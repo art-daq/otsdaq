@@ -9,7 +9,7 @@ ots::RunInfoVInterface* ots::makeRunInfo(const std::string& runInfoPluginName, c
 //    const ots::ConfigurationTree& configurationTree,  // Pass the big tree
 //    const std::string&            pathToControlsConfiguration)   // Path to RunInfoDashboard Table
 {
-	static cet::BasicPluginFactory basicPluginInterfaceFactory("runinfo", "make");
+	static cet::BasicPluginFactory basicPluginInterfaceFactory("runInfo", "make");
 
 	return basicPluginInterfaceFactory
 	    .makePlugin<ots::RunInfoVInterface*, const std::string&, const std::string&>(  //, const ots::ConfigurationTree&, const std::string&>(
