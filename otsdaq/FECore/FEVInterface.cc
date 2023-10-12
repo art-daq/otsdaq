@@ -3,6 +3,7 @@
 #include "otsdaq/FECore/FEVInterfacesManager.h"
 #include "otsdaq/NetworkUtilities/UDPDataStreamerBase.h"
 #include "otsdaq/Macros/BinaryStringMacros.h"
+#include "otsdaq/FECore/exprtk.hpp"
 
 #define TRACE_NAME "FEVInterface"
 #include <iostream>
@@ -133,12 +134,20 @@ void FEVInterface::addSlowControlsChannels(ConfigurationTree                    
 						getInterfaceUID() << "/" << groupLinkChild.first
 		            << "\t Type:" << groupLinkChild.second.getNode("ChannelDataType") << __E__;
 
+        std::string transformation = "";
+		try {
+			transformation = groupLinkChild.second.getNode("Transformation").getValue<std::string>();
+		} catch (...) {
+			__FE_COUT__ << "No 'Transformation' setting found." << __E__;
+		}
+
 		mapOfSlowControlsChannels->insert(std::pair<std::string, FESlowControlsChannel>(
 		    groupLinkChild.first,
 		    FESlowControlsChannel(this,
 		                          groupLinkChild.first,
 		                          groupLinkChild.second.getNode("ChannelDataType").getValue<std::string>(),
 		                          groupLinkChild.second.getNode("UniversalInterfaceAddress").getValue<std::string>(),
+								  transformation,
 		                          groupLinkChild.second.getNode("UniversalDataBitOffset").getValue<unsigned int>(),
 		                          groupLinkChild.second.getNode("ReadAccess").getValue<bool>(),
 		                          groupLinkChild.second.getNode("WriteAccess").getValue<bool>(),
@@ -356,9 +365,29 @@ try
 				uint64_t val = 0;  // 64 bits!
 				for(size_t ii = 0; ii < universalAddressSize_; ++ii)
 					val += (uint8_t)readVal[ii] << (ii * 8);
+				
+				if(!channel->transformation_.empty()) {
+   					exprtk::symbol_table<double> symbol_table;
+					double val_d = static_cast<double>(val);
+    				symbol_table.add_variable("v", val_d);
+    				symbol_table.add_constants();
 
-				__FE_COUT__ << "Sending sample to Metric Manager..." << __E__;
-				metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
+
+    				exprtk::expression<double> expression;
+    				expression.register_symbol_table(symbol_table);
+
+    				exprtk::parser<double> parser;
+    				if (parser.compile(channel->transformation_, expression)) {
+        				double val = expression.value();
+						__FE_COUT__ << "Sending transformed sample to Metric Manager..." << __E__;
+						metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
+    				} else {
+        				__FE_COUT__ << "Transformation '" << channel->transformation_ << "' of sample 0x" << std::hex << val << " failed." << __E__;
+    				}
+				} else {
+					__FE_COUT__ << "Sending sample to Metric Manager..." << __E__;
+					metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
+				}
 			}
 			else
 				__FE_COUT__ << "Skipping sample to Metric Manager: "
