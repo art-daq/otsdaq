@@ -18,8 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        build-type: [ 'd', 'p' ]
-        qualifiers: [ 's112-e20', 's124-e20', 's124-e26' ]
+        build-type: [ 'p' ]
+        qualifiers: [ 's112-e20', 's126-e28' ]
 
     steps:
     - uses: cvmfs-contrib/github-action-cvmfs@v3
