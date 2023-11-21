@@ -355,7 +355,7 @@ try
 			{
 				uint64_t val = 0;  // 64 bits!
 				for(size_t ii = 0; ii < universalAddressSize_; ++ii)
-					val += (uint8_t)readVal[ii] << (ii * 4);
+					val += (uint8_t)readVal[ii] << (ii * 8);
 
 				__FE_COUT__ << "Sending sample to Metric Manager..." << __E__;
 				metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
