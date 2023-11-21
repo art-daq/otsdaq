@@ -1106,7 +1106,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 		__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Using cache!" << __E__;
 
 	const int numOfThreads = PROCESSOR_COUNT/2;
-	if(usingCache || numOfThreads < 2) // no multi-threading
+	if(1 || usingCache || numOfThreads < 2) // no multi-threading
 	{
 		//	for each member
 		//		get()
@@ -2337,6 +2337,9 @@ try
 		else
 			__SS_THROW__;
 	}
+
+	if(getError != "") 
+		__COUTV__(getError);
 
 	//__GEN_COUT__ << "Checking ptr.. " <<  (tmpTableBasePtr?"GOOD":"BAD") << __E__;
 	if(!table)

@@ -41,10 +41,10 @@ void get(TableBase*&                          table,
 
 	if(table == 0)
 	{
+		std::unique_lock<std::mutex> lock(tableReaderMutex_);
 		// try making table table plugin, if fails use TableBase
 		try
 		{
-			std::unique_lock<std::mutex> lock(tableReaderMutex_);
 			table = makeTable(tableName);
 		}
 		catch(...)
@@ -60,7 +60,6 @@ void get(TableBase*&                          table,
 			//	if it fails, then probably something wrong with Info file
 			try
 			{
-				std::unique_lock<std::mutex> lock(tableReaderMutex_);
 				table = new TableBase(tableName);
 			}
 			catch(...)  // failure so cleanup any halfway complete table work
