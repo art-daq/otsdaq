@@ -79,6 +79,7 @@ void CoreSupervisorBase::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
 // requestWrapper ~
 //	wrapper for inheritance Supervisor request call
 void CoreSupervisorBase::requestWrapper(xgi::Input* in, xgi::Output* out)
+try
 {
 	cgicc::Cgicc cgiIn(in);
 	std::string  requestType = CgiDataUtilities::getData(cgiIn, "RequestType");
@@ -196,6 +197,25 @@ void CoreSupervisorBase::requestWrapper(xgi::Input* in, xgi::Output* out)
 	__SUP_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Total xml request time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << 
 		" = " <<  time(0) - requestStartTime << __E__;
 }  // end requestWrapper()
+catch(const std::runtime_error& e)
+{
+	__SUP_SS__ << "An error was encountered handling HTTP request:" << e.what() << __E__;
+	__SUP_COUT_ERR__ << "\n" << ss.str();
+	throw;
+}
+catch(...)
+{
+	__SUP_SS__ << "An unknown error was encountered HTTP request. "
+				<< "Please check the printouts to debug." << __E__;
+	try	{ throw; } //one more try to printout extra info
+	catch(const std::exception &e)
+	{
+		ss << "Exception message: " << e.what();
+	}
+	catch(...){}
+	__SUP_COUT_ERR__ << "\n" << ss.str();
+	throw;
+}	// end requestWrapper() error handling
 
 //==============================================================================
 // request

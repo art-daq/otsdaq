@@ -47,7 +47,7 @@ class CodeEditor
 
 	static std::map<std::string /*special type*/, std::set<std::string> /*special file paths*/> getSpecialsMap(void);
 
-	static void readFile(const std::string& basepath, const std::string& path, std::string& contents);
+	static void readFile(const std::string& basepath, const std::string& path, std::string& contents, bool binaryRead = false);
 	static void writeFile(const std::string&        basepath,
 	                      const std::string&        path,
 	                      const std::string&        contents,

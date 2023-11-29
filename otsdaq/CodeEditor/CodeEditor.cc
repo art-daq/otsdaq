@@ -360,7 +360,8 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	if(extension == "ots")
 		extension = "";  // special handling of ots extension (to get bash script
 		                 // properly)
-	if(!(path.length() > 4 && path.substr(path.length() - 4) == "/ots"))
+	if(!( extension == "bin" || //allow bin for read-only
+		(path.length() > 4 && path.substr(path.length() - 4) == "/ots")))
 		extension = safeExtensionString(extension);
 	xmlOut->addTextElementToData("ext", extension);
 
@@ -368,12 +369,12 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	size_t      i;
 	if((i = path.find("$USER_DATA/")) == 0 || (i == 1 && path[0] == '/'))  // if leading / or without
 		CodeEditor::readFile(
-		    CodeEditor::USER_DATA_PATH, path.substr(i + std::string("$USER_DATA/").size()) + (extension.size() ? "." : "") + extension, contents);
+		    CodeEditor::USER_DATA_PATH, path.substr(i + std::string("$USER_DATA/").size()) + (extension.size() ? "." : "") + extension, contents, extension == "bin");
 	else if((i = path.find("$OTSDAQ_DATA/")) == 0 || (i == 1 && path[0] == '/'))  // if leading / or without
 		CodeEditor::readFile(
-		    CodeEditor::OTSDAQ_DATA_PATH, path.substr(std::string("/$OTSDAQ_DATA/").size()) + (extension.size() ? "." : "") + extension, contents);
+		    CodeEditor::OTSDAQ_DATA_PATH, path.substr(std::string("/$OTSDAQ_DATA/").size()) + (extension.size() ? "." : "") + extension, contents, extension == "bin");
 	else
-		CodeEditor::readFile(CodeEditor::SOURCE_BASE_PATH, path + (extension.size() ? "." : "") + extension, contents);
+		CodeEditor::readFile(CodeEditor::SOURCE_BASE_PATH, path + (extension.size() ? "." : "") + extension, contents, extension == "bin");
 
 	xmlOut->addTextElementToData("content", contents);
 
@@ -381,18 +382,58 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 
 //==============================================================================
 // readFile
-void CodeEditor::readFile(const std::string& basepath, const std::string& path, std::string& contents)
+void CodeEditor::readFile(const std::string& basepath, const std::string& path, std::string& contents, 
+	bool binaryRead /* = false*/)
 {
-	std::string fullpath = basepath + "/" + path;
+	__COUTV__(basepath);
+	__COUTV__(path);
+	std::string fullpath;
+	if(path.find(basepath) == 0) //check if path is already complete
+		fullpath = path;
+	else
+		fullpath = basepath + "/" + path;
 	__COUTV__(fullpath);
 
 	std::FILE* fp = std::fopen(fullpath.c_str(), "rb");
 	if(!fp)
 	{
-		__SS__ << "Could not open file at " << path << __E__;
+		__SS__ << "Could not open file at " << fullpath << 
+			". Error: " << errno << " - " << strerror(errno) << __E__;
 		__SS_THROW__;
 	}
 
+	if(binaryRead)
+	{
+		std::string binaryContents;
+		std::fseek(fp, 0, SEEK_END);
+		binaryContents.resize(std::ftell(fp));
+		std::rewind(fp);
+		std::fread(&binaryContents[0], 1, binaryContents.size(), fp);
+		std::fclose(fp);
+
+		for(size_t i = 0; i < binaryContents.size(); i += 8)
+		{
+			contents += "0x"; //no need to send line number (it is in web display already)
+
+			for(size_t j = 0; j < 8 && 
+							j < binaryContents.size() - i; ++j)
+			{
+				size_t jj = i + 7 - j; //go in reverse order so least significant is at right
+				if(i + 8 > binaryContents.size()) //if not a multiple of 8 at end
+					jj = i + (binaryContents.size() - i) - j;
+
+				if(j == 4) contents += ' '; //one space at 32b groups
+				contents += "  "; //declare the 2 bytes of space, then fill with sprintf
+				sprintf(&contents[contents.length() - 2],"%2.2x",
+					binaryContents[jj]);				
+			} //end binary hex char loop			
+			contents += '\n';
+		} //end binary line loop
+		contents += '\n';
+		
+		return;
+	}
+	//else standard text read
 	std::fseek(fp, 0, SEEK_END);
 	contents.resize(std::ftell(fp));
 	std::rewind(fp);

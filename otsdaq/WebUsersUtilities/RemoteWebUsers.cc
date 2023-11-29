@@ -128,7 +128,7 @@ bool RemoteWebUsers::xmlRequestToGateway(
 
 	/////////////////////////////////////////////////////
 	// have CookieCode, try it out
-	if(allSupervisorInfo.isWizardMode())
+	if(allSupervisorInfo.isWizardMode() || allSupervisorInfo.isMacroMakerMode())
 	{
 		// if missing CookieCode... check if in Wizard mode and using sequence
 		std::string sequence = CgiDataUtilities::getOrPostData(cgi, "sequence");  // from GET or POST
@@ -143,10 +143,14 @@ bool RemoteWebUsers::xmlRequestToGateway(
 
 		// have sequence, try it out
 
-		gatewaySupervisor = allSupervisorInfo.getWizardInfo().getDescriptor();
+		if(allSupervisorInfo.isWizardMode())
+			gatewaySupervisor = allSupervisorInfo.getWizardInfo().getDescriptor();
+		else //is MacroMaker mode
+			gatewaySupervisor = allSupervisorInfo.getAllMacroMakerTypeSupervisorInfo().begin()->second.getDescriptor();
+
 		if(!gatewaySupervisor)
 		{
-			__COUT_ERR__ << "Missing wizard supervisor." << std::endl;
+			__COUT_ERR__ << "Missing gateway supervisor." << std::endl;
 			*out << WebUsers::REQ_NO_LOGIN_RESPONSE;
 			// sequence code present, but no wizard supervisor
 			goto HANDLE_ACCESS_FAILURE;  // return false, access failed

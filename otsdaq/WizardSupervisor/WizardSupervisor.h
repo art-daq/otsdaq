@@ -75,8 +75,8 @@ class WizardSupervisor : public xdaq::Application, public SOAPMessenger
 	                            HttpXmlDocument*                    xmldoc = nullptr);
 
 	// External Supervisor XOAP handlers
-	xoap::MessageReference 		supervisorSequenceCheck(xoap::MessageReference msg);
-	xoap::MessageReference 		supervisorLastTableGroupRequest(xoap::MessageReference msg);
+	xoap::MessageReference 		supervisorSequenceCheck			(xoap::MessageReference message);
+	xoap::MessageReference 		supervisorLastTableGroupRequest	(xoap::MessageReference message);
 
 
   private:

@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+#include "otsdaq/Macros/CoutMacros.h"
 
 using namespace ots;
 
@@ -86,50 +87,44 @@ int TCPReceiverSocket::receive(char* buffer, std::size_t bufferSize, int /*timeo
 	// std::cout << __PRETTY_FUNCTION__ << "Message-" << buffer << "- Error? " << (dataRead == static_cast<std::size_t>(-1)) << std::endl;
 	if(dataRead < 0)
 	{
-		std::stringstream error;
+		__SS__;
 		switch(errno)
 		{
-		case EBADF:
-			error << "Socket file descriptor " << getSocketId() << " is not a valid file descriptor or is not open for reading...Errno: " << errno;
-			break;
-		case EFAULT:
-			error << "Buffer is outside your accessible address space...Errno: " << errno;
-			break;
-		case ENXIO: {
-			// Fatal error. Programming bug
-			error << "Read critical error caused by a programming bug...Errno: " << errno;
-			throw std::domain_error(error.str());
+			case EBADF:
+				ss << "Socket file descriptor " << getSocketId() << " is not a valid file descriptor or is not open for reading...Errno: " << errno;
+				break;
+			case EFAULT:
+				ss << "Buffer is outside your accessible address space...Errno: " << errno;
+				break;
+			case ENXIO: // Fatal error. Programming bug
+				ss << "Read critical error caused by a programming bug...Errno: " << errno;
+				break;
+			case EINTR:
+				// TODO: Check for user interrupt flags.
+				//       Beyond the scope of this project
+				//       so continue normal operations.
+				ss << "The call was interrupted by a signal before any data was "
+						"read...Errno: " << errno;
+				break;
+			case EAGAIN: 
+				// recv is non blocking so this error is issued every time there are no messages to read
+				// std::cout << __PRETTY_FUNCTION__ << "Couldn't read any data: " << dataRead << std::endl;
+				// std::this_thread::sleep_for (std::chrono::seconds(1));
+				return dataRead;
+			case ENOTCONN: 
+				// Connection broken.
+				// Return the data we have available and exit
+				// as if the connection was closed correctly.
+				return dataRead;
+			default: 
+				ss << "Read: returned -1...Errno: " << errno;
 		}
-		case EINTR:
-			// TODO: Check for user interrupt flags.
-			//       Beyond the scope of this project
-			//       so continue normal operations.
-			error << "The call was interrupted by a signal before any data was "
-			         "read...Errno: "
-			      << errno;
-			break;
-		case EAGAIN: {
-			// recv is non blocking so this error is issued every time there are no messages to read
-			// std::cout << __PRETTY_FUNCTION__ << "Couldn't read any data: " << dataRead << std::endl;
-			// std::this_thread::sleep_for (std::chrono::seconds(1));
-			return dataRead;
-		}
-		case ENOTCONN: {
-			// Connection broken.
-			// Return the data we have available and exit
-			// as if the connection was closed correctly.
-			return dataRead;
-		}
-		default: {
-			error << "Read: returned -1...Errno: " << errno;
-		}
-		}
-		throw std::runtime_error(error.str());
+		__SS_THROW__;
 	}
 	else if(dataRead == static_cast<std::size_t>(0))
 	{
-		std::cout << __PRETTY_FUNCTION__ << "Connection closed!" << std::endl;
-		throw std::runtime_error("Connection closed");
+		__SS__ << "Connection closed!" << std::endl;
+		__SS_THROW__;
 	}
 	// std::cout << __PRETTY_FUNCTION__ << "Message: " << buffer << " -> is error free! Socket: " << getSocketId() << std::endl;
 	return dataRead;

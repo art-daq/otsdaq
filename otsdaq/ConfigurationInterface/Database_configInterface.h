@@ -22,6 +22,8 @@ class DatabaseConfigurationInterface : public ConfigurationInterface
 	DatabaseConfigurationInterface();
 	~DatabaseConfigurationInterface() { ; }
 
+	bool 									IS_FILESYSTEM_DB = true;
+
 	// read table from database
 	void 									fill						(TableBase* table, TableVersion version) const;
 
