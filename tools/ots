@@ -581,7 +581,7 @@ if [ "x$USER_DATA" == "x" ]; then
     out "Environment variable ${Cyan}${Bold}USER_DATAr${RstClr} has not been setup!"
     out "To setup, use 'export USER_DATA=<path to user data>'"
 
-    out "(If you do not have a user data folder copy '<path to ots source>/otsdaq-demo/Data' as your starting point.)"
+    out "(If you do not have a user data folder, copy '<path to otsdaq_demo_data repo>/Data' as your starting point.)"
     out "${Red}${Bold}${Blink}Aborting launch${RstClr} "
 
     
@@ -623,7 +623,7 @@ ARTDAQ_DATABASE_TYPE=$(echo ${ARTDAQ_DATABASE_URI}|sed 's|:.*||')
 #out "Database type = $ARTDAQ_DATABASE_TYPE"
 
 #if not using filesystem point to a db "services" folder
-if [ $ARTDAQ_DATABASE_TYPE == "filesystemdb" ]; then
+if [ "x$ARTDAQ_DATABASE_TYPE" == "xfilesystemdb" ]; then
 
 
 	#basic philosophy:
@@ -653,8 +653,20 @@ if [ $ARTDAQ_DATABASE_TYPE == "filesystemdb" ]; then
 	# As of 27-Oct-2023, no longer... check for somewhat-antiquated(pre-configuration-to-table) artdaq database
 
 else
-	ARTDAQ_DATABASE_FILESYSTEM_PATH=${USER_DATA}/ServiceData/artdaq_database_services
-	mkdir $ARTDAQ_DATABASE_FILESYSTEM_PATH &>/dev/null 2>&1 #hide output
+
+    out "${Red}${Bold}${Blink}Fatal Error${RstClr}."
+    out "ARTDAQ_DATABASE_URI=$ARTDAQ_DATABASE_URI"
+    out "Environment variable ${Cyan}${Bold}ARTDAQ_DATABASE_URI${RstClr} does not have a value!"
+    out "To setup, use 'export ARTDAQ_DATABASE_URI=<value>'"
+
+
+    out "(If you do not have a database folder, copy '<path to otsdaq_demo_data repo>/databases/filesystemdb/test_db' as your starting point.)"
+    out "${Red}${Bold}${Blink}Aborting launch${RstClr} "
+
+    
+    exit   
+	# ARTDAQ_DATABASE_FILESYSTEM_PATH=${USER_DATA}/ServiceData/artdaq_database_services
+	# mkdir $ARTDAQ_DATABASE_FILESYSTEM_PATH &>/dev/null 2>&1 #hide output
 fi	
 		
 #check for somewhat-antiquated artdaq 'DAQ' tables and auto-fix
@@ -793,7 +805,8 @@ launchOTSMacromaker() {
 	
 	out "CONFIGURATION_INIT_FCL = ${CONFIGURATION_INIT_FCL}"
 	
-	#setup wiz mode environment variables
+	#setup MacroMaker mode environment variables
+	export CODE_EDITOR_SUPERVISOR_ID=240
 	export FE_SUPERVISOR_ID=280
 	export MACROMAKER_SUPERVISOR_ID=290
 	MAIN_PORT=2015
@@ -803,6 +816,7 @@ launchOTSMacromaker() {
 	fi
 	export PORT=${MAIN_PORT} #must be exported for xml env var conversion	
 	
+
 	
 	#check for mm xml file, if missing download it	
 	if [ ! -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake.xml ]; then

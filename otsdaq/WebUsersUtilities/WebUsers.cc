@@ -243,10 +243,11 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 	// - check access based on cookieCode and permission level
 	// - check user lock flags and status
 
-	if(userInfo.requireSecurity_)
+	if(userInfo.requireSecurity_ && userInfo.permissionsThreshold_ > 1)
 	{
-		// only allow if wiz mode with random code, or normal mode with security mode
-		// enabled
+		// In an attempt to force accountability,..
+		// only allow higher permission threshold requests
+		//	 if wiz mode with random code, or normal mode with security mode enabled
 
 		if(isWizardMode && wizardModeSequence.size() < 8)
 		{
@@ -298,7 +299,8 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 	{
 		*out << WebUsers::REQ_NO_PERMISSION_RESPONSE;
 		__COUT__ << "User (@" << userInfo.ip_ << ") has insufficient permissions for requestType '" << userInfo.requestType_
-		         << "' : " << (unsigned int)userInfo.permissionLevel_ << "<" << (unsigned int)userInfo.permissionsThreshold_ << std::endl;
+		         << "' : user level is " << (unsigned int)userInfo.permissionLevel_ << ", " << 
+				 (unsigned int)userInfo.permissionsThreshold_ << " required." << __E__;
 		return false;  // invalid cookie and present sequence, but not correct sequence
 	}
 	// end check access -------

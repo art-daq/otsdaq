@@ -436,7 +436,7 @@ void WizardSupervisor::toggleSecurityCodeGeneration(xgi::Input* in, xgi::Output*
 		__COUT__ << "Command Request, " << Command << ", not recognized." << std::endl;
 
 	xmldoc.outputXmlDocument((std::ostringstream*)out, false, true);
-}
+} //end toggleSecurityCodeGeneration()
 
 //==============================================================================
 // xoap::supervisorSequenceCheck
@@ -470,7 +470,7 @@ xoap::MessageReference WizardSupervisor::supervisorSequenceCheck(xoap::MessageRe
 	retParameters.addParameter("Permissions", StringMacros::mapToString(permissionMap));
 
 	return SOAPUtilities::makeSOAPMessageReference("SequenceResponse", retParameters);
-}
+} //end supervisorSequenceCheck()
 
 //===================================================================================================================
 // xoap::supervisorLastTableGroupRequest
@@ -484,14 +484,14 @@ xoap::MessageReference WizardSupervisor::supervisorLastTableGroupRequest(xoap::M
 	SOAPUtilities::receive(message, parameters);
 
 	return GatewaySupervisor::lastTableGroupRequestHandler(parameters);
-}
+} //end supervisorLastTableGroupRequest()
 
 //==============================================================================
 void WizardSupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 {
 	__COUT__ << "Unauthorized Request made, security sequence doesn't match!" << std::endl;
 	*out << "Unauthorized Request.";
-}
+} //end Default()
 
 //==============================================================================
 void WizardSupervisor::request(xgi::Input* in, xgi::Output* out)
@@ -886,7 +886,8 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 
 	*out << "test";
 	return;
-}
+} //end UserSettings()
+
 //==============================================================================
 //	validateUploadFileType
 //      returns "" if file type is invalid, else returns file extension to use
@@ -897,7 +898,8 @@ std::string WizardSupervisor::validateUploadFileType(const std::string fileType)
 			return matchingFileUploadTypes_[i];  // found and done
 
 	return "";  // not valid, return ""
-}
+} //end validateUploadFileType()
+
 //==============================================================================
 //	cleanUpPreviews
 //      cleanup logbook preview directory
@@ -943,7 +945,7 @@ void WizardSupervisor::cleanUpPreviews()
 	}
 
 	closedir(dir);
-}
+} //end cleanUpPreviews()
 
 //==============================================================================
 //	savePostPreview
@@ -1040,4 +1042,4 @@ void WizardSupervisor::savePostPreview(
 	if(xmldoc) xmldoc->addTextElementToData(XML_STATUS,"1"); //1 indicates success!
 	if(xmldoc) xmldoc->addTextElementToData(XML_PREVIEW_INDEX,"1"); //1 indicates is a
 	preview post*/
-}
+} //end savePostPreview()

@@ -86,7 +86,7 @@ TableView& TableView::copy(const TableView& src, TableVersion destinationVersion
 
 	std::string tmpCachePrepend = TableBase::GROUP_CACHE_PREPEND;
 	tmpCachePrepend = TableBase::convertToCaps(tmpCachePrepend);
-	__COUT__ << " '" << tableName_ << "' vs "  << tmpCachePrepend << __E__;
+
 	//if special GROUP CACHE table, handle construction in a special way
 	if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend)
 	{
@@ -2073,7 +2073,7 @@ int TableView::fillFromJSON(const std::string& json)
 		//handle special GROUP CACHE table
 		std::string tmpCachePrepend = TableBase::GROUP_CACHE_PREPEND;
 		tmpCachePrepend = TableBase::convertToCaps(tmpCachePrepend);
-		__COUT__ << " '" << tableName_ << "' vs "  << tmpCachePrepend << __E__;
+		
 		//if special GROUP CACHE table, handle construction in a special way
 		if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend)
 		{

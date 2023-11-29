@@ -73,7 +73,14 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 		artdaq::database::configuration::Multitasker();
 	}
 #endif
-}
+
+	std::string envVar = __ENV__("ARTDAQ_DATABASE_URI");
+	if(envVar.length() && envVar[0] != 'f')  //e.g., filesystemdb:///path/filesystemdb/test_db
+		IS_FILESYSTEM_DB = false;
+	else 
+		IS_FILESYSTEM_DB = true;
+	__COUTV__(IS_FILESYSTEM_DB);
+} //end constructor()
 
 //==============================================================================
 // read table from database
@@ -516,7 +523,9 @@ try
 		return resultList;
 	};
 
-	auto result = ifc.storeGlobalConfiguration_mt(to_list(memberMap), tableGroup);
+	auto result = IS_FILESYSTEM_DB?
+		ifc.storeGlobalConfiguration(to_list(memberMap), tableGroup):
+		ifc.storeGlobalConfiguration_mt(to_list(memberMap), tableGroup);
 
 	auto end      = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
