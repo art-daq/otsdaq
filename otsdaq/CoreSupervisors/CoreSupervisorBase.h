@@ -75,6 +75,7 @@ class CoreSupervisorBase : public xdaq::Application,
 																	std::ostream&                    out,
 																	const WebUsers::RequestUserInfo& userInfo);
 	virtual std::string 			getStatusProgressDetail			(void);
+	virtual std::vector<SupervisorInfo::SubappInfo>             getSubappInfo					(void) { return std::vector<SupervisorInfo::SubappInfo>(); }
 
   private:
 	xoap::MessageReference 			workLoopStatusRequestWrapper	(xoap::MessageReference message);

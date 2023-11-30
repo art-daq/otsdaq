@@ -42,9 +42,9 @@ class AllSupervisorInfo : public SupervisorDescriptorInfoBase
 	bool 													isMacroMakerMode					(void) const { return AllSupervisorInfo::MACROMAKER_MODE; }
 
 	// SETTERs
-	void 													setSupervisorStatus					(xdaq::Application* app, const std::string& status, const unsigned int progress = 100, const std::string& detail = "");
-	void 													setSupervisorStatus					(const SupervisorInfo& appInfo, const std::string& status, const unsigned int progress = 100, const std::string& detail = "");
-	void 													setSupervisorStatus					(const unsigned int& id, const std::string& status, const unsigned int progress = 100, const std::string& detail = "");
+	void 													setSupervisorStatus					(xdaq::Application* app, const std::string& status, const unsigned int progress = 100, const std::string& detail = "", std::vector<SupervisorInfo::SubappInfo> subapps = {});
+	void 													setSupervisorStatus					(const SupervisorInfo& appInfo, const std::string& status, const unsigned int progress = 100, const std::string& detail = "", std::vector<SupervisorInfo::SubappInfo> subapps = {});
+	void 													setSupervisorStatus					(const unsigned int& id, const std::string& status, const unsigned int progress = 100, const std::string& detail = "", std::vector<SupervisorInfo::SubappInfo> subapps = {});
 
 	// GETTERs (so searching and iterating is easier)
 	const std::map<unsigned int /* lid */, SupervisorInfo>& getAllSupervisorInfo				(void) const { return allSupervisorInfo_; }

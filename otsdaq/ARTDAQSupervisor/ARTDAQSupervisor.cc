@@ -141,12 +141,17 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 
 	o << "package_hashes_to_save: " << getSupervisorProperty("package_hashes_to_save", "[artdaq]") << std::endl;
 	// Note that productsdir_for_bash_scripts is REQUIRED!
-	__SUP_COUT__ <<"Use spack is " << getSupervisorProperty("use_spack", false) << ", spack_root is " << getSupervisorProperty("spack_root_for_bash_scripts", "NOT SET") << ", productsdir is " << getSupervisorProperty("productsdir_for_bash_scripts", "NOT SET") << __E__;
-	if(getSupervisorProperty("use_spack", false)) {
-	    o << "spack_root_for_bash_scripts: " << getSupervisorProperty("spack_root_for_bash_scripts", std::string(__ENV__("SPACK_ROOT"))) << std::endl;
-        } else {
-	    o << "productsdir_for_bash_scripts: " << getSupervisorProperty("productsdir_for_bash_scripts", std::string(__ENV__("OTS_PRODUCTS"))) << std::endl;
-        }
+	__SUP_COUT__ << "Use spack is " << getSupervisorProperty("use_spack", false) << ", spack_root is "
+	             << getSupervisorProperty("spack_root_for_bash_scripts", "NOT SET") << ", productsdir is "
+	             << getSupervisorProperty("productsdir_for_bash_scripts", "NOT SET") << __E__;
+	if(getSupervisorProperty("use_spack", false))
+	{
+		o << "spack_root_for_bash_scripts: " << getSupervisorProperty("spack_root_for_bash_scripts", std::string(__ENV__("SPACK_ROOT"))) << std::endl;
+	}
+	else
+	{
+		o << "productsdir_for_bash_scripts: " << getSupervisorProperty("productsdir_for_bash_scripts", std::string(__ENV__("OTS_PRODUCTS"))) << std::endl;
+	}
 	o << "boardreader timeout: " << getSupervisorProperty("boardreader_timeout", 30) << std::endl;
 	o << "eventbuilder timeout: " << getSupervisorProperty("eventbuilder_timeout", 30) << std::endl;
 	o << "datalogger timeout: " << getSupervisorProperty("datalogger_timeout", 30) << std::endl;
@@ -367,10 +372,21 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 		try
 		{
-			//disable version tracking to accept untracked versions to be selected by the FSM transition source
-			theConfigurationManager_->loadTableGroup(theGroup.first, theGroup.second, true /*doActivate*/,
-				0,0,0,0,0,0,false,0,0,ConfigurationManager::LoadGroupType::ALL_TYPES,
-				true /*ignoreVersionTracking*/);
+			// disable version tracking to accept untracked versions to be selected by the FSM transition source
+			theConfigurationManager_->loadTableGroup(theGroup.first,
+			                                         theGroup.second,
+			                                         true /*doActivate*/,
+			                                         0,
+			                                         0,
+			                                         0,
+			                                         0,
+			                                         0,
+			                                         0,
+			                                         false,
+			                                         0,
+			                                         0,
+			                                         ConfigurationManager::LoadGroupType::ALL_TYPES,
+			                                         true /*ignoreVersionTracking*/);
 		}
 		catch(const std::runtime_error& e)
 		{
@@ -380,8 +396,11 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 			//__SS_THROW_ONLY__;
 			theStateMachine_.setErrorMessage(ss.str());
-			throw toolbox::fsm::exception::Exception(
-				"Transition Error" /*name*/, ss.str() /* message*/, "ARTDAQSupervisor::transitionConfiguring" /*module*/, __LINE__ /*line*/, __FUNCTION__ /*function*/
+			throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
+			                                         ss.str() /* message*/,
+			                                         "ARTDAQSupervisor::transitionConfiguring" /*module*/,
+			                                         __LINE__ /*line*/,
+			                                         __FUNCTION__ /*function*/
 			);
 		}
 		catch(...)
@@ -392,8 +411,11 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 			//__SS_THROW_ONLY__;
 			theStateMachine_.setErrorMessage(ss.str());
-			throw toolbox::fsm::exception::Exception(
-				"Transition Error" /*name*/, ss.str() /* message*/, "ARTDAQSupervisor::transitionConfiguring" /*module*/, __LINE__ /*line*/, __FUNCTION__ /*function*/
+			throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
+			                                         ss.str() /* message*/,
+			                                         "ARTDAQSupervisor::transitionConfiguring" /*module*/,
+			                                         __LINE__ /*line*/,
+			                                         __FUNCTION__ /*function*/
 			);
 		}
 
@@ -543,6 +565,7 @@ try
 	{
 		o << "EventBuilder host: " << builder.hostname << std::endl;
 		o << "EventBuilder label: " << builder.label << std::endl;
+		label_to_proc_type_map_[builder.label] = "EventBuilder";
 		if(builder.subsystem != 1)
 		{
 			o << "EventBuilder subsystem: " << builder.subsystem << std::endl;
@@ -557,6 +580,7 @@ try
 	{
 		o << "DataLogger host: " << logger.hostname << std::endl;
 		o << "DataLogger label: " << logger.label << std::endl;
+		label_to_proc_type_map_[logger.label] = "DataLogger";
 		if(logger.subsystem != 1)
 		{
 			o << "DataLogger subsystem: " << logger.subsystem << std::endl;
@@ -572,6 +596,7 @@ try
 		o << "Dispatcher host: " << dispatcher.hostname << std::endl;
 		o << "Dispatcher label: " << dispatcher.label << std::endl;
 		o << "Dispatcher port: " << dispatcher.port << std::endl;
+		label_to_proc_type_map_[dispatcher.label] = "Dispatcher";
 		if(dispatcher.subsystem != 1)
 		{
 			o << "Dispatcher subsystem: " << dispatcher.subsystem << std::endl;
@@ -586,6 +611,7 @@ try
 	{
 		o << "RoutingManager host: " << rmanager.hostname << std::endl;
 		o << "RoutingManager label: " << rmanager.label << std::endl;
+		label_to_proc_type_map_[rmanager.label] = "RoutingManager";
 		if(rmanager.subsystem != 1)
 		{
 			o << "RoutingManager subsystem: " << rmanager.subsystem << std::endl;
@@ -652,6 +678,7 @@ try
 	PyObject* readerDict = PyDict_New();
 	for(auto& reader : info.processes[ARTDAQTableBase::ARTDAQAppType::BoardReader])
 	{
+		label_to_proc_type_map_[reader.label] = "BoardReader";
 		PyObject* readerName = PyUnicode_FromString(reader.label.c_str());
 
 		int list_size = reader.allowed_processors != "" ? 4 : 3;
@@ -1189,6 +1216,27 @@ void ots::ARTDAQSupervisor::enteringError(toolbox::Event::Reference /*event*/)
 
 }  // end enteringError()
 
+std::vector<SupervisorInfo::SubappInfo> ots::ARTDAQSupervisor::getSubappInfo(void)
+{
+	auto                                    apps = getAndParseProcessInfo_();
+	std::vector<SupervisorInfo::SubappInfo> output;
+	for(auto& app : apps)
+	{
+		SupervisorInfo::SubappInfo info;
+
+		info.name           = app.label;
+		info.detail         = "Rank " + std::to_string(app.rank) + ", subsystem " + std::to_string(app.subsystem);
+		info.lastStatusTime = time(0);
+		info.progress       = 100;
+		info.status         = artdaqStateToOtsState(app.state);
+		info.url            = "http://" + app.host + ":" + std::to_string(app.port) + "/RPC2";
+		info.class_name     = "ARTDAQ " + labelToProcType_(app.label);
+
+		output.push_back(info);
+	}
+	return output;
+}
+
 //==============================================================================
 void ots::ARTDAQSupervisor::getDAQState_()
 {
@@ -1229,7 +1277,8 @@ std::string ots::ARTDAQSupervisor::getProcessInfo_(void)
 
 	PyObject* pName = PyUnicode_FromString("artdaq_process_info");
 	PyObject* pArg  = PyUnicode_FromString("DAQInterface");
-	PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, NULL);
+	PyObject* pArg2 = PyBool_FromLong(true);
+	PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, pArg2, NULL);
 
 	if(res == NULL)
 	{
@@ -1241,6 +1290,32 @@ std::string ots::ARTDAQSupervisor::getProcessInfo_(void)
 	return std::string(PyUnicode_AsUTF8(res));
 	//__SUP_COUT__ << "getDAQState_ DONE: state=" << result << __E__;
 }  // end getProcessInfo_()
+
+std::string ots::ARTDAQSupervisor::artdaqStateToOtsState(std::string state)
+{
+	if(state == "nonexistant")
+		return RunControlStateMachine::INITIAL_STATE_NAME;
+	if(state == "Ready")
+		return "Configured";
+	if(state == "Running")
+		return RunControlStateMachine::RUNNING_STATE_NAME;
+	if(state == "Paused")
+		return RunControlStateMachine::PAUSED_STATE_NAME;
+	if(state == "Stopped")
+		return RunControlStateMachine::HALTED_STATE_NAME;
+
+	TLOG(TLVL_WARNING) << "Unrecognized state name " << state;
+	return RunControlStateMachine::FAILED_STATE_NAME;
+}
+
+std::string ots::ARTDAQSupervisor::labelToProcType_(std::string label)
+{
+	if(label_to_proc_type_map_.count(label))
+	{
+		return label_to_proc_type_map_[label];
+	}
+	return "UNKNOWN";
+}
 
 //==============================================================================
 std::list<ots::ARTDAQSupervisor::DAQInterfaceProcessInfo> ots::ARTDAQSupervisor::getAndParseProcessInfo_()

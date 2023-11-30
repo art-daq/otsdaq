@@ -203,6 +203,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 	bool        firstError = true;
 	std::string status, progress, detail, appName;
+	std::vector<SupervisorInfo::SubappInfo> subapps;
 	int         progressInteger;
 	bool        oneStatusReqHasFailed = false;
 
@@ -311,6 +312,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					parameters.addParameter("Status");
 					parameters.addParameter("Progress");
 					parameters.addParameter("Detail");
+					parameters.addParameter("Subapps");
 					SOAPUtilities::receive(statusMessage, parameters);
 
 					status = parameters.getValue("Status");
@@ -325,6 +327,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					// 	__COUTV__(progress);
 
 					detail = parameters.getValue("Detail");
+
+					subapps = SupervisorInfo::deserializeSubappInfos(parameters.getValue("Subapps"));
 
 					if(!appLastStatusGood[appName])
 					{
@@ -443,7 +447,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 			// if("ContextARTDAQ" == appInfo.getContextName() )
 			// 	__COUTV__(progressInteger);
 
-			theSupervisor->allSupervisorInfo_.setSupervisorStatus(appInfo, status, progressInteger, detail);
+			theSupervisor->allSupervisorInfo_.setSupervisorStatus(appInfo, status, progressInteger, detail, subapps);
 
 		}  // end of app loop
 		if(oneStatusReqHasFailed)
@@ -3819,6 +3823,21 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 				                            appInfo.getURL());  // get application url
 				xmlOut.addTextElementToData("context",
 				                            appInfo.getContextName());  // get context
+				auto subappElement = xmlOut.addTextElementToData("subapps", "");
+				for(auto& subappInfoPair : appInfo.getSubappInfo())
+				{
+					xmlOut.addTextElementToParent("subapp_name", subappInfoPair.first, subappElement);
+					xmlOut.addTextElementToParent("subapp_status", subappInfoPair.second.status, subappElement);  // get status
+					xmlOut.addTextElementToParent("subapp_time",
+					    subappInfoPair.second.lastStatusTime ? StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
+					                              subappElement);  // get time stamp
+					xmlOut.addTextElementToParent("subapp_stale", std::to_string(time(0) - subappInfoPair.second.lastStatusTime), subappElement);  // time since update
+					xmlOut.addTextElementToParent("subapp_progress", std::to_string(subappInfoPair.second.progress), subappElement);               // get progress
+					xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
+					xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                   // get url
+					xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
+
+				}
 			}
 		}
 		else if(requestType == "getAppId")
