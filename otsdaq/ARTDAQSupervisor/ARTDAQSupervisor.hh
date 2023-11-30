@@ -42,19 +42,19 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	void init(void);
 	void destroy(void);
 
-	virtual void        transitionConfiguring(toolbox::Event::Reference event) override;
-	virtual void        transitionHalting(toolbox::Event::Reference event) override;
-	virtual void        transitionInitializing(toolbox::Event::Reference event) override;
-	virtual void        transitionPausing(toolbox::Event::Reference event) override;
-	virtual void        transitionResuming(toolbox::Event::Reference event) override;
-	virtual void        transitionStarting(toolbox::Event::Reference event) override;
-	virtual void        transitionStopping(toolbox::Event::Reference event) override;
-	virtual void        enteringError(toolbox::Event::Reference event) override;
-	virtual std::string getStatusProgressDetail(void) override
+	virtual void                                    transitionConfiguring(toolbox::Event::Reference event) override;
+	virtual void                                    transitionHalting(toolbox::Event::Reference event) override;
+	virtual void                                    transitionInitializing(toolbox::Event::Reference event) override;
+	virtual void                                    transitionPausing(toolbox::Event::Reference event) override;
+	virtual void                                    transitionResuming(toolbox::Event::Reference event) override;
+	virtual void                                    transitionStarting(toolbox::Event::Reference event) override;
+	virtual void                                    transitionStopping(toolbox::Event::Reference event) override;
+	virtual void                                    enteringError(toolbox::Event::Reference event) override;
+	virtual std::vector<SupervisorInfo::SubappInfo> getSubappInfo(void) override;
+	virtual std::string                             getStatusProgressDetail(void) override
 	{
-		if(!theStateMachine_.isInTransition() && 
-			(theStateMachine_.getCurrentStateName() == RunControlStateMachine::HALTED_STATE_NAME || 
-			theStateMachine_.getCurrentStateName() == RunControlStateMachine::INITIAL_STATE_NAME))
+		if(!theStateMachine_.isInTransition() && (theStateMachine_.getCurrentStateName() == RunControlStateMachine::HALTED_STATE_NAME ||
+		                                          theStateMachine_.getCurrentStateName() == RunControlStateMachine::INITIAL_STATE_NAME))
 			return CoreSupervisorBase::getStatusProgressDetail();
 
 		std::lock_guard<std::mutex> lk(thread_mutex_);
@@ -86,6 +86,7 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 
 	void                               getDAQState_(void);
 	std::string                        getProcessInfo_(void);
+	std::string                        artdaqStateToOtsState(std::string state);
 	std::list<DAQInterfaceProcessInfo> getAndParseProcessInfo_(void);
 	void                               daqinterfaceRunner_(void);
 	void                               stop_runner_(void);

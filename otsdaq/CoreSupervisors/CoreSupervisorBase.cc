@@ -367,6 +367,8 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(xoap::Messag
 
 	retParameters.addParameter("Progress", RunControlStateMachine::theProgressBar_.readPercentageString());
 	retParameters.addParameter("Detail", getStatusProgressDetail());  // call virtual progress detail string generation
+	auto subappInfo = getSubappInfo();
+	retParameters.addParameter("Subapps", SupervisorInfo::serializeSubappInfos(subappInfo));
 
 	return SOAPUtilities::makeSOAPMessageReference("applicationStatusRequestReply", retParameters);
 }  // end applicationStatusRequest()

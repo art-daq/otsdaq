@@ -60,6 +60,14 @@ class SupervisorInfo
 	~SupervisorInfo(void) { ; }
 
 
+	struct SubappInfo {
+		std::string name; // Also key in map
+		std::string status;
+		unsigned int progress;
+		std::string detail;
+		time_t lastStatusTime;
+	};
+
 	static const std::string APP_STATUS_UNKNOWN;
 	static const std::string APP_STATUS_NOT_MONITORED;
 
@@ -92,10 +100,16 @@ class SupervisorInfo
 	const std::string&                           getURN							(void) const { return URN_; }
 	const std::string&                           getFullURL						(void) const { return URL_; }
 	const uint16_t&                              getPort						(void) const { return port_; }
+	const std::map<std::string, SubappInfo>&     getSubappInfo					(void) const { return subapps_; }
 
 	// Setters -------------------
 	void setStatus(const std::string& status, const unsigned int progress, const std::string& detail = "");
+	void setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail = "" );
+	void setSubappStatus(const SubappInfo& info);
 	void clear(void);
+
+	static std::string serializeSubappInfos(std::vector<SubappInfo> infos);
+	static std::vector<SubappInfo> deserializeSubappInfos(std::string info_string);
 
   private:
 	// Helpers -------------------
@@ -116,6 +130,7 @@ class SupervisorInfo
 	unsigned int                             progress_;
 	std::string                              detail_;
 	time_t                                   lastStatusTime_;
+	std::map<std::string, SubappInfo>        subapps_;
 };
 // clang-format on
 }  // namespace ots

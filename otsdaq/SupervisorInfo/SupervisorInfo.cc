@@ -16,6 +16,25 @@ void SupervisorInfo::setStatus(const std::string& status, const unsigned int pro
 }  // end setStatus()
 
 //=====================================================================================
+void SupervisorInfo::setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail)
+{
+	subapps_[name].name     = name;
+	subapps_[name].status   = status;
+	subapps_[name].progress = progress;
+	subapps_[name].detail   = detail;
+	if(status != SupervisorInfo::APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
+		subapps_[name].lastStatusTime = time(0);
+}  // end setSubappStatus()
+
+//=====================================================================================
+void SupervisorInfo::setSubappStatus(const SubappInfo& info)
+{
+	subapps_[info.name] = info;
+	if(info.status != SupervisorInfo::APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
+		subapps_[info.name].lastStatusTime = time(0);
+}  // end setSubappStatus()
+
+//=====================================================================================
 void SupervisorInfo::clear(void)
 {
 	descriptor_        = 0;
@@ -44,3 +63,43 @@ std::string SupervisorInfo::extractHostname(const std::string& URL)
 	//__COUTV__(URL.substr(i,j));
 	return URL.substr(i, j);
 }  // end extractHostname
+
+//=====================================================================================
+std::string SupervisorInfo::serializeSubappInfos(std::vector<SubappInfo> infos)
+{
+	std::ostringstream ostr;
+	for(auto& info : infos)
+	{
+		ostr << info.name << "\n";
+		ostr << info.detail << "\n";
+		ostr << info.progress << "\n";
+		ostr << info.status << "\n";
+		ostr << info.lastStatusTime << "\n";
+	}
+	return ostr.str();
+}
+
+//=====================================================================================
+std::vector<SupervisorInfo::SubappInfo> SupervisorInfo::deserializeSubappInfos(std::string info_string)
+{
+	std::vector<SubappInfo> infos;
+	std::istringstream      istr(info_string);
+	std::string             line;
+	while(std::getline(istr, line)) {
+		SubappInfo thisInfo;
+		thisInfo.name = line;
+		std::getline(istr, line);
+		thisInfo.detail = line;
+		std::getline(istr, line);
+		std::istringstream converter(line);
+		converter >> thisInfo.progress;
+		std::getline(istr, line);
+		thisInfo.status = line;
+		std::getline(istr, line);
+		converter = std::istringstream(line);
+		converter >> thisInfo.lastStatusTime;
+		infos.push_back(thisInfo);
+	}
+
+	return infos;
+}

@@ -294,17 +294,26 @@ const SupervisorInfo& AllSupervisorInfo::getSupervisorInfo(xdaq::Application* ap
 }
 
 //==============================================================================
-void AllSupervisorInfo::setSupervisorStatus(xdaq::Application* app, const std::string& status, const unsigned int progress, const std::string& detail)
+void AllSupervisorInfo::setSupervisorStatus(xdaq::Application*                      app,
+                                            const std::string&                      status,
+                                            const unsigned int                      progress,
+                                            const std::string&                      detail,
+                                            std::vector<SupervisorInfo::SubappInfo> subapps )
 {
-	setSupervisorStatus(app->getApplicationDescriptor()->getLocalId(), status, progress, detail);
+	setSupervisorStatus(app->getApplicationDescriptor()->getLocalId(), status, progress, detail, subapps);
 }
 //==============================================================================
-void AllSupervisorInfo::setSupervisorStatus(const SupervisorInfo& appInfo, const std::string& status, const unsigned int progress, const std::string& detail)
+void AllSupervisorInfo::setSupervisorStatus(const SupervisorInfo&                   appInfo,
+                                            const std::string&                      status,
+                                            const unsigned int                      progress,
+                                            const std::string&                      detail,
+                                            std::vector<SupervisorInfo::SubappInfo> subapps)
 {
-	setSupervisorStatus(appInfo.getId(), status, progress, detail);
+	setSupervisorStatus(appInfo.getId(), status, progress, detail, subapps);
 }
 //==============================================================================
-void AllSupervisorInfo::setSupervisorStatus(const unsigned int& id, const std::string& status, const unsigned int progress, const std::string& detail)
+void AllSupervisorInfo::setSupervisorStatus(
+    const unsigned int& id, const std::string& status, const unsigned int progress, const std::string& detail, std::vector<SupervisorInfo::SubappInfo> subapps)
 {
 	auto it = allSupervisorInfo_.find(id);
 	if(it == allSupervisorInfo_.end())
@@ -316,6 +325,9 @@ void AllSupervisorInfo::setSupervisorStatus(const unsigned int& id, const std::s
 	if(allSupervisorInfoMutex_[id].try_lock())
 	{
 		it->second.setStatus(status, progress, detail);
+		for (auto& subapp : subapps) {
+			it->second.setSubappStatus(subapp);
+		}
 		allSupervisorInfoMutex_[id].unlock();
 	}
 }  // end setSupervisorStatus()
