@@ -83,10 +83,12 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	std::string thread_error_message_;
 	int         last_thread_progress_read_;
 	time_t      last_thread_progress_update_;
+	std::map<std::string, std::string> label_to_proc_type_map_;
 
 	void                               getDAQState_(void);
 	std::string                        getProcessInfo_(void);
 	std::string                        artdaqStateToOtsState(std::string state);
+	std::string                        labelToProcType_(std::string label);
 	std::list<DAQInterfaceProcessInfo> getAndParseProcessInfo_(void);
 	void                               daqinterfaceRunner_(void);
 	void                               stop_runner_(void);

@@ -75,6 +75,8 @@ std::string SupervisorInfo::serializeSubappInfos(std::vector<SubappInfo> infos)
 		ostr << info.progress << "\n";
 		ostr << info.status << "\n";
 		ostr << info.lastStatusTime << "\n";
+		ostr << info.url << "\n";
+		ostr << info.class_name << "\n";
 	}
 	return ostr.str();
 }
@@ -98,6 +100,10 @@ std::vector<SupervisorInfo::SubappInfo> SupervisorInfo::deserializeSubappInfos(s
 		std::getline(istr, line);
 		converter = std::istringstream(line);
 		converter >> thisInfo.lastStatusTime;
+		std::getline(istr, line);
+		thisInfo.url = line;
+		std::getline(istr, line);
+		thisInfo.class_name = line;
 		infos.push_back(thisInfo);
 	}
 

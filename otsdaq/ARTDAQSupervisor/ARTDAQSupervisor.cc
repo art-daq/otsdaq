@@ -565,6 +565,7 @@ try
 	{
 		o << "EventBuilder host: " << builder.hostname << std::endl;
 		o << "EventBuilder label: " << builder.label << std::endl;
+		label_to_proc_type_map_[builder.label] = "EventBuilder";
 		if(builder.subsystem != 1)
 		{
 			o << "EventBuilder subsystem: " << builder.subsystem << std::endl;
@@ -579,6 +580,7 @@ try
 	{
 		o << "DataLogger host: " << logger.hostname << std::endl;
 		o << "DataLogger label: " << logger.label << std::endl;
+		label_to_proc_type_map_[logger.label] = "DataLogger";
 		if(logger.subsystem != 1)
 		{
 			o << "DataLogger subsystem: " << logger.subsystem << std::endl;
@@ -594,6 +596,7 @@ try
 		o << "Dispatcher host: " << dispatcher.hostname << std::endl;
 		o << "Dispatcher label: " << dispatcher.label << std::endl;
 		o << "Dispatcher port: " << dispatcher.port << std::endl;
+		label_to_proc_type_map_[dispatcher.label] = "Dispatcher";
 		if(dispatcher.subsystem != 1)
 		{
 			o << "Dispatcher subsystem: " << dispatcher.subsystem << std::endl;
@@ -608,6 +611,7 @@ try
 	{
 		o << "RoutingManager host: " << rmanager.hostname << std::endl;
 		o << "RoutingManager label: " << rmanager.label << std::endl;
+		label_to_proc_type_map_[rmanager.label] = "RoutingManager";
 		if(rmanager.subsystem != 1)
 		{
 			o << "RoutingManager subsystem: " << rmanager.subsystem << std::endl;
@@ -674,6 +678,7 @@ try
 	PyObject* readerDict = PyDict_New();
 	for(auto& reader : info.processes[ARTDAQTableBase::ARTDAQAppType::BoardReader])
 	{
+		label_to_proc_type_map_[reader.label] = "BoardReader";
 		PyObject* readerName = PyUnicode_FromString(reader.label.c_str());
 
 		int list_size = reader.allowed_processors != "" ? 4 : 3;
@@ -1224,6 +1229,8 @@ std::vector<SupervisorInfo::SubappInfo> ots::ARTDAQSupervisor::getSubappInfo(voi
 		info.lastStatusTime = time(0);
 		info.progress       = 100;
 		info.status         = artdaqStateToOtsState(app.state);
+		info.url            = "http://" + app.host + ":" + std::to_string(app.port) + "/RPC2";
+		info.class_name     = "ARTDAQ " + labelToProcType_(app.label);
 
 		output.push_back(info);
 	}
@@ -1299,6 +1306,15 @@ std::string ots::ARTDAQSupervisor::artdaqStateToOtsState(std::string state)
 
 	TLOG(TLVL_WARNING) << "Unrecognized state name " << state;
 	return RunControlStateMachine::FAILED_STATE_NAME;
+}
+
+std::string ots::ARTDAQSupervisor::labelToProcType_(std::string label)
+{
+	if(label_to_proc_type_map_.count(label))
+	{
+		return label_to_proc_type_map_[label];
+	}
+	return "UNKNOWN";
 }
 
 //==============================================================================

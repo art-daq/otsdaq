@@ -66,6 +66,8 @@ class SupervisorInfo
 		unsigned int progress;
 		std::string detail;
 		time_t lastStatusTime;
+		std::string url;
+		std::string class_name;
 	};
 
 	static const std::string APP_STATUS_UNKNOWN;

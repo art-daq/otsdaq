@@ -3834,6 +3834,8 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 					xmlOut.addTextElementToParent("subapp_stale", std::to_string(time(0) - subappInfoPair.second.lastStatusTime), subappElement);  // time since update
 					xmlOut.addTextElementToParent("subapp_progress", std::to_string(subappInfoPair.second.progress), subappElement);               // get progress
 					xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
+					xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                   // get url
+					xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
 
 				}
 			}
