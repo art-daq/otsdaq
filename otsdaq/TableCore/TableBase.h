@@ -98,6 +98,7 @@ class TableBase
 
   public:
 	static const std::string			GROUP_CACHE_PREPEND;	
+	static const std::string			JSON_DOC_PREPEND;	
 
   protected:
 	std::string 						tableName_;

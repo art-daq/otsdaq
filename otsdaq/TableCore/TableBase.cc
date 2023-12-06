@@ -13,6 +13,7 @@ using namespace ots;
 #define __COUT_HDR__ ("TableBase-" + getTableName() + "\t<> ")
 
 const std::string TableBase::GROUP_CACHE_PREPEND = "GroupCache_";
+const std::string TableBase::JSON_DOC_PREPEND = "JSONDoc_";
 
 //==============================================================================
 // TableBase
@@ -50,7 +51,8 @@ TableBase::TableBase(const std::string& tableName,
 	}
 
 	//if special GROUP CACHE table, handle construction in a special way
-	if(tableName.substr(0,TableBase::GROUP_CACHE_PREPEND.length()) == TableBase::GROUP_CACHE_PREPEND)
+	if(tableName.substr(0,TableBase::GROUP_CACHE_PREPEND.length()) == TableBase::GROUP_CACHE_PREPEND ||
+		tableName.substr(0,TableBase::JSON_DOC_PREPEND.length()) == TableBase::JSON_DOC_PREPEND)
 	{
 		__COUT__ << "TableBase for '" << tableName << "' constructed." << __E__;
 		return;
@@ -1531,7 +1533,9 @@ std::string TableBase::convertToCaps(std::string& str, bool isTableName)
 		else                    // error! non-alpha
 		{
 			//allow underscores for group cache document name
-			if(str.substr(0,TableBase::GROUP_CACHE_PREPEND.length()) == TableBase::GROUP_CACHE_PREPEND && str[c] == '_') 
+			if((str.substr(0,TableBase::GROUP_CACHE_PREPEND.length()) == TableBase::GROUP_CACHE_PREPEND ||
+				str.substr(0,TableBase::JSON_DOC_PREPEND.length()) == TableBase::JSON_DOC_PREPEND) &&
+			 	str[c] == '_') 
 			{
 				capsStr += '-';
 				continue;
