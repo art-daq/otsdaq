@@ -578,7 +578,7 @@ ln -s $USER_WEB_PATH $WEB_PATH/UserWebPath &>/dev/null  #make link, hide output
 if [ "x$USER_DATA" == "x" ]; then
 
     out "${Red}${Bold}${Blink}Fatal Error${RstClr}."
-    out "Environment variable ${Cyan}${Bold}USER_DATAr${RstClr} has not been setup!"
+    out "Environment variable ${Cyan}${Bold}USER_DATA${RstClr} has not been setup!"
     out "To setup, use 'export USER_DATA=<path to user data>'"
 
     out "(If you do not have a user data folder, copy '<path to otsdaq_demo_data repo>/Data' as your starting point.)"
