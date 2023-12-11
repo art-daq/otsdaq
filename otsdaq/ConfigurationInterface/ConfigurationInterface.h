@@ -54,6 +54,9 @@ public:
 	TableVersion /*version*/> 				getTableGroupMembers			(std::string const& /*groupName*/, bool /*includeMetaDataTable*/ = false) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getTableGroupMembers in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
 	virtual void 							saveTableGroup					(std::map<std::string /*name*/,TableVersion /*version*/> const& /*tableToVersionMap*/, std::string const& /*groupName*/) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call saveTableGroup in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
 
+	virtual std::pair<std::string, TableVersion>	saveCustomJSON			(const std::string& JSON, const std::string& documentNameToSave) const { __COUTV__(JSON);  __COUTV__(documentNameToSave); return std::make_pair("",TableVersion());}
+	virtual std::string 					loadCustomJSON					(const std::string& documentNameToLoad, TableVersion documentVersionToLoad) const {__COUTV__(documentNameToLoad); __COUTV__(documentVersionToLoad); return "{}";};
+
 
 protected:
 	virtual void 							fill							(TableBase* configuration, TableVersion version) const = 0;

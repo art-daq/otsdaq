@@ -48,6 +48,11 @@ class DatabaseConfigurationInterface : public ConfigurationInterface
 
 	// create a new table group from the contents map	
 	void 									saveTableGroup				(table_version_map_t const& memberMap, std::string const& tableGroup) const;
+
+
+	std::pair<std::string, TableVersion>	saveCustomJSON				(const std::string& JSON, const std::string& documentNameToSave) const override;
+	std::string		 						loadCustomJSON				(const std::string& documentNameToLoad, TableVersion documentVersionToLoad) const override;
+
   private:
 	table_version_map_t 					getCachedTableGroupMembers	(std::string const& tableGroup) const;
 	void 									saveTableGroupMemberCache	(table_version_map_t const& memberMap, std::string const& tableGroup) const;

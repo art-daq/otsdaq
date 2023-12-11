@@ -86,9 +86,12 @@ TableView& TableView::copy(const TableView& src, TableVersion destinationVersion
 
 	std::string tmpCachePrepend = TableBase::GROUP_CACHE_PREPEND;
 	tmpCachePrepend = TableBase::convertToCaps(tmpCachePrepend);
+	std::string tmpJsonDocPrepend = TableBase::JSON_DOC_PREPEND;
+	tmpJsonDocPrepend = TableBase::convertToCaps(tmpJsonDocPrepend);
 
 	//if special GROUP CACHE table, handle construction in a special way
-	if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend)
+	if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend ||
+		tableName_.substr(0,tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
 	{
 		__COUT__ << "TableView copy for '" << tableName_ << "' done." << __E__;
 		return *this;
@@ -1930,9 +1933,13 @@ void TableView::printJSON(std::ostream& out) const
 	{ //handle special GROUP CACHE table
 		std::string tmpCachePrepend = TableBase::GROUP_CACHE_PREPEND;
 		tmpCachePrepend = TableBase::convertToCaps(tmpCachePrepend);
-		__COUT__ << " '" << tableName_ << "' vs "  << tmpCachePrepend << __E__;
+		std::string tmpJsonDocPrepend = TableBase::JSON_DOC_PREPEND;
+		tmpJsonDocPrepend = TableBase::convertToCaps(tmpJsonDocPrepend);
+		__COUT__ << " '" << tableName_ << "' vs "  << tmpCachePrepend <<
+			" or " << tmpJsonDocPrepend << __E__;
 		//if special GROUP CACHE table, handle construction in a special way
-		if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend)
+		if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend ||
+			tableName_.substr(0,tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
 		{
 			out << getCustomStorageData();
 			return;
@@ -2073,7 +2080,17 @@ int TableView::fillFromJSON(const std::string& json)
 		//handle special GROUP CACHE table
 		std::string tmpCachePrepend = TableBase::GROUP_CACHE_PREPEND;
 		tmpCachePrepend = TableBase::convertToCaps(tmpCachePrepend);
+		std::string tmpJsonDocPrepend = TableBase::JSON_DOC_PREPEND;
+		tmpJsonDocPrepend = TableBase::convertToCaps(tmpJsonDocPrepend);
 		
+		//if special JSON DOC table, handle construction in a special way
+		if(tableName_.substr(0,tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
+		{
+			__COUT__ << "Special JSON doc: " << json << __E__;
+			setCustomStorageData(json);
+			return 0; //success
+		} //end special JSON DOC table construction
+
 		//if special GROUP CACHE table, handle construction in a special way
 		if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend)
 		{

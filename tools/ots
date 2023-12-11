@@ -652,11 +652,30 @@ if [ "x$ARTDAQ_DATABASE_TYPE" == "xfilesystemdb" ]; then
 
 	# As of 27-Oct-2023, no longer... check for somewhat-antiquated(pre-configuration-to-table) artdaq database
 
+
+	#check for somewhat-antiquated artdaq 'DAQ' tables and auto-fix
+	if [ ! -e ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/artdaqDaqTableConversion ]; then
+		out "Converting artdaq 'daq' tables in databases..."
+		
+		#backup because we are scared
+		cp -r ${ARTDAQ_DATABASE_FILESYSTEM_PATH} ${ARTDAQ_DATABASE_FILESYSTEM_PATH}bk12346
+		cp -r ${USER_DATA} ${USER_DATA}bk12346
+		
+		otsdaq_convert_artdaq_daq_tables
+		echo "converted" > ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/artdaqDaqTableConversion
+		out "Conversion complete. You must run wiz mode once now to activate the configuration changes."
+		
+		if [ $ISCONFIG == 0 ]; then		
+			exit
+		fi
+	fi
+elif [ "x$ARTDAQ_DATABASE_TYPE" == "xmongodb" ]; then
+	out "mongodb identified."
 else
 
     out "${Red}${Bold}${Blink}Fatal Error${RstClr}."
     out "ARTDAQ_DATABASE_URI=$ARTDAQ_DATABASE_URI"
-    out "Environment variable ${Cyan}${Bold}ARTDAQ_DATABASE_URI${RstClr} does not have a value!"
+    out "Environment variable ${Cyan}${Bold}ARTDAQ_DATABASE_URI${RstClr} does not have a valid type: ${ARTDAQ_DATABASE_TYPE}!"
     out "To setup, use 'export ARTDAQ_DATABASE_URI=<value>'"
 
 
@@ -669,22 +688,6 @@ else
 	# mkdir $ARTDAQ_DATABASE_FILESYSTEM_PATH &>/dev/null 2>&1 #hide output
 fi	
 		
-#check for somewhat-antiquated artdaq 'DAQ' tables and auto-fix
-if [ ! -e ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/artdaqDaqTableConversion ]; then
-    out "Converting artdaq 'daq' tables in databases..."
-    
-    #backup because we are scared
-    cp -r ${ARTDAQ_DATABASE_FILESYSTEM_PATH} ${ARTDAQ_DATABASE_FILESYSTEM_PATH}bk12346
-    cp -r ${USER_DATA} ${USER_DATA}bk12346
-    
-    otsdaq_convert_artdaq_daq_tables
-    echo "converted" > ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/artdaqDaqTableConversion
-    out "Conversion complete. You must run wiz mode once now to activate the configuration changes."
-    
-    if [ $ISCONFIG == 0 ]; then		
-		exit
-    fi
-fi
 
 export TABLE_INFO_PATH=${USER_DATA}/TableInfo
 export SERVICE_DATA_PATH=${USER_DATA}/ServiceData #it is not recommended that the SERVICE_DATA_PATH environment variable be changed by the user, it may break some features.
