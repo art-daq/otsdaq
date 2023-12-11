@@ -411,7 +411,7 @@ try
 	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Getting cache for " << groupName << "(" << groupKey << ")" << __E__;
 
 
-	TableBase localGroupMemberCacheSaver("GroupCache_" + groupName);
+	TableBase localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + groupName);
 	TableVersion localVersion(atoi(groupKey.c_str()));
 	localGroupMemberCacheSaver.changeVersionAndActivateView(
 		localGroupMemberCacheSaver.createTemporaryView(), 
@@ -464,7 +464,7 @@ try
 	std::string groupKey = tableGroup.substr(vi+2);
 	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving cache for " << groupName << "(" << groupKey << ")" << __E__;
 
-	TableBase localGroupMemberCacheSaver("GroupCache_" + groupName);
+	TableBase localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + groupName);
 	localGroupMemberCacheSaver.changeVersionAndActivateView(
 		localGroupMemberCacheSaver.createTemporaryView(), 
 		TableVersion(atoi(groupKey.c_str())));
@@ -559,5 +559,94 @@ catch(...)
 	__SS__ << "DBI Unknown exception saveTableGroup for '" << tableGroup << ".'\n";
 	__SS_THROW__;
 } //end saveTableGroup() catch
+
+
+
+
+//==============================================================================
+std::pair<std::string, TableVersion> DatabaseConfigurationInterface::saveCustomJSON(const std::string& json, const std::string& documentNameToSave) const
+try
+{
+	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving doc '" << documentNameToSave << "'" << __E__;
+
+	TableBase localDocSaver(TableBase::JSON_DOC_PREPEND + documentNameToSave);
+
+	std::set<TableVersion> versions = getVersions(&localDocSaver);
+	TableVersion version;
+	if(versions.size())
+		version = TableVersion::getNextVersion(*versions.rbegin());
+	else 
+		version = TableVersion::DEFAULT;
+	__COUTV__(version);
+
+	localDocSaver.changeVersionAndActivateView(
+		localDocSaver.createTemporaryView(), 
+		version);
+
+	localDocSaver.getViewP()->setCustomStorageData(json);
+
+	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving JSON string: " <<
+		localDocSaver.getViewP()->getCustomStorageData() << __E__;
+
+	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving JSON doc as " <<
+		localDocSaver.getView().getTableName() << "(" <<
+		localDocSaver.getView().getVersion().toString() << ")" << __E__;
+
+ 
+	// save to db, and do not allow overwrite
+	saveActiveVersion(&localDocSaver, false /* overwrite */);
+	
+	return std::make_pair(localDocSaver.getTableName(),
+		localDocSaver.getView().getVersion());
+} //end saveCustomJSON()
+catch(std::exception const& e)
+{
+	__SS__ << "DBI Exception saveCustomJSON for '" << documentNameToSave << "':\n\n" << e.what() << "\n";
+	__COUT_ERR__ << ss.str();
+	__SS_THROW__;
+}
+catch(...)
+{
+	__SS__ << "DBI Unknown exception saveCustomJSON for '" << documentNameToSave << ".'\n";
+	__COUT_ERR__ << ss.str();
+	__SS_THROW__;
+} //end saveCustomJSON() catch
+
+
+//==============================================================================
+std::string DatabaseConfigurationInterface::loadCustomJSON(const std::string& documentNameToLoad, TableVersion documentVersionToLoad) const
+try
+{
+	
+	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Loading doc '" << documentNameToLoad << "-v" <<
+		documentVersionToLoad << "'" << __E__;
+
+	TableBase localDocLoader(TableBase::JSON_DOC_PREPEND + documentNameToLoad);
+
+	localDocLoader.changeVersionAndActivateView(
+		localDocLoader.createTemporaryView(), 
+		documentVersionToLoad);
+
+	fill(&localDocLoader,documentVersionToLoad);
+
+	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Loaded JSON doc string " <<
+		localDocLoader.getViewP()->getCustomStorageData() << __E__;
+	
+	return localDocLoader.getViewP()->getCustomStorageData();
+} //end loadCustomJSON()
+catch(std::exception const& e)
+{
+	__SS__ << "DBI Exception saveCustomJSON for '" << documentNameToLoad << "-v" <<
+		documentVersionToLoad << "':\n\n" << e.what() << "\n";
+	__COUT_ERR__ << ss.str();
+	__SS_THROW__;
+}
+catch(...)
+{
+	__SS__ << "DBI Unknown exception saveCustomJSON for '" << documentNameToLoad << "-v" <<
+		documentVersionToLoad << ".'\n";
+	__COUT_ERR__ << ss.str();
+	__SS_THROW__;
+} //end loadCustomJSON() catch
 
 DEFINE_OTS_CONFIGURATION_INTERFACE(DatabaseConfigurationInterface)
