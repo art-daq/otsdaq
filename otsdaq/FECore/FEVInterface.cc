@@ -187,6 +187,15 @@ FESlowControlsChannel* FEVInterface::getNextSlowControlsChannel(void)
 }  // end getNextSlowControlsChannel()
 
 //==============================================================================
+// virtual in case read should be different than universalread
+// Put this back in?
+// void FEVInterface::getSlowControlsValue(FESlowControlsChannel& channel, std::string& readValue)
+// {
+// 	readValue.resize(universalDataSize_);
+// 	universalRead(&channel.universalAddress_[0], &readValue[0]);
+// }  // end getNextSlowControlsChannel()
+
+//==============================================================================
 // virtual in case channels are handled in multiple maps, for example
 unsigned int FEVInterface::getSlowControlsChannelCount(void) { return mapOfSlowControlsChannels_.size(); }  // end getSlowControlsChannelCount()
 
@@ -349,6 +358,7 @@ try
 			}
 
 			if(!usingBufferedValue)
+				// getSlowControlsValue(*channel, readVal);
 				channel->getSample(readVal);
 
 			// have sample
@@ -363,9 +373,13 @@ try
 			if(channel->monitoringEnabled_ && metricMan && metricMan->Running() && universalAddressSize_ <= 8)
 			{
 				uint64_t val = 0;  // 64 bits!
-				for(size_t ii = 0; ii < universalAddressSize_; ++ii)
-					val += (uint8_t)readVal[ii] << (ii * 8);
+				for(size_t ii = 0; ii < universalAddressSize_; ++ii) {
+					val += (uint8_t)readVal[ii] << (ii * 8);        
+			        // __FE_COUT__ << "ii: " << ii << ", " << (uint8_t)readVal[ii] << ", " << ((uint8_t)readVal[ii] << (ii * 8)) <<  __E__;
+                }
 				
+			    __FE_COUT__ << "Sample: " << channel->fullChannelName_ << ", " << BinaryStringMacros::binaryNumberToHexString(channel->universalAddress_) << ", " <<  val << __E__;
+
 				if(!channel->transformation_.empty()) {
    					exprtk::symbol_table<double> symbol_table;
 					double val_d = static_cast<double>(val);
@@ -379,7 +393,7 @@ try
     				exprtk::parser<double> parser;
     				if (parser.compile(channel->transformation_, expression)) {
         				double val = expression.value();
-						__FE_COUT__ << "Sending transformed sample to Metric Manager..." << __E__;
+						__FE_COUT__ << "Sending transformed sample (" << val << ") to Metric Manager..." << __E__;
 						metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
     				} else {
         				__FE_COUT__ << "Transformation '" << channel->transformation_ << "' of sample 0x" << std::hex << val << " failed." << __E__;
