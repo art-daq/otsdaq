@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+	<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TableInfo.xsd">
+		<TABLE Name="WriteSequenceOperationTable">
+			<VIEW Name="WRITE_SEQUENCE_OPERATION_TABLE" Type="File,Database,DatabaseTest" Description="No%20description.">
+				<COLUMN Type="GroupID-WriteSequenceParameters" 	 Name="GroupID" 	 StorageName="GROUP_ID" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="UID" 	 Name="RegisterOperationUID" 	 StorageName="REGISTER_OPERATION_UID" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="OnOff" 	 Name="Status" 	 StorageName="STATUS" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="WriteAddress" 	 StorageName="WRITE_ADDRESS" 		DataType="NUMBER" 		DefaultValue="DEFAULT" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="WriteValue" 	 StorageName="WRITE_VALUE" 		DataType="NUMBER" 		DefaultValue="DEFAULT" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="StartingBitPosition" 	 StorageName="STARTING_BIT_POSITION" 		DataType="NUMBER" 		DefaultValue="DEFAULT" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="BitFieldSize" 	 StorageName="BIT_FIELD_SIZE" 		DataType="NUMBER" 		DefaultValue="DEFAULT" 		DataChoices=""/>
+				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE" 		DataChoices=""/>
+			</VIEW>
+		</TABLE>
+	</ROOT>
