@@ -2490,23 +2490,24 @@ ConfigurationTree ConfigurationManager::getSupervisorTableNode(const std::string
 //==============================================================================
 ConfigurationTree ConfigurationManager::getNode(const std::string& nodeString, bool doNotThrowOnBrokenUIDLinks) const
 {
-	// __GEN_COUT__ << "nodeString=" << nodeString << " " << nodeString.length() << __E__;
-
+	// __GEN_COUT__ << "nodeString=" << nodeString << " len=" << nodeString.length() << __E__;
+	
 	// get nodeName (in case of / syntax)
 	if(nodeString.length() < 1)
 	{
 		__SS__ << ("Invalid empty node name") << __E__;
-		__GEN_COUT_ERR__ << ss.str();
-		__SS_THROW__;
+		__GEN_SS_THROW__;
 	}
 
 	// ignore multiple starting slashes
-	unsigned int startingIndex = 0;
+	size_t startingIndex = 0;
 	while(startingIndex < nodeString.length() && nodeString[startingIndex] == '/')
 		++startingIndex;
+	size_t endingIndex = nodeString.find('/', startingIndex);
+	if(endingIndex == std::string::npos) endingIndex = nodeString.length();
 
-	std::string nodeName = nodeString.substr(startingIndex, nodeString.find('/', startingIndex) - startingIndex);
-	// __GEN_COUT__ << "nodeName=" << nodeName << " " << nodeName.length() << __E__;
+	std::string nodeName = nodeString.substr(startingIndex, endingIndex-startingIndex);
+	// __GEN_COUT__ << "nodeName=" << nodeName << " len" << nodeName.length() << __E__;
 	if(nodeName.length() < 1)
 	{
 		// return root node
@@ -2516,10 +2517,10 @@ ConfigurationTree ConfigurationManager::getNode(const std::string& nodeString, b
 		//		__GEN_COUT_ERR__ << ss.str();
 		//		__SS_THROW__;
 	}
+	++endingIndex;
+	std::string childPath = (endingIndex >= nodeString.length()?"":nodeString.substr(endingIndex));
 
-	std::string childPath = nodeString.substr(nodeName.length() + startingIndex);
-
-	// __GEN_COUT__ << "childPath=" << childPath << " " << childPath.length() << __E__;
+	// __GEN_COUT__ << "childPath=" << childPath << " len=" << childPath.length() << " endingIndex=" << endingIndex << " nodeString.length()=" << nodeString.length() << __E__;
 
 	ConfigurationTree configTree(this, getTableByName(nodeName));
 
