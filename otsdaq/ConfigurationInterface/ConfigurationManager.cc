@@ -1158,7 +1158,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 			}
 			catch(...)
 			{
-				__SS__ << "Failed to load member table '" << memberPair.first << "-v" << memberPair.second << "' due to unknown error!" << __E__;
+				__SS__ << "Failed to load member table '" << memberPair.first << " -v" << memberPair.second << "' due to unknown error!" << __E__;
 				try	{ throw; } //one more try to printout extra info
 				catch(const std::exception &e)
 				{
@@ -1184,7 +1184,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 			//__GEN_COUT__ << "Checking ptr.. " <<  (tmpTableBasePtr?"GOOD":"BAD") << __E__;
 			if(!tmpTableBasePtr)
 			{
-				__SS__ << "Null pointer returned for table '" << memberPair.first << ".' Was the table info deleted?" << __E__;
+				__SS__ << "Null pointer returned for table '" << memberPair.first << " -v" << memberPair.second << ".' Was the table info deleted?" << __E__;
 				__GEN_COUT_ERR__ << ss.str();
 
 				nameToTableMap_.erase(memberPair.first);
@@ -1205,14 +1205,14 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 
 				if(accumulatedWarnings && getError != "")
 				{
-					__SS__ << "Error caught during '" << memberPair.first << "' table retrieval: \n" << getError << __E__;
+					__SS__ << "Error caught during '" << memberPair.first << " -v" << memberPair.second << "' table retrieval: \n" << getError << __E__;
 					__GEN_COUT_ERR__ << ss.str();
 					*accumulatedWarnings += ss.str();
 				}
 			}
 			else
 			{
-				__SS__ << nameToTableMap_[memberPair.first]->getTableName() << ": View version not activated properly!";
+				__SS__ << nameToTableMap_[memberPair.first]->getTableName() << " -v" << memberPair.second << ": View version not activated properly!";
 				__SS_THROW__;
 			}
 		}  // end member map loop
@@ -1254,7 +1254,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 				} //end thread search loop
 				threadsLaunched = numOfThreads - 1;
 			}					
-			__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Starting filling thread... " << foundThreadIndex << " for " << memberPair.first << __E__;
+			__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Starting filling thread... " << foundThreadIndex << " for " << memberPair.first << " -v" << memberPair.second << __E__;
 			*(threadDone[foundThreadIndex]) = false;
 
 			// get the proper temporary pointer
@@ -2490,23 +2490,24 @@ ConfigurationTree ConfigurationManager::getSupervisorTableNode(const std::string
 //==============================================================================
 ConfigurationTree ConfigurationManager::getNode(const std::string& nodeString, bool doNotThrowOnBrokenUIDLinks) const
 {
-	// __GEN_COUT__ << "nodeString=" << nodeString << " " << nodeString.length() << __E__;
-
+	// __GEN_COUT__ << "nodeString=" << nodeString << " len=" << nodeString.length() << __E__;
+	
 	// get nodeName (in case of / syntax)
 	if(nodeString.length() < 1)
 	{
 		__SS__ << ("Invalid empty node name") << __E__;
-		__GEN_COUT_ERR__ << ss.str();
-		__SS_THROW__;
+		__GEN_SS_THROW__;
 	}
 
 	// ignore multiple starting slashes
-	unsigned int startingIndex = 0;
+	size_t startingIndex = 0;
 	while(startingIndex < nodeString.length() && nodeString[startingIndex] == '/')
 		++startingIndex;
+	size_t endingIndex = nodeString.find('/', startingIndex);
+	if(endingIndex == std::string::npos) endingIndex = nodeString.length();
 
-	std::string nodeName = nodeString.substr(startingIndex, nodeString.find('/', startingIndex) - startingIndex);
-	// __GEN_COUT__ << "nodeName=" << nodeName << " " << nodeName.length() << __E__;
+	std::string nodeName = nodeString.substr(startingIndex, endingIndex-startingIndex);
+	// __GEN_COUT__ << "nodeName=" << nodeName << " len" << nodeName.length() << __E__;
 	if(nodeName.length() < 1)
 	{
 		// return root node
@@ -2516,10 +2517,10 @@ ConfigurationTree ConfigurationManager::getNode(const std::string& nodeString, b
 		//		__GEN_COUT_ERR__ << ss.str();
 		//		__SS_THROW__;
 	}
+	++endingIndex;
+	std::string childPath = (endingIndex >= nodeString.length()?"":nodeString.substr(endingIndex));
 
-	std::string childPath = nodeString.substr(nodeName.length() + startingIndex);
-
-	// __GEN_COUT__ << "childPath=" << childPath << " " << childPath.length() << __E__;
+	// __GEN_COUT__ << "childPath=" << childPath << " len=" << childPath.length() << " endingIndex=" << endingIndex << " nodeString.length()=" << nodeString.length() << __E__;
 
 	ConfigurationTree configTree(this, getTableByName(nodeName));
 

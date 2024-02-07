@@ -469,7 +469,7 @@ void TableView::init(void)
 				// check if arbitrary values allowed
 				if(theDataChoices.size() && theDataChoices[0] == "arbitraryBool=1")
 					continue;  // arbitrary values allowed
-
+					
 				bool found;
 				for(unsigned int row = 0; row < getNumberOfRows(); ++row)
 				{
@@ -492,9 +492,13 @@ void TableView::init(void)
 						       << " is not a valid Fixed Choice option. "
 						       << "Possible values are as follows: ";
 
+						ss << columnsInfo_[col].getDefaultValue() << (columnsInfo_[col].getDataChoices().size()?", ":"");
 						for(unsigned int i = 0; i < columnsInfo_[col].getDataChoices().size(); ++i)
 						{
-							if(i)
+							if(columnsInfo_[col].getDataChoices()[i] == "arbitraryBool=0") continue; //skip printout of arbitrary bool field first
+							
+							if(i &&
+								(i != 1 || columnsInfo_[col].getDataChoices()[0] != "arbitraryBool=0"))
 								ss << ", ";
 							ss << columnsInfo_[col].getDataChoices()[i];
 						}

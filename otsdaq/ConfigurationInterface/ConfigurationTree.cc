@@ -946,13 +946,14 @@ ConfigurationTree ConfigurationTree::recurse(const ConfigurationTree& tree,
 //		then catch exceptions on UID links and call disconnected
 ConfigurationTree ConfigurationTree::getNode(const std::string& nodeString, bool doNotThrowOnBrokenUIDLinks) const
 {
+	// __COUT__ << "nodeString=" << nodeString << " len=" << nodeString.length() << __E__;
 	return recursiveGetNode(nodeString, doNotThrowOnBrokenUIDLinks, "" /*originalNodeString*/);
 }  // end getNode() connected to recursiveGetNode()
 ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeString,
                                                       bool               doNotThrowOnBrokenUIDLinks,
                                                       const std::string& originalNodeString) const
 {
-	//__COUT__ << "nodeString=" << nodeString << " " << nodeString.length() << __E__;
+	// __COUT__ << "nodeString=" << nodeString << " len=" << nodeString.length() << __E__;
 	//__COUT__ << "doNotThrowOnBrokenUIDLinks=" << doNotThrowOnBrokenUIDLinks <<
 	// __E__;
 
@@ -965,13 +966,20 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeStr
 		__SS_THROW__;
 	}
 
-	bool startingSlash = nodeString[0] == '/';
 
-	std::string nodeName = nodeString.substr(startingSlash ? 1 : 0, nodeString.find('/', 1) - (startingSlash ? 1 : 0));
-	//__COUT__ << "nodeName=" << nodeName << " " << nodeName.length() << __E__;
+	// ignore multiple starting slashes
+	size_t startingIndex = 0;
+	while(startingIndex < nodeString.length() && nodeString[startingIndex] == '/')
+		++startingIndex;
+	size_t endingIndex = nodeString.find('/', startingIndex);
+	if(endingIndex == std::string::npos) endingIndex = nodeString.length();
 
-	std::string childPath = nodeString.substr(nodeName.length() + (startingSlash ? 1 : 0));
-	//__COUT__ << "childPath=" << childPath << " " << childPath.length() << __E__;
+	std::string nodeName = nodeString.substr(startingIndex, endingIndex-startingIndex);
+	// __COUT__ << "nodeName=" << nodeName << " len=" << nodeName.length() << __E__;
+	
+	++endingIndex;
+	std::string childPath = (endingIndex >= nodeString.length()?"":nodeString.substr(endingIndex));
+	// __COUT__ << "childPath=" << childPath << " len=" << childPath.length() << " endingIndex=" << endingIndex << " nodeString.length()=" << nodeString.length() << __E__;
 
 	// if this tree is beginning at a configuration.. then go to uid, and vice versa
 
