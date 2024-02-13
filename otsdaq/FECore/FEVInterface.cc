@@ -664,7 +664,7 @@ const std::string& FEVInterface::getFEMacroConstArgument(frontEndMacroConstArgs_
 	{
 		if(pair.first == argName)
 		{
-			__COUT__ << "argName : " << pair.second << __E__;
+			__COUT__ << argName << ": " << pair.second << __E__;
 			return pair.second;
 		}
 	}
