@@ -137,7 +137,7 @@ std::string StringMacros::encodeURIComponent(const std::string& sourceStr)
 			retStr += c;
 		else
 		{
-			sprintf(encodeStr, "%%%2.2X", c);
+			sprintf(encodeStr, "%%%2.2X", (uint8_t)c);
 			retStr += encodeStr;
 		}
 	return retStr;
