@@ -126,6 +126,8 @@ class WorkLoopManager;
 
 		static xoap::MessageReference 	lastTableGroupRequestHandler					(const SOAPParameters& parameters);
 		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr);
+		static void 					launchStartOneServerCommand						(const std::string& command, ConfigurationManager* cfgMgr, std::string& contextName);
+
 		static void 					indicateOtsAlive								(const CorePropertySupervisorBase* properties = 0);
 		xoap::MessageReference 			TRACESupervisorRequest							(xoap::MessageReference message);
 

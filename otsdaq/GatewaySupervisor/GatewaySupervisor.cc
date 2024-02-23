@@ -4259,6 +4259,16 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 		{
 			WebUsers::silenceAllUserTooltips(theWebUsers_.getUsersUsername(userInfo.uid_));
 		}
+		else if(requestType == "restartApps") /*NEW: ADDED FOR APPS RESTART*/
+		{
+			std::string contextName = CgiDataUtilities::getData(cgiIn, "contextName");
+			__COUT__ << "launch ots script Command = " << "OTS_APP_SHUTDOWN" << __E__;
+			GatewaySupervisor::launchStartOneServerCommand("OTS_APP_SHUTDOWN", CorePropertySupervisorBase::theConfigurationManager_, contextName);
+			sleep(5);
+			GatewaySupervisor::launchStartOneServerCommand("OTS_APP_STARTUP", CorePropertySupervisorBase::theConfigurationManager_, contextName);
+
+			xmlOut.addTextElementToData("status", "restarted");
+		}
 		else
 		{
 			__SS__ << "requestType Request, " << requestType << ", not recognized." << __E__;
@@ -4290,6 +4300,87 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 
 	//__COUT__ << "Done" << __E__;
 }  // end request()
+
+
+//==============================================================================
+// launchStartOneServerCommand
+//	static function (so WizardSupervisor can use it)
+//	throws exception if command fails to start a server
+void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, ConfigurationManager* cfgMgr, std::string& contextName)
+{
+	__COUT__ << "launch ots script Command = " << command << __E__;
+	__COUT__ << "Extracting target context hostname... " << __E__;
+
+	std::string hostname;
+	try
+	{
+		cfgMgr->init();  // completely reset to re-align with any changes
+		const 	XDAQContextTable* contextTable = cfgMgr->__GET_CONFIG__(XDAQContextTable);
+		auto	contexts = contextTable->getContexts();
+
+		unsigned int i, j;
+		for(const auto& context : contexts)
+		{
+			if(context.contextUID_ != contextName)
+				continue;
+
+			__COUT__ << "contextUID_ is: " << context.contextUID_ << __E__;
+
+			// find last slash
+			j = 0;  // default to whole string
+			for(i = 0; i < context.address_.size(); ++i)
+				if(context.address_[i] == '/')
+					j = i + 1;
+			hostname = context.address_.substr(j);
+			__COUT__ << "ots script command '" << command << "' launching on hostname = " << hostname << " in context name " << context.contextUID_ << __E__;
+		}
+	}
+	catch(...)
+	{
+		__SS__ << "\nRelaunch of otsdaq interrupted! "
+		       << "The Configuration Manager could not be initialized." << __E__;
+
+		__SS_THROW__;
+	}
+
+	std::string fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" + hostname + ".cmd");
+	FILE*       fp = fopen(fn.c_str(), "w");
+	if(fp)
+	{
+		fprintf(fp, "%s", command.c_str());
+		fclose(fp);
+	}
+	else
+	{
+		__SS__ << "Unable to open command file: " << fn << __E__;
+		__SS_THROW__;
+	}
+
+	sleep(2 /*seconds*/);  // then verify that the commands were read
+	// note: StartOTS.sh has a sleep of 1 second
+
+	fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" + hostname + ".cmd");
+	fp = fopen(fn.c_str(), "r");
+	if(fp)
+	{
+		char line[100];
+		fgets(line, 100, fp);
+		fclose(fp);
+
+		if(strcmp(line, command.c_str()) == 0)
+		{
+			__SS__ << "The command looks to have been ignored by " << hostname << ". Is the ots launch script still running on that node?" << __E__;
+			__SS_THROW__;
+		}
+		__COUTV__(line);
+	}
+	else
+	{
+		__SS__ << "Unable to open command file for verification: " << fn << __E__;
+		__SS_THROW__;
+	}
+}  // end launchStartOneServerCommand
+
 
 //==============================================================================
 // launchStartOTSCommand
