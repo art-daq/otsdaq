@@ -919,7 +919,7 @@ launchOTSMacromaker() {
 		
 		# Alert user to the problem and keep trying
 		while [ "x$OTS_IS_ALIVE" == "x" ]; do
-			warning "Could not verify successful ots Macro Maker mode context launch, relaunching ots Macro Maker mode context..."									
+			warning "Could not verify successful ots Macro Maker mode context launch, relaunching ots Macro Maker mode context (check log for details)..."									
 			killproc ${LAST_OTS_PID} 	
 			sleep 2
 			

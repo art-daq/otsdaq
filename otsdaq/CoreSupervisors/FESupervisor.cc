@@ -115,6 +115,9 @@ FESupervisor::FESupervisor(xdaq::ApplicationStub* stub) : CoreSupervisorBase(stu
 				postStateMachineExecution(i);
 			}
 			postStateMachineExecutionLoop();
+
+			//ony indicate alive after configure
+			CorePropertySupervisorBase::indicateOtsAlive(0);
 		}
 		catch(const std::runtime_error& e)
 		{

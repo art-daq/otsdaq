@@ -95,9 +95,9 @@ class CorePropertySupervisorBase
 	const std::string supervisorClass_;
 	const std::string supervisorClassNoNamespace_;
 
-  private:
 	static void 					indicateOtsAlive								(const CorePropertySupervisorBase* properties = 0);
 
+  private:
 
 	std::string supervisorContextUID_;
 	std::string supervisorApplicationUID_;
