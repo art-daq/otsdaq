@@ -1015,7 +1015,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 	std::vector<std::string> extractVec;
 	StringMacros::getVectorFromString(macroString, extractVec, {'"'});
 
-	__COUTV__(StringMacros::vectorToString(extractVec, " ||| "));
+	// __COUTV__(StringMacros::vectorToString(extractVec, " ||| "));
 
 	enum
 	{
@@ -1044,20 +1044,20 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 		__SS_THROW__;
 	}
 	macroName_ = extractVec[MACRONAME_VALUE_INDEX];
-	__COUTV__(macroName_);
+	// __COUTV__(macroName_);
 	lsbf_ = extractVec[LSFBF_VALUE_INDEX] == "false" ? false : true;
-	__COUTV__(lsbf_);
+	// __COUTV__(lsbf_);
 	std::string& sequence = extractVec[SEQUENCE_VALUE_INDEX];
-	__COUTV__(sequence);
+	// __COUTV__(sequence);
 
 	std::vector<std::string> sequenceCommands;
 	StringMacros::getVectorFromString(sequence, sequenceCommands, {','});
 
-	__COUTV__(StringMacros::vectorToString(sequenceCommands, " ### "));
+	// __COUTV__(StringMacros::vectorToString(sequenceCommands, " ### "));
 
 	for(auto& command : sequenceCommands)
 	{
-		__COUTV__(command);
+		// __COUTV__(command);
 
 		// Note: the only way to distinguish between variable and data
 		//	is hex characters or not (lower and upper case allowed for hex)
@@ -1065,9 +1065,9 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 		std::vector<std::string> commandPieces;
 		StringMacros::getVectorFromString(command, commandPieces, {':'});
 
-		__COUTV__(StringMacros::vectorToString(commandPieces, " ### "));
+		// __COUTV__(StringMacros::vectorToString(commandPieces, " ### "));
 
-		__COUTV__(commandPieces.size());
+		// __COUTV__(commandPieces.size());
 
 		// command format
 		//	index | type | address/sleep[ms] | data
@@ -1102,7 +1102,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 
 		if(commandPieces[1][0] == 'r' && commandPieces.size() == 4)  // read type
 		{
-			__COUT__ << "Read type found." << __E__;
+			// __COUT__ << "Read type found." << __E__;
 			// 2: address or optional variable name
 			// 3: optional variable name
 
@@ -1128,7 +1128,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 						lsbfData += commandPieces[2][commandPieces[2].size() - 2 * (i + 1) + 1];
 						__COUTV__(lsbfData);
 					}
-					__COUTV__(lsbfData);
+					// __COUTV__(lsbfData);
 					StringMacros::getNumber("0x" + lsbfData, readOps_.back().address_);
 				}
 				else
@@ -1137,7 +1137,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 			else
 			{
 				readOps_.back().addressVarName_ = commandPieces[2];
-				__COUTV__(readOps_.back().addressVarName_);
+				// __COUTV__(readOps_.back().addressVarName_);
 
 				namesOfInputArguments_.emplace(readOps_.back().addressVarName_);
 			}
@@ -1145,14 +1145,14 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 			if(readOps_.back().dataIsVar_)
 			{
 				readOps_.back().dataVarName_ = commandPieces[3];
-				__COUTV__(readOps_.back().dataVarName_);
+				// __COUTV__(readOps_.back().dataVarName_);
 
 				namesOfOutputArguments_.emplace(readOps_.back().dataVarName_);
 			}
 		}
 		else if(commandPieces[1][0] == 'w' && commandPieces.size() == 4)  // write type
 		{
-			__COUT__ << "Write type found." << __E__;
+			// __COUT__ << "Write type found." << __E__;
 			// 2: address or optional variable name
 			// 3: data or optional variable name
 
@@ -1178,7 +1178,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 						lsbfData += commandPieces[2][commandPieces[2].size() - 2 * (i + 1) + 1];
 						__COUTV__(lsbfData);
 					}
-					__COUTV__(lsbfData);
+					// __COUTV__(lsbfData);
 					StringMacros::getNumber("0x" + lsbfData, writeOps_.back().address_);
 				}
 				else
@@ -1187,7 +1187,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 			else
 			{
 				writeOps_.back().addressVarName_ = commandPieces[2];
-				__COUTV__(writeOps_.back().addressVarName_);
+				// __COUTV__(writeOps_.back().addressVarName_);
 
 				namesOfInputArguments_.emplace(writeOps_.back().addressVarName_);
 			}
@@ -1202,11 +1202,11 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 					commandPieces[2] = "0" + commandPieces[3];
 					for(unsigned int i = 0; i < commandPieces[3].size() / 2; ++i)
 					{
-						__COUTV__(commandPieces[3].size() - 2 * (i + 1));
+						// __COUTV__(commandPieces[3].size() - 2 * (i + 1));
 						// add one byte at a time, backwards
 						lsbfData += commandPieces[3][commandPieces[3].size() - 2 * (i + 1)];
 						lsbfData += commandPieces[3][commandPieces[3].size() - 2 * (i + 1) + 1];
-						__COUTV__(lsbfData);
+						// __COUTV__(lsbfData);
 					}
 					__COUTV__(lsbfData);
 					StringMacros::getNumber("0x" + lsbfData, writeOps_.back().data_);
@@ -1217,14 +1217,14 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 			else
 			{
 				writeOps_.back().dataVarName_ = commandPieces[3];
-				__COUTV__(writeOps_.back().dataVarName_);
+				// __COUTV__(writeOps_.back().dataVarName_);
 
 				namesOfInputArguments_.emplace(writeOps_.back().dataVarName_);
 			}
 		}
 		else if(commandPieces[1][0] == 'd' && commandPieces.size() == 3)  // delay type
 		{
-			__COUT__ << "Delay type found." << __E__;
+			// __COUT__ << "Delay type found." << __E__;
 			// 2: delay[ms] or optional variable name
 
 			operations_.push_back(std::make_pair(macroStruct_t::OP_TYPE_DELAY, delayOps_.size()));
@@ -1237,7 +1237,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 			else
 			{
 				delayOps_.back().delayVarName_ = commandPieces[2];
-				__COUTV__(delayOps_.back().delayVarName_);
+				// __COUTV__(delayOps_.back().delayVarName_);
 
 				namesOfInputArguments_.emplace(delayOps_.back().delayVarName_);
 			}
