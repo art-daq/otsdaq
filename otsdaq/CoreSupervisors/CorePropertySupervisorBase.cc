@@ -47,7 +47,8 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		__SUP_COUTV__(CorePropertySupervisorBase::supervisorApplicationUID_);
 		__SUP_COUTV__(CorePropertySupervisorBase::supervisorConfigurationPath_);
 
-		CorePropertySupervisorBase::indicateOtsAlive(0);
+		//move to after configure for MacroMaker mode
+		// CorePropertySupervisorBase::indicateOtsAlive(0); 
 
 		return;
 	}
