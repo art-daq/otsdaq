@@ -20,7 +20,7 @@ if [ "x$OTS_USER_STUB" == "x" ]; then
 fi
 
 # Get color code variables and other common utility portions of the code
-source "${SCRIPT_DIR}"/common.sh ots
+source "${SCRIPT_DIR}"/common.sh # ots
 
 function setupTrace() 
 {	
