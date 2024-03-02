@@ -1209,7 +1209,8 @@ unsigned int TableView::getColStatus(void) const
 
 	ss << StringMacros::stackTrace() << __E__;
 
-	__SS_THROW__;
+	__COUT_WARN__ << ss.str();
+	__SS_ONLY_THROW__;
 }  // end getColStatus()
 
 //==============================================================================

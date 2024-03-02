@@ -40,7 +40,7 @@ function setupTrace()
 
 	
 	#for muting trace
-	export TRACE_NAME=OTSDAQ_TRACE
+	#export TRACE_NAME=OTSDAQ_TRACE  # THIS SEEMS TOO "STRONG" for this application of TRACE
 	export TRACE_LIMIT_MS="0,50,50" #unlimited trace messages
 	#tinfo #show trace info
 
@@ -2182,7 +2182,7 @@ export -f printMainURL
 #########################################################
 otsActionHandler() {
 
-	info "Starting action handler on {${THIS_HOST}}..."
+	info "Starting action handler on ${THIS_HOST}..."
 
 	if [[ ($ISCONFIG == 1) || ("${THIS_HOST}" == "${gatewayHostname}") ]]; then
 		out "The script, on ${THIS_HOST}, is the gateway ots script, so it will drive the exit of ots scripts running on other hosts."

@@ -90,14 +90,32 @@ defineColors ()
 defineColors
 
 #SCRIPT_NAME=$1
-out()     { pp="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}%M${RstClr}";           do_out TLVL_LOG     "$*"; }
-info()    { pp="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IBlue}%M${RstClr}";   do_out TLVL_INFO    "$*"; }
-success() { pp="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IGreen}%M${RstClr}";  do_out TLVL_NOTICE  "$*"; }
-warning() { pp="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IYellow}%M${RstClr}"; do_out TVLV_WARNING "$*"; } >&2
-error()   { pp="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IRed}%M${RstClr}";    do_out TLVL_ERROR   "$*"; } >&2
-die()     { pp="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IRed}%M${RstClr}";    do_out TLVL_FATAL   "$*"; exit 1; }
+out()     { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}";         do_out TLVL_LOG     "$*"; }
+info()    { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IBlue";   do_out TLVL_INFO    "$*"; }
+success() { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IGreen";  do_out TLVL_NOTICE  "$*"; }
+warning() { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IYellow"; do_out TLVL_WARNING "$*" >&2; }
+error()   { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IRed";    do_out TLVL_ERROR   "$*" >&2; }
+die()     { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IRed";    do_out TLVL_FATAL   "$*"; exit 1; }
 
-do_out() { tlvl=$1;shift;TRACE_TIME_FMT=%d%h%y.%T TRACE_PRINT="$pp" trace_cntl -n`basename ${BASH_SOURCE[2]}` -L${BASH_LINENO[1]} TRACE TLVL_LOG "$(echo -e "$*")"; }
 
-#out  common2.sh done
-#out2 common2.sh done
+#info()    { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IBlue}%M${RstClr}";   do_out TLVL_INFO    "$*"; }
+#success() { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IGreen}%M${RstClr}";  do_out TLVL_NOTICE  "$*"; }
+#warning() { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IYellow}%M${RstClr}"; do_out TVLV_WARNING "$*"; } >&2
+#error()   { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IRed}%M${RstClr}";    do_out TLVL_ERROR   "$*"; } >&2
+#die()     { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IRed}%M${RstClr}";    do_out TLVL_FATAL   "$*"; exit 1; }
+
+if ! hash trace_cntl >/dev/null 2>&1;then
+    # try to setup TRACE or otsdaq or artdaq???
+    :
+fi
+do_out() {
+    tlvl=$1;shift
+    if hash trace_cntl >/dev/null 2>&1;then
+	TRACE_TIME_FMT=%d%h%y.%T TRACE_PRINT="${part1}%T $part2 %n:$Cyan${BASH_LINENO[1]}$RstClr $part3" \
+	    trace_cntl -n`basename "${BASH_SOURCE[2]}"` -L${BASH_LINENO[1]} TRACE TLVL_LOG "$(echo -e "$*")${RstClr}"
+    else
+	echo -e "${part1}`date +%d%h%y.%T` $part2 `basename "${BASH_SOURCE[2]}"`:$Cyan${BASH_LINENO[0]}$RstClr ${part3}${*}${RstClr}"
+    fi
+}
+
+#out  common.sh done
