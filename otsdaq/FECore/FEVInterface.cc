@@ -1102,7 +1102,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 
 		if(commandPieces[1][0] == 'r' && commandPieces.size() == 4)  // read type
 		{
-			TLOG(TLVL_DEBUG+20) << __COUT_HDR__ << "Read type found." << __E__;
+			TLOG_DEBUG(20) << __COUT_HDR__ << "Read type found." << __E__;
 			// 2: address or optional variable name
 			// 3: optional variable name
 
@@ -1152,7 +1152,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 		}
 		else if(commandPieces[1][0] == 'w' && commandPieces.size() == 4)  // write type
 		{
-			TLOG(TLVL_DEBUG+20) << __COUT_HDR__ << "Write type found." << __E__;
+			TLOG_DEBUG(20) << __COUT_HDR__ << "Write type found." << __E__;
 			// 2: address or optional variable name
 			// 3: data or optional variable name
 
@@ -1224,7 +1224,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 		}
 		else if(commandPieces[1][0] == 'd' && commandPieces.size() == 3)  // delay type
 		{
-			TLOG(TLVL_DEBUG+20) << __COUT_HDR__ << "Delay type found." << __E__;
+			TLOG_DEBUG(20) << __COUT_HDR__ << "Delay type found." << __E__;
 			// 2: delay[ms] or optional variable name
 
 			operations_.push_back(std::make_pair(macroStruct_t::OP_TYPE_DELAY, delayOps_.size()));
