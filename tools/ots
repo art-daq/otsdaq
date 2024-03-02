@@ -20,7 +20,7 @@ if [ "x$OTS_USER_STUB" == "x" ]; then
 fi
 
 # Get color code variables and other common utility portions of the code
-source "${SCRIPT_DIR}"/common.sh # ots
+source "${SCRIPT_DIR}"/common.sh
 
 function setupTrace() 
 {	
@@ -36,11 +36,10 @@ function setupTrace()
 	#setup TRACE v3_13_04
 	#ups active
 	#which trace_cntl
-	#type toffS
+	#type toffS #for muting TRACE
 
 	
-	#for muting trace
-	#export TRACE_NAME=OTSDAQ_TRACE  # THIS SEEMS TOO "STRONG" for this application of TRACE
+	#for throttling trace:
 	export TRACE_LIMIT_MS="0,50,50" #unlimited trace messages
 	#tinfo #show trace info
 
