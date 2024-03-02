@@ -67,7 +67,7 @@
 #define __COUTT__           __COUT_TYPE__(TLVL_TRACE) 	<< __COUT_HDR__
 #define __COUTV__(X) 		__COUT__ << QUOTE(X) << " = " << X << __E__
 #define __COUTTV__(X) 		__COUTT__ << QUOTE(X) << " = " << X << __E__
-
+#define __COUTVS__(LVL,X)	TLOG(TLVL_DEBUG + LVL) << __COUT_HDR__ << QUOTE(X) << " = " << X << __E__
 
 //////// ==============================================================
 //////// Use __MCOUT__ for cout and Message Facility use in one line (that compiler
