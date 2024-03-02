@@ -1,6 +1,5 @@
 #!/bin/sh
 # Source this to get color code variables to use during output
-# Not sure why this is encapsulated into a function...
 
 defineColors ()
 {
@@ -97,17 +96,6 @@ warning() { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlu
 error()   { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IRed";    do_out TLVL_ERROR   "$*" >&2; }
 die()     { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IRed";    do_out TLVL_FATAL   "$*"; exit 1; }
 
-
-#info()    { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IBlue}%M${RstClr}";   do_out TLVL_INFO    "$*"; }
-#success() { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IGreen}%M${RstClr}";  do_out TLVL_NOTICE  "$*"; }
-#warning() { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IYellow}%M${RstClr}"; do_out TVLV_WARNING "$*"; } >&2
-#error()   { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IRed}%M${RstClr}";    do_out TLVL_ERROR   "$*"; } >&2
-#die()     { preT="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}%T ${IBlue}${THIS_HOST}${RstClr} %n:${Cyan}${BASH_LINENO[0]}${RstClr} |${IBlack}	${RstClr}${IRed}%M${RstClr}";    do_out TLVL_FATAL   "$*"; exit 1; }
-
-if ! hash trace_cntl >/dev/null 2>&1;then
-    # try to setup TRACE or otsdaq or artdaq???
-    :
-fi
 do_out() {
     tlvl=$1;shift
     if hash trace_cntl >/dev/null 2>&1;then
@@ -118,4 +106,3 @@ do_out() {
     fi
 }
 
-#out  common.sh done
