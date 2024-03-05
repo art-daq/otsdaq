@@ -123,7 +123,7 @@ class ConfigurationManager
 	double								runTimeSeconds() {return artdaq::TimeUtils::GetElapsedTime(startClockTime_);}; //((double)(clock()-startClockTime_))/CLOCKS_PER_SEC;};
 	
 	void 								loadTableGroup				(
-	    const std::string&                                     configGroupName,
+	    const std::string&                                     tableGroupName,
 	    const TableGroupKey&                                   tableGroupKey,
 	    bool                                                   doActivate         = false,
 	    std::map<std::string, TableVersion>*                   groupMembers       = 0,
