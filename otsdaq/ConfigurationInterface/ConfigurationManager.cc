@@ -443,10 +443,18 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup, bool o
 		contextFindIt  = contextMemberNames_.find(it->first);
 		backboneFindIt = backboneMemberNames_.find(it->first);
 		iterateFindIt  = iterateMemberNames_.find(it->first);
-		if(theGroup == "" || ((isContext && contextFindIt != contextMemberNames_.end()) || (isBackbone && backboneFindIt != backboneMemberNames_.end()) ||
-		                      (isIterate && iterateFindIt != iterateMemberNames_.end()) ||
-		                      (!isContext && !isBackbone && contextFindIt == contextMemberNames_.end() && backboneFindIt == backboneMemberNames_.end() &&
-		                       iterateFindIt == iterateMemberNames_.end())))
+		if(theGroup == "" || (
+								(isContext && contextFindIt != contextMemberNames_.end()) || //for context group, deactivate context members AND optional member
+								(isContext && it->first == ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE) || //optional context member
+								(isBackbone && backboneFindIt != backboneMemberNames_.end()) ||
+		                      	(isIterate && iterateFindIt != iterateMemberNames_.end()) ||
+								(isConfiguration && //for configuration group, deactivate all tables not specified in other group types						
+									contextFindIt == contextMemberNames_.end() && 
+									it->first != ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE &&
+									backboneFindIt == backboneMemberNames_.end() &&
+									iterateFindIt == iterateMemberNames_.end()
+								)
+							))
 		{
 			//__GEN_COUT__ << "\t" << it->first << __E__;
 			// if(it->second->isActive())
