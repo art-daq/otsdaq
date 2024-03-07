@@ -960,7 +960,8 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeStr
 	// get nodeName (in case of / syntax)
 	if(nodeString.length() < 1)
 	{
-		__SS__ << "Invalid empty node name! Looking for child node from node '" << getValue() << "'..." << __E__;
+		__SS__ << "Invalid empty node name! Looking for child node '" << nodeString << 
+			"' from node '" << getValue() << "'..." << __E__;
 
 		ss << nodeDump() << __E__;
 		__SS_THROW__;

@@ -174,7 +174,12 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 			// if last character is not '='
 			//	then assume need to add "?urn="
 			if(icon->windowContentURL_[icon->windowContentURL_.size() - 1] != '=')
-				icon->windowContentURL_ += "?urn=";
+			{
+				if(icon->windowContentURL_.find('?') == std::string::npos) //if no ? already
+					icon->windowContentURL_ += "?urn=";
+				else 
+					icon->windowContentURL_ += "&urn=";
+			}
 
 			// __COUT__ << "Following Application link." << std::endl;
 			appLink.getNode(COL_APP_ID).getValue(intVal);

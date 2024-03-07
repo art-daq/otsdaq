@@ -892,6 +892,7 @@ std::string GatewaySupervisor::attemptStateMachineTransition(HttpXmlDocument*   
                                                              const std::string&              username,
                                                              const std::vector<std::string>& commandParameters,
                                                              const std::string&              logEntry)
+try
 {
 	std::string errorStr = "";
 
@@ -1158,6 +1159,35 @@ std::string GatewaySupervisor::attemptStateMachineTransition(HttpXmlDocument*   
 	stateMachineLastCommandInput_ = command;
 	return errorStr;
 }  // end attemptStateMachineTransition()
+catch(...)
+{
+	__SS__ << "Error - transition '" << command << "' attempt failed!" << __E__;
+	try
+	{
+		throw;
+	}
+	catch(const std::runtime_error& e)
+	{
+		ss << "\nHere is the error: " << e.what() << __E__;
+	}
+	catch(...)
+	{
+		ss << "Uknown error caught." << __E__;
+	}	
+
+	__COUT_ERR__ << "\n" << ss.str();
+	
+	if(xmldoc)
+		xmldoc->addTextElementToData("state_tranisition_attempted",
+										"0");  // indicate to GUI transition NOT attempted
+	if(xmldoc)
+		xmldoc->addTextElementToData("state_tranisition_attempted_err",
+										ss.str());  // indicate to GUI transition NOT attempted
+	if(out)
+		xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+
+	return ss.str();
+} // end attemptStateMachineTransition() error handling
 
 //==============================================================================
 xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(xoap::MessageReference message)
