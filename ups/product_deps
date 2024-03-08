@@ -1,7 +1,7 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
 parent otsdaq
-defaultqual    e20:s112
+defaultqual    e20:s128
 
 # These optional lines define the installed directories where
 # headers, libraries, and executables will be found
@@ -19,40 +19,51 @@ old_style_config_vars
 
 #
 product             version     optional
-artdaq              v3_12_07
-artdaq_database     v1_09_00
+artdaq              v3_13_00
+artdaq_database     v1_10_00
 xdaq                v16_28_0_3
-artdaq_daqinterface v3_12_07
-cetmodules          v3_22_02    -    only_for_build
+artdaq_daqinterface v3_13_00
+cetmodules          v3_24_01    -    only_for_build
 end_product_list
 
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
 qualifier           artdaq              artdaq_database         xdaq       artdaq_daqinterface  notes
-e20:s126:prof       e20:s126:prof       e20:s126:ots:prof       e20:prof   -nq-                 -std=c++17
-e20:s126:debug      e20:s126:debug      e20:s126:ots:debug      e20:debug  -nq-                 -std=c++17
-e26:s126:prof       e26:s126:prof       e26:s126:ots:prof       e26:prof   -nq-                 -std=c++17
-e26:s126:debug      e26:s126:debug      e26:s126:ots:debug      e26:debug  -nq-                 -std=c++17
-e28:s126:prof       e28:s126:prof       e28:s126:ots:prof       e28:prof   -nq-                 -std=c++20
-e28:s126:debug      e28:s126:debug      e28:s126:ots:debug      e28:debug  -nq-                 -std=c++20
-c14:s126:prof       c14:s126:prof       c14:s126:ots:prof       c14:prof   -nq-                 -std=c++17
-c14:s126:debug      c14:s126:debug      c14:s126:ots:debug      c14:debug  -nq-                 -std=c++17
+e20:s130:prof       e20:s130:prof       e20:s130:ots:prof       e20:prof   -nq-                 -std=c++17
+e20:s130:debug      e20:s130:debug      e20:s130:ots:debug      e20:debug  -nq-                 -std=c++17
+e26:s130:prof       e26:s130:prof       e26:s130:ots:prof       e26:prof   -nq-                 -std=c++17
+e26:s130:debug      e26:s130:debug      e26:s130:ots:debug      e26:debug  -nq-                 -std=c++17
+e28:s130:prof       e28:s130:prof       e28:s130:ots:prof       e28:prof   -nq-                 -std=c++20
+e28:s130:debug      e28:s130:debug      e28:s130:ots:debug      e28:debug  -nq-                 -std=c++20
+c14:s130:prof       c14:s130:prof       c14:s130:ots:prof       c14:prof   -nq-                 -std=c++17
+c14:s130:debug      c14:s130:debug      c14:s130:ots:debug      c14:debug  -nq-                 -std=c++17
 
-e20:s124:prof       e20:s124:prof       e20:s124:ots:prof       e20:prof   -nq-                 -std=c++17
-e20:s124:debug      e20:s124:debug      e20:s124:ots:debug      e20:debug  -nq-                 -std=c++17
-e26:s124:prof       e26:s124:prof       e26:s124:ots:prof       e26:prof   -nq-                 -std=c++17
-e26:s124:debug      e26:s124:debug      e26:s124:ots:debug      e26:debug  -nq-                 -std=c++17
-e28:s124:prof       e28:s124:prof       e28:s124:ots:prof       e28:prof   -nq-                 -std=c++20
-e28:s124:debug      e28:s124:debug      e28:s124:ots:debug      e28:debug  -nq-                 -std=c++20
-c15:s124:prof       c15:s124:prof       c15:s124:ots:prof       c15:prof   -nq-                 -std=c++17
-c15:s124:debug      c15:s124:debug      c15:s124:ots:debug      c15:debug  -nq-                 -std=c++17
-c14:s124:prof       c14:s124:prof       c14:s124:ots:prof       c14:prof   -nq-                 -std=c++17
-c14:s124:debug      c14:s124:debug      c14:s124:ots:debug      c14:debug  -nq-                 -std=c++17
+e20:s128:prof       e20:s128:prof       e20:s128:ots:prof       e20:prof   -nq-                 -std=c++17
+e20:s128:debug      e20:s128:debug      e20:s128:ots:debug      e20:debug  -nq-                 -std=c++17
+e26:s128:prof       e26:s128:prof       e26:s128:ots:prof       e26:prof   -nq-                 -std=c++17
+e26:s128:debug      e26:s128:debug      e26:s128:ots:debug      e26:debug  -nq-                 -std=c++17
+e28:s128:prof       e28:s128:prof       e28:s128:ots:prof       e28:prof   -nq-                 -std=c++20
+e28:s128:debug      e28:s128:debug      e28:s128:ots:debug      e28:debug  -nq-                 -std=c++20
+c14:s128:prof       c14:s128:prof       c14:s128:ots:prof       c14:prof   -nq-                 -std=c++17
+c14:s128:debug      c14:s128:debug      c14:s128:ots:debug      c14:debug  -nq-                 -std=c++17
 
-e20:s112:prof       e20:s112:prof       e20:s112:ots:prof       e20:prof   -nq-                 -std=c++17
-e20:s112:debug      e20:s112:debug      e20:s112:ots:debug      e20:debug  -nq-                 -std=c++17
-c7:s112:prof        c7:s112:prof        c7:s112:ots:prof        c7:prof    -nq-                 -std=c++17
-c7:s112:debug       c7:s112:debug       c7:s112:ots:debug       c7:debug   -nq-                 -std=c++17
+e26:s120b:prof      e26:s120b:prof      e26:s120b:ots:prof      e26:prof   -nq-                 -std=c++17
+e26:s120b:debug     e26:s120b:debug     e26:s120b:ots:debug     e26:debug  -nq-                 -std=c++17
+e20:s120b:prof      e20:s120b:prof      e20:s120b:ots:prof      e20:prof   -nq-                 -std=c++17
+e20:s120b:debug     e20:s120b:debug     e20:s120b:ots:debug     e20:debug  -nq-                 -std=c++17
+c7:s120b:prof       c7:s120b:prof       c7:s120b:ots:prof       c7:prof    -nq-                 -std=c++17
+c7:s120b:debug      c7:s120b:debug      c7:s120b:ots:debug      c7:debug   -nq-                 -std=c++17
+c14:s120b:prof      c14:s120b:prof      c14:s120b:ots:prof      c14:prof   -nq-                 -std=c++17
+c14:s120b:debug     c14:s120b:debug     c14:s120b:ots:debug     c14:debug  -nq-                 -std=c++17
+
+e26:s120a:prof      e26:s120a:prof      e26:s120a:ots:prof      e26:prof   -nq-                 -std=c++17
+e26:s120a:debug     e26:s120a:debug     e26:s120a:ots:debug     e26:debug  -nq-                 -std=c++17
+e20:s120a:prof      e20:s120a:prof      e20:s120a:ots:prof      e20:prof   -nq-                 -std=c++17
+e20:s120a:debug     e20:s120a:debug     e20:s120a:ots:debug     e20:debug  -nq-                 -std=c++17
+c7:s120a:prof       c7:s120a:prof       c7:s120a:ots:prof       c7:prof    -nq-                 -std=c++17
+c7:s120a:debug      c7:s120a:debug      c7:s120a:ots:debug      c7:debug   -nq-                 -std=c++17
+c14:s120a:prof      c14:s120a:prof      c14:s120a:ots:prof      c14:prof   -nq-                 -std=c++17
+c14:s120a:debug     c14:s120a:debug     c14:s120a:ots:debug     c14:debug  -nq-                 -std=c++17
 
 end_qualifier_list
 
