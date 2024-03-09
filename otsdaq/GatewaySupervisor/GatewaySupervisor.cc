@@ -453,7 +453,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 		if(oneStatusReqHasFailed)
 			sleep(5);  // sleep to not overwhelm server with errors
 	}                  // end of infinite status checking loop
-}  // end AppStatusWorkLoop
+}  // end AppStatusWorkLoop()
 
 //==============================================================================
 // StateChangerWorkLoop
@@ -536,6 +536,53 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 				begin = commaPosition + 1;
 				++commaCounter;
+			}
+
+			if(command == "GetRemoteAppStatus")
+			{
+				__COUT__ << "Giving app status to remote monitor..." << __E__;
+				HttpXmlDocument xmlOut;
+				for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+				{
+					const auto& appInfo = it.second;
+
+					xmlOut.addTextElementToData("name",
+												appInfo.getName());                      // get application name
+					xmlOut.addTextElementToData("id", std::to_string(appInfo.getId()));  // get application id
+					xmlOut.addTextElementToData("status", appInfo.getStatus());          // get status
+					xmlOut.addTextElementToData(
+						"time", appInfo.getLastStatusTime() ? StringMacros::getTimestampString(appInfo.getLastStatusTime()) : "0");  // get time stamp
+					xmlOut.addTextElementToData("stale",
+												std::to_string(time(0) - appInfo.getLastStatusTime()));  // time since update
+					xmlOut.addTextElementToData("progress", std::to_string(appInfo.getProgress()));      // get progress
+					xmlOut.addTextElementToData("detail", appInfo.getDetail());                          // get detail
+					xmlOut.addTextElementToData("class",
+												appInfo.getClass());  // get application class
+					xmlOut.addTextElementToData("url",
+												appInfo.getURL());  // get application url
+					xmlOut.addTextElementToData("context",
+												appInfo.getContextName());  // get context
+					auto subappElement = xmlOut.addTextElementToData("subapps", "");
+					for(auto& subappInfoPair : appInfo.getSubappInfo())
+					{
+						xmlOut.addTextElementToParent("subapp_name", subappInfoPair.first, subappElement);
+						xmlOut.addTextElementToParent("subapp_status", subappInfoPair.second.status, subappElement);  // get status
+						xmlOut.addTextElementToParent("subapp_time",
+							subappInfoPair.second.lastStatusTime ? StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
+													subappElement);  // get time stamp
+						xmlOut.addTextElementToParent("subapp_stale", std::to_string(time(0) - subappInfoPair.second.lastStatusTime), subappElement);  // time since update
+						xmlOut.addTextElementToParent("subapp_progress", std::to_string(subappInfoPair.second.progress), subappElement);               // get progress
+						xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
+						xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                   // get url
+						xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
+
+					}
+				}
+				std::stringstream out;
+				xmlOut.outputXmlDocument((std::ostringstream*)&out, false /*dispStdOut*/, false /*allowWhiteSpace*/);
+				__COUT_TYPE__(TLVL_DEBUG+20) << "App status to monitor: " << out.str() << __E__;
+				sock.acknowledge(out.str(), false /* verbose */);
+				continue;
 			}
 
 			// set scope of mutex
