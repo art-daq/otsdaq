@@ -466,11 +466,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	int         portForStateChangesOverUDP      = configLinkNode.getNode("PortForStateChangesOverUDP").getValue<int>();
 	bool        acknowledgementEnabled          = configLinkNode.getNode("EnableAckForStateChangesOverUDP").getValue<bool>();
 
-	//__COUT__ << "IPAddressForStateChangesOverUDP = " << ipAddressForStateChangesOverUDP
-	//<< __E__;
-	//__COUT__ << "PortForStateChangesOverUDP      = " << portForStateChangesOverUDP <<
-	//__E__;
-	//__COUT__ << "acknowledgmentEnabled           = " << acknowledgmentEnabled << __E__;
+	__COUTV__(ipAddressForStateChangesOverUDP);
+	__COUTV__(portForStateChangesOverUDP);
+	__COUTV__(acknowledgementEnabled);
 
 	TransceiverSocket sock(ipAddressForStateChangesOverUDP,
 	                       portForStateChangesOverUDP);  // Take Port from Table
@@ -485,7 +483,6 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		       << ". Perhaps it is already in use? Exiting State Changer "
 		          "SOAPUtilities::receive loop."
 		       << __E__;
-		__COUT__ << ss.str();
 		__SS_THROW__;
 		return;
 	}
@@ -509,36 +506,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		if(sock.receive(buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) != -1)
 		{
 			__COUT__ << "UDP State Changer packet received of size = " << buffer.size() << __E__;
+			__COUTV__(buffer);
 
-			size_t nCommas = std::count(buffer.begin(), buffer.end(), ',');
-			if(nCommas == 0)
-			{
-				__SS__ << "Unrecognized State Machine command :-" << buffer
-				       << "-. Format is FiniteStateMachineName,Command,Parameter(s). "
-				          "Where Parameter(s) is/are optional."
-				       << __E__;
-				__COUT_INFO__ << ss.str();
-			}
-			begin        = 0;
-			commaCounter = 0;
-			parameters.clear();
-			while((commaPosition = buffer.find(',', begin)) != std::string::npos || commaCounter == nCommas)
-			{
-				if(commaCounter == nCommas)
-					commaPosition = buffer.size();
-				if(commaCounter == 0)
-					fsmName = buffer.substr(begin, commaPosition - begin);
-				else if(commaCounter == 1)
-					command = buffer.substr(begin, commaPosition - begin);
-				else
-					parameters.push_back(buffer.substr(begin, commaPosition - begin));
-				__COUT__ << "Word: " << buffer.substr(begin, commaPosition - begin) << __E__;
-
-				begin = commaPosition + 1;
-				++commaCounter;
-			}
-
-			if(command == "GetRemoteAppStatus")
+			if(buffer == "GetRemoteAppStatus")
 			{
 				__COUT__ << "Giving app status to remote monitor..." << __E__;
 				HttpXmlDocument xmlOut;
@@ -585,6 +555,39 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				continue;
 			}
 
+			size_t nCommas = std::count(buffer.begin(), buffer.end(), ',');
+			if(nCommas == 0)
+			{
+				__SS__ << "Unrecognized State Machine command :-" << buffer
+				       << "-. Format is FiniteStateMachineName,Command,Parameter(s). "
+				          "Where Parameter(s) is/are optional."
+				       << __E__;
+				__COUT_ERR__ << ss.str();
+				continue;
+			}
+			begin        = 0;
+			commaCounter = 0;
+			parameters.clear();
+			while((commaPosition = buffer.find(',', begin)) != std::string::npos || commaCounter == nCommas)
+			{
+				if(commaCounter == nCommas)
+					commaPosition = buffer.size();
+				if(commaCounter == 0)
+					fsmName = buffer.substr(begin, commaPosition - begin);
+				else if(commaCounter == 1)
+					command = buffer.substr(begin, commaPosition - begin);
+				else
+					parameters.push_back(buffer.substr(begin, commaPosition - begin));
+				__COUT__ << "Word: " << buffer.substr(begin, commaPosition - begin) << __E__;
+
+				begin = commaPosition + 1;
+				++commaCounter;
+			}
+			__COUTV__(fsmName);
+			__COUTV__(command);
+			__COUTV__(StringMacros::vectorToString(parameters));
+
+
 			// set scope of mutex
 			{
 				// should be mutually exclusive with GatewaySupervisor main thread state
@@ -608,14 +611,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				       << errorStr;
 				__COUT_ERR__ << ss.str();
 				if(acknowledgementEnabled)
-					sock.acknowledge(errorStr, true /*verbose*/);
+					sock.acknowledge(errorStr, true /* verbose */);
 			}
 			else
 			{
 				__SS__ << "Successfully executed state change command '" << command << ".'" << __E__;
 				__COUT_INFO__ << ss.str();
 				if(acknowledgementEnabled)
-					sock.acknowledge("Done", true /*verbose*/);
+					sock.acknowledge("Done", true /* verbose */);
 			}
 		}
 		else
@@ -951,16 +954,17 @@ try
 	__COUTV__(logEntry);
 	__COUT__ << "command = " << command << __E__;
 	__COUT__ << "commandParameters.size = " << commandParameters.size() << __E__;
+	__COUTV__(StringMacros::vectorToString(commandParameters));
 
 	activeStateMachineLogEntry_ = "";  // clear
 
 	SOAPParameters parameters;
-	if(command == "Configure")
+	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 	{
 		if(currentState != "Halted")  // check if out of sync command
 		{
 			__SS__ << "Error - Can only transition to Configured if the current "
-			       << "state is Halted. Perhaps your state machine is out of sync." << __E__;
+			       << "state is Halted. The current state is '" << currentState << ".' Perhaps your state machine is out of sync." << __E__;
 			__COUT_ERR__ << "\n" << ss.str();
 			errorStr = ss.str();
 
@@ -1188,6 +1192,33 @@ try
 			setNextRunNumber(runNumber + 1);
 		}
 		parameters.addParameter("RunNumber", runNumber);
+	}
+	else if(!(command == "Halt" || 
+				command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME || 
+				command == RunControlStateMachine::ERROR_TRANSITION_NAME ||		
+				command == "Fail" || 		
+				command == RunControlStateMachine::STARTUP_TRANSITION_NAME ||		
+				command == "Initialize" || 		
+				command == "Abort" ||
+				command == "Pause" || 
+				command == "Resume" || 
+				command == "Stop" ))
+	{		
+		__SS__ << "Error - illegal state machine command received '" << command <<
+					".'" << __E__;
+		__COUT_ERR__ << "\n" << ss.str();
+		errorStr = ss.str();
+
+		if(xmldoc)
+			xmldoc->addTextElementToData("state_tranisition_attempted",
+											"0");  // indicate to GUI transition NOT attempted
+		if(xmldoc)
+			xmldoc->addTextElementToData("state_tranisition_attempted_err",
+											ss.str());  // indicate to GUI transition NOT attempted
+		if(out)
+			xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+
+		return errorStr;		
 	}
 
 	xoap::MessageReference message = SOAPUtilities::makeSOAPMessageReference(command, parameters);

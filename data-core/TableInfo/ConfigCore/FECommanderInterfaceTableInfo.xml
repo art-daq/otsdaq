@@ -11,6 +11,7 @@
 				<COLUMN Type="Data" 	 Name="ConfigurationAlias" 	 StorageName="CONFIGURATION_ALIAS" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="YesNo" 	 Name="OnlyRunTransitions" 	 StorageName="ONLY_RUN_TRANSITIONS" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="OnOff" 	 Name="MonitorRemoteAppStatus" 	 StorageName="MONITOR_REMOTE_APP_STATUS" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="YesNo" 	 Name="ExpectTransitionAck" 	 StorageName="EXPECT_TRANSITION_ACK" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE" 		DataChoices=""/>

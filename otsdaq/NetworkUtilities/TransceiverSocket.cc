@@ -57,7 +57,7 @@ std::string TransceiverSocket::sendAndReceive(Socket& toSocket, const std::strin
 	std::string receiveBuffer;
 	if(receive(receiveBuffer, timeoutSeconds, timeoutUSeconds, verbose) < 0)
 	{
-		__SS__ << "Error receiving buffer." << __E__;
+		__SS__ << "Timeout or Error receiving response buffer." << __E__;
 		__SS_THROW__;
 	}
 	return receiveBuffer;
