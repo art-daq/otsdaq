@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+	<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TableInfo.xsd">
+		<TABLE Name="FECommanderInterfaceTable">
+			<VIEW Name="FE_COMMANDER_INTERFACE_TABLE" Type="File,Database,DatabaseTest" Description="No%20description.">
+				<COLUMN Type="UID" 	 Name="InterfaceID" 	 StorageName="INTERFACE_ID" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="RemoteInterfaceIPAddress" 	 StorageName="REMOTE_INTERFACE_IP_ADDRESS" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="RemoteInterfacePort" 	 StorageName="REMOTE_INTERFACE_PORT" 		DataType="NUMBER" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="HostIPAddress" 	 StorageName="HOST_IP_ADDRESS" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="HostPort" 	 StorageName="HOST_PORT" 		DataType="NUMBER" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="StateMachineName" 	 StorageName="STATE_MACHINE_NAME" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="ConfigurationAlias" 	 StorageName="CONFIGURATION_ALIAS" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="YesNo" 	 Name="OnlyRunTransitions" 	 StorageName="ONLY_RUN_TRANSITIONS" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="OnOff" 	 Name="MonitorRemoteAppStatus" 	 StorageName="MONITOR_REMOTE_APP_STATUS" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE" 		DataChoices=""/>
+			</VIEW>
+		</TABLE>
+	</ROOT>
