@@ -8,7 +8,7 @@ on:
         default: 'd'
       quals:
         description: 'qualifiers'
-        default: 's112:e20'
+        default: 's128:e20'
 
 jobs:
 
@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: cvmfs-contrib/github-action-cvmfs@v3
+    - uses: cvmfs-contrib/github-action-cvmfs@main
 
     - name: change dir permission
       run: |
@@ -25,7 +25,7 @@ jobs:
 
     - name: Cache cvmfs cache
       id: cvmfs_cache
-      uses: actions/cache@v3
+      uses: actions/cache@main
       with:
         path: /var/lib/cvmfs/shared
         key: cachecvmfs
@@ -36,7 +36,7 @@ jobs:
         sudo chmod -R go-rwx /var/lib/cvmfs
 
     - name: Checkout pkg
-      uses: actions/checkout@v3
+      uses: actions/checkout@main
       with:
         repository: ${{ github.repository }}
         path: scratch/${{ github.repository }}
@@ -62,7 +62,7 @@ jobs:
         docker run --rm -v /cvmfs:/cvmfs:shared -v $GITHUB_WORKSPACE/scratch:/scratch eflumerf/sl7-minimal:latest /scratch/build_pkg.sh
 
     - name: upload build log file
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@main
       with:
         name: build_log_${{ matrix.os_name }}
         path: ${{ github.workspace }}/scratch/build_*/build.log
