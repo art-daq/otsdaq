@@ -47,4 +47,18 @@ int TransceiverSocket::acknowledge(const std::string& buffer, bool verbose)
 	}
 
 	return 0;
-}
+} //end acknowledge()
+
+//==============================================================================
+std::string TransceiverSocket::sendAndReceive(Socket& toSocket, const std::string& sendBuffer, unsigned int timeoutSeconds /* = 1 */,
+	 unsigned int timeoutUSeconds /* = 0 */, bool verbose /* = false */)
+{
+	send(toSocket,sendBuffer,verbose);
+	std::string receiveBuffer;
+	if(receive(receiveBuffer, timeoutSeconds, timeoutUSeconds, verbose) < 0)
+	{
+		__SS__ << "Timeout or Error receiving response buffer." << __E__;
+		__SS_THROW__;
+	}
+	return receiveBuffer;
+} //end sendAndReceive()

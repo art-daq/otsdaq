@@ -2274,6 +2274,7 @@ bool ConfigurationTree::isEnabled(void) const
 	if(!isUIDNode())
 	{
 		__SS__ << "Can not get status of '" << getValueAsString() << ".' Can only check the status of a UID/Record node!" << __E__;
+		ss << nodeDump() << __E__;
 		__SS_THROW__;
 	}
 

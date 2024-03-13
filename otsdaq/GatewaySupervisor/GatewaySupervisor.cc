@@ -453,7 +453,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 		if(oneStatusReqHasFailed)
 			sleep(5);  // sleep to not overwhelm server with errors
 	}                  // end of infinite status checking loop
-}  // end AppStatusWorkLoop
+}  // end AppStatusWorkLoop()
 
 //==============================================================================
 // StateChangerWorkLoop
@@ -466,11 +466,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	int         portForStateChangesOverUDP      = configLinkNode.getNode("PortForStateChangesOverUDP").getValue<int>();
 	bool        acknowledgementEnabled          = configLinkNode.getNode("EnableAckForStateChangesOverUDP").getValue<bool>();
 
-	//__COUT__ << "IPAddressForStateChangesOverUDP = " << ipAddressForStateChangesOverUDP
-	//<< __E__;
-	//__COUT__ << "PortForStateChangesOverUDP      = " << portForStateChangesOverUDP <<
-	//__E__;
-	//__COUT__ << "acknowledgmentEnabled           = " << acknowledgmentEnabled << __E__;
+	__COUTV__(ipAddressForStateChangesOverUDP);
+	__COUTV__(portForStateChangesOverUDP);
+	__COUTV__(acknowledgementEnabled);
 
 	TransceiverSocket sock(ipAddressForStateChangesOverUDP,
 	                       portForStateChangesOverUDP);  // Take Port from Table
@@ -485,7 +483,6 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		       << ". Perhaps it is already in use? Exiting State Changer "
 		          "SOAPUtilities::receive loop."
 		       << __E__;
-		__COUT__ << ss.str();
 		__SS_THROW__;
 		return;
 	}
@@ -509,6 +506,54 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		if(sock.receive(buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) != -1)
 		{
 			__COUT__ << "UDP State Changer packet received of size = " << buffer.size() << __E__;
+			__COUTV__(buffer);
+
+			if(buffer == "GetRemoteAppStatus")
+			{
+				__COUT__ << "Giving app status to remote monitor..." << __E__;
+				HttpXmlDocument xmlOut;
+				for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+				{
+					const auto& appInfo = it.second;
+
+					xmlOut.addTextElementToData("name",
+												appInfo.getName());                      // get application name
+					xmlOut.addTextElementToData("id", std::to_string(appInfo.getId()));  // get application id
+					xmlOut.addTextElementToData("status", appInfo.getStatus());          // get status
+					xmlOut.addTextElementToData(
+						"time", appInfo.getLastStatusTime() ? StringMacros::getTimestampString(appInfo.getLastStatusTime()) : "0");  // get time stamp
+					xmlOut.addTextElementToData("stale",
+												std::to_string(time(0) - appInfo.getLastStatusTime()));  // time since update
+					xmlOut.addTextElementToData("progress", std::to_string(appInfo.getProgress()));      // get progress
+					xmlOut.addTextElementToData("detail", appInfo.getDetail());                          // get detail
+					xmlOut.addTextElementToData("class",
+												appInfo.getClass());  // get application class
+					xmlOut.addTextElementToData("url",
+												appInfo.getURL());  // get application url
+					xmlOut.addTextElementToData("context",
+												appInfo.getContextName());  // get context
+					auto subappElement = xmlOut.addTextElementToData("subapps", "");
+					for(auto& subappInfoPair : appInfo.getSubappInfo())
+					{
+						xmlOut.addTextElementToParent("subapp_name", subappInfoPair.first, subappElement);
+						xmlOut.addTextElementToParent("subapp_status", subappInfoPair.second.status, subappElement);  // get status
+						xmlOut.addTextElementToParent("subapp_time",
+							subappInfoPair.second.lastStatusTime ? StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
+													subappElement);  // get time stamp
+						xmlOut.addTextElementToParent("subapp_stale", std::to_string(time(0) - subappInfoPair.second.lastStatusTime), subappElement);  // time since update
+						xmlOut.addTextElementToParent("subapp_progress", std::to_string(subappInfoPair.second.progress), subappElement);               // get progress
+						xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
+						xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                   // get url
+						xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
+
+					}
+				}
+				std::stringstream out;
+				xmlOut.outputXmlDocument((std::ostringstream*)&out, false /*dispStdOut*/, false /*allowWhiteSpace*/);
+				__COUT_TYPE__(TLVL_DEBUG+20) << "App status to monitor: " << out.str() << __E__;
+				sock.acknowledge(out.str(), false /* verbose */);
+				continue;
+			}
 
 			size_t nCommas = std::count(buffer.begin(), buffer.end(), ',');
 			if(nCommas == 0)
@@ -517,7 +562,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				       << "-. Format is FiniteStateMachineName,Command,Parameter(s). "
 				          "Where Parameter(s) is/are optional."
 				       << __E__;
-				__COUT_INFO__ << ss.str();
+				__COUT_ERR__ << ss.str();
+				continue;
 			}
 			begin        = 0;
 			commaCounter = 0;
@@ -537,6 +583,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				begin = commaPosition + 1;
 				++commaCounter;
 			}
+			__COUTV__(fsmName);
+			__COUTV__(command);
+			__COUTV__(StringMacros::vectorToString(parameters));
+
 
 			// set scope of mutex
 			{
@@ -561,14 +611,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				       << errorStr;
 				__COUT_ERR__ << ss.str();
 				if(acknowledgementEnabled)
-					sock.acknowledge(errorStr, true /*verbose*/);
+					sock.acknowledge(errorStr, true /* verbose */);
 			}
 			else
 			{
 				__SS__ << "Successfully executed state change command '" << command << ".'" << __E__;
 				__COUT_INFO__ << ss.str();
 				if(acknowledgementEnabled)
-					sock.acknowledge("Done", true /*verbose*/);
+					sock.acknowledge("Done", true /* verbose */);
 			}
 		}
 		else
@@ -904,16 +954,17 @@ try
 	__COUTV__(logEntry);
 	__COUT__ << "command = " << command << __E__;
 	__COUT__ << "commandParameters.size = " << commandParameters.size() << __E__;
+	__COUTV__(StringMacros::vectorToString(commandParameters));
 
 	activeStateMachineLogEntry_ = "";  // clear
 
 	SOAPParameters parameters;
-	if(command == "Configure")
+	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 	{
 		if(currentState != "Halted")  // check if out of sync command
 		{
 			__SS__ << "Error - Can only transition to Configured if the current "
-			       << "state is Halted. Perhaps your state machine is out of sync." << __E__;
+			       << "state is Halted. The current state is '" << currentState << ".' Perhaps your state machine is out of sync." << __E__;
 			__COUT_ERR__ << "\n" << ss.str();
 			errorStr = ss.str();
 
@@ -1141,6 +1192,33 @@ try
 			setNextRunNumber(runNumber + 1);
 		}
 		parameters.addParameter("RunNumber", runNumber);
+	}
+	else if(!(command == "Halt" || 
+				command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME || 
+				command == RunControlStateMachine::ERROR_TRANSITION_NAME ||		
+				command == "Fail" || 		
+				command == RunControlStateMachine::STARTUP_TRANSITION_NAME ||		
+				command == "Initialize" || 		
+				command == "Abort" ||
+				command == "Pause" || 
+				command == "Resume" || 
+				command == "Stop" ))
+	{		
+		__SS__ << "Error - illegal state machine command received '" << command <<
+					".'" << __E__;
+		__COUT_ERR__ << "\n" << ss.str();
+		errorStr = ss.str();
+
+		if(xmldoc)
+			xmldoc->addTextElementToData("state_tranisition_attempted",
+											"0");  // indicate to GUI transition NOT attempted
+		if(xmldoc)
+			xmldoc->addTextElementToData("state_tranisition_attempted_err",
+											ss.str());  // indicate to GUI transition NOT attempted
+		if(out)
+			xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+
+		return errorStr;		
 	}
 
 	xoap::MessageReference message = SOAPUtilities::makeSOAPMessageReference(command, parameters);

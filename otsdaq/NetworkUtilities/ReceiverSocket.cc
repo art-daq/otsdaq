@@ -98,8 +98,8 @@ int ReceiverSocket::receive(
 			std::string fromIP = inet_ntoa(fromAddress_.sin_addr);
 
 			__COUT__ << "Receiving "
-			         << " at: " << getIPAddress() << ":" << getPort() << " from: " << fromIP;
-			std::cout << ":" << ntohs(fromPort) << " size: " << buffer.size() << std::endl;
+			         << " at: " << getIPAddress() << ":" << getPort() << " from: " << fromIP 
+					 << ":" << ntohs(fromPort) << " size: " << buffer.size() << std::endl;
 
 			//			std::stringstream ss;
 			//			ss << "\tRx";

@@ -16,6 +16,10 @@ class TransceiverSocket : public TransmitterSocket, public ReceiverSocket
 
 	int acknowledge(const std::string& buffer,
 	                bool               verbose = false);  // responds to last receive location
+
+
+	std::string sendAndReceive(Socket& toSocket, const std::string& sendBuffer, unsigned int timeoutSeconds = 1, unsigned int timeoutUSeconds = 0, bool verbose = false);
+
   protected:
 	TransceiverSocket(void);
 };
