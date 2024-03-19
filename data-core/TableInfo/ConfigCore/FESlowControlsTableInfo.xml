@@ -7,6 +7,7 @@
 				<COLUMN Type="OnOff" 	 Name="Status" 	 StorageName="STATUS" 		DataType="VARCHAR2" 		DataChoices=""/>
 				<COLUMN Type="FixedChoiceData" 	 Name="ChannelDataType" 	 StorageName="CHANNEL_DATA_TYPE" 		DataType="VARCHAR2" 		DataChoices="arbitraryBool=1,char,unsigned%20char,short,unsigned%20short,int,unsigned%20int,long%20long,unsigned%20long%20long,float,double,1b,2b,10b"/>
 				<COLUMN Type="Data" 	 Name="Units" 	 StorageName="UNITS" 		DataType="VARCHAR2" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="Transformation" 	 StorageName="TRANSFORMATION" 		DataType="STRING" 		DefaultValue="v" 		DataChoices=""/>
 				<COLUMN Type="Data" 	 Name="UniversalInterfaceAddress" 	 StorageName="UNIVERSAL_INTERFACE_ADDRESS" 		DataType="VARCHAR2" 		DataChoices=""/>
 				<COLUMN Type="Data" 	 Name="UniversalDataBitOffset" 	 StorageName="UNIVERSAL_DATA_BIT_OFFSET" 		DataType="NUMBER" 		DataChoices=""/>
 				<COLUMN Type="YesNo" 	 Name="ReadAccess" 	 StorageName="READ_ACCESS" 		DataType="VARCHAR2" 		DataChoices=""/>

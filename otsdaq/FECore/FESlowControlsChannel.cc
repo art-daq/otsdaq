@@ -33,6 +33,7 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
                                              const std::string& channelName,
                                              const std::string& dataType,
                                              const std::string& universalAddress,
+											 const std::string& transformation,
                                              unsigned int       universalDataBitOffset,
                                              bool               readAccess,
                                              bool               writeAccess,
@@ -67,6 +68,7 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
     , saveBinaryFormat_(saveBinaryFormat)
     , alarmsEnabled_(alarmsEnabled)
     , latchAlarms_(latchAlarms)
+	, transformation_(transformation)
     , lastSampleTime_(0)
     , loloAlarmed_(false)
     , loAlarmed_(false)
@@ -86,6 +88,9 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
 			<< interface->getUniversalAddressSize() << ", data size = " << interface->getUniversalDataSize() << __E__;
 		__GEN_SS_THROW__;
 	}
+	__GEN_COUT__ << "universalAddressSize = " << interface->getUniversalAddressSize() << __E__;
+	__GEN_COUT__ << "universalAddress = " << universalAddress << __E__;
+	__GEN_COUT__ << "transformation = " << transformation << __E__;
 
 	sizeOfReadBytes_ = 0;
 
@@ -263,16 +268,24 @@ FESlowControlsChannel::~FESlowControlsChannel(void) {}
 // virtual in case read should be different than universalread
 void FESlowControlsChannel::getSample(std::string& readValue)
 {
+	__GEN_COUT__ << "starting getSample() of address " << BinaryStringMacros::binaryNumberToHexString(universalAddress_, "0x", " ") << "..." << __E__;
+
 	if(getReadSizeBytes() > interface_->getUniversalDataSize())
 	{
 		//block read!
 		readValue.resize(getReadSizeBytes());
 		interface_->universalBlockRead(&universalAddress_[0], &readValue[0], getReadSizeBytes());
+		__GEN_COUT__ << "interface_->universalBlockRead(" << 
+			BinaryStringMacros::binaryNumberToHexString(universalAddress_, "0x", " ") << ", " <<  
+			BinaryStringMacros::binaryNumberToHexString(readValue, "0x", " ") << ", " <<  getReadSizeBytes() << ")" << __E__; 
 	}
 	else //normal read
 	{
 		readValue.resize(interface_->getUniversalDataSize());
 		interface_->universalRead(&universalAddress_[0], &readValue[0]);
+		__GEN_COUT__ << "interface_->universalRead(" << 
+			BinaryStringMacros::binaryNumberToHexString(universalAddress_, "0x", " ") << ", " <<  
+			BinaryStringMacros::binaryNumberToHexString(readValue, "0x", " ") << ")" << __E__; 
 	}
 }  // end getSample()
 
@@ -293,6 +306,8 @@ void FESlowControlsChannel::print(std::ostream& out) const
 	    << "sizeOfReadBytes_: " << sizeOfReadBytes_ << __E__;
 	out << "\t"
 	    << "universalAddress_: " << BinaryStringMacros::binaryNumberToHexString(universalAddress_, "0x", " ") << __E__;	
+	out << "\t"
+		<< "transformation_: " << transformation_ << __E__;
 	out << "\t"
 	    << "readAccess_: " << readAccess_ << __E__;
 	out << "\t"

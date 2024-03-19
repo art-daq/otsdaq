@@ -16,6 +16,7 @@ class FESlowControlsChannel
 	                      const std::string& channelName,
 	                      const std::string& dataType,
 	                      const std::string& universalAddress,
+						  const std::string& transformation,
 	                      unsigned int       universalDataBitOffset,
 	                      bool               readAccess,
 	                      bool               writeAccess,
@@ -78,6 +79,7 @@ class FESlowControlsChannel
 	const bool 				alarmsEnabled_, latchAlarms_;
 	std::string 			universalReadValue_;
 	std::string  			universalAddress_;    // get size from parent FE interface
+	std::string  			transformation_;
 
   private:
 	std::string 			sample_, lastSample_;
