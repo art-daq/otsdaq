@@ -943,7 +943,9 @@ void TableView::setValueAsString(const std::string& value, unsigned int row, uns
 const std::string& TableView::setUniqueColumnValue(unsigned int row,
                                                    unsigned int col,
                                                    std::string  baseValueAsString /*= "" */,
-                                                   bool         doMathAppendStrategy /*= false*/)
+                                                   bool         doMathAppendStrategy /*= false*/,
+												   std::string  childLinkIndex /* = "" */,
+												   std::string  groupId /* = "" */)
 {
 	if(!(col < columnsInfo_.size() && row < getNumberOfRows()))
 	{
@@ -951,7 +953,20 @@ const std::string& TableView::setUniqueColumnValue(unsigned int row,
 		__SS_THROW__;
 	}
 
-	__COUT__ << "Current unique data entry is data[" << row << "][" << col << "] = '" << theDataView_[row][col] << "' baseValueAsString = " << baseValueAsString
+	bool isUniqueGroupCol = (columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA);
+	unsigned int childLinkIndexCol = -1;
+	if(isUniqueGroupCol)
+	{
+		__COUTVS__(12,childLinkIndex); //set TRACE level to TLVL_DEBUG + 12
+		__COUTVS__(12,groupId); //set TRACE level to TLVL_DEBUG + 12
+		childLinkIndexCol = getLinkGroupIDColumn(childLinkIndex);  // column in question
+		__COUTVS__(12,childLinkIndexCol); //set TRACE level to TLVL_DEBUG + 12
+	}
+	
+	__COUT__ << "Current '" << columnsInfo_[col].getName() << "' " 
+			 << (isUniqueGroupCol?"(Unique in Group) ":"")
+			 << "unique data entry is data[" 
+			 << row << "][" << col << "] = '" << theDataView_[row][col] << "' baseValueAsString = " << baseValueAsString
 	         << " doMathAppendStrategy = " << doMathAppendStrategy << __E__;
 
 	bool         firstConflict = true;
@@ -961,7 +976,6 @@ const std::string& TableView::setUniqueColumnValue(unsigned int row,
 	unsigned int index;
 	std::string  numString;
 	std::string  opString;  // for doMathAppendStrategy
-	char         indexString[1000];
 
 	// find max in rows
 
@@ -972,23 +986,25 @@ const std::string& TableView::setUniqueColumnValue(unsigned int row,
 		if(r == row)
 			continue;  // skip row to add
 
+		if(isUniqueGroupCol && !isEntryInGroupCol(r, childLinkIndexCol, groupId))
+			continue; 	// skip rows not in group
+
 		// find last non numeric character
 
 		foundAny  = false;
 		tmpString = theDataView_[r][col];
 
-		//__COUT__ << "tmpString " << tmpString << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+12) << "row[" << r << "] tmpString " << tmpString << __E__;
 
 		for(index = tmpString.length() - 1; index < tmpString.length(); --index)
 		{
-			//__COUT__ << index << " tmpString[index] " << tmpString[index] <<
-			//__E__;
+			__COUT_TYPE__(TLVL_DEBUG+12) << index << " tmpString[index] " << tmpString[index] << __E__;
 			if(!(tmpString[index] >= '0' && tmpString[index] <= '9'))
 				break;  // if not numeric, break
 			foundAny = true;
 		}
 
-		//__COUT__ << "index " << index << " foundAny " << foundAny << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+12) << "index " << index << " foundAny " << foundAny << __E__;
 
 		if(tmpString.length() && foundAny)  // then found a numeric substring
 		{
@@ -1021,13 +1037,13 @@ const std::string& TableView::setUniqueColumnValue(unsigned int row,
 				}
 			}
 
-			//__COUT__ << tmpString << " vs " << baseValueAsString << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+12) << tmpString << " vs " << baseValueAsString << __E__;
 
 			if(baseValueAsString != "" && tmpString != baseValueAsString)
 				continue;  // skip max unique number if basestring does not match
 
-			//__COUT__ << "Found unique data base string '" << tmpString << "' and number string '" << numString << "' in last record '" << theDataView_[r][col]
-			//        << "'" << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+12) << "Found unique data base string '" << tmpString << "' and number string '" << numString << "' in last record '" << theDataView_[r][col]
+			       << "'" << __E__;
 
 			if(firstConflict)
 			{
@@ -1062,20 +1078,27 @@ const std::string& TableView::setUniqueColumnValue(unsigned int row,
 
 			maxUniqueData = 0;  // start a number if basestring conflict
 		}
-	}
+	} //end loop finding max unique data (potentially for group)
 
-	//__COUTV__(maxUniqueData);
+	__COUTVS__(12, maxUniqueData); //set TRACE level to TLVL_DEBUG + 12
+	__COUTVS__(12, baseValueAsString); //set TRACE level to TLVL_DEBUG + 12
 
 	if(maxUniqueData == -1)  // if no conflicts, then do not add number
-		theDataView_[row][col] = baseValueAsString;
+	{
+		if(baseValueAsString != "")
+			theDataView_[row][col] = baseValueAsString;
+		else
+			theDataView_[row][col] = columnsInfo_[col].getDefaultValue();
+	}
 	else
 	{
 		++maxUniqueData;  // increment
 
+		char indexString[1000];
 		sprintf(indexString, "%u", maxUniqueData);
 
-		//__COUTV__(indexString);
-		//__COUTV__(baseValueAsString);
+		__COUTVS__(12,indexString); //set TRACE level to TLVL_DEBUG + 12
+		__COUTVS__(12,baseValueAsString); //set TRACE level to TLVL_DEBUG + 12
 
 		if(doMathAppendStrategy)
 			theDataView_[row][col] = baseValueAsString + " + " + indexString;
@@ -3029,11 +3052,13 @@ void TableView::resizeDataView(unsigned int nRows, unsigned int nCols)
 //	if baseNameAutoUID != "", creates a UID based on this base name
 //		and increments and appends an integer relative to the previous last row
 unsigned int TableView::addRow(const std::string& author,
-                               unsigned char      incrementUniqueData /*= false */,  // leave as unsigned char rather than
+                               unsigned char      incrementUniqueData /* = false */,  // leave as unsigned char rather than
                                // bool, too many things (e.g. strings)
                                // evaluate successfully to bool values
-                               const std::string& baseNameAutoUID /*= "" */,
-                               unsigned int       rowToAdd /*= -1 */)
+                               const std::string& baseNameAutoUID /* = "" */,
+                               unsigned int       rowToAdd /* = -1 */,
+							   std::string 		  childLinkIndex /* = "" */,
+							   std::string 		  groupId /* = "" */)
 {
 	// default to last row
 	if(rowToAdd == (unsigned int)-1)
@@ -3077,7 +3102,11 @@ unsigned int TableView::addRow(const std::string& author,
 			if(col == getColUID() || columnsInfo_[col].isChildLinkGroupID())
 				setUniqueColumnValue(rowToAdd, col, baseNameAutoUID /*baseValueAsString*/);
 			else
-				setUniqueColumnValue(rowToAdd, col);
+				setUniqueColumnValue(rowToAdd, col,
+					"" /* baseValueAsString */,
+					false /* doMathAppendStrategy */,
+					childLinkIndex,
+					groupId);
 		}
 		else
 			theDataView_[rowToAdd][col] = defaultRowValues[col];

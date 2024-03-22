@@ -184,8 +184,10 @@ public:
 	// Careful: The setValueAsString method is used to set the value without any
 	// consistency check with the data type
 	void 										setValueAsString			(const std::string& value, unsigned int row, unsigned int col);
-	const std::string&							setUniqueColumnValue		(unsigned int row, unsigned int col, std::string baseValueAsString = "", bool doMathAppendStrategy = false);
-
+	const std::string&							setUniqueColumnValue		(unsigned int row, unsigned int col, std::string baseValueAsString = "", 
+																			 bool doMathAppendStrategy = false,
+																			 std::string 		  childLinkIndex = "", //to allow for handling TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA
+							   												 std::string 		  groupId = "");
 	void         								resizeDataView				(unsigned int nRows, unsigned int nCols);
 	unsigned int 								addRow						(const std::string& author = "",
 																		     unsigned char      incrementUniqueData = false,  // leave as unsigned char rather than
@@ -193,7 +195,9 @@ public:
 																		                                                 // evaluate successfully to bool values
 																			 const std::string&  baseNameAutoUID = "",
 																		     unsigned int rowToAdd =
-																		         (unsigned int)-1);  // returns index of added row, default is last row
+																		         (unsigned int)-1,  // returns index of added row, default is last row
+																			 std::string 		  childLinkIndex = "", //to allow for handling TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA
+							   												 std::string 		  groupId = "");
 	void 										deleteRow					(int r);
 	void 										deleteAllRows				(void) {theDataView_.clear();}
 
