@@ -22,7 +22,7 @@ jobs:
   build_against_dev_release:
     name: build_against_dev
     # The type of runner that the job will run on
-    runs-on: ironwork
+    runs-on: self-hosted
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
