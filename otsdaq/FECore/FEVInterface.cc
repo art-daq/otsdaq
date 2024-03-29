@@ -842,7 +842,7 @@ void FEVInterface::runSelfFrontEndMacro(const std::string& feMacroName,
 	const FEVInterface::frontEndMacroStruct_t& feMacro = FEMacroIt->second;
 
 	// check for input arg name match
-	for(unsigned int i = 0; i < argsIn.size(); ++i)
+	for(unsigned int i = 0; i < argsIn.size() && i < feMacro.namesOfInputArguments_.size(); ++i)
 		if(argsIn[i].first != feMacro.namesOfInputArguments_[i])
 		{
 			__CFG_SS__ << "FE Macro '" << feMacro.feMacroName_ << "' of interfaceID '" << getInterfaceUID() << "' was attempted with a mismatch in"
