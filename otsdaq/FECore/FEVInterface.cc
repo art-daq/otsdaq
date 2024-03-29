@@ -4,6 +4,8 @@
 #include "otsdaq/NetworkUtilities/UDPDataStreamerBase.h"
 #include "otsdaq/Macros/BinaryStringMacros.h"
 
+#include <TFormula.h>
+
 #define TRACE_NAME "FEVInterface"
 #include <iostream>
 #include <sstream>
@@ -133,12 +135,21 @@ void FEVInterface::addSlowControlsChannels(ConfigurationTree                    
 						getInterfaceUID() << "/" << groupLinkChild.first
 		            << "\t Type:" << groupLinkChild.second.getNode("ChannelDataType") << __E__;
 
+		// Unit transforms
+		std::string transformation = "";
+		try {
+			transformation = groupLinkChild.second.getNode("Transformation").getValue<std::string>();
+		} catch (...) {
+			__FE_COUT__ << "Slow controls 'Transformation' setting found." << __E__;
+		}
+
 		mapOfSlowControlsChannels->insert(std::pair<std::string, FESlowControlsChannel>(
 		    groupLinkChild.first,
 		    FESlowControlsChannel(this,
 		                          groupLinkChild.first,
 		                          groupLinkChild.second.getNode("ChannelDataType").getValue<std::string>(),
 		                          groupLinkChild.second.getNode("UniversalInterfaceAddress").getValue<std::string>(),
+								  groupLinkChild.second.getNode("Transformation").getValue<std::string>(),
 		                          groupLinkChild.second.getNode("UniversalDataBitOffset").getValue<unsigned int>(),
 		                          groupLinkChild.second.getNode("ReadAccess").getValue<bool>(),
 		                          groupLinkChild.second.getNode("WriteAccess").getValue<bool>(),
@@ -357,6 +368,19 @@ try
 				for(size_t ii = 0; ii < universalAddressSize_; ++ii)
 					val += (uint8_t)readVal[ii] << (ii * 8);
 
+				if(!channel->transformation_.empty()) { 
+
+					__FE_COUT__ << "Transformation formula = " <<channel->transformation_ << __E__;
+
+					TFormula transformationFormula("transformationFormula", (channel->transformation_).c_str());
+					double transformedVal = transformationFormula.Eval(val);
+
+					__FE_COUT__ << "Transformed " << val << " into " << transformedVal << __E__;
+					__FE_COUT__ << "Sending transformed sample to Metric Manager..." << __E__;
+
+					metricMan->sendMetric(channel->fullChannelName_, transformedVal, "", 3, artdaq::MetricMode::LastPoint);
+
+				}
 				__FE_COUT__ << "Sending sample to Metric Manager..." << __E__;
 				metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
 			}
