@@ -33,7 +33,7 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
                                              const std::string& channelName,
                                              const std::string& dataType,
                                              const std::string& universalAddress,
-											 const std::string& transformation, 
+                                             const std::string& transformation, 
                                              unsigned int       universalDataBitOffset,
                                              bool               readAccess,
                                              bool               writeAccess,
@@ -68,7 +68,7 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
     , saveBinaryFormat_(saveBinaryFormat)
     , alarmsEnabled_(alarmsEnabled)
     , latchAlarms_(latchAlarms)
-	, transformation_(transformation)
+    , transformation_(transformation)
     , lastSampleTime_(0)
     , loloAlarmed_(false)
     , loAlarmed_(false)

@@ -16,7 +16,7 @@ class FESlowControlsChannel
 	                      const std::string& channelName,
 	                      const std::string& dataType,
 	                      const std::string& universalAddress,
-						  const std::string& transformation,
+			      const std::string& transformation,
 	                      unsigned int       universalDataBitOffset,
 	                      bool               readAccess,
 	                      bool               writeAccess,
