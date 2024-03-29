@@ -149,7 +149,7 @@ void FEVInterface::addSlowControlsChannels(ConfigurationTree                    
 		                          groupLinkChild.first,
 		                          groupLinkChild.second.getNode("ChannelDataType").getValue<std::string>(),
 		                          groupLinkChild.second.getNode("UniversalInterfaceAddress").getValue<std::string>(),
-								  groupLinkChild.second.getNode("Transformation").getValue<std::string>(),
+					  groupLinkChild.second.getNode("Transformation").getValue<std::string>(),
 		                          groupLinkChild.second.getNode("UniversalDataBitOffset").getValue<unsigned int>(),
 		                          groupLinkChild.second.getNode("ReadAccess").getValue<bool>(),
 		                          groupLinkChild.second.getNode("WriteAccess").getValue<bool>(),
