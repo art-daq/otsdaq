@@ -368,26 +368,28 @@ try
 				for(size_t ii = 0; ii < universalAddressSize_; ++ii)
 					val += (uint8_t)readVal[ii] << (ii * 8);
 
-				if(!channel->transformation_.empty()) { 
-
+				if(!channel->transformation_.empty()) 
+                { 
 					__FE_COUT__ << "Transformation formula = " <<channel->transformation_ << __E__;
-
+                
 					TFormula transformationFormula("transformationFormula", (channel->transformation_).c_str());
 					double transformedVal = transformationFormula.Eval(val);
 
 					__FE_COUT__ << "Transformed " << val << " into " << transformedVal << __E__;
 					__FE_COUT__ << "Sending transformed sample to Metric Manager..." << __E__;
-
+                    
 					metricMan->sendMetric(channel->fullChannelName_, transformedVal, "", 3, artdaq::MetricMode::LastPoint);
-
-				}
-				__FE_COUT__ << "Sending sample to Metric Manager..." << __E__;
-				metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
-			}
-			else
+				} else 
+                {
+                    __FE_COUT__ << "Sending sample to Metric Manager..." << __E__;
+                    metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
+                }
+			} else 
+            { 
 				__FE_COUT__ << "Skipping sample to Metric Manager: "
 				            << " channel->monitoringEnabled_=" << channel->monitoringEnabled_ << " metricMan=" << metricMan
 				            << " metricMan->Running()=" << (metricMan && metricMan->Running()) << __E__;
+            }
 
 			// make sure buffer hasn't exploded somehow
 			if(txBuffer.size() > txBufferSz)
