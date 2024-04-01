@@ -555,6 +555,10 @@ if [ "x$MRB_BUILDDIR" != "x" ] && [ -e $OTSDAQ_UTILITIES_DIR/CMakeLists.txt ]; t
 	export OTS_SOURCE=$MRB_SOURCE
 fi
 
+if [ "x$SPACK_ENV" != x ];then
+    export OTS_SOURCE=$SPACK_ENV
+fi
+
 if [ "x$OTS_SOURCE" == "x" ]; then
     export OTS_SOURCE=$PWD
 fi
