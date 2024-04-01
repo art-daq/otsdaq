@@ -22,7 +22,7 @@ const std::string CodeEditor::SPECIAL_TYPE_Tools         = "Tools";
 const std::string CodeEditor::SPECIAL_TYPE_UserData      = "UserData";
 const std::string CodeEditor::SPECIAL_TYPE_OutputData    = "OutputData";
 
-const std::string CodeEditor::SOURCE_BASE_PATH = std::string(__ENV__("MRB_SOURCE")) + "/";
+const std::string CodeEditor::SOURCE_BASE_PATH = std::string(__ENV__("OTS_SOURCE")) + "/";
 const std::string CodeEditor::USER_DATA_PATH   = std::string(__ENV__("USER_DATA")) + "/";
 const std::string CodeEditor::OTSDAQ_DATA_PATH = std::string(__ENV__("OTSDAQ_DATA")) + "/";
 
@@ -679,7 +679,7 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn, HttpXmlDocument* /*xmlOut*/, const s
 std::map<std::string /*special type*/, std::set<std::string> /*special file paths*/> CodeEditor::getSpecialsMap(void)
 {
 	std::map<std::string /*special type*/, std::set<std::string> /*special file paths*/> retMap;
-	std::string                                                                          path = std::string(__ENV__("MRB_SOURCE"));
+	std::string                                                                          path = std::string(__ENV__("OTS_SOURCE"));
 
 	__COUTV__(path);
 
