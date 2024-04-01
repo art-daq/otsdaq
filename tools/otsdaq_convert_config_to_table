@@ -190,7 +190,7 @@ echo
 #		Convert each .cc and .h to _table.cc
 #			Search and replace class names in the .h .cc
 
-REPO_DIR="$(find $MRB_SOURCE/* -maxdepth 1 -iname 'otsdaq*')"
+REPO_DIR="$(find $OTS_SOURCE/* -maxdepth 1 -iname 'otsdaq*')"
 
 
 for p in ${REPO_DIR[@]}; do
