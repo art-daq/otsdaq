@@ -140,7 +140,7 @@ void FEVInterface::addSlowControlsChannels(ConfigurationTree                    
 		try {
 			transformation = groupLinkChild.second.getNode("Transformation").getValue<std::string>();
 		} catch (...) {
-			__FE_COUT__ << "Slow controls 'Transformation' setting found." << __E__;
+			__FE_COUT__ << "Slow controls 'Transformation' setting not found." << __E__;
 		}
 
 		mapOfSlowControlsChannels->insert(std::pair<std::string, FESlowControlsChannel>(
@@ -369,7 +369,7 @@ try
 					val += (uint8_t)readVal[ii] << (ii * 8);
 
 				// Unit transforms
-				if(!channel->transformation_.empty()) 
+				if((channel->transformation_).size() > 1) // Execute transformation if a formula is present
 				{ 
 					__FE_COUT__ << "Transformation formula = " <<channel->transformation_ << __E__;
                 
