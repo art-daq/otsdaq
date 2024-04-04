@@ -834,13 +834,13 @@ launchOTSMacromaker() {
 	#check for mm xml file, if missing download it	
 	if [ ! -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake.xml ]; then
 		out "Downloading MacroMaker mode context configuration..."
-		wget https://github.com/art-daq/otsdaq/raw/develop/data-core/XDAQConfigurations/otsConfiguration_MacroMaker_CMake.xml -P ${XDAQ_CONFIGURATION_DATA_PATH} --no-check-certificate	
+		wget -T 5 https://github.com/art-daq/otsdaq/raw/develop/data-core/XDAQConfigurations/otsConfiguration_MacroMaker_CMake.xml -P ${XDAQ_CONFIGURATION_DATA_PATH} --no-check-certificate	
 	fi
 	
 	#check for message facility file, if missing download it	
 	if [ ! -e ${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWithCout.fcl ]; then
 		out "Downloading MacroMaker mode context configuration..."
-		wget https://github.com/art-daq/otsdaq/raw/develop/data-core/MessageFacilityConfigurations/MessageFacilityWithCout.fcl -P ${USER_DATA}/MessageFacilityConfigurations --no-check-certificate
+		wget -T 5 https://github.com/art-daq/otsdaq/raw/develop/data-core/MessageFacilityConfigurations/MessageFacilityWithCout.fcl -P ${USER_DATA}/MessageFacilityConfigurations --no-check-certificate
 	fi
 	
 		

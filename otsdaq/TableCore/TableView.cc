@@ -2114,7 +2114,7 @@ int TableView::fillFromJSON(const std::string& json)
 		//if special JSON DOC table, handle construction in a special way
 		if(tableName_.substr(0,tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
 		{
-			__COUT__ << "Special JSON doc: " << json << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << "Special JSON doc: " << json << __E__;
 			setCustomStorageData(json);
 			return 0; //success
 		} //end special JSON DOC table construction
@@ -2122,6 +2122,8 @@ int TableView::fillFromJSON(const std::string& json)
 		//if special GROUP CACHE table, handle construction in a special way
 		if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend)
 		{
+			__COUT_TYPE__(TLVL_DEBUG+20) << "Group Cache JSON doc: " << json << __E__;
+
 			//remove json { } and all " characters
 			std::string jsonClean = "";
 			for(auto& c : json)

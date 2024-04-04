@@ -317,6 +317,8 @@ try
 	try
 	{
 		table_version_map_t retMap = getCachedTableGroupMembers(tableGroup);
+		__COUTV__(tableGroup);
+		__COUTV__(StringMacros::mapToString(retMap));
 
 		if(!includeMetaDataTable)
 		{
@@ -339,9 +341,8 @@ try
 	auto ifc    = db::ConfigurationInterface{default_dbprovider};
 	auto result = ifc.loadGlobalConfiguration(tableGroup);
 
-	//	for(auto &item:result)
-	//		__COUT__ << "====================>" << item.configuration << ": " <<
-	// item.version << __E__;
+	// for(auto &item:result)
+	// 	__COUT_TYPE__(TLVL_DEBUG+20) << "====================> " << item.configuration << ": " << item.version << __E__;
 
 	auto to_map = [](auto const& inputList, bool includeMetaDataTable) 
 	{
@@ -386,7 +387,8 @@ catch(...)
 }  // end getTableGroupMembers() catch
 
 //==============================================================================
-// create a new configuration group from the contents map
+// get cached Table Group members
+//	throw exception on failure or missing cache
 table_version_map_t DatabaseConfigurationInterface::getCachedTableGroupMembers(std::string const& tableGroup) const
 try
 {	
@@ -410,9 +412,21 @@ try
 	std::string groupKey = tableGroup.substr(vi+2);
 	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Getting cache for " << groupName << "(" << groupKey << ")" << __E__;
 
-
-	TableBase localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + groupName);
+	TableBase localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + groupName);	
 	TableVersion localVersion(atoi(groupKey.c_str()));
+	
+	//if filesystem db, as of April 2024, artdaq_database returned latest version when version is missing...
+	if(IS_FILESYSTEM_DB)
+	{		
+		__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "IS_FILESYSTEM_DB=true, so checking cached keys for " << groupName << "(" << groupKey << ")" << __E__;
+		std::set<TableVersion> versions = getVersions(&localGroupMemberCacheSaver);
+		if(versions.find(localVersion) == versions.end())
+		{
+			__SS__ << "Cached member table versions not found for " << groupName << "(" << groupKey << ")" << __E__;
+			__SS_THROW__;
+		}
+	}
+
 	localGroupMemberCacheSaver.changeVersionAndActivateView(
 		localGroupMemberCacheSaver.createTemporaryView(), 
 		localVersion);

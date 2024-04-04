@@ -413,7 +413,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 	//==============================================================================
 	//	-- for each group in set
 
-	ConfigurationInterface* theInterface_ = ConfigurationInterface::getInstance(false);  // true for File interface, false for artdaq database;
+	ConfigurationInterface* theInterface_ = ConfigurationInterface::getInstance(ConfigurationInterface::CONFIGURATION_MODE::ARTDAQ_DATABASE);  // true for XML-File interface, false for artdaq database;
 	TableView*              cfgView;
 	TableBase*              config;
 	TableVersion            newVersion;
