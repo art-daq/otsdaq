@@ -305,7 +305,7 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 		}
 	}
 
-	ConfigurationInterface* theInterface_ = ConfigurationInterface::getInstance(ConfigurationInterface::CONFIGURATION_MODE::ARTDAQ_DATABASE);  // true for XML-File interface, false for artdaq database;
+	ConfigurationInterface* theInterface_ = ConfigurationInterface::getInstance(ConfigurationInterface::CONFIGURATION_MODE::ARTDAQ_DATABASE);
 	TableView*              cfgView;
 	TableBase*              config;
 
