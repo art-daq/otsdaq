@@ -23,7 +23,7 @@ ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username) : Co
 {
 	__GEN_COUT__ << "Instantiating Config Manager with Write Access! (for " << username << ") time=" << time(0) << " runTimeSeconds()=" << runTimeSeconds() << __E__;
 
-	theInterface_ = ConfigurationInterface::getInstance(false);  // false to use artdaq DB
+	theInterface_ = ConfigurationInterface::getInstance(ConfigurationInterface::CONFIGURATION_MODE::ARTDAQ_DATABASE);  // false to use artdaq DB
 
 	//=========================
 	// dump names of core tables (so UpdateOTS.sh can copy core tables for user)

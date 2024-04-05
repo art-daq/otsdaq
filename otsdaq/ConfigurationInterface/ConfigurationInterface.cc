@@ -14,9 +14,9 @@ using namespace ots;
 #define DEBUG_CONFIGURATION true
 
 //==============================================================================
-ConfigurationInterface* ConfigurationInterface::theInstance_               = nullptr;
-bool                    ConfigurationInterface::theMode_                   = true;
-bool                    ConfigurationInterface::theVersionTrackingEnabled_ = true;
+ConfigurationInterface* 					ConfigurationInterface::theInstance_               = nullptr;
+ConfigurationInterface::CONFIGURATION_MODE  ConfigurationInterface::theMode_                   = ConfigurationInterface::CONFIGURATION_MODE::DO_NOT_CREATE;
+bool                    					ConfigurationInterface::theVersionTrackingEnabled_ = true;
 
 const std::string ConfigurationInterface::GROUP_METADATA_TABLE_NAME = "TableGroupMetadata";
 
@@ -24,9 +24,16 @@ const std::string ConfigurationInterface::GROUP_METADATA_TABLE_NAME = "TableGrou
 ConfigurationInterface::ConfigurationInterface() {}
 
 //==============================================================================
-ConfigurationInterface* ConfigurationInterface::getInstance(bool mode)
+ConfigurationInterface* ConfigurationInterface::getInstance(ConfigurationInterface::CONFIGURATION_MODE mode /* = DO_NOT_CREATE */)
 {
-	auto instanceType = mode ? "File" : "Database";
+	if(mode == CONFIGURATION_MODE::DO_NOT_CREATE)
+	{
+		if(theInstance_ == nullptr)
+			std::cout << __COUT_HDR_FL__ << "WARNING -- returning a nullptr ConfigurationInterface::theInstance_" << __E__;
+		return theInstance_;
+	}
+
+	auto instanceType = (mode == CONFIGURATION_MODE::XML_FILE) ? "File" : "Database";
 	if(theMode_ != mode)
 	{
 		delete theInstance_;
@@ -46,6 +53,9 @@ bool ConfigurationInterface::isVersionTrackingEnabled() { return ConfigurationIn
 
 //==============================================================================
 void ConfigurationInterface::setVersionTrackingEnabled(bool setValue) { ConfigurationInterface::theVersionTrackingEnabled_ = setValue; }
+
+//==============================================================================
+const ConfigurationInterface::CONFIGURATION_MODE& ConfigurationInterface::getMode()  { return ConfigurationInterface::theMode_; }
 
 //==============================================================================
 // saveNewVersion
