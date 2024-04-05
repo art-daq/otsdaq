@@ -54,7 +54,7 @@ TableBase::TableBase(const std::string& tableName,
 	if(tableName.substr(0,TableBase::GROUP_CACHE_PREPEND.length()) == TableBase::GROUP_CACHE_PREPEND ||
 		tableName.substr(0,TableBase::JSON_DOC_PREPEND.length()) == TableBase::JSON_DOC_PREPEND)
 	{
-		__COUT__ << "TableBase for '" << tableName << "' constructed." << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+20) << "TableBase for '" << tableName << "' constructed." << __E__;
 		return;
 	} //end special GROUP CACHE table construction
 
