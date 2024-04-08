@@ -54,7 +54,7 @@ TableBase::TableBase(const std::string& tableName,
 	if(tableName.substr(0,TableBase::GROUP_CACHE_PREPEND.length()) == TableBase::GROUP_CACHE_PREPEND ||
 		tableName.substr(0,TableBase::JSON_DOC_PREPEND.length()) == TableBase::JSON_DOC_PREPEND)
 	{
-		__COUT__ << "TableBase for '" << tableName << "' constructed." << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+20) << "TableBase for '" << tableName << "' constructed." << __E__;
 		return;
 	} //end special GROUP CACHE table construction
 
@@ -517,11 +517,11 @@ bool TableBase::diffTwoVersions(TableVersion v1, TableVersion v2,
 					foundUid2 = true;
 					break;
 				}
-			__COUT__ << "Found row ? '" << foundUid2 << " " << row << "," << row2 << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << "Found row ? '" << foundUid2 << " " << row << "," << row2 << __E__;
 			if(!foundUid2) continue; //skip view1 record because no matching record found in view2
 		}
 		
-		__COUT__ << "Found row " << " " << row << "," << row2 << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+20) << "Found row " << " " << row << "," << row2 << __E__;
 		for(unsigned int col = 0; col < cols1 - 2 && 
 			col < view2->getNumberOfColumns() - 2; ++col)  // do not consider author and timestamp
 		{
@@ -540,11 +540,11 @@ bool TableBase::diffTwoVersions(TableVersion v1, TableVersion v2,
 						break;
 					}
 				
-				__COUT__ << "Found column ? '" << foundCol2 << " " << col << "," << col2 << __E__;
+				__COUT_TYPE__(TLVL_DEBUG+20) << "Found column ? '" << foundCol2 << " " << col << "," << col2 << __E__;
 				if(!foundCol2) continue; //skip view1 column because no matching column name was found in view2
 			}
 
-			__COUT__ << "Found column " << " " << col << "," << col2 << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << "Found column " << " " << col << "," << col2 << __E__;
 			if(view1->getDataView()[row][col] != view2->getDataView()[row2][col2])
 			{
 				__COUT__ << "Found column value mismatch for '" << row << "," << col << " " << 

@@ -104,13 +104,13 @@ catch(...)
 // safePathString
 std::string CodeEditor::safePathString(const std::string& path)
 {
-	__COUTV__(path);
+	__COUTVS__(20,path);
 	// remove all non ascii and non /, -, _,, space
 	std::string fullpath = "";
 	for(unsigned int i = 0; i < path.length(); ++i)
 		if((path[i] >= 'a' && path[i] <= 'z') || (path[i] >= 'A' && path[i] <= 'Z') || path[i] >= '_' || path[i] >= '-' || path[i] >= ' ' || path[i] >= '/')
 			fullpath += path[i];
-	__COUTV__(fullpath);
+	__COUTVS__(20,fullpath);
 	if(!fullpath.length())
 	{
 		__SS__ << "Invalid path '" << fullpath << "' found!" << __E__;
@@ -158,7 +158,7 @@ void CodeEditor::getDirectoryContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOu
 {
 	std::string path = CgiDataUtilities::getData(cgiIn, "path");
 	path             = safePathString(StringMacros::decodeURIComponent(path));
-	__COUTV__(path);
+ 	__COUTV__(path);
 	__COUTV__(CodeEditor::SOURCE_BASE_PATH);
 
 	xmlOut->addTextElementToData("path", path);
@@ -331,7 +331,7 @@ void CodeEditor::getPathContent(const std::string& basepath, const std::string& 
 				}
 				catch(...)
 				{
-					__COUT__ << "Invalid file extension, skipping '" << name << "' ..." << __E__;
+					__COUT_TYPE__(TLVL_DEBUG+20) << "Invalid file extension, skipping '" << name << "' ..." << __E__;
 				}
 			}
 		}

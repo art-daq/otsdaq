@@ -93,7 +93,7 @@ TableView& TableView::copy(const TableView& src, TableVersion destinationVersion
 	if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend ||
 		tableName_.substr(0,tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
 	{
-		__COUT__ << "TableView copy for '" << tableName_ << "' done." << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+20) << "TableView copy for '" << tableName_ << "' done." << __E__;
 		return *this;
 	} //end special GROUP CACHE table construction
 
@@ -706,16 +706,20 @@ void TableView::init(void)
 						getValue(valueFromTable, row, col);
 						if(minExists && valueFromTable < minimumValue)
 						{
-							__SS__ << "The value '" << valueFromTable << "' at [row,col]=[" << row << "," << col
-							       << "] is outside the established limits: " << valueFromTable << " is lower than the specified minimum " << minimumValue
-							       << "." << __E__;
+							__SS__ << "The value '" << valueFromTable << "'(" << 
+								getValueAsString(row,col,false /* convertEnvironmentVariables */) <<
+								") at [row,col]=[" << row << "," << col
+								<< "] is outside the established limits: " << valueFromTable << " is lower than the specified minimum " << minimumValue
+								<< "." << __E__;
 							__SS_THROW__;
 						}
 						if(maxExists && valueFromTable > maximumValue)
 						{
-							__SS__ << "This value '" << valueFromTable << "' at [row,col]=[" << row << "," << col
-							       << "] is outside the established limits: " << valueFromTable << " is greater than the specified maximum " << maximumValue
-							       << "." << __E__;
+							__SS__ << "This value '" << valueFromTable << "'(" << 
+								getValueAsString(row,col,false /* convertEnvironmentVariables */) <<
+								") at [row,col]=[" << row << "," << col
+								<< "] is outside the established limits: " << valueFromTable << " is greater than the specified maximum " << maximumValue
+								<< "." << __E__;
 							__SS_THROW__;
 						}
 					}
@@ -2114,7 +2118,7 @@ int TableView::fillFromJSON(const std::string& json)
 		//if special JSON DOC table, handle construction in a special way
 		if(tableName_.substr(0,tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
 		{
-			__COUT__ << "Special JSON doc: " << json << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << "Special JSON doc: " << json << __E__;
 			setCustomStorageData(json);
 			return 0; //success
 		} //end special JSON DOC table construction
@@ -2122,6 +2126,8 @@ int TableView::fillFromJSON(const std::string& json)
 		//if special GROUP CACHE table, handle construction in a special way
 		if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend)
 		{
+			__COUT_TYPE__(TLVL_DEBUG+20) << "Group Cache JSON doc: " << json << __E__;
+
 			//remove json { } and all " characters
 			std::string jsonClean = "";
 			for(auto& c : json)
@@ -2886,7 +2892,7 @@ int TableView::fillFromCSV(const std::string& data, const int& dataOffset, const
 		// if row was modified, assign author and timestamp
 		if(author != "" && rowWasModified)
 		{
-			__COUT__ << "Row=" << (int)r << " was modified!" << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << "Row=" << (int)r << " was modified!" << __E__;
 			setValue(author, r, authorCol);
 			setValue(time(0), r, timestampCol);
 		}
