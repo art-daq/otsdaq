@@ -31,6 +31,7 @@ version.cc
 		 otsdaq::CgiDataUtilities
 		 otsdaq::ARTDAQTableBase
 		 otsdaq::ARTDAQDataManager
+		 xgi # From XDAQ
         )
 
 install_headers()
