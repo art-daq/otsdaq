@@ -22,6 +22,7 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 	    , interfaceUID_(interfaceUID)
 	    , interfaceType_(interfaceType)
 	    , mfSubject_("controls-" + interfaceType_ + "-" + interfaceUID_)
+		, newAlarmCallback_(nullptr)
 	{
 		// inheriting children classes should use __GEN_COUT_*
 		//	for decorations using mfSubject.
@@ -60,10 +61,13 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 	// States
 	virtual bool 										running(void) override { return false; } //This is a workloop/thread, by default do nothing and end thread during running (Note: return true would repeat call)
 
+    void setNewAlarmCallback(std::function<void()> callback) {newAlarmCallback_ = callback; }
+
   protected:
 	const std::string interfaceUID_;
 	const std::string interfaceType_;
 	const std::string mfSubject_;
+	std::function<void()> newAlarmCallback_;
 };
 // clang-format on
 }  // namespace ots
