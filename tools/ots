@@ -556,6 +556,10 @@ if [ "x$OTSDAQ_DEMO_DIR" == "x" ]; then
     export OTSDAQ_DEMO_DIR=$OTSDAQDEMO_BUILD
 fi
 
+if [ "x$USER_SCRIPT_PATH" == "x" ]; then
+    export USER_SCRIPT_PATH=${OTSDAQ_DEMO_DIR}/UserScripts
+fi
+
 if [ "x$USER_WEB_PATH" == "x" ]; then  #setup the location for user web-apps
     export USER_WEB_PATH=$OTSDAQ_DEMO_DIR/UserWebGUI 
 fi
