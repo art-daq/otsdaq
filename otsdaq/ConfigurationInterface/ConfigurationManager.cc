@@ -102,7 +102,7 @@ ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/, b
     , groupMetadataTable_(true /*special table*/, ConfigurationInterface::GROUP_METADATA_TABLE_NAME)
 {
 	__GEN_COUTV__(runTimeSeconds());
-	theInterface_ = ConfigurationInterface::getInstance(false);  // false to use artdaq DB
+	theInterface_ = ConfigurationInterface::getInstance(ConfigurationInterface::CONFIGURATION_MODE::ARTDAQ_DATABASE);  // false to use artdaq DB
 
 	__GEN_COUTV__(runTimeSeconds());
 
@@ -1385,6 +1385,8 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 		*groupCreateTime = ConfigurationManager::UNKNOWN_TIME;
 	if(groupTypeString)
 		*groupTypeString = ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN;
+	else
+		__GEN_COUT_TYPE__(TLVL_DEBUG+20) << "No group type requested." << __E__;
 
 	//	if(groupName == "defaultConfig")
 	//	{ //debug active versions
@@ -1411,8 +1413,8 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 	//		set theConfigurationTableGroup_, theContextTableGroup_, or
 	// theBackboneTableGroup_ on success
 
-	//	__GEN_COUT_INFO__ << "Loading Table Group: " << groupName <<
-	//			"(" << groupKey << ")" << __E__;
+	__GEN_COUT_TYPE__(TLVL_DEBUG+20) << "Loading Table Group: " << groupName <<
+			"(" << groupKey << ")" << __E__;
 
 	//failing member map load should be an exception!
 	
@@ -1550,6 +1552,8 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 				groupType        = getTypeOfGroup(memberMap);
 				*groupTypeString = convertGroupTypeToName(groupType);
 			}
+			else
+				__GEN_COUT_TYPE__(TLVL_DEBUG+20) << "No group type requested." << __E__;
 
 			if(doNotLoadMembers)
 				return;  //this is useful if just getting group metadata

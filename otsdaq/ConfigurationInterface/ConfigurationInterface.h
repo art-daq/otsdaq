@@ -29,7 +29,14 @@ protected:
 public:
 	virtual ~ConfigurationInterface() { ; }
 
-	static ConfigurationInterface* 			getInstance						(bool mode);
+	enum class CONFIGURATION_MODE 
+	{
+		DO_NOT_CREATE,
+		XML_FILE,
+		ARTDAQ_DATABASE
+	};
+
+	static ConfigurationInterface* 			getInstance						(CONFIGURATION_MODE mode = CONFIGURATION_MODE::DO_NOT_CREATE);
 	static bool                    			isVersionTrackingEnabled		(void);
 	static void                    			setVersionTrackingEnabled		(bool setValue);
 
@@ -39,7 +46,7 @@ public:
 	#include "otsdaq/ConfigurationInterface/ConfigurationInterface.icc"  	//define ConfigurationInterface::get() source code
 	virtual std::set<std::string /*name*/> 	getAllTableNames				(void) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getAllTableNames in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
 	virtual std::set<TableVersion> 			getVersions						(const TableBase* configuration) const = 0;
-	const bool&                    			getMode							(void) const { return theMode_; }
+	static const CONFIGURATION_MODE&		getMode							(void);
 	TableVersion                   			saveNewVersion					(TableBase*   configuration, TableVersion temporaryVersion, TableVersion newVersion = TableVersion());
 
 	// group handling
@@ -72,7 +79,7 @@ protected:
 
 private:
 	static ConfigurationInterface* 			theInstance_;
-	static bool                    			theMode_;  						// 1 is FILE, 0 is artdaq-DB
+	static CONFIGURATION_MODE     			theMode_;  				
 	static bool								theVersionTrackingEnabled_;  	// tracking versions 1 is enabled, 0 is disabled
 
 	std::mutex								tableReaderMutex_;
