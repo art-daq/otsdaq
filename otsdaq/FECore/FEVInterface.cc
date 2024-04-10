@@ -376,10 +376,16 @@ try
 					TFormula transformationFormula("transformationFormula", (channel->transformation_).c_str());
 					double transformedVal = transformationFormula.Eval(val);
 
-					__FE_COUT__ << "Transformed " << val << " into " << transformedVal << __E__;
-					__FE_COUT__ << "Sending transformed sample to Metric Manager..." << __E__;
-                    
-					metricMan->sendMetric(channel->fullChannelName_, transformedVal, "", 3, artdaq::MetricMode::LastPoint);
+					if(!std::isnan(transformedVal)) 
+					{
+						__FE_COUT__ << "Transformed " << val << " into " << transformedVal << __E__;
+						__FE_COUT__ << "Sending transformed sample to Metric Manager..." << __E__;
+						metricMan->sendMetric(channel->fullChannelName_, transformedVal, "", 3, artdaq::MetricMode::LastPoint);
+					}
+					else
+					{
+						__FE_COUT_ERR__ << "Transformed value is NaN!" << __E__;
+					}
 				} 
 				else 
 				{
