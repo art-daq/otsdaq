@@ -384,7 +384,8 @@ try
 					}
 					else
 					{
-						__FE_COUT_ERR__ << "Transformed value is NaN!" << __E__;
+						__FE_SS__ << "Transformed value is NaN!" << __E__; 
+						__FE_SS_THROW__;
 					}
 				} 
 				else 
