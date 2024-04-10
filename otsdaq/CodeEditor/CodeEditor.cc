@@ -22,7 +22,7 @@ const std::string CodeEditor::SPECIAL_TYPE_Tools         = "Tools";
 const std::string CodeEditor::SPECIAL_TYPE_UserData      = "UserData";
 const std::string CodeEditor::SPECIAL_TYPE_OutputData    = "OutputData";
 
-const std::string CodeEditor::SOURCE_BASE_PATH = std::string(__ENV__("MRB_SOURCE")) + "/";
+const std::string CodeEditor::SOURCE_BASE_PATH = std::string(__ENV__("OTS_SOURCE")) + "/";
 const std::string CodeEditor::USER_DATA_PATH   = std::string(__ENV__("USER_DATA")) + "/";
 const std::string CodeEditor::OTSDAQ_DATA_PATH = std::string(__ENV__("OTSDAQ_DATA")) + "/";
 
@@ -104,13 +104,13 @@ catch(...)
 // safePathString
 std::string CodeEditor::safePathString(const std::string& path)
 {
-	__COUTV__(path);
+	__COUTVS__(20,path);
 	// remove all non ascii and non /, -, _,, space
 	std::string fullpath = "";
 	for(unsigned int i = 0; i < path.length(); ++i)
 		if((path[i] >= 'a' && path[i] <= 'z') || (path[i] >= 'A' && path[i] <= 'Z') || path[i] >= '_' || path[i] >= '-' || path[i] >= ' ' || path[i] >= '/')
 			fullpath += path[i];
-	__COUTV__(fullpath);
+	__COUTVS__(20,fullpath);
 	if(!fullpath.length())
 	{
 		__SS__ << "Invalid path '" << fullpath << "' found!" << __E__;
@@ -158,7 +158,7 @@ void CodeEditor::getDirectoryContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOu
 {
 	std::string path = CgiDataUtilities::getData(cgiIn, "path");
 	path             = safePathString(StringMacros::decodeURIComponent(path));
-	__COUTV__(path);
+ 	__COUTV__(path);
 	__COUTV__(CodeEditor::SOURCE_BASE_PATH);
 
 	xmlOut->addTextElementToData("path", path);
@@ -331,7 +331,7 @@ void CodeEditor::getPathContent(const std::string& basepath, const std::string& 
 				}
 				catch(...)
 				{
-					__COUT__ << "Invalid file extension, skipping '" << name << "' ..." << __E__;
+					__COUT_TYPE__(TLVL_DEBUG+20) << "Invalid file extension, skipping '" << name << "' ..." << __E__;
 				}
 			}
 		}
@@ -679,7 +679,7 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn, HttpXmlDocument* /*xmlOut*/, const s
 std::map<std::string /*special type*/, std::set<std::string> /*special file paths*/> CodeEditor::getSpecialsMap(void)
 {
 	std::map<std::string /*special type*/, std::set<std::string> /*special file paths*/> retMap;
-	std::string                                                                          path = std::string(__ENV__("MRB_SOURCE"));
+	std::string                                                                          path = std::string(__ENV__("OTS_SOURCE"));
 
 	__COUTV__(path);
 
