@@ -404,7 +404,7 @@ void FESlowControlsChannel::convertStringToBuffer(const std::string& inString, s
 //==============================================================================
 // handleSample
 //	adds to txBuffer if sample should be sent to monitor server
-void FESlowControlsChannel::handleSample(const std::string& universalReadValue, std::string& txBuffer, FILE* fpAggregate, bool aggregateIsBinaryFormat)
+void FESlowControlsChannel::handleSample(const std::string& universalReadValue, std::string& txBuffer, FILE* fpAggregate, bool aggregateIsBinaryFormat, bool txBufferUsed)
 {
 	// __GEN_COUT__ << "txBuffer size=" << txBuffer.size() << __E__;
 
@@ -449,7 +449,7 @@ void FESlowControlsChannel::handleSample(const std::string& universalReadValue, 
 	/////////////////////////////////////////////
 	/////////////////////////////////////////////
 	/////////////////////////////////////////////
-	if(monitoringEnabled_)
+	if(monitoringEnabled_ && txBufferUsed)
 	{
 		// create value packet:
 		//  1B type (0: value, 1: loloalarm, 2: loalarm, 3: hioalarm, 4: hihialarm)
@@ -495,7 +495,7 @@ void FESlowControlsChannel::handleSample(const std::string& universalReadValue, 
 	}
 
 	// check alarms
-	if(alarmsEnabled_)
+	if(alarmsEnabled_ && txBufferUsed)
 		alarmMask = checkAlarms(txBuffer);
 
 	// create array helper for saving
