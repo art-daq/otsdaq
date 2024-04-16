@@ -4145,7 +4145,7 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 				xmlOut.addTextElementToData("transition_progress", "100");
 
 			// char tmp[20]; old size before adding db run number
-			char tmp[30];
+			char tmp[50]; // for a 6 digits run number from the DB, this needs to be at least 34
 			sprintf(tmp, "%lu", theStateMachine_.getTimeInState());
 			xmlOut.addTextElementToData("time_in_state", tmp);
 
