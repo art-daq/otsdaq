@@ -140,7 +140,7 @@ void FEVInterface::addSlowControlsChannels(ConfigurationTree                    
 		try {
 			transformation = groupLinkChild.second.getNode("Transformation").getValue<std::string>();
 		} catch (...) {
-			__FE_COUT__ << "Slow controls 'Transformation' setting found." << __E__;
+			__FE_COUT__ << "Slow controls 'Transformation' setting not found." << __E__;
 		}
 
 		mapOfSlowControlsChannels->insert(std::pair<std::string, FESlowControlsChannel>(
@@ -371,17 +371,24 @@ try
 					val += (uint8_t)readVal[ii] << (ii * 8);
 
 				// Unit transforms
-				if(!channel->transformation_.empty()) 
+				if((channel->transformation_).size() > 1) // Execute transformation if a formula is present
 				{ 
 					__FE_COUT__ << "Transformation formula = " <<channel->transformation_ << __E__;
                 
 					TFormula transformationFormula("transformationFormula", (channel->transformation_).c_str());
 					double transformedVal = transformationFormula.Eval(val);
 
-					__FE_COUT__ << "Transformed " << val << " into " << transformedVal << __E__;
-					__FE_COUT__ << "Sending transformed sample to Metric Manager..." << __E__;
-                    
-					metricMan->sendMetric(channel->fullChannelName_, transformedVal, "", 3, artdaq::MetricMode::LastPoint);
+					if(!std::isnan(transformedVal)) 
+					{
+						__FE_COUT__ << "Transformed " << val << " into " << transformedVal << __E__;
+						__FE_COUT__ << "Sending transformed sample to Metric Manager..." << __E__;
+						metricMan->sendMetric(channel->fullChannelName_, transformedVal, "", 3, artdaq::MetricMode::LastPoint);
+					}
+					else
+					{
+						__FE_SS__ << "Transformed value is NaN!" << __E__; 
+						__FE_SS_THROW__;
+					}
 				} 
 				else 
 				{
