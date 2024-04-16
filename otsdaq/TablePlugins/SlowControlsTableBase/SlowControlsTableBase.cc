@@ -139,6 +139,7 @@ unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&      
 
 			if(first)  // if first, output header
 			{
+				// TODO: add zero alarm severity and hysteresis
 				first = false;
 				OUT << "file \"dbt/subst_ai.dbt\" {" << __E__;
 				PUSHTAB;
