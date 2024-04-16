@@ -239,13 +239,15 @@ try
 	{
 		__FE_COUT__ << "Link to slow controls supervisor is missing, so no socket made." << __E__;
 	}
-
+    
+	bool txBufferUsed = false;
 	if(slowControlsSupervisorPort && slowControlsSelfPort && slowControlsSupervisorIPAddress != "" && slowControlsSelfIPAddress != "")
 	{
 		__FE_COUT__ << "slowControlsInterfaceLink is valid! Create tx socket..." << __E__;
 		slowContrlolsTxSocket.reset(
 		    new UDPDataStreamerBase(slowControlsSelfIPAddress, slowControlsSelfPort, slowControlsSupervisorIPAddress, slowControlsSupervisorPort));
-	}
+			txBufferUsed = true;
+	} 
 	else
 	{
 		__FE_COUT__ << "Invalid Slow Controls socket parameters, so no socket made." << __E__;
@@ -354,7 +356,7 @@ try
 				channel->getSample(readVal);
 
 			// have sample
-			channel->handleSample(readVal, txBuffer, fp, aggregateFileIsBinaryFormat);
+			channel->handleSample(readVal, txBuffer, fp, aggregateFileIsBinaryFormat, txBufferUsed);
 			__FE_COUT__ << "Have: " << BinaryStringMacros::binaryNumberToHexString(channel->universalReadValue_, "0x", " ") << " at t=" << time(0) << __E__;					
 
 			if(txBuffer.size())
@@ -406,6 +408,10 @@ try
 			{
 				__FE_SS__ << "This should never happen hopefully!" << __E__;
 				__FE_SS_THROW__;
+			}
+			// if we don't have a socket, no need for txBuffer, should already be handled by 
+			if(!slowContrlolsTxSocket && txBufferUsed) {
+				txBuffer.resize(0);
 			}
 
 			// send early if threshold reached

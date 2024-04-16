@@ -81,6 +81,7 @@ void CoreSupervisorBase::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
 void CoreSupervisorBase::requestWrapper(xgi::Input* in, xgi::Output* out)
 try
 {
+	out->getHTTPResponseHeader().addHeader("Access-Control-Allow-Origin", "*");  // to avoid block by blocked by CORS policy of browser
 	cgicc::Cgicc cgiIn(in);
 	std::string  requestType = CgiDataUtilities::getData(cgiIn, "RequestType");
 
