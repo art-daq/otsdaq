@@ -167,7 +167,7 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
 
 	__GEN_COUTV__(sizeOfReadBytes_);
 	__GEN_COUTV__(interface->getUniversalDataSize());
-	if(sizeOfReadBytes_ > interface->getUniversalDataSize() && !interface->universalBlockReadImplementationConfirmed_)
+	if(sizeOfReadBytes_ > interface->getUniversalDataSize() && !interface->universalBlockReadImplementationConfirmed)
 	{
 		//check if FE supports Block Reads by using a test read (because the compiler does not allow this preferrable code attempt below...)
 		// if(interface->*(&FEVInterface::universalBlockRead) != (&FEVInterface::universalBlockRead))
@@ -197,7 +197,7 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
 			    __GEN_COUT_WARN__ << "Ignoring test block read error - assuming FE not setup yet - here is the caught exception:\n" << e.what() << __E__;
 		}
 		__GEN_COUT__ << "Block read was found to be implemented!" << __E__;
-		interface->universalBlockReadImplementationConfirmed_ = true; //set to avoid more tests of block read functionality
+		interface->universalBlockReadImplementationConfirmed = true; //set to avoid more tests of block read functionality
 	}
 
 	
