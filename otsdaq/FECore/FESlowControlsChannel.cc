@@ -168,7 +168,7 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
 
 	__GEN_COUTV__(sizeOfReadBytes_);
 	__GEN_COUTV__(interface->getUniversalDataSize());
-	if(sizeOfReadBytes_ > interface->getUniversalDataSize())
+	if(sizeOfReadBytes_ > interface->getUniversalDataSize() && !interface->universalBlockReadConfirmed_)
 	{
 		//check if FE supports Block Reads by using a test read (because the compiler does not allow this)
 		// if(interface->*(&FEVInterface::universalBlockRead) != (&FEVInterface::universalBlockRead))
@@ -194,9 +194,11 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
 				__GEN_COUT_ERR__ << "\n" << ss.str();
 				__GEN_SS_THROW__;
 			}
-			// else ignore  error for test read (assume things are not setup yet)
+			else // else ignore  error for test read (assume things are not setup yet)
+			         __GEN_COUT_WARN__ << "Ignoring test block read error - assuming FE not setup yet - here is the caught exception:\n" << e.what() << __E__;
 		}
 		__GEN_COUT__ << "Block read was found to be implemented!" << __E__;
+		interface->universalBlockReadConfirmed_ = true; //set to avoid more tests of block read functionality
 	}
 
 	
@@ -264,7 +266,7 @@ FESlowControlsChannel::~FESlowControlsChannel(void) {}
 
 //==============================================================================
 // virtual in case read should be different than universalread
-void FESlowControlsChannel::getSample(std::string& readValue)
+void FESlowControlsChannel::doRead(std::string& readValue)
 {
 	if(getReadSizeBytes() > interface_->getUniversalDataSize())
 	{
@@ -277,6 +279,17 @@ void FESlowControlsChannel::getSample(std::string& readValue)
 		readValue.resize(interface_->getUniversalDataSize());
 		interface_->universalRead(&universalAddress_[0], &readValue[0]);
 	}
+}  // end doRead()
+
+
+
+//==============================================================================
+// virtual in case read should be different than universalread
+const std::string & FESlowControlsChannel::getSample()
+{
+	
+  return sample_;
+
 }  // end getSample()
 
 //==============================================================================

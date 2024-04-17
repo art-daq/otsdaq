@@ -327,12 +327,13 @@ try
 			bool usingBufferedValue = false;
 			while((channelToCopy = getNextSlowControlsChannel()) != channel)
 			{
-				__FE_COUT__ << "Looking for buffered value at " << 					
+			        __FE_COUT_TYPE__(TLVL_DEBUG+8) << "Looking for buffered value at " << 					
 					BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") << " "  << 
 					channelToCopy->getReadSizeBytes() << " " <<
 					time(0) - channelToCopy->getLastSampleTime() << __E__;
 
-				if(BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") == 
+				if(!usingBufferedValue  &&
+				        BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") == 
 					BinaryStringMacros::binaryNumberToHexString(channel->universalAddress_,  "0x", " ") && 
 					channelToCopy->getReadSizeBytes() == channel->getReadSizeBytes() && 
 					time(0) - channelToCopy->getLastSampleTime() < 2 /* within 2 seconds, then re-use buffer */)
@@ -351,11 +352,11 @@ try
 			}
 
 			if(!usingBufferedValue)
-				channel->getSample(readVal);
+				channel->doRead(readVal);
 
 			// have sample
 			channel->handleSample(readVal, txBuffer, fp, aggregateFileIsBinaryFormat);
-			__FE_COUT__ << "Have: " << BinaryStringMacros::binaryNumberToHexString(channel->universalReadValue_, "0x", " ") << " at t=" << time(0) << __E__;					
+			__FE_COUT__ << "Have: " << BinaryStringMacros::binaryNumberToHexString(channel->getSample(), "0x", " ") << " at t=" << time(0) << __E__;					
 
 			if(txBuffer.size())
 				__FE_COUT__ << "txBuffer sz=" << txBuffer.size() << __E__;
@@ -365,8 +366,8 @@ try
 			if(channel->monitoringEnabled_ && metricMan && metricMan->Running() && universalAddressSize_ <= 8) 
 			{
 				uint64_t val = 0;  // 64 bits!
-				for(size_t ii = 0; ii < universalAddressSize_; ++ii)
-					val += (uint8_t)readVal[ii] << (ii * 8);
+				for(size_t ii = 0; ii < channel->getSample().size(); ++ii)
+					val += (uint8_t)channel->getSample()[ii] << (ii * 8);
 
 				// Unit transforms
 				if((channel->transformation_).size() > 1) // Execute transformation if a formula is present
@@ -379,7 +380,7 @@ try
 					if(!std::isnan(transformedVal)) 
 					{
 						__FE_COUT__ << "Transformed " << val << " into " << transformedVal << __E__;
-						__FE_COUT__ << "Sending transformed sample to Metric Manager..." << __E__;
+						__FE_COUT__ << "Sending \"" << channel->fullChannelName_ << "\" transformed sample to Metric Manager..." << __E__;
 						metricMan->sendMetric(channel->fullChannelName_, transformedVal, "", 3, artdaq::MetricMode::LastPoint);
 					}
 					else
@@ -390,13 +391,13 @@ try
 				} 
 				else 
 				{
-					__FE_COUT__ << "Sending sample to Metric Manager..." << __E__;
+					__FE_COUT__ << "Sending \"" << channel->fullChannelName_ << "\" sample to Metric Manager..." << __E__;					
 					metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
 				}
 			} 
 			else 
 			{ 
-				__FE_COUT__ << "Skipping sample to Metric Manager: "
+      			        __FE_COUT__ << "Skipping  \"" << channel->fullChannelName_ << "\" sample to Metric Manager... "
 				            << " channel->monitoringEnabled_=" << channel->monitoringEnabled_ << " metricMan=" << metricMan
 				            << " metricMan->Running()=" << (metricMan && metricMan->Running()) << __E__;
 			}

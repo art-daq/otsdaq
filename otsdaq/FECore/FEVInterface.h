@@ -82,7 +82,8 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	const unsigned int& 				getUniversalDataSize		(void) { return universalDataSize_; }
 	virtual void 						universalBlockRead			(char* address, char* returnValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK READ"); /* to make compiler happy, use params */ __COUTV__((void*)address); __COUTV__((void*)returnValue); __COUTV__(numberOfBytes); }
 	virtual void        				universalBlockWrite			(char* address, char* writeValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK WRITE"); /* to make compiler happy, use params */ __COUTV__((void*)address); __COUTV__((void*)writeValue); __COUTV__(numberOfBytes); }
-	
+	bool universalBlockReadConfirmed_ = false; //will be confirmed by slow controls handling that universalBlockWrite is implemented by the FE plugin
+
 	void 								runSequenceOfCommands		(const std::string& treeLinkName);
 
 	static void 						sendAsyncExceptionToGateway		(FEVInterface* fe, const std::string& errMsg, bool isPauseException, bool isStopException);
