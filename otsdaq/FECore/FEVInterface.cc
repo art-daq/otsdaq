@@ -327,19 +327,18 @@ try
 			bool usingBufferedValue = false;
 			while((channelToCopy = getNextSlowControlsChannel()) != channel)
 			{
-			        __FE_COUT_TYPE__(TLVL_DEBUG+8) << "Looking for buffered value at " << 					
+			    __FE_COUT_TYPE__(TLVL_DEBUG+8) << "Looking for buffered value at " << 					
 					BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") << " "  << 
 					channelToCopy->getReadSizeBytes() << " " <<
 					time(0) - channelToCopy->getLastSampleTime() << __E__;
 
-				if(!usingBufferedValue  &&
-				        BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") == 
+				if(!usingBufferedValue && 	
+					BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") == 
 					BinaryStringMacros::binaryNumberToHexString(channel->universalAddress_,  "0x", " ") && 
 					channelToCopy->getReadSizeBytes() == channel->getReadSizeBytes() && 
 					time(0) - channelToCopy->getLastSampleTime() < 2 /* within 2 seconds, then re-use buffer */)
 				{
 					usingBufferedValue = true;
-					//can NOT break;... must take iterator back to channel
 					__FE_COUT__ << "Using buffered " << channelToCopy->getReadSizeBytes() << 
 						"-byte value at address:" << 
 						BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") << __E__;
@@ -348,8 +347,10 @@ try
 						" at t=" << time(0) << __E__;
 					readVal = channelToCopy->universalReadValue_; //copy by reference
 					__FE_COUT__ << "Copied: " << BinaryStringMacros::binaryNumberToHexString(readVal, "0x", " ") << " at t=" << time(0) << __E__;
+
+					//can NOT break; from while loop... must take iterator back to starting point channel iterator
 				}
-			}
+			} //end while loop
 
 			if(!usingBufferedValue)
 				channel->doRead(readVal);
@@ -397,9 +398,9 @@ try
 			} 
 			else 
 			{ 
-      			        __FE_COUT__ << "Skipping  \"" << channel->fullChannelName_ << "\" sample to Metric Manager... "
-				            << " channel->monitoringEnabled_=" << channel->monitoringEnabled_ << " metricMan=" << metricMan
-				            << " metricMan->Running()=" << (metricMan && metricMan->Running()) << __E__;
+				__FE_COUT__ << "Skipping  \"" << channel->fullChannelName_ << "\" sample to Metric Manager... "
+					<< " channel->monitoringEnabled_=" << channel->monitoringEnabled_ << " metricMan=" << metricMan
+					<< " metricMan->Running()=" << (metricMan && metricMan->Running()) << __E__;
 			}
 
 			// make sure buffer hasn't exploded somehow
