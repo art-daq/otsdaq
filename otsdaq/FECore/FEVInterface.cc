@@ -243,7 +243,7 @@ try
 		__FE_COUT__ << "slowControlsInterfaceLink is valid! Create tx socket..." << __E__;
 		slowContrlolsTxSocket.reset(
 		    new UDPDataStreamerBase(slowControlsSelfIPAddress, slowControlsSelfPort, slowControlsSupervisorIPAddress, slowControlsSupervisorPort));
-			txBufferUsed = true;
+		txBufferUsed = true;
 	} 
 	else
 	{
@@ -413,9 +413,8 @@ try
 				__FE_SS_THROW__;
 			}
 			// if we don't have a socket, no need for txBuffer, should already be handled by 
-			if(!slowContrlolsTxSocket && txBufferUsed) {
+			if(!slowContrlolsTxSocket && txBufferUsed)
 				txBuffer.resize(0);
-			}
 
 			// send early if threshold reached
 			if(slowContrlolsTxSocket && txBuffer.size() > txBufferFullThreshold)
