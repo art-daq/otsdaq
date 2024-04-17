@@ -44,7 +44,7 @@ class FESlowControlsChannel
 	time_t					getLastSampleTime 			() const { return lastSampleTime_; }
 	void					doRead						(std::string& readValue);	
 	const std::string&     	getSample                	() const { return sample_; }
-	void  					handleSample				(const std::string& universalReadValue, std::string& txBuffer, FILE* fpAggregate = 0, bool aggregateIsBinaryFormat = false);
+	void  					handleSample				(const std::string& universalReadValue, std::string& txBuffer, FILE* fpAggregate = 0, bool aggregateIsBinaryFormat = false, bool txBufferUsed = true);
 	const std::string&		getLastSampleReadValue		() const { return universalReadValue_; };	
 	void  					clearAlarms					(int targetAlarm = -1);  // default to all
 
