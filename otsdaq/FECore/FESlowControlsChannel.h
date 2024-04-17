@@ -16,7 +16,7 @@ class FESlowControlsChannel
 	                      const std::string& channelName,
 	                      const std::string& dataType,
 	                      const std::string& universalAddress,
-			      const std::string& transformation,
+			     		  const std::string& transformation,
 	                      unsigned int       universalDataBitOffset,
 	                      bool               readAccess,
 	                      bool               writeAccess,
@@ -41,8 +41,8 @@ class FESlowControlsChannel
 
 	unsigned int			getReadSizeBytes 			() const { return sizeOfReadBytes_; }
 	time_t					getLastSampleTime 			() const { return lastSampleTime_; }
-	void					doRead					(std::string& readValue);	
-	const std::string &     getSample                ();
+	void					doRead						(std::string& readValue);	
+	const std::string &     getSample                	() const { return sample_; }
 	void  					handleSample				(const std::string& universalReadValue, std::string& txBuffer, FILE* fpAggregate = 0, bool aggregateIsBinaryFormat = false);
 	void  					clearAlarms					(int targetAlarm = -1);  // default to all
 
