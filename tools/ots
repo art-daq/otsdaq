@@ -616,7 +616,7 @@ fi
 #check for new Slow Controls context table
 if [ ! -e ${USER_DATA}/TableInfo/SlowControlsDashboardSupervisorTableInfo.xml ]; then
 	#if missing, attempt to copy
-	cp ${MRB_SOURCE}/otsdaq/data-core/TableInfo/ContextGroup/SlowControlsDashboardSupervisorTableInfo.xml ${USER_DATA}/TableInfo/
+	cp ${OTS_SOURCE}/otsdaq/data-core/TableInfo/ContextGroup/SlowControlsDashboardSupervisorTableInfo.xml ${USER_DATA}/TableInfo/
 fi
 
 #print out important environment variables
