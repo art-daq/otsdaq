@@ -397,7 +397,7 @@ void FESlowControlsChannel::convertStringToBuffer(const std::string& inString, s
 	for(; i < buffer.size(); ++i)
 		buffer[i] = 0;
 
-	__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Resulting Number Buffer: " << BinaryStringMacros::binaryNumberToHexString(buffer, "0x", " ") << __E__;
+	__COUTT__ << "Resulting Number Buffer: " << BinaryStringMacros::binaryNumberToHexString(buffer, "0x", " ") << __E__;
 }  // end convertStringToBuffer()
 
 //==============================================================================
