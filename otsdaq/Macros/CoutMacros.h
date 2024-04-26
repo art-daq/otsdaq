@@ -106,6 +106,7 @@
 #define __CFG_COUT_WARN__ 		__CFG_COUT_TYPE__(TLVL_WARNING) << __COUT_HDR__
 #define __CFG_COUT_INFO__ 		__CFG_COUT_TYPE__(TLVL_INFO) 	<< __COUT_HDR__
 #define __CFG_COUT__ 			__CFG_COUT_TYPE__(TLVL_DEBUG) 	<< __COUT_HDR__
+#define __CFG_COUTT__ 			__CFG_COUT_TYPE__(TLVL_TRACE) 	<< __COUT_HDR__
 #define __CFG_COUTV__(X) 		__CFG_COUT__ << QUOTE(X) << " = " << X << __E__
 
 #define __CFG_MCOUT_ERR__(X)   	{ __CFG_MOUT_ERR__  << X;} 	//causes duplicate with mf improvements: { __CFG_MOUT_ERR__ 	<< X; __CFG_COUT_ERR__ 	<< X; }
@@ -138,6 +139,7 @@
 #define __FE_COUT_WARN__ 		__FE_COUT_TYPE__(TLVL_WARNING)	<< __COUT_HDR__
 #define __FE_COUT_INFO__ 		__FE_COUT_TYPE__(TLVL_INFO) 	<< __COUT_HDR__
 #define __FE_COUT__ 			__FE_COUT_TYPE__(TLVL_DEBUG) 	<< __COUT_HDR__
+#define __FE_COUTT__ 			__FE_COUT_TYPE__(TLVL_TRACE) 	<< __COUT_HDR__
 #define __FE_COUTV__(X) 		__FE_COUT__ << QUOTE(X) << " = " << X << __E__
 
 #define __FE_MCOUT_ERR__(X)   	{ __FE_MOUT_ERR__  << X;} 	//causes duplicate with mf improvements: { __FE_MOUT_ERR__ 	<< X; __FE_COUT_ERR__ 	<< X; }
@@ -170,6 +172,7 @@
 #define __GEN_COUT_WARN__ 		__GEN_COUT_TYPE__(TLVL_WARNING) 	<< __COUT_HDR__
 #define __GEN_COUT_INFO__ 		__GEN_COUT_TYPE__(TLVL_INFO) 		<< __COUT_HDR__
 #define __GEN_COUT__ 			__GEN_COUT_TYPE__(TLVL_DEBUG) 		<< __COUT_HDR__
+#define __GEN_COUTT__ 			__GEN_COUT_TYPE__(TLVL_TRACE) 		<< __COUT_HDR__
 #define __GEN_COUTV__(X) 		__GEN_COUT__ << QUOTE(X) << " = " << X << __E__
 
 #define __GEN_MCOUT_ERR__(X)   	{ __GEN_MOUT_ERR__  << X;} 	//causes duplicate with mf improvements: { __GEN_MOUT_ERR__ 	<< X; __GEN_COUT_ERR__ 	<< X; }
@@ -204,6 +207,7 @@
 #define __SUP_COUT_WARN__ 		__SUP_COUT_TYPE__(TLVL_WARNING) 	<< __COUT_HDR__
 #define __SUP_COUT_INFO__ 		__SUP_COUT_TYPE__(TLVL_INFO) 		<< __COUT_HDR__
 #define __SUP_COUT__ 			__SUP_COUT_TYPE__(TLVL_DEBUG) 		<< __COUT_HDR__
+#define __SUP_COUTT__ 			__SUP_COUT_TYPE__(TLVL_TRACE) 		<< __COUT_HDR__
 #define __SUP_COUTV__(X) 		__SUP_COUT__ << QUOTE(X) << " = " << X << __E__
 
 #define __SUP_MCOUT_ERR__(X)   	{ __SUP_MOUT_ERR__  << X;} 	//causes duplicate with mf improvements: { __SUP_MOUT_ERR__ << X; __SUP_COUT_ERR__ << X; }
