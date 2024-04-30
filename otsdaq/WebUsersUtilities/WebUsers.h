@@ -189,6 +189,7 @@ class WebUsers
 	enum
 	{
 		SYS_CLEANUP_WILDCARD_TIME = 30,  // 30 seconds
+        SYS_CLEANUP_TIME = 3600*24,      // keep system messages for 24h to be able to access history
 	};
 
 	struct SystemMessage
@@ -209,17 +210,19 @@ class WebUsers
 		: message_			(message)
 		, creationTime_		(time(0))
 		, delivered_		(false)
+        , removed_          (false)
 		{} //end constructor
 
 		std::string 			message_;
 		time_t					creationTime_;
 		bool					delivered_; //flag
+        bool                    removed_;   // flag indicating its removed but keep them for history reason
 	}; //end SystemMessage struct
 
 	void        			addSystemMessage			(const std::string& targetUsersCSV, const std::string& message);
 	void        			addSystemMessage			(const std::string& targetUsersCSV, const std::string& subject, const std::string& message, bool doEmail);
 	void        			addSystemMessage			(const std::vector<std::string>& targetUsers, const std::string& subject, const std::string& message, bool doEmail);
-	std::string 			getSystemMessage			(const std::string& targetUser);
+	std::string 			getSystemMessage			(const std::string& targetUser, bool history=false);
 
   private:
 	void					addSystemMessageToMap		(const std::string& targetUser, const std::string& fullMessage); //private because target already vetted

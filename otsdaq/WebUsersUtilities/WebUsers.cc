@@ -3148,7 +3148,8 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser, const std::s
 //	Empty std::string "" returned if no message for targetUser
 //	Note: | is an illegal character and will cause GUI craziness
 // 	Note: targetUser is by display name
-std::string WebUsers::getSystemMessage(const std::string& targetUser)
+// history: if true, get 24h history of system messages, defaults to galse
+std::string WebUsers::getSystemMessage(const std::string& targetUser, bool history)
 {
 	//__COUT__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
 
@@ -3175,11 +3176,13 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 		// deliver user specific system message
 		if(cnt)
 			retStr += "|";
-		sprintf(tmp, "%lu", it->second[i].creationTime_);
-		retStr += std::string(tmp) + "|" + it->second[i].message_;
+        if((it->second[i].removed_ == false) || history) {
+		    sprintf(tmp, "%lu", it->second[i].creationTime_);
+		    retStr += std::string(tmp) + "|" + it->second[i].message_;
 
-		it->second[i].delivered_ = true;
-		++cnt;
+		    it->second[i].delivered_ = true;
+		    ++cnt;
+        }
 	}
 	it = systemMessages_.find("*");
 	for(uint64_t i = 0; it != systemMessages_.end() && i < it->second.size(); ++i)
@@ -3187,10 +3190,12 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 		// deliver "*" system message
 		if(cnt)
 			retStr += "|";
-		sprintf(tmp, "%lu", it->second[i].creationTime_);
-		retStr += std::string(tmp) + "|" + it->second[i].message_;
+        if((it->second[i].removed_ == false) || history) {
+		    sprintf(tmp, "%lu", it->second[i].creationTime_);
+		    retStr += std::string(tmp) + "|" + it->second[i].message_;
 
-		++cnt;
+		    ++cnt;
+        }
 	}
 	//__COUTV__(retStr);
 
@@ -3216,8 +3221,12 @@ void WebUsers::systemMessageCleanup()
 			   userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME < time(0))  // expired
 			{
 				// remove
-				userMessagesPair.second.erase(userMessagesPair.second.begin() + i);
-				--i;  // rewind
+                userMessagesPair.second[i].removed_ = true;
+                if(userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_TIME < time(0)) {
+				    userMessagesPair.second.erase(userMessagesPair.second.begin() + i);
+				    --i;  // rewind
+                }
+
 			}
 
 		//__COUT__ << userMessagesPair.first << " remaining system messages: " <<
