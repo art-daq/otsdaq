@@ -3587,7 +3587,7 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AutomatedRequestTypes,
 	                                                  "getSystemMessages | getCurrentState | getIterationPlanStatus"
-	                                                  " | getAppStatus");
+	                                                  " | getAppStatus | getRunInfo");
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
 	                                                  "gatewayLaunchOTS | gatewayLaunchWiz");
 	//	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.NeedUsernameRequestTypes,
@@ -3655,6 +3655,8 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 
 	// gatewayLaunchOTS
 	// gatewayLaunchWiz
+
+    // getRunInfo
 
 	if(0)  // leave for debugging
 	{
@@ -3964,7 +3966,9 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 		}
 		else if(requestType == "getSystemMessages")
 		{
-			xmlOut.addTextElementToData("systemMessages", theWebUsers_.getSystemMessage(userInfo.displayName_));
+            std::string history = CgiDataUtilities::postData(cgiIn, "history");
+			xmlOut.addTextElementToData("systemMessages", theWebUsers_.getSystemMessage(userInfo.displayName_, history != ""));
+            xmlOut.addTextElementToData("history",history);
 
 			xmlOut.addTextElementToData("username_with_lock",
 			                            theWebUsers_.getUserWithLock());  // always give system lock update
@@ -4377,6 +4381,42 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 
 			xmlOut.addTextElementToData("status", "restarted");
 		}
+        else if(requestType == "getRunInfo") 
+        {
+            // runNUmber > 0: get run record of that number
+            // runNumber = 0 (or not present): try to get run info of active run
+            // runNumber < 0: get run log, n = -runNUmber last entries
+            xmlOut.addTextElementToData("activeStateMachine", activeStateMachineName_);
+            xmlOut.addTextElementToData("activeRunNumber", activeStateMachineRunNumber_);
+            //auto pluginOut = xmlOut.addTextElementToData("plugin", "");
+            std::string runInfoPluginType;
+            ConfigurationTree configLinkNode =
+                        CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+            if(activeStateMachineName_ != "") { 
+                ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
+                runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+            } else { // if no state machien is active yet, use the first one, liklely they'll all use the same plugin, mainly relevant for getRunInfo before configured
+                auto fsmLinkNodes = configLinkNode.getNode("LinkToStateMachineTable").getChildren();
+                if(fsmLinkNodes.size() > 0) {
+                    ConfigurationTree fsmLinkNode = fsmLinkNodes[0].second;
+                    runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+                } else {
+                    __SS__ << "No State Machine found." << __E__;
+			        __SS_THROW__;
+                }
+            }
+			if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+			{
+                RunInfoVInterface* runInfoInterface = nullptr;
+                runInfoInterface = makeRunInfo(runInfoPluginType, activeStateMachineName_);
+                int runNumber = CgiDataUtilities::getDataAsInt(cgiIn, "RunNumber");
+                if(runNumber == 0) { // 0, try to use the active run number
+                    try { runNumber = std::stoi(activeStateMachineRunNumber_);} catch(...) {;}
+                }
+                std::cout << "activeStateMachineRunNumber: '" << activeStateMachineRunNumber_ << "', CgiDataUtilities::getDataAsInt(cgiIn, \"RunNumber\"):" << CgiDataUtilities::getDataAsInt(cgiIn, "RunNumber") << "runNumber:" << runNumber << std::endl;
+                xmlOut.addTextElementToData("plugin", runInfoInterface->getRunInfo(runNumber));//, pluginOut);
+            }
+        }
 		else
 		{
 			__SS__ << "requestType Request, " << requestType << ", not recognized." << __E__;
