@@ -550,7 +550,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				}
 				std::stringstream out;
 				xmlOut.outputXmlDocument((std::ostringstream*)&out, false /*dispStdOut*/, false /*allowWhiteSpace*/);
-				__COUT_TYPE__(TLVL_DEBUG+20) << "App status to monitor: " << out.str() << __E__;
+				__COUTT__ << "App status to monitor: " << out.str() << __E__;
 				sock.acknowledge(out.str(), false /* verbose */);
 				continue;
 			}
@@ -3511,7 +3511,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 		xmldoc.outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
 	}
 
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Login end clock=" << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
+	__COUTT__ << "Login end clock=" << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
 }  // end loginRequest()
 
 //==============================================================================

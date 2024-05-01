@@ -331,7 +331,7 @@ void CodeEditor::getPathContent(const std::string& basepath, const std::string& 
 				}
 				catch(...)
 				{
-					__COUT_TYPE__(TLVL_DEBUG+20) << "Invalid file extension, skipping '" << name << "' ..." << __E__;
+					__COUTT__ << "Invalid file extension, skipping '" << name << "' ..." << __E__;
 				}
 			}
 		}

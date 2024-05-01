@@ -166,7 +166,7 @@ try
 		__SUP_COUT_ERR__ << "\n" << ss.str();
 		xmlOut.addTextElementToData("Error", ss.str());
 	}
-	__SUP_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Request time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
+	__SUP_COUTT__ << "Request time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
 	
 	// report any errors encountered
 	// but only if there are a reasonable number of children
@@ -175,7 +175,7 @@ try
 		xmlOut.getRootDataElement()->getChildNodes()->item(0)->getNodeType() != xercesc::DOMNode::TEXT_NODE) 
 		numberOfChildren += xmlOut.getRootDataElement()->getChildNodes()->item(0)->getChildNodes()->getLength();
 
-	__SUP_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__  << "Number of children: " << numberOfChildren << __E__;
+	__SUP_COUTT__  << "Number of children: " << numberOfChildren << __E__;
 
 	if(numberOfChildren < 1000)
 	{
@@ -186,7 +186,7 @@ try
 			__SUP_COUT_ERR__ << "'" << requestType << "' ERROR encountered: " << err << __E__;
 			err = xmlOut.getMatchingValue("Error", occurance++);
 		}
-		__SUP_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Error check time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
+		__SUP_COUTT__ << "Error check time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
 	}
 
 	// __SUP_COUTV__(xmlDataSs.str());
@@ -195,7 +195,7 @@ try
 	// return xml doc holding server response
 	xmlOut.outputXmlDocument((std::ostringstream*)out, false /*print to cout*/, !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/);
 
-	__SUP_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Total xml request time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << 
+	__SUP_COUTT__ << "Total xml request time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << 
 		" = " <<  time(0) - requestStartTime << __E__;
 }  // end requestWrapper()
 catch(const std::runtime_error& e)

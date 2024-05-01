@@ -185,7 +185,7 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType type, const std::string& name)
 
 		std::ofstream ofs{outFile};
 		ofs << pset.to_indented_string(0);  // , fhicl::detail::print_mode::annotated); // Only really useful for debugging
-		__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << name << " Flatten Clock time = " << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__; 
+		__COUTT__ << name << " Flatten Clock time = " << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__; 
 	}
 	catch(cet::exception const& e)
 	{

@@ -93,7 +93,7 @@ TableView& TableView::copy(const TableView& src, TableVersion destinationVersion
 	if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend ||
 		tableName_.substr(0,tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
 	{
-		__COUT_TYPE__(TLVL_DEBUG+20) << "TableView copy for '" << tableName_ << "' done." << __E__;
+		__COUTT__ << "TableView copy for '" << tableName_ << "' done." << __E__;
 		return *this;
 	} //end special GROUP CACHE table construction
 
@@ -998,17 +998,17 @@ const std::string& TableView::setUniqueColumnValue(unsigned int row,
 		foundAny  = false;
 		tmpString = theDataView_[r][col];
 
-		__COUT_TYPE__(TLVL_DEBUG+12) << "row[" << r << "] tmpString " << tmpString << __E__;
+		__COUTT__ << "row[" << r << "] tmpString " << tmpString << __E__;
 
 		for(index = tmpString.length() - 1; index < tmpString.length(); --index)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+12) << index << " tmpString[index] " << tmpString[index] << __E__;
+			__COUTT__ << index << " tmpString[index] " << tmpString[index] << __E__;
 			if(!(tmpString[index] >= '0' && tmpString[index] <= '9'))
 				break;  // if not numeric, break
 			foundAny = true;
 		}
 
-		__COUT_TYPE__(TLVL_DEBUG+12) << "index " << index << " foundAny " << foundAny << __E__;
+		__COUTT__ << "index " << index << " foundAny " << foundAny << __E__;
 
 		if(tmpString.length() && foundAny)  // then found a numeric substring
 		{
@@ -1041,12 +1041,12 @@ const std::string& TableView::setUniqueColumnValue(unsigned int row,
 				}
 			}
 
-			__COUT_TYPE__(TLVL_DEBUG+12) << tmpString << " vs " << baseValueAsString << __E__;
+			__COUTT__ << tmpString << " vs " << baseValueAsString << __E__;
 
 			if(baseValueAsString != "" && tmpString != baseValueAsString)
 				continue;  // skip max unique number if basestring does not match
 
-			__COUT_TYPE__(TLVL_DEBUG+12) << "Found unique data base string '" << tmpString << "' and number string '" << numString << "' in last record '" << theDataView_[r][col]
+			__COUTT__ << "Found unique data base string '" << tmpString << "' and number string '" << numString << "' in last record '" << theDataView_[r][col]
 			       << "'" << __E__;
 
 			if(firstConflict)
@@ -2118,7 +2118,7 @@ int TableView::fillFromJSON(const std::string& json)
 		//if special JSON DOC table, handle construction in a special way
 		if(tableName_.substr(0,tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+20) << "Special JSON doc: " << json << __E__;
+			__COUTT__ << "Special JSON doc: " << json << __E__;
 			setCustomStorageData(json);
 			return 0; //success
 		} //end special JSON DOC table construction
@@ -2126,7 +2126,7 @@ int TableView::fillFromJSON(const std::string& json)
 		//if special GROUP CACHE table, handle construction in a special way
 		if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+20) << "Group Cache JSON doc: " << json << __E__;
+			__COUTT__ << "Group Cache JSON doc: " << json << __E__;
 
 			//remove json { } and all " characters
 			std::string jsonClean = "";
@@ -2892,7 +2892,7 @@ int TableView::fillFromCSV(const std::string& data, const int& dataOffset, const
 		// if row was modified, assign author and timestamp
 		if(author != "" && rowWasModified)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+20) << "Row=" << (int)r << " was modified!" << __E__;
+			__COUTT__ << "Row=" << (int)r << " was modified!" << __E__;
 			setValue(author, r, authorCol);
 			setValue(time(0), r, timestampCol);
 		}

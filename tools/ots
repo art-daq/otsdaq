@@ -358,9 +358,10 @@ done
 function killproc
 {
 	pid=$1
+	type=$2
 	
 	if [ $ISREMOTE == 0 ]; then
-		out "${Red}${Rev}Killing process ID ${pid}${RstClr}"
+		out "${Red}${Rev}Killing process ID ${pid} ${type}${RstClr}"
 	fi
 	
 	count=10
@@ -390,21 +391,21 @@ function killprocs
 	
 	if [[ "x$1" == "x" ]]; then #kill all ots processes that share $USER_DATA
 
-		pids=`ps aux|grep [o]ts.exe|grep ${USER_DATA}|awk '{print $2}'`
+		pids=`ps aux|grep -v grep|grep [o]ts.exe|grep ${USER_DATA}|awk '{print $2}'`		
 		for pid in $pids;do
-			killproc $pid &
+			killproc $pid ots.exe &
 		done
-		pids=`ps aux|grep [x]daq.exe|grep ${USER_DATA}|awk '{print $2}'`
+		pids=`ps aux|grep -v grep|grep [x]daq.exe|grep ${USER_DATA}|awk '{print $2}'`
 		for pid in $pids;do
-			killproc $pid &
+			killproc $pid xdaq.exe &
 		done
-		pids=`ps aux|grep [o]tsConsoleFwd|grep ${USER_DATA}|awk '{print $2}'`
+		pids=`ps aux|grep -v grep|grep [o]tsConsoleFwd|grep ${USER_DATA}|awk '{print $2}'`
 		for pid in $pids;do
-			killproc $pid &
+			killproc $pid otsConsoleFwd &
 		done
-		pids=`ps aux|grep [m]f_rcv_n_fwd|grep ${USER_DATA}|awk '{print $2}'`
+		pids=`ps aux|grep -v grep|grep [m]f_rcv_n_fwd|grep ${USER_DATA}|awk '{print $2}'`
 		for pid in $pids;do
-			killproc $pid &
+			killproc $pid mf_rcv_n_fwd &
 		done		
 	
 
@@ -427,7 +428,7 @@ function killprocs
 			fi
 
 			
-			killproc ${contextPID} &
+			killproc ${contextPID} non-gateway &
 
 		done	
 
@@ -435,7 +436,7 @@ function killprocs
 		
 		if [[ $1 == "ownedProcesses" && -v GATEWAY_PID ]]; then #in this case if variable is set, kill gateway too
 			out "${Red}${Rev}Killing Gateway process ID ${GATEWAY_PID}${RstClr}"
-			killproc ${GATEWAY_PID} &
+			killproc ${GATEWAY_PID} gateway &
 			unset GATEWAY_PID 
 		fi
 
@@ -443,17 +444,17 @@ function killprocs
 	fi		
 	
 	#kill lingering artdaq processes by partition number
-	pids=`ps aux|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
 	for pid in $pids;do
-		killproc $pid &
+		killproc $pid artdaq &
 	done
-	pids=`ps aux|grep "partition_${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	pids=`ps aux|grep -v grep|grep "partition_${ARTDAQ_PARTITION}"|awk '{print $2}'`
 	for pid in $pids;do
-		killproc $pid &
+		killproc $pid artdaq &
 	done
-	pids=`ps aux|grep "art -c ${USER_DATA}"|awk '{print $2}'`
+	pids=`ps aux|grep -v grep|grep "art -c ${USER_DATA}"|awk '{print $2}'`
 	for pid in $pids;do
-		killproc $pid &
+		killproc $pid art &
 	done
 
 	# for now (Aug-2023), stop killing artdaq and trust artdaq cleanup (this will also allowed share user accounts)
@@ -930,7 +931,7 @@ launchOTSMacromaker() {
 		# Alert user to the problem and keep trying
 		while [ "x$OTS_IS_ALIVE" == "x" ]; do
 			warning "Could not verify successful ots Macro Maker mode context launch, relaunching ots Macro Maker mode context (check log for details)..."									
-			killproc ${LAST_OTS_PID} 	
+			killproc ${LAST_OTS_PID} xdaq.exe	
 			sleep 2
 			
 			if [ $QUIET == 1 ]; then
@@ -1171,7 +1172,7 @@ launchOTSWiz() {
 	
 		while [ "x$OTS_IS_ALIVE" == "x" ]; do
 			warning "Could not verify successful ots wiz context launch, relaunching ots wiz context..."			
-			killproc ${LAST_OTS_PID} 
+			killproc ${LAST_OTS_PID} xdaq.exe
 			sleep 2
 			
 			if [ $QUIET == 1 ]; then
@@ -1591,7 +1592,7 @@ launchOTS() {
 
 								while [ "x$OTS_IS_ALIVE" == "x" ]; do
 									warning "Could not verify successful ots gateway context launch, relaunching ots gateway context..."									
-									killproc ${LAST_OTS_PID} 
+									killproc ${LAST_OTS_PID} xdaq.exe 
 									sleep 2
 									
 									if [ $QUIET == 1 ]; then
@@ -1806,7 +1807,7 @@ launchOTS() {
 
 			while [ "x$OTS_IS_ALIVE" == "x" ]; do
 				warning "Could not verify successful ots non-gateway context launch, relaunching non-gateway context..."
-				killproc ${LAST_OTS_PID} 
+				killproc ${LAST_OTS_PID} xdaq.exe 
 				sleep 2
 				
 				if [ $QUIET == 1 ]; then					

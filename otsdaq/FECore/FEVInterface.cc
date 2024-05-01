@@ -326,7 +326,7 @@ try
 			bool usingBufferedValue = false;
 			while((channelToCopy = getNextSlowControlsChannel()) != channel)
 			{
-			    __FE_COUT_TYPE__(TLVL_DEBUG+8) << "Looking for buffered value at " << 					
+			    __FE_COUTT__ << "Looking for buffered value at " << 					
 					BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") << " "  << 
 					channelToCopy->getReadSizeBytes() << " " <<
 					time(0) - channelToCopy->getLastSampleTime() << __E__;
