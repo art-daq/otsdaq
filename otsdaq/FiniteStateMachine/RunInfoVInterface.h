@@ -18,7 +18,8 @@ class RunInfoVInterface  // : public Configurable
 		STOP,
 		ERROR,
 		PAUSE,
-		RESUME
+		RESUME,
+		START
 	};
 
 	// NOTE: Memory access violations were happening when we tried to pass  const ConfigurationTree& theXDAQContextConfigTree
@@ -35,6 +36,7 @@ class RunInfoVInterface  // : public Configurable
 	}
 	virtual ~RunInfoVInterface(void) { ; }
 
+	virtual unsigned int insertRunCondition(const std::string& runInfoConditions = "")                     = 0;
 	virtual unsigned int claimNextRunNumber(const std::string& runInfoConditions = "")                     = 0;
 	virtual void         updateRunInfo(unsigned int runNumber, RunInfoVInterface::RunStopType runStopType) = 0;
 
