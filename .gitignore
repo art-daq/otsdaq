@@ -3,6 +3,7 @@
 download
 products
 build_*
+build-*
 setupARTDAQOTS
 otsdaq-core/tmp/
 otsdaq-core/DataManager/MoreJunk/

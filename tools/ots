@@ -30,8 +30,9 @@ function setupTrace()
 	fi
 
 	# trace helper functions
-	source "${TRACE_BIN}"/trace_functions.sh
-	
+	source "${TRACE_BIN}"/trace_functions.sh >/dev/null 2>&1 #for SL7
+	source trace_functions.sh >/dev/null 2>&1 #for AL9
+
 	#source /data/ups/setup
 	#setup TRACE v3_13_04
 	#ups active
