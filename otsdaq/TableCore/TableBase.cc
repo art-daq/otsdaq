@@ -54,7 +54,7 @@ TableBase::TableBase(const std::string& tableName,
 	if(tableName.substr(0,TableBase::GROUP_CACHE_PREPEND.length()) == TableBase::GROUP_CACHE_PREPEND ||
 		tableName.substr(0,TableBase::JSON_DOC_PREPEND.length()) == TableBase::JSON_DOC_PREPEND)
 	{
-		__COUT__ << "TableBase for '" << tableName << "' constructed." << __E__;
+		__COUTT__ << "TableBase for '" << tableName << "' constructed." << __E__;
 		return;
 	} //end special GROUP CACHE table construction
 
@@ -314,7 +314,7 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion, TableVersi
 			continue;  // col mismatch
 
 		++potentialMatchCount;
-		__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Checking version... " << viewPairReverseIterator->first << __E__;
+		__COUTT__ << "Checking version... " << viewPairReverseIterator->first << __E__;
 
 		// viewPairReverseIterator->second.print();
 
@@ -393,7 +393,7 @@ bool TableBase::diffTwoVersions(TableVersion v1, TableVersion v2,
 	std::stringstream* diffReport /* = 0 */,
 	std::map<std::string /* uid */, std::vector<std::string /* colName */>>* v1ModifiedRecords /* = 0 */) const
 {
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Diffing version... " << v1 << " vs " << v2 << __E__;
+	__COUTT__ << "Diffing version... " << v1 << " vs " << v2 << __E__;
 	auto v1It = tableViews_.find(v1);
 	if(v1It == tableViews_.end())
 	{
@@ -517,11 +517,11 @@ bool TableBase::diffTwoVersions(TableVersion v1, TableVersion v2,
 					foundUid2 = true;
 					break;
 				}
-			__COUT__ << "Found row ? '" << foundUid2 << " " << row << "," << row2 << __E__;
+			__COUTT__ << "Found row ? '" << foundUid2 << " " << row << "," << row2 << __E__;
 			if(!foundUid2) continue; //skip view1 record because no matching record found in view2
 		}
 		
-		__COUT__ << "Found row " << " " << row << "," << row2 << __E__;
+		__COUTT__ << "Found row " << " " << row << "," << row2 << __E__;
 		for(unsigned int col = 0; col < cols1 - 2 && 
 			col < view2->getNumberOfColumns() - 2; ++col)  // do not consider author and timestamp
 		{
@@ -540,11 +540,11 @@ bool TableBase::diffTwoVersions(TableVersion v1, TableVersion v2,
 						break;
 					}
 				
-				__COUT__ << "Found column ? '" << foundCol2 << " " << col << "," << col2 << __E__;
+				__COUTT__ << "Found column ? '" << foundCol2 << " " << col << "," << col2 << __E__;
 				if(!foundCol2) continue; //skip view1 column because no matching column name was found in view2
 			}
 
-			__COUT__ << "Found column " << " " << col << "," << col2 << __E__;
+			__COUTT__ << "Found column " << " " << col << "," << col2 << __E__;
 			if(view1->getDataView()[row][col] != view2->getDataView()[row2][col2])
 			{
 				__COUT__ << "Found column value mismatch for '" << row << "," << col << " " << 
@@ -1392,7 +1392,7 @@ TableVersion TableBase::copyView(const TableView& sourceView, TableVersion desti
 // 	returns new temporary version number (which is always negative)
 TableVersion TableBase::createTemporaryView(TableVersion sourceViewVersion, TableVersion destTemporaryViewVersion)
 {
-	__COUT_TYPE__(TLVL_DEBUG + 20) << __COUT_HDR__ << "Table: " << getTableName() << __E__ <<
+	__COUTT__ << "Table: " << getTableName() << __E__ <<
 		 "Num of Views: " << tableViews_.size()
 		<< " (Temporary Views: " << (tableViews_.size() - getNumberOfStoredViews())
 		<< ")" << __E__;
@@ -1420,7 +1420,7 @@ TableVersion TableBase::createTemporaryView(TableVersion sourceViewVersion, Tabl
 			       << __E__;
 			__SS_THROW__;
 		}
-		__COUT_TYPE__(TLVL_DEBUG + 20) << __COUT_HDR__ << "Using Mock-up view" << __E__;
+		__COUTT__ << "Using Mock-up view" << __E__;
 		tableViews_.emplace(std::make_pair(tmpVersion, TableView(tableName_)));
 		tableViews_.at(tmpVersion).copy(mockupTableView_, tmpVersion, mockupTableView_.getAuthor());
 	}

@@ -14,3 +14,5 @@ obj/*
 *.bk
 *.tmp
 .StartOTS_*.cmd
+spack-build-*
+build-linux-*

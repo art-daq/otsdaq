@@ -2033,7 +2033,7 @@ void FEVInterfacesManager::runFEMacro(const std::string&                        
 		outputArgs += argsOut[i].first + "," + StringMacros::encodeURIComponent(argsOut[i].second);
 	}
 
-	__CFG_COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "outputArgs = " << outputArgs << __E__;
+	__CFG_COUTT__ << "outputArgs = " << outputArgs << __E__;
 
 }  // end runFEMacro()
 

@@ -550,7 +550,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				}
 				std::stringstream out;
 				xmlOut.outputXmlDocument((std::ostringstream*)&out, false /*dispStdOut*/, false /*allowWhiteSpace*/);
-				__COUT_TYPE__(TLVL_DEBUG+20) << "App status to monitor: " << out.str() << __E__;
+				__COUTT__ << "App status to monitor: " << out.str() << __E__;
 				sock.acknowledge(out.str(), false /* verbose */);
 				continue;
 			}
@@ -3511,7 +3511,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 		xmldoc.outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
 	}
 
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Login end clock=" << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
+	__COUTT__ << "Login end clock=" << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
 }  // end loginRequest()
 
 //==============================================================================
@@ -4145,7 +4145,7 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 				xmlOut.addTextElementToData("transition_progress", "100");
 
 			// char tmp[20]; old size before adding db run number
-			char tmp[30];
+			char tmp[50]; // for a 6 digits run number from the DB, this needs to be at least 34
 			sprintf(tmp, "%lu", theStateMachine_.getTimeInState());
 			xmlOut.addTextElementToData("time_in_state", tmp);
 

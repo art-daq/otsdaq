@@ -40,6 +40,7 @@ cet_make_library(LIBRARY_NAME FECore
 		 otsdaq::NetworkUtilities
 		 otsdaq::ConfigurationInterface
 		 otsdaq::SOAPUtilities
+		 ROOT::Hist
 )
 
 

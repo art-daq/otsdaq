@@ -110,61 +110,49 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 
 		//__COUTV__(number);
 
-		// check integer types
-		if(typeid(unsigned int) == typeid(retValue) || typeid(int) == typeid(retValue) || typeid(unsigned long long) == typeid(retValue) ||
-		   typeid(long long) == typeid(retValue) || typeid(unsigned long) == typeid(retValue) || typeid(long) == typeid(retValue) ||
-		   typeid(unsigned short) == typeid(retValue) || typeid(short) == typeid(retValue) || typeid(uint8_t) == typeid(retValue))
+		// check for base16 and base2		
+		if(number.find("0x") == 0)  // indicates hex
 		{
-			if(number.find("0x") == 0)  // indicates hex
+			//__COUT__ << "0x found" << __E__;
+			for(unsigned int i = 2; i < number.size(); ++i)
 			{
-				//__COUT__ << "0x found" << __E__;
-				for(unsigned int i = 2; i < number.size(); ++i)
+				if(!((number[i] >= '0' && number[i] <= '9') || (number[i] >= 'A' && number[i] <= 'F') || (number[i] >= 'a' && number[i] <= 'f')))
 				{
-					if(!((number[i] >= '0' && number[i] <= '9') || (number[i] >= 'A' && number[i] <= 'F') || (number[i] >= 'a' && number[i] <= 'f')))
-					{
-						//__COUT__ << "prob " << number[i] << __E__;
-						return false;
-					}
+					//__COUT__ << "prob " << number[i] << __E__;
+					return false;
 				}
-				verified = true;
 			}
-			else if(number[0] == 'b')  // indicates binary
-			{
-				//__COUT__ << "b found" << __E__;
+			verified = true;
+		}
+		else if(number[0] == 'b')  // indicates binary
+		{
+			//__COUT__ << "b found" << __E__;
 
-				for(unsigned int i = 1; i < number.size(); ++i)
+			for(unsigned int i = 1; i < number.size(); ++i)
+			{
+				if(!((number[i] >= '0' && number[i] <= '1')))
 				{
-					if(!((number[i] >= '0' && number[i] <= '1')))
-					{
-						//__COUT__ << "prob " << number[i] << __E__;
-						return false;
-					}
+					//__COUT__ << "prob " << number[i] << __E__;
+					return false;
 				}
-				verified = true;
 			}
+			verified = true;
 		}
 
-		// if not verified above, for all types, check base10
-		if(!verified)
+		// if not verified above, check base10
+		if(!verified) //assume must be base10
+		{
 			for(unsigned int i = 0; i < number.size(); ++i)
 				if(!((number[i] >= '0' && number[i] <= '9') || number[i] == '.' || number[i] == '+' || number[i] == '-'))
 					return false;
 
-		// at this point, this number is confirmed to be a number of some sort
-		// so convert to temporary number
-		if(typeid(double) == typeid(retValue))
-			tmpValue = strtod(number.c_str(), 0);
-		else if(typeid(float) == typeid(retValue))
-			tmpValue = strtof(number.c_str(), 0);
-		else if(typeid(unsigned int) == typeid(retValue) || typeid(int) == typeid(retValue) || typeid(unsigned long long) == typeid(retValue) ||
-		        typeid(long long) == typeid(retValue) || typeid(unsigned long) == typeid(retValue) || typeid(long) == typeid(retValue) ||
-		        typeid(unsigned short) == typeid(retValue) || typeid(short) == typeid(retValue) || typeid(uint8_t) == typeid(retValue))
-		{
-			if(number.size() > 2 && number[1] == 'x')  // assume hex value
-				tmpValue = (T)strtol(number.c_str(), 0, 16);
-			else if(number.size() > 1 && number[0] == 'b')             // assume binary value
-				tmpValue = (T)strtol(number.substr(1).c_str(), 0, 2);  // skip first 'b' character
-			else
+			// at this point, this number is confirmed to be a number of some sort
+			// so convert to temporary number
+			if(typeid(double) == typeid(retValue))
+				tmpValue = strtod(number.c_str(), 0);
+			else if(typeid(float) == typeid(retValue))
+				tmpValue = strtof(number.c_str(), 0);
+			else //integer/other types
 				tmpValue = (T)strtol(number.c_str(), 0, 10);
 		}
 		else //just try!

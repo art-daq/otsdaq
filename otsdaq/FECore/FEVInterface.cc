@@ -4,6 +4,8 @@
 #include "otsdaq/NetworkUtilities/UDPDataStreamerBase.h"
 #include "otsdaq/Macros/BinaryStringMacros.h"
 
+#include <TFormula.h>
+
 #define TRACE_NAME "FEVInterface"
 #include <iostream>
 #include <sstream>
@@ -133,12 +135,21 @@ void FEVInterface::addSlowControlsChannels(ConfigurationTree                    
 						getInterfaceUID() << "/" << groupLinkChild.first
 		            << "\t Type:" << groupLinkChild.second.getNode("ChannelDataType") << __E__;
 
+		// Unit transforms
+		std::string transformation = "";
+		try {
+			transformation = groupLinkChild.second.getNode("Transformation").getValue<std::string>();
+		} catch (...) {
+			__FE_COUT__ << "Slow controls 'Transformation' setting not found." << __E__;
+		}
+
 		mapOfSlowControlsChannels->insert(std::pair<std::string, FESlowControlsChannel>(
 		    groupLinkChild.first,
 		    FESlowControlsChannel(this,
 		                          groupLinkChild.first,
 		                          groupLinkChild.second.getNode("ChannelDataType").getValue<std::string>(),
 		                          groupLinkChild.second.getNode("UniversalInterfaceAddress").getValue<std::string>(),
+					  groupLinkChild.second.getNode("Transformation").getValue<std::string>(),
 		                          groupLinkChild.second.getNode("UniversalDataBitOffset").getValue<unsigned int>(),
 		                          groupLinkChild.second.getNode("ReadAccess").getValue<bool>(),
 		                          groupLinkChild.second.getNode("WriteAccess").getValue<bool>(),
@@ -192,9 +203,6 @@ try
 		__FE_COUT__ << "No slow controls channels to monitor, exiting slow controls workloop." << __E__;
 		return false;
 	}
-	std::string readValInst;
-	std::string& readVal = readValInst;
-	readVal.resize(universalDataSize_);  // size to data in advance
 
 	FESlowControlsChannel* channel;
 
@@ -228,13 +236,15 @@ try
 	{
 		__FE_COUT__ << "Link to slow controls supervisor is missing, so no socket made." << __E__;
 	}
-
+    
+	bool txBufferUsed = false;
 	if(slowControlsSupervisorPort && slowControlsSelfPort && slowControlsSupervisorIPAddress != "" && slowControlsSelfIPAddress != "")
 	{
 		__FE_COUT__ << "slowControlsInterfaceLink is valid! Create tx socket..." << __E__;
 		slowContrlolsTxSocket.reset(
 		    new UDPDataStreamerBase(slowControlsSelfIPAddress, slowControlsSelfPort, slowControlsSupervisorIPAddress, slowControlsSupervisorPort));
-	}
+		txBufferUsed = true;
+	} 
 	else
 	{
 		__FE_COUT__ << "Invalid Slow Controls socket parameters, so no socket made." << __E__;
@@ -308,7 +318,7 @@ try
 			if(timeCounter % channel->delayBetweenSamples_)
 				continue;
 
-			__FE_COUT__ << "Reading Channel:" << channel->fullChannelName_ << " at t=" << time(0) << __E__;
+			__FE_COUT__ << "Reading Channel:" << channel->fullChannelName << " at t=" << time(0) << __E__;
 
 			//check if can use buffered value
 			resetSlowControlsChannelIterator();
@@ -316,54 +326,85 @@ try
 			bool usingBufferedValue = false;
 			while((channelToCopy = getNextSlowControlsChannel()) != channel)
 			{
-				__FE_COUT__ << "Looking for buffered value at " << 					
-					BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") << " "  << 
+			    __FE_COUTT__ << "Looking for buffered value at " << 					
+					BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") << " "  << 
 					channelToCopy->getReadSizeBytes() << " " <<
 					time(0) - channelToCopy->getLastSampleTime() << __E__;
 
-				if(BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") == 
-					BinaryStringMacros::binaryNumberToHexString(channel->universalAddress_,  "0x", " ") && 
+				if(!usingBufferedValue && 	
+					BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") == 
+					BinaryStringMacros::binaryNumberToHexString(channel->getUniversalAddress(), "0x", " ") && 
 					channelToCopy->getReadSizeBytes() == channel->getReadSizeBytes() && 
 					time(0) - channelToCopy->getLastSampleTime() < 2 /* within 2 seconds, then re-use buffer */)
 				{
 					usingBufferedValue = true;
-					//can NOT break;... must take iterator back to channel
 					__FE_COUT__ << "Using buffered " << channelToCopy->getReadSizeBytes() << 
 						"-byte value at address:" << 
-						BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalAddress_,  "0x", " ") << __E__;
+						BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") << __E__;
 
-					__FE_COUT__ << "Copying: " << BinaryStringMacros::binaryNumberToHexString(channelToCopy->universalReadValue_, "0x", " ") << 
-						" at t=" << time(0) << __E__;
-					readVal = channelToCopy->universalReadValue_; //copy by reference
-					__FE_COUT__ << "Copied: " << BinaryStringMacros::binaryNumberToHexString(readVal, "0x", " ") << " at t=" << time(0) << __E__;
+					__FE_COUT__ << "Copying: " << BinaryStringMacros::binaryNumberToHexString(channelToCopy->getLastSampleReadValue(), "0x", " ") << " at t=" << time(0) << __E__;
+					channel->handleSample(channelToCopy->getLastSampleReadValue(), txBuffer, fp, aggregateFileIsBinaryFormat, txBufferUsed);
+					__FE_COUT__ << "Copied: " << BinaryStringMacros::binaryNumberToHexString(channel->getSample(), "0x", " ") << " at t=" << time(0) << __E__;
+
+					//can NOT break; from while loop... must take iterator back to starting point channel iterator
 				}
-			}
+			} //end while loop
 
+			//get and handle sample if not already handled using buffered value
 			if(!usingBufferedValue)
-				channel->getSample(readVal);
-
-			// have sample
-			channel->handleSample(readVal, txBuffer, fp, aggregateFileIsBinaryFormat);
-			__FE_COUT__ << "Have: " << BinaryStringMacros::binaryNumberToHexString(channel->universalReadValue_, "0x", " ") << " at t=" << time(0) << __E__;					
+			{
+				std::string readValInst;
+				std::string& readVal = readValInst;
+				readVal.resize(universalDataSize_);  // size to data in advance
+				channel->doRead(readVal);
+				channel->handleSample(readVal, txBuffer, fp, aggregateFileIsBinaryFormat, txBufferUsed);
+				__FE_COUT__ << "Have: " << BinaryStringMacros::binaryNumberToHexString(channel->getSample(), "0x", " ") << " at t=" << time(0) << __E__;
+			}
+								
 
 			if(txBuffer.size())
 				__FE_COUT__ << "txBuffer sz=" << txBuffer.size() << __E__;
 
 
 			// Use artdaq Metric Manager if available,
-			if(channel->monitoringEnabled_ && metricMan && metricMan->Running() && universalAddressSize_ <= 8)
+			if(channel->monitoringEnabled && metricMan && metricMan->Running() && universalAddressSize_ <= 8) 
 			{
 				uint64_t val = 0;  // 64 bits!
-				for(size_t ii = 0; ii < universalAddressSize_; ++ii)
-					val += (uint8_t)readVal[ii] << (ii * 8);
+				for(size_t ii = 0; ii < channel->getSample().size(); ++ii)
+					val += (uint8_t)channel->getSample()[ii] << (ii * 8);
 
-				__FE_COUT__ << "Sending sample to Metric Manager..." << __E__;
-				metricMan->sendMetric(channel->fullChannelName_, val, "", 3, artdaq::MetricMode::LastPoint);
+				// Unit transforms
+				if((channel->transformation).size() > 1) // Execute transformation if a formula is present
+				{ 
+					__FE_COUT__ << "Transformation formula = " << channel->transformation << __E__;
+                
+					TFormula transformationFormula("transformationFormula", (channel->transformation).c_str());
+					double transformedVal = transformationFormula.Eval(val);
+
+					if(!std::isnan(transformedVal)) 
+					{
+						__FE_COUT__ << "Transformed " << val << " into " << transformedVal << __E__;
+						__FE_COUT__ << "Sending \"" << channel->fullChannelName << "\" transformed sample to Metric Manager..." << __E__;
+						metricMan->sendMetric(channel->fullChannelName, transformedVal, "", 3, artdaq::MetricMode::LastPoint);
+					}
+					else
+					{
+						__FE_SS__ << "Transformed value is NaN!" << __E__; 
+						__FE_SS_THROW__;
+					}
+				} 
+				else 
+				{
+					__FE_COUT__ << "Sending \"" << channel->fullChannelName << "\" sample to Metric Manager..." << __E__;					
+					metricMan->sendMetric(channel->fullChannelName, val, "", 3, artdaq::MetricMode::LastPoint);
+				}
+			} 
+			else 
+			{ 
+				__FE_COUT__ << "Skipping  \"" << channel->fullChannelName << "\" sample to Metric Manager... "
+					<< " channel->monitoringEnabled=" << channel->monitoringEnabled << " metricMan=" << metricMan
+					<< " metricMan->Running()=" << (metricMan && metricMan->Running()) << __E__;
 			}
-			else
-				__FE_COUT__ << "Skipping sample to Metric Manager: "
-				            << " channel->monitoringEnabled_=" << channel->monitoringEnabled_ << " metricMan=" << metricMan
-				            << " metricMan->Running()=" << (metricMan && metricMan->Running()) << __E__;
 
 			// make sure buffer hasn't exploded somehow
 			if(txBuffer.size() > txBufferSz)
@@ -371,6 +412,9 @@ try
 				__FE_SS__ << "This should never happen hopefully!" << __E__;
 				__FE_SS_THROW__;
 			}
+			// if we don't have a socket, no need for txBuffer, should already be handled by 
+			if(!slowContrlolsTxSocket && txBufferUsed)
+				txBuffer.resize(0);
 
 			// send early if threshold reached
 			if(slowContrlolsTxSocket && txBuffer.size() > txBufferFullThreshold)

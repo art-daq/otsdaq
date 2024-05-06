@@ -98,7 +98,7 @@ void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version
 
 	auto end      = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Time taken to call DatabaseConfigurationInterface::fill(tableName=" << table->getTableName() << ", version=" << versionstring << ") "
+	__COUTT__ << "Time taken to call DatabaseConfigurationInterface::fill(tableName=" << table->getTableName() << ", version=" << versionstring << ") "
 	         << duration << " milliseconds." << std::endl;
 
 	if(result.first)
@@ -133,7 +133,7 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table, b
 
 	auto end      = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Time taken to call DatabaseConfigurationInterface::saveActiveVersion(tableName=" << table->getTableName()
+	__COUTT__ << "Time taken to call DatabaseConfigurationInterface::saveActiveVersion(tableName=" << table->getTableName()
 	         << ", versionstring=" << versionstring << ") " << duration << " milliseconds" << std::endl;
 
 	if(result.first)
@@ -174,7 +174,7 @@ try
 
 	auto end      = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Time taken to call DatabaseConfigurationInterface::getVersions(tableName=" << table->getTableName() << ") " << duration << " milliseconds."
+	__COUTT__ << "Time taken to call DatabaseConfigurationInterface::getVersions(tableName=" << table->getTableName() << ") " << duration << " milliseconds."
 	         << std::endl;
 
 	auto resultSet = std::set<TableVersion>{};
@@ -216,7 +216,7 @@ try
 
 	auto end      = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Time taken to call DatabaseConfigurationInterface::getAllTableNames(collection_name_prefix=" << collection_name_prefix << ") " << duration
+	__COUTT__ << "Time taken to call DatabaseConfigurationInterface::getAllTableNames(collection_name_prefix=" << collection_name_prefix << ") " << duration
 	         << " milliseconds." << std::endl;
 
 	return result;
@@ -255,7 +255,7 @@ try
 		                                                            // reg expr
 	auto end      = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Time taken to call DatabaseConfigurationInterface::getAllTableGroupNames(filterString=" << filterString << ") " << duration << " milliseconds."
+	__COUTT__ << "Time taken to call DatabaseConfigurationInterface::getAllTableGroupNames(filterString=" << filterString << ") " << duration << " milliseconds."
 	         << std::endl;
 
 	return result;
@@ -317,6 +317,8 @@ try
 	try
 	{
 		table_version_map_t retMap = getCachedTableGroupMembers(tableGroup);
+		__COUTV__(tableGroup);
+		__COUTV__(StringMacros::mapToString(retMap));
 
 		if(!includeMetaDataTable)
 		{
@@ -327,21 +329,20 @@ try
 		}
 
 		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-		__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Time taken to call DatabaseConfigurationInterface::getTableGroupMembers(tableGroup=" << tableGroup << ") " << duration << " milliseconds."
+		__COUTT__ << "Time taken to call DatabaseConfigurationInterface::getTableGroupMembers(tableGroup=" << tableGroup << ") " << duration << " milliseconds."
 	         << std::endl;
 		return retMap;
 	}
 	catch(...) //ignore error and proceed with standard db access
 	{
-		__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Ignoring error DatabaseConfigurationInterface::getTableGroupMembers(tableGroup=" << tableGroup << ") " << __E__;
+		__COUTT__ << "Ignoring error DatabaseConfigurationInterface::getTableGroupMembers(tableGroup=" << tableGroup << ") " << __E__;
 	} 
 
 	auto ifc    = db::ConfigurationInterface{default_dbprovider};
 	auto result = ifc.loadGlobalConfiguration(tableGroup);
 
-	//	for(auto &item:result)
-	//		__COUT__ << "====================>" << item.configuration << ": " <<
-	// item.version << __E__;
+	// for(auto &item:result)
+	// 	__COUTT__ << "====================> " << item.configuration << ": " << item.version << __E__;
 
 	auto to_map = [](auto const& inputList, bool includeMetaDataTable) 
 	{
@@ -364,11 +365,11 @@ try
 	//now create cache for next time!
 	saveTableGroupMemberCache(retMap, tableGroup);
 
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Loaded db member map string " <<
+	__COUTT__ << "Loaded db member map string " <<
 		StringMacros::mapToString(retMap) << __E__;
 
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Time taken to call DatabaseConfigurationInterface::getTableGroupMembers(tableGroup=" << tableGroup << ") " << duration << " milliseconds."
+	__COUTT__ << "Time taken to call DatabaseConfigurationInterface::getTableGroupMembers(tableGroup=" << tableGroup << ") " << duration << " milliseconds."
 	         << std::endl;
 
 	return retMap;
@@ -386,7 +387,8 @@ catch(...)
 }  // end getTableGroupMembers() catch
 
 //==============================================================================
-// create a new configuration group from the contents map
+// get cached Table Group members
+//	throw exception on failure or missing cache
 table_version_map_t DatabaseConfigurationInterface::getCachedTableGroupMembers(std::string const& tableGroup) const
 try
 {	
@@ -408,23 +410,35 @@ try
 	std::size_t vi = tableGroup.rfind("_v");
 	std::string groupName = tableGroup.substr(0,vi);
 	std::string groupKey = tableGroup.substr(vi+2);
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Getting cache for " << groupName << "(" << groupKey << ")" << __E__;
+	__COUTT__ << "Getting cache for " << groupName << "(" << groupKey << ")" << __E__;
 
-
-	TableBase localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + groupName);
+	TableBase localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + groupName);	
 	TableVersion localVersion(atoi(groupKey.c_str()));
+	
+	//if filesystem db, as of April 2024, artdaq_database returned latest version when version is missing...
+	if(IS_FILESYSTEM_DB)
+	{		
+		__COUTT__ << "IS_FILESYSTEM_DB=true, so checking cached keys for " << groupName << "(" << groupKey << ")" << __E__;
+		std::set<TableVersion> versions = getVersions(&localGroupMemberCacheSaver);
+		if(versions.find(localVersion) == versions.end())
+		{
+			__SS__ << "Cached member table versions not found for " << groupName << "(" << groupKey << ")" << __E__;
+			__SS_THROW__;
+		}
+	}
+
 	localGroupMemberCacheSaver.changeVersionAndActivateView(
 		localGroupMemberCacheSaver.createTemporaryView(), 
 		localVersion);
 
 	fill(&localGroupMemberCacheSaver,localVersion);
 
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Loaded cache member map string " <<
+	__COUTT__ << "Loaded cache member map string " <<
 		localGroupMemberCacheSaver.getViewP()->getCustomStorageData() << __E__;
 	
 	StringMacros::getMapFromString(localGroupMemberCacheSaver.getViewP()->getCustomStorageData(),retMap);
 
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Loaded cache member map string " <<
+	__COUTT__ << "Loaded cache member map string " <<
 		StringMacros::mapToString(retMap) << __E__;
 		
 	return retMap;
@@ -462,7 +476,7 @@ try
 	std::size_t vi = tableGroup.rfind("_v");
 	std::string groupName = tableGroup.substr(0,vi);
 	std::string groupKey = tableGroup.substr(vi+2);
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving cache for " << groupName << "(" << groupKey << ")" << __E__;
+	__COUTT__ << "Saving cache for " << groupName << "(" << groupKey << ")" << __E__;
 
 	TableBase localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + groupName);
 	localGroupMemberCacheSaver.changeVersionAndActivateView(
@@ -480,10 +494,10 @@ try
 		localGroupMemberCacheSaver.getViewP()->setCustomStorageData(groupCacheData.str());
 	} //end set custom storage data
 
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving member map string " <<
+	__COUTT__ << "Saving member map string " <<
 		localGroupMemberCacheSaver.getViewP()->getCustomStorageData() << __E__;
 
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving cache table " <<
+	__COUTT__ << "Saving cache table " <<
 		localGroupMemberCacheSaver.getView().getTableName() << "(" <<
 		localGroupMemberCacheSaver.getView().getVersion().toString() << ")" << __E__;
 
@@ -529,7 +543,7 @@ try
 
 	auto end      = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Time taken to call DatabaseConfigurationInterface::saveTableGroup(tableGroup=" << tableGroup << ") " << duration
+	__COUTT__ << "Time taken to call DatabaseConfigurationInterface::saveTableGroup(tableGroup=" << tableGroup << ") " << duration
 	         << " milliseconds." << std::endl;
 
 	if(result.first)
@@ -567,7 +581,7 @@ catch(...)
 std::pair<std::string, TableVersion> DatabaseConfigurationInterface::saveCustomJSON(const std::string& json, const std::string& documentNameToSave) const
 try
 {
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving doc '" << documentNameToSave << "'" << __E__;
+	__COUTT__ << "Saving doc '" << documentNameToSave << "'" << __E__;
 
 	TableBase localDocSaver(TableBase::JSON_DOC_PREPEND + documentNameToSave);
 
@@ -585,10 +599,10 @@ try
 
 	localDocSaver.getViewP()->setCustomStorageData(json);
 
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving JSON string: " <<
+	__COUTT__ << "Saving JSON string: " <<
 		localDocSaver.getViewP()->getCustomStorageData() << __E__;
 
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Saving JSON doc as " <<
+	__COUTT__ << "Saving JSON doc as " <<
 		localDocSaver.getView().getTableName() << "(" <<
 		localDocSaver.getView().getVersion().toString() << ")" << __E__;
 
@@ -618,7 +632,7 @@ std::string DatabaseConfigurationInterface::loadCustomJSON(const std::string& do
 try
 {
 	
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Loading doc '" << documentNameToLoad << "-v" <<
+	__COUTT__ << "Loading doc '" << documentNameToLoad << "-v" <<
 		documentVersionToLoad << "'" << __E__;
 
 	TableBase localDocLoader(TableBase::JSON_DOC_PREPEND + documentNameToLoad);
@@ -629,7 +643,7 @@ try
 
 	fill(&localDocLoader,documentVersionToLoad);
 
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Loaded JSON doc string " <<
+	__COUTT__ << "Loaded JSON doc string " <<
 		localDocLoader.getViewP()->getCustomStorageData() << __E__;
 	
 	return localDocLoader.getViewP()->getCustomStorageData();
