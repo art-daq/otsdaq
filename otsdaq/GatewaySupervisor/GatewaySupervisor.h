@@ -315,6 +315,9 @@ class WorkLoopManager;
 		char 				tmpStringForConversions_[100];
 
 		std::string        	securityType_;
+
+		//Variable used by the RunInfo plugin
+		unsigned int conditionID_;
 	};
 // clang-format on
 
