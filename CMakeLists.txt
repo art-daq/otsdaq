@@ -12,7 +12,7 @@ cmake_minimum_required (VERSION 3.19 FATAL_ERROR)
 
 find_package(cetmodules 3.16.00 REQUIRED)
 
-project(otsdaq VERSION 2.08.00)
+project(otsdaq VERSION 2.08.01)
 
 include(CetCMakeEnv)
 cet_cmake_env()
