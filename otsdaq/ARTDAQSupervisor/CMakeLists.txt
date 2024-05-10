@@ -14,6 +14,7 @@ version.cc
 		 artdaq_plugin_support::commanderMaker
 		 otsdaq::CoreSupervisors
 		 otsdaq::ARTDAQTableBase
+		 Boost::filesystem
 )
 
 install_headers()

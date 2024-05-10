@@ -5,6 +5,7 @@ SOURCE ARTDAQOnlineMonitorSupervisor.cc
 		 otsdaq::CoreSupervisors
 		 otsdaq::ARTDAQTableBase
 		 Boost::thread
+		 Boost::filesystem
 		 )
 
 install_headers()
