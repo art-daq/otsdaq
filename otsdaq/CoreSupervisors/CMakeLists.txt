@@ -31,7 +31,7 @@ version.cc
 		 otsdaq::CgiDataUtilities
 		 otsdaq::ARTDAQTableBase
 		 otsdaq::ARTDAQDataManager
-		 xgi # From XDAQ
+		 xgi # From XDAQ for xgi::Output::getHTTPResponseHeader
         )
 
 install_headers()
