@@ -47,7 +47,8 @@ public:
 									   bool                    allowDuplicates   = false,
 									   bool                    ignoreWarnings    = false,
 									   const std::string&      groupComment      = "",
-									   bool                    lookForEquivalent = false);
+									   bool                    lookForEquivalent = false,
+                                       bool                    reuseCache        = false);
 
 	static void 				handleGetTableGroupXML(HttpXmlDocument&        xmlOut,
 										ConfigurationManagerRW* cfgMgr,

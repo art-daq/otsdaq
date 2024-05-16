@@ -295,7 +295,8 @@ void ConfigurationSupervisorBase::handleCreateTableGroupXML(HttpXmlDocument&    
                                                             bool                    allowDuplicates,
                                                             bool                    ignoreWarnings,
                                                             const std::string&      groupComment,
-                                                            bool                    lookForEquivalent)
+                                                            bool                    lookForEquivalent,
+                                                            bool                    reuseCache)
 try
 {
 	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "handleCreateTableGroupXML start runtime=" << cfgMgr->runTimeSeconds() << __E__;
@@ -305,12 +306,12 @@ try
 	// make sure not using partial tables or anything weird when creating the group
 	//	so start from scratch and load backbone, but allow errors
 	std::string                             accumulatedWarnings;
-	const std::map<std::string, TableInfo>& allTableInfo = cfgMgr->getAllTableInfo(true /* refresh */, 
+	const std::map<std::string, TableInfo>& allTableInfo = cfgMgr->getAllTableInfo(!reuseCache /* refresh */, 
 		&accumulatedWarnings, 
 		"" /* errorFilterName */, 
 		true /* getGroupKeys*/,
 		false /* getGroupInfo */,
-		true /* initializeActiveGroups */);
+		true  /* initializeActiveGroups */); // we only use this to check if the table exists, no need to initialize it here, will be done with the new group
 	__COUT_WARN__ << "Ignoring these errors: " << accumulatedWarnings << __E__;
 	// cfgMgr->loadConfigurationBackbone(); //already loaded by initializeActiveGroups of getAllTableInfo
 
