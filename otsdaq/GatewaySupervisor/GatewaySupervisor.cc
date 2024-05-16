@@ -137,6 +137,9 @@ void GatewaySupervisor::indicateOtsAlive(const CorePropertySupervisorBase* prope
 void GatewaySupervisor::init(void)
 {
 	supervisorGuiHasBeenLoaded_ = false;
+	
+	//Initialize the variable used by the RunInfo plugin
+	conditionID_ = (unsigned int)-1;
 
 	// setting up thread for UDP thread to drive state machine
 	{
@@ -550,7 +553,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				}
 				std::stringstream out;
 				xmlOut.outputXmlDocument((std::ostringstream*)&out, false /*dispStdOut*/, false /*allowWhiteSpace*/);
-				__COUT_TYPE__(TLVL_DEBUG+20) << "App status to monitor: " << out.str() << __E__;
+				__COUTT__ << "App status to monitor: " << out.str() << __E__;
 				sock.acknowledge(out.str(), false /* verbose */);
 				continue;
 			}
@@ -1061,6 +1064,69 @@ try
 
 		activeStateMachineName_       = fsmName;
 		activeStateMachineWindowName_ = fsmWindowName;
+
+		std::stringstream dumpSs;
+		// Check if run number should come from db, if so create a new condition record into database
+		try
+		{
+			ConfigurationTree configLinkNode =
+				CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+			if(!configLinkNode.isDisconnected())
+			{
+				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
+
+				std::string runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+				__COUTV__(runInfoPluginType);
+				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+				{
+					RunInfoVInterface* runInfoInterface = nullptr;
+					try
+					{
+						std::string dumpFormat = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
+
+						// dump configuration
+						CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+							"",
+							dumpFormat,
+							"Configuration Alias: " + lastConfigurationAlias_ + "\n\n" + "Run note: " + StringMacros::decodeURIComponent(logEntry),
+							theWebUsers_.getActiveUsersString(),
+							dumpSs);
+
+						runInfoInterface = makeRunInfo(runInfoPluginType, activeStateMachineName_);
+					}
+					catch(...)
+					{
+					}
+
+					if(runInfoInterface == nullptr)
+					{
+						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS_THROW__;
+					}
+
+					conditionID_ = runInfoInterface->insertRunCondition(dumpSs.str());
+				}  // end Run Info Plugin handling
+
+			}  // end handle state machine config link
+		}
+		catch(const std::runtime_error& e)
+		{
+			// ERROR
+			__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << e.what() << __E__;
+			__SS_THROW__;
+		}
+		catch(...)
+		{
+			// ERROR
+			__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << __E__;
+			try	{ throw; } //one more try to printout extra info
+			catch(const std::exception &e)
+			{
+				ss << "Exception message: " << e.what();
+			}
+			catch(...){}
+			__SS_THROW__;
+		}  // End write run condition into db
 	}
 	else if(command == "Start")
 	{
@@ -1129,7 +1195,7 @@ try
 							__SS_THROW__;
 						}
 
-						runNumber = runInfoInterface->claimNextRunNumber(dumpSs.str());
+						runNumber = runInfoInterface->claimNextRunNumber(conditionID_, dumpSs.str());
 					}  // end Run Info Plugin handling
 
 					// test Require user log info
@@ -3511,7 +3577,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 		xmldoc.outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
 	}
 
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Login end clock=" << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
+	__COUTT__ << "Login end clock=" << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
 }  // end loginRequest()
 
 //==============================================================================

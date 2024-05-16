@@ -299,7 +299,7 @@ void ConfigurationSupervisorBase::handleCreateTableGroupXML(HttpXmlDocument&    
                                                             bool                    reuseCache)
 try
 {
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "handleCreateTableGroupXML start runtime=" << cfgMgr->runTimeSeconds() << __E__;
+	__COUTT__ << "handleCreateTableGroupXML start runtime=" << cfgMgr->runTimeSeconds() << __E__;
 
 	xmlOut.addTextElementToData("AttemptedNewGroupName", groupName);
 
@@ -315,7 +315,7 @@ try
 	__COUT_WARN__ << "Ignoring these errors: " << accumulatedWarnings << __E__;
 	// cfgMgr->loadConfigurationBackbone(); //already loaded by initializeActiveGroups of getAllTableInfo
 
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "handleCreateTableGroupXML loaded runtime=" << cfgMgr->runTimeSeconds() << __E__;
+	__COUTT__ << "handleCreateTableGroupXML loaded runtime=" << cfgMgr->runTimeSeconds() << __E__;
 
 	std::map<std::string /*tableName*/, std::map<std::string /*aliasName*/, TableVersion /*version*/>> versionAliases = cfgMgr->getVersionAliases();
 	//	for(const auto& aliases : versionAliases)
@@ -429,7 +429,7 @@ try
 		groupMembers[name] = version;
 	}  // end member verification loop
 
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "handleCreateTableGroupXML tables saved runtime=" << cfgMgr->runTimeSeconds() << __E__;
+	__COUTT__ << "handleCreateTableGroupXML tables saved runtime=" << cfgMgr->runTimeSeconds() << __E__;
 
 	__COUTV__(StringMacros::mapToString(memberTableAliases));
 
@@ -439,7 +439,7 @@ try
 		try
 		{
 			TableGroupKey foundKey = cfgMgr->findTableGroup(groupName, groupMembers, memberTableAliases);
-			__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "handleCreateTableGroupXML group duplicates checked runtime=" << cfgMgr->runTimeSeconds() << __E__;
+			__COUTT__ << "handleCreateTableGroupXML group duplicates checked runtime=" << cfgMgr->runTimeSeconds() << __E__;
 			if(!foundKey.isInvalid())
 			{
 				// return found equivalent key
@@ -518,7 +518,7 @@ try
 		return;
 	}
 
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "handleCreateTableGroupXML group members init checked runtime=" << cfgMgr->runTimeSeconds() << __E__;
+	__COUTT__ << "handleCreateTableGroupXML group members init checked runtime=" << cfgMgr->runTimeSeconds() << __E__;
 
 	// check the tree for warnings before creating group
 	std::string accumulateTreeErrs;
@@ -533,7 +533,7 @@ try
 		}
 	}
 
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "handleCreateTableGroupXML tree checked runtime=" << cfgMgr->runTimeSeconds() << __E__;
+	__COUTT__ << "handleCreateTableGroupXML tree checked runtime=" << cfgMgr->runTimeSeconds() << __E__;
 
 	TableGroupKey newKey;
 	try
@@ -563,14 +563,14 @@ try
 		return;
 	}
 
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "handleCreateTableGroupXML group saved runtime=" << cfgMgr->runTimeSeconds() << __E__;
+	__COUTT__ << "handleCreateTableGroupXML group saved runtime=" << cfgMgr->runTimeSeconds() << __E__;
 
 	// insert get table info
 	__COUT__ << "Loading new table group..." << __E__;
 	handleGetTableGroupXML(xmlOut, cfgMgr, groupName, newKey, ignoreWarnings);
 
 
-	__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "handleCreateTableGroupXML end runtime=" << cfgMgr->runTimeSeconds() << __E__;
+	__COUTT__ << "handleCreateTableGroupXML end runtime=" << cfgMgr->runTimeSeconds() << __E__;
 
 }  // end handleCreateTableGroupXML()
 catch(std::runtime_error& e)
@@ -647,9 +647,9 @@ try
 		const GroupInfo&               groupInfo  = cfgMgr->getGroupInfo(groupName);
 		const std::set<TableGroupKey>& sortedKeys = groupInfo.keys_;  // rename
 
-		__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << groupName << " keys: " << StringMacros::setToString(groupInfo.keys_) << __E__;
-		__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Active groups: " << StringMacros::mapToString(cfgMgr->getActiveTableGroups()) << __E__;
-		__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Active tables: " << StringMacros::mapToString(cfgMgr->getActiveVersions()) << __E__;
+		__COUTT__ << groupName << " keys: " << StringMacros::setToString(groupInfo.keys_) << __E__;
+		__COUTT__ << "Active groups: " << StringMacros::mapToString(cfgMgr->getActiveTableGroups()) << __E__;
+		__COUTT__ << "Active tables: " << StringMacros::mapToString(cfgMgr->getActiveVersions()) << __E__;
 
 		if(groupKey.isInvalid() ||  // if invalid or not found, get latest
 		   sortedKeys.find(groupKey) == sortedKeys.end())
@@ -659,10 +659,10 @@ try
 			{
 				// attempt to reload all group info and power through
 				std::string accumulatedWarnings;
-				__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Attempting full table refresh (assuming cache not yet established)." << __E__;
+				__COUTT__ << "Attempting full table refresh (assuming cache not yet established)." << __E__;
 				/*const std::map<std::string, TableInfo>& allTableInfo = */ cfgMgr->getAllTableInfo(true /* refresh */, 
 					&accumulatedWarnings, "" /* errorFilterName */, true /* getGroupKeys*/, false /* getGroupInfo */, true /* initializeActiveGroups */);
-				__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "After full table refresh (assuming cache not yet established) so ignoring these errors: " << accumulatedWarnings << __E__;
+				__COUTT__ << "After full table refresh (assuming cache not yet established) so ignoring these errors: " << accumulatedWarnings << __E__;
 
 				// xmlOut.addTextElementToData("Error", ss.str());
 
@@ -701,12 +701,12 @@ try
 
 		if(cfgMgr->getActiveVersions().size() == 0)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "There are no active tables. Attempting to initialize active groups." << __E__;
+			__COUTT__ << "There are no active tables. Attempting to initialize active groups." << __E__;
 			//if no active tables, attempt to init active groups (it should prevent confusing warnings to users complaining about a partially loaded configuration)
 			std::string tmpAccumulateWarnings;
 			cfgMgr->init(0 /*accumulatedErrors*/, false /*initForWriteAccess*/, &tmpAccumulateWarnings); 
-			__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Now Active tables: " << StringMacros::mapToString(cfgMgr->getActiveVersions()) << __E__;
-			__COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Ingoring warnings during init of active groups: " << tmpAccumulateWarnings << __E__;
+			__COUTT__ << "Now Active tables: " << StringMacros::mapToString(cfgMgr->getActiveVersions()) << __E__;
+			__COUTT__ << "Ingoring warnings during init of active groups: " << tmpAccumulateWarnings << __E__;
 		}
 	}
 	

@@ -1096,7 +1096,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 // if accumulateWarnings, then put in string, do not throw
 void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap, std::string* accumulatedWarnings /* =0 */)
 {
-	__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "runTimeSeconds: " << runTimeSeconds() << __E__;
+	__GEN_COUTT__ << "runTimeSeconds: " << runTimeSeconds() << __E__;
 
 	TableBase* tmpTableBasePtr;
 
@@ -1111,7 +1111,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 		usingCache = true;
 	}
 	if(usingCache)
-		__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Using cache!" << __E__;
+		__GEN_COUTT__ << "Using cache!" << __E__;
 
 	const int numOfThreads = PROCESSOR_COUNT/2;
 	if(1 || usingCache || numOfThreads < 2) // no multi-threading
@@ -1256,13 +1256,13 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 						}
 					if(foundThreadIndex == -1)
 					{
-						__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Waiting for available thread..." << __E__;
+						__GEN_COUTT__ << "Waiting for available thread..." << __E__;
 						usleep(10000);
 					}
 				} //end thread search loop
 				threadsLaunched = numOfThreads - 1;
 			}					
-			__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Starting filling thread... " << foundThreadIndex << " for " << memberPair.first << " -v" << memberPair.second << __E__;
+			__GEN_COUTT__ << "Starting filling thread... " << foundThreadIndex << " for " << memberPair.first << " -v" << memberPair.second << __E__;
 			*(threadDone[foundThreadIndex]) = false;
 
 			// get the proper temporary pointer
@@ -1318,17 +1318,17 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 				}
 			if(foundThreadIndex != -1)
 			{
-				__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
+				__GEN_COUTT__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
 				usleep(10000);
 			}
 		} while(foundThreadIndex != -1); //end thread done search loop
-		__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "All threads done." << __E__;
+		__GEN_COUTT__ << "All threads done." << __E__;
 
 		if(threadErrors != "")
 		{			
 			__SS__ << "Error identified in threads during loading of member map: \n" <<
 				 threadErrors << __E__;
-			__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "\n" << ss.str() << __E__;
+			__GEN_COUTT__ << "\n" << ss.str() << __E__;
 			if(accumulatedWarnings)
 				*accumulatedWarnings += ss.str();
 			else
@@ -1336,7 +1336,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 		} 
 	} //end multi-thread handling
 
-	__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "loadMemberMap end Clock time = " << runTimeSeconds() <<__E__;	
+	__GEN_COUTT__ << "loadMemberMap end Clock time = " << runTimeSeconds() <<__E__;	
 }  // end loadMemberMap()
 
 //==============================================================================
@@ -1386,7 +1386,7 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 	if(groupTypeString)
 		*groupTypeString = ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN;
 	else
-		__GEN_COUT_TYPE__(TLVL_DEBUG+20) << "No group type requested." << __E__;
+		__GEN_COUTT__ << "No group type requested." << __E__;
 
 	//	if(groupName == "defaultConfig")
 	//	{ //debug active versions
@@ -1413,7 +1413,7 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 	//		set theConfigurationTableGroup_, theContextTableGroup_, or
 	// theBackboneTableGroup_ on success
 
-	__GEN_COUT_TYPE__(TLVL_DEBUG+20) << "Loading Table Group: " << groupName <<
+	__GEN_COUTT__ << "Loading Table Group: " << groupName <<
 			"(" << groupKey << ")" << __E__;
 
 	//failing member map load should be an exception!
@@ -1553,7 +1553,7 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 				*groupTypeString = convertGroupTypeToName(groupType);
 			}
 			else
-				__GEN_COUT_TYPE__(TLVL_DEBUG+20) << "No group type requested." << __E__;
+				__GEN_COUTT__ << "No group type requested." << __E__;
 
 			if(doNotLoadMembers)
 				return;  //this is useful if just getting group metadata
@@ -1616,7 +1616,7 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 			if(progressBar)
 				progressBar->step();
 
-			__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "loadMemberMap() completed." << __E__;
+			__GEN_COUTT__ << "loadMemberMap() completed." << __E__;
 
 			if(accumulatedWarnings)
 			{
@@ -1634,7 +1634,7 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 			if(progressBar)
 				progressBar->step();
 			
-			__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Tree view check complete." << __E__;
+			__GEN_COUTT__ << "Tree view check complete." << __E__;
 
 			//	for each member
 			//		if doActivate, configBase->init()
@@ -1738,13 +1738,13 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 									}
 								if(foundThreadIndex == -1)
 								{
-									__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Waiting for available thread..." << __E__;
+									__GEN_COUTT__ << "Waiting for available thread..." << __E__;
 									usleep(10000);
 								}
 							} //end thread search loop
 							threadsLaunched = numOfThreads - 1;
 						}					
-						__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Starting init table thread... " << foundThreadIndex << " for " << memberPair.first << __E__;
+						__GEN_COUTT__ << "Starting init table thread... " << foundThreadIndex << " for " << memberPair.first << __E__;
 						*(threadDone[foundThreadIndex]) = false;
 
 						std::thread([](
@@ -1779,7 +1779,7 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 							}
 						if(foundThreadIndex != -1)
 						{
-							__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
+							__GEN_COUTT__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
 							usleep(10000);
 						}
 					} while(foundThreadIndex != -1); //end thread done search loop
@@ -1876,14 +1876,14 @@ void ConfigurationManager::loadTableGroup(const std::string&                    
 			}
 		}
 
-		__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "loadTableGroup() complete." << __E__;
+		__GEN_COUTT__ << "loadTableGroup() complete." << __E__;
 		lastGroupLoad_[convertGroupTypeToName(groupType)] =
 			std::make_pair(std::make_pair(groupName, TableGroupKey(groupKey)), memberMap);
 		return;
 	}
 	catch(...)
 	{
-		__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "loadTableGroup() failed." << __E__;
+		__GEN_COUTT__ << "loadTableGroup() failed." << __E__;
 		
 		// save group name and key of failed load attempt
 		lastFailedGroupLoad_[ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN] = std::pair<std::string, TableGroupKey>(groupName, TableGroupKey(groupKey));
@@ -1971,7 +1971,7 @@ void ConfigurationManager::copyTableGroupFromCache(
 		//		get()
 		for(auto& memberPair : memberMap)
 		{
-			__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Copying " << memberPair.first << "-v" << memberPair.second << __E__;
+			__GEN_COUTT__ << "Copying " << memberPair.first << "-v" << memberPair.second << __E__;
 
 			//if table does not exist, create it
 			if(nameToTableMap_.find(memberPair.first) == nameToTableMap_.end())
@@ -1996,7 +1996,7 @@ void ConfigurationManager::copyTableGroupFromCache(
 			//	to make the new view the active view do this:
 			// 		nameToTableMap_.at(memberPair.first)->setActiveView(memberPair.second);
 		} //end member map copy loop
-		__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Done with member copy loop." << __E__;
+		__GEN_COUTT__ << "Done with member copy loop." << __E__;
 
 		//	for each member
 		//		if doActivate, configBase->init()
@@ -2085,13 +2085,13 @@ void ConfigurationManager::copyTableGroupFromCache(
 								}
 							if(foundThreadIndex == -1)
 							{
-								__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Waiting for available thread..." << __E__;
+								__GEN_COUTT__ << "Waiting for available thread..." << __E__;
 								usleep(10000);
 							}
 						} //end thread search loop
 						threadsLaunched = numOfThreads - 1;
 					}					
-					__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Starting init table thread... " << foundThreadIndex << " for " << memberPair.first << __E__;
+					__GEN_COUTT__ << "Starting init table thread... " << foundThreadIndex << " for " << memberPair.first << __E__;
 					*(threadDone[foundThreadIndex]) = false;
 
 					std::thread([](
@@ -2126,7 +2126,7 @@ void ConfigurationManager::copyTableGroupFromCache(
 						}
 					if(foundThreadIndex != -1)
 					{
-						__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
+						__GEN_COUTT__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
 						usleep(10000);
 					}
 				} while(foundThreadIndex != -1); //end thread done search loop
@@ -2188,14 +2188,14 @@ void ConfigurationManager::copyTableGroupFromCache(
 							"plug-ins in member map"
 						<< "']" << __E__;
 		
-		__GEN_COUT_TYPE__(TLVL_DEBUG+12) << __COUT_HDR__ << "Completed cache copy." << __E__;
+		__GEN_COUTT__ << "Completed cache copy." << __E__;
 		if(groupName != "" && !TableGroupKey(groupKey).isInvalid())
 			lastGroupLoad_[convertGroupTypeToName(groupType)] = 
 				make_pair(make_pair(groupName, TableGroupKey(groupKey)), memberMap);		
 	}  // end failed group load try
 	catch(...)
 	{		
-		__GEN_COUT_TYPE__(TLVL_DEBUG) << __COUT_HDR__ << "Unknown failure in cache copy." << __E__;
+		__GEN_COUT__ << "Unknown failure in cache copy." << __E__;
 		// save group name and key of failed load attempt
 		lastFailedGroupLoad_[convertGroupTypeToName(groupType)] = std::pair<std::string, TableGroupKey>(groupName, TableGroupKey(groupKey));
 		throw;
@@ -2284,7 +2284,7 @@ void ConfigurationManager::fillTableThread(ConfigurationInterface* 					theInter
 											std::shared_ptr<std::atomic<bool>> 		threadDone)
 try
 {
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Thread fill of " << tableName << "-v" << version << __E__;
+	__COUTT__ << "Thread fill of " << tableName << "-v" << version << __E__;
 
 	// std::map<std::string, ots::TableBase *> n;
 	// std::map<std::string, ots::TableBase *>*nameToTableMap = &n;
@@ -2353,7 +2353,7 @@ try
 	if(getError != "") 
 		__COUTV__(getError);
 
-	//__GEN_COUT__ << "Checking ptr.. " <<  (tmpTableBasePtr?"GOOD":"BAD") << __E__;
+	__COUTT__ << "Checking ptr.. " << (table?"GOOD":"BAD") << __E__;
 	if(!table)
 	{
 		__SS__ << "Null pointer returned for table '" << tableName << ".' Was the table info deleted?" << __E__;
@@ -2379,8 +2379,7 @@ try
 
 	if(nameToTableMap->at(tableName)->getViewP())
 	{
-		//__GEN_COUT__ << "Activated version: " <<
-		// nameToTableMap_[memberPair.first]->getViewVersion() << __E__;
+		__COUTT__ << "Activated version: " << nameToTableMap->at(tableName)->getViewVersion() << __E__;
 
 		if(threadErrors && getError != "")
 		{
@@ -2396,7 +2395,7 @@ try
 		__SS_THROW__;
 	}
 
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "end Thread fill of " << tableName << "-v" << version << __E__;
+	__COUTT__ << "end Thread fill of " << tableName << "-v" << version << __E__;
 	*(threadDone) = true;
 } // end fillTableThread()
 catch(const std::runtime_error& e)
