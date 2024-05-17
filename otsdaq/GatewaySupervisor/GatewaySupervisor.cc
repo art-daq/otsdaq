@@ -1105,6 +1105,7 @@ try
 					}
 
 					conditionID_ = runInfoInterface->insertRunCondition(dumpSs.str());
+					delete runInfoInterface;
 				}  // end Run Info Plugin handling
 
 			}  // end handle state machine config link
@@ -1196,6 +1197,7 @@ try
 						}
 
 						runNumber = runInfoInterface->claimNextRunNumber(conditionID_, dumpSs.str());
+						delete runInfoInterface;
 					}  // end Run Info Plugin handling
 
 					// test Require user log info
@@ -1419,6 +1421,7 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::PAUSE);
+					delete RunInfoVInterface;
 				}
 			}
 		}
@@ -1479,6 +1482,7 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::RESUME);
+					delete runInfoInterface;
 				}
 			}
 		}
@@ -1545,6 +1549,7 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::HALT);
+					delete runInfoInterface;
 				}
 			}
 		}
@@ -1611,6 +1616,7 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 					}
 
 					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::STOP);
+					delete runInfoInterface;
 				}
 			}
 		}
@@ -1680,6 +1686,7 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::ERROR);
+					delete runInfoInterface;
 				}
 			}
 		}
