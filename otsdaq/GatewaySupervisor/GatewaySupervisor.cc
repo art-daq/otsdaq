@@ -1421,7 +1421,7 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::PAUSE);
-					delete RunInfoVInterface;
+					delete runInfoInterface;
 				}
 			}
 		}
