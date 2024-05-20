@@ -1079,7 +1079,7 @@ try
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
 				{
-					RunInfoVInterface* runInfoInterface = nullptr;
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
 						std::string dumpFormat = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
@@ -1092,7 +1092,7 @@ try
 							theWebUsers_.getActiveUsersString(),
 							dumpSs);
 
-						runInfoInterface = makeRunInfo(runInfoPluginType, activeStateMachineName_);
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 					}
 					catch(...)
 					{
@@ -1167,7 +1167,7 @@ try
 					__COUTV__(runInfoPluginType);
 					if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
 					{
-						RunInfoVInterface* runInfoInterface = nullptr;
+						std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 						try
 						{
 							std::string dumpFormat = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
@@ -1180,7 +1180,7 @@ try
 							    theWebUsers_.getActiveUsersString(),
 							    dumpSs);
 
-							runInfoInterface = makeRunInfo(runInfoPluginType, activeStateMachineName_);
+							runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 							// ,
 							// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 							// CorePropertySupervisorBase::getSupervisorConfigurationPath());
@@ -1403,10 +1403,10 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
 				{
-					RunInfoVInterface* runInfoInterface = nullptr;
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface = makeRunInfo(runInfoPluginType, activeStateMachineName_);
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 					}
 					catch(...)
 					{
@@ -1463,10 +1463,10 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
 				{
-					RunInfoVInterface* runInfoInterface = nullptr;
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface = makeRunInfo(runInfoPluginType, activeStateMachineName_);
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 					}
 					catch(...)
 					{
@@ -1526,10 +1526,10 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
 				{
-					RunInfoVInterface* runInfoInterface = nullptr;
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface = makeRunInfo(runInfoPluginType, activeStateMachineName_);
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 						// ,
 						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
@@ -1592,10 +1592,10 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
 				{
-					RunInfoVInterface* runInfoInterface = nullptr;
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface = makeRunInfo(runInfoPluginType, activeStateMachineName_);
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 						// ,
 						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
@@ -1661,10 +1661,10 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
 				{
-					RunInfoVInterface* runInfoInterface = nullptr;
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface = makeRunInfo(runInfoPluginType, activeStateMachineName_);
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 						// ,
 						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
