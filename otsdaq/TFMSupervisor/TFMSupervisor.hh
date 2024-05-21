@@ -81,6 +81,7 @@ class TFMSupervisor : public CoreSupervisorBase
     void xmlrpc_cleanup();
 
     int killAllRunningFarmManagers();
+    int writeSettings(std::string configName);
 
 
 	//PyObject*                    daqinterface_ptr_;
