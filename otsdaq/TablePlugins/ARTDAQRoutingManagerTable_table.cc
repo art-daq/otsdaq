@@ -103,38 +103,44 @@ unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
 				if(routingManagerPair.second.getNode("daqMetricsLink").isDisconnected())
 					continue;
 
-				auto daqMetricsLinks = routingManagerPair.second.getNode("daqMetricsLink").getChildren();
-				for(auto& daqMetricsLink : daqMetricsLinks)  // start daqMetricsLinks record loop
-				{
-					if(!daqMetricsLink.second.status())
-						continue;
+                ConfigurationTree slowControlsLink = routingManagerPair.second.getNode("MetricAlarmThresholdsLink");
 
-					if(daqMetricsLink.second.getNode("metricParametersLink").isDisconnected())
-						continue;
+                // check if epics is present, if it is maybe extract subsystem?
+                bool epcisFound = false;
+                std::string subsystem = std::string("TDAQ_") + __ENV__("MU2E_OWNER");
+                auto daqMetricsLinks = routingManagerPair.second.getNode("daqMetricsLink").getChildren();
+                for(auto& daqMetricsLink : daqMetricsLinks)
+                {
+                    if(!daqMetricsLink.second.status())
+                    continue;
+                    if(daqMetricsLink.second.getNode("metricPluginType").getValue<std::string>() == "epics") {
+                        epcisFound = true;
 
-					// ConfigurationTree slowControlsLink = configManager->getNode("ARTDAQMetricAlarmThresholdsTable");
-					ConfigurationTree slowControlsLink = routingManagerPair.second.getNode("MetricAlarmThresholdsLink");
+                        if(!daqMetricsLink.second.getNode("metricParametersLink").isDisconnected()) {
+                            auto metricParametersLinks = daqMetricsLink.second.getNode("metricParametersLink").getChildren();
+                            for(auto& metricParametersLink : metricParametersLinks) {
+                                if(!metricParametersLink.second.status()) {
+							        continue;
+                                }
+                                if( metricParametersLink.second.getNode("metricParameterKey").getValue<std::string>() == "subsystem" ) {
+                                    subsystem = metricParametersLink.second.getNode("metricParameterValue").getValue<std::string>();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                if(!epcisFound) continue;
+                if(subsystem.find("Mu2e:") != std::string::npos)
+				    subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
+				while(subsystem.find("\"") != std::string::npos)
+					subsystem = subsystem.replace(subsystem.find("\""), 1, "");
 
-					auto metricParametersLinks = daqMetricsLink.second.getNode("metricParametersLink").getChildren();
-					for(auto& metricParametersLink : metricParametersLinks)  // start daq MetricParametersLinks record loop
-					{
-						if(!metricParametersLink.second.status())
-							continue;
-
-						std::string subsystem = metricParametersLink.second.getNode("metricParameterValue")
-						                            .getValueWithDefault<std::string>(std::string("TDAQ_") + __ENV__("MU2E_OWNER"));
-						if(subsystem.find("Mu2e:") != std::string::npos)
-							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
-						while(subsystem.find("\"") != std::string::npos)
-							subsystem = subsystem.replace(subsystem.find("\""), 1, "");
-
-						numberOfRoutingManagerMetricParameters =
-						    slowControlsHandler(out, tabStr, commentStr, subsystem, routingManagerPair.first, slowControlsLink, channelList);
-
-						__COUT__ << "RoutingManager '" << routingManagerPair.first
-						         << "' number of metrics for slow controls: " << numberOfRoutingManagerMetricParameters << __E__;
-					}
-				}
+				auto numberOfRoutingManagerMetricParametersThis =
+					slowControlsHandler(out, tabStr, commentStr, subsystem, routingManagerPair.first, slowControlsLink, channelList);
+			    __COUT__ << "Dispatcher '" << routingManagerPair.first << "' number of metrics for slow controls: " << numberOfRoutingManagerMetricParametersThis
+					<< __E__;
+                numberOfRoutingManagerMetricParameters += numberOfRoutingManagerMetricParametersThis;
 			}
 			catch(const std::runtime_error& e)
 			{

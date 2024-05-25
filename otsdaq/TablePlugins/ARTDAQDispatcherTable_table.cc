@@ -108,38 +108,44 @@ unsigned int ARTDAQDispatcherTable::slowControlsHandlerConfig(std::stringstream&
 				if(daqLink.getNode("daqMetricsLink").isDisconnected())
 					continue;
 
-				auto daqMetricsLinks = daqLink.getNode("daqMetricsLink").getChildren();
-				for(auto& daqMetricsLink : daqMetricsLinks)  // start daqMetricsLinks record loop
-				{
-					if(!daqMetricsLink.second.status())
-						continue;
+                ConfigurationTree slowControlsLink = dispatcherPair.second.getNode("MetricAlarmThresholdsLink");
 
-					if(daqMetricsLink.second.getNode("metricParametersLink").isDisconnected())
-						continue;
+                // check if epics is present, if it is maybe extract subsystem?
+                bool epcisFound = false;
+                std::string subsystem = std::string("TDAQ_") + __ENV__("MU2E_OWNER");
+                auto daqMetricsLinks = daqLink.getNode("daqMetricsLink").getChildren();
+                for(auto& daqMetricsLink : daqMetricsLinks)
+                {
+                    if(!daqMetricsLink.second.status())
+                    continue;
+                    if(daqMetricsLink.second.getNode("metricPluginType").getValue<std::string>() == "epics") {
+                        epcisFound = true;
 
-					// ConfigurationTree slowControlsLink = configManager->getNode("ARTDAQMetricAlarmThresholdsTable");
-					ConfigurationTree slowControlsLink = dispatcherPair.second.getNode("MetricAlarmThresholdsLink");
+                        if(!daqMetricsLink.second.getNode("metricParametersLink").isDisconnected()) {
+                            auto metricParametersLinks = daqMetricsLink.second.getNode("metricParametersLink").getChildren();
+                            for(auto& metricParametersLink : metricParametersLinks) {
+                                if(!metricParametersLink.second.status()) {
+							        continue;
+                                }
+                                if( metricParametersLink.second.getNode("metricParameterKey").getValue<std::string>() == "subsystem" ) {
+                                    subsystem = metricParametersLink.second.getNode("metricParameterValue").getValue<std::string>();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                if(!epcisFound) continue;
+                if(subsystem.find("Mu2e:") != std::string::npos)
+				    subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
+				while(subsystem.find("\"") != std::string::npos)
+					subsystem = subsystem.replace(subsystem.find("\""), 1, "");
 
-					auto metricParametersLinks = daqMetricsLink.second.getNode("metricParametersLink").getChildren();
-					for(auto& metricParametersLink : metricParametersLinks)  // start daq MetricParametersLinks record loop
-					{
-						if(!metricParametersLink.second.status())
-							continue;
-
-						std::string subsystem = metricParametersLink.second.getNode("metricParameterValue")
-						                            .getValueWithDefault<std::string>(std::string("TDAQ_") + __ENV__("MU2E_OWNER"));
-						if(subsystem.find("Mu2e:") != std::string::npos)
-							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
-						while(subsystem.find("\"") != std::string::npos)
-							subsystem = subsystem.replace(subsystem.find("\""), 1, "");
-
-						numberOfDispatcherMetricParameters =
-						    slowControlsHandler(out, tabStr, commentStr, subsystem, dispatcherPair.first, slowControlsLink, channelList);
-
-						__COUT__ << "Dispatcher '" << dispatcherPair.first << "' number of metrics for slow controls: " << numberOfDispatcherMetricParameters
-						         << __E__;
-					}
-				}
+				auto numberOfDispatcherMetricParametersThis =
+					slowControlsHandler(out, tabStr, commentStr, subsystem, dispatcherPair.first, slowControlsLink, channelList);
+			    __COUT__ << "Dispatcher '" << dispatcherPair.first << "' number of metrics for slow controls: " << numberOfDispatcherMetricParametersThis
+					<< __E__;
+                numberOfDispatcherMetricParameters += numberOfDispatcherMetricParametersThis;
 			}
 			catch(const std::runtime_error& e)
 			{
