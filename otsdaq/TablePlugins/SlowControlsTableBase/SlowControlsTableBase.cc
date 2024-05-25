@@ -150,7 +150,10 @@ unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&      
 
 			++numberOfChannels;
 
-			std::string pvName    = channel.first;
+			// FESlowControlsTable uses the UID, called ChannelName as pvName
+			// ARTDAQMetricAlarmThresholdsTable doesn't use the UID (aka first), both are called ChannelName now
+			//std::string pvName    = channel.first; // first is UID, we want MetricName
+			std::string pvName    = channel.second.getNode(channelColNames_.colChannelName_).getValue<std::string>();
 			std::string comment   = channel.second.getNode(TableViewColumnInfo::COL_NAME_COMMENT).getValue<std::string>();
 			std::string precision = "0";
 			std::string units     = channel.second.getNode(channelColNames_.colUnits_).getValue<std::string>();

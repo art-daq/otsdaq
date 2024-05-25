@@ -60,7 +60,8 @@ class SlowControlsTableBase : virtual public TableBase //virtual so future plugi
 	// Column names
 	struct ColChannel
 	{
-		std::string const colMetricName_ 			= "MetricName";
+		std::string const colMetricName_ 			= "MetricName";// no longer used! 
+		std::string const colChannelName_ 			= "ChannelName";
 		std::string const colStatus_ 				= "Status";
 		std::string const colUnits_ 				= "Units";
 		std::string const colChannelDataType_		= "ChannelDataType";
