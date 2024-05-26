@@ -111,7 +111,7 @@ class TFMSupervisor : public CoreSupervisorBase
     //std::future<void>            tfm_;
     pid_t                        tfm_;
     std::list<std::pair<DAQInterfaceProcessInfo, std::unique_ptr<artdaq::CommanderInterface>>> commanders_;
-    bool                         daq_repoers_enabled_;
+    bool                         daq_reports_enabled_;
     std::map<std::string, std::string> daq_reports_;
     std::map<std::string, std::chrono::time_point<std::chrono::high_resolution_clock>> daq_reports_update_time_;
 

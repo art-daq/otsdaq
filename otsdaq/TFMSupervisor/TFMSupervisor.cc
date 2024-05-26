@@ -122,7 +122,7 @@ TFMSupervisor::TFMSupervisor(xdaq::ApplicationStub* stub)
     , runner_thread_(nullptr)
     , tfm_(0)
     , commanders_()
-    , daq_repoers_enabled_(false)
+    , daq_reports_enabled_(false)
 {
 	__SUP_COUT__ << "Constructor." << __E__;
 
@@ -217,7 +217,7 @@ void TFMSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
         __SUP_COUT__ << "transitionConfiguring" << __E__;
         std::string configName = getSupervisorProperty("tfm_config", "demo_config");
         bool generateConfig    = getSupervisorProperty("tfm_generate_config", true);
-        daq_repoers_enabled_   = getSupervisorProperty("tfm_daq_repoers_enabled_", true);
+        daq_reports_enabled_   = getSupervisorProperty("tfm_daq_reports_enabled_", true);
 
         setenv("TFM_CONFIG_NAME",configName.c_str(), 1);
         if(generateConfig) {
@@ -271,6 +271,7 @@ void TFMSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
             
             std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
             setTfmState_("booting");
+            resetTfmStateTime_(); // reset timeout timer in case we were already booting from a failed attampt
             //current_transition_timeout_ms_ = 3000;
             daqinterface_mutex_.unlock();
             usleep(1000000); // 1s
@@ -302,9 +303,10 @@ void TFMSupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
 //try
 {
     __SUP_COUT__ << "transitionHalting" << __E__;
-    commanders_.clear(); // stop updating daq reports
     //xmlrpc_setup();
     std::string msg;
+    std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_); // let ongoing reads finish
+    commanders_.clear(); // stop updating daq reports
     int rc = xmlrpc("shutdown","(s)","daqint", msg);
     if(rc != 0) {
         __SUP_COUT__ << "rpc result: " << __E__;
@@ -312,8 +314,8 @@ void TFMSupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
     } else {
         TLOG(TLVL_DEBUG) << "xmlrpc result: " << msg << __E__;
     }
-
     stop_runner_();
+    daqinterface_mutex_.unlock();
     xmlrpc_cleanup();
     return;
 }  // end transitionHalting() exception handling
@@ -545,6 +547,8 @@ std::vector<SupervisorInfo::SubappInfo> ots::TFMSupervisor::getSubappInfo(void)
             auto                                    apps = getAndParseProcessInfo_();
             std::vector<SupervisorInfo::SubappInfo> output;
             for(auto& app : apps)
+
+
             {
                 SupervisorInfo::SubappInfo info;
 
@@ -569,7 +573,6 @@ std::vector<SupervisorInfo::SubappInfo> ots::TFMSupervisor::getSubappInfo(void)
 //==============================================================================
 void ots::TFMSupervisor::getDAQState_()
 {   
-    std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
 
     std::string state;
     if(xmlrpc("get_state","(s)","daqint", state) == 0) {
@@ -720,12 +723,16 @@ void ots::TFMSupervisor::daqinterfaceRunner_()
     unsigned int cnt = 0;
 	while(runner_running_)
 	{   
+
+        std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+        if(!runner_running_) break; // if the thread is stoped while waiting for mutex
         getDAQState_();
-        TLOG(TLVL_INFO) << "daq_repoers_enabled_: " << daq_repoers_enabled_ << " && (" << cnt << " % 5 == 0 :" << ((cnt) % 5 == 0) << __E__; 
-        if(daq_repoers_enabled_ && ((++cnt) % 5 == 0)) {
+        TLOG(TLVL_DEBUG+5) << "daq_reports_enabled_: " << daq_reports_enabled_ << " && (" << cnt << " % 5 == 0 :" << ((cnt) % 5 == 0) << __E__; 
+        if(daq_reports_enabled_ && ((++cnt) % 5 == 0)) {
             getDAQReports_();
-            TLOG(TLVL_INFO) << getDAQReport() << __E__;
+            TLOG(TLVL_DEBUG+5) << getDAQReport() << __E__;
         }
+        daqinterface_mutex_.unlock();
 		usleep(1000000); // 1s
 	}
 	runner_running_ = false;
@@ -737,6 +744,7 @@ void ots::TFMSupervisor::daqinterfaceRunner_()
 void ots::TFMSupervisor::stop_runner_()
 {
 	runner_running_ = false;
+    tfm_connected_ = 0; // force disconnect tfm 
 	if(runner_thread_ && runner_thread_->joinable())
 	{
 		runner_thread_->join();
@@ -939,7 +947,7 @@ int TFMSupervisor::writeSettings(std::string configName) {
     const int fw = 30; // fixed width
     o << std::left;
 	o << std::setw(fw) << "debug_level"             << ": " << debugLevel;
-    o << std::setw(fw)<< "# debug_level ranges from 1 to 4 in increasing level of verbosity" << std::endl;
+    o << std::setw(fw)<< " # debug_level ranges from 1 to 4 in increasing level of verbosity" << std::endl;
     o << std::setw(fw) << "daq_setup_script"        << ": "  << setupScript << std::endl;
     auto top_output_dir = getSupervisorProperty("top_output_dir", std::string(__ENV__("OTS_SCRATCH")));
     o << std::setw(fw) << "top_output_dir"          << ": "  << top_output_dir << std::endl;
@@ -976,45 +984,45 @@ int TFMSupervisor::writeSettings(std::string configName) {
     o << std::setw(fw) << "aggregator timeout"             << ": " << getSupervisorProperty("aggregator_timeout", 30) << std::endl;
     o << std::endl;
 
-    o << std::setw(fw) << "advanced_memory_usage: "        << ": " << std::boolalpha << getSupervisorProperty("advanced_memory_usage", false) << " # default \"false\"" << std::endl;
+    o << std::setw(fw) << "advanced_memory_usage "         << ": " << std::boolalpha << getSupervisorProperty("advanced_memory_usage", false) << " # default \"false\"" << std::endl;
     o << "# If set to \"true\", max_fragment_size_bytes must not be set as both settings deal with the same thing " << std::endl;
     o << "#in mutually exclusive ways: the size of fragments and events which can pass through the artdaq system. " << std::endl;
     o << "#advanced_memory_usage allows for more sophisticated fine-tuning of these sizes, and warrants its own section. " << std::endl;
     o << "#Info is provided in the memory management details section." << std::endl;
 	// Only put max_fragment_size_bytes into DAQInterface settings file if advanced_memory_usage is disabled
-	//if(!getSupervisorProperty("advanced_memory_usage", false)) {
-	//	o << std::setw(fw) << "max_fragment_size_bytes"    << ": " << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
-	//} else {
-    //    o << std::setw(fw) << "#max_fragment_size_bytes"   << ": " << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
-    //}
+	if(!getSupervisorProperty("advanced_memory_usage", false)) {
+		o << std::setw(fw) << "max_fragment_size_bytes"    << ": " << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
+	} else {
+        o << std::setw(fw) << "#max_fragment_size_bytes"   << ": " << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
+    }
     // but tfm complains if max_fragment_size_byte is not present, for now, add it
-    o << std::setw(fw) << "max_fragment_size_bytes"    << ": " << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
+    // o << std::setw(fw) << "max_fragment_size_bytes"    << ": " << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
     auto transfer_plugin_to_use = getSupervisorProperty("transfer_plugin_to_use", "Autodetect");
     if(transfer_plugin_to_use != "Autodetect") {
 	    o << std::setw(fw) << "transfer_plugin_to_use"     << ": " <<  transfer_plugin_to_use << std::endl;
     } else {
-        o << std::setw(fw) << "#transfer_plugin_to_use"    << ": " <<  transfer_plugin_to_use << std::endl;
+        o << std::setw(fw) << " #transfer_plugin_to_use"   << ": " <<  transfer_plugin_to_use << std::endl;
     }
 	auto disable_unique_rootfile_labels = getSupervisorProperty("disable_unique_rootfile_labels", false);
     if(disable_unique_rootfile_labels != true) {
         o << std::setw(fw) << "disable_unique_rootfile_labels" << ": " <<  disable_unique_rootfile_labels << std::endl;
     } else {
-        o << std::setw(fw) << "#disable_unique_rootfile_labels" << ": " <<  disable_unique_rootfile_labels << std::endl;
+        o << std::setw(fw) << "# disable_unique_rootfile_labels" << ": " <<  disable_unique_rootfile_labels << std::endl;
     }
     o << std::setw(fw) << "use_messageviewer"              << ": " <<  std::boolalpha << getSupervisorProperty("use_messageviewer", false) << std::endl;
 	auto use_messagefacility = getSupervisorProperty("use_messagefacility", true);
     if(use_messagefacility != true) {
         o << std::setw(fw) << "use_messagefacility"       << ": " <<  std::boolalpha << use_messagefacility << std::endl;
     } else {
-        o << std::setw(fw) << "#use_messagefacility"      << ": " <<  std::boolalpha << use_messagefacility << std::endl;
+        o << std::setw(fw) << "# use_messagefacility"     << ": " <<  std::boolalpha << use_messagefacility << std::endl;
     }
     auto fake_messagefacility = getSupervisorProperty("fake_messagefacility", false);
     if(fake_messagefacility != false) {
 	    o << std::setw(fw) << "fake_messagefacility"      << ": " <<  fake_messagefacility << std::endl;
     } else {
-        o << std::setw(fw) << "#fake_messagefacility"     << ": " <<  fake_messagefacility << std::endl;
+        o << std::setw(fw) << " # fake_messagefacility"   << ": " <<  fake_messagefacility << std::endl;
     }
-    o << std::setw(fw) << "validate_setup_script"         << ": " <<  0 << "# defaults=1" <<std::endl;
+    o << std::setw(fw) << "validate_setup_script"         << ": " <<  0 << " # defaults=1" <<std::endl;
 	
     // setting I don't know the defaults yet
     o << std::setw(fw) << "# settings I don't yet know the default yet" << std::endl;
@@ -1181,8 +1189,16 @@ try
     } else if(requestType == "getDAQState") {
         xmlOut.addTextElementToData("connected", (tfm_connected_ ? "true": "false"));
         xmlOut.addTextElementToData("state", tfm_state_);
-        for(const auto& app : getAndParseProcessInfo_()) {
-            xmlOut.addTextElementToData(app.label, '{host: "'+app.host+'", subsystem: '+std::to_string(app.subsystem)+', port: '+std::to_string(app.port)+', state:"'+app.state+'", rank:'+std::to_string(app.rank)+'}');
+        if(tfm_connected_) {
+            for(const auto& app : getAndParseProcessInfo_()) {
+                xmlOut.addTextElementToData(app.label, 
+                    R"({"host": ")"+app.host+R"(")"+\
+                    R"(, "subsystem":)"+std::to_string(app.subsystem)+
+                    R"(, "port":)"+std::to_string(app.port)+\
+                    R"(, "state":")"+app.state+R"(")"+\
+                    R"(, "rank":)"+std::to_string(app.rank)+\
+                    R"(})");
+            }
         }
     } else {
 		__SUP_SS__ << "requestType '" << requestType << "' request not recognized."
