@@ -1468,7 +1468,26 @@ if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::PAUSED_S
 				std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 				try
 				{
+<<<<<<< HEAD
 					runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+=======
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+					try
+					{
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+					}
+					catch(...)
+					{
+					}
+
+					if(runInfoInterface == nullptr)
+					{
+						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS_THROW__;
+					}
+
+					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::RESUME);
+>>>>>>> origin2/develop
 				}
 				catch(...)
 				{
@@ -1531,10 +1550,32 @@ if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::RUNNING_
 				std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 				try
 				{
+<<<<<<< HEAD
 					runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 					// ,
 					// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 					// CorePropertySupervisorBase::getSupervisorConfigurationPath());
+=======
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+					try
+					{
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+						// ,
+						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
+						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
+					}
+					catch(...)
+					{
+					}
+
+					if(runInfoInterface == nullptr)
+					{
+						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS_THROW__;
+					}
+
+					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::HALT);
+>>>>>>> origin2/develop
 				}
 				catch(...)
 				{
@@ -1597,10 +1638,32 @@ if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::RUNNING_
 				std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 				try
 				{
+<<<<<<< HEAD
 					runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 					// ,
 					// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 					// CorePropertySupervisorBase::getSupervisorConfigurationPath());
+=======
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+					try
+					{
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+						// ,
+						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
+						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
+					}
+					catch(...)
+					{
+					}
+
+					if(runInfoInterface == nullptr)
+					{
+						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS_THROW__;
+					}
+
+					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::STOP);
+>>>>>>> origin2/develop
 				}
 				catch(...)
 				{
@@ -1666,10 +1729,32 @@ if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::RUNNING_
 				std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 				try
 				{
+<<<<<<< HEAD
 					runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
 					// ,
 					// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 					// CorePropertySupervisorBase::getSupervisorConfigurationPath());
+=======
+					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+					try
+					{
+						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+						// ,
+						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
+						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
+					}
+					catch(...)
+					{
+					}
+
+					if(runInfoInterface == nullptr)
+					{
+						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS_THROW__;
+					}
+
+					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::ERROR);
+>>>>>>> origin2/develop
 				}
 				catch(...)
 				{
