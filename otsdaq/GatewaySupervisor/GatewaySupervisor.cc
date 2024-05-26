@@ -1067,6 +1067,8 @@ try
 		activeStateMachineName_       = fsmName;
 		activeStateMachineWindowName_ = fsmWindowName;
 
+        // SC, we need to do this after we acticated the tables. Moving it to transitionConfiguring
+        /*
 		std::stringstream dumpSs;
 		// Check if run number should come from db, if so create a new condition record into database
 		try
@@ -1129,6 +1131,7 @@ try
 			catch(...){}
 			__SS_THROW__;
 		}  // End write run condition into db
+        */
 	}
 	else if(command == "Start")
 	{
@@ -1995,6 +1998,77 @@ catch(...)
 		__COUT_INFO__ << "No Gateway Supervisor configuration record found at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
 			      << supervisorContextUID_ << "/" << supervisorApplicationUID_
 			      << "' - consider adding one to control configuration dumps and state machine properties." << __E__;
+}
+RunControlStateMachine::theProgressBar_.step();
+
+// potentially write config to database
+{
+    // only new Config, if we don't come from running or paused 
+    if(theStateMachine_.getProvenanceStateName() != RunControlStateMachine::RUNNING_STATE_NAME &&
+       theStateMachine_.getProvenanceStateName() != RunControlStateMachine::PAUSED_STATE_NAME) {
+        std::stringstream dumpSs;
+        // Check if run number should come from db, if so create a new condition record into database
+        try
+        {
+            ConfigurationTree configLinkNode =
+                CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+            if(!configLinkNode.isDisconnected())
+            {
+                ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
+
+                std::string runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+                __COUTV__(runInfoPluginType);
+                if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+                {
+                    std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+                    try
+                    {
+                        std::string dumpFormat = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
+
+                        // dump configuration
+                        CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+                            "",
+                            dumpFormat,
+                            "Configuration Alias: " + lastConfigurationAlias_,// + "\n\n" + "Run note: " + StringMacros::decodeURIComponent(logEntry),
+                            theWebUsers_.getActiveUsersString(),
+                            dumpSs);
+
+                        runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+                    }
+                    catch(...)
+                    {
+                    }
+
+                    if(runInfoInterface == nullptr)
+                    {
+                        __SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+                        __SS_THROW__;
+                    }
+
+                    conditionID_ = runInfoInterface->insertRunCondition(dumpSs.str());
+                }  // end Run Info Plugin handling
+
+            }  // end handle state machine config link
+        }
+        catch(const std::runtime_error& e)
+        {
+            // ERROR
+            __SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << e.what() << __E__;
+            __SS_THROW__;
+        }
+        catch(...)
+        {
+            // ERROR
+            __SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << __E__;
+            try	{ throw; } //one more try to printout extra info
+            catch(const std::exception &e)
+            {
+                ss << "Exception message: " << e.what();
+            }
+            catch(...){}
+            __SS_THROW__;
+        }  // End write run condition into db
+    } // end if running or paused
 }
 
 RunControlStateMachine::theProgressBar_.step();
