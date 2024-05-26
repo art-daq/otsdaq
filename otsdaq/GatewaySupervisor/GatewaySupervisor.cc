@@ -35,8 +35,10 @@
 #include <chrono>      // std::chrono::seconds
 #include <fstream>
 #include <thread>  // std::this_thread::sleep_for
+#include <filesystem>
 
 using namespace ots;
+namespace fs = std::filesystem;
 
 #define RUN_NUMBER_PATH std::string(__ENV__("SERVICE_DATA_PATH")) + "/RunNumber/"
 #define RUN_NUMBER_FILE_NAME "NextRunNumber.txt"
@@ -2469,12 +2471,14 @@ __COUTV__(activeStateMachineRunNumber_);
 			bool        dumpConfiguration   = true;
 			bool        requireUserLogInput = false;
 			std::string dumpFilePath, dumpFileRadix, dumpFormat;
+            int dumpRunNewFolderDigits = 0;
 
 			bool doThrow = false;
 			try  // for backwards compatibility
 			{
 				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
 				dumpConfiguration             = fsmLinkNode.getNode("EnableConfigurationDumpOnRunTransition").getValue<bool>();
+                dumpRunNewFolderDigits        = fsmLinkNode.getNode("ConfigurationDumpOnRunNewFolderDigits").getValueWithDefault<int>(0); // create new folder with run name if > 0
 				doThrow                       = true;  // at this point throw the exception!
 				dumpFilePath  = fsmLinkNode.getNode("ConfigurationDumpOnRunFilePath").getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
 				dumpFileRadix = fsmLinkNode.getNode("ConfigurationDumpOnRunFileRadix").getValueWithDefault<std::string>("RunTransitionConfigurationDump");
@@ -2499,11 +2503,24 @@ __COUTV__(activeStateMachineRunNumber_);
 			{
 				__COUT_INFO__ << "Dumping the Configuration on the Run Start transition..." << __E__;
 				// dump configuration
-				CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
-				    dumpFilePath + "/" + dumpFileRadix + "_Run" + activeStateMachineRunNumber_ + "_" + std::to_string(time(0)) + ".dump",
-				    dumpFormat,
-				    requireUserLogInput ? activeStateMachineLogEntry_ : "",
-				    theWebUsers_.getActiveUsersString());
+                std::string dumpFileName = dumpFilePath + "/" + dumpFileRadix + "_Run" + activeStateMachineRunNumber_ + "_" + std::to_string(time(0)) + ".dump";
+                if(dumpRunNewFolderDigits > 0) {
+                    std::stringstream runNumberStrFormatted; 
+                    runNumberStrFormatted << std::setw(6) << std::setfill('0') << std::stoi(activeStateMachineRunNumber_);
+                    std::string fullDumpFilePath = dumpFilePath + "/" + runNumberStrFormatted.str();
+                    if (!fs::exists(fullDumpFilePath)) { // create run number folder
+                        if (!fs::create_directories(fullDumpFilePath)) {
+                            __SS__ << "Failed to create folder \"" << fullDumpFilePath << "\"." << __E__;
+                            __SS_THROW__;
+                        }
+                    }
+                    dumpFileName = fullDumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump";
+                }
+                CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+                    dumpFileName,
+                    dumpFormat,
+                    requireUserLogInput ? activeStateMachineLogEntry_ : "",
+                    theWebUsers_.getActiveUsersString()); 
 			}
 			else
 				__COUT_INFO__ << "Not dumping the Configuration on the Run Start transition." << __E__;
