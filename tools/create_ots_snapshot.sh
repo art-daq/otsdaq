@@ -75,6 +75,22 @@ while [ -n "${1-}" ];do
 done
 eval "set -- $args \"\$@\""; unset args aa	
 
+test -n "${do_help-}" -o $# -ge 2 && echo "$USAGE" && exit
+
+if [[ "x$SNAPSHOT" == "x" ]]; then 		#require a snapshot name
+    echo -e `date +"%h%y %T"` "create_ots_snapshot.sh [${LINENO}]  \t No --name parameter given!"
+	echo "$USAGE" && exit
+fi
+if ! [ -d $UDATA ]; then
+    echo -e `date +"%h%y %T"` "create_ots_snapshot.sh [${LINENO}]  \t Data directory ${UDATA} does not exist!"
+    echo "$USAGE" && exit
+fi
+if ! [ -d $UDATABASES ]; then   
+    echo -e `date +"%h%y %T"` "create_ots_snapshot.sh [${LINENO}]  \t databases directory ${UDATABASES} does not exist!"
+    echo "$USAGE" && exit
+fi 
+
+
 echo -e `date +"%h%y %T"` "create_ots_snapshot.sh [${LINENO}]  \t SNAPSHOT \t= $SNAPSHOT"
 echo -e `date +"%h%y %T"` "create_ots_snapshot.sh [${LINENO}]  \t DATA     \t= $UDATA"
 echo -e `date +"%h%y %T"` "create_ots_snapshot.sh [${LINENO}]  \t DATABASE \t= $UDATABASES"
