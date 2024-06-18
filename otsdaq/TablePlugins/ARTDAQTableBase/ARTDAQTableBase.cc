@@ -1200,6 +1200,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 				                 true /*onlyInsertAtTableParameters*/,
 				                 false /*includeAtTableParameters*/);
 
+				if (module.second.status() && module.second.getNode("producerModuleType").getValue() == "") continue;
 				OUT << module.second.getNode("producerKey").getValue() << ": {\n";
 				PUSHTAB;
 
@@ -1248,7 +1249,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 				                 "filterParameter" /*parameterType*/,
 				                 true /*onlyInsertAtTableParameters*/,
 				                 false /*includeAtTableParameters*/);
-
+				if (module.second.status()  && module.second.getNode("filterModuleType").getValue() == "") continue;
 				OUT << module.second.getNode("filterKey").getValue() << ": {\n";
 				PUSHTAB;
 
