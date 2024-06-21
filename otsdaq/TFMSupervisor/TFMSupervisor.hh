@@ -116,7 +116,9 @@ class TFMSupervisor : public CoreSupervisorBase
     std::map<std::string, std::chrono::time_point<std::chrono::high_resolution_clock>> daq_reports_update_time_;
 
     // xmlrpc variables
-    char                         xmlrpcUrl_[100];
+    int                          xmlrpcPort_;
+    char                         xmlrpcHost_[128];
+    char                         xmlrpcUrl_[256];
     xmlrpc_env                   xmlrpcEnv_;
     //xmlrpc_client*               xmlrpcClient_;
     //std::mutex                   xmlrpc_mtx_;

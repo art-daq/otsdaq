@@ -133,7 +133,12 @@ TFMSupervisor::TFMSupervisor(xdaq::ApplicationStub* stub)
     if (envValue != nullptr) partition_ = std::atoi(envValue);
 
     //snprintf(xmlrpcUrl_, 100, "http://localhost:%i/RPC2", 10000+1000*partition_);
-    snprintf(xmlrpcUrl_, 100, "http://mu2edaq08.fnal.gov:%i/RPC2", 10000+1000*partition_);
+    xmlrpcPort_ = 10000+1000*partition_;
+    if (gethostname(xmlrpcHost_, sizeof(xmlrpcHost_)) != 0) {
+        strncpy(xmlrpcHost_, "localhost", sizeof(xmlrpcHost_) - 1);
+    }
+    snprintf(xmlrpcUrl_, sizeof(xmlrpcUrl_), "http://%s:%i/RPC2", xmlrpcHost_, xmlrpcPort_);
+    
     //xmlrpc_setup();
 
     __SUP_COUT__ << "Killing all running farm managers: " <<
@@ -1189,6 +1194,9 @@ try
     } else if(requestType == "getDAQState") {
         xmlOut.addTextElementToData("connected", (tfm_connected_ ? "true": "false"));
         xmlOut.addTextElementToData("state", tfm_state_);
+        xmlOut.addTextElementToData("port", std::to_string(xmlrpcPort_));
+        xmlOut.addTextElementToData("host", xmlrpcHost_);
+
         if(tfm_connected_) {
             for(const auto& app : getAndParseProcessInfo_()) {
                 xmlOut.addTextElementToData(app.label, 
