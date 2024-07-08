@@ -23,18 +23,24 @@ source ${SCRIPT_DIR}/common.sh ots_remote_start
 STARTTIME=`date +"%d%h%y.%T"` #to fully ID one StartOTS from another
 out "${Green}=========================== ots REMOTE on {${THIS_HOST}} ============================="
 info "ots script path = ${SCRIPT_DIR}/ots_remote_start"
-info "Expected setup path     = ${SCRIPT_DIR}/../../../../setup_ots.sh"
 
 
 # Have to CD because setup_ots.sh isn't safe to run in other directories than the ots root, die if it didn't work
-cd ${SCRIPT_DIR}/../../../ || die "Couldn't chdir to ots setup directory on ${THIS_HOST}"
+if [ "x$1" != "x" ]; then
+    setup_dir=$1
+    shift
+else
+    setup_dir=${SCRIPT_DIR}/../../../
+fi
+info "Expected setup path     = ${setup_dir}/setup_ots.sh"
+cd $setup_dir || die "Couldn't chdir to ots setup directory on ${THIS_HOST}"
 if ! [ -e setup_ots.sh ]; then # try going one directory up (for mrb reverse compatibility)
   cd ../ || die "Couldn't chdir to ots setup directory on ${THIS_HOST}"
 fi
 
 # We don't care about the non-error output of this script because it gets shown on the remote's launching terminal
 userinput="$(cat .ots_setup_type.txt)";
-source ./setup_ots.sh >/dev/null </dev/null || die "Couldn't setup ots for ${userinput} on ${THIS_HOST}"
+source ./setup_ots.sh > /dev/null </dev/null  || die "Couldn't setup ots for ${userinput} on ${THIS_HOST}"
 
 info "Executing ots script on ${THIS_HOST}"
 
