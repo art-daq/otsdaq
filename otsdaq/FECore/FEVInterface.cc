@@ -332,6 +332,8 @@ try
 					time(0) - channelToCopy->getLastSampleTime() << __E__;
 
 				if(!usingBufferedValue && 	
+					channelToCopy->getInterfaceUID() == channel->getInterfaceUID() &&
+					channelToCopy->getInterfaceType() == channel->getInterfaceType() &&
 					BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") == 
 					BinaryStringMacros::binaryNumberToHexString(channel->getUniversalAddress(), "0x", " ") && 
 					channelToCopy->getReadSizeBytes() == channel->getReadSizeBytes() && 
@@ -348,7 +350,7 @@ try
 
 					//can NOT break; from while loop... must take iterator back to starting point channel iterator
 				}
-			} //end while loop
+			} //end while loop searching for buffered slow controls value
 
 			//get and handle sample if not already handled using buffered value
 			if(!usingBufferedValue)
