@@ -2093,7 +2093,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 				__COUTV__(allNodes.size());
 				for(auto& otherNode : allNodes)  // start multi-node search loop
 				{
-					if(otherNode.first == nodeName || skipSet.find(otherNode.first) != skipSet.end() ||
+					if(otherNode.first == nodeName || skipSet.find(StringMacros::encodeURIComponent(otherNode.first)) != skipSet.end() ||
 					   otherNode.second.status() != status)  // skip if status mismatch
 						continue;                            // skip unless 'other' and not in skip set
 
@@ -2137,14 +2137,17 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						{
 							__COUT__ << "Found '" << nodeName << "' multi-node member candidate '" << otherNode.first << "'" << __E__;
 
+							//use StringMacros::encodeURIComponent because dashes will confuse printer syntax later!
 							if(!multiNodeNames.size())  // add this node first!
 							{
-								multiNodeNames.push_back(nodeName);
-								hostnameArray.push_back(hostname);
+								multiNodeNames.push_back(StringMacros::encodeURIComponent(nodeName));
+								hostnameArray.push_back(StringMacros::encodeURIComponent(hostname));
 							}
-							multiNodeNames.push_back(otherNode.first);
-							hostnameArray.push_back(otherNode.second.getNode(ARTDAQ_TYPE_TABLE_HOSTNAME).getValue());
-							skipSet.emplace(otherNode.first);
+							multiNodeNames.push_back(StringMacros::encodeURIComponent(otherNode.first));
+							hostnameArray.push_back(StringMacros::encodeURIComponent(otherNode.second.getNode(ARTDAQ_TYPE_TABLE_HOSTNAME).getValue()));
+
+							__COUTV__(hostnameArray.back());
+							skipSet.emplace(StringMacros::encodeURIComponent(otherNode.first));
 						}
 					}
 				}  // end loop to search for multi-node members
