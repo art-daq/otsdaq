@@ -508,8 +508,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 		if(sock.receive(buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) != -1)
 		{
-			__COUT__ << "UDP State Changer packet received of size = " << buffer.size() << __E__;
-			__COUTV__(buffer);
+			__COUT__ << "UDP State Changer packet received from ip:port " <<
+				sock.getLastIncomingIPAddress() << ":" << sock.getLastIncomingPort() <<
+				" of size = " << buffer.size() << __E__;
+			__COUTTV__(buffer);
 
 			if(buffer == "GetRemoteAppStatus")
 			{
@@ -556,7 +558,101 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				__COUTT__ << "App status to monitor: " << out.str() << __E__;
 				sock.acknowledge(out.str(), false /* verbose */);
 				continue;
-			}
+			} //end GetRemoteAppStatus
+			else if(buffer == "GetRemoteDesktopIcons")
+			{
+				__COUT__ << "Giving desktop icons to remote gateway..." << __E__;
+
+				// get icons and create comma-separated string based on user permissions
+				//	note: each icon has own permission threshold, so each user can have
+				//		a unique desktop icon experience.
+
+				// use latest context always from temporary configuration manager,
+				//	to get updated icons every time...
+				//(so icon changes do no require an ots restart)
+
+				ConfigurationManager                              tmpCfgMgr; // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
+				const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
+				const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
+
+				std::string iconString = "";  // comma-separated icon string, 7 fields:
+				//				0 - caption 		= text below icon
+				//				1 - altText 		= text icon if no image given
+				//				2 - uniqueWin 		= if true, only one window is allowed,
+				// else  multiple instances of window 				3 - permissions 	=
+				// security level needed to see icon 				4 - picfn 			=
+				// icon image filename 				5 - linkurl 		= url of the window to
+				// open 				6 - folderPath 		= folder and subfolder location
+				// '/'
+				// separated  for example:  State
+				// Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config
+				// Subsets
+
+
+				bool getRemoteIcons = true;
+
+				bool firstIcon = true;
+				for(const auto& icon : icons)
+				{
+					//__COUTV__(icon.caption_);
+					//__COUTV__(icon.permissionThresholdString_);
+
+					//ignore permission level, and give all icons
+
+					//__COUTV__(icon.caption_);
+
+					if(getRemoteIcons)
+					{
+						__COUTV__(icon.windowContentURL_);
+						if(icon.windowContentURL_.size() > 4 && 
+							icon.windowContentURL_[0] == 'o' &&
+							icon.windowContentURL_[1] == 't' &&
+							icon.windowContentURL_[2] == 's' &&
+							icon.windowContentURL_[3] == ':')
+						{
+							__COUT__ << "Retrieving remote icons at " << icon.windowContentURL_ << __E__;
+
+							std::vector<std::string> parsedFields = StringMacros::getVectorFromString(icon.windowContentURL_,{':'});
+							__COUTV__(StringMacros::vectorToString(parsedFields));
+
+							if(parsedFields.size() > 3)
+							{
+								Socket      iconRemoteSocket(parsedFields[0],atoi(parsedFields[1].c_str()));
+
+								// ConfigurationTree configLinkNode = theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
+								// std::string ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
+								__COUTTV__(ipAddressForStateChangesOverUDP);
+								TransceiverSocket iconSocket(ipAddressForStateChangesOverUDP);
+								std::string remoteIconString = iconSocket.sendAndReceive(iconRemoteSocket,"GetRemoteDesktopIcons");
+								__COUTV__(remoteIconString);
+								continue;
+							}
+						}
+					} //end remote icon handling
+
+					// have icon access, so add to CSV string
+					if(firstIcon)
+						firstIcon = false;
+					else
+						iconString += ",";
+						
+
+					iconString += icon.caption_;
+					iconString += "," + icon.alternateText_;
+					iconString += "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+					iconString += "," + std::string("1");  // set permission to 1 so the
+															// desktop shows every icon that the
+															// server allows (i.e., trust server
+															// security, ignore client security)
+					iconString += "," + icon.imageURL_;
+					iconString += "," + icon.windowContentURL_;
+					iconString += "," + icon.folderPath_;
+				}
+				__COUTV__(iconString);
+
+				sock.acknowledge(iconString, false /* verbose */);
+				continue;
+			} //end GetRemoteDesktopIcons
 
 			size_t nCommas = std::count(buffer.begin(), buffer.end(), ',');
 			if(nCommas == 0)
@@ -4358,6 +4454,9 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 			std::map<std::string, WebUsers::permissionLevel_t> userPermissionLevelsMap = theWebUsers_.getPermissionsForUser(userInfo.uid_);
 			std::map<std::string, WebUsers::permissionLevel_t> iconPermissionThresholdsMap;
 
+			bool getRemoteIcons = true;
+			std::string ipAddressForRemoteIconsOverUDP = "";
+
 			bool firstIcon = true;
 			for(const auto& icon : icons)
 			{
@@ -4371,11 +4470,86 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 
 				//__COUTV__(icon.caption_);
 
+				if(getRemoteIcons)
+				{
+					__COUTV__(icon.windowContentURL_);
+					if(icon.windowContentURL_.size() > 4 && 
+						icon.windowContentURL_[0] == 'o' &&
+						icon.windowContentURL_[1] == 't' &&
+						icon.windowContentURL_[2] == 's' &&
+						icon.windowContentURL_[3] == ':')
+					{
+						__COUT__ << "Retrieving remote icons at " << icon.windowContentURL_ << __E__;
+
+						std::vector<std::string> parsedFields = StringMacros::getVectorFromString(icon.windowContentURL_,{':'});
+						__COUTV__(StringMacros::vectorToString(parsedFields));
+
+						if(parsedFields.size() == 3)
+						{
+							__COUT__ << "Opening socket to " << parsedFields[1] << ":" << parsedFields[2] << __E__;
+
+							Socket iconRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));
+
+							if(ipAddressForRemoteIconsOverUDP == "")
+							{
+								ConfigurationTree configLinkNode = this->CorePropertySupervisorBase::getSupervisorTableNode();
+								ipAddressForRemoteIconsOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
+								__COUTV__(ipAddressForRemoteIconsOverUDP);
+							}
+							try
+							{
+								TransceiverSocket iconSocket(ipAddressForRemoteIconsOverUDP, 0);
+								iconSocket.initialize();
+								std::string remoteIconString = iconSocket.sendAndReceive(iconRemoteSocket,"GetRemoteDesktopIcons");
+								__COUTV__(remoteIconString);
+
+								//now have remote icon string, append icons to list
+								std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString);
+								const int numOfIconFields = 7;
+								for(int i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
+								{
+
+									if(firstIcon)
+										firstIcon = false;
+									else
+										iconString += ",";					
+
+									iconString += remoteIconsCSV[i+0]; //icon.caption_;
+									iconString += "," + remoteIconsCSV[i+1]; //icon.alternateText_;
+									iconString += "," + remoteIconsCSV[i+2]; //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+									iconString += "," + std::string("1");  // set permission to 1 so the
+																		// desktop shows every icon that the
+																		// server allows (i.e., trust server
+																		// security, ignore client security)
+									iconString += "," + remoteIconsCSV[i+4]; //icon.imageURL_;
+									iconString += "," + remoteIconsCSV[i+5]; //icon.windowContentURL_;
+									iconString += "," + icon.folderPath_ + "/" + remoteIconsCSV[i+6]; //icon.folderPath_;
+									
+								} //end append remote icons
+
+							}
+							catch(const std::runtime_error& e)
+							{
+								__SS__ << "Failure getting remote Desktop Icons from ots:host:port url=" << icon.windowContentURL_ << 
+									"\n\nHere was the error:\n" << e.what();
+								
+								//add error for notification, but try to ignore so rest of system works
+								__COUT_ERR__ << "\n" << ss.str();
+								xmlOut.addTextElementToData("Error", ss.str());
+								// __SS_THROW__;  
+							}
+
+							continue;
+						}
+					}
+				} //end remote icon handling
+
 				// have icon access, so add to CSV string
 				if(firstIcon)
 					firstIcon = false;
 				else
 					iconString += ",";
+					
 
 				iconString += icon.caption_;
 				iconString += "," + icon.alternateText_;
@@ -4388,7 +4562,7 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 				iconString += "," + icon.windowContentURL_;
 				iconString += "," + icon.folderPath_;
 			}
-			//__COUTV__(iconString);
+			// //__COUTV__(iconString);
 
 			xmlOut.addTextElementToData("iconList", iconString);
 		}

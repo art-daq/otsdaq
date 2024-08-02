@@ -30,10 +30,25 @@ ReceiverSocket::ReceiverSocket(void) : addressLength_(sizeof(fromAddress_)), num
 ReceiverSocket::~ReceiverSocket(void) {}
 
 //==============================================================================
+std::string ReceiverSocket::getLastIncomingIPAddress(void) 
+{
+	std::string fromIP;
+	for(int i = 0; i < 4; i++)
+	{
+		fromIP += std::to_string((lastIncomingIPAddress_ << (i * 8)) & 0xff);
+		if(i < 3)
+			fromIP += ".";
+	}
+	return fromIP;
+} //end getLastIncomingIPAddress()
+//==============================================================================
+unsigned short ReceiverSocket::getLastIncomingPort(void) { return ntohs(lastIncomingPort_); }
+
+//==============================================================================
 int ReceiverSocket::receive(std::string& buffer, unsigned int timeoutSeconds, unsigned int timeoutUSeconds, bool verbose)
 {
-	return receive(buffer, dummyIPAddress_, dummyPort_, timeoutSeconds, timeoutUSeconds, verbose);
-}
+	return receive(buffer, lastIncomingIPAddress_, lastIncomingPort_, timeoutSeconds, timeoutUSeconds, verbose);
+} //end receive()
 
 //==============================================================================
 // receive ~~
@@ -65,6 +80,9 @@ int ReceiverSocket::receive(
 			std::string fromIP = inet_ntoa(fromAddress_.sin_addr);
 			fromIPAddress      = fromAddress_.sin_addr.s_addr;
 			fromPort           = fromAddress_.sin_port;
+			lastIncomingIPAddress_ = fromIPAddress;
+			lastIncomingPort_ = fromPort;
+
 			for(int i = 0; i < 4; i++)
 			{
 				ss << ((fromIPAddress << (i * 8)) & 0xff);
@@ -79,6 +97,8 @@ int ReceiverSocket::receive(
 		// inet_ntop(AF_INET, &(fromAddress.sin_addr), address, INET_ADDRSTRLEN);
 		fromIPAddress = fromAddress_.sin_addr.s_addr;
 		fromPort      = fromAddress_.sin_port;
+		lastIncomingIPAddress_ = fromIPAddress;
+		lastIncomingPort_ = fromPort;
 
 		//__COUT__ << __PRETTY_FUNCTION__ << "IP: " << std::hex << fromIPAddress <<
 		// std::dec << " port: " << fromPort << std::endl;
@@ -127,13 +147,13 @@ int ReceiverSocket::receive(
 	}
 
 	return 0;
-}
+} //end receive()
 
 //==============================================================================
 int ReceiverSocket::receive(std::vector<uint32_t>& buffer, unsigned int timeoutSeconds, unsigned int timeoutUSeconds, bool verbose)
 {
-	return receive(buffer, dummyIPAddress_, dummyPort_, timeoutSeconds, timeoutUSeconds, verbose);
-}
+	return receive(buffer, lastIncomingIPAddress_, lastIncomingPort_, timeoutSeconds, timeoutUSeconds, verbose);
+} //end receive()
 
 //==============================================================================
 // receive ~~
@@ -170,20 +190,28 @@ int ReceiverSocket::receive(std::vector<uint32_t>& buffer,
 		{
 			__COUT__ << "At socket with IPAddress: " << getIPAddress() << " port: " << getPort() << std::endl;
 			__SS__ << "Error reading buffer from\tIP:\t";
+			std::string fromIP = inet_ntoa(fromAddress_.sin_addr);
+			fromIPAddress      = fromAddress_.sin_addr.s_addr;
+			fromPort           = fromAddress_.sin_port;
+			lastIncomingIPAddress_ = fromIPAddress;
+			lastIncomingPort_ = fromPort;
+
 			for(int i = 0; i < 4; i++)
 			{
 				ss << ((fromIPAddress << (i * 8)) & 0xff);
 				if(i < 3)
 					ss << ".";
 			}
-			ss << "\tPort\t" << fromPort << std::endl;
+			ss << "\tPort\t" << ntohs(fromPort) << " IP " << fromIP << std::endl;
 			__COUT__ << "\n" << ss.str();
-			return -1;
+			return -1;			
 		}
 		// char address[INET_ADDRSTRLEN];
 		// inet_ntop(AF_INET, &(fromAddress.sin_addr), address, INET_ADDRSTRLEN);
 		fromIPAddress = fromAddress_.sin_addr.s_addr;
 		fromPort      = fromAddress_.sin_port;
+		lastIncomingIPAddress_ = fromIPAddress;
+		lastIncomingPort_ = fromPort;
 
 		//__COUT__ << __PRETTY_FUNCTION__ << "IP: " << std::hex << fromIPAddress <<
 		// std::dec << " port: " << fromPort << std::endl;
@@ -213,4 +241,4 @@ int ReceiverSocket::receive(std::vector<uint32_t>& buffer,
 	}
 	__COUT__ << "This a successful reeeaaad" << std::endl;
 	return 0;
-}
+} //end receive()

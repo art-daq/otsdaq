@@ -96,6 +96,23 @@ ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username) : Co
 				}
 			}
 
+			//look for optional Context table ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE 
+			{
+				foundVector.push_back(false);
+				rewind(fp);
+				while(fgets(line, 100, fp))
+				{
+					if(strlen(line) < 1)
+						continue;
+					line[strlen(line) - 1] = '\0';                           // remove endline
+					if(strcmp(line, ("ContextGroup/" + ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE).c_str()) == 0)  // is match?
+					{
+						foundVector.back() = true;
+						break;
+					}
+				}
+			}
+
 			fclose(fp);
 
 			// open file for appending the missing names
@@ -124,6 +141,11 @@ ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username) : Co
 
 					++i;
 				}
+
+				//last is optional Context table ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE 
+				if(!foundVector[i])
+					fprintf(fp, "\nContextGroup/%s", ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE.c_str());
+					
 				fclose(fp);
 			}
 			else

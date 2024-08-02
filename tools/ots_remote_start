@@ -22,7 +22,7 @@ source ${SCRIPT_DIR}/common.sh ots_remote_start
 
 STARTTIME=`date +"%d%h%y.%T"` #to fully ID one StartOTS from another
 out "${Green}=========================== ots REMOTE on {${THIS_HOST}} ============================="
-info "ots script path = ${SCRIPT_DIR}/ots_remote_start"
+# info "ots script path = ${SCRIPT_DIR}/ots_remote_start"
 
 
 # Have to CD because setup_ots.sh isn't safe to run in other directories than the ots root, die if it didn't work
