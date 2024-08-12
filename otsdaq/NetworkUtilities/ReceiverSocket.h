@@ -34,6 +34,9 @@ class ReceiverSocket : public virtual Socket
 	            unsigned int           timeoutUSeconds = 0,
 	            bool                   verbose         = false);
 
+	std::string 			getLastIncomingIPAddress(void); 
+	unsigned short		 	getLastIncomingPort(void);
+
   protected:
 	ReceiverSocket(void);
 
@@ -44,8 +47,8 @@ class ReceiverSocket : public virtual Socket
 	socklen_t          addressLength_;
 	int                numberOfBytes_;
 
-	unsigned long  dummyIPAddress_;
-	unsigned short dummyPort_;
+	unsigned long  lastIncomingIPAddress_ = 0;
+	unsigned short lastIncomingPort_ = 0;
 	unsigned int   readCounter_;
 
 	std::mutex receiveMutex_;  // to make receiver socket thread safe

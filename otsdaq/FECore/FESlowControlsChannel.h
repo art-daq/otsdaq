@@ -48,6 +48,9 @@ class FESlowControlsChannel
 	const std::string&		getLastSampleReadValue		() const { return universalReadValue_; };	
 	void  					clearAlarms					(int targetAlarm = -1);  // default to all
 
+	const std::string&  	getInterfaceUID				(void) const;
+	const std::string& 		getInterfaceType			(void) const;
+
 	static std::string 		underscoreString			(const std::string& str);
 
   private:

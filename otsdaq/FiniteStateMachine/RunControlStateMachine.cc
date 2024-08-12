@@ -342,6 +342,17 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 		command = "Initialize";
 		message = SOAPUtilities::makeSOAPMessageReference(command);
 	}
+	if(command == "Configure" && currentState == RunControlStateMachine::INITIAL_STATE_NAME)
+	{
+		__GEN_COUT__ << "Pre-empting Configure command with Initialize, since currently in "
+		                "Initialized state."
+		             << std::endl;
+		std::string precommand = "Initialize";
+		xoap::MessageReference premessage = SOAPUtilities::makeSOAPMessageReference(precommand);
+		theStateMachine_.execTransition(precommand, premessage);
+		__GEN_COUT__ << "Now proceeding with Configure command" << __E__;
+	}
+
 
 	// handle normal transitions here
 	try

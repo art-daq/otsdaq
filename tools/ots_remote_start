@@ -22,7 +22,7 @@ source ${SCRIPT_DIR}/common.sh ots_remote_start
 
 STARTTIME=`date +"%d%h%y.%T"` #to fully ID one StartOTS from another
 out "${Green}=========================== ots REMOTE on {${THIS_HOST}} ============================="
-info "ots script path = ${SCRIPT_DIR}/ots_remote_start"
+# info "ots script path = ${SCRIPT_DIR}/ots_remote_start"
 
 
 # Have to CD because setup_ots.sh isn't safe to run in other directories than the ots root, die if it didn't work
@@ -42,7 +42,7 @@ fi
 userinput="$(cat .ots_setup_type.txt)";
 source ./setup_ots.sh > /dev/null </dev/null  || die "Couldn't setup ots for ${userinput} on ${THIS_HOST}"
 
-info "Executing ots script on ${THIS_HOST}"
+info "Executing ots script for ${userinput} on ${THIS_HOST}"
 
 # -x is a special "remote launch" flag to handle that similarly to the -s case but with less printouts
 # Exec since this is the last thing this script does and we don't need a pointless fork (plus the process stays the same for ssh)

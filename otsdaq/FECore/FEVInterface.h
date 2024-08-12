@@ -65,16 +65,10 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 
 	virtual ~FEVInterface(void);
 
-
 	FEVInterfacesManager* 				parentInterfaceManager_;
 
-	const std::string&  				getInterfaceUID				(void) const { return interfaceUID_; }
-	virtual std::string 				getInterfaceType			(void) const
-	{
-		return theXDAQContextConfigTree_.getBackNode(theConfigurationPath_)
-		    .getNode("FEInterfacePluginName")
-		    .getValue<std::string>();
-	}  // end getInterfaceType()
+	const std::string&  				getInterfaceUID				(void) const { return interfaceUID_; } 
+	const std::string&  				getInterfaceType			(void) const { return interfaceType_; }
 
 	virtual void 						universalRead				(char* address, char* returnValue) = 0;  // throw std::runtime_error exception on error/timeout
 	virtual void        				universalWrite				(char* address, char* writeValue) = 0;
@@ -125,6 +119,9 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	bool 								slowControlsRunning			(void);  // slow controls workloop calls this
 	void 								startSlowControlsWorkLoop	(void) { slowControlsWorkLoop_.startWorkLoop(); }
 	void 								stopSlowControlsWorkLoop	(void) { slowControlsWorkLoop_.stopWorkLoop(); }
+
+
+	static const std::string 						UNKNOWN_TYPE;
 
   protected:
 	// Slow Controls members
@@ -267,8 +264,8 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
   protected:
 	bool        					workLoopThread				(toolbox::task::WorkLoop* workLoop);
 	
-	std::string 									interfaceUID_;
-	std::string                                                                     mfSubject_; // for __GEN_COUT__ decorations which would be safe in destructors, e.g. mirror interfaceUID_ 
+	std::string 									interfaceUID_, interfaceType_;
+	std::string                                     mfSubject_; // for __GEN_COUT__ decorations which would be safe in destructors, e.g. mirror interfaceUID_ 
 
 	unsigned int 									universalAddressSize_ = 0;
 	unsigned int 									universalDataSize_    = 0;

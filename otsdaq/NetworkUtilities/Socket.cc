@@ -32,8 +32,6 @@ Socket::Socket(const std::string& IPAddress, unsigned int port) : socketNumber_(
 	if(port >= (1 << 16))
 	{
 		__SS__ << "FATAL: Invalid Port " << port << ". Max port number is " << (1 << 16) - 1 << "." << std::endl;
-		// assert(0); //RAR changed to exception on 8/17/2016
-		__COUT_ERR__ << "\n" << ss.str();
 		__SS_THROW__;
 	}
 
@@ -46,8 +44,6 @@ Socket::Socket(const std::string& IPAddress, unsigned int port) : socketNumber_(
 	if(inet_aton(IPAddress.c_str(), &socketAddress_.sin_addr) == 0)
 	{
 		__SS__ << "FATAL: Invalid IP:Port combination. Please verify... " << IPAddress << ":" << port << std::endl;
-		// assert(0); //RAR changed to exception on 8/17/2016
-		__COUT_ERR__ << "\n" << ss.str();
 		__SS_THROW__;
 	}
 
@@ -63,8 +59,6 @@ Socket::Socket(void)
 	__SS__ << "ERROR: This method should never be called. This is the protected "
 	          "constructor. There is something wrong in your inheritance scheme!"
 	       << std::endl;
-	__COUT_ERR__ << "\n" << ss.str();
-
 	__SS_THROW__;
 }
 
@@ -147,7 +141,8 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 			char yes = '1';
 			setsockopt(socketNumber_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 			socketInitialized = true;
-			__COUT__ << "]\tSocket Number: " << socketNumber_ << " for port: " << ntohs(socketAddress_.sin_port) << " initialized." << std::endl;
+			__COUT__ << "]\tSocket Number: " << socketNumber_ << " for port: " << ntohs(socketAddress_.sin_port) << 
+				" htons: " << socketAddress_.sin_port << " initialized." << std::endl;
 		}
 
 		freeaddrinfo(res);  // free the linked-list
@@ -157,7 +152,6 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 	{
 		__SS__ << "FATAL: Socket could not initialize socket (IP=" << IPAddress_ << ", Port=" << ntohs(socketAddress_.sin_port)
 		       << "). Perhaps it is already in use?" << std::endl;
-		std::cout << ss.str();
 		__SS_THROW__;
 	}
 
@@ -172,7 +166,6 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 		if(setsockopt(socketNumber_, SOL_SOCKET, SO_RCVBUF, (char*)&socketReceiveBufferSize, sizeof(socketReceiveBufferSize)) < 0)
 		{
 			__SS__ << "Failed to set socket receive size to " << socketReceiveBufferSize << ". Attempting to revert to default." << std::endl;
-			std::cout << ss.str();
 			__SS_THROW__;
 		}
 	}

@@ -318,7 +318,7 @@ try
 	{
 		table_version_map_t retMap = getCachedTableGroupMembers(tableGroup);
 		__COUTV__(tableGroup);
-		__COUTV__(StringMacros::mapToString(retMap));
+		__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << (StringMacros::mapToString(retMap));
 
 		if(!includeMetaDataTable)
 		{
@@ -433,12 +433,12 @@ try
 
 	fill(&localGroupMemberCacheSaver,localVersion);
 
-	__COUTT__ << "Loaded cache member map string " <<
+	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Loaded cache member map string " <<
 		localGroupMemberCacheSaver.getViewP()->getCustomStorageData() << __E__;
 	
 	StringMacros::getMapFromString(localGroupMemberCacheSaver.getViewP()->getCustomStorageData(),retMap);
 
-	__COUTT__ << "Loaded cache member map string " <<
+	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Loaded cache member map string " <<
 		StringMacros::mapToString(retMap) << __E__;
 		
 	return retMap;
