@@ -39,6 +39,7 @@ std::string ReceiverSocket::getLastIncomingIPAddress(void)
 		if(i < 3)
 			fromIP += ".";
 	}
+	
 	return fromIP;
 } //end getLastIncomingIPAddress()
 //==============================================================================

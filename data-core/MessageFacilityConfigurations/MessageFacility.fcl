@@ -1,7 +1,7 @@
 udp: { 
 	type: 					UDP 
 	threshold: 				DEBUG 
-	filename_delimit: 		"/src"
+	filename_delimit: 		"/tdaq-v3_01_00/"
 	port: 					30000 
 	host: 					"127.0.0.1" 
 }
@@ -9,7 +9,7 @@ udp: {
 console: { 
 	type: 					OTS
 	threshold: 				DEBUG
-	filename_delimit: 		"/src"
+	filename_delimit: 		"/tdaq-v3_01_00/"
 	format_string: 			"|%L:%N: %f:%u |\t%m"
 }
 

@@ -35,7 +35,7 @@ class ReceiverSocket : public virtual Socket
 	            bool                   verbose         = false);
 
 	std::string 			getLastIncomingIPAddress(void); 
-	unsigned short 			getLastIncomingPort(void);
+	unsigned short		 	getLastIncomingPort(void);
 
   protected:
 	ReceiverSocket(void);

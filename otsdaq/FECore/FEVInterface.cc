@@ -13,6 +13,8 @@
 
 using namespace ots;
 
+const std::string FEVInterface::UNKNOWN_TYPE = "UNKNOWN";
+
 //==============================================================================
 FEVInterface::FEVInterface(const std::string& interfaceUID, const ConfigurationTree& theXDAQContextConfigTree, const std::string& configurationPath)
     : WorkLoop(interfaceUID)
@@ -20,12 +22,29 @@ FEVInterface::FEVInterface(const std::string& interfaceUID, const ConfigurationT
     , VStateMachine(interfaceUID)
     , slowControlsWorkLoop_(interfaceUID + "-SlowControls", this)
     , interfaceUID_(interfaceUID)
+	, interfaceType_(FEVInterface::UNKNOWN_TYPE)
     , mfSubject_(interfaceUID)
 {
+		
 	// NOTE!! be careful to not decorate with __FE_COUT__ because in the constructor the
 	// base class versions of function (e.g. getInterfaceType) are called because the
 	// derived class has not been instantiate yet!
 	// Instead use __GEN_COUT__ which decorates using mfSubject_
+
+	try
+	{
+		interfaceType_ = theXDAQContextConfigTree_.getBackNode(theConfigurationPath_)
+			.getNode("FEInterfacePluginName")
+			.getValue<std::string>();
+	}
+	catch(...) //ignore exception, but give warning
+	{
+		__GEN_COUT_WARN__ << "FEInterface type could not be determined in base class from configuration tree path; "
+			"the type may be defined subsequently by the inheriting class (e.g. to take advantage of Slow Controls caching functionality, "
+			"the FEInterface type should be defined for all frontend interfaces)" << __E__;
+	}
+
+
 	__GEN_COUT__ << "Constructed." << __E__;
 }  // end constructor()
 
@@ -321,36 +340,44 @@ try
 			__FE_COUT__ << "Reading Channel:" << channel->fullChannelName << " at t=" << time(0) << __E__;
 
 			//check if can use buffered value
-			resetSlowControlsChannelIterator();
-			FESlowControlsChannel* channelToCopy;
 			bool usingBufferedValue = false;
-			while((channelToCopy = getNextSlowControlsChannel()) != channel)
+			if(channel->getInterfaceType() != FEVInterface::UNKNOWN_TYPE)
 			{
-			    __FE_COUTT__ << "Looking for buffered value at " << 					
-					BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") << " "  << 
-					channelToCopy->getReadSizeBytes() << " " <<
-					time(0) - channelToCopy->getLastSampleTime() << __E__;
-
-				if(!usingBufferedValue && 	
-					channelToCopy->getInterfaceUID() == channel->getInterfaceUID() &&
-					channelToCopy->getInterfaceType() == channel->getInterfaceType() &&
-					BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") == 
-					BinaryStringMacros::binaryNumberToHexString(channel->getUniversalAddress(), "0x", " ") && 
-					channelToCopy->getReadSizeBytes() == channel->getReadSizeBytes() && 
-					time(0) - channelToCopy->getLastSampleTime() < 2 /* within 2 seconds, then re-use buffer */)
+				resetSlowControlsChannelIterator();
+				FESlowControlsChannel* channelToCopy;
+				while((channelToCopy = getNextSlowControlsChannel()) != channel && channelToCopy != nullptr)
 				{
-					usingBufferedValue = true;
-					__FE_COUT__ << "Using buffered " << channelToCopy->getReadSizeBytes() << 
-						"-byte value at address:" << 
-						BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") << __E__;
+					__FE_COUTT__ << "Looking for buffered value at " << 					
+						BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") << " "  << 
+						channelToCopy->getReadSizeBytes() << " " <<
+						time(0) - channelToCopy->getLastSampleTime() << __E__;
 
-					__FE_COUT__ << "Copying: " << BinaryStringMacros::binaryNumberToHexString(channelToCopy->getLastSampleReadValue(), "0x", " ") << " at t=" << time(0) << __E__;
-					channel->handleSample(channelToCopy->getLastSampleReadValue(), txBuffer, fp, aggregateFileIsBinaryFormat, txBufferUsed);
-					__FE_COUT__ << "Copied: " << BinaryStringMacros::binaryNumberToHexString(channel->getSample(), "0x", " ") << " at t=" << time(0) << __E__;
+					__FE_COUTTV__(channel->getInterfaceUID());
+					__FE_COUTTV__(channelToCopy->getInterfaceUID());
+					__FE_COUTTV__(channel->getInterfaceType());
+					__FE_COUTTV__(channelToCopy->getInterfaceType());
 
-					//can NOT break; from while loop... must take iterator back to starting point channel iterator
-				}
-			} //end while loop searching for buffered slow controls value
+					if(!usingBufferedValue && 	
+						channelToCopy->getInterfaceUID() == channel->getInterfaceUID() &&
+						channelToCopy->getInterfaceType() == channel->getInterfaceType() &&
+						BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") == 
+						BinaryStringMacros::binaryNumberToHexString(channel->getUniversalAddress(), "0x", " ") && 
+						channelToCopy->getReadSizeBytes() == channel->getReadSizeBytes() && 
+						time(0) - channelToCopy->getLastSampleTime() < 2 /* within 2 seconds, then re-use buffer */)
+					{
+						usingBufferedValue = true;
+						__FE_COUT__ << "Using buffered " << channelToCopy->getReadSizeBytes() << 
+							"-byte value at address:" << 
+							BinaryStringMacros::binaryNumberToHexString(channelToCopy->getUniversalAddress(), "0x", " ") << __E__;
+
+						__FE_COUT__ << "Copying: " << BinaryStringMacros::binaryNumberToHexString(channelToCopy->getLastSampleReadValue(), "0x", " ") << " at t=" << time(0) << __E__;
+						channel->handleSample(channelToCopy->getLastSampleReadValue(), txBuffer, fp, aggregateFileIsBinaryFormat, txBufferUsed);
+						__FE_COUT__ << "Copied: " << BinaryStringMacros::binaryNumberToHexString(channel->getSample(), "0x", " ") << " at t=" << time(0) << __E__;
+
+						//can NOT break; from while loop... must take iterator back to starting point channel iterator
+					}
+				} //end while loop searching for buffered slow controls value
+			} //end buffered value check
 
 			//get and handle sample if not already handled using buffered value
 			if(!usingBufferedValue)
