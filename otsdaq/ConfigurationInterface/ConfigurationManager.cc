@@ -785,9 +785,19 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 	}
 	catch(...)
 	{
-		__GEN_COUT_ERR__ << "Failed to complete MacroMaker mode fcl "
+		__SS__ << "Failed to complete MacroMaker mode fcl "
 		                    "file configuration dump due to error."
 		                 << __E__;
+		try	{ throw; } //one more try to printout extra info
+		catch(const std::runtime_error &e)
+		{
+			ss << "Exception message: " << e.what();
+		}
+		catch(const std::exception &e)
+		{
+			ss << "Exception message: " << e.what();
+		}
+		__GEN_COUT_ERR__ << ss.str();
 	}
 
 	out.close();

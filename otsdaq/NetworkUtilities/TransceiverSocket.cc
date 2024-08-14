@@ -32,8 +32,8 @@ int TransceiverSocket::acknowledge(const std::string& buffer, bool verbose)
 	constexpr size_t MAX_SEND_SIZE = 65500;
 	if(buffer.size() > MAX_SEND_SIZE)
 	{
-		__COUT__ << "Too large! Error writing buffer from port " << ntohs(TransmitterSocket::socketAddress_.sin_port) << ": " << std::endl;
-		return -1;
+		__SS__ << "Too large! Error writing buffer from port " << ntohs(TransmitterSocket::socketAddress_.sin_port) << ": " << std::endl;
+		__SS_THROW__; //return -1;
 	}
 
 	size_t offset     = 0;
@@ -42,8 +42,8 @@ int TransceiverSocket::acknowledge(const std::string& buffer, bool verbose)
 
 	if(sendToSize <= 0)
 	{
-		__COUT__ << "Error writing buffer from port " << ntohs(TransmitterSocket::socketAddress_.sin_port) << ": " << strerror(errno) << std::endl;
-		return -1;
+		__SS__ << "Error writing buffer from port " << ntohs(TransmitterSocket::socketAddress_.sin_port) << ": " << strerror(errno) << std::endl;
+		__SS_THROW__; //return -1;
 	}
 
 	return 0;
@@ -57,7 +57,9 @@ std::string TransceiverSocket::sendAndReceive(Socket& toSocket, const std::strin
 	std::string receiveBuffer;
 	if(receive(receiveBuffer, timeoutSeconds, timeoutUSeconds, verbose) < 0)
 	{
-		__SS__ << "Timeout or Error receiving response buffer." << __E__;
+		__SS__ << "Timeout or Error receiving response buffer from remote ip:port " << 
+			toSocket.getIPAddress() << ":" << toSocket.getPort() << " to this ip:port " <<
+			Socket::getIPAddress() << ":" << Socket::getPort() << __E__;
 		__SS_THROW__;
 	}
 	return receiveBuffer;

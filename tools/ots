@@ -390,21 +390,21 @@ function killprocs
 		out "Killing processes $1..."
 	fi
 	
-	if [[ "x$1" == "x" ]]; then #kill all ots processes that share $USER_DATA
+	if [[ "x$1" == "x" ]]; then #kill all ots processes that share "$USER_DATA/" (without the trailing /, shift will kill shift1)
 
-		pids=`ps aux|grep -v grep|grep [o]ts.exe|grep ${USER_DATA}|awk '{print $2}'`		
+		pids=`ps aux|grep -v grep|grep [o]ts.exe|grep "${USER_DATA}/"|awk '{print $2}'`		
 		for pid in $pids;do
 			killproc $pid ots.exe &
 		done
-		pids=`ps aux|grep -v grep|grep [x]daq.exe|grep ${USER_DATA}|awk '{print $2}'`
+		pids=`ps aux|grep -v grep|grep [x]daq.exe|grep "${USER_DATA}/"|awk '{print $2}'`
 		for pid in $pids;do
 			killproc $pid xdaq.exe &
 		done
-		pids=`ps aux|grep -v grep|grep [o]tsConsoleFwd|grep ${USER_DATA}|awk '{print $2}'`
+		pids=`ps aux|grep -v grep|grep [o]tsConsoleFwd|grep "${USER_DATA}/"|awk '{print $2}'`
 		for pid in $pids;do
 			killproc $pid otsConsoleFwd &
 		done
-		pids=`ps aux|grep -v grep|grep [m]f_rcv_n_fwd|grep ${USER_DATA}|awk '{print $2}'`
+		pids=`ps aux|grep -v grep|grep [m]f_rcv_n_fwd|grep "${USER_DATA}/"|awk '{print $2}'`
 		for pid in $pids;do
 			killproc $pid mf_rcv_n_fwd &
 		done		
@@ -453,7 +453,7 @@ function killprocs
 	for pid in $pids;do
 		killproc $pid artdaq &
 	done
-	pids=`ps aux|grep -v grep|grep "art -c ${USER_DATA}"|awk '{print $2}'`
+	pids=`ps aux|grep -v grep|grep "art -c ${USER_DATA}/"|awk '{print $2}'`
 	for pid in $pids;do
 		killproc $pid art &
 	done
@@ -1068,7 +1068,7 @@ launchOTSWiz() {
 			fi
 			
 			#out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Message Facility${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt${RstClr}"
-			otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt &
+			otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt &
 		#else
 		#	otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &
 		#fi		 	 	
@@ -1344,7 +1344,7 @@ launchOTS() {
 				fi
 				
 				#out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Message Facility${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt${RstClr}"
-				otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt &
+				otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt &
 			#else
 			#	otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &
 			#fi		 	
@@ -1915,7 +1915,7 @@ launchOTS() {
 				fi
 			
 				out "\tRemote launch of ots Context processes on host {${host}}."
-				out "\t\tssh ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD}" 
+				out "\t\tssh ${host} SCRIPT_DIR/ots_remote_start ${host} ${PWD}" 
 				
 				# launch ssh remote start (attempt twice)
 				ssh ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} || ssh ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
@@ -2114,7 +2114,7 @@ launchOTSLogFind() {
 
 	fn="otsdaq_quiet_run-gateway-${gatewayHostname[$i]}-${gatewayPort}"
 	if [[ ${gatewayHostname[$i]} != ${THIS_HOST} ]]; then
-		out " '${Bold}${gatewayUID}${RstClr}'\t vless_mu2e.sh ${gatewayHostname[$i]} ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			
+		out " '${Bold}${gatewayUID}${RstClr}'\t vless_ots.sh ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			#hostname ${gatewayHostname[$i]} 
 	else
 		out " '${Bold}${gatewayUID}${RstClr}'\t less ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			
 	fi
@@ -2130,7 +2130,7 @@ launchOTSLogFind() {
 		# out "[$i] == $fn - ${xdaqHost[$i]} - ${PORT} - $gatewayHostname : $gatewayPort"
 
 		if [[ ${xdaqHost[$i]} != ${THIS_HOST} ]]; then
-			out " '${Bold}${xdaqContextUID[$i]}${RstClr}'\t vless_mu2e.sh ${Bold}${xdaqHost[$i]}${RstClr} ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			
+			out " '${Bold}${xdaqContextUID[$i]}${RstClr}'\t vless_ots.sh ${Bold}${xdaqHost[$i]}${RstClr} ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			
 		else
 			out " '${Bold}${xdaqContextUID[$i]}${RstClr}'\t less ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			
 		fi

@@ -68,11 +68,12 @@ int TransmitterSocket::send(Socket& toSocket, const std::string& buffer, bool ve
 
 	if(sts <= 0)
 	{
-		__COUT__ << "Error writing buffer for port " << ntohs(socketAddress_.sin_port) << ": " << strerror(errno) << std::endl;
-		return -1;
+		__SS__ << "Error writing buffer for port " << ntohs(socketAddress_.sin_port) << ": " << strerror(errno) << 
+			". Was this tx socket initialized with Socket::Initialize()?" << __E__;
+		__SS_THROW__; //return -1;
 	}
 	return 0;
-}
+} //end send()
 
 //==============================================================================
 int TransmitterSocket::send(Socket& toSocket, const std::vector<uint16_t>& buffer, bool /*verbose*/)
@@ -97,11 +98,12 @@ int TransmitterSocket::send(Socket& toSocket, const std::vector<uint16_t>& buffe
 
 	if(sts <= 0)
 	{
-		__COUT__ << "Error writing buffer for port " << ntohs(socketAddress_.sin_port) << ": " << strerror(errno) << std::endl;
-		return -1;
+		__SS__ << "Error writing buffer for port " << ntohs(socketAddress_.sin_port) << ": " << strerror(errno) << 
+			". Was this tx socket initialized with Socket::Initialize()?" << __E__;
+		__SS_THROW__; //return -1;
 	}
 	return 0;
-}
+} //end send()
 
 //==============================================================================
 int TransmitterSocket::send(Socket& toSocket, const std::vector<uint32_t>& buffer, bool /*verbose*/)
@@ -116,8 +118,9 @@ int TransmitterSocket::send(Socket& toSocket, const std::vector<uint32_t>& buffe
 	if(sendto(socketNumber_, &buffer[0], buffer.size() * sizeof(uint32_t), 0, (struct sockaddr*)&(toSocket.getSocketAddress()), sizeof(sockaddr_in)) <
 	   (int)(buffer.size() * sizeof(uint32_t)))
 	{
-		__COUT__ << "Error writing buffer for port " << ntohs(socketAddress_.sin_port) << std::endl;
-		return -1;
+		__SS__ << "Error writing buffer for port " << ntohs(socketAddress_.sin_port) << 
+			". Was this tx socket initialized with Socket::Initialize()?" << __E__;
+		__SS_THROW__; //return -1;
 	}
 	return 0;
-}
+} //end send()

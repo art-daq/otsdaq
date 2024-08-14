@@ -2126,7 +2126,7 @@ int TableView::fillFromJSON(const std::string& json)
 		//if special GROUP CACHE table, handle construction in a special way
 		if(tableName_.substr(0,tmpCachePrepend.length()) == tmpCachePrepend)
 		{
-			__COUTT__ << "Group Cache JSON doc: " << json << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Group Cache JSON doc: " << json << __E__;
 
 			//remove json { } and all " characters
 			std::string jsonClean = "";

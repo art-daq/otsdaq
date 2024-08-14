@@ -56,6 +56,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	bool        enableFwd = true, useWeb = true, useQT = false;  // default to enabling web console
 	int         fwdPort, destFwdPort;
 	std::string fwdIP;
+	std::string parseFilename = "/src";
 
 	// attempt to setup forward IP:Port:FwdPort defaults
 	try
@@ -75,6 +76,13 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	try
 	{
 		fwdIP = __ENV__("HOSTNAME");
+	}
+	catch(...)
+	{
+	}  // ignore errors (assume user will setup in table)
+	try
+	{
+		parseFilename = std::string("/") + __ENV__("OTS_ENV") + "/"; //parse on spack environment
 	}
 	catch(...)
 	{
@@ -165,7 +173,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 			fclSs << "\t"
 			      << "threshold: DEBUG\n";
 			fclSs << "\t"
-			      << "filename_delimit: \"/src\"\n";
+			      << "filename_delimit: \"" << parseFilename << "\"\n";
 			fclSs << "\t"
 			      << "port: " << fwdPort << "\n";
 			fclSs << "\t"
@@ -178,7 +186,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 			fclSs << "\t"
 			      << "threshold: \"DEBUG\"\n";
 			fclSs << "\t"
-			      << "filename_delimit: \"/src\"\n";
+			      << "filename_delimit: \"" << parseFilename << "\"\n";
 			fclSs << "\t"
 			      << "format_string: \"|%L:%N: %f:%u |\t%m\"\n";
 
@@ -215,7 +223,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 			fclSs << "\t"
 			      << "threshold: DEBUG\n";
 			fclSs << "\t"
-			      << "filename_delimit: \"/src\"\n";
+			      << "filename_delimit: \"" << parseFilename << "\"\n";
 			fclSs << "\t"
 			      << "port: " << fwdPort << "\n";
 			fclSs << "\t"
@@ -257,7 +265,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 		fclSs << "\t"
 		      << "threshold: \"DEBUG\"\n";
 		fclSs << "\t"
-		      << "filename_delimit: \"/src\"\n";
+		      << "filename_delimit: \"" << parseFilename << "\"\n";
 		fclSs << "\t"
 		      << "format_string: \"|%L:%N:%f [%u]\t%m\"\n";
 

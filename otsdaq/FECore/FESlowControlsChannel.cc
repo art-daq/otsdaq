@@ -262,6 +262,9 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface* interface,
 //==============================================================================
 FESlowControlsChannel::~FESlowControlsChannel(void) {}
 
+const std::string&  FESlowControlsChannel::getInterfaceUID	(void) const { return interface_->getInterfaceUID(); }
+const std::string& 	FESlowControlsChannel::getInterfaceType	(void) const { return interface_->getInterfaceType(); }
+
 //==============================================================================
 void FESlowControlsChannel::doRead(std::string& readValue)
 {
