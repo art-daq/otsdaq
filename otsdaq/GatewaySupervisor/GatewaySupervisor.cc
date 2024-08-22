@@ -4506,7 +4506,7 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 								//now have remote icon string, append icons to list
 								std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString);
 								const int numOfIconFields = 7;
-								for(int i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
+								for(size_t i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
 								{
 
 									if(firstIcon)
