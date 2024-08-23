@@ -61,6 +61,7 @@ try
 	//	cleanBuild
 	//	incrementalBuild
 	//	getAllowedExtensions
+	//	getFileGitURL
 	//
 
 	if(option == "getDirectoryContent")
@@ -82,6 +83,10 @@ try
 	else if(option == "getAllowedExtensions")
 	{
 		xmlOut->addTextElementToData("AllowedExtensions", StringMacros::setToString(ALLOWED_FILE_EXTENSIONS_, ","));
+	}
+	else if(option == "getFileGitURL")
+	{
+		getFileGitURL(cgiIn, xmlOut);
 	}
 	else
 	{
@@ -379,6 +384,56 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	xmlOut->addTextElementToData("content", contents);
 
 }  // end getFileContent()
+
+//==============================================================================
+// getFileGitURL
+void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
+{
+	std::string path = CgiDataUtilities::getData(cgiIn, "path");
+	path             = safePathString(StringMacros::decodeURIComponent(path));
+	xmlOut->addTextElementToData("path", path);
+
+	std::string extension = CgiDataUtilities::getData(cgiIn, "ext");
+	if(extension == "ots")
+		extension = "";  // special handling of ots extension (to get bash script
+		                 // properly)
+	if(!( extension == "bin" || //allow bin for read-only
+		(path.length() > 4 && path.substr(path.length() - 4) == "/ots")))
+		extension = safeExtensionString(extension);
+	xmlOut->addTextElementToData("ext", extension);
+
+	std::string gitPath;
+	size_t      i;
+	if((i = path.find("$USER_DATA/")) == 0 || (i == 1 && path[0] == '/'))  // if leading / or without
+		gitPath = CodeEditor::getFileGitURL(
+		    CodeEditor::USER_DATA_PATH, path.substr(i + std::string("$USER_DATA/").size()) + (extension.size() ? "." : "") + extension);
+	else if((i = path.find("$OTSDAQ_DATA/")) == 0 || (i == 1 && path[0] == '/'))  // if leading / or without
+		gitPath = CodeEditor::getFileGitURL(
+		    CodeEditor::OTSDAQ_DATA_PATH, path.substr(std::string("/$OTSDAQ_DATA/").size()) + (extension.size() ? "." : "") + extension);
+	else
+		gitPath = CodeEditor::getFileGitURL(CodeEditor::SOURCE_BASE_PATH, path + (extension.size() ? "." : "") + extension);
+
+	xmlOut->addTextElementToData("gitPath", gitPath);
+
+}  // end getFileGitURL()
+
+//==============================================================================
+// getFileGitURL
+std::string CodeEditor::getFileGitURL(const std::string& basepath, const std::string& path)
+{
+	__COUTV__(basepath);
+	__COUTV__(path);
+	std::string fullpath;
+	if(path.find(basepath) == 0) //check if path is already complete
+		fullpath = path;
+	else
+		fullpath = basepath + "/" + path;
+	__COUTV__(fullpath);
+
+	//look for environments
+
+	return "unknown";
+}  // end getFileGitURL()
 
 //==============================================================================
 // readFile

@@ -34,7 +34,7 @@ constexpr auto default_entity     = "OTSROOT";
 //==============================================================================
 DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 {
-#ifdef DEBUG_ENABLE
+// #ifdef DEBUG_ENABLE
 	// to enable debugging
 	if(0)
 	{
@@ -60,19 +60,22 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 		artdaq::database::configuration::debug::UconDB();
 		artdaq::database::configuration::debug::FileSystemDB();
 
-		artdaq::database::filesystem::index::debug::enable();
+		// artdaq::database::filesystem::index::debug::enable();
 
+		// THIS TURNS OFF TRACE SLOW PATH!!! (bug?) 
 		artdaq::database::filesystem::debug::enable();
-		artdaq::database::mongo::debug::enable();
 
-		artdaq::database::docrecord::debug::JSONDocumentBuilder();
-		artdaq::database::docrecord::debug::JSONDocument();
+		// artdaq::database::mongo::debug::enable();
+
+		// artdaq::database::docrecord::debug::JSONDocumentBuilder();
+		// artdaq::database::docrecord::debug::JSONDocument();
 
 		// debug::registerUngracefullExitHandlers();
 		//  artdaq::database::useFakeTime(true);
 		artdaq::database::configuration::Multitasker();
+		TRACE_CNTL("modeS", true);
 	}
-#endif
+// #endif
 
 	std::string envVar = __ENV__("ARTDAQ_DATABASE_URI");
 	if(envVar.length() && envVar[0] != 'f')  //e.g., filesystemdb:///path/filesystemdb/test_db

@@ -49,7 +49,8 @@ function setupTrace()
 	fi
 
 	export TRACE_PRINT_FD=2 #reroute everything to std:err (overriding > dev/null hiding)
-	export TRACE_PRINT="|%L:%N:%f [%u] %m" #to mimic ots line number output
+	# export TRACE_PRINT="|%L:%N:%f [%u] %m" #to mimic ots line number output
+	export TRACE_PRINT="|%L:%N: %#f#/tdaq-v#:%u | %m" #to mimic ots line number output
 }
 
 setupTrace
@@ -931,8 +932,14 @@ launchOTSMacromaker() {
 		
 		# Alert user to the problem and keep trying
 		while [ "x$OTS_IS_ALIVE" == "x" ]; do
-			warning "Could not verify successful ots Macro Maker mode context launch, relaunching ots Macro Maker mode context (check log for details)..."									
+			warning "Could not verify successful ots Macro Maker mode context launch (check log for details)..."									
 			killproc ${LAST_OTS_PID} xdaq.exe	
+			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
+				tail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
+				echo
+				echo
+			fi
+			warning "Relaunching ots Macro Maker mode context..."			
 			sleep 2
 			
 			if [ $QUIET == 1 ]; then
@@ -1172,8 +1179,14 @@ launchOTSWiz() {
 		#out "OTS_IS_ALIVE=${OTS_IS_ALIVE}"
 	
 		while [ "x$OTS_IS_ALIVE" == "x" ]; do
-			warning "Could not verify successful ots wiz context launch, relaunching ots wiz context..."			
+			warning "Could not verify successful ots wiz context launch (check log for details)..."			
 			killproc ${LAST_OTS_PID} xdaq.exe
+			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
+				tail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
+				echo
+				echo
+			fi
+			warning "Relaunching ots wiz context..."	
 			sleep 2
 			
 			if [ $QUIET == 1 ]; then
@@ -1592,8 +1605,14 @@ launchOTS() {
 								# Alert the user to the problem and keep relaunching
 
 								while [ "x$OTS_IS_ALIVE" == "x" ]; do
-									warning "Could not verify successful ots gateway context launch, relaunching ots gateway context..."									
+									warning "Could not verify successful ots gateway context launch (check log for details)..."									
 									killproc ${LAST_OTS_PID} xdaq.exe 
+									if [ $QUIET == 1 ]; then #display log tail for user to diagnose
+										tail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
+										echo
+										echo
+									fi
+									warning "Relaunching ots gateway context..."
 									sleep 2
 									
 									if [ $QUIET == 1 ]; then
@@ -1807,8 +1826,14 @@ launchOTS() {
 			
 
 			while [ "x$OTS_IS_ALIVE" == "x" ]; do
-				warning "Could not verify successful ots non-gateway context launch, relaunching non-gateway context..."
+				warning "Could not verify successful ots non-gateway context launch (check log for details)..."
 				killproc ${LAST_OTS_PID} xdaq.exe 
+				if [ $QUIET == 1 ]; then #display log tail for user to diagnose
+					tail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
+					echo
+					echo
+				fi
+				warning "Relaunching non-gateway context..."
 				sleep 2
 				
 				if [ $QUIET == 1 ]; then					

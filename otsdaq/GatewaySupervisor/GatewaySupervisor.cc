@@ -335,10 +335,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 					if(!appLastStatusGood[appName])
 					{
-						__COUT__ << "First good status from "
+						__COUT_INFO__ << "First good status from "
 						         << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
 						         << "' [URL=" << appInfo.getURL() << "].\n\n";
-						__COUTV__(SOAPUtilities::translate(tempMessage));
+						__COUTTV__(SOAPUtilities::translate(tempMessage));
 					}
 					appLastStatusGood[appName] = true;
 				}
@@ -358,7 +358,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						__COUT__ << "Failed getting status from "
 						         << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
 						         << "' [URL=" << appInfo.getURL() << "].\n\n";
-						__COUTV__(SOAPUtilities::translate(tempMessage));
+						__COUTTV__(SOAPUtilities::translate(tempMessage));
 						__COUT_WARN__ << "Failed to send getStatus SOAP Message - will suppress repeat errors: " << e.what() << __E__;
 					}  // else quiet repeat error messages
 					else  //check if should throw state machine error
@@ -575,18 +575,17 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
 				const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
 
-				std::string iconString = "";  // comma-separated icon string, 7 fields:
+				std::string iconString = "";  
+				// comma-separated icon string, 7 fields:
 				//				0 - caption 		= text below icon
 				//				1 - altText 		= text icon if no image given
 				//				2 - uniqueWin 		= if true, only one window is allowed,
-				// else  multiple instances of window 				3 - permissions 	=
-				// security level needed to see icon 				4 - picfn 			=
-				// icon image filename 				5 - linkurl 		= url of the window to
-				// open 				6 - folderPath 		= folder and subfolder location
-				// '/'
-				// separated  for example:  State
-				// Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config
-				// Subsets
+				// 										else  multiple instances of window 				
+				//				3 - permissions 	= security level needed to see icon 				
+				//				4 - picfn 			= icon image filename 				
+				//				5 - linkurl 		= url of the window to open
+				// 				6 - folderPath 		= folder and subfolder location '/' separated  
+				//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
 
 
 				bool getRemoteIcons = true;
@@ -623,7 +622,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								// std::string ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
 								__COUTTV__(ipAddressForStateChangesOverUDP);
 								TransceiverSocket iconSocket(ipAddressForStateChangesOverUDP);
-								std::string remoteIconString = iconSocket.sendAndReceive(iconRemoteSocket,"GetRemoteDesktopIcons");
+								std::string remoteIconString = iconSocket.sendAndReceive(iconRemoteSocket,"GetRemoteDesktopIcons", 10 /*timeoutSeconds*/);
 								__COUTV__(remoteIconString);
 								continue;
 							}
@@ -637,6 +636,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						iconString += ",";
 						
 
+					__COUTV__(icon.caption_);
 					iconString += icon.caption_;
 					iconString += "," + icon.alternateText_;
 					iconString += "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
@@ -645,12 +645,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 															// server allows (i.e., trust server
 															// security, ignore client security)
 					iconString += "," + icon.imageURL_;
-					iconString += "," + icon.windowContentURL_;
+					iconString += "," + iconTable->getRemoteURL(&tmpCfgMgr, icon.windowContentURL_);
 					iconString += "," + icon.folderPath_;
 				}
 				__COUTV__(iconString);
 
-				sock.acknowledge(iconString, false /* verbose */);
+				sock.acknowledge(iconString, true /* verbose */);
 				continue;
 			} //end GetRemoteDesktopIcons
 
@@ -4436,18 +4436,18 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 			const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
 			const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
 
-			std::string iconString = "";  // comma-separated icon string, 7 fields:
+			std::string iconString = "";  
+			// comma-separated icon string, 7 fields:
 			//				0 - caption 		= text below icon
 			//				1 - altText 		= text icon if no image given
 			//				2 - uniqueWin 		= if true, only one window is allowed,
-			// else  multiple instances of window 				3 - permissions 	=
-			// security level needed to see icon 				4 - picfn 			=
-			// icon image filename 				5 - linkurl 		= url of the window to
-			// open 				6 - folderPath 		= folder and subfolder location
-			// '/'
-			// separated  for example:  State
-			// Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config
-			// Subsets
+			// 										else  multiple instances of window 				
+			//				3 - permissions 	= security level needed to see icon 				
+			//				4 - picfn 			= icon image filename 				
+			//				5 - linkurl 		= url of the window to open
+			// 				6 - folderPath 		= folder and subfolder location '/' separated  
+			//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
+
 
 			//__COUTV__((unsigned int)userInfo.permissionLevel_);
 
@@ -4504,9 +4504,9 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 								__COUTV__(remoteIconString);
 
 								//now have remote icon string, append icons to list
-								std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString);
-								const int numOfIconFields = 7;
-								for(int i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
+								std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString, {','});
+								const size_t numOfIconFields = 7;
+								for(size_t i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
 								{
 
 									if(firstIcon)
@@ -4514,7 +4514,11 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 									else
 										iconString += ",";					
 
-									iconString += remoteIconsCSV[i+0]; //icon.caption_;
+									__COUTV__(remoteIconsCSV[i+0]);
+									if(icon.folderPath_ == "") //if not in folder, distinguish remote icon somehow
+										iconString += icon.alternateText_ + " " + remoteIconsCSV[i+0]; //icon.caption_;
+									else
+										iconString += remoteIconsCSV[i+0]; //icon.caption_;
 									iconString += "," + remoteIconsCSV[i+1]; //icon.alternateText_;
 									iconString += "," + remoteIconsCSV[i+2]; //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
 									iconString += "," + std::string("1");  // set permission to 1 so the
@@ -4523,6 +4527,7 @@ void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 																		// security, ignore client security)
 									iconString += "," + remoteIconsCSV[i+4]; //icon.imageURL_;
 									iconString += "," + remoteIconsCSV[i+5]; //icon.windowContentURL_;
+									
 									iconString += "," + icon.folderPath_ + "/" + remoteIconsCSV[i+6]; //icon.folderPath_;
 									
 								} //end append remote icons

@@ -24,8 +24,9 @@ class DesktopIconTable : public TableBase
 		                                         // pairs separated by ',' '&' or '|'
 	};
 
-	const std::vector<DesktopIconTable::DesktopIcon>& getAllDesktopIcons() const { return activeDesktopIcons_; }  // activeDesktopIcons_ is setup in init
-	void setAllDesktopIcons(const std::vector<DesktopIconTable::DesktopIcon>& newIcons);                          // overwrite dynamically the init result
+	const std::vector<DesktopIconTable::DesktopIcon>& 	getAllDesktopIcons() const { return activeDesktopIcons_; }  // activeDesktopIcons_ is setup in init
+	void 												setAllDesktopIcons(const std::vector<DesktopIconTable::DesktopIcon>& newIcons);                          // overwrite dynamically the init result
+	std::string  										getRemoteURL(ConfigurationManager* configManager, const std::string& localURL) const;
 
 	static const std::string COL_NAME;
 	static const std::string COL_STATUS;

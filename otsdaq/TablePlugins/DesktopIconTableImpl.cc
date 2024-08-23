@@ -107,6 +107,12 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 		icon->windowContentURL_          = child.second.getNode(COL_WINDOW_CONTENT_URL).getValue<std::string>();
 		icon->folderPath_                = child.second.getNode(COL_FOLDER_PATH).getValue<std::string>();
 
+		if(icon->windowContentURL_.size() == 0)
+		{
+			__SS__ << "Illegal empty URL in Desktop Icon '" << child.first << "'" << __E__;
+			__SS_THROW__;
+		}
+
 		if(icon->folderPath_ == TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
 			icon->folderPath_ = "";  // convert DEFAULT to empty string
 
@@ -219,6 +225,54 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 	}  // end main icon extraction loop
 
 }  // end init()
+
+//==============================================================================
+//Convert to remote URL assuming port forwarding to primary Gateway Port
+std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager, const std::string& localURL) const
+{
+	std::string retURL;
+	std::string contextAddress;
+
+	if(localURL.size() && localURL[0] == '/')
+	{
+		ConfigurationTree       contextTableNode = configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
+		const XDAQContextTable* contextTable     = configManager->getTable<XDAQContextTable>(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
+
+		std::string gatewayContextUID = contextTable->getContextOfGateway(configManager);
+		ConfigurationTree contextNode = contextTableNode.getNode(gatewayContextUID);
+
+		contextAddress = contextNode.getNode(XDAQContextTable::colContext_.colAddress_).getValue<std::string>();
+		unsigned int contextPort    = contextNode.getNode(XDAQContextTable::colContext_.colPort_).getValue<unsigned int>();
+		
+		try
+		{
+			if(__ENV__("OTS_REMOTE_ICONS_NO_PORT_FOWARDING")) //define this environment variable to not use localhost port forwarding to browser			
+				contextAddress += ":" + std::to_string(contextPort);
+			else
+				contextAddress = std::string("http://") + "localhost" + ":" + std::to_string(contextPort);
+		}
+		catch(...)
+		{
+			__COUTT__ << "Ignoring missing environment variable OTS_REMOTE_ICONS_NO_PORT_FOWARDING, and assuming localhost port forwarding to web browser." <<  __E__;
+			contextAddress = std::string("http://") + "localhost" + ":" + std::to_string(contextPort);
+		}
+		retURL = contextAddress + localURL;		
+	}
+	else //if no starting '/' assume URL is already complete
+		retURL = localURL;
+
+	//now add get parameters for remoteGateway
+	// if there is no '?' found
+	//	then assume need to add "?"
+	if(retURL.find('?') == std::string::npos)
+		retURL += '?';
+	else if(retURL[retURL.size() - 1] != '?')  // if not first parameter, add &
+		retURL += '&';
+	retURL += "remoteServerOrigin=" + StringMacros::encodeURIComponent(contextAddress) + 
+		"&remoteServerUrnLid=" + std::to_string(XDAQContextTable::XDAQApplication::GATEWAY_APP_ID);
+
+	return retURL;
+} // end getRemoteURL()
 
 //==============================================================================
 std::string DesktopIconTable::removeCommas(const std::string& str, bool andHexReplace, bool andHTMLReplace)

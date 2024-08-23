@@ -141,8 +141,8 @@ int ReceiverSocket::receive(
 		++readCounter_;
 
 		if(verbose)
-			__COUT__ << "No new messages for " << timeoutSeconds + timeoutUSeconds / 1000. << "s (Total "
-			         << readCounter_ * (timeoutSeconds + timeoutUSeconds / 1000.) << "s). Read request timed out receiving on "
+			__COUT__ << "No new messages for " << timeoutSeconds + timeoutUSeconds / 1000000. << "s (Total "
+			         << readCounter_ * (timeoutSeconds + timeoutUSeconds / 1000000.) << "s). Read request timed out receiving on "
 			         << " " << getIPAddress() << ":" << getPort() << std::endl;
 		return -1;
 	}
@@ -235,11 +235,11 @@ int ReceiverSocket::receive(std::vector<uint32_t>& buffer,
 		getsockname(socketNumber_, (struct sockaddr*)&sin, &len);
 
 		if(verbose)
-			__COUT__ << __COUT_HDR_FL__ << "No new messages for " << timeoutSeconds + timeoutUSeconds / 1000. << "s (Total "
-			         << readCounter_ * (timeoutSeconds + timeoutUSeconds / 1000.) << "s). Read request timed out for port: " << ntohs(sin.sin_port)
+			__COUT__ << __COUT_HDR_FL__ << "No new messages for " << timeoutSeconds + timeoutUSeconds / 1000000. << "s (Total "
+			         << readCounter_ * (timeoutSeconds + timeoutUSeconds / 1000000.) << "s). Read request timed out for port: " << ntohs(sin.sin_port)
 			         << std::endl;
 		return -1;
 	}
-	__COUT__ << "This a successful reeeaaad" << std::endl;
+	__COUT__ << "This a successful read" << std::endl;
 	return 0;
 } //end receive()
