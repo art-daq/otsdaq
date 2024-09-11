@@ -62,7 +62,7 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 
 		// artdaq::database::filesystem::index::debug::enable();
 
-		// THIS TURNS OFF TRACE SLOW PATH!!! (bug?) 
+		// THIS TURNS OFF TRACE SLOW PATH!!! (bug? Gennadiy says was trying to avoid slowing down TRACE with too many messages on slow path) 
 		artdaq::database::filesystem::debug::enable();
 
 		// artdaq::database::mongo::debug::enable();
@@ -73,7 +73,7 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 		// debug::registerUngracefullExitHandlers();
 		//  artdaq::database::useFakeTime(true);
 		artdaq::database::configuration::Multitasker();
-		TRACE_CNTL("modeS", true);
+		TRACE_CNTL("modeS", true); //TURN BACK ON TRACE SLOW PATH
 	}
 // #endif
 

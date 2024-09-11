@@ -51,6 +51,10 @@ function setupTrace()
 	export TRACE_PRINT_FD=2 #reroute everything to std:err (overriding > dev/null hiding)
 	# export TRACE_PRINT="|%L:%N:%f [%u] %m" #to mimic ots line number output
 	export TRACE_PRINT="|%L:%N: %#f#/tdaq-v#:%u | %m" #to mimic ots line number output
+
+	#at least enable messages from self
+	tonS 0-9 -N ots
+	tonS 0-9 -N ots_remote_start
 }
 
 setupTrace
@@ -627,6 +631,8 @@ if [ $ISREMOTE == 0 ]; then
 	info "\$USER_DATA               = ${YELLOW}${USER_DATA}${RstClr}          "
 	info "\$ARTDAQ_DATABASE_URI     = ${YELLOW}${Bold}${ARTDAQ_DATABASE_URI}${DBold}${RstClr}"
 	info "\$OTSDAQ_DATA             = ${YELLOW}${OTSDAQ_DATA}${RstClr}        "
+	info "\$WEB_PATH                = ${YELLOW}${WEB_PATH}${RstClr}        "
+	info "\$USER_WEB_PATH           = ${YELLOW}${USER_WEB_PATH}${RstClr}        "
 fi
 #end print out important environment variables
 

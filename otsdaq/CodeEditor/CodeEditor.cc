@@ -86,6 +86,7 @@ try
 	}
 	else if(option == "getFileGitURL")
 	{
+		//TODO!
 		getFileGitURL(cgiIn, xmlOut);
 	}
 	else
@@ -421,6 +422,10 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 // getFileGitURL
 std::string CodeEditor::getFileGitURL(const std::string& basepath, const std::string& path)
 {
+
+		//TODO!
+		//TODO! request with linux exec to spack environment
+		
 	__COUTV__(basepath);
 	__COUTV__(path);
 	std::string fullpath;

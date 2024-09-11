@@ -320,16 +320,15 @@ void CorePropertySupervisorBase::checkSupervisorPropertySetup()
 	//	only redo if Context configuration group changes
 	propertiesAreSetup_ = true;
 
+	__SUP_COUTT__ << "Setting up supervisor specific property DEFAULTS for supervisor..." << __E__;
 
 	CorePropertySupervisorBase::setSupervisorPropertyDefaults();  // calls base class
 	                                                              // version defaults
 
-	//__SUP_COUT__ << "Setting up supervisor specific property DEFAULTS for supervisor..."
-	//<< __E__;
+	
 	setSupervisorPropertyDefaults();  // calls override version defaults
-	                                  //	__SUP_COUT__ << "Done setting up supervisor
-	                                  // specific property DEFAULTS for supervisor" <<
-	                                  //			"." << __E__;
+	
+	__SUP_COUTT__ << "Done setting up supervisor	specific property DEFAULTS for supervisor" << "." << __E__;
 
 	if(allSupervisorInfo_.isWizardMode())
 		__SUP_COUT__ << "Wiz mode detected. Skipping setup of supervisor properties for "

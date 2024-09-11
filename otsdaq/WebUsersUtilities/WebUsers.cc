@@ -2967,7 +2967,8 @@ void WebUsers::addSystemMessage(const std::string& targetUsersCSV, const std::st
 //	targetUser can be "*" for all users
 void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, const std::string& subject, const std::string& message, bool doEmail)
 {
-	__COUT__ << "Before number of users with system messages: " << systemMessages_.size() << __E__;
+	__COUT__ << "Before number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 
 	// lock for remainder of scope
 	std::lock_guard<std::mutex> lock(systemMessageLock_);
@@ -3075,7 +3076,8 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, con
 
 	}  // end target user message add loop
 
-	__COUT__ << "After number of users with system messages: " << systemMessages_.size() << __E__;
+	__COUT__ << "After number of users with system messages: " << systemMessages_.size() << 
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 	__COUTV__(targetEmails.size());
 
 	if(doEmail && targetEmails.size())
@@ -3205,25 +3207,29 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 //	For all remaining messages, wait some time before removing (e.g. 30 sec)
 void WebUsers::systemMessageCleanup()
 {
-	//__COUT__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
+	__COUTT__ << "Before cleanup number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 	for(auto& userMessagesPair : systemMessages_)
 	{
-		//__COUT__ << userMessagesPair.first << " system messages: " <<
-		//		userMessagesPair.second.size() << __E__;
 
 		for(uint64_t i = 0; i < userMessagesPair.second.size(); ++i)
 			if((userMessagesPair.first != "*" && userMessagesPair.second[i].delivered_) ||      // delivered and != *
 			   userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME < time(0))  // expired
 			{
+
+				__COUTT__ << userMessagesPair.first << " at time: " << userMessagesPair.second[i].creationTime_ << 
+						" system messages: " <<	userMessagesPair.second.size() << __E__;
+
 				// remove
 				userMessagesPair.second.erase(userMessagesPair.second.begin() + i);
 				--i;  // rewind
-			}
+			} //end cleanup loop by message
 
-		//__COUT__ << userMessagesPair.first << " remaining system messages: " <<
-		//		userMessagesPair.second.size() << __E__;
-	}
-	//__COUT__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
+		__COUTT__ << "User '" << userMessagesPair.first << "' remaining system messages: " <<
+				userMessagesPair.second.size() << __E__;
+	} //end cleanup loop by user
+	__COUTT__ << "After cleanup number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 }  // end systemMessageCleanup()
 
 //==============================================================================

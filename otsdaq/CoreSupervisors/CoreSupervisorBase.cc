@@ -166,7 +166,7 @@ try
 		__SUP_COUT_ERR__ << "\n" << ss.str();
 		xmlOut.addTextElementToData("Error", ss.str());
 	}
-	__SUP_COUTT__ << "Request time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
+	__SUP_COUTT__ << "Request '" << requestType << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
 	
 	// report any errors encountered
 	// but only if there are a reasonable number of children
@@ -175,7 +175,7 @@ try
 		xmlOut.getRootDataElement()->getChildNodes()->item(0)->getNodeType() != xercesc::DOMNode::TEXT_NODE) 
 		numberOfChildren += xmlOut.getRootDataElement()->getChildNodes()->item(0)->getChildNodes()->getLength();
 
-	__SUP_COUTT__  << "Number of children: " << numberOfChildren << __E__;
+	__SUP_COUTT__  << "Number of xml data element children: " << numberOfChildren << __E__;
 
 	if(numberOfChildren < 1000)
 	{
