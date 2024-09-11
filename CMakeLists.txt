@@ -83,8 +83,8 @@ endif()
 find_package(Boost QUIET COMPONENTS date_time program_options regex thread REQUIRED EXPORT)
 
  # XDAQ Extra setup
- include_directories($ENV{XDAQ_INC}/linux $ENV{XDAQ_INC})
-link_directories($ENV{XDAQ_LIB})
+ include_directories($ENV{XDAQ_ROOT}/include/linux $ENV{XDAQ_ROOT}/include)
+link_directories($ENV{XDAQ_ROOT}/lib)
  set(XDAQ_BASIC_LIB_LIST 
    xcept
    xoap
