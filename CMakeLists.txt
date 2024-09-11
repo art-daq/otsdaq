@@ -16,6 +16,7 @@ project(otsdaq VERSION 2.08.02)
 
 include(CetCMakeEnv)
 cet_cmake_env()
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Find our own CMake modules, and tell everyone else where to find them.
 cet_cmake_module_directories(Modules BINARY)
