@@ -16,7 +16,7 @@ class ConfigurationSupervisorBase
 {
 public:
 
-	static void 				getConfigurationStatusXML(HttpXmlDocument& xmlOut, ConfigurationManagerRW* cfgMgr);
+	static void 				getConfigurationStatusXML(HttpXmlDocument& xmlOut, ConfigurationManagerRW* cfgMgr, const std::string& username);
 
 	static TableVersion 		saveModifiedVersionXML(HttpXmlDocument&        xmlOut,
 		                                    ConfigurationManagerRW* cfgMgr,

@@ -187,6 +187,7 @@ const T* retPtr = dynamic_cast<const T*>(srcPtr); if(retPtr == nullptr) { __SS__
 	ConfigurationTree 					getContextNode				(const std::string& contextUID, const std::string& applicationUID) const;
 	ConfigurationTree 					getSupervisorNode			(const std::string& contextUID, const std::string& applicationUID) const;
 	ConfigurationTree 					getSupervisorTableNode		(const std::string& contextUID, const std::string& applicationUID) const;
+	ConfigurationTree 					getGatewaySupervisorNode	(void) const;
 
 	std::vector<std::pair<std::string /*childName*/,
 		ConfigurationTree>> 			getChildren					(std::map<std::string, TableVersion>* memberMap = 0, std::string* accumulatedTreeErrors = 0) const;
@@ -199,6 +200,12 @@ const T* retPtr = dynamic_cast<const T*>(srcPtr); if(retPtr == nullptr) { __SS__
 	const std::string& 					getOwnerContext				(void) { return ownerContextUID_; }
 	const std::string& 					getOwnerApp					(void) { return ownerAppUID_; }
 	bool               					isOwnerFirstAppInContext	(void);
+
+	std::map<std::string /*groupType*/,
+		 std::pair<std::string /*groupName*/,
+		 TableGroupKey>>						getOtherSubsystemActiveTableGroups		(const std::string& otherSubsystemUID, std::string* userDataPathPtr = nullptr, std::string* hostnamePtr = nullptr, std::string* usernamePtr = nullptr);
+	std::set<std::string  /* configAlias */>	getOtherSubsystemConfigAliases			(const std::string& otherSubsystemUID);
+	std::set<std::string  /* configAlias */>	getOtherSubsystemFilteredConfigAliases	(const std::string& otherSubsystemUID, const std::string& otherSubsystemFsmName );
 
 	//==============================================================================
 	// Setters/Modifiers

@@ -58,6 +58,9 @@ class RemoteWebUsers : public SOAPMessenger
 	void        makeSystemLogEntry	(const std::string& entryText);
 	std::pair<std::string /*group name*/, TableGroupKey>
 				getLastTableGroup		(const std::string& actionOfLastGroup, std::string& returnedActionTimeString);  // actionOfLastGroup = "Configured" or "Started", for example
+	void		getLastTableGroups		(std::map< std::string /* group type */,
+										std::tuple<std::string /*group name*/, TableGroupKey, 
+											std::string /* time string*/>>& theGroups);
 
   private:
 

@@ -2509,6 +2509,24 @@ ConfigurationTree ConfigurationManager::getSupervisorTableNode(const std::string
 }  // end getSupervisorTableNode()
 
 //==============================================================================
+//There can only be one active Gateway Superivsor app, so find it
+ConfigurationTree ConfigurationManager::getGatewaySupervisorNode() const
+{	
+	auto contextChildren = getNode("/" + getTableByName(XDAQ_CONTEXT_TABLE_NAME)->getTableName()).getChildren();
+	for(const auto& contextChild : contextChildren)
+	{
+		auto appChildren = contextChild.second.getNode("LinkToApplicationTable").getChildren(); //colContext_.colLinkToApplicationTable_
+		for(const auto& appChild : appChildren)
+		{
+			if(appChild.second.getNode("Class").getValue() == "ots::GatewaySupervisor") //colApplication_.colClass_ ... XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+				return appChild.second;
+		}
+	}
+	__SS__ << "No Gateway Supervisor node found!" << __E__;
+	__SS_THROW__;
+}  // end getGatewaySupervisorNode()
+
+//==============================================================================
 ConfigurationTree ConfigurationManager::getNode(const std::string& nodeString, bool doNotThrowOnBrokenUIDLinks) const
 {
 	// __GEN_COUT__ << "nodeString=" << nodeString << " len=" << nodeString.length() << __E__;
@@ -2769,16 +2787,22 @@ const TableBase* ConfigurationManager::getTableByName(const std::string& tableNa
 	std::map<std::string, TableBase*>::const_iterator it;
 	if((it = nameToTableMap_.find(tableName)) == nameToTableMap_.end())
 	{
-		__SS__ << "Can not find table named '" << tableName << "' - you need to load the table before it can be used."
-		       << " It probably is missing from the member list of the Table "
-		          "Group that was loaded.\n"
-		       << "\nYou may need to enter wiz mode to remedy the situation, use the "
-		          "following:\n"
-		       << "\n\t StartOTS.sh --wiz"
-		       << "\n\n\n\n"
-		       << __E__;
+		__SS__ << "Can not find table named '" << tableName << "' - you need to load the table before it can be used.";
 
-		ss << __E__ << StringMacros::stackTrace() << __E__;
+		if(nameToTableMap_.size() == 0)
+			ss << "\n\nAll tables are missing. Your configuration database connection may have been interrupted. Did an ssh tunnel disconnect?" << __E__;
+		else
+		{
+			ss  << " It probably is missing from the member list of the Table "
+					"Group that was loaded.\n"
+				<< "\nYou may need to enter wiz mode to remedy the situation, use the "
+					"following:\n"
+				<< "\n\t StartOTS.sh --wiz"
+				<< "\n\n\n\n"
+				<< __E__;
+
+			ss << __E__ << StringMacros::stackTrace() << __E__;
+		}
 
 		// prints out too often, so only throw
 		// if(tableName != TableViewColumnInfo::DATATYPE_LINK_DEFAULT)
@@ -3486,6 +3510,432 @@ bool ConfigurationManager::isOwnerFirstAppInContext()
 		return true; // default to 'yes' if XDAQ Context doesn't exist
 	}
 }  // end isOwnerFirstAppInContext()
+
+//==============================================================================
+std::map<std::string /*groupType*/,
+		 std::pair<std::string /*groupName*/,
+		 TableGroupKey>> ConfigurationManager::getOtherSubsystemActiveTableGroups(const std::string& otherSubsystemUID, 
+		 std::string* userDataPathPtr /* = nullptr */, std::string* hostnamePtr /* = nullptr */, std::string* usernamePtr /* = nullptr */)
+{
+	std::map<std::string /*groupType*/,
+		 std::pair<std::string /*groupName*/,
+		 TableGroupKey>> retMap;
+
+	__GEN_COUTV__(otherSubsystemUID); 
+
+	ConfigurationTree node = getNode(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE).getNode(otherSubsystemUID);
+	std::string userPath = node.getNode("SubsystemUserDataPath").getValue();	
+	auto splitPath = StringMacros::getVectorFromString(userPath,{':'});
+	__GEN_COUTV__(StringMacros::vectorToString(splitPath));
+
+	if(!splitPath.size() || splitPath.size() > 2) 
+	{					
+		__GEN_SS__ << "Illegal user data path specified for subsystem '" <<  otherSubsystemUID
+			<< "': " << userPath << __E__;
+		__SS_ONLY_THROW__;				
+	}		
+	std::string userDataPath = splitPath[splitPath.size()-1];
+
+	//since we are running exec, cleanse the filename path for alphanumeric,_,-,/ only
+	for(unsigned int i=0; i < userDataPath.length(); ++i)
+		if(!((userDataPath[i] >= 'a' && userDataPath[i] <= 'z') ||
+			(userDataPath[i] >= 'A' && userDataPath[i] <= 'Z') ||
+			(userDataPath[i] >= '0' && userDataPath[i] <= '9') ||
+			userDataPath[i] == '-' ||
+			userDataPath[i] == '_' ||
+			userDataPath[i] == '/'))
+		{				
+			__GEN_SS__ << "Illegal user data path specified (no special characters allowed) for subsystem '" <<  otherSubsystemUID
+					<< "': " << userPath << __E__;
+			__SS_ONLY_THROW__;									
+		} // end filename cleanse		
+
+	if(userDataPathPtr) *userDataPathPtr = userDataPath;
+
+	//enforce filename ends correctly
+	std::string filename = userDataPath + "/ServiceData/ActiveTableGroups.cfg";		
+
+	std::string cmdResult;
+	std::string username, hostname;
+	if(splitPath.size() == 2) //then need to scp the file
+	{
+		//since we are running exec, cleanse the username@host path for alphanumeric,_,-,/ only
+		std::vector<std::string> userHostSplit = StringMacros::getVectorFromString(splitPath[0],{'@'});
+		__GEN_COUTV__(userHostSplit.size());			
+		if(userHostSplit.size() == 1)
+			hostname = userHostSplit[0];
+		else if(userHostSplit.size() == 2)
+		{
+			username = userHostSplit[0];
+			hostname = userHostSplit[1];
+		}
+		else
+		{					
+			__GEN_SS__ << "Illegal remote username/host specified for subsystem '" <<  otherSubsystemUID
+				<< "': " << userPath << __E__;
+			__SS_ONLY_THROW__;					
+		}		
+
+		for(unsigned int i=0;userHostSplit.size() == 2 && i<username.length(); ++i)
+			if(!((username[i] >= 'a' && username[i] <= 'z') ||
+				(username[i] >= 'A' && username[i] <= 'Z') ||
+				(username[i] >= '0' && username[i] <= '9') ||
+				username[i] == '-' ||
+				username[i] == '_'))
+			{					
+				__GEN_SS__ << "Illegal remote username specified for subsystem '" <<  otherSubsystemUID
+					<< "': " << userPath << __E__;
+				__SS_ONLY_THROW__;					
+			}		
+		unsigned int ii = 0; //track last . to prevent weird . usage
+		for(unsigned int i=0;i<hostname.length(); ++i)
+			if(!((hostname[i] >= 'a' && hostname[i] <= 'z') ||
+				(hostname[i] >= 'A' && hostname[i] <= 'Z') ||
+				(hostname[i] >= '0' && hostname[i] <= '9') ||
+				hostname[i] == '-' ||
+				hostname[i] == '_'))
+			{					
+				if(hostname[i] == '.' && i > ii + 1)
+				{
+					//its ok to have this . so track position
+					ii = i;
+				}
+				else //else not ok to have .. or other characters
+				{
+					__GEN_SS__ << "Illegal remote hostname '" << hostname << "' specified for subsystem '" <<  otherSubsystemUID
+						<< "': " << userPath << __E__;
+					__SS_ONLY_THROW__;					
+				}
+			}		
+
+		std::string tmpSubsystemFilename = ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + otherSubsystemUID;
+		__GEN_COUTV__(tmpSubsystemFilename);
+		if(userHostSplit.size() == 2) //has username
+		{
+			cmdResult = StringMacros::exec(("rm "  + tmpSubsystemFilename + " 2>/dev/null; scp " + username + "@" + hostname + 
+				":" + filename + 
+				" " + tmpSubsystemFilename + " 2>&1; cat " + tmpSubsystemFilename + " 2>&1").c_str());
+		}
+		else
+			cmdResult = StringMacros::exec(("rm "  + tmpSubsystemFilename + " 2>/dev/null; scp " + hostname + ":" + filename + 
+				" " + tmpSubsystemFilename + " 2>&1; cat " + tmpSubsystemFilename + " 2>&1").c_str());
+	}
+	else if(splitPath.size() == 1) //then can just directly access the file
+	{
+		cmdResult = StringMacros::exec(("cat " + filename + " 2>&1").c_str());
+	}
+	else
+	{
+		__GEN_SS__ << "Illegal user data path specified for subsystem '" << otherSubsystemUID
+			<< "': " << userPath << __E__;
+		__SS_ONLY_THROW__;
+	}
+
+	if(hostnamePtr) *hostnamePtr = hostname;
+	if(usernamePtr) *usernamePtr = username;
+
+	__GEN_COUTV__(cmdResult);
+	if(cmdResult.find("Permission denied") != std::string::npos)
+	{
+		__GEN_SS__ << "Permission denied accessing user data path specified for subsystem '" << otherSubsystemUID
+			<< "': " << userPath << __E__;
+		__SS_ONLY_THROW__;
+	}
+
+	auto subsystemActiveGroupMap = StringMacros::getVectorFromString(cmdResult,{'\n'} /* delimieter*/, {' ','\t'} /* whitespace*/);
+	__GEN_COUTV__(StringMacros::vectorToString(subsystemActiveGroupMap));
+	__GEN_COUTV__(subsystemActiveGroupMap.size());
+
+	std::string //groupComment, groupAuthor, groupCreationTime, 
+		groupType;
+	for(unsigned int i = 0; i + 1 < subsystemActiveGroupMap.size(); i += 2)
+	{
+		if(subsystemActiveGroupMap[i] == "" || subsystemActiveGroupMap[i+1] == "-1") continue;
+
+		__GEN_COUT__ << "Loading type of subsystem '" << otherSubsystemUID
+			<< "' group " << subsystemActiveGroupMap[i] << "(" << subsystemActiveGroupMap[i+1] << ")" << __E__;
+
+		try
+		{
+			loadTableGroup(
+				subsystemActiveGroupMap[i]/*groupName*/,
+				TableGroupKey(subsystemActiveGroupMap[i+1]),
+				false /*doActivate*/,
+				0 /*groupMembers*/,
+				0 /*progressBar*/,
+				0 /*accumulateErrors*/,
+				0, // &groupComment,
+				0, //&groupAuthor,
+				0, //&groupCreationTime,
+				true /*doNotLoadMember*/,
+				&groupType);
+		}
+		catch(const std::runtime_error& e)
+		{
+			__GEN_COUT__ <<  "Ignoring error loading subsystem '" << otherSubsystemUID
+			<< "' group " << subsystemActiveGroupMap[i] << "(" << subsystemActiveGroupMap[i+1] << "): " << __E__ << e.what() << __E__;
+			groupType = ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN;
+		}			
+		retMap[groupType] = std::make_pair(subsystemActiveGroupMap[i],TableGroupKey(subsystemActiveGroupMap[i+1]));		
+	}
+
+	__GEN_COUTTV__(StringMacros::mapToString(retMap));
+	return retMap;
+} //end getOtherSubsystemActiveTableGroups()
+
+
+//==============================================================================
+//Ignore any System Aliases with "Context" or "Iterat" in the name
+std::set<std::string /* configAlias */> ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSubsystemUID)
+{
+	std::set<std::string> retSet;
+
+	std::map<std::string /*groupType*/,
+		 std::pair<std::string /*groupName*/,
+		 TableGroupKey>> retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
+
+
+	//load backbone
+	auto it = retMap.find(ConfigurationManager::convertGroupTypeToName(GroupType::BACKBONE_TYPE));
+	if(it == retMap.end())
+	{
+		__GEN_SS__ << "No active Backbone group found in the active groups of remote subsystem '" << 
+			otherSubsystemUID << "!'" << __E__;
+		__GEN_SS_THROW__;
+	}
+	auto it2 = retMap.find(ConfigurationManager::convertGroupTypeToName(GroupType::CONTEXT_TYPE));
+	if(it2 == retMap.end())
+	{
+		__GEN_SS__ << "No active Context group found in the active groups of remote subsystem '" << 
+			otherSubsystemUID << "!'" << __E__;
+		__GEN_SS_THROW__;
+	}
+
+	std::string accumulatedWarnings;
+
+	// be careful to not activate! which calls init() and then generates output files to disk
+	//	and changes the system active group; instead only setActiveView
+	loadTableGroup(it->second.first,
+					it->second.second,
+					false /*doActivate*/,
+					0 /*groupMembers*/,
+					0 /*progressBar*/,
+					&accumulatedWarnings /*accumulateWarnings = 0*/
+	);
+	__GEN_COUTTV__(accumulatedWarnings);
+
+	//get aliases (a la ConfigurationManager::getActiveGroupAliases:2888)
+	std::vector<std::pair<std::string, ConfigurationTree>> entries = getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
+
+	for(auto& entry : entries)
+	{
+		if(entry.first.find("Context") == std::string::npos &&
+				entry.first.find("Iterat") == std::string::npos)
+			retSet.emplace(entry.first);
+	}
+	return retSet;
+} //end getOtherSubsystemActiveTableGroups()
+
+//==============================================================================
+//Ignore any System Aliases with "Context" or "Iterat" in the name
+std::set<std::string /* configAlias */> ConfigurationManager::getOtherSubsystemFilteredConfigAliases(const std::string& otherSubsystemUID, const std::string& otherSubsystemFsmName)
+{
+	std::set<std::string> retSet;
+
+	std::map<std::string /*groupType*/,
+		 std::pair<std::string /*groupName*/,
+		 TableGroupKey>> retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
+
+
+	//load backbone
+	auto it = retMap.find(ConfigurationManager::convertGroupTypeToName(GroupType::BACKBONE_TYPE));
+	if(it == retMap.end())
+	{
+		__GEN_SS__ << "No active Backbone group found in the active groups of remote subsystem '" << 
+			otherSubsystemUID << "!'" << __E__;
+		__GEN_SS_THROW__;
+	}
+	auto it2 = retMap.find(ConfigurationManager::convertGroupTypeToName(GroupType::CONTEXT_TYPE));
+	if(it2 == retMap.end())
+	{
+		__GEN_SS__ << "No active Context group found in the active groups of remote subsystem '" << 
+			otherSubsystemUID << "!'" << __E__;
+		__GEN_SS_THROW__;
+	}
+
+	std::string accumulatedWarnings;
+
+	// be careful to not activate! which calls init() and then generates output files to disk
+	//	and changes the system active group; instead only setActiveView
+	loadTableGroup(it->second.first,
+					it->second.second,
+					false /*doActivate*/,
+					0 /*groupMembers*/,
+					0 /*progressBar*/,
+					&accumulatedWarnings /*accumulateWarnings = 0*/
+	);
+	loadTableGroup(it2->second.first,
+					it2->second.second,
+					false /*doActivate*/,
+					0 /*groupMembers*/,
+					0 /*progressBar*/,
+					&accumulatedWarnings /*accumulateWarnings = 0*/
+	);
+	__GEN_COUTTV__(accumulatedWarnings);
+
+	//get aliases (a la ConfigurationManager::getActiveGroupAliases:2888)
+	std::vector<std::pair<std::string, ConfigurationTree>> entries = getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
+
+
+	//apply filter (a la GatewaySupervisor::addFilteredConfigAliasesToXML:5357)
+	
+	std::string stateMachineAliasFilter = "*";  // default to all
+	try  // if cant find alias, default to all
+	{
+		ConfigurationTree otherGatewayNode = getGatewaySupervisorNode(); 
+		ConfigurationTree fsmFilterNode = otherGatewayNode.getNode("LinkToStateMachineTable").getNode(otherSubsystemFsmName + "/SystemAliasFilter");
+		if(!fsmFilterNode.isDefaultValue())
+			stateMachineAliasFilter = fsmFilterNode.getValue<std::string>();
+		else
+			__GEN_COUT_INFO__ << "FSM has no SystemAliasFilter value." << __E__;
+	}
+	catch(std::runtime_error& e)
+	{
+		__COUT__ << "Ignoring unsetup SystemAliasFilter value: " << e.what() << __E__;
+	}
+	catch(...)
+	{
+		__COUT__ << "Ignoring unsetup SystemAliasFilter value." << __E__;
+	}
+	
+	__COUT__ << "Applying alias filter for other user_data path FSM '" << otherSubsystemFsmName << "' and stateMachineAliasFilter  = " << stateMachineAliasFilter << __E__;
+
+	// filter list of aliases based on stateMachineAliasFilter
+	//  ! as first character means choose those that do NOT match filter
+	//	* can be used as wild card.
+	{
+		bool                     invertFilter = stateMachineAliasFilter.size() && stateMachineAliasFilter[0] == '!';
+		std::vector<std::string> filterArr;
+
+		size_t i = 0;
+		if(invertFilter)
+			++i;
+		size_t      f;
+		std::string tmp;
+		while((f = stateMachineAliasFilter.find('*', i)) != std::string::npos)
+		{
+			tmp = stateMachineAliasFilter.substr(i, f - i);
+			i   = f + 1;
+			filterArr.push_back(tmp);
+			//__COUT__ << filterArr[filterArr.size()-1] << " " << i <<
+			//		" of " << stateMachineAliasFilter.size() << __E__;
+		}
+		if(i <= stateMachineAliasFilter.size())
+		{
+			tmp = stateMachineAliasFilter.substr(i);
+			filterArr.push_back(tmp);
+			//__COUT__ << filterArr[filterArr.size()-1] << " last." << __E__;
+		}
+
+		bool filterMatch;
+
+		for(auto& aliasMapPair : entries)
+		{
+			//__COUT__ << "aliasMapPair.first: " << aliasMapPair.first << __E__;
+
+			filterMatch = true;
+
+			if(filterArr.size() == 1)
+			{
+				if(filterArr[0] != "" && filterArr[0] != "*" && aliasMapPair.first != filterArr[0])
+					filterMatch = false;
+			}
+			else
+			{
+				i = -1;
+				for(f = 0; f < filterArr.size(); ++f)
+				{
+					if(!filterArr[f].size())
+						continue;  // skip empty filters
+
+					if(f == 0)  // must start with this filter
+					{
+						if((i = aliasMapPair.first.find(filterArr[f])) != 0)
+						{
+							filterMatch = false;
+							break;
+						}
+					}
+					else if(f == filterArr.size() - 1)  // must end with this filter
+					{
+						if(aliasMapPair.first.rfind(filterArr[f]) != aliasMapPair.first.size() - filterArr[f].size())
+						{
+							filterMatch = false;
+							break;
+						}
+					}
+					else if((i = aliasMapPair.first.find(filterArr[f])) == std::string::npos)
+					{
+						filterMatch = false;
+						break;
+					}
+				}
+			}
+
+			if(invertFilter)
+				filterMatch = !filterMatch;
+
+			//__COUT__ << "filterMatch=" << filterMatch  << __E__;
+
+			if(!filterMatch)
+				continue;
+
+			retSet.emplace(aliasMapPair.first);
+
+			//bring back below, if need more alias details:
+
+			// xmlOut.addTextElementToData("config_alias", aliasMapPair.first);
+			// xmlOut.addTextElementToData("config_key", TableGroupKey::getFullGroupString(aliasMapPair.second.first, aliasMapPair.second.second, /*decorate as (<key>)*/ "(",")"));
+
+			// // __COUT__ << "config_alias_comment" << " " <<  temporaryConfigMgr.getNode(
+			// // 	ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(aliasMapPair.first).getNode(
+			// // 		TableViewColumnInfo::COL_NAME_COMMENT).getValue<std::string>() << __E__;
+			// xmlOut.addTextElementToData("config_alias_comment",
+			// 							temporaryConfigMgr.getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
+			// 								.getNode(aliasMapPair.first)
+			// 								.getNode(TableViewColumnInfo::COL_NAME_COMMENT)
+			// 								.getValue<std::string>());
+
+			// std::string groupComment, groupAuthor, groupCreationTime;
+			// try
+			// {
+			// 	temporaryConfigMgr.loadTableGroup(aliasMapPair.second.first,
+			// 									aliasMapPair.second.second,
+			// 									false,
+			// 									0,
+			// 									0,
+			// 									0,
+			// 									&groupComment,
+			// 									&groupAuthor,
+			// 									&groupCreationTime,
+			// 									true /*doNotLoadMembers*/);
+
+			// 	xmlOut.addTextElementToData("config_comment", groupComment);
+			// 	xmlOut.addTextElementToData("config_author", groupAuthor);
+			// 	xmlOut.addTextElementToData("config_create_time", groupCreationTime);
+			// }
+			// catch(...)
+			// {
+			// 	__COUT_WARN__ << "Failed to load group metadata." << __E__;
+			// 	xmlOut.addTextElementToData("config_comment", "");
+			// 	xmlOut.addTextElementToData("config_author", "");
+			// 	xmlOut.addTextElementToData("config_create_time", "");
+			// }
+		}
+	}
+
+	return retSet;
+} //end getOtherSubsystemFilteredConfigAliases()
 
 //==============================================================================
 // allow for just the desktop icons of the Context to be changed during run-time

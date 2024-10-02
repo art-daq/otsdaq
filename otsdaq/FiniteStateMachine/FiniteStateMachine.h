@@ -47,7 +47,7 @@ class FiniteStateMachine : public toolbox::fsm::FiniteStateMachine
 
 	std::string        				getProvenanceStateName		(void);
 	std::string        				getCurrentStateName			(void);
-	time_t             				getTimeInState				(void);
+	time_t             				getTimeInState				(void) const;
 	std::string        				getCurrentTransitionName	(const std::string& transition = "");
 	std::string        				getTransitionName			(const toolbox::fsm::State from, const std::string& transition);
 	std::string        				getTransitionParameter		(const toolbox::fsm::State from, const std::string& transition);

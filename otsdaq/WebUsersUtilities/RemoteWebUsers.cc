@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
+#include <tuple>
 
 #include "otsdaq/SupervisorInfo/AllSupervisorInfo.h"
 
@@ -216,7 +217,7 @@ bool RemoteWebUsers::xmlRequestToGateway(
 	parameters.addParameter("UserWithLock");
 	parameters.addParameter("Username");
 	parameters.addParameter("DisplayName");
-	parameters.addParameter("ActiveSessionIndex");
+	// parameters.addParameter("ActiveSessionIndex");
 	SOAPUtilities::receive(retMsg, parameters);
 
 	//__COUT__ << std::endl;
@@ -228,7 +229,7 @@ bool RemoteWebUsers::xmlRequestToGateway(
 	userInfo.username_               = parameters.getValue("Username");
 	userInfo.displayName_            = parameters.getValue("DisplayName");
 	userInfo.usernameWithLock_       = parameters.getValue("UserWithLock");
-	userInfo.activeUserSessionIndex_ = strtoul(parameters.getValue("ActiveSessionIndex").c_str(), 0, 0);
+	// userInfo.activeUserSessionIndex_ = strtoul(parameters.getValue("ActiveSessionIndex").c_str(), 0, 0);
 
 	if(!WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo))
 		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
@@ -268,6 +269,66 @@ std::string RemoteWebUsers::getActiveUserList()
 		return ActiveUserList_;
 }  // end getActiveUserList()
 
+
+//==============================================================================
+// getLastTableGroups
+//	request last "Configured" or "Started" group, for example
+//	returns empty "" for actionTimeString on failure
+//	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
+// has occurred
+void RemoteWebUsers::getLastTableGroups(
+	std::map< std::string /* group type */,
+			std::tuple<std::string /*group name*/, TableGroupKey, 
+				std::string /* time string*/>>& theGroups
+	)
+{
+	xoap::MessageReference retMsg = ots::SOAPMessenger::sendWithSOAPReply(
+	    gatewaySupervisorDescriptor_, "SupervisorLastTableGroupRequest", SOAPParameters("ActionOfLastGroup", "ALL"));
+
+
+	SOAPParameters retParameters;
+	retParameters.addParameter("GroupName");
+	retParameters.addParameter("GroupKey");
+	retParameters.addParameter("GroupAction");
+	retParameters.addParameter("GroupActionTime");
+	SOAPUtilities::receive(retMsg, retParameters);
+
+
+	//parse as CSV
+	std::vector<std::string> groupNames = StringMacros::getVectorFromString(
+			retParameters.getValue("GroupName"), {','});
+	std::vector<std::string> groupKeys = StringMacros::getVectorFromString(
+			retParameters.getValue("GroupKey"), {','});
+	std::vector<std::string> groupActions = StringMacros::getVectorFromString(
+			retParameters.getValue("GroupAction"), {','});
+	std::vector<std::string> groupTimes = StringMacros::getVectorFromString(
+			retParameters.getValue("GroupActionTime"), {','});
+
+	if(groupNames.size() < 2)
+	{
+		//expecting something like 7?
+		__SS__ << "Failure in handling request for recent config group activity. Response received was this: \n" <<
+				SOAPUtilities::translate(retMsg) << __E__;
+		__SS_THROW__;
+	}
+
+	if(groupNames.size() != groupKeys.size() || groupNames.size() != groupActions.size() || 
+		groupNames.size() != groupTimes.size())
+	{
+		__SS__ << "Illegal list size mismatch while retrieving recent config group info. Should not be possible! Notify admins." << __E__;
+		__SS_THROW__;
+	}
+
+	for(size_t i=0; i < groupNames.size(); ++i)
+	{
+		theGroups[groupActions[i]] = std::make_tuple(
+			groupNames[i], strtol(groupKeys[i].c_str(), 0, 0), groupTimes[i]
+		);
+	}
+
+	__COUTT__ << "Done with getLastTableGroups()" << __E__;
+}  // end getLastTableGroup()
+
 //==============================================================================
 // getLastTableGroup
 //	request last "Configured" or "Started" group, for example
@@ -290,9 +351,9 @@ std::pair<std::string /*group name*/, TableGroupKey> RemoteWebUsers::getLastTabl
 	std::pair<std::string /*group name*/, TableGroupKey> theGroup;
 	if(retParameters.getValue("GroupAction") != actionOfLastGroup)  // if action doesn't match.. weird
 	{
-		__COUT_WARN__ << "Returned group action '" << retParameters.getValue("GroupAction") << "' does not match requested group action '" << actionOfLastGroup
+		__SS__ << "Returned group action '" << retParameters.getValue("GroupAction") << "' does not match requested group action '" << actionOfLastGroup
 		              << ".'" << std::endl;
-		return theGroup;  // return empty and invalid
+		__SS_THROW__;
 	}
 	// else we have an action match
 

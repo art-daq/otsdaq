@@ -136,7 +136,7 @@ unsigned int TableGroupKey::getInvalidKey(void) { return INVALID; }
 //		if given nothing returns DEFAULT as first key
 //		if given 0, returns 1, etc.
 //	if no available keys left return INVALID
-std::string TableGroupKey::getFullGroupString(const std::string& groupName, const TableGroupKey& key)
+std::string TableGroupKey::getFullGroupString(const std::string& groupName, const TableGroupKey& key, const std::string& preKey /* = "_v" */ , const std::string& postKey /* = "" */)
 {
 	if(groupName.size() == 0)
 	{
@@ -173,10 +173,11 @@ std::string TableGroupKey::getFullGroupString(const std::string& groupName, cons
 		}
 	}
 
-	return groupName + "_v" + std::to_string(key.key_);
+	return groupName + preKey + std::to_string(key.key_) + postKey;
 }
 
 //==============================================================================
+// requires fullGroupString created as name + "_v" + key + ""
 void TableGroupKey::getGroupNameAndKey(const std::string& fullGroupString, std::string& groupName, TableGroupKey& key)
 {
 	auto i    = fullGroupString.rfind("_v");

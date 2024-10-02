@@ -205,6 +205,15 @@ struct StringMacros
 
 
 
+	static std::string 			extractXmlField				(const std::string &xml,
+															 const std::string &field,
+															 uint32_t occurrence, size_t after,
+															 size_t *returnAfter = nullptr);
+	static std::string 			rextractXmlField			(const std::string &xml,
+															 const std::string &field,
+															 uint32_t occurrence, size_t before);
+
+
 	struct IgnoreCaseCompareStruct { //get string in order ignoring letter case
 		bool 					operator() 					(const std::string& lhs, const std::string& rhs) const; //comparison handler
 	}; //end IgnoreCaseCompareStruct

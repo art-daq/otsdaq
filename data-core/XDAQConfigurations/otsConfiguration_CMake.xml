@@ -21,7 +21,7 @@ are loaded prior instantiation of plugins -->
   <properties xmlns="urn:xdaq-application:pt::http::PeerTransportHTTP" xsi:type="soapenc:Struct">
    <documentRoot xsi:type="xsd:string">${XDAQ_DOCUMENT_ROOT}</documentRoot>
    <aliasName xsi:type="xsd:string">/WebPath</aliasName>
-   <aliasPath xsi:type="xsd:string">${OTSDAQ_UTILITIES_DIR}/WebGUI</aliasPath>
+   <aliasPath xsi:type="xsd:string">${OTSDAQ_WEB_PATH}</aliasPath>
    <!-- this second alias does not work .. PeerTransportHTTP only allows one aliasName/Path as a property it seems
     <aliasName xsi:type="xsd:string">/UserWebPath</aliasName>
     <aliasPath xsi:type="xsd:string">${USER_WEB_PATH}</aliasPath> -->

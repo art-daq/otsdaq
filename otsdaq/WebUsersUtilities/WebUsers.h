@@ -15,6 +15,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "otsdaq/NetworkUtilities/TransceiverSocket.h"  // for UDP remote login verify
 
 #define WEB_LOGIN_DB_PATH std::string(__ENV__("SERVICE_DATA_PATH")) + "/LoginData/"
 #define WEB_LOGIN_CERTDATA_PATH std::string(__ENV__("CERT_DATA_PATH"))
@@ -45,6 +46,7 @@ class WebUsers
 		NOT_FOUND_IN_DATABASE 		= uint64_t(-1),
 		ACCOUNT_INACTIVE 			= uint64_t(-2),
 		ACCOUNT_BLACKLISTED 		= uint64_t(-3),
+		// ACCOUNT_REMOTE		 		= uint64_t(-4),
 		ACCOUNT_ERROR_THRESHOLD 	= uint64_t(-5),
 		USERNAME_LENGTH       		= 4,
 		DISPLAY_NAME_LENGTH   		= 4,
@@ -188,7 +190,7 @@ class WebUsers
 
 	enum
 	{
-		SYS_CLEANUP_WILDCARD_TIME = 30,  // 30 seconds
+		SYS_CLEANUP_WILDCARD_TIME = 300,  // 300 seconds
 	};
 
 	struct SystemMessage
@@ -209,17 +211,21 @@ class WebUsers
 		: message_			(message)
 		, creationTime_		(time(0))
 		, delivered_		(false)
+		, deliveredRemote_	(false)
 		{} //end constructor
 
 		std::string 			message_;
 		time_t					creationTime_;
 		bool					delivered_; //flag
+		bool					deliveredRemote_; //flag
 	}; //end SystemMessage struct
 
 	void        			addSystemMessage			(const std::string& targetUsersCSV, const std::string& message);
 	void        			addSystemMessage			(const std::string& targetUsersCSV, const std::string& subject, const std::string& message, bool doEmail);
 	void        			addSystemMessage			(const std::vector<std::string>& targetUsers, const std::string& subject, const std::string& message, bool doEmail);
 	std::string 			getSystemMessage			(const std::string& targetUser);
+	std::pair<std::string, time_t>	getLastSystemMessage(void) const;
+	std::string 			getAllSystemMessages		(void);
 
   private:
 	void					addSystemMessageToMap		(const std::string& targetUser, const std::string& fullMessage); //private because target already vetted
@@ -354,7 +360,7 @@ class WebUsers
 		std::string                 ip_;
 		uint64_t    uid_ /*only WebUser owner has access to uid, RemoteWebUsers do not*/;
 		std::string username_, displayName_, usernameWithLock_;
-		uint64_t    activeUserSessionIndex_;
+		uint64_t    userSessionIndex_; //can use session index to track a user's session on multiple devices/browsers
 
 	  private:
 		std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
@@ -385,6 +391,7 @@ class WebUsers
 	                             const std::string& displayName,
 	                             const std::string& email);
 	void        cleanupExpiredEntries(std::vector<std::string>* loggedOutUsernames = 0);
+	void        cleanupExpiredRemoteEntries(void);
 	std::string createNewLoginSession(const std::string& uuid, const std::string& ip);
 
 	uint64_t attemptActiveSession(const std::string& uuid,
@@ -408,18 +415,27 @@ class WebUsers
 	        const std::string& ip                     = "0",
 	        bool               refresh                = true,
 	        std::string*       userWithLock           = 0,
-	        uint64_t*          activeUserSessionIndex = 0);
+	        uint64_t*          userSessionIndex = 0);
 	uint64_t cookieCodeLogout(const std::string& cookieCode,
 	                          bool               logoutOtherUserSessions,
 	                          uint64_t*          uid = 0,
 	                          const std::string& ip  = "0");
 	bool     checkIpAccess(const std::string& ip);
 
-	std::string getUsersDisplayName(uint64_t uid);
-	std::string getUsersUsername(uint64_t uid);
-	uint64_t    getActiveSessionCountForUser(uint64_t uid);
+	std::string getUsersDisplayName(uint64_t uid); //from Gateway, use public version which considers remote users
+	std::string getUsersUsername(uint64_t uid); //from Gateway, use public version which considers remote users
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
-	            getPermissionsForUser(uint64_t uid);
+	            getPermissionsForUser(uint64_t uid); //from Gateway, use public version which considers remote users
+//   public:
+// 	std::string getUsersDisplayName(uint64_t uid, uint64_t remoteSessionID);
+// 	std::string getUsersUsername(uint64_t uid, uint64_t remoteSessionID);
+// 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
+// 	            getPermissionsForUser(uint64_t uid, uint64_t remoteSessionID);
+
+	// std::string getRemoteUsersDisplayName(uint64_t remoteSessionID);
+	// std::string getRemoteUsersUsername(uint64_t remoteSessionID);
+
+	uint64_t    getActiveSessionCountForUser(uint64_t uid);
 	void        insertSettingsForUser(uint64_t         uid,
 	                                  HttpXmlDocument* xmldoc,
 	                                  bool             includeAccounts = false);
@@ -458,12 +474,13 @@ class WebUsers
 	bool setUserWithLock(uint64_t actingUid, bool lock, const std::string& username);
 	std::string getUserWithLock(void) { return usersUsernameWithLock_; }
 
+	size_t 		getActiveUserCount(void);
 	std::string getActiveUsersString(void);
 
-	bool getUserInfoForCookie(std::string& cookieCode,
-	                          std::string* userName,
-	                          std::string* displayName        = 0,
-	                          uint64_t*    activeSessionIndex = 0);
+	// bool getUserInfoForCookie(std::string& cookieCode,
+	//                           std::string* userName,
+	//                           std::string* displayName        = 0,
+	//                           uint64_t*    activeSessionIndex = 0);
 
 	bool        isUsernameActive(const std::string& username) const;
 	bool        isUserIdActive(uint64_t uid) const;
@@ -523,6 +540,9 @@ class WebUsers
 	uint64_t searchLoginSessionDatabaseForUUID		(const std::string& uuid) const;
 	uint64_t searchHashesDatabaseForHash			(const std::string& hash);
 	uint64_t searchActiveSessionDatabaseForCookie	(const std::string& cookieCode) const;
+	uint64_t searchRemoteSessionDatabaseForCookie	(const std::string& cookieCode) const;
+	// uint64_t searchRemoteSessionDatabaseForUsername	(const std::string& username) const;
+	uint64_t checkRemoteLoginVerification			(const std::string& cookieCode, bool refresh, const std::string& ip);
 
 	static std::string getTooltipFilename(const std::string& username,
 	                                      const std::string& srcFile,
@@ -570,6 +590,7 @@ class WebUsers
 
 	//"Active Session" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::vector<ActiveSession> ActiveSessions_;
+	std::map<std::string /* cookieCode */, ActiveSession > RemoteSessions_;
 
 	// Maintain list of valid cookieCodes and associated user
 	// all request must come with a valid cookieCode, else server fails request
@@ -647,6 +668,13 @@ class WebUsers
 	std::map<std::string /*ip*/, uint32_t /*errorCount*/> ipBlacklistCounts_;
 
 	std::mutex				webUserMutex_;
+
+	std::unique_ptr<TransceiverSocket> remoteLoginVerificationSocket_; //use to ask remote gateway for login verification
+
+  public:
+	std::atomic<bool>			remoteLoginVerificationEnabled_ = false; //true if this supervisor is under control of a remote supervisor
+	std::string					remoteLoginVerificationIP_;   //IP of remote Gateway to be used for login verification
+	int							remoteLoginVerificationPort_; //Port of remote Gateway to be used for login verification
 };
 }  // namespace ots
 

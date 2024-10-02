@@ -325,12 +325,32 @@ void AllSupervisorInfo::setSupervisorStatus(
 	if(allSupervisorInfoMutex_[id].try_lock())
 	{
 		it->second.setStatus(status, progress, detail);
+		//if subapps size mismatch, then clear to eliminate renamed subapps
+		if(it->second.getSubappInfo().size() != subapps.size())
+			it->second.clearSubapps(); 
 		for (auto& subapp : subapps) {
-			it->second.setSubappStatus(subapp);
+			it->second.copySubappStatus(subapp);
 		}
 		allSupervisorInfoMutex_[id].unlock();
 	}
 }  // end setSupervisorStatus()
+
+//==============================================================================
+void AllSupervisorInfo::clearSupervisorSubappsStatus(const SupervisorInfo&                   appInfo)
+{
+	auto it = allSupervisorInfo_.find(appInfo.getId());
+	if(it == allSupervisorInfo_.end())
+	{
+		__SS__ << "Could not find: " << appInfo.getId() << __E__;
+		__SS_THROW__;
+	}
+	// non-blocking here, it's ok if the status is not updated (it is probably blocked on purpose, for exampled by the GatewaySupervisor broadcast threads)
+	if(allSupervisorInfoMutex_[appInfo.getId()].try_lock())
+	{
+		it->second.clearSubapps();
+		allSupervisorInfoMutex_[appInfo.getId()].unlock();
+	}
+} //end clearSupervisorSubappsStatus()
 
 //==============================================================================
 const SupervisorInfo& AllSupervisorInfo::getGatewayInfo(void) const

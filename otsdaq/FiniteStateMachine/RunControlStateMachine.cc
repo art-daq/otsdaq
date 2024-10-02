@@ -334,25 +334,7 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	__GEN_COUTV__(getErrorMessage());
 	__GEN_COUTV__(retransmittedCommand);
 
-	if(command == "Halt" && currentState == RunControlStateMachine::INITIAL_STATE_NAME)
-	{
-		__GEN_COUT__ << "Converting Halt command to Initialize, since currently in "
-		                "Initialized state."
-		             << std::endl;
-		command = "Initialize";
-		message = SOAPUtilities::makeSOAPMessageReference(command);
-	}
-	if(command == "Configure" && currentState == RunControlStateMachine::INITIAL_STATE_NAME)
-	{
-		__GEN_COUT__ << "Pre-empting Configure command with Initialize, since currently in "
-		                "Initialized state."
-		             << std::endl;
-		std::string precommand = "Initialize";
-		xoap::MessageReference premessage = SOAPUtilities::makeSOAPMessageReference(precommand);
-		theStateMachine_.execTransition(precommand, premessage);
-		__GEN_COUT__ << "Now proceeding with Configure command" << __E__;
-	}
-
+	
 
 	// handle normal transitions here
 	try
@@ -362,6 +344,26 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 		//	Do not clear if retransmission transition from Failed (likely an error just occured that we do not want to lose!)
 		if(!((asyncPauseExceptionReceived_ && command == "Pause") || (asyncStopExceptionReceived_ && command == "Stop")))
 			theStateMachine_.setErrorMessage("", false /*append*/);  // clear error message
+
+		if(command == "Halt" && currentState == RunControlStateMachine::INITIAL_STATE_NAME)
+		{
+			__GEN_COUT__ << "Converting Halt command to Initialize, since currently in "
+							"Initialized state."
+						<< std::endl;
+			command = "Initialize";
+			message = SOAPUtilities::makeSOAPMessageReference(command);
+		}
+		if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME && currentState == RunControlStateMachine::INITIAL_STATE_NAME)
+		{
+			__GEN_COUT__ << "Pre-empting Configure command with Initialize, since currently in "
+							"Initialized state."
+						<< std::endl;
+			std::string precommand = "Initialize";
+			xoap::MessageReference premessage = SOAPUtilities::makeSOAPMessageReference(precommand);
+			theStateMachine_.execTransition(precommand, premessage);
+			__GEN_COUT__ << "Now proceeding with Configure command" << __E__;
+		}
+
 
 		iterationWorkFlag_    = false;
 		subIterationWorkFlag_ = false;

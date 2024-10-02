@@ -380,6 +380,10 @@ try
 catch(std::exception const& e)
 {
 	__SS__ << "DBI Exception getting Group's member tables for '" << tableGroup << "':\n\n" << e.what() << "\n";
+	if(std::string(e.what()).find("connection refused") != std::string::npos)
+	{
+		ss << "\n\nConnection to database refused. Perhaps your ssh tunnel has closed?\n\n";
+	}
 	__SS_THROW__;
 }
 catch(...)

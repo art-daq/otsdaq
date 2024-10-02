@@ -99,6 +99,7 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 		activeDesktopIcons_.push_back(DesktopIconTable::DesktopIcon());
 		icon = &(activeDesktopIcons_.back());
 
+		icon->recordUID_				 = child.first;
 		icon->caption_                   = child.second.getNode(COL_CAPTION).getValue<std::string>();
 		icon->alternateText_             = child.second.getNode(COL_ALTERNATE_TEXT).getValue<std::string>();
 		icon->enforceOneWindowInstance_  = child.second.getNode(COL_FORCE_ONLY_ONE_INSTANCE).getValue<bool>();

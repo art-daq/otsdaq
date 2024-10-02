@@ -22,6 +22,7 @@ class DesktopIconTable : public TableBase
 		std::string caption_, alternateText_, imageURL_, windowContentURL_, folderPath_;
 		std::string permissionThresholdString_;  // <groupName>:<permissionsThreshold>
 		                                         // pairs separated by ',' '&' or '|'
+		std::string recordUID_;
 	};
 
 	const std::vector<DesktopIconTable::DesktopIcon>& 	getAllDesktopIcons() const { return activeDesktopIcons_; }  // activeDesktopIcons_ is setup in init

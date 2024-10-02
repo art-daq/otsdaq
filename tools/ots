@@ -52,9 +52,6 @@ function setupTrace()
 	# export TRACE_PRINT="|%L:%N:%f [%u] %m" #to mimic ots line number output
 	export TRACE_PRINT="|%L:%N: %#f#/tdaq-v#:%u | %m" #to mimic ots line number output
 
-	#at least enable messages from self
-	tonS 0-9 -N ots
-	tonS 0-9 -N ots_remote_start
 }
 
 setupTrace
@@ -80,6 +77,7 @@ export XDAQ_CONFIGURATION_XML=otsConfiguration_CMake_Run #used by xdaq superviso
 
 #############################
 # setup defaults:
+SOFTKILLALL=0 #only kill user data areas
 KILLALL=0
 ISMACROMAKER=0
 ISFINDLOGFILES=0
@@ -96,6 +94,17 @@ export MACROMAKER_MODE #this environment variable is used by source code
 #############################
 
 # Output startup banner
+out
+#at least enable messages from self
+tonS 0-9 -N ots
+tonS 0-9 -N ots_remote_start
+
+if [ "x$OTS_SETUP_TYPE" == "x" ]; then
+	export OTS_SETUP_TYPE="$(cat .ots_setup_type.txt)"; #keep ots setup type so that it does not change from (remote) start to (remote) start (in a shared directory scenario)
+fi
+if [ "x$OTS_SETUP_TYPE" != "x" ]; then
+	info "Found setup_ots.sh type as ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+fi
 
 if [ "$1" != "-x" ]; then
 
@@ -165,6 +174,10 @@ while :; do
 		;;
 	--killall | --kill | --kx | -k)
 		info "KILL OTS!"
+		SOFTKILLALL=1
+		;;
+	--hardkill | -K)
+		info "KILL ALL OTS!"
 		KILLALL=1
 		;;
 	--)
@@ -334,7 +347,7 @@ fi
 
 OTSDAQ_STARTOTS_ACTION_FILE="${USER_DATA}/ServiceData/StartOTS_action_${THIS_HOST}.cmd" #the targeted hostname action script gives commands to StartOTS scripts running on that host
 OTSDAQ_STARTOTS_QUIT_FILE="${USER_DATA}/ServiceData/StartOTS_action_quit.cmd" #the global quit gives exit commonds to the non-gateway StartOTS scripts
-OTSDAQ_STARTOTS_LOCAL_QUIT_FILE=".StartOTS_action_quit.cmd" #the local quit is used to remove other StartOTS calls from the same directory (it catches the case when switching USER_DATA paths)
+OTSDAQ_STARTOTS_LOCAL_QUIT_FILE=".StartOTS_${OTS_OWNER}_action_quit.cmd" #the local quit is used to remove other StartOTS calls from the same directory (it catches the case when switching USER_DATA paths)
 
 #if [ $ISREMOTE == 0 ]; then
 	#out "ots script path     = ${SCRIPT_DIR}/ots         "
@@ -486,10 +499,30 @@ function killprocs
 export -f killprocs
 
 
+
+if [[ $SOFTKILLALL != 0 ]]; then
+
+	out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
+	out "${Yellow}${Bold}${REV}*************       kill otsdaq!        ************** ${OTS_OWNER} ${RstClr}"
+    out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
+	
+	#try to force kill other StartOTS scripts
+	echo "KILL_ALL" > $OTSDAQ_STARTOTS_QUIT_FILE
+	echo "KILL_ALL ${THIS_HOST}" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
+	
+    echo  -e "${IBRed}"
+
+    killprocs	
+	
+    out "Done with ots kill-all." 
+
+	exit
+fi
+
 if [[ $KILLALL != 0 ]]; then
 
 	out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
-	out "${Yellow}${Bold}${REV}*************       kill otsdaq!        **************${RstClr}"
+	out "${Yellow}${Bold}${REV}*************       kill ALL otsdaq!        **************${RstClr}"
     out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
 	
 	#try to force kill other StartOTS scripts
@@ -507,7 +540,7 @@ if [[ $KILLALL != 0 ]]; then
 	ipcrm -a &>/dev/null 2>&1 #hide output #clean-up shared memory
     #killprocs	
 	
-    out "Done with ots kill-all." 
+    out "Done with ots hard kill-all." 
 	
 	#kills self too:
 	killall -9 xdaq.exe  &>/dev/null 2>&1 #hide output
@@ -530,9 +563,6 @@ fi
 # Old host resolution approach:
 #SERVER=`hostname -f || ifconfig eth0|grep "inet addr"|cut -d":" -f2|awk '{print $1}'`
 export SUPERVISOR_SERVER=$THIS_HOST #$SERVER
-if [ $ISCONFIG == 1 ]; then
-    export OTS_CONFIGURATION_WIZARD_SUPERVISOR_SERVER=$SUPERVISOR_SERVER
-fi
 
 #At one point, could be File, Database, DatabaseTest
 #  Now,.. artdaq_database expects File, and the ARTDAQ_DATABASE_URI decides the rest
@@ -562,7 +592,7 @@ if [ "x$MRB_BUILDDIR" != "x" ] && [ -e $OTSDAQ_UTILITIES_DIR/CMakeLists.txt ]; t
 	export OTS_SOURCE=$MRB_SOURCE
 fi
 
-if [ "x$SPACK_ENV" != x ];then
+if [ "x$SPACK_ENV" != "x" ] && [ "x$OTS_SOURCE" == "x" ]; then
     export OTS_SOURCE=$SPACK_ENV
 fi
 
@@ -578,18 +608,13 @@ if [ "x$USER_WEB_PATH" == "x" ]; then  #setup the location for user web-apps
     export USER_WEB_PATH=$OTSDAQ_DEMO_DIR/UserWebGUI 
 fi
 
-#setup web path as XDAQ is setup.. 
-#then make a link to user specified web path.
-WEB_PATH=${OTSDAQ_UTILITIES_DIR}/WebGUI
-
-# TODO: Maybe bring these back if user starts in verbose (quiet=0)
-#out "WEB_PATH=$WEB_PATH"
-#out "USER_WEB_PATH=$USER_WEB_PATH"
-#out "Making symbolic link to USER_WEB_PATH"
-#out "ln -s $USER_WEB_PATH $WEB_PATH/UserWebPath"
-
-rm $WEB_PATH/UserWebPath &>/dev/null  #delete link first, hide output
-ln -s $USER_WEB_PATH $WEB_PATH/UserWebPath &>/dev/null  #make link, hide output
+#setup web path before XDAQ setup uses it in xml config files.. 
+#  ..also make a link to user specified web path.
+if [ "x$OTSDAQ_WEB_PATH" == "x" ]; then  #setup the location for ots web-apps
+	export OTSDAQ_WEB_PATH=${OTSDAQ_UTILITIES_DIR}/WebGUI
+fi 
+rm $OTSDAQ_WEB_PATH/UserWebPath &>/dev/null  #delete link first, hide output
+ln -s $USER_WEB_PATH $OTSDAQ_WEB_PATH/UserWebPath &>/dev/null  #make link, hide output
 
 
 if [ "x$USER_DATA" == "x" ]; then
@@ -631,8 +656,9 @@ if [ $ISREMOTE == 0 ]; then
 	info "\$USER_DATA               = ${YELLOW}${USER_DATA}${RstClr}          "
 	info "\$ARTDAQ_DATABASE_URI     = ${YELLOW}${Bold}${ARTDAQ_DATABASE_URI}${DBold}${RstClr}"
 	info "\$OTSDAQ_DATA             = ${YELLOW}${OTSDAQ_DATA}${RstClr}        "
-	info "\$WEB_PATH                = ${YELLOW}${WEB_PATH}${RstClr}        "
+	info "\$OTSDAQ_WEB_PATH         = ${YELLOW}${OTSDAQ_WEB_PATH}${RstClr}        "
 	info "\$USER_WEB_PATH           = ${YELLOW}${USER_WEB_PATH}${RstClr}        "
+	info "\$OTS_SOURCE              = ${YELLOW}${OTS_SOURCE}${RstClr}        "
 fi
 #end print out important environment variables
 
@@ -856,9 +882,12 @@ launchOTSMacromaker() {
 	#substitute environment variables into template wiz-mode xdaq config xml
 	envsubst <${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake.xml > ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml
 	
-	#use safe Message Facility fcl in wiz mode
+	#use safe Message Facility fcl in MacroMaker mode
 	export OTSDAQ_LOG_FHICL=${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWithCout.fcl
-	
+	#if in dev mode, use dev filename parsing
+	if [[ -e ${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWithCout_dev.fcl && "x$OTS_FILE_PARSE_PATTERN" != "x" ]]; then 
+		export OTSDAQ_LOG_FHICL=${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWithCout_dev.fcl		
+	fi
 
 	out "Starting MacroMaker mode on PORT ${PORT}; to change, please setup environment variable OTS_MAIN_PORT."
 	out "MacroMaker mode ots context is defined by ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml"
@@ -1027,6 +1056,7 @@ launchOTSWiz() {
 	export CONFIGURATION_GUI_SUPERVISOR_ID=280
 	export WIZARD_SUPERVISOR_ID=290	
 	export OTS_CONFIGURATION_WIZARD_SUPERVISOR_ID=290	
+	export OTS_CONFIGURATION_WIZARD_SUPERVISOR_SERVER=$SUPERVISOR_SERVER
 	MAIN_PORT=2015
 
    
@@ -1049,6 +1079,10 @@ launchOTSWiz() {
 	
 	#modify the PORT to avoid wiz mode conflicts
 	cp ${USER_DATA}/MessageFacilityConfigurations/MessageFacility.fcl ${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWiz.fcl 
+	#if in dev mode, use dev filename parsing
+	if [[ -e ${USER_DATA}/MessageFacilityConfigurations/MessageFacility_dev.fcl && "x$OTS_FILE_PARSE_PATTERN" != "x" ]]; then 
+		cp ${USER_DATA}/MessageFacilityConfigurations/MessageFacility_dev.fcl ${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWiz.fcl 		
+	fi
 	PORTMFOFF=$((30000 + $PORT))
 	sed -i s/30000/${PORTMFOFF}/g ${USER_DATA}/MessageFacilityConfigurations/MessageFacilityWiz.fcl 
 	
@@ -1461,6 +1495,15 @@ launchOTS() {
 	unset TempContextPIDArray #reset  
 	unset ContextPIDArray #reset
 
+
+	#(re)setup user ssh tunnels in case they have timed out
+	if declare -F otsUserSshTunnels > /dev/null; then
+		out "otsUserSshTunnels() function is defined, so setting up user ssh tunnels..."
+		otsUserSshTunnels
+	else
+		out "otsUserSshTunnels() funtion is not defined, define to setup user ssh tunnels."
+	fi
+
 	####################################################################
 	########### read from context config and launch Gateway ############
 	####################################################################
@@ -1543,7 +1586,6 @@ launchOTS() {
 							
 							#cleanup alive files
 							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive* &>/dev/null 2>&1 #hide output #remove alive file
-
 
 							#attempt to avoid false starts by xdaq by detecting constructor, and relaunching
 							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat >/dev/null 2>&1 #hide output #remove alive file
@@ -1862,6 +1904,26 @@ launchOTS() {
 				for t in {1..16}; do
 					if [ "x$OTS_IS_ALIVE" == "x" ]; then		
 						sleep 2
+
+						#check if exit requested to avoid endless looping (e.g. on remote hosts)
+						OTSDAQ_STARTOTS_ACTION="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE})"
+						OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
+						OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
+				
+						if [[ "$OTSDAQ_STARTOTS_ACTION" == "KILL_ALL" || "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
+
+							out "Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+										
+							killprocs	
+
+							if [ $ISREMOTE == 1 ]; then
+								out "Done killing (stale) processes"
+							fi
+							
+							exit
+						fi
+
+
 						OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)					
 						out "Checking http://${THIS_HOST}:${PORT}..."
 					else   # found the supervisor!
@@ -1946,10 +2008,10 @@ launchOTS() {
 				fi
 			
 				out "\tRemote launch of ots Context processes on host {${host}}."
-				out "\t\tssh ${host} SCRIPT_DIR/ots_remote_start ${host} ${PWD}" 
+				out "\t\tssh ${host} SCRIPT_DIR/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE}" 
 				
 				# launch ssh remote start (attempt twice)
-				ssh ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} || ssh ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
+				ssh ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
 				
 				
 				#add host to remote launch host list
@@ -2161,7 +2223,7 @@ launchOTSLogFind() {
 		# out "[$i] == $fn - ${xdaqHost[$i]} - ${PORT} - $gatewayHostname : $gatewayPort"
 
 		if [[ ${xdaqHost[$i]} != ${THIS_HOST} ]]; then
-			out " '${Bold}${xdaqContextUID[$i]}${RstClr}'\t vless_ots.sh ${Bold}${xdaqHost[$i]}${RstClr} ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			
+			out " '${Bold}${xdaqContextUID[$i]}${RstClr}'\t vless_ots.sh ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"		#hostname ${Bold}${xdaqHost[$i]}${RstClr} 	
 		else
 			out " '${Bold}${xdaqContextUID[$i]}${RstClr}'\t less ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			
 		fi
@@ -2268,6 +2330,10 @@ otsActionHandler() {
 		OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
 		
 		echo "0" > $OTSDAQ_STARTOTS_ACTION_FILE #clear the command in the file; it has been responded to
+
+		if [ "$OTSDAQ_REFRESH_KINIT" == "1" ]; then
+			kinit -R &>/dev/null 2>&1 #hide output
+		fi
 				
 		#out "message loop command ${OTSDAQ_STARTOTS_ACTION} ${OTSDAQ_STARTOTS_QUIT} ${OTSDAQ_STARTOTS_LOCAL_QUIT} "
 				

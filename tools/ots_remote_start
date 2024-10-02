@@ -38,11 +38,26 @@ if ! [ -e setup_ots.sh ]; then # try going one directory up (for mrb reverse com
   cd ../ || die "Couldn't chdir to ots setup directory on ${THIS_HOST}"
 fi
 
-# We don't care about the non-error output of this script because it gets shown on the remote's launching terminal
-userinput="$(cat .ots_setup_type.txt)";
-source ./setup_ots.sh > /dev/null </dev/null  || die "Couldn't setup ots for ${userinput} on ${THIS_HOST}"
+#get setup type
+if [ "x$1" == "x" ]; then
+	export OTS_SETUP_TYPE="$(cat .ots_setup_type.txt)";
+else
+  export OTS_SETUP_TYPE="$1"
+  shift
+fi
 
-info "Executing ots script for ${userinput} on ${THIS_HOST}"
+# We don't care about the non-error output of this script because it gets shown on the remote's launching terminal
+if [ "x$OTS_SETUP_TYPE" != "x" ]; then
+  info "Sourcing remote setup_ots.sh, and hiding output, for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+  source ./setup_ots.sh ${OTS_SETUP_TYPE} > /dev/null </dev/null  || die "Couldn't setup ots for ${OTS_SETUP_TYPE} on ${THIS_HOST}"
+  info "Launching ots for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+else # no setup type
+  info "Sourcing remote setup_ots.sh, and hiding output, on ${EBold}${THIS_HOST}${DBold}..."
+  source ./setup_ots.sh > /dev/null </dev/null  || die "Couldn't setup ots on ${THIS_HOST}"
+  info "Launching ots on ${EBold}${THIS_HOST}${DBold}..."
+fi
+
+
 
 # -x is a special "remote launch" flag to handle that similarly to the -s case but with less printouts
 # Exec since this is the last thing this script does and we don't need a pointless fork (plus the process stays the same for ssh)

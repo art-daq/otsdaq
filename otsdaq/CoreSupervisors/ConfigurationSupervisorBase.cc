@@ -5,7 +5,8 @@ using namespace ots;
 
 //==============================================================================
 // getConfigurationStatusXML
-void ConfigurationSupervisorBase::getConfigurationStatusXML(HttpXmlDocument& xmlOut, ConfigurationManagerRW* cfgMgr)
+void ConfigurationSupervisorBase::getConfigurationStatusXML(HttpXmlDocument& xmlOut, ConfigurationManagerRW* cfgMgr,
+	const std::string& username)
 {
 	std::map<std::string /*type*/, std::pair<std::string /*groupName*/, TableGroupKey>> activeGroupMap = cfgMgr->getActiveTableGroups();
 
@@ -52,6 +53,8 @@ void ConfigurationSupervisorBase::getConfigurationStatusXML(HttpXmlDocument& xml
 
 	// always add version tracking bool
 	xmlOut.addTextElementToData("versionTracking", ConfigurationInterface::isVersionTrackingEnabled() ? "ON" : "OFF");
+
+	xmlOut.addTextElementToData("configUsername", username);
 
 }  // end getConfigurationStatusXML()
 
@@ -1124,7 +1127,7 @@ try
 	xmlOut.addTextElementToData("backboneGroupKey", newBackboneKey.toString());
 
 	// always add active table groups to xml response
-	ConfigurationSupervisorBase::getConfigurationStatusXML(xmlOut, cfgMgr);
+	ConfigurationSupervisorBase::getConfigurationStatusXML(xmlOut, cfgMgr, author);
 
 	return true;
 	//---------------------------------------------------
@@ -1608,7 +1611,7 @@ try
 		cfgMgr->activateTableGroup(backboneGroupName, newBackboneKey);
 
 		// always add active table groups to xml response
-		ConfigurationSupervisorBase::getConfigurationStatusXML(xmlOut, cfgMgr);
+		ConfigurationSupervisorBase::getConfigurationStatusXML(xmlOut, cfgMgr, author);
 	}
 	return true;
 }  // end handleAddDesktopIconXML()

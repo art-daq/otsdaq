@@ -51,7 +51,7 @@ std::string FiniteStateMachine::getCurrentStateName(void) { return getStateName(
 //	returns number of seconds elapsed while in current state
 //	returns 0 if invalid (i.e. stateEntranceTime_ is not set - stateEntranceTime_ is
 // initialized to 0)
-time_t FiniteStateMachine::getTimeInState(void) { return stateEntranceTime_ ? (time(0) - stateEntranceTime_) : 0; }
+time_t FiniteStateMachine::getTimeInState(void) const { return stateEntranceTime_ ? (time(0) - stateEntranceTime_) : 0; }
 
 //==============================================================================
 std::string FiniteStateMachine::getCurrentTransitionName(const std::string& transition)

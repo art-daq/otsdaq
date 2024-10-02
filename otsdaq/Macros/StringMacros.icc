@@ -338,8 +338,8 @@ void StringMacros::getMapFromString(const std::string&    inputString,
 
 		if(!emplaceReturn.second)
 		{
-			__COUT_WARN__ << "Ignoring repetitive value ('" << inputString.substr(i, j - i) << "') and keeping current value ('" << emplaceReturn.first->second
-			              << "'). " << __E__;
+			__COUT_WARN__ << "Ignoring repetitive value ('" << name << "," << inputString.substr(i, j - i) << 
+				"') and keeping current value ('" << name << "," << emplaceReturn.first->second << "'). " << __E__;
 		}
 	}
 }  // end getMapFromString<T>()

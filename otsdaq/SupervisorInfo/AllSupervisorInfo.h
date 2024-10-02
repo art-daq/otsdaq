@@ -45,6 +45,7 @@ class AllSupervisorInfo : public SupervisorDescriptorInfoBase
 	void 													setSupervisorStatus					(xdaq::Application* app, const std::string& status, const unsigned int progress = 100, const std::string& detail = "", std::vector<SupervisorInfo::SubappInfo> subapps = {});
 	void 													setSupervisorStatus					(const SupervisorInfo& appInfo, const std::string& status, const unsigned int progress = 100, const std::string& detail = "", std::vector<SupervisorInfo::SubappInfo> subapps = {});
 	void 													setSupervisorStatus					(const unsigned int& id, const std::string& status, const unsigned int progress = 100, const std::string& detail = "", std::vector<SupervisorInfo::SubappInfo> subapps = {});
+	void 													clearSupervisorSubappsStatus		(const SupervisorInfo& appInfo);
 
 	// GETTERs (so searching and iterating is easier)
 	const std::map<unsigned int /* lid */, SupervisorInfo>& getAllSupervisorInfo				(void) const { return allSupervisorInfo_; }
