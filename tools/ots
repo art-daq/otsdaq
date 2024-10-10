@@ -2011,7 +2011,7 @@ launchOTS() {
 				out "\t\tssh ${host} SCRIPT_DIR/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE}" 
 				
 				# launch ssh remote start (attempt twice)
-				ssh ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
+				ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
 				
 				
 				#add host to remote launch host list
@@ -2333,6 +2333,7 @@ otsActionHandler() {
 
 		if [ "$OTSDAQ_REFRESH_KINIT" == "1" ]; then
 			kinit -R &>/dev/null 2>&1 #hide output
+			otsUserSshTunnels &>/dev/null 2>&1 #hide output
 		fi
 				
 		#out "message loop command ${OTSDAQ_STARTOTS_ACTION} ${OTSDAQ_STARTOTS_QUIT} ${OTSDAQ_STARTOTS_LOCAL_QUIT} "

@@ -459,7 +459,7 @@ FEVInterface* FEVInterfacesManager::getFEInterfaceP(const std::string& interface
 	catch(...)
 	{
 		__CFG_SS__ << "Interface ID '" << interfaceID << "' not found in configured interfaces." << __E__;
-		__CFG_SS_THROW__;
+		__SS_ONLY_THROW__;
 	}
 }  // end getFEInterfaceP()
 
@@ -474,7 +474,7 @@ const FEVInterface& FEVInterfacesManager::getFEInterface(const std::string& inte
 	catch(...)
 	{
 		__CFG_SS__ << "Interface ID '" << interfaceID << "' not found in configured interfaces." << __E__;
-		__CFG_SS_THROW__;
+		__SS_ONLY_THROW__;
 	}
 }  // end getFEInterface()
 

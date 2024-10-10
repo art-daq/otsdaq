@@ -42,6 +42,9 @@ using namespace ots;
 #define FSM_LAST_GROUP_ALIAS_FILE_START std::string("FSMLastGroupAlias-")
 #define FSM_USERS_PREFERENCES_FILETYPE "pref"
 
+
+#define REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME "RemoteSubsystems.txt"
+
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "GatewaySupervisor"
 
@@ -130,6 +133,7 @@ GatewaySupervisor::~GatewaySupervisor(void)
 }  // end destructor
 
 //==============================================================================
+//For Wizard Supervisor to call
 void GatewaySupervisor::indicateOtsAlive(const CorePropertySupervisorBase* properties) { CorePropertySupervisorBase::indicateOtsAlive(properties); }
 
 //==============================================================================
@@ -159,7 +163,12 @@ void GatewaySupervisor::init(void)
 			if(enableStateChanges)
 				__COUT_INFO__ << "Enabling state changes over UDP..." << __E__;
 			else if(enableLoginVerify)
-				__COUT_INFO__ << "Enabling login verification over UDP..." << __E__;
+			{
+				__COUT_INFO__ << "Enabling this Gateway as source of primary login verification over UDP..." << __E__;
+
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				loadRemoteGatewaySettings(remoteGatewayApps_);
+			}
 
 			// start state changer UDP listener thread
 			std::thread([](GatewaySupervisor* s) { GatewaySupervisor::StateChangerWorkLoop(s); }, this).detach();
@@ -258,9 +267,20 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					//                                                                        : theSupervisor->theStateMachine_.getCurrentStateName())
 					//                    : (theSupervisor->theStateMachine_.getCurrentStateName() == "Paused" ? "Soft-Error:::" : "Failed:::") + err;
 
+					try
+					{
+						__COUTTV__(theSupervisor->theStateMachine_.isInTransition());
+						if(theSupervisor->theStateMachine_.isInTransition())
+							__COUTTV__(theSupervisor->theStateMachine_.getCurrentTransitionName());
+						__COUTTV__(theSupervisor->theStateMachine_.getProvenanceStateName());
+						__COUTTV__(theSupervisor->theStateMachine_.getCurrentStateName());
+					}
+					catch(...)
+					{;}
+					
 					if(err == "")
 					{
-						if(theSupervisor->theStateMachine_.isInTransition() || theSupervisor->theProgressBar_.read() < 100)
+						if(theSupervisor->theStateMachine_.isInTransition())// || theSupervisor->theProgressBar_.read() < 100)
 						{
 							// attempt to get transition name, otherwise give provenance state
 							try
@@ -271,14 +291,22 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							{
 								status = theSupervisor->theStateMachine_.getProvenanceStateName();
 							}
+							progress = theSupervisor->theProgressBar_.readPercentageString();
 						}
 						else
+						{
 							status = theSupervisor->theStateMachine_.getCurrentStateName();
+							progress = "100"; //if not in transition, then 100
+						}
 					}
 					else
+					{
 						status = (theSupervisor->theStateMachine_.getCurrentStateName() == "Paused" ? "Soft-Error:::" : "Failed:::") + err;
+						progress = theSupervisor->theProgressBar_.readPercentageString();
+					}
 
-					progress = theSupervisor->theProgressBar_.readPercentageString();
+					__COUTTV__(status);
+					__COUTTV__(progress);
 
 					try
 					{
@@ -317,7 +345,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					__COUTTV__(commandingRemoteGatewayApps);
 
 					//Add sub-apps for each Remote Gateway specified as a Remote Desktop Icon
-					if(!commandingRemoteGatewayApps && loopCount % 20 == 0) //periodically refresh Remote Gateway list based on icon list
+					if((!commandingRemoteGatewayApps && loopCount % 20 == 0) ||
+						loopCount == 0) //periodically refresh Remote Gateway list based on icon list
 					{					
 
 						// use latest context always from temporary configuration manager,
@@ -326,7 +355,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						ConfigurationManager                              tmpCfgMgr; // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
 						const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
 						const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
-						
+																		
 						for(auto& remoteGatewayApp : remoteApps)
 							remoteGatewayApp.appInfo.status = ""; //clear status, to be used to remove remote gateways no longer targeted
 
@@ -353,6 +382,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								thisInfo.appInfo.lastStatusTime = time(0);
 
 								thisInfo.user_data_path_record = icon.alternateText_;
+								thisInfo.parentIconFolderPath = icon.folderPath_;								
 
 								//replace or add to local copy of supervisor remote gateway list (control info will be protected later, after status update, with final copy to real list)
 								bool found = false;
@@ -366,6 +396,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										//overwrite with refreshed info
 										remoteApps[i].appInfo = thisInfo.appInfo;
 										remoteApps[i].user_data_path_record = thisInfo.user_data_path_record;
+										remoteApps[i].parentIconFolderPath = thisInfo.parentIconFolderPath;
 										break;
 									}
 								}
@@ -389,9 +420,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										"Please specify a valid User Data Path record as the Desktop Icon AlternateText field, targeting a UID in the SubsystemUserDataPathsTable." << __E__;
 									ss << "\n\nHere was the error: " << e.what() << __E__;
 									__COUT__ << ss.str();
-								}						
+								}			
+
 
 							} //end remote icon handling
+
 						} //end icon loop
 
 						//clean up stale remoteGatewayApps with blank status
@@ -438,6 +471,48 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 					} //end periodic Remote Gateway refresh
 
+					//if possible, get remote icon list for desktop from each remote app
+					if(resetRemoteGatewayApps)
+					{
+						__COUT__ << "Attempting to get Remote Desktop Icons..." << __E__; 
+						
+						for(auto& remoteGatewayApp : remoteApps)
+						{
+							if(remoteGatewayApp.command != "") continue; //skip if command to be sent
+
+					
+							//clear any previous icon error
+							if(remoteGatewayApp.error.find("desktop icons") != std::string::npos)
+							{
+								__COUTV__(remoteGatewayApp.error);
+								//lock for remainder of scope
+								std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
+								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
+									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+									{
+										theSupervisor->remoteGatewayApps_[i].error = ""; 										
+										break;
+									}
+							}
+
+							remoteGatewayApp.error = ""; //clear error		
+							GatewaySupervisor::GetRemoteGatewayIcons(remoteGatewayApp, remoteGatewaySocket);
+							if(remoteGatewayApp.error != "")//give feedback immediately to user!!
+							{
+								__COUTV__(remoteGatewayApp.error);
+								//lock for remainder of scope
+								std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
+								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
+									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+									{
+										theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 										
+										break;
+									}
+							}
+						}
+
+					} //end remote desktop icon gathering
+
 					//for each remote gateway, request app status with "GetRemoteAppStatus"	
 					if(loopCount % 3 == 0 || resetRemoteGatewayApps || //a little less frequently
 						commandingRemoteGatewayApps)
@@ -471,7 +546,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						if(commandSent)
 						{
 							commandRemoteIdleCount = 0; //reset
-							sleep(3); //gives some time for command to sink in
+							sleep(1); //gives some time for command to sink in
 						}
 						
 						//then get status
@@ -551,6 +626,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										theSupervisor->remoteGatewayApps_[i].consoleErrCount = remoteGatewayApp.consoleErrCount;	
 										theSupervisor->remoteGatewayApps_[i].consoleWarnCount = remoteGatewayApp.consoleWarnCount;	
 
+										theSupervisor->remoteGatewayApps_[i].user_data_path_record = remoteGatewayApp.user_data_path_record;
+										theSupervisor->remoteGatewayApps_[i].iconString = remoteGatewayApp.iconString;	
+										theSupervisor->remoteGatewayApps_[i].parentIconFolderPath = remoteGatewayApp.parentIconFolderPath;	
+										
 										//fix config_aliases and selected_config_alias
 										theSupervisor->remoteGatewayApps_[i].config_aliases = remoteGatewayApp.config_aliases;										
 										//if invalid selected_config_alias, renitialize for user
@@ -681,7 +760,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					{
 						//parse detail 
 
-						__COUTTV__(detail);
+
+						//Note: do not printout detail, because custom counts will fire recursively
+						//__COUTTV__(detail);
 
 						//Console Supervisor status detatil format is (from otsdaq-utilities/otsdaq-utilities/Console/ConsoleSupervisor.cc:1722):
 						//	uptime, Err count, Warn count, Last Error msg, Last Warn msg
@@ -692,6 +773,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							theSupervisor->systemConsoleErrCount_ = atoi(parseDetail[1].substr(parseDetail[1].find(':')+1).c_str());
 						if(parseDetail.size() > 2)
 							theSupervisor->systemConsoleWarnCount_ = atoi(parseDetail[2].substr(parseDetail[2].find(':')+1).c_str());
+						__COUTTV__(theSupervisor->systemConsoleErrCount_);
+						__COUTTV__(theSupervisor->systemConsoleWarnCount_);
 						if(parseDetail.size() > 3) //e.g. Last Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
 							size_t closeTimePos = parseDetail[3].find(')');
@@ -718,6 +801,31 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 						if(parseDetail.size() > 6)
 							theSupervisor->systemConsoleInfoCount_ = atoi(parseDetail[6].substr(parseDetail[6].find(':')+1).c_str());
+						
+						if(parseDetail.size() > 7) //e.g. First Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
+						{
+							size_t closeTimePos = parseDetail[7].find(')');
+							theSupervisor->firstConsoleErr_ = parseDetail[7].substr(closeTimePos+2);
+							size_t openTimePos = parseDetail[7].find('(');
+							theSupervisor->firstConsoleErrTime_ = parseDetail[7].substr(openTimePos,closeTimePos-openTimePos+1);
+							__COUTTV__(theSupervisor->firstConsoleErrTime_);
+						}
+						if(parseDetail.size() > 8) //e.g. First Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
+						{
+							size_t closeTimePos = parseDetail[8].find(')');
+							theSupervisor->firstConsoleWarn_ = parseDetail[8].substr(closeTimePos+2);
+							size_t openTimePos = parseDetail[8].find('(');
+							theSupervisor->firstConsoleWarnTime_ = parseDetail[8].substr(openTimePos,closeTimePos-openTimePos+1);
+							__COUTTV__(theSupervisor->firstConsoleWarnTime_);
+						}
+						if(parseDetail.size() > 9) //e.g. First Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
+						{
+							size_t closeTimePos = parseDetail[9].find(')');
+							theSupervisor->firstConsoleInfo_ = parseDetail[9].substr(closeTimePos+2);
+							size_t openTimePos = parseDetail[9].find('(');
+							theSupervisor->firstConsoleInfoTime_ = parseDetail[9].substr(openTimePos,closeTimePos-openTimePos+1);
+							__COUTTV__(theSupervisor->firstConsoleInfoTime_);
+						}
 					}
 
 					subapps = SupervisorInfo::deserializeSubappInfos(parameters.getValue("Subapps"));
@@ -842,12 +950,95 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 			theSupervisor->allSupervisorInfo_.setSupervisorStatus(appInfo, status, progressInteger, detail, subapps);
 
 		}  // end of app loop
-		
+				
 		if(oneStatusReqHasFailed)
+		{
+			__COUTT__ << "oneStatusReqHasFailed" << __E__;
 			sleep(5);  // sleep to not overwhelm server with errors
+		}
 
 	} // end of infinite status checking loop
 }  // end AppStatusWorkLoop()
+
+//==============================================================================
+// SendRemoteGatewayCommand
+//	static function
+void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, 
+	const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */ remoteGatewaySocket)
+{
+
+	// comma-separated icon string, 7 fields:
+	//				0 - caption 		= text below icon
+	//				1 - altText 		= text icon if no image given
+	//				2 - uniqueWin 		= if true, only one window is allowed,
+	// 										else  multiple instances of window 				
+	//				3 - permissions 	= security level needed to see icon 				
+	//				4 - picfn 			= icon image filename 				
+	//				5 - linkurl 		= url of the window to open
+	// 				6 - folderPath 		= folder and subfolder location '/' separated  
+	//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
+
+	std::string iconString = "";
+
+	__COUT__ << "Sending remote gateway command '" << remoteGatewayApp.command << "' to target '" <<
+		remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
+
+	std::string command = "GetRemoteDesktopIcons";	
+	try
+	{
+		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
+		__COUTTV__(StringMacros::vectorToString(parsedFields));
+		__COUTV__(command);
+
+		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
+		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
+		__COUTV__(remoteIconString);
+
+		bool firstIcon = true;
+
+		//now have remote icon string, append icons to list
+		std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString, {','});
+		const size_t numOfIconFields = 7;
+		for(size_t i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
+		{
+			if(firstIcon)
+				firstIcon = false;
+			else
+				iconString += ",";					
+
+			__COUTV__(remoteIconsCSV[i+0]);
+			if(remoteGatewayApp.parentIconFolderPath == "")//icon.folderPath_ == "") //if not in folder, distinguish remote icon somehow
+				iconString += remoteGatewayApp.user_data_path_record //icon.alternateText_ 
+					+ " " + remoteIconsCSV[i+0]; //icon.caption_;
+			else
+				iconString += remoteIconsCSV[i+0]; //icon.caption_;
+			iconString += "," + remoteIconsCSV[i+1]; //icon.alternateText_;
+			iconString += "," + remoteIconsCSV[i+2]; //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+			iconString += "," + std::string("1");  // set permission to 1 so the
+												// desktop shows every icon that the
+												// server allows (i.e., trust server
+												// security, ignore client security)
+			iconString += "," + remoteIconsCSV[i+4]; //icon.imageURL_;
+			iconString += "," + remoteIconsCSV[i+5]; //icon.windowContentURL_;
+			
+			iconString += "," + remoteGatewayApp.parentIconFolderPath //icon.folderPath_
+				+ "/" + remoteIconsCSV[i+6];
+			
+		} //end append remote icons
+
+	}  //end SendRemoteGatewayCommand()
+	catch(const std::runtime_error& e)
+	{
+		__SS__ << "Failure gathering Remote Gateway desktop icons with command '" << command
+			<< "' from target '" << remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << " due to error: " << e.what() << __E__;
+		__COUT_ERR__ << ss.str();	
+		remoteGatewayApp.error = ss.str();
+		return;
+	}  //end SendRemoteGatewayCommand() catch
+
+	__COUTV__(iconString);
+	remoteGatewayApp.iconString = iconString;
+}  //end GetRemoteGatewayIcons()
 
 //==============================================================================
 // SendRemoteGatewayCommand
@@ -862,7 +1053,14 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 	std::string tmpCommand = remoteGatewayApp.command;	
 	try
 	{
-		std::string command = remoteGatewayApp.fsmName + "," + remoteGatewayApp.command;
+		std::string command;
+
+		//for non-FSM commands, do not use fsmName
+		if(remoteGatewayApp.command == "ResetConsoleCounts")
+			command = "ResetConsoleCounts";
+		else
+			command = remoteGatewayApp.fsmName + "," + remoteGatewayApp.command;
+					
 		remoteGatewayApp.command = "Sent"; //Mark that send is being attempted
 
 		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
@@ -1046,318 +1244,376 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				" of size = " << buffer.size() << __E__;
 			__COUTTV__(buffer);
 
-			bool remoteGatewayStatus = buffer.find("GetRemoteGatewayStatus") == 0;
-			if(remoteGatewayStatus || buffer == "GetRemoteAppStatus")
+			try
 			{
-				__COUT__ << "Giving app status to remote monitor..." << __E__;
-
-				if(remoteGatewayStatus && buffer.size() > strlen("GetRemoteGatewayStatus")+1)
+				
+			
+				bool remoteGatewayStatus = buffer.find("GetRemoteGatewayStatus") == 0;
+				if(remoteGatewayStatus || buffer == "GetRemoteAppStatus")
 				{
-					std::string tmpIP = sock.getLastIncomingIPAddress();
-					int tmpPort = atoi(buffer.substr(strlen("GetRemoteGatewayStatus")+1).c_str());
-					
-					if(!theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ ||
-						theSupervisor->theWebUsers_.remoteLoginVerificationIP_ != tmpIP ||
-						theSupervisor->theWebUsers_.remoteLoginVerificationPort_ != tmpPort)
+					__COUT__ << "Giving app status to remote monitor..." << __E__;
+
+					if(remoteGatewayStatus && buffer.size() > strlen("GetRemoteGatewayStatus")+1)
 					{
-						theSupervisor->theWebUsers_.remoteLoginVerificationIP_ = tmpIP;
-						theSupervisor->theWebUsers_.remoteLoginVerificationPort_ = tmpPort;
-						theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ = true; //mark as under remote control
-						__COUT_INFO__ << "This Gateway is now under remote control and will validate logins through remote Gateway Supervisor at "
-							<< theSupervisor->theWebUsers_.remoteLoginVerificationIP_ << ":" << 
-							theSupervisor->theWebUsers_.remoteLoginVerificationPort_ << __E__;
-					}
-				}
-
-				HttpXmlDocument xmlOut;
-				for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
-				{
-					const auto& appInfo = it.second;
-					if(buffer == "GetRemoteGatewayStatus" && appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
-						continue; //only return Gateway status
-
-					xmlOut.addTextElementToData("name",
-												appInfo.getName());                      // get application name
-					xmlOut.addTextElementToData("id", std::to_string(appInfo.getId()));  // get application id
-					xmlOut.addTextElementToData("status", appInfo.getStatus());          // get status
-					xmlOut.addTextElementToData(
-						"time", std::to_string(appInfo.getLastStatusTime())); // ? StringMacros::getTimestampString(appInfo.getLastStatusTime()) : "0");  // get time stamp
-					xmlOut.addTextElementToData("stale",
-												std::to_string(time(0) - appInfo.getLastStatusTime()));  // time since update
-					xmlOut.addTextElementToData("progress", std::to_string(appInfo.getProgress()));      // get progress
-					xmlOut.addTextElementToData("detail", appInfo.getDetail());                          // get detail
-					xmlOut.addTextElementToData("class",
-												appInfo.getClass());  // get application class
-					xmlOut.addTextElementToData("url",
-												appInfo.getURL());  // get application url
-					xmlOut.addTextElementToData("context",
-												appInfo.getContextName());  // get context
-					auto subappElement = xmlOut.addTextElementToData("subapps", "");
-					for(auto& subappInfoPair : appInfo.getSubappInfo())
-					{
-						xmlOut.addTextElementToParent("subapp_name", subappInfoPair.first, subappElement);
-						xmlOut.addTextElementToParent("subapp_status", subappInfoPair.second.status, subappElement);  // get status
-						xmlOut.addTextElementToParent("subapp_time",
-							subappInfoPair.second.lastStatusTime ? StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
-													subappElement);  // get time stamp
-						xmlOut.addTextElementToParent("subapp_stale", std::to_string(time(0) - subappInfoPair.second.lastStatusTime), subappElement);  // time since update
-						xmlOut.addTextElementToParent("subapp_progress", std::to_string(subappInfoPair.second.progress), subappElement);               // get progress
-						xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
-						xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                   // get url
-						xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
-
-					}
-				}
-
-				if(buffer == "GetRemoteGatewayStatus") //also return System Messages
-				{
-					__COUT__ << "Giving extra Gateawy info to remote monitor..." << __E__;		
-								
-					xmlOut.addTextElementToData("systemMessages",
-												theWebUsers_.getAllSystemMessages());  
-
-					std::lock_guard<std::mutex> lock(theSupervisor->systemStatusMutex_); //lock for rest of scope
-					xmlOut.addTextElementToData("console_err_count",
-												 std::to_string(theSupervisor->systemConsoleErrCount_));  
-					xmlOut.addTextElementToData("console_warn_count",
-												 std::to_string(theSupervisor->systemConsoleWarnCount_));  
-				}
-
-				std::stringstream out;
-				xmlOut.outputXmlDocument((std::ostringstream*)&out, false /*dispStdOut*/, false /*allowWhiteSpace*/);
-				__COUT_TYPE__(TLVL_DEBUG+23) << __COUT_HDR__ << "App status to monitor: " << out.str() << __E__;
-				sock.acknowledge(out.str(), false /* verbose */);
-				continue;
-			} //end GetRemoteAppStatus
-			else if(buffer.find("loginVerify") == 0)
-			{
-				__COUT__ << "Checking login verification request from remote gateway..." << __E__;
-
-				//Lookup cookie code and return refreshed cookie code and user info
-				// command = loginVerify
-				// parameters.addParameter("CookieCode");
-				// parameters.addParameter("RefreshOption");
-				// parameters.addParameter("IPAddress");
-				std::vector<std::string> rxParams = StringMacros::getVectorFromString(buffer,{','});
-				__COUTV__(StringMacros::vectorToString(rxParams));
-
-				if(rxParams.size() != 4)
-				{
-					__COUT_ERR__ << "Invalid remote login verify attempt!" << __E__;
-					sock.acknowledge("0", false /* verbose */);
-					continue;	
-				}
-
-				// If TRUE, cookie code is good, and refreshed code is in cookieCode, also pointers
-				// optionally for uint8_t userPermissions, uint64_t uid  Else, error message is
-				// returned in cookieCode
-				std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> userGroupPermissionsMap;
-				std::string                                                      userWithLock = "";
-				uint64_t                                                         uid, userSessionIndex;
-				std::string cookieCode = rxParams[1];
-				if(!theWebUsers_.cookieCodeIsActiveForRequest(
-				    cookieCode /*cookieCode*/, &userGroupPermissionsMap, &uid /*uid is not given to remote users*/, 
-					rxParams[3] /*ip*/, rxParams[2] /*refresh*/ == "1", &userWithLock, &userSessionIndex))
-				{
-					__COUT_ERR__ << "Remote login failed!" << __E__;
-					sock.acknowledge("0", false /* verbose */);
-					continue;	
-				}
-
-				// Returned user info:
-				// retParameters.addParameter("CookieCode", cookieCode);
-				// "Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
-				// "UserWithLock", userWithLock);
-				// "Username", theWebUsers_.getUsersUsername(uid));
-				// "DisplayName", theWebUsers_.getUsersDisplayName(uid));
-				// "UserSessionIndex" 
-
-				std::string retStr = "";	
-				std::string username = theWebUsers_.getUsersUsername(uid);
-				retStr += cookieCode;
-				retStr += "," + StringMacros::encodeURIComponent(StringMacros::mapToString(userGroupPermissionsMap));
-				retStr += "," + userWithLock;
-				retStr += "," + username;
-				retStr += "," + theWebUsers_.getUsersDisplayName(uid);
-				retStr += "," + std::to_string(userSessionIndex);
-
-				__COUTV__(retStr);
-				__COUTT__ << "Remote login successful for " << username << ", userWithLock = " << userWithLock << __E__;
-				sock.acknowledge(retStr, false /* verbose */);
-				continue;
-			}
-			else if(buffer == "GetRemoteDesktopIcons")
-			{
-				__COUT__ << "Giving desktop icons to remote gateway..." << __E__;
-
-				// get icons and create comma-separated string based on user permissions
-				//	note: each icon has own permission threshold, so each user can have
-				//		a unique desktop icon experience.
-
-				// use latest context always from temporary configuration manager,
-				//	to get updated icons every time...
-				//(so icon changes do no require an ots restart)
-
-				ConfigurationManager                              tmpCfgMgr; // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
-				const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
-				const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
-
-				std::string iconString = "";  
-				// comma-separated icon string, 7 fields:
-				//				0 - caption 		= text below icon
-				//				1 - altText 		= text icon if no image given
-				//				2 - uniqueWin 		= if true, only one window is allowed,
-				// 										else  multiple instances of window 				
-				//				3 - permissions 	= security level needed to see icon 				
-				//				4 - picfn 			= icon image filename 				
-				//				5 - linkurl 		= url of the window to open
-				// 				6 - folderPath 		= folder and subfolder location '/' separated  
-				//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
-
-
-				bool getRemoteIcons = true;
-
-				bool firstIcon = true;
-				for(const auto& icon : icons)
-				{
-					//__COUTV__(icon.caption_);
-					//__COUTV__(icon.permissionThresholdString_);
-
-					//ignore permission level, and give all icons
-
-					//__COUTV__(icon.caption_);
-
-					if(getRemoteIcons)
-					{
-						__COUTV__(icon.windowContentURL_);
-						if(icon.windowContentURL_.size() > 4 && 
-							icon.windowContentURL_[0] == 'o' &&
-							icon.windowContentURL_[1] == 't' &&
-							icon.windowContentURL_[2] == 's' &&
-							icon.windowContentURL_[3] == ':')
-						{
-							__COUT__ << "Retrieving remote icons at " << icon.windowContentURL_ << __E__;
-
-							std::vector<std::string> parsedFields = StringMacros::getVectorFromString(icon.windowContentURL_,{':'});
-							__COUTV__(StringMacros::vectorToString(parsedFields));
-
-							if(parsedFields.size() == 3)
-							{
-								Socket      iconRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));
-
-								// ConfigurationTree configLinkNode = theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
-								// std::string ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
-								__COUTTV__(ipAddressForStateChangesOverUDP);
-								TransceiverSocket iconSocket(ipAddressForStateChangesOverUDP);
-								std::string remoteIconString = iconSocket.sendAndReceive(iconRemoteSocket,"GetRemoteDesktopIcons", 10 /*timeoutSeconds*/);
-								__COUTV__(remoteIconString);
-								continue;
-							}
-						}
-					} //end remote icon handling
-
-					// have icon access, so add to CSV string
-					if(firstIcon)
-						firstIcon = false;
-					else
-						iconString += ",";
+						std::string tmpIP = sock.getLastIncomingIPAddress();
+						int tmpPort = atoi(buffer.substr(strlen("GetRemoteGatewayStatus")+1).c_str());
 						
+						if(!theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ ||
+							theSupervisor->theWebUsers_.remoteLoginVerificationIP_ != tmpIP ||
+							theSupervisor->theWebUsers_.remoteLoginVerificationPort_ != tmpPort)
+						{
+							theSupervisor->theWebUsers_.remoteLoginVerificationIP_ = tmpIP;
+							theSupervisor->theWebUsers_.remoteLoginVerificationPort_ = tmpPort;
+							theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ = true; //mark as under remote control
+							__COUT_INFO__ << "This Gateway is now under remote control and will validate logins through remote Gateway Supervisor at "
+								<< theSupervisor->theWebUsers_.remoteLoginVerificationIP_ << ":" << 
+								theSupervisor->theWebUsers_.remoteLoginVerificationPort_ << __E__;
+						}
+					}
 
-					__COUTV__(icon.caption_);
-					iconString += icon.caption_;
-					iconString += "," + icon.alternateText_;
-					iconString += "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
-					iconString += "," + std::string("1");  // set permission to 1 so the
-															// desktop shows every icon that the
-															// server allows (i.e., trust server
-															// security, ignore client security)
-					iconString += "," + icon.imageURL_;
-					iconString += "," + iconTable->getRemoteURL(&tmpCfgMgr, icon.windowContentURL_);
-					iconString += "," + icon.folderPath_;
-				}
-				__COUTV__(iconString);
+					HttpXmlDocument xmlOut;
+					for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+					{
+						const auto& appInfo = it.second;
+						if(remoteGatewayStatus && appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+							continue; //only return Gateway status
 
-				sock.acknowledge(iconString, true /* verbose */);
-				continue;
-			} //end GetRemoteDesktopIcons
-			else if(!enableStateChanges)//else it is an FSM Command!
-			{
-				__COUT_WARN__ << "Skipping potential FSM Command because enableStateChanges=false" << __E__;
-				continue;
-			}
+						xmlOut.addTextElementToData("name",
+													appInfo.getName());                      // get application name
+						xmlOut.addTextElementToData("id", std::to_string(appInfo.getId()));  // get application id
+						xmlOut.addTextElementToData("status", appInfo.getStatus());          // get status
+						xmlOut.addTextElementToData(
+							"time", std::to_string(appInfo.getLastStatusTime())); // ? StringMacros::getTimestampString(appInfo.getLastStatusTime()) : "0");  // get time stamp
+						xmlOut.addTextElementToData("stale",
+													std::to_string(time(0) - appInfo.getLastStatusTime()));  // time since update
+						xmlOut.addTextElementToData("progress", std::to_string(appInfo.getProgress()));      // get progress
+						xmlOut.addTextElementToData("detail", appInfo.getDetail());                          // get detail
+						xmlOut.addTextElementToData("class",
+													appInfo.getClass());  // get application class
+						xmlOut.addTextElementToData("url",
+													appInfo.getURL());  // get application url
+						xmlOut.addTextElementToData("context",
+													appInfo.getContextName());  // get context
+						auto subappElement = xmlOut.addTextElementToData("subapps", "");
+						for(auto& subappInfoPair : appInfo.getSubappInfo())
+						{
+							xmlOut.addTextElementToParent("subapp_name", subappInfoPair.first, subappElement);
+							xmlOut.addTextElementToParent("subapp_status", subappInfoPair.second.status, subappElement);  // get status
+							xmlOut.addTextElementToParent("subapp_time",
+								subappInfoPair.second.lastStatusTime ? StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
+														subappElement);  // get time stamp
+							xmlOut.addTextElementToParent("subapp_stale", std::to_string(time(0) - subappInfoPair.second.lastStatusTime), subappElement);  // time since update
+							xmlOut.addTextElementToParent("subapp_progress", std::to_string(subappInfoPair.second.progress), subappElement);               // get progress
+							xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
+							xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                   // get url
+							xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
 
+						}
+					}
 
-			__COUT__ << "Received a remote FSM Command attempt!" << __E__;
+					if(remoteGatewayStatus) //also return System Messages
+					{
+						__COUT__ << "Giving extra Gateway info to remote monitor..." << __E__;		
+									
+						xmlOut.addTextElementToData("systemMessages",
+													theWebUsers_.getAllSystemMessages());  
 
-			size_t nCommas = std::count(buffer.begin(), buffer.end(), ',');
-			if(nCommas == 0)
-			{
-				__SS__ << "Unrecognized State Machine command :-" << buffer
-				       << "-. Format is FiniteStateMachineName,Command,Parameter(s). "
-				          "Where Parameter(s) is/are optional."
-				       << __E__;
-				__COUT_ERR__ << ss.str();
-				if(acknowledgementEnabled)
+						std::lock_guard<std::mutex> lock(theSupervisor->systemStatusMutex_); //lock for rest of scope
+						xmlOut.addTextElementToData("console_err_count",
+													std::to_string(theSupervisor->systemConsoleErrCount_));  
+						xmlOut.addTextElementToData("console_warn_count",
+													std::to_string(theSupervisor->systemConsoleWarnCount_));  
+					}
+
+					std::stringstream out;
+					xmlOut.outputXmlDocument((std::ostringstream*)&out, false /*dispStdOut*/, false /*allowWhiteSpace*/);
+					__COUT_TYPE__(TLVL_DEBUG+23) << __COUT_HDR__ << "App status to monitor: " << out.str() << __E__;
+					sock.acknowledge(out.str(), false /* verbose */);
+					continue;
+				} //end GetRemoteAppStatus
+				if(buffer == "ResetConsoleCounts") 
 				{
-					__COUTT__ << "Ack'ing" << __E__;
-					sock.acknowledge(ss.str(), true /* verbose */);
+					__COUT__ << "Remote request to reset Console Counts..." << __E__;
+
+					//zero out console count and retake first messages
+
+					for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+					{
+						const auto& appInfo = it.second;
+						if(appInfo.isTypeConsoleSupervisor())
+						{
+							xoap::MessageReference tempMessage = SOAPUtilities::makeSOAPMessageReference("ResetConsoleCounts");
+							std::string reply = theSupervisor->send(appInfo.getDescriptor(), tempMessage);
+
+							if(reply != "Done")
+							{
+								__SS__ << "Error while resetting console counts of Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
+									<< "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "].\n\n"
+									<< reply << __E__;
+								__SS_THROW__;
+							}
+							__COUT__ << "Reset console counts of Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
+									<< "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "]." << __E__;
+						}
+					} //end loop for Console Supervisors
+
+					//for user display feedback, clear local cached values also
+					std::lock_guard<std::mutex> lock(theSupervisor->systemStatusMutex_); //lock for rest of scope
+					theSupervisor->lastConsoleErrTime_ = "0"; 	theSupervisor->lastConsoleErr_ = "";
+					theSupervisor->lastConsoleWarnTime_ = "0"; 	theSupervisor->lastConsoleWarn_ = "";
+					theSupervisor->lastConsoleInfoTime_ = "0";	theSupervisor->lastConsoleInfo_ = "";
+					theSupervisor->firstConsoleErrTime_ = "0"; 	theSupervisor->firstConsoleErr_ = "";
+					theSupervisor->firstConsoleWarnTime_ = "0"; theSupervisor->firstConsoleWarn_ = "";
+					theSupervisor->firstConsoleInfoTime_ = "0"; theSupervisor->firstConsoleInfo_ = "";
+					
+					sock.acknowledge("Done", false /* verbose */);
+					continue;
+				} //end ResetConsoleCounts
+				else if(buffer.find("loginVerify") == 0)
+				{
+					__COUT__ << "Checking login verification request from remote gateway..." << __E__;
+
+					//Lookup cookie code and return refreshed cookie code and user info
+					// command = loginVerify
+					// parameters.addParameter("CookieCode");
+					// parameters.addParameter("RefreshOption");
+					// parameters.addParameter("IPAddress");
+					std::vector<std::string> rxParams = StringMacros::getVectorFromString(buffer,{','});
+					__COUTV__(StringMacros::vectorToString(rxParams));
+
+					if(rxParams.size() != 4)
+					{
+						__COUT_ERR__ << "Invalid remote login verify attempt!" << __E__;
+						sock.acknowledge("0", false /* verbose */);
+						continue;	
+					}
+
+					// If TRUE, cookie code is good, and refreshed code is in cookieCode, also pointers
+					// optionally for uint8_t userPermissions, uint64_t uid  Else, error message is
+					// returned in cookieCode
+					std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> userGroupPermissionsMap;
+					std::string                                                      userWithLock = "";
+					uint64_t                                                         uid, userSessionIndex;
+					std::string cookieCode = rxParams[1];
+					if(!theWebUsers_.cookieCodeIsActiveForRequest(
+						cookieCode /*cookieCode*/, &userGroupPermissionsMap, &uid /*uid is not given to remote users*/, 
+						rxParams[3] /*ip*/, rxParams[2] /*refresh*/ == "1", &userWithLock, &userSessionIndex))
+					{
+						__COUT_ERR__ << "Remote login failed!" << __E__;
+						sock.acknowledge("0", false /* verbose */);
+						continue;	
+					}
+
+					// Returned user info:
+					// retParameters.addParameter("CookieCode", cookieCode);
+					// "Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
+					// "UserWithLock", userWithLock);
+					// "Username", theWebUsers_.getUsersUsername(uid));
+					// "DisplayName", theWebUsers_.getUsersDisplayName(uid));
+					// "UserSessionIndex" 
+
+					std::string retStr = "";	
+					std::string username = theWebUsers_.getUsersUsername(uid);
+					retStr += cookieCode;
+					retStr += "," + StringMacros::encodeURIComponent(StringMacros::mapToString(userGroupPermissionsMap));
+					retStr += "," + userWithLock;
+					retStr += "," + username;
+					retStr += "," + theWebUsers_.getUsersDisplayName(uid);
+					retStr += "," + std::to_string(userSessionIndex);
+
+					__COUTV__(retStr);
+					__COUTT__ << "Remote login successful for " << username << ", userWithLock = " << userWithLock << __E__;
+					sock.acknowledge(retStr, false /* verbose */);
+					continue;
 				}
-				continue;
-			}
-			begin        = 0;
-			commaCounter = 0;
-			parameters.clear();
-			while((commaPosition = buffer.find(',', begin)) != std::string::npos || commaCounter == nCommas)
-			{
-				if(commaCounter == nCommas)
-					commaPosition = buffer.size();
-				if(commaCounter == 0)
-					fsmName = buffer.substr(begin, commaPosition - begin);
-				else if(commaCounter == 1)
-					command = buffer.substr(begin, commaPosition - begin);
+				else if(buffer == "GetRemoteDesktopIcons")
+				{
+					__COUT__ << "Giving desktop icons to remote gateway..." << __E__;
+
+					// get icons and create comma-separated string based on user permissions
+					//	note: each icon has own permission threshold, so each user can have
+					//		a unique desktop icon experience.
+
+					// use latest context always from temporary configuration manager,
+					//	to get updated icons every time...
+					//(so icon changes do no require an ots restart)
+
+					ConfigurationManager                              tmpCfgMgr; // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
+					const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
+					const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
+
+					std::string iconString = "";  
+					// comma-separated icon string, 7 fields:
+					//				0 - caption 		= text below icon
+					//				1 - altText 		= text icon if no image given
+					//				2 - uniqueWin 		= if true, only one window is allowed,
+					// 										else  multiple instances of window 				
+					//				3 - permissions 	= security level needed to see icon 				
+					//				4 - picfn 			= icon image filename 				
+					//				5 - linkurl 		= url of the window to open
+					// 				6 - folderPath 		= folder and subfolder location '/' separated  
+					//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
+
+
+					bool getRemoteIcons = true;
+
+					bool firstIcon = true;
+					for(const auto& icon : icons)
+					{
+						//__COUTV__(icon.caption_);
+						//__COUTV__(icon.permissionThresholdString_);
+
+						//ignore permission level, and give all icons
+
+						//__COUTV__(icon.caption_);
+
+						if(getRemoteIcons)
+						{
+							__COUTV__(icon.windowContentURL_);
+							if(icon.windowContentURL_.size() > 4 && 
+								icon.windowContentURL_[0] == 'o' &&
+								icon.windowContentURL_[1] == 't' &&
+								icon.windowContentURL_[2] == 's' &&
+								icon.windowContentURL_[3] == ':')
+							{
+								__COUT__ << "Retrieving remote icons at " << icon.windowContentURL_ << __E__;
+
+								std::vector<std::string> parsedFields = StringMacros::getVectorFromString(icon.windowContentURL_,{':'});
+								__COUTV__(StringMacros::vectorToString(parsedFields));
+
+								if(parsedFields.size() == 3)
+								{
+									Socket      iconRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));
+
+									// ConfigurationTree configLinkNode = theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
+									// std::string ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
+									__COUTTV__(ipAddressForStateChangesOverUDP);
+									TransceiverSocket iconSocket(ipAddressForStateChangesOverUDP);
+									std::string remoteIconString = iconSocket.sendAndReceive(iconRemoteSocket,"GetRemoteDesktopIcons", 10 /*timeoutSeconds*/);
+									__COUTV__(remoteIconString);
+									continue;
+								}
+							}
+						} //end remote icon handling
+
+						// have icon access, so add to CSV string
+						if(firstIcon)
+							firstIcon = false;
+						else
+							iconString += ",";
+							
+
+						__COUTV__(icon.caption_);
+						iconString += icon.caption_;
+						iconString += "," + icon.alternateText_;
+						iconString += "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+						iconString += "," + std::string("1");  // set permission to 1 so the
+																// desktop shows every icon that the
+																// server allows (i.e., trust server
+																// security, ignore client security)
+						iconString += "," + icon.imageURL_;
+						iconString += "," + iconTable->getRemoteURL(&tmpCfgMgr, icon.windowContentURL_);
+						iconString += "," + icon.folderPath_;
+					}
+					__COUTV__(iconString);
+
+					sock.acknowledge(iconString, true /* verbose */);
+					continue;
+				} //end GetRemoteDesktopIcons
+				else if(!enableStateChanges)//else it is an FSM Command!
+				{
+					__COUT_WARN__ << "Skipping potential FSM Command because enableStateChanges=false" << __E__;
+					continue;
+				}
+
+
+				__COUT__ << "Received a remote FSM Command attempt!" << __E__;
+
+				size_t nCommas = std::count(buffer.begin(), buffer.end(), ',');
+				if(nCommas == 0)
+				{
+					__SS__ << "Unrecognized State Machine command :-" << buffer
+						<< "-. Format is FiniteStateMachineName,Command,Parameter(s). "
+							"Where Parameter(s) is/are optional."
+						<< __E__;
+					__COUT_ERR__ << ss.str();
+					if(acknowledgementEnabled)
+					{
+						__COUTT__ << "Ack'ing" << __E__;
+						sock.acknowledge(ss.str(), true /* verbose */);
+					}
+					continue;
+				}
+				begin        = 0;
+				commaCounter = 0;
+				parameters.clear();
+				while((commaPosition = buffer.find(',', begin)) != std::string::npos || commaCounter == nCommas)
+				{
+					if(commaCounter == nCommas)
+						commaPosition = buffer.size();
+					if(commaCounter == 0)
+						fsmName = buffer.substr(begin, commaPosition - begin);
+					else if(commaCounter == 1)
+						command = buffer.substr(begin, commaPosition - begin);
+					else
+						parameters.push_back(buffer.substr(begin, commaPosition - begin));
+					__COUT__ << "Word: " << buffer.substr(begin, commaPosition - begin) << __E__;
+
+					begin = commaPosition + 1;
+					++commaCounter;
+				}
+				__COUTV__(fsmName);
+				__COUTV__(command);
+				__COUTV__(StringMacros::vectorToString(parameters));
+
+
+				// set scope of mutex
+				{
+					// should be mutually exclusive with GatewaySupervisor main thread state
+					// machine accesses  lockout the messages array for the remainder of the
+					// scope  this guarantees the reading thread can safely access the
+					// messages
+					if(theSupervisor->VERBOSE_MUTEX)
+						__COUT__ << "Waiting for FSM access" << __E__;
+					std::lock_guard<std::mutex> lock(theSupervisor->stateMachineAccessMutex_);
+					if(theSupervisor->VERBOSE_MUTEX)
+						__COUT__ << "Have FSM access" << __E__;
+
+					errorStr = theSupervisor->attemptStateMachineTransition(
+						0, 0, command, fsmName, WebUsers::DEFAULT_STATECHANGER_USERNAME /*fsmWindowName*/, WebUsers::DEFAULT_STATECHANGER_USERNAME, parameters);
+				}
+
+				if(errorStr != "")
+				{
+					__SS__ << "UDP State Changer failed to execute command because of the "
+							"following error: "
+						<< errorStr;
+					__COUT_ERR__ << ss.str();
+					if(acknowledgementEnabled)
+						sock.acknowledge(errorStr, true /* verbose */);
+				}
 				else
-					parameters.push_back(buffer.substr(begin, commaPosition - begin));
-				__COUT__ << "Word: " << buffer.substr(begin, commaPosition - begin) << __E__;
-
-				begin = commaPosition + 1;
-				++commaCounter;
+				{
+					__SS__ << "Successfully executed state change command '" << command << ".'" << __E__;
+					__COUT_INFO__ << ss.str();
+					if(acknowledgementEnabled)
+						sock.acknowledge("Done", true /* verbose */);
+				}
+				
 			}
-			__COUTV__(fsmName);
-			__COUTV__(command);
-			__COUTV__(StringMacros::vectorToString(parameters));
-
-
-			// set scope of mutex
+			catch(...)
 			{
-				// should be mutually exclusive with GatewaySupervisor main thread state
-				// machine accesses  lockout the messages array for the remainder of the
-				// scope  this guarantees the reading thread can safely access the
-				// messages
-				if(theSupervisor->VERBOSE_MUTEX)
-					__COUT__ << "Waiting for FSM access" << __E__;
-				std::lock_guard<std::mutex> lock(theSupervisor->stateMachineAccessMutex_);
-				if(theSupervisor->VERBOSE_MUTEX)
-					__COUT__ << "Have FSM access" << __E__;
-
-				errorStr = theSupervisor->attemptStateMachineTransition(
-				    0, 0, command, fsmName, WebUsers::DEFAULT_STATECHANGER_USERNAME /*fsmWindowName*/, WebUsers::DEFAULT_STATECHANGER_USERNAME, parameters);
-			}
-
-			if(errorStr != "")
-			{
-				__SS__ << "UDP State Changer failed to execute command because of the "
-				          "following error: "
-				       << errorStr;
+				__SS__ << "Error was caught handling UDP command." << __E__;
+				try
+				{ throw; }
+				catch(const std::runtime_error& e)
+				{ ss << "Here is the error: " << e.what() << __E__;	}
+				catch(...)
+				{ ss << "Unrecognized error." << __E__;	}
+				
 				__COUT_ERR__ << ss.str();
 				if(acknowledgementEnabled)
-					sock.acknowledge(errorStr, true /* verbose */);
-			}
-			else
-			{
-				__SS__ << "Successfully executed state change command '" << command << ".'" << __E__;
-				__COUT_INFO__ << ss.str();
-				if(acknowledgementEnabled)
-					sock.acknowledge("Done", true /* verbose */);
+					sock.acknowledge(ss.str(), true /* verbose */);
 			}
 		}
 		else
@@ -1815,6 +2071,10 @@ try
 		activeStateMachineName_       = fsmName;
 		activeStateMachineWindowName_ = fsmWindowName;
 
+		if(activeStateMachineName_ == "")
+			__COUT_WARN__ << "The active state machine is an empty string, this is allowed for backwards compatibility, but may not be intentional! " <<
+				"Make sure you or your system admins understand why the active FSM name is blank." << __E__;
+
 		std::stringstream dumpSs;
 		// Check if run number should come from db, if so create a new condition record into database
 		try
@@ -1823,22 +2083,33 @@ try
 				CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
-				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
+				std::string runInfoPluginType = TableViewColumnInfo::DATATYPE_STRING_DEFAULT;
+				std::string dumpFormat = TableViewColumnInfo::DATATYPE_STRING_DEFAULT;
+				try
+				{
+					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
+					runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+					dumpFormat = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
+				}
+				catch(...) //ignore missing link
+				{ 
+					__COUT__ << "RunInfoPluginType not defined for FSM name '" <<
+						activeStateMachineName_ << "' - please setup a valid run info plugin type to enable external Run Number coordination and dumping configuration info to an external location." << __E__; 
+				} 
 
-				std::string runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
+				__COUTV__(dumpFormat);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						std::string dumpFormat = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
-
 						// dump configuration
 						CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
 							"",
 							dumpFormat,
-							"Configuration Alias: " + lastConfigurationAlias_ + "\n\n" + "Run note: " + StringMacros::decodeURIComponent(logEntry),
+							"Configuration Alias: " + lastConfigurationAlias_ + "\n\n" + 
+								"Run note: " + StringMacros::decodeURIComponent(logEntry),
 							theWebUsers_.getActiveUsersString(),
 							dumpSs);
 
@@ -1850,7 +2121,8 @@ try
 
 					if(runInfoInterface == nullptr)
 					{
-						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << 
+							" for configuration dump format " << dumpFormat << __E__;
 						__SS_THROW__;
 					}
 
@@ -2011,16 +2283,16 @@ try
 		}
 		parameters.addParameter("RunNumber", runNumber);
 	}
-	else if(!(command == "Halt" || 
+	else if(!(command ==RunControlStateMachine::HALT_TRANSITION_NAME || 
 				command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME || 
 				command == RunControlStateMachine::ERROR_TRANSITION_NAME ||		
-				command == "Fail" || 		
+				command == RunControlStateMachine::FAIL_TRANSITION_NAME || 		
 				command == RunControlStateMachine::STARTUP_TRANSITION_NAME ||		
-				command == "Initialize" || 		
-				command == "Abort" ||
-				command == "Pause" || 
-				command == "Resume" || 
-				command == "Stop" ))
+				command == RunControlStateMachine::INIT_TRANSITION_NAME || 		
+				command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
+				command == RunControlStateMachine::PAUSE_TRANSITION_NAME || 
+				command == RunControlStateMachine::RESUME_TRANSITION_NAME || 
+				command == RunControlStateMachine::STOP_TRANSITION_NAME ))
 	{		
 		__SS__ << "Error - illegal state machine command received '" << command <<
 					".'" << __E__;
@@ -2089,10 +2361,10 @@ catch(...)
 xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(xoap::MessageReference message)
 
 {
-	__COUT__ << "Soap Handler!" << __E__;
+	__COUT__ << "FSM Soap Handler!" << __E__;
 	stateMachineWorkLoopManager_.removeProcessedRequests();
 	stateMachineWorkLoopManager_.processRequest(message);
-	__COUT__ << "Done - Soap Handler!" << __E__;
+	__COUT__ << "Done - FSM Soap Handler!" << __E__;
 	return message;
 }  // end stateMachineXoapHandler()
 
@@ -2107,12 +2379,12 @@ bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 	stateMachineSemaphore_.take();
 	std::string command = SOAPUtilities::translate(stateMachineWorkLoopManager_.getMessage(workLoop)).getCommand();
 
-	__COUT__ << "Propagating command '" << command << "'..." << __E__;
+	__COUT__ << "Propagating FSM command '" << command << "'..." << __E__;
 
 	std::string reply = send(allSupervisorInfo_.getGatewayDescriptor(), stateMachineWorkLoopManager_.getMessage(workLoop));
 	stateMachineWorkLoopManager_.report(workLoop, reply, 100, true);
 
-	__COUT__ << "Done with command '" << command << ".' Reply = " << reply << __E__;
+	__COUT__ << "Done with FSM command '" << command << ".' Reply = " << reply << __E__;
 	stateMachineSemaphore_.give();
 
 	if(reply == "Fault")
@@ -2838,11 +3110,18 @@ try
 {
 	checkForAsyncError();
 
+	RunControlStateMachine::theProgressBar_.step();
+
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	makeSystemLogEntry("System halting.");
 
+	RunControlStateMachine::theProgressBar_.step();
+
 	broadcastMessage(theStateMachine_.getCurrentMessage());
+
+	__COUT__ << "Done halting." << __E__;
+	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionHalting()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -2906,6 +3185,8 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
+	__COUT__ << "Done shutting down." << __E__;
+	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionShuttingDown()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -2966,6 +3247,9 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
+	__COUT__ << "Done starting up." << __E__;
+	RunControlStateMachine::theProgressBar_.complete();
+
 }  // end transitionStartingUp()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -3013,6 +3297,10 @@ try
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 	__COUT__ << "Fsm current transition: " << theStateMachine_.getCurrentTransitionName(event->type()) << __E__;
 	__COUT__ << "Fsm final state: " << theStateMachine_.getTransitionFinalStateName(event->type()) << __E__;
+
+	__COUT__ << "Done initializing." << __E__;
+	RunControlStateMachine::theProgressBar_.complete();
+
 }  // end transitionInitializing()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -3085,6 +3373,10 @@ try
 	}
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
+
+	__COUT__ << "Done pausing." << __E__;
+	RunControlStateMachine::theProgressBar_.complete();
+
 }  // end transitionPausing()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -3147,6 +3439,9 @@ try
 	activeStateMachineRunStartTime = std::chrono::steady_clock::now();
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
+
+	__COUT__ << "Done resuming." << __E__;
+	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionResuming()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -3204,11 +3499,15 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
+	RunControlStateMachine::theProgressBar_.step();
+
 	SOAPParameters parameters("RunNumber");
 	SOAPUtilities::receive(theStateMachine_.getCurrentMessage(), parameters);
 
 	activeStateMachineRunNumber_ = parameters.getValue("RunNumber");
 	__COUTV__(activeStateMachineRunNumber_);
+
+	RunControlStateMachine::theProgressBar_.step();
 
 	// check if configuration dump is enabled on configure transition
 	{
@@ -3306,8 +3605,14 @@ try
 	activeStateMachineRunDuration_ms = 0;
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
+	RunControlStateMachine::theProgressBar_.step();
+
 	// save last started group name/key
 	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_, FSM_LAST_STARTED_GROUP_ALIAS_FILE);
+
+	__COUT__ << "Done starting run." << __E__;
+	RunControlStateMachine::theProgressBar_.complete();
+
 }  // end transitionStarting()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -3355,6 +3660,8 @@ try
 	activeStateMachineRunDuration_ms +=
 	    std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - activeStateMachineRunStartTime).count();
 
+	RunControlStateMachine::theProgressBar_.step();
+
 	// calculate run duration and make system log entry
 	{
 		int dur   = activeStateMachineRunDuration_ms;
@@ -3379,6 +3686,10 @@ try
 	}
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
+
+	__COUT__ << "Done stopping run." << __E__;
+	RunControlStateMachine::theProgressBar_.complete();
+
 }  // end transitionStopping()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -3784,8 +4095,8 @@ void GatewaySupervisor::broadcastMessageThread(GatewaySupervisor* supervisorPtr,
 
 //==============================================================================
 // broadcastMessage
-//	Broadcast state transition to all xdaq Supervisors.
-//		- Transition in order of priority as given by AllSupervisorInfo
+//	Broadcast state transition to all xdaq Supervisors and remote Gateway Supervisors.
+//		- Transition in order of, remote Gateways first, then priority as given by AllSupervisorInfo
 //	Update Supervisor Info based on result of transition.
 void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 {
@@ -3882,6 +4193,10 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		            broadcastThreadStructs_[i])
 		    .detach();
 	}  // end broadcast thread creation loop
+
+	RunControlStateMachine::theProgressBar_.step();
+
+	broadcastMessageToRemoteGateways(originalMessage);
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -4072,8 +4387,142 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		usleep(100 * 1000 /*100ms*/);  // sleep for exit time
 	}
 
-	__COUT__ << "Broadcast complete." << __E__;
+
+	RunControlStateMachine::theProgressBar_.step();
+
+	if(broadcastMessageToRemoteGatewaysComplete(originalMessage))
+	{
+		RunControlStateMachine::theProgressBar_.step();
+		__COUT__ << "Broadcast complete." << __E__;
+	}
 }  // end broadcastMessage()
+
+//==============================================================================
+void GatewaySupervisor::broadcastMessageToRemoteGateways(const xoap::MessageReference message)
+{
+	SOAPCommand commandObj = SOAPUtilities::translate(message);
+	std::string command = commandObj.getCommand();
+	__COUTV__(command);
+	
+
+	std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+	for(auto& remoteGatewayApp : remoteGatewayApps_)
+	{
+		//construct command params based on remote gateway settings
+		std::string commandAndParams = command;
+		if(commandObj.hasParameters())
+		{
+			//parameters over UDP are much simpler than xoap message, so filter
+			for(const auto& param : commandObj.getParameters())
+			{
+				__COUTTV__(param.first);
+				__COUTTV__(param.second);
+				if(param.first == "ConfigurationAlias")
+				{	
+					if(remoteGatewayApp.selected_config_alias != "") //replace 
+						commandAndParams += "," + //param.first + ":" + 
+							remoteGatewayApp.selected_config_alias;
+					else
+						commandAndParams += "," + //param.first + ":" + 
+							param.second;
+				}
+				else if(param.first == "Run Number")
+				{	
+					commandAndParams += "," + //param.first + ":" + 
+							param.second;
+				}
+
+				// else
+				// 	commandAndParams += "," + param.first + ":" + param.second;
+			}
+			__COUTV__(commandAndParams);
+		}
+
+		if(!remoteGatewayApp.fsm_included)
+		{
+			__COUTT__ << "Skipping excluded Remote gateway '" << 
+				remoteGatewayApp.appInfo.name << "' for FSM command = " << commandAndParams << __E__;
+			continue; //skip if not included
+		}
+
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt && 
+			(command == RunControlStateMachine::ERROR_TRANSITION_NAME || 
+			command == RunControlStateMachine::FAIL_TRANSITION_NAME || 
+			command == RunControlStateMachine::HALT_TRANSITION_NAME ||
+			command == RunControlStateMachine::ABORT_TRANSITION_NAME ))
+		{
+			__COUTT__ << "Skipping '" << remoteGatewayApp.getFsmMode() << "' Remote gateway '" << 
+				remoteGatewayApp.appInfo.name << "' for FSM command = " << commandAndParams << __E__;
+			continue; //skip if not included
+		}
+
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure && 
+			(remoteGatewayApp.appInfo.status != RunControlStateMachine::HALTED_STATE_NAME ||
+			command != RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
+		{
+			__COUTT__ << "Skipping '" << remoteGatewayApp.getFsmMode() << "' Remote gateway '" << 
+				remoteGatewayApp.appInfo.name << "' w/status = " << remoteGatewayApp.appInfo.status <<
+				"... for FSM command = " << commandAndParams << __E__;
+			continue; //skip if not included
+		}
+
+		__COUT__ << "Launching FSM command '" << commandAndParams << "' on Remote gateway '" << 
+			remoteGatewayApp.appInfo.name << "'..." << __E__;
+
+		remoteGatewayApp.command = commandAndParams;
+		remoteGatewayApp.fsmName = activeStateMachineName_; //fsmName will be prepended during command send
+		//force status for immediate user feedback
+		remoteGatewayApp.appInfo.status = "Launching " + commandAndParams;
+		remoteGatewayApp.appInfo.progress = 0;
+	}
+}  // end broadcastMessageToRemoteGateways()
+
+//==============================================================================
+bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::MessageReference message)
+{
+	std::string command = SOAPUtilities::translate(message).getCommand();
+	__COUTV__(command);
+
+	bool done = command == "Error"; //dont check for done if Error'ing
+	while(!done)
+	{
+		__COUT__ << "Checking " << remoteGatewayApps_.size() << " remote gateway(s) completion for command = " <<
+			command << __E__;
+
+		done = true;
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		for(auto& remoteGatewayApp : remoteGatewayApps_)
+		{
+			if(!(				
+				remoteGatewayApp.appInfo.progress == 100 || 
+				remoteGatewayApp.appInfo.status.find("Error") != std::string::npos ||
+				remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos
+				))
+			{
+				__COUT__ << "Remote gateway '" << remoteGatewayApp.appInfo.name << "' not done w/command '" <<
+					command << "' status = " << remoteGatewayApp.appInfo.status <<
+					",... progress = " << remoteGatewayApp.appInfo.progress << __E__;
+
+				done = false;
+			}
+			else 
+			{
+				__COUTT__ << "Done Remote gateway '" << remoteGatewayApp.appInfo.name << "' w/command '" <<
+					command << "' status = " << remoteGatewayApp.appInfo.status <<
+					",... progress = " << remoteGatewayApp.appInfo.progress << __E__;
+			}
+
+		}
+		if(!done) sleep(2);
+
+		checkForAsyncError();
+	}
+
+	__COUT__ << "Done with " << remoteGatewayApps_.size() << " remote gateway(s) command = " <<
+		command << __E__;
+
+	return true;
+}  // end broadcastMessageToRemoteGatewaysComplete()
 
 //==============================================================================
 // LoginRequest
@@ -4494,10 +4943,13 @@ try
 
 	// getDesktopIcons
 	// addDesktopIcon
+
+	// resetConsoleCounts
 	
 	// getRemoteSubsystems
 	// getRemoteSubsystemStatus
 	// commandRemoteSubsystem
+	// setRemoteSubsystemFsmIncludes
 
 	// resetUserTooltips
 	// silenceAllUserTooltips
@@ -5177,14 +5629,14 @@ try
 			// get icons and create comma-separated string based on user permissions
 			//	note: each icon has own permission threshold, so each user can have
 			//		a unique desktop icon experience.
-
+						
 			// use latest context always from temporary configuration manager,
 			//	to get updated icons every time...
 			//(so icon changes do no require an ots restart)
-
 			ConfigurationManager                              tmpCfgMgr; // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
 			const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
 			const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
+
 
 			std::string iconString = "";  
 			// comma-separated icon string, 7 fields:
@@ -5229,6 +5681,8 @@ try
 						icon.windowContentURL_[2] == 's' &&
 						icon.windowContentURL_[3] == ':')
 					{
+						continue; //skip retrieval and use cache!
+
 						__COUT__ << "Retrieving remote icons at " << icon.windowContentURL_ << __E__;
 
 						std::vector<std::string> parsedFields = StringMacros::getVectorFromString(icon.windowContentURL_,{':'});
@@ -5319,7 +5773,56 @@ try
 			}
 			// //__COUTV__(iconString);
 
-			xmlOut.addTextElementToData("iconList", iconString);
+			//also return remote gateway icons
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteGatewayApps = remoteGatewayApps_;
+			}
+
+			for(const auto& remoteGatewayApp : remoteGatewayApps)
+			{				
+				if(remoteGatewayApp.iconString == "") 
+				{
+					//add error if it has to do with icons
+					if(remoteGatewayApp.error.find("desktop icons") != std::string::npos)
+						xmlOut.addTextElementToData("Error", remoteGatewayApp.error);
+
+					//add placeholder "Loading icon"
+					if(firstIcon)
+						firstIcon = false;
+					else
+						iconString += ",";
+					
+					if(remoteGatewayApp.parentIconFolderPath != "")
+						iconString += remoteGatewayApp.parentIconFolderPath + " icons loading..."; //icon.caption_;
+					else if(remoteGatewayApp.user_data_path_record != "")
+						iconString += remoteGatewayApp.user_data_path_record + " icons loading..."; //icon.caption_;
+					else
+						iconString += remoteGatewayApp.appInfo.name + " icons loading..."; //icon.caption_;
+						
+					iconString += ",X"; //icon.alternateText_;
+					iconString += ",1";//std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+					iconString += ",0";//std::string("1");  // set permission to 1 so the
+														// desktop shows every icon that the
+														// server allows (i.e., trust server
+														// security, ignore client security)
+					iconString += ",";//icon.imageURL_;
+					iconString += ",";//icon.windowContentURL_;
+					iconString += ",";//icon.folderPath_;
+				
+					continue;
+				}
+
+				if(firstIcon)
+					firstIcon = false;
+				else
+					iconString += ",";
+
+				iconString += remoteGatewayApp.iconString;
+			}
+
+			xmlOut.addTextElementToData("iconList", iconString);			
 		}
 		else if(requestType == "addDesktopIcon")
 		{
@@ -5337,7 +5840,41 @@ try
 			}
 			else
 				__COUT__ << "Failed dynamic icon add." << __E__;
-		}
+		} //end addDesktopIcon
+		else if(requestType == "resetConsoleCounts")
+		{
+			//zero out console count and retake first messages
+
+			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
+			{
+				const auto& appInfo = it.second;
+				if(appInfo.isTypeConsoleSupervisor())
+				{
+					xoap::MessageReference tempMessage = SOAPUtilities::makeSOAPMessageReference("ResetConsoleCounts");
+					std::string reply = send(appInfo.getDescriptor(), tempMessage);
+
+					if(reply != "Done")
+					{
+						__SUP_SS__ << "Error while resetting console counts of Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
+			       			<< "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "].\n\n"
+							<< reply << __E__;
+						__SUP_SS_THROW__;
+					}
+					__SUP_COUT__ << "Reset console counts of Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
+			       			<< "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "]." << __E__;
+				}
+			} //end loop for Console Supervisors
+
+			//for user display feedback, clear local cached values also
+			std::lock_guard<std::mutex> lock(systemStatusMutex_); //lock for rest of scope
+			lastConsoleErrTime_ = "0"; lastConsoleErr_ = "";
+			lastConsoleWarnTime_ = "0"; lastConsoleWarn_ = "";
+			lastConsoleInfoTime_ = "0"; lastConsoleInfo_ = "";
+			firstConsoleErrTime_ = "0"; firstConsoleErr_ = "";
+			firstConsoleWarnTime_ = "0"; firstConsoleWarn_ = "";
+			firstConsoleInfoTime_ = "0"; firstConsoleInfo_ = "";
+
+		} //end resetConsoleCounts
 		else if(requestType == "getRemoteSubsystems" || requestType == "getRemoteSubsystemStatus")
 		{
 			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");			
@@ -5392,10 +5929,11 @@ try
 
 			{ //get system status 
 				//(a la getCurrentState request)
+								
+				addStateMachineStatusToXML(xmlOut, fsmName);	
 
 				std::lock_guard<std::mutex> lock(systemStatusMutex_); //lock for rest of scope
 
-				addStateMachineStatusToXML(xmlOut, fsmName);	
 				xmlOut.addTextElementToData("last_logbook_entry", lastLogbookEntry_);
 				xmlOut.addTextElementToData("last_logbook_entry_time", lastLogbookEntryTime_?StringMacros::getTimestampString(lastLogbookEntryTime_):"0");
 				auto msgPair = theWebUsers_.getLastSystemMessage();
@@ -5411,20 +5949,26 @@ try
 				xmlOut.addTextElementToData("last_console_err_msg_time", lastConsoleErrTime_);
 				xmlOut.addTextElementToData("last_console_warn_msg_time", lastConsoleWarnTime_);
 				xmlOut.addTextElementToData("last_console_info_msg_time", lastConsoleInfoTime_);
+				xmlOut.addTextElementToData("first_console_err_msg", firstConsoleErr_);
+				xmlOut.addTextElementToData("first_console_warn_msg", firstConsoleWarn_);
+				xmlOut.addTextElementToData("first_console_info_msg", firstConsoleInfo_);
+				xmlOut.addTextElementToData("first_console_err_msg_time", firstConsoleErrTime_);
+				xmlOut.addTextElementToData("first_console_warn_msg_time", firstConsoleWarnTime_);
+				xmlOut.addTextElementToData("first_console_info_msg_time", firstConsoleInfoTime_);
 		
 			} //end get system status
 
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps; //local copy
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
 			{ //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-				__SUP_COUTV__(remoteGatewayApps_.size());
-				remoteApps = remoteGatewayApps_;
+				__SUP_COUTVS__(22,remoteGatewayApps_.size());
+				remoteGatewayApps = remoteGatewayApps_;
 				if(remoteGatewayApps_.size())
-					__SUP_COUT__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+					__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
 			}
 
 			std::string accumulateErrors = "";
-			for(const auto& remoteSubsystem : remoteApps)
+			for(const auto& remoteSubsystem : remoteGatewayApps)
 			{
 				xmlOut.addTextElementToData("subsystem_name", remoteSubsystem.appInfo.name);
 				xmlOut.addTextElementToData("subsystem_url", remoteSubsystem.appInfo.url);
@@ -5448,20 +5992,70 @@ try
 				{
 					if(remoteSubsystem.user_data_path_record == "")
 					{
-						__SUP_SS__ << "Failed to retrieve the list of Configuration Aliases for Remote Subsystem '" <<
-							remoteSubsystem.appInfo.name << ".' Remote Subsystems are specified through their Desktop Icon record. "
-							"Please specify a valid User Data Path record as the Desktop Icon AlternateText field, targeting a UID in the SubsystemUserDataPathsTable." << __E__;
-						__SUP_SS_THROW__;
+						// __SUP_SS__;
+						__SUP_COUT_WARN__ << "Remote Subsystem '" <<
+							remoteSubsystem.appInfo.name << "' user data path is empty. Perhaps the system is still booting up. If the problem persists, note that Remote Subsystems are specified through their Desktop Icon record. "
+							"Please specify a valid User Data Path record as the Desktop Icon AlternateText field, targeting a UID in the SubsystemUserDataPathsTable (or contact system admins for assitance)." << __E__;
+						// __SUP_SS_THROW__;
 					}					
 				}
 				xmlOut.addTextElementToData("subsystem_configAliasChoices", StringMacros::setToString(remoteSubsystem.config_aliases,{','}) );	//CSV list of aliases
 				xmlOut.addTextElementToData("subsystem_fsmMode", remoteSubsystem.getFsmMode());
+				xmlOut.addTextElementToData("subsystem_fsmIncluded", remoteSubsystem.fsm_included?"1":"0");
 			} //end remote app loop
 
 			if(accumulateErrors != "")
 				xmlOut.addTextElementToData("system_error", accumulateErrors);
 
 		} //end getRemoteSubsystems
+		else if(requestType == "setRemoteSubsystemFsmControl")
+		{
+			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");		 // * for all
+			std::string setValue  = CgiDataUtilities::getData(cgiIn, "setValue"); 
+			std::string controlType  = CgiDataUtilities::getData(cgiIn, "controlType");		 // include, mode
+
+			setValue = StringMacros::decodeURIComponent(setValue);
+			__SUP_COUTV__(targetSubsystem);
+			__SUP_COUTV__(setValue);
+			__SUP_COUTV__(controlType);
+
+			bool changedSomething = false;
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			for(auto& remoteGatewayApp : remoteGatewayApps_)
+				if(targetSubsystem == "*" || targetSubsystem == remoteGatewayApp.appInfo.name)
+				{
+					changedSomething = true;
+					if(controlType == "include")
+						remoteGatewayApp.fsm_included = setValue == "1"?true:false;
+					if(controlType == "configAlias")
+					{
+						if(remoteGatewayApp.config_aliases.find(setValue) == 
+							remoteGatewayApp.config_aliases.end())
+						{
+							__SUP_SS__ << "Configuration Alias value '" << setValue << "' for target Subsystem '" << 
+								remoteGatewayApp.appInfo.name << "' is not found in list of Configuration Aliases: " << 
+								StringMacros::setToString(remoteGatewayApp.config_aliases) << __E__;
+							__SUP_SS_THROW__;
+						}
+						remoteGatewayApp.selected_config_alias = setValue;
+					}
+					else if(controlType == "mode")
+						remoteGatewayApp.fsm_mode = 
+							setValue == "Do Not Halt"?RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt:
+								(setValue == "Only Configure"?RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure:
+									RemoteGatewayInfo::FSM_ModeTypes::Follow_FSM);
+				}
+			
+			if(!changedSomething)
+			{
+				__SUP_SS__ << "Did not find any matching subsystems for target '" << targetSubsystem << 
+							"' attempted!" << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			saveRemoteGatewaySettings();
+
+		} //end setRemoteSubsystemFsmIncludes
 		else if(requestType == "commandRemoteSubsystem")
 		{
 			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");		
@@ -5489,23 +6083,27 @@ try
 
 			bool found = false;
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-			for(auto& remoteGatewayApps : remoteGatewayApps_)
+			for(auto& remoteGatewayApp : remoteGatewayApps_)
 			{
-				if(targetSubsystem == remoteGatewayApps.appInfo.name)
+				if(targetSubsystem == remoteGatewayApp.appInfo.name)
 				{
-					if(remoteGatewayApps.command != "")
+					if(remoteGatewayApp.command != "")
 					{
 						__SUP_SS__ << "Can not target the remote subsystem '" << targetSubsystem << 
 							"' with command '" << command << "' which already has a pending command '"
-							<< remoteGatewayApps.command << ".' Please try again after the pending command is sent." << __E__;
+							<< remoteGatewayApp.command << ".' Please try again after the pending command is sent." << __E__;
 						__SUP_SS_THROW__;					
 					}
-					remoteGatewayApps.error = ""; //clear to see result of this command
-					remoteGatewayApps.command = command + (parameter != ""?("," + parameter):"");
-					remoteGatewayApps.fsmName = fsmName;
+					remoteGatewayApp.error = ""; //clear to see result of this command
+					remoteGatewayApp.command = command + (parameter != ""?("," + parameter):"");
+					
+					//for non-FSM commands, do not modify fsmName
+					if(command != "ResetConsoleCounts")
+						remoteGatewayApp.fsmName = fsmName;
+
 					//force status for immediate user feedback
-					remoteGatewayApps.appInfo.status = "Launching " + command;
-					remoteGatewayApps.appInfo.progress = 0;
+					remoteGatewayApp.appInfo.status = "Launching " + command;
+					remoteGatewayApp.appInfo.progress = 0;
 					found = true;
 				}
 			} //end search for targetSubsystem
@@ -5602,9 +6200,15 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 
 	xmlOut.addTextElementToData("in_transition", theStateMachine_.isInTransition() ? "1" : "0");
 	if(theStateMachine_.isInTransition())
+	{
 		xmlOut.addTextElementToData("transition_progress", RunControlStateMachine::theProgressBar_.readPercentageString());
+		xmlOut.addTextElementToData("current_transition", theStateMachine_.getCurrentTransitionName());
+	}
 	else
+	{	
 		xmlOut.addTextElementToData("transition_progress", "100");
+		xmlOut.addTextElementToData("current_transition", "");
+	}
 	xmlOut.addTextElementToData("time_in_state", std::to_string(theStateMachine_.getTimeInState()));
 
 
@@ -6294,7 +6898,6 @@ unsigned int GatewaySupervisor::getNextRunNumber(const std::string& fsmNameIn)
 		if(!runNumberFile.is_open())
 		{
 			__SS__ << "Error. Can't create file: " << runNumberFileName << __E__;
-			__COUT_ERR__ << ss.str();
 			__SS_THROW__;
 		}
 	}
@@ -6320,7 +6923,6 @@ bool GatewaySupervisor::setNextRunNumber(unsigned int runNumber, const std::stri
 	if(!runNumberFile.is_open())
 	{
 		__SS__ << "Can't open file: " << runNumberFileName << __E__;
-		__COUT__ << ss.str();
 		__SS_THROW__;
 	}
 	std::stringstream runNumberStream;
@@ -6329,6 +6931,132 @@ bool GatewaySupervisor::setNextRunNumber(unsigned int runNumber, const std::stri
 	runNumberFile.close();
 	return true;
 }  // end setNextRunNumber()
+
+//==============================================================================
+// loadRemoteGatewaySettings
+//
+//	 If editing remoteGatewayApps_, assume already locked remoteGatewayAppsMutex_
+//
+//	Load from file into vector of Remote Gateways passed by reference.
+//	onlyNotFound := load only settings for remoteGateways not currently in vector (keep existing settings, e.g. right before a save)
+void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways,
+	bool onlyNotFound /* = false */) const
+{	
+	std::string filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" + REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME;
+	__SUP_COUTV__(filepath);
+
+	std::ifstream settingsFile(filepath.c_str());
+	if(!settingsFile.is_open())
+	{
+		__COUT__ << "Can't open Remote Gateway settings file (assuming no settings yet!): " << filepath << __E__;
+
+		__COUT__ << "Creating empty Remote Gateway settings file: " << filepath << __E__;
+		FILE* fp = fopen(filepath.c_str(), "w");
+		fprintf(fp, "\n");
+		fclose(fp);
+
+		settingsFile.open(filepath.c_str());
+		if(!settingsFile.is_open())
+		{
+			__SS__ << "Error. Can't create or load Remote Gateway settings file: " << filepath << __E__;
+			__SS_THROW__;
+		}
+	}
+
+	size_t NUM_FIELDS = 3; //name, fsmMode, included
+	std::vector<std::string> values;
+
+	bool done = false;
+    do  // Read each line from the file
+	{  
+		size_t i=0;
+		for(i=0; i<NUM_FIELDS; ++i)
+		{
+			if(i >= values.size()) values.push_back(""); //init values vector
+
+			if(!std::getline(settingsFile, values[i]))
+			{
+				//no more lines left
+				if(i) //at illegal moment mid-record?
+				{
+					settingsFile.close();
+					__SS__ << "Error. Illegal file format in Remote Gateway settings file: " << filepath << __E__;
+					__SS_THROW__;
+				}
+				//else end is correctly at record boundary
+				done = true;
+				break;
+			}
+			if(values[i] == "") //do not allow blank lines
+			{
+				//rewind
+				--i;
+				continue;
+			}
+		} //end record value load
+		if(done) break;
+
+		//at this point values vector complete for Remote Gateway
+
+		bool found = false;
+		for(i=0; i<remoteGateways.size(); ++i)
+			if(values[0] == remoteGateways[i].appInfo.name)
+			{
+				found = true; 
+				break;
+			}
+
+		if(!found) //create Remote Gateway (and i will be correctly pointing to back())		
+		{
+			remoteGateways.push_back(GatewaySupervisor::RemoteGatewayInfo());
+			remoteGateways[i].appInfo.name = values[0];
+		}
+		else if(onlyNotFound)
+			continue; //skip modifying current settings
+
+		
+		remoteGateways[i].fsm_mode = values[1] == "Do Not Halt"?RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt:
+							(values[1] == "Only Configure"?RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure:
+								RemoteGatewayInfo::FSM_ModeTypes::Follow_FSM);
+		remoteGateways[i].fsm_included = values[2] == "1"?true:false;
+
+		__SUP_COUT__ << "Loaded Remote Gateway '" << remoteGateways[i].appInfo.name << "' ==> " <<
+			remoteGateways[i].getFsmMode() << " :" << remoteGateways[i].fsm_included << __E__;
+
+	} while (1); //end file read loop
+
+	settingsFile.close();
+} //end loadRemoteGatewaySettings()
+
+//==============================================================================
+void GatewaySupervisor::saveRemoteGatewaySettings() const
+{
+	std::string filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" + REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME;
+	__SUP_COUTV__(filepath);
+
+
+	std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGateways = remoteGatewayApps_;
+
+	//load existing settings for remote gateways not present
+	loadRemoteGatewaySettings(remoteGateways, true /* onlyNotFound*/);
+
+
+	std::ofstream settingsFile(filepath.c_str());
+	if(!settingsFile.is_open())
+	{
+		__SS__ << "Can't open Remote Gateway settings file: " << filepath << __E__;
+		__SS_THROW__;
+	}
+
+	for(size_t i=0; i<remoteGateways.size(); ++i)
+	{
+		settingsFile << remoteGateways[i].appInfo.name << __E__;
+		settingsFile << remoteGateways[i].getFsmMode() << __E__;
+		settingsFile << std::string(remoteGateways[i].fsm_included?"1":"0") << __E__;
+	}
+
+	settingsFile.close();
+}  // end saveRemoteGatewaySettings()
 
 //==============================================================================
 void GatewaySupervisor::handleGetApplicationIdRequest(AllSupervisorInfo* allSupervisorInfo, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut)

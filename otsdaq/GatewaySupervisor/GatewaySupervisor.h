@@ -150,6 +150,8 @@ class WorkLoopManager;
 																						const std::vector<std::string>& parameters,
 																						const std::string& logEntry = "");
 		void        					broadcastMessage								(xoap::MessageReference msg);
+		void        					broadcastMessageToRemoteGateways				(const xoap::MessageReference msg);
+		bool        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg);
 
 		struct BroadcastMessageIterationsDoneStruct
 		{
@@ -293,11 +295,12 @@ class WorkLoopManager;
 		int					activeStateMachineRunDuration_ms; // For paused runs, don't count time spent in pause state
 
 
-		std::mutex			systemStatusMutex_;		
+		std::mutex			systemStatusMutex_;	
 		std::string 		lastLogbookEntry_;
 		time_t				lastLogbookEntryTime_ = 0;
 
 		std::string 		lastConsoleErr_, lastConsoleWarn_, lastConsoleInfo_, lastConsoleErrTime_, lastConsoleWarnTime_, lastConsoleInfoTime_;
+		std::string 		firstConsoleErr_, firstConsoleWarn_, firstConsoleInfo_, firstConsoleErrTime_, firstConsoleWarnTime_, firstConsoleInfoTime_;		
 		size_t				systemConsoleErrCount_ = 0, systemConsoleWarnCount_ = 0, systemConsoleInfoCount_ = 0;
 
 		std::pair<std::string /*group name*/, TableGroupKey>
@@ -345,6 +348,7 @@ public:	//used by remote subsystem control and status
 
 			std::string 						selected_config_alias; //used for remote gateway subapp control
 			std::set<std::string> 				config_aliases; //used for remote gateway subapp control
+			std::string 						iconString, parentIconFolderPath; //used for desktop icons
 
 			enum class FSM_ModeTypes //FSM Modes: 'Follow FSM,' 'Do not Halt' (artdaq),  or 'Only Configure' (DCS/DQM)
 			{
@@ -353,6 +357,7 @@ public:	//used by remote subsystem control and status
 				OnlyConfigure, //(e.g. for DCS/DQM)
 			};
 			FSM_ModeTypes 						fsm_mode = FSM_ModeTypes::Follow_FSM; //used for remote gateway subapp control
+			bool								fsm_included = true; 
 
 			std::string							getFsmMode() const { 
 				switch(fsm_mode)
@@ -370,8 +375,11 @@ public:	//used by remote subsystem control and status
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
 		std::mutex											remoteGatewayAppsMutex_;
 
-		static void 				CheckRemoteGatewayStatus(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, int portForReverseLoginOverUDP);
-		static void 				SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
+		static void 				CheckRemoteGatewayStatus	(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, int portForReverseLoginOverUDP);
+		static void 				SendRemoteGatewayCommand	(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
+		static void 				GetRemoteGatewayIcons		(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
+		void						loadRemoteGatewaySettings	(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways, bool onlyNotFound = false) const;
+		void						saveRemoteGatewaySettings	(void) const;
 
 		time_t		 				getSupervisorUptime				(void) const { return time(0) - constructedTime_;}
 		std::string	 				getSupervisorUptimeString		(void) const { // a la CoreSupervisorBase::getStatusProgressDetail(void)

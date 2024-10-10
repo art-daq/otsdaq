@@ -1301,6 +1301,8 @@ uint64_t WebUsers::searchActiveSessionDatabaseForCookie(const std::string& cooki
 //	returns userId if login verified, else -1
 uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, bool refresh, const std::string& ip)
 {
+	__COUTTV__(cookieCode);
+	remoteLoginVerificationEnabledBlackoutTime_ = 0;
 	if(!remoteLoginVerificationSocket_)  //instantiate socket first time needed
 	{
 		if(!remoteLoginVerificationPort_)
@@ -1314,6 +1316,8 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, b
 		
 		remoteLoginVerificationSocket_ = std::make_unique<TransceiverSocket>(remoteLoginVerificationIP_);
 		remoteLoginVerificationSocket_->initialize();
+
+		remoteLoginVerificationSocketTarget_ = std::make_unique<Socket>(remoteLoginVerificationIP_,remoteLoginVerificationPort_);		
 	}
 
 	//check if cookie code is cached locally
@@ -1336,8 +1340,8 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, b
 		(refresh?"1":"0") + "," + ip;
 
 	__COUTV__(request);
-	Socket      gatewayRemoteSocket(remoteLoginVerificationIP_,remoteLoginVerificationPort_);		
-	std::string requestResponseString = remoteLoginVerificationSocket_->sendAndReceive(gatewayRemoteSocket, request, 10 /*timeoutSeconds*/);
+	
+	std::string requestResponseString = remoteLoginVerificationSocket_->sendAndReceive(*remoteLoginVerificationSocketTarget_, request, 10 /*timeoutSeconds*/);
 	__COUTV__(requestResponseString);
 
 	//from response... extract refreshedCookieCode, permissions, userWithLock, username, and display name
@@ -2022,12 +2026,13 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 	uint64_t i, j, userId = NOT_FOUND_IN_DATABASE, userSession = NOT_FOUND_IN_DATABASE;
 
 	__COUTV__(CareAboutCookieCodes_);
-	//__COUT__ << "refresh cookie " << refresh << __E__;
+	__COUTT__ << "refresh cookie " << refresh << __E__;
+	__COUTTV__(cookieCode);
 
 	//always go remote if enabled
 	try
 	{
-		if(remoteLoginVerificationEnabled_ && 
+		if(remoteLoginVerificationEnabled_ && time(0) > remoteLoginVerificationEnabledBlackoutTime_ &&
 			(userId = checkRemoteLoginVerification(cookieCode, refresh, ip)) != NOT_FOUND_IN_DATABASE)
 		{		
 			// remote verify success!
@@ -2038,19 +2043,22 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 	catch(...)
 	{
 		__COUT_WARN__ << "Ignoring exception during remote login verification." << __E__;
+
+		//Disable remote login in the case that remote verifier is down
+		if(!CareAboutCookieCodes_ && remoteLoginVerificationEnabled_ && 
+			remoteLoginVerificationEnabledBlackoutTime_ == 0)
+		{
+			remoteLoginVerificationEnabled_ = false;
+			remoteLoginVerificationEnabledBlackoutTime_ = time(0) + 5*60;
+			__COUT_INFO__ << "Disabled remote login until " << StringMacros::getTimestampString(remoteLoginVerificationEnabledBlackoutTime_) << __E__;
+		}
 	}
 
 	if(remoteLoginVerificationEnabled_ && userId == NOT_FOUND_IN_DATABASE)
 		__COUTT__ << "Remote login verification failed." << __E__;
 
 	if(!CareAboutCookieCodes_ && userId == NOT_FOUND_IN_DATABASE)  // No Security, so grant admin
-	{
-		if(remoteLoginVerificationEnabled_)
-		{
-			remoteLoginVerificationEnabled_ = false;
-			__COUT_INFO__ << "Disabled remote login." << __E__;
-		}
-
+	{		
 		if(userPermissions)
 			*userPermissions =
 			    std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>({{WebUsers::DEFAULT_USER_GROUP, WebUsers::PERMISSION_LEVEL_ADMIN}});
@@ -2063,6 +2071,21 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 
 		if(cookieCode.size() != COOKIE_CODE_LENGTH)
 			cookieCode = genCookieCode();  // return "dummy" cookie code
+
+		
+		if(remoteLoginVerificationEnabled_) //add admin session to Remote Sessions for quick verify
+		{
+			//fill in Remote Session and User info to cache for next login attempt
+
+			while(RemoteSessions_.find(cookieCode) != RemoteSessions_.end()) 
+				cookieCode = genCookieCode(); // regenerate on the off chance of collissions
+			ActiveSession& newRemoteSession = RemoteSessions_[cookieCode]; //construct remote ActiveSession
+			newRemoteSession.cookieCode_ = cookieCode;
+			newRemoteSession.ip_ = ip;
+			newRemoteSession.userId_ = getAdminUserID();
+			newRemoteSession.sessionIndex_ = 0;
+			newRemoteSession.startTime_ = time(0);	
+		}
 
 		return true;
 	}
@@ -2184,6 +2207,7 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 			//	<< __E__;
 
 			__COUT__ << "Found expired active sessions: #" << (i + 1) << " of " << ActiveSessions_.size() << __E__;
+			__COUTTV__(ActiveSessions_[i].cookieCode_);
 
 			tmpUid = ActiveSessions_[i].userId_;
 			ActiveSessions_.erase(ActiveSessions_.begin() + i);

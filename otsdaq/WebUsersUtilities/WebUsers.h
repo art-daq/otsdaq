@@ -669,9 +669,11 @@ class WebUsers
 
 	std::mutex				webUserMutex_;
 
-	std::unique_ptr<TransceiverSocket> remoteLoginVerificationSocket_; //use to ask remote gateway for login verification
+	std::unique_ptr<TransceiverSocket> 	remoteLoginVerificationSocket_; //use to ask remote gateway for login verification
+	std::unique_ptr<Socket> 			remoteLoginVerificationSocketTarget_; 
 
   public:
+  	std::atomic<time_t>			remoteLoginVerificationEnabledBlackoutTime_ = 0;
 	std::atomic<bool>			remoteLoginVerificationEnabled_ = false; //true if this supervisor is under control of a remote supervisor
 	std::string					remoteLoginVerificationIP_;   //IP of remote Gateway to be used for login verification
 	int							remoteLoginVerificationPort_; //Port of remote Gateway to be used for login verification
