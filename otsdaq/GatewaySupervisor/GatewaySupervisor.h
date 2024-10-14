@@ -68,10 +68,9 @@ class WorkLoopManager;
 		void 						request(xgi::Input* in, xgi::Output* out);
 		void 						tooltipRequest(xgi::Input* in, xgi::Output* out);
 
-		void						addStateMachineStatusToXML		(HttpXmlDocument& xmlOut,
-																	const std::string& fsmName);
-		void						addFilteredConfigAliasesToXML	(HttpXmlDocument& xmlOut,
-																	const std::string& fsmName);
+		void						addStateMachineStatusToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName, bool getRunNumber = true);
+		void						addFilteredConfigAliasesToXML	(HttpXmlDocument& xmlOut, const std::string& fsmName);
+		void						addRequiredFsmLogInputToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName);
 
 		// State Machine requests handlers
 		void 						stateMachineXgiHandler(xgi::Input* in, xgi::Output* out);
@@ -129,7 +128,10 @@ class WorkLoopManager;
 
 	private:
 		unsigned int 					getNextRunNumber								(const std::string& fsmName = "");
-		bool 							setNextRunNumber								(unsigned int runNumber, const std::string& fsmName = "");
+		void 							setNextRunNumber								(unsigned int runNumber, const std::string& fsmName = "");
+		std::string 					getLastLogEntry									(const std::string& logType, const std::string& fsmName = "");
+		void 							setLastLogEntry									(const std::string& logType, const std::string& logEntry, const std::string& fsmName = "");
+
 
 		static xoap::MessageReference 	lastTableGroupRequestHandler					(const SOAPParameters& parameters);
 		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr);
@@ -148,7 +150,7 @@ class WorkLoopManager;
 																						const std::string& fsmWindowName,
 																						const std::string& username,
 																						const std::vector<std::string>& parameters,
-																						const std::string& logEntry = "");
+																						std::string logEntry = "");
 		void        					broadcastMessage								(xoap::MessageReference msg);
 		void        					broadcastMessageToRemoteGateways				(const xoap::MessageReference msg);
 		bool        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg);
@@ -288,7 +290,13 @@ class WorkLoopManager;
 
 		std::string 		activeStateMachineName_;  // when multiple state machines, this is the name of the state machine which executed the configure transition
 		std::string 		activeStateMachineWindowName_;
-		std::string			activeStateMachineConfigureLogEntry_, activeStateMachineStartLogEntry_;
+		std::string 		activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; //cached at Configure transition
+		bool				activeStateMachineConfigurationDumpOnRunEnable_, activeStateMachineConfigurationDumpOnConfigureEnable_; //cached at Configure transition
+		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; //cached at Configure transition
+		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; //cached at Configure transition
+		std::string 		activeStateMachineRunInfoPluginType_; //cached at Configure transition
+		std::map<std::string /* fsmName */, std::string /* logEntry */>			
+							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_;
 		std::string 		activeStateMachineRunNumber_;
 		std::chrono::steady_clock::time_point 
 							activeStateMachineRunStartTime;
@@ -339,7 +347,7 @@ public:	//used by remote subsystem control and status
 			SupervisorInfo::SubappInfo 			appInfo;
 
 			std::string 						command, fsmName; //when not "", need to send 
-			std::string							error;
+			std::string							error, config_dump;
 			size_t								ignoreStatusCount = 0; //if non-zero, do not ask for status
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;

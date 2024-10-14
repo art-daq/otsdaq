@@ -337,7 +337,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 
 	// if already Halted, respond to Initialize with "done"
 	//	(this avoids race conditions involved with artdaq mpi reset)
-	if(command == "Initialize" && currentState == RunControlStateMachine::HALTED_STATE_NAME)
+	if(command == RunControlStateMachine::INIT_TRANSITION_NAME && 
+		currentState == RunControlStateMachine::HALTED_STATE_NAME)
 	{
 		__GEN_COUT__ << "Already Initialized.. ignoring Initialize command." << std::endl;
 
@@ -345,7 +346,18 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 		return SOAPUtilities::makeSOAPMessageReference(result);
 	}
 
-	if(command == RunControlStateMachine::HALT_TRANSITION_NAME && currentState == RunControlStateMachine::FAILED_STATE_NAME)
+	if(command == RunControlStateMachine::INIT_TRANSITION_NAME && 
+		currentState == RunControlStateMachine::FAILED_STATE_NAME)
+	{
+		__GEN_COUT__ << "Converting Initialize command to Halt, since currently in " <<
+						currentState << " state."
+					<< std::endl;
+		command = RunControlStateMachine::HALT_TRANSITION_NAME;
+		message = SOAPUtilities::makeSOAPMessageReference(command);
+	}
+
+	if(command == RunControlStateMachine::HALT_TRANSITION_NAME && 
+		currentState == RunControlStateMachine::FAILED_STATE_NAME)
 	{
 		__GEN_COUT__ << "Clearing Errors after failure..." << std::endl;
 		theStateMachine_.setErrorMessage("", false /*append*/);  // clear error message
@@ -372,20 +384,29 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 			 (asyncStopExceptionReceived_ && command == RunControlStateMachine::STOP_TRANSITION_NAME)))
 			theStateMachine_.setErrorMessage("", false /*append*/);  // clear error message
 
-		if(command == RunControlStateMachine::HALT_TRANSITION_NAME && currentState == RunControlStateMachine::INITIAL_STATE_NAME)
+		if(command == RunControlStateMachine::HALT_TRANSITION_NAME && 
+			currentState == RunControlStateMachine::INITIAL_STATE_NAME)
 		{
-			__GEN_COUT__ << "Converting Halt command to Initialize, since currently in "
-							"Initialized state."
-						<< std::endl;
-			command = "Initialize";
+			command = RunControlStateMachine::INIT_TRANSITION_NAME;
+			__GEN_COUT__ << "Converting Halt command to " << command << ", since currently in " <<
+							currentState << " state." << std::endl;
 			message = SOAPUtilities::makeSOAPMessageReference(command);
 		}
-		if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME && currentState == RunControlStateMachine::INITIAL_STATE_NAME)
+		if(command == RunControlStateMachine::HALT_TRANSITION_NAME && 
+			(currentState == RunControlStateMachine::PAUSED_STATE_NAME || 
+			currentState == RunControlStateMachine::RUNNING_STATE_NAME))
 		{
-			__GEN_COUT__ << "Pre-empting Configure command with Initialize, since currently in "
-							"Initialized state."
-						<< std::endl;
-			std::string precommand = "Initialize";
+			command = RunControlStateMachine::ABORT_TRANSITION_NAME;
+			__GEN_COUT__ << "Converting Halt command to " << command << ", since currently in " <<
+							currentState << " state." << std::endl;
+			message = SOAPUtilities::makeSOAPMessageReference(command);
+		}
+		if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME && 
+			currentState == RunControlStateMachine::INITIAL_STATE_NAME)
+		{
+			__GEN_COUT__ << "Pre-empting Configure command with Initialize, since currently in " <<
+							currentState << " state." << std::endl;
+			std::string precommand = RunControlStateMachine::INIT_TRANSITION_NAME;
 			xoap::MessageReference premessage = SOAPUtilities::makeSOAPMessageReference(precommand);
 			theStateMachine_.execTransition(precommand, premessage);
 			__GEN_COUT__ << "Now proceeding with Configure command" << __E__;

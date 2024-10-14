@@ -903,6 +903,7 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 //	if filePath == "", then output to cout
 void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
                                                    const std::string& dumpType,
+												   const std::string& configurationAlias,
                                                    const std::string& logEntry,
                                                    const std::string& activeUsers,
                                                    std::ostream&      altOut /* = std::cout */)
@@ -934,17 +935,25 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	(*out) << "#################################" << __E__;
 	(*out) << "This is an ots configuration dump.\n" << __E__;
 	(*out) << "Source database is $ARTDAQ_DATABASE_URI: " << __ENV__("ARTDAQ_DATABASE_URI") << __E__;
-	(*out) << "Original location of dump:               " << filePath << __E__;
+	if(fs.is_open())
+		(*out) << "Original location of dump:               " << 
+			__ENV__("HOSTNAME") << ":" << filePath << __E__;
 	(*out) << "\nActive ots users: \t" << (activeUsers.size() ? activeUsers : "no active users") << __E__;
 	(*out) << "Type of dump: \t\t" << dumpType << __E__;
 	(*out) << "Time of dump: \t\t" << rawtime;
-
 	{
 		struct tm* timeinfo = localtime(&rawtime);
 		char       buffer[100];
 		strftime(buffer, 100, "%c %Z", timeinfo);
 		(*out) << " \t" << buffer << __E__;
 	}
+
+	//determine configurationAlias tranlation
+	std::pair<std::string, ots::TableGroupKey> configurationTableGroup = 
+		getTableGroupFromAlias(configurationAlias);
+	(*out) << "Configuration Alias: \t\t\t" << configurationAlias << "\n";
+	(*out) << "Configuration Alias translation: \t" << configurationTableGroup.first <<
+		"(" << configurationTableGroup.second << ")\n\n";
 
 	if(logEntry.size())
 		(*out) << "User Log Entry (" << logEntry.size() << " chars):\n" << logEntry << __E__;
@@ -1096,7 +1105,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 	if(fs.is_open())
 		fs.close();
-}
+
+} //end dumpActiveConfiguration()
 
 //==============================================================================
 // loadMemberMap

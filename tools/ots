@@ -6,6 +6,7 @@ SCRIPT_DIR="$(
  pwd -P 
 )"
 
+#Note: &>/dev/null is the same as >/dev/null 2>&1
 
 # Bash defines HOSTNAME but it's possible that it might not be a FQDN, this specifically enforces that it will be
 HOSTNAME="$(hostname -f)"
@@ -1500,9 +1501,39 @@ launchOTS() {
 	if declare -F otsUserSshTunnels > /dev/null; then
 		out "otsUserSshTunnels() function is defined, so setting up user ssh tunnels..."
 		otsUserSshTunnels
+
+		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
+			out "otsUserSshTunnels() is set to auto refresh mode."
+		fi
 	else
 		out "otsUserSshTunnels() funtion is not defined, define to setup user ssh tunnels."
 	fi
+
+	#Example declaration in setup_ots.sh
+	# unset otsUserSshTunnels
+    # function otsUserSshTunnels() 
+    # {	
+    #     #!/bin/bash
+
+    #     kinit -R #refresh kerberos
+
+    #     echo -e "setup_ots.sh:${LINENO} |  \t "
+    #     echo -e "setup_ots.sh:${LINENO} |  \t Tunnel in background to IERC mongodb:"
+    #     echo "ssh -f -K -N -L $ARTDAQ_DATABASE_SSH_LOCAL_PORT:localhost:$ARTDAQ_DATABASE_SSH_TUNNEL"
+    #     # echo "ssh -M -S mongodb-ssh-socket -fnNT -L $ARTDAQ_DATABASE_SSH_LOCAL_PORT:localhost:$ARTDAQ_DATABASE_SSH_TUNNEL"
+
+    #     # Check if the SSH tunnel is already running on port $ARTDAQ_DATABASE_SSH_LOCAL_PORT
+    #     # if [ -e mongodb-ssh-socket ]; then            
+    #     if lsof -i :$ARTDAQ_DATABASE_SSH_LOCAL_PORT | grep -q ssh; then
+    #         echo -e "setup_ots.sh:${LINENO} |  \t Tunnel already exists"
+    #     else            
+    #         ssh -f -K -N -L $ARTDAQ_DATABASE_SSH_LOCAL_PORT:localhost:$ARTDAQ_DATABASE_SSH_TUNNEL >/dev/null 
+    #         # ssh -M -S mongodb-ssh-socket -fnNT -L $ARTDAQ_DATABASE_SSH_LOCAL_PORT:localhost:$ARTDAQ_DATABASE_SSH_TUNNEL
+    #     fi
+
+    #     echo -e "setup_ots.sh:${LINENO} |  \t " 
+    # }
+    # export -f otsUserSshTunnels
 
 	####################################################################
 	########### read from context config and launch Gateway ############
@@ -1583,9 +1614,9 @@ launchOTS() {
 							####################################################################
 							
 							out #empty line
-							
+														
 							#cleanup alive files
-							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive* &>/dev/null 2>&1 #hide output #remove alive file
+							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive* &>/dev/null #hide output #remove alive file
 
 							#attempt to avoid false starts by xdaq by detecting constructor, and relaunching
 							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat >/dev/null 2>&1 #hide output #remove alive file
@@ -2331,9 +2362,10 @@ otsActionHandler() {
 		
 		echo "0" > $OTSDAQ_STARTOTS_ACTION_FILE #clear the command in the file; it has been responded to
 
-		if [ "$OTSDAQ_REFRESH_KINIT" == "1" ]; then
-			kinit -R &>/dev/null 2>&1 #hide output
-			otsUserSshTunnels &>/dev/null 2>&1 #hide output
+		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
+			if declare -F otsUserSshTunnels > /dev/null; then
+				otsUserSshTunnels >/dev/null #hide std output and show errors
+			fi
 		fi
 				
 		#out "message loop command ${OTSDAQ_STARTOTS_ACTION} ${OTSDAQ_STARTOTS_QUIT} ${OTSDAQ_STARTOTS_LOCAL_QUIT} "

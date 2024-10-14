@@ -20,10 +20,10 @@ SimpleSoap::SimpleSoap(xdaq::ApplicationStub* s) : xdaq::Application(s), SOAPMes
 	xgi::bind(this, &SimpleSoap::Default, "Default");
 	xgi::bind(this, &SimpleSoap::StateMachineXgiHandler, "StateMachineXgiHandler");
 
-	xoap::bind(this, &SimpleSoap::Start, "Start", XDAQ_NS_URI);
-	fsm_.addState('I', "Initial", this, &SimpleSoap::stateInitial);
-	fsm_.addState('H', "Halted", this, &SimpleSoap::stateHalted);
-	fsm_.addStateTransition('I', 'H', "Initialize");
+	xoap::bind(this, &SimpleSoap::Start, RunControlStateMachine::START_TRANSITION_NAME, XDAQ_NS_URI);
+	fsm_.addState('I', RunControlStateMachine::INITIAL_STATE_NAME, this, &SimpleSoap::stateInitial);
+	fsm_.addState('H', RunControlStateMachine::HALTED_STATE_NAME, this, &SimpleSoap::stateHalted);
+	fsm_.addStateTransition('I', 'H', RunControlStateMachine::INIT_TRANSITION_NAME);
 }
 
 //==============================================================================

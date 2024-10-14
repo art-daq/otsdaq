@@ -158,7 +158,7 @@ const TableBase* srcPtr = getTableByName(tableName);
 const T* retPtr = dynamic_cast<const T*>(srcPtr); if(retPtr == nullptr) { __SS__ << "Illegal cast of '" << tableName << "' to type " << StringMacros::getTypeName<T>() << " (s=" << static_cast<const void*>(srcPtr) <<", t=" << typeid(srcPtr).name() << ")"<< __E__; __SS_THROW__ } return retPtr;}
 	const TableBase* 					getTableByName				(const std::string& configurationName) const;
 
-	void 								dumpActiveConfiguration		(const std::string& filePath, const std::string& dumpType, const std::string& logEntry, const std::string& activeUsers, std::ostream& altOut = std::cout);
+	void 								dumpActiveConfiguration		(const std::string& filePath, const std::string& dumpType, const std::string& configurationAlias, const std::string& logEntry, const std::string& activeUsers, std::ostream& altOut = std::cout);
 	void								dumpMacroMakerModeFhicl		(void);	
 	
 	std::map<std::string /*groupAlias*/,

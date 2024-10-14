@@ -3163,7 +3163,7 @@ std::string WebUsers::getActiveUsersString()
 	for(uint64_t i = 0; i < ActiveSessions_.size(); ++i)
 		activeUserIndices.emplace(searchUsersDatabaseForUserId(ActiveSessions_[i].userId_));
 
-	std::string ret      = "";
+	std::string activeUsersString      = "";
 	bool        addComma = false;
 	for(const auto& i : activeUserIndices)
 	{
@@ -3171,17 +3171,17 @@ std::string WebUsers::getActiveUsersString()
 			continue;  // skip not found
 
 		if(addComma)
-			ret += ",";
+			activeUsersString += ",";
 		else
 			addComma = true;
 
-		ret += Users_[i].displayName_;
+		activeUsersString += Users_[i].displayName_;
 	}
 	if(activeUserIndices.size() == 0 && WebUsers::getSecurity() == WebUsers::SECURITY_TYPE_NONE)  // assume only admin is active
-		ret += WebUsers::DEFAULT_ADMIN_DISPLAY_NAME;
+		activeUsersString += WebUsers::DEFAULT_ADMIN_DISPLAY_NAME;
 
-	__COUTV__(ret);
-	return ret;
+	__COUTV__(activeUsersString);
+	return activeUsersString;
 }  // end getActiveUsersString()
 
 //==============================================================================
@@ -3441,11 +3441,14 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser, const std::s
 //	Returns last */global system message for statusing
 std::pair<std::string, time_t> WebUsers::getLastSystemMessage() const
 {
+	__COUT__ << "GetLast number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
+
 	auto it = systemMessages_.find("*");
 	if(it == systemMessages_.end() || it->second.size() == 0)
 		return std::make_pair("",0);
 
-	return std::make_pair(it->second[0].message_, it->second[0].creationTime_);
+	return std::make_pair(it->second.back().message_, it->second.back().creationTime_);
 }  // end getLastSystemMessage()
 
 //==============================================================================

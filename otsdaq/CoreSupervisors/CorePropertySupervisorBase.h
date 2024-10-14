@@ -96,6 +96,7 @@ class CorePropertySupervisorBase
 	const std::string supervisorClassNoNamespace_;
 
 	static void 					indicateOtsAlive								(const CorePropertySupervisorBase* properties = 0);
+	static void 					indicateOtsDead									(const CorePropertySupervisorBase* properties = 0);
 
   private:
 

@@ -39,6 +39,8 @@ using namespace ots;
 
 #define RUN_NUMBER_PATH std::string(__ENV__("SERVICE_DATA_PATH")) + "/RunNumber/"
 #define RUN_NUMBER_FILE_NAME "NextRunNumber.txt"
+#define LOG_ENTRY_PATH std::string(__ENV__("SERVICE_DATA_PATH")) + "/FSM_LastLogEntry/"
+#define LOG_ENTRY_FILE_NAME "LastLogEntry.txt"
 #define FSM_LAST_GROUP_ALIAS_FILE_START std::string("FSMLastGroupAlias-")
 #define FSM_USERS_PREFERENCES_FILETYPE "pref"
 
@@ -100,6 +102,7 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 	// make table group history directory here and at ConfigurationManagerRW (just in case)
 	mkdir((ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH).c_str(), 0755);
 	mkdir((RUN_NUMBER_PATH).c_str(), 0755);
+	mkdir((LOG_ENTRY_PATH).c_str(), 0755);
 
 	securityType_ = GatewaySupervisor::theWebUsers_.getSecurity();
 
@@ -420,6 +423,20 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										"Please specify a valid User Data Path record as the Desktop Icon AlternateText field, targeting a UID in the SubsystemUserDataPathsTable." << __E__;
 									ss << "\n\nHere was the error: " << e.what() << __E__;
 									__COUT__ << ss.str();
+									remoteApps[i].error = ss.str();
+									
+									//give feedback immediately to user!!
+									{
+										__COUTV__(remoteApps[i].error);
+										//lock for remainder of scope
+										std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
+										for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
+											if(remoteApps[i].appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+											{
+												theSupervisor->remoteGatewayApps_[i].error = remoteApps[i].error; 							
+												break;
+											}
+									}
 								}			
 
 
@@ -490,12 +507,12 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
 									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
 									{
-										theSupervisor->remoteGatewayApps_[i].error = ""; 										
+										theSupervisor->remoteGatewayApps_[i].error = ""; 		
+										__COUTV__(theSupervisor->remoteGatewayApps_[i].error);											
 										break;
 									}
 							}
 
-							remoteGatewayApp.error = ""; //clear error		
 							GatewaySupervisor::GetRemoteGatewayIcons(remoteGatewayApp, remoteGatewaySocket);
 							if(remoteGatewayApp.error != "")//give feedback immediately to user!!
 							{
@@ -505,7 +522,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
 									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
 									{
-										theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 										
+										theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 					
 										break;
 									}
 							}
@@ -517,6 +534,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					if(loopCount % 3 == 0 || resetRemoteGatewayApps || //a little less frequently
 						commandingRemoteGatewayApps)
 					{
+						if(theSupervisor->remoteGatewayApps_.size()) __COUTV__(theSupervisor->remoteGatewayApps_[0].error);
+
 						//check for commands first
 						bool commandSent = false;
 
@@ -549,6 +568,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							sleep(1); //gives some time for command to sink in
 						}
 						
+						if(theSupervisor->remoteGatewayApps_.size()) __COUTV__(theSupervisor->remoteGatewayApps_[0].error);
+
 						//then get status
 						bool allAppsAreIdle = true;
 						bool allApssAreUnknown = true;
@@ -596,7 +617,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							}
 						}
 						__COUT__ << "commandRemoteIdleCount " << commandRemoteIdleCount << " " << allAppsAreIdle << " " << commandingRemoteGatewayApps << __E__;
-
+						if(theSupervisor->remoteGatewayApps_.size()) __COUTV__(theSupervisor->remoteGatewayApps_[0].error);
 						//replace info in supervisor remote gateway list
 						{
 							//lock for remainder of scope
@@ -626,6 +647,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										theSupervisor->remoteGatewayApps_[i].consoleErrCount = remoteGatewayApp.consoleErrCount;	
 										theSupervisor->remoteGatewayApps_[i].consoleWarnCount = remoteGatewayApp.consoleWarnCount;	
 
+										theSupervisor->remoteGatewayApps_[i].config_dump = remoteGatewayApp.config_dump;
+
 										theSupervisor->remoteGatewayApps_[i].user_data_path_record = remoteGatewayApp.user_data_path_record;
 										theSupervisor->remoteGatewayApps_[i].iconString = remoteGatewayApp.iconString;	
 										theSupervisor->remoteGatewayApps_[i].parentIconFolderPath = remoteGatewayApp.parentIconFolderPath;	
@@ -635,6 +658,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										//if invalid selected_config_alias, renitialize for user
 										if(remoteGatewayApp.config_aliases.find(theSupervisor->remoteGatewayApps_[i].selected_config_alias) == remoteGatewayApp.config_aliases.end())
 											theSupervisor->remoteGatewayApps_[i].selected_config_alias = remoteGatewayApp.selected_config_alias;
+
+										__COUTTV__(theSupervisor->remoteGatewayApps_[i].selected_config_alias);
 
 										__COUTT__ << "Command: " << remoteGatewayApp.command << 
 											" Command-old: " << theSupervisor->remoteGatewayApps_[i].command <<
@@ -672,6 +697,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								}
 							}							
 						}
+
+						if(theSupervisor->remoteGatewayApps_.size()) __COUTV__(theSupervisor->remoteGatewayApps_[0].error);
 					} //end remote app status update
 
 					//copy to subapps for display of primary Gateway
@@ -980,10 +1007,11 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 
 	std::string iconString = "";
 
-	__COUT__ << "Sending remote gateway command '" << remoteGatewayApp.command << "' to target '" <<
+	std::string command = "GetRemoteDesktopIcons";	
+
+	__COUT__ << "Sending remote gateway command '" << command << "' to target '" <<
 		remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
 
-	std::string command = "GetRemoteDesktopIcons";	
 	try
 	{
 		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
@@ -1071,10 +1099,23 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
 		__COUTV__(commandResponseString);
 
-		if(commandResponseString != "Done") //then error
+		if(commandResponseString.find("Done") != 0) //then error
 		{
 			__SS__ << "Unsuccessful response received: \n" << commandResponseString << __E__;
 			__SS_THROW__;
+		}
+
+		if(commandResponseString.size() > strlen("Done")+1)
+		{
+			//assume have config dump response!
+			remoteGatewayApp.config_dump = "\n\n************************\n";
+			remoteGatewayApp.config_dump += "* Remote Subsystem Dump from '" + 
+				remoteGatewayApp.appInfo.name + "' at url: " + remoteGatewayApp.appInfo.url + "\n";
+			remoteGatewayApp.config_dump += "* \n";
+			remoteGatewayApp.config_dump += "\n\n";
+			remoteGatewayApp.config_dump += commandResponseString.substr(strlen("Done")+1);
+
+			__COUTTV__(remoteGatewayApp.config_dump);
 		}
 
 	}  //end SendRemoteGatewayCommand()
@@ -1557,7 +1598,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						command = buffer.substr(begin, commaPosition - begin);
 					else
 						parameters.push_back(buffer.substr(begin, commaPosition - begin));
-					__COUT__ << "Word: " << buffer.substr(begin, commaPosition - begin) << __E__;
+					__COUT__ << "Word[" << commaCounter << "]: " << 
+						buffer.substr(begin, commaPosition - begin) << __E__;
 
 					begin = commaPosition + 1;
 					++commaCounter;
@@ -1568,6 +1610,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 
 				// set scope of mutex
+				std::string extraDoneContent = "";
 				{
 					// should be mutually exclusive with GatewaySupervisor main thread state
 					// machine accesses  lockout the messages array for the remainder of the
@@ -1580,7 +1623,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						__COUT__ << "Have FSM access" << __E__;
 
 					errorStr = theSupervisor->attemptStateMachineTransition(
-						0, 0, command, fsmName, WebUsers::DEFAULT_STATECHANGER_USERNAME /*fsmWindowName*/, WebUsers::DEFAULT_STATECHANGER_USERNAME, parameters);
+						0, 0, command, fsmName, WebUsers::DEFAULT_STATECHANGER_USERNAME /*fsmWindowName*/, 
+						WebUsers::DEFAULT_STATECHANGER_USERNAME, parameters);
+
+					if(errorStr == "" && command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+						extraDoneContent = theSupervisor->activeStateMachineConfigurationDumpOnConfigure_;
+
+					if(errorStr == "" && command == RunControlStateMachine::START_TRANSITION_NAME)
+						extraDoneContent = theSupervisor->activeStateMachineConfigurationDumpOnRun_; 
 				}
 
 				if(errorStr != "")
@@ -1597,7 +1647,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					__SS__ << "Successfully executed state change command '" << command << ".'" << __E__;
 					__COUT_INFO__ << ss.str();
 					if(acknowledgementEnabled)
-						sock.acknowledge("Done", true /* verbose */);
+						sock.acknowledge("Done" + (
+							extraDoneContent.size()?("," + extraDoneContent):"" //append extra done content, if any
+						), true /* verbose */);
 				}
 				
 			}
@@ -1885,7 +1937,8 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	if(command == "Configure")
 		parameters.push_back(CgiDataUtilities::postData(cgiIn, "ConfigurationAlias"));
 
-	std::string logEntry = CgiDataUtilities::postData(cgiIn, "logEntry");
+	std::string logEntry = StringMacros::decodeURIComponent(
+		CgiDataUtilities::postData(cgiIn, "logEntry"));
 
 	attemptStateMachineTransition(&xmlOut, out, command, fsmName, fsmWindowName, userInfo.username_, parameters, logEntry);
 
@@ -1899,7 +1952,7 @@ std::string GatewaySupervisor::attemptStateMachineTransition(HttpXmlDocument*   
                                                              const std::string&              fsmWindowName,
                                                              const std::string&              username,
                                                              const std::vector<std::string>& commandParameters,
-                                                             const std::string&              logEntry)
+                                                             std::string             		 logEntry /* = "" */)
 try
 {
 	std::string errorStr = "";
@@ -1915,6 +1968,14 @@ try
 	__COUT__ << "commandParameters.size = " << commandParameters.size() << __E__;
 	__COUTV__(StringMacros::vectorToString(commandParameters));
 
+	//check if logEntry is in parameters
+	if(!logEntry.size() && commandParameters.size() && 
+		commandParameters.back().find("LogEntry:") == 0 && 
+			commandParameters.back().size() > strlen("LogEntry:")+1)
+	{
+		logEntry = commandParameters.back().substr(strlen("LogEntry:")+1);
+		__COUTV__(logEntry);	
+	}
 
 	/////////////////
 	// Validate FSM name (do here because remote commands bypass stateMachineXgiHandler)
@@ -1940,19 +2001,7 @@ try
 					"to control progress, please transition to " << 
 					RunControlStateMachine::HALTED_STATE_NAME << " using the active "
 				<< "State Machine '" << activeStateMachineWindowName_ << ".'" << __E__;
-			__COUT_ERR__ << "\n" << ss.str();
-			errorStr = ss.str();
-
-			if(xmldoc)
-				xmldoc->addTextElementToData("state_tranisition_attempted",
-										"0");  // indicate to GUI transition NOT attempted
-			if(xmldoc)
-				xmldoc->addTextElementToData("state_tranisition_attempted_err",
-										ss.str());  // indicate to GUI transition NOT attempted
-			if(xmldoc)
-				xmldoc->outputXmlDocument((std::ostringstream*)out, false, true);
-
-			return errorStr;
+			__SS_THROW__;
 		}
 		else  // clear active state machine
 		{
@@ -1962,10 +2011,23 @@ try
 	}
 	//FSM name validated
 
+	if(logEntry != "")
+		makeSystemLogEntry("Attempting FSM command '" + command + "' from state '" + 
+			currentState + "' with user log entry: " + logEntry);
+
+	setLastLogEntry(command,logEntry);
+
 	SOAPParameters parameters;
 	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 	{
-		activeStateMachineConfigureLogEntry_ = "";  // clear
+		activeStateMachineConfigurationDumpOnConfigure_ = ""; //clear (and set if enabled during configure transition)
+		activeStateMachineConfigurationDumpOnRun_ = ""; //clear (and set if enabled during configure transition)
+		activeStateMachineConfigurationDumpOnRunEnable_ = false, activeStateMachineConfigurationDumpOnConfigureEnable_ = false; //clear (and set if enabled during configure transition)		
+		activeStateMachineConfigurationDumpOnConfigureFilename_ = ""; //clear (and set if enabled during configure transition)
+		activeStateMachineConfigurationDumpOnRunFilename_ = ""; //clear (and set if enabled during configure transition)
+		
+		activeStateMachineRequireUserLogOnRun_ = false, activeStateMachineRequireUserLogOnConfigure_ = false; //clear (and set if enabled during configure transition)
+		activeStateMachineRunInfoPluginType_ = TableViewColumnInfo::DATATYPE_STRING_DEFAULT; //clear (and set if enabled during configure transition)
 
 		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
 			currentState != RunControlStateMachine::INITIAL_STATE_NAME)  // check if out of sync command
@@ -1973,80 +2035,88 @@ try
 			__SS__ << "Error - Can only transition to Configured if the current "
 			       << "state is Initial or Halted. The current state is '" << currentState << 
 				   ".' Perhaps your state machine is out of sync, or you need to Halt before Configuring." << __E__;
-			__COUT_ERR__ << "\n" << ss.str();
-			errorStr = ss.str();
-
-			if(xmldoc)
-				xmldoc->addTextElementToData("state_tranisition_attempted",
-				                             "0");  // indicate to GUI transition NOT attempted
-			if(xmldoc)
-				xmldoc->addTextElementToData("state_tranisition_attempted_err",
-				                             ss.str());  // indicate to GUI transition NOT attempted
-			if(out)
-				xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
-
-			return errorStr;
+			__SS_THROW__;
 		}
 
-		// NOTE Original name of the configuration key
+		// Note: Original name of the configuration key was RUN_KEY
 		// parameters.addParameter("RUN_KEY",CgiDataUtilities::postData(cgi,"ConfigurationAlias"));
 		if(commandParameters.size() == 0)
 		{
 			__SS__ << "Error - Can only transition to Configured if a Configuration "
 			          "Alias parameter is provided."
 			       << __E__;
-			__COUT_ERR__ << "\n" << ss.str();
-			errorStr = ss.str();
-
-			if(xmldoc)
-				xmldoc->addTextElementToData("state_tranisition_attempted",
-				                             "0");  // indicate to GUI transition NOT attempted
-			if(xmldoc)
-				xmldoc->addTextElementToData("state_tranisition_attempted_err",
-				                             ss.str());  // indicate to GUI transition NOT attempted
-			if(out)
-				xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
-
-			return errorStr;
+			__SS_THROW__;
 		}
 
-		// test Require user log info
-		try
+		// check if configuration dump is enabled on configure transition
+		std::string  dumpFormatOnConfigure, dumpFormatOnRun;
 		{
 			ConfigurationTree configLinkNode =
-			    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+					CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
-				ConfigurationTree fsmLinkNode         = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
-				bool              requireUserLogInput = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>();
-				__COUTV__(requireUserLogInput);
-				if(requireUserLogInput && logEntry.size() < 3)
+				bool doThrow = false;
+				try  // for backwards compatibility
 				{
-					__SS__ << "Error - the state machine property 'RequireUserLogInputOnConfigureTransition' has been enabled which requires the user to enter "
-					          "at least 3 characters of log info to proceed with the Configure transition."
-					       << __E__;
-					__COUT_ERR__ << "\n" << ss.str();
-					errorStr = ss.str();
+					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
+						
+					try { activeStateMachineRequireUserLogOnConfigure_ = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>(); } catch(...) {;}
+					try { activeStateMachineRequireUserLogOnRun_ = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) {;}
 
-					if(xmldoc)
-						xmldoc->addTextElementToData("state_tranisition_attempted",
-						                             "0");  // indicate to GUI transition NOT attempted
-					if(xmldoc)
-						xmldoc->addTextElementToData("state_tranisition_attempted_err",
-						                             ss.str());  // indicate to GUI transition NOT attempted
-					if(out)
-						xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+					try
+					{ 
+						activeStateMachineRunInfoPluginType_ = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>(); 							
+					}
+					catch(...) //ignore missing RunInfoPluginType
+					{ 
+						__COUT__ << "RunInfoPluginType not defined for FSM name '" <<
+							fsmName << "' - please setup a valid run info plugin type to enable external Run Number coordination and dumping configuration info to an external location." << __E__; 
+					} 
 
-					return errorStr;
+					activeStateMachineConfigurationDumpOnConfigureEnable_  = fsmLinkNode.getNode("EnableConfigurationDumpOnConfigureTransition").getValue<bool>();						
+					activeStateMachineConfigurationDumpOnRunEnable_        = fsmLinkNode.getNode("EnableConfigurationDumpOnRunTransition").getValue<bool>();						
+										
+					doThrow                       = true;  // at this point throw the exception!
+
+					dumpFormatOnConfigure		  = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFormat").getValue<std::string>();						
+					dumpFormatOnRun				  = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
+
+					std::string dumpFilePath, dumpFileRadix;
+					dumpFilePath = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFilePath").getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
+					dumpFileRadix = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFileRadix").getValueWithDefault<std::string>("ConfigTransitionConfigurationDump");											
+					activeStateMachineConfigurationDumpOnConfigureFilename_ = dumpFilePath + "/" + dumpFileRadix;
+					dumpFilePath = fsmLinkNode.getNode("ConfigurationDumpOnRunFilePath").getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
+					dumpFileRadix = fsmLinkNode.getNode("ConfigurationDumpOnRunFileRadix").getValueWithDefault<std::string>("ConfigTransitionConfigurationDump");											
+					activeStateMachineConfigurationDumpOnRunFilename_ = dumpFilePath + "/" + dumpFileRadix;
+
 				}
-				else if(requireUserLogInput)
-					activeStateMachineConfigureLogEntry_ = logEntry;
-			}
-		}
-		catch(...)
-		{ /* ignore exceptions during test Require user log info*/
-		}
+				catch(std::runtime_error& e)  // throw exception on missing fields if dumpConfiguration set
+				{						
+					if(doThrow && (activeStateMachineConfigurationDumpOnConfigureEnable_ || 
+						activeStateMachineConfigurationDumpOnRunEnable_))
+					{
+						__SS__ << "Configuration Dump was enabled, but there are missing fields! " << e.what() << __E__;
+						__SS_THROW__;
+					}
+					else
+						__COUT_INFO__ << "FSM configuration dump Link disconnected at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
+								<< supervisorContextUID_ << "/" << supervisorApplicationUID_ << "/"
+								<< "LinkToStateMachineTable/" << fsmName << "/"
+								<< "EnableConfigurationDumpOnConfigureTransition and/or EnableConfigurationDumpOnRunTransition" << __E__;						
+				}
+			} //end configuration dump check/handling
+			else
+				__COUT_INFO__ << "No Gateway Supervisor configuration record found at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
+							<< supervisorContextUID_ << "/" << supervisorApplicationUID_
+							<< "' - consider adding one to control configuration dumps and state machine properties." << __E__;
+		} //end check if configuration dump is enabled on configure transition
 
+		if(activeStateMachineRequireUserLogOnConfigure_ && getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME).size() < 3)
+		{
+			__SS__ << "Error - the state machine property 'RequireUserLogInputOnConfigureTransition' has been enabled which requires the user to enter "
+					"at least 3 characters of log info to proceed with the Configure transition." << __E__;
+			__SS_THROW__;
+		}
 
 		parameters.addParameter("ConfigurationAlias", commandParameters[0]);
 
@@ -2062,7 +2132,6 @@ try
 		if(!fp)
 		{
 			__SS__ << ("Could not open file: " + fn) << __E__;
-			__COUT_ERR__ << ss.str();
 			__SS_THROW__;
 		}
 		fprintf(fp, "FSM_last_configuration_alias %s", configurationAlias.c_str());
@@ -2075,204 +2144,304 @@ try
 			__COUT_WARN__ << "The active state machine is an empty string, this is allowed for backwards compatibility, but may not be intentional! " <<
 				"Make sure you or your system admins understand why the active FSM name is blank." << __E__;
 
-		std::stringstream dumpSs;
-		// Check if run number should come from db, if so create a new condition record into database
+		//Note: Must create configuration dump at this point!! In case this is a remote subsystem and must respond with string
+		//Must define activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; //cached at Configure transition
+
 		try
 		{
-			ConfigurationTree configLinkNode =
-				CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
-			if(!configLinkNode.isDisconnected())
+			CorePropertySupervisorBase::theConfigurationManager_->init();  // completely reset to re-align with any changes
+		}
+		catch(...)
+		{
+			__SS__ << "\nTransition to Configuring interrupted! "
+				<< "The Configuration Manager could not be initialized." << __E__;
+			__SS_THROW__;
+		}
+
+		// Translate the system alias to a group name/key
+		try
+		{
+			theConfigurationTableGroup_ = CorePropertySupervisorBase::theConfigurationManager_->getTableGroupFromAlias(configurationAlias);
+		}
+		catch(...)
+		{
+			__COUT_INFO__ << "Exception occurred translating the Configuration System Alias." << __E__;
+		}
+
+		if(theConfigurationTableGroup_.second.isInvalid())
+		{
+			__SS__ << "\nTransition to Configuring interrupted! System Configuration Alias '" << 
+				configurationAlias << "' could not be translated to a group name and key." << __E__;
+			__SS_THROW__;
+		}
+
+		__COUT_INFO__ << "Configuration table group name: " << theConfigurationTableGroup_.first << " key: " << theConfigurationTableGroup_.second << __E__;
+
+		// load and activate Configuration Alias
+		try
+		{
+			//first get group type - it must be Configuration type!
+			std::string groupTypeString;
+			CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
+				theConfigurationTableGroup_.first, theConfigurationTableGroup_.second,
+				false /*doActivate*/,
+				0 /*groupMembers      */,
+				0 /*progressBar       */,
+				0 /*accumulateWarnings*/,
+				0 /*groupComment      */,
+				0 /*groupAuthor       */,
+				0 /*groupCreateTime   */,
+				true /*doNotLoadMember */,
+				&groupTypeString
+				);
+			if(groupTypeString != ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
 			{
-				std::string runInfoPluginType = TableViewColumnInfo::DATATYPE_STRING_DEFAULT;
-				std::string dumpFormat = TableViewColumnInfo::DATATYPE_STRING_DEFAULT;
-				try
-				{
-					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
-					runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
-					dumpFormat = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
-				}
-				catch(...) //ignore missing link
-				{ 
-					__COUT__ << "RunInfoPluginType not defined for FSM name '" <<
-						activeStateMachineName_ << "' - please setup a valid run info plugin type to enable external Run Number coordination and dumping configuration info to an external location." << __E__; 
-				} 
+				__SS__ << "Illegal attempted configuration group type. The table group '" <<
+					theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second << ")' is of type " <<
+					groupTypeString << ". It must be " << ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION << "." << __E__;
+				__SS_THROW__;
+			}
 
-				__COUTV__(runInfoPluginType);
-				__COUTV__(dumpFormat);
-				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
-				{
-					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
-					try
-					{
-						// dump configuration
-						CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
-							"",
-							dumpFormat,
-							"Configuration Alias: " + lastConfigurationAlias_ + "\n\n" + 
-								"Run note: " + StringMacros::decodeURIComponent(logEntry),
-							theWebUsers_.getActiveUsersString(),
-							dumpSs);
+			CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
+				theConfigurationTableGroup_.first, theConfigurationTableGroup_.second, true /*doActivate*/);
 
-						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
-					}
-					catch(...)
-					{
-					}
+			__COUT__ << "Done loading Configuration Alias." << __E__;
 
-					if(runInfoInterface == nullptr)
-					{
-						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << 
-							" for configuration dump format " << dumpFormat << __E__;
-						__SS_THROW__;
-					}
+			// mark the translated group as the last activated group
+			std::pair<std::string /*group name*/, TableGroupKey> activatedGroup(std::string(theConfigurationTableGroup_.first), theConfigurationTableGroup_.second);
+			ConfigurationManager::saveGroupNameAndKey(activatedGroup, ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE);
 
-					conditionID_ = runInfoInterface->insertRunCondition(dumpSs.str());
-				}  // end Run Info Plugin handling
-
-			}  // end handle state machine config link
+			__COUT__ << "Done activating Configuration Alias." << __E__;
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << e.what() << __E__;
+			__SS__ << "\nTransition to Configuring interrupted! System Configuration Alias " << configurationAlias << " was translated to " << theConfigurationTableGroup_.first << " ("
+				<< theConfigurationTableGroup_.second << ") but could not be loaded and initialized." << __E__;
+			ss << "\n\nHere was the error: " << e.what()
+			<< "\n\nTo help debug this problem, try activating this group in the Configuration "
+				"GUI "
+			<< " and detailed errors will be shown." << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << __E__;
+			__SS__ << "\nTransition to Configuring interrupted! System Configuration Alias " << configurationAlias << " was translated to " << theConfigurationTableGroup_.first << " ("
+				<< theConfigurationTableGroup_.second << ") but could not be loaded and initialized." << __E__;
 			try	{ throw; } //one more try to printout extra info
 			catch(const std::exception &e)
 			{
 				ss << "Exception message: " << e.what();
 			}
 			catch(...){}
+			ss << "\n\nTo help debug this problem, try activating this group in the Configuration "
+				"GUI "
+			<< " and detailed errors will be shown." << __E__;
 			__SS_THROW__;
-		}  // End write run condition into db
-	}
-	else if(command == "Start")
-	{
-		activeStateMachineStartLogEntry_ = "";  // clear
+		}
 
-		if(currentState != "Configured")  // check if out of sync command
+		//at this point Configuration Tree is fully loaded
+
+
+		//handle configuration dump if enabled on configure transition
+		try  // errors in dump are not tolerated				
+		{		
+			//get/cache Run transition dump
+			if(activeStateMachineConfigurationDumpOnRunEnable_ || 
+				((activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
+					activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+			{
+				__COUT_INFO__ << "Caching the Configuration Dump for the Run transition..." << __E__;
+
+				// dump configuration
+				std::stringstream dumpSs;
+				CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+					"", //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
+					dumpFormatOnRun,
+					lastConfigurationAlias_,
+					getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+					theWebUsers_.getActiveUsersString(),
+					dumpSs);
+
+				activeStateMachineConfigurationDumpOnRun_ = dumpSs.str();						
+			}
+			else
+				__COUT_INFO__ << "Not caching the Configuration Dump on the Run transition." << __E__;
+
+			//get/cache Configuration transition dump
+			if(activeStateMachineConfigurationDumpOnConfigureEnable_ || 
+				((activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
+					activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+			{
+				__COUT_INFO__ << "Caching the Configuration Dump for the Configure transition..." << __E__;
+
+				// dump configuration
+				std::stringstream dumpSs;
+				CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+					"", //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
+					dumpFormatOnConfigure,
+					lastConfigurationAlias_,
+					getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+					theWebUsers_.getActiveUsersString(),
+					dumpSs);
+
+				activeStateMachineConfigurationDumpOnConfigure_ = dumpSs.str();						
+			}
+			else
+				__COUT_INFO__ << "Not caching the Configuration Dump on the Configure transition." << __E__;
+					
+			
+		} //end handle configuration dump if enabled on configure transition
+		catch(const std::runtime_error& e)
+		{
+			__SS__ << "Error encoutered during configuration dump. Here is the error: " << e.what();
+			__SS_THROW__;
+		}
+		catch(...)
+		{
+			__SS__ << "Unknown error encoutered during configuration dump.";
+			__SS_THROW__;
+		}
+
+	} //end Configure transition
+	else if(command == RunControlStateMachine::START_TRANSITION_NAME)
+	{
+		if(currentState != RunControlStateMachine::CONFIGURED_STATE_NAME)  // check if out of sync command
 		{
 			__SS__ << "Error - Can only transition to Configured if the current "
 			       << "state is Halted. Perhaps your state machine is out of sync. "
 			       << "(Likely the server was restarted or another user changed the state)" << __E__;
-			__COUT_ERR__ << "\n" << ss.str();
-			errorStr = ss.str();
-
-			if(xmldoc)
-				xmldoc->addTextElementToData("state_tranisition_attempted",
-				                             "0");  // indicate to GUI transition NOT attempted
-			if(xmldoc)
-				xmldoc->addTextElementToData("state_tranisition_attempted_err",
-				                             ss.str());  // indicate to GUI transition NOT attempted
-			if(out)
-				xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
-
-			return errorStr;
+			__SS_THROW__;
 		}
+
+		if(activeStateMachineRequireUserLogOnRun_ && getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME).size() < 3)
+		{
+			__SS__ << "Error - the state machine property 'RequireUserLogInputOnRunTransition' has been enabled which requires the user to enter "
+					"at least 3 characters of log info to proceed with the Run transition." << __E__;
+			__SS_THROW__;
+		}
+
 		unsigned int runNumber;
 		if(commandParameters.size() == 0)
 		{
 			runNumber = getNextRunNumber();
-			std::stringstream dumpSs;
 			// Check if run number should come from db, if so create run info record into database
-			try
+
+			__COUTV__(activeStateMachineRunInfoPluginType_);
+
+			if(activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
+				activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
 			{
-				ConfigurationTree configLinkNode =
-				    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
-				if(!configLinkNode.isDisconnected())
+				std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+				try	{ runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_, activeStateMachineName_));} catch(...) {;}
+				if(runInfoInterface == nullptr)
 				{
-					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
-
-					std::string runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
-					__COUTV__(runInfoPluginType);
-					if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
-					{
-						std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
-						try
-						{
-							std::string dumpFormat = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
-
-							// dump configuration
-							CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
-							    "",
-							    dumpFormat,
-							    "Configuration Alias: " + lastConfigurationAlias_ + "\n\n" + "Run note: " + StringMacros::decodeURIComponent(logEntry),
-							    theWebUsers_.getActiveUsersString(),
-							    dumpSs);
-
-							runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
-							// ,
-							// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
-							// CorePropertySupervisorBase::getSupervisorConfigurationPath());
-						}
-						catch(...)
-						{
-						}
-
-						if(runInfoInterface == nullptr)
-						{
-							__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
-							__SS_THROW__;
-						}
-
-						runNumber = runInfoInterface->claimNextRunNumber(conditionID_, dumpSs.str());
-					}  // end Run Info Plugin handling
-
-					// test Require user log info
-					try
-					{
-						bool requireUserLogInput = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>();
-						__COUTV__(requireUserLogInput);
-						if(requireUserLogInput && logEntry.size() < 3)
-						{
-							__SS__ << "Error - the state machine property 'RequireUserLogInputOnRunTransition' has been enabled which requires the user to "
-							          "enter at least 3 characters of log info to proceed with the Start transition."
-							       << __E__;
-							__COUT_ERR__ << "\n" << ss.str();
-							errorStr = ss.str();
-
-							if(xmldoc)
-								xmldoc->addTextElementToData("state_tranisition_attempted",
-								                             "0");  // indicate to GUI transition NOT attempted
-							if(xmldoc)
-								xmldoc->addTextElementToData("state_tranisition_attempted_err",
-								                             ss.str());  // indicate to GUI transition NOT attempted
-							if(out)
-								xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
-
-							return errorStr;
-						}
-						else if(requireUserLogInput)
-							activeStateMachineStartLogEntry_ = logEntry;
-					}
-					catch(...)
-					{ /* ignore exceptions during test Require user log info*/
-					}
-
-				}  // end handle state machine config link
-			}
-			catch(const std::runtime_error& e)
-			{
-				// ERROR
-				__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what() << __E__;
-				__SS_THROW__;
-			}
-			catch(...)
-			{
-				// ERROR
-				__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << __E__;
-				try	{ throw; } //one more try to printout extra info
-				catch(const std::exception &e)
-				{
-					ss << "Exception message: " << e.what();
+					__SS__ << "Run Info interface plugin construction failed of type " << activeStateMachineRunInfoPluginType_ << 
+						" for claiming next run number!" << __E__;
+					__SS_THROW__;
 				}
-				catch(...){}
-				__SS_THROW__;
-			}  // End write run info into db
+
+				//FIXME -- Should this 2nd param be activeStateMachineConfigurationDumpOnConfigure_?! What is the 2nd param for? Is conditionID_ enough?
+				runNumber = runInfoInterface->claimNextRunNumber(conditionID_, activeStateMachineConfigurationDumpOnRun_);
+			}  // end Run Info Plugin handling
+
+			// std::stringstream dumpSs;
+			// // Check if run number should come from db, if so create run info record into database
+			// try
+			// {
+			// 	ConfigurationTree configLinkNode =
+			// 	    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+			// 	if(!configLinkNode.isDisconnected())
+			// 	{
+			// 		ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
+
+			// 		std::string runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+			// 		__COUTV__(runInfoPluginType);
+			// 		if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+			// 		{
+			// 			std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+			// 			try
+			// 			{
+			// 				std::string dumpFormat = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
+
+			// 				// dump configuration
+			// 				CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+			// 				    "",
+			// 				    dumpFormat,
+			// 					lastConfigurationAlias_,
+			// 					logEntry,
+			// 				    theWebUsers_.getActiveUsersString(),
+			// 				    dumpSs);
+
+			// 				runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+			// 				// ,
+			// 				// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
+			// 				// CorePropertySupervisorBase::getSupervisorConfigurationPath());
+			// 			}
+			// 			catch(...)
+			// 			{
+			// 			}
+
+			// 			if(runInfoInterface == nullptr)
+			// 			{
+			// 				__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+			// 				__SS_THROW__;
+			// 			}
+
+			// 			runNumber = runInfoInterface->claimNextRunNumber(conditionID_, dumpSs.str());
+			// 		}  // end Run Info Plugin handling
+
+			// 		// test Require user log info
+			// 		try
+			// 		{
+			// 			bool requireUserLogInput = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>();
+			// 			__COUTV__(requireUserLogInput);
+			// 			if(requireUserLogInput && logEntry.size() < 3)
+			// 			{
+			// 				__SS__ << "Error - the state machine property 'RequireUserLogInputOnRunTransition' has been enabled which requires the user to "
+			// 				          "enter at least 3 characters of log info to proceed with the Start transition."
+			// 				       << __E__;
+			// 				__COUT_ERR__ << "\n" << ss.str();
+			// 				errorStr = ss.str();
+
+			// 				if(xmldoc)
+			// 					xmldoc->addTextElementToData("state_tranisition_attempted",
+			// 					                             "0");  // indicate to GUI transition NOT attempted
+			// 				if(xmldoc)
+			// 					xmldoc->addTextElementToData("state_tranisition_attempted_err",
+			// 					                             ss.str());  // indicate to GUI transition NOT attempted
+			// 				if(out)
+			// 					xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+
+			// 				return errorStr;
+			// 			}
+						
+						
+							
+			// 		}
+			// 		catch(...)
+			// 		{ /* ignore exceptions during test Require user log info*/
+			// 		}
+
+			// 	}  // end handle state machine config link
+			// }
+			// catch(const std::runtime_error& e)
+			// {
+			// 	// ERROR
+			// 	__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what() << __E__;
+			// 	__SS_THROW__;
+			// }
+			// catch(...)
+			// {
+			// 	// ERROR
+			// 	__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << __E__;
+			// 	try	{ throw; } //one more try to printout extra info
+			// 	catch(const std::exception &e)
+			// 	{
+			// 		ss << "Exception message: " << e.what();
+			// 	}
+			// 	catch(...){}
+			// 	__SS_THROW__;
+			// }  // End write run info into db
 
 			setNextRunNumber(runNumber + 1);
 		}
@@ -2282,8 +2451,8 @@ try
 			setNextRunNumber(runNumber + 1);
 		}
 		parameters.addParameter("RunNumber", runNumber);
-	}
-	else if(!(command ==RunControlStateMachine::HALT_TRANSITION_NAME || 
+	} //end Start transition
+	else if(!(command == RunControlStateMachine::HALT_TRANSITION_NAME || 
 				command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME || 
 				command == RunControlStateMachine::ERROR_TRANSITION_NAME ||		
 				command == RunControlStateMachine::FAIL_TRANSITION_NAME || 		
@@ -2296,19 +2465,7 @@ try
 	{		
 		__SS__ << "Error - illegal state machine command received '" << command <<
 					".'" << __E__;
-		__COUT_ERR__ << "\n" << ss.str();
-		errorStr = ss.str();
-
-		if(xmldoc)
-			xmldoc->addTextElementToData("state_tranisition_attempted",
-											"0");  // indicate to GUI transition NOT attempted
-		if(xmldoc)
-			xmldoc->addTextElementToData("state_tranisition_attempted_err",
-											ss.str());  // indicate to GUI transition NOT attempted
-		if(out)
-			xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
-
-		return errorStr;		
+		__SS_THROW__;		
 	}
 
 	xoap::MessageReference message = SOAPUtilities::makeSOAPMessageReference(command, parameters);
@@ -2801,222 +2958,143 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
-	std::string systemAlias = SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getParameters().getValue("ConfigurationAlias");
+	std::string configurationAlias = SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getParameters().getValue("ConfigurationAlias");
 
-	__COUT__ << "Transition parameter: " << systemAlias << __E__;
-
-	RunControlStateMachine::theProgressBar_.step();
-
-	try
-	{
-		CorePropertySupervisorBase::theConfigurationManager_->init();  // completely reset to re-align with any changes
-	}
-	catch(...)
-	{
-		__SS__ << "\nTransition to Configuring interrupted! "
-		       << "The Configuration Manager could not be initialized." << __E__;
-
-		__COUT_ERR__ << "\n" << ss.str();
-		XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
-		return;
-	}
+	__COUT__ << "Transition parameter ConfigurationAlias: " << configurationAlias << __E__;
 
 	RunControlStateMachine::theProgressBar_.step();
 
-	// Translate the system alias to a group name/key
-	try
-	{
-		theConfigurationTableGroup_ = CorePropertySupervisorBase::theConfigurationManager_->getTableGroupFromAlias(systemAlias);
-	}
-	catch(...)
-	{
-		__COUT_INFO__ << "Exception occurred" << __E__;
-	}
+	// try
+	// {
+	// 	CorePropertySupervisorBase::theConfigurationManager_->init();  // completely reset to re-align with any changes
+	// }
+	// catch(...)
+	// {
+	// 	__SS__ << "\nTransition to Configuring interrupted! "
+	// 	       << "The Configuration Manager could not be initialized." << __E__;
 
-	RunControlStateMachine::theProgressBar_.step();
+	// 	__COUT_ERR__ << "\n" << ss.str();
+	// 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+	// 	return;
+	// }
 
-	if(theConfigurationTableGroup_.second.isInvalid())
-	{
-		__SS__ << "\nTransition to Configuring interrupted! System Alias " << systemAlias << " could not be translated to a group name and key." << __E__;
+	// RunControlStateMachine::theProgressBar_.step();
 
-		__COUT_ERR__ << "\n" << ss.str();
-		XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
-		return;
-	}
+	// // Translate the system alias to a group name/key
+	// try
+	// {
+	// 	theConfigurationTableGroup_ = CorePropertySupervisorBase::theConfigurationManager_->getTableGroupFromAlias(systemAlias);
+	// }
+	// catch(...)
+	// {
+	// 	__COUT_INFO__ << "Exception occurred" << __E__;
+	// }
 
-	RunControlStateMachine::theProgressBar_.step();
+	// RunControlStateMachine::theProgressBar_.step();
+
+	// if(theConfigurationTableGroup_.second.isInvalid())
+	// {
+	// 	__SS__ << "\nTransition to Configuring interrupted! System Alias " << systemAlias << " could not be translated to a group name and key." << __E__;
+
+	// 	__COUT_ERR__ << "\n" << ss.str();
+	// 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+	// 	return;
+	// }
+
+	// RunControlStateMachine::theProgressBar_.step();
 
 	__COUT__ << "Configuration table group name: " << theConfigurationTableGroup_.first << " key: " << theConfigurationTableGroup_.second << __E__;
 
 	// make logbook entry
 	{
 		std::stringstream ss;
-		ss << "Configuring '" << systemAlias << "' which translates to " << theConfigurationTableGroup_.first << " (" << theConfigurationTableGroup_.second
+		ss << "Configuring with System Configuration Alias '" << configurationAlias << 
+			"' which translates to " << theConfigurationTableGroup_.first << " (" << theConfigurationTableGroup_.second
 		   << ").";
 
-		if(activeStateMachineConfigureLogEntry_ != "")
-			ss << " User log entry:\n " << StringMacros::decodeURIComponent(activeStateMachineConfigureLogEntry_);
-
+		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
+			ss << " User log entry:\n " << 
+				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+		else
+			ss << " No user log entry.";
 		makeSystemLogEntry(ss.str());
 	}  // end make logbook entry
 
 	RunControlStateMachine::theProgressBar_.step();
 
-	// load and activate
+	// // load and activate
+	// try
+	// {
+	// 	//first get group type - it must be Configuration type!
+	// 	std::string groupTypeString;
+	// 	CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
+	// 		theConfigurationTableGroup_.first, theConfigurationTableGroup_.second,
+	// 		false /*doActivate*/,
+	// 		0 /*groupMembers      */,
+	// 		0 /*progressBar       */,
+	// 		0 /*accumulateWarnings*/,
+	// 		0 /*groupComment      */,
+	// 		0 /*groupAuthor       */,
+	// 		0 /*groupCreateTime   */,
+	// 		true /*doNotLoadMember */,
+	// 		&groupTypeString
+	// 		);
+	// 	if(groupTypeString != ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
+	// 	{
+	// 		__SS__ << "Illegal attempted configuration group type. The table group '" <<
+	// 			theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second << ")' is of type " <<
+	// 			groupTypeString << ". It must be " << ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION << "." << __E__;
+	// 		__SS_THROW__;
+	// 	}
+
+	// 	CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
+	// 	    theConfigurationTableGroup_.first, theConfigurationTableGroup_.second, true /*doActivate*/);
+
+	// 	__COUT__ << "Done loading Configuration Alias." << __E__;
+
+	// 	// mark the translated group as the last activated group
+	// 	std::pair<std::string /*group name*/, TableGroupKey> activatedGroup(std::string(theConfigurationTableGroup_.first), theConfigurationTableGroup_.second);
+	// 	ConfigurationManager::saveGroupNameAndKey(activatedGroup, ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE);
+
+	// 	__COUT__ << "Done activating Configuration Alias." << __E__;
+	// }
+	// catch(const std::runtime_error& e)
+	// {
+	// 	__SS__ << "\nTransition to Configuring interrupted! System Alias " << systemAlias << " was translated to " << theConfigurationTableGroup_.first << " ("
+	// 	       << theConfigurationTableGroup_.second << ") but could not be loaded and initialized." << __E__;
+	// 	ss << "\n\nHere was the error: " << e.what()
+	// 	   << "\n\nTo help debug this problem, try activating this group in the Configuration "
+	// 	      "GUI "
+	// 	   << " and detailed errors will be shown." << __E__;
+	// 	__COUT_ERR__ << "\n" << ss.str();
+	// 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+	// 	return;
+	// }
+	// catch(...)
+	// {
+	// 	__SS__ << "\nTransition to Configuring interrupted! System Alias " << systemAlias << " was translated to " << theConfigurationTableGroup_.first << " ("
+	// 	       << theConfigurationTableGroup_.second << ") but could not be loaded and initialized." << __E__;
+	// 	try	{ throw; } //one more try to printout extra info
+	// 	catch(const std::exception &e)
+	// 	{
+	// 		ss << "Exception message: " << e.what();
+	// 	}
+	// 	catch(...){}
+	// 	ss << "\n\nTo help debug this problem, try activating this group in the Configuration "
+	// 	      "GUI "
+	// 	   << " and detailed errors will be shown." << __E__;
+	// 	__COUT_ERR__ << "\n" << ss.str();
+	// 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+	// 	return;
+	// }
+
 	try
 	{
-		//first get group type - it must be Configuration type!
-		std::string groupTypeString;
-		CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
-			theConfigurationTableGroup_.first, theConfigurationTableGroup_.second,
-			false /*doActivate*/,
-			0 /*groupMembers      */,
-			0 /*progressBar       */,
-			0 /*accumulateWarnings*/,
-			0 /*groupComment      */,
-			0 /*groupAuthor       */,
-			0 /*groupCreateTime   */,
-			true /*doNotLoadMember */,
-			&groupTypeString
-			);
-		if(groupTypeString != ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
-		{
-			__SS__ << "Illegal attempted configuration group type. The table group '" <<
-				theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second << ")' is of type " <<
-				groupTypeString << ". It must be " << ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION << "." << __E__;
-			__SS_THROW__;
-		}
-
-		CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
-		    theConfigurationTableGroup_.first, theConfigurationTableGroup_.second, true /*doActivate*/);
-
-		__COUT__ << "Done loading Configuration Alias." << __E__;
-
-		// mark the translated group as the last activated group
-		std::pair<std::string /*group name*/, TableGroupKey> activatedGroup(std::string(theConfigurationTableGroup_.first), theConfigurationTableGroup_.second);
-		ConfigurationManager::saveGroupNameAndKey(activatedGroup, ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE);
-
-		__COUT__ << "Done activating Configuration Alias." << __E__;
+		CorePropertySupervisorBase::theConfigurationManager_->dumpMacroMakerModeFhicl();
 	}
-	catch(const std::runtime_error& e)
+	catch(...)  // ignore error for now
 	{
-		__SS__ << "\nTransition to Configuring interrupted! System Alias " << systemAlias << " was translated to " << theConfigurationTableGroup_.first << " ("
-		       << theConfigurationTableGroup_.second << ") but could not be loaded and initialized." << __E__;
-		ss << "\n\nHere was the error: " << e.what()
-		   << "\n\nTo help debug this problem, try activating this group in the Configuration "
-		      "GUI "
-		   << " and detailed errors will be shown." << __E__;
-		__COUT_ERR__ << "\n" << ss.str();
-		XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
-		return;
-	}
-	catch(...)
-	{
-		__SS__ << "\nTransition to Configuring interrupted! System Alias " << systemAlias << " was translated to " << theConfigurationTableGroup_.first << " ("
-		       << theConfigurationTableGroup_.second << ") but could not be loaded and initialized." << __E__;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
-		{
-			ss << "Exception message: " << e.what();
-		}
-		catch(...){}
-		ss << "\n\nTo help debug this problem, try activating this group in the Configuration "
-		      "GUI "
-		   << " and detailed errors will be shown." << __E__;
-		__COUT_ERR__ << "\n" << ss.str();
-		XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
-		return;
-	}
-
-	// check if configuration dump is enabled on configure transition
-	{
-		try
-		{
-			CorePropertySupervisorBase::theConfigurationManager_->dumpMacroMakerModeFhicl();
-		}
-		catch(...)  // ignore error for now
-		{
-			__COUT_ERR__ << "Failed to dump MacroMaker mode fhicl." << __E__;
-		}
-
-		ConfigurationTree configLinkNode =
-		    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
-		if(!configLinkNode.isDisconnected())
-		{
-			try  // errors in dump are not tolerated
-			{
-				bool        dumpConfiguration   = true;
-				bool        requireUserLogInput = false;
-				std::string dumpFilePath, dumpFileRadix, dumpFormat;
-
-				bool doThrow = false;
-				try  // for backwards compatibility
-				{
-					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
-					dumpConfiguration             = fsmLinkNode.getNode("EnableConfigurationDumpOnConfigureTransition").getValue<bool>();
-					doThrow                       = true;  // at this point throw the exception!
-					dumpFilePath = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFilePath").getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
-					dumpFileRadix =
-					    fsmLinkNode.getNode("ConfigurationDumpOnConfigureFileRadix").getValueWithDefault<std::string>("ConfigTransitionConfigurationDump");
-					dumpFormat          = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFormat").getValue<std::string>();
-					requireUserLogInput = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>();
-				}
-				catch(std::runtime_error& e)  // throw exception on missing fields if dumpConfiguration set
-				{
-					__COUT_INFO__ << "FSM configuration dump Link disconnected at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
-					              << supervisorContextUID_ << "/" << supervisorApplicationUID_ << "/"
-					              << "LinkToStateMachineTable/" << activeStateMachineName_ << "/"
-					              << "EnableConfigurationDumpOnConfigureTransition" << __E__;
-					if(doThrow)
-					{
-						__SS__ << "Configuration Dump on Configure transition was enabled, but there are missing fields! " << e.what() << __E__;
-						__SS_THROW__;
-					}
-					dumpConfiguration = false;
-				}
-
-				if(dumpConfiguration)
-				{
-					__COUT_INFO__ << "Dumping the Configuration on the Configuration transition..." << __E__;
-					// dump configuration
-					CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
-					    dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
-					    dumpFormat,
-					    requireUserLogInput ? activeStateMachineConfigureLogEntry_ : "",
-					    theWebUsers_.getActiveUsersString());
-				}
-				else
-					__COUT_INFO__ << "Not dumping the Configuration on the Configuration transition." << __E__;
-			}
-			catch(std::runtime_error& e)
-			{
-				__SS__ << "\nTransition to Configuring interrupted! There was an error "
-				          "identified "
-				       << "during the configuration dump attempt:\n\n " << e.what() << __E__;
-				__COUT_ERR__ << "\n" << ss.str();
-				XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
-				return;
-			}
-			catch(...)
-			{
-				__SS__ << "\nTransition to Configuring interrupted! There was an error "
-				          "identified "
-				       << "during the configuration dump attempt.\n\n " << __E__;
-				try	{ throw; } //one more try to printout extra info
-				catch(const std::exception &e)
-				{
-					ss << "Exception message: " << e.what();
-				}
-				catch(...){}
-				__COUT_ERR__ << "\n" << ss.str();
-				XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
-				return;
-			}
-		}
-		else
-			__COUT_INFO__ << "No Gateway Supervisor configuration record found at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
-			              << supervisorContextUID_ << "/" << supervisorApplicationUID_
-			              << "' - consider adding one to control configuration dumps and state machine properties." << __E__;
+		__COUT_ERR__ << "Failed to dump MacroMaker mode fhicl." << __E__;
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -3052,20 +3130,350 @@ try
 			return;
 		}
 	}  // end update Macro Maker front end list
+	RunControlStateMachine::theProgressBar_.step();
 
 	// xoap::MessageReference message =
 	// SOAPUtilities::makeSOAPMessageReference(SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand(),
 	// parameters);
+
 	xoap::MessageReference message = theStateMachine_.getCurrentMessage();
 	SOAPUtilities::addParameters(message, parameters);
-	broadcastMessage(message);
+	//Note: Must save configuration dump after this point!! In case there are remote subsystems responding with string
+	broadcastMessage(message); // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
-	// Advertise the exiting of this method
-	// diagService_->reportError("GatewaySupervisor::stateConfiguring: Exiting",DIAGINFO);
 
+
+	//check for remote subsystem dumps (after broadcast!)
+	std::string remoteSubsystemDump = "";
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		for(auto& remoteGatewayApp : remoteGatewayApps_)
+			remoteSubsystemDump += remoteGatewayApp.config_dump;
+
+		if(remoteSubsystemDump.size())
+			__COUTV__(remoteSubsystemDump);
+	} //end check for remote subsystem dumps
+	RunControlStateMachine::theProgressBar_.step();
+
+	if(activeStateMachineConfigurationDumpOnConfigureEnable_)
+	{
+		//write local configuration dump file
+		std::string fullfilename = activeStateMachineConfigurationDumpOnConfigureFilename_ +
+			"_" + std::to_string(time(0)) + ".dump";
+		FILE* fp = fopen(fullfilename.c_str(), "w");
+		if(!fp)
+		{
+			__SS__ << "Configuration dump failed to file: " << fullfilename << __E__;
+			__SS_THROW__;
+		}
+
+		//(a la ConfigurationManager::dumpActiveConfiguration)
+		fullfilename = __ENV__("HOSTNAME") + std::string(":") + fullfilename;
+		fprintf(fp,"Original location of dump:               %s\n",fullfilename.c_str());
+
+		if(activeStateMachineConfigurationDumpOnConfigure_.size())
+			fwrite(&activeStateMachineConfigurationDumpOnConfigure_[0], 1, 
+				activeStateMachineConfigurationDumpOnConfigure_.size(), fp); 
+		__COUT__ << "Wrote configuration dump of char count " << 
+			activeStateMachineConfigurationDumpOnConfigure_.size() << 
+			" to file: " << fullfilename << __E__;
+
+		if(remoteSubsystemDump.size())
+		{
+			fwrite(&remoteSubsystemDump[0], 1, 
+				remoteSubsystemDump.size(), fp); 
+
+			__COUT__ << "Wrote remote subsystem configuration dump of char count " << 
+				remoteSubsystemDump.size() << 
+				" to file: " << fullfilename << __E__;
+		}
+		fclose(fp);
+
+		__COUT_INFO__ << "Configure transition Configuration Dump saved to file: " << fullfilename << __E__;
+	} //done with local config dump
+	RunControlStateMachine::theProgressBar_.step();
+
+	// Check if Run Plugin is defined and, if so, create a new condition record into database
+	// leave as repeated code in case dumpFormat is different for Run Plugin (in the future)
+	try
+	{						
+		if(activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
+			activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
+		{
+			std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+			try	{ runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_, activeStateMachineName_));} catch(...) {;}
+			if(runInfoInterface == nullptr)
+			{
+				__SS__ << "Run Info interface plugin construction failed of type " << activeStateMachineRunInfoPluginType_ << 
+					" for inserting Run Condition record of char size " << 
+					activeStateMachineConfigurationDumpOnConfigure_.size() << __E__;
+				__SS_THROW__;
+			}
+
+			conditionID_ = runInfoInterface->insertRunCondition(
+				activeStateMachineConfigurationDumpOnConfigure_ + 
+				remoteSubsystemDump);
+		}  // end Run Info Plugin handling
+	}
+	catch(const std::runtime_error& e)
+	{
+		__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << e.what() << __E__;
+		__SS_THROW__;
+	}
+	catch(...)
+	{
+		__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << __E__;
+		try	{ throw; } //one more try to printout extra info
+		catch(const std::exception &e)
+		{
+			ss << "Exception message: " << e.what();
+		}
+		catch(...){}
+		__SS_THROW__;
+	}  // End write run condition into db
+	RunControlStateMachine::theProgressBar_.step();
+
+	// // Check if Run Plugin is defined and, if so, create a new condition record into database
+	// // leave as repeated code in case dumpFormat is different for Run Plugin (in the future)
+	// try
+	// {						
+	// 	if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+	// 	{
+	// 		std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+	// 		try
+	// 		{
+	// 			// dump configuration
+	// 			CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+	// 				"",
+	// 				dumpOnRunFormat,
+	// 				lastConfigurationAlias_,
+	// 				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+	// 				theWebUsers_.getActiveUsersString(),
+	// 				remoteSubsystemDump,
+	// 				dumpSs);
+
+	// 			runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+	// 		}
+	// 		catch(...)
+	// 		{
+	// 		}
+
+	// 		if(runInfoInterface == nullptr)
+	// 		{
+	// 			__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << 
+	// 				" for configuration dump format " << dumpFormat << __E__;
+	// 			__SS_THROW__;
+	// 		}
+
+	// 		conditionID_ = runInfoInterface->insertRunCondition(dumpSs.str());
+	// 	}  // end Run Info Plugin handling
+	// }
+	// catch(const std::runtime_error& e)
+	// {
+	// 	// ERROR
+	// 	__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << e.what() << __E__;
+	// 	__SS_THROW__;
+	// }
+	// catch(...)
+	// {
+	// 	// ERROR
+	// 	__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << __E__;
+	// 	try	{ throw; } //one more try to printout extra info
+	// 	catch(const std::exception &e)
+	// 	{
+	// 		ss << "Exception message: " << e.what();
+	// 	}
+	// 	catch(...){}
+	// 	__SS_THROW__;
+	// }  // End write run condition into db
+
+	// check if configuration dump is enabled on configure transition
+	// if(0)
+	// {
+	// 	ConfigurationTree configLinkNode =
+	// 	    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+	// 	if(!configLinkNode.isDisconnected())
+	// 	{
+	// 		try  // errors in dump are not tolerated
+	// 		{
+	// 			bool        dumpConfiguration   = true;
+	// 			bool        requireUserLogInput = false;
+	// 			std::string dumpFilePath, dumpFileRadix, dumpFormat, dumpOnRunFormat;
+
+	// 			std::string runInfoPluginType = TableViewColumnInfo::DATATYPE_STRING_DEFAULT;
+
+	// 			bool doThrow = false;
+	// 			try  // for backwards compatibility
+	// 			{
+	// 				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
+	// 				dumpConfiguration             = fsmLinkNode.getNode("EnableConfigurationDumpOnConfigureTransition").getValue<bool>();
+	// 				doThrow                       = true;  // at this point throw the exception!
+	// 				dumpFilePath = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFilePath").getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
+	// 				dumpFileRadix =
+	// 				    fsmLinkNode.getNode("ConfigurationDumpOnConfigureFileRadix").getValueWithDefault<std::string>("ConfigTransitionConfigurationDump");
+	// 				dumpFormat          = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFormat").getValue<std::string>();					
+	// 				requireUserLogInput = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>();
+
+	// 				try
+	// 				{ 
+	// 					runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>(); 
+	// 					dumpOnRunFormat   = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
+	// 				}
+	// 				catch(...) //ignore missing RunInfoPluginType
+	// 				{ 
+	// 					__COUT__ << "RunInfoPluginType not defined for FSM name '" <<
+	// 						activeStateMachineName_ << "' - please setup a valid run info plugin type to enable external Run Number coordination and dumping configuration info to an external location." << __E__; 
+	// 				} 
+	// 			}
+	// 			catch(std::runtime_error& e)  // throw exception on missing fields if dumpConfiguration set
+	// 			{
+	// 				__COUT_INFO__ << "FSM configuration dump Link disconnected at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
+	// 				              << supervisorContextUID_ << "/" << supervisorApplicationUID_ << "/"
+	// 				              << "LinkToStateMachineTable/" << activeStateMachineName_ << "/"
+	// 				              << "EnableConfigurationDumpOnConfigureTransition" << __E__;
+	// 				if(doThrow)
+	// 				{
+	// 					__SS__ << "Configuration Dump on Configure transition was enabled, but there are missing fields! " << e.what() << __E__;
+	// 					__SS_THROW__;
+	// 				}
+	// 				dumpConfiguration = false;
+	// 			}
+
+	// 			if(requireUserLogInput && getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME).size() < 3)
+	// 			{
+	// 				__SS__ << "Error - the state machine property 'RequireUserLogInputOnConfigureTransition' has been enabled which requires the user to enter "
+	// 				          "at least 3 characters of log info to proceed with the Configure transition."
+	// 				       << __E__;
+	// 				__SS_THROW__;
+	// 			}
+
+	// 			RunControlStateMachine::theProgressBar_.step();
+
+	// 			//check for remote subsystem dumps
+	// 			std::string remoteSubsystemDump = "";
+	// 			{
+	// 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+	// 				for(auto& remoteGatewayApp : remoteGatewayApps_)
+	// 				{
+	// 					remoteSubsystemDump += remoteGatewayApp.config_dump;
+	// 				}
+
+	// 				if(remoteSubsystemDump.size())
+	// 					__COUTV__(remoteSubsystemDump);
+
+	// 			} //end check for remote subsystem dumps
+
+	// 			RunControlStateMachine::theProgressBar_.step();
+
+	// 			if(dumpConfiguration)
+	// 			{
+	// 				__COUT_INFO__ << "Dumping the Configuration on the Configuration transition..." << __E__;
+
+	// 				// dump configuration
+	// 				CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+	// 				    dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
+	// 				    dumpFormat,
+	// 					lastConfigurationAlias_,
+	// 					getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+	// 				    theWebUsers_.getActiveUsersString(),
+	// 					remoteSubsystemDump);
+					
+	// 			}
+	// 			else
+	// 				__COUT_INFO__ << "Not dumping the Configuration on the Configuration transition." << __E__;
+
+	// 			std::stringstream dumpSs;
+	// 			// Check if Run Plugin is defined and, if so, create a new condition record into database
+	// 			// leave as repeated code in case dumpFormat is different for Run Plugin (in the future)
+	// 			try
+	// 			{						
+	// 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+	// 				{
+	// 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+	// 					try
+	// 					{
+	// 						// dump configuration
+	// 						CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+	// 							"",
+	// 							dumpOnRunFormat,
+	// 							lastConfigurationAlias_,
+	// 							getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+	// 							theWebUsers_.getActiveUsersString(),
+	// 							remoteSubsystemDump,
+	// 							dumpSs);
+
+	// 						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+	// 					}
+	// 					catch(...)
+	// 					{
+	// 					}
+
+	// 					if(runInfoInterface == nullptr)
+	// 					{
+	// 						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << 
+	// 							" for configuration dump format " << dumpFormat << __E__;
+	// 						__SS_THROW__;
+	// 					}
+
+	// 					conditionID_ = runInfoInterface->insertRunCondition(dumpSs.str());
+	// 				}  // end Run Info Plugin handling
+	// 			}
+	// 			catch(const std::runtime_error& e)
+	// 			{
+	// 				// ERROR
+	// 				__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << e.what() << __E__;
+	// 				__SS_THROW__;
+	// 			}
+	// 			catch(...)
+	// 			{
+	// 				// ERROR
+	// 				__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << __E__;
+	// 				try	{ throw; } //one more try to printout extra info
+	// 				catch(const std::exception &e)
+	// 				{
+	// 					ss << "Exception message: " << e.what();
+	// 				}
+	// 				catch(...){}
+	// 				__SS_THROW__;
+	// 			}  // End write run condition into db
+	// 		}
+	// 		catch(std::runtime_error& e)
+	// 		{
+	// 			__SS__ << "\nTransition to Configuring interrupted! There was an error "
+	// 			          "identified "
+	// 			       << "during the configuration dump attempt:\n\n " << e.what() << __E__;
+	// 			__COUT_ERR__ << "\n" << ss.str();
+	// 			XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+	// 			return;
+	// 		}
+	// 		catch(...)
+	// 		{
+	// 			__SS__ << "\nTransition to Configuring interrupted! There was an error "
+	// 			          "identified "
+	// 			       << "during the configuration dump attempt.\n\n " << __E__;
+	// 			try	{ throw; } //one more try to printout extra info
+	// 			catch(const std::exception &e)
+	// 			{
+	// 				ss << "Exception message: " << e.what();
+	// 			}
+	// 			catch(...){}
+	// 			__COUT_ERR__ << "\n" << ss.str();
+	// 			XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+	// 			return;
+	// 		}
+	// 	}
+	// 	else
+	// 		__COUT_INFO__ << "No Gateway Supervisor configuration record found at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
+	// 		              << supervisorContextUID_ << "/" << supervisorApplicationUID_
+	// 		              << "' - consider adding one to control configuration dumps and state machine properties." << __E__;
+	// } //end check if configuration dump is enabled on configure transition
+	
+	RunControlStateMachine::theProgressBar_.step();
+	
 	// save last configured group name/key
 	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_, FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
 
+	makeSystemLogEntry("System configured.");
 	__COUT__ << "Done configuring." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionConfiguring()
@@ -3120,6 +3528,7 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
+	makeSystemLogEntry("System halted.");
 	__COUT__ << "Done halting." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionHalting()
@@ -3185,6 +3594,7 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
+	makeSystemLogEntry("System shutdown complete.");
 	__COUT__ << "Done shutting down." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionShuttingDown()
@@ -3247,6 +3657,7 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
+	makeSystemLogEntry("System startup complete.");
 	__COUT__ << "Done starting up." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3298,6 +3709,7 @@ try
 	__COUT__ << "Fsm current transition: " << theStateMachine_.getCurrentTransitionName(event->type()) << __E__;
 	__COUT__ << "Fsm final state: " << theStateMachine_.getTransitionFinalStateName(event->type()) << __E__;
 
+	makeSystemLogEntry("System initialized.");
 	__COUT__ << "Done initializing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3374,6 +3786,7 @@ try
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
 
+	makeSystemLogEntry("Run paused.");
 	__COUT__ << "Done pausing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3510,106 +3923,173 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 	// check if configuration dump is enabled on configure transition
-	{
-		ConfigurationTree configLinkNode =
-		    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
-		if(!configLinkNode.isDisconnected())
-		{
-			try  // errors in dump are not tolerated
-			{
-				bool        dumpConfiguration   = true;
-				bool        requireUserLogInput = false;
-				std::string dumpFilePath, dumpFileRadix, dumpFormat;
+	// if(0)
+	// {
+	// 	ConfigurationTree configLinkNode =
+	// 	    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+	// 	if(!configLinkNode.isDisconnected())
+	// 	{
+	// 		try  // errors in dump are not tolerated
+	// 		{
+	// 			bool        dumpConfiguration   = true;
+	// 			bool        requireUserLogInput = false;
+	// 			std::string dumpFilePath, dumpFileRadix, dumpFormat;
 
-				bool doThrow = false;
-				try  // for backwards compatibility
-				{
-					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
-					dumpConfiguration             = fsmLinkNode.getNode("EnableConfigurationDumpOnRunTransition").getValue<bool>();
-					doThrow                       = true;  // at this point throw the exception!
-					dumpFilePath  = fsmLinkNode.getNode("ConfigurationDumpOnRunFilePath").getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
-					dumpFileRadix = fsmLinkNode.getNode("ConfigurationDumpOnRunFileRadix").getValueWithDefault<std::string>("RunTransitionConfigurationDump");
-					dumpFormat    = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
-					requireUserLogInput = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>();
-				}
-				catch(std::runtime_error& e)  // throw exception on missing fields if dumpConfiguration set
-				{
-					__COUT_INFO__ << "FSM configuration dump Link disconnected at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
-					              << supervisorContextUID_ << "/" << supervisorApplicationUID_ << "/"
-					              << "LinkToStateMachineTable/" << activeStateMachineName_ << "/"
-					              << "EnableConfigurationDumpOnRunTransition" << __E__;
-					if(doThrow)
-					{
-						__SS__ << "Configuration Dump on the Run Start transition was enabled, but there are missing fields! " << e.what() << __E__;
-						__SS_THROW__;
-					}
-					dumpConfiguration = false;
-				}
+	// 			bool doThrow = false;
+	// 			try  // for backwards compatibility
+	// 			{
+	// 				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
+	// 				dumpConfiguration             = fsmLinkNode.getNode("EnableConfigurationDumpOnRunTransition").getValue<bool>();
+	// 				doThrow                       = true;  // at this point throw the exception!
+	// 				dumpFilePath  = fsmLinkNode.getNode("ConfigurationDumpOnRunFilePath").getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
+	// 				dumpFileRadix = fsmLinkNode.getNode("ConfigurationDumpOnRunFileRadix").getValueWithDefault<std::string>("RunTransitionConfigurationDump");
+	// 				dumpFormat    = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
+	// 				requireUserLogInput = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>();
+	// 			}
+	// 			catch(std::runtime_error& e)  // throw exception on missing fields if dumpConfiguration set
+	// 			{
+	// 				__COUT_INFO__ << "FSM configuration dump Link disconnected at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
+	// 				              << supervisorContextUID_ << "/" << supervisorApplicationUID_ << "/"
+	// 				              << "LinkToStateMachineTable/" << activeStateMachineName_ << "/"
+	// 				              << "EnableConfigurationDumpOnRunTransition" << __E__;
+	// 				if(doThrow)
+	// 				{
+	// 					__SS__ << "Configuration Dump on the Run Start transition was enabled, but there are missing fields! " << e.what() << __E__;
+	// 					__SS_THROW__;
+	// 				}
+	// 				dumpConfiguration = false;
+	// 			}
 
-				if(dumpConfiguration)
-				{
-					__COUT_INFO__ << "Dumping the Configuration on the Run Start transition..." << __E__;
-					// dump configuration
-					CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
-					    dumpFilePath + "/" + dumpFileRadix + "_Run" + activeStateMachineRunNumber_ + "_" + std::to_string(time(0)) + ".dump",
-					    dumpFormat,
-					    requireUserLogInput ? activeStateMachineStartLogEntry_ : "",
-					    theWebUsers_.getActiveUsersString());
-				}
-				else
-					__COUT_INFO__ << "Not dumping the Configuration on the Run Start transition." << __E__;
-			}
-			catch(std::runtime_error& e)
-			{
-				__SS__ << "\nTransition to Running interrupted! There was an error "
-				          "identified "
-				       << "during the configuration dump attempt:\n\n " << e.what() << __E__;
-				__COUT_ERR__ << "\n" << ss.str();
-				XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
-				return;
-			}
-			catch(...)
-			{
-				__SS__ << "\nTransition to Running interrupted! There was an error "
-				          "identified "
-				       << "during the configuration dump attempt.\n\n " << __E__;
-				try	{ throw; } //one more try to printout extra info
-				catch(const std::exception &e)
-				{
-					ss << "Exception message: " << e.what();
-				}
-				catch(...){}
-				__COUT_ERR__ << "\n" << ss.str();
-				XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
-				return;
-			}
-		}
-		else
-			__COUT_INFO__ << "No Gateway Supervisor configuration record found at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
-			              << supervisorContextUID_ << "/" << supervisorApplicationUID_
-			              << "' - consider adding one to control configuration dumps and state machine properties." << __E__;
-	}
+	// 			if(requireUserLogInput && getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME).size() < 3)
+	// 			{
+	// 				__SS__ << "Error - the state machine property 'RequireUserLogInputOnRunTransition' has been enabled which requires the user to enter "
+	// 				          "at least 3 characters of log info to proceed with the Start transition."
+	// 				       << __E__;
+	// 				__SS_THROW__;
+	// 			}
+
+	// 			if(dumpConfiguration)
+	// 			{
+	// 				__COUT_INFO__ << "Dumping the Configuration on the Run Start transition..." << __E__;
+	// 				// dump configuration
+	// 				CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
+	// 				    dumpFilePath + "/" + dumpFileRadix + "_Run" + activeStateMachineRunNumber_ + "_" + std::to_string(time(0)) + ".dump",
+	// 				    dumpFormat,
+	// 					lastConfigurationAlias_,
+	// 					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME),
+	// 				    theWebUsers_.getActiveUsersString());
+	// 			}
+	// 			else
+	// 				__COUT_INFO__ << "Not dumping the Configuration on the Run Start transition." << __E__;
+	// 		}
+	// 		catch(std::runtime_error& e)
+	// 		{
+	// 			__SS__ << "\nTransition to Running interrupted! There was an error "
+	// 			          "identified "
+	// 			       << "during the configuration dump attempt:\n\n " << e.what() << __E__;
+	// 			__COUT_ERR__ << "\n" << ss.str();
+	// 			XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+	// 			return;
+	// 		}
+	// 		catch(...)
+	// 		{
+	// 			__SS__ << "\nTransition to Running interrupted! There was an error "
+	// 			          "identified "
+	// 			       << "during the configuration dump attempt.\n\n " << __E__;
+	// 			try	{ throw; } //one more try to printout extra info
+	// 			catch(const std::exception &e)
+	// 			{
+	// 				ss << "Exception message: " << e.what();
+	// 			}
+	// 			catch(...){}
+	// 			__COUT_ERR__ << "\n" << ss.str();
+	// 			XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+	// 			return;
+	// 		}
+	// 	}
+	// 	else
+	// 		__COUT_INFO__ << "No Gateway Supervisor configuration record found at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
+	// 		              << supervisorContextUID_ << "/" << supervisorApplicationUID_
+	// 		              << "' - consider adding one to control configuration dumps and state machine properties." << __E__;
+	// }
 
 	// make logbook entry
 	{
 		std::stringstream ss;
 		ss << "Run '" << activeStateMachineRunNumber_ << "' starting.";
 
-		if(activeStateMachineStartLogEntry_ != "")
-			ss << " User log entry:\n " << StringMacros::decodeURIComponent(activeStateMachineStartLogEntry_);
+		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
+			ss << " User log entry:\n " << 
+					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
+		else 
+			ss << " No user log entry.";
 
 		makeSystemLogEntry(ss.str());
 	}  // end make logbook entry
+	RunControlStateMachine::theProgressBar_.step();
+
 
 	activeStateMachineRunStartTime   = std::chrono::steady_clock::now();
 	activeStateMachineRunDuration_ms = 0;
-	broadcastMessage(theStateMachine_.getCurrentMessage());
-
+	broadcastMessage(theStateMachine_.getCurrentMessage()); // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
+
+
+	//check for remote subsystem dumps (after broadcast!)
+	std::string remoteSubsystemDump = "";
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		for(auto& remoteGatewayApp : remoteGatewayApps_)
+			remoteSubsystemDump += remoteGatewayApp.config_dump;
+
+		if(remoteSubsystemDump.size())
+			__COUTV__(remoteSubsystemDump);
+	} //end check for remote subsystem dumps
+	RunControlStateMachine::theProgressBar_.step();
+	
+	if(activeStateMachineConfigurationDumpOnRunEnable_)
+	{
+		//write local configuration dump file
+		std::string fullfilename = activeStateMachineConfigurationDumpOnRunFilename_ +
+			"_" + std::to_string(time(0)) + ".dump";
+		FILE* fp = fopen(fullfilename.c_str(), "w");
+		if(!fp)
+		{
+			__SS__ << "Configuration dump failed to file: " << fullfilename << __E__;
+			__SS_THROW__;
+		}
+
+		//(a la ConfigurationManager::dumpActiveConfiguration)
+		fullfilename = __ENV__("HOSTNAME") + std::string(":") + fullfilename;
+		fprintf(fp,"Original location of dump:               %s\n", fullfilename.c_str());
+
+		if(activeStateMachineConfigurationDumpOnRun_.size())
+			fwrite(&activeStateMachineConfigurationDumpOnRun_[0], 1, 
+				activeStateMachineConfigurationDumpOnRun_.size(), fp); 
+		__COUT__ << "Wrote configuration dump of char count " << 
+			activeStateMachineConfigurationDumpOnRun_.size() << 
+			" to file: " << fullfilename << __E__;
+
+		if(remoteSubsystemDump.size())
+		{
+			fwrite(&remoteSubsystemDump[0], 1, 
+				remoteSubsystemDump.size(), fp); 
+
+			__COUT__ << "Wrote remote subsystem configuration dump of char count " << 
+				remoteSubsystemDump.size() << 
+				" to file: " << fullfilename << __E__;
+		}
+		fclose(fp);
+
+		__COUT_INFO__ << "Run transition Configuration Dump saved to file: " << fullfilename << __E__;
+	} //done with local config dump
+	RunControlStateMachine::theProgressBar_.step();
+
 
 	// save last started group name/key
 	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_, FSM_LAST_STARTED_GROUP_ALIAS_FILE);
 
+	makeSystemLogEntry("Run started.");
 	__COUT__ << "Done starting run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3687,9 +4167,9 @@ try
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
 
+	makeSystemLogEntry("Run stopped.");
 	__COUT__ << "Done stopping run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
-
 }  // end transitionStopping()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -4418,13 +4898,11 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(const xoap::MessageRefe
 				__COUTTV__(param.first);
 				__COUTTV__(param.second);
 				if(param.first == "ConfigurationAlias")
-				{	
+				{						
 					if(remoteGatewayApp.selected_config_alias != "") //replace 
-						commandAndParams += "," + //param.first + ":" + 
-							remoteGatewayApp.selected_config_alias;
+						commandAndParams += "," + remoteGatewayApp.selected_config_alias;						 
 					else
-						commandAndParams += "," + //param.first + ":" + 
-							param.second;
+						commandAndParams += "," + param.second;
 				}
 				else if(param.first == "Run Number")
 				{	
@@ -4440,27 +4918,33 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(const xoap::MessageRefe
 
 		if(!remoteGatewayApp.fsm_included)
 		{
-			__COUTT__ << "Skipping excluded Remote gateway '" << 
+			__COUT__ << "Skipping excluded Remote gateway '" << 
 				remoteGatewayApp.appInfo.name << "' for FSM command = " << commandAndParams << __E__;
 			continue; //skip if not included
 		}
 
 		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt && 
+			//do not allow halt/err transitions:
 			(command == RunControlStateMachine::ERROR_TRANSITION_NAME || 
 			command == RunControlStateMachine::FAIL_TRANSITION_NAME || 
 			command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 			command == RunControlStateMachine::ABORT_TRANSITION_NAME ))
 		{
-			__COUTT__ << "Skipping '" << remoteGatewayApp.getFsmMode() << "' Remote gateway '" << 
+			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode() << "' Remote gateway '" << 
 				remoteGatewayApp.appInfo.name << "' for FSM command = " << commandAndParams << __E__;
 			continue; //skip if not included
 		}
 
 		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure && 
-			(remoteGatewayApp.appInfo.status != RunControlStateMachine::HALTED_STATE_NAME ||
-			command != RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
+			!  //invert of allowed situations:
+			(remoteGatewayApp.appInfo.status == RunControlStateMachine::INITIAL_STATE_NAME ||
+			remoteGatewayApp.appInfo.status == RunControlStateMachine::HALTED_STATE_NAME ||			
+			remoteGatewayApp.appInfo.status.find(RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
+			remoteGatewayApp.appInfo.status.find("Error") != std::string::npos || //	case "Error", "Soft-Error"									
+			(remoteGatewayApp.appInfo.status == RunControlStateMachine::HALTED_STATE_NAME && 
+				command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
 		{
-			__COUTT__ << "Skipping '" << remoteGatewayApp.getFsmMode() << "' Remote gateway '" << 
+			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode() << "' Remote gateway '" << 
 				remoteGatewayApp.appInfo.name << "' w/status = " << remoteGatewayApp.appInfo.status <<
 				"... for FSM command = " << commandAndParams << __E__;
 			continue; //skip if not included
@@ -4469,7 +4953,20 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(const xoap::MessageRefe
 		__COUT__ << "Launching FSM command '" << commandAndParams << "' on Remote gateway '" << 
 			remoteGatewayApp.appInfo.name << "'..." << __E__;
 
+		if(remoteGatewayApp.command != "")
+		{
+			__SUP_SS__ << "Can not target the remote subsystem '" << remoteGatewayApp.appInfo.name << 
+				"' with command '" << command << "' which already has a pending command '"
+				<< remoteGatewayApp.command << ".' Please try again after the pending command is sent." << __E__;
+			__SUP_SS_THROW__;					
+		}
+
+		remoteGatewayApp.config_dump = ""; //clear, must come from new command completion
 		remoteGatewayApp.command = commandAndParams;
+		
+		std::string logEntry = getLastLogEntry(command);
+		if(logEntry.size())
+			remoteGatewayApp.command += ",LogEntry:" + StringMacros::encodeURIComponent(logEntry);
 		remoteGatewayApp.fsmName = activeStateMachineName_; //fsmName will be prepended during command send
 		//force status for immediate user feedback
 		remoteGatewayApp.appInfo.status = "Launching " + commandAndParams;
@@ -4485,7 +4982,7 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 
 	bool done = command == "Error"; //dont check for done if Error'ing
 	while(!done)
-	{
+	{		
 		__COUT__ << "Checking " << remoteGatewayApps_.size() << " remote gateway(s) completion for command = " <<
 			command << __E__;
 
@@ -4493,12 +4990,37 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 		for(auto& remoteGatewayApp : remoteGatewayApps_)
 		{
+			//skip remote gateways that were not commanded
+			if(!remoteGatewayApp.fsm_included) continue;
+			if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt && 
+				//do not allow halt/err transitions:
+				(command == RunControlStateMachine::ERROR_TRANSITION_NAME || 
+				command == RunControlStateMachine::FAIL_TRANSITION_NAME || 
+				command == RunControlStateMachine::HALT_TRANSITION_NAME ||
+				command == RunControlStateMachine::ABORT_TRANSITION_NAME )) continue;
+			if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure && 
+				!  //invert of allowed situations:
+				(remoteGatewayApp.appInfo.status == RunControlStateMachine::INITIAL_STATE_NAME ||
+				remoteGatewayApp.appInfo.status == RunControlStateMachine::HALTED_STATE_NAME ||			
+				remoteGatewayApp.appInfo.status.find(RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
+				remoteGatewayApp.appInfo.status.find("Error") != std::string::npos || //	case "Error", "Soft-Error"									
+				(remoteGatewayApp.appInfo.status == RunControlStateMachine::HALTED_STATE_NAME && 
+					command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))) continue;	
+			//if here, was commanded, so check status
+
 			if(!(				
 				remoteGatewayApp.appInfo.progress == 100 || 
 				remoteGatewayApp.appInfo.status.find("Error") != std::string::npos ||
-				remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos
+				remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos				
 				))
 			{
+				//not done
+				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
+				{
+					__SS__ <<  "Can not complete FSM command '" << command << "' with unknown status from Remote gateway '" << 
+						remoteGatewayApp.appInfo.name << "' - it seems communication was lost. Please check the connection or notify admins." << __E__;						  
+					__SS_THROW__;
+				}
 				__COUT__ << "Remote gateway '" << remoteGatewayApp.appInfo.name << "' not done w/command '" <<
 					command << "' status = " << remoteGatewayApp.appInfo.status <<
 					",... progress = " << remoteGatewayApp.appInfo.progress << __E__;
@@ -4507,6 +5029,7 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 			}
 			else 
 			{
+				//done
 				__COUTT__ << "Done Remote gateway '" << remoteGatewayApp.appInfo.name << "' w/command '" <<
 					command << "' status = " << remoteGatewayApp.appInfo.status <<
 					",... progress = " << remoteGatewayApp.appInfo.progress << __E__;
@@ -4868,6 +5391,10 @@ void GatewaySupervisor::setSupervisorPropertyDefaults()
 {
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
 	                                                  std::string() + "*=1 | gatewayLaunchOTS=-1 | gatewayLaunchWiz=-1");
+
+	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AllowNoLoginRequestTypes,
+	                                                  "getCurrentState "
+	                                                  " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
 }  // end setSupervisorPropertyDefaults()
 
 //==============================================================================
@@ -4934,6 +5461,7 @@ try
 	// getSystemMessages
 	// setUserWithLock
 	// getStateMachine
+	// getStateMachineLastLogEntry
 	// stateMatchinePreferences
 	// getStateMachineNames
 	// getCurrentState
@@ -5353,9 +5881,24 @@ try
 				theWebUsers_.addSystemMessage(
 				    "*", theWebUsers_.getUserWithLock() == "" ? tmpUserWithLock + " has unlocked ots." : theWebUsers_.getUserWithLock() + " has locked ots.");
 		}
+		else if(requestType == "getStateMachineLastLogEntry")
+		{
+			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");
+			std::string transition  = CgiDataUtilities::getData(cgiIn, "transition");
+			__SUP_COUTV__(fsmName);
+			__SUP_COUTV__(transition);
+			xmlOut.addTextElementToData("lastLogEntry",
+				getLastLogEntry(transition,fsmName));
+		}
 		else if(requestType == "getStateMachine")
 		{
 			// __COUT__ << "Getting state machine" << __E__;
+
+			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");
+			__SUP_COUTVS__(20,fsmName);
+
+			addRequiredFsmLogInputToXML(xmlOut,fsmName);
+
 			std::vector<toolbox::fsm::State> states;
 			states = theStateMachine_.getStates();
 			char stateStr[2];
@@ -5463,7 +6006,7 @@ try
 
 					xmlOut.addTextElementToParent("state_transition_parameter", transParameter, stateParent);
 				}
-			}
+			} //end state traversal loop
 		}
 		else if(requestType == "getStateMachineNames")
 		{
@@ -5879,58 +6422,37 @@ try
 		{
 			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");			
 			bool getRunTypeNote  = CgiDataUtilities::getDataAsInt(cgiIn, "getRunTypeNote");
-			bool getFullInfo = (requestType == "getRemoteSubsystems");
+			bool getFullInfo 	 = (requestType == "getRemoteSubsystems");
+			bool getRunNumber    = CgiDataUtilities::getDataAsInt(cgiIn, "getRunNumber");
 
 			//if full info, then add:
 			//	- system and remote aliases, translations, group notes
 			//	- run type note
 			// - log file rollover mode
 
-			std::unique_ptr<ConfigurationManager>      tmpCfgMgr;
 			if(getFullInfo)
 			{
 				__SUP_COUTV__(fsmName);
 				__SUP_COUTV__(getRunTypeNote);
-
-				// use latest context always from temporary configuration manager,
-				//	to get updated icons every time...
-				//(so icon and remote subsystem control changes do no require an ots restart)
-
-				// // IMPORTANT -- use temporary ConfigurationManager to get the Active Group Aliases,
-				// //	 to avoid changing the Context Configuration tree for the Gateway Supervisor
-
-				// tmpCfgMgr = std::make_unique<ConfigurationManager>();				
-			
-				// std::map<std::string /*alias*/, std::pair<std::string /*group name*/, TableGroupKey>> aliasMap;
-				// aliasMap = tmpCfgMgr->getActiveGroupAliases();
 				
 				//get system and remote aliases, translations, group notes (a la getAliasList request)				
 				addFilteredConfigAliasesToXML(xmlOut, fsmName);
 
-
-				bool        requireUserLogInput = false;
-				ConfigurationTree configLinkNode =
-					CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
-				if(!configLinkNode.isDisconnected())
-				{
-					try //ignore errors
-					{ 
-						ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
-						requireUserLogInput = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); 
-					}
-					catch(...)
-					{ __SUP_COUTT__ << "RequireUserLogInputOnRunTransition not set." << __E__; }
-				}				
-
-				if(requireUserLogInput)
-					xmlOut.addTextElementToData("last_run_log_entry", activeStateMachineStartLogEntry_);
-								
+				addRequiredFsmLogInputToXML(xmlOut,fsmName); //(a la getStateMachine request)
+												
 			} //end getFullInfo prepend
 
 			{ //get system status 
-				//(a la getCurrentState request)
 								
-				addStateMachineStatusToXML(xmlOut, fsmName);	
+				xmlOut.addTextElementToData("last_run_log_entry", 
+						getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME,fsmName));
+
+
+				//getIterationPlanStatus returns iterator status and does not request next run number (which is expensive)
+				//	.. so only get run number 1:10
+				//getIterationPlanStatus will repeat a few fields, but js will just take first field, so doesnt matter
+				addStateMachineStatusToXML(xmlOut, fsmName, getRunNumber);	 //(a la getCurrentState request)
+				theIterator_.handleCommandRequest(xmlOut, "getIterationPlanStatus", "");
 
 				std::lock_guard<std::mutex> lock(systemStatusMutex_); //lock for rest of scope
 
@@ -5939,10 +6461,10 @@ try
 				auto msgPair = theWebUsers_.getLastSystemMessage();
 				xmlOut.addTextElementToData("last_system_message", msgPair.first);
 				xmlOut.addTextElementToData("last_system_message_time", msgPair.second?StringMacros::getTimestampString(msgPair.second):"0");
-				xmlOut.addTextElementToData("active_user_count", std::to_string(theWebUsers_.getActiveUserCount()));
-				xmlOut.addTextElementToData("console_err_count", std::to_string(systemConsoleErrCount_));
-				xmlOut.addTextElementToData("console_warn_count", std::to_string(systemConsoleWarnCount_));
-				xmlOut.addTextElementToData("console_info_count", std::to_string(systemConsoleInfoCount_));
+				xmlOut.addNumberElementToData("active_user_count", theWebUsers_.getActiveUserCount());
+				xmlOut.addNumberElementToData("console_err_count", systemConsoleErrCount_);
+				xmlOut.addNumberElementToData("console_warn_count", systemConsoleWarnCount_);
+				xmlOut.addNumberElementToData("console_info_count", systemConsoleInfoCount_);
 				xmlOut.addTextElementToData("last_console_err_msg", lastConsoleErr_);
 				xmlOut.addTextElementToData("last_console_warn_msg", lastConsoleWarn_);
 				xmlOut.addTextElementToData("last_console_info_msg", lastConsoleInfo_);
@@ -5981,8 +6503,15 @@ try
 				
 				if(remoteSubsystem.error != "")
 				{
-					if(accumulateErrors.size()) accumulateErrors += "\n";
-					accumulateErrors += remoteSubsystem.error;
+					__COUTT__ << "Error from Subsystem '" << remoteSubsystem.appInfo.name << 
+						"' = " << remoteSubsystem.error << __E__;	
+
+					if(remoteSubsystem.error.find("Failure gathering Remote Gateway desktop icons") == 
+						std::string::npos) //only add if not Icon error
+					{
+						if(accumulateErrors.size()) accumulateErrors += "\n";
+						accumulateErrors += remoteSubsystem.error;
+					}
 				}
 				
 				//special values for managing remote subsystems
@@ -6190,7 +6719,8 @@ catch(const std::runtime_error& e)
 //==============================================================================
 void GatewaySupervisor::addStateMachineStatusToXML(
 	HttpXmlDocument& xmlOut,
-	const std::string& fsmName)
+	const std::string& fsmName,
+	bool getRunNumber /* = true */)
 {
 	xmlOut.addTextElementToData("current_state", theStateMachine_.getCurrentStateName());
 	const std::string& gatewayStatus = allSupervisorInfo_.getGatewayInfo().getStatus();
@@ -6232,79 +6762,6 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 
 	if(!theStateMachine_.isInTransition())
 	{
-		std::string stateMachineRunAlias = "Run";  // default to "Run"
-
-		// get stateMachineAliasFilter if possible
-		ConfigurationTree configLinkNode =
-			CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
-
-		if(!configLinkNode.isDisconnected())
-		{
-			try  // for backwards compatibility
-			{
-				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
-
-				//__COUTV__(fsmLinkNode.getTableVersion());
-
-				if(!fsmLinkNode.isDisconnected())
-				{
-					if(!fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").isDefaultValue())
-						stateMachineRunAlias = fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").getValue<std::string>();
-					std::string runInfoPluginType = fsmLinkNode.getNode(fsmName + "/RunInfoPluginType").getValue<std::string>();
-					if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
-						useRunInfoDb = true;
-				}
-				// else
-				//	__COUT_INFO__ << "FSM Link disconnected." << __E__;
-			}
-			catch(std::runtime_error& e)
-			{
-				//__COUT_INFO__ << e.what() << __E__;
-				//__COUT_INFO__ << "No state machine Run alias. Ignoring and
-				// assuming alias of '" << 		stateMachineRunAlias << ".'" <<
-				//__E__;
-			}
-			catch(...)
-			{
-				__COUT_ERR__ << "Unknown error. Should never happen." << __E__;
-
-				__COUT_INFO__ << "No state machine Run alias. Ignoring and "
-									"assuming alias of '"
-								<< stateMachineRunAlias << ".'" << __E__;
-			}
-		}
-		// else
-		//	__COUT_INFO__ << "FSM Link disconnected." << __E__;
-
-		//__COUT__ << "stateMachineRunAlias  = " << stateMachineRunAlias	<<
-		//__E__;
-
-		xmlOut.addTextElementToData("stateMachineRunAlias", stateMachineRunAlias);
-
-		//// ======================== get run number based on fsm name ====
-
-		if(theStateMachine_.getCurrentStateName() == "Running" || theStateMachine_.getCurrentStateName() == "Paused")
-		{
-			if(useRunInfoDb)
-				sprintf(tmp, "Current %s Number from DB: %u", stateMachineRunAlias.c_str(), getNextRunNumber(activeStateMachineName_) - 1);
-			else
-				sprintf(tmp, "Current %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(activeStateMachineName_) - 1);
-
-			if(RunControlStateMachine::asyncPauseExceptionReceived_)
-			{
-				//__COUTV__(RunControlStateMachine::asyncPauseExceptionReceived_);
-				//__COUTV__(RunControlStateMachine::getErrorMessage());
-				xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
-			}
-		}
-		else
-		{
-			if(useRunInfoDb)
-				sprintf(tmp, "Next %s Number from DB.", stateMachineRunAlias.c_str());
-			else
-				sprintf(tmp, "Next %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(fsmName));
-		}
-
 		if(RunControlStateMachine::asyncStopExceptionReceived_)
 		{
 			//__COUTV__(RunControlStateMachine::asyncPauseExceptionReceived_);
@@ -6312,8 +6769,115 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 			xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
 		}
 
-		xmlOut.addTextElementToData("run_number", tmp);
-	}
+		if(getRunNumber)
+		{
+			std::string stateMachineRunAlias = "Run";  // default to "Run"
+
+			// get stateMachineAliasFilter if possible
+			ConfigurationTree configLinkNode =
+				CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+
+			if(!configLinkNode.isDisconnected())
+			{
+				try  // for backwards compatibility
+				{
+					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
+
+					//__COUTV__(fsmLinkNode.getTableVersion());
+
+					if(!fsmLinkNode.isDisconnected())
+					{
+						if(!fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").isDefaultValue())
+							stateMachineRunAlias = fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").getValue<std::string>();
+						std::string runInfoPluginType = fsmLinkNode.getNode(fsmName + "/RunInfoPluginType").getValue<std::string>();
+						if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+							useRunInfoDb = true;
+					}
+					// else
+					//	__COUT_INFO__ << "FSM Link disconnected." << __E__;
+				}
+				catch(std::runtime_error& e)
+				{
+					//__COUT_INFO__ << e.what() << __E__;
+					//__COUT_INFO__ << "No state machine Run alias. Ignoring and
+					// assuming alias of '" << 		stateMachineRunAlias << ".'" <<
+					//__E__;
+				}
+				catch(...)
+				{
+					__COUT_ERR__ << "Unknown error. Should never happen." << __E__;
+
+					__COUT_INFO__ << "No state machine Run alias. Ignoring and "
+										"assuming alias of '"
+									<< stateMachineRunAlias << ".'" << __E__;
+				}
+			}
+			// else
+			//	__COUT_INFO__ << "FSM Link disconnected." << __E__;
+
+			//__COUT__ << "stateMachineRunAlias  = " << stateMachineRunAlias	<<
+			//__E__;
+
+			xmlOut.addTextElementToData("stateMachineRunAlias", stateMachineRunAlias);
+
+			//// ======================== get run number based on fsm name ====
+
+			if(theStateMachine_.getCurrentStateName() == "Running" || theStateMachine_.getCurrentStateName() == "Paused")
+			{
+				if(useRunInfoDb)
+					sprintf(tmp, "Current %s Number from DB: %u", stateMachineRunAlias.c_str(), getNextRunNumber(activeStateMachineName_) - 1);
+				else
+					sprintf(tmp, "Current %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(activeStateMachineName_) - 1);
+
+				if(RunControlStateMachine::asyncPauseExceptionReceived_)
+				{
+					//__COUTV__(RunControlStateMachine::asyncPauseExceptionReceived_);
+					//__COUTV__(RunControlStateMachine::getErrorMessage());
+					xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
+				}
+			}
+			else
+			{
+				if(useRunInfoDb)
+					sprintf(tmp, "Next %s Number from DB.", stateMachineRunAlias.c_str());
+				else
+					sprintf(tmp, "Next %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(fsmName));
+			}
+
+			xmlOut.addTextElementToData("run_number", tmp);
+		} //end run number handling
+	} //end not-in-transition handling
+}  // end request()
+
+//==============================================================================
+void GatewaySupervisor::addRequiredFsmLogInputToXML(
+	HttpXmlDocument& xmlOut,
+	const std::string& fsmName)
+{
+	bool        requireUserLogInputOnConfigure = false, requireUserLogInputOnRun = false;
+	//if fsmName specified, return log entry requirements from config tree
+	if(fsmName != "")
+	{
+		//------------------
+		ConfigurationTree configLinkNode =
+			CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+		if(!configLinkNode.isDisconnected())
+		{
+// clang-format off
+			try //ignore errors
+			{ 
+				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
+				try { requireUserLogInputOnConfigure = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnConfigureTransition not set."; }
+				try { requireUserLogInputOnRun = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnRunTransition not set."; }				
+			}
+			catch(...)
+			{ __SUP_COUTT__ << "Settings not set for fsm name = " << fsmName << __E__; }
+// clang-format on
+		}						
+	} //end log entry requirements gathering
+
+	xmlOut.addTextElementToData("RequireUserLogInputOnConfigureTransition", requireUserLogInputOnConfigure?"1":"0");
+	xmlOut.addTextElementToData("RequireUserLogInputOnRunTransition", 		requireUserLogInputOnRun?"1":"0");
 }  // end request()
 
 //==============================================================================
@@ -6864,7 +7428,7 @@ xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(const SOA
 	retParameters.addParameter("GroupActionTime", groupTimes);//timeString);
 
 	return SOAPUtilities::makeSOAPMessageReference("LastConfigGroupResponse", retParameters);
-}
+} //end lastTableGroupRequestHandler()
 
 //==============================================================================
 // getNextRunNumber
@@ -6887,7 +7451,7 @@ unsigned int GatewaySupervisor::getNextRunNumber(const std::string& fsmNameIn)
 	std::ifstream runNumberFile(runNumberFileName.c_str());
 	if(!runNumberFile.is_open())
 	{
-		__COUT__ << "Can't open file: " << runNumberFileName << __E__;
+		__COUT__ << "Cannot open file: " << runNumberFileName << __E__;
 
 		__COUT__ << "Creating file and setting Run Number to 1: " << runNumberFileName << __E__;
 		FILE* fp = fopen(runNumberFileName.c_str(), "w");
@@ -6897,7 +7461,7 @@ unsigned int GatewaySupervisor::getNextRunNumber(const std::string& fsmNameIn)
 		runNumberFile.open(runNumberFileName.c_str());
 		if(!runNumberFile.is_open())
 		{
-			__SS__ << "Error. Can't create file: " << runNumberFileName << __E__;
+			__SS__ << "Error. Cannot create file: " << runNumberFileName << __E__;
 			__SS_THROW__;
 		}
 	}
@@ -6905,10 +7469,10 @@ unsigned int GatewaySupervisor::getNextRunNumber(const std::string& fsmNameIn)
 	runNumberFile >> runNumberString;
 	runNumberFile.close();
 	return atoi(runNumberString.c_str());
-}
+} // end getNextRunNumber()
 
 //==============================================================================
-bool GatewaySupervisor::setNextRunNumber(unsigned int runNumber, const std::string& fsmNameIn)
+void GatewaySupervisor::setNextRunNumber(unsigned int runNumber, const std::string& fsmNameIn)
 {
 	std::string runNumberFileName = RUN_NUMBER_PATH + "/";
 	std::string fsmName           = fsmNameIn == "" ? activeStateMachineName_ : fsmNameIn;
@@ -6917,20 +7481,111 @@ bool GatewaySupervisor::setNextRunNumber(unsigned int runNumber, const std::stri
 		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') || (fsmName[i] >= 'A' && fsmName[i] <= 'Z') || (fsmName[i] >= '0' && fsmName[i] <= '9'))
 			runNumberFileName += fsmName[i];
 	runNumberFileName += RUN_NUMBER_FILE_NAME;
-	__COUT__ << "runNumberFileName: " << runNumberFileName << __E__;
+	__COUTTV__(runNumberFileName);
 
 	std::ofstream runNumberFile(runNumberFileName.c_str());
 	if(!runNumberFile.is_open())
 	{
-		__SS__ << "Can't open file: " << runNumberFileName << __E__;
+		__SS__ << "Cannot open file: " << runNumberFileName << __E__;
 		__SS_THROW__;
 	}
 	std::stringstream runNumberStream;
 	runNumberStream << runNumber;
 	runNumberFile << runNumberStream.str().c_str();
 	runNumberFile.close();
-	return true;
 }  // end setNextRunNumber()
+
+//==============================================================================
+// getLastLogEntry
+//
+//	If fsmName is passed, then get last log entry for that FSM name and transition type
+//	Else for the active FSM name, activeStateMachineName_
+//
+// 	Note: the FSM name is sanitized of special characters and used in the filename.
+std::string GatewaySupervisor::getLastLogEntry(const std::string& logType, const std::string& fsmNameIn /* = "" */)
+{
+	std::string logEntryFileName = LOG_ENTRY_PATH + "/";
+	std::string fsmName           = fsmNameIn == "" ? activeStateMachineName_ : fsmNameIn;
+
+	if(logType == RunControlStateMachine::START_TRANSITION_NAME &&
+		 stateMachineStartLogEntry_.find(fsmName) != stateMachineStartLogEntry_.end())
+		return stateMachineStartLogEntry_.at(fsmName);
+	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME &&
+		 stateMachineConfigureLogEntry_.find(fsmName) != stateMachineConfigureLogEntry_.end())
+		return stateMachineConfigureLogEntry_.at(fsmName);
+
+	// prepend sanitized FSM name
+	for(unsigned int i = 0; i < fsmName.size(); ++i)
+		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') || (fsmName[i] >= 'A' && fsmName[i] <= 'Z') || (fsmName[i] >= '0' && fsmName[i] <= '9'))
+			logEntryFileName += fsmName[i];
+	logEntryFileName += "_" + logType + "_" + LOG_ENTRY_FILE_NAME;
+	__SUP_COUTTV__(logEntryFileName);
+
+	std::string contents;
+	std::FILE* fp = std::fopen(logEntryFileName.c_str(), "rb");
+	if(!fp)
+	{
+		__SUP_COUTT__ << "Could not open file at " << logEntryFileName << 
+			". Error: " << errno << " - " << strerror(errno) << __E__;
+		contents = "";
+	}
+	else
+	{
+		std::fseek(fp, 0, SEEK_END);
+		contents.resize(std::ftell(fp));
+		std::rewind(fp);
+		std::fread(&contents[0], 1, contents.size(), fp);
+		std::fclose(fp);
+	}
+
+	__SUP_COUTTV__(contents);
+
+	if(logType == RunControlStateMachine::START_TRANSITION_NAME)
+		stateMachineStartLogEntry_[fsmName] = contents;
+	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+		stateMachineConfigureLogEntry_[fsmName] = contents;
+
+	return contents;
+} // end getLastLogEntry()
+
+//==============================================================================
+// setLastLogEntry
+//
+//	If fsmName is passed, then get last log entry for that FSM name and transition type
+//	Else for the active FSM name, activeStateMachineName_
+//
+// 	Note: the FSM name is sanitized of special characters and used in the filename.
+void GatewaySupervisor::setLastLogEntry(const std::string& logType, const std::string& logEntry, const std::string& fsmNameIn /* = "" */)
+{
+	std::string logEntryFileName = LOG_ENTRY_PATH + "/";
+	std::string fsmName           = fsmNameIn == "" ? activeStateMachineName_ : fsmNameIn;
+
+	if(logType == RunControlStateMachine::START_TRANSITION_NAME)
+		stateMachineStartLogEntry_[fsmName] = logEntry;
+	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+		stateMachineConfigureLogEntry_[fsmName] = logEntry;
+	else return; //for now,  do not save other types of transitions
+	
+	// prepend sanitized FSM name
+	for(unsigned int i = 0; i < fsmName.size(); ++i)
+		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') || (fsmName[i] >= 'A' && fsmName[i] <= 'Z') || (fsmName[i] >= '0' && fsmName[i] <= '9'))
+			logEntryFileName += fsmName[i];
+	logEntryFileName += "_" + logType + "_" + LOG_ENTRY_FILE_NAME;
+	__COUTTV__(logEntryFileName);
+	__COUTTV__(logType);
+	__COUTTV__(logEntry);
+
+	std::FILE* fp = std::fopen(logEntryFileName.c_str(), "w");
+	if(!fp)
+	{
+		__SUP_SS__ << "Could not open file at " << logEntryFileName << 
+			". Error: " << errno << " - " << strerror(errno) << __E__;
+		__SUP_SS_THROW__;
+	}
+	if(logEntry.size())
+		std::fwrite(&logEntry[0], 1, logEntry.size(), fp);
+	fclose(fp);
+}  // end setLastLogEntry()
 
 //==============================================================================
 // loadRemoteGatewaySettings
@@ -6948,9 +7603,9 @@ void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor:
 	std::ifstream settingsFile(filepath.c_str());
 	if(!settingsFile.is_open())
 	{
-		__COUT__ << "Can't open Remote Gateway settings file (assuming no settings yet!): " << filepath << __E__;
+		__SUP_COUT__ << "Cannot open Remote Gateway settings file (assuming no settings yet!): " << filepath << __E__;
 
-		__COUT__ << "Creating empty Remote Gateway settings file: " << filepath << __E__;
+		__SUP_COUT__ << "Creating empty Remote Gateway settings file: " << filepath << __E__;
 		FILE* fp = fopen(filepath.c_str(), "w");
 		fprintf(fp, "\n");
 		fclose(fp);
@@ -6958,14 +7613,14 @@ void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor:
 		settingsFile.open(filepath.c_str());
 		if(!settingsFile.is_open())
 		{
-			__SS__ << "Error. Can't create or load Remote Gateway settings file: " << filepath << __E__;
-			__SS_THROW__;
+			__SUP_SS__ << "Error. Cannot create or load Remote Gateway settings file: " << filepath << __E__;
+			__SUP_SS_THROW__;
 		}
 	}
 
 	size_t NUM_FIELDS = 3; //name, fsmMode, included
 	std::vector<std::string> values;
-
+	float formatVersion = 0.0;
 	bool done = false;
     do  // Read each line from the file
 	{  
@@ -6980,19 +7635,36 @@ void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor:
 				if(i) //at illegal moment mid-record?
 				{
 					settingsFile.close();
-					__SS__ << "Error. Illegal file format in Remote Gateway settings file: " << filepath << __E__;
-					__SS_THROW__;
+					__SUP_SS__ << "Error. Illegal file format in Remote Gateway settings file: " << filepath << __E__;
+					__SUP_SS_THROW__;
 				}
 				//else end is correctly at record boundary
 				done = true;
 				break;
 			}
-			if(values[i] == "") //do not allow blank lines
+			__SUP_COUTVS__(20,values[i]);
+
+			if(values[i] == "")  //do not allow blank lines				
 			{
 				//rewind
 				--i;
 				continue;
 			}
+			else if(values[i].find("Remote Gateway Settings, file format v") != //grab format version if present
+				std::string::npos)
+			{				
+				sscanf(values[i].c_str(),"Remote Gateway Settings, file format v%f",&formatVersion);
+				__SUP_COUTV__(formatVersion);
+
+				if(formatVersion > 0.5)
+					NUM_FIELDS = 4; //name, fsmMode, included, selected_config_alias
+
+				__SUP_COUTV__(NUM_FIELDS);
+				//rewind
+				--i;
+				continue;
+			}
+
 		} //end record value load
 		if(done) break;
 
@@ -7019,9 +7691,12 @@ void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor:
 							(values[1] == "Only Configure"?RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure:
 								RemoteGatewayInfo::FSM_ModeTypes::Follow_FSM);
 		remoteGateways[i].fsm_included = values[2] == "1"?true:false;
+		if(values.size() > 3)
+			remoteGateways[i].selected_config_alias = values[3];
 
 		__SUP_COUT__ << "Loaded Remote Gateway '" << remoteGateways[i].appInfo.name << "' ==> " <<
-			remoteGateways[i].getFsmMode() << " :" << remoteGateways[i].fsm_included << __E__;
+			remoteGateways[i].getFsmMode() << " :" << remoteGateways[i].fsm_included << 
+			"configAlias=" << remoteGateways[i].selected_config_alias << __E__;
 
 	} while (1); //end file read loop
 
@@ -7044,15 +7719,16 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 	std::ofstream settingsFile(filepath.c_str());
 	if(!settingsFile.is_open())
 	{
-		__SS__ << "Can't open Remote Gateway settings file: " << filepath << __E__;
-		__SS_THROW__;
+		__SUP_SS__ << "Cannot open Remote Gateway settings file: " << filepath << __E__;
+		__SUP_SS_THROW__;
 	}
-
+	settingsFile << "Remote Gateway Settings, file format v1.0" << __E__; //save file format version first
 	for(size_t i=0; i<remoteGateways.size(); ++i)
 	{
 		settingsFile << remoteGateways[i].appInfo.name << __E__;
 		settingsFile << remoteGateways[i].getFsmMode() << __E__;
 		settingsFile << std::string(remoteGateways[i].fsm_included?"1":"0") << __E__;
+		settingsFile << remoteGateways[i].selected_config_alias << __E__;
 	}
 
 	settingsFile.close();
