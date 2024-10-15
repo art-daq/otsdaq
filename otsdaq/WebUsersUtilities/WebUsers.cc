@@ -177,7 +177,7 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc& cgi, std::ostringstream* out, H
 	                                 userInfo.ip_,
 	                                 !userInfo.automatedCommand_ /*refresh cookie*/,
 	                                 &userInfo.usernameWithLock_,
-	                                 &userInfo.activeUserSessionIndex_))
+	                                 &userInfo.userSessionIndex_))
 	{
 		*out << userInfo.cookieCode_;
 		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
@@ -196,7 +196,7 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc& cgi, std::ostringstream* out, H
 
 	userInfo.username_    = Users_[i].username_;
 	userInfo.displayName_ = Users_[i].displayName_;
-
+	
 	if(!WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo))
 		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
 
@@ -221,7 +221,7 @@ void WebUsers::initializeRequestUserInfo(cgicc::Cgicc& cgi, WebUsers::RequestUse
 	userInfo.username_               = "";
 	userInfo.displayName_            = "";
 	userInfo.usernameWithLock_       = "";
-	userInfo.activeUserSessionIndex_ = -1;
+	userInfo.userSessionIndex_ 		 = NOT_FOUND_IN_DATABASE;
 	userInfo.setGroupPermissionLevels("");  // always init to inactive
 }
 
@@ -310,7 +310,7 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 		userInfo.username_               = WebUsers::DEFAULT_ADMIN_USERNAME;
 		userInfo.displayName_            = "Admin";
 		userInfo.usernameWithLock_       = userInfo.username_;
-		userInfo.activeUserSessionIndex_ = 0;
+		userInfo.userSessionIndex_ 		 = 0;
 		return true;  // done, wizard mode access granted
 	}
 	// else, normal gateway verify mode
@@ -337,7 +337,8 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 	//		__COUTV__(userInfo.usernameWithLock_);
 	//	}
 
-	if((userInfo.checkLock_ || userInfo.requireLock_) && userInfo.usernameWithLock_ != "" && userInfo.usernameWithLock_ != userInfo.username_)
+	if((userInfo.checkLock_ || userInfo.requireLock_) && userInfo.usernameWithLock_ != "" && 
+		userInfo.usernameWithLock_ != userInfo.username_)
 	{
 		*out << WebUsers::REQ_USER_LOCKOUT_RESPONSE;
 		__COUT__ << "User '" << userInfo.username_ << "' is locked out. '" << userInfo.usernameWithLock_ << "' has lock." << std::endl;
@@ -1281,7 +1282,127 @@ uint64_t WebUsers::searchActiveSessionDatabaseForCookie(const std::string& cooki
 		if(ActiveSessions_[i].cookieCode_ == cookieCode)
 			break;
 	return (i == ActiveSessions_.size()) ? NOT_FOUND_IN_DATABASE : i;
-}
+} //end searchActiveSessionDatabaseForCookie()
+
+// //==============================================================================
+// // WebUsers::searchRemoteSessionDatabaseForUsername ---
+// //	returns index if found, else -1
+// uint64_t WebUsers::searchRemoteSessionDatabaseForUsername(const std::string& username) const
+// {
+// 	for(const auto& remoteSession : RemoteSessions_)
+// 		if(remoteSession.second.second.username_ == username)
+// 			return remoteSession.first;
+// 	return NOT_FOUND_IN_DATABASE;
+// } //end searchRemoteSessionDatabaseForUsername()
+
+//==============================================================================
+// WebUsers::checkRemoteLoginVerification ---
+//	checks over remote socket
+//	returns userId if login verified, else -1
+uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, bool refresh, const std::string& ip)
+{
+	__COUTTV__(cookieCode);
+	remoteLoginVerificationEnabledBlackoutTime_ = 0;
+	if(!remoteLoginVerificationSocket_)  //instantiate socket first time needed
+	{
+		if(!remoteLoginVerificationPort_)
+		{
+			__SS__ << "Illegal remote login verification port found in remote destination " << remoteLoginVerificationIP_ << ":" <<
+				remoteLoginVerificationPort_ << ". Please check remote settings." << __E__;
+			__SS_THROW__;
+		}
+		__COUT_INFO__ << "Instantiating Remote Gateway login verifification socket! Validation requests will go to " << 
+			remoteLoginVerificationIP_ << ":" << remoteLoginVerificationPort_ << __E__;						
+		
+		remoteLoginVerificationSocket_ = std::make_unique<TransceiverSocket>(remoteLoginVerificationIP_);
+		remoteLoginVerificationSocket_->initialize();
+
+		remoteLoginVerificationSocketTarget_ = std::make_unique<Socket>(remoteLoginVerificationIP_,remoteLoginVerificationPort_);		
+	}
+
+	//check if cookie code is cached locally
+	cleanupExpiredRemoteEntries();  // remove expired cookies
+	auto it = RemoteSessions_.find(cookieCode);
+	if(it != RemoteSessions_.end()) //then found cached cookie code
+	{
+		__COUTT__ << "cookieCode still active locally!" << __E__;
+		return it->second.userId_;
+	}
+	//else ask Remote server to verify login
+
+	// Send these parameters:
+	// command = loginVerify
+	// parameters.addParameter("CookieCode");
+	// parameters.addParameter("RefreshOption");
+	// parameters.addParameter("IPAddress");
+
+	std::string request = "loginVerify," + cookieCode + "," + 
+		(refresh?"1":"0") + "," + ip;
+
+	__COUTV__(request);
+	
+	std::string requestResponseString = remoteLoginVerificationSocket_->sendAndReceive(*remoteLoginVerificationSocketTarget_, request, 10 /*timeoutSeconds*/);
+	__COUTV__(requestResponseString);
+
+	//from response... extract refreshedCookieCode, permissions, userWithLock, username, and display name
+	std::vector<std::string> rxParams = StringMacros::getVectorFromString(requestResponseString);
+	__COUTV__(StringMacros::vectorToString(rxParams));
+
+	if(rxParams.size() != 6)
+	{
+		__COUT__ << "Remote login response indicates rejected: " << rxParams.size() << __E__;
+		return NOT_FOUND_IN_DATABASE;
+	}
+	//else valid remote login! so create active remote session object
+
+	// Receive these parameters
+	// 0: retParameters.addParameter("CookieCode", cookieCode);
+	// 1: retParameters.addParameter("Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
+	// 2: retParameters.addParameter("UserWithLock", userWithLock);
+	// 3: retParameters.addParameter("Username", theWebUsers_.getUsersUsername(uid));
+	// 4: retParameters.addParameter("DisplayName", theWebUsers_.getUsersDisplayName(uid));	
+	// 5: retParameters.addParameter("UserSessionIndex", td::to_string(userSessionIndex)); 
+
+	if(rxParams[2] != "" && 
+		usersUsernameWithLock_ != rxParams[2])
+	{
+		__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_ << 
+			"' with remote user-with-lock 'Remote:" << rxParams[2] << "'" << __E__;
+		usersUsernameWithLock_ = rxParams[2];
+	}
+
+	//search for an existing matching username, otherwise create
+	std::string username = rxParams[3];
+	__COUTTV__(username);	
+	uint64_t j = searchUsersDatabaseForUsername(username);
+	if(j == NOT_FOUND_IN_DATABASE)
+	{
+		__COUT_INFO__ << "Creating User entry for remote user '" << username << "' in local user list to track user preferences." << __E__;		
+		createNewAccount(username, rxParams[4] /* displayName */, "" /* email */);
+		j = Users_.size()-1;		
+	}
+
+	Users_[j].lastLoginAttempt_ = time(0);	
+	Users_[j].setModifier("REMOTE_GATEWAY");
+
+	//take permissions from remote source always, it overrides existing local user settings (and will force changes to local user db)
+	__COUTV__(StringMacros::decodeURIComponent(rxParams[1]));
+	Users_[j].permissions_.clear(); //otherwise collissions could occur in getMapFromString()
+	StringMacros::getMapFromString(StringMacros::decodeURIComponent(rxParams[1]), 
+		Users_[j].permissions_);
+	__COUTV__(StringMacros::mapToString(Users_[j].permissions_));
+
+	//fill in Remote Session and User info to cache for next login attempt
+
+	ActiveSession& newRemoteSession = RemoteSessions_[rxParams[0]]; //construct remote ActiveSession
+	newRemoteSession.cookieCode_ = rxParams[0];
+	newRemoteSession.ip_ = ip;
+	newRemoteSession.userId_ = Users_[j].userId_;
+	sscanf(rxParams[5].c_str(),"%lu", &newRemoteSession.sessionIndex_);
+	newRemoteSession.startTime_ = time(0);	
+
+	return Users_[j].userId_;
+} //end checkRemoteLoginVerification()
 
 //==============================================================================
 // WebUsers::isUsernameActive ---
@@ -1292,13 +1413,21 @@ bool WebUsers::isUsernameActive(const std::string& username) const
 	if((u = searchUsersDatabaseForUsername(username)) == NOT_FOUND_IN_DATABASE)
 		return false;
 	return isUserIdActive(Users_[u].userId_);
-}
+} //end isUsernameActive()
 
 //==============================================================================
 // WebUsers::isUserIdActive ---
 //	returns true if found, else false
 bool WebUsers::isUserIdActive(uint64_t uid) const
 {
+	__COUTT__ << "isUserIdActive? " << uid << __E__;
+	if(remoteLoginVerificationEnabled_) //first check remote sessions
+	{
+		for(const auto& remoteSession : RemoteSessions_)
+			if(remoteSession.second.userId_ == uid)
+				return true;
+	} //end remote session checkion	
+
 	uint64_t i = 0;
 	for(; i < ActiveSessions_.size(); ++i)
 		if(ActiveSessions_[i].userId_ == uid)
@@ -1708,6 +1837,48 @@ std::string WebUsers::getUsersUsername(uint64_t uid)
 	return Users_[i].username_;
 }  // end getUsersUsername()
 
+// //==============================================================================
+// // WebUsers::getUsersDisplayName --- public version which considers remote users
+// std::string WebUsers::getUsersDisplayName(uint64_t uid, uint64_t remoteSessionID)
+// {
+// 	uint64_t i;
+// 	if((i = searchUsersDatabaseForUserId(uid)) == NOT_FOUND_IN_DATABASE)
+// 		return "";
+// 	return Users_[i].displayName_;
+// }  // end getUsersDisplayName()
+
+// //==============================================================================
+// // WebUsers::getUsersUsername --- public version which considers remote users
+// std::string WebUsers::getUsersUsername(uint64_t uid, uint64_t remoteSessionID)
+// {
+// 	if(uid == ACCOUNT_REMOTE) return getRemoteUsersUsername(remoteSessionID);
+
+// 	uint64_t i;
+// 	if((i = searchUsersDatabaseForUserId(uid)) == NOT_FOUND_IN_DATABASE)
+// 		return "";
+// 	return Users_[i].username_;
+// }  // end getUsersUsername()
+
+// //==============================================================================
+// // WebUsers::getRemoteUsersDisplayName ---
+// std::string WebUsers::getRemoteUsersDisplayName(uint64_t remoteSessionID)
+// {
+// 	auto it = RemoteSessions_.find(remoteSessionID);
+// 	if(it == RemoteSessions_.end())
+// 		return "";
+// 	return it->second.second.displayName_;
+// }  // end getRemoteUsersDisplayName()
+
+// //==============================================================================
+// // WebUsers::getRemoteUsersUsername ---
+// std::string WebUsers::getRemoteUsersUsername(uint64_t remoteSessionID)
+// {	
+// 	auto it = RemoteSessions_.find(remoteSessionID);
+// 	if(it == RemoteSessions_.end())
+// 		return "";
+// 	return it->second.second.username_;
+// }  // end getRemoteUsersUsername()
+
 //==============================================================================
 // WebUsers::cookieCodeLogout ---
 //	Used to logout user based on cookieCode and ActiveSessionIndex
@@ -1773,51 +1944,51 @@ uint64_t WebUsers::cookieCodeLogout(const std::string& cookieCode, bool logoutOt
 	return logoutCount;
 }  // end cookieCodeLogout()
 
-//==============================================================================
-// WebUsers::getUserInfoForCookie ---
-bool WebUsers::getUserInfoForCookie(std::string& cookieCode, std::string* userName, std::string* displayName, uint64_t* activeSessionIndex)
-{
-	if(userName)
-		*userName = "";
-	if(displayName)
-		*displayName = "";
+// //==============================================================================
+// // WebUsers::getUserInfoForCookie ---
+// bool WebUsers::getUserInfoForCookie(std::string& cookieCode, std::string* userName, std::string* displayName, uint64_t* activeSessionIndex)
+// {
+// 	if(userName)
+// 		*userName = "";
+// 	if(displayName)
+// 		*displayName = "";
 
-	if(!CareAboutCookieCodes_)  // NO SECURITY, return admin
-	{
-		uint64_t uid = getAdminUserID();
-		if(userName)
-			*userName = getUsersUsername(uid);
-		if(displayName)
-			*displayName = getUsersDisplayName(uid);
-		if(activeSessionIndex)
-			*activeSessionIndex = -1;
-		return true;
-	}
+// 	if(!CareAboutCookieCodes_)  // NO SECURITY, return admin
+// 	{
+// 		uint64_t uid = getAdminUserID();
+// 		if(userName)
+// 			*userName = getUsersUsername(uid);
+// 		if(displayName)
+// 			*displayName = getUsersDisplayName(uid);
+// 		if(activeSessionIndex)
+// 			*activeSessionIndex = -1;
+// 		return true;
+// 	}
 
-	uint64_t i, j;
+// 	uint64_t i, j;
 
-	// search active users for cookie code
-	if((i = searchActiveSessionDatabaseForCookie(cookieCode)) == NOT_FOUND_IN_DATABASE)
-	{
-		__COUT__ << "cookieCode NOT_FOUND_IN_DATABASE" << __E__;
-		return false;
-	}
+// 	// search active users for cookie code
+// 	if((i = searchActiveSessionDatabaseForCookie(cookieCode)) == NOT_FOUND_IN_DATABASE)
+// 	{
+// 		__COUT__ << "cookieCode NOT_FOUND_IN_DATABASE" << __E__;
+// 		return false;
+// 	}
 
-	// get Users record
-	if((j = searchUsersDatabaseForUserId(ActiveSessions_[i].userId_)) == NOT_FOUND_IN_DATABASE)
-	{
-		__COUT__ << "ActiveSession UserId NOT_FOUND_IN_DATABASE" << __E__;
-		return false;
-	}
+// 	// get Users record
+// 	if((j = searchUsersDatabaseForUserId(ActiveSessions_[i].userId_)) == NOT_FOUND_IN_DATABASE)
+// 	{
+// 		__COUT__ << "ActiveSession UserId NOT_FOUND_IN_DATABASE" << __E__;
+// 		return false;
+// 	}
 
-	if(userName)
-		*userName = Users_[j].username_;
-	if(displayName)
-		*displayName = Users_[j].displayName_;
-	if(activeSessionIndex)
-		*activeSessionIndex = ActiveSessions_[i].sessionIndex_;
-	return true;
-}  // end getUserInfoForCookie()
+// 	if(userName)
+// 		*userName = Users_[j].username_;
+// 	if(displayName)
+// 		*displayName = Users_[j].displayName_;
+// 	if(activeSessionIndex)
+// 		*activeSessionIndex = ActiveSessions_[i].sessionIndex_;
+// 	return true;
+// }  // end getUserInfoForCookie()
 
 //==============================================================================
 // WebUsers::isCookieCodeActiveForRequest ---
@@ -1838,7 +2009,7 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
                                             const std::string&                                                ip,
                                             bool                                                              refresh,
                                             std::string*                                                      userWithLock,
-                                            uint64_t*                                                         activeUserSessionIndex)
+                                            uint64_t*                                                         userSessionIndex)
 {
 	//__COUTV__(ip);
 
@@ -1852,13 +2023,42 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 
 	cleanupExpiredEntries();  // remove expired cookies
 
-	uint64_t i, j;
+	uint64_t i, j, userId = NOT_FOUND_IN_DATABASE, userSession = NOT_FOUND_IN_DATABASE;
 
-	//__COUT__ << "I care about cookie codes: " << CareAboutCookieCodes_ << __E__;
-	//__COUT__ << "refresh cookie " << refresh << __E__;
+	__COUTV__(CareAboutCookieCodes_);
+	__COUTT__ << "refresh cookie " << refresh << __E__;
+	__COUTTV__(cookieCode);
 
-	if(!CareAboutCookieCodes_)  // No Security, so grant admin
+	//always go remote if enabled
+	try
 	{
+		if(remoteLoginVerificationEnabled_ && time(0) > remoteLoginVerificationEnabledBlackoutTime_ &&
+			(userId = checkRemoteLoginVerification(cookieCode, refresh, ip)) != NOT_FOUND_IN_DATABASE)
+		{		
+			// remote verify success!
+			userSession = RemoteSessions_.at(cookieCode).sessionIndex_;
+			__COUTT__ << "Remote login session verified." << __E__;
+		}
+	}
+	catch(...)
+	{
+		__COUT_WARN__ << "Ignoring exception during remote login verification." << __E__;
+
+		//Disable remote login in the case that remote verifier is down
+		if(!CareAboutCookieCodes_ && remoteLoginVerificationEnabled_ && 
+			remoteLoginVerificationEnabledBlackoutTime_ == 0)
+		{
+			remoteLoginVerificationEnabled_ = false;
+			remoteLoginVerificationEnabledBlackoutTime_ = time(0) + 5*60;
+			__COUT_INFO__ << "Disabled remote login until " << StringMacros::getTimestampString(remoteLoginVerificationEnabledBlackoutTime_) << __E__;
+		}
+	}
+
+	if(remoteLoginVerificationEnabled_ && userId == NOT_FOUND_IN_DATABASE)
+		__COUTT__ << "Remote login verification failed." << __E__;
+
+	if(!CareAboutCookieCodes_ && userId == NOT_FOUND_IN_DATABASE)  // No Security, so grant admin
+	{		
 		if(userPermissions)
 			*userPermissions =
 			    std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>({{WebUsers::DEFAULT_USER_GROUP, WebUsers::PERMISSION_LEVEL_ADMIN}});
@@ -1866,51 +2066,77 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 			*uid = getAdminUserID();
 		if(userWithLock)
 			*userWithLock = usersUsernameWithLock_;
-		if(activeUserSessionIndex)
-			*activeUserSessionIndex = -1;
+		if(userSessionIndex)
+			*userSessionIndex = 0;
 
 		if(cookieCode.size() != COOKIE_CODE_LENGTH)
 			cookieCode = genCookieCode();  // return "dummy" cookie code
+
+		
+		if(remoteLoginVerificationEnabled_) //add admin session to Remote Sessions for quick verify
+		{
+			//fill in Remote Session and User info to cache for next login attempt
+
+			while(RemoteSessions_.find(cookieCode) != RemoteSessions_.end()) 
+				cookieCode = genCookieCode(); // regenerate on the off chance of collissions
+			ActiveSession& newRemoteSession = RemoteSessions_[cookieCode]; //construct remote ActiveSession
+			newRemoteSession.cookieCode_ = cookieCode;
+			newRemoteSession.ip_ = ip;
+			newRemoteSession.userId_ = getAdminUserID();
+			newRemoteSession.sessionIndex_ = 0;
+			newRemoteSession.startTime_ = time(0);	
+		}
 
 		return true;
 	}
 	// else using security!
 
-	// search active users for cookie code
-	if((i = searchActiveSessionDatabaseForCookie(cookieCode)) == NOT_FOUND_IN_DATABASE)
+	if(userId == NOT_FOUND_IN_DATABASE) //handle standard active session verify
 	{
-		__COUT_ERR__ << "Cookie code not found" << __E__;
-		cookieCode = REQ_NO_LOGIN_RESPONSE;
+		// search active users for cookie code
+		if((i = searchActiveSessionDatabaseForCookie(cookieCode)) == NOT_FOUND_IN_DATABASE)
+		{
+			__COUT_ERR__ << "Cookie code not found" << __E__;
+			cookieCode = REQ_NO_LOGIN_RESPONSE;
 
-		incrementIpBlacklistCount(ip);  // increment ip blacklist counter
+			incrementIpBlacklistCount(ip);  // increment ip blacklist counter
 
-		return false;
+			return false;
+		}
+		else
+			ipBlacklistCounts_[ip] = 0;  // clear blacklist count
+
+		// check ip
+		if(ip != "0" && ActiveSessions_[i].ip_ != ip)
+		{
+			__COUTV__(ActiveSessions_[i].ip_);
+			//__COUTV__(ip);
+			__COUT_ERR__ << "IP does not match active session." << __E__;
+			cookieCode = REQ_NO_LOGIN_RESPONSE;
+			return false;
+		}
+
+		userId = ActiveSessions_[i].userId_;
+		userSession = ActiveSessions_[i].sessionIndex_;
+		cookieCode = refreshCookieCode(i, refresh);  // refresh cookie by reference
+		__COUTT__ << "Login session verified." << __E__;
 	}
-	else
-		ipBlacklistCounts_[ip] = 0;  // clear blacklist count
 
-	// check ip
-	if(ip != "0" && ActiveSessions_[i].ip_ != ip)
-	{
-		__COUTV__(ActiveSessions_[i].ip_);
-		//__COUTV__(ip);
-		__COUT_ERR__ << "IP does not match active session." << __E__;
-		cookieCode = REQ_NO_LOGIN_RESPONSE;
-		return false;
-	}
+	//at this point userId has been confirmed remotely or locally
 
 	// get Users record
-	if((j = searchUsersDatabaseForUserId(ActiveSessions_[i].userId_)) == NOT_FOUND_IN_DATABASE)
+	if((j = searchUsersDatabaseForUserId(userId)) == NOT_FOUND_IN_DATABASE)
 	{
-		__COUT_ERR__ << "User ID not found" << __E__;
+		__COUT_ERR__ << "After login verification, User ID not found! Notify admins." << __E__;
 		cookieCode = REQ_NO_LOGIN_RESPONSE;
 		return false;
 	}
-
-	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> tmpPerm = getPermissionsForUser(Users_[j].userId_);
+	
+	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> tmpPerm = getPermissionsForUser(userId);
 
 	if(isInactiveForGroup(tmpPerm))  // Check for inactive for all requests!
 	{
+		__COUTT__ << "Inactive user identified." << __E__;
 		cookieCode = REQ_NO_PERMISSION_RESPONSE;
 		return false;
 	}
@@ -1919,20 +2145,19 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 	if(userPermissions)
 		*userPermissions = tmpPerm;
 	if(uid)
-		*uid = Users_[j].userId_;
+		*uid = userId;
 	if(userWithLock)
 		*userWithLock = usersUsernameWithLock_;
-	if(activeUserSessionIndex)
-		*activeUserSessionIndex = ActiveSessions_[i].sessionIndex_;
+	if(userSessionIndex)
+		*userSessionIndex = userSession; 
 
-	cookieCode = refreshCookieCode(i, refresh);  // refresh cookie by reference
 
 	return true;
 }  // end cookieCodeIsActiveForRequest()
 
 //==============================================================================
 // WebUsers::cleanupExpiredEntries ---
-//	cleanup expired entries form Login Session and Active Session databases
+//	cleanup expired entries from Login Session and Active Session databases
 //	check if usersUsernameWithLock_ is still active
 //  return the vector of logged out user names if a parameter
 //		if not a parameter, store logged out user names for next time called with
@@ -1982,6 +2207,7 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 			//	<< __E__;
 
 			__COUT__ << "Found expired active sessions: #" << (i + 1) << " of " << ActiveSessions_.size() << __E__;
+			__COUTTV__(ActiveSessions_[i].cookieCode_);
 
 			tmpUid = ActiveSessions_[i].userId_;
 			ActiveSessions_.erase(ActiveSessions_.begin() + i);
@@ -2012,9 +2238,35 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 	//		}
 
 	//__COUT__ << "Found usersUsernameWithLock_: " << usersUsernameWithLock_ << __E__;
-	if(CareAboutCookieCodes_ && !isUsernameActive(usersUsernameWithLock_))  // unlock if user no longer logged in
+	// size_t posRemoteFlag = std::string::npos; 
+	if(CareAboutCookieCodes_ && usersUsernameWithLock_ != "" &&
+			// ((remoteLoginVerificationEnabled_ && //if remote login enabled, check if userWithLock is remote
+			// 	(posRemoteFlag = usersUsernameWithLock_.find(REMOTE_USERLOCK_PREFIX)) == 0 && 
+			// 	searchRemoteSessionDatabaseForUsername(
+			// 		usersUsernameWithLock_.substr(strlen(REMOTE_USERLOCK_PREFIX))) == NOT_FOUND_IN_DATABASE ) ||
+			// (posRemoteFlag != 0 && 
+			!isUsernameActive(usersUsernameWithLock_))
+			//)))  // unlock if user no longer logged in
 		usersUsernameWithLock_ = "";
 }  // end cleanupExpiredEntries()
+
+//==============================================================================
+// WebUsers::cleanupExpiredRemoteEntries ---
+//	cleanup expired entries from Remote Active Session databases
+//		Give less time than ACTIVE_SESSION_EXPIRATION_TIME (e.g. /4, and assume safe to keep session open and cached locally to avoid hitting remote server with back-to-back requests)
+void WebUsers::cleanupExpiredRemoteEntries()
+{
+	// remove expired entries from Remote Active Session
+	std::vector<std::string> toErase;
+	for(const auto& remoteSession : RemoteSessions_)
+		if(remoteSession.second.startTime_ + ACTIVE_SESSION_EXPIRATION_TIME/4 <= time(0))  // expired
+		{			
+			__COUT__ << "Found expired remote active sessions: #" << remoteSession.first << " in " << RemoteSessions_.size() << __E__;
+			toErase.push_back(remoteSession.first); //mark for erasing
+		}
+	for(const auto& eraseId : toErase)
+		RemoteSessions_.erase(eraseId);	
+} // end cleanupExpiredRemoteEntries()
 
 //==============================================================================
 // createNewLoginSession
@@ -2160,9 +2412,7 @@ std::string WebUsers::dejumble(const std::string& u, const std::string& s)
 // return WebUsers::PERMISSION_LEVEL_INACTIVE if invalid index
 std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> WebUsers::getPermissionsForUser(uint64_t uid)
 {
-	//__COUTV__(uid);
 	uint64_t userIndex = searchUsersDatabaseForUserId(uid);
-	//__COUTV__(userIndex); __COUTV__(UsersPermissionsVector.size());
 	if(userIndex < Users_.size())
 		return Users_[userIndex].permissions_;
 
@@ -2171,6 +2421,36 @@ std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> WebUsers::getPe
 	retErrorMap[WebUsers::DEFAULT_USER_GROUP] = WebUsers::PERMISSION_LEVEL_INACTIVE;
 	return retErrorMap;
 }  // end getPermissionsForUser()
+
+// //==============================================================================
+// // WebUsers::getPermissionForUser --- public version which considers remote users
+// // return WebUsers::PERMISSION_LEVEL_INACTIVE if invalid index
+// std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> WebUsers::getPermissionsForUser(uint64_t uid, uint64_t remoteSessionID)
+// {	
+// 	if(uid == ACCOUNT_REMOTE) 
+// 	{
+// 		auto it = RemoteSessions_.find(remoteSessionID);
+// 		if(it == RemoteSessions_.end())
+// 		{
+// 			// else return all user inactive map
+// 			std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> retErrorMap;
+// 			retErrorMap[WebUsers::DEFAULT_USER_GROUP] = WebUsers::PERMISSION_LEVEL_INACTIVE;
+// 			return retErrorMap;
+// 		}
+// 		return it->second.second.permissions_;
+// 	}
+
+// 	//__COUTV__(uid);
+// 	uint64_t userIndex = searchUsersDatabaseForUserId(uid);
+// 	//__COUTV__(userIndex); __COUTV__(UsersPermissionsVector.size());
+// 	if(userIndex < Users_.size())
+// 		return Users_[userIndex].permissions_;
+
+// 	// else return all user inactive map
+// 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> retErrorMap;
+// 	retErrorMap[WebUsers::DEFAULT_USER_GROUP] = WebUsers::PERMISSION_LEVEL_INACTIVE;
+// 	return retErrorMap;
+// }  // end getPermissionsForUser()
 
 //==============================================================================
 // WebUsers::getPermissionLevelForGroup
@@ -2666,15 +2946,16 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> permissionMap = getPermissionsForUser(actingUid);
 
 	std::string actingUser = getUsersUsername(actingUid);
+	bool isUserActive = isUsernameActive(username);
 
 	__COUTV__(actingUser);
 	__COUT__ << "Permissions: " << StringMacros::mapToString(permissionMap) << __E__;
 	__COUTV__(usersUsernameWithLock_);
 	__COUTV__(lock);
 	__COUTV__(username);
-	__COUTV__(isUsernameActive(username));
+	__COUTV__(isUserActive);
 
-	if(lock && (isUsernameActive(username) || !CareAboutCookieCodes_))  // lock and currently active
+	if(lock && (isUserActive || !CareAboutCookieCodes_))  // lock and currently active
 	{
 		if(!CareAboutCookieCodes_ && username != DEFAULT_ADMIN_USERNAME)  // enforce wiz mode only use admin account
 		{
@@ -2692,7 +2973,7 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 		usersUsernameWithLock_ = "";
 	else
 	{
-		if(!isUsernameActive(username))
+		if(!isUserActive)
 			__MCOUT_ERR__("User '" << username << "' is inactive." << __E__);
 		__MCOUT_ERR__("Failed to lock for user '" << username << ".'" << __E__);
 		return false;
@@ -2862,6 +3143,16 @@ void WebUsers::modifyAccountSettings(
 
 	saveDatabaseToFile(DB_USERS);
 }  // end modifyAccountSettings()
+//==============================================================================
+// WebUsers::getActiveUserCount
+//	return count of active Display Names
+size_t WebUsers::getActiveUserCount()
+{
+	std::set<unsigned int> activeUserIndices;
+	for(uint64_t i = 0; i < ActiveSessions_.size(); ++i)
+		activeUserIndices.emplace(searchUsersDatabaseForUserId(ActiveSessions_[i].userId_));
+	return activeUserIndices.size();
+}  // end getActiveUserCount()
 
 //==============================================================================
 // WebUsers::getActiveUsersString
@@ -2872,7 +3163,7 @@ std::string WebUsers::getActiveUsersString()
 	for(uint64_t i = 0; i < ActiveSessions_.size(); ++i)
 		activeUserIndices.emplace(searchUsersDatabaseForUserId(ActiveSessions_[i].userId_));
 
-	std::string ret      = "";
+	std::string activeUsersString      = "";
 	bool        addComma = false;
 	for(const auto& i : activeUserIndices)
 	{
@@ -2880,17 +3171,17 @@ std::string WebUsers::getActiveUsersString()
 			continue;  // skip not found
 
 		if(addComma)
-			ret += ",";
+			activeUsersString += ",";
 		else
 			addComma = true;
 
-		ret += Users_[i].displayName_;
+		activeUsersString += Users_[i].displayName_;
 	}
 	if(activeUserIndices.size() == 0 && WebUsers::getSecurity() == WebUsers::SECURITY_TYPE_NONE)  // assume only admin is active
-		ret += WebUsers::DEFAULT_ADMIN_DISPLAY_NAME;
+		activeUsersString += WebUsers::DEFAULT_ADMIN_DISPLAY_NAME;
 
-	__COUTV__(ret);
-	return ret;
+	__COUTV__(activeUsersString);
+	return activeUsersString;
 }  // end getActiveUsersString()
 
 //==============================================================================
@@ -2965,9 +3256,11 @@ void WebUsers::addSystemMessage(const std::string& targetUsersCSV, const std::st
 //==============================================================================
 // addSystemMessage
 //	targetUser can be "*" for all users
+//	Note: do not printout message, because if it was a Console trigger, it will fire repeatedly
 void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, const std::string& subject, const std::string& message, bool doEmail)
 {
-	__COUT__ << "Before number of users with system messages: " << systemMessages_.size() << __E__;
+	__COUT__ << "Before number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 
 	// lock for remainder of scope
 	std::lock_guard<std::mutex> lock(systemMessageLock_);
@@ -2976,7 +3269,8 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, con
 
 	std::string fullMessage = StringMacros::encodeURIComponent((subject == "" ? "" : (subject + ": ")) + message);
 
-	__COUTV__(fullMessage);
+	//	Note: do not printout message, because if it was a Console trigger, it will fire repeatedly
+	std::cout << __COUT_HDR__ << "fullMessage: " << fullMessage << __E__;
 	__COUTV__(StringMacros::vectorToString(targetUsers));
 
 	std::set<std::string> targetEmails;
@@ -3075,7 +3369,8 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, con
 
 	}  // end target user message add loop
 
-	__COUT__ << "After number of users with system messages: " << systemMessages_.size() << __E__;
+	__COUT__ << "After number of users with system messages: " << systemMessages_.size() << 
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 	__COUTV__(targetEmails.size());
 
 	if(doEmail && targetEmails.size())
@@ -3142,6 +3437,48 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser, const std::s
 }  // end addSystemMessageToMap
 
 //==============================================================================
+// getAllSystemMessages
+//	Returns last */global system message for statusing
+std::pair<std::string, time_t> WebUsers::getLastSystemMessage() const
+{
+	__COUT__ << "GetLast number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
+
+	auto it = systemMessages_.find("*");
+	if(it == systemMessages_.end() || it->second.size() == 0)
+		return std::make_pair("",0);
+
+	return std::make_pair(it->second.back().message_, it->second.back().creationTime_);
+}  // end getLastSystemMessage()
+
+//==============================================================================
+// getAllSystemMessages
+//	Returns string all all system messages by user (for remote gateway monitoring)
+//	Format: targetUser | time | msg | targetUser | time | msg...etc
+std::string WebUsers::getAllSystemMessages()
+{
+	std::string retStr = "";
+
+	// lock for remainder of scope
+	std::lock_guard<std::mutex> lock(systemMessageLock_);
+
+	for(auto& userSysMessages : systemMessages_)
+	{
+		for(auto& userSysMessage : userSysMessages.second)
+		{
+			if(userSysMessage.deliveredRemote_) continue; //skip messages already deivered remote
+			
+			if(retStr.size()) retStr += '|';
+			retStr += userSysMessages.first; //target display name
+			retStr += "|" + std::to_string(userSysMessage.creationTime_);
+			retStr += "|" + userSysMessage.message_;
+			userSysMessage.deliveredRemote_ = true;
+		}
+	}
+	return retStr;
+} //end getAllSystemMessages()
+
+//==============================================================================
 // getSystemMessage
 //	Deliver | separated system messages (time | msg | time | msg...etc),
 //		if there is any in vector set for user or for wildcard *
@@ -3202,28 +3539,31 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 //==============================================================================
 // systemMessageCleanup
 //	Cleanup messages if delivered, and targetUser != wildcard *
-//	For all remaining messages, wait some time before removing (e.g. 30 sec)
+//	For all remaining messages, wait some time before removing (e.g. 300 sec)
 void WebUsers::systemMessageCleanup()
 {
-	//__COUT__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
+	__COUTT__ << "Before cleanup number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 	for(auto& userMessagesPair : systemMessages_)
 	{
-		//__COUT__ << userMessagesPair.first << " system messages: " <<
-		//		userMessagesPair.second.size() << __E__;
-
 		for(uint64_t i = 0; i < userMessagesPair.second.size(); ++i)
 			if((userMessagesPair.first != "*" && userMessagesPair.second[i].delivered_) ||      // delivered and != *
 			   userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME < time(0))  // expired
 			{
+
+				__COUTT__ << userMessagesPair.first << " at time: " << userMessagesPair.second[i].creationTime_ << 
+						" system messages: " <<	userMessagesPair.second.size() << __E__;
+
 				// remove
 				userMessagesPair.second.erase(userMessagesPair.second.begin() + i);
 				--i;  // rewind
-			}
+			} //end cleanup loop by message
 
-		//__COUT__ << userMessagesPair.first << " remaining system messages: " <<
-		//		userMessagesPair.second.size() << __E__;
-	}
-	//__COUT__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
+		__COUTT__ << "User '" << userMessagesPair.first << "' remaining system messages: " <<
+				userMessagesPair.second.size() << __E__;
+	} //end cleanup loop by user
+	__COUTT__ << "After cleanup number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 }  // end systemMessageCleanup()
 
 //==============================================================================

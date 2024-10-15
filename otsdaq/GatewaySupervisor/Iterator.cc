@@ -18,6 +18,8 @@ using namespace ots;
 	((getenv("SERVICE_DATA_PATH") == NULL) ? (std::string(__ENV__("USER_DATA")) + "/ServiceData") : (std::string(__ENV__("SERVICE_DATA_PATH")))) + \
 	    "/IteratorPlanHistory.hist"
 
+const std::string Iterator::RESERVED_GEN_PLAN_NAME = "---GENERATED_PLAN---";
+
 //==============================================================================
 Iterator::Iterator(GatewaySupervisor* supervisor)
     : workloopRunning_(false)
@@ -92,12 +94,16 @@ try
 			false /* getGroupInfo */,
 			true /* initializeActiveGroups */);
 
+	__COUT__ << "Iterator work loop starting..." << __E__;
 	IteratorWorkLoopStruct theIteratorStruct(iterator, &theConfigurationManager);
+	__COUT__ << "Iterator work loop starting..." << __E__;
 
 	const IterateTable* itConfig;
 
 	std::vector<IterateTable::Command> commands;
 
+	try
+	{	
 	while(1)
 	{
 		// Process:
@@ -185,6 +191,11 @@ try
 			   theIteratorStruct.commandIndex_)
 			{
 				iterator->activeCommandIndex_     = theIteratorStruct.commandIndex_;
+				if(theIteratorStruct.commandIndex_ < theIteratorStruct.commands_.size())
+					iterator->activeCommandType_     = theIteratorStruct.commands_[
+						theIteratorStruct.commandIndex_].type_;
+				else
+					iterator->activeCommandType_  = "";
 				iterator->activeCommandStartTime_ = time(0);  // reset on any change
 
 				if(theIteratorStruct.commandIndex_ < theIteratorStruct.commandIterations_.size())
@@ -199,6 +210,8 @@ try
 				//	iterator->activeLoopIteration_ =
 				// theIteratorStruct.stepIndexStack_.back();  else
 				//	iterator->activeLoopIteration_ = -1;
+
+				iterator->activeNumberOfCommands_ = theIteratorStruct.commands_.size();
 			}
 
 		}  // end command handling and iterator mutex
@@ -301,9 +314,22 @@ try
 				theIteratorStruct.commandIndex_ = 0;
 
 				theIteratorStruct.cfgMgr_->init();  // completely reset to re-align with any changes
-				itConfig = theIteratorStruct.cfgMgr_->__GET_CONFIG__(IterateTable);
-
-				theIteratorStruct.commands_ = itConfig->getPlanCommands(theIteratorStruct.cfgMgr_, theIteratorStruct.activePlan_);
+				
+				if(theIteratorStruct.activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME)
+				{
+					__COUT__ << "Using generated plan..." << __E__;
+					theIteratorStruct.onlyConfigIfNotConfigured_ = iterator->genKeepConfiguration_;
+					theIteratorStruct.commands_ = generateIterationPlan(
+						iterator->genFsmName_, iterator->genConfigAlias_, 
+						iterator->genPlanDurationSeconds_, iterator->genPlanNumberOfRuns_);
+				}
+				else
+				{
+					__COUT__ << "Getting iterator table..." << __E__;
+					itConfig = theIteratorStruct.cfgMgr_->__GET_CONFIG__(IterateTable);
+					theIteratorStruct.onlyConfigIfNotConfigured_ = false;
+					theIteratorStruct.commands_ = itConfig->getPlanCommands(theIteratorStruct.cfgMgr_, theIteratorStruct.activePlan_);
+				}
 
 				// reset commandIteration counts
 				theIteratorStruct.commandIterations_.clear();
@@ -399,13 +425,26 @@ try
 		//		__COUT__ << "end loop.." << theIteratorStruct.running_ << " " <<
 		//				theIteratorStruct.activePlan_ << " cmd=" <<
 		//				theIteratorStruct.commandIndex_ << __E__;
+	}	/* code */
+	} //end try/catch
+	catch(const std::runtime_error& e) //insert info about the state of the iterator
+	{
+		if(theIteratorStruct.activePlan_ != "")
+		{
+			__SS__ << "The active Iterator plan name is '" << theIteratorStruct.activePlan_ << 
+				"'... Here was the error: " << e.what() << __E__;
+			__SS_THROW__; 
+		}
+		else 
+			throw;
 	}
+	
 
 	iterator->workloopRunning_ = false;  // if we ever exit
-}
+} //end IteratorWorkLoop()
 catch(const std::runtime_error& e)
 {
-	__SS__ << "Encountered error in Iterator thread:\n" << e.what() << __E__;
+	__SS__ << "Encountered error in Iterator thread. Here is the error:\n" << e.what() << __E__;
 	__COUT_ERR__ << ss.str();
 
 	// lockout the messages array for the remainder of the scope
@@ -440,7 +479,7 @@ catch(...)
 
 	iterator->workloopRunning_ = false;  // if we ever exit
 	iterator->errorMessage_    = ss.str();
-}  // end IteratorWorkLoop()
+}  // end IteratorWorkLoop() exception handling
 
 //==============================================================================
 void Iterator::startCommand(IteratorWorkLoopStruct* iteratorStruct)
@@ -533,23 +572,23 @@ try
 	}
 	else if(type == IterateTable::COMMAND_START)
 	{
-		return startCommandFSMTransition(iteratorStruct, "Start");
+		return startCommandFSMTransition(iteratorStruct, RunControlStateMachine::START_TRANSITION_NAME);
 	}
 	else if(type == IterateTable::COMMAND_STOP)
 	{
-		return startCommandFSMTransition(iteratorStruct, "Stop");
+		return startCommandFSMTransition(iteratorStruct, RunControlStateMachine::STOP_TRANSITION_NAME);
 	}
 	else if(type == IterateTable::COMMAND_PAUSE)
 	{
-		return startCommandFSMTransition(iteratorStruct, "Pause");
+		return startCommandFSMTransition(iteratorStruct, RunControlStateMachine::PAUSE_TRANSITION_NAME);
 	}
 	else if(type == IterateTable::COMMAND_RESUME)
 	{
-		return startCommandFSMTransition(iteratorStruct, "Resume");
+		return startCommandFSMTransition(iteratorStruct, RunControlStateMachine::RESUME_TRANSITION_NAME);
 	}
 	else if(type == IterateTable::COMMAND_HALT)
 	{
-		return startCommandFSMTransition(iteratorStruct, "Halt");
+		return startCommandFSMTransition(iteratorStruct, RunControlStateMachine::HALT_TRANSITION_NAME);
 	}
 	else
 	{
@@ -749,6 +788,8 @@ bool Iterator::haltIterator(Iterator* iterator, IteratorWorkLoopStruct* iterator
 	std::string              errorStr     = "";
 	std::string              currentState = theSupervisor->theStateMachine_.getCurrentStateName();
 
+	__COUTV__(currentState);
+
 	bool haltAttempted = true;	
 	if(doNotHaltFSM)
 	{
@@ -756,17 +797,18 @@ bool Iterator::haltIterator(Iterator* iterator, IteratorWorkLoopStruct* iterator
 			". If this is undesireable, add a Halt command, for example, to the end of your Iteration plan." << __E__;
 		haltAttempted = false;
 	}
-	else if(currentState == "Initialized" || currentState == "Halted")
+	else if(currentState == RunControlStateMachine::INITIAL_STATE_NAME || 
+		currentState == RunControlStateMachine::HALTED_STATE_NAME)
 	{
 		__COUT__ << "Do nothing. Already halted." << __E__;
 		haltAttempted = false;
 	}
 	else if(currentState == "Running")
 		errorStr = theSupervisor->attemptStateMachineTransition(
-		    0, 0, "Abort", fsmName, WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/, WebUsers::DEFAULT_ITERATOR_USERNAME, fsmCommandParameters);
+		    0, 0, RunControlStateMachine::ABORT_TRANSITION_NAME, fsmName, WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/, WebUsers::DEFAULT_ITERATOR_USERNAME, fsmCommandParameters);
 	else
 		errorStr = theSupervisor->attemptStateMachineTransition(
-		    0, 0, "Halt", fsmName, WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/, WebUsers::DEFAULT_ITERATOR_USERNAME, fsmCommandParameters);
+		    0, 0, RunControlStateMachine::HALT_TRANSITION_NAME, fsmName, WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/, WebUsers::DEFAULT_ITERATOR_USERNAME, fsmCommandParameters);
 
 	if(haltAttempted)
 	{
@@ -899,22 +941,29 @@ void Iterator::startCommandRepeatLabel(IteratorWorkLoopStruct* iteratorStruct)
 //==============================================================================
 void Iterator::startCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 {
+	__COUT__ << "startCommandRun " << __E__;
+
 	iteratorStruct->runIsDone_ = false;
 	iteratorStruct->fsmCommandParameters_.clear();
 
 	std::string errorStr     = "";
 	std::string currentState = iteratorStruct->theIterator_->theSupervisor_->theStateMachine_.getCurrentStateName();
 
-	// execute first transition (may need two)
+	// execute first transition (may need two)	
 
-	if(currentState == "Configured")
+	__COUTTV__(iteratorStruct->theIterator_->genLogEntry_);
+
+	if(currentState == RunControlStateMachine::CONFIGURED_STATE_NAME)
 		errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
-		                                                                                       0,
-		                                                                                       "Start",
-		                                                                                       iteratorStruct->fsmName_,
-		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
-		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME,
-		                                                                                       iteratorStruct->fsmCommandParameters_);
+					0,
+					RunControlStateMachine::START_TRANSITION_NAME,
+					iteratorStruct->fsmName_,
+					WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
+					WebUsers::DEFAULT_ITERATOR_USERNAME,
+					iteratorStruct->fsmCommandParameters_,
+					iteratorStruct->activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME ? 
+						iteratorStruct->theIterator_->genLogEntry_ : ""
+				);
 	else
 		errorStr = "Can only Run from the Configured state. The current state is " + currentState;
 
@@ -991,30 +1040,37 @@ void Iterator::startCommandConfigureAlias(IteratorWorkLoopStruct* iteratorStruct
 
 	// execute first transition (may need two in conjunction with checkCommandConfigure())
 
-	if(currentState == "Initial")
+	if(currentState == RunControlStateMachine::INITIAL_STATE_NAME)
 		errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
 		                                                                                       0,
-		                                                                                       "Initialize",
+		                                                                                       RunControlStateMachine::INIT_TRANSITION_NAME,
 		                                                                                       iteratorStruct->fsmName_,
 		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME,
 		                                                                                       iteratorStruct->fsmCommandParameters_);
-	else if(currentState == "Halted")
+	else if(currentState == RunControlStateMachine::HALTED_STATE_NAME)
 		errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
 		                                                                                       0,
-		                                                                                       "Configure",
+		                                                                                       RunControlStateMachine::CONFIGURE_TRANSITION_NAME,
 		                                                                                       iteratorStruct->fsmName_,
 		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME,
 		                                                                                       iteratorStruct->fsmCommandParameters_);
-	else if(currentState == "Configured")
-		errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
+	else if(currentState == RunControlStateMachine::CONFIGURED_STATE_NAME ||
+		currentState == RunControlStateMachine::FAILED_STATE_NAME)
+	{
+		if(iteratorStruct->onlyConfigIfNotConfigured_ && 
+				currentState != RunControlStateMachine::FAILED_STATE_NAME)
+			__COUT__ << "Already configured, so do nothing!" << __E__;
+		else
+			errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
 		                                                                                       0,
-		                                                                                       "Halt",
+		                                                                                       RunControlStateMachine::HALT_TRANSITION_NAME,
 		                                                                                       iteratorStruct->fsmName_,
 		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME,
 		                                                                                       iteratorStruct->fsmCommandParameters_);
+	}
 	else
 		errorStr = "Can only Configure from the Initial or Halted state. The current state is " + currentState;
 
@@ -1044,20 +1100,27 @@ void Iterator::startCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
 	// execute first transition (may need two in conjunction with checkCommandConfigure())
 
 	__COUTV__(currentState);
-
+	
 	errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
-	                                                                                       0,
-	                                                                                       transitionCommand,
-	                                                                                       iteratorStruct->fsmName_,
-	                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
-	                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME,
-	                                                                                       iteratorStruct->fsmCommandParameters_);
+			0,
+			transitionCommand,
+			iteratorStruct->fsmName_,
+			WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
+			WebUsers::DEFAULT_ITERATOR_USERNAME,
+			iteratorStruct->fsmCommandParameters_,
+			(transitionCommand == RunControlStateMachine::START_TRANSITION_NAME && 
+				iteratorStruct->activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME) ? 
+						iteratorStruct->theIterator_->genLogEntry_ : ""
+		);
 
 	if(errorStr != "")
 	{
-		__SS__ << "Iterator failed to configure with system alias '"
-		       << (iteratorStruct->fsmCommandParameters_.size() ? iteratorStruct->fsmCommandParameters_[0] : "UNKNOWN")
-		       << "' because of the following error: " << errorStr;
+		__SS__ << "Iterator failed to " << transitionCommand << " with ";
+		if(iteratorStruct->fsmCommandParameters_.size() == 0)
+			ss << "no parameters ";
+		else
+			ss << "parameters '" << StringMacros::vectorToString(iteratorStruct->fsmCommandParameters_) << "' ";		
+		ss << "' because of the following error: " << errorStr;
 		__SS_THROW__;
 	}
 
@@ -1370,25 +1433,25 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 		// transition to halted state
 		__COUT__ << "Transitioning FSM to Halted..." << __E__;
 
-		if(currentState == "Halted")
+		if(currentState == RunControlStateMachine::HALTED_STATE_NAME)
 		{
 			// done with early halt exit!
 			__COUT__ << "Transition to Halted complete." << __E__;
 			return true;
 		}
-		else if(currentState == "Running" ||  // launch transition to halt
-		        currentState == "Paused")
+		else if(currentState == RunControlStateMachine::RUNNING_STATE_NAME ||  // launch transition to halt
+		        currentState == RunControlStateMachine::PAUSED_STATE_NAME)
 			errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
 			                                                                                       0,
-			                                                                                       "Abort",
+			                                                                                       RunControlStateMachine::ABORT_TRANSITION_NAME,
 			                                                                                       iteratorStruct->fsmName_,
 			                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 			                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME,
 			                                                                                       iteratorStruct->fsmCommandParameters_);
-		else if(currentState == "Configured")  // launch transition to halt
+		else if(currentState == RunControlStateMachine::CONFIGURED_STATE_NAME)  // launch transition to halt
 			errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
 			                                                                                       0,
-			                                                                                       "Halt",
+			                                                                                       RunControlStateMachine::HALT_TRANSITION_NAME,
 			                                                                                       iteratorStruct->fsmName_,
 			                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 			                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME,
@@ -1414,7 +1477,7 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 		if(currentState == "Paused")  // launch transition to running
 			errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
 			                                                                                       0,
-			                                                                                       "Resume",
+			                                                                                       RunControlStateMachine::RESUME_TRANSITION_NAME,
 			                                                                                       iteratorStruct->fsmName_,
 			                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 			                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME,
@@ -1517,12 +1580,21 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 
 				return false;
 			}
-		}
+		} //end waitOnRunningThreads
 
 		///////////////////
 		// priority 2 is duration, if <= 0 it is ignored
 		if(remainingDurationInSeconds > 1)
 		{
+			//reset command start time (for displays) once running is stable
+			if(remainingDurationInSeconds == iteratorStruct->originalDurationInSeconds_)
+			{
+				iteratorStruct->theIterator_->activeCommandStartTime_ = time(0);  // reset on any change
+				__COUT__ << "Starting run duration of " << remainingDurationInSeconds << 
+					" [s] at time = " << iteratorStruct->theIterator_->activeCommandStartTime_ << " "
+					<< StringMacros::getTimestampString(iteratorStruct->theIterator_->activeCommandStartTime_) << __E__; 
+			}
+
 			--remainingDurationInSeconds;
 
 			// write back to string
@@ -1591,7 +1663,7 @@ bool Iterator::checkCommandConfigure(IteratorWorkLoopStruct* iteratorStruct)
 	std::string errorStr     = "";
 	std::string currentState = iteratorStruct->theIterator_->theSupervisor_->theStateMachine_.getCurrentStateName();
 
-	if(currentState == "Halted")
+	if(currentState == RunControlStateMachine::HALTED_STATE_NAME)
 		errorStr = iteratorStruct->theIterator_->theSupervisor_->attemptStateMachineTransition(0,
 		                                                                                       0,
 		                                                                                       "Configure",
@@ -1599,9 +1671,11 @@ bool Iterator::checkCommandConfigure(IteratorWorkLoopStruct* iteratorStruct)
 		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 		                                                                                       WebUsers::DEFAULT_ITERATOR_USERNAME,
 		                                                                                       iteratorStruct->fsmCommandParameters_);
-	else if(currentState != "Configured")
-		errorStr = "Expected to be in Configure. Unexpectedly, the current state is " + currentState + "." +
-		           ". Last State Machine error message was as follows: " + iteratorStruct->theIterator_->theSupervisor_->theStateMachine_.getErrorMessage();
+	else if(currentState != RunControlStateMachine::CONFIGURED_STATE_NAME)
+		errorStr = "Expected to be in '" + RunControlStateMachine::CONFIGURED_STATE_NAME + 
+			"' state. Unexpectedly, the current state is " + currentState + "." +
+			". Last State Machine error message was as follows: " + 
+			iteratorStruct->theIterator_->theSupervisor_->theStateMachine_.getErrorMessage();
 	else  // else successfully done (in Configured state!)
 	{
 		__COUT__ << "checkCommandConfigureAlias complete." << __E__;
@@ -1675,12 +1749,121 @@ bool Iterator::checkCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
 }  // end checkCommandConfigure()
 
 //==============================================================================
+// -1 durationSeconds means open-ended single run
+std::vector<IterateTable::Command> Iterator::generateIterationPlan(
+	const std::string& fsmName, const std::string& configAlias, 
+	uint64_t durationSeconds /* = -1 */, unsigned int numberOfRuns /* = 1 */)
+{
+	std::vector<IterateTable::Command> commands;
+
+	//example commands:
+	//  Choose FSM name
+	//	Configure if needed to selected system alias
+	//	Start run
+	//		count seconds
+	//	Stop run numberOfRuns
+	//	loop
+
+	if(durationSeconds == (uint64_t)-1)
+		numberOfRuns = 1;
+	__COUTV__(durationSeconds);
+	__COUTV__(numberOfRuns);
+
+	// --------  Choose FSM name
+	{
+		commands.push_back(IterateTable::Command());
+		commands.back().type_ = IterateTable::COMMAND_CHOOSE_FSM;
+
+		commands.back().params_.emplace(std::pair<std::string /*param name*/, std::string /*param value*/>(
+			IterateTable::commandChooseFSMParams_.NameOfFSM_, 
+			fsmName
+		));
+	}
+
+	// -------- Configure if needed to selected system alias
+	{
+		commands.push_back(IterateTable::Command());
+		commands.back().type_ = IterateTable::COMMAND_CONFIGURE_ALIAS;
+
+		commands.back().params_.emplace(std::pair<std::string /*param name*/, std::string /*param value*/>(
+			IterateTable::commandConfigureAliasParams_.SystemAlias_,
+			configAlias
+		));
+	}
+
+	if(durationSeconds == (uint64_t)-1)
+	{
+		__COUT__ << "Open ended run..." << __E__;
+
+		// -------- Start FSM transtion
+		{
+			commands.push_back(IterateTable::Command());
+			commands.back().type_ = IterateTable::COMMAND_START;
+		}
+	}
+	else
+	{
+		__COUT__ << "Finite duration run(s)..." << __E__;
+
+		if(numberOfRuns > 1)
+		{
+			__COUT__ << "Setting up iterator loop for " << numberOfRuns << " runs." << __E__;
+
+			commands.push_back(IterateTable::Command());
+			commands.back().type_ = IterateTable::COMMAND_BEGIN_LABEL;
+
+			commands.back().params_.emplace(std::pair<std::string /*param name*/, std::string /*param value*/>(
+				IterateTable::commandBeginLabelParams_.Label_,
+				"GENERATED_LABEL"
+			));
+			
+		}
+
+		// -------- Start managed run
+		{
+			commands.push_back(IterateTable::Command());
+			commands.back().type_ = IterateTable::COMMAND_RUN;
+
+			commands.back().params_.emplace(std::pair<std::string /*param name*/, std::string /*param value*/>(
+				IterateTable::commandRunParams_.DurationInSeconds_,
+				std::to_string(durationSeconds)
+			));
+		}
+
+		if(numberOfRuns > 1)
+		{
+			commands.push_back(IterateTable::Command());
+			commands.back().type_ = IterateTable::COMMAND_REPEAT_LABEL;
+
+			commands.back().params_.emplace(std::pair<std::string /*param name*/, std::string /*param value*/>(
+				IterateTable::commandRepeatLabelParams_.Label_,
+				"GENERATED_LABEL"
+			));
+			commands.back().params_.emplace(std::pair<std::string /*param name*/, std::string /*param value*/>(
+				IterateTable::commandRepeatLabelParams_.NumberOfRepetitions_,
+				std::to_string(numberOfRuns-1) //number of repeats (i.e., 1 repeat, gives 2 runs)
+			));
+		}
+	}
+
+	__COUTV__(commands.size());
+
+	return commands;
+} //end generateIterationPlan()
+
+//==============================================================================
 bool Iterator::handleCommandRequest(HttpXmlDocument& xmldoc, const std::string& command, const std::string& parameter)
+try
 {
 	//__COUTV__(command);
 	if(command == "iteratePlay")
 	{
 		playIterationPlan(xmldoc, parameter);
+		return true;
+	}
+	else if(command == "iteratePlayGenerated")
+	{
+		playGeneratedIterationPlan(xmldoc, parameter);
 		return true;
 	}
 	else if(command == "iteratePause")
@@ -1730,14 +1913,119 @@ bool Iterator::handleCommandRequest(HttpXmlDocument& xmldoc, const std::string& 
 		}
 	}
 	return false;
-}
+} //end handleCommandRequest()
+catch(...)
+{
+	__SS__ << "Error caught by Iterator command handling!" << __E__;
+	try
+	{
+		throw;
+	}
+	catch(const std::runtime_error& e)
+	{
+		ss << "\nHere is the error: " << e.what() << __E__;
+	}
+	catch(...)
+	{
+		ss << "Uknown error caught." << __E__;
+	}	
+
+	__COUT_ERR__ << "\n" << ss.str();
+	
+	xmldoc.addTextElementToData("state_tranisition_attempted",
+										"0");  // indicate to GUI transition NOT attempted
+	xmldoc.addTextElementToData("state_tranisition_attempted_err",
+										ss.str());  // indicate to GUI transition NOT attempted		
+	return true;
+} // end stateMachineXgiHandler() error handling
 
 //==============================================================================
 void Iterator::playIterationPlan(HttpXmlDocument& xmldoc, const std::string& planName)
 {
-	__MOUT__ << "Attempting to play iteration plan '" << planName << ".'" << __E__;
 	__COUT__ << "Attempting to play iteration plan '" << planName << ".'" << __E__;
 
+	if(planName == Iterator::RESERVED_GEN_PLAN_NAME)
+	{
+		__SS__ << "Illegal use of reserved iteration plan name '" << Iterator::RESERVED_GEN_PLAN_NAME <<
+			"!' Please select a different name." << __E__;
+		__SS_THROW__;
+	}
+
+	playIterationPlanPrivate(xmldoc, planName);
+
+} //end playIterationPlan()
+
+//==============================================================================
+void Iterator::playGeneratedIterationPlan(HttpXmlDocument& xmldoc,
+	const std::string& parametersCSV)
+{
+	__COUTV__(parametersCSV);
+	std::vector<std::string> parameters = StringMacros::getVectorFromString(parametersCSV,{','});
+
+	if(parameters.size() != 6)
+	{
+		__SS__ << "Malformed CSV parameters to playGeneratedIterationPlan(), must be 6 arguments and there were " <<
+			parameters.size() << ": " << parametersCSV << __E__;
+		__SS_THROW__;
+	}
+	// parameters[0] /*fsmName*/,
+	// parameters[1] /*configAlias*/,
+	// parameters[2] /*durationSeconds*/,
+	// parameters[3] /*numberOfRuns*/,
+	// parameters[4] /*keepConfiguration*/,
+	// parameters[5] /*logEntry*/
+
+	uint64_t durationSeconds;
+	sscanf(parameters[2].c_str(),"%lu",&durationSeconds);
+	unsigned int numberOfRuns;
+	sscanf(parameters[3].c_str(),"%u",&numberOfRuns);
+	unsigned int keepConfiguration;
+	sscanf(parameters[4].c_str(),"%u",&keepConfiguration);
+	playGeneratedIterationPlan(xmldoc,
+		parameters[0] /*fsmName*/,
+		parameters[1] /*configAlias*/,
+		durationSeconds,
+		numberOfRuns,
+		keepConfiguration,
+		parameters[5] /*logEntry*/
+		);
+
+} //end playGeneratedIterationPlan()
+
+//==============================================================================
+void Iterator::playGeneratedIterationPlan(HttpXmlDocument& xmldoc,
+	const std::string& fsmName, 
+	const std::string& configAlias, 
+	uint64_t durationSeconds /* = -1 */, 
+	unsigned int numberOfRuns /* = 1 */,
+	bool keepConfiguration /* = false */,
+	const std::string& logEntry)
+{
+	std::string planName = Iterator::RESERVED_GEN_PLAN_NAME;
+	__COUT__ << "Attempting to play iteration plan '" << planName << ".'" << __E__;
+
+	genFsmName_ = fsmName;
+	genConfigAlias_ = configAlias;
+	genPlanDurationSeconds_ = durationSeconds;
+	genPlanNumberOfRuns_ = numberOfRuns;
+	genKeepConfiguration_ = keepConfiguration;
+	genLogEntry_ = logEntry;
+	
+	__COUTV__(genFsmName_);
+	__COUTV__(genConfigAlias_);
+	__COUTV__(genPlanDurationSeconds_);
+	__COUTV__(genPlanNumberOfRuns_);
+	__COUTV__(genKeepConfiguration_);
+	__COUTV__(genLogEntry_);
+
+	playIterationPlanPrivate(xmldoc, planName);
+
+} //end playGeneratedIterationPlan()
+
+//==============================================================================
+//called by both playIterationPlan and playGeneratedIterationPlan
+void Iterator::playIterationPlanPrivate(HttpXmlDocument& xmldoc, const std::string& planName)
+{
 	// setup "play" command
 
 	// lockout the messages array for the remainder of the scope
@@ -1767,14 +2055,16 @@ void Iterator::playIterationPlan(HttpXmlDocument& xmldoc, const std::string& pla
 	{
 		__SS__ << "Invalid play command attempted. Can only play when the Iterator is "
 		          "inactive or paused."
-		       << " If you would like to restart an iteration plan, first try halting." << __E__;
+		       << " If you would like to restart an iteration plan, first try halting the Iterator." << __E__;
 		__MOUT__ << ss.str();
 
 		xmldoc.addTextElementToData("error_message", ss.str());
 
-		__COUT__ << "Invalid play command attempted. " << commandPlay_ << " " << activePlanName_ << __E__;
+		__COUT__ << "Invalid play command attempted. " << 
+				activePlanIsRunning_ << " " << commandPlay_ << " " <<
+			 	activePlanName_ << __E__;
 	}
-}
+} //end playIterationPlan()
 
 //==============================================================================
 void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
@@ -1806,7 +2096,7 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 		__COUT__ << "Invalid pause command attempted. " << workloopRunning_ << " " << activePlanIsRunning_ << " " << commandPause_ << " " << activePlanName_
 		         << __E__;
 	}
-}
+} //end pauseIterationPlan()
 
 //==============================================================================
 void Iterator::haltIterationPlan(HttpXmlDocument& /*xmldoc*/)
@@ -1839,7 +2129,7 @@ void Iterator::haltIterationPlan(HttpXmlDocument& /*xmldoc*/)
 		__COUT__ << "No thread, so conducting halt." << __E__;
 		Iterator::haltIterator(this);
 	}
-}
+} //end haltIterationPlan()
 
 //==============================================================================
 //	return state machine and iterator status
@@ -1857,9 +2147,7 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 	else
 		xmldoc.addTextElementToData("transition_progress", "100");
 
-	char tmp[20];
-	sprintf(tmp, "%lu", theSupervisor_->theStateMachine_.getTimeInState());
-	xmldoc.addTextElementToData("time_in_state", tmp);
+	xmldoc.addNumberElementToData("time_in_state", theSupervisor_->theStateMachine_.getTimeInState());
 
 	// lockout the messages array for the remainder of the scope
 	// this guarantees the reading thread can safely access the messages
@@ -1873,17 +2161,18 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 	xmldoc.addTextElementToData("last_started_plan", lastStartedPlanName_);
 	xmldoc.addTextElementToData("last_finished_plan", lastFinishedPlanName_);
 
-	sprintf(tmp, "%u", activeCommandIndex_);
-	xmldoc.addTextElementToData("current_command_index", tmp);
-	sprintf(tmp, "%ld", time(0) - activeCommandStartTime_);
-	xmldoc.addTextElementToData("current_command_duration", tmp);
-	sprintf(tmp, "%u", activeCommandIteration_);
-	xmldoc.addTextElementToData("current_command_iteration", tmp);
+	xmldoc.addNumberElementToData("current_command_index", activeCommandIndex_);
+	xmldoc.addNumberElementToData("current_number_of_commands", activeNumberOfCommands_);
+	xmldoc.addTextElementToData("current_command_type", activeCommandType_);
+	xmldoc.addNumberElementToData("current_command_duration", time(0) - activeCommandStartTime_);
+	xmldoc.addNumberElementToData("current_command_iteration", activeCommandIteration_);
+	for(const auto& depthIteration : depthIterationStack_)		
+		xmldoc.addNumberElementToData("depth_iteration", depthIteration);
 
-	for(const auto& depthIteration : depthIterationStack_)
+	if(activePlanName_ == Iterator::RESERVED_GEN_PLAN_NAME)
 	{
-		sprintf(tmp, "%u", depthIteration);
-		xmldoc.addTextElementToData("depth_iteration", tmp);
+		xmldoc.addNumberElementToData("generated_number_of_runs", genPlanNumberOfRuns_);	
+		xmldoc.addNumberElementToData("generated_duration_of_runs", genPlanDurationSeconds_);	
 	}
 
 	if(activePlanIsRunning_ && iteratorBusy_)
@@ -1899,4 +2188,4 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 		xmldoc.addTextElementToData("active_plan_status", "Inactive");
 
 	xmldoc.addTextElementToData("error_message", errorMessage_);
-}
+} //end getIterationPlanStatus()

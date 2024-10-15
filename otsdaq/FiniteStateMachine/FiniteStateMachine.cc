@@ -51,7 +51,7 @@ std::string FiniteStateMachine::getCurrentStateName(void) { return getStateName(
 //	returns number of seconds elapsed while in current state
 //	returns 0 if invalid (i.e. stateEntranceTime_ is not set - stateEntranceTime_ is
 // initialized to 0)
-time_t FiniteStateMachine::getTimeInState(void) { return stateEntranceTime_ ? (time(0) - stateEntranceTime_) : 0; }
+time_t FiniteStateMachine::getTimeInState(void) const { return stateEntranceTime_ ? (time(0) - stateEntranceTime_) : 0; }
 
 //==============================================================================
 std::string FiniteStateMachine::getCurrentTransitionName(const std::string& transition)
@@ -78,7 +78,7 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 			return stateTransitionNameTable_.at(provenanceState_).at(currentTransition_);
 		else
 		{
-			__GEN_SS__ << "Cannot find transition name from '" << getProvenanceStateName() << "' with transition: " << currentTransition_ << "...";
+			__GEN_SS__ << "Cannot find transition name from '" << getProvenanceStateName() << "' with command: " << currentTransition_ << "...";
 			__GEN_COUT_ERR__ << ss.str();
 			XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 		}
@@ -90,7 +90,7 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 	}
 	else
 	{
-		__GEN_SS__ << "Cannot find transition name from '" << getCurrentStateName() << "' with transition: " << transition << "...";
+		__GEN_SS__ << "Cannot find transition name from '" << getCurrentStateName() << "' with command: " << transition << "...";
 		__GEN_COUT_ERR__ << ss.str();
 		XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 	}
@@ -106,7 +106,7 @@ std::string FiniteStateMachine::getTransitionName(const toolbox::fsm::State from
 	else
 	{
 		std::ostringstream error;
-		error << "Cannot find transition name from " << from << " with transition: " << transition << ", unknown!";
+		error << "Cannot find transition name from " << from << " with command: " << transition << ", unknown!";
 		XCEPT_RAISE(toolbox::fsm::exception::Exception, error.str());
 	}
 }  // end getTransitionName()

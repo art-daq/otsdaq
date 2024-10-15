@@ -542,7 +542,7 @@ std::string StringMacros::getTimestampString(const std::string& linuxTimeInSecon
 // getTimestampString ~~
 //	returns ots style timestamp string
 //	of known fixed size: Thu Aug 23 14:55:02 2001 CST
-std::string StringMacros::getTimestampString(const time_t& linuxTimeInSeconds)
+std::string StringMacros::getTimestampString(const time_t linuxTimeInSeconds)
 {
 	std::string retValue(30, '\0');  // known fixed size: Thu Aug 23 14:55:02 2001 CST
 
@@ -1278,6 +1278,49 @@ char* StringMacros::otsGetEnvironmentVarable(const char* name, const std::string
 	}
 	return environmentVariablePtr;
 }  // end otsGetEnvironmentVarable()
+
+//=========================================================================
+//extract value for field from xml looking forwards from after
+// occurence = 0 is first occurence
+std::string StringMacros::extractXmlField(const std::string &xml,
+												const std::string &field,
+												uint32_t occurrence, size_t after,
+												size_t *returnAfter /* = nullptr */)
+{
+	size_t lo = after, hi;
+	for (uint32_t i = 0; i <= occurrence; ++i)
+		if ((lo = xml.find("<" + field + " ", lo)) == std::string::npos)
+			return "";
+	if ((hi = xml.find("'/>", lo)) == std::string::npos)
+		return "";
+
+	lo = xml.find("value='", lo) + 7;
+
+	if (returnAfter)
+		*returnAfter = hi + 3; //field.length() + 3;
+
+	return xml.substr(lo, hi - lo);
+} //end extractXmlField()
+
+//=========================================================================
+//extract value for field from xml looking backwards from before
+// occurence = 0 is first occurence
+std::string StringMacros::rextractXmlField(const std::string &xml,
+												 const std::string &field,
+												 uint32_t occurrence, size_t before)
+{
+	size_t lo = 0, hi = before;
+	for (uint32_t i = 0; i <= occurrence; ++i)
+		if ((lo = xml.rfind("<" + field + " ", hi)) == std::string::npos)
+			return "";
+	if ((hi = xml.rfind("'/>", hi)) == std::string::npos)
+		return "";
+
+	lo = xml.find("value='", lo) + 7;
+
+	return xml.substr(lo, hi - lo);
+} //end rextractXmlField()
+
 
 #ifdef __GNUG__
 #include <cxxabi.h>

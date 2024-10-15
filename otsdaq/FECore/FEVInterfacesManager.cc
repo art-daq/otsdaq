@@ -459,7 +459,7 @@ FEVInterface* FEVInterfacesManager::getFEInterfaceP(const std::string& interface
 	catch(...)
 	{
 		__CFG_SS__ << "Interface ID '" << interfaceID << "' not found in configured interfaces." << __E__;
-		__CFG_SS_THROW__;
+		__SS_ONLY_THROW__;
 	}
 }  // end getFEInterfaceP()
 
@@ -474,7 +474,7 @@ const FEVInterface& FEVInterfacesManager::getFEInterface(const std::string& inte
 	catch(...)
 	{
 		__CFG_SS__ << "Interface ID '" << interfaceID << "' not found in configured interfaces." << __E__;
-		__CFG_SS_THROW__;
+		__SS_ONLY_THROW__;
 	}
 }  // end getFEInterface()
 
@@ -2042,7 +2042,7 @@ void FEVInterfacesManager::runFEMacro(const std::string&                        
 //	returns string with each new line indicating the macros for a FE
 //	each line:
 //		<parent supervisor name>;<parent supervisor lid>;<interface type>;<interface UID>
-//		;<macro name>;<macro permissions req>;<macro num of inputs>;...<input names ;
+//		;<macro name>;<macro permissions req>;<macro tooltip>;<macro num of inputs>;...<input names ;
 // separated>...
 //		;<macro num of outputs>;...<output names ; separated>...
 //	do not use :-separator because of the : in user permissions strings
@@ -2054,13 +2054,13 @@ std::string FEVInterfacesManager::getFEMacrosString(const std::string& superviso
 
 	for(const auto& it : theFEInterfaces_)
 	{
-		__CFG_COUT__ << "FE interface UID = " << it.first << __E__;
+		__CFG_COUTT__ << "FE interface UID = " << it.first << __E__;
 
 		retList += supervisorName + ";" + supervisorLid + ";" + it.second->getInterfaceType() + ";" + it.second->getInterfaceUID();
 
 		for(const auto& macroPair : it.second->getMapOfFEMacroFunctions())
 		{
-			__CFG_COUT__ << "FE Macro name = " << macroPair.first << __E__;
+			__CFG_COUTT__ << "FE Macro name = " << macroPair.first << __E__;
 			retList += ";" + macroPair.first + ";" + macroPair.second.requiredUserPermissions_;
 			retList += ";" + StringMacros::encodeURIComponent(macroPair.second.feMacroTooltip_);
 

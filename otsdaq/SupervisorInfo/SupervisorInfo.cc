@@ -27,11 +27,9 @@ void SupervisorInfo::setSubappStatus(const std::string& name, const std::string&
 }  // end setSubappStatus()
 
 //=====================================================================================
-void SupervisorInfo::setSubappStatus(const SubappInfo& info)
+void SupervisorInfo::copySubappStatus(const SubappInfo& info)
 {
 	subapps_[info.name] = info;
-	if(info.status != SupervisorInfo::APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
-		subapps_[info.name].lastStatusTime = time(0);
 }  // end setSubappStatus()
 
 //=====================================================================================

@@ -61,14 +61,14 @@ class SupervisorInfo
 
 
 	struct SubappInfo {
-		std::string name; // Also key in map
-		std::string status;
-		unsigned int progress;
-		std::string detail;
-		time_t lastStatusTime;
-		std::string url;
-		std::string class_name;
-	};
+		std::string 	name; // Also key in map
+		std::string 	status;
+		unsigned int 	progress;
+		std::string 	detail;
+		time_t 			lastStatusTime;
+		std::string 	url;
+		std::string 	class_name;
+	}; // end SubappInfo struct
 
 	static const std::string APP_STATUS_UNKNOWN;
 	static const std::string APP_STATUS_NOT_MONITORED;
@@ -107,7 +107,8 @@ class SupervisorInfo
 	// Setters -------------------
 	void setStatus(const std::string& status, const unsigned int progress, const std::string& detail = "");
 	void setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail = "" );
-	void setSubappStatus(const SubappInfo& info);
+	void copySubappStatus(const SubappInfo& info);
+	void clearSubapps() { subapps_.clear(); };
 	void clear(void);
 
 	static std::string serializeSubappInfos(std::vector<SubappInfo> infos);

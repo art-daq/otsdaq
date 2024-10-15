@@ -7,6 +7,7 @@ WebUsers.cc
 		 otsdaq::TableCore
 		 PRIVATE
 		 otsdaq::XmlUtilities
+		 otsdaq::NetworkUtilities
 		 otsdaq::CgiDataUtilities
 		 otsdaq::SupervisorInfo
 )

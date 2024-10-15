@@ -72,7 +72,7 @@ struct StringMacros
 	static bool        			getNumber		 			(const std::string& s, bool& retValue);  // defined in included .icc source // Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
 
 	static std::string 			getTimestampString			(const std::string& linuxTimeInSeconds);
-	static std::string 			getTimestampString			(const time_t& linuxTimeInSeconds = time(0));
+	static std::string 			getTimestampString			(const time_t linuxTimeInSeconds = time(0));
 
 	//========================================================================================================================
 	// validateValueForDefaultStringDataType ~
@@ -203,6 +203,15 @@ struct StringMacros
 
 	static char* 				otsGetEnvironmentVarable	(const char* name, const std::string&  location, const unsigned int& line);
 
+
+
+	static std::string 			extractXmlField				(const std::string &xml,
+															 const std::string &field,
+															 uint32_t occurrence, size_t after,
+															 size_t *returnAfter = nullptr);
+	static std::string 			rextractXmlField			(const std::string &xml,
+															 const std::string &field,
+															 uint32_t occurrence, size_t before);
 
 
 	struct IgnoreCaseCompareStruct { //get string in order ignoring letter case

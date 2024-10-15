@@ -22,6 +22,8 @@ class HttpXmlDocument : public XmlDocument
 	void 		      			setHeader                       (std::string  cookieCode = "", std::string displayName = "");
 	xercesc::DOMElement* 		getRootDataElement              (void ) { return dataElement_; }
 	xercesc::DOMElement* 		addTextElementToData            (const std::string          & field					,  	const std::string                       & value = ""   		);
+	template<class T>
+	xercesc::DOMElement* 		addNumberElementToData          (const std::string          & field					,  	const T                       			& value 	   		) { return addTextElementToData(field,std::to_string(value)); }
 	xercesc::DOMElement* 		addBinaryStringToData           (const std::string          & field					,  	const std::string                       & binary        	);
 	void 		      			copyDataChildren                (      HttpXmlDocument      & document             );	
 	std::string 	      		getMatchingValue                (const std::string          & field					,  	const unsigned int                        occurance = 0 	);

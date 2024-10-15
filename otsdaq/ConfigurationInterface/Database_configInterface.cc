@@ -34,9 +34,8 @@ constexpr auto default_entity     = "OTSROOT";
 //==============================================================================
 DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 {
-#ifdef DEBUG_ENABLE
+#ifdef ARTDAQ_DATABASE_DEBUG_ENABLE
 	// to enable debugging
-	if(0)
 	{
 		artdaq::database::configuration::debug::ExportImport();
 		artdaq::database::configuration::debug::ManageAliases();
@@ -60,17 +59,20 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 		artdaq::database::configuration::debug::UconDB();
 		artdaq::database::configuration::debug::FileSystemDB();
 
-		artdaq::database::filesystem::index::debug::enable();
+		// artdaq::database::filesystem::index::debug::enable();
 
+		// THIS TURNS OFF TRACE SLOW PATH!!! (bug? Gennadiy says was trying to avoid slowing down TRACE with too many messages on slow path) 
 		artdaq::database::filesystem::debug::enable();
-		artdaq::database::mongo::debug::enable();
 
-		artdaq::database::docrecord::debug::JSONDocumentBuilder();
-		artdaq::database::docrecord::debug::JSONDocument();
+		// artdaq::database::mongo::debug::enable();
+
+		// artdaq::database::docrecord::debug::JSONDocumentBuilder();
+		// artdaq::database::docrecord::debug::JSONDocument();
 
 		// debug::registerUngracefullExitHandlers();
 		//  artdaq::database::useFakeTime(true);
 		artdaq::database::configuration::Multitasker();
+		TRACE_CNTL("modeS", true); //TURN BACK ON TRACE SLOW PATH
 	}
 #endif
 
@@ -377,6 +379,10 @@ try
 catch(std::exception const& e)
 {
 	__SS__ << "DBI Exception getting Group's member tables for '" << tableGroup << "':\n\n" << e.what() << "\n";
+	if(std::string(e.what()).find("connection refused") != std::string::npos)
+	{
+		ss << "\n\nConnection to database refused. Perhaps your ssh tunnel has closed?\n\n";
+	}
 	__SS_THROW__;
 }
 catch(...)

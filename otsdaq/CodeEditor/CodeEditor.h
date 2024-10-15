@@ -33,6 +33,7 @@ class CodeEditor
 	void getDirectoryContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut);
 	void getPathContent(const std::string& basepath, const std::string& path, HttpXmlDocument* xmlOut);
 	void getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut);
+	void getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut);
 	void saveFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut, const std::string& username);
 	void build(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut, const std::string& username);
 
@@ -54,6 +55,7 @@ class CodeEditor
 	                      const std::string&        username,
 	                      const unsigned long long& insertPos    = -1,
 	                      const std::string&        insertString = "");
+	static std::string getFileGitURL(const std::string& basepath, const std::string& path);
 
 	const std::set<std::string> ALLOWED_FILE_EXTENSIONS_;
 };

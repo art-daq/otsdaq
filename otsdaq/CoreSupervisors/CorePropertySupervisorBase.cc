@@ -133,6 +133,9 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 CorePropertySupervisorBase::~CorePropertySupervisorBase(void)
 {
 	__SUP_COUT__ << "Destructor." << __E__;
+
+	CorePropertySupervisorBase::indicateOtsDead(this);
+
 	if(theConfigurationManager_)
 		delete theConfigurationManager_;
 
@@ -191,6 +194,52 @@ void CorePropertySupervisorBase::indicateOtsAlive(const CorePropertySupervisorBa
 
 	__COUT__ << "Marked alive: " << filename << __E__;
 }  // end indicateOtsAlive()
+
+//==============================================================================
+void CorePropertySupervisorBase::indicateOtsDead(const CorePropertySupervisorBase* properties)
+{
+	char        portStr[100] = "0";
+	std::string hostname     = "wiz";
+
+	/* Note: the environment variable __ENV__("HOSTNAME")
+	//	fails in multinode ots systems started through ssh
+	//	because it will change meaning from host to host
+	*/
+
+	if(properties)
+	{
+		unsigned int port = properties->getContextTreeNode().getNode(properties->supervisorContextUID_).getNode("Port").getValue<unsigned int>();
+
+		// help the user out if the config has old defaults for port/address
+		// Same as XDAQContextTable_table.cc:extractContexts:L164
+		if(port == 0)  // convert 0 to ${OTS_MAIN_PORT}
+			port = atoi(__ENV__("OTS_MAIN_PORT"));
+
+		sprintf(portStr, "%u", port);
+
+		hostname = properties->getContextTreeNode().getNode(properties->supervisorContextUID_).getNode("Address").getValue<std::string>();
+		if(hostname == "DEFAULT")  // convert DEFAULT to http://${HOSTNAME}
+			hostname = "http://" + std::string(__ENV__("HOSTNAME"));
+
+		size_t i = hostname.find("//");
+		if(i != std::string::npos)
+			hostname = hostname.substr(i + 2);
+
+		__COUTV__(hostname);
+	}
+
+	// indicate ots is dead (for StartOTS.sh to verify launch was successful)
+	std::string filename = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/otsdaq_is_alive-" + hostname + "-" + portStr + ".dat";
+	FILE*       fp       = fopen(filename.c_str(), "w");
+	if(!fp)
+	{
+		__SS__ << "Failed to open the ots-is-alive file: " << filename << __E__;
+		__SS_THROW__;
+	}
+	fclose(fp);
+
+	__COUT__ << "Marked dead: " << filename << __E__;
+}  // end indicateOtsDead()
 
 //==============================================================================
 // will be wizard supervisor in wiz mode, otherwise Gateway Supervisor descriptor
@@ -320,16 +369,15 @@ void CorePropertySupervisorBase::checkSupervisorPropertySetup()
 	//	only redo if Context configuration group changes
 	propertiesAreSetup_ = true;
 
+	__SUP_COUTT__ << "Setting up supervisor specific property DEFAULTS for supervisor..." << __E__;
 
 	CorePropertySupervisorBase::setSupervisorPropertyDefaults();  // calls base class
 	                                                              // version defaults
 
-	//__SUP_COUT__ << "Setting up supervisor specific property DEFAULTS for supervisor..."
-	//<< __E__;
+	
 	setSupervisorPropertyDefaults();  // calls override version defaults
-	                                  //	__SUP_COUT__ << "Done setting up supervisor
-	                                  // specific property DEFAULTS for supervisor" <<
-	                                  //			"." << __E__;
+	
+	__SUP_COUTT__ << "Done setting up supervisor	specific property DEFAULTS for supervisor" << "." << __E__;
 
 	if(allSupervisorInfo_.isWizardMode())
 		__SUP_COUT__ << "Wiz mode detected. Skipping setup of supervisor properties for "

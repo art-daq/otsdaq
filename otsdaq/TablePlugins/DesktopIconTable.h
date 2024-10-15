@@ -22,10 +22,12 @@ class DesktopIconTable : public TableBase
 		std::string caption_, alternateText_, imageURL_, windowContentURL_, folderPath_;
 		std::string permissionThresholdString_;  // <groupName>:<permissionsThreshold>
 		                                         // pairs separated by ',' '&' or '|'
+		std::string recordUID_;
 	};
 
-	const std::vector<DesktopIconTable::DesktopIcon>& getAllDesktopIcons() const { return activeDesktopIcons_; }  // activeDesktopIcons_ is setup in init
-	void setAllDesktopIcons(const std::vector<DesktopIconTable::DesktopIcon>& newIcons);                          // overwrite dynamically the init result
+	const std::vector<DesktopIconTable::DesktopIcon>& 	getAllDesktopIcons() const { return activeDesktopIcons_; }  // activeDesktopIcons_ is setup in init
+	void 												setAllDesktopIcons(const std::vector<DesktopIconTable::DesktopIcon>& newIcons);                          // overwrite dynamically the init result
+	std::string  										getRemoteURL(ConfigurationManager* configManager, const std::string& localURL) const;
 
 	static const std::string COL_NAME;
 	static const std::string COL_STATUS;

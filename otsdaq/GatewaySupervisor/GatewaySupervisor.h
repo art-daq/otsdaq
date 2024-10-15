@@ -7,20 +7,20 @@
 #include "otsdaq/GatewaySupervisor/Iterator.h"
 #include "otsdaq/SOAPUtilities/SOAPMessenger.h"
 #include "otsdaq/SupervisorInfo/AllSupervisorInfo.h"
-// #include "otsdaq/SystemMessenger/SystemMessenger.h"
-// #include "otsdaq/TableCore/TableGroupKey.h"
 #include "otsdaq/WebUsersUtilities/WebUsers.h"
 #include "otsdaq/WorkLoopManager/WorkLoopManager.h"
 
 #include "otsdaq/CodeEditor/CodeEditor.h"
 #include "otsdaq/TablePlugins/DesktopIconTable.h"
 
+#include "otsdaq/NetworkUtilities/TransceiverSocket.h"  // for UDP state changer
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <xdaq/Application.h>
 #pragma GCC diagnostic pop
 #include "otsdaq/Macros/XDAQApplicationMacros.h"
-// #include <toolbox/fsm/FiniteStateMachine.h>
+
 #include <toolbox/task/WorkLoop.h>
 #include <xdata/String.h>
 #include <xgi/Method.h>
@@ -68,6 +68,10 @@ class WorkLoopManager;
 		void 						request(xgi::Input* in, xgi::Output* out);
 		void 						tooltipRequest(xgi::Input* in, xgi::Output* out);
 
+		void						addStateMachineStatusToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName, bool getRunNumber = true);
+		void						addFilteredConfigAliasesToXML	(HttpXmlDocument& xmlOut, const std::string& fsmName);
+		void						addRequiredFsmLogInputToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName);
+
 		// State Machine requests handlers
 		void 						stateMachineXgiHandler(xgi::Input* in, xgi::Output* out);
 		void 						stateMachineIterationBreakpoint(xgi::Input* in, xgi::Output* out);
@@ -75,7 +79,7 @@ class WorkLoopManager;
 		static std::string			getIconHeaderString(void);
 		static bool					handleAddDesktopIconRequest(const std::string& author, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut, std::vector<DesktopIconTable::DesktopIcon>* newIcons = nullptr);
 		static void 				handleGetApplicationIdRequest(AllSupervisorInfo* applicationInfo, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut);
-
+		
 		xoap::MessageReference 		stateMachineXoapHandler(xoap::MessageReference msg);
 
 		bool 						stateMachineThread(toolbox::task::WorkLoop* workLoop);
@@ -113,16 +117,21 @@ class WorkLoopManager;
 		void 						enteringError(toolbox::Event::Reference e) override;
 
 		void 						makeSystemLogEntry(std::string entryText);
+		static void 				addSystemMessage(std::string toUserCSV, std::string message);
 
 		void 						checkForAsyncError(void);
 
 		// CorePropertySupervisorBase override functions
 		virtual void 					setSupervisorPropertyDefaults					(void) override;  // override to control supervisor specific defaults
 		virtual void 					forceSupervisorPropertyValues					(void) override;  // override to force supervisor property values (and ignore user settings)
+		
 
 	private:
 		unsigned int 					getNextRunNumber								(const std::string& fsmName = "");
-		bool 							setNextRunNumber								(unsigned int runNumber, const std::string& fsmName = "");
+		void 							setNextRunNumber								(unsigned int runNumber, const std::string& fsmName = "");
+		std::string 					getLastLogEntry									(const std::string& logType, const std::string& fsmName = "");
+		void 							setLastLogEntry									(const std::string& logType, const std::string& logEntry, const std::string& fsmName = "");
+
 
 		static xoap::MessageReference 	lastTableGroupRequestHandler					(const SOAPParameters& parameters);
 		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr);
@@ -141,8 +150,10 @@ class WorkLoopManager;
 																						const std::string& fsmWindowName,
 																						const std::string& username,
 																						const std::vector<std::string>& parameters,
-																						const std::string& logEntry = "");
+																						std::string logEntry = "");
 		void        					broadcastMessage								(xoap::MessageReference msg);
+		void        					broadcastMessageToRemoteGateways				(const xoap::MessageReference msg);
+		bool        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg);
 
 		struct BroadcastMessageIterationsDoneStruct
 		{
@@ -279,12 +290,26 @@ class WorkLoopManager;
 
 		std::string 		activeStateMachineName_;  // when multiple state machines, this is the name of the state machine which executed the configure transition
 		std::string 		activeStateMachineWindowName_;
-		std::string			activeStateMachineLogEntry_;
+		std::string 		activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; //cached at Configure transition
+		bool				activeStateMachineConfigurationDumpOnRunEnable_, activeStateMachineConfigurationDumpOnConfigureEnable_; //cached at Configure transition
+		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; //cached at Configure transition
+		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; //cached at Configure transition
+		std::string 		activeStateMachineRunInfoPluginType_; //cached at Configure transition
+		std::map<std::string /* fsmName */, std::string /* logEntry */>			
+							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_;
 		std::string 		activeStateMachineRunNumber_;
 		std::chrono::steady_clock::time_point 
 							activeStateMachineRunStartTime;
 		int					activeStateMachineRunDuration_ms; // For paused runs, don't count time spent in pause state
 
+
+		std::mutex			systemStatusMutex_;	
+		std::string 		lastLogbookEntry_;
+		time_t				lastLogbookEntryTime_ = 0;
+
+		std::string 		lastConsoleErr_, lastConsoleWarn_, lastConsoleInfo_, lastConsoleErrTime_, lastConsoleWarnTime_, lastConsoleInfoTime_;
+		std::string 		firstConsoleErr_, firstConsoleWarn_, firstConsoleInfo_, firstConsoleErrTime_, firstConsoleWarnTime_, firstConsoleInfoTime_;		
+		size_t				systemConsoleErrCount_ = 0, systemConsoleWarnCount_ = 0, systemConsoleInfoCount_ = 0;
 
 		std::pair<std::string /*group name*/, TableGroupKey>
 							theConfigurationTableGroup_;  // used to track the active configuration group atstates after the configure state
@@ -311,13 +336,97 @@ class WorkLoopManager;
 		std::string			broadcastCommandStatus_;
 		static std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>> broadcastThreadStructs_; //moving to static, instead of a local instance inside broadcastMessage() seems to avoid crashing when multiple error stack up and threads get stuck waiting for app replies
 
-		// temporary member variable to avoid redeclaration in repetitive functions
-		char 				tmpStringForConversions_[100];
-
 		std::string        	securityType_;
 
 		//Variable used by the RunInfo plugin
-		unsigned int conditionID_;
+		unsigned int 		conditionID_;
+
+public:	//used by remote subsystem control and status
+
+		struct RemoteGatewayInfo {
+			SupervisorInfo::SubappInfo 			appInfo;
+
+			std::string 						command, fsmName; //when not "", need to send 
+			std::string							error, config_dump;
+			size_t								ignoreStatusCount = 0; //if non-zero, do not ask for status
+
+			size_t								consoleErrCount = 0, consoleWarnCount = 0;
+
+			std::string 						user_data_path_record; //used for remote gateway subapp control
+
+			std::string 						selected_config_alias; //used for remote gateway subapp control
+			std::set<std::string> 				config_aliases; //used for remote gateway subapp control
+			std::string 						iconString, parentIconFolderPath; //used for desktop icons
+
+			enum class FSM_ModeTypes //FSM Modes: 'Follow FSM,' 'Do not Halt' (artdaq),  or 'Only Configure' (DCS/DQM)
+			{
+				Follow_FSM,
+				DoNotHalt, //(e.g. for artdaq)
+				OnlyConfigure, //(e.g. for DCS/DQM)
+			};
+			FSM_ModeTypes 						fsm_mode = FSM_ModeTypes::Follow_FSM; //used for remote gateway subapp control
+			bool								fsm_included = true; 
+
+			std::string							getFsmMode() const { 
+				switch(fsm_mode)
+				{
+					case FSM_ModeTypes::Follow_FSM: return "Follow FSM";
+					case FSM_ModeTypes::DoNotHalt: return "Do Not Halt";
+					case FSM_ModeTypes::OnlyConfigure: return "Only Configure";
+					default: return "Impossible";
+				}
+			} //end getFsmMode()
+
+			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; //remote gateways can have subapps
+		}; //end GatewaySupervisor::RemoteGatewayInfo struct
+
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
+		std::mutex											remoteGatewayAppsMutex_;
+
+		static void 				CheckRemoteGatewayStatus	(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, int portForReverseLoginOverUDP);
+		static void 				SendRemoteGatewayCommand	(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
+		static void 				GetRemoteGatewayIcons		(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
+		void						loadRemoteGatewaySettings	(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways, bool onlyNotFound = false) const;
+		void						saveRemoteGatewaySettings	(void) const;
+
+		time_t		 				getSupervisorUptime				(void) const { return time(0) - constructedTime_;}
+		std::string	 				getSupervisorUptimeString		(void) const { // a la CoreSupervisorBase::getStatusProgressDetail(void)
+			//return uptime detail
+			std::stringstream ss;
+			time_t t = getSupervisorUptime();
+			ss << "Uptime: ";
+			int days = t/60/60/24;
+			if(days > 0)
+			{
+				ss << days << " day" << (days>1?"s":"") << ", ";
+				t -= days * 60*60*24;
+			}
+
+			//HH:MM:SS
+			ss << std::setw(2) << std::setfill('0') << (t/60/60) << ":" <<
+				std::setw(2) << std::setfill('0') << ((t % (60*60))/60) << ":" << 
+				std::setw(2) << std::setfill('0') << (t % 60);
+
+			//return time-in-state detail
+			t = theStateMachine_.getTimeInState();
+			ss << ", Time-in-state: ";
+			days = t/60/60/24;
+			if(days > 0)
+			{
+				ss << days << " day" << (days>1?"s":"") << ", ";
+				t -= days * 60*60*24;
+			}
+
+			//HH:MM:SS
+			ss << std::setw(2) << std::setfill('0') << (t/60/60) << ":" <<
+				std::setw(2) << std::setfill('0') << ((t % (60*60))/60) << ":" << 
+				std::setw(2) << std::setfill('0') << (t % 60);
+
+			return ss.str();	
+		}	//end getSupervisorUptimeString()		
+		
+private:	
+		const time_t				constructedTime_ = time(0);
 	};
 // clang-format on
 

@@ -1,7 +1,7 @@
 console : { 
  	type : 					OTS 
  	threshold : 			DEBUG
-	filename_delimit: 		"/tdaq-v3"
+	filename_delimit: 		"/srcs/"
 	format_string: 			"|%L:%N: %f:%u |\t%m"
 }
 

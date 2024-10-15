@@ -83,10 +83,15 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	try
 	{
 		parseFilename = std::string("/") + __ENV__("OTS_ENV") + "/"; //parse on spack environment
+		//override with env variable if present
+		parseFilename = __ENV__("OTS_FILE_PARSE_PATTERN"); //parse on spack environment
 	}
 	catch(...)
 	{
 	}  // ignore errors (assume user will setup in table)
+	
+	__COUTTV__(parseFilename);
+	try{ __COUTTV__(__ENV__("TRACE_TIME_FMT")); } catch(...) {} //ignore error
 
 	auto childrenMap = configManager->__SELF_NODE__.getChildren();
 
@@ -188,7 +193,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 			fclSs << "\t"
 			      << "filename_delimit: \"" << parseFilename << "\"\n";
 			fclSs << "\t"
-			      << "format_string: \"|%L:%N: %f:%u |\t%m\"\n";
+			      << "format_string: \"|%T:%L:%N: %f:%u |\t%m\"\n";
 
 			fclSs << "\n}\n";
 
@@ -267,7 +272,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 		fclSs << "\t"
 		      << "filename_delimit: \"" << parseFilename << "\"\n";
 		fclSs << "\t"
-		      << "format_string: \"|%L:%N:%f [%u]\t%m\"\n";
+				<< "format_string: \"|%T:%L:%N: %f:%u |\t%m\"\n";
 
 		fclSs << "\n}\n";
 	}
