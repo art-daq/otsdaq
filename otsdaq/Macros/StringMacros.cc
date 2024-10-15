@@ -542,7 +542,7 @@ std::string StringMacros::getTimestampString(const std::string& linuxTimeInSecon
 // getTimestampString ~~
 //	returns ots style timestamp string
 //	of known fixed size: Thu Aug 23 14:55:02 2001 CST
-std::string StringMacros::getTimestampString(const time_t& linuxTimeInSeconds)
+std::string StringMacros::getTimestampString(const time_t linuxTimeInSeconds)
 {
 	std::string retValue(30, '\0');  // known fixed size: Thu Aug 23 14:55:02 2001 CST
 

@@ -1580,12 +1580,21 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 
 				return false;
 			}
-		}
+		} //end waitOnRunningThreads
 
 		///////////////////
 		// priority 2 is duration, if <= 0 it is ignored
 		if(remainingDurationInSeconds > 1)
 		{
+			//reset command start time (for displays) once running is stable
+			if(remainingDurationInSeconds == iteratorStruct->originalDurationInSeconds_)
+			{
+				iteratorStruct->theIterator_->activeCommandStartTime_ = time(0);  // reset on any change
+				__COUT__ << "Starting run duration of " << remainingDurationInSeconds << 
+					" [s] at time = " << iteratorStruct->theIterator_->activeCommandStartTime_ << " "
+					<< StringMacros::getTimestampString(iteratorStruct->theIterator_->activeCommandStartTime_) << __E__; 
+			}
+
 			--remainingDurationInSeconds;
 
 			// write back to string

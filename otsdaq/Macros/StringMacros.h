@@ -72,7 +72,7 @@ struct StringMacros
 	static bool        			getNumber		 			(const std::string& s, bool& retValue);  // defined in included .icc source // Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
 
 	static std::string 			getTimestampString			(const std::string& linuxTimeInSeconds);
-	static std::string 			getTimestampString			(const time_t& linuxTimeInSeconds = time(0));
+	static std::string 			getTimestampString			(const time_t linuxTimeInSeconds = time(0));
 
 	//========================================================================================================================
 	// validateValueForDefaultStringDataType ~

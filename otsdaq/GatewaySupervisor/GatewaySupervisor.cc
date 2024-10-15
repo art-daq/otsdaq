@@ -272,11 +272,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 					try
 					{
-						__COUTTV__(theSupervisor->theStateMachine_.isInTransition());
+						__COUTVS__(39,theSupervisor->theStateMachine_.isInTransition());
 						if(theSupervisor->theStateMachine_.isInTransition())
-							__COUTTV__(theSupervisor->theStateMachine_.getCurrentTransitionName());
-						__COUTTV__(theSupervisor->theStateMachine_.getProvenanceStateName());
-						__COUTTV__(theSupervisor->theStateMachine_.getCurrentStateName());
+							__COUTVS__(39,theSupervisor->theStateMachine_.getCurrentTransitionName());
+						__COUTVS__(39,theSupervisor->theStateMachine_.getProvenanceStateName());
+						__COUTVS__(39,theSupervisor->theStateMachine_.getCurrentStateName());
 					}
 					catch(...)
 					{;}
@@ -308,8 +308,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						progress = theSupervisor->theProgressBar_.readPercentageString();
 					}
 
-					__COUTTV__(status);
-					__COUTTV__(progress);
+					__COUTVS__(39,status);
+					__COUTVS__(39,progress);
 
 					try
 					{
@@ -345,7 +345,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							}
 						}	
 					}
-					__COUTTV__(commandingRemoteGatewayApps);
+					__COUTVS__(38,commandingRemoteGatewayApps);
 
 					//Add sub-apps for each Remote Gateway specified as a Remote Desktop Icon
 					if((!commandingRemoteGatewayApps && loopCount % 20 == 0) ||
@@ -491,7 +491,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					//if possible, get remote icon list for desktop from each remote app
 					if(resetRemoteGatewayApps)
 					{
-						__COUT__ << "Attempting to get Remote Desktop Icons..." << __E__; 
+						__COUT_TYPE__(TLVL_DEBUG+35) << __COUT_HDR__ << "Attempting to get Remote Desktop Icons..." << __E__; 
 						
 						for(auto& remoteGatewayApp : remoteApps)
 						{
@@ -534,7 +534,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					if(loopCount % 3 == 0 || resetRemoteGatewayApps || //a little less frequently
 						commandingRemoteGatewayApps)
 					{
-						if(theSupervisor->remoteGatewayApps_.size()) __COUTV__(theSupervisor->remoteGatewayApps_[0].error);
+						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(38,theSupervisor->remoteGatewayApps_[0].error);
 
 						//check for commands first
 						bool commandSent = false;
@@ -568,7 +568,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							sleep(1); //gives some time for command to sink in
 						}
 						
-						if(theSupervisor->remoteGatewayApps_.size()) __COUTV__(theSupervisor->remoteGatewayApps_[0].error);
+						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(38,theSupervisor->remoteGatewayApps_[0].error);
 
 						//then get status
 						bool allAppsAreIdle = true;
@@ -616,8 +616,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								commandingRemoteGatewayApps = false;
 							}
 						}
-						__COUT__ << "commandRemoteIdleCount " << commandRemoteIdleCount << " " << allAppsAreIdle << " " << commandingRemoteGatewayApps << __E__;
-						if(theSupervisor->remoteGatewayApps_.size()) __COUTV__(theSupervisor->remoteGatewayApps_[0].error);
+
+						__COUT_TYPE__(TLVL_DEBUG+38) << __COUT_HDR__ << "commandRemoteIdleCount " << commandRemoteIdleCount << " " << allAppsAreIdle << " " << commandingRemoteGatewayApps << __E__;
+
+						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(37,theSupervisor->remoteGatewayApps_[0].error);
+
 						//replace info in supervisor remote gateway list
 						{
 							//lock for remainder of scope
@@ -698,7 +701,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							}							
 						}
 
-						if(theSupervisor->remoteGatewayApps_.size()) __COUTV__(theSupervisor->remoteGatewayApps_[0].error);
+						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(38,theSupervisor->remoteGatewayApps_[0].error);
 					} //end remote app status update
 
 					//copy to subapps for display of primary Gateway
@@ -800,15 +803,15 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							theSupervisor->systemConsoleErrCount_ = atoi(parseDetail[1].substr(parseDetail[1].find(':')+1).c_str());
 						if(parseDetail.size() > 2)
 							theSupervisor->systemConsoleWarnCount_ = atoi(parseDetail[2].substr(parseDetail[2].find(':')+1).c_str());
-						__COUTTV__(theSupervisor->systemConsoleErrCount_);
-						__COUTTV__(theSupervisor->systemConsoleWarnCount_);
+						__COUTVS__(36,theSupervisor->systemConsoleErrCount_);
+						__COUTVS__(36,theSupervisor->systemConsoleWarnCount_);
 						if(parseDetail.size() > 3) //e.g. Last Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
 							size_t closeTimePos = parseDetail[3].find(')');
 							theSupervisor->lastConsoleErr_ = parseDetail[3].substr(closeTimePos+2);
 							size_t openTimePos = parseDetail[3].find('(');
 							theSupervisor->lastConsoleErrTime_ = parseDetail[3].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTTV__(theSupervisor->lastConsoleErrTime_);
+							__COUTVS__(36,theSupervisor->lastConsoleErrTime_);
 						}
 						if(parseDetail.size() > 4) //e.g. Last Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
@@ -816,7 +819,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							theSupervisor->lastConsoleWarn_ = parseDetail[4].substr(closeTimePos+2);
 							size_t openTimePos = parseDetail[4].find('(');
 							theSupervisor->lastConsoleWarnTime_ = parseDetail[4].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTTV__(theSupervisor->lastConsoleWarnTime_);
+							__COUTVS__(36,theSupervisor->lastConsoleWarnTime_);
 						}
 						if(parseDetail.size() > 5) //e.g. Last Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
@@ -824,7 +827,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							theSupervisor->lastConsoleInfo_ = parseDetail[5].substr(closeTimePos+2);
 							size_t openTimePos = parseDetail[5].find('(');
 							theSupervisor->lastConsoleInfoTime_ = parseDetail[5].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTTV__(theSupervisor->lastConsoleInfoTime_);
+							__COUTVS__(36,theSupervisor->lastConsoleInfoTime_);
 						}
 						if(parseDetail.size() > 6)
 							theSupervisor->systemConsoleInfoCount_ = atoi(parseDetail[6].substr(parseDetail[6].find(':')+1).c_str());
@@ -835,7 +838,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							theSupervisor->firstConsoleErr_ = parseDetail[7].substr(closeTimePos+2);
 							size_t openTimePos = parseDetail[7].find('(');
 							theSupervisor->firstConsoleErrTime_ = parseDetail[7].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTTV__(theSupervisor->firstConsoleErrTime_);
+							__COUTVS__(36,theSupervisor->firstConsoleErrTime_);
 						}
 						if(parseDetail.size() > 8) //e.g. First Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
@@ -843,7 +846,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							theSupervisor->firstConsoleWarn_ = parseDetail[8].substr(closeTimePos+2);
 							size_t openTimePos = parseDetail[8].find('(');
 							theSupervisor->firstConsoleWarnTime_ = parseDetail[8].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTTV__(theSupervisor->firstConsoleWarnTime_);
+							__COUTVS__(36,theSupervisor->firstConsoleWarnTime_);
 						}
 						if(parseDetail.size() > 9) //e.g. First Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
@@ -851,7 +854,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							theSupervisor->firstConsoleInfo_ = parseDetail[9].substr(closeTimePos+2);
 							size_t openTimePos = parseDetail[9].find('(');
 							theSupervisor->firstConsoleInfoTime_ = parseDetail[9].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTTV__(theSupervisor->firstConsoleInfoTime_);
+							__COUTVS__(36,theSupervisor->firstConsoleInfoTime_);
 						}
 					}
 
@@ -1101,7 +1104,8 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 
 		if(commandResponseString.find("Done") != 0) //then error
 		{
-			__SS__ << "Unsuccessful response received: \n" << commandResponseString << __E__;
+			__SS__ << "Unsuccessful response received from Remote Gateway '" << remoteGatewayApp.appInfo.name +
+				"' - here was the response: " << commandResponseString << __E__;
 			__SS_THROW__;
 		}
 
@@ -1121,7 +1125,8 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 	}  //end SendRemoteGatewayCommand()
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Failure sending Remote Gateway App command '" << tmpCommand
+		__SS__ << "Failure sending Remote Gateway App command '" << 
+			(tmpCommand.size() > 30?tmpCommand.substr(0,30):tmpCommand)
 			<< "' at url: " << remoteGatewayApp.appInfo.url << " due to error: " << e.what() << __E__;
 		__COUT_ERR__ << ss.str();	
 		remoteGatewayApp.error = ss.str();
@@ -1148,10 +1153,10 @@ try
 		std::string	requestString = "GetRemoteGatewayStatus";
 		if(portForReverseLoginOverUDP)
 			requestString += "," + std::to_string(portForReverseLoginOverUDP);
-		__COUT_TYPE__(TLVL_DEBUG + 24) << __COUT_HDR__ << "requestString = " << requestString << __E__;	
+		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "requestString = " << requestString << __E__;	
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket,
 			requestString, 10 /*timeoutSeconds*/);
-		__COUT_TYPE__(TLVL_DEBUG + 24) << __COUT_HDR__ << "remoteStatusString = " << remoteStatusString << __E__;	
+		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "remoteStatusString = " << remoteStatusString << __E__;	
 
 		std::string value, name;
 		size_t after = 0;
@@ -1280,10 +1285,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 		if(sock.receive(buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) != -1)
 		{
-			__COUT__ << "UDP State Changer packet received from ip:port " <<
+			__COUT_TYPE__(TLVL_DEBUG+9) << __COUT_HDR__ << "UDP State Changer packet received from ip:port " <<
 				sock.getLastIncomingIPAddress() << ":" << sock.getLastIncomingPort() <<
 				" of size = " << buffer.size() << __E__;
-			__COUTTV__(buffer);
+			__COUTVS__(11,buffer);
 
 			try
 			{
@@ -1292,7 +1297,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				bool remoteGatewayStatus = buffer.find("GetRemoteGatewayStatus") == 0;
 				if(remoteGatewayStatus || buffer == "GetRemoteAppStatus")
 				{
-					__COUT__ << "Giving app status to remote monitor..." << __E__;
+					__COUT_TYPE__(TLVL_DEBUG+12) << "Giving app status to remote monitor..." << __E__;
 
 					if(remoteGatewayStatus && buffer.size() > strlen("GetRemoteGatewayStatus")+1)
 					{
@@ -1354,7 +1359,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					if(remoteGatewayStatus) //also return System Messages
 					{
-						__COUT__ << "Giving extra Gateway info to remote monitor..." << __E__;		
+						__COUT_TYPE__(TLVL_DEBUG+12) << "Giving extra Gateway info to remote monitor..." << __E__;		
 									
 						xmlOut.addTextElementToData("systemMessages",
 													theWebUsers_.getAllSystemMessages());  
@@ -1412,7 +1417,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				} //end ResetConsoleCounts
 				else if(buffer.find("loginVerify") == 0)
 				{
-					__COUT__ << "Checking login verification request from remote gateway..." << __E__;
+					__COUTT__ << "Checking login verification request from remote gateway..." << __E__;
 
 					//Lookup cookie code and return refreshed cookie code and user info
 					// command = loginVerify
@@ -1420,7 +1425,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					// parameters.addParameter("RefreshOption");
 					// parameters.addParameter("IPAddress");
 					std::vector<std::string> rxParams = StringMacros::getVectorFromString(buffer,{','});
-					__COUTV__(StringMacros::vectorToString(rxParams));
+					__COUTVS__(23,StringMacros::vectorToString(rxParams));
 
 					if(rxParams.size() != 4)
 					{
@@ -1462,7 +1467,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					retStr += "," + theWebUsers_.getUsersDisplayName(uid);
 					retStr += "," + std::to_string(userSessionIndex);
 
-					__COUTV__(retStr);
+					__COUTVS__(23,retStr);
 					__COUTT__ << "Remote login successful for " << username << ", userWithLock = " << userWithLock << __E__;
 					sock.acknowledge(retStr, false /* verbose */);
 					continue;
@@ -1510,17 +1515,17 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 						if(getRemoteIcons)
 						{
-							__COUTV__(icon.windowContentURL_);
+							__COUTVS__(10,icon.windowContentURL_);
 							if(icon.windowContentURL_.size() > 4 && 
 								icon.windowContentURL_[0] == 'o' &&
 								icon.windowContentURL_[1] == 't' &&
 								icon.windowContentURL_[2] == 's' &&
 								icon.windowContentURL_[3] == ':')
 							{
-								__COUT__ << "Retrieving remote icons at " << icon.windowContentURL_ << __E__;
+								 __COUT_TYPE__(TLVL_DEBUG+10) << __COUT_HDR__ << "Retrieving remote icons at " << icon.windowContentURL_ << __E__;
 
 								std::vector<std::string> parsedFields = StringMacros::getVectorFromString(icon.windowContentURL_,{':'});
-								__COUTV__(StringMacros::vectorToString(parsedFields));
+								__COUTVS__(10,StringMacros::vectorToString(parsedFields));
 
 								if(parsedFields.size() == 3)
 								{
@@ -1528,10 +1533,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 									// ConfigurationTree configLinkNode = theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
 									// std::string ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
-									__COUTTV__(ipAddressForStateChangesOverUDP);
+									__COUTVS__(10,ipAddressForStateChangesOverUDP);
 									TransceiverSocket iconSocket(ipAddressForStateChangesOverUDP);
 									std::string remoteIconString = iconSocket.sendAndReceive(iconRemoteSocket,"GetRemoteDesktopIcons", 10 /*timeoutSeconds*/);
-									__COUTV__(remoteIconString);
+									__COUTVS__(10,remoteIconString);
 									continue;
 								}
 							}
@@ -1544,7 +1549,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							iconString += ",";
 							
 
-						__COUTV__(icon.caption_);
+						__COUTVS__(10,icon.caption_);
 						iconString += icon.caption_;
 						iconString += "," + icon.alternateText_;
 						iconString += "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
@@ -1556,7 +1561,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						iconString += "," + iconTable->getRemoteURL(&tmpCfgMgr, icon.windowContentURL_);
 						iconString += "," + icon.folderPath_;
 					}
-					__COUTV__(iconString);
+					__COUTVS__(10,iconString);
 
 					sock.acknowledge(iconString, true /* verbose */);
 					continue;
@@ -1971,9 +1976,9 @@ try
 	//check if logEntry is in parameters
 	if(!logEntry.size() && commandParameters.size() && 
 		commandParameters.back().find("LogEntry:") == 0 && 
-			commandParameters.back().size() > strlen("LogEntry:")+1)
+			commandParameters.back().size() > strlen("LogEntry:"))
 	{
-		logEntry = commandParameters.back().substr(strlen("LogEntry:")+1);
+		logEntry = commandParameters.back().substr(strlen("LogEntry:"));
 		__COUTV__(logEntry);	
 	}
 
@@ -2320,7 +2325,7 @@ try
 			__SS_THROW__;
 		}
 
-		unsigned int runNumber;
+		unsigned long runNumber;
 		if(commandParameters.size() == 0)
 		{
 			runNumber = getNextRunNumber();
@@ -2447,7 +2452,8 @@ try
 		}
 		else
 		{
-			runNumber = std::atoi(commandParameters[0].c_str());
+			sscanf(commandParameters[0].c_str(),"%lu",&runNumber);
+			__COUTV__(runNumber);		 
 			setNextRunNumber(runNumber + 1);
 		}
 		parameters.addParameter("RunNumber", runNumber);
@@ -4904,7 +4910,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(const xoap::MessageRefe
 					else
 						commandAndParams += "," + param.second;
 				}
-				else if(param.first == "Run Number")
+				else if(param.first == "RunNumber")
 				{	
 					commandAndParams += "," + //param.first + ":" + 
 							param.second;
@@ -5495,7 +5501,7 @@ try
 		__COUT__ << "requestType " << requestType << " v" << (fsmLinkNode.getTableVersion()) << __E__;
 	}
 	else
-		__COUTTV__(requestType);
+		__COUTVS__(40,requestType);
 
 	try
 	{
@@ -6035,126 +6041,6 @@ try
 		{
 			std::string fsmName = CgiDataUtilities::getData(cgiIn, "fsmName");
 			addStateMachineStatusToXML(xmlOut, fsmName);
-
-			if(0)
-			{
-				xmlOut.addTextElementToData("current_state", theStateMachine_.getCurrentStateName());
-				const std::string& gatewayStatus = allSupervisorInfo_.getGatewayInfo().getStatus();
-				if(gatewayStatus.size() > std::string(RunControlStateMachine::FAILED_STATE_NAME).length() && 
-					(gatewayStatus[0] == 'F' || gatewayStatus[0] == 'E')) //assume it is Failed or Error and send to state machine
-					xmlOut.addTextElementToData("current_error", gatewayStatus);
-
-				xmlOut.addTextElementToData("in_transition", theStateMachine_.isInTransition() ? "1" : "0");
-				if(theStateMachine_.isInTransition())
-					xmlOut.addTextElementToData("transition_progress", RunControlStateMachine::theProgressBar_.readPercentageString());
-				else
-					xmlOut.addTextElementToData("transition_progress", "100");
-
-				// char tmp[20]; old size before adding db run number
-				char tmp[50]; // for a 6 digits run number from the DB, this needs to be at least 34
-				sprintf(tmp, "%lu", theStateMachine_.getTimeInState());
-				xmlOut.addTextElementToData("time_in_state", tmp);
-
-				//__COUT__ << "current state: " << theStateMachine_.getCurrentStateName() <<
-				//__E__;
-
-				//// ======================== get run alias based on fsm name ====
-
-				std::string fsmName = CgiDataUtilities::getData(cgiIn, "fsmName");
-				//		__COUT__ << "fsmName = " << fsmName << __E__;
-				//		__COUT__ << "activeStateMachineName_ = " << activeStateMachineName_ <<
-				//__E__;
-				//		__COUT__ << "theStateMachine_.getProvenanceStateName() = " <<
-				//				theStateMachine_.getProvenanceStateName() << __E__;
-				//		__COUT__ << "theStateMachine_.getCurrentStateName() = " <<
-				//				theStateMachine_.getCurrentStateName() << __E__;
-				bool useRunInfoDb = false;
-
-				if(!theStateMachine_.isInTransition())
-				{
-					std::string stateMachineRunAlias = "Run";  // default to "Run"
-
-					// get stateMachineAliasFilter if possible
-					ConfigurationTree configLinkNode =
-						CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
-
-					if(!configLinkNode.isDisconnected())
-					{
-						try  // for backwards compatibility
-						{
-							ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
-
-							//__COUTV__(fsmLinkNode.getTableVersion());
-
-							if(!fsmLinkNode.isDisconnected())
-							{
-								if(!fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").isDefaultValue())
-									stateMachineRunAlias = fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").getValue<std::string>();
-								std::string runInfoPluginType = fsmLinkNode.getNode(fsmName + "/RunInfoPluginType").getValue<std::string>();
-								if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
-									useRunInfoDb = true;
-							}
-							// else
-							//	__COUT_INFO__ << "FSM Link disconnected." << __E__;
-						}
-						catch(std::runtime_error& e)
-						{
-							//__COUT_INFO__ << e.what() << __E__;
-							//__COUT_INFO__ << "No state machine Run alias. Ignoring and
-							// assuming alias of '" << 		stateMachineRunAlias << ".'" <<
-							//__E__;
-						}
-						catch(...)
-						{
-							__COUT_ERR__ << "Unknown error. Should never happen." << __E__;
-
-							__COUT_INFO__ << "No state machine Run alias. Ignoring and "
-											"assuming alias of '"
-										<< stateMachineRunAlias << ".'" << __E__;
-						}
-					}
-					// else
-					//	__COUT_INFO__ << "FSM Link disconnected." << __E__;
-
-					//__COUT__ << "stateMachineRunAlias  = " << stateMachineRunAlias	<<
-					//__E__;
-
-					xmlOut.addTextElementToData("stateMachineRunAlias", stateMachineRunAlias);
-
-					//// ======================== get run number based on fsm name ====
-
-					if(theStateMachine_.getCurrentStateName() == "Running" || theStateMachine_.getCurrentStateName() == "Paused")
-					{
-						if(useRunInfoDb)
-							sprintf(tmp, "Current %s Number from DB: %u", stateMachineRunAlias.c_str(), getNextRunNumber(activeStateMachineName_) - 1);
-						else
-							sprintf(tmp, "Current %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(activeStateMachineName_) - 1);
-
-						if(RunControlStateMachine::asyncPauseExceptionReceived_)
-						{
-							//__COUTV__(RunControlStateMachine::asyncPauseExceptionReceived_);
-							//__COUTV__(RunControlStateMachine::getErrorMessage());
-							xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
-						}
-					}
-					else
-					{
-						if(useRunInfoDb)
-							sprintf(tmp, "Next %s Number from DB.", stateMachineRunAlias.c_str());
-						else
-							sprintf(tmp, "Next %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(fsmName));
-					}
-
-					if(RunControlStateMachine::asyncStopExceptionReceived_)
-					{
-						//__COUTV__(RunControlStateMachine::asyncPauseExceptionReceived_);
-						//__COUTV__(RunControlStateMachine::getErrorMessage());
-						xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
-					}
-
-					xmlOut.addTextElementToData("run_number", tmp);
-				}
-			}
 		}
 		else if(requestType == "cancelStateMachineTransition")
 		{
@@ -6768,84 +6654,69 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 			//__COUTV__(RunControlStateMachine::getErrorMessage());
 			xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
 		}
+		
+		std::string stateMachineRunAlias = "Run";  // default to "Run"
 
-		if(getRunNumber)
+		// get stateMachineAliasFilter if possible
+		ConfigurationTree configLinkNode =
+			CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+
+		if(!configLinkNode.isDisconnected())
 		{
-			std::string stateMachineRunAlias = "Run";  // default to "Run"
-
-			// get stateMachineAliasFilter if possible
-			ConfigurationTree configLinkNode =
-				CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
-
-			if(!configLinkNode.isDisconnected())
+			try  // for backwards compatibility
 			{
-				try  // for backwards compatibility
+				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
+				if(!fsmLinkNode.isDisconnected())
 				{
-					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
-
-					//__COUTV__(fsmLinkNode.getTableVersion());
-
-					if(!fsmLinkNode.isDisconnected())
-					{
-						if(!fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").isDefaultValue())
-							stateMachineRunAlias = fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").getValue<std::string>();
-						std::string runInfoPluginType = fsmLinkNode.getNode(fsmName + "/RunInfoPluginType").getValue<std::string>();
-						if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
-							useRunInfoDb = true;
-					}
-					// else
-					//	__COUT_INFO__ << "FSM Link disconnected." << __E__;
-				}
-				catch(std::runtime_error& e)
-				{
-					//__COUT_INFO__ << e.what() << __E__;
-					//__COUT_INFO__ << "No state machine Run alias. Ignoring and
-					// assuming alias of '" << 		stateMachineRunAlias << ".'" <<
-					//__E__;
-				}
-				catch(...)
-				{
-					__COUT_ERR__ << "Unknown error. Should never happen." << __E__;
-
-					__COUT_INFO__ << "No state machine Run alias. Ignoring and "
-										"assuming alias of '"
-									<< stateMachineRunAlias << ".'" << __E__;
+					if(!fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").isDefaultValue())
+						stateMachineRunAlias = fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").getValue<std::string>();
+					std::string runInfoPluginType = fsmLinkNode.getNode(fsmName + "/RunInfoPluginType").getValue<std::string>();
+					if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+						useRunInfoDb = true;
 				}
 			}
-			// else
-			//	__COUT_INFO__ << "FSM Link disconnected." << __E__;
-
-			//__COUT__ << "stateMachineRunAlias  = " << stateMachineRunAlias	<<
-			//__E__;
-
-			xmlOut.addTextElementToData("stateMachineRunAlias", stateMachineRunAlias);
-
-			//// ======================== get run number based on fsm name ====
-
-			if(theStateMachine_.getCurrentStateName() == "Running" || theStateMachine_.getCurrentStateName() == "Paused")
+			catch(std::runtime_error& e)
 			{
-				if(useRunInfoDb)
-					sprintf(tmp, "Current %s Number from DB: %u", stateMachineRunAlias.c_str(), getNextRunNumber(activeStateMachineName_) - 1);
-				else
-					sprintf(tmp, "Current %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(activeStateMachineName_) - 1);
-
-				if(RunControlStateMachine::asyncPauseExceptionReceived_)
-				{
-					//__COUTV__(RunControlStateMachine::asyncPauseExceptionReceived_);
-					//__COUTV__(RunControlStateMachine::getErrorMessage());
-					xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
-				}
+				; //ignoring error
 			}
+			catch(...)
+			{
+				__COUT_ERR__ << "Unknown error looking for Run alias. Should never happen." << __E__;
+			}
+		}
+
+		xmlOut.addTextElementToData("stateMachineRunAlias", stateMachineRunAlias);
+
+		//// ======================== get run number based on fsm name ====
+
+		if(theStateMachine_.getCurrentStateName() == RunControlStateMachine::RUNNING_STATE_NAME || 
+			theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::PAUSED_STATE_NAME)
+		{
+			if(useRunInfoDb)
+				sprintf(tmp, "Current %s Number from DB: %s", stateMachineRunAlias.c_str(),
+					activeStateMachineRunNumber_.c_str());
+					//%u // getNextRunNumber(activeStateMachineName_) - 1);
 			else
+				sprintf(tmp, "Current %s Number: %s", stateMachineRunAlias.c_str(), 
+					activeStateMachineRunNumber_.c_str()); //%u //getNextRunNumber(activeStateMachineName_) - 1);
+
+			if(RunControlStateMachine::asyncPauseExceptionReceived_)
 			{
-				if(useRunInfoDb)
-					sprintf(tmp, "Next %s Number from DB.", stateMachineRunAlias.c_str());
-				else
-					sprintf(tmp, "Next %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(fsmName));
+				//__COUTV__(RunControlStateMachine::asyncPauseExceptionReceived_);
+				//__COUTV__(RunControlStateMachine::getErrorMessage());
+				xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
 			}
+		}
+		else if(getRunNumber) //only periodically get next run number (expensive from file, and shouldnt change much)
+		{
+			if(useRunInfoDb)
+				sprintf(tmp, "Next %s Number from DB.", stateMachineRunAlias.c_str());
+			else
+				sprintf(tmp, "Next %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(fsmName));
 
 			xmlOut.addTextElementToData("run_number", tmp);
-		} //end run number handling
+		}
+
 	} //end not-in-transition handling
 }  // end request()
 
