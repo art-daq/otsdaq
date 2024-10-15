@@ -3837,21 +3837,21 @@ std::set<std::string /* configAlias */> ConfigurationManager::getOtherSubsystemF
 			tmp = stateMachineAliasFilter.substr(i, f - i);
 			i   = f + 1;
 			filterArr.push_back(tmp);
-			//__COUT__ << filterArr[filterArr.size()-1] << " " << i <<
-			//		" of " << stateMachineAliasFilter.size() << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << filterArr[filterArr.size()-1] << " " << i <<
+					" of " << stateMachineAliasFilter.size() << __E__;
 		}
 		if(i <= stateMachineAliasFilter.size())
 		{
 			tmp = stateMachineAliasFilter.substr(i);
 			filterArr.push_back(tmp);
-			//__COUT__ << filterArr[filterArr.size()-1] << " last." << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << filterArr[filterArr.size()-1] << " last." << __E__;
 		}
 
 		bool filterMatch;
 
 		for(auto& aliasMapPair : entries)
 		{
-			//__COUT__ << "aliasMapPair.first: " << aliasMapPair.first << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "aliasMapPair.first: " << aliasMapPair.first << __E__;
 
 			filterMatch = true;
 
@@ -3895,52 +3895,14 @@ std::set<std::string /* configAlias */> ConfigurationManager::getOtherSubsystemF
 			if(invertFilter)
 				filterMatch = !filterMatch;
 
-			//__COUT__ << "filterMatch=" << filterMatch  << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "filterMatch=" << filterMatch  << __E__;
 
 			if(!filterMatch)
 				continue;
 
 			retSet.emplace(aliasMapPair.first);
 
-			//bring back below, if need more alias details:
-
-			// xmlOut.addTextElementToData("config_alias", aliasMapPair.first);
-			// xmlOut.addTextElementToData("config_key", TableGroupKey::getFullGroupString(aliasMapPair.second.first, aliasMapPair.second.second, /*decorate as (<key>)*/ "(",")"));
-
-			// // __COUT__ << "config_alias_comment" << " " <<  temporaryConfigMgr.getNode(
-			// // 	ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(aliasMapPair.first).getNode(
-			// // 		TableViewColumnInfo::COL_NAME_COMMENT).getValue<std::string>() << __E__;
-			// xmlOut.addTextElementToData("config_alias_comment",
-			// 							temporaryConfigMgr.getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
-			// 								.getNode(aliasMapPair.first)
-			// 								.getNode(TableViewColumnInfo::COL_NAME_COMMENT)
-			// 								.getValue<std::string>());
-
-			// std::string groupComment, groupAuthor, groupCreationTime;
-			// try
-			// {
-			// 	temporaryConfigMgr.loadTableGroup(aliasMapPair.second.first,
-			// 									aliasMapPair.second.second,
-			// 									false,
-			// 									0,
-			// 									0,
-			// 									0,
-			// 									&groupComment,
-			// 									&groupAuthor,
-			// 									&groupCreationTime,
-			// 									true /*doNotLoadMembers*/);
-
-			// 	xmlOut.addTextElementToData("config_comment", groupComment);
-			// 	xmlOut.addTextElementToData("config_author", groupAuthor);
-			// 	xmlOut.addTextElementToData("config_create_time", groupCreationTime);
-			// }
-			// catch(...)
-			// {
-			// 	__COUT_WARN__ << "Failed to load group metadata." << __E__;
-			// 	xmlOut.addTextElementToData("config_comment", "");
-			// 	xmlOut.addTextElementToData("config_author", "");
-			// 	xmlOut.addTextElementToData("config_create_time", "");
-			// }
+			//If need more alias details, see ConfigurationGUISupervisor::handleGroupAliasesXML
 		}
 	}
 
