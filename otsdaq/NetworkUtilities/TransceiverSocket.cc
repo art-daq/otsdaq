@@ -51,23 +51,6 @@ int TransceiverSocket::acknowledge(const std::string& buffer, bool verbose)
 		__SS_THROW__; //return -1;
 	}
 
-	// constexpr size_t MAX_SEND_SIZE = 65500;
-	// if(buffer.size() > MAX_SEND_SIZE)
-	// {
-	// 	__SS__ << "Too large! Error writing buffer from port " << ntohs(TransmitterSocket::socketAddress_.sin_port) << ": " << std::endl;
-	// 	__SS_THROW__; //return -1;
-	// }
-
-	// size_t offset     = 0;
-	// size_t thisSize   = buffer.size();
-	// int    sendToSize = sendto(socketNumber_, buffer.c_str() + offset, thisSize, 0, (struct sockaddr*)&(ReceiverSocket::fromAddress_), sizeof(sockaddr_in));
-
-	// if(sendToSize <= 0)
-	// {
-	// 	__SS__ << "Error writing buffer from port " << ntohs(TransmitterSocket::socketAddress_.sin_port) << ": " << strerror(errno) << std::endl;
-	// 	__SS_THROW__; //return -1;
-	// }
-
 	return 0;
 } //end acknowledge()
 
