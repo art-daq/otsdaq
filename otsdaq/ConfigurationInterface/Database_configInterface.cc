@@ -34,9 +34,8 @@ constexpr auto default_entity     = "OTSROOT";
 //==============================================================================
 DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 {
-// #ifdef DEBUG_ENABLE
+#ifdef ARTDAQ_DATABASE_DEBUG_ENABLE
 	// to enable debugging
-	if(0)
 	{
 		artdaq::database::configuration::debug::ExportImport();
 		artdaq::database::configuration::debug::ManageAliases();
@@ -75,7 +74,7 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 		artdaq::database::configuration::Multitasker();
 		TRACE_CNTL("modeS", true); //TURN BACK ON TRACE SLOW PATH
 	}
-// #endif
+#endif
 
 	std::string envVar = __ENV__("ARTDAQ_DATABASE_URI");
 	if(envVar.length() && envVar[0] != 'f')  //e.g., filesystemdb:///path/filesystemdb/test_db

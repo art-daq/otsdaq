@@ -426,14 +426,6 @@ class WebUsers
 	std::string getUsersUsername(uint64_t uid); //from Gateway, use public version which considers remote users
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
 	            getPermissionsForUser(uint64_t uid); //from Gateway, use public version which considers remote users
-//   public:
-// 	std::string getUsersDisplayName(uint64_t uid, uint64_t remoteSessionID);
-// 	std::string getUsersUsername(uint64_t uid, uint64_t remoteSessionID);
-// 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
-// 	            getPermissionsForUser(uint64_t uid, uint64_t remoteSessionID);
-
-	// std::string getRemoteUsersDisplayName(uint64_t remoteSessionID);
-	// std::string getRemoteUsersUsername(uint64_t remoteSessionID);
 
 	uint64_t    getActiveSessionCountForUser(uint64_t uid);
 	void        insertSettingsForUser(uint64_t         uid,
@@ -476,11 +468,6 @@ class WebUsers
 
 	size_t 		getActiveUserCount(void);
 	std::string getActiveUsersString(void);
-
-	// bool getUserInfoForCookie(std::string& cookieCode,
-	//                           std::string* userName,
-	//                           std::string* displayName        = 0,
-	//                           uint64_t*    activeSessionIndex = 0);
 
 	bool        isUsernameActive(const std::string& username) const;
 	bool        isUserIdActive(uint64_t uid) const;
@@ -541,7 +528,6 @@ class WebUsers
 	uint64_t searchHashesDatabaseForHash			(const std::string& hash);
 	uint64_t searchActiveSessionDatabaseForCookie	(const std::string& cookieCode) const;
 	uint64_t searchRemoteSessionDatabaseForCookie	(const std::string& cookieCode) const;
-	// uint64_t searchRemoteSessionDatabaseForUsername	(const std::string& username) const;
 	uint64_t checkRemoteLoginVerification			(const std::string& cookieCode, bool refresh, const std::string& ip);
 
 	static std::string getTooltipFilename(const std::string& username,
@@ -571,17 +557,12 @@ class WebUsers
 
 	//"Login Session" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::vector<LoginSession> LoginSessions_;
-
 	// Generate random sessionId when receive a unique user ID (UUID)
 	// reject UUID that have been used recently (e.g. last 5 minutes)
 	// Maintain list of active sessionIds and associated UUID
 	// remove from list if been idle after some time or login attempts (e.g. 5 minutes or
 	// 3 login attempts)  maybe track IP address, to block multiple failed login attempts
 	// from same IP.  Use sessionId to un-jumble login attempts, lookup using UUID
-//	std::vector<std::string> LoginSessionIdVector, LoginSessionUUIDVector,
-//	    LoginSessionIpVector;
-//	std::vector<time_t>  LoginSessionStartTimeVector;
-//	std::vector<uint8_t> LoginSessionAttemptsVector;
 	enum
 	{
 		LOGIN_SESSION_EXPIRATION_TIME = 5 * 60,  // 5 minutes
@@ -591,7 +572,6 @@ class WebUsers
 	//"Active Session" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::vector<ActiveSession> ActiveSessions_;
 	std::map<std::string /* cookieCode */, ActiveSession > RemoteSessions_;
-
 	// Maintain list of valid cookieCodes and associated user
 	// all request must come with a valid cookieCode, else server fails request
 	// On logout request, invalidate cookieCode
@@ -601,9 +581,6 @@ class WebUsers
 	// where each independent login starts a new thread of cookieCodes tagged with
 	// ActiveSessionIndex  if cookieCode not refreshed, then return most recent cookie
 	// code
-//	std::vector<std::string> ActiveSessionCookieCodeVector, ActiveSessionIpVector;
-//	std::vector<uint64_t>    ActiveSessionUserIdVector, ActiveSessionIndex;
-//	std::vector<time_t>      ActiveSessionStartTimeVector;
 	enum
 	{
 		ACTIVE_SESSION_EXPIRATION_TIME = 120 * 60,  // 120 minutes, cookie is changed
@@ -635,14 +612,6 @@ class WebUsers
 	// and login history file  UsersLastModifierUsernameVector - is username of last
 	// master user to modify something about account  UsersLastModifierTimeVector - is
 	// time of last modify by a master user
-//	std::vector<std::string> UsersUsernameVector, UsersUserEmailVector,
-//	    UsersDisplayNameVector, UsersSaltVector, UsersLastModifierUsernameVector;
-//	std::vector<std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> >
-//	                      UsersPermissionsVector;
-//	std::vector<uint64_t> UsersUserIdVector;
-//	std::vector<time_t>   UsersLastLoginAttemptVector, UsersAccountCreatedTimeVector,
-//	    UsersLastModifiedTimeVector;
-//	std::vector<uint8_t> UsersLoginFailureCountVector;
 	uint64_t             usersNextUserId_;
 	enum
 	{
@@ -656,10 +625,7 @@ class WebUsers
 
 	//"Hashes" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::vector<Hash> 		Hashes_;
-
 	// Maintain list of acceptable encoded (SHA-512) salt+user+pw's
-//	std::vector<std::string> HashesVector;
-//	std::vector<time_t>      HashesAccessTimeVector;
 
 	enum
 	{
