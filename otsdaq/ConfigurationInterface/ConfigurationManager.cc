@@ -101,10 +101,10 @@ ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/, b
     , theBackboneTableGroup_("")
     , groupMetadataTable_(true /*special table*/, ConfigurationInterface::GROUP_METADATA_TABLE_NAME)
 {
-	__GEN_COUTV__(runTimeSeconds());
+	__GEN_COUTTV__(runTimeSeconds());
 	theInterface_ = ConfigurationInterface::getInstance(ConfigurationInterface::CONFIGURATION_MODE::ARTDAQ_DATABASE);  // false to use artdaq DB
 
-	__GEN_COUTV__(runTimeSeconds());
+	__GEN_COUTTV__(runTimeSeconds());
 
 	// initialize special group metadata table
 	{
@@ -172,10 +172,10 @@ ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/, b
 	}
 	// else do normal init
 
-	__GEN_COUTV__(runTimeSeconds());	
+	__GEN_COUTTV__(runTimeSeconds());	
 	if(!initForWriteAccess) //ConfigurationManagerRW can do manual init later when it calls getAllTableInfo(true)
 		init(0 /*accumulatedErrors*/, initForWriteAccess);
-	__GEN_COUTV__(runTimeSeconds());
+	__GEN_COUTTV__(runTimeSeconds());
 
 }  // end constructor()
 
@@ -209,7 +209,7 @@ void ConfigurationManager::init(std::string* accumulatedErrors /*=0*/, bool init
 	{
 		try
 		{
-			__GEN_COUTV__(username_);
+			__GEN_COUTTV__(username_);
 
 			// if write access, then load all specified table groups (including configuration group),
 			//	otherwise skip configuration group. Important to consider initForWriteAccess

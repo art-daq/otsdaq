@@ -374,18 +374,56 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								icon.windowContentURL_[3] == ':')
 							{
 								__COUT__ << "Found remote gateway from icons at " << icon.windowContentURL_ << __E__;
-
+								
 								GatewaySupervisor::RemoteGatewayInfo thisInfo;
+
+								std::string remoteURL = icon.windowContentURL_;
+								std::string remoteLandingPage = "";
+								//remote ? parameters from remoteURL
+								if(remoteURL.find('?') != std::string::npos)
+								{
+									__COUT__ << "Extracting GET ? parameters from remote url." << __E__;
+									std::vector<std::string> urlSplit = StringMacros::getVectorFromString(
+										remoteURL, {'?'});
+									if(urlSplit.size() > 0)
+										remoteURL = urlSplit[0]; 
+									if(urlSplit.size() > 1)
+									{
+										//look for 'LandingPage' parameter										
+										std::vector<std::string> parameterPairs = StringMacros::getVectorFromString(
+												urlSplit[1], {'&'});
+										for(const auto& parameterPair : parameterPairs)
+										{
+											std::vector<std::string> parameterPairSplit = StringMacros::getVectorFromString(
+												parameterPair, {'='});
+											if(parameterPairSplit.size() == 2)
+											{
+												__COUT__ << "Found remote URL parameter " << parameterPairSplit[0] << 
+													", " << parameterPairSplit[1] << __E__;
+												if(parameterPairSplit[0] == "LandingPage")
+												{
+													remoteLandingPage = StringMacros::decodeURIComponent(parameterPairSplit[1]);
+													if(remoteLandingPage.find(icon.folderPath_) != 0)
+														remoteLandingPage = icon.folderPath_ + "/" + remoteLandingPage;
+													__COUT__ << "Found landing page " << remoteLandingPage << 
+														" for " << icon.recordUID_ << __E__;
+												}
+											}
+										}
+									}
+								} //end remote URL parameter handling
+
 								thisInfo.appInfo.name = icon.recordUID_;							
 								thisInfo.appInfo.status = SupervisorInfo::APP_STATUS_UNKNOWN;		
 								thisInfo.appInfo.progress = 0;			
 								thisInfo.appInfo.detail = "";
-								thisInfo.appInfo.url =  icon.windowContentURL_;
+								thisInfo.appInfo.url = remoteURL; //icon.windowContentURL_;
 								thisInfo.appInfo.class_name = "Remote Gateway";
 								thisInfo.appInfo.lastStatusTime = time(0);
 
 								thisInfo.user_data_path_record = icon.alternateText_;
-								thisInfo.parentIconFolderPath = icon.folderPath_;								
+								thisInfo.parentIconFolderPath = icon.folderPath_;		
+								thisInfo.landingPage = remoteLandingPage;								
 
 								//replace or add to local copy of supervisor remote gateway list (control info will be protected later, after status update, with final copy to real list)
 								bool found = false;
@@ -400,6 +438,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										remoteApps[i].appInfo = thisInfo.appInfo;
 										remoteApps[i].user_data_path_record = thisInfo.user_data_path_record;
 										remoteApps[i].parentIconFolderPath = thisInfo.parentIconFolderPath;
+										remoteApps[i].landingPage = thisInfo.landingPage;
 										break;
 									}
 								}
@@ -655,6 +694,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										theSupervisor->remoteGatewayApps_[i].user_data_path_record = remoteGatewayApp.user_data_path_record;
 										theSupervisor->remoteGatewayApps_[i].iconString = remoteGatewayApp.iconString;	
 										theSupervisor->remoteGatewayApps_[i].parentIconFolderPath = remoteGatewayApp.parentIconFolderPath;	
+										theSupervisor->remoteGatewayApps_[i].landingPage = remoteGatewayApp.landingPage;	
 										
 										//fix config_aliases and selected_config_alias
 										theSupervisor->remoteGatewayApps_[i].config_aliases = remoteGatewayApp.config_aliases;										
@@ -705,8 +745,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					} //end remote app status update
 
 					//copy to subapps for display of primary Gateway
-					for(const auto& remoteGatewayApp : remoteApps)
-						subapps.push_back(remoteGatewayApp.appInfo);			
+					{
+						std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);	
+						for(const auto& remoteGatewayApp : theSupervisor->remoteGatewayApps_)
+							subapps.push_back(remoteGatewayApp.appInfo);			
+					}
 					
 					resetRemoteGatewayApps = false; //reset
 				}
@@ -6380,6 +6423,7 @@ try
 			{
 				xmlOut.addTextElementToData("subsystem_name", remoteSubsystem.appInfo.name);
 				xmlOut.addTextElementToData("subsystem_url", remoteSubsystem.appInfo.url);
+				xmlOut.addTextElementToData("subsystem_landingPage", remoteSubsystem.landingPage);
 				xmlOut.addTextElementToData("subsystem_status", remoteSubsystem.appInfo.status);
 				xmlOut.addTextElementToData("subsystem_progress", std::to_string(remoteSubsystem.appInfo.progress));
 				xmlOut.addTextElementToData("subsystem_detail", remoteSubsystem.appInfo.detail);

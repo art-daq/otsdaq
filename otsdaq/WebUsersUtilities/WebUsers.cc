@@ -326,7 +326,7 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 	if(userInfo.allowNoUser_)
 	{
 		if(userInfo.automatedCommand_)
-			__COUT__ << "Allowing anonymous access." << __E__;
+			__COUTT__ << "Allowing anonymous access." << __E__;
 
 		return true;  // ignore lock for allow-no-user case
 	}
@@ -1301,7 +1301,7 @@ uint64_t WebUsers::searchActiveSessionDatabaseForCookie(const std::string& cooki
 //	returns userId if login verified, else -1
 uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, bool refresh, const std::string& ip)
 {
-	__COUTTV__(cookieCode);
+	__COUTVS__(2,cookieCode);
 	remoteLoginVerificationEnabledBlackoutTime_ = 0;
 	if(!remoteLoginVerificationSocket_)  //instantiate socket first time needed
 	{
@@ -2025,9 +2025,9 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 
 	uint64_t i, j, userId = NOT_FOUND_IN_DATABASE, userSession = NOT_FOUND_IN_DATABASE;
 
-	__COUTV__(CareAboutCookieCodes_);
+	__COUTTV__(CareAboutCookieCodes_);
 	__COUTT__ << "refresh cookie " << refresh << __E__;
-	__COUTTV__(cookieCode);
+	__COUTVS__(2,cookieCode);
 
 	//always go remote if enabled
 	try
