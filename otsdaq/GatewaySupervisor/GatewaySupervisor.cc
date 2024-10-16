@@ -1168,7 +1168,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 	}  //end SendRemoteGatewayCommand()
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Failure sending Remote Gateway App command '" << 
+		__SS__ << "Failure sending Remote Gateway App '" << remoteGatewayApp.appInfo.name << "' the command '" << 
 			(tmpCommand.size() > 30?tmpCommand.substr(0,30):tmpCommand)
 			<< "' at url: " << remoteGatewayApp.appInfo.url << " due to error: " << e.what() << __E__;
 		__COUT_ERR__ << ss.str();	
@@ -6172,6 +6172,7 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 	const std::string& fsmName,
 	bool getRunNumber /* = true */)
 {
+	xmlOut.addTextElementToData("active_fsmName", activeStateMachineName_);
 	xmlOut.addTextElementToData("current_state", theStateMachine_.getCurrentStateName());
 	const std::string& gatewayStatus = allSupervisorInfo_.getGatewayInfo().getStatus();
 	if(gatewayStatus.size() > std::string(RunControlStateMachine::FAILED_STATE_NAME).length() && 
