@@ -6018,8 +6018,9 @@ try
 						StringMacros::decodeURIComponent(groupComment);
 					if(groupCreationTime != "" && groupCreationTime != "0")
 						returnInfo << "<br><br>";
-					returnInfo << "Created by " << groupAuthor << " at " <<
-						StringMacros::getTimestampString(groupCreationTime);
+					returnInfo << "<b>" << groupTranslation.first << "(" << groupTranslation.second <<
+						")</b> was created by " << groupAuthor << " (" <<
+						StringMacros::getTimestampString(groupCreationTime) << ")";
 					returnInfo << "</i>";
 
 					xmlOut.addTextElementToData("alias_info", returnInfo.str());
