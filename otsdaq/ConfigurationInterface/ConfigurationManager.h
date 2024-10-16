@@ -206,6 +206,7 @@ const T* retPtr = dynamic_cast<const T*>(srcPtr); if(retPtr == nullptr) { __SS__
 		 TableGroupKey>>						getOtherSubsystemActiveTableGroups		(const std::string& otherSubsystemUID, std::string* userDataPathPtr = nullptr, std::string* hostnamePtr = nullptr, std::string* usernamePtr = nullptr);
 	std::set<std::string  /* configAlias */>	getOtherSubsystemConfigAliases			(const std::string& otherSubsystemUID);
 	std::set<std::string  /* configAlias */>	getOtherSubsystemFilteredConfigAliases	(const std::string& otherSubsystemUID, const std::string& otherSubsystemFsmName );
+	void										getOtherSubsystemConfigAliasInfo		(const std::string& otherSubsystemUID, const std::string& configAlias, std::pair<std::string, TableGroupKey>& groupTranslation, std::string& groupComment, std::string& groupAuthor, std::string& groupCreationTime);
 
 	//==============================================================================
 	// Setters/Modifiers

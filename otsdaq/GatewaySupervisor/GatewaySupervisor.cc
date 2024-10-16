@@ -374,18 +374,56 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								icon.windowContentURL_[3] == ':')
 							{
 								__COUT__ << "Found remote gateway from icons at " << icon.windowContentURL_ << __E__;
-
+								
 								GatewaySupervisor::RemoteGatewayInfo thisInfo;
+
+								std::string remoteURL = icon.windowContentURL_;
+								std::string remoteLandingPage = "";
+								//remote ? parameters from remoteURL
+								if(remoteURL.find('?') != std::string::npos)
+								{
+									__COUT__ << "Extracting GET ? parameters from remote url." << __E__;
+									std::vector<std::string> urlSplit = StringMacros::getVectorFromString(
+										remoteURL, {'?'});
+									if(urlSplit.size() > 0)
+										remoteURL = urlSplit[0]; 
+									if(urlSplit.size() > 1)
+									{
+										//look for 'LandingPage' parameter										
+										std::vector<std::string> parameterPairs = StringMacros::getVectorFromString(
+												urlSplit[1], {'&'});
+										for(const auto& parameterPair : parameterPairs)
+										{
+											std::vector<std::string> parameterPairSplit = StringMacros::getVectorFromString(
+												parameterPair, {'='});
+											if(parameterPairSplit.size() == 2)
+											{
+												__COUT__ << "Found remote URL parameter " << parameterPairSplit[0] << 
+													", " << parameterPairSplit[1] << __E__;
+												if(parameterPairSplit[0] == "LandingPage")
+												{
+													remoteLandingPage = StringMacros::decodeURIComponent(parameterPairSplit[1]);
+													if(remoteLandingPage.find(icon.folderPath_) != 0)
+														remoteLandingPage = icon.folderPath_ + "/" + remoteLandingPage;
+													__COUT__ << "Found landing page " << remoteLandingPage << 
+														" for " << icon.recordUID_ << __E__;
+												}
+											}
+										}
+									}
+								} //end remote URL parameter handling
+
 								thisInfo.appInfo.name = icon.recordUID_;							
 								thisInfo.appInfo.status = SupervisorInfo::APP_STATUS_UNKNOWN;		
 								thisInfo.appInfo.progress = 0;			
 								thisInfo.appInfo.detail = "";
-								thisInfo.appInfo.url =  icon.windowContentURL_;
+								thisInfo.appInfo.url = remoteURL; //icon.windowContentURL_;
 								thisInfo.appInfo.class_name = "Remote Gateway";
 								thisInfo.appInfo.lastStatusTime = time(0);
 
 								thisInfo.user_data_path_record = icon.alternateText_;
-								thisInfo.parentIconFolderPath = icon.folderPath_;								
+								thisInfo.parentIconFolderPath = icon.folderPath_;		
+								thisInfo.landingPage = remoteLandingPage;								
 
 								//replace or add to local copy of supervisor remote gateway list (control info will be protected later, after status update, with final copy to real list)
 								bool found = false;
@@ -400,6 +438,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										remoteApps[i].appInfo = thisInfo.appInfo;
 										remoteApps[i].user_data_path_record = thisInfo.user_data_path_record;
 										remoteApps[i].parentIconFolderPath = thisInfo.parentIconFolderPath;
+										remoteApps[i].landingPage = thisInfo.landingPage;
 										break;
 									}
 								}
@@ -655,6 +694,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										theSupervisor->remoteGatewayApps_[i].user_data_path_record = remoteGatewayApp.user_data_path_record;
 										theSupervisor->remoteGatewayApps_[i].iconString = remoteGatewayApp.iconString;	
 										theSupervisor->remoteGatewayApps_[i].parentIconFolderPath = remoteGatewayApp.parentIconFolderPath;	
+										theSupervisor->remoteGatewayApps_[i].landingPage = remoteGatewayApp.landingPage;	
 										
 										//fix config_aliases and selected_config_alias
 										theSupervisor->remoteGatewayApps_[i].config_aliases = remoteGatewayApp.config_aliases;										
@@ -705,8 +745,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					} //end remote app status update
 
 					//copy to subapps for display of primary Gateway
-					for(const auto& remoteGatewayApp : remoteApps)
-						subapps.push_back(remoteGatewayApp.appInfo);			
+					{
+						std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);	
+						for(const auto& remoteGatewayApp : theSupervisor->remoteGatewayApps_)
+							subapps.push_back(remoteGatewayApp.appInfo);			
+					}
 					
 					resetRemoteGatewayApps = false; //reset
 				}
@@ -1125,7 +1168,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 	}  //end SendRemoteGatewayCommand()
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Failure sending Remote Gateway App command '" << 
+		__SS__ << "Failure sending Remote Gateway App '" << remoteGatewayApp.appInfo.name << "' the command '" << 
 			(tmpCommand.size() > 30?tmpCommand.substr(0,30):tmpCommand)
 			<< "' at url: " << remoteGatewayApp.appInfo.url << " due to error: " << e.what() << __E__;
 		__COUT_ERR__ << ss.str();	
@@ -4947,7 +4990,8 @@ try
 	// getRemoteSubsystems
 	// getRemoteSubsystemStatus
 	// commandRemoteSubsystem
-	// setRemoteSubsystemFsmIncludes
+	// setRemoteSubsystemFsmControl
+	// getSubsystemConfigAliasSelectInfo
 
 	// resetUserTooltips
 	// silenceAllUserTooltips
@@ -5844,6 +5888,7 @@ try
 			{
 				xmlOut.addTextElementToData("subsystem_name", remoteSubsystem.appInfo.name);
 				xmlOut.addTextElementToData("subsystem_url", remoteSubsystem.appInfo.url);
+				xmlOut.addTextElementToData("subsystem_landingPage", remoteSubsystem.landingPage);
 				xmlOut.addTextElementToData("subsystem_status", remoteSubsystem.appInfo.status);
 				xmlOut.addTextElementToData("subsystem_progress", std::to_string(remoteSubsystem.appInfo.progress));
 				xmlOut.addTextElementToData("subsystem_detail", remoteSubsystem.appInfo.detail);
@@ -5934,7 +5979,62 @@ try
 
 			saveRemoteGatewaySettings();
 
-		} //end setRemoteSubsystemFsmIncludes
+		} //end setRemoteSubsystemFsmControl
+		else if(requestType == "getSubsystemConfigAliasSelectInfo")
+		{
+			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");	
+			//return info on selected_config_alias
+			
+			bool found = false;
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			for(auto& remoteGatewayApp : remoteGatewayApps_)
+				if(targetSubsystem == remoteGatewayApp.appInfo.name)
+				{
+					found = true;
+
+					if(remoteGatewayApp.selected_config_alias == "")
+					{
+						__SUP_SS__ << "No selected Configuration Alias found for target Subsystem '" << 
+							remoteGatewayApp.appInfo.name << "' - please select one before requesting info." << __E__;
+						__SUP_SS_THROW__;
+					}
+
+					std::pair<std::string, TableGroupKey> groupTranslation;
+					std::string groupComment, groupAuthor, groupCreationTime;
+
+					ConfigurationManager tmpCfgMgr; // Creating new temporary instance to not mess up member CorePropertySupervisorBase::theConfigurationManager_
+					tmpCfgMgr.getOtherSubsystemConfigAliasInfo(
+						remoteGatewayApp.user_data_path_record,
+						remoteGatewayApp.selected_config_alias,
+						groupTranslation, groupComment, groupAuthor, groupCreationTime
+					);
+
+
+					std::stringstream returnInfo;
+					returnInfo << "At remote Subsystem <b>'" << remoteGatewayApp.appInfo.name << 
+						",'</b> the Configure Alias <b>'" << remoteGatewayApp.selected_config_alias << 
+						"'</b>  translates to <b>" << groupTranslation.first << "(" << groupTranslation.second <<
+						")</b>  w/comment: <br><br><i>" << 						
+						StringMacros::decodeURIComponent(groupComment);
+					if(groupCreationTime != "" && groupCreationTime != "0")
+						returnInfo << "<br><br>";
+					returnInfo << "<b>" << groupTranslation.first << "(" << groupTranslation.second <<
+						")</b> was created by " << groupAuthor << " (" <<
+						StringMacros::getTimestampString(groupCreationTime) << ")";
+					returnInfo << "</i>";
+
+					xmlOut.addTextElementToData("alias_info", returnInfo.str());
+					break;
+				}
+
+			if(!found)
+			{
+				__SUP_SS__ << "Did not find any matching subsystems for target '" << targetSubsystem << 
+							"' attempted!" << __E__;
+				__SUP_SS_THROW__;
+			}
+
+		} //end getSubsystemConfigAliasSelectInfo
 		else if(requestType == "commandRemoteSubsystem")
 		{
 			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");		
@@ -6072,6 +6172,7 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 	const std::string& fsmName,
 	bool getRunNumber /* = true */)
 {
+	xmlOut.addTextElementToData("active_fsmName", activeStateMachineName_);
 	xmlOut.addTextElementToData("current_state", theStateMachine_.getCurrentStateName());
 	const std::string& gatewayStatus = allSupervisorInfo_.getGatewayInfo().getStatus();
 	if(gatewayStatus.size() > std::string(RunControlStateMachine::FAILED_STATE_NAME).length() && 
@@ -6234,7 +6335,7 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 		CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
 
 	std::string stateMachineAliasFilter = "*";  // default to all
-	if(!configLinkNode.isDisconnected())
+	if(fsmName != "" && !configLinkNode.isDisconnected())
 	{
 		try  // for backwards compatibility
 		{
@@ -6356,10 +6457,10 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 			{
 				temporaryConfigMgr.loadTableGroup(aliasMapPair.second.first,
 												aliasMapPair.second.second,
-												false,
-												0,
-												0,
-												0,
+												false /*doActivate*/,
+												0 /*groupMembers*/,
+												0 /*progressBar*/,
+												0 /*accumulateWarnings*/,
 												&groupComment,
 												&groupAuthor,
 												&groupCreationTime,
