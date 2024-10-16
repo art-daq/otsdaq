@@ -3426,13 +3426,13 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser, const std::s
 	{
 		systemMessages_.emplace(
 		    std::pair<std::string /*toUser*/, std::vector<SystemMessage>>(targetUser, std::vector<SystemMessage>({SystemMessage(fullMessage)})));
-		__COUT__ << targetUser << " Current System Messages count = " << 1 << __E__;
+		__COUTT__ << targetUser << " Current System Messages count = " << 1 << __E__;
 	}
 	else  // add message
 	{
-		__COUT__ << __E__;
+		__COUTT__ << __E__;
 		it->second.push_back(SystemMessage(fullMessage));
-		__COUT__ << it->first << " Current System Messages count = " << it->second.size() << __E__;
+		__COUTT__ << it->first << " Current System Messages count = " << it->second.size() << __E__;
 	}
 }  // end addSystemMessageToMap
 
@@ -3441,7 +3441,7 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser, const std::s
 //	Returns last */global system message for statusing
 std::pair<std::string, time_t> WebUsers::getLastSystemMessage() const
 {
-	__COUT__ << "GetLast number of users with system messages: " << systemMessages_.size() <<
+	__COUTT__ << "GetLast number of users with system messages: " << systemMessages_.size() <<
 		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 
 	auto it = systemMessages_.find("*");

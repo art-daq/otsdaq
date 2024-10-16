@@ -4990,7 +4990,8 @@ try
 	// getRemoteSubsystems
 	// getRemoteSubsystemStatus
 	// commandRemoteSubsystem
-	// setRemoteSubsystemFsmIncludes
+	// setRemoteSubsystemFsmControl
+	// getSubsystemConfigAliasSelectInfo
 
 	// resetUserTooltips
 	// silenceAllUserTooltips
@@ -5978,7 +5979,61 @@ try
 
 			saveRemoteGatewaySettings();
 
-		} //end setRemoteSubsystemFsmIncludes
+		} //end setRemoteSubsystemFsmControl
+		else if(requestType == "getSubsystemConfigAliasSelectInfo")
+		{
+			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");	
+			//return info on selected_config_alias
+			
+			bool found = false;
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			for(auto& remoteGatewayApp : remoteGatewayApps_)
+				if(targetSubsystem == remoteGatewayApp.appInfo.name)
+				{
+					found = true;
+
+					if(remoteGatewayApp.selected_config_alias == "")
+					{
+						__SUP_SS__ << "No selected Configuration Alias found for target Subsystem '" << 
+							remoteGatewayApp.appInfo.name << "' - please select one before requesting info." << __E__;
+						__SUP_SS_THROW__;
+					}
+
+					std::pair<std::string, TableGroupKey> groupTranslation;
+					std::string groupComment, groupAuthor, groupCreationTime;
+
+					ConfigurationManager tmpCfgMgr; // Creating new temporary instance to not mess up member CorePropertySupervisorBase::theConfigurationManager_
+					tmpCfgMgr.getOtherSubsystemConfigAliasInfo(
+						remoteGatewayApp.user_data_path_record,
+						remoteGatewayApp.selected_config_alias,
+						groupTranslation, groupComment, groupAuthor, groupCreationTime
+					);
+
+
+					std::stringstream returnInfo;
+					returnInfo << "At remote Subsystem <b>'" << remoteGatewayApp.appInfo.name << 
+						",'</b> the Configure Alias <b>'" << remoteGatewayApp.selected_config_alias << 
+						"'</b>  translates to <b>" << groupTranslation.first << "(" << groupTranslation.second <<
+						")</b>  w/comment: <br><br><i>" << 						
+						StringMacros::decodeURIComponent(groupComment);
+					if(groupCreationTime != "" && groupCreationTime != "0")
+						returnInfo << "<br><br>";
+					returnInfo << "Created by " << groupAuthor << " at " <<
+						StringMacros::getTimestampString(groupCreationTime);
+					returnInfo << "</i>";
+
+					xmlOut.addTextElementToData("alias_info", returnInfo.str());
+					break;
+				}
+
+			if(!found)
+			{
+				__SUP_SS__ << "Did not find any matching subsystems for target '" << targetSubsystem << 
+							"' attempted!" << __E__;
+				__SUP_SS_THROW__;
+			}
+
+		} //end getSubsystemConfigAliasSelectInfo
 		else if(requestType == "commandRemoteSubsystem")
 		{
 			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");		
@@ -6278,7 +6333,7 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 		CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
 
 	std::string stateMachineAliasFilter = "*";  // default to all
-	if(!configLinkNode.isDisconnected())
+	if(fsmName != "" && !configLinkNode.isDisconnected())
 	{
 		try  // for backwards compatibility
 		{
@@ -6400,10 +6455,10 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 			{
 				temporaryConfigMgr.loadTableGroup(aliasMapPair.second.first,
 												aliasMapPair.second.second,
-												false,
-												0,
-												0,
-												0,
+												false /*doActivate*/,
+												0 /*groupMembers*/,
+												0 /*progressBar*/,
+												0 /*accumulateWarnings*/,
 												&groupComment,
 												&groupAuthor,
 												&groupCreationTime,

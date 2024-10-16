@@ -3531,12 +3531,12 @@ std::map<std::string /*groupType*/,
 		 std::pair<std::string /*groupName*/,
 		 TableGroupKey>> retMap;
 
-	__GEN_COUTV__(otherSubsystemUID); 
+	__GEN_COUTTV__(otherSubsystemUID); 
 
 	ConfigurationTree node = getNode(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE).getNode(otherSubsystemUID);
 	std::string userPath = node.getNode("SubsystemUserDataPath").getValue();	
 	auto splitPath = StringMacros::getVectorFromString(userPath,{':'});
-	__GEN_COUTV__(StringMacros::vectorToString(splitPath));
+	__GEN_COUTTV__(StringMacros::vectorToString(splitPath));
 
 	if(!splitPath.size() || splitPath.size() > 2) 
 	{					
@@ -3571,7 +3571,7 @@ std::map<std::string /*groupType*/,
 	{
 		//since we are running exec, cleanse the username@host path for alphanumeric,_,-,/ only
 		std::vector<std::string> userHostSplit = StringMacros::getVectorFromString(splitPath[0],{'@'});
-		__GEN_COUTV__(userHostSplit.size());			
+		__GEN_COUTTV__(userHostSplit.size());			
 		if(userHostSplit.size() == 1)
 			hostname = userHostSplit[0];
 		else if(userHostSplit.size() == 2)
@@ -3619,7 +3619,7 @@ std::map<std::string /*groupType*/,
 			}		
 
 		std::string tmpSubsystemFilename = ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + otherSubsystemUID;
-		__GEN_COUTV__(tmpSubsystemFilename);
+		__GEN_COUTTV__(tmpSubsystemFilename);
 		if(userHostSplit.size() == 2) //has username
 		{
 			cmdResult = StringMacros::exec(("rm "  + tmpSubsystemFilename + " 2>/dev/null; scp " + username + "@" + hostname + 
@@ -3644,7 +3644,7 @@ std::map<std::string /*groupType*/,
 	if(hostnamePtr) *hostnamePtr = hostname;
 	if(usernamePtr) *usernamePtr = username;
 
-	__GEN_COUTV__(cmdResult);
+	__GEN_COUTTV__(cmdResult);
 	if(cmdResult.find("Permission denied") != std::string::npos)
 	{
 		__GEN_SS__ << "Permission denied accessing user data path specified for subsystem '" << otherSubsystemUID
@@ -3653,8 +3653,8 @@ std::map<std::string /*groupType*/,
 	}
 
 	auto subsystemActiveGroupMap = StringMacros::getVectorFromString(cmdResult,{'\n'} /* delimieter*/, {' ','\t'} /* whitespace*/);
-	__GEN_COUTV__(StringMacros::vectorToString(subsystemActiveGroupMap));
-	__GEN_COUTV__(subsystemActiveGroupMap.size());
+	__GEN_COUTTV__(StringMacros::vectorToString(subsystemActiveGroupMap));
+	__GEN_COUTTV__(subsystemActiveGroupMap.size());
 
 	std::string //groupComment, groupAuthor, groupCreationTime, 
 		groupType;
@@ -3662,7 +3662,7 @@ std::map<std::string /*groupType*/,
 	{
 		if(subsystemActiveGroupMap[i] == "" || subsystemActiveGroupMap[i+1] == "-1") continue;
 
-		__GEN_COUT__ << "Loading type of subsystem '" << otherSubsystemUID
+		__GEN_COUTT__ << "Loading type of subsystem '" << otherSubsystemUID
 			<< "' group " << subsystemActiveGroupMap[i] << "(" << subsystemActiveGroupMap[i+1] << ")" << __E__;
 
 		try
@@ -3692,7 +3692,6 @@ std::map<std::string /*groupType*/,
 	__GEN_COUTTV__(StringMacros::mapToString(retMap));
 	return retMap;
 } //end getOtherSubsystemActiveTableGroups()
-
 
 //==============================================================================
 //Ignore any System Aliases with "Context" or "Iterat" in the name
@@ -3908,6 +3907,92 @@ std::set<std::string /* configAlias */> ConfigurationManager::getOtherSubsystemF
 
 	return retSet;
 } //end getOtherSubsystemFilteredConfigAliases()
+
+//==============================================================================
+// returns configAlias translation group info by reference
+void ConfigurationManager::getOtherSubsystemConfigAliasInfo(const std::string& otherSubsystemUID, 
+	const std::string& configAlias, std::pair<std::string, TableGroupKey>& groupTranslation,
+	std::string& groupComment, std::string& groupAuthor, std::string& groupCreationTime)
+{
+	__GEN_COUTV__(otherSubsystemUID); 
+
+
+	std::map<std::string /*groupType*/,
+		 std::pair<std::string /*groupName*/,
+		 TableGroupKey>> retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
+
+		
+	//load backbone
+	auto it = retMap.find(ConfigurationManager::convertGroupTypeToName(GroupType::BACKBONE_TYPE));
+	if(it == retMap.end())
+	{
+		__GEN_SS__ << "No active Backbone group found in the active groups of remote subsystem '" << 
+			otherSubsystemUID << "!'" << __E__;
+		__GEN_SS_THROW__;
+	}
+	auto it2 = retMap.find(ConfigurationManager::convertGroupTypeToName(GroupType::CONTEXT_TYPE));
+	if(it2 == retMap.end())
+	{
+		__GEN_SS__ << "No active Context group found in the active groups of remote subsystem '" << 
+			otherSubsystemUID << "!'" << __E__;
+		__GEN_SS_THROW__;
+	}
+
+	std::string accumulatedWarnings;
+
+	// be careful to not activate! which calls init() and then generates output files to disk
+	//	and changes the system active group; instead only setActiveView
+	loadTableGroup(it->second.first,
+					it->second.second,
+					false /*doActivate*/,
+					0 /*groupMembers*/,
+					0 /*progressBar*/,
+					&accumulatedWarnings /*accumulateWarnings = 0*/
+	);
+	__GEN_COUTTV__(accumulatedWarnings);
+
+	// (a la ConfigurationManager::getTableGroupFromAlias)
+	try
+	{
+		//	find runType in Group Aliases table
+		ConfigurationTree entry = getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(configAlias);
+
+		groupTranslation = 
+			std::pair<std::string, TableGroupKey>(entry.getNode("GroupName").getValueAsString(),
+		    		                TableGroupKey(entry.getNode("GroupKey").getValueAsString()));
+		__COUT__ << "Found " << configAlias << " translates to " << groupTranslation.first << "(" <<
+			groupTranslation.second << ")" << __E__;
+
+		//get comment, author, creationTime
+		try
+		{
+			loadTableGroup(groupTranslation.first,
+							groupTranslation.second,
+							false /*doActivate*/,
+							0 /*groupMembers*/,
+							0 /*progressBar*/,
+							&accumulatedWarnings,
+							&groupComment,
+							&groupAuthor,
+							&groupCreationTime,
+							true /*doNotLoadMembers*/);
+		}
+		catch(...)
+		{
+			__COUT_WARN__ << "Failed to load group metadata." << __E__;
+		}		
+		__COUT__ << "Found " << configAlias << " author: " << groupAuthor << ", createTime: " 
+			<< groupCreationTime << ", comment: " << groupComment << __E__;
+	}
+	catch(...)
+	{
+		__GEN_SS__ << "Did not find the Configuration Alias '" << configAlias <<
+			"' in the active Backbone group of remote subsystem '" << 
+			otherSubsystemUID << "!'" << __E__;
+		__GEN_SS_THROW__;
+	}	
+
+} //end getOtherSubsystemConfigAliasInfo()
 
 //==============================================================================
 // allow for just the desktop icons of the Context to be changed during run-time
