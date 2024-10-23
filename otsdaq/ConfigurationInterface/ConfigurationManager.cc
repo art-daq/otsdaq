@@ -3522,19 +3522,16 @@ bool ConfigurationManager::isOwnerFirstAppInContext()
 }  // end isOwnerFirstAppInContext()
 
 //==============================================================================
-std::map<std::string /*groupType*/,
-		 std::pair<std::string /*groupName*/,
-		 TableGroupKey>> ConfigurationManager::getOtherSubsystemActiveTableGroups(const std::string& otherSubsystemUID, 
-		 std::string* userDataPathPtr /* = nullptr */, std::string* hostnamePtr /* = nullptr */, std::string* usernamePtr /* = nullptr */)
+void ConfigurationManager::getOtherSubsystemInstanceInfo(const std::string& otherSubsystemUID, 
+		 std::string* userDataPathPtr /* = nullptr */, std::string* hostnamePtr /* = nullptr */, std::string* usernamePtr /* = nullptr */,
+		 std::string* fullNamePtr /* = nullptr */)	
 {
-	std::map<std::string /*groupType*/,
-		 std::pair<std::string /*groupName*/,
-		 TableGroupKey>> retMap;
-
 	__GEN_COUTTV__(otherSubsystemUID); 
 
 	ConfigurationTree node = getNode(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE).getNode(otherSubsystemUID);
-	std::string userPath = node.getNode("SubsystemUserDataPath").getValue();	
+	std::string userPath = node.getNode("SubsystemUserDataPath").getValue();
+	if(fullNamePtr) *fullNamePtr = node.getNode("SubsystemFullName").getValue();
+
 	auto splitPath = StringMacros::getVectorFromString(userPath,{':'});
 	__GEN_COUTTV__(StringMacros::vectorToString(splitPath));
 
@@ -3562,10 +3559,6 @@ std::map<std::string /*groupType*/,
 
 	if(userDataPathPtr) *userDataPathPtr = userDataPath;
 
-	//enforce filename ends correctly
-	std::string filename = userDataPath + "/ServiceData/ActiveTableGroups.cfg";		
-
-	std::string cmdResult;
 	std::string username, hostname;
 	if(splitPath.size() == 2) //then need to scp the file
 	{
@@ -3618,21 +3611,10 @@ std::map<std::string /*groupType*/,
 				}
 			}		
 
-		std::string tmpSubsystemFilename = ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + otherSubsystemUID;
-		__GEN_COUTTV__(tmpSubsystemFilename);
-		if(userHostSplit.size() == 2) //has username
-		{
-			cmdResult = StringMacros::exec(("rm "  + tmpSubsystemFilename + " 2>/dev/null; scp " + username + "@" + hostname + 
-				":" + filename + 
-				" " + tmpSubsystemFilename + " 2>&1; cat " + tmpSubsystemFilename + " 2>&1").c_str());
-		}
-		else
-			cmdResult = StringMacros::exec(("rm "  + tmpSubsystemFilename + " 2>/dev/null; scp " + hostname + ":" + filename + 
-				" " + tmpSubsystemFilename + " 2>&1; cat " + tmpSubsystemFilename + " 2>&1").c_str());
 	}
 	else if(splitPath.size() == 1) //then can just directly access the file
 	{
-		cmdResult = StringMacros::exec(("cat " + filename + " 2>&1").c_str());
+		__GEN_COUT__ << "Local user date path identified." << __E__;
 	}
 	else
 	{
@@ -3644,11 +3626,181 @@ std::map<std::string /*groupType*/,
 	if(hostnamePtr) *hostnamePtr = hostname;
 	if(usernamePtr) *usernamePtr = username;
 
+}  // end getOtherSubsystemInstanceInfo()
+
+//==============================================================================
+std::map<std::string /*groupType*/,
+		 std::pair<std::string /*groupName*/,
+		 TableGroupKey>> ConfigurationManager::getOtherSubsystemActiveTableGroups(const std::string& otherSubsystemUID, 
+		 std::string* userDataPathPtr /* = nullptr */, std::string* hostnamePtr /* = nullptr */, std::string* usernamePtr /* = nullptr */)
+{
+	std::map<std::string /*groupType*/,
+		 std::pair<std::string /*groupName*/,
+		 TableGroupKey>> retMap;
+
+	__GEN_COUTTV__(otherSubsystemUID); 
+
+	std::string userDataPath;
+	std::string username, hostname;
+
+	getOtherSubsystemInstanceInfo(otherSubsystemUID,
+		&userDataPath, &hostname, &username);
+
+	__GEN_COUTTV__(userDataPath); 
+	__GEN_COUTTV__(username); 
+	__GEN_COUTTV__(hostname); 
+
+	if(userDataPathPtr) *userDataPathPtr = userDataPath;
+	if(hostnamePtr) *hostnamePtr = hostname;
+	if(usernamePtr) *usernamePtr = username;
+
+	//enforce filename ends correctly
+	std::string filename = userDataPath + "/ServiceData/ActiveTableGroups.cfg";		
+
+	std::string cmdResult;
+
+	if(hostname != "")
+	{
+		std::string tmpSubsystemFilename = ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + otherSubsystemUID;
+		__GEN_COUTTV__(tmpSubsystemFilename);
+		if(username != "") //has username
+		{
+			cmdResult = StringMacros::exec(("rm "  + tmpSubsystemFilename + " 2>/dev/null; scp " + username + "@" + hostname + 
+				":" + filename + 
+				" " + tmpSubsystemFilename + " 2>&1; cat " + tmpSubsystemFilename + " 2>&1").c_str());
+		}
+		else
+			cmdResult = StringMacros::exec(("rm "  + tmpSubsystemFilename + " 2>/dev/null; scp " + hostname + ":" + filename + 
+				" " + tmpSubsystemFilename + " 2>&1; cat " + tmpSubsystemFilename + " 2>&1").c_str());
+	}
+	else //then can just directly access the file
+	{
+		__GEN_COUT__ << "Local user date path identified." << __E__;
+		cmdResult = StringMacros::exec(("cat " + filename + " 2>&1").c_str());
+	}
+
+
+	// ConfigurationTree node = getNode(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE).getNode(otherSubsystemUID);
+	// std::string userPath = node.getNode("SubsystemUserDataPath").getValue();	
+	// auto splitPath = StringMacros::getVectorFromString(userPath,{':'});
+	// __GEN_COUTTV__(StringMacros::vectorToString(splitPath));
+
+	// if(!splitPath.size() || splitPath.size() > 2) 
+	// {					
+	// 	__GEN_SS__ << "Illegal user data path specified for subsystem '" <<  otherSubsystemUID
+	// 		<< "': " << userPath << __E__;
+	// 	__SS_ONLY_THROW__;				
+	// }		
+	// std::string userDataPath = splitPath[splitPath.size()-1];
+
+	// //since we are running exec, cleanse the filename path for alphanumeric,_,-,/ only
+	// for(unsigned int i=0; i < userDataPath.length(); ++i)
+	// 	if(!((userDataPath[i] >= 'a' && userDataPath[i] <= 'z') ||
+	// 		(userDataPath[i] >= 'A' && userDataPath[i] <= 'Z') ||
+	// 		(userDataPath[i] >= '0' && userDataPath[i] <= '9') ||
+	// 		userDataPath[i] == '-' ||
+	// 		userDataPath[i] == '_' ||
+	// 		userDataPath[i] == '/'))
+	// 	{				
+	// 		__GEN_SS__ << "Illegal user data path specified (no special characters allowed) for subsystem '" <<  otherSubsystemUID
+	// 				<< "': " << userPath << __E__;
+	// 		__SS_ONLY_THROW__;									
+	// 	} // end filename cleanse		
+
+	// if(userDataPathPtr) *userDataPathPtr = userDataPath;
+
+	// //enforce filename ends correctly
+	// std::string filename = userDataPath + "/ServiceData/ActiveTableGroups.cfg";		
+
+	// std::string cmdResult;
+	// std::string username, hostname;
+	// if(splitPath.size() == 2) //then need to scp the file
+	// {
+	// 	//since we are running exec, cleanse the username@host path for alphanumeric,_,-,/ only
+	// 	std::vector<std::string> userHostSplit = StringMacros::getVectorFromString(splitPath[0],{'@'});
+	// 	__GEN_COUTTV__(userHostSplit.size());			
+	// 	if(userHostSplit.size() == 1)
+	// 		hostname = userHostSplit[0];
+	// 	else if(userHostSplit.size() == 2)
+	// 	{
+	// 		username = userHostSplit[0];
+	// 		hostname = userHostSplit[1];
+	// 	}
+	// 	else
+	// 	{					
+	// 		__GEN_SS__ << "Illegal remote username/host specified for subsystem '" <<  otherSubsystemUID
+	// 			<< "': " << userPath << __E__;
+	// 		__SS_ONLY_THROW__;					
+	// 	}		
+
+	// 	for(unsigned int i=0;userHostSplit.size() == 2 && i<username.length(); ++i)
+	// 		if(!((username[i] >= 'a' && username[i] <= 'z') ||
+	// 			(username[i] >= 'A' && username[i] <= 'Z') ||
+	// 			(username[i] >= '0' && username[i] <= '9') ||
+	// 			username[i] == '-' ||
+	// 			username[i] == '_'))
+	// 		{					
+	// 			__GEN_SS__ << "Illegal remote username specified for subsystem '" <<  otherSubsystemUID
+	// 				<< "': " << userPath << __E__;
+	// 			__SS_ONLY_THROW__;					
+	// 		}		
+	// 	unsigned int ii = 0; //track last . to prevent weird . usage
+	// 	for(unsigned int i=0;i<hostname.length(); ++i)
+	// 		if(!((hostname[i] >= 'a' && hostname[i] <= 'z') ||
+	// 			(hostname[i] >= 'A' && hostname[i] <= 'Z') ||
+	// 			(hostname[i] >= '0' && hostname[i] <= '9') ||
+	// 			hostname[i] == '-' ||
+	// 			hostname[i] == '_'))
+	// 		{					
+	// 			if(hostname[i] == '.' && i > ii + 1)
+	// 			{
+	// 				//its ok to have this . so track position
+	// 				ii = i;
+	// 			}
+	// 			else //else not ok to have .. or other characters
+	// 			{
+	// 				__GEN_SS__ << "Illegal remote hostname '" << hostname << "' specified for subsystem '" <<  otherSubsystemUID
+	// 					<< "': " << userPath << __E__;
+	// 				__SS_ONLY_THROW__;					
+	// 			}
+	// 		}		
+
+	// 	std::string tmpSubsystemFilename = ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + otherSubsystemUID;
+	// 	__GEN_COUTTV__(tmpSubsystemFilename);
+	// 	if(userHostSplit.size() == 2) //has username
+	// 	{
+	// 		cmdResult = StringMacros::exec(("rm "  + tmpSubsystemFilename + " 2>/dev/null; scp " + username + "@" + hostname + 
+	// 			":" + filename + 
+	// 			" " + tmpSubsystemFilename + " 2>&1; cat " + tmpSubsystemFilename + " 2>&1").c_str());
+	// 	}
+	// 	else
+	// 		cmdResult = StringMacros::exec(("rm "  + tmpSubsystemFilename + " 2>/dev/null; scp " + hostname + ":" + filename + 
+	// 			" " + tmpSubsystemFilename + " 2>&1; cat " + tmpSubsystemFilename + " 2>&1").c_str());
+	// }
+	// else if(splitPath.size() == 1) //then can just directly access the file
+	// {
+	// 	cmdResult = StringMacros::exec(("cat " + filename + " 2>&1").c_str());
+	// }
+	// else
+	// {
+	// 	__GEN_SS__ << "Illegal user data path specified for subsystem '" << otherSubsystemUID
+	// 		<< "': " << userPath << __E__;
+	// 	__SS_ONLY_THROW__;
+	// }
+
+	// if(hostnamePtr) *hostnamePtr = hostname;
+	// if(usernamePtr) *usernamePtr = username;
+
 	__GEN_COUTTV__(cmdResult);
 	if(cmdResult.find("Permission denied") != std::string::npos)
 	{
 		__GEN_SS__ << "Permission denied accessing user data path specified for subsystem '" << otherSubsystemUID
-			<< "': " << userPath << __E__;
+			<< "': ";
+		if(username != "")
+			ss << username << "@";
+		if(hostname != "")
+			ss << hostname << ":";
+		ss << userDataPath << __E__;
 		__SS_ONLY_THROW__;
 	}
 

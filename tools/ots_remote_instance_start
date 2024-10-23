@@ -1,0 +1,88 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( 
+ cd "$(dirname "$(readlink "$0" || printf %s "$0")")"
+ pwd -P 
+)"
+
+
+# # Bash defines HOSTNAME but it's possible that it might not be a FQDN, this specifically enforces that it will be
+HOSTNAME="$(hostname -f)"
+
+export THIS_HOST="$1"
+if [ "x$1" == "x" ]; then
+	THIS_HOST="${HOSTNAME}"
+else
+  shift
+fi
+
+# Get color code variables
+source ${SCRIPT_DIR}/common.sh ots_remote_instance_start
+
+
+STARTTIME=`date +"%d%h%y.%T"` #to fully ID one StartOTS from another
+out "${Green}=========================== ots REMOTE INSTANCE on {${THIS_HOST}} ============================="
+# info "ots script path = ${SCRIPT_DIR}/ots_remote_instance_start"
+
+
+# Have to CD because setup_ots.sh isn't safe to run in other directories than the ots root, die if it didn't work
+if [ "x$1" != "x" ]; then
+    setup_dir=$1
+    shift
+else
+    setup_dir=${SCRIPT_DIR}/../../../
+fi
+info "Expected setup path     = ${setup_dir}/setup_ots.sh"
+cd $setup_dir || die "Couldn't chdir to ots setup directory on ${THIS_HOST}"
+if ! [ -e setup_ots.sh ]; then # try going one directory up (for mrb reverse compatibility)
+  cd ../ || die "Couldn't chdir to ots setup directory on ${THIS_HOST}"
+fi
+
+#get ots mode "Normal" or "Wiz"
+if [ "x$1" == "x" ]; then
+	OTS_MODE="Normal"
+else
+  OTS_MODE="$1"
+  shift
+fi
+
+#get setup type
+if [ "x$1" == "x" ]; then
+	export OTS_SETUP_TYPE="$(cat .ots_setup_type.txt)";
+else
+  export OTS_SETUP_TYPE="$1"
+  shift
+fi
+
+# We don't care about the non-error output of this script because it gets shown on the remote's launching terminal
+if [ "x$OTS_SETUP_TYPE" != "x" ]; then
+  info "Sourcing remote setup_ots.sh, and hiding output, for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+  source ./setup_ots.sh ${OTS_SETUP_TYPE} > /dev/null </dev/null  || die "Couldn't setup ots for ${OTS_SETUP_TYPE} on ${THIS_HOST}"
+  info "Launching ots ${OTS_MODE}-mode for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+else # no setup type
+  info "Sourcing remote setup_ots.sh, and hiding output, on ${EBold}${THIS_HOST}${DBold}..."
+  source ./setup_ots.sh > /dev/null </dev/null  || die "Couldn't setup ots on ${THIS_HOST}"
+  info "Launching ots ${OTS_MODE}-mode on ${EBold}${THIS_HOST}${DBold}..."
+fi
+
+
+if [ "$OTS_MODE" == "Normal" ]; then
+  # standard ots launch to handle normal instance start
+  # Exec since this is the last thing this script does and we don't need a pointless fork (plus the process stays the same for ssh)
+  exec ots || die "Couldn't launch ots instance on ${THIS_HOST}"
+elif [ "$OTS_MODE" == "Wiz" ]; then
+  # standard ots -w launch to handle wiz mode instance start
+  # Exec since this is the last thing this script does and we don't need a pointless fork (plus the process stays the same for ssh)
+  exec ots -w || die "Couldn't launch ots instance on ${THIS_HOST}"
+else
+  error "Unrecognized ots mode: $OTS_MODE"
+fi
+
+
+
+
+
+
+
+
+

@@ -2467,10 +2467,54 @@ otsActionHandler() {
 			fi
 			
 		    exit
+
+		elif [[ $OTSDAQ_STARTOTS_ACTION == LAUNCH_INSTANCE* ]]; then
+
+			info "Launching remote ots instance $OTSDAQ_STARTOTS_ACTION"
+
+			# Set Internal Field Separator to ";"
+			IFS=';'
+
+			# Read the string into an array
+			read -ra params <<< "$OTSDAQ_STARTOTS_ACTION"
+			# Print each parameter
+			cnt=0
+			for param in "${params[@]}"; do
+				# out "param[$cnt] = $param"
+
+				if [ $cnt == 1 ]; then
+					inst_user=$param
+				elif [ $cnt == 2 ]; then
+					inst_host=$param
+				elif [ $cnt == 3 ]; then
+					inst_path=$param
+				elif [ $cnt == 4 ]; then
+					inst_mode=$param
+				elif [ $cnt == 5 ]; then
+					inst_type=$param
+				fi
+				cnt=$(( $cnt + 1 ))				
+			done
+
+			if [ $cnt != 6 ]; then
+				error "Invalid parameters received, must be 6"
+			else
+				out "inst_user = $inst_user"
+				out "inst_host = $inst_host"
+				out "inst_path = $inst_path"
+				out "inst_mode = $inst_mode"
+				out "inst_type = $inst_type"
+
+				out "\tRemote launch of ots instance processes on host {${inst_host}}."
+				out "\t\tssh ${inst_host} SCRIPT_DIR/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type}" 
+				
+				# launch ssh remote start (attempt twice)
+				ssh -K ${inst_user}@${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || ssh -K ${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || out "${Red}${REV} ***************** {${inst_host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
+			fi
 			
 		elif [[ "${OTSDAQ_STARTOTS_ACTION:-"0"}" != "0"  || "${OTSDAQ_STARTOTS_QUIT:-"0"}" != "0" ]]; then
 		
-			out "Exiting ots.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"			
+			error "Exiting ots script.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"			
 			exit
 			
 		fi
