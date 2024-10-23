@@ -234,7 +234,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 	bool resetRemoteGatewayApps = false;
 	bool commandingRemoteGatewayApps = false;
 	size_t commandRemoteIdleCount = 0;
-	int portForReverseLoginOverUDP = 0; //if 0, then not enabled
+	int portForReverseLoginOverUDP = 0; //if 0, then not reverse login not enabled
+	std::string ipAddressForStateChangesOverUDP = ""; //if "", then not enabled
 
 	while(1)
 	{
@@ -528,7 +529,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						{
 							__COUT_INFO__ << "Instantiating Remote Gateway App Status Socket!" << __E__;
 							ConfigurationTree configLinkNode = theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
-							std::string ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
+							ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
 							__COUTTV__(ipAddressForStateChangesOverUDP);
 							
 							//check if allowing reverse login verification from remote Gateways to this Gateway							
@@ -642,7 +643,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						bool allApssAreUnknown = true;
 						for(auto& remoteGatewayApp : remoteApps)		
 						{
-							GatewaySupervisor::CheckRemoteGatewayStatus(remoteGatewayApp, remoteGatewaySocket, portForReverseLoginOverUDP);
+							GatewaySupervisor::CheckRemoteGatewayStatus(remoteGatewayApp, remoteGatewaySocket, ipAddressForStateChangesOverUDP, portForReverseLoginOverUDP);
 							if(remoteGatewayApp.appInfo.status != SupervisorInfo::APP_STATUS_UNKNOWN)
 							{
 								allApssAreUnknown = false;
@@ -694,7 +695,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
 							for(size_t i = 0; !commandingRemoteGatewayApps && i < theSupervisor->remoteGatewayApps_.size(); ++i)
 							{
-								__COUTV__(theSupervisor->remoteGatewayApps_[i].command);
+								__COUTVS__(50,theSupervisor->remoteGatewayApps_[i].command);
 								if(theSupervisor->remoteGatewayApps_[i].command == "") //make sure not mid-command
 									theSupervisor->remoteGatewayApps_[i].appInfo.status = ""; //clear status as indicator to be erased
 							}
@@ -1218,6 +1219,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 //		Just need status, progress, and detail of ots::GatewaySupervisor extracted from GetRemoteGatewayStatus
 void GatewaySupervisor::CheckRemoteGatewayStatus(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, 
 	const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */ remoteGatewaySocket,
+	const std::string& ipForReverseLoginOverUDP,
 	int portForReverseLoginOverUDP)
 try
 {
@@ -1230,7 +1232,8 @@ try
 		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
 		std::string	requestString = "GetRemoteGatewayStatus";
 		if(portForReverseLoginOverUDP)
-			requestString += "," + std::to_string(portForReverseLoginOverUDP);
+			requestString += "," + ipForReverseLoginOverUDP + 
+				"," + std::to_string(portForReverseLoginOverUDP);
 		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "requestString = " << requestString << __E__;	
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket,
 			requestString, 10 /*timeoutSeconds*/);
@@ -1398,20 +1401,27 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					if(remoteGatewayStatus && buffer.size() > strlen("GetRemoteGatewayStatus")+1)
 					{
-						std::string tmpIP = sock.getLastIncomingIPAddress();
-						int tmpPort = atoi(buffer.substr(strlen("GetRemoteGatewayStatus")+1).c_str());
-						
-						if(!theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ ||
-							theSupervisor->theWebUsers_.remoteLoginVerificationIP_ != tmpIP ||
-							theSupervisor->theWebUsers_.remoteLoginVerificationPort_ != tmpPort)
+						std::vector<std::string> params = StringMacros::getVectorFromString(buffer,{','});
+						if(params.size() == 3)
 						{
-							theSupervisor->theWebUsers_.remoteLoginVerificationIP_ = tmpIP;
-							theSupervisor->theWebUsers_.remoteLoginVerificationPort_ = tmpPort;
-							theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ = true; //mark as under remote control
-							__COUT_INFO__ << "This Gateway is now under remote control and will validate logins through remote Gateway Supervisor at "
-								<< theSupervisor->theWebUsers_.remoteLoginVerificationIP_ << ":" << 
-								theSupervisor->theWebUsers_.remoteLoginVerificationPort_ << __E__;
+							__COUTV__(StringMacros::vectorToString(params));
+							std::string tmpIP = params[1];
+							int tmpPort = atoi(params[2].c_str());
+							
+							if(!theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ ||
+								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ != tmpIP ||
+								theSupervisor->theWebUsers_.remoteLoginVerificationPort_ != tmpPort)
+							{
+								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ = tmpIP;
+								theSupervisor->theWebUsers_.remoteLoginVerificationPort_ = tmpPort;
+								theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ = true; //mark as under remote control
+								__COUT_INFO__ << "This Gateway is now under remote control and will validate logins through remote Gateway Supervisor at "
+									<< theSupervisor->theWebUsers_.remoteLoginVerificationIP_ << ":" << 
+									theSupervisor->theWebUsers_.remoteLoginVerificationPort_ << __E__;
+							}
 						}
+						else
+							__COUT_WARN__ << "Parameter count is not 3, it is " << params.size() << __E__;
 					}
 
 					HttpXmlDocument xmlOut;
@@ -7069,7 +7079,7 @@ void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor:
 		}
 	}
 
-	size_t NUM_FIELDS = 3; //name, fsmMode, included
+	size_t NUM_FIELDS = 4; //name, fsmMode, included, selected alias
 	std::vector<std::string> values;
 	float formatVersion = 0.0;
 	bool done = false;
@@ -7095,7 +7105,7 @@ void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor:
 			}
 			__SUP_COUTVS__(20,values[i]);
 
-			if(values[i] == "")  //do not allow blank lines				
+			if(i < 3 && values[i] == "")  //do not allow blank lines, except for selected alias				
 			{
 				//rewind
 				--i;

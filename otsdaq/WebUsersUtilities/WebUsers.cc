@@ -1311,7 +1311,7 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, b
 				remoteLoginVerificationPort_ << ". Please check remote settings." << __E__;
 			__SS_THROW__;
 		}
-		__COUT_INFO__ << "Instantiating Remote Gateway login verifification socket! Validation requests will go to " << 
+		__COUT_INFO__ << "Instantiating Remote Gateway login verification socket! Validation requests will go to " << 
 			remoteLoginVerificationIP_ << ":" << remoteLoginVerificationPort_ << __E__;						
 		
 		remoteLoginVerificationSocket_ = std::make_unique<TransceiverSocket>(remoteLoginVerificationIP_);
