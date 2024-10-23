@@ -135,7 +135,7 @@ class WorkLoopManager;
 
 		static xoap::MessageReference 	lastTableGroupRequestHandler					(const SOAPParameters& parameters);
 		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr);
-		static void 					launchStartOneServerCommand						(const std::string& command, ConfigurationManager* cfgMgr, std::string& contextName);
+		static void 					launchStartOneServerCommand						(const std::string& command, ConfigurationManager* cfgMgr, const std::string& contextName);
 
 		static void 					indicateOtsAlive								(const CorePropertySupervisorBase* properties = 0);
 		xoap::MessageReference 			TRACESupervisorRequest							(xoap::MessageReference message);
@@ -352,7 +352,9 @@ public:	//used by remote subsystem control and status
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
 
+			std::string							fullName;
 			std::string 						user_data_path_record; //used for remote gateway subapp control
+			std::string							setupType, instancePath, instanceHost, instanceUser; //used for remote ots instance ssh launch
 
 			std::string 						selected_config_alias; //used for remote gateway subapp control
 			std::set<std::string> 				config_aliases; //used for remote gateway subapp control

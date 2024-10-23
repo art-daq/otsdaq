@@ -11,12 +11,13 @@ cet_script(ALWAYS_COPY
     common.sh 
     EclipseBuild.sh 
     ots 
+    ots_remote_start 
+    ots_remote_instance_start 
     otsdaq_add_artdaq_tables 
     otsdaq_beautify_artdaq_tables 
     otsdaq_convert_artdaq_daq_tables 
     otsdaq_convert_config_to_table 
     otsweb_login.sh 
-    ots_remote_start 
     redmine_login.sh 
     reset_ots_snapshot.sh 
     StartOTS.sh 

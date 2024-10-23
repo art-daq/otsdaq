@@ -379,6 +379,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 								std::string remoteURL = icon.windowContentURL_;
 								std::string remoteLandingPage = "";
+								std::string remoteSetupType = "";
 								//remote ? parameters from remoteURL
 								if(remoteURL.find('?') != std::string::npos)
 								{
@@ -408,6 +409,13 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 													__COUT__ << "Found landing page " << remoteLandingPage << 
 														" for " << icon.recordUID_ << __E__;
 												}
+												if(parameterPairSplit[0] == "SetupType")
+												{
+													remoteSetupType = StringMacros::decodeURIComponent(parameterPairSplit[1]);
+
+													__COUT__ << "Found setup_ots.sh type " << remoteSetupType << 
+														" for " << icon.recordUID_ << __E__;
+												}
 											}
 										}
 									}
@@ -423,7 +431,21 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 								thisInfo.user_data_path_record = icon.alternateText_;
 								thisInfo.parentIconFolderPath = icon.folderPath_;		
-								thisInfo.landingPage = remoteLandingPage;								
+								thisInfo.landingPage = remoteLandingPage;		
+								thisInfo.setupType = remoteSetupType;
+
+								try
+								{																		
+									tmpCfgMgr.getOtherSubsystemInstanceInfo(thisInfo.user_data_path_record,
+										&thisInfo.instancePath,
+										&thisInfo.instanceHost,
+										&thisInfo.instanceUser,
+										&thisInfo.fullName
+									);
+								}
+								catch(...) {;} //ignore any errors getting full name and instance info
+								
+												
 
 								//replace or add to local copy of supervisor remote gateway list (control info will be protected later, after status update, with final copy to real list)
 								bool found = false;
@@ -439,6 +461,12 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										remoteApps[i].user_data_path_record = thisInfo.user_data_path_record;
 										remoteApps[i].parentIconFolderPath = thisInfo.parentIconFolderPath;
 										remoteApps[i].landingPage = thisInfo.landingPage;
+										remoteApps[i].setupType = thisInfo.setupType;
+										remoteApps[i].fullName = thisInfo.fullName;
+										remoteApps[i].instancePath = thisInfo.instancePath;
+										remoteApps[i].instanceHost = thisInfo.instanceHost;
+										remoteApps[i].instanceUser = thisInfo.instanceUser;
+
 										break;
 									}
 								}
@@ -649,7 +677,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						if(commandingRemoteGatewayApps && allAppsAreIdle)
 						{
 							++commandRemoteIdleCount;
-							if(commandRemoteIdleCount >= 2)
+							if(commandRemoteIdleCount >= 3)
 							{
 								__COUTT__ << "Back to idle statusing" << __E__;
 								commandingRemoteGatewayApps = false;
@@ -695,6 +723,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										theSupervisor->remoteGatewayApps_[i].iconString = remoteGatewayApp.iconString;	
 										theSupervisor->remoteGatewayApps_[i].parentIconFolderPath = remoteGatewayApp.parentIconFolderPath;	
 										theSupervisor->remoteGatewayApps_[i].landingPage = remoteGatewayApp.landingPage;	
+										theSupervisor->remoteGatewayApps_[i].setupType = remoteGatewayApp.setupType;	
+										theSupervisor->remoteGatewayApps_[i].fullName = remoteGatewayApp.fullName;	
+										theSupervisor->remoteGatewayApps_[i].instancePath = remoteGatewayApp.instancePath;	
+										theSupervisor->remoteGatewayApps_[i].instanceHost = remoteGatewayApp.instanceHost;
+										theSupervisor->remoteGatewayApps_[i].instanceUser = remoteGatewayApp.instanceUser;
 										
 										//fix config_aliases and selected_config_alias
 										theSupervisor->remoteGatewayApps_[i].config_aliases = remoteGatewayApp.config_aliases;										
@@ -785,30 +818,28 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 				SOAPParameters appPointer;
 				appPointer.addParameter("ApplicationPointer");
 
-				xoap::MessageReference tempMessage = SOAPUtilities::makeSOAPMessageReference("ApplicationStatusRequest");
-				// print tempMessage
-				//				__COUT__ << "tempMessage... " <<
-				// SOAPUtilities::translate(tempMessage)
-				//				         << std::endl;
+				xoap::MessageReference tempMessage = SOAPUtilities::makeSOAPMessageReference("ApplicationStatusRequest");				
+				__COUT_TYPE__(TLVL_DEBUG+39) << __COUT_HDR__ << "tempMessage... " << SOAPUtilities::translate(tempMessage) << std::endl;
 
 				try
 				{
 					xoap::MessageReference statusMessage = theSupervisor->sendWithSOAPReply(appInfo.getDescriptor(), tempMessage);
 
-					// if("ContextARTDAQ" == appInfo.getContextName() )
-					// 	__COUT__ << " Supervisor instance = '" << appName
-					// 			<< "' [LID=" << appInfo.getId() << "] in Context '"
-					// 			<< appInfo.getContextName() << " statusMessage... "
-					// 			<<
-					// 			SOAPUtilities::translate(statusMessage)
-					// 		<<  std::endl;
-					// else
-					// 	__COUT__ << " Supervisor instance = '" << appName
-					// 			<< "' [LID=" << appInfo.getId() << "] in Context '"
-					// 			<< appInfo.getContextName() << " statusMessage... "
-					// 			<<
-					// 			SOAPUtilities::translate(statusMessage)
-					// 		<<  std::endl;
+
+					if("ContextARTDAQ" == appInfo.getContextName())
+						__COUT_TYPE__(TLVL_DEBUG+41) << __COUT_HDR__ << " Supervisor instance = '" << appName
+								<< "' [LID=" << appInfo.getId() << "] in Context '"
+								<< appInfo.getContextName() << " statusMessage... "
+								<<
+								SOAPUtilities::translate(statusMessage)
+							<<  std::endl;
+					else
+						__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << " Supervisor instance = '" << appName
+								<< "' [LID=" << appInfo.getId() << "] in Context '"
+								<< appInfo.getContextName() << " statusMessage... "
+								<<
+								SOAPUtilities::translate(statusMessage)
+							<<  std::endl;
 
 					SOAPParameters parameters;
 					parameters.addParameter("Status");
@@ -825,17 +856,13 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					if(progress.empty())
 						progress = "100";
 
-					// if("ContextARTDAQ" == appInfo.getContextName() )
-					// 	__COUTV__(progress);
-
 					detail = parameters.getValue("Detail");
 					if(appInfo.isTypeConsoleSupervisor())
 					{
 						//parse detail 
 
-
 						//Note: do not printout detail, because custom counts will fire recursively
-						//__COUTTV__(detail);
+						//std::cout << __COUT_HDR__ << (detail);
 
 						//Console Supervisor status detatil format is (from otsdaq-utilities/otsdaq-utilities/Console/ConsoleSupervisor.cc:1722):
 						//	uptime, Err count, Warn count, Last Error msg, Last Warn msg
@@ -1008,8 +1035,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 				}
 			}  // end with non-gateway status request handling
 
-			//					__COUTV__(status);
-			//					__COUTV__(progress);
+			__COUTVS__(38,status);
+			__COUTVS__(38,progress);
 
 			// set status and progress
 			// convert the progress string into an integer in order to call
@@ -1017,8 +1044,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 			std::istringstream ssProgress(progress);
 			ssProgress >> progressInteger;
 
-			// if("ContextARTDAQ" == appInfo.getContextName() )
-			// 	__COUTV__(progressInteger);
+			if("ContextARTDAQ" == appInfo.getContextName())
+				__COUTVS__(41,progressInteger);
+			else
+				__COUTVS__(40,progressInteger);
 
 			theSupervisor->allSupervisorInfo_.setSupervisorStatus(appInfo, status, progressInteger, detail, subapps);
 
@@ -1034,7 +1063,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 }  // end AppStatusWorkLoop()
 
 //==============================================================================
-// SendRemoteGatewayCommand
+// GetRemoteGatewayIcons
 //	static function
 void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, 
 	const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */ remoteGatewaySocket)
@@ -1100,7 +1129,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 			
 		} //end append remote icons
 
-	}  //end SendRemoteGatewayCommand()
+	}  //end GetRemoteGatewayIcons()
 	catch(const std::runtime_error& e)
 	{
 		__SS__ << "Failure gathering Remote Gateway desktop icons with command '" << command
@@ -1108,7 +1137,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 		__COUT_ERR__ << ss.str();	
 		remoteGatewayApp.error = ss.str();
 		return;
-	}  //end SendRemoteGatewayCommand() catch
+	}  //end GetRemoteGatewayIcons() catch
 
 	__COUTV__(iconString);
 	remoteGatewayApp.iconString = iconString;
@@ -1136,6 +1165,12 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 			command = remoteGatewayApp.fsmName + "," + remoteGatewayApp.command;
 					
 		remoteGatewayApp.command = "Sent"; //Mark that send is being attempted
+		if(tmpCommand == "Reboot") //do nothing for reboot command
+		{
+			__COUT__ << "Reboot command handled by ots script command." << __E__;
+			sleep(5);
+			return;
+		}
 
 		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
 		__COUTTV__(StringMacros::vectorToString(parsedFields));
@@ -1242,8 +1277,27 @@ try
 			} //end found Remote Gateway status
 			else //found remote subapp
 			{
+				//get remote subapp class name
 				remoteGatewayApp.subapps[name].class_name = value;
 				__COUTTV__(value);
+
+				//get remote subapp status
+				value = StringMacros::extractXmlField(remoteStatusString, "status", 0, after);
+				__COUTTV__(value);
+				remoteGatewayApp.subapps[name].status = value;
+
+				value = StringMacros::extractXmlField(remoteStatusString, "progress", 0, after);
+				__COUTTV__(value);
+				remoteGatewayApp.subapps[name].progress = atoi(value.c_str());
+
+				value = StringMacros::extractXmlField(remoteStatusString, "detail", 0, after);
+				__COUTTV__(value);
+				remoteGatewayApp.subapps[name].detail = StringMacros::decodeURIComponent(value);
+
+				value = StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
+				__COUTTV__(value);
+				remoteGatewayApp.subapps[name].lastStatusTime = atoi(value.c_str());
+
 			}
 		} //end primary loop
 
@@ -1364,7 +1418,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 					{
 						const auto& appInfo = it.second;
-						if(remoteGatewayStatus && appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+						if(0 && //always return full status
+								remoteGatewayStatus && appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
 							continue; //only return Gateway status
 
 						xmlOut.addTextElementToData("name",
@@ -4903,7 +4958,8 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 void GatewaySupervisor::setSupervisorPropertyDefaults()
 {
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
-	                                                  std::string() + "*=1 | gatewayLaunchOTS=-1 | gatewayLaunchWiz=-1");
+	                                                  std::string() + "*=1 | gatewayLaunchOTS=-1 | gatewayLaunchWiz=-1"
+													  " | gatewayLaunchOTSInstance");
 
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AllowNoLoginRequestTypes,
 	                                                  "getCurrentState "
@@ -4923,7 +4979,8 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 	                                                  "getSystemMessages | getCurrentState | getIterationPlanStatus"
 	                                                  " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
-	                                                  "gatewayLaunchOTS | gatewayLaunchWiz | commandRemoteSubsystem");
+	                                                  "gatewayLaunchOTS | gatewayLaunchWiz | gatewayLaunchOTSInstance"
+													  " | commandRemoteSubsystem");
 	//	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.NeedUsernameRequestTypes,
 	//			"StateMachine*"); //for all stateMachineXgiHandler requests
 
@@ -4998,6 +5055,7 @@ try
 
 	// gatewayLaunchOTS
 	// gatewayLaunchWiz
+	// gatewayLaunchOTSInstance
 
 	if(0)  // leave for debugging
 	{
@@ -5361,6 +5419,19 @@ try
 			{
 				xmlOut.addTextElementToData("ContextMember", context.contextUID_);  // get context member name
 			}
+
+			//Also add Remote Subystems and consider them Context Member Names!
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteGatewayApps = remoteGatewayApps_;
+			}
+
+			for(const auto& remoteGatewayApp : remoteGatewayApps)
+			{				
+				xmlOut.addTextElementToData("RemoteGateway", "Remote-" +
+					remoteGatewayApp.appInfo.url); 
+			} //end remote subsystem loop
 		}
 		else if(requestType == "getSystemMessages")
 		{
@@ -5406,8 +5477,6 @@ try
 		}
 		else if(requestType == "getStateMachine")
 		{
-			// __COUT__ << "Getting state machine" << __E__;
-
 			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");
 			__SUP_COUTVS__(20,fsmName);
 
@@ -5420,16 +5489,12 @@ try
 			std::string transName;
 			std::string transParameter;
 
-			// bool addRun, addCfg;
 			for(unsigned int i = 0; i < states.size(); ++i)  // get all states
 			{
 				stateStr[0]             = states[i];
 				DOMElement* stateParent = xmlOut.addTextElementToData("state", stateStr);
 
 				xmlOut.addTextElementToParent("state_name", theStateMachine_.getStateName(states[i]), stateParent);
-
-				//__COUT__ << "state: " << states[i] << " - " <<
-				// theStateMachine_.getStateName(states[i]) << __E__;
 
 				// get all transition final states, transitionNames and actionNames from
 				// state
@@ -5439,11 +5504,8 @@ try
 				std::map<std::string, toolbox::fsm::State, std::less<std::string>>::iterator it  = trans.begin();
 				std::set<std::string>::iterator                                              ait = actionNames.begin();
 
-				//			addRun = false;
-				//			addCfg = false;
-
 				// handle hacky way to keep "forward" moving states on right of FSM
-				// display  must be first!
+				// display.. must be first!
 
 				for(; it != trans.end() && ait != actionNames.end(); ++it, ++ait)
 				{
@@ -5451,53 +5513,33 @@ try
 
 					if(stateStr[0] == 'R')
 					{
-						// addRun = true;
 						xmlOut.addTextElementToParent("state_transition", stateStr, stateParent);
-
-						//__COUT__ << states[i] << " => " << *ait << __E__;
-
 						xmlOut.addTextElementToParent("state_transition_action", *ait, stateParent);
-
 						transName = theStateMachine_.getTransitionName(states[i], *ait);
-						//__COUT__ << states[i] << " => " << transName << __E__;
-
 						xmlOut.addTextElementToParent("state_transition_name", transName, stateParent);
 						transParameter = theStateMachine_.getTransitionParameter(states[i], *ait);
-						//__COUT__ << states[i] << " => " << transParameter<< __E__;
-
 						xmlOut.addTextElementToParent("state_transition_parameter", transParameter, stateParent);
 						break;
 					}
 					else if(stateStr[0] == 'C')
 					{
-						// addCfg = true;
 						xmlOut.addTextElementToParent("state_transition", stateStr, stateParent);
-
-						//__COUT__ << states[i] << " => " << *ait << __E__;
-
 						xmlOut.addTextElementToParent("state_transition_action", *ait, stateParent);
-
 						transName = theStateMachine_.getTransitionName(states[i], *ait);
-						//__COUT__ << states[i] << " => " << transName << __E__;
-
 						xmlOut.addTextElementToParent("state_transition_name", transName, stateParent);
 						transParameter = theStateMachine_.getTransitionParameter(states[i], *ait);
-						//__COUT__ << states[i] << " => " << transParameter<< __E__;
-
 						xmlOut.addTextElementToParent("state_transition_parameter", transParameter, stateParent);
 						break;
 					}
 				}
 
-				// reset for 2nd pass
+				// reset for 2nd pass (on left of FSM display)
 				it  = trans.begin();
 				ait = actionNames.begin();
 
 				// other states
 				for(; it != trans.end() && ait != actionNames.end(); ++it, ++ait)
 				{
-					//__COUT__ << states[i] << " => " << it->second << __E__;
-
 					stateStr[0] = it->second;
 
 					if(stateStr[0] == 'R')
@@ -5506,18 +5548,10 @@ try
 						continue;
 
 					xmlOut.addTextElementToParent("state_transition", stateStr, stateParent);
-
-					//__COUT__ << states[i] << " => " << *ait << __E__;
-
 					xmlOut.addTextElementToParent("state_transition_action", *ait, stateParent);
-
 					transName = theStateMachine_.getTransitionName(states[i], *ait);
-					//__COUT__ << states[i] << " => " << transName << __E__;
-
 					xmlOut.addTextElementToParent("state_transition_name", transName, stateParent);
 					transParameter = theStateMachine_.getTransitionParameter(states[i], *ait);
-					//__COUT__ << states[i] << " => " << transParameter<< __E__;
-
 					xmlOut.addTextElementToParent("state_transition_parameter", transParameter, stateParent);
 				}
 			} //end state traversal loop
@@ -5588,7 +5622,7 @@ try
 			//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
 
 
-			//__COUTV__((unsigned int)userInfo.permissionLevel_);
+			__COUTVS__(20,(unsigned int)userInfo.permissionLevel_);
 
 			std::map<std::string, WebUsers::permissionLevel_t> userPermissionLevelsMap = theWebUsers_.getPermissionsForUser(userInfo.uid_);
 			std::map<std::string, WebUsers::permissionLevel_t> iconPermissionThresholdsMap;
@@ -5599,15 +5633,15 @@ try
 			bool firstIcon = true;
 			for(const auto& icon : icons)
 			{
-				//__COUTV__(icon.caption_);
-				//__COUTV__(icon.permissionThresholdString_);
+				__COUTVS__(21,icon.caption_);
+				__COUTVS__(21,icon.permissionThresholdString_);
 
 				CorePropertySupervisorBase::extractPermissionsMapFromString(icon.permissionThresholdString_, iconPermissionThresholdsMap);
 
 				if(!CorePropertySupervisorBase::doPermissionsGrantAccess(userPermissionLevelsMap, iconPermissionThresholdsMap))
 					continue;  // skip icon if no access
 
-				//__COUTV__(icon.caption_);
+				__COUTVS__(21,icon.caption_);
 
 				if(getRemoteIcons)
 				{
@@ -5619,74 +5653,6 @@ try
 						icon.windowContentURL_[3] == ':')
 					{
 						continue; //skip retrieval and use cache!
-
-						__COUT__ << "Retrieving remote icons at " << icon.windowContentURL_ << __E__;
-
-						std::vector<std::string> parsedFields = StringMacros::getVectorFromString(icon.windowContentURL_,{':'});
-						__COUTV__(StringMacros::vectorToString(parsedFields));
-
-						if(parsedFields.size() == 3)
-						{
-							__COUT__ << "Opening socket to " << parsedFields[1] << ":" << parsedFields[2] << __E__;
-
-							Socket iconRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));
-
-							if(ipAddressForRemoteIconsOverUDP == "")
-							{
-								ConfigurationTree configLinkNode = this->CorePropertySupervisorBase::getSupervisorTableNode();
-								ipAddressForRemoteIconsOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
-								__COUTV__(ipAddressForRemoteIconsOverUDP);
-							}
-							try
-							{
-								TransceiverSocket iconSocket(ipAddressForRemoteIconsOverUDP, 0);
-								iconSocket.initialize();
-								std::string remoteIconString = iconSocket.sendAndReceive(iconRemoteSocket,"GetRemoteDesktopIcons", 10 /*timeoutSeconds*/);
-								__COUTV__(remoteIconString);
-
-								//now have remote icon string, append icons to list
-								std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString, {','});
-								const size_t numOfIconFields = 7;
-								for(size_t i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
-								{
-
-									if(firstIcon)
-										firstIcon = false;
-									else
-										iconString += ",";					
-
-									__COUTV__(remoteIconsCSV[i+0]);
-									if(icon.folderPath_ == "") //if not in folder, distinguish remote icon somehow
-										iconString += icon.alternateText_ + " " + remoteIconsCSV[i+0]; //icon.caption_;
-									else
-										iconString += remoteIconsCSV[i+0]; //icon.caption_;
-									iconString += "," + remoteIconsCSV[i+1]; //icon.alternateText_;
-									iconString += "," + remoteIconsCSV[i+2]; //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
-									iconString += "," + std::string("1");  // set permission to 1 so the
-																		// desktop shows every icon that the
-																		// server allows (i.e., trust server
-																		// security, ignore client security)
-									iconString += "," + remoteIconsCSV[i+4]; //icon.imageURL_;
-									iconString += "," + remoteIconsCSV[i+5]; //icon.windowContentURL_;
-									
-									iconString += "," + icon.folderPath_ + "/" + remoteIconsCSV[i+6]; //icon.folderPath_;
-									
-								} //end append remote icons
-
-							}
-							catch(const std::runtime_error& e)
-							{
-								__SS__ << "Failure getting Remote Desktop Icons for record '" << icon.recordUID_ << "' from ots:host:port url=" << icon.windowContentURL_ << 
-									". Please check the Remote Gateway App status, perhaps the Remote Gateway App is down. \n\nHere was the error:\n" << e.what();
-								
-								//add error for notification, but try to ignore so rest of system works
-								__COUT_ERR__ << "\n" << ss.str();
-								xmlOut.addTextElementToData("Error", ss.str());
-								// __SS_THROW__;  
-							}
-
-							continue;
-						}
 					}
 				} //end remote icon handling
 
@@ -5708,7 +5674,7 @@ try
 				iconString += "," + icon.windowContentURL_;
 				iconString += "," + icon.folderPath_;
 			}
-			// //__COUTV__(iconString);
+			__COUTVS__(23,iconString);
 
 			//also return remote gateway icons
 			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
@@ -5983,6 +5949,7 @@ try
 		else if(requestType == "getSubsystemConfigAliasSelectInfo")
 		{
 			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");	
+			__SUP_COUTV__(targetSubsystem);
 			//return info on selected_config_alias
 			
 			bool found = false;
@@ -6109,7 +6076,55 @@ try
 			if(requestType == "gatewayLaunchOTS")
 				GatewaySupervisor::launchStartOTSCommand("LAUNCH_OTS", CorePropertySupervisorBase::theConfigurationManager_);
 			else if(requestType == "gatewayLaunchWiz")
-				GatewaySupervisor::launchStartOTSCommand("LAUNCH_WIZ", CorePropertySupervisorBase::theConfigurationManager_);
+				GatewaySupervisor::launchStartOneServerCommand("LAUNCH_WIZ", CorePropertySupervisorBase::theConfigurationManager_, 
+					getContextUID());
+		}
+		else if(requestType == "gatewayLaunchOTSInstance")
+		{
+			__COUT_WARN__ << requestType << " requestType received! " << __E__;
+
+			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");	
+			__SUP_COUTV__(targetSubsystem);
+			//launch Target Subsystem's remote ots instance
+			
+			bool found = false;
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			for(auto& remoteGatewayApp : remoteGatewayApps_)
+				if(targetSubsystem == remoteGatewayApp.appInfo.name)
+				{
+					found = true;
+
+					std::stringstream commandSs;
+					commandSs << "LAUNCH_INSTANCE";
+					commandSs << ";" << remoteGatewayApp.instanceUser;
+					commandSs << ";" << remoteGatewayApp.instanceHost;
+					//assume ots path is parent of USER_DATA
+					size_t i = remoteGatewayApp.instancePath.rfind('/');
+					if(i != std::string::npos)
+						commandSs << ";" << remoteGatewayApp.instancePath.substr(0,i);
+					else
+						commandSs << ";" << remoteGatewayApp.instancePath;
+					commandSs << ";" << "Normal";
+					commandSs << ";" << remoteGatewayApp.setupType;
+					__SUP_COUTV__(commandSs.str());
+
+					GatewaySupervisor::launchStartOneServerCommand(
+						commandSs.str(),
+						//"LAUNCH_INSTANCE;mu2ehwdev;mu2e-cfo-01.fnal.gov;/home/mu2ehwdev/ots_spack_fast;Normal;shift1",
+						CorePropertySupervisorBase::theConfigurationManager_, getContextUID());
+					
+					//force status for immediate user feedback
+					remoteGatewayApp.command = "Reboot"; //use command process for getting updated status
+					remoteGatewayApp.appInfo.status = "Rebooting... ";
+					remoteGatewayApp.appInfo.progress = 1;
+				}
+
+			if(!found)
+			{
+				__SUP_SS__ << "Did not find any matching subsystems for target '" << targetSubsystem << 
+							"' attempted!" << __E__;
+				__SUP_SS_THROW__;
+			}
 		}
 		else if(requestType == "resetUserTooltips")
 		{
@@ -6502,7 +6517,8 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 // launchStartOneServerCommand
 //	static function (so WizardSupervisor can use it)
 //	throws exception if command fails to start a server
-void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, ConfigurationManager* cfgMgr, std::string& contextName)
+// Note: to get the Gateway's Context name: getContextUID()
+void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, ConfigurationManager* cfgMgr, const std::string& contextName)
 {
 	__COUT__ << "launch ots script Command = " << command << __E__;
 	__COUT__ << "Extracting target context hostname... " << __E__;
@@ -6576,7 +6592,6 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, 
 		__SS_THROW__;
 	}
 }  // end launchStartOneServerCommand
-
 
 //==============================================================================
 // launchStartOTSCommand
