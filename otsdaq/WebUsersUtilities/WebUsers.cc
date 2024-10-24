@@ -1340,6 +1340,7 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, b
 		(refresh?"1":"0") + "," + ip;
 
 	__COUTV__(request);
+	std::cout << StringMacros::stackTrace() << __E__;
 	
 	std::string requestResponseString = remoteLoginVerificationSocket_->sendAndReceive(*remoteLoginVerificationSocketTarget_, request, 10 /*timeoutSeconds*/);
 	__COUTV__(requestResponseString);
