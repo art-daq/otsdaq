@@ -1551,7 +1551,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					std::string cookieCode = rxParams[1];
 					if(!theWebUsers_.cookieCodeIsActiveForRequest(
 						cookieCode /*cookieCode*/, &userGroupPermissionsMap, &uid /*uid is not given to remote users*/, 
-						rxParams[3] /*ip*/, rxParams[2] /*refresh*/ == "1", &userWithLock, &userSessionIndex))
+						rxParams[3] /*ip*/, rxParams[2] /*refresh*/ == "1", false /* doNotGoRemote */, &userWithLock, &userSessionIndex))
 					{
 						__COUT_ERR__ << "Remote login failed!" << __E__;
 						sock.acknowledge("0", false /* verbose */);
@@ -4901,7 +4901,7 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 		uint64_t    uid;
 
 		if(!theWebUsers_.cookieCodeIsActiveForRequest(cookieCode, 0 /*userPermissions*/, 
-			&uid, "0" /*dummy ip*/, false /*refresh*/))
+			&uid, "0" /*dummy ip*/, false /*refresh*/, true /*doNotGoRemote*/))
 		{
 			*out << cookieCode;
 			return;
@@ -5021,6 +5021,7 @@ try
 	cgicc::Cgicc cgiIn(in);
 
 	std::string requestType = CgiDataUtilities::getData(cgiIn, "RequestType");
+	__COUTVS__(40,requestType);
 
 	HttpXmlDocument           xmlOut;
 	WebUsers::RequestUserInfo userInfo(requestType, CgiDataUtilities::postData(cgiIn, "CookieCode"));
@@ -5075,9 +5076,7 @@ try
 		ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
 
 		__COUT__ << "requestType " << requestType << " v" << (fsmLinkNode.getTableVersion()) << __E__;
-	}
-	else
-		__COUTVS__(40,requestType);
+	}		
 
 	try
 	{
@@ -6715,7 +6714,7 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(xoap::MessageRef
 	uint64_t                                                         uid, userSessionIndex;
 	theWebUsers_.cookieCodeIsActiveForRequest(
 	    cookieCode, &userGroupPermissionsMap, &uid /*uid is not given to remote users*/,
-		ipAddress, refreshOption == "1", &userWithLock, &userSessionIndex);
+		ipAddress, refreshOption == "1", false /* doNotGoRemote */, &userWithLock, &userSessionIndex);
 
 	__COUTTV__(userWithLock);
 
