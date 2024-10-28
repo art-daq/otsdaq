@@ -556,47 +556,6 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 					} //end periodic Remote Gateway refresh
 
-					//if possible, get remote icon list for desktop from each remote app
-					if(resetRemoteGatewayApps)
-					{
-						__COUT_TYPE__(TLVL_DEBUG+35) << __COUT_HDR__ << "Attempting to get Remote Desktop Icons..." << __E__; 
-						
-						for(auto& remoteGatewayApp : remoteApps)
-						{
-							if(remoteGatewayApp.command != "") continue; //skip if command to be sent
-
-					
-							//clear any previous icon error
-							if(remoteGatewayApp.error.find("desktop icons") != std::string::npos)
-							{
-								__COUTV__(remoteGatewayApp.error);
-								//lock for remainder of scope
-								std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
-								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
-									{
-										theSupervisor->remoteGatewayApps_[i].error = ""; 		
-										__COUTV__(theSupervisor->remoteGatewayApps_[i].error);											
-										break;
-									}
-							}
-
-							GatewaySupervisor::GetRemoteGatewayIcons(remoteGatewayApp, remoteGatewaySocket);
-							if(remoteGatewayApp.error != "")//give feedback immediately to user!!
-							{
-								__COUTV__(remoteGatewayApp.error);
-								//lock for remainder of scope
-								std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
-								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
-									{
-										theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 					
-										break;
-									}
-							}
-						}
-
-					} //end remote desktop icon gathering
 
 					//for each remote gateway, request app status with "GetRemoteAppStatus"	
 					if(loopCount % 3 == 0 || resetRemoteGatewayApps || //a little less frequently
@@ -686,7 +645,62 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 
 						__COUT_TYPE__(TLVL_DEBUG+38) << __COUT_HDR__ << "commandRemoteIdleCount " << commandRemoteIdleCount << " " << allAppsAreIdle << " " << commandingRemoteGatewayApps << __E__;
+						
+					} //end remote app status update
 
+					//if possible, get remote icon list for desktop from each remote app
+					if(resetRemoteGatewayApps)
+					{
+						__COUT_TYPE__(TLVL_DEBUG+35) << __COUT_HDR__ << "Attempting to get Remote Desktop Icons... size=" << remoteApps.size() << __E__; 
+						
+						for(auto& remoteGatewayApp : remoteApps)
+						{
+							__COUTVS__(35,remoteGatewayApp.appInfo.name);
+							__COUTVS__(35,remoteGatewayApp.command);
+							if(remoteGatewayApp.command != "") continue; //skip if command to be sent
+
+							__COUT_TYPE__(TLVL_DEBUG+14) << __COUT_HDR__ << remoteGatewayApp.appInfo.name << ": " 
+								<< remoteGatewayApp.appInfo.status << __E__;
+							if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN) continue; //skip if no status yet
+
+					
+							//clear any previous icon error
+							if(remoteGatewayApp.error.find("desktop icons") != std::string::npos)
+							{
+								__COUTV__(remoteGatewayApp.error);
+								//lock for remainder of scope
+								std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
+								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
+									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+									{
+										theSupervisor->remoteGatewayApps_[i].error = ""; 		
+										__COUTV__(theSupervisor->remoteGatewayApps_[i].error);											
+										break;
+									}
+							}
+
+							GatewaySupervisor::GetRemoteGatewayIcons(remoteGatewayApp, remoteGatewaySocket);
+							if(remoteGatewayApp.error != "")//give feedback immediately to user!!
+							{
+								__COUTV__(remoteGatewayApp.error);
+								//lock for remainder of scope
+								std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
+								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
+									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+									{
+										theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 					
+										break;
+									}
+							}
+						}
+
+					} //end remote desktop icon gathering
+
+
+					//for each remote gateway, copy info to Gateway supervisor remote gateway structure
+					if(loopCount % 3 == 0 || resetRemoteGatewayApps || //a little less frequently
+						commandingRemoteGatewayApps)
+					{
 						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(37,theSupervisor->remoteGatewayApps_[0].error);
 
 						//replace info in supervisor remote gateway list
@@ -776,7 +790,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 
 						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(38,theSupervisor->remoteGatewayApps_[0].error);
-					} //end remote app status update
+					}
 
 					//copy to subapps for display of primary Gateway
 					{
@@ -857,13 +871,13 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					if(progress.empty())
 						progress = "100";
 
-					detail = parameters.getValue("Detail");
+					detail = parameters.getValue("Detail");					
 					if(appInfo.isTypeConsoleSupervisor())
 					{
 						//parse detail 
 
 						//Note: do not printout detail, because custom counts will fire recursively
-						//std::cout << __COUT_HDR__ << (detail);
+						// std::cout << __COUT_HDR__ << (detail);
 
 						//Console Supervisor status detatil format is (from otsdaq-utilities/otsdaq-utilities/Console/ConsoleSupervisor.cc:1722):
 						//	uptime, Err count, Warn count, Last Error msg, Last Warn msg
@@ -1236,7 +1250,7 @@ try
 				"," + std::to_string(portForReverseLoginOverUDP);
 		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "requestString = " << requestString << __E__;	
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket,
-			requestString, 10 /*timeoutSeconds*/);
+			requestString, 2 /*timeoutSeconds*/);
 		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "remoteStatusString = " << remoteStatusString << __E__;	
 
 		std::string value, name;
@@ -1263,7 +1277,7 @@ try
 
 				value = StringMacros::extractXmlField(remoteStatusString, "detail", 0, after);
 				__COUTTV__(value);
-				remoteGatewayApp.appInfo.detail = StringMacros::decodeURIComponent(value);
+				remoteGatewayApp.appInfo.detail = value; //StringMacros::decodeURIComponent(value);
 
 				value = StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
 				__COUTTV__(value);
@@ -1295,7 +1309,7 @@ try
 
 				value = StringMacros::extractXmlField(remoteStatusString, "detail", 0, after);
 				__COUTTV__(value);
-				remoteGatewayApp.subapps[name].detail = StringMacros::decodeURIComponent(value);
+				remoteGatewayApp.subapps[name].detail = value; //StringMacros::decodeURIComponent(value);
 
 				value = StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
 				__COUTTV__(value);
@@ -2125,8 +2139,12 @@ try
 	//FSM name validated
 
 	if(logEntry != "")
+	{		
+		logEntry += " (" + StringMacros::getTimestampString(time(0)) + ")";
+
 		makeSystemLogEntry("Attempting FSM command '" + command + "' from state '" + 
 			currentState + "' with user log entry: " + logEntry);
+	}
 
 	setLastLogEntry(command,logEntry);
 
@@ -2465,6 +2483,9 @@ try
 			__COUTV__(runNumber);		 
 			setNextRunNumber(runNumber + 1);
 		}
+
+		setLastLogEntry(command,"Run #" + std::to_string(runNumber) + 
+			": " + logEntry);
 		parameters.addParameter("RunNumber", runNumber);
 	} //end Start transition
 	else if(!(command == RunControlStateMachine::HALT_TRANSITION_NAME || 
@@ -4557,6 +4578,8 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 {
 	std::string command = SOAPUtilities::translate(message).getCommand();
 	__COUTV__(command);
+	std::string destinationState = theStateMachine_.getTransitionFinalStateName(command);
+	__COUTV__(destinationState);
 
 	bool done = command == "Error"; //dont check for done if Error'ing
 	while(!done)
@@ -4587,7 +4610,8 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 			//if here, was commanded, so check status
 
 			if(!(				
-				remoteGatewayApp.appInfo.progress == 100 || 
+				(remoteGatewayApp.appInfo.status == destinationState &&
+					remoteGatewayApp.appInfo.progress == 100) || 
 				remoteGatewayApp.appInfo.status.find("Error") != std::string::npos ||
 				remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos				
 				))
@@ -5481,8 +5505,28 @@ try
 			std::string transition  = CgiDataUtilities::getData(cgiIn, "transition");
 			__SUP_COUTV__(fsmName);
 			__SUP_COUTV__(transition);
-			xmlOut.addTextElementToData("lastLogEntry",
-				getLastLogEntry(transition,fsmName));
+
+			//remove appended date and, for start, remove prepended run #
+			std::string lastLog = getLastLogEntry(transition,fsmName);
+			__SUP_COUTTV__(lastLog);
+			size_t i = lastLog.rfind('(');
+			if(i != std::string::npos && i > 1) //remove appended date
+			{
+				lastLog = lastLog.substr(0,i-1);
+				__SUP_COUTTV__(lastLog);
+			}
+			
+			if(transition == RunControlStateMachine::START_TRANSITION_NAME)
+			{
+				i = lastLog.find(':');
+				if(i != std::string::npos && i+2 < lastLog.size()) //remove prepended run #
+				{
+					lastLog = lastLog.substr(i+2);
+					__SUP_COUTTV__(lastLog);
+				}
+			}
+			
+			xmlOut.addTextElementToData("lastLogEntry",lastLog);
 		}
 		else if(requestType == "getStateMachine")
 		{
@@ -6288,6 +6332,7 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 			else
 				sprintf(tmp, "Current %s Number: %s", stateMachineRunAlias.c_str(), 
 					activeStateMachineRunNumber_.c_str()); //%u //getNextRunNumber(activeStateMachineName_) - 1);
+			xmlOut.addTextElementToData("run_number", tmp);
 
 			if(RunControlStateMachine::asyncPauseExceptionReceived_)
 			{

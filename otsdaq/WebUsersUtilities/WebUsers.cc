@@ -1368,6 +1368,8 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode,
 	// 4: retParameters.addParameter("DisplayName", theWebUsers_.getUsersDisplayName(uid));	
 	// 5: retParameters.addParameter("UserSessionIndex", td::to_string(userSessionIndex)); 
 
+	__COUTTV__(rxParams[2]);	
+	__COUTTV__(usersUsernameWithLock_);	
 	if(rxParams[2] != "" && 
 		usersUsernameWithLock_ != rxParams[2])
 	{
