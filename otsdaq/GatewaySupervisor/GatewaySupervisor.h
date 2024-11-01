@@ -360,6 +360,8 @@ public:	//used by remote subsystem control and status
 			std::set<std::string> 				config_aliases; //used for remote gateway subapp control
 			std::string 						iconString, parentIconFolderPath, landingPage; //used for desktop icons
 
+			std::string							usernameWithLock;
+
 			enum class FSM_ModeTypes //FSM Modes: 'Follow FSM,' 'Do not Halt' (artdaq),  or 'Only Configure' (DCS/DQM)
 			{
 				Follow_FSM,

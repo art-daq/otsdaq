@@ -2492,22 +2492,29 @@ otsActionHandler() {
 					inst_mode=$param
 				elif [ $cnt == 5 ]; then
 					inst_type=$param
+				elif [ $cnt == 6 ]; then
+					inst_data=$param
 				fi
 				cnt=$(( $cnt + 1 ))				
 			done
 
-			if [ $cnt != 6 ]; then
-				error "Invalid parameters received, must be 6"
+			if [ $cnt != 7 ]; then
+				error "Invalid parameters received, must be 6 (received ${cnt})."
 			else
 				out "inst_user = $inst_user"
 				out "inst_host = $inst_host"
 				out "inst_path = $inst_path"
 				out "inst_mode = $inst_mode"
 				out "inst_type = $inst_type"
+				out "inst_data = $inst_data"
+
 
 				out "\tRemote launch of ots instance processes on host {${inst_host}}."
-				out "\t\tssh ${inst_host} SCRIPT_DIR/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type}" 
-				
+				out "\t\tssh ${inst_user}@${inst_host} SCRIPT_DIR/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type}" 
+
+				# first kill existing for immediate gratification to user (so not confused by existing instance status)
+				ssh -K ${inst_user}@${inst_host} "echo \"KILL_ALL\" > ${inst_data}/ServiceData/StartOTS_action_quit.cmd"
+
 				# launch ssh remote start (attempt twice)
 				ssh -K ${inst_user}@${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || ssh -K ${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || out "${Red}${REV} ***************** {${inst_host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
 			fi

@@ -732,6 +732,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										theSupervisor->remoteGatewayApps_[i].consoleErrCount = remoteGatewayApp.consoleErrCount;	
 										theSupervisor->remoteGatewayApps_[i].consoleWarnCount = remoteGatewayApp.consoleWarnCount;	
 
+										theSupervisor->remoteGatewayApps_[i].usernameWithLock = remoteGatewayApp.usernameWithLock;	
+
 										theSupervisor->remoteGatewayApps_[i].config_dump = remoteGatewayApp.config_dump;
 
 										theSupervisor->remoteGatewayApps_[i].user_data_path_record = remoteGatewayApp.user_data_path_record;
@@ -1283,14 +1285,6 @@ try
 				__COUTTV__(value);
 				remoteGatewayApp.appInfo.lastStatusTime = atoi(value.c_str());
 
-				value = StringMacros::extractXmlField(remoteStatusString, "console_err_count", 0, after);
-				__COUTTV__(value);				
-				remoteGatewayApp.consoleErrCount = atoi(value.c_str());
-
-				value = StringMacros::extractXmlField(remoteStatusString, "console_warn_count", 0, after);
-				__COUTTV__(value);
-				remoteGatewayApp.consoleWarnCount = atoi(value.c_str());
-
 			} //end found Remote Gateway status
 			else //found remote subapp
 			{
@@ -1319,7 +1313,7 @@ try
 		} //end primary loop
 
 		//get system messages
-		value = StringMacros::extractXmlField(remoteStatusString, "systemMessages", 0, after);	
+		value = StringMacros::extractXmlField(remoteStatusString, "systemMessages", 0, after, &after);	
 		__COUTT__ << "Remote System Messages:" << value << __E__;
 		std::vector<std::string> parsedSysMsgs;
 		StringMacros::getVectorFromString(value,parsedSysMsgs,{'|'});
@@ -1332,6 +1326,21 @@ try
 				+ "' at url: " + remoteGatewayApp.appInfo.url + " ... " +
 				StringMacros::decodeURIComponent(parsedSysMsgs[i+2]));
 		} //end System Message handling loop
+
+		//get user with lock
+		value = StringMacros::extractXmlField(remoteStatusString, "usernameWithLock", 0, after, &after);	
+		__COUTT__ << "Remote User with Lock:" << value << __E__;
+		remoteGatewayApp.usernameWithLock = value; 
+
+		//get Console err/warn count
+		value = StringMacros::extractXmlField(remoteStatusString, "console_err_count", 0, after, &after);
+		__COUTTV__(value);				
+		remoteGatewayApp.consoleErrCount = atoi(value.c_str());
+
+		value = StringMacros::extractXmlField(remoteStatusString, "console_warn_count", 0, after);
+		__COUTTV__(value);
+		remoteGatewayApp.consoleWarnCount = atoi(value.c_str());
+		
 	}
 	else
 		__COUT_WARN__ << "Illegal Remote Gateawy App URL (must be ots:<IP>:<PORT>): " << remoteGatewayApp.appInfo.url << __E__;
@@ -1479,12 +1488,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 					}
 
-					if(remoteGatewayStatus) //also return System Messages
+					if(remoteGatewayStatus) //also return System Messages and console count and user-with-lock
 					{
 						__COUT_TYPE__(TLVL_DEBUG+12) << "Giving extra Gateway info to remote monitor..." << __E__;		
 									
 						xmlOut.addTextElementToData("systemMessages",
 													theWebUsers_.getAllSystemMessages());  
+						xmlOut.addTextElementToData("usernameWithLock",
+													theWebUsers_.getUserWithLock());  
 
 						std::lock_guard<std::mutex> lock(theSupervisor->systemStatusMutex_); //lock for rest of scope
 						xmlOut.addTextElementToData("console_err_count",
@@ -1624,16 +1635,35 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 
 					bool getRemoteIcons = true;
-
 					bool firstIcon = true;
+
+					//always force insert UserSettings so that the lock can be managed
+					{
+						if(firstIcon)
+							firstIcon = false;
+						else
+							iconString += ",";
+
+						iconString += "User Settings";//icon.caption_;
+						iconString += "," + std::string("User");//icon.alternateText_;
+						iconString += "," + std::string("1"); //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+						iconString += "," + std::string("1");  // set permission to 1 so the
+																// desktop shows every icon that the
+																// server allows (i.e., trust server
+																// security, ignore client security)
+						iconString += "," + std::string("/WebPath/images/dashboardImages/icon-Settings.png"); //icon.imageURL_;
+						iconString += "," + iconTable->getRemoteURL(&tmpCfgMgr, 
+							"/WebPath/html/UserSettings.html");
+						iconString += "," + std::string(""); //icon.folderPath_;
+					}
+
+
 					for(const auto& icon : icons)
 					{
-						//__COUTV__(icon.caption_);
-						//__COUTV__(icon.permissionThresholdString_);
+						__COUTVS__(40,icon.caption_);
+						__COUTVS__(40,icon.permissionThresholdString_);
 
 						//ignore permission level, and give all icons
-
-						//__COUTV__(icon.caption_);
 
 						if(getRemoteIcons)
 						{
@@ -4919,8 +4949,7 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 		//**** start LOGIN GATEWAY CODE ***//
 		// If TRUE, cookie code is good, and refreshed code is in cookieCode, also pointers
 		// optionally for uint8_t userPermissions, uint64_t uid  Else, error message is
-		// returned in cookieCode  Notes: cookie code not refreshed if RequestType =
-		// getSystemMessages
+		// returned in cookieCode  Notes: cookie code not refreshed if RequestType is in AutomatedRequestTypes
 		std::string cookieCode = CgiDataUtilities::postData(cgi, "CookieCode");
 		uint64_t    uid;
 
@@ -5473,7 +5502,28 @@ try
 			xmlOut.addTextElementToData("username_with_lock",
 			                            theWebUsers_.getUserWithLock());  // always give system lock update
 
-			//__COUT__ << "userWithLock " << theWebUsers_.getUserWithLock() << __E__;
+			__COUTV__(theWebUsers_.getUserWithLock());
+			__COUTVS__(20,theWebUsers_.getUserWithLock());
+
+			//Also add Remote Subystems users-with-lock!
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteGatewayApps = remoteGatewayApps_;
+			}
+
+			for(const auto& remoteGatewayApp : remoteGatewayApps)
+			{	
+				__COUTVS__(21,remoteGatewayApp.appInfo.status);
+
+				//skip disconnected remote gateways			
+				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN) continue;
+
+				xmlOut.addTextElementToData("RemoteGateway_name", 
+					remoteGatewayApp.appInfo.name); 
+				xmlOut.addTextElementToData("RemoteGateway_usernameWithLock", 
+					remoteGatewayApp.usernameWithLock); 
+			} //end remote subsystem loop
 		}
 		else if(requestType == "setUserWithLock")
 		{
@@ -5498,6 +5548,24 @@ try
 			if(tmpUserWithLock != theWebUsers_.getUserWithLock())  // if there was a change, broadcast system message
 				theWebUsers_.addSystemMessage(
 				    "*", theWebUsers_.getUserWithLock() == "" ? tmpUserWithLock + " has unlocked ots." : theWebUsers_.getUserWithLock() + " has locked ots.");
+
+			//Also add Remote Subystems users-with-lock!
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteGatewayApps = remoteGatewayApps_;
+			}
+
+			for(const auto& remoteGatewayApp : remoteGatewayApps)
+			{	
+				//skip disconnected remote gateways			
+				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN) continue;
+
+				xmlOut.addTextElementToData("RemoteGateway_name", 
+					remoteGatewayApp.appInfo.name); 
+				xmlOut.addTextElementToData("RemoteGateway_usernameWithLock", 
+					remoteGatewayApp.usernameWithLock); 
+			} //end remote subsystem loop
 		}
 		else if(requestType == "getStateMachineLastLogEntry")
 		{
@@ -6159,6 +6227,7 @@ try
 						commandSs << ";" << remoteGatewayApp.instancePath;
 					commandSs << ";" << "Normal";
 					commandSs << ";" << remoteGatewayApp.setupType;
+					commandSs << ";" << remoteGatewayApp.instancePath; //full USER_DATA path
 					__SUP_COUTV__(commandSs.str());
 
 					GatewaySupervisor::launchStartOneServerCommand(
