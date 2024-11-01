@@ -414,6 +414,7 @@ class WebUsers
 	        uint64_t*          uid                    = 0,
 	        const std::string& ip                     = "0",
 	        bool               refresh                = true,
+	        bool               doNotGoRemote          = false,
 	        std::string*       userWithLock           = 0,
 	        uint64_t*          userSessionIndex = 0);
 	uint64_t cookieCodeLogout(const std::string& cookieCode,
@@ -528,7 +529,7 @@ class WebUsers
 	uint64_t searchHashesDatabaseForHash			(const std::string& hash);
 	uint64_t searchActiveSessionDatabaseForCookie	(const std::string& cookieCode) const;
 	uint64_t searchRemoteSessionDatabaseForCookie	(const std::string& cookieCode) const;
-	uint64_t checkRemoteLoginVerification			(const std::string& cookieCode, bool refresh, const std::string& ip);
+	uint64_t checkRemoteLoginVerification			(const std::string& cookieCode, bool refresh, bool doNotGoRemote, const std::string& ip);
 
 	static std::string getTooltipFilename(const std::string& username,
 	                                      const std::string& srcFile,

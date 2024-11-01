@@ -170,12 +170,13 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc& cgi, std::ostringstream* out, H
 	WebUsers::initializeRequestUserInfo(cgi, userInfo);
 
 	uint64_t i;
-
+	
 	if(!cookieCodeIsActiveForRequest(userInfo.cookieCode_,
 	                                 &userInfo.groupPermissionLevelMap_,
 	                                 &userInfo.uid_,
 	                                 userInfo.ip_,
 	                                 !userInfo.automatedCommand_ /*refresh cookie*/,
+									 userInfo.allowNoUser_ /* do not go to remote verify to avoid hammering remote verify	 */,
 	                                 &userInfo.usernameWithLock_,
 	                                 &userInfo.userSessionIndex_))
 	{
@@ -1299,7 +1300,8 @@ uint64_t WebUsers::searchActiveSessionDatabaseForCookie(const std::string& cooki
 // WebUsers::checkRemoteLoginVerification ---
 //	checks over remote socket
 //	returns userId if login verified, else -1
-uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, bool refresh, const std::string& ip)
+uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, 
+	bool refresh, bool doNotGoRemote, const std::string& ip)
 {
 	__COUTVS__(2,cookieCode);
 	remoteLoginVerificationEnabledBlackoutTime_ = 0;
@@ -1311,7 +1313,7 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, b
 				remoteLoginVerificationPort_ << ". Please check remote settings." << __E__;
 			__SS_THROW__;
 		}
-		__COUT_INFO__ << "Instantiating Remote Gateway login verifification socket! Validation requests will go to " << 
+		__COUT_INFO__ << "Instantiating Remote Gateway login verification socket! Validation requests will go to " << 
 			remoteLoginVerificationIP_ << ":" << remoteLoginVerificationPort_ << __E__;						
 		
 		remoteLoginVerificationSocket_ = std::make_unique<TransceiverSocket>(remoteLoginVerificationIP_);
@@ -1330,6 +1332,8 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, b
 	}
 	//else ask Remote server to verify login
 
+	if(!doNotGoRemote) return NOT_FOUND_IN_DATABASE;
+
 	// Send these parameters:
 	// command = loginVerify
 	// parameters.addParameter("CookieCode");
@@ -1340,6 +1344,7 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, b
 		(refresh?"1":"0") + "," + ip;
 
 	__COUTV__(request);
+	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << StringMacros::stackTrace() << __E__;
 	
 	std::string requestResponseString = remoteLoginVerificationSocket_->sendAndReceive(*remoteLoginVerificationSocketTarget_, request, 10 /*timeoutSeconds*/);
 	__COUTV__(requestResponseString);
@@ -1363,6 +1368,8 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode, b
 	// 4: retParameters.addParameter("DisplayName", theWebUsers_.getUsersDisplayName(uid));	
 	// 5: retParameters.addParameter("UserSessionIndex", td::to_string(userSessionIndex)); 
 
+	__COUTTV__(rxParams[2]);	
+	__COUTTV__(usersUsernameWithLock_);	
 	if(rxParams[2] != "" && 
 		usersUsernameWithLock_ != rxParams[2])
 	{
@@ -2008,6 +2015,7 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
                                             uint64_t*                                                         uid,
                                             const std::string&                                                ip,
                                             bool                                                              refresh,
+                                            bool                                                              doNotGoRemote,
                                             std::string*                                                      userWithLock,
                                             uint64_t*                                                         userSessionIndex)
 {
@@ -2033,7 +2041,7 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 	try
 	{
 		if(remoteLoginVerificationEnabled_ && time(0) > remoteLoginVerificationEnabledBlackoutTime_ &&
-			(userId = checkRemoteLoginVerification(cookieCode, refresh, ip)) != NOT_FOUND_IN_DATABASE)
+			(userId = checkRemoteLoginVerification(cookieCode, refresh, doNotGoRemote, ip)) != NOT_FOUND_IN_DATABASE)
 		{		
 			// remote verify success!
 			userSession = RemoteSessions_.at(cookieCode).sessionIndex_;
