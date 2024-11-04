@@ -2593,12 +2593,13 @@ otsActionHandler() {
 					if [ $REDIRECT_FAILED == 1 ]; then
 						error "Redirect failed! Retrying..."
 						REDIRECT_FAILED=0
-						timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID} || REDIRECT_FAILED=1
+						timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID} || REDIRECT_FAILED=1
 					fi
 
 					if [ $REDIRECT_FAILED == 1 ]; then
+						out "To manually retry: reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID}"
 						$xdaqLogFilename[$i]=$tmpLogFilename						
-						error "Redirect failed!.. Reverting to ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}"
+						error "Redirect failed!.. Reverting to ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}"						
 					else
 						echo "Redirecting Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
 						echo "Redirected to Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
@@ -2640,8 +2641,9 @@ otsActionHandler() {
 					fi
 
 					if [ $REDIRECT_FAILED == 1 ]; then
+						out "To manually retry: reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID}"
 						gatewayLogFilename=$tmpLogFilename						
-						error "Redirect failed!.. Reverting to ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}"
+						error "Redirect failed!.. Reverting to ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}"						
 					else
 						echo "Redirecting Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}					
 						echo "Redirected Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}					
