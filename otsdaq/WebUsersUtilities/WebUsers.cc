@@ -1947,52 +1947,6 @@ uint64_t WebUsers::cookieCodeLogout(const std::string& cookieCode, bool logoutOt
 	return logoutCount;
 }  // end cookieCodeLogout()
 
-// //==============================================================================
-// // WebUsers::getUserInfoForCookie ---
-// bool WebUsers::getUserInfoForCookie(std::string& cookieCode, std::string* userName, std::string* displayName, uint64_t* activeSessionIndex)
-// {
-// 	if(userName)
-// 		*userName = "";
-// 	if(displayName)
-// 		*displayName = "";
-
-// 	if(!CareAboutCookieCodes_)  // NO SECURITY, return admin
-// 	{
-// 		uint64_t uid = getAdminUserID();
-// 		if(userName)
-// 			*userName = getUsersUsername(uid);
-// 		if(displayName)
-// 			*displayName = getUsersDisplayName(uid);
-// 		if(activeSessionIndex)
-// 			*activeSessionIndex = -1;
-// 		return true;
-// 	}
-
-// 	uint64_t i, j;
-
-// 	// search active users for cookie code
-// 	if((i = searchActiveSessionDatabaseForCookie(cookieCode)) == NOT_FOUND_IN_DATABASE)
-// 	{
-// 		__COUT__ << "cookieCode NOT_FOUND_IN_DATABASE" << __E__;
-// 		return false;
-// 	}
-
-// 	// get Users record
-// 	if((j = searchUsersDatabaseForUserId(ActiveSessions_[i].userId_)) == NOT_FOUND_IN_DATABASE)
-// 	{
-// 		__COUT__ << "ActiveSession UserId NOT_FOUND_IN_DATABASE" << __E__;
-// 		return false;
-// 	}
-
-// 	if(userName)
-// 		*userName = Users_[j].username_;
-// 	if(displayName)
-// 		*displayName = Users_[j].displayName_;
-// 	if(activeSessionIndex)
-// 		*activeSessionIndex = ActiveSessions_[i].sessionIndex_;
-// 	return true;
-// }  // end getUserInfoForCookie()
-
 //==============================================================================
 // WebUsers::isCookieCodeActiveForRequest ---
 //	Used to verify cookie code for all general user requests
@@ -2087,14 +2041,6 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 			//fill in Remote Session and User info to cache for next login attempt
 
 			cookieCode = WebUsers::REQ_ALLOW_NO_USER; //allowNoUser will not overwrite other valid cookieCodes in parent Gateway Desktop
-			// while(RemoteSessions_.find(cookieCode) != RemoteSessions_.end()) 
-			// 	cookieCode = genCookieCode(); // regenerate on the off chance of collisions
-			// ActiveSession& newRemoteSession = RemoteSessions_[cookieCode]; //construct remote ActiveSession
-			// newRemoteSession.cookieCode_ = cookieCode;
-			// newRemoteSession.ip_ = ip;
-			// newRemoteSession.userId_ = getAdminUserID();
-			// newRemoteSession.sessionIndex_ = 0;
-			// newRemoteSession.startTime_ = time(0);	
 		}
 
 		return true;
