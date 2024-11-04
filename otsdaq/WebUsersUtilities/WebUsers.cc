@@ -2036,10 +2036,8 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 			cookieCode = genCookieCode();  // return "dummy" cookie code
 
 		
-		if(localEnableRemoteLogin) //add admin session to Remote Sessions for quick verify
+		if(localEnableRemoteLogin) //want future login attempts to still go to remote
 		{
-			//fill in Remote Session and User info to cache for next login attempt
-
 			cookieCode = WebUsers::REQ_ALLOW_NO_USER; //allowNoUser will not overwrite other valid cookieCodes in parent Gateway Desktop
 		}
 
