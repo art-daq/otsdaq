@@ -1780,57 +1780,6 @@ bool WebUsers::checkIpAccess(const std::string& ip)
 			return false;  // found in blacklist file, so reject
 		}
 
-	// FILE*  fp = fopen((IP_ACCEPT_FILE).c_str(), "r");
-	// char   line[300];
-	// size_t len;
-
-	// if(fp)
-	// {
-	// 	while(fgets(line, 300, fp))
-	// 	{
-	// 		len = strlen(line);
-	// 		// remove new line
-	// 		if(len > 2 && line[len - 1] == '\n')
-	// 			line[len - 1] = '\0';
-	// 		if(StringMacros::wildCardMatch(ip, line))
-	// 			return true;  // found in accept file, so accept
-	// 	}
-
-	// 	fclose(fp);
-	// }
-
-	// fp = fopen((IP_REJECT_FILE).c_str(), "r");
-	// if(fp)
-	// {
-	// 	while(fgets(line, 300, fp))
-	// 	{
-	// 		len = strlen(line);
-	// 		// remove new line
-	// 		if(len > 2 && line[len - 1] == '\n')
-	// 			line[len - 1] = '\0';
-	// 		if(StringMacros::wildCardMatch(ip, line))
-	// 			return false;  // found in reject file, so reject
-	// 	}
-
-	// 	fclose(fp);
-	// }
-
-	// fp = fopen((IP_BLACKLIST_FILE).c_str(), "r");
-	// if(fp)
-	// {
-	// 	while(fgets(line, 300, fp))
-	// 	{
-	// 		len = strlen(line);
-	// 		// remove new line
-	// 		if(len > 2 && line[len - 1] == '\n')
-	// 			line[len - 1] = '\0';
-	// 		if(StringMacros::wildCardMatch(ip, line))
-	// 			return false;  // found in blacklist file, so reject
-	// 	}
-
-	// 	fclose(fp);
-	// }
-
 	// default to accept if nothing triggered above
 	return true;
 }  // end checkIpAccess()
