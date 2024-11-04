@@ -645,7 +645,7 @@ class WebUsers
   public:
   	std::atomic<time_t>			remoteLoginVerificationEnabledBlackoutTime_ = 0;
 	static std::atomic<bool>	remoteLoginVerificationEnabled_; //true if this supervisor is under control of a remote supervisor
-	std::string					remoteLoginVerificationIP_;   //IP of remote Gateway to be used for login verification
+	std::string					remoteLoginVerificationIP_, remoteGatewaySelfName_;   //IP of remote Gateway to be used for login verification
 	int							remoteLoginVerificationPort_; //Port of remote Gateway to be used for login verification
 };
 }  // namespace ots

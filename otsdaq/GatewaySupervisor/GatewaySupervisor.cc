@@ -431,7 +431,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								thisInfo.appInfo.lastStatusTime = time(0);
 
 								thisInfo.user_data_path_record = icon.alternateText_;
-								thisInfo.parentIconFolderPath = icon.folderPath_;		
+								thisInfo.parentIconFolderPath = icon.folderPath_;	
+								thisInfo.permissionThresholdString = icon.permissionThresholdString_;
 								thisInfo.landingPage = remoteLandingPage;		
 								thisInfo.setupType = remoteSetupType;
 
@@ -461,6 +462,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										remoteApps[i].appInfo = thisInfo.appInfo;
 										remoteApps[i].user_data_path_record = thisInfo.user_data_path_record;
 										remoteApps[i].parentIconFolderPath = thisInfo.parentIconFolderPath;
+										remoteApps[i].permissionThresholdString = thisInfo.permissionThresholdString;
 										remoteApps[i].landingPage = thisInfo.landingPage;
 										remoteApps[i].setupType = thisInfo.setupType;
 										remoteApps[i].fullName = thisInfo.fullName;
@@ -738,7 +740,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 										theSupervisor->remoteGatewayApps_[i].user_data_path_record = remoteGatewayApp.user_data_path_record;
 										theSupervisor->remoteGatewayApps_[i].iconString = remoteGatewayApp.iconString;	
-										theSupervisor->remoteGatewayApps_[i].parentIconFolderPath = remoteGatewayApp.parentIconFolderPath;	
+										theSupervisor->remoteGatewayApps_[i].parentIconFolderPath = remoteGatewayApp.parentIconFolderPath;
+										theSupervisor->remoteGatewayApps_[i].permissionThresholdString = remoteGatewayApp.permissionThresholdString;	
 										theSupervisor->remoteGatewayApps_[i].landingPage = remoteGatewayApp.landingPage;	
 										theSupervisor->remoteGatewayApps_[i].setupType = remoteGatewayApp.setupType;	
 										theSupervisor->remoteGatewayApps_[i].fullName = remoteGatewayApp.fullName;	
@@ -1249,7 +1252,8 @@ try
 		std::string	requestString = "GetRemoteGatewayStatus";
 		if(portForReverseLoginOverUDP)
 			requestString += "," + ipForReverseLoginOverUDP + 
-				"," + std::to_string(portForReverseLoginOverUDP);
+				"," + std::to_string(portForReverseLoginOverUDP) + 
+				"," + remoteGatewayApp.appInfo.name;
 		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "requestString = " << requestString << __E__;	
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket,
 			requestString, 2 /*timeoutSeconds*/);
@@ -1264,25 +1268,25 @@ try
 			if(value == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS) 
 			{
 				//found remote gateway
-				__COUTTV__(remoteStatusString.size());
-				__COUTTV__(after);
-				__COUTTV__(value);
+				__COUTVS__(25,remoteStatusString.size());
+				__COUTVS__(25,after);
+				__COUTVS__(25,value);
 
 				//get gateway status
 				value = StringMacros::extractXmlField(remoteStatusString, "status", 0, after);
-				__COUTTV__(value);
+				__COUTVS__(25,value);
 				remoteGatewayApp.appInfo.status = value;
 
 				value = StringMacros::extractXmlField(remoteStatusString, "progress", 0, after);
-				__COUTTV__(value);
+				__COUTVS__(25,value);
 				remoteGatewayApp.appInfo.progress = atoi(value.c_str());
 
 				value = StringMacros::extractXmlField(remoteStatusString, "detail", 0, after);
-				__COUTTV__(value);
+				__COUTVS__(25,value);
 				remoteGatewayApp.appInfo.detail = value; //StringMacros::decodeURIComponent(value);
 
 				value = StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
-				__COUTTV__(value);
+				__COUTVS__(25,value);
 				remoteGatewayApp.appInfo.lastStatusTime = atoi(value.c_str());
 
 			} //end found Remote Gateway status
@@ -1290,23 +1294,23 @@ try
 			{
 				//get remote subapp class name
 				remoteGatewayApp.subapps[name].class_name = value;
-				__COUTTV__(value);
+				__COUTVS__(25,value);
 
 				//get remote subapp status
 				value = StringMacros::extractXmlField(remoteStatusString, "status", 0, after);
-				__COUTTV__(value);
+				__COUTVS__(25,value);
 				remoteGatewayApp.subapps[name].status = value;
 
 				value = StringMacros::extractXmlField(remoteStatusString, "progress", 0, after);
-				__COUTTV__(value);
+				__COUTVS__(25,value);
 				remoteGatewayApp.subapps[name].progress = atoi(value.c_str());
 
 				value = StringMacros::extractXmlField(remoteStatusString, "detail", 0, after);
-				__COUTTV__(value);
+				__COUTVS__(25,value);
 				remoteGatewayApp.subapps[name].detail = value; //StringMacros::decodeURIComponent(value);
 
 				value = StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
-				__COUTTV__(value);
+				__COUTVS__(25,value);
 				remoteGatewayApp.subapps[name].lastStatusTime = atoi(value.c_str());
 
 			}
@@ -1334,11 +1338,11 @@ try
 
 		//get Console err/warn count
 		value = StringMacros::extractXmlField(remoteStatusString, "console_err_count", 0, after, &after);
-		__COUTTV__(value);				
+		__COUTVS__(25,value);				
 		remoteGatewayApp.consoleErrCount = atoi(value.c_str());
 
 		value = StringMacros::extractXmlField(remoteStatusString, "console_warn_count", 0, after);
-		__COUTTV__(value);
+		__COUTVS__(25,value);
 		remoteGatewayApp.consoleWarnCount = atoi(value.c_str());
 		
 	}
@@ -1425,8 +1429,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					if(remoteGatewayStatus && buffer.size() > strlen("GetRemoteGatewayStatus")+1)
 					{
 						std::vector<std::string> params = StringMacros::getVectorFromString(buffer,{','});
-						if(params.size() == 3)
+						if(params.size() == 4)
 						{
+							//Parameters are 	"," + ipForReverseLoginOverUDP + 
+							// 					"," + std::to_string(portForReverseLoginOverUDP) + 
+							// 					"," + remoteGatewayApp.appInfo.name;
+
 							__COUTV__(StringMacros::vectorToString(params));
 							std::string tmpIP = params[1];
 							int tmpPort = atoi(params[2].c_str());
@@ -1437,14 +1445,16 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							{
 								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ = tmpIP;
 								theSupervisor->theWebUsers_.remoteLoginVerificationPort_ = tmpPort;
+								theSupervisor->theWebUsers_.remoteGatewaySelfName_ = params[3];
 								theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ = true; //mark as under remote control
-								__COUT_INFO__ << "This Gateway is now under remote control and will validate logins through remote Gateway Supervisor at "
+								__COUT_INFO__ << "This Gateway '" << theSupervisor->theWebUsers_.remoteGatewaySelfName_
+									<< "' is now under remote control and will validate logins through remote Gateway Supervisor at "
 									<< theSupervisor->theWebUsers_.remoteLoginVerificationIP_ << ":" << 
 									theSupervisor->theWebUsers_.remoteLoginVerificationPort_ << __E__;
 							}
 						}
 						else
-							__COUT_WARN__ << "Parameter count is not 3, it is " << params.size() << __E__;
+							__COUT_ERR__ << "Parameter count is not 4, it is " << params.size() << __E__;
 					}
 
 					HttpXmlDocument xmlOut;
@@ -1557,12 +1567,16 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					// parameters.addParameter("CookieCode");
 					// parameters.addParameter("RefreshOption");
 					// parameters.addParameter("IPAddress");
+					//	-- Use name to lookup access level conversion for user
+					//  -- if Desktop Icon has a special permission type, then modify userGroupPermissionsMap's allUsers to match
+					//		parameters.addParameter("RemoteGatewaySelfName");
 					std::vector<std::string> rxParams = StringMacros::getVectorFromString(buffer,{','});
 					__COUTVS__(23,StringMacros::vectorToString(rxParams));
 
-					if(rxParams.size() != 4)
+					if(rxParams.size() != 5)
 					{
-						__COUT_ERR__ << "Invalid remote login verify attempt!" << __E__;
+						__COUT_ERR__ << "Invalid remote login verify attempt! Expected 5 parameters, got " <<
+							rxParams.size() << __E__;
 						sock.acknowledge("0", false /* verbose */);
 						continue;	
 					}
@@ -1583,13 +1597,74 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						continue;	
 					}
 
+					//Modify Permission Map based on Desktop Icon permission requirement
+					const std::string& remoteName = rxParams[4];
+					__COUTVS__(23,remoteName);
+					std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+					{ //lock for remainder of scope
+						std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);
+						remoteGatewayApps = theSupervisor->remoteGatewayApps_;
+						__COUTVS__(22,remoteGatewayApps.size());						
+					}
+
+					bool found = false;
+					for(const auto& remoteGatewayApp : remoteGatewayApps)
+						if(remoteName == remoteGatewayApp.appInfo.name)
+						{
+							found = true;
+							__COUTVS__(21,remoteGatewayApp.permissionThresholdString);
+
+							std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> remoteIconPermissionsMap;
+							StringMacros::getMapFromString(remoteGatewayApp.permissionThresholdString, 
+								remoteIconPermissionsMap);
+
+							//if permission map is only size 1, 
+							//	then modify WebUsers::DEFAULT_USER_GROUP for user with the icon's group level of the user
+							//	e.g. if user is 'HW: 255, allUsers: 1'
+							//		and icon is 'HW: 1'
+							//	then give to remote subsystem the user permission as 'HW: 255, allUsers: 255'
+							//
+							//	... this way the user is considered an expert at the remote subsystem
+							
+							if(remoteIconPermissionsMap.size() == 1 && 
+								remoteIconPermissionsMap.begin()->first != WebUsers::DEFAULT_USER_GROUP)
+							{
+								__COUTVS__(21,remoteIconPermissionsMap.begin()->first); //the group
+
+								auto it = userGroupPermissionsMap.find(
+									remoteIconPermissionsMap.begin()->first);
+								std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>::iterator it2 = 
+									userGroupPermissionsMap.find(WebUsers::DEFAULT_USER_GROUP);
+								if(it != userGroupPermissionsMap.end() && 
+									it2 != userGroupPermissionsMap.end())
+								{
+									__COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ <<
+										"Found user group '" << it->first << 
+										"' to modify: " << (uint16_t)it2->second << 
+										" --> " << (uint16_t)it->second << __E__;
+									it2->second = it->second;
+									__COUTVS__(21,(uint16_t)it2->second);
+								}
+								else if(it == userGroupPermissionsMap.end()) //if special group not found, then no access
+									userGroupPermissionsMap[remoteIconPermissionsMap.begin()->first] = WebUsers::PERMISSION_LEVEL_INACTIVE;
+							}
+
+							break;
+						}
+
+					if(!found)
+					{
+						__COUT_ERR__ << "Did not find any matching subsystems for remote login verify from '" << remoteName << 
+									"' attempted!" << __E__;
+					}
+
 					// Returned user info:
 					// retParameters.addParameter("CookieCode", cookieCode);
 					// "Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
 					// "UserWithLock", userWithLock);
 					// "Username", theWebUsers_.getUsersUsername(uid));
 					// "DisplayName", theWebUsers_.getUsersDisplayName(uid));
-					// "UserSessionIndex" 
+					// "UserSessionIndex" 			
 
 					std::string retStr = "";	
 					std::string username = theWebUsers_.getUsersUsername(uid);
@@ -2045,7 +2120,8 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	cgicc::Cgicc cgiIn(in);
 
 	std::string command     = CgiDataUtilities::getData(cgiIn, "StateMachine");
-	std::string requestType = "StateMachine" + command;  // prepend StateMachine to request type
+	std::string requestType = "StateMachine-" + command;  // prepend StateMachine to request type
+	__COUTV__(requestType);
 
 	HttpXmlDocument           xmlOut;
 	WebUsers::RequestUserInfo userInfo(requestType, CgiDataUtilities::postData(cgiIn, "CookieCode"));
@@ -2063,7 +2139,8 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	__COUT__ << "Check for Handled by theIterator_" << __E__;
 
 	// check if Iterator should handle
-	if((activeStateMachineWindowName_ == "" || activeStateMachineWindowName_ == "iterator") &&
+	if((activeStateMachineWindowName_ == "" || activeStateMachineWindowName_ == "iterator" ||
+		(activeStateMachineName_ == fsmName && command.find("iterate") == 0) /* for combo iterate/fsm GUIs like SubsystemLaunch.js */ ) &&
 	   theIterator_.handleCommandRequest(xmlOut, command, fsmWindowName))
 	{
 		__COUT__ << "Handled by theIterator_" << __E__;
@@ -2222,8 +2299,11 @@ try
 					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
 						
 					try { activeStateMachineRequireUserLogOnConfigure_ = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>(); } catch(...) {;}
-					try { activeStateMachineRequireUserLogOnRun_ = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) {;}
-
+					try { activeStateMachineRequireUserLogOnRun_ = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) {;}					
+					try { activeStateMachineRunAlias_ = fsmLinkNode.getNode("RunDisplayAlias").getValueWithDefault<std::string>("Run" /* defaultValue */); } catch(...) { activeStateMachineRunAlias_ = "Run";}
+					try { activeStateMachineRollOverLogOnConfigure_ = fsmLinkNode.getNode("RollOverLogOnConfigure").getValueWithDefault<bool>(false /* defaultValue */); } catch(...) { activeStateMachineRollOverLogOnConfigure_ = false;}
+					try { activeStateMachineRollOverLogOnStart_ = fsmLinkNode.getNode("RollOverLogOnStart").getValueWithDefault<bool>(false /* defaultValue */); } catch(...) { activeStateMachineRollOverLogOnStart_ = false;}
+					
 					try
 					{ 
 						activeStateMachineRunInfoPluginType_ = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>(); 							
@@ -2271,6 +2351,19 @@ try
 							<< supervisorContextUID_ << "/" << supervisorApplicationUID_
 							<< "' - consider adding one to control configuration dumps and state machine properties." << __E__;
 		} //end check if configuration dump is enabled on configure transition
+
+		__COUTTV__(activeStateMachineRequireUserLogOnConfigure_);
+		__COUTTV__(activeStateMachineRequireUserLogOnRun_);
+		__COUTTV__(activeStateMachineRunAlias_);
+		__COUTTV__(activeStateMachineRunInfoPluginType_);
+		__COUTTV__(activeStateMachineConfigurationDumpOnConfigureEnable_);
+		__COUTTV__(activeStateMachineConfigurationDumpOnRunEnable_);
+		__COUTTV__(dumpFormatOnConfigure);
+		__COUTTV__(dumpFormatOnRun);
+		__COUTTV__(activeStateMachineConfigurationDumpOnConfigureFilename_);
+		__COUTTV__(activeStateMachineConfigurationDumpOnRunFilename_);
+		__COUTTV__(activeStateMachineRollOverLogOnConfigure_);
+		__COUTTV__(activeStateMachineRollOverLogOnStart_);
 
 		if(activeStateMachineRequireUserLogOnConfigure_ && getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME).size() < 3)
 		{
@@ -3032,6 +3125,20 @@ try
 
 	__COUT__ << "Configuration table group name: " << theConfigurationTableGroup_.first << " key: " << theConfigurationTableGroup_.second << __E__;
 
+	//Roll over log file if enabled
+	if(activeStateMachineRollOverLogOnConfigure_)
+	{
+		__COUT_INFO__ << "Rolling over log file on Configure transition..." << __E__;
+		std::stringstream runSs;
+		runSs << "LOG_ROLLOVER";
+		runSs << ";" << "Configure" << "_" << 
+			theConfigurationTableGroup_.first << "_v" << theConfigurationTableGroup_.second;
+
+		GatewaySupervisor::launchStartOTSCommand(runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+	}
+
+	RunControlStateMachine::theProgressBar_.step();
+
 	// make logbook entry
 	{
 		std::stringstream ss;
@@ -3642,10 +3749,24 @@ try
 
 	RunControlStateMachine::theProgressBar_.step();
 
+	//Roll over log file if enabled
+	if(1 || activeStateMachineRollOverLogOnStart_)
+	{
+		__COUT_INFO__ << "Rolling over log file on Start transition..." << __E__;
+		std::stringstream runSs;
+		runSs << "LOG_ROLLOVER";
+		runSs << ";" << activeStateMachineRunAlias_ << "_" << activeStateMachineRunNumber_;
+
+		GatewaySupervisor::launchStartOTSCommand(runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+	}
+
+	RunControlStateMachine::theProgressBar_.step();
+
+
 	// make logbook entry
 	{
 		std::stringstream ss;
-		ss << "Run '" << activeStateMachineRunNumber_ << "' starting.";
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' starting.";
 
 		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
 			ss << " User log entry:\n " << 
@@ -3717,8 +3838,14 @@ try
 
 	// save last started group name/key
 	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_, FSM_LAST_STARTED_GROUP_ALIAS_FILE);
+	RunControlStateMachine::theProgressBar_.complete();
 
-	makeSystemLogEntry("Run started.");
+	// make logbook entry
+	{
+		std::stringstream ss;
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' started.";
+		makeSystemLogEntry(ss.str());
+	} // end make logbook entry
 	__COUT__ << "Done starting run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3799,6 +3926,20 @@ try
 	makeSystemLogEntry("Run stopped.");
 	__COUT__ << "Done stopping run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
+
+	//Roll over log file if enabled
+	if(1 || activeStateMachineRollOverLogOnStart_)
+	{
+		__COUT_INFO__ << "Rolling over log file on Stop transition..." << __E__;
+		std::stringstream runSs;
+		runSs << "LOG_ROLLOVER";
+		runSs << ";Post" << activeStateMachineRunAlias_ << "_" << activeStateMachineRunNumber_;
+
+		GatewaySupervisor::launchStartOTSCommand(runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+	}
+
+	RunControlStateMachine::theProgressBar_.step();
+
 }  // end transitionStopping()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
@@ -5022,7 +5163,12 @@ void GatewaySupervisor::setSupervisorPropertyDefaults()
 {
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
 	                                                  std::string() + "*=1 | gatewayLaunchOTS=-1 | gatewayLaunchWiz=-1"
-													  " | gatewayLaunchOTSInstance");
+													  " | gatewayLaunchOTSInstance=-1"
+													  " | StateMachine-*=10" //state machine transitions through stateMachineXgiHandler
+													  " | cancelStateMachineTransition=10"
+													  " | resetConsoleCounts=10"
+													  " | commandRemoteSubsystem=10 | setRemoteSubsystemFsmControl=10" //remote subsystem control
+													  ); 
 
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AllowNoLoginRequestTypes,
 	                                                  "getCurrentState "
@@ -5743,12 +5889,21 @@ try
 			//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
 
 
-			__COUTVS__(20,(unsigned int)userInfo.permissionLevel_);
 
 			std::map<std::string, WebUsers::permissionLevel_t> userPermissionLevelsMap = theWebUsers_.getPermissionsForUser(userInfo.uid_);
 			std::map<std::string, WebUsers::permissionLevel_t> iconPermissionThresholdsMap;
 
-			bool getRemoteIcons = true;
+			__COUTVS__(20,StringMacros::mapToString(userPermissionLevelsMap));
+
+			bool getRemoteIcons = true; //could potentially enable from configuration in future
+			//also return remote gateway icons from cache
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+			if(getRemoteIcons)
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteGatewayApps = remoteGatewayApps_;
+			}
+
 			std::string ipAddressForRemoteIconsOverUDP = "";
 
 			bool firstIcon = true;
@@ -5760,7 +5915,10 @@ try
 				CorePropertySupervisorBase::extractPermissionsMapFromString(icon.permissionThresholdString_, iconPermissionThresholdsMap);
 
 				if(!CorePropertySupervisorBase::doPermissionsGrantAccess(userPermissionLevelsMap, iconPermissionThresholdsMap))
+				{
+					__COUTT__ << "No user access to icon '" << icon.caption_ << "'" << __E__;
 					continue;  // skip icon if no access
+				}
 
 				__COUTVS__(21,icon.caption_);
 
@@ -5773,7 +5931,63 @@ try
 						icon.windowContentURL_[2] == 's' &&
 						icon.windowContentURL_[3] == ':')
 					{
-						continue; //skip retrieval and use cache!
+						//retrieval from cache!
+						bool found = false;
+						for(const auto& remoteGatewayApp : remoteGatewayApps)
+						{				
+							if(icon.recordUID_ != remoteGatewayApp.appInfo.name) continue;
+							__COUTVS__(21,icon.caption_);
+							found = true;
+
+							if(remoteGatewayApp.iconString == "") //then either error or still loading...
+							{
+								//add error if it has to do with icons
+								if(remoteGatewayApp.error.find("desktop icons") != std::string::npos)
+									xmlOut.addTextElementToData("Error", remoteGatewayApp.error);
+
+								//add placeholder "Loading icon"
+								if(firstIcon)
+									firstIcon = false;
+								else
+									iconString += ",";
+								
+								if(remoteGatewayApp.parentIconFolderPath != "")
+									iconString += remoteGatewayApp.parentIconFolderPath + " icons loading..."; //icon.caption_;
+								else if(remoteGatewayApp.user_data_path_record != "")
+									iconString += remoteGatewayApp.user_data_path_record + " icons loading..."; //icon.caption_;
+								else
+									iconString += remoteGatewayApp.appInfo.name + " icons loading..."; //icon.caption_;
+									
+								iconString += ",X"; //icon.alternateText_;
+								iconString += ",1";//std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+								iconString += ",0";//std::string("1");  // set permission to 1 so the
+																	// desktop shows every icon that the
+																	// server allows (i.e., trust server
+																	// security, ignore client security)
+								iconString += ",";//icon.imageURL_;
+								iconString += ",";//icon.windowContentURL_;
+								iconString += ",";//icon.folderPath_;
+							
+								break; //done adding error/loading icon
+							}
+
+							if(firstIcon)
+								firstIcon = false;
+							else
+								iconString += ",";
+
+							iconString += remoteGatewayApp.iconString;
+							break; //done with cache retrieval
+						} //end loop retrieval
+
+						if(!found)
+						{
+							__SUP_SS__ << "Illegal missing remote icon definition for icon record UID '" <<
+								icon.recordUID_ << ".' Please notify admins." << __E__;
+							__SUP_SS_THROW__; 
+						}
+						
+						continue; //done with remote icon string retrieval
 					}
 				} //end remote icon handling
 
@@ -5795,56 +6009,7 @@ try
 				iconString += "," + icon.windowContentURL_;
 				iconString += "," + icon.folderPath_;
 			}
-			__COUTVS__(23,iconString);
-
-			//also return remote gateway icons
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-			{ //lock for remainder of scope
-				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-				remoteGatewayApps = remoteGatewayApps_;
-			}
-
-			for(const auto& remoteGatewayApp : remoteGatewayApps)
-			{				
-				if(remoteGatewayApp.iconString == "") 
-				{
-					//add error if it has to do with icons
-					if(remoteGatewayApp.error.find("desktop icons") != std::string::npos)
-						xmlOut.addTextElementToData("Error", remoteGatewayApp.error);
-
-					//add placeholder "Loading icon"
-					if(firstIcon)
-						firstIcon = false;
-					else
-						iconString += ",";
-					
-					if(remoteGatewayApp.parentIconFolderPath != "")
-						iconString += remoteGatewayApp.parentIconFolderPath + " icons loading..."; //icon.caption_;
-					else if(remoteGatewayApp.user_data_path_record != "")
-						iconString += remoteGatewayApp.user_data_path_record + " icons loading..."; //icon.caption_;
-					else
-						iconString += remoteGatewayApp.appInfo.name + " icons loading..."; //icon.caption_;
-						
-					iconString += ",X"; //icon.alternateText_;
-					iconString += ",1";//std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
-					iconString += ",0";//std::string("1");  // set permission to 1 so the
-														// desktop shows every icon that the
-														// server allows (i.e., trust server
-														// security, ignore client security)
-					iconString += ",";//icon.imageURL_;
-					iconString += ",";//icon.windowContentURL_;
-					iconString += ",";//icon.folderPath_;
-				
-					continue;
-				}
-
-				if(firstIcon)
-					firstIcon = false;
-				else
-					iconString += ",";
-
-				iconString += remoteGatewayApp.iconString;
-			}
+			__COUTVS__(23,iconString);			
 
 			xmlOut.addTextElementToData("iconList", iconString);			
 		}
@@ -5943,6 +6108,7 @@ try
 				xmlOut.addTextElementToData("last_system_message", msgPair.first);
 				xmlOut.addTextElementToData("last_system_message_time", msgPair.second?StringMacros::getTimestampString(msgPair.second):"0");
 				xmlOut.addNumberElementToData("active_user_count", theWebUsers_.getActiveUserCount());
+				xmlOut.addTextElementToData("active_user_list", theWebUsers_.getActiveUsersString());
 				xmlOut.addNumberElementToData("console_err_count", systemConsoleErrCount_);
 				xmlOut.addNumberElementToData("console_warn_count", systemConsoleWarnCount_);
 				xmlOut.addNumberElementToData("console_info_count", systemConsoleInfoCount_);
@@ -6358,6 +6524,8 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 		}
 		
 		std::string stateMachineRunAlias = "Run";  // default to "Run"
+		bool rollOverLogOnConfigure = false, rollOverLogOnStart = false;
+		std::string rollOverLogOnSize = "";
 
 		// get stateMachineAliasFilter if possible
 		ConfigurationTree configLinkNode =
@@ -6375,6 +6543,9 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 					std::string runInfoPluginType = fsmLinkNode.getNode(fsmName + "/RunInfoPluginType").getValue<std::string>();
 					if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
 						useRunInfoDb = true;
+
+					try { rollOverLogOnConfigure = fsmLinkNode.getNode("RollOverLogOnConfigure").getValueWithDefault<bool>(false /* defaultValue */); } catch(...) { rollOverLogOnConfigure = false;}
+					try { rollOverLogOnStart = fsmLinkNode.getNode("RollOverLogOnConfigure").getValueWithDefault<bool>(false /* defaultValue */); } catch(...) { rollOverLogOnStart = false;}					
 				}
 			}
 			catch(std::runtime_error& e)
@@ -6389,17 +6560,50 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 
 		xmlOut.addTextElementToData("stateMachineRunAlias", stateMachineRunAlias);
 
+		//generate log rollover string
+		{
+			rollOverLogOnSize = (getenv("OTS_LOG_ROLLOVER")?getenv("OTS_LOG_ROLLOVER"):"");
+			std::stringstream ss;
+			if(rollOverLogOnConfigure || rollOverLogOnStart || rollOverLogOnSize != "")			
+			{
+				ss << "ots log files will rollover ";
+				if(!rollOverLogOnConfigure && !rollOverLogOnStart) //the rollOverLogOnSize != ""
+					ss << " on size-in-bytes: " << rollOverLogOnSize << 
+						". To enable on FSM transitions set RollOverLogOnConfigure and/or RollOverLogOnStart in the FSM Configuration Tree.";
+				else 
+				{
+					if(rollOverLogOnConfigure && rollOverLogOnStart)
+						ss << " on the Configure and Start FSM transitions";
+					else if(rollOverLogOnConfigure)
+						ss << " on the Configure FSM transition";
+					else if(rollOverLogOnStart)
+						ss << " on the Start FSM transition";
+					
+					if(rollOverLogOnSize != "")
+						ss << ". To enable rollover on 100MB size, for example, export OTS_LOG_ROLLOVER=100000000.";
+					else 
+						ss << ", and also on size-in-bytes: " << rollOverLogOnSize;
+				}					
+			}	
+			else
+				ss << "ots log files will not rollover. "
+					"To enable rollover on 100MB size, for example, export OTS_LOG_ROLLOVER=100000000; "
+					"to enable on FSM transitions set RollOverLogOnConfigure and/or RollOverLogOnStart in the FSM Configuration Tree.";
+
+			xmlOut.addTextElementToData("stateMachineLogRollover", ss.str());
+		}
+
 		//// ======================== get run number based on fsm name ====
 
 		if(theStateMachine_.getCurrentStateName() == RunControlStateMachine::RUNNING_STATE_NAME || 
 			theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::PAUSED_STATE_NAME)
 		{
 			if(useRunInfoDb)
-				sprintf(tmp, "Current %s Number from DB: %s", stateMachineRunAlias.c_str(),
+				sprintf(tmp, "Current %s Number from DB: %s", activeStateMachineRunAlias_.c_str(),
 					activeStateMachineRunNumber_.c_str());
 					//%u // getNextRunNumber(activeStateMachineName_) - 1);
 			else
-				sprintf(tmp, "Current %s Number: %s", stateMachineRunAlias.c_str(), 
+				sprintf(tmp, "Current %s Number: %s", activeStateMachineRunAlias_.c_str(), 
 					activeStateMachineRunNumber_.c_str()); //%u //getNextRunNumber(activeStateMachineName_) - 1);
 			xmlOut.addTextElementToData("run_number", tmp);
 
@@ -6421,7 +6625,7 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 		}
 
 	} //end not-in-transition handling
-}  // end request()
+}  // end addStateMachineStatusToXML()
 
 //==============================================================================
 void GatewaySupervisor::addRequiredFsmLogInputToXML(
@@ -6750,8 +6954,8 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string& command, Config
 	}
 	catch(...)
 	{
-		__SS__ << "\nRelaunch of otsdaq interrupted! "
-		       << "The Configuration Manager could not be initialized." << __E__;
+		__SS__ << "Launch of command '" << command << "' interrupted! "
+		       << "The Configuration Manager could not be initialized to find targets." << __E__;
 
 		__SS_THROW__;
 	}
@@ -6787,7 +6991,7 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string& command, Config
 
 			if(strcmp(line, command.c_str()) == 0)
 			{
-				__SS__ << "The command looks to have been ignored by " << hostname << ". Is the ots launch script still running on that node?" << __E__;
+				__SS__ << "The command '" << command << "' looks to have been ignored by " << hostname << ". Is the ots launch script still running on that node?" << __E__;
 				__SS_THROW__;
 			}
 			__COUTV__(line);

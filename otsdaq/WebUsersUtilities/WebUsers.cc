@@ -1349,9 +1349,12 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode,
 	// parameters.addParameter("CookieCode");
 	// parameters.addParameter("RefreshOption");
 	// parameters.addParameter("IPAddress");
+	//	-- Use name to lookup access level conversion for user
+	//  -- if Desktop Icon has a special permission type, then modify userGroupPermissionsMap's allUsers to match
+	//		parameters.addParameter("RemoteGatewaySelfName");
 
 	std::string request = "loginVerify," + cookieCode + "," + 
-		(refresh?"1":"0") + "," + ip;
+		(refresh?"1":"0") + "," + ip + "," + remoteGatewaySelfName_;
 
 	__COUTV__(request);
 	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << StringMacros::stackTrace() << __E__;
