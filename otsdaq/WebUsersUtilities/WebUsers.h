@@ -553,8 +553,11 @@ class WebUsers
 	std::unordered_map<std::string, std::string> certFingerprints_;
 
 	static const std::vector<std::string> UsersDatabaseEntryFields_, HashesDatabaseEntryFields_;
-	bool                     CareAboutCookieCodes_;
+	static volatile bool     CareAboutCookieCodes_;
 	std::string              securityType_;
+	std::set<std::string /* ip */> ipAccessAccept_;
+	std::set<std::string /* ip */> ipAccessReject_;
+	std::set<std::string /* ip */> ipAccessBlacklist_;
 
 	//"Login Session" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::vector<LoginSession> LoginSessions_;
@@ -641,8 +644,8 @@ class WebUsers
 
   public:
   	std::atomic<time_t>			remoteLoginVerificationEnabledBlackoutTime_ = 0;
-	std::atomic<bool>			remoteLoginVerificationEnabled_ = false; //true if this supervisor is under control of a remote supervisor
-	std::string					remoteLoginVerificationIP_;   //IP of remote Gateway to be used for login verification
+	static std::atomic<bool>	remoteLoginVerificationEnabled_; //true if this supervisor is under control of a remote supervisor
+	std::string					remoteLoginVerificationIP_, remoteGatewaySelfName_;   //IP of remote Gateway to be used for login verification
 	int							remoteLoginVerificationPort_; //Port of remote Gateway to be used for login verification
 };
 }  // namespace ots

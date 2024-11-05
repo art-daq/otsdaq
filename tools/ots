@@ -92,6 +92,7 @@ REMOTELAUNCH=1
 ISREMOTE=0
 MACROMAKER_MODE=0
 export MACROMAKER_MODE #this environment variable is used by source code 
+log_label=""
 #############################
 
 # Output startup banner
@@ -1771,10 +1772,7 @@ launchOTS() {
 					xdaqContextUID+=($contextUID)				
 					haveXDAQContextPort=true
 				fi
- 				
-			  #IF THERE IS AT LEAST ONE NOT ARTDAQ APP THEN I CAN GET OUT OF THIS CONTEXT AND RUN XDAQ ONCE JUST FOR THIS
-			  #insideContext=false #RAR commented because need Super Supervisor connection LID for URL
-			  #echo $line          
+ 				     
 			fi
 		fi   
 	done < ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml
@@ -2345,6 +2343,7 @@ otsActionHandler() {
 	fi	
 		
 	FIRST_TIME=1 #to enable url printouts
+	DO_LOG_ROLLOVER=0
 	
 	#listen for file commands
 	while true; do
@@ -2492,26 +2491,62 @@ otsActionHandler() {
 					inst_mode=$param
 				elif [ $cnt == 5 ]; then
 					inst_type=$param
+				elif [ $cnt == 6 ]; then
+					inst_data=$param
 				fi
 				cnt=$(( $cnt + 1 ))				
 			done
 
-			if [ $cnt != 6 ]; then
-				error "Invalid parameters received, must be 6"
+			if [ $cnt != 7 ]; then
+				error "Invalid parameters received, must be 7 (received ${cnt})."
 			else
 				out "inst_user = $inst_user"
 				out "inst_host = $inst_host"
 				out "inst_path = $inst_path"
 				out "inst_mode = $inst_mode"
 				out "inst_type = $inst_type"
+				out "inst_data = $inst_data"
+
 
 				out "\tRemote launch of ots instance processes on host {${inst_host}}."
-				out "\t\tssh ${inst_host} SCRIPT_DIR/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type}" 
-				
+				out "\t\tssh ${inst_user}@${inst_host} SCRIPT_DIR/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type}" 
+
+				# first kill existing for immediate gratification to user (so not confused by existing instance status)
+				ssh -K ${inst_user}@${inst_host} "echo \"KILL_ALL\" > ${inst_data}/ServiceData/StartOTS_action_quit.cmd"
+
 				# launch ssh remote start (attempt twice)
 				ssh -K ${inst_user}@${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || ssh -K ${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || out "${Red}${REV} ***************** {${inst_host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
 			fi
 			
+		elif [[ "$OTSDAQ_STARTOTS_ACTION" == LOG_ROLLOVER* ]]; then
+
+			info "Rolling over log files $OTSDAQ_STARTOTS_ACTION"
+
+			# Set Internal Field Separator to ";"
+			IFS=';'
+
+			# Read the string into an array
+			read -ra params <<< "$OTSDAQ_STARTOTS_ACTION"
+			# Print each parameter
+			cnt=0
+			log_label=""
+			for param in "${params[@]}"; do
+				# out "param[$cnt] = $param"
+
+				if [ $cnt == 1 ]; then
+					log_label="-$param"				
+				fi
+				cnt=$(( $cnt + 1 ))				
+			done
+
+			if [ $cnt != 2 ]; then
+				error "Invalid parameters received, must be 2 (received ${cnt})."
+			else
+				out "log_label = $log_label"
+				
+				DO_LOG_ROLLOVER=1
+			fi
+
 		elif [[ "${OTSDAQ_STARTOTS_ACTION:-"0"}" != "0"  || "${OTSDAQ_STARTOTS_QUIT:-"0"}" != "0" ]]; then
 		
 			error "Exiting ots script.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"			
@@ -2521,8 +2556,8 @@ otsActionHandler() {
 				
 		sleep 1
 
-		#manage log file rollover
-		if [ "x$OTS_LOG_ROLLOVER" != "x" ]; then
+		#manage log file rollover with $OTS_LOG_ROLLOVER or ots commands
+		if [[ "x$OTS_LOG_ROLLOVER" != "x" || $DO_LOG_ROLLOVER == 1 ]]; then
 			i=0
 			for contextPID in "${ContextPIDArray[@]}"
 			do
@@ -2536,17 +2571,46 @@ otsActionHandler() {
 					logFileSize=0
 					# out "File empty"
 				fi
-				# out "${Red}${Rev}Found Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${PORT} > ${xdaqLogFilename[$i]} size=${logFileSize} ${RstClr}"
+				# out "Found Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${xdaqLogFilename[$i]} size=${logFileSize}"
 
-				# if log file > 100MB
-				if [ $logFileSize -gt 100000000 ]; then 
+				# if log file > 100MB, export OTS_LOG_ROLLOVER=100000000			
+				if [[ $logFileSize -gt $OTS_LOG_ROLLOVER || $DO_LOG_ROLLOVER == 1 ]]; then 
 					DATESTRING=`date +'%s'`	
-					xdaqLogFilename[$i]="otsdaq_quiet_run-gateway-${gatewayHostname}-${gatewayPort}-${DATESTRING}.txt"
-					
-					#from https://github.com/jerome-pouiller/reredirect/
-					reredirect -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${GATEWAY_PID}
-					out "${Red}${Rev}Doing log rollover of Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${PORT} > ${xdaqLogFilename[$i]}${RstClr}"
+					out "Found Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${xdaqLogFilename[$i]} size=${logFileSize}"
+					tmpLogFilename=$xdaqLogFilename[$i]
+					xdaqLogFilename[$i]="otsdaq_quiet_run-${xdaqHost[$i]}-${xdaqPort[$i]}${log_label}-${DATESTRING}.txt"
+					out "${Red}${Bold}Redirecting${RstClr} ${Bold}Non-gateway${RstClr}' process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${Yellow}${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}${RstClr}"					
+
+					#from https://github.com/jerome-pouiller/reredirect/					
+					# reredirect overwrites the file, so do not attempt to create in advance
+					# echo "Redirecting Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}
+					# echo "...to this file: ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" >> ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}						
+
+					REDIRECT_FAILED=1
+					MAX_RETRIES=20
+					RETRY_COUNT=0
+					while [ $REDIRECT_FAILED -ne 0 ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+						out "Attempt $((RETRY_COUNT + 1)) to redirect process ID ${contextPID} on host ${xdaqHost[$i]} port ${xdaqPort[$i]}..."
+						timeout 2s reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID} && REDIRECT_FAILED=0 || REDIRECT_FAILED=1
+						
+						if [ $REDIRECT_FAILED -ne 0 ]; then
+							error "Redirect failed on attempt $((RETRY_COUNT + 1)). Retrying..."
+							RETRY_COUNT=$((RETRY_COUNT + 1))
+							# sleep 1  # Optional delay before retrying
+						fi
+					done
+
+					if [ $REDIRECT_FAILED == 1 ]; then
+						out "To manually retry: reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID}"
+						$xdaqLogFilename[$i]=$tmpLogFilename						
+						error "Redirect failed!.. Reverting to ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}"						
+					else
+						echo "Redirecting Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
+						echo "Redirected to Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
+						info "Completed log rollover of Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]}"
+					fi
 				fi
+				i=$(( $i + 1 ))
 			done
 
 			if [[ -v GATEWAY_PID ]]; then
@@ -2555,20 +2619,49 @@ otsActionHandler() {
 					logFileSize=0
 					# out "File empty"
 				fi
-				# out "${Red}${Rev}Found Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${gatewayLogFilename} size=${logFileSize} ${RstClr}"
+				# out "Found Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${gatewayLogFilename} size=${logFileSize}"
 				
-				# if log file > 100MB
-				if [ $logFileSize -gt 100000000 ]; then 
+				# if log file > 100MB, export OTS_LOG_ROLLOVER=100000000
+				if [[ $logFileSize -gt $OTS_LOG_ROLLOVER || $DO_LOG_ROLLOVER == 1 ]]; then 
 					DATESTRING=`date +'%s'`	
-					gatewayLogFilename="otsdaq_quiet_run-gateway-${gatewayHostname}-${gatewayPort}-${DATESTRING}.txt"
-					
+					out "Found Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${gatewayLogFilename} size=${logFileSize}"
+					tmpLogFilename=$gatewayLogFilename
+					gatewayLogFilename="otsdaq_quiet_run-gateway-${gatewayHostname}-${gatewayPort}${log_label}-${DATESTRING}.txt"
+					out "${Red}${Bold}Redirecting${RstClr} ${Bold}Gateway${RstClr}' process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${Yellow}${OTSDAQ_LOG_DIR}/${gatewayLogFilename}${RstClr}"					
+
 					#from https://github.com/jerome-pouiller/reredirect/
-					reredirect -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID}
-					out "${Red}${Rev}Doing log rollover of Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${gatewayLogFilename}${RstClr}"
+					# reredirect overwrites the file, so do not attempt to create in advance
+					# echo "Redirecting Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}					
+					# echo "...to this file: ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" >> ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}
+
+					REDIRECT_FAILED=1
+					MAX_RETRIES=20
+					RETRY_COUNT=0
+					while [ $REDIRECT_FAILED -ne 0 ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+						out "Attempt $((RETRY_COUNT + 1)) to redirect process ID ${GATEWAY_PID} on host ${gatewayHostname} port ${gatewayPort}..."
+						timeout 2s reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID} && REDIRECT_FAILED=0 || REDIRECT_FAILED=1
+						
+						if [ $REDIRECT_FAILED -ne 0 ]; then
+							error "Redirect failed on attempt $((RETRY_COUNT + 1)). Retrying..."
+							RETRY_COUNT=$((RETRY_COUNT + 1))
+							# sleep 1  # Optional delay before retrying
+						fi
+					done
+
+					if [ $REDIRECT_FAILED == 1 ]; then
+						out "To manually retry: reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID}"
+						gatewayLogFilename=$tmpLogFilename						
+						error "Redirect failed!.. Reverting to ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}"						
+					else
+						echo "Redirecting Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}					
+						echo "Redirected Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}					
+						info "Completed log rollover of Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort}"
+					fi
 				fi
 			fi
 		fi
 
+		DO_LOG_ROLLOVER=0 #clear do rollover command
 	done
 
 		

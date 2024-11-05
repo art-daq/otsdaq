@@ -60,23 +60,23 @@ using namespace ots;
 #define PREF_XML_ACCOUNTS_FIELD 			"users_accounts"  	// user accounts field for super users
 #define PREF_XML_LOGIN_HISTORY_FIELD 		"login_entry"  		// login history field for user login history data
 
-const std::string WebUsers::OTS_OWNER					  =	getenv("OTS_OWNER")?getenv("OTS_OWNER"):"";
-const std::string WebUsers::DEFAULT_ADMIN_USERNAME        = "admin";
-const std::string WebUsers::DEFAULT_ADMIN_DISPLAY_NAME    = "Administrator";
-const std::string WebUsers::DEFAULT_ADMIN_EMAIL           = "root@otsdaq.fnal.gov";
-const std::string WebUsers::DEFAULT_ITERATOR_USERNAME     = "iterator";
-const std::string WebUsers::DEFAULT_STATECHANGER_USERNAME = "statechanger";
-const std::string WebUsers::DEFAULT_USER_GROUP            = "allUsers";
+const std::string WebUsers::OTS_OWNER					  	=	getenv("OTS_OWNER")?getenv("OTS_OWNER"):"";
+const std::string WebUsers::DEFAULT_ADMIN_USERNAME        	= "admin";
+const std::string WebUsers::DEFAULT_ADMIN_DISPLAY_NAME    	= "Administrator";
+const std::string WebUsers::DEFAULT_ADMIN_EMAIL           	= "root@otsdaq.fnal.gov";
+const std::string WebUsers::DEFAULT_ITERATOR_USERNAME     	= "iterator";
+const std::string WebUsers::DEFAULT_STATECHANGER_USERNAME 	= "statechanger";
+const std::string WebUsers::DEFAULT_USER_GROUP            	= "allUsers";
 
-const std::string WebUsers::REQ_NO_LOGIN_RESPONSE      = "NoLogin";
-const std::string WebUsers::REQ_NO_PERMISSION_RESPONSE = "NoPermission";
-const std::string WebUsers::REQ_USER_LOCKOUT_RESPONSE  = "UserLockout";
-const std::string WebUsers::REQ_LOCK_REQUIRED_RESPONSE = "LockRequired";
-const std::string WebUsers::REQ_ALLOW_NO_USER          = "AllowNoUser";
+const std::string WebUsers::REQ_NO_LOGIN_RESPONSE      		= "NoLogin";
+const std::string WebUsers::REQ_NO_PERMISSION_RESPONSE 		= "NoPermission";
+const std::string WebUsers::REQ_USER_LOCKOUT_RESPONSE  		= "UserLockout";
+const std::string WebUsers::REQ_LOCK_REQUIRED_RESPONSE 		= "LockRequired";
+const std::string WebUsers::REQ_ALLOW_NO_USER          		= "AllowNoUser";
 
-const std::string WebUsers::SECURITY_TYPE_NONE          = "NoSecurity";
-const std::string WebUsers::SECURITY_TYPE_DIGEST_ACCESS = "DigestAccessAuthentication";
-const std::string WebUsers::SECURITY_TYPE_DEFAULT 		= WebUsers::SECURITY_TYPE_NONE; // default to NO SECURITY
+const std::string WebUsers::SECURITY_TYPE_NONE          	= "NoSecurity";
+const std::string WebUsers::SECURITY_TYPE_DIGEST_ACCESS 	= "DigestAccessAuthentication";
+const std::string WebUsers::SECURITY_TYPE_DEFAULT 			= WebUsers::SECURITY_TYPE_NONE; // default to NO SECURITY
 
 const std::vector<std::string> WebUsers::HashesDatabaseEntryFields_ = {"hash","lastAccessTime"};
 const std::vector<std::string> WebUsers::UsersDatabaseEntryFields_ = {"username","displayName","salt",
@@ -85,6 +85,9 @@ const std::vector<std::string> WebUsers::UsersDatabaseEntryFields_ = {"username"
 
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "WebUsers"
+
+std::atomic<bool>	WebUsers::remoteLoginVerificationEnabled_ 	= false;
+volatile bool		WebUsers::CareAboutCookieCodes_ 			= true;
 
 // clang-format on
 
@@ -228,7 +231,8 @@ void WebUsers::initializeRequestUserInfo(cgicc::Cgicc& cgi, WebUsers::RequestUse
 
 //==============================================================================
 // checkRequestAccess
-//	check user permission parameters based on cookie code, user permission level
+//	-- static function
+//	Check user permission parameters based on cookie code, user permission level
 //(extracted previous from group membership) 	Note: assumes
 // userInfo.groupPermissionLevelMap_ and userInfo.permissionLevel_ are properly setup
 //		by either calling userInfo.setGroupPermissionLevels() or
@@ -286,11 +290,13 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 	}
 
 	// second, start check access -------
-	if(!isWizardMode && !userInfo.allowNoUser_ && userInfo.cookieCode_.length() != WebUsers::COOKIE_CODE_LENGTH)
+	if(!isWizardMode && !userInfo.allowNoUser_ && userInfo.cookieCode_.length() != WebUsers::COOKIE_CODE_LENGTH
+		&& !(!WebUsers::CareAboutCookieCodes_ && WebUsers::remoteLoginVerificationEnabled_ && 
+			userInfo.cookieCode_ == WebUsers::REQ_ALLOW_NO_USER)) //ignore case when security disabled at remote subsystem (avoid propagating bad cookieCode to primary Gateway)
 	{
 		__COUT__ << "User (@" << userInfo.ip_ << ") has invalid cookie code: " << userInfo.cookieCode_ << std::endl;
 		*out << WebUsers::REQ_NO_LOGIN_RESPONSE;
-		return false;  // invalid cookie and present sequence, but not correct sequence
+		return false;  // invalid cookie and sequence present, but not correct sequence
 	}
 
 	if(!userInfo.allowNoUser_ && (userInfo.permissionLevel_ == 0 ||  // reject inactive user permission level
@@ -302,7 +308,7 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 		__COUT__ << "User (@" << userInfo.ip_ << ") has insufficient permissions for requestType '" << userInfo.requestType_
 		         << "' : user level is " << (unsigned int)userInfo.permissionLevel_ << ", " << 
 				 (unsigned int)userInfo.permissionsThreshold_ << " required." << __E__;
-		return false;  // invalid cookie and present sequence, but not correct sequence
+		return false;  // invalid permissions
 	}
 	// end check access -------
 
@@ -1324,24 +1330,31 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode,
 
 	//check if cookie code is cached locally
 	cleanupExpiredRemoteEntries();  // remove expired cookies
+	__COUTTV__(cookieCode);
+	__COUTTV__(RemoteSessions_.size());
 	auto it = RemoteSessions_.find(cookieCode);
 	if(it != RemoteSessions_.end()) //then found cached cookie code
 	{
 		__COUTT__ << "cookieCode still active locally!" << __E__;
+		__COUTV__(it->second.userId_);
 		return it->second.userId_;
 	}
 	//else ask Remote server to verify login
 
-	if(!doNotGoRemote) return NOT_FOUND_IN_DATABASE;
+	__COUTTV__(doNotGoRemote);
+	if(doNotGoRemote) return NOT_FOUND_IN_DATABASE;
 
 	// Send these parameters:
 	// command = loginVerify
 	// parameters.addParameter("CookieCode");
 	// parameters.addParameter("RefreshOption");
 	// parameters.addParameter("IPAddress");
+	//	-- Use name to lookup access level conversion for user
+	//  -- if Desktop Icon has a special permission type, then modify userGroupPermissionsMap's allUsers to match
+	//		parameters.addParameter("RemoteGatewaySelfName");
 
 	std::string request = "loginVerify," + cookieCode + "," + 
-		(refresh?"1":"0") + "," + ip;
+		(refresh?"1":"0") + "," + ip + "," + remoteGatewaySelfName_;
 
 	__COUTV__(request);
 	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << StringMacros::stackTrace() << __E__;
@@ -1368,15 +1381,8 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode,
 	// 4: retParameters.addParameter("DisplayName", theWebUsers_.getUsersDisplayName(uid));	
 	// 5: retParameters.addParameter("UserSessionIndex", td::to_string(userSessionIndex)); 
 
-	__COUTTV__(rxParams[2]);	
-	__COUTTV__(usersUsernameWithLock_);	
-	if(rxParams[2] != "" && 
-		usersUsernameWithLock_ != rxParams[2])
-	{
-		__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_ << 
-			"' with remote user-with-lock 'Remote:" << rxParams[2] << "'" << __E__;
-		usersUsernameWithLock_ = rxParams[2];
-	}
+	__COUTTV__(rxParams[2]);	//Primary Gateway user-with-lock
+	__COUTTV__(usersUsernameWithLock_);	 //Local Gateway user-with-lock	
 
 	//search for an existing matching username, otherwise create
 	std::string username = rxParams[3];
@@ -1385,6 +1391,8 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode,
 	if(j == NOT_FOUND_IN_DATABASE)
 	{
 		__COUT_INFO__ << "Creating User entry for remote user '" << username << "' in local user list to track user preferences." << __E__;		
+
+		//Note: createNewAccount will validate username and displayName
 		createNewAccount(username, rxParams[4] /* displayName */, "" /* email */);
 		j = Users_.size()-1;		
 	}
@@ -1398,6 +1406,8 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode,
 	StringMacros::getMapFromString(StringMacros::decodeURIComponent(rxParams[1]), 
 		Users_[j].permissions_);
 	__COUTV__(StringMacros::mapToString(Users_[j].permissions_));
+	__COUTV__(Users_[j].username_);
+	__COUTV__(Users_[j].userId_);
 
 	//fill in Remote Session and User info to cache for next login attempt
 
@@ -1407,6 +1417,19 @@ uint64_t WebUsers::checkRemoteLoginVerification(const std::string& cookieCode,
 	newRemoteSession.userId_ = Users_[j].userId_;
 	sscanf(rxParams[5].c_str(),"%lu", &newRemoteSession.sessionIndex_);
 	newRemoteSession.startTime_ = time(0);	
+
+	//handle local user-with-lock
+	if(!CareAboutCookieCodes_ && refresh && 
+		usersUsernameWithLock_ == DEFAULT_ADMIN_USERNAME &&
+		usersUsernameWithLock_ != username)
+	{
+		__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_ << 
+			"' with remote user-with-lock 'Remote:" << username << "'" << __E__;
+		usersUsernameWithLock_ = username; //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
+		addSystemMessage( //broadcast change!
+				"*", getUserWithLock() + " has locked REMOTE ots (overriding anonymous " + 
+				DEFAULT_ADMIN_USERNAME + " user).");
+	}
 
 	return Users_[j].userId_;
 } //end checkRemoteLoginVerification()
@@ -1736,56 +1759,26 @@ bool WebUsers::checkIpAccess(const std::string& ip)
 	if(ip == "0")
 		return true;  // always accept dummy IP
 
-	FILE*  fp = fopen((IP_ACCEPT_FILE).c_str(), "r");
-	char   line[300];
-	size_t len;
+	__COUTTV__(ip);
 
-	if(fp)
-	{
-		while(fgets(line, 300, fp))
+	for(const auto& acceptIp : ipAccessAccept_)
+		if(StringMacros::wildCardMatch(ip, acceptIp))
 		{
-			len = strlen(line);
-			// remove new line
-			if(len > 2 && line[len - 1] == '\n')
-				line[len - 1] = '\0';
-			if(StringMacros::wildCardMatch(ip, line))
-				return true;  // found in accept file, so accept
+			__COUTV__(acceptIp);
+			return true;  // found in accept set, so accept
 		}
-
-		fclose(fp);
-	}
-
-	fp = fopen((IP_REJECT_FILE).c_str(), "r");
-	if(fp)
-	{
-		while(fgets(line, 300, fp))
+	for(const auto& rejectIp : ipAccessReject_)
+		if(StringMacros::wildCardMatch(ip, rejectIp))
 		{
-			len = strlen(line);
-			// remove new line
-			if(len > 2 && line[len - 1] == '\n')
-				line[len - 1] = '\0';
-			if(StringMacros::wildCardMatch(ip, line))
-				return false;  // found in reject file, so reject
+			__COUTV__(rejectIp);
+			return false;  // found in reject file, so reject
 		}
-
-		fclose(fp);
-	}
-
-	fp = fopen((IP_BLACKLIST_FILE).c_str(), "r");
-	if(fp)
-	{
-		while(fgets(line, 300, fp))
+	for(const auto& blacklistIp : ipAccessBlacklist_)
+		if(StringMacros::wildCardMatch(ip, blacklistIp))
 		{
-			len = strlen(line);
-			// remove new line
-			if(len > 2 && line[len - 1] == '\n')
-				line[len - 1] = '\0';
-			if(StringMacros::wildCardMatch(ip, line))
-				return false;  // found in blacklist file, so reject
+			__COUTV__(blacklistIp);
+			return false;  // found in blacklist file, so reject
 		}
-
-		fclose(fp);
-	}
 
 	// default to accept if nothing triggered above
 	return true;
@@ -1809,6 +1802,9 @@ void WebUsers::incrementIpBlacklistCount(const std::string& ip)
 		if(it->second >= IP_BLACKLIST_COUNT_THRESHOLD)
 		{
 			__MCOUT__("Adding IP '" << ip << "' to blacklist!" << __E__);
+
+			ipAccessBlacklist_.emplace(ip);
+			__COUTV__(ipAccessBlacklist_.size());
 
 			// append to blacklisted IP to generated IP reject file
 			FILE* fp = fopen((IP_BLACKLIST_FILE).c_str(), "a");
@@ -1951,52 +1947,6 @@ uint64_t WebUsers::cookieCodeLogout(const std::string& cookieCode, bool logoutOt
 	return logoutCount;
 }  // end cookieCodeLogout()
 
-// //==============================================================================
-// // WebUsers::getUserInfoForCookie ---
-// bool WebUsers::getUserInfoForCookie(std::string& cookieCode, std::string* userName, std::string* displayName, uint64_t* activeSessionIndex)
-// {
-// 	if(userName)
-// 		*userName = "";
-// 	if(displayName)
-// 		*displayName = "";
-
-// 	if(!CareAboutCookieCodes_)  // NO SECURITY, return admin
-// 	{
-// 		uint64_t uid = getAdminUserID();
-// 		if(userName)
-// 			*userName = getUsersUsername(uid);
-// 		if(displayName)
-// 			*displayName = getUsersDisplayName(uid);
-// 		if(activeSessionIndex)
-// 			*activeSessionIndex = -1;
-// 		return true;
-// 	}
-
-// 	uint64_t i, j;
-
-// 	// search active users for cookie code
-// 	if((i = searchActiveSessionDatabaseForCookie(cookieCode)) == NOT_FOUND_IN_DATABASE)
-// 	{
-// 		__COUT__ << "cookieCode NOT_FOUND_IN_DATABASE" << __E__;
-// 		return false;
-// 	}
-
-// 	// get Users record
-// 	if((j = searchUsersDatabaseForUserId(ActiveSessions_[i].userId_)) == NOT_FOUND_IN_DATABASE)
-// 	{
-// 		__COUT__ << "ActiveSession UserId NOT_FOUND_IN_DATABASE" << __E__;
-// 		return false;
-// 	}
-
-// 	if(userName)
-// 		*userName = Users_[j].username_;
-// 	if(displayName)
-// 		*displayName = Users_[j].displayName_;
-// 	if(activeSessionIndex)
-// 		*activeSessionIndex = ActiveSessions_[i].sessionIndex_;
-// 	return true;
-// }  // end getUserInfoForCookie()
-
 //==============================================================================
 // WebUsers::isCookieCodeActiveForRequest ---
 //	Used to verify cookie code for all general user requests
@@ -2034,13 +1984,16 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 	uint64_t i, j, userId = NOT_FOUND_IN_DATABASE, userSession = NOT_FOUND_IN_DATABASE;
 
 	__COUTTV__(CareAboutCookieCodes_);
-	__COUTT__ << "refresh cookie " << refresh << __E__;
+	__COUTT__ << "refresh=" << refresh << ", doNotGoRemote=" << doNotGoRemote << __E__;
 	__COUTVS__(2,cookieCode);
+
+	bool localEnableRemoteLogin = WebUsers::remoteLoginVerificationEnabled_; //cache here so another process does not change mid-function
+	__COUTTV__(localEnableRemoteLogin);
 
 	//always go remote if enabled
 	try
 	{
-		if(remoteLoginVerificationEnabled_ && time(0) > remoteLoginVerificationEnabledBlackoutTime_ &&
+		if(localEnableRemoteLogin && time(0) > remoteLoginVerificationEnabledBlackoutTime_ &&
 			(userId = checkRemoteLoginVerification(cookieCode, refresh, doNotGoRemote, ip)) != NOT_FOUND_IN_DATABASE)
 		{		
 			// remote verify success!
@@ -2053,16 +2006,18 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 		__COUT_WARN__ << "Ignoring exception during remote login verification." << __E__;
 
 		//Disable remote login in the case that remote verifier is down
-		if(!CareAboutCookieCodes_ && remoteLoginVerificationEnabled_ && 
+		if(!CareAboutCookieCodes_ && localEnableRemoteLogin && 
 			remoteLoginVerificationEnabledBlackoutTime_ == 0)
 		{
-			remoteLoginVerificationEnabled_ = false;
-			remoteLoginVerificationEnabledBlackoutTime_ = time(0) + 5*60;
+			remoteLoginVerificationEnabled_ = false; //set globally
+			localEnableRemoteLogin = false; //set locally
+			remoteLoginVerificationEnabledBlackoutTime_ = time(0) + 10;
 			__COUT_INFO__ << "Disabled remote login until " << StringMacros::getTimestampString(remoteLoginVerificationEnabledBlackoutTime_) << __E__;
 		}
 	}
+	__COUTTV__(localEnableRemoteLogin);
 
-	if(remoteLoginVerificationEnabled_ && userId == NOT_FOUND_IN_DATABASE)
+	if(localEnableRemoteLogin && userId == NOT_FOUND_IN_DATABASE)
 		__COUTT__ << "Remote login verification failed." << __E__;
 
 	if(!CareAboutCookieCodes_ && userId == NOT_FOUND_IN_DATABASE)  // No Security, so grant admin
@@ -2081,18 +2036,9 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 			cookieCode = genCookieCode();  // return "dummy" cookie code
 
 		
-		if(remoteLoginVerificationEnabled_) //add admin session to Remote Sessions for quick verify
+		if(localEnableRemoteLogin) //want future login attempts to still go to remote
 		{
-			//fill in Remote Session and User info to cache for next login attempt
-
-			while(RemoteSessions_.find(cookieCode) != RemoteSessions_.end()) 
-				cookieCode = genCookieCode(); // regenerate on the off chance of collissions
-			ActiveSession& newRemoteSession = RemoteSessions_[cookieCode]; //construct remote ActiveSession
-			newRemoteSession.cookieCode_ = cookieCode;
-			newRemoteSession.ip_ = ip;
-			newRemoteSession.userId_ = getAdminUserID();
-			newRemoteSession.sessionIndex_ = 0;
-			newRemoteSession.startTime_ = time(0);	
+			cookieCode = WebUsers::REQ_ALLOW_NO_USER; //allowNoUser will not overwrite other valid cookieCodes in parent Gateway Desktop
 		}
 
 		return true;
@@ -2694,6 +2640,8 @@ void WebUsers::resetAllUserTooltips(const std::string& userNeedle)
 void WebUsers::silenceAllUserTooltips(const std::string& username)
 {
 	std::string silencefilename = getTooltipFilename(username, SILENCE_ALL_TOOLTIPS_FILENAME, "", "");  // srcFile, srcFunc, srcId);
+
+	__COUTV__(silencefilename);
 	FILE*       silencefp       = fopen(silencefilename.c_str(), "w");
 	if(silencefp != NULL)
 	{
@@ -2819,6 +2767,10 @@ void WebUsers::insertSettingsForUser(uint64_t uid, HttpXmlDocument* xmldoc, bool
 	// add ots owner name
 	xmldoc->addTextElementToData(PREF_XML_OTS_OWNER_FIELD, WebUsers::OTS_OWNER);
 
+	if(WebUsers::remoteLoginVerificationEnabled_) // add remote ots ip:port
+		xmldoc->addTextElementToData("ots_remote_address", 
+			remoteLoginVerificationIP_ + ":" + std::to_string(remoteLoginVerificationPort_));
+	
 }  // end insertSettingsForUser()
 
 //==============================================================================
@@ -3150,6 +3102,7 @@ void WebUsers::modifyAccountSettings(
 	}
 
 	saveDatabaseToFile(DB_USERS);
+	loadSecuritySelection(); //give opportunity to dynamically modifiy IP access settings or security settings
 }  // end modifyAccountSettings()
 //==============================================================================
 // WebUsers::getActiveUserCount
@@ -3609,6 +3562,73 @@ void WebUsers::loadSecuritySelection()
 		CareAboutCookieCodes_ = true;
 
 	__COUT__ << "CareAboutCookieCodes_: " << CareAboutCookieCodes_ << __E__;
+
+
+	//-------- load IP address security
+	{
+		ipAccessAccept_.clear();
+		ipAccessReject_.clear();
+		ipAccessBlacklist_.clear();
+
+		FILE*  fp = fopen((IP_ACCEPT_FILE).c_str(), "r");
+		char   line[300];
+		size_t len;
+
+		if(fp)
+		{
+			while(fgets(line, 300, fp))
+			{
+				len = strlen(line);
+				// remove new line
+				if(len > 2 && line[len - 1] == '\n')
+					line[len - 1] = '\0';
+				ipAccessAccept_.emplace(line);
+				// if(StringMacros::wildCardMatch(ip, line))
+				// 	return true;  // found in accept file, so accept
+			}
+
+			fclose(fp);
+		}
+		__COUTV__(ipAccessAccept_.size());
+
+		fp = fopen((IP_REJECT_FILE).c_str(), "r");
+		if(fp)
+		{
+			while(fgets(line, 300, fp))
+			{
+				len = strlen(line);
+				// remove new line
+				if(len > 2 && line[len - 1] == '\n')
+					line[len - 1] = '\0';
+				ipAccessReject_.emplace(line);
+				// if(StringMacros::wildCardMatch(ip, line))
+				// 	return false;  // found in reject file, so reject
+			}
+
+			fclose(fp);
+		}
+		__COUTV__(ipAccessReject_.size());
+
+		fp = fopen((IP_BLACKLIST_FILE).c_str(), "r");
+		if(fp)
+		{
+			while(fgets(line, 300, fp))
+			{
+				len = strlen(line);
+				// remove new line
+				if(len > 2 && line[len - 1] == '\n')
+					line[len - 1] = '\0';
+				ipAccessBlacklist_.emplace(line);
+				// if(StringMacros::wildCardMatch(ip, line))
+				// 	return false;  // found in blacklist file, so reject
+			}
+
+			fclose(fp);
+		}
+		__COUTV__(ipAccessBlacklist_.size());
+	} //end load IP address security
+
+
 }  // end loadSecuritySelection()()
 
 //==============================================================================
