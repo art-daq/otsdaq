@@ -2583,18 +2583,32 @@ otsActionHandler() {
 					xdaqLogFilename[$i]="${xdaqLogFilename[$i]}.txt"
 					out "${Red}${Bold}Redirecting${RstClr} ${Bold}Non-gateway${RstClr}' process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${Yellow}${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}${RstClr}"					
 
-					#from https://github.com/jerome-pouiller/reredirect/
-					REDIRECT_FAILED=0
+					#from https://github.com/jerome-pouiller/reredirect/					
 					# reredirect overwrites the file, so do not attempt to create in advance
 					# echo "Redirecting Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}
 					# echo "...to this file: ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" >> ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}						
-					timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID} || REDIRECT_FAILED=1
 
-					if [ $REDIRECT_FAILED == 1 ]; then
-						error "Redirect failed! Retrying..."
-						REDIRECT_FAILED=0
-						timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID} || REDIRECT_FAILED=1
-					fi
+					REDIRECT_FAILED=1
+					MAX_RETRIES=20
+					RETRY_COUNT=0
+					while [ $REDIRECT_FAILED -ne 0 ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+						out "Attempt $((RETRY_COUNT + 1)) to redirect process ID ${contextPID} on host ${xdaqHost[$i]} port ${xdaqPort[$i]}..."
+						timeout 2s reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID} && REDIRECT_FAILED=0 || REDIRECT_FAILED=1
+						
+						if [ $REDIRECT_FAILED -ne 0 ]; then
+							error "Redirect failed on attempt $((RETRY_COUNT + 1)). Retrying..."
+							RETRY_COUNT=$((RETRY_COUNT + 1))
+							# sleep 1  # Optional delay before retrying
+						fi
+					done
+
+					# timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID} || REDIRECT_FAILED=1
+
+					# if [ $REDIRECT_FAILED == 1 ]; then
+					# 	error "Redirect failed! Retrying..."
+					# 	REDIRECT_FAILED=0
+					# 	timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID} || REDIRECT_FAILED=1
+					# fi
 
 					if [ $REDIRECT_FAILED == 1 ]; then
 						out "To manually retry: reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID}"
@@ -2628,17 +2642,31 @@ otsActionHandler() {
 					out "${Red}${Bold}Redirecting${RstClr} ${Bold}Gateway${RstClr}' process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${Yellow}${OTSDAQ_LOG_DIR}/${gatewayLogFilename}${RstClr}"					
 
 					#from https://github.com/jerome-pouiller/reredirect/
-					REDIRECT_FAILED=0
 					# reredirect overwrites the file, so do not attempt to create in advance
 					# echo "Redirecting Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}					
 					# echo "...to this file: ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" >> ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}
-					timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID} || REDIRECT_FAILED=1
 
-					if [ $REDIRECT_FAILED == 1 ]; then
-						error "Redirect failed! Retrying..."
-						REDIRECT_FAILED=0
-						timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID} || REDIRECT_FAILED=1
-					fi
+					REDIRECT_FAILED=1
+					MAX_RETRIES=20
+					RETRY_COUNT=0
+					while [ $REDIRECT_FAILED -ne 0 ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+						out "Attempt $((RETRY_COUNT + 1)) to redirect process ID ${GATEWAY_PID} on host ${gatewayHostname} port ${gatewayPort}..."
+						timeout 2s reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID} && REDIRECT_FAILED=0 || REDIRECT_FAILED=1
+						
+						if [ $REDIRECT_FAILED -ne 0 ]; then
+							error "Redirect failed on attempt $((RETRY_COUNT + 1)). Retrying..."
+							RETRY_COUNT=$((RETRY_COUNT + 1))
+							# sleep 1  # Optional delay before retrying
+						fi
+					done
+
+					# timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID} || REDIRECT_FAILED=1
+
+					# if [ $REDIRECT_FAILED == 1 ]; then
+					# 	error "Redirect failed! Retrying..."
+					# 	REDIRECT_FAILED=0
+					# 	timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID} || REDIRECT_FAILED=1
+					# fi
 
 					if [ $REDIRECT_FAILED == 1 ]; then
 						out "To manually retry: reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID}"
