@@ -2520,7 +2520,7 @@ otsActionHandler() {
 			
 		elif [[ "$OTSDAQ_STARTOTS_ACTION" == LOG_ROLLOVER* ]]; then
 
-			info "Roling over log files $OTSDAQ_STARTOTS_ACTION"
+			info "Rolling over log files $OTSDAQ_STARTOTS_ACTION"
 
 			# Set Internal Field Separator to ";"
 			IFS=';'
