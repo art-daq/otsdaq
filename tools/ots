@@ -2579,7 +2579,7 @@ otsActionHandler() {
 					out "Found Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${xdaqLogFilename[$i]} size=${logFileSize}"
 					tmpLogFilename=$xdaqLogFilename[$i]
 					xdaqLogFilename[$i]="otsdaq_quiet_run-${xdaqHost[$i]}-${xdaqPort[$i]}${log_label}-${DATESTRING}"
-					xdaqLogFilename[$i]=$(echo "${xdaqLogFilename[$i]}" | sed 's/\./_/g') # remove .'s that reredirect seems to not like
+					# xdaqLogFilename[$i]=$(echo "${xdaqLogFilename[$i]}" | sed 's/\./_/g') # remove .'s that reredirect seems to not like
 					xdaqLogFilename[$i]="${xdaqLogFilename[$i]}.txt"
 					out "${Red}${Bold}Redirecting${RstClr} ${Bold}Non-gateway${RstClr}' process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${Yellow}${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}${RstClr}"					
 
@@ -2629,7 +2629,7 @@ otsActionHandler() {
 					out "Found Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${gatewayLogFilename} size=${logFileSize}"
 					tmpLogFilename=$gatewayLogFilename
 					gatewayLogFilename="otsdaq_quiet_run-gateway-${gatewayHostname}-${gatewayPort}${log_label}-${DATESTRING}"
-					gatewayLogFilename=$(echo "${gatewayLogFilename}" | sed 's/\./_/g') # remove .'s that reredirect seems to not like
+					# gatewayLogFilename=$(echo "${gatewayLogFilename}" | sed 's/\./_/g') # remove .'s that reredirect seems to not like
 					gatewayLogFilename="${gatewayLogFilename}.txt"
 					out "${Red}${Bold}Redirecting${RstClr} ${Bold}Gateway${RstClr}' process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${Yellow}${OTSDAQ_LOG_DIR}/${gatewayLogFilename}${RstClr}"					
 
