@@ -2602,14 +2602,6 @@ otsActionHandler() {
 						fi
 					done
 
-					# timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID} || REDIRECT_FAILED=1
-
-					# if [ $REDIRECT_FAILED == 1 ]; then
-					# 	error "Redirect failed! Retrying..."
-					# 	REDIRECT_FAILED=0
-					# 	timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID} || REDIRECT_FAILED=1
-					# fi
-
 					if [ $REDIRECT_FAILED == 1 ]; then
 						out "To manually retry: reredirect -N -m "${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" ${contextPID}"
 						$xdaqLogFilename[$i]=$tmpLogFilename						
@@ -2659,14 +2651,6 @@ otsActionHandler() {
 							# sleep 1  # Optional delay before retrying
 						fi
 					done
-
-					# timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID} || REDIRECT_FAILED=1
-
-					# if [ $REDIRECT_FAILED == 1 ]; then
-					# 	error "Redirect failed! Retrying..."
-					# 	REDIRECT_FAILED=0
-					# 	timeout 10s reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID} || REDIRECT_FAILED=1
-					# fi
 
 					if [ $REDIRECT_FAILED == 1 ]; then
 						out "To manually retry: reredirect -N -m "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" ${GATEWAY_PID}"
