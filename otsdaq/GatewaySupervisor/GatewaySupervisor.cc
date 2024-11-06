@@ -3750,7 +3750,7 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 	//Roll over log file if enabled
-	if(1 || activeStateMachineRollOverLogOnStart_)
+	if(activeStateMachineRollOverLogOnStart_)
 	{
 		__COUT_INFO__ << "Rolling over log file on Start transition..." << __E__;
 		std::stringstream runSs;
@@ -3928,7 +3928,7 @@ try
 	RunControlStateMachine::theProgressBar_.complete();
 
 	//Roll over log file if enabled
-	if(1 || activeStateMachineRollOverLogOnStart_)
+	if(activeStateMachineRollOverLogOnStart_)
 	{
 		__COUT_INFO__ << "Rolling over log file on Stop transition..." << __E__;
 		std::stringstream runSs;
