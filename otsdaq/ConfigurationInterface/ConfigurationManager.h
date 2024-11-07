@@ -119,8 +119,17 @@ class ConfigurationManager
 	//==============================================================================
 	// Getters
 
-	std::chrono::steady_clock::time_point						startClockTime_;
-	double								runTimeSeconds() {return artdaq::TimeUtils::GetElapsedTime(startClockTime_);}; //((double)(clock()-startClockTime_))/CLOCKS_PER_SEC;};
+	std::chrono::steady_clock::time_point						startClockTime_, deltaClockTime_;
+	std::string /* sinceStart deltaLastCheck */	runTimeSeconds() {
+		
+		//((double)(clock()-startClockTime_))/CLOCKS_PER_SEC;};
+		std::string retStr = 
+			std::to_string(artdaq::TimeUtils::GetElapsedTime(startClockTime_))
+			+ "s " + 
+			std::to_string(artdaq::TimeUtils::GetElapsedTime(deltaClockTime_)) + "s";
+		deltaClockTime_ = std::chrono::steady_clock::now();
+		return retStr;
+	};
 	
 	void 								loadTableGroup				(
 	    const std::string&                                     tableGroupName,

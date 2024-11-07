@@ -14,6 +14,7 @@ struct TableInfo
 
 	std::set<TableVersion> versions_;
 	TableBase*             tablePtr_;
+	std::string			   accumulatedWarnings_;
 };
 
 struct GroupInfo
@@ -115,6 +116,11 @@ class ConfigurationManagerRW : public ConfigurationManager
 	void 										testXDAQContext					(void);  // for debugging
 
   public:
+	static void 								loadTableInfoThread				(ConfigurationManagerRW* 			cfgMgr,
+																				std::string 						tableName, 
+																				TableBase*        				    existingTable,
+																				std::shared_ptr<ots::TableInfo>		tableInfo, 
+																				std::shared_ptr<std::atomic<bool>> 	threadDone);
 	static void 								loadTableGroupThread			(ConfigurationManagerRW* 			cfgMgr,
 																				std::string							groupName, 
 																				ots::TableGroupKey					groupKey,

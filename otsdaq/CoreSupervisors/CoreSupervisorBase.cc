@@ -186,7 +186,7 @@ try
 			__SUP_COUT_ERR__ << "'" << requestType << "' ERROR encountered: " << err << __E__;
 			err = xmlOut.getMatchingValue("Error", occurance++);
 		}
-		__SUP_COUTT__ << "Error check time: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
+		__SUP_COUTT__ << "Elapsed time after error check: " << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
 	}
 
 	// __SUP_COUTV__(xmlDataSs.str());
