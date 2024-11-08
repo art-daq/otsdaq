@@ -1740,11 +1740,14 @@ unsigned int TableView::findCol(const std::string& wildCardName) const
 //==============================================================================
 // findColByType
 //	return invalid if type not found
-unsigned int TableView::findColByType(const std::string& type, int startingCol) const
+unsigned int TableView::findColByType(const std::string& type, unsigned int startingCol) const
 {
 	for(unsigned int col = startingCol; col < columnsInfo_.size(); ++col)
+	{
+		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << columnsInfo_[col].getType() << __E__;
 		if(columnsInfo_[col].getType() == type)
 			return col;
+	}
 
 	return INVALID;
 }  // end findColByType()

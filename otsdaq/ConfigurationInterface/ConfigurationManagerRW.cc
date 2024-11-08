@@ -382,7 +382,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 								}
 							if(foundThreadIndex == -1)
 							{
-								__GEN_COUTT__ << "Waiting for available thread..." << __E__;
+								__GEN_COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Waiting for available thread..." << __E__;
 								usleep(10000);
 							}
 						} //end thread search loop
@@ -432,7 +432,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			//threads done now, so copy table info			
 			for(auto& tableInfo : sharedTableInfoPtrs)
 			{		
-				__GEN_COUTT__ << "Copying table info for " << tableInfo->tablePtr_->getTableName() << __E__;		
+				__GEN_COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Copying table info for " << tableInfo->tablePtr_->getTableName() << __E__;		
 				nameToTableMap_[tableInfo->tablePtr_->getTableName()] = tableInfo->tablePtr_;
 				allTableInfo_[tableInfo->tablePtr_->getTableName()].tablePtr_ = tableInfo->tablePtr_;
 				allTableInfo_[tableInfo->tablePtr_->getTableName()].versions_ = tableInfo->versions_;

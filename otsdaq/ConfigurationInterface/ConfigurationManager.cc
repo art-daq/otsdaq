@@ -1340,7 +1340,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 				}
 			if(foundThreadIndex != -1)
 			{
-				__GEN_COUTT__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
+				__GEN_COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
 				usleep(10000);
 			}
 		} while(foundThreadIndex != -1); //end thread done search loop
