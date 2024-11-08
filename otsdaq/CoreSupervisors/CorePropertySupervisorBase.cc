@@ -470,7 +470,7 @@ void CorePropertySupervisorBase::loadUserSupervisorProperties(void)
 
 		for(auto& child : children)
 		{
-			if(child.second.getNode("Status").getValue<bool>() == false)
+			if(!child.second.status())
 				continue;  // skip OFF properties
 
 			auto propertyName = child.second.getNode("PropertyName").getValue();

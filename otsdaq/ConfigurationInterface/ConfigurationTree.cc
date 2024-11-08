@@ -1516,8 +1516,7 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(c
 
 		for(unsigned int col = 0; col < colInfo.size(); ++col)
 		{
-			//__COUT__ << "Considering field " <<
-			//		colInfo[col].getName() << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "Considering field " << colInfo[col].getName() << __E__;
 
 			// check field accept filter list
 			found = fieldAcceptList.size() ? false : true;  // accept if no filter
@@ -1545,12 +1544,11 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(c
 			// if found, new field (since this is first record)
 			if(found)
 			{
-				//__COUT__ << "FOUND field " <<
-				//		colInfo[col].getName() << __E__;
+				__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "FOUND field " << colInfo[col].getName() << __E__;
 
 				if(colInfo[col].isChildLink())
 				{
-					//__COUT__ << "isGroupLinkNode " << colInfo[col].getName() << __E__;
+					__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "isGroupLinkNode " << colInfo[col].getName() << __E__;
 
 					// must get column info differently for group link column
 
@@ -1589,7 +1587,7 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(c
 
 	for(unsigned int i = 0; i < recordList.size(); ++i)
 	{
-		//__COUT__ << "Checking " << recordList[i] << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "Checking " << recordList[i] << __E__;
 		ConfigurationTree node = getNode(recordList[i]);
 
 		node.recursiveGetCommonFields(fieldCandidateList,
@@ -1609,11 +1607,11 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(c
 	//	remove those with <field count> != num of records
 	for(unsigned int i = 0; i < fieldCandidateList.size(); ++i)
 	{
-		__COUT__ << "Checking " << fieldCandidateList[i].relativePath_ << fieldCandidateList[i].columnName_ << " = " << fieldCount[i] << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "Checking " << fieldCandidateList[i].relativePath_ << fieldCandidateList[i].columnName_ << " = " << fieldCount[i] << __E__;
 		if(recordList.size() != 0 && fieldCount[i] != -1 && fieldCount[i] != (int)recordList.size())
 		{
-			//__COUT__ << "Erasing " << fieldCandidateList[i].relativePath_ <<
-			//		fieldCandidateList[i].columnName_ << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "Erasing " << fieldCandidateList[i].relativePath_ <<
+					fieldCandidateList[i].columnName_ << __E__;
 
 			fieldCount.erase(fieldCount.begin() + i);
 			fieldCandidateList.erase(fieldCandidateList.begin() + i);
@@ -1621,9 +1619,9 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(c
 		}
 	}
 
-	// for(unsigned int i=0;i<fieldCandidateList.size();++i)
-	//	__COUT__ << "Pre-Final " << fieldCandidateList[i].relativePath_ <<
-	//			fieldCandidateList[i].columnName_ << __E__;
+	for(unsigned int i=0;i<fieldCandidateList.size();++i)
+		__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "Pre-Final " << fieldCandidateList[i].relativePath_ <<
+				fieldCandidateList[i].columnName_ << __E__;
 
 	if(autoSelectFilterFields)
 	{
@@ -1631,48 +1629,54 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(c
 		//	i.e. preference	for GroupID, On/Off, and FixedChoice fields.
 		std::set<std::pair<unsigned int /*fieldPriority*/, unsigned int /*fieldIndex*/>> prioritySet;
 
-		unsigned int highestPriority = 0;
 		unsigned int priorityPenalty;
 		for(unsigned int i = 0; i < fieldCandidateList.size(); ++i)
 		{
-			//				__COUT__ << "Option " << fieldCandidateList[i].relativePath_
-			//<< 						fieldCandidateList[i].columnName_ << " : " <<
-			//						fieldCandidateList[i].columnInfo_->getType() << ":" <<
-			//						fieldCandidateList[i].columnInfo_->getDataType() <<
-			//__E__;
+			__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "Option [" <<
+									i << "] " << fieldCandidateList[i].relativePath_ <<
+			 						fieldCandidateList[i].columnName_ << " : " <<
+									fieldCandidateList[i].columnInfo_->getType() << ":" <<
+									fieldCandidateList[i].columnInfo_->getDataType() <<
+									__E__;
 
 			priorityPenalty =
 			    std::count(fieldCandidateList[i].relativePath_.begin(), fieldCandidateList[i].relativePath_.end(), '/') * 20;  // penalize if not top level
 
-			if(fieldCandidateList[i].columnInfo_->isBoolType())
+			if(fieldCandidateList[i].columnInfo_->isBoolType() &&
+				(fieldCandidateList[i].columnName_ == TableViewColumnInfo::COL_NAME_STATUS || 
+				fieldCandidateList[i].columnName_ == TableViewColumnInfo::COL_NAME_ENABLED))
 			{
-				prioritySet.emplace(std::make_pair(0 + priorityPenalty /*fieldPriority*/, i /*fieldIndex*/));
-				if(highestPriority < 0 + priorityPenalty)
-					highestPriority = 0 + priorityPenalty;
+				priorityPenalty += 0;				
 			}
 			else if(fieldCandidateList[i].columnInfo_->isGroupID())
 			{
-				prioritySet.emplace(std::make_pair(1 + priorityPenalty /*fieldPriority*/, i /*fieldIndex*/));
-				if(highestPriority < 1 + priorityPenalty)
-					highestPriority = 1 + priorityPenalty;
+				priorityPenalty += 1;
+			}
+			else if(fieldCandidateList[i].columnInfo_->isBoolType())
+			{
+				priorityPenalty += 3;				
 			}
 			else if(fieldCandidateList[i].columnInfo_->getType() == TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA)
 			{
-				prioritySet.emplace(std::make_pair(3 + priorityPenalty /*fieldPriority*/, i /*fieldIndex*/));
-				if(highestPriority < 3 + priorityPenalty)
-					highestPriority = 3 + priorityPenalty;
+				priorityPenalty += 3;
 			}
 			else if(fieldCandidateList[i].columnInfo_->getType() == TableViewColumnInfo::TYPE_DATA)
 			{
-				prioritySet.emplace(std::make_pair(10 + priorityPenalty /*fieldPriority*/, i /*fieldIndex*/));
-				if(highestPriority < 10 + priorityPenalty)
-					highestPriority = 10 + priorityPenalty;
+				priorityPenalty += 10;
 			}
 			else  // skip other fields and mark for erasing
 			{
 				fieldCandidateList[i].tableName_ = "";  // clear table name as indicator for erase
 				continue;
 			}
+			prioritySet.emplace(std::make_pair(priorityPenalty /*fieldPriority*/, i /*fieldIndex*/));
+			__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "Option [" <<
+									i << "] " << fieldCandidateList[i].relativePath_ <<
+			 						fieldCandidateList[i].columnName_ << " : " <<
+									fieldCandidateList[i].columnInfo_->getType() << ":" <<
+									fieldCandidateList[i].columnInfo_->getDataType() <<
+									"... priority = " << priorityPenalty <<
+									__E__;
 
 		}  // done ranking fields
 
@@ -1685,13 +1689,9 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(c
 			for(const auto& priorityFieldIndex : prioritySet)
 				if(++cnt > 3)  // then mark for erasing
 				{
-					//					__COUT__ << cnt << " marking " <<
-					// fieldCandidateList[
-					//								priorityFieldIndex.second].relativePath_
-					//<<
-					//							fieldCandidateList[priorityFieldIndex.second].columnName_
-					//<<
-					//							__E__;
+					__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << cnt << " marking " <<
+							fieldCandidateList[priorityFieldIndex.second].relativePath_ <<
+							fieldCandidateList[priorityFieldIndex.second].columnName_ << __E__;
 					fieldCandidateList[priorityFieldIndex.second].tableName_ = "";  // clear table name as indicator for erase
 				}
 		}
@@ -1700,9 +1700,9 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(c
 		{
 			if(fieldCandidateList[i].tableName_ == "")  // then erase
 			{
-				//				__COUT__ << "Erasing " <<
-				// fieldCandidateList[i].relativePath_
-				//<< 						fieldCandidateList[i].columnName_ << __E__;
+				__COUT_TYPE__(TLVL_DEBUG+11) << __COUT_HDR__ << "Erasing " <<
+							fieldCandidateList[i].relativePath_ <<
+							fieldCandidateList[i].columnName_ << __E__;
 				fieldCandidateList.erase(fieldCandidateList.begin() + i);
 				--i;  // rewind to look at next after deleted
 			}

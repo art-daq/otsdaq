@@ -177,7 +177,7 @@ void WizardSupervisor::requestIcons(xgi::Input* in, xgi::Output* out)
 
 	     << ",Desktop Icon Editor,ICON,0,1,icon-IconEditor.png,"
 		 	"/WebPath/html/ConfigurationGUI_subset.html?urn=280&subsetBasePath=DesktopIconTable&"
-	        "recordAlias=Icons&groupingFieldList=Status%2CForceOnlyOneInstance%2CRequiredPermissionLevel,/"
+	        "recordAlias=Icons&groupingFieldList=Status%2CFolderPath%2CRequiredPermissionLevel,/"
 
 		 //User Settings ------------------
 		 << ",Edit User Accounts,USER,1,1,"

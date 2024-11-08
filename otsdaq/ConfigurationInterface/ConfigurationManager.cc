@@ -763,7 +763,7 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 		for(auto& fe : fes)
 		{
 			// skip status false
-			if(!fe.second.getNode("Status").getValue<bool>())
+			if(!fe.second.status())
 				continue;
 
 			//__GEN_COUTV__(fe.first);
@@ -2375,7 +2375,7 @@ try
 	if(getError != "") 
 		__COUTV__(getError);
 
-	__COUTT__ << "Checking ptr.. " << (table?"GOOD":"BAD") << __E__;
+	__COUT_TYPE__(TLVL_TRACE+1) << __COUT_HDR__ << "Checking ptr.. " << (table?"GOOD":"BAD") << __E__;
 	if(!table)
 	{
 		__SS__ << "Null pointer returned for table '" << tableName << ".' Was the table info deleted?" << __E__;
@@ -2401,7 +2401,7 @@ try
 
 	if(nameToTableMap->at(tableName)->getViewP())
 	{
-		__COUTT__ << "Activated version: " << nameToTableMap->at(tableName)->getViewVersion() << __E__;
+		__COUT_TYPE__(TLVL_TRACE+1) << __COUT_HDR__ << "Activated version: " << nameToTableMap->at(tableName)->getViewVersion() << __E__;
 
 		if(threadErrors && getError != "")
 		{
@@ -3126,7 +3126,7 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		view->setValue("MacroMakerFEContext", 0, colMap["ContextUID"]);
 		view->setValue("XDAQApplicationTable", 0, colMap["LinkToApplicationTable"]);
 		view->setValue("MacroMakerFEContextApps", 0, colMap["LinkToApplicationGroupID"]);
-		view->setValue("1", 0, colMap["Status"]);
+		view->setValue("1", 0, colMap[TableViewColumnInfo::COL_NAME_STATUS]);
 
 		__GEN_COUT__ << "Done adding context record..." << __E__;
 		view->print();
@@ -3160,7 +3160,7 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		view->setValue("MacroMakerFESupervisor", 0, colMap["ApplicationUID"]);
 		view->setValue("FESupervisorTable", 0, colMap["LinkToSupervisorTable"]);
 		view->setValue("MacroMakerFESupervisor", 0, colMap["LinkToSupervisorUID"]);
-		view->setValue("1", 0, colMap["Status"]);
+		view->setValue("1", 0, colMap[TableViewColumnInfo::COL_NAME_STATUS]);
 		view->setValue(__ENV__("FE_SUPERVISOR_ID"), 0, colMap["Id"]);  // XDAQ LID
 
 		__GEN_COUT__ << "Done adding application record..." << __E__;
