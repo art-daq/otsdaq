@@ -641,6 +641,13 @@ std::vector<std::string> ConfigurationTree::getFixedChoices(void) const
 }  // end getFixedChoices()
 
 //==============================================================================
+// getComment
+const std::string& ConfigurationTree::getComment(void) const
+{
+	return getNode(TableViewColumnInfo::COL_NAME_COMMENT).getValueAsString();
+}  // end getComment()
+
+//==============================================================================
 // getValueAsString
 //	NOTE: getValueAsString() method should be preferred if getting the Link UID
 //		because when disconnected will return "X". getValue() would return the
@@ -902,37 +909,12 @@ ConfigurationTree ConfigurationTree::recurse(const ConfigurationTree& tree,
                                              bool                     doNotThrowOnBrokenUIDLinks,
                                              const std::string&       originalNodeString)
 {
-	//__COUT__ << tree.row_ << " " << tree.col_ << __E__;
-	//__COUT__ << "childPath=" << childPath << " " << childPath.length() << __E__;
+	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << tree.row_ << " " << tree.col_ << __E__;
+	__COUT_TYPE__(TLVL_DEBUG+51) << __COUT_HDR__ << "childPath=" << childPath << " " << childPath.length() << __E__;
 	if(childPath.length() <= 1)  // only "/" or ""
 		return tree;
 	return tree.recursiveGetNode(childPath, doNotThrowOnBrokenUIDLinks, originalNodeString);
 }  // end recurse()
-
-////==============================================================================
-////getRecordFieldValueAsString
-////
-////	This function throws error if not called on a record (uid node)
-////
-////Note: that ConfigurationTree maps both fields associated with a link
-////	to the same node instance.
-////The behavior is likely not expected as response for this function..
-////	so for links return actual value for field name specified
-////	i.e. if Table of link is requested give that; if linkID is requested give that.
-// std::string ConfigurationTree::getRecordFieldValueAsString(std::string fieldName) const
-//{
-//	//enforce that starting point is a table node
-//	if(!isUIDNode())
-//	{
-//		__SS__ << "Can only get getRecordFieldValueAsString from a uid node! " <<
-//				"The node type is " << getNodeType() << __E__;
-//		__COUT__ << "\n" << ss.str() << __E__;
-//		__SS_THROW__;
-//	}
-//
-//	unsigned int c = tableView_->findCol(fieldName);
-//	return tableView_->getDataView()[row_][c];
-//}
 
 //==============================================================================
 // getNode
@@ -953,9 +935,8 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeStr
                                                       bool               doNotThrowOnBrokenUIDLinks,
                                                       const std::string& originalNodeString) const
 {
-	// __COUT__ << "nodeString=" << nodeString << " len=" << nodeString.length() << __E__;
-	//__COUT__ << "doNotThrowOnBrokenUIDLinks=" << doNotThrowOnBrokenUIDLinks <<
-	// __E__;
+	__COUT_TYPE__(TLVL_DEBUG+51) << __COUT_HDR__ << "nodeString=" << nodeString << " len=" << nodeString.length() << __E__;
+	__COUT_TYPE__(TLVL_DEBUG+52) << __COUT_HDR__ << "doNotThrowOnBrokenUIDLinks=" << doNotThrowOnBrokenUIDLinks << __E__;
 
 	// get nodeName (in case of / syntax)
 	if(nodeString.length() < 1)
@@ -976,18 +957,17 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeStr
 	if(endingIndex == std::string::npos) endingIndex = nodeString.length();
 
 	std::string nodeName = nodeString.substr(startingIndex, endingIndex-startingIndex);
-	// __COUT__ << "nodeName=" << nodeName << " len=" << nodeName.length() << __E__;
+	__COUT_TYPE__(TLVL_DEBUG+51) << __COUT_HDR__ << "nodeName=" << nodeName << " len=" << nodeName.length() << __E__;
 	
 	++endingIndex;
 	std::string childPath = (endingIndex >= nodeString.length()?"":nodeString.substr(endingIndex));
-	// __COUT__ << "childPath=" << childPath << " len=" << childPath.length() << " endingIndex=" << endingIndex << " nodeString.length()=" << nodeString.length() << __E__;
+	__COUT_TYPE__(TLVL_DEBUG+51) << __COUT_HDR__ << "childPath=" << childPath << " len=" << childPath.length() << " endingIndex=" << endingIndex << " nodeString.length()=" << nodeString.length() << __E__;
 
 	// if this tree is beginning at a configuration.. then go to uid, and vice versa
 
 	try
 	{
-		//__COUT__ << row_ << " " << col_ <<  " " << groupId_ << " " << tableView_ <<
-		// __E__;
+		__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << row_ << " " << col_ <<  " " << groupId_ << " " << tableView_ <<	__E__;
 		if(isRootNode())
 		{
 			// root node
@@ -1039,8 +1019,7 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeStr
 			// this node is uid node, so return link, group link, disconnected, or value
 			// node
 
-			//__COUT__ << "nodeName=" << nodeName << " " << nodeName.length() <<
-			// __E__;
+			__COUT_TYPE__(TLVL_DEBUG+51) << __COUT_HDR__ << "nodeName=" << nodeName << " " << nodeName.length() << __E__;
 
 			// if the value is a unique link ..
 			// return a uid node!
@@ -1063,8 +1042,9 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeStr
 			bool                                                               isGroupLink, isLink;
 			if((isLink = tableView_->getChildLink(c, isGroupLink, linkPair)) && !isGroupLink)
 			{
-				//__COUT__ << "nodeName=" << nodeName << " " << nodeName.length() <<
-				// __E__;  is a unique link, return uid node in new configuration
+				__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "nodeName=" << nodeName << " " << 
+					nodeName.length() << __E__;  
+				//is a unique link, return uid node in new configuration
 				//	need new configuration pointer
 				//	and row of linkUID in new configuration
 
@@ -1081,14 +1061,13 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeStr
 				}
 				catch(...)
 				{
-					//					__COUT_WARN__ << "Found disconnected node! (" <<
-					// nodeName
-					//<<
-					//							":" <<
-					// tableView_->getDataView()[row_][linkPair.first]
-					//<< ")" << 							" at entry with UID " <<
-					//							tableView_->getDataView()[row_][tableView_->getColUID()]
-					//<< 							__E__;  do not recurse further
+					__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "Found disconnected node! (" <<
+						nodeName <<	":" <<
+						tableView_->getDataView()[row_][linkPair.first]	<< ")" <<
+						" at entry with UID " << 
+						tableView_->getDataView()[row_][tableView_->getColUID()] <<
+						__E__;  
+					//do not recurse further
 					return ConfigurationTree(configMgr_,
 					                         0,
 					                         "",
@@ -1129,8 +1108,9 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeStr
 			}
 			else if(isLink)
 			{
-				//__COUT__ << "nodeName=" << nodeName << " " << nodeName.length() <<
-				// __E__;  is a group link, return new configuration with group string
+				__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "nodeName=" << 
+					nodeName << " " << nodeName.length() <<	__E__;  
+				// is a group link, return new configuration with group string
 				//	need new configuration pointer
 				//	and group string
 
@@ -1188,8 +1168,9 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(const std::string& nodeStr
 			}
 			else
 			{
-				//__COUT__ << "nodeName=" << nodeName << " " << nodeName.length() <<
-				// __E__;  return value node
+				__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "nodeName=" << nodeName << " " << 
+					nodeName.length() << __E__;  
+				//return value node
 				return ConfigurationTree(configMgr_,
 				                         table_,
 				                         "",

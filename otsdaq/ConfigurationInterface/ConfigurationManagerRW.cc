@@ -1800,6 +1800,8 @@ TableVersion ConfigurationManagerRW::saveModifiedVersion(const std::string& tabl
 
 	TableVersion newAssignedVersion = saveNewTable(tableName, temporaryModifiedVersion, makeTemporary);
 
+	__GEN_COUTTV__(table->getView().getComment());
+
 	if(needToEraseTemporarySource)
 		eraseTemporaryVersion(tableName, originalVersion);
 
