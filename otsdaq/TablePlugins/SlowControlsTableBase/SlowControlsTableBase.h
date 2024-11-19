@@ -61,7 +61,7 @@ class SlowControlsTableBase : virtual public TableBase //virtual so future plugi
 	struct ColChannel
 	{
 		std::string const colMetricName_ 			= "MetricName";
-		std::string const colStatus_ 				= "Status";
+		std::string const colStatus_ 				= TableViewColumnInfo::COL_NAME_STATUS;
 		std::string const colUnits_ 				= "Units";
 		std::string const colChannelDataType_		= "ChannelDataType";
 		std::string const colLowLowThreshold_		= "LowLowThreshold";

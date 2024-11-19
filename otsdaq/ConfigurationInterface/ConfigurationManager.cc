@@ -90,6 +90,7 @@ const std::set<std::string> ConfigurationManager::iterateMemberNames_  = {"Itera
 ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/, bool doInitializeFromFhicl /*=false*/)
     : 
 	startClockTime_(std::chrono::steady_clock::now())
+	, deltaClockTime_(std::chrono::steady_clock::now())
 	, mfSubject_(ConfigurationManager::READONLY_USER)
     , username_(ConfigurationManager::READONLY_USER)
     , theInterface_(0)
@@ -762,7 +763,7 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 		for(auto& fe : fes)
 		{
 			// skip status false
-			if(!fe.second.getNode("Status").getValue<bool>())
+			if(!fe.second.status())
 				continue;
 
 			//__GEN_COUTV__(fe.first);
@@ -1116,7 +1117,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 // if accumulateWarnings, then put in string, do not throw
 void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap, std::string* accumulatedWarnings /* =0 */)
 {
-	__GEN_COUTT__ << "runTimeSeconds: " << runTimeSeconds() << __E__;
+	__GEN_COUTTV__(runTimeSeconds());
 
 	TableBase* tmpTableBasePtr;
 
@@ -1133,8 +1134,9 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 	if(usingCache)
 		__GEN_COUTT__ << "Using cache!" << __E__;
 
-	const int numOfThreads = PROCESSOR_COUNT/2;
-	if(1 || usingCache || numOfThreads < 2) // no multi-threading
+	const int numOfThreads = PROCESSOR_COUNT/2 > memberMap.size()? (PROCESSOR_COUNT/2) : memberMap.size() ;
+	if(memberMap.size() <= 2 /* i.e. is Context group */ || 
+		usingCache || numOfThreads < 2) // no multi-threading
 	{
 		//	for each member
 		//		get()
@@ -1247,7 +1249,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 	}
 	else //multi-threading
 	{
-		__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads << " threads for loading member map." << __E__;
+		__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads << " threads for loading member map of size " << memberMap.size() << __E__;
 	
 		int threadsLaunched = 0;
 		int foundThreadIndex = 0;
@@ -1338,7 +1340,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 				}
 			if(foundThreadIndex != -1)
 			{
-				__GEN_COUTT__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
+				__GEN_COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
 				usleep(10000);
 			}
 		} while(foundThreadIndex != -1); //end thread done search loop
@@ -1356,7 +1358,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 		} 
 	} //end multi-thread handling
 
-	__GEN_COUTT__ << "loadMemberMap end Clock time = " << runTimeSeconds() <<__E__;	
+	__GEN_COUTT__ << "loadMemberMap end runTimeSeconds()=" << runTimeSeconds() <<__E__;	
 }  // end loadMemberMap()
 
 //==============================================================================
@@ -2373,7 +2375,7 @@ try
 	if(getError != "") 
 		__COUTV__(getError);
 
-	__COUTT__ << "Checking ptr.. " << (table?"GOOD":"BAD") << __E__;
+	__COUT_TYPE__(TLVL_TRACE+1) << __COUT_HDR__ << "Checking ptr.. " << (table?"GOOD":"BAD") << __E__;
 	if(!table)
 	{
 		__SS__ << "Null pointer returned for table '" << tableName << ".' Was the table info deleted?" << __E__;
@@ -2399,7 +2401,7 @@ try
 
 	if(nameToTableMap->at(tableName)->getViewP())
 	{
-		__COUTT__ << "Activated version: " << nameToTableMap->at(tableName)->getViewVersion() << __E__;
+		__COUT_TYPE__(TLVL_TRACE+1) << __COUT_HDR__ << "Activated version: " << nameToTableMap->at(tableName)->getViewVersion() << __E__;
 
 		if(threadErrors && getError != "")
 		{
@@ -3124,7 +3126,7 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		view->setValue("MacroMakerFEContext", 0, colMap["ContextUID"]);
 		view->setValue("XDAQApplicationTable", 0, colMap["LinkToApplicationTable"]);
 		view->setValue("MacroMakerFEContextApps", 0, colMap["LinkToApplicationGroupID"]);
-		view->setValue("1", 0, colMap["Status"]);
+		view->setValue("1", 0, colMap[TableViewColumnInfo::COL_NAME_STATUS]);
 
 		__GEN_COUT__ << "Done adding context record..." << __E__;
 		view->print();
@@ -3158,7 +3160,7 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		view->setValue("MacroMakerFESupervisor", 0, colMap["ApplicationUID"]);
 		view->setValue("FESupervisorTable", 0, colMap["LinkToSupervisorTable"]);
 		view->setValue("MacroMakerFESupervisor", 0, colMap["LinkToSupervisorUID"]);
-		view->setValue("1", 0, colMap["Status"]);
+		view->setValue("1", 0, colMap[TableViewColumnInfo::COL_NAME_STATUS]);
 		view->setValue(__ENV__("FE_SUPERVISOR_ID"), 0, colMap["Id"]);  // XDAQ LID
 
 		__GEN_COUT__ << "Done adding application record..." << __E__;

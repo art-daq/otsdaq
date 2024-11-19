@@ -65,7 +65,7 @@ class TableView
 																			 const std::string& childLinkIndex,
 																			 unsigned int       offsetRow = 0) const;
 	unsigned int 								findCol						(const std::string& name) const;
-	unsigned int 								findColByType				(const std::string& type, int startingCol = 0) const;
+	unsigned int 								findColByType				(const std::string& type, unsigned int startingCol = 0) const;
 
 	// Getters
 	const std::string&                          getCustomStorageData		(void) const { return storageData_; }

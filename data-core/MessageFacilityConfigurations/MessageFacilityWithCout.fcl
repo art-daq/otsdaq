@@ -2,7 +2,7 @@ console : {
  	type : 					OTS 
  	threshold : 			DEBUG
 	filename_delimit: 		"/tdaq-v3"
-	format_string: 			"|%L:%N: %f:%u |\t%m"
+	format_string: 			"|%T:%L:%N: %f:%u |\t%m"
 }
 
 #file: {

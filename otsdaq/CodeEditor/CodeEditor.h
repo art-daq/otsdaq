@@ -42,9 +42,9 @@ class CodeEditor
 
   public:
 	static const std::string SPECIAL_TYPE_FEInterface, SPECIAL_TYPE_DataProcessor, SPECIAL_TYPE_Table, SPECIAL_TYPE_SlowControls, SPECIAL_TYPE_Tools,
-	    SPECIAL_TYPE_UserData, SPECIAL_TYPE_OutputData;
+	    SPECIAL_TYPE_UserData, SPECIAL_TYPE_WebPath, SPECIAL_TYPE_OutputData;
 
-	static const std::string SOURCE_BASE_PATH, USER_DATA_PATH, OTSDAQ_DATA_PATH;
+	static const std::string SOURCE_BASE_PATH, USER_DATA_PATH, OTSDAQ_WEB_PATH, OTSDAQ_DATA_PATH;
 
 	static std::map<std::string /*special type*/, std::set<std::string> /*special file paths*/> getSpecialsMap(void);
 

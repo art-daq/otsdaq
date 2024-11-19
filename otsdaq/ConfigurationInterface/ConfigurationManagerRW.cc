@@ -207,130 +207,239 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 	// existing configurations are defined by which infos are in TABLE_INFO_PATH
 	// can test that the class exists based on this
 	// and then which versions
-	__GEN_COUT__ << "======================================================== getAllTableInfo start runtime=" << runTimeSeconds() << __E__;
-	__GEN_COUT__ << "Refreshing all! Extracting list of tables..." << __E__;
-	DIR*                pDIR;
-	struct dirent*      entry;
-	std::string         path              = TABLE_INFO_PATH;
-	char                fileExt[]         = TABLE_INFO_EXT;
-	const unsigned char MIN_TABLE_NAME_SZ = 3;
-	if((pDIR = opendir(path.c_str())) != 0)
+	__GEN_COUT__ << "======================================================== getAllTableInfo start runTimeSeconds()=" << runTimeSeconds() << __E__;
 	{
-		while((entry = readdir(pDIR)) != 0)
+		__GEN_COUT__ << "Refreshing all! Extracting list of tables..." << __E__;
+		DIR*                pDIR;
+		struct dirent*      entry;
+		std::string         path              = TABLE_INFO_PATH;
+		char                fileExt[]         = TABLE_INFO_EXT;
+		const unsigned char MIN_TABLE_NAME_SZ = 3;	
+		
+		const int numOfThreads = PROCESSOR_COUNT/2;
+		__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads << " threads." << __E__;
+		if(numOfThreads < 2) // no multi-threading
 		{
-			// enforce table name length
-			if(strlen(entry->d_name) < strlen(fileExt) + MIN_TABLE_NAME_SZ)
-				continue;
-
-			// find file names with correct file extenstion
-			if(strcmp(&(entry->d_name[strlen(entry->d_name) - strlen(fileExt)]), fileExt) != 0)
-				continue;  // skip different extentions
-
-			entry->d_name[strlen(entry->d_name) - strlen(fileExt)] = '\0';  // remove file extension to get table name
-
-			// 0 will force the creation of new instance (and reload from Info)
-			table = 0;
-
-			try  // only add valid table instances to maps
+			if((pDIR = opendir(path.c_str())) != 0)
 			{
-				theInterface_->get(table, entry->d_name, 0, 0,
-				                   true);  // dont fill
-			}
-			catch(cet::exception const&)
-			{
-				if(table)
-					delete table;
-				table = 0;
-
-				__GEN_COUT__ << "Skipping! No valid class found for... " << entry->d_name << "\n";
-				continue;
-			}
-			catch(std::runtime_error& e)
-			{
-				if(table)
-					delete table;
-				table = 0;
-
-				__GEN_COUT__ << "Skipping! No valid class found for... " << entry->d_name << "\n";
-				__GEN_COUT__ << "Error: " << e.what() << __E__;
-
-				// for a runtime_error, it is likely that columns are the problem
-				//	the Table Editor needs to still fix these.. so attempt to
-				// 	proceed.
-				if(accumulatedWarnings)
+				while((entry = readdir(pDIR)) != 0)
 				{
-					if(errorFilterName == "" || errorFilterName == entry->d_name)
-					{
-						*accumulatedWarnings += std::string("\nIn table '") + entry->d_name + "'..." + e.what();  // global accumulate
+					// enforce table name length
+					if(strlen(entry->d_name) < strlen(fileExt) + MIN_TABLE_NAME_SZ)
+						continue;
 
-						__SS__ << "Attempting to allow illegal columns!" << __E__;
-						*accumulatedWarnings += ss.str();
+					// find file names with correct file extenstion
+					if(strcmp(&(entry->d_name[strlen(entry->d_name) - strlen(fileExt)]), fileExt) != 0)
+						continue;  // skip different extentions
+
+					entry->d_name[strlen(entry->d_name) - strlen(fileExt)] = '\0';  // remove file extension to get table name
+
+					// 0 will force the creation of new instance (and reload from Info)
+					table = 0;
+
+					try  // only add valid table instances to maps
+					{
+						theInterface_->get(table, entry->d_name, 0, 0,
+										true);  // dont fill
 					}
-
-					// attempt to recover and build a mock-up
-					__GEN_COUT__ << "Attempting to allow illegal columns!" << __E__;
-
-					std::string returnedAccumulatedErrors;
-					try
+					catch(cet::exception const&)
 					{
-						table = new TableBase(entry->d_name, &returnedAccumulatedErrors);
-					}
-					catch(...)
-					{
-						__GEN_COUT__ << "Skipping! Allowing illegal columns didn't work either... " << entry->d_name << "\n";
+						if(table)
+							delete table;
+						table = 0;
+
+						__GEN_COUT__ << "Skipping! No valid class found for... " << entry->d_name << "\n";
 						continue;
 					}
-					__GEN_COUT__ << "Error (but allowed): " << returnedAccumulatedErrors << __E__;
-
-					if(errorFilterName == "" || errorFilterName == entry->d_name)
-						*accumulatedWarnings += std::string("\nIn table '") + entry->d_name + "'..." + returnedAccumulatedErrors;  // global accumulate
-				}
-				else
-					continue;
-			}
-
-			if(nameToTableMap_[entry->d_name])  // handle if instance existed
-			{
-				// copy the temporary versions! (or else all is lost)
-				std::set<TableVersion> versions = nameToTableMap_[entry->d_name]->getStoredVersions();
-				for(auto& version : versions)
-					if(version.isTemporaryVersion())
+					catch(std::runtime_error& e)
 					{
-						try  // do NOT let TableView::init() throw here
+						if(table)
+							delete table;
+						table = 0;
+
+						__GEN_COUT__ << "Skipping! No valid class found for... " << entry->d_name << "\n";
+						__GEN_COUT__ << "Error: " << e.what() << __E__;
+
+						// for a runtime_error, it is likely that columns are the problem
+						//	the Table Editor needs to still fix these.. so attempt to
+						// 	proceed.
+						if(accumulatedWarnings)
 						{
-							nameToTableMap_[entry->d_name]->setActiveView(version);
-							table->copyView(  // this calls TableView::init()
-							    nameToTableMap_[entry->d_name]->getView(),
-							    version,
-							    username_);
+							if(errorFilterName == "" || errorFilterName == entry->d_name)
+							{
+								*accumulatedWarnings += std::string("\nIn table '") + entry->d_name + "'..." + e.what();  // global accumulate
+
+								__SS__ << "Attempting to allow illegal columns!" << __E__;
+								*accumulatedWarnings += ss.str();
+							}
+
+							// attempt to recover and build a mock-up
+							__GEN_COUT__ << "Attempting to allow illegal columns!" << __E__;
+
+							std::string returnedAccumulatedErrors;
+							try
+							{
+								table = new TableBase(entry->d_name, &returnedAccumulatedErrors);
+							}
+							catch(...)
+							{
+								__GEN_COUT__ << "Skipping! Allowing illegal columns didn't work either... " << entry->d_name << "\n";
+								continue;
+							}
+							__GEN_COUT__ << "Error (but allowed): " << returnedAccumulatedErrors << __E__;
+
+							if(errorFilterName == "" || errorFilterName == entry->d_name)
+								*accumulatedWarnings += std::string("\nIn table '") + entry->d_name + "'..." + returnedAccumulatedErrors;  // global accumulate
 						}
-						catch(...)  // do NOT let invalid temporary version throw at this
-						            // point
-						{
-						}  // just trust configurationBase throws out the failed version
+						else
+							continue;
 					}
 
-				delete nameToTableMap_[entry->d_name];
-				nameToTableMap_[entry->d_name] = 0;
+					if(nameToTableMap_[entry->d_name])  // handle if instance existed
+					{
+						// copy the existing temporary versions! (or else all is lost)
+						std::set<TableVersion> versions = nameToTableMap_[entry->d_name]->getStoredVersions();
+						for(auto& version : versions)
+							if(version.isTemporaryVersion())
+							{
+								try  // do NOT let TableView::init() throw here
+								{
+									nameToTableMap_[entry->d_name]->setActiveView(version);
+									table->copyView(  // this calls TableView::init()
+										nameToTableMap_[entry->d_name]->getView(),
+										version,
+										username_);
+								}
+								catch(...)  // do NOT let invalid temporary version throw at this
+											// point
+								{
+								}  // just trust configurationBase throws out the failed version
+							}
+
+						delete nameToTableMap_[entry->d_name];
+						nameToTableMap_[entry->d_name] = 0;
+					}
+
+					nameToTableMap_[entry->d_name] = table;
+
+					allTableInfo_[entry->d_name].tablePtr_ = table;
+					allTableInfo_[entry->d_name].versions_ = theInterface_->getVersions(table);
+
+					// also add any existing temporary versions to all table info
+					//	because the interface wont find those versions
+					std::set<TableVersion> versions = nameToTableMap_[entry->d_name]->getStoredVersions();
+					for(auto& version : versions)
+						if(version.isTemporaryVersion())
+						{
+							allTableInfo_[entry->d_name].versions_.emplace(version);
+						}
+				} //end table name handling from directory
+				closedir(pDIR);
 			}
-
-			nameToTableMap_[entry->d_name] = table;
-
-			allTableInfo_[entry->d_name].tablePtr_ = table;
-			allTableInfo_[entry->d_name].versions_ = theInterface_->getVersions(table);
-
-			// also add any existing temporary versions to all table info
-			//	because the interface wont find those versions
-			std::set<TableVersion> versions = nameToTableMap_[entry->d_name]->getStoredVersions();
-			for(auto& version : versions)
-				if(version.isTemporaryVersion())
-				{
-					allTableInfo_[entry->d_name].versions_.emplace(version);
-				}
 		}
-		closedir(pDIR);
-	}
-	__GEN_COUT__ << "Extracting list of tables complete." << __E__;
+		else //multi-threading
+		{
+			int threadsLaunched = 0;
+			int foundThreadIndex = 0;
+			std::string tableName;
+
+			std::vector<std::shared_ptr<std::atomic<bool>>> threadDone;
+			for(int i=0;i<numOfThreads;++i)
+				threadDone.push_back(std::make_shared<std::atomic<bool>>(true));
+
+			std::vector<std::shared_ptr<ots::TableInfo>> sharedTableInfoPtrs;
+
+			if((pDIR = opendir(path.c_str())) != 0)
+			{
+				while((entry = readdir(pDIR)) != 0)
+				{
+					// enforce table name length
+					if(strlen(entry->d_name) < strlen(fileExt) + MIN_TABLE_NAME_SZ)
+						continue;
+
+					// find file names with correct file extenstion
+					if(strcmp(&(entry->d_name[strlen(entry->d_name) - strlen(fileExt)]), fileExt) != 0)
+						continue;  // skip different extentions
+
+					entry->d_name[strlen(entry->d_name) - strlen(fileExt)] = '\0';  // remove file extension to get table name
+					tableName = entry->d_name; //copy immediate, thread does not like using pointer to char*, corrupts immediately on wraparound
+
+					//make temporary table info for thread
+					sharedTableInfoPtrs.push_back(std::make_shared<ots::TableInfo>());
+					sharedTableInfoPtrs.back()->accumulatedWarnings_ = accumulatedWarnings?"ALLOW":""; //mark to allow accumulated warnings
+
+					if(threadsLaunched >= numOfThreads)
+					{
+						//find availableThreadIndex
+						foundThreadIndex = -1;
+						while(foundThreadIndex == -1)
+						{
+							for(int i=0;i<numOfThreads;++i)
+								if(*(threadDone[i]))
+								{
+									foundThreadIndex = i;
+									break;
+								}
+							if(foundThreadIndex == -1)
+							{
+								__GEN_COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Waiting for available thread..." << __E__;
+								usleep(10000);
+							}
+						} //end thread search loop
+						threadsLaunched = numOfThreads - 1;
+					}					
+					__GEN_COUTT__ << "Starting thread... " << foundThreadIndex << " for table " << 
+						tableName << __E__;
+
+					*(threadDone[foundThreadIndex]) = false;					
+					std::thread([](
+						ConfigurationManagerRW* 				theCfgMgr, 
+						std::string 							theTableName, 
+						TableBase*        						existingTable,
+						std::shared_ptr<ots::TableInfo>        	theTableInfo,
+						std::shared_ptr<std::atomic<bool>> 		theThreadDone) { 
+					ConfigurationManagerRW::loadTableInfoThread(theCfgMgr, theTableName, existingTable, theTableInfo, theThreadDone); },
+						this,
+						tableName,
+						nameToTableMap_[tableName],
+						sharedTableInfoPtrs.back(),
+						threadDone[foundThreadIndex])
+					.detach();
+
+					++threadsLaunched;
+					++foundThreadIndex;
+				} //end table name handling from directory
+				closedir(pDIR);
+			} //end tableInfo thread loop
+
+			//check for all threads done					
+			do
+			{
+				foundThreadIndex = -1;
+				for(int i=0;i<numOfThreads;++i)
+					if(!*(threadDone[i]))
+					{
+						foundThreadIndex = i;
+						break;
+					}
+				if(foundThreadIndex != -1)
+				{
+					__GEN_COUTT__ << "Waiting for thread to finish... " << foundThreadIndex << __E__;
+					usleep(10000);
+				}
+			} while(foundThreadIndex != -1); //end thread done search loop
+
+			//threads done now, so copy table info			
+			for(auto& tableInfo : sharedTableInfoPtrs)
+			{		
+				__GEN_COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Copying table info for " << tableInfo->tablePtr_->getTableName() << __E__;		
+				nameToTableMap_[tableInfo->tablePtr_->getTableName()] = tableInfo->tablePtr_;
+				allTableInfo_[tableInfo->tablePtr_->getTableName()].tablePtr_ = tableInfo->tablePtr_;
+				allTableInfo_[tableInfo->tablePtr_->getTableName()].versions_ = tableInfo->versions_;
+			} //end copy group info loop
+		}
+		__GEN_COUT__ << "Extracting list of tables complete." << __E__;
+	} //end Extracting list of tables
 
 
 	// call init to load active versions by default, activate with warnings allowed (assuming development going on)
@@ -344,7 +453,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 		if(accumulatedWarnings && errorFilterName == "")
 			*accumulatedWarnings += tmpAccumulateWarnings;
 	}
-	__GEN_COUT__ << "======================================================== getAllTableInfo end runtime=" << runTimeSeconds() << __E__;
+	__GEN_COUT__ << "======================================================== getAllTableInfo end runTimeSeconds()=" << runTimeSeconds() << __E__;
 
 	// get Group Info too!
 	if(getGroupKeys || getGroupInfo)
@@ -357,7 +466,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			std::set<std::string /*name*/> tableGroups = theInterface_->getAllTableGroupNames();
 			__GEN_COUT__ << "Number of Groups: " << tableGroups.size() << __E__;
 
-			__GEN_COUTT__ << "Group Info start runtime=" << runTimeSeconds() << __E__;
+			__GEN_COUTT__ << "Group Info start runTimeSeconds()=" << runTimeSeconds() << __E__;
 		
 			TableGroupKey key;
 			std::string   name;
@@ -367,7 +476,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 				cacheGroupKey(name, key);
 			}
 
-			__GEN_COUTT__ << "Group Keys end runtime=" << runTimeSeconds() << __E__;
+			__GEN_COUTT__ << "Group Keys end runTimeSeconds()=" << runTimeSeconds() << __E__;
 
 			// for each group get member map & comment, author, time, and type for latest key			
 			if(getGroupInfo)
@@ -517,14 +626,140 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			else
 				throw;
 		}
-		__GEN_COUTT__ << "Group Info end runtime=" << runTimeSeconds() << __E__;
+		__GEN_COUTT__ << "Group Info end runTimeSeconds()=" << runTimeSeconds() << __E__;
 	} //end getGroupInfo
 	else
-		__GEN_COUTT__ << "Table Info end runtime=" << runTimeSeconds() << __E__;
+		__GEN_COUTT__ << "Table Info end runTimeSeconds()=" << runTimeSeconds() << __E__;
 
 	return allTableInfo_;
 }  // end getAllTableInfo()
+
+//==============================================================================
+// loadTableInfoThread()
+void ConfigurationManagerRW::loadTableInfoThread(ConfigurationManagerRW* 				cfgMgr, 
+													std::string 						tableName, 
+													TableBase*        				    existingTable,
+													std::shared_ptr<ots::TableInfo>		tableInfo, 
+													std::shared_ptr<std::atomic<bool>> 	threadDone)
+try
+{
+	__COUTT__ << "Thread started... table " << tableName << __E__;
+
+	// 0 will force the creation of new instance (and reload from Info)
+	tableInfo->tablePtr_ = 0;
+
+	try  // only add valid table instances to maps
+	{
+		cfgMgr->theInterface_->get(tableInfo->tablePtr_, tableName, 0, 0,
+						true);  // dont fill
+	}
+	catch(cet::exception const&)
+	{
+		if(tableInfo->tablePtr_)
+			delete tableInfo->tablePtr_;
+		tableInfo->tablePtr_ = 0;
+
+		__COUT__ << "Skipping! No valid class found for... " << tableName << "\n";
+		*(threadDone) = true;
+		return;
+	}
+	catch(std::runtime_error& e)
+	{
+		if(tableInfo->tablePtr_)
+			delete tableInfo->tablePtr_;
+		tableInfo->tablePtr_ = 0;
+
+		__COUT__ << "Skipping! No valid class found for... " <<tableName << "\n";
+		__COUTT__ << "Error: " << e.what() << __E__;
+
+		// for a runtime_error, it is likely that columns are the problem
+		//	the Table Editor needs to still fix these.. so attempt to
+		// 	proceed.
+		if(tableInfo->accumulatedWarnings_ == "ALLOW")
+		{
+			tableInfo->accumulatedWarnings_ = "";
+			if(1) //errorFilterName == "" || errorFilterName == tableName)
+			{
+				tableInfo->accumulatedWarnings_ += std::string("\nIn table '") + tableName + "'..." + e.what();  // global accumulate
+
+				__SS__ << "Attempting to allow illegal columns!" << __E__;
+				tableInfo->accumulatedWarnings_ += ss.str();
+			}
+
+			// attempt to recover and build a mock-up
+			__COUT__ << "Attempting to allow illegal columns!" << __E__;
+
+			std::string returnedAccumulatedErrors;
+			try
+			{
+				tableInfo->tablePtr_ = new TableBase(tableName, &returnedAccumulatedErrors);
+			}
+			catch(...)
+			{
+				__COUT__ << "Skipping! Allowing illegal columns didn't work either... " << tableName << "\n";
+				*(threadDone) = true;
+				return;
+			}
+			__COUT_WARN__ << "Error (but allowed): " << returnedAccumulatedErrors << __E__;
+
+			if(1) //errorFilterName == "" || errorFilterName == entry->d_name)
+				tableInfo->accumulatedWarnings_ += std::string("\nIn table '") + tableName + "'..." + returnedAccumulatedErrors;  // global accumulate
+		}
+		else
+		{
+			tableInfo->accumulatedWarnings_ = "";
+			*(threadDone) = true;
+			return;
+		}
+	}
+
+	if(existingTable)  // handle if instance existed
+	{
+		__COUTT__ << "Copying temporary version from existing table object for " << tableName << __E__;
+		// copy the existing temporary versions! (or else all is lost)
+		std::set<TableVersion> versions = existingTable->getStoredVersions();
+		for(auto& version : versions)
+			if(version.isTemporaryVersion())
+			{
+				try  // do NOT let TableView::init() throw here
+				{
+					existingTable->setActiveView(version);
+					tableInfo->tablePtr_->copyView(  // this calls TableView::init()
+						existingTable->getView(),
+						version,
+						cfgMgr->username_);
+				}
+				catch(...)  // do NOT let invalid temporary version throw at this
+							// point
+				{
+				}  // just trust configurationBase throws out the failed version
+			}
 	
+		delete existingTable;
+		existingTable = 0;
+	}
+
+	tableInfo->versions_ = cfgMgr->theInterface_->getVersions(tableInfo->tablePtr_);
+
+	// also add any existing temporary versions to all table info
+	//	because the interface wont find those versions
+	std::set<TableVersion> versions = tableInfo->tablePtr_->getStoredVersions();
+	for(auto& version : versions)
+		if(version.isTemporaryVersion())
+		{
+			tableInfo->versions_.emplace(version);
+		}
+
+	__COUTT__ << "Thread done... table " << tableName << __E__;
+	*(threadDone) = true;
+} // end loadTableInfoThread
+catch(...)
+{
+	__COUT_ERR__ << "Error occurred loading latest table info into cache for '"
+		<< tableName << "'..." << __E__;
+	*(threadDone) = true;
+} // end loadTableInfoThread catch
+
 //==============================================================================
 // loadTableGroupThread()
 void ConfigurationManagerRW::loadTableGroupThread(ConfigurationManagerRW* 				cfgMgr, 
@@ -562,7 +797,6 @@ catch(...)
 	groupInfo->latestKeyMemberMap_   	   = {};
 	*(threadDone) = true;
 } // end loadTableGroupThread catch
-
 
 //==============================================================================
 // compareTableGroupThread()
@@ -819,7 +1053,7 @@ TableBase* ConfigurationManagerRW::getTableByName(const std::string& tableName)
 
 		ss << "\nIf you think this table should exist in the core set of tables, try running 'UpdateOTS.sh --tables' to update your tables, then relaunch ots."
 		   << __E__;
-		ss << "\nTables must be defined in $USER_DATA/TableInfo to exist in ots. Please verify your table definitions, and then restart ots." << __E__;
+		ss << "\nTables must be defined at path $USER_DATA/TableInfo/ to exist in ots. Please verify your table definitions, and then restart ots." << __E__;
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		__SS_THROW__;
 	}
@@ -1296,12 +1530,12 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(const std::string&      
 		__SS_THROW__;
 	}
 
-	__GEN_COUTT__ << "saveNewTableGroup runtime=" << runTimeSeconds() << __E__;
+	__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
 	// determine new group key
 	TableGroupKey newKey = TableGroupKey::getNextKey(theInterface_->findLatestGroupKey(groupName));
 
-	__GEN_COUTT__ << "saveNewTableGroup runtime=" << runTimeSeconds() << __E__;
+	__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
 	__GEN_COUT__ << "New Key for group: " << groupName << " found as " << newKey << __E__;
 
@@ -1338,7 +1572,7 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(const std::string&      
 		}
 	}  // end verify members
 
-	__GEN_COUTT__ << "saveNewTableGroup runtime=" << runTimeSeconds() << __E__;
+	__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
 	// verify group aliases
 	if(groupAliases)
@@ -1385,7 +1619,7 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(const std::string&      
 
 		theInterface_->saveActiveVersion(&groupMetadataTable_);
 
-		__GEN_COUTT__ << "saveNewTableGroup runtime=" << runTimeSeconds() << __E__;
+		__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
 		// force groupMetadataTable_ to be a member for the group
 		groupMembers[groupMetadataTable_.getTableName()] = groupMetadataTable_.getViewVersion();
@@ -1405,7 +1639,7 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(const std::string&      
 		throw;
 	}
 
-	__GEN_COUTT__ << "saveNewTableGroup runtime=" << runTimeSeconds() << __E__;
+	__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
 	// store cache of recent groups
 	cacheGroupKey(groupName, newKey);
@@ -1565,6 +1799,8 @@ TableVersion ConfigurationManagerRW::saveModifiedVersion(const std::string& tabl
 		__GEN_COUT__ << "\t\t**************************** Save as new '" << tableName << "' table version" << __E__;
 
 	TableVersion newAssignedVersion = saveNewTable(tableName, temporaryModifiedVersion, makeTemporary);
+
+	__GEN_COUTTV__(table->getView().getComment());
 
 	if(needToEraseTemporarySource)
 		eraseTemporaryVersion(tableName, originalVersion);
@@ -2008,7 +2244,7 @@ void ConfigurationManagerRW::testXDAQContext()
 		else
 			throw;
 	}
-	__GEN_COUT__ << "Group Info end runtime=" << runTimeSeconds() << __E__;
+	__GEN_COUT__ << "Group Info end runTimeSeconds()=" << runTimeSeconds() << __E__;
 	
 
 	return;
