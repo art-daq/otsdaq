@@ -1750,9 +1750,9 @@ uint64_t WebUsers::getActiveSessionCountForUser(uint64_t uid)
 
 //==============================================================================
 // WebUsers::checkIpAccess ---
-//	checks user defined accept,
-//	then checks reject IP file
-//	then checks blacklist file
+//	checks user defined accept cache,
+//	then checks reject IP cache
+//	then checks blacklist cache
 //	return true if ip is accepted, and false if rejected
 bool WebUsers::checkIpAccess(const std::string& ip)
 {
@@ -1760,6 +1760,12 @@ bool WebUsers::checkIpAccess(const std::string& ip)
 		return true;  // always accept dummy IP
 
 	__COUTTV__(ip);
+
+	if(time(0) > ipSecurityLastLoadTime_ + 10*60*60) //every 10 minutes (to allow manual dynamic changes)
+	{
+		ipSecurityLastLoadTime_ = time(0);
+		loadIPAddressSecurity();
+	}
 
 	for(const auto& acceptIp : ipAccessAccept_)
 		if(StringMacros::wildCardMatch(ip, acceptIp))
@@ -1788,6 +1794,9 @@ bool WebUsers::checkIpAccess(const std::string& ip)
 // WebUsers::incrementIpBlacklistCount ---
 void WebUsers::incrementIpBlacklistCount(const std::string& ip)
 {
+	if(ipAccessBlacklist_.find(ip) != ipAccessBlacklist_.end())
+		return; //already in IP blacklist
+
 	// increment ip blacklist counter
 	auto it = ipBlacklistCounts_.find(ip);
 	if(it == ipBlacklistCounts_.end())
@@ -1801,7 +1810,7 @@ void WebUsers::incrementIpBlacklistCount(const std::string& ip)
 
 		if(it->second >= IP_BLACKLIST_COUNT_THRESHOLD)
 		{
-			__MCOUT__("Adding IP '" << ip << "' to blacklist!" << __E__);
+			__COUT_WARN__ << "Adding IP '" << ip << "' to blacklist!" << __E__;
 
 			ipAccessBlacklist_.emplace(ip);
 			__COUTV__(ipAccessBlacklist_.size());
@@ -1810,8 +1819,7 @@ void WebUsers::incrementIpBlacklistCount(const std::string& ip)
 			FILE* fp = fopen((IP_BLACKLIST_FILE).c_str(), "a");
 			if(!fp)
 			{
-				__SS__ << "IP black list file '" << IP_BLACKLIST_FILE << "' could not be opened." << __E__;
-				__MCOUT_ERR__(ss.str());
+				__COUT_ERR__ << "IP black list file '" << IP_BLACKLIST_FILE << "' could not be opened." << __E__;				
 				return;
 			}
 			fprintf(fp, "%s\n", ip.c_str());
@@ -2003,7 +2011,12 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 	}
 	catch(...)
 	{
-		__COUT_WARN__ << "Ignoring exception during remote login verification." << __E__;
+		std::string err = "";
+		try	{ throw; }
+		catch(const std::exception& e)
+		{ err = e.what(); }
+		
+		__COUT_WARN__ << "Ignoring exception during remote login verification. " << err << __E__;
 
 		//Disable remote login in the case that remote verifier is down
 		if(!CareAboutCookieCodes_ && localEnableRemoteLogin && 
@@ -2064,7 +2077,7 @@ bool WebUsers::cookieCodeIsActiveForRequest(std::string&                        
 		if(ip != "0" && ActiveSessions_[i].ip_ != ip)
 		{
 			__COUTV__(ActiveSessions_[i].ip_);
-			//__COUTV__(ip);
+			__COUTV__(ip);
 			__COUT_ERR__ << "IP does not match active session." << __E__;
 			cookieCode = REQ_NO_LOGIN_RESPONSE;
 			return false;
@@ -2917,7 +2930,7 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 
 	if(lock && (isUserActive || !CareAboutCookieCodes_))  // lock and currently active
 	{
-		if(!CareAboutCookieCodes_ && username != DEFAULT_ADMIN_USERNAME)  // enforce wiz mode only use admin account
+		if(!CareAboutCookieCodes_ && !isUserActive && username != DEFAULT_ADMIN_USERNAME)  // enforce wiz mode only use admin account
 		{
 			__MCOUT_ERR__("User '" << actingUser << "' tried to lock for a user other than admin in wiz mode. Not allowed." << __E__);
 			return false;
@@ -3563,73 +3576,76 @@ void WebUsers::loadSecuritySelection()
 
 	__COUT__ << "CareAboutCookieCodes_: " << CareAboutCookieCodes_ << __E__;
 
+	loadIPAddressSecurity();
 
-	//-------- load IP address security
+}  // end loadSecuritySelection()
+
+//==============================================================================
+// WebUsers::loadIPAddressSecurity
+void WebUsers::loadIPAddressSecurity()
+{
+	ipAccessAccept_.clear();
+	ipAccessReject_.clear();
+	ipAccessBlacklist_.clear();
+
+	FILE*  fp = fopen((IP_ACCEPT_FILE).c_str(), "r");
+	char   line[300];
+	size_t len;
+
+	if(fp)
 	{
-		ipAccessAccept_.clear();
-		ipAccessReject_.clear();
-		ipAccessBlacklist_.clear();
-
-		FILE*  fp = fopen((IP_ACCEPT_FILE).c_str(), "r");
-		char   line[300];
-		size_t len;
-
-		if(fp)
+		while(fgets(line, 300, fp))
 		{
-			while(fgets(line, 300, fp))
-			{
-				len = strlen(line);
-				// remove new line
-				if(len > 2 && line[len - 1] == '\n')
-					line[len - 1] = '\0';
-				ipAccessAccept_.emplace(line);
-				// if(StringMacros::wildCardMatch(ip, line))
-				// 	return true;  // found in accept file, so accept
-			}
-
-			fclose(fp);
+			len = strlen(line);
+			// remove new line
+			if(len > 2 && line[len - 1] == '\n')
+				line[len - 1] = '\0';
+			ipAccessAccept_.emplace(line);
+			// if(StringMacros::wildCardMatch(ip, line))
+			// 	return true;  // found in accept file, so accept
 		}
-		__COUTV__(ipAccessAccept_.size());
 
-		fp = fopen((IP_REJECT_FILE).c_str(), "r");
-		if(fp)
+		fclose(fp);
+	}
+	__COUTV__(ipAccessAccept_.size());
+
+	fp = fopen((IP_REJECT_FILE).c_str(), "r");
+	if(fp)
+	{
+		while(fgets(line, 300, fp))
 		{
-			while(fgets(line, 300, fp))
-			{
-				len = strlen(line);
-				// remove new line
-				if(len > 2 && line[len - 1] == '\n')
-					line[len - 1] = '\0';
-				ipAccessReject_.emplace(line);
-				// if(StringMacros::wildCardMatch(ip, line))
-				// 	return false;  // found in reject file, so reject
-			}
-
-			fclose(fp);
+			len = strlen(line);
+			// remove new line
+			if(len > 2 && line[len - 1] == '\n')
+				line[len - 1] = '\0';
+			ipAccessReject_.emplace(line);
+			// if(StringMacros::wildCardMatch(ip, line))
+			// 	return false;  // found in reject file, so reject
 		}
-		__COUTV__(ipAccessReject_.size());
 
-		fp = fopen((IP_BLACKLIST_FILE).c_str(), "r");
-		if(fp)
+		fclose(fp);
+	}
+	__COUTV__(ipAccessReject_.size());
+
+	fp = fopen((IP_BLACKLIST_FILE).c_str(), "r");
+	if(fp)
+	{
+		while(fgets(line, 300, fp))
 		{
-			while(fgets(line, 300, fp))
-			{
-				len = strlen(line);
-				// remove new line
-				if(len > 2 && line[len - 1] == '\n')
-					line[len - 1] = '\0';
-				ipAccessBlacklist_.emplace(line);
-				// if(StringMacros::wildCardMatch(ip, line))
-				// 	return false;  // found in blacklist file, so reject
-			}
-
-			fclose(fp);
+			len = strlen(line);
+			// remove new line
+			if(len > 2 && line[len - 1] == '\n')
+				line[len - 1] = '\0';
+			ipAccessBlacklist_.emplace(line);
+			// if(StringMacros::wildCardMatch(ip, line))
+			// 	return false;  // found in blacklist file, so reject
 		}
-		__COUTV__(ipAccessBlacklist_.size());
-	} //end load IP address security
 
+		fclose(fp);
+	}
+	__COUTV__(ipAccessBlacklist_.size());
+}  // end loadIPAddressSecurity()
 
-}  // end loadSecuritySelection()()
 
 //==============================================================================
 void WebUsers::NACDisplayThread(const std::string& nac, const std::string& user)

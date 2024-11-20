@@ -497,6 +497,7 @@ class WebUsers
 	    const std::string& groupName = WebUsers::DEFAULT_USER_GROUP);
 
 	void         loadSecuritySelection(void);
+	void         loadIPAddressSecurity(void);
 	void         loadUserWithLock(void);
 	unsigned int hexByteStrToInt(const char* h);
 	void         intToHexStr(uint8_t i, char* h);
@@ -640,7 +641,9 @@ class WebUsers
 	std::mutex				webUserMutex_;
 
 	std::unique_ptr<TransceiverSocket> 	remoteLoginVerificationSocket_; //use to ask remote gateway for login verification
-	std::unique_ptr<Socket> 			remoteLoginVerificationSocketTarget_; 
+	std::unique_ptr<Socket> 			remoteLoginVerificationSocketTarget_;
+
+	time_t						ipSecurityLastLoadTime_ = time(0); 
 
   public:
   	std::atomic<time_t>			remoteLoginVerificationEnabledBlackoutTime_ = 0;
