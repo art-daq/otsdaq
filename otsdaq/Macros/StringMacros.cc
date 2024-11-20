@@ -144,6 +144,33 @@ std::string StringMacros::encodeURIComponent(const std::string& sourceStr)
 }  // end encodeURIComponent()
 
 //==============================================================================
+// StringMacros::sanitizeForSQL
+void StringMacros::sanitizeForSQL(std::string& str) 
+{
+    std::map<char, std::string> replacements = {
+        {'\'', "''"},    // Single quote becomes two single quotes
+        {'\\', "\\\\"}//,  // Backslash becomes double backslash
+        // {';', "\\;"},    // Semicolon can be escaped (optional)
+        // {'-', "\\-"},    // Dash for comments (optional, context-specific)
+    };
+
+    size_t pos = 0;
+    while (pos < str.size()) 
+	{
+        auto it = replacements.find(str[pos]);
+        if (it != replacements.end()) 
+		{
+            str.replace(pos, 1, it->second);
+            pos += it->second.size(); // Advance past the replacement
+        } 
+		else 
+		{
+            ++pos;
+        }
+    }
+} //end sanitizeForSQL
+
+//==============================================================================
 // StringMacros::escapeString
 //	convert quotes to html quote characters &apos; = ' and &quot; = "
 //	remove new line characters
