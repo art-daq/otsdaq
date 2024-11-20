@@ -1590,7 +1590,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					std::string cookieCode = rxParams[1];
 					if(!theWebUsers_.cookieCodeIsActiveForRequest(
 						cookieCode /*cookieCode*/, &userGroupPermissionsMap, &uid /*uid is not given to remote users*/, 
-						rxParams[3] /*ip*/, rxParams[2] /*refresh*/ == "1", false /* doNotGoRemote */, &userWithLock, &userSessionIndex))
+						"0" /* check at remote location because ip addresses change from subsystem to subsystem depending on tunnels,... rxParams[3] */ /*ip*/, 
+						rxParams[2] /*refresh*/ == "1", false /* doNotGoRemote */, &userWithLock, &userSessionIndex))
 					{
 						__COUT_ERR__ << "Remote login failed!" << __E__;
 						sock.acknowledge("0", false /* verbose */);
@@ -3212,7 +3213,11 @@ try
 	{
 		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 		for(auto& remoteGatewayApp : remoteGatewayApps_)
+		{
+			if(!remoteGatewayApp.fsm_included) continue; //skip if not included
+
 			remoteSubsystemDump += remoteGatewayApp.config_dump;
+		}
 
 		if(remoteSubsystemDump.size())
 			__COUTV__(remoteSubsystemDump);
@@ -5952,11 +5957,11 @@ try
 									iconString += ",";
 								
 								if(remoteGatewayApp.parentIconFolderPath != "")
-									iconString += remoteGatewayApp.parentIconFolderPath + " icons loading..."; //icon.caption_;
+									iconString += remoteGatewayApp.parentIconFolderPath + " loading..."; //icon.caption_;
 								else if(remoteGatewayApp.user_data_path_record != "")
-									iconString += remoteGatewayApp.user_data_path_record + " icons loading..."; //icon.caption_;
+									iconString += remoteGatewayApp.user_data_path_record + " loading..."; //icon.caption_;
 								else
-									iconString += remoteGatewayApp.appInfo.name + " icons loading..."; //icon.caption_;
+									iconString += remoteGatewayApp.appInfo.name + " loading..."; //icon.caption_;
 									
 								iconString += ",X"; //icon.alternateText_;
 								iconString += ",1";//std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
