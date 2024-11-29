@@ -757,7 +757,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 										__COUTTV__(theSupervisor->remoteGatewayApps_[i].selected_config_alias);
 
-										__COUTT__ << "Command: " << remoteGatewayApp.command << 
+										__COUTT__ << remoteGatewayApp.appInfo.name << " -- Command: " << remoteGatewayApp.command << 
 											" Command-old: " << theSupervisor->remoteGatewayApps_[i].command <<
 											" Status: " << remoteGatewayApp.appInfo.status <<
 											" Status_old: " << theSupervisor->remoteGatewayApps_[i].appInfo.status << 
@@ -1023,7 +1023,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						         << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
 						         << "' [URL=" << appInfo.getURL() << "].\n\n";
 						__COUTV__(SOAPUtilities::translate(tempMessage));
-						__COUT_WARN__ << "Failed to send getStatus SOAP Message due to unknown error. Will suppress repeat errors." << __E__;
+						__COUT_WARN__ << "Failed to send getStatus SOAP Message due to unknown error. Will suppress repeat errors from Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
+						         << "' [URL=" << appInfo.getURL() << "]." << __E__;
 					}  // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{						
@@ -1170,6 +1171,8 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, 
 	const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */ remoteGatewaySocket)
 {
+	remoteGatewayApp.error = ""; //clear error for new command
+
 	__COUT__ << "Sending remote gateway command '" << remoteGatewayApp.command << "' to target '" <<
 		remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
 
@@ -1194,11 +1197,12 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 
 		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
 		__COUTTV__(StringMacros::vectorToString(parsedFields));
-		__COUTV__(command);
+		__COUT__ << "Sending to subsystem '" << remoteGatewayApp.appInfo.name << "' the command: " << command << __E__;
 
 		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
 		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
-		__COUTV__(commandResponseString);
+		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name << "' received: " << 
+			commandResponseString << __E__;
 
 		if(commandResponseString.find("Done") != 0) //then error
 		{
@@ -2627,7 +2631,8 @@ try
 					".'" << __E__;
 		__SS_THROW__;		
 	}
-
+	
+	theStateMachine_.setErrorMessage(""); //clear State Machine error message in prep for transition
 	xoap::MessageReference message = SOAPUtilities::makeSOAPMessageReference(command, parameters);
 	// Maybe we return an acknowledgment that the message has been received and processed
 	xoap::MessageReference reply = stateMachineXoapHandler(message);
@@ -5192,11 +5197,11 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AutomatedRequestTypes,
 	                                                  "getSystemMessages | getCurrentState | getIterationPlanStatus"
 	                                                  " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
+	CorePropertySupervisorBase::addSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
 	                                                  "gatewayLaunchOTS | gatewayLaunchWiz | gatewayLaunchOTSInstance"
-													  " | commandRemoteSubsystem");
-	//	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.NeedUsernameRequestTypes,
-	//			"StateMachine*"); //for all stateMachineXgiHandler requests
+													  " | commandRemoteSubsystem");											
+	CorePropertySupervisorBase::addSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes,
+	   												  "StateMachine*");  //for all stateMachineXgiHandler requests
 
 	if(readOnly_)
 	{

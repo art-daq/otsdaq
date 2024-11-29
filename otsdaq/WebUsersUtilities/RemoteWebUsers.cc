@@ -269,7 +269,6 @@ std::string RemoteWebUsers::getActiveUserList()
 		return ActiveUserList_;
 }  // end getActiveUserList()
 
-
 //==============================================================================
 // getLastTableGroups
 //	request last "Configured" or "Started" group, for example

@@ -74,24 +74,32 @@ try
 	if(priorityIndex)
 		*priorityIndex = 0;  // no match
 	return false;
-}
+} //end wildCardMatch()
 catch(...)
 {
 	if(priorityIndex)
 		*priorityIndex = 0;  // no match
 	return false;            // if out of range
-}
+} //end wildCardMatch() catch
 
 //==============================================================================
 // inWildCardSet ~
 //	returns true if needle is in haystack (considering wildcards)
+//	allow inverted haystack strings by first character being '!' 
 bool StringMacros::inWildCardSet(const std::string& needle, const std::set<std::string>& haystack)
 {
 	for(const auto& haystackString : haystack)
-		// use wildcard match, flip needle parameter.. because we want haystack to have
-		// the wildcards
-		if(StringMacros::wildCardMatch(haystackString, needle))
+	{
+		// use wildcard match, flip needle parameter.. because we want haystack to have the wildcards
+		if(haystackString.size() && haystackString[0] == '!')				
+		{
+			 //treat as inverted
+			if(!StringMacros::wildCardMatch(haystackString.substr(1), needle))
+				return true;
+		}
+		else if(StringMacros::wildCardMatch(haystackString, needle))
 			return true;
+	}
 	return false;
 }
 
@@ -1307,12 +1315,13 @@ char* StringMacros::otsGetEnvironmentVarable(const char* name, const std::string
 }  // end otsGetEnvironmentVarable()
 
 //=========================================================================
-//extract value for field from xml looking forwards from after
+//extract valueField for field from xml looking forwards from after
 // occurence = 0 is first occurence
 std::string StringMacros::extractXmlField(const std::string &xml,
 												const std::string &field,
 												uint32_t occurrence, size_t after,
-												size_t *returnAfter /* = nullptr */)
+												size_t *returnAfter /* = nullptr */,
+												const std::string& valueField /* = "value" */)
 {
 	size_t lo = after, hi;
 	for (uint32_t i = 0; i <= occurrence; ++i)
@@ -1321,7 +1330,7 @@ std::string StringMacros::extractXmlField(const std::string &xml,
 	if ((hi = xml.find("'/>", lo)) == std::string::npos)
 		return "";
 
-	lo = xml.find("value='", lo) + 7;
+	lo = xml.find(valueField + "='", lo) + 7;
 
 	if (returnAfter)
 		*returnAfter = hi + 3; //field.length() + 3;
@@ -1330,11 +1339,12 @@ std::string StringMacros::extractXmlField(const std::string &xml,
 } //end extractXmlField()
 
 //=========================================================================
-//extract value for field from xml looking backwards from before
+//extract valueField for field from xml looking backwards from before
 // occurence = 0 is first occurence
 std::string StringMacros::rextractXmlField(const std::string &xml,
 												 const std::string &field,
-												 uint32_t occurrence, size_t before)
+												 uint32_t occurrence, size_t before,
+												 const std::string& valueField /* = "value" */)
 {
 	size_t lo = 0, hi = before;
 	for (uint32_t i = 0; i <= occurrence; ++i)
@@ -1343,7 +1353,7 @@ std::string StringMacros::rextractXmlField(const std::string &xml,
 	if ((hi = xml.rfind("'/>", hi)) == std::string::npos)
 		return "";
 
-	lo = xml.find("value='", lo) + 7;
+	lo = xml.find(valueField + "='", lo) + 7;
 
 	return xml.substr(lo, hi - lo);
 } //end rextractXmlField()

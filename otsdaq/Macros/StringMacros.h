@@ -209,10 +209,13 @@ struct StringMacros
 	static std::string 			extractXmlField				(const std::string &xml,
 															 const std::string &field,
 															 uint32_t occurrence, size_t after,
-															 size_t *returnAfter = nullptr);
+															 size_t *returnAfter = nullptr,
+															 const std::string &valueField = "value");
 	static std::string 			rextractXmlField			(const std::string &xml,
 															 const std::string &field,
-															 uint32_t occurrence, size_t before);
+															 uint32_t occurrence, 
+															 size_t before,
+															 const std::string &valueField = "value");
 
 
 	struct IgnoreCaseCompareStruct { //get string in order ignoring letter case

@@ -477,21 +477,32 @@ function killprocs
 	for pid in $pids;do
 		killproc $pid art &
 	done
-
-	# for now (Aug-2023), stop killing artdaq and trust artdaq cleanup (this will also allowed share user accounts)
-	# #now hard kill any processes that may be stuck and detached:
-	# killall -9 art &>/dev/null 2>&1 #hide output
-	# killall -9 boardreader &>/dev/null 2>&1 #hide output
-	# killall -9 eventbuilder &>/dev/null 2>&1 #hide output
-	# killall -9 datalogger &>/dev/null 2>&1 #hide output
-	# killall -9 dispatcher &>/dev/null 2>&1 #hide output
-	# killall -9 routing_manager &>/dev/null 2>&1 #hide output
-	# ipcrm -a &>/dev/null 2>&1 #hide output #clean-up shared memory
-	
-	# if [[ "x$1" == "x" ]]; then #kill all ots processes, not in background or it kills the new launch sometimes!
-	# 	killall -9 xdaq.exe  >/dev/null 2>&1 #hide output
-	# 	killall -9 otsConsoleFwd  >/dev/null 2>&1 #hide output
-	# fi
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid boardreader &
+	done
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid eventbuilder &
+	done
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid datalogger &
+	done
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid dispatcher &
+	done
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid routing_manager &
+	done
+	sleep 1
+	#do art again, in case art processes were kept alive by artdaq
+	pids=`ps aux|grep -v grep|grep "art -c ${USER_DATA}/"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid art &
+	done
    
 	if [ $ISREMOTE == 0 ]; then
 		out "Done killing processes $1 ${RstClr}"
@@ -540,6 +551,9 @@ if [[ $KILLALL != 0 ]]; then
 	killall -9 dispatcher &>/dev/null 2>&1 #hide output
 	killall -9 routing_manager &>/dev/null 2>&1 #hide output
 	ipcrm -a &>/dev/null 2>&1 #hide output #clean-up shared memory
+	sleep 1
+	#in case art processes were kept alive by artdaq
+	killall -9 art &>/dev/null 2>&1 #hide output 
     #killprocs	
 	
     out "Done with ots hard kill-all." 
@@ -2040,7 +2054,7 @@ launchOTS() {
 				out "\t\tssh ${host} SCRIPT_DIR/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE}" 
 				
 				# launch ssh remote start (attempt twice)
-				ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
+				ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}${Reset}" &
 				
 				
 				#add host to remote launch host list

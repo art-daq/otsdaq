@@ -46,9 +46,8 @@ class WebUsers
 		NOT_FOUND_IN_DATABASE 		= uint64_t(-1),
 		ACCOUNT_INACTIVE 			= uint64_t(-2),
 		ACCOUNT_BLACKLISTED 		= uint64_t(-3),
-		// ACCOUNT_REMOTE		 		= uint64_t(-4),
 		ACCOUNT_ERROR_THRESHOLD 	= uint64_t(-5),
-		USERNAME_LENGTH       		= 4,
+		USERNAME_LENGTH       		= 3,
 		DISPLAY_NAME_LENGTH   		= 4,
 	};
 
@@ -530,7 +529,7 @@ class WebUsers
 	uint64_t searchHashesDatabaseForHash			(const std::string& hash);
 	uint64_t searchActiveSessionDatabaseForCookie	(const std::string& cookieCode) const;
 	uint64_t searchRemoteSessionDatabaseForCookie	(const std::string& cookieCode) const;
-	uint64_t checkRemoteLoginVerification			(const std::string& cookieCode, bool refresh, bool doNotGoRemote, const std::string& ip);
+	uint64_t checkRemoteLoginVerification			(std::string& cookieCode, bool refresh, bool doNotGoRemote, const std::string& ip);
 
 	static std::string getTooltipFilename(const std::string& username,
 	                                      const std::string& srcFile,

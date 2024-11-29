@@ -1973,7 +1973,8 @@ void Iterator::playGeneratedIterationPlan(HttpXmlDocument& xmldoc,
 	// parameters[2] /*durationSeconds*/,
 	// parameters[3] /*numberOfRuns*/,
 	// parameters[4] /*keepConfiguration*/,
-	// parameters[5] /*logEntry*/
+	// parameters[5] /*logEntry*/ double encoded
+	parameters[5] = StringMacros::decodeURIComponent(parameters[5]);
 
 	uint64_t durationSeconds;
 	sscanf(parameters[2].c_str(),"%lu",&durationSeconds);
