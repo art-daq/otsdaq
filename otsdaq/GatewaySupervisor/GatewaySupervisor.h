@@ -116,7 +116,7 @@ class WorkLoopManager;
 		void 						transitionStartingUp(toolbox::Event::Reference e) override;
 		void 						enteringError(toolbox::Event::Reference e) override;
 
-		void 						makeSystemLogEntry(std::string entryText);
+		void 						makeSystemLogEntry(const std::string& entryText, const std::string& subjectText = "");
 		static void 				addSystemMessage(std::string toUserCSV, std::string message);
 
 		void 						checkForAsyncError(void);

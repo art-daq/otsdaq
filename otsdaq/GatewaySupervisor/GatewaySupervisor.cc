@@ -1916,9 +1916,11 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 //		and specifically the current active experiments within the logbook
 //	escape entryText to make it html/xml safe!!
 ////      reserved: ", ', &, <, >, \n, double-space
-void GatewaySupervisor::makeSystemLogEntry(std::string entryText)
+void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText, const std::string& subjectText /* = "" */)
 {
 	__COUT__ << "Making System Logbook Entry: " << entryText << __E__;
+	if(subjectText.size())
+		__COUTV__(subjectText);
 	lastLogbookEntry_ = entryText;
 	lastLogbookEntryTime_ = time(0);
 
@@ -1935,9 +1937,7 @@ void GatewaySupervisor::makeSystemLogEntry(std::string entryText)
 	}
 
 	SOAPParameters parameters("EntryText", StringMacros::encodeURIComponent(entryText));
-
-	// SOAPParametersV parameters(1);
-	// parameters[0].setName("EntryText"); parameters[0].setValue(entryText);
+	parameters.addParameter("SubjectText", StringMacros::encodeURIComponent(subjectText));
 
 	for(auto& logbookInfo : logbookInfoMap)
 	{
@@ -1946,8 +1946,6 @@ void GatewaySupervisor::makeSystemLogEntry(std::string entryText)
 			xoap::MessageReference retMsg = SOAPMessenger::sendWithSOAPReply(logbookInfo.second.getDescriptor(), "MakeSystemLogEntry", parameters);
 
 			SOAPParameters retParameters("Status");
-			// SOAPParametersV retParameters(1);
-			// retParameters[0].setName("Status");
 			SOAPUtilities::receive(retMsg, retParameters);
 
 			std::string status = retParameters.getValue("Status");
@@ -2250,9 +2248,18 @@ try
 	}
 	//FSM name validated
 
-	if(logEntry != "")
+	if(logEntry != "")		
 	{		
 		logEntry += " (" + StringMacros::getTimestampString(time(0)) + ")";
+
+		if(command == RunControlStateMachine::START_TRANSITION_NAME && 
+			getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME).size())
+		{
+			//add configure log entry to start log entry
+
+			logEntry += "\n\nThe last Configure transition log entry was this:\n" + 
+				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+		}
 
 		makeSystemLogEntry("Attempting FSM command '" + command + "' from state '" + 
 			currentState + "' with user log entry: " + logEntry);
@@ -3359,7 +3366,7 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
-	makeSystemLogEntry("System halting.");
+	//makeSystemLogEntry("System halting."); //maybe happens too much? 
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -3605,7 +3612,7 @@ try
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
 		std::ostringstream dur_ss;
-		dur_ss << "Run pausing. Duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+		dur_ss << "Run pausing. '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
 		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
 
 		makeSystemLogEntry(dur_ss.str());
@@ -3784,7 +3791,7 @@ try
 		else 
 			ss << " No user log entry.";
 
-		makeSystemLogEntry(ss.str());
+		makeSystemLogEntry(ss.str(), activeStateMachineRunNumber_);
 	}  // end make logbook entry
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -3918,7 +3925,7 @@ try
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
 		std::ostringstream dur_ss;
-		dur_ss << "Run stopping. Duration of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+		dur_ss << "Run stopping. '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
 		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
 
 		makeSystemLogEntry(dur_ss.str());
@@ -4853,8 +4860,13 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 		// always cleanup expired entries and get a vector std::string of logged out users
 		std::vector<std::string> loggedOutUsernames;
 		theWebUsers_.cleanupExpiredEntries(&loggedOutUsernames);
+		bool doLog = false;
+		if(loggedOutUsernames.size())
+		{
+			try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+		}
 		for(unsigned int i = 0; i < loggedOutUsernames.size(); ++i)  // Log logout for logged out users
-			makeSystemLogEntry(loggedOutUsernames[i] + " login timed out.");
+			if(doLog) makeSystemLogEntry(loggedOutUsernames[i] + " login timed out.");
 
 		if(Command == "sessionId")
 		{
@@ -4953,7 +4965,12 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 					newAccountCode = "0";  // clear cookie code if failure
 			}
 			else  // Log login in logbook for active experiment
-				makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+			{
+				bool doLog = false;
+				try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+				if(doLog) makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+			}
 
 			//__COUT__ << "new cookieCode = " << newAccountCode.substr(0, 10) << __E__;
 
@@ -5014,7 +5031,12 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 					cookieCode = "0";  // clear cookie code if failure
 			}
 			else  // Log login in logbook for active experiment
-				makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+			{
+				bool doLog = false;
+				try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+				if(doLog) makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+			}
 
 			//__COUT__ << "new cookieCode = " << cookieCode.substr(0, 10) << __E__;
 
