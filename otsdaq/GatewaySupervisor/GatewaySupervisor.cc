@@ -132,7 +132,11 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 GatewaySupervisor::~GatewaySupervisor(void)
 {
 	delete CorePropertySupervisorBase::theConfigurationManager_;
-	makeSystemLogEntry("ots shutdown.");
+
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+	if(doLog) makeSystemLogEntry("ots shutdown.");
 }  // end destructor
 
 //==============================================================================
@@ -1976,7 +1980,12 @@ void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText, const s
 void GatewaySupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 {
 	if(!supervisorGuiHasBeenLoaded_ && (supervisorGuiHasBeenLoaded_ = true))  // make system logbook entry that ots has been started
-		makeSystemLogEntry("ots started.");
+	{
+		bool doLog = false;
+		try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+		if(doLog) makeSystemLogEntry("ots started.");
+	}
 
 	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots</title>" << GatewaySupervisor::getIconHeaderString() <<
 	    // end show ots icon
@@ -3366,7 +3375,10 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
-	//makeSystemLogEntry("System halting."); //maybe happens too much? 
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+	if(doLog) makeSystemLogEntry("System halting.");
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -3421,7 +3433,10 @@ try
 	         << " message: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	RunControlStateMachine::theProgressBar_.step();
-	makeSystemLogEntry("System shutting down.");
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+	if(doLog) makeSystemLogEntry("System shutting down.");
 	RunControlStateMachine::theProgressBar_.step();
 
 	// kill all non-gateway contexts
@@ -3438,7 +3453,7 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("System shutdown complete.");
+	if(doLog) makeSystemLogEntry("System shutdown complete.");
 	__COUT__ << "Done shutting down." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionShuttingDown()
@@ -3484,7 +3499,10 @@ try
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	RunControlStateMachine::theProgressBar_.step();
-	makeSystemLogEntry("System starting up.");
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+	if(doLog) makeSystemLogEntry("System starting up.");
 	RunControlStateMachine::theProgressBar_.step();
 
 	// start all non-gateway contexts
@@ -3501,7 +3519,7 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("System startup complete.");
+	if(doLog) makeSystemLogEntry("System startup complete.");
 	__COUT__ << "Done starting up." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3553,7 +3571,10 @@ try
 	__COUT__ << "Fsm current transition: " << theStateMachine_.getCurrentTransitionName(event->type()) << __E__;
 	__COUT__ << "Fsm final state: " << theStateMachine_.getTransitionFinalStateName(event->type()) << __E__;
 
-	makeSystemLogEntry("System initialized.");
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+	if(doLog) makeSystemLogEntry("System initialized.");
 	__COUT__ << "Done initializing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -5073,7 +5094,12 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 				// if did some logging out, check if completely logged out
 				// if so, system logbook message should be made.
 				if(!theWebUsers_.isUserIdActive(uid))
-					makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged out.");
+				{
+					bool doLog = false;
+					try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+					if(doLog) makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged out.");
+				}
 			}
 		}
 		else
