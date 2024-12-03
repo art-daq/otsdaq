@@ -2378,7 +2378,6 @@ otsActionHandler() {
 		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
 			if declare -F otsUserSshTunnels > /dev/null; then
 				otsUserSshTunnels #show output in case of weird repetitive tunnel situations from user, user can always hide output in the function (recommended when not remaking tunnel)
-				# otsUserSshTunnels >/dev/null #hide std output and show errors
 			fi
 		fi
 				
