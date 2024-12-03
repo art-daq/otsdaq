@@ -15,6 +15,7 @@ if [ "x$1" == "x" ]; then
 else
   shift
 fi
+SAVE_THIS_HOST=$THIS_HOST
 
 # Get color code variables
 source ${SCRIPT_DIR}/common.sh ots_remote_start
@@ -46,10 +47,21 @@ else
   shift
 fi
 
+
 # We don't care about the non-error output of this script because it gets shown on the remote's launching terminal
 if [ "x$OTS_SETUP_TYPE" != "x" ]; then
-  info "Sourcing remote setup_ots.sh, and hiding output, for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
-  source ./setup_ots.sh ${OTS_SETUP_TYPE} > /dev/null </dev/null  || die "Couldn't setup ots for ${OTS_SETUP_TYPE} on ${THIS_HOST}"
+
+  ENV_SUBSYSTEM=$OTS_SETUP_TYPE
+  ENV_CACHE_FILE="${setup_dir}/.rte_${ENV_SUBSYSTEM}_setup_ots.sh"
+
+  if [ -f $ENV_CACHE_FILE ]; then
+    info "Source remote env cachce for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+    source $ENV_CACHE_FILE
+    THIS_HOST=$SAVE_THIS_HOST
+  else
+    info "Sourcing remote setup_ots.sh, and hiding output, for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+    source ./setup_ots.sh ${OTS_SETUP_TYPE} > /dev/null </dev/null  || die "Couldn't setup ots for ${OTS_SETUP_TYPE} on ${THIS_HOST}"
+  fi
   info "Launching ots for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
 else # no setup type
   info "Sourcing remote setup_ots.sh, and hiding output, on ${EBold}${THIS_HOST}${DBold}..."
