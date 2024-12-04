@@ -3157,7 +3157,7 @@ std::string WebUsers::getActiveUsersString()
 	if(activeUserIndices.size() == 0 && WebUsers::getSecurity() == WebUsers::SECURITY_TYPE_NONE)  // assume only admin is active
 		activeUsersString += WebUsers::DEFAULT_ADMIN_DISPLAY_NAME;
 
-	__COUTV__(activeUsersString);
+	__COUTVS__(20,activeUsersString);
 	return activeUsersString;
 }  // end getActiveUsersString()
 

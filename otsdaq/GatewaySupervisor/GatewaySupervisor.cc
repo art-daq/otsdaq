@@ -1120,12 +1120,13 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 
 		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
 		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
-		__COUTV__(remoteIconString);
+		__COUTTV__(remoteIconString);
 
 		bool firstIcon = true;
 
 		//now have remote icon string, append icons to list
-		std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString, {','});
+		std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString + ",", //add 1 just in case last folder string is empty
+			{','});
 		const size_t numOfIconFields = 7;
 		for(size_t i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
 		{
@@ -1134,7 +1135,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 			else
 				iconString += ",";					
 
-			__COUTV__(remoteIconsCSV[i+0]);
+			__COUTTV__(remoteIconsCSV[i+0]);
 			if(remoteGatewayApp.parentIconFolderPath == "")//icon.folderPath_ == "") //if not in folder, distinguish remote icon somehow
 				iconString += remoteGatewayApp.user_data_path_record //icon.alternateText_ 
 					+ " " + remoteIconsCSV[i+0]; //icon.caption_;
@@ -3290,6 +3291,8 @@ try
 		if(activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
 			activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
 		{
+			__COUT_INFO__ << "Instantiating Run Info plugin '" << activeStateMachineRunInfoPluginType_ << 
+				"' to insert Configure run condition entry." << __E__;
 			std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 			try	{ runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_, activeStateMachineName_));} catch(...) {;}
 			if(runInfoInterface == nullptr)
@@ -5706,7 +5709,6 @@ try
 			xmlOut.addTextElementToData("username_with_lock",
 			                            theWebUsers_.getUserWithLock());  // always give system lock update
 
-			__COUTV__(theWebUsers_.getUserWithLock());
 			__COUTVS__(20,theWebUsers_.getUserWithLock());
 
 			//Also add Remote Subystems users-with-lock!

@@ -1908,7 +1908,7 @@ try
 			                            "0");  // indicate to GUI transition NOT attempted
 			xmldoc.addTextElementToData("state_tranisition_attempted_err",
 			                            ss.str());  // indicate to GUI transition NOT attempted
-
+			theSupervisor_->theStateMachine_.setErrorMessage(ss.str());
 			return true;  // to block other commands
 		}
 	}
@@ -1936,8 +1936,9 @@ catch(...)
 										"0");  // indicate to GUI transition NOT attempted
 	xmldoc.addTextElementToData("state_tranisition_attempted_err",
 										ss.str());  // indicate to GUI transition NOT attempted		
+	theSupervisor_->theStateMachine_.setErrorMessage(ss.str());
 	return true;
-} // end stateMachineXgiHandler() error handling
+} // end handleCommandRequest() error handling
 
 //==============================================================================
 void Iterator::playIterationPlan(HttpXmlDocument& xmldoc, const std::string& planName)
