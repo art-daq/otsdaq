@@ -1136,7 +1136,7 @@ void ConfigurationManager::loadMemberMap(const std::map<std::string /*name*/, Ta
 
 	//Note: mongodb crashing from too many connections was resolved by increasing ulimit at mongodb launch
 	//	 i.e. ulimit -n 64000 && ./start_mongod.sh
-	const int numOfThreads = PROCESSOR_COUNT/2 > memberMap.size()?(PROCESSOR_COUNT/2) : memberMap.size();
+	const int numOfThreads = PROCESSOR_COUNT/2 > memberMap.size() ? (PROCESSOR_COUNT/2) : memberMap.size();
 	if(memberMap.size() <= 2 /* i.e. is Context group */ || 
 		usingCache || numOfThreads < 2) // no multi-threading
 	{
