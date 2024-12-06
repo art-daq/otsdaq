@@ -297,7 +297,7 @@ class WorkLoopManager;
 		std::string 		activeStateMachineRunInfoPluginType_; //cached at Configure transition
 		std::map<std::string /* fsmName */, std::string /* logEntry */>			
 							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_;
-		std::string 		activeStateMachineRunNumber_, activeStateMachineRunAlias_;
+		std::string 		activeStateMachineRunNumber_, activeStateMachineRunAlias_, activeStateMachineConfigurationAlias_;
 		bool				activeStateMachineRollOverLogOnConfigure_, activeStateMachineRollOverLogOnStart_;
 		std::chrono::steady_clock::time_point 
 							activeStateMachineRunStartTime;
@@ -394,44 +394,6 @@ public:	//used by remote subsystem control and status
 		void						loadRemoteGatewaySettings	(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways, bool onlyNotFound = false) const;
 		void						saveRemoteGatewaySettings	(void) const;
 
-		time_t		 				getSupervisorUptime				(void) const { return time(0) - constructedTime_;}
-		std::string	 				getSupervisorUptimeString		(void) const { // a la CoreSupervisorBase::getStatusProgressDetail(void)
-			//return uptime detail
-			std::stringstream ss;
-			time_t t = getSupervisorUptime();
-			ss << "Uptime: ";
-			int days = t/60/60/24;
-			if(days > 0)
-			{
-				ss << days << " day" << (days>1?"s":"") << ", ";
-				t -= days * 60*60*24;
-			}
-
-			//HH:MM:SS
-			ss << std::setw(2) << std::setfill('0') << (t/60/60) << ":" <<
-				std::setw(2) << std::setfill('0') << ((t % (60*60))/60) << ":" << 
-				std::setw(2) << std::setfill('0') << (t % 60);
-
-			//return time-in-state detail
-			t = theStateMachine_.getTimeInState();
-			ss << ", Time-in-state: ";
-			days = t/60/60/24;
-			if(days > 0)
-			{
-				ss << days << " day" << (days>1?"s":"") << ", ";
-				t -= days * 60*60*24;
-			}
-
-			//HH:MM:SS
-			ss << std::setw(2) << std::setfill('0') << (t/60/60) << ":" <<
-				std::setw(2) << std::setfill('0') << ((t % (60*60))/60) << ":" << 
-				std::setw(2) << std::setfill('0') << (t % 60);
-
-			return ss.str();	
-		}	//end getSupervisorUptimeString()		
-		
-private:	
-		const time_t				constructedTime_ = time(0);
 	};
 // clang-format on
 

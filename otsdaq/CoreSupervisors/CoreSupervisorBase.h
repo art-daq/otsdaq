@@ -56,7 +56,7 @@ class CoreSupervisorBase : public xdaq::Application,
 	void destroy(void);
 
 	unsigned int 					getSupervisorLID				(void) const { return getApplicationDescriptor()->getLocalId(); }
-	time_t		 					getSupervisorUptime				(void) const { return time(0) - constructedTime_;}				
+	
 
 	// Here are the common web request handlers:
 	//	defaultPage returns the public html page
@@ -135,8 +135,6 @@ class CoreSupervisorBase : public xdaq::Application,
 
 	RemoteWebUsers 				theRemoteWebUsers_;
 
-private:	
-	const time_t				constructedTime_ = time(0);
 };
 // clang-format on
 }  // namespace ots

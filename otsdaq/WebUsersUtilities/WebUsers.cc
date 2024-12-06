@@ -3491,12 +3491,12 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 	//do user messages 2nd because the web client will hide all messages before a repeat, so make sure to show user messages
 	__COUTVS__(20,targetUser);
 	it = systemMessages_.find(targetUser);
-	//if(TTEST(20)) //FIXME once TRACE has TTEST implemented
-	//{
-	// for(auto systemMessagePair:systemMessages_)
-	//	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << systemMessagePair.first << " " << systemMessagePair.second.size() << " "
-	//		<< (systemMessagePair.second.size()?systemMessagePair.second[0].message_:"") << __E__;
-	//}
+	if(TTEST(20)) 
+	{
+		for(auto systemMessagePair:systemMessages_)
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << systemMessagePair.first << " " << systemMessagePair.second.size() << " "
+				<< (systemMessagePair.second.size()?systemMessagePair.second[0].message_:"") << __E__;
+	}
 	if(it != systemMessages_.end())
 	{
 		__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Message count: " <<

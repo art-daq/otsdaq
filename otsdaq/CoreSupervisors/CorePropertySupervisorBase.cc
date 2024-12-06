@@ -547,15 +547,6 @@ WebUsers::permissionLevel_t CorePropertySupervisorBase::getSupervisorPropertyUse
 	checkSupervisorPropertySetup();
 
 	return StringMacros::getWildCardMatchFromMap(requestType, propertyStruct_.UserPermissionsThreshold);
-
-	//	auto it = propertyStruct_.UserPermissionsThreshold.find(requestType);
-	//	if(it == propertyStruct_.UserPermissionsThreshold.end())
-	//	{
-	//		__SUP_SS__ << "Could not find requestType named " << requestType << " in
-	// UserPermissionsThreshold map." << __E__;
-	//		__SS_THROW__; //__SUP_SS_THROW__;
-	//	}
-	//	return it->second;
 }  // end getSupervisorPropertyUserPermissionsThreshold()
 
 //==============================================================================
@@ -612,11 +603,13 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 				             << "'... Defaulting to max threshold = " << (unsigned int)userInfo.permissionsThreshold_ << __E__;
 		}
 
-		__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "userInfo.requestType_ " << userInfo.requestType_ << __E__;
-		__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "userInfo.checkLock_ " << userInfo.checkLock_ << __E__;
-		__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "userInfo.requireLock_ " << userInfo.requireLock_ << __E__;
-		__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "userInfo.allowNoUser_ " << userInfo.allowNoUser_ << __E__;
-		__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "userInfo.permissionsThreshold_ " << (unsigned int)userInfo.permissionsThreshold_ << __E__;
+		__SUP_COUTVS__(20,userInfo.requestType_);
+		__SUP_COUTVS__(20,userInfo.checkLock_);
+		__SUP_COUTVS__(20,userInfo.requireLock_);
+		__SUP_COUTVS__(20,userInfo.allowNoUser_);
+		__SUP_COUTVS__(20,userInfo.automatedCommand_);
+		__SUP_COUTVS__(20,userInfo.automatedCommand_);
+		__SUP_COUTVS__(20,(unsigned int)userInfo.permissionsThreshold_ );
 
 		try
 		{
@@ -625,12 +618,10 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 		}
 		catch(std::runtime_error& e)
 		{
-			userInfo.groupsAllowed_.clear();
-
-			//			if(!userInfo.automatedCommand_)
-			//				__SUP_COUT__ << "No explicit groups allowed for request '" <<
-			//					 userInfo.requestType_ << "'... Defaulting to empty groups
-			// allowed. " << __E__;
+			userInfo.groupsAllowed_.clear(); 
+			if(!userInfo.automatedCommand_)
+				__SUP_COUT_TYPE__(TLVL_DEBUG+25) << __COUT_HDR__ << "No explicit groups allowed for request '" << 
+					userInfo.requestType_ << "'... Defaulting to empty groups allowed. " << __E__;
 		}
 		try
 		{
@@ -641,11 +632,9 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 		{
 			userInfo.groupsDisallowed_.clear();
 
-			//			if(!userInfo.automatedCommand_)
-			//				__SUP_COUT__ << "No explicit groups disallowed for request '"
-			//<<
-			//					 userInfo.requestType_ << "'... Defaulting to empty groups
-			// disallowed. " << __E__;
+			if(!userInfo.automatedCommand_)
+				__SUP_COUT_TYPE__(TLVL_DEBUG+25) << __COUT_HDR__ << "No explicit groups disallowed for request '" <<
+					userInfo.requestType_ << "'... Defaulting to empty groups disallowed. " << __E__;
 		}
 	}  //**** end LOGIN GATEWAY CODE ***//
 

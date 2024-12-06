@@ -320,7 +320,14 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					{
 						detail = (theSupervisor->theStateMachine_.isInTransition()
 									? theSupervisor->theStateMachine_.getCurrentTransitionName(theSupervisor->stateMachineLastCommandInput_)
-									: theSupervisor->getSupervisorUptimeString());
+									: 
+									(std::string("Uptime: ") +
+									StringMacros::getTimeDurationString(
+										theSupervisor->CorePropertySupervisorBase::getSupervisorUptime()) +
+									", Time-in-state: " +
+									StringMacros::getTimeDurationString(
+										theSupervisor->theStateMachine_.getTimeInState())
+									));
 						// make sure broadcast message status is not being updated
 						std::lock_guard<std::mutex> lock(theSupervisor->broadcastCommandStatusUpdateMutex_);
 						if(detail != "" && theSupervisor->broadcastCommandStatus_ != "")
@@ -1109,18 +1116,18 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 
 	std::string command = "GetRemoteDesktopIcons";	
 
-	__COUT__ << "Sending remote gateway command '" << command << "' to target '" <<
+	__COUTT__ << "Sending remote gateway command '" << command << "' to target '" <<
 		remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
 
 	try
 	{
 		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
-		__COUTTV__(StringMacros::vectorToString(parsedFields));
-		__COUTV__(command);
+		__COUTVS__(10,StringMacros::vectorToString(parsedFields));
+		__COUTVS__(10,command);
 
 		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
 		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
-		__COUTTV__(remoteIconString);
+		__COUTVS__(10,remoteIconString);
 
 		bool firstIcon = true;
 
@@ -1135,7 +1142,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 			else
 				iconString += ",";					
 
-			__COUTTV__(remoteIconsCSV[i+0]);
+			__COUTVS__(10,remoteIconsCSV[i+0]);
 			if(remoteGatewayApp.parentIconFolderPath == "")//icon.folderPath_ == "") //if not in folder, distinguish remote icon somehow
 				iconString += remoteGatewayApp.user_data_path_record //icon.alternateText_ 
 					+ " " + remoteIconsCSV[i+0]; //icon.caption_;
@@ -2271,7 +2278,10 @@ try
 				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
 		}
 
-		makeSystemLogEntry("Attempting FSM command '" + command + "' from state '" + 
+		bool doLog = false;
+		try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+		if(doLog) makeSystemLogEntry("Attempting FSM command '" + command + "' from state '" + 
 			currentState + "' with user log entry: " + logEntry);
 	}
 
@@ -3163,14 +3173,22 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 	// make logbook entry
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	if(doLog) 
 	{
 		std::stringstream ss;
 		ss << "Configuring with System Configuration Alias '" << configurationAlias << 
-			"' which translates to " << theConfigurationTableGroup_.first << " (" << theConfigurationTableGroup_.second
-		   << ").";
+			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
+		   << "). Active Context Group " << 
+		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
+			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
+				").";
 
 		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
-			ss << " User log entry:\n " << 
+			ss << "\n\nUser log entry:\n\n" << 
 				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
 		else
 			ss << " No user log entry.";
@@ -3329,7 +3347,28 @@ try
 	// save last configured group name/key
 	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_, FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
 
-	makeSystemLogEntry("System configured.");
+	activeStateMachineConfigurationAlias_ = configurationAlias;
+	doLog = true; //default to true
+	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	if(doLog) 
+	{
+		std::stringstream ss;
+		ss << "Configured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
+			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
+		   << "). Active Context Group " << 
+		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
+			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
+				").";
+
+		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
+			ss << "\n\nUser log entry:\n\n" << 
+				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+		else
+			ss << " No user log entry.";
+		makeSystemLogEntry(ss.str());
+	}
 	__COUT__ << "Done configuring." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionConfiguring()
@@ -3379,15 +3418,17 @@ try
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	bool doLogIntermediate = false;
+	try{ doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
 
-	if(doLog) makeSystemLogEntry("System halting.");
+	if(doLog && doLogIntermediate) makeSystemLogEntry("System halting.");
 
 	RunControlStateMachine::theProgressBar_.step();
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("System halted.");
+	if(doLogIntermediate) makeSystemLogEntry("System halted.");
 	__COUT__ << "Done halting." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionHalting()
@@ -3437,9 +3478,11 @@ try
 
 	RunControlStateMachine::theProgressBar_.step();
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	bool doLogIntermediate = false;
+	try{ doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
 
-	if(doLog) makeSystemLogEntry("System shutting down.");
+	if(doLog && doLogIntermediate) makeSystemLogEntry("System shutting down.");
 	RunControlStateMachine::theProgressBar_.step();
 
 	// kill all non-gateway contexts
@@ -3455,8 +3498,8 @@ try
 	}
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
-
-	if(doLog) makeSystemLogEntry("System shutdown complete.");
+ 
+	if(doLogIntermediate) makeSystemLogEntry("System shutdown complete.");
 	__COUT__ << "Done shutting down." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionShuttingDown()
@@ -3503,9 +3546,11 @@ try
 
 	RunControlStateMachine::theProgressBar_.step();
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	bool doLogIntermediate = false;
+	try{ doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
 
-	if(doLog) makeSystemLogEntry("System starting up.");
+	if(doLog && doLogIntermediate) makeSystemLogEntry("System starting up.");
 	RunControlStateMachine::theProgressBar_.step();
 
 	// start all non-gateway contexts
@@ -3522,7 +3567,7 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	if(doLog) makeSystemLogEntry("System startup complete.");
+	if(doLogIntermediate) makeSystemLogEntry("System startup complete.");
 	__COUT__ << "Done starting up." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3576,8 +3621,8 @@ try
 
 	bool doLog = false;
 	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
-
 	if(doLog) makeSystemLogEntry("System initialized.");
+
 	__COUT__ << "Done initializing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3625,7 +3670,13 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
+	RunControlStateMachine::theProgressBar_.step();
+
 	// calculate run duration and post system log entry
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	
+	std::ostringstream dur_ss;
 	{
 		int dur = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - activeStateMachineRunStartTime).count() +
 		          activeStateMachineRunDuration_ms;
@@ -3635,11 +3686,11 @@ try
 		dur_s     = dur_s % 60;
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
-		std::ostringstream dur_ss;
-		dur_ss << "Run pausing. '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
 		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
 
-		makeSystemLogEntry(dur_ss.str());
+		if(doLog) 
+			makeSystemLogEntry("Run pausing. " + dur_ss.str());
 	}
 
 	activeStateMachineRunDuration_ms +=
@@ -3654,7 +3705,9 @@ try
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("Run paused.");
+	makeSystemLogEntry("Run paused. " + dur_ss.str(), 
+		activeStateMachineRunAlias_ + " '" + 
+		activeStateMachineRunNumber_ + "' paused");
 	__COUT__ << "Done pausing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3715,11 +3768,42 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
-	makeSystemLogEntry("Run resuming.");
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	if(doLog) 
+	{
+		
+		std::stringstream ss;
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resuming.";
+	
+		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
+			ss << "\nUser log entry:\n\n" << 
+					getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME);
+		else 
+			ss << " No user log entry.";
+
+		makeSystemLogEntry(ss.str());
+	} //end make logbook entry
 
 	activeStateMachineRunStartTime = std::chrono::steady_clock::now();
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
+
+	// make logbook entry
+	{
+		std::stringstream ss;
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resumed.";
+	
+		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
+			ss << "\nUser log entry:\n\n" << 
+					getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME);
+		else 
+			ss << " No user log entry.";
+
+		makeSystemLogEntry(ss.str(),
+			activeStateMachineRunAlias_ + " '" + 
+			activeStateMachineRunNumber_ + "' resumed");
+	} // end make logbook entry
 
 	__COUT__ << "Done resuming." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
@@ -3804,18 +3888,21 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 
-	// make logbook entry
+	// make logbook entry	
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}	
+	if(doLog)
 	{
 		std::stringstream ss;
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' starting.";
 
 		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
-			ss << " User log entry:\n " << 
+			ss << "\nUser log entry:\n\n" << 
 					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
 		else 
 			ss << " No user log entry.";
 
-		makeSystemLogEntry(ss.str(), activeStateMachineRunNumber_);
+		makeSystemLogEntry(ss.str());
 	}  // end make logbook entry
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -3885,7 +3972,25 @@ try
 	{
 		std::stringstream ss;
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' started.";
-		makeSystemLogEntry(ss.str());
+	
+		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
+			ss << "\nUser log entry:\n\n" << 
+					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
+		else 
+			ss << " No user log entry.";
+
+		ss << "\n\nConfigured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
+			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
+		   << "). Active Context Group " << 
+		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
+			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
+				").";
+
+		makeSystemLogEntry(ss.str(),
+			activeStateMachineRunAlias_ + " '" + 
+			activeStateMachineRunNumber_ + "' started");
 	} // end make logbook entry
 	__COUT__ << "Done starting run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
@@ -3939,7 +4044,11 @@ try
 
 	RunControlStateMachine::theProgressBar_.step();
 
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	
 	// calculate run duration and make system log entry
+	std::ostringstream dur_ss;
 	{
 		int dur   = activeStateMachineRunDuration_ms;
 		int dur_s = dur / 1000;
@@ -3948,11 +4057,21 @@ try
 		dur_s     = dur_s % 60;
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
-		std::ostringstream dur_ss;
-		dur_ss << "Run stopping. '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
 		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
 
-		makeSystemLogEntry(dur_ss.str());
+		if(doLog) 
+		{
+			std::stringstream ss;
+			ss <<  dur_ss.str();
+			if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
+				ss << "\nUser log entry:\n\n" << 
+						getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME);
+			else 
+				ss << " No user log entry.";
+
+			makeSystemLogEntry("Run stopping. " + ss.str());
+		}
 	}
 
 	// the current message is not for Stop if its due to async exception, so rename
@@ -3964,7 +4083,21 @@ try
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("Run stopped.");
+	// make logbook entry
+	{
+		std::stringstream ss;
+		ss <<  dur_ss.str();
+		if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
+			ss << "\n\nUser log entry:\n\n" << 
+					getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME);
+		else 
+			ss << " No user log entry.";
+
+		makeSystemLogEntry("Run stopped.\n" + ss.str(),		 
+			activeStateMachineRunAlias_ + " '" + 
+			activeStateMachineRunNumber_ + "' stopped");
+	} // end make logbook entry
+
 	__COUT__ << "Done stopping run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -7070,7 +7203,7 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string& command, Config
 xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(xoap::MessageReference message)
 
 {
-	__COUTT__ << __E__;
+	__COUTT__ << "request from remote Supervisor for GatewaySupervisor::supervisorCookieCheck()" << __E__;
 
 	// SOAPUtilities::receive request parameters
 	SOAPParameters parameters;

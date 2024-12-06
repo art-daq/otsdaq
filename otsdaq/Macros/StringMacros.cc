@@ -590,6 +590,28 @@ std::string StringMacros::getTimestampString(const time_t linuxTimeInSeconds)
 }  // end getTimestampString()
 
 //==============================================================================
+// getTimeDurationString
+//	returns the duration HH:MM:SS with consideration for day(s)
+std::string StringMacros::getTimeDurationString(time_t t)
+{
+	 //e.g., used by CoreSupervisorBase::getStatusProgressDetail(void)
+	
+	std::stringstream ss;	
+	int days = t/60/60/24;
+	if(days > 0)
+	{
+		ss << days << " day" << (days>1?"s":"") << ", ";
+		t -= days * 60*60*24;
+	}
+
+	//HH:MM:SS
+	ss << std::setw(2) << std::setfill('0') << (t/60/60) << ":" <<
+		std::setw(2) << std::setfill('0') << ((t % (60*60))/60) << ":" << 
+		std::setw(2) << std::setfill('0') << (t % 60);
+	return ss.str();
+} //end getTimeDurationString()
+
+//==============================================================================
 // validateValueForDefaultStringDataType
 //
 std::string StringMacros::validateValueForDefaultStringDataType(const std::string& value, bool doConvertEnvironmentVariables)
@@ -1321,16 +1343,17 @@ std::string StringMacros::extractXmlField(const std::string &xml,
 												const std::string &field,
 												uint32_t occurrence, size_t after,
 												size_t *returnAfter /* = nullptr */,
-												const std::string& valueField /* = "value" */)
+												const std::string& valueField /* = "value" */,
+												const std::string& quoteType /* = "'" */)
 {
 	size_t lo = after, hi;
 	for (uint32_t i = 0; i <= occurrence; ++i)
 		if ((lo = xml.find("<" + field + " ", lo)) == std::string::npos)
 			return "";
-	if ((hi = xml.find("'/>", lo)) == std::string::npos)
+	if ((hi = xml.find(quoteType + "/>", lo)) == std::string::npos)
 		return "";
 
-	lo = xml.find(valueField + "='", lo) + 7;
+	lo = xml.find(valueField + "=" + quoteType, lo) + valueField.size() + 2;
 
 	if (returnAfter)
 		*returnAfter = hi + 3; //field.length() + 3;
@@ -1344,16 +1367,17 @@ std::string StringMacros::extractXmlField(const std::string &xml,
 std::string StringMacros::rextractXmlField(const std::string &xml,
 												 const std::string &field,
 												 uint32_t occurrence, size_t before,
-												 const std::string& valueField /* = "value" */)
+												 const std::string& valueField /* = "value" */,
+												 const std::string& quoteType /* = "'" */)
 {
 	size_t lo = 0, hi = before;
 	for (uint32_t i = 0; i <= occurrence; ++i)
 		if ((lo = xml.rfind("<" + field + " ", hi)) == std::string::npos)
 			return "";
-	if ((hi = xml.rfind("'/>", hi)) == std::string::npos)
+	if ((hi = xml.rfind(quoteType + "/>", hi)) == std::string::npos)
 		return "";
 
-	lo = xml.find(valueField + "='", lo) + 7;
+	lo = xml.find(valueField + "=" + quoteType, lo) + valueField.size() + 2;
 
 	return xml.substr(lo, hi - lo);
 } //end rextractXmlField()

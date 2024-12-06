@@ -407,38 +407,12 @@ std::string CoreSupervisorBase::getStatusProgressDetail(void)
 		(theStateMachine_.getCurrentStateName() == RunControlStateMachine::HALTED_STATE_NAME || 
 		theStateMachine_.getCurrentStateName() == RunControlStateMachine::INITIAL_STATE_NAME))
 	{
-		//return uptime detail
-		std::stringstream ss;
-		time_t t = getSupervisorUptime();
-		ss << "Uptime: ";
-		int days = t/60/60/24;
-		if(days > 0)
-		{
-			ss << days << " day" << (days>1?"s":"") << ", ";
-			t -= days * 60*60*24;
-		}
-
-		//HH:MM:SS
-		ss << std::setw(2) << std::setfill('0') << (t/60/60) << ":" <<
-			std::setw(2) << std::setfill('0') << ((t % (60*60))/60) << ":" << 
-			std::setw(2) << std::setfill('0') << (t % 60);
-
-		//return time-in-state detail
-		t = theStateMachine_.getTimeInState();
-		ss << ", Time-in-state: ";
-		days = t/60/60/24;
-		if(days > 0)
-		{
-			ss << days << " day" << (days>1?"s":"") << ", ";
-			t -= days * 60*60*24;
-		}
-
-		//HH:MM:SS
-		ss << std::setw(2) << std::setfill('0') << (t/60/60) << ":" <<
-			std::setw(2) << std::setfill('0') << ((t % (60*60))/60) << ":" << 
-			std::setw(2) << std::setfill('0') << (t % 60);
-
-		detail = ss.str();
+		detail = std::string("Uptime: ") +
+			StringMacros::getTimeDurationString(
+				CorePropertySupervisorBase::getSupervisorUptime()) +
+			", Time-in-state: " +
+			StringMacros::getTimeDurationString(
+				theStateMachine_.getTimeInState());
 		return detail;
 	}
 
@@ -449,8 +423,8 @@ std::string CoreSupervisorBase::getStatusProgressDetail(void)
 			detail += ((cnt++) ? ":" : "") + fsmProgressDetail;  // StringMacros::encodeURIComponent(fsmProgressDetail);
 	}
 
-	// if(detail.size())
-	//	__SUP_COUTV__(detail);
+	if(detail.size())
+		__SUP_COUTVS__(20,detail);
 
 	// if empty detail, give last command
 	if(!detail.size() && RunControlStateMachine::getLastCommand() != "")

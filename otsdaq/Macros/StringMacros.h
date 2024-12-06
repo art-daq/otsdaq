@@ -21,6 +21,8 @@ struct StringMacros
 	~StringMacros	(void);
 
   public:
+
+	//========================================================================================================================
 	// Here is the list of static helper functions:
 	//
 	//		wildCardMatch
@@ -32,6 +34,7 @@ struct StringMacros
 	//		isNumber
 	//		getNumber
 	//		getTimestampString
+	//		getTimeDurationString
 	//
 	//		validateValueForDefaultStringDataType
 	//
@@ -44,6 +47,15 @@ struct StringMacros
 	//		mapToString
 	//
 	//		demangleTypeName
+	//		getTypeName
+	//		stackTrace
+	//		exec
+	//		otsGetEnvironmentVarable
+	//		extractXmlField
+	//		rextractXmlField
+	//
+	// End  list of static helper functions:
+	//========================================================================================================================
 
 	static bool 				wildCardMatch				(const std::string& needle, const std::string& haystack, unsigned int* priorityIndex = 0);
 	static bool 				inWildCardSet				(const std::string& needle, const std::set<std::string>& haystack);
@@ -74,6 +86,7 @@ struct StringMacros
 
 	static std::string 			getTimestampString			(const std::string& linuxTimeInSeconds);
 	static std::string 			getTimestampString			(const time_t linuxTimeInSeconds = time(0));
+	static std::string 			getTimeDurationString		(const time_t durationInSeconds = time(0));
 
 	//========================================================================================================================
 	// validateValueForDefaultStringDataType ~
@@ -210,12 +223,14 @@ struct StringMacros
 															 const std::string &field,
 															 uint32_t occurrence, size_t after,
 															 size_t *returnAfter = nullptr,
-															 const std::string &valueField = "value");
+															 const std::string &valueField = "value",
+															 const std::string &quoteType = "'");
 	static std::string 			rextractXmlField			(const std::string &xml,
 															 const std::string &field,
 															 uint32_t occurrence, 
 															 size_t before,
-															 const std::string &valueField = "value");
+															 const std::string &valueField = "value",
+															 const std::string &quoteType = "'");
 
 
 	struct IgnoreCaseCompareStruct { //get string in order ignoring letter case

@@ -110,7 +110,7 @@ bool RemoteWebUsers::xmlRequestToGateway(
 {
 	//__COUT__ << std::endl;
 	// initialize user info parameters to failed results
-	WebUsers::initializeRequestUserInfo(cgi, userInfo);
+	WebUsers::initializeRequestUserInfo(cgi, userInfo); 
 
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* gatewaySupervisor;
 
@@ -120,15 +120,9 @@ bool RemoteWebUsers::xmlRequestToGateway(
 	//**** start LOGIN GATEWAY CODE ***//
 	// If TRUE, cookie code is good, and refreshed code is in cookieCode
 	// Else, error message is returned in cookieCode
-	// tmpCookieCode_ = CgiDataUtilities::getOrPostData(cgi,"CookieCode"); //from GET or
-	// POST
-
-	//	__COUT__ << cookieCode.length() << std::endl;
-	//	__COUT__ << "cookieCode=" << cookieCode << std::endl;
-	//__COUT__ << std::endl;
-
+	
 	/////////////////////////////////////////////////////
-	// have CookieCode, try it out
+	// if Wiz or Macormaker mode, use sequence instead of cookieCode
 	if(allSupervisorInfo.isWizardMode() || allSupervisorInfo.isMacroMakerMode())
 	{
 		// if missing CookieCode... check if in Wizard mode and using sequence
@@ -167,28 +161,10 @@ bool RemoteWebUsers::xmlRequestToGateway(
 		userInfo.setGroupPermissionLevels(parameters.getValue("Permissions"));
 
 		if(WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo, true /*isWizardMode*/, sequence))
-			return true;
+			return true; //successful sequence login!
 		else
 			goto HANDLE_ACCESS_FAILURE;  // return false, access failed
-
-		//		if(userInfo.permissionLevel_ < userInfo.permissionsThreshold_)
-		//		{
-		//			*out << WebUsers::REQ_NO_LOGIN_RESPONSE;
-		//			__COUT__ << "User (@" << userInfo.ip_ << ") has insufficient
-		// permissions: " << userInfo.permissionLevel_ << "<" <<
-		//					userInfo.permissionsThreshold_ << std::endl;
-		//			return false;	//invalid cookie and present sequence, but not correct
-		// sequence
-		//		}
-		//
-		//		userInfo.setUsername("admin");
-		//		userInfo.setDisplayName("Admin");
-		//		userInfo.setUsernameWithLock("admin");
-		//		userInfo.setActiveUserSessionIndex(0);
-		//		userInfo.setGroupMemebership("admin");
-		//
-		//		return true; //successful sequence login!
-	}
+	} //end  Wiz or Macormaker mode
 
 	// else proceed with inquiry to Gateway Supervisor
 
@@ -201,7 +177,7 @@ bool RemoteWebUsers::xmlRequestToGateway(
 		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
 	}
 
-	//__COUT__ << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG+1) << __COUT_HDR__ << std::endl;
 
 	parameters.clear();
 	parameters.addParameter("CookieCode", userInfo.cookieCode_);
@@ -220,7 +196,7 @@ bool RemoteWebUsers::xmlRequestToGateway(
 	// parameters.addParameter("ActiveSessionIndex");
 	SOAPUtilities::receive(retMsg, parameters);
 
-	//__COUT__ << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG+1) << __COUT_HDR__ << std::endl;
 
 	// first extract a few things always from parameters
 	//	like permissionLevel for this request... must consider allowed groups!!
