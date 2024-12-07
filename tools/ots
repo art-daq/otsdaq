@@ -96,7 +96,7 @@ log_label=""
 #############################
 
 # Output startup banner
-out
+out "ots -h #for usage help"
 #at least enable messages from self
 tonS 0-9 -N ots
 tonS 0-9 -N ots_remote_start
@@ -193,49 +193,49 @@ while :; do
 		# not being handled
 		
 		out
-		out "******************************************************"
-		out "*************        ots Usage          **************"
-		out "******************************************************"	
+		out "${Purple}${REV} ****************************************************** ${RstClr}"
+		out "${Purple}${REV} *************        ots Usage          ************** ${RstClr}"
+		out "${Purple}${REV} ****************************************************** ${RstClr}${Reset}"	
 		out
 		out "To kill all otsdaq running processes, please use any of these options:"
-		out "--killall  --kill  --kx  -k"
+		out " --killall  --kill  --kx  -k"
 		out "	e.g.: ots --kx"
 		out
 		out "To start otsdaq in 'wiz mode' please use any of these options:"
-		out "--configure  --config  --wizard  --wiz  -w"
+		out " --configure  --config  --wizard  --wiz  -w"
 		out "	e.g.: ots --wiz"
 		out
 		out "To start otsdaq with 'verbose mode' enabled, add one of these options:"
-		out "--verbose  -v"
+		out " --verbose  -v"
 		out "	e.g.: ots --wiz -v     or    ots --verbose"
 		out
 		out "To display potential log file locations based on current otsdaq configuration, add one of these options:"
-		out "--logfind  -l"
+		out " --logfind  -l"
 		out "	e.g.: ots -l     or    ots --logfind"
 		out
 		out "To start otsdaq and launch google-chrome, add one of these options:"
-		out "--chrome  -c"
+		out " --chrome  -c"
 		out "	e.g.: ots --wiz -c     or    ots --chrome"
 		out
 		out "To start otsdaq and launch firefox, add one of these options:"
-		out "--firefox  -f"
+		out " --firefox  -f"
 		out "	e.g.: ots --wiz -f     or    ots --firefox"
 		out
 		out "To backup and not overwrite previous quiet log files, add one of these options:"
-		out "--backup  -b"
+		out " --backup  -b"
 		out "	e.g.: ots -b     or    ots --backup"
 		out
 		out "To disable otsdaq startup checking and relaunching, add one of these options:"
-		out "--relaunch  -r"
+		out " --relaunch  -r"
 		out "	e.g.: ots -r     or    ots --relaunch"
 		out
 		out "To disable otsdaq remote process startup, add one of these options:"
-		out "--startremote  -s"
+		out " --startremote  -s"
 		out "	e.g.: ots -s     or    ots --startremote"
 		out
-		out "Exiting ots. Please see usage tips above."		
-		out
-		die "Unsupported option '$1'"
+		die "Exiting ots. Please see usage tips above."		
+		# out
+		# die "Unsupported option '$1'"
 		;;
 	*)
 		# Match any remaining non-option arguments (or an empty string) which marks the end of arguments
