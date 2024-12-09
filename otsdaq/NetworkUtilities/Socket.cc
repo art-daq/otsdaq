@@ -27,7 +27,7 @@ using namespace ots;
 Socket::Socket(const std::string& IPAddress, unsigned int port) : socketNumber_(-1), IPAddress_(IPAddress), requestedPort_(port)
 //    maxSocketSize_(maxSocketSize)
 {
-	__COUT__ << "Socket constructor " << IPAddress << ":" << port << __E__;
+	__COUTT__ << "Socket constructor " << IPAddress << ":" << port << __E__;
 
 	if(port >= (1 << 16))
 	{
@@ -39,7 +39,7 @@ Socket::Socket(const std::string& IPAddress, unsigned int port) : socketNumber_(
 	socketAddress_.sin_family = AF_INET;      // use IPv4 host byte order
 	socketAddress_.sin_port   = htons(port);  // short, network byte order
 
-	__COUT__ << "IPAddress: " << IPAddress << " port: " << port << " htons: " << socketAddress_.sin_port << std::endl;
+	__COUTT__ << "IPAddress: " << IPAddress << " port: " << port << " htons: " << socketAddress_.sin_port << std::endl;
 
 	if(inet_aton(IPAddress.c_str(), &socketAddress_.sin_addr) == 0)
 	{
@@ -49,8 +49,8 @@ Socket::Socket(const std::string& IPAddress, unsigned int port) : socketNumber_(
 
 	memset(&(socketAddress_.sin_zero), '\0', 8);  // zero the rest of the struct
 
-	__COUT__ << "Constructed socket for port " << ntohs(socketAddress_.sin_port) << "=" << getPort() << " htons: " << socketAddress_.sin_port << std::endl;
-}
+	__COUTT__ << "Constructed socket for port " << ntohs(socketAddress_.sin_port) << "=" << getPort() << " htons: " << socketAddress_.sin_port << std::endl;
+} //end constructor
 
 //==============================================================================
 // protected constructor
@@ -65,7 +65,7 @@ Socket::Socket(void)
 //==============================================================================
 Socket::~Socket(void)
 {
-	__COUT__ << "CLOSING THE SOCKET #" << socketNumber_ << " IP: " << IPAddress_ << " port: " << getPort() << " htons: " << socketAddress_.sin_port
+	__COUTT__ << "CLOSING THE SOCKET #" << socketNumber_ << " IP: " << IPAddress_ << " port: " << getPort() << " htons: " << socketAddress_.sin_port
 	         << std::endl;
 	if(socketNumber_ != -1)
 		close(socketNumber_);

@@ -1908,7 +1908,7 @@ try
 			                            "0");  // indicate to GUI transition NOT attempted
 			xmldoc.addTextElementToData("state_tranisition_attempted_err",
 			                            ss.str());  // indicate to GUI transition NOT attempted
-
+			theSupervisor_->theStateMachine_.setErrorMessage(ss.str());
 			return true;  // to block other commands
 		}
 	}
@@ -1936,8 +1936,9 @@ catch(...)
 										"0");  // indicate to GUI transition NOT attempted
 	xmldoc.addTextElementToData("state_tranisition_attempted_err",
 										ss.str());  // indicate to GUI transition NOT attempted		
+	theSupervisor_->theStateMachine_.setErrorMessage(ss.str());
 	return true;
-} // end stateMachineXgiHandler() error handling
+} // end handleCommandRequest() error handling
 
 //==============================================================================
 void Iterator::playIterationPlan(HttpXmlDocument& xmldoc, const std::string& planName)
@@ -1973,7 +1974,8 @@ void Iterator::playGeneratedIterationPlan(HttpXmlDocument& xmldoc,
 	// parameters[2] /*durationSeconds*/,
 	// parameters[3] /*numberOfRuns*/,
 	// parameters[4] /*keepConfiguration*/,
-	// parameters[5] /*logEntry*/
+	// parameters[5] /*logEntry*/ double encoded
+	parameters[5] = StringMacros::decodeURIComponent(parameters[5]);
 
 	uint64_t durationSeconds;
 	sscanf(parameters[2].c_str(),"%lu",&durationSeconds);

@@ -132,7 +132,11 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 GatewaySupervisor::~GatewaySupervisor(void)
 {
 	delete CorePropertySupervisorBase::theConfigurationManager_;
-	makeSystemLogEntry("ots shutdown.");
+
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+	if(doLog) makeSystemLogEntry("ots shutdown.");
 }  // end destructor
 
 //==============================================================================
@@ -316,7 +320,14 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					{
 						detail = (theSupervisor->theStateMachine_.isInTransition()
 									? theSupervisor->theStateMachine_.getCurrentTransitionName(theSupervisor->stateMachineLastCommandInput_)
-									: theSupervisor->getSupervisorUptimeString());
+									: 
+									(std::string("Uptime: ") +
+									StringMacros::getTimeDurationString(
+										theSupervisor->CorePropertySupervisorBase::getSupervisorUptime()) +
+									", Time-in-state: " +
+									StringMacros::getTimeDurationString(
+										theSupervisor->theStateMachine_.getTimeInState())
+									));
 						// make sure broadcast message status is not being updated
 						std::lock_guard<std::mutex> lock(theSupervisor->broadcastCommandStatusUpdateMutex_);
 						if(detail != "" && theSupervisor->broadcastCommandStatus_ != "")
@@ -757,7 +768,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 										__COUTTV__(theSupervisor->remoteGatewayApps_[i].selected_config_alias);
 
-										__COUTT__ << "Command: " << remoteGatewayApp.command << 
+										__COUTT__ << remoteGatewayApp.appInfo.name << " -- Command: " << remoteGatewayApp.command << 
 											" Command-old: " << theSupervisor->remoteGatewayApps_[i].command <<
 											" Status: " << remoteGatewayApp.appInfo.status <<
 											" Status_old: " << theSupervisor->remoteGatewayApps_[i].appInfo.status << 
@@ -1023,7 +1034,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						         << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
 						         << "' [URL=" << appInfo.getURL() << "].\n\n";
 						__COUTV__(SOAPUtilities::translate(tempMessage));
-						__COUT_WARN__ << "Failed to send getStatus SOAP Message due to unknown error. Will suppress repeat errors." << __E__;
+						__COUT_WARN__ << "Failed to send getStatus SOAP Message due to unknown error. Will suppress repeat errors from Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
+						         << "' [URL=" << appInfo.getURL() << "]." << __E__;
 					}  // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{						
@@ -1104,23 +1116,24 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 
 	std::string command = "GetRemoteDesktopIcons";	
 
-	__COUT__ << "Sending remote gateway command '" << command << "' to target '" <<
+	__COUTT__ << "Sending remote gateway command '" << command << "' to target '" <<
 		remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
 
 	try
 	{
 		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
-		__COUTTV__(StringMacros::vectorToString(parsedFields));
-		__COUTV__(command);
+		__COUTVS__(10,StringMacros::vectorToString(parsedFields));
+		__COUTVS__(10,command);
 
 		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
 		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
-		__COUTV__(remoteIconString);
+		__COUTVS__(10,remoteIconString);
 
 		bool firstIcon = true;
 
 		//now have remote icon string, append icons to list
-		std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString, {','});
+		std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString + ",", //add 1 just in case last folder string is empty
+			{','});
 		const size_t numOfIconFields = 7;
 		for(size_t i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
 		{
@@ -1129,7 +1142,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 			else
 				iconString += ",";					
 
-			__COUTV__(remoteIconsCSV[i+0]);
+			__COUTVS__(10,remoteIconsCSV[i+0]);
 			if(remoteGatewayApp.parentIconFolderPath == "")//icon.folderPath_ == "") //if not in folder, distinguish remote icon somehow
 				iconString += remoteGatewayApp.user_data_path_record //icon.alternateText_ 
 					+ " " + remoteIconsCSV[i+0]; //icon.caption_;
@@ -1170,6 +1183,8 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, 
 	const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */ remoteGatewaySocket)
 {
+	remoteGatewayApp.error = ""; //clear error for new command
+
 	__COUT__ << "Sending remote gateway command '" << remoteGatewayApp.command << "' to target '" <<
 		remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
 
@@ -1194,11 +1209,12 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 
 		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
 		__COUTTV__(StringMacros::vectorToString(parsedFields));
-		__COUTV__(command);
+		__COUT__ << "Sending to subsystem '" << remoteGatewayApp.appInfo.name << "' the command: " << command << __E__;
 
 		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
 		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
-		__COUTV__(commandResponseString);
+		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name << "' received: " << 
+			commandResponseString << __E__;
 
 		if(commandResponseString.find("Done") != 0) //then error
 		{
@@ -1590,7 +1606,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					std::string cookieCode = rxParams[1];
 					if(!theWebUsers_.cookieCodeIsActiveForRequest(
 						cookieCode /*cookieCode*/, &userGroupPermissionsMap, &uid /*uid is not given to remote users*/, 
-						rxParams[3] /*ip*/, rxParams[2] /*refresh*/ == "1", false /* doNotGoRemote */, &userWithLock, &userSessionIndex))
+						"0" /* check at remote location because ip addresses change from subsystem to subsystem depending on tunnels,... rxParams[3] */ /*ip*/, 
+						rxParams[2] /*refresh*/ == "1", false /* doNotGoRemote */, &userWithLock, &userSessionIndex))
 					{
 						__COUT_ERR__ << "Remote login failed!" << __E__;
 						sock.acknowledge("0", false /* verbose */);
@@ -1911,9 +1928,11 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 //		and specifically the current active experiments within the logbook
 //	escape entryText to make it html/xml safe!!
 ////      reserved: ", ', &, <, >, \n, double-space
-void GatewaySupervisor::makeSystemLogEntry(std::string entryText)
+void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText, const std::string& subjectText /* = "" */)
 {
 	__COUT__ << "Making System Logbook Entry: " << entryText << __E__;
+	if(subjectText.size())
+		__COUTV__(subjectText);
 	lastLogbookEntry_ = entryText;
 	lastLogbookEntryTime_ = time(0);
 
@@ -1930,9 +1949,7 @@ void GatewaySupervisor::makeSystemLogEntry(std::string entryText)
 	}
 
 	SOAPParameters parameters("EntryText", StringMacros::encodeURIComponent(entryText));
-
-	// SOAPParametersV parameters(1);
-	// parameters[0].setName("EntryText"); parameters[0].setValue(entryText);
+	parameters.addParameter("SubjectText", StringMacros::encodeURIComponent(subjectText));
 
 	for(auto& logbookInfo : logbookInfoMap)
 	{
@@ -1941,8 +1958,6 @@ void GatewaySupervisor::makeSystemLogEntry(std::string entryText)
 			xoap::MessageReference retMsg = SOAPMessenger::sendWithSOAPReply(logbookInfo.second.getDescriptor(), "MakeSystemLogEntry", parameters);
 
 			SOAPParameters retParameters("Status");
-			// SOAPParametersV retParameters(1);
-			// retParameters[0].setName("Status");
 			SOAPUtilities::receive(retMsg, retParameters);
 
 			std::string status = retParameters.getValue("Status");
@@ -1973,7 +1988,12 @@ void GatewaySupervisor::makeSystemLogEntry(std::string entryText)
 void GatewaySupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 {
 	if(!supervisorGuiHasBeenLoaded_ && (supervisorGuiHasBeenLoaded_ = true))  // make system logbook entry that ots has been started
-		makeSystemLogEntry("ots started.");
+	{
+		bool doLog = false;
+		try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+		if(doLog) makeSystemLogEntry("ots started.");
+	}
 
 	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots</title>" << GatewaySupervisor::getIconHeaderString() <<
 	    // end show ots icon
@@ -2245,11 +2265,23 @@ try
 	}
 	//FSM name validated
 
-	if(logEntry != "")
+	if(logEntry != "")		
 	{		
 		logEntry += " (" + StringMacros::getTimestampString(time(0)) + ")";
 
-		makeSystemLogEntry("Attempting FSM command '" + command + "' from state '" + 
+		if(command == RunControlStateMachine::START_TRANSITION_NAME && 
+			getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME).size())
+		{
+			//add configure log entry to start log entry
+
+			logEntry += "\n\nThe last Configure transition log entry was this:\n" + 
+				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+		}
+
+		bool doLog = false;
+		try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+		if(doLog) makeSystemLogEntry("Attempting FSM command '" + command + "' from state '" + 
 			currentState + "' with user log entry: " + logEntry);
 	}
 
@@ -2626,7 +2658,8 @@ try
 					".'" << __E__;
 		__SS_THROW__;		
 	}
-
+	
+	theStateMachine_.setErrorMessage(""); //clear State Machine error message in prep for transition
 	xoap::MessageReference message = SOAPUtilities::makeSOAPMessageReference(command, parameters);
 	// Maybe we return an acknowledgment that the message has been received and processed
 	xoap::MessageReference reply = stateMachineXoapHandler(message);
@@ -3140,14 +3173,22 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 	// make logbook entry
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	if(doLog) 
 	{
 		std::stringstream ss;
 		ss << "Configuring with System Configuration Alias '" << configurationAlias << 
-			"' which translates to " << theConfigurationTableGroup_.first << " (" << theConfigurationTableGroup_.second
-		   << ").";
+			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
+		   << "). Active Context Group " << 
+		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
+			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
+				").";
 
 		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
-			ss << " User log entry:\n " << 
+			ss << "\n\nUser log entry:\n\n" << 
 				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
 		else
 			ss << " No user log entry.";
@@ -3212,7 +3253,11 @@ try
 	{
 		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 		for(auto& remoteGatewayApp : remoteGatewayApps_)
+		{
+			if(!remoteGatewayApp.fsm_included) continue; //skip if not included
+
 			remoteSubsystemDump += remoteGatewayApp.config_dump;
+		}
 
 		if(remoteSubsystemDump.size())
 			__COUTV__(remoteSubsystemDump);
@@ -3264,6 +3309,8 @@ try
 		if(activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
 			activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
 		{
+			__COUT_INFO__ << "Instantiating Run Info plugin '" << activeStateMachineRunInfoPluginType_ << 
+				"' to insert Configure run condition entry." << __E__;
 			std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 			try	{ runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_, activeStateMachineName_));} catch(...) {;}
 			if(runInfoInterface == nullptr)
@@ -3300,7 +3347,28 @@ try
 	// save last configured group name/key
 	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_, FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
 
-	makeSystemLogEntry("System configured.");
+	activeStateMachineConfigurationAlias_ = configurationAlias;
+	doLog = true; //default to true
+	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	if(doLog) 
+	{
+		std::stringstream ss;
+		ss << "Configured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
+			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
+		   << "). Active Context Group " << 
+		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
+			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
+				").";
+
+		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
+			ss << "\n\nUser log entry:\n\n" << 
+				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+		else
+			ss << " No user log entry.";
+		makeSystemLogEntry(ss.str());
+	}
 	__COUT__ << "Done configuring." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionConfiguring()
@@ -3349,13 +3417,18 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
-	makeSystemLogEntry("System halting.");
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	bool doLogIntermediate = false;
+	try{ doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+	if(doLog && doLogIntermediate) makeSystemLogEntry("System halting.");
 
 	RunControlStateMachine::theProgressBar_.step();
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("System halted.");
+	if(doLogIntermediate) makeSystemLogEntry("System halted.");
 	__COUT__ << "Done halting." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionHalting()
@@ -3404,7 +3477,12 @@ try
 	         << " message: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	RunControlStateMachine::theProgressBar_.step();
-	makeSystemLogEntry("System shutting down.");
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	bool doLogIntermediate = false;
+	try{ doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+	if(doLog && doLogIntermediate) makeSystemLogEntry("System shutting down.");
 	RunControlStateMachine::theProgressBar_.step();
 
 	// kill all non-gateway contexts
@@ -3420,8 +3498,8 @@ try
 	}
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
-
-	makeSystemLogEntry("System shutdown complete.");
+ 
+	if(doLogIntermediate) makeSystemLogEntry("System shutdown complete.");
 	__COUT__ << "Done shutting down." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionShuttingDown()
@@ -3467,7 +3545,12 @@ try
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	RunControlStateMachine::theProgressBar_.step();
-	makeSystemLogEntry("System starting up.");
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	bool doLogIntermediate = false;
+	try{ doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+	if(doLog && doLogIntermediate) makeSystemLogEntry("System starting up.");
 	RunControlStateMachine::theProgressBar_.step();
 
 	// start all non-gateway contexts
@@ -3484,7 +3567,7 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("System startup complete.");
+	if(doLogIntermediate) makeSystemLogEntry("System startup complete.");
 	__COUT__ << "Done starting up." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3536,7 +3619,10 @@ try
 	__COUT__ << "Fsm current transition: " << theStateMachine_.getCurrentTransitionName(event->type()) << __E__;
 	__COUT__ << "Fsm final state: " << theStateMachine_.getTransitionFinalStateName(event->type()) << __E__;
 
-	makeSystemLogEntry("System initialized.");
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	if(doLog) makeSystemLogEntry("System initialized.");
+
 	__COUT__ << "Done initializing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3584,7 +3670,13 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
+	RunControlStateMachine::theProgressBar_.step();
+
 	// calculate run duration and post system log entry
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	
+	std::ostringstream dur_ss;
 	{
 		int dur = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - activeStateMachineRunStartTime).count() +
 		          activeStateMachineRunDuration_ms;
@@ -3594,11 +3686,11 @@ try
 		dur_s     = dur_s % 60;
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
-		std::ostringstream dur_ss;
-		dur_ss << "Run pausing. Duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
 		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
 
-		makeSystemLogEntry(dur_ss.str());
+		if(doLog) 
+			makeSystemLogEntry("Run pausing. " + dur_ss.str());
 	}
 
 	activeStateMachineRunDuration_ms +=
@@ -3613,7 +3705,9 @@ try
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("Run paused.");
+	makeSystemLogEntry("Run paused. " + dur_ss.str(), 
+		activeStateMachineRunAlias_ + " '" + 
+		activeStateMachineRunNumber_ + "' paused");
 	__COUT__ << "Done pausing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -3674,11 +3768,42 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
-	makeSystemLogEntry("Run resuming.");
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	if(doLog) 
+	{
+		
+		std::stringstream ss;
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resuming.";
+	
+		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
+			ss << "\nUser log entry:\n\n" << 
+					getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME);
+		else 
+			ss << " No user log entry.";
+
+		makeSystemLogEntry(ss.str());
+	} //end make logbook entry
 
 	activeStateMachineRunStartTime = std::chrono::steady_clock::now();
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
+
+	// make logbook entry
+	{
+		std::stringstream ss;
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resumed.";
+	
+		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
+			ss << "\nUser log entry:\n\n" << 
+					getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME);
+		else 
+			ss << " No user log entry.";
+
+		makeSystemLogEntry(ss.str(),
+			activeStateMachineRunAlias_ + " '" + 
+			activeStateMachineRunNumber_ + "' resumed");
+	} // end make logbook entry
 
 	__COUT__ << "Done resuming." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
@@ -3763,13 +3888,16 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 
-	// make logbook entry
+	// make logbook entry	
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}	
+	if(doLog)
 	{
 		std::stringstream ss;
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' starting.";
 
 		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
-			ss << " User log entry:\n " << 
+			ss << "\nUser log entry:\n\n" << 
 					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
 		else 
 			ss << " No user log entry.";
@@ -3844,7 +3972,25 @@ try
 	{
 		std::stringstream ss;
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' started.";
-		makeSystemLogEntry(ss.str());
+	
+		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
+			ss << "\nUser log entry:\n\n" << 
+					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
+		else 
+			ss << " No user log entry.";
+
+		ss << "\n\nConfigured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
+			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
+		   << "). Active Context Group " << 
+		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
+			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
+				").";
+
+		makeSystemLogEntry(ss.str(),
+			activeStateMachineRunAlias_ + " '" + 
+			activeStateMachineRunNumber_ + "' started");
 	} // end make logbook entry
 	__COUT__ << "Done starting run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
@@ -3898,7 +4044,11 @@ try
 
 	RunControlStateMachine::theProgressBar_.step();
 
+	bool doLog = false;
+	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	
 	// calculate run duration and make system log entry
+	std::ostringstream dur_ss;
 	{
 		int dur   = activeStateMachineRunDuration_ms;
 		int dur_s = dur / 1000;
@@ -3907,11 +4057,21 @@ try
 		dur_s     = dur_s % 60;
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
-		std::ostringstream dur_ss;
-		dur_ss << "Run stopping. Duration of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
 		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
 
-		makeSystemLogEntry(dur_ss.str());
+		if(doLog) 
+		{
+			std::stringstream ss;
+			ss <<  dur_ss.str();
+			if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
+				ss << "\nUser log entry:\n\n" << 
+						getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME);
+			else 
+				ss << " No user log entry.";
+
+			makeSystemLogEntry("Run stopping. " + ss.str());
+		}
 	}
 
 	// the current message is not for Stop if its due to async exception, so rename
@@ -3923,7 +4083,21 @@ try
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("Run stopped.");
+	// make logbook entry
+	{
+		std::stringstream ss;
+		ss <<  dur_ss.str();
+		if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
+			ss << "\n\nUser log entry:\n\n" << 
+					getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME);
+		else 
+			ss << " No user log entry.";
+
+		makeSystemLogEntry("Run stopped.\n" + ss.str(),		 
+			activeStateMachineRunAlias_ + " '" + 
+			activeStateMachineRunNumber_ + "' stopped");
+	} // end make logbook entry
+
 	__COUT__ << "Done stopping run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -4843,8 +5017,13 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 		// always cleanup expired entries and get a vector std::string of logged out users
 		std::vector<std::string> loggedOutUsernames;
 		theWebUsers_.cleanupExpiredEntries(&loggedOutUsernames);
+		bool doLog = false;
+		if(loggedOutUsernames.size())
+		{
+			try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+		}
 		for(unsigned int i = 0; i < loggedOutUsernames.size(); ++i)  // Log logout for logged out users
-			makeSystemLogEntry(loggedOutUsernames[i] + " login timed out.");
+			if(doLog) makeSystemLogEntry(loggedOutUsernames[i] + " login timed out.");
 
 		if(Command == "sessionId")
 		{
@@ -4943,7 +5122,12 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 					newAccountCode = "0";  // clear cookie code if failure
 			}
 			else  // Log login in logbook for active experiment
-				makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+			{
+				bool doLog = false;
+				try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+				if(doLog) makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+			}
 
 			//__COUT__ << "new cookieCode = " << newAccountCode.substr(0, 10) << __E__;
 
@@ -5004,7 +5188,12 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 					cookieCode = "0";  // clear cookie code if failure
 			}
 			else  // Log login in logbook for active experiment
-				makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+			{
+				bool doLog = false;
+				try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+				if(doLog) makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+			}
 
 			//__COUT__ << "new cookieCode = " << cookieCode.substr(0, 10) << __E__;
 
@@ -5041,7 +5230,12 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 				// if did some logging out, check if completely logged out
 				// if so, system logbook message should be made.
 				if(!theWebUsers_.isUserIdActive(uid))
-					makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged out.");
+				{
+					bool doLog = false;
+					try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+
+					if(doLog) makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged out.");
+				}
 			}
 		}
 		else
@@ -5187,11 +5381,11 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AutomatedRequestTypes,
 	                                                  "getSystemMessages | getCurrentState | getIterationPlanStatus"
 	                                                  " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
+	CorePropertySupervisorBase::addSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
 	                                                  "gatewayLaunchOTS | gatewayLaunchWiz | gatewayLaunchOTSInstance"
-													  " | commandRemoteSubsystem");
-	//	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.NeedUsernameRequestTypes,
-	//			"StateMachine*"); //for all stateMachineXgiHandler requests
+													  " | commandRemoteSubsystem");											
+	CorePropertySupervisorBase::addSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes,
+	   												  "StateMachine*");  //for all stateMachineXgiHandler requests
 
 	if(readOnly_)
 	{
@@ -5648,7 +5842,6 @@ try
 			xmlOut.addTextElementToData("username_with_lock",
 			                            theWebUsers_.getUserWithLock());  // always give system lock update
 
-			__COUTV__(theWebUsers_.getUserWithLock());
 			__COUTVS__(20,theWebUsers_.getUserWithLock());
 
 			//Also add Remote Subystems users-with-lock!
@@ -5952,11 +6145,11 @@ try
 									iconString += ",";
 								
 								if(remoteGatewayApp.parentIconFolderPath != "")
-									iconString += remoteGatewayApp.parentIconFolderPath + " icons loading..."; //icon.caption_;
+									iconString += remoteGatewayApp.parentIconFolderPath + " loading..."; //icon.caption_;
 								else if(remoteGatewayApp.user_data_path_record != "")
-									iconString += remoteGatewayApp.user_data_path_record + " icons loading..."; //icon.caption_;
+									iconString += remoteGatewayApp.user_data_path_record + " loading..."; //icon.caption_;
 								else
-									iconString += remoteGatewayApp.appInfo.name + " icons loading..."; //icon.caption_;
+									iconString += remoteGatewayApp.appInfo.name + " loading..."; //icon.caption_;
 									
 								iconString += ",X"; //icon.alternateText_;
 								iconString += ",1";//std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
@@ -7010,7 +7203,7 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string& command, Config
 xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(xoap::MessageReference message)
 
 {
-	__COUTT__ << __E__;
+	__COUTT__ << "request from remote Supervisor for GatewaySupervisor::supervisorCookieCheck()" << __E__;
 
 	// SOAPUtilities::receive request parameters
 	SOAPParameters parameters;

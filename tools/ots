@@ -96,7 +96,7 @@ log_label=""
 #############################
 
 # Output startup banner
-out
+out "ots -h #for usage help"
 #at least enable messages from self
 tonS 0-9 -N ots
 tonS 0-9 -N ots_remote_start
@@ -193,49 +193,49 @@ while :; do
 		# not being handled
 		
 		out
-		out "******************************************************"
-		out "*************        ots Usage          **************"
-		out "******************************************************"	
+		out "${Purple}${REV} ****************************************************** ${RstClr}"
+		out "${Purple}${REV} *************        ots Usage          ************** ${RstClr}"
+		out "${Purple}${REV} ****************************************************** ${RstClr}${Reset}"	
 		out
 		out "To kill all otsdaq running processes, please use any of these options:"
-		out "--killall  --kill  --kx  -k"
+		out " --killall  --kill  --kx  -k"
 		out "	e.g.: ots --kx"
 		out
 		out "To start otsdaq in 'wiz mode' please use any of these options:"
-		out "--configure  --config  --wizard  --wiz  -w"
+		out " --configure  --config  --wizard  --wiz  -w"
 		out "	e.g.: ots --wiz"
 		out
 		out "To start otsdaq with 'verbose mode' enabled, add one of these options:"
-		out "--verbose  -v"
+		out " --verbose  -v"
 		out "	e.g.: ots --wiz -v     or    ots --verbose"
 		out
 		out "To display potential log file locations based on current otsdaq configuration, add one of these options:"
-		out "--logfind  -l"
+		out " --logfind  -l"
 		out "	e.g.: ots -l     or    ots --logfind"
 		out
 		out "To start otsdaq and launch google-chrome, add one of these options:"
-		out "--chrome  -c"
+		out " --chrome  -c"
 		out "	e.g.: ots --wiz -c     or    ots --chrome"
 		out
 		out "To start otsdaq and launch firefox, add one of these options:"
-		out "--firefox  -f"
+		out " --firefox  -f"
 		out "	e.g.: ots --wiz -f     or    ots --firefox"
 		out
 		out "To backup and not overwrite previous quiet log files, add one of these options:"
-		out "--backup  -b"
+		out " --backup  -b"
 		out "	e.g.: ots -b     or    ots --backup"
 		out
 		out "To disable otsdaq startup checking and relaunching, add one of these options:"
-		out "--relaunch  -r"
+		out " --relaunch  -r"
 		out "	e.g.: ots -r     or    ots --relaunch"
 		out
 		out "To disable otsdaq remote process startup, add one of these options:"
-		out "--startremote  -s"
+		out " --startremote  -s"
 		out "	e.g.: ots -s     or    ots --startremote"
 		out
-		out "Exiting ots. Please see usage tips above."		
-		out
-		die "Unsupported option '$1'"
+		die "Exiting ots. Please see usage tips above."		
+		# out
+		# die "Unsupported option '$1'"
 		;;
 	*)
 		# Match any remaining non-option arguments (or an empty string) which marks the end of arguments
@@ -477,21 +477,32 @@ function killprocs
 	for pid in $pids;do
 		killproc $pid art &
 	done
-
-	# for now (Aug-2023), stop killing artdaq and trust artdaq cleanup (this will also allowed share user accounts)
-	# #now hard kill any processes that may be stuck and detached:
-	# killall -9 art &>/dev/null 2>&1 #hide output
-	# killall -9 boardreader &>/dev/null 2>&1 #hide output
-	# killall -9 eventbuilder &>/dev/null 2>&1 #hide output
-	# killall -9 datalogger &>/dev/null 2>&1 #hide output
-	# killall -9 dispatcher &>/dev/null 2>&1 #hide output
-	# killall -9 routing_manager &>/dev/null 2>&1 #hide output
-	# ipcrm -a &>/dev/null 2>&1 #hide output #clean-up shared memory
-	
-	# if [[ "x$1" == "x" ]]; then #kill all ots processes, not in background or it kills the new launch sometimes!
-	# 	killall -9 xdaq.exe  >/dev/null 2>&1 #hide output
-	# 	killall -9 otsConsoleFwd  >/dev/null 2>&1 #hide output
-	# fi
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid boardreader &
+	done
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid eventbuilder &
+	done
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid datalogger &
+	done
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid dispatcher &
+	done
+	pids=`ps aux|grep -v grep|grep "partition_number: ${ARTDAQ_PARTITION}"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid routing_manager &
+	done
+	sleep 1
+	#do art again, in case art processes were kept alive by artdaq
+	pids=`ps aux|grep -v grep|grep "art -c ${USER_DATA}/"|awk '{print $2}'`
+	for pid in $pids;do
+		killproc $pid art &
+	done
    
 	if [ $ISREMOTE == 0 ]; then
 		out "Done killing processes $1 ${RstClr}"
@@ -506,7 +517,7 @@ if [[ $SOFTKILLALL != 0 ]]; then
 
 	out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
 	out "${Yellow}${Bold}${REV}*************       kill otsdaq!        ************** ${OTS_OWNER} ${RstClr}"
-    out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
+    out "${Yellow}${Bold}${REV}******************************************************${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	
 	#try to force kill other StartOTS scripts
 	echo "KILL_ALL" > $OTSDAQ_STARTOTS_QUIT_FILE
@@ -525,7 +536,7 @@ if [[ $KILLALL != 0 ]]; then
 
 	out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
 	out "${Yellow}${Bold}${REV}*************       kill ALL otsdaq!        **************${RstClr}"
-    out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
+    out "${Yellow}${Bold}${REV}******************************************************${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	
 	#try to force kill other StartOTS scripts
 	echo "KILL_ALL" > $OTSDAQ_STARTOTS_QUIT_FILE
@@ -540,6 +551,9 @@ if [[ $KILLALL != 0 ]]; then
 	killall -9 dispatcher &>/dev/null 2>&1 #hide output
 	killall -9 routing_manager &>/dev/null 2>&1 #hide output
 	ipcrm -a &>/dev/null 2>&1 #hide output #clean-up shared memory
+	sleep 1
+	#in case art processes were kept alive by artdaq
+	killall -9 art &>/dev/null 2>&1 #hide output 
     #killprocs	
 	
     out "Done with ots hard kill-all." 
@@ -826,7 +840,7 @@ launchOTSMacromaker() {
 	out "${Blue}${REV} ***************************************************** ${RstClr}"
 	out "${Blue}${REV} *******  Launching ots in MacroMaker MODE!  ********* ${RstClr}"	
 	out "${Blue}${REV} ***************************************************** ${RstClr}"
-	out "${Blue}${REV}                                                       ${RstClr}"
+	out "${Blue}${REV}                                                       ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	out #blank line
 		
 	
@@ -1049,7 +1063,7 @@ launchOTSWiz() {
 	out "${Red}${REV} ***************************************************** ${RstClr}"
 	out "${Red}${REV} ***********  Launching ots in WIZ MODE!  ************ ${RstClr}"	
 	out "${Red}${REV} ***************************************************** ${RstClr}"
-	out "${Red}${REV}                                                       ${RstClr}"
+	out "${Red}${REV}                                                       ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	out #blank line
 		
 	#setup wiz mode environment variables
@@ -1356,7 +1370,7 @@ launchOTS() {
 			fi
 		fi
 		out "${Purple}${REV} ***************************************************** ${RstClr}"
-		out "${Purple}${REV}                                                       ${RstClr}"
+		out "${Purple}${REV}                                                       ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 		out #blank line
 		out "XDAQ Configuration XML   = ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml"	
 		
@@ -2040,7 +2054,7 @@ launchOTS() {
 				out "\t\tssh ${host} SCRIPT_DIR/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE}" 
 				
 				# launch ssh remote start (attempt twice)
-				ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
+				ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}${Reset}" &
 				
 				
 				#add host to remote launch host list
@@ -2115,7 +2129,7 @@ launchOTSLogFind() {
 	out "${Purple}${REV} *********************************************************************** ${RstClr}"
 	out "${Purple}${REV} ***********       Finding potential ots log files!         ************ ${RstClr}"
 	out "${Purple}${REV} *********************************************************************** ${RstClr}"
-	out "${Purple}${REV}                                                                         ${RstClr}"
+	out "${Purple}${REV}                                                                         ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	out #blank line
 	out "XDAQ Configuration XML   = ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml"	
 	
@@ -2363,7 +2377,7 @@ otsActionHandler() {
 
 		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
 			if declare -F otsUserSshTunnels > /dev/null; then
-				otsUserSshTunnels >/dev/null #hide std output and show errors
+				otsUserSshTunnels #show output in case of weird repetitive tunnel situations from user, user can always hide output in the function (recommended when not remaking tunnel)
 			fi
 		fi
 				

@@ -547,15 +547,6 @@ WebUsers::permissionLevel_t CorePropertySupervisorBase::getSupervisorPropertyUse
 	checkSupervisorPropertySetup();
 
 	return StringMacros::getWildCardMatchFromMap(requestType, propertyStruct_.UserPermissionsThreshold);
-
-	//	auto it = propertyStruct_.UserPermissionsThreshold.find(requestType);
-	//	if(it == propertyStruct_.UserPermissionsThreshold.end())
-	//	{
-	//		__SUP_SS__ << "Could not find requestType named " << requestType << " in
-	// UserPermissionsThreshold map." << __E__;
-	//		__SS_THROW__; //__SUP_SS_THROW__;
-	//	}
-	//	return it->second;
 }  // end getSupervisorPropertyUserPermissionsThreshold()
 
 //==============================================================================
@@ -565,24 +556,39 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 {
 	checkSupervisorPropertySetup();
 
-	//__SUP_COUT__ << "userInfo.requestType_ " << userInfo.requestType_ << __E__;
+	__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "userInfo.requestType_ " << userInfo.requestType_ << __E__;
 
+	__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "propertyStruct_.AutomatedRequestTypes " << StringMacros::setToString(propertyStruct_.AutomatedRequestTypes) << __E__;
 	userInfo.automatedCommand_ = StringMacros::inWildCardSet(userInfo.requestType_,
 	                                                         propertyStruct_.AutomatedRequestTypes);  // automatic commands should not refresh
 	                                                                                                  // cookie code.. only user initiated
 	                                                                                                  // commands should!
+
+	__SUP_COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ << "propertyStruct_.NonXMLRequestTypes " << StringMacros::setToString(propertyStruct_.NonXMLRequestTypes) << __E__;
 	userInfo.NonXMLRequestType_ = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.NonXMLRequestTypes);  // non-xml request
 	                                                                                                                       // types just return
 	                                                                                                                       // the request return
 	                                                                                                                       // string to client
+
+	__SUP_COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ << "propertyStruct_.NoXmlWhiteSpaceRequestTypes " << StringMacros::setToString(propertyStruct_.NoXmlWhiteSpaceRequestTypes) << __E__;
 	userInfo.NoXmlWhiteSpace_ = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.NoXmlWhiteSpaceRequestTypes);
 
 	//**** start LOGIN GATEWAY CODE ***//
 	// check cookieCode, sequence, userWithLock, and permissions access all in one shot!
 	{
+		__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "propertyStruct_.CheckUserLockRequestTypes " << StringMacros::setToString(propertyStruct_.CheckUserLockRequestTypes) << __E__;
 		userInfo.checkLock_       = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.CheckUserLockRequestTypes);
+		__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "propertyStruct_.RequireUserLockRequestTypes " << StringMacros::setToString(propertyStruct_.RequireUserLockRequestTypes) << __E__;
 		userInfo.requireLock_     = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.RequireUserLockRequestTypes);
+		if(userInfo.requireLock_ && userInfo.automatedCommand_)
+		{
+			__SUP_COUTT__ << "Overriding requireLock_ because request '" << userInfo.requestType_ << "' marked as automatedCommand_" << __E__;
+			userInfo.requireLock_ = false;
+		}
+
+		__SUP_COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ << "propertyStruct_.AllowNoLoginRequestTypes " << StringMacros::setToString(propertyStruct_.AllowNoLoginRequestTypes) << __E__;
 		userInfo.allowNoUser_     = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.AllowNoLoginRequestTypes);
+		__SUP_COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ << "propertyStruct_.RequireSecurityRequestTypes " << StringMacros::setToString(propertyStruct_.RequireSecurityRequestTypes) << __E__;
 		userInfo.requireSecurity_ = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.RequireSecurityRequestTypes);
 
 		userInfo.permissionsThreshold_ = -1;  // default to max
@@ -597,11 +603,13 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 				             << "'... Defaulting to max threshold = " << (unsigned int)userInfo.permissionsThreshold_ << __E__;
 		}
 
-		// __COUTV__(userInfo.requestType_);
-		// __COUTV__(userInfo.checkLock_);
-		// __COUTV__(userInfo.requireLock_);
-		// __COUTV__(userInfo.allowNoUser_);
-		// __COUTV__((unsigned int)userInfo.permissionsThreshold_);
+		__SUP_COUTVS__(20,userInfo.requestType_);
+		__SUP_COUTVS__(20,userInfo.checkLock_);
+		__SUP_COUTVS__(20,userInfo.requireLock_);
+		__SUP_COUTVS__(20,userInfo.allowNoUser_);
+		__SUP_COUTVS__(20,userInfo.automatedCommand_);
+		__SUP_COUTVS__(20,userInfo.automatedCommand_);
+		__SUP_COUTVS__(20,(unsigned int)userInfo.permissionsThreshold_ );
 
 		try
 		{
@@ -610,12 +618,10 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 		}
 		catch(std::runtime_error& e)
 		{
-			userInfo.groupsAllowed_.clear();
-
-			//			if(!userInfo.automatedCommand_)
-			//				__SUP_COUT__ << "No explicit groups allowed for request '" <<
-			//					 userInfo.requestType_ << "'... Defaulting to empty groups
-			// allowed. " << __E__;
+			userInfo.groupsAllowed_.clear(); 
+			if(!userInfo.automatedCommand_)
+				__SUP_COUT_TYPE__(TLVL_DEBUG+25) << __COUT_HDR__ << "No explicit groups allowed for request '" << 
+					userInfo.requestType_ << "'... Defaulting to empty groups allowed. " << __E__;
 		}
 		try
 		{
@@ -626,11 +632,9 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 		{
 			userInfo.groupsDisallowed_.clear();
 
-			//			if(!userInfo.automatedCommand_)
-			//				__SUP_COUT__ << "No explicit groups disallowed for request '"
-			//<<
-			//					 userInfo.requestType_ << "'... Defaulting to empty groups
-			// disallowed. " << __E__;
+			if(!userInfo.automatedCommand_)
+				__SUP_COUT_TYPE__(TLVL_DEBUG+25) << __COUT_HDR__ << "No explicit groups disallowed for request '" <<
+					userInfo.requestType_ << "'... Defaulting to empty groups disallowed. " << __E__;
 		}
 	}  //**** end LOGIN GATEWAY CODE ***//
 

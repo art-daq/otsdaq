@@ -79,8 +79,8 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 		else
 		{
 			__GEN_SS__ << "Cannot find transition name from '" << getProvenanceStateName() << "' with command: " << currentTransition_ << "...";
-			__GEN_COUT_ERR__ << ss.str();
-			XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+			__GEN_COUT_WARN__ << ss.str(); //reduce to warning because transitions like 'Configure' can jump multiple states, e.g. from Initial
+			return currentTransition_;
 		}
 	}
 
@@ -91,8 +91,8 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 	else
 	{
 		__GEN_SS__ << "Cannot find transition name from '" << getCurrentStateName() << "' with command: " << transition << "...";
-		__GEN_COUT_ERR__ << ss.str();
-		XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
+		__GEN_COUT_WARN__ << ss.str(); //reduce to warning because transitions like 'Configure' can jump multiple states, e.g. from Initial
+		return transition;
 	}
 }  // end getCurrentTransitionName()
 

@@ -74,24 +74,32 @@ try
 	if(priorityIndex)
 		*priorityIndex = 0;  // no match
 	return false;
-}
+} //end wildCardMatch()
 catch(...)
 {
 	if(priorityIndex)
 		*priorityIndex = 0;  // no match
 	return false;            // if out of range
-}
+} //end wildCardMatch() catch
 
 //==============================================================================
 // inWildCardSet ~
 //	returns true if needle is in haystack (considering wildcards)
+//	allow inverted haystack strings by first character being '!' 
 bool StringMacros::inWildCardSet(const std::string& needle, const std::set<std::string>& haystack)
 {
 	for(const auto& haystackString : haystack)
-		// use wildcard match, flip needle parameter.. because we want haystack to have
-		// the wildcards
-		if(StringMacros::wildCardMatch(haystackString, needle))
+	{
+		// use wildcard match, flip needle parameter.. because we want haystack to have the wildcards
+		if(haystackString.size() && haystackString[0] == '!')				
+		{
+			 //treat as inverted
+			if(!StringMacros::wildCardMatch(haystackString.substr(1), needle))
+				return true;
+		}
+		else if(StringMacros::wildCardMatch(haystackString, needle))
 			return true;
+	}
 	return false;
 }
 
@@ -142,6 +150,33 @@ std::string StringMacros::encodeURIComponent(const std::string& sourceStr)
 		}
 	return retStr;
 }  // end encodeURIComponent()
+
+//==============================================================================
+// StringMacros::sanitizeForSQL
+void StringMacros::sanitizeForSQL(std::string& str) 
+{
+    std::map<char, std::string> replacements = {
+        {'\'', "''"},    // Single quote becomes two single quotes
+        {'\\', "\\\\"}//,  // Backslash becomes double backslash
+        // {';', "\\;"},    // Semicolon can be escaped (optional)
+        // {'-', "\\-"},    // Dash for comments (optional, context-specific)
+    };
+
+    size_t pos = 0;
+    while (pos < str.size()) 
+	{
+        auto it = replacements.find(str[pos]);
+        if (it != replacements.end()) 
+		{
+            str.replace(pos, 1, it->second);
+            pos += it->second.size(); // Advance past the replacement
+        } 
+		else 
+		{
+            ++pos;
+        }
+    }
+} //end sanitizeForSQL
 
 //==============================================================================
 // StringMacros::escapeString
@@ -553,6 +588,28 @@ std::string StringMacros::getTimestampString(const time_t linuxTimeInSeconds)
 
 	return retValue;
 }  // end getTimestampString()
+
+//==============================================================================
+// getTimeDurationString
+//	returns the duration HH:MM:SS with consideration for day(s)
+std::string StringMacros::getTimeDurationString(time_t t)
+{
+	 //e.g., used by CoreSupervisorBase::getStatusProgressDetail(void)
+	
+	std::stringstream ss;	
+	int days = t/60/60/24;
+	if(days > 0)
+	{
+		ss << days << " day" << (days>1?"s":"") << ", ";
+		t -= days * 60*60*24;
+	}
+
+	//HH:MM:SS
+	ss << std::setw(2) << std::setfill('0') << (t/60/60) << ":" <<
+		std::setw(2) << std::setfill('0') << ((t % (60*60))/60) << ":" << 
+		std::setw(2) << std::setfill('0') << (t % 60);
+	return ss.str();
+} //end getTimeDurationString()
 
 //==============================================================================
 // validateValueForDefaultStringDataType
@@ -1280,21 +1337,23 @@ char* StringMacros::otsGetEnvironmentVarable(const char* name, const std::string
 }  // end otsGetEnvironmentVarable()
 
 //=========================================================================
-//extract value for field from xml looking forwards from after
+//extract valueField for field from xml looking forwards from after
 // occurence = 0 is first occurence
 std::string StringMacros::extractXmlField(const std::string &xml,
 												const std::string &field,
 												uint32_t occurrence, size_t after,
-												size_t *returnAfter /* = nullptr */)
+												size_t *returnAfter /* = nullptr */,
+												const std::string& valueField /* = "value" */,
+												const std::string& quoteType /* = "'" */)
 {
 	size_t lo = after, hi;
 	for (uint32_t i = 0; i <= occurrence; ++i)
 		if ((lo = xml.find("<" + field + " ", lo)) == std::string::npos)
 			return "";
-	if ((hi = xml.find("'/>", lo)) == std::string::npos)
+	if ((hi = xml.find(quoteType + "/>", lo)) == std::string::npos)
 		return "";
 
-	lo = xml.find("value='", lo) + 7;
+	lo = xml.find(valueField + "=" + quoteType, lo) + valueField.size() + 2;
 
 	if (returnAfter)
 		*returnAfter = hi + 3; //field.length() + 3;
@@ -1303,20 +1362,22 @@ std::string StringMacros::extractXmlField(const std::string &xml,
 } //end extractXmlField()
 
 //=========================================================================
-//extract value for field from xml looking backwards from before
+//extract valueField for field from xml looking backwards from before
 // occurence = 0 is first occurence
 std::string StringMacros::rextractXmlField(const std::string &xml,
 												 const std::string &field,
-												 uint32_t occurrence, size_t before)
+												 uint32_t occurrence, size_t before,
+												 const std::string& valueField /* = "value" */,
+												 const std::string& quoteType /* = "'" */)
 {
 	size_t lo = 0, hi = before;
 	for (uint32_t i = 0; i <= occurrence; ++i)
 		if ((lo = xml.rfind("<" + field + " ", hi)) == std::string::npos)
 			return "";
-	if ((hi = xml.rfind("'/>", hi)) == std::string::npos)
+	if ((hi = xml.rfind(quoteType + "/>", hi)) == std::string::npos)
 		return "";
 
-	lo = xml.find("value='", lo) + 7;
+	lo = xml.find(valueField + "=" + quoteType, lo) + valueField.size() + 2;
 
 	return xml.substr(lo, hi - lo);
 } //end rextractXmlField()
