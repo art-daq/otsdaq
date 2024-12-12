@@ -296,7 +296,7 @@ class WorkLoopManager;
 		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; //cached at Configure transition
 		std::string 		activeStateMachineRunInfoPluginType_; //cached at Configure transition
 		std::map<std::string /* fsmName */, std::string /* logEntry */>			
-							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_;
+							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_, stateMachineStopLogEntry_;
 		std::string 		activeStateMachineRunNumber_, activeStateMachineRunAlias_, activeStateMachineConfigurationAlias_;
 		bool				activeStateMachineRollOverLogOnConfigure_, activeStateMachineRollOverLogOnStart_;
 		std::chrono::steady_clock::time_point 

@@ -496,4 +496,4 @@ std::vector<std::vector<const SupervisorInfo*>> AllSupervisorInfo::getOrderedSup
 		}
 	}  // end equal priority loop
 	return retVec;
-}
+} //end getOrderedSupervisorDescriptors()

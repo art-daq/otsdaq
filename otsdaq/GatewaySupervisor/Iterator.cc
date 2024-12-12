@@ -162,14 +162,14 @@ try
 					if(theIteratorStruct.commandIndex_ == (unsigned int)-1)
 					{
 						__COUT__ << "Starting plan '" << theIteratorStruct.activePlan_ << ".'" << __E__;
-						__MOUT__ << "Starting plan '" << theIteratorStruct.activePlan_ << ".'" << __E__;
+						__COUT__ << "Starting plan '" << theIteratorStruct.activePlan_ << ".'" << __E__;
 					}
 					else
 					{
 						theIteratorStruct.doResumeAction_ = true;
 						__COUT__ << "Continuing plan '" << theIteratorStruct.activePlan_ << "' at command index " << theIteratorStruct.commandIndex_ << ". "
 						         << __E__;
-						__MOUT__ << "Continuing plan '" << theIteratorStruct.activePlan_ << "' at command index " << theIteratorStruct.commandIndex_ << ". "
+						__COUT__ << "Continuing plan '" << theIteratorStruct.activePlan_ << "' at command index " << theIteratorStruct.commandIndex_ << ". "
 						         << __E__;
 					}
 				}
@@ -246,7 +246,7 @@ try
 			iterator->activePlanIsRunning_ = false;
 
 			__COUT__ << "Paused plan '" << theIteratorStruct.activePlan_ << "' at command index " << theIteratorStruct.commandIndex_ << ". " << __E__;
-			__MOUT__ << "Paused plan '" << theIteratorStruct.activePlan_ << "' at command index " << theIteratorStruct.commandIndex_ << ". " << __E__;
+			__COUT__ << "Paused plan '" << theIteratorStruct.activePlan_ << "' at command index " << theIteratorStruct.commandIndex_ << ". " << __E__;
 
 			continue;  // resume workloop
 		}
@@ -287,7 +287,7 @@ try
 			//			__COUT__ << "Halted plan '" << theIteratorStruct.activePlan_ << "'
 			// at  command index " << 					theIteratorStruct.commandIndex_ <<
 			//". " << __E__;
-			//			__MOUT__ << "Halted plan '" << theIteratorStruct.activePlan_ << "'
+			//			__COUT__ << "Halted plan '" << theIteratorStruct.activePlan_ << "'
 			// at  command index " << 					theIteratorStruct.commandIndex_ <<
 			//". " << __E__;
 			//
@@ -365,7 +365,7 @@ try
 
 					__COUT__ << "Iterator starting command " << theIteratorStruct.commandIndex_ + 1 << ": "
 					         << theIteratorStruct.commands_[theIteratorStruct.commandIndex_].type_ << __E__;
-					__MOUT__ << "Iterator starting command " << theIteratorStruct.commandIndex_ + 1 << ": "
+					__COUT__ << "Iterator starting command " << theIteratorStruct.commandIndex_ + 1 << ": "
 					         << theIteratorStruct.commands_[theIteratorStruct.commandIndex_].type_ << __E__;
 
 					iterator->startCommand(&theIteratorStruct);
@@ -373,7 +373,7 @@ try
 				else if(theIteratorStruct.commandIndex_ == theIteratorStruct.commands_.size())  // Done!
 				{
 					__COUT__ << "Finished Iteration Plan '" << theIteratorStruct.activePlan_ << __E__;
-					__MOUT__ << "Finished Iteration Plan '" << theIteratorStruct.activePlan_ << __E__;
+					__COUT__ << "Finished Iteration Plan '" << theIteratorStruct.activePlan_ << __E__;
 
 					__COUT__ << "Reverting track changes." << __E__;
 					ConfigurationInterface::setVersionTrackingEnabled(theIteratorStruct.originalTrackChanges_);
@@ -406,7 +406,7 @@ try
 
 					__COUT__ << "Ready for next command. Done with " << theIteratorStruct.commandIndex_ << " of " << theIteratorStruct.commands_.size()
 					         << __E__;
-					__MOUT__ << "Iterator ready for next command. Done with " << theIteratorStruct.commandIndex_ << " of " << theIteratorStruct.commands_.size()
+					__COUT__ << "Iterator ready for next command. Done with " << theIteratorStruct.commandIndex_ << " of " << theIteratorStruct.commands_.size()
 					         << __E__;
 				}
 
@@ -1902,7 +1902,7 @@ try
 			       << "is currently "
 			       << "in control of State Machine progress. ";
 			__COUT_ERR__ << "\n" << ss.str();
-			__MOUT_ERR__ << "\n" << ss.str();
+			__COUT_ERR__ << "\n" << ss.str();
 
 			xmldoc.addTextElementToData("state_tranisition_attempted",
 			                            "0");  // indicate to GUI transition NOT attempted
@@ -2058,7 +2058,7 @@ void Iterator::playIterationPlanPrivate(HttpXmlDocument& xmldoc, const std::stri
 		__SS__ << "Invalid play command attempted. Can only play when the Iterator is "
 		          "inactive or paused."
 		       << " If you would like to restart an iteration plan, first try halting the Iterator." << __E__;
-		__MOUT__ << ss.str();
+		__COUT__ << ss.str();
 
 		xmldoc.addTextElementToData("error_message", ss.str());
 
@@ -2071,7 +2071,7 @@ void Iterator::playIterationPlanPrivate(HttpXmlDocument& xmldoc, const std::stri
 //==============================================================================
 void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 {
-	__MOUT__ << "Attempting to pause iteration plan '" << activePlanName_ << ".'" << __E__;
+	__COUT__ << "Attempting to pause iteration plan '" << activePlanName_ << ".'" << __E__;
 	__COUT__ << "Attempting to pause iteration plan '" << activePlanName_ << ".'" << __E__;
 
 	// setup "pause" command
@@ -2091,7 +2091,7 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 	else
 	{
 		__SS__ << "Invalid pause command attempted. Can only pause when running." << __E__;
-		__MOUT__ << ss.str();
+		__COUT__ << ss.str();
 
 		xmldoc.addTextElementToData("error_message", ss.str());
 
@@ -2103,7 +2103,7 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 //==============================================================================
 void Iterator::haltIterationPlan(HttpXmlDocument& /*xmldoc*/)
 {
-	__MOUT__ << "Attempting to halt iteration plan '" << activePlanName_ << ".'" << __E__;
+	__COUT__ << "Attempting to halt iteration plan '" << activePlanName_ << ".'" << __E__;
 	__COUT__ << "Attempting to halt iteration plan '" << activePlanName_ << ".'" << __E__;
 
 	// setup "halt" command

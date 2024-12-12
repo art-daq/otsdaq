@@ -385,7 +385,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								icon.windowContentURL_[2] == 's' &&
 								icon.windowContentURL_[3] == ':')
 							{
-								__COUT__ << "Found remote gateway from icons at " << icon.windowContentURL_ << __E__;
+								__COUT__ << "Found '" << icon.recordUID_ << "' remote gateway icons url: " << icon.windowContentURL_ << __E__;
 								
 								GatewaySupervisor::RemoteGatewayInfo thisInfo;
 
@@ -588,9 +588,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 									remoteGatewayApp.ignoreStatusCount = 0; //if non-zero, do not ask for status
 									commandSent = true;
 								}
-								else //give feedback immediately to user!!
+								
+								//give feedback immediately to user!!
 								{
-									__COUTV__(remoteGatewayApp.error);
+									__COUT__ << "remoteGatewayApp " << remoteGatewayApp.appInfo.name << " error: " << remoteGatewayApp.error << __E__;
 									//lock for remainder of scope
 									std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
 									for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
@@ -690,20 +691,24 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										__COUTV__(theSupervisor->remoteGatewayApps_[i].error);											
 										break;
 									}
+								remoteGatewayApp.error = "";
 							}
 
-							GatewaySupervisor::GetRemoteGatewayIcons(remoteGatewayApp, remoteGatewaySocket);
-							if(remoteGatewayApp.error != "")//give feedback immediately to user!!
+							if(remoteGatewayApp.error == "") //only request icons if no errors
 							{
-								__COUTV__(remoteGatewayApp.error);
-								//lock for remainder of scope
-								std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
-								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
-									{
-										theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 					
-										break;
-									}
+								GatewaySupervisor::GetRemoteGatewayIcons(remoteGatewayApp, remoteGatewaySocket);
+								if(remoteGatewayApp.error != "")//give feedback immediately to user!!
+								{
+									__COUTV__(remoteGatewayApp.error);
+									//lock for remainder of scope
+									std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
+									for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
+										if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+										{
+											theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 					
+											break;
+										}
+								}
 							}
 						}
 
@@ -1276,13 +1281,18 @@ try
 		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "remoteStatusString = " << remoteStatusString << __E__;	
 
 		std::string value, name;
+		bool foundGateway = false;
 		size_t after = 0;
 		while((name = StringMacros::extractXmlField(remoteStatusString, "name", 0, after, &after)) != "")
-		{					
+		{			
+			after += std::string("name").size(); //move beyond found pos
+			
 			//find class associated with record
 			value = StringMacros::extractXmlField(remoteStatusString, "class", 0, after);
 			if(value == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS) 
 			{
+				foundGateway = true;		
+
 				//found remote gateway
 				__COUTVS__(25,remoteStatusString.size());
 				__COUTVS__(25,after);
@@ -1331,6 +1341,13 @@ try
 
 			}
 		} //end primary loop
+
+		if(!foundGateway)
+		{
+			__SS__ << "Failure encountered while checking remote gateway status of '" << 
+				remoteGatewayApp.appInfo.name << "' - no Gateway app status reported!" << __E__;
+			__SS_THROW__;
+		}
 
 		//get system messages
 		value = StringMacros::extractXmlField(remoteStatusString, "systemMessages", 0, after, &after);	
@@ -1451,7 +1468,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							// 					"," + std::to_string(portForReverseLoginOverUDP) + 
 							// 					"," + remoteGatewayApp.appInfo.name;
 
-							__COUTV__(StringMacros::vectorToString(params));
+							__COUTVS__(23,StringMacros::vectorToString(params));
 							std::string tmpIP = params[1];
 							int tmpPort = atoi(params[2].c_str());
 							
@@ -2286,7 +2303,7 @@ try
 	}
 
 	setLastLogEntry(command,logEntry);
-
+	
 	SOAPParameters parameters;
 	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 	{
@@ -6047,7 +6064,7 @@ try
 		else if(requestType == "cancelStateMachineTransition")
 		{
 			__SS__ << "State transition was cancelled by user!" << __E__;
-			__MCOUT__(ss.str());
+			__COUTV__(ss.str());
 			RunControlStateMachine::theStateMachine_.setErrorMessage(ss.str());
 			RunControlStateMachine::asyncFailureReceived_ = true;
 		}
@@ -6342,7 +6359,7 @@ try
 				xmlOut.addTextElementToData("subsystem_consoleErrCount", std::to_string(remoteSubsystem.consoleErrCount));
 				xmlOut.addTextElementToData("subsystem_consoleWarnCount", std::to_string(remoteSubsystem.consoleWarnCount));
 				
-				if(remoteSubsystem.error != "")
+				if(remoteSubsystem.command == "" && remoteSubsystem.error != "")
 				{
 					__COUTT__ << "Error from Subsystem '" << remoteSubsystem.appInfo.name << 
 						"' = " << remoteSubsystem.error << __E__;	
@@ -7484,6 +7501,9 @@ std::string GatewaySupervisor::getLastLogEntry(const std::string& logType, const
 	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME &&
 		 stateMachineConfigureLogEntry_.find(fsmName) != stateMachineConfigureLogEntry_.end())
 		return stateMachineConfigureLogEntry_.at(fsmName);
+	else if(logType == RunControlStateMachine::STOP_TRANSITION_NAME &&
+		 stateMachineStopLogEntry_.find(fsmName) != stateMachineStopLogEntry_.end())
+		return stateMachineStopLogEntry_.at(fsmName);
 
 	// prepend sanitized FSM name
 	for(unsigned int i = 0; i < fsmName.size(); ++i)
@@ -7515,6 +7535,8 @@ std::string GatewaySupervisor::getLastLogEntry(const std::string& logType, const
 		stateMachineStartLogEntry_[fsmName] = contents;
 	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 		stateMachineConfigureLogEntry_[fsmName] = contents;
+	else if(logType == RunControlStateMachine::STOP_TRANSITION_NAME)
+		stateMachineStopLogEntry_[fsmName] = contents;
 
 	return contents;
 } // end getLastLogEntry()
@@ -7535,7 +7557,14 @@ void GatewaySupervisor::setLastLogEntry(const std::string& logType, const std::s
 		stateMachineStartLogEntry_[fsmName] = logEntry;
 	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 		stateMachineConfigureLogEntry_[fsmName] = logEntry;
-	else return; //for now,  do not save other types of transitions
+	else if(logType == RunControlStateMachine::STOP_TRANSITION_NAME)
+		stateMachineStopLogEntry_[fsmName] = logEntry;
+	else 
+	{
+		if(logEntry != "")
+			__COUT_WARN__ << "Log entry for log type '" << logType << "' not implemented for saving." << __E__;
+		return; //for now,  do not save other types of transitions
+	}
 	
 	// prepend sanitized FSM name
 	for(unsigned int i = 0; i < fsmName.size(); ++i)

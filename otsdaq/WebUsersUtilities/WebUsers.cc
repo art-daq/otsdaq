@@ -668,11 +668,11 @@ bool WebUsers::loadDatabases()
 						// WebUsers::PERMISSION_LEVEL_INACTIVE)
 						if(lastPermissionsMap.find(WebUsers::DEFAULT_USER_GROUP) == lastPermissionsMap.end())
 						{
-							__MCOUT_INFO__("User '" << Users_.back().username_ << "' is not a member of the default user group '"
+							__COUT_INFO__ << "User '" << Users_.back().username_ << "' is not a member of the default user group '"
 							                        << WebUsers::DEFAULT_USER_GROUP
 							                        << ".' Assuming user account is inactive (permission "
 							                           "level := "
-							                        << WebUsers::PERMISSION_LEVEL_INACTIVE << ")." << __E__);
+							                        << WebUsers::PERMISSION_LEVEL_INACTIVE << ")." << __E__;
 							lastPermissionsMap[WebUsers::DEFAULT_USER_GROUP] = WebUsers::PERMISSION_LEVEL_INACTIVE;  // mark inactive
 						}
 
@@ -1030,13 +1030,13 @@ uint64_t WebUsers::attemptActiveSession(
 
 	if(isInactiveForGroup(Users_[i].permissions_))
 	{
-		__MCOUT_ERR__("User '" << user << "' account INACTIVE (could be due to failed logins)" << __E__);
+		__COUT_ERR__ << "User '" << user << "' account INACTIVE (could be due to failed logins)" << __E__;
 		return ACCOUNT_INACTIVE;
 	}
 
 	if(Users_[i].salt_ == "")  // first login
 	{
-		__MCOUT__("First login attempt for user: " << user << __E__);
+		__COUT__ << "First login attempt for user: " << user << __E__;
 
 		if(newAccountCode != Users_[i].getNewAccountCode())
 		{
@@ -1078,17 +1078,17 @@ uint64_t WebUsers::attemptActiveSession(
 
 			__COUTV__(isInactiveForGroup(Users_[i].permissions_));
 			if(isInactiveForGroup(Users_[i].permissions_))
-				__MCOUT_INFO__("Account '" << user
+				__COUT_INFO__ << "Account '" << user
 				                           << "' has been marked inactive due to too many failed "
 				                              "login attempts (Failed Attempt #"
-				                           << (int)Users_[i].loginFailureCount_ << ")! Note only admins can reactivate accounts." << __E__);
+				                           << (int)Users_[i].loginFailureCount_ << ")! Note only admins can reactivate accounts." << __E__;
 
 			saveDatabaseToFile(DB_USERS);  // users db modified, so save
 			return NOT_FOUND_IN_DATABASE;
 		}
 	}
 
-	__MCOUT_INFO__("Login successful for: " << user << __E__);
+	__COUT_INFO__ << "Login successful for: " << user << __E__;
 
 	Users_[i].loginFailureCount_ = 0;
 
@@ -1220,7 +1220,7 @@ uint64_t WebUsers::attemptActiveSessionWithCert(const std::string& uuid, std::st
 	Users_[i].lastLoginAttempt_ = time(0);
 	if(isInactiveForGroup(Users_[i].permissions_))
 	{
-		__MCOUT__("User '" << user << "' account INACTIVE (could be due to failed logins)." << __E__);
+		__COUT__ << "User '" << user << "' account INACTIVE (could be due to failed logins)." << __E__;
 		return NOT_FOUND_IN_DATABASE;
 	}
 
@@ -1229,7 +1229,7 @@ uint64_t WebUsers::attemptActiveSessionWithCert(const std::string& uuid, std::st
 		return NOT_FOUND_IN_DATABASE;
 	}
 
-	__MCOUT__("Login successful for: " << user << __E__);
+	__COUT__ << "Login successful for: " << user << __E__;
 
 	Users_[i].loginFailureCount_ = 0;
 
@@ -2935,12 +2935,12 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	{
 		if(!CareAboutCookieCodes_ && !isUserActive && username != DEFAULT_ADMIN_USERNAME)  // enforce wiz mode only use admin account
 		{
-			__MCOUT_ERR__("User '" << actingUser << "' tried to lock for a user other than admin in wiz mode. Not allowed." << __E__);
+			__COUT_ERR__ << "User '" << actingUser << "' tried to lock for a user other than admin in wiz mode. Not allowed." << __E__;
 			return false;
 		}
 		else if(!isAdminForGroup(permissionMap) && actingUser != username)  // enforce normal mode admin privleges
 		{
-			__MCOUT_ERR__("A non-admin user '" << actingUser << "' tried to lock for a user other than self. Not allowed." << __E__);
+			__COUT_ERR__ << "A non-admin user '" << actingUser << "' tried to lock for a user other than self. Not allowed." << __E__;
 			return false;
 		}
 		usersUsernameWithLock_ = username;
@@ -2950,12 +2950,12 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	else
 	{
 		if(!isUserActive)
-			__MCOUT_ERR__("User '" << username << "' is inactive." << __E__);
-		__MCOUT_ERR__("Failed to lock for user '" << username << ".'" << __E__);
+			__COUT_ERR__ << "User '" << username << "' is inactive." << __E__;
+		__COUT_ERR__ << "Failed to lock for user '" << username << ".'" << __E__;
 		return false;
 	}
 
-	__MCOUT_INFO__("User '" << username << "' has locked out the system!" << __E__);
+	__COUT_INFO__ << "User '" << username << "' has locked out the system!" << __E__;
 
 	// save username with lock
 	{

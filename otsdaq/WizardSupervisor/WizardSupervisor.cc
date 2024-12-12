@@ -533,7 +533,7 @@ void WizardSupervisor::request(xgi::Input* in, xgi::Output* out)
 			// sessions
 
 			__COUT_WARN__ << requestType << " requestType received! " << __E__;
-			__MOUT_WARN__ << requestType << " requestType received! " << __E__;
+			__COUT_WARN__ << requestType << " requestType received! " << __E__;
 
 			// now launch
 			ConfigurationManager cfgMgr;
@@ -623,7 +623,7 @@ void WizardSupervisor::request(xgi::Input* in, xgi::Output* out)
 		while(err != "")
 		{
 			__COUT_ERR__ << "'" << requestType << "' ERROR encountered: " << err << __E__;
-			__MOUT_ERR__ << "'" << requestType << "' ERROR encountered: " << err << __E__;
+			__COUT_ERR__ << "'" << requestType << "' ERROR encountered: " << err << __E__;
 			err = xmlOut.getMatchingValue("Error", occurance++);
 		}
 	}

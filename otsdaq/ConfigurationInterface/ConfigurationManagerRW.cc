@@ -945,15 +945,15 @@ void ConfigurationManagerRW::activateTableGroup(const std::string& tableGroupNam
 
 	
 
-	__MCOUT_INFO__("Active Context table group: " << theContextTableGroup_ << "("
-	                                              << (theContextTableGroupKey_ ? theContextTableGroupKey_->toString().c_str() : "-1") << ")" << __E__);
-	__MCOUT_INFO__("Active Backbone table group: " << theBackboneTableGroup_ << "("
-	                                               << (theBackboneTableGroupKey_ ? theBackboneTableGroupKey_->toString().c_str() : "-1") << ")" << __E__);
-	__MCOUT_INFO__("Active Iterate table group: " << theIterateTableGroup_ << "("
-	                                              << (theIterateTableGroupKey_ ? theIterateTableGroupKey_->toString().c_str() : "-1") << ")" << __E__);
-	__MCOUT_INFO__("Active Configuration table group: " << theConfigurationTableGroup_ << "("
+	__COUT_INFO__ << "Active Context table group: " << theContextTableGroup_ << "("
+	                                              << (theContextTableGroupKey_ ? theContextTableGroupKey_->toString().c_str() : "-1") << ")" << __E__;
+	__COUT_INFO__ << "Active Backbone table group: " << theBackboneTableGroup_ << "("
+	                                               << (theBackboneTableGroupKey_ ? theBackboneTableGroupKey_->toString().c_str() : "-1") << ")" << __E__;
+	__COUT_INFO__ << "Active Iterate table group: " << theIterateTableGroup_ << "("
+	                                              << (theIterateTableGroupKey_ ? theIterateTableGroupKey_->toString().c_str() : "-1") << ")" << __E__;
+	__COUT_INFO__ << "Active Configuration table group: " << theConfigurationTableGroup_ << "("
 	                                                    << (theConfigurationTableGroupKey_ ? theConfigurationTableGroupKey_->toString().c_str() : "-1") << ")"
-	                                                    << __E__);
+	                                                    << __E__;
 
 	std::string fn = ConfigurationManager::ACTIVE_GROUPS_FILENAME;
 	FILE*       fp = fopen(fn.c_str(), "w");

@@ -12,7 +12,9 @@ using namespace ots;
 #define __MF_SUBJECT__ "FSM"
 #define mfSubject_ std::string("FSM-") + getStateMachineName()
 
-const std::string FiniteStateMachine::FAILED_STATE_NAME = "Failed";
+const char 			FiniteStateMachine::FAILED_STATE 			= 'F';
+const std::string 	FiniteStateMachine::FAILED_STATE_NAME		= "Failed";
+const std::string 	FiniteStateMachine::ERROR_TRANSITION_NAME 	= "Error";
 
 //==============================================================================
 FiniteStateMachine::FiniteStateMachine(const std::string& stateMachineName)
@@ -34,7 +36,14 @@ toolbox::fsm::State FiniteStateMachine::getTransitionFinalState(const std::strin
 		return stateTransitionTable_[currentState_][transition];
 	else
 	{
-		__GEN_SS__ << "Cannot find transition name with transition: " << transition << ", unknown!";
+		if(transition == FiniteStateMachine::ERROR_TRANSITION_NAME)
+		{
+			__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to " <<
+				FiniteStateMachine::FAILED_STATE_NAME << __E__;
+			return stateTransitionTable_[FiniteStateMachine::FAILED_STATE][FiniteStateMachine::ERROR_TRANSITION_NAME];
+		}
+		__GEN_SS__ << "Cannot find transition name for transition '" << transition << 
+			"' from current state '" << currentState_ << ".'" << __E__;
 		__GEN_COUT__ << ss.str();
 		XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 	}
@@ -78,7 +87,13 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 			return stateTransitionNameTable_.at(provenanceState_).at(currentTransition_);
 		else
 		{
-			__GEN_SS__ << "Cannot find transition name from '" << getProvenanceStateName() << "' with command: " << currentTransition_ << "...";
+			if(currentTransition_ == FiniteStateMachine::ERROR_TRANSITION_NAME)
+			{
+				__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to " <<
+					FiniteStateMachine::FAILED_STATE_NAME << __E__;
+				return currentTransition_;
+			}
+			__GEN_SS__ << "Cannot find transition name from '" << getProvenanceStateName() << "' for command: " << currentTransition_ << "...";
 			__GEN_COUT_WARN__ << ss.str(); //reduce to warning because transitions like 'Configure' can jump multiple states, e.g. from Initial
 			return currentTransition_;
 		}
@@ -90,7 +105,13 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 	}
 	else
 	{
-		__GEN_SS__ << "Cannot find transition name from '" << getCurrentStateName() << "' with command: " << transition << "...";
+		if(transition == FiniteStateMachine::ERROR_TRANSITION_NAME)
+		{
+			__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to " <<
+				FiniteStateMachine::FAILED_STATE_NAME << __E__;
+			return transition;
+		}
+		__GEN_SS__ << "Cannot find transition name from '" << getCurrentStateName() << "' for command: " << transition << "...";
 		__GEN_COUT_WARN__ << ss.str(); //reduce to warning because transitions like 'Configure' can jump multiple states, e.g. from Initial
 		return transition;
 	}
@@ -105,8 +126,14 @@ std::string FiniteStateMachine::getTransitionName(const toolbox::fsm::State from
 	}
 	else
 	{
+		if(transition == FiniteStateMachine::ERROR_TRANSITION_NAME)
+		{
+			__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to " <<
+				FiniteStateMachine::FAILED_STATE_NAME << __E__;
+			return transition;
+		}
 		std::ostringstream error;
-		error << "Cannot find transition name from " << from << " with command: " << transition << ", unknown!";
+		error << "Cannot find transition name from '" << from << "' for command: " << transition << __E__;
 		XCEPT_RAISE(toolbox::fsm::exception::Exception, error.str());
 	}
 }  // end getTransitionName()

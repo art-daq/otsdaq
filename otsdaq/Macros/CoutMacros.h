@@ -24,10 +24,6 @@
 //un-comment __COUT_TO_STD__ to send __COUT__ directly to std::cout, rather than through message facility
 //#define __COUT_TO_STD__		1
 
-//////// ==============================================================
-//////// Use __MOUT__ for Message Facility use (easy to switch to cout for debugging):
-////////
-
 #define __MF_SUBJECT__ __FILENAME__  // default subject.. others can #undef and re-#define
 // Note: to turn off MF everywhere, just replace with std::cout here at __MF_TYPE__(X)!
 
@@ -42,7 +38,6 @@
 #define __COUT_HDR_FL__ 	__SHORTFILE__ << ""  << __COUT_HDR_L__
 #define __COUT_HDR_FP__ 	__SHORTFILE__ << ":" << __COUT_HDR_P__
 #define __COUT_HDR__ 		""//__COUT_HDR_FL__
-#define __MF_HDR__ 			""//__COUT_HDR__
 
 //////// ==============================================================
 #define __MF_DECOR__		(__MF_SUBJECT__)
@@ -54,30 +49,17 @@
 #define __COUT_TYPE__(X) 	std::cout << QUOTE(X) << ":" << __MF_DECOR__ << ": " << __COUT_HDR_FL__
 #endif
 
-#define __MOUT_ERR__ 		__MF_TYPE__(TLVL_ERROR) 	<< __MF_HDR__
-#define __MOUT_WARN__ 		__MF_TYPE__(TLVL_WARNING) 	<< __MF_HDR__
-#define __MOUT_INFO__ 		__MF_TYPE__(TLVL_INFO) 		<< __MF_HDR__
-#define __MOUT__ 			__MF_TYPE__(TLVL_DEBUG) 	<< __MF_HDR__
-#define __MOUTV__(X) 		__MOUT__ << QUOTE(X) << " = " << X
 
-#define __COUT_ERR__ 		__COUT_TYPE__(TLVL_ERROR) 	<< __COUT_HDR__
-#define __COUT_WARN__ 		__COUT_TYPE__(TLVL_WARNING) << __COUT_HDR__
-#define __COUT_INFO__ 		__COUT_TYPE__(TLVL_INFO) 	<< __COUT_HDR__
-#define __COUT__ 			__COUT_TYPE__(TLVL_DEBUG) 	<< __COUT_HDR__
-#define __COUTT__           __COUT_TYPE__(TLVL_TRACE) 	<< __COUT_HDR__
+#define __COUT_ERR__ 		__COUT_TYPE__(TLVL_ERROR) 			<< __COUT_HDR__
+#define __COUT_WARN__ 		__COUT_TYPE__(TLVL_WARNING) 		<< __COUT_HDR__
+#define __COUT_INFO__ 		__COUT_TYPE__(TLVL_INFO) 			<< __COUT_HDR__
+#define __COUT__ 			__COUT_TYPE__(TLVL_DEBUG) 			<< __COUT_HDR__
+#define __COUTS__(LVL) 		__COUT_TYPE__(TLVL_DEBUG + LVL) 	<< __COUT_HDR__
+#define __COUTT__           __COUT_TYPE__(TLVL_TRACE) 			<< __COUT_HDR__
 #define __COUTV__(X) 		__COUT__ << QUOTE(X) << " = " << X << __E__
 #define __COUTTV__(X) 		__COUTT__ << QUOTE(X) << " = " << X << __E__
 #define __COUTVS__(LVL,X)	TLOG(TLVL_DEBUG + LVL) << __COUT_HDR__ << QUOTE(X) << " = " << X << __E__
 
-//////// ==============================================================
-//////// Use __MCOUT__ for cout and Message Facility use in one line (that compiler
-/// expands to two)
-////////
-#define __MCOUT_ERR__(X)   	{ __MOUT_ERR__  << X;} 	//causes duplicate with mf improvements: { __MOUT_ERR__  << X; __COUT_ERR__ 	<< X; }
-#define __MCOUT_WARN__(X)   { __MOUT_WARN__  << X;} //causes duplicate with mf improvements: { __MOUT_WARN__ << X; __COUT_WARN__ << X; }
-#define __MCOUT_INFO__(X)   { __MOUT_INFO__  << X;} //causes duplicate with mf improvements: { __MOUT_INFO__ << X; __COUT_INFO__ << X; }
-#define __MCOUT__(X)   		{ __MOUT__  << X;} 		//causes duplicate with mf improvements: { __MOUT__      << X; __COUT__ 		<< X; }
-#define __MCOUTV__(X) 		{ __MOUTV__(X);} 		//causes duplicate with mf improvements: { __MOUTV__(X); __COUTV__(X); }
 
 //////// ==============================================================
 
@@ -97,24 +79,14 @@
 #define __CFG_COUT_TYPE__(X) 	std::cout << QUOTE(X) << ":" << __CFG_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #endif
 
-#define __CFG_MOUT_ERR__ 		__CFG_MF_TYPE__(TLVL_ERROR) 	<< __COUT_HDR__
-#define __CFG_MOUT_WARN__ 		__CFG_MF_TYPE__(TLVL_WARNING) 	<< __COUT_HDR__
-#define __CFG_MOUT_INFO__ 		__CFG_MF_TYPE__(TLVL_INFO) 		<< __COUT_HDR__
-#define __CFG_MOUT__ 			__CFG_MF_TYPE__(TLVL_DEBUG) 	<< __COUT_HDR__
-#define __CFG_MOUTV__(X) 		__CFG_MOUT__ << QUOTE(X) << " = " << X
-#define __CFG_COUT_ERR__ 		__CFG_COUT_TYPE__(TLVL_ERROR) 	<< __COUT_HDR__
-#define __CFG_COUT_WARN__ 		__CFG_COUT_TYPE__(TLVL_WARNING) << __COUT_HDR__
-#define __CFG_COUT_INFO__ 		__CFG_COUT_TYPE__(TLVL_INFO) 	<< __COUT_HDR__
-#define __CFG_COUT__ 			__CFG_COUT_TYPE__(TLVL_DEBUG) 	<< __COUT_HDR__
-#define __CFG_COUTT__ 			__CFG_COUT_TYPE__(TLVL_TRACE) 	<< __COUT_HDR__
+#define __CFG_COUT_ERR__ 		__CFG_COUT_TYPE__(TLVL_ERROR) 			<< __COUT_HDR__
+#define __CFG_COUT_WARN__ 		__CFG_COUT_TYPE__(TLVL_WARNING) 		<< __COUT_HDR__
+#define __CFG_COUT_INFO__ 		__CFG_COUT_TYPE__(TLVL_INFO) 			<< __COUT_HDR__
+#define __CFG_COUT__ 			__CFG_COUT_TYPE__(TLVL_DEBUG) 			<< __COUT_HDR__
+#define __CFG_COUTS__(LVL) 		__CFG_COUT_TYPE__(TLVL_DEBUG + LVL) 	<< __COUT_HDR__
+#define __CFG_COUTT__ 			__CFG_COUT_TYPE__(TLVL_TRACE) 			<< __COUT_HDR__
 #define __CFG_COUTV__(X) 		__CFG_COUT__ << QUOTE(X) << " = " << X << __E__
 #define __CFG_COUTTV__(X) 		__CFG_COUTT__ << QUOTE(X) << " = " << X << __E__
-
-#define __CFG_MCOUT_ERR__(X)   	{ __CFG_MOUT_ERR__  << X;} 	//causes duplicate with mf improvements: { __CFG_MOUT_ERR__ 	<< X; __CFG_COUT_ERR__ 	<< X; }
-#define __CFG_MCOUT_WARN__(X)  	{ __CFG_MOUT_WARN__  << X;} //causes duplicate with mf improvements: { __CFG_MOUT_WARN__ << X; __CFG_COUT_WARN__ << X; }
-#define __CFG_MCOUT_INFO__(X)  	{ __CFG_MOUT_INFO__  << X;} //causes duplicate with mf improvements: { __CFG_MOUT_INFO__ << X; __CFG_COUT_INFO__ << X; }
-#define __CFG_MCOUT__(X)   		{ __CFG_MOUT__  << X;} 		//causes duplicate with mf improvements: { __CFG_MOUT__ 		<< X; __CFG_COUT__ 		<< X; }
-#define __CFG_MCOUTV__(X) 		{ __CFG_MOUTV__(X);} 		//causes duplicate with mf improvements: { __CFG_MOUTV__(X); __CFG_COUTV__(X); }
 
 #define __CFG_SS__  			std::stringstream ss; ss << "|" << __CFG_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #define __CFG_SS_THROW__        { __CFG_COUT_ERR__ << "\n" << ss.str(); throw std::runtime_error(ss.str()); }
@@ -131,24 +103,14 @@
 #define __FE_COUT_TYPE__(X) 	std::cout << QUOTE(X) << ":" << __FE_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #endif
 
-#define __FE_MOUT_ERR__ 		__FE_MF_TYPE__(TLVL_ERROR) 		<< __COUT_HDR__
-#define __FE_MOUT_WARN__ 		__FE_MF_TYPE__(TLVL_WARNING)	<< __COUT_HDR__
-#define __FE_MOUT_INFO__ 		__FE_MF_TYPE__(TLVL_INFO) 		<< __COUT_HDR__
-#define __FE_MOUT__ 			__FE_MF_TYPE__(TLVL_DEBUG) 		<< __COUT_HDR__
-#define __FE_MOUTV__(X) 		__FE_MOUT__ << QUOTE(X) << " = " << X
-#define __FE_COUT_ERR__ 		__FE_COUT_TYPE__(TLVL_ERROR) 	<< __COUT_HDR__
-#define __FE_COUT_WARN__ 		__FE_COUT_TYPE__(TLVL_WARNING)	<< __COUT_HDR__
-#define __FE_COUT_INFO__ 		__FE_COUT_TYPE__(TLVL_INFO) 	<< __COUT_HDR__
-#define __FE_COUT__ 			__FE_COUT_TYPE__(TLVL_DEBUG) 	<< __COUT_HDR__
-#define __FE_COUTT__ 			__FE_COUT_TYPE__(TLVL_TRACE) 	<< __COUT_HDR__
+#define __FE_COUT_ERR__ 		__FE_COUT_TYPE__(TLVL_ERROR) 		<< __COUT_HDR__
+#define __FE_COUT_WARN__ 		__FE_COUT_TYPE__(TLVL_WARNING)		<< __COUT_HDR__
+#define __FE_COUT_INFO__ 		__FE_COUT_TYPE__(TLVL_INFO) 		<< __COUT_HDR__
+#define __FE_COUT__ 			__FE_COUT_TYPE__(TLVL_DEBUG) 		<< __COUT_HDR__
+#define __FE_COUTS__(LVL) 		__FE_COUT_TYPE__(TLVL_DEBUG + LVL) 	<< __COUT_HDR__
+#define __FE_COUTT__ 			__FE_COUT_TYPE__(TLVL_TRACE) 		<< __COUT_HDR__
 #define __FE_COUTV__(X) 		__FE_COUT__ << QUOTE(X) << " = " << X << __E__
 #define __FE_COUTTV__(X) 		__FE_COUTT__ << QUOTE(X) << " = " << X << __E__
-
-#define __FE_MCOUT_ERR__(X)   	{ __FE_MOUT_ERR__  << X;} 	//causes duplicate with mf improvements: { __FE_MOUT_ERR__ 	<< X; __FE_COUT_ERR__ 	<< X; }
-#define __FE_MCOUT_WARN__(X)   	{ __FE_MOUT_WARN__  << X;} 	//causes duplicate with mf improvements: { __FE_MOUT_WARN__ 	<< X; __FE_COUT_WARN__ 	<< X; }
-#define __FE_MCOUT_INFO__(X)   	{ __FE_MOUT_INFO__  << X;} 	//causes duplicate with mf improvements: { __FE_MOUT_INFO__ 	<< X; __FE_COUT_INFO__ 	<< X; }
-#define __FE_MCOUT__(X)   		{ __FE_MOUT__  << X;} 		//causes duplicate with mf improvements: { __FE_MOUT__ 		<< X; __FE_COUT__ 		<< X; }
-#define __FE_MCOUTV__(X) 		{ __FE_MOUTV__(X);} 		//causes duplicate with mf improvements: { __FE_MOUTV__(X); __FE_COUTV__(X); }
 
 #define __FE_SS__          		std::stringstream ss; ss << "|" << __FE_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #define __FE_SS_THROW__         { __FE_COUT_ERR__ << "\n" << ss.str(); throw std::runtime_error(ss.str()); }
@@ -165,24 +127,14 @@
 #define __GEN_COUT_TYPE__(X) 	std::cout << QUOTE(X) << ":" << __GEN_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #endif
 
-#define __GEN_MOUT_ERR__ 		__GEN_MF_TYPE__(TLVL_ERROR) 		<< __COUT_HDR__
-#define __GEN_MOUT_WARN__ 		__GEN_MF_TYPE__(TLVL_WARNING) 		<< __COUT_HDR__
-#define __GEN_MOUT_INFO__ 		__GEN_MF_TYPE__(TLVL_INFO) 			<< __COUT_HDR__
-#define __GEN_MOUT__ 			__GEN_MF_TYPE__(TLVL_DEBUG) 		<< __COUT_HDR__
-#define __GEN_MOUTV__(X) 		__GEN_MOUT__ << QUOTE(X) << " = " << X
-#define __GEN_COUT_ERR__ 		__GEN_COUT_TYPE__(TLVL_ERROR) 		<< __COUT_HDR__
-#define __GEN_COUT_WARN__ 		__GEN_COUT_TYPE__(TLVL_WARNING) 	<< __COUT_HDR__
-#define __GEN_COUT_INFO__ 		__GEN_COUT_TYPE__(TLVL_INFO) 		<< __COUT_HDR__
-#define __GEN_COUT__ 			__GEN_COUT_TYPE__(TLVL_DEBUG) 		<< __COUT_HDR__
-#define __GEN_COUTT__ 			__GEN_COUT_TYPE__(TLVL_TRACE) 		<< __COUT_HDR__
+#define __GEN_COUT_ERR__ 		__GEN_COUT_TYPE__(TLVL_ERROR) 			<< __COUT_HDR__
+#define __GEN_COUT_WARN__ 		__GEN_COUT_TYPE__(TLVL_WARNING) 		<< __COUT_HDR__
+#define __GEN_COUT_INFO__ 		__GEN_COUT_TYPE__(TLVL_INFO) 			<< __COUT_HDR__
+#define __GEN_COUT__ 			__GEN_COUT_TYPE__(TLVL_DEBUG) 			<< __COUT_HDR__
+#define __GEN_COUTS__(LVL) 		__GEN_COUT_TYPE__(TLVL_DEBUG + LVL) 	<< __COUT_HDR__
+#define __GEN_COUTT__ 			__GEN_COUT_TYPE__(TLVL_TRACE) 			<< __COUT_HDR__
 #define __GEN_COUTV__(X) 		__GEN_COUT__ << QUOTE(X) << " = " << X << __E__
 #define __GEN_COUTTV__(X) 		__GEN_COUTT__ << QUOTE(X) << " = " << X << __E__
-
-#define __GEN_MCOUT_ERR__(X)   	{ __GEN_MOUT_ERR__  << X;} 	//causes duplicate with mf improvements: { __GEN_MOUT_ERR__ 	<< X; __GEN_COUT_ERR__ 	<< X; }
-#define __GEN_MCOUT_WARN__(X)   { __GEN_MOUT_WARN__  << X;} //causes duplicate with mf improvements: { __GEN_MOUT_WARN__ << X; __GEN_COUT_WARN__ << X; }
-#define __GEN_MCOUT_INFO__(X)   { __GEN_MOUT_INFO__  << X;} //causes duplicate with mf improvements: { __GEN_MOUT_INFO__ << X; __GEN_COUT_INFO__ << X; }
-#define __GEN_MCOUT__(X)   		{ __GEN_MOUT__  << X;} 		//causes duplicate with mf improvements: { __GEN_MOUT__ 		<< X; __GEN_COUT__ 		<< X; }
-#define __GEN_MCOUTV__(X) 		{ __GEN_MOUTV__(X);} 		//causes duplicate with mf improvements: { __GEN_MOUTV__(X); __GEN_COUTV__(X); }
 
 #define __GEN_SS__        		std::stringstream ss; ss << "|" << __GEN_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #define __GEN_SS_THROW__        { __GEN_COUT_ERR__ << "\n" << ss.str(); throw std::runtime_error(ss.str()); }
@@ -200,26 +152,15 @@
 #define __SUP_COUT_TYPE__(X) 	std::cout << QUOTE(X) << ":" << __SUP_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #endif
 
-#define __SUP_MOUT_ERR__ 		__SUP_MF_TYPE__(TLVL_ERROR) 		<< __COUT_HDR__
-#define __SUP_MOUT_WARN__ 		__SUP_MF_TYPE__(TLVL_WARNING) 		<< __COUT_HDR__
-#define __SUP_MOUT_INFO__ 		__SUP_MF_TYPE__(TLVL_INFO) 			<< __COUT_HDR__
-#define __SUP_MOUT__ 			__SUP_MF_TYPE__(TLVL_DEBUG) 		<< __COUT_HDR__
-#define __SUP_MOUTV__(X) 		__SUP_MOUT__ << QUOTE(X) << " = " << X
-
-#define __SUP_COUT_ERR__ 		__SUP_COUT_TYPE__(TLVL_ERROR) 		<< __COUT_HDR__
-#define __SUP_COUT_WARN__ 		__SUP_COUT_TYPE__(TLVL_WARNING) 	<< __COUT_HDR__
-#define __SUP_COUT_INFO__ 		__SUP_COUT_TYPE__(TLVL_INFO) 		<< __COUT_HDR__
-#define __SUP_COUT__ 			__SUP_COUT_TYPE__(TLVL_DEBUG) 		<< __COUT_HDR__
-#define __SUP_COUTT__ 			__SUP_COUT_TYPE__(TLVL_TRACE) 		<< __COUT_HDR__
+#define __SUP_COUT_ERR__ 		__SUP_COUT_TYPE__(TLVL_ERROR) 			<< __COUT_HDR__
+#define __SUP_COUT_WARN__ 		__SUP_COUT_TYPE__(TLVL_WARNING) 		<< __COUT_HDR__
+#define __SUP_COUT_INFO__ 		__SUP_COUT_TYPE__(TLVL_INFO) 			<< __COUT_HDR__
+#define __SUP_COUT__ 			__SUP_COUT_TYPE__(TLVL_DEBUG) 			<< __COUT_HDR__
+#define __SUP_COUTS__(LVL) 		__SUP_COUT_TYPE__(TLVL_DEBUG + LVL) 	<< __COUT_HDR__
+#define __SUP_COUTT__ 			__SUP_COUT_TYPE__(TLVL_TRACE) 			<< __COUT_HDR__
 #define __SUP_COUTV__(X) 		__SUP_COUT__ << QUOTE(X) << " = " << X << __E__
 #define __SUP_COUTTV__(X) 		__SUP_COUTT__ << QUOTE(X) << " = " << X << __E__
 #define __SUP_COUTVS__(LVL,X)	TLOG(TLVL_DEBUG + LVL) << __SUP_MF_DECOR__ << __COUT_HDR__ << QUOTE(X) << " = " << X << __E__
-
-#define __SUP_MCOUT_ERR__(X)   	{ __SUP_MOUT_ERR__  << X;} 	//causes duplicate with mf improvements: { __SUP_MOUT_ERR__ << X; __SUP_COUT_ERR__ << X; }
-#define __SUP_MCOUT_WARN__(X)  	{ __SUP_MOUT_WARN__  << X;} //causes duplicate with mf improvements: { __SUP_MOUT_WARN__ << X; __SUP_COUT_WARN__ << X; }
-#define __SUP_MCOUT_INFO__(X)  	{ __SUP_MOUT_INFO__  << X;} //causes duplicate with mf improvements: { __SUP_MOUT_INFO__ << X; __SUP_COUT_INFO__ << X; }
-#define __SUP_MCOUT__(X)   		{ __SUP_MOUT__  << X;} 		//causes duplicate with mf improvements: { __SUP_MOUT__ << X; __SUP_COUT__ << X; }
-#define __SUP_MCOUTV__(X) 		{ __SUP_MOUTV__(X);} 		//causes duplicate with mf improvements: { __SUP_MOUTV__(X); __SUP_COUTV__(X); }
 
 #define __SUP_SS__              std::stringstream ss; ss << "|" << __SUP_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #define __SUP_SS_THROW__        { __SUP_COUT_ERR__ << "\n" << ss.str(); throw std::runtime_error(ss.str()); }
