@@ -305,7 +305,7 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 
 	{
 		*out << WebUsers::REQ_NO_PERMISSION_RESPONSE;
-		__COUT__ << "User (@" << userInfo.ip_ << ") has insufficient permissions for requestType '" << userInfo.requestType_
+		__COUT_INFO__ << "User (@" << userInfo.ip_ << ") has insufficient permissions for requestType '" << userInfo.requestType_
 		         << "' : user level is " << (unsigned int)userInfo.permissionLevel_ << ", " << 
 				 (unsigned int)userInfo.permissionsThreshold_ << " required." << __E__;
 		return false;  // invalid permissions
@@ -348,14 +348,14 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 		userInfo.usernameWithLock_ != userInfo.username_)
 	{
 		*out << WebUsers::REQ_USER_LOCKOUT_RESPONSE;
-		__COUT__ << "User '" << userInfo.username_ << "' is locked out. '" << userInfo.usernameWithLock_ << "' has lock." << std::endl;
+		__COUT_INFO__ << "User '" << userInfo.username_ << "' is locked out. '" << userInfo.usernameWithLock_ << "' has lock." << std::endl;
 		return false;  // failed due to another user having lock
 	}
 
 	if(userInfo.requireLock_ && userInfo.usernameWithLock_ != userInfo.username_)
 	{
 		*out << WebUsers::REQ_LOCK_REQUIRED_RESPONSE;
-		__COUT__ << "User '" << userInfo.username_ << "' must have lock to proceed. ('" << userInfo.usernameWithLock_ << "' has lock.)" << std::endl;
+		__COUT_INFO__ << "User '" << userInfo.username_ << "' must have lock to proceed. ('" << userInfo.usernameWithLock_ << "' has lock.)" << std::endl;
 		return false;  // failed due to lock being required, and this user does not have
 		               // it
 	}

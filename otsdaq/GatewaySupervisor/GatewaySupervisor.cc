@@ -3205,8 +3205,9 @@ try
 				").";
 
 		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
-			ss << "\n\nUser log entry:\n\n" << 
-				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) << 
+					"\n-----------------\n";
 		else
 			ss << " No user log entry.";
 		makeSystemLogEntry(ss.str());
@@ -3380,8 +3381,9 @@ try
 				").";
 
 		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
-			ss << "\n\nUser log entry:\n\n" << 
-				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else
 			ss << " No user log entry.";
 		makeSystemLogEntry(ss.str());
@@ -3794,8 +3796,9 @@ try
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resuming.";
 	
 		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
-			ss << "\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
@@ -3812,8 +3815,9 @@ try
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resumed.";
 	
 		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
-			ss << "\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
@@ -3914,8 +3918,9 @@ try
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' starting.";
 
 		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
-			ss << "\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) <<
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
@@ -3991,8 +3996,9 @@ try
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' started.";
 	
 		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
-			ss << "\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
@@ -4082,8 +4088,9 @@ try
 			std::stringstream ss;
 			ss <<  dur_ss.str();
 			if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
-				ss << "\nUser log entry:\n\n" << 
-						getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME);
+				ss << "\n\n-----------------\nUser log entry:\n" << 
+					getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) << 
+					"\n-----------------\n";
 			else 
 				ss << " No user log entry.";
 
@@ -4105,8 +4112,9 @@ try
 		std::stringstream ss;
 		ss <<  dur_ss.str();
 		if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
-			ss << "\n\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
@@ -5402,7 +5410,7 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 	                                                  "gatewayLaunchOTS | gatewayLaunchWiz | gatewayLaunchOTSInstance"
 													  " | commandRemoteSubsystem");											
 	CorePropertySupervisorBase::addSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes,
-	   												  "StateMachine*");  //for all stateMachineXgiHandler requests
+	   												  "StateMachine-*");  //for all stateMachineXgiHandler requests
 
 	if(readOnly_)
 	{

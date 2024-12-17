@@ -1360,53 +1360,46 @@ std::string StringMacros::extractXmlField(const std::string &xml,
 	if (returnFindPos)
 		*returnFindPos = std::string::npos;
 
+	__COUTVS__(41,xml);
+
 	size_t lo, findpos = after, hi;
 	for (uint32_t i = 0; i <= occurrence; ++i)
-	{
-		__COUT_TYPE__(TLVL_DEBUG+41) << __COUT_HDR__ << xml;
-		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << field;
-		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << xml.find("<" + field, //allow for immediate closing of xml tag with >
-				findpos);
-		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << findpos;
+	{		
 		bool anyFound = false;
 		while ((findpos = xml.find("<" + field, //allow for immediate closing of xml tag with >
 				findpos)) != std::string::npos && 
 				findpos + 1 + field.size() < xml.size())
 		{
-			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "findpos " << findpos << 
-				" " << field[findpos] << " " << field[findpos + 1 + field.size()] << " " << (int) field[findpos + 1 + field.size()] << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "find: ---- '<" << field << 
+				" findpos=" << findpos << "findpos " << findpos << 
+				" " << xml[findpos] << " " << xml[findpos + 1 + field.size()] << " " << (int) xml[findpos + 1 + field.size()] << __E__;
+
+			findpos += 1 + field.size(); //to point to closing white space and advance for next forward search
+
 			//verify white space after the field
-			if((quoteType == ">" && xml[findpos + 1 + field.size()] == '>') ||
-					xml[findpos + 1 + field.size()] == ' ' || 
-					xml[findpos + 1 + field.size()] == '\n' || 
-					xml[findpos + 1 + field.size()] == '\t')
+			if((quoteType == ">" && xml[findpos] == '>') ||
+					xml[findpos] == ' ' || 
+					xml[findpos] == '\n' || 
+					xml[findpos] == '\t')
 			{
 				anyFound = true; //flag 
-				findpos += 1 + field.size() + (quoteType == ">"?0:1);
 				break;
 			}
 		}		
 
 		if(!anyFound)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Field not found" << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Field '" << field << "' not found" << __E__;
 			return "";
 		}	
-		// if ((findpos = xml.find("<" + field + (quoteType == ">"?">":" "), //allow for immediate closing of xml tag with >
-		// 		findpos)) == std::string::npos)
-		// {
-		// 	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Field not found" << __E__;
-		// 	return "";
-		// }
-		// else 
-		// 	findpos += 1 + field.size() + (quoteType == ">"?0:1);
 	}
 
 	lo = xml.find(valueField + quoteType, findpos) + valueField.size() + quoteType.size();
 
 	if(TTEST(40) && quoteType.size())
 	{
-		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Neighbors of field: " << field << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Neighbors of field '" << field <<
+			"' and value '" << valueField << "' w/quote = " << quoteType << __E__;
 		for(size_t i=lo-valueField.size(); i<lo + 10 && i < xml.size() ; ++i)
 			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "xml[" << i << "] " << xml[i] << 
 				" vs " << quoteType << " ? " << (int)xml[i] << " vs " <<  (int)quoteType[0] << __E__;
@@ -1420,10 +1413,12 @@ std::string StringMacros::extractXmlField(const std::string &xml,
 	}
 
 	if (returnFindPos)
-		*returnFindPos = findpos - (1 + field.size() + 1); //remove offset that was added
+		*returnFindPos = findpos - (1 + field.size()); //remove offset that was added
 
 	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "after: " << after << 
-		", findpos: " << findpos << ", hi/lo: " << hi << "/" << lo << __E__;
+		", findpos: " << findpos << ", hi/lo: " << hi << "/" << lo << 
+		", size: " << xml.size() << __E__;
+	__COUTVS__(40, xml.substr(lo, hi - lo));
 	return xml.substr(lo, hi - lo);
 } //end extractXmlField()
 
@@ -1440,6 +1435,8 @@ std::string StringMacros::rextractXmlField(const std::string &xml,
 	if (returnFindPos)
 		*returnFindPos = std::string::npos;
 
+	__COUTVS__(41,xml);
+
 	size_t lo = 0, hi, findpos = before;
 	for (uint32_t i = 0; i <= occurrence; ++i)
 	{
@@ -1448,19 +1445,27 @@ std::string StringMacros::rextractXmlField(const std::string &xml,
 				findpos)) != std::string::npos && 
 				findpos + 1 + field.size() < xml.size())
 		{
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "rfind: ---- '<" << field << 
+				" findpos=" << findpos << 
+				" " << xml[findpos] << " " << xml[findpos + 1 + field.size()] << " " << (int)xml[findpos + 1 + field.size()] << __E__;
+
+			findpos += 1 + field.size();
+			
 			//verify white space after the field
-			if((quoteType == ">" && xml[findpos + 1 + field.size()] == '>') ||
-					xml[findpos + 1 + field.size()] == ' ' || 
-					xml[findpos + 1 + field.size()] == '\n' || 
-					xml[findpos + 1 + field.size()] == '\t')
+			if((quoteType == ">" && xml[findpos] == '>') ||
+					xml[findpos] == ' ' || 
+					xml[findpos] == '\n' || 
+					xml[findpos] == '\t')
 			{
 				anyFound = true; //flag 
 				break;
 			}
+			else 
+				findpos -= 1 + field.size() + 1; //for next reverse search
 		}		
 		if(!anyFound)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Field not found" << __E__;
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Field '" << field << "' not found" << __E__;
 			return "";
 		}	
 	}
@@ -1483,10 +1488,12 @@ std::string StringMacros::rextractXmlField(const std::string &xml,
 	}
 
 	if (returnFindPos)
-		*returnFindPos = findpos;
+		*returnFindPos = findpos - (1 + field.size()); //return found position of "< + field"
 
 	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "before: " << before << 
-		", findpos: " << findpos << ", hi/lo: " << hi << "/" << lo << __E__;
+		", findpos: " << findpos << ", hi/lo: " << hi << "/" << lo << 
+		", size: " << xml.size() << __E__;
+	__COUTVS__(40, xml.substr(lo, hi - lo));
 	return xml.substr(lo, hi - lo);
 } //end rextractXmlField()
 
