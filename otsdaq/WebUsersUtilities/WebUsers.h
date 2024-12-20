@@ -223,7 +223,7 @@ class WebUsers
 	void        			addSystemMessage			(const std::string& targetUsersCSV, const std::string& subject, const std::string& message, bool doEmail);
 	void        			addSystemMessage			(const std::vector<std::string>& targetUsers, const std::string& subject, const std::string& message, bool doEmail);
 	std::string 			getSystemMessage			(const std::string& targetUser);
-	std::pair<std::string, time_t>	getLastSystemMessage(void) const;
+	std::pair<std::string, time_t>	getLastSystemMessage(void);
 	std::string 			getAllSystemMessages		(void);
 
   private:

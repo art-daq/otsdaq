@@ -3236,12 +3236,6 @@ void WebUsers::addSystemMessage(const std::string& targetUsersCSV, const std::st
 //	Note: do not printout message, because if it was a Console trigger, it will fire repeatedly
 void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, const std::string& subject, const std::string& message, bool doEmail)
 {
-	__COUT__ << "Before number of users with system messages: " << systemMessages_.size() <<
-		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
-
-	// lock for remainder of scope
-	std::lock_guard<std::mutex> lock(systemMessageLock_);
-
 	systemMessageCleanup();
 
 	std::string fullMessage = StringMacros::encodeURIComponent((subject == "" ? "" : (subject + ": ")) + message);
@@ -3346,8 +3340,6 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, con
 
 	}  // end target user message add loop
 
-	__COUT__ << "After number of users with system messages: " << systemMessages_.size() << 
-		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 	__COUTV__(targetEmails.size());
 
 	if(doEmail && targetEmails.size())
@@ -3393,6 +3385,12 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, con
 //	targetUser should be display name of user or "*"
 void WebUsers::addSystemMessageToMap(const std::string& targetUser, const std::string& fullMessage)
 {
+	// lock for remainder of scope
+	std::lock_guard<std::mutex> lock(systemMessageLock_);
+
+	__COUT__ << "Before number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
+
 	auto it = systemMessages_.find(targetUser);
 
 	// check for repeat messages
@@ -3411,13 +3409,19 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser, const std::s
 		it->second.push_back(SystemMessage(fullMessage));
 		__COUTT__ << it->first << " Current System Messages count = " << it->second.size() << __E__;
 	}
+
+	__COUT__ << "After number of users with system messages: " << systemMessages_.size() << 
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 }  // end addSystemMessageToMap
 
 //==============================================================================
 // getAllSystemMessages
 //	Returns last */global system message for statusing
-std::pair<std::string, time_t> WebUsers::getLastSystemMessage() const
+std::pair<std::string, time_t> WebUsers::getLastSystemMessage()
 {
+	// lock for remainder of scope
+	std::lock_guard<std::mutex> lock(systemMessageLock_);
+
 	__COUTT__ << "GetLast number of users with system messages: " << systemMessages_.size() <<
 		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 
@@ -3464,62 +3468,63 @@ std::string WebUsers::getAllSystemMessages()
 // 	Note: targetUser is by display name
 std::string WebUsers::getSystemMessage(const std::string& targetUser)
 {
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
-
-	// lock for remainder of scope
-	std::lock_guard<std::mutex> lock(systemMessageLock_);
-
 	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Current System Messages: " << targetUser << __E__;
-
 	std::string retStr = "";
-	int         cnt    = 0;
-	char        tmp[32];
+	{	
+		int         cnt    = 0;
+		char        tmp[32];
+		
+		// lock for remainder of scope
+		std::lock_guard<std::mutex> lock(systemMessageLock_);
 
-	//do broadcast * messages 1st because the web client will hide all messages before a repeat, so make sure to show user messages
-	auto it = systemMessages_.find("*");
-	for(uint64_t i = 0; it != systemMessages_.end() && i < it->second.size(); ++i)
-	{
-		// deliver "*" system message
-		if(cnt)
-			retStr += "|";
-		sprintf(tmp, "%lu", it->second[i].creationTime_);
-		retStr += std::string(tmp) + "|" + it->second[i].message_;
+		__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
 
-		++cnt;
-	}
 
-	//do user messages 2nd because the web client will hide all messages before a repeat, so make sure to show user messages
-	__COUTVS__(20,targetUser);
-	it = systemMessages_.find(targetUser);
-	if(TTEST(20)) 
-	{
-		for(auto systemMessagePair:systemMessages_)
-			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << systemMessagePair.first << " " << systemMessagePair.second.size() << " "
-				<< (systemMessagePair.second.size()?systemMessagePair.second[0].message_:"") << __E__;
-	}
-	if(it != systemMessages_.end())
-	{
-		__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Message count: " <<
-			it->second.size() << ", Last Message: " << 
-			(it->second.size()?it->second.back().message_:"") << __E__;
-	}
+		//do broadcast * messages 1st because the web client will hide all messages before a repeat, so make sure to show user messages
+		auto it = systemMessages_.find("*");
+		for(uint64_t i = 0; it != systemMessages_.end() && i < it->second.size(); ++i)
+		{
+			// deliver "*" system message
+			if(cnt)
+				retStr += "|";
+			sprintf(tmp, "%lu", it->second[i].creationTime_);
+			retStr += std::string(tmp) + "|" + it->second[i].message_;
 
-	for(uint64_t i = 0; it != systemMessages_.end() && i < it->second.size(); ++i)
-	{
-		// deliver user specific system message
-		if(cnt)
-			retStr += "|";
-		sprintf(tmp, "%lu", it->second[i].creationTime_);
-		retStr += std::string(tmp) + "|" + it->second[i].message_;
+			++cnt;
+		}
 
-		it->second[i].delivered_ = true;
-		++cnt;
-	}
+		//do user messages 2nd because the web client will hide all messages before a repeat, so make sure to show user messages
+		__COUTVS__(20,targetUser);
+		it = systemMessages_.find(targetUser);
+		if(TTEST(20)) 
+		{
+			for(auto systemMessagePair:systemMessages_)
+				__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << systemMessagePair.first << " " << systemMessagePair.second.size() << " "
+					<< (systemMessagePair.second.size()?systemMessagePair.second[0].message_:"") << __E__;
+		}
+		if(it != systemMessages_.end())
+		{
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Message count: " <<
+				it->second.size() << ", Last Message: " << 
+				(it->second.size()?it->second.back().message_:"") << __E__;
+		}
+
+		for(uint64_t i = 0; it != systemMessages_.end() && i < it->second.size(); ++i)
+		{
+			// deliver user specific system message
+			if(cnt)
+				retStr += "|";
+			sprintf(tmp, "%lu", it->second[i].creationTime_);
+			retStr += std::string(tmp) + "|" + it->second[i].message_;
+
+			it->second[i].delivered_ = true;
+			++cnt;
+		}
+	} //end mutex scope
 
 	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "retStr: " << retStr << __E__;
 
-	systemMessageCleanup();
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
+	systemMessageCleanup(); //NOTE: also locks mutex within!
 	return retStr;
 }  // end getSystemMessage()
 
@@ -3529,6 +3534,9 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 //	For all remaining messages, wait some time before removing (e.g. 300 sec)
 void WebUsers::systemMessageCleanup()
 {
+	// lock for remainder of scope
+	std::lock_guard<std::mutex> lock(systemMessageLock_);
+
 	__COUTT__ << "Before cleanup number of users with system messages: " << systemMessages_.size() <<
 		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 	for(auto& userMessagesPair : systemMessages_)

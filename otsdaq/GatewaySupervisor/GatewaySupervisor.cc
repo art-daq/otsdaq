@@ -3269,8 +3269,15 @@ try
 	//check for remote subsystem dumps (after broadcast!)
 	std::string remoteSubsystemDump = "";
 	{
-		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-		for(auto& remoteGatewayApp : remoteGatewayApps_)
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+		{ //lock for remainder of scope
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			__SUP_COUTVS__(22,remoteGatewayApps_.size());
+			remoteGatewayApps = remoteGatewayApps_;
+			if(remoteGatewayApps_.size())
+				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+		}
+		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			if(!remoteGatewayApp.fsm_included) continue; //skip if not included
 
@@ -3938,8 +3945,15 @@ try
 	//check for remote subsystem dumps (after broadcast!)
 	std::string remoteSubsystemDump = "";
 	{
-		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-		for(auto& remoteGatewayApp : remoteGatewayApps_)
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+		{ //lock for remainder of scope
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			__SUP_COUTVS__(22,remoteGatewayApps_.size());
+			remoteGatewayApps = remoteGatewayApps_;
+			if(remoteGatewayApps_.size())
+				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+		}
+		for(auto& remoteGatewayApp : remoteGatewayApps)
 			remoteSubsystemDump += remoteGatewayApp.config_dump;
 
 		if(remoteSubsystemDump.size())
@@ -4961,6 +4975,8 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 	std::string destinationState = theStateMachine_.getTransitionFinalStateName(command);
 	__COUTV__(destinationState);
 
+	size_t countOfRemoteGateways = 0;
+
 	bool done = command == "Error"; //dont check for done if Error'ing
 	while(!done)
 	{		
@@ -4968,8 +4984,18 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 			command << __E__;
 
 		done = true;
-		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-		for(auto& remoteGatewayApp : remoteGatewayApps_)
+
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+		{ //lock for remainder of scope
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			__SUP_COUTVS__(22,remoteGatewayApps_.size());
+			countOfRemoteGateways = remoteGatewayApps_.size();
+			remoteGatewayApps = remoteGatewayApps_;
+			if(remoteGatewayApps_.size())
+				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+		}
+		
+		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			//skip remote gateways that were not commanded
 			if(!remoteGatewayApp.fsm_included) continue;
@@ -5023,7 +5049,7 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 		checkForAsyncError();
 	}
 
-	__COUT__ << "Done with " << remoteGatewayApps_.size() << " remote gateway(s) command = " <<
+	__COUT__ << "Done with " << countOfRemoteGateways << " remote gateway(s) command = " <<
 		command << __E__;
 
 	return true;
@@ -6468,8 +6494,16 @@ try
 			//return info on selected_config_alias
 			
 			bool found = false;
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				__SUP_COUTVS__(22,remoteGatewayApps_.size());
+				remoteGatewayApps = remoteGatewayApps_;
+				if(remoteGatewayApps_.size())
+					__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+			}
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-			for(auto& remoteGatewayApp : remoteGatewayApps_)
+			for(auto& remoteGatewayApp : remoteGatewayApps)
 				if(targetSubsystem == remoteGatewayApp.appInfo.name)
 				{
 					found = true;
