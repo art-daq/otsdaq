@@ -4002,6 +4002,7 @@ try
 		else 
 			ss << " No user log entry.";
 
+
 		ss << "\n\nConfigured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
 			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
 		   << "). Active Context Group " << 
@@ -4010,6 +4011,15 @@ try
 			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
 				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
 				").";
+		
+		if(activeStateMachineConfigurationDumpOnRunEnable_)
+		{
+			ss << "\n\n-----------------\nConfiguration dump:\n" <<
+				activeStateMachineConfigurationDumpOnRun_;
+			if(remoteSubsystemDump.size()) 
+				ss << remoteSubsystemDump;
+			ss << "\nEND Configuration dump:\n-----------------\n";
+		}
 
 		makeSystemLogEntry(ss.str(),
 			activeStateMachineRunAlias_ + " '" + 
