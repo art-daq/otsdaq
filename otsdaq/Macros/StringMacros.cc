@@ -189,16 +189,13 @@ void StringMacros::sanitizeForSQL(std::string& str)
 //	if(allowWhiteSpace) convert \t to 8 &#160; spaces and \n to <br>
 std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpace /* = false */)
 {
-	bool doit = false;
-
 	unsigned int ws = -1;
 	char         htmlTmp[10];
 
 	for(unsigned int i = 0; i < inString.length(); i++)
 		if(inString[i] != ' ')
 		{
-			if(doit)
-				__COUT__ << inString[i] << ":" << (int)inString[i] << ":" << inString << std::endl;
+			__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << i << ". " << inString[i] << ":" << (int)inString[i] << std::endl;
 
 			// remove new lines and unprintable characters
 			if(inString[i] == '\r' || inString[i] == '\n' ||          // remove new line chars
@@ -211,6 +208,21 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 			                                                          // impossible if by byte (but there are html
 			                                                          // chracters in 300s and 8000s)
 			{
+				//handle UTF-8 encoded characters
+				if(i+2 < inString.size() && inString[i] == char(0xE2) &&
+					inString[i+1] == char(0x80) && inString[i+2] == char(0x93)) // longer dash endash is 3-bytes 0xE2 0x80 0x93
+				{
+					//encode "--" as &#8211;
+					inString.insert(i, "&#82");          // insert HTML name before special character
+					inString.replace(i + 4, 1, 1, '1');  // replace special character-0 with s
+					inString.replace(i + 5, 1, 1, '1');  // replace special character-1 with h
+					inString.replace(i + 6, 1, 1, ';');  // replace special character-2 with ;
+					i += 7;                              // skip to next char to check
+					ws = i;  // last non white space char
+					--i;
+					continue;
+				}			
+				
 				if(  // maintain new lines and tabs
 				    inString[i] == '\n')
 				{
@@ -256,13 +268,11 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 					inString.erase(i, 1);  // erase character
 					--i;                   // step back so next char to check is correct
 				}
-				if(doit)
-					__COUT__ << inString << std::endl;
+				__COUT_TYPE__(TLVL_DEBUG+31) << __COUT_HDR__ << inString << std::endl;
 				continue;
 			}
 
-			if(doit)
-				__COUT__ << inString << std::endl;
+			__COUT_TYPE__(TLVL_DEBUG+31) << __COUT_HDR__ << inString << std::endl;
 
 			// replace special characters
 			if(inString[i] == '\"' || inString[i] == '\'')
@@ -272,7 +282,7 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 				inString.replace(i + 5, 1, 1, ';');                          // replace special character with ;
 				i += 5;                                                      // skip to next char to check
 				                                                             //__COUT__ <<  inString << std::endl;
-			}
+			}			
 			else if(inString[i] == '&')
 			{
 				inString.insert(i, "&amp");          // insert HTML name before special character
@@ -294,8 +304,7 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 				i += 5;                                    // skip to next char to check
 			}
 
-			if(doit)
-				__COUT__ << inString << std::endl;
+			__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << inString << std::endl;
 
 			ws = i;  // last non white space char
 		}
@@ -316,13 +325,11 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 			                                     // ws = i;
 		}
 
-	if(doit)
-		__COUT__ << inString.size() << " " << ws << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << inString.size() << " " << ws << std::endl;
 
 	// inString.substr(0,ws+1);
 
-	if(doit)
-		__COUT__ << inString.size() << " " << inString << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << inString.size() << " " << inString << std::endl;
 
 	if(allowWhiteSpace)  // keep all white space
 		return inString;

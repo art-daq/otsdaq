@@ -270,11 +270,6 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 				{
 					// send back status and progress parameters
 					const std::string& err = theSupervisor->theStateMachine_.getErrorMessage();
-
-					// status = err == "" ? (theSupervisor->theStateMachine_.isInTransition() ? theSupervisor->theStateMachine_.getProvenanceStateName()
-					//                                                                        : theSupervisor->theStateMachine_.getCurrentStateName())
-					//                    : (theSupervisor->theStateMachine_.getCurrentStateName() == "Paused" ? "Soft-Error:::" : "Failed:::") + err;
-
 					try
 					{
 						__COUTVS__(39,theSupervisor->theStateMachine_.isInTransition());
@@ -309,7 +304,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					}
 					else
 					{
-						status = (theSupervisor->theStateMachine_.getCurrentStateName() == "Paused" ? "Soft-Error:::" : "Failed:::") + err;
+						status = (theSupervisor->theStateMachine_.getCurrentStateName() == RunControlStateMachine::PAUSED_STATE_NAME ? 
+							"Soft-Error:::" : "Failed:::") + err;
 						progress = theSupervisor->theProgressBar_.readPercentageString();
 					}
 
@@ -332,6 +328,22 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						std::lock_guard<std::mutex> lock(theSupervisor->broadcastCommandStatusUpdateMutex_);
 						if(detail != "" && theSupervisor->broadcastCommandStatus_ != "")
 							detail += " - " + theSupervisor->broadcastCommandStatus_;
+
+						if(!theSupervisor->theStateMachine_.isInTransition() && (
+							theSupervisor->theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::CONFIGURED_STATE_NAME ||
+							theSupervisor->theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::RUNNING_STATE_NAME ||
+							theSupervisor->theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::PAUSED_STATE_NAME))
+						{
+							//add Configuration details 
+							detail += " - Configured with System Configuration Alias '" + theSupervisor->activeStateMachineConfigurationAlias_ + 
+								"' which translates to " + theSupervisor->theConfigurationTableGroup_.first + "(" + theSupervisor->theConfigurationTableGroup_.second.str()
+								+ "). Active Context Group " +
+								theSupervisor->CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+									ConfigurationManager::GroupType::CONTEXT_TYPE) + "(" + 
+								theSupervisor->CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+									ConfigurationManager::GroupType::CONTEXT_TYPE).str() +
+									").";
+						}
 					}
 					catch(...)
 					{
@@ -1351,7 +1363,7 @@ try
 
 		//get system messages
 		value = StringMacros::extractXmlField(remoteStatusString, "systemMessages", 0, after, &after);	
-		__COUTT__ << "Remote System Messages:" << value << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Remote System Messages:" << value << __E__;
 		std::vector<std::string> parsedSysMsgs;
 		StringMacros::getVectorFromString(value,parsedSysMsgs,{'|'});
 
@@ -1366,7 +1378,7 @@ try
 
 		//get user with lock
 		value = StringMacros::extractXmlField(remoteStatusString, "usernameWithLock", 0, after, &after);	
-		__COUTT__ << "Remote User with Lock:" << value << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Remote User with Lock:" << value << __E__;
 		remoteGatewayApp.usernameWithLock = value; 
 
 		//get Console err/warn count
@@ -3280,7 +3292,6 @@ try
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			if(!remoteGatewayApp.fsm_included) continue; //skip if not included
-
 			remoteSubsystemDump += remoteGatewayApp.config_dump;
 		}
 
@@ -3393,6 +3404,40 @@ try
 				"\n-----------------\n";
 		else
 			ss << " No user log entry.";
+
+		//insert system and remote subsystem status/detail
+		{
+			ss << "\n\n~~~ System Status and Detail ~~~\n";
+			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
+			{
+				const auto& appInfo = it.second;
+				if(appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+					continue; //only give Gateway status
+				ss 	<< "\tStatus: " << appInfo.getStatus() << __E__
+					<< "\tDetail: " << appInfo.getDetail() << __E__;
+			}
+			
+			//also return remote gateways as apps			
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteApps = remoteGatewayApps_;
+			}
+
+			if(remoteApps.size())
+			{
+				ss << "\n\n~~~ Subsystem Status and Detail ~~~\n";
+
+				for(const auto& remoteApp : remoteApps)
+				{
+					const auto& appInfo = remoteApp.appInfo;
+					ss 	<< "Subsystem Name: " <<  appInfo.name << __E__
+						<< "\tStatus: " <<  appInfo.status << __E__
+						<< "\tDetail: " <<  appInfo.detail << __E__;
+				}
+			}
+		}
+
 		makeSystemLogEntry(ss.str());
 	}
 	__COUT__ << "Done configuring." << __E__;
@@ -3713,7 +3758,11 @@ try
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
 		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
-		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
+		       << std::setw(2) << std::setfill('0') << dur_s; //too much detail "." << dur << " seconds.";
+		if(dur_h == 0 && dur_m == 0 && dur_s < 5) //if very short, add the detail
+			dur_ss << "." << dur << " seconds.";
+		else 
+			dur_ss << ".";
 
 		if(doLog) 
 			makeSystemLogEntry("Run pausing. " + dur_ss.str());
@@ -3953,8 +4002,34 @@ try
 			if(remoteGatewayApps_.size())
 				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
 		}
+
+		remoteSubsystemDump += "--------------- Remote Subsystem Status ---------------\n";
+		remoteSubsystemDump += "Remote Subsystem Count: " + std::to_string(remoteGatewayApps.size()) + "\n";
+		size_t ssi = 1;
 		for(auto& remoteGatewayApp : remoteGatewayApps)
+		{
+			remoteSubsystemDump += std::to_string(ssi) + ". ~~ subsystem_name: " + remoteGatewayApp.appInfo.name + "\n.     ";
+			remoteSubsystemDump += "subsystem_url: " + remoteGatewayApp.appInfo.url + "\n.     ";
+			// remoteSubsystemDump += "subsystem_landingPage: " + remoteGatewayApp.landingPage + "\n.     ";
+			remoteSubsystemDump += "subsystem_status: " + remoteGatewayApp.appInfo.status + "\n.     ";
+			remoteSubsystemDump += "subsystem_progress: " + std::to_string(remoteGatewayApp.appInfo.progress) + "\n.     ";
+			remoteSubsystemDump += "subsystem_detail: " + remoteGatewayApp.appInfo.detail + "\n.     ";
+			// remoteSubsystemDump += "subsystem_lastStatusTime: " + StringMacros::getTimestampString(remoteGatewayApp.appInfo.lastStatusTime) + "\n.     ";
+			// remoteSubsystemDump += "subsystem_consoleErrCount: " + std::to_string(remoteGatewayApp.consoleErrCount) + "\n.     ";
+			// remoteSubsystemDump += "subsystem_consoleWarnCount: " + std::to_string(remoteGatewayApp.consoleWarnCount) + "\n.     ";
+			remoteSubsystemDump += "subsystem_configAlias: " + remoteGatewayApp.selected_config_alias + "\n.     ";			
+			remoteSubsystemDump += "subsystem_fsmMode: " + remoteGatewayApp.getFsmMode() + "\n.     ";
+			remoteSubsystemDump += "subsystem_fsmIncluded: " + std::string(remoteGatewayApp.fsm_included?"1":"0") + "\n.     ";			
+		}
+		remoteSubsystemDump += "--------------- end Remote Subsystem Status ---------------\n";
+
+		remoteSubsystemDump += "\n\n-----------------\nRemote Configuration dump:\n";
+		for(auto& remoteGatewayApp : remoteGatewayApps)
+		{
+			if(!remoteGatewayApp.fsm_included) continue; //skip if not included
 			remoteSubsystemDump += remoteGatewayApp.config_dump;
+		}
+		remoteSubsystemDump += "\nEND Remote Configuration dump:\n-----------------\n";
 
 		if(remoteSubsystemDump.size())
 			__COUTV__(remoteSubsystemDump);
@@ -4016,23 +4091,59 @@ try
 		else 
 			ss << " No user log entry.";
 
-
-		ss << "\n\nConfigured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
-			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
-		   << "). Active Context Group " << 
-		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
-				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
-			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
-				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
-				").";
-		
-		if(activeStateMachineConfigurationDumpOnRunEnable_)
+		//insert system and remote subsystem status/detail
 		{
-			ss << "\n\n-----------------\nConfiguration dump:\n" <<
-				activeStateMachineConfigurationDumpOnRun_;
+			ss << "\n\n~~~ System Status and Detail ~~~\n";
+			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
+			{
+				const auto& appInfo = it.second;
+				if(appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+					continue; //only give Gateway status
+				ss 	<< "\tStatus: " << appInfo.getStatus() << __E__
+					<< "\tDetail: " << appInfo.getDetail() << __E__;
+			}
+			
+			//also return remote gateways as apps			
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteApps = remoteGatewayApps_;
+			}
+
+			if(remoteApps.size())
+			{
+				ss << "\n\n~~~ Subsystem Status and Detail ~~~\n";
+
+				for(const auto& remoteApp : remoteApps)
+				{
+					const auto& appInfo = remoteApp.appInfo;
+					ss 	<< "Subsystem Name: " <<  appInfo.name << __E__
+						<< "\tStatus: " <<  appInfo.status << __E__
+						<< "\tDetail: " <<  appInfo.detail << __E__;
+				}
+			}
+		}
+
+		if(0) //full configuration dump too verbose for ECL (?)
+		{
+			ss << "\n\nConfigured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
+				"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
+			<< "). Active Context Group " << 
+				CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+					ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
+				CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+					ConfigurationManager::GroupType::CONTEXT_TYPE) <<
+					").";
+			
+			if(activeStateMachineConfigurationDumpOnRunEnable_)
+			{
+				ss << "\n\n-----------------\nConfiguration dump:\n" <<
+					activeStateMachineConfigurationDumpOnRun_;
+				ss << "\nEND Remote Configuration dump:\n-----------------\n";
+			}
+
 			if(remoteSubsystemDump.size()) 
 				ss << remoteSubsystemDump;
-			ss << "\nEND Configuration dump:\n-----------------\n";
 		}
 
 		makeSystemLogEntry(ss.str(),
@@ -4104,8 +4215,12 @@ try
 		dur_s     = dur_s % 60;
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
-		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
-		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
+		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+		       << std::setw(2) << std::setfill('0') << dur_s; //too much detail "." << dur << " seconds.";
+		if(dur_h == 0 && dur_m == 0 && dur_s < 5) //if very short, add the detail
+			dur_ss << "." << dur << " seconds.";
+		else 
+			dur_ss << ".";
 
 		if(doLog) 
 		{
