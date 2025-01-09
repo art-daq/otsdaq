@@ -63,5 +63,5 @@ void RawDataVisualizerConsumer::slowRead(void)
 		usleep(1000);
 		return;
 	}
-	__MOUT__ << DataProcessor::processorUID_ << " UID: " << supervisorApplicationUID_ << std::endl;
+	__COUT__ << DataProcessor::processorUID_ << " UID: " << supervisorApplicationUID_ << std::endl;
 }

@@ -654,7 +654,7 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn, HttpXmlDocument* /*xmlOut*/, const s
 {
 	bool clean = CgiDataUtilities::getDataAsInt(cgiIn, "clean") ? true : false;
 
-	__MCOUT_INFO__("Build (clean=" << clean << ") launched by '" << username << "'..." << __E__);
+	__COUT_INFO__ << "Build (clean=" << clean << ") launched by '" << username << "'..." << __E__;
 
 	// launch as thread so it does not lock up rest of code
 	std::thread(
@@ -684,13 +684,13 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn, HttpXmlDocument* /*xmlOut*/, const s
 						    // each time there is a new line print out
 						    i = result.find('\n');
 						    __COUTV__(result.substr(0, i));
-						    __MOUT__ << result.substr(0, i);
+						    __COUT__ << result.substr(0, i);
 						    result = result.substr(i + 1);  // discard before new line
 					    }
 				    }
 
 				    __COUTV__(result);
-				    __MOUT__ << result.substr(0, i);
+				    __COUT__ << result.substr(0, i);
 			    }
 
 			    sleep(1);
@@ -716,13 +716,13 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn, HttpXmlDocument* /*xmlOut*/, const s
 						    // each time there is a new line print out
 						    i = result.find('\n');
 						    __COUTV__(result.substr(0, i));
-						    __MOUT__ << result.substr(0, i);
+						    __COUT__ << result.substr(0, i);
 						    result = result.substr(i + 1);  // discard before new line
 					    }
 				    }
 
 				    __COUTV__(result);
-				    __MOUT__ << result.substr(0, i);
+				    __COUT__ << result.substr(0, i);
 			    }
 			    sleep(1);
 		    }
@@ -749,13 +749,13 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn, HttpXmlDocument* /*xmlOut*/, const s
 					    // each time there is a new line print out
 					    i = result.find('\n');
 					    //__COUTV__(result.substr(0,i));
-					    __MOUT__ << result.substr(0, i);
+					    __COUT__ << result.substr(0, i);
 					    result = result.substr(i + 1);  // discard before new line
 				    }
 			    }
 
 			    //__COUTV__(result);
-			    __MOUT__ << result.substr(0, i);
+			    __COUT__ << result.substr(0, i);
 		    }
 	    },
 	    clean)

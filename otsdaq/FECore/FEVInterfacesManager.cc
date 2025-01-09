@@ -106,7 +106,7 @@ void FEVInterfacesManager::createInterfaces(void)
 			__CFG_SS__ << "Failed to instantiate plugin named '" << interface.first << "' of type '"
 			           << interface.second.getNode(COL_NAME_fePlugin).getValue<std::string>() << "' due to the following error: \n"
 			           << e.what() << __E__;
-			__MOUT_ERR__ << ss.str();
+			__COUT_ERR__ << ss.str();
 			__CFG_SS_THROW__;
 		}
 		catch(const std::runtime_error& e)
@@ -114,7 +114,7 @@ void FEVInterfacesManager::createInterfaces(void)
 			__CFG_SS__ << "Failed to instantiate plugin named '" << interface.first << "' of type '"
 			           << interface.second.getNode(COL_NAME_fePlugin).getValue<std::string>() << "' due to the following error: \n"
 			           << e.what() << __E__;
-			__MOUT_ERR__ << ss.str();
+			__COUT_ERR__ << ss.str();
 			__CFG_SS_THROW__;
 		}
 		catch(...)
@@ -127,7 +127,7 @@ void FEVInterfacesManager::createInterfaces(void)
 				ss << "Exception message: " << e.what();
 			}
 			catch(...){}
-			__MOUT_ERR__ << ss.str();
+			__COUT_ERR__ << ss.str();
 			throw;  // if we do not throw, it is hard to tell what is happening..
 			        //__CFG_SS_THROW__;
 		}
@@ -1982,7 +1982,7 @@ void FEVInterfacesManager::runFEMacro(const std::string&                        
 	//	for(unsigned int i=0;i<returnStrings.size();++i)
 	//		__CFG_COUT__ << i << ": " << returnStrings[i] << __E__;
 
-	__MOUT__ << "Launching FE Macro '" << feMacro.feMacroName_ << "' ..." << __E__;
+	__COUT__ << "Launching FE Macro '" << feMacro.feMacroName_ << "' ..." << __E__;
 	__CFG_COUT__ << "Launching FE Macro '" << feMacro.feMacroName_ << "' ..." << __E__;
 
 	// have pointer to Macro structure, so run it

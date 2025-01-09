@@ -32,7 +32,7 @@ const std::string RunControlStateMachine::CONFIGURED_STATE_NAME 		= "Configured"
 const std::string RunControlStateMachine::SHUTDOWN_TRANSITION_NAME 		= "Shutdown";
 const std::string RunControlStateMachine::STARTUP_TRANSITION_NAME  		= "Startup";
 const std::string RunControlStateMachine::INIT_TRANSITION_NAME  		= "Initialize";
-const std::string RunControlStateMachine::ERROR_TRANSITION_NAME  		= "Error";
+const std::string RunControlStateMachine::ERROR_TRANSITION_NAME  		= FiniteStateMachine::ERROR_TRANSITION_NAME;
 const std::string RunControlStateMachine::FAIL_TRANSITION_NAME  		= "Fail";
 const std::string RunControlStateMachine::CONFIGURE_TRANSITION_NAME  	= "Configure";
 const std::string RunControlStateMachine::HALT_TRANSITION_NAME  		= "Halt";
@@ -64,20 +64,20 @@ RunControlStateMachine::RunControlStateMachine(const std::string& name)
 	// exceptions like..
 	//	XCEPT_RAISE (toolbox::fsm::exception::Exception, ss.str());)
 	//	take state machine to "failed" otherwise
-	theStateMachine_.setStateName('F', RunControlStateMachine::FAILED_STATE_NAME);
+	theStateMachine_.setStateName(FiniteStateMachine::FAILED_STATE, RunControlStateMachine::FAILED_STATE_NAME);
 	theStateMachine_.setFailedStateTransitionAction(this, &RunControlStateMachine::enteringError);
 	theStateMachine_.setFailedStateTransitionChanged(this, &RunControlStateMachine::inError);
 
 	//clang-format off
 	// this line was added to get out of Failed state
 	RunControlStateMachine::addStateTransition(
-		'F', 'H', RunControlStateMachine::HALT_TRANSITION_NAME, "Halting", this, &RunControlStateMachine::transitionHalting);
+		FiniteStateMachine::FAILED_STATE, 'H', RunControlStateMachine::HALT_TRANSITION_NAME, "Halting", this, &RunControlStateMachine::transitionHalting);
 	RunControlStateMachine::addStateTransition(
-	    'F', 'X', RunControlStateMachine::SHUTDOWN_TRANSITION_NAME, "Shutting Down", this, &RunControlStateMachine::transitionShuttingDown);
+	    FiniteStateMachine::FAILED_STATE, 'X', RunControlStateMachine::SHUTDOWN_TRANSITION_NAME, "Shutting Down", this, &RunControlStateMachine::transitionShuttingDown);
 	RunControlStateMachine::addStateTransition(
-		'F', 'F', RunControlStateMachine::ERROR_TRANSITION_NAME, "Erroring", this, &RunControlStateMachine::transitionShuttingDown);
+		FiniteStateMachine::FAILED_STATE, FiniteStateMachine::FAILED_STATE, RunControlStateMachine::ERROR_TRANSITION_NAME, "Erroring", this, &RunControlStateMachine::enteringError);
 	RunControlStateMachine::addStateTransition(
-		'F', 'F', RunControlStateMachine::FAIL_TRANSITION_NAME, "Failing", this, &RunControlStateMachine::transitionShuttingDown);
+		FiniteStateMachine::FAILED_STATE, FiniteStateMachine::FAILED_STATE, RunControlStateMachine::FAIL_TRANSITION_NAME, "Failing", this, &RunControlStateMachine::transitionShuttingDown);
 
 	RunControlStateMachine::addStateTransition(
 	    'H', 'C', RunControlStateMachine::CONFIGURE_TRANSITION_NAME, "Configuring", "ConfigurationAlias", this, &RunControlStateMachine::transitionConfiguring);

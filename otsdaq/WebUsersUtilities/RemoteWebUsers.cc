@@ -177,8 +177,6 @@ bool RemoteWebUsers::xmlRequestToGateway(
 		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
 	}
 
-	__COUT_TYPE__(TLVL_DEBUG+1) << __COUT_HDR__ << std::endl;
-
 	parameters.clear();
 	parameters.addParameter("CookieCode", userInfo.cookieCode_);
 	parameters.addParameter("RefreshOption", userInfo.automatedCommand_ ? "0" : "1");
@@ -195,8 +193,6 @@ bool RemoteWebUsers::xmlRequestToGateway(
 	parameters.addParameter("DisplayName");
 	// parameters.addParameter("ActiveSessionIndex");
 	SOAPUtilities::receive(retMsg, parameters);
-
-	__COUT_TYPE__(TLVL_DEBUG+1) << __COUT_HDR__ << std::endl;
 
 	// first extract a few things always from parameters
 	//	like permissionLevel for this request... must consider allowed groups!!

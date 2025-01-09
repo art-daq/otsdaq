@@ -189,16 +189,13 @@ void StringMacros::sanitizeForSQL(std::string& str)
 //	if(allowWhiteSpace) convert \t to 8 &#160; spaces and \n to <br>
 std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpace /* = false */)
 {
-	bool doit = false;
-
 	unsigned int ws = -1;
 	char         htmlTmp[10];
 
 	for(unsigned int i = 0; i < inString.length(); i++)
 		if(inString[i] != ' ')
 		{
-			if(doit)
-				__COUT__ << inString[i] << ":" << (int)inString[i] << ":" << inString << std::endl;
+			__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << i << ". " << inString[i] << ":" << (int)inString[i] << std::endl;
 
 			// remove new lines and unprintable characters
 			if(inString[i] == '\r' || inString[i] == '\n' ||          // remove new line chars
@@ -211,6 +208,21 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 			                                                          // impossible if by byte (but there are html
 			                                                          // chracters in 300s and 8000s)
 			{
+				//handle UTF-8 encoded characters
+				if(i+2 < inString.size() && inString[i] == char(0xE2) &&
+					inString[i+1] == char(0x80) && inString[i+2] == char(0x93)) // longer dash endash is 3-bytes 0xE2 0x80 0x93
+				{
+					//encode "--" as &#8211;
+					inString.insert(i, "&#82");          // insert HTML name before special character
+					inString.replace(i + 4, 1, 1, '1');  // replace special character-0 with s
+					inString.replace(i + 5, 1, 1, '1');  // replace special character-1 with h
+					inString.replace(i + 6, 1, 1, ';');  // replace special character-2 with ;
+					i += 7;                              // skip to next char to check
+					ws = i;  // last non white space char
+					--i;
+					continue;
+				}			
+				
 				if(  // maintain new lines and tabs
 				    inString[i] == '\n')
 				{
@@ -256,13 +268,11 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 					inString.erase(i, 1);  // erase character
 					--i;                   // step back so next char to check is correct
 				}
-				if(doit)
-					__COUT__ << inString << std::endl;
+				__COUT_TYPE__(TLVL_DEBUG+31) << __COUT_HDR__ << inString << std::endl;
 				continue;
 			}
 
-			if(doit)
-				__COUT__ << inString << std::endl;
+			__COUT_TYPE__(TLVL_DEBUG+31) << __COUT_HDR__ << inString << std::endl;
 
 			// replace special characters
 			if(inString[i] == '\"' || inString[i] == '\'')
@@ -272,7 +282,7 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 				inString.replace(i + 5, 1, 1, ';');                          // replace special character with ;
 				i += 5;                                                      // skip to next char to check
 				                                                             //__COUT__ <<  inString << std::endl;
-			}
+			}			
 			else if(inString[i] == '&')
 			{
 				inString.insert(i, "&amp");          // insert HTML name before special character
@@ -294,8 +304,7 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 				i += 5;                                    // skip to next char to check
 			}
 
-			if(doit)
-				__COUT__ << inString << std::endl;
+			__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << inString << std::endl;
 
 			ws = i;  // last non white space char
 		}
@@ -316,13 +325,11 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 			                                     // ws = i;
 		}
 
-	if(doit)
-		__COUT__ << inString.size() << " " << ws << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << inString.size() << " " << ws << std::endl;
 
 	// inString.substr(0,ws+1);
 
-	if(doit)
-		__COUT__ << inString.size() << " " << inString << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << inString.size() << " " << inString << std::endl;
 
 	if(allowWhiteSpace)  // keep all white space
 		return inString;
@@ -346,6 +353,17 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		size_t      end;
 		std::string envVariable;
 		std::string converted = data;  // make copy to modify
+		
+		while(begin && begin != std::string::npos && converted[begin-1] == '\\') //do not convert environment variables with escaped \$
+		{
+			converted.replace(begin-1, 1, "");			
+			begin = data.find("$",begin+1); //find next
+			if(begin == std::string::npos)
+			{
+				__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "Only found escaped $'s that will not be converted: " << converted << __E__;
+				return converted;
+			}
+		}
 
 		if(data[begin + 1] == '{')  // check if using ${NAME} syntax
 		{
@@ -362,8 +380,8 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 					break;  // found end
 			envVariable = data.substr(begin + 1, end - begin - 1);
 		}
-		//__COUTV__(data);
-		//__COUTV__(envVariable);
+		__COUTVS__(50,data);
+		__COUTVS__(50,envVariable);
 		char* envResult = __ENV__(envVariable.c_str());
 
 		if(envResult)
@@ -378,9 +396,9 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		}
 	}
 	// else no environment variables found in string
-	//__COUT__ << "Result: " << data << __E__;
+	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "Result: " << data << __E__;
 	return data;
-}
+} //end convertEnvironmentVariables()
 
 //==============================================================================
 // isNumber ~~
@@ -1340,24 +1358,74 @@ char* StringMacros::otsGetEnvironmentVarable(const char* name, const std::string
 //extract valueField for field from xml looking forwards from after
 // occurence = 0 is first occurence
 std::string StringMacros::extractXmlField(const std::string &xml,
-												const std::string &field,
-												uint32_t occurrence, size_t after,
-												size_t *returnAfter /* = nullptr */,
-												const std::string& valueField /* = "value" */,
-												const std::string& quoteType /* = "'" */)
+											const std::string &field,
+											uint32_t occurrence, size_t after,
+											size_t *returnFindPos /* = nullptr */,
+											const std::string& valueField /* = "value=" */,
+											const std::string& quoteType /* = "'" */)
 {
-	size_t lo = after, hi;
+	if (returnFindPos)
+		*returnFindPos = std::string::npos;
+
+	__COUTVS__(41,xml);
+
+	size_t lo, findpos = after, hi;
 	for (uint32_t i = 0; i <= occurrence; ++i)
-		if ((lo = xml.find("<" + field + " ", lo)) == std::string::npos)
+	{		
+		bool anyFound = false;
+		while ((findpos = xml.find("<" + field, //allow for immediate closing of xml tag with >
+				findpos)) != std::string::npos && 
+				findpos + 1 + field.size() < xml.size())
+		{
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "find: ---- '<" << field << 
+				" findpos=" << findpos << "findpos " << findpos << 
+				" " << xml[findpos] << " " << xml[findpos + 1 + field.size()] << " " << (int) xml[findpos + 1 + field.size()] << __E__;
+
+			findpos += 1 + field.size(); //to point to closing white space and advance for next forward search
+
+			//verify white space after the field
+			if((quoteType == ">" && xml[findpos] == '>') ||
+					xml[findpos] == ' ' || 
+					xml[findpos] == '\n' || 
+					xml[findpos] == '\t')
+			{
+				anyFound = true; //flag 
+				break;
+			}
+		}		
+
+		if(!anyFound)
+		{
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Field '" << field << "' not found" << __E__;
 			return "";
-	if ((hi = xml.find(quoteType + "/>", lo)) == std::string::npos)
+		}	
+	}
+
+	lo = xml.find(valueField + quoteType, findpos) + valueField.size() + quoteType.size();
+
+	if(TTEST(40) && quoteType.size())
+	{
+		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Neighbors of field '" << field <<
+			"' and value '" << valueField << "' w/quote = " << quoteType << __E__;
+		for(size_t i=lo-valueField.size(); i<lo + 10 && i < xml.size() ; ++i)
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "xml[" << i << "] " << xml[i] << 
+				" vs " << quoteType << " ? " << (int)xml[i] << " vs " <<  (int)quoteType[0] << __E__;
+	}
+
+	if ((hi = xml.find(quoteType == ">"?"<":quoteType, //if xml tag, change closing direction
+			lo)) == std::string::npos)
+	{
+		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Value closing not found" << __E__;
 		return "";
+	}
 
-	lo = xml.find(valueField + "=" + quoteType, lo) + valueField.size() + 2;
+	if (returnFindPos)
+		*returnFindPos = findpos - (1 + field.size()); //remove offset that was added
 
-	if (returnAfter)
-		*returnAfter = hi + 3; //field.length() + 3;
-
+	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "after: " << after << 
+		", findpos: " << findpos << ", hi/lo: " << hi << "/" << lo << 
+		", size: " << xml.size() << __E__;
+	__COUTVS__(40, xml.substr(lo, hi - lo));
 	return xml.substr(lo, hi - lo);
 } //end extractXmlField()
 
@@ -1365,20 +1433,74 @@ std::string StringMacros::extractXmlField(const std::string &xml,
 //extract valueField for field from xml looking backwards from before
 // occurence = 0 is first occurence
 std::string StringMacros::rextractXmlField(const std::string &xml,
-												 const std::string &field,
-												 uint32_t occurrence, size_t before,
-												 const std::string& valueField /* = "value" */,
-												 const std::string& quoteType /* = "'" */)
+											const std::string &field,
+											uint32_t occurrence, size_t before,
+											size_t *returnFindPos /* = nullptr */,
+											const std::string& valueField /* = "value=" */,
+											const std::string& quoteType /* = "'" */)
 {
-	size_t lo = 0, hi = before;
+	if (returnFindPos)
+		*returnFindPos = std::string::npos;
+
+	__COUTVS__(41,xml);
+
+	size_t lo = 0, hi, findpos = before;
 	for (uint32_t i = 0; i <= occurrence; ++i)
-		if ((lo = xml.rfind("<" + field + " ", hi)) == std::string::npos)
+	{
+		bool anyFound = false;
+		while ((findpos = xml.rfind("<" + field, //allow for immediate closing of xml tag with >
+				findpos)) != std::string::npos && 
+				findpos + 1 + field.size() < xml.size())
+		{
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "rfind: ---- '<" << field << 
+				" findpos=" << findpos << 
+				" " << xml[findpos] << " " << xml[findpos + 1 + field.size()] << " " << (int)xml[findpos + 1 + field.size()] << __E__;
+
+			findpos += 1 + field.size();
+			
+			//verify white space after the field
+			if((quoteType == ">" && xml[findpos] == '>') ||
+					xml[findpos] == ' ' || 
+					xml[findpos] == '\n' || 
+					xml[findpos] == '\t')
+			{
+				anyFound = true; //flag 
+				break;
+			}
+			else 
+				findpos -= 1 + field.size() + 1; //for next reverse search
+		}		
+		if(!anyFound)
+		{
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Field '" << field << "' not found" << __E__;
 			return "";
-	if ((hi = xml.rfind(quoteType + "/>", hi)) == std::string::npos)
+		}	
+	}
+			
+	lo = xml.find(valueField + quoteType, findpos) + valueField.size() + quoteType.size();
+
+	if(TTEST(40) && quoteType.size())
+	{
+		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Neighbors?" << __E__;
+		for(size_t i=findpos; i<lo + 10 && i < xml.size() ; ++i)
+			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "xml[" << i << "] " << xml[i] << 
+				" vs " << quoteType << " ? " << (int)xml[i] << " vs " <<  (int)quoteType[0] << __E__;
+	}
+
+	if ((hi = xml.find(quoteType == ">"?"<":quoteType, //if xml tag, change closing direction
+			lo)) == std::string::npos)	
+	{
+		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Value closing not found" << __E__;
 		return "";
+	}
 
-	lo = xml.find(valueField + "=" + quoteType, lo) + valueField.size() + 2;
+	if (returnFindPos)
+		*returnFindPos = findpos - (1 + field.size()); //return found position of "< + field"
 
+	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "before: " << before << 
+		", findpos: " << findpos << ", hi/lo: " << hi << "/" << lo << 
+		", size: " << xml.size() << __E__;
+	__COUTVS__(40, xml.substr(lo, hi - lo));
 	return xml.substr(lo, hi - lo);
 } //end rextractXmlField()
 

@@ -106,7 +106,7 @@ void DataManager::configure(void)
 						           << " is invalid. The only accepted types are Producer "
 						              "and Consumer"
 						           << __E__;
-						__CFG_MOUT_ERR__ << ss.str();
+						__CFG_COUT_ERR__ << ss.str();
 						__CFG_SS_THROW__;
 					}
 				}
@@ -120,7 +120,7 @@ void DataManager::configure(void)
 				           << " and " << consumersVectorLocation.size() << " Consumers"
 				           << " there must be at least 1 Producer " <<  //	of both configured
 				    "for the buffer!" << __E__;
-				__CFG_MOUT_ERR__ << ss.str();
+				__CFG_COUT_ERR__ << ss.str();
 				__CFG_SS_THROW__;
 			}
 
@@ -177,7 +177,7 @@ void DataManager::configure(void)
 					           << bufferConfigurationList[producerLocation].second.getNode(COL_NAME_processorPlugin).getValue<std::string>()
 					           << "' due to the following error: \n"
 					           << e.what() << __E__;
-					__CFG_MOUT_ERR__ << ss.str();
+					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
 				catch(const cet::exception& e)
@@ -186,7 +186,7 @@ void DataManager::configure(void)
 					           << bufferConfigurationList[producerLocation].second.getNode(COL_NAME_processorPlugin).getValue<std::string>()
 					           << "' due to the following error: \n"
 					           << e.what() << __E__;
-					__CFG_MOUT_ERR__ << ss.str();
+					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
 				catch(const std::runtime_error& e)
@@ -195,7 +195,7 @@ void DataManager::configure(void)
 					           << bufferConfigurationList[producerLocation].second.getNode(COL_NAME_processorPlugin).getValue<std::string>()
 					           << "' due to the following error: \n"
 					           << e.what() << __E__;
-					__CFG_MOUT_ERR__ << ss.str();
+					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
 				catch(...)
@@ -209,7 +209,7 @@ void DataManager::configure(void)
 						ss << "Exception message: " << e.what();
 					}
 					catch(...){}
-					__CFG_MOUT_ERR__ << ss.str();
+					__CFG_COUT_ERR__ << ss.str();
 					throw;  // if we do not throw, it is hard to tell what is causing the
 					        // problem..
 					        //__CFG_SS_THROW__;
@@ -265,7 +265,7 @@ void DataManager::configure(void)
 					           << bufferConfigurationList[consumerLocation].second.getNode(COL_NAME_processorPlugin).getValue<std::string>()
 					           << "' due to the following error: \n"
 					           << e.what() << __E__;
-					__CFG_MOUT_ERR__ << ss.str();
+					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
 				catch(const cet::exception& e)
@@ -274,7 +274,7 @@ void DataManager::configure(void)
 					           << bufferConfigurationList[consumerLocation].second.getNode(COL_NAME_processorPlugin).getValue<std::string>()
 					           << "' due to the following error: \n"
 					           << e.what() << __E__;
-					__CFG_MOUT_ERR__ << ss.str();
+					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
 				catch(const std::runtime_error& e)
@@ -283,7 +283,7 @@ void DataManager::configure(void)
 					           << bufferConfigurationList[consumerLocation].second.getNode(COL_NAME_processorPlugin).getValue<std::string>()
 					           << "' due to the following error: \n"
 					           << e.what() << __E__;
-					__CFG_MOUT_ERR__ << ss.str();
+					__CFG_COUT_ERR__ << ss.str();
 					__CFG_SS_THROW__;
 				}
 				catch(...)
@@ -297,7 +297,7 @@ void DataManager::configure(void)
 						ss << "Exception message: " << e.what();
 					}
 					catch(...){}
-					__CFG_MOUT_ERR__ << ss.str();
+					__CFG_COUT_ERR__ << ss.str();
 					throw;  // if we do not throw, it is hard to tell what is happening..
 					        //__CFG_SS_THROW__;
 				}

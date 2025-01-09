@@ -222,14 +222,15 @@ struct StringMacros
 	static std::string 			extractXmlField				(const std::string &xml,
 															 const std::string &field,
 															 uint32_t occurrence, size_t after,
-															 size_t *returnAfter = nullptr,
-															 const std::string &valueField = "value",
+															size_t *returnFindPos = nullptr,
+															 const std::string &valueField = "value=",
 															 const std::string &quoteType = "'");
 	static std::string 			rextractXmlField			(const std::string &xml,
 															 const std::string &field,
 															 uint32_t occurrence, 
 															 size_t before,
-															 const std::string &valueField = "value",
+															size_t *returnFindPos = nullptr,
+															 const std::string &valueField = "value=",
 															 const std::string &quoteType = "'");
 
 

@@ -305,7 +305,7 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 
 	{
 		*out << WebUsers::REQ_NO_PERMISSION_RESPONSE;
-		__COUT__ << "User (@" << userInfo.ip_ << ") has insufficient permissions for requestType '" << userInfo.requestType_
+		__COUT_INFO__ << "User (@" << userInfo.ip_ << ") has insufficient permissions for requestType '" << userInfo.requestType_
 		         << "' : user level is " << (unsigned int)userInfo.permissionLevel_ << ", " << 
 				 (unsigned int)userInfo.permissionsThreshold_ << " required." << __E__;
 		return false;  // invalid permissions
@@ -348,14 +348,14 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 		userInfo.usernameWithLock_ != userInfo.username_)
 	{
 		*out << WebUsers::REQ_USER_LOCKOUT_RESPONSE;
-		__COUT__ << "User '" << userInfo.username_ << "' is locked out. '" << userInfo.usernameWithLock_ << "' has lock." << std::endl;
+		__COUT_INFO__ << "User '" << userInfo.username_ << "' is locked out. '" << userInfo.usernameWithLock_ << "' has lock." << std::endl;
 		return false;  // failed due to another user having lock
 	}
 
 	if(userInfo.requireLock_ && userInfo.usernameWithLock_ != userInfo.username_)
 	{
 		*out << WebUsers::REQ_LOCK_REQUIRED_RESPONSE;
-		__COUT__ << "User '" << userInfo.username_ << "' must have lock to proceed. ('" << userInfo.usernameWithLock_ << "' has lock.)" << std::endl;
+		__COUT_INFO__ << "User '" << userInfo.username_ << "' must have lock to proceed. ('" << userInfo.usernameWithLock_ << "' has lock.)" << std::endl;
 		return false;  // failed due to lock being required, and this user does not have
 		               // it
 	}
@@ -668,11 +668,11 @@ bool WebUsers::loadDatabases()
 						// WebUsers::PERMISSION_LEVEL_INACTIVE)
 						if(lastPermissionsMap.find(WebUsers::DEFAULT_USER_GROUP) == lastPermissionsMap.end())
 						{
-							__MCOUT_INFO__("User '" << Users_.back().username_ << "' is not a member of the default user group '"
+							__COUT_INFO__ << "User '" << Users_.back().username_ << "' is not a member of the default user group '"
 							                        << WebUsers::DEFAULT_USER_GROUP
 							                        << ".' Assuming user account is inactive (permission "
 							                           "level := "
-							                        << WebUsers::PERMISSION_LEVEL_INACTIVE << ")." << __E__);
+							                        << WebUsers::PERMISSION_LEVEL_INACTIVE << ")." << __E__;
 							lastPermissionsMap[WebUsers::DEFAULT_USER_GROUP] = WebUsers::PERMISSION_LEVEL_INACTIVE;  // mark inactive
 						}
 
@@ -1030,13 +1030,13 @@ uint64_t WebUsers::attemptActiveSession(
 
 	if(isInactiveForGroup(Users_[i].permissions_))
 	{
-		__MCOUT_ERR__("User '" << user << "' account INACTIVE (could be due to failed logins)" << __E__);
+		__COUT_ERR__ << "User '" << user << "' account INACTIVE (could be due to failed logins)" << __E__;
 		return ACCOUNT_INACTIVE;
 	}
 
 	if(Users_[i].salt_ == "")  // first login
 	{
-		__MCOUT__("First login attempt for user: " << user << __E__);
+		__COUT__ << "First login attempt for user: " << user << __E__;
 
 		if(newAccountCode != Users_[i].getNewAccountCode())
 		{
@@ -1078,17 +1078,17 @@ uint64_t WebUsers::attemptActiveSession(
 
 			__COUTV__(isInactiveForGroup(Users_[i].permissions_));
 			if(isInactiveForGroup(Users_[i].permissions_))
-				__MCOUT_INFO__("Account '" << user
+				__COUT_INFO__ << "Account '" << user
 				                           << "' has been marked inactive due to too many failed "
 				                              "login attempts (Failed Attempt #"
-				                           << (int)Users_[i].loginFailureCount_ << ")! Note only admins can reactivate accounts." << __E__);
+				                           << (int)Users_[i].loginFailureCount_ << ")! Note only admins can reactivate accounts." << __E__;
 
 			saveDatabaseToFile(DB_USERS);  // users db modified, so save
 			return NOT_FOUND_IN_DATABASE;
 		}
 	}
 
-	__MCOUT_INFO__("Login successful for: " << user << __E__);
+	__COUT_INFO__ << "Login successful for: " << user << __E__;
 
 	Users_[i].loginFailureCount_ = 0;
 
@@ -1220,7 +1220,7 @@ uint64_t WebUsers::attemptActiveSessionWithCert(const std::string& uuid, std::st
 	Users_[i].lastLoginAttempt_ = time(0);
 	if(isInactiveForGroup(Users_[i].permissions_))
 	{
-		__MCOUT__("User '" << user << "' account INACTIVE (could be due to failed logins)." << __E__);
+		__COUT__ << "User '" << user << "' account INACTIVE (could be due to failed logins)." << __E__;
 		return NOT_FOUND_IN_DATABASE;
 	}
 
@@ -1229,7 +1229,7 @@ uint64_t WebUsers::attemptActiveSessionWithCert(const std::string& uuid, std::st
 		return NOT_FOUND_IN_DATABASE;
 	}
 
-	__MCOUT__("Login successful for: " << user << __E__);
+	__COUT__ << "Login successful for: " << user << __E__;
 
 	Users_[i].loginFailureCount_ = 0;
 
@@ -2935,12 +2935,12 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	{
 		if(!CareAboutCookieCodes_ && !isUserActive && username != DEFAULT_ADMIN_USERNAME)  // enforce wiz mode only use admin account
 		{
-			__MCOUT_ERR__("User '" << actingUser << "' tried to lock for a user other than admin in wiz mode. Not allowed." << __E__);
+			__COUT_ERR__ << "User '" << actingUser << "' tried to lock for a user other than admin in wiz mode. Not allowed." << __E__;
 			return false;
 		}
 		else if(!isAdminForGroup(permissionMap) && actingUser != username)  // enforce normal mode admin privleges
 		{
-			__MCOUT_ERR__("A non-admin user '" << actingUser << "' tried to lock for a user other than self. Not allowed." << __E__);
+			__COUT_ERR__ << "A non-admin user '" << actingUser << "' tried to lock for a user other than self. Not allowed." << __E__;
 			return false;
 		}
 		usersUsernameWithLock_ = username;
@@ -2950,12 +2950,12 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	else
 	{
 		if(!isUserActive)
-			__MCOUT_ERR__("User '" << username << "' is inactive." << __E__);
-		__MCOUT_ERR__("Failed to lock for user '" << username << ".'" << __E__);
+			__COUT_ERR__ << "User '" << username << "' is inactive." << __E__;
+		__COUT_ERR__ << "Failed to lock for user '" << username << ".'" << __E__;
 		return false;
 	}
 
-	__MCOUT_INFO__("User '" << username << "' has locked out the system!" << __E__);
+	__COUT_INFO__ << "User '" << username << "' has locked out the system!" << __E__;
 
 	// save username with lock
 	{
@@ -3236,12 +3236,6 @@ void WebUsers::addSystemMessage(const std::string& targetUsersCSV, const std::st
 //	Note: do not printout message, because if it was a Console trigger, it will fire repeatedly
 void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, const std::string& subject, const std::string& message, bool doEmail)
 {
-	__COUT__ << "Before number of users with system messages: " << systemMessages_.size() <<
-		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
-
-	// lock for remainder of scope
-	std::lock_guard<std::mutex> lock(systemMessageLock_);
-
 	systemMessageCleanup();
 
 	std::string fullMessage = StringMacros::encodeURIComponent((subject == "" ? "" : (subject + ": ")) + message);
@@ -3346,8 +3340,6 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, con
 
 	}  // end target user message add loop
 
-	__COUT__ << "After number of users with system messages: " << systemMessages_.size() << 
-		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 	__COUTV__(targetEmails.size());
 
 	if(doEmail && targetEmails.size())
@@ -3393,6 +3385,12 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers, con
 //	targetUser should be display name of user or "*"
 void WebUsers::addSystemMessageToMap(const std::string& targetUser, const std::string& fullMessage)
 {
+	// lock for remainder of scope
+	std::lock_guard<std::mutex> lock(systemMessageLock_);
+
+	__COUT__ << "Before number of users with system messages: " << systemMessages_.size() <<
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
+
 	auto it = systemMessages_.find(targetUser);
 
 	// check for repeat messages
@@ -3411,13 +3409,19 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser, const std::s
 		it->second.push_back(SystemMessage(fullMessage));
 		__COUTT__ << it->first << " Current System Messages count = " << it->second.size() << __E__;
 	}
+
+	__COUT__ << "After number of users with system messages: " << systemMessages_.size() << 
+		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 }  // end addSystemMessageToMap
 
 //==============================================================================
 // getAllSystemMessages
 //	Returns last */global system message for statusing
-std::pair<std::string, time_t> WebUsers::getLastSystemMessage() const
+std::pair<std::string, time_t> WebUsers::getLastSystemMessage()
 {
+	// lock for remainder of scope
+	std::lock_guard<std::mutex> lock(systemMessageLock_);
+
 	__COUTT__ << "GetLast number of users with system messages: " << systemMessages_.size() <<
 		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 
@@ -3464,62 +3468,63 @@ std::string WebUsers::getAllSystemMessages()
 // 	Note: targetUser is by display name
 std::string WebUsers::getSystemMessage(const std::string& targetUser)
 {
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
-
-	// lock for remainder of scope
-	std::lock_guard<std::mutex> lock(systemMessageLock_);
-
 	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Current System Messages: " << targetUser << __E__;
-
 	std::string retStr = "";
-	int         cnt    = 0;
-	char        tmp[32];
+	{	
+		int         cnt    = 0;
+		char        tmp[32];
+		
+		// lock for remainder of scope
+		std::lock_guard<std::mutex> lock(systemMessageLock_);
 
-	//do broadcast * messages 1st because the web client will hide all messages before a repeat, so make sure to show user messages
-	auto it = systemMessages_.find("*");
-	for(uint64_t i = 0; it != systemMessages_.end() && i < it->second.size(); ++i)
-	{
-		// deliver "*" system message
-		if(cnt)
-			retStr += "|";
-		sprintf(tmp, "%lu", it->second[i].creationTime_);
-		retStr += std::string(tmp) + "|" + it->second[i].message_;
+		__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
 
-		++cnt;
-	}
 
-	//do user messages 2nd because the web client will hide all messages before a repeat, so make sure to show user messages
-	__COUTVS__(20,targetUser);
-	it = systemMessages_.find(targetUser);
-	if(TTEST(20)) 
-	{
-		for(auto systemMessagePair:systemMessages_)
-			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << systemMessagePair.first << " " << systemMessagePair.second.size() << " "
-				<< (systemMessagePair.second.size()?systemMessagePair.second[0].message_:"") << __E__;
-	}
-	if(it != systemMessages_.end())
-	{
-		__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Message count: " <<
-			it->second.size() << ", Last Message: " << 
-			(it->second.size()?it->second.back().message_:"") << __E__;
-	}
+		//do broadcast * messages 1st because the web client will hide all messages before a repeat, so make sure to show user messages
+		auto it = systemMessages_.find("*");
+		for(uint64_t i = 0; it != systemMessages_.end() && i < it->second.size(); ++i)
+		{
+			// deliver "*" system message
+			if(cnt)
+				retStr += "|";
+			sprintf(tmp, "%lu", it->second[i].creationTime_);
+			retStr += std::string(tmp) + "|" + it->second[i].message_;
 
-	for(uint64_t i = 0; it != systemMessages_.end() && i < it->second.size(); ++i)
-	{
-		// deliver user specific system message
-		if(cnt)
-			retStr += "|";
-		sprintf(tmp, "%lu", it->second[i].creationTime_);
-		retStr += std::string(tmp) + "|" + it->second[i].message_;
+			++cnt;
+		}
 
-		it->second[i].delivered_ = true;
-		++cnt;
-	}
+		//do user messages 2nd because the web client will hide all messages before a repeat, so make sure to show user messages
+		__COUTVS__(20,targetUser);
+		it = systemMessages_.find(targetUser);
+		if(TTEST(20)) 
+		{
+			for(auto systemMessagePair:systemMessages_)
+				__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << systemMessagePair.first << " " << systemMessagePair.second.size() << " "
+					<< (systemMessagePair.second.size()?systemMessagePair.second[0].message_:"") << __E__;
+		}
+		if(it != systemMessages_.end())
+		{
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Message count: " <<
+				it->second.size() << ", Last Message: " << 
+				(it->second.size()?it->second.back().message_:"") << __E__;
+		}
+
+		for(uint64_t i = 0; it != systemMessages_.end() && i < it->second.size(); ++i)
+		{
+			// deliver user specific system message
+			if(cnt)
+				retStr += "|";
+			sprintf(tmp, "%lu", it->second[i].creationTime_);
+			retStr += std::string(tmp) + "|" + it->second[i].message_;
+
+			it->second[i].delivered_ = true;
+			++cnt;
+		}
+	} //end mutex scope
 
 	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "retStr: " << retStr << __E__;
 
-	systemMessageCleanup();
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "Number of users with system messages: " << systemMessages_.size() << __E__;
+	systemMessageCleanup(); //NOTE: also locks mutex within!
 	return retStr;
 }  // end getSystemMessage()
 
@@ -3529,6 +3534,9 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 //	For all remaining messages, wait some time before removing (e.g. 300 sec)
 void WebUsers::systemMessageCleanup()
 {
+	// lock for remainder of scope
+	std::lock_guard<std::mutex> lock(systemMessageLock_);
+
 	__COUTT__ << "Before cleanup number of users with system messages: " << systemMessages_.size() <<
 		", first user has " << (systemMessages_.size()?systemMessages_.begin()->second.size():0) << " messages." << __E__;
 	for(auto& userMessagesPair : systemMessages_)

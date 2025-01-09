@@ -71,7 +71,7 @@ void ConfigurationHandler::initPlatform(void)
 	}
 	catch(xercesc::XMLException& e)
 	{
-		__MOUT_ERR__ << "XML toolkit initialization error: " << XML_TO_CHAR(e.getMessage()) << std::endl;
+		__COUT_ERR__ << "XML toolkit initialization error: " << XML_TO_CHAR(e.getMessage()) << std::endl;
 		// throw exception here to return ERROR_XERCES_INIT
 	}
 
@@ -121,7 +121,7 @@ void ConfigurationHandler::terminatePlatform(void)
 	}
 	catch(...)
 	{
-		__MOUT_ERR__ << "Unknown exception encountered in TagNames destructor" << std::endl;
+		__COUT_ERR__ << "Unknown exception encountered in TagNames destructor" << std::endl;
 	}
 
 	try
@@ -130,7 +130,7 @@ void ConfigurationHandler::terminatePlatform(void)
 	}
 	catch(xercesc::XMLException& e)
 	{
-		__MOUT_ERR__ << "XML ttolkit teardown error: " << XML_TO_CHAR(e.getMessage()) << std::endl;
+		__COUT_ERR__ << "XML ttolkit teardown error: " << XML_TO_CHAR(e.getMessage()) << std::endl;
 	}
 }
 
@@ -383,7 +383,7 @@ void ConfigurationHandler::readXML(TableBase& table, TableVersion version)
 					      << " defined in the view " << table.getView().getTableName() << " doesn't match the file column order, since the " << colNumber + 1
 					      << (colNumber == 0 ? "st" : (colNumber == 1 ? "nd" : (colNumber == 2 ? "rd" : "th"))) << " element found in the file at "
 					      << XML_TO_CHAR(dataTag_) << " tag number " << row << " is " << XML_TO_CHAR(columnElement->getTagName());
-					__MOUT_ERR__ << error.str();
+					__COUT_ERR__ << error.str();
 					throw(std::runtime_error(error.str()));
 				}
 

@@ -270,11 +270,6 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 				{
 					// send back status and progress parameters
 					const std::string& err = theSupervisor->theStateMachine_.getErrorMessage();
-
-					// status = err == "" ? (theSupervisor->theStateMachine_.isInTransition() ? theSupervisor->theStateMachine_.getProvenanceStateName()
-					//                                                                        : theSupervisor->theStateMachine_.getCurrentStateName())
-					//                    : (theSupervisor->theStateMachine_.getCurrentStateName() == "Paused" ? "Soft-Error:::" : "Failed:::") + err;
-
 					try
 					{
 						__COUTVS__(39,theSupervisor->theStateMachine_.isInTransition());
@@ -309,7 +304,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					}
 					else
 					{
-						status = (theSupervisor->theStateMachine_.getCurrentStateName() == "Paused" ? "Soft-Error:::" : "Failed:::") + err;
+						status = (theSupervisor->theStateMachine_.getCurrentStateName() == RunControlStateMachine::PAUSED_STATE_NAME ? 
+							"Soft-Error:::" : "Failed:::") + err;
 						progress = theSupervisor->theProgressBar_.readPercentageString();
 					}
 
@@ -332,6 +328,22 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						std::lock_guard<std::mutex> lock(theSupervisor->broadcastCommandStatusUpdateMutex_);
 						if(detail != "" && theSupervisor->broadcastCommandStatus_ != "")
 							detail += " - " + theSupervisor->broadcastCommandStatus_;
+
+						if(!theSupervisor->theStateMachine_.isInTransition() && (
+							theSupervisor->theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::CONFIGURED_STATE_NAME ||
+							theSupervisor->theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::RUNNING_STATE_NAME ||
+							theSupervisor->theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::PAUSED_STATE_NAME))
+						{
+							//add Configuration details 
+							detail += " - Configured with System Configuration Alias '" + theSupervisor->activeStateMachineConfigurationAlias_ + 
+								"' which translates to " + theSupervisor->theConfigurationTableGroup_.first + "(" + theSupervisor->theConfigurationTableGroup_.second.str()
+								+ "). Active Context Group " +
+								theSupervisor->CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+									ConfigurationManager::GroupType::CONTEXT_TYPE) + "(" + 
+								theSupervisor->CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+									ConfigurationManager::GroupType::CONTEXT_TYPE).str() +
+									").";
+						}
 					}
 					catch(...)
 					{
@@ -385,7 +397,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								icon.windowContentURL_[2] == 's' &&
 								icon.windowContentURL_[3] == ':')
 							{
-								__COUT__ << "Found remote gateway from icons at " << icon.windowContentURL_ << __E__;
+								__COUT__ << "Found '" << icon.recordUID_ << "' remote gateway icons url: " << icon.windowContentURL_ << __E__;
 								
 								GatewaySupervisor::RemoteGatewayInfo thisInfo;
 
@@ -588,9 +600,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 									remoteGatewayApp.ignoreStatusCount = 0; //if non-zero, do not ask for status
 									commandSent = true;
 								}
-								else //give feedback immediately to user!!
+								
+								//give feedback immediately to user!!
 								{
-									__COUTV__(remoteGatewayApp.error);
+									__COUT__ << "remoteGatewayApp " << remoteGatewayApp.appInfo.name << " error: " << remoteGatewayApp.error << __E__;
 									//lock for remainder of scope
 									std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
 									for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
@@ -690,20 +703,24 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										__COUTV__(theSupervisor->remoteGatewayApps_[i].error);											
 										break;
 									}
+								remoteGatewayApp.error = "";
 							}
 
-							GatewaySupervisor::GetRemoteGatewayIcons(remoteGatewayApp, remoteGatewaySocket);
-							if(remoteGatewayApp.error != "")//give feedback immediately to user!!
+							if(remoteGatewayApp.error == "") //only request icons if no errors
 							{
-								__COUTV__(remoteGatewayApp.error);
-								//lock for remainder of scope
-								std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
-								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
-									{
-										theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 					
-										break;
-									}
+								GatewaySupervisor::GetRemoteGatewayIcons(remoteGatewayApp, remoteGatewaySocket);
+								if(remoteGatewayApp.error != "")//give feedback immediately to user!!
+								{
+									__COUTV__(remoteGatewayApp.error);
+									//lock for remainder of scope
+									std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
+									for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
+										if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+										{
+											theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 					
+											break;
+										}
+								}
 							}
 						}
 
@@ -1276,13 +1293,18 @@ try
 		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "remoteStatusString = " << remoteStatusString << __E__;	
 
 		std::string value, name;
+		bool foundGateway = false;
 		size_t after = 0;
 		while((name = StringMacros::extractXmlField(remoteStatusString, "name", 0, after, &after)) != "")
-		{					
+		{			
+			after += std::string("name").size(); //move beyond found pos
+			
 			//find class associated with record
 			value = StringMacros::extractXmlField(remoteStatusString, "class", 0, after);
 			if(value == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS) 
 			{
+				foundGateway = true;		
+
 				//found remote gateway
 				__COUTVS__(25,remoteStatusString.size());
 				__COUTVS__(25,after);
@@ -1332,9 +1354,16 @@ try
 			}
 		} //end primary loop
 
+		if(!foundGateway)
+		{
+			__SS__ << "Failure encountered while checking remote gateway status of '" << 
+				remoteGatewayApp.appInfo.name << "' - no Gateway app status reported!" << __E__;
+			__SS_THROW__;
+		}
+
 		//get system messages
 		value = StringMacros::extractXmlField(remoteStatusString, "systemMessages", 0, after, &after);	
-		__COUTT__ << "Remote System Messages:" << value << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Remote System Messages:" << value << __E__;
 		std::vector<std::string> parsedSysMsgs;
 		StringMacros::getVectorFromString(value,parsedSysMsgs,{'|'});
 
@@ -1349,7 +1378,7 @@ try
 
 		//get user with lock
 		value = StringMacros::extractXmlField(remoteStatusString, "usernameWithLock", 0, after, &after);	
-		__COUTT__ << "Remote User with Lock:" << value << __E__;
+		__COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Remote User with Lock:" << value << __E__;
 		remoteGatewayApp.usernameWithLock = value; 
 
 		//get Console err/warn count
@@ -1451,7 +1480,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							// 					"," + std::to_string(portForReverseLoginOverUDP) + 
 							// 					"," + remoteGatewayApp.appInfo.name;
 
-							__COUTV__(StringMacros::vectorToString(params));
+							__COUTVS__(23,StringMacros::vectorToString(params));
 							std::string tmpIP = params[1];
 							int tmpPort = atoi(params[2].c_str());
 							
@@ -2286,7 +2315,7 @@ try
 	}
 
 	setLastLogEntry(command,logEntry);
-
+	
 	SOAPParameters parameters;
 	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 	{
@@ -3188,8 +3217,9 @@ try
 				").";
 
 		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
-			ss << "\n\nUser log entry:\n\n" << 
-				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) << 
+					"\n-----------------\n";
 		else
 			ss << " No user log entry.";
 		makeSystemLogEntry(ss.str());
@@ -3251,11 +3281,17 @@ try
 	//check for remote subsystem dumps (after broadcast!)
 	std::string remoteSubsystemDump = "";
 	{
-		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-		for(auto& remoteGatewayApp : remoteGatewayApps_)
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+		{ //lock for remainder of scope
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			__SUP_COUTVS__(22,remoteGatewayApps_.size());
+			remoteGatewayApps = remoteGatewayApps_;
+			if(remoteGatewayApps_.size())
+				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+		}
+		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			if(!remoteGatewayApp.fsm_included) continue; //skip if not included
-
 			remoteSubsystemDump += remoteGatewayApp.config_dump;
 		}
 
@@ -3363,10 +3399,45 @@ try
 				").";
 
 		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
-			ss << "\n\nUser log entry:\n\n" << 
-				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else
 			ss << " No user log entry.";
+
+		//insert system and remote subsystem status/detail
+		{
+			ss << "\n\n~~~ System Status and Detail ~~~\n";
+			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
+			{
+				const auto& appInfo = it.second;
+				if(appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+					continue; //only give Gateway status
+				ss 	<< "\tStatus: " << appInfo.getStatus() << __E__
+					<< "\tDetail: " << appInfo.getDetail() << __E__;
+			}
+			
+			//also return remote gateways as apps			
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteApps = remoteGatewayApps_;
+			}
+
+			if(remoteApps.size())
+			{
+				ss << "\n\n~~~ Subsystem Status and Detail ~~~\n";
+
+				for(const auto& remoteApp : remoteApps)
+				{
+					const auto& appInfo = remoteApp.appInfo;
+					ss 	<< "Subsystem Name: " <<  appInfo.name << __E__
+						<< "\tStatus: " <<  appInfo.status << __E__
+						<< "\tDetail: " <<  appInfo.detail << __E__;
+				}
+			}
+		}
+
 		makeSystemLogEntry(ss.str());
 	}
 	__COUT__ << "Done configuring." << __E__;
@@ -3687,7 +3758,11 @@ try
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
 		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
-		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
+		       << std::setw(2) << std::setfill('0') << dur_s; //too much detail "." << dur << " seconds.";
+		if(dur_h == 0 && dur_m == 0 && dur_s < 5) //if very short, add the detail
+			dur_ss << "." << dur << " seconds.";
+		else 
+			dur_ss << ".";
 
 		if(doLog) 
 			makeSystemLogEntry("Run pausing. " + dur_ss.str());
@@ -3777,8 +3852,9 @@ try
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resuming.";
 	
 		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
-			ss << "\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
@@ -3795,8 +3871,9 @@ try
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resumed.";
 	
 		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
-			ss << "\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
@@ -3897,8 +3974,9 @@ try
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' starting.";
 
 		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
-			ss << "\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) <<
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
@@ -3916,9 +3994,42 @@ try
 	//check for remote subsystem dumps (after broadcast!)
 	std::string remoteSubsystemDump = "";
 	{
-		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-		for(auto& remoteGatewayApp : remoteGatewayApps_)
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+		{ //lock for remainder of scope
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			__SUP_COUTVS__(22,remoteGatewayApps_.size());
+			remoteGatewayApps = remoteGatewayApps_;
+			if(remoteGatewayApps_.size())
+				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+		}
+
+		remoteSubsystemDump += "--------------- Remote Subsystem Status ---------------\n";
+		remoteSubsystemDump += "Remote Subsystem Count: " + std::to_string(remoteGatewayApps.size()) + "\n";
+		size_t ssi = 1;
+		for(auto& remoteGatewayApp : remoteGatewayApps)
+		{
+			remoteSubsystemDump += std::to_string(ssi) + ". ~~ subsystem_name: " + remoteGatewayApp.appInfo.name + "\n.     ";
+			remoteSubsystemDump += "subsystem_url: " + remoteGatewayApp.appInfo.url + "\n.     ";
+			// remoteSubsystemDump += "subsystem_landingPage: " + remoteGatewayApp.landingPage + "\n.     ";
+			remoteSubsystemDump += "subsystem_status: " + remoteGatewayApp.appInfo.status + "\n.     ";
+			remoteSubsystemDump += "subsystem_progress: " + std::to_string(remoteGatewayApp.appInfo.progress) + "\n.     ";
+			remoteSubsystemDump += "subsystem_detail: " + remoteGatewayApp.appInfo.detail + "\n.     ";
+			// remoteSubsystemDump += "subsystem_lastStatusTime: " + StringMacros::getTimestampString(remoteGatewayApp.appInfo.lastStatusTime) + "\n.     ";
+			// remoteSubsystemDump += "subsystem_consoleErrCount: " + std::to_string(remoteGatewayApp.consoleErrCount) + "\n.     ";
+			// remoteSubsystemDump += "subsystem_consoleWarnCount: " + std::to_string(remoteGatewayApp.consoleWarnCount) + "\n.     ";
+			remoteSubsystemDump += "subsystem_configAlias: " + remoteGatewayApp.selected_config_alias + "\n.     ";			
+			remoteSubsystemDump += "subsystem_fsmMode: " + remoteGatewayApp.getFsmMode() + "\n.     ";
+			remoteSubsystemDump += "subsystem_fsmIncluded: " + std::string(remoteGatewayApp.fsm_included?"1":"0") + "\n.     ";			
+		}
+		remoteSubsystemDump += "--------------- end Remote Subsystem Status ---------------\n";
+
+		remoteSubsystemDump += "\n\n-----------------\nRemote Configuration dump:\n";
+		for(auto& remoteGatewayApp : remoteGatewayApps)
+		{
+			if(!remoteGatewayApp.fsm_included) continue; //skip if not included
 			remoteSubsystemDump += remoteGatewayApp.config_dump;
+		}
+		remoteSubsystemDump += "\nEND Remote Configuration dump:\n-----------------\n";
 
 		if(remoteSubsystemDump.size())
 			__COUTV__(remoteSubsystemDump);
@@ -3974,19 +4085,66 @@ try
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' started.";
 	
 		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
-			ss << "\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
-		ss << "\n\nConfigured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
-			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
-		   << "). Active Context Group " << 
-		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
-				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
-			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
-				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
-				").";
+		//insert system and remote subsystem status/detail
+		{
+			ss << "\n\n~~~ System Status and Detail ~~~\n";
+			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
+			{
+				const auto& appInfo = it.second;
+				if(appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+					continue; //only give Gateway status
+				ss 	<< "\tStatus: " << appInfo.getStatus() << __E__
+					<< "\tDetail: " << appInfo.getDetail() << __E__;
+			}
+			
+			//also return remote gateways as apps			
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteApps = remoteGatewayApps_;
+			}
+
+			if(remoteApps.size())
+			{
+				ss << "\n\n~~~ Subsystem Status and Detail ~~~\n";
+
+				for(const auto& remoteApp : remoteApps)
+				{
+					const auto& appInfo = remoteApp.appInfo;
+					ss 	<< "Subsystem Name: " <<  appInfo.name << __E__
+						<< "\tStatus: " <<  appInfo.status << __E__
+						<< "\tDetail: " <<  appInfo.detail << __E__;
+				}
+			}
+		}
+
+		if(0) //full configuration dump too verbose for ECL (?)
+		{
+			ss << "\n\nConfigured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
+				"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
+			<< "). Active Context Group " << 
+				CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+					ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
+				CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+					ConfigurationManager::GroupType::CONTEXT_TYPE) <<
+					").";
+			
+			if(activeStateMachineConfigurationDumpOnRunEnable_)
+			{
+				ss << "\n\n-----------------\nConfiguration dump:\n" <<
+					activeStateMachineConfigurationDumpOnRun_;
+				ss << "\nEND Remote Configuration dump:\n-----------------\n";
+			}
+
+			if(remoteSubsystemDump.size()) 
+				ss << remoteSubsystemDump;
+		}
 
 		makeSystemLogEntry(ss.str(),
 			activeStateMachineRunAlias_ + " '" + 
@@ -4057,16 +4215,21 @@ try
 		dur_s     = dur_s % 60;
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
-		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
-		       << std::setw(2) << std::setfill('0') << dur_s << "." << dur << " seconds.";
+		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+		       << std::setw(2) << std::setfill('0') << dur_s; //too much detail "." << dur << " seconds.";
+		if(dur_h == 0 && dur_m == 0 && dur_s < 5) //if very short, add the detail
+			dur_ss << "." << dur << " seconds.";
+		else 
+			dur_ss << ".";
 
 		if(doLog) 
 		{
 			std::stringstream ss;
 			ss <<  dur_ss.str();
 			if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
-				ss << "\nUser log entry:\n\n" << 
-						getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME);
+				ss << "\n\n-----------------\nUser log entry:\n" << 
+					getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) << 
+					"\n-----------------\n";
 			else 
 				ss << " No user log entry.";
 
@@ -4088,8 +4251,9 @@ try
 		std::stringstream ss;
 		ss <<  dur_ss.str();
 		if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
-			ss << "\n\nUser log entry:\n\n" << 
-					getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME);
+			ss << "\n\n-----------------\nUser log entry:\n" << 
+				getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) << 
+				"\n-----------------\n";
 		else 
 			ss << " No user log entry.";
 
@@ -4926,6 +5090,8 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 	std::string destinationState = theStateMachine_.getTransitionFinalStateName(command);
 	__COUTV__(destinationState);
 
+	size_t countOfRemoteGateways = 0;
+
 	bool done = command == "Error"; //dont check for done if Error'ing
 	while(!done)
 	{		
@@ -4933,8 +5099,18 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 			command << __E__;
 
 		done = true;
-		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-		for(auto& remoteGatewayApp : remoteGatewayApps_)
+
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+		{ //lock for remainder of scope
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			__SUP_COUTVS__(22,remoteGatewayApps_.size());
+			countOfRemoteGateways = remoteGatewayApps_.size();
+			remoteGatewayApps = remoteGatewayApps_;
+			if(remoteGatewayApps_.size())
+				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+		}
+		
+		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			//skip remote gateways that were not commanded
 			if(!remoteGatewayApp.fsm_included) continue;
@@ -4988,7 +5164,7 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 		checkForAsyncError();
 	}
 
-	__COUT__ << "Done with " << remoteGatewayApps_.size() << " remote gateway(s) command = " <<
+	__COUT__ << "Done with " << countOfRemoteGateways << " remote gateway(s) command = " <<
 		command << __E__;
 
 	return true;
@@ -5385,7 +5561,7 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 	                                                  "gatewayLaunchOTS | gatewayLaunchWiz | gatewayLaunchOTSInstance"
 													  " | commandRemoteSubsystem");											
 	CorePropertySupervisorBase::addSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes,
-	   												  "StateMachine*");  //for all stateMachineXgiHandler requests
+	   												  "StateMachine-*");  //for all stateMachineXgiHandler requests
 
 	if(readOnly_)
 	{
@@ -6047,7 +6223,7 @@ try
 		else if(requestType == "cancelStateMachineTransition")
 		{
 			__SS__ << "State transition was cancelled by user!" << __E__;
-			__MCOUT__(ss.str());
+			__COUTV__(ss.str());
 			RunControlStateMachine::theStateMachine_.setErrorMessage(ss.str());
 			RunControlStateMachine::asyncFailureReceived_ = true;
 		}
@@ -6342,7 +6518,7 @@ try
 				xmlOut.addTextElementToData("subsystem_consoleErrCount", std::to_string(remoteSubsystem.consoleErrCount));
 				xmlOut.addTextElementToData("subsystem_consoleWarnCount", std::to_string(remoteSubsystem.consoleWarnCount));
 				
-				if(remoteSubsystem.error != "")
+				if(remoteSubsystem.command == "" && remoteSubsystem.error != "")
 				{
 					__COUTT__ << "Error from Subsystem '" << remoteSubsystem.appInfo.name << 
 						"' = " << remoteSubsystem.error << __E__;	
@@ -6433,8 +6609,16 @@ try
 			//return info on selected_config_alias
 			
 			bool found = false;
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+			{ //lock for remainder of scope
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				__SUP_COUTVS__(22,remoteGatewayApps_.size());
+				remoteGatewayApps = remoteGatewayApps_;
+				if(remoteGatewayApps_.size())
+					__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+			}
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-			for(auto& remoteGatewayApp : remoteGatewayApps_)
+			for(auto& remoteGatewayApp : remoteGatewayApps)
 				if(targetSubsystem == remoteGatewayApp.appInfo.name)
 				{
 					found = true;
@@ -7484,6 +7668,9 @@ std::string GatewaySupervisor::getLastLogEntry(const std::string& logType, const
 	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME &&
 		 stateMachineConfigureLogEntry_.find(fsmName) != stateMachineConfigureLogEntry_.end())
 		return stateMachineConfigureLogEntry_.at(fsmName);
+	else if(logType == RunControlStateMachine::STOP_TRANSITION_NAME &&
+		 stateMachineStopLogEntry_.find(fsmName) != stateMachineStopLogEntry_.end())
+		return stateMachineStopLogEntry_.at(fsmName);
 
 	// prepend sanitized FSM name
 	for(unsigned int i = 0; i < fsmName.size(); ++i)
@@ -7515,6 +7702,8 @@ std::string GatewaySupervisor::getLastLogEntry(const std::string& logType, const
 		stateMachineStartLogEntry_[fsmName] = contents;
 	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 		stateMachineConfigureLogEntry_[fsmName] = contents;
+	else if(logType == RunControlStateMachine::STOP_TRANSITION_NAME)
+		stateMachineStopLogEntry_[fsmName] = contents;
 
 	return contents;
 } // end getLastLogEntry()
@@ -7535,7 +7724,14 @@ void GatewaySupervisor::setLastLogEntry(const std::string& logType, const std::s
 		stateMachineStartLogEntry_[fsmName] = logEntry;
 	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 		stateMachineConfigureLogEntry_[fsmName] = logEntry;
-	else return; //for now,  do not save other types of transitions
+	else if(logType == RunControlStateMachine::STOP_TRANSITION_NAME)
+		stateMachineStopLogEntry_[fsmName] = logEntry;
+	else 
+	{
+		if(logEntry != "")
+			__COUT_WARN__ << "Log entry for log type '" << logType << "' not implemented for saving." << __E__;
+		return; //for now,  do not save other types of transitions
+	}
 	
 	// prepend sanitized FSM name
 	for(unsigned int i = 0; i < fsmName.size(); ++i)
