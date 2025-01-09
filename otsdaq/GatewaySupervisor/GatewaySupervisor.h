@@ -24,6 +24,7 @@
 #include <toolbox/task/WorkLoop.h>
 #include <xdata/String.h>
 #include <xgi/Method.h>
+#include "otsdaq/GatewaySupervisor/PixelHistoPicGen.h"
 
 #include <set>
 #include <sstream>
@@ -57,16 +58,17 @@ class WorkLoopManager;
 	public:
 		XDAQ_INSTANTIATOR();
 
-		GatewaySupervisor(xdaq::ApplicationStub* s);
-		virtual 					~GatewaySupervisor(void);
+									GatewaySupervisor				(xdaq::ApplicationStub* s);
+		virtual 					~GatewaySupervisor				(void);
 
-		void 						init(void);
+		void 						init							(void);
 
-		void 						Default(xgi::Input* in, xgi::Output* out);
+		void 						Default							(xgi::Input* in, xgi::Output* out);
 
-		void 						loginRequest(xgi::Input* in, xgi::Output* out);
-		void 						request(xgi::Input* in, xgi::Output* out);
-		void 						tooltipRequest(xgi::Input* in, xgi::Output* out);
+		void 						loginRequest					(xgi::Input* in, xgi::Output* out);
+		void 						request							(xgi::Input* in, xgi::Output* out);
+		void 						tooltipRequest					(xgi::Input* in, xgi::Output* out);
+		void 						XGI_Turtle						(xgi::Input* in, xgi::Output* out);
 
 		void						addStateMachineStatusToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName, bool getRunNumber = true);
 		void						addFilteredConfigAliasesToXML	(HttpXmlDocument& xmlOut, const std::string& fsmName);
@@ -338,6 +340,7 @@ class WorkLoopManager;
 		static std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>> broadcastThreadStructs_; //moving to static, instead of a local instance inside broadcastMessage() seems to avoid crashing when multiple error stack up and threads get stuck waiting for app replies
 
 		std::string        	securityType_;
+		PixelHistoPicGen	picGen_;
 
 		//Variable used by the RunInfo plugin
 		unsigned int 		conditionID_;
