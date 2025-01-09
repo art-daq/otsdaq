@@ -114,6 +114,7 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 	xgi::bind(this, &GatewaySupervisor::stateMachineXgiHandler, "StateMachineXgiHandler");
 	xgi::bind(this, &GatewaySupervisor::stateMachineIterationBreakpoint, "StateMachineIterationBreakpoint");
 	xgi::bind(this, &GatewaySupervisor::tooltipRequest, "TooltipRequest");
+  	xgi::bind(this, &GatewaySupervisor::XGI_Turtle,	"XGI_Turtle");	
 
 	xoap::bind(this, &GatewaySupervisor::supervisorCookieCheck, "SupervisorCookieCheck", XDAQ_NS_URI);
 	xoap::bind(this, &GatewaySupervisor::supervisorGetActiveUsers, "SupervisorGetActiveUsers", XDAQ_NS_URI);
@@ -2059,6 +2060,48 @@ std::string GatewaySupervisor::getIconHeaderString(void)
 	<meta name='theme-color' content='#ffffff'>";
 
 }  // end getIconHeaderString()
+
+//==============================================================================
+////////////////////////////////////////////////////////////////////////
+void GatewaySupervisor::XGI_Turtle(xgi::Input * /*in*/, xgi::Output * out )
+{
+	//test if ImageMagick is installed to do convert, if not just return existing png
+	if(!picGen_.imageMagickInstallChecked)
+	{
+		//to install on AL9, sudo dnf install -y ImageMagick
+		std::string ret = StringMacros::exec("convert --version"); //check if ImageMagick is installed
+		__COUTVS__(50,ret);
+		picGen_.imageMagickInstallChecked = true;
+		picGen_.imageMagickInstalled = ret == ""?false:true;
+	}
+
+	std::string filepath = __ENV__("OTSDAQ_WEB_PATH")+ std::string("/images/otsdaqIcons/");
+	
+	std::string filename = filepath + "generated/turtle.png";
+	if(picGen_.imageMagickInstalled)
+		picGen_.generateTurtle(filepath);
+	else 
+		filename = filepath + "turtle.png";
+		
+	//insertPngRawData(out,"images/generated/turtle.png");
+	{
+
+		//write raw picture data to output stream
+		std::ifstream is;
+		is.open(filename.c_str());
+		
+		*out << "data:image/png;charset=US-ASCII,";
+
+		char CodeURL[4];
+		while(is.good())
+		{ //print out safe Ascii equivalent
+			sprintf(CodeURL,"%%%2.2X",(unsigned char)(is.get()));
+			*out << CodeURL;
+		}
+		
+		is.close();
+	}
+} //end XGI_Turtle()
 
 //==============================================================================
 // stateMachineIterationBreakpoint

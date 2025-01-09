@@ -2,6 +2,7 @@ cet_make_library(LIBRARY_NAME GatewaySupervisor
 SOURCE
 GatewaySupervisor.cc
 Iterator.cc
+PixelHistoPicGen.cc
 version.cc
 		 LIBRARIES PRIVATE
 		 otsdaq::CoreSupervisors
