@@ -1,0 +1,20 @@
+name: Tidy Single Pkg Workflow
+
+on:
+  push:
+    branches: 
+      - develop
+    paths-ignore:
+      - 'docs/**'
+      - '.github/**'
+  pull_request:
+    branches: [ develop ]
+  workflow_dispatch:
+
+jobs:
+
+  build_single_pkg:
+    name: tidy single pkg
+    uses: art-daq/.github/.github/workflows/otsdaq-tidy-single-pkg.yml@stable
+    with:
+      against-ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before || 0 }}
