@@ -63,10 +63,10 @@ class SupervisorInfo
 	struct SubappInfo {
 		std::string 	name; // Also key in map
 		std::string 	status;
-		unsigned int 	progress;
+		unsigned int 	progress, id;
 		std::string 	detail;
 		time_t 			lastStatusTime;
-		std::string 	url;
+		std::string 	url, parent_url;
 		std::string 	class_name;
 	}; // end SubappInfo struct
 

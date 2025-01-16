@@ -43,7 +43,7 @@
 using namespace ots;
 
 //==============================================================================
-XmlDocument::XmlDocument(std::string rootName) : rootTagName_(rootName)
+XmlDocument::XmlDocument(const std::string& rootName) : rootTagName_(rootName)
 {
 	//__COUT__ << "in" << std::endl;
 	initDocument();
@@ -177,7 +177,7 @@ void XmlDocument::terminatePlatform(void)
 // addTextElementToParent
 //	add to parent by pointer to parent
 //	returns pointer to element that is added
-xercesc::DOMElement* XmlDocument::addTextElementToParent(std::string childName, std::string childText, xercesc::DOMElement* parent)
+xercesc::DOMElement* XmlDocument::addTextElementToParent(const std::string& childName, const std::string& childText, xercesc::DOMElement* parent)
 {
 	if(parent == 0)
 	{
@@ -217,7 +217,7 @@ xercesc::DOMElement* XmlDocument::addTextElementToParent(std::string childName, 
 // addTextElementToParent
 //	add to parent by instance number of parent name
 //	returns pointer to element that is added
-xercesc::DOMElement* XmlDocument::addTextElementToParent(std::string childName, std::string childText, std::string parentName, unsigned int parentIndex)
+xercesc::DOMElement* XmlDocument::addTextElementToParent(const std::string& childName, const std::string& childText, const std::string&parentName, unsigned int parentIndex)
 {
 	xercesc::DOMNodeList* nodeList = theDocument_->getElementsByTagName(CONVERT_TO_XML(parentName));
 
@@ -449,7 +449,7 @@ void XmlDocument::setDocument(xercesc::DOMDocument* doc) { theDocument_ = doc; }
 //==============================================================================
 // XmlDocument::recursiveOutputXmlDocument
 //	recursively printout XML theDocument_ to std out and output stream if not null
-void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl, std::ostringstream* out, bool dispStdOut, std::string tabStr)
+void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl, std::ostringstream* out, bool dispStdOut, const std::string& tabStr)
 {
 	// open field tag
 	if(dispStdOut)
@@ -597,7 +597,7 @@ void XmlDocument::recursiveRemoveChild(xercesc::DOMElement* childEl, xercesc::DO
 // XmlDocument::saveXmlDocument
 //	wrapper for private outputXML
 //	Warning: filePath must be accessible or program will crash!
-void XmlDocument::saveXmlDocument(std::string filePath)
+void XmlDocument::saveXmlDocument(const std::string& filePath)
 {
 	__COUT__ << "Saving theDocument_ to file: " << filePath << std::endl;
 	// Return the first registered theImplementation_ that has the desired features. In
@@ -700,7 +700,7 @@ void XmlDocument::saveXmlDocument(std::string filePath)
 }
 
 //==============================================================================
-bool XmlDocument::loadXmlDocument(std::string filePath)
+bool XmlDocument::loadXmlDocument(const std::string& filePath)
 {
 	__COUT__ << "Loading theDocument_ from file: " << filePath << std::endl;
 
@@ -746,16 +746,16 @@ bool XmlDocument::loadXmlDocument(std::string filePath)
 }
 // clang-format off
 //============================================================================
-void XmlDocument::setAnchors(std::string fSystemPath,
-	std::string fRootPath)
+void XmlDocument::setAnchors(const std::string& fSystemPath,
+	const std::string& fRootPath)
 {
 	fSystemPath_ = fSystemPath;
 	fRootPath_ = fRootPath;
 }
 
 //============================================================================
-void XmlDocument::makeDirectoryBinaryTree(std::string           fSystemPath,
-	std::string           fRootPath,
+void XmlDocument::makeDirectoryBinaryTree(const std::string&           fSystemPath,
+	const std::string&           fRootPath,
 	int                   indent,
 	xercesc::DOMElement* anchorNode)
 {
@@ -844,7 +844,7 @@ void XmlDocument::makeDirectoryBinaryTree(std::string           fSystemPath,
 
 //==========================================================================================
 xercesc::DOMElement* XmlDocument::populateBinaryTreeNode(xercesc::DOMElement* anchorNode,
-	std::string           name,
+	const std::string&           name,
 	int                   indent,
 	bool                  isLeaf)
 {
