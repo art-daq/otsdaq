@@ -439,21 +439,25 @@ function killprocs
 
 	else #then killing only non-gateway contexts
 
+		i=0	
 		for contextPID in "${ContextPIDArray[@]}"
 		do
 			
 			if [ $ISREMOTE == 0 ]; then
-				out "${Red}${Rev}Killing Non-gateway process ID ${contextPID}${RstClr}"
+				out "${Red}${Rev}Killing Non-gateway context ${ContextPIDNameArray[$i]}, PID ${contextPID}${RstClr}"
 			else
-				out "${Red}${Rev}Killing Non-gateway process ID ${contextPID}${RstClr}"
+				out "${Red}${Rev}Killing Non-gateway context ${ContextPIDNameArray[$i]}, PID ${contextPID}${RstClr}"
 			fi
 
 			
 			killproc ${contextPID} non-gateway &
 
+			i=$(( $i + 1 ))
 		done	
 
 		unset ContextPIDArray #done with array of PIDs, so clear
+		unset ContextPIDNameArray #done with array of PIDs, so clear
+		unset ContextPIDIsAliveArray #done with array of PIDs, so clear
 		
 		if [[ $1 == "ownedProcesses" && -v GATEWAY_PID ]]; then #in this case if variable is set, kill gateway too
 			out "${Red}${Rev}Killing Gateway process ID ${GATEWAY_PID}${RstClr}"
@@ -843,6 +847,9 @@ launchOTSMacromaker() {
 	out "${Blue}${REV}                                                       ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	out #blank line
 		
+	unset ContextPIDArray #reset
+	unset ContextPIDNameArray #reset 
+	unset ContextPIDIsAliveArray #reset 
 	
 	export MACROMAKER_MODE=1
 	#parameters are shifted during initial parsing, so the filename input should always be at $1
@@ -986,7 +993,7 @@ launchOTSMacromaker() {
 			warning "Could not verify successful ots Macro Maker mode context launch (check log for details)..."									
 			killproc ${LAST_OTS_PID} xdaq.exe	
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-				tail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
+				tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
 				echo
 				echo
 			fi
@@ -1039,6 +1046,9 @@ launchOTSMacromaker() {
 	
 	printMainURL &
 	
+	ContextPIDArray+=($LAST_OTS_PID)
+	ContextPIDNameArray+=("MacroMakerMode")
+	ContextPIDIsAliveArray+=(1)
 	
 } #end launchOTSMacromaker
 export -f launchOTSMacromaker
@@ -1066,6 +1076,10 @@ launchOTSWiz() {
 	out "${Red}${REV}                                                       ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	out #blank line
 		
+	unset ContextPIDArray #reset
+	unset ContextPIDNameArray #reset
+	unset ContextPIDIsAliveArray #reset
+	
 	#setup wiz mode environment variables
 	export CODE_EDITOR_SUPERVISOR_ID=240
 	export CONSOLE_SUPERVISOR_ID=260
@@ -1238,7 +1252,7 @@ launchOTSWiz() {
 			warning "Could not verify successful ots wiz context launch (check log for details)..."			
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-				tail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
+				tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
 				echo
 				echo
 			fi
@@ -1305,6 +1319,10 @@ launchOTSWiz() {
 
 	printMainURL &
 	
+	ContextPIDArray+=($LAST_OTS_PID)
+	ContextPIDNameArray+=("WizMode")
+	ContextPIDIsAliveArray+=(1)
+
 } #end launchOTSWiz
 export -f launchOTSWiz
 		
@@ -1510,6 +1528,8 @@ launchOTS() {
 	unset contextUIDArray #reset
 	unset TempContextPIDArray #reset  
 	unset ContextPIDArray #reset
+	unset ContextPIDNameArray #reset
+	unset ContextPIDIsAliveArray #reset
 
 
 	#(re)setup user ssh tunnels in case they have timed out
@@ -1702,7 +1722,7 @@ launchOTS() {
 									warning "Could not verify successful ots gateway context launch (check log for details)..."									
 									killproc ${LAST_OTS_PID} xdaq.exe 
 									if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-										tail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
+										tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
 										echo
 										echo
 									fi
@@ -1852,6 +1872,8 @@ launchOTS() {
 		
 		TempContextPIDArray+=($LAST_OTS_PID)
 		ContextPIDArray+=($LAST_OTS_PID)
+		ContextPIDNameArray+=(${xdaqContextUID[$i]})
+		ContextPIDIsAliveArray+=(1)
 		
 		i=$(( $i + 1 ))
 	done
@@ -1874,6 +1896,8 @@ launchOTS() {
 		sleep 1 #give time before relaunch test
 		
 		unset ContextPIDArray #reset  
+		unset ContextPIDNameArray #reset  
+		unset ContextPIDIsAliveArray #reset  
 		i=0
 		j=0
 		for PORT in "${xdaqPort[@]}"
@@ -1920,7 +1944,7 @@ launchOTS() {
 				warning "Could not verify successful ots non-gateway context launch (check log for details)..."
 				killproc ${LAST_OTS_PID} xdaq.exe 
 				if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-					tail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
+					tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
 					echo
 					echo
 				fi
@@ -2004,6 +2028,8 @@ launchOTS() {
 			info "Verified successful ots non-gateway context ${THIS_HOST}-${PORT} launch."
 			#add successful launch to Context PID array	
 			ContextPIDArray+=($LAST_OTS_PID)
+			ContextPIDNameArray+=(${xdaqContextUID[$i]})
+			ContextPIDIsAliveArray+=(1)
 			#ContextPIDArray+=(${TempContextPIDArray[$j]})
 			
 			
@@ -2326,11 +2352,24 @@ printMainURL() {
 export -f printMainURL
 
 
+# Function to handle signals
+handleExitSignal() {
+	if [ $1 != 17 ]; then # 17 is child process activity, ignore it
+		info "Script terminated by signal: $1"
+		exit 1
+	fi
+}
+
 #########################################################
 #########################################################
 otsActionHandler() {
 
 	info "Starting action handler on ${THIS_HOST}..."
+
+	# Trap specific signals and call the exit handler
+	for sig in {1..31}; do
+		trap "handleExitSignal $sig" $sig 2>/dev/null
+	done
 
 	if [[ ($ISCONFIG == 1) || ("${THIS_HOST}" == "${gatewayHostname}") ]]; then
 		out "The script, on ${THIS_HOST}, is the gateway ots script, so it will drive the exit of ots scripts running on other hosts."
@@ -2369,6 +2408,24 @@ otsActionHandler() {
 		#KILL_ALL will kill all and exit ots action loop
 		#if cmd file is missing, exit StartOTS loop
 		
+
+		#check for processes getting killed
+		i=0	
+		for pid in "${ContextPIDArray[@]}"
+		do
+			if [ ${ContextPIDIsAliveArray[$i]} == 1 ]; then
+				if kill -0 "$pid" 2>/dev/null; then
+					ContextPIDIsAliveArray[$i]=1 #do nothing, PID $pid is still alive."
+				else
+					out "Context '${ContextPIDNameArray[$i]}' PID $pid is not alive."
+					ContextPIDIsAliveArray[$i]=0
+	    		fi
+			fi
+			i=$(( $i + 1 ))
+		done
+		
+
+
 		OTSDAQ_STARTOTS_ACTION="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE})"
 		OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
 		OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
@@ -2700,7 +2757,7 @@ fi
 
 if [ $ISMACROMAKER == 1 ]; then
 	launchOTSMacromaker $1 $2 $3
-	exit
+	# exit #do not exit, monitor with action handler
 elif [ $ISCONFIG == 1 ]; then
 	launchOTSWiz
 else
@@ -2731,6 +2788,7 @@ if [ $FIREFOX == 1 ]; then
 fi
 
 #sleep 5 #so that the terminal comes back after the printouts are done ( in quiet mode )
+
 
 # This does all we really needed from reset
 
