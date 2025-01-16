@@ -25,6 +25,8 @@ class HttpXmlDocument : public XmlDocument
 	template<class T>
 	xercesc::DOMElement* 		addNumberElementToData          (const std::string          & field					,  	const T                       			& value 	   		) { return addTextElementToData(field,std::to_string(value)); }
 	xercesc::DOMElement* 		addBinaryStringToData           (const std::string          & field					,  	const std::string                       & binary        	);
+	template<class T>
+	xercesc::DOMElement* 		addNumberElementToParent		(const std::string			& field					, 	const T                       			& value, xercesc::DOMElement* parent) { return addTextElementToParent(field,std::to_string(value),parent); }
 	void 		      			copyDataChildren                (      HttpXmlDocument      & document             );	
 	std::string 	      		getMatchingValue                (const std::string          & field					,  	const unsigned int                        occurance = 0 	);
 	void 		      			getAllMatchingValues            (const std::string          & field					,    	  std::vector<std::string>          & retVec);	

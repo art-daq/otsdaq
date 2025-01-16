@@ -1328,6 +1328,15 @@ try
 				__COUTVS__(25,value);
 				remoteGatewayApp.appInfo.lastStatusTime = atoi(value.c_str());
 
+				value = StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
+				__COUTVS__(25,value);
+				remoteGatewayApp.appInfo.parent_url = value;
+
+				value = StringMacros::extractXmlField(remoteStatusString, "id", 0, after);
+				__COUTVS__(25,value);
+				remoteGatewayApp.appInfo.id = atoi(value.c_str());
+
+
 			} //end found Remote Gateway status
 			else //found remote subapp
 			{
@@ -1352,6 +1361,13 @@ try
 				__COUTVS__(25,value);
 				remoteGatewayApp.subapps[name].lastStatusTime = atoi(value.c_str());
 
+				value = StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
+				__COUTVS__(25,value);
+				remoteGatewayApp.subapps[name].parent_url = value;
+
+				value = StringMacros::extractXmlField(remoteStatusString, "id", 0, after);
+				__COUTVS__(25,value);
+				remoteGatewayApp.subapps[name].id = atoi(value.c_str());
 			}
 		} //end primary loop
 
@@ -5948,13 +5964,12 @@ try
 
 				xmlOut.addTextElementToData("name",
 				                            appInfo.getName());                      // get application name
-				xmlOut.addTextElementToData("id", std::to_string(appInfo.getId()));  // get application id
+				xmlOut.addNumberElementToData("id", appInfo.getId());  // get application id
 				xmlOut.addTextElementToData("status", appInfo.getStatus());          // get status
 				xmlOut.addTextElementToData(
 				    "time", appInfo.getLastStatusTime() ? StringMacros::getTimestampString(appInfo.getLastStatusTime()) : "0");  // get time stamp
-				xmlOut.addTextElementToData("stale",
-				                            std::to_string(time(0) - appInfo.getLastStatusTime()));  // time since update
-				xmlOut.addTextElementToData("progress", std::to_string(appInfo.getProgress()));      // get progress
+				xmlOut.addNumberElementToData("stale", time(0) - appInfo.getLastStatusTime());  // time since update
+				xmlOut.addNumberElementToData("progress", appInfo.getProgress());      // get progress
 				xmlOut.addTextElementToData("detail", appInfo.getDetail());                          // get detail
 				xmlOut.addTextElementToData("class",
 				                            appInfo.getClass());  // get application class
@@ -5970,10 +5985,11 @@ try
 					xmlOut.addTextElementToParent("subapp_time",
 					    subappInfoPair.second.lastStatusTime ? StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
 					                              subappElement);  // get timestamp
-					xmlOut.addTextElementToParent("subapp_stale", std::to_string(time(0) - subappInfoPair.second.lastStatusTime), subappElement);  // time since update
-					xmlOut.addTextElementToParent("subapp_progress", std::to_string(subappInfoPair.second.progress), subappElement);               // get progress
+					xmlOut.addNumberElementToParent("subapp_stale", time(0) - subappInfoPair.second.lastStatusTime, subappElement);  // time since update
+					xmlOut.addNumberElementToParent("subapp_progress", subappInfoPair.second.progress, subappElement);               // get progress
 					xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
-					xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                   // get url
+					xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                        // get detail
+					xmlOut.addNumberElementToParent("subapp_id", subappInfoPair.second.id, subappElement);                                   // get url
 					xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
 
 				}
@@ -5995,32 +6011,31 @@ try
 
 				xmlOut.addTextElementToData("name",
 				                            appInfo.name);                      // get application name
-				xmlOut.addTextElementToData("id", std::to_string(-1));  // get application id
+				xmlOut.addNumberElementToData("id", appInfo.id);  				// get application id
 				xmlOut.addTextElementToData("status", appInfo.status);          // get status
-				xmlOut.addTextElementToData(
-				    "time", appInfo.lastStatusTime ? StringMacros::getTimestampString(appInfo.lastStatusTime) : "0");  // get timestamp
-				xmlOut.addTextElementToData("stale",
-				                            std::to_string(time(0) - appInfo.lastStatusTime));  // time since update
-				xmlOut.addTextElementToData("progress", std::to_string(appInfo.progress));      // get progress
-				xmlOut.addTextElementToData("detail", appInfo.detail);                          // get detail
-				xmlOut.addTextElementToData("class",
-				                            appInfo.class_name);  // get application class
-				xmlOut.addTextElementToData("url",
-				                            appInfo.url);  // get application url
-				xmlOut.addTextElementToData("context", "Remote-" +
-				                            appInfo.url);  // get context
+				xmlOut.addTextElementToData("time", appInfo.lastStatusTime ? 
+					StringMacros::getTimestampString(appInfo.lastStatusTime) : "0");  // get timestamp
+				xmlOut.addNumberElementToData("stale",
+				                            time(0) - appInfo.lastStatusTime);  // time since update
+				xmlOut.addNumberElementToData("progress", appInfo.progress);    // get progress
+				xmlOut.addTextElementToData("detail", appInfo.detail);          // get detail
+				xmlOut.addTextElementToData("class",  appInfo.class_name);  	// get application class
+				xmlOut.addTextElementToData("url", appInfo.parent_url);  		// get application url
+				xmlOut.addTextElementToData("context", appInfo.name + " at " + appInfo.url);  // get context
 				auto subappElement = xmlOut.addTextElementToData("subapps", "");
 				for(auto& subappInfoPair : remoteApp.subapps)
 				{
 					xmlOut.addTextElementToParent("subapp_name", subappInfoPair.first, subappElement);
 					xmlOut.addTextElementToParent("subapp_status", subappInfoPair.second.status, subappElement);  // get status
 					xmlOut.addTextElementToParent("subapp_time",
-					    subappInfoPair.second.lastStatusTime ? StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
+					    subappInfoPair.second.lastStatusTime ? 
+							StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
 					                              subappElement);  // get time stamp
-					xmlOut.addTextElementToParent("subapp_stale", std::to_string(time(0) - subappInfoPair.second.lastStatusTime), subappElement);  // time since update
-					xmlOut.addTextElementToParent("subapp_progress", std::to_string(subappInfoPair.second.progress), subappElement);               // get progress
+					xmlOut.addNumberElementToParent("subapp_stale", time(0) - subappInfoPair.second.lastStatusTime, subappElement);  // time since update
+					xmlOut.addNumberElementToParent("subapp_progress", subappInfoPair.second.progress, subappElement);               // get progress
 					xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
-					xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                   // get url
+					xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.parent_url, subappElement);                               // get detail
+					xmlOut.addNumberElementToParent("subapp_id", subappInfoPair.second.id, subappElement);                                      // get url
 					xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
 
 				}
@@ -6049,10 +6064,8 @@ try
 			}
 
 			for(const auto& remoteGatewayApp : remoteGatewayApps)
-			{				
-				xmlOut.addTextElementToData("RemoteGateway", "Remote-" +
-					remoteGatewayApp.appInfo.url); 
-			} //end remote subsystem loop
+				xmlOut.addTextElementToData("RemoteGateway", 
+					remoteGatewayApp.appInfo.name + " at " + remoteGatewayApp.appInfo.url); 
 		}
 		else if(requestType == "getSystemMessages")
 		{
