@@ -2,15 +2,15 @@
 #define _ots_ConfigurationManager_h_
 
 #include <map>
+#include <mutex>
 #include <set>
 #include <string>
-#include <mutex>
 #include <thread>
 
+#include "artdaq-core/Utilities/TimeUtils.hh"
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationTree.h"
 #include "otsdaq/TableCore/TableVersion.h"
-#include "artdaq-core/Utilities/TimeUtils.hh"
 
 namespace ots
 {
@@ -26,12 +26,11 @@ class ConfigurationManager
 	friend class GatewaySupervisor;
 
   public:
-
 	typedef std::map<std::string,
-		std::pair< 
-			std::pair<std::string, TableGroupKey>,
-			std::map<std::string, TableVersion> /* memberMap */ 
-			>> lastGroupLoad_t;
+	                 std::pair<std::pair<std::string, TableGroupKey>,
+	                           std::map<std::string, TableVersion> /* memberMap */
+	                           >>
+	    lastGroupLoad_t;
 
 	//==============================================================================
 	// Static members
@@ -67,14 +66,15 @@ class ConfigurationManager
 	static const uint8_t METADATA_COL_AUTHOR;
 	static const uint8_t METADATA_COL_TIMESTAMP;
 
-	static const std::set<std::string> contextMemberNames_;        // list of context members
-	static const std::set<std::string> backboneMemberNames_;       // list of backbone members
-	static const std::set<std::string> iterateMemberNames_;        // list of iterate members
-	std::set<std::string>              configurationMemberNames_;  // list of 'active' configuration members
+	static const std::set<std::string> contextMemberNames_;   // list of context members
+	static const std::set<std::string> backboneMemberNames_;  // list of backbone members
+	static const std::set<std::string> iterateMemberNames_;   // list of iterate members
+	std::set<std::string>
+	    configurationMemberNames_;  // list of 'active' configuration members
 
-	static const std::string 			CONTEXT_SUBSYSTEM_OPTIONAL_TABLE;
-	static const std::string 			UNKNOWN_INFO;
-	static const std::string 			UNKNOWN_TIME;
+	static const std::string CONTEXT_SUBSYSTEM_OPTIONAL_TABLE;
+	static const std::string UNKNOWN_INFO;
+	static const std::string UNKNOWN_TIME;
 
 	enum class GroupType
 	{

@@ -2,9 +2,9 @@
 #define _ots_ConfigurationInterface_h_
 
 #include <memory>
+#include <mutex>
 #include <set>
 #include <sstream>
-#include <mutex>
 #include "otsdaq/Macros/CoutMacros.h"
 
 #include "otsdaq/TableCore/MakeTable.h"

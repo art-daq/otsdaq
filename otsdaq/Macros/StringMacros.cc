@@ -15,7 +15,9 @@ using namespace ots;
 //			- 3: next highest is partial LEADING-wildcard match
 //			- 4: lowest priority is partial full-wildcard match
 //		return priority found by reference
-bool StringMacros::wildCardMatch(const std::string& needle, const std::string& haystack, unsigned int* priorityIndex)
+bool StringMacros::wildCardMatch(const std::string& needle,
+                                 const std::string& haystack,
+                                 unsigned int*      priorityIndex)
 try
 {
 	//	__COUT__ << "\t\t wildCardMatch: " << needle <<
@@ -47,7 +49,8 @@ try
 	}
 
 	// trailing wildcard
-	if(needle[needle.size() - 1] == '*' && needle.substr(0, needle.size() - 1) == haystack.substr(0, needle.size() - 1))
+	if(needle[needle.size() - 1] == '*' &&
+	   needle.substr(0, needle.size() - 1) == haystack.substr(0, needle.size() - 1))
 	{
 		if(priorityIndex)
 			*priorityIndex = 2;  // trailing wildcard match
@@ -55,7 +58,8 @@ try
 	}
 
 	// leading wildcard
-	if(needle[0] == '*' && needle.substr(1) == haystack.substr(haystack.size() - (needle.size() - 1)))
+	if(needle[0] == '*' &&
+	   needle.substr(1) == haystack.substr(haystack.size() - (needle.size() - 1)))
 	{
 		if(priorityIndex)
 			*priorityIndex = 3;  // leading wildcard match
@@ -63,7 +67,8 @@ try
 	}
 
 	// leading wildcard and trailing wildcard
-	if(needle[0] == '*' && needle[needle.size() - 1] == '*' && std::string::npos != haystack.find(needle.substr(1, needle.size() - 2)))
+	if(needle[0] == '*' && needle[needle.size() - 1] == '*' &&
+	   std::string::npos != haystack.find(needle.substr(1, needle.size() - 2)))
 	{
 		if(priorityIndex)
 			*priorityIndex = 4;  // leading and trailing wildcard match
@@ -74,26 +79,27 @@ try
 	if(priorityIndex)
 		*priorityIndex = 0;  // no match
 	return false;
-} //end wildCardMatch()
+}  //end wildCardMatch()
 catch(...)
 {
 	if(priorityIndex)
 		*priorityIndex = 0;  // no match
 	return false;            // if out of range
-} //end wildCardMatch() catch
+}  //end wildCardMatch() catch
 
 //==============================================================================
 // inWildCardSet ~
 //	returns true if needle is in haystack (considering wildcards)
-//	allow inverted haystack strings by first character being '!' 
-bool StringMacros::inWildCardSet(const std::string& needle, const std::set<std::string>& haystack)
+//	allow inverted haystack strings by first character being '!'
+bool StringMacros::inWildCardSet(const std::string&           needle,
+                                 const std::set<std::string>& haystack)
 {
 	for(const auto& haystackString : haystack)
 	{
 		// use wildcard match, flip needle parameter.. because we want haystack to have the wildcards
-		if(haystackString.size() && haystackString[0] == '!')				
+		if(haystackString.size() && haystackString[0] == '!')
 		{
-			 //treat as inverted
+			//treat as inverted
 			if(!StringMacros::wildCardMatch(haystackString.substr(1), needle))
 				return true;
 		}
@@ -153,30 +159,30 @@ std::string StringMacros::encodeURIComponent(const std::string& sourceStr)
 
 //==============================================================================
 // StringMacros::sanitizeForSQL
-void StringMacros::sanitizeForSQL(std::string& str) 
+void StringMacros::sanitizeForSQL(std::string& str)
 {
-    std::map<char, std::string> replacements = {
-        {'\'', "''"},    // Single quote becomes two single quotes
-        {'\\', "\\\\"}//,  // Backslash becomes double backslash
-        // {';', "\\;"},    // Semicolon can be escaped (optional)
-        // {'-', "\\-"},    // Dash for comments (optional, context-specific)
-    };
+	std::map<char, std::string> replacements = {
+	    {'\'', "''"},   // Single quote becomes two single quotes
+	    {'\\', "\\\\"}  //,  // Backslash becomes double backslash
+	    // {';', "\\;"},    // Semicolon can be escaped (optional)
+	    // {'-', "\\-"},    // Dash for comments (optional, context-specific)
+	};
 
-    size_t pos = 0;
-    while (pos < str.size()) 
+	size_t pos = 0;
+	while(pos < str.size())
 	{
-        auto it = replacements.find(str[pos]);
-        if (it != replacements.end()) 
+		auto it = replacements.find(str[pos]);
+		if(it != replacements.end())
 		{
-            str.replace(pos, 1, it->second);
-            pos += it->second.size(); // Advance past the replacement
-        } 
-		else 
+			str.replace(pos, 1, it->second);
+			pos += it->second.size();  // Advance past the replacement
+		}
+		else
 		{
-            ++pos;
-        }
-    }
-} //end sanitizeForSQL
+			++pos;
+		}
+	}
+}  //end sanitizeForSQL
 
 //==============================================================================
 // StringMacros::escapeString
@@ -187,7 +193,8 @@ void StringMacros::sanitizeForSQL(std::string& str)
 //
 //	convert &amp; = &
 //	if(allowWhiteSpace) convert \t to 8 &#160; spaces and \n to <br>
-std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpace /* = false */)
+std::string StringMacros::escapeString(std::string inString,
+                                       bool        allowWhiteSpace /* = false */)
 {
 	unsigned int ws = -1;
 	char         htmlTmp[10];
@@ -195,43 +202,53 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 	for(unsigned int i = 0; i < inString.length(); i++)
 		if(inString[i] != ' ')
 		{
-			__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << i << ". " << inString[i] << ":" << (int)inString[i] << std::endl;
+			__COUT_TYPE__(TLVL_DEBUG + 30) << __COUT_HDR__ << i << ". " << inString[i]
+			                               << ":" << (int)inString[i] << std::endl;
 
 			// remove new lines and unprintable characters
-			if(inString[i] == '\r' || inString[i] == '\n' ||          // remove new line chars
-			   inString[i] == '\t' ||                                 // remove tabs
-			   inString[i] < 32 ||                                    // remove un-printable characters (they mess up xml
-			                                                          // interpretation)
-			   (inString[i] > char(126) && inString[i] < char(161)))  // this is aggravated by the bug in
-			                                                          // MFextensions (though Eric says he fixed on
-			                                                          // 8/24/2016)  Note: greater than 255 should be
-			                                                          // impossible if by byte (but there are html
-			                                                          // chracters in 300s and 8000s)
+			if(inString[i] == '\r' || inString[i] == '\n' ||  // remove new line chars
+			   inString[i] == '\t' ||                         // remove tabs
+			   inString[i] < 32 ||  // remove un-printable characters (they mess up xml
+			                        // interpretation)
+			   (inString[i] > char(126) &&
+			    inString[i] < char(161)))  // this is aggravated by the bug in
+			                               // MFextensions (though Eric says he fixed on
+			                               // 8/24/2016)  Note: greater than 255 should be
+			                               // impossible if by byte (but there are html
+			                               // chracters in 300s and 8000s)
 			{
 				//handle UTF-8 encoded characters
-				if(i+2 < inString.size() && inString[i] == char(0xE2) &&
-					inString[i+1] == char(0x80) && inString[i+2] == char(0x93)) // longer dash endash is 3-bytes 0xE2 0x80 0x93
+				if(i + 2 < inString.size() && inString[i] == char(0xE2) &&
+				   inString[i + 1] == char(0x80) &&
+				   inString[i + 2] ==
+				       char(0x93))  // longer dash endash is 3-bytes 0xE2 0x80 0x93
 				{
 					//encode "--" as &#8211;
-					inString.insert(i, "&#82");          // insert HTML name before special character
-					inString.replace(i + 4, 1, 1, '1');  // replace special character-0 with s
-					inString.replace(i + 5, 1, 1, '1');  // replace special character-1 with h
-					inString.replace(i + 6, 1, 1, ';');  // replace special character-2 with ;
-					i += 7;                              // skip to next char to check
-					ws = i;  // last non white space char
+					inString.insert(i,
+					                "&#82");  // insert HTML name before special character
+					inString.replace(
+					    i + 4, 1, 1, '1');  // replace special character-0 with s
+					inString.replace(
+					    i + 5, 1, 1, '1');  // replace special character-1 with h
+					inString.replace(
+					    i + 6, 1, 1, ';');  // replace special character-2 with ;
+					i += 7;                 // skip to next char to check
+					ws = i;                 // last non white space char
 					--i;
 					continue;
-				}			
-				
+				}
+
 				if(  // maintain new lines and tabs
 				    inString[i] == '\n')
 				{
 					if(allowWhiteSpace)
 					{
 						sprintf(htmlTmp, "&#%3.3d", inString[i]);
-						inString.insert(i, std::string(htmlTmp));  // insert html str sequence
-						inString.replace(i + 5, 1, 1, ';');        // replace special character with ;
-						i += 6;                                    // skip to next char to check
+						inString.insert(
+						    i, std::string(htmlTmp));  // insert html str sequence
+						inString.replace(
+						    i + 5, 1, 1, ';');  // replace special character with ;
+						i += 6;                 // skip to next char to check
 						--i;
 					}
 					else  // translate to ' '
@@ -245,18 +262,23 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 						if(0)
 						{
 							// tab = 8 spaces
-							sprintf(htmlTmp, "&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160");
-							inString.insert(i, std::string(htmlTmp));  // insert html str sequence
-							inString.replace(i + 47, 1, 1, ';');       // replace special character with ;
-							i += 48;                                   // skip to next char to check
+							sprintf(htmlTmp,
+							        "&#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160");
+							inString.insert(
+							    i, std::string(htmlTmp));  // insert html str sequence
+							inString.replace(
+							    i + 47, 1, 1, ';');  // replace special character with ;
+							i += 48;                 // skip to next char to check
 							--i;
 						}
 						else  // tab =  0x09
 						{
 							sprintf(htmlTmp, "&#009");
-							inString.insert(i, std::string(htmlTmp));  // insert html str sequence
-							inString.replace(i + 5, 1, 1, ';');        // replace special character with ;
-							i += 6;                                    // skip to next char to check
+							inString.insert(
+							    i, std::string(htmlTmp));  // insert html str sequence
+							inString.replace(
+							    i + 5, 1, 1, ';');  // replace special character with ;
+							i += 6;                 // skip to next char to check
 							--i;
 						}
 					}
@@ -268,43 +290,49 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 					inString.erase(i, 1);  // erase character
 					--i;                   // step back so next char to check is correct
 				}
-				__COUT_TYPE__(TLVL_DEBUG+31) << __COUT_HDR__ << inString << std::endl;
+				__COUT_TYPE__(TLVL_DEBUG + 31) << __COUT_HDR__ << inString << std::endl;
 				continue;
 			}
 
-			__COUT_TYPE__(TLVL_DEBUG+31) << __COUT_HDR__ << inString << std::endl;
+			__COUT_TYPE__(TLVL_DEBUG + 31) << __COUT_HDR__ << inString << std::endl;
 
 			// replace special characters
 			if(inString[i] == '\"' || inString[i] == '\'')
 			{
 				inString.insert(i,
-				                (inString[i] == '\'') ? "&apos" : "&quot");  // insert HTML name before quotes
-				inString.replace(i + 5, 1, 1, ';');                          // replace special character with ;
-				i += 5;                                                      // skip to next char to check
-				                                                             //__COUT__ <<  inString << std::endl;
-			}			
+				                (inString[i] == '\'')
+				                    ? "&apos"
+				                    : "&quot");      // insert HTML name before quotes
+				inString.replace(i + 5, 1, 1, ';');  // replace special character with ;
+				i += 5;                              // skip to next char to check
+				                                     //__COUT__ <<  inString << std::endl;
+			}
 			else if(inString[i] == '&')
 			{
-				inString.insert(i, "&amp");          // insert HTML name before special character
+				inString.insert(i, "&amp");  // insert HTML name before special character
 				inString.replace(i + 4, 1, 1, ';');  // replace special character with ;
 				i += 4;                              // skip to next char to check
 			}
 			else if(inString[i] == '<' || inString[i] == '>')
 			{
-				inString.insert(i,
-				                (inString[i] == '<') ? "&lt" : "&gt");  // insert HTML name before special character
-				inString.replace(i + 3, 1, 1, ';');                     // replace special character with ;
-				i += 3;                                                 // skip to next char to check
+				inString.insert(
+				    i,
+				    (inString[i] == '<')
+				        ? "&lt"
+				        : "&gt");  // insert HTML name before special character
+				inString.replace(i + 3, 1, 1, ';');  // replace special character with ;
+				i += 3;                              // skip to next char to check
 			}
-			else if(inString[i] >= char(161) && inString[i] <= char(255))  // printable special characters
+			else if(inString[i] >= char(161) &&
+			        inString[i] <= char(255))  // printable special characters
 			{
 				sprintf(htmlTmp, "&#%3.3d", inString[i]);
 				inString.insert(i, std::string(htmlTmp));  // insert html number sequence
-				inString.replace(i + 5, 1, 1, ';');        // replace special character with ;
-				i += 5;                                    // skip to next char to check
+				inString.replace(i + 5, 1, 1, ';');  // replace special character with ;
+				i += 5;                              // skip to next char to check
 			}
 
-			__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << inString << std::endl;
+			__COUT_TYPE__(TLVL_DEBUG + 30) << __COUT_HDR__ << inString << std::endl;
 
 			ws = i;  // last non white space char
 		}
@@ -325,11 +353,13 @@ std::string StringMacros::escapeString(std::string inString, bool allowWhiteSpac
 			                                     // ws = i;
 		}
 
-	__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << inString.size() << " " << ws << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG + 30)
+	    << __COUT_HDR__ << inString.size() << " " << ws << std::endl;
 
 	// inString.substr(0,ws+1);
 
-	__COUT_TYPE__(TLVL_DEBUG+30) << __COUT_HDR__ << inString.size() << " " << inString << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG + 30)
+	    << __COUT_HDR__ << inString.size() << " " << inString << std::endl;
 
 	if(allowWhiteSpace)  // keep all white space
 		return inString;
@@ -353,14 +383,19 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		size_t      end;
 		std::string envVariable;
 		std::string converted = data;  // make copy to modify
-		
-		while(begin && begin != std::string::npos && converted[begin-1] == '\\') //do not convert environment variables with escaped \$
+
+		while(begin && begin != std::string::npos &&
+		      converted[begin - 1] ==
+		          '\\')  //do not convert environment variables with escaped \$
 		{
-			converted.replace(begin-1, 1, "");			
-			begin = data.find("$",begin+1); //find next
+			converted.replace(begin - 1, 1, "");
+			begin = data.find("$", begin + 1);  //find next
 			if(begin == std::string::npos)
 			{
-				__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "Only found escaped $'s that will not be converted: " << converted << __E__;
+				__COUT_TYPE__(TLVL_DEBUG + 50)
+				    << __COUT_HDR__
+				    << "Only found escaped $'s that will not be converted: " << converted
+				    << __E__;
 				return converted;
 			}
 		}
@@ -375,30 +410,35 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		{
 			// end is first non environment variable character
 			for(end = begin + 1; end < data.size(); ++end)
-				if(!((data[end] >= '0' && data[end] <= '9') || (data[end] >= 'A' && data[end] <= 'Z') || (data[end] >= 'a' && data[end] <= 'z') ||
-				     data[end] == '-' || data[end] == '_' || data[end] == '.' || data[end] == ':'))
+				if(!((data[end] >= '0' && data[end] <= '9') ||
+				     (data[end] >= 'A' && data[end] <= 'Z') ||
+				     (data[end] >= 'a' && data[end] <= 'z') || data[end] == '-' ||
+				     data[end] == '_' || data[end] == '.' || data[end] == ':'))
 					break;  // found end
 			envVariable = data.substr(begin + 1, end - begin - 1);
 		}
-		__COUTVS__(50,data);
-		__COUTVS__(50,envVariable);
+		__COUTVS__(50, data);
+		__COUTVS__(50, envVariable);
 		char* envResult = __ENV__(envVariable.c_str());
 
 		if(envResult)
 		{
 			// proceed recursively
-			return convertEnvironmentVariables(converted.replace(begin, end - begin, envResult));
+			return convertEnvironmentVariables(
+			    converted.replace(begin, end - begin, envResult));
 		}
 		else
 		{
-			__SS__ << ("The environmental variable '" + envVariable + "' is not set! Please make sure you set it before continuing!") << std::endl;
+			__SS__ << ("The environmental variable '" + envVariable +
+			           "' is not set! Please make sure you set it before continuing!")
+			       << std::endl;
 			__SS_THROW__;
 		}
 	}
 	// else no environment variables found in string
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "Result: " << data << __E__;
+	__COUT_TYPE__(TLVL_DEBUG + 50) << __COUT_HDR__ << "Result: " << data << __E__;
 	return data;
-} //end convertEnvironmentVariables()
+}  //end convertEnvironmentVariables()
 
 //==============================================================================
 // isNumber ~~
@@ -414,11 +454,12 @@ bool StringMacros::isNumber(const std::string& s)
 	if(!s.size())
 		return false;
 
-	StringMacros::getVectorFromString(s,
-	                                  numbers,
-	                                  /*delimiter*/ std::set<char>({'+', '-', '*', '/'}),
-	                                  /*whitespace*/ std::set<char>({' ', '\t', '\n', '\r'}),
-	                                  &ops);
+	StringMacros::getVectorFromString(
+	    s,
+	    numbers,
+	    /*delimiter*/ std::set<char>({'+', '-', '*', '/'}),
+	    /*whitespace*/ std::set<char>({' ', '\t', '\n', '\r'}),
+	    &ops);
 
 	//__COUTV__(StringMacros::vectorToString(numbers));
 	//__COUTV__(StringMacros::vectorToString(ops));
@@ -433,7 +474,9 @@ bool StringMacros::isNumber(const std::string& s)
 			//__COUT__ << "0x found" << std::endl;
 			for(unsigned int i = 2; i < number.size(); ++i)
 			{
-				if(!((number[i] >= '0' && number[i] <= '9') || (number[i] >= 'A' && number[i] <= 'F') || (number[i] >= 'a' && number[i] <= 'f')))
+				if(!((number[i] >= '0' && number[i] <= '9') ||
+				     (number[i] >= 'A' && number[i] <= 'F') ||
+				     (number[i] >= 'a' && number[i] <= 'f')))
 				{
 					//__COUT__ << "prob " << number[i] << std::endl;
 					return false;
@@ -458,7 +501,8 @@ bool StringMacros::isNumber(const std::string& s)
 		{
 			//__COUT__ << "base 10 " << std::endl;
 			for(unsigned int i = 0; i < number.size(); ++i)
-				if(!((number[i] >= '0' && number[i] <= '9') || number[i] == '.' || number[i] == '+' || number[i] == '-'))
+				if(!((number[i] >= '0' && number[i] <= '9') || number[i] == '.' ||
+				     number[i] == '+' || number[i] == '-'))
 					return false;
 			// Note: std::regex crashes in unresolvable ways (says Ryan.. also, stop using
 			// libraries)  return std::regex_match(s,
@@ -486,11 +530,12 @@ std::string StringMacros::getNumberType(const std::string& s)
 
 	bool hasDecimal = false;
 
-	StringMacros::getVectorFromString(s,
-	                                  numbers,
-	                                  /*delimiter*/ std::set<char>({'+', '-', '*', '/'}),
-	                                  /*whitespace*/ std::set<char>({' ', '\t', '\n', '\r'}),
-	                                  &ops);
+	StringMacros::getVectorFromString(
+	    s,
+	    numbers,
+	    /*delimiter*/ std::set<char>({'+', '-', '*', '/'}),
+	    /*whitespace*/ std::set<char>({' ', '\t', '\n', '\r'}),
+	    &ops);
 
 	//__COUTV__(StringMacros::vectorToString(numbers));
 	//__COUTV__(StringMacros::vectorToString(ops));
@@ -505,7 +550,9 @@ std::string StringMacros::getNumberType(const std::string& s)
 			//__COUT__ << "0x found" << std::endl;
 			for(unsigned int i = 2; i < number.size(); ++i)
 			{
-				if(!((number[i] >= '0' && number[i] <= '9') || (number[i] >= 'A' && number[i] <= 'F') || (number[i] >= 'a' && number[i] <= 'f')))
+				if(!((number[i] >= '0' && number[i] <= '9') ||
+				     (number[i] >= 'A' && number[i] <= 'F') ||
+				     (number[i] >= 'a' && number[i] <= 'f')))
 				{
 					//__COUT__ << "prob " << number[i] << std::endl;
 					return "nan";
@@ -530,7 +577,8 @@ std::string StringMacros::getNumberType(const std::string& s)
 		{
 			//__COUT__ << "base 10 " << std::endl;
 			for(unsigned int i = 0; i < number.size(); ++i)
-				if(!((number[i] >= '0' && number[i] <= '9') || number[i] == '.' || number[i] == '+' || number[i] == '-'))
+				if(!((number[i] >= '0' && number[i] <= '9') || number[i] == '.' ||
+				     number[i] == '+' || number[i] == '-'))
 					return "nan";
 				else if(number[i] == '.')
 					hasDecimal = true;
@@ -612,34 +660,38 @@ std::string StringMacros::getTimestampString(const time_t linuxTimeInSeconds)
 //	returns the duration HH:MM:SS with consideration for day(s)
 std::string StringMacros::getTimeDurationString(time_t t)
 {
-	 //e.g., used by CoreSupervisorBase::getStatusProgressDetail(void)
-	
-	std::stringstream ss;	
-	int days = t/60/60/24;
+	//e.g., used by CoreSupervisorBase::getStatusProgressDetail(void)
+
+	std::stringstream ss;
+	int               days = t / 60 / 60 / 24;
 	if(days > 0)
 	{
-		ss << days << " day" << (days>1?"s":"") << ", ";
-		t -= days * 60*60*24;
+		ss << days << " day" << (days > 1 ? "s" : "") << ", ";
+		t -= days * 60 * 60 * 24;
 	}
 
 	//HH:MM:SS
-	ss << std::setw(2) << std::setfill('0') << (t/60/60) << ":" <<
-		std::setw(2) << std::setfill('0') << ((t % (60*60))/60) << ":" << 
-		std::setw(2) << std::setfill('0') << (t % 60);
+	ss << std::setw(2) << std::setfill('0') << (t / 60 / 60) << ":" << std::setw(2)
+	   << std::setfill('0') << ((t % (60 * 60)) / 60) << ":" << std::setw(2)
+	   << std::setfill('0') << (t % 60);
 	return ss.str();
-} //end getTimeDurationString()
+}  //end getTimeDurationString()
 
 //==============================================================================
 // validateValueForDefaultStringDataType
 //
-std::string StringMacros::validateValueForDefaultStringDataType(const std::string& value, bool doConvertEnvironmentVariables)
+std::string StringMacros::validateValueForDefaultStringDataType(
+    const std::string& value, bool doConvertEnvironmentVariables)
 try
 {
-	return doConvertEnvironmentVariables ? StringMacros::convertEnvironmentVariables(value) : value;
+	return doConvertEnvironmentVariables
+	           ? StringMacros::convertEnvironmentVariables(value)
+	           : value;
 }
 catch(const std::runtime_error& e)
 {
-	__SS__ << "Failed to validate value for default string data type. " << __E__ << e.what() << __E__;
+	__SS__ << "Failed to validate value for default string data type. " << __E__
+	       << e.what() << __E__;
 	__SS_THROW__;
 }
 
@@ -658,11 +710,14 @@ void StringMacros::getSetFromString(const std::string&     inputString,
 	// go through the full string extracting elements
 	// add each found element to set
 	for(; j < inputString.size(); ++j)
-		if((whitespace.find(inputString[j]) != whitespace.end() ||  // ignore leading white space or delimiter
+		if((whitespace.find(inputString[j]) !=
+		        whitespace.end() ||  // ignore leading white space or delimiter
 		    delimiter.find(inputString[j]) != delimiter.end()) &&
 		   i == j)
 			++i;
-		else if((whitespace.find(inputString[j]) != whitespace.end() ||  // trailing white space or delimiter indicates end
+		else if((whitespace.find(inputString[j]) !=
+		             whitespace
+		                 .end() ||  // trailing white space or delimiter indicates end
 		         delimiter.find(inputString[j]) != delimiter.end()) &&
 		        i != j)  // assume end of element
 		{
@@ -721,7 +776,8 @@ void StringMacros::getVectorFromString(const std::string&        inputString,
 		//__COUT__ << (char)inputString[c] << " " << isDelimiter <<
 		//__E__;//char)lastDelimiter << __E__;
 
-		if(whitespace.find(inputString[c]) != whitespace.end()  // ignore leading white space
+		if(whitespace.find(inputString[c]) !=
+		       whitespace.end()  // ignore leading white space
 		   && i == j)
 		{
 			++i;
@@ -729,7 +785,8 @@ void StringMacros::getVectorFromString(const std::string&        inputString,
 			// if(isDelimiter)
 			//	foundLeadingDelimiter = true;
 		}
-		else if(whitespace.find(inputString[c]) != whitespace.end() && i != j)  // trailing white space, assume possible end of element
+		else if(whitespace.find(inputString[c]) != whitespace.end() &&
+		        i != j)  // trailing white space, assume possible end of element
 		{
 			// do not change j or i
 		}
@@ -747,7 +804,9 @@ void StringMacros::getVectorFromString(const std::string&        inputString,
 				//__COUTV__(lastDelimiter);
 				listOfDelimiters->push_back(lastDelimiter);
 			}
-			listToReturn.push_back(decodeURIComponents ? StringMacros::decodeURIComponent(inputString.substr(i, j - i)) : inputString.substr(i, j - i));
+			listToReturn.push_back(decodeURIComponents ? StringMacros::decodeURIComponent(
+			                                                 inputString.substr(i, j - i))
+			                                           : inputString.substr(i, j - i));
 
 			// setup i and j for next find
 			i = c + 1;
@@ -774,16 +833,21 @@ void StringMacros::getVectorFromString(const std::string&        inputString,
 			//__COUTV__(lastDelimiter);
 			listOfDelimiters->push_back(lastDelimiter);
 		}
-		listToReturn.push_back(decodeURIComponents ? StringMacros::decodeURIComponent(inputString.substr(i, j - i)) : inputString.substr(i, j - i));
+		listToReturn.push_back(decodeURIComponents ? StringMacros::decodeURIComponent(
+		                                                 inputString.substr(i, j - i))
+		                                           : inputString.substr(i, j - i));
 	}
 
 	// assert that there is one less delimiter than values
-	if(listOfDelimiters && listToReturn.size() - 1 != listOfDelimiters->size() && listToReturn.size() != listOfDelimiters->size())
+	if(listOfDelimiters && listToReturn.size() - 1 != listOfDelimiters->size() &&
+	   listToReturn.size() != listOfDelimiters->size())
 	{
 		__SS__ << "There is a mismatch in delimiters to entries (should be equal or one "
 		          "less delimiter): "
-		       << listOfDelimiters->size() << " vs " << listToReturn.size() << __E__ << "Entries: " << StringMacros::vectorToString(listToReturn) << __E__
-		       << "Delimiters: " << StringMacros::vectorToString(*listOfDelimiters) << __E__;
+		       << listOfDelimiters->size() << " vs " << listToReturn.size() << __E__
+		       << "Entries: " << StringMacros::vectorToString(listToReturn) << __E__
+		       << "Delimiters: " << StringMacros::vectorToString(*listOfDelimiters)
+		       << __E__;
 		__SS_THROW__;
 	}
 
@@ -801,15 +865,21 @@ void StringMacros::getVectorFromString(const std::string&        inputString,
 //	Note: the size() of delimiters will be one less than the size() of the returned values
 //		unless there is a leading delimiter, in which case vectors will have the same
 // size.
-std::vector<std::string> StringMacros::getVectorFromString(const std::string&    inputString,
-                                                           const std::set<char>& delimiter,
-                                                           const std::set<char>& whitespace,
-                                                           std::vector<char>*    listOfDelimiters,
-                                                           bool                  decodeURIComponents)
+std::vector<std::string> StringMacros::getVectorFromString(
+    const std::string&    inputString,
+    const std::set<char>& delimiter,
+    const std::set<char>& whitespace,
+    std::vector<char>*    listOfDelimiters,
+    bool                  decodeURIComponents)
 {
 	std::vector<std::string> listToReturn;
 
-	StringMacros::getVectorFromString(inputString, listToReturn, delimiter, whitespace, listOfDelimiters, decodeURIComponents);
+	StringMacros::getVectorFromString(inputString,
+	                                  listToReturn,
+	                                  delimiter,
+	                                  whitespace,
+	                                  listOfDelimiters,
+	                                  decodeURIComponents);
 	return listToReturn;
 }  // end getVectorFromString()
 
@@ -820,8 +890,8 @@ std::vector<std::string> StringMacros::getVectorFromString(const std::string&   
 void StringMacros::getMapFromString(const std::string&                  inputString,
                                     std::map<std::string, std::string>& mapToReturn,
                                     const std::set<char>&               pairPairDelimiter,
-                                    const std::set<char>&               nameValueDelimiter,
-                                    const std::set<char>&               whitespace)
+                                    const std::set<char>& nameValueDelimiter,
+                                    const std::set<char>& whitespace)
 try
 {
 	unsigned int i = 0;
@@ -834,12 +904,16 @@ try
 	for(; j < inputString.size(); ++j)
 		if(!needValue)  // finding name
 		{
-			if((whitespace.find(inputString[j]) != whitespace.end() ||  // ignore leading white space or delimiter
+			if((whitespace.find(inputString[j]) !=
+			        whitespace.end() ||  // ignore leading white space or delimiter
 			    pairPairDelimiter.find(inputString[j]) != pairPairDelimiter.end()) &&
 			   i == j)
 				++i;
-			else if((whitespace.find(inputString[j]) != whitespace.end() ||  // trailing white space or delimiter indicates end
-			         nameValueDelimiter.find(inputString[j]) != nameValueDelimiter.end()) &&
+			else if((whitespace.find(inputString[j]) !=
+			             whitespace
+			                 .end() ||  // trailing white space or delimiter indicates end
+			         nameValueDelimiter.find(inputString[j]) !=
+			             nameValueDelimiter.end()) &&
 			        i != j)  // assume end of map name
 			{
 				//__COUT__ << "Map name found: " <<
@@ -855,24 +929,33 @@ try
 		}
 		else  // finding value
 		{
-			if((whitespace.find(inputString[j]) != whitespace.end() ||  // ignore leading white space or delimiter
+			if((whitespace.find(inputString[j]) !=
+			        whitespace.end() ||  // ignore leading white space or delimiter
 			    nameValueDelimiter.find(inputString[j]) != nameValueDelimiter.end()) &&
 			   i == j)
 				++i;
-			else if(whitespace.find(inputString[j]) != whitespace.end() ||              // trailing white space or delimiter indicates end
-			        pairPairDelimiter.find(inputString[j]) != pairPairDelimiter.end())  // &&
-			                                                                            //  i != j)  // assume end of value name
+			else if(whitespace.find(inputString[j]) !=
+			            whitespace
+			                .end() ||  // trailing white space or delimiter indicates end
+			        pairPairDelimiter.find(inputString[j]) !=
+			            pairPairDelimiter.end())  // &&
+			                                      //  i != j)  // assume end of value name
 			{
 				//__COUT__ << "Map value found: " <<
 				//		inputString.substr(i,j-i) << std::endl;
 
 				auto /*pair<it,success>*/ emplaceReturn =
-				    mapToReturn.emplace(std::pair<std::string, std::string>(name, validateValueForDefaultStringDataType(inputString.substr(i, j - i))  // value
-				                                                            ));
+				    mapToReturn.emplace(std::pair<std::string, std::string>(
+				        name,
+				        validateValueForDefaultStringDataType(
+				            inputString.substr(i, j - i))  // value
+				        ));
 
 				if(!emplaceReturn.second)
 				{
-					__COUT__ << "Ignoring repetitive value ('" << inputString.substr(i, j - i) << "') and keeping current value ('"
+					__COUT__ << "Ignoring repetitive value ('"
+					         << inputString.substr(i, j - i)
+					         << "') and keeping current value ('"
 					         << emplaceReturn.first->second << "'). " << __E__;
 				}
 
@@ -886,27 +969,32 @@ try
 	if(i != j)  // last value (for case when no concluding ' ' or delimiter)
 	{
 		auto /*pair<it,success>*/ emplaceReturn =
-		    mapToReturn.emplace(std::pair<std::string, std::string>(name, validateValueForDefaultStringDataType(inputString.substr(i, j - i))  // value
-		                                                            ));
+		    mapToReturn.emplace(std::pair<std::string, std::string>(
+		        name,
+		        validateValueForDefaultStringDataType(
+		            inputString.substr(i, j - i))  // value
+		        ));
 
 		if(!emplaceReturn.second)
 		{
-			__COUT__ << "Ignoring repetitive value ('" << inputString.substr(i, j - i) << "') and keeping current value ('" << emplaceReturn.first->second
+			__COUT__ << "Ignoring repetitive value ('" << inputString.substr(i, j - i)
+			         << "') and keeping current value ('" << emplaceReturn.first->second
 			         << "'). " << __E__;
 		}
 	}
 }  // end getMapFromString()
 catch(const std::runtime_error& e)
 {
-	__SS__ << "Error while extracting a map from the string '" << inputString << "'... is it a valid map?" << __E__ << e.what() << __E__;
+	__SS__ << "Error while extracting a map from the string '" << inputString
+	       << "'... is it a valid map?" << __E__ << e.what() << __E__;
 	__SS_THROW__;
 }
 
 //==============================================================================
 // mapToString
 std::string StringMacros::mapToString(const std::map<std::string, uint8_t>& mapToReturn,
-                                      const std::string&                    primaryDelimeter,
-                                      const std::string&                    secondaryDelimeter)
+                                      const std::string& primaryDelimeter,
+                                      const std::string& secondaryDelimeter)
 {
 	std::stringstream ss;
 	bool              first = true;
@@ -923,7 +1011,8 @@ std::string StringMacros::mapToString(const std::map<std::string, uint8_t>& mapT
 
 //==============================================================================
 // setToString
-std::string StringMacros::setToString(const std::set<uint8_t>& setToReturn, const std::string& delimeter)
+std::string StringMacros::setToString(const std::set<uint8_t>& setToReturn,
+                                      const std::string&       delimeter)
 {
 	std::stringstream ss;
 	bool              first = true;
@@ -940,10 +1029,13 @@ std::string StringMacros::setToString(const std::set<uint8_t>& setToReturn, cons
 
 //==============================================================================
 // vectorToString
-std::string StringMacros::vectorToString(const std::vector<uint8_t>& setToReturn, const std::string& delimeter)
+std::string StringMacros::vectorToString(const std::vector<uint8_t>& setToReturn,
+                                         const std::string&          delimeter)
 {
 	std::stringstream ss;
 	bool              first = true;
+	if(delimeter == "\n")
+		ss << "\n";  //add initial new line if new line delimiting
 	for(auto& setValue : setToReturn)
 	{
 		if(first)
@@ -966,9 +1058,9 @@ std::string StringMacros::vectorToString(const std::vector<uint8_t>& setToReturn
 //	Returns true if common chunks and wildcards found,
 //	returns false if all inputs were the same (i.e. no wildcards needed)
 bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
-                                       std::vector<std::string>&       commonChunksToReturn,
-                                       std::vector<std::string>&       wildcardStringsToReturn,
-                                       unsigned int&                   fixedWildcardLength)
+                                       std::vector<std::string>& commonChunksToReturn,
+                                       std::vector<std::string>& wildcardStringsToReturn,
+                                       unsigned int&             fixedWildcardLength)
 {
 	fixedWildcardLength = 0;  // default
 
@@ -994,11 +1086,14 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 	//		    //__COUTV__(path);
 	//		    //__COUTV__(depth);
 	//	}
-	std::pair<unsigned int /*lo*/, unsigned int /*hi*/> wildcardBounds(std::make_pair(-1, 0));  // initialize to illegal wildcard
+	std::pair<unsigned int /*lo*/, unsigned int /*hi*/> wildcardBounds(
+	    std::make_pair(-1, 0));  // initialize to illegal wildcard
 
 	// look for starting matching segment
 	for(unsigned int n = 1; n < haystack.size(); ++n)
-		for(unsigned int i = 0, j = 0; i < haystack[0].length() && j < haystack[n].length(); ++i, ++j)
+		for(unsigned int i = 0, j = 0;
+		    i < haystack[0].length() && j < haystack[n].length();
+		    ++i, ++j)
 		{
 			if(i < wildcardBounds.first)
 			{
@@ -1015,7 +1110,9 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 
 	// look for end matching segment
 	for(unsigned int n = 1; n < haystack.size(); ++n)
-		for(int i = haystack[0].length() - 1, j = haystack[n].length() - 1; i >= (int)wildcardBounds.first && j >= (int)wildcardBounds.first; --i, --j)
+		for(int i = haystack[0].length() - 1, j = haystack[n].length() - 1;
+		    i >= (int)wildcardBounds.first && j >= (int)wildcardBounds.first;
+		    --i, --j)
 		{
 			if(i > (int)wildcardBounds.second)  // looking for hi side
 			{
@@ -1037,19 +1134,24 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 	if(wildcardBounds.first != (unsigned int)-1)  // potentially more chunks if not end
 	{
 		//  - use start and end to determine if there is more than one *
-		for(int i = (wildcardBounds.first + wildcardBounds.second) / 2 + 1; i < (int)wildcardBounds.second; ++i)
+		for(int i = (wildcardBounds.first + wildcardBounds.second) / 2 + 1;
+		    i < (int)wildcardBounds.second;
+		    ++i)
 			if(haystack[0][wildcardBounds.first] == haystack[0][i] &&
-			   haystack[0].substr(wildcardBounds.first, wildcardBounds.second - i) == haystack[0].substr(i, wildcardBounds.second - i))
+			   haystack[0].substr(wildcardBounds.first, wildcardBounds.second - i) ==
+			       haystack[0].substr(i, wildcardBounds.second - i))
 			{
-				std::string multiWildcardString = haystack[0].substr(i, wildcardBounds.second - i);
+				std::string multiWildcardString =
+				    haystack[0].substr(i, wildcardBounds.second - i);
 				__COUT__ << "Multi-wildcard found: " << multiWildcardString << __E__;
 
 				std::vector<unsigned int /*lo index*/> wildCardInstances;
 				// add front one now, and back one later
 				wildCardInstances.push_back(wildcardBounds.first);
 
-				unsigned int offset       = wildCardInstances[0] + multiWildcardString.size() + 1;
-				std::string  middleString = haystack[0].substr(offset, (i - 1) - offset);
+				unsigned int offset =
+				    wildCardInstances[0] + multiWildcardString.size() + 1;
+				std::string middleString = haystack[0].substr(offset, (i - 1) - offset);
 				__COUTV__(middleString);
 
 				// search for more wildcard instances in new common area
@@ -1060,7 +1162,8 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 
 					wildCardInstances.push_back(offset + k);
 
-					middleString = middleString.substr(k + multiWildcardString.size() + 1);
+					middleString =
+					    middleString.substr(k + multiWildcardString.size() + 1);
 					offset += k + multiWildcardString.size() + 1;
 					__COUTV__(middleString);
 				}
@@ -1070,8 +1173,10 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 
 				for(unsigned int w = 0; w < wildCardInstances.size() - 1; ++w)
 				{
-					commonChunksToReturn.push_back(haystack[0].substr(wildCardInstances[w] + wildCardInstances.size(),
-					                                                  wildCardInstances[w + 1] - (wildCardInstances[w] + wildCardInstances.size())));
+					commonChunksToReturn.push_back(haystack[0].substr(
+					    wildCardInstances[w] + wildCardInstances.size(),
+					    wildCardInstances[w + 1] -
+					        (wildCardInstances[w] + wildCardInstances.size())));
 				}
 			}
 
@@ -1097,7 +1202,8 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 				fixedWildcardLength = cnt;
 			else if(fixedWildcardLength > cnt)
 			{
-				__SS__ << "Invalid fixed length found, please simplify indexing between these common chunks: "
+				__SS__ << "Invalid fixed length found, please simplify indexing between "
+				          "these common chunks: "
 				       << StringMacros::vectorToString(commonChunksToReturn) << __E__;
 				__SS_THROW__;
 			}
@@ -1106,7 +1212,8 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 
 		if(fixedWildcardLength)  // take trailing 0s out of common chunks
 			for(unsigned int c = 0; c < commonChunksToReturn.size(); ++c)
-				commonChunksToReturn[c] = commonChunksToReturn[c].substr(0, commonChunksToReturn[c].size() - fixedWildcardLength);
+				commonChunksToReturn[c] = commonChunksToReturn[c].substr(
+				    0, commonChunksToReturn[c].size() - fixedWildcardLength);
 
 		// add last common chunk
 		commonChunksToReturn.push_back(haystack[0].substr(wildcardBounds.second));
@@ -1149,10 +1256,13 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 
 					break;
 				}
-				else if(0 /*skip validation in favor of speed*/ && wildcard != haystack[n].substr(i, k - i))
+				else if(0 /*skip validation in favor of speed*/ &&
+				        wildcard != haystack[n].substr(i, k - i))
 				{
 					__SS__ << "Invalid wildcard! for name[" << n << "] = " << haystack[n]
-					       << " - the extraction algorithm is confused, please simplify your naming convention." << __E__;
+					       << " - the extraction algorithm is confused, please simplify "
+					          "your naming convention."
+					       << __E__;
 					__SS_THROW__;
 				}
 
@@ -1182,7 +1292,8 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 // IgnoreCaseCompareStruct operator used to order
 //	std::set, etc ignoring letter case
 // e.g. used here: void ConfigurationGUISupervisor::handleTablesXML
-bool StringMacros::IgnoreCaseCompareStruct::operator()(const std::string& lhs, const std::string& rhs) const
+bool StringMacros::IgnoreCaseCompareStruct::operator()(const std::string& lhs,
+                                                       const std::string& rhs) const
 {
 	//__COUTV__(lhs);
 	//__COUTV__(rhs);
@@ -1191,7 +1302,8 @@ bool StringMacros::IgnoreCaseCompareStruct::operator()(const std::string& lhs, c
 	for(unsigned int i = 0; i < lhs.size() && i < rhs.size(); ++i)
 	{
 		//__COUT__ << i << "\t" << lhs[i] << "\t" << rhs[i] << __E__;
-		if((lhs[i] >= 'A' && lhs[i] <= 'Z' && rhs[i] >= 'A' && rhs[i] <= 'Z') || (lhs[i] >= 'a' && lhs[i] <= 'z' && rhs[i] >= 'a' && rhs[i] <= 'z'))
+		if((lhs[i] >= 'A' && lhs[i] <= 'Z' && rhs[i] >= 'A' && rhs[i] <= 'Z') ||
+		   (lhs[i] >= 'a' && lhs[i] <= 'z' && rhs[i] >= 'a' && rhs[i] <= 'z'))
 		{  // same case
 			if(lhs[i] == rhs[i])
 				continue;
@@ -1312,12 +1424,14 @@ std::string StringMacros::stackTrace()
 			// if demangling is successful, output the demangled function name
 			if(status == 0)
 			{
-				ss << "[" << i << "] " << messages[i] << " : " << real_name << "+" << offset_begin << offset_end << std::endl;
+				ss << "[" << i << "] " << messages[i] << " : " << real_name << "+"
+				   << offset_begin << offset_end << std::endl;
 			}
 			// otherwise, output the mangled function name
 			else
 			{
-				ss << "[" << i << "] " << messages[i] << " : " << mangled_name << "+" << offset_begin << offset_end << std::endl;
+				ss << "[" << i << "] " << messages[i] << " : " << mangled_name << "+"
+				   << offset_begin << offset_end << std::endl;
 			}
 			free(real_name);
 		}
@@ -1342,12 +1456,15 @@ std::string StringMacros::stackTrace()
 // 		declare special ots environment variable get,
 //		that throws exception instead of causing crashes with null pointer.
 //		Note: usually called with __ENV__(X) in CoutMacros.h
-char* StringMacros::otsGetEnvironmentVarable(const char* name, const std::string& location, const unsigned int& line)
+char* StringMacros::otsGetEnvironmentVarable(const char*         name,
+                                             const std::string&  location,
+                                             const unsigned int& line)
 {
 	char* environmentVariablePtr = getenv(name);
 	if(!environmentVariablePtr)
 	{
-		__SS__ << "Environment variable '$" << name << "' not defined at " << location << ":" << line << __E__;
+		__SS__ << "Environment variable '$" << name << "' not defined at " << location
+		       << ":" << line << __E__;
 		ss << "\n\n" << StringMacros::stackTrace() << __E__;
 		__SS_ONLY_THROW__;
 	}
@@ -1357,153 +1474,168 @@ char* StringMacros::otsGetEnvironmentVarable(const char* name, const std::string
 //=========================================================================
 //extract valueField for field from xml looking forwards from after
 // occurence = 0 is first occurence
-std::string StringMacros::extractXmlField(const std::string &xml,
-											const std::string &field,
-											uint32_t occurrence, size_t after,
-											size_t *returnFindPos /* = nullptr */,
-											const std::string& valueField /* = "value=" */,
-											const std::string& quoteType /* = "'" */)
+std::string StringMacros::extractXmlField(const std::string& xml,
+                                          const std::string& field,
+                                          uint32_t           occurrence,
+                                          size_t             after,
+                                          size_t* returnFindPos /* = nullptr */,
+                                          const std::string& valueField /* = "value=" */,
+                                          const std::string& quoteType /* = "'" */)
 {
-	if (returnFindPos)
+	if(returnFindPos)
 		*returnFindPos = std::string::npos;
 
-	__COUTVS__(41,xml);
+	__COUTVS__(41, xml);
 
 	size_t lo, findpos = after, hi;
-	for (uint32_t i = 0; i <= occurrence; ++i)
-	{		
+	for(uint32_t i = 0; i <= occurrence; ++i)
+	{
 		bool anyFound = false;
-		while ((findpos = xml.find("<" + field, //allow for immediate closing of xml tag with >
-				findpos)) != std::string::npos && 
-				findpos + 1 + field.size() < xml.size())
+		while((findpos =
+		           xml.find("<" + field,  //allow for immediate closing of xml tag with >
+		                    findpos)) != std::string::npos &&
+		      findpos + 1 + field.size() < xml.size())
 		{
-			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "find: ---- '<" << field << 
-				" findpos=" << findpos << "findpos " << findpos << 
-				" " << xml[findpos] << " " << xml[findpos + 1 + field.size()] << " " << (int) xml[findpos + 1 + field.size()] << __E__;
+			__COUT_TYPE__(TLVL_DEBUG + 40)
+			    << __COUT_HDR__ << "find: ---- '<" << field << " findpos=" << findpos
+			    << "findpos " << findpos << " " << xml[findpos] << " "
+			    << xml[findpos + 1 + field.size()] << " "
+			    << (int)xml[findpos + 1 + field.size()] << __E__;
 
-			findpos += 1 + field.size(); //to point to closing white space and advance for next forward search
+			findpos +=
+			    1 +
+			    field
+			        .size();  //to point to closing white space and advance for next forward search
 
 			//verify white space after the field
-			if((quoteType == ">" && xml[findpos] == '>') ||
-					xml[findpos] == ' ' || 
-					xml[findpos] == '\n' || 
-					xml[findpos] == '\t')
+			if((quoteType == ">" && xml[findpos] == '>') || xml[findpos] == ' ' ||
+			   xml[findpos] == '\n' || xml[findpos] == '\t')
 			{
-				anyFound = true; //flag 
+				anyFound = true;  //flag
 				break;
 			}
-		}		
+		}
 
 		if(!anyFound)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Field '" << field << "' not found" << __E__;
+			__COUT_TYPE__(TLVL_DEBUG + 40)
+			    << __COUT_HDR__ << "Field '" << field << "' not found" << __E__;
 			return "";
-		}	
+		}
 	}
 
 	lo = xml.find(valueField + quoteType, findpos) + valueField.size() + quoteType.size();
 
 	if(TTEST(40) && quoteType.size())
 	{
-		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Neighbors of field '" << field <<
-			"' and value '" << valueField << "' w/quote = " << quoteType << __E__;
-		for(size_t i=lo-valueField.size(); i<lo + 10 && i < xml.size() ; ++i)
-			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "xml[" << i << "] " << xml[i] << 
-				" vs " << quoteType << " ? " << (int)xml[i] << " vs " <<  (int)quoteType[0] << __E__;
+		__COUT_TYPE__(TLVL_DEBUG + 40)
+		    << __COUT_HDR__ << "Neighbors of field '" << field << "' and value '"
+		    << valueField << "' w/quote = " << quoteType << __E__;
+		for(size_t i = lo - valueField.size(); i < lo + 10 && i < xml.size(); ++i)
+			__COUT_TYPE__(TLVL_DEBUG + 40)
+			    << __COUT_HDR__ << "xml[" << i << "] " << xml[i] << " vs " << quoteType
+			    << " ? " << (int)xml[i] << " vs " << (int)quoteType[0] << __E__;
 	}
 
-	if ((hi = xml.find(quoteType == ">"?"<":quoteType, //if xml tag, change closing direction
-			lo)) == std::string::npos)
+	if((hi = xml.find(
+	        quoteType == ">" ? "<" : quoteType,  //if xml tag, change closing direction
+	        lo)) == std::string::npos)
 	{
-		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Value closing not found" << __E__;
+		__COUT_TYPE__(TLVL_DEBUG + 40)
+		    << __COUT_HDR__ << "Value closing not found" << __E__;
 		return "";
 	}
 
-	if (returnFindPos)
-		*returnFindPos = findpos - (1 + field.size()); //remove offset that was added
+	if(returnFindPos)
+		*returnFindPos = findpos - (1 + field.size());  //remove offset that was added
 
-	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "after: " << after << 
-		", findpos: " << findpos << ", hi/lo: " << hi << "/" << lo << 
-		", size: " << xml.size() << __E__;
+	__COUT_TYPE__(TLVL_DEBUG + 40)
+	    << __COUT_HDR__ << "after: " << after << ", findpos: " << findpos
+	    << ", hi/lo: " << hi << "/" << lo << ", size: " << xml.size() << __E__;
 	__COUTVS__(40, xml.substr(lo, hi - lo));
 	return xml.substr(lo, hi - lo);
-} //end extractXmlField()
+}  //end extractXmlField()
 
 //=========================================================================
 //extract valueField for field from xml looking backwards from before
 // occurence = 0 is first occurence
-std::string StringMacros::rextractXmlField(const std::string &xml,
-											const std::string &field,
-											uint32_t occurrence, size_t before,
-											size_t *returnFindPos /* = nullptr */,
-											const std::string& valueField /* = "value=" */,
-											const std::string& quoteType /* = "'" */)
+std::string StringMacros::rextractXmlField(const std::string& xml,
+                                           const std::string& field,
+                                           uint32_t           occurrence,
+                                           size_t             before,
+                                           size_t* returnFindPos /* = nullptr */,
+                                           const std::string& valueField /* = "value=" */,
+                                           const std::string& quoteType /* = "'" */)
 {
-	if (returnFindPos)
+	if(returnFindPos)
 		*returnFindPos = std::string::npos;
 
-	__COUTVS__(41,xml);
+	__COUTVS__(41, xml);
 
 	size_t lo = 0, hi, findpos = before;
-	for (uint32_t i = 0; i <= occurrence; ++i)
+	for(uint32_t i = 0; i <= occurrence; ++i)
 	{
 		bool anyFound = false;
-		while ((findpos = xml.rfind("<" + field, //allow for immediate closing of xml tag with >
-				findpos)) != std::string::npos && 
-				findpos + 1 + field.size() < xml.size())
+		while((findpos =
+		           xml.rfind("<" + field,  //allow for immediate closing of xml tag with >
+		                     findpos)) != std::string::npos &&
+		      findpos + 1 + field.size() < xml.size())
 		{
-			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "rfind: ---- '<" << field << 
-				" findpos=" << findpos << 
-				" " << xml[findpos] << " " << xml[findpos + 1 + field.size()] << " " << (int)xml[findpos + 1 + field.size()] << __E__;
+			__COUT_TYPE__(TLVL_DEBUG + 40)
+			    << __COUT_HDR__ << "rfind: ---- '<" << field << " findpos=" << findpos
+			    << " " << xml[findpos] << " " << xml[findpos + 1 + field.size()] << " "
+			    << (int)xml[findpos + 1 + field.size()] << __E__;
 
 			findpos += 1 + field.size();
-			
+
 			//verify white space after the field
-			if((quoteType == ">" && xml[findpos] == '>') ||
-					xml[findpos] == ' ' || 
-					xml[findpos] == '\n' || 
-					xml[findpos] == '\t')
+			if((quoteType == ">" && xml[findpos] == '>') || xml[findpos] == ' ' ||
+			   xml[findpos] == '\n' || xml[findpos] == '\t')
 			{
-				anyFound = true; //flag 
+				anyFound = true;  //flag
 				break;
 			}
-			else 
-				findpos -= 1 + field.size() + 1; //for next reverse search
-		}		
+			else
+				findpos -= 1 + field.size() + 1;  //for next reverse search
+		}
 		if(!anyFound)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Field '" << field << "' not found" << __E__;
+			__COUT_TYPE__(TLVL_DEBUG + 40)
+			    << __COUT_HDR__ << "Field '" << field << "' not found" << __E__;
 			return "";
-		}	
+		}
 	}
-			
+
 	lo = xml.find(valueField + quoteType, findpos) + valueField.size() + quoteType.size();
 
 	if(TTEST(40) && quoteType.size())
 	{
-		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Neighbors?" << __E__;
-		for(size_t i=findpos; i<lo + 10 && i < xml.size() ; ++i)
-			__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "xml[" << i << "] " << xml[i] << 
-				" vs " << quoteType << " ? " << (int)xml[i] << " vs " <<  (int)quoteType[0] << __E__;
+		__COUT_TYPE__(TLVL_DEBUG + 40) << __COUT_HDR__ << "Neighbors?" << __E__;
+		for(size_t i = findpos; i < lo + 10 && i < xml.size(); ++i)
+			__COUT_TYPE__(TLVL_DEBUG + 40)
+			    << __COUT_HDR__ << "xml[" << i << "] " << xml[i] << " vs " << quoteType
+			    << " ? " << (int)xml[i] << " vs " << (int)quoteType[0] << __E__;
 	}
 
-	if ((hi = xml.find(quoteType == ">"?"<":quoteType, //if xml tag, change closing direction
-			lo)) == std::string::npos)	
+	if((hi = xml.find(
+	        quoteType == ">" ? "<" : quoteType,  //if xml tag, change closing direction
+	        lo)) == std::string::npos)
 	{
-		__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "Value closing not found" << __E__;
+		__COUT_TYPE__(TLVL_DEBUG + 40)
+		    << __COUT_HDR__ << "Value closing not found" << __E__;
 		return "";
 	}
 
-	if (returnFindPos)
-		*returnFindPos = findpos - (1 + field.size()); //return found position of "< + field"
+	if(returnFindPos)
+		*returnFindPos =
+		    findpos - (1 + field.size());  //return found position of "< + field"
 
-	__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << "before: " << before << 
-		", findpos: " << findpos << ", hi/lo: " << hi << "/" << lo << 
-		", size: " << xml.size() << __E__;
+	__COUT_TYPE__(TLVL_DEBUG + 40)
+	    << __COUT_HDR__ << "before: " << before << ", findpos: " << findpos
+	    << ", hi/lo: " << hi << "/" << lo << ", size: " << xml.size() << __E__;
 	__COUTVS__(40, xml.substr(lo, hi - lo));
 	return xml.substr(lo, hi - lo);
-} //end rextractXmlField()
-
+}  //end rextractXmlField()
 
 #ifdef __GNUG__
 #include <cxxabi.h>
@@ -1517,7 +1649,8 @@ std::string StringMacros::demangleTypeName(const char* name)
 	int status = -4;  // some arbitrary value to eliminate the compiler warning
 
 	// enable c++11 by passing the flag -std=c++11 to g++
-	std::unique_ptr<char, void (*)(void*)> res{abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
+	std::unique_ptr<char, void (*)(void*)> res{
+	    abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
 
 	return (status == 0) ? res.get() : name;
 }  // end demangleTypeName()

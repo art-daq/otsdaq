@@ -36,7 +36,8 @@ using namespace ots;
 #define CONFIGURATION_BACKEND_TYPE_ __ENV__("CONFIGURATION_TYPE")
 
 //==============================================================================
-TableInfoReader::TableInfoReader(bool allowIllegalColumns) : allowIllegalColumns_(allowIllegalColumns)
+TableInfoReader::TableInfoReader(bool allowIllegalColumns)
+    : allowIllegalColumns_(allowIllegalColumns)
 {
 	initPlatform();
 	rootTag_                        = xercesc::XMLString::transcode("ROOT");
@@ -95,7 +96,8 @@ void TableInfoReader::initPlatform(void)
 	}
 	catch(xercesc::XMLException& e)
 	{
-		__COUT_ERR__ << "XML toolkit initialization error: " << XML_TO_CHAR(e.getMessage()) << __E__;
+		__COUT_ERR__ << "XML toolkit initialization error: "
+		             << XML_TO_CHAR(e.getMessage()) << __E__;
 		// throw exception here to return ERROR_XERCES_INIT
 	}
 }
@@ -109,12 +111,16 @@ void TableInfoReader::terminatePlatform(void)
 	}
 	catch(xercesc::XMLException& e)
 	{
-		__COUT_ERR__ << "XML tolkit teardown error: " << XML_TO_CHAR(e.getMessage()) << __E__;
+		__COUT_ERR__ << "XML tolkit teardown error: " << XML_TO_CHAR(e.getMessage())
+		             << __E__;
 	}
 }
 
 //==============================================================================
-void TableInfoReader::setAllowColumnErrors(bool setValue) { allowIllegalColumns_ = setValue; }
+void TableInfoReader::setAllowColumnErrors(bool setValue)
+{
+	allowIllegalColumns_ = setValue;
+}
 //==============================================================================
 const bool& TableInfoReader::getAllowColumnErrors(void) { return allowIllegalColumns_; }
 
@@ -125,7 +131,8 @@ bool TableInfoReader::checkViewType(std::string type)
 	int                      currentIndex = 0;
 	while(type.find(',', currentIndex) != std::string::npos)
 	{
-		types.push_back(type.substr(currentIndex, type.find(',', currentIndex) - currentIndex));
+		types.push_back(
+		    type.substr(currentIndex, type.find(',', currentIndex) - currentIndex));
 		currentIndex = type.find(',', currentIndex) + 1;
 	}
 	types.push_back(type.substr(currentIndex, type.size()));
@@ -140,8 +147,10 @@ bool TableInfoReader::checkViewType(std::string type)
 	// In case I don't succeed let's check if maybe there is something wrong with the
 	// names
 	const unsigned int allowedNamesSize               = 3;
-	const std::string  allowedNames[allowedNamesSize] = {"File", "Database", "DatabaseTest"};
-	if(systemType != allowedNames[0] && systemType != allowedNames[1] && systemType != allowedNames[2])
+	const std::string  allowedNames[allowedNamesSize] = {
+        "File", "Database", "DatabaseTest"};
+	if(systemType != allowedNames[0] && systemType != allowedNames[1] &&
+	   systemType != allowedNames[2])
 	{
 		__COUT__ << "The type defined in CONFIGURATION_BACKEND_TYPE (" << systemType
 		         << ") doesn't match with any of the allowed types: File,Database or "
@@ -152,10 +161,13 @@ bool TableInfoReader::checkViewType(std::string type)
 	}
 	for(unsigned int i = 0; i < types.size(); i++)
 	{
-		if(types[i] != allowedNames[0] && types[i] != allowedNames[1] && types[i] != allowedNames[2])
+		if(types[i] != allowedNames[0] && types[i] != allowedNames[1] &&
+		   types[i] != allowedNames[2])
 		{
-			__COUT__ << "The type defined in the info file (" << types[i] << ") doesn't match with any of the allowed types: " << allowedNames[0] << ", "
-			         << allowedNames[1] << " or " << allowedNames[2] << __E__;
+			__COUT__ << "The type defined in the info file (" << types[i]
+			         << ") doesn't match with any of the allowed types: "
+			         << allowedNames[0] << ", " << allowedNames[1] << " or "
+			         << allowedNames[2] << __E__;
 			throw(std::runtime_error("Illegal Type!"));
 		}
 	}
@@ -164,19 +176,25 @@ bool TableInfoReader::checkViewType(std::string type)
 }
 
 //==============================================================================
-xercesc::DOMNode* TableInfoReader::getNode(XMLCh* tagName, xercesc::DOMNode* parent, unsigned int itemNumber)
+xercesc::DOMNode* TableInfoReader::getNode(XMLCh*            tagName,
+                                           xercesc::DOMNode* parent,
+                                           unsigned int      itemNumber)
 {
 	return getNode(tagName, dynamic_cast<xercesc::DOMElement*>(parent), itemNumber);
 }
 
 //==============================================================================
-xercesc::DOMNode* TableInfoReader::getNode(XMLCh* tagName, xercesc::DOMElement* parent, unsigned int itemNumber)
+xercesc::DOMNode* TableInfoReader::getNode(XMLCh*               tagName,
+                                           xercesc::DOMElement* parent,
+                                           unsigned int         itemNumber)
 {
 	xercesc::DOMNodeList* nodeList = parent->getElementsByTagName(tagName);
 	if(!nodeList)
 	{
-		throw(std::runtime_error(std::string("Can't find ") + XML_TO_CHAR(tagName) + " tag!"));
-		__COUT__ << (std::string("Can't find ") + XML_TO_CHAR(tagName) + " tag!") << __E__;
+		throw(std::runtime_error(std::string("Can't find ") + XML_TO_CHAR(tagName) +
+		                         " tag!"));
+		__COUT__ << (std::string("Can't find ") + XML_TO_CHAR(tagName) + " tag!")
+		         << __E__;
 	}
 	//    __COUT__<< "Name: "  << XML_TO_CHAR(nodeList->item(itemNumber)->getNodeName())
 	//    << __E__; if( nodeList->item(itemNumber)->getFirstChild() != 0 )
@@ -187,13 +205,17 @@ xercesc::DOMNode* TableInfoReader::getNode(XMLCh* tagName, xercesc::DOMElement* 
 }
 
 //==============================================================================
-xercesc::DOMElement* TableInfoReader::getElement(XMLCh* tagName, xercesc::DOMNode* parent, unsigned int itemNumber)
+xercesc::DOMElement* TableInfoReader::getElement(XMLCh*            tagName,
+                                                 xercesc::DOMNode* parent,
+                                                 unsigned int      itemNumber)
 {
 	return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber));
 }
 
 //==============================================================================
-xercesc::DOMElement* TableInfoReader::getElement(XMLCh* tagName, xercesc::DOMElement* parent, unsigned int itemNumber)
+xercesc::DOMElement* TableInfoReader::getElement(XMLCh*               tagName,
+                                                 xercesc::DOMElement* parent,
+                                                 unsigned int         itemNumber)
 {
 	return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber));
 }
@@ -234,7 +256,8 @@ std::string TableInfoReader::read(TableBase& table)
 	int iretStat = stat(tableFile.c_str(), &fileStatus);
 	if(iretStat == ENOENT)
 	{
-		__SS__ << ("Path file_name does not exist, or path is an empty std::string.") << __E__;
+		__SS__ << ("Path file_name does not exist, or path is an empty std::string.")
+		       << __E__;
 		__COUT_ERR__ << ss.str();
 		__SS_THROW__;
 	}
@@ -246,7 +269,8 @@ std::string TableInfoReader::read(TableBase& table)
 	}
 	else if(iretStat == ELOOP)
 	{
-		__SS__ << ("Too many symbolic links encountered while traversing the path.") << __E__;
+		__SS__ << ("Too many symbolic links encountered while traversing the path.")
+		       << __E__;
 		__COUT_ERR__ << ss.str();
 		__SS_THROW__;
 	}
@@ -290,10 +314,13 @@ std::string TableInfoReader::read(TableBase& table)
 
 		//<TABLE>
 		xercesc::DOMElement* tableElement = getElement(tableTag_, elementRoot, 0);
-		if(table.getTableName() != XML_TO_CHAR(tableElement->getAttribute(tableNameAttributeTag_)))
+		if(table.getTableName() !=
+		   XML_TO_CHAR(tableElement->getAttribute(tableNameAttributeTag_)))
 		{
-			__SS__ << "In " << tableFile << " the table name " << XML_TO_CHAR(tableElement->getAttribute(tableNameAttributeTag_))
-			       << " doesn't match the the class table name " << table.getTableName() << __E__;
+			__SS__ << "In " << tableFile << " the table name "
+			       << XML_TO_CHAR(tableElement->getAttribute(tableNameAttributeTag_))
+			       << " doesn't match the the class table name " << table.getTableName()
+			       << __E__;
 
 			delete parser;
 			delete errorHandler;
@@ -301,13 +328,15 @@ std::string TableInfoReader::read(TableBase& table)
 			throw(std::runtime_error(ss.str()));
 		}
 		//<VIEW>
-		xercesc::DOMNodeList* viewNodeList     = tableElement->getElementsByTagName(viewTag_);
+		xercesc::DOMNodeList* viewNodeList = tableElement->getElementsByTagName(viewTag_);
 		bool                  storageTypeFound = false;
 
 		if(viewNodeList->getLength() != 1)
 		{
-			__SS__ << "In " << tableFile << " the table name " << XML_TO_CHAR(tableElement->getAttribute(tableNameAttributeTag_))
-			       << " there must only be one view. There were " << viewNodeList->getLength() << " found." << __E__;
+			__SS__ << "In " << tableFile << " the table name "
+			       << XML_TO_CHAR(tableElement->getAttribute(tableNameAttributeTag_))
+			       << " there must only be one view. There were "
+			       << viewNodeList->getLength() << " found." << __E__;
 
 			delete parser;
 			delete errorHandler;
@@ -318,10 +347,13 @@ std::string TableInfoReader::read(TableBase& table)
 		for(XMLSize_t view = 0; view < viewNodeList->getLength(); view++)
 		{
 			if(!viewNodeList->item(view)->getNodeType() ||
-			   viewNodeList->item(view)->getNodeType() != xercesc::DOMNode::ELEMENT_NODE)  // true is not 0 && is element
+			   viewNodeList->item(view)->getNodeType() !=
+			       xercesc::DOMNode::ELEMENT_NODE)  // true is not 0 && is element
 				continue;
-			xercesc::DOMElement* viewElement = dynamic_cast<xercesc::DOMElement*>(viewNodeList->item(view));
-			std::string          viewType    = XML_TO_CHAR(viewElement->getAttribute(viewTypeAttributeTag_));
+			xercesc::DOMElement* viewElement =
+			    dynamic_cast<xercesc::DOMElement*>(viewNodeList->item(view));
+			std::string viewType =
+			    XML_TO_CHAR(viewElement->getAttribute(viewTypeAttributeTag_));
 			if(!checkViewType(viewType))
 				continue;
 			storageTypeFound = true;
@@ -329,16 +361,22 @@ std::string TableInfoReader::read(TableBase& table)
 			// table name is now constant, set by parent TableBase
 			// table.getMockupViewP()->setTableName(XML_TO_CHAR(viewElement->getAttribute(viewNameAttributeTag_)));
 			// check for consistency, and show warning
-			if(std::string(XML_TO_CHAR(viewElement->getAttribute(viewNameAttributeTag_))) != table.getMockupViewP()->getTableName())
-				__COUT_WARN__ << "Table Info name mismatch: " << std::string(XML_TO_CHAR(viewElement->getAttribute(viewNameAttributeTag_))) << " vs "
-				              << table.getMockupViewP()->getTableName() << __E__;
+			if(std::string(XML_TO_CHAR(viewElement->getAttribute(
+			       viewNameAttributeTag_))) != table.getMockupViewP()->getTableName())
+				__COUT_WARN__ << "Table Info name mismatch: "
+				              << std::string(XML_TO_CHAR(
+				                     viewElement->getAttribute(viewNameAttributeTag_)))
+				              << " vs " << table.getMockupViewP()->getTableName()
+				              << __E__;
 
-			xercesc::DOMNodeList* columnNodeList = viewElement->getElementsByTagName(columnTag_);
+			xercesc::DOMNodeList* columnNodeList =
+			    viewElement->getElementsByTagName(columnTag_);
 
 			for(XMLSize_t column = 0; column < columnNodeList->getLength(); column++)
 			{
 				//<COLUMN>
-				xercesc::DOMElement* columnElement = dynamic_cast<xercesc::DOMElement*>(columnNodeList->item(column));
+				xercesc::DOMElement* columnElement =
+				    dynamic_cast<xercesc::DOMElement*>(columnNodeList->item(column));
 				//__COUT__ <<
 				// XML_TO_CHAR(columnElement->getAttribute(columnNameAttributeTag_)) <<
 				// __E__;
@@ -346,26 +384,36 @@ std::string TableInfoReader::read(TableBase& table)
 				// Check for default value tag being there (for backwards compatibility)
 				//  Documentation :https://xerces.apache.org/xerces-c/apiDocs-3/classDOMElement.html#a9d6a102d853eafe6619be4324c1555c3
 				std::string defaultValue;
-				bool        isDefaultValue = columnElement->getAttributeNode(columnDefaultValueAttributeTag_) ? true : false;
+				bool        isDefaultValue =
+                    columnElement->getAttributeNode(columnDefaultValueAttributeTag_)
+				               ? true
+				               : false;
 				if(isDefaultValue)
 				{
-					defaultValue = StringMacros::decodeURIComponent(XML_TO_CHAR(columnElement->getAttribute(columnDefaultValueAttributeTag_)));
+					defaultValue = StringMacros::decodeURIComponent(XML_TO_CHAR(
+					    columnElement->getAttribute(columnDefaultValueAttributeTag_)));
 
 					//__COUT__ << "FOUND default value! " << defaultValue << __E__;
 				}
 				std::string minValue;
-				bool        isMinValue = columnElement->getAttributeNode(columnMinValueAttributeTag_) ? true : false;
+				bool        isMinValue =
+                    columnElement->getAttributeNode(columnMinValueAttributeTag_) ? true
+				                                                                        : false;
 				if(isMinValue)
 				{
-					minValue = StringMacros::decodeURIComponent(XML_TO_CHAR(columnElement->getAttribute(columnMinValueAttributeTag_)));
+					minValue = StringMacros::decodeURIComponent(XML_TO_CHAR(
+					    columnElement->getAttribute(columnMinValueAttributeTag_)));
 
 					// __COUT__ << "FOUND min value! " << minValue << __E__;
 				}
 				std::string maxValue;
-				bool        isMaxValue = columnElement->getAttributeNode(columnMaxValueAttributeTag_) ? true : false;
+				bool        isMaxValue =
+                    columnElement->getAttributeNode(columnMaxValueAttributeTag_) ? true
+				                                                                        : false;
 				if(isMaxValue)
 				{
-					maxValue = StringMacros::decodeURIComponent(XML_TO_CHAR(columnElement->getAttribute(columnMaxValueAttributeTag_)));
+					maxValue = StringMacros::decodeURIComponent(XML_TO_CHAR(
+					    columnElement->getAttribute(columnMaxValueAttributeTag_)));
 
 					// __COUT__ << "FOUND max value! " << maxValue << __E__;
 				}
@@ -378,28 +426,34 @@ std::string TableInfoReader::read(TableBase& table)
 				// automatically delete the persistent version of the column info
 				std::string capturedException;
 				// TODO add reading of min / max
-				table.getMockupViewP()->getColumnsInfoP()->push_back(
-				    TableViewColumnInfo(XML_TO_CHAR(columnElement->getAttribute(columnTypeAttributeTag_)),
-				                        XML_TO_CHAR(columnElement->getAttribute(columnNameAttributeTag_)),
-				                        XML_TO_CHAR(columnElement->getAttribute(columnStorageNameAttributeTag_)),
-				                        XML_TO_CHAR(columnElement->getAttribute(columnDataTypeAttributeTag_)),
-				                        isDefaultValue ? &defaultValue : 0,
-				                        XML_TO_CHAR(columnElement->getAttribute(columnDataChoicesAttributeTag_)),
-				                        isMinValue ? &minValue : 0,
-				                        isMaxValue ? &maxValue : 0,
-				                        allowIllegalColumns_ ? &capturedException : 0));  // capture exception string if allowing illegal columns
+				table.getMockupViewP()->getColumnsInfoP()->push_back(TableViewColumnInfo(
+				    XML_TO_CHAR(columnElement->getAttribute(columnTypeAttributeTag_)),
+				    XML_TO_CHAR(columnElement->getAttribute(columnNameAttributeTag_)),
+				    XML_TO_CHAR(
+				        columnElement->getAttribute(columnStorageNameAttributeTag_)),
+				    XML_TO_CHAR(columnElement->getAttribute(columnDataTypeAttributeTag_)),
+				    isDefaultValue ? &defaultValue : 0,
+				    XML_TO_CHAR(
+				        columnElement->getAttribute(columnDataChoicesAttributeTag_)),
+				    isMinValue ? &minValue : 0,
+				    isMaxValue ? &maxValue : 0,
+				    allowIllegalColumns_
+				        ? &capturedException
+				        : 0));  // capture exception string if allowing illegal columns
 
 				// if error detected (this implies allowing illegal columns)
 				//	accumulate and return accumulated errors at end
 				if(capturedException != "")
-					accumulatedExceptions += std::string("\n\nColumn Error:") + capturedException;
+					accumulatedExceptions +=
+					    std::string("\n\nColumn Error:") + capturedException;
 
 				//</COLUMN>
 			}
 
 			// handle view description (which is actually the table
 			//	description since only one view allowed)
-			std::string tableDescription = XML_TO_CHAR(viewElement->getAttribute(viewDescriptionAttributeTag_));
+			std::string tableDescription =
+			    XML_TO_CHAR(viewElement->getAttribute(viewDescriptionAttributeTag_));
 
 			table.setTableDescription(StringMacros::decodeURIComponent(tableDescription));
 			//__COUT__ << "tableDescription = " << tableDescription << __E__;
@@ -408,8 +462,10 @@ std::string TableInfoReader::read(TableBase& table)
 		}
 		if(!storageTypeFound)
 		{
-			__COUT__ << "The type defined in CONFIGURATION_BACKEND_TYPE (" << CONFIGURATION_BACKEND_TYPE_ << ") doesn't match with any of the types defined in "
-			         << tableFile << __E__;
+			__COUT__ << "The type defined in CONFIGURATION_BACKEND_TYPE ("
+			         << CONFIGURATION_BACKEND_TYPE_
+			         << ") doesn't match with any of the types defined in " << tableFile
+			         << __E__;
 
 			delete parser;
 			delete errorHandler;

@@ -17,8 +17,9 @@ namespace ots
 //	This class is a Data Consumer plugin that
 //	allows a single artdaq Board Reader to be
 // instantiated on the read side of an otsdaq Buffer.
-class ARTDAQConsumer : public DataConsumer,
-                       public ARTDAQReaderProcessorBase  // public DataConsumer, public Configurable
+class ARTDAQConsumer
+    : public DataConsumer,
+      public ARTDAQReaderProcessorBase  // public DataConsumer, public Configurable
 {
   public:
 	ARTDAQConsumer(std::string              supervisorApplicationUID,

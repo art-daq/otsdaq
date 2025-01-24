@@ -16,7 +16,8 @@ DataProducerBase::DataProducerBase(const std::string& supervisorApplicationUID,
                                    const std::string& bufferUID,
                                    const std::string& processorUID,
                                    unsigned int       bufferSize)
-    : DataProcessor(supervisorApplicationUID, bufferUID, processorUID), bufferSize_(bufferSize)
+    : DataProcessor(supervisorApplicationUID, bufferUID, processorUID)
+    , bufferSize_(bufferSize)
 {
 	__GEN_COUT__ << "Constructor." << __E__;
 	registerToBuffer();
@@ -24,16 +25,22 @@ DataProducerBase::DataProducerBase(const std::string& supervisorApplicationUID,
 }  // end constructor()
 
 //==============================================================================
-DataProducerBase::~DataProducerBase(void) { __GEN_COUT__ << "Destructed." << __E__; }  // end destructor()
+DataProducerBase::~DataProducerBase(void)
+{
+	__GEN_COUT__ << "Destructed." << __E__;
+}  // end destructor()
 
 //==============================================================================
 // mirror DataConsumer::registerToBuffer
 void DataProducerBase::registerToBuffer(void)
 {
-	__GEN_COUT__ << "Producer '" << DataProcessor::processorUID_ << "' is registering to DataManager Supervisor Buffer '"
-	             << DataProcessor::supervisorApplicationUID_ << ":" << DataProcessor::bufferUID_ << ".'" << std::endl;
+	__GEN_COUT__ << "Producer '" << DataProcessor::processorUID_
+	             << "' is registering to DataManager Supervisor Buffer '"
+	             << DataProcessor::supervisorApplicationUID_ << ":"
+	             << DataProcessor::bufferUID_ << ".'" << std::endl;
 
-	DataManager* dataManager = (DataManagerSingleton::getInstance(supervisorApplicationUID_));
+	DataManager* dataManager =
+	    (DataManagerSingleton::getInstance(supervisorApplicationUID_));
 
 	dataManager->registerProducer(bufferUID_, this);
 
@@ -43,7 +50,8 @@ void DataProducerBase::registerToBuffer(void)
 		std::cout << ss.str() << __E__;
 	}
 
-	__GEN_COUT__ << "Producer '" << DataProcessor::processorUID_ << "' Registered." << __E__;
+	__GEN_COUT__ << "Producer '" << DataProcessor::processorUID_ << "' Registered."
+	             << __E__;
 }  // end registerToBuffer()
 //
 ////==============================================================================

@@ -15,7 +15,9 @@ using namespace ots;
 
 //==============================================================================
 ARTDAQDataLoggerTable::ARTDAQDataLoggerTable(void)
-    : TableBase("ARTDAQDataLoggerTable"), ARTDAQTableBase("ARTDAQDataLoggerTable"), SlowControlsTableBase("ARTDAQDataLoggerTable")
+    : TableBase("ARTDAQDataLoggerTable")
+    , ARTDAQTableBase("ARTDAQDataLoggerTable")
+    , SlowControlsTableBase("ARTDAQDataLoggerTable")
 {
 	//////////////////////////////////////////////////////////////////////
 	// WARNING: the names used in C++ MUST match the Table INFO  		//
@@ -56,7 +58,8 @@ void ARTDAQDataLoggerTable::init(ConfigurationManager* configManager)
 	//if artdaq supervisor is disabled, skip fcl handling
 	if(!ARTDAQTableBase::isARTDAQEnabled(configManager))
 	{
-		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling." << __E__;
+		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling."
+		              << __E__;
 		return;
 	}
 
@@ -69,22 +72,27 @@ void ARTDAQDataLoggerTable::init(ConfigurationManager* configManager)
 	// handle fcl file generation, wherever the level of this table
 
 	auto dataloggers = lastConfigManager_->__SELF_NODE__.getChildren(
-	    /*default filterMap*/ std::map<std::string /*relative-path*/, std::string /*value*/>(),
+	    /*default filterMap*/ std::map<std::string /*relative-path*/,
+	                                   std::string /*value*/>(),
 	    /*default byPriority*/ false,
 	    /*TRUE! onlyStatusTrue*/ true);
 
 	for(auto& datalogger : dataloggers)
 	{
-		ARTDAQTableBase::outputDataReceiverFHICL(datalogger.second, ARTDAQTableBase::ARTDAQAppType::DataLogger);
+		ARTDAQTableBase::outputDataReceiverFHICL(
+		    datalogger.second, ARTDAQTableBase::ARTDAQAppType::DataLogger);
 
-		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::DataLogger, datalogger.second.getValue());
+		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::DataLogger,
+		                              datalogger.second.getValue());
 	}
-} // end init()
+}  // end init()
 
 //==============================================================================
-unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(std::stringstream&                                                             out,
-                                                              ConfigurationManager*                                                          configManager,
-                                                              std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/
+unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(
+    std::stringstream&    out,
+    ConfigurationManager* configManager,
+    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+        channelList /*= 0*/
 ) const
 {
 	/////////////////////////
@@ -94,19 +102,23 @@ unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(std::stringstream&
 	std::string commentStr = "";
 
 	// loop through ARTDAQ DataLogger records starting at ARTDAQSupervisorTable
-	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords = configManager->getNode("ARTDAQSupervisorTable").getChildren();
+	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords =
+	    configManager->getNode("ARTDAQSupervisorTable").getChildren();
 
 	unsigned int numberOfDataLoggerMetricParameters = 0;
 
 	for(auto& artdaqPair : artdaqRecords)  // start main artdaq record loop
 	{
-		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToDataLoggers_).isDisconnected())
+		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToDataLoggers_)
+		       .isDisconnected())
 			continue;
 
 		std::vector<std::pair<std::string, ConfigurationTree>> dataLoggerRecords =
-		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToDataLoggers_).getChildren();
+		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToDataLoggers_)
+		        .getChildren();
 
-		for(auto& dataLoggerPair : dataLoggerRecords)  // start main dataLogger record loop
+		for(auto& dataLoggerPair :
+		    dataLoggerRecords)  // start main dataLogger record loop
 		{
 			if(!dataLoggerPair.second.status())
 				continue;
@@ -122,35 +134,50 @@ unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(std::stringstream&
 					continue;
 
 				auto daqMetricsLinks = daqLink.getNode("daqMetricsLink").getChildren();
-				for(auto& daqMetricsLink : daqMetricsLinks)  // start daqMetricsLinks record loop
+				for(auto& daqMetricsLink :
+				    daqMetricsLinks)  // start daqMetricsLinks record loop
 				{
 					if(!daqMetricsLink.second.status())
 						continue;
 
-					if(daqMetricsLink.second.getNode("metricParametersLink").isDisconnected())
+					if(daqMetricsLink.second.getNode("metricParametersLink")
+					       .isDisconnected())
 						continue;
 
 					// ConfigurationTree slowControlsLink = configManager->getNode("ARTDAQMetricAlarmThresholdsTable");
-					ConfigurationTree slowControlsLink = dataLoggerPair.second.getNode("MetricAlarmThresholdsLink");
+					ConfigurationTree slowControlsLink =
+					    dataLoggerPair.second.getNode("MetricAlarmThresholdsLink");
 
-					auto metricParametersLinks = daqMetricsLink.second.getNode("metricParametersLink").getChildren();
-					for(auto& metricParametersLink : metricParametersLinks)  // start daq MetricParametersLinks record loop
+					auto metricParametersLinks =
+					    daqMetricsLink.second.getNode("metricParametersLink")
+					        .getChildren();
+					for(auto& metricParametersLink :
+					    metricParametersLinks)  // start daq MetricParametersLinks record loop
 					{
 						if(!metricParametersLink.second.status())
 							continue;
 
-						std::string subsystem = metricParametersLink.second.getNode("metricParameterValue")
-						                            .getValueWithDefault<std::string>(std::string("TDAQ_") + __ENV__("MU2E_OWNER"));
+						std::string subsystem =
+						    metricParametersLink.second.getNode("metricParameterValue")
+						        .getValueWithDefault<std::string>(std::string("TDAQ_") +
+						                                          __ENV__("MU2E_OWNER"));
 						if(subsystem.find("Mu2e:") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
 						while(subsystem.find("\"") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("\""), 1, "");
 
 						numberOfDataLoggerMetricParameters =
-						    slowControlsHandler(out, tabStr, commentStr, subsystem, dataLoggerPair.first, slowControlsLink, channelList);
+						    slowControlsHandler(out,
+						                        tabStr,
+						                        commentStr,
+						                        subsystem,
+						                        dataLoggerPair.first,
+						                        slowControlsLink,
+						                        channelList);
 
-						__COUT__ << "DataLogger '" << dataLoggerPair.first << "' number of metrics for slow controls: " << numberOfDataLoggerMetricParameters
-						         << __E__;
+						__COUT__ << "DataLogger '" << dataLoggerPair.first
+						         << "' number of metrics for slow controls: "
+						         << numberOfDataLoggerMetricParameters << __E__;
 					}
 				}
 			}
@@ -166,6 +193,9 @@ unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(std::stringstream&
 
 //==============================================================================
 // return out file path
-std::string ARTDAQDataLoggerTable::setFilePath() const { return SLOWCONTROL_PV_FILE_PATH; }
+std::string ARTDAQDataLoggerTable::setFilePath() const
+{
+	return SLOWCONTROL_PV_FILE_PATH;
+}
 
 DEFINE_OTS_TABLE(ARTDAQDataLoggerTable)

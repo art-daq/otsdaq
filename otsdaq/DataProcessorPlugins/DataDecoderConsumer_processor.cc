@@ -11,14 +11,16 @@
 using namespace ots;
 
 //==============================================================================
-DataDecoderConsumer::DataDecoderConsumer(std::string              supervisorApplicationUID,
-                                         std::string              bufferUID,
-                                         std::string              processorUID,
-                                         const ConfigurationTree& theXDAQContextConfigTree,
-                                         const std::string&       configurationPath)
+DataDecoderConsumer::DataDecoderConsumer(
+    std::string              supervisorApplicationUID,
+    std::string              bufferUID,
+    std::string              processorUID,
+    const ConfigurationTree& theXDAQContextConfigTree,
+    const std::string&       configurationPath)
     : WorkLoop(processorUID)
     , DataDecoder(supervisorApplicationUID, bufferUID, processorUID)
-    , DataConsumer(supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
+    , DataConsumer(
+          supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)
 {
 }
@@ -38,7 +40,8 @@ bool DataDecoderConsumer::workLoopThread(toolbox::task::WorkLoop* workLoop)
 		usleep(100000);
 	else
 	{
-		std::cout << __COUT_HDR_FL__ << __PRETTY_FUNCTION__ << processorUID_ << " Buffer: " << buffer << std::endl;
+		std::cout << __COUT_HDR_FL__ << __PRETTY_FUNCTION__ << processorUID_
+		          << " Buffer: " << buffer << std::endl;
 	}
 	return true;
 }

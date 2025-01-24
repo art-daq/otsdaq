@@ -24,13 +24,14 @@ class IterateTable : public TableBase
 
 	struct Command
 	{
-		void                                                              addTarget() { targets_.push_back(CommandTarget()); }
-		std::string                                                       type_;
-		std::vector<CommandTarget>                                        targets_;
+		void                       addTarget() { targets_.push_back(CommandTarget()); }
+		std::string                type_;
+		std::vector<CommandTarget> targets_;
 		std::map<std::string /*param name*/, std::string /*param value*/> params_;
 	};
 
-	std::vector<IterateTable::Command> getPlanCommands(ConfigurationManager* configManager, const std::string& plan) const;
+	std::vector<IterateTable::Command> getPlanCommands(
+	    ConfigurationManager* configManager, const std::string& plan) const;
 
 	static const std::string COMMAND_BEGIN_LABEL;
 	static const std::string COMMAND_CHOOSE_FSM;

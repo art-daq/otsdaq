@@ -24,14 +24,16 @@
 using namespace ots;
 
 //==============================================================================
-Socket::Socket(const std::string& IPAddress, unsigned int port) : socketNumber_(-1), IPAddress_(IPAddress), requestedPort_(port)
+Socket::Socket(const std::string& IPAddress, unsigned int port)
+    : socketNumber_(-1), IPAddress_(IPAddress), requestedPort_(port)
 //    maxSocketSize_(maxSocketSize)
 {
 	__COUTT__ << "Socket constructor " << IPAddress << ":" << port << __E__;
 
 	if(port >= (1 << 16))
 	{
-		__SS__ << "FATAL: Invalid Port " << port << ". Max port number is " << (1 << 16) - 1 << "." << std::endl;
+		__SS__ << "FATAL: Invalid Port " << port << ". Max port number is "
+		       << (1 << 16) - 1 << "." << std::endl;
 		__SS_THROW__;
 	}
 
@@ -39,18 +41,21 @@ Socket::Socket(const std::string& IPAddress, unsigned int port) : socketNumber_(
 	socketAddress_.sin_family = AF_INET;      // use IPv4 host byte order
 	socketAddress_.sin_port   = htons(port);  // short, network byte order
 
-	__COUTT__ << "IPAddress: " << IPAddress << " port: " << port << " htons: " << socketAddress_.sin_port << std::endl;
+	__COUTT__ << "IPAddress: " << IPAddress << " port: " << port
+	          << " htons: " << socketAddress_.sin_port << std::endl;
 
 	if(inet_aton(IPAddress.c_str(), &socketAddress_.sin_addr) == 0)
 	{
-		__SS__ << "FATAL: Invalid IP:Port combination. Please verify... " << IPAddress << ":" << port << std::endl;
+		__SS__ << "FATAL: Invalid IP:Port combination. Please verify... " << IPAddress
+		       << ":" << port << std::endl;
 		__SS_THROW__;
 	}
 
 	memset(&(socketAddress_.sin_zero), '\0', 8);  // zero the rest of the struct
 
-	__COUTT__ << "Constructed socket for port " << ntohs(socketAddress_.sin_port) << "=" << getPort() << " htons: " << socketAddress_.sin_port << std::endl;
-} //end constructor
+	__COUTT__ << "Constructed socket for port " << ntohs(socketAddress_.sin_port) << "="
+	          << getPort() << " htons: " << socketAddress_.sin_port << std::endl;
+}  //end constructor
 
 //==============================================================================
 // protected constructor
@@ -65,8 +70,9 @@ Socket::Socket(void)
 //==============================================================================
 Socket::~Socket(void)
 {
-	__COUTT__ << "CLOSING THE SOCKET #" << socketNumber_ << " IP: " << IPAddress_ << " port: " << getPort() << " htons: " << socketAddress_.sin_port
-	         << std::endl;
+	__COUTT__ << "CLOSING THE SOCKET #" << socketNumber_ << " IP: " << IPAddress_
+	          << " port: " << getPort() << " htons: " << socketAddress_.sin_port
+	          << std::endl;
 	if(socketNumber_ != -1)
 		close(socketNumber_);
 }
@@ -74,7 +80,8 @@ Socket::~Socket(void)
 //==============================================================================
 void Socket::initialize(unsigned int socketReceiveBufferSize)
 {
-	__COUT__ << "Initializing port " << ntohs(socketAddress_.sin_port) << " htons: " << socketAddress_.sin_port << std::endl;
+	__COUT__ << "Initializing port " << ntohs(socketAddress_.sin_port)
+	         << " htons: " << socketAddress_.sin_port << std::endl;
 	struct addrinfo  hints;
 	struct addrinfo* res;
 	int              status = 0;
@@ -110,14 +117,17 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 		// make a socket:
 		socketNumber_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
-		__COUT__ << "]\tSocket Number: " << socketNumber_ << " for port: " << ntohs(socketAddress_.sin_port) << " initialized." << std::endl;
+		__COUT__ << "]\tSocket Number: " << socketNumber_
+		         << " for port: " << ntohs(socketAddress_.sin_port) << " initialized."
+		         << std::endl;
 		// bind it to the port we passed in to getaddrinfo():
 		if(bind(socketNumber_, res->ai_addr, res->ai_addrlen) == -1)
 		{
 			__COUT__ << "Error********Error********Error********Error********Error******"
 			            "**Error"
 			         << std::endl;
-			__COUT__ << "FAILED BIND FOR PORT: " << port.str() << " ON IP: " << IPAddress_ << std::endl;
+			__COUT__ << "FAILED BIND FOR PORT: " << port.str() << " ON IP: " << IPAddress_
+			         << std::endl;
 			__COUT__ << "Error********Error********Error********Error********Error******"
 			            "**Error"
 			         << std::endl;
@@ -131,7 +141,8 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 			__COUT__ << ":):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):"
 			            "):):):)"
 			         << std::endl;
-			__COUT__ << "SOCKET ON PORT: " << port.str() << " ON IP: " << IPAddress_ << " INITIALIZED OK!" << std::endl;
+			__COUT__ << "SOCKET ON PORT: " << port.str() << " ON IP: " << IPAddress_
+			         << " INITIALIZED OK!" << std::endl;
 			__COUT__ << ":):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):"
 			            "):):):)"
 			         << std::endl;
@@ -141,8 +152,10 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 			char yes = '1';
 			setsockopt(socketNumber_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 			socketInitialized = true;
-			__COUT__ << "]\tSocket Number: " << socketNumber_ << " for port: " << ntohs(socketAddress_.sin_port) << 
-				" htons: " << socketAddress_.sin_port << " initialized." << std::endl;
+			__COUT__ << "]\tSocket Number: " << socketNumber_
+			         << " for port: " << ntohs(socketAddress_.sin_port)
+			         << " htons: " << socketAddress_.sin_port << " initialized."
+			         << std::endl;
 		}
 
 		freeaddrinfo(res);  // free the linked-list
@@ -150,22 +163,35 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 
 	if(!socketInitialized)
 	{
-		__SS__ << "FATAL: Socket could not initialize socket (IP=" << IPAddress_ << ", Port=" << ntohs(socketAddress_.sin_port)
+		__SS__ << "FATAL: Socket could not initialize socket (IP=" << IPAddress_
+		       << ", Port=" << ntohs(socketAddress_.sin_port)
 		       << "). Perhaps it is already in use?" << std::endl;
 		__SS_THROW__;
 	}
 
-	__COUT__ << "Setting socket receive buffer size = " << socketReceiveBufferSize << " 0x" << std::hex << socketReceiveBufferSize << std::dec << __E__;
-	if(setsockopt(socketNumber_, SOL_SOCKET, SO_RCVBUF, (char*)&socketReceiveBufferSize, sizeof(socketReceiveBufferSize)) < 0)
+	__COUT__ << "Setting socket receive buffer size = " << socketReceiveBufferSize
+	         << " 0x" << std::hex << socketReceiveBufferSize << std::dec << __E__;
+	if(setsockopt(socketNumber_,
+	              SOL_SOCKET,
+	              SO_RCVBUF,
+	              (char*)&socketReceiveBufferSize,
+	              sizeof(socketReceiveBufferSize)) < 0)
 	{
-		__COUT_ERR__ << "Failed to set socket receive size to " << socketReceiveBufferSize << ". Attempting to revert to default." << std::endl;
+		__COUT_ERR__ << "Failed to set socket receive size to " << socketReceiveBufferSize
+		             << ". Attempting to revert to default." << std::endl;
 
 		socketReceiveBufferSize = defaultSocketReceiveSize_;
 
-		__COUT__ << "Setting socket receive buffer size = " << socketReceiveBufferSize << " 0x" << std::hex << socketReceiveBufferSize << std::dec << __E__;
-		if(setsockopt(socketNumber_, SOL_SOCKET, SO_RCVBUF, (char*)&socketReceiveBufferSize, sizeof(socketReceiveBufferSize)) < 0)
+		__COUT__ << "Setting socket receive buffer size = " << socketReceiveBufferSize
+		         << " 0x" << std::hex << socketReceiveBufferSize << std::dec << __E__;
+		if(setsockopt(socketNumber_,
+		              SOL_SOCKET,
+		              SO_RCVBUF,
+		              (char*)&socketReceiveBufferSize,
+		              sizeof(socketReceiveBufferSize)) < 0)
 		{
-			__SS__ << "Failed to set socket receive size to " << socketReceiveBufferSize << ". Attempting to revert to default." << std::endl;
+			__SS__ << "Failed to set socket receive size to " << socketReceiveBufferSize
+			       << ". Attempting to revert to default." << std::endl;
 			__SS_THROW__;
 		}
 	}

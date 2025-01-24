@@ -6,7 +6,8 @@
 
 /*! The XDAQ_INSTANTIATOR macro needs to put this macro into the header file (.h) class
  * declaration */
-#define XDAQ_INSTANTIATOR() static xdaq::Application* instantiate(xdaq::ApplicationStub* s)
+#define XDAQ_INSTANTIATOR() \
+	static xdaq::Application* instantiate(xdaq::ApplicationStub* s)
 
 /*! the XDAQ_INSTANTIATOR_IMPL(ns1::ns2::...) macro needs to be put into the
  * implementation file (.cc) of the XDAQ application */

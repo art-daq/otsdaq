@@ -12,13 +12,17 @@ using namespace ots;
 #define __MF_SUBJECT__ "FSM"
 #define mfSubject_ std::string("FSM-") + getStateMachineName()
 
-const char 			FiniteStateMachine::FAILED_STATE 			= 'F';
-const std::string 	FiniteStateMachine::FAILED_STATE_NAME		= "Failed";
-const std::string 	FiniteStateMachine::ERROR_TRANSITION_NAME 	= "Error";
+const char        FiniteStateMachine::FAILED_STATE          = 'F';
+const std::string FiniteStateMachine::FAILED_STATE_NAME     = "Failed";
+const std::string FiniteStateMachine::ERROR_TRANSITION_NAME = "Error";
 
 //==============================================================================
 FiniteStateMachine::FiniteStateMachine(const std::string& stateMachineName)
-    : stateEntranceTime_(0), inTransition_(false), provenanceState_('X'), theErrorMessage_(""), stateMachineName_(stateMachineName)
+    : stateEntranceTime_(0)
+    , inTransition_(false)
+    , provenanceState_('X')
+    , theErrorMessage_("")
+    , stateMachineName_(stateMachineName)
 {
 	__GEN_COUT__ << "Constructing FiniteStateMachine" << __E__;
 }  // end constructor()
@@ -27,40 +31,55 @@ FiniteStateMachine::FiniteStateMachine(const std::string& stateMachineName)
 FiniteStateMachine::~FiniteStateMachine(void) {}
 
 //==============================================================================
-toolbox::fsm::State FiniteStateMachine::getProvenanceState(void) { return provenanceState_; }
+toolbox::fsm::State FiniteStateMachine::getProvenanceState(void)
+{
+	return provenanceState_;
+}
 
 //==============================================================================
-toolbox::fsm::State FiniteStateMachine::getTransitionFinalState(const std::string& transition)
+toolbox::fsm::State FiniteStateMachine::getTransitionFinalState(
+    const std::string& transition)
 {
-	if(stateTransitionTable_[currentState_].find(transition) != stateTransitionTable_[currentState_].end())
+	if(stateTransitionTable_[currentState_].find(transition) !=
+	   stateTransitionTable_[currentState_].end())
 		return stateTransitionTable_[currentState_][transition];
 	else
 	{
 		if(transition == FiniteStateMachine::ERROR_TRANSITION_NAME)
 		{
-			__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to " <<
-				FiniteStateMachine::FAILED_STATE_NAME << __E__;
-			return stateTransitionTable_[FiniteStateMachine::FAILED_STATE][FiniteStateMachine::ERROR_TRANSITION_NAME];
+			__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to "
+			             << FiniteStateMachine::FAILED_STATE_NAME << __E__;
+			return stateTransitionTable_[FiniteStateMachine::FAILED_STATE]
+			                            [FiniteStateMachine::ERROR_TRANSITION_NAME];
 		}
-		__GEN_SS__ << "Cannot find transition name for transition '" << transition << 
-			"' from current state '" << currentState_ << ".'" << __E__;
+		__GEN_SS__ << "Cannot find transition name for transition '" << transition
+		           << "' from current state '" << currentState_ << ".'" << __E__;
 		__GEN_COUT__ << ss.str();
 		XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 	}
 }  // end getTransitionFinalState()
 
 //==============================================================================
-std::string FiniteStateMachine::getProvenanceStateName(void) { return getStateName(getProvenanceState()); }
+std::string FiniteStateMachine::getProvenanceStateName(void)
+{
+	return getStateName(getProvenanceState());
+}
 
 //==============================================================================
-std::string FiniteStateMachine::getCurrentStateName(void) { return getStateName(getCurrentState()); }
+std::string FiniteStateMachine::getCurrentStateName(void)
+{
+	return getStateName(getCurrentState());
+}
 
 //==============================================================================
 // getTimeInState
 //	returns number of seconds elapsed while in current state
 //	returns 0 if invalid (i.e. stateEntranceTime_ is not set - stateEntranceTime_ is
 // initialized to 0)
-time_t FiniteStateMachine::getTimeInState(void) const { return stateEntranceTime_ ? (time(0) - stateEntranceTime_) : 0; }
+time_t FiniteStateMachine::getTimeInState(void) const
+{
+	return stateEntranceTime_ ? (time(0) - stateEntranceTime_) : 0;
+}
 
 //==============================================================================
 std::string FiniteStateMachine::getCurrentTransitionName(const std::string& transition)
@@ -83,23 +102,27 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 	// if looking for current active transition, calculate from provenance state
 	if(transition == "")
 	{
-		if(stateTransitionNameTable_.at(provenanceState_).find(currentTransition_) != stateTransitionNameTable_.at(provenanceState_).end())
+		if(stateTransitionNameTable_.at(provenanceState_).find(currentTransition_) !=
+		   stateTransitionNameTable_.at(provenanceState_).end())
 			return stateTransitionNameTable_.at(provenanceState_).at(currentTransition_);
 		else
 		{
 			if(currentTransition_ == FiniteStateMachine::ERROR_TRANSITION_NAME)
 			{
-				__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to " <<
-					FiniteStateMachine::FAILED_STATE_NAME << __E__;
+				__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to "
+				             << FiniteStateMachine::FAILED_STATE_NAME << __E__;
 				return currentTransition_;
 			}
-			__GEN_SS__ << "Cannot find transition name from '" << getProvenanceStateName() << "' for command: " << currentTransition_ << "...";
-			__GEN_COUT_WARN__ << ss.str(); //reduce to warning because transitions like 'Configure' can jump multiple states, e.g. from Initial
+			__GEN_SS__ << "Cannot find transition name from '" << getProvenanceStateName()
+			           << "' for command: " << currentTransition_ << "...";
+			__GEN_COUT_WARN__
+			    << ss.str();  //reduce to warning because transitions like 'Configure' can jump multiple states, e.g. from Initial
 			return currentTransition_;
 		}
 	}
 
-	if(stateTransitionNameTable_.at(currentState_).find(transition) != stateTransitionNameTable_.at(currentState_).end())
+	if(stateTransitionNameTable_.at(currentState_).find(transition) !=
+	   stateTransitionNameTable_.at(currentState_).end())
 	{
 		return stateTransitionNameTable_.at(currentState_).at(transition);
 	}
@@ -107,20 +130,24 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 	{
 		if(transition == FiniteStateMachine::ERROR_TRANSITION_NAME)
 		{
-			__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to " <<
-				FiniteStateMachine::FAILED_STATE_NAME << __E__;
+			__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to "
+			             << FiniteStateMachine::FAILED_STATE_NAME << __E__;
 			return transition;
 		}
-		__GEN_SS__ << "Cannot find transition name from '" << getCurrentStateName() << "' for command: " << transition << "...";
-		__GEN_COUT_WARN__ << ss.str(); //reduce to warning because transitions like 'Configure' can jump multiple states, e.g. from Initial
+		__GEN_SS__ << "Cannot find transition name from '" << getCurrentStateName()
+		           << "' for command: " << transition << "...";
+		__GEN_COUT_WARN__
+		    << ss.str();  //reduce to warning because transitions like 'Configure' can jump multiple states, e.g. from Initial
 		return transition;
 	}
 }  // end getCurrentTransitionName()
 
 //==============================================================================
-std::string FiniteStateMachine::getTransitionName(const toolbox::fsm::State from, const std::string& transition)
+std::string FiniteStateMachine::getTransitionName(const toolbox::fsm::State from,
+                                                  const std::string&        transition)
 {
-	if(stateTransitionNameTable_[from].find(transition) != stateTransitionNameTable_[from].end())
+	if(stateTransitionNameTable_[from].find(transition) !=
+	   stateTransitionNameTable_[from].end())
 	{
 		return stateTransitionNameTable_[from][transition];
 	}
@@ -128,20 +155,23 @@ std::string FiniteStateMachine::getTransitionName(const toolbox::fsm::State from
 	{
 		if(transition == FiniteStateMachine::ERROR_TRANSITION_NAME)
 		{
-			__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to " <<
-				FiniteStateMachine::FAILED_STATE_NAME << __E__;
+			__GEN_COUT__ << FiniteStateMachine::ERROR_TRANSITION_NAME << "'ing to "
+			             << FiniteStateMachine::FAILED_STATE_NAME << __E__;
 			return transition;
 		}
 		std::ostringstream error;
-		error << "Cannot find transition name from '" << from << "' for command: " << transition << __E__;
+		error << "Cannot find transition name from '" << from
+		      << "' for command: " << transition << __E__;
 		XCEPT_RAISE(toolbox::fsm::exception::Exception, error.str());
 	}
 }  // end getTransitionName()
 
 //==============================================================================
-std::string FiniteStateMachine::getTransitionParameter(const toolbox::fsm::State from, const std::string& transition)
+std::string FiniteStateMachine::getTransitionParameter(const toolbox::fsm::State from,
+                                                       const std::string& transition)
 {
-	if(stateTransitionParameterTable_[from].find(transition) != stateTransitionParameterTable_[from].end())
+	if(stateTransitionParameterTable_[from].find(transition) !=
+	   stateTransitionParameterTable_[from].end())
 	{
 		return stateTransitionParameterTable_[from][transition];
 	}
@@ -149,7 +179,10 @@ std::string FiniteStateMachine::getTransitionParameter(const toolbox::fsm::State
 }  // end getTransitionParameter()
 
 //==============================================================================
-std::string FiniteStateMachine::getTransitionFinalStateName(const std::string& transition) { return getStateName(getTransitionFinalState(transition)); }
+std::string FiniteStateMachine::getTransitionFinalStateName(const std::string& transition)
+{
+	return getStateName(getTransitionFinalState(transition));
+}
 
 //==============================================================================
 bool FiniteStateMachine::execTransition(const std::string& transition)
@@ -166,7 +199,8 @@ bool FiniteStateMachine::execTransition(const std::string& transition)
 //
 //	Note: For iteration handling, there is iterationIndex_ and iterationWorkFlag_.
 //		These are different (higher level) than the members of VStateMachine.
-bool FiniteStateMachine::execTransition(const std::string& transition, const xoap::MessageReference& message)
+bool FiniteStateMachine::execTransition(const std::string&            transition,
+                                        const xoap::MessageReference& message)
 {
 	__GEN_COUTV__(transition);
 
@@ -174,30 +208,40 @@ bool FiniteStateMachine::execTransition(const std::string& transition, const xoa
 	{
 		while(inTransition_)
 		{
-			__GEN_COUT__ << "Currently in transition '" << currentTransition_ << "' executed from current state " << getProvenanceStateName()
-			             << ". Attempting to wait for the transition to complete." << __E__;
+			__GEN_COUT__ << "Currently in transition '" << currentTransition_
+			             << "' executed from current state " << getProvenanceStateName()
+			             << ". Attempting to wait for the transition to complete."
+			             << __E__;
 			sleep(1);
 		}
 		sleep(1);
 
 		if(getStateName(getCurrentState()) == FiniteStateMachine::FAILED_STATE_NAME)
 		{
-			__GEN_COUT_INFO__ << "Already failed. Current state: " << getStateName(getCurrentState()) << " last state: " << getProvenanceStateName() << __E__;
+			__GEN_COUT_INFO__ << "Already failed. Current state: "
+			                  << getStateName(getCurrentState())
+			                  << " last state: " << getProvenanceStateName() << __E__;
 			return true;
 		}
-		__GEN_COUT_INFO__ << "Failing now!! Current state: " << getStateName(getCurrentState()) << " last state: " << getProvenanceStateName() << __E__;
+		__GEN_COUT_INFO__ << "Failing now!! Current state: "
+		                  << getStateName(getCurrentState())
+		                  << " last state: " << getProvenanceStateName() << __E__;
 
 		// find any valid transition and take it..
 		//	all transition functions must check for a failure
 		//	flag, and throw an exception to go to Fail state
 
-		std::map<std::string, toolbox::fsm::State> transitions = getTransitions(getCurrentState());
+		std::map<std::string, toolbox::fsm::State> transitions =
+		    getTransitions(getCurrentState());
 		for(const auto& transitionPair : transitions)
 		{
-			__GEN_COUT__ << "Taking any transition to indirect failure.. found '" << transitionPair.first << "'" << __E__;
-			__GEN_COUT__ << "Taking fail transition from Current state: " << getStateName(getCurrentState()) << " last state: " << getProvenanceStateName()
-			             << __E__;
-			toolbox::Event::Reference event(new toolbox::Event(transitionPair.first, this));
+			__GEN_COUT__ << "Taking any transition to indirect failure.. found '"
+			             << transitionPair.first << "'" << __E__;
+			__GEN_COUT__ << "Taking fail transition from Current state: "
+			             << getStateName(getCurrentState())
+			             << " last state: " << getProvenanceStateName() << __E__;
+			toolbox::Event::Reference event(
+			    new toolbox::Event(transitionPair.first, this));
 
 			try
 			{
@@ -206,7 +250,9 @@ bool FiniteStateMachine::execTransition(const std::string& transition, const xoa
 			catch(toolbox::fsm::exception::Exception& e)
 			{
 				std::ostringstream error;
-				error << "Transition " << transition << " was not executed from current state " << getStateName(getCurrentState())
+				error << "Transition " << transition
+				      << " was not executed from current state "
+				      << getStateName(getCurrentState())
 				      << ". There was an error: " << e.what();
 				__GEN_COUT_ERR__ << error.str() << __E__;
 			}
@@ -222,19 +268,23 @@ bool FiniteStateMachine::execTransition(const std::string& transition, const xoa
 
 	if(inTransition_)
 	{
-		__GEN_COUT_WARN__ << "In transition, and received another transition: " << transition << ". Ignoring..." << __E__;
+		__GEN_COUT_WARN__ << "In transition, and received another transition: "
+		                  << transition << ". Ignoring..." << __E__;
 		return false;
 	}
 	inTransition_             = true;
 	bool transitionSuccessful = true;
 	provenanceState_          = getCurrentState();
 
-	std::map<std::string, toolbox::fsm::State> transitions = getTransitions(getCurrentState());
+	std::map<std::string, toolbox::fsm::State> transitions =
+	    getTransitions(getCurrentState());
 	if(transitions.find(transition) == transitions.end())
 	{
 		inTransition_ = false;
 		std::ostringstream error;
-		error << transition << " is not in the list of the transitions from current state " << getStateName(getCurrentState());
+		error << transition
+		      << " is not in the list of the transitions from current state "
+		      << getStateName(getCurrentState());
 		__GEN_COUT_ERR__ << error.str() << __E__;
 		__GEN_COUTV__(getErrorMessage());
 		XCEPT_RAISE(toolbox::fsm::exception::Exception, error.str());
@@ -249,8 +299,9 @@ bool FiniteStateMachine::execTransition(const std::string& transition, const xoa
 	try
 	{
 		toolbox::Event::Reference event(new toolbox::Event(transition, this));
-		theMessage_ = message;  // Even if it is bad, there can only be 1 transition at a time
-		                        // so this parameter should not change during all transition
+		theMessage_ =
+		    message;  // Even if it is bad, there can only be 1 transition at a time
+		              // so this parameter should not change during all transition
 		currentTransition_ = transition;
 
 		this->fireEvent(event);
@@ -260,7 +311,9 @@ bool FiniteStateMachine::execTransition(const std::string& transition, const xoa
 		inTransition_        = false;
 		transitionSuccessful = false;
 		std::ostringstream error;
-		__GEN_SS__ << "Transition " << transition << " was not executed from current state " << getStateName(getCurrentState())
+		__GEN_SS__ << "Transition " << transition
+		           << " was not executed from current state "
+		           << getStateName(getCurrentState())
 		           << ". There was an error: " << e.what();
 		__GEN_COUT_ERR__ << ss.str() << __E__;
 		// diagService_->reportError(err.str(),DIAGERROR);
@@ -272,14 +325,20 @@ bool FiniteStateMachine::execTransition(const std::string& transition, const xoa
 	{
 		inTransition_        = false;
 		transitionSuccessful = false;
-		__GEN_SS__ << "Transition " << transition << " was not executed from current state " << getStateName(getCurrentState())
-		           << ". There was an unknown error.";
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		__GEN_SS__ << "Transition " << transition
+		           << " was not executed from current state "
+		           << getStateName(getCurrentState()) << ". There was an unknown error.";
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__GEN_COUT_ERR__ << ss.str() << __E__;
 		// diagService_->reportError(err.str(),DIAGERROR);
 
@@ -305,7 +364,10 @@ void FiniteStateMachine::setErrorMessage(const std::string& errMessage, bool app
 }  // end setErrorMessage()
 
 //==============================================================================
-const std::string& FiniteStateMachine::getErrorMessage() const { return theErrorMessage_; }
+const std::string& FiniteStateMachine::getErrorMessage() const
+{
+	return theErrorMessage_;
+}
 
 //==============================================================================
 void FiniteStateMachine::setInitialState(toolbox::fsm::State state)

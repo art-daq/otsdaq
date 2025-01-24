@@ -14,7 +14,9 @@ using namespace ots;
 //	then allowIllegalColumns is set for InfoReader
 //	If accumulatedExceptions pointer = 0, then illegal columns throw std::runtime_error
 // exception
-SlowControlsTableBase::SlowControlsTableBase(std::string tableName, std::string* accumulatedExceptions /* =0 */) : TableBase(tableName, accumulatedExceptions)
+SlowControlsTableBase::SlowControlsTableBase(std::string  tableName,
+                                             std::string* accumulatedExceptions /* =0 */)
+    : TableBase(tableName, accumulatedExceptions)
 {
 	// December 2021 started seeing an issue where traceTID is found to be cleared to 0
 	//	which crashes TRACE if __COUT__ is used in a Table plugin constructor
@@ -44,7 +46,9 @@ SlowControlsTableBase::SlowControlsTableBase(void) : TableBase("SlowControlsTabl
 SlowControlsTableBase::~SlowControlsTableBase(void) {}  // end destructor()
 
 //==============================================================================
-void SlowControlsTableBase::getSlowControlsChannelList(std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>& channelList) const
+void SlowControlsTableBase::getSlowControlsChannelList(
+    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>&
+        channelList) const
 {
 	outputEpicsPVFile(lastConfigManager_, &channelList);
 }  // end getSlowControlsChannelList()
@@ -58,24 +62,29 @@ bool SlowControlsTableBase::slowControlsChannelListHasChanged(void) const
 
 	if(lastConfigManager_ == nullptr)
 	{
-		__SS__ << "Illegal call to get status of channel list, no config manager has been initialized!" << __E__;
+		__SS__ << "Illegal call to get status of channel list, no config manager has "
+		          "been initialized!"
+		       << __E__;
 		__SS_THROW__;
 	}
 
 	// if here, lastConfigManager_ pointer is defined
 	bool changed = outputEpicsPVFile(lastConfigManager_);
-	__COUT__ << "slowControlsChannelListHasChanged(): return " << std::boolalpha << std::to_string(changed) << __E__;
+	__COUT__ << "slowControlsChannelListHasChanged(): return " << std::boolalpha
+	         << std::to_string(changed) << __E__;
 	return changed;
 }  // end slowControlsChannelListHasChanged()
 
 //==============================================================================
-unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&                                                             out,
-                                                        std::string&                                                                   tabStr,
-                                                        std::string&                                                                   commentStr,
-                                                        std::string&                                                                   subsystem,
-                                                        std::string&                                                                   location,
-                                                        ConfigurationTree                                                              slowControlsLink,
-                                                        std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/
+unsigned int SlowControlsTableBase::slowControlsHandler(
+    std::stringstream& out,
+    std::string&       tabStr,
+    std::string&       commentStr,
+    std::string&       subsystem,
+    std::string&       location,
+    ConfigurationTree  slowControlsLink,
+    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+        channelList /*= 0*/
 ) const
 {
 	unsigned int numberOfChannels = 0;
@@ -84,13 +93,15 @@ unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&      
 	if(!slowControlsLink.isDisconnected())
 	// if(1)
 	{
-		std::vector<std::pair<std::string, ConfigurationTree>> channelChildren = slowControlsLink.getChildren();
+		std::vector<std::pair<std::string, ConfigurationTree>> channelChildren =
+		    slowControlsLink.getChildren();
 
 		// first do single bit binary fields
 		bool first = true;
 		for(auto& channel : channelChildren)
 		{
-			if(channel.second.getNode(channelColNames_.colChannelDataType_).getValue<std::string>() != "1b")
+			if(channel.second.getNode(channelColNames_.colChannelDataType_)
+			       .getValue<std::string>() != "1b")
 				continue;  // skip non-binary fields
 
 			if(first)  // if first, output header
@@ -106,11 +117,14 @@ unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&      
 
 			++numberOfChannels;
 
-			std::string pvName  = channel.first;
-			std::string comment = channel.second.getNode(TableViewColumnInfo::COL_NAME_COMMENT).getValue<std::string>();
+			std::string pvName = channel.first;
+			std::string comment =
+			    channel.second.getNode(TableViewColumnInfo::COL_NAME_COMMENT)
+			        .getValue<std::string>();
 
 			// output channel
-			OUT << "{ \"" << subsystem << "\", \"" << location << "\", \"" << pvName << "\", \""
+			OUT << "{ \"" << subsystem << "\", \"" << location << "\", \"" << pvName
+			    << "\", \""
 			    << "NOT_OK"
 			    << "\", \""
 			    << "OK"
@@ -134,7 +148,8 @@ unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&      
 		first = true;
 		for(auto& channel : channelChildren)
 		{
-			if(channel.second.getNode(channelColNames_.colChannelDataType_).getValue<std::string>() == "1b")
+			if(channel.second.getNode(channelColNames_.colChannelDataType_)
+			       .getValue<std::string>() == "1b")
 				continue;  // skip non-binary fields
 
 			if(first)  // if first, output header
@@ -150,16 +165,27 @@ unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&      
 
 			++numberOfChannels;
 
-			std::string pvName    = channel.first;
-			std::string comment   = channel.second.getNode(TableViewColumnInfo::COL_NAME_COMMENT).getValue<std::string>();
+			std::string pvName = channel.first;
+			std::string comment =
+			    channel.second.getNode(TableViewColumnInfo::COL_NAME_COMMENT)
+			        .getValue<std::string>();
 			std::string precision = "0";
-			std::string units     = channel.second.getNode(channelColNames_.colUnits_).getValue<std::string>();
+			std::string units     = channel.second.getNode(channelColNames_.colUnits_)
+			                        .getValue<std::string>();
 			// channel.second.getNode(channelColNames_.colChannelDataType_)
 			//     .getValue<std::string>();
-			std::string low_alarm_lmt  = channel.second.getNode(channelColNames_.colLowLowThreshold_).getValueWithDefault<std::string>("-1000");
-			std::string low_warn_lmt   = channel.second.getNode(channelColNames_.colLowThreshold_).getValueWithDefault<std::string>("-100");
-			std::string high_warn_lmt  = channel.second.getNode(channelColNames_.colHighThreshold_).getValueWithDefault<std::string>("100");
-			std::string high_alarm_lmt = channel.second.getNode(channelColNames_.colHighHighThreshold_).getValueWithDefault<std::string>("1000");
+			std::string low_alarm_lmt =
+			    channel.second.getNode(channelColNames_.colLowLowThreshold_)
+			        .getValueWithDefault<std::string>("-1000");
+			std::string low_warn_lmt =
+			    channel.second.getNode(channelColNames_.colLowThreshold_)
+			        .getValueWithDefault<std::string>("-100");
+			std::string high_warn_lmt =
+			    channel.second.getNode(channelColNames_.colHighThreshold_)
+			        .getValueWithDefault<std::string>("100");
+			std::string high_alarm_lmt =
+			    channel.second.getNode(channelColNames_.colHighHighThreshold_)
+			        .getValueWithDefault<std::string>("1000");
 			if(channelList != nullptr)
 			{
 				std::vector<std::string> pvSettings;
@@ -170,12 +196,15 @@ unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&      
 				pvSettings.push_back(high_alarm_lmt);
 				pvSettings.push_back(precision);
 				pvSettings.push_back(units);
-				channelList->push_back(std::make_pair("Mu2e:" + subsystem + ":" + location + ":" + pvName, pvSettings));
+				channelList->push_back(std::make_pair(
+				    "Mu2e:" + subsystem + ":" + location + ":" + pvName, pvSettings));
 			}
 
 			// output channel
-			OUT << "{ \"" << subsystem << "\", \"" << location << "\", \"" << pvName << "\", \"" << precision  // PREC
-			    << "\", \"" << units << "\", \"" << low_alarm_lmt << "\", \"" << low_warn_lmt << "\", \"" << high_warn_lmt << "\", \"" << high_alarm_lmt
+			OUT << "{ \"" << subsystem << "\", \"" << location << "\", \"" << pvName
+			    << "\", \"" << precision  // PREC
+			    << "\", \"" << units << "\", \"" << low_alarm_lmt << "\", \""
+			    << low_warn_lmt << "\", \"" << high_warn_lmt << "\", \"" << high_alarm_lmt
 			    << "\", \""
 			    << ""
 			    << "\", \"" <<  // MDEL
@@ -198,7 +227,8 @@ unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&      
 		}
 	}
 	else
-		__COUT__ << "Disconnected EventBuilder Slow Controls metric channels link, so assuming "
+		__COUT__ << "Disconnected EventBuilder Slow Controls metric channels link, so "
+		            "assuming "
 		            "no slow controls channels."
 		         << __E__;
 
@@ -207,8 +237,10 @@ unsigned int SlowControlsTableBase::slowControlsHandler(std::stringstream&      
 
 //==============================================================================
 // return channel list if pointer passed
-bool SlowControlsTableBase::outputEpicsPVFile(ConfigurationManager*                                                          configManager,
-                                              std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/) const
+bool SlowControlsTableBase::outputEpicsPVFile(
+    ConfigurationManager* configManager,
+    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+        channelList /*= 0*/) const
 {
 	/*
 	    the file will look something like this:
@@ -264,11 +296,13 @@ bool SlowControlsTableBase::outputEpicsPVFile(ConfigurationManager*             
 			std::fseek(fp, 0, SEEK_END);
 			previousConfigFileContents.resize(std::ftell(fp));
 			std::rewind(fp);
-			std::fread(&previousConfigFileContents[0], 1, previousConfigFileContents.size(), fp);
+			std::fread(
+			    &previousConfigFileContents[0], 1, previousConfigFileContents.size(), fp);
 			std::fclose(fp);
 		}
 		else
-			__COUT_WARN__ << "Could not open EPICS IOC config file at " << filename << __E__;
+			__COUT_WARN__ << "Could not open EPICS IOC config file at " << filename
+			              << __E__;
 
 	}  // done reading
 
@@ -276,7 +310,8 @@ bool SlowControlsTableBase::outputEpicsPVFile(ConfigurationManager*             
 	// generate xdaq run parameter file
 
 	std::stringstream out;
-	unsigned int      numberOfParameters = slowControlsHandlerConfig(out, configManager, channelList);
+	unsigned int      numberOfParameters =
+	    slowControlsHandlerConfig(out, configManager, channelList);
 	__COUTV__(numberOfParameters);
 
 	// check if need to restart EPICS ioc
@@ -335,7 +370,8 @@ bool SlowControlsTableBase::outputEpicsPVFile(ConfigurationManager*             
 				fclose(fp);
 			}
 			else
-				__COUT_WARN__ << "Could not open dirty file: " << EPICS_DIRTY_FILE_PATH << __E__;
+				__COUT_WARN__ << "Could not open dirty file: " << EPICS_DIRTY_FILE_PATH
+				              << __E__;
 		}
 
 		// Indicate that PV list has changed

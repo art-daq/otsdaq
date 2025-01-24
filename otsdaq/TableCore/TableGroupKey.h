@@ -18,8 +18,8 @@ class TableGroupKey
 
 	unsigned int key(void) const;
 	bool         isInvalid(void) const;
-	std::string  toString(void) const;  
-    std::string  str() const { return toString(); } // alternative alias method
+	std::string  toString(void) const;
+	std::string  str() const { return toString(); }  // alternative alias method
 
 	// Operators
 	TableGroupKey& operator=(const unsigned int key);
@@ -31,11 +31,16 @@ class TableGroupKey
 	bool           operator>(const TableGroupKey& key) const;
 	bool           operator<=(const TableGroupKey& key) const { return !operator>(key); }
 	bool           operator>=(const TableGroupKey& key) const { return !operator<(key); }
-	TableGroupKey&  operator*=(const unsigned int a);  //to support StringMacros on TableGroupKey types
-	TableGroupKey&  operator*=(const TableGroupKey a); //to support StringMacros on TableGroupKey types
-	TableGroupKey&  operator+=(const TableGroupKey a); //to support StringMacros on TableGroupKey types
-	TableGroupKey&  operator-=(const TableGroupKey a); //to support StringMacros on TableGroupKey types
-	TableGroupKey&  operator/=(const TableGroupKey a); //to support StringMacros on TableGroupKey types
+	TableGroupKey& operator*=(
+	    const unsigned int a);  //to support StringMacros on TableGroupKey types
+	TableGroupKey& operator*=(
+	    const TableGroupKey a);  //to support StringMacros on TableGroupKey types
+	TableGroupKey& operator+=(
+	    const TableGroupKey a);  //to support StringMacros on TableGroupKey types
+	TableGroupKey& operator-=(
+	    const TableGroupKey a);  //to support StringMacros on TableGroupKey types
+	TableGroupKey& operator/=(
+	    const TableGroupKey a);  //to support StringMacros on TableGroupKey types
 
 	friend std::ostream& operator<<(std::ostream& out, const TableGroupKey& key)
 	{
@@ -44,12 +49,18 @@ class TableGroupKey
 	}
 
 	static TableGroupKey getNextKey(const TableGroupKey& key = TableGroupKey());
-	static std::string   getFullGroupString(const std::string& groupName, const TableGroupKey& key, const std::string& preKey = "_v", const std::string& postKey = "");
-	static void          getGroupNameAndKey(const std::string& fullGroupString, std::string& groupName, TableGroupKey& key);
+	static std::string   getFullGroupString(const std::string&   groupName,
+	                                        const TableGroupKey& key,
+	                                        const std::string&   preKey  = "_v",
+	                                        const std::string&   postKey = "");
+	static void          getGroupNameAndKey(const std::string& fullGroupString,
+	                                        std::string&       groupName,
+	                                        TableGroupKey&     key);
 	static unsigned int  getDefaultKey(void);
 	static unsigned int  getInvalidKey(void);
 
 	static const unsigned int INVALID;
+
   private:
 	static const unsigned int DEFAULT;
 	unsigned int              key_;

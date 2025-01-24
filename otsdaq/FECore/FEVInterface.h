@@ -23,14 +23,16 @@
 
 #include "otsdaq/Macros/CoutMacros.h"
 
-#define __ARGS__                                                                                                                 \
-	[[maybe_unused]] const frontEndMacroStruct_t &feMacroStruct, [[maybe_unused]] FEVInterface::frontEndMacroConstArgs_t argsIn, \
-	    [[maybe_unused]] FEVInterface::frontEndMacroArgs_t argsOut
+#define __ARGS__                                                               \
+	[[maybe_unused]] const frontEndMacroStruct_t &              feMacroStruct, \
+	    [[maybe_unused]] FEVInterface::frontEndMacroConstArgs_t argsIn,        \
+	    [[maybe_unused]] FEVInterface::frontEndMacroArgs_t      argsOut
 
 #define __GET_ARG_IN_NO_DEFAULT__(X, Y) getFEMacroConstArgumentValue<Y>(argsIn, X)
 #define __GET_ARG_IN_DEFAULT__(X, Y, D) getFEMacroConstArgumentValue<Y>(argsIn, X, D)
 #define GET_4TH_ARG(arg1, arg2, arg3, arg4, ...) arg4
-#define __GET_ARG_IN_CHOOSER__(...) GET_4TH_ARG(__VA_ARGS__, __GET_ARG_IN_DEFAULT__, __GET_ARG_IN_NO_DEFAULT__, )
+#define __GET_ARG_IN_CHOOSER__(...) \
+	GET_4TH_ARG(__VA_ARGS__, __GET_ARG_IN_DEFAULT__, __GET_ARG_IN_NO_DEFAULT__, )
 #define __GET_ARG_IN__(...) __GET_ARG_IN_CHOOSER__(__VA_ARGS__)(__VA_ARGS__)
 // #define __GET_ARG_IN_DEFAULT__(X, Y, D) getFEMacroConstArgumentValueWithDefault<Y>(argsIn, X, D)
 #define __GET_ARG_OUT__(X, Y) getFEMacroArgumentValue<Y>(argsOut, X)

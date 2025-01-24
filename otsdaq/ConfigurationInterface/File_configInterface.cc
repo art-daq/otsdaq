@@ -13,12 +13,17 @@
 using namespace ots;
 
 //==============================================================================
-void FileConfigurationInterface::fill(TableBase* configuration, TableVersion version) const { ConfigurationHandler::readXML(configuration, version); }
+void FileConfigurationInterface::fill(TableBase*   configuration,
+                                      TableVersion version) const
+{
+	ConfigurationHandler::readXML(configuration, version);
+}
 
 //==============================================================================
 // findLatestVersion
 //	return INVALID if no existing versions
-TableVersion FileConfigurationInterface::findLatestVersion(const TableBase* configuration) const
+TableVersion FileConfigurationInterface::findLatestVersion(
+    const TableBase* configuration) const
 {
 	auto versions = getVersions(configuration);
 	if(!versions.size())
@@ -28,10 +33,15 @@ TableVersion FileConfigurationInterface::findLatestVersion(const TableBase* conf
 
 //==============================================================================
 // save active configuration view to file
-void FileConfigurationInterface::saveActiveVersion(const TableBase* configuration, bool /*overwrite*/) const { ConfigurationHandler::writeXML(configuration); }
+void FileConfigurationInterface::saveActiveVersion(const TableBase* configuration,
+                                                   bool /*overwrite*/) const
+{
+	ConfigurationHandler::writeXML(configuration);
+}
 
 //==============================================================================
-std::set<TableVersion> FileConfigurationInterface::getVersions(const TableBase* configuration) const
+std::set<TableVersion> FileConfigurationInterface::getVersions(
+    const TableBase* configuration) const
 {
 	std::string configDir = ConfigurationHandler::getXMLDir(configuration);
 	std::cout << __COUT_HDR_FL__ << "ConfigurationDir: " << configDir << std::endl;
@@ -41,7 +51,8 @@ std::set<TableVersion> FileConfigurationInterface::getVersions(const TableBase* 
 
 	if((dp = opendir(configDir.c_str())) == 0)
 	{
-		__SS__ << "ERROR:(" << errno << ").  Can't open directory: " << configDir << std::endl;
+		__SS__ << "ERROR:(" << errno << ").  Can't open directory: " << configDir
+		       << std::endl;
 		__COUT_ERR__ << ss.str();
 		__SS_THROW__;
 	}
@@ -67,7 +78,9 @@ std::set<TableVersion> FileConfigurationInterface::getVersions(const TableBase* 
 
 			if(dirName.empty() || it != dirName.end())
 			{
-				std::cout << __COUT_HDR_FL__ << "WARNING: there is a non numeric directory in " << configDir << " called " << dirName
+				std::cout << __COUT_HDR_FL__
+				          << "WARNING: there is a non numeric directory in " << configDir
+				          << " called " << dirName
 				          << " please remove it from there since only numeric "
 				             "directories are considered."
 				          << std::endl;

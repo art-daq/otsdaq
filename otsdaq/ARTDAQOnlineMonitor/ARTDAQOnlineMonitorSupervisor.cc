@@ -15,7 +15,8 @@ XDAQ_INSTANTIATOR_IMPL(ots::ARTDAQOnlineMonitorSupervisor)
 #define FAKE_CONFIG_NAME "ots_config"
 
 //==============================================================================
-ots::ARTDAQOnlineMonitorSupervisor::ARTDAQOnlineMonitorSupervisor(xdaq::ApplicationStub* stub)
+ots::ARTDAQOnlineMonitorSupervisor::ARTDAQOnlineMonitorSupervisor(
+    xdaq::ApplicationStub* stub)
     : CoreSupervisorBase(stub), partition_(getSupervisorProperty("partition", 0))
 {
 	__SUP_COUT__ << "Constructor." << __E__;
@@ -51,7 +52,8 @@ void ots::ARTDAQOnlineMonitorSupervisor::init(void)
 }  // end init()
 
 //==============================================================================
-void ots::ARTDAQOnlineMonitorSupervisor::transitionInitializing(toolbox::Event::Reference /*event*/)
+void ots::ARTDAQOnlineMonitorSupervisor::transitionInitializing(
+    toolbox::Event::Reference /*event*/)
 try
 {
 	__SUP_COUT__ << "Initializing..." << __E__;
@@ -65,57 +67,86 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknown error was caught while Initializing. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while Initializing. Please checked the logs."
+	       << __E__;
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 	__SS_THROW__;
 }  // end transitionInitializing() error handling
 
 //==============================================================================
-void ots::ARTDAQOnlineMonitorSupervisor::transitionConfiguring(toolbox::Event::Reference /*e*/)
+void ots::ARTDAQOnlineMonitorSupervisor::transitionConfiguring(
+    toolbox::Event::Reference /*e*/)
 {
 	std::pair<std::string /*group name*/, TableGroupKey> theGroup(
-		SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getParameters().getValue("ConfigurationTableGroupName"),
-		TableGroupKey(SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getParameters().getValue("ConfigurationTableGroupKey")));
+	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+	        .getParameters()
+	        .getValue("ConfigurationTableGroupName"),
+	    TableGroupKey(SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+	                      .getParameters()
+	                      .getValue("ConfigurationTableGroupKey")));
 
-	__SUP_COUT__ << "Configuration table group name: " << theGroup.first << " key: " << theGroup.second << std::endl;
+	__SUP_COUT__ << "Configuration table group name: " << theGroup.first
+	             << " key: " << theGroup.second << std::endl;
 
 	try
-	{		
+	{
 		//disable version tracking to accept untracked versions to be selected by the FSM transition source
-		theConfigurationManager_->loadTableGroup(theGroup.first, theGroup.second, true /*doActivate*/,
-			0,0,0,0,0,0,false,0,0,ConfigurationManager::LoadGroupType::ALL_TYPES,
-			true /*ignoreVersionTracking*/);
+		theConfigurationManager_->loadTableGroup(
+		    theGroup.first,
+		    theGroup.second,
+		    true /*doActivate*/,
+		    0,
+		    0,
+		    0,
+		    0,
+		    0,
+		    0,
+		    false,
+		    0,
+		    0,
+		    ConfigurationManager::LoadGroupType::ALL_TYPES,
+		    true /*ignoreVersionTracking*/);
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Error loading table group '" << theGroup.first << "(" << theGroup.second << ")! \n" << e.what() << __E__;
+		__SS__ << "Error loading table group '" << theGroup.first << "("
+		       << theGroup.second << ")! \n"
+		       << e.what() << __E__;
 		__SUP_COUT_ERR__ << ss.str();
 		// ExceptionHandler(ExceptionHandlerRethrow::no, ss.str());
 
 		//__SS_THROW_ONLY__;
 		theStateMachine_.setErrorMessage(ss.str());
 		throw toolbox::fsm::exception::Exception(
-			"Transition Error" /*name*/, ss.str() /* message*/, "ARTDAQOnlineMonitorSupervisor::transitionConfiguring" /*module*/, __LINE__ /*line*/, __FUNCTION__ /*function*/
+		    "Transition Error" /*name*/,
+		    ss.str() /* message*/,
+		    "ARTDAQOnlineMonitorSupervisor::transitionConfiguring" /*module*/,
+		    __LINE__ /*line*/,
+		    __FUNCTION__ /*function*/
 		);
 	}
 	catch(...)
 	{
-		__SS__ << "Unknown error loading table group '" << theGroup.first << "(" << theGroup.second << ")!" << __E__;
+		__SS__ << "Unknown error loading table group '" << theGroup.first << "("
+		       << theGroup.second << ")!" << __E__;
 		__SUP_COUT_ERR__ << ss.str();
 		// ExceptionHandler(ExceptionHandlerRethrow::no, ss.str());
 
 		//__SS_THROW_ONLY__;
 		theStateMachine_.setErrorMessage(ss.str());
 		throw toolbox::fsm::exception::Exception(
-			"Transition Error" /*name*/, ss.str() /* message*/, "ARTDAQOnlineMonitorSupervisor::transitionConfiguring" /*module*/, __LINE__ /*line*/, __FUNCTION__ /*function*/
+		    "Transition Error" /*name*/,
+		    ss.str() /* message*/,
+		    "ARTDAQOnlineMonitorSupervisor::transitionConfiguring" /*module*/,
+		    __LINE__ /*line*/,
+		    __FUNCTION__ /*function*/
 		);
 	}
-
 
 	try
 	{
 		ConfigurationTree theSupervisorNode = getSupervisorTableNode();
-		om_rank_                            = theSupervisorNode.getNode("MonitorID").getValue<int>();
+		om_rank_ = theSupervisorNode.getNode("MonitorID").getValue<int>();
 
 		__SUP_COUT__ << "Building configuration directory" << __E__;
 
@@ -123,33 +154,47 @@ void ots::ARTDAQOnlineMonitorSupervisor::transitionConfiguring(toolbox::Event::R
 		//		boost::filesystem::remove_all(ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME, ignored);
 
 		// Make directory for art process logfiles
-		boost::filesystem::create_directory(std::string(__ENV__("OTSDAQ_LOG_ROOT")) + "/" + theSupervisorNode.getValue(), ignored);
+		boost::filesystem::create_directory(
+		    std::string(__ENV__("OTSDAQ_LOG_ROOT")) + "/" + theSupervisorNode.getValue(),
+		    ignored);
 		mkdir((ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME).c_str(), 0755);
 
 		// Generate Online Monitor FHICL
 		ARTDAQTableBase::outputOnlineMonitorFHICL(theSupervisorNode);
-		ARTDAQTableBase::flattenFHICL(ARTDAQTableBase::ARTDAQAppType::Monitor, theSupervisorNode.getValue());
+		ARTDAQTableBase::flattenFHICL(ARTDAQTableBase::ARTDAQAppType::Monitor,
+		                              theSupervisorNode.getValue());
 
-		symlink(ARTDAQTableBase::getFlatFHICLFilename(ARTDAQTableBase::ARTDAQAppType::Monitor, theSupervisorNode.getValue()).c_str(),
-				(ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" + theSupervisorNode.getValue() + ".fcl").c_str());
-		config_file_name_ = ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" + theSupervisorNode.getValue() + ".fcl";
+		symlink(ARTDAQTableBase::getFlatFHICLFilename(
+		            ARTDAQTableBase::ARTDAQAppType::Monitor, theSupervisorNode.getValue())
+		            .c_str(),
+		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" +
+		         theSupervisorNode.getValue() + ".fcl")
+		            .c_str());
+		config_file_name_ = ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" +
+		                    theSupervisorNode.getValue() + ".fcl";
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Error configuring the ARTDAQOnlineMonitorSupervisor! \n" << e.what() << __E__;
+		__SS__ << "Error configuring the ARTDAQOnlineMonitorSupervisor! \n"
+		       << e.what() << __E__;
 		__SUP_COUT_ERR__ << ss.str();
 		// ExceptionHandler(ExceptionHandlerRethrow::no, ss.str());
 
 		//__SS_THROW_ONLY__;
 		theStateMachine_.setErrorMessage(ss.str());
 		throw toolbox::fsm::exception::Exception(
-			"Transition Error" /*name*/, ss.str() /* message*/, "ARTDAQOnlineMonitorSupervisor::transitionConfiguring" /*module*/, __LINE__ /*line*/, __FUNCTION__ /*function*/
+		    "Transition Error" /*name*/,
+		    ss.str() /* message*/,
+		    "ARTDAQOnlineMonitorSupervisor::transitionConfiguring" /*module*/,
+		    __LINE__ /*line*/,
+		    __FUNCTION__ /*function*/
 		);
 	}
-} //end transitionConfiguring()
+}  //end transitionConfiguring()
 
 //==============================================================================
-void ots::ARTDAQOnlineMonitorSupervisor::transitionStarting(toolbox::Event::Reference /*event*/)
+void ots::ARTDAQOnlineMonitorSupervisor::transitionStarting(
+    toolbox::Event::Reference /*event*/)
 try
 {
 	__SUP_COUT__ << "Starting..." << __E__;
@@ -165,13 +210,15 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknown error was caught while Starting. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while Starting. Please checked the logs."
+	       << __E__;
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 	__SS_THROW__;
 }  // end transitionStarting() error handling
 
 //==============================================================================
-void ots::ARTDAQOnlineMonitorSupervisor::transitionStopping(toolbox::Event::Reference /*event*/)
+void ots::ARTDAQOnlineMonitorSupervisor::transitionStopping(
+    toolbox::Event::Reference /*event*/)
 try
 {
 	__SUP_COUT__ << "Stopping..." << __E__;
@@ -187,13 +234,15 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknown error was caught while Stopping. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while Stopping. Please checked the logs."
+	       << __E__;
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 	__SS_THROW__;
 }  // end transitionStopping() error handling
 
 //==============================================================================
-void ots::ARTDAQOnlineMonitorSupervisor::transitionPausing(toolbox::Event::Reference /*event*/)
+void ots::ARTDAQOnlineMonitorSupervisor::transitionPausing(
+    toolbox::Event::Reference /*event*/)
 try
 {
 	__SUP_COUT__ << "Pausing..." << __E__;
@@ -215,7 +264,8 @@ catch(...)
 }  // end transitionPausing() error handling
 
 //==============================================================================
-void ots::ARTDAQOnlineMonitorSupervisor::transitionResuming(toolbox::Event::Reference /*event*/)
+void ots::ARTDAQOnlineMonitorSupervisor::transitionResuming(
+    toolbox::Event::Reference /*event*/)
 try
 {
 	__SUP_COUT__ << "Resuming..." << __E__;
@@ -231,13 +281,15 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknown error was caught while Resuming. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while Resuming. Please checked the logs."
+	       << __E__;
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 	__SS_THROW__;
 }  // end transitionResuming() error handling
 
 //==============================================================================
-void ots::ARTDAQOnlineMonitorSupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
+void ots::ARTDAQOnlineMonitorSupervisor::transitionHalting(
+    toolbox::Event::Reference /*event*/)
 try
 {
 	__SUP_COUT__ << "Halting..." << __E__;
@@ -250,23 +302,29 @@ catch(const std::runtime_error& e)
 {
 	const std::string transitionName = "Halting";
 	// if halting from Failed state, then ignore errors
-	if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::FAILED_STATE_NAME ||
-	   theStateMachine_.getProvenanceStateName() == RunControlStateMachine::HALTED_STATE_NAME)
+	if(theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::FAILED_STATE_NAME ||
+	   theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::HALTED_STATE_NAME)
 	{
 		__SUP_COUT_INFO__ << "Error was caught while halting (but ignoring because "
 		                     "previous state was '"
-		                  << RunControlStateMachine::FAILED_STATE_NAME << "'): " << e.what() << __E__;
+		                  << RunControlStateMachine::FAILED_STATE_NAME
+		                  << "'): " << e.what() << __E__;
 	}
 	else  // if not previously in Failed state, then fail
 	{
-		__SUP_SS__ << "Error was caught while " << transitionName << ": " << e.what() << __E__;
+		__SUP_SS__ << "Error was caught while " << transitionName << ": " << e.what()
+		           << __E__;
 		__SUP_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
-		throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
-		                                         ss.str() /* message*/,
-		                                         "ots::ARTDAQOnlineMonitorSupervisorBase::transition" + transitionName /*module*/,
-		                                         __LINE__ /*line*/,
-		                                         __FUNCTION__ /*function*/
+		throw toolbox::fsm::exception::Exception(
+		    "Transition Error" /*name*/,
+		    ss.str() /* message*/,
+		    "ots::ARTDAQOnlineMonitorSupervisorBase::transition" +
+		        transitionName /*module*/,
+		    __LINE__ /*line*/,
+		    __FUNCTION__ /*function*/
 		);
 	}
 }  // end transitionHalting() std::runtime_error exception handling
@@ -274,8 +332,10 @@ catch(...)
 {
 	const std::string transitionName = "Halting";
 	// if halting from Failed state, then ignore errors
-	if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::FAILED_STATE_NAME ||
-	   theStateMachine_.getProvenanceStateName() == RunControlStateMachine::HALTED_STATE_NAME)
+	if(theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::FAILED_STATE_NAME ||
+	   theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::HALTED_STATE_NAME)
 	{
 		__SUP_COUT_INFO__ << "Unknown error was caught while halting (but ignoring "
 		                     "because previous state was '"
@@ -283,23 +343,26 @@ catch(...)
 	}
 	else  // if not previously in Failed state, then fail
 	{
-		__SUP_SS__ << "Unknown error was caught while " << transitionName << ". Please checked the logs." << __E__;
+		__SUP_SS__ << "Unknown error was caught while " << transitionName
+		           << ". Please checked the logs." << __E__;
 		__SUP_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
 		artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 
-		throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
-		                                         ss.str() /* message*/,
-		                                         "ots::ARTDAQOnlineMonitorSupervisor::transition" + transitionName /*module*/,
-		                                         __LINE__ /*line*/,
-		                                         __FUNCTION__ /*function*/
+		throw toolbox::fsm::exception::Exception(
+		    "Transition Error" /*name*/,
+		    ss.str() /* message*/,
+		    "ots::ARTDAQOnlineMonitorSupervisor::transition" + transitionName /*module*/,
+		    __LINE__ /*line*/,
+		    __FUNCTION__ /*function*/
 		);
 	}
 }  // end transitionHalting() exception handling
 
 //==============================================================================
-void ots::ARTDAQOnlineMonitorSupervisor::enteringError(toolbox::Event::Reference /*event*/)
+void ots::ARTDAQOnlineMonitorSupervisor::enteringError(
+    toolbox::Event::Reference /*event*/)
 {
 	__SUP_COUT__ << "Entering error recovery state" << __E__;
 
@@ -311,7 +374,8 @@ void ots::ARTDAQOnlineMonitorSupervisor::enteringError(toolbox::Event::Reference
 
 //==============================================================================
 
-void ots::ARTDAQOnlineMonitorSupervisor::RunArt(const std::string& config_file, const std::shared_ptr<std::atomic<pid_t>>& pid_out)
+void ots::ARTDAQOnlineMonitorSupervisor::RunArt(
+    const std::string& config_file, const std::shared_ptr<std::atomic<pid_t>>& pid_out)
 {
 	do
 	{
@@ -322,7 +386,8 @@ void ots::ARTDAQOnlineMonitorSupervisor::RunArt(const std::string& config_file, 
 
 		char* filename = new char[config_file.length() + 1];
 		memcpy(filename, config_file.c_str(), config_file.length());
-		filename[config_file.length()] = '\0';  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+		filename[config_file.length()] =
+		    '\0';  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
 #ifdef DEBUG_ART
 		std::string debugArgS = "--config-out=" + app_name + "_art.out";
@@ -330,9 +395,17 @@ void ots::ARTDAQOnlineMonitorSupervisor::RunArt(const std::string& config_file, 
 		memcpy(debugArg, debugArgS.c_str(), debugArgS.length());
 		debugArg[debugArgS.length()] = '\0';
 
-		std::vector<char*> args{const_cast<char*>("art"), const_cast<char*>("-c"), filename, debugArg, NULL};  // NOLINT(cppcoreguidelines-pro-type-const-cast)
+		std::vector<char*> args{const_cast<char*>("art"),
+		                        const_cast<char*>("-c"),
+		                        filename,
+		                        debugArg,
+		                        NULL};  // NOLINT(cppcoreguidelines-pro-type-const-cast)
 #else
-		std::vector<char*> args{const_cast<char*>("art"), const_cast<char*>("-c"), filename, nullptr};  // NOLINT(cppcoreguidelines-pro-type-const-cast)
+		std::vector<char*> args{
+		    const_cast<char*>("art"),
+		    const_cast<char*>("-c"),
+		    filename,
+		    nullptr};  // NOLINT(cppcoreguidelines-pro-type-const-cast)
 #endif
 
 		pid = fork();
@@ -344,7 +417,8 @@ void ots::ARTDAQOnlineMonitorSupervisor::RunArt(const std::string& config_file, 
 			std::string envVarValue = std::to_string(partition_);
 			if(setenv(envVarKey.c_str(), envVarValue.c_str(), 1) != 0)
 			{
-				TLOG(TLVL_ERROR) << "Error setting environment variable \"" << envVarKey << "\" in the environment of a child art process. "
+				TLOG(TLVL_ERROR) << "Error setting environment variable \"" << envVarKey
+				                 << "\" in the environment of a child art process. "
 				                 << "This may result in incorrect TCP port number "
 				                 << "assignments or other issues, and data may "
 				                 << "not flow through the system correctly.";
@@ -353,13 +427,15 @@ void ots::ARTDAQOnlineMonitorSupervisor::RunArt(const std::string& config_file, 
 			envVarValue = getSupervisorTableNode().getValue();
 			if(setenv(envVarKey.c_str(), envVarValue.c_str(), 1) != 0)
 			{
-				TLOG(TLVL_DEBUG) << "Error setting environment variable \"" << envVarKey << "\" in the environment of a child art process. ";
+				TLOG(TLVL_DEBUG) << "Error setting environment variable \"" << envVarKey
+				                 << "\" in the environment of a child art process. ";
 			}
 			envVarKey   = "ARTDAQ_RANK";
 			envVarValue = std::to_string(om_rank_);
 			if(setenv(envVarKey.c_str(), envVarValue.c_str(), 1) != 0)
 			{
-				TLOG(TLVL_DEBUG) << "Error setting environment variable \"" << envVarKey << "\" in the environment of a child art process. ";
+				TLOG(TLVL_DEBUG) << "Error setting environment variable \"" << envVarKey
+				                 << "\" in the environment of a child art process. ";
 			}
 
 			execvp("art", &args[0]);
@@ -376,11 +452,13 @@ void ots::ARTDAQOnlineMonitorSupervisor::RunArt(const std::string& config_file, 
 		TLOG(TLVL_INFO) << "Removing PID " << pid << " from process list";
 		if(sts < 0)
 		{
-			TLOG(TLVL_WARNING) << "Error occurred in waitid for art process " << pid << ": " << errno << " (" << strerror(errno) << ").";
+			TLOG(TLVL_WARNING) << "Error occurred in waitid for art process " << pid
+			                   << ": " << errno << " (" << strerror(errno) << ").";
 		}
 		else if(status.si_code == CLD_EXITED && status.si_status == 0)
 		{
-			TLOG(TLVL_INFO) << "art process " << pid << " exited normally, " << (restart_art_ ? "restarting" : "not restarting");
+			TLOG(TLVL_INFO) << "art process " << pid << " exited normally, "
+			                << (restart_art_ ? "restarting" : "not restarting");
 		}
 		else
 		{
@@ -403,8 +481,10 @@ void ots::ARTDAQOnlineMonitorSupervisor::RunArt(const std::string& config_file, 
 			}
 
 			TLOG((restart_art_ ? TLVL_WARNING : TLVL_ERROR))
-			    << "art process " << pid << " " << exit_type << " " << status.si_status << (status.si_code == CLD_DUMPED ? " (core dumped)" : "")
-			    << " after running for " << std::setprecision(2) << std::fixed << art_lifetime << " seconds, "
+			    << "art process " << pid << " " << exit_type << " " << status.si_status
+			    << (status.si_code == CLD_DUMPED ? " (core dumped)" : "")
+			    << " after running for " << std::setprecision(2) << std::fixed
+			    << art_lifetime << " seconds, "
 			    << (restart_art_ ? "restarting" : "not restarting");
 		}
 	} while(restart_art_);
@@ -430,14 +510,16 @@ void ots::ARTDAQOnlineMonitorSupervisor::StartArtProcess(const std::string& conf
 	}
 	if(*art_pid_ <= 0)
 	{
-		TLOG(TLVL_WARNING) << "art process has not started after 5s. Check art configuration!"
-		                   << " (pid=" << *art_pid_ << ")";
+		TLOG(TLVL_WARNING)
+		    << "art process has not started after 5s. Check art configuration!"
+		    << " (pid=" << *art_pid_ << ")";
 		__SS__ << "art process has not started after 5s. Check art configuration!"
 		       << " (pid=" << *art_pid_ << ")" << __E__;
 		__SUP_SS_THROW__;
 	}
 
-	TLOG(TLVL_INFO) << std::setw(4) << std::fixed << "art initialization took " << artdaq::TimeUtils::GetElapsedTime(startTime) << " seconds.";
+	TLOG(TLVL_INFO) << std::setw(4) << std::fixed << "art initialization took "
+	                << artdaq::TimeUtils::GetElapsedTime(startTime) << " seconds.";
 }
 
 //==============================================================================
@@ -473,14 +555,18 @@ void ots::ARTDAQOnlineMonitorSupervisor::ShutdownArtProcess()
 	int gentle_wait_ms   = 1000 * 2;
 	int int_wait_ms      = 1000;
 
-	TLOG(TLVL_TRACE) << "Waiting up to " << graceful_wait_ms << " ms for art process to exit gracefully";
+	TLOG(TLVL_TRACE) << "Waiting up to " << graceful_wait_ms
+	                 << " ms for art process to exit gracefully";
 	for(int ii = 0; ii < graceful_wait_ms; ++ii)
 	{
 		usleep(1000);
 
 		if(!check_pid())
 		{
-			TLOG(TLVL_INFO) << "art process exited after " << artdaq::TimeUtils::GetElapsedTimeMilliseconds(shutdown_start) << " ms.";
+			TLOG(TLVL_INFO) << "art process exited after "
+			                << artdaq::TimeUtils::GetElapsedTimeMilliseconds(
+			                       shutdown_start)
+			                << " ms.";
 			return;
 		}
 	}
@@ -492,14 +578,18 @@ void ots::ARTDAQOnlineMonitorSupervisor::ShutdownArtProcess()
 		kill(*art_pid_, SIGQUIT);
 	}
 
-	TLOG(TLVL_TRACE) << "Waiting up to " << gentle_wait_ms << " ms for art process to exit from SIGQUIT";
+	TLOG(TLVL_TRACE) << "Waiting up to " << gentle_wait_ms
+	                 << " ms for art process to exit from SIGQUIT";
 	for(int ii = 0; ii < gentle_wait_ms; ++ii)
 	{
 		usleep(1000);
 
 		if(!check_pid())
 		{
-			TLOG(TLVL_INFO) << "art process exited after " << artdaq::TimeUtils::GetElapsedTimeMilliseconds(shutdown_start) << " ms (SIGQUIT).";
+			TLOG(TLVL_INFO) << "art process exited after "
+			                << artdaq::TimeUtils::GetElapsedTimeMilliseconds(
+			                       shutdown_start)
+			                << " ms (SIGQUIT).";
 			return;
 		}
 	}
@@ -509,14 +599,18 @@ void ots::ARTDAQOnlineMonitorSupervisor::ShutdownArtProcess()
 		kill(*art_pid_, SIGINT);
 	}
 
-	TLOG(TLVL_TRACE) << "Waiting up to " << int_wait_ms << " ms for art process to exit from SIGINT";
+	TLOG(TLVL_TRACE) << "Waiting up to " << int_wait_ms
+	                 << " ms for art process to exit from SIGINT";
 	for(int ii = 0; ii < int_wait_ms; ++ii)
 	{
 		usleep(1000);
 
 		if(!check_pid())
 		{
-			TLOG(TLVL_INFO) << "art process exited after " << artdaq::TimeUtils::GetElapsedTimeMilliseconds(shutdown_start) << " ms (SIGINT).";
+			TLOG(TLVL_INFO) << "art process exited after "
+			                << artdaq::TimeUtils::GetElapsedTimeMilliseconds(
+			                       shutdown_start)
+			                << " ms (SIGINT).";
 			return;
 		}
 	}
@@ -529,7 +623,9 @@ void ots::ARTDAQOnlineMonitorSupervisor::ShutdownArtProcess()
 			usleep(1000);
 		}
 	}
-	TLOG(TLVL_INFO) << "art process exited after " << artdaq::TimeUtils::GetElapsedTimeMilliseconds(shutdown_start) << " ms (SIGKILL).";
+	TLOG(TLVL_INFO) << "art process exited after "
+	                << artdaq::TimeUtils::GetElapsedTimeMilliseconds(shutdown_start)
+	                << " ms (SIGKILL).";
 }
 
 //==============================================================================

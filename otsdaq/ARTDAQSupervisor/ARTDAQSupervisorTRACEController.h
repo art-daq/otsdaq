@@ -16,7 +16,7 @@ class ARTDAQSupervisorTRACEController : public ITRACEController
 	virtual void                               setTraceLevelMask(std::string const& label,
 	                                                             TraceMasks const&  lvl,
 	                                                             std::string const& hostname = "localhost",
-	                                                             std::string const& mode     = "ALL") final;
+	                                                             std::string const& mode = "ALL") final;
 
 	void setSupervisorPtr(ARTDAQSupervisor* ptr) { theSupervisor_ = ptr; }
 

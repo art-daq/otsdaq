@@ -46,16 +46,37 @@ const std::string RunControlStateMachine::STOP_TRANSITION_NAME  		= "Stop";
 
 //==============================================================================
 RunControlStateMachine::RunControlStateMachine(const std::string& name)
-    : theStateMachine_(name), asyncFailureReceived_(false), asyncPauseExceptionReceived_(false), asyncStopExceptionReceived_(false)
+    : theStateMachine_(name)
+    , asyncFailureReceived_(false)
+    , asyncPauseExceptionReceived_(false)
+    , asyncStopExceptionReceived_(false)
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
-	theStateMachine_.addState('I', RunControlStateMachine::INITIAL_STATE_NAME, 		this, &RunControlStateMachine::stateInitial);
-	theStateMachine_.addState('H', RunControlStateMachine::HALTED_STATE_NAME, 		this, &RunControlStateMachine::stateHalted);
-	theStateMachine_.addState('C', RunControlStateMachine::CONFIGURED_STATE_NAME, 	this, &RunControlStateMachine::stateConfigured);
-	theStateMachine_.addState('R', RunControlStateMachine::RUNNING_STATE_NAME, 		this, &RunControlStateMachine::stateRunning);
-	theStateMachine_.addState('P', RunControlStateMachine::PAUSED_STATE_NAME, 		this, &RunControlStateMachine::statePaused);
-	theStateMachine_.addState('X', RunControlStateMachine::SHUTDOWN_STATE_NAME, 	this, &RunControlStateMachine::stateShutdown);
+	theStateMachine_.addState('I',
+	                          RunControlStateMachine::INITIAL_STATE_NAME,
+	                          this,
+	                          &RunControlStateMachine::stateInitial);
+	theStateMachine_.addState('H',
+	                          RunControlStateMachine::HALTED_STATE_NAME,
+	                          this,
+	                          &RunControlStateMachine::stateHalted);
+	theStateMachine_.addState('C',
+	                          RunControlStateMachine::CONFIGURED_STATE_NAME,
+	                          this,
+	                          &RunControlStateMachine::stateConfigured);
+	theStateMachine_.addState('R',
+	                          RunControlStateMachine::RUNNING_STATE_NAME,
+	                          this,
+	                          &RunControlStateMachine::stateRunning);
+	theStateMachine_.addState('P',
+	                          RunControlStateMachine::PAUSED_STATE_NAME,
+	                          this,
+	                          &RunControlStateMachine::statePaused);
+	theStateMachine_.addState('X',
+	                          RunControlStateMachine::SHUTDOWN_STATE_NAME,
+	                          this,
+	                          &RunControlStateMachine::stateShutdown);
 	// theStateMachine_.addState('v', "Recovering",  this,
 	// &RunControlStateMachine::stateRecovering);  theStateMachine_.addState('T',
 	// "TTSTestMode", this, &RunControlStateMachine::stateTTSTestMode);
@@ -64,69 +85,200 @@ RunControlStateMachine::RunControlStateMachine(const std::string& name)
 	// exceptions like..
 	//	XCEPT_RAISE (toolbox::fsm::exception::Exception, ss.str());)
 	//	take state machine to "failed" otherwise
-	theStateMachine_.setStateName(FiniteStateMachine::FAILED_STATE, RunControlStateMachine::FAILED_STATE_NAME);
-	theStateMachine_.setFailedStateTransitionAction(this, &RunControlStateMachine::enteringError);
-	theStateMachine_.setFailedStateTransitionChanged(this, &RunControlStateMachine::inError);
+	theStateMachine_.setStateName(FiniteStateMachine::FAILED_STATE,
+	                              RunControlStateMachine::FAILED_STATE_NAME);
+	theStateMachine_.setFailedStateTransitionAction(
+	    this, &RunControlStateMachine::enteringError);
+	theStateMachine_.setFailedStateTransitionChanged(this,
+	                                                 &RunControlStateMachine::inError);
 
 	//clang-format off
 	// this line was added to get out of Failed state
 	RunControlStateMachine::addStateTransition(
-		FiniteStateMachine::FAILED_STATE, 'H', RunControlStateMachine::HALT_TRANSITION_NAME, "Halting", this, &RunControlStateMachine::transitionHalting);
+	    FiniteStateMachine::FAILED_STATE,
+	    'H',
+	    RunControlStateMachine::HALT_TRANSITION_NAME,
+	    "Halting",
+	    this,
+	    &RunControlStateMachine::transitionHalting);
 	RunControlStateMachine::addStateTransition(
-	    FiniteStateMachine::FAILED_STATE, 'X', RunControlStateMachine::SHUTDOWN_TRANSITION_NAME, "Shutting Down", this, &RunControlStateMachine::transitionShuttingDown);
+	    FiniteStateMachine::FAILED_STATE,
+	    'X',
+	    RunControlStateMachine::SHUTDOWN_TRANSITION_NAME,
+	    "Shutting Down",
+	    this,
+	    &RunControlStateMachine::transitionShuttingDown);
 	RunControlStateMachine::addStateTransition(
-		FiniteStateMachine::FAILED_STATE, FiniteStateMachine::FAILED_STATE, RunControlStateMachine::ERROR_TRANSITION_NAME, "Erroring", this, &RunControlStateMachine::enteringError);
+	    FiniteStateMachine::FAILED_STATE,
+	    FiniteStateMachine::FAILED_STATE,
+	    RunControlStateMachine::ERROR_TRANSITION_NAME,
+	    "Erroring",
+	    this,
+	    &RunControlStateMachine::enteringError);
 	RunControlStateMachine::addStateTransition(
-		FiniteStateMachine::FAILED_STATE, FiniteStateMachine::FAILED_STATE, RunControlStateMachine::FAIL_TRANSITION_NAME, "Failing", this, &RunControlStateMachine::transitionShuttingDown);
+	    FiniteStateMachine::FAILED_STATE,
+	    FiniteStateMachine::FAILED_STATE,
+	    RunControlStateMachine::FAIL_TRANSITION_NAME,
+	    "Failing",
+	    this,
+	    &RunControlStateMachine::transitionShuttingDown);
 
 	RunControlStateMachine::addStateTransition(
-	    'H', 'C', RunControlStateMachine::CONFIGURE_TRANSITION_NAME, "Configuring", "ConfigurationAlias", this, &RunControlStateMachine::transitionConfiguring);
+	    'H',
+	    'C',
+	    RunControlStateMachine::CONFIGURE_TRANSITION_NAME,
+	    "Configuring",
+	    "ConfigurationAlias",
+	    this,
+	    &RunControlStateMachine::transitionConfiguring);
 	RunControlStateMachine::addStateTransition(
-	    'H', 'X', RunControlStateMachine::SHUTDOWN_TRANSITION_NAME, "Shutting Down", this, &RunControlStateMachine::transitionShuttingDown);
+	    'H',
+	    'X',
+	    RunControlStateMachine::SHUTDOWN_TRANSITION_NAME,
+	    "Shutting Down",
+	    this,
+	    &RunControlStateMachine::transitionShuttingDown);
 	RunControlStateMachine::addStateTransition(
-	    'X', 'I', RunControlStateMachine::STARTUP_TRANSITION_NAME, "Starting Up", this, &RunControlStateMachine::transitionStartingUp);
+	    'X',
+	    'I',
+	    RunControlStateMachine::STARTUP_TRANSITION_NAME,
+	    "Starting Up",
+	    this,
+	    &RunControlStateMachine::transitionStartingUp);
 
 	// Every state can transition to halted
 	RunControlStateMachine::addStateTransition(
-		'I', 'H', RunControlStateMachine::INIT_TRANSITION_NAME, "Initializing", this, &RunControlStateMachine::transitionInitializing);
+	    'I',
+	    'H',
+	    RunControlStateMachine::INIT_TRANSITION_NAME,
+	    "Initializing",
+	    this,
+	    &RunControlStateMachine::transitionInitializing);
 	RunControlStateMachine::addStateTransition(
-		'H', 'H', RunControlStateMachine::HALT_TRANSITION_NAME, "Halting", this, &RunControlStateMachine::transitionHalting);
+	    'H',
+	    'H',
+	    RunControlStateMachine::HALT_TRANSITION_NAME,
+	    "Halting",
+	    this,
+	    &RunControlStateMachine::transitionHalting);
 	RunControlStateMachine::addStateTransition(
-		'C', 'H', RunControlStateMachine::HALT_TRANSITION_NAME, "Halting", this, &RunControlStateMachine::transitionHalting);
+	    'C',
+	    'H',
+	    RunControlStateMachine::HALT_TRANSITION_NAME,
+	    "Halting",
+	    this,
+	    &RunControlStateMachine::transitionHalting);
 	RunControlStateMachine::addStateTransition(
-		'R', 'H', RunControlStateMachine::ABORT_TRANSITION_NAME, "Aborting", this, &RunControlStateMachine::transitionHalting);
+	    'R',
+	    'H',
+	    RunControlStateMachine::ABORT_TRANSITION_NAME,
+	    "Aborting",
+	    this,
+	    &RunControlStateMachine::transitionHalting);
 	RunControlStateMachine::addStateTransition(
-		'P', 'H', RunControlStateMachine::ABORT_TRANSITION_NAME, "Aborting", this, &RunControlStateMachine::transitionHalting);
+	    'P',
+	    'H',
+	    RunControlStateMachine::ABORT_TRANSITION_NAME,
+	    "Aborting",
+	    this,
+	    &RunControlStateMachine::transitionHalting);
 
 	RunControlStateMachine::addStateTransition(
-		'R', 'P', RunControlStateMachine::PAUSE_TRANSITION_NAME, "Pausing", this, &RunControlStateMachine::transitionPausing);
+	    'R',
+	    'P',
+	    RunControlStateMachine::PAUSE_TRANSITION_NAME,
+	    "Pausing",
+	    this,
+	    &RunControlStateMachine::transitionPausing);
 	RunControlStateMachine::addStateTransition(
-		'P', 'R', RunControlStateMachine::RESUME_TRANSITION_NAME, "Resuming", this, &RunControlStateMachine::transitionResuming);
+	    'P',
+	    'R',
+	    RunControlStateMachine::RESUME_TRANSITION_NAME,
+	    "Resuming",
+	    this,
+	    &RunControlStateMachine::transitionResuming);
 	RunControlStateMachine::addStateTransition(
-		'C', 'R', RunControlStateMachine::START_TRANSITION_NAME, "Starting", this, &RunControlStateMachine::transitionStarting);
+	    'C',
+	    'R',
+	    RunControlStateMachine::START_TRANSITION_NAME,
+	    "Starting",
+	    this,
+	    &RunControlStateMachine::transitionStarting);
 	RunControlStateMachine::addStateTransition(
-		'R', 'C', RunControlStateMachine::STOP_TRANSITION_NAME, "Stopping", this, &RunControlStateMachine::transitionStopping);
+	    'R',
+	    'C',
+	    RunControlStateMachine::STOP_TRANSITION_NAME,
+	    "Stopping",
+	    this,
+	    &RunControlStateMachine::transitionStopping);
 	RunControlStateMachine::addStateTransition(
-		'P', 'C', RunControlStateMachine::STOP_TRANSITION_NAME, "Stopping", this, &RunControlStateMachine::transitionStopping);
+	    'P',
+	    'C',
+	    RunControlStateMachine::STOP_TRANSITION_NAME,
+	    "Stopping",
+	    this,
+	    &RunControlStateMachine::transitionStopping);
 	//clang-format on
 
 	// NOTE!! There must be a defined message handler for each transition name created
 	// above
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::INIT_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::CONFIGURE_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::START_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::STOP_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::PAUSE_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::RESUME_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::HALT_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::ABORT_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::SHUTDOWN_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::STARTUP_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::FAIL_TRANSITION_NAME, XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, RunControlStateMachine::ERROR_TRANSITION_NAME, XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::INIT_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::CONFIGURE_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::START_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::STOP_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::PAUSE_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::RESUME_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::HALT_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::ABORT_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::SHUTDOWN_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::STARTUP_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::FAIL_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           RunControlStateMachine::ERROR_TRANSITION_NAME,
+	           XDAQ_NS_URI);
 
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, "AsyncError", XDAQ_NS_URI);
-	xoap::bind(this, &RunControlStateMachine::runControlMessageHandler, "AsyncPauseException", XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           "AsyncError",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &RunControlStateMachine::runControlMessageHandler,
+	           "AsyncPauseException",
+	           XDAQ_NS_URI);
 
 	reset();
 }
@@ -137,7 +289,8 @@ RunControlStateMachine::~RunControlStateMachine(void) {}
 //==============================================================================
 void RunControlStateMachine::reset(void)
 {
-	__GEN_COUT__ << "Resetting RunControlStateMachine with name '" << theStateMachine_.getStateMachineName() << "'..." << __E__;
+	__GEN_COUT__ << "Resetting RunControlStateMachine with name '"
+	             << theStateMachine_.getStateMachineName() << "'..." << __E__;
 	theStateMachine_.setInitialState('I');
 	theStateMachine_.reset();
 
@@ -177,7 +330,8 @@ void RunControlStateMachine::reset(void)
 //	Handles the command broadcast message from the Gateway Supervisor
 //	and maps the command to a transition function, allowing for multiple iteration
 //	passes through the transition function.
-xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::MessageReference message)
+xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
+    xoap::MessageReference message)
 {
 	__GEN_COUT__ << "Received... \t" << SOAPUtilities::translate(message) << std::endl;
 
@@ -186,7 +340,9 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	// get iteration index
 	try
 	{
-		StringMacros::getNumber(SOAPUtilities::translate(message).getParameters().getValue("iterationIndex"), iterationIndex_);
+		StringMacros::getNumber(
+		    SOAPUtilities::translate(message).getParameters().getValue("iterationIndex"),
+		    iterationIndex_);
 	}
 	catch(...)  // ignore errors and set iteration index to 0
 	{
@@ -196,7 +352,10 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	// get subIteration index
 	try
 	{
-		StringMacros::getNumber(SOAPUtilities::translate(message).getParameters().getValue("subIterationIndex"), subIterationIndex_);
+		StringMacros::getNumber(
+		    SOAPUtilities::translate(message).getParameters().getValue(
+		        "subIterationIndex"),
+		    subIterationIndex_);
 	}
 	catch(...)  // ignore errors and set subIteration index to 0
 	{
@@ -208,9 +367,12 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	bool retransmittedCommand = false;
 	try
 	{
-		retransmittedCommand = (SOAPUtilities::translate(message).getParameters().getValue("retransmission") == "1");
+		retransmittedCommand =
+		    (SOAPUtilities::translate(message).getParameters().getValue(
+		         "retransmission") == "1");
 	}
-	catch(...)  // ignore errors for retransmission indicator (assume it is not a retransmission)
+	catch(
+	    ...)  // ignore errors for retransmission indicator (assume it is not a retransmission)
 	{
 		;
 	}
@@ -220,22 +382,29 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 		// handle retransmission
 
 		// attempt to stop an error if last command was same
-		if(lastIterationCommand_ == command && lastIterationIndex_ == iterationIndex_ && lastSubIterationIndex_ == subIterationIndex_)
+		if(lastIterationCommand_ == command && lastIterationIndex_ == iterationIndex_ &&
+		   lastSubIterationIndex_ == subIterationIndex_)
 		{
-			__GEN_COUT__ << "Assuming a timeout occurred at Gateway waiting for a response. "
-			             << "Attempting to avoid error, by giving last result for command '" << command << "': " << lastIterationResult_ << __E__;
+			__GEN_COUT__
+			    << "Assuming a timeout occurred at Gateway waiting for a response. "
+			    << "Attempting to avoid error, by giving last result for command '"
+			    << command << "': " << lastIterationResult_ << __E__;
 			try
 			{
 				return SOAPUtilities::makeSOAPMessageReference(lastIterationResult_);
 			}
-			catch(const std::exception& e)  // if an illegal result ever propagates here, it is bug!
+			catch(const std::exception&
+			          e)  // if an illegal result ever propagates here, it is bug!
 			{
-				__GEN_COUT__ << "There was an illegal result propagation: " << lastIterationResult_ << ". Here was the error: " << e.what() << __E__;
+				__GEN_COUT__ << "There was an illegal result propagation: "
+				             << lastIterationResult_
+				             << ". Here was the error: " << e.what() << __E__;
 				throw;
 			}
 		}
 		else
-			__GEN_COUT__ << "Looks like Gateway command '" << command << "' was lost - attempting to handle retransmission." << __E__;
+			__GEN_COUT__ << "Looks like Gateway command '" << command
+			             << "' was lost - attempting to handle retransmission." << __E__;
 	}
 
 	lastIterationIndex_    = iterationIndex_;
@@ -247,14 +416,16 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 		// this is the first iteration attempt for this transition
 		theProgressBar_.reset(command, theStateMachine_.getStateMachineName());
 		currentState = theStateMachine_.getCurrentStateName();
-		__GEN_COUT__ << "Starting state for " << theStateMachine_.getStateMachineName() << " is " << currentState << " and attempting to " << command
+		__GEN_COUT__ << "Starting state for " << theStateMachine_.getStateMachineName()
+		             << " is " << currentState << " and attempting to " << command
 		             << std::endl;
 	}
 	else
 	{
 		currentState = theStateMachine_.getStateName(lastIterationState_);
 
-		__GEN_COUT__ << "Iteration index " << iterationIndex_ << "." << subIterationIndex_ << " for " << theStateMachine_.getStateMachineName() << " from "
+		__GEN_COUT__ << "Iteration index " << iterationIndex_ << "." << subIterationIndex_
+		             << " for " << theStateMachine_.getStateMachineName() << " from "
 		             << currentState << " attempting to " << command << std::endl;
 	}
 
@@ -273,21 +444,26 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 		try
 		{
 			if(currentState == "Configured")
-				theStateMachine_.execTransition(RunControlStateMachine::HALT_TRANSITION_NAME, message);
+				theStateMachine_.execTransition(
+				    RunControlStateMachine::HALT_TRANSITION_NAME, message);
 			else if(currentState == "Running" || currentState == "Paused")
-				theStateMachine_.execTransition(RunControlStateMachine::ABORT_TRANSITION_NAME, message);
+				theStateMachine_.execTransition(
+				    RunControlStateMachine::ABORT_TRANSITION_NAME, message);
 		}
 		catch(...)
 		{
-			__GEN_COUT_ERR__ << "Halting failed in reaction to " << command << "... ignoring." << __E__;
+			__GEN_COUT_ERR__ << "Halting failed in reaction to " << command
+			                 << "... ignoring." << __E__;
 		}
 		return SOAPUtilities::makeSOAPMessageReference(result);
 	}
 	else if(command == "AsyncError")
 	{
-		std::string errorMessage = SOAPUtilities::translate(message).getParameters().getValue("ErrorMessage");
+		std::string errorMessage =
+		    SOAPUtilities::translate(message).getParameters().getValue("ErrorMessage");
 
-		__GEN_SS__ << command << " was received! Error'ing immediately: " << errorMessage << std::endl;
+		__GEN_SS__ << command << " was received! Error'ing immediately: " << errorMessage
+		           << std::endl;
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
@@ -300,9 +476,11 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	}
 	else if(command == "AsyncPauseException")
 	{
-		std::string errorMessage = SOAPUtilities::translate(message).getParameters().getValue("ErrorMessage");
+		std::string errorMessage =
+		    SOAPUtilities::translate(message).getParameters().getValue("ErrorMessage");
 
-		__GEN_SS__ << command << " was received! Pause'ing immediately: " << errorMessage << std::endl;
+		__GEN_SS__ << command << " was received! Pause'ing immediately: " << errorMessage
+		           << std::endl;
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
@@ -318,9 +496,11 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	}
 	else if(command == "AsyncStopException")
 	{
-		std::string errorMessage = SOAPUtilities::translate(message).getParameters().getValue("ErrorMessage");
+		std::string errorMessage =
+		    SOAPUtilities::translate(message).getParameters().getValue("ErrorMessage");
 
-		__GEN_SS__ << command << " was received! Stop'ing immediately: " << errorMessage << std::endl;
+		__GEN_SS__ << command << " was received! Stop'ing immediately: " << errorMessage
+		           << std::endl;
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
@@ -337,8 +517,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 
 	// if already Halted, respond to Initialize with "done"
 	//	(this avoids race conditions involved with artdaq mpi reset)
-	if(command == RunControlStateMachine::INIT_TRANSITION_NAME && 
-		currentState == RunControlStateMachine::HALTED_STATE_NAME)
+	if(command == RunControlStateMachine::INIT_TRANSITION_NAME &&
+	   currentState == RunControlStateMachine::HALTED_STATE_NAME)
 	{
 		__GEN_COUT__ << "Already Initialized.. ignoring Initialize command." << std::endl;
 
@@ -346,18 +526,17 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 		return SOAPUtilities::makeSOAPMessageReference(result);
 	}
 
-	if(command == RunControlStateMachine::INIT_TRANSITION_NAME && 
-		currentState == RunControlStateMachine::FAILED_STATE_NAME)
+	if(command == RunControlStateMachine::INIT_TRANSITION_NAME &&
+	   currentState == RunControlStateMachine::FAILED_STATE_NAME)
 	{
-		__GEN_COUT__ << "Converting Initialize command to Halt, since currently in " <<
-						currentState << " state."
-					<< std::endl;
+		__GEN_COUT__ << "Converting Initialize command to Halt, since currently in "
+		             << currentState << " state." << std::endl;
 		command = RunControlStateMachine::HALT_TRANSITION_NAME;
 		message = SOAPUtilities::makeSOAPMessageReference(command);
 	}
 
-	if(command == RunControlStateMachine::HALT_TRANSITION_NAME && 
-		currentState == RunControlStateMachine::FAILED_STATE_NAME)
+	if(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+	   currentState == RunControlStateMachine::FAILED_STATE_NAME)
 	{
 		__GEN_COUT__ << "Clearing Errors after failure..." << std::endl;
 		theStateMachine_.setErrorMessage("", false /*append*/);  // clear error message
@@ -372,63 +551,72 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	__GEN_COUTV__(getErrorMessage());
 	__GEN_COUTV__(retransmittedCommand);
 
-	
-
 	// handle normal transitions here
 	try
 	{
 		// Clear error message if starting a normal transition.
 		//	Do not clear soft PAUSE or harder STOP exception
 		//	Do not clear if retransmission transition from Failed (likely an error just occured that we do not want to lose!)
-		if(!((asyncPauseExceptionReceived_ && command == RunControlStateMachine::PAUSE_TRANSITION_NAME) ||
-			 (asyncStopExceptionReceived_ && command == RunControlStateMachine::STOP_TRANSITION_NAME)))
-			theStateMachine_.setErrorMessage("", false /*append*/);  // clear error message
+		if(!((asyncPauseExceptionReceived_ &&
+		      command == RunControlStateMachine::PAUSE_TRANSITION_NAME) ||
+		     (asyncStopExceptionReceived_ &&
+		      command == RunControlStateMachine::STOP_TRANSITION_NAME)))
+			theStateMachine_.setErrorMessage("",
+			                                 false /*append*/);  // clear error message
 
-		if(command == RunControlStateMachine::HALT_TRANSITION_NAME && 
-			currentState == RunControlStateMachine::INITIAL_STATE_NAME)
+		if(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+		   currentState == RunControlStateMachine::INITIAL_STATE_NAME)
 		{
 			command = RunControlStateMachine::INIT_TRANSITION_NAME;
-			__GEN_COUT__ << "Converting Halt command to " << command << ", since currently in " <<
-							currentState << " state." << std::endl;
+			__GEN_COUT__ << "Converting Halt command to " << command
+			             << ", since currently in " << currentState << " state."
+			             << std::endl;
 			message = SOAPUtilities::makeSOAPMessageReference(command);
 		}
-		if(command == RunControlStateMachine::HALT_TRANSITION_NAME && 
-			(currentState == RunControlStateMachine::PAUSED_STATE_NAME || 
-			currentState == RunControlStateMachine::RUNNING_STATE_NAME))
+		if(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+		   (currentState == RunControlStateMachine::PAUSED_STATE_NAME ||
+		    currentState == RunControlStateMachine::RUNNING_STATE_NAME))
 		{
 			command = RunControlStateMachine::ABORT_TRANSITION_NAME;
-			__GEN_COUT__ << "Converting Halt command to " << command << ", since currently in " <<
-							currentState << " state." << std::endl;
+			__GEN_COUT__ << "Converting Halt command to " << command
+			             << ", since currently in " << currentState << " state."
+			             << std::endl;
 			message = SOAPUtilities::makeSOAPMessageReference(command);
 		}
-		if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME && 
-			currentState == RunControlStateMachine::INITIAL_STATE_NAME)
+		if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME &&
+		   currentState == RunControlStateMachine::INITIAL_STATE_NAME)
 		{
-			__GEN_COUT__ << "Pre-empting Configure command with Initialize, since currently in " <<
-							currentState << " state." << std::endl;
+			__GEN_COUT__
+			    << "Pre-empting Configure command with Initialize, since currently in "
+			    << currentState << " state." << std::endl;
 			std::string precommand = RunControlStateMachine::INIT_TRANSITION_NAME;
-			xoap::MessageReference premessage = SOAPUtilities::makeSOAPMessageReference(precommand);
+			xoap::MessageReference premessage =
+			    SOAPUtilities::makeSOAPMessageReference(precommand);
 			theStateMachine_.execTransition(precommand, premessage);
 			__GEN_COUT__ << "Now proceeding with Configure command" << __E__;
 		}
-
 
 		iterationWorkFlag_    = false;
 		subIterationWorkFlag_ = false;
 		if(iterationIndex_ || subIterationIndex_)
 		{
-			__GEN_COUT__ << command << " iteration " << iterationIndex_ << "." << subIterationIndex_ << __E__;
+			__GEN_COUT__ << command << " iteration " << iterationIndex_ << "."
+			             << subIterationIndex_ << __E__;
 			toolbox::Event::Reference event(new toolbox::Event(command, this));
 
 			// call inheriting transition function based on last state and command
 			{
 				// e.g. transitionConfiguring(event);
-				__GEN_COUT__ << "Iterating on the transition function from " << currentState << " through " << lastIterationCommand_ << __E__;
+				__GEN_COUT__ << "Iterating on the transition function from "
+				             << currentState << " through " << lastIterationCommand_
+				             << __E__;
 
 				auto itFrom = stateTransitionFunctionTable_.find(lastIterationState_);
 				if(itFrom == stateTransitionFunctionTable_.end())
 				{
-					__GEN_SS__ << "Cannot find transition function from '" << currentState << "' with transition '" << lastIterationCommand_ << "!'" << __E__;
+					__GEN_SS__ << "Cannot find transition function from '" << currentState
+					           << "' with transition '" << lastIterationCommand_ << "!'"
+					           << __E__;
 					__GEN_COUT_ERR__ << ss.str();
 					XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 				}
@@ -436,7 +624,9 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 				auto itTransition = itFrom->second.find(lastIterationCommand_);
 				if(itTransition == itFrom->second.end())
 				{
-					__GEN_SS__ << "Cannot find transition function from '" << currentState << "' with transition '" << lastIterationCommand_ << "!'" << __E__;
+					__GEN_SS__ << "Cannot find transition function from '" << currentState
+					           << "' with transition '" << lastIterationCommand_ << "!'"
+					           << __E__;
 					__GEN_COUT_ERR__ << ss.str();
 					XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 				}
@@ -452,15 +642,25 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 			lastIterationCommand_ = command;
 			if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 			{
-				lastAttemptedConfigureGroup_ = SOAPUtilities::translate(message).getParameters().getValue("ConfigurationAlias"); 
+				lastAttemptedConfigureGroup_ =
+				    SOAPUtilities::translate(message).getParameters().getValue(
+				        "ConfigurationAlias");
 
 				//all entities but Gateway will have alias group name and key translation:
 				try
 				{
-					lastAttemptedConfigureGroup_ += " " + SOAPUtilities::translate(message).getParameters().getValue("ConfigurationTableGroupName") + 
-						"(" +  SOAPUtilities::translate(message).getParameters().getValue("ConfigurationTableGroupKey") + ")";
+					lastAttemptedConfigureGroup_ +=
+					    " " +
+					    SOAPUtilities::translate(message).getParameters().getValue(
+					        "ConfigurationTableGroupName") +
+					    "(" +
+					    SOAPUtilities::translate(message).getParameters().getValue(
+					        "ConfigurationTableGroupKey") +
+					    ")";
 				}
-				catch(...) { /* ignore missing parameters */ }
+				catch(...)
+				{ /* ignore missing parameters */
+				}
 			}
 
 			theStateMachine_.execTransition(command, message);
@@ -469,7 +669,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 		if(subIterationWorkFlag_)  // sub-iteration has priority over 'Working'
 		{
 			__GEN_COUTV__(subIterationWorkFlag_);
-			result = command + "SubIterate";  // indicate another sub-iteration back to Gateway
+			result =
+			    command + "SubIterate";  // indicate another sub-iteration back to Gateway
 		}
 		else if(iterationWorkFlag_)
 		{
@@ -479,7 +680,9 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	}
 	catch(const std::runtime_error& e)
 	{
-		__GEN_SS__ << "Run Control Message Handling Failed with command '" << command << "': " << e.what() << " " << theStateMachine_.getErrorMessage() << __E__;
+		__GEN_SS__ << "Run Control Message Handling Failed with command '" << command
+		           << "': " << e.what() << " " << theStateMachine_.getErrorMessage()
+		           << __E__;
 		__GEN_COUT_ERR__ << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
@@ -487,7 +690,9 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	}
 	catch(toolbox::fsm::exception::Exception& e)
 	{
-		__GEN_SS__ << "Run Control Message Handling Failed with command '" << command << "': " << e.what() << " " << theStateMachine_.getErrorMessage() << __E__;
+		__GEN_SS__ << "Run Control Message Handling Failed with command '" << command
+		           << "': " << e.what() << " " << theStateMachine_.getErrorMessage()
+		           << __E__;
 		__GEN_COUT_ERR__ << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
@@ -495,13 +700,20 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	}
 	catch(...)
 	{
-		__GEN_SS__ << "Run Control Message Handling Failed  with command '" << command << "' and encountered an unknown error." << theStateMachine_.getErrorMessage() << __E__;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		__GEN_SS__ << "Run Control Message Handling Failed  with command '" << command
+		           << "' and encountered an unknown error."
+		           << theStateMachine_.getErrorMessage() << __E__;
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__GEN_COUT_ERR__ << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
@@ -515,8 +727,11 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 	if(currentState == RunControlStateMachine::FAILED_STATE_NAME)
 	{
 		result = command + RunControlStateMachine::FAILED_STATE_NAME;
-		__GEN_COUT_ERR__ << "Unexpected Failure state for " << theStateMachine_.getStateMachineName() << " is " << currentState << std::endl;
-		__GEN_COUT_ERR__ << "Error message was as follows: " << theStateMachine_.getErrorMessage() << std::endl;
+		__GEN_COUT_ERR__ << "Unexpected Failure state for "
+		                 << theStateMachine_.getStateMachineName() << " is "
+		                 << currentState << std::endl;
+		__GEN_COUT_ERR__ << "Error message was as follows: "
+		                 << theStateMachine_.getErrorMessage() << std::endl;
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -529,7 +744,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(xoap::Me
 		__GEN_COUTV__(theProgressBar_.isComplete());
 	}
 
-	__GEN_COUT__ << "Ending state for " << theStateMachine_.getStateMachineName() << " is " << currentState << std::endl;
+	__GEN_COUT__ << "Ending state for " << theStateMachine_.getStateMachineName()
+	             << " is " << currentState << std::endl;
 	__GEN_COUT__ << "result = " << result << std::endl;
 	lastIterationResult_ = result;
 	return SOAPUtilities::makeSOAPMessageReference(result);

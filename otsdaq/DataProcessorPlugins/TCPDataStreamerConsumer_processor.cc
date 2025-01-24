@@ -10,14 +10,18 @@
 using namespace ots;
 
 //==============================================================================
-TCPDataStreamerConsumer::TCPDataStreamerConsumer(std::string              supervisorApplicationUID,
-                                                 std::string              bufferUID,
-                                                 std::string              processorUID,
-                                                 const ConfigurationTree& theXDAQContextConfigTree,
-                                                 const std::string&       configurationPath)
+TCPDataStreamerConsumer::TCPDataStreamerConsumer(
+    std::string              supervisorApplicationUID,
+    std::string              bufferUID,
+    std::string              processorUID,
+    const ConfigurationTree& theXDAQContextConfigTree,
+    const std::string&       configurationPath)
     : WorkLoop(processorUID)
-    , TCPDataStreamerBase(theXDAQContextConfigTree.getNode(configurationPath).getNode("StreamToPort").getValue<unsigned int>())
-    , DataConsumer(supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
+    , TCPDataStreamerBase(theXDAQContextConfigTree.getNode(configurationPath)
+                              .getNode("StreamToPort")
+                              .getValue<unsigned int>())
+    , DataConsumer(
+          supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)
 //, Socket         ("192.168.133.1", 47200)
 //, DataConsumer   ("ARTDAQDataManager", 1, "ARTDAQBuffer", "ARTDAQDataStreamer0",

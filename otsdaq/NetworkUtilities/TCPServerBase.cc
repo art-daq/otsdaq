@@ -37,7 +37,8 @@ TCPServerBase::~TCPServerBase(void)
 {
 	__COUT__ << "Shutting down accept for socket: " << getSocketId() << std::endl;
 	shutdownAccept();
-	while(fAcceptFuture.valid() && fAcceptFuture.wait_for(std::chrono::milliseconds(100)) != std::future_status::ready)
+	while(fAcceptFuture.valid() && fAcceptFuture.wait_for(std::chrono::milliseconds(
+	                                   100)) != std::future_status::ready)
 	{
 		__COUT__ << "Server accept still running" << std::endl;
 		shutdownAccept();
@@ -77,8 +78,9 @@ void TCPServerBase::startAccept(void)
 		throw std::runtime_error(std::string("Listen: ") + strerror(errno));
 	}
 
-	fAccept       = true;
-	fAcceptFuture = std::async(std::launch::async, &TCPServerBase::acceptConnections, this);
+	fAccept = true;
+	fAcceptFuture =
+	    std::async(std::launch::async, &TCPServerBase::acceptConnections, this);
 	//	__COUT__ << "Done startAccept" << std::endl;
 }
 
@@ -89,7 +91,8 @@ int TCPServerBase::accept(bool blocking)
 	__COUT__ << "Now server accept connections on socket: " << getSocketId() << std::endl;
 	if(getSocketId() == invalidSocketId)
 	{
-		throw std::logic_error("Accept called on a bad socket object (this object was moved)");
+		throw std::logic_error(
+		    "Accept called on a bad socket object (this object was moved)");
 	}
 
 	struct sockaddr_storage clientAddress;  // connector's address information
@@ -102,9 +105,11 @@ int TCPServerBase::accept(bool blocking)
 		// unsigned counter = 0;
 		while(true)
 		{
-			clientSocket = ::accept(getSocketId(), (struct sockaddr*)&clientAddress, &clientAddressSize);
+			clientSocket = ::accept(
+			    getSocketId(), (struct sockaddr*)&clientAddress, &clientAddressSize);
 			pingActiveClients();  // This message is to check if there are clients that disconnected and, if so, they are removed from the client list
-			if(fAccept && fMaxNumberOfClients > 0 && fConnectedClients.size() >= fMaxNumberOfClients)
+			if(fAccept && fMaxNumberOfClients > 0 &&
+			   fConnectedClients.size() >= fMaxNumberOfClients)
 			{
 				send(clientSocket, "Too many clients connected!", 27, 0);
 				::shutdown(clientSocket, SHUT_WR);
@@ -119,11 +124,13 @@ int TCPServerBase::accept(bool blocking)
 		}
 		else if(clientSocket == invalidSocketId)
 		{
-			__COUT__ << "New socket invalid?: " << clientSocket << " errno: " << errno << std::endl;
+			__COUT__ << "New socket invalid?: " << clientSocket << " errno: " << errno
+			         << std::endl;
 			throw std::runtime_error(std::string("Accept: ") + strerror(errno));
 		}
 
-		__COUT__ << "Server just accepted a connection on socket: " << getSocketId() << " Client socket: " << clientSocket << std::endl;
+		__COUT__ << "Server just accepted a connection on socket: " << getSocketId()
+		         << " Client socket: " << clientSocket << std::endl;
 		return clientSocket;
 	}
 	else
@@ -148,11 +155,14 @@ int TCPServerBase::accept(bool blocking)
 				struct sockaddr_in clientAddress;
 				socklen_t          socketSize = sizeof(clientAddress);
 				// int newSocketFD = ::accept4(fdServerSocket_,(struct sockaddr*)&clientAddress,&socketSize, (pushOnly_ ? SOCK_NONBLOCK : 0));
-				clientSocket =
-				    ::accept(getSocketId(), (struct sockaddr*)&clientAddress, &socketSize);  // Blocking since select goes in timeout if there is nothing
+				clientSocket = ::accept(
+				    getSocketId(),
+				    (struct sockaddr*)&clientAddress,
+				    &socketSize);  // Blocking since select goes in timeout if there is nothing
 				if(clientSocket == invalidSocketId)
 				{
-					__COUT__ << "New socket invalid?: " << clientSocket << " errno: " << errno << std::endl;
+					__COUT__ << "New socket invalid?: " << clientSocket
+					         << " errno: " << errno << std::endl;
 					throw std::runtime_error(std::string("Accept: ") + strerror(errno));
 				}
 				return clientSocket;
@@ -213,13 +223,17 @@ void TCPServerBase::closeClientSocket(int socket)
 		}
 		else
 		{
-			throw std::runtime_error(std::string("SocketId in fConnectedClients != socketId in TCPSocket! Impossible!!!"));
+			throw std::runtime_error(std::string(
+			    "SocketId in fConnectedClients != socketId in TCPSocket! Impossible!!!"));
 		}
 	}
 }
 
 //==============================================================================
-void TCPServerBase::broadcastPacket(const char* message, std::size_t length) { broadcastPacket(std::string(message, length)); }
+void TCPServerBase::broadcastPacket(const char* message, std::size_t length)
+{
+	broadcastPacket(std::string(message, length));
+}
 
 //==============================================================================
 void TCPServerBase::broadcastPacket(const std::string& message)

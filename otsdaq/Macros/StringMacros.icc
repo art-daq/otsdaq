@@ -6,14 +6,17 @@
 //	returns value if needle is in haystack otherwise throws exception
 //	(considering wildcards AND match priority as defined by StringMacros::wildCardMatch)
 template<class T>
-T& StringMacros::getWildCardMatchFromMap(const std::string& needle, std::map<std::string, T>& haystack, std::string* foundKey)
+T& StringMacros::getWildCardMatchFromMap(const std::string&        needle,
+                                         std::map<std::string, T>& haystack,
+                                         std::string*              foundKey)
 {
 	unsigned int matchPriority,
 	    bestMatchPriority = 0;  // lowest number matters most for matches
 
 	if(!haystack.size())
 	{
-		__SS__ << "Needle '" << needle << "' not found in EMPTY wildcard haystack:" << __E__;
+		__SS__ << "Needle '" << needle
+		       << "' not found in EMPTY wildcard haystack:" << __E__;
 		__SS_ONLY_THROW__;
 	}
 
@@ -77,11 +80,12 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 	std::vector<std::string> numbers;
 	std::vector<char>        ops;
 
-	StringMacros::getVectorFromString(s,
-	                                  numbers,
-	                                  /*delimiter*/ std::set<char>({'+', '-', '*', '/'}),
-	                                  /*whitespace*/ std::set<char>({' ', '\t', '\n', '\r'}),
-	                                  &ops);
+	StringMacros::getVectorFromString(
+	    s,
+	    numbers,
+	    /*delimiter*/ std::set<char>({'+', '-', '*', '/'}),
+	    /*whitespace*/ std::set<char>({' ', '\t', '\n', '\r'}),
+	    &ops);
 
 	//__COUTV__(StringMacros::vectorToString(numbers));
 	//__COUTV__(StringMacros::vectorToString(ops));
@@ -90,8 +94,8 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 
 	T tmpValue;
 
-	unsigned int i    = 0;
-	unsigned int opsi = 0;
+	unsigned int i                = 0;
+	unsigned int opsi             = 0;
 	unsigned int blankNumberCount = 0;
 	bool         verified;
 	for(const auto& number : numbers)
@@ -110,13 +114,15 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 
 		//__COUTV__(number);
 
-		// check for base16 and base2		
+		// check for base16 and base2
 		if(number.find("0x") == 0)  // indicates hex
 		{
 			//__COUT__ << "0x found" << __E__;
 			for(unsigned int i = 2; i < number.size(); ++i)
 			{
-				if(!((number[i] >= '0' && number[i] <= '9') || (number[i] >= 'A' && number[i] <= 'F') || (number[i] >= 'a' && number[i] <= 'f')))
+				if(!((number[i] >= '0' && number[i] <= '9') ||
+				     (number[i] >= 'A' && number[i] <= 'F') ||
+				     (number[i] >= 'a' && number[i] <= 'f')))
 				{
 					//__COUT__ << "prob " << number[i] << __E__;
 					return false;
@@ -140,10 +146,11 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 		}
 
 		// if not verified above, check base10
-		if(!verified) //assume must be base10
+		if(!verified)  //assume must be base10
 		{
 			for(unsigned int i = 0; i < number.size(); ++i)
-				if(!((number[i] >= '0' && number[i] <= '9') || number[i] == '.' || number[i] == '+' || number[i] == '-'))
+				if(!((number[i] >= '0' && number[i] <= '9') || number[i] == '.' ||
+				     number[i] == '+' || number[i] == '-'))
 					return false;
 
 			// at this point, this number is confirmed to be a number of some sort
@@ -152,15 +159,16 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 				tmpValue = strtod(number.c_str(), 0);
 			else if(typeid(float) == typeid(retValue))
 				tmpValue = strtof(number.c_str(), 0);
-			else //integer/other types
+			else  //integer/other types
 				tmpValue = (T)strtol(number.c_str(), 0, 10);
 		}
-		else //just try!
+		else  //just try!
 		{
 			if(number.size() > 2 && number[1] == 'x')  // assume hex value
 				tmpValue = (T)strtol(number.c_str(), 0, 16);
-			else if(number.size() > 1 && number[0] == 'b')             // assume binary value
-				tmpValue = (T)strtol(number.substr(1).c_str(), 0, 2);  // skip first 'b' character
+			else if(number.size() > 1 && number[0] == 'b')  // assume binary value
+				tmpValue = (T)strtol(
+				    number.substr(1).c_str(), 0, 2);  // skip first 'b' character
 			else
 				tmpValue = (T)strtol(number.c_str(), 0, 10);
 			// __SS__ << "Invalid type '" << StringMacros::demangleTypeName(typeid(retValue).name()) << "' requested for a numeric string. Data was '" << number
@@ -173,7 +181,9 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 		{
 			retValue = tmpValue;
 
-			if(ops.size() == numbers.size() - blankNumberCount)  // then there is a leading operation, so apply
+			if(ops.size() ==
+			   numbers.size() -
+			       blankNumberCount)  // then there is a leading operation, so apply
 			{
 				if(ops[opsi] == '-')  // only meaningful op is negative sign
 					retValue *= -1;
@@ -207,7 +217,8 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 				retValue /= tmpValue;
 				break;
 			default:
-				__SS__ << "Unrecognized operation '" << ops[opsi] << "' found!" << __E__ << "Numbers: " << StringMacros::vectorToString(numbers) << __E__
+				__SS__ << "Unrecognized operation '" << ops[opsi] << "' found!" << __E__
+				       << "Numbers: " << StringMacros::vectorToString(numbers) << __E__
 				       << "Operations: " << StringMacros::vectorToString(ops) << __E__;
 				__SS_THROW__;
 			}
@@ -228,13 +239,15 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 //	static template function
 //	special validation ignoring any table info - just assuming type string
 template<class T>
-T StringMacros::validateValueForDefaultStringDataType(const std::string& value, bool doConvertEnvironmentVariables)
+T StringMacros::validateValueForDefaultStringDataType(const std::string& value,
+                                                      bool doConvertEnvironmentVariables)
 {
 	T retValue;
 	try
 	{
 		//__COUTV__(value);
-		std::string data = doConvertEnvironmentVariables ? convertEnvironmentVariables(value) : value;
+		std::string data =
+		    doConvertEnvironmentVariables ? convertEnvironmentVariables(value) : value;
 
 		// Note: allow string column types to convert to number (since user's would likely
 		// expect this to work)
@@ -242,7 +255,8 @@ T StringMacros::validateValueForDefaultStringDataType(const std::string& value, 
 			return retValue;
 		else
 		{
-			__SS__ << "Invalid type '" << StringMacros::demangleTypeName(typeid(retValue).name())
+			__SS__ << "Invalid type '"
+			       << StringMacros::demangleTypeName(typeid(retValue).name())
 			       << "' requested for a non-numeric string (must request std::string). "
 			          "Data was '"
 			       << data << "'" << __E__;
@@ -251,8 +265,9 @@ T StringMacros::validateValueForDefaultStringDataType(const std::string& value, 
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Failed to validate the string value for the data type  '" << StringMacros::demangleTypeName(typeid(retValue).name()) << "' requested. "
-		       << __E__ << e.what() << __E__;
+		__SS__ << "Failed to validate the string value for the data type  '"
+		       << StringMacros::demangleTypeName(typeid(retValue).name())
+		       << "' requested. " << __E__ << e.what() << __E__;
 		ss << StringMacros::stackTrace();
 		__SS_THROW__;
 	}
@@ -262,11 +277,13 @@ T StringMacros::validateValueForDefaultStringDataType(const std::string& value, 
 // static template function
 //	Note: that empty names are not allowed (or at least are confusing)!
 template<class T /*value type*/, class S /*name string or const string*/>
-void StringMacros::getMapFromString(const std::string&    inputString,
-                                    std::map<S, T>&       mapToReturn,
-                                    const std::set<char>& pairPairDelimiter /* = {',','|','&'}*/,
-                                    const std::set<char>& nameValueDelimiter /* = {'=',':'} */,
-                                    const std::set<char>& whitespace /* = {' ','\t','\n','\r'}*/) try
+void StringMacros::getMapFromString(
+    const std::string&    inputString,
+    std::map<S, T>&       mapToReturn,
+    const std::set<char>& pairPairDelimiter /* = {',','|','&'}*/,
+    const std::set<char>& nameValueDelimiter /* = {'=',':'} */,
+    const std::set<char>& whitespace /* = {' ','\t','\n','\r'}*/)
+try
 {
 	unsigned int i = 0;
 	unsigned int j = 0;
@@ -278,12 +295,16 @@ void StringMacros::getMapFromString(const std::string&    inputString,
 	for(; j < inputString.size(); ++j)
 		if(!needValue)  // finding name
 		{
-			if((whitespace.find(inputString[j]) != whitespace.end() ||  // ignore leading white space or delimiter
+			if((whitespace.find(inputString[j]) !=
+			        whitespace.end() ||  // ignore leading white space or delimiter
 			    pairPairDelimiter.find(inputString[j]) != pairPairDelimiter.end()) &&
 			   i == j)
 				++i;
-			else if((whitespace.find(inputString[j]) != whitespace.end() ||  // trailing white space or delimiter indicates end
-			         nameValueDelimiter.find(inputString[j]) != nameValueDelimiter.end()) &&
+			else if((whitespace.find(inputString[j]) !=
+			             whitespace
+			                 .end() ||  // trailing white space or delimiter indicates end
+			         nameValueDelimiter.find(inputString[j]) !=
+			             nameValueDelimiter.end()) &&
 			        i != j)  // assume end of map name
 			{
 				//__COUT__ << "Map name found: " <<
@@ -299,24 +320,32 @@ void StringMacros::getMapFromString(const std::string&    inputString,
 		}
 		else  // finding value
 		{
-			if((whitespace.find(inputString[j]) != whitespace.end() ||  // ignore leading white space or delimiter
+			if((whitespace.find(inputString[j]) !=
+			        whitespace.end() ||  // ignore leading white space or delimiter
 			    nameValueDelimiter.find(inputString[j]) != nameValueDelimiter.end()) &&
 			   i == j)
 				++i;
-			else if(whitespace.find(inputString[j]) != whitespace.end() ||              // trailing white space or delimiter indicates end
-			        pairPairDelimiter.find(inputString[j]) != pairPairDelimiter.end())  // &&
-			                                                                            // i != j)  // assume end of value name
+			else if(whitespace.find(inputString[j]) !=
+			            whitespace
+			                .end() ||  // trailing white space or delimiter indicates end
+			        pairPairDelimiter.find(inputString[j]) !=
+			            pairPairDelimiter.end())  // &&
+			                                      // i != j)  // assume end of value name
 			{
 				//__COUT__ << "Map value found: " <<
 				//		inputString.substr(i,j-i) << __E__;
 
-				auto /*pair<it,success>*/ emplaceReturn =
-				    mapToReturn.emplace(std::pair<S, T>(name, validateValueForDefaultStringDataType<T>(inputString.substr(i, j - i))  // value
-				                                        ));
+				auto /*pair<it,success>*/ emplaceReturn = mapToReturn.emplace(
+				    std::pair<S, T>(name,
+				                    validateValueForDefaultStringDataType<T>(
+				                        inputString.substr(i, j - i))  // value
+				                    ));
 
 				if(!emplaceReturn.second)
 				{
-					__COUT_WARN__ << "Ignoring repetitive value ('" << inputString.substr(i, j - i) << "') and keeping current value ('"
+					__COUT_WARN__ << "Ignoring repetitive value ('"
+					              << inputString.substr(i, j - i)
+					              << "') and keeping current value ('"
 					              << emplaceReturn.first->second << "'). " << __E__;
 				}
 
@@ -332,20 +361,25 @@ void StringMacros::getMapFromString(const std::string&    inputString,
 		//__COUT__ << "Map value found: " <<
 		//		inputString.substr(i,j-i) << __E__;
 
-		auto /*pair<it,success>*/ emplaceReturn =
-		    mapToReturn.emplace(std::pair<S, T>(name, validateValueForDefaultStringDataType<T>(inputString.substr(i, j - i))  // value
-		                                        ));
+		auto /*pair<it,success>*/ emplaceReturn = mapToReturn.emplace(std::pair<S, T>(
+		    name,
+		    validateValueForDefaultStringDataType<T>(
+		        inputString.substr(i, j - i))  // value
+		    ));
 
 		if(!emplaceReturn.second)
 		{
-			__COUT_WARN__ << "Ignoring repetitive value ('" << name << "," << inputString.substr(i, j - i) << 
-				"') and keeping current value ('" << name << "," << emplaceReturn.first->second << "'). " << __E__;
+			__COUT_WARN__ << "Ignoring repetitive value ('" << name << ","
+			              << inputString.substr(i, j - i)
+			              << "') and keeping current value ('" << name << ","
+			              << emplaceReturn.first->second << "'). " << __E__;
 		}
 	}
 }  // end getMapFromString<T>()
 catch(const std::runtime_error& e)
 {
-	__SS__ << "Error while extracting a map from the string '" << inputString << "'... is it a valid map?" << __E__ << e.what() << __E__;
+	__SS__ << "Error while extracting a map from the string '" << inputString
+	       << "'... is it a valid map?" << __E__ << e.what() << __E__;
 	__SS_THROW__;
 }  // end getMapFromString
 
@@ -353,8 +387,8 @@ catch(const std::runtime_error& e)
 // static template function
 template<class T>
 std::string StringMacros::mapToString(const std::map<std::string, T>& mapToReturn,
-                                      const std::string&              primaryDelimeter /*= ", "*/,
-                                      const std::string&              secondaryDelimeter /*= ": "*/)
+                                      const std::string& primaryDelimeter /*= ", "*/,
+                                      const std::string& secondaryDelimeter /*= ": "*/)
 {
 	std::stringstream ss;
 	bool              first = true;
@@ -372,9 +406,10 @@ std::string StringMacros::mapToString(const std::map<std::string, T>& mapToRetur
 //==============================================================================
 // static template function
 template<class T>
-std::string StringMacros::mapToString(const std::map<std::pair<std::string, std::string>, T>& mapToReturn,
-                                      const std::string&                                      primaryDelimeter /*= ", "*/,
-                                      const std::string&                                      secondaryDelimeter /*= ": "*/)
+std::string StringMacros::mapToString(
+    const std::map<std::pair<std::string, std::string>, T>& mapToReturn,
+    const std::string&                                      primaryDelimeter /*= ", "*/,
+    const std::string&                                      secondaryDelimeter /*= ": "*/)
 {
 	// this is a pretty specific map format (comes from the merge function in TableBase)
 
@@ -386,7 +421,8 @@ std::string StringMacros::mapToString(const std::map<std::pair<std::string, std:
 			first = false;
 		else
 			ss << primaryDelimeter;
-		ss << mapPair.first.first << "/" << mapPair.first.second << secondaryDelimeter << mapPair.second;
+		ss << mapPair.first.first << "/" << mapPair.first.second << secondaryDelimeter
+		   << mapPair.second;
 	}
 	return ss.str();
 }  // end mapToString<T>()
@@ -394,9 +430,11 @@ std::string StringMacros::mapToString(const std::map<std::pair<std::string, std:
 //==============================================================================
 // static template function
 template<class T>
-std::string StringMacros::mapToString(const std::map<std::pair<std::string, std::pair<std::string, std::string>>, T>& mapToReturn,
-                                      const std::string&                                                              primaryDelimeter /*= ", "*/,
-                                      const std::string&                                                              secondaryDelimeter /*= ": "*/)
+std::string StringMacros::mapToString(
+    const std::map<std::pair<std::string, std::pair<std::string, std::string>>, T>&
+                       mapToReturn,
+    const std::string& primaryDelimeter /*= ", "*/,
+    const std::string& secondaryDelimeter /*= ": "*/)
 {
 	// this is a pretty specific map format (comes from the merge function in TableBase)
 	std::stringstream ss;
@@ -407,7 +445,8 @@ std::string StringMacros::mapToString(const std::map<std::pair<std::string, std:
 			first = false;
 		else
 			ss << primaryDelimeter;
-		ss << mapPair.first.first << "/" << mapPair.first.second.first << "," << mapPair.first.second.second << secondaryDelimeter << mapPair.second;
+		ss << mapPair.first.first << "/" << mapPair.first.second.first << ","
+		   << mapPair.first.second.second << secondaryDelimeter << mapPair.second;
 	}
 	return ss.str();
 }  // end mapToString<T>()
@@ -415,9 +454,10 @@ std::string StringMacros::mapToString(const std::map<std::pair<std::string, std:
 //==============================================================================
 // static template function
 template<class T>
-std::string StringMacros::mapToString(const std::map<std::string, std::pair<std::string, T>>& mapToReturn,
-                                      const std::string&                                      primaryDelimeter /*= ", "*/,
-                                      const std::string&                                      secondaryDelimeter /*= ": "*/)
+std::string StringMacros::mapToString(
+    const std::map<std::string, std::pair<std::string, T>>& mapToReturn,
+    const std::string&                                      primaryDelimeter /*= ", "*/,
+    const std::string&                                      secondaryDelimeter /*= ": "*/)
 {
 	// this is a pretty specific map format (comes from the get aliases functions in
 	// ConfigurationManager)
@@ -429,7 +469,8 @@ std::string StringMacros::mapToString(const std::map<std::string, std::pair<std:
 			first = false;
 		else
 			ss << primaryDelimeter;
-		ss << mapPair.first << "/" << mapPair.second.first << secondaryDelimeter << mapPair.second.second;
+		ss << mapPair.first << "/" << mapPair.second.first << secondaryDelimeter
+		   << mapPair.second.second;
 	}
 	return ss.str();
 }  // end mapToString<T>()
@@ -437,9 +478,10 @@ std::string StringMacros::mapToString(const std::map<std::string, std::pair<std:
 //==============================================================================
 // static template function
 template<class T>
-std::string StringMacros::mapToString(const std::map<std::string, std::map<std::string, T>>& mapToReturn,
-                                      const std::string&                                     primaryDelimeter /*= ", "*/,
-                                      const std::string&                                     secondaryDelimeter /*= ": "*/)
+std::string StringMacros::mapToString(
+    const std::map<std::string, std::map<std::string, T>>& mapToReturn,
+    const std::string&                                     primaryDelimeter /*= ", "*/,
+    const std::string&                                     secondaryDelimeter /*= ": "*/)
 {
 	// this is a pretty specific map format (comes from the get aliases functions in
 	// ConfigurationManager)
@@ -453,7 +495,8 @@ std::string StringMacros::mapToString(const std::map<std::string, std::map<std::
 			ss << primaryDelimeter;
 		ss << mapPair.first;
 		for(auto& secondMapPair : mapPair.second)
-			ss << "/" << secondMapPair.first << secondaryDelimeter << secondMapPair.second;
+			ss << "/" << secondMapPair.first << secondaryDelimeter
+			   << secondMapPair.second;
 	}
 	return ss.str();
 }  // end mapToString<T>()
@@ -461,9 +504,10 @@ std::string StringMacros::mapToString(const std::map<std::string, std::map<std::
 //==============================================================================
 // static template function
 template<class T>
-std::string StringMacros::mapToString(const std::map<std::string, std::set<T>>& mapToReturn,
-                                      const std::string&                        primaryDelimeter /*= ", "*/,
-                                      const std::string&                        secondaryDelimeter /*= ": "*/)
+std::string StringMacros::mapToString(
+    const std::map<std::string, std::set<T>>& mapToReturn,
+    const std::string&                        primaryDelimeter /*= ", "*/,
+    const std::string&                        secondaryDelimeter /*= ": "*/)
 {
 	// this is a somewhat specific map format (one usage is in CodeEditor)
 	std::stringstream ss;
@@ -484,9 +528,10 @@ std::string StringMacros::mapToString(const std::map<std::string, std::set<T>>& 
 //==============================================================================
 // static template function
 template<class T>
-std::string StringMacros::mapToString(const std::map<std::string, std::vector<T>>& mapToReturn,
-                                      const std::string&                           primaryDelimeter /*= ", "*/,
-                                      const std::string&                           secondaryDelimeter /*= ": "*/)
+std::string StringMacros::mapToString(
+    const std::map<std::string, std::vector<T>>& mapToReturn,
+    const std::string&                           primaryDelimeter /*= ", "*/,
+    const std::string&                           secondaryDelimeter /*= ": "*/)
 {
 	// this is a somewhat specific map format (one usage is similar to that in CodeEditor)
 	std::stringstream ss;
@@ -507,7 +552,8 @@ std::string StringMacros::mapToString(const std::map<std::string, std::vector<T>
 //==============================================================================
 // static template function
 template<class T>
-std::string StringMacros::setToString(const std::set<T>& setToReturn, const std::string& delimeter /*= ", "*/)
+std::string StringMacros::setToString(const std::set<T>& setToReturn,
+                                      const std::string& delimeter /*= ", "*/)
 {
 	std::stringstream ss;
 	bool              first = true;
@@ -526,8 +572,8 @@ std::string StringMacros::setToString(const std::set<T>& setToReturn, const std:
 // static template function
 template<class S, class T>
 std::string StringMacros::setToString(const std::set<std::pair<S, T>>& setToReturn,
-                                      const std::string&               primaryDelimeter /*= ", "*/,
-                                      const std::string&               secondaryDelimeter /*= ":"*/)
+                                      const std::string& primaryDelimeter /*= ", "*/,
+                                      const std::string& secondaryDelimeter /*= ":"*/)
 {
 	// this is a somewhat specific vector format (one usage is in FE Macro arguments)
 	std::stringstream ss;
@@ -546,10 +592,13 @@ std::string StringMacros::setToString(const std::set<std::pair<S, T>>& setToRetu
 //==============================================================================
 // static template function
 template<class T>
-std::string StringMacros::vectorToString(const std::vector<T>& setToReturn, const std::string& delimeter /*= ", "*/)
+std::string StringMacros::vectorToString(const std::vector<T>& setToReturn,
+                                         const std::string&    delimeter /*= ", "*/)
 {
 	std::stringstream ss;
 	bool              first = true;
+	if(delimeter == "\n")
+		ss << "\n";  //add initial new line if new line delimiting
 	for(auto& setValue : setToReturn)
 	{
 		if(first)
@@ -565,12 +614,14 @@ std::string StringMacros::vectorToString(const std::vector<T>& setToReturn, cons
 // static template function
 template<class S, class T>
 std::string StringMacros::vectorToString(const std::vector<std::pair<S, T>>& setToReturn,
-                                         const std::string&                  primaryDelimeter /*= "; "*/,
-                                         const std::string&                  secondaryDelimeter /*= ":"*/)
+                                         const std::string& primaryDelimeter /*= "; "*/,
+                                         const std::string& secondaryDelimeter /*= ":"*/)
 {
 	// this is a somewhat specific vector format (one usage is in FE Macro arguments)
 	std::stringstream ss;
 	bool              first = true;
+	if(primaryDelimeter == "\n")
+		ss << "\n";  //add initial new line if new line delimiting
 	for(auto& setPair : setToReturn)
 	{
 		if(first)

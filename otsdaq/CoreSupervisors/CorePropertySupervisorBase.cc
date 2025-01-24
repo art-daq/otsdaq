@@ -4,7 +4,9 @@
 
 using namespace ots;
 
-const CorePropertySupervisorBase::SupervisorProperties CorePropertySupervisorBase::SUPERVISOR_PROPERTIES = CorePropertySupervisorBase::SupervisorProperties();
+const CorePropertySupervisorBase::SupervisorProperties
+    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES =
+        CorePropertySupervisorBase::SupervisorProperties();
 
 // clang-format off
 //==============================================================================
@@ -149,7 +151,8 @@ CorePropertySupervisorBase::~CorePropertySupervisorBase(void)
 }  // end destructor
 
 //==============================================================================
-void CorePropertySupervisorBase::indicateOtsAlive(const CorePropertySupervisorBase* properties)
+void CorePropertySupervisorBase::indicateOtsAlive(
+    const CorePropertySupervisorBase* properties)
 {
 	char        portStr[100] = "0";
 	std::string hostname     = "wiz";
@@ -161,7 +164,10 @@ void CorePropertySupervisorBase::indicateOtsAlive(const CorePropertySupervisorBa
 
 	if(properties)
 	{
-		unsigned int port = properties->getContextTreeNode().getNode(properties->supervisorContextUID_).getNode("Port").getValue<unsigned int>();
+		unsigned int port = properties->getContextTreeNode()
+		                        .getNode(properties->supervisorContextUID_)
+		                        .getNode("Port")
+		                        .getValue<unsigned int>();
 
 		// help the user out if the config has old defaults for port/address
 		// Same as XDAQContextTable_table.cc:extractContexts:L164
@@ -170,7 +176,10 @@ void CorePropertySupervisorBase::indicateOtsAlive(const CorePropertySupervisorBa
 
 		sprintf(portStr, "%u", port);
 
-		hostname = properties->getContextTreeNode().getNode(properties->supervisorContextUID_).getNode("Address").getValue<std::string>();
+		hostname = properties->getContextTreeNode()
+		               .getNode(properties->supervisorContextUID_)
+		               .getNode("Address")
+		               .getValue<std::string>();
 		if(hostname == "DEFAULT")  // convert DEFAULT to http://${HOSTNAME}
 			hostname = "http://" + std::string(__ENV__("HOSTNAME"));
 
@@ -182,8 +191,9 @@ void CorePropertySupervisorBase::indicateOtsAlive(const CorePropertySupervisorBa
 	}
 
 	// indicate ots is alive (for StartOTS.sh to verify launch was successful)
-	std::string filename = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/otsdaq_is_alive-" + hostname + "-" + portStr + ".dat";
-	FILE*       fp       = fopen(filename.c_str(), "w");
+	std::string filename = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/otsdaq_is_alive-" +
+	                       hostname + "-" + portStr + ".dat";
+	FILE* fp = fopen(filename.c_str(), "w");
 	if(!fp)
 	{
 		__SS__ << "Failed to open the ots-is-alive file: " << filename << __E__;
@@ -196,7 +206,8 @@ void CorePropertySupervisorBase::indicateOtsAlive(const CorePropertySupervisorBa
 }  // end indicateOtsAlive()
 
 //==============================================================================
-void CorePropertySupervisorBase::indicateOtsDead(const CorePropertySupervisorBase* properties)
+void CorePropertySupervisorBase::indicateOtsDead(
+    const CorePropertySupervisorBase* properties)
 {
 	char        portStr[100] = "0";
 	std::string hostname     = "wiz";
@@ -208,7 +219,10 @@ void CorePropertySupervisorBase::indicateOtsDead(const CorePropertySupervisorBas
 
 	if(properties)
 	{
-		unsigned int port = properties->getContextTreeNode().getNode(properties->supervisorContextUID_).getNode("Port").getValue<unsigned int>();
+		unsigned int port = properties->getContextTreeNode()
+		                        .getNode(properties->supervisorContextUID_)
+		                        .getNode("Port")
+		                        .getValue<unsigned int>();
 
 		// help the user out if the config has old defaults for port/address
 		// Same as XDAQContextTable_table.cc:extractContexts:L164
@@ -217,7 +231,10 @@ void CorePropertySupervisorBase::indicateOtsDead(const CorePropertySupervisorBas
 
 		sprintf(portStr, "%u", port);
 
-		hostname = properties->getContextTreeNode().getNode(properties->supervisorContextUID_).getNode("Address").getValue<std::string>();
+		hostname = properties->getContextTreeNode()
+		               .getNode(properties->supervisorContextUID_)
+		               .getNode("Address")
+		               .getValue<std::string>();
 		if(hostname == "DEFAULT")  // convert DEFAULT to http://${HOSTNAME}
 			hostname = "http://" + std::string(__ENV__("HOSTNAME"));
 
@@ -229,8 +246,9 @@ void CorePropertySupervisorBase::indicateOtsDead(const CorePropertySupervisorBas
 	}
 
 	// indicate ots is dead (for StartOTS.sh to verify launch was successful)
-	std::string filename = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/otsdaq_is_alive-" + hostname + "-" + portStr + ".dat";
-	FILE*       fp       = fopen(filename.c_str(), "w");
+	std::string filename = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/otsdaq_is_alive-" +
+	                       hostname + "-" + portStr + ".dat";
+	FILE* fp = fopen(filename.c_str(), "w");
 	if(!fp)
 	{
 		__SS__ << "Failed to open the ots-is-alive file: " << filename << __E__;
@@ -243,12 +261,14 @@ void CorePropertySupervisorBase::indicateOtsDead(const CorePropertySupervisorBas
 
 //==============================================================================
 // will be wizard supervisor in wiz mode, otherwise Gateway Supervisor descriptor
-XDAQ_CONST_CALL xdaq::ApplicationDescriptor* CorePropertySupervisorBase::getGatewaySupervisorDescriptor(void)
+XDAQ_CONST_CALL xdaq::ApplicationDescriptor*
+                CorePropertySupervisorBase::getGatewaySupervisorDescriptor(void)
 {
 	if(allSupervisorInfo_.isMacroMakerMode())
 		return 0;
 
-	return allSupervisorInfo_.isWizardMode() ? allSupervisorInfo_.getWizardDescriptor() : allSupervisorInfo_.getGatewayDescriptor();
+	return allSupervisorInfo_.isWizardMode() ? allSupervisorInfo_.getWizardDescriptor()
+	                                         : allSupervisorInfo_.getGatewayDescriptor();
 }  // end getGatewaySupervisorDescriptor()
 
 //==============================================================================
@@ -265,18 +285,32 @@ void CorePropertySupervisorBase::setSupervisorPropertyDefaults(void)
 	//		"..." << __E__;
 
 	// set core Supervisor base class defaults
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold, "*=1");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserGroupsAllowed, "");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserGroupsDisallowed, "");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
+	    "*=1");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserGroupsAllowed, "");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserGroupsDisallowed, "");
 
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes, "");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes, "");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AutomatedRequestTypes, "");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AllowNoLoginRequestTypes, "");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireSecurityRequestTypes, "");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes, "");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
+	    "");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AutomatedRequestTypes, "");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AllowNoLoginRequestTypes, "");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireSecurityRequestTypes,
+	    "");
 
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.NoXmlWhiteSpaceRequestTypes, "");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.NonXMLRequestTypes, "");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.NoXmlWhiteSpaceRequestTypes,
+	    "");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.NonXMLRequestTypes, "");
 
 	//	__SUP_COUT__ << "Done setting up Core Supervisor Base property defaults for
 	// supervisor" <<
@@ -298,14 +332,16 @@ void CorePropertySupervisorBase::setSupervisorPropertyDefaults(void)
 //
 //	Use with CorePropertySupervisorBase::doPermissionsGrantAccess to determine
 //		if access is allowed.
-void CorePropertySupervisorBase::extractPermissionsMapFromString(const std::string&                                  permissionsString,
-                                                                 std::map<std::string, WebUsers::permissionLevel_t>& permissionsMap)
+void CorePropertySupervisorBase::extractPermissionsMapFromString(
+    const std::string&                                  permissionsString,
+    std::map<std::string, WebUsers::permissionLevel_t>& permissionsMap)
 {
 	permissionsMap.clear();
 	StringMacros::getMapFromString(permissionsString, permissionsMap);
 	if(permissionsMap.size() == 0)  // do not allow empty permissions map
-		permissionsMap.emplace(std::pair<std::string, WebUsers::permissionLevel_t>(WebUsers::DEFAULT_USER_GROUP,
-		                                                                           atoi(permissionsString.c_str()))  // convert to integer
+		permissionsMap.emplace(std::pair<std::string, WebUsers::permissionLevel_t>(
+		    WebUsers::DEFAULT_USER_GROUP,
+		    atoi(permissionsString.c_str()))  // convert to integer
 		);
 }  // end extractPermissionsMapFromString()
 
@@ -327,8 +363,9 @@ void CorePropertySupervisorBase::extractPermissionsMapFromString(const std::stri
 //		<groupName>:<permissionsThreshold> pairs separated by ',' '&' or '|'
 //		for example, to give access admins and pixel team but not calorimeter team:
 //			allUsers:255 | pixelTeam:1 | calorimeterTeam:0
-bool CorePropertySupervisorBase::doPermissionsGrantAccess(std::map<std::string, WebUsers::permissionLevel_t>& permissionLevelsMap,
-                                                          std::map<std::string, WebUsers::permissionLevel_t>& permissionThresholdsMap)
+bool CorePropertySupervisorBase::doPermissionsGrantAccess(
+    std::map<std::string, WebUsers::permissionLevel_t>& permissionLevelsMap,
+    std::map<std::string, WebUsers::permissionLevel_t>& permissionThresholdsMap)
 {
 	// return true if a permission level group name is found with a permission level
 	//	greater than or equal to the permission level at a matching group name entry in
@@ -346,7 +383,8 @@ bool CorePropertySupervisorBase::doPermissionsGrantAccess(std::map<std::string, 
 		{
 			//__COUTV__(permissionThresholdGroupPair.first);
 			//__COUTV__(permissionThresholdGroupPair.second);
-			if(permissionLevelGroupPair.first == permissionThresholdGroupPair.first && permissionThresholdGroupPair.second &&  // not explicitly disallowed
+			if(permissionLevelGroupPair.first == permissionThresholdGroupPair.first &&
+			   permissionThresholdGroupPair.second &&  // not explicitly disallowed
 			   permissionLevelGroupPair.second >= permissionThresholdGroupPair.second)
 				return true;  // access granted!
 		}
@@ -369,33 +407,35 @@ void CorePropertySupervisorBase::checkSupervisorPropertySetup()
 	//	only redo if Context configuration group changes
 	propertiesAreSetup_ = true;
 
-	__SUP_COUTT__ << "Setting up supervisor specific property DEFAULTS for supervisor..." << __E__;
+	__SUP_COUTT__ << "Setting up supervisor specific property DEFAULTS for supervisor..."
+	              << __E__;
 
 	CorePropertySupervisorBase::setSupervisorPropertyDefaults();  // calls base class
 	                                                              // version defaults
 
-	
 	setSupervisorPropertyDefaults();  // calls override version defaults
-	
-	__SUP_COUTT__ << "Done setting up supervisor specific property DEFAULTS for supervisor." << __E__;
+
+	__SUP_COUTT__
+	    << "Done setting up supervisor specific property DEFAULTS for supervisor."
+	    << __E__;
 
 	if(allSupervisorInfo_.isWizardMode())
 		__SUP_COUT__ << "Wiz mode detected. Skipping setup of supervisor properties for "
 		                "supervisor of class '"
 		             << supervisorClass_ << "'" << __E__;
 	else if(allSupervisorInfo_.isMacroMakerMode())
-		__SUP_COUT__ << "Maker Maker mode detected. Skipping setup of supervisor properties for "
-		                "supervisor of class '"
-		             << supervisorClass_ << "'" << __E__;
+		__SUP_COUT__
+		    << "Maker Maker mode detected. Skipping setup of supervisor properties for "
+		       "supervisor of class '"
+		    << supervisorClass_ << "'" << __E__;
 	else
 		CorePropertySupervisorBase::loadUserSupervisorProperties();  // loads user
 		                                                             // settings from
 		                                                             // configuration
 
+	readOnly_ = getSupervisorProperty("ReadOnly", "0") == "1" ? true : false;
+	__SUP_COUTV__(readOnly_);
 
-	readOnly_        		= getSupervisorProperty("ReadOnly","0") == "1"?true:false;
-    __SUP_COUTV__(readOnly_);
-	
 	//__SUP_COUT__ << "Setting up supervisor specific FORCED properties for supervisor..."
 	//<< __E__;
 	forceSupervisorPropertyValues();  // calls override forced values
@@ -404,19 +444,26 @@ void CorePropertySupervisorBase::checkSupervisorPropertySetup()
 	                                  //			"." << __E__;
 
 	CorePropertySupervisorBase::extractPermissionsMapFromString(
-	    getSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold), propertyStruct_.UserPermissionsThreshold);
+	    getSupervisorProperty(
+	        CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold),
+	    propertyStruct_.UserPermissionsThreshold);
 
 	propertyStruct_.UserGroupsAllowed.clear();
-	StringMacros::getMapFromString(getSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserGroupsAllowed),
-	                               propertyStruct_.UserGroupsAllowed);
+	StringMacros::getMapFromString(
+	    getSupervisorProperty(
+	        CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserGroupsAllowed),
+	    propertyStruct_.UserGroupsAllowed);
 
 	propertyStruct_.UserGroupsDisallowed.clear();
-	StringMacros::getMapFromString(getSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserGroupsDisallowed),
-	                               propertyStruct_.UserGroupsDisallowed);
+	StringMacros::getMapFromString(
+	    getSupervisorProperty(
+	        CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserGroupsDisallowed),
+	    propertyStruct_.UserGroupsDisallowed);
 
 	auto nameIt = SUPERVISOR_PROPERTIES.allSetNames_.begin();
 	auto setIt  = propertyStruct_.allSets_.begin();
-	while(nameIt != SUPERVISOR_PROPERTIES.allSetNames_.end() && setIt != propertyStruct_.allSets_.end())
+	while(nameIt != SUPERVISOR_PROPERTIES.allSetNames_.end() &&
+	      setIt != propertyStruct_.allSets_.end())
 	{
 		(*setIt)->clear();
 		StringMacros::getSetFromString(getSupervisorProperty(*(*nameIt)), *(*setIt));
@@ -438,17 +485,21 @@ try
 {
 	if(supervisorContextUID_ == "" || supervisorApplicationUID_ == "")
 	{
-		__SUP_SS__ << "Empty supervisorContextUID_ or supervisorApplicationUID_." << __E__;
+		__SUP_SS__ << "Empty supervisorContextUID_ or supervisorApplicationUID_."
+		           << __E__;
 		__SUP_SS_THROW__;
 	}
-	return theConfigurationManager_->getSupervisorNode(supervisorContextUID_, supervisorApplicationUID_);
+	return theConfigurationManager_->getSupervisorNode(supervisorContextUID_,
+	                                                   supervisorApplicationUID_);
 }  // end getSupervisorTreeNode()
 catch(...)
 {
-	__SUP_COUT_ERR__ << "XDAQ Supervisor could not access it's configuration node through "
-	                    "theConfigurationManager_ "
-	                 << "(Did you remember to initialize using CorePropertySupervisorBase::init()?)."
-	                 << " The supervisorContextUID_ = " << supervisorContextUID_ << ". The supervisorApplicationUID = " << supervisorApplicationUID_ << __E__;
+	__SUP_COUT_ERR__
+	    << "XDAQ Supervisor could not access it's configuration node through "
+	       "theConfigurationManager_ "
+	    << "(Did you remember to initialize using CorePropertySupervisorBase::init()?)."
+	    << " The supervisorContextUID_ = " << supervisorContextUID_
+	    << ". The supervisorApplicationUID = " << supervisorApplicationUID_ << __E__;
 	throw;
 }  // end getSupervisorTreeNode() exception handling
 
@@ -466,7 +517,8 @@ void CorePropertySupervisorBase::loadUserSupervisorProperties(void)
 
 	try
 	{
-		auto /*map<name,node>*/ children = supervisorNode.getNode("LinkToPropertyTable").getChildren();
+		auto /*map<name,node>*/ children =
+		    supervisorNode.getNode("LinkToPropertyTable").getChildren();
 
 		for(auto& child : children)
 		{
@@ -474,7 +526,9 @@ void CorePropertySupervisorBase::loadUserSupervisorProperties(void)
 				continue;  // skip OFF properties
 
 			auto propertyName = child.second.getNode("PropertyName").getValue();
-			setSupervisorProperty(propertyName, child.second.getNode("PropertyValue").getValue<std::string>());
+			setSupervisorProperty(
+			    propertyName,
+			    child.second.getNode("PropertyValue").getValue<std::string>());
 		}
 	}
 	catch(...)
@@ -490,7 +544,8 @@ void CorePropertySupervisorBase::loadUserSupervisorProperties(void)
 }  // end loadUserSupervisorProperties()
 
 //==============================================================================
-void CorePropertySupervisorBase::setSupervisorProperty(const std::string& propertyName, const std::string& propertyValue)
+void CorePropertySupervisorBase::setSupervisorProperty(const std::string& propertyName,
+                                                       const std::string& propertyValue)
 {
 	propertyMap_[propertyName] = propertyValue;
 	//	__SUP_COUT__ << "Set propertyMap_[" << propertyName <<
@@ -498,9 +553,11 @@ void CorePropertySupervisorBase::setSupervisorProperty(const std::string& proper
 }  // end setSupervisorProperty()
 
 //==============================================================================
-void CorePropertySupervisorBase::addSupervisorProperty(const std::string& propertyName, const std::string& propertyValue)
+void CorePropertySupervisorBase::addSupervisorProperty(const std::string& propertyName,
+                                                       const std::string& propertyValue)
 {
-	propertyMap_[propertyName] = propertyValue + " | " + getSupervisorProperty(propertyName);
+	propertyMap_[propertyName] =
+	    propertyValue + " | " + getSupervisorProperty(propertyName);
 	//	__SUP_COUT__ << "Set propertyMap_[" << propertyName <<
 	//			"] = " << propertyMap_[propertyName] << __E__;
 }  // end addSupervisorProperty()
@@ -508,7 +565,8 @@ void CorePropertySupervisorBase::addSupervisorProperty(const std::string& proper
 //==============================================================================
 // getSupervisorProperty
 //		string version of template function
-std::string CorePropertySupervisorBase::getSupervisorProperty(const std::string& propertyName)
+std::string CorePropertySupervisorBase::getSupervisorProperty(
+    const std::string& propertyName)
 {
 	// check if need to setup properties
 	checkSupervisorPropertySetup();
@@ -524,7 +582,8 @@ std::string CorePropertySupervisorBase::getSupervisorProperty(const std::string&
 
 //==============================================================================
 // getSupervisorProperty
-std::string CorePropertySupervisorBase::getSupervisorProperty(const std::string& propertyName, const std::string& defaultValue)
+std::string CorePropertySupervisorBase::getSupervisorProperty(
+    const std::string& propertyName, const std::string& defaultValue)
 {
 	// check if need to setup properties
 	checkSupervisorPropertySetup();
@@ -541,12 +600,15 @@ std::string CorePropertySupervisorBase::getSupervisorProperty(const std::string&
 //==============================================================================
 // getSupervisorPropertyUserPermissionsThreshold
 //	returns the threshold based on the requestType
-WebUsers::permissionLevel_t CorePropertySupervisorBase::getSupervisorPropertyUserPermissionsThreshold(const std::string& requestType)
+WebUsers::permissionLevel_t
+CorePropertySupervisorBase::getSupervisorPropertyUserPermissionsThreshold(
+    const std::string& requestType)
 {
 	// check if need to setup properties
 	checkSupervisorPropertySetup();
 
-	return StringMacros::getWildCardMatchFromMap(requestType, propertyStruct_.UserPermissionsThreshold);
+	return StringMacros::getWildCardMatchFromMap(
+	    requestType, propertyStruct_.UserPermissionsThreshold);
 }  // end getSupervisorPropertyUserPermissionsThreshold()
 
 //==============================================================================
@@ -556,85 +618,126 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 {
 	checkSupervisorPropertySetup();
 
-	__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "userInfo.requestType_ " << userInfo.requestType_ << __E__;
+	__SUP_COUT_TYPE__(TLVL_DEBUG + 20)
+	    << __COUT_HDR__ << "userInfo.requestType_ " << userInfo.requestType_ << __E__;
 
-	__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "propertyStruct_.AutomatedRequestTypes " << StringMacros::setToString(propertyStruct_.AutomatedRequestTypes) << __E__;
-	userInfo.automatedCommand_ = StringMacros::inWildCardSet(userInfo.requestType_,
-	                                                         propertyStruct_.AutomatedRequestTypes);  // automatic commands should not refresh
-	                                                                                                  // cookie code.. only user initiated
-	                                                                                                  // commands should!
+	__SUP_COUT_TYPE__(TLVL_DEBUG + 20)
+	    << __COUT_HDR__ << "propertyStruct_.AutomatedRequestTypes "
+	    << StringMacros::setToString(propertyStruct_.AutomatedRequestTypes) << __E__;
+	userInfo.automatedCommand_ = StringMacros::inWildCardSet(
+	    userInfo.requestType_,
+	    propertyStruct_.AutomatedRequestTypes);  // automatic commands should not refresh
+	                                             // cookie code.. only user initiated
+	                                             // commands should!
 
-	__SUP_COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ << "propertyStruct_.NonXMLRequestTypes " << StringMacros::setToString(propertyStruct_.NonXMLRequestTypes) << __E__;
-	userInfo.NonXMLRequestType_ = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.NonXMLRequestTypes);  // non-xml request
-	                                                                                                                       // types just return
-	                                                                                                                       // the request return
-	                                                                                                                       // string to client
+	__SUP_COUT_TYPE__(TLVL_DEBUG + 21)
+	    << __COUT_HDR__ << "propertyStruct_.NonXMLRequestTypes "
+	    << StringMacros::setToString(propertyStruct_.NonXMLRequestTypes) << __E__;
+	userInfo.NonXMLRequestType_ = StringMacros::inWildCardSet(
+	    userInfo.requestType_, propertyStruct_.NonXMLRequestTypes);  // non-xml request
+	                                                                 // types just return
+	                                                                 // the request return
+	                                                                 // string to client
 
-	__SUP_COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ << "propertyStruct_.NoXmlWhiteSpaceRequestTypes " << StringMacros::setToString(propertyStruct_.NoXmlWhiteSpaceRequestTypes) << __E__;
-	userInfo.NoXmlWhiteSpace_ = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.NoXmlWhiteSpaceRequestTypes);
+	__SUP_COUT_TYPE__(TLVL_DEBUG + 21)
+	    << __COUT_HDR__ << "propertyStruct_.NoXmlWhiteSpaceRequestTypes "
+	    << StringMacros::setToString(propertyStruct_.NoXmlWhiteSpaceRequestTypes)
+	    << __E__;
+	userInfo.NoXmlWhiteSpace_ = StringMacros::inWildCardSet(
+	    userInfo.requestType_, propertyStruct_.NoXmlWhiteSpaceRequestTypes);
 
 	//**** start LOGIN GATEWAY CODE ***//
 	// check cookieCode, sequence, userWithLock, and permissions access all in one shot!
 	{
-		__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "propertyStruct_.CheckUserLockRequestTypes " << StringMacros::setToString(propertyStruct_.CheckUserLockRequestTypes) << __E__;
-		userInfo.checkLock_       = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.CheckUserLockRequestTypes);
-		__SUP_COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__ << "propertyStruct_.RequireUserLockRequestTypes " << StringMacros::setToString(propertyStruct_.RequireUserLockRequestTypes) << __E__;
-		userInfo.requireLock_     = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.RequireUserLockRequestTypes);
+		__SUP_COUT_TYPE__(TLVL_DEBUG + 20)
+		    << __COUT_HDR__ << "propertyStruct_.CheckUserLockRequestTypes "
+		    << StringMacros::setToString(propertyStruct_.CheckUserLockRequestTypes)
+		    << __E__;
+		userInfo.checkLock_ = StringMacros::inWildCardSet(
+		    userInfo.requestType_, propertyStruct_.CheckUserLockRequestTypes);
+		__SUP_COUT_TYPE__(TLVL_DEBUG + 20)
+		    << __COUT_HDR__ << "propertyStruct_.RequireUserLockRequestTypes "
+		    << StringMacros::setToString(propertyStruct_.RequireUserLockRequestTypes)
+		    << __E__;
+		userInfo.requireLock_ = StringMacros::inWildCardSet(
+		    userInfo.requestType_, propertyStruct_.RequireUserLockRequestTypes);
 		if(userInfo.requireLock_ && userInfo.automatedCommand_)
 		{
-			__SUP_COUTT__ << "Overriding requireLock_ because request '" << userInfo.requestType_ << "' marked as automatedCommand_" << __E__;
+			__SUP_COUTT__ << "Overriding requireLock_ because request '"
+			              << userInfo.requestType_ << "' marked as automatedCommand_"
+			              << __E__;
 			userInfo.requireLock_ = false;
 		}
 
-		__SUP_COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ << "propertyStruct_.AllowNoLoginRequestTypes " << StringMacros::setToString(propertyStruct_.AllowNoLoginRequestTypes) << __E__;
-		userInfo.allowNoUser_     = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.AllowNoLoginRequestTypes);
-		__SUP_COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ << "propertyStruct_.RequireSecurityRequestTypes " << StringMacros::setToString(propertyStruct_.RequireSecurityRequestTypes) << __E__;
-		userInfo.requireSecurity_ = StringMacros::inWildCardSet(userInfo.requestType_, propertyStruct_.RequireSecurityRequestTypes);
+		__SUP_COUT_TYPE__(TLVL_DEBUG + 21)
+		    << __COUT_HDR__ << "propertyStruct_.AllowNoLoginRequestTypes "
+		    << StringMacros::setToString(propertyStruct_.AllowNoLoginRequestTypes)
+		    << __E__;
+		userInfo.allowNoUser_ = StringMacros::inWildCardSet(
+		    userInfo.requestType_, propertyStruct_.AllowNoLoginRequestTypes);
+		__SUP_COUT_TYPE__(TLVL_DEBUG + 21)
+		    << __COUT_HDR__ << "propertyStruct_.RequireSecurityRequestTypes "
+		    << StringMacros::setToString(propertyStruct_.RequireSecurityRequestTypes)
+		    << __E__;
+		userInfo.requireSecurity_ = StringMacros::inWildCardSet(
+		    userInfo.requestType_, propertyStruct_.RequireSecurityRequestTypes);
 
 		userInfo.permissionsThreshold_ = -1;  // default to max
 		try
 		{
-			userInfo.permissionsThreshold_ = CorePropertySupervisorBase::getSupervisorPropertyUserPermissionsThreshold(userInfo.requestType_);
+			userInfo.permissionsThreshold_ =
+			    CorePropertySupervisorBase::getSupervisorPropertyUserPermissionsThreshold(
+			        userInfo.requestType_);
 		}
 		catch(std::runtime_error& e)
 		{
 			if(!userInfo.automatedCommand_)
-				__SUP_COUT__ << "No explicit permissions threshold for request '" << userInfo.requestType_
-				             << "'... Defaulting to max threshold = " << (unsigned int)userInfo.permissionsThreshold_ << __E__;
+				__SUP_COUT__ << "No explicit permissions threshold for request '"
+				             << userInfo.requestType_
+				             << "'... Defaulting to max threshold = "
+				             << (unsigned int)userInfo.permissionsThreshold_ << __E__;
 		}
 
-		__SUP_COUTVS__(20,userInfo.requestType_);
-		__SUP_COUTVS__(20,userInfo.checkLock_);
-		__SUP_COUTVS__(20,userInfo.requireLock_);
-		__SUP_COUTVS__(20,userInfo.allowNoUser_);
-		__SUP_COUTVS__(20,userInfo.automatedCommand_);
-		__SUP_COUTVS__(20,userInfo.automatedCommand_);
-		__SUP_COUTVS__(20,(unsigned int)userInfo.permissionsThreshold_ );
+		__SUP_COUTVS__(20, userInfo.requestType_);
+		__SUP_COUTVS__(20, userInfo.checkLock_);
+		__SUP_COUTVS__(20, userInfo.requireLock_);
+		__SUP_COUTVS__(20, userInfo.allowNoUser_);
+		__SUP_COUTVS__(20, userInfo.automatedCommand_);
+		__SUP_COUTVS__(20, userInfo.automatedCommand_);
+		__SUP_COUTVS__(20, (unsigned int)userInfo.permissionsThreshold_);
 
 		try
 		{
-			StringMacros::getSetFromString(StringMacros::getWildCardMatchFromMap(userInfo.requestType_, propertyStruct_.UserGroupsAllowed),
-			                               userInfo.groupsAllowed_);
+			StringMacros::getSetFromString(
+			    StringMacros::getWildCardMatchFromMap(userInfo.requestType_,
+			                                          propertyStruct_.UserGroupsAllowed),
+			    userInfo.groupsAllowed_);
 		}
 		catch(std::runtime_error& e)
 		{
-			userInfo.groupsAllowed_.clear(); 
+			userInfo.groupsAllowed_.clear();
 			if(!userInfo.automatedCommand_)
-				__SUP_COUT_TYPE__(TLVL_DEBUG+25) << __COUT_HDR__ << "No explicit groups allowed for request '" << 
-					userInfo.requestType_ << "'... Defaulting to empty groups allowed. " << __E__;
+				__SUP_COUT_TYPE__(TLVL_DEBUG + 25)
+				    << __COUT_HDR__ << "No explicit groups allowed for request '"
+				    << userInfo.requestType_
+				    << "'... Defaulting to empty groups allowed. " << __E__;
 		}
 		try
 		{
-			StringMacros::getSetFromString(StringMacros::getWildCardMatchFromMap(userInfo.requestType_, propertyStruct_.UserGroupsDisallowed),
-			                               userInfo.groupsDisallowed_);
+			StringMacros::getSetFromString(
+			    StringMacros::getWildCardMatchFromMap(
+			        userInfo.requestType_, propertyStruct_.UserGroupsDisallowed),
+			    userInfo.groupsDisallowed_);
 		}
 		catch(std::runtime_error& e)
 		{
 			userInfo.groupsDisallowed_.clear();
 
 			if(!userInfo.automatedCommand_)
-				__SUP_COUT_TYPE__(TLVL_DEBUG+25) << __COUT_HDR__ << "No explicit groups disallowed for request '" <<
-					userInfo.requestType_ << "'... Defaulting to empty groups disallowed. " << __E__;
+				__SUP_COUT_TYPE__(TLVL_DEBUG + 25)
+				    << __COUT_HDR__ << "No explicit groups disallowed for request '"
+				    << userInfo.requestType_
+				    << "'... Defaulting to empty groups disallowed. " << __E__;
 		}
 	}  //**** end LOGIN GATEWAY CODE ***//
 
@@ -642,7 +745,8 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 }  // end getRequestUserInfo()
 
 //==============================================================================
-xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(xoap::MessageReference message)
+xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(
+    xoap::MessageReference message)
 {
 	__SUP_COUT__ << "$$$$$$$$$$$$$$$$$" << __E__;
 
@@ -650,7 +754,8 @@ xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(xoap::
 	SOAPParameters parameters;
 	parameters.addParameter("Request");
 
-	__SUP_COUT__ << "Received TRACE message: " << SOAPUtilities::translate(message) << __E__;
+	__SUP_COUT__ << "Received TRACE message: " << SOAPUtilities::translate(message)
+	             << __E__;
 
 	SOAPUtilities::receive(message, parameters);
 	std::string request = parameters.getValue("Request");
@@ -668,7 +773,8 @@ xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(xoap::
 		{
 			retParameters.addParameter("TRACEList", getTraceLevels());
 			retParameters.addParameter("TRACEHostnameList", traceReturnHostString_);
-			return SOAPUtilities::makeSOAPMessageReference(supervisorClassNoNamespace_ + "Response", retParameters);
+			return SOAPUtilities::makeSOAPMessageReference(
+			    supervisorClassNoNamespace_ + "Response", retParameters);
 		}
 		else if(request == "SetTraceLevels")
 		{
@@ -694,15 +800,20 @@ xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(xoap::
 			__SUP_COUTV__(labelsStr);
 
 			if(individualValues)
-				retParameters.addParameter("TRACEList", setIndividualTraceLevels(host, setMode, labelsStr));
+				retParameters.addParameter(
+				    "TRACEList", setIndividualTraceLevels(host, setMode, labelsStr));
 			else
-				retParameters.addParameter("TRACEList", setTraceLevels(host, setMode, labelsStr, setValueMSB, setValueLSB));
-			return SOAPUtilities::makeSOAPMessageReference(supervisorClassNoNamespace_ + "Response", retParameters);
+				retParameters.addParameter(
+				    "TRACEList",
+				    setTraceLevels(host, setMode, labelsStr, setValueMSB, setValueLSB));
+			return SOAPUtilities::makeSOAPMessageReference(
+			    supervisorClassNoNamespace_ + "Response", retParameters);
 		}
 		else if(request == "GetTriggerStatus")
 		{
 			retParameters.addParameter("TRACETriggerStatus", getTraceTriggerStatus());
-			return SOAPUtilities::makeSOAPMessageReference(supervisorClassNoNamespace_ + "Response", retParameters);
+			return SOAPUtilities::makeSOAPMessageReference(
+			    supervisorClassNoNamespace_ + "Response", retParameters);
 		}
 		else if(request == "SetTriggerEnable")
 		{
@@ -710,12 +821,14 @@ xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(xoap::
 			parameters.addParameter("EntriesAfterTrigger");
 			SOAPUtilities::receive(message, parameters);
 
-			std::string host                = parameters.getValue("Host");
-			int         entriesAfterTrigger = parameters.getValueAsInt("EntriesAfterTrigger");
+			std::string host        = parameters.getValue("Host");
+			int entriesAfterTrigger = parameters.getValueAsInt("EntriesAfterTrigger");
 			__SUP_COUTV__(host);
 			__SUP_COUTV__(entriesAfterTrigger);
-			retParameters.addParameter("TRACETriggerStatus", setTraceTriggerEnable(host, entriesAfterTrigger));
-			return SOAPUtilities::makeSOAPMessageReference(supervisorClassNoNamespace_ + "Response", retParameters);
+			retParameters.addParameter("TRACETriggerStatus",
+			                           setTraceTriggerEnable(host, entriesAfterTrigger));
+			return SOAPUtilities::makeSOAPMessageReference(
+			    supervisorClassNoNamespace_ + "Response", retParameters);
 		}
 		else if(request == "ResetTRACE")
 		{
@@ -725,7 +838,8 @@ xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(xoap::
 			std::string host = parameters.getValue("Host");
 			__SUP_COUTV__(host);
 			retParameters.addParameter("TRACETriggerStatus", resetTRACE(host));
-			return SOAPUtilities::makeSOAPMessageReference(supervisorClassNoNamespace_ + "Response", retParameters);
+			return SOAPUtilities::makeSOAPMessageReference(
+			    supervisorClassNoNamespace_ + "Response", retParameters);
 		}
 		else if(request == "EnableTRACE")
 		{
@@ -739,7 +853,8 @@ xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(xoap::
 			__SUP_COUTV__(enable);
 
 			retParameters.addParameter("TRACETriggerStatus", enableTRACE(host, enable));
-			return SOAPUtilities::makeSOAPMessageReference(supervisorClassNoNamespace_ + "Response", retParameters);
+			return SOAPUtilities::makeSOAPMessageReference(
+			    supervisorClassNoNamespace_ + "Response", retParameters);
 		}
 		else if(request == "GetSnapshot")
 		{
@@ -754,9 +869,11 @@ xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(xoap::
 			__SUP_COUTV__(host);
 			__SUP_COUTV__(filterFor);
 			__SUP_COUTV__(filterOut);
-			retParameters.addParameter("TRACESnapshot", getTraceSnapshot(host, filterFor, filterOut));
+			retParameters.addParameter("TRACESnapshot",
+			                           getTraceSnapshot(host, filterFor, filterOut));
 			retParameters.addParameter("TRACETriggerStatus", getTraceTriggerStatus());
-			return SOAPUtilities::makeSOAPMessageReference(supervisorClassNoNamespace_ + "Response", retParameters);
+			return SOAPUtilities::makeSOAPMessageReference(
+			    supervisorClassNoNamespace_ + "Response", retParameters);
 		}
 		else
 		{
@@ -773,12 +890,17 @@ xoap::MessageReference CorePropertySupervisorBase::TRACESupervisorRequest(xoap::
 	catch(...)
 	{
 		__SUP_SS__ << "Error occurred handling request." << __E__;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__SUP_COUT_ERR__ << ss.str();
 		retParameters.addParameter("Error", ss.str());
 	}
@@ -802,7 +924,8 @@ const std::string& CorePropertySupervisorBase::getTraceLevels()
 	}
 
 	// typedef std::unordered_map<std::string, TraceLevelMap> HostTraceLevelMap =
-	ITRACEController::HostTraceLevelMap traceHostMap = theTRACEController_->getTraceLevels();
+	ITRACEController::HostTraceLevelMap traceHostMap =
+	    theTRACEController_->getTraceLevels();
 	for(const auto& traceMap : traceHostMap)
 	{
 		//__COUTV__(traceMap.first);
@@ -818,10 +941,14 @@ const std::string& CorePropertySupervisorBase::getTraceLevels()
 			//__COUTV__(traceMask.first);
 			//__COUTV__(traceMask.second);
 			// give in 32b chunks since javascript is 32-bit
-			traceReturnString_ += "," + traceMask.first + ",M:" + std::to_string((unsigned int)(traceMask.second.M >> 32)) + ":" +
-			                      std::to_string((unsigned int)traceMask.second.M) + ":S:" + std::to_string((unsigned int)(traceMask.second.S >> 32)) + ":" +
-			                      std::to_string((unsigned int)traceMask.second.S) + ":T:" + std::to_string((unsigned int)(traceMask.second.T >> 32)) + ":" +
-			                      std::to_string((unsigned int)traceMask.second.T);
+			traceReturnString_ +=
+			    "," + traceMask.first +
+			    ",M:" + std::to_string((unsigned int)(traceMask.second.M >> 32)) + ":" +
+			    std::to_string((unsigned int)traceMask.second.M) +
+			    ":S:" + std::to_string((unsigned int)(traceMask.second.S >> 32)) + ":" +
+			    std::to_string((unsigned int)traceMask.second.S) +
+			    ":T:" + std::to_string((unsigned int)(traceMask.second.T >> 32)) + ":" +
+			    std::to_string((unsigned int)traceMask.second.T);
 		}  // end label loop
 	}      // end host loop
 	__SUP_COUT__ << "end getTraceLevels()" << __E__;
@@ -830,7 +957,11 @@ const std::string& CorePropertySupervisorBase::getTraceLevels()
 
 //==============================================================================
 const std::string& CorePropertySupervisorBase::setTraceLevels(
-    std::string const& host, std::string const& mode, std::string const& labelsStr, uint32_t setValueMSB, uint32_t setValueLSB)
+    std::string const& host,
+    std::string const& mode,
+    std::string const& labelsStr,
+    uint32_t           setValueMSB,
+    uint32_t           setValueLSB)
 {
 	__SUP_COUT__ << "setTraceLevels()" << __E__;
 
@@ -862,7 +993,8 @@ const std::string& CorePropertySupervisorBase::setTraceLevels(
 }  // end setTraceLevels()
 
 //==============================================================================
-const std::string& CorePropertySupervisorBase::setIndividualTraceLevels(std::string const& host, std::string const& mode, std::string const& labelValuesStr)
+const std::string& CorePropertySupervisorBase::setIndividualTraceLevels(
+    std::string const& host, std::string const& mode, std::string const& labelValuesStr)
 {
 	__SUP_COUT__ << "setIndividualTraceLevels()" << __E__;
 
@@ -882,14 +1014,18 @@ const std::string& CorePropertySupervisorBase::setIndividualTraceLevels(std::str
 	StringMacros::getVectorFromString(labelValuesStr, labelValues, {','});
 	for(unsigned int i = 0; i < labelValues.size(); i += 3 /*label,msb,lsb*/)
 	{
-		__SUP_COUT__ << "Label = " << labelValues[i] << " msb/lsb " << labelValues[i + 1] << "/" << labelValues[i + 2] << __E__;
+		__SUP_COUT__ << "Label = " << labelValues[i] << " msb/lsb " << labelValues[i + 1]
+		             << "/" << labelValues[i + 2] << __E__;
 
 		if(allMode || fastMode)
-			setMask.M = ((uint64_t(atoi(labelValues[i + 1].c_str()))) << 32) | (uint64_t(uint32_t(atoi(labelValues[i + 2].c_str()))));
+			setMask.M = ((uint64_t(atoi(labelValues[i + 1].c_str()))) << 32) |
+			            (uint64_t(uint32_t(atoi(labelValues[i + 2].c_str()))));
 		if(allMode || slowMode)
-			setMask.S = ((uint64_t(atoi(labelValues[i + 1].c_str()))) << 32) | (uint64_t(uint32_t(atoi(labelValues[i + 2].c_str()))));
+			setMask.S = ((uint64_t(atoi(labelValues[i + 1].c_str()))) << 32) |
+			            (uint64_t(uint32_t(atoi(labelValues[i + 2].c_str()))));
 		if(allMode || triggerMode)
-			setMask.T = ((uint64_t(atoi(labelValues[i + 1].c_str()))) << 32) | (uint64_t(uint32_t(atoi(labelValues[i + 2].c_str()))));
+			setMask.T = ((uint64_t(atoi(labelValues[i + 1].c_str()))) << 32) |
+			            (uint64_t(uint32_t(atoi(labelValues[i + 2].c_str()))));
 
 		theTRACEController_->setTraceLevelMask(labelValues[i], setMask, host, mode);
 	}
@@ -912,14 +1048,16 @@ const std::string& CorePropertySupervisorBase::getTraceTriggerStatus()
 	}
 
 	bool isTriggered = theTRACEController_->getIsTriggered();
-	traceReturnString_ += ";" + theTRACEController_->getHostnameString() + "," + (isTriggered ? "1" : "0");
+	traceReturnString_ +=
+	    ";" + theTRACEController_->getHostnameString() + "," + (isTriggered ? "1" : "0");
 
 	__SUP_COUT__ << "end getTraceTriggerStatus() " << traceReturnString_ << __E__;
 	return traceReturnString_;
 }  // end getTraceTriggerStatus()
 
 //==============================================================================
-const std::string& CorePropertySupervisorBase::setTraceTriggerEnable(std::string const& host, size_t entriesAfterTrigger)
+const std::string& CorePropertySupervisorBase::setTraceTriggerEnable(
+    std::string const& host, size_t entriesAfterTrigger)
 {
 	__SUP_COUT__ << "setTraceTriggerEnable() " << host << __E__;
 
@@ -950,7 +1088,8 @@ const std::string& CorePropertySupervisorBase::resetTRACE(std::string const& hos
 }  // end resetTRACE()
 
 //==============================================================================
-const std::string& CorePropertySupervisorBase::enableTRACE(std::string const& host, bool enable)
+const std::string& CorePropertySupervisorBase::enableTRACE(std::string const& host,
+                                                           bool               enable)
 {
 	__SUP_COUT__ << "enableTRACE() " << host << " " << enable << __E__;
 
@@ -965,7 +1104,8 @@ const std::string& CorePropertySupervisorBase::enableTRACE(std::string const& ho
 }  // end enableTRACE()
 
 //==============================================================================
-const std::string& CorePropertySupervisorBase::getTraceSnapshot(std::string const& host, std::string const& filterFor, std::string const& filterOut)
+const std::string& CorePropertySupervisorBase::getTraceSnapshot(
+    std::string const& host, std::string const& filterFor, std::string const& filterOut)
 {
 	__SUP_COUT__ << "getTraceSnapshot()" << host << __E__;
 
@@ -983,7 +1123,8 @@ const std::string& CorePropertySupervisorBase::getTraceSnapshot(std::string cons
 	const size_t MAX_SZ = 200000;
 	if(traceReturnString_.size() > MAX_SZ)
 	{
-		__SUP_COUT__ << "Truncating from " << traceReturnString_.size() << " to " << MAX_SZ << __E__;
+		__SUP_COUT__ << "Truncating from " << traceReturnString_.size() << " to "
+		             << MAX_SZ << __E__;
 		traceReturnString_.resize(MAX_SZ);
 		traceReturnString_ += "\n...TRUNCATED";
 	}
@@ -992,6 +1133,7 @@ const std::string& CorePropertySupervisorBase::getTraceSnapshot(std::string cons
 		__SUP_COUT__ << "Empty snapshot" << __E__;
 		traceReturnString_ = "Empty TRACE snapshot.";
 	}
-	__SUP_COUT__ << "end getTraceSnapshot() Bytes = " << traceReturnString_.size() << __E__;
+	__SUP_COUT__ << "end getTraceSnapshot() Bytes = " << traceReturnString_.size()
+	             << __E__;
 	return traceReturnString_;
 }  // end getTraceSnapshot()

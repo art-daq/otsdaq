@@ -10,7 +10,8 @@ namespace ots
 class RunInfoVInterface;
 class ConfigurationTree;
 
-RunInfoVInterface* makeRunInfo(const std::string& runInfoPluginName, const std::string& runInfoUID);
+RunInfoVInterface* makeRunInfo(const std::string& runInfoPluginName,
+                               const std::string& runInfoUID);
 // ,  // Key value for (eventual) Run Info in Configuration
 // const ConfigurationTree& configurationTree,  // Pass the big tree
 // const std::string& pathToControlsConfiguration);  // Path to ControlsDashboard Table

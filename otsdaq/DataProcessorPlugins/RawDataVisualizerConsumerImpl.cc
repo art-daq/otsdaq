@@ -6,11 +6,12 @@
 using namespace ots;
 
 //==============================================================================
-RawDataVisualizerConsumer::RawDataVisualizerConsumer(std::string              supervisorApplicationUID,
-                                                     std::string              bufferUID,
-                                                     std::string              processorUID,
-                                                     const ConfigurationTree& theXDAQContextConfigTree,
-                                                     const std::string&       configurationPath)
+RawDataVisualizerConsumer::RawDataVisualizerConsumer(
+    std::string              supervisorApplicationUID,
+    std::string              bufferUID,
+    std::string              processorUID,
+    const ConfigurationTree& theXDAQContextConfigTree,
+    const std::string&       configurationPath)
     : WorkLoop(processorUID)
     , DataConsumer(supervisorApplicationUID, bufferUID, processorUID, LowConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)
@@ -21,15 +22,23 @@ RawDataVisualizerConsumer::RawDataVisualizerConsumer(std::string              su
 RawDataVisualizerConsumer::~RawDataVisualizerConsumer(void) {}
 
 //==============================================================================
-void RawDataVisualizerConsumer::startProcessingData(std::string runNumber) { DataConsumer::startProcessingData(runNumber); }
+void RawDataVisualizerConsumer::startProcessingData(std::string runNumber)
+{
+	DataConsumer::startProcessingData(runNumber);
+}
 
 //==============================================================================
-void RawDataVisualizerConsumer::stopProcessingData(void) { DataConsumer::stopProcessingData(); }
+void RawDataVisualizerConsumer::stopProcessingData(void)
+{
+	DataConsumer::stopProcessingData();
+}
 
 //==============================================================================
 bool RawDataVisualizerConsumer::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)
 {
-	__COUT__ << DataProcessor::processorUID_ << " running, because workloop: " << WorkLoop::continueWorkLoop_ << std::endl;
+	__COUT__ << DataProcessor::processorUID_
+	         << " running, because workloop: " << WorkLoop::continueWorkLoop_
+	         << std::endl;
 	slowRead();  // fastRead();
 	return WorkLoop::continueWorkLoop_;
 }
@@ -44,7 +53,8 @@ void RawDataVisualizerConsumer::fastRead(void)
 		usleep(100);
 		return;
 	}
-	__COUT__ << DataProcessor::processorUID_ << " UID: " << supervisorApplicationUID_ << std::endl;
+	__COUT__ << DataProcessor::processorUID_ << " UID: " << supervisorApplicationUID_
+	         << std::endl;
 
 	//	//HW emulator
 	//	//	 Burst Type | Sequence | 8B data
@@ -63,5 +73,6 @@ void RawDataVisualizerConsumer::slowRead(void)
 		usleep(1000);
 		return;
 	}
-	__COUT__ << DataProcessor::processorUID_ << " UID: " << supervisorApplicationUID_ << std::endl;
+	__COUT__ << DataProcessor::processorUID_ << " UID: " << supervisorApplicationUID_
+	         << std::endl;
 }

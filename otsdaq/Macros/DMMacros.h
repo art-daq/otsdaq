@@ -271,126 +271,130 @@ static std::string __c_date__ = ACBLightCyan_;
 static std::string __c_time__ = ACBLightBlue_;
 static std::string __c_meth__ = ACBLightPurple_;
 
-#define __PRE__(priority, iostream)                                                                                 \
-	{                                                                                                               \
-		if(DMM::__enablePrintouts__)                                                                                \
-		{                                                                                                           \
-			std::stringstream msg_;                                                                                 \
-			std::stringstream ss;                                                                                   \
-			std::string       toTrim;                                                                               \
-			std::string       PF_;                                                                                  \
-			std::stringstream PFs_;                                                                                 \
-			std::string       blanks = "";                                                                          \
-			int               PFSize = 0;                                                                           \
-			int               maxL   = 30;                                                                          \
-			int               msgS;                                                                                 \
-			int               blankSize;                                                                            \
-                                                                                                                    \
-			msg_ << ACBCyan_ << __LINE__ << ACPlain << ACYellow << "\t] " << ACPlain;                               \
-                                                                                                                    \
-			if(DMM::__meth__)                                                                                       \
-			{                                                                                                       \
-				PF_ = __FUNCTION__;                                                                                 \
-				if(DMM::__long__)                                                                                   \
-					PF_ = __PRETTY_FUNCTION__;                                                                      \
-				PFSize = PF_.size();                                                                                \
-				if(PFSize >= DMM::__span__)                                                                         \
-				{                                                                                                   \
-					PFSize = DMM::__span__;                                                                         \
-				}                                                                                                   \
-				for(int i = 0; i < PFSize; ++i)                                                                     \
-				{                                                                                                   \
-					PFs_ << PF_[i];                                                                                 \
-				}                                                                                                   \
-				if(PFSize < DMM::__span__)                                                                          \
-				{                                                                                                   \
-					for(int i = 0; i < DMM::__span__ + 3 - PFSize; ++i)                                             \
-					{                                                                                               \
-						PFs_ << " ";                                                                                \
-					}                                                                                               \
-				}                                                                                                   \
-				if(PFSize < (int)PF_.size())                                                                        \
-				{                                                                                                   \
-					maxL -= 4;                                                                                      \
-					PFs_ << ACRed << "...";                                                                         \
-				}                                                                                                   \
-				else                                                                                                \
-				{                                                                                                   \
-					PFs_ << ACPlain << ACPlain << ACPlain;                                                          \
-				}                                                                                                   \
-				msgS = PFs_.str().size() + 1;                                                                       \
-				if(msgS <= DMM::__span__)                                                                           \
-					msgS = DMM::__span__;                                                                           \
-				blankSize = maxL - msgS;                                                                            \
-				if(blankSize < 0)                                                                                   \
-					blankSize = 3;                                                                                  \
-				for(int i = 0; i < blankSize; ++i)                                                                  \
-				{                                                                                                   \
-					blanks += " ";                                                                                  \
-				}                                                                                                   \
-				PFs_ << blanks;                                                                                     \
-				msg_ << ACYellow << "[" << DMM::__c_meth__ << PFs_.str() << ACPlain << ACYellow << "] " << ACPlain; \
-			}                                                                                                       \
-                                                                                                                    \
-			if(DMM::__file__)                                                                                       \
-			{                                                                                                       \
-				PFs_.str("");                                                                                       \
-				PF_    = __FILE__;                                                                                  \
-				PFSize = PF_.size();                                                                                \
-				if(PFSize >= DMM::__span__)                                                                         \
-				{                                                                                                   \
-					PFSize = DMM::__span__;                                                                         \
-				}                                                                                                   \
-				for(int i = 0; i < PFSize; ++i)                                                                     \
-				{                                                                                                   \
-					PFs_ << PF_[i];                                                                                 \
-				}                                                                                                   \
-				if(PFSize < DMM::__span__)                                                                          \
-				{                                                                                                   \
-					for(int i = 0; i < DMM::__span__ + 3 - PFSize; ++i)                                             \
-					{                                                                                               \
-						PFs_ << " ";                                                                                \
-					}                                                                                               \
-				}                                                                                                   \
-				if(PFSize < (int)PF_.size())                                                                        \
-				{                                                                                                   \
-					maxL -= 4;                                                                                      \
-					PFs_ << ACRed << "...";                                                                         \
-				}                                                                                                   \
-				else                                                                                                \
-				{                                                                                                   \
-					PFs_ << ACPlain << ACPlain << ACPlain;                                                          \
-				}                                                                                                   \
-				msgS = PFs_.str().size() + 1;                                                                       \
-				if(msgS <= DMM::__span__)                                                                           \
-					msgS = DMM::__span__;                                                                           \
-				blankSize = maxL - msgS;                                                                            \
-				if(blankSize < 0)                                                                                   \
-					blankSize = 3;                                                                                  \
-				for(int i = 0; i < blankSize; ++i)                                                                  \
-				{                                                                                                   \
-					blanks += " ";                                                                                  \
-				}                                                                                                   \
-				PFs_ << blanks;                                                                                     \
-				msg_ << ACYellow << "[" << DMM::__c_file__ << PFs_.str() << ACPlain << ACYellow << "] " << ACPlain; \
-			}                                                                                                       \
-                                                                                                                    \
-			if(DMM::__date__)                                                                                       \
-			{                                                                                                       \
-				msg_ << ACYellow << "[" << DMM::__c_date__ << __DATE__ << ACPlain << ACYellow << "] " << ACPlain;   \
-			}                                                                                                       \
-                                                                                                                    \
-			if(DMM::__time__)                                                                                       \
-			{                                                                                                       \
-				msg_ << ACYellow << "[" << DMM ::__c_time__ << __TIME__ << ACPlain << ACYellow << "] " << ACPlain;  \
-			}                                                                                                       \
-			if(priority >= DMM::__pthr__)                                                                           \
-			{                                                                                                       \
-				std::cout << msg_.str();                                                                            \
-				iostream;                                                                                           \
-				cout << ACPlain;                                                                                    \
-			}                                                                                                       \
-		}                                                                                                           \
+#define __PRE__(priority, iostream)                                                   \
+	{                                                                                 \
+		if(DMM::__enablePrintouts__)                                                  \
+		{                                                                             \
+			std::stringstream msg_;                                                   \
+			std::stringstream ss;                                                     \
+			std::string       toTrim;                                                 \
+			std::string       PF_;                                                    \
+			std::stringstream PFs_;                                                   \
+			std::string       blanks = "";                                            \
+			int               PFSize = 0;                                             \
+			int               maxL   = 30;                                            \
+			int               msgS;                                                   \
+			int               blankSize;                                              \
+                                                                                      \
+			msg_ << ACBCyan_ << __LINE__ << ACPlain << ACYellow << "\t] " << ACPlain; \
+                                                                                      \
+			if(DMM::__meth__)                                                         \
+			{                                                                         \
+				PF_ = __FUNCTION__;                                                   \
+				if(DMM::__long__)                                                     \
+					PF_ = __PRETTY_FUNCTION__;                                        \
+				PFSize = PF_.size();                                                  \
+				if(PFSize >= DMM::__span__)                                           \
+				{                                                                     \
+					PFSize = DMM::__span__;                                           \
+				}                                                                     \
+				for(int i = 0; i < PFSize; ++i)                                       \
+				{                                                                     \
+					PFs_ << PF_[i];                                                   \
+				}                                                                     \
+				if(PFSize < DMM::__span__)                                            \
+				{                                                                     \
+					for(int i = 0; i < DMM::__span__ + 3 - PFSize; ++i)               \
+					{                                                                 \
+						PFs_ << " ";                                                  \
+					}                                                                 \
+				}                                                                     \
+				if(PFSize < (int)PF_.size())                                          \
+				{                                                                     \
+					maxL -= 4;                                                        \
+					PFs_ << ACRed << "...";                                           \
+				}                                                                     \
+				else                                                                  \
+				{                                                                     \
+					PFs_ << ACPlain << ACPlain << ACPlain;                            \
+				}                                                                     \
+				msgS = PFs_.str().size() + 1;                                         \
+				if(msgS <= DMM::__span__)                                             \
+					msgS = DMM::__span__;                                             \
+				blankSize = maxL - msgS;                                              \
+				if(blankSize < 0)                                                     \
+					blankSize = 3;                                                    \
+				for(int i = 0; i < blankSize; ++i)                                    \
+				{                                                                     \
+					blanks += " ";                                                    \
+				}                                                                     \
+				PFs_ << blanks;                                                       \
+				msg_ << ACYellow << "[" << DMM::__c_meth__ << PFs_.str() << ACPlain   \
+				     << ACYellow << "] " << ACPlain;                                  \
+			}                                                                         \
+                                                                                      \
+			if(DMM::__file__)                                                         \
+			{                                                                         \
+				PFs_.str("");                                                         \
+				PF_    = __FILE__;                                                    \
+				PFSize = PF_.size();                                                  \
+				if(PFSize >= DMM::__span__)                                           \
+				{                                                                     \
+					PFSize = DMM::__span__;                                           \
+				}                                                                     \
+				for(int i = 0; i < PFSize; ++i)                                       \
+				{                                                                     \
+					PFs_ << PF_[i];                                                   \
+				}                                                                     \
+				if(PFSize < DMM::__span__)                                            \
+				{                                                                     \
+					for(int i = 0; i < DMM::__span__ + 3 - PFSize; ++i)               \
+					{                                                                 \
+						PFs_ << " ";                                                  \
+					}                                                                 \
+				}                                                                     \
+				if(PFSize < (int)PF_.size())                                          \
+				{                                                                     \
+					maxL -= 4;                                                        \
+					PFs_ << ACRed << "...";                                           \
+				}                                                                     \
+				else                                                                  \
+				{                                                                     \
+					PFs_ << ACPlain << ACPlain << ACPlain;                            \
+				}                                                                     \
+				msgS = PFs_.str().size() + 1;                                         \
+				if(msgS <= DMM::__span__)                                             \
+					msgS = DMM::__span__;                                             \
+				blankSize = maxL - msgS;                                              \
+				if(blankSize < 0)                                                     \
+					blankSize = 3;                                                    \
+				for(int i = 0; i < blankSize; ++i)                                    \
+				{                                                                     \
+					blanks += " ";                                                    \
+				}                                                                     \
+				PFs_ << blanks;                                                       \
+				msg_ << ACYellow << "[" << DMM::__c_file__ << PFs_.str() << ACPlain   \
+				     << ACYellow << "] " << ACPlain;                                  \
+			}                                                                         \
+                                                                                      \
+			if(DMM::__date__)                                                         \
+			{                                                                         \
+				msg_ << ACYellow << "[" << DMM::__c_date__ << __DATE__ << ACPlain     \
+				     << ACYellow << "] " << ACPlain;                                  \
+			}                                                                         \
+                                                                                      \
+			if(DMM::__time__)                                                         \
+			{                                                                         \
+				msg_ << ACYellow << "[" << DMM ::__c_time__ << __TIME__ << ACPlain    \
+				     << ACYellow << "] " << ACPlain;                                  \
+			}                                                                         \
+			if(priority >= DMM::__pthr__)                                             \
+			{                                                                         \
+				std::cout << msg_.str();                                              \
+				iostream;                                                             \
+				cout << ACPlain;                                                      \
+			}                                                                         \
+		}                                                                             \
 	}
 }  // namespace DMM
 

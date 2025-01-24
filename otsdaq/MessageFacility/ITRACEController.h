@@ -27,7 +27,8 @@ class ITRACEController
 		uint64_t             T;
 		friend std::ostream& operator<<(std::ostream& out, const TraceMasks& traceMask)
 		{
-			out << "Memory:" << traceMask.M << ",Slow:" << traceMask.S << ",Trigger:" << traceMask.T;
+			out << "Memory:" << traceMask.M << ",Slow:" << traceMask.S
+			    << ",Trigger:" << traceMask.T;
 			return out;
 		}
 	};
@@ -37,11 +38,11 @@ class ITRACEController
 	ITRACEController() {}
 	virtual ~ITRACEController() = default;
 
-	virtual const HostTraceLevelMap& getTraceLevels(void)                               = 0;  // pure virtual
+	virtual const HostTraceLevelMap& getTraceLevels(void) = 0;  // pure virtual
 	virtual void                     setTraceLevelMask(std::string const& name,
 	                                                   TraceMasks const&  lvl,
 	                                                   std::string const& hostname = "localhost",
-	                                                   std::string const& mode     = "ALL") = 0;  // pure virtual
+	                                                   std::string const& mode = "ALL") = 0;  // pure virtual
 
 	virtual bool getIsTriggered(void)                         = 0;  // pure virtual
 	virtual void setTriggerEnable(size_t entriesAfterTrigger) = 0;  // pure virtual
@@ -50,7 +51,8 @@ class ITRACEController
 	virtual void enableTrace(bool enable = true) = 0;  // pure virtual
 
 	//=====================================
-	std::string getTraceBufferDump(std::string const& filterFor = "", std::string const& filterOut = "")
+	std::string getTraceBufferDump(std::string const& filterFor = "",
+	                               std::string const& filterOut = "")
 	{
 		std::string command = "";  //"trace_cntl show";
 
@@ -67,8 +69,11 @@ class ITRACEController
 
 			safeGrep += " | grep \" ";
 			for(unsigned int i = 0; i < grepVal.size(); ++i)
-				if((grepVal[i] >= 'a' && grepVal[i] <= 'z') || (grepVal[i] >= 'A' && grepVal[i] <= 'Z') || (grepVal[i] >= '0' && grepVal[i] <= '9') ||
-				   (grepVal[i] == '.' && i && grepVal[i - 1] != '.') || (grepVal[i] == '-' || grepVal[i] == '_'))
+				if((grepVal[i] >= 'a' && grepVal[i] <= 'z') ||
+				   (grepVal[i] >= 'A' && grepVal[i] <= 'Z') ||
+				   (grepVal[i] >= '0' && grepVal[i] <= '9') ||
+				   (grepVal[i] == '.' && i && grepVal[i - 1] != '.') ||
+				   (grepVal[i] == '-' || grepVal[i] == '_'))
 					safeGrep += grepVal[i];
 			safeGrep += " \"";
 		}
@@ -86,8 +91,11 @@ class ITRACEController
 
 			safeGrep += " | grep -v \" ";
 			for(unsigned int i = 0; i < grepVal.size(); ++i)
-				if((grepVal[i] >= 'a' && grepVal[i] <= 'z') || (grepVal[i] >= 'A' && grepVal[i] <= 'Z') || (grepVal[i] >= '0' && grepVal[i] <= '9') ||
-				   (grepVal[i] == '.' && i && grepVal[i - 1] != '.') || (grepVal[i] == '-' || grepVal[i] == '_'))
+				if((grepVal[i] >= 'a' && grepVal[i] <= 'z') ||
+				   (grepVal[i] >= 'A' && grepVal[i] <= 'Z') ||
+				   (grepVal[i] >= '0' && grepVal[i] <= '9') ||
+				   (grepVal[i] == '.' && i && grepVal[i - 1] != '.') ||
+				   (grepVal[i] == '-' || grepVal[i] == '_'))
 					safeGrep += grepVal[i];
 			safeGrep += " \"";
 		}
@@ -134,13 +142,17 @@ class ITRACEController
 	}  // end addTraceLevelsForThisHost()
 
 	//=====================================
-	void setTraceLevelsForThisHost(std::string const& name, TraceMasks const& lvl, std::string const& mode = "ALL")
+	void setTraceLevelsForThisHost(std::string const& name,
+	                               TraceMasks const&  lvl,
+	                               std::string const& mode = "ALL")
 	{
 		auto hostname = getHostnameString();
 		TLOG(TLVL_DEBUG) << "Setting TRACE levels [" << hostname << "]";
 
 		bool allMode = mode == "ALL";
-		TLOG(TLVL_DEBUG) << "Setting " << mode << " levels for name '" << name << "' to " << std::hex << std::showbase << lvl.M << " " << lvl.S << " " << lvl.T;
+		TLOG(TLVL_DEBUG) << "Setting " << mode << " levels for name '" << name << "' to "
+		                 << std::hex << std::showbase << lvl.M << " " << lvl.S << " "
+		                 << lvl.T;
 		if(name != "ALL")
 		{
 			if(allMode || mode == "FAST")

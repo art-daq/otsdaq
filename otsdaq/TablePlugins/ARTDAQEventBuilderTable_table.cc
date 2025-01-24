@@ -15,7 +15,9 @@ using namespace ots;
 
 //==============================================================================
 ARTDAQEventBuilderTable::ARTDAQEventBuilderTable(void)
-    : TableBase("ARTDAQEventBuilderTable"), ARTDAQTableBase("ARTDAQEventBuilderTable"), SlowControlsTableBase("ARTDAQEventBuilderTable")
+    : TableBase("ARTDAQEventBuilderTable")
+    , ARTDAQTableBase("ARTDAQEventBuilderTable")
+    , SlowControlsTableBase("ARTDAQEventBuilderTable")
 {
 	//////////////////////////////////////////////////////////////////////
 	// WARNING: the names used in C++ MUST match the Table INFO  		//
@@ -38,11 +40,12 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 	//__COUTV__(isFirstAppInContext);
 	if(!isFirstAppInContext_)
 		return;
-	
+
 	//if artdaq supervisor is disabled, skip fcl handling
 	if(!ARTDAQTableBase::isARTDAQEnabled(configManager))
 	{
-		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling." << __E__;
+		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling."
+		              << __E__;
 		return;
 	}
 
@@ -56,22 +59,26 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 
 	auto buiders = lastConfigManager_->getNode(ARTDAQTableBase::getTableName())
 	                   .getChildren(
-	                       /*default filterMap*/ std::map<std::string /*relative-path*/, std::string /*value*/>(),
+	                       /*default filterMap*/ std::map<std::string /*relative-path*/,
+	                                                      std::string /*value*/>(),
 	                       /*default byPriority*/ false,
 	                       /*TRUE! onlyStatusTrue*/ true);
 
 	for(auto& builder : buiders)
 	{
-		ARTDAQTableBase::outputDataReceiverFHICL(builder.second, ARTDAQTableBase::ARTDAQAppType::EventBuilder);
-		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::EventBuilder, builder.second.getValue());
+		ARTDAQTableBase::outputDataReceiverFHICL(
+		    builder.second, ARTDAQTableBase::ARTDAQAppType::EventBuilder);
+		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::EventBuilder,
+		                              builder.second.getValue());
 	}
 }  // end init()
 
 //==============================================================================
 unsigned int ARTDAQEventBuilderTable::slowControlsHandlerConfig(
-    std::stringstream&                                                             out,
-    ConfigurationManager*                                                          configManager,
-    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/
+    std::stringstream&    out,
+    ConfigurationManager* configManager,
+    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+        channelList /*= 0*/
 ) const
 {
 	/////////////////////////
@@ -81,19 +88,23 @@ unsigned int ARTDAQEventBuilderTable::slowControlsHandlerConfig(
 	std::string commentStr = "";
 
 	// loop through ARTDAQ EventBuilder records starting at ARTDAQSupervisorTable
-	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords = configManager->getNode("ARTDAQSupervisorTable").getChildren();
+	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords =
+	    configManager->getNode("ARTDAQSupervisorTable").getChildren();
 
 	unsigned int numberOfEventBuiderMetricParameters = 0;
 
 	for(auto& artdaqPair : artdaqRecords)  // start main artdaq record loop
 	{
-		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToEventBuilders_).isDisconnected())
+		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToEventBuilders_)
+		       .isDisconnected())
 			continue;
 
 		std::vector<std::pair<std::string, ConfigurationTree>> eventBuilderRecords =
-		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToEventBuilders_).getChildren();
+		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToEventBuilders_)
+		        .getChildren();
 
-		for(auto& eventBuilderPair : eventBuilderRecords)  // start main eventBuilder record loop
+		for(auto& eventBuilderPair :
+		    eventBuilderRecords)  // start main eventBuilder record loop
 		{
 			if(!eventBuilderPair.second.status())
 				continue;
@@ -109,35 +120,50 @@ unsigned int ARTDAQEventBuilderTable::slowControlsHandlerConfig(
 					continue;
 
 				auto daqMetricsLinks = daqLink.getNode("daqMetricsLink").getChildren();
-				for(auto& daqMetricsLink : daqMetricsLinks)  // start daqMetricsLinks record loop
+				for(auto& daqMetricsLink :
+				    daqMetricsLinks)  // start daqMetricsLinks record loop
 				{
 					if(!daqMetricsLink.second.status())
 						continue;
 
-					if(daqMetricsLink.second.getNode("metricParametersLink").isDisconnected())
+					if(daqMetricsLink.second.getNode("metricParametersLink")
+					       .isDisconnected())
 						continue;
 
 					// ConfigurationTree slowControlsLink = configManager->getNode("ARTDAQMetricAlarmThresholdsTable");
-					ConfigurationTree slowControlsLink = eventBuilderPair.second.getNode("MetricAlarmThresholdsLink");
+					ConfigurationTree slowControlsLink =
+					    eventBuilderPair.second.getNode("MetricAlarmThresholdsLink");
 
-					auto metricParametersLinks = daqMetricsLink.second.getNode("metricParametersLink").getChildren();
-					for(auto& metricParametersLink : metricParametersLinks)  // start daq MetricParametersLinks record loop
+					auto metricParametersLinks =
+					    daqMetricsLink.second.getNode("metricParametersLink")
+					        .getChildren();
+					for(auto& metricParametersLink :
+					    metricParametersLinks)  // start daq MetricParametersLinks record loop
 					{
 						if(!metricParametersLink.second.status())
 							continue;
 
-						std::string subsystem = metricParametersLink.second.getNode("metricParameterValue")
-						                            .getValueWithDefault<std::string>(std::string("TDAQ_") + __ENV__("MU2E_OWNER"));
+						std::string subsystem =
+						    metricParametersLink.second.getNode("metricParameterValue")
+						        .getValueWithDefault<std::string>(std::string("TDAQ_") +
+						                                          __ENV__("MU2E_OWNER"));
 						if(subsystem.find("Mu2e:") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
 						while(subsystem.find("\"") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("\""), 1, "");
 
 						numberOfEventBuiderMetricParameters =
-						    slowControlsHandler(out, tabStr, commentStr, subsystem, eventBuilderPair.first, slowControlsLink, channelList);
+						    slowControlsHandler(out,
+						                        tabStr,
+						                        commentStr,
+						                        subsystem,
+						                        eventBuilderPair.first,
+						                        slowControlsLink,
+						                        channelList);
 
 						__COUT__ << "EventBuilder '" << eventBuilderPair.first
-						         << "' number of metrics for slow controls: " << numberOfEventBuiderMetricParameters << __E__;
+						         << "' number of metrics for slow controls: "
+						         << numberOfEventBuiderMetricParameters << __E__;
 					}
 				}
 			}
@@ -153,6 +179,9 @@ unsigned int ARTDAQEventBuilderTable::slowControlsHandlerConfig(
 
 //==============================================================================
 // return out file path
-std::string ARTDAQEventBuilderTable::setFilePath() const { return SLOWCONTROL_PV_FILE_PATH; }
+std::string ARTDAQEventBuilderTable::setFilePath() const
+{
+	return SLOWCONTROL_PV_FILE_PATH;
+}
 
 DEFINE_OTS_TABLE(ARTDAQEventBuilderTable)

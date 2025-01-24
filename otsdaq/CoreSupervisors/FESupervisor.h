@@ -20,9 +20,10 @@ class FESupervisor : public CoreSupervisorBase
 	FESupervisor(xdaq::ApplicationStub* s);
 	virtual ~FESupervisor(void);
 
-	xoap::MessageReference         frontEndCommunicationRequest(xoap::MessageReference message);
-	xoap::MessageReference         macroMakerSupervisorRequest(xoap::MessageReference message);
-	virtual xoap::MessageReference workLoopStatusRequest(xoap::MessageReference message) override;
+	xoap::MessageReference frontEndCommunicationRequest(xoap::MessageReference message);
+	xoap::MessageReference macroMakerSupervisorRequest(xoap::MessageReference message);
+	virtual xoap::MessageReference workLoopStatusRequest(
+	    xoap::MessageReference message) override;
 
 	virtual void transitionConfiguring(toolbox::Event::Reference event) override;
 	virtual void transitionHalting(toolbox::Event::Reference event) override;
@@ -31,7 +32,8 @@ class FESupervisor : public CoreSupervisorBase
 	FEVInterfacesManager* theFEInterfacesManager_;
 
   private:
-	FEVInterfacesManager* extractFEInterfacesManager();  // likely, just used in constructor
+	FEVInterfacesManager*
+	extractFEInterfacesManager();  // likely, just used in constructor
 };
 
 }  // namespace ots

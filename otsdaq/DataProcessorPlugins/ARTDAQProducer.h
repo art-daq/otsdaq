@@ -17,8 +17,9 @@ namespace ots
 //	This class is a Data Producer plugin that
 //	allows a single artdaq Board Reader to be
 // instantiated on the write side of an otsdaq Buffer.
-class ARTDAQProducer : public DataProducer,
-                       public ARTDAQReaderProcessorBase  // public DataProducer, public Configurable
+class ARTDAQProducer
+    : public DataProducer,
+      public ARTDAQReaderProcessorBase  // public DataProducer, public Configurable
 {
   public:
 	ARTDAQProducer(std::string              supervisorApplicationUID,

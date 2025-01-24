@@ -15,7 +15,9 @@ using namespace ots;
 
 //==============================================================================
 ARTDAQDispatcherTable::ARTDAQDispatcherTable(void)
-    : TableBase("ARTDAQDispatcherTable"), ARTDAQTableBase("ARTDAQDispatcherTable"), SlowControlsTableBase("ARTDAQDispatcherTable")
+    : TableBase("ARTDAQDispatcherTable")
+    , ARTDAQTableBase("ARTDAQDispatcherTable")
+    , SlowControlsTableBase("ARTDAQDispatcherTable")
 
 {
 	//////////////////////////////////////////////////////////////////////
@@ -43,7 +45,8 @@ void ARTDAQDispatcherTable::init(ConfigurationManager* configManager)
 	//if artdaq supervisor is disabled, skip fcl handling
 	if(!ARTDAQTableBase::isARTDAQEnabled(configManager))
 	{
-		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling." << __E__;
+		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling."
+		              << __E__;
 		return;
 	}
 
@@ -56,22 +59,27 @@ void ARTDAQDispatcherTable::init(ConfigurationManager* configManager)
 	// handle fcl file generation, wherever the level of this table
 
 	auto dispatchers = lastConfigManager_->__SELF_NODE__.getChildren(
-	    /*default filterMap*/ std::map<std::string /*relative-path*/, std::string /*value*/>(),
+	    /*default filterMap*/ std::map<std::string /*relative-path*/,
+	                                   std::string /*value*/>(),
 	    /*default byPriority*/ false,
 	    /*TRUE! onlyStatusTrue*/ true);
 
 	for(auto& dispatcher : dispatchers)
 	{
-		ARTDAQTableBase::outputDataReceiverFHICL(dispatcher.second, ARTDAQTableBase::ARTDAQAppType::Dispatcher);
-		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::Dispatcher, dispatcher.second.getValue());
+		ARTDAQTableBase::outputDataReceiverFHICL(
+		    dispatcher.second, ARTDAQTableBase::ARTDAQAppType::Dispatcher);
+		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::Dispatcher,
+		                              dispatcher.second.getValue());
 	}
 
 }  // end init()
 
 //==============================================================================
-unsigned int ARTDAQDispatcherTable::slowControlsHandlerConfig(std::stringstream&                                                             out,
-                                                              ConfigurationManager*                                                          configManager,
-                                                              std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/
+unsigned int ARTDAQDispatcherTable::slowControlsHandlerConfig(
+    std::stringstream&    out,
+    ConfigurationManager* configManager,
+    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+        channelList /*= 0*/
 ) const
 {
 	/////////////////////////
@@ -81,19 +89,23 @@ unsigned int ARTDAQDispatcherTable::slowControlsHandlerConfig(std::stringstream&
 	std::string commentStr = "";
 
 	// loop through ARTDAQ Dispatcher records starting at ARTDAQSupervisorTable
-	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords = configManager->getNode("ARTDAQSupervisorTable").getChildren();
+	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords =
+	    configManager->getNode("ARTDAQSupervisorTable").getChildren();
 
 	unsigned int numberOfDispatcherMetricParameters = 0;
 
 	for(auto& artdaqPair : artdaqRecords)  // start main artdaq record loop
 	{
-		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToDispatchers_).isDisconnected())
+		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToDispatchers_)
+		       .isDisconnected())
 			continue;
 
 		std::vector<std::pair<std::string, ConfigurationTree>> dispatcherRecords =
-		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToDispatchers_).getChildren();
+		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToDispatchers_)
+		        .getChildren();
 
-		for(auto& dispatcherPair : dispatcherRecords)  // start main dispatcher record loop
+		for(auto& dispatcherPair :
+		    dispatcherRecords)  // start main dispatcher record loop
 		{
 			if(!dispatcherPair.second.status())
 				continue;
@@ -109,35 +121,50 @@ unsigned int ARTDAQDispatcherTable::slowControlsHandlerConfig(std::stringstream&
 					continue;
 
 				auto daqMetricsLinks = daqLink.getNode("daqMetricsLink").getChildren();
-				for(auto& daqMetricsLink : daqMetricsLinks)  // start daqMetricsLinks record loop
+				for(auto& daqMetricsLink :
+				    daqMetricsLinks)  // start daqMetricsLinks record loop
 				{
 					if(!daqMetricsLink.second.status())
 						continue;
 
-					if(daqMetricsLink.second.getNode("metricParametersLink").isDisconnected())
+					if(daqMetricsLink.second.getNode("metricParametersLink")
+					       .isDisconnected())
 						continue;
 
 					// ConfigurationTree slowControlsLink = configManager->getNode("ARTDAQMetricAlarmThresholdsTable");
-					ConfigurationTree slowControlsLink = dispatcherPair.second.getNode("MetricAlarmThresholdsLink");
+					ConfigurationTree slowControlsLink =
+					    dispatcherPair.second.getNode("MetricAlarmThresholdsLink");
 
-					auto metricParametersLinks = daqMetricsLink.second.getNode("metricParametersLink").getChildren();
-					for(auto& metricParametersLink : metricParametersLinks)  // start daq MetricParametersLinks record loop
+					auto metricParametersLinks =
+					    daqMetricsLink.second.getNode("metricParametersLink")
+					        .getChildren();
+					for(auto& metricParametersLink :
+					    metricParametersLinks)  // start daq MetricParametersLinks record loop
 					{
 						if(!metricParametersLink.second.status())
 							continue;
 
-						std::string subsystem = metricParametersLink.second.getNode("metricParameterValue")
-						                            .getValueWithDefault<std::string>(std::string("TDAQ_") + __ENV__("MU2E_OWNER"));
+						std::string subsystem =
+						    metricParametersLink.second.getNode("metricParameterValue")
+						        .getValueWithDefault<std::string>(std::string("TDAQ_") +
+						                                          __ENV__("MU2E_OWNER"));
 						if(subsystem.find("Mu2e:") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
 						while(subsystem.find("\"") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("\""), 1, "");
 
 						numberOfDispatcherMetricParameters =
-						    slowControlsHandler(out, tabStr, commentStr, subsystem, dispatcherPair.first, slowControlsLink, channelList);
+						    slowControlsHandler(out,
+						                        tabStr,
+						                        commentStr,
+						                        subsystem,
+						                        dispatcherPair.first,
+						                        slowControlsLink,
+						                        channelList);
 
-						__COUT__ << "Dispatcher '" << dispatcherPair.first << "' number of metrics for slow controls: " << numberOfDispatcherMetricParameters
-						         << __E__;
+						__COUT__ << "Dispatcher '" << dispatcherPair.first
+						         << "' number of metrics for slow controls: "
+						         << numberOfDispatcherMetricParameters << __E__;
 					}
 				}
 			}
@@ -153,6 +180,9 @@ unsigned int ARTDAQDispatcherTable::slowControlsHandlerConfig(std::stringstream&
 
 //==============================================================================
 // return out file path
-std::string ARTDAQDispatcherTable::setFilePath() const { return SLOWCONTROL_PV_FILE_PATH; }
+std::string ARTDAQDispatcherTable::setFilePath() const
+{
+	return SLOWCONTROL_PV_FILE_PATH;
+}
 
 DEFINE_OTS_TABLE(ARTDAQDispatcherTable)

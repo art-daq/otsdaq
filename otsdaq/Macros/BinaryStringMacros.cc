@@ -8,10 +8,11 @@ using namespace ots;
 //	Note: no preamble is applied by default (but "0x" could be nice)
 //
 //	Note: this is used with defaults by VisualSupervisor
-std::string BinaryStringMacros::binaryStringToHexString(const void*        binaryBuffer,
-                                                        unsigned int       numberOfBytes,
-                                                        const std::string& resultPreamble,
-                                                        const std::string& resultDelimiter)
+std::string BinaryStringMacros::binaryStringToHexString(
+    const void*        binaryBuffer,
+    unsigned int       numberOfBytes,
+    const std::string& resultPreamble,
+    const std::string& resultDelimiter)
 {
 	std::string dest;
 	dest.reserve(numberOfBytes * 2);
@@ -31,24 +32,28 @@ std::string BinaryStringMacros::binaryStringToHexString(const void*        binar
 // binaryNumberToHexString
 //	convert a data buffer string a hex string
 //		8 bytes at a time with the least significant byte last.
-std::string BinaryStringMacros::binaryNumberToHexString(const std::string& binaryBuffer,
-                                                        const std::string& resultPreamble /*"0x"*/,
-                                                        const std::string& resultDelimiter /*" "*/)
+std::string BinaryStringMacros::binaryNumberToHexString(
+    const std::string& binaryBuffer,
+    const std::string& resultPreamble /*"0x"*/,
+    const std::string& resultDelimiter /*" "*/)
 {
-	return binaryNumberToHexString(&binaryBuffer[0], binaryBuffer.size(), resultPreamble, resultDelimiter);
+	return binaryNumberToHexString(
+	    &binaryBuffer[0], binaryBuffer.size(), resultPreamble, resultDelimiter);
 }  // end binaryNumberToHexString()
 
 //==============================================================================
 // binaryNumberToHexString
 //	convert a data buffer string a hex string
 //		8 bytes at a time with the least significant byte last.
-std::string BinaryStringMacros::binaryNumberToHexString(const void*        binaryBuffer,
-                                                        unsigned int       numberOfBytes,
-                                                        const std::string& resultPreamble /*"0x"*/,
-                                                        const std::string& resultDelimiter /*" "*/)
+std::string BinaryStringMacros::binaryNumberToHexString(
+    const void*        binaryBuffer,
+    unsigned int       numberOfBytes,
+    const std::string& resultPreamble /*"0x"*/,
+    const std::string& resultDelimiter /*" "*/)
 {
 	std::string dest;
-	dest.reserve(numberOfBytes * 2 + resultDelimiter.size() * (numberOfBytes / 8) + resultPreamble.size());
+	dest.reserve(numberOfBytes * 2 + resultDelimiter.size() * (numberOfBytes / 8) +
+	             resultPreamble.size());
 	char hexstr[3];
 
 	dest += resultPreamble;
@@ -60,7 +65,9 @@ std::string BinaryStringMacros::binaryNumberToHexString(const void*        binar
 			dest += resultDelimiter;
 		for(unsigned int k = 0; k < 8; ++k)
 		{
-			sprintf(hexstr, "%02X", (unsigned char)((const char*)binaryBuffer)[7 - k + j * 8]);
+			sprintf(hexstr,
+			        "%02X",
+			        (unsigned char)((const char*)binaryBuffer)[7 - k + j * 8]);
 			dest += hexstr;
 		}
 	}
@@ -78,7 +85,9 @@ std::string BinaryStringMacros::binaryNumberToHexString(const void*        binar
 //==============================================================================
 // insertValueInBinaryString
 // 	static and specialized for string value
-void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer, const std::string& value, unsigned int bitIndex /* = 0 */)
+void BinaryStringMacros::insertValueInBinaryString(std::string&       binaryBuffer,
+                                                   const std::string& value,
+                                                   unsigned int       bitIndex /* = 0 */)
 {
 	std::string dataType = StringMacros::getNumberType(value);
 	if(dataType == "nan")
@@ -92,7 +101,8 @@ void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer, co
 		double v;
 		if(!StringMacros::getNumber<double>(value, v))
 		{
-			__SS__ << "String double value must be a valid number! Value was " << value << __E__;
+			__SS__ << "String double value must be a valid number! Value was " << value
+			       << __E__;
 			__SS_THROW__;
 		}
 		BinaryStringMacros::insertValueInBinaryString<double>(binaryBuffer, v, bitIndex);
@@ -102,10 +112,12 @@ void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer, co
 		unsigned long long v;
 		if(!StringMacros::getNumber<unsigned long long>(value, v))
 		{
-			__SS__ << "String unsigned long long value must be a valid number! Value was " << value << __E__;
+			__SS__ << "String unsigned long long value must be a valid number! Value was "
+			       << value << __E__;
 			__SS_THROW__;
 		}
-		BinaryStringMacros::insertValueInBinaryString<unsigned long long>(binaryBuffer, v, bitIndex);
+		BinaryStringMacros::insertValueInBinaryString<unsigned long long>(
+		    binaryBuffer, v, bitIndex);
 	}
 }  // end insertValueInBinaryString()
 
@@ -113,8 +125,11 @@ void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer, co
 // extractValueFromBinaryString
 //	static template function
 //	Extract value from buffer starting at bitIndex position
-void BinaryStringMacros::extractValueFromBinaryString(
-    const void* binaryBufferVoid, unsigned int bufferNumberOfBytes, void* valueVoid, unsigned int valueNumberOfBits, unsigned int bitIndex /* = 0 */)
+void BinaryStringMacros::extractValueFromBinaryString(const void*  binaryBufferVoid,
+                                                      unsigned int bufferNumberOfBytes,
+                                                      void*        valueVoid,
+                                                      unsigned int valueNumberOfBits,
+                                                      unsigned int bitIndex /* = 0 */)
 {
 	//__COUTV__(bufferNumberOfBytes);
 
@@ -128,8 +143,9 @@ void BinaryStringMacros::extractValueFromBinaryString(
 
 	if(bitIndex + valueNumberOfBits > bufferNumberOfBytes * 8)
 	{
-		__SS__ << "Can not extract value of size " << valueNumberOfBits << ", at position " << bitIndex << ", from buffer of size " << bufferNumberOfBytes * 8
-		       << "." << __E__;
+		__SS__ << "Can not extract value of size " << valueNumberOfBits
+		       << ", at position " << bitIndex << ", from buffer of size "
+		       << bufferNumberOfBytes * 8 << "." << __E__;
 		__SS_THROW__;
 	}
 
@@ -186,9 +202,10 @@ void BinaryStringMacros::extractValueFromBinaryString(
 //	Extract value from buffer starting at bitIndex position
 void BinaryStringMacros::extractValueFromBinaryString(const std::string& binaryBuffer,
                                                       std::string&       value,
-                                                      unsigned int       valueNumberOfBits,
-                                                      unsigned int       bitIndex /* = 0 */)
+                                                      unsigned int valueNumberOfBits,
+                                                      unsigned int bitIndex /* = 0 */)
 {
 	value.resize((valueNumberOfBits / 8) + ((valueNumberOfBits % 8) ? 1 : 0));
-	extractValueFromBinaryString(&binaryBuffer[0], binaryBuffer.size(), &value[0], valueNumberOfBits, bitIndex);
+	extractValueFromBinaryString(
+	    &binaryBuffer[0], binaryBuffer.size(), &value[0], valueNumberOfBits, bitIndex);
 }  // end extractValueFromBinaryString()

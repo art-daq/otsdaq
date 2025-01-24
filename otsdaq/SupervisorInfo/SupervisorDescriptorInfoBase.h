@@ -21,7 +21,8 @@
 namespace ots
 {
 // key is the crate number
-typedef std::map<xdata::UnsignedIntegerT, XDAQ_CONST_CALL xdaq::ApplicationDescriptor*> SupervisorDescriptors;
+typedef std::map<xdata::UnsignedIntegerT, XDAQ_CONST_CALL xdaq::ApplicationDescriptor*>
+    SupervisorDescriptors;
 
 class SupervisorDescriptorInfoBase
 {

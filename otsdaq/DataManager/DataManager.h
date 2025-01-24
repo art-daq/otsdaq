@@ -25,7 +25,8 @@ class CircularBufferBase;
 class DataManager : public Configurable, public VStateMachine
 {
   public:
-	DataManager(const ConfigurationTree& theXDAQContextConfigTree, const std::string& supervisorConfigurationPath);
+	DataManager(const ConfigurationTree& theXDAQContextConfigTree,
+	            const std::string&       supervisorConfigurationPath);
 	virtual ~DataManager(void);
 
 	// State Machine Methods
@@ -47,10 +48,11 @@ class DataManager : public Configurable, public VStateMachine
 	                      DataProducerBase*  producer);  // The data manager becomes the
 	                                                    // owner of the producer object!
 	void registerConsumer(const std::string& bufferUID,
-	                      DataConsumer*      consumer);  // The data manager becomes the owner
+	                      DataConsumer* consumer);  // The data manager becomes the owner
 	                                                // of the consumer object!
 
-	void unregisterFEProducer(const std::string& bufferID, const std::string& feProducerID);
+	void unregisterFEProducer(const std::string& bufferID,
+	                          const std::string& feProducerID);
 
 	// void unregisterConsumer		(const std::string& bufferID, const std::string&
 	// consumerID);  void unregisterProducer		(const std::string& bufferID, const
@@ -89,14 +91,19 @@ class DataManager : public Configurable, public VStateMachine
 		std::vector<DataConsumer*>     consumers_;
 		BufferStatus                   status_;
 	};
-	std::map<std::string /*dataBufferId*/, Buffer /*CircularBuffer:=Map of Producer to Buffer Implementations*/> buffers_;
+	std::map<std::string /*dataBufferId*/,
+	         Buffer /*CircularBuffer:=Map of Producer to Buffer Implementations*/>
+	    buffers_;
 
   public:
 	bool parentSupervisorHasFrontends_;  // if parent supervisor has front-ends, then
 	                                     // allow no producers... that will be checked
 	                                     // later by parent supervisor
 
-	const std::map<std::string /*dataBufferId*/, Buffer>& getBuffers(void) const { return buffers_; }
+	const std::map<std::string /*dataBufferId*/, Buffer>& getBuffers(void) const
+	{
+		return buffers_;
+	}
 };
 
 }  // namespace ots

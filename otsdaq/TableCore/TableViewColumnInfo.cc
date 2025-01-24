@@ -83,28 +83,38 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
     : type_(type)
     , name_(name)
     , storageName_(storageName)
-    , dataType_(/*convert antiquated*/ dataType == "VARCHAR2" ? DATATYPE_STRING : dataType)
-    , defaultValue_(defaultValue ? *defaultValue : getDefaultDefaultValue(type_, dataType_))
+    , dataType_(/*convert antiquated*/ dataType == "VARCHAR2" ? DATATYPE_STRING
+                                                              : dataType)
+    , defaultValue_(defaultValue ? *defaultValue
+                                 : getDefaultDefaultValue(type_, dataType_))
     ,  // if default pointer, take input default value
     dataChoices_(getDataChoicesFromString(dataChoicesCSV))
-    , minValue_(minValue ? ((*minValue) == "null" ? "" : (*minValue)) : getMinDefaultValue(dataType_))
+    , minValue_(minValue ? ((*minValue) == "null" ? "" : (*minValue))
+                         : getMinDefaultValue(dataType_))
     ,  // there was a time during JS GUI development when "null" was being injected into data files rather than empty strings. Because this member variable is
        // constant, this is the single cleansing point.
-    maxValue_(maxValue ? ((*maxValue) == "null" ? "" : (*maxValue)) : getMaxDefaultValue(dataType_))
+    maxValue_(maxValue ? ((*maxValue) == "null" ? "" : (*maxValue))
+                       : getMaxDefaultValue(dataType_))
     ,  // there was a time during JS GUI development when "null" was being injected into data files rather than empty strings. Because this member variable is
        // constant, this is the single cleansing point.
     bitMapInfoP_(0)
 {
 	// verify type
-	if((type_ != TYPE_UID) && (type_ != TYPE_DATA) && (type_ != TYPE_UNIQUE_DATA) && (type_ != TYPE_UNIQUE_GROUP_DATA) && (type_ != TYPE_MULTILINE_DATA) &&
-	   (type_ != TYPE_FIXED_CHOICE_DATA) && (type_ != TYPE_BITMAP_DATA) && (type_ != TYPE_ON_OFF) && (type_ != TYPE_TRUE_FALSE) && (type_ != TYPE_YES_NO) &&
-	   (type_ != TYPE_COMMENT) && (type_ != TYPE_AUTHOR) && (type_ != TYPE_TIMESTAMP) && !isChildLink() && !isChildLinkUID() && !isChildLinkGroupID() &&
-	   !isGroupID())
+	if((type_ != TYPE_UID) && (type_ != TYPE_DATA) && (type_ != TYPE_UNIQUE_DATA) &&
+	   (type_ != TYPE_UNIQUE_GROUP_DATA) && (type_ != TYPE_MULTILINE_DATA) &&
+	   (type_ != TYPE_FIXED_CHOICE_DATA) && (type_ != TYPE_BITMAP_DATA) &&
+	   (type_ != TYPE_ON_OFF) && (type_ != TYPE_TRUE_FALSE) && (type_ != TYPE_YES_NO) &&
+	   (type_ != TYPE_COMMENT) && (type_ != TYPE_AUTHOR) && (type_ != TYPE_TIMESTAMP) &&
+	   !isChildLink() && !isChildLinkUID() && !isChildLinkGroupID() && !isGroupID())
 	{
-		__SS__ << "The type for column " << name_ << " is " << type_ << ", while the only accepted types are: " << TYPE_DATA << " " << TYPE_UNIQUE_DATA << " "
-		       << TYPE_UNIQUE_GROUP_DATA << " " << TYPE_MULTILINE_DATA << " " << TYPE_FIXED_CHOICE_DATA << " " << TYPE_UID << " " << TYPE_ON_OFF << " "
-		       << TYPE_TRUE_FALSE << " " << TYPE_YES_NO << " " << TYPE_START_CHILD_LINK << "-* " << TYPE_START_CHILD_LINK_UID << "-* "
-		       << TYPE_START_CHILD_LINK_GROUP_ID << "-* " << TYPE_START_GROUP_ID << "-* " << std::endl;
+		__SS__ << "The type for column " << name_ << " is " << type_
+		       << ", while the only accepted types are: " << TYPE_DATA << " "
+		       << TYPE_UNIQUE_DATA << " " << TYPE_UNIQUE_GROUP_DATA << " "
+		       << TYPE_MULTILINE_DATA << " " << TYPE_FIXED_CHOICE_DATA << " " << TYPE_UID
+		       << " " << TYPE_ON_OFF << " " << TYPE_TRUE_FALSE << " " << TYPE_YES_NO
+		       << " " << TYPE_START_CHILD_LINK << "-* " << TYPE_START_CHILD_LINK_UID
+		       << "-* " << TYPE_START_CHILD_LINK_GROUP_ID << "-* " << TYPE_START_GROUP_ID
+		       << "-* " << std::endl;
 		if(capturedExceptionString)
 			*capturedExceptionString = ss.str();
 		else
@@ -116,10 +126,13 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 	// enforce that type only
 	// allows letters, numbers, dash, underscore
 	for(unsigned int i = 0; i < type_.size(); ++i)
-		if(!((type_[i] >= 'A' && type_[i] <= 'Z') || (type_[i] >= 'a' && type_[i] <= 'z') || (type_[i] >= '0' && type_[i] <= '9') ||
+		if(!((type_[i] >= 'A' && type_[i] <= 'Z') ||
+		     (type_[i] >= 'a' && type_[i] <= 'z') ||
+		     (type_[i] >= '0' && type_[i] <= '9') ||
 		     (type_[i] == '-' || type_[i] == '_' || type_[i] == '.' || type_[i] == ' ')))
 		{
-			__SS__ << "The column type for column " << name_ << " is '" << type_ << "'. Column types must contain only letters, numbers, "
+			__SS__ << "The column type for column " << name_ << " is '" << type_
+			       << "'. Column types must contain only letters, numbers, "
 			       << "dashes, underscores, periods, and spaces." << std::endl;
 			if(capturedExceptionString)
 				*capturedExceptionString += ss.str();
@@ -128,9 +141,11 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 		}
 
 	// verify data type
-	if((dataType_ != DATATYPE_NUMBER) && (dataType_ != DATATYPE_STRING) && (dataType_ != DATATYPE_TIME))
+	if((dataType_ != DATATYPE_NUMBER) && (dataType_ != DATATYPE_STRING) &&
+	   (dataType_ != DATATYPE_TIME))
 	{
-		__SS__ << "The data type for column " << name_ << " is " << dataType_ << ", while the only accepted types are: " << DATATYPE_NUMBER << " "
+		__SS__ << "The data type for column " << name_ << " is " << dataType_
+		       << ", while the only accepted types are: " << DATATYPE_NUMBER << " "
 		       << DATATYPE_STRING << " " << DATATYPE_TIME << std::endl;
 		if(capturedExceptionString)
 			*capturedExceptionString += ss.str();
@@ -140,7 +155,8 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 
 	if(dataType_.size() == 0)
 	{
-		__SS__ << "The data type for column " << name_ << " is '" << dataType_ << "'. Data types must contain at least 1 character." << std::endl;
+		__SS__ << "The data type for column " << name_ << " is '" << dataType_
+		       << "'. Data types must contain at least 1 character." << std::endl;
 		if(capturedExceptionString)
 			*capturedExceptionString += ss.str();
 		else
@@ -150,10 +166,13 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 	// enforce that data type only
 	// allows letters, numbers, dash, underscore
 	for(unsigned int i = 0; i < dataType_.size(); ++i)
-		if(!((dataType_[i] >= 'A' && dataType_[i] <= 'Z') || (dataType_[i] >= 'a' && dataType_[i] <= 'z') || (dataType_[i] >= '0' && dataType_[i] <= '9') ||
+		if(!((dataType_[i] >= 'A' && dataType_[i] <= 'Z') ||
+		     (dataType_[i] >= 'a' && dataType_[i] <= 'z') ||
+		     (dataType_[i] >= '0' && dataType_[i] <= '9') ||
 		     (dataType_[i] == '-' || dataType_[i] == '_' || dataType_[i] == ' ')))
 		{
-			__SS__ << "The data type for column " << name_ << " is '" << dataType_ << "'. Data types must contain only letters, numbers, "
+			__SS__ << "The data type for column " << name_ << " is '" << dataType_
+			       << "'. Data types must contain only letters, numbers, "
 			       << "dashes, underscores, and spaces." << std::endl;
 			if(capturedExceptionString)
 				*capturedExceptionString += ss.str();
@@ -163,7 +182,8 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 
 	if(name_.size() == 0)
 	{
-		__SS__ << "There is a column named " << name_ << "'. Column names must contain at least 1 character." << std::endl;
+		__SS__ << "There is a column named " << name_
+		       << "'. Column names must contain at least 1 character." << std::endl;
 		if(capturedExceptionString)
 			*capturedExceptionString += ss.str();
 		else
@@ -173,10 +193,13 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 	// enforce that col name only
 	// allows letters, numbers, dash, underscore
 	for(unsigned int i = 0; i < name_.size(); ++i)
-		if(!((name_[i] >= 'A' && name_[i] <= 'Z') || (name_[i] >= 'a' && name_[i] <= 'z') || (name_[i] >= '0' && name_[i] <= '9') ||
+		if(!((name_[i] >= 'A' && name_[i] <= 'Z') ||
+		     (name_[i] >= 'a' && name_[i] <= 'z') ||
+		     (name_[i] >= '0' && name_[i] <= '9') ||
 		     (name_[i] == '-' || name_[i] == '_')))
 		{
-			__SS__ << "There is a column named " << name_ << "'. Column names must contain only letters, numbers, "
+			__SS__ << "There is a column named " << name_
+			       << "'. Column names must contain only letters, numbers, "
 			       << "dashes, and underscores." << std::endl;
 			if(capturedExceptionString)
 				*capturedExceptionString += ss.str();
@@ -186,7 +209,8 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 
 	if(storageName_.size() == 0)
 	{
-		__SS__ << "The storage name for column " << name_ << " is '" << storageName_ << "'. Storage names must contain at least 1 character." << std::endl;
+		__SS__ << "The storage name for column " << name_ << " is '" << storageName_
+		       << "'. Storage names must contain at least 1 character." << std::endl;
 		if(capturedExceptionString)
 			*capturedExceptionString += ss.str();
 		else
@@ -196,10 +220,12 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 	// enforce that col storage name only
 	// allows capital letters, numbers, dash, underscore
 	for(unsigned int i = 0; i < storageName_.size(); ++i)
-		if(!((storageName_[i] >= 'A' && storageName_[i] <= 'Z') || (storageName_[i] >= '0' && storageName_[i] <= '9') ||
+		if(!((storageName_[i] >= 'A' && storageName_[i] <= 'Z') ||
+		     (storageName_[i] >= '0' && storageName_[i] <= '9') ||
 		     (storageName_[i] == '-' || storageName_[i] == '_')))
 		{
-			__SS__ << "The storage name for column " << name_ << " is '" << storageName_ << "'. Storage names must contain only capital letters, numbers,"
+			__SS__ << "The storage name for column " << name_ << " is '" << storageName_
+			       << "'. Storage names must contain only capital letters, numbers,"
 			       << "dashes, and underscores." << std::endl;
 			if(capturedExceptionString)
 				*capturedExceptionString += ss.str();
@@ -241,7 +267,8 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 }
 
 //==============================================================================
-std::vector<std::string> TableViewColumnInfo::getDataChoicesFromString(const std::string& dataChoicesCSV) const
+std::vector<std::string> TableViewColumnInfo::getDataChoicesFromString(
+    const std::string& dataChoicesCSV) const
 {
 	std::vector<std::string> dataChoices;
 	// build data choices vector from URI encoded data
@@ -292,7 +319,8 @@ void TableViewColumnInfo::extractBitMapInfo()
 
 		if(dataChoices_.size() < 16)
 		{
-			__SS__ << "The Bit-Map data parameters for column " << name_ << " should be size 16, but is size " << dataChoices_.size()
+			__SS__ << "The Bit-Map data parameters for column " << name_
+			       << " should be size 16, but is size " << dataChoices_.size()
 			       << ". Bit-Map parameters should be rows, cols, cellBitSize, and min, "
 			          "mid, max color."
 			       << std::endl;
@@ -326,7 +354,8 @@ void TableViewColumnInfo::extractBitMapInfo()
 TableViewColumnInfo::TableViewColumnInfo(void) {}
 
 //==============================================================================
-TableViewColumnInfo::TableViewColumnInfo(const TableViewColumnInfo& c)  // copy constructor because of bitmap pointer
+TableViewColumnInfo::TableViewColumnInfo(
+    const TableViewColumnInfo& c)  // copy constructor because of bitmap pointer
     : type_(c.type_)
     , name_(c.name_)
     , storageName_(c.storageName_)
@@ -342,7 +371,8 @@ TableViewColumnInfo::TableViewColumnInfo(const TableViewColumnInfo& c)  // copy 
 }  // end copy constructor
 
 //==============================================================================
-TableViewColumnInfo& TableViewColumnInfo::operator=(const TableViewColumnInfo&)  // assignment operator because of bitmap pointer
+TableViewColumnInfo& TableViewColumnInfo::operator=(
+    const TableViewColumnInfo&)  // assignment operator because of bitmap pointer
 {
 	__COUT__ << "OPERATOR= COPY CONSTRUCTOR " << std::endl;
 	// Note: Members of the ConfigurationTree are declared constant.
@@ -403,18 +433,25 @@ TableViewColumnInfo::~TableViewColumnInfo(void)
 const std::string& TableViewColumnInfo::getType(void) const { return type_; }
 
 //==============================================================================
-const std::string& TableViewColumnInfo::getDefaultValue(void) const { return defaultValue_; }
+const std::string& TableViewColumnInfo::getDefaultValue(void) const
+{
+	return defaultValue_;
+}
 const std::string& TableViewColumnInfo::getMinValue(void) const { return minValue_; }
 const std::string& TableViewColumnInfo::getMaxValue(void) const { return maxValue_; }
 
 //==============================================================================
-const std::string& TableViewColumnInfo::getDefaultDefaultValue(const std::string& type, const std::string& dataType)
+const std::string& TableViewColumnInfo::getDefaultDefaultValue(
+    const std::string& type, const std::string& dataType)
 {
 	if(dataType == TableViewColumnInfo::DATATYPE_STRING)
 	{
-		if(type == TableViewColumnInfo::TYPE_ON_OFF || type == TableViewColumnInfo::TYPE_TRUE_FALSE || type == TableViewColumnInfo::TYPE_YES_NO)
-			return (TableViewColumnInfo::DATATYPE_BOOL_DEFAULT);  // default to OFF, NO, FALSE
-		else if(TableViewColumnInfo::isChildLink(type))           // call static version
+		if(type == TableViewColumnInfo::TYPE_ON_OFF ||
+		   type == TableViewColumnInfo::TYPE_TRUE_FALSE ||
+		   type == TableViewColumnInfo::TYPE_YES_NO)
+			return (
+			    TableViewColumnInfo::DATATYPE_BOOL_DEFAULT);  // default to OFF, NO, FALSE
+		else if(TableViewColumnInfo::isChildLink(type))       // call static version
 			return (TableViewColumnInfo::DATATYPE_LINK_DEFAULT);
 		else if(type == TableViewColumnInfo::TYPE_COMMENT)
 			return (TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT);
@@ -438,7 +475,8 @@ const std::string& TableViewColumnInfo::getDefaultDefaultValue(const std::string
 const std::string& TableViewColumnInfo::getMinDefaultValue(const std::string& dataType)
 {
 	if(dataType == TableViewColumnInfo::DATATYPE_STRING)
-		return (TableViewColumnInfo::DATATYPE_NUMBER_MIN_DEFAULT);  // default to OFF, NO, FALSE
+		return (TableViewColumnInfo::
+		            DATATYPE_NUMBER_MIN_DEFAULT);  // default to OFF, NO, FALSE
 
 	else if(dataType == TableViewColumnInfo::DATATYPE_NUMBER)
 	{
@@ -508,40 +546,59 @@ std::vector<std::string> TableViewColumnInfo::getAllDataTypesForGUI(void)
 
 //==============================================================================
 // map of datatype,type to default value
-std::map<std::pair<std::string, std::string>, std::string> TableViewColumnInfo::getAllDefaultsForGUI(void)
+std::map<std::pair<std::string, std::string>, std::string>
+TableViewColumnInfo::getAllDefaultsForGUI(void)
 {
 	std::map<std::pair<std::string, std::string>, std::string> all;
-	all[std::pair<std::string, std::string>(DATATYPE_NUMBER, "*")] = DATATYPE_NUMBER_DEFAULT;
-	all[std::pair<std::string, std::string>(DATATYPE_TIME, "*")]   = DATATYPE_TIME_DEFAULT;
+	all[std::pair<std::string, std::string>(DATATYPE_NUMBER, "*")] =
+	    DATATYPE_NUMBER_DEFAULT;
+	all[std::pair<std::string, std::string>(DATATYPE_TIME, "*")] = DATATYPE_TIME_DEFAULT;
 
-	all[std::pair<std::string, std::string>(DATATYPE_STRING, TYPE_ON_OFF)]     = DATATYPE_BOOL_DEFAULT;
-	all[std::pair<std::string, std::string>(DATATYPE_STRING, TYPE_TRUE_FALSE)] = DATATYPE_BOOL_DEFAULT;
-	all[std::pair<std::string, std::string>(DATATYPE_STRING, TYPE_YES_NO)]     = DATATYPE_BOOL_DEFAULT;
+	all[std::pair<std::string, std::string>(DATATYPE_STRING, TYPE_ON_OFF)] =
+	    DATATYPE_BOOL_DEFAULT;
+	all[std::pair<std::string, std::string>(DATATYPE_STRING, TYPE_TRUE_FALSE)] =
+	    DATATYPE_BOOL_DEFAULT;
+	all[std::pair<std::string, std::string>(DATATYPE_STRING, TYPE_YES_NO)] =
+	    DATATYPE_BOOL_DEFAULT;
 
-	all[std::pair<std::string, std::string>(DATATYPE_STRING, TYPE_START_CHILD_LINK)] = DATATYPE_LINK_DEFAULT;
-	all[std::pair<std::string, std::string>(DATATYPE_STRING, "*")]                   = DATATYPE_STRING_DEFAULT;
+	all[std::pair<std::string, std::string>(DATATYPE_STRING, TYPE_START_CHILD_LINK)] =
+	    DATATYPE_LINK_DEFAULT;
+	all[std::pair<std::string, std::string>(DATATYPE_STRING, "*")] =
+	    DATATYPE_STRING_DEFAULT;
 	return all;
 }
 // TODO check if min and max values need a function called getallminmaxforgui or something like that for someplace
 //==============================================================================
 // isBoolType
-bool TableViewColumnInfo::isBoolType(void) const { return (type_ == TYPE_ON_OFF || type_ == TYPE_TRUE_FALSE || type_ == TYPE_YES_NO); }  // end isBoolType()
+bool TableViewColumnInfo::isBoolType(void) const
+{
+	return (type_ == TYPE_ON_OFF || type_ == TYPE_TRUE_FALSE || type_ == TYPE_YES_NO);
+}  // end isBoolType()
 
 //==============================================================================
 // isNumberDataType
-bool TableViewColumnInfo::isNumberDataType(void) const { return (dataType_ == DATATYPE_NUMBER); }  // end isBoolType()
+bool TableViewColumnInfo::isNumberDataType(void) const
+{
+	return (dataType_ == DATATYPE_NUMBER);
+}  // end isBoolType()
 
 //==============================================================================
 const std::string& TableViewColumnInfo::getName(void) const { return name_; }
 
 //==============================================================================
-const std::string& TableViewColumnInfo::getStorageName(void) const { return storageName_; }
+const std::string& TableViewColumnInfo::getStorageName(void) const
+{
+	return storageName_;
+}
 
 //==============================================================================
 const std::string& TableViewColumnInfo::getDataType(void) const { return dataType_; }
 
 //==============================================================================
-const std::vector<std::string>& TableViewColumnInfo::getDataChoices(void) const { return dataChoices_; }
+const std::vector<std::string>& TableViewColumnInfo::getDataChoices(void) const
+{
+	return dataChoices_;
+}
 
 //==============================================================================
 // getBitMapInfo
@@ -553,7 +610,8 @@ const TableViewColumnInfo::BitMapInfo& TableViewColumnInfo::getBitMapInfo(void) 
 
 	// throw error at this point!
 	{
-		__SS__ << "getBitMapInfo request for non-BitMap column of type: " << getType() << std::endl;
+		__SS__ << "getBitMapInfo request for non-BitMap column of type: " << getType()
+		       << std::endl;
 		__COUT_ERR__ << "\n" << ss.str();
 		__SS_THROW__;
 	}
@@ -565,7 +623,9 @@ const TableViewColumnInfo::BitMapInfo& TableViewColumnInfo::getBitMapInfo(void) 
 //	so don't allow alpha character immediately after
 bool TableViewColumnInfo::isChildLink(const std::string& type)
 {
-	return (type.find(TYPE_START_CHILD_LINK) == 0 && type.length() > TYPE_START_CHILD_LINK.length() && type[TYPE_START_CHILD_LINK.length()] == '-');
+	return (type.find(TYPE_START_CHILD_LINK) == 0 &&
+	        type.length() > TYPE_START_CHILD_LINK.length() &&
+	        type[TYPE_START_CHILD_LINK.length()] == '-');
 }
 
 //==============================================================================
@@ -574,7 +634,9 @@ bool TableViewColumnInfo::isChildLink(const std::string& type)
 //	so don't allow alpha character immediately after
 bool TableViewColumnInfo::isChildLink(void) const
 {
-	return (type_.find(TYPE_START_CHILD_LINK) == 0 && type_.length() > TYPE_START_CHILD_LINK.length() && type_[TYPE_START_CHILD_LINK.length()] == '-');
+	return (type_.find(TYPE_START_CHILD_LINK) == 0 &&
+	        type_.length() > TYPE_START_CHILD_LINK.length() &&
+	        type_[TYPE_START_CHILD_LINK.length()] == '-');
 }
 
 //==============================================================================
@@ -583,7 +645,8 @@ bool TableViewColumnInfo::isChildLink(void) const
 //	so don't allow alpha character immediately after
 bool TableViewColumnInfo::isChildLinkUID(void) const
 {
-	return (type_.find(TYPE_START_CHILD_LINK_UID) == 0 && type_.length() > TYPE_START_CHILD_LINK_UID.length() &&
+	return (type_.find(TYPE_START_CHILD_LINK_UID) == 0 &&
+	        type_.length() > TYPE_START_CHILD_LINK_UID.length() &&
 	        type_[TYPE_START_CHILD_LINK_UID.length()] == '-');
 }
 
@@ -593,7 +656,8 @@ bool TableViewColumnInfo::isChildLinkUID(void) const
 //	so don't allow alpha character immediately after
 bool TableViewColumnInfo::isChildLinkGroupID(void) const
 {
-	return (type_.find(TYPE_START_CHILD_LINK_GROUP_ID) == 0 && type_.length() > TYPE_START_CHILD_LINK_GROUP_ID.length() &&
+	return (type_.find(TYPE_START_CHILD_LINK_GROUP_ID) == 0 &&
+	        type_.length() > TYPE_START_CHILD_LINK_GROUP_ID.length() &&
 	        type_[TYPE_START_CHILD_LINK_GROUP_ID.length()] == '-');
 }
 
@@ -603,7 +667,9 @@ bool TableViewColumnInfo::isChildLinkGroupID(void) const
 //	so don't allow alpha character immediately after in group index
 bool TableViewColumnInfo::isGroupID(void) const
 {
-	return (type_.find(TYPE_START_GROUP_ID) == 0 && type_.length() > TYPE_START_GROUP_ID.length() && type_[TYPE_START_GROUP_ID.length()] == '-');
+	return (type_.find(TYPE_START_GROUP_ID) == 0 &&
+	        type_.length() > TYPE_START_GROUP_ID.length() &&
+	        type_[TYPE_START_GROUP_ID.length()] == '-');
 }
 
 //==============================================================================
@@ -625,7 +691,9 @@ std::string TableViewColumnInfo::getChildLinkIndex(void) const
 		return type_.substr(TYPE_START_GROUP_ID.length() + 1);
 	else
 	{
-		__SS__ << ("Requesting a Link Index from a column that is not a child link member!") << std::endl;
+		__SS__
+		    << ("Requesting a Link Index from a column that is not a child link member!")
+		    << std::endl;
 		__COUT_ERR__ << ss.str();
 		__SS_THROW__;
 	}

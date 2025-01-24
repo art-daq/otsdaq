@@ -7,8 +7,13 @@ using namespace ots;
 #define mfSubject_ (std::string("Processor:") + DataProcessor::processorUID_)
 
 //==============================================================================
-DataProcessor::DataProcessor(std::string supervisorApplicationUID, std::string bufferUID, std::string processorUID)
-    : supervisorApplicationUID_(supervisorApplicationUID), bufferUID_(bufferUID), processorUID_(processorUID), theCircularBuffer_(nullptr)
+DataProcessor::DataProcessor(std::string supervisorApplicationUID,
+                             std::string bufferUID,
+                             std::string processorUID)
+    : supervisorApplicationUID_(supervisorApplicationUID)
+    , bufferUID_(bufferUID)
+    , processorUID_(processorUID)
+    , theCircularBuffer_(nullptr)
 {
 	__GEN_COUT__ << "Constructor." << __E__;
 	__GEN_COUTV__(supervisorApplicationUID_);
@@ -22,4 +27,7 @@ DataProcessor::DataProcessor(std::string supervisorApplicationUID, std::string b
 DataProcessor::~DataProcessor(void) { __GEN_COUT__ << "Destructed." << __E__; }
 
 //==============================================================================
-void DataProcessor::setCircularBuffer(CircularBufferBase* circularBuffer) { theCircularBuffer_ = circularBuffer; }
+void DataProcessor::setCircularBuffer(CircularBufferBase* circularBuffer)
+{
+	theCircularBuffer_ = circularBuffer;
+}

@@ -23,10 +23,13 @@
 // #define __SHORTFILE__ 		(__builtin_strstr(&__FILE__[0], "/srcs/") ? __builtin_strstr(&__FILE__[0], "/srcs/") + 6 : __FILE__)
 // #define __COUT_HDR_L__ 		"[" << std::dec        << __LINE__ << "]\t"
 // #define __COUT_HDR_FL__ 	__SHORTFILE__ << " "   << __COUT_HDR_L__
-// #define __COUT_ERR__ 		TLOG(TLVL_ERROR) 
-// #define __COUT_INFO__ 		TLOG(TLVL_INFO) 
-#undef	__COUT__
-#define __COUT__			std::cout << __MF_DECOR__ << __COUT_HDR_FL__ //TLOG(TLVL_DEBUG) //std::cout << __MF_DECOR__ << __COUT_HDR_FL__
+// #define __COUT_ERR__ 		TLOG(TLVL_ERROR)
+// #define __COUT_INFO__ 		TLOG(TLVL_INFO)
+#undef __COUT__
+#define __COUT__        \
+	std::cout           \
+	    << __MF_DECOR__ \
+	    << __COUT_HDR_FL__  //TLOG(TLVL_DEBUG) //std::cout << __MF_DECOR__ << __COUT_HDR_FL__
 
 using namespace ots;
 
@@ -34,16 +37,19 @@ void SaveJSON_Document(int argc, char* argv[])
 {
 	// The configuration uses __ENV__("SERVICE_DATA_PATH") in init() so define it if it is not defined
 	if(getenv("SERVICE_DATA_PATH") == NULL)
-		setenv("SERVICE_DATA_PATH", (std::string(__ENV__("USER_DATA")) + "/ServiceData").c_str(), 1);
+		setenv("SERVICE_DATA_PATH",
+		       (std::string(__ENV__("USER_DATA")) + "/ServiceData").c_str(),
+		       1);
 
 	__COUT__ << "=================================================\n";
 	__COUT__ << "=================================================\n";
 	__COUT__ << "=================================================\n";
 	__COUT__ << "\nSaving Trigger Document!" << std::endl;
 
-	__COUT__ << "\n\nusage: Two arguments:\n\t <path_to_source_JSON> <document_name_to_save>"
-	          << std::endl << std::endl;
-
+	__COUT__
+	    << "\n\nusage: Two arguments:\n\t <path_to_source_JSON> <document_name_to_save>"
+	    << std::endl
+	    << std::endl;
 
 	__COUT__ << "argc = " << argc << std::endl;
 	for(int i = 0; i < argc; i++)
@@ -87,12 +93,11 @@ void SaveJSON_Document(int argc, char* argv[])
 	ConfigurationManagerRW  cfgMgrInst("doc_admin");
 	ConfigurationManagerRW* cfgMgr = &cfgMgrInst;
 
-
 	std::FILE* fp = std::fopen(argv[1], "rb");
 	if(!fp)
 	{
-		__COUT__ << "\n\nERROR! Could not open file at " << argv[1] << 
-			". Error: " << errno << " - " << strerror(errno) << __E__;
+		__COUT__ << "\n\nERROR! Could not open file at " << argv[1]
+		         << ". Error: " << errno << " - " << strerror(errno) << __E__;
 		return;
 	}
 	std::string json;
@@ -109,19 +114,26 @@ void SaveJSON_Document(int argc, char* argv[])
 		__COUT__ << "ERROR! ARTDAQ_DATABASE_URI not set." << __E__;
 		return;
 	}
-	ConfigurationInterface* theInterface_ = cfgMgr->getConfigurationInterface();		
-	std::pair<std::string, TableVersion> savedDoc = theInterface_->saveCustomJSON(json,argv[2]);
-	__COUT__ << "Done with JSON doc save as '" << savedDoc.first << "-v" << savedDoc.second << "'" << __E__;
+	ConfigurationInterface* theInterface_ = cfgMgr->getConfigurationInterface();
+	std::pair<std::string, TableVersion> savedDoc =
+	    theInterface_->saveCustomJSON(json, argv[2]);
+	__COUT__ << "Done with JSON doc save as '" << savedDoc.first << "-v"
+	         << savedDoc.second << "'" << __E__;
 	return;
-} //end SaveJSON_Document()
+}  //end SaveJSON_Document()
 
 int main(int argc, char* argv[])
 {
 	if(getenv("OTSDAQ_LOG_FHICL") == NULL)
-		setenv("OTSDAQ_LOG_FHICL", (std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/MessageFacilityWithCout.fcl").c_str(), 1);
+		setenv("OTSDAQ_LOG_FHICL",
+		       (std::string(__ENV__("USER_DATA")) +
+		        "/MessageFacilityConfigurations/MessageFacilityWithCout.fcl")
+		           .c_str(),
+		       1);
 
 	if(getenv("OTSDAQ_LOG_ROOT") == NULL)
-		setenv("OTSDAQ_LOG_ROOT", (std::string(__ENV__("USER_DATA")) + "/Logs").c_str(), 1);
+		setenv(
+		    "OTSDAQ_LOG_ROOT", (std::string(__ENV__("USER_DATA")) + "/Logs").c_str(), 1);
 
 	// INIT_MF("SaveJSON_Document");
 	SaveJSON_Document(argc, argv);

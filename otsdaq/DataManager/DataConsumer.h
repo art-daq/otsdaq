@@ -20,7 +20,10 @@ class DataConsumer : public DataProcessor, public virtual WorkLoop
 		HighConsumerPriority  // Can't overwrite but need to wait for sometime before
 		                      // writing a buffer
 	};
-	DataConsumer(std::string supervisorApplicationUID, std::string bufferUID, std::string processorUID, ConsumerPriority priority);
+	DataConsumer(std::string      supervisorApplicationUID,
+	             std::string      bufferUID,
+	             std::string      processorUID,
+	             ConsumerPriority priority);
 	virtual ~DataConsumer(void);
 
 	virtual void registerToBuffer(void);
@@ -34,14 +37,16 @@ class DataConsumer : public DataProcessor, public virtual WorkLoop
 	template<class D, class H>
 	int read(D& buffer, H& header)
 	{
-		return static_cast<CircularBuffer<D, H>*>(theCircularBuffer_)->read(buffer, header, processorUID_);
+		return static_cast<CircularBuffer<D, H>*>(theCircularBuffer_)
+		    ->read(buffer, header, processorUID_);
 	}
 
 	// Fast version where you point to the buffer without copying
 	template<class D, class H>
 	int read(D*& buffer, H*& header)
 	{
-		return static_cast<CircularBuffer<D, H>*>(theCircularBuffer_)->read(buffer, header, processorUID_);
+		return static_cast<CircularBuffer<D, H>*>(theCircularBuffer_)
+		    ->read(buffer, header, processorUID_);
 	}
 
 	template<class D, class H>
@@ -55,7 +60,8 @@ class DataConsumer : public DataProcessor, public virtual WorkLoop
 	template<class D, class H>
 	int read(D& buffer)
 	{
-		return static_cast<CircularBuffer<D, H>*>(theCircularBuffer_)->read(buffer, processorUID_);
+		return static_cast<CircularBuffer<D, H>*>(theCircularBuffer_)
+		    ->read(buffer, processorUID_);
 	}
 
 	ConsumerPriority getPriority(void);

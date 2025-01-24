@@ -6,23 +6,32 @@ const std::string SupervisorInfo::APP_STATUS_UNKNOWN       = "UNKNOWN";
 const std::string SupervisorInfo::APP_STATUS_NOT_MONITORED = "Not Monitored";
 
 //=====================================================================================
-void SupervisorInfo::setStatus(const std::string& status, const unsigned int progress, const std::string& detail)
+void SupervisorInfo::setStatus(const std::string& status,
+                               const unsigned int progress,
+                               const std::string& detail)
 {
 	status_   = status;
 	progress_ = progress;
 	detail_   = detail;
-	if(status != SupervisorInfo::APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
+	if(status !=
+	   SupervisorInfo::
+	       APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
 		lastStatusTime_ = time(0);
 }  // end setStatus()
 
 //=====================================================================================
-void SupervisorInfo::setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail)
+void SupervisorInfo::setSubappStatus(const std::string& name,
+                                     const std::string& status,
+                                     const unsigned int progress,
+                                     const std::string& detail)
 {
 	subapps_[name].name     = name;
 	subapps_[name].status   = status;
 	subapps_[name].progress = progress;
 	subapps_[name].detail   = detail;
-	if(status != SupervisorInfo::APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
+	if(status !=
+	   SupervisorInfo::
+	       APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
 		subapps_[name].lastStatusTime = time(0);
 }  // end setSubappStatus()
 
@@ -80,12 +89,14 @@ std::string SupervisorInfo::serializeSubappInfos(std::vector<SubappInfo> infos)
 }
 
 //=====================================================================================
-std::vector<SupervisorInfo::SubappInfo> SupervisorInfo::deserializeSubappInfos(std::string info_string)
+std::vector<SupervisorInfo::SubappInfo> SupervisorInfo::deserializeSubappInfos(
+    std::string info_string)
 {
 	std::vector<SubappInfo> infos;
 	std::istringstream      istr(info_string);
 	std::string             line;
-	while(std::getline(istr, line)) {
+	while(std::getline(istr, line))
+	{
 		SubappInfo thisInfo;
 		thisInfo.name = line;
 		std::getline(istr, line);

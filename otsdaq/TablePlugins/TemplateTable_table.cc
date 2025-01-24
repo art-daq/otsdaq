@@ -36,7 +36,8 @@ void TemplateTable::init(ConfigurationManager* configManager)
 	//		  											  << std::endl;
 
 	std::string                                             value;
-	std::vector<std::pair<std::string, ConfigurationTree> > children = configManager->__SELF_NODE__.getChildren();
+	std::vector<std::pair<std::string, ConfigurationTree> > children =
+	    configManager->__SELF_NODE__.getChildren();
 	for(auto& childPair : children)
 	{
 		// do something for each row in table

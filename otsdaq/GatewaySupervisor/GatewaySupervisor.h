@@ -31,7 +31,8 @@
 #include <string>
 
 // defines used also by OtsConfigurationWizardSupervisor
-#define FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE std::string("FSMLastConfiguredGroupAlias.hist")
+#define FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE \
+	std::string("FSMLastConfiguredGroupAlias.hist")
 #define FSM_LAST_STARTED_GROUP_ALIAS_FILE std::string("FSMLastStartedGroupAlias.hist")
 
 namespace ots

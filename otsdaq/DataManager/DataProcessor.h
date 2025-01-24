@@ -13,7 +13,9 @@ namespace ots
 class DataProcessor
 {
   public:
-	DataProcessor(std::string supervisorApplicationUID, std::string bufferUID, std::string processorUID);
+	DataProcessor(std::string supervisorApplicationUID,
+	              std::string bufferUID,
+	              std::string processorUID);
 	virtual ~DataProcessor(void);
 
 	virtual void registerToBuffer(void) = 0;

@@ -7,7 +7,8 @@
 using namespace ots;
 
 //==============================================================================
-TCPServer::TCPServer(unsigned int serverPort, unsigned int maxNumberOfClients) : TCPServerBase(serverPort, maxNumberOfClients), fInDestructor(false)
+TCPServer::TCPServer(unsigned int serverPort, unsigned int maxNumberOfClients)
+    : TCPServerBase(serverPort, maxNumberOfClients), fInDestructor(false)
 
 {
 	fReceiveTimeout.tv_sec  = 0;
@@ -40,7 +41,8 @@ void TCPServer::connectClient(TCPTransceiverSocket* socket)
 		{
 			if(!fInDestructor)
 			{
-				std::cout << __PRETTY_FUNCTION__ << "Error client socket #" << socket->getSocketId() << ": " << e.what()
+				std::cout << __PRETTY_FUNCTION__ << "Error client socket #"
+				          << socket->getSocketId() << ": " << e.what()
 				          << std::endl;  // Client connection must have closed
 				TCPServerBase::closeClientSocket(socket->getSocketId());
 				interpretMessage("Error: " + std::string(e.what()));
@@ -67,7 +69,8 @@ void TCPServer::connectClient(TCPTransceiverSocket* socket)
 	}
 	// If the socket is removed then this line will crash.
 	// It is crucial then to have the return when the exception is caught and the socket is closed!
-	std::cout << __PRETTY_FUNCTION__ << "Thread done for socket  #: " << socket->getSocketId() << std::endl;
+	std::cout << __PRETTY_FUNCTION__
+	          << "Thread done for socket  #: " << socket->getSocketId() << std::endl;
 	//	std::cout << __PRETTY_FUNCTION__ << "Thread done for socket!" << std::endl;
 }
 
@@ -80,11 +83,17 @@ void TCPServer::acceptConnections()
 		try
 		{
 			TCPTransceiverSocket* clientSocket = acceptClient<TCPTransceiverSocket>();
-			clientSocket->setReceiveTimeout(fReceiveTimeout.tv_sec, fReceiveTimeout.tv_usec);
+			clientSocket->setReceiveTimeout(fReceiveTimeout.tv_sec,
+			                                fReceiveTimeout.tv_usec);
 			clientSocket->setSendTimeout(fSendTimeout.tv_sec, fSendTimeout.tv_usec);
-			if(fConnectedClientsFuture.find(clientSocket->getSocketId()) != fConnectedClientsFuture.end())
-				fConnectedClientsFuture.erase(fConnectedClientsFuture.find(clientSocket->getSocketId()));
-			fConnectedClientsFuture.emplace(clientSocket->getSocketId(), std::async(std::launch::async, &TCPServer::connectClient, this, clientSocket));
+			if(fConnectedClientsFuture.find(clientSocket->getSocketId()) !=
+			   fConnectedClientsFuture.end())
+				fConnectedClientsFuture.erase(
+				    fConnectedClientsFuture.find(clientSocket->getSocketId()));
+			fConnectedClientsFuture.emplace(
+			    clientSocket->getSocketId(),
+			    std::async(
+			        std::launch::async, &TCPServer::connectClient, this, clientSocket));
 			// fConnectedClientsFuture.emplace(clientSocket->getSocketId(), std::thread(&TCPServer::connectClient, this, clientSocket));
 		}
 		catch(int e)
@@ -97,14 +106,16 @@ void TCPServer::acceptConnections()
 }
 
 //==============================================================================
-void TCPServer::setReceiveTimeout(unsigned int timeoutSeconds, unsigned int timeoutMicroseconds)
+void TCPServer::setReceiveTimeout(unsigned int timeoutSeconds,
+                                  unsigned int timeoutMicroseconds)
 {
 	fReceiveTimeout.tv_sec  = timeoutSeconds;
 	fReceiveTimeout.tv_usec = timeoutMicroseconds;
 }
 
 //==============================================================================
-void TCPServer::setSendTimeout(unsigned int timeoutSeconds, unsigned int timeoutMicroseconds)
+void TCPServer::setSendTimeout(unsigned int timeoutSeconds,
+                               unsigned int timeoutMicroseconds)
 {
 	fSendTimeout.tv_sec  = timeoutSeconds;
 	fSendTimeout.tv_usec = timeoutMicroseconds;

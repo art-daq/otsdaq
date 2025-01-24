@@ -19,7 +19,8 @@ class FileConfigurationInterface : public ConfigurationInterface
 	void fill(TableBase* /*configuration*/, TableVersion /*version*/) const;
 
 	// write configuration to database
-	void saveActiveVersion(const TableBase* /*configuration*/, bool overwrite = false) const;
+	void saveActiveVersion(const TableBase* /*configuration*/,
+	                       bool overwrite = false) const;
 
 	// find the latest configuration version by configuration type
 	TableVersion findLatestVersion(const TableBase* /*configuration*/) const;

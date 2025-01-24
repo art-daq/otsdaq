@@ -16,7 +16,8 @@ enum FragmentType : artdaq::Fragment::type_t
 };
 
 // Safety check.
-static_assert(artdaq::Fragment::isUserFragmentType(FragmentType::INVALID - 1), "Too many user-defined fragments!");
+static_assert(artdaq::Fragment::isUserFragmentType(FragmentType::INVALID - 1),
+              "Too many user-defined fragments!");
 }  // namespace detail
 
 using detail::FragmentType;

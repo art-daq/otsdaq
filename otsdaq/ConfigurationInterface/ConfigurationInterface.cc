@@ -14,22 +14,28 @@ using namespace ots;
 #define DEBUG_CONFIGURATION true
 
 //==============================================================================
-ConfigurationInterface* 					ConfigurationInterface::theInstance_               = nullptr;
-ConfigurationInterface::CONFIGURATION_MODE  ConfigurationInterface::theMode_                   = ConfigurationInterface::CONFIGURATION_MODE::DO_NOT_CREATE;
-bool                    					ConfigurationInterface::theVersionTrackingEnabled_ = true;
+ConfigurationInterface*                    ConfigurationInterface::theInstance_ = nullptr;
+ConfigurationInterface::CONFIGURATION_MODE ConfigurationInterface::theMode_ =
+    ConfigurationInterface::CONFIGURATION_MODE::DO_NOT_CREATE;
+bool ConfigurationInterface::theVersionTrackingEnabled_ = true;
 
-const std::string ConfigurationInterface::GROUP_METADATA_TABLE_NAME = "TableGroupMetadata";
+const std::string ConfigurationInterface::GROUP_METADATA_TABLE_NAME =
+    "TableGroupMetadata";
 
 //==============================================================================
 ConfigurationInterface::ConfigurationInterface() {}
 
 //==============================================================================
-ConfigurationInterface* ConfigurationInterface::getInstance(ConfigurationInterface::CONFIGURATION_MODE mode /* = DO_NOT_CREATE */)
+ConfigurationInterface* ConfigurationInterface::getInstance(
+    ConfigurationInterface::CONFIGURATION_MODE mode /* = DO_NOT_CREATE */)
 {
 	if(mode == CONFIGURATION_MODE::DO_NOT_CREATE)
 	{
 		if(theInstance_ == nullptr)
-			std::cout << __COUT_HDR_FL__ << "WARNING -- returning a nullptr ConfigurationInterface::theInstance_" << __E__;
+			std::cout
+			    << __COUT_HDR_FL__
+			    << "WARNING -- returning a nullptr ConfigurationInterface::theInstance_"
+			    << __E__;
 		return theInstance_;
 	}
 
@@ -46,16 +52,25 @@ ConfigurationInterface* ConfigurationInterface::getInstance(ConfigurationInterfa
 
 	theMode_ = mode;
 	return theInstance_;
-} //end getInstance()
+}  //end getInstance()
 
 //==============================================================================
-bool ConfigurationInterface::isVersionTrackingEnabled() { return ConfigurationInterface::theVersionTrackingEnabled_; }
+bool ConfigurationInterface::isVersionTrackingEnabled()
+{
+	return ConfigurationInterface::theVersionTrackingEnabled_;
+}
 
 //==============================================================================
-void ConfigurationInterface::setVersionTrackingEnabled(bool setValue) { ConfigurationInterface::theVersionTrackingEnabled_ = setValue; }
+void ConfigurationInterface::setVersionTrackingEnabled(bool setValue)
+{
+	ConfigurationInterface::theVersionTrackingEnabled_ = setValue;
+}
 
 //==============================================================================
-const ConfigurationInterface::CONFIGURATION_MODE& ConfigurationInterface::getMode()  { return ConfigurationInterface::theMode_; }
+const ConfigurationInterface::CONFIGURATION_MODE& ConfigurationInterface::getMode()
+{
+	return ConfigurationInterface::theMode_;
+}
 
 //==============================================================================
 // saveNewVersion
@@ -64,11 +79,15 @@ const ConfigurationInterface::CONFIGURATION_MODE& ConfigurationInterface::getMod
 //		save using the interface, and return the new version number
 //	If newVersion is non 0, attempt to save as given newVersion number, else throw
 // exception. 	return TableVersion::INVALID on failure
-TableVersion ConfigurationInterface::saveNewVersion(TableBase* table, TableVersion temporaryVersion, TableVersion newVersion)
+TableVersion ConfigurationInterface::saveNewVersion(TableBase*   table,
+                                                    TableVersion temporaryVersion,
+                                                    TableVersion newVersion)
 {
 	if(!temporaryVersion.isTemporaryVersion() || !table->isStored(temporaryVersion))
 	{
-		std::cout << __COUT_HDR_FL__ << "Invalid temporary version number: " << temporaryVersion << std::endl;
+		std::cout << __COUT_HDR_FL__
+		          << "Invalid temporary version number: " << temporaryVersion
+		          << std::endl;
 		return TableVersion();  // return INVALID
 	}
 
@@ -81,14 +100,17 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase* table, TableVersi
 	std::set<TableVersion> versions = getVersions(table);
 	if(newVersion == TableVersion::INVALID)
 	{
-		if(versions.size() &&  // 1 more than last version, if any non-scratch versions exist
+		if(versions
+		       .size() &&  // 1 more than last version, if any non-scratch versions exist
 		   *(versions.rbegin()) != TableVersion(TableVersion::SCRATCH))
 			newVersion = TableVersion::getNextVersion(*(versions.rbegin()));
-		else if(versions.size() > 1)  // if scratch exists, take 1 more than second to last version
+		else if(versions.size() >
+		        1)  // if scratch exists, take 1 more than second to last version
 			newVersion = TableVersion::getNextVersion(*(--(versions.rbegin())));
 		else
 			newVersion = TableVersion::DEFAULT;
-		std::cout << __COUT_HDR_FL__ << "Next available version number is " << newVersion << std::endl;
+		std::cout << __COUT_HDR_FL__ << "Next available version number is " << newVersion
+		          << std::endl;
 		//
 		//		//for sanity check, compare with config's idea of next version
 		//		TableVersion baseNextVersion = table->getNextVersion();
@@ -101,7 +123,8 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase* table, TableVersi
 	}
 	else if(versions.find(newVersion) != versions.end())
 	{
-		std::cout << __COUT_HDR_FL__ << "newVersion(" << newVersion << ") already exists!" << std::endl;
+		std::cout << __COUT_HDR_FL__ << "newVersion(" << newVersion << ") already exists!"
+		          << std::endl;
 		rewriteableExists = newVersion == TableVersion::SCRATCH;
 
 		// throw error if version already exists and this is not the rewriteable version
@@ -113,7 +136,8 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase* table, TableVersi
 		}
 	}
 
-	std::cout << __COUT_HDR_FL__ << "Version number to save is " << newVersion << std::endl;
+	std::cout << __COUT_HDR_FL__ << "Version number to save is " << newVersion
+	          << std::endl;
 
 	// copy to new version
 	table->changeVersionAndActivateView(temporaryVersion, newVersion);
@@ -121,7 +145,8 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase* table, TableVersi
 	// save to disk
 	//	only allow overwrite if version tracking is disabled AND the rewriteable version
 	//		already exists.
-	saveActiveVersion(table, !ConfigurationInterface::isVersionTrackingEnabled() && rewriteableExists);
+	saveActiveVersion(
+	    table, !ConfigurationInterface::isVersionTrackingEnabled() && rewriteableExists);
 
 	return newVersion;
-} //end saveNewVersion()
+}  //end saveNewVersion()

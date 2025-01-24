@@ -9,6 +9,7 @@ ConfigurationInterface* makeConfigurationInterface(std::string const& interfaceP
 {
 	static cet::BasicPluginFactory basicPluginInterfaceFactory("configInterface", "make");
 
-	return basicPluginInterfaceFactory.makePlugin<ConfigurationInterface*>(interfacePluginName);
+	return basicPluginInterfaceFactory.makePlugin<ConfigurationInterface*>(
+	    interfacePluginName);
 }
 }  // namespace ots

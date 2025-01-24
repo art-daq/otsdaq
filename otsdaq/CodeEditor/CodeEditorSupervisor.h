@@ -18,9 +18,13 @@ class CodeEditorSupervisor : public CoreSupervisorBase
 
 	// CorePropertySupervisorBase override functions
 	virtual void defaultPage(xgi::Input* in, xgi::Output* out) override;
-	virtual void request(const std::string& requestType, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut, const WebUsers::RequestUserInfo& userInfo) override;
+	virtual void request(const std::string&               requestType,
+	                     cgicc::Cgicc&                    cgiIn,
+	                     HttpXmlDocument&                 xmlOut,
+	                     const WebUsers::RequestUserInfo& userInfo) override;
 
-	virtual void setSupervisorPropertyDefaults(void) override;  // override to control supervisor specific defaults
+	virtual void setSupervisorPropertyDefaults(
+	    void) override;  // override to control supervisor specific defaults
 	virtual void forceSupervisorPropertyValues(void) override;  // override to force
 	                                                            // supervisor property
 	                                                            // values (and ignore user

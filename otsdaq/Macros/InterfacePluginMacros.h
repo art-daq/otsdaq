@@ -9,13 +9,16 @@
 #define EXTERN_C_FUNC_DECLARE_START extern "C" {
 #endif
 
-#define DEFINE_OTS_INTERFACE(klass)                                                                                                        \
-	EXTERN_C_FUNC_DECLARE_START                                                                                                            \
-	std::unique_ptr<ots::FEVInterface> make(                                                                                               \
-	    const std::string& interfaceUID, const ots::ConfigurationTree& configurationTree, const std::string& pathToInterfaceConfiguration) \
-	{                                                                                                                                      \
-		return std::unique_ptr<ots::FEVInterface>(new klass(interfaceUID, configurationTree, pathToInterfaceConfiguration));               \
-	}                                                                                                                                      \
+#define DEFINE_OTS_INTERFACE(klass)                                                    \
+	EXTERN_C_FUNC_DECLARE_START                                                        \
+	std::unique_ptr<ots::FEVInterface> make(                                           \
+	    const std::string&            interfaceUID,                                    \
+	    const ots::ConfigurationTree& configurationTree,                               \
+	    const std::string&            pathToInterfaceConfiguration)                    \
+	{                                                                                  \
+		return std::unique_ptr<ots::FEVInterface>(                                     \
+		    new klass(interfaceUID, configurationTree, pathToInterfaceConfiguration)); \
+	}                                                                                  \
 	}
 
 #endif /* _ots_InterfacePluginMacro_h_ */

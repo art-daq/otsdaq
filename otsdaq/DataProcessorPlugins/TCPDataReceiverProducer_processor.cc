@@ -13,24 +13,39 @@
 using namespace ots;
 
 //==============================================================================
-TCPDataReceiverProducer::TCPDataReceiverProducer(std::string              supervisorApplicationUID,
-                                                 std::string              bufferUID,
-                                                 std::string              processorUID,
-                                                 const ConfigurationTree& theXDAQContextConfigTree,
-                                                 const std::string&       configurationPath)
+TCPDataReceiverProducer::TCPDataReceiverProducer(
+    std::string              supervisorApplicationUID,
+    std::string              bufferUID,
+    std::string              processorUID,
+    const ConfigurationTree& theXDAQContextConfigTree,
+    const std::string&       configurationPath)
     : WorkLoop(processorUID)
     //, Socket       ("192.168.133.100", 40000)
-    , DataProducer(
-          supervisorApplicationUID, bufferUID, processorUID, theXDAQContextConfigTree.getNode(configurationPath).getNode("BufferSize").getValue<unsigned int>())
+    , DataProducer(supervisorApplicationUID,
+                   bufferUID,
+                   processorUID,
+                   theXDAQContextConfigTree.getNode(configurationPath)
+                       .getNode("BufferSize")
+                       .getValue<unsigned int>())
     //, DataProducer (supervisorApplicationUID, bufferUID, processorUID, 100)
     , Configurable(theXDAQContextConfigTree, configurationPath)
-    , TCPSubscribeClient(theXDAQContextConfigTree.getNode(configurationPath).getNode("ServerIPAddress").getValue<std::string>(),
-                         theXDAQContextConfigTree.getNode(configurationPath).getNode("ServerPort").getValue<unsigned int>())
+    , TCPSubscribeClient(theXDAQContextConfigTree.getNode(configurationPath)
+                             .getNode("ServerIPAddress")
+                             .getValue<std::string>(),
+                         theXDAQContextConfigTree.getNode(configurationPath)
+                             .getNode("ServerPort")
+                             .getValue<unsigned int>())
     , dataP_(nullptr)
     , headerP_(nullptr)
-    , ipAddress_(theXDAQContextConfigTree.getNode(configurationPath).getNode("ServerIPAddress").getValue<std::string>())
-    , port_(theXDAQContextConfigTree.getNode(configurationPath).getNode("ServerPort").getValue<unsigned int>())
-    , dataType_(theXDAQContextConfigTree.getNode(configurationPath).getNode("DataType").getValue<std::string>())
+    , ipAddress_(theXDAQContextConfigTree.getNode(configurationPath)
+                     .getNode("ServerIPAddress")
+                     .getValue<std::string>())
+    , port_(theXDAQContextConfigTree.getNode(configurationPath)
+                .getNode("ServerPort")
+                .getValue<unsigned int>())
+    , dataType_(theXDAQContextConfigTree.getNode(configurationPath)
+                    .getNode("DataType")
+                    .getValue<std::string>())
 {
 }
 
@@ -71,9 +86,11 @@ void TCPDataReceiverProducer::slowWrite(void)
 	try
 	{
 		if(dataType_ == "Packet")
-			data_ = TCPSubscribeClient::receivePacket();         // Throws an exception if it fails
-		else                                                     //"Raw" || DEFAULT
-			data_ = TCPSubscribeClient::receive<std::string>();  // Throws an exception if it fails
+			data_ =
+			    TCPSubscribeClient::receivePacket();  // Throws an exception if it fails
+		else                                          //"Raw" || DEFAULT
+			data_ = TCPSubscribeClient::receive<
+			    std::string>();  // Throws an exception if it fails
 		if(data_.size() == 0)
 		{
 			std::this_thread::sleep_for(std::chrono::microseconds(1000));
@@ -107,7 +124,9 @@ void TCPDataReceiverProducer::fastWrite(void)
 
 	if(DataProducer::attachToEmptySubBuffer(dataP_, headerP_) < 0)
 	{
-		__COUT__ << "There are no available buffers! Retrying...after waiting 10 milliseconds!" << std::endl;
+		__COUT__
+		    << "There are no available buffers! Retrying...after waiting 10 milliseconds!"
+		    << std::endl;
 		std::this_thread::sleep_for(std::chrono::microseconds(1000));
 		return;
 	}
@@ -115,9 +134,11 @@ void TCPDataReceiverProducer::fastWrite(void)
 	try
 	{
 		if(dataType_ == "Packet")
-			*dataP_ = TCPSubscribeClient::receivePacket();         // Throws an exception if it fails
-		else                                                       //"Raw" || DEFAULT
-			*dataP_ = TCPSubscribeClient::receive<std::string>();  // Throws an exception if it fails
+			*dataP_ =
+			    TCPSubscribeClient::receivePacket();  // Throws an exception if it fails
+		else                                          //"Raw" || DEFAULT
+			*dataP_ = TCPSubscribeClient::receive<
+			    std::string>();  // Throws an exception if it fails
 
 		if(dataP_->size() == 0)  // When it goes in timeout
 			return;
