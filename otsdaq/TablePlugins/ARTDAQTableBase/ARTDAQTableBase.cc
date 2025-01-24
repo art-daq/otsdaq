@@ -2337,7 +2337,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 			for(auto& artdaqNode : it->second)
 			{
 				// check skip set
-				if(skipSet.find(artdaqNode.label) != skipSet.end())
+				if(skipSet.find(StringMacros::encodeURIComponent(artdaqNode.label)) != 
+						skipSet.end())
 					continue;
 
 				__COUT__ << "\t\t"

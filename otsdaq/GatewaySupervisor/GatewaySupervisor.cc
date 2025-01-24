@@ -1358,16 +1358,23 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							    << "' [URL=" << appInfo.getURL() << "]." << __E__;
 							__COUT_ERR__ << "\n" << ss.str();
 
-							theSupervisor->theStateMachine_.setErrorMessage(ss.str());
-							try
+							//Prevent stopping state machine from failed status (for now)
+							//	Seeing Console Crash and bring down state machine at the moment
+							if(!appInfo.isTypeConsoleSupervisor())
 							{
-								theSupervisor->runControlMessageHandler(
-								    SOAPUtilities::makeSOAPMessageReference(
-								        RunControlStateMachine::ERROR_TRANSITION_NAME));
+								theSupervisor->theStateMachine_.setErrorMessage(ss.str());
+								try
+								{
+									theSupervisor->runControlMessageHandler(
+										SOAPUtilities::makeSOAPMessageReference(
+											RunControlStateMachine::ERROR_TRANSITION_NAME));
+								}
+								catch(...)
+								{
+								}  //ignore any errors
 							}
-							catch(...)
-							{
-							}  //ignore any errors
+							else 
+								__COUT__ << "Ignoring that Console type supervisor crashed." << __E__;
 
 							break;  //only send one Error, then restart status loop
 						}
