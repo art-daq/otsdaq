@@ -1091,7 +1091,8 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 				POPTAB;
 				OUT << "}\n";  // end routing_table_config
 			}
-			if(outputPlugin.second.getNode("outputModuleType").getValue() == "TransferOutput")
+			if(outputPlugin.second.getNode("outputModuleType").getValue() == "TransferOutput"
+			 || outputPlugin.second.getNode("outputModuleType").getValue() == "TransferOutputReliable")
 			{
 				OUT << "transfer_plugin: @local::TransferPluginConfig \n";
 			}
