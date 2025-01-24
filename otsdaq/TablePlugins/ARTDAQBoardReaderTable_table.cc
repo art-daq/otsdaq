@@ -15,7 +15,9 @@ using namespace ots;
 
 //==============================================================================
 ARTDAQBoardReaderTable::ARTDAQBoardReaderTable(void)
-    : TableBase("ARTDAQBoardReaderTable"), ARTDAQTableBase("ARTDAQBoardReaderTable"), SlowControlsTableBase("ARTDAQBoardReaderTable")
+    : TableBase("ARTDAQBoardReaderTable")
+    , ARTDAQTableBase("ARTDAQBoardReaderTable")
+    , SlowControlsTableBase("ARTDAQBoardReaderTable")
 {
 	//////////////////////////////////////////////////////////////////////
 	// WARNING: the names used in C++ MUST match the Table INFO  		//
@@ -56,7 +58,8 @@ void ARTDAQBoardReaderTable::init(ConfigurationManager* configManager)
 	//if artdaq supervisor is disabled, skip fcl handling
 	if(!ARTDAQTableBase::isARTDAQEnabled(configManager))
 	{
-		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling." << __E__;
+		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling."
+		              << __E__;
 		return;
 	}
 
@@ -70,22 +73,25 @@ void ARTDAQBoardReaderTable::init(ConfigurationManager* configManager)
 
 	// auto readers = lastConfigManager_->getNode(ARTDAQTableBase::getTableName()).getChildren(
 	auto readers = lastConfigManager_->__SELF_NODE__.getChildren(
-	    /*default filterMap*/ std::map<std::string /*relative-path*/, std::string /*value*/>(),
+	    /*default filterMap*/ std::map<std::string /*relative-path*/,
+	                                   std::string /*value*/>(),
 	    /*default byPriority*/ false,
 	    /*TRUE! onlyStatusTrue*/ true);
 
 	for(auto& reader : readers)
 	{
 		ARTDAQTableBase::outputBoardReaderFHICL(reader.second);
-		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::BoardReader, reader.second.getValue());
+		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::BoardReader,
+		                              reader.second.getValue());
 	}
 }  // end init()
 
 //==============================================================================
 unsigned int ARTDAQBoardReaderTable::slowControlsHandlerConfig(
-    std::stringstream&                                                             out,
-    ConfigurationManager*                                                          configManager,
-    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/
+    std::stringstream&    out,
+    ConfigurationManager* configManager,
+    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+        channelList /*= 0*/
 ) const
 {
 	/////////////////////////
@@ -95,19 +101,23 @@ unsigned int ARTDAQBoardReaderTable::slowControlsHandlerConfig(
 	std::string commentStr = "";
 
 	// loop through ARTDAQ BoardReader records starting at ARTDAQSupervisorTable
-	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords = configManager->getNode("ARTDAQSupervisorTable").getChildren();
+	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords =
+	    configManager->getNode("ARTDAQSupervisorTable").getChildren();
 
 	unsigned int numberOfBoardReaderMetricParameters = 0;
 
 	for(auto& artdaqPair : artdaqRecords)  // start main artdaq record loop
 	{
-		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToBoardReaders_).isDisconnected())
+		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToBoardReaders_)
+		       .isDisconnected())
 			continue;
 
 		std::vector<std::pair<std::string, ConfigurationTree>> boardReaderRecords =
-		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToBoardReaders_).getChildren();
+		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToBoardReaders_)
+		        .getChildren();
 
-		for(auto& boardReaderPair : boardReaderRecords)  // start main boardReader record loop
+		for(auto& boardReaderPair :
+		    boardReaderRecords)  // start main boardReader record loop
 		{
 			if(!boardReaderPair.second.status())
 				continue;
@@ -117,36 +127,52 @@ unsigned int ARTDAQBoardReaderTable::slowControlsHandlerConfig(
 				if(boardReaderPair.second.getNode("daqMetricsLink").isDisconnected())
 					continue;
 
-				auto daqMetricsLinks = boardReaderPair.second.getNode("daqMetricsLink").getChildren();
-				for(auto& daqMetricsLink : daqMetricsLinks)  // start daqMetricsLinks record loop
+				auto daqMetricsLinks =
+				    boardReaderPair.second.getNode("daqMetricsLink").getChildren();
+				for(auto& daqMetricsLink :
+				    daqMetricsLinks)  // start daqMetricsLinks record loop
 				{
 					if(!daqMetricsLink.second.status())
 						continue;
 
-					if(daqMetricsLink.second.getNode("metricParametersLink").isDisconnected())
+					if(daqMetricsLink.second.getNode("metricParametersLink")
+					       .isDisconnected())
 						continue;
 
 					// ConfigurationTree slowControlsLink = configManager->getNode("ARTDAQMetricAlarmThresholdsTable");
-					ConfigurationTree slowControlsLink = boardReaderPair.second.getNode("MetricAlarmThresholdsLink");
+					ConfigurationTree slowControlsLink =
+					    boardReaderPair.second.getNode("MetricAlarmThresholdsLink");
 
-					auto metricParametersLinks = daqMetricsLink.second.getNode("metricParametersLink").getChildren();
-					for(auto& metricParametersLink : metricParametersLinks)  // start daq MetricParametersLinks record loop
+					auto metricParametersLinks =
+					    daqMetricsLink.second.getNode("metricParametersLink")
+					        .getChildren();
+					for(auto& metricParametersLink :
+					    metricParametersLinks)  // start daq MetricParametersLinks record loop
 					{
 						if(!metricParametersLink.second.status())
 							continue;
 
-						std::string subsystem = metricParametersLink.second.getNode("metricParameterValue")
-						                            .getValueWithDefault<std::string>(std::string("TDAQ_") + __ENV__("MU2E_OWNER"));
+						std::string subsystem =
+						    metricParametersLink.second.getNode("metricParameterValue")
+						        .getValueWithDefault<std::string>(std::string("TDAQ_") +
+						                                          __ENV__("MU2E_OWNER"));
 						if(subsystem.find("Mu2e:") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
 						while(subsystem.find("\"") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("\""), 1, "");
 
 						numberOfBoardReaderMetricParameters =
-						    slowControlsHandler(out, tabStr, commentStr, subsystem, boardReaderPair.first, slowControlsLink, channelList);
+						    slowControlsHandler(out,
+						                        tabStr,
+						                        commentStr,
+						                        subsystem,
+						                        boardReaderPair.first,
+						                        slowControlsLink,
+						                        channelList);
 
-						__COUT__ << "BoardReader '" << boardReaderPair.first << "' number of metrics for slow controls: " << numberOfBoardReaderMetricParameters
-						         << __E__;
+						__COUT__ << "BoardReader '" << boardReaderPair.first
+						         << "' number of metrics for slow controls: "
+						         << numberOfBoardReaderMetricParameters << __E__;
 					}
 				}
 			}
@@ -162,6 +188,9 @@ unsigned int ARTDAQBoardReaderTable::slowControlsHandlerConfig(
 
 //==============================================================================
 // return out file path
-std::string ARTDAQBoardReaderTable::setFilePath() const { return SLOWCONTROL_PV_FILE_PATH; }
+std::string ARTDAQBoardReaderTable::setFilePath() const
+{
+	return SLOWCONTROL_PV_FILE_PATH;
+}
 
 DEFINE_OTS_TABLE(ARTDAQBoardReaderTable)

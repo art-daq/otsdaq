@@ -12,17 +12,26 @@
 using namespace ots;
 
 //==============================================================================
-RawDataSaverConsumerBase::RawDataSaverConsumerBase(std::string              supervisorApplicationUID,
-                                                   std::string              bufferUID,
-                                                   std::string              processorUID,
-                                                   const ConfigurationTree& theXDAQContextConfigTree,
-                                                   const std::string&       configurationPath)
+RawDataSaverConsumerBase::RawDataSaverConsumerBase(
+    std::string              supervisorApplicationUID,
+    std::string              bufferUID,
+    std::string              processorUID,
+    const ConfigurationTree& theXDAQContextConfigTree,
+    const std::string&       configurationPath)
     : WorkLoop(processorUID)
-    , DataConsumer(supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
+    , DataConsumer(
+          supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)
-    , filePath_(theXDAQContextConfigTree.getNode(configurationPath).getNode("FilePath").getValue<std::string>())
-    , fileRadix_(theXDAQContextConfigTree.getNode(configurationPath).getNode("RadixFileName").getValue<std::string>())
-    , maxFileSize_(theXDAQContextConfigTree.getNode(configurationPath).getNode("MaxFileSize").getValue<long>() * 1000000)  // Instead of 2^6=1048576
+    , filePath_(theXDAQContextConfigTree.getNode(configurationPath)
+                    .getNode("FilePath")
+                    .getValue<std::string>())
+    , fileRadix_(theXDAQContextConfigTree.getNode(configurationPath)
+                     .getNode("RadixFileName")
+                     .getValue<std::string>())
+    , maxFileSize_(theXDAQContextConfigTree.getNode(configurationPath)
+                       .getNode("MaxFileSize")
+                       .getValue<long>() *
+                   1000000)  // Instead of 2^6=1048576
     , currentSubRunNumber_(0)
 
 {

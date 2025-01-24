@@ -12,7 +12,9 @@ using namespace ots;
 XDAQ_INSTANTIATOR_IMPL(FEDataManagerSupervisor)
 
 //==============================================================================
-FEDataManagerSupervisor::FEDataManagerSupervisor(xdaq::ApplicationStub* s, bool artdaqDataManager) : FESupervisor(s)
+FEDataManagerSupervisor::FEDataManagerSupervisor(xdaq::ApplicationStub* s,
+                                                 bool                   artdaqDataManager)
+    : FESupervisor(s)
 {
 	__SUP_COUT__ << "Constructor." << __E__;
 
@@ -37,17 +39,19 @@ FEDataManagerSupervisor::FEDataManagerSupervisor(xdaq::ApplicationStub* s, bool 
 	{
 		__SUP_COUT__ << "Adding ARTDAQ Data Manager now...!" << __E__;
 		CoreSupervisorBase::theStateMachineImplementation_.push_back(
-		    DataManagerSingleton::getInstance<ARTDAQDataManager>(CorePropertySupervisorBase::getContextTreeNode(),
-		                                                         CorePropertySupervisorBase::getSupervisorConfigurationPath(),
-		                                                         CorePropertySupervisorBase::getSupervisorUID()));
+		    DataManagerSingleton::getInstance<ARTDAQDataManager>(
+		        CorePropertySupervisorBase::getContextTreeNode(),
+		        CorePropertySupervisorBase::getSupervisorConfigurationPath(),
+		        CorePropertySupervisorBase::getSupervisorUID()));
 	}
 	else
 	{
 		__SUP_COUT__ << "Adding Data Manager now...!" << __E__;
 		CoreSupervisorBase::theStateMachineImplementation_.push_back(
-		    DataManagerSingleton::getInstance<DataManager>(CorePropertySupervisorBase::getContextTreeNode(),
-		                                                   CorePropertySupervisorBase::getSupervisorConfigurationPath(),
-		                                                   CorePropertySupervisorBase::getSupervisorUID()));
+		    DataManagerSingleton::getInstance<DataManager>(
+		        CorePropertySupervisorBase::getContextTreeNode(),
+		        CorePropertySupervisorBase::getSupervisorConfigurationPath(),
+		        CorePropertySupervisorBase::getSupervisorUID()));
 	}
 
 	extractDataManager();
@@ -85,7 +89,9 @@ void FEDataManagerSupervisor::transitionConfiguring(toolbox::Event::Reference e)
 
 	if(theStateMachineImplementation_.size() != 2)
 	{
-		__SUP_SS__ << "State machine size is not 2! It is " << theStateMachineImplementation_.size() << ". What happened??" << __E__;
+		__SUP_SS__ << "State machine size is not 2! It is "
+		           << theStateMachineImplementation_.size() << ". What happened??"
+		           << __E__;
 		__SUP_SS_THROW__;
 	}
 
@@ -126,7 +132,9 @@ void FEDataManagerSupervisor::transitionStarting(toolbox::Event::Reference e)
 
 	if(theStateMachineImplementation_.size() != 2)
 	{
-		__SUP_SS__ << "State machine size is not 2! It is " << theStateMachineImplementation_.size() << ". What happened??" << __E__;
+		__SUP_SS__ << "State machine size is not 2! It is "
+		           << theStateMachineImplementation_.size() << ". What happened??"
+		           << __E__;
 	}
 
 	VStateMachine* p                  = theStateMachineImplementation_[0];
@@ -155,7 +163,9 @@ void FEDataManagerSupervisor::transitionResuming(toolbox::Event::Reference e)
 
 	if(theStateMachineImplementation_.size() != 2)
 	{
-		__SUP_SS__ << "State machine size is not 2! It is " << theStateMachineImplementation_.size() << ". What happened??" << __E__;
+		__SUP_SS__ << "State machine size is not 2! It is "
+		           << theStateMachineImplementation_.size() << ". What happened??"
+		           << __E__;
 	}
 
 	VStateMachine* p                  = theStateMachineImplementation_[0];
@@ -186,7 +196,8 @@ DataManager* FEDataManagerSupervisor::extractDataManager()
 	{
 		try
 		{
-			theDataManager_ = dynamic_cast<DataManager*>(theStateMachineImplementation_[i]);
+			theDataManager_ =
+			    dynamic_cast<DataManager*>(theStateMachineImplementation_[i]);
 			if(!theDataManager_)
 			{
 				// dynamic_cast returns null pointer on failure
@@ -198,7 +209,8 @@ DataManager* FEDataManagerSupervisor::extractDataManager()
 		}
 		catch(...)
 		{
-			__SUP_COUT__ << "State Machine " << i << " was NOT of type DataManager" << __E__;
+			__SUP_COUT__ << "State Machine " << i << " was NOT of type DataManager"
+			             << __E__;
 		}
 	}
 

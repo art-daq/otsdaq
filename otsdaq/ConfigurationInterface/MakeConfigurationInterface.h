@@ -9,7 +9,8 @@ namespace ots
 {
 class ConfigurationInterface;
 
-ConfigurationInterface* makeConfigurationInterface(std::string const& interfacePluginName);
+ConfigurationInterface* makeConfigurationInterface(
+    std::string const& interfacePluginName);
 
 }  // namespace ots
 

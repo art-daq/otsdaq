@@ -8,8 +8,8 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <vector>
 #include <tuple>
+#include <vector>
 
 #include "otsdaq/SupervisorInfo/AllSupervisorInfo.h"
 
@@ -94,8 +94,11 @@ using namespace ots;
 // clang-format on
 
 //==============================================================================
-RemoteWebUsers::RemoteWebUsers(xdaq::Application* application, XDAQ_CONST_CALL xdaq::ApplicationDescriptor* gatewaySupervisorDescriptor)
-    : SOAPMessenger(application), gatewaySupervisorDescriptor_(gatewaySupervisorDescriptor)
+RemoteWebUsers::RemoteWebUsers(
+    xdaq::Application* application,
+    XDAQ_CONST_CALL xdaq::ApplicationDescriptor* gatewaySupervisorDescriptor)
+    : SOAPMessenger(application)
+    , gatewaySupervisorDescriptor_(gatewaySupervisorDescriptor)
 {
 	ActiveUserLastUpdateTime_ = 0;   // init to never
 	ActiveUserList_           = "";  // init to empty
@@ -105,12 +108,15 @@ RemoteWebUsers::RemoteWebUsers(xdaq::Application* application, XDAQ_CONST_CALL x
 // xmlRequestGateway
 //	if false, user code should just return.. out is handled on false; on true, out is
 // untouched
-bool RemoteWebUsers::xmlRequestToGateway(
-    cgicc::Cgicc& cgi, std::ostringstream* out, HttpXmlDocument* xmldoc, const AllSupervisorInfo& allSupervisorInfo, WebUsers::RequestUserInfo& userInfo)
+bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
+                                         std::ostringstream*        out,
+                                         HttpXmlDocument*           xmldoc,
+                                         const AllSupervisorInfo&   allSupervisorInfo,
+                                         WebUsers::RequestUserInfo& userInfo)
 {
 	//__COUT__ << std::endl;
 	// initialize user info parameters to failed results
-	WebUsers::initializeRequestUserInfo(cgi, userInfo); 
+	WebUsers::initializeRequestUserInfo(cgi, userInfo);
 
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* gatewaySupervisor;
 
@@ -120,17 +126,19 @@ bool RemoteWebUsers::xmlRequestToGateway(
 	//**** start LOGIN GATEWAY CODE ***//
 	// If TRUE, cookie code is good, and refreshed code is in cookieCode
 	// Else, error message is returned in cookieCode
-	
+
 	/////////////////////////////////////////////////////
 	// if Wiz or Macormaker mode, use sequence instead of cookieCode
 	if(allSupervisorInfo.isWizardMode() || allSupervisorInfo.isMacroMakerMode())
 	{
 		// if missing CookieCode... check if in Wizard mode and using sequence
-		std::string sequence = CgiDataUtilities::getOrPostData(cgi, "sequence");  // from GET or POST
+		std::string sequence =
+		    CgiDataUtilities::getOrPostData(cgi, "sequence");  // from GET or POST
 		//__COUT__ << "sequence=" << sequence << std::endl;
 		if(!sequence.length())
 		{
-			__COUT_ERR__ << "Invalid access attempt (@" << userInfo.ip_ << ")." << std::endl;
+			__COUT_ERR__ << "Invalid access attempt (@" << userInfo.ip_ << ")."
+			             << std::endl;
 			*out << WebUsers::REQ_NO_LOGIN_RESPONSE;
 			// invalid cookie and also invalid sequence
 			goto HANDLE_ACCESS_FAILURE;  // return false, access failed
@@ -140,8 +148,10 @@ bool RemoteWebUsers::xmlRequestToGateway(
 
 		if(allSupervisorInfo.isWizardMode())
 			gatewaySupervisor = allSupervisorInfo.getWizardInfo().getDescriptor();
-		else //is MacroMaker mode
-			gatewaySupervisor = allSupervisorInfo.getAllMacroMakerTypeSupervisorInfo().begin()->second.getDescriptor();
+		else  //is MacroMaker mode
+			gatewaySupervisor = allSupervisorInfo.getAllMacroMakerTypeSupervisorInfo()
+			                        .begin()
+			                        ->second.getDescriptor();
 
 		if(!gatewaySupervisor)
 		{
@@ -153,18 +163,20 @@ bool RemoteWebUsers::xmlRequestToGateway(
 
 		parameters.addParameter("sequence", sequence);
 		parameters.addParameter("IPAddress", userInfo.ip_);
-		retMsg = SOAPMessenger::sendWithSOAPReply(gatewaySupervisor, "SupervisorSequenceCheck", parameters);
+		retMsg = SOAPMessenger::sendWithSOAPReply(
+		    gatewaySupervisor, "SupervisorSequenceCheck", parameters);
 		parameters.clear();
 		parameters.addParameter("Permissions");
 		SOAPUtilities::receive(retMsg, parameters);
 
 		userInfo.setGroupPermissionLevels(parameters.getValue("Permissions"));
 
-		if(WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo, true /*isWizardMode*/, sequence))
-			return true; //successful sequence login!
+		if(WebUsers::checkRequestAccess(
+		       cgi, out, xmldoc, userInfo, true /*isWizardMode*/, sequence))
+			return true;  //successful sequence login!
 		else
 			goto HANDLE_ACCESS_FAILURE;  // return false, access failed
-	} //end  Wiz or Macormaker mode
+	}                                    //end  Wiz or Macormaker mode
 
 	// else proceed with inquiry to Gateway Supervisor
 
@@ -182,7 +194,8 @@ bool RemoteWebUsers::xmlRequestToGateway(
 	parameters.addParameter("RefreshOption", userInfo.automatedCommand_ ? "0" : "1");
 	parameters.addParameter("IPAddress", userInfo.ip_);
 
-	retMsg = SOAPMessenger::sendWithSOAPReply(gatewaySupervisor, "SupervisorCookieCheck", parameters);
+	retMsg = SOAPMessenger::sendWithSOAPReply(
+	    gatewaySupervisor, "SupervisorCookieCheck", parameters);
 
 	parameters.clear();
 	parameters.addParameter("CookieCode");
@@ -197,10 +210,10 @@ bool RemoteWebUsers::xmlRequestToGateway(
 	// first extract a few things always from parameters
 	//	like permissionLevel for this request... must consider allowed groups!!
 	userInfo.setGroupPermissionLevels(parameters.getValue("Permissions"));
-	userInfo.cookieCode_             = parameters.getValue("CookieCode");
-	userInfo.username_               = parameters.getValue("Username");
-	userInfo.displayName_            = parameters.getValue("DisplayName");
-	userInfo.usernameWithLock_       = parameters.getValue("UserWithLock");
+	userInfo.cookieCode_       = parameters.getValue("CookieCode");
+	userInfo.username_         = parameters.getValue("Username");
+	userInfo.displayName_      = parameters.getValue("DisplayName");
+	userInfo.usernameWithLock_ = parameters.getValue("UserWithLock");
 	// userInfo.activeUserSessionIndex_ = strtoul(parameters.getValue("ActiveSessionIndex").c_str(), 0, 0);
 
 	if(!WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo))
@@ -215,7 +228,8 @@ HANDLE_ACCESS_FAILURE:
 
 	// print out return string on failure
 	if(!userInfo.automatedCommand_)
-		__COUT_ERR__ << "Failed request (requestType = " << userInfo.requestType_ << "): " << out->str() << __E__;
+		__COUT_ERR__ << "Failed request (requestType = " << userInfo.requestType_
+		             << "): " << out->str() << __E__;
 	return false;  // access failed
 }  // end xmlRequestToGateway()
 
@@ -225,11 +239,14 @@ HANDLE_ACCESS_FAILURE:
 //	if server responds with
 std::string RemoteWebUsers::getActiveUserList()
 {
-	if(time(0) - ActiveUserLastUpdateTime_ > ACTIVE_USERS_UPDATE_THRESHOLD)  // need to update
+	if(time(0) - ActiveUserLastUpdateTime_ >
+	   ACTIVE_USERS_UPDATE_THRESHOLD)  // need to update
 	{
-		__COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Need to update active user list" << std::endl;
+		__COUT_TYPE__(TLVL_DEBUG + 2)
+		    << __COUT_HDR__ << "Need to update active user list" << std::endl;
 
-		xoap::MessageReference retMsg = ots::SOAPMessenger::sendWithSOAPReply(gatewaySupervisorDescriptor_, "SupervisorGetActiveUsers");
+		xoap::MessageReference retMsg = ots::SOAPMessenger::sendWithSOAPReply(
+		    gatewaySupervisorDescriptor_, "SupervisorGetActiveUsers");
 
 		SOAPParameters retParameters("UserList");
 		SOAPUtilities::receive(retMsg, retParameters);
@@ -248,14 +265,15 @@ std::string RemoteWebUsers::getActiveUserList()
 //	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
 // has occurred
 void RemoteWebUsers::getLastTableGroups(
-	std::map< std::string /* group type */,
-			std::tuple<std::string /*group name*/, TableGroupKey, 
-				std::string /* time string*/>>& theGroups
-	)
+    std::map<std::string /* group type */,
+             std::tuple<std::string /*group name*/,
+                        TableGroupKey,
+                        std::string /* time string*/>>& theGroups)
 {
-	xoap::MessageReference retMsg = ots::SOAPMessenger::sendWithSOAPReply(
-	    gatewaySupervisorDescriptor_, "SupervisorLastTableGroupRequest", SOAPParameters("ActionOfLastGroup", "ALL"));
-
+	xoap::MessageReference retMsg =
+	    ots::SOAPMessenger::sendWithSOAPReply(gatewaySupervisorDescriptor_,
+	                                          "SupervisorLastTableGroupRequest",
+	                                          SOAPParameters("ActionOfLastGroup", "ALL"));
 
 	SOAPParameters retParameters;
 	retParameters.addParameter("GroupName");
@@ -264,37 +282,38 @@ void RemoteWebUsers::getLastTableGroups(
 	retParameters.addParameter("GroupActionTime");
 	SOAPUtilities::receive(retMsg, retParameters);
 
-
 	//parse as CSV
-	std::vector<std::string> groupNames = StringMacros::getVectorFromString(
-			retParameters.getValue("GroupName"), {','});
-	std::vector<std::string> groupKeys = StringMacros::getVectorFromString(
-			retParameters.getValue("GroupKey"), {','});
-	std::vector<std::string> groupActions = StringMacros::getVectorFromString(
-			retParameters.getValue("GroupAction"), {','});
+	std::vector<std::string> groupNames =
+	    StringMacros::getVectorFromString(retParameters.getValue("GroupName"), {','});
+	std::vector<std::string> groupKeys =
+	    StringMacros::getVectorFromString(retParameters.getValue("GroupKey"), {','});
+	std::vector<std::string> groupActions =
+	    StringMacros::getVectorFromString(retParameters.getValue("GroupAction"), {','});
 	std::vector<std::string> groupTimes = StringMacros::getVectorFromString(
-			retParameters.getValue("GroupActionTime"), {','});
+	    retParameters.getValue("GroupActionTime"), {','});
 
 	if(groupNames.size() < 2)
 	{
 		//expecting something like 7?
-		__SS__ << "Failure in handling request for recent config group activity. Response received was this: \n" <<
-				SOAPUtilities::translate(retMsg) << __E__;
+		__SS__ << "Failure in handling request for recent config group activity. "
+		          "Response received was this: \n"
+		       << SOAPUtilities::translate(retMsg) << __E__;
 		__SS_THROW__;
 	}
 
-	if(groupNames.size() != groupKeys.size() || groupNames.size() != groupActions.size() || 
-		groupNames.size() != groupTimes.size())
+	if(groupNames.size() != groupKeys.size() ||
+	   groupNames.size() != groupActions.size() || groupNames.size() != groupTimes.size())
 	{
-		__SS__ << "Illegal list size mismatch while retrieving recent config group info. Should not be possible! Notify admins." << __E__;
+		__SS__ << "Illegal list size mismatch while retrieving recent config group info. "
+		          "Should not be possible! Notify admins."
+		       << __E__;
 		__SS_THROW__;
 	}
 
-	for(size_t i=0; i < groupNames.size(); ++i)
+	for(size_t i = 0; i < groupNames.size(); ++i)
 	{
 		theGroups[groupActions[i]] = std::make_tuple(
-			groupNames[i], strtol(groupKeys[i].c_str(), 0, 0), groupTimes[i]
-		);
+		    groupNames[i], strtol(groupKeys[i].c_str(), 0, 0), groupTimes[i]);
 	}
 
 	__COUTT__ << "Done with getLastTableGroups()" << __E__;
@@ -306,11 +325,14 @@ void RemoteWebUsers::getLastTableGroups(
 //	returns empty "" for actionTimeString on failure
 //	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
 // has occurred
-std::pair<std::string /*group name*/, TableGroupKey> RemoteWebUsers::getLastTableGroup(const std::string& actionOfLastGroup, std::string& actionTimeString)
+std::pair<std::string /*group name*/, TableGroupKey> RemoteWebUsers::getLastTableGroup(
+    const std::string& actionOfLastGroup, std::string& actionTimeString)
 {
 	actionTimeString              = "";
 	xoap::MessageReference retMsg = ots::SOAPMessenger::sendWithSOAPReply(
-	    gatewaySupervisorDescriptor_, "SupervisorLastTableGroupRequest", SOAPParameters("ActionOfLastGroup", actionOfLastGroup));
+	    gatewaySupervisorDescriptor_,
+	    "SupervisorLastTableGroupRequest",
+	    SOAPParameters("ActionOfLastGroup", actionOfLastGroup));
 
 	SOAPParameters retParameters;
 	retParameters.addParameter("GroupName");
@@ -320,10 +342,12 @@ std::pair<std::string /*group name*/, TableGroupKey> RemoteWebUsers::getLastTabl
 	SOAPUtilities::receive(retMsg, retParameters);
 
 	std::pair<std::string /*group name*/, TableGroupKey> theGroup;
-	if(retParameters.getValue("GroupAction") != actionOfLastGroup)  // if action doesn't match.. weird
+	if(retParameters.getValue("GroupAction") !=
+	   actionOfLastGroup)  // if action doesn't match.. weird
 	{
-		__SS__ << "Returned group action '" << retParameters.getValue("GroupAction") << "' does not match requested group action '" << actionOfLastGroup
-		              << ".'" << std::endl;
+		__SS__ << "Returned group action '" << retParameters.getValue("GroupAction")
+		       << "' does not match requested group action '" << actionOfLastGroup << ".'"
+		       << std::endl;
 		__SS_THROW__;
 	}
 	// else we have an action match
@@ -338,7 +362,9 @@ std::pair<std::string /*group name*/, TableGroupKey> RemoteWebUsers::getLastTabl
 // sendSystemMessage
 //	send system message to toUser through Supervisor
 //	toUser wild card * is to all users
-void RemoteWebUsers::sendSystemMessage(const std::string& toUser, const std::string& message, bool doEmail /*=false*/)
+void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
+                                       const std::string& message,
+                                       bool               doEmail /*=false*/)
 {
 	sendSystemMessage(toUser, "" /*subject*/, message, doEmail);
 }  // end sendSystemMessage)
@@ -347,7 +373,10 @@ void RemoteWebUsers::sendSystemMessage(const std::string& toUser, const std::str
 // sendSystemMessage
 //	send system message to toUser comma separate variable (CSV) list through Supervisor
 //	toUser wild card * is to all users
-void RemoteWebUsers::sendSystemMessage(const std::string& toUser, const std::string& subject, const std::string& message, bool doEmail /*=false*/)
+void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
+                                       const std::string& subject,
+                                       const std::string& message,
+                                       bool               doEmail /*=false*/)
 {
 	SOAPParameters parameters;
 	parameters.addParameter("ToUser", toUser);  // CSV list or *
@@ -355,7 +384,8 @@ void RemoteWebUsers::sendSystemMessage(const std::string& toUser, const std::str
 	parameters.addParameter("Message", message);
 	parameters.addParameter("DoEmail", doEmail ? "1" : "0");
 
-	xoap::MessageReference retMsg = SOAPMessenger::sendWithSOAPReply(gatewaySupervisorDescriptor_, "SupervisorSystemMessage", parameters);
+	xoap::MessageReference retMsg = SOAPMessenger::sendWithSOAPReply(
+	    gatewaySupervisorDescriptor_, "SupervisorSystemMessage", parameters);
 
 	//__COUT__ << SOAPUtilities::translate(retMsg) << __E__;
 }  // end sendSystemMessage)
@@ -368,7 +398,8 @@ void RemoteWebUsers::makeSystemLogEntry(const std::string& entryText)
 	SOAPParameters parameters;
 	parameters.addParameter("EntryText", entryText);
 
-	xoap::MessageReference retMsg = SOAPMessenger::sendWithSOAPReply(gatewaySupervisorDescriptor_, "SupervisorSystemLogbookEntry", parameters);
+	xoap::MessageReference retMsg = SOAPMessenger::sendWithSOAPReply(
+	    gatewaySupervisorDescriptor_, "SupervisorSystemLogbookEntry", parameters);
 
 	//__COUT__ << SOAPUtilities::translate(retMsg) << __E__;
 }  // end makeSystemLogEntry()

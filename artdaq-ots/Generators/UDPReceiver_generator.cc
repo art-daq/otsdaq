@@ -43,7 +43,8 @@ ots::UDPReceiver::UDPReceiver(fhicl::ParameterSet const& ps)
 		datasocket_ = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if(!datasocket_)
 		{
-			throw art::Exception(art::errors::Configuration) << "UDPReceiver: Error creating socket!";
+			throw art::Exception(art::errors::Configuration)
+			    << "UDPReceiver: Error creating socket!";
 			exit(1);
 		}
 
@@ -53,7 +54,8 @@ ots::UDPReceiver::UDPReceiver(fhicl::ParameterSet const& ps)
 		si_me_data.sin_addr.s_addr = htonl(INADDR_ANY);
 		if(bind(datasocket_, (struct sockaddr*)&si_me_data, sizeof(si_me_data)) == -1)
 		{
-			throw art::Exception(art::errors::Configuration) << "UDPReceiver: Cannot bind data socket to port " << dataport_;
+			throw art::Exception(art::errors::Configuration)
+			    << "UDPReceiver: Cannot bind data socket to port " << dataport_;
 			exit(1);
 		}
 		/*if(fcntl(datasocket_, F_SETFL, O_NONBLOCK) == -1) {
@@ -62,9 +64,11 @@ ots::UDPReceiver::UDPReceiver(fhicl::ParameterSet const& ps)
 		  socket to nonblocking!" ;
 		  }*/
 
-		if(rcvbuf_ > 0 && setsockopt(datasocket_, SOL_SOCKET, SO_RCVBUF, &rcvbuf_, sizeof(rcvbuf_)))
+		if(rcvbuf_ > 0 &&
+		   setsockopt(datasocket_, SOL_SOCKET, SO_RCVBUF, &rcvbuf_, sizeof(rcvbuf_)))
 		{
-			throw art::Exception(art::errors::Configuration) << "UDPReceiver: Could not set receive buffer size: " << rcvbuf_;
+			throw art::Exception(art::errors::Configuration)
+			    << "UDPReceiver: Could not set receive buffer size: " << rcvbuf_;
 			exit(1);
 		}
 
@@ -72,7 +76,8 @@ ots::UDPReceiver::UDPReceiver(fhicl::ParameterSet const& ps)
 		si_data_.sin_port   = htons(dataport_);
 		if(inet_aton(ip_.c_str(), &si_data_.sin_addr) == 0)
 		{
-			throw art::Exception(art::errors::Configuration) << "UDPReceiver: Could not translate provided IP Address: " << ip_;
+			throw art::Exception(art::errors::Configuration)
+			    << "UDPReceiver: Could not translate provided IP Address: " << ip_;
 			exit(1);
 		}
 	}
@@ -131,7 +136,8 @@ void ots::UDPReceiver::receiveLoop_()
 		int rv = poll(ufds, 1, 1000);
 		if(rv > 0)
 		{
-			TLOG(TLVL_TRACE) << "revents: " << ufds[0].revents << ", ";  // ufds[1].revents ;
+			TLOG(TLVL_TRACE) << "revents: " << ufds[0].revents
+			                 << ", ";  // ufds[1].revents ;
 			if(ufds[0].revents == POLLIN || ufds[0].revents == POLLPRI)
 			{
 				// FIXME -> IN THE STIB GENERATOR WE DON'T HAVE A HEADER
@@ -139,28 +145,48 @@ void ots::UDPReceiver::receiveLoop_()
 				// FIXME -> IN THE STIB GENERATOR WE DON'T HAVE A HEADER
 				uint8_t   peekBuffer[4];
 				socklen_t dataSz = sizeof(si_data_);
-				recvfrom(datasocket_, peekBuffer, sizeof(peekBuffer), MSG_PEEK, (struct sockaddr*)&si_data_, &dataSz);
+				recvfrom(datasocket_,
+				         peekBuffer,
+				         sizeof(peekBuffer),
+				         MSG_PEEK,
+				         (struct sockaddr*)&si_data_,
+				         &dataSz);
 
-				TLOG(TLVL_TRACE) << "Received UDP Datagram with sequence number " << std::hex << "0x" << static_cast<int>(peekBuffer[1]) << "!" << std::dec;
-				TLOG(TLVL_TRACE) << "peekBuffer[1] == expectedPacketNumber_: " << std::hex << static_cast<int>(peekBuffer[1])
+				TLOG(TLVL_TRACE)
+				    << "Received UDP Datagram with sequence number " << std::hex << "0x"
+				    << static_cast<int>(peekBuffer[1]) << "!" << std::dec;
+				TLOG(TLVL_TRACE) << "peekBuffer[1] == expectedPacketNumber_: " << std::hex
+				                 << static_cast<int>(peekBuffer[1])
 				                 << " =?= " << (int)expectedPacketNumber_;
-				TLOG(TLVL_TRACE) << "peekBuffer: 0: " << std::hex << static_cast<int>(peekBuffer[0]) << ", 1: " << std::hex << static_cast<int>(peekBuffer[1])
-				                 << ", 2: " << std::hex << static_cast<int>(peekBuffer[2]) << ", 3: " << std::hex << static_cast<int>(peekBuffer[3]);
+				TLOG(TLVL_TRACE)
+				    << "peekBuffer: 0: " << std::hex << static_cast<int>(peekBuffer[0])
+				    << ", 1: " << std::hex << static_cast<int>(peekBuffer[1])
+				    << ", 2: " << std::hex << static_cast<int>(peekBuffer[2])
+				    << ", 3: " << std::hex << static_cast<int>(peekBuffer[3]);
 
 				uint8_t seqNum = peekBuffer[1];
 				// ReturnCode dataCode = getReturnCode(peekBuffer[0]);
-				if(seqNum >= expectedPacketNumber_ || (seqNum < 64 && expectedPacketNumber_ > 192))
+				if(seqNum >= expectedPacketNumber_ ||
+				   (seqNum < 64 && expectedPacketNumber_ > 192))
 				{
 					if(seqNum != expectedPacketNumber_)
 					{
 						int delta = seqNum - expectedPacketNumber_;
-						TLOG(TLVL_WARNING) << std::dec << "Sequence Number different than expected! (delta: " << delta << ")";
+						TLOG(TLVL_WARNING)
+						    << std::dec
+						    << "Sequence Number different than expected! (delta: "
+						    << delta << ")";
 						expectedPacketNumber_ = seqNum;
 					}
 
 					packetBuffer_t receiveBuffer;
 					receiveBuffer.resize(1500);
-					int sts = recvfrom(datasocket_, &receiveBuffer[0], receiveBuffer.size(), 0, (struct sockaddr*)&si_data_, &dataSz);
+					int sts = recvfrom(datasocket_,
+					                   &receiveBuffer[0],
+					                   receiveBuffer.size(),
+					                   0,
+					                   (struct sockaddr*)&si_data_,
+					                   &dataSz);
 					receiveBuffer.resize(sts);
 
 					if(sts == -1)
@@ -173,7 +199,9 @@ void ots::UDPReceiver::receiveLoop_()
 					}
 
 					std::unique_lock<std::mutex> lock(receiveBufferLock_);
-					TLOG(TLVL_TRACE) << "Now placing UDP datagram with sequence number " << std::hex << (int)seqNum << " into buffer." << std::dec;
+					TLOG(TLVL_TRACE)
+					    << "Now placing UDP datagram with sequence number " << std::hex
+					    << (int)seqNum << " into buffer." << std::dec;
 					receiveBuffers_.push_back(receiveBuffer);
 
 					++expectedPacketNumber_;
@@ -181,10 +209,17 @@ void ots::UDPReceiver::receiveLoop_()
 				else
 				{
 					// Receiving out-of-order datagram, then moving on...
-					TLOG(TLVL_WARNING) << "Received out-of-order datagram: " << seqNum << " != " << expectedPacketNumber_ << " (expected)";
+					TLOG(TLVL_WARNING)
+					    << "Received out-of-order datagram: " << seqNum
+					    << " != " << expectedPacketNumber_ << " (expected)";
 					packetBuffer_t receiveBuffer;
 					receiveBuffer.resize(1500);
-					int sts = recvfrom(datasocket_, &receiveBuffer[0], receiveBuffer.size(), 0, (struct sockaddr*)&si_data_, &dataSz);
+					int sts = recvfrom(datasocket_,
+					                   &receiveBuffer[0],
+					                   receiveBuffer.size(),
+					                   0,
+					                   (struct sockaddr*)&si_data_,
+					                   &dataSz);
 					receiveBuffer.resize(sts);
 				}
 			}
@@ -204,7 +239,9 @@ bool ots::UDPReceiver::getNext_(artdaq::FragmentPtrs& output)
 	if(!fakeDataMode_)
 	{
 		std::unique_lock<std::mutex> lock(receiveBufferLock_);
-		std::move(receiveBuffers_.begin(), receiveBuffers_.end(), std::inserter(packetBuffers_, packetBuffers_.end()));
+		std::move(receiveBuffers_.begin(),
+		          receiveBuffers_.end(),
+		          std::inserter(packetBuffers_, packetBuffers_.end()));
 		receiveBuffers_.clear();
 	}
 	else
@@ -227,7 +264,8 @@ bool ots::UDPReceiver::getNext_(artdaq::FragmentPtrs& output)
 		{
 			packetBufferSize += buf.size();
 		}
-		TLOG(TLVL_TRACE) << "Calling ProcessData, packetBuffers_.size() == " << std::to_string(packetBuffers_.size())
+		TLOG(TLVL_TRACE) << "Calling ProcessData, packetBuffers_.size() == "
+		                 << std::to_string(packetBuffers_.size())
 		                 << ", sz = " << std::to_string(packetBufferSize);
 		ProcessData_(output, packetBufferSize);
 
@@ -254,7 +292,11 @@ void ots::UDPReceiver::ProcessData_(artdaq::FragmentPtrs& output, size_t totalSi
 
 	TLOG(TLVL_TRACE) << "Creating Fragment";
 
-	output.emplace_back(artdaq::Fragment::FragmentBytes(initial_payload_size, ev_counter(), fragment_id(), ots::detail::FragmentType::UDP, metadata));
+	output.emplace_back(artdaq::Fragment::FragmentBytes(initial_payload_size,
+	                                                    ev_counter(),
+	                                                    fragment_id(),
+	                                                    ots::detail::FragmentType::UDP,
+	                                                    metadata));
 
 	ev_counter_inc();
 
@@ -262,13 +304,15 @@ void ots::UDPReceiver::ProcessData_(artdaq::FragmentPtrs& output, size_t totalSi
 	// We now have a fragment to contain this event:
 	ots::UDPFragmentWriter thisFrag(*output.back());
 
-	TLOG(TLVL_TRACE) << "Received data, now placing data with UDP sequence number " << std::hex << static_cast<int>((packetBuffers_.front()).at(1))
+	TLOG(TLVL_TRACE) << "Received data, now placing data with UDP sequence number "
+	                 << std::hex << static_cast<int>((packetBuffers_.front()).at(1))
 	                 << " into UDPFragment";
 	thisFrag.resize(totalSize + 1);
 	std::ofstream rawOutput;
 	if(rawOutput_)
 	{
-		std::string outputPath = rawPath_ + "/UDPReceiver-" + ip_ + ":" + std::to_string(dataport_) + ".bin";
+		std::string outputPath =
+		    rawPath_ + "/UDPReceiver-" + ip_ + ":" + std::to_string(dataport_) + ".bin";
 		rawOutput.open(outputPath, std::ios::out | std::ios::app | std::ios::binary);
 	}
 
@@ -280,7 +324,8 @@ void ots::UDPReceiver::ProcessData_(artdaq::FragmentPtrs& output, size_t totalSi
 		for(size_t ii = 0; ii < jj->size(); ++ii)
 		{
 			// Null-terminate string types
-			if((jj)->at(ii) == 0 && (dataType == DataType::JSON || dataType == DataType::String))
+			if((jj)->at(ii) == 0 &&
+			   (dataType == DataType::JSON || dataType == DataType::String))
 			{
 				break;
 			}
@@ -311,7 +356,12 @@ void ots::UDPReceiver::send(CommandType command)
 		CommandPacket packet;
 		packet.type     = command;
 		packet.dataSize = 0;
-		sendto(datasocket_, &packet, sizeof(packet), 0, (struct sockaddr*)&si_data_, sizeof(si_data_));
+		sendto(datasocket_,
+		       &packet,
+		       sizeof(packet),
+		       0,
+		       (struct sockaddr*)&si_data_,
+		       sizeof(si_data_));
 	}
 }
 

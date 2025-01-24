@@ -15,7 +15,9 @@ using namespace ots;
 
 //==============================================================================
 ARTDAQRoutingManagerTable::ARTDAQRoutingManagerTable(void)
-    : TableBase("ARTDAQRoutingManagerTable"), ARTDAQTableBase("ARTDAQRoutingManagerTable"), SlowControlsTableBase("ARTDAQRoutingManagerTable")
+    : TableBase("ARTDAQRoutingManagerTable")
+    , ARTDAQTableBase("ARTDAQRoutingManagerTable")
+    , SlowControlsTableBase("ARTDAQRoutingManagerTable")
 {
 	//////////////////////////////////////////////////////////////////////
 	// WARNING: the names used in C++ MUST match the Table INFO 		//
@@ -42,7 +44,8 @@ void ARTDAQRoutingManagerTable::init(ConfigurationManager* configManager)
 	//if artdaq supervisor is disabled, skip fcl handling
 	if(!ARTDAQTableBase::isARTDAQEnabled(configManager))
 	{
-		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling." << __E__;
+		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling."
+		              << __E__;
 		return;
 	}
 
@@ -55,23 +58,26 @@ void ARTDAQRoutingManagerTable::init(ConfigurationManager* configManager)
 	// handle fcl file generation, wherever the level of this table
 
 	auto routingManagers = lastConfigManager_->__SELF_NODE__.getChildren(
-	    /*default filterMap*/ std::map<std::string /*relative-path*/, std::string /*value*/>(),
+	    /*default filterMap*/ std::map<std::string /*relative-path*/,
+	                                   std::string /*value*/>(),
 	    /*default byPriority*/ false,
 	    /*TRUE! onlyStatusTrue*/ true);
 
 	for(auto& routingManager : routingManagers)
 	{
 		ARTDAQTableBase::outputRoutingManagerFHICL(routingManager.second);
-		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::RoutingManager, routingManager.second.getValue());
+		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::RoutingManager,
+		                              routingManager.second.getValue());
 	}
 
 }  // end init()
 
 //==============================================================================
 unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
-    std::stringstream&                                                             out,
-    ConfigurationManager*                                                          configManager,
-    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/
+    std::stringstream&    out,
+    ConfigurationManager* configManager,
+    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+        channelList /*= 0*/
 ) const
 {
 	/////////////////////////
@@ -81,19 +87,23 @@ unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
 	std::string commentStr = "";
 
 	// loop through ARTDAQ RoutingManager records starting at ARTDAQSupervisorTable
-	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords = configManager->getNode("ARTDAQSupervisorTable").getChildren();
+	std::vector<std::pair<std::string, ConfigurationTree>> artdaqRecords =
+	    configManager->getNode("ARTDAQSupervisorTable").getChildren();
 
 	unsigned int numberOfRoutingManagerMetricParameters = 0;
 
 	for(auto& artdaqPair : artdaqRecords)  // start main artdaq record loop
 	{
-		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToRoutingManagers_).isDisconnected())
+		if(artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToRoutingManagers_)
+		       .isDisconnected())
 			continue;
 
 		std::vector<std::pair<std::string, ConfigurationTree>> routingManagerRecords =
-		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToRoutingManagers_).getChildren();
+		    artdaqPair.second.getNode(colARTDAQSupervisor_.colLinkToRoutingManagers_)
+		        .getChildren();
 
-		for(auto& routingManagerPair : routingManagerRecords)  // start main routingManager record loop
+		for(auto& routingManagerPair :
+		    routingManagerRecords)  // start main routingManager record loop
 		{
 			if(!routingManagerPair.second.status())
 				continue;
@@ -103,36 +113,52 @@ unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
 				if(routingManagerPair.second.getNode("daqMetricsLink").isDisconnected())
 					continue;
 
-				auto daqMetricsLinks = routingManagerPair.second.getNode("daqMetricsLink").getChildren();
-				for(auto& daqMetricsLink : daqMetricsLinks)  // start daqMetricsLinks record loop
+				auto daqMetricsLinks =
+				    routingManagerPair.second.getNode("daqMetricsLink").getChildren();
+				for(auto& daqMetricsLink :
+				    daqMetricsLinks)  // start daqMetricsLinks record loop
 				{
 					if(!daqMetricsLink.second.status())
 						continue;
 
-					if(daqMetricsLink.second.getNode("metricParametersLink").isDisconnected())
+					if(daqMetricsLink.second.getNode("metricParametersLink")
+					       .isDisconnected())
 						continue;
 
 					// ConfigurationTree slowControlsLink = configManager->getNode("ARTDAQMetricAlarmThresholdsTable");
-					ConfigurationTree slowControlsLink = routingManagerPair.second.getNode("MetricAlarmThresholdsLink");
+					ConfigurationTree slowControlsLink =
+					    routingManagerPair.second.getNode("MetricAlarmThresholdsLink");
 
-					auto metricParametersLinks = daqMetricsLink.second.getNode("metricParametersLink").getChildren();
-					for(auto& metricParametersLink : metricParametersLinks)  // start daq MetricParametersLinks record loop
+					auto metricParametersLinks =
+					    daqMetricsLink.second.getNode("metricParametersLink")
+					        .getChildren();
+					for(auto& metricParametersLink :
+					    metricParametersLinks)  // start daq MetricParametersLinks record loop
 					{
 						if(!metricParametersLink.second.status())
 							continue;
 
-						std::string subsystem = metricParametersLink.second.getNode("metricParameterValue")
-						                            .getValueWithDefault<std::string>(std::string("TDAQ_") + __ENV__("MU2E_OWNER"));
+						std::string subsystem =
+						    metricParametersLink.second.getNode("metricParameterValue")
+						        .getValueWithDefault<std::string>(std::string("TDAQ_") +
+						                                          __ENV__("MU2E_OWNER"));
 						if(subsystem.find("Mu2e:") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
 						while(subsystem.find("\"") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("\""), 1, "");
 
 						numberOfRoutingManagerMetricParameters =
-						    slowControlsHandler(out, tabStr, commentStr, subsystem, routingManagerPair.first, slowControlsLink, channelList);
+						    slowControlsHandler(out,
+						                        tabStr,
+						                        commentStr,
+						                        subsystem,
+						                        routingManagerPair.first,
+						                        slowControlsLink,
+						                        channelList);
 
 						__COUT__ << "RoutingManager '" << routingManagerPair.first
-						         << "' number of metrics for slow controls: " << numberOfRoutingManagerMetricParameters << __E__;
+						         << "' number of metrics for slow controls: "
+						         << numberOfRoutingManagerMetricParameters << __E__;
 					}
 				}
 			}
@@ -148,6 +174,9 @@ unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
 
 //==============================================================================
 // return out file path
-std::string ARTDAQRoutingManagerTable::setFilePath() const { return SLOWCONTROL_PV_FILE_PATH; }
+std::string ARTDAQRoutingManagerTable::setFilePath() const
+{
+	return SLOWCONTROL_PV_FILE_PATH;
+}
 
 DEFINE_OTS_TABLE(ARTDAQRoutingManagerTable)

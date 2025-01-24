@@ -92,8 +92,9 @@ WizardSupervisor::WizardSupervisor(xdaq::ApplicationStub* s)
     : xdaq::Application(s)
     , SOAPMessenger(this)
     , supervisorClass_(getApplicationDescriptor()->getClassName())
-    , supervisorClassNoNamespace_(
-          supervisorClass_.substr(supervisorClass_.find_last_of(":") + 1, supervisorClass_.length() - supervisorClass_.find_last_of(":")))
+    , supervisorClassNoNamespace_(supervisorClass_.substr(
+          supervisorClass_.find_last_of(":") + 1,
+          supervisorClass_.length() - supervisorClass_.find_last_of(":")))
 {
 	__COUT__ << "Constructor." << __E__;
 
@@ -109,9 +110,17 @@ WizardSupervisor::WizardSupervisor(xdaq::ApplicationStub* s)
 	xgi::bind(this, &WizardSupervisor::editSecurity, "editSecurity");
 	xgi::bind(this, &WizardSupervisor::UserSettings, "UserSettings");
 	xgi::bind(this, &WizardSupervisor::tooltipRequest, "TooltipRequest");
-	xgi::bind(this, &WizardSupervisor::toggleSecurityCodeGeneration, "ToggleSecurityCodeGeneration");
-	xoap::bind(this, &WizardSupervisor::supervisorSequenceCheck, "SupervisorSequenceCheck", XDAQ_NS_URI);
-	xoap::bind(this, &WizardSupervisor::supervisorLastTableGroupRequest, "SupervisorLastTableGroupRequest", XDAQ_NS_URI);
+	xgi::bind(this,
+	          &WizardSupervisor::toggleSecurityCodeGeneration,
+	          "ToggleSecurityCodeGeneration");
+	xoap::bind(this,
+	           &WizardSupervisor::supervisorSequenceCheck,
+	           "SupervisorSequenceCheck",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &WizardSupervisor::supervisorLastTableGroupRequest,
+	           "SupervisorLastTableGroupRequest",
+	           XDAQ_NS_URI);
 
 	init();
 	generateURL();
@@ -152,12 +161,14 @@ void WizardSupervisor::requestIcons(xgi::Input* in, xgi::Output* out)
 	// SECURITY CHECK START ****
 	if(securityCode_.compare(submittedSequence) != 0)
 	{
-		__COUT__ << "Unauthorized Request made, security sequence doesn't match! " << time(0) << std::endl;
+		__COUT__ << "Unauthorized Request made, security sequence doesn't match! "
+		         << time(0) << std::endl;
 		return;
 	}
 	else
 	{
-		__COUT__ << "*** Successfully authenticated security sequence @ " << time(0) << std::endl;
+		__COUT__ << "*** Successfully authenticated security sequence @ " << time(0)
+		         << std::endl;
 	}
 	// SECURITY CHECK END ****
 
@@ -253,7 +264,8 @@ void WizardSupervisor::verification(xgi::Input* in, xgi::Output* out)
 
 	if(securityCode_.compare(submittedSequence) != 0)
 	{
-		__COUT__ << "Unauthorized Request made, security sequence doesn't match!" << std::endl;
+		__COUT__ << "Unauthorized Request made, security sequence doesn't match!"
+		         << std::endl;
 		*out << "Invalid code.";
 		return;
 	}
@@ -270,10 +282,12 @@ void WizardSupervisor::verification(xgi::Input* in, xgi::Output* out)
 		}
 	}
 
-	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots wiz</title>" << GatewaySupervisor::getIconHeaderString() <<
+	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots wiz</title>"
+	     << GatewaySupervisor::getIconHeaderString() <<
 	    // end show ots icon
 	    "</head>"
-	     << "<frameset col='100%' row='100%'><frame src='/WebPath/html/Wizard.html?urn=" << this->getApplicationDescriptor()->getLocalId() << securityWarning
+	     << "<frameset col='100%' row='100%'><frame src='/WebPath/html/Wizard.html?urn="
+	     << this->getApplicationDescriptor()->getLocalId() << securityWarning
 	     << "'></frameset></html>";
 }  // end verification()
 
@@ -286,7 +300,8 @@ void WizardSupervisor::generateURL()
 	FILE* fp     = fopen((SEQUENCE_FILE_NAME).c_str(), "r");
 	if(fp)
 	{
-		__COUT_INFO__ << "Sequence length file found: " << SEQUENCE_FILE_NAME << std::endl;
+		__COUT_INFO__ << "Sequence length file found: " << SEQUENCE_FILE_NAME
+		              << std::endl;
 		char line[100];
 		fgets(line, 100, fp);
 		sscanf(line, "%d", &length);
@@ -299,7 +314,9 @@ void WizardSupervisor::generateURL()
 	}
 	else
 	{
-		__COUT_INFO__ << "(Reverting to default wiz security) Sequence length file NOT found: " << SEQUENCE_FILE_NAME << std::endl;
+		__COUT_INFO__
+		    << "(Reverting to default wiz security) Sequence length file NOT found: "
+		    << SEQUENCE_FILE_NAME << std::endl;
 		srand(0);  // use same seed for convenience if file not found
 	}
 
@@ -318,7 +335,9 @@ void WizardSupervisor::generateURL()
 	}
 
 	__COUT__ << WizardSupervisor::WIZ_SUPERVISOR << ":" << WizardSupervisor::WIZ_PORT
-	         << "/urn:xdaq-application:lid=" << this->getApplicationDescriptor()->getLocalId() << "/Verify?code=" << securityCode_ << std::endl;
+	         << "/urn:xdaq-application:lid="
+	         << this->getApplicationDescriptor()->getLocalId()
+	         << "/Verify?code=" << securityCode_ << std::endl;
 
 	// Note: print out handled by StartOTS.sh now
 	// std::thread([&](WizardSupervisor *ptr, std::string securityCode)
@@ -331,7 +350,8 @@ void WizardSupervisor::generateURL()
 		fclose(fp);
 	}
 	else
-		__COUT_ERR__ << "Sequence output file NOT found: " << SEQUENCE_OUT_FILE_NAME << std::endl;
+		__COUT_ERR__ << "Sequence output file NOT found: " << SEQUENCE_OUT_FILE_NAME
+		             << std::endl;
 
 	return;
 }  // end generateURL()
@@ -344,7 +364,9 @@ void WizardSupervisor::printURL(WizardSupervisor* ptr, std::string securityCode)
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(2));
 		__COUT__ << WizardSupervisor::WIZ_SUPERVISOR << ":" << WizardSupervisor::WIZ_PORT
-		         << "/urn:xdaq-application:lid=" << ptr->getApplicationDescriptor()->getLocalId() << "/Verify?code=" << securityCode << std::endl;
+		         << "/urn:xdaq-application:lid="
+		         << ptr->getApplicationDescriptor()->getLocalId()
+		         << "/Verify?code=" << securityCode << std::endl;
 	}
 }  // end printURL()
 
@@ -361,7 +383,8 @@ void WizardSupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 	// SECURITY CHECK START ****
 	if(securityCode_.compare(submittedSequence) != 0)
 	{
-		__COUT__ << "Unauthorized Request made, security sequence doesn't match!" << std::endl;
+		__COUT__ << "Unauthorized Request made, security sequence doesn't match!"
+		         << std::endl;
 		return;
 	}
 	//	else
@@ -382,13 +405,14 @@ void WizardSupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 	}
 	else if(Command == "setNeverShow")
 	{
-		WebUsers::tooltipSetNeverShowForUsername(WebUsers::DEFAULT_ADMIN_USERNAME,
-		                                         &xmldoc,
-		                                         CgiDataUtilities::getData(cgi, "srcFile"),
-		                                         CgiDataUtilities::getData(cgi, "srcFunc"),
-		                                         CgiDataUtilities::getData(cgi, "srcId"),
-		                                         CgiDataUtilities::getData(cgi, "doNeverShow") == "1" ? true : false,
-		                                         CgiDataUtilities::getData(cgi, "temporarySilence") == "1" ? true : false);
+		WebUsers::tooltipSetNeverShowForUsername(
+		    WebUsers::DEFAULT_ADMIN_USERNAME,
+		    &xmldoc,
+		    CgiDataUtilities::getData(cgi, "srcFile"),
+		    CgiDataUtilities::getData(cgi, "srcFunc"),
+		    CgiDataUtilities::getData(cgi, "srcId"),
+		    CgiDataUtilities::getData(cgi, "doNeverShow") == "1" ? true : false,
+		    CgiDataUtilities::getData(cgi, "temporarySilence") == "1" ? true : false);
 	}
 	else
 		__COUT__ << "Command Request, " << Command << ", not recognized." << std::endl;
@@ -409,7 +433,8 @@ void WizardSupervisor::toggleSecurityCodeGeneration(xgi::Input* in, xgi::Output*
 	// SECURITY CHECK START ****
 	if(securityCode_.compare(submittedSequence) != 0)
 	{
-		__COUT__ << "Unauthorized Request made, security sequence doesn't match!" << std::endl;
+		__COUT__ << "Unauthorized Request made, security sequence doesn't match!"
+		         << std::endl;
 		return;
 	}
 	else
@@ -422,13 +447,18 @@ void WizardSupervisor::toggleSecurityCodeGeneration(xgi::Input* in, xgi::Output*
 
 	if(Command == "TurnGenerationOn")
 	{
-		__COUT__ << "Turning automatic URL Generation on with a sequence depth of 16!" << std::endl;
+		__COUT__ << "Turning automatic URL Generation on with a sequence depth of 16!"
+		         << std::endl;
 		std::ofstream outfile((SEQUENCE_FILE_NAME).c_str());
 		outfile << "16" << std::endl;
 		outfile.close();
 		generateURL();
 
-		std::thread([&](WizardSupervisor* ptr, std::string securityCode) { printURL(ptr, securityCode); }, this, securityCode_).detach();
+		std::thread([&](WizardSupervisor* ptr,
+		                std::string       securityCode) { printURL(ptr, securityCode); },
+		            this,
+		            securityCode_)
+		    .detach();
 
 		xmldoc.addTextElementToData("Status", "Generation_Success");
 	}
@@ -436,12 +466,13 @@ void WizardSupervisor::toggleSecurityCodeGeneration(xgi::Input* in, xgi::Output*
 		__COUT__ << "Command Request, " << Command << ", not recognized." << std::endl;
 
 	xmldoc.outputXmlDocument((std::ostringstream*)out, false, true);
-} //end toggleSecurityCodeGeneration()
+}  //end toggleSecurityCodeGeneration()
 
 //==============================================================================
 // xoap::supervisorSequenceCheck
 //	verify cookie
-xoap::MessageReference WizardSupervisor::supervisorSequenceCheck(xoap::MessageReference message)
+xoap::MessageReference WizardSupervisor::supervisorSequenceCheck(
+    xoap::MessageReference message)
 {
 	// SOAPUtilities::receive request parameters
 	SOAPParameters parameters;
@@ -456,13 +487,16 @@ xoap::MessageReference WizardSupervisor::supervisorSequenceCheck(xoap::MessageRe
 
 	if(securityCode_ == submittedSequence)
 		permissionMap.emplace(
-		    std::pair<std::string /*groupName*/, WebUsers::permissionLevel_t>(WebUsers::DEFAULT_USER_GROUP, WebUsers::PERMISSION_LEVEL_ADMIN));
+		    std::pair<std::string /*groupName*/, WebUsers::permissionLevel_t>(
+		        WebUsers::DEFAULT_USER_GROUP, WebUsers::PERMISSION_LEVEL_ADMIN));
 	else
 	{
-		__COUT__ << "Unauthorized Request made, security sequence doesn't match!" << std::endl;
+		__COUT__ << "Unauthorized Request made, security sequence doesn't match!"
+		         << std::endl;
 
 		permissionMap.emplace(
-		    std::pair<std::string /*groupName*/, WebUsers::permissionLevel_t>(WebUsers::DEFAULT_USER_GROUP, WebUsers::PERMISSION_LEVEL_INACTIVE));
+		    std::pair<std::string /*groupName*/, WebUsers::permissionLevel_t>(
+		        WebUsers::DEFAULT_USER_GROUP, WebUsers::PERMISSION_LEVEL_INACTIVE));
 	}
 
 	// fill return parameters
@@ -470,28 +504,30 @@ xoap::MessageReference WizardSupervisor::supervisorSequenceCheck(xoap::MessageRe
 	retParameters.addParameter("Permissions", StringMacros::mapToString(permissionMap));
 
 	return SOAPUtilities::makeSOAPMessageReference("SequenceResponse", retParameters);
-} //end supervisorSequenceCheck()
+}  //end supervisorSequenceCheck()
 
 //===================================================================================================================
 // xoap::supervisorLastTableGroupRequest
 //	return the group name and key for the last state machine activity
 //
 //	Note: same as Supervisor::supervisorLastTableGroupRequest
-xoap::MessageReference WizardSupervisor::supervisorLastTableGroupRequest(xoap::MessageReference message)
+xoap::MessageReference WizardSupervisor::supervisorLastTableGroupRequest(
+    xoap::MessageReference message)
 {
 	SOAPParameters parameters;
 	parameters.addParameter("ActionOfLastGroup");
 	SOAPUtilities::receive(message, parameters);
 
 	return GatewaySupervisor::lastTableGroupRequestHandler(parameters);
-} //end supervisorLastTableGroupRequest()
+}  //end supervisorLastTableGroupRequest()
 
 //==============================================================================
 void WizardSupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 {
-	__COUT__ << "Unauthorized Request made, security sequence doesn't match!" << std::endl;
+	__COUT__ << "Unauthorized Request made, security sequence doesn't match!"
+	         << std::endl;
 	*out << "Unauthorized Request.";
-} //end Default()
+}  //end Default()
 
 //==============================================================================
 void WizardSupervisor::request(xgi::Input* in, xgi::Output* out)
@@ -503,13 +539,15 @@ void WizardSupervisor::request(xgi::Input* in, xgi::Output* out)
 	// SECURITY CHECK START ****
 	if(securityCode_.compare(submittedSequence) != 0)
 	{
-		__COUT__ << "Unauthorized Request made, security sequence doesn't match! " << time(0) << std::endl;
+		__COUT__ << "Unauthorized Request made, security sequence doesn't match! "
+		         << time(0) << std::endl;
 		*out << WebUsers::REQ_NO_PERMISSION_RESPONSE.c_str();
 		return;
 	}
 	else
 	{
-		__COUT__ << "***Successfully authenticated security sequence. " << time(0) << std::endl;
+		__COUT__ << "***Successfully authenticated security sequence. " << time(0)
+		         << std::endl;
 	}
 	// SECURITY CHECK END ****
 
@@ -548,7 +586,8 @@ void WizardSupervisor::request(xgi::Input* in, xgi::Output* out)
 		}
 		else if(requestType == "getAppId")
 		{
-			GatewaySupervisor::handleGetApplicationIdRequest(&allSupervisorInfo_, cgiIn, xmlOut);
+			GatewaySupervisor::handleGetApplicationIdRequest(
+			    &allSupervisorInfo_, cgiIn, xmlOut);
 		}
 		else if(requestType == "getSettings")
 		{
@@ -557,12 +596,14 @@ void WizardSupervisor::request(xgi::Input* in, xgi::Output* out)
 			__COUT__ << "Get Settings Request" << __E__;
 			__COUT__ << "accounts = " << accounts << __E__;
 
-			GatewaySupervisor::theWebUsers_.insertSettingsForUser(0 /*admin UID*/, &xmlOut, accounts == "1");
+			GatewaySupervisor::theWebUsers_.insertSettingsForUser(
+			    0 /*admin UID*/, &xmlOut, accounts == "1");
 		}
 		else if(requestType == "accountSettings")
 		{
-			std::string type     = CgiDataUtilities::postData(cgiIn, "type");  // updateAccount, createAccount, deleteAccount
-			int         type_int = -1;
+			std::string type = CgiDataUtilities::postData(
+			    cgiIn, "type");  // updateAccount, createAccount, deleteAccount
+			int type_int = -1;
 
 			if(type == "updateAccount")
 				type_int = GatewaySupervisor::theWebUsers_.MOD_TYPE_UPDATE;
@@ -584,34 +625,44 @@ void WizardSupervisor::request(xgi::Input* in, xgi::Output* out)
 			__COUT__ << "displayname = " << displayname << __E__;
 			__COUT__ << "permissions = " << permissions << __E__;
 
-			GatewaySupervisor::theWebUsers_.modifyAccountSettings(0 /*admin UID*/, type_int, username, displayname, email, permissions);
+			GatewaySupervisor::theWebUsers_.modifyAccountSettings(
+			    0 /*admin UID*/, type_int, username, displayname, email, permissions);
 
 			__COUT__ << "accounts = " << accounts << __E__;
 
-			GatewaySupervisor::theWebUsers_.insertSettingsForUser(0 /*admin UID*/, &xmlOut, accounts == "1");
+			GatewaySupervisor::theWebUsers_.insertSettingsForUser(
+			    0 /*admin UID*/, &xmlOut, accounts == "1");
 		}
 		else
 		{
-			__SS__ << "requestType Request '" << requestType << "' not recognized." << __E__;
+			__SS__ << "requestType Request '" << requestType << "' not recognized."
+			       << __E__;
 			__SS_THROW__;
 		}
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "An error was encountered handling requestType '" << requestType << "':" << e.what() << __E__;
+		__SS__ << "An error was encountered handling requestType '" << requestType
+		       << "':" << e.what() << __E__;
 		__COUT__ << "\n" << ss.str();
 		xmlOut.addTextElementToData("Error", ss.str());
 	}
 	catch(...)
 	{
-		__SS__ << "An unknown error was encountered handling requestType '" << requestType << ".' "
+		__SS__ << "An unknown error was encountered handling requestType '" << requestType
+		       << ".' "
 		       << "Please check the printouts to debug." << __E__;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__COUT__ << "\n" << ss.str();
 		xmlOut.addTextElementToData("Error", ss.str());
 	}
@@ -629,7 +680,10 @@ void WizardSupervisor::request(xgi::Input* in, xgi::Output* out)
 	}
 
 	// return xml doc holding server response
-	xmlOut.outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);  // Note: allow white space need for error response
+	xmlOut.outputXmlDocument(
+	    (std::ostringstream*)out,
+	    false /*dispStdOut*/,
+	    true /*allowWhiteSpace*/);  // Note: allow white space need for error response
 
 }  // end request()
 
@@ -644,7 +698,8 @@ void WizardSupervisor::editSecurity(xgi::Input* in, xgi::Output* out)
 	// SECURITY CHECK START ****
 	if(securityCode_.compare(submittedSequence) != 0)
 	{
-		__COUT__ << "Unauthorized Request made, security sequence doesn't match!" << std::endl;
+		__COUT__ << "Unauthorized Request made, security sequence doesn't match!"
+		         << std::endl;
 		return;
 	}
 	else
@@ -669,7 +724,11 @@ void WizardSupervisor::editSecurity(xgi::Input* in, xgi::Output* out)
 			newFile.close();
 
 			generateURL();
-			std::thread([&](WizardSupervisor* ptr, std::string securityCode) { printURL(ptr, securityCode); }, this, securityCode_).detach();
+			std::thread([&](WizardSupervisor* ptr,
+			                std::string securityCode) { printURL(ptr, securityCode); },
+			            this,
+			            securityCode_)
+			    .detach();
 			*out << "Default_URL_Generation";
 		}
 		else if(submittedSecurity == "ResetAllUserTooltips")
@@ -678,7 +737,8 @@ void WizardSupervisor::editSecurity(xgi::Input* in, xgi::Output* out)
 			*out << submittedSecurity;
 			return;
 		}
-		else if(submittedSecurity == WebUsers::SECURITY_TYPE_DIGEST_ACCESS || submittedSecurity == WebUsers::SECURITY_TYPE_NONE)
+		else if(submittedSecurity == WebUsers::SECURITY_TYPE_DIGEST_ACCESS ||
+		        submittedSecurity == WebUsers::SECURITY_TYPE_NONE)
 		{
 			// attempt to make directory structure (just in case)
 			mkdir((WizardSupervisor::SERVICE_DATA_PATH).c_str(), 0755);
@@ -700,7 +760,8 @@ void WizardSupervisor::editSecurity(xgi::Input* in, xgi::Output* out)
 		}
 		else
 		{
-			__COUT_ERR__ << "Invalid submittedSecurity string: " << submittedSecurity << std::endl;
+			__COUT_ERR__ << "Invalid submittedSecurity string: " << submittedSecurity
+			             << std::endl;
 			*out << "Error";
 			return;
 		}
@@ -718,7 +779,8 @@ void WizardSupervisor::editSecurity(xgi::Input* in, xgi::Output* out)
 			securityFile.close();
 		}
 		else
-			security = WebUsers::SECURITY_TYPE_DEFAULT;  // default security when no file exists
+			security =
+			    WebUsers::SECURITY_TYPE_DEFAULT;  // default security when no file exists
 
 		*out << security;
 	}
@@ -742,7 +804,8 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 	// SECURITY CHECK START ****
 	if(securityCode_.compare(submittedSequence) != 0)
 	{
-		__COUT__ << "Unauthorized Request made, security sequence doesn't match!" << std::endl;
+		__COUT__ << "Unauthorized Request made, security sequence doesn't match!"
+		         << std::endl;
 		__COUT__ << submittedSequence << std::endl;
 		// return;
 	}
@@ -791,7 +854,8 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 				__COUT__ << temporaryPath << " exists!" << std::endl;
 			else
 			{
-				__COUT__ << temporaryPath << " does not exist! Creating it now. " << std::endl;
+				__COUT__ << temporaryPath << " does not exist! Creating it now. "
+				         << std::endl;
 				filesystem::create_directory(temporaryPath);
 			}
 
@@ -811,9 +875,12 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 
 				if(tarFoundFlag != std::string::npos)
 				{
-					if(tarGzFoundFlag != std::string::npos || tarBzFoundFlag != std::string::npos)
+					if(tarGzFoundFlag != std::string::npos ||
+					   tarBzFoundFlag != std::string::npos)
 					{
-						__SS__ << "This is not a valid tar file, due to bad extension naming" << __E__;
+						__SS__
+						    << "This is not a valid tar file, due to bad extension naming"
+						    << __E__;
 						__COUT_ERR__ << "\n" << ss.str();
 					}
 					else
@@ -821,7 +888,8 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 						std::ofstream myFile;
 						myFile.open(filename.c_str());
 						files[0].writeToStream(myFile);
-						std::string commandToDecompressUserData = std::string("tar -xvf ") + filename;
+						std::string commandToDecompressUserData =
+						    std::string("tar -xvf ") + filename;
 						filesystem::current_path(USER_IMPORT_EXPORT_PATH);
 						system(commandToDecompressUserData.c_str());
 						// std::string resultString = StringMacros::exec(commandToDecompressUserData.c_str());
@@ -830,7 +898,8 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 				}
 				else
 				{
-					__SS__ << "This is not a valid tar file for user preferences" << __E__;
+					__SS__ << "This is not a valid tar file for user preferences"
+					       << __E__;
 					__COUT_ERR__ << "\n" << ss.str();
 				}
 			}
@@ -862,18 +931,23 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 				__COUT__ << temporaryPath << " exists!" << std::endl;
 			else
 			{
-				__COUT__ << temporaryPath << " does not exist! Creating it now. " << std::endl;
+				__COUT__ << temporaryPath << " does not exist! Creating it now. "
+				         << std::endl;
 				filesystem::create_directory(temporaryPath);
 			}
-			std::string commandToCompressUserData = std::string("tar -cvf user_settings.tar ") + std::string("ActiveTableGroups.cfg ") +
-			                                        std::string("ConsolePreferences ") + std::string("CoreTableInfoNames.dat ") + std::string("LoginData ") +
-			                                        std::string("OtsWizardData ") + std::string("ProgressBarData ");
+			std::string commandToCompressUserData =
+			    std::string("tar -cvf user_settings.tar ") +
+			    std::string("ActiveTableGroups.cfg ") +
+			    std::string("ConsolePreferences ") +
+			    std::string("CoreTableInfoNames.dat ") + std::string("LoginData ") +
+			    std::string("OtsWizardData ") + std::string("ProgressBarData ");
 
 			filesystem::current_path(USER_IMPORT_EXPORT_PATH);
 			system(commandToCompressUserData.c_str());
 			filesystem::rename("user_settings.tar", "tmp/user_settings.tar");
 			filesystem::current_path(temporaryPath);
-			__COUT__ << system("echo You can find the output on the following path ") << __E__;
+			__COUT__ << system("echo You can find the output on the following path ")
+			         << __E__;
 			__COUT__ << system("pwd") << std::endl;
 		}
 		else
@@ -886,7 +960,7 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 
 	*out << "test";
 	return;
-} //end UserSettings()
+}  //end UserSettings()
 
 //==============================================================================
 //	validateUploadFileType
@@ -898,7 +972,7 @@ std::string WizardSupervisor::validateUploadFileType(const std::string fileType)
 			return matchingFileUploadTypes_[i];  // found and done
 
 	return "";  // not valid, return ""
-} //end validateUploadFileType()
+}  //end validateUploadFileType()
 
 //==============================================================================
 //	cleanUpPreviews
@@ -919,9 +993,12 @@ void WizardSupervisor::cleanUpPreviews()
 	time_t         dirCreateTime;
 	unsigned int   i;
 
-	while((entry = readdir(dir)))  // loop through all entries in directory and remove anything expired
+	while(
+	    (entry = readdir(
+	         dir)))  // loop through all entries in directory and remove anything expired
 	{
-		if(strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 && strcmp(entry->d_name, ".svn") != 0)
+		if(strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0 &&
+		   strcmp(entry->d_name, ".svn") != 0)
 		{
 			// replace _ with space so sscanf works
 			for(i = 0; i < strlen(entry->d_name); ++i)
@@ -938,20 +1015,27 @@ void WizardSupervisor::cleanUpPreviews()
 
 				entry->d_name[i] = '_';  // put _ back
 
-				__COUT__ << "rm -rf " << USER_IMPORT_EXPORT_PATH + (std::string)entry->d_name << std::endl << std::endl;
-				system(((std::string)("rm -rf " + userData + (std::string)entry->d_name)).c_str());
+				__COUT__ << "rm -rf "
+				         << USER_IMPORT_EXPORT_PATH + (std::string)entry->d_name
+				         << std::endl
+				         << std::endl;
+				system(((std::string)("rm -rf " + userData + (std::string)entry->d_name))
+				           .c_str());
 			}
 		}
 	}
 
 	closedir(dir);
-} //end cleanUpPreviews()
+}  //end cleanUpPreviews()
 
 //==============================================================================
 //	savePostPreview
 //      save post to preview directory named with time and incremented index
-void WizardSupervisor::savePostPreview(
-    std::string& /*subject*/, std::string& /*text*/, const std::vector<cgicc::FormFile>& /*files*/, std::string /*creator*/, HttpXmlDocument* xmldoc)
+void WizardSupervisor::savePostPreview(std::string& /*subject*/,
+                                       std::string& /*text*/,
+                                       const std::vector<cgicc::FormFile>& /*files*/,
+                                       std::string /*creator*/,
+                                       HttpXmlDocument* xmldoc)
 {
 	/*if(activeExperiment_ == "") //no active experiment!
 	{
@@ -960,15 +1044,19 @@ void WizardSupervisor::savePostPreview(
 	}
 */
 	char fileIndex[40];
-	sprintf(fileIndex, "%lu_%lu", time(0),
+	sprintf(fileIndex,
+	        "%lu_%lu",
+	        time(0),
 	        clock());  // create unique time label for entry time(0)_clock()
-	std::string userDataPath = (std::string)USER_IMPORT_EXPORT_PATH + (std::string)fileIndex;
+	std::string userDataPath =
+	    (std::string)USER_IMPORT_EXPORT_PATH + (std::string)fileIndex;
 
 	__COUT__ << "userDataPath " << userDataPath << std::endl;
 	if(-1 == mkdir(userDataPath.c_str(), 0755))
 	{
 		if(xmldoc)
-			xmldoc->addTextElementToData(XML_STATUS, "Failed - directory could not be generated.");
+			xmldoc->addTextElementToData(XML_STATUS,
+			                             "Failed - directory could not be generated.");
 		return;
 	}
 	/*
@@ -1042,4 +1130,4 @@ void WizardSupervisor::savePostPreview(
 	if(xmldoc) xmldoc->addTextElementToData(XML_STATUS,"1"); //1 indicates success!
 	if(xmldoc) xmldoc->addTextElementToData(XML_PREVIEW_INDEX,"1"); //1 indicates is a
 	preview post*/
-} //end savePostPreview()
+}  //end savePostPreview()

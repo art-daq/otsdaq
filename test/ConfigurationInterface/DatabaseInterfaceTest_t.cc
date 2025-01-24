@@ -207,11 +207,13 @@ BOOST_AUTO_TEST_CASE(list_configuration_types)
 	std::shared_ptr<TableBase> cfg1 = std::make_shared<TestConfiguration001>();
 	std::shared_ptr<TableBase> cfg2 = std::make_shared<TestConfiguration002>();
 
-	auto found1 = (std::find(list.begin(), list.end(), cfg1->getTableName()) != list.end());
+	auto found1 =
+	    (std::find(list.begin(), list.end(), cfg1->getTableName()) != list.end());
 
 	BOOST_CHECK_EQUAL(found1, true);
 
-	auto found2 = (std::find(list.begin(), list.end(), cfg2->getTableName()) != list.end());
+	auto found2 =
+	    (std::find(list.begin(), list.end(), cfg2->getTableName()) != list.end());
 
 	BOOST_CHECK_EQUAL(found2, true);
 
@@ -230,7 +232,8 @@ BOOST_AUTO_TEST_CASE(find_configuration_version)
 
 	BOOST_CHECK_EQUAL(found1, true);
 
-	auto found2 = (std::find(list.begin(), list.end(), fixture.version() + 1) != list.end());
+	auto found2 =
+	    (std::find(list.begin(), list.end(), fixture.version() + 1) != list.end());
 
 	BOOST_CHECK_EQUAL(found2, true);
 

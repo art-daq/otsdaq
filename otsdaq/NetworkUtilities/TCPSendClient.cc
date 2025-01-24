@@ -3,7 +3,10 @@
 using namespace ots;
 
 //==============================================================================
-TCPSendClient::TCPSendClient(const std::string& serverIP, int serverPort) : TCPClientBase(serverIP, serverPort) {}
+TCPSendClient::TCPSendClient(const std::string& serverIP, int serverPort)
+    : TCPClientBase(serverIP, serverPort)
+{
+}
 
 //==============================================================================
 TCPSendClient::~TCPSendClient(void) {}

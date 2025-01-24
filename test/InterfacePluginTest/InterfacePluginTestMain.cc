@@ -23,10 +23,12 @@ using namespace ots;
 int main()
 {
 	// Variables
-	std::string supervisorContextUID_           = "MainContext";
-	std::string supervisorApplicationUID_       = "FeSupervisor0";
-	std::string ConfigurationAlias_             = "Physics";
-	std::string theSupervisorConfigurationPath_ = supervisorContextUID_ + "/LinkToApplicationTable/" + supervisorApplicationUID_ + "/LinkToSupervisorTable";
+	std::string supervisorContextUID_     = "MainContext";
+	std::string supervisorApplicationUID_ = "FeSupervisor0";
+	std::string ConfigurationAlias_       = "Physics";
+	std::string theSupervisorConfigurationPath_ =
+	    supervisorContextUID_ + "/LinkToApplicationTable/" + supervisorApplicationUID_ +
+	    "/LinkToSupervisorTable";
 	// const int TableGroupKeyValue_ = 0;
 	// std::shared_ptr<TableGroupKey> theConfigurationTableGroupKey_(new
 	// TableGroupKey(TableGroupKeyValue_));
@@ -34,10 +36,12 @@ int main()
 	////////////////////////////////////////////////////////////////
 	// INSERTED GLOBALLY IN THE CODE
 	ConfigurationManager* theConfigurationManager_ = new ConfigurationManager;
-	FEVInterfacesManager  theFEVInterfacesManager_(theConfigurationManager_->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME),
-                                                  theSupervisorConfigurationPath_);
+	FEVInterfacesManager  theFEVInterfacesManager_(
+        theConfigurationManager_->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME),
+        theSupervisorConfigurationPath_);
 
-	std::pair<std::string /*group name*/, TableGroupKey> theGroup = theConfigurationManager_->getTableGroupFromAlias(ConfigurationAlias_);
+	std::pair<std::string /*group name*/, TableGroupKey> theGroup =
+	    theConfigurationManager_->getTableGroupFromAlias(ConfigurationAlias_);
 
 	theConfigurationManager_->loadTableGroup(theGroup.first, theGroup.second, true);
 

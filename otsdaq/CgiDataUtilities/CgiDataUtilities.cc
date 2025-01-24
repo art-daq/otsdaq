@@ -12,7 +12,8 @@ std::string CgiDataUtilities::getOrPostData(cgicc::Cgicc& cgi, const std::string
 {
 	std::string postData = "";
 	if((postData = CgiDataUtilities::postData(cgi, needle)) == "")
-		postData = CgiDataUtilities::getData(cgi, needle);  // get command from form, if PreviewEntry
+		postData = CgiDataUtilities::getData(
+		    cgi, needle);  // get command from form, if PreviewEntry
 	return postData;
 }
 
@@ -25,7 +26,9 @@ std::string CgiDataUtilities::postData(cgicc::Cgicc& cgi, const std::string& nee
 {
 	std::string postData = "&" + cgi.getEnvironment().getPostData();
 	//__COUT__ << "PostData: " + postData << std::endl;
-	size_t start_pos = postData.find("&" + needle + "=");  // add & and = to make sure found field and not part of a value
+	size_t start_pos = postData.find(
+	    "&" + needle +
+	    "=");  // add & and = to make sure found field and not part of a value
 	if(start_pos == std::string::npos)
 		return "";  // needle not found
 
@@ -52,7 +55,9 @@ std::string CgiDataUtilities::getData(cgicc::Cgicc& cgi, const std::string& need
 	std::string getData = "&" + cgi.getEnvironment().getQueryString();
 	//__COUT__ << "getData: " + getData << std::endl;
 
-	size_t start_pos = getData.find("&" + needle + "=");  // add & and = to make sure found field and not part of a value
+	size_t start_pos = getData.find(
+	    "&" + needle +
+	    "=");  // add & and = to make sure found field and not part of a value
 	if(start_pos == std::string::npos)
 		return "";  // needle not found
 
@@ -73,9 +78,18 @@ std::string CgiDataUtilities::getData(cgicc::Cgicc& cgi, const std::string& need
 }
 
 //==============================================================================
-int CgiDataUtilities::getOrPostDataAsInt(cgicc::Cgicc& cgi, const std::string& needle) { return atoi(getOrPostData(cgi, needle).c_str()); }
-int CgiDataUtilities::postDataAsInt(cgicc::Cgicc& cgi, const std::string& needle) { return atoi(postData(cgi, needle).c_str()); }
-int CgiDataUtilities::getDataAsInt(cgicc::Cgicc& cgi, const std::string& needle) { return atoi(getData(cgi, needle).c_str()); }
+int CgiDataUtilities::getOrPostDataAsInt(cgicc::Cgicc& cgi, const std::string& needle)
+{
+	return atoi(getOrPostData(cgi, needle).c_str());
+}
+int CgiDataUtilities::postDataAsInt(cgicc::Cgicc& cgi, const std::string& needle)
+{
+	return atoi(postData(cgi, needle).c_str());
+}
+int CgiDataUtilities::getDataAsInt(cgicc::Cgicc& cgi, const std::string& needle)
+{
+	return atoi(getData(cgi, needle).c_str());
+}
 //
 ////==============================================================================
 //// decodeURIComponent

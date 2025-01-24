@@ -29,16 +29,27 @@ class ConfigurationHandler
 	static std::string getXMLDir(const TableBase* configuration);
 
   private:
-	static void        initPlatform(void);
-	static void        terminatePlatform(void);
-	static bool        validateNode(XMLCh* tagName, xercesc::DOMNode* node, const std::string& expectedValue);
-	static void        outputXML(xercesc::DOMDocument* pmyDOMDocument, std::string filePath);
-	static std::string getXMLFileName(const TableBase& configuration, TableVersion version);
+	static void initPlatform(void);
+	static void terminatePlatform(void);
+	static bool validateNode(XMLCh*             tagName,
+	                         xercesc::DOMNode*  node,
+	                         const std::string& expectedValue);
+	static void outputXML(xercesc::DOMDocument* pmyDOMDocument, std::string filePath);
+	static std::string getXMLFileName(const TableBase& configuration,
+	                                  TableVersion     version);
 
-	static xercesc::DOMNode*    getNode(XMLCh* tagName, xercesc::DOMNode* parent, unsigned int itemNumber);
-	static xercesc::DOMNode*    getNode(XMLCh* tagName, xercesc::DOMElement* parent, unsigned int itemNumber);
-	static xercesc::DOMElement* getElement(XMLCh* tagName, xercesc::DOMNode* parent, unsigned int itemNumber);
-	static xercesc::DOMElement* getElement(XMLCh* tagName, xercesc::DOMElement* parent, unsigned int itemNumber);
+	static xercesc::DOMNode*    getNode(XMLCh*            tagName,
+	                                    xercesc::DOMNode* parent,
+	                                    unsigned int      itemNumber);
+	static xercesc::DOMNode*    getNode(XMLCh*               tagName,
+	                                    xercesc::DOMElement* parent,
+	                                    unsigned int         itemNumber);
+	static xercesc::DOMElement* getElement(XMLCh*            tagName,
+	                                       xercesc::DOMNode* parent,
+	                                       unsigned int      itemNumber);
+	static xercesc::DOMElement* getElement(XMLCh*               tagName,
+	                                       xercesc::DOMElement* parent,
+	                                       unsigned int         itemNumber);
 	static XMLCh*               rootTag_;
 	static XMLCh*               headerTag_;
 	static XMLCh*               typeTag_;

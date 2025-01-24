@@ -5,13 +5,17 @@
 using namespace ots;
 
 //==============================================================================
-CircularBufferBase::CircularBufferBase(const std::string& bufferID) : dataBufferId_(bufferID), mfSubject_("CircularBuffer:" + dataBufferId_) {}
+CircularBufferBase::CircularBufferBase(const std::string& bufferID)
+    : dataBufferId_(bufferID), mfSubject_("CircularBuffer:" + dataBufferId_)
+{
+}
 
 //==============================================================================
 CircularBufferBase::~CircularBufferBase(void) {}
 
 //==============================================================================
-void CircularBufferBase::registerProducer(DataProcessor* producer, unsigned int numberOfSubBuffers)
+void CircularBufferBase::registerProducer(DataProcessor* producer,
+                                          unsigned int   numberOfSubBuffers)
 {
 	registerProducer(producer->getProcessorID(), numberOfSubBuffers);
 	producer->setCircularBuffer(this);

@@ -17,10 +17,16 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	RunControlStateMachine(const std::string& name = "Undefined Name");
 	virtual ~RunControlStateMachine(void);
 
-	void               reset(void);
-	void               setStateMachineName(const std::string& name) { theStateMachine_.setStateMachineName(name); }
-	const std::string& getErrorMessage(void) const { return theStateMachine_.getErrorMessage(); }
-	void               setAsyncPauseExceptionMessage(const std::string& error)
+	void reset(void);
+	void setStateMachineName(const std::string& name)
+	{
+		theStateMachine_.setStateMachineName(name);
+	}
+	const std::string& getErrorMessage(void) const
+	{
+		return theStateMachine_.getErrorMessage();
+	}
+	void setAsyncPauseExceptionMessage(const std::string& error)
 	{
 		asyncPauseExceptionReceived_ = true;
 		theStateMachine_.setErrorMessage(error);
@@ -55,7 +61,8 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 
 	{
 		stateTransitionFunctionTable_[from][input] = func;
-		theStateMachine_.addStateTransition(from, to, input, transitionName, transitionParameter, obj, func);
+		theStateMachine_.addStateTransition(
+		    from, to, input, transitionName, transitionParameter, obj, func);
 	}
 
 	// using	stateMachineFunction_t = void (ots::RunControlStateMachine::*
@@ -119,7 +126,7 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	static const std::string RUNNING_STATE_NAME;
 	static const std::string SHUTDOWN_STATE_NAME;
 	static const std::string CONFIGURED_STATE_NAME;
-	
+
 	static const std::string SHUTDOWN_TRANSITION_NAME;
 	static const std::string STARTUP_TRANSITION_NAME;
 	static const std::string INIT_TRANSITION_NAME;
@@ -142,13 +149,17 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	void               clearSubIterationWork(void) { subIterationWorkFlag_ = false; }
 	bool               getSubIterationWork(void) { return subIterationWorkFlag_; }
 	const std::string& getLastCommand(void) { return lastIterationCommand_; }
-	const std::string& getLastAttemptedConfigureGroup(void) { return lastAttemptedConfigureGroup_; }
+	const std::string& getLastAttemptedConfigureGroup(void)
+	{
+		return lastAttemptedConfigureGroup_;
+	}
 
   protected:
 	FiniteStateMachine theStateMachine_;
 	ProgressBar        theProgressBar_;
 
-	volatile bool asyncFailureReceived_, asyncPauseExceptionReceived_, asyncStopExceptionReceived_;
+	volatile bool asyncFailureReceived_, asyncPauseExceptionReceived_,
+	    asyncStopExceptionReceived_;
 
 	unsigned int iterationIndex_ = 0, subIterationIndex_ = 0;
 	bool         iterationWorkFlag_, subIterationWorkFlag_;
@@ -159,7 +170,10 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	std::string         lastIterationResult_;
 	unsigned int        lastIterationIndex_, lastSubIterationIndex_;
 
-	std::map<toolbox::fsm::State, std::map<std::string, void (RunControlStateMachine::*)(toolbox::Event::Reference), std::less<std::string> > >
+	std::map<toolbox::fsm::State,
+	         std::map<std::string,
+	                  void (RunControlStateMachine::*)(toolbox::Event::Reference),
+	                  std::less<std::string> > >
 	    stateTransitionFunctionTable_;
 };
 

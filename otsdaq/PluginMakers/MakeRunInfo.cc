@@ -3,10 +3,12 @@
 
 #include "otsdaq/FiniteStateMachine/RunInfoVInterface.h"
 
-ots::RunInfoVInterface* ots::makeRunInfo(const std::string& runInfoPluginName, const std::string& runInfoUID)
+ots::RunInfoVInterface* ots::makeRunInfo(const std::string& runInfoPluginName,
+                                         const std::string& runInfoUID)
 {
 	static cet::BasicPluginFactory basicPluginInterfaceFactory("runinfo", "make");
 
-	return basicPluginInterfaceFactory.makePlugin<ots::RunInfoVInterface*, const std::string&, const std::string&>(
-	    runInfoPluginName, runInfoPluginName, runInfoUID);
+	return basicPluginInterfaceFactory
+	    .makePlugin<ots::RunInfoVInterface*, const std::string&, const std::string&>(
+	        runInfoPluginName, runInfoPluginName, runInfoUID);
 }

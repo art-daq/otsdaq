@@ -19,12 +19,20 @@ namespace ots
 class FEProducerVInterface : public FEVInterface, public DataProducerBase
 {
   public:
-	FEProducerVInterface(const std::string& interfaceUID, const ConfigurationTree& theXDAQContextConfigTree, const std::string& interfaceConfigurationPath);
+	FEProducerVInterface(const std::string&       interfaceUID,
+	                     const ConfigurationTree& theXDAQContextConfigTree,
+	                     const std::string&       interfaceConfigurationPath);
 
 	virtual ~FEProducerVInterface(void);
 
-	virtual void startProcessingData(std::string /*runNumber*/) { __FE_COUT__ << "Do nothing. The FE Manager starts the workloop." << __E__; }
-	virtual void stopProcessingData(void) { __FE_COUT__ << "Do nothing. The FE Manager stops the workloop." << __E__; }
+	virtual void startProcessingData(std::string /*runNumber*/)
+	{
+		__FE_COUT__ << "Do nothing. The FE Manager starts the workloop." << __E__;
+	}
+	virtual void stopProcessingData(void)
+	{
+		__FE_COUT__ << "Do nothing. The FE Manager stops the workloop." << __E__;
+	}
 
 	virtual void         copyToNextBuffer(const std::string& dataToWrite);
 	virtual std::string* getNextBuffer(void);

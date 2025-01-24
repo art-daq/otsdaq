@@ -30,7 +30,8 @@ class ARTDAQOnlineMonitorSupervisor : public CoreSupervisorBase
 	virtual void enteringError(toolbox::Event::Reference event) override;
 
   private:
-	void RunArt(const std::string& config_file, const std::shared_ptr<std::atomic<pid_t>>& pid_out);
+	void RunArt(const std::string&                         config_file,
+	            const std::shared_ptr<std::atomic<pid_t>>& pid_out);
 
 	void StartArtProcess(const std::string& config_file);
 

@@ -21,7 +21,9 @@ class OtsFragmentNameHelper : public artdaq::FragmentNameHelper
 	/**
 	 * \brief OtsFragmentNameHelper Constructor
 	 */
-	OtsFragmentNameHelper(std::string unidentified_instance_name, std::vector<std::pair<artdaq::Fragment::type_t, std::string>> extraTypes);
+	OtsFragmentNameHelper(
+	    std::string unidentified_instance_name,
+	    std::vector<std::pair<artdaq::Fragment::type_t, std::string>> extraTypes);
 
   private:
 	OtsFragmentNameHelper(OtsFragmentNameHelper const&)            = delete;
@@ -30,7 +32,9 @@ class OtsFragmentNameHelper : public artdaq::FragmentNameHelper
 	OtsFragmentNameHelper& operator=(OtsFragmentNameHelper&&)      = delete;
 };
 
-OtsFragmentNameHelper::OtsFragmentNameHelper(std::string unidentified_instance_name, std::vector<std::pair<artdaq::Fragment::type_t, std::string>> extraTypes)
+OtsFragmentNameHelper::OtsFragmentNameHelper(
+    std::string unidentified_instance_name,
+    std::vector<std::pair<artdaq::Fragment::type_t, std::string>> extraTypes)
     : FragmentNameHelper(unidentified_instance_name, extraTypes)
 {
 	TLOG(TLVL_DEBUG) << "OtsFragmentNameHelper CONSTRUCTOR START";

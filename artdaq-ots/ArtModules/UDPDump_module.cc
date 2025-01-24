@@ -68,9 +68,13 @@ void ots::UDPDump::analyze(art::Event const& evt)
 
 	if(raw.isValid())
 	{
-		std::cout << __COUT_HDR_FL__ << "######################################################################" << std::endl;
+		std::cout
+		    << __COUT_HDR_FL__
+		    << "######################################################################"
+		    << std::endl;
 
-		std::cout << __COUT_HDR_FL__ << std::dec << "Run " << evt.run() << ", subrun " << evt.subRun() << ", event " << eventNumber << " has " << raw->size()
+		std::cout << __COUT_HDR_FL__ << std::dec << "Run " << evt.run() << ", subrun "
+		          << evt.subRun() << ", event " << eventNumber << " has " << raw->size()
 		          << " fragment(s) of type " << frag_type_ << std::endl;
 
 		for(size_t idx = 0; idx < raw->size(); ++idx)
@@ -79,19 +83,22 @@ void ots::UDPDump::analyze(art::Event const& evt)
 
 			ots::UDPFragment bb(frag);
 
-			std::cout << __COUT_HDR_FL__ << "UDP fragment " << frag.fragmentID() << " has total byte count = " << bb.udp_data_words() << std::endl;
+			std::cout << __COUT_HDR_FL__ << "UDP fragment " << frag.fragmentID()
+			          << " has total byte count = " << bb.udp_data_words() << std::endl;
 
 			if(frag.hasMetadata())
 			{
 				std::cout << __COUT_HDR_FL__ << "Fragment metadata: " << std::endl;
-				ots::UDPFragment::Metadata const* md = frag.metadata<ots::UDPFragment::Metadata>();
+				ots::UDPFragment::Metadata const* md =
+				    frag.metadata<ots::UDPFragment::Metadata>();
 
 				char               buf[sizeof(in_addr)];
 				struct sockaddr_in addr;
 				addr.sin_addr.s_addr = md->address;
 				inet_ntop(AF_INET, &(addr.sin_addr), buf, INET_ADDRSTRLEN);
 
-				std::cout << __COUT_HDR_FL__ << "Board port number = " << ((int)md->port) << ", address = " << std::string(buf) << std::endl;
+				std::cout << __COUT_HDR_FL__ << "Board port number = " << ((int)md->port)
+				          << ", address = " << std::string(buf) << std::endl;
 			}
 
 			int type = bb.hdr_data_type();
@@ -103,7 +110,8 @@ void ots::UDPDump::analyze(art::Event const& evt)
 
 				for(; it != bb.dataEnd(); ++it)
 				{
-					std::cout << __COUT_HDR_FL__ << ", " << std::hex << "0x" << (int)*it << std::endl;
+					std::cout << __COUT_HDR_FL__ << ", " << std::hex << "0x" << (int)*it
+					          << std::endl;
 				}
 			}
 			else
@@ -115,7 +123,8 @@ void ots::UDPDump::analyze(art::Event const& evt)
 	}
 	else
 	{
-		std::cout << __COUT_HDR_FL__ << std::dec << "Run " << evt.run() << ", subrun " << evt.subRun() << ", event " << eventNumber << " has zero"
+		std::cout << __COUT_HDR_FL__ << std::dec << "Run " << evt.run() << ", subrun "
+		          << evt.subRun() << ", event " << eventNumber << " has zero"
 		          << " UDP fragments." << std::endl;
 	}
 }

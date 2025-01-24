@@ -6,7 +6,8 @@
 template<class T>
 void ConfigurationTree::getValue(T& value) const
 {
-	if(row_ != TableView::INVALID && col_ != TableView::INVALID)  // this node is a value node
+	if(row_ != TableView::INVALID &&
+	   col_ != TableView::INVALID)  // this node is a value node
 	{
 		// attempt to interpret the value as a tree node path itself
 		try
@@ -23,7 +24,8 @@ void ConfigurationTree::getValue(T& value) const
 			//				else
 			//	value = (T)tableView_->validateValueForColumn<T>(
 			//		valueAsTreeNode.getValueAsString(),col_);
-			value = handleValidateValueForColumn(tableView_, valueAsTreeNode.getValueAsString(), col_, identity<T>());
+			value = handleValidateValueForColumn(
+			    tableView_, valueAsTreeNode.getValueAsString(), col_, identity<T>());
 
 			__COUT__ << "Successful value!" << __E__;
 			return;
@@ -36,9 +38,11 @@ void ConfigurationTree::getValue(T& value) const
 		// else normal return
 		tableView_->getValue(value, row_, col_);
 	}
-	else if(row_ == TableView::INVALID && col_ == TableView::INVALID)  // this node is config node maybe with groupId
+	else if(row_ == TableView::INVALID &&
+	        col_ == TableView::INVALID)  // this node is config node maybe with groupId
 	{
-		__SS__ << "Requesting getValue on config node level. Must be a value node. " << __E__;
+		__SS__ << "Requesting getValue on config node level. Must be a value node. "
+		       << __E__;
 		ss << nodeDump() << __E__;
 		__SS_THROW__;
 	}
@@ -51,7 +55,8 @@ void ConfigurationTree::getValue(T& value) const
 	}
 	else if(col_ == TableView::INVALID)  // this node is uid node
 	{
-		__SS__ << "Requesting getValue on uid node level. Must be a value node. " << __E__;
+		__SS__ << "Requesting getValue on uid node level. Must be a value node. "
+		       << __E__;
 
 		ss << nodeDump() << __E__;
 		__SS_THROW__;
@@ -94,7 +99,10 @@ T ConfigurationTree::getValueWithDefault(const T& defaultValue) const
 
 //==============================================================================
 template<typename T>
-T ConfigurationTree::handleValidateValueForColumn(const TableView* configView, std::string value, unsigned int col, ots::identity<T>) const
+T ConfigurationTree::handleValidateValueForColumn(const TableView* configView,
+                                                  std::string      value,
+                                                  unsigned int     col,
+                                                  ots::identity<T>) const
 {
 	if(!configView)
 	{

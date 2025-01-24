@@ -12,7 +12,6 @@
 #include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
 #include "otsdaq/WorkLoopManager/WorkLoopManager.h"
 
-
 #include "otsdaq/FiniteStateMachine/MakeRunInfo.h"        // for Run Info plugin macro
 #include "otsdaq/FiniteStateMachine/RunInfoVInterface.h"  // for Run Info plugins
 
@@ -44,7 +43,6 @@ using namespace ots;
 #define FSM_LAST_GROUP_ALIAS_FILE_START std::string("FSMLastGroupAlias-")
 #define FSM_USERS_PREFERENCES_FILETYPE "pref"
 
-
 #define REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME "RemoteSubsystems.txt"
 
 #undef __MF_SUBJECT__
@@ -53,7 +51,8 @@ using namespace ots;
 XDAQ_INSTANTIATOR_IMPL(GatewaySupervisor)
 
 WebUsers GatewaySupervisor::theWebUsers_ = WebUsers();
-std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>> GatewaySupervisor::broadcastThreadStructs_;
+std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>>
+    GatewaySupervisor::broadcastThreadStructs_;
 
 //==============================================================================
 GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
@@ -61,17 +60,18 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
     , SOAPMessenger(this)
     , RunControlStateMachine("GatewaySupervisor")
     , CorePropertySupervisorBase(this)
-    , stateMachineWorkLoopManager_(toolbox::task::bind(this, &GatewaySupervisor::stateMachineThread, "StateMachine"))
+    , stateMachineWorkLoopManager_(toolbox::task::bind(
+          this, &GatewaySupervisor::stateMachineThread, "StateMachine"))
     , stateMachineSemaphore_(toolbox::BSem::FULL)
     , activeStateMachineName_("")
     , theIterator_(this)
     , broadcastCommandMessageIndex_(0)
-    , broadcastIterationBreakpoint_(-1)  // for standard transitions, ignore the breakpoint
+    , broadcastIterationBreakpoint_(
+          -1)  // for standard transitions, ignore the breakpoint
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
 	__COUT__ << "Constructing" << __E__;
-	
 
 	if(0)  // to test xdaq exception what
 	{
@@ -112,16 +112,36 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 	xgi::bind(this, &GatewaySupervisor::loginRequest, "LoginRequest");
 	xgi::bind(this, &GatewaySupervisor::request, "Request");
 	xgi::bind(this, &GatewaySupervisor::stateMachineXgiHandler, "StateMachineXgiHandler");
-	xgi::bind(this, &GatewaySupervisor::stateMachineIterationBreakpoint, "StateMachineIterationBreakpoint");
+	xgi::bind(this,
+	          &GatewaySupervisor::stateMachineIterationBreakpoint,
+	          "StateMachineIterationBreakpoint");
 	xgi::bind(this, &GatewaySupervisor::tooltipRequest, "TooltipRequest");
-  	xgi::bind(this, &GatewaySupervisor::XGI_Turtle,	"XGI_Turtle");	
+	xgi::bind(this, &GatewaySupervisor::XGI_Turtle, "XGI_Turtle");
 
-	xoap::bind(this, &GatewaySupervisor::supervisorCookieCheck, "SupervisorCookieCheck", XDAQ_NS_URI);
-	xoap::bind(this, &GatewaySupervisor::supervisorGetActiveUsers, "SupervisorGetActiveUsers", XDAQ_NS_URI);
-	xoap::bind(this, &GatewaySupervisor::supervisorSystemMessage, "SupervisorSystemMessage", XDAQ_NS_URI);
-	xoap::bind(this, &GatewaySupervisor::supervisorSystemLogbookEntry, "SupervisorSystemLogbookEntry", XDAQ_NS_URI);
-	xoap::bind(this, &GatewaySupervisor::supervisorLastTableGroupRequest, "SupervisorLastTableGroupRequest", XDAQ_NS_URI);
-	xoap::bind(this, &GatewaySupervisor::TRACESupervisorRequest, "TRACESupervisorRequest", XDAQ_NS_URI);
+	xoap::bind(this,
+	           &GatewaySupervisor::supervisorCookieCheck,
+	           "SupervisorCookieCheck",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &GatewaySupervisor::supervisorGetActiveUsers,
+	           "SupervisorGetActiveUsers",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &GatewaySupervisor::supervisorSystemMessage,
+	           "SupervisorSystemMessage",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &GatewaySupervisor::supervisorSystemLogbookEntry,
+	           "SupervisorSystemLogbookEntry",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &GatewaySupervisor::supervisorLastTableGroupRequest,
+	           "SupervisorLastTableGroupRequest",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &GatewaySupervisor::TRACESupervisorRequest,
+	           "TRACESupervisorRequest",
+	           XDAQ_NS_URI);
 
 	init();
 
@@ -135,31 +155,46 @@ GatewaySupervisor::~GatewaySupervisor(void)
 	delete CorePropertySupervisorBase::theConfigurationManager_;
 
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try
+	{
+		doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 
-	if(doLog) makeSystemLogEntry("ots shutdown.");
+	if(doLog)
+		makeSystemLogEntry("ots shutdown.");
 }  // end destructor
 
 //==============================================================================
 //For Wizard Supervisor to call
-void GatewaySupervisor::indicateOtsAlive(const CorePropertySupervisorBase* properties) { CorePropertySupervisorBase::indicateOtsAlive(properties); }
+void GatewaySupervisor::indicateOtsAlive(const CorePropertySupervisorBase* properties)
+{
+	CorePropertySupervisorBase::indicateOtsAlive(properties);
+}
 
 //==============================================================================
 void GatewaySupervisor::init(void)
 {
 	supervisorGuiHasBeenLoaded_ = false;
-	
+
 	//Initialize the variable used by the RunInfo plugin
 	conditionID_ = (unsigned int)-1;
 
 	// setting up thread for UDP thread to drive state machine
 	{
 		bool enableStateChanges = false;
-		bool enableLoginVerify = false;
+		bool enableLoginVerify  = false;
 		try
 		{
-			enableStateChanges = CorePropertySupervisorBase::getSupervisorTableNode().getNode("EnableStateChangesOverUDP").getValue<bool>();
-			enableLoginVerify = CorePropertySupervisorBase::getSupervisorTableNode().getNode("EnableAckForStateChangesOverUDP").getValue<bool>();
+			enableStateChanges = CorePropertySupervisorBase::getSupervisorTableNode()
+			                         .getNode("EnableStateChangesOverUDP")
+			                         .getValue<bool>();
+			enableLoginVerify = CorePropertySupervisorBase::getSupervisorTableNode()
+			                        .getNode("EnableAckForStateChangesOverUDP")
+			                        .getValue<bool>();
 		}
 		catch(...)
 		{
@@ -172,14 +207,19 @@ void GatewaySupervisor::init(void)
 				__COUT_INFO__ << "Enabling state changes over UDP..." << __E__;
 			else if(enableLoginVerify)
 			{
-				__COUT_INFO__ << "Enabling this Gateway as source of primary login verification over UDP..." << __E__;
+				__COUT_INFO__ << "Enabling this Gateway as source of primary login "
+				                 "verification over UDP..."
+				              << __E__;
 
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				loadRemoteGatewaySettings(remoteGatewayApps_);
 			}
 
 			// start state changer UDP listener thread
-			std::thread([](GatewaySupervisor* s) { GatewaySupervisor::StateChangerWorkLoop(s); }, this).detach();
+			std::thread(
+			    [](GatewaySupervisor* s) { GatewaySupervisor::StateChangerWorkLoop(s); },
+			    this)
+			    .detach();
 		}
 		else
 			__COUT__ << "State changes over UDP are disabled." << __E__;
@@ -190,7 +230,9 @@ void GatewaySupervisor::init(void)
 		bool checkAppStatus = false;
 		try
 		{
-			checkAppStatus = CorePropertySupervisorBase::getSupervisorTableNode().getNode("EnableApplicationStatusMonitoring").getValue<bool>();
+			checkAppStatus = CorePropertySupervisorBase::getSupervisorTableNode()
+			                     .getNode("EnableApplicationStatusMonitoring")
+			                     .getValue<bool>();
 		}
 		catch(...)
 		{
@@ -201,7 +243,10 @@ void GatewaySupervisor::init(void)
 		{
 			__COUT__ << "Enabling App Status checking..." << __E__;
 			//
-			std::thread([](GatewaySupervisor* s) { GatewaySupervisor::AppStatusWorkLoop(s); }, this).detach();
+			std::thread(
+			    [](GatewaySupervisor* s) { GatewaySupervisor::AppStatusWorkLoop(s); },
+			    this)
+			    .detach();
 		}
 		else
 		{
@@ -211,7 +256,11 @@ void GatewaySupervisor::init(void)
 			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
 			{
 				auto appInfo = it.second;
-				allSupervisorInfo_.setSupervisorStatus(appInfo, SupervisorInfo::APP_STATUS_NOT_MONITORED, 0 /* progressInteger */, "" /* detail */);
+				allSupervisorInfo_.setSupervisorStatus(
+				    appInfo,
+				    SupervisorInfo::APP_STATUS_NOT_MONITORED,
+				    0 /* progressInteger */,
+				    "" /* detail */);
 			}
 		}
 
@@ -226,21 +275,22 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 {
 	sleep(5);  // wait for apps to get started
 
-	bool        firstError = true;
-	std::string status, progress, detail, appName;
+	bool                                    firstError = true;
+	std::string                             status, progress, detail, appName;
 	std::vector<SupervisorInfo::SubappInfo> subapps;
-	int         progressInteger;
-	bool        oneStatusReqHasFailed = false;
-	size_t		loopCount = -1; //first time through loop will be 0
+	int                                     progressInteger;
+	bool                                    oneStatusReqHasFailed = false;
+	size_t loopCount = -1;  //first time through loop will be 0
 
 	std::map<std::string /* appName */, bool /* lastStatusGood */> appLastStatusGood;
 
-	std::unique_ptr<TransceiverSocket> remoteGatewaySocket; //use to get remote gateway status
-	bool resetRemoteGatewayApps = false;
-	bool commandingRemoteGatewayApps = false;
-	size_t commandRemoteIdleCount = 0;
-	int portForReverseLoginOverUDP = 0; //if 0, then not reverse login not enabled
-	std::string ipAddressForStateChangesOverUDP = ""; //if "", then not enabled
+	std::unique_ptr<TransceiverSocket>
+	       remoteGatewaySocket;  //use to get remote gateway status
+	bool   resetRemoteGatewayApps      = false;
+	bool   commandingRemoteGatewayApps = false;
+	size_t commandRemoteIdleCount      = 0;
+	int    portForReverseLoginOverUDP  = 0;  //if 0, then not reverse login not enabled
+	std::string ipAddressForStateChangesOverUDP = "";  //if "", then not enabled
 
 	while(1)
 	{
@@ -270,80 +320,112 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 				try
 				{
 					// send back status and progress parameters
-					const std::string& err = theSupervisor->theStateMachine_.getErrorMessage();
+					const std::string& err =
+					    theSupervisor->theStateMachine_.getErrorMessage();
 					try
 					{
-						__COUTVS__(39,theSupervisor->theStateMachine_.isInTransition());
+						__COUTVS__(39, theSupervisor->theStateMachine_.isInTransition());
 						if(theSupervisor->theStateMachine_.isInTransition())
-							__COUTVS__(39,theSupervisor->theStateMachine_.getCurrentTransitionName());
-						__COUTVS__(39,theSupervisor->theStateMachine_.getProvenanceStateName());
-						__COUTVS__(39,theSupervisor->theStateMachine_.getCurrentStateName());
+							__COUTVS__(39,
+							           theSupervisor->theStateMachine_
+							               .getCurrentTransitionName());
+						__COUTVS__(
+						    39, theSupervisor->theStateMachine_.getProvenanceStateName());
+						__COUTVS__(39,
+						           theSupervisor->theStateMachine_.getCurrentStateName());
 					}
 					catch(...)
-					{;}
-					
+					{
+						;
+					}
+
 					if(err == "")
 					{
-						if(theSupervisor->theStateMachine_.isInTransition())// || theSupervisor->theProgressBar_.read() < 100)
+						if(theSupervisor->theStateMachine_
+						       .isInTransition())  // || theSupervisor->theProgressBar_.read() < 100)
 						{
 							// attempt to get transition name, otherwise give provenance state
 							try
 							{
-								status = theSupervisor->theStateMachine_.getCurrentTransitionName();
+								status = theSupervisor->theStateMachine_
+								             .getCurrentTransitionName();
 							}
 							catch(...)
 							{
-								status = theSupervisor->theStateMachine_.getProvenanceStateName();
+								status = theSupervisor->theStateMachine_
+								             .getProvenanceStateName();
 							}
-							progress = theSupervisor->theProgressBar_.readPercentageString();
+							progress =
+							    theSupervisor->theProgressBar_.readPercentageString();
 						}
 						else
 						{
-							status = theSupervisor->theStateMachine_.getCurrentStateName();
-							progress = "100"; //if not in transition, then 100
+							status =
+							    theSupervisor->theStateMachine_.getCurrentStateName();
+							progress = "100";  //if not in transition, then 100
 						}
 					}
 					else
 					{
-						status = (theSupervisor->theStateMachine_.getCurrentStateName() == RunControlStateMachine::PAUSED_STATE_NAME ? 
-							"Soft-Error:::" : "Failed:::") + err;
+						status = (theSupervisor->theStateMachine_.getCurrentStateName() ==
+						                  RunControlStateMachine::PAUSED_STATE_NAME
+						              ? "Soft-Error:::"
+						              : "Failed:::") +
+						         err;
 						progress = theSupervisor->theProgressBar_.readPercentageString();
 					}
 
-					__COUTVS__(39,status);
-					__COUTVS__(39,progress);
+					__COUTVS__(39, status);
+					__COUTVS__(39, progress);
 
 					try
 					{
-						detail = (theSupervisor->theStateMachine_.isInTransition()
-									? theSupervisor->theStateMachine_.getCurrentTransitionName(theSupervisor->stateMachineLastCommandInput_)
-									: 
-									(std::string("Uptime: ") +
-									StringMacros::getTimeDurationString(
-										theSupervisor->CorePropertySupervisorBase::getSupervisorUptime()) +
-									", Time-in-state: " +
-									StringMacros::getTimeDurationString(
-										theSupervisor->theStateMachine_.getTimeInState())
-									));
+						detail =
+						    (theSupervisor->theStateMachine_.isInTransition()
+						         ? theSupervisor->theStateMachine_
+						               .getCurrentTransitionName(
+						                   theSupervisor->stateMachineLastCommandInput_)
+						         : (std::string("Uptime: ") +
+						            StringMacros::getTimeDurationString(
+						                theSupervisor->CorePropertySupervisorBase::
+						                    getSupervisorUptime()) +
+						            ", Time-in-state: " +
+						            StringMacros::getTimeDurationString(
+						                theSupervisor->theStateMachine_
+						                    .getTimeInState())));
 						// make sure broadcast message status is not being updated
-						std::lock_guard<std::mutex> lock(theSupervisor->broadcastCommandStatusUpdateMutex_);
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->broadcastCommandStatusUpdateMutex_);
 						if(detail != "" && theSupervisor->broadcastCommandStatus_ != "")
 							detail += " - " + theSupervisor->broadcastCommandStatus_;
 
-						if(!theSupervisor->theStateMachine_.isInTransition() && (
-							theSupervisor->theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::CONFIGURED_STATE_NAME ||
-							theSupervisor->theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::RUNNING_STATE_NAME ||
-							theSupervisor->theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::PAUSED_STATE_NAME))
+						if(!theSupervisor->theStateMachine_.isInTransition() &&
+						   (theSupervisor->theStateMachine_.getCurrentStateName() ==
+						        RunControlStateMachine::CONFIGURED_STATE_NAME ||
+						    theSupervisor->theStateMachine_.getCurrentStateName() ==
+						        RunControlStateMachine::RUNNING_STATE_NAME ||
+						    theSupervisor->theStateMachine_.getCurrentStateName() ==
+						        RunControlStateMachine::PAUSED_STATE_NAME))
 						{
-							//add Configuration details 
-							detail += " - Configured with System Configuration Alias '" + theSupervisor->activeStateMachineConfigurationAlias_ + 
-								"' which translates to " + theSupervisor->theConfigurationTableGroup_.first + "(" + theSupervisor->theConfigurationTableGroup_.second.str()
-								+ "). Active Context Group " +
-								theSupervisor->CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
-									ConfigurationManager::GroupType::CONTEXT_TYPE) + "(" + 
-								theSupervisor->CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
-									ConfigurationManager::GroupType::CONTEXT_TYPE).str() +
-									").";
+							//add Configuration details
+							detail +=
+							    " - Configured with System Configuration Alias '" +
+							    theSupervisor->activeStateMachineConfigurationAlias_ +
+							    "' which translates to " +
+							    theSupervisor->theConfigurationTableGroup_.first + "(" +
+							    theSupervisor->theConfigurationTableGroup_.second.str() +
+							    "). Active Context Group " +
+							    theSupervisor
+							        ->CorePropertySupervisorBase::theConfigurationManager_
+							        ->getActiveGroupName(
+							            ConfigurationManager::GroupType::CONTEXT_TYPE) +
+							    "(" +
+							    theSupervisor
+							        ->CorePropertySupervisorBase::theConfigurationManager_
+							        ->getActiveGroupKey(
+							            ConfigurationManager::GroupType::CONTEXT_TYPE)
+							        .str() +
+							    ").";
 						}
 					}
 					catch(...)
@@ -351,9 +433,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						detail = "";
 					}
 
-					std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps; //local copy to avoid long mutex lock
-					{ //lock for remainder of scope
-						std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);		
+					std::vector<GatewaySupervisor::RemoteGatewayInfo>
+					    remoteApps;  //local copy to avoid long mutex lock
+					{                //lock for remainder of scope
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->remoteGatewayAppsMutex_);
 						remoteApps = theSupervisor->remoteGatewayApps_;
 
 						//check for commands
@@ -368,180 +452,234 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 									break;
 								}
 							}
-						}	
+						}
 					}
-					__COUTVS__(38,commandingRemoteGatewayApps);
+					__COUTVS__(38, commandingRemoteGatewayApps);
 
 					//Add sub-apps for each Remote Gateway specified as a Remote Desktop Icon
 					if((!commandingRemoteGatewayApps && loopCount % 20 == 0) ||
-						loopCount == 0) //periodically refresh Remote Gateway list based on icon list
-					{					
-
+					   loopCount ==
+					       0)  //periodically refresh Remote Gateway list based on icon list
+					{
 						// use latest context always from temporary configuration manager,
 						//	to get updated icons every time...
 						//(so icon changes do no require an ots restart)
-						ConfigurationManager                              tmpCfgMgr; // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
-						const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
-						const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
-																		
+						ConfigurationManager
+						    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
+						const DesktopIconTable* iconTable =
+						    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
+						const std::vector<DesktopIconTable::DesktopIcon>& icons =
+						    iconTable->getAllDesktopIcons();
+
 						for(auto& remoteGatewayApp : remoteApps)
-							remoteGatewayApp.appInfo.status = ""; //clear status, to be used to remove remote gateways no longer targeted
+							remoteGatewayApp.appInfo.status =
+							    "";  //clear status, to be used to remove remote gateways no longer targeted
 
 						resetRemoteGatewayApps = true;
 
 						for(const auto& icon : icons)
 						{
 							__COUTTV__(icon.windowContentURL_);
-							if(icon.windowContentURL_.size() > 4 && 
-								icon.windowContentURL_[0] == 'o' &&
-								icon.windowContentURL_[1] == 't' &&
-								icon.windowContentURL_[2] == 's' &&
-								icon.windowContentURL_[3] == ':')
+							if(icon.windowContentURL_.size() > 4 &&
+							   icon.windowContentURL_[0] == 'o' &&
+							   icon.windowContentURL_[1] == 't' &&
+							   icon.windowContentURL_[2] == 's' &&
+							   icon.windowContentURL_[3] == ':')
 							{
-								__COUT__ << "Found '" << icon.recordUID_ << "' remote gateway icons url: " << icon.windowContentURL_ << __E__;
-								
+								__COUT__ << "Found '" << icon.recordUID_
+								         << "' remote gateway icons url: "
+								         << icon.windowContentURL_ << __E__;
+
 								GatewaySupervisor::RemoteGatewayInfo thisInfo;
 
-								std::string remoteURL = icon.windowContentURL_;
+								std::string remoteURL         = icon.windowContentURL_;
 								std::string remoteLandingPage = "";
-								std::string remoteSetupType = "";
+								std::string remoteSetupType   = "";
 								//remote ? parameters from remoteURL
 								if(remoteURL.find('?') != std::string::npos)
 								{
-									__COUT__ << "Extracting GET ? parameters from remote url." << __E__;
-									std::vector<std::string> urlSplit = StringMacros::getVectorFromString(
-										remoteURL, {'?'});
+									__COUT__
+									    << "Extracting GET ? parameters from remote url."
+									    << __E__;
+									std::vector<std::string> urlSplit =
+									    StringMacros::getVectorFromString(remoteURL,
+									                                      {'?'});
 									if(urlSplit.size() > 0)
-										remoteURL = urlSplit[0]; 
+										remoteURL = urlSplit[0];
 									if(urlSplit.size() > 1)
 									{
-										//look for 'LandingPage' parameter										
-										std::vector<std::string> parameterPairs = StringMacros::getVectorFromString(
-												urlSplit[1], {'&'});
+										//look for 'LandingPage' parameter
+										std::vector<std::string> parameterPairs =
+										    StringMacros::getVectorFromString(urlSplit[1],
+										                                      {'&'});
 										for(const auto& parameterPair : parameterPairs)
 										{
-											std::vector<std::string> parameterPairSplit = StringMacros::getVectorFromString(
-												parameterPair, {'='});
+											std::vector<std::string> parameterPairSplit =
+											    StringMacros::getVectorFromString(
+											        parameterPair, {'='});
 											if(parameterPairSplit.size() == 2)
 											{
-												__COUT__ << "Found remote URL parameter " << parameterPairSplit[0] << 
-													", " << parameterPairSplit[1] << __E__;
+												__COUT__ << "Found remote URL parameter "
+												         << parameterPairSplit[0] << ", "
+												         << parameterPairSplit[1]
+												         << __E__;
 												if(parameterPairSplit[0] == "LandingPage")
 												{
-													remoteLandingPage = StringMacros::decodeURIComponent(parameterPairSplit[1]);
-													if(remoteLandingPage.find(icon.folderPath_) != 0)
-														remoteLandingPage = icon.folderPath_ + "/" + remoteLandingPage;
-													__COUT__ << "Found landing page " << remoteLandingPage << 
-														" for " << icon.recordUID_ << __E__;
+													remoteLandingPage =
+													    StringMacros::decodeURIComponent(
+													        parameterPairSplit[1]);
+													if(remoteLandingPage.find(
+													       icon.folderPath_) != 0)
+														remoteLandingPage =
+														    icon.folderPath_ + "/" +
+														    remoteLandingPage;
+													__COUT__ << "Found landing page "
+													         << remoteLandingPage
+													         << " for " << icon.recordUID_
+													         << __E__;
 												}
 												if(parameterPairSplit[0] == "SetupType")
 												{
-													remoteSetupType = StringMacros::decodeURIComponent(parameterPairSplit[1]);
+													remoteSetupType =
+													    StringMacros::decodeURIComponent(
+													        parameterPairSplit[1]);
 
-													__COUT__ << "Found setup_ots.sh type " << remoteSetupType << 
-														" for " << icon.recordUID_ << __E__;
+													__COUT__ << "Found setup_ots.sh type "
+													         << remoteSetupType << " for "
+													         << icon.recordUID_ << __E__;
 												}
 											}
 										}
 									}
-								} //end remote URL parameter handling
+								}  //end remote URL parameter handling
 
-								thisInfo.appInfo.name = icon.recordUID_;							
-								thisInfo.appInfo.status = SupervisorInfo::APP_STATUS_UNKNOWN;		
-								thisInfo.appInfo.progress = 0;			
-								thisInfo.appInfo.detail = "";
-								thisInfo.appInfo.url = remoteURL; //icon.windowContentURL_;
-								thisInfo.appInfo.class_name = "Remote Gateway";
+								thisInfo.appInfo.name = icon.recordUID_;
+								thisInfo.appInfo.status =
+								    SupervisorInfo::APP_STATUS_UNKNOWN;
+								thisInfo.appInfo.progress = 0;
+								thisInfo.appInfo.detail   = "";
+								thisInfo.appInfo.url =
+								    remoteURL;  //icon.windowContentURL_;
+								thisInfo.appInfo.class_name     = "Remote Gateway";
 								thisInfo.appInfo.lastStatusTime = time(0);
 
 								thisInfo.user_data_path_record = icon.alternateText_;
-								thisInfo.parentIconFolderPath = icon.folderPath_;	
-								thisInfo.permissionThresholdString = icon.permissionThresholdString_;
-								thisInfo.landingPage = remoteLandingPage;		
-								thisInfo.setupType = remoteSetupType;
+								thisInfo.parentIconFolderPath  = icon.folderPath_;
+								thisInfo.permissionThresholdString =
+								    icon.permissionThresholdString_;
+								thisInfo.landingPage = remoteLandingPage;
+								thisInfo.setupType   = remoteSetupType;
 
 								try
-								{																		
-									tmpCfgMgr.getOtherSubsystemInstanceInfo(thisInfo.user_data_path_record,
-										&thisInfo.instancePath,
-										&thisInfo.instanceHost,
-										&thisInfo.instanceUser,
-										&thisInfo.fullName
-									);
+								{
+									tmpCfgMgr.getOtherSubsystemInstanceInfo(
+									    thisInfo.user_data_path_record,
+									    &thisInfo.instancePath,
+									    &thisInfo.instanceHost,
+									    &thisInfo.instanceUser,
+									    &thisInfo.fullName);
 								}
-								catch(...) {;} //ignore any errors getting full name and instance info
-								
-												
+								catch(...)
+								{
+									;
+								}  //ignore any errors getting full name and instance info
 
 								//replace or add to local copy of supervisor remote gateway list (control info will be protected later, after status update, with final copy to real list)
-								bool found = false;
-								size_t i = 0;
+								bool   found = false;
+								size_t i     = 0;
 								for(; i < remoteApps.size(); ++i)
-								{	
-									if(thisInfo.appInfo.name == remoteApps[i].appInfo.name)
+								{
+									if(thisInfo.appInfo.name ==
+									   remoteApps[i].appInfo.name)
 									{
 										found = true;
 
 										//overwrite with refreshed info
 										remoteApps[i].appInfo = thisInfo.appInfo;
-										remoteApps[i].user_data_path_record = thisInfo.user_data_path_record;
-										remoteApps[i].parentIconFolderPath = thisInfo.parentIconFolderPath;
-										remoteApps[i].permissionThresholdString = thisInfo.permissionThresholdString;
+										remoteApps[i].user_data_path_record =
+										    thisInfo.user_data_path_record;
+										remoteApps[i].parentIconFolderPath =
+										    thisInfo.parentIconFolderPath;
+										remoteApps[i].permissionThresholdString =
+										    thisInfo.permissionThresholdString;
 										remoteApps[i].landingPage = thisInfo.landingPage;
-										remoteApps[i].setupType = thisInfo.setupType;
-										remoteApps[i].fullName = thisInfo.fullName;
-										remoteApps[i].instancePath = thisInfo.instancePath;
-										remoteApps[i].instanceHost = thisInfo.instanceHost;
-										remoteApps[i].instanceUser = thisInfo.instanceUser;
+										remoteApps[i].setupType   = thisInfo.setupType;
+										remoteApps[i].fullName    = thisInfo.fullName;
+										remoteApps[i].instancePath =
+										    thisInfo.instancePath;
+										remoteApps[i].instanceHost =
+										    thisInfo.instanceHost;
+										remoteApps[i].instanceUser =
+										    thisInfo.instanceUser;
 
 										break;
 									}
 								}
 
-								if(!found) //add
+								if(!found)  //add
 									remoteApps.push_back(thisInfo);
 
 								//if possible, get CSV list of potential config_aliases (for dropdown)
 								try
 								{
 									__COUTTV__(remoteApps[i].fsmName);
-									remoteApps[i].config_aliases = tmpCfgMgr.getOtherSubsystemConfigAliases(remoteApps[i].user_data_path_record);//getOtherSubsystemFilteredConfigAliases(remoteApps[i].user_data_path_record, remoteApps[i].fsmName);
-									__COUTV__(StringMacros::setToString(thisInfo.config_aliases));
-									if(remoteApps[i].config_aliases.size()) //initialize selected alias in case it is needed (selected alias will be verified at final copy)
-										remoteApps[i].selected_config_alias = *(remoteApps[i].config_aliases.begin());
+									remoteApps[i].config_aliases =
+									    tmpCfgMgr.getOtherSubsystemConfigAliases(
+									        remoteApps[i]
+									            .user_data_path_record);  //getOtherSubsystemFilteredConfigAliases(remoteApps[i].user_data_path_record, remoteApps[i].fsmName);
+									__COUTV__(StringMacros::setToString(
+									    thisInfo.config_aliases));
+									if(remoteApps[i]
+									       .config_aliases
+									       .size())  //initialize selected alias in case it is needed (selected alias will be verified at final copy)
+										remoteApps[i].selected_config_alias =
+										    *(remoteApps[i].config_aliases.begin());
 								}
 								catch(const std::runtime_error& e)
 								{
-									__SS__ << "Failed to retrieve the list of Configuration Aliases for Remote Subsystem '" <<
-										remoteApps[i].appInfo.name << ".' Remote Subsystems are specified through their Desktop Icon record. "
-										"Please specify a valid User Data Path record as the Desktop Icon AlternateText field, targeting a UID in the SubsystemUserDataPathsTable." << __E__;
+									__SS__
+									    << "Failed to retrieve the list of Configuration "
+									       "Aliases for Remote Subsystem '"
+									    << remoteApps[i].appInfo.name
+									    << ".' Remote Subsystems are specified through "
+									       "their Desktop Icon record. "
+									       "Please specify a valid User Data Path record "
+									       "as the Desktop Icon AlternateText field, "
+									       "targeting a UID in the "
+									       "SubsystemUserDataPathsTable."
+									    << __E__;
 									ss << "\n\nHere was the error: " << e.what() << __E__;
 									__COUT__ << ss.str();
 									remoteApps[i].error = ss.str();
-									
+
 									//give feedback immediately to user!!
 									{
 										__COUTV__(remoteApps[i].error);
 										//lock for remainder of scope
-										std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
-										for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-											if(remoteApps[i].appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+										std::lock_guard<std::mutex> lock(
+										    theSupervisor->remoteGatewayAppsMutex_);
+										for(size_t i = 0;
+										    i < theSupervisor->remoteGatewayApps_.size();
+										    ++i)
+											if(remoteApps[i].appInfo.name ==
+											   theSupervisor->remoteGatewayApps_[i]
+											       .appInfo.name)
 											{
-												theSupervisor->remoteGatewayApps_[i].error = remoteApps[i].error; 							
+												theSupervisor->remoteGatewayApps_[i]
+												    .error = remoteApps[i].error;
 												break;
 											}
 									}
-								}			
+								}
 
+							}  //end remote icon handling
 
-							} //end remote icon handling
-
-						} //end icon loop
+						}  //end icon loop
 
 						//clean up stale remoteGatewayApps with blank status
 						bool remoteAppsExist = false;
 						for(size_t i = 0; i < remoteApps.size(); ++i)
-						{	
+						{
 							if(remoteApps[i].appInfo.status == "")
 							{
 								//rewind and erase
@@ -551,66 +689,100 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 						remoteAppsExist = remoteApps.size();
 
-						if(remoteAppsExist && !remoteGatewaySocket) //instantiate socket first time there are remote apps
+						if(remoteAppsExist &&
+						   !remoteGatewaySocket)  //instantiate socket first time there are remote apps
 						{
-							__COUT_INFO__ << "Instantiating Remote Gateway App Status Socket!" << __E__;
-							ConfigurationTree configLinkNode = theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
-							ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
+							__COUT_INFO__
+							    << "Instantiating Remote Gateway App Status Socket!"
+							    << __E__;
+							ConfigurationTree configLinkNode =
+							    theSupervisor->CorePropertySupervisorBase::
+							        getSupervisorTableNode();
+							ipAddressForStateChangesOverUDP =
+							    configLinkNode.getNode("IPAddressForStateChangesOverUDP")
+							        .getValue<std::string>();
 							__COUTTV__(ipAddressForStateChangesOverUDP);
-							
-							//check if allowing reverse login verification from remote Gateways to this Gateway							
-							if(theSupervisor->theWebUsers_.getSecurity() == WebUsers::SECURITY_TYPE_DIGEST_ACCESS)
+
+							//check if allowing reverse login verification from remote Gateways to this Gateway
+							if(theSupervisor->theWebUsers_.getSecurity() ==
+							   WebUsers::SECURITY_TYPE_DIGEST_ACCESS)
 							{
-								bool enableLoginVerify = configLinkNode.getNode("EnableAckForStateChangesOverUDP").getValue<bool>();
+								bool enableLoginVerify =
+								    configLinkNode
+								        .getNode("EnableAckForStateChangesOverUDP")
+								        .getValue<bool>();
 
 								if(enableLoginVerify)
 								{
-									portForReverseLoginOverUDP = configLinkNode.getNode("PortForStateChangesOverUDP").getValue<int>();
+									portForReverseLoginOverUDP =
+									    configLinkNode
+									        .getNode("PortForStateChangesOverUDP")
+									        .getValue<int>();
 									if(portForReverseLoginOverUDP)
-										__COUT_INFO__ << "Enabling reverse login verification for Remote Gateways at " <<
-											ipAddressForStateChangesOverUDP << ":" << 
-											portForReverseLoginOverUDP << __E__;
+										__COUT_INFO__
+										    << "Enabling reverse login verification for "
+										       "Remote Gateways at "
+										    << ipAddressForStateChangesOverUDP << ":"
+										    << portForReverseLoginOverUDP << __E__;
 								}
 								else
 								{
-									__COUT_WARN__ << "Remote login verification at this Gateway, for other Remote Gateways, is not enabled unless the GatewaySupervisor has 'EnableStateChangesOverUDP' enabled." << __E__;
+									__COUT_WARN__
+									    << "Remote login verification at this Gateway, "
+									       "for other Remote Gateways, is not enabled "
+									       "unless the GatewaySupervisor has "
+									       "'EnableStateChangesOverUDP' enabled."
+									    << __E__;
 								}
 							}
-							remoteGatewaySocket = std::make_unique<TransceiverSocket>(ipAddressForStateChangesOverUDP);
+							remoteGatewaySocket = std::make_unique<TransceiverSocket>(
+							    ipAddressForStateChangesOverUDP);
 							remoteGatewaySocket->initialize();
 						}
 
-					} //end periodic Remote Gateway refresh
+					}  //end periodic Remote Gateway refresh
 
-
-					//for each remote gateway, request app status with "GetRemoteAppStatus"	
-					if(loopCount % 3 == 0 || resetRemoteGatewayApps || //a little less frequently
-						commandingRemoteGatewayApps)
+					//for each remote gateway, request app status with "GetRemoteAppStatus"
+					if(loopCount % 3 == 0 ||
+					   resetRemoteGatewayApps ||  //a little less frequently
+					   commandingRemoteGatewayApps)
 					{
-						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(38,theSupervisor->remoteGatewayApps_[0].error);
+						if(theSupervisor->remoteGatewayApps_.size())
+							__COUTVS__(38, theSupervisor->remoteGatewayApps_[0].error);
 
 						//check for commands first
 						bool commandSent = false;
 
-						for(auto& remoteGatewayApp : remoteApps)	
+						for(auto& remoteGatewayApp : remoteApps)
 							if(remoteGatewayApp.command != "")
 							{
-								GatewaySupervisor::SendRemoteGatewayCommand(remoteGatewayApp, remoteGatewaySocket);
+								GatewaySupervisor::SendRemoteGatewayCommand(
+								    remoteGatewayApp, remoteGatewaySocket);
 								if(remoteGatewayApp.error == "")
 								{
-									remoteGatewayApp.ignoreStatusCount = 0; //if non-zero, do not ask for status
+									remoteGatewayApp.ignoreStatusCount =
+									    0;  //if non-zero, do not ask for status
 									commandSent = true;
 								}
-								
+
 								//give feedback immediately to user!!
 								{
-									__COUT__ << "remoteGatewayApp " << remoteGatewayApp.appInfo.name << " error: " << remoteGatewayApp.error << __E__;
+									__COUT__ << "remoteGatewayApp "
+									         << remoteGatewayApp.appInfo.name
+									         << " error: " << remoteGatewayApp.error
+									         << __E__;
 									//lock for remainder of scope
-									std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
-									for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-										if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->remoteGatewayAppsMutex_);
+									for(size_t i = 0;
+									    i < theSupervisor->remoteGatewayApps_.size();
+									    ++i)
+										if(remoteGatewayApp.appInfo.name ==
+										   theSupervisor->remoteGatewayApps_[i]
+										       .appInfo.name)
 										{
-											theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 										
+											theSupervisor->remoteGatewayApps_[i].error =
+											    remoteGatewayApp.error;
 											break;
 										}
 								}
@@ -618,47 +790,67 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 						if(commandSent)
 						{
-							commandRemoteIdleCount = 0; //reset
-							sleep(1); //gives some time for command to sink in
+							commandRemoteIdleCount = 0;  //reset
+							sleep(1);  //gives some time for command to sink in
 						}
-						
-						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(38,theSupervisor->remoteGatewayApps_[0].error);
+
+						if(theSupervisor->remoteGatewayApps_.size())
+							__COUTVS__(38, theSupervisor->remoteGatewayApps_[0].error);
 
 						//then get status
-						bool allAppsAreIdle = true;
+						bool allAppsAreIdle    = true;
 						bool allApssAreUnknown = true;
-						for(auto& remoteGatewayApp : remoteApps)		
+						for(auto& remoteGatewayApp : remoteApps)
 						{
-							GatewaySupervisor::CheckRemoteGatewayStatus(remoteGatewayApp, remoteGatewaySocket, ipAddressForStateChangesOverUDP, portForReverseLoginOverUDP);
-							if(remoteGatewayApp.appInfo.status != SupervisorInfo::APP_STATUS_UNKNOWN)
+							GatewaySupervisor::CheckRemoteGatewayStatus(
+							    remoteGatewayApp,
+							    remoteGatewaySocket,
+							    ipAddressForStateChangesOverUDP,
+							    portForReverseLoginOverUDP);
+							if(remoteGatewayApp.appInfo.status !=
+							   SupervisorInfo::APP_STATUS_UNKNOWN)
 							{
 								allApssAreUnknown = false;
-								if(!appLastStatusGood[remoteGatewayApp.appInfo.url + remoteGatewayApp.appInfo.name])
+								if(!appLastStatusGood[remoteGatewayApp.appInfo.url +
+								                      remoteGatewayApp.appInfo.name])
 								{
-									__COUT_INFO__ << "First good status from "
-											<< " Remote subapp = '" << remoteGatewayApp.appInfo.name 
-											<< "' [URL=" << remoteGatewayApp.appInfo.url << "].\n\n";							
+									__COUT_INFO__
+									    << "First good status from "
+									    << " Remote subapp = '"
+									    << remoteGatewayApp.appInfo.name
+									    << "' [URL=" << remoteGatewayApp.appInfo.url
+									    << "].\n\n";
 								}
-								appLastStatusGood[remoteGatewayApp.appInfo.url + remoteGatewayApp.appInfo.name] = true;
+								appLastStatusGood[remoteGatewayApp.appInfo.url +
+								                  remoteGatewayApp.appInfo.name] = true;
 
-								if(!(remoteGatewayApp.appInfo.progress == 0 ||  //if !(idle)
-								 	remoteGatewayApp.appInfo.progress == 100 ||
-									remoteGatewayApp.appInfo.status.find("Error") != std::string::npos || //	case "Failed", "Error", "Soft-Error"
-									remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
+								if(!(remoteGatewayApp.appInfo.progress ==
+								         0 ||  //if !(idle)
+								     remoteGatewayApp.appInfo.progress == 100 ||
+								     remoteGatewayApp.appInfo.status.find("Error") !=
+								         std::string::
+								             npos ||  //	case "Failed", "Error", "Soft-Error"
+								     remoteGatewayApp.appInfo.status.find("Fail") !=
+								         std::string::npos))
 								{
-									__COUT__ << remoteGatewayApp.appInfo.name << " not idle: " << 
-										remoteGatewayApp.appInfo.status << " progress: " << remoteGatewayApp.appInfo.progress << __E__;
+									__COUT__
+									    << remoteGatewayApp.appInfo.name << " not idle: "
+									    << remoteGatewayApp.appInfo.status
+									    << " progress: "
+									    << remoteGatewayApp.appInfo.progress << __E__;
 									allAppsAreIdle = false;
 								}
 							}
-							else //skip absent subsystems for a while
-								remoteGatewayApp.ignoreStatusCount = 3; //if non-zero, do not ask for status
-						} //end remote app status update loop
+							else  //skip absent subsystems for a while
+								remoteGatewayApp.ignoreStatusCount =
+								    3;  //if non-zero, do not ask for status
+						}               //end remote app status update loop
 
-						if(allApssAreUnknown) //then remove ignore status, and give user feedback faster
+						if(allApssAreUnknown)  //then remove ignore status, and give user feedback faster
 						{
 							for(auto& remoteGatewayApp : remoteApps)
-								remoteGatewayApp.ignoreStatusCount = 0; //if non-zero, do not ask for status
+								remoteGatewayApp.ignoreStatusCount =
+								    0;  //if non-zero, do not ask for status
 						}
 
 						if(commandingRemoteGatewayApps && allAppsAreIdle)
@@ -671,169 +863,264 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							}
 						}
 
-						__COUT_TYPE__(TLVL_DEBUG+38) << __COUT_HDR__ << "commandRemoteIdleCount " << commandRemoteIdleCount << " " << allAppsAreIdle << " " << commandingRemoteGatewayApps << __E__;
-						
-					} //end remote app status update
+						__COUT_TYPE__(TLVL_DEBUG + 38)
+						    << __COUT_HDR__ << "commandRemoteIdleCount "
+						    << commandRemoteIdleCount << " " << allAppsAreIdle << " "
+						    << commandingRemoteGatewayApps << __E__;
+
+					}  //end remote app status update
 
 					//if possible, get remote icon list for desktop from each remote app
 					if(resetRemoteGatewayApps)
 					{
-						__COUT_TYPE__(TLVL_DEBUG+35) << __COUT_HDR__ << "Attempting to get Remote Desktop Icons... size=" << remoteApps.size() << __E__; 
-						
+						__COUT_TYPE__(TLVL_DEBUG + 35)
+						    << __COUT_HDR__
+						    << "Attempting to get Remote Desktop Icons... size="
+						    << remoteApps.size() << __E__;
+
 						for(auto& remoteGatewayApp : remoteApps)
 						{
-							__COUTVS__(35,remoteGatewayApp.appInfo.name);
-							__COUTVS__(35,remoteGatewayApp.command);
-							if(remoteGatewayApp.command != "") continue; //skip if command to be sent
+							__COUTVS__(35, remoteGatewayApp.appInfo.name);
+							__COUTVS__(35, remoteGatewayApp.command);
+							if(remoteGatewayApp.command != "")
+								continue;  //skip if command to be sent
 
-							__COUT_TYPE__(TLVL_DEBUG+14) << __COUT_HDR__ << remoteGatewayApp.appInfo.name << ": " 
-								<< remoteGatewayApp.appInfo.status << __E__;
-							if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN) continue; //skip if no status yet
+							__COUT_TYPE__(TLVL_DEBUG + 14)
+							    << __COUT_HDR__ << remoteGatewayApp.appInfo.name << ": "
+							    << remoteGatewayApp.appInfo.status << __E__;
+							if(remoteGatewayApp.appInfo.status ==
+							   SupervisorInfo::APP_STATUS_UNKNOWN)
+								continue;  //skip if no status yet
 
-					
 							//clear any previous icon error
-							if(remoteGatewayApp.error.find("desktop icons") != std::string::npos)
+							if(remoteGatewayApp.error.find("desktop icons") !=
+							   std::string::npos)
 							{
 								__COUTV__(remoteGatewayApp.error);
 								//lock for remainder of scope
-								std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
-								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+								std::lock_guard<std::mutex> lock(
+								    theSupervisor->remoteGatewayAppsMutex_);
+								for(size_t i = 0;
+								    i < theSupervisor->remoteGatewayApps_.size();
+								    ++i)
+									if(remoteGatewayApp.appInfo.name ==
+									   theSupervisor->remoteGatewayApps_[i].appInfo.name)
 									{
-										theSupervisor->remoteGatewayApps_[i].error = ""; 		
-										__COUTV__(theSupervisor->remoteGatewayApps_[i].error);											
+										theSupervisor->remoteGatewayApps_[i].error = "";
+										__COUTV__(
+										    theSupervisor->remoteGatewayApps_[i].error);
 										break;
 									}
 								remoteGatewayApp.error = "";
 							}
 
-							if(remoteGatewayApp.error == "") //only request icons if no errors
+							if(remoteGatewayApp.error ==
+							   "")  //only request icons if no errors
 							{
-								GatewaySupervisor::GetRemoteGatewayIcons(remoteGatewayApp, remoteGatewaySocket);
-								if(remoteGatewayApp.error != "")//give feedback immediately to user!!
+								GatewaySupervisor::GetRemoteGatewayIcons(
+								    remoteGatewayApp, remoteGatewaySocket);
+								if(remoteGatewayApp.error !=
+								   "")  //give feedback immediately to user!!
 								{
 									__COUTV__(remoteGatewayApp.error);
 									//lock for remainder of scope
-									std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
-									for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-										if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->remoteGatewayAppsMutex_);
+									for(size_t i = 0;
+									    i < theSupervisor->remoteGatewayApps_.size();
+									    ++i)
+										if(remoteGatewayApp.appInfo.name ==
+										   theSupervisor->remoteGatewayApps_[i]
+										       .appInfo.name)
 										{
-											theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error; 					
+											theSupervisor->remoteGatewayApps_[i].error =
+											    remoteGatewayApp.error;
 											break;
 										}
 								}
 							}
 						}
 
-					} //end remote desktop icon gathering
-
+					}  //end remote desktop icon gathering
 
 					//for each remote gateway, copy info to Gateway supervisor remote gateway structure
-					if(loopCount % 3 == 0 || resetRemoteGatewayApps || //a little less frequently
-						commandingRemoteGatewayApps)
+					if(loopCount % 3 == 0 ||
+					   resetRemoteGatewayApps ||  //a little less frequently
+					   commandingRemoteGatewayApps)
 					{
-						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(37,theSupervisor->remoteGatewayApps_[0].error);
+						if(theSupervisor->remoteGatewayApps_.size())
+							__COUTVS__(37, theSupervisor->remoteGatewayApps_[0].error);
 
 						//replace info in supervisor remote gateway list
 						{
 							//lock for remainder of scope
-							std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);							
-							for(size_t i = 0; !commandingRemoteGatewayApps && i < theSupervisor->remoteGatewayApps_.size(); ++i)
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->remoteGatewayAppsMutex_);
+							for(size_t i = 0;
+							    !commandingRemoteGatewayApps &&
+							    i < theSupervisor->remoteGatewayApps_.size();
+							    ++i)
 							{
-								__COUTVS__(50,theSupervisor->remoteGatewayApps_[i].command);
-								if(theSupervisor->remoteGatewayApps_[i].command == "") //make sure not mid-command
-									theSupervisor->remoteGatewayApps_[i].appInfo.status = ""; //clear status as indicator to be erased
+								__COUTVS__(50,
+								           theSupervisor->remoteGatewayApps_[i].command);
+								if(theSupervisor->remoteGatewayApps_[i].command ==
+								   "")  //make sure not mid-command
+									theSupervisor->remoteGatewayApps_[i].appInfo.status =
+									    "";  //clear status as indicator to be erased
 							}
-								
 
-							for(auto& remoteGatewayApp : remoteApps)	
+							for(auto& remoteGatewayApp : remoteApps)
 							{
 								bool found = false;
-								for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-								{	
-									if(remoteGatewayApp.appInfo.name == theSupervisor->remoteGatewayApps_[i].appInfo.name)
+								for(size_t i = 0;
+								    i < theSupervisor->remoteGatewayApps_.size();
+								    ++i)
+								{
+									if(remoteGatewayApp.appInfo.name ==
+									   theSupervisor->remoteGatewayApps_[i].appInfo.name)
 									{
 										found = true;
-										//copy over updated status (but not control info, which may be have been changed while mutex was dropped)		
-										
-										if(remoteGatewayApp.command == "") //if there is action on command, then error is being set (request()) or cleared (send) somewhere else
-											theSupervisor->remoteGatewayApps_[i].error = remoteGatewayApp.error;	
+										//copy over updated status (but not control info, which may be have been changed while mutex was dropped)
 
-										theSupervisor->remoteGatewayApps_[i].ignoreStatusCount = remoteGatewayApp.ignoreStatusCount;	
-										theSupervisor->remoteGatewayApps_[i].consoleErrCount = remoteGatewayApp.consoleErrCount;	
-										theSupervisor->remoteGatewayApps_[i].consoleWarnCount = remoteGatewayApp.consoleWarnCount;	
+										if(remoteGatewayApp.command ==
+										   "")  //if there is action on command, then error is being set (request()) or cleared (send) somewhere else
+											theSupervisor->remoteGatewayApps_[i].error =
+											    remoteGatewayApp.error;
 
-										theSupervisor->remoteGatewayApps_[i].usernameWithLock = remoteGatewayApp.usernameWithLock;	
+										theSupervisor->remoteGatewayApps_[i]
+										    .ignoreStatusCount =
+										    remoteGatewayApp.ignoreStatusCount;
+										theSupervisor->remoteGatewayApps_[i]
+										    .consoleErrCount =
+										    remoteGatewayApp.consoleErrCount;
+										theSupervisor->remoteGatewayApps_[i]
+										    .consoleWarnCount =
+										    remoteGatewayApp.consoleWarnCount;
 
-										theSupervisor->remoteGatewayApps_[i].config_dump = remoteGatewayApp.config_dump;
+										theSupervisor->remoteGatewayApps_[i]
+										    .usernameWithLock =
+										    remoteGatewayApp.usernameWithLock;
 
-										theSupervisor->remoteGatewayApps_[i].user_data_path_record = remoteGatewayApp.user_data_path_record;
-										theSupervisor->remoteGatewayApps_[i].iconString = remoteGatewayApp.iconString;	
-										theSupervisor->remoteGatewayApps_[i].parentIconFolderPath = remoteGatewayApp.parentIconFolderPath;
-										theSupervisor->remoteGatewayApps_[i].permissionThresholdString = remoteGatewayApp.permissionThresholdString;	
-										theSupervisor->remoteGatewayApps_[i].landingPage = remoteGatewayApp.landingPage;	
-										theSupervisor->remoteGatewayApps_[i].setupType = remoteGatewayApp.setupType;	
-										theSupervisor->remoteGatewayApps_[i].fullName = remoteGatewayApp.fullName;	
-										theSupervisor->remoteGatewayApps_[i].instancePath = remoteGatewayApp.instancePath;	
-										theSupervisor->remoteGatewayApps_[i].instanceHost = remoteGatewayApp.instanceHost;
-										theSupervisor->remoteGatewayApps_[i].instanceUser = remoteGatewayApp.instanceUser;
-										
+										theSupervisor->remoteGatewayApps_[i].config_dump =
+										    remoteGatewayApp.config_dump;
+
+										theSupervisor->remoteGatewayApps_[i]
+										    .user_data_path_record =
+										    remoteGatewayApp.user_data_path_record;
+										theSupervisor->remoteGatewayApps_[i].iconString =
+										    remoteGatewayApp.iconString;
+										theSupervisor->remoteGatewayApps_[i]
+										    .parentIconFolderPath =
+										    remoteGatewayApp.parentIconFolderPath;
+										theSupervisor->remoteGatewayApps_[i]
+										    .permissionThresholdString =
+										    remoteGatewayApp.permissionThresholdString;
+										theSupervisor->remoteGatewayApps_[i].landingPage =
+										    remoteGatewayApp.landingPage;
+										theSupervisor->remoteGatewayApps_[i].setupType =
+										    remoteGatewayApp.setupType;
+										theSupervisor->remoteGatewayApps_[i].fullName =
+										    remoteGatewayApp.fullName;
+										theSupervisor->remoteGatewayApps_[i]
+										    .instancePath = remoteGatewayApp.instancePath;
+										theSupervisor->remoteGatewayApps_[i]
+										    .instanceHost = remoteGatewayApp.instanceHost;
+										theSupervisor->remoteGatewayApps_[i]
+										    .instanceUser = remoteGatewayApp.instanceUser;
+
 										//fix config_aliases and selected_config_alias
-										theSupervisor->remoteGatewayApps_[i].config_aliases = remoteGatewayApp.config_aliases;										
+										theSupervisor->remoteGatewayApps_[i]
+										    .config_aliases =
+										    remoteGatewayApp.config_aliases;
 										//if invalid selected_config_alias, renitialize for user
-										if(remoteGatewayApp.config_aliases.find(theSupervisor->remoteGatewayApps_[i].selected_config_alias) == remoteGatewayApp.config_aliases.end())
-											theSupervisor->remoteGatewayApps_[i].selected_config_alias = remoteGatewayApp.selected_config_alias;
+										if(remoteGatewayApp.config_aliases.find(
+										       theSupervisor->remoteGatewayApps_[i]
+										           .selected_config_alias) ==
+										   remoteGatewayApp.config_aliases.end())
+											theSupervisor->remoteGatewayApps_[i]
+											    .selected_config_alias =
+											    remoteGatewayApp.selected_config_alias;
 
-										__COUTTV__(theSupervisor->remoteGatewayApps_[i].selected_config_alias);
+										__COUTTV__(theSupervisor->remoteGatewayApps_[i]
+										               .selected_config_alias);
 
-										__COUTT__ << remoteGatewayApp.appInfo.name << " -- Command: " << remoteGatewayApp.command << 
-											" Command-old: " << theSupervisor->remoteGatewayApps_[i].command <<
-											" Status: " << remoteGatewayApp.appInfo.status <<
-											" Status_old: " << theSupervisor->remoteGatewayApps_[i].appInfo.status << 
-											" Error: " << remoteGatewayApp.error << 
-											" progress: " << remoteGatewayApp.appInfo.progress << __E__;
+										__COUTT__
+										    << remoteGatewayApp.appInfo.name
+										    << " -- Command: " << remoteGatewayApp.command
+										    << " Command-old: "
+										    << theSupervisor->remoteGatewayApps_[i]
+										           .command
+										    << " Status: "
+										    << remoteGatewayApp.appInfo.status
+										    << " Status_old: "
+										    << theSupervisor->remoteGatewayApps_[i]
+										           .appInfo.status
+										    << " Error: " << remoteGatewayApp.error
+										    << " progress: "
+										    << remoteGatewayApp.appInfo.progress << __E__;
 
-										if(remoteGatewayApp.command == "Sent") //apply command clear	
-											theSupervisor->remoteGatewayApps_[i].command = ""; 
+										if(remoteGatewayApp.command ==
+										   "Sent")  //apply command clear
+											theSupervisor->remoteGatewayApps_[i].command =
+											    "";
 
-										if(theSupervisor->remoteGatewayApps_[i].command != "" || (commandingRemoteGatewayApps && 
-												theSupervisor->remoteGatewayApps_[i].appInfo.status.find("Launching") == 0 &&
-												remoteGatewayApp.appInfo.progress == 100)) //dont trust done progress while still 'commanding'
-											__COUT__ << "Ignoring '" << remoteGatewayApp.appInfo.name << "' assumed stale status: " << remoteGatewayApp.appInfo.status << __E__;
-										else										
-											theSupervisor->remoteGatewayApps_[i].appInfo = remoteGatewayApp.appInfo;
-										
-										theSupervisor->remoteGatewayApps_[i].subapps = remoteGatewayApp.subapps;
+										if(theSupervisor->remoteGatewayApps_[i].command !=
+										       "" ||
+										   (commandingRemoteGatewayApps &&
+										    theSupervisor->remoteGatewayApps_[i]
+										            .appInfo.status.find("Launching") ==
+										        0 &&
+										    remoteGatewayApp.appInfo.progress ==
+										        100))  //dont trust done progress while still 'commanding'
+											__COUT__ << "Ignoring '"
+											         << remoteGatewayApp.appInfo.name
+											         << "' assumed stale status: "
+											         << remoteGatewayApp.appInfo.status
+											         << __E__;
+										else
+											theSupervisor->remoteGatewayApps_[i].appInfo =
+											    remoteGatewayApp.appInfo;
+
+										theSupervisor->remoteGatewayApps_[i].subapps =
+										    remoteGatewayApp.subapps;
 										break;
 									}
 								}
-								if(!found) //add
-									theSupervisor->remoteGatewayApps_.push_back(remoteGatewayApp);
+								if(!found)  //add
+									theSupervisor->remoteGatewayApps_.push_back(
+									    remoteGatewayApp);
 							}
 
 							//cleanup unused remoteGatewayApps_
-							for(size_t i = 0; i < theSupervisor->remoteGatewayApps_.size(); ++i)
-							{	
-								if(theSupervisor->remoteGatewayApps_[i].appInfo.status == "")
+							for(size_t i = 0;
+							    i < theSupervisor->remoteGatewayApps_.size();
+							    ++i)
+							{
+								if(theSupervisor->remoteGatewayApps_[i].appInfo.status ==
+								   "")
 								{
 									//rewind and erase
-									theSupervisor->remoteGatewayApps_.erase(theSupervisor->remoteGatewayApps_.begin() + i);
+									theSupervisor->remoteGatewayApps_.erase(
+									    theSupervisor->remoteGatewayApps_.begin() + i);
 									--i;
 								}
-							}							
+							}
 						}
 
-						if(theSupervisor->remoteGatewayApps_.size()) __COUTVS__(38,theSupervisor->remoteGatewayApps_[0].error);
+						if(theSupervisor->remoteGatewayApps_.size())
+							__COUTVS__(38, theSupervisor->remoteGatewayApps_[0].error);
 					}
 
 					//copy to subapps for display of primary Gateway
 					{
-						std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);	
-						for(const auto& remoteGatewayApp : theSupervisor->remoteGatewayApps_)
-							subapps.push_back(remoteGatewayApp.appInfo);			
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->remoteGatewayAppsMutex_);
+						for(const auto& remoteGatewayApp :
+						    theSupervisor->remoteGatewayApps_)
+							subapps.push_back(remoteGatewayApp.appInfo);
 					}
-					
-					resetRemoteGatewayApps = false; //reset
+
+					resetRemoteGatewayApps = false;  //reset
 				}
 				catch(const std::runtime_error& e)
 				{
@@ -841,11 +1128,15 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					progress              = "0";
 					detail                = "SOAP Message Error";
 					oneStatusReqHasFailed = true;
-					
+
 					__COUT__ << "Failed getting status from Gateway"
-								<< " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-								<< "' [URL=" << appInfo.getURL() << "].\n\n";					
-					__COUT_WARN__ << "Failed to retrieve Gateway Supervisor status. Here is the error: " << e.what() << __E__;					
+					         << " Supervisor instance = '" << appName
+					         << "' [LID=" << appInfo.getId() << "] in Context '"
+					         << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+					         << "].\n\n";
+					__COUT_WARN__ << "Failed to retrieve Gateway Supervisor status. Here "
+					                 "is the error: "
+					              << e.what() << __E__;
 				}
 				catch(...)
 				{
@@ -853,13 +1144,16 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					progress              = "0";
 					detail                = "Unknown SOAP Message Error";
 					oneStatusReqHasFailed = true;
-					
-					__COUT__ << "Failed getting status from Gateway "
-								<< " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-								<< "' [URL=" << appInfo.getURL() << "].\n\n";
-					__COUT_WARN__ << "Failed to retrieve Gateway Supervisor status to unknown error." << __E__;					
-				}
 
+					__COUT__ << "Failed getting status from Gateway "
+					         << " Supervisor instance = '" << appName
+					         << "' [LID=" << appInfo.getId() << "] in Context '"
+					         << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+					         << "].\n\n";
+					__COUT_WARN__ << "Failed to retrieve Gateway Supervisor status to "
+					                 "unknown error."
+					              << __E__;
+				}
 			}
 			else  // get non-gateway status
 			{
@@ -867,28 +1161,30 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 				SOAPParameters appPointer;
 				appPointer.addParameter("ApplicationPointer");
 
-				xoap::MessageReference tempMessage = SOAPUtilities::makeSOAPMessageReference("ApplicationStatusRequest");				
-				__COUT_TYPE__(TLVL_DEBUG+39) << __COUT_HDR__ << "tempMessage... " << SOAPUtilities::translate(tempMessage) << std::endl;
+				xoap::MessageReference tempMessage =
+				    SOAPUtilities::makeSOAPMessageReference("ApplicationStatusRequest");
+				__COUT_TYPE__(TLVL_DEBUG + 39)
+				    << __COUT_HDR__ << "tempMessage... "
+				    << SOAPUtilities::translate(tempMessage) << std::endl;
 
 				try
 				{
-					xoap::MessageReference statusMessage = theSupervisor->sendWithSOAPReply(appInfo.getDescriptor(), tempMessage);
-
+					xoap::MessageReference statusMessage =
+					    theSupervisor->sendWithSOAPReply(appInfo.getDescriptor(),
+					                                     tempMessage);
 
 					if("ContextARTDAQ" == appInfo.getContextName())
-						__COUT_TYPE__(TLVL_DEBUG+41) << __COUT_HDR__ << " Supervisor instance = '" << appName
-								<< "' [LID=" << appInfo.getId() << "] in Context '"
-								<< appInfo.getContextName() << " statusMessage... "
-								<<
-								SOAPUtilities::translate(statusMessage)
-							<<  std::endl;
+						__COUT_TYPE__(TLVL_DEBUG + 41)
+						    << __COUT_HDR__ << " Supervisor instance = '" << appName
+						    << "' [LID=" << appInfo.getId() << "] in Context '"
+						    << appInfo.getContextName() << " statusMessage... "
+						    << SOAPUtilities::translate(statusMessage) << std::endl;
 					else
-						__COUT_TYPE__(TLVL_DEBUG+40) << __COUT_HDR__ << " Supervisor instance = '" << appName
-								<< "' [LID=" << appInfo.getId() << "] in Context '"
-								<< appInfo.getContextName() << " statusMessage... "
-								<<
-								SOAPUtilities::translate(statusMessage)
-							<<  std::endl;
+						__COUT_TYPE__(TLVL_DEBUG + 40)
+						    << __COUT_HDR__ << " Supervisor instance = '" << appName
+						    << "' [LID=" << appInfo.getId() << "] in Context '"
+						    << appInfo.getContextName() << " statusMessage... "
+						    << SOAPUtilities::translate(statusMessage) << std::endl;
 
 					SOAPParameters parameters;
 					parameters.addParameter("Status");
@@ -905,85 +1201,117 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					if(progress.empty())
 						progress = "100";
 
-					detail = parameters.getValue("Detail");					
+					detail = parameters.getValue("Detail");
 					if(appInfo.isTypeConsoleSupervisor())
 					{
-						//parse detail 
+						//parse detail
 
 						//Note: do not printout detail, because custom counts will fire recursively
 						// std::cout << __COUT_HDR__ << (detail);
 
 						//Console Supervisor status detatil format is (from otsdaq-utilities/otsdaq-utilities/Console/ConsoleSupervisor.cc:1722):
 						//	uptime, Err count, Warn count, Last Error msg, Last Warn msg
-						std::vector<std::string> parseDetail = StringMacros::getVectorFromString(detail,{','});
+						std::vector<std::string> parseDetail =
+						    StringMacros::getVectorFromString(detail, {','});
 
-						std::lock_guard<std::mutex> lock(theSupervisor->systemStatusMutex_); //lock for rest of scope
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->systemStatusMutex_);  //lock for rest of scope
 						if(parseDetail.size() > 1)
-							theSupervisor->systemConsoleErrCount_ = atoi(parseDetail[1].substr(parseDetail[1].find(':')+1).c_str());
+							theSupervisor->systemConsoleErrCount_ =
+							    atoi(parseDetail[1]
+							             .substr(parseDetail[1].find(':') + 1)
+							             .c_str());
 						if(parseDetail.size() > 2)
-							theSupervisor->systemConsoleWarnCount_ = atoi(parseDetail[2].substr(parseDetail[2].find(':')+1).c_str());
-						__COUTVS__(36,theSupervisor->systemConsoleErrCount_);
-						__COUTVS__(36,theSupervisor->systemConsoleWarnCount_);
-						if(parseDetail.size() > 3) //e.g. Last Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
+							theSupervisor->systemConsoleWarnCount_ =
+							    atoi(parseDetail[2]
+							             .substr(parseDetail[2].find(':') + 1)
+							             .c_str());
+						__COUTVS__(36, theSupervisor->systemConsoleErrCount_);
+						__COUTVS__(36, theSupervisor->systemConsoleWarnCount_);
+						if(parseDetail.size() >
+						   3)  //e.g. Last Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
 							size_t closeTimePos = parseDetail[3].find(')');
-							theSupervisor->lastConsoleErr_ = parseDetail[3].substr(closeTimePos+2);
-							size_t openTimePos = parseDetail[3].find('(');
-							theSupervisor->lastConsoleErrTime_ = parseDetail[3].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTVS__(36,theSupervisor->lastConsoleErrTime_);
+							theSupervisor->lastConsoleErr_ =
+							    parseDetail[3].substr(closeTimePos + 2);
+							size_t openTimePos                 = parseDetail[3].find('(');
+							theSupervisor->lastConsoleErrTime_ = parseDetail[3].substr(
+							    openTimePos, closeTimePos - openTimePos + 1);
+							__COUTVS__(36, theSupervisor->lastConsoleErrTime_);
 						}
-						if(parseDetail.size() > 4) //e.g. Last Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
+						if(parseDetail.size() >
+						   4)  //e.g. Last Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
 							size_t closeTimePos = parseDetail[4].find(')');
-							theSupervisor->lastConsoleWarn_ = parseDetail[4].substr(closeTimePos+2);
+							theSupervisor->lastConsoleWarn_ =
+							    parseDetail[4].substr(closeTimePos + 2);
 							size_t openTimePos = parseDetail[4].find('(');
-							theSupervisor->lastConsoleWarnTime_ = parseDetail[4].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTVS__(36,theSupervisor->lastConsoleWarnTime_);
+							theSupervisor->lastConsoleWarnTime_ = parseDetail[4].substr(
+							    openTimePos, closeTimePos - openTimePos + 1);
+							__COUTVS__(36, theSupervisor->lastConsoleWarnTime_);
 						}
-						if(parseDetail.size() > 5) //e.g. Last Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
+						if(parseDetail.size() >
+						   5)  //e.g. Last Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
 							size_t closeTimePos = parseDetail[5].find(')');
-							theSupervisor->lastConsoleInfo_ = parseDetail[5].substr(closeTimePos+2);
+							theSupervisor->lastConsoleInfo_ =
+							    parseDetail[5].substr(closeTimePos + 2);
 							size_t openTimePos = parseDetail[5].find('(');
-							theSupervisor->lastConsoleInfoTime_ = parseDetail[5].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTVS__(36,theSupervisor->lastConsoleInfoTime_);
+							theSupervisor->lastConsoleInfoTime_ = parseDetail[5].substr(
+							    openTimePos, closeTimePos - openTimePos + 1);
+							__COUTVS__(36, theSupervisor->lastConsoleInfoTime_);
 						}
 						if(parseDetail.size() > 6)
-							theSupervisor->systemConsoleInfoCount_ = atoi(parseDetail[6].substr(parseDetail[6].find(':')+1).c_str());
-						
-						if(parseDetail.size() > 7) //e.g. First Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
+							theSupervisor->systemConsoleInfoCount_ =
+							    atoi(parseDetail[6]
+							             .substr(parseDetail[6].find(':') + 1)
+							             .c_str());
+
+						if(parseDetail.size() >
+						   7)  //e.g. First Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
 							size_t closeTimePos = parseDetail[7].find(')');
-							theSupervisor->firstConsoleErr_ = parseDetail[7].substr(closeTimePos+2);
+							theSupervisor->firstConsoleErr_ =
+							    parseDetail[7].substr(closeTimePos + 2);
 							size_t openTimePos = parseDetail[7].find('(');
-							theSupervisor->firstConsoleErrTime_ = parseDetail[7].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTVS__(36,theSupervisor->firstConsoleErrTime_);
+							theSupervisor->firstConsoleErrTime_ = parseDetail[7].substr(
+							    openTimePos, closeTimePos - openTimePos + 1);
+							__COUTVS__(36, theSupervisor->firstConsoleErrTime_);
 						}
-						if(parseDetail.size() > 8) //e.g. First Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
+						if(parseDetail.size() >
+						   8)  //e.g. First Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
 							size_t closeTimePos = parseDetail[8].find(')');
-							theSupervisor->firstConsoleWarn_ = parseDetail[8].substr(closeTimePos+2);
+							theSupervisor->firstConsoleWarn_ =
+							    parseDetail[8].substr(closeTimePos + 2);
 							size_t openTimePos = parseDetail[8].find('(');
-							theSupervisor->firstConsoleWarnTime_ = parseDetail[8].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTVS__(36,theSupervisor->firstConsoleWarnTime_);
+							theSupervisor->firstConsoleWarnTime_ = parseDetail[8].substr(
+							    openTimePos, closeTimePos - openTimePos + 1);
+							__COUTVS__(36, theSupervisor->firstConsoleWarnTime_);
 						}
-						if(parseDetail.size() > 9) //e.g. First Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
+						if(parseDetail.size() >
+						   9)  //e.g. First Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
 							size_t closeTimePos = parseDetail[9].find(')');
-							theSupervisor->firstConsoleInfo_ = parseDetail[9].substr(closeTimePos+2);
+							theSupervisor->firstConsoleInfo_ =
+							    parseDetail[9].substr(closeTimePos + 2);
 							size_t openTimePos = parseDetail[9].find('(');
-							theSupervisor->firstConsoleInfoTime_ = parseDetail[9].substr(openTimePos,closeTimePos-openTimePos+1);
-							__COUTVS__(36,theSupervisor->firstConsoleInfoTime_);
+							theSupervisor->firstConsoleInfoTime_ = parseDetail[9].substr(
+							    openTimePos, closeTimePos - openTimePos + 1);
+							__COUTVS__(36, theSupervisor->firstConsoleInfoTime_);
 						}
 					}
 
-					subapps = SupervisorInfo::deserializeSubappInfos(parameters.getValue("Subapps"));
+					subapps = SupervisorInfo::deserializeSubappInfos(
+					    parameters.getValue("Subapps"));
 
 					if(!appLastStatusGood[appName])
 					{
 						__COUT_INFO__ << "First good status from "
-						         << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-						         << "' [URL=" << appInfo.getURL() << "].\n\n";
+						              << " Supervisor instance = '" << appName
+						              << "' [LID=" << appInfo.getId() << "] in Context '"
+						              << appInfo.getContextName()
+						              << "' [URL=" << appInfo.getURL() << "].\n\n";
 						__COUTTV__(SOAPUtilities::translate(tempMessage));
 					}
 					appLastStatusGood[appName] = true;
@@ -1002,35 +1330,46 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					if(appLastStatusGood[appName])
 					{
 						__COUT__ << "Failed getting status from "
-						         << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
+						         << " Supervisor instance = '" << appName
+						         << "' [LID=" << appInfo.getId() << "] in Context '"
+						         << appInfo.getContextName()
 						         << "' [URL=" << appInfo.getURL() << "].\n\n";
 						__COUTTV__(SOAPUtilities::translate(tempMessage));
-						__COUT_WARN__ << "Failed to send getStatus SOAP Message - will suppress repeat errors: " << e.what() << __E__;
-					}  // else quiet repeat error messages
+						__COUT_WARN__ << "Failed to send getStatus SOAP Message - will "
+						                 "suppress repeat errors: "
+						              << e.what() << __E__;
+					}     // else quiet repeat error messages
 					else  //check if should throw state machine error
-					{						
-						std::lock_guard<std::mutex> lock(theSupervisor->stateMachineAccessMutex_);
+					{
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->stateMachineAccessMutex_);
 
-						std::string currentState  = theSupervisor->theStateMachine_.getCurrentStateName();
-						if(currentState != RunControlStateMachine::FAILED_STATE_NAME && 
-							currentState != RunControlStateMachine::HALTED_STATE_NAME && 
-							currentState != RunControlStateMachine::INITIAL_STATE_NAME)
-						{							
-							__SS__ << "\nDid a supervisor crash? Failed getting status from "
-						         << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-						         << "' [URL=" << appInfo.getURL() << "]."
-								<< __E__;
+						std::string currentState =
+						    theSupervisor->theStateMachine_.getCurrentStateName();
+						if(currentState != RunControlStateMachine::FAILED_STATE_NAME &&
+						   currentState != RunControlStateMachine::HALTED_STATE_NAME &&
+						   currentState != RunControlStateMachine::INITIAL_STATE_NAME)
+						{
+							__SS__
+							    << "\nDid a supervisor crash? Failed getting status from "
+							    << " Supervisor instance = '" << appName
+							    << "' [LID=" << appInfo.getId() << "] in Context '"
+							    << appInfo.getContextName()
+							    << "' [URL=" << appInfo.getURL() << "]." << __E__;
 							__COUT_ERR__ << "\n" << ss.str();
 
 							theSupervisor->theStateMachine_.setErrorMessage(ss.str());
 							try
 							{
-								theSupervisor->runControlMessageHandler(SOAPUtilities::makeSOAPMessageReference(
-									RunControlStateMachine::ERROR_TRANSITION_NAME));
+								theSupervisor->runControlMessageHandler(
+								    SOAPUtilities::makeSOAPMessageReference(
+								        RunControlStateMachine::ERROR_TRANSITION_NAME));
 							}
-							catch(...) {} //ignore any errors
-							
-							break; //only send one Error, then restart status loop
+							catch(...)
+							{
+							}  //ignore any errors
+
+							break;  //only send one Error, then restart status loop
 						}
 					}
 					appLastStatusGood[appName] = false;
@@ -1049,44 +1388,56 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					if(appLastStatusGood[appName])
 					{
 						__COUT__ << "Failed getting status from "
-						         << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
+						         << " Supervisor instance = '" << appName
+						         << "' [LID=" << appInfo.getId() << "] in Context '"
+						         << appInfo.getContextName()
 						         << "' [URL=" << appInfo.getURL() << "].\n\n";
 						__COUTV__(SOAPUtilities::translate(tempMessage));
-						__COUT_WARN__ << "Failed to send getStatus SOAP Message due to unknown error. Will suppress repeat errors from Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-						         << "' [URL=" << appInfo.getURL() << "]." << __E__;
-					}  // else quiet repeat error messages
+						__COUT_WARN__ << "Failed to send getStatus SOAP Message due to "
+						                 "unknown error. Will suppress repeat errors "
+						                 "from Supervisor instance = '"
+						              << appName << "' [LID=" << appInfo.getId()
+						              << "] in Context '" << appInfo.getContextName()
+						              << "' [URL=" << appInfo.getURL() << "]." << __E__;
+					}     // else quiet repeat error messages
 					else  //check if should throw state machine error
-					{						
-						std::lock_guard<std::mutex> lock(theSupervisor->stateMachineAccessMutex_);
+					{
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->stateMachineAccessMutex_);
 
-						std::string currentState  = theSupervisor->theStateMachine_.getCurrentStateName();
-						if(currentState != RunControlStateMachine::FAILED_STATE_NAME && 
-							currentState != RunControlStateMachine::HALTED_STATE_NAME && 
-							currentState != RunControlStateMachine::INITIAL_STATE_NAME)
-						{							
+						std::string currentState =
+						    theSupervisor->theStateMachine_.getCurrentStateName();
+						if(currentState != RunControlStateMachine::FAILED_STATE_NAME &&
+						   currentState != RunControlStateMachine::HALTED_STATE_NAME &&
+						   currentState != RunControlStateMachine::INITIAL_STATE_NAME)
+						{
 							__SS__ << "\nDid a supervisor crash? Failed getting Status "
-						         << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-						         << "' [URL=" << appInfo.getURL() << "]."
-								<< __E__;
+							       << " Supervisor instance = '" << appName
+							       << "' [LID=" << appInfo.getId() << "] in Context '"
+							       << appInfo.getContextName()
+							       << "' [URL=" << appInfo.getURL() << "]." << __E__;
 							__COUT_ERR__ << "\n" << ss.str();
 
 							theSupervisor->theStateMachine_.setErrorMessage(ss.str());
 							try
 							{
-								theSupervisor->runControlMessageHandler(SOAPUtilities::makeSOAPMessageReference(
-									RunControlStateMachine::ERROR_TRANSITION_NAME));
+								theSupervisor->runControlMessageHandler(
+								    SOAPUtilities::makeSOAPMessageReference(
+								        RunControlStateMachine::ERROR_TRANSITION_NAME));
 							}
-							catch(...) {} //ignore any errors
+							catch(...)
+							{
+							}  //ignore any errors
 
-							break; //only send one Error, then restart status loop
+							break;  //only send one Error, then restart status loop
 						}
 					}
 					appLastStatusGood[appName] = false;
 				}
 			}  // end with non-gateway status request handling
 
-			__COUTVS__(38,status);
-			__COUTVS__(38,progress);
+			__COUTVS__(38, status);
+			__COUTVS__(38, progress);
 
 			// set status and progress
 			// convert the progress string into an integer in order to call
@@ -1095,97 +1446,111 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 			ssProgress >> progressInteger;
 
 			if("ContextARTDAQ" == appInfo.getContextName())
-				__COUTVS__(41,progressInteger);
+				__COUTVS__(41, progressInteger);
 			else
-				__COUTVS__(40,progressInteger);
+				__COUTVS__(40, progressInteger);
 
-			theSupervisor->allSupervisorInfo_.setSupervisorStatus(appInfo, status, progressInteger, detail, subapps);
+			theSupervisor->allSupervisorInfo_.setSupervisorStatus(
+			    appInfo, status, progressInteger, detail, subapps);
 
 		}  // end of app loop
-				
+
 		if(oneStatusReqHasFailed)
 		{
 			__COUTT__ << "oneStatusReqHasFailed" << __E__;
 			sleep(5);  // sleep to not overwhelm server with errors
 		}
 
-	} // end of infinite status checking loop
+	}  // end of infinite status checking loop
 }  // end AppStatusWorkLoop()
 
 //==============================================================================
 // GetRemoteGatewayIcons
 //	static function
-void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, 
-	const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */ remoteGatewaySocket)
+void GatewaySupervisor::GetRemoteGatewayIcons(
+    GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp,
+    const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */
+        remoteGatewaySocket)
 {
-
 	// comma-separated icon string, 7 fields:
 	//				0 - caption 		= text below icon
 	//				1 - altText 		= text icon if no image given
 	//				2 - uniqueWin 		= if true, only one window is allowed,
-	// 										else  multiple instances of window 				
-	//				3 - permissions 	= security level needed to see icon 				
-	//				4 - picfn 			= icon image filename 				
+	// 										else  multiple instances of window
+	//				3 - permissions 	= security level needed to see icon
+	//				4 - picfn 			= icon image filename
 	//				5 - linkurl 		= url of the window to open
-	// 				6 - folderPath 		= folder and subfolder location '/' separated  
+	// 				6 - folderPath 		= folder and subfolder location '/' separated
 	//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
 
 	std::string iconString = "";
 
-	std::string command = "GetRemoteDesktopIcons";	
+	std::string command = "GetRemoteDesktopIcons";
 
-	__COUTT__ << "Sending remote gateway command '" << command << "' to target '" <<
-		remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
+	__COUTT__ << "Sending remote gateway command '" << command << "' to target '"
+	          << remoteGatewayApp.appInfo.name
+	          << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
 
 	try
 	{
-		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
-		__COUTVS__(10,StringMacros::vectorToString(parsedFields));
-		__COUTVS__(10,command);
+		std::vector<std::string> parsedFields =
+		    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url, {':'});
+		__COUTVS__(10, StringMacros::vectorToString(parsedFields));
+		__COUTVS__(10, command);
 
-		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
-		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
-		__COUTVS__(10,remoteIconString);
+		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(
+		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
+		__COUTVS__(10, remoteIconString);
 
 		bool firstIcon = true;
 
 		//now have remote icon string, append icons to list
-		std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(remoteIconString + ",", //add 1 just in case last folder string is empty
-			{','});
+		std::vector<std::string> remoteIconsCSV = StringMacros::getVectorFromString(
+		    remoteIconString + ",",  //add 1 just in case last folder string is empty
+		    {','});
 		const size_t numOfIconFields = 7;
-		for(size_t i = 0; i+numOfIconFields < remoteIconsCSV.size(); i += numOfIconFields)
+		for(size_t i = 0; i + numOfIconFields < remoteIconsCSV.size();
+		    i += numOfIconFields)
 		{
 			if(firstIcon)
 				firstIcon = false;
 			else
-				iconString += ",";					
+				iconString += ",";
 
-			__COUTVS__(10,remoteIconsCSV[i+0]);
-			if(remoteGatewayApp.parentIconFolderPath == "")//icon.folderPath_ == "") //if not in folder, distinguish remote icon somehow
-				iconString += remoteGatewayApp.user_data_path_record //icon.alternateText_ 
-					+ " " + remoteIconsCSV[i+0]; //icon.caption_;
+			__COUTVS__(10, remoteIconsCSV[i + 0]);
+			if(remoteGatewayApp.parentIconFolderPath ==
+			   "")  //icon.folderPath_ == "") //if not in folder, distinguish remote icon somehow
+				iconString +=
+				    remoteGatewayApp.user_data_path_record  //icon.alternateText_
+				    + " " + remoteIconsCSV[i + 0];          //icon.caption_;
 			else
-				iconString += remoteIconsCSV[i+0]; //icon.caption_;
-			iconString += "," + remoteIconsCSV[i+1]; //icon.alternateText_;
-			iconString += "," + remoteIconsCSV[i+2]; //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+				iconString += remoteIconsCSV[i + 0];    //icon.caption_;
+			iconString += "," + remoteIconsCSV[i + 1];  //icon.alternateText_;
+			iconString +=
+			    "," +
+			    remoteIconsCSV
+			        [i + 2];  //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
 			iconString += "," + std::string("1");  // set permission to 1 so the
-												// desktop shows every icon that the
-												// server allows (i.e., trust server
-												// security, ignore client security)
-			iconString += "," + remoteIconsCSV[i+4]; //icon.imageURL_;
-			iconString += "," + remoteIconsCSV[i+5]; //icon.windowContentURL_;
-			
-			iconString += "," + remoteGatewayApp.parentIconFolderPath //icon.folderPath_
-				+ "/" + remoteIconsCSV[i+6];
-			
-		} //end append remote icons
+			                                       // desktop shows every icon that the
+			                                       // server allows (i.e., trust server
+			                                       // security, ignore client security)
+			iconString += "," + remoteIconsCSV[i + 4];  //icon.imageURL_;
+			iconString += "," + remoteIconsCSV[i + 5];  //icon.windowContentURL_;
+
+			iconString += "," + remoteGatewayApp.parentIconFolderPath  //icon.folderPath_
+			              + "/" + remoteIconsCSV[i + 6];
+
+		}  //end append remote icons
 
 	}  //end GetRemoteGatewayIcons()
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Failure gathering Remote Gateway desktop icons with command '" << command
-			<< "' from target '" << remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << " due to error: " << e.what() << __E__;
-		__COUT_ERR__ << ss.str();	
+		__SS__ << "Failure gathering Remote Gateway desktop icons with command '"
+		       << command << "' from target '" << remoteGatewayApp.appInfo.name
+		       << "' at url: " << remoteGatewayApp.appInfo.url
+		       << " due to error: " << e.what() << __E__;
+		__COUT_ERR__ << ss.str();
 		remoteGatewayApp.error = ss.str();
 		return;
 	}  //end GetRemoteGatewayIcons() catch
@@ -1198,15 +1563,18 @@ void GatewaySupervisor::GetRemoteGatewayIcons(GatewaySupervisor::RemoteGatewayIn
 // SendRemoteGatewayCommand
 //	static function
 //		Format is FiniteStateMachineName,Command,Parameter(s)
-void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, 
-	const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */ remoteGatewaySocket)
+void GatewaySupervisor::SendRemoteGatewayCommand(
+    GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp,
+    const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */
+        remoteGatewaySocket)
 {
-	remoteGatewayApp.error = ""; //clear error for new command
+	remoteGatewayApp.error = "";  //clear error for new command
 
-	__COUT__ << "Sending remote gateway command '" << remoteGatewayApp.command << "' to target '" <<
-		remoteGatewayApp.appInfo.name << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
+	__COUT__ << "Sending remote gateway command '" << remoteGatewayApp.command
+	         << "' to target '" << remoteGatewayApp.appInfo.name
+	         << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
 
-	std::string tmpCommand = remoteGatewayApp.command;	
+	std::string tmpCommand = remoteGatewayApp.command;
 	try
 	{
 		std::string command;
@@ -1216,40 +1584,46 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 			command = "ResetConsoleCounts";
 		else
 			command = remoteGatewayApp.fsmName + "," + remoteGatewayApp.command;
-					
-		remoteGatewayApp.command = "Sent"; //Mark that send is being attempted
-		if(tmpCommand == "Reboot") //do nothing for reboot command
+
+		remoteGatewayApp.command = "Sent";  //Mark that send is being attempted
+		if(tmpCommand == "Reboot")          //do nothing for reboot command
 		{
 			__COUT__ << "Reboot command handled by ots script command." << __E__;
 			sleep(5);
 			return;
 		}
 
-		std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
+		std::vector<std::string> parsedFields =
+		    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url, {':'});
 		__COUTTV__(StringMacros::vectorToString(parsedFields));
-		__COUT__ << "Sending to subsystem '" << remoteGatewayApp.appInfo.name << "' the command: " << command << __E__;
+		__COUT__ << "Sending to subsystem '" << remoteGatewayApp.appInfo.name
+		         << "' the command: " << command << __E__;
 
-		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
-		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
-		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name << "' received: " << 
-			commandResponseString << __E__;
+		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(
+		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
+		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name
+		         << "' received: " << commandResponseString << __E__;
 
-		if(commandResponseString.find("Done") != 0) //then error
+		if(commandResponseString.find("Done") != 0)  //then error
 		{
-			__SS__ << "Unsuccessful response received from Remote Gateway '" << remoteGatewayApp.appInfo.name +
-				"' - here was the response: " << commandResponseString << __E__;
+			__SS__ << "Unsuccessful response received from Remote Gateway '"
+			       << remoteGatewayApp.appInfo.name + "' - here was the response: "
+			       << commandResponseString << __E__;
 			__SS_THROW__;
 		}
 
-		if(commandResponseString.size() > strlen("Done")+1)
+		if(commandResponseString.size() > strlen("Done") + 1)
 		{
 			//assume have config dump response!
 			remoteGatewayApp.config_dump = "\n\n************************\n";
-			remoteGatewayApp.config_dump += "* Remote Subsystem Dump from '" + 
-				remoteGatewayApp.appInfo.name + "' at url: " + remoteGatewayApp.appInfo.url + "\n";
+			remoteGatewayApp.config_dump +=
+			    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
+			    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
 			remoteGatewayApp.config_dump += "* \n";
 			remoteGatewayApp.config_dump += "\n\n";
-			remoteGatewayApp.config_dump += commandResponseString.substr(strlen("Done")+1);
+			remoteGatewayApp.config_dump +=
+			    commandResponseString.substr(strlen("Done") + 1);
 
 			__COUTTV__(remoteGatewayApp.config_dump);
 		}
@@ -1257,10 +1631,12 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 	}  //end SendRemoteGatewayCommand()
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Failure sending Remote Gateway App '" << remoteGatewayApp.appInfo.name << "' the command '" << 
-			(tmpCommand.size() > 30?tmpCommand.substr(0,30):tmpCommand)
-			<< "' at url: " << remoteGatewayApp.appInfo.url << " due to error: " << e.what() << __E__;
-		__COUT_ERR__ << ss.str();	
+		__SS__ << "Failure sending Remote Gateway App '" << remoteGatewayApp.appInfo.name
+		       << "' the command '"
+		       << (tmpCommand.size() > 30 ? tmpCommand.substr(0, 30) : tmpCommand)
+		       << "' at url: " << remoteGatewayApp.appInfo.url
+		       << " due to error: " << e.what() << __E__;
+		__COUT_ERR__ << ss.str();
 		remoteGatewayApp.error = ss.str();
 	}  //end SendRemoteGatewayCommand() catch
 
@@ -1270,156 +1646,184 @@ void GatewaySupervisor::SendRemoteGatewayCommand(GatewaySupervisor::RemoteGatewa
 // CheckRemoteGatewayStatus
 //	static function
 //		Just need status, progress, and detail of ots::GatewaySupervisor extracted from GetRemoteGatewayStatus
-void GatewaySupervisor::CheckRemoteGatewayStatus(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, 
-	const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */ remoteGatewaySocket,
-	const std::string& ipForReverseLoginOverUDP,
-	int portForReverseLoginOverUDP)
+void GatewaySupervisor::CheckRemoteGatewayStatus(
+    GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp,
+    const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */
+                       remoteGatewaySocket,
+    const std::string& ipForReverseLoginOverUDP,
+    int                portForReverseLoginOverUDP)
 try
 {
-	__COUTT__ << "Checking remote gateway status of '" << remoteGatewayApp.appInfo.name << "'" << __E__;
-	std::vector<std::string> parsedFields = StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,{':'});
+	__COUTT__ << "Checking remote gateway status of '" << remoteGatewayApp.appInfo.name
+	          << "'" << __E__;
+	std::vector<std::string> parsedFields =
+	    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url, {':'});
 	__COUTTV__(StringMacros::vectorToString(parsedFields));
 
 	if(parsedFields.size() == 3)
 	{
-		Socket      gatewayRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));		
-		std::string	requestString = "GetRemoteGatewayStatus";
+		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+		std::string requestString = "GetRemoteGatewayStatus";
 		if(portForReverseLoginOverUDP)
-			requestString += "," + ipForReverseLoginOverUDP + 
-				"," + std::to_string(portForReverseLoginOverUDP) + 
-				"," + remoteGatewayApp.appInfo.name;
-		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "requestString = " << requestString << __E__;	
-		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(gatewayRemoteSocket,
-			requestString, 2 /*timeoutSeconds*/);
-		__COUT_TYPE__(TLVL_DEBUG+24) << __COUT_HDR__ << "remoteStatusString = " << remoteStatusString << __E__;	
+			requestString += "," + ipForReverseLoginOverUDP + "," +
+			                 std::to_string(portForReverseLoginOverUDP) + "," +
+			                 remoteGatewayApp.appInfo.name;
+		__COUT_TYPE__(TLVL_DEBUG + 24)
+		    << __COUT_HDR__ << "requestString = " << requestString << __E__;
+		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(
+		    gatewayRemoteSocket, requestString, 2 /*timeoutSeconds*/);
+		__COUT_TYPE__(TLVL_DEBUG + 24)
+		    << __COUT_HDR__ << "remoteStatusString = " << remoteStatusString << __E__;
 
 		std::string value, name;
-		bool foundGateway = false;
-		size_t after = 0;
-		while((name = StringMacros::extractXmlField(remoteStatusString, "name", 0, after, &after)) != "")
-		{			
-			after += std::string("name").size(); //move beyond found pos
-			
+		bool        foundGateway = false;
+		size_t      after        = 0;
+		while((name = StringMacros::extractXmlField(
+		           remoteStatusString, "name", 0, after, &after)) != "")
+		{
+			after += std::string("name").size();  //move beyond found pos
+
 			//find class associated with record
 			value = StringMacros::extractXmlField(remoteStatusString, "class", 0, after);
-			if(value == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS) 
+			if(value == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
 			{
-				foundGateway = true;		
+				foundGateway = true;
 
 				//found remote gateway
-				__COUTVS__(25,remoteStatusString.size());
-				__COUTVS__(25,after);
-				__COUTVS__(25,value);
+				__COUTVS__(25, remoteStatusString.size());
+				__COUTVS__(25, after);
+				__COUTVS__(25, value);
 
 				//get gateway status
-				value = StringMacros::extractXmlField(remoteStatusString, "status", 0, after);
-				__COUTVS__(25,value);
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "status", 0, after);
+				__COUTVS__(25, value);
 				remoteGatewayApp.appInfo.status = value;
 
-				value = StringMacros::extractXmlField(remoteStatusString, "progress", 0, after);
-				__COUTVS__(25,value);
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "progress", 0, after);
+				__COUTVS__(25, value);
 				remoteGatewayApp.appInfo.progress = atoi(value.c_str());
 
-				value = StringMacros::extractXmlField(remoteStatusString, "detail", 0, after);
-				__COUTVS__(25,value);
-				remoteGatewayApp.appInfo.detail = value; //StringMacros::decodeURIComponent(value);
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "detail", 0, after);
+				__COUTVS__(25, value);
+				remoteGatewayApp.appInfo.detail =
+				    value;  //StringMacros::decodeURIComponent(value);
 
-				value = StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
-				__COUTVS__(25,value);
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
+				__COUTVS__(25, value);
 				remoteGatewayApp.appInfo.lastStatusTime = atoi(value.c_str());
 
-				value = StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
-				__COUTVS__(25,value);
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
+				__COUTVS__(25, value);
 				remoteGatewayApp.appInfo.parent_url = value;
 
 				value = StringMacros::extractXmlField(remoteStatusString, "id", 0, after);
-				__COUTVS__(25,value);
+				__COUTVS__(25, value);
 				remoteGatewayApp.appInfo.id = atoi(value.c_str());
 
-
-			} //end found Remote Gateway status
-			else //found remote subapp
+			}     //end found Remote Gateway status
+			else  //found remote subapp
 			{
 				//get remote subapp class name
 				remoteGatewayApp.subapps[name].class_name = value;
-				__COUTVS__(25,value);
+				__COUTVS__(25, value);
 
 				//get remote subapp status
-				value = StringMacros::extractXmlField(remoteStatusString, "status", 0, after);
-				__COUTVS__(25,value);
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "status", 0, after);
+				__COUTVS__(25, value);
 				remoteGatewayApp.subapps[name].status = value;
 
-				value = StringMacros::extractXmlField(remoteStatusString, "progress", 0, after);
-				__COUTVS__(25,value);
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "progress", 0, after);
+				__COUTVS__(25, value);
 				remoteGatewayApp.subapps[name].progress = atoi(value.c_str());
 
-				value = StringMacros::extractXmlField(remoteStatusString, "detail", 0, after);
-				__COUTVS__(25,value);
-				remoteGatewayApp.subapps[name].detail = value; //StringMacros::decodeURIComponent(value);
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "detail", 0, after);
+				__COUTVS__(25, value);
+				remoteGatewayApp.subapps[name].detail =
+				    value;  //StringMacros::decodeURIComponent(value);
 
-				value = StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
-				__COUTVS__(25,value);
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
+				__COUTVS__(25, value);
 				remoteGatewayApp.subapps[name].lastStatusTime = atoi(value.c_str());
 
-				value = StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
-				__COUTVS__(25,value);
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
+				__COUTVS__(25, value);
 				remoteGatewayApp.subapps[name].parent_url = value;
 
 				value = StringMacros::extractXmlField(remoteStatusString, "id", 0, after);
-				__COUTVS__(25,value);
+				__COUTVS__(25, value);
 				remoteGatewayApp.subapps[name].id = atoi(value.c_str());
 			}
-		} //end primary loop
+		}  //end primary loop
 
 		if(!foundGateway)
 		{
-			__SS__ << "Failure encountered while checking remote gateway status of '" << 
-				remoteGatewayApp.appInfo.name << "' - no Gateway app status reported!" << __E__;
+			__SS__ << "Failure encountered while checking remote gateway status of '"
+			       << remoteGatewayApp.appInfo.name
+			       << "' - no Gateway app status reported!" << __E__;
 			__SS_THROW__;
 		}
 
 		//get system messages
-		value = StringMacros::extractXmlField(remoteStatusString, "systemMessages", 0, after, &after);	
-		__COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Remote System Messages:" << value << __E__;
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "systemMessages", 0, after, &after);
+		__COUT_TYPE__(TLVL_DEBUG + 2)
+		    << __COUT_HDR__ << "Remote System Messages:" << value << __E__;
 		std::vector<std::string> parsedSysMsgs;
-		StringMacros::getVectorFromString(value,parsedSysMsgs,{'|'});
+		StringMacros::getVectorFromString(value, parsedSysMsgs, {'|'});
 
 		//Format: targetUser | time | msg | targetUser | time | msg...etc
-		for(size_t i = 0; i+2 < parsedSysMsgs.size(); i+=3)
+		for(size_t i = 0; i + 2 < parsedSysMsgs.size(); i += 3)
 		{
-			GatewaySupervisor::addSystemMessage(parsedSysMsgs[i],
-				"Remote System Message from '" + remoteGatewayApp.appInfo.name
-				+ "' at url: " + remoteGatewayApp.appInfo.url + " ... " +
-				StringMacros::decodeURIComponent(parsedSysMsgs[i+2]));
-		} //end System Message handling loop
+			GatewaySupervisor::addSystemMessage(
+			    parsedSysMsgs[i],
+			    "Remote System Message from '" + remoteGatewayApp.appInfo.name +
+			        "' at url: " + remoteGatewayApp.appInfo.url + " ... " +
+			        StringMacros::decodeURIComponent(parsedSysMsgs[i + 2]));
+		}  //end System Message handling loop
 
 		//get user with lock
-		value = StringMacros::extractXmlField(remoteStatusString, "usernameWithLock", 0, after, &after);	
-		__COUT_TYPE__(TLVL_DEBUG+2) << __COUT_HDR__ << "Remote User with Lock:" << value << __E__;
-		remoteGatewayApp.usernameWithLock = value; 
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "usernameWithLock", 0, after, &after);
+		__COUT_TYPE__(TLVL_DEBUG + 2)
+		    << __COUT_HDR__ << "Remote User with Lock:" << value << __E__;
+		remoteGatewayApp.usernameWithLock = value;
 
 		//get Console err/warn count
-		value = StringMacros::extractXmlField(remoteStatusString, "console_err_count", 0, after, &after);
-		__COUTVS__(25,value);				
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "console_err_count", 0, after, &after);
+		__COUTVS__(25, value);
 		remoteGatewayApp.consoleErrCount = atoi(value.c_str());
 
-		value = StringMacros::extractXmlField(remoteStatusString, "console_warn_count", 0, after);
-		__COUTVS__(25,value);
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "console_warn_count", 0, after);
+		__COUTVS__(25, value);
 		remoteGatewayApp.consoleWarnCount = atoi(value.c_str());
-		
 	}
 	else
-		__COUT_WARN__ << "Illegal Remote Gateawy App URL (must be ots:<IP>:<PORT>): " << remoteGatewayApp.appInfo.url << __E__;
-} //end CheckRemoteGatewayStatus()
+		__COUT_WARN__ << "Illegal Remote Gateawy App URL (must be ots:<IP>:<PORT>): "
+		              << remoteGatewayApp.appInfo.url << __E__;
+}  //end CheckRemoteGatewayStatus()
 catch(const std::runtime_error& e)
 {
-	__COUT_WARN__ << "Failure getting Remote Gateway App status of '" << remoteGatewayApp.appInfo.name
-		<< "' at url: " << remoteGatewayApp.appInfo.url << " due to error: " << e.what() << __E__;
-	
-	remoteGatewayApp.appInfo.status                = SupervisorInfo::APP_STATUS_UNKNOWN;
-	remoteGatewayApp.appInfo.progress              = 0;
-	remoteGatewayApp.appInfo.detail                = "Unknown UDP Message Error";
-	remoteGatewayApp.appInfo.lastStatusTime 	   = time(0);
+	__COUT_WARN__ << "Failure getting Remote Gateway App status of '"
+	              << remoteGatewayApp.appInfo.name
+	              << "' at url: " << remoteGatewayApp.appInfo.url
+	              << " due to error: " << e.what() << __E__;
+
+	remoteGatewayApp.appInfo.status         = SupervisorInfo::APP_STATUS_UNKNOWN;
+	remoteGatewayApp.appInfo.progress       = 0;
+	remoteGatewayApp.appInfo.detail         = "Unknown UDP Message Error";
+	remoteGatewayApp.appInfo.lastStatusTime = time(0);
 }  //end CheckRemoteGatewayStatus() catch
 
 //==============================================================================
@@ -1427,12 +1831,17 @@ catch(const std::runtime_error& e)
 //	child thread
 void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 {
-	ConfigurationTree configLinkNode = theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
+	ConfigurationTree configLinkNode =
+	    theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
 
-	std::string ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
-	int         portForStateChangesOverUDP      = configLinkNode.getNode("PortForStateChangesOverUDP").getValue<int>();
-	bool        acknowledgementEnabled          = configLinkNode.getNode("EnableAckForStateChangesOverUDP").getValue<bool>();
-	bool		enableStateChanges				= configLinkNode.getNode("EnableStateChangesOverUDP").getValue<bool>();
+	std::string ipAddressForStateChangesOverUDP =
+	    configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
+	int portForStateChangesOverUDP =
+	    configLinkNode.getNode("PortForStateChangesOverUDP").getValue<int>();
+	bool acknowledgementEnabled =
+	    configLinkNode.getNode("EnableAckForStateChangesOverUDP").getValue<bool>();
+	bool enableStateChanges =
+	    configLinkNode.getNode("EnableStateChangesOverUDP").getValue<bool>();
 
 	__COUTV__(ipAddressForStateChangesOverUDP);
 	__COUTV__(portForStateChangesOverUDP);
@@ -1448,7 +1857,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	catch(...)
 	{
 		// generate special message to indicate failed socket
-		__SS__ << "FATAL Console error. Could not initialize socket at ip '" << ipAddressForStateChangesOverUDP << "' and port " << portForStateChangesOverUDP
+		__SS__ << "FATAL Console error. Could not initialize socket at ip '"
+		       << ipAddressForStateChangesOverUDP << "' and port "
+		       << portForStateChangesOverUDP
 		       << ". Perhaps it is already in use? Exiting State Changer "
 		          "SOAPUtilities::receive loop."
 		       << __E__;
@@ -1472,157 +1883,242 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		//	else
 		//		sleep
 
-		if(sock.receive(buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) != -1)
+		if(sock.receive(
+		       buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) !=
+		   -1)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+9) << __COUT_HDR__ << "UDP State Changer packet received from ip:port " <<
-				sock.getLastIncomingIPAddress() << ":" << sock.getLastIncomingPort() <<
-				" of size = " << buffer.size() << __E__;
-			__COUTVS__(11,buffer);
+			__COUT_TYPE__(TLVL_DEBUG + 9)
+			    << __COUT_HDR__ << "UDP State Changer packet received from ip:port "
+			    << sock.getLastIncomingIPAddress() << ":" << sock.getLastIncomingPort()
+			    << " of size = " << buffer.size() << __E__;
+			__COUTVS__(11, buffer);
 
 			try
 			{
-				
-			
 				bool remoteGatewayStatus = buffer.find("GetRemoteGatewayStatus") == 0;
 				if(remoteGatewayStatus || buffer == "GetRemoteAppStatus")
 				{
-					__COUT_TYPE__(TLVL_DEBUG+12) << "Giving app status to remote monitor..." << __E__;
+					__COUT_TYPE__(TLVL_DEBUG + 12)
+					    << "Giving app status to remote monitor..." << __E__;
 
-					if(remoteGatewayStatus && buffer.size() > strlen("GetRemoteGatewayStatus")+1)
+					if(remoteGatewayStatus &&
+					   buffer.size() > strlen("GetRemoteGatewayStatus") + 1)
 					{
-						std::vector<std::string> params = StringMacros::getVectorFromString(buffer,{','});
+						std::vector<std::string> params =
+						    StringMacros::getVectorFromString(buffer, {','});
 						if(params.size() == 4)
 						{
-							//Parameters are 	"," + ipForReverseLoginOverUDP + 
-							// 					"," + std::to_string(portForReverseLoginOverUDP) + 
+							//Parameters are 	"," + ipForReverseLoginOverUDP +
+							// 					"," + std::to_string(portForReverseLoginOverUDP) +
 							// 					"," + remoteGatewayApp.appInfo.name;
 
-							__COUTVS__(23,StringMacros::vectorToString(params));
-							std::string tmpIP = params[1];
-							int tmpPort = atoi(params[2].c_str());
-							
-							if(!theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ ||
-								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ != tmpIP ||
-								theSupervisor->theWebUsers_.remoteLoginVerificationPort_ != tmpPort)
+							__COUTVS__(23, StringMacros::vectorToString(params));
+							std::string tmpIP   = params[1];
+							int         tmpPort = atoi(params[2].c_str());
+
+							if(!theSupervisor->theWebUsers_
+							        .remoteLoginVerificationEnabled_ ||
+							   theSupervisor->theWebUsers_.remoteLoginVerificationIP_ !=
+							       tmpIP ||
+							   theSupervisor->theWebUsers_.remoteLoginVerificationPort_ !=
+							       tmpPort)
 							{
-								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ = tmpIP;
-								theSupervisor->theWebUsers_.remoteLoginVerificationPort_ = tmpPort;
-								theSupervisor->theWebUsers_.remoteGatewaySelfName_ = params[3];
-								theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_ = true; //mark as under remote control
-								__COUT_INFO__ << "This Gateway '" << theSupervisor->theWebUsers_.remoteGatewaySelfName_
-									<< "' is now under remote control and will validate logins through remote Gateway Supervisor at "
-									<< theSupervisor->theWebUsers_.remoteLoginVerificationIP_ << ":" << 
-									theSupervisor->theWebUsers_.remoteLoginVerificationPort_ << __E__;
+								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ =
+								    tmpIP;
+								theSupervisor->theWebUsers_.remoteLoginVerificationPort_ =
+								    tmpPort;
+								theSupervisor->theWebUsers_.remoteGatewaySelfName_ =
+								    params[3];
+								theSupervisor->theWebUsers_
+								    .remoteLoginVerificationEnabled_ =
+								    true;  //mark as under remote control
+								__COUT_INFO__
+								    << "This Gateway '"
+								    << theSupervisor->theWebUsers_.remoteGatewaySelfName_
+								    << "' is now under remote control and will validate "
+								       "logins through remote Gateway Supervisor at "
+								    << theSupervisor->theWebUsers_
+								           .remoteLoginVerificationIP_
+								    << ":"
+								    << theSupervisor->theWebUsers_
+								           .remoteLoginVerificationPort_
+								    << __E__;
 							}
 						}
 						else
-							__COUT_ERR__ << "Parameter count is not 4, it is " << params.size() << __E__;
+							__COUT_ERR__ << "Parameter count is not 4, it is "
+							             << params.size() << __E__;
 					}
 
 					HttpXmlDocument xmlOut;
-					for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+					for(const auto& it :
+					    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 					{
 						const auto& appInfo = it.second;
-						if(0 && //always return full status
-								remoteGatewayStatus && appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
-							continue; //only return Gateway status
+						if(0 &&  //always return full status
+						   remoteGatewayStatus &&
+						   appInfo.getClass() !=
+						       XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+							continue;  //only return Gateway status
 
-						xmlOut.addTextElementToData("name",
-													appInfo.getName());                      // get application name
-						xmlOut.addTextElementToData("id", std::to_string(appInfo.getId()));  // get application id
-						xmlOut.addTextElementToData("status", appInfo.getStatus());          // get status
 						xmlOut.addTextElementToData(
-							"time", std::to_string(appInfo.getLastStatusTime())); // ? StringMacros::getTimestampString(appInfo.getLastStatusTime()) : "0");  // get time stamp
-						xmlOut.addTextElementToData("stale",
-													std::to_string(time(0) - appInfo.getLastStatusTime()));  // time since update
-						xmlOut.addTextElementToData("progress", std::to_string(appInfo.getProgress()));      // get progress
-						xmlOut.addTextElementToData("detail", appInfo.getDetail());                          // get detail
-						xmlOut.addTextElementToData("class",
-													appInfo.getClass());  // get application class
-						xmlOut.addTextElementToData("url",
-													appInfo.getURL());  // get application url
-						xmlOut.addTextElementToData("context",
-													appInfo.getContextName());  // get context
+						    "name",
+						    appInfo.getName());  // get application name
+						xmlOut.addTextElementToData(
+						    "id", std::to_string(appInfo.getId()));  // get application id
+						xmlOut.addTextElementToData("status",
+						                            appInfo.getStatus());  // get status
+						xmlOut.addTextElementToData(
+						    "time",
+						    std::to_string(
+						        appInfo
+						            .getLastStatusTime()));  // ? StringMacros::getTimestampString(appInfo.getLastStatusTime()) : "0");  // get time stamp
+						xmlOut.addTextElementToData(
+						    "stale",
+						    std::to_string(
+						        time(0) -
+						        appInfo.getLastStatusTime()));  // time since update
+						xmlOut.addTextElementToData(
+						    "progress",
+						    std::to_string(appInfo.getProgress()));  // get progress
+						xmlOut.addTextElementToData("detail",
+						                            appInfo.getDetail());  // get detail
+						xmlOut.addTextElementToData(
+						    "class",
+						    appInfo.getClass());  // get application class
+						xmlOut.addTextElementToData(
+						    "url",
+						    appInfo.getURL());  // get application url
+						xmlOut.addTextElementToData(
+						    "context",
+						    appInfo.getContextName());  // get context
 						auto subappElement = xmlOut.addTextElementToData("subapps", "");
 						for(auto& subappInfoPair : appInfo.getSubappInfo())
 						{
-							xmlOut.addTextElementToParent("subapp_name", subappInfoPair.first, subappElement);
-							xmlOut.addTextElementToParent("subapp_status", subappInfoPair.second.status, subappElement);  // get status
-							xmlOut.addTextElementToParent("subapp_time",
-								subappInfoPair.second.lastStatusTime ? StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
-														subappElement);  // get time stamp
-							xmlOut.addTextElementToParent("subapp_stale", std::to_string(time(0) - subappInfoPair.second.lastStatusTime), subappElement);  // time since update
-							xmlOut.addTextElementToParent("subapp_progress", std::to_string(subappInfoPair.second.progress), subappElement);               // get progress
-							xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
-							xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                   // get url
-							xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
-
+							xmlOut.addTextElementToParent(
+							    "subapp_name", subappInfoPair.first, subappElement);
+							xmlOut.addTextElementToParent("subapp_status",
+							                              subappInfoPair.second.status,
+							                              subappElement);  // get status
+							xmlOut.addTextElementToParent(
+							    "subapp_time",
+							    subappInfoPair.second.lastStatusTime
+							        ? StringMacros::getTimestampString(
+							              subappInfoPair.second.lastStatusTime)
+							        : "0",
+							    subappElement);  // get time stamp
+							xmlOut.addTextElementToParent(
+							    "subapp_stale",
+							    std::to_string(time(0) -
+							                   subappInfoPair.second.lastStatusTime),
+							    subappElement);  // time since update
+							xmlOut.addTextElementToParent(
+							    "subapp_progress",
+							    std::to_string(subappInfoPair.second.progress),
+							    subappElement);  // get progress
+							xmlOut.addTextElementToParent("subapp_detail",
+							                              subappInfoPair.second.detail,
+							                              subappElement);  // get detail
+							xmlOut.addTextElementToParent("subapp_url",
+							                              subappInfoPair.second.url,
+							                              subappElement);  // get url
+							xmlOut.addTextElementToParent(
+							    "subapp_class",
+							    subappInfoPair.second.class_name,
+							    subappElement);  // get class
 						}
 					}
 
-					if(remoteGatewayStatus) //also return System Messages and console count and user-with-lock
+					if(remoteGatewayStatus)  //also return System Messages and console count and user-with-lock
 					{
-						__COUT_TYPE__(TLVL_DEBUG+12) << "Giving extra Gateway info to remote monitor..." << __E__;		
-									
-						xmlOut.addTextElementToData("systemMessages",
-													theWebUsers_.getAllSystemMessages());  
-						xmlOut.addTextElementToData("usernameWithLock",
-													theWebUsers_.getUserWithLock());  
+						__COUT_TYPE__(TLVL_DEBUG + 12)
+						    << "Giving extra Gateway info to remote monitor..." << __E__;
 
-						std::lock_guard<std::mutex> lock(theSupervisor->systemStatusMutex_); //lock for rest of scope
-						xmlOut.addTextElementToData("console_err_count",
-													std::to_string(theSupervisor->systemConsoleErrCount_));  
-						xmlOut.addTextElementToData("console_warn_count",
-													std::to_string(theSupervisor->systemConsoleWarnCount_));  
+						xmlOut.addTextElementToData("systemMessages",
+						                            theWebUsers_.getAllSystemMessages());
+						xmlOut.addTextElementToData("usernameWithLock",
+						                            theWebUsers_.getUserWithLock());
+
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->systemStatusMutex_);  //lock for rest of scope
+						xmlOut.addTextElementToData(
+						    "console_err_count",
+						    std::to_string(theSupervisor->systemConsoleErrCount_));
+						xmlOut.addTextElementToData(
+						    "console_warn_count",
+						    std::to_string(theSupervisor->systemConsoleWarnCount_));
 					}
 
 					std::stringstream out;
-					xmlOut.outputXmlDocument((std::ostringstream*)&out, false /*dispStdOut*/, false /*allowWhiteSpace*/);
-					__COUT_TYPE__(TLVL_DEBUG+23) << __COUT_HDR__ << "App status to monitor: " << out.str() << __E__;
+					xmlOut.outputXmlDocument((std::ostringstream*)&out,
+					                         false /*dispStdOut*/,
+					                         false /*allowWhiteSpace*/);
+					__COUT_TYPE__(TLVL_DEBUG + 23)
+					    << __COUT_HDR__ << "App status to monitor: " << out.str()
+					    << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
-				} //end GetRemoteAppStatus
-				if(buffer == "ResetConsoleCounts") 
+				}  //end GetRemoteAppStatus
+				if(buffer == "ResetConsoleCounts")
 				{
 					__COUT__ << "Remote request to reset Console Counts..." << __E__;
 
 					//zero out console count and retake first messages
 
-					for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+					for(const auto& it :
+					    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 					{
 						const auto& appInfo = it.second;
 						if(appInfo.isTypeConsoleSupervisor())
 						{
-							xoap::MessageReference tempMessage = SOAPUtilities::makeSOAPMessageReference("ResetConsoleCounts");
-							std::string reply = theSupervisor->send(appInfo.getDescriptor(), tempMessage);
+							xoap::MessageReference tempMessage =
+							    SOAPUtilities::makeSOAPMessageReference(
+							        "ResetConsoleCounts");
+							std::string reply =
+							    theSupervisor->send(appInfo.getDescriptor(), tempMessage);
 
 							if(reply != "Done")
 							{
-								__SS__ << "Error while resetting console counts of Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
-									<< "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "].\n\n"
-									<< reply << __E__;
+								__SS__ << "Error while resetting console counts of "
+								          "Supervisor instance = '"
+								       << appInfo.getName()
+								       << "' [LID=" << appInfo.getId() << "] in Context '"
+								       << appInfo.getContextName()
+								       << "' [URL=" << appInfo.getURL() << "].\n\n"
+								       << reply << __E__;
 								__SS_THROW__;
 							}
-							__COUT__ << "Reset console counts of Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
-									<< "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "]." << __E__;
+							__COUT__ << "Reset console counts of Supervisor instance = '"
+							         << appInfo.getName() << "' [LID=" << appInfo.getId()
+							         << "] in Context '" << appInfo.getContextName()
+							         << "' [URL=" << appInfo.getURL() << "]." << __E__;
 						}
-					} //end loop for Console Supervisors
+					}  //end loop for Console Supervisors
 
 					//for user display feedback, clear local cached values also
-					std::lock_guard<std::mutex> lock(theSupervisor->systemStatusMutex_); //lock for rest of scope
-					theSupervisor->lastConsoleErrTime_ = "0"; 	theSupervisor->lastConsoleErr_ = "";
-					theSupervisor->lastConsoleWarnTime_ = "0"; 	theSupervisor->lastConsoleWarn_ = "";
-					theSupervisor->lastConsoleInfoTime_ = "0";	theSupervisor->lastConsoleInfo_ = "";
-					theSupervisor->firstConsoleErrTime_ = "0"; 	theSupervisor->firstConsoleErr_ = "";
-					theSupervisor->firstConsoleWarnTime_ = "0"; theSupervisor->firstConsoleWarn_ = "";
-					theSupervisor->firstConsoleInfoTime_ = "0"; theSupervisor->firstConsoleInfo_ = "";
-					
+					std::lock_guard<std::mutex> lock(
+					    theSupervisor->systemStatusMutex_);  //lock for rest of scope
+					theSupervisor->lastConsoleErrTime_   = "0";
+					theSupervisor->lastConsoleErr_       = "";
+					theSupervisor->lastConsoleWarnTime_  = "0";
+					theSupervisor->lastConsoleWarn_      = "";
+					theSupervisor->lastConsoleInfoTime_  = "0";
+					theSupervisor->lastConsoleInfo_      = "";
+					theSupervisor->firstConsoleErrTime_  = "0";
+					theSupervisor->firstConsoleErr_      = "";
+					theSupervisor->firstConsoleWarnTime_ = "0";
+					theSupervisor->firstConsoleWarn_     = "";
+					theSupervisor->firstConsoleInfoTime_ = "0";
+					theSupervisor->firstConsoleInfo_     = "";
+
 					sock.acknowledge("Done", false /* verbose */);
 					continue;
-				} //end ResetConsoleCounts
+				}  //end ResetConsoleCounts
 				else if(buffer.find("loginVerify") == 0)
 				{
-					__COUTT__ << "Checking login verification request from remote gateway..." << __E__;
+					__COUTT__
+					    << "Checking login verification request from remote gateway..."
+					    << __E__;
 
 					//Lookup cookie code and return refreshed cookie code and user info
 					// command = loginVerify
@@ -1632,42 +2128,53 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					//	-- Use name to lookup access level conversion for user
 					//  -- if Desktop Icon has a special permission type, then modify userGroupPermissionsMap's allUsers to match
 					//		parameters.addParameter("RemoteGatewaySelfName");
-					std::vector<std::string> rxParams = StringMacros::getVectorFromString(buffer,{','});
-					__COUTVS__(23,StringMacros::vectorToString(rxParams));
+					std::vector<std::string> rxParams =
+					    StringMacros::getVectorFromString(buffer, {','});
+					__COUTVS__(23, StringMacros::vectorToString(rxParams));
 
 					if(rxParams.size() != 5)
 					{
-						__COUT_ERR__ << "Invalid remote login verify attempt! Expected 5 parameters, got " <<
-							rxParams.size() << __E__;
+						__COUT_ERR__ << "Invalid remote login verify attempt! Expected 5 "
+						                "parameters, got "
+						             << rxParams.size() << __E__;
 						sock.acknowledge("0", false /* verbose */);
-						continue;	
+						continue;
 					}
 
 					// If TRUE, cookie code is good, and refreshed code is in cookieCode, also pointers
 					// optionally for uint8_t userPermissions, uint64_t uid  Else, error message is
 					// returned in cookieCode
-					std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> userGroupPermissionsMap;
-					std::string                                                      userWithLock = "";
-					uint64_t                                                         uid, userSessionIndex;
+					std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
+					            userGroupPermissionsMap;
+					std::string userWithLock = "";
+					uint64_t    uid, userSessionIndex;
 					std::string cookieCode = rxParams[1];
 					if(!theWebUsers_.cookieCodeIsActiveForRequest(
-						cookieCode /*cookieCode*/, &userGroupPermissionsMap, &uid /*uid is not given to remote users*/, 
-						"0" /* check at remote location because ip addresses change from subsystem to subsystem depending on tunnels,... rxParams[3] */ /*ip*/, 
-						rxParams[2] /*refresh*/ == "1", false /* doNotGoRemote */, &userWithLock, &userSessionIndex))
+					       cookieCode /*cookieCode*/,
+					       &userGroupPermissionsMap,
+					       &uid /*uid is not given to remote users*/,
+					       "0" /* check at remote location because ip addresses change from subsystem to subsystem depending on tunnels,... rxParams[3] */
+					       /*ip*/,
+					       rxParams[2] /*refresh*/ == "1",
+					       false /* doNotGoRemote */,
+					       &userWithLock,
+					       &userSessionIndex))
 					{
 						__COUT_ERR__ << "Remote login failed!" << __E__;
 						sock.acknowledge("0", false /* verbose */);
-						continue;	
+						continue;
 					}
 
 					//Modify Permission Map based on Desktop Icon permission requirement
 					const std::string& remoteName = rxParams[4];
-					__COUTVS__(23,remoteName);
-					std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-					{ //lock for remainder of scope
-						std::lock_guard<std::mutex> lock(theSupervisor->remoteGatewayAppsMutex_);
+					__COUTVS__(23, remoteName);
+					std::vector<GatewaySupervisor::RemoteGatewayInfo>
+					    remoteGatewayApps;  //local copy
+					{                       //lock for remainder of scope
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->remoteGatewayAppsMutex_);
 						remoteGatewayApps = theSupervisor->remoteGatewayApps_;
-						__COUTVS__(22,remoteGatewayApps.size());						
+						__COUTVS__(22, remoteGatewayApps.size());
 					}
 
 					bool found = false;
@@ -1675,41 +2182,55 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						if(remoteName == remoteGatewayApp.appInfo.name)
 						{
 							found = true;
-							__COUTVS__(21,remoteGatewayApp.permissionThresholdString);
+							__COUTVS__(21, remoteGatewayApp.permissionThresholdString);
 
-							std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> remoteIconPermissionsMap;
-							StringMacros::getMapFromString(remoteGatewayApp.permissionThresholdString, 
-								remoteIconPermissionsMap);
+							std::map<std::string /*groupName*/,
+							         WebUsers::permissionLevel_t>
+							    remoteIconPermissionsMap;
+							StringMacros::getMapFromString(
+							    remoteGatewayApp.permissionThresholdString,
+							    remoteIconPermissionsMap);
 
-							//if permission map is only size 1, 
+							//if permission map is only size 1,
 							//	then modify WebUsers::DEFAULT_USER_GROUP for user with the icon's group level of the user
 							//	e.g. if user is 'HW: 255, allUsers: 1'
 							//		and icon is 'HW: 1'
 							//	then give to remote subsystem the user permission as 'HW: 255, allUsers: 255'
 							//
 							//	... this way the user is considered an expert at the remote subsystem
-							
-							if(remoteIconPermissionsMap.size() == 1 && 
-								remoteIconPermissionsMap.begin()->first != WebUsers::DEFAULT_USER_GROUP)
+
+							if(remoteIconPermissionsMap.size() == 1 &&
+							   remoteIconPermissionsMap.begin()->first !=
+							       WebUsers::DEFAULT_USER_GROUP)
 							{
-								__COUTVS__(21,remoteIconPermissionsMap.begin()->first); //the group
+								__COUTVS__(
+								    21,
+								    remoteIconPermissionsMap.begin()->first);  //the group
 
 								auto it = userGroupPermissionsMap.find(
-									remoteIconPermissionsMap.begin()->first);
-								std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>::iterator it2 = 
-									userGroupPermissionsMap.find(WebUsers::DEFAULT_USER_GROUP);
-								if(it != userGroupPermissionsMap.end() && 
-									it2 != userGroupPermissionsMap.end())
+								    remoteIconPermissionsMap.begin()->first);
+								std::map<std::string /*groupName*/,
+								         WebUsers::permissionLevel_t>::iterator it2 =
+								    userGroupPermissionsMap.find(
+								        WebUsers::DEFAULT_USER_GROUP);
+								if(it != userGroupPermissionsMap.end() &&
+								   it2 != userGroupPermissionsMap.end())
 								{
-									__COUT_TYPE__(TLVL_DEBUG+21) << __COUT_HDR__ <<
-										"Found user group '" << it->first << 
-										"' to modify: " << (uint16_t)it2->second << 
-										" --> " << (uint16_t)it->second << __E__;
+									__COUT_TYPE__(TLVL_DEBUG + 21)
+									    << __COUT_HDR__ << "Found user group '"
+									    << it->first
+									    << "' to modify: " << (uint16_t)it2->second
+									    << " --> " << (uint16_t)it->second << __E__;
 									it2->second = it->second;
-									__COUTVS__(21,(uint16_t)it2->second);
+									__COUTVS__(21, (uint16_t)it2->second);
 								}
-								else if(it == userGroupPermissionsMap.end()) //if special group not found, then no access
-									userGroupPermissionsMap[remoteIconPermissionsMap.begin()->first] = WebUsers::PERMISSION_LEVEL_INACTIVE;
+								else if(
+								    it ==
+								    userGroupPermissionsMap
+								        .end())  //if special group not found, then no access
+									userGroupPermissionsMap
+									    [remoteIconPermissionsMap.begin()->first] =
+									        WebUsers::PERMISSION_LEVEL_INACTIVE;
 							}
 
 							break;
@@ -1717,8 +2238,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					if(!found)
 					{
-						__COUT_ERR__ << "Did not find any matching subsystems for remote login verify from '" << remoteName << 
-									"' attempted!" << __E__;
+						__COUT_ERR__ << "Did not find any matching subsystems for remote "
+						                "login verify from '"
+						             << remoteName << "' attempted!" << __E__;
 					}
 
 					// Returned user info:
@@ -1727,19 +2249,22 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					// "UserWithLock", userWithLock);
 					// "Username", theWebUsers_.getUsersUsername(uid));
 					// "DisplayName", theWebUsers_.getUsersDisplayName(uid));
-					// "UserSessionIndex" 			
+					// "UserSessionIndex"
 
-					std::string retStr = "";	
+					std::string retStr   = "";
 					std::string username = theWebUsers_.getUsersUsername(uid);
 					retStr += cookieCode;
-					retStr += "," + StringMacros::encodeURIComponent(StringMacros::mapToString(userGroupPermissionsMap));
+					retStr +=
+					    "," + StringMacros::encodeURIComponent(
+					              StringMacros::mapToString(userGroupPermissionsMap));
 					retStr += "," + userWithLock;
 					retStr += "," + username;
 					retStr += "," + theWebUsers_.getUsersDisplayName(uid);
 					retStr += "," + std::to_string(userSessionIndex);
 
-					__COUTVS__(23,retStr);
-					__COUTT__ << "Remote login successful for " << username << ", userWithLock = " << userWithLock << __E__;
+					__COUTVS__(23, retStr);
+					__COUTT__ << "Remote login successful for " << username
+					          << ", userWithLock = " << userWithLock << __E__;
 					sock.acknowledge(retStr, false /* verbose */);
 					continue;
 				}
@@ -1755,25 +2280,27 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					//	to get updated icons every time...
 					//(so icon changes do no require an ots restart)
 
-					ConfigurationManager                              tmpCfgMgr; // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
-					const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
-					const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
+					ConfigurationManager
+					    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
+					const DesktopIconTable* iconTable =
+					    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
+					const std::vector<DesktopIconTable::DesktopIcon>& icons =
+					    iconTable->getAllDesktopIcons();
 
-					std::string iconString = "";  
+					std::string iconString = "";
 					// comma-separated icon string, 7 fields:
 					//				0 - caption 		= text below icon
 					//				1 - altText 		= text icon if no image given
 					//				2 - uniqueWin 		= if true, only one window is allowed,
-					// 										else  multiple instances of window 				
-					//				3 - permissions 	= security level needed to see icon 				
-					//				4 - picfn 			= icon image filename 				
+					// 										else  multiple instances of window
+					//				3 - permissions 	= security level needed to see icon
+					//				4 - picfn 			= icon image filename
 					//				5 - linkurl 		= url of the window to open
-					// 				6 - folderPath 		= folder and subfolder location '/' separated  
+					// 				6 - folderPath 		= folder and subfolder location '/' separated
 					//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
 
-
 					bool getRemoteIcons = true;
-					bool firstIcon = true;
+					bool firstIcon      = true;
 
 					//always force insert UserSettings so that the lock can be managed
 					{
@@ -1782,86 +2309,105 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						else
 							iconString += ",";
 
-						iconString += "User Settings";//icon.caption_;
-						iconString += "," + std::string("User");//icon.alternateText_;
-						iconString += "," + std::string("1"); //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
-						iconString += "," + std::string("1");  // set permission to 1 so the
-																// desktop shows every icon that the
-																// server allows (i.e., trust server
-																// security, ignore client security)
-						iconString += "," + std::string("/WebPath/images/dashboardImages/icon-Settings.png"); //icon.imageURL_;
-						iconString += "," + iconTable->getRemoteURL(&tmpCfgMgr, 
-							"/WebPath/html/UserSettings.html");
-						iconString += "," + std::string(""); //icon.folderPath_;
+						iconString += "User Settings";            //icon.caption_;
+						iconString += "," + std::string("User");  //icon.alternateText_;
+						iconString +=
+						    "," +
+						    std::string(
+						        "1");  //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+						iconString +=
+						    "," + std::string("1");  // set permission to 1 so the
+						                             // desktop shows every icon that the
+						                             // server allows (i.e., trust server
+						                             // security, ignore client security)
+						iconString += "," + std::string(
+						                        "/WebPath/images/dashboardImages/"
+						                        "icon-Settings.png");  //icon.imageURL_;
+						iconString +=
+						    "," + iconTable->getRemoteURL(
+						              &tmpCfgMgr, "/WebPath/html/UserSettings.html");
+						iconString += "," + std::string("");  //icon.folderPath_;
 					}
-
 
 					for(const auto& icon : icons)
 					{
-						__COUTVS__(40,icon.caption_);
-						__COUTVS__(40,icon.permissionThresholdString_);
+						__COUTVS__(40, icon.caption_);
+						__COUTVS__(40, icon.permissionThresholdString_);
 
 						//ignore permission level, and give all icons
 
 						if(getRemoteIcons)
 						{
-							__COUTVS__(10,icon.windowContentURL_);
-							if(icon.windowContentURL_.size() > 4 && 
-								icon.windowContentURL_[0] == 'o' &&
-								icon.windowContentURL_[1] == 't' &&
-								icon.windowContentURL_[2] == 's' &&
-								icon.windowContentURL_[3] == ':')
+							__COUTVS__(10, icon.windowContentURL_);
+							if(icon.windowContentURL_.size() > 4 &&
+							   icon.windowContentURL_[0] == 'o' &&
+							   icon.windowContentURL_[1] == 't' &&
+							   icon.windowContentURL_[2] == 's' &&
+							   icon.windowContentURL_[3] == ':')
 							{
-								 __COUT_TYPE__(TLVL_DEBUG+10) << __COUT_HDR__ << "Retrieving remote icons at " << icon.windowContentURL_ << __E__;
+								__COUT_TYPE__(TLVL_DEBUG + 10)
+								    << __COUT_HDR__ << "Retrieving remote icons at "
+								    << icon.windowContentURL_ << __E__;
 
-								std::vector<std::string> parsedFields = StringMacros::getVectorFromString(icon.windowContentURL_,{':'});
-								__COUTVS__(10,StringMacros::vectorToString(parsedFields));
+								std::vector<std::string> parsedFields =
+								    StringMacros::getVectorFromString(
+								        icon.windowContentURL_, {':'});
+								__COUTVS__(10,
+								           StringMacros::vectorToString(parsedFields));
 
 								if(parsedFields.size() == 3)
 								{
-									Socket      iconRemoteSocket(parsedFields[1],atoi(parsedFields[2].c_str()));
+									Socket iconRemoteSocket(
+									    parsedFields[1], atoi(parsedFields[2].c_str()));
 
 									// ConfigurationTree configLinkNode = theSupervisor->CorePropertySupervisorBase::getSupervisorTableNode();
 									// std::string ipAddressForStateChangesOverUDP = configLinkNode.getNode("IPAddressForStateChangesOverUDP").getValue<std::string>();
-									__COUTVS__(10,ipAddressForStateChangesOverUDP);
-									TransceiverSocket iconSocket(ipAddressForStateChangesOverUDP);
-									std::string remoteIconString = iconSocket.sendAndReceive(iconRemoteSocket,"GetRemoteDesktopIcons", 10 /*timeoutSeconds*/);
-									__COUTVS__(10,remoteIconString);
+									__COUTVS__(10, ipAddressForStateChangesOverUDP);
+									TransceiverSocket iconSocket(
+									    ipAddressForStateChangesOverUDP);
+									std::string remoteIconString =
+									    iconSocket.sendAndReceive(iconRemoteSocket,
+									                              "GetRemoteDesktopIcons",
+									                              10 /*timeoutSeconds*/);
+									__COUTVS__(10, remoteIconString);
 									continue;
 								}
 							}
-						} //end remote icon handling
+						}  //end remote icon handling
 
 						// have icon access, so add to CSV string
 						if(firstIcon)
 							firstIcon = false;
 						else
 							iconString += ",";
-							
 
-						__COUTVS__(10,icon.caption_);
+						__COUTVS__(10, icon.caption_);
 						iconString += icon.caption_;
 						iconString += "," + icon.alternateText_;
-						iconString += "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
-						iconString += "," + std::string("1");  // set permission to 1 so the
-																// desktop shows every icon that the
-																// server allows (i.e., trust server
-																// security, ignore client security)
+						iconString +=
+						    "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+						iconString +=
+						    "," + std::string("1");  // set permission to 1 so the
+						                             // desktop shows every icon that the
+						                             // server allows (i.e., trust server
+						                             // security, ignore client security)
 						iconString += "," + icon.imageURL_;
-						iconString += "," + iconTable->getRemoteURL(&tmpCfgMgr, icon.windowContentURL_);
+						iconString += "," + iconTable->getRemoteURL(
+						                        &tmpCfgMgr, icon.windowContentURL_);
 						iconString += "," + icon.folderPath_;
 					}
-					__COUTVS__(10,iconString);
+					__COUTVS__(10, iconString);
 
 					sock.acknowledge(iconString, true /* verbose */);
 					continue;
-				} //end GetRemoteDesktopIcons
-				else if(!enableStateChanges)//else it is an FSM Command!
+				}                             //end GetRemoteDesktopIcons
+				else if(!enableStateChanges)  //else it is an FSM Command!
 				{
-					__COUT_WARN__ << "Skipping potential FSM Command because enableStateChanges=false" << __E__;
+					__COUT_WARN__ << "Skipping potential FSM Command because "
+					                 "enableStateChanges=false"
+					              << __E__;
 					continue;
 				}
-
 
 				__COUT__ << "Received a remote FSM Command attempt!" << __E__;
 
@@ -1869,9 +2415,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				if(nCommas == 0)
 				{
 					__SS__ << "Unrecognized State Machine command :-" << buffer
-						<< "-. Format is FiniteStateMachineName,Command,Parameter(s). "
-							"Where Parameter(s) is/are optional."
-						<< __E__;
+					       << "-. Format is FiniteStateMachineName,Command,Parameter(s). "
+					          "Where Parameter(s) is/are optional."
+					       << __E__;
 					__COUT_ERR__ << ss.str();
 					if(acknowledgementEnabled)
 					{
@@ -1883,7 +2429,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				begin        = 0;
 				commaCounter = 0;
 				parameters.clear();
-				while((commaPosition = buffer.find(',', begin)) != std::string::npos || commaCounter == nCommas)
+				while((commaPosition = buffer.find(',', begin)) != std::string::npos ||
+				      commaCounter == nCommas)
 				{
 					if(commaCounter == nCommas)
 						commaPosition = buffer.size();
@@ -1893,8 +2440,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						command = buffer.substr(begin, commaPosition - begin);
 					else
 						parameters.push_back(buffer.substr(begin, commaPosition - begin));
-					__COUT__ << "Word[" << commaCounter << "]: " << 
-						buffer.substr(begin, commaPosition - begin) << __E__;
+					__COUT__ << "Word[" << commaCounter
+					         << "]: " << buffer.substr(begin, commaPosition - begin)
+					         << __E__;
 
 					begin = commaPosition + 1;
 					++commaCounter;
@@ -1902,7 +2450,6 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				__COUTV__(fsmName);
 				__COUTV__(command);
 				__COUTV__(StringMacros::vectorToString(parameters));
-
 
 				// set scope of mutex
 				std::string extraDoneContent = "";
@@ -1913,51 +2460,72 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					// messages
 					if(theSupervisor->VERBOSE_MUTEX)
 						__COUT__ << "Waiting for FSM access" << __E__;
-					std::lock_guard<std::mutex> lock(theSupervisor->stateMachineAccessMutex_);
+					std::lock_guard<std::mutex> lock(
+					    theSupervisor->stateMachineAccessMutex_);
 					if(theSupervisor->VERBOSE_MUTEX)
 						__COUT__ << "Have FSM access" << __E__;
 
 					errorStr = theSupervisor->attemptStateMachineTransition(
-						0, 0, command, fsmName, WebUsers::DEFAULT_STATECHANGER_USERNAME /*fsmWindowName*/, 
-						WebUsers::DEFAULT_STATECHANGER_USERNAME, parameters);
+					    0,
+					    0,
+					    command,
+					    fsmName,
+					    WebUsers::DEFAULT_STATECHANGER_USERNAME /*fsmWindowName*/,
+					    WebUsers::DEFAULT_STATECHANGER_USERNAME,
+					    parameters);
 
-					if(errorStr == "" && command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
-						extraDoneContent = theSupervisor->activeStateMachineConfigurationDumpOnConfigure_;
+					if(errorStr == "" &&
+					   command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+						extraDoneContent =
+						    theSupervisor
+						        ->activeStateMachineConfigurationDumpOnConfigure_;
 
-					if(errorStr == "" && command == RunControlStateMachine::START_TRANSITION_NAME)
-						extraDoneContent = theSupervisor->activeStateMachineConfigurationDumpOnRun_; 
+					if(errorStr == "" &&
+					   command == RunControlStateMachine::START_TRANSITION_NAME)
+						extraDoneContent =
+						    theSupervisor->activeStateMachineConfigurationDumpOnRun_;
 				}
 
 				if(errorStr != "")
 				{
-					__SS__ << "UDP State Changer failed to execute command because of the "
-							"following error: "
-						<< errorStr;
+					__SS__
+					    << "UDP State Changer failed to execute command because of the "
+					       "following error: "
+					    << errorStr;
 					__COUT_ERR__ << ss.str();
 					if(acknowledgementEnabled)
 						sock.acknowledge(errorStr, true /* verbose */);
 				}
 				else
 				{
-					__SS__ << "Successfully executed state change command '" << command << ".'" << __E__;
+					__SS__ << "Successfully executed state change command '" << command
+					       << ".'" << __E__;
 					__COUT_INFO__ << ss.str();
 					if(acknowledgementEnabled)
-						sock.acknowledge("Done" + (
-							extraDoneContent.size()?("," + extraDoneContent):"" //append extra done content, if any
-						), true /* verbose */);
+						sock.acknowledge(
+						    "Done" + (extraDoneContent.size()
+						                  ? ("," + extraDoneContent)
+						                  : ""  //append extra done content, if any
+						              ),
+						    true /* verbose */);
 				}
-				
 			}
 			catch(...)
 			{
 				__SS__ << "Error was caught handling UDP command." << __E__;
 				try
-				{ throw; }
+				{
+					throw;
+				}
 				catch(const std::runtime_error& e)
-				{ ss << "Here is the error: " << e.what() << __E__;	}
+				{
+					ss << "Here is the error: " << e.what() << __E__;
+				}
 				catch(...)
-				{ ss << "Unrecognized error." << __E__;	}
-				
+				{
+					ss << "Unrecognized error." << __E__;
+				}
+
 				__COUT_ERR__ << ss.str();
 				if(acknowledgementEnabled)
 					sock.acknowledge(ss.str(), true /* verbose */);
@@ -1974,15 +2542,17 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 //		and specifically the current active experiments within the logbook
 //	escape entryText to make it html/xml safe!!
 ////      reserved: ", ', &, <, >, \n, double-space
-void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText, const std::string& subjectText /* = "" */)
+void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText,
+                                           const std::string& subjectText /* = "" */)
 {
 	__COUT__ << "Making System Logbook Entry: " << entryText << __E__;
 	if(subjectText.size())
 		__COUTV__(subjectText);
-	lastLogbookEntry_ = entryText;
+	lastLogbookEntry_     = entryText;
 	lastLogbookEntryTime_ = time(0);
 
-	SupervisorInfoMap logbookInfoMap = allSupervisorInfo_.getAllLogbookTypeSupervisorInfo();
+	SupervisorInfoMap logbookInfoMap =
+	    allSupervisorInfo_.getAllLogbookTypeSupervisorInfo();
 
 	if(logbookInfoMap.size() == 0)
 	{
@@ -2001,30 +2571,37 @@ void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText, const s
 	{
 		try
 		{
-			xoap::MessageReference retMsg = SOAPMessenger::sendWithSOAPReply(logbookInfo.second.getDescriptor(), "MakeSystemLogEntry", parameters);
+			xoap::MessageReference retMsg = SOAPMessenger::sendWithSOAPReply(
+			    logbookInfo.second.getDescriptor(), "MakeSystemLogEntry", parameters);
 
 			SOAPParameters retParameters("Status");
 			SOAPUtilities::receive(retMsg, retParameters);
 
 			std::string status = retParameters.getValue("Status");
-			__COUT__ << "Returned Status: " << status << __E__;  // retParameters[0].getValue() << __E__ << __E__;
+			__COUT__ << "Returned Status: " << status
+			         << __E__;  // retParameters[0].getValue() << __E__ << __E__;
 			if(status != "Success")
 			{
-				__SS__ << "Invalid return status on MakeSystemLogEntry: " << status << __E__;
+				__SS__ << "Invalid return status on MakeSystemLogEntry: " << status
+				       << __E__;
 				__SS_THROW__;
 			}
 		}
 		catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 		{
-			__SS__ << "Failed to send system log SOAP entry to " << logbookInfo.second.getContextName() << "/" << logbookInfo.second.getName()
-			       << " w/app ID=" << logbookInfo.first << __E__ << e.what();
+			__SS__ << "Failed to send system log SOAP entry to "
+			       << logbookInfo.second.getContextName() << "/"
+			       << logbookInfo.second.getName() << " w/app ID=" << logbookInfo.first
+			       << __E__ << e.what();
 
 			__SS_THROW__;
 		}
 		catch(std::runtime_error& e)
 		{
-			__SS__ << "Error during handling of system log SOAP entry at " << logbookInfo.second.getContextName() << "/" << logbookInfo.second.getName()
-			       << " w/app ID=" << logbookInfo.first << __E__ << e.what();
+			__SS__ << "Error during handling of system log SOAP entry at "
+			       << logbookInfo.second.getContextName() << "/"
+			       << logbookInfo.second.getName() << " w/app ID=" << logbookInfo.first
+			       << __E__ << e.what();
 			__SS_THROW__;
 		}
 	}
@@ -2033,20 +2610,32 @@ void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText, const s
 //==============================================================================
 void GatewaySupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 {
-	if(!supervisorGuiHasBeenLoaded_ && (supervisorGuiHasBeenLoaded_ = true))  // make system logbook entry that ots has been started
+	if(!supervisorGuiHasBeenLoaded_ &&
+	   (supervisorGuiHasBeenLoaded_ =
+	        true))  // make system logbook entry that ots has been started
 	{
 		bool doLog = false;
-		try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+		try
+		{
+			doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
+		}
+		catch(...)
+		{ /* ignore errors */
+			;
+		}
 
-		if(doLog) makeSystemLogEntry("ots started.");
+		if(doLog)
+			makeSystemLogEntry("ots started.");
 	}
 
-	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots</title>" << GatewaySupervisor::getIconHeaderString() <<
+	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots</title>"
+	     << GatewaySupervisor::getIconHeaderString() <<
 	    // end show ots icon
 	    "</head>"
 	     << "<frameset col='100%' row='100%'>"
-	     << "<frame src='/WebPath/html/Desktop.html?urn=" << this->getApplicationDescriptor()->getLocalId() << "&securityType=" << securityType_
-	     << "'></frameset></html>";
+	     << "<frame src='/WebPath/html/Desktop.html?urn="
+	     << this->getApplicationDescriptor()->getLocalId()
+	     << "&securityType=" << securityType_ << "'></frameset></html>";
 }  // end Default()
 
 //==============================================================================
@@ -2079,45 +2668,46 @@ std::string GatewaySupervisor::getIconHeaderString(void)
 
 //==============================================================================
 ////////////////////////////////////////////////////////////////////////
-void GatewaySupervisor::XGI_Turtle(xgi::Input * /*in*/, xgi::Output * out )
+void GatewaySupervisor::XGI_Turtle(xgi::Input* /*in*/, xgi::Output* out)
 {
 	//test if ImageMagick is installed to do convert, if not just return existing png
 	if(!picGen_.imageMagickInstallChecked)
 	{
 		//to install on AL9, sudo dnf install -y ImageMagick
-		std::string ret = StringMacros::exec("convert --version"); //check if ImageMagick is installed
-		__COUTVS__(50,ret);
+		std::string ret =
+		    StringMacros::exec("convert --version");  //check if ImageMagick is installed
+		__COUTVS__(50, ret);
 		picGen_.imageMagickInstallChecked = true;
-		picGen_.imageMagickInstalled = ret == ""?false:true;
+		picGen_.imageMagickInstalled      = ret == "" ? false : true;
 	}
 
-	std::string filepath = __ENV__("OTSDAQ_WEB_PATH")+ std::string("/images/otsdaqIcons/");
-	
+	std::string filepath =
+	    __ENV__("OTSDAQ_WEB_PATH") + std::string("/images/otsdaqIcons/");
+
 	std::string filename = filepath + "generated/turtle.png";
 	if(picGen_.imageMagickInstalled)
 		picGen_.generateTurtle(filepath);
-	else 
+	else
 		filename = filepath + "turtle.png";
-		
+
 	//insertPngRawData(out,"images/generated/turtle.png");
 	{
-
 		//write raw picture data to output stream
 		std::ifstream is;
 		is.open(filename.c_str());
-		
+
 		*out << "data:image/png;charset=US-ASCII,";
 
 		char CodeURL[4];
 		while(is.good())
-		{ //print out safe Ascii equivalent
-			sprintf(CodeURL,"%%%2.2X",(unsigned char)(is.get()));
+		{  //print out safe Ascii equivalent
+			sprintf(CodeURL, "%%%2.2X", (unsigned char)(is.get()));
 			*out << CodeURL;
 		}
-		
+
 		is.close();
 	}
-} //end XGI_Turtle()
+}  //end XGI_Turtle()
 
 //==============================================================================
 // stateMachineIterationBreakpoint
@@ -2131,7 +2721,8 @@ try
 	std::string requestType = CgiDataUtilities::getData(cgiIn, "Request");
 
 	HttpXmlDocument           xmlOut;
-	WebUsers::RequestUserInfo userInfo(requestType, CgiDataUtilities::postData(cgiIn, "CookieCode"));
+	WebUsers::RequestUserInfo userInfo(requestType,
+	                                   CgiDataUtilities::postData(cgiIn, "CookieCode"));
 
 	CorePropertySupervisorBase::getRequestUserInfo(userInfo);
 
@@ -2154,7 +2745,8 @@ try
 		}
 		else if(requestType == "set")
 		{
-			unsigned int breakpointSetValue = CgiDataUtilities::getDataAsInt(cgiIn, "breakpointSetValue");
+			unsigned int breakpointSetValue =
+			    CgiDataUtilities::getDataAsInt(cgiIn, "breakpointSetValue");
 			__COUTV__(breakpointSetValue);
 
 			{  // start mutex scope
@@ -2169,25 +2761,32 @@ try
 		}
 		else
 		{
-			__SS__ << "Unknown iteration breakpoint request type = " << requestType << __E__;
+			__SS__ << "Unknown iteration breakpoint request type = " << requestType
+			       << __E__;
 			__SS_THROW__;
 		}
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Error caught handling iteration breakpoint command: " << e.what() << __E__;
+		__SS__ << "Error caught handling iteration breakpoint command: " << e.what()
+		       << __E__;
 		__COUT_ERR__ << ss.str();
 		xmlOut.addTextElementToData("Error", ss.str());
 	}
 	catch(...)
 	{
 		__SS__ << "Unknown error caught handling iteration breakpoint command." << __E__;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__COUT_ERR__ << ss.str();
 		xmlOut.addTextElementToData("Error", ss.str());
 	}  // end stateMachineIterationBreakpoint() catch
@@ -2203,12 +2802,17 @@ catch(const std::runtime_error& e)
 catch(...)
 {
 	__SS__ << "Unknown error caught handling iteration breakpoint command." << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << ss.str();
 }  // end stateMachineIterationBreakpoint() catch
 
@@ -2224,15 +2828,19 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	if(VERBOSE_MUTEX)
 		__COUT__ << "Have FSM access" << __E__;
 
-	out->getHTTPResponseHeader().addHeader("Access-Control-Allow-Origin", "*");  // to avoid block by blocked by CORS policy of browser
+	out->getHTTPResponseHeader().addHeader(
+	    "Access-Control-Allow-Origin",
+	    "*");  // to avoid block by blocked by CORS policy of browser
 	cgicc::Cgicc cgiIn(in);
 
-	std::string command     = CgiDataUtilities::getData(cgiIn, "StateMachine");
-	std::string requestType = "StateMachine-" + command;  // prepend StateMachine to request type
+	std::string command = CgiDataUtilities::getData(cgiIn, "StateMachine");
+	std::string requestType =
+	    "StateMachine-" + command;  // prepend StateMachine to request type
 	__COUTV__(requestType);
 
 	HttpXmlDocument           xmlOut;
-	WebUsers::RequestUserInfo userInfo(requestType, CgiDataUtilities::postData(cgiIn, "CookieCode"));
+	WebUsers::RequestUserInfo userInfo(requestType,
+	                                   CgiDataUtilities::postData(cgiIn, "CookieCode"));
 
 	CorePropertySupervisorBase::getRequestUserInfo(userInfo);
 
@@ -2247,8 +2855,11 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	__COUT__ << "Check for Handled by theIterator_" << __E__;
 
 	// check if Iterator should handle
-	if((activeStateMachineWindowName_ == "" || activeStateMachineWindowName_ == "iterator" ||
-		(activeStateMachineName_ == fsmName && command.find("iterate") == 0) /* for combo iterate/fsm GUIs like SubsystemLaunch.js */ ) &&
+	if((activeStateMachineWindowName_ == "" ||
+	    activeStateMachineWindowName_ == "iterator" ||
+	    (activeStateMachineName_ == fsmName &&
+	     command.find("iterate") ==
+	         0) /* for combo iterate/fsm GUIs like SubsystemLaunch.js */) &&
 	   theIterator_.handleCommandRequest(xmlOut, command, fsmWindowName))
 	{
 		__COUT__ << "Handled by theIterator_" << __E__;
@@ -2266,8 +2877,9 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 
 		xmlOut.addTextElementToData("state_tranisition_attempted",
 		                            "0");  // indicate to GUI transition NOT attempted
-		xmlOut.addTextElementToData("state_tranisition_attempted_err",
-		                            ss.str());  // indicate to GUI transition NOT attempted
+		xmlOut.addTextElementToData(
+		    "state_tranisition_attempted_err",
+		    ss.str());  // indicate to GUI transition NOT attempted
 		xmlOut.outputXmlDocument((std::ostringstream*)out, false, true);
 		return;
 	}
@@ -2279,28 +2891,36 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	if(command == "Configure")
 		parameters.push_back(CgiDataUtilities::postData(cgiIn, "ConfigurationAlias"));
 
-	std::string logEntry = StringMacros::decodeURIComponent(
-		CgiDataUtilities::postData(cgiIn, "logEntry"));
+	std::string logEntry =
+	    StringMacros::decodeURIComponent(CgiDataUtilities::postData(cgiIn, "logEntry"));
 
-	attemptStateMachineTransition(&xmlOut, out, command, fsmName, fsmWindowName, userInfo.username_, parameters, logEntry);
+	attemptStateMachineTransition(&xmlOut,
+	                              out,
+	                              command,
+	                              fsmName,
+	                              fsmWindowName,
+	                              userInfo.username_,
+	                              parameters,
+	                              logEntry);
 
 }  // end stateMachineXgiHandler()
 
 //==============================================================================
-std::string GatewaySupervisor::attemptStateMachineTransition(HttpXmlDocument*                xmldoc,
-                                                             std::ostringstream*             out,
-                                                             const std::string&              command,
-                                                             const std::string&              fsmName,
-                                                             const std::string&              fsmWindowName,
-                                                             const std::string&              username,
-                                                             const std::vector<std::string>& commandParameters,
-                                                             std::string             		 logEntry /* = "" */)
+std::string GatewaySupervisor::attemptStateMachineTransition(
+    HttpXmlDocument*                xmldoc,
+    std::ostringstream*             out,
+    const std::string&              command,
+    const std::string&              fsmName,
+    const std::string&              fsmWindowName,
+    const std::string&              username,
+    const std::vector<std::string>& commandParameters,
+    std::string                     logEntry /* = "" */)
 try
 {
 	std::string errorStr = "";
 
 	std::string currentState = theStateMachine_.getCurrentStateName();
-	__COUT__ << "State Machine command = " << command << __E__;	
+	__COUT__ << "State Machine command = " << command << __E__;
 	__COUT__ << "fsmName = " << fsmName << __E__;
 	__COUT__ << "fsmWindowName = " << fsmWindowName << __E__;
 	__COUTV__(username);
@@ -2311,12 +2931,12 @@ try
 	__COUTV__(StringMacros::vectorToString(commandParameters));
 
 	//check if logEntry is in parameters
-	if(!logEntry.size() && commandParameters.size() && 
-		commandParameters.back().find("LogEntry:") == 0 && 
-			commandParameters.back().size() > strlen("LogEntry:"))
+	if(!logEntry.size() && commandParameters.size() &&
+	   commandParameters.back().find("LogEntry:") == 0 &&
+	   commandParameters.back().size() > strlen("LogEntry:"))
 	{
 		logEntry = commandParameters.back().substr(strlen("LogEntry:"));
-		__COUTV__(logEntry);	
+		__COUTV__(logEntry);
 	}
 
 	/////////////////
@@ -2327,22 +2947,26 @@ try
 	//	else, allow
 	if(activeStateMachineName_ != "" && activeStateMachineName_ != fsmName)
 	{
-		__COUT__ << "Validating... currentFSM = " << activeStateMachineName_ << ", currentState = " << currentState <<
-			", newFSM = " << fsmName << ", command = " << command << __E__;
-		if(currentState != RunControlStateMachine::HALTED_STATE_NAME && currentState != RunControlStateMachine::INITIAL_STATE_NAME)
+		__COUT__ << "Validating... currentFSM = " << activeStateMachineName_
+		         << ", currentState = " << currentState << ", newFSM = " << fsmName
+		         << ", command = " << command << __E__;
+		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
+		   currentState != RunControlStateMachine::INITIAL_STATE_NAME)
 		{
 			// illegal for this FSM name to attempt transition
 
 			__SS__ << "Error - Can not accept request because the State Machine "
-				<< "with window name '" << activeStateMachineWindowName_ << "' (UID: " << activeStateMachineName_
-				<< ") "
-					"is currently "
-				<< "in control of State Machine progress. ";
-			ss << "\n\nIn order for this State Machine with window name '" << fsmWindowName << "' (UID: " << fsmName
-				<< ") "
-					"to control progress, please transition to " << 
-					RunControlStateMachine::HALTED_STATE_NAME << " using the active "
-				<< "State Machine '" << activeStateMachineWindowName_ << ".'" << __E__;
+			       << "with window name '" << activeStateMachineWindowName_
+			       << "' (UID: " << activeStateMachineName_
+			       << ") "
+			          "is currently "
+			       << "in control of State Machine progress. ";
+			ss << "\n\nIn order for this State Machine with window name '"
+			   << fsmWindowName << "' (UID: " << fsmName
+			   << ") "
+			      "to control progress, please transition to "
+			   << RunControlStateMachine::HALTED_STATE_NAME << " using the active "
+			   << "State Machine '" << activeStateMachineWindowName_ << ".'" << __E__;
 			__SS_THROW__;
 		}
 		else  // clear active state machine
@@ -2353,46 +2977,67 @@ try
 	}
 	//FSM name validated
 
-	if(logEntry != "")		
-	{		
+	if(logEntry != "")
+	{
 		logEntry += " (" + StringMacros::getTimestampString(time(0)) + ")";
 
-		if(command == RunControlStateMachine::START_TRANSITION_NAME && 
-			getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME).size())
+		if(command == RunControlStateMachine::START_TRANSITION_NAME &&
+		   getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME).size())
 		{
 			//add configure log entry to start log entry
 
-			logEntry += "\n\nThe last Configure transition log entry was this:\n" + 
-				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+			logEntry +=
+			    "\n\nThe last Configure transition log entry was this:\n" +
+			    getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
 		}
 
 		bool doLog = false;
-		try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+		try
+		{
+			doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+		}
+		catch(...)
+		{ /* ignore errors */
+			;
+		}
 
-		if(doLog) makeSystemLogEntry("Attempting FSM command '" + command + "' from state '" + 
-			currentState + "' with user log entry: " + logEntry);
+		if(doLog)
+			makeSystemLogEntry("Attempting FSM command '" + command + "' from state '" +
+			                   currentState + "' with user log entry: " + logEntry);
 	}
 
-	setLastLogEntry(command,logEntry);
-	
+	setLastLogEntry(command, logEntry);
+
 	SOAPParameters parameters;
 	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 	{
-		activeStateMachineConfigurationDumpOnConfigure_ = ""; //clear (and set if enabled during configure transition)
-		activeStateMachineConfigurationDumpOnRun_ = ""; //clear (and set if enabled during configure transition)
-		activeStateMachineConfigurationDumpOnRunEnable_ = false, activeStateMachineConfigurationDumpOnConfigureEnable_ = false; //clear (and set if enabled during configure transition)		
-		activeStateMachineConfigurationDumpOnConfigureFilename_ = ""; //clear (and set if enabled during configure transition)
-		activeStateMachineConfigurationDumpOnRunFilename_ = ""; //clear (and set if enabled during configure transition)
-		
-		activeStateMachineRequireUserLogOnRun_ = false, activeStateMachineRequireUserLogOnConfigure_ = false; //clear (and set if enabled during configure transition)
-		activeStateMachineRunInfoPluginType_ = TableViewColumnInfo::DATATYPE_STRING_DEFAULT; //clear (and set if enabled during configure transition)
+		activeStateMachineConfigurationDumpOnConfigure_ =
+		    "";  //clear (and set if enabled during configure transition)
+		activeStateMachineConfigurationDumpOnRun_ =
+		    "";  //clear (and set if enabled during configure transition)
+		activeStateMachineConfigurationDumpOnRunEnable_ = false,
+		activeStateMachineConfigurationDumpOnConfigureEnable_ =
+		    false;  //clear (and set if enabled during configure transition)
+		activeStateMachineConfigurationDumpOnConfigureFilename_ =
+		    "";  //clear (and set if enabled during configure transition)
+		activeStateMachineConfigurationDumpOnRunFilename_ =
+		    "";  //clear (and set if enabled during configure transition)
+
+		activeStateMachineRequireUserLogOnRun_ = false,
+		activeStateMachineRequireUserLogOnConfigure_ =
+		    false;  //clear (and set if enabled during configure transition)
+		activeStateMachineRunInfoPluginType_ = TableViewColumnInfo::
+		    DATATYPE_STRING_DEFAULT;  //clear (and set if enabled during configure transition)
 
 		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
-			currentState != RunControlStateMachine::INITIAL_STATE_NAME)  // check if out of sync command
+		   currentState != RunControlStateMachine::
+		                       INITIAL_STATE_NAME)  // check if out of sync command
 		{
 			__SS__ << "Error - Can only transition to Configured if the current "
-			       << "state is Initial or Halted. The current state is '" << currentState << 
-				   ".' Perhaps your state machine is out of sync, or you need to Halt before Configuring." << __E__;
+			       << "state is Initial or Halted. The current state is '" << currentState
+			       << ".' Perhaps your state machine is out of sync, or you need to Halt "
+			          "before Configuring."
+			       << __E__;
 			__SS_THROW__;
 		}
 
@@ -2407,70 +3052,157 @@ try
 		}
 
 		// check if configuration dump is enabled on configure transition
-		std::string  dumpFormatOnConfigure, dumpFormatOnRun;
+		std::string dumpFormatOnConfigure, dumpFormatOnRun;
 		{
 			ConfigurationTree configLinkNode =
-					CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+			    CorePropertySupervisorBase::theConfigurationManager_
+			        ->getSupervisorTableNode(supervisorContextUID_,
+			                                 supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
 				bool doThrow = false;
 				try  // for backwards compatibility
 				{
-					ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
-						
-					try { activeStateMachineRequireUserLogOnConfigure_ = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>(); } catch(...) {;}
-					try { activeStateMachineRequireUserLogOnRun_ = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) {;}					
-					try { activeStateMachineRunAlias_ = fsmLinkNode.getNode("RunDisplayAlias").getValueWithDefault<std::string>("Run" /* defaultValue */); } catch(...) { activeStateMachineRunAlias_ = "Run";}
-					try { activeStateMachineRollOverLogOnConfigure_ = fsmLinkNode.getNode("RollOverLogOnConfigure").getValueWithDefault<bool>(false /* defaultValue */); } catch(...) { activeStateMachineRollOverLogOnConfigure_ = false;}
-					try { activeStateMachineRollOverLogOnStart_ = fsmLinkNode.getNode("RollOverLogOnStart").getValueWithDefault<bool>(false /* defaultValue */); } catch(...) { activeStateMachineRollOverLogOnStart_ = false;}
-					
+					ConfigurationTree fsmLinkNode =
+					    configLinkNode.getNode("LinkToStateMachineTable")
+					        .getNode(fsmName);
+
 					try
-					{ 
-						activeStateMachineRunInfoPluginType_ = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>(); 							
+					{
+						activeStateMachineRequireUserLogOnConfigure_ =
+						    fsmLinkNode
+						        .getNode("RequireUserLogInputOnConfigureTransition")
+						        .getValue<bool>();
 					}
-					catch(...) //ignore missing RunInfoPluginType
-					{ 
-						__COUT__ << "RunInfoPluginType not defined for FSM name '" <<
-							fsmName << "' - please setup a valid run info plugin type to enable external Run Number coordination and dumping configuration info to an external location." << __E__; 
-					} 
+					catch(...)
+					{
+						;
+					}
+					try
+					{
+						activeStateMachineRequireUserLogOnRun_ =
+						    fsmLinkNode.getNode("RequireUserLogInputOnRunTransition")
+						        .getValue<bool>();
+					}
+					catch(...)
+					{
+						;
+					}
+					try
+					{
+						activeStateMachineRunAlias_ =
+						    fsmLinkNode.getNode("RunDisplayAlias")
+						        .getValueWithDefault<std::string>(
+						            "Run" /* defaultValue */);
+					}
+					catch(...)
+					{
+						activeStateMachineRunAlias_ = "Run";
+					}
+					try
+					{
+						activeStateMachineRollOverLogOnConfigure_ =
+						    fsmLinkNode.getNode("RollOverLogOnConfigure")
+						        .getValueWithDefault<bool>(false /* defaultValue */);
+					}
+					catch(...)
+					{
+						activeStateMachineRollOverLogOnConfigure_ = false;
+					}
+					try
+					{
+						activeStateMachineRollOverLogOnStart_ =
+						    fsmLinkNode.getNode("RollOverLogOnStart")
+						        .getValueWithDefault<bool>(false /* defaultValue */);
+					}
+					catch(...)
+					{
+						activeStateMachineRollOverLogOnStart_ = false;
+					}
 
-					activeStateMachineConfigurationDumpOnConfigureEnable_  = fsmLinkNode.getNode("EnableConfigurationDumpOnConfigureTransition").getValue<bool>();						
-					activeStateMachineConfigurationDumpOnRunEnable_        = fsmLinkNode.getNode("EnableConfigurationDumpOnRunTransition").getValue<bool>();						
-										
-					doThrow                       = true;  // at this point throw the exception!
+					try
+					{
+						activeStateMachineRunInfoPluginType_ =
+						    fsmLinkNode.getNode("RunInfoPluginType")
+						        .getValue<std::string>();
+					}
+					catch(...)  //ignore missing RunInfoPluginType
+					{
+						__COUT__ << "RunInfoPluginType not defined for FSM name '"
+						         << fsmName
+						         << "' - please setup a valid run info plugin type to "
+						            "enable external Run Number coordination and dumping "
+						            "configuration info to an external location."
+						         << __E__;
+					}
 
-					dumpFormatOnConfigure		  = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFormat").getValue<std::string>();						
-					dumpFormatOnRun				  = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat").getValue<std::string>();
+					activeStateMachineConfigurationDumpOnConfigureEnable_ =
+					    fsmLinkNode
+					        .getNode("EnableConfigurationDumpOnConfigureTransition")
+					        .getValue<bool>();
+					activeStateMachineConfigurationDumpOnRunEnable_ =
+					    fsmLinkNode.getNode("EnableConfigurationDumpOnRunTransition")
+					        .getValue<bool>();
+
+					doThrow = true;  // at this point throw the exception!
+
+					dumpFormatOnConfigure =
+					    fsmLinkNode.getNode("ConfigurationDumpOnConfigureFormat")
+					        .getValue<std::string>();
+					dumpFormatOnRun = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat")
+					                      .getValue<std::string>();
 
 					std::string dumpFilePath, dumpFileRadix;
-					dumpFilePath = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFilePath").getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
-					dumpFileRadix = fsmLinkNode.getNode("ConfigurationDumpOnConfigureFileRadix").getValueWithDefault<std::string>("ConfigTransitionConfigurationDump");											
-					activeStateMachineConfigurationDumpOnConfigureFilename_ = dumpFilePath + "/" + dumpFileRadix;
-					dumpFilePath = fsmLinkNode.getNode("ConfigurationDumpOnRunFilePath").getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
-					dumpFileRadix = fsmLinkNode.getNode("ConfigurationDumpOnRunFileRadix").getValueWithDefault<std::string>("ConfigTransitionConfigurationDump");											
-					activeStateMachineConfigurationDumpOnRunFilename_ = dumpFilePath + "/" + dumpFileRadix;
-
+					dumpFilePath =
+					    fsmLinkNode.getNode("ConfigurationDumpOnConfigureFilePath")
+					        .getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
+					dumpFileRadix =
+					    fsmLinkNode.getNode("ConfigurationDumpOnConfigureFileRadix")
+					        .getValueWithDefault<std::string>(
+					            "ConfigTransitionConfigurationDump");
+					activeStateMachineConfigurationDumpOnConfigureFilename_ =
+					    dumpFilePath + "/" + dumpFileRadix;
+					dumpFilePath =
+					    fsmLinkNode.getNode("ConfigurationDumpOnRunFilePath")
+					        .getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
+					dumpFileRadix = fsmLinkNode.getNode("ConfigurationDumpOnRunFileRadix")
+					                    .getValueWithDefault<std::string>(
+					                        "ConfigTransitionConfigurationDump");
+					activeStateMachineConfigurationDumpOnRunFilename_ =
+					    dumpFilePath + "/" + dumpFileRadix;
 				}
-				catch(std::runtime_error& e)  // throw exception on missing fields if dumpConfiguration set
-				{						
-					if(doThrow && (activeStateMachineConfigurationDumpOnConfigureEnable_ || 
-						activeStateMachineConfigurationDumpOnRunEnable_))
+				catch(
+				    std::runtime_error&
+				        e)  // throw exception on missing fields if dumpConfiguration set
+				{
+					if(doThrow &&
+					   (activeStateMachineConfigurationDumpOnConfigureEnable_ ||
+					    activeStateMachineConfigurationDumpOnRunEnable_))
 					{
-						__SS__ << "Configuration Dump was enabled, but there are missing fields! " << e.what() << __E__;
+						__SS__ << "Configuration Dump was enabled, but there are missing "
+						          "fields! "
+						       << e.what() << __E__;
 						__SS_THROW__;
 					}
 					else
-						__COUT_INFO__ << "FSM configuration dump Link disconnected at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
-								<< supervisorContextUID_ << "/" << supervisorApplicationUID_ << "/"
-								<< "LinkToStateMachineTable/" << fsmName << "/"
-								<< "EnableConfigurationDumpOnConfigureTransition and/or EnableConfigurationDumpOnRunTransition" << __E__;						
+						__COUT_INFO__ << "FSM configuration dump Link disconnected at '"
+						              << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME
+						              << "/" << supervisorContextUID_ << "/"
+						              << supervisorApplicationUID_ << "/"
+						              << "LinkToStateMachineTable/" << fsmName << "/"
+						              << "EnableConfigurationDumpOnConfigureTransition "
+						                 "and/or EnableConfigurationDumpOnRunTransition"
+						              << __E__;
 				}
-			} //end configuration dump check/handling
+			}  //end configuration dump check/handling
 			else
-				__COUT_INFO__ << "No Gateway Supervisor configuration record found at '" << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
-							<< supervisorContextUID_ << "/" << supervisorApplicationUID_
-							<< "' - consider adding one to control configuration dumps and state machine properties." << __E__;
-		} //end check if configuration dump is enabled on configure transition
+				__COUT_INFO__ << "No Gateway Supervisor configuration record found at '"
+				              << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
+				              << supervisorContextUID_ << "/" << supervisorApplicationUID_
+				              << "' - consider adding one to control configuration dumps "
+				                 "and state machine properties."
+				              << __E__;
+		}  //end check if configuration dump is enabled on configure transition
 
 		__COUTTV__(activeStateMachineRequireUserLogOnConfigure_);
 		__COUTTV__(activeStateMachineRequireUserLogOnRun_);
@@ -2485,21 +3217,28 @@ try
 		__COUTTV__(activeStateMachineRollOverLogOnConfigure_);
 		__COUTTV__(activeStateMachineRollOverLogOnStart_);
 
-		if(activeStateMachineRequireUserLogOnConfigure_ && getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME).size() < 3)
+		if(activeStateMachineRequireUserLogOnConfigure_ &&
+		   getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME).size() < 3)
 		{
-			__SS__ << "Error - the state machine property 'RequireUserLogInputOnConfigureTransition' has been enabled which requires the user to enter "
-					"at least 3 characters of log info to proceed with the Configure transition." << __E__;
+			__SS__ << "Error - the state machine property "
+			          "'RequireUserLogInputOnConfigureTransition' has been enabled which "
+			          "requires the user to enter "
+			          "at least 3 characters of log info to proceed with the Configure "
+			          "transition."
+			       << __E__;
 			__SS_THROW__;
 		}
 
 		parameters.addParameter("ConfigurationAlias", commandParameters[0]);
 
 		std::string configurationAlias = parameters.getValue("ConfigurationAlias");
-		__COUT__ << "Configure --> Name: ConfigurationAlias Value: " << configurationAlias << __E__;
+		__COUT__ << "Configure --> Name: ConfigurationAlias Value: " << configurationAlias
+		         << __E__;
 		lastConfigurationAlias_ = configurationAlias;
 		// save last used config alias
-		std::string fn =
-		    ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." + FSM_USERS_PREFERENCES_FILETYPE;
+		std::string fn = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
+		                 FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." +
+		                 FSM_USERS_PREFERENCES_FILETYPE;
 
 		__COUT__ << "Save FSM preferences: " << fn << __E__;
 		FILE* fp = fopen(fn.c_str(), "w");
@@ -2515,41 +3254,54 @@ try
 		activeStateMachineWindowName_ = fsmWindowName;
 
 		if(activeStateMachineName_ == "")
-			__COUT_WARN__ << "The active state machine is an empty string, this is allowed for backwards compatibility, but may not be intentional! " <<
-				"Make sure you or your system admins understand why the active FSM name is blank." << __E__;
+			__COUT_WARN__
+			    << "The active state machine is an empty string, this is allowed for "
+			       "backwards compatibility, but may not be intentional! "
+			    << "Make sure you or your system admins understand why the active FSM "
+			       "name is blank."
+			    << __E__;
 
 		//Note: Must create configuration dump at this point!! In case this is a remote subsystem and must respond with string
 		//Must define activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; //cached at Configure transition
 
 		try
 		{
-			CorePropertySupervisorBase::theConfigurationManager_->init();  // completely reset to re-align with any changes
+			CorePropertySupervisorBase::theConfigurationManager_
+			    ->init();  // completely reset to re-align with any changes
 		}
 		catch(...)
 		{
 			__SS__ << "\nTransition to Configuring interrupted! "
-				<< "The Configuration Manager could not be initialized." << __E__;
+			       << "The Configuration Manager could not be initialized." << __E__;
 			__SS_THROW__;
 		}
 
 		// Translate the system alias to a group name/key
 		try
 		{
-			theConfigurationTableGroup_ = CorePropertySupervisorBase::theConfigurationManager_->getTableGroupFromAlias(configurationAlias);
+			theConfigurationTableGroup_ =
+			    CorePropertySupervisorBase::theConfigurationManager_
+			        ->getTableGroupFromAlias(configurationAlias);
 		}
 		catch(...)
 		{
-			__COUT_INFO__ << "Exception occurred translating the Configuration System Alias." << __E__;
+			__COUT_INFO__
+			    << "Exception occurred translating the Configuration System Alias."
+			    << __E__;
 		}
 
 		if(theConfigurationTableGroup_.second.isInvalid())
 		{
-			__SS__ << "\nTransition to Configuring interrupted! System Configuration Alias '" << 
-				configurationAlias << "' could not be translated to a group name and key." << __E__;
+			__SS__
+			    << "\nTransition to Configuring interrupted! System Configuration Alias '"
+			    << configurationAlias
+			    << "' could not be translated to a group name and key." << __E__;
 			__SS_THROW__;
 		}
 
-		__COUT_INFO__ << "Configuration table group name: " << theConfigurationTableGroup_.first << " key: " << theConfigurationTableGroup_.second << __E__;
+		__COUT_INFO__ << "Configuration table group name: "
+		              << theConfigurationTableGroup_.first
+		              << " key: " << theConfigurationTableGroup_.second << __E__;
 
 		// load and activate Configuration Alias
 		try
@@ -2557,117 +3309,153 @@ try
 			//first get group type - it must be Configuration type!
 			std::string groupTypeString;
 			CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
-				theConfigurationTableGroup_.first, theConfigurationTableGroup_.second,
-				false /*doActivate*/,
-				0 /*groupMembers      */,
-				0 /*progressBar       */,
-				0 /*accumulateWarnings*/,
-				0 /*groupComment      */,
-				0 /*groupAuthor       */,
-				0 /*groupCreateTime   */,
-				true /*doNotLoadMember */,
-				&groupTypeString
-				);
+			    theConfigurationTableGroup_.first,
+			    theConfigurationTableGroup_.second,
+			    false /*doActivate*/,
+			    0 /*groupMembers      */,
+			    0 /*progressBar       */,
+			    0 /*accumulateWarnings*/,
+			    0 /*groupComment      */,
+			    0 /*groupAuthor       */,
+			    0 /*groupCreateTime   */,
+			    true /*doNotLoadMember */,
+			    &groupTypeString);
 			if(groupTypeString != ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
 			{
-				__SS__ << "Illegal attempted configuration group type. The table group '" <<
-					theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second << ")' is of type " <<
-					groupTypeString << ". It must be " << ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION << "." << __E__;
+				__SS__ << "Illegal attempted configuration group type. The table group '"
+				       << theConfigurationTableGroup_.first << "("
+				       << theConfigurationTableGroup_.second << ")' is of type "
+				       << groupTypeString << ". It must be "
+				       << ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION << "."
+				       << __E__;
 				__SS_THROW__;
 			}
 
 			CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
-				theConfigurationTableGroup_.first, theConfigurationTableGroup_.second, true /*doActivate*/);
+			    theConfigurationTableGroup_.first,
+			    theConfigurationTableGroup_.second,
+			    true /*doActivate*/);
 
 			__COUT__ << "Done loading Configuration Alias." << __E__;
 
 			// mark the translated group as the last activated group
-			std::pair<std::string /*group name*/, TableGroupKey> activatedGroup(std::string(theConfigurationTableGroup_.first), theConfigurationTableGroup_.second);
-			ConfigurationManager::saveGroupNameAndKey(activatedGroup, ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE);
+			std::pair<std::string /*group name*/, TableGroupKey> activatedGroup(
+			    std::string(theConfigurationTableGroup_.first),
+			    theConfigurationTableGroup_.second);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup, ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE);
 
 			__COUT__ << "Done activating Configuration Alias." << __E__;
 		}
 		catch(const std::runtime_error& e)
 		{
-			__SS__ << "\nTransition to Configuring interrupted! System Configuration Alias " << configurationAlias << " was translated to " << theConfigurationTableGroup_.first << " ("
-				<< theConfigurationTableGroup_.second << ") but could not be loaded and initialized." << __E__;
+			__SS__
+			    << "\nTransition to Configuring interrupted! System Configuration Alias "
+			    << configurationAlias << " was translated to "
+			    << theConfigurationTableGroup_.first << " ("
+			    << theConfigurationTableGroup_.second
+			    << ") but could not be loaded and initialized." << __E__;
 			ss << "\n\nHere was the error: " << e.what()
-			<< "\n\nTo help debug this problem, try activating this group in the Configuration "
-				"GUI "
-			<< " and detailed errors will be shown." << __E__;
+			   << "\n\nTo help debug this problem, try activating this group in the "
+			      "Configuration "
+			      "GUI "
+			   << " and detailed errors will be shown." << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			__SS__ << "\nTransition to Configuring interrupted! System Configuration Alias " << configurationAlias << " was translated to " << theConfigurationTableGroup_.first << " ("
-				<< theConfigurationTableGroup_.second << ") but could not be loaded and initialized." << __E__;
-			try	{ throw; } //one more try to printout extra info
-			catch(const std::exception &e)
+			__SS__
+			    << "\nTransition to Configuring interrupted! System Configuration Alias "
+			    << configurationAlias << " was translated to "
+			    << theConfigurationTableGroup_.first << " ("
+			    << theConfigurationTableGroup_.second
+			    << ") but could not be loaded and initialized." << __E__;
+			try
+			{
+				throw;
+			}  //one more try to printout extra info
+			catch(const std::exception& e)
 			{
 				ss << "Exception message: " << e.what();
 			}
-			catch(...){}
-			ss << "\n\nTo help debug this problem, try activating this group in the Configuration "
-				"GUI "
-			<< " and detailed errors will be shown." << __E__;
+			catch(...)
+			{
+			}
+			ss << "\n\nTo help debug this problem, try activating this group in the "
+			      "Configuration "
+			      "GUI "
+			   << " and detailed errors will be shown." << __E__;
 			__SS_THROW__;
 		}
 
 		//at this point Configuration Tree is fully loaded
 
-
 		//handle configuration dump if enabled on configure transition
-		try  // errors in dump are not tolerated				
-		{		
+		try  // errors in dump are not tolerated
+		{
 			//get/cache Run transition dump
-			if(activeStateMachineConfigurationDumpOnRunEnable_ || 
-				((activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
-					activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+			if(activeStateMachineConfigurationDumpOnRunEnable_ ||
+			   ((activeStateMachineRunInfoPluginType_ !=
+			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
 			{
-				__COUT_INFO__ << "Caching the Configuration Dump for the Run transition..." << __E__;
+				__COUT_INFO__
+				    << "Caching the Configuration Dump for the Run transition..."
+				    << __E__;
 
 				// dump configuration
 				std::stringstream dumpSs;
-				CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
-					"", //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
-					dumpFormatOnRun,
-					lastConfigurationAlias_,
-					getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-					theWebUsers_.getActiveUsersString(),
-					dumpSs);
+				CorePropertySupervisorBase::theConfigurationManager_
+				    ->dumpActiveConfiguration(
+				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
+				        dumpFormatOnRun,
+				        lastConfigurationAlias_,
+				        getLastLogEntry(
+				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+				        theWebUsers_.getActiveUsersString(),
+				        dumpSs);
 
-				activeStateMachineConfigurationDumpOnRun_ = dumpSs.str();						
+				activeStateMachineConfigurationDumpOnRun_ = dumpSs.str();
 			}
 			else
-				__COUT_INFO__ << "Not caching the Configuration Dump on the Run transition." << __E__;
+				__COUT_INFO__
+				    << "Not caching the Configuration Dump on the Run transition."
+				    << __E__;
 
 			//get/cache Configuration transition dump
-			if(activeStateMachineConfigurationDumpOnConfigureEnable_ || 
-				((activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
-					activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+			if(activeStateMachineConfigurationDumpOnConfigureEnable_ ||
+			   ((activeStateMachineRunInfoPluginType_ !=
+			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
 			{
-				__COUT_INFO__ << "Caching the Configuration Dump for the Configure transition..." << __E__;
+				__COUT_INFO__
+				    << "Caching the Configuration Dump for the Configure transition..."
+				    << __E__;
 
 				// dump configuration
 				std::stringstream dumpSs;
-				CorePropertySupervisorBase::theConfigurationManager_->dumpActiveConfiguration(
-					"", //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
-					dumpFormatOnConfigure,
-					lastConfigurationAlias_,
-					getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-					theWebUsers_.getActiveUsersString(),
-					dumpSs);
+				CorePropertySupervisorBase::theConfigurationManager_
+				    ->dumpActiveConfiguration(
+				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
+				        dumpFormatOnConfigure,
+				        lastConfigurationAlias_,
+				        getLastLogEntry(
+				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+				        theWebUsers_.getActiveUsersString(),
+				        dumpSs);
 
-				activeStateMachineConfigurationDumpOnConfigure_ = dumpSs.str();						
+				activeStateMachineConfigurationDumpOnConfigure_ = dumpSs.str();
 			}
 			else
-				__COUT_INFO__ << "Not caching the Configuration Dump on the Configure transition." << __E__;
-					
-			
-		} //end handle configuration dump if enabled on configure transition
+				__COUT_INFO__
+				    << "Not caching the Configuration Dump on the Configure transition."
+				    << __E__;
+
+		}  //end handle configuration dump if enabled on configure transition
 		catch(const std::runtime_error& e)
 		{
-			__SS__ << "Error encoutered during configuration dump. Here is the error: " << e.what();
+			__SS__ << "Error encoutered during configuration dump. Here is the error: "
+			       << e.what();
 			__SS_THROW__;
 		}
 		catch(...)
@@ -2676,21 +3464,29 @@ try
 			__SS_THROW__;
 		}
 
-	} //end Configure transition
+	}  //end Configure transition
 	else if(command == RunControlStateMachine::START_TRANSITION_NAME)
 	{
-		if(currentState != RunControlStateMachine::CONFIGURED_STATE_NAME)  // check if out of sync command
+		if(currentState !=
+		   RunControlStateMachine::CONFIGURED_STATE_NAME)  // check if out of sync command
 		{
-			__SS__ << "Error - Can only transition to Configured if the current "
-			       << "state is Halted. Perhaps your state machine is out of sync. "
-			       << "(Likely the server was restarted or another user changed the state)" << __E__;
+			__SS__
+			    << "Error - Can only transition to Configured if the current "
+			    << "state is Halted. Perhaps your state machine is out of sync. "
+			    << "(Likely the server was restarted or another user changed the state)"
+			    << __E__;
 			__SS_THROW__;
 		}
 
-		if(activeStateMachineRequireUserLogOnRun_ && getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME).size() < 3)
+		if(activeStateMachineRequireUserLogOnRun_ &&
+		   getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME).size() < 3)
 		{
-			__SS__ << "Error - the state machine property 'RequireUserLogInputOnRunTransition' has been enabled which requires the user to enter "
-					"at least 3 characters of log info to proceed with the Run transition." << __E__;
+			__SS__
+			    << "Error - the state machine property "
+			       "'RequireUserLogInputOnRunTransition' has been enabled which requires "
+			       "the user to enter "
+			       "at least 3 characters of log info to proceed with the Run transition."
+			    << __E__;
 			__SS_THROW__;
 		}
 
@@ -2702,53 +3498,65 @@ try
 
 			__COUTV__(activeStateMachineRunInfoPluginType_);
 
-			if(activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
-				activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
+			if(activeStateMachineRunInfoPluginType_ !=
+			       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+			   activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
 			{
 				std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
-				try	{ runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_, activeStateMachineName_));} catch(...) {;}
+				try
+				{
+					runInfoInterface.reset(makeRunInfo(
+					    activeStateMachineRunInfoPluginType_, activeStateMachineName_));
+				}
+				catch(...)
+				{
+					;
+				}
 				if(runInfoInterface == nullptr)
 				{
-					__SS__ << "Run Info interface plugin construction failed of type " << activeStateMachineRunInfoPluginType_ << 
-						" for claiming next run number!" << __E__;
+					__SS__ << "Run Info interface plugin construction failed of type "
+					       << activeStateMachineRunInfoPluginType_
+					       << " for claiming next run number!" << __E__;
 					__SS_THROW__;
 				}
 
 				//FIXME -- October 2024, by rrivera (need future simplification from agioiosa) -  Should this 2nd param be activeStateMachineConfigurationDumpOnConfigure_?! What is the 2nd param for? Is conditionID_ enough?
-				runNumber = runInfoInterface->claimNextRunNumber(conditionID_, activeStateMachineConfigurationDumpOnRun_);
+				runNumber = runInfoInterface->claimNextRunNumber(
+				    conditionID_, activeStateMachineConfigurationDumpOnRun_);
 			}  // end Run Info Plugin handling
 
 			setNextRunNumber(runNumber + 1);
 		}
 		else
 		{
-			sscanf(commandParameters[0].c_str(),"%lu",&runNumber);
-			__COUTV__(runNumber);		 
+			sscanf(commandParameters[0].c_str(), "%lu", &runNumber);
+			__COUTV__(runNumber);
 			setNextRunNumber(runNumber + 1);
 		}
 
-		setLastLogEntry(command,"Run #" + std::to_string(runNumber) + 
-			": " + logEntry);
+		setLastLogEntry(command, "Run #" + std::to_string(runNumber) + ": " + logEntry);
 		parameters.addParameter("RunNumber", runNumber);
-	} //end Start transition
-	else if(!(command == RunControlStateMachine::HALT_TRANSITION_NAME || 
-				command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME || 
-				command == RunControlStateMachine::ERROR_TRANSITION_NAME ||		
-				command == RunControlStateMachine::FAIL_TRANSITION_NAME || 		
-				command == RunControlStateMachine::STARTUP_TRANSITION_NAME ||		
-				command == RunControlStateMachine::INIT_TRANSITION_NAME || 		
-				command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
-				command == RunControlStateMachine::PAUSE_TRANSITION_NAME || 
-				command == RunControlStateMachine::RESUME_TRANSITION_NAME || 
-				command == RunControlStateMachine::STOP_TRANSITION_NAME ))
-	{		
-		__SS__ << "Error - illegal state machine command received '" << command <<
-					".'" << __E__;
-		__SS_THROW__;		
+	}  //end Start transition
+	else if(!(command == RunControlStateMachine::HALT_TRANSITION_NAME ||
+	          command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME ||
+	          command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
+	          command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
+	          command == RunControlStateMachine::STARTUP_TRANSITION_NAME ||
+	          command == RunControlStateMachine::INIT_TRANSITION_NAME ||
+	          command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
+	          command == RunControlStateMachine::PAUSE_TRANSITION_NAME ||
+	          command == RunControlStateMachine::RESUME_TRANSITION_NAME ||
+	          command == RunControlStateMachine::STOP_TRANSITION_NAME))
+	{
+		__SS__ << "Error - illegal state machine command received '" << command << ".'"
+		       << __E__;
+		__SS_THROW__;
 	}
-	
-	theStateMachine_.setErrorMessage(""); //clear State Machine error message in prep for transition
-	xoap::MessageReference message = SOAPUtilities::makeSOAPMessageReference(command, parameters);
+
+	theStateMachine_.setErrorMessage(
+	    "");  //clear State Machine error message in prep for transition
+	xoap::MessageReference message =
+	    SOAPUtilities::makeSOAPMessageReference(command, parameters);
 	// Maybe we return an acknowledgment that the message has been received and processed
 	xoap::MessageReference reply = stateMachineXoapHandler(message);
 	// stateMachineWorkLoopManager_.removeProcessedRequests();
@@ -2778,24 +3586,27 @@ catch(...)
 	catch(...)
 	{
 		ss << "Uknown error caught." << __E__;
-	}	
+	}
 
 	__COUT_ERR__ << "\n" << ss.str();
-	
+
 	if(xmldoc)
 		xmldoc->addTextElementToData("state_tranisition_attempted",
-										"0");  // indicate to GUI transition NOT attempted
+		                             "0");  // indicate to GUI transition NOT attempted
 	if(xmldoc)
-		xmldoc->addTextElementToData("state_tranisition_attempted_err",
-										ss.str());  // indicate to GUI transition NOT attempted
+		xmldoc->addTextElementToData(
+		    "state_tranisition_attempted_err",
+		    ss.str());  // indicate to GUI transition NOT attempted
 	if(out)
-		xmldoc->outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+		xmldoc->outputXmlDocument(
+		    (std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
 
 	return ss.str();
-} // end attemptStateMachineTransition() error handling
+}  // end attemptStateMachineTransition() error handling
 
 //==============================================================================
-xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(xoap::MessageReference message)
+xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(
+    xoap::MessageReference message)
 
 {
 	__COUT__ << "FSM Soap Handler!" << __E__;
@@ -2814,11 +3625,14 @@ xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(xoap::MessageR
 bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 {
 	stateMachineSemaphore_.take();
-	std::string command = SOAPUtilities::translate(stateMachineWorkLoopManager_.getMessage(workLoop)).getCommand();
+	std::string command =
+	    SOAPUtilities::translate(stateMachineWorkLoopManager_.getMessage(workLoop))
+	        .getCommand();
 
 	__COUT__ << "Propagating FSM command '" << command << "'..." << __E__;
 
-	std::string reply = send(allSupervisorInfo_.getGatewayDescriptor(), stateMachineWorkLoopManager_.getMessage(workLoop));
+	std::string reply = send(allSupervisorInfo_.getGatewayDescriptor(),
+	                         stateMachineWorkLoopManager_.getMessage(workLoop));
 	stateMachineWorkLoopManager_.report(workLoop, reply, 100, true);
 
 	__COUT__ << "Done with FSM command '" << command << ".' Reply = " << reply << __E__;
@@ -2826,7 +3640,8 @@ bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 
 	if(reply == "Fault")
 	{
-		__SS__ << "Failure to send Workloop transition command '" << command << "!' An error response '" << reply << "' was received." << __E__;
+		__SS__ << "Failure to send Workloop transition command '" << command
+		       << "!' An error response '" << reply << "' was received." << __E__;
 		__COUT_ERR__ << ss.str();
 	}
 	return false;  // execute once and automatically remove the workloop so in
@@ -2849,25 +3664,34 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 {
 	auto        pause      = std::chrono::system_clock::now();
 	std::time_t pause_time = std::chrono::system_clock::to_time_t(pause);
-	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << " at " << std::ctime(&pause_time) << __E__;
+	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << " at "
+	         << std::ctime(&pause_time) << __E__;
 
-	if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::RUNNING_STATE_NAME)
+	if(theStateMachine_.getProvenanceStateName() ==
+	   RunControlStateMachine::RUNNING_STATE_NAME)
 	{
 		try
 		{
 			ConfigurationTree configLinkNode =
-			    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+			    CorePropertySupervisorBase::theConfigurationManager_
+			        ->getSupervisorTableNode(supervisorContextUID_,
+			                                 supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
-				ConfigurationTree fsmLinkNode       = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
-				std::string       runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+				ConfigurationTree fsmLinkNode =
+				    configLinkNode.getNode("LinkToStateMachineTable")
+				        .getNode(activeStateMachineName_);
+				std::string runInfoPluginType =
+				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
-				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+						runInfoInterface.reset(
+						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
 					}
 					catch(...)
 					{
@@ -2875,30 +3699,39 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 
 					if(runInfoInterface == nullptr)
 					{
-						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS__ << "Run Info interface plugin construction failed of type "
+						       << runInfoPluginType << __E__;
 						__SS_THROW__;
 					}
 
-					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::PAUSE);
+					runInfoInterface->updateRunInfo(
+					    getNextRunNumber(activeStateMachineName_) - 1,
+					    RunInfoVInterface::RunStopType::PAUSE);
 				}
 			}
 		}
 		catch(const std::runtime_error& e)
 		{
 			// ERROR
-			__SS__ << "RUN INFO PAUSE TIME UPDATE INTO DATABASE FAILED!!! " << e.what() << __E__;
+			__SS__ << "RUN INFO PAUSE TIME UPDATE INTO DATABASE FAILED!!! " << e.what()
+			       << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
 			// ERROR
 			__SS__ << "RUN INFO PAUSE TIME UPDATE INTO DATABASE FAILED!!! " << __E__;
-			try	{ throw; } //one more try to printout extra info
-			catch(const std::exception &e)
+			try
+			{
+				throw;
+			}  //one more try to printout extra info
+			catch(const std::exception& e)
 			{
 				ss << "Exception message: " << e.what();
 			}
-			catch(...){}
+			catch(...)
+			{
+			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
 	}      // end update Run Info handling
@@ -2909,25 +3742,34 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 {
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
-	if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::PAUSED_STATE_NAME)
+	if(theStateMachine_.getProvenanceStateName() ==
+	   RunControlStateMachine::PAUSED_STATE_NAME)
 	{
-		__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << " coming from resume" << __E__;
+		__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
+		         << " coming from resume" << __E__;
 
 		try
 		{
 			ConfigurationTree configLinkNode =
-			    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+			    CorePropertySupervisorBase::theConfigurationManager_
+			        ->getSupervisorTableNode(supervisorContextUID_,
+			                                 supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
-				ConfigurationTree fsmLinkNode       = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
-				std::string       runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+				ConfigurationTree fsmLinkNode =
+				    configLinkNode.getNode("LinkToStateMachineTable")
+				        .getNode(activeStateMachineName_);
+				std::string runInfoPluginType =
+				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
-				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+						runInfoInterface.reset(
+						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
 					}
 					catch(...)
 					{
@@ -2935,30 +3777,39 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 
 					if(runInfoInterface == nullptr)
 					{
-						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS__ << "Run Info interface plugin construction failed of type "
+						       << runInfoPluginType << __E__;
 						__SS_THROW__;
 					}
 
-					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::RESUME);
+					runInfoInterface->updateRunInfo(
+					    getNextRunNumber(activeStateMachineName_) - 1,
+					    RunInfoVInterface::RunStopType::RESUME);
 				}
 			}
 		}
 		catch(const std::runtime_error& e)
 		{
 			// ERROR
-			__SS__ << "RUN INFO RESUME TIME UPDATE INTO DATABASE FAILED!!! " << e.what() << __E__;
+			__SS__ << "RUN INFO RESUME TIME UPDATE INTO DATABASE FAILED!!! " << e.what()
+			       << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
 			// ERROR
 			__SS__ << "RUN INFO RESUME TIME UPDATE INTO DATABASE FAILED!!! " << __E__;
-			try	{ throw; } //one more try to printout extra info
-			catch(const std::exception &e)
+			try
+			{
+				throw;
+			}  //one more try to printout extra info
+			catch(const std::exception& e)
 			{
 				ss << "Exception message: " << e.what();
 			}
-			catch(...){}
+			catch(...)
+			{
+			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
 	}      // end update Run Info handling
@@ -2967,30 +3818,42 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 //==============================================================================
 void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 {
-	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << " from " << theStateMachine_.getProvenanceStateName() << __E__;
-	__COUT__ << "Fsm is in transition? " << (theStateMachine_.isInTransition() ? "yes" : "no") << __E__;
+	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
+	         << " from " << theStateMachine_.getProvenanceStateName() << __E__;
+	__COUT__ << "Fsm is in transition? "
+	         << (theStateMachine_.isInTransition() ? "yes" : "no") << __E__;
 
-	__COUTV__(SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand());
+	__COUTV__(
+	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand());
 
 	// if coming from Running or Paused, update Run Info	w/HALT
-	if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::RUNNING_STATE_NAME ||
-	   theStateMachine_.getProvenanceStateName() == RunControlStateMachine::PAUSED_STATE_NAME)
+	if(theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::RUNNING_STATE_NAME ||
+	   theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::PAUSED_STATE_NAME)
 	{
 		try
 		{
 			ConfigurationTree configLinkNode =
-			    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+			    CorePropertySupervisorBase::theConfigurationManager_
+			        ->getSupervisorTableNode(supervisorContextUID_,
+			                                 supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
-				ConfigurationTree fsmLinkNode       = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
-				std::string       runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+				ConfigurationTree fsmLinkNode =
+				    configLinkNode.getNode("LinkToStateMachineTable")
+				        .getNode(activeStateMachineName_);
+				std::string runInfoPluginType =
+				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
-				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+						runInfoInterface.reset(
+						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
 						// ,
 						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
@@ -3001,11 +3864,14 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 
 					if(runInfoInterface == nullptr)
 					{
-						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS__ << "Run Info interface plugin construction failed of type "
+						       << runInfoPluginType << __E__;
 						__SS_THROW__;
 					}
 
-					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::HALT);
+					runInfoInterface->updateRunInfo(
+					    getNextRunNumber(activeStateMachineName_) - 1,
+					    RunInfoVInterface::RunStopType::HALT);
 				}
 			}
 		}
@@ -3019,12 +3885,17 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		{
 			// ERROR
 			__SS__ << "RUN INFO UPDATE INTO DATABASE FAILED!!! " << __E__;
-			try	{ throw; } //one more try to printout extra info
-			catch(const std::exception &e)
+			try
+			{
+				throw;
+			}  //one more try to printout extra info
+			catch(const std::exception& e)
 			{
 				ss << "Exception message: " << e.what();
 			}
-			catch(...){}
+			catch(...)
+			{
+			}
 			__SS_THROW__;
 		}  // End write run info into db
 	}      // end update Run Info handling
@@ -3033,30 +3904,42 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 //==============================================================================
 void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 {
-	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << " from " << theStateMachine_.getProvenanceStateName() << __E__;
-	__COUT__ << "Fsm is in transition? " << (theStateMachine_.isInTransition() ? "yes" : "no") << __E__;
+	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
+	         << " from " << theStateMachine_.getProvenanceStateName() << __E__;
+	__COUT__ << "Fsm is in transition? "
+	         << (theStateMachine_.isInTransition() ? "yes" : "no") << __E__;
 
-	__COUTV__(SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand());
+	__COUTV__(
+	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand());
 
 	// if coming from Running or Paused, update Run Info w/STOP
-	if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::RUNNING_STATE_NAME ||
-	   theStateMachine_.getProvenanceStateName() == RunControlStateMachine::PAUSED_STATE_NAME)
+	if(theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::RUNNING_STATE_NAME ||
+	   theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::PAUSED_STATE_NAME)
 	{
 		try
 		{
 			ConfigurationTree configLinkNode =
-			    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+			    CorePropertySupervisorBase::theConfigurationManager_
+			        ->getSupervisorTableNode(supervisorContextUID_,
+			                                 supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
-				ConfigurationTree fsmLinkNode       = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
-				std::string       runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+				ConfigurationTree fsmLinkNode =
+				    configLinkNode.getNode("LinkToStateMachineTable")
+				        .getNode(activeStateMachineName_);
+				std::string runInfoPluginType =
+				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
-				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+						runInfoInterface.reset(
+						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
 						// ,
 						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
@@ -3067,30 +3950,39 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 
 					if(runInfoInterface == nullptr)
 					{
-						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS__ << "Run Info interface plugin construction failed of type "
+						       << runInfoPluginType << __E__;
 						__SS_THROW__;
 					}
 
-					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::STOP);
+					runInfoInterface->updateRunInfo(
+					    getNextRunNumber(activeStateMachineName_) - 1,
+					    RunInfoVInterface::RunStopType::STOP);
 				}
 			}
 		}
 		catch(const std::runtime_error& e)
 		{
 			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what() << __E__;
+			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what()
+			       << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
 			// ERROR
 			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << __E__;
-			try	{ throw; } //one more try to printout extra info
-			catch(const std::exception &e)
+			try
+			{
+				throw;
+			}  //one more try to printout extra info
+			catch(const std::exception& e)
 			{
 				ss << "Exception message: " << e.what();
 			}
-			catch(...){}
+			catch(...)
+			{
+			}
 			__SS_THROW__;
 		}  // End write run info into db
 	}      // end update Run Info handling
@@ -3101,31 +3993,44 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 {
 	__COUT__ << "Error occured - FSM current state: "
-	         << "Failed? = " << theStateMachine_.getCurrentStateName() <<  // There may be a race condition here
+	         << "Failed? = " << theStateMachine_.getCurrentStateName()
+	         <<  // There may be a race condition here
 	    //	when async errors occur (e.g. immediately in running)
 	    " from " << theStateMachine_.getProvenanceStateName() << __E__;
 
-	__COUT__ << "Error occured on command: " << (SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand()) << __E__;
+	__COUT__
+	    << "Error occured on command: "
+	    << (SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand())
+	    << __E__;
 
 	// if coming from Running or Paused, update Run Info w/ERROR
-	if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::RUNNING_STATE_NAME ||
-	   theStateMachine_.getProvenanceStateName() == RunControlStateMachine::PAUSED_STATE_NAME)
+	if(theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::RUNNING_STATE_NAME ||
+	   theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::PAUSED_STATE_NAME)
 	{
 		try
 		{
 			ConfigurationTree configLinkNode =
-			    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+			    CorePropertySupervisorBase::theConfigurationManager_
+			        ->getSupervisorTableNode(supervisorContextUID_,
+			                                 supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
-				ConfigurationTree fsmLinkNode       = configLinkNode.getNode("LinkToStateMachineTable").getNode(activeStateMachineName_);
-				std::string       runInfoPluginType = fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+				ConfigurationTree fsmLinkNode =
+				    configLinkNode.getNode("LinkToStateMachineTable")
+				        .getNode(activeStateMachineName_);
+				std::string runInfoPluginType =
+				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
-				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 					try
 					{
-						runInfoInterface.reset(makeRunInfo(runInfoPluginType, activeStateMachineName_));
+						runInfoInterface.reset(
+						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
 						// ,
 						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
 						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
@@ -3136,30 +4041,39 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 
 					if(runInfoInterface == nullptr)
 					{
-						__SS__ << "Run Info interface plugin construction failed of type " << runInfoPluginType << __E__;
+						__SS__ << "Run Info interface plugin construction failed of type "
+						       << runInfoPluginType << __E__;
 						__SS_THROW__;
 					}
 
-					runInfoInterface->updateRunInfo(getNextRunNumber(activeStateMachineName_) - 1, RunInfoVInterface::RunStopType::ERROR);
+					runInfoInterface->updateRunInfo(
+					    getNextRunNumber(activeStateMachineName_) - 1,
+					    RunInfoVInterface::RunStopType::ERROR);
 				}
 			}
 		}
 		catch(const std::runtime_error& e)
 		{
 			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what() << __E__;
+			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what()
+			       << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
 			// ERROR
 			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << __E__;
-			try	{ throw; } //one more try to printout extra info
-			catch(const std::exception &e)
+			try
+			{
+				throw;
+			}  //one more try to printout extra info
+			catch(const std::exception& e)
 			{
 				ss << "Exception message: " << e.what();
 			}
-			catch(...){}
+			catch(...)
+			{
+			}
 			__SS_THROW__;
 		}  // End write run info into db
 	}      // end update Run Info handling
@@ -3169,13 +4083,14 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 //==============================================================================
 void GatewaySupervisor::enteringError(toolbox::Event::Reference e)
 {
-	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << ", Error event type: " << e->type() << __E__;
+	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
+	         << ", Error event type: " << e->type() << __E__;
 
 	// xdaq 15_14_0_3 broke what() by return c_str() on a temporary string
 	//  https://gitlab.cern.ch/cmsos/core/-/blob/release_15_14_0_3/xcept/src/common/Exception.cc
 
 	// extract error message and save for user interface access
-	toolbox::fsm::FailedEvent& failedEvent     = dynamic_cast<toolbox::fsm::FailedEvent&>(*e);
+	toolbox::fsm::FailedEvent& failedEvent = dynamic_cast<toolbox::fsm::FailedEvent&>(*e);
 	xcept::Exception&          failedException = failedEvent.getException();
 	//__COUT__ << "History of errors: " << failedException.size() << __E__;
 	//__COUT__ << "Failed Message: " << failedException.rbegin()->at("message") << __E__;
@@ -3192,24 +4107,30 @@ void GatewaySupervisor::enteringError(toolbox::Event::Reference e)
 		   << failedException.message() << __E__;  // rbegin()->at("message") << __E__;
 		//<< failedEvent.getException().what() << __E__;
 		RunControlStateMachine::asyncFailureReceived_ = false;  // clear async error
-		asyncFailureIdentified = true;
+		asyncFailureIdentified                        = true;
 	}
 	else
 	{
-		ss << "\nFailure performing transition from " << failedEvent.getFromState() << "-" << theStateMachine_.getStateName(failedEvent.getFromState())
-		   << " to " << failedEvent.getToState() << "-" << theStateMachine_.getStateName(failedEvent.getToState()) << ".\n\nException:\n"
+		ss << "\nFailure performing transition from " << failedEvent.getFromState() << "-"
+		   << theStateMachine_.getStateName(failedEvent.getFromState()) << " to "
+		   << failedEvent.getToState() << "-"
+		   << theStateMachine_.getStateName(failedEvent.getToState())
+		   << ".\n\nException:\n"
 		   << failedException.message() << __E__;  // rbegin()->at("message") << __E__;
-		                                           //<< failedEvent.getException().what() << __E__;
+		    //<< failedEvent.getException().what() << __E__;
 	}
 
 	__COUT_ERR__ << "\n" << ss.str();
 
 	theStateMachine_.setErrorMessage(ss.str());
 
-	if(!asyncFailureIdentified && theStateMachine_.getCurrentStateName() == RunControlStateMachine::FAILED_STATE_NAME)
-		__COUT__ << "Already in failed state, so not broadcasting Error transition again." << __E__;
-	else 	// move everything else to Error!
-		broadcastMessage(SOAPUtilities::makeSOAPMessageReference(RunControlStateMachine::ERROR_TRANSITION_NAME));
+	if(!asyncFailureIdentified && theStateMachine_.getCurrentStateName() ==
+	                                  RunControlStateMachine::FAILED_STATE_NAME)
+		__COUT__ << "Already in failed state, so not broadcasting Error transition again."
+		         << __E__;
+	else  // move everything else to Error!
+		broadcastMessage(SOAPUtilities::makeSOAPMessageReference(
+		    RunControlStateMachine::ERROR_TRANSITION_NAME));
 }  // end enteringError()
 
 //==============================================================================
@@ -3219,7 +4140,8 @@ void GatewaySupervisor::checkForAsyncError()
 	{
 		__COUTV__(RunControlStateMachine::asyncFailureReceived_);
 
-		XCEPT_RAISE(toolbox::fsm::exception::Exception, RunControlStateMachine::getErrorMessage());
+		XCEPT_RAISE(toolbox::fsm::exception::Exception,
+		            RunControlStateMachine::getErrorMessage());
 		return;
 	}
 }  // end checkForAsyncError()
@@ -3238,13 +4160,18 @@ try
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
-	std::string configurationAlias = SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getParameters().getValue("ConfigurationAlias");
+	std::string configurationAlias =
+	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+	        .getParameters()
+	        .getValue("ConfigurationAlias");
 
-	__COUT__ << "Transition parameter ConfigurationAlias: " << configurationAlias << __E__;
+	__COUT__ << "Transition parameter ConfigurationAlias: " << configurationAlias
+	         << __E__;
 
 	RunControlStateMachine::theProgressBar_.step();
 
-	__COUT__ << "Configuration table group name: " << theConfigurationTableGroup_.first << " key: " << theConfigurationTableGroup_.second << __E__;
+	__COUT__ << "Configuration table group name: " << theConfigurationTableGroup_.first
+	         << " key: " << theConfigurationTableGroup_.second << __E__;
 
 	//Roll over log file if enabled
 	if(activeStateMachineRollOverLogOnConfigure_)
@@ -3252,33 +4179,44 @@ try
 		__COUT_INFO__ << "Rolling over log file on Configure transition..." << __E__;
 		std::stringstream runSs;
 		runSs << "LOG_ROLLOVER";
-		runSs << ";" << "Configure" << "_" << 
-			theConfigurationTableGroup_.first << "_v" << theConfigurationTableGroup_.second;
+		runSs << ";"
+		      << "Configure"
+		      << "_" << theConfigurationTableGroup_.first << "_v"
+		      << theConfigurationTableGroup_.second;
 
-		GatewaySupervisor::launchStartOTSCommand(runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+		GatewaySupervisor::launchStartOTSCommand(
+		    runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
 
 	// make logbook entry
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
-	if(doLog) 
+	try
+	{
+		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
+	if(doLog)
 	{
 		std::stringstream ss;
-		ss << "Configuring with System Configuration Alias '" << configurationAlias << 
-			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
-		   << "). Active Context Group " << 
-		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
-				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
-			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
-				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
-				").";
+		ss << "Configuring with System Configuration Alias '" << configurationAlias
+		   << "' which translates to " << theConfigurationTableGroup_.first << "("
+		   << theConfigurationTableGroup_.second << "). Active Context Group "
+		   << CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+		          ConfigurationManager::GroupType::CONTEXT_TYPE)
+		   << "("
+		   << CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+		          ConfigurationManager::GroupType::CONTEXT_TYPE)
+		   << ").";
 
 		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
-			ss << "\n\n-----------------\nUser log entry:\n" << 
-				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) << 
-					"\n-----------------\n";
+			ss << "\n\n-----------------\nUser log entry:\n"
+			   << getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+			   << "\n-----------------\n";
 		else
 			ss << " No user log entry.";
 		makeSystemLogEntry(ss.str());
@@ -3297,25 +4235,35 @@ try
 
 	RunControlStateMachine::theProgressBar_.step();
 	SOAPParameters parameters;
-	parameters.addParameter("ConfigurationTableGroupName", theConfigurationTableGroup_.first);
-	parameters.addParameter("ConfigurationTableGroupKey", theConfigurationTableGroup_.second.toString());
+	parameters.addParameter("ConfigurationTableGroupName",
+	                        theConfigurationTableGroup_.first);
+	parameters.addParameter("ConfigurationTableGroupKey",
+	                        theConfigurationTableGroup_.second.toString());
 
 	// update Macro Maker front end list
-	if(CorePropertySupervisorBase::allSupervisorInfo_.getAllMacroMakerTypeSupervisorInfo().size())
+	if(CorePropertySupervisorBase::allSupervisorInfo_.getAllMacroMakerTypeSupervisorInfo()
+	       .size())
 	{
 		__COUT__ << "Initializing Macro Maker." << __E__;
-		xoap::MessageReference message = SOAPUtilities::makeSOAPMessageReference("FECommunication");
+		xoap::MessageReference message =
+		    SOAPUtilities::makeSOAPMessageReference("FECommunication");
 
 		SOAPParameters parameters;
 		parameters.addParameter("type", "initFElist");
 		parameters.addParameter("groupName", theConfigurationTableGroup_.first);
-		parameters.addParameter("groupKey", theConfigurationTableGroup_.second.toString());
+		parameters.addParameter("groupKey",
+		                        theConfigurationTableGroup_.second.toString());
 		SOAPUtilities::addParameters(message, parameters);
 
-		__COUT__ << "Sending FE communication: " << SOAPUtilities::translate(message) << __E__;
+		__COUT__ << "Sending FE communication: " << SOAPUtilities::translate(message)
+		         << __E__;
 
 		std::string reply =
-		    SOAPMessenger::send(CorePropertySupervisorBase::allSupervisorInfo_.getAllMacroMakerTypeSupervisorInfo().begin()->second.getDescriptor(), message);
+		    SOAPMessenger::send(CorePropertySupervisorBase::allSupervisorInfo_
+		                            .getAllMacroMakerTypeSupervisorInfo()
+		                            .begin()
+		                            ->second.getDescriptor(),
+		                        message);
 
 		__COUT__ << "Macro Maker init reply: " << reply << __E__;
 		if(reply == "Error")
@@ -3333,37 +4281,40 @@ try
 	xoap::MessageReference message = theStateMachine_.getCurrentMessage();
 	SOAPUtilities::addParameters(message, parameters);
 	//Note: Must save configuration dump after this point!! In case there are remote subsystems responding with string
-	broadcastMessage(message); // ---------------------------------- broadcast!
+	broadcastMessage(message);  // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
-
 
 	//check for remote subsystem dumps (after broadcast!)
 	std::string remoteSubsystemDump = "";
 	{
-		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-		{ //lock for remainder of scope
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
+		{  //lock for remainder of scope
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-			__SUP_COUTVS__(22,remoteGatewayApps_.size());
+			__SUP_COUTVS__(22, remoteGatewayApps_.size());
 			remoteGatewayApps = remoteGatewayApps_;
 			if(remoteGatewayApps_.size())
-				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+				__SUP_COUT_TYPE__(TLVL_DEBUG + 22)
+				    << __COUT_HDR__ << remoteGatewayApps_[0].command << " "
+				    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 		}
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
-			if(!remoteGatewayApp.fsm_included) continue; //skip if not included
+			if(!remoteGatewayApp.fsm_included)
+				continue;  //skip if not included
 			remoteSubsystemDump += remoteGatewayApp.config_dump;
 		}
 
 		if(remoteSubsystemDump.size())
 			__COUTV__(remoteSubsystemDump);
-	} //end check for remote subsystem dumps
+	}  //end check for remote subsystem dumps
 	RunControlStateMachine::theProgressBar_.step();
 
 	if(activeStateMachineConfigurationDumpOnConfigureEnable_)
 	{
 		//write local configuration dump file
-		std::string fullfilename = activeStateMachineConfigurationDumpOnConfigureFilename_ +
-			"_" + std::to_string(time(0)) + ".dump";
+		std::string fullfilename =
+		    activeStateMachineConfigurationDumpOnConfigureFilename_ + "_" +
+		    std::to_string(time(0)) + ".dump";
 		FILE* fp = fopen(fullfilename.c_str(), "w");
 		if(!fp)
 		{
@@ -3373,52 +4324,65 @@ try
 
 		//(a la ConfigurationManager::dumpActiveConfiguration)
 		fullfilename = __ENV__("HOSTNAME") + std::string(":") + fullfilename;
-		fprintf(fp,"Original location of dump:               %s\n",fullfilename.c_str());
+		fprintf(
+		    fp, "Original location of dump:               %s\n", fullfilename.c_str());
 
 		if(activeStateMachineConfigurationDumpOnConfigure_.size())
-			fwrite(&activeStateMachineConfigurationDumpOnConfigure_[0], 1, 
-				activeStateMachineConfigurationDumpOnConfigure_.size(), fp); 
-		__COUT__ << "Wrote configuration dump of char count " << 
-			activeStateMachineConfigurationDumpOnConfigure_.size() << 
-			" to file: " << fullfilename << __E__;
+			fwrite(&activeStateMachineConfigurationDumpOnConfigure_[0],
+			       1,
+			       activeStateMachineConfigurationDumpOnConfigure_.size(),
+			       fp);
+		__COUT__ << "Wrote configuration dump of char count "
+		         << activeStateMachineConfigurationDumpOnConfigure_.size()
+		         << " to file: " << fullfilename << __E__;
 
 		if(remoteSubsystemDump.size())
 		{
-			fwrite(&remoteSubsystemDump[0], 1, 
-				remoteSubsystemDump.size(), fp); 
+			fwrite(&remoteSubsystemDump[0], 1, remoteSubsystemDump.size(), fp);
 
-			__COUT__ << "Wrote remote subsystem configuration dump of char count " << 
-				remoteSubsystemDump.size() << 
-				" to file: " << fullfilename << __E__;
+			__COUT__ << "Wrote remote subsystem configuration dump of char count "
+			         << remoteSubsystemDump.size() << " to file: " << fullfilename
+			         << __E__;
 		}
 		fclose(fp);
 
-		__COUT_INFO__ << "Configure transition Configuration Dump saved to file: " << fullfilename << __E__;
-	} //done with local config dump
+		__COUT_INFO__ << "Configure transition Configuration Dump saved to file: "
+		              << fullfilename << __E__;
+	}  //done with local config dump
 	RunControlStateMachine::theProgressBar_.step();
 
 	// Check if Run Plugin is defined and, if so, create a new condition record into database
 	// leave as repeated code in case dumpFormat is different for Run Plugin (in the future)
 	try
-	{						
-		if(activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && 
-			activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
+	{
+		if(activeStateMachineRunInfoPluginType_ !=
+		       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+		   activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
 		{
-			__COUT_INFO__ << "Instantiating Run Info plugin '" << activeStateMachineRunInfoPluginType_ << 
-				"' to insert Configure run condition entry." << __E__;
+			__COUT_INFO__ << "Instantiating Run Info plugin '"
+			              << activeStateMachineRunInfoPluginType_
+			              << "' to insert Configure run condition entry." << __E__;
 			std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
-			try	{ runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_, activeStateMachineName_));} catch(...) {;}
+			try
+			{
+				runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_,
+				                                   activeStateMachineName_));
+			}
+			catch(...)
+			{
+				;
+			}
 			if(runInfoInterface == nullptr)
 			{
-				__SS__ << "Run Info interface plugin construction failed of type " << activeStateMachineRunInfoPluginType_ << 
-					" for inserting Run Condition record of char size " << 
-					activeStateMachineConfigurationDumpOnConfigure_.size() << __E__;
+				__SS__ << "Run Info interface plugin construction failed of type "
+				       << activeStateMachineRunInfoPluginType_
+				       << " for inserting Run Condition record of char size "
+				       << activeStateMachineConfigurationDumpOnConfigure_.size() << __E__;
 				__SS_THROW__;
 			}
 
 			conditionID_ = runInfoInterface->insertRunCondition(
-				activeStateMachineConfigurationDumpOnConfigure_ + 
-				remoteSubsystemDump);
+			    activeStateMachineConfigurationDumpOnConfigure_ + remoteSubsystemDump);
 		}  // end Run Info Plugin handling
 	}
 	catch(const std::runtime_error& e)
@@ -3429,38 +4393,53 @@ try
 	catch(...)
 	{
 		__SS__ << "RUN CONDITION INSERT INTO DATABASE FAILED!!! " << __E__;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__SS_THROW__;
 	}  // End write run condition into db
 	RunControlStateMachine::theProgressBar_.step();
-		
+
 	// save last configured group name/key
-	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_, FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
+	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
+	                                          FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
 
 	activeStateMachineConfigurationAlias_ = configurationAlias;
-	doLog = true; //default to true
-	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
-	if(doLog) 
+	doLog                                 = true;  //default to true
+	try
+	{
+		doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
+	if(doLog)
 	{
 		std::stringstream ss;
-		ss << "Configured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
-			"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
-		   << "). Active Context Group " << 
-		   	CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
-				ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
-			CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
-				ConfigurationManager::GroupType::CONTEXT_TYPE) <<
-				").";
+		ss << "Configured with System Configuration Alias '"
+		   << activeStateMachineConfigurationAlias_ << "' which translates to "
+		   << theConfigurationTableGroup_.first << "("
+		   << theConfigurationTableGroup_.second << "). Active Context Group "
+		   << CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
+		          ConfigurationManager::GroupType::CONTEXT_TYPE)
+		   << "("
+		   << CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+		          ConfigurationManager::GroupType::CONTEXT_TYPE)
+		   << ").";
 
 		if(getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) != "")
-			ss << "\n\n-----------------\nUser log entry:\n" << 
-				getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME) << 
-				"\n-----------------\n";
+			ss << "\n\n-----------------\nUser log entry:\n"
+			   << getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+			   << "\n-----------------\n";
 		else
 			ss << " No user log entry.";
 
@@ -3471,14 +4450,14 @@ try
 			{
 				const auto& appInfo = it.second;
 				if(appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
-					continue; //only give Gateway status
-				ss 	<< "\tStatus: " << appInfo.getStatus() << __E__
-					<< "\tDetail: " << appInfo.getDetail() << __E__;
+					continue;  //only give Gateway status
+				ss << "\tStatus: " << appInfo.getStatus() << __E__
+				   << "\tDetail: " << appInfo.getDetail() << __E__;
 			}
-			
-			//also return remote gateways as apps			
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps; //local copy
-			{ //lock for remainder of scope
+
+			//also return remote gateways as apps
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps;  //local copy
+			{  //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				remoteApps = remoteGatewayApps_;
 			}
@@ -3490,9 +4469,9 @@ try
 				for(const auto& remoteApp : remoteApps)
 				{
 					const auto& appInfo = remoteApp.appInfo;
-					ss 	<< "Subsystem Name: " <<  appInfo.name << __E__
-						<< "\tStatus: " <<  appInfo.status << __E__
-						<< "\tDetail: " <<  appInfo.detail << __E__;
+					ss << "Subsystem Name: " << appInfo.name << __E__
+					   << "\tStatus: " << appInfo.status << __E__
+					   << "\tDetail: " << appInfo.detail << __E__;
 				}
 			}
 		}
@@ -3504,7 +4483,8 @@ try
 }  // end transitionConfiguring()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
-	__SS__ << "\nTransition to Configuring interrupted! There was a system communication error "
+	__SS__ << "\nTransition to Configuring interrupted! There was a system communication "
+	          "error "
 	          "identified. "
 	       << __E__ << e.what();
 	__COUT_ERR__ << "\n" << ss.str();
@@ -3527,12 +4507,17 @@ catch(...)
 	__SS__ << "\nTransition to Configuring interrupted! There was an unknown error "
 	          "identified. "
 	       << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }  // end transitionConfiguring() catch
@@ -3548,25 +4533,42 @@ try
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try
+	{
+		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 	bool doLogIntermediate = false;
-	try{ doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try
+	{
+		doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 
-	if(doLog && doLogIntermediate) makeSystemLogEntry("System halting.");
+	if(doLog && doLogIntermediate)
+		makeSystemLogEntry("System halting.");
 
 	RunControlStateMachine::theProgressBar_.step();
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	if(doLogIntermediate) makeSystemLogEntry("System halted.");
+	if(doLogIntermediate)
+		makeSystemLogEntry("System halted.");
 	__COUT__ << "Done halting." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionHalting()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
-	__SS__ << "\nTransition to Halting interrupted! There was a system communication error "
-	          "identified. "
-	       << __E__ << e.what();
+	__SS__
+	    << "\nTransition to Halting interrupted! There was a system communication error "
+	       "identified. "
+	    << __E__ << e.what();
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }
@@ -3587,12 +4589,17 @@ catch(...)
 	__SS__ << "\nTransition to Halting interrupted! There was an unknown error "
 	          "identified. "
 	       << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }  // end transitionHalting() catch
@@ -3603,20 +4610,37 @@ try
 {
 	checkForAsyncError();
 
-	__COUT__ << "transitionShuttingDown -- Fsm current state: " << theStateMachine_.getCurrentStateName()
+	__COUT__ << "transitionShuttingDown -- Fsm current state: "
+	         << theStateMachine_.getCurrentStateName()
 	         << " message: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	RunControlStateMachine::theProgressBar_.step();
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try
+	{
+		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 	bool doLogIntermediate = false;
-	try{ doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try
+	{
+		doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 
-	if(doLog && doLogIntermediate) makeSystemLogEntry("System shutting down.");
+	if(doLog && doLogIntermediate)
+		makeSystemLogEntry("System shutting down.");
 	RunControlStateMachine::theProgressBar_.step();
 
 	// kill all non-gateway contexts
-	GatewaySupervisor::launchStartOTSCommand("OTS_APP_SHUTDOWN", CorePropertySupervisorBase::theConfigurationManager_);
+	GatewaySupervisor::launchStartOTSCommand(
+	    "OTS_APP_SHUTDOWN", CorePropertySupervisorBase::theConfigurationManager_);
 	RunControlStateMachine::theProgressBar_.step();
 
 	// important to give time for StartOTS script to recognize command (before user does
@@ -3628,14 +4652,16 @@ try
 	}
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
- 
-	if(doLogIntermediate) makeSystemLogEntry("System shutdown complete.");
+
+	if(doLogIntermediate)
+		makeSystemLogEntry("System shutdown complete.");
 	__COUT__ << "Done shutting down." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionShuttingDown()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
-	__SS__ << "\nTransition to Shutting Down interrupted! There was a system communication error "
+	__SS__ << "\nTransition to Shutting Down interrupted! There was a system "
+	          "communication error "
 	          "identified. "
 	       << __E__ << e.what();
 	__COUT_ERR__ << "\n" << ss.str();
@@ -3658,12 +4684,17 @@ catch(...)
 	__SS__ << "\nTransition to Shutting Down interrupted! There was an unknown error "
 	          "identified. "
 	       << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }  // end transitionShuttingDown() catch
@@ -3676,15 +4707,31 @@ try
 
 	RunControlStateMachine::theProgressBar_.step();
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try
+	{
+		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 	bool doLogIntermediate = false;
-	try{ doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
+	try
+	{
+		doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 
-	if(doLog && doLogIntermediate) makeSystemLogEntry("System starting up.");
+	if(doLog && doLogIntermediate)
+		makeSystemLogEntry("System starting up.");
 	RunControlStateMachine::theProgressBar_.step();
 
 	// start all non-gateway contexts
-	GatewaySupervisor::launchStartOTSCommand("OTS_APP_STARTUP", CorePropertySupervisorBase::theConfigurationManager_);
+	GatewaySupervisor::launchStartOTSCommand(
+	    "OTS_APP_STARTUP", CorePropertySupervisorBase::theConfigurationManager_);
 	RunControlStateMachine::theProgressBar_.step();
 
 	// important to give time for StartOTS script to recognize command and for apps to
@@ -3697,14 +4744,16 @@ try
 
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	if(doLogIntermediate) makeSystemLogEntry("System startup complete.");
+	if(doLogIntermediate)
+		makeSystemLogEntry("System startup complete.");
 	__COUT__ << "Done starting up." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
 }  // end transitionStartingUp()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
-	__SS__ << "\nTransition to Starting Up interrupted! There was a system communication error "
+	__SS__ << "\nTransition to Starting Up interrupted! There was a system communication "
+	          "error "
 	          "identified. "
 	       << __E__ << e.what();
 	__COUT_ERR__ << "\n" << ss.str();
@@ -3727,12 +4776,17 @@ catch(...)
 	__SS__ << "\nTransition to Starting Up interrupted! There was an unknown error "
 	          "identified. "
 	       << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }  // end transitionStartingUp() catch
@@ -3746,12 +4800,22 @@ try
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
-	__COUT__ << "Fsm current transition: " << theStateMachine_.getCurrentTransitionName(event->type()) << __E__;
-	__COUT__ << "Fsm final state: " << theStateMachine_.getTransitionFinalStateName(event->type()) << __E__;
+	__COUT__ << "Fsm current transition: "
+	         << theStateMachine_.getCurrentTransitionName(event->type()) << __E__;
+	__COUT__ << "Fsm final state: "
+	         << theStateMachine_.getTransitionFinalStateName(event->type()) << __E__;
 
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1"); } catch (...) {/* ignore errors */;}
-	if(doLog) makeSystemLogEntry("System initialized.");
+	try
+	{
+		doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
+	if(doLog)
+		makeSystemLogEntry("System initialized.");
 
 	__COUT__ << "Done initializing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
@@ -3759,7 +4823,8 @@ try
 }  // end transitionInitializing()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
-	__SS__ << "\nTransition to Initializing interrupted! There was a system communication error "
+	__SS__ << "\nTransition to Initializing interrupted! There was a system "
+	          "communication error "
 	          "identified. "
 	       << __E__ << e.what();
 	__COUT_ERR__ << "\n" << ss.str();
@@ -3782,12 +4847,17 @@ catch(...)
 	__SS__ << "\nTransition to Initializing interrupted! There was an unknown error "
 	          "identified. "
 	       << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }  // end transitionInitializing() catch
@@ -3804,11 +4874,20 @@ try
 
 	// calculate run duration and post system log entry
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
-	
+	try
+	{
+		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
+
 	std::ostringstream dur_ss;
 	{
-		int dur = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - activeStateMachineRunStartTime).count() +
+		int dur = std::chrono::duration_cast<std::chrono::milliseconds>(
+		              std::chrono::steady_clock::now() - activeStateMachineRunStartTime)
+		              .count() +
 		          activeStateMachineRunDuration_ms;
 		int dur_s = dur / 1000;
 		dur       = dur % 1000;
@@ -3816,19 +4895,24 @@ try
 		dur_s     = dur_s % 60;
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
-		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
-		       << std::setw(2) << std::setfill('0') << dur_s; //too much detail "." << dur << " seconds.";
-		if(dur_h == 0 && dur_m == 0 && dur_s < 5) //if very short, add the detail
+		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_
+		       << "' duration so far of " << std::setw(2) << std::setfill('0') << dur_h
+		       << ":" << std::setw(2) << std::setfill('0') << dur_m << ":" << std::setw(2)
+		       << std::setfill('0')
+		       << dur_s;  //too much detail "." << dur << " seconds.";
+		if(dur_h == 0 && dur_m == 0 && dur_s < 5)  //if very short, add the detail
 			dur_ss << "." << dur << " seconds.";
-		else 
+		else
 			dur_ss << ".";
 
-		if(doLog) 
+		if(doLog)
 			makeSystemLogEntry("Run pausing. " + dur_ss.str());
 	}
 
 	activeStateMachineRunDuration_ms +=
-	    std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - activeStateMachineRunStartTime).count();
+	    std::chrono::duration_cast<std::chrono::milliseconds>(
+	        std::chrono::steady_clock::now() - activeStateMachineRunStartTime)
+	        .count();
 
 	// the current message is not for Pause if its due to async exception, so rename
 	if(RunControlStateMachine::asyncPauseExceptionReceived_)
@@ -3839,18 +4923,19 @@ try
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry("Run paused. " + dur_ss.str(), 
-		activeStateMachineRunAlias_ + " '" + 
-		activeStateMachineRunNumber_ + "' paused");
+	makeSystemLogEntry(
+	    "Run paused. " + dur_ss.str(),
+	    activeStateMachineRunAlias_ + " '" + activeStateMachineRunNumber_ + "' paused");
 	__COUT__ << "Done pausing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
 }  // end transitionPausing()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
-	__SS__ << "\nTransition to Pausing interrupted! There was a system communication error "
-	          "identified. "
-	       << __E__ << e.what();
+	__SS__
+	    << "\nTransition to Pausing interrupted! There was a system communication error "
+	       "identified. "
+	    << __E__ << e.what();
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }
@@ -3871,12 +4956,17 @@ catch(...)
 	__SS__ << "\nTransition to Pausing interrupted! There was an unknown error "
 	          "identified. "
 	       << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }  // end transitionPausing() catch
@@ -3903,22 +4993,29 @@ try
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
-	if(doLog) 
+	try
 	{
-		
+		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
+	if(doLog)
+	{
 		std::stringstream ss;
-		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resuming.";
-	
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_
+		   << "' resuming.";
+
 		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
-			ss << "\n\n-----------------\nUser log entry:\n" << 
-				getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) << 
-				"\n-----------------\n";
-		else 
+			ss << "\n\n-----------------\nUser log entry:\n"
+			   << getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME)
+			   << "\n-----------------\n";
+		else
 			ss << " No user log entry.";
 
 		makeSystemLogEntry(ss.str());
-	} //end make logbook entry
+	}  //end make logbook entry
 
 	activeStateMachineRunStartTime = std::chrono::steady_clock::now();
 
@@ -3927,28 +5024,30 @@ try
 	// make logbook entry
 	{
 		std::stringstream ss;
-		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' resumed.";
-	
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_
+		   << "' resumed.";
+
 		if(getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) != "")
-			ss << "\n\n-----------------\nUser log entry:\n" << 
-				getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME) << 
-				"\n-----------------\n";
-		else 
+			ss << "\n\n-----------------\nUser log entry:\n"
+			   << getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME)
+			   << "\n-----------------\n";
+		else
 			ss << " No user log entry.";
 
 		makeSystemLogEntry(ss.str(),
-			activeStateMachineRunAlias_ + " '" + 
-			activeStateMachineRunNumber_ + "' resumed");
-	} // end make logbook entry
+		                   activeStateMachineRunAlias_ + " '" +
+		                       activeStateMachineRunNumber_ + "' resumed");
+	}  // end make logbook entry
 
 	__COUT__ << "Done resuming." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionResuming()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
-	__SS__ << "\nTransition to Resuming interrupted! There was a system communication error "
-	          "identified. "
-	       << __E__ << e.what();
+	__SS__
+	    << "\nTransition to Resuming interrupted! There was a system communication error "
+	       "identified. "
+	    << __E__ << e.what();
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }
@@ -3969,12 +5068,17 @@ catch(...)
 	__SS__ << "\nTransition to Resuming interrupted! There was an unknown error "
 	          "identified. "
 	       << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }  // end transitionResuming() catch
@@ -4016,90 +5120,116 @@ try
 		__COUT_INFO__ << "Rolling over log file on Start transition..." << __E__;
 		std::stringstream runSs;
 		runSs << "LOG_ROLLOVER";
-		runSs << ";" << activeStateMachineRunAlias_ << "_" << activeStateMachineRunNumber_;
+		runSs << ";" << activeStateMachineRunAlias_ << "_"
+		      << activeStateMachineRunNumber_;
 
-		GatewaySupervisor::launchStartOTSCommand(runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+		GatewaySupervisor::launchStartOTSCommand(
+		    runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
 
-
-	// make logbook entry	
+	// make logbook entry
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}	
+	try
+	{
+		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 	if(doLog)
 	{
 		std::stringstream ss;
-		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' starting.";
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_
+		   << "' starting.";
 
 		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
-			ss << "\n\n-----------------\nUser log entry:\n" << 
-				getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) <<
-				"\n-----------------\n";
-		else 
+			ss << "\n\n-----------------\nUser log entry:\n"
+			   << getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME)
+			   << "\n-----------------\n";
+		else
 			ss << " No user log entry.";
 
 		makeSystemLogEntry(ss.str());
 	}  // end make logbook entry
 	RunControlStateMachine::theProgressBar_.step();
 
-
 	activeStateMachineRunStartTime   = std::chrono::steady_clock::now();
 	activeStateMachineRunDuration_ms = 0;
-	broadcastMessage(theStateMachine_.getCurrentMessage()); // ---------------------------------- broadcast!
+	broadcastMessage(
+	    theStateMachine_
+	        .getCurrentMessage());  // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
-
 
 	//check for remote subsystem dumps (after broadcast!)
 	std::string remoteSubsystemDump = "";
 	{
-		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-		{ //lock for remainder of scope
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
+		{  //lock for remainder of scope
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-			__SUP_COUTVS__(22,remoteGatewayApps_.size());
+			__SUP_COUTVS__(22, remoteGatewayApps_.size());
 			remoteGatewayApps = remoteGatewayApps_;
 			if(remoteGatewayApps_.size())
-				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+				__SUP_COUT_TYPE__(TLVL_DEBUG + 22)
+				    << __COUT_HDR__ << remoteGatewayApps_[0].command << " "
+				    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 		}
 
-		remoteSubsystemDump += "--------------- Remote Subsystem Status ---------------\n";
-		remoteSubsystemDump += "Remote Subsystem Count: " + std::to_string(remoteGatewayApps.size()) + "\n";
+		remoteSubsystemDump +=
+		    "--------------- Remote Subsystem Status ---------------\n";
+		remoteSubsystemDump +=
+		    "Remote Subsystem Count: " + std::to_string(remoteGatewayApps.size()) + "\n";
 		size_t ssi = 1;
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
-			remoteSubsystemDump += std::to_string(ssi) + ". ~~ subsystem_name: " + remoteGatewayApp.appInfo.name + "\n.     ";
-			remoteSubsystemDump += "subsystem_url: " + remoteGatewayApp.appInfo.url + "\n.     ";
+			remoteSubsystemDump += std::to_string(ssi) + ". ~~ subsystem_name: " +
+			                       remoteGatewayApp.appInfo.name + "\n.     ";
+			remoteSubsystemDump +=
+			    "subsystem_url: " + remoteGatewayApp.appInfo.url + "\n.     ";
 			// remoteSubsystemDump += "subsystem_landingPage: " + remoteGatewayApp.landingPage + "\n.     ";
-			remoteSubsystemDump += "subsystem_status: " + remoteGatewayApp.appInfo.status + "\n.     ";
-			remoteSubsystemDump += "subsystem_progress: " + std::to_string(remoteGatewayApp.appInfo.progress) + "\n.     ";
-			remoteSubsystemDump += "subsystem_detail: " + remoteGatewayApp.appInfo.detail + "\n.     ";
+			remoteSubsystemDump +=
+			    "subsystem_status: " + remoteGatewayApp.appInfo.status + "\n.     ";
+			remoteSubsystemDump += "subsystem_progress: " +
+			                       std::to_string(remoteGatewayApp.appInfo.progress) +
+			                       "\n.     ";
+			remoteSubsystemDump +=
+			    "subsystem_detail: " + remoteGatewayApp.appInfo.detail + "\n.     ";
 			// remoteSubsystemDump += "subsystem_lastStatusTime: " + StringMacros::getTimestampString(remoteGatewayApp.appInfo.lastStatusTime) + "\n.     ";
 			// remoteSubsystemDump += "subsystem_consoleErrCount: " + std::to_string(remoteGatewayApp.consoleErrCount) + "\n.     ";
 			// remoteSubsystemDump += "subsystem_consoleWarnCount: " + std::to_string(remoteGatewayApp.consoleWarnCount) + "\n.     ";
-			remoteSubsystemDump += "subsystem_configAlias: " + remoteGatewayApp.selected_config_alias + "\n.     ";			
-			remoteSubsystemDump += "subsystem_fsmMode: " + remoteGatewayApp.getFsmMode() + "\n.     ";
-			remoteSubsystemDump += "subsystem_fsmIncluded: " + std::string(remoteGatewayApp.fsm_included?"1":"0") + "\n.     ";			
+			remoteSubsystemDump +=
+			    "subsystem_configAlias: " + remoteGatewayApp.selected_config_alias +
+			    "\n.     ";
+			remoteSubsystemDump +=
+			    "subsystem_fsmMode: " + remoteGatewayApp.getFsmMode() + "\n.     ";
+			remoteSubsystemDump +=
+			    "subsystem_fsmIncluded: " +
+			    std::string(remoteGatewayApp.fsm_included ? "1" : "0") + "\n.     ";
 		}
-		remoteSubsystemDump += "--------------- end Remote Subsystem Status ---------------\n";
+		remoteSubsystemDump +=
+		    "--------------- end Remote Subsystem Status ---------------\n";
 
 		remoteSubsystemDump += "\n\n-----------------\nRemote Configuration dump:\n";
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
-			if(!remoteGatewayApp.fsm_included) continue; //skip if not included
+			if(!remoteGatewayApp.fsm_included)
+				continue;  //skip if not included
 			remoteSubsystemDump += remoteGatewayApp.config_dump;
 		}
 		remoteSubsystemDump += "\nEND Remote Configuration dump:\n-----------------\n";
 
 		if(remoteSubsystemDump.size())
 			__COUTV__(remoteSubsystemDump);
-	} //end check for remote subsystem dumps
+	}  //end check for remote subsystem dumps
 	RunControlStateMachine::theProgressBar_.step();
-	
+
 	if(activeStateMachineConfigurationDumpOnRunEnable_)
 	{
 		//write local configuration dump file
 		std::string fullfilename = activeStateMachineConfigurationDumpOnRunFilename_ +
-			"_" + std::to_string(time(0)) + ".dump";
+		                           "_" + std::to_string(time(0)) + ".dump";
 		FILE* fp = fopen(fullfilename.c_str(), "w");
 		if(!fp)
 		{
@@ -4109,45 +5239,49 @@ try
 
 		//(a la ConfigurationManager::dumpActiveConfiguration)
 		fullfilename = __ENV__("HOSTNAME") + std::string(":") + fullfilename;
-		fprintf(fp,"Original location of dump:               %s\n", fullfilename.c_str());
+		fprintf(
+		    fp, "Original location of dump:               %s\n", fullfilename.c_str());
 
 		if(activeStateMachineConfigurationDumpOnRun_.size())
-			fwrite(&activeStateMachineConfigurationDumpOnRun_[0], 1, 
-				activeStateMachineConfigurationDumpOnRun_.size(), fp); 
-		__COUT__ << "Wrote configuration dump of char count " << 
-			activeStateMachineConfigurationDumpOnRun_.size() << 
-			" to file: " << fullfilename << __E__;
+			fwrite(&activeStateMachineConfigurationDumpOnRun_[0],
+			       1,
+			       activeStateMachineConfigurationDumpOnRun_.size(),
+			       fp);
+		__COUT__ << "Wrote configuration dump of char count "
+		         << activeStateMachineConfigurationDumpOnRun_.size()
+		         << " to file: " << fullfilename << __E__;
 
 		if(remoteSubsystemDump.size())
 		{
-			fwrite(&remoteSubsystemDump[0], 1, 
-				remoteSubsystemDump.size(), fp); 
+			fwrite(&remoteSubsystemDump[0], 1, remoteSubsystemDump.size(), fp);
 
-			__COUT__ << "Wrote remote subsystem configuration dump of char count " << 
-				remoteSubsystemDump.size() << 
-				" to file: " << fullfilename << __E__;
+			__COUT__ << "Wrote remote subsystem configuration dump of char count "
+			         << remoteSubsystemDump.size() << " to file: " << fullfilename
+			         << __E__;
 		}
 		fclose(fp);
 
-		__COUT_INFO__ << "Run transition Configuration Dump saved to file: " << fullfilename << __E__;
-	} //done with local config dump
+		__COUT_INFO__ << "Run transition Configuration Dump saved to file: "
+		              << fullfilename << __E__;
+	}  //done with local config dump
 	RunControlStateMachine::theProgressBar_.step();
 
-
 	// save last started group name/key
-	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_, FSM_LAST_STARTED_GROUP_ALIAS_FILE);
+	ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
+	                                          FSM_LAST_STARTED_GROUP_ALIAS_FILE);
 	RunControlStateMachine::theProgressBar_.complete();
 
 	// make logbook entry
 	{
 		std::stringstream ss;
-		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' started.";
-	
+		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_
+		   << "' started.";
+
 		if(getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) != "")
-			ss << "\n\n-----------------\nUser log entry:\n" << 
-				getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME) << 
-				"\n-----------------\n";
-		else 
+			ss << "\n\n-----------------\nUser log entry:\n"
+			   << getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME)
+			   << "\n-----------------\n";
+		else
 			ss << " No user log entry.";
 
 		//insert system and remote subsystem status/detail
@@ -4157,14 +5291,14 @@ try
 			{
 				const auto& appInfo = it.second;
 				if(appInfo.getClass() != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
-					continue; //only give Gateway status
-				ss 	<< "\tStatus: " << appInfo.getStatus() << __E__
-					<< "\tDetail: " << appInfo.getDetail() << __E__;
+					continue;  //only give Gateway status
+				ss << "\tStatus: " << appInfo.getStatus() << __E__
+				   << "\tDetail: " << appInfo.getDetail() << __E__;
 			}
-			
-			//also return remote gateways as apps			
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps; //local copy
-			{ //lock for remainder of scope
+
+			//also return remote gateways as apps
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps;  //local copy
+			{  //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				remoteApps = remoteGatewayApps_;
 			}
@@ -4176,46 +5310,49 @@ try
 				for(const auto& remoteApp : remoteApps)
 				{
 					const auto& appInfo = remoteApp.appInfo;
-					ss 	<< "Subsystem Name: " <<  appInfo.name << __E__
-						<< "\tStatus: " <<  appInfo.status << __E__
-						<< "\tDetail: " <<  appInfo.detail << __E__;
+					ss << "Subsystem Name: " << appInfo.name << __E__
+					   << "\tStatus: " << appInfo.status << __E__
+					   << "\tDetail: " << appInfo.detail << __E__;
 				}
 			}
 		}
 
-		if(0) //full configuration dump too verbose for ECL (?)
+		if(0)  //full configuration dump too verbose for ECL (?)
 		{
-			ss << "\n\nConfigured with System Configuration Alias '" << activeStateMachineConfigurationAlias_ << 
-				"' which translates to " << theConfigurationTableGroup_.first << "(" << theConfigurationTableGroup_.second
-			<< "). Active Context Group " << 
-				CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupName(
-					ConfigurationManager::GroupType::CONTEXT_TYPE) << "(" << 
-				CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
-					ConfigurationManager::GroupType::CONTEXT_TYPE) <<
-					").";
-			
+			ss << "\n\nConfigured with System Configuration Alias '"
+			   << activeStateMachineConfigurationAlias_ << "' which translates to "
+			   << theConfigurationTableGroup_.first << "("
+			   << theConfigurationTableGroup_.second << "). Active Context Group "
+			   << CorePropertySupervisorBase::theConfigurationManager_
+			          ->getActiveGroupName(ConfigurationManager::GroupType::CONTEXT_TYPE)
+			   << "("
+			   << CorePropertySupervisorBase::theConfigurationManager_->getActiveGroupKey(
+			          ConfigurationManager::GroupType::CONTEXT_TYPE)
+			   << ").";
+
 			if(activeStateMachineConfigurationDumpOnRunEnable_)
 			{
-				ss << "\n\n-----------------\nConfiguration dump:\n" <<
-					activeStateMachineConfigurationDumpOnRun_;
+				ss << "\n\n-----------------\nConfiguration dump:\n"
+				   << activeStateMachineConfigurationDumpOnRun_;
 				ss << "\nEND Remote Configuration dump:\n-----------------\n";
 			}
 
-			if(remoteSubsystemDump.size()) 
+			if(remoteSubsystemDump.size())
 				ss << remoteSubsystemDump;
 		}
 
 		makeSystemLogEntry(ss.str(),
-			activeStateMachineRunAlias_ + " '" + 
-			activeStateMachineRunNumber_ + "' started");
-	} // end make logbook entry
+		                   activeStateMachineRunAlias_ + " '" +
+		                       activeStateMachineRunNumber_ + "' started");
+	}  // end make logbook entry
 	__COUT__ << "Done starting run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
 }  // end transitionStarting()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
-	__SS__ << "\nTransition to Starting Run interrupted! There was a system communication error "
+	__SS__ << "\nTransition to Starting Run interrupted! There was a system "
+	          "communication error "
 	          "identified. "
 	       << __E__ << e.what();
 	__COUT_ERR__ << "\n" << ss.str();
@@ -4238,12 +5375,17 @@ catch(...)
 	__SS__ << "\nTransition to Starting Run interrupted! There was an unknown error "
 	          "identified. "
 	       << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }  // end transitionStarting() catch
@@ -4257,13 +5399,22 @@ try
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
 
 	activeStateMachineRunDuration_ms +=
-	    std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - activeStateMachineRunStartTime).count();
+	    std::chrono::duration_cast<std::chrono::milliseconds>(
+	        std::chrono::steady_clock::now() - activeStateMachineRunStartTime)
+	        .count();
 
 	RunControlStateMachine::theProgressBar_.step();
 
 	bool doLog = false;
-	try{ doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1"); } catch (...) {/* ignore errors */;}
-	
+	try
+	{
+		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
+
 	// calculate run duration and make system log entry
 	std::ostringstream dur_ss;
 	{
@@ -4274,22 +5425,25 @@ try
 		dur_s     = dur_s % 60;
 		int dur_h = dur_m / 60;
 		dur_m     = dur_m % 60;
-		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_ << "' duration of " << std::setw(2) << std::setfill('0') << dur_h << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
-		       << std::setw(2) << std::setfill('0') << dur_s; //too much detail "." << dur << " seconds.";
-		if(dur_h == 0 && dur_m == 0 && dur_s < 5) //if very short, add the detail
+		dur_ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_
+		       << "' duration of " << std::setw(2) << std::setfill('0') << dur_h << ":"
+		       << std::setw(2) << std::setfill('0') << dur_m << ":" << std::setw(2)
+		       << std::setfill('0')
+		       << dur_s;  //too much detail "." << dur << " seconds.";
+		if(dur_h == 0 && dur_m == 0 && dur_s < 5)  //if very short, add the detail
 			dur_ss << "." << dur << " seconds.";
-		else 
+		else
 			dur_ss << ".";
 
-		if(doLog) 
+		if(doLog)
 		{
 			std::stringstream ss;
-			ss <<  dur_ss.str();
+			ss << dur_ss.str();
 			if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
-				ss << "\n\n-----------------\nUser log entry:\n" << 
-					getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) << 
-					"\n-----------------\n";
-			else 
+				ss << "\n\n-----------------\nUser log entry:\n"
+				   << getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME)
+				   << "\n-----------------\n";
+			else
 				ss << " No user log entry.";
 
 			makeSystemLogEntry("Run stopping. " + ss.str());
@@ -4308,18 +5462,18 @@ try
 	// make logbook entry
 	{
 		std::stringstream ss;
-		ss <<  dur_ss.str();
+		ss << dur_ss.str();
 		if(getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) != "")
-			ss << "\n\n-----------------\nUser log entry:\n" << 
-				getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME) << 
-				"\n-----------------\n";
-		else 
+			ss << "\n\n-----------------\nUser log entry:\n"
+			   << getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME)
+			   << "\n-----------------\n";
+		else
 			ss << " No user log entry.";
 
-		makeSystemLogEntry("Run stopped.\n" + ss.str(),		 
-			activeStateMachineRunAlias_ + " '" + 
-			activeStateMachineRunNumber_ + "' stopped");
-	} // end make logbook entry
+		makeSystemLogEntry("Run stopped.\n" + ss.str(),
+		                   activeStateMachineRunAlias_ + " '" +
+		                       activeStateMachineRunNumber_ + "' stopped");
+	}  // end make logbook entry
 
 	__COUT__ << "Done stopping run." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
@@ -4330,9 +5484,11 @@ try
 		__COUT_INFO__ << "Rolling over log file on Stop transition..." << __E__;
 		std::stringstream runSs;
 		runSs << "LOG_ROLLOVER";
-		runSs << ";Post" << activeStateMachineRunAlias_ << "_" << activeStateMachineRunNumber_;
+		runSs << ";Post" << activeStateMachineRunAlias_ << "_"
+		      << activeStateMachineRunNumber_;
 
-		GatewaySupervisor::launchStartOTSCommand(runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+		GatewaySupervisor::launchStartOTSCommand(
+		    runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -4340,7 +5496,8 @@ try
 }  // end transitionStopping()
 catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 {
-	__SS__ << "\nTransition to Stopping Run interrupted! There was a system communication error "
+	__SS__ << "\nTransition to Stopping Run interrupted! There was a system "
+	          "communication error "
 	          "identified. "
 	       << __E__ << e.what();
 	__COUT_ERR__ << "\n" << ss.str();
@@ -4363,12 +5520,17 @@ catch(...)
 	__SS__ << "\nTransition to Stopping Run interrupted! There was an unknown error "
 	          "identified. "
 	       << __E__;
-	try	{ throw; } //one more try to printout extra info
-	catch(const std::exception &e)
+	try
+	{
+		throw;
+	}  //one more try to printout extra info
+	catch(const std::exception& e)
 	{
 		ss << "Exception message: " << e.what();
 	}
-	catch(...){}
+	catch(...)
+	{
+	}
 	__COUT_ERR__ << "\n" << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }  // end transitionStopping() catch
@@ -4398,8 +5560,10 @@ try
 	while(!subIterationsDone)  // start subIteration handling loop
 	{
 		__COUT__ << "Broadcast thread " << threadIndex << "\t"
-		         << "Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-		         << "' [URL=" << appInfo.getURL() << "] Command = " << command << __E__;
+		         << "Supervisor instance = '" << appInfo.getName()
+		         << "' [LID=" << appInfo.getId() << "] in Context '"
+		         << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+		         << "] Command = " << command << __E__;
 
 		checkForAsyncError();
 
@@ -4416,7 +5580,8 @@ try
 
 		if(iteration || subIteration)
 			__COUT__ << "Broadcast thread " << threadIndex << "\t"
-			         << "Adding iteration parameters " << iteration << "." << subIteration << __E__;
+			         << "Adding iteration parameters " << iteration << "." << subIteration
+			         << __E__;
 
 		RunControlStateMachine::theProgressBar_.step();
 
@@ -4438,30 +5603,35 @@ try
 			givenAppDetail   = "";
 		}
 
-		if(iteration == 0 && subIteration == 0) //first time through the supervisors
+		if(iteration == 0 && subIteration == 0)  //first time through the supervisors
 		{
 			__COUT__ << "Broadcast thread " << threadIndex << "\t"
-						<< "Sending message to Supervisor " << appInfo.getName() << " [LID=" << appInfo.getId() << "]: " << command << __E__;
+			         << "Sending message to Supervisor " << appInfo.getName()
+			         << " [LID=" << appInfo.getId() << "]: " << command << __E__;
 
 			givenAppDetail = "";
 		}
 		else  // else this not the first time through the supervisors
 		{
 			if(givenAppDetail == "")
-				givenAppDetail = std::to_string(iteration) + ":" + std::to_string(subIteration);
+				givenAppDetail =
+				    std::to_string(iteration) + ":" + std::to_string(subIteration);
 			if(subIteration == 0)
 			{
 				for(unsigned int j = 0; j < 4; ++j)
 					__COUT__ << "Broadcast thread " << threadIndex << "\t"
-					         << "Sending message to Supervisor " << appInfo.getName() << " [LID=" << appInfo.getId() << "]: " << command
+					         << "Sending message to Supervisor " << appInfo.getName()
+					         << " [LID=" << appInfo.getId() << "]: " << command
 					         << " (iteration: " << iteration << ")" << __E__;
 			}
 			else
 			{
 				for(unsigned int j = 0; j < 4; ++j)
 					__COUT__ << "Broadcast thread " << threadIndex << "\t"
-					         << "Sending message to Supervisor " << appInfo.getName() << " [LID=" << appInfo.getId() << "]: " << command
-					         << " (iteration: " << iteration << ", sub-iteration: " << subIteration << ")" << __E__;
+					         << "Sending message to Supervisor " << appInfo.getName()
+					         << " [LID=" << appInfo.getId() << "]: " << command
+					         << " (iteration: " << iteration
+					         << ", sub-iteration: " << subIteration << ")" << __E__;
 			}
 		}
 
@@ -4480,22 +5650,29 @@ try
 
 		try  // attempt transmit of transition command
 		{
-			__COUT__ << "Broadcast thread " << threadIndex << "\t givenAppStatus=" << givenAppStatus << __E__;
-			__COUT__ << "Broadcast thread " << threadIndex << "\t appInfo.getStatus()=" << appInfo.getStatus() << __E__;
+			__COUT__ << "Broadcast thread " << threadIndex
+			         << "\t givenAppStatus=" << givenAppStatus << __E__;
+			__COUT__ << "Broadcast thread " << threadIndex
+			         << "\t appInfo.getStatus()=" << appInfo.getStatus() << __E__;
 
 			// wait for app to exist in status before sending commands
 			int waitAttempts = 0;
 			while(appInfo.getStatus() == SupervisorInfo::APP_STATUS_UNKNOWN)
 			{
 				__COUT__ << "Broadcast thread " << threadIndex << "\t"
-				         << "Waiting for Supervisor " << appInfo.getName() << " [LID=" << appInfo.getId() << "] in unknown state. waitAttempts of 10 = " << waitAttempts << __E__;
+				         << "Waiting for Supervisor " << appInfo.getName()
+				         << " [LID=" << appInfo.getId()
+				         << "] in unknown state. waitAttempts of 10 = " << waitAttempts
+				         << __E__;
 				++waitAttempts;
 				if(waitAttempts == 10)
 				{
-					__SS__ << "Error! Gateway Supervisor failed to send message to app in unknown state "
+					__SS__ << "Error! Gateway Supervisor failed to send message to app "
+					          "in unknown state "
 					          "Supervisor instance = '"
-					       << appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
-					       << "].\n\n";
+					       << appInfo.getName() << "' [LID=" << appInfo.getId()
+					       << "] in Context '" << appInfo.getContextName()
+					       << "' [URL=" << appInfo.getURL() << "].\n\n";
 					__COUT_ERR__ << ss.str();
 					XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 				}
@@ -4503,23 +5680,28 @@ try
 			}
 
 			// start recursive mutex scope (same thread can lock multiple times, but needs to unlock the same)
-			std::lock_guard<std::recursive_mutex> lock(allSupervisorInfo_.getSupervisorInfoMutex(appInfo.getId()));
+			std::lock_guard<std::recursive_mutex> lock(
+			    allSupervisorInfo_.getSupervisorInfoMutex(appInfo.getId()));
 			// set app status, but leave progress and detail alone
-			allSupervisorInfo_.setSupervisorStatus(appInfo, givenAppStatus, givenAppProgress, givenAppDetail);
+			allSupervisorInfo_.setSupervisorStatus(
+			    appInfo, givenAppStatus, givenAppProgress, givenAppDetail);
 
-			// for transition attempt, set status for app, in case the request occupies the target app			
+			// for transition attempt, set status for app, in case the request occupies the target app
 			std::string tmpReply = send(appInfo.getDescriptor(), message);
 			__COUTV__(tmpReply);
-			//using the intermediate temporary string seems to possibly help when there are multiple crashes of FSM entities			
+			//using the intermediate temporary string seems to possibly help when there are multiple crashes of FSM entities
 			reply = tmpReply;
-			
-			// then release mutex here using scope change, to allow the app to start giving its own updates			
+
+			// then release mutex here using scope change, to allow the app to start giving its own updates
 		}
 		catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 		{
 			// do not kill whole system if xdaq xoap failure
-			__SS__ << "Error! Gateway Supervisor can NOT " << command << " Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
-			       << "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "].\n\n"
+			__SS__ << "Error! Gateway Supervisor can NOT " << command
+			       << " Supervisor instance = '" << appInfo.getName()
+			       << "' [LID=" << appInfo.getId() << "] in Context '"
+			       << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+			       << "].\n\n"
 			       << "Xoap message failure. Did the target Supervisor crash? Try "
 			          "re-initializing or restarting otsdaq."
 			       << __E__;
@@ -4541,14 +5723,17 @@ try
 					// add the message index
 					SOAPParameters parameters;
 					{  // mutex scope
-						std::lock_guard<std::mutex> lock(broadcastCommandMessageIndexMutex_);
-						parameters.addParameter("commandId", broadcastCommandMessageIndex_++);
+						std::lock_guard<std::mutex> lock(
+						    broadcastCommandMessageIndexMutex_);
+						parameters.addParameter("commandId",
+						                        broadcastCommandMessageIndex_++);
 					}  // end mutex scope
 					SOAPUtilities::addParameters(message, parameters);
 				}
 
 				__COUT__ << "Broadcast thread " << threadIndex << "\t"
-				         << "Re-Sending... " << SOAPUtilities::translate(message) << std::endl;
+				         << "Re-Sending... " << SOAPUtilities::translate(message)
+				         << std::endl;
 
 				reply = send(appInfo.getDescriptor(), message);
 			}
@@ -4563,12 +5748,17 @@ try
 		}  // end send catch
 
 		__COUT__ << "Broadcast thread " << threadIndex << "\t"
-		         << "Reply received from " << appInfo.getName() << " [LID=" << appInfo.getId() << "]: " << reply << __E__;
+		         << "Reply received from " << appInfo.getName()
+		         << " [LID=" << appInfo.getId() << "]: " << reply << __E__;
 
-		if((reply != command + "Done") && (reply != command + "Response") && (reply != command + "Iterate") && (reply != command + "SubIterate"))
+		if((reply != command + "Done") && (reply != command + "Response") &&
+		   (reply != command + "Iterate") && (reply != command + "SubIterate"))
 		{
-			__SS__ << "Error! Gateway Supervisor can NOT " << command << " Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
-			       << "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "].\n\n"
+			__SS__ << "Error! Gateway Supervisor can NOT " << command
+			       << " Supervisor instance = '" << appInfo.getName()
+			       << "' [LID=" << appInfo.getId() << "] in Context '"
+			       << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+			       << "].\n\n"
 			       << reply;
 			__COUT_ERR__ << ss.str() << __E__;
 
@@ -4577,7 +5767,9 @@ try
 			try
 			{
 				xoap::MessageReference errorMessage =
-				    sendWithSOAPReply(appInfo.getDescriptor(), SOAPUtilities::makeSOAPMessageReference("StateMachineErrorMessageRequest"));
+				    sendWithSOAPReply(appInfo.getDescriptor(),
+				                      SOAPUtilities::makeSOAPMessageReference(
+				                          "StateMachineErrorMessageRequest"));
 				SOAPParameters parameters;
 				parameters.addParameter("ErrorMessage");
 				SOAPUtilities::receive(errorMessage, parameters);
@@ -4586,15 +5778,20 @@ try
 				if(error == "")
 				{
 					std::stringstream err;
-					err << "Unknown error from Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '"
-					    << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+					err << "Unknown error from Supervisor instance = '"
+					    << appInfo.getName() << "' [LID=" << appInfo.getId()
+					    << "] in Context '" << appInfo.getContextName()
+					    << "' [URL=" << appInfo.getURL()
 					    << "]. If the problem persists or is repeatable, please notify "
 					       "admins.\n\n";
 					error = err.str();
 				}
 
-				__SS__ << "Received error message from Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '"
-				       << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "].\n\n Error Message = " << error << __E__;
+				__SS__ << "Received error message from Supervisor instance = '"
+				       << appInfo.getName() << "' [LID=" << appInfo.getId()
+				       << "] in Context '" << appInfo.getContextName()
+				       << "' [URL=" << appInfo.getURL()
+				       << "].\n\n Error Message = " << error << __E__;
 
 				__COUT_ERR__ << ss.str() << __E__;
 
@@ -4609,8 +5806,9 @@ try
 				// do not kill whole system if xdaq xoap failure
 				__SS__ << "Error! Gateway Supervisor failed to read error message from "
 				          "Supervisor instance = '"
-				       << appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
-				       << "].\n\n"
+				       << appInfo.getName() << "' [LID=" << appInfo.getId()
+				       << "] in Context '" << appInfo.getContextName()
+				       << "' [URL=" << appInfo.getURL() << "].\n\n"
 				       << "Xoap message failure. Did the target Supervisor crash? Try "
 				          "re-initializing or restarting otsdaq."
 				       << __E__;
@@ -4627,8 +5825,11 @@ try
 
 			iterationsDone = false;
 			__COUT__ << "Broadcast thread " << threadIndex << "\t"
-			         << "Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-			         << "' [URL=" << appInfo.getURL() << "] flagged for another iteration to " << command << "... (iteration: " << iteration << ")" << __E__;
+			         << "Supervisor instance = '" << appInfo.getName()
+			         << "' [LID=" << appInfo.getId() << "] in Context '"
+			         << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+			         << "] flagged for another iteration to " << command
+			         << "... (iteration: " << iteration << ")" << __E__;
 
 		}  // end still working response handling
 		else if(reply == command + "SubIterate")
@@ -4640,15 +5841,20 @@ try
 
 			subIterationsDone = false;
 			__COUT__ << "Broadcast thread " << threadIndex << "\t"
-			         << "Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-			         << "' [URL=" << appInfo.getURL() << "] flagged for another sub-iteration to " << command << "... (iteration: " << iteration
+			         << "Supervisor instance = '" << appInfo.getName()
+			         << "' [LID=" << appInfo.getId() << "] in Context '"
+			         << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+			         << "] flagged for another sub-iteration to " << command
+			         << "... (iteration: " << iteration
 			         << ", sub-iteration: " << subIteration << ")" << __E__;
 		}
 		else  // else success response
 		{
 			__COUT__ << "Broadcast thread " << threadIndex << "\t"
-			         << "Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName()
-			         << "' [URL=" << appInfo.getURL() << "] was " << command << "'d correctly!" << __E__;
+			         << "Supervisor instance = '" << appInfo.getName()
+			         << "' [LID=" << appInfo.getId() << "] in Context '"
+			         << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+			         << "] was " << command << "'d correctly!" << __E__;
 		}
 
 		if(subIteration)
@@ -4661,15 +5867,19 @@ try
 	return iterationsDone;
 
 }  // end handleBroadcastMessageTarget()
-catch(const toolbox::fsm::exception::Exception& e) {throw;} //keep existing FSM execptions intact
+catch(const toolbox::fsm::exception::Exception& e)
+{
+	throw;
+}  //keep existing FSM execptions intact
 catch(...)
 {
 	// do not kill whole system if unexpected exception
-	__SS__ << "Error! Gateway Supervisor failed to broadcast message '" << command << "' to "
-				"Supervisor instance = '"
-			<< appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
-			<< "]. Try re-initializing or restarting otsdaq."
-			<< __E__;
+	__SS__ << "Error! Gateway Supervisor failed to broadcast message '" << command
+	       << "' to "
+	          "Supervisor instance = '"
+	       << appInfo.getName() << "' [LID=" << appInfo.getId() << "] in Context '"
+	       << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+	       << "]. Try re-initializing or restarting otsdaq." << __E__;
 	__COUT_ERR__ << ss.str();
 	XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 }
@@ -4678,7 +5888,9 @@ catch(...)
 // broadcastMessageThread
 //	Sends transition command message and gets reply
 //		if failure, THROW
-void GatewaySupervisor::broadcastMessageThread(GatewaySupervisor* supervisorPtr, std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct)
+void GatewaySupervisor::broadcastMessageThread(
+    GatewaySupervisor*                                        supervisorPtr,
+    std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct)
 {
 	__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t"
 	         << "established..." << __E__;
@@ -4693,16 +5905,18 @@ void GatewaySupervisor::broadcastMessageThread(GatewaySupervisor* supervisorPtr,
 		if(threadStruct->workToDo_)
 		{
 			__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t"
-			         << "starting work... command = " << threadStruct->getCommand() << __E__;
+			         << "starting work... command = " << threadStruct->getCommand()
+			         << __E__;
 
 			try
 			{
-				if(supervisorPtr->handleBroadcastMessageTarget(threadStruct->getAppInfo(),
-				                                               threadStruct->getMessage(),
-				                                               threadStruct->getCommand(),
-				                                               threadStruct->getIteration(),
-				                                               threadStruct->getReply(),
-				                                               threadStruct->threadIndex_))
+				if(supervisorPtr->handleBroadcastMessageTarget(
+				       threadStruct->getAppInfo(),
+				       threadStruct->getMessage(),
+				       threadStruct->getCommand(),
+				       threadStruct->getIteration(),
+				       threadStruct->getReply(),
+				       threadStruct->threadIndex_))
 					threadStruct->getIterationsDone() = true;
 			}
 			catch(const toolbox::fsm::exception::Exception& e)
@@ -4723,7 +5937,8 @@ void GatewaySupervisor::broadcastMessageThread(GatewaySupervisor* supervisorPtr,
 				         << "flagged for another iteration." << __E__;
 
 				// set global iterationsDone
-				std::lock_guard<std::mutex> lock(supervisorPtr->broadcastIterationsDoneMutex_);
+				std::lock_guard<std::mutex> lock(
+				    supervisorPtr->broadcastIterationsDoneMutex_);
 				supervisorPtr->broadcastIterationsDone_ = false;
 			}
 
@@ -4770,14 +5985,16 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		orderedSupervisors = allSupervisorInfo_.getOrderedSupervisorDescriptors(
 		    command,
 		    // only gateway apps for special shutdown and startup command broadcast
-		    command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME || command == RunControlStateMachine::STARTUP_TRANSITION_NAME);
+		    command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME ||
+		        command == RunControlStateMachine::STARTUP_TRANSITION_NAME);
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Error getting supervisor priority. Was there a change in the context?"
-		       << " Remember, if the context was changed, it is recommended to relaunch the "
-		          "ots script. "
-		       << e.what() << __E__;
+		__SS__
+		    << "Error getting supervisor priority. Was there a change in the context?"
+		    << " Remember, if the context was changed, it is recommended to relaunch the "
+		       "ots script. "
+		    << e.what() << __E__;
 		XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 	}
 
@@ -4790,8 +6007,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	// initialize to false (not done)
 	for(const auto& vectorAtPriority : orderedSupervisors)
 		supervisorIterationsDone.push(vectorAtPriority.size());  // push_back(
-		                                                         // std::vector<uint8_t>(vectorAtPriority.size(),
-		                                                         // false /*initial value*/));
+		    // std::vector<uint8_t>(vectorAtPriority.size(),
+		    // false /*initial value*/));
 
 	unsigned int iteration = 0;
 	// unsigned int subIteration;
@@ -4800,7 +6017,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	// send command to all supervisors (for multiple iterations) until all are done
 
 	// make a copy of the message to use as starting point for iterations
-	xoap::MessageReference originalMessage = SOAPUtilities::makeSOAPMessageReference(SOAPUtilities::translate(message));
+	xoap::MessageReference originalMessage =
+	    SOAPUtilities::makeSOAPMessageReference(SOAPUtilities::translate(message));
 
 	__COUT__ << "=========> Broadcasting state machine command = " << command << __E__;
 
@@ -4808,12 +6026,15 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	try
 	{
-		numberOfThreads = CorePropertySupervisorBase::getSupervisorTableNode().getNode("NumberOfStateMachineBroadcastThreads").getValue<unsigned int>();
+		numberOfThreads = CorePropertySupervisorBase::getSupervisorTableNode()
+		                      .getNode("NumberOfStateMachineBroadcastThreads")
+		                      .getValue<unsigned int>();
 	}
 	catch(...)
 	{
 		// ignore error for backwards compatibility
-		__COUT__ << "Number of threads not in configuration, so defaulting to " << numberOfThreads << __E__;
+		__COUT__ << "Number of threads not in configuration, so defaulting to "
+		         << numberOfThreads << __E__;
 	}
 
 	// Note: if 1 thread, then create no threads
@@ -4830,14 +6051,17 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	//	if 1, just use main thread
 	for(unsigned int i = 0; i < numberOfThreads; ++i)
 	{
-		broadcastThreadStructs_.push_back(std::make_shared<GatewaySupervisor::BroadcastThreadStruct>());
+		broadcastThreadStructs_.push_back(
+		    std::make_shared<GatewaySupervisor::BroadcastThreadStruct>());
 		broadcastThreadStructs_[i]->threadIndex_ = i;
 
-		std::thread([](GatewaySupervisor*                        supervisorPtr,
-		               std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct) { 
-						GatewaySupervisor::broadcastMessageThread(supervisorPtr, threadStruct); },
-		            this,
-		            broadcastThreadStructs_[i])
+		std::thread(
+		    [](GatewaySupervisor*                                        supervisorPtr,
+		       std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct) {
+			    GatewaySupervisor::broadcastMessageThread(supervisorPtr, threadStruct);
+		    },
+		    this,
+		    broadcastThreadStructs_[i])
 		    .detach();
 	}  // end broadcast thread creation loop
 
@@ -4861,11 +6085,13 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			}                                                         // end mutex scope
 
 			if(iterationBreakpoint < (unsigned int)-1)
-				__COUT__ << "Iteration breakpoint currently is " << iterationBreakpoint << __E__;
+				__COUT__ << "Iteration breakpoint currently is " << iterationBreakpoint
+				         << __E__;
 			if(iteration >= iterationBreakpoint)
 			{
 				broadcastIterationsDone_ = false;
-				__COUT__ << "Waiting at transition breakpoint - iteration = " << iteration << __E__;
+				__COUT__ << "Waiting at transition breakpoint - iteration = " << iteration
+				         << __E__;
 				usleep(5 * 1000 * 1000 /*5 s*/);
 				continue;  // wait until breakpoint moved
 			}
@@ -4885,7 +6111,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					const SupervisorInfo& appInfo = *(orderedSupervisors[i][j]);
 
 					// re-acquire original message
-					message = SOAPUtilities::makeSOAPMessageReference(SOAPUtilities::translate(originalMessage));
+					message = SOAPUtilities::makeSOAPMessageReference(
+					    SOAPUtilities::translate(originalMessage));
 
 					// add iteration index to message
 					if(iteration)
@@ -4908,10 +6135,17 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								{
 									// found our thread!
 									assignedJob = true;
-									__COUT__ << "Giving work to thread " << k << ", command = " << command << __E__;
+									__COUT__ << "Giving work to thread " << k
+									         << ", command = " << command << __E__;
 
-									std::lock_guard<std::mutex> lock(broadcastThreadStructs_[k]->threadMutex_);
-									broadcastThreadStructs_[k]->setMessage(appInfo, message, command, iteration, supervisorIterationsDone[i][j]);
+									std::lock_guard<std::mutex> lock(
+									    broadcastThreadStructs_[k]->threadMutex_);
+									broadcastThreadStructs_[k]->setMessage(
+									    appInfo,
+									    message,
+									    command,
+									    iteration,
+									    supervisorIterationsDone[i][j]);
 
 									break;
 								}
@@ -4927,7 +6161,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					}
 					else  // no thread
 					{
-						if(handleBroadcastMessageTarget(appInfo, message, command, iteration, reply))
+						if(handleBroadcastMessageTarget(
+						       appInfo, message, command, iteration, reply))
 							supervisorIterationsDone[i][j] = true;
 						else
 							broadcastIterationsDone_ = false;
@@ -4939,7 +6174,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 				//	make sure all threads have completed
 				if(numberOfThreads)
 				{
-					__COUT__ << "Done with priority level. Waiting for threads to finish..." << __E__;
+					__COUT__
+					    << "Done with priority level. Waiting for threads to finish..."
+					    << __E__;
 					bool done;
 					do
 					{
@@ -4958,26 +6195,39 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							{
 								__COUT__ << "Found thread in error! Throwing state "
 								            "machine error: "
-								         << broadcastThreadStructs_[i]->getReply() << __E__;
-								XCEPT_RAISE(toolbox::fsm::exception::Exception, broadcastThreadStructs_[i]->getReply());
+								         << broadcastThreadStructs_[i]->getReply()
+								         << __E__;
+								XCEPT_RAISE(toolbox::fsm::exception::Exception,
+								            broadcastThreadStructs_[i]->getReply());
 							}
 
 						if(!done)  // update status and sleep
 						{
 							std::stringstream waitSs;
-							waitSs << "Waiting on " << numOfThreadsWithWork << " of " << numberOfThreads << " threads to finish. Command = " << command;
-							if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
-								waitSs << " w/" + RunControlStateMachine::getLastAttemptedConfigureGroup();
+							waitSs << "Waiting on " << numOfThreadsWithWork << " of "
+							       << numberOfThreads
+							       << " threads to finish. Command = " << command;
+							if(command ==
+							   RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+								waitSs << " w/" + RunControlStateMachine::
+								                      getLastAttemptedConfigureGroup();
 							if(numOfThreadsWithWork == 1)
 							{
-								waitSs << ".. " << broadcastThreadStructs_[lastUnfinishedThread]->getAppInfo().getName() << ":"
-								       << broadcastThreadStructs_[lastUnfinishedThread]->getAppInfo().getId();
+								waitSs << ".. "
+								       << broadcastThreadStructs_[lastUnfinishedThread]
+								              ->getAppInfo()
+								              .getName()
+								       << ":"
+								       << broadcastThreadStructs_[lastUnfinishedThread]
+								              ->getAppInfo()
+								              .getId();
 							}
 							waitSs << __E__;
 							__COUT__ << waitSs.str();
 
 							{  // create lock scope that does not include sleep
-								std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
+								std::lock_guard<std::mutex> lock(
+								    broadcastCommandStatusUpdateMutex_);
 								broadcastCommandStatus_ = waitSs.str();
 							}
 							usleep(100 * 1000 /*100ms*/);
@@ -5021,7 +6271,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	if(numberOfThreads)
 	{
-		__COUT__ << "All transitions completed. Wrapping up, exiting broadcast threads..." << __E__;
+		__COUT__ << "All transitions completed. Wrapping up, exiting broadcast threads..."
+		         << __E__;
 
 		// attempt to exit threads
 		//	The threads should already be done with all work.
@@ -5034,7 +6285,6 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		usleep(100 * 1000 /*100ms*/);  // sleep for exit time
 	}
 
-
 	RunControlStateMachine::theProgressBar_.step();
 
 	if(broadcastMessageToRemoteGatewaysComplete(originalMessage))
@@ -5045,12 +6295,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 }  // end broadcastMessage()
 
 //==============================================================================
-void GatewaySupervisor::broadcastMessageToRemoteGateways(const xoap::MessageReference message)
+void GatewaySupervisor::broadcastMessageToRemoteGateways(
+    const xoap::MessageReference message)
 {
 	SOAPCommand commandObj = SOAPUtilities::translate(message);
-	std::string command = commandObj.getCommand();
+	std::string command    = commandObj.getCommand();
 	__COUTV__(command);
-	
 
 	std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 	for(auto& remoteGatewayApp : remoteGatewayApps_)
@@ -5065,16 +6315,16 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(const xoap::MessageRefe
 				__COUTTV__(param.first);
 				__COUTTV__(param.second);
 				if(param.first == "ConfigurationAlias")
-				{						
-					if(remoteGatewayApp.selected_config_alias != "") //replace 
-						commandAndParams += "," + remoteGatewayApp.selected_config_alias;						 
+				{
+					if(remoteGatewayApp.selected_config_alias != "")  //replace
+						commandAndParams += "," + remoteGatewayApp.selected_config_alias;
 					else
 						commandAndParams += "," + param.second;
 				}
 				else if(param.first == "RunNumber")
-				{	
-					commandAndParams += "," + //param.first + ":" + 
-							param.second;
+				{
+					commandAndParams += "," +  //param.first + ":" +
+					                    param.second;
 				}
 
 				// else
@@ -5085,64 +6335,79 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(const xoap::MessageRefe
 
 		if(!remoteGatewayApp.fsm_included)
 		{
-			__COUT__ << "Skipping excluded Remote gateway '" << 
-				remoteGatewayApp.appInfo.name << "' for FSM command = " << commandAndParams << __E__;
-			continue; //skip if not included
+			__COUT__ << "Skipping excluded Remote gateway '"
+			         << remoteGatewayApp.appInfo.name
+			         << "' for FSM command = " << commandAndParams << __E__;
+			continue;  //skip if not included
 		}
 
-		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt && 
-			//do not allow halt/err transitions:
-			(command == RunControlStateMachine::ERROR_TRANSITION_NAME || 
-			command == RunControlStateMachine::FAIL_TRANSITION_NAME || 
-			command == RunControlStateMachine::HALT_TRANSITION_NAME ||
-			command == RunControlStateMachine::ABORT_TRANSITION_NAME ))
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
+		   //do not allow halt/err transitions:
+		   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
+		    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
+		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
+		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
 		{
-			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode() << "' Remote gateway '" << 
-				remoteGatewayApp.appInfo.name << "' for FSM command = " << commandAndParams << __E__;
-			continue; //skip if not included
+			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
+			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
+			         << "' for FSM command = " << commandAndParams << __E__;
+			continue;  //skip if not included
 		}
 
-		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure && 
-			!  //invert of allowed situations:
-			(remoteGatewayApp.appInfo.status == RunControlStateMachine::INITIAL_STATE_NAME ||
-			remoteGatewayApp.appInfo.status == RunControlStateMachine::HALTED_STATE_NAME ||			
-			remoteGatewayApp.appInfo.status.find(RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
-			remoteGatewayApp.appInfo.status.find("Error") != std::string::npos || //	case "Error", "Soft-Error"									
-			(remoteGatewayApp.appInfo.status == RunControlStateMachine::HALTED_STATE_NAME && 
-				command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
+		   !  //invert of allowed situations:
+		   (remoteGatewayApp.appInfo.status ==
+		        RunControlStateMachine::INITIAL_STATE_NAME ||
+		    remoteGatewayApp.appInfo.status ==
+		        RunControlStateMachine::HALTED_STATE_NAME ||
+		    remoteGatewayApp.appInfo.status.find(
+		        RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
+		    remoteGatewayApp.appInfo.status.find("Error") !=
+		        std::string::npos ||  //	case "Error", "Soft-Error"
+		    (remoteGatewayApp.appInfo.status ==
+		         RunControlStateMachine::HALTED_STATE_NAME &&
+		     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
 		{
-			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode() << "' Remote gateway '" << 
-				remoteGatewayApp.appInfo.name << "' w/status = " << remoteGatewayApp.appInfo.status <<
-				"... for FSM command = " << commandAndParams << __E__;
-			continue; //skip if not included
+			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
+			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
+			         << "' w/status = " << remoteGatewayApp.appInfo.status
+			         << "... for FSM command = " << commandAndParams << __E__;
+			continue;  //skip if not included
 		}
 
-		__COUT__ << "Launching FSM command '" << commandAndParams << "' on Remote gateway '" << 
-			remoteGatewayApp.appInfo.name << "'..." << __E__;
+		__COUT__ << "Launching FSM command '" << commandAndParams
+		         << "' on Remote gateway '" << remoteGatewayApp.appInfo.name << "'..."
+		         << __E__;
 
 		if(remoteGatewayApp.command != "")
 		{
-			__SUP_SS__ << "Can not target the remote subsystem '" << remoteGatewayApp.appInfo.name << 
-				"' with command '" << command << "' which already has a pending command '"
-				<< remoteGatewayApp.command << ".' Please try again after the pending command is sent." << __E__;
-			__SUP_SS_THROW__;					
+			__SUP_SS__ << "Can not target the remote subsystem '"
+			           << remoteGatewayApp.appInfo.name << "' with command '" << command
+			           << "' which already has a pending command '"
+			           << remoteGatewayApp.command
+			           << ".' Please try again after the pending command is sent."
+			           << __E__;
+			__SUP_SS_THROW__;
 		}
 
-		remoteGatewayApp.config_dump = ""; //clear, must come from new command completion
-		remoteGatewayApp.command = commandAndParams;
-		
+		remoteGatewayApp.config_dump = "";  //clear, must come from new command completion
+		remoteGatewayApp.command     = commandAndParams;
+
 		std::string logEntry = getLastLogEntry(command);
 		if(logEntry.size())
-			remoteGatewayApp.command += ",LogEntry:" + StringMacros::encodeURIComponent(logEntry);
-		remoteGatewayApp.fsmName = activeStateMachineName_; //fsmName will be prepended during command send
+			remoteGatewayApp.command +=
+			    ",LogEntry:" + StringMacros::encodeURIComponent(logEntry);
+		remoteGatewayApp.fsmName =
+		    activeStateMachineName_;  //fsmName will be prepended during command send
 		//force status for immediate user feedback
-		remoteGatewayApp.appInfo.status = "Launching " + commandAndParams;
+		remoteGatewayApp.appInfo.status   = "Launching " + commandAndParams;
 		remoteGatewayApp.appInfo.progress = 0;
 	}
 }  // end broadcastMessageToRemoteGateways()
 
 //==============================================================================
-bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::MessageReference message)
+bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
+    const xoap::MessageReference message)
 {
 	std::string command = SOAPUtilities::translate(message).getCommand();
 	__COUTV__(command);
@@ -5151,80 +6416,97 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 
 	size_t countOfRemoteGateways = 0;
 
-	bool done = command == "Error"; //dont check for done if Error'ing
+	bool done = command == "Error";  //dont check for done if Error'ing
 	while(!done)
-	{		
-		__COUT__ << "Checking " << remoteGatewayApps_.size() << " remote gateway(s) completion for command = " <<
-			command << __E__;
+	{
+		__COUT__ << "Checking " << remoteGatewayApps_.size()
+		         << " remote gateway(s) completion for command = " << command << __E__;
 
 		done = true;
 
-		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-		{ //lock for remainder of scope
+		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
+		{  //lock for remainder of scope
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-			__SUP_COUTVS__(22,remoteGatewayApps_.size());
+			__SUP_COUTVS__(22, remoteGatewayApps_.size());
 			countOfRemoteGateways = remoteGatewayApps_.size();
-			remoteGatewayApps = remoteGatewayApps_;
+			remoteGatewayApps     = remoteGatewayApps_;
 			if(remoteGatewayApps_.size())
-				__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+				__SUP_COUT_TYPE__(TLVL_DEBUG + 22)
+				    << __COUT_HDR__ << remoteGatewayApps_[0].command << " "
+				    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 		}
-		
+
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			//skip remote gateways that were not commanded
-			if(!remoteGatewayApp.fsm_included) continue;
-			if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt && 
-				//do not allow halt/err transitions:
-				(command == RunControlStateMachine::ERROR_TRANSITION_NAME || 
-				command == RunControlStateMachine::FAIL_TRANSITION_NAME || 
-				command == RunControlStateMachine::HALT_TRANSITION_NAME ||
-				command == RunControlStateMachine::ABORT_TRANSITION_NAME )) continue;
-			if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure && 
-				!  //invert of allowed situations:
-				(remoteGatewayApp.appInfo.status == RunControlStateMachine::INITIAL_STATE_NAME ||
-				remoteGatewayApp.appInfo.status == RunControlStateMachine::HALTED_STATE_NAME ||			
-				remoteGatewayApp.appInfo.status.find(RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
-				remoteGatewayApp.appInfo.status.find("Error") != std::string::npos || //	case "Error", "Soft-Error"									
-				(remoteGatewayApp.appInfo.status == RunControlStateMachine::HALTED_STATE_NAME && 
-					command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))) continue;	
+			if(!remoteGatewayApp.fsm_included)
+				continue;
+			if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
+			   //do not allow halt/err transitions:
+			   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
+			    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
+			    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
+			    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
+				continue;
+			if(remoteGatewayApp.fsm_mode ==
+			       RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
+			   !  //invert of allowed situations:
+			   (remoteGatewayApp.appInfo.status ==
+			        RunControlStateMachine::INITIAL_STATE_NAME ||
+			    remoteGatewayApp.appInfo.status ==
+			        RunControlStateMachine::HALTED_STATE_NAME ||
+			    remoteGatewayApp.appInfo.status.find(
+			        RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
+			    remoteGatewayApp.appInfo.status.find("Error") !=
+			        std::string::npos ||  //	case "Error", "Soft-Error"
+			    (remoteGatewayApp.appInfo.status ==
+			         RunControlStateMachine::HALTED_STATE_NAME &&
+			     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
+				continue;
 			//if here, was commanded, so check status
 
-			if(!(				
-				(remoteGatewayApp.appInfo.status == destinationState &&
-					remoteGatewayApp.appInfo.progress == 100) || 
-				remoteGatewayApp.appInfo.status.find("Error") != std::string::npos ||
-				remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos				
-				))
+			if(!((remoteGatewayApp.appInfo.status == destinationState &&
+			      remoteGatewayApp.appInfo.progress == 100) ||
+			     remoteGatewayApp.appInfo.status.find("Error") != std::string::npos ||
+			     remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
 			{
 				//not done
 				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
 				{
-					__SS__ <<  "Can not complete FSM command '" << command << "' with unknown status from Remote gateway '" << 
-						remoteGatewayApp.appInfo.name << "' - it seems communication was lost. Please check the connection or notify admins." << __E__;						  
+					__SS__ << "Can not complete FSM command '" << command
+					       << "' with unknown status from Remote gateway '"
+					       << remoteGatewayApp.appInfo.name
+					       << "' - it seems communication was lost. Please check the "
+					          "connection or notify admins."
+					       << __E__;
 					__SS_THROW__;
 				}
-				__COUT__ << "Remote gateway '" << remoteGatewayApp.appInfo.name << "' not done w/command '" <<
-					command << "' status = " << remoteGatewayApp.appInfo.status <<
-					",... progress = " << remoteGatewayApp.appInfo.progress << __E__;
+				__COUT__ << "Remote gateway '" << remoteGatewayApp.appInfo.name
+				         << "' not done w/command '" << command
+				         << "' status = " << remoteGatewayApp.appInfo.status
+				         << ",... progress = " << remoteGatewayApp.appInfo.progress
+				         << __E__;
 
 				done = false;
 			}
-			else 
+			else
 			{
 				//done
-				__COUTT__ << "Done Remote gateway '" << remoteGatewayApp.appInfo.name << "' w/command '" <<
-					command << "' status = " << remoteGatewayApp.appInfo.status <<
-					",... progress = " << remoteGatewayApp.appInfo.progress << __E__;
+				__COUTT__ << "Done Remote gateway '" << remoteGatewayApp.appInfo.name
+				          << "' w/command '" << command
+				          << "' status = " << remoteGatewayApp.appInfo.status
+				          << ",... progress = " << remoteGatewayApp.appInfo.progress
+				          << __E__;
 			}
-
 		}
-		if(!done) sleep(2);
+		if(!done)
+			sleep(2);
 
 		checkForAsyncError();
 	}
 
-	__COUT__ << "Done with " << countOfRemoteGateways << " remote gateway(s) command = " <<
-		command << __E__;
+	__COUT__ << "Done with " << countOfRemoteGateways
+	         << " remote gateway(s) command = " << command << __E__;
 
 	return true;
 }  // end broadcastMessageToRemoteGatewaysComplete()
@@ -5237,8 +6519,8 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(const xoap::Mes
 void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 {
 	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
-	cgicc::Cgicc cgi(in);
-	std::string  Command = CgiDataUtilities::getData(cgi, "RequestType");
+	cgicc::Cgicc                          cgi(in);
+	std::string Command = CgiDataUtilities::getData(cgi, "RequestType");
 	__COUT__ << "*** Login RequestType = " << Command << " time=" << time(0) << __E__;
 
 	// RequestType Commands:
@@ -5255,10 +6537,19 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 		bool doLog = false;
 		if(loggedOutUsernames.size())
 		{
-			try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+			try
+			{
+				doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1");
+			}
+			catch(...)
+			{ /* ignore errors */
+				;
+			}
 		}
-		for(unsigned int i = 0; i < loggedOutUsernames.size(); ++i)  // Log logout for logged out users
-			if(doLog) makeSystemLogEntry(loggedOutUsernames[i] + " login timed out.");
+		for(unsigned int i = 0; i < loggedOutUsernames.size();
+		    ++i)  // Log logout for logged out users
+			if(doLog)
+				makeSystemLogEntry(loggedOutUsernames[i] + " login timed out.");
 
 		if(Command == "sessionId")
 		{
@@ -5271,7 +6562,8 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 			//	sessionId expires after set time if no login attempt (e.g. 5 minutes)
 			std::string uuid = CgiDataUtilities::postData(cgi, "uuid");
 
-			std::string sid = theWebUsers_.createNewLoginSession(uuid, cgi.getEnvironment().getRemoteAddr() /* ip */);
+			std::string sid = theWebUsers_.createNewLoginSession(
+			    uuid, cgi.getEnvironment().getRemoteAddr() /* ip */);
 
 			//		__COUT__ << "uuid = " << uuid << __E__;
 			//		__COUT__ << "SessionId = " << sid.substr(0, 10) << __E__;
@@ -5303,8 +6595,10 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 
 			// If cookie code is good, then refresh and return with display name, else return
 			// 0 as CookieCode value
-			uid = theWebUsers_.isCookieCodeActiveForLogin(uuid, cookieCode,
-			                                              jumbledUser);  // after call jumbledUser holds displayName on success
+			uid = theWebUsers_.isCookieCodeActiveForLogin(
+			    uuid,
+			    cookieCode,
+			    jumbledUser);  // after call jumbledUser holds displayName on success
 
 			if(uid == theWebUsers_.NOT_FOUND_IN_DATABASE)
 			{
@@ -5343,11 +6637,13 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 			//		__COUT__ << "uuid = " << uuid << __E__;
 			//		__COUT__ << "nac =-" << newAccountCode << "-" << __E__;
 
-			uint64_t uid = theWebUsers_.attemptActiveSession(uuid,
-			                                                 jumbledUser,
-			                                                 jumbledPw,
-			                                                 newAccountCode,
-			                                                 cgi.getEnvironment().getRemoteAddr());  // after call jumbledUser holds displayName on success
+			uint64_t uid = theWebUsers_.attemptActiveSession(
+			    uuid,
+			    jumbledUser,
+			    jumbledPw,
+			    newAccountCode,
+			    cgi.getEnvironment()
+			        .getRemoteAddr());  // after call jumbledUser holds displayName on success
 
 			if(uid >= theWebUsers_.ACCOUNT_ERROR_THRESHOLD)
 			{
@@ -5359,9 +6655,18 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 			else  // Log login in logbook for active experiment
 			{
 				bool doLog = false;
-				try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+				try
+				{
+					doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1");
+				}
+				catch(...)
+				{ /* ignore errors */
+					;
+				}
 
-				if(doLog) makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+				if(doLog)
+					makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) +
+					                   " logged in.");
 			}
 
 			//__COUT__ << "new cookieCode = " << newAccountCode.substr(0, 10) << __E__;
@@ -5370,9 +6675,11 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 
 			// include extra error detail
 			if(uid == theWebUsers_.ACCOUNT_INACTIVE)
-				xmldoc.addTextElementToData("Error", "Account is inactive. Notify admins.");
+				xmldoc.addTextElementToData("Error",
+				                            "Account is inactive. Notify admins.");
 			else if(uid == theWebUsers_.ACCOUNT_BLACKLISTED)
-				xmldoc.addTextElementToData("Error", "Account is blacklisted. Notify admins.");
+				xmldoc.addTextElementToData("Error",
+				                            "Account is blacklisted. Notify admins.");
 
 			theWebUsers_.insertSettingsForUser(uid, &xmldoc);  // insert settings
 
@@ -5380,8 +6687,10 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 
 			if(uid != theWebUsers_.NOT_FOUND_IN_DATABASE)
 			{
-				uint64_t asCnt = theWebUsers_.getActiveSessionCountForUser(uid) - 1;  // subtract 1 to remove just started session from count
-				char     asStr[20];
+				uint64_t asCnt =
+				    theWebUsers_.getActiveSessionCountForUser(uid) -
+				    1;  // subtract 1 to remove just started session from count
+				char asStr[20];
 				sprintf(asStr, "%lu", asCnt);
 				xmldoc.addTextElementToData("user_active_session_count", asStr);
 			}
@@ -5399,21 +6708,23 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 			//		ju 				- jumbled user name
 			//		jp		 		- jumbled password
 
-			std::string uuid         = CgiDataUtilities::postData(cgi, "uuid");
-			std::string jumbledEmail = cgicc::form_urldecode(CgiDataUtilities::getData(cgi, "httpsUser"));
-			std::string username     = "";
-			std::string cookieCode   = "";
+			std::string uuid = CgiDataUtilities::postData(cgi, "uuid");
+			std::string jumbledEmail =
+			    cgicc::form_urldecode(CgiDataUtilities::getData(cgi, "httpsUser"));
+			std::string username   = "";
+			std::string cookieCode = "";
 
 			//		__COUT__ << "CERTIFICATE LOGIN REUEST RECEVIED!!!" << __E__;
 			//		__COUT__ << "jumbledEmail = " << jumbledEmail << __E__;
 			//		__COUT__ << "uuid = " << uuid << __E__;
 
-			uint64_t uid =
-			    theWebUsers_.attemptActiveSessionWithCert(uuid,
-			                                              jumbledEmail,
-			                                              cookieCode,
-			                                              username,
-			                                              cgi.getEnvironment().getRemoteAddr());  // after call jumbledUser holds displayName on success
+			uint64_t uid = theWebUsers_.attemptActiveSessionWithCert(
+			    uuid,
+			    jumbledEmail,
+			    cookieCode,
+			    username,
+			    cgi.getEnvironment()
+			        .getRemoteAddr());  // after call jumbledUser holds displayName on success
 
 			if(uid == theWebUsers_.NOT_FOUND_IN_DATABASE)
 			{
@@ -5425,9 +6736,18 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 			else  // Log login in logbook for active experiment
 			{
 				bool doLog = false;
-				try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+				try
+				{
+					doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1");
+				}
+				catch(...)
+				{ /* ignore errors */
+					;
+				}
 
-				if(doLog) makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged in.");
+				if(doLog)
+					makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) +
+					                   " logged in.");
 			}
 
 			//__COUT__ << "new cookieCode = " << cookieCode.substr(0, 10) << __E__;
@@ -5440,8 +6760,10 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 
 			if(uid != theWebUsers_.NOT_FOUND_IN_DATABASE)
 			{
-				uint64_t asCnt = theWebUsers_.getActiveSessionCountForUser(uid) - 1;  // subtract 1 to remove just started session from count
-				char     asStr[20];
+				uint64_t asCnt =
+				    theWebUsers_.getActiveSessionCountForUser(uid) -
+				    1;  // subtract 1 to remove just started session from count
+				char asStr[20];
 				sprintf(asStr, "%lu", asCnt);
 				xmldoc.addTextElementToData("user_active_session_count", asStr);
 			}
@@ -5460,16 +6782,26 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 			if(theWebUsers_.cookieCodeLogout(cookieCode,
 			                                 logoutOthers == "1",
 			                                 &uid,
-			                                 cgi.getEnvironment().getRemoteAddr()) != theWebUsers_.NOT_FOUND_IN_DATABASE)  // user logout
+			                                 cgi.getEnvironment().getRemoteAddr()) !=
+			   theWebUsers_.NOT_FOUND_IN_DATABASE)  // user logout
 			{
 				// if did some logging out, check if completely logged out
 				// if so, system logbook message should be made.
 				if(!theWebUsers_.isUserIdActive(uid))
 				{
 					bool doLog = false;
-					try{ doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1"); } catch (...) {/* ignore errors */;}
+					try
+					{
+						doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1");
+					}
+					catch(...)
+					{ /* ignore errors */
+						;
+					}
 
-					if(doLog) makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) + " logged out.");
+					if(doLog)
+						makeSystemLogEntry(theWebUsers_.getUsersUsername(uid) +
+						                   " logged out.");
 				}
 			}
 		}
@@ -5481,29 +6813,39 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "An error was encountered handling Command '" << Command << "':" << e.what() << __E__;
+		__SS__ << "An error was encountered handling Command '" << Command
+		       << "':" << e.what() << __E__;
 		__COUT__ << "\n" << ss.str();
 		HttpXmlDocument xmldoc;
 		xmldoc.addTextElementToData("Error", ss.str());
-		xmldoc.outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+		xmldoc.outputXmlDocument(
+		    (std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
 	}
 	catch(...)
 	{
-		__SS__ << "An unknown error was encountered handling Command '" << Command << ".' "
+		__SS__ << "An unknown error was encountered handling Command '" << Command
+		       << ".' "
 		       << "Please check the printouts to debug." << __E__;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__COUT__ << "\n" << ss.str();
 		HttpXmlDocument xmldoc;
 		xmldoc.addTextElementToData("Error", ss.str());
-		xmldoc.outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+		xmldoc.outputXmlDocument(
+		    (std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
 	}
 
-	__COUTT__ << "Login end clock=" << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
+	__COUTT__ << "Login end clock=" << artdaq::TimeUtils::GetElapsedTime(startClock)
+	          << __E__;
 }  // end loginRequest()
 
 //==============================================================================
@@ -5523,8 +6865,12 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 		std::string cookieCode = CgiDataUtilities::postData(cgi, "CookieCode");
 		uint64_t    uid;
 
-		if(!theWebUsers_.cookieCodeIsActiveForRequest(cookieCode, 0 /*userPermissions*/, 
-			&uid, "0" /*dummy ip*/, false /*refresh*/, true /*doNotGoRemote*/))
+		if(!theWebUsers_.cookieCodeIsActiveForRequest(cookieCode,
+		                                              0 /*userPermissions*/,
+		                                              &uid,
+		                                              "0" /*dummy ip*/,
+		                                              false /*refresh*/,
+		                                              true /*doNotGoRemote*/))
 		{
 			*out << cookieCode;
 			return;
@@ -5537,20 +6883,21 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 		if(Command == "check")
 		{
 			WebUsers::tooltipCheckForUsername(theWebUsers_.getUsersUsername(uid),
-											&xmldoc,
-											CgiDataUtilities::getData(cgi, "srcFile"),
-											CgiDataUtilities::getData(cgi, "srcFunc"),
-											CgiDataUtilities::getData(cgi, "srcId"));
+			                                  &xmldoc,
+			                                  CgiDataUtilities::getData(cgi, "srcFile"),
+			                                  CgiDataUtilities::getData(cgi, "srcFunc"),
+			                                  CgiDataUtilities::getData(cgi, "srcId"));
 		}
 		else if(Command == "setNeverShow")
 		{
-			WebUsers::tooltipSetNeverShowForUsername(theWebUsers_.getUsersUsername(uid),
-													&xmldoc,
-													CgiDataUtilities::getData(cgi, "srcFile"),
-													CgiDataUtilities::getData(cgi, "srcFunc"),
-													CgiDataUtilities::getData(cgi, "srcId"),
-													CgiDataUtilities::getData(cgi, "doNeverShow") == "1" ? true : false,
-													CgiDataUtilities::getData(cgi, "temporarySilence") == "1" ? true : false);
+			WebUsers::tooltipSetNeverShowForUsername(
+			    theWebUsers_.getUsersUsername(uid),
+			    &xmldoc,
+			    CgiDataUtilities::getData(cgi, "srcFile"),
+			    CgiDataUtilities::getData(cgi, "srcFunc"),
+			    CgiDataUtilities::getData(cgi, "srcId"),
+			    CgiDataUtilities::getData(cgi, "doNeverShow") == "1" ? true : false,
+			    CgiDataUtilities::getData(cgi, "temporarySilence") == "1" ? true : false);
 		}
 		else
 			__COUT__ << "Command Request, " << Command << ", not recognized." << __E__;
@@ -5559,26 +6906,35 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "An error was encountered handling Tooltip Command '" << Command << "':" << e.what() << __E__;
+		__SS__ << "An error was encountered handling Tooltip Command '" << Command
+		       << "':" << e.what() << __E__;
 		__COUT__ << "\n" << ss.str();
 		HttpXmlDocument xmldoc;
 		xmldoc.addTextElementToData("Error", ss.str());
-		xmldoc.outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+		xmldoc.outputXmlDocument(
+		    (std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
 	}
 	catch(...)
 	{
-		__SS__ << "An unknown error was encountered handling Tooltip Command '" << Command << ".' "
+		__SS__ << "An unknown error was encountered handling Tooltip Command '" << Command
+		       << ".' "
 		       << "Please check the printouts to debug." << __E__;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__COUT__ << "\n" << ss.str();
 		HttpXmlDocument xmldoc;
 		xmldoc.addTextElementToData("Error", ss.str());
-		xmldoc.outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
+		xmldoc.outputXmlDocument(
+		    (std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);
 	}
 
 	//__COUT__ << "Done" << __E__;
@@ -5590,18 +6946,21 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 // override)
 void GatewaySupervisor::setSupervisorPropertyDefaults()
 {
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
-	                                                  std::string() + "*=1 | gatewayLaunchOTS=-1 | gatewayLaunchWiz=-1"
-													  " | gatewayLaunchOTSInstance=-1"
-													  " | StateMachine-*=10" //state machine transitions through stateMachineXgiHandler
-													  " | cancelStateMachineTransition=10"
-													  " | resetConsoleCounts=10"
-													  " | commandRemoteSubsystem=10 | setRemoteSubsystemFsmControl=10" //remote subsystem control
-													  ); 
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
+	    std::string() +
+	        "*=1 | gatewayLaunchOTS=-1 | gatewayLaunchWiz=-1"
+	        " | gatewayLaunchOTSInstance=-1"
+	        " | StateMachine-*=10"  //state machine transitions through stateMachineXgiHandler
+	        " | cancelStateMachineTransition=10"
+	        " | resetConsoleCounts=10"
+	        " | commandRemoteSubsystem=10 | setRemoteSubsystemFsmControl=10"  //remote subsystem control
+	);
 
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AllowNoLoginRequestTypes,
-	                                                  "getCurrentState "
-	                                                  " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AllowNoLoginRequestTypes,
+	    "getCurrentState "
+	    " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
 }  // end setSupervisorPropertyDefaults()
 
 //==============================================================================
@@ -5613,20 +6972,23 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 	//	request()
 	//	stateMachineXgiHandler() -- prepend StateMachine to request type
 
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AutomatedRequestTypes,
-	                                                  "getSystemMessages | getCurrentState | getIterationPlanStatus"
-	                                                  " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
-	CorePropertySupervisorBase::addSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
-	                                                  "gatewayLaunchOTS | gatewayLaunchWiz | gatewayLaunchOTSInstance"
-													  " | commandRemoteSubsystem");											
-	CorePropertySupervisorBase::addSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes,
-	   												  "StateMachine-*");  //for all stateMachineXgiHandler requests
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AutomatedRequestTypes,
+	    "getSystemMessages | getCurrentState | getIterationPlanStatus"
+	    " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
+	CorePropertySupervisorBase::addSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
+	    "gatewayLaunchOTS | gatewayLaunchWiz | gatewayLaunchOTSInstance"
+	    " | commandRemoteSubsystem");
+	CorePropertySupervisorBase::addSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes,
+	    "StateMachine-*");  //for all stateMachineXgiHandler requests
 
 	if(readOnly_)
 	{
-        CorePropertySupervisorBase::setSupervisorProperty(
-            CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
-            "*=0 | getSystemMessages=1 | getDesktopIcons=1");  // block users from writing if no write access
+		CorePropertySupervisorBase::setSupervisorProperty(
+		    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
+		    "*=0 | getSystemMessages=1 | getDesktopIcons=1");  // block users from writing if no write access
 		__COUT_INFO__ << "readOnly true in setSupervisorProperty" << __E__;
 	}
 }  // end forceSupervisorPropertyValues()
@@ -5635,7 +6997,9 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 void GatewaySupervisor::request(xgi::Input* in, xgi::Output* out)
 try
 {
-	out->getHTTPResponseHeader().addHeader("Access-Control-Allow-Origin", "*");  // to avoid block by blocked by CORS policy of browser
+	out->getHTTPResponseHeader().addHeader(
+	    "Access-Control-Allow-Origin",
+	    "*");  // to avoid block by blocked by CORS policy of browser
 
 	// for simplicity assume all commands should be mutually exclusive with iterator
 	// thread state machine accesses (really should just be careful with
@@ -5649,10 +7013,11 @@ try
 	cgicc::Cgicc cgiIn(in);
 
 	std::string requestType = CgiDataUtilities::getData(cgiIn, "RequestType");
-	__COUTVS__(40,requestType);
+	__COUTVS__(40, requestType);
 
 	HttpXmlDocument           xmlOut;
-	WebUsers::RequestUserInfo userInfo(requestType, CgiDataUtilities::postData(cgiIn, "CookieCode"));
+	WebUsers::RequestUserInfo userInfo(requestType,
+	                                   CgiDataUtilities::postData(cgiIn, "CookieCode"));
 
 	CorePropertySupervisorBase::getRequestUserInfo(userInfo);
 
@@ -5682,7 +7047,7 @@ try
 	// addDesktopIcon
 
 	// resetConsoleCounts
-	
+
 	// getRemoteSubsystems
 	// getRemoteSubsystemStatus
 	// commandRemoteSubsystem
@@ -5699,12 +7064,14 @@ try
 	if(0)  // leave for debugging
 	{
 		ConfigurationTree configLinkNode =
-		    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+		    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(
+		        supervisorContextUID_, supervisorApplicationUID_);
 
 		ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
 
-		__COUT__ << "requestType " << requestType << " v" << (fsmLinkNode.getTableVersion()) << __E__;
-	}		
+		__COUT__ << "requestType " << requestType << " v"
+		         << (fsmLinkNode.getTableVersion()) << __E__;
+	}
 
 	try
 	{
@@ -5731,13 +7098,16 @@ try
 			__COUT__ << "layout = " << layout << __E__;
 			__COUT__ << "syslayout = " << syslayout << __E__;
 
-			theWebUsers_.changeSettingsForUser(userInfo.uid_, bgcolor, dbcolor, wincolor, layout, syslayout);
-			theWebUsers_.insertSettingsForUser(userInfo.uid_, &xmlOut, true);  // include user accounts
+			theWebUsers_.changeSettingsForUser(
+			    userInfo.uid_, bgcolor, dbcolor, wincolor, layout, syslayout);
+			theWebUsers_.insertSettingsForUser(
+			    userInfo.uid_, &xmlOut, true);  // include user accounts
 		}
 		else if(requestType == "accountSettings")
 		{
-			std::string type     = CgiDataUtilities::postData(cgiIn, "type");  // updateAccount, createAccount, deleteAccount
-			int         type_int = -1;
+			std::string type = CgiDataUtilities::postData(
+			    cgiIn, "type");  // updateAccount, createAccount, deleteAccount
+			int type_int = -1;
 
 			if(type == "updateAccount")
 				type_int = theWebUsers_.MOD_TYPE_UPDATE;
@@ -5759,7 +7129,8 @@ try
 			__COUT__ << "displayname = " << displayname << __E__;
 			__COUT__ << "permissions = " << permissions << __E__;
 
-			theWebUsers_.modifyAccountSettings(userInfo.uid_, type_int, username, displayname, email, permissions);
+			theWebUsers_.modifyAccountSettings(
+			    userInfo.uid_, type_int, username, displayname, email, permissions);
 
 			__COUT__ << "accounts = " << accounts << __E__;
 
@@ -5770,40 +7141,52 @@ try
 			std::string       set              = CgiDataUtilities::getData(cgiIn, "set");
 			const std::string DEFAULT_FSM_VIEW = "Default_FSM_View";
 			if(set == "1")
-				theWebUsers_.setGenericPreference(userInfo.uid_, DEFAULT_FSM_VIEW, CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_VIEW));
+				theWebUsers_.setGenericPreference(
+				    userInfo.uid_,
+				    DEFAULT_FSM_VIEW,
+				    CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_VIEW));
 			else
-				theWebUsers_.getGenericPreference(userInfo.uid_, DEFAULT_FSM_VIEW, &xmlOut);
+				theWebUsers_.getGenericPreference(
+				    userInfo.uid_, DEFAULT_FSM_VIEW, &xmlOut);
 		}
 		else if(requestType == "getAliasList")
 		{
-			// std::string username = userInfo.username_; 
-			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");
+			// std::string username = userInfo.username_;
+			std::string fsmName = CgiDataUtilities::getData(cgiIn, "fsmName");
 			__SUP_COUTV__(fsmName);
 
 			addFilteredConfigAliasesToXML(xmlOut, fsmName);
 			if(0)
 			{
-
 				std::string stateMachineAliasFilter = "*";  // default to all
 
 				// IMPORTANT -- use temporary ConfigurationManager to get the Active Group Aliases,
 				//	 to avoid changing the Context Configuration tree for the Gateway Supervisor
-				ConfigurationManager                                                                  temporaryConfigMgr;
-				std::map<std::string /*alias*/, std::pair<std::string /*group name*/, TableGroupKey>> aliasMap;
+				ConfigurationManager temporaryConfigMgr;
+				std::map<std::string /*alias*/,
+				         std::pair<std::string /*group name*/, TableGroupKey>>
+				    aliasMap;
 				aliasMap = temporaryConfigMgr.getActiveGroupAliases();
-				
+
 				// AND IMPORTANT -- to use ConfigurationManager to get the Context settings for the Gateway Supervisor
 				// get stateMachineAliasFilter if possible
 				ConfigurationTree configLinkNode =
-					CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+				    CorePropertySupervisorBase::theConfigurationManager_
+				        ->getSupervisorTableNode(supervisorContextUID_,
+				                                 supervisorApplicationUID_);
 
 				if(!configLinkNode.isDisconnected())
 				{
 					try  // for backwards compatibility
 					{
-						ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
-						if(!fsmLinkNode.isDisconnected() && !fsmLinkNode.getNode(fsmName + "/SystemAliasFilter").isDefaultValue())
-							stateMachineAliasFilter = fsmLinkNode.getNode(fsmName + "/SystemAliasFilter").getValue<std::string>();
+						ConfigurationTree fsmLinkNode =
+						    configLinkNode.getNode("LinkToStateMachineTable");
+						if(!fsmLinkNode.isDisconnected() &&
+						   !fsmLinkNode.getNode(fsmName + "/SystemAliasFilter")
+						        .isDefaultValue())
+							stateMachineAliasFilter =
+							    fsmLinkNode.getNode(fsmName + "/SystemAliasFilter")
+							        .getValue<std::string>();
 						else
 							__COUT_INFO__ << "FSM Link disconnected." << __E__;
 					}
@@ -5819,13 +7202,16 @@ try
 				else
 					__COUT_INFO__ << "FSM Link disconnected." << __E__;
 
-				__COUT__ << "For FSM '" << fsmName << ",' stateMachineAliasFilter  = " << stateMachineAliasFilter << __E__;
+				__COUT__ << "For FSM '" << fsmName
+				         << ",' stateMachineAliasFilter  = " << stateMachineAliasFilter
+				         << __E__;
 
 				// filter list of aliases based on stateMachineAliasFilter
 				//  ! as first character means choose those that do NOT match filter
 				//	* can be used as wild card.
 				{
-					bool                     invertFilter = stateMachineAliasFilter.size() && stateMachineAliasFilter[0] == '!';
+					bool invertFilter = stateMachineAliasFilter.size() &&
+					                    stateMachineAliasFilter[0] == '!';
 					std::vector<std::string> filterArr;
 
 					size_t i = 0;
@@ -5858,7 +7244,8 @@ try
 
 						if(filterArr.size() == 1)
 						{
-							if(filterArr[0] != "" && filterArr[0] != "*" && aliasMapPair.first != filterArr[0])
+							if(filterArr[0] != "" && filterArr[0] != "*" &&
+							   aliasMapPair.first != filterArr[0])
 								filterMatch = false;
 						}
 						else
@@ -5877,15 +7264,18 @@ try
 										break;
 									}
 								}
-								else if(f == filterArr.size() - 1)  // must end with this filter
+								else if(f == filterArr.size() -
+								                 1)  // must end with this filter
 								{
-									if(aliasMapPair.first.rfind(filterArr[f]) != aliasMapPair.first.size() - filterArr[f].size())
+									if(aliasMapPair.first.rfind(filterArr[f]) !=
+									   aliasMapPair.first.size() - filterArr[f].size())
 									{
 										filterMatch = false;
 										break;
 									}
 								}
-								else if((i = aliasMapPair.first.find(filterArr[f])) == std::string::npos)
+								else if((i = aliasMapPair.first.find(filterArr[f])) ==
+								        std::string::npos)
 								{
 									filterMatch = false;
 									break;
@@ -5902,34 +7292,42 @@ try
 							continue;
 
 						xmlOut.addTextElementToData("config_alias", aliasMapPair.first);
-						xmlOut.addTextElementToData("config_key", TableGroupKey::getFullGroupString(aliasMapPair.second.first, aliasMapPair.second.second, /*decorate as (<key>)*/ "(",")"));
+						xmlOut.addTextElementToData(
+						    "config_key",
+						    TableGroupKey::getFullGroupString(aliasMapPair.second.first,
+						                                      aliasMapPair.second.second,
+						                                      /*decorate as (<key>)*/ "(",
+						                                      ")"));
 
 						// __COUT__ << "config_alias_comment" << " " <<  temporaryConfigMgr.getNode(
 						// 	ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(aliasMapPair.first).getNode(
 						// 		TableViewColumnInfo::COL_NAME_COMMENT).getValue<std::string>() << __E__;
-						xmlOut.addTextElementToData("config_alias_comment",
-													temporaryConfigMgr.getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
-														.getNode(aliasMapPair.first)
-														.getNode(TableViewColumnInfo::COL_NAME_COMMENT)
-														.getValue<std::string>());
+						xmlOut.addTextElementToData(
+						    "config_alias_comment",
+						    temporaryConfigMgr
+						        .getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
+						        .getNode(aliasMapPair.first)
+						        .getNode(TableViewColumnInfo::COL_NAME_COMMENT)
+						        .getValue<std::string>());
 
 						std::string groupComment, groupAuthor, groupCreationTime;
 						try
 						{
 							temporaryConfigMgr.loadTableGroup(aliasMapPair.second.first,
-															aliasMapPair.second.second,
-															false,
-															0,
-															0,
-															0,
-															&groupComment,
-															&groupAuthor,
-															&groupCreationTime,
-															true /*doNotLoadMembers*/);
+							                                  aliasMapPair.second.second,
+							                                  false,
+							                                  0,
+							                                  0,
+							                                  0,
+							                                  &groupComment,
+							                                  &groupAuthor,
+							                                  &groupCreationTime,
+							                                  true /*doNotLoadMembers*/);
 
 							xmlOut.addTextElementToData("config_comment", groupComment);
 							xmlOut.addTextElementToData("config_author", groupAuthor);
-							xmlOut.addTextElementToData("config_create_time", groupCreationTime);
+							xmlOut.addTextElementToData("config_create_time",
+							                            groupCreationTime);
 						}
 						catch(...)
 						{
@@ -5939,8 +7337,9 @@ try
 				}
 
 				// return last group alias by user
-				std::string fn =
-					ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." + FSM_USERS_PREFERENCES_FILETYPE;
+				std::string fn = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
+				                 FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." +
+				                 FSM_USERS_PREFERENCES_FILETYPE;
 				__COUT__ << "Load preferences: " << fn << __E__;
 				FILE* fp = fopen(fn.c_str(), "r");
 				if(fp)
@@ -5952,9 +7351,10 @@ try
 					xmlOut.addTextElementToData("UserLastConfigAlias", tmpLastAlias);
 					fclose(fp);
 				}
-				else if(aliasMap.size()) //if not set, return first
-					xmlOut.addTextElementToData("UserLastConfigAlias", aliasMap.begin()->first);
-			} //end if 0
+				else if(aliasMap.size())  //if not set, return first
+					xmlOut.addTextElementToData("UserLastConfigAlias",
+					                            aliasMap.begin()->first);
+			}  //end if 0
 		}
 		else if(requestType == "getAppStatus")
 		{
@@ -5963,14 +7363,20 @@ try
 				const auto& appInfo = it.second;
 
 				xmlOut.addTextElementToData("name",
-				                            appInfo.getName());                      // get application name
-				xmlOut.addNumberElementToData("id", appInfo.getId());  // get application id
-				xmlOut.addTextElementToData("status", appInfo.getStatus());          // get status
+				                            appInfo.getName());  // get application name
+				xmlOut.addNumberElementToData("id",
+				                              appInfo.getId());  // get application id
+				xmlOut.addTextElementToData("status", appInfo.getStatus());  // get status
 				xmlOut.addTextElementToData(
-				    "time", appInfo.getLastStatusTime() ? StringMacros::getTimestampString(appInfo.getLastStatusTime()) : "0");  // get time stamp
-				xmlOut.addNumberElementToData("stale", time(0) - appInfo.getLastStatusTime());  // time since update
-				xmlOut.addNumberElementToData("progress", appInfo.getProgress());      // get progress
-				xmlOut.addTextElementToData("detail", appInfo.getDetail());                          // get detail
+				    "time",
+				    appInfo.getLastStatusTime()
+				        ? StringMacros::getTimestampString(appInfo.getLastStatusTime())
+				        : "0");  // get time stamp
+				xmlOut.addNumberElementToData(
+				    "stale", time(0) - appInfo.getLastStatusTime());  // time since update
+				xmlOut.addNumberElementToData("progress",
+				                              appInfo.getProgress());  // get progress
+				xmlOut.addTextElementToData("detail", appInfo.getDetail());  // get detail
 				xmlOut.addTextElementToData("class",
 				                            appInfo.getClass());  // get application class
 				xmlOut.addTextElementToData("url",
@@ -5980,24 +7386,42 @@ try
 				auto subappElement = xmlOut.addTextElementToData("subapps", "");
 				for(auto& subappInfoPair : appInfo.getSubappInfo())
 				{
-					xmlOut.addTextElementToParent("subapp_name", subappInfoPair.first, subappElement);
-					xmlOut.addTextElementToParent("subapp_status", subappInfoPair.second.status, subappElement);  // get status
-					xmlOut.addTextElementToParent("subapp_time",
-					    subappInfoPair.second.lastStatusTime ? StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
-					                              subappElement);  // get timestamp
-					xmlOut.addNumberElementToParent("subapp_stale", time(0) - subappInfoPair.second.lastStatusTime, subappElement);  // time since update
-					xmlOut.addNumberElementToParent("subapp_progress", subappInfoPair.second.progress, subappElement);               // get progress
-					xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
-					xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.url, subappElement);                                        // get detail
-					xmlOut.addNumberElementToParent("subapp_id", subappInfoPair.second.id, subappElement);                                   // get url
-					xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
-
+					xmlOut.addTextElementToParent(
+					    "subapp_name", subappInfoPair.first, subappElement);
+					xmlOut.addTextElementToParent("subapp_status",
+					                              subappInfoPair.second.status,
+					                              subappElement);  // get status
+					xmlOut.addTextElementToParent(
+					    "subapp_time",
+					    subappInfoPair.second.lastStatusTime
+					        ? StringMacros::getTimestampString(
+					              subappInfoPair.second.lastStatusTime)
+					        : "0",
+					    subappElement);  // get timestamp
+					xmlOut.addNumberElementToParent(
+					    "subapp_stale",
+					    time(0) - subappInfoPair.second.lastStatusTime,
+					    subappElement);  // time since update
+					xmlOut.addNumberElementToParent("subapp_progress",
+					                                subappInfoPair.second.progress,
+					                                subappElement);  // get progress
+					xmlOut.addTextElementToParent("subapp_detail",
+					                              subappInfoPair.second.detail,
+					                              subappElement);  // get detail
+					xmlOut.addTextElementToParent("subapp_url",
+					                              subappInfoPair.second.url,
+					                              subappElement);  // get detail
+					xmlOut.addNumberElementToParent(
+					    "subapp_id", subappInfoPair.second.id, subappElement);  // get url
+					xmlOut.addTextElementToParent("subapp_class",
+					                              subappInfoPair.second.class_name,
+					                              subappElement);  // get class
 				}
-			} //end app info loop
+			}  //end app info loop
 
-			//also return remote gateways as apps			
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps; //local copy
-			{ //lock for remainder of scope
+			//also return remote gateways as apps
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteApps;  //local copy
+			{  //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				remoteApps = remoteGatewayApps_;
 			}
@@ -6007,94 +7431,129 @@ try
 				const auto& appInfo = remoteApp.appInfo;
 
 				//skip if no status (will show up as subapp of Gateway)
-				if(appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN) continue;
+				if(appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
+					continue;
 
 				xmlOut.addTextElementToData("name",
-				                            appInfo.name);                      // get application name
-				xmlOut.addNumberElementToData("id", appInfo.id);  				// get application id
-				xmlOut.addTextElementToData("status", appInfo.status);          // get status
-				xmlOut.addTextElementToData("time", appInfo.lastStatusTime ? 
-					StringMacros::getTimestampString(appInfo.lastStatusTime) : "0");  // get timestamp
-				xmlOut.addNumberElementToData("stale",
-				                            time(0) - appInfo.lastStatusTime);  // time since update
-				xmlOut.addNumberElementToData("progress", appInfo.progress);    // get progress
-				xmlOut.addTextElementToData("detail", appInfo.detail);          // get detail
-				xmlOut.addTextElementToData("class",  appInfo.class_name);  	// get application class
-				xmlOut.addTextElementToData("url", appInfo.parent_url);  		// get application url
-				xmlOut.addTextElementToData("context", appInfo.name + " at " + appInfo.url);  // get context
+				                            appInfo.name);        // get application name
+				xmlOut.addNumberElementToData("id", appInfo.id);  // get application id
+				xmlOut.addTextElementToData("status", appInfo.status);  // get status
+				xmlOut.addTextElementToData(
+				    "time",
+				    appInfo.lastStatusTime
+				        ? StringMacros::getTimestampString(appInfo.lastStatusTime)
+				        : "0");  // get timestamp
+				xmlOut.addNumberElementToData(
+				    "stale",
+				    time(0) - appInfo.lastStatusTime);  // time since update
+				xmlOut.addNumberElementToData("progress",
+				                              appInfo.progress);        // get progress
+				xmlOut.addTextElementToData("detail", appInfo.detail);  // get detail
+				xmlOut.addTextElementToData("class",
+				                            appInfo.class_name);  // get application class
+				xmlOut.addTextElementToData("url",
+				                            appInfo.parent_url);  // get application url
+				xmlOut.addTextElementToData(
+				    "context", appInfo.name + " at " + appInfo.url);  // get context
 				auto subappElement = xmlOut.addTextElementToData("subapps", "");
 				for(auto& subappInfoPair : remoteApp.subapps)
 				{
-					xmlOut.addTextElementToParent("subapp_name", subappInfoPair.first, subappElement);
-					xmlOut.addTextElementToParent("subapp_status", subappInfoPair.second.status, subappElement);  // get status
-					xmlOut.addTextElementToParent("subapp_time",
-					    subappInfoPair.second.lastStatusTime ? 
-							StringMacros::getTimestampString(subappInfoPair.second.lastStatusTime) : "0",
-					                              subappElement);  // get time stamp
-					xmlOut.addNumberElementToParent("subapp_stale", time(0) - subappInfoPair.second.lastStatusTime, subappElement);  // time since update
-					xmlOut.addNumberElementToParent("subapp_progress", subappInfoPair.second.progress, subappElement);               // get progress
-					xmlOut.addTextElementToParent("subapp_detail", subappInfoPair.second.detail, subappElement);                                   // get detail
-					xmlOut.addTextElementToParent("subapp_url", subappInfoPair.second.parent_url, subappElement);                               // get detail
-					xmlOut.addNumberElementToParent("subapp_id", subappInfoPair.second.id, subappElement);                                      // get url
-					xmlOut.addTextElementToParent("subapp_class", subappInfoPair.second.class_name, subappElement);                                // get class
-
+					xmlOut.addTextElementToParent(
+					    "subapp_name", subappInfoPair.first, subappElement);
+					xmlOut.addTextElementToParent("subapp_status",
+					                              subappInfoPair.second.status,
+					                              subappElement);  // get status
+					xmlOut.addTextElementToParent(
+					    "subapp_time",
+					    subappInfoPair.second.lastStatusTime
+					        ? StringMacros::getTimestampString(
+					              subappInfoPair.second.lastStatusTime)
+					        : "0",
+					    subappElement);  // get time stamp
+					xmlOut.addNumberElementToParent(
+					    "subapp_stale",
+					    time(0) - subappInfoPair.second.lastStatusTime,
+					    subappElement);  // time since update
+					xmlOut.addNumberElementToParent("subapp_progress",
+					                                subappInfoPair.second.progress,
+					                                subappElement);  // get progress
+					xmlOut.addTextElementToParent("subapp_detail",
+					                              subappInfoPair.second.detail,
+					                              subappElement);  // get detail
+					xmlOut.addTextElementToParent("subapp_url",
+					                              subappInfoPair.second.parent_url,
+					                              subappElement);  // get detail
+					xmlOut.addNumberElementToParent(
+					    "subapp_id", subappInfoPair.second.id, subappElement);  // get url
+					xmlOut.addTextElementToParent("subapp_class",
+					                              subappInfoPair.second.class_name,
+					                              subappElement);  // get class
 				}
-			} //end remote app info loop
-
+			}  //end remote app info loop
 		}
 		else if(requestType == "getAppId")
 		{
-			GatewaySupervisor::handleGetApplicationIdRequest(&allSupervisorInfo_, cgiIn, xmlOut);
+			GatewaySupervisor::handleGetApplicationIdRequest(
+			    &allSupervisorInfo_, cgiIn, xmlOut);
 		}
 		else if(requestType == "getContextMemberNames")
 		{
-			const XDAQContextTable* contextTable = CorePropertySupervisorBase::theConfigurationManager_->__GET_CONFIG__(XDAQContextTable);
+			const XDAQContextTable* contextTable =
+			    CorePropertySupervisorBase::theConfigurationManager_->__GET_CONFIG__(
+			        XDAQContextTable);
 
 			auto contexts = contextTable->getContexts();
 			for(const auto& context : contexts)
 			{
-				xmlOut.addTextElementToData("ContextMember", context.contextUID_);  // get context member name
+				xmlOut.addTextElementToData(
+				    "ContextMember", context.contextUID_);  // get context member name
 			}
 
 			//Also add Remote Subystems and consider them Context Member Names!
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-			{ //lock for remainder of scope
+			std::vector<GatewaySupervisor::RemoteGatewayInfo>
+			    remoteGatewayApps;  //local copy
+			{                       //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				remoteGatewayApps = remoteGatewayApps_;
 			}
 
 			for(const auto& remoteGatewayApp : remoteGatewayApps)
-				xmlOut.addTextElementToData("RemoteGateway", 
-					remoteGatewayApp.appInfo.name + " at " + remoteGatewayApp.appInfo.url); 
+				xmlOut.addTextElementToData("RemoteGateway",
+				                            remoteGatewayApp.appInfo.name + " at " +
+				                                remoteGatewayApp.appInfo.url);
 		}
 		else if(requestType == "getSystemMessages")
 		{
-			xmlOut.addTextElementToData("systemMessages", theWebUsers_.getSystemMessage(userInfo.displayName_));
+			xmlOut.addTextElementToData(
+			    "systemMessages", theWebUsers_.getSystemMessage(userInfo.displayName_));
 
-			xmlOut.addTextElementToData("username_with_lock",
-			                            theWebUsers_.getUserWithLock());  // always give system lock update
+			xmlOut.addTextElementToData(
+			    "username_with_lock",
+			    theWebUsers_.getUserWithLock());  // always give system lock update
 
-			__COUTVS__(20,theWebUsers_.getUserWithLock());
+			__COUTVS__(20, theWebUsers_.getUserWithLock());
 
 			//Also add Remote Subystems users-with-lock!
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-			{ //lock for remainder of scope
+			std::vector<GatewaySupervisor::RemoteGatewayInfo>
+			    remoteGatewayApps;  //local copy
+			{                       //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				remoteGatewayApps = remoteGatewayApps_;
 			}
 
 			for(const auto& remoteGatewayApp : remoteGatewayApps)
-			{	
-				__COUTVS__(21,remoteGatewayApp.appInfo.status);
+			{
+				__COUTVS__(21, remoteGatewayApp.appInfo.status);
 
-				//skip disconnected remote gateways			
-				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN) continue;
+				//skip disconnected remote gateways
+				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
+					continue;
 
-				xmlOut.addTextElementToData("RemoteGateway_name", 
-					remoteGatewayApp.appInfo.name); 
-				xmlOut.addTextElementToData("RemoteGateway_usernameWithLock", 
-					remoteGatewayApp.usernameWithLock); 
-			} //end remote subsystem loop
+				xmlOut.addTextElementToData("RemoteGateway_name",
+				                            remoteGatewayApp.appInfo.name);
+				xmlOut.addTextElementToData("RemoteGateway_usernameWithLock",
+				                            remoteGatewayApp.usernameWithLock);
+			}  //end remote subsystem loop
 		}
 		else if(requestType == "setUserWithLock")
 		{
@@ -6109,70 +7568,79 @@ try
 
 			std::string tmpUserWithLock = theWebUsers_.getUserWithLock();
 			if(!theWebUsers_.setUserWithLock(userInfo.uid_, lock == "1", username))
-				xmlOut.addTextElementToData("server_alert",
-				                            std::string("Set user lock action failed. You must have valid "
-				                                        "permissions and ") +
-				                                "locking user must be currently logged in.");
+				xmlOut.addTextElementToData(
+				    "server_alert",
+				    std::string("Set user lock action failed. You must have valid "
+				                "permissions and ") +
+				        "locking user must be currently logged in.");
 
 			theWebUsers_.insertSettingsForUser(userInfo.uid_, &xmlOut, accounts == "1");
 
-			if(tmpUserWithLock != theWebUsers_.getUserWithLock())  // if there was a change, broadcast system message
+			if(tmpUserWithLock !=
+			   theWebUsers_
+			       .getUserWithLock())  // if there was a change, broadcast system message
 				theWebUsers_.addSystemMessage(
-				    "*", theWebUsers_.getUserWithLock() == "" ? tmpUserWithLock + " has unlocked ots." : theWebUsers_.getUserWithLock() + " has locked ots.");
+				    "*",
+				    theWebUsers_.getUserWithLock() == ""
+				        ? tmpUserWithLock + " has unlocked ots."
+				        : theWebUsers_.getUserWithLock() + " has locked ots.");
 
 			//Also add Remote Subystems users-with-lock!
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-			{ //lock for remainder of scope
+			std::vector<GatewaySupervisor::RemoteGatewayInfo>
+			    remoteGatewayApps;  //local copy
+			{                       //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				remoteGatewayApps = remoteGatewayApps_;
 			}
 
 			for(const auto& remoteGatewayApp : remoteGatewayApps)
-			{	
-				//skip disconnected remote gateways			
-				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN) continue;
+			{
+				//skip disconnected remote gateways
+				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
+					continue;
 
-				xmlOut.addTextElementToData("RemoteGateway_name", 
-					remoteGatewayApp.appInfo.name); 
-				xmlOut.addTextElementToData("RemoteGateway_usernameWithLock", 
-					remoteGatewayApp.usernameWithLock); 
-			} //end remote subsystem loop
+				xmlOut.addTextElementToData("RemoteGateway_name",
+				                            remoteGatewayApp.appInfo.name);
+				xmlOut.addTextElementToData("RemoteGateway_usernameWithLock",
+				                            remoteGatewayApp.usernameWithLock);
+			}  //end remote subsystem loop
 		}
 		else if(requestType == "getStateMachineLastLogEntry")
 		{
-			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");
-			std::string transition  = CgiDataUtilities::getData(cgiIn, "transition");
+			std::string fsmName    = CgiDataUtilities::getData(cgiIn, "fsmName");
+			std::string transition = CgiDataUtilities::getData(cgiIn, "transition");
 			__SUP_COUTV__(fsmName);
 			__SUP_COUTV__(transition);
 
 			//remove appended date and, for start, remove prepended run #
-			std::string lastLog = getLastLogEntry(transition,fsmName);
+			std::string lastLog = getLastLogEntry(transition, fsmName);
 			__SUP_COUTTV__(lastLog);
 			size_t i = lastLog.rfind('(');
-			if(i != std::string::npos && i > 1) //remove appended date
+			if(i != std::string::npos && i > 1)  //remove appended date
 			{
-				lastLog = lastLog.substr(0,i-1);
+				lastLog = lastLog.substr(0, i - 1);
 				__SUP_COUTTV__(lastLog);
 			}
-			
+
 			if(transition == RunControlStateMachine::START_TRANSITION_NAME)
 			{
 				i = lastLog.find(':');
-				if(i != std::string::npos && i+2 < lastLog.size()) //remove prepended run #
+				if(i != std::string::npos &&
+				   i + 2 < lastLog.size())  //remove prepended run #
 				{
-					lastLog = lastLog.substr(i+2);
+					lastLog = lastLog.substr(i + 2);
 					__SUP_COUTTV__(lastLog);
 				}
 			}
-			
-			xmlOut.addTextElementToData("lastLogEntry",lastLog);
+
+			xmlOut.addTextElementToData("lastLogEntry", lastLog);
 		}
 		else if(requestType == "getStateMachine")
 		{
-			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");
-			__SUP_COUTVS__(20,fsmName);
+			std::string fsmName = CgiDataUtilities::getData(cgiIn, "fsmName");
+			__SUP_COUTVS__(20, fsmName);
 
-			addRequiredFsmLogInputToXML(xmlOut,fsmName);
+			addRequiredFsmLogInputToXML(xmlOut, fsmName);
 
 			std::vector<toolbox::fsm::State> states;
 			states = theStateMachine_.getStates();
@@ -6186,15 +7654,18 @@ try
 				stateStr[0]             = states[i];
 				DOMElement* stateParent = xmlOut.addTextElementToData("state", stateStr);
 
-				xmlOut.addTextElementToParent("state_name", theStateMachine_.getStateName(states[i]), stateParent);
+				xmlOut.addTextElementToParent(
+				    "state_name", theStateMachine_.getStateName(states[i]), stateParent);
 
 				// get all transition final states, transitionNames and actionNames from
 				// state
-				std::map<std::string, toolbox::fsm::State, std::less<std::string>> trans       = theStateMachine_.getTransitions(states[i]);
-				std::set<std::string>                                              actionNames = theStateMachine_.getInputs(states[i]);
+				std::map<std::string, toolbox::fsm::State, std::less<std::string>> trans =
+				    theStateMachine_.getTransitions(states[i]);
+				std::set<std::string> actionNames = theStateMachine_.getInputs(states[i]);
 
-				std::map<std::string, toolbox::fsm::State, std::less<std::string>>::iterator it  = trans.begin();
-				std::set<std::string>::iterator                                              ait = actionNames.begin();
+				std::map<std::string, toolbox::fsm::State, std::less<std::string>>::
+				    iterator                    it  = trans.begin();
+				std::set<std::string>::iterator ait = actionNames.begin();
 
 				// handle hacky way to keep "forward" moving states on right of FSM
 				// display.. must be first!
@@ -6205,22 +7676,32 @@ try
 
 					if(stateStr[0] == 'R')
 					{
-						xmlOut.addTextElementToParent("state_transition", stateStr, stateParent);
-						xmlOut.addTextElementToParent("state_transition_action", *ait, stateParent);
+						xmlOut.addTextElementToParent(
+						    "state_transition", stateStr, stateParent);
+						xmlOut.addTextElementToParent(
+						    "state_transition_action", *ait, stateParent);
 						transName = theStateMachine_.getTransitionName(states[i], *ait);
-						xmlOut.addTextElementToParent("state_transition_name", transName, stateParent);
-						transParameter = theStateMachine_.getTransitionParameter(states[i], *ait);
-						xmlOut.addTextElementToParent("state_transition_parameter", transParameter, stateParent);
+						xmlOut.addTextElementToParent(
+						    "state_transition_name", transName, stateParent);
+						transParameter =
+						    theStateMachine_.getTransitionParameter(states[i], *ait);
+						xmlOut.addTextElementToParent(
+						    "state_transition_parameter", transParameter, stateParent);
 						break;
 					}
 					else if(stateStr[0] == 'C')
 					{
-						xmlOut.addTextElementToParent("state_transition", stateStr, stateParent);
-						xmlOut.addTextElementToParent("state_transition_action", *ait, stateParent);
+						xmlOut.addTextElementToParent(
+						    "state_transition", stateStr, stateParent);
+						xmlOut.addTextElementToParent(
+						    "state_transition_action", *ait, stateParent);
 						transName = theStateMachine_.getTransitionName(states[i], *ait);
-						xmlOut.addTextElementToParent("state_transition_name", transName, stateParent);
-						transParameter = theStateMachine_.getTransitionParameter(states[i], *ait);
-						xmlOut.addTextElementToParent("state_transition_parameter", transParameter, stateParent);
+						xmlOut.addTextElementToParent(
+						    "state_transition_name", transName, stateParent);
+						transParameter =
+						    theStateMachine_.getTransitionParameter(states[i], *ait);
+						xmlOut.addTextElementToParent(
+						    "state_transition_parameter", transParameter, stateParent);
 						break;
 					}
 				}
@@ -6239,24 +7720,32 @@ try
 					else if(stateStr[0] == 'C')
 						continue;
 
-					xmlOut.addTextElementToParent("state_transition", stateStr, stateParent);
-					xmlOut.addTextElementToParent("state_transition_action", *ait, stateParent);
+					xmlOut.addTextElementToParent(
+					    "state_transition", stateStr, stateParent);
+					xmlOut.addTextElementToParent(
+					    "state_transition_action", *ait, stateParent);
 					transName = theStateMachine_.getTransitionName(states[i], *ait);
-					xmlOut.addTextElementToParent("state_transition_name", transName, stateParent);
-					transParameter = theStateMachine_.getTransitionParameter(states[i], *ait);
-					xmlOut.addTextElementToParent("state_transition_parameter", transParameter, stateParent);
+					xmlOut.addTextElementToParent(
+					    "state_transition_name", transName, stateParent);
+					transParameter =
+					    theStateMachine_.getTransitionParameter(states[i], *ait);
+					xmlOut.addTextElementToParent(
+					    "state_transition_parameter", transParameter, stateParent);
 				}
-			} //end state traversal loop
+			}  //end state traversal loop
 		}
 		else if(requestType == "getStateMachineNames")
 		{
 			// get stateMachineAliasFilter if possible
 			ConfigurationTree configLinkNode =
-			    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+			    CorePropertySupervisorBase::theConfigurationManager_
+			        ->getSupervisorTableNode(supervisorContextUID_,
+			                                 supervisorApplicationUID_);
 
 			try
 			{
-				auto fsmNodes = configLinkNode.getNode("LinkToStateMachineTable").getChildren();
+				auto fsmNodes =
+				    configLinkNode.getNode("LinkToStateMachineTable").getChildren();
 				for(const auto& fsmNode : fsmNodes)
 					xmlOut.addTextElementToData("stateMachineName", fsmNode.first);
 			}
@@ -6292,39 +7781,43 @@ try
 			// get icons and create comma-separated string based on user permissions
 			//	note: each icon has own permission threshold, so each user can have
 			//		a unique desktop icon experience.
-						
+
 			// use latest context always from temporary configuration manager,
 			//	to get updated icons every time...
 			//(so icon changes do no require an ots restart)
-			ConfigurationManager                              tmpCfgMgr; // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
-			const DesktopIconTable*                           iconTable = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
-			const std::vector<DesktopIconTable::DesktopIcon>& icons     = iconTable->getAllDesktopIcons();
+			ConfigurationManager
+			    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
+			const DesktopIconTable* iconTable =
+			    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
+			const std::vector<DesktopIconTable::DesktopIcon>& icons =
+			    iconTable->getAllDesktopIcons();
 
-
-			std::string iconString = "";  
+			std::string iconString = "";
 			// comma-separated icon string, 7 fields:
 			//				0 - caption 		= text below icon
 			//				1 - altText 		= text icon if no image given
 			//				2 - uniqueWin 		= if true, only one window is allowed,
-			// 										else  multiple instances of window 				
-			//				3 - permissions 	= security level needed to see icon 				
-			//				4 - picfn 			= icon image filename 				
+			// 										else  multiple instances of window
+			//				3 - permissions 	= security level needed to see icon
+			//				4 - picfn 			= icon image filename
 			//				5 - linkurl 		= url of the window to open
-			// 				6 - folderPath 		= folder and subfolder location '/' separated  
+			// 				6 - folderPath 		= folder and subfolder location '/' separated
 			//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
 
+			std::map<std::string, WebUsers::permissionLevel_t> userPermissionLevelsMap =
+			    theWebUsers_.getPermissionsForUser(userInfo.uid_);
+			std::map<std::string, WebUsers::permissionLevel_t>
+			    iconPermissionThresholdsMap;
 
+			__COUTVS__(20, StringMacros::mapToString(userPermissionLevelsMap));
 
-			std::map<std::string, WebUsers::permissionLevel_t> userPermissionLevelsMap = theWebUsers_.getPermissionsForUser(userInfo.uid_);
-			std::map<std::string, WebUsers::permissionLevel_t> iconPermissionThresholdsMap;
-
-			__COUTVS__(20,StringMacros::mapToString(userPermissionLevelsMap));
-
-			bool getRemoteIcons = true; //could potentially enable from configuration in future
+			bool getRemoteIcons =
+			    true;  //could potentially enable from configuration in future
 			//also return remote gateway icons from cache
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
+			std::vector<GatewaySupervisor::RemoteGatewayInfo>
+			    remoteGatewayApps;  //local copy
 			if(getRemoteIcons)
-			{ //lock for remainder of scope
+			{  //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				remoteGatewayApps = remoteGatewayApps_;
 			}
@@ -6334,66 +7827,78 @@ try
 			bool firstIcon = true;
 			for(const auto& icon : icons)
 			{
-				__COUTVS__(21,icon.caption_);
-				__COUTVS__(21,icon.permissionThresholdString_);
+				__COUTVS__(21, icon.caption_);
+				__COUTVS__(21, icon.permissionThresholdString_);
 
-				CorePropertySupervisorBase::extractPermissionsMapFromString(icon.permissionThresholdString_, iconPermissionThresholdsMap);
+				CorePropertySupervisorBase::extractPermissionsMapFromString(
+				    icon.permissionThresholdString_, iconPermissionThresholdsMap);
 
-				if(!CorePropertySupervisorBase::doPermissionsGrantAccess(userPermissionLevelsMap, iconPermissionThresholdsMap))
+				if(!CorePropertySupervisorBase::doPermissionsGrantAccess(
+				       userPermissionLevelsMap, iconPermissionThresholdsMap))
 				{
-					__COUTT__ << "No user access to icon '" << icon.caption_ << "'" << __E__;
+					__COUTT__ << "No user access to icon '" << icon.caption_ << "'"
+					          << __E__;
 					continue;  // skip icon if no access
 				}
 
-				__COUTVS__(21,icon.caption_);
+				__COUTVS__(21, icon.caption_);
 
 				if(getRemoteIcons)
 				{
 					__COUTV__(icon.windowContentURL_);
-					if(icon.windowContentURL_.size() > 4 && 
-						icon.windowContentURL_[0] == 'o' &&
-						icon.windowContentURL_[1] == 't' &&
-						icon.windowContentURL_[2] == 's' &&
-						icon.windowContentURL_[3] == ':')
+					if(icon.windowContentURL_.size() > 4 &&
+					   icon.windowContentURL_[0] == 'o' &&
+					   icon.windowContentURL_[1] == 't' &&
+					   icon.windowContentURL_[2] == 's' &&
+					   icon.windowContentURL_[3] == ':')
 					{
 						//retrieval from cache!
 						bool found = false;
 						for(const auto& remoteGatewayApp : remoteGatewayApps)
-						{				
-							if(icon.recordUID_ != remoteGatewayApp.appInfo.name) continue;
-							__COUTVS__(21,icon.caption_);
+						{
+							if(icon.recordUID_ != remoteGatewayApp.appInfo.name)
+								continue;
+							__COUTVS__(21, icon.caption_);
 							found = true;
 
-							if(remoteGatewayApp.iconString == "") //then either error or still loading...
+							if(remoteGatewayApp.iconString ==
+							   "")  //then either error or still loading...
 							{
 								//add error if it has to do with icons
-								if(remoteGatewayApp.error.find("desktop icons") != std::string::npos)
-									xmlOut.addTextElementToData("Error", remoteGatewayApp.error);
+								if(remoteGatewayApp.error.find("desktop icons") !=
+								   std::string::npos)
+									xmlOut.addTextElementToData("Error",
+									                            remoteGatewayApp.error);
 
 								//add placeholder "Loading icon"
 								if(firstIcon)
 									firstIcon = false;
 								else
 									iconString += ",";
-								
+
 								if(remoteGatewayApp.parentIconFolderPath != "")
-									iconString += remoteGatewayApp.parentIconFolderPath + " loading..."; //icon.caption_;
+									iconString += remoteGatewayApp.parentIconFolderPath +
+									              " loading...";  //icon.caption_;
 								else if(remoteGatewayApp.user_data_path_record != "")
-									iconString += remoteGatewayApp.user_data_path_record + " loading..."; //icon.caption_;
+									iconString += remoteGatewayApp.user_data_path_record +
+									              " loading...";  //icon.caption_;
 								else
-									iconString += remoteGatewayApp.appInfo.name + " loading..."; //icon.caption_;
-									
-								iconString += ",X"; //icon.alternateText_;
-								iconString += ",1";//std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
-								iconString += ",0";//std::string("1");  // set permission to 1 so the
-																	// desktop shows every icon that the
-																	// server allows (i.e., trust server
-																	// security, ignore client security)
-								iconString += ",";//icon.imageURL_;
-								iconString += ",";//icon.windowContentURL_;
-								iconString += ",";//icon.folderPath_;
-							
-								break; //done adding error/loading icon
+									iconString += remoteGatewayApp.appInfo.name +
+									              " loading...";  //icon.caption_;
+
+								iconString += ",X";  //icon.alternateText_;
+								iconString +=
+								    ",1";  //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+								iconString +=
+								    ",0";  //std::string("1");  // set permission to 1 so the
+								           // desktop shows every icon that the
+								           // server allows (i.e., trust server
+								           // security, ignore client security)
+								iconString += ",";  //icon.imageURL_;
+								iconString += ",";  //icon.windowContentURL_;
+								iconString += ",";  //icon.folderPath_;
+
+								break;  //done adding error/loading icon
 							}
 
 							if(firstIcon)
@@ -6402,59 +7907,64 @@ try
 								iconString += ",";
 
 							iconString += remoteGatewayApp.iconString;
-							break; //done with cache retrieval
-						} //end loop retrieval
+							break;  //done with cache retrieval
+						}           //end loop retrieval
 
 						if(!found)
 						{
-							__SUP_SS__ << "Illegal missing remote icon definition for icon record UID '" <<
-								icon.recordUID_ << ".' Please notify admins." << __E__;
-							__SUP_SS_THROW__; 
+							__SUP_SS__ << "Illegal missing remote icon definition for "
+							              "icon record UID '"
+							           << icon.recordUID_ << ".' Please notify admins."
+							           << __E__;
+							__SUP_SS_THROW__;
 						}
-						
-						continue; //done with remote icon string retrieval
+
+						continue;  //done with remote icon string retrieval
 					}
-				} //end remote icon handling
+				}  //end remote icon handling
 
 				// have icon access, so add to CSV string
 				if(firstIcon)
 					firstIcon = false;
 				else
 					iconString += ",";
-					
 
 				iconString += icon.caption_;
 				iconString += "," + icon.alternateText_;
-				iconString += "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+				iconString +=
+				    "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
 				iconString += "," + std::string("1");  // set permission to 1 so the
-				                                       // desktop shows every icon that the
-				                                       // server allows (i.e., trust server
-				                                       // security, ignore client security)
+				    // desktop shows every icon that the
+				    // server allows (i.e., trust server
+				    // security, ignore client security)
 				iconString += "," + icon.imageURL_;
 				iconString += "," + icon.windowContentURL_;
 				iconString += "," + icon.folderPath_;
 			}
-			__COUTVS__(23,iconString);			
+			__COUTVS__(23, iconString);
 
-			xmlOut.addTextElementToData("iconList", iconString);			
+			xmlOut.addTextElementToData("iconList", iconString);
 		}
 		else if(requestType == "addDesktopIcon")
 		{
 			std::vector<DesktopIconTable::DesktopIcon> newIcons;
 
 			bool success = GatewaySupervisor::handleAddDesktopIconRequest(
-				userInfo.username_,	cgiIn, xmlOut, &newIcons);
+			    userInfo.username_, cgiIn, xmlOut, &newIcons);
 
 			if(success)
 			{
 				__COUT__ << "Attempting dynamic icon change..." << __E__;
 
-				DesktopIconTable* iconTable = (DesktopIconTable*)CorePropertySupervisorBase::theConfigurationManager_->getDesktopIconTable();
+				DesktopIconTable* iconTable =
+				    (DesktopIconTable*)
+				        CorePropertySupervisorBase::theConfigurationManager_
+				            ->getDesktopIconTable();
 				iconTable->setAllDesktopIcons(newIcons);
 			}
 			else
 				__COUT__ << "Failed dynamic icon add." << __E__;
-		} //end addDesktopIcon
+		}  //end addDesktopIcon
 		else if(requestType == "resetConsoleCounts")
 		{
 			//zero out console count and retake first messages
@@ -6464,37 +7974,51 @@ try
 				const auto& appInfo = it.second;
 				if(appInfo.isTypeConsoleSupervisor())
 				{
-					xoap::MessageReference tempMessage = SOAPUtilities::makeSOAPMessageReference("ResetConsoleCounts");
+					xoap::MessageReference tempMessage =
+					    SOAPUtilities::makeSOAPMessageReference("ResetConsoleCounts");
 					std::string reply = send(appInfo.getDescriptor(), tempMessage);
 
 					if(reply != "Done")
 					{
-						__SUP_SS__ << "Error while resetting console counts of Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
-			       			<< "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "].\n\n"
-							<< reply << __E__;
+						__SUP_SS__ << "Error while resetting console counts of "
+						              "Supervisor instance = '"
+						           << appInfo.getName() << "' [LID=" << appInfo.getId()
+						           << "] in Context '" << appInfo.getContextName()
+						           << "' [URL=" << appInfo.getURL() << "].\n\n"
+						           << reply << __E__;
 						__SUP_SS_THROW__;
 					}
-					__SUP_COUT__ << "Reset console counts of Supervisor instance = '" << appInfo.getName() << "' [LID=" << appInfo.getId()
-			       			<< "] in Context '" << appInfo.getContextName() << "' [URL=" << appInfo.getURL() << "]." << __E__;
+					__SUP_COUT__ << "Reset console counts of Supervisor instance = '"
+					             << appInfo.getName() << "' [LID=" << appInfo.getId()
+					             << "] in Context '" << appInfo.getContextName()
+					             << "' [URL=" << appInfo.getURL() << "]." << __E__;
 				}
-			} //end loop for Console Supervisors
+			}  //end loop for Console Supervisors
 
 			//for user display feedback, clear local cached values also
-			std::lock_guard<std::mutex> lock(systemStatusMutex_); //lock for rest of scope
-			lastConsoleErrTime_ = "0"; lastConsoleErr_ = "";
-			lastConsoleWarnTime_ = "0"; lastConsoleWarn_ = "";
-			lastConsoleInfoTime_ = "0"; lastConsoleInfo_ = "";
-			firstConsoleErrTime_ = "0"; firstConsoleErr_ = "";
-			firstConsoleWarnTime_ = "0"; firstConsoleWarn_ = "";
-			firstConsoleInfoTime_ = "0"; firstConsoleInfo_ = "";
+			std::lock_guard<std::mutex> lock(
+			    systemStatusMutex_);  //lock for rest of scope
+			lastConsoleErrTime_   = "0";
+			lastConsoleErr_       = "";
+			lastConsoleWarnTime_  = "0";
+			lastConsoleWarn_      = "";
+			lastConsoleInfoTime_  = "0";
+			lastConsoleInfo_      = "";
+			firstConsoleErrTime_  = "0";
+			firstConsoleErr_      = "";
+			firstConsoleWarnTime_ = "0";
+			firstConsoleWarn_     = "";
+			firstConsoleInfoTime_ = "0";
+			firstConsoleInfo_     = "";
 
-		} //end resetConsoleCounts
-		else if(requestType == "getRemoteSubsystems" || requestType == "getRemoteSubsystemStatus")
+		}  //end resetConsoleCounts
+		else if(requestType == "getRemoteSubsystems" ||
+		        requestType == "getRemoteSubsystemStatus")
 		{
-			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");			
-			bool getRunTypeNote  = CgiDataUtilities::getDataAsInt(cgiIn, "getRunTypeNote");
-			bool getFullInfo 	 = (requestType == "getRemoteSubsystems");
-			bool getRunNumber    = CgiDataUtilities::getDataAsInt(cgiIn, "getRunNumber");
+			std::string fsmName = CgiDataUtilities::getData(cgiIn, "fsmName");
+			bool getRunTypeNote = CgiDataUtilities::getDataAsInt(cgiIn, "getRunTypeNote");
+			bool getFullInfo    = (requestType == "getRemoteSubsystems");
+			bool getRunNumber   = CgiDataUtilities::getDataAsInt(cgiIn, "getRunNumber");
 
 			//if full info, then add:
 			//	- system and remote aliases, translations, group notes
@@ -6505,173 +8029,240 @@ try
 			{
 				__SUP_COUTV__(fsmName);
 				__SUP_COUTV__(getRunTypeNote);
-				
-				//get system and remote aliases, translations, group notes (a la getAliasList request)				
+
+				//get system and remote aliases, translations, group notes (a la getAliasList request)
 				addFilteredConfigAliasesToXML(xmlOut, fsmName);
 
-				addRequiredFsmLogInputToXML(xmlOut,fsmName); //(a la getStateMachine request)
-												
-			} //end getFullInfo prepend
+				addRequiredFsmLogInputToXML(xmlOut,
+				                            fsmName);  //(a la getStateMachine request)
 
-			{ //get system status 
-								
-				xmlOut.addTextElementToData("last_run_log_entry", 
-						getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME,fsmName));
+			}  //end getFullInfo prepend
 
+			{  //get system status
+
+				xmlOut.addTextElementToData(
+				    "last_run_log_entry",
+				    getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME,
+				                    fsmName));
 
 				//getIterationPlanStatus returns iterator status and does not request next run number (which is expensive)
 				//	.. so only get run number 1:10
 				//getIterationPlanStatus will repeat a few fields, but js will just take first field, so doesnt matter
-				addStateMachineStatusToXML(xmlOut, fsmName, getRunNumber);	 //(a la getCurrentState request)
+				addStateMachineStatusToXML(
+				    xmlOut, fsmName, getRunNumber);  //(a la getCurrentState request)
 				theIterator_.handleCommandRequest(xmlOut, "getIterationPlanStatus", "");
 
-				std::lock_guard<std::mutex> lock(systemStatusMutex_); //lock for rest of scope
+				std::lock_guard<std::mutex> lock(
+				    systemStatusMutex_);  //lock for rest of scope
 
 				xmlOut.addTextElementToData("last_logbook_entry", lastLogbookEntry_);
-				xmlOut.addTextElementToData("last_logbook_entry_time", lastLogbookEntryTime_?StringMacros::getTimestampString(lastLogbookEntryTime_):"0");
+				xmlOut.addTextElementToData(
+				    "last_logbook_entry_time",
+				    lastLogbookEntryTime_
+				        ? StringMacros::getTimestampString(lastLogbookEntryTime_)
+				        : "0");
 				auto msgPair = theWebUsers_.getLastSystemMessage();
 				xmlOut.addTextElementToData("last_system_message", msgPair.first);
-				xmlOut.addTextElementToData("last_system_message_time", msgPair.second?StringMacros::getTimestampString(msgPair.second):"0");
-				xmlOut.addNumberElementToData("active_user_count", theWebUsers_.getActiveUserCount());
-				xmlOut.addTextElementToData("active_user_list", theWebUsers_.getActiveUsersString());
-				xmlOut.addNumberElementToData("console_err_count", systemConsoleErrCount_);
-				xmlOut.addNumberElementToData("console_warn_count", systemConsoleWarnCount_);
-				xmlOut.addNumberElementToData("console_info_count", systemConsoleInfoCount_);
+				xmlOut.addTextElementToData(
+				    "last_system_message_time",
+				    msgPair.second ? StringMacros::getTimestampString(msgPair.second)
+				                   : "0");
+				xmlOut.addNumberElementToData("active_user_count",
+				                              theWebUsers_.getActiveUserCount());
+				xmlOut.addTextElementToData("active_user_list",
+				                            theWebUsers_.getActiveUsersString());
+				xmlOut.addNumberElementToData("console_err_count",
+				                              systemConsoleErrCount_);
+				xmlOut.addNumberElementToData("console_warn_count",
+				                              systemConsoleWarnCount_);
+				xmlOut.addNumberElementToData("console_info_count",
+				                              systemConsoleInfoCount_);
 				xmlOut.addTextElementToData("last_console_err_msg", lastConsoleErr_);
 				xmlOut.addTextElementToData("last_console_warn_msg", lastConsoleWarn_);
 				xmlOut.addTextElementToData("last_console_info_msg", lastConsoleInfo_);
-				xmlOut.addTextElementToData("last_console_err_msg_time", lastConsoleErrTime_);
-				xmlOut.addTextElementToData("last_console_warn_msg_time", lastConsoleWarnTime_);
-				xmlOut.addTextElementToData("last_console_info_msg_time", lastConsoleInfoTime_);
+				xmlOut.addTextElementToData("last_console_err_msg_time",
+				                            lastConsoleErrTime_);
+				xmlOut.addTextElementToData("last_console_warn_msg_time",
+				                            lastConsoleWarnTime_);
+				xmlOut.addTextElementToData("last_console_info_msg_time",
+				                            lastConsoleInfoTime_);
 				xmlOut.addTextElementToData("first_console_err_msg", firstConsoleErr_);
 				xmlOut.addTextElementToData("first_console_warn_msg", firstConsoleWarn_);
 				xmlOut.addTextElementToData("first_console_info_msg", firstConsoleInfo_);
-				xmlOut.addTextElementToData("first_console_err_msg_time", firstConsoleErrTime_);
-				xmlOut.addTextElementToData("first_console_warn_msg_time", firstConsoleWarnTime_);
-				xmlOut.addTextElementToData("first_console_info_msg_time", firstConsoleInfoTime_);
-		
-			} //end get system status
+				xmlOut.addTextElementToData("first_console_err_msg_time",
+				                            firstConsoleErrTime_);
+				xmlOut.addTextElementToData("first_console_warn_msg_time",
+				                            firstConsoleWarnTime_);
+				xmlOut.addTextElementToData("first_console_info_msg_time",
+				                            firstConsoleInfoTime_);
 
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-			{ //lock for remainder of scope
+			}  //end get system status
+
+			std::vector<GatewaySupervisor::RemoteGatewayInfo>
+			    remoteGatewayApps;  //local copy
+			{                       //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-				__SUP_COUTVS__(22,remoteGatewayApps_.size());
+				__SUP_COUTVS__(22, remoteGatewayApps_.size());
 				remoteGatewayApps = remoteGatewayApps_;
 				if(remoteGatewayApps_.size())
-					__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+					__SUP_COUT_TYPE__(TLVL_DEBUG + 22)
+					    << __COUT_HDR__ << remoteGatewayApps_[0].command << " "
+					    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 			}
 
 			std::string accumulateErrors = "";
 			for(const auto& remoteSubsystem : remoteGatewayApps)
 			{
-				xmlOut.addTextElementToData("subsystem_name", remoteSubsystem.appInfo.name);
+				xmlOut.addTextElementToData("subsystem_name",
+				                            remoteSubsystem.appInfo.name);
 				xmlOut.addTextElementToData("subsystem_url", remoteSubsystem.appInfo.url);
-				xmlOut.addTextElementToData("subsystem_landingPage", remoteSubsystem.landingPage);
-				xmlOut.addTextElementToData("subsystem_status", remoteSubsystem.appInfo.status);
-				xmlOut.addTextElementToData("subsystem_progress", std::to_string(remoteSubsystem.appInfo.progress));
-				xmlOut.addTextElementToData("subsystem_detail", remoteSubsystem.appInfo.detail);
-				xmlOut.addTextElementToData("subsystem_lastStatusTime", StringMacros::getTimestampString(remoteSubsystem.appInfo.lastStatusTime));
-				xmlOut.addTextElementToData("subsystem_consoleErrCount", std::to_string(remoteSubsystem.consoleErrCount));
-				xmlOut.addTextElementToData("subsystem_consoleWarnCount", std::to_string(remoteSubsystem.consoleWarnCount));
-				
+				xmlOut.addTextElementToData("subsystem_landingPage",
+				                            remoteSubsystem.landingPage);
+				xmlOut.addTextElementToData("subsystem_status",
+				                            remoteSubsystem.appInfo.status);
+				xmlOut.addTextElementToData(
+				    "subsystem_progress",
+				    std::to_string(remoteSubsystem.appInfo.progress));
+				xmlOut.addTextElementToData("subsystem_detail",
+				                            remoteSubsystem.appInfo.detail);
+				xmlOut.addTextElementToData("subsystem_lastStatusTime",
+				                            StringMacros::getTimestampString(
+				                                remoteSubsystem.appInfo.lastStatusTime));
+				xmlOut.addTextElementToData(
+				    "subsystem_consoleErrCount",
+				    std::to_string(remoteSubsystem.consoleErrCount));
+				xmlOut.addTextElementToData(
+				    "subsystem_consoleWarnCount",
+				    std::to_string(remoteSubsystem.consoleWarnCount));
+
 				if(remoteSubsystem.command == "" && remoteSubsystem.error != "")
 				{
-					__COUTT__ << "Error from Subsystem '" << remoteSubsystem.appInfo.name << 
-						"' = " << remoteSubsystem.error << __E__;	
+					__COUTT__ << "Error from Subsystem '" << remoteSubsystem.appInfo.name
+					          << "' = " << remoteSubsystem.error << __E__;
 
-					if(remoteSubsystem.error.find("Failure gathering Remote Gateway desktop icons") == 
-						std::string::npos) //only add if not Icon error
+					if(remoteSubsystem.error.find(
+					       "Failure gathering Remote Gateway desktop icons") ==
+					   std::string::npos)  //only add if not Icon error
 					{
-						if(accumulateErrors.size()) accumulateErrors += "\n";
+						if(accumulateErrors.size())
+							accumulateErrors += "\n";
 						accumulateErrors += remoteSubsystem.error;
 					}
 				}
-				
+
 				//special values for managing remote subsystems
-				xmlOut.addTextElementToData("subsystem_configAlias", remoteSubsystem.selected_config_alias);
+				xmlOut.addTextElementToData("subsystem_configAlias",
+				                            remoteSubsystem.selected_config_alias);
 
 				if(getFullInfo)
 				{
 					if(remoteSubsystem.user_data_path_record == "")
 					{
 						// __SUP_SS__;
-						__SUP_COUT_WARN__ << "Remote Subsystem '" <<
-							remoteSubsystem.appInfo.name << "' user data path is empty. Perhaps the system is still booting up. If the problem persists, note that Remote Subsystems are specified through their Desktop Icon record. "
-							"Please specify a valid User Data Path record as the Desktop Icon AlternateText field, targeting a UID in the SubsystemUserDataPathsTable (or contact system admins for assitance)." << __E__;
+						__SUP_COUT_WARN__
+						    << "Remote Subsystem '" << remoteSubsystem.appInfo.name
+						    << "' user data path is empty. Perhaps the system is still "
+						       "booting up. If the problem persists, note that Remote "
+						       "Subsystems are specified through their Desktop Icon "
+						       "record. "
+						       "Please specify a valid User Data Path record as the "
+						       "Desktop Icon AlternateText field, targeting a UID in the "
+						       "SubsystemUserDataPathsTable (or contact system admins "
+						       "for assitance)."
+						    << __E__;
 						// __SUP_SS_THROW__;
-					}					
+					}
 				}
-				xmlOut.addTextElementToData("subsystem_configAliasChoices", StringMacros::setToString(remoteSubsystem.config_aliases,{','}) );	//CSV list of aliases
-				xmlOut.addTextElementToData("subsystem_fsmMode", remoteSubsystem.getFsmMode());
-				xmlOut.addTextElementToData("subsystem_fsmIncluded", remoteSubsystem.fsm_included?"1":"0");
-			} //end remote app loop
+				xmlOut.addTextElementToData(
+				    "subsystem_configAliasChoices",
+				    StringMacros::setToString(remoteSubsystem.config_aliases,
+				                              {','}));  //CSV list of aliases
+				xmlOut.addTextElementToData("subsystem_fsmMode",
+				                            remoteSubsystem.getFsmMode());
+				xmlOut.addTextElementToData("subsystem_fsmIncluded",
+				                            remoteSubsystem.fsm_included ? "1" : "0");
+			}  //end remote app loop
 
 			if(accumulateErrors != "")
 				xmlOut.addTextElementToData("system_error", accumulateErrors);
 
-		} //end getRemoteSubsystems
+		}  //end getRemoteSubsystems
 		else if(requestType == "setRemoteSubsystemFsmControl")
 		{
-			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");		 // * for all
-			std::string setValue  = CgiDataUtilities::getData(cgiIn, "setValue"); 
-			std::string controlType  = CgiDataUtilities::getData(cgiIn, "controlType");		 // include, mode
+			std::string targetSubsystem =
+			    CgiDataUtilities::getData(cgiIn, "targetSubsystem");  // * for all
+			std::string setValue = CgiDataUtilities::getData(cgiIn, "setValue");
+			std::string controlType =
+			    CgiDataUtilities::getData(cgiIn, "controlType");  // include, mode
 
 			setValue = StringMacros::decodeURIComponent(setValue);
 			__SUP_COUTV__(targetSubsystem);
 			__SUP_COUTV__(setValue);
 			__SUP_COUTV__(controlType);
 
-			bool changedSomething = false;
+			bool                        changedSomething = false;
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 			for(auto& remoteGatewayApp : remoteGatewayApps_)
-				if(targetSubsystem == "*" || targetSubsystem == remoteGatewayApp.appInfo.name)
+				if(targetSubsystem == "*" ||
+				   targetSubsystem == remoteGatewayApp.appInfo.name)
 				{
 					changedSomething = true;
 					if(controlType == "include")
-						remoteGatewayApp.fsm_included = setValue == "1"?true:false;
+						remoteGatewayApp.fsm_included = setValue == "1" ? true : false;
 					if(controlType == "configAlias")
 					{
-						if(remoteGatewayApp.config_aliases.find(setValue) == 
-							remoteGatewayApp.config_aliases.end())
+						if(remoteGatewayApp.config_aliases.find(setValue) ==
+						   remoteGatewayApp.config_aliases.end())
 						{
-							__SUP_SS__ << "Configuration Alias value '" << setValue << "' for target Subsystem '" << 
-								remoteGatewayApp.appInfo.name << "' is not found in list of Configuration Aliases: " << 
-								StringMacros::setToString(remoteGatewayApp.config_aliases) << __E__;
+							__SUP_SS__
+							    << "Configuration Alias value '" << setValue
+							    << "' for target Subsystem '"
+							    << remoteGatewayApp.appInfo.name
+							    << "' is not found in list of Configuration Aliases: "
+							    << StringMacros::setToString(
+							           remoteGatewayApp.config_aliases)
+							    << __E__;
 							__SUP_SS_THROW__;
 						}
 						remoteGatewayApp.selected_config_alias = setValue;
 					}
 					else if(controlType == "mode")
-						remoteGatewayApp.fsm_mode = 
-							setValue == "Do Not Halt"?RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt:
-								(setValue == "Only Configure"?RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure:
-									RemoteGatewayInfo::FSM_ModeTypes::Follow_FSM);
+						remoteGatewayApp.fsm_mode =
+						    setValue == "Do Not Halt"
+						        ? RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt
+						        : (setValue == "Only Configure"
+						               ? RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure
+						               : RemoteGatewayInfo::FSM_ModeTypes::Follow_FSM);
 				}
-			
+
 			if(!changedSomething)
 			{
-				__SUP_SS__ << "Did not find any matching subsystems for target '" << targetSubsystem << 
-							"' attempted!" << __E__;
+				__SUP_SS__ << "Did not find any matching subsystems for target '"
+				           << targetSubsystem << "' attempted!" << __E__;
 				__SUP_SS_THROW__;
 			}
 
 			saveRemoteGatewaySettings();
 
-		} //end setRemoteSubsystemFsmControl
+		}  //end setRemoteSubsystemFsmControl
 		else if(requestType == "getSubsystemConfigAliasSelectInfo")
 		{
-			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");	
+			std::string targetSubsystem =
+			    CgiDataUtilities::getData(cgiIn, "targetSubsystem");
 			__SUP_COUTV__(targetSubsystem);
 			//return info on selected_config_alias
-			
+
 			bool found = false;
-			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps; //local copy
-			{ //lock for remainder of scope
+			std::vector<GatewaySupervisor::RemoteGatewayInfo>
+			    remoteGatewayApps;  //local copy
+			{                       //lock for remainder of scope
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-				__SUP_COUTVS__(22,remoteGatewayApps_.size());
+				__SUP_COUTVS__(22, remoteGatewayApps_.size());
 				remoteGatewayApps = remoteGatewayApps_;
 				if(remoteGatewayApps_.size())
-					__SUP_COUT_TYPE__(TLVL_DEBUG+22) << __COUT_HDR__ << remoteGatewayApps_[0].command << " " << (remoteGatewayApps_[0].appInfo.status) << __E__;
+					__SUP_COUT_TYPE__(TLVL_DEBUG + 22)
+					    << __COUT_HDR__ << remoteGatewayApps_[0].command << " "
+					    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 			}
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 			for(auto& remoteGatewayApp : remoteGatewayApps)
@@ -6681,33 +8272,43 @@ try
 
 					if(remoteGatewayApp.selected_config_alias == "")
 					{
-						__SUP_SS__ << "No selected Configuration Alias found for target Subsystem '" << 
-							remoteGatewayApp.appInfo.name << "' - please select one before requesting info." << __E__;
+						__SUP_SS__ << "No selected Configuration Alias found for target "
+						              "Subsystem '"
+						           << remoteGatewayApp.appInfo.name
+						           << "' - please select one before requesting info."
+						           << __E__;
 						__SUP_SS_THROW__;
 					}
 
 					std::pair<std::string, TableGroupKey> groupTranslation;
 					std::string groupComment, groupAuthor, groupCreationTime;
 
-					ConfigurationManager tmpCfgMgr; // Creating new temporary instance to not mess up member CorePropertySupervisorBase::theConfigurationManager_
+					ConfigurationManager
+					    tmpCfgMgr;  // Creating new temporary instance to not mess up member CorePropertySupervisorBase::theConfigurationManager_
 					tmpCfgMgr.getOtherSubsystemConfigAliasInfo(
-						remoteGatewayApp.user_data_path_record,
-						remoteGatewayApp.selected_config_alias,
-						groupTranslation, groupComment, groupAuthor, groupCreationTime
-					);
-
+					    remoteGatewayApp.user_data_path_record,
+					    remoteGatewayApp.selected_config_alias,
+					    groupTranslation,
+					    groupComment,
+					    groupAuthor,
+					    groupCreationTime);
 
 					std::stringstream returnInfo;
-					returnInfo << "At remote Subsystem <b>'" << remoteGatewayApp.appInfo.name << 
-						",'</b> the Configure Alias <b>'" << remoteGatewayApp.selected_config_alias << 
-						"'</b>  translates to <b>" << groupTranslation.first << "(" << groupTranslation.second <<
-						")</b>  w/comment: <br><br><i>" << 						
-						StringMacros::decodeURIComponent(groupComment);
+					returnInfo << "At remote Subsystem <b>'"
+					           << remoteGatewayApp.appInfo.name
+					           << ",'</b> the Configure Alias <b>'"
+					           << remoteGatewayApp.selected_config_alias
+					           << "'</b>  translates to <b>" << groupTranslation.first
+					           << "(" << groupTranslation.second
+					           << ")</b>  w/comment: <br><br><i>"
+					           << StringMacros::decodeURIComponent(groupComment);
 					if(groupCreationTime != "" && groupCreationTime != "0")
 						returnInfo << "<br><br>";
-					returnInfo << "<b>" << groupTranslation.first << "(" << groupTranslation.second <<
-						")</b> was created by " << groupAuthor << " (" <<
-						StringMacros::getTimestampString(groupCreationTime) << ")";
+					returnInfo << "<b>" << groupTranslation.first << "("
+					           << groupTranslation.second << ")</b> was created by "
+					           << groupAuthor << " ("
+					           << StringMacros::getTimestampString(groupCreationTime)
+					           << ")";
 					returnInfo << "</i>";
 
 					xmlOut.addTextElementToData("alias_info", returnInfo.str());
@@ -6716,18 +8317,19 @@ try
 
 			if(!found)
 			{
-				__SUP_SS__ << "Did not find any matching subsystems for target '" << targetSubsystem << 
-							"' attempted!" << __E__;
+				__SUP_SS__ << "Did not find any matching subsystems for target '"
+				           << targetSubsystem << "' attempted!" << __E__;
 				__SUP_SS_THROW__;
 			}
 
-		} //end getSubsystemConfigAliasSelectInfo
+		}  //end getSubsystemConfigAliasSelectInfo
 		else if(requestType == "commandRemoteSubsystem")
 		{
-			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");		
-			std::string command  = CgiDataUtilities::getData(cgiIn, "command");		
-			std::string parameter  = CgiDataUtilities::getData(cgiIn, "parameter");	
-			std::string fsmName  = CgiDataUtilities::getData(cgiIn, "fsmName");		
+			std::string targetSubsystem =
+			    CgiDataUtilities::getData(cgiIn, "targetSubsystem");
+			std::string command   = CgiDataUtilities::getData(cgiIn, "command");
+			std::string parameter = CgiDataUtilities::getData(cgiIn, "parameter");
+			std::string fsmName   = CgiDataUtilities::getData(cgiIn, "fsmName");
 
 			__SUP_COUTV__(targetSubsystem);
 			__SUP_COUTV__(command);
@@ -6736,18 +8338,20 @@ try
 
 			if(command == "")
 			{
-				__SUP_SS__ << "Illegal empty command received to target remote subsystem '" << targetSubsystem << 
-							"' attempted!" << __E__;
+				__SUP_SS__
+				    << "Illegal empty command received to target remote subsystem '"
+				    << targetSubsystem << "' attempted!" << __E__;
 				__SUP_SS_THROW__;
 			}
 			if(targetSubsystem == "")
 			{
-				__SUP_SS__ << "Illegal empty targetSubsystem received for remote subsystem command '" << command << 
-							"' attempted!" << __E__;
+				__SUP_SS__ << "Illegal empty targetSubsystem received for remote "
+				              "subsystem command '"
+				           << command << "' attempted!" << __E__;
 				__SUP_SS_THROW__;
 			}
 
-			bool found = false;
+			bool                        found = false;
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 			for(auto& remoteGatewayApp : remoteGatewayApps_)
 			{
@@ -6755,29 +8359,35 @@ try
 				{
 					if(remoteGatewayApp.command != "")
 					{
-						__SUP_SS__ << "Can not target the remote subsystem '" << targetSubsystem << 
-							"' with command '" << command << "' which already has a pending command '"
-							<< remoteGatewayApp.command << ".' Please try again after the pending command is sent." << __E__;
-						__SUP_SS_THROW__;					
+						__SUP_SS__
+						    << "Can not target the remote subsystem '" << targetSubsystem
+						    << "' with command '" << command
+						    << "' which already has a pending command '"
+						    << remoteGatewayApp.command
+						    << ".' Please try again after the pending command is sent."
+						    << __E__;
+						__SUP_SS_THROW__;
 					}
-					remoteGatewayApp.error = ""; //clear to see result of this command
-					remoteGatewayApp.command = command + (parameter != ""?("," + parameter):"");
-					
+					remoteGatewayApp.error = "";  //clear to see result of this command
+					remoteGatewayApp.command =
+					    command + (parameter != "" ? ("," + parameter) : "");
+
 					//for non-FSM commands, do not modify fsmName
 					if(command != "ResetConsoleCounts")
 						remoteGatewayApp.fsmName = fsmName;
 
 					//force status for immediate user feedback
-					remoteGatewayApp.appInfo.status = "Launching " + command;
+					remoteGatewayApp.appInfo.status   = "Launching " + command;
 					remoteGatewayApp.appInfo.progress = 0;
-					found = true;
+					found                             = true;
 				}
-			} //end search for targetSubsystem
+			}  //end search for targetSubsystem
 
 			if(!found)
 			{
-				__SUP_SS__ << "Target remote subsystem '" << targetSubsystem << 
-							"' was not found for attempted command '" << command << "!'" << __E__;
+				__SUP_SS__ << "Target remote subsystem '" << targetSubsystem
+				           << "' was not found for attempted command '" << command << "!'"
+				           << __E__;
 				__SUP_SS_THROW__;
 			}
 		}
@@ -6794,20 +8404,24 @@ try
 			// now launch
 
 			if(requestType == "gatewayLaunchOTS")
-				GatewaySupervisor::launchStartOTSCommand("LAUNCH_OTS", CorePropertySupervisorBase::theConfigurationManager_);
+				GatewaySupervisor::launchStartOTSCommand(
+				    "LAUNCH_OTS", CorePropertySupervisorBase::theConfigurationManager_);
 			else if(requestType == "gatewayLaunchWiz")
-				GatewaySupervisor::launchStartOneServerCommand("LAUNCH_WIZ", CorePropertySupervisorBase::theConfigurationManager_, 
-					getContextUID());
+				GatewaySupervisor::launchStartOneServerCommand(
+				    "LAUNCH_WIZ",
+				    CorePropertySupervisorBase::theConfigurationManager_,
+				    getContextUID());
 		}
 		else if(requestType == "gatewayLaunchOTSInstance")
 		{
 			__COUT_WARN__ << requestType << " requestType received! " << __E__;
 
-			std::string targetSubsystem  = CgiDataUtilities::getData(cgiIn, "targetSubsystem");	
+			std::string targetSubsystem =
+			    CgiDataUtilities::getData(cgiIn, "targetSubsystem");
 			__SUP_COUTV__(targetSubsystem);
 			//launch Target Subsystem's remote ots instance
-			
-			bool found = false;
+
+			bool                        found = false;
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 			for(auto& remoteGatewayApp : remoteGatewayApps_)
 				if(targetSubsystem == remoteGatewayApp.appInfo.name)
@@ -6821,29 +8435,33 @@ try
 					//assume ots path is parent of USER_DATA
 					size_t i = remoteGatewayApp.instancePath.rfind('/');
 					if(i != std::string::npos)
-						commandSs << ";" << remoteGatewayApp.instancePath.substr(0,i);
+						commandSs << ";" << remoteGatewayApp.instancePath.substr(0, i);
 					else
 						commandSs << ";" << remoteGatewayApp.instancePath;
-					commandSs << ";" << "Normal";
+					commandSs << ";"
+					          << "Normal";
 					commandSs << ";" << remoteGatewayApp.setupType;
-					commandSs << ";" << remoteGatewayApp.instancePath; //full USER_DATA path
+					commandSs << ";"
+					          << remoteGatewayApp.instancePath;  //full USER_DATA path
 					__SUP_COUTV__(commandSs.str());
 
 					GatewaySupervisor::launchStartOneServerCommand(
-						commandSs.str(),
-						//"LAUNCH_INSTANCE;mu2ehwdev;mu2e-cfo-01.fnal.gov;/home/mu2ehwdev/ots_spack_fast;Normal;shift1",
-						CorePropertySupervisorBase::theConfigurationManager_, getContextUID());
-					
+					    commandSs.str(),
+					    //"LAUNCH_INSTANCE;mu2ehwdev;mu2e-cfo-01.fnal.gov;/home/mu2ehwdev/ots_spack_fast;Normal;shift1",
+					    CorePropertySupervisorBase::theConfigurationManager_,
+					    getContextUID());
+
 					//force status for immediate user feedback
-					remoteGatewayApp.command = "Reboot"; //use command process for getting updated status
-					remoteGatewayApp.appInfo.status = "Rebooting... ";
+					remoteGatewayApp.command =
+					    "Reboot";  //use command process for getting updated status
+					remoteGatewayApp.appInfo.status   = "Rebooting... ";
 					remoteGatewayApp.appInfo.progress = 1;
 				}
 
 			if(!found)
 			{
-				__SUP_SS__ << "Did not find any matching subsystems for target '" << targetSubsystem << 
-							"' attempted!" << __E__;
+				__SUP_SS__ << "Did not find any matching subsystems for target '"
+				           << targetSubsystem << "' attempted!" << __E__;
 				__SUP_SS_THROW__;
 			}
 		}
@@ -6858,41 +8476,59 @@ try
 		else if(requestType == "restartApps") /*NEW: ADDED FOR APPS RESTART*/
 		{
 			std::string contextName = CgiDataUtilities::getData(cgiIn, "contextName");
-			__COUT__ << "launch ots script Command = " << "OTS_APP_SHUTDOWN" << __E__;
-			GatewaySupervisor::launchStartOneServerCommand("OTS_APP_SHUTDOWN", CorePropertySupervisorBase::theConfigurationManager_, contextName);
+			__COUT__ << "launch ots script Command = "
+			         << "OTS_APP_SHUTDOWN" << __E__;
+			GatewaySupervisor::launchStartOneServerCommand(
+			    "OTS_APP_SHUTDOWN",
+			    CorePropertySupervisorBase::theConfigurationManager_,
+			    contextName);
 			sleep(5);
-			GatewaySupervisor::launchStartOneServerCommand("OTS_APP_STARTUP", CorePropertySupervisorBase::theConfigurationManager_, contextName);
+			GatewaySupervisor::launchStartOneServerCommand(
+			    "OTS_APP_STARTUP",
+			    CorePropertySupervisorBase::theConfigurationManager_,
+			    contextName);
 
 			xmlOut.addTextElementToData("status", "restarted");
 		}
 		else
 		{
-			__SS__ << "requestType Request, " << requestType << ", not recognized." << __E__;
+			__SS__ << "requestType Request, " << requestType << ", not recognized."
+			       << __E__;
 			__SS_THROW__;
 		}
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "An error was encountered handling requestType '" << requestType << "':" << e.what() << __E__;
+		__SS__ << "An error was encountered handling requestType '" << requestType
+		       << "':" << e.what() << __E__;
 		__COUT__ << "\n" << ss.str();
 		xmlOut.addTextElementToData("Error", ss.str());
 	}
 	catch(...)
 	{
-		__SS__ << "An unknown error was encountered handling requestType '" << requestType << ".' "
+		__SS__ << "An unknown error was encountered handling requestType '" << requestType
+		       << ".' "
 		       << "Please check the printouts to debug." << __E__;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__COUT__ << "\n" << ss.str();
 		xmlOut.addTextElementToData("Error", ss.str());
 	}
 
 	// return xml doc holding server response
-	xmlOut.outputXmlDocument((std::ostringstream*)out, false /*dispStdOut*/, true /*allowWhiteSpace*/);  // Note: allow white space need for error response
+	xmlOut.outputXmlDocument(
+	    (std::ostringstream*)out,
+	    false /*dispStdOut*/,
+	    true /*allowWhiteSpace*/);  // Note: allow white space need for error response
 
 	//__COUT__ << "Done" << __E__;
 }  // end request()
@@ -6903,34 +8539,41 @@ catch(const std::runtime_error& e)
 }  // end request() exception handling
 
 //==============================================================================
-void GatewaySupervisor::addStateMachineStatusToXML(
-	HttpXmlDocument& xmlOut,
-	const std::string& fsmName,
-	bool getRunNumber /* = true */)
+void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
+                                                   const std::string& fsmName,
+                                                   bool getRunNumber /* = true */)
 {
 	xmlOut.addTextElementToData("active_fsmName", activeStateMachineName_);
 	xmlOut.addTextElementToData("current_state", theStateMachine_.getCurrentStateName());
 	const std::string& gatewayStatus = allSupervisorInfo_.getGatewayInfo().getStatus();
-	if(gatewayStatus.size() > std::string(RunControlStateMachine::FAILED_STATE_NAME).length() && 
-		(gatewayStatus[0] == 'F' || gatewayStatus[0] == 'E')) //assume it is Failed or Error and send to state machine
+	if(gatewayStatus.size() >
+	       std::string(RunControlStateMachine::FAILED_STATE_NAME).length() &&
+	   (gatewayStatus[0] == 'F' ||
+	    gatewayStatus[0] ==
+	        'E'))  //assume it is Failed or Error and send to state machine
 		xmlOut.addTextElementToData("current_error", gatewayStatus);
 
-	xmlOut.addTextElementToData("in_transition", theStateMachine_.isInTransition() ? "1" : "0");
+	xmlOut.addTextElementToData("in_transition",
+	                            theStateMachine_.isInTransition() ? "1" : "0");
 	if(theStateMachine_.isInTransition())
 	{
-		xmlOut.addTextElementToData("transition_progress", RunControlStateMachine::theProgressBar_.readPercentageString());
-		xmlOut.addTextElementToData("current_transition", theStateMachine_.getCurrentTransitionName());
+		xmlOut.addTextElementToData(
+		    "transition_progress",
+		    RunControlStateMachine::theProgressBar_.readPercentageString());
+		xmlOut.addTextElementToData("current_transition",
+		                            theStateMachine_.getCurrentTransitionName());
 	}
 	else
-	{	
+	{
 		xmlOut.addTextElementToData("transition_progress", "100");
 		xmlOut.addTextElementToData("current_transition", "");
 	}
-	xmlOut.addTextElementToData("time_in_state", std::to_string(theStateMachine_.getTimeInState()));
-
+	xmlOut.addTextElementToData("time_in_state",
+	                            std::to_string(theStateMachine_.getTimeInState()));
 
 	// char tmp[20]; old size before adding db run number
-	char tmp[50]; // for a 6 digits run number from the DB, this needs to be at least 34 chars
+	char tmp
+	    [50];  // for a 6 digits run number from the DB, this needs to be at least 34 chars
 
 	//__COUT__ << "current state: " << theStateMachine_.getCurrentStateName() <<
 	//__E__;
@@ -6953,41 +8596,71 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 		{
 			//__COUTV__(RunControlStateMachine::asyncPauseExceptionReceived_);
 			//__COUTV__(RunControlStateMachine::getErrorMessage());
-			xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
+			xmlOut.addTextElementToData("soft_error",
+			                            RunControlStateMachine::getErrorMessage());
 		}
-		
-		std::string stateMachineRunAlias = "Run";  // default to "Run"
-		bool rollOverLogOnConfigure = false, rollOverLogOnStart = false;
+
+		std::string stateMachineRunAlias   = "Run";  // default to "Run"
+		bool        rollOverLogOnConfigure = false, rollOverLogOnStart = false;
 		std::string rollOverLogOnSize = "";
 
 		// get stateMachineAliasFilter if possible
 		ConfigurationTree configLinkNode =
-			CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+		    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(
+		        supervisorContextUID_, supervisorApplicationUID_);
 
 		if(!configLinkNode.isDisconnected())
 		{
 			try  // for backwards compatibility
 			{
-				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
+				ConfigurationTree fsmLinkNode =
+				    configLinkNode.getNode("LinkToStateMachineTable");
 				if(!fsmLinkNode.isDisconnected())
 				{
-					if(!fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").isDefaultValue())
-						stateMachineRunAlias = fsmLinkNode.getNode(fsmName + "/RunDisplayAlias").getValue<std::string>();
-					std::string runInfoPluginType = fsmLinkNode.getNode(fsmName + "/RunInfoPluginType").getValue<std::string>();
-					if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT && runInfoPluginType != "No Run Info Plugin")
+					if(!fsmLinkNode.getNode(fsmName + "/RunDisplayAlias")
+					        .isDefaultValue())
+						stateMachineRunAlias =
+						    fsmLinkNode.getNode(fsmName + "/RunDisplayAlias")
+						        .getValue<std::string>();
+					std::string runInfoPluginType =
+					    fsmLinkNode.getNode(fsmName + "/RunInfoPluginType")
+					        .getValue<std::string>();
+					if(runInfoPluginType !=
+					       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+					   runInfoPluginType != "No Run Info Plugin")
 						useRunInfoDb = true;
 
-					try { rollOverLogOnConfigure = fsmLinkNode.getNode("RollOverLogOnConfigure").getValueWithDefault<bool>(false /* defaultValue */); } catch(...) { rollOverLogOnConfigure = false;}
-					try { rollOverLogOnStart = fsmLinkNode.getNode("RollOverLogOnConfigure").getValueWithDefault<bool>(false /* defaultValue */); } catch(...) { rollOverLogOnStart = false;}					
+					try
+					{
+						rollOverLogOnConfigure =
+						    fsmLinkNode.getNode("RollOverLogOnConfigure")
+						        .getValueWithDefault<bool>(false /* defaultValue */);
+					}
+					catch(...)
+					{
+						rollOverLogOnConfigure = false;
+					}
+					try
+					{
+						rollOverLogOnStart =
+						    fsmLinkNode.getNode("RollOverLogOnConfigure")
+						        .getValueWithDefault<bool>(false /* defaultValue */);
+					}
+					catch(...)
+					{
+						rollOverLogOnStart = false;
+					}
 				}
 			}
 			catch(std::runtime_error& e)
 			{
-				; //ignoring error
+				;  //ignoring error
 			}
 			catch(...)
 			{
-				__COUT_ERR__ << "Unknown error looking for Run alias. Should never happen." << __E__;
+				__COUT_ERR__
+				    << "Unknown error looking for Run alias. Should never happen."
+				    << __E__;
 			}
 		}
 
@@ -6995,15 +8668,18 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 
 		//generate log rollover string
 		{
-			rollOverLogOnSize = (getenv("OTS_LOG_ROLLOVER")?getenv("OTS_LOG_ROLLOVER"):"");
+			rollOverLogOnSize =
+			    (getenv("OTS_LOG_ROLLOVER") ? getenv("OTS_LOG_ROLLOVER") : "");
 			std::stringstream ss;
-			if(rollOverLogOnConfigure || rollOverLogOnStart || rollOverLogOnSize != "")			
+			if(rollOverLogOnConfigure || rollOverLogOnStart || rollOverLogOnSize != "")
 			{
 				ss << "ots log files will rollover ";
-				if(!rollOverLogOnConfigure && !rollOverLogOnStart) //the rollOverLogOnSize != ""
-					ss << " on size-in-bytes: " << rollOverLogOnSize << 
-						". To enable on FSM transitions set RollOverLogOnConfigure and/or RollOverLogOnStart in the FSM Configuration Tree.";
-				else 
+				if(!rollOverLogOnConfigure &&
+				   !rollOverLogOnStart)  //the rollOverLogOnSize != ""
+					ss << " on size-in-bytes: " << rollOverLogOnSize
+					   << ". To enable on FSM transitions set RollOverLogOnConfigure "
+					      "and/or RollOverLogOnStart in the FSM Configuration Tree.";
+				else
 				{
 					if(rollOverLogOnConfigure && rollOverLogOnStart)
 						ss << " on the Configure and Start FSM transitions";
@@ -7011,70 +8687,86 @@ void GatewaySupervisor::addStateMachineStatusToXML(
 						ss << " on the Configure FSM transition";
 					else if(rollOverLogOnStart)
 						ss << " on the Start FSM transition";
-					
+
 					if(rollOverLogOnSize != "")
-						ss << ". To enable rollover on 100MB size, for example, export OTS_LOG_ROLLOVER=100000000.";
-					else 
+						ss << ". To enable rollover on 100MB size, for example, export "
+						      "OTS_LOG_ROLLOVER=100000000.";
+					else
 						ss << ", and also on size-in-bytes: " << rollOverLogOnSize;
-				}					
-			}	
+				}
+			}
 			else
 				ss << "ots log files will not rollover. "
-					"To enable rollover on 100MB size, for example, export OTS_LOG_ROLLOVER=100000000; "
-					"to enable on FSM transitions set RollOverLogOnConfigure and/or RollOverLogOnStart in the FSM Configuration Tree.";
+				      "To enable rollover on 100MB size, for example, export "
+				      "OTS_LOG_ROLLOVER=100000000; "
+				      "to enable on FSM transitions set RollOverLogOnConfigure and/or "
+				      "RollOverLogOnStart in the FSM Configuration Tree.";
 
 			xmlOut.addTextElementToData("stateMachineLogRollover", ss.str());
 		}
 
 		//// ======================== get run number based on fsm name ====
 
-		if(theStateMachine_.getCurrentStateName() == RunControlStateMachine::RUNNING_STATE_NAME || 
-			theStateMachine_.getCurrentStateName() ==  RunControlStateMachine::PAUSED_STATE_NAME)
+		if(theStateMachine_.getCurrentStateName() ==
+		       RunControlStateMachine::RUNNING_STATE_NAME ||
+		   theStateMachine_.getCurrentStateName() ==
+		       RunControlStateMachine::PAUSED_STATE_NAME)
 		{
 			if(useRunInfoDb)
-				sprintf(tmp, "Current %s Number from DB: %s", activeStateMachineRunAlias_.c_str(),
-					activeStateMachineRunNumber_.c_str());
-					//%u // getNextRunNumber(activeStateMachineName_) - 1);
+				sprintf(tmp,
+				        "Current %s Number from DB: %s",
+				        activeStateMachineRunAlias_.c_str(),
+				        activeStateMachineRunNumber_.c_str());
+			//%u // getNextRunNumber(activeStateMachineName_) - 1);
 			else
-				sprintf(tmp, "Current %s Number: %s", activeStateMachineRunAlias_.c_str(), 
-					activeStateMachineRunNumber_.c_str()); //%u //getNextRunNumber(activeStateMachineName_) - 1);
+				sprintf(
+				    tmp,
+				    "Current %s Number: %s",
+				    activeStateMachineRunAlias_.c_str(),
+				    activeStateMachineRunNumber_
+				        .c_str());  //%u //getNextRunNumber(activeStateMachineName_) - 1);
 			xmlOut.addTextElementToData("run_number", tmp);
 
 			if(RunControlStateMachine::asyncPauseExceptionReceived_)
 			{
 				//__COUTV__(RunControlStateMachine::asyncPauseExceptionReceived_);
 				//__COUTV__(RunControlStateMachine::getErrorMessage());
-				xmlOut.addTextElementToData("soft_error", RunControlStateMachine::getErrorMessage());
+				xmlOut.addTextElementToData("soft_error",
+				                            RunControlStateMachine::getErrorMessage());
 			}
 		}
-		else if(getRunNumber) //only periodically get next run number (expensive from file, and shouldnt change much)
+		else if(
+		    getRunNumber)  //only periodically get next run number (expensive from file, and shouldnt change much)
 		{
 			if(useRunInfoDb)
 				sprintf(tmp, "Next %s Number from DB.", stateMachineRunAlias.c_str());
 			else
-				sprintf(tmp, "Next %s Number: %u", stateMachineRunAlias.c_str(), getNextRunNumber(fsmName));
+				sprintf(tmp,
+				        "Next %s Number: %u",
+				        stateMachineRunAlias.c_str(),
+				        getNextRunNumber(fsmName));
 
 			xmlOut.addTextElementToData("run_number", tmp);
 		}
 
-	} //end not-in-transition handling
+	}  //end not-in-transition handling
 }  // end addStateMachineStatusToXML()
 
 //==============================================================================
-void GatewaySupervisor::addRequiredFsmLogInputToXML(
-	HttpXmlDocument& xmlOut,
-	const std::string& fsmName)
+void GatewaySupervisor::addRequiredFsmLogInputToXML(HttpXmlDocument&   xmlOut,
+                                                    const std::string& fsmName)
 {
-	bool        requireUserLogInputOnConfigure = false, requireUserLogInputOnRun = false;
+	bool requireUserLogInputOnConfigure = false, requireUserLogInputOnRun = false;
 	//if fsmName specified, return log entry requirements from config tree
 	if(fsmName != "")
 	{
 		//------------------
 		ConfigurationTree configLinkNode =
-			CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+		    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(
+		        supervisorContextUID_, supervisorApplicationUID_);
 		if(!configLinkNode.isDisconnected())
 		{
-// clang-format off
+			// clang-format off
 			try //ignore errors
 			{ 
 				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
@@ -7083,40 +8775,47 @@ void GatewaySupervisor::addRequiredFsmLogInputToXML(
 			}
 			catch(...)
 			{ __SUP_COUTT__ << "Settings not set for fsm name = " << fsmName << __E__; }
-// clang-format on
-		}						
-	} //end log entry requirements gathering
+			// clang-format on
+		}
+	}  //end log entry requirements gathering
 
-	xmlOut.addTextElementToData("RequireUserLogInputOnConfigureTransition", requireUserLogInputOnConfigure?"1":"0");
-	xmlOut.addTextElementToData("RequireUserLogInputOnRunTransition", 		requireUserLogInputOnRun?"1":"0");
+	xmlOut.addTextElementToData("RequireUserLogInputOnConfigureTransition",
+	                            requireUserLogInputOnConfigure ? "1" : "0");
+	xmlOut.addTextElementToData("RequireUserLogInputOnRunTransition",
+	                            requireUserLogInputOnRun ? "1" : "0");
 }  // end request()
 
 //==============================================================================
-void GatewaySupervisor::addFilteredConfigAliasesToXML(
-	HttpXmlDocument& xmlOut,
-	const std::string& fsmName)
+void GatewaySupervisor::addFilteredConfigAliasesToXML(HttpXmlDocument&   xmlOut,
+                                                      const std::string& fsmName)
 {
 	__SUP_COUTV__(fsmName);
 
 	// IMPORTANT -- use temporary ConfigurationManager to get the Active Group Aliases,
 	//	 to avoid changing the Context Configuration tree for the Gateway Supervisor
-	ConfigurationManager                                                                  temporaryConfigMgr;
-	std::map<std::string /*alias*/, std::pair<std::string /*group name*/, TableGroupKey>> aliasMap;
+	ConfigurationManager temporaryConfigMgr;
+	std::map<std::string /*alias*/, std::pair<std::string /*group name*/, TableGroupKey>>
+	    aliasMap;
 	aliasMap = temporaryConfigMgr.getActiveGroupAliases();
 
 	// also IMPORTANT -- to use theConfigurationManager_ to get the Context settings for the Gateway Supervisor
 	// get stateMachineAliasFilter if possible
 	ConfigurationTree configLinkNode =
-		CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_);
+	    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(
+	        supervisorContextUID_, supervisorApplicationUID_);
 
 	std::string stateMachineAliasFilter = "*";  // default to all
 	if(fsmName != "" && !configLinkNode.isDisconnected())
 	{
 		try  // for backwards compatibility
 		{
-			ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable");
-			if(!fsmLinkNode.isDisconnected() && !fsmLinkNode.getNode(fsmName + "/SystemAliasFilter").isDefaultValue())
-				stateMachineAliasFilter = fsmLinkNode.getNode(fsmName + "/SystemAliasFilter").getValue<std::string>();
+			ConfigurationTree fsmLinkNode =
+			    configLinkNode.getNode("LinkToStateMachineTable");
+			if(!fsmLinkNode.isDisconnected() &&
+			   !fsmLinkNode.getNode(fsmName + "/SystemAliasFilter").isDefaultValue())
+				stateMachineAliasFilter =
+				    fsmLinkNode.getNode(fsmName + "/SystemAliasFilter")
+				        .getValue<std::string>();
 			else
 				__COUT_INFO__ << "FSM Link disconnected." << __E__;
 		}
@@ -7132,14 +8831,15 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 	else
 		__COUT_INFO__ << "FSM Link disconnected." << __E__;
 
-	__COUT__ << "For FSM '" << fsmName << ",' stateMachineAliasFilter  = " << stateMachineAliasFilter << __E__;
-
+	__COUT__ << "For FSM '" << fsmName
+	         << ",' stateMachineAliasFilter  = " << stateMachineAliasFilter << __E__;
 
 	// filter list of aliases based on stateMachineAliasFilter
 	//  ! as first character means choose those that do NOT match filter
 	//	* can be used as wild card.
 	{
-		bool                     invertFilter = stateMachineAliasFilter.size() && stateMachineAliasFilter[0] == '!';
+		bool invertFilter =
+		    stateMachineAliasFilter.size() && stateMachineAliasFilter[0] == '!';
 		std::vector<std::string> filterArr;
 
 		size_t i = 0;
@@ -7172,7 +8872,8 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 
 			if(filterArr.size() == 1)
 			{
-				if(filterArr[0] != "" && filterArr[0] != "*" && aliasMapPair.first != filterArr[0])
+				if(filterArr[0] != "" && filterArr[0] != "*" &&
+				   aliasMapPair.first != filterArr[0])
 					filterMatch = false;
 			}
 			else
@@ -7193,13 +8894,15 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 					}
 					else if(f == filterArr.size() - 1)  // must end with this filter
 					{
-						if(aliasMapPair.first.rfind(filterArr[f]) != aliasMapPair.first.size() - filterArr[f].size())
+						if(aliasMapPair.first.rfind(filterArr[f]) !=
+						   aliasMapPair.first.size() - filterArr[f].size())
 						{
 							filterMatch = false;
 							break;
 						}
 					}
-					else if((i = aliasMapPair.first.find(filterArr[f])) == std::string::npos)
+					else if((i = aliasMapPair.first.find(filterArr[f])) ==
+					        std::string::npos)
 					{
 						filterMatch = false;
 						break;
@@ -7216,30 +8919,36 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 				continue;
 
 			xmlOut.addTextElementToData("config_alias", aliasMapPair.first);
-			xmlOut.addTextElementToData("config_key", TableGroupKey::getFullGroupString(aliasMapPair.second.first, aliasMapPair.second.second, /*decorate as (<key>)*/ "(",")"));
+			xmlOut.addTextElementToData(
+			    "config_key",
+			    TableGroupKey::getFullGroupString(aliasMapPair.second.first,
+			                                      aliasMapPair.second.second,
+			                                      /*decorate as (<key>)*/ "(",
+			                                      ")"));
 
 			// __COUT__ << "config_alias_comment" << " " <<  temporaryConfigMgr.getNode(
 			// 	ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(aliasMapPair.first).getNode(
 			// 		TableViewColumnInfo::COL_NAME_COMMENT).getValue<std::string>() << __E__;
-			xmlOut.addTextElementToData("config_alias_comment",
-										temporaryConfigMgr.getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
-											.getNode(aliasMapPair.first)
-											.getNode(TableViewColumnInfo::COL_NAME_COMMENT)
-											.getValue<std::string>());
+			xmlOut.addTextElementToData(
+			    "config_alias_comment",
+			    temporaryConfigMgr.getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
+			        .getNode(aliasMapPair.first)
+			        .getNode(TableViewColumnInfo::COL_NAME_COMMENT)
+			        .getValue<std::string>());
 
 			std::string groupComment, groupAuthor, groupCreationTime;
 			try
 			{
 				temporaryConfigMgr.loadTableGroup(aliasMapPair.second.first,
-												aliasMapPair.second.second,
-												false /*doActivate*/,
-												0 /*groupMembers*/,
-												0 /*progressBar*/,
-												0 /*accumulateWarnings*/,
-												&groupComment,
-												&groupAuthor,
-												&groupCreationTime,
-												true /*doNotLoadMembers*/);
+				                                  aliasMapPair.second.second,
+				                                  false /*doActivate*/,
+				                                  0 /*groupMembers*/,
+				                                  0 /*progressBar*/,
+				                                  0 /*accumulateWarnings*/,
+				                                  &groupComment,
+				                                  &groupAuthor,
+				                                  &groupCreationTime,
+				                                  true /*doNotLoadMembers*/);
 
 				xmlOut.addTextElementToData("config_comment", groupComment);
 				xmlOut.addTextElementToData("config_author", groupAuthor);
@@ -7256,8 +8965,9 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 	}
 
 	// return last group alias by user
-	std::string fn =
-		ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." + FSM_USERS_PREFERENCES_FILETYPE;
+	std::string fn = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
+	                 FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." +
+	                 FSM_USERS_PREFERENCES_FILETYPE;
 	__COUT__ << "Load preferences: " << fn << __E__;
 	FILE* fp = fopen(fn.c_str(), "r");
 	if(fp)
@@ -7269,16 +8979,18 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(
 		xmlOut.addTextElementToData("UserLastConfigAlias", tmpLastAlias);
 		fclose(fp);
 	}
-	else if(aliasMap.size()) //if not set, return first
+	else if(aliasMap.size())  //if not set, return first
 		xmlOut.addTextElementToData("UserLastConfigAlias", aliasMap.begin()->first);
-} //end addFilteredConfigAliasesToXML()
+}  //end addFilteredConfigAliasesToXML()
 
 //==============================================================================
 // launchStartOneServerCommand
 //	static function (so WizardSupervisor can use it)
 //	throws exception if command fails to start a server
 // Note: to get the Gateway's Context name: getContextUID()
-void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, ConfigurationManager* cfgMgr, const std::string& contextName)
+void GatewaySupervisor::launchStartOneServerCommand(const std::string&    command,
+                                                    ConfigurationManager* cfgMgr,
+                                                    const std::string&    contextName)
 {
 	__COUT__ << "launch ots script Command = " << command << __E__;
 	__COUT__ << "Extracting target context hostname... " << __E__;
@@ -7287,8 +8999,8 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, 
 	try
 	{
 		cfgMgr->init();  // completely reset to re-align with any changes
-		const 	XDAQContextTable* contextTable = cfgMgr->__GET_CONFIG__(XDAQContextTable);
-		auto	contexts = contextTable->getContexts();
+		const XDAQContextTable* contextTable = cfgMgr->__GET_CONFIG__(XDAQContextTable);
+		auto                    contexts     = contextTable->getContexts();
 
 		unsigned int i, j;
 		for(const auto& context : contexts)
@@ -7304,7 +9016,9 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, 
 				if(context.address_[i] == '/')
 					j = i + 1;
 			hostname = context.address_.substr(j);
-			__COUT__ << "ots script command '" << command << "' launching on hostname = " << hostname << " in context name " << context.contextUID_ << __E__;
+			__COUT__ << "ots script command '" << command
+			         << "' launching on hostname = " << hostname << " in context name "
+			         << context.contextUID_ << __E__;
 		}
 	}
 	catch(...)
@@ -7315,7 +9029,8 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, 
 		__SS_THROW__;
 	}
 
-	std::string fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" + hostname + ".cmd");
+	std::string fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" +
+	                  hostname + ".cmd");
 	FILE*       fp = fopen(fn.c_str(), "w");
 	if(fp)
 	{
@@ -7331,7 +9046,8 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, 
 	sleep(2 /*seconds*/);  // then verify that the commands were read
 	// note: StartOTS.sh has a sleep of 1 second
 
-	fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" + hostname + ".cmd");
+	fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" + hostname +
+	      ".cmd");
 	fp = fopen(fn.c_str(), "r");
 	if(fp)
 	{
@@ -7341,7 +9057,8 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, 
 
 		if(strcmp(line, command.c_str()) == 0)
 		{
-			__SS__ << "The command looks to have been ignored by " << hostname << ". Is the ots launch script still running on that node?" << __E__;
+			__SS__ << "The command looks to have been ignored by " << hostname
+			       << ". Is the ots launch script still running on that node?" << __E__;
 			__SS_THROW__;
 		}
 		__COUTV__(line);
@@ -7357,7 +9074,8 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string& command, 
 // launchStartOTSCommand
 //	static function (so WizardSupervisor can use it)
 //	throws exception if command fails to start
-void GatewaySupervisor::launchStartOTSCommand(const std::string& command, ConfigurationManager* cfgMgr)
+void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
+                                              ConfigurationManager* cfgMgr)
 {
 	__COUT__ << "launch ots script Command = " << command << __E__;
 	__COUT__ << "Extracting target context hostnames... " << __E__;
@@ -7382,20 +9100,23 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string& command, Config
 				if(context.address_[i] == '/')
 					j = i + 1;
 			hostnames.push_back(context.address_.substr(j));
-			__COUT__ << "ots script command '" << command << "' launching on hostname = " << hostnames.back() << __E__;
+			__COUT__ << "ots script command '" << command
+			         << "' launching on hostname = " << hostnames.back() << __E__;
 		}
 	}
 	catch(...)
 	{
 		__SS__ << "Launch of command '" << command << "' interrupted! "
-		       << "The Configuration Manager could not be initialized to find targets." << __E__;
+		       << "The Configuration Manager could not be initialized to find targets."
+		       << __E__;
 
 		__SS_THROW__;
 	}
 
 	for(const auto& hostname : hostnames)
 	{
-		std::string fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" + hostname + ".cmd");
+		std::string fn = (std::string(__ENV__("SERVICE_DATA_PATH")) +
+		                  "/StartOTS_action_" + hostname + ".cmd");
 		FILE*       fp = fopen(fn.c_str(), "w");
 		if(fp)
 		{
@@ -7414,7 +9135,8 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string& command, Config
 
 	for(const auto& hostname : hostnames)
 	{
-		std::string fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" + hostname + ".cmd");
+		std::string fn = (std::string(__ENV__("SERVICE_DATA_PATH")) +
+		                  "/StartOTS_action_" + hostname + ".cmd");
 		FILE*       fp = fopen(fn.c_str(), "r");
 		if(fp)
 		{
@@ -7424,7 +9146,10 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string& command, Config
 
 			if(strcmp(line, command.c_str()) == 0)
 			{
-				__SS__ << "The command '" << command << "' looks to have been ignored by " << hostname << ". Is the ots launch script still running on that node?" << __E__;
+				__SS__ << "The command '" << command << "' looks to have been ignored by "
+				       << hostname
+				       << ". Is the ots launch script still running on that node?"
+				       << __E__;
 				__SS_THROW__;
 			}
 			__COUTV__(line);
@@ -7440,10 +9165,13 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string& command, Config
 //==============================================================================
 // xoap::supervisorCookieCheck
 //	verify cookie
-xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(xoap::MessageReference message)
+xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
+    xoap::MessageReference message)
 
 {
-	__COUTT__ << "request from remote Supervisor for GatewaySupervisor::supervisorCookieCheck()" << __E__;
+	__COUTT__
+	    << "request from remote Supervisor for GatewaySupervisor::supervisorCookieCheck()"
+	    << __E__;
 
 	// SOAPUtilities::receive request parameters
 	SOAPParameters parameters;
@@ -7451,28 +9179,37 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(xoap::MessageRef
 	parameters.addParameter("RefreshOption");
 	parameters.addParameter("IPAddress");
 	SOAPUtilities::receive(message, parameters);
-	std::string cookieCode    = parameters.getValue("CookieCode");
-	std::string refreshOption = parameters.getValue("RefreshOption");  // give external supervisors option to
-	                                                                   // refresh cookie or not, "1" to refresh
-	std::string ipAddress = parameters.getValue("IPAddress");          // give external supervisors option to refresh
-	                                                                   // cookie or not, "1" to refresh
+	std::string cookieCode = parameters.getValue("CookieCode");
+	std::string refreshOption =
+	    parameters.getValue("RefreshOption");  // give external supervisors option to
+	                                           // refresh cookie or not, "1" to refresh
+	std::string ipAddress =
+	    parameters.getValue("IPAddress");  // give external supervisors option to refresh
+	                                       // cookie or not, "1" to refresh
 
 	// If TRUE, cookie code is good, and refreshed code is in cookieCode, also pointers
 	// optionally for uint8_t userPermissions, uint64_t uid  Else, error message is
 	// returned in cookieCode
-	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> userGroupPermissionsMap;
-	std::string                                                      userWithLock = "";
-	uint64_t                                                         uid, userSessionIndex;
-	theWebUsers_.cookieCodeIsActiveForRequest(
-	    cookieCode, &userGroupPermissionsMap, &uid /*uid is not given to remote users*/,
-		ipAddress, refreshOption == "1", false /* doNotGoRemote */, &userWithLock, &userSessionIndex);
+	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
+	            userGroupPermissionsMap;
+	std::string userWithLock = "";
+	uint64_t    uid, userSessionIndex;
+	theWebUsers_.cookieCodeIsActiveForRequest(cookieCode,
+	                                          &userGroupPermissionsMap,
+	                                          &uid /*uid is not given to remote users*/,
+	                                          ipAddress,
+	                                          refreshOption == "1",
+	                                          false /* doNotGoRemote */,
+	                                          &userWithLock,
+	                                          &userSessionIndex);
 
 	__COUTTV__(userWithLock);
 
 	// fill return parameters
 	SOAPParameters retParameters;
 	retParameters.addParameter("CookieCode", cookieCode);
-	retParameters.addParameter("Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
+	retParameters.addParameter(
+	    "Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
 	retParameters.addParameter("UserWithLock", userWithLock);
 	retParameters.addParameter("Username", theWebUsers_.getUsersUsername(uid));
 	retParameters.addParameter("DisplayName", theWebUsers_.getUsersDisplayName(uid));
@@ -7486,7 +9223,8 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(xoap::MessageRef
 //==============================================================================
 // xoap::supervisorGetActiveUsers
 //	get display names for all active users
-xoap::MessageReference GatewaySupervisor::supervisorGetActiveUsers(xoap::MessageReference /*message*/)
+xoap::MessageReference GatewaySupervisor::supervisorGetActiveUsers(
+    xoap::MessageReference /*message*/)
 {
 	__COUT__ << __E__;
 
@@ -7499,7 +9237,8 @@ xoap::MessageReference GatewaySupervisor::supervisorGetActiveUsers(xoap::Message
 //	SOAPUtilities::receive a new system Message from a supervisor
 //	ToUser wild card * is to all users
 //	or comma-separated variable  (CSV) to multiple users
-xoap::MessageReference GatewaySupervisor::supervisorSystemMessage(xoap::MessageReference message)
+xoap::MessageReference GatewaySupervisor::supervisorSystemMessage(
+    xoap::MessageReference message)
 {
 	SOAPParameters parameters;
 	parameters.addParameter("ToUser");
@@ -7526,15 +9265,16 @@ xoap::MessageReference GatewaySupervisor::supervisorSystemMessage(xoap::MessageR
 void GatewaySupervisor::addSystemMessage(std::string toUserCSV, std::string message)
 {
 	__COUTTV__(toUserCSV);
-	__COUTVS__(45,message);
+	__COUTVS__(45, message);
 	GatewaySupervisor::theWebUsers_.addSystemMessage(toUserCSV, message);
-} //end addSystemMessage
+}  //end addSystemMessage
 
 //===================================================================================================================
 // xoap::supervisorSystemLogbookEntry
 //	SOAPUtilities::receive a new system Message from a supervisor
 //	ToUser wild card * is to all users
-xoap::MessageReference GatewaySupervisor::supervisorSystemLogbookEntry(xoap::MessageReference message)
+xoap::MessageReference GatewaySupervisor::supervisorSystemLogbookEntry(
+    xoap::MessageReference message)
 {
 	SOAPParameters parameters;
 	parameters.addParameter("EntryText");
@@ -7545,21 +9285,22 @@ xoap::MessageReference GatewaySupervisor::supervisorSystemLogbookEntry(xoap::Mes
 	makeSystemLogEntry(parameters.getValue("EntryText"));
 
 	return SOAPUtilities::makeSOAPMessageReference("SystemLogbookResponse");
-} //end supervisorSystemLogbookEntry()
+}  //end supervisorSystemLogbookEntry()
 
 //===================================================================================================================
 // supervisorLastTableGroupRequest
 //	return the group name and key for the last state machine activity
 //
 //	Note: same as OtsConfigurationWizardSupervisor::supervisorLastTableGroupRequest
-xoap::MessageReference GatewaySupervisor::supervisorLastTableGroupRequest(xoap::MessageReference message)
+xoap::MessageReference GatewaySupervisor::supervisorLastTableGroupRequest(
+    xoap::MessageReference message)
 {
 	SOAPParameters parameters;
 	parameters.addParameter("ActionOfLastGroup");
 	SOAPUtilities::receive(message, parameters);
 
 	return GatewaySupervisor::lastTableGroupRequestHandler(parameters);
-} //end supervisorLastTableGroupRequest()
+}  //end supervisorLastTableGroupRequest()
 
 //===================================================================================================================
 // xoap::lastTableGroupRequestHandler
@@ -7567,7 +9308,8 @@ xoap::MessageReference GatewaySupervisor::supervisorLastTableGroupRequest(xoap::
 //	called by both:
 //		GatewaySupervisor::supervisorLastTableGroupRequest
 //		OtsConfigurationWizardSupervisor::supervisorLastTableGroupRequest
-xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(const SOAPParameters& parameters)
+xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(
+    const SOAPParameters& parameters)
 {
 	std::string action = parameters.getValue("ActionOfLastGroup");
 	__COUT__ << "ActionOfLastGroup: " << action.substr(0, 30) << __E__;
@@ -7576,20 +9318,26 @@ xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(const SOA
 	std::vector<std::string> fileNames;
 	if(action == "ALL")
 	{
-		actions = std::vector<std::string>({"Configured",
-			"Started","ActivatedConfig","ActivatedContext","ActivatedBackbone",
-			"ActivatedIterator"});
-		fileNames = std::vector<std::string>({FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE,
-			FSM_LAST_STARTED_GROUP_ALIAS_FILE,ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
-			ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE, ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE,
-			ConfigurationManager::LAST_ACTIVATED_ITERATOR_GROUP_FILE});	
+		actions   = std::vector<std::string>({"Configured",
+		                                      "Started",
+		                                      "ActivatedConfig",
+		                                      "ActivatedContext",
+		                                      "ActivatedBackbone",
+		                                      "ActivatedIterator"});
+		fileNames = std::vector<std::string>(
+		    {FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE,
+		     FSM_LAST_STARTED_GROUP_ALIAS_FILE,
+		     ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
+		     ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE,
+		     ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE,
+		     ConfigurationManager::LAST_ACTIVATED_ITERATOR_GROUP_FILE});
 	}
-	else 
+	else
 	{
 		actions.push_back(action);
 
 		if(action == "Configured")
-			fileNames.push_back(FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE); 
+			fileNames.push_back(FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
 		else if(action == "Started")
 			fileNames.push_back(FSM_LAST_STARTED_GROUP_ALIAS_FILE);
 		else if(action == "ActivatedConfig")
@@ -7603,15 +9351,16 @@ xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(const SOA
 		else
 		{
 			__COUT_ERR__ << "Invalid last group action requested." << __E__;
-			return SOAPUtilities::makeSOAPMessageReference("LastConfigGroupResponseFailure");
+			return SOAPUtilities::makeSOAPMessageReference(
+			    "LastConfigGroupResponseFailure");
 		}
 	}
 
-	std::string groupNames = "";
-	std::string groupKeys = "";
+	std::string groupNames   = "";
+	std::string groupKeys    = "";
 	std::string groupActions = "";
-	std::string groupTimes = "";
-	for(size_t i=0; i < fileNames.size(); ++i)
+	std::string groupTimes   = "";
+	for(size_t i = 0; i < fileNames.size(); ++i)
 	{
 		if(i)
 		{
@@ -7622,24 +9371,24 @@ xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(const SOA
 		}
 
 		std::string                                          timeString;
-		std::pair<std::string /*group name*/, TableGroupKey> theGroup = 
-			ConfigurationManager::loadGroupNameAndKey(fileNames[i], timeString);
+		std::pair<std::string /*group name*/, TableGroupKey> theGroup =
+		    ConfigurationManager::loadGroupNameAndKey(fileNames[i], timeString);
 
-		groupNames 		+= theGroup.first;
-		groupKeys	 	+= theGroup.second.toString();
-		groupActions 	+= actions[i];
-		groupTimes 		+= timeString;
-
+		groupNames += theGroup.first;
+		groupKeys += theGroup.second.toString();
+		groupActions += actions[i];
+		groupTimes += timeString;
 	}
 	// fill return parameters
 	SOAPParameters retParameters;
-	retParameters.addParameter("GroupName", groupNames);//theGroup.first);
-	retParameters.addParameter("GroupKey", groupKeys);//theGroup.second.toString());
-	retParameters.addParameter("GroupAction", groupActions);//action);
-	retParameters.addParameter("GroupActionTime", groupTimes);//timeString);
+	retParameters.addParameter("GroupName", groupNames);  //theGroup.first);
+	retParameters.addParameter("GroupKey", groupKeys);    //theGroup.second.toString());
+	retParameters.addParameter("GroupAction", groupActions);    //action);
+	retParameters.addParameter("GroupActionTime", groupTimes);  //timeString);
 
-	return SOAPUtilities::makeSOAPMessageReference("LastConfigGroupResponse", retParameters);
-} //end lastTableGroupRequestHandler()
+	return SOAPUtilities::makeSOAPMessageReference("LastConfigGroupResponse",
+	                                               retParameters);
+}  //end lastTableGroupRequestHandler()
 
 //==============================================================================
 // getNextRunNumber
@@ -7654,7 +9403,9 @@ unsigned int GatewaySupervisor::getNextRunNumber(const std::string& fsmNameIn)
 	std::string fsmName           = fsmNameIn == "" ? activeStateMachineName_ : fsmNameIn;
 	// prepend sanitized FSM name
 	for(unsigned int i = 0; i < fsmName.size(); ++i)
-		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') || (fsmName[i] >= 'A' && fsmName[i] <= 'Z') || (fsmName[i] >= '0' && fsmName[i] <= '9'))
+		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') ||
+		   (fsmName[i] >= 'A' && fsmName[i] <= 'Z') ||
+		   (fsmName[i] >= '0' && fsmName[i] <= '9'))
 			runNumberFileName += fsmName[i];
 	runNumberFileName += RUN_NUMBER_FILE_NAME;
 	//__COUT__ << "runNumberFileName: " << runNumberFileName << __E__;
@@ -7664,7 +9415,8 @@ unsigned int GatewaySupervisor::getNextRunNumber(const std::string& fsmNameIn)
 	{
 		__COUT__ << "Cannot open file: " << runNumberFileName << __E__;
 
-		__COUT__ << "Creating file and setting Run Number to 1: " << runNumberFileName << __E__;
+		__COUT__ << "Creating file and setting Run Number to 1: " << runNumberFileName
+		         << __E__;
 		FILE* fp = fopen(runNumberFileName.c_str(), "w");
 		fprintf(fp, "1");
 		fclose(fp);
@@ -7680,16 +9432,19 @@ unsigned int GatewaySupervisor::getNextRunNumber(const std::string& fsmNameIn)
 	runNumberFile >> runNumberString;
 	runNumberFile.close();
 	return atoi(runNumberString.c_str());
-} // end getNextRunNumber()
+}  // end getNextRunNumber()
 
 //==============================================================================
-void GatewaySupervisor::setNextRunNumber(unsigned int runNumber, const std::string& fsmNameIn)
+void GatewaySupervisor::setNextRunNumber(unsigned int       runNumber,
+                                         const std::string& fsmNameIn)
 {
 	std::string runNumberFileName = RUN_NUMBER_PATH + "/";
 	std::string fsmName           = fsmNameIn == "" ? activeStateMachineName_ : fsmNameIn;
 	// prepend sanitized FSM name
 	for(unsigned int i = 0; i < fsmName.size(); ++i)
-		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') || (fsmName[i] >= 'A' && fsmName[i] <= 'Z') || (fsmName[i] >= '0' && fsmName[i] <= '9'))
+		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') ||
+		   (fsmName[i] >= 'A' && fsmName[i] <= 'Z') ||
+		   (fsmName[i] >= '0' && fsmName[i] <= '9'))
 			runNumberFileName += fsmName[i];
 	runNumberFileName += RUN_NUMBER_FILE_NAME;
 	__COUTTV__(runNumberFileName);
@@ -7713,34 +9468,38 @@ void GatewaySupervisor::setNextRunNumber(unsigned int runNumber, const std::stri
 //	Else for the active FSM name, activeStateMachineName_
 //
 // 	Note: the FSM name is sanitized of special characters and used in the filename.
-std::string GatewaySupervisor::getLastLogEntry(const std::string& logType, const std::string& fsmNameIn /* = "" */)
+std::string GatewaySupervisor::getLastLogEntry(const std::string& logType,
+                                               const std::string& fsmNameIn /* = "" */)
 {
 	std::string logEntryFileName = LOG_ENTRY_PATH + "/";
-	std::string fsmName           = fsmNameIn == "" ? activeStateMachineName_ : fsmNameIn;
+	std::string fsmName          = fsmNameIn == "" ? activeStateMachineName_ : fsmNameIn;
 
 	if(logType == RunControlStateMachine::START_TRANSITION_NAME &&
-		 stateMachineStartLogEntry_.find(fsmName) != stateMachineStartLogEntry_.end())
+	   stateMachineStartLogEntry_.find(fsmName) != stateMachineStartLogEntry_.end())
 		return stateMachineStartLogEntry_.at(fsmName);
 	else if(logType == RunControlStateMachine::CONFIGURE_TRANSITION_NAME &&
-		 stateMachineConfigureLogEntry_.find(fsmName) != stateMachineConfigureLogEntry_.end())
+	        stateMachineConfigureLogEntry_.find(fsmName) !=
+	            stateMachineConfigureLogEntry_.end())
 		return stateMachineConfigureLogEntry_.at(fsmName);
 	else if(logType == RunControlStateMachine::STOP_TRANSITION_NAME &&
-		 stateMachineStopLogEntry_.find(fsmName) != stateMachineStopLogEntry_.end())
+	        stateMachineStopLogEntry_.find(fsmName) != stateMachineStopLogEntry_.end())
 		return stateMachineStopLogEntry_.at(fsmName);
 
 	// prepend sanitized FSM name
 	for(unsigned int i = 0; i < fsmName.size(); ++i)
-		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') || (fsmName[i] >= 'A' && fsmName[i] <= 'Z') || (fsmName[i] >= '0' && fsmName[i] <= '9'))
+		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') ||
+		   (fsmName[i] >= 'A' && fsmName[i] <= 'Z') ||
+		   (fsmName[i] >= '0' && fsmName[i] <= '9'))
 			logEntryFileName += fsmName[i];
 	logEntryFileName += "_" + logType + "_" + LOG_ENTRY_FILE_NAME;
 	__SUP_COUTTV__(logEntryFileName);
 
 	std::string contents;
-	std::FILE* fp = std::fopen(logEntryFileName.c_str(), "rb");
+	std::FILE*  fp = std::fopen(logEntryFileName.c_str(), "rb");
 	if(!fp)
 	{
-		__SUP_COUTT__ << "Could not open file at " << logEntryFileName << 
-			". Error: " << errno << " - " << strerror(errno) << __E__;
+		__SUP_COUTT__ << "Could not open file at " << logEntryFileName
+		              << ". Error: " << errno << " - " << strerror(errno) << __E__;
 		contents = "";
 	}
 	else
@@ -7762,7 +9521,7 @@ std::string GatewaySupervisor::getLastLogEntry(const std::string& logType, const
 		stateMachineStopLogEntry_[fsmName] = contents;
 
 	return contents;
-} // end getLastLogEntry()
+}  // end getLastLogEntry()
 
 //==============================================================================
 // setLastLogEntry
@@ -7771,10 +9530,12 @@ std::string GatewaySupervisor::getLastLogEntry(const std::string& logType, const
 //	Else for the active FSM name, activeStateMachineName_
 //
 // 	Note: the FSM name is sanitized of special characters and used in the filename.
-void GatewaySupervisor::setLastLogEntry(const std::string& logType, const std::string& logEntry, const std::string& fsmNameIn /* = "" */)
+void GatewaySupervisor::setLastLogEntry(const std::string& logType,
+                                        const std::string& logEntry,
+                                        const std::string& fsmNameIn /* = "" */)
 {
 	std::string logEntryFileName = LOG_ENTRY_PATH + "/";
-	std::string fsmName           = fsmNameIn == "" ? activeStateMachineName_ : fsmNameIn;
+	std::string fsmName          = fsmNameIn == "" ? activeStateMachineName_ : fsmNameIn;
 
 	if(logType == RunControlStateMachine::START_TRANSITION_NAME)
 		stateMachineStartLogEntry_[fsmName] = logEntry;
@@ -7782,16 +9543,19 @@ void GatewaySupervisor::setLastLogEntry(const std::string& logType, const std::s
 		stateMachineConfigureLogEntry_[fsmName] = logEntry;
 	else if(logType == RunControlStateMachine::STOP_TRANSITION_NAME)
 		stateMachineStopLogEntry_[fsmName] = logEntry;
-	else 
+	else
 	{
 		if(logEntry != "")
-			__COUT_WARN__ << "Log entry for log type '" << logType << "' not implemented for saving." << __E__;
-		return; //for now,  do not save other types of transitions
+			__COUT_WARN__ << "Log entry for log type '" << logType
+			              << "' not implemented for saving." << __E__;
+		return;  //for now,  do not save other types of transitions
 	}
-	
+
 	// prepend sanitized FSM name
 	for(unsigned int i = 0; i < fsmName.size(); ++i)
-		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') || (fsmName[i] >= 'A' && fsmName[i] <= 'Z') || (fsmName[i] >= '0' && fsmName[i] <= '9'))
+		if((fsmName[i] >= 'a' && fsmName[i] <= 'z') ||
+		   (fsmName[i] >= 'A' && fsmName[i] <= 'Z') ||
+		   (fsmName[i] >= '0' && fsmName[i] <= '9'))
 			logEntryFileName += fsmName[i];
 	logEntryFileName += "_" + logType + "_" + LOG_ENTRY_FILE_NAME;
 	__COUTTV__(logEntryFileName);
@@ -7801,8 +9565,8 @@ void GatewaySupervisor::setLastLogEntry(const std::string& logType, const std::s
 	std::FILE* fp = std::fopen(logEntryFileName.c_str(), "w");
 	if(!fp)
 	{
-		__SUP_SS__ << "Could not open file at " << logEntryFileName << 
-			". Error: " << errno << " - " << strerror(errno) << __E__;
+		__SUP_SS__ << "Could not open file at " << logEntryFileName
+		           << ". Error: " << errno << " - " << strerror(errno) << __E__;
 		__SUP_SS_THROW__;
 	}
 	if(logEntry.size())
@@ -7817,18 +9581,23 @@ void GatewaySupervisor::setLastLogEntry(const std::string& logType, const std::s
 //
 //	Load from file into vector of Remote Gateways passed by reference.
 //	onlyNotFound := load only settings for remoteGateways not currently in vector (keep existing settings, e.g. right before a save)
-void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways,
-	bool onlyNotFound /* = false */) const
-{	
-	std::string filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" + REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME;
+void GatewaySupervisor::loadRemoteGatewaySettings(
+    std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways,
+    bool                                               onlyNotFound /* = false */) const
+{
+	std::string filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
+	                       REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME;
 	__SUP_COUTV__(filepath);
 
 	std::ifstream settingsFile(filepath.c_str());
 	if(!settingsFile.is_open())
 	{
-		__SUP_COUT__ << "Cannot open Remote Gateway settings file (assuming no settings yet!): " << filepath << __E__;
+		__SUP_COUT__
+		    << "Cannot open Remote Gateway settings file (assuming no settings yet!): "
+		    << filepath << __E__;
 
-		__SUP_COUT__ << "Creating empty Remote Gateway settings file: " << filepath << __E__;
+		__SUP_COUT__ << "Creating empty Remote Gateway settings file: " << filepath
+		             << __E__;
 		FILE* fp = fopen(filepath.c_str(), "w");
 		fprintf(fp, "\n");
 		fclose(fp);
@@ -7836,51 +9605,60 @@ void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor:
 		settingsFile.open(filepath.c_str());
 		if(!settingsFile.is_open())
 		{
-			__SUP_SS__ << "Error. Cannot create or load Remote Gateway settings file: " << filepath << __E__;
+			__SUP_SS__ << "Error. Cannot create or load Remote Gateway settings file: "
+			           << filepath << __E__;
 			__SUP_SS_THROW__;
 		}
 	}
 
-	size_t NUM_FIELDS = 4; //name, fsmMode, included, selected alias
+	size_t                   NUM_FIELDS = 4;  //name, fsmMode, included, selected alias
 	std::vector<std::string> values;
-	float formatVersion = 0.0;
-	bool done = false;
-    do  // Read each line from the file
-	{  
-		size_t i=0;
-		for(i=0; i<NUM_FIELDS; ++i)
+	float                    formatVersion = 0.0;
+	bool                     done          = false;
+	do  // Read each line from the file
+	{
+		size_t i = 0;
+		for(i = 0; i < NUM_FIELDS; ++i)
 		{
-			if(i >= values.size()) values.push_back(""); //init values vector
+			if(i >= values.size())
+				values.push_back("");  //init values vector
 
 			if(!std::getline(settingsFile, values[i]))
 			{
 				//no more lines left
-				if(i) //at illegal moment mid-record?
+				if(i)  //at illegal moment mid-record?
 				{
 					settingsFile.close();
-					__SUP_SS__ << "Error. Illegal file format in Remote Gateway settings file: " << filepath << __E__;
+					__SUP_SS__
+					    << "Error. Illegal file format in Remote Gateway settings file: "
+					    << filepath << __E__;
 					__SUP_SS_THROW__;
 				}
 				//else end is correctly at record boundary
 				done = true;
 				break;
 			}
-			__SUP_COUTVS__(20,values[i]);
+			__SUP_COUTVS__(20, values[i]);
 
-			if(i < 3 && values[i] == "")  //do not allow blank lines, except for selected alias				
+			if(i < 3 &&
+			   values[i] == "")  //do not allow blank lines, except for selected alias
 			{
 				//rewind
 				--i;
 				continue;
 			}
-			else if(values[i].find("Remote Gateway Settings, file format v") != //grab format version if present
-				std::string::npos)
-			{				
-				sscanf(values[i].c_str(),"Remote Gateway Settings, file format v%f",&formatVersion);
+			else if(
+			    values[i].find(
+			        "Remote Gateway Settings, file format v") !=  //grab format version if present
+			    std::string::npos)
+			{
+				sscanf(values[i].c_str(),
+				       "Remote Gateway Settings, file format v%f",
+				       &formatVersion);
 				__SUP_COUTV__(formatVersion);
 
 				if(formatVersion > 0.5)
-					NUM_FIELDS = 4; //name, fsmMode, included, selected_config_alias
+					NUM_FIELDS = 4;  //name, fsmMode, included, selected_config_alias
 
 				__SUP_COUTV__(NUM_FIELDS);
 				//rewind
@@ -7888,56 +9666,60 @@ void GatewaySupervisor::loadRemoteGatewaySettings(std::vector<GatewaySupervisor:
 				continue;
 			}
 
-		} //end record value load
-		if(done) break;
+		}  //end record value load
+		if(done)
+			break;
 
 		//at this point values vector complete for Remote Gateway
 
 		bool found = false;
-		for(i=0; i<remoteGateways.size(); ++i)
+		for(i = 0; i < remoteGateways.size(); ++i)
 			if(values[0] == remoteGateways[i].appInfo.name)
 			{
-				found = true; 
+				found = true;
 				break;
 			}
 
-		if(!found) //create Remote Gateway (and i will be correctly pointing to back())		
+		if(!found)  //create Remote Gateway (and i will be correctly pointing to back())
 		{
 			remoteGateways.push_back(GatewaySupervisor::RemoteGatewayInfo());
 			remoteGateways[i].appInfo.name = values[0];
 		}
 		else if(onlyNotFound)
-			continue; //skip modifying current settings
+			continue;  //skip modifying current settings
 
-		
-		remoteGateways[i].fsm_mode = values[1] == "Do Not Halt"?RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt:
-							(values[1] == "Only Configure"?RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure:
-								RemoteGatewayInfo::FSM_ModeTypes::Follow_FSM);
-		remoteGateways[i].fsm_included = values[2] == "1"?true:false;
+		remoteGateways[i].fsm_mode =
+		    values[1] == "Do Not Halt"
+		        ? RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt
+		        : (values[1] == "Only Configure"
+		               ? RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure
+		               : RemoteGatewayInfo::FSM_ModeTypes::Follow_FSM);
+		remoteGateways[i].fsm_included = values[2] == "1" ? true : false;
 		if(values.size() > 3)
 			remoteGateways[i].selected_config_alias = values[3];
 
-		__SUP_COUT__ << "Loaded Remote Gateway '" << remoteGateways[i].appInfo.name << "' ==> " <<
-			remoteGateways[i].getFsmMode() << " :" << remoteGateways[i].fsm_included << 
-			"configAlias=" << remoteGateways[i].selected_config_alias << __E__;
+		__SUP_COUT__ << "Loaded Remote Gateway '" << remoteGateways[i].appInfo.name
+		             << "' ==> " << remoteGateways[i].getFsmMode() << " :"
+		             << remoteGateways[i].fsm_included
+		             << "configAlias=" << remoteGateways[i].selected_config_alias
+		             << __E__;
 
-	} while (1); //end file read loop
+	} while(1);  //end file read loop
 
 	settingsFile.close();
-} //end loadRemoteGatewaySettings()
+}  //end loadRemoteGatewaySettings()
 
 //==============================================================================
 void GatewaySupervisor::saveRemoteGatewaySettings() const
 {
-	std::string filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" + REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME;
+	std::string filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
+	                       REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME;
 	__SUP_COUTV__(filepath);
-
 
 	std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGateways = remoteGatewayApps_;
 
 	//load existing settings for remote gateways not present
 	loadRemoteGatewaySettings(remoteGateways, true /* onlyNotFound*/);
-
 
 	std::ofstream settingsFile(filepath.c_str());
 	if(!settingsFile.is_open())
@@ -7945,12 +9727,13 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 		__SUP_SS__ << "Cannot open Remote Gateway settings file: " << filepath << __E__;
 		__SUP_SS_THROW__;
 	}
-	settingsFile << "Remote Gateway Settings, file format v1.0" << __E__; //save file format version first
-	for(size_t i=0; i<remoteGateways.size(); ++i)
+	settingsFile << "Remote Gateway Settings, file format v1.0"
+	             << __E__;  //save file format version first
+	for(size_t i = 0; i < remoteGateways.size(); ++i)
 	{
 		settingsFile << remoteGateways[i].appInfo.name << __E__;
 		settingsFile << remoteGateways[i].getFsmMode() << __E__;
-		settingsFile << std::string(remoteGateways[i].fsm_included?"1":"0") << __E__;
+		settingsFile << std::string(remoteGateways[i].fsm_included ? "1" : "0") << __E__;
 		settingsFile << remoteGateways[i].selected_config_alias << __E__;
 	}
 
@@ -7958,9 +9741,11 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 }  // end saveRemoteGatewaySettings()
 
 //==============================================================================
-void GatewaySupervisor::handleGetApplicationIdRequest(AllSupervisorInfo* allSupervisorInfo, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut)
+void GatewaySupervisor::handleGetApplicationIdRequest(
+    AllSupervisorInfo* allSupervisorInfo, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut)
 {
-	std::string classNeedle = StringMacros::decodeURIComponent(CgiDataUtilities::getData(cgiIn, "classNeedle"));
+	std::string classNeedle =
+	    StringMacros::decodeURIComponent(CgiDataUtilities::getData(cgiIn, "classNeedle"));
 	__COUTV__(classNeedle);
 
 	for(auto it : allSupervisorInfo->getAllSupervisorInfo())
@@ -7973,8 +9758,9 @@ void GatewaySupervisor::handleGetApplicationIdRequest(AllSupervisorInfo* allSupe
 			continue;  // skip non-matches
 
 		xmlOut.addTextElementToData("name",
-		                            appInfo.getName());                      // get application name
-		xmlOut.addTextElementToData("id", std::to_string(appInfo.getId()));  // get application id
+		                            appInfo.getName());  // get application name
+		xmlOut.addTextElementToData(
+		    "id", std::to_string(appInfo.getId()));  // get application id
 		xmlOut.addTextElementToData("class",
 		                            appInfo.getClass());  // get application class
 		xmlOut.addTextElementToData("url",
@@ -7986,23 +9772,36 @@ void GatewaySupervisor::handleGetApplicationIdRequest(AllSupervisorInfo* allSupe
 }  // end handleGetApplicationIdRequest()
 
 //==============================================================================
-bool GatewaySupervisor::handleAddDesktopIconRequest(const std::string&                          author,
-                                                    cgicc::Cgicc&                               cgiIn,
-                                                    HttpXmlDocument&                            xmlOut,
-                                                    std::vector<DesktopIconTable::DesktopIcon>* newIcons /* = nullptr*/)
+bool GatewaySupervisor::handleAddDesktopIconRequest(
+    const std::string&                          author,
+    cgicc::Cgicc&                               cgiIn,
+    HttpXmlDocument&                            xmlOut,
+    std::vector<DesktopIconTable::DesktopIcon>* newIcons /* = nullptr*/)
 {
-	std::string iconCaption     = CgiDataUtilities::getData(cgiIn, "iconCaption");      // from GET
-	std::string iconAltText     = CgiDataUtilities::getData(cgiIn, "iconAltText");      // from GET
-	std::string iconFolderPath  = CgiDataUtilities::getData(cgiIn, "iconFolderPath");   // from GET
-	std::string iconImageURL    = CgiDataUtilities::getData(cgiIn, "iconImageURL");     // from GET
-	std::string iconWindowURL   = CgiDataUtilities::getData(cgiIn, "iconWindowURL");    // from GET
-	std::string iconPermissions = CgiDataUtilities::getData(cgiIn, "iconPermissions");  // from GET
+	std::string iconCaption =
+	    CgiDataUtilities::getData(cgiIn, "iconCaption");  // from GET
+	std::string iconAltText =
+	    CgiDataUtilities::getData(cgiIn, "iconAltText");  // from GET
+	std::string iconFolderPath =
+	    CgiDataUtilities::getData(cgiIn, "iconFolderPath");  // from GET
+	std::string iconImageURL =
+	    CgiDataUtilities::getData(cgiIn, "iconImageURL");  // from GET
+	std::string iconWindowURL =
+	    CgiDataUtilities::getData(cgiIn, "iconWindowURL");  // from GET
+	std::string iconPermissions =
+	    CgiDataUtilities::getData(cgiIn, "iconPermissions");  // from GET
 	// windowLinkedApp is one of the only fields that needs to be decoded before write into table cells, because the app class name might be here
-	std::string  windowLinkedApp          = CgiDataUtilities::getData(cgiIn, "iconLinkedApp");                                       // from GET
-	unsigned int windowLinkedAppLID       = CgiDataUtilities::getDataAsInt(cgiIn, "iconLinkedAppLID");                               // from GET
-	bool         enforceOneWindowInstance = CgiDataUtilities::getData(cgiIn, "iconEnforceOneWindowInstance") == "1" ? true : false;  // from GET
+	std::string windowLinkedApp =
+	    CgiDataUtilities::getData(cgiIn, "iconLinkedApp");  // from GET
+	unsigned int windowLinkedAppLID =
+	    CgiDataUtilities::getDataAsInt(cgiIn, "iconLinkedAppLID");  // from GET
+	bool enforceOneWindowInstance =
+	    CgiDataUtilities::getData(cgiIn, "iconEnforceOneWindowInstance") == "1"
+	        ? true
+	        : false;  // from GET
 
-	std::string windowParameters = StringMacros::decodeURIComponent(CgiDataUtilities::postData(cgiIn, "iconParameters"));  // from POST
+	std::string windowParameters = StringMacros::decodeURIComponent(
+	    CgiDataUtilities::postData(cgiIn, "iconParameters"));  // from POST
 
 	__COUTV__(author);
 	__COUTV__(iconCaption);
@@ -8019,24 +9818,26 @@ bool GatewaySupervisor::handleAddDesktopIconRequest(const std::string&          
 
 	ConfigurationManagerRW tmpCfgMgr(author);
 
-	bool success = ConfigurationSupervisorBase::handleAddDesktopIconXML(xmlOut,
-	                                                                    &tmpCfgMgr,
-	                                                                    iconCaption,
-	                                                                    iconAltText,
-	                                                                    iconFolderPath,
-	                                                                    iconImageURL,
-	                                                                    iconWindowURL,
-	                                                                    iconPermissions,
-	                                                                    windowLinkedApp /*= ""*/,
-	                                                                    windowLinkedAppLID /*= 0*/,
-	                                                                    enforceOneWindowInstance /*= false*/,
-	                                                                    windowParameters /*= ""*/);
+	bool success = ConfigurationSupervisorBase::handleAddDesktopIconXML(
+	    xmlOut,
+	    &tmpCfgMgr,
+	    iconCaption,
+	    iconAltText,
+	    iconFolderPath,
+	    iconImageURL,
+	    iconWindowURL,
+	    iconPermissions,
+	    windowLinkedApp /*= ""*/,
+	    windowLinkedAppLID /*= 0*/,
+	    enforceOneWindowInstance /*= false*/,
+	    windowParameters /*= ""*/);
 
 	if(newIcons && success)
 	{
 		__COUT__ << "Passing new icons back to caller..." << __E__;
 
-		const std::vector<DesktopIconTable::DesktopIcon>& tmpNewIcons = tmpCfgMgr.__GET_CONFIG__(DesktopIconTable)->getAllDesktopIcons();
+		const std::vector<DesktopIconTable::DesktopIcon>& tmpNewIcons =
+		    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable)->getAllDesktopIcons();
 
 		newIcons->clear();
 		for(const auto& tmpNewIcon : tmpNewIcons)
@@ -8047,7 +9848,8 @@ bool GatewaySupervisor::handleAddDesktopIconRequest(const std::string&          
 }  // end handleAddDesktopIconRequest()
 
 //==============================================================================
-xoap::MessageReference GatewaySupervisor::TRACESupervisorRequest(xoap::MessageReference message)
+xoap::MessageReference GatewaySupervisor::TRACESupervisorRequest(
+    xoap::MessageReference message)
 {
 	return CorePropertySupervisorBase::TRACESupervisorRequest(message);
 }  // end TRACESupervisorRequest()

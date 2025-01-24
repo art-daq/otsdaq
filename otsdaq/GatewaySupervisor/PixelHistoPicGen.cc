@@ -1,8 +1,8 @@
 #include "PixelHistoPicGen.h"
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <math.h>
+#include <fstream>
+#include <iostream>
+#include <sstream>
 
 #include <stdlib.h>
 
@@ -12,45 +12,47 @@ using namespace std;
 
 ////////////////////////////////////////////////////////////////////////
 //handles rotation operations
-void transform(float &x ,float &y, float m1, float m2, float m3, float m4){
-  float tx,ty;
+void transform(float& x, float& y, float m1, float m2, float m3, float m4)
+{
+	float tx, ty;
 
-  tx = x * m1 + y * m2;
-  ty = x * m3 + y * m4;
+	tx = x * m1 + y * m2;
+	ty = x * m3 + y * m4;
 
-  x = tx;
-  y = ty;
+	x = tx;
+	y = ty;
 }
-	
-	
-//================================================================================	
-//================================================================================
-//================================================================================
-	
-	
-////////////////////////////////////////////////////////////////////////
-PixelHistoPicGen::PixelHistoPicGen(){			
-  	std::string mthn = "[PixelHistoPicGen::PixelHistoPicGen()]\t";
 
-  	readImg_ = 0;
+//================================================================================
+//================================================================================
+//================================================================================
+
+////////////////////////////////////////////////////////////////////////
+PixelHistoPicGen::PixelHistoPicGen()
+{
+	std::string mthn = "[PixelHistoPicGen::PixelHistoPicGen()]\t";
+
+	readImg_   = 0;
 	clickMask_ = 0;
-	
+
 	firstTurtle = true;
 }
 
 ////////////////////////////////////////////////////////////////////////
 PixelHistoPicGen::~PixelHistoPicGen()
 {
-  //dealloc
-  if(readImg_){
-    for(int x=0;x<readImgW_;++x){
-      for(int y=0;y<readImgH_;++y)
-	delete[] readImg_[x][y];
-      delete[] readImg_[x];
-    }
-    delete[] readImg_;
-    readImg_ = 0;
-  }
+	//dealloc
+	if(readImg_)
+	{
+		for(int x = 0; x < readImgW_; ++x)
+		{
+			for(int y = 0; y < readImgH_; ++y)
+				delete[] readImg_[x][y];
+			delete[] readImg_[x];
+		}
+		delete[] readImg_;
+		readImg_ = 0;
+	}
 }
 
 // ////////////////////////////////////////////////////////////////////////
@@ -98,7 +100,7 @@ PixelHistoPicGen::~PixelHistoPicGen()
 // 		  img_[x][y][1] = g;
 // 		  img_[x][y][2] = b;
 // 		}
-	
+
 // }
 
 // ////////////////////////////////////////////////////////////////////////
@@ -110,85 +112,90 @@ PixelHistoPicGen::~PixelHistoPicGen()
 // 		  bimg_[x][y][1] = g;
 // 		  bimg_[x][y][2] = b;
 // 		}
-	
+
 // }
 
 ////////////////////////////////////////////////////////////////////////
 //read bmp file to readImg_ buffer
-void PixelHistoPicGen::readBmpToReadImg(const string& filename){
+void PixelHistoPicGen::readBmpToReadImg(const string& filename)
+{
+	//   string mthn = "[PicGen::readBMPToReadImg()]\t";
 
-//   string mthn = "[PicGen::readBMPToReadImg()]\t";
+	ifstream file(filename.c_str(), ifstream::binary);
+	if(!file.is_open())
+		return;
 
-  ifstream file(filename.c_str(),ifstream::binary);
-  if(!file.is_open())
-    return;
+	//   cout << mthn << "Has file." << endl;
 
-//   cout << mthn << "Has file." << endl;
+	//BMP Header
+	char buffer[64];
+	file.read(buffer, 2);  //"BM"
+	unsigned int size;
+	file.read((char*)(&size), 4);
+	//   cout << mthn << "size: " << size << endl;
+	file.read(buffer, 4);
+	unsigned int data_offset;
+	file.read((char*)(&data_offset), 4);
+	//   cout << mthn << "doff: " << data_offset << endl;
+	unsigned int header_size;
+	file.read((char*)(&header_size), 4);
+	//   cout << mthn << "hsize: " << header_size << endl;
+	unsigned int w, h;
+	file.read((char*)(&w), 4);
+	file.read((char*)(&h), 4);
+	//   cout << mthn << w << " " << h << endl;
+	file.read(buffer, 2);
+	unsigned int depth = 0;
+	file.read((char*)(&depth), 2);
+	//   cout << mthn << depth << endl;
+	if(depth != 24 && depth != 32)
+	{
+		file.close();
+		return;
+	}
+	//   cout << mthn << "Depth correct." << endl;
+	unsigned int compr_method;
+	file.read((char*)(&compr_method), 4);
+	//   cout << mthn << "method: " << compr_method << endl;
 
-  //BMP Header
-  char buffer[64];
-  file.read(buffer,2); //"BM"
-  unsigned int size;
-  file.read((char *)(&size),4);
-//   cout << mthn << "size: " << size << endl;
-  file.read(buffer,4);
-  unsigned int data_offset;
-  file.read((char *)(&data_offset),4);
-//   cout << mthn << "doff: " << data_offset << endl;
-  unsigned int header_size;
-  file.read((char *)(&header_size),4);
-//   cout << mthn << "hsize: " << header_size << endl;
-  unsigned int w,h;
-  file.read((char *)(&w),4);
-  file.read((char *)(&h),4);
-//   cout << mthn << w << " " << h << endl;
-  file.read(buffer,2);
-  unsigned int depth = 0;
-  file.read((char *)(&depth),2);
-//   cout << mthn << depth << endl;
-  if(depth != 24 && depth != 32){
-    file.close();
-    return;
-  }
-//   cout << mthn << "Depth correct." << endl;
-  unsigned int compr_method;
-  file.read((char *)(&compr_method),4);
-//   cout << mthn << "method: " << compr_method << endl;
+	//BMP Data
+	file.seekg(data_offset, ios_base::beg);  //set file position to start of data
 
-  //BMP Data
-  file.seekg(data_offset,ios_base::beg); //set file position to start of data
+	//dealloc old
+	if(readImg_)
+	{
+		for(int x = 0; x < readImgW_; ++x)
+		{
+			for(int y = 0; y < readImgH_; ++y)
+				delete[] readImg_[x][y];
+			delete[] readImg_[x];
+		}
+		delete[] readImg_;
+		readImg_ = 0;
+	}
 
-  //dealloc old
-  if(readImg_){
-    for(int x=0;x<readImgW_;++x){
-      for(int y=0;y<readImgH_;++y)
-	delete[] readImg_[x][y];
-      delete[] readImg_[x];
-    }
-    delete[] readImg_;
-    readImg_ = 0;
-  }
+	//allocate
+	readImgW_ = w;
+	readImgH_ = h;
+	readImg_  = new unsigned char**[readImgW_];
+	for(int x = 0; x < readImgW_; ++x)
+	{
+		readImg_[x] = new unsigned char*[readImgH_];
+		for(int y = 0; y < readImgH_; ++y)
+			readImg_[x][y] = new unsigned char[3];
+	}
 
-  //allocate
-  readImgW_ = w;
-  readImgH_ = h;
-  readImg_ = new unsigned char**[readImgW_];
-  for(int x=0;x<readImgW_;++x){
-    readImg_[x] = new unsigned char*[readImgH_];
-      for(int y=0;y<readImgH_;++y)
-				readImg_[x][y] = new unsigned char[3];
-  }
+	//read data
+	for(int y = readImgH_ - 1; y >= 0; --y)
+		for(int x = 0; x < readImgW_; ++x)
+		{
+			for(int i = 2; i >= 0; --i)
+				file.read((char*)(&(readImg_[x][y][i])), 1);
+			if(depth == 32)                    //skip alpha byte
+				file.seekg(1, ios_base::cur);  //skip one byte
+		}
 
-  //read data
-  for(int y=readImgH_-1;y>=0;--y)
-    for(int x=0;x<readImgW_;++x){
-      for(int i=2;i>=0;--i)
-				file.read((char *)(&(readImg_[x][y][i])),1);
-      if(depth == 32) //skip alpha byte
-				file.seekg(1,ios_base::cur); //skip one byte
-    }
-
-  file.close();
+	file.close();
 }
 
 // ////////////////////////////////////////////////////////////////////////
@@ -225,72 +232,79 @@ void PixelHistoPicGen::readBmpToReadImg(const string& filename){
 
 ////////////////////////////////////////////////////////////////////////
 //write img buffer to bmp file
-void PixelHistoPicGen::writeImgToBmp(string filename){
-  
-// BMP Header				Stores general information about the BMP file.
-// Bitmap Information (DIB header)	Stores detailed information about the bitmap image.
-// Color Palette			Stores the definition of the colors being used for indexed color bitmaps.
-// Bitmap Data				Stores the actual image, pixel by pixel.
+void PixelHistoPicGen::writeImgToBmp(string filename)
+{
+	// BMP Header				Stores general information about the BMP file.
+	// Bitmap Information (DIB header)	Stores detailed information about the bitmap image.
+	// Color Palette			Stores the definition of the colors being used for indexed color bitmaps.
+	// Bitmap Data				Stores the actual image, pixel by pixel.
 
-  ofstream file(filename.c_str(),ofstream::binary);
-  if(!file.is_open())
-    return;
+	ofstream file(filename.c_str(), ofstream::binary);
+	if(!file.is_open())
+		return;
 
-  unsigned int bmpTemp;
-	bmpTemp=IMG_FILE_SIZE;
-	
-  //BMP Header
-  file << char(0x42) << char(0x4d); //"BM"
-  for(int i=0;i<4;++i){ //file size in little-endian
-    file << (unsigned char)(((char *)(&bmpTemp))[i]);  
-  }
-  file << char(0x00)<< char(0x00)<< char(0x00)<< char(0x00);//0x00000000; //reserved bytes
-  file << char(0x36)<< char(0x00)<< char(0x00)<< char(0x00);//0x36000000; //offset to data
-  file << char(0x28)<< char(0x00)<< char(0x00)<< char(0x00);//0x28000000; //size of DIB header
-  for(int i=0,bmpTemp=IMG_WIDTH;i<4;++i){ //img pixel width in little-endian
-    file << (unsigned char)(((char *)(&bmpTemp))[i]);
-  }
-  for(int i=0,bmpTemp=IMG_HEIGHT;i<4;++i){ //img pixel height in little-endian
-    file << (unsigned char)(((char *)(&bmpTemp))[i]);
-  }
-  file <<char(0x01)<<char(0x00)<<char(0x18)<<char(0x00)<<\
-    char(0x00)<<char(0x00)<<char(0x00)<<char(0x00); //details and 24-bit depth
-  for(int i=0,bmpTemp=IMG_RAW_SIZE;i<4;++i){ //file raw data size in little-endian
-    file <<(unsigned char)(((char *)(&bmpTemp))[i]);    
-  }
-								
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<\
-    char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<			\
-    char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<			\
-    char(0x00)<<char(0x00)<<char(0x00); //finish header details
-  
-  //BMP Data
-  
-  for(int y=IMG_HEIGHT-1;y>=0;--y)
-    for(int x=0;x<IMG_WIDTH;++x)
-      for(int i=2;i>=0;--i){
+	unsigned int bmpTemp;
+	bmpTemp = IMG_FILE_SIZE;
+
+	//BMP Header
+	file << char(0x42) << char(0x4d);  //"BM"
+	for(int i = 0; i < 4; ++i)
+	{  //file size in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	}
+	file << char(0x00) << char(0x00) << char(0x00)
+	     << char(0x00);  //0x00000000; //reserved bytes
+	file << char(0x36) << char(0x00) << char(0x00)
+	     << char(0x00);  //0x36000000; //offset to data
+	file << char(0x28) << char(0x00) << char(0x00)
+	     << char(0x00);  //0x28000000; //size of DIB header
+	for(int i = 0, bmpTemp = IMG_WIDTH; i < 4; ++i)
+	{  //img pixel width in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	}
+	for(int i = 0, bmpTemp = IMG_HEIGHT; i < 4; ++i)
+	{  //img pixel height in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	}
+	file << char(0x01) << char(0x00) << char(0x18) << char(0x00) << char(0x00)
+	     << char(0x00) << char(0x00) << char(0x00);  //details and 24-bit depth
+	for(int i = 0, bmpTemp = IMG_RAW_SIZE; i < 4; ++i)
+	{  //file raw data size in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	}
+
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00) << char(0x00)
+	     << char(0x00) << char(0x00) << char(0x00) << char(0x00) << char(0x00)
+	     << char(0x00) << char(0x00) << char(0x00) << char(0x00) << char(0x00)
+	     << char(0x00);  //finish header details
+
+	//BMP Data
+
+	for(int y = IMG_HEIGHT - 1; y >= 0; --y)
+		for(int x = 0; x < IMG_WIDTH; ++x)
+			for(int i = 2; i >= 0; --i)
+			{
 				file << img_[x][y][i];
-      }
+			}
 
-  file.close();
-  
+	file.close();
 }
 
 // ////////////////////////////////////////////////////////////////////////
 // //write bimg buffer to bmp file
 // void PixelHistoPicGen::writeBImgToBmp(string filename){
-  
+
 //   ofstream file(filename.c_str(),ofstream::binary);
 //   if(!file.is_open())
 //     return;
 
 //   unsigned int bmpTemp;
 // 	bmpTemp=BIMG_FILE_SIZE;
-	
+
 //   //BMP Header
 //   file << char(0x42) << char(0x4d); //"BM"
 //   for(int i=0;i<4;++i){ //file size in little-endian
-//     file << (unsigned char)(((char *)(&bmpTemp))[i]);  
+//     file << (unsigned char)(((char *)(&bmpTemp))[i]);
 //   }
 //   file << char(0x00)<< char(0x00)<< char(0x00)<< char(0x00);//0x00000000; //reserved bytes
 //   file << char(0x36)<< char(0x00)<< char(0x00)<< char(0x00);//0x36000000; //offset to data
@@ -304,16 +318,16 @@ void PixelHistoPicGen::writeImgToBmp(string filename){
 //   file <<char(0x01)<<char(0x00)<<char(0x18)<<char(0x00)<<
 //     char(0x00)<<char(0x00)<<char(0x00)<<char(0x00); //details and 24-bit depth
 //   for(int i=0,bmpTemp=BIMG_RAW_SIZE;i<4;++i){ //file raw data size in little-endian
-//     file <<(unsigned char)(((char *)(&bmpTemp))[i]);    
+//     file <<(unsigned char)(((char *)(&bmpTemp))[i]);
 //   }
-								
+
 //   file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<
-//     char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<			
-//     char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<			
+//     char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<
+//     char(0x00)<<char(0x00)<<char(0x00)<<char(0x00)<<
 //     char(0x00)<<char(0x00)<<char(0x00); //finish header details
-  
+
 //   //BMP Data
-  
+
 //   for(int y=BIMG_HEIGHT-1;y>=0;--y)
 //     for(int x=0;x<BIMG_WIDTH;++x)
 //       for(int i=2;i>=0;--i){
@@ -321,11 +335,13 @@ void PixelHistoPicGen::writeImgToBmp(string filename){
 //       }
 
 //   file.close();
-  
+
 // }
 
 ////////////////////////////////////////////////////////////////////////
-void PixelHistoPicGen::convertBmp  (const std::string& fileBMP, const std::string& convertFile){
+void PixelHistoPicGen::convertBmp(const std::string& fileBMP,
+                                  const std::string& convertFile)
+{
 	string convertCmd = "convert " + fileBMP + " " + convertFile;
 	system(convertCmd.c_str());
 }
@@ -337,7 +353,7 @@ void PixelHistoPicGen::convertBmp  (const std::string& fileBMP, const std::strin
 //   //string mthn = "[PixelHistoPicGen::drawDetectorToImg()]\t";
 //   resetFPixGood(disc);
 // 	drawPanelToImg(disc/2,disc%2,DET_DISCL_X,DET_DISCL_Y, isClicked);
-	
+
 //   //drawPanelToImg(disc,0,DET_DISCR_X,DET_DISCR_Y);	//4 Plaquette Panel
 // 	//drawPanelToImg(disc,1,DET_DISCL_X,DET_DISCL_Y);	//3 Plaquette Panel
 
@@ -346,42 +362,42 @@ void PixelHistoPicGen::convertBmp  (const std::string& fileBMP, const std::strin
 // ////////////////////////////////////////////////////////////////////////
 // //{x,y} is the center coord
 // void PixelHistoPicGen::drawPanelToImg(int disc, int panel, int x, int y, bool isClicked){
-     
-//   float up[2] = {0.0f,-1.0f}; 
- 
+
+//   float up[2] = {0.0f,-1.0f};
+
 //   float rad_delta = PI/24.0f; //start 7.5deg offset from center
 //   float deg = 7.5;
 
 //   transform(up[0], up[1], cos(rad_delta), -sin(rad_delta), sin(rad_delta), cos(rad_delta));  //transform up vector
-  
+
 //   rad_delta = PI/12.0f;
-//   float deg_delta = 15.0f;  
+//   float deg_delta = 15.0f;
 //   int radius = DET_DISC_RADIUS;
 //   float px,py;
 
 // 	int halfDisc,blade;
 // 	halfDisc = 0;
-	
+
 // 	int clicki = 0;
 // 	int roci = 0;
-	
+
 //   for(int i=0;i<24;++i){
-	
+
 // 		if(i >= 12){
 // 			if(!halfDisc){
 // 				halfDisc = 1;
 // 			}
-// 			blade = 11 - (i-12);								
+// 			blade = 11 - (i-12);
 // 		}
 // 		else{
 // 			blade = i;
 // 		}
-		
+
 //     px = x + up[0]*radius;
 //     py = y + up[1]*radius;
 
 //     drawBladeToImg(disc,panel,halfDisc,blade,(int)px,(int)py,deg,roci,clicki,isClicked);
-    
+
 //     deg += deg_delta;
 //     transform(up[0], up[1], cos(rad_delta), -sin(rad_delta), sin(rad_delta), cos(rad_delta));  //transform up vector
 //   }
@@ -393,11 +409,11 @@ void PixelHistoPicGen::convertBmp  (const std::string& fileBMP, const std::strin
 // void PixelHistoPicGen::drawBladeToImg(int disc,int panel,int halfDisc,int blade,
 // 														 int x,int y,float deg,int &roci,int &clicki,bool isClicked){
 //   string mthn = "[PixelHistoPicGen::drawBladeToImg()]\t";
-//   float up[2] = {0.0f,1.0f}; 
+//   float up[2] = {0.0f,1.0f};
 //   float rad = deg*PI/180.0f;
 //   transform(up[0], up[1], cos(rad), -sin(rad), sin(rad), cos(rad));  //transform up vector
 //   float rt[2] = {up[1],-up[0]}; //get rt from up vector
-  
+
 //   int dimensions[] = {5,2,4,2,3,2,0,0};
 //   if(panel==0){
 //     dimensions[1] = 1;
@@ -409,12 +425,12 @@ void PixelHistoPicGen::convertBmp  (const std::string& fileBMP, const std::strin
 //   int sz = DET_ROC_SIZE;
 //   int ROC_off = DET_ROC_OFFSET;
 //   int plaq_off = DET_PLAQ_OFFSET;
-  
+
 //   float rx = x - rt[0]*(2.5f*sz+2.0f*ROC_off); //center {x,y}
 //   float ry = y - rt[1]*(2.5f*sz+2.0f*ROC_off);
 
 // 	int rd,gn,bl;
-	
+
 // 	int roc = panel ? 23:20; //roc numbering is 0 in bottom left and then snakes rows
 //   int tmproc;
 // 	for(int layer=0;layer<4;++layer){
@@ -424,14 +440,14 @@ void PixelHistoPicGen::convertBmp  (const std::string& fileBMP, const std::strin
 // 		tmproc = roc;
 //     for(int j=0;j<dimensions[layer*2+1];++j){
 //       tmpx = rx;
-//       tmpy = ry;	
-			
+//       tmpy = ry;
+
 // 			if(dimensions[layer*2+1] == 1){
 // 				roc -= dimensions[layer*2]-1;
 // 			}
-				
+
 //       for(int i=0;i<dimensions[layer*2];++i){
-			
+
 // 				rd = fpix_[disc][panel][halfDisc][blade][roc][0];
 //   			gn = fpix_[disc][panel][halfDisc][blade][roc][1];
 //   			bl = fpix_[disc][panel][halfDisc][blade][roc][2];
@@ -445,10 +461,10 @@ void PixelHistoPicGen::convertBmp  (const std::string& fileBMP, const std::strin
 // 						else{
 // //							cout << mthn << "All-" << rd << ":" << gn << ":" << bl << endl;
 // 							fpixGood_[disc*2+panel] = -2;
-// 						}					
+// 						}
 // 					}
 // 				}
-	
+
 // 				if(isClicked && clickMask_ != 0 && clickMask_[clicki] == roci){
 // 					rd -= CLICK_MASK_R;
 // 					gn -= CLICK_MASK_G;
@@ -459,10 +475,10 @@ void PixelHistoPicGen::convertBmp  (const std::string& fileBMP, const std::strin
 // 					++clicki;
 // 				}
 // 				++roci;
-					
+
 // 				drawFillRectAng((int)rx,(int)ry,sz,sz,
 // 					rd,gn,bl,deg);
-					
+
 // 				if(i+1 < dimensions[layer*2]){
 // 					if(dimensions[layer*2+1] == 1 || j == 1){
 // 						++roc;
@@ -471,69 +487,78 @@ void PixelHistoPicGen::convertBmp  (const std::string& fileBMP, const std::strin
 // 						--roc;
 // 					}
 // 				}
-				
+
 // 				rx += rt[0]*(sz+ROC_off);
 // 				ry += rt[1]*(sz+ROC_off);
 //       }
-			
+
 // 			if(dimensions[layer*2+1] == 2){
 // 				roc -= dimensions[layer*2];
 // 			}
-			
+
 //       rx = tmpx + up[0]*(sz+ROC_off);
 //       ry = tmpy + up[1]*(sz+ROC_off);
 //     }
 // 		roc = tmproc - dimensions[layer*2+1]*dimensions[layer*2];
-  
+
 //     rx = tmprx + up[0]*(dimensions[layer*2+1]*(sz+ROC_off)+plaq_off) + rt[0]*0.5f*(sz+ROC_off);
 //     ry = tmpry + up[1]*(dimensions[layer*2+1]*(sz+ROC_off)+plaq_off) + rt[1]*0.5f*(sz+ROC_off);
 //   }
 // }
 
 ////////////////////////////////////////////////////////////////////////
-void PixelHistoPicGen::drawFillRectAng(int x,int y,int w,int h,
-										  int r, int g, int b, float deg){
-  
-  float rad = deg*PI/180.0f;
-  drawFillRect(x,y,w,h,r,g,b, cos(rad), -sin(rad), sin(rad), cos(rad)); 
-
+void PixelHistoPicGen::drawFillRectAng(
+    int x, int y, int w, int h, int r, int g, int b, float deg)
+{
+	float rad = deg * PI / 180.0f;
+	drawFillRect(x, y, w, h, r, g, b, cos(rad), -sin(rad), sin(rad), cos(rad));
 }
 
 ////////////////////////////////////////////////////////////////////////
 //draws rect to img buffer. {x,y} is lower left corner. d is degrees of rotation around z-axis.
-void PixelHistoPicGen::drawFillRect(int x,int y,int w,int h, 
-										  int r, int g, int b, float m1, float m2, float m3, float m4){
-  
-  float up[2] = {0.0f,1.0f};  
+void PixelHistoPicGen::drawFillRect(int   x,
+                                    int   y,
+                                    int   w,
+                                    int   h,
+                                    int   r,
+                                    int   g,
+                                    int   b,
+                                    float m1,
+                                    float m2,
+                                    float m3,
+                                    float m4)
+{
+	float up[2] = {0.0f, 1.0f};
 
-  transform(up[0], up[1], m1, m2, m3, m4);  //transform up vector
+	transform(up[0], up[1], m1, m2, m3, m4);  //transform up vector
 
-  float rt[2] = {up[1],-up[0]}; //get rt from up vector
-  
-  
-  float px = (float)x;
-  float py = (float)y; 
-  float tpx,tpy;
-  
-  for(int i=0;i<w*2;++i){
-    tpx = px;
-    tpy = py;
-    for(float j=0;j<h*2;++j){
-      setImgPixel((int)px,(int)py,r,g,b);     
-      px += up[0]/2.0f;
-      py += up[1]/2.0f;
-    }
-    px = tpx + rt[0]/2.0f;
-    py = tpy + rt[1]/2.0f;
-  }
+	float rt[2] = {up[1], -up[0]};  //get rt from up vector
 
+	float px = (float)x;
+	float py = (float)y;
+	float tpx, tpy;
+
+	for(int i = 0; i < w * 2; ++i)
+	{
+		tpx = px;
+		tpy = py;
+		for(float j = 0; j < h * 2; ++j)
+		{
+			setImgPixel((int)px, (int)py, r, g, b);
+			px += up[0] / 2.0f;
+			py += up[1] / 2.0f;
+		}
+		px = tpx + rt[0] / 2.0f;
+		py = tpy + rt[1] / 2.0f;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////
-void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
-  img_[x][y][0]=r;
-  img_[x][y][1]=g;
-  img_[x][y][2]=b;
+void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b)
+{
+	img_[x][y][0] = r;
+	img_[x][y][1] = g;
+	img_[x][y][2] = b;
 }
 
 // ////////////////////////////////////////////////////////////////////////
@@ -555,10 +580,10 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 		int halfDisc, int blade, int roc){
 
 // 	//FPix B(p,m)(I,O) D(1-3) BLD(1-12) PNL(1,2) RNG(1-(3,4)) ROC(0-(1,4,5,7,9))
-	
+
 // 	string stdName = "FPix_B";
 // 	char intString[3];
-	
+
 // 	stdName += disc < 2 			? "m":"p";									 //minus or plus
 // 	stdName += halfDisc == 0  ? "I":"O";									 //inner or outter
 // 	stdName += "_D";
@@ -578,22 +603,20 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 															):(
 // 																roc < 6 ? 1 :
 // 																roc < 14? 2 :	3
-// 															));	
+// 															));
 // 	stdName += intString;																	 //plaquette 1-3,4
 // 	stdName += "_ROC";
 // 	sprintf(intString,"%d",panel == 0 		? (
-// 																roc < 2 ? roc 	: 
+// 																roc < 2 ? roc 	:
 // 																roc < 8 ? roc-2 :
 // 																roc < 16? roc-8	: roc-16
 // 															):(
-// 																roc < 6 ? roc 	: 
-// 																roc < 14? roc-6 :	roc-14														
+// 																roc < 6 ? roc 	:
+// 																roc < 14? roc-6 :	roc-14
 // 															));
 // 	stdName += intString;												  					//roc 0-1,4,5,7,9
-	
-	
-	
-// 	return stdName;	
+
+// 	return stdName;
 // }
 
 // ////////////////////////////////////////////////////////////////////////
@@ -601,21 +624,21 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 		int &halfDisc, int &blade, int &roc){
 
 // 	string mthn = "[PixelHistoViewer::getFPixIndices()]\t";
-	
+
 // 	//fpix_[disc][panel][halfDisc][blade][roc][rgb];
-	
+
 // 	if(stdName.length() < 30 || stdName.length() > 32){
 // 		cout << mthn << "Invalid Length." << endl;
 // 		disc = -1; //indicate error
 // 		return;
 // 	}
-	
+
 // 	char intString[3];
 // 		//disc -------------------------------------
 // 	sprintf(intString,"%c",stdName[10]);
-// 	int d = atoi(intString); 
+// 	int d = atoi(intString);
 // 	disc = stdName[6] == 'm' ? 2-d:d+1;
-	
+
 // 		//panel -------------------------------------
 // 	int pnlLoc = stdName.find("_PNL");
 // 	if(pnlLoc < 0){
@@ -627,9 +650,9 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	sprintf(intString,"%c",stdName[pnlLoc]);
 // 	panel = atoi(intString) - 1;
 
-// 		//halfDisc ------------------------------------- 
+// 		//halfDisc -------------------------------------
 // 	halfDisc = stdName[7] == 'I' ? 0:1;
-	
+
 // 		//blade -------------------------------------
 // 	int bldLoc = stdName.find("_BLD");
 // 	if(bldLoc < 0){
@@ -641,9 +664,9 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	sprintf(intString,"%c",stdName[bldLoc]);
 // 	if(stdName[bldLoc+1] != '_'){
 // 		sprintf(intString,"%s%c",intString,stdName[bldLoc+1]);
-// 	}	
+// 	}
 // 	blade = atoi(intString) - 1;
-	
+
 // 		//roc -------------------------------------
 // 	int rngLoc = stdName.find("_RNG");
 // 	if(rngLoc < 0){
@@ -653,8 +676,8 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	}
 // 	rngLoc += 4;
 // 	sprintf(intString,"%c",stdName[rngLoc]);
-// 	int ring = atoi(intString)-1; 
-	
+// 	int ring = atoi(intString)-1;
+
 // 	int rocLoc = stdName.find("_ROC");
 // 	if(rocLoc < 0){
 // 		cout << mthn << "Invalid ROC." << endl;
@@ -663,8 +686,8 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	}
 // 	rocLoc += 4;
 // 	sprintf(intString,"%c",stdName[rocLoc]);
-// 	int rocLabel = atoi(intString); 
-	
+// 	int rocLabel = atoi(intString);
+
 // 	if(panel == 0){ //4 ring panel
 // 		int rocsPerPlaq[] = {0,2,8,16};
 // 		roc = rocsPerPlaq[ring] + rocLabel;
@@ -680,21 +703,21 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // string PixelHistoPicGen::getBPixStandardName(int layer,int pm,int row,int col){
 // 	string mthn = "[PixelHistoViewer::getBPixStandardName()]\t";
 // 	//BPix B(p,m)(I,O) SEC(1-8) LYR(1-3) LDR(1H,2F-(N-1)F,NH) MOD(1-4) ROC(0-(7,15))
-	
+
 // 	string stdName = "BPix_B";
 // 	char intString[10];
-	
+
 // 	int lyrRows[] = {BPIX_LYR1_ROWS,BPIX_LYR2_ROWS,BPIX_LYR3_ROWS};
 // 	int endSectorRows[] = {3,3,5};
 // 	int otherSectorRows[] = {2,4,6};
-	
+
 // 	if(row >= lyrRows[layer] || col >= BPIX_LYR_COLS){
 // 		cout << mthn << "Invalid Row and Col: " << row << " " << col << endl;
-// 		return "";	
+// 		return "";
 // 	}
-	
+
 // 	stdName += pm == 0 ? "m":"p"; 													//minus or plus
-	
+
 // 	int moduloCmp = 0;
 
 // 	if(pm == 0){
@@ -708,7 +731,7 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 		inOut = 'I';
 // 	}
 // 	else{
-// 		inOut = 'O';	
+// 		inOut = 'O';
 // 		row = lyrRows[layer] - 1 - row;
 // 	}
 // 	sprintf(intString,"%c",inOut);
@@ -716,14 +739,14 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 																													//find sector
 // 	int sector;
 // 	if(row < endSectorRows[layer]){ //first sector
-// 		sector = 1; 
+// 		sector = 1;
 // 	}
 // 	else{
 // 		row -= endSectorRows[layer];
 // 		sector = 2 + row/otherSectorRows[layer];
 // 		if(sector > 8)
 // 			sector = 8;
-			
+
 // 		if(layer == 2 && sector >= 4){
 // 			row -= otherSectorRows[layer]*2;
 // 			if(row < 8){ //in sector 4 or 5
@@ -732,23 +755,23 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 			}
 // 			else{
 // 				sector = 6 + (row-8)/otherSectorRows[layer];
-// 				row = (row-8)%otherSectorRows[layer];			
+// 				row = (row-8)%otherSectorRows[layer];
 // 			}
 // 		}
 // 		else{
-// 			row -= otherSectorRows[layer]*(sector-2);		
+// 			row -= otherSectorRows[layer]*(sector-2);
 // 		}
 // 	}
 // 	sprintf(intString,"_SEC%d",sector);
-// 	stdName += intString;		
-	
+// 	stdName += intString;
+
 // 	sprintf(intString,"_LYR%d",layer+1); 												//layer
-// 	stdName += intString;		
-	
+// 	stdName += intString;
+
 // 	//row now is the row withing the sector
 
 // 	int doubleRow = row/2;
-	
+
 // 																														//find ladder
 // 	int ladder;
 // 	char halfFull;
@@ -759,7 +782,7 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 		}
 // 		else{
 // 			halfFull = 'F';
-// 			ladder = 2 + (row-1)/2;		
+// 			ladder = 2 + (row-1)/2;
 // 		}
 // 	}
 // 	else if(layer == 2 && sector >= 4){
@@ -781,26 +804,26 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	else if(sector == 8){
 
 // 		ladder = endSectorRows[layer]/2 + 1 + (lyrRows[layer]/2 - endSectorRows[layer])/2 + doubleRow;
-	
+
 // 		if(row == endSectorRows[layer] - 1){
 // 			halfFull = 'H';
 // 		}
 // 		else{
 // 			halfFull = 'F';
 // 		}
-// 	}	
+// 	}
 // 	else{
 // 		halfFull = 'F';
 // 		ladder = endSectorRows[layer]/2 + 2 + (sector-2)*otherSectorRows[layer]/2 + doubleRow;
 // 	}
 // 	sprintf(intString,"_LDR%d%c",ladder,halfFull);
-// 	stdName += intString;		
-	
+// 	stdName += intString;
+
 // 																																//find module
 // 	int module = col/8 + 1;
 // 	sprintf(intString,"_MOD%d",module);
-// 	stdName += intString;		
-		
+// 	stdName += intString;
+
 // 																																//find ROC
 // 	int roc;
 // 	if( (inOut == 'I' && sector == 1 && row != 0 && row%2 == moduloCmp) ||
@@ -818,32 +841,31 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	else{
 // 		roc = 7 - (col%8);
 // 	}
-	
+
 // 	sprintf(intString,"_ROC%d",roc);
-// 	stdName += intString;		
-	
+// 	stdName += intString;
+
 // 	return stdName;
 // }
-	
+
 // ////////////////////////////////////////////////////////////////////////
 // void PixelHistoPicGen::getBPixIndices(string stdName,int &layer,int &pm,int &row,int &col){
 // 	string mthn = "[PixelHistoViewer::getBPixIndices()]\t";
-	
+
 // 	int lyrRows[] = {BPIX_LYR1_ROWS,BPIX_LYR2_ROWS,BPIX_LYR3_ROWS};
 // 	int lastLadder[] = {10,16,22};
-	
-	
-// 	//bpix_[layer]   [p/m] [rows]  				 [cols] 				 [rgb]; 
+
+// 	//bpix_[layer]   [p/m] [rows]  				 [cols] 				 [rgb];
 // 	//BPix B(p,m)(I,O) SEC(1-8) LYR(1-3) LDR(1H,2F-(N-1)F,NH) MOD(1-4) ROC(0-(7,15))
-	
+
 // 	if(stdName.length() < 34 || stdName.length() > 37){
 // 		cout << mthn << "Invalid Length: " <<  stdName.length() << endl;
 // 		layer = -1; //indicate error
 // 		return;
 // 	}
-	
+
 // 	char intString[3];
-	
+
 // 		//layer -------------------------------------
 // 	int lyrLoc = stdName.find("_LYR");
 // 	if(lyrLoc < 0){
@@ -854,10 +876,10 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	lyrLoc += 4;
 // 	sprintf(intString,"%c",stdName[lyrLoc]);
 // 	layer = atoi(intString) - 1;
-	
+
 // 		//pm -------------------------------------
 // 	pm = stdName[6] == 'm' ? 0:1;
-	
+
 // 		//GET PARAMETERS FOR ROW AND COL -------------------------------------
 // 	char inOut = stdName[7];								//get inout
 // 	int sector;
@@ -870,7 +892,7 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	secLoc += 4;
 // 	sprintf(intString,"%c",stdName[secLoc]);
 // 	sector = atoi(intString); 							//get sector
-	
+
 // 	int ladder;
 // 	int ldrLoc = stdName.find("_LDR");
 // 	if(ldrLoc < 0){
@@ -883,7 +905,7 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	if(stdName[ldrLoc+1] != 'H' && stdName[ldrLoc+1] != 'F'){
 // 		sprintf(intString,"%s%c",intString,stdName[ldrLoc+1]);
 // 		++ldrLoc;
-// 	}	
+// 	}
 // 	ladder = atoi(intString); 							//get ladder
 // 	int module;
 // 	int modLoc = stdName.find("_MOD");
@@ -906,9 +928,9 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	sprintf(intString,"%c",stdName[rocLoc]);
 // 	if((unsigned int)rocLoc+1 < stdName.length() && stdName[rocLoc+1] != '\0'){
 // 		sprintf(intString,"%s%c",intString,stdName[rocLoc+1]);
-// 	}	
+// 	}
 // 	roc = atoi(intString); 									//get roc
-	
+
 // 		//row -------------------------------------
 // 	if(inOut == 'I'){
 // 		if(ladder == 1){
@@ -928,27 +950,27 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 				++row;
 // 		}
 // 	}
-	
+
 // 	if(pm == 0 && ladder != 1 && ladder != lastLadder[layer] && roc < 8 ){
-// 		++row;	
+// 		++row;
 // 	}
 // 	else if(pm == 1 && ladder != 1 && ladder != lastLadder[layer] && roc >= 8 ){
-// 		++row;	
-// 	}	
-	
+// 		++row;
+// 	}
+
 // 		//col -------------------------------------
 // 	col = pm == 0 ? (4-module)*8 : (module-1)*8;
 // 	if(pm == 0){
 // 		if(roc < 8)
 // 			col += roc;
 // 		else
-// 			col += 15 - roc;	
+// 			col += 15 - roc;
 // 	}
 // 	else{
 // 		if(roc < 8)
 // 			col += 7 - roc;
 // 		else
-// 			col += roc - 8;	
+// 			col += roc - 8;
 // 	}
 // }
 
@@ -966,7 +988,7 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 		getBPixIndices(stdName,a,b,c,d);
 // 		bpix_(a,b,c,d,0) = rd;
 // 		bpix_(a,b,c,d,1) = gn;
-// 		bpix_(a,b,c,d,2) = bl;	
+// 		bpix_(a,b,c,d,2) = bl;
 // 	}
 // 	else
 // 		cout << "PixelHistoPicGen::setRocColor()\tFailed." << endl;
@@ -977,7 +999,7 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	if(isGood)
 // 		setRocColor(stdName,COLOR_GOOD_R,COLOR_GOOD_G,COLOR_GOOD_B);
 // 	else
-// 		setRocColor(stdName,COLOR_BAD_R,COLOR_BAD_G,COLOR_BAD_B);	
+// 		setRocColor(stdName,COLOR_BAD_R,COLOR_BAD_G,COLOR_BAD_B);
 // }
 
 // ////////////////////////////////////////////////////////////////////////
@@ -991,7 +1013,7 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 					bpix_(l,pm,r,c,0) = COLOR_INIT_R;
 // 					bpix_(l,pm,r,c,1) = COLOR_INIT_G;
 // 					bpix_(l,pm,r,c,2) = COLOR_INIT_B;
-// 				}	
+// 				}
 // 	}
 // }
 
@@ -1002,7 +1024,7 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 //   resetBPixGood(layerHalf);
 // 	int layer = layerHalf/2;
 // 	int rows = layer==0?BPIX_LYR1_ROWS:layer==1?BPIX_LYR2_ROWS:BPIX_LYR3_ROWS;
-	
+
 // 	int pm,r,c,x,y,svx,svy;
 // 	x = BPIX_LYRM_XOFF;
 // 	y = BPIX_LYRM_YOFF;
@@ -1010,17 +1032,17 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	int roci = 0;
 // 	int clicki = 0;
 // 	int rd,gn,bl;
-// 	for(pm=layerHalf%2;pm<layerHalf%2+1;++pm){ //only do one half of layer 
+// 	for(pm=layerHalf%2;pm<layerHalf%2+1;++pm){ //only do one half of layer
 // 		svy = y;
 // 		for(r=0;r<BPIX_LYR3_ROWS;++r){
 // 			svx = x;
 // 			if(r<rows){//in layer
 // 				for(c=0;c<BPIX_LYR_COLS;++c){
-				
+
 // 					rd = bpix_(layer,pm,r,c,0);
 //   				gn = bpix_(layer,pm,r,c,1);
 //   				bl = bpix_(layer,pm,r,c,2);
-					
+
 // 					if( rd!=COLOR_INIT_R || gn!=COLOR_INIT_G || bl!=COLOR_INIT_B){
 // 						bpixOn_[layer*2+pm] = 1;
 // 						if( rd!=COLOR_GOOD_R || gn!=COLOR_GOOD_G || bl!=COLOR_GOOD_B){
@@ -1031,7 +1053,7 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 							else{
 // //								cout << mthn << "All-" << rd << ":" << gn << ":" << bl << endl;
 // 								bpixGood_[layer*2+pm] = -2;
-// 							}					
+// 							}
 // 						}
 // 					}
 // 					if(isClicked && clickMask_ != 0 && clickMask_[clicki] == roci){
@@ -1040,18 +1062,18 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 						bl -= CLICK_MASK_B;
 // 						rd = rd<0?0:rd;
 // 						gn = gn<0?0:gn;
-// 						bl = bl<0?0:bl;				
-// 						++clicki;		
+// 						bl = bl<0?0:bl;
+// 						++clicki;
 // 					}
-					
+
 // 					drawBPixRoc(x,y,rd,gn,bl);
-				
+
 // 					x+=BPIX_ROC_WIDTH+BPIX_COL_OFFSET;
 // 					++roci;
 // 				}
 // 			}
 // 			else{//out of layer... possibly use to erase img buffer artifacts
-	
+
 // 			}
 // 			x = svx;
 // 			y+=BPIX_ROC_HEIGHT+BPIX_ROW_OFFSET;
@@ -1061,7 +1083,6 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 	}
 
 // }
-
 
 // ////////////////////////////////////////////////////////////////////////
 // void PixelHistoPicGen::drawBPixRoc(int x,int y,int r,int g,int b){
@@ -1074,101 +1095,98 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b){
 // 		}
 // }
 
+void recurseForBg(unsigned char*** d, int r, int c, int rm, int cm)
+{
+	if(r == rm || c == cm || r < 0 || c < 0)
+		return;
 
-void recurseForBg(unsigned char ***d,int r,int c,int rm, int cm){
-	if(r == rm || c == cm || r<0 || c<0)
+	if(d[r][c][0] == 255 && d[r][c][1] == 0 && d[r][c][2] == 0)  //already found
 		return;
-		
-	if(d[r][c][0] == 255 && d[r][c][1] == 0 && d[r][c][2] == 0) //already found
-		return;
-		
-	if(d[r][c][0] > 100){ //white so mark & check for neighbors
+
+	if(d[r][c][0] > 100)
+	{  //white so mark & check for neighbors
 		d[r][c][0] = 255;
 		d[r][c][1] = 0;
 		d[r][c][2] = 0;
-		recurseForBg(d,r+1,c,rm,cm); //right
-		recurseForBg(d,r-1,c,rm,cm); //left
-		recurseForBg(d,r,c-1,rm,cm); //up
-		recurseForBg(d,r,c+1,rm,cm); //dn
+		recurseForBg(d, r + 1, c, rm, cm);  //right
+		recurseForBg(d, r - 1, c, rm, cm);  //left
+		recurseForBg(d, r, c - 1, rm, cm);  //up
+		recurseForBg(d, r, c + 1, rm, cm);  //dn
 	}
-} 
+}
 
 #include <sys/stat.h>  // for mkdir
 void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 {
 	std::string tmpPath = filepath + "generated/tmp.bmp";
-	int offSetH;
-	
+	int         offSetH;
+
 	if(firstTurtle)
-	{ //create first turtle
+	{  //create first turtle
 		firstTurtle = false;
 
 		// attempt to make directory structure (just in case)
 		mkdir((filepath + "generated").c_str(), 0755);
-	 
+
 		readBmpToReadImg(filepath + "turtle.bmp");
-	
+
 		if(readImgW_ == 0)
 			return;
-	
-		offSetH = (TUR_IMG_HEIGHT - readImgH_)/2;
-		
-		clearTurtleBuffer(255,255,255,255);
-		
-		recurseForBg(readImg_,0,0,readImgW_,readImgH_);
-		recurseForBg(readImg_,150,readImgH_-1,readImgW_,readImgH_);
-	
+
+		offSetH = (TUR_IMG_HEIGHT - readImgH_) / 2;
+
+		clearTurtleBuffer(255, 255, 255, 255);
+
+		recurseForBg(readImg_, 0, 0, readImgW_, readImgH_);
+		recurseForBg(readImg_, 150, readImgH_ - 1, readImgW_, readImgH_);
+
 		// std::cout << "readImgW_ " << readImgW_ << std::endl;
 		// std::cout << "readImgH_ " << readImgH_ << std::endl;
-		for(int i=0;i<readImgW_;++i)
-			for(int j=0;j<readImgH_;++j)
+		for(int i = 0; i < readImgW_; ++i)
+			for(int j = 0; j < readImgH_; ++j)
 			{
-				if( readImg_[i][j][0] < 60 && 
-						readImg_[i][j][1] > 130)
+				if(readImg_[i][j][0] < 60 && readImg_[i][j][1] > 130)
 				{
-					turtleImg_[i][offSetH+j][0] = 0;
-					turtleImg_[i][offSetH+j][1] = 0;
-					turtleImg_[i][offSetH+j][2] = 255;
-//					cout << (int)readImg_[i][j][0] << " " << (int)readImg_[i][j][1] << " " <<	(int)readImg_[i][j][2] <<endl;
-  				}
+					turtleImg_[i][offSetH + j][0] = 0;
+					turtleImg_[i][offSetH + j][1] = 0;
+					turtleImg_[i][offSetH + j][2] = 255;
+					//					cout << (int)readImg_[i][j][0] << " " << (int)readImg_[i][j][1] << " " <<	(int)readImg_[i][j][2] <<endl;
+				}
 				else
-					for(int k=0;k<3;++k)
-						turtleImg_[i][offSetH+j][k] = readImg_[i][j][k];
-	
-				
-			 	if(readImg_[i][j][0] == 255 &&
-  					readImg_[i][j][1] == 0 &&
-  					readImg_[i][j][2] == 0)
-  				turtleImg_[i][offSetH+j][3] = 0; //invisible
-  			else
-  				turtleImg_[i][offSetH+j][3] = 255;
-			}
-	
-		writeTurtleToBmp((filepath + "generated/turtleBase.bmp").c_str());
+					for(int k = 0; k < 3; ++k)
+						turtleImg_[i][offSetH + j][k] = readImg_[i][j][k];
 
+				if(readImg_[i][j][0] == 255 && readImg_[i][j][1] == 0 &&
+				   readImg_[i][j][2] == 0)
+					turtleImg_[i][offSetH + j][3] = 0;  //invisible
+				else
+					turtleImg_[i][offSetH + j][3] = 255;
+			}
+
+		writeTurtleToBmp((filepath + "generated/turtleBase.bmp").c_str());
 	}
-	
+
 	//change color
 	readBmpToReadImg(filepath + "generated/turtleBase.bmp");
-	offSetH = (TUR_IMG_HEIGHT - readImgH_)/2;
-	
-	int rd = clock()%256;
-	int gn = (clock()/3)%256;
-	int bl = (clock()*3)%256;	
-	
-	for(int i=0;i<readImgW_;++i)
-		for(int j=0;j<readImgH_;++j)
-		 	if(readImg_[i][j][0] == 0 &&
-					readImg_[i][j][1] == 0 &&
-					readImg_[i][j][2] == 255){
-				turtleImg_[i][offSetH+j][0] = rd;
-				turtleImg_[i][offSetH+j][1] = gn;
-				turtleImg_[i][offSetH+j][2] = bl;
+	offSetH = (TUR_IMG_HEIGHT - readImgH_) / 2;
+
+	int rd = clock() % 256;
+	int gn = (clock() / 3) % 256;
+	int bl = (clock() * 3) % 256;
+
+	for(int i = 0; i < readImgW_; ++i)
+		for(int j = 0; j < readImgH_; ++j)
+			if(readImg_[i][j][0] == 0 && readImg_[i][j][1] == 0 &&
+			   readImg_[i][j][2] == 255)
+			{
+				turtleImg_[i][offSetH + j][0] = rd;
+				turtleImg_[i][offSetH + j][1] = gn;
+				turtleImg_[i][offSetH + j][2] = bl;
 			}
-			
+
 	writeTurtleToBmp(tmpPath.c_str());
 	convertBmp(tmpPath, filepath + "generated/turtle.png");
-} //end generateTurtle()
+}  //end generateTurtle()
 
 // ////////////////////////////////////////////////////////////////////////
 // //creates the png's for the different angled ROC highlights for js mouseover
@@ -1202,19 +1220,19 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 //   char convertPng[1000];
 //   for(int i=0;i<6;++i){ //draw all 6 angles
 //     clearAuxBuffer(0,0,0,255);
- 
+
 //     drawFillRectAngAux(AUX_IMG_WIDTH/2+1,
 //        AUX_IMG_HEIGHT/2+1,
 //        WEB_ROC_SIZE*2+8,
 //        WEB_ROC_SIZE*2+8,
 //        COLOR_HIGHLIGHT_R,COLOR_HIGHLIGHT_G,COLOR_HIGHLIGHT_B,
 //        7.5+i*15);
- 
+
 //     writeAuxToBmp(tmpPath);
-//     sprintf(convertPng,"images/generated/rocHighlight%d.png",i);		
+//     sprintf(convertPng,"images/generated/rocHighlight%d.png",i);
 //   	convertBmp(tmpPath,convertPng);
 //   }
-	
+
 // 		//create summary color keys
 // 	//for boolean
 // 	for(int x=0;x<IMG_WIDTH;++x)
@@ -1223,21 +1241,21 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 // 				x>IMG_WIDTH/2?COLOR_GOOD_R:COLOR_BAD_R,
 // 				x>IMG_WIDTH/2?COLOR_GOOD_G:COLOR_BAD_G,
 // 				x>IMG_WIDTH/2?COLOR_GOOD_B:COLOR_BAD_B);
-				
+
 // 	writeImgToBmp(tmpPath);
 // 	convertBmp(tmpPath,"images/generated/summaryColorKeyBoolean.png");
-	
+
 // 	//must be the same code as invoid PixelHistoViewer::colorRocsWithField(TTree *summary, string field) to match key
 // 	int numOfColors = 6;
 // 	int colors[6][3] = {
 // 		{255,0,255},
 // 		{0,0,255},
 // 		{0,255,255},
-// 		{0,255,0},	
+// 		{0,255,0},
 // 		{255,255,0},
 // 		{255,0,0},
 // 	};
-	
+
 // 	float v;
 // 	float sizeOfGrade = 1.0/(numOfColors-1);
 // 	int ci;
@@ -1246,7 +1264,7 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 // 	for(int x=0;x<IMG_WIDTH;++x)
 // 		for(int y=0;y<IMG_HEIGHT;++y)
 // 		{
-			
+
 // 			v = (float)x/IMG_WIDTH;
 // 			ci = (int)(v/sizeOfGrade);
 // 			v -= ci*sizeOfGrade;
@@ -1256,10 +1274,10 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 // 				(int)(colors[ci][1]*(1-v) + colors[ci+1][1]*v),
 // 				(int)(colors[ci][2]*(1-v) + colors[ci+1][2]*v));
 // 		}
-				
+
 // 	writeImgToBmp(tmpPath);
 // 	convertBmp(tmpPath,"images/generated/summaryColorKey.png");
-	
+
 // 		//for overflow
 // 	clearAuxBuffer(COLOR_HI_R,COLOR_HI_G,COLOR_HI_B,0);
 // 	writeAuxToBmp(tmpPath);
@@ -1273,12 +1291,11 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 // void PixelHistoPicGen::createRocAlphaMasks(void)
 // {
 
-
 // }
 
 // ////////////////////////////////////////////////////////////////////////
 // //initializes aux buffer to all invisible black pixels
-// void PixelHistoPicGen::clearAuxBuffer(int r,int g,int b, int a){ 
+// void PixelHistoPicGen::clearAuxBuffer(int r,int g,int b, int a){
 //   for(int x=0;x<AUX_IMG_WIDTH;++x)
 //     for(int y=0;y<AUX_IMG_HEIGHT;++y){
 //       auxImg_[x][y][0] = r;
@@ -1288,225 +1305,249 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 //     }
 // }
 
-
 ////////////////////////////////////////////////////////////////////////
 //initializes aux buffer to all invisible black pixels
-void PixelHistoPicGen::clearTurtleBuffer(int r,int g,int b, int a){ 
-  for(int x=0;x<TUR_IMG_WIDTH;++x)
-    for(int y=0;y<TUR_IMG_HEIGHT;++y){
-      turtleImg_[x][y][0] = r;
-      turtleImg_[x][y][1] = g;
-      turtleImg_[x][y][2] = b;
-      turtleImg_[x][y][3] = a;  //255 is invisible, 0 is opaque
-    }
+void PixelHistoPicGen::clearTurtleBuffer(int r, int g, int b, int a)
+{
+	for(int x = 0; x < TUR_IMG_WIDTH; ++x)
+		for(int y = 0; y < TUR_IMG_HEIGHT; ++y)
+		{
+			turtleImg_[x][y][0] = r;
+			turtleImg_[x][y][1] = g;
+			turtleImg_[x][y][2] = b;
+			turtleImg_[x][y][3] = a;  //255 is invisible, 0 is opaque
+		}
 }
 
-
 ////////////////////////////////////////////////////////////////////////
-void PixelHistoPicGen::writeTurtleToBmp(const char *fn){
-  string mthn = "[PicGen::writeTurtleToBmp()]\t";
-  
-// BMP Header				Stores general information about the BMP file.
-// Bitmap Information (DIB header)	Stores detailed information about the bitmap image.
-// Color Palette			Stores the definition of the colors being used for indexed color bitmaps.
-// Bitmap Data				Stores the actual image, pixel by pixel.
+void PixelHistoPicGen::writeTurtleToBmp(const char* fn)
+{
+	string mthn = "[PicGen::writeTurtleToBmp()]\t";
 
-  ofstream file(fn,ofstream::binary);
-  if(!file.is_open())
-    return;
+	// BMP Header				Stores general information about the BMP file.
+	// Bitmap Information (DIB header)	Stores detailed information about the bitmap image.
+	// Color Palette			Stores the definition of the colors being used for indexed color bitmaps.
+	// Bitmap Data				Stores the actual image, pixel by pixel.
 
+	ofstream file(fn, ofstream::binary);
+	if(!file.is_open())
+		return;
 
-  unsigned int bmpTemp;
-	
-  //BMP Header
-  file << char(0x42) << char(0x4d);					//"BM"
+	unsigned int bmpTemp;
+
+	//BMP Header
+	file << char(0x42) << char(0x4d);  //"BM"
 	bmpTemp = TUR_IMG_FILE_SIZE;
-  for(int i=0;i<4;++i)						        //file size in little-endian
-    file << (unsigned char)(((char *)(&bmpTemp))[i]);  
-  file << char(0x00)<< char(0x00)<< char(0x00)<< char(0x00);		//reserved bytes
-  unsigned int dibHeaderSize = TUR_IMG_HEADER_SIZE + 14;
-  for(int i=0;i<4;++i)							//DIB header size
-    file << (unsigned char)(((char *)(&dibHeaderSize))[i]);
-	bmpTemp = TUR_IMG_HEADER_SIZE;	
-  for(int i=0;i<4;++i)							//offset to data
-    file << (unsigned char)(((char *)(&bmpTemp))[i]); 
-	bmpTemp = TUR_IMG_WIDTH; 
-  for(int i=0;i<4;++i)							//img pixel width in little-endian
-    file << (unsigned char)(((char *)(&bmpTemp))[i]);
+	for(int i = 0; i < 4; ++i)  //file size in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //reserved bytes
+	unsigned int dibHeaderSize = TUR_IMG_HEADER_SIZE + 14;
+	for(int i = 0; i < 4; ++i)  //DIB header size
+		file << (unsigned char)(((char*)(&dibHeaderSize))[i]);
+	bmpTemp = TUR_IMG_HEADER_SIZE;
+	for(int i = 0; i < 4; ++i)  //offset to data
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	bmpTemp = TUR_IMG_WIDTH;
+	for(int i = 0; i < 4; ++i)  //img pixel width in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
 	bmpTemp = TUR_IMG_HEIGHT;
-  for(int i=0;i<4;++i)							//img pixel height in little-endian
-    file << (unsigned char)(((char *)(&bmpTemp))[i]);
-  file <<char(0x01)<<char(0x00)<<char(0x20)<<char(0x00);		//color planes and bits per pixel
-  file << char(0x03)<<char(0x00)<<char(0x00)<<char(0x00);		//compression method
+	for(int i = 0; i < 4; ++i)  //img pixel height in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	file << char(0x01) << char(0x00) << char(0x20)
+	     << char(0x00);  //color planes and bits per pixel
+	file << char(0x03) << char(0x00) << char(0x00) << char(0x00);  //compression method
 	bmpTemp = TUR_IMG_RAW_SIZE;
-  for(int i=0;i<4;++i)							//file raw data size in little-endian
-    file <<(unsigned char)(((char *)(&bmpTemp))[i]);    
-  file << char(0xD6)<<char(0x0D)<<char(0x00)<<char(0x00);		//horiz resol in pixels per meter
-  file << char(0xD6)<<char(0x0D)<<char(0x00)<<char(0x00);		//vert resol in pixels per meter
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//colors used
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//important colors
-  file << char(0x00)<<char(0x00)<<char(0xFF)<<char(0x00);		//red mask
-  file << char(0x00)<<char(0xFF)<<char(0x00)<<char(0x00);		//green mask
-  file << char(0xFF)<<char(0x00)<<char(0x00)<<char(0x00);		//blue mask
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0xFF);		//alpha mask
-  file << char(0x01)<<char(0x00)<<char(0x00)<<char(0x00);		//color space
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//red X
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//red Y
-  file << char(0x01)<<char(0x00)<<char(0x00)<<char(0x00);		//red Z
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//green X
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//green Y
-  file << char(0x01)<<char(0x00)<<char(0x00)<<char(0x00);		//green Z
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//blue X
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//blue Y
-  file << char(0x01)<<char(0x00)<<char(0x00)<<char(0x00);		//blue Z
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//gamma red
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//gamma green
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//gamma blue
-  
-  //BMP Data
+	for(int i = 0; i < 4; ++i)  //file raw data size in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	file << char(0xD6) << char(0x0D) << char(0x00)
+	     << char(0x00);  //horiz resol in pixels per meter
+	file << char(0xD6) << char(0x0D) << char(0x00)
+	     << char(0x00);  //vert resol in pixels per meter
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //colors used
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //important colors
+	file << char(0x00) << char(0x00) << char(0xFF) << char(0x00);  //red mask
+	file << char(0x00) << char(0xFF) << char(0x00) << char(0x00);  //green mask
+	file << char(0xFF) << char(0x00) << char(0x00) << char(0x00);  //blue mask
+	file << char(0x00) << char(0x00) << char(0x00) << char(0xFF);  //alpha mask
+	file << char(0x01) << char(0x00) << char(0x00) << char(0x00);  //color space
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //red X
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //red Y
+	file << char(0x01) << char(0x00) << char(0x00) << char(0x00);  //red Z
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //green X
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //green Y
+	file << char(0x01) << char(0x00) << char(0x00) << char(0x00);  //green Z
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //blue X
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //blue Y
+	file << char(0x01) << char(0x00) << char(0x00) << char(0x00);  //blue Z
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //gamma red
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //gamma green
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //gamma blue
 
-  int bytesToPad = (4-TUR_IMG_WIDTH*4%4)%4; //each row must start on a multiple of 4 byte offset
-  for(int y=TUR_IMG_HEIGHT-1;y>=0;--y){
-    for(int x=0;x<TUR_IMG_WIDTH;++x){
-      for(int i=2;i>=0;--i){
+	//BMP Data
+
+	int bytesToPad = (4 - TUR_IMG_WIDTH * 4 % 4) %
+	                 4;  //each row must start on a multiple of 4 byte offset
+	for(int y = TUR_IMG_HEIGHT - 1; y >= 0; --y)
+	{
+		for(int x = 0; x < TUR_IMG_WIDTH; ++x)
+		{
+			for(int i = 2; i >= 0; --i)
+			{
 				file << turtleImg_[x][y][i];
-      }
-      file << turtleImg_[x][y][3]; //alpha byte last
-    }
-    //pad bytes
-    for(int p=0;p<bytesToPad;++p)
-      file << char(0x00);
-  }
+			}
+			file << turtleImg_[x][y][3];  //alpha byte last
+		}
+		//pad bytes
+		for(int p = 0; p < bytesToPad; ++p)
+			file << char(0x00);
+	}
 
-  file.close();
-  
+	file.close();
 }
 ////////////////////////////////////////////////////////////////////////
-void PixelHistoPicGen::writeAuxToBmp(char *fn){
-  string mthn = "[PicGen::writeAuxToBmp()]\t";
-  
-// BMP Header				Stores general information about the BMP file.
-// Bitmap Information (DIB header)	Stores detailed information about the bitmap image.
-// Color Palette			Stores the definition of the colors being used for indexed color bitmaps.
-// Bitmap Data				Stores the actual image, pixel by pixel.
+void PixelHistoPicGen::writeAuxToBmp(char* fn)
+{
+	string mthn = "[PicGen::writeAuxToBmp()]\t";
 
-  ofstream file(fn,ofstream::binary);
-  if(!file.is_open())
-    return;
+	// BMP Header				Stores general information about the BMP file.
+	// Bitmap Information (DIB header)	Stores detailed information about the bitmap image.
+	// Color Palette			Stores the definition of the colors being used for indexed color bitmaps.
+	// Bitmap Data				Stores the actual image, pixel by pixel.
 
+	ofstream file(fn, ofstream::binary);
+	if(!file.is_open())
+		return;
 
-  unsigned int bmpTemp;
-	
-  //BMP Header
-  file << char(0x42) << char(0x4d);					//"BM"
+	unsigned int bmpTemp;
+
+	//BMP Header
+	file << char(0x42) << char(0x4d);  //"BM"
 	bmpTemp = AUX_IMG_FILE_SIZE;
-  for(int i=0;i<4;++i)						        //file size in little-endian
-    file << (unsigned char)(((char *)(&bmpTemp))[i]);  
-  file << char(0x00)<< char(0x00)<< char(0x00)<< char(0x00);		//reserved bytes
-  unsigned int dibHeaderSize = AUX_IMG_HEADER_SIZE + 14;
-  for(int i=0;i<4;++i)							//DIB header size
-    file << (unsigned char)(((char *)(&dibHeaderSize))[i]);
-	bmpTemp = AUX_IMG_HEADER_SIZE;	
-  for(int i=0;i<4;++i)							//offset to data
-    file << (unsigned char)(((char *)(&bmpTemp))[i]); 
-	bmpTemp = AUX_IMG_WIDTH; 
-  for(int i=0;i<4;++i)							//img pixel width in little-endian
-    file << (unsigned char)(((char *)(&bmpTemp))[i]);
+	for(int i = 0; i < 4; ++i)  //file size in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //reserved bytes
+	unsigned int dibHeaderSize = AUX_IMG_HEADER_SIZE + 14;
+	for(int i = 0; i < 4; ++i)  //DIB header size
+		file << (unsigned char)(((char*)(&dibHeaderSize))[i]);
+	bmpTemp = AUX_IMG_HEADER_SIZE;
+	for(int i = 0; i < 4; ++i)  //offset to data
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	bmpTemp = AUX_IMG_WIDTH;
+	for(int i = 0; i < 4; ++i)  //img pixel width in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
 	bmpTemp = AUX_IMG_HEIGHT;
-  for(int i=0;i<4;++i)							//img pixel height in little-endian
-    file << (unsigned char)(((char *)(&bmpTemp))[i]);
-  file <<char(0x01)<<char(0x00)<<char(0x20)<<char(0x00);		//color planes and bits per pixel
-  file << char(0x03)<<char(0x00)<<char(0x00)<<char(0x00);		//compression method
+	for(int i = 0; i < 4; ++i)  //img pixel height in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	file << char(0x01) << char(0x00) << char(0x20)
+	     << char(0x00);  //color planes and bits per pixel
+	file << char(0x03) << char(0x00) << char(0x00) << char(0x00);  //compression method
 	bmpTemp = AUX_IMG_RAW_SIZE;
-  for(int i=0;i<4;++i)							//file raw data size in little-endian
-    file <<(unsigned char)(((char *)(&bmpTemp))[i]);    
-  file << char(0xD6)<<char(0x0D)<<char(0x00)<<char(0x00);		//horiz resol in pixels per meter
-  file << char(0xD6)<<char(0x0D)<<char(0x00)<<char(0x00);		//vert resol in pixels per meter
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//colors used
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//important colors
-  file << char(0x00)<<char(0x00)<<char(0xFF)<<char(0x00);		//red mask
-  file << char(0x00)<<char(0xFF)<<char(0x00)<<char(0x00);		//green mask
-  file << char(0xFF)<<char(0x00)<<char(0x00)<<char(0x00);		//blue mask
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0xFF);		//alpha mask
-  file << char(0x01)<<char(0x00)<<char(0x00)<<char(0x00);		//color space
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//red X
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//red Y
-  file << char(0x01)<<char(0x00)<<char(0x00)<<char(0x00);		//red Z
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//green X
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//green Y
-  file << char(0x01)<<char(0x00)<<char(0x00)<<char(0x00);		//green Z
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//blue X
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//blue Y
-  file << char(0x01)<<char(0x00)<<char(0x00)<<char(0x00);		//blue Z
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//gamma red
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//gamma green
-  file << char(0x00)<<char(0x00)<<char(0x00)<<char(0x00);		//gamma blue
-  
-  //BMP Data
+	for(int i = 0; i < 4; ++i)  //file raw data size in little-endian
+		file << (unsigned char)(((char*)(&bmpTemp))[i]);
+	file << char(0xD6) << char(0x0D) << char(0x00)
+	     << char(0x00);  //horiz resol in pixels per meter
+	file << char(0xD6) << char(0x0D) << char(0x00)
+	     << char(0x00);  //vert resol in pixels per meter
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //colors used
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //important colors
+	file << char(0x00) << char(0x00) << char(0xFF) << char(0x00);  //red mask
+	file << char(0x00) << char(0xFF) << char(0x00) << char(0x00);  //green mask
+	file << char(0xFF) << char(0x00) << char(0x00) << char(0x00);  //blue mask
+	file << char(0x00) << char(0x00) << char(0x00) << char(0xFF);  //alpha mask
+	file << char(0x01) << char(0x00) << char(0x00) << char(0x00);  //color space
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //red X
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //red Y
+	file << char(0x01) << char(0x00) << char(0x00) << char(0x00);  //red Z
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //green X
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //green Y
+	file << char(0x01) << char(0x00) << char(0x00) << char(0x00);  //green Z
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //blue X
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //blue Y
+	file << char(0x01) << char(0x00) << char(0x00) << char(0x00);  //blue Z
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //gamma red
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //gamma green
+	file << char(0x00) << char(0x00) << char(0x00) << char(0x00);  //gamma blue
 
-  int bytesToPad = (4-AUX_IMG_WIDTH*4%4)%4; //each row must start on a multiple of 4 byte offset
-  for(int y=AUX_IMG_HEIGHT-1;y>=0;--y){
-    for(int x=0;x<AUX_IMG_WIDTH;++x){
-      for(int i=2;i>=0;--i){
+	//BMP Data
+
+	int bytesToPad = (4 - AUX_IMG_WIDTH * 4 % 4) %
+	                 4;  //each row must start on a multiple of 4 byte offset
+	for(int y = AUX_IMG_HEIGHT - 1; y >= 0; --y)
+	{
+		for(int x = 0; x < AUX_IMG_WIDTH; ++x)
+		{
+			for(int i = 2; i >= 0; --i)
+			{
 				file << auxImg_[x][y][i];
-      }
-      file << auxImg_[x][y][3]; //alpha byte last
-    }
-    //pad bytes
-    for(int p=0;p<bytesToPad;++p)
-      file << char(0x00);
-  }
+			}
+			file << auxImg_[x][y][3];  //alpha byte last
+		}
+		//pad bytes
+		for(int p = 0; p < bytesToPad; ++p)
+			file << char(0x00);
+	}
 
-  file.close();
-  
+	file.close();
 }
 
 ////////////////////////////////////////////////////////////////////////
 //DIFFERENT THAN drawFillRect... x,y is CENTER!!
 //draws rect to aux img buffer. {x,y} is center. m1-4 is rotation matrix around z-axis.
-void PixelHistoPicGen::drawFillRectAux(int x,int y,int w,int h, int r, int g, int b, float m1, float m2, float m3, float m4){
-  
-  float up[2] = {0.0f,1.0f};  
+void PixelHistoPicGen::drawFillRectAux(int   x,
+                                       int   y,
+                                       int   w,
+                                       int   h,
+                                       int   r,
+                                       int   g,
+                                       int   b,
+                                       float m1,
+                                       float m2,
+                                       float m3,
+                                       float m4)
+{
+	float up[2] = {0.0f, 1.0f};
 
-  transform(up[0], up[1], m1, m2, m3, m4);  //transform up vector
+	transform(up[0], up[1], m1, m2, m3, m4);  //transform up vector
 
-  float rt[2] = {up[1],-up[0]}; //get rt from up vector
-  
-  
-  float px = (float)x-up[0]*0.5*w-rt[0]*0.5*w; //subtract to get to bottom left corner
-  float py = (float)y-up[1]*0.5*h-rt[1]*0.5*h; 
-  float tpx,tpy;
-  
-  for(int i=0;i<w*2;++i){
-    tpx = px;
-    tpy = py;
-    for(float j=0;j<h*2;++j){
-      setAuxPixel((int)px,(int)py,r,g,b);     
-      px += up[0]/2.0f;
-      py += up[1]/2.0f;
-    }
-    px = tpx + rt[0]/2.0f;
-    py = tpy + rt[1]/2.0f;
-  }
+	float rt[2] = {up[1], -up[0]};  //get rt from up vector
 
+	float px = (float)x - up[0] * 0.5 * w -
+	           rt[0] * 0.5 * w;  //subtract to get to bottom left corner
+	float py = (float)y - up[1] * 0.5 * h - rt[1] * 0.5 * h;
+	float tpx, tpy;
+
+	for(int i = 0; i < w * 2; ++i)
+	{
+		tpx = px;
+		tpy = py;
+		for(float j = 0; j < h * 2; ++j)
+		{
+			setAuxPixel((int)px, (int)py, r, g, b);
+			px += up[0] / 2.0f;
+			py += up[1] / 2.0f;
+		}
+		px = tpx + rt[0] / 2.0f;
+		py = tpy + rt[1] / 2.0f;
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////
 //DIFFERENT THAN drawFillRect... x,y is CENTER!!
 //draws rect to aux img buffer. {x,y} is center. d is degrees of rotation around z-axis.
-void PixelHistoPicGen::drawFillRectAngAux(int x,int y,int w,int h, int r, int g, int b, float deg){
-  
-  float rad = deg*PI/180.0f;
-  drawFillRectAux(x,y,w,h,r,g,b, cos(rad), -sin(rad), sin(rad), cos(rad));
-
+void PixelHistoPicGen::drawFillRectAngAux(
+    int x, int y, int w, int h, int r, int g, int b, float deg)
+{
+	float rad = deg * PI / 180.0f;
+	drawFillRectAux(x, y, w, h, r, g, b, cos(rad), -sin(rad), sin(rad), cos(rad));
 }
 
 ////////////////////////////////////////////////////////////////////////
-void PixelHistoPicGen::setAuxPixel(int x, int y, int r, int g, int b){
-  auxImg_[x][y][0]=r;
-  auxImg_[x][y][1]=g;
-  auxImg_[x][y][2]=b;
-  auxImg_[x][y][3]=0;
+void PixelHistoPicGen::setAuxPixel(int x, int y, int r, int g, int b)
+{
+	auxImg_[x][y][0] = r;
+	auxImg_[x][y][1] = g;
+	auxImg_[x][y][2] = b;
+	auxImg_[x][y][3] = 0;
 }
 
 // ////////////////////////////////////////////////////////////////////////
@@ -1516,14 +1557,14 @@ void PixelHistoPicGen::setAuxPixel(int x, int y, int r, int g, int b){
 // 		delete[] clickMask_;
 // 		clickMask_ = 0;
 // 	}
-	
+
 // 	clickMask_ = new int[size+1];
 // 	clickMask_[size] = -1;
-	
+
 // 	char intString[20];
 // 	int c = 0;
 // 	int i = 0;
-	
+
 // 	for(i=0;i<size;++i){
 // 		sprintf(intString,"%c",maskString[c]);
 // 		++c;
@@ -1532,9 +1573,9 @@ void PixelHistoPicGen::setAuxPixel(int x, int y, int r, int g, int b){
 // 			++c;
 // 		}
 // 		++c; //skip comma
-// 		clickMask_[i] = atoi(intString);	
+// 		clickMask_[i] = atoi(intString);
 // 	}
-// }	
+// }
 
 // ////////////////////////////////////////////////////////////////////////
 // void PixelHistoPicGen::resetFPixGood(int disk){
@@ -1563,4 +1604,3 @@ void PixelHistoPicGen::setAuxPixel(int x, int y, int r, int g, int b){
 // 	}
 // 	return bpixGood_[halfLayer];
 // }
-

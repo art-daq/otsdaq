@@ -11,7 +11,9 @@ namespace ots
 {
 class ConfigurationTree;
 
-class TCPDataStreamerConsumer : public TCPublishServer, public DataConsumer, public Configurable
+class TCPDataStreamerConsumer : public TCPublishServer,
+                                public DataConsumer,
+                                public Configurable
 {
   public:
 	TCPDataStreamerConsumer(std::string              supervisorApplicationUID,

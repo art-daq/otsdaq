@@ -9,8 +9,5 @@ typedef ConfigurationInterface*(cbmakeFunc_t)();
 }
 
 #define DEFINE_OTS_CONFIGURATION_INTERFACE(klass) \
-	extern "C" ConfigurationInterface* make()     \
-	{                                             \
-		return new klass();                       \
-	}
+	extern "C" ConfigurationInterface* make() { return new klass(); }
 #endif /* _ots_TablePluginMacro_h_ */

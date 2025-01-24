@@ -10,20 +10,21 @@
 #include <iostream>
 using namespace ots;
 
-#define DESKTOP_ICONS_FILE std::string(__ENV__("SERVICE_DATA_PATH")) + "/OtsWizardData/iconList.dat"
+#define DESKTOP_ICONS_FILE \
+	std::string(__ENV__("SERVICE_DATA_PATH")) + "/OtsWizardData/iconList.dat"
 
 // DesktopIconTable Column names
 
-const std::string DesktopIconTable::COL_NAME                    = "IconName";
-const std::string DesktopIconTable::COL_STATUS                  = TableViewColumnInfo::COL_NAME_STATUS;
-const std::string DesktopIconTable::COL_CAPTION                 = "Caption";
+const std::string DesktopIconTable::COL_NAME    = "IconName";
+const std::string DesktopIconTable::COL_STATUS  = TableViewColumnInfo::COL_NAME_STATUS;
+const std::string DesktopIconTable::COL_CAPTION = "Caption";
 const std::string DesktopIconTable::COL_ALTERNATE_TEXT          = "AlternateText";
 const std::string DesktopIconTable::COL_FORCE_ONLY_ONE_INSTANCE = "ForceOnlyOneInstance";
-const std::string DesktopIconTable::COL_PERMISSIONS             = "RequiredPermissionLevel";
-const std::string DesktopIconTable::COL_IMAGE_URL               = "ImageURL";
-const std::string DesktopIconTable::COL_WINDOW_CONTENT_URL      = "WindowContentURL";
-const std::string DesktopIconTable::COL_APP_LINK                = "LinkToApplicationTable";
-const std::string DesktopIconTable::COL_APP_LINK_UID            = "LinkToApplicationUID";
+const std::string DesktopIconTable::COL_PERMISSIONS        = "RequiredPermissionLevel";
+const std::string DesktopIconTable::COL_IMAGE_URL          = "ImageURL";
+const std::string DesktopIconTable::COL_WINDOW_CONTENT_URL = "WindowContentURL";
+const std::string DesktopIconTable::COL_APP_LINK           = "LinkToApplicationTable";
+const std::string DesktopIconTable::COL_APP_LINK_UID       = "LinkToApplicationUID";
 
 const std::string DesktopIconTable::COL_PARAMETER_LINK     = "LinkToParameterTable";
 const std::string DesktopIconTable::COL_PARAMETER_LINK_GID = "LinkToParameterGroupID";
@@ -33,7 +34,8 @@ const std::string DesktopIconTable::COL_PARAMETER_GID   = "windowParameterGroupI
 const std::string DesktopIconTable::COL_PARAMETER_KEY   = "windowParameterKey";
 const std::string DesktopIconTable::COL_PARAMETER_VALUE = "windowParameterValue";
 
-const std::string DesktopIconTable::ICON_TABLE      = ConfigurationManager::DESKTOP_ICON_TABLE_NAME;
+const std::string DesktopIconTable::ICON_TABLE =
+    ConfigurationManager::DESKTOP_ICON_TABLE_NAME;
 const std::string DesktopIconTable::PARAMETER_TABLE = "DesktopWindowParameterTable";
 
 // #define COL_NAME "IconName"
@@ -78,8 +80,10 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 
 	auto childrenMap = configManager->__SELF_NODE__.getChildren();
 
-	ConfigurationTree       contextTableNode = configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
-	const XDAQContextTable* contextTable     = configManager->getTable<XDAQContextTable>(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
+	ConfigurationTree contextTableNode =
+	    configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
+	const XDAQContextTable* contextTable = configManager->getTable<XDAQContextTable>(
+	    ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
 
 	// find gateway host origin string, to avoid modifying icons with same host
 	std::string gatewayContextUID = contextTable->getContextOfGateway(configManager);
@@ -99,30 +103,38 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 		activeDesktopIcons_.push_back(DesktopIconTable::DesktopIcon());
 		icon = &(activeDesktopIcons_.back());
 
-		icon->recordUID_				 = child.first;
-		icon->caption_                   = child.second.getNode(COL_CAPTION).getValue<std::string>();
-		icon->alternateText_             = child.second.getNode(COL_ALTERNATE_TEXT).getValue<std::string>();
-		icon->enforceOneWindowInstance_  = child.second.getNode(COL_FORCE_ONLY_ONE_INSTANCE).getValue<bool>();
-		icon->permissionThresholdString_ = child.second.getNode(COL_PERMISSIONS).getValue<std::string>();
-		icon->imageURL_                  = child.second.getNode(COL_IMAGE_URL).getValue<std::string>();
-		icon->windowContentURL_          = child.second.getNode(COL_WINDOW_CONTENT_URL).getValue<std::string>();
-		icon->folderPath_                = child.second.getNode(COL_FOLDER_PATH).getValue<std::string>();
+		icon->recordUID_ = child.first;
+		icon->caption_   = child.second.getNode(COL_CAPTION).getValue<std::string>();
+		icon->alternateText_ =
+		    child.second.getNode(COL_ALTERNATE_TEXT).getValue<std::string>();
+		icon->enforceOneWindowInstance_ =
+		    child.second.getNode(COL_FORCE_ONLY_ONE_INSTANCE).getValue<bool>();
+		icon->permissionThresholdString_ =
+		    child.second.getNode(COL_PERMISSIONS).getValue<std::string>();
+		icon->imageURL_ = child.second.getNode(COL_IMAGE_URL).getValue<std::string>();
+		icon->windowContentURL_ =
+		    child.second.getNode(COL_WINDOW_CONTENT_URL).getValue<std::string>();
+		icon->folderPath_ = child.second.getNode(COL_FOLDER_PATH).getValue<std::string>();
 
 		if(icon->windowContentURL_.size() == 0)
 		{
-			__SS__ << "Illegal empty URL in Desktop Icon '" << child.first << "'" << __E__;
+			__SS__ << "Illegal empty URL in Desktop Icon '" << child.first << "'"
+			       << __E__;
 			__SS_THROW__;
 		}
 
 		if(icon->folderPath_ == TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
 			icon->folderPath_ = "";  // convert DEFAULT to empty string
 
-		if(icon->permissionThresholdString_ == TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
-			icon->permissionThresholdString_ = "1";  // convert DEFAULT to standard user allow
+		if(icon->permissionThresholdString_ ==
+		   TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
+			icon->permissionThresholdString_ =
+			    "1";  // convert DEFAULT to standard user allow
 
 		numeric = true;
 		for(i = 0; i < icon->permissionThresholdString_.size(); ++i)
-			if(!(icon->permissionThresholdString_[i] >= '0' && icon->permissionThresholdString_[i] <= '9'))
+			if(!(icon->permissionThresholdString_[i] >= '0' &&
+			     icon->permissionThresholdString_[i] <= '9'))
 			{
 				numeric = false;
 				break;
@@ -130,15 +142,20 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 		// for backwards compatibility, if permissions threshold is a single number
 		//	assume it is the threshold intended for the WebUsers::DEFAULT_USER_GROUP group
 		if(numeric)
-			icon->permissionThresholdString_ = WebUsers::DEFAULT_USER_GROUP + ":" + icon->permissionThresholdString_;
+			icon->permissionThresholdString_ =
+			    WebUsers::DEFAULT_USER_GROUP + ":" + icon->permissionThresholdString_;
 
 		// remove all commas from member strings because desktop icons are served to
 		// client in comma-separated string
-		icon->caption_          = removeCommas(icon->caption_, false /*andHexReplace*/, true /*andHTMLReplace*/);
-		icon->alternateText_    = removeCommas(icon->alternateText_, false /*andHexReplace*/, true /*andHTMLReplace*/);
-		icon->imageURL_         = removeCommas(icon->imageURL_, true /*andHexReplace*/);
-		icon->windowContentURL_ = removeCommas(icon->windowContentURL_, true /*andHexReplace*/);
-		icon->folderPath_       = removeCommas(icon->folderPath_, false /*andHexReplace*/, true /*andHTMLReplace*/);
+		icon->caption_ = removeCommas(
+		    icon->caption_, false /*andHexReplace*/, true /*andHTMLReplace*/);
+		icon->alternateText_ = removeCommas(
+		    icon->alternateText_, false /*andHexReplace*/, true /*andHTMLReplace*/);
+		icon->imageURL_ = removeCommas(icon->imageURL_, true /*andHexReplace*/);
+		icon->windowContentURL_ =
+		    removeCommas(icon->windowContentURL_, true /*andHexReplace*/);
+		icon->folderPath_ = removeCommas(
+		    icon->folderPath_, false /*andHexReplace*/, true /*andHTMLReplace*/);
 
 		// add application origin and URN/LID to windowContentURL_, if link is given
 		addedAppId                = false;
@@ -153,27 +170,38 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 				//	with app/supervisor)
 				try
 				{
-					std::string contextUID = contextTable->getContextOfApplication(configManager, appLink.getValueAsString());
+					std::string contextUID = contextTable->getContextOfApplication(
+					    configManager, appLink.getValueAsString());
 
 					// only prepend address if not same as gateway
 					if(contextUID != gatewayContextUID)
 					{
 						// __COUTV__(contextUID);
-						ConfigurationTree contextNode = contextTableNode.getNode(contextUID);
+						ConfigurationTree contextNode =
+						    contextTableNode.getNode(contextUID);
 
-						std::string  contextAddress = contextNode.getNode(XDAQContextTable::colContext_.colAddress_).getValue<std::string>();
-						unsigned int contextPort    = contextNode.getNode(XDAQContextTable::colContext_.colPort_).getValue<unsigned int>();
+						std::string contextAddress =
+						    contextNode.getNode(XDAQContextTable::colContext_.colAddress_)
+						        .getValue<std::string>();
+						unsigned int contextPort =
+						    contextNode.getNode(XDAQContextTable::colContext_.colPort_)
+						        .getValue<unsigned int>();
 
 						//__COUTV__(contextAddress);
-						icon->windowContentURL_ = contextAddress + ":" + std::to_string(contextPort) + icon->windowContentURL_;
+						icon->windowContentURL_ = contextAddress + ":" +
+						                          std::to_string(contextPort) +
+						                          icon->windowContentURL_;
 						//__COUTV__(icon->windowContentURL_);
-					
 					}
 				}
 				catch(const std::runtime_error& e)
 				{
-					__SS__ << "Error finding XDAQ Application origin which was linked to Desktop Icon '" << child.first << "': " << e.what() << __E__;
-					ss << "\n\nPlease fix by disabling the Icon, enabling the App or fixing the link in the Configurate Tree." << __E__;
+					__SS__ << "Error finding XDAQ Application origin which was linked to "
+					          "Desktop Icon '"
+					       << child.first << "': " << e.what() << __E__;
+					ss << "\n\nPlease fix by disabling the Icon, enabling the App or "
+					      "fixing the link in the Configurate Tree."
+					   << __E__;
 					__SS_THROW__;
 				}
 			}  // end app origin check
@@ -182,9 +210,10 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 			//	then assume need to add "?urn="
 			if(icon->windowContentURL_[icon->windowContentURL_.size() - 1] != '=')
 			{
-				if(icon->windowContentURL_.find('?') == std::string::npos) //if no ? already
+				if(icon->windowContentURL_.find('?') ==
+				   std::string::npos)  //if no ? already
 					icon->windowContentURL_ += "?urn=";
-				else 
+				else
 					icon->windowContentURL_ += "&urn=";
 			}
 
@@ -204,7 +233,9 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 			//	then assume need to add "?"
 			if(icon->windowContentURL_.find('?') == std::string::npos)
 				icon->windowContentURL_ += '?';
-			else if(addedAppId || icon->windowContentURL_[icon->windowContentURL_.size() - 1] != '?')  // if not first parameter, add &
+			else if(addedAppId ||
+			        icon->windowContentURL_[icon->windowContentURL_.size() - 1] !=
+			            '?')  // if not first parameter, add &
 				icon->windowContentURL_ += '&';
 
 			// now add each paramter separated by &
@@ -219,8 +250,13 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 					icon->windowContentURL_ += '&';
 				else
 					notFirst = true;
-				icon->windowContentURL_ += StringMacros::encodeURIComponent(param.second.getNode(COL_PARAMETER_KEY).getValue<std::string>()) + "=" +
-				                           StringMacros::encodeURIComponent(param.second.getNode(COL_PARAMETER_VALUE).getValue<std::string>());
+				icon->windowContentURL_ +=
+				    StringMacros::encodeURIComponent(
+				        param.second.getNode(COL_PARAMETER_KEY).getValue<std::string>()) +
+				    "=" +
+				    StringMacros::encodeURIComponent(
+				        param.second.getNode(COL_PARAMETER_VALUE)
+				            .getValue<std::string>());
 			}
 		}
 	}  // end main icon extraction loop
@@ -229,37 +265,49 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 
 //==============================================================================
 //Convert to remote URL assuming port forwarding to primary Gateway Port
-std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager, const std::string& localURL) const
+std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager,
+                                           const std::string&    localURL) const
 {
 	std::string retURL;
 	std::string contextAddress;
 
 	if(localURL.size() && localURL[0] == '/')
 	{
-		ConfigurationTree       contextTableNode = configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
-		const XDAQContextTable* contextTable     = configManager->getTable<XDAQContextTable>(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
+		ConfigurationTree contextTableNode =
+		    configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
+		const XDAQContextTable* contextTable = configManager->getTable<XDAQContextTable>(
+		    ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
 
 		std::string gatewayContextUID = contextTable->getContextOfGateway(configManager);
 		ConfigurationTree contextNode = contextTableNode.getNode(gatewayContextUID);
 
-		contextAddress = contextNode.getNode(XDAQContextTable::colContext_.colAddress_).getValue<std::string>();
-		unsigned int contextPort    = contextNode.getNode(XDAQContextTable::colContext_.colPort_).getValue<unsigned int>();
-		
+		contextAddress = contextNode.getNode(XDAQContextTable::colContext_.colAddress_)
+		                     .getValue<std::string>();
+		unsigned int contextPort =
+		    contextNode.getNode(XDAQContextTable::colContext_.colPort_)
+		        .getValue<unsigned int>();
+
 		try
 		{
-			if(__ENV__("OTS_REMOTE_ICONS_NO_PORT_FOWARDING")) //define this environment variable to not use localhost port forwarding to browser			
+			if(__ENV__(
+			       "OTS_REMOTE_ICONS_NO_PORT_FOWARDING"))  //define this environment variable to not use localhost port forwarding to browser
 				contextAddress += ":" + std::to_string(contextPort);
 			else
-				contextAddress = std::string("http://") + "localhost" + ":" + std::to_string(contextPort);
+				contextAddress = std::string("http://") + "localhost" + ":" +
+				                 std::to_string(contextPort);
 		}
 		catch(...)
 		{
-			__COUTT__ << "Ignoring missing environment variable OTS_REMOTE_ICONS_NO_PORT_FOWARDING, and assuming localhost port forwarding to web browser." <<  __E__;
-			contextAddress = std::string("http://") + "localhost" + ":" + std::to_string(contextPort);
+			__COUTT__ << "Ignoring missing environment variable "
+			             "OTS_REMOTE_ICONS_NO_PORT_FOWARDING, and assuming localhost "
+			             "port forwarding to web browser."
+			          << __E__;
+			contextAddress =
+			    std::string("http://") + "localhost" + ":" + std::to_string(contextPort);
 		}
-		retURL = contextAddress + localURL;		
+		retURL = contextAddress + localURL;
 	}
-	else //if no starting '/' assume URL is already complete
+	else  //if no starting '/' assume URL is already complete
 		retURL = localURL;
 
 	//now add get parameters for remoteGateway
@@ -269,14 +317,17 @@ std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager, 
 		retURL += '?';
 	else if(retURL[retURL.size() - 1] != '?')  // if not first parameter, add &
 		retURL += '&';
-	retURL += "remoteServerOrigin=" + StringMacros::encodeURIComponent(contextAddress) + 
-		"&remoteServerUrnLid=" + std::to_string(XDAQContextTable::XDAQApplication::GATEWAY_APP_ID);
+	retURL += "remoteServerOrigin=" + StringMacros::encodeURIComponent(contextAddress) +
+	          "&remoteServerUrnLid=" +
+	          std::to_string(XDAQContextTable::XDAQApplication::GATEWAY_APP_ID);
 
 	return retURL;
-} // end getRemoteURL()
+}  // end getRemoteURL()
 
 //==============================================================================
-std::string DesktopIconTable::removeCommas(const std::string& str, bool andHexReplace, bool andHTMLReplace)
+std::string DesktopIconTable::removeCommas(const std::string& str,
+                                           bool               andHexReplace,
+                                           bool               andHTMLReplace)
 {
 	std::string retStr = "";
 	retStr.reserve(str.length());
@@ -293,7 +344,8 @@ std::string DesktopIconTable::removeCommas(const std::string& str, bool andHexRe
 }  // end removeCommas()
 
 //==============================================================================
-void DesktopIconTable::setAllDesktopIcons(const std::vector<DesktopIconTable::DesktopIcon>& newIcons)
+void DesktopIconTable::setAllDesktopIcons(
+    const std::vector<DesktopIconTable::DesktopIcon>& newIcons)
 {
 	activeDesktopIcons_.clear();
 	for(const auto& newIcon : newIcons)

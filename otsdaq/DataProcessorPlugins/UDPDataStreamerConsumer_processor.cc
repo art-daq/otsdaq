@@ -10,19 +10,33 @@
 using namespace ots;
 
 //==============================================================================
-UDPDataStreamerConsumer::UDPDataStreamerConsumer(std::string              supervisorApplicationUID,
-                                                 std::string              bufferUID,
-                                                 std::string              processorUID,
-                                                 const ConfigurationTree& theXDAQContextConfigTree,
-                                                 const std::string&       configurationPath)
-    : Socket(theXDAQContextConfigTree.getNode(configurationPath).getNode("HostIPAddress").getValue<std::string>(),
-             theXDAQContextConfigTree.getNode(configurationPath).getNode("HostPort").getValue<unsigned int>())
+UDPDataStreamerConsumer::UDPDataStreamerConsumer(
+    std::string              supervisorApplicationUID,
+    std::string              bufferUID,
+    std::string              processorUID,
+    const ConfigurationTree& theXDAQContextConfigTree,
+    const std::string&       configurationPath)
+    : Socket(theXDAQContextConfigTree.getNode(configurationPath)
+                 .getNode("HostIPAddress")
+                 .getValue<std::string>(),
+             theXDAQContextConfigTree.getNode(configurationPath)
+                 .getNode("HostPort")
+                 .getValue<unsigned int>())
     , WorkLoop(processorUID)
-    , UDPDataStreamerBase(theXDAQContextConfigTree.getNode(configurationPath).getNode("HostIPAddress").getValue<std::string>(),
-                          theXDAQContextConfigTree.getNode(configurationPath).getNode("HostPort").getValue<unsigned int>(),
-                          theXDAQContextConfigTree.getNode(configurationPath).getNode("StreamToIPAddress").getValue<std::string>(),
-                          theXDAQContextConfigTree.getNode(configurationPath).getNode("StreamToPort").getValue<unsigned int>())
-    , DataConsumer(supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
+    , UDPDataStreamerBase(theXDAQContextConfigTree.getNode(configurationPath)
+                              .getNode("HostIPAddress")
+                              .getValue<std::string>(),
+                          theXDAQContextConfigTree.getNode(configurationPath)
+                              .getNode("HostPort")
+                              .getValue<unsigned int>(),
+                          theXDAQContextConfigTree.getNode(configurationPath)
+                              .getNode("StreamToIPAddress")
+                              .getValue<std::string>(),
+                          theXDAQContextConfigTree.getNode(configurationPath)
+                              .getNode("StreamToPort")
+                              .getValue<unsigned int>())
+    , DataConsumer(
+          supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)
 //, Socket         ("192.168.133.1", 47200)
 //, DataConsumer   ("ARTDAQDataManager", 1, "ARTDAQBuffer", "ARTDAQDataStreamer0",

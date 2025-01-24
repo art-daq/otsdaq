@@ -3,7 +3,8 @@
 
 ots::ARTDAQSupervisorTRACEController::ARTDAQSupervisorTRACEController() {}
 
-const ots::ITRACEController::HostTraceLevelMap& ots::ARTDAQSupervisorTRACEController::getTraceLevels()
+const ots::ITRACEController::HostTraceLevelMap&
+ots::ARTDAQSupervisorTRACEController::getTraceLevels()
 {
 	traceLevelsMap_.clear();  // reset
 
@@ -40,10 +41,11 @@ const ots::ITRACEController::HostTraceLevelMap& ots::ARTDAQSupervisorTRACEContro
 	return traceLevelsMap_;
 }  // end getTraceLevels()
 
-void ots::ARTDAQSupervisorTRACEController::setTraceLevelMask(const std::string& label,
-                                                             TraceMasks const&  lvl,
-                                                             const std::string& host /*=localhost*/,
-                                                             std::string const& mode /*= "ALL"*/)
+void ots::ARTDAQSupervisorTRACEController::setTraceLevelMask(
+    const std::string& label,
+    TraceMasks const&  lvl,
+    const std::string& host /*=localhost*/,
+    std::string const& mode /*= "ALL"*/)
 {
 	if(theSupervisor_)
 	{

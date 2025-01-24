@@ -5,11 +5,13 @@
 //	convert a data buffer string a hex string
 //		8 bytes at a time with the least significant byte last.
 template<class T>
-std::string BinaryStringMacros::binaryNumberToHexString(const T&           binaryBuffer,
-                                                        const std::string& resultPreamble /*"0x"*/,
-                                                        const std::string& resultDelimiter /*" "*/)
+std::string BinaryStringMacros::binaryNumberToHexString(
+    const T&           binaryBuffer,
+    const std::string& resultPreamble /*"0x"*/,
+    const std::string& resultDelimiter /*" "*/)
 {
-	return binaryNumberToHexString(&binaryBuffer, sizeof(T), resultPreamble, resultDelimiter);
+	return binaryNumberToHexString(
+	    &binaryBuffer, sizeof(T), resultPreamble, resultDelimiter);
 }  // end binaryNumberToHexString()
 
 //========================================================================================================================
@@ -17,7 +19,9 @@ std::string BinaryStringMacros::binaryNumberToHexString(const T&           binar
 //	static template function
 //	Insert value in at buffer starting at bitIndex position
 template<class T>
-void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer, T value, unsigned int bitIndex /* = 0 */)
+void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer,
+                                                   T            value,
+                                                   unsigned int bitIndex /* = 0 */)
 {
 	__COUTV__(sizeof(value));
 
@@ -35,18 +39,23 @@ void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer, T 
 		unsigned char keepMask = ((unsigned char)(-1)) >> bitIndex;
 
 		// first byte is a mix of what's there and value
-		binaryBuffer[byteIndex] = (binaryBuffer[byteIndex] & keepMask) | (((unsigned char*)(&value))[0] << bitIndex);
+		binaryBuffer[byteIndex] = (binaryBuffer[byteIndex] & keepMask) |
+		                          (((unsigned char*)(&value))[0] << bitIndex);
 
 		// middle bytes are mix of value i-1 and i
 		for(unsigned int i = 1; i < sizeof(value); ++i)
-			binaryBuffer[byteIndex + i] = (((unsigned char*)(&value))[i - 1] & keepMask) | (((unsigned char*)(&value))[i] << bitIndex);
+			binaryBuffer[byteIndex + i] = (((unsigned char*)(&value))[i - 1] & keepMask) |
+			                              (((unsigned char*)(&value))[i] << bitIndex);
 
 		// last bytes is mix of value and what's there
 		binaryBuffer[byteIndex + sizeof(value)] =
-		    (((unsigned char*)(&value))[sizeof(value) - 1] & keepMask) | (binaryBuffer[byteIndex + sizeof(value)] << bitIndex);
+		    (((unsigned char*)(&value))[sizeof(value) - 1] & keepMask) |
+		    (binaryBuffer[byteIndex + sizeof(value)] << bitIndex);
 	}
 	else
-		memcpy((void*)&binaryBuffer[byteIndex + 0] /*dest*/, (void*)&value /*src*/, sizeof(value) /*numOfBytes*/);
+		memcpy((void*)&binaryBuffer[byteIndex + 0] /*dest*/,
+		       (void*)&value /*src*/,
+		       sizeof(value) /*numOfBytes*/);
 
 	__COUT__ << "Final size of binary buffer: " << binaryBuffer.size() << __E__;
 
@@ -57,9 +66,12 @@ void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer, T 
 //	static template function
 //	Extract value from buffer starting at bitIndex position
 template<class T>
-void BinaryStringMacros::extractValueFromBinaryString(const std::string& binaryBuffer, T& value, unsigned int bitIndex /* = 0 */)
+void BinaryStringMacros::extractValueFromBinaryString(const std::string& binaryBuffer,
+                                                      T&                 value,
+                                                      unsigned int bitIndex /* = 0 */)
 {
 	__COUTV__(sizeof(value));
 
-	extractValueFromBinaryString(&binaryBuffer[0], binaryBuffer.size(), &value, sizeof(value) * 8, bitIndex);
+	extractValueFromBinaryString(
+	    &binaryBuffer[0], binaryBuffer.size(), &value, sizeof(value) * 8, bitIndex);
 }  // end extractValueFromBinaryString()

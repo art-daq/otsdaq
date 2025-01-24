@@ -8,9 +8,6 @@ namespace ots
 typedef TableBase*(cbmakeFunc_t)();
 }
 
-#define DEFINE_OTS_TABLE(klass)  \
-	extern "C" TableBase* make() \
-	{                            \
-		return new klass();      \
-	}
+#define DEFINE_OTS_TABLE(klass) \
+	extern "C" TableBase* make() { return new klass(); }
 #endif /* _ots_TablePluginMacro_h_ */

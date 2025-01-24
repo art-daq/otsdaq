@@ -96,7 +96,9 @@ XDAQContextTable::ColApplicationProperty 	XDAQContextTable::colAppProperty_ 	= X
 // clang-format on
 
 //==============================================================================
-XDAQContextTable::XDAQContextTable(void) : TableBase(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME), artdaqSupervisorContext_((unsigned int)-1)
+XDAQContextTable::XDAQContextTable(void)
+    : TableBase(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
+    , artdaqSupervisorContext_((unsigned int)-1)
 {
 	//////////////////////////////////////////////////////////////////////
 	// WARNING: the names used in C++ MUST match the Table INFO  //
@@ -142,7 +144,8 @@ void XDAQContextTable::init(ConfigurationManager* configManager)
 }  // end init()
 
 //==============================================================================
-std::string XDAQContextTable::getContextAddress(const std::string& contextUID, bool wantHttp) const
+std::string XDAQContextTable::getContextAddress(const std::string& contextUID,
+                                                bool               wantHttp) const
 {
 	if(contextUID == "X")
 		return "";
@@ -164,7 +167,8 @@ std::string XDAQContextTable::getContextAddress(const std::string& contextUID, b
 }  // end getContextAddress()
 
 //==============================================================================
-const XDAQContextTable::XDAQContext* XDAQContextTable::getTheARTDAQSupervisorContext() const
+const XDAQContextTable::XDAQContext* XDAQContextTable::getTheARTDAQSupervisorContext()
+    const
 {
 	if(artdaqSupervisorContext_ >= contexts_.size())
 		return nullptr;
@@ -172,24 +176,34 @@ const XDAQContextTable::XDAQContext* XDAQContextTable::getTheARTDAQSupervisorCon
 }  // end getTheARTDAQSupervisorContext()
 
 //==============================================================================
-ConfigurationTree XDAQContextTable::getContextNode(const ConfigurationManager* configManager, const std::string& contextUID)
+ConfigurationTree XDAQContextTable::getContextNode(
+    const ConfigurationManager* configManager, const std::string& contextUID)
 {
-	return configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME).getNode(contextUID);
+	return configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
+	    .getNode(contextUID);
 }  // end getContextNode()
 
 //==============================================================================
-ConfigurationTree XDAQContextTable::getApplicationNode(const ConfigurationManager* configManager, const std::string& contextUID, const std::string& appUID)
+ConfigurationTree XDAQContextTable::getApplicationNode(
+    const ConfigurationManager* configManager,
+    const std::string&          contextUID,
+    const std::string&          appUID)
 {
 	return configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
-	    .getNode(contextUID + "/" + colContext_.colLinkToApplicationTable_ + "/" + appUID);
+	    .getNode(contextUID + "/" + colContext_.colLinkToApplicationTable_ + "/" +
+	             appUID);
 }  // end getApplicationNode()
 
 //==============================================================================
-ConfigurationTree XDAQContextTable::getSupervisorConfigNode(const ConfigurationManager* configManager, const std::string& contextUID, const std::string& appUID)
+ConfigurationTree XDAQContextTable::getSupervisorConfigNode(
+    const ConfigurationManager* configManager,
+    const std::string&          contextUID,
+    const std::string&          appUID)
 {
 	return configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
-	    .getNode(contextUID + "/" + XDAQContextTable::colContext_.colLinkToApplicationTable_ + "/" + appUID + "/" +
-	             XDAQContextTable::colApplication_.colLinkToSupervisorTable_);
+	    .getNode(contextUID + "/" +
+	             XDAQContextTable::colContext_.colLinkToApplicationTable_ + "/" + appUID +
+	             "/" + XDAQContextTable::colApplication_.colLinkToSupervisorTable_);
 }  // end getSupervisorConfigNode()
 
 //==============================================================================
@@ -223,8 +237,11 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 		contexts_.back().contextUID_ = child.first;
 
 		contexts_.back().sourceConfig_ =
-		    child.second.getTableName() + "_v" + child.second.getTableVersion().toString() + " @ " + std::to_string(child.second.getTableCreationTime());
-		child.second.getNode(colContext_.colContextUID_).getValue(contexts_.back().contextUID_);
+		    child.second.getTableName() + "_v" +
+		    child.second.getTableVersion().toString() + " @ " +
+		    std::to_string(child.second.getTableCreationTime());
+		child.second.getNode(colContext_.colContextUID_)
+		    .getValue(contexts_.back().contextUID_);
 		child.second.getNode(colContext_.colStatus_).getValue(contexts_.back().status_);
 		child.second.getNode(colContext_.colId_).getValue(contexts_.back().id_);
 		child.second.getNode(colContext_.colAddress_).getValue(contexts_.back().address_);
@@ -234,11 +251,13 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 		// Same as CorePropertySupervisorBase.cc:indicateOtsAlive:L156
 		if(contexts_.back().port_ == 0)  // convert 0 to ${OTS_MAIN_PORT}
 			contexts_.back().port_ = atoi(__ENV__("OTS_MAIN_PORT"));
-		if(contexts_.back().address_ == "DEFAULT")  // convert DEFAULT to http://${HOSTNAME}
+		if(contexts_.back().address_ ==
+		   "DEFAULT")  // convert DEFAULT to http://${HOSTNAME}
 			contexts_.back().address_ = "http://" + std::string(__ENV__("HOSTNAME"));
 		if(contexts_.back().port_ < 1024 || contexts_.back().port_ > 49151)
 		{
-			__SS__ << "Illegal xdaq Context port: " << contexts_.back().port_ << ". Port must be between 1024 and 49151." << __E__;
+			__SS__ << "Illegal xdaq Context port: " << contexts_.back().port_
+			       << ". Port must be between 1024 and 49151." << __E__;
 		}
 		// child.second.getNode(colContext_.colARTDAQDataPort_).getValue(contexts_.back().artdaqDataPort_);
 
@@ -259,35 +278,58 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 			contexts_.back().applications_.push_back(XDAQApplication());
 
 			contexts_.back().applications_.back().applicationGroupID_ = child.first;
-			contexts_.back().applications_.back().sourceConfig_ = appChild.second.getTableName() + "_v" + appChild.second.getTableVersion().toString() + " @ " +
-			                                                      std::to_string(appChild.second.getTableCreationTime());
+			contexts_.back().applications_.back().sourceConfig_ =
+			    appChild.second.getTableName() + "_v" +
+			    appChild.second.getTableVersion().toString() + " @ " +
+			    std::to_string(appChild.second.getTableCreationTime());
 
-			appChild.second.getNode(colApplication_.colApplicationUID_).getValue(contexts_.back().applications_.back().applicationUID_);
-			appChild.second.getNode(colApplication_.colStatus_).getValue(contexts_.back().applications_.back().status_);
-			appChild.second.getNode(colApplication_.colClass_).getValue(contexts_.back().applications_.back().class_);
-			appChild.second.getNode(colApplication_.colId_).getValue(contexts_.back().applications_.back().id_);
+			appChild.second.getNode(colApplication_.colApplicationUID_)
+			    .getValue(contexts_.back().applications_.back().applicationUID_);
+			appChild.second.getNode(colApplication_.colStatus_)
+			    .getValue(contexts_.back().applications_.back().status_);
+			appChild.second.getNode(colApplication_.colClass_)
+			    .getValue(contexts_.back().applications_.back().class_);
+			appChild.second.getNode(colApplication_.colId_)
+			    .getValue(contexts_.back().applications_.back().id_);
 
 			// infer Gateway is XDAQContextTable::XDAQApplication::GATEWAY_APP_ID from default
 			if(appChild.second.getNode(colApplication_.colId_).isDefaultValue() &&
-			   (contexts_.back().applications_.back().class_ == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS ||
-			    contexts_.back().applications_.back().class_ == XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS))
+			   (contexts_.back().applications_.back().class_ ==
+			        XDAQContextTable::GATEWAY_SUPERVISOR_CLASS ||
+			    contexts_.back().applications_.back().class_ ==
+			        XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS))
 			{
-				contexts_.back().applications_.back().id_ = XDAQContextTable::XDAQApplication::GATEWAY_APP_ID;
+				contexts_.back().applications_.back().id_ =
+				    XDAQContextTable::XDAQApplication::GATEWAY_APP_ID;
 			}
 
 			// assert Gateway is XDAQContextTable::XDAQApplication::GATEWAY_APP_ID
-			if((contexts_.back().applications_.back().id_ == XDAQContextTable::XDAQApplication::GATEWAY_APP_ID &&
-			    contexts_.back().applications_.back().class_ != XDAQContextTable::GATEWAY_SUPERVISOR_CLASS &&
-			    contexts_.back().applications_.back().class_ != XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS) ||
-			   (contexts_.back().applications_.back().id_ != XDAQContextTable::XDAQApplication::GATEWAY_APP_ID &&
-			    (contexts_.back().applications_.back().class_ == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS ||
-			     contexts_.back().applications_.back().class_ == XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS)))
+			if((contexts_.back().applications_.back().id_ ==
+			        XDAQContextTable::XDAQApplication::GATEWAY_APP_ID &&
+			    contexts_.back().applications_.back().class_ !=
+			        XDAQContextTable::GATEWAY_SUPERVISOR_CLASS &&
+			    contexts_.back().applications_.back().class_ !=
+			        XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS) ||
+			   (contexts_.back().applications_.back().id_ !=
+			        XDAQContextTable::XDAQApplication::GATEWAY_APP_ID &&
+			    (contexts_.back().applications_.back().class_ ==
+			         XDAQContextTable::GATEWAY_SUPERVISOR_CLASS ||
+			     contexts_.back().applications_.back().class_ ==
+			         XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS)))
 			{
-				__SS__ << "XDAQ Application ID of " << XDAQContextTable::XDAQApplication::GATEWAY_APP_ID << " is reserved for the Gateway Supervisor's class '"
-				       << XDAQContextTable::GATEWAY_SUPERVISOR_CLASS << ".' There must be one and only one XDAQ supervisor application specified with ID '"
-				       << XDAQContextTable::XDAQApplication::GATEWAY_APP_ID << "' and class '" << XDAQContextTable::GATEWAY_SUPERVISOR_CLASS
-				       << ".' A conflict was found specifically at appName=" << contexts_.back().applications_.back().applicationUID_
-				       << " with id=" << contexts_.back().applications_.back().id_ << " and class=" << contexts_.back().applications_.back().class_ << __E__;
+				__SS__ << "XDAQ Application ID of "
+				       << XDAQContextTable::XDAQApplication::GATEWAY_APP_ID
+				       << " is reserved for the Gateway Supervisor's class '"
+				       << XDAQContextTable::GATEWAY_SUPERVISOR_CLASS
+				       << ".' There must be one and only one XDAQ supervisor application "
+				          "specified with ID '"
+				       << XDAQContextTable::XDAQApplication::GATEWAY_APP_ID
+				       << "' and class '" << XDAQContextTable::GATEWAY_SUPERVISOR_CLASS
+				       << ".' A conflict was found specifically at appName="
+				       << contexts_.back().applications_.back().applicationUID_
+				       << " with id=" << contexts_.back().applications_.back().id_
+				       << " and class=" << contexts_.back().applications_.back().class_
+				       << __E__;
 				__SS_THROW__;
 			}
 
@@ -295,12 +337,18 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 			if(contexts_.back().status_ && contexts_.back().applications_.back().status_)
 			{
 				// assert NO app id repeats
-				if(appIdSet.find(contexts_.back().applications_.back().id_) != appIdSet.end())
+				if(appIdSet.find(contexts_.back().applications_.back().id_) !=
+				   appIdSet.end())
 				{
-					__SS__
-					    << "XDAQ Application IDs are not unique; this could be due to multiple instances of the same XDAQ application linked to from two "
-					       "seperate XDAQ Contexts (check all enabled XDAQ Contexts for replicated application IDs). Specifically, there is a duplicate at id="
-					    << contexts_.back().applications_.back().id_ << " appName=" << contexts_.back().applications_.back().applicationUID_ << __E__;
+					__SS__ << "XDAQ Application IDs are not unique; this could be due to "
+					          "multiple instances of the same XDAQ application linked to "
+					          "from two "
+					          "seperate XDAQ Contexts (check all enabled XDAQ Contexts "
+					          "for replicated application IDs). Specifically, there is a "
+					          "duplicate at id="
+					       << contexts_.back().applications_.back().id_ << " appName="
+					       << contexts_.back().applications_.back().applicationUID_
+					       << __E__;
 					__COUT_ERR__ << "\n" << ss.str();
 					__SS_THROW__;
 				}
@@ -311,33 +359,44 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 			if(appChild.second.getNode(colApplication_.colInstance_).isDefaultValue())
 				contexts_.back().applications_.back().instance_ = 1;
 			else
-				appChild.second.getNode(colApplication_.colInstance_).getValue(contexts_.back().applications_.back().instance_);
+				appChild.second.getNode(colApplication_.colInstance_)
+				    .getValue(contexts_.back().applications_.back().instance_);
 
 			if(appChild.second.getNode(colApplication_.colNetwork_).isDefaultValue())
 				contexts_.back().applications_.back().network_ = "local";
 			else
-				appChild.second.getNode(colApplication_.colNetwork_).getValue(contexts_.back().applications_.back().network_);
+				appChild.second.getNode(colApplication_.colNetwork_)
+				    .getValue(contexts_.back().applications_.back().network_);
 
 			if(appChild.second.getNode(colApplication_.colGroup_).isDefaultValue())
 				contexts_.back().applications_.back().group_ = "daq";
 			else
-				appChild.second.getNode(colApplication_.colGroup_).getValue(contexts_.back().applications_.back().group_);
+				appChild.second.getNode(colApplication_.colGroup_)
+				    .getValue(contexts_.back().applications_.back().group_);
 
 			// force deprecated Supervisor to GatewaySupervisor class
-			if(contexts_.back().applications_.back().class_ == XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS)
+			if(contexts_.back().applications_.back().class_ ==
+			   XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS)
 			{
-				contexts_.back().applications_.back().class_ = XDAQContextTable::GATEWAY_SUPERVISOR_CLASS;
-				__COUT__ << "Fixing deprecated Supervisor class from " << XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS << " to "
+				contexts_.back().applications_.back().class_ =
+				    XDAQContextTable::GATEWAY_SUPERVISOR_CLASS;
+				__COUT__ << "Fixing deprecated Supervisor class from "
+				         << XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS << " to "
 				         << (contexts_.back().applications_.back().class_);
 			}
 
-			if(contexts_.back().applications_.back().class_ == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS &&
-			   contexts_.back().applications_.back().module_.find("libSupervisor.so") != std::string::npos)
+			if(contexts_.back().applications_.back().class_ ==
+			       XDAQContextTable::GATEWAY_SUPERVISOR_CLASS &&
+			   contexts_.back().applications_.back().module_.find("libSupervisor.so") !=
+			       std::string::npos)
 			{
-				__COUT__ << "Fixing deprecated Supervisor class from " << contexts_.back().applications_.back().module_ << " to ";
+				__COUT__ << "Fixing deprecated Supervisor class from "
+				         << contexts_.back().applications_.back().module_ << " to ";
 				contexts_.back().applications_.back().module_ =
 				    contexts_.back().applications_.back().module_.substr(
-				        0, contexts_.back().applications_.back().module_.size() - std::string("Supervisor.so").size()) +
+				        0,
+				        contexts_.back().applications_.back().module_.size() -
+				            std::string("Supervisor.so").size()) +
 				    "GatewaySupervisor.so";
 				std::cout << contexts_.back().applications_.back().module_ << __E__;
 			}
@@ -347,33 +406,54 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 			// __E__;
 
 			// if module is default, attempt to resolve from class
-			if(contexts_.back().applications_.back().id_ == XDAQContextTable::XDAQApplication::GATEWAY_APP_ID)  // force correct Gateway Supervisor module
-				contexts_.back().applications_.back().module_ = XDAQContextTable::AppClassModuleLookup_.at(XDAQContextTable::GATEWAY_SUPERVISOR_CLASS);
-			else if(appChild.second.getNode(colApplication_.colModule_).isDefaultValue() &&
-			        XDAQContextTable::AppClassModuleLookup_.find(contexts_.back().applications_.back().class_) != XDAQContextTable::AppClassModuleLookup_.end())
+			if(contexts_.back().applications_.back().id_ ==
+			   XDAQContextTable::XDAQApplication::
+			       GATEWAY_APP_ID)  // force correct Gateway Supervisor module
+				contexts_.back().applications_.back().module_ =
+				    XDAQContextTable::AppClassModuleLookup_.at(
+				        XDAQContextTable::GATEWAY_SUPERVISOR_CLASS);
+			else if(appChild.second.getNode(colApplication_.colModule_)
+			            .isDefaultValue() &&
+			        XDAQContextTable::AppClassModuleLookup_.find(
+			            contexts_.back().applications_.back().class_) !=
+			            XDAQContextTable::AppClassModuleLookup_.end())
 			{
-				contexts_.back().applications_.back().module_ = XDAQContextTable::AppClassModuleLookup_.at(contexts_.back().applications_.back().class_);
-				__COUT__ << "Inferred module of '" << contexts_.back().applications_.back().applicationUID_ << "' as '"
-				         << contexts_.back().applications_.back().module_ << "' based on class '" << contexts_.back().applications_.back().class_ << "'"
-				         << __E__;
+				contexts_.back().applications_.back().module_ =
+				    XDAQContextTable::AppClassModuleLookup_.at(
+				        contexts_.back().applications_.back().class_);
+				__COUT__ << "Inferred module of '"
+				         << contexts_.back().applications_.back().applicationUID_
+				         << "' as '" << contexts_.back().applications_.back().module_
+				         << "' based on class '"
+				         << contexts_.back().applications_.back().class_ << "'" << __E__;
 			}
 			else  // keep module env variable!! so do getValueAsString()
-				contexts_.back().applications_.back().module_ = appChild.second.getNode(colApplication_.colModule_).getValueAsString();
+				contexts_.back().applications_.back().module_ =
+				    appChild.second.getNode(colApplication_.colModule_)
+				        .getValueAsString();
 
 			try
 			{
 				appChild.second.getNode(colApplication_.colConfigurePriority_)
-				    .getValue(contexts_.back().applications_.back().stateMachineCommandPriority_["Configure"]);
+				    .getValue(contexts_.back()
+				                  .applications_.back()
+				                  .stateMachineCommandPriority_["Configure"]);
 				appChild.second.getNode(colApplication_.colStartPriority_)
-				    .getValue(contexts_.back().applications_.back().stateMachineCommandPriority_["Start"]);
-				appChild.second.getNode(colApplication_.colStopPriority_).getValue(contexts_.back().applications_.back().stateMachineCommandPriority_["Stop"]);
+				    .getValue(contexts_.back()
+				                  .applications_.back()
+				                  .stateMachineCommandPriority_["Start"]);
+				appChild.second.getNode(colApplication_.colStopPriority_)
+				    .getValue(contexts_.back()
+				                  .applications_.back()
+				                  .stateMachineCommandPriority_["Stop"]);
 			}
 			catch(...)
 			{
 				__COUT__ << "Ignoring missing state machine priorities..." << __E__;
 			}
 
-			auto appPropertyLink = appChild.second.getNode(colApplication_.colLinkToPropertyTable_);
+			auto appPropertyLink =
+			    appChild.second.getNode(colApplication_.colLinkToPropertyTable_);
 			if(!appPropertyLink.isDisconnected())
 			{
 				// add xdaq application properties to this context
@@ -385,15 +465,20 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 
 				for(auto appPropertyChild : appPropertyChildren)
 				{
-					contexts_.back().applications_.back().properties_.push_back(XDAQApplicationProperty());
+					contexts_.back().applications_.back().properties_.push_back(
+					    XDAQApplicationProperty());
 					contexts_.back().applications_.back().properties_.back().status_ =
-					    appPropertyChild.second.getNode(colAppProperty_.colStatus_).getValue<bool>();
+					    appPropertyChild.second.getNode(colAppProperty_.colStatus_)
+					        .getValue<bool>();
 					contexts_.back().applications_.back().properties_.back().name_ =
-					    appPropertyChild.second.getNode(colAppProperty_.colPropertyName_).getValue<std::string>();
+					    appPropertyChild.second.getNode(colAppProperty_.colPropertyName_)
+					        .getValue<std::string>();
 					contexts_.back().applications_.back().properties_.back().type_ =
-					    appPropertyChild.second.getNode(colAppProperty_.colPropertyType_).getValue<std::string>();
+					    appPropertyChild.second.getNode(colAppProperty_.colPropertyType_)
+					        .getValue<std::string>();
 					contexts_.back().applications_.back().properties_.back().value_ =
-					    appPropertyChild.second.getNode(colAppProperty_.colPropertyValue_).getValue<std::string>();
+					    appPropertyChild.second.getNode(colAppProperty_.colPropertyValue_)
+					        .getValue<std::string>();
 
 					//__COUT__ <<
 					// contexts_.back().applications_.back().properties_.back().name_ <<
@@ -415,13 +500,17 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 				       "ots::ARTDAQSupervisor" &&
 				   app.status_)
 				{
-					__COUT__ << "Found " << app.class_ << " in context '" << contexts_.back().contextUID_ << "'" << __E__;
+					__COUT__ << "Found " << app.class_ << " in context '"
+					         << contexts_.back().contextUID_ << "'" << __E__;
 
 					if(artdaqSupervisorContext_ < contexts_.size())
 					{
-						__SS__ << "Error! Only one artdaq Supervisor is allowed to be active - "
-						       << "two encountered in context '" << contexts_[artdaqSupervisorContext_].contextUID_ << "' and '" << contexts_.back().contextUID_
-						       << "'..." << __E__;
+						__SS__ << "Error! Only one artdaq Supervisor is allowed to be "
+						          "active - "
+						       << "two encountered in context '"
+						       << contexts_[artdaqSupervisorContext_].contextUID_
+						       << "' and '" << contexts_.back().contextUID_ << "'..."
+						       << __E__;
 
 						artdaqSupervisorContext_ = (unsigned int)-1;  // reset
 
@@ -470,13 +559,20 @@ void XDAQContextTable::outputXDAQXML(std::ostream& out)
 	{
 		//__COUT__ << context.contextUID_ << __E__;
 
-		sprintf(tmp, "\t<!-- ContextUID='%s' sourceConfig='%s' -->", context.contextUID_.c_str(), context.sourceConfig_.c_str());
+		sprintf(tmp,
+		        "\t<!-- ContextUID='%s' sourceConfig='%s' -->",
+		        context.contextUID_.c_str(),
+		        context.sourceConfig_.c_str());
 		out << tmp << "\n";
 
 		if(!context.status_)  // comment out if disabled
 			out << "\t<!--\n";
 
-		sprintf(tmp, "\t<xc:Context id=\"%u\" url=\"%s:%u\">", context.id_, context.address_.c_str(), context.port_);
+		sprintf(tmp,
+		        "\t<xc:Context id=\"%u\" url=\"%s:%u\">",
+		        context.id_,
+		        context.address_.c_str(),
+		        context.port_);
 		out << tmp << "\n\n";
 
 		for(XDAQApplication& app : context.applications_)
@@ -485,11 +581,12 @@ void XDAQContextTable::outputXDAQXML(std::ostream& out)
 
 			if(context.status_)
 			{
-				sprintf(tmp,
-				        "\t\t<!-- Application GroupID = '%s' UID='%s' sourceConfig='%s' -->",
-				        app.applicationGroupID_.c_str(),
-				        app.applicationUID_.c_str(),
-				        app.sourceConfig_.c_str());
+				sprintf(
+				    tmp,
+				    "\t\t<!-- Application GroupID = '%s' UID='%s' sourceConfig='%s' -->",
+				    app.applicationGroupID_.c_str(),
+				    app.applicationUID_.c_str(),
+				    app.sourceConfig_.c_str());
 				out << tmp << "\n";
 
 				if(!app.status_)  // comment out if disabled
@@ -497,15 +594,17 @@ void XDAQContextTable::outputXDAQXML(std::ostream& out)
 			}
 
 			if(app.class_ == "ots::GatewaySupervisor")  // add otsdaq icons
-				sprintf(tmp,
-				        "\t\t<xc:Application class=\"%s\" id=\"%u\" instance=\"%u\" "
-				        "network=\"%s\" icon=\"/WebPath/images/otsdaqIcons/logo_square.png\" icon16x16=\"/WebPath/images/otsdaqIcons/favicon-16x16.png\" "
-				        "group=\"%s\">\n",
-				        app.class_.c_str(),
-				        app.id_,
-				        app.instance_,
-				        app.network_.c_str(),
-				        app.group_.c_str());
+				sprintf(
+				    tmp,
+				    "\t\t<xc:Application class=\"%s\" id=\"%u\" instance=\"%u\" "
+				    "network=\"%s\" icon=\"/WebPath/images/otsdaqIcons/logo_square.png\" "
+				    "icon16x16=\"/WebPath/images/otsdaqIcons/favicon-16x16.png\" "
+				    "group=\"%s\">\n",
+				    app.class_.c_str(),
+				    app.id_,
+				    app.instance_,
+				    app.network_.c_str(),
+				    app.group_.c_str());
 			else
 				sprintf(tmp,
 				        "\t\t<xc:Application class=\"%s\" id=\"%u\" instance=\"%u\" "
@@ -523,10 +622,12 @@ void XDAQContextTable::outputXDAQXML(std::ostream& out)
 				++foundColon;
 			else
 			{
-				__SS__ << "Illegal XDAQApplication class name value of '" << app.class_ << "' - please check the entry for app ID = " << app.id_ << __E__;
+				__SS__ << "Illegal XDAQApplication class name value of '" << app.class_
+				       << "' - please check the entry for app ID = " << app.id_ << __E__;
 				__SS_THROW__;
 			}
-			out << "\t\t\t<properties xmlns=\"urn:xdaq-application:" << app.class_.substr(foundColon) << "\" xsi:type=\"soapenc:Struct\">\n";
+			out << "\t\t\t<properties xmlns=\"urn:xdaq-application:"
+			    << app.class_.substr(foundColon) << "\" xsi:type=\"soapenc:Struct\">\n";
 
 			//__COUT__ << "app.properties_ " << app.properties_.size() << __E__;
 			for(XDAQApplicationProperty& appProperty : app.properties_)
@@ -588,7 +689,8 @@ std::string XDAQContextTable::getContextUID(const std::string& url) const
 }
 
 //==============================================================================
-std::string XDAQContextTable::getApplicationUID(const std::string& url, unsigned int id) const
+std::string XDAQContextTable::getApplicationUID(const std::string& url,
+                                                unsigned int       id) const
 {
 	//__COUTV__(url); __COUTV__(id);
 	for(auto context : contexts_)
@@ -620,7 +722,8 @@ std::string XDAQContextTable::getApplicationUID(const std::string& url, unsigned
 
 //==============================================================================
 // only considers ON contexts and applications
-std::string XDAQContextTable::getContextOfApplication(ConfigurationManager* configManager, const std::string& appUID) const
+std::string XDAQContextTable::getContextOfApplication(ConfigurationManager* configManager,
+                                                      const std::string&    appUID) const
 {
 	// look through all contexts until first appUID found
 
@@ -628,17 +731,20 @@ std::string XDAQContextTable::getContextOfApplication(ConfigurationManager* conf
 
 	for(auto& context : childrenMap)
 	{
-		if(!context.second.getNode(XDAQContextTable::colContext_.colStatus_).getValue<bool>())
+		if(!context.second.getNode(XDAQContextTable::colContext_.colStatus_)
+		        .getValue<bool>())
 			continue;
 
-		ConfigurationTree appLink = context.second.getNode(XDAQContextTable::colContext_.colLinkToApplicationTable_);
+		ConfigurationTree appLink = context.second.getNode(
+		    XDAQContextTable::colContext_.colLinkToApplicationTable_);
 		if(appLink.isDisconnected())
 			continue;
 
 		auto appMap = appLink.getChildren();
 		for(auto& app : appMap)
 		{
-			if(!app.second.getNode(XDAQContextTable::colApplication_.colStatus_).getValue<bool>())
+			if(!app.second.getNode(XDAQContextTable::colApplication_.colStatus_)
+			        .getValue<bool>())
 				continue;
 
 			if(app.first == appUID)
@@ -653,7 +759,8 @@ std::string XDAQContextTable::getContextOfApplication(ConfigurationManager* conf
 
 //==============================================================================
 // only considers ON contexts and applications
-std::string XDAQContextTable::getContextOfGateway(ConfigurationManager* configManager) const
+std::string XDAQContextTable::getContextOfGateway(
+    ConfigurationManager* configManager) const
 {
 	// look through all contexts until first gateway found
 
@@ -661,21 +768,27 @@ std::string XDAQContextTable::getContextOfGateway(ConfigurationManager* configMa
 
 	for(auto& context : childrenMap)
 	{
-		if(!context.second.getNode(XDAQContextTable::colContext_.colStatus_).getValue<bool>())
+		if(!context.second.getNode(XDAQContextTable::colContext_.colStatus_)
+		        .getValue<bool>())
 			continue;
 
-		ConfigurationTree appLink = context.second.getNode(XDAQContextTable::colContext_.colLinkToApplicationTable_);
+		ConfigurationTree appLink = context.second.getNode(
+		    XDAQContextTable::colContext_.colLinkToApplicationTable_);
 		if(appLink.isDisconnected())
 			continue;
 
 		auto appMap = appLink.getChildren();
 		for(auto& app : appMap)
 		{
-			if(!app.second.getNode(XDAQContextTable::colApplication_.colStatus_).getValue<bool>())
+			if(!app.second.getNode(XDAQContextTable::colApplication_.colStatus_)
+			        .getValue<bool>())
 				continue;
 
-			std::string className = app.second.getNode(XDAQContextTable::colApplication_.colClass_).getValue<std::string>();
-			if(className == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS || className == XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS)
+			std::string className =
+			    app.second.getNode(XDAQContextTable::colApplication_.colClass_)
+			        .getValue<std::string>();
+			if(className == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS ||
+			   className == XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS)
 				return context.first;  // return context UID
 		}                              // end app search loop
 	}                                  // end context search loop

@@ -15,7 +15,8 @@ using namespace ots;
 
 //==============================================================================
 ProgressBar::ProgressBar()
-    : cProgressBarFilePath_(std::string(__ENV__("SERVICE_DATA_PATH")) + "/ProgressBarData/")
+    : cProgressBarFilePath_(std::string(__ENV__("SERVICE_DATA_PATH")) +
+                            "/ProgressBarData/")
     , cProgressBarFileExtension_(".txt")
     , totalStepsFileName_("")
     , stepCount_(0)
@@ -32,7 +33,7 @@ ProgressBar::ProgressBar()
 		__SS__ << "Service directory creation failed: " << path << std::endl;
 		__SS_THROW__;
 	}
-} //end constructor()
+}  //end constructor()
 
 //==============================================================================
 //		reset() ~~
@@ -49,24 +50,26 @@ void ProgressBar::reset(std::string file, std::string lineNumber, int id)
 	sprintf(fn, "%s_%s_%d", file.c_str(), lineNumber.c_str(), id);
 
 	for(unsigned int c = 0; c < strlen(fn); ++c)
-		if(!((fn[c] >= '0' && fn[c] <= '9') || (fn[c] >= 'a' && fn[c] <= 'z') || (fn[c] >= 'A' && fn[c] <= 'Z')))
+		if(!((fn[c] >= '0' && fn[c] <= '9') || (fn[c] >= 'a' && fn[c] <= 'z') ||
+		     (fn[c] >= 'A' && fn[c] <= 'Z')))
 			fn[c] = '_';
 	totalStepsFileName_ = cProgressBarFilePath_ + fn + cProgressBarFileExtension_;
-	__COUTVS__(10,totalStepsFileName_);
+	__COUTVS__(10, totalStepsFileName_);
 
 	FILE* fp = fopen(totalStepsFileName_.c_str(), "r");
 	if(fp)
 	{
 		fscanf(fp, "%d", &stepsToComplete_);
 		fclose(fp);
-		__COUT_TYPE__(TLVL_DEBUG+10) << __COUT_HDR__ << "File Found - stepsToComplete = " <<
-			stepsToComplete_ << std::endl;
+		__COUT_TYPE__(TLVL_DEBUG + 10)
+		    << __COUT_HDR__ << "File Found - stepsToComplete = " << stepsToComplete_
+		    << std::endl;
 	}
 	else
 		__COUTT__ << "File Not there: " << totalStepsFileName_ << __E__;
 
 	started_ = true;
-} //end reset()
+}  //end reset()
 
 //==============================================================================
 void ProgressBar::step()
@@ -78,16 +81,16 @@ void ProgressBar::step()
 	if(stepsToComplete_ && stepCount_ >= stepsToComplete_)
 		stepsToComplete_ = stepCount_ + 1;
 
-	__COUT_TYPE__(TLVL_DEBUG+10) << __COUT_HDR__  << totalStepsFileName_ << " " <<
-		readPercentageString() << "% complete" << std::endl;
-} //end step()
+	__COUT_TYPE__(TLVL_DEBUG + 10) << __COUT_HDR__ << totalStepsFileName_ << " "
+	                               << readPercentageString() << "% complete" << std::endl;
+}  //end step()
 
 //==============================================================================
 bool ProgressBar::isComplete()
 {
 	std::lock_guard<std::mutex> lock(theMutex_);  // lock out for remainder of scope
 	return !started_;
-} //end isComplete()
+}  //end isComplete()
 
 //==============================================================================
 void ProgressBar::complete()
@@ -101,7 +104,7 @@ void ProgressBar::complete()
 
 	// done, save steps to file
 
-	__COUT_TYPE__(TLVL_DEBUG+10) << __COUT_HDR__ << totalStepsFileName_ << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG + 10) << __COUT_HDR__ << totalStepsFileName_ << std::endl;
 
 	FILE* fp = fopen(totalStepsFileName_.c_str(), "w");
 	if(fp)
@@ -111,7 +114,7 @@ void ProgressBar::complete()
 	}
 	else
 		__COUT_ERR__ << "Critical ERROR!" << std::endl;
-} //end complete()
+}  //end complete()
 
 //==============================================================================
 // return percentage complete as integer
@@ -126,7 +129,7 @@ int ProgressBar::read()
 		return stepCount_ * 100.0 / stepsToComplete_;
 
 	return stepCount_ ? 50 : 0;
-} //end read()
+}  //end read()
 
 //==============================================================================
 // return percentage complete as std::string
@@ -135,4 +138,4 @@ std::string ProgressBar::readPercentageString()
 	char pct[5];
 	sprintf(pct, "%d", read());
 	return pct;
-} //end readPercentageString()
+}  //end readPercentageString()

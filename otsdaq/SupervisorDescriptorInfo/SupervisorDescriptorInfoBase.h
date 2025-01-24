@@ -14,7 +14,8 @@
 namespace ots
 {
 // key is the crate number
-typedef std::map<xdata::UnsignedIntegerT, XDAQ_CONST_CALL xdaq::ApplicationDescriptor*> SupervisorDescriptors;
+typedef std::map<xdata::UnsignedIntegerT, XDAQ_CONST_CALL xdaq::ApplicationDescriptor*>
+    SupervisorDescriptors;
 
 class SupervisorDescriptorInfoBase
 {
@@ -39,18 +40,28 @@ class SupervisorDescriptorInfoBase
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getSupervisorDescriptor(void) const;
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getLogbookDescriptor(void) const;
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getWizardDescriptor(void) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getDataManagerDescriptor(xdata::UnsignedIntegerT instance) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getFEDescriptor(xdata::UnsignedIntegerT instance) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getDTCDescriptor(xdata::UnsignedIntegerT instance) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getFEDataManagerDescriptor(xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getDataManagerDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getFEDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getDTCDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getFEDataManagerDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
 	// xdaq::ApplicationDescriptor* getARTDAQFEDescriptor
 	// (xdata::UnsignedIntegerT instance) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQFEDataManagerDescriptor(xdata::UnsignedIntegerT instance) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQDataManagerDescriptor(xdata::UnsignedIntegerT instance) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQBuilderDescriptor(xdata::UnsignedIntegerT instance) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQDataLoggerDescriptor(xdata::UnsignedIntegerT instance) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQDispatcherDescriptor(xdata::UnsignedIntegerT instance) const;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getVisualDescriptor(xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQFEDataManagerDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQDataManagerDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQBuilderDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQDataLoggerDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQDispatcherDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getVisualDescriptor(
+	    xdata::UnsignedIntegerT instance) const;
 
 	std::string getFEURL(xdata::UnsignedIntegerT instance) const;
 

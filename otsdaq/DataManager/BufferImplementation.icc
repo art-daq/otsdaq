@@ -3,7 +3,8 @@
 
 //========================================================================================================================
 template<class D, class H>
-BufferImplementation<D, H>::BufferImplementation(const std::string& producerName, unsigned int numberOfSubBuffers)
+BufferImplementation<D, H>::BufferImplementation(const std::string& producerName,
+                                                 unsigned int       numberOfSubBuffers)
     : mfSubject_("BufferImp-" + producerName + "-" + std::to_string(numberOfSubBuffers))
     , producerName_(producerName)
     , numberOfSubBuffers_(numberOfSubBuffers)
@@ -68,7 +69,8 @@ BufferImplementation<D, H>::BufferImplementation(const BufferImplementation<D, H
 
 //========================================================================================================================
 template<class D, class H>
-BufferImplementation<D, H>& BufferImplementation<D, H>::operator=(const BufferImplementation<D, H>& toCopy)
+BufferImplementation<D, H>& BufferImplementation<D, H>::operator=(
+    const BufferImplementation<D, H>& toCopy)
 {
 	__GEN_SS__ << "DO NOT EVER COPY?!" << __E__;
 	__GEN_SS_THROW__;
@@ -77,11 +79,13 @@ BufferImplementation<D, H>& BufferImplementation<D, H>::operator=(const BufferIm
 	numberOfSubBuffers_ = toCopy.numberOfSubBuffers_;
 	for(auto& it : toCopy.consumers_)
 	{
-		consumers_[it.first].priority_         = it.second.priority_;
-		consumers_[it.first].readPointer_      = it.second.readPointer_;
-		consumers_[it.first].subBuffersStatus_ = new std::atomic_bool[numberOfSubBuffers_];
+		consumers_[it.first].priority_    = it.second.priority_;
+		consumers_[it.first].readPointer_ = it.second.readPointer_;
+		consumers_[it.first].subBuffersStatus_ =
+		    new std::atomic_bool[numberOfSubBuffers_];
 		for(unsigned int i = 0; i < numberOfSubBuffers_; i++)
-			consumers_[it.first].subBuffersStatus_[i] = it.second.subBuffersStatus_[i].load();
+			consumers_[it.first].subBuffersStatus_[i] =
+			    it.second.subBuffersStatus_[i].load();
 	}
 	writePointer_     = toCopy.writePointer_;
 	subBuffersStatus_ = new std::atomic_bool[numberOfSubBuffers_];
@@ -160,8 +164,9 @@ int BufferImplementation<D, H>::attachToEmptySubBuffer(D*& data, H*& header)
 	{
 		__GEN_COUT__ << "There are no free buffers!" << std::endl;
 		dumpStatus();
-		__GEN_COUT__ << "Producer: " << producerName_ << " write pointer: " << writePointer_
-		             << " written buffers: " << (100 * numberOfWrittenBuffers()) / numberOfSubBuffers_ << "%";
+		__GEN_COUT__ << "Producer: " << producerName_
+		             << " write pointer: " << writePointer_ << " written buffers: "
+		             << (100 * numberOfWrittenBuffers()) / numberOfSubBuffers_ << "%";
 		return ErrorBufferFull;
 	}
 	if(false && subBuffer % (numberOfSubBuffers_ / 50) == 0)
@@ -192,9 +197,10 @@ int BufferImplementation<D, H>::setWrittenSubBuffer(void)  // Must be used in co
                                                            // because it attach to the
                                                            // nextWritePointer buffer
 {
-	writePointer_ = nextWritePointer();  // Already protected in nextWritePointer with %numSubBuffers_
-//	if(writePointer_ % 1000 == 0)
-//		dumpStatus();
+	writePointer_ =
+	    nextWritePointer();  // Already protected in nextWritePointer with %numSubBuffers_
+	                         //	if(writePointer_ % 1000 == 0)
+	                         //		dumpStatus();
 	//__GEN_COUTV__(writePointer_);
 	setWritten(writePointer_);
 	return writePointer_;
@@ -210,23 +216,29 @@ int BufferImplementation<D, H>::write(const D& buffer, const H& header)
 	{
 		__GEN_COUT__ << "There are no free buffers!" << std::endl;
 		dumpStatus();
-		__GEN_COUT__ << "Producer: " << producerName_ << " writing buffer: " << subBuffer << " write pointer: " << writePointer_
-		             << " Buffer free: " << isFree(subBuffer) << " written buffers: " << (100 * numberOfWrittenBuffers()) / numberOfSubBuffers_ << "%";
+		__GEN_COUT__ << "Producer: " << producerName_ << " writing buffer: " << subBuffer
+		             << " write pointer: " << writePointer_
+		             << " Buffer free: " << isFree(subBuffer) << " written buffers: "
+		             << (100 * numberOfWrittenBuffers()) / numberOfSubBuffers_ << "%";
 		return ErrorBufferFull;
 	}
 
 	if(false && subBuffer % (numberOfSubBuffers_ / 100) == 0)
 	{
 		// dumpStatus();
-		__GEN_COUT__ << "Producer: " << producerName_ << " writing buffer: " << subBuffer << " write pointer: " << writePointer_
-		             << " Buffer free: " << isFree(subBuffer) << " written buffers: " << (100 * numberOfWrittenBuffers()) / numberOfSubBuffers_ << "%";
+		__GEN_COUT__ << "Producer: " << producerName_ << " writing buffer: " << subBuffer
+		             << " write pointer: " << writePointer_
+		             << " Buffer free: " << isFree(subBuffer) << " written buffers: "
+		             << (100 * numberOfWrittenBuffers()) / numberOfSubBuffers_ << "%";
 		for(auto& it : consumers_)
 		{
-			__GEN_COUT__ << "P: " << producerName_ << " w-buffer: " << subBuffer << " w-pointer: " << writePointer_
-			             << " w-buffers: " << (100 * numberOfWrittenBuffers()) / numberOfSubBuffers_ << "%"
+			__GEN_COUT__ << "P: " << producerName_ << " w-buffer: " << subBuffer
+			             << " w-pointer: " << writePointer_ << " w-buffers: "
+			             << (100 * numberOfWrittenBuffers()) / numberOfSubBuffers_ << "%"
 			             << " C: " << it.first << " r-pointer " << it.second.readPointer_;
 			if(it.second.readPointer_ > writePointer_)
-				__GEN_COUT__ << " I read already! Delta: " << subBuffer - it.second.readPointer_ << std::endl;
+				__GEN_COUT__ << " I read already! Delta: "
+				             << subBuffer - it.second.readPointer_ << std::endl;
 		}
 	}
 	//
@@ -235,7 +247,8 @@ int BufferImplementation<D, H>::write(const D& buffer, const H& header)
 	__GEN_COUT__ << __E__;
 	writeSubBuffer(subBuffer, buffer, header);
 	__GEN_COUT__ << __E__;
-	writePointer_ = subBuffer;  // Already protected in nextWritePointer with %numSubBuffers_
+	writePointer_ =
+	    subBuffer;  // Already protected in nextWritePointer with %numSubBuffers_
 	__GEN_COUT__ << __E__;
 	setWritten(subBuffer);
 	__GEN_COUT__ << __E__;
@@ -272,7 +285,8 @@ int BufferImplementation<D, H>::read(D& buffer, H& header, const std::string& co
 	buffer = getSubBuffer(subBuffer);
 	header = getHeader(subBuffer);
 
-	consumers_[consumer].readPointer_ = nextReadPointer(consumer);  // Already protected in nextReadPointer with %numSubBuffers_
+	consumers_[consumer].readPointer_ = nextReadPointer(
+	    consumer);  // Already protected in nextReadPointer with %numSubBuffers_
 	setFree(subBuffer, consumer);
 	return subBuffer;
 }
@@ -303,24 +317,29 @@ int BufferImplementation<D, H>::read(D*& buffer, H*& header, const std::string& 
 
 //========================================================================================================================
 template<class D, class H>
-int BufferImplementation<D, H>::setReadSubBuffer(const std::string& consumer)  // Must be used in conjunction with
-                                                                               // attachToEmptySubBuffer because it attach to the
-                                                                               // nextWritePointer buffer
+int BufferImplementation<D, H>::setReadSubBuffer(
+    const std::string& consumer)  // Must be used in conjunction with
+                                  // attachToEmptySubBuffer because it attach to the
+                                  // nextWritePointer buffer
 {
 	setFree(consumers_[consumer].readPointer_, consumer);
-	consumers_[consumer].readPointer_ = nextReadPointer(consumer);  // Already protected in nextReadPointer with %numSubBuffers_
+	consumers_[consumer].readPointer_ = nextReadPointer(
+	    consumer);  // Already protected in nextReadPointer with %numSubBuffers_
 	return consumers_[consumer].readPointer_;
 }
 
 //========================================================================================================================
 template<class D, class H>
-void BufferImplementation<D, H>::registerConsumer(const std::string& consumer, CircularBufferBase::ConsumerPriority priority)
+void BufferImplementation<D, H>::registerConsumer(
+    const std::string& consumer, CircularBufferBase::ConsumerPriority priority)
 {
 	consumers_[consumer].priority_ = priority;
 	if(consumers_[consumer].subBuffersStatus_ == nullptr)
 	{
-		consumers_[consumer].readPointer_      = 0;  // This MUST Start at 0 if the write pointer is reset!
-		consumers_[consumer].subBuffersStatus_ = new std::atomic_bool[numberOfSubBuffers_];
+		consumers_[consumer].readPointer_ =
+		    0;  // This MUST Start at 0 if the write pointer is reset!
+		consumers_[consumer].subBuffersStatus_ =
+		    new std::atomic_bool[numberOfSubBuffers_];
 
 		for(unsigned int i = 0; i < numberOfSubBuffers_; i++)
 			consumers_[consumer].subBuffersStatus_[i] = bufferFree_;
@@ -345,7 +364,9 @@ void BufferImplementation<D, H>::registerConsumer(const std::string& consumer, C
 
 //========================================================================================================================
 template<class D, class H>
-void BufferImplementation<D, H>::writeSubBuffer(unsigned int subBuffer, const D& buffer, const H& header)
+void BufferImplementation<D, H>::writeSubBuffer(unsigned int subBuffer,
+                                                const D&     buffer,
+                                                const H&     header)
 {
 	subBuffers_[subBuffer] = buffer;
 	headers_[subBuffer]    = header;
@@ -432,7 +453,8 @@ void BufferImplementation<D, H>::setWritten(unsigned int subBuffer)
 
 //========================================================================================================================
 template<class D, class H>
-void BufferImplementation<D, H>::setFree(unsigned int subBuffer, const std::string& consumer)
+void BufferImplementation<D, H>::setFree(unsigned int       subBuffer,
+                                         const std::string& consumer)
 {
 	// The consumers status must be set first because the producer checks for the producer
 	// subBufferStatus
@@ -453,7 +475,8 @@ std::atomic_bool& BufferImplementation<D, H>::isFree(unsigned int subBuffer) con
 
 //========================================================================================================================
 template<class D, class H>
-std::atomic_bool& BufferImplementation<D, H>::isFree(unsigned int subBuffer, const std::string& consumer) const
+std::atomic_bool& BufferImplementation<D, H>::isFree(unsigned int       subBuffer,
+                                                     const std::string& consumer) const
 {
 	return consumers_.at(consumer).subBuffersStatus_[subBuffer];
 }

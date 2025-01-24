@@ -53,7 +53,8 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	//	__COUTT__ << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << std::endl;
 	//	__COUTT__ << configManager->__SELF_NODE__ << std::endl;
 
-	bool        enableFwd = true, useWeb = true, useQT = false;  // default to enabling web console
+	bool enableFwd = true, useWeb = true,
+	     useQT = false;  // default to enabling web console
 	int         fwdPort, destFwdPort;
 	std::string fwdIP;
 	std::string parseFilename = "/src";
@@ -82,16 +83,23 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	}  // ignore errors (assume user will setup in table)
 	try
 	{
-		parseFilename = std::string("/") + __ENV__("OTS_ENV") + "/"; //parse on spack environment
+		parseFilename =
+		    std::string("/") + __ENV__("OTS_ENV") + "/";  //parse on spack environment
 		//override with env variable if present
-		parseFilename = __ENV__("OTS_FILE_PARSE_PATTERN"); //parse on spack environment
+		parseFilename = __ENV__("OTS_FILE_PARSE_PATTERN");  //parse on spack environment
 	}
 	catch(...)
 	{
 	}  // ignore errors (assume user will setup in table)
-	
+
 	__COUTTV__(parseFilename);
-	try{ __COUTTV__(__ENV__("TRACE_TIME_FMT")); } catch(...) {} //ignore error
+	try
+	{
+		__COUTTV__(__ENV__("TRACE_TIME_FMT"));
+	}
+	catch(...)
+	{
+	}  //ignore error
 
 	auto childrenMap = configManager->__SELF_NODE__.getChildren();
 
@@ -130,9 +138,11 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 				child.second.getNode(COL_QT_PORT).getValue(fwdPort);
 		}
 
-		__COUTT__ << "Found FWD/WEB/QT " << (COL_ENABLE_FWD ? "true" : "false") << "/" << (COL_USE_WEB ? "true" : "false") << "/"
-		         << (COL_USE_QT ? "true" : "false") << " and IP:Port:FwdPort " << fwdIP << ":" << fwdPort << ":" << destFwdPort << " in MesageFacility table."
-		         << __E__;
+		__COUTT__ << "Found FWD/WEB/QT " << (COL_ENABLE_FWD ? "true" : "false") << "/"
+		          << (COL_USE_WEB ? "true" : "false") << "/"
+		          << (COL_USE_QT ? "true" : "false") << " and IP:Port:FwdPort " << fwdIP
+		          << ":" << fwdPort << ":" << destFwdPort << " in MesageFacility table."
+		          << __E__;
 		break;  // take first enable row only!
 	}           // end record loop
 
@@ -148,7 +158,8 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	bfs.open(USE_WEB_BOOL_FILE, std::fstream::out | std::fstream::trunc);
 	if(bfs.fail())
 	{
-		__SS__ << "Failed to open boolean Use of Web Console table file: " << USE_WEB_BOOL_FILE << std::endl;
+		__SS__ << "Failed to open boolean Use of Web Console table file: "
+		       << USE_WEB_BOOL_FILE << std::endl;
 		__SS_THROW__;
 	}
 	bfs << (useWeb ? 1 : 0);
@@ -158,7 +169,8 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	bfs.open(USE_QT_BOOL_FILE, std::fstream::out | std::fstream::trunc);
 	if(bfs.fail())
 	{
-		__SS__ << "Failed to open boolean Use of QT Viewer table file: " << USE_QT_BOOL_FILE << std::endl;
+		__SS__ << "Failed to open boolean Use of QT Viewer table file: "
+		       << USE_QT_BOOL_FILE << std::endl;
 		__SS_THROW__;
 	}
 	bfs << (useQT ? 1 : 0);
@@ -169,8 +181,9 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 		// handle using web gui
 		if(useWeb)
 		{
-			__COUTT__ << "Forwarding to Web GUI at IP:Port:FwdPort " << fwdIP << ":" << fwdPort << ":" << destFwdPort << " with UDP forward MesageFacility."
-			         << __E__;
+			__COUTT__ << "Forwarding to Web GUI at IP:Port:FwdPort " << fwdIP << ":"
+			          << fwdPort << ":" << destFwdPort
+			          << " with UDP forward MesageFacility." << __E__;
 
 			fclSs << "otsConsole: {\n";
 			fclSs << "\t"
@@ -214,13 +227,15 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 			}
 			qtfs << qtSs.str();
 			qtfs.close();
-			__COUTT__ << "Wrote " << QUIET_CFG_FILE << ":" << __E__ << qtSs.str() << __E__;
+			__COUTT__ << "Wrote " << QUIET_CFG_FILE << ":" << __E__ << qtSs.str()
+			          << __E__;
 		}
 
 		// handle using qt viewer
 		if(useQT)
 		{
-			__COUTT__ << "Forwarding to QT GUI  at IP:Port " << fwdIP << ":" << fwdPort << " with UDP forward MesageFacility." << __E__;
+			__COUTT__ << "Forwarding to QT GUI  at IP:Port " << fwdIP << ":" << fwdPort
+			          << " with UDP forward MesageFacility." << __E__;
 
 			fclSs << "otsViewer: {\n";
 			fclSs << "\t"
@@ -240,7 +255,8 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 			qtfs.open(QT_CFG_FILE, std::fstream::out | std::fstream::trunc);
 			if(qtfs.fail())
 			{
-				__SS__ << "Failed to open QT Message Viewer table file: " << QT_CFG_FILE << std::endl;
+				__SS__ << "Failed to open QT Message Viewer table file: " << QT_CFG_FILE
+				       << std::endl;
 				__SS_THROW__;
 			}
 			qtfs << "receivers: \n{\n";
@@ -272,7 +288,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 		fclSs << "\t"
 		      << "filename_delimit: \"" << parseFilename << "\"\n";
 		fclSs << "\t"
-				<< "format_string: \"|%T:%L:%N: %f:%u |\t%m\"\n";
+		      << "format_string: \"|%T:%L:%N: %f:%u |\t%m\"\n";
 
 		fclSs << "\n}\n";
 	}
@@ -293,7 +309,8 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	artdaqfs.open(MF_ARTDAQ_INTERFACE_CFG_FILE, std::fstream::out | std::fstream::trunc);
 	if(artdaqfs.fail())
 	{
-		__SS__ << "Failed to open artdaq interface Message Facility table file: " << MF_ARTDAQ_INTERFACE_CFG_FILE << __E__;
+		__SS__ << "Failed to open artdaq interface Message Facility table file: "
+		       << MF_ARTDAQ_INTERFACE_CFG_FILE << __E__;
 		__SS_THROW__;
 	}
 	else

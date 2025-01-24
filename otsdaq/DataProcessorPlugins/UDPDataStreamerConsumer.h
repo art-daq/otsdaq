@@ -11,7 +11,9 @@ namespace ots
 {
 class ConfigurationTree;
 
-class UDPDataStreamerConsumer : public UDPDataStreamerBase, public DataConsumer, public Configurable
+class UDPDataStreamerConsumer : public UDPDataStreamerBase,
+                                public DataConsumer,
+                                public Configurable
 {
   public:
 	UDPDataStreamerConsumer(std::string              supervisorApplicationUID,

@@ -51,7 +51,9 @@ void FixNewTableFields(int argc, char* argv[])
 
 	if(pathToSwapIn == "-h" || pathToSwapIn == "--help")
 	{
-		std::cout << "Recognized parameter 1 as a 'help' option. Usage was printed. Exiting." << __E__;
+		std::cout
+		    << "Recognized parameter 1 as a 'help' option. Usage was printed. Exiting."
+		    << __E__;
 		return;
 	}
 
@@ -65,12 +67,17 @@ void FixNewTableFields(int argc, char* argv[])
 	// These are needed by
 	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [207]
 	setenv("CONFIGURATION_TYPE", "File", 1);  // Can be File, Database, DatabaseTest
-	setenv("CONFIGURATION_DATA_PATH", (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(), 1);
-	setenv("TABLE_INFO_PATH", (std::string(__ENV__("USER_DATA")) + "/TableInfo").c_str(), 1);
+	setenv("CONFIGURATION_DATA_PATH",
+	       (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
+	       1);
+	setenv(
+	    "TABLE_INFO_PATH", (std::string(__ENV__("USER_DATA")) + "/TableInfo").c_str(), 1);
 	////////////////////////////////////////////////////
 
 	// Some configuration plug-ins use __ENV__("SERVICE_DATA_PATH") in init() so define it
-	setenv("SERVICE_DATA_PATH", (std::string(__ENV__("USER_DATA")) + "/ServiceData").c_str(), 1);
+	setenv("SERVICE_DATA_PATH",
+	       (std::string(__ENV__("USER_DATA")) + "/ServiceData").c_str(),
+	       1);
 
 	// Some configuration plug-ins use __ENV__("OTSDAQ_LIB") and
 	// __ENV__("OTSDAQ_UTILITIES_LIB") in init() so define it 	to a non-sense place is ok
@@ -81,7 +88,9 @@ void FixNewTableFields(int argc, char* argv[])
 	setenv("OTS_MAIN_PORT", "2015", 1);
 
 	// also xdaq envs for XDAQContextTable
-	setenv("XDAQ_CONFIGURATION_DATA_PATH", (std::string(__ENV__("USER_DATA")) + "/XDAQConfigurations").c_str(), 1);
+	setenv("XDAQ_CONFIGURATION_DATA_PATH",
+	       (std::string(__ENV__("USER_DATA")) + "/XDAQConfigurations").c_str(),
+	       1);
 	setenv("XDAQ_CONFIGURATION_XML", "otsConfigurationNoRU_CMake", 1);
 	////////////////////////////////////////////////////
 
@@ -96,10 +105,9 @@ void FixNewTableFields(int argc, char* argv[])
 	{
 		std::string accumulatedWarnings;
 		cfgMgr->restoreActiveTableGroups(false /*throwErrors*/,
-					"" /*pathToActiveGroupsFile*/,
-					ConfigurationManager::LoadGroupType::ALL_TYPES,
-					&accumulatedWarnings
-				);
+		                                 "" /*pathToActiveGroupsFile*/,
+		                                 ConfigurationManager::LoadGroupType::ALL_TYPES,
+		                                 &accumulatedWarnings);
 
 		__COUT__ << "Done Loading active groups: \n" << accumulatedWarnings << std::endl;
 	}
@@ -150,53 +158,67 @@ void FixNewTableFields(int argc, char* argv[])
 	}
 
 	// add active groups to set
-	std::map<std::string, std::pair<std::string, TableGroupKey>> activeGroupsMap = cfgMgr->getActiveTableGroups();
+	std::map<std::string, std::pair<std::string, TableGroupKey>> activeGroupsMap =
+	    cfgMgr->getActiveTableGroups();
 
 	for(const auto& activeGroup : activeGroupsMap)
 	{
 		groupSet.insert(std::pair<std::pair<std::string, TableGroupKey>, TableGroupKey>(
-		    std::pair<std::string, TableGroupKey>(activeGroup.second.first, activeGroup.second.second), TableGroupKey()));
-		activeGroupKeys.insert(std::pair<std::string, std::pair<TableGroupKey, TableGroupKey>>(
-		    activeGroup.second.first, std::pair<TableGroupKey, TableGroupKey>(activeGroup.second.second, TableGroupKey())));
+		    std::pair<std::string, TableGroupKey>(activeGroup.second.first,
+		                                          activeGroup.second.second),
+		    TableGroupKey()));
+		activeGroupKeys.insert(
+		    std::pair<std::string, std::pair<TableGroupKey, TableGroupKey>>(
+		        activeGroup.second.first,
+		        std::pair<TableGroupKey, TableGroupKey>(activeGroup.second.second,
+		                                                TableGroupKey())));
 
 		if(activeGroup.first == ConfigurationManager::GROUP_TYPE_NAME_BACKBONE)
 		{
 			activeBackboneGroupName = activeGroup.second.first;
-			__COUT__ << "found activeBackboneGroupName = " << activeBackboneGroupName << __E__;
+			__COUT__ << "found activeBackboneGroupName = " << activeBackboneGroupName
+			         << __E__;
 		}
 		else if(activeGroup.first == ConfigurationManager::GROUP_TYPE_NAME_CONTEXT)
 		{
 			activeContextGroupName = activeGroup.second.first;
-			__COUT__ << "found activeContextGroupName = " << activeContextGroupName << __E__;
+			__COUT__ << "found activeContextGroupName = " << activeContextGroupName
+			         << __E__;
 		}
 		else if(activeGroup.first == ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
 		{
 			activeIterateGroupName = activeGroup.second.first;
-			__COUT__ << "found activeIterateGroupName = " << activeIterateGroupName << __E__;
+			__COUT__ << "found activeIterateGroupName = " << activeIterateGroupName
+			         << __E__;
 		}
 		else if(activeGroup.first == ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
 		{
 			activeConfigGroupName = activeGroup.second.first;
-			__COUT__ << "found activeConfigGroupName = " << activeConfigGroupName << __E__;
+			__COUT__ << "found activeConfigGroupName = " << activeConfigGroupName
+			         << __E__;
 		}
 	}
 
 	// add system alias groups to set
-	const std::string                   groupAliasesTableName = ConfigurationManager::GROUP_ALIASES_TABLE_NAME;
-	std::map<std::string, TableVersion> activeVersions        = cfgMgr->getActiveVersions();
+	const std::string groupAliasesTableName =
+	    ConfigurationManager::GROUP_ALIASES_TABLE_NAME;
+	std::map<std::string, TableVersion> activeVersions = cfgMgr->getActiveVersions();
 	if(activeVersions.find(groupAliasesTableName) == activeVersions.end())
 	{
-		__SS__ << "\nActive version of " << groupAliasesTableName << " missing! " << groupAliasesTableName
+		__SS__ << "\nActive version of " << groupAliasesTableName << " missing! "
+		       << groupAliasesTableName
 		       << " is a required member of the Backbone configuration group."
 		       << "\n\nLikely you need to activate a valid Backbone group." << __E__;
 		__SS_THROW__;
 	}
 
-	std::vector<std::pair<std::string, ConfigurationTree>> aliasNodePairs = cfgMgr->getNode(groupAliasesTableName).getChildren();
+	std::vector<std::pair<std::string, ConfigurationTree>> aliasNodePairs =
+	    cfgMgr->getNode(groupAliasesTableName).getChildren();
 	for(auto& groupPair : aliasNodePairs)
 		groupSet.insert(std::pair<std::pair<std::string, TableGroupKey>, TableGroupKey>(
-		    std::pair<std::string, TableGroupKey>(groupPair.second.getNode("GroupName").getValueAsString(),
-		                                          TableGroupKey(groupPair.second.getNode("GroupKey").getValueAsString())),
+		    std::pair<std::string, TableGroupKey>(
+		        groupPair.second.getNode("GroupName").getValueAsString(),
+		        TableGroupKey(groupPair.second.getNode("GroupKey").getValueAsString())),
 		    TableGroupKey()));
 
 	__COUT__ << "Identified groups:" << __E__;
@@ -217,7 +239,8 @@ void FixNewTableFields(int argc, char* argv[])
 	}
 
 	currentDir = currentDir.substr(std::string("filesystemdb://").length());
-	while(currentDir.length() && currentDir[currentDir.length() - 1] == '/')  // remove trailing '/'s
+	while(currentDir.length() &&
+	      currentDir[currentDir.length() - 1] == '/')  // remove trailing '/'s
 		currentDir = currentDir.substr(0, currentDir.length() - 1);
 	std::string moveToDir = currentDir + "_" + nowTime;
 
@@ -226,7 +249,8 @@ void FixNewTableFields(int argc, char* argv[])
 		DIR* dp;
 		if((dp = opendir(pathToSwapIn.c_str())) == 0)
 		{
-			__COUT__ << "ERROR:(" << errno << ").  Can't open directory: " << pathToSwapIn << __E__;
+			__COUT__ << "ERROR:(" << errno << ").  Can't open directory: " << pathToSwapIn
+			         << __E__;
 			exit(0);
 		}
 		closedir(dp);
@@ -246,13 +270,16 @@ void FixNewTableFields(int argc, char* argv[])
 
 		// also swap in active groups file
 		// check if original active file exists
-		std::string activeGroupsFile = ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + thenTime;
-		FILE*       fp               = fopen(activeGroupsFile.c_str(), "r");
+		std::string activeGroupsFile =
+		    ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + thenTime;
+		FILE* fp = fopen(activeGroupsFile.c_str(), "r");
 		if(fp)
 		{
 			__COUT__ << "Swapping active groups file: \t" << activeGroupsFile << __E__;
-			__COUT__ << "\t.. to: \t\t" << ConfigurationManager::ACTIVE_GROUPS_FILENAME << __E__;
-			rename(activeGroupsFile.c_str(), ConfigurationManager::ACTIVE_GROUPS_FILENAME.c_str());
+			__COUT__ << "\t.. to: \t\t" << ConfigurationManager::ACTIVE_GROUPS_FILENAME
+			         << __E__;
+			rename(activeGroupsFile.c_str(),
+			       ConfigurationManager::ACTIVE_GROUPS_FILENAME.c_str());
 		}
 
 		__COUT__ << "Path swapped in. Done." << __E__;
@@ -299,7 +326,8 @@ void FixNewTableFields(int argc, char* argv[])
 		errDetected = false;
 
 		__COUT__ << "****************************" << __E__;
-		__COUT__ << "Loading members for " << groupPair.first.first << "(" << groupPair.first.second << ")" << __E__;
+		__COUT__ << "Loading members for " << groupPair.first.first << "("
+		         << groupPair.first.second << ")" << __E__;
 
 		//=========================
 		// load group, group metadata, and tables from original DB
@@ -320,13 +348,15 @@ void FixNewTableFields(int argc, char* argv[])
 		}
 		catch(std::runtime_error& e)
 		{
-			__COUT__ << "Error was caught loading members for " << groupPair.first.first << "(" << groupPair.first.second << ")" << __E__;
+			__COUT__ << "Error was caught loading members for " << groupPair.first.first
+			         << "(" << groupPair.first.second << ")" << __E__;
 			__COUT__ << e.what() << __E__;
 			errDetected = true;
 		}
 		catch(...)
 		{
-			__COUT__ << "Error was caught loading members for " << groupPair.first.first << "(" << groupPair.first.second << ")" << __E__;
+			__COUT__ << "Error was caught loading members for " << groupPair.first.first
+			         << "(" << groupPair.first.second << ")" << __E__;
 			errDetected = true;
 		}
 
@@ -338,8 +368,11 @@ void FixNewTableFields(int argc, char* argv[])
 			// power on if group failed
 			//	and record error
 
-			groupErrors.insert(std::pair<std::pair<std::string, TableGroupKey>, std::string>(
-			    std::pair<std::string, TableGroupKey>(groupPair.first.first, groupPair.first.second), "Error caught loading the group."));
+			groupErrors.insert(
+			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
+			        std::pair<std::string, TableGroupKey>(groupPair.first.first,
+			                                              groupPair.first.second),
+			        "Error caught loading the group."));
 			continue;
 		}
 
@@ -347,7 +380,8 @@ void FixNewTableFields(int argc, char* argv[])
 		// save group and its tables with new key and versions!
 		try
 		{
-			__COUT__ << "Before member map: " << StringMacros::mapToString(memberMap) << __E__;
+			__COUT__ << "Before member map: " << StringMacros::mapToString(memberMap)
+			         << __E__;
 
 			// saving tables
 			for(auto& memberPair : memberMap)
@@ -356,22 +390,28 @@ void FixNewTableFields(int argc, char* argv[])
 
 				// check if table has already been modified by a previous group
 				//	(i.e. two groups using the same version of a table)
-				if(modifiedTables.find(std::pair<std::string, TableVersion>(memberPair.first, memberPair.second)) != modifiedTables.end())
+				if(modifiedTables.find(std::pair<std::string, TableVersion>(
+				       memberPair.first, memberPair.second)) != modifiedTables.end())
 				{
 					__COUT__ << "Table was already modified!" << __E__;
-					memberPair.second = modifiedTables[std::pair<std::string, TableVersion>(memberPair.first, memberPair.second)];
-					__COUT__ << "\t to...\t" << memberPair.first << ":v" << memberPair.second << __E__;
+					memberPair.second =
+					    modifiedTables[std::pair<std::string, TableVersion>(
+					        memberPair.first, memberPair.second)];
+					__COUT__ << "\t to...\t" << memberPair.first << ":v"
+					         << memberPair.second << __E__;
 					continue;
 				}
 
 				// save new version, and then record new version in map
 
 				// first copy to new column names
-				TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(memberPair.first /*table name*/, memberPair.second /*source version*/
+				TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(
+				    memberPair.first /*table name*/, memberPair.second /*source version*/
 				);
 
 				// then save temporary to persistent version
-				TableVersion persistentVersion = cfgMgr->saveNewTable(memberPair.first /*table name*/, temporaryVersion);
+				TableVersion persistentVersion = cfgMgr->saveNewTable(
+				    memberPair.first /*table name*/, temporaryVersion);
 
 				//				//change the version of the active view to flatVersion and
 				// save  it 				config =
@@ -386,21 +426,30 @@ void FixNewTableFields(int argc, char* argv[])
 				////IMPORTANT
 
 				// save new version to modifiedTables
-				modifiedTables.insert(std::pair<std::pair<std::string, TableVersion>, TableVersion>(
-				    std::pair<std::string, TableVersion>(memberPair.first, memberPair.second), persistentVersion));
+				modifiedTables.insert(
+				    std::pair<std::pair<std::string, TableVersion>, TableVersion>(
+				        std::pair<std::string, TableVersion>(memberPair.first,
+				                                             memberPair.second),
+				        persistentVersion));
 
 				memberPair.second = persistentVersion;  // change version in the member
 				                                        // map
 
-				__COUT__ << "\t to...\t" << memberPair.first << ":v" << memberPair.second << __E__;
+				__COUT__ << "\t to...\t" << memberPair.first << ":v" << memberPair.second
+				         << __E__;
 			}  // end table member loop
 
 			// now save new group
-			__COUT__ << "After member map: " << StringMacros::mapToString(memberMap) << __E__;
+			__COUT__ << "After member map: " << StringMacros::mapToString(memberMap)
+			         << __E__;
 
 			// return;
 
-			TableGroupKey newGroupKey = cfgMgr->saveNewTableGroup(groupPair.first.first /*groupName*/, memberMap, groupComment, &groupAliases);
+			TableGroupKey newGroupKey =
+			    cfgMgr->saveNewTableGroup(groupPair.first.first /*groupName*/,
+			                              memberMap,
+			                              groupComment,
+			                              &groupAliases);
 
 			//
 			//
@@ -456,23 +505,33 @@ void FixNewTableFields(int argc, char* argv[])
 			groupPair.second = TableGroupKey(newGroupKey);
 
 			// if this is an active group, save key change
-			if(activeGroupKeys.find(groupPair.first.first) != activeGroupKeys.end() && activeGroupKeys[groupPair.first.first].first == groupPair.first.second)
-				activeGroupKeys[groupPair.first.first].second = TableGroupKey(newGroupKey);
+			if(activeGroupKeys.find(groupPair.first.first) != activeGroupKeys.end() &&
+			   activeGroupKeys[groupPair.first.first].first == groupPair.first.second)
+				activeGroupKeys[groupPair.first.first].second =
+				    TableGroupKey(newGroupKey);
 		}
 		catch(std::runtime_error& e)
 		{
-			__COUT__ << "Error was caught saving group " << groupPair.first.first << " (" << groupPair.first.second << ") " << __E__;
+			__COUT__ << "Error was caught saving group " << groupPair.first.first << " ("
+			         << groupPair.first.second << ") " << __E__;
 			__COUT__ << e.what() << __E__;
 
-			groupErrors.insert(std::pair<std::pair<std::string, TableGroupKey>, std::string>(
-			    std::pair<std::string, TableGroupKey>(groupPair.first.first, groupPair.first.second), "Error caught saving the group."));
+			groupErrors.insert(
+			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
+			        std::pair<std::string, TableGroupKey>(groupPair.first.first,
+			                                              groupPair.first.second),
+			        "Error caught saving the group."));
 		}
 		catch(...)
 		{
-			__COUT__ << "Error was caught saving group " << groupPair.first.first << " (" << groupPair.first.second << ") " << __E__;
+			__COUT__ << "Error was caught saving group " << groupPair.first.first << " ("
+			         << groupPair.first.second << ") " << __E__;
 
-			groupErrors.insert(std::pair<std::pair<std::string, TableGroupKey>, std::string>(
-			    std::pair<std::string, TableGroupKey>(groupPair.first.first, groupPair.first.second), "Error caught saving the group."));
+			groupErrors.insert(
+			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
+			        std::pair<std::string, TableGroupKey>(groupPair.first.first,
+			                                              groupPair.first.second),
+			        "Error caught saving the group."));
 		}
 		//=========================
 
@@ -579,8 +638,10 @@ void FixNewTableFields(int argc, char* argv[])
 		// modify Group Aliases Table and Version Aliases Table to point
 		//	at DEFAULT and flatVersion respectively
 
-		const std::string groupAliasesName   = ConfigurationManager::GROUP_ALIASES_TABLE_NAME;
-		const std::string versionAliasesName = ConfigurationManager::VERSION_ALIASES_TABLE_NAME;
+		const std::string groupAliasesName =
+		    ConfigurationManager::GROUP_ALIASES_TABLE_NAME;
+		const std::string versionAliasesName =
+		    ConfigurationManager::VERSION_ALIASES_TABLE_NAME;
 
 		std::map<std::string, TableVersion> activeMap = cfgMgr->getActiveVersions();
 
@@ -590,14 +651,17 @@ void FixNewTableFields(int argc, char* argv[])
 			__COUT__ << "\n\nModifying " << groupAliasesName << __E__;
 
 			// now save new group
-			__COUT__ << "Before member map: " << StringMacros::mapToString(memberMap) << __E__;
+			__COUT__ << "Before member map: " << StringMacros::mapToString(memberMap)
+			         << __E__;
 
 			// save new Group Aliases table and Version Aliases table
 			// first save new group aliases table
 			__COUT__ << groupAliasesName << ":v" << memberMap[groupAliasesName] << __E__;
 
 			// first copy to new column names
-			TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(groupAliasesName /*table name*/, memberMap[groupAliasesName] /*source version*/
+			TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(
+			    groupAliasesName /*table name*/,
+			    memberMap[groupAliasesName] /*source version*/
 			);
 
 			config = cfgMgr->getTableByName(groupAliasesName);
@@ -618,10 +682,14 @@ void FixNewTableFields(int argc, char* argv[])
 				for(const auto& group : groupSet)
 					if(group.second.isInvalid())
 						continue;
-					else if(cfgView->getDataView()[row][col1] == group.first.first && cfgView->getDataView()[row][col2] == group.first.second.toString())
+					else if(cfgView->getDataView()[row][col1] == group.first.first &&
+					        cfgView->getDataView()[row][col2] ==
+					            group.first.second.toString())
 					{
 						// found a matching group/key pair
-						__COUT__ << "Changing row " << row << " for " << cfgView->getDataView()[row][col1] << " key=" << cfgView->getDataView()[row][col2]
+						__COUT__ << "Changing row " << row << " for "
+						         << cfgView->getDataView()[row][col1]
+						         << " key=" << cfgView->getDataView()[row][col2]
 						         << " to NEW key=" << group.second << __E__;
 						cfgView->setValue(group.second.toString(), row, col2);
 						found = true;
@@ -635,7 +703,8 @@ void FixNewTableFields(int argc, char* argv[])
 			cfgView->print();
 
 			// then save temporary to persistent version
-			TableVersion persistentVersion = cfgMgr->saveNewTable(groupAliasesName /*table name*/, temporaryVersion);
+			TableVersion persistentVersion =
+			    cfgMgr->saveNewTable(groupAliasesName /*table name*/, temporaryVersion);
 
 			//		//change the version of the active view to flatVersion and save it
 			//		config = cfgMgr->getTableByName(groupAliasesName);
@@ -643,9 +712,11 @@ void FixNewTableFields(int argc, char* argv[])
 			//		cfgView->setVersion(TableVersion(flatVersion));
 			//		theInterface_->saveActiveVersion(config);
 
-			memberMap[groupAliasesName] = persistentVersion;  // change version in the member map
+			memberMap[groupAliasesName] =
+			    persistentVersion;  // change version in the member map
 
-			__COUT__ << "\t to...\t" << groupAliasesName << ":v" << memberMap[groupAliasesName] << __E__;
+			__COUT__ << "\t to...\t" << groupAliasesName << ":v"
+			         << memberMap[groupAliasesName] << __E__;
 
 		}  // done modifying group aliases
 
@@ -655,10 +726,13 @@ void FixNewTableFields(int argc, char* argv[])
 			__COUT__ << "\n\nModifying " << versionAliasesName << __E__;
 
 			// first save new version aliases table
-			__COUT__ << versionAliasesName << ":v" << memberMap[versionAliasesName] << __E__;
+			__COUT__ << versionAliasesName << ":v" << memberMap[versionAliasesName]
+			         << __E__;
 
 			// first copy to new column names
-			TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(versionAliasesName /*table name*/, memberMap[versionAliasesName] /*source version*/
+			TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(
+			    versionAliasesName /*table name*/,
+			    memberMap[versionAliasesName] /*source version*/
 			);
 
 			config = cfgMgr->getTableByName(versionAliasesName);
@@ -673,10 +747,13 @@ void FixNewTableFields(int argc, char* argv[])
 			{
 				found = false;
 				for(const auto& table : modifiedTables)
-					if(cfgView->getDataView()[row][col1] == table.first.first && cfgView->getDataView()[row][col2] == table.first.second.toString())
+					if(cfgView->getDataView()[row][col1] == table.first.first &&
+					   cfgView->getDataView()[row][col2] == table.first.second.toString())
 					{
 						// found a matching group/key pair
-						__COUT__ << "Changing row " << row << " for " << cfgView->getDataView()[row][col1] << " version=" << cfgView->getDataView()[row][col2]
+						__COUT__ << "Changing row " << row << " for "
+						         << cfgView->getDataView()[row][col1]
+						         << " version=" << cfgView->getDataView()[row][col2]
 						         << " to NEW version=" << table.second << __E__;
 						cfgView->setValue(table.second.toString(), row, col2);
 						found = true;
@@ -688,7 +765,8 @@ void FixNewTableFields(int argc, char* argv[])
 			}
 
 			// then save temporary to persistent version
-			TableVersion persistentVersion = cfgMgr->saveNewTable(versionAliasesName /*table name*/, temporaryVersion);
+			TableVersion persistentVersion =
+			    cfgMgr->saveNewTable(versionAliasesName /*table name*/, temporaryVersion);
 
 			//		//change the version of the active view to flatVersion and save it
 			//		config = cfgMgr->getTableByName(versionAliasesName);
@@ -696,9 +774,11 @@ void FixNewTableFields(int argc, char* argv[])
 			//		cfgView->setVersion(TableVersion(flatVersion));
 			//		theInterface_->saveActiveVersion(config);
 
-			memberMap[versionAliasesName] = persistentVersion;  // change version in the member map
+			memberMap[versionAliasesName] =
+			    persistentVersion;  // change version in the member map
 
-			__COUT__ << "\t to...\t" << versionAliasesName << ":v" << memberMap[versionAliasesName] << __E__;
+			__COUT__ << "\t to...\t" << versionAliasesName << ":v"
+			         << memberMap[versionAliasesName] << __E__;
 
 		}  // done modifying version aliases
 
@@ -706,7 +786,10 @@ void FixNewTableFields(int argc, char* argv[])
 		__COUT__ << "After member map: " << StringMacros::mapToString(memberMap) << __E__;
 
 		TableGroupKey newGroupKey = cfgMgr->saveNewTableGroup(
-		    activeBackboneGroupName /*groupName*/, memberMap, groupComment, 0 /*groupAliases*/);  // Do we need groupAliases for backbone here?
+		    activeBackboneGroupName /*groupName*/,
+		    memberMap,
+		    groupComment,
+		    0 /*groupAliases*/);  // Do we need groupAliases for backbone here?
 
 		// TableGroupKey cfgMgr->saveNewTableGroup
 		//		theInterface_->saveTableGroup(memberMap,
@@ -716,7 +799,8 @@ void FixNewTableFields(int argc, char* argv[])
 
 		activeGroupKeys[activeBackboneGroupName].second = TableGroupKey(newGroupKey);
 
-		__COUT__ << "New to-be-active backbone group " << activeBackboneGroupName << ":v" << activeGroupKeys[activeBackboneGroupName].second << __E__;
+		__COUT__ << "New to-be-active backbone group " << activeBackboneGroupName << ":v"
+		         << activeGroupKeys[activeBackboneGroupName].second << __E__;
 	}  // end active backbone group handling
 
 	// backup the file ConfigurationManager::ACTIVE_GROUPS_FILENAME with time
@@ -730,21 +814,27 @@ void FixNewTableFields(int argc, char* argv[])
 		FILE* fp = fopen(ConfigurationManager::ACTIVE_GROUPS_FILENAME.c_str(), "r");
 		if(!fp)
 		{
-			__SS__ << "Original active groups file '" << ConfigurationManager::ACTIVE_GROUPS_FILENAME << "' not found." << __E__;
+			__SS__ << "Original active groups file '"
+			       << ConfigurationManager::ACTIVE_GROUPS_FILENAME << "' not found."
+			       << __E__;
 			goto CLEAN_UP;
 		}
 
-		__COUT__ << "Backing up file: " << ConfigurationManager::ACTIVE_GROUPS_FILENAME << __E__;
+		__COUT__ << "Backing up file: " << ConfigurationManager::ACTIVE_GROUPS_FILENAME
+		         << __E__;
 
 		fclose(fp);
 
-		std::string renameFile = ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + nowTime;
+		std::string renameFile =
+		    ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + nowTime;
 		rename(ConfigurationManager::ACTIVE_GROUPS_FILENAME.c_str(), renameFile.c_str());
 
 		__COUT__ << "Backup file name: " << renameFile << __E__;
 
-		TableGroupKey *theConfigurationTableGroupKey_, *theContextTableGroupKey_, *theBackboneTableGroupKey_, *theIterateTableGroupKey_;
-		std::string    theConfigurationTableGroup_, theContextTableGroup_, theBackboneTableGroup_, theIterateTableGroup_;
+		TableGroupKey *theConfigurationTableGroupKey_, *theContextTableGroupKey_,
+		    *theBackboneTableGroupKey_, *theIterateTableGroupKey_;
+		std::string theConfigurationTableGroup_, theContextTableGroup_,
+		    theBackboneTableGroup_, theIterateTableGroup_;
 
 		theConfigurationTableGroup_    = activeConfigGroupName;
 		theConfigurationTableGroupKey_ = &(activeGroupKeys[activeConfigGroupName].second);
@@ -760,7 +850,8 @@ void FixNewTableFields(int argc, char* argv[])
 
 		// the following is copied from ConfigurationManagerRW::activateTableGroup
 		{
-			__COUT__ << "Updating persistent active groups to " << ConfigurationManager::ACTIVE_GROUPS_FILENAME << " ..." << __E__;
+			__COUT__ << "Updating persistent active groups to "
+			         << ConfigurationManager::ACTIVE_GROUPS_FILENAME << " ..." << __E__;
 
 			std::string fn = ConfigurationManager::ACTIVE_GROUPS_FILENAME;
 			FILE*       fp = fopen(fn.c_str(), "w");
@@ -768,13 +859,29 @@ void FixNewTableFields(int argc, char* argv[])
 				return;
 
 			fprintf(fp, "%s\n", theContextTableGroup_.c_str());
-			fprintf(fp, "%s\n", theContextTableGroupKey_ ? theContextTableGroupKey_->toString().c_str() : "-1");
+			fprintf(fp,
+			        "%s\n",
+			        theContextTableGroupKey_
+			            ? theContextTableGroupKey_->toString().c_str()
+			            : "-1");
 			fprintf(fp, "%s\n", theBackboneTableGroup_.c_str());
-			fprintf(fp, "%s\n", theBackboneTableGroupKey_ ? theBackboneTableGroupKey_->toString().c_str() : "-1");
+			fprintf(fp,
+			        "%s\n",
+			        theBackboneTableGroupKey_
+			            ? theBackboneTableGroupKey_->toString().c_str()
+			            : "-1");
 			fprintf(fp, "%s\n", theConfigurationTableGroup_.c_str());
-			fprintf(fp, "%s\n", theConfigurationTableGroupKey_ ? theConfigurationTableGroupKey_->toString().c_str() : "-1");
+			fprintf(fp,
+			        "%s\n",
+			        theConfigurationTableGroupKey_
+			            ? theConfigurationTableGroupKey_->toString().c_str()
+			            : "-1");
 			fprintf(fp, "%s\n", theIterateTableGroup_.c_str());
-			fprintf(fp, "%s\n", theIterateTableGroupKey_ ? theIterateTableGroupKey_->toString().c_str() : "-1");
+			fprintf(fp,
+			        "%s\n",
+			        theIterateTableGroupKey_
+			            ? theIterateTableGroupKey_->toString().c_str()
+			            : "-1");
 			fclose(fp);
 		}
 	}
@@ -783,16 +890,19 @@ void FixNewTableFields(int argc, char* argv[])
 
 	__COUT__ << "Resulting Groups:" << __E__;
 	for(const auto& group : groupSet)
-		__COUT__ << "\t" << group.first.first << ": " << group.first.second << " => " << group.second << __E__;
+		__COUT__ << "\t" << group.first.first << ": " << group.first.second << " => "
+		         << group.second << __E__;
 	__COUT__ << "Resulting Groups end." << __E__;
 
 	// print resulting active groups
 
 	__COUT__ << "Resulting Active Groups:" << __E__;
 	for(const auto& activeGroup : activeGroupKeys)
-		__COUT__ << "\t" << activeGroup.first << ": " << activeGroup.second.first << " => " << activeGroup.second.second << __E__;
+		__COUT__ << "\t" << activeGroup.first << ": " << activeGroup.second.first
+		         << " => " << activeGroup.second.second << __E__;
 
-	__COUT__ << activeBackboneGroupName << " is the " << ConfigurationManager::GROUP_TYPE_NAME_BACKBONE << "." << __E__;
+	__COUT__ << activeBackboneGroupName << " is the "
+	         << ConfigurationManager::GROUP_TYPE_NAME_BACKBONE << "." << __E__;
 	__COUT__ << "Resulting Active Groups end." << __E__;
 
 CLEAN_UP:
@@ -800,14 +910,16 @@ CLEAN_UP:
 	__COUT__ << "End of Flattening Active Table Groups!\n\n\n" << __E__;
 
 	__COUT__ << "****************************" << __E__;
-	__COUT__ << "There were " << groupSet.size() << " groups considered, and there were " << groupErrors.size() << " errors found handling those groups."
-	         << __E__;
+	__COUT__ << "There were " << groupSet.size() << " groups considered, and there were "
+	         << groupErrors.size() << " errors found handling those groups." << __E__;
 	__COUT__ << "The following errors were found handling the groups:" << __E__;
 	for(auto& groupErr : groupErrors)
-		__COUT__ << "\t" << groupErr.first.first << " " << groupErr.first.second << ": \t" << groupErr.second << __E__;
+		__COUT__ << "\t" << groupErr.first.first << " " << groupErr.first.second << ": \t"
+		         << groupErr.second << __E__;
 	__COUT__ << "End of errors.\n\n" << __E__;
 
-	__COUT__ << "Run the following to return to your previous database structure:" << __E__;
+	__COUT__ << "Run the following to return to your previous database structure:"
+	         << __E__;
 	__COUT__ << "\t otsdaq_fix_new_table_fiels " << moveToDir << "\n\n" << __E__;
 
 	return;

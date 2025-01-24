@@ -40,130 +40,137 @@
 #define __MODULE__ __PRETTY_FUNCTION__  // Options: __FUNCTION__ | __PRETTY_FUNCTION___
 #define __OFFSET__ 50                   // Options: __FUNCTION__ | __PRETTY_FUNCTION___
 
-#define FATAL(MSG, COLOR)                                                                                                                                  \
-	{                                                                                                                                                      \
-		std::stringstream msg_;                                                                                                                            \
-		std::stringstream PFs_;                                                                                                                            \
-		std::string       PF_    = __MODULE__;                                                                                                             \
-		int               PFSize = PF_.size();                                                                                                             \
-		int               maxL   = 90;                                                                                                                     \
-		if(PFSize > __OFFSET__)                                                                                                                            \
-		{                                                                                                                                                  \
-			PFSize = __OFFSET__;                                                                                                                           \
-		}                                                                                                                                                  \
-		for(int i = 0; i < PFSize; ++i)                                                                                                                    \
-		{                                                                                                                                                  \
-			PFs_ << PF_[i];                                                                                                                                \
-		}                                                                                                                                                  \
-		if(PFSize < __OFFSET__)                                                                                                                            \
-		{                                                                                                                                                  \
-			for(int i = 0; i < __OFFSET__ + 3 - PFSize; ++i)                                                                                               \
-			{                                                                                                                                              \
-				PFs_ << " ";                                                                                                                               \
-			}                                                                                                                                              \
-		}                                                                                                                                                  \
-		if(PFSize < (int)PF_.size())                                                                                                                       \
-		{                                                                                                                                                  \
-			maxL -= 3;                                                                                                                                     \
-			PFs_ << ACRed << "...";                                                                                                                        \
-		}                                                                                                                                                  \
-		msg_ << ACCyan << ACBold << __LINE__ << ACPlain << ACYellow << "\t] [" << ACRed << ACBold << ACReverse << "FATAL:" << ACPlain << ACWhite << ACBold \
-		     << " " << PFs_.str() << ACPlain << ACYellow << "]";                                                                                           \
-		int blankSize = maxL - msg_.str().size() + 1;                                                                                                      \
-		if(blankSize < 0)                                                                                                                                  \
-			blankSize = 2;                                                                                                                                 \
-		std::string blanks = "";                                                                                                                           \
-		for(int i = 0; i < blankSize; ++i)                                                                                                                 \
-		{                                                                                                                                                  \
-			blanks += " ";                                                                                                                                 \
-		}                                                                                                                                                  \
-		std::cout << msg_.str() << blanks << COLOR << ACBold << MSG << ACPlain << std::endl;                                                               \
+#define FATAL(MSG, COLOR)                                                               \
+	{                                                                                   \
+		std::stringstream msg_;                                                         \
+		std::stringstream PFs_;                                                         \
+		std::string       PF_    = __MODULE__;                                          \
+		int               PFSize = PF_.size();                                          \
+		int               maxL   = 90;                                                  \
+		if(PFSize > __OFFSET__)                                                         \
+		{                                                                               \
+			PFSize = __OFFSET__;                                                        \
+		}                                                                               \
+		for(int i = 0; i < PFSize; ++i)                                                 \
+		{                                                                               \
+			PFs_ << PF_[i];                                                             \
+		}                                                                               \
+		if(PFSize < __OFFSET__)                                                         \
+		{                                                                               \
+			for(int i = 0; i < __OFFSET__ + 3 - PFSize; ++i)                            \
+			{                                                                           \
+				PFs_ << " ";                                                            \
+			}                                                                           \
+		}                                                                               \
+		if(PFSize < (int)PF_.size())                                                    \
+		{                                                                               \
+			maxL -= 3;                                                                  \
+			PFs_ << ACRed << "...";                                                     \
+		}                                                                               \
+		msg_ << ACCyan << ACBold << __LINE__ << ACPlain << ACYellow << "\t] [" << ACRed \
+		     << ACBold << ACReverse << "FATAL:" << ACPlain << ACWhite << ACBold << " "  \
+		     << PFs_.str() << ACPlain << ACYellow << "]";                               \
+		int blankSize = maxL - msg_.str().size() + 1;                                   \
+		if(blankSize < 0)                                                               \
+			blankSize = 2;                                                              \
+		std::string blanks = "";                                                        \
+		for(int i = 0; i < blankSize; ++i)                                              \
+		{                                                                               \
+			blanks += " ";                                                              \
+		}                                                                               \
+		std::cout << msg_.str() << blanks << COLOR << ACBold << MSG << ACPlain          \
+		          << std::endl;                                                         \
 	}
 
-#define STDLINE(MSG, COLOR)                                                                                                                                 \
-	{                                                                                                                                                       \
-		std::stringstream msg_;                                                                                                                             \
-		std::stringstream PFs_;                                                                                                                             \
-		std::string       PF_    = __MODULE__;                                                                                                              \
-		int               PFSize = PF_.size();                                                                                                              \
-		int               maxL   = 90;                                                                                                                      \
-		if(PFSize > __OFFSET__)                                                                                                                             \
-		{                                                                                                                                                   \
-			PFSize = __OFFSET__;                                                                                                                            \
-		}                                                                                                                                                   \
-		for(int i = 0; i < PFSize; ++i)                                                                                                                     \
-		{                                                                                                                                                   \
-			PFs_ << PF_[i];                                                                                                                                 \
-		}                                                                                                                                                   \
-		if(PFSize < __OFFSET__)                                                                                                                             \
-		{                                                                                                                                                   \
-			for(int i = 0; i < __OFFSET__ + 3 - PFSize; ++i)                                                                                                \
-			{                                                                                                                                               \
-				PFs_ << " ";                                                                                                                                \
-			}                                                                                                                                               \
-		}                                                                                                                                                   \
-		if(PFSize < (int)PF_.size())                                                                                                                        \
-		{                                                                                                                                                   \
-			maxL -= 4;                                                                                                                                      \
-			PFs_ << ACRed << "...";                                                                                                                         \
-		}                                                                                                                                                   \
-		else                                                                                                                                                \
-		{                                                                                                                                                   \
-			PFs_ << ACPlain << ACPlain << ACPlain << ACPlain;                                                                                               \
-		}                                                                                                                                                   \
-		msg_ << ACCyan << ACBold << __LINE__ << ACPlain << ACYellow << "\t] [" << ACPlain << ACWhite << ACBold << PFs_.str() << ACPlain << ACYellow << "]"; \
-		int msgS = msg_.str().size() + 1;                                                                                                                   \
-		if(msgS < __OFFSET__)                                                                                                                               \
-			msgS = __OFFSET__;                                                                                                                              \
-		int blankSize = maxL - msgS;                                                                                                                        \
-		if(blankSize < 0)                                                                                                                                   \
-			blankSize = 3;                                                                                                                                  \
-		std::string blanks = "";                                                                                                                            \
-		for(int i = 0; i < blankSize; ++i)                                                                                                                  \
-		{                                                                                                                                                   \
-			blanks += " ";                                                                                                                                  \
-		}                                                                                                                                                   \
-		std::cout << msg_.str() << blanks << COLOR << ACBold << MSG << ACPlain << std::endl;                                                                \
+#define STDLINE(MSG, COLOR)                                                       \
+	{                                                                             \
+		std::stringstream msg_;                                                   \
+		std::stringstream PFs_;                                                   \
+		std::string       PF_    = __MODULE__;                                    \
+		int               PFSize = PF_.size();                                    \
+		int               maxL   = 90;                                            \
+		if(PFSize > __OFFSET__)                                                   \
+		{                                                                         \
+			PFSize = __OFFSET__;                                                  \
+		}                                                                         \
+		for(int i = 0; i < PFSize; ++i)                                           \
+		{                                                                         \
+			PFs_ << PF_[i];                                                       \
+		}                                                                         \
+		if(PFSize < __OFFSET__)                                                   \
+		{                                                                         \
+			for(int i = 0; i < __OFFSET__ + 3 - PFSize; ++i)                      \
+			{                                                                     \
+				PFs_ << " ";                                                      \
+			}                                                                     \
+		}                                                                         \
+		if(PFSize < (int)PF_.size())                                              \
+		{                                                                         \
+			maxL -= 4;                                                            \
+			PFs_ << ACRed << "...";                                               \
+		}                                                                         \
+		else                                                                      \
+		{                                                                         \
+			PFs_ << ACPlain << ACPlain << ACPlain << ACPlain;                     \
+		}                                                                         \
+		msg_ << ACCyan << ACBold << __LINE__ << ACPlain << ACYellow << "\t] ["    \
+		     << ACPlain << ACWhite << ACBold << PFs_.str() << ACPlain << ACYellow \
+		     << "]";                                                              \
+		int msgS = msg_.str().size() + 1;                                         \
+		if(msgS < __OFFSET__)                                                     \
+			msgS = __OFFSET__;                                                    \
+		int blankSize = maxL - msgS;                                              \
+		if(blankSize < 0)                                                         \
+			blankSize = 3;                                                        \
+		std::string blanks = "";                                                  \
+		for(int i = 0; i < blankSize; ++i)                                        \
+		{                                                                         \
+			blanks += " ";                                                        \
+		}                                                                         \
+		std::cout << msg_.str() << blanks << COLOR << ACBold << MSG << ACPlain    \
+		          << std::endl;                                                   \
 	}
 
-#define STDSNAP(MSG, COLOR)                                                                                                                                 \
-	{                                                                                                                                                       \
-		std::stringstream msg_;                                                                                                                             \
-		std::stringstream PFs_;                                                                                                                             \
-		std::string       PF_    = __MODULE__;                                                                                                              \
-		int               PFSize = PF_.size();                                                                                                              \
-		int               maxL   = 90;                                                                                                                      \
-		if(PFSize > __OFFSET__)                                                                                                                             \
-		{                                                                                                                                                   \
-			PFSize = __OFFSET__;                                                                                                                            \
-		}                                                                                                                                                   \
-		for(int i = 0; i < PFSize; ++i)                                                                                                                     \
-		{                                                                                                                                                   \
-			PFs_ << PF_[i];                                                                                                                                 \
-		}                                                                                                                                                   \
-		if(PFSize <= __OFFSET__)                                                                                                                            \
-		{                                                                                                                                                   \
-			for(int i = 0; i < __OFFSET__ + 3 - PFSize; ++i)                                                                                                \
-			{                                                                                                                                               \
-				PFs_ << " ";                                                                                                                                \
-			}                                                                                                                                               \
-		}                                                                                                                                                   \
-		if(PFSize < (int)PF_.size())                                                                                                                        \
-		{                                                                                                                                                   \
-			maxL -= 4;                                                                                                                                      \
-			PFs_ << ACRed << "...";                                                                                                                         \
-		}                                                                                                                                                   \
-		msg_ << ACCR << ACCyan << ACBold << __LINE__ << ACPlain << ACYellow << "\t] [" << ACPlain << ACWhite << ACBold << PFs_.str() << ACPlain << ACYellow \
-		     << "]";                                                                                                                                        \
-		int blankSize = maxL - msg_.str().size() + 1;                                                                                                       \
-		if(blankSize < 0)                                                                                                                                   \
-			blankSize = 3;                                                                                                                                  \
-		std::string blanks = "";                                                                                                                            \
-		for(int i = 0; i < blankSize; ++i)                                                                                                                  \
-		{                                                                                                                                                   \
-			blanks += " ";                                                                                                                                  \
-		}                                                                                                                                                   \
-		std::cout << msg_.str() << blanks << COLOR << ACBold << MSG << ACPlain << std::flush;                                                               \
+#define STDSNAP(MSG, COLOR)                                                            \
+	{                                                                                  \
+		std::stringstream msg_;                                                        \
+		std::stringstream PFs_;                                                        \
+		std::string       PF_    = __MODULE__;                                         \
+		int               PFSize = PF_.size();                                         \
+		int               maxL   = 90;                                                 \
+		if(PFSize > __OFFSET__)                                                        \
+		{                                                                              \
+			PFSize = __OFFSET__;                                                       \
+		}                                                                              \
+		for(int i = 0; i < PFSize; ++i)                                                \
+		{                                                                              \
+			PFs_ << PF_[i];                                                            \
+		}                                                                              \
+		if(PFSize <= __OFFSET__)                                                       \
+		{                                                                              \
+			for(int i = 0; i < __OFFSET__ + 3 - PFSize; ++i)                           \
+			{                                                                          \
+				PFs_ << " ";                                                           \
+			}                                                                          \
+		}                                                                              \
+		if(PFSize < (int)PF_.size())                                                   \
+		{                                                                              \
+			maxL -= 4;                                                                 \
+			PFs_ << ACRed << "...";                                                    \
+		}                                                                              \
+		msg_ << ACCR << ACCyan << ACBold << __LINE__ << ACPlain << ACYellow << "\t] [" \
+		     << ACPlain << ACWhite << ACBold << PFs_.str() << ACPlain << ACYellow      \
+		     << "]";                                                                   \
+		int blankSize = maxL - msg_.str().size() + 1;                                  \
+		if(blankSize < 0)                                                              \
+			blankSize = 3;                                                             \
+		std::string blanks = "";                                                       \
+		for(int i = 0; i < blankSize; ++i)                                             \
+		{                                                                              \
+			blanks += " ";                                                             \
+		}                                                                              \
+		std::cout << msg_.str() << blanks << COLOR << ACBold << MSG << ACPlain         \
+		          << std::flush;                                                       \
 	}
 
 class Utils

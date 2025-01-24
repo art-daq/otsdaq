@@ -25,10 +25,18 @@ class TableInfoReader
 	void terminatePlatform(void);
 	bool checkViewType(std::string type);
 
-	xercesc::DOMNode*    getNode(XMLCh* tagName, xercesc::DOMNode* parent, unsigned int itemNumber);
-	xercesc::DOMNode*    getNode(XMLCh* tagName, xercesc::DOMElement* parent, unsigned int itemNumber);
-	xercesc::DOMElement* getElement(XMLCh* tagName, xercesc::DOMNode* parent, unsigned int itemNumber);
-	xercesc::DOMElement* getElement(XMLCh* tagName, xercesc::DOMElement* parent, unsigned int itemNumber);
+	xercesc::DOMNode*    getNode(XMLCh*            tagName,
+	                             xercesc::DOMNode* parent,
+	                             unsigned int      itemNumber);
+	xercesc::DOMNode*    getNode(XMLCh*               tagName,
+	                             xercesc::DOMElement* parent,
+	                             unsigned int         itemNumber);
+	xercesc::DOMElement* getElement(XMLCh*            tagName,
+	                                xercesc::DOMNode* parent,
+	                                unsigned int      itemNumber);
+	xercesc::DOMElement* getElement(XMLCh*               tagName,
+	                                xercesc::DOMElement* parent,
+	                                unsigned int         itemNumber);
 
 	XMLCh* rootTag_;
 	XMLCh* tableTag_;

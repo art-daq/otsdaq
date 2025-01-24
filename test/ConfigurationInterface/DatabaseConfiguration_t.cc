@@ -33,7 +33,9 @@ BOOST_AUTO_TEST_CASE(readxml_writedb_configurations)
 	std::vector<std::string> configTables;
 
 	// normally CONFIGURATION_TYPE is set by StartOTS.sh
-	setenv("CONFIGURATION_DATA_PATH", (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(), 1);
+	setenv("CONFIGURATION_DATA_PATH",
+	       (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
+	       1);
 	std::string configDir = std::string(__ENV__("CONFIGURATION_DATA_PATH")) + '/';
 
 	// CONFIGURATION_TYPE needed by
@@ -50,7 +52,8 @@ BOOST_AUTO_TEST_CASE(readxml_writedb_configurations)
 
 		if((dp = opendir(configDir.c_str())) == 0)
 		{
-			__COUT__ << "ERROR:(" << errno << ").  Can't open directory: " << configDir << __E__;
+			__COUT__ << "ERROR:(" << errno << ").  Can't open directory: " << configDir
+			         << __E__;
 			exit(0);
 		}
 
@@ -73,10 +76,16 @@ BOOST_AUTO_TEST_CASE(readxml_writedb_configurations)
 		TableBase* base = 0;
 		__COUT__ << __E__;
 		__COUT__ << __E__;
-		__COUT__ << (i + 1) << " of " << configTables.size() << ": " << configTables[i] << __E__;
+		__COUT__ << (i + 1) << " of " << configTables.size() << ": " << configTables[i]
+		         << __E__;
 
-		theInterface_->get(base, configTables[i], 0, 0, false,
-		                   TableVersion(TableVersion::DEFAULT));  // load version 0 for all
+		theInterface_->get(
+		    base,
+		    configTables[i],
+		    0,
+		    0,
+		    false,
+		    TableVersion(TableVersion::DEFAULT));  // load version 0 for all
 
 		__COUT__ << "loaded " << configTables[i] << __E__;
 
@@ -92,7 +101,8 @@ BOOST_AUTO_TEST_CASE(readxml_writedb_configurations)
 
 		// theInterface_->saveActiveVersion(base); //saves current version
 
-		TableVersion tmpView = base->createTemporaryView(TableVersion(TableVersion::DEFAULT));
+		TableVersion tmpView =
+		    base->createTemporaryView(TableVersion(TableVersion::DEFAULT));
 		theInterface_->saveNewVersion(base, tmpView);
 
 		delete base;  // cleanup config instance
@@ -110,7 +120,9 @@ BOOST_AUTO_TEST_CASE(readdb_writexml_configurations)
 	std::vector<std::string> configTables;
 
 	// normally CONFIGURATION_TYPE is set by StartOTS.sh
-	setenv("CONFIGURATION_DATA_PATH", (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(), 1);
+	setenv("CONFIGURATION_DATA_PATH",
+	       (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
+	       1);
 	std::string configDir = std::string(__ENV__("CONFIGURATION_DATA_PATH")) + '/';
 
 	// CONFIGURATION_TYPE needed by
@@ -127,7 +139,8 @@ BOOST_AUTO_TEST_CASE(readdb_writexml_configurations)
 
 		if((dp = opendir(configDir.c_str())) == 0)
 		{
-			__COUT__ << "ERROR:(" << errno << ").  Can't open directory: " << configDir << __E__;
+			__COUT__ << "ERROR:(" << errno << ").  Can't open directory: " << configDir
+			         << __E__;
 			exit(0);
 		}
 
@@ -150,10 +163,16 @@ BOOST_AUTO_TEST_CASE(readdb_writexml_configurations)
 		TableBase* base = 0;
 		__COUT__ << __E__;
 		__COUT__ << __E__;
-		__COUT__ << (i + 1) << " of " << configTables.size() << ": " << configTables[i] << __E__;
+		__COUT__ << (i + 1) << " of " << configTables.size() << ": " << configTables[i]
+		         << __E__;
 
-		theInterface_->get(base, configTables[i], 0, 0, false,
-		                   TableVersion(TableVersion::DEFAULT));  // load version 0 for all
+		theInterface_->get(
+		    base,
+		    configTables[i],
+		    0,
+		    0,
+		    false,
+		    TableVersion(TableVersion::DEFAULT));  // load version 0 for all
 
 		__COUT__ << "loaded " << configTables[i] << __E__;
 
@@ -167,7 +186,8 @@ BOOST_AUTO_TEST_CASE(readdb_writexml_configurations)
 		//
 		//
 
-		TableVersion tmpView = base->createTemporaryView(TableVersion(TableVersion::DEFAULT));
+		TableVersion tmpView =
+		    base->createTemporaryView(TableVersion(TableVersion::DEFAULT));
 		theInterface_->saveNewVersion(base, tmpView);
 
 		delete base;  // cleanup config instance

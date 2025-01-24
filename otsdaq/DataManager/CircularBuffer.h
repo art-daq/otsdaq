@@ -47,7 +47,9 @@ class CircularBuffer : public CircularBufferBase
 		// lastReadBuffer_[consumerID]->second.numberOfWrittenBuffers()
 		//			<< std::endl;
 		int readReturnVal;
-		while((readReturnVal = lastReadBuffer_[consumerID]->second.read(buffer, header, consumerID)) < 0 && readCounter > 0)
+		while((readReturnVal = lastReadBuffer_[consumerID]->second.read(
+		           buffer, header, consumerID)) < 0 &&
+		      readCounter > 0)
 		{
 			setNextProducerBuffer(consumerID);
 			--readCounter;
@@ -69,7 +71,9 @@ class CircularBuffer : public CircularBufferBase
 		// lastReadBuffer_[consumerID]->second.numberOfWrittenBuffers()
 		//			<< std::endl;
 		int readReturnVal;
-		while((readReturnVal = lastReadBuffer_[consumerID]->second.read(buffer, header, consumerID)) < 0 && readCounter > 0)
+		while((readReturnVal = lastReadBuffer_[consumerID]->second.read(
+		           buffer, header, consumerID)) < 0 &&
+		      readCounter > 0)
 		{
 			setNextProducerBuffer(consumerID);
 			--readCounter;
@@ -77,7 +81,10 @@ class CircularBuffer : public CircularBufferBase
 		return readReturnVal;
 	}
 
-	BufferImplementation<D, H>& getLastReadBuffer(const std::string& consumerID) { return lastReadBuffer_[consumerID]->second; }
+	BufferImplementation<D, H>& getLastReadBuffer(const std::string& consumerID)
+	{
+		return lastReadBuffer_[consumerID]->second;
+	}
 	BufferImplementation<D, H>& getBuffer(const std::string& producerID)
 	{
 		// __COUTV__(producerID);
@@ -89,15 +96,20 @@ class CircularBuffer : public CircularBufferBase
 	// void unregisterProducer   (const std::string& producerID);
 
   private:
-	std::map<std::string /*producer id*/, BufferImplementation<D, H> /*one producer, many consumers*/> theBuffer_;
+	std::map<std::string /*producer id*/,
+	         BufferImplementation<D, H> /*one producer, many consumers*/>
+	    theBuffer_;
 
-	void registerProducer(const std::string& producerID, unsigned int numberOfSubBuffers = 100);
-	void registerConsumer(const std::string& consumerID, CircularBufferBase::ConsumerPriority priority);
+	void registerProducer(const std::string& producerID,
+	                      unsigned int       numberOfSubBuffers = 100);
+	void registerConsumer(const std::string&                   consumerID,
+	                      CircularBufferBase::ConsumerPriority priority);
 
 	void setNextProducerBuffer(const std::string& consumer);
 
 	std::map<std::string /*consumer id*/,
-	         /*iterator within producer map*/ typename std::map<std::string, BufferImplementation<D, H>>::iterator>
+	         /*iterator within producer map*/ typename std::
+	             map<std::string, BufferImplementation<D, H>>::iterator>
 	    lastReadBuffer_;
 
 	std::map<std::string, CircularBufferBase::ConsumerPriority> consumers_;

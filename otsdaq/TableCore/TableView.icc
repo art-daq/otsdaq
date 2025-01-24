@@ -1,7 +1,10 @@
 
 //==============================================================================
 template<class T>
-unsigned int TableView::findRow(unsigned int col, const T& value, unsigned int offsetRow /*=0*/, bool doNotThrow /*= false*/) const
+unsigned int TableView::findRow(unsigned int col,
+                                const T&     value,
+                                unsigned int offsetRow /*=0*/,
+                                bool         doNotThrow /*= false*/) const
 {
 	std::stringstream ss;
 	ss << value;
@@ -10,8 +13,11 @@ unsigned int TableView::findRow(unsigned int col, const T& value, unsigned int o
 
 //==============================================================================
 template<class T>
-unsigned int TableView::findRowInGroup(
-    unsigned int col, const T& value, const std::string& groupId, const std::string& childLinkIndex, unsigned int offsetRow /*=0*/) const
+unsigned int TableView::findRowInGroup(unsigned int       col,
+                                       const T&           value,
+                                       const std::string& groupId,
+                                       const std::string& childLinkIndex,
+                                       unsigned int       offsetRow /*=0*/) const
 {
 	std::stringstream ss(value);
 	ss << value;
@@ -24,7 +30,10 @@ unsigned int TableView::findRowInGroup(
 // Since there is no environmental variable that can just be a number they will all be
 // converted no matter what.
 template<class T>
-void TableView::getValue(T& value, unsigned int row, unsigned int col, bool doConvertEnvironmentVariables /*=true*/) const
+void TableView::getValue(T&           value,
+                         unsigned int row,
+                         unsigned int col,
+                         bool         doConvertEnvironmentVariables /*=true*/) const
 {
 	if(!(col < columnsInfo_.size() && row < getNumberOfRows()))
 	{
@@ -32,7 +41,8 @@ void TableView::getValue(T& value, unsigned int row, unsigned int col, bool doCo
 		__SS_THROW__;
 	}
 
-	value = validateValueForColumn<T>(theDataView_[row][col], col, doConvertEnvironmentVariables);
+	value = validateValueForColumn<T>(
+	    theDataView_[row][col], col, doConvertEnvironmentVariables);
 }  // end getValue<T>()
 
 //==============================================================================
@@ -42,7 +52,9 @@ void TableView::getValue(T& value, unsigned int row, unsigned int col, bool doCo
 //
 //	on success returns what the value would be for get value
 template<class T>
-T TableView::validateValueForColumn(const std::string& value, unsigned int col, bool doConvertEnvironmentVariables /*=true*/) const
+T TableView::validateValueForColumn(const std::string& value,
+                                    unsigned int       col,
+                                    bool doConvertEnvironmentVariables /*=true*/) const
 {
 	if(col >= columnsInfo_.size())
 	{
@@ -54,23 +66,28 @@ T TableView::validateValueForColumn(const std::string& value, unsigned int col, 
 
 	try
 	{
-		if(columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_NUMBER)  // handle numbers
+		if(columnsInfo_[col].getDataType() ==
+		   TableViewColumnInfo::DATATYPE_NUMBER)  // handle numbers
 		{
-			if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA && 
-				//value == columnsInfo_[col].getDefaultValue())
-				value == columnsInfo_[col].getDefaultDefaultValue(columnsInfo_[col].getType(),columnsInfo_[col].getDataType()))
+			if(columnsInfo_[col].getType() ==
+			       TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA &&
+			   //value == columnsInfo_[col].getDefaultValue())
+			   value == columnsInfo_[col].getDefaultDefaultValue(
+			                columnsInfo_[col].getType(), columnsInfo_[col].getDataType()))
 			{
 				// if type number, fixed choice and 0(default), then return first choice
 
 				std::vector<std::string> choices = columnsInfo_[col].getDataChoices();
 
 				// consider arbitrary bool
-				bool   skipOne = (choices.size() && choices[0].find("arbitraryBool=") == 0);
-				size_t index   = (skipOne ? 1 : 0);
+				bool skipOne = (choices.size() && choices[0].find("arbitraryBool=") == 0);
+				size_t index = (skipOne ? 1 : 0);
 				if(choices.size() > index)
 				{
-					std::string data = doConvertEnvironmentVariables ? StringMacros::convertEnvironmentVariables(choices[index])
-					                                                 : choices[index];  // handled value from fixed choices
+					std::string data =
+					    doConvertEnvironmentVariables
+					        ? StringMacros::convertEnvironmentVariables(choices[index])
+					        : choices[index];  // handled value from fixed choices
 
 					if(StringMacros::getNumber(data, retValue))
 						return retValue;
@@ -82,7 +99,9 @@ T TableView::validateValueForColumn(const std::string& value, unsigned int col, 
 				}
 			}  // end handling default to fixed choice conversion
 
-			std::string data = doConvertEnvironmentVariables ? StringMacros::convertEnvironmentVariables(value) : value;
+			std::string data = doConvertEnvironmentVariables
+			                       ? StringMacros::convertEnvironmentVariables(value)
+			                       : value;
 
 			if(StringMacros::getNumber(data, retValue))
 				return retValue;
@@ -92,16 +111,20 @@ T TableView::validateValueForColumn(const std::string& value, unsigned int col, 
 				__SS_THROW__;
 			}
 		}
-		else if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA &&
+		else if(columnsInfo_[col].getType() ==
+		            TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA &&
 		        columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_STRING &&
-		        (typeid(int) == typeid(retValue) || typeid(unsigned int) == typeid(retValue)))
+		        (typeid(int) == typeid(retValue) ||
+		         typeid(unsigned int) == typeid(retValue)))
 		{
 			// this case is for if fixed choice type but int is requested
 			//	then return index in fixed choice list
 			//	(always consider DEFAULT as index 0, so first non-default is index 1 and so on)
 			// throw error if no match
 
-			if(value == columnsInfo_[col].getDefaultValue()) // allow custom default value, not necessarily TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
+			if(value ==
+			   columnsInfo_[col]
+			       .getDefaultValue())  // allow custom default value, not necessarily TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
 				retValue = 0;
 			else
 			{
@@ -111,8 +134,8 @@ T TableView::validateValueForColumn(const std::string& value, unsigned int col, 
 				// 	__COUT__ << "choice " << choice << __E__;
 
 				// consider arbitrary bool
-				bool   skipOne = (choices.size() && choices[0].find("arbitraryBool=") == 0);
-				size_t index   = 0;
+				bool skipOne = (choices.size() && choices[0].find("arbitraryBool=") == 0);
+				size_t index = 0;
 
 				// return index of choices that are not the DEFAULT value starting at index 1
 				for(index = 0 + (skipOne ? 1 : 0); index < choices.size(); ++index)
@@ -121,16 +144,20 @@ T TableView::validateValueForColumn(const std::string& value, unsigned int col, 
 					if(value == choices[index])
 					{
 						// __COUT__ << value << " == " << choices[index] << __E__;
-						return static_cast<T>(1 + index - (skipOne ? 1 : 0));  // value has been set to
-						                                                   // selected choice index, so
-						                                                   // return
+						return static_cast<T>(
+						    1 + index - (skipOne ? 1 : 0));  // value has been set to
+						                                     // selected choice index, so
+						                                     // return
 					}
 				}
 
-				__SS__ << "\tInvalid value for column data type: " << columnsInfo_[col].getDataType() << " in configuration " << tableName_
-				       << " at column=" << columnsInfo_[col].getName() << " for getValue with type '" << StringMacros::demangleTypeName(typeid(retValue).name())
-				       << ".'"
-				       << "Attempting to get index of '" << value << " in fixed choice array, but was not found in array. "
+				__SS__ << "\tInvalid value for column data type: "
+				       << columnsInfo_[col].getDataType() << " in configuration "
+				       << tableName_ << " at column=" << columnsInfo_[col].getName()
+				       << " for getValue with type '"
+				       << StringMacros::demangleTypeName(typeid(retValue).name()) << ".'"
+				       << "Attempting to get index of '" << value
+				       << " in fixed choice array, but was not found in array. "
 				       << "Here are the valid choices:\n";
 				ss << "\t" << TableViewColumnInfo::DATATYPE_STRING_DEFAULT << "\n";
 				for(const auto& choice : choices)
@@ -141,7 +168,8 @@ T TableView::validateValueForColumn(const std::string& value, unsigned int col, 
 
 			return retValue;
 		}
-		else if(columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_STRING && typeid(bool) == typeid(retValue))  // handle bool
+		else if(columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_STRING &&
+		        typeid(bool) == typeid(retValue))  // handle bool
 		{
 			if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_ON_OFF)
 				retValue = (value == TableViewColumnInfo::TYPE_VALUE_ON) ? true : false;
@@ -163,9 +191,11 @@ T TableView::validateValueForColumn(const std::string& value, unsigned int col, 
 
 			return retValue;
 		}
-		else if(columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_STRING && typeid(std::string) != typeid(retValue))
+		else if(columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_STRING &&
+		        typeid(std::string) != typeid(retValue))
 		{
-			return StringMacros::validateValueForDefaultStringDataType<T>(value, doConvertEnvironmentVariables);
+			return StringMacros::validateValueForDefaultStringDataType<T>(
+			    value, doConvertEnvironmentVariables);
 		}
 
 		// if here, then there was a problem
@@ -174,14 +204,20 @@ T TableView::validateValueForColumn(const std::string& value, unsigned int col, 
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "\tUnrecognized column data type: " << columnsInfo_[col].getDataType() << " and column type: " << columnsInfo_[col].getType()
-		       << ", in configuration " << tableName_ << " at column=" << columnsInfo_[col].getName() << " for getValue with type '"
-		       << StringMacros::demangleTypeName(typeid(retValue).name()) << "'" << std::endl;
+		__SS__ << "\tUnrecognized column data type: " << columnsInfo_[col].getDataType()
+		       << " and column type: " << columnsInfo_[col].getType()
+		       << ", in configuration " << tableName_
+		       << " at column=" << columnsInfo_[col].getName()
+		       << " for getValue with type '"
+		       << StringMacros::demangleTypeName(typeid(retValue).name()) << "'"
+		       << std::endl;
 
 		if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA)
-			ss << "For column type " << TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA << " the only valid numeric types are 'int' and 'unsigned int.'" << __E__;
+			ss << "For column type " << TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA
+			   << " the only valid numeric types are 'int' and 'unsigned int.'" << __E__;
 		else if(columnsInfo_[col].getDataType() != TableViewColumnInfo::DATATYPE_STRING &&
-		        (columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_ON_OFF || columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_TRUE_FALSE ||
+		        (columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_ON_OFF ||
+		         columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_TRUE_FALSE ||
 		         columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_YES_NO))
 			ss << "For boolean column types (e.g. On/Off, True/False, Yes/No), you must "
 			      "choose "
@@ -206,7 +242,8 @@ void TableView::setValue(const T& value, unsigned int row, unsigned int col)
 {
 	if(!(col < columnsInfo_.size() && row < getNumberOfRows()))
 	{
-		__SS__ << "Invalid row (" << row << ") col (" << col << ") requested!" << std::endl;
+		__SS__ << "Invalid row (" << row << ") col (" << col << ") requested!"
+		       << std::endl;
 		__SS_THROW__;
 	}
 
@@ -216,7 +253,8 @@ void TableView::setValue(const T& value, unsigned int row, unsigned int col)
 		ss << value;
 		theDataView_[row][col] = ss.str();
 	}
-	else if(columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_TIME && typeid(time_t) == typeid(value))
+	else if(columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_TIME &&
+	        typeid(time_t) == typeid(value))
 	{
 		// save DATATYPE_TIME as unix timestamp, but get as nice string
 		std::stringstream ss;
@@ -225,8 +263,11 @@ void TableView::setValue(const T& value, unsigned int row, unsigned int col)
 	}
 	else
 	{
-		__SS__ << "\tUnrecognized view data type: " << columnsInfo_[col].getDataType() << " in configuration " << tableName_
-		       << " at column=" << columnsInfo_[col].getName() << " for setValue with type '" << StringMacros::demangleTypeName(typeid(value).name()) << "'"
+		__SS__ << "\tUnrecognized view data type: " << columnsInfo_[col].getDataType()
+		       << " in configuration " << tableName_
+		       << " at column=" << columnsInfo_[col].getName()
+		       << " for setValue with type '"
+		       << StringMacros::demangleTypeName(typeid(value).name()) << "'"
 		       << std::endl;
 		__SS_THROW__;
 	}

@@ -37,13 +37,18 @@ class TableVersion
 	bool          operator!=(const TableVersion& version) const;
 	bool          operator<(const TableVersion& version) const;
 	bool          operator>(const TableVersion& version) const;
-	bool          operator<=(const TableVersion& version) const { return !operator>(version); }
-	bool          operator>=(const TableVersion& version) const { return !operator<(version); }
-	TableVersion& operator*=(const unsigned int a); //to support StringMacros on TableVersion types
-	TableVersion& operator*=(const TableVersion a); //to support StringMacros on TableVersion types
-	TableVersion& operator+=(const TableVersion a); //to support StringMacros on TableVersion types
-	TableVersion& operator-=(const TableVersion a); //to support StringMacros on TableVersion types
-	TableVersion& operator/=(const TableVersion a); //to support StringMacros on TableVersion types
+	bool operator<=(const TableVersion& version) const { return !operator>(version); }
+	bool operator>=(const TableVersion& version) const { return !operator<(version); }
+	TableVersion& operator*=(
+	    const unsigned int a);  //to support StringMacros on TableVersion types
+	TableVersion& operator*=(
+	    const TableVersion a);  //to support StringMacros on TableVersion types
+	TableVersion& operator+=(
+	    const TableVersion a);  //to support StringMacros on TableVersion types
+	TableVersion& operator-=(
+	    const TableVersion a);  //to support StringMacros on TableVersion types
+	TableVersion& operator/=(
+	    const TableVersion a);  //to support StringMacros on TableVersion types
 
 	friend std::ostream& operator<<(std::ostream& out, const TableVersion& version)
 	{
@@ -59,7 +64,8 @@ class TableVersion
 	}
 
 	static TableVersion getNextVersion(const TableVersion& version = TableVersion());
-	static TableVersion getNextTemporaryVersion(const TableVersion& version = TableVersion());
+	static TableVersion getNextTemporaryVersion(
+	    const TableVersion& version = TableVersion());
 
   protected:
 	enum

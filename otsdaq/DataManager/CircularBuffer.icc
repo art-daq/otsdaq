@@ -7,7 +7,8 @@
 
 //========================================================================================================================
 template<class D, class H>
-CircularBuffer<D, H>::CircularBuffer(const std::string& dataBufferId) : CircularBufferBase(dataBufferId)
+CircularBuffer<D, H>::CircularBuffer(const std::string& dataBufferId)
+    : CircularBufferBase(dataBufferId)
 {
 	__GEN_COUT__ << "Constructed." << __E__;
 }  // end constructor()
@@ -49,40 +50,47 @@ unsigned int CircularBuffer<D, H>::getTotalNumberOfSubBuffers(void) const
 
 //========================================================================================================================
 template<class D, class H>
-unsigned int CircularBuffer<D, H>::getProducerBufferSize(const std::string& producerID) const
+unsigned int CircularBuffer<D, H>::getProducerBufferSize(
+    const std::string& producerID) const
 {
 	return theBuffer_.at(producerID).bufferSize();
 }  // end getProducerBufferSize()
 
 //========================================================================================================================
 template<class D, class H>
-void CircularBuffer<D, H>::registerProducer(const std::string& producerID, unsigned int bufferSize)
+void CircularBuffer<D, H>::registerProducer(const std::string& producerID,
+                                            unsigned int       bufferSize)
 {
 	if(theBuffer_.find(producerID) != theBuffer_.end())
 	{
-		__SS__ << "There is already a producer with name: " << producerID << "...Aborting" << std::endl;
+		__SS__ << "There is already a producer with name: " << producerID << "...Aborting"
+		       << std::endl;
 		__SS_THROW__;
 	}
 
 	__COUTV__(producerID);
 	__COUTV__(bufferSize);
 
-	auto /*<it,new bool>*/ emplacePair = theBuffer_.emplace(std::make_pair(  // pair<std::string,BufferImplementation<D,H> >(
-	    producerID,
-	    BufferImplementation<D, H>(producerID, bufferSize)));
+	auto /*<it,new bool>*/ emplacePair = theBuffer_.emplace(
+	    std::make_pair(  // pair<std::string,BufferImplementation<D,H> >(
+	        producerID,
+	        BufferImplementation<D, H>(producerID, bufferSize)));
 
-	__COUT__ << "Registering " << consumers_.size() << " existing consumers to new buffer implementation." << __E__;
+	__COUT__ << "Registering " << consumers_.size()
+	         << " existing consumers to new buffer implementation." << __E__;
 
 	// register all existing consumers
 	for(const auto& consumer : consumers_)
 		emplacePair.first->second.registerConsumer(consumer.first, consumer.second);
 
-	__COUT__ << "PRODUCER NAME: " << producerID << " SIZE: " << theBuffer_.size() << std::endl;
+	__COUT__ << "PRODUCER NAME: " << producerID << " SIZE: " << theBuffer_.size()
+	         << std::endl;
 }
 
 //========================================================================================================================
 template<class D, class H>
-void CircularBuffer<D, H>::registerConsumer(const std::string& consumerID, CircularBufferBase::ConsumerPriority priority)
+void CircularBuffer<D, H>::registerConsumer(const std::string& consumerID,
+                                            CircularBufferBase::ConsumerPriority priority)
 {
 	consumers_[consumerID] = priority;
 

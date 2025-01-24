@@ -8,14 +8,16 @@ using namespace ots;
 XDAQ_INSTANTIATOR_IMPL(DataManagerSupervisor)
 
 //==============================================================================
-DataManagerSupervisor::DataManagerSupervisor(xdaq::ApplicationStub* s) : CoreSupervisorBase(s)
+DataManagerSupervisor::DataManagerSupervisor(xdaq::ApplicationStub* s)
+    : CoreSupervisorBase(s)
 {
 	__SUP_COUT__ << "Constructor." << __E__;
 
 	CoreSupervisorBase::theStateMachineImplementation_.push_back(
-	    DataManagerSingleton::getInstance<DataManager>(CorePropertySupervisorBase::getContextTreeNode(),
-	                                                   CorePropertySupervisorBase::getSupervisorConfigurationPath(),
-	                                                   CorePropertySupervisorBase::getSupervisorUID()));
+	    DataManagerSingleton::getInstance<DataManager>(
+	        CorePropertySupervisorBase::getContextTreeNode(),
+	        CorePropertySupervisorBase::getSupervisorConfigurationPath(),
+	        CorePropertySupervisorBase::getSupervisorUID()));
 
 	__SUP_COUT__ << "Constructed." << __E__;
 }  // end constructor()

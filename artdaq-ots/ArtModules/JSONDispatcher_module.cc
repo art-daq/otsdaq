@@ -67,14 +67,16 @@ ots::JSONDispatcher::JSONDispatcher(fhicl::ParameterSet const& pset)
 	socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
 	if(ec)
 	{
-		TLOG(TLVL_ERROR, "JSONDispatcher") << "An error occurred setting reuse_address: " << ec.message() << std::endl;
+		TLOG(TLVL_ERROR, "JSONDispatcher")
+		    << "An error occurred setting reuse_address: " << ec.message() << std::endl;
 	}
 	// std::cout << __COUT_HDR_FL__ << "JSONDispatcher setting broadcast option" <<
 	// std::endl;
 	socket_.set_option(boost::asio::socket_base::broadcast(true), ec);
 	if(ec)
 	{
-		TLOG(TLVL_ERROR, "JSONDispatcher") << "An error occurred setting broadcast: " << ec.message() << std::endl;
+		TLOG(TLVL_ERROR, "JSONDispatcher")
+		    << "An error occurred setting broadcast: " << ec.message() << std::endl;
 	}
 
 	// std::cout << __COUT_HDR_FL__ << "JSONDispatcher gettting UDP endpoint" <<
@@ -85,20 +87,26 @@ ots::JSONDispatcher::JSONDispatcher(fhicl::ParameterSet const& pset)
 
 ots::JSONDispatcher::~JSONDispatcher() {}
 
-void ots::JSONDispatcher::beginRun(art::Run const& run) { std::cout << __COUT_HDR_FL__ << "JSONDispatcher beginning run " << run.run() << std::endl; }
+void ots::JSONDispatcher::beginRun(art::Run const& run)
+{
+	std::cout << __COUT_HDR_FL__ << "JSONDispatcher beginning run " << run.run()
+	          << std::endl;
+}
 
 void ots::JSONDispatcher::analyze(art::Event const& evt)
 {
 	// std::cout << __COUT_HDR_FL__ << "JSONDispatcher getting event number to check
 	// prescale" << std::endl;
 	art::EventNumber_t eventNumber = evt.event();
-	TLOG(TLVL_INFO, "JSONDispatcher") << "Received event with sequence ID " << eventNumber;
+	TLOG(TLVL_INFO, "JSONDispatcher")
+	    << "Received event with sequence ID " << eventNumber;
 	if((int)eventNumber % prescale_ == 0)
 	{
 		// std::cout << __COUT_HDR_FL__ << "JSONDispatcher dispatching event" <<
 		// std::endl;
 		std::ostringstream outputJSON;
-		outputJSON << "{\"run\":" << std::to_string(evt.run()) << ",\"subrun\":" << std::to_string(evt.subRun())
+		outputJSON << "{\"run\":" << std::to_string(evt.run())
+		           << ",\"subrun\":" << std::to_string(evt.subRun())
 		           << ",\"event\":" << std::to_string(eventNumber);
 
 		// ***********************
@@ -143,7 +151,8 @@ void ots::JSONDispatcher::analyze(art::Event const& evt)
 					outputJSON << "},";
 				}
 				outputJSON << "\"header\":{";
-				outputJSON << "\"event_size\":" << std::to_string(bb.hdr_event_size()) << ",";
+				outputJSON << "\"event_size\":" << std::to_string(bb.hdr_event_size())
+				           << ",";
 				outputJSON << "\"data_type\":" << std::to_string(bb.hdr_data_type());
 				type = bb.hdr_data_type();
 				outputJSON << "},";
@@ -157,7 +166,8 @@ void ots::JSONDispatcher::analyze(art::Event const& evt)
 
 					for(; it != bb.dataEnd(); ++it)
 					{
-						outputJSON << "," << std::hex << "\"0x" << (int)*it << "\"" << std::dec;
+						outputJSON << "," << std::hex << "\"0x" << (int)*it << "\""
+						           << std::dec;
 					}
 					outputJSON << "]";
 				}
@@ -172,7 +182,8 @@ void ots::JSONDispatcher::analyze(art::Event const& evt)
 					{
 						std::string find    = "\"";
 						std::string replace = "\\\"";
-						for(std::string::size_type i = 0; (i = output.find(find, i)) != std::string::npos;)
+						for(std::string::size_type i = 0;
+						    (i = output.find(find, i)) != std::string::npos;)
 						{
 							output.replace(i, find.length(), replace);
 							i += replace.length();

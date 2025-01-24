@@ -10,25 +10,28 @@ struct TableInfo
 	TableInfo()
 	    :  // constructor
 	    tablePtr_(0)
-	{}
+	{
+	}
 
 	std::set<TableVersion> versions_;
 	TableBase*             tablePtr_;
-	std::string			   accumulatedWarnings_;
+	std::string            accumulatedWarnings_;
 };
 
 struct GroupInfo
 {
 	GroupInfo()
-		: //constructor
-		latestKeyGroupAuthor_		(ConfigurationManager::UNKNOWN_INFO),
-		latestKeyGroupComment_		(ConfigurationManager::UNKNOWN_INFO),
-		latestKeyGroupCreationTime_	(ConfigurationManager::UNKNOWN_TIME),
-		latestKeyGroupTypeString_	(ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN)
-	{}
+	    :  //constructor
+	    latestKeyGroupAuthor_(ConfigurationManager::UNKNOWN_INFO)
+	    , latestKeyGroupComment_(ConfigurationManager::UNKNOWN_INFO)
+	    , latestKeyGroupCreationTime_(ConfigurationManager::UNKNOWN_TIME)
+	    , latestKeyGroupTypeString_(ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN)
+	{
+	}
 
 	std::set<TableGroupKey> keys_;
-	std::string             latestKeyGroupAuthor_, latestKeyGroupComment_, latestKeyGroupCreationTime_, latestKeyGroupTypeString_;
+	std::string             latestKeyGroupAuthor_, latestKeyGroupComment_,
+	    latestKeyGroupCreationTime_, latestKeyGroupTypeString_;
 	std::map<std::string /*name*/, TableVersion /*version*/> latestKeyMemberMap_;
 
 	TableGroupKey getLatestKey()

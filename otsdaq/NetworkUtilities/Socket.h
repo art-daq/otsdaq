@@ -13,7 +13,8 @@ class Socket
 	Socket(const std::string& IPAddress, unsigned int port = 0);
 	virtual ~Socket(void);
 
-	virtual void              initialize(unsigned int socketReceiveBufferSize = defaultSocketReceiveSize_);
+	virtual void initialize(
+	    unsigned int socketReceiveBufferSize = defaultSocketReceiveSize_);
 	const struct sockaddr_in& getSocketAddress(void);
 	const std::string&        getIPAddress() { return IPAddress_; }
 	uint16_t                  getPort();

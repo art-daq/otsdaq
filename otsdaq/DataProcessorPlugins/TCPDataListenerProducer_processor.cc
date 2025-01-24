@@ -13,23 +13,36 @@
 using namespace ots;
 
 //==============================================================================
-TCPDataListenerProducer::TCPDataListenerProducer(std::string              supervisorApplicationUID,
-                                                 std::string              bufferUID,
-                                                 std::string              processorUID,
-                                                 const ConfigurationTree& theXDAQContextConfigTree,
-                                                 const std::string&       configurationPath)
+TCPDataListenerProducer::TCPDataListenerProducer(
+    std::string              supervisorApplicationUID,
+    std::string              bufferUID,
+    std::string              processorUID,
+    const ConfigurationTree& theXDAQContextConfigTree,
+    const std::string&       configurationPath)
     : WorkLoop(processorUID)
     //, Socket       ("192.168.133.100", 40000)
-    , DataProducer(
-          supervisorApplicationUID, bufferUID, processorUID, theXDAQContextConfigTree.getNode(configurationPath).getNode("BufferSize").getValue<unsigned int>())
+    , DataProducer(supervisorApplicationUID,
+                   bufferUID,
+                   processorUID,
+                   theXDAQContextConfigTree.getNode(configurationPath)
+                       .getNode("BufferSize")
+                       .getValue<unsigned int>())
     //, DataProducer (supervisorApplicationUID, bufferUID, processorUID, 100)
     , Configurable(theXDAQContextConfigTree, configurationPath)
-    , TCPListenServer(theXDAQContextConfigTree.getNode(configurationPath).getNode("ServerPort").getValue<unsigned int>(),
-                      theXDAQContextConfigTree.getNode(configurationPath).getNode("ServerMaxClients").getValue<unsigned>())
+    , TCPListenServer(theXDAQContextConfigTree.getNode(configurationPath)
+                          .getNode("ServerPort")
+                          .getValue<unsigned int>(),
+                      theXDAQContextConfigTree.getNode(configurationPath)
+                          .getNode("ServerMaxClients")
+                          .getValue<unsigned>())
     , dataP_(nullptr)
     , headerP_(nullptr)
-    , dataType_(theXDAQContextConfigTree.getNode(configurationPath).getNode("DataType").getValue<std::string>())
-    , port_(theXDAQContextConfigTree.getNode(configurationPath).getNode("ServerPort").getValue<unsigned int>())
+    , dataType_(theXDAQContextConfigTree.getNode(configurationPath)
+                    .getNode("DataType")
+                    .getValue<std::string>())
+    , port_(theXDAQContextConfigTree.getNode(configurationPath)
+                .getNode("ServerPort")
+                .getValue<unsigned int>())
 {
 }
 
@@ -44,7 +57,10 @@ void TCPDataListenerProducer::startProcessingData(std::string runNumber)
 }
 
 //==============================================================================
-void TCPDataListenerProducer::stopProcessingData(void) { DataProducer::stopProcessingData(); }
+void TCPDataListenerProducer::stopProcessingData(void)
+{
+	DataProducer::stopProcessingData();
+}
 
 //==============================================================================
 bool TCPDataListenerProducer::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)
@@ -64,7 +80,8 @@ void TCPDataListenerProducer::slowWrite(void)
 
 	try
 	{
-		data_ = TCPListenServer::receive<std::string>();  // Throws an exception if it fails
+		data_ =
+		    TCPListenServer::receive<std::string>();  // Throws an exception if it fails
 		if(data_.size() == 0)
 		{
 			std::this_thread::sleep_for(std::chrono::microseconds(1000));
@@ -97,7 +114,9 @@ void TCPDataListenerProducer::fastWrite(void)
 
 	if(DataProducer::attachToEmptySubBuffer(dataP_, headerP_) < 0)
 	{
-		__COUT__ << "There are no available buffers! Retrying...after waiting 10 milliseconds!" << std::endl;
+		__COUT__
+		    << "There are no available buffers! Retrying...after waiting 10 milliseconds!"
+		    << std::endl;
 		std::this_thread::sleep_for(std::chrono::microseconds(1000));
 		return;
 	}
@@ -105,9 +124,11 @@ void TCPDataListenerProducer::fastWrite(void)
 	try
 	{
 		if(dataType_ == "Packet")
-			*dataP_ = TCPListenServer::receivePacket();         // Throws an exception if it fails
-		else                                                    //"Raw" || DEFAULT
-			*dataP_ = TCPListenServer::receive<std::string>();  // Throws an exception if it fails
+			*dataP_ =
+			    TCPListenServer::receivePacket();  // Throws an exception if it fails
+		else                                       //"Raw" || DEFAULT
+			*dataP_ = TCPListenServer::receive<
+			    std::string>();  // Throws an exception if it fails
 
 		if(dataP_->size() == 0)  // When it goes in timeout
 			return;

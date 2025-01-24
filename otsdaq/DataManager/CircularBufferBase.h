@@ -24,8 +24,8 @@ class CircularBufferBase
 	virtual ~CircularBufferBase(void);
 
 	virtual void reset(void) = 0;
-	void         registerProducer(DataProcessor* producer, unsigned int numberOfSubBuffers = 100);
-	void         registerConsumer(DataProcessor* consumer);
+	void registerProducer(DataProcessor* producer, unsigned int numberOfSubBuffers = 100);
+	void registerConsumer(DataProcessor* consumer);
 	// void unregisterProducer(DataProcessor*  producer);
 	// void unregisterConsumer(DataProcessor*  consumer);
 
@@ -34,8 +34,10 @@ class CircularBufferBase
 	virtual unsigned int getProducerBufferSize(const std::string& producerID) const = 0;
 
   protected:
-	virtual void registerProducer(const std::string& producerID, unsigned int numberOfSubBuffers = 100) = 0;
-	virtual void registerConsumer(const std::string& consumerID, ConsumerPriority priority)             = 0;
+	virtual void registerProducer(const std::string& producerID,
+	                              unsigned int       numberOfSubBuffers = 100) = 0;
+	virtual void registerConsumer(const std::string& consumerID,
+	                              ConsumerPriority   priority)             = 0;
 	//    virtual void unregisterProducer			(const std::string& producerID) = 0;
 	//    virtual void unregisterConsume			r(const std::string& consumerID) = 0;
 

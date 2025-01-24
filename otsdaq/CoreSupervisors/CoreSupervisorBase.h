@@ -26,11 +26,11 @@
 #include <xdaq/NamespaceURI.h>
 #include <xoap/Method.h>
 
+#include <time.h>
 #include <map>
 #include <memory>
 #include <string> /*string and to_string*/
 #include <vector>
-#include <time.h>
 
 namespace ots
 {

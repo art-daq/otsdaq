@@ -10,11 +10,15 @@ const ots::ITRACEController::HostTraceLevelMap& ots::TRACEController::getTraceLe
 }  // end getTraceLevels()
 
 //==============================================================================
-void ots::TRACEController::setTraceLevelMask(std::string const& label, TraceMasks const& lvl, std::string const& hostname, std::string const& mode /*= "ALL"*/)
+void ots::TRACEController::setTraceLevelMask(std::string const& label,
+                                             TraceMasks const&  lvl,
+                                             std::string const& hostname,
+                                             std::string const& mode /*= "ALL"*/)
 {
 	if(hostname != "localhost" && hostname != getHostnameString())
 	{
-		TLOG(TLVL_WARNING) << "TRACEController asked to set TRACE levels for host " << hostname << ", but this is " << getHostnameString() << "!";
+		TLOG(TLVL_WARNING) << "TRACEController asked to set TRACE levels for host "
+		                   << hostname << ", but this is " << getHostnameString() << "!";
 		return;
 	}
 
@@ -30,10 +34,16 @@ bool ots::TRACEController::getIsTriggered()
 }  // end getIsTriggered()
 
 //==============================================================================
-void ots::TRACEController::setTriggerEnable(size_t entriesAfterTrigger) { TRACE_CNTL("trig", entriesAfterTrigger + 1); }  // end setTriggerEnable()
+void ots::TRACEController::setTriggerEnable(size_t entriesAfterTrigger)
+{
+	TRACE_CNTL("trig", entriesAfterTrigger + 1);
+}  // end setTriggerEnable()
 
 //==============================================================================
-void ots::TRACEController::resetTraceBuffer() { TRACE_CNTL("reset"); }  // end resetTraceBuffer()
+void ots::TRACEController::resetTraceBuffer()
+{
+	TRACE_CNTL("reset");
+}  // end resetTraceBuffer()
 
 //==============================================================================
 void ots::TRACEController::enableTrace(bool enable /* = true */)

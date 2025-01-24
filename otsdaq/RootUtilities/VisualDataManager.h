@@ -19,7 +19,8 @@ class ConfigurationManager;
 class VisualDataManager : public DataManager
 {
   public:
-	VisualDataManager(const ConfigurationTree& theXDAQContextConfigTree, const std::string& supervisorConfigurationPath);
+	VisualDataManager(const ConfigurationTree& theXDAQContextConfigTree,
+	                  const std::string&       supervisorConfigurationPath);
 	virtual ~VisualDataManager(void);
 
 	void configure(void) override;
@@ -40,8 +41,8 @@ class VisualDataManager : public DataManager
 	bool               getLiveDQMHistos(void);
 	DQMHistosBase&     getFileDQMHistos(void);  // TO BE DELETED
 	const std::string& getRawData(void);        // TO BE DELETED
-	                                            // const Visual3DEvents&   getVisual3DEvents   (void);
-	                                            // const Visual3DGeometry& getVisual3DGeometry (void);
+	    // const Visual3DEvents&   getVisual3DEvents   (void);
+	    // const Visual3DGeometry& getVisual3DGeometry (void);
 
   private:
 	std::vector<DQMHistosBase*>   theLiveDQMs_;

@@ -11,7 +11,8 @@
 using namespace ots;
 
 //==============================================================================
-ARTDAQDataManager::ARTDAQDataManager(const ConfigurationTree& theXDAQContextConfigTree, const std::string& supervisorConfigurationPath)
+ARTDAQDataManager::ARTDAQDataManager(const ConfigurationTree& theXDAQContextConfigTree,
+                                     const std::string&       supervisorConfigurationPath)
     : DataManager(theXDAQContextConfigTree, supervisorConfigurationPath)
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
@@ -20,8 +21,11 @@ ARTDAQDataManager::ARTDAQDataManager(const ConfigurationTree& theXDAQContextConf
 
 	std::string name = "BoardReader";
 
-	__CFG_COUT__ << "artdaq version " << artdaq::GetPackageBuildInfo::getPackageBuildInfo().getPackageVersion() << ", built "
-	                                << artdaq::GetPackageBuildInfo::getPackageBuildInfo().getBuildTimestamp() << __E__;
+	__CFG_COUT__ << "artdaq version "
+	             << artdaq::GetPackageBuildInfo::getPackageBuildInfo().getPackageVersion()
+	             << ", built "
+	             << artdaq::GetPackageBuildInfo::getPackageBuildInfo().getBuildTimestamp()
+	             << __E__;
 
 	// artdaq::configureMessageFacility("boardreader");
 	// artdaq::configureMessageFacility(name.c_str());
@@ -56,12 +60,14 @@ void ARTDAQDataManager::configure(void)
 	// find the ARTDAQ processor (can only be 1)
 	//	and initialize with rank info
 
-	__CFG_COUT__ << "ARTDAQDataManager DataManager configured now pass the MPI stuff" << __E__;
+	__CFG_COUT__ << "ARTDAQDataManager DataManager configured now pass the MPI stuff"
+	             << __E__;
 	for(auto it = DataManager::buffers_.begin(); it != DataManager::buffers_.end(); it++)
 		for(auto& consumer : it->second.consumers_)
 			if(dynamic_cast<ARTDAQConsumer*>(consumer))
 			{
-				__CFG_COUT__ << "Found an ARTDAQ Consumer: " << consumer->getProcessorID() << __E__;
+				__CFG_COUT__ << "Found an ARTDAQ Consumer: " << consumer->getProcessorID()
+				             << __E__;
 
 				dynamic_cast<ARTDAQConsumer*>(consumer)->initLocalGroup(rank_);
 				return;  // There can only be 1 ARTDAQConsumer for each
@@ -77,7 +83,8 @@ void ARTDAQDataManager::configure(void)
 		for(auto& producer : it->second.producers_)
 			if(dynamic_cast<ARTDAQProducer*>(producer))
 			{
-				__CFG_COUT__ << "Found an ARTDAQ Producer: " << producer->getProcessorID() << __E__;
+				__CFG_COUT__ << "Found an ARTDAQ Producer: " << producer->getProcessorID()
+				             << __E__;
 
 				dynamic_cast<ARTDAQProducer*>(producer)->initLocalGroup(rank_);
 				return;  // There can only be 1 ARTDAQProducer for each

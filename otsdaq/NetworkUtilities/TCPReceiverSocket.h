@@ -29,11 +29,14 @@ class TCPReceiverSocket : public virtual TCPSocket
 		// std::endl;
 		return buffer;  // c++11 doesn't make a copy anymore when returned
 	}
-	std::string receivePacket(std::chrono::milliseconds timeout = std::chrono::milliseconds(5));
-	void        setReceiveTimeout(unsigned int timeoutSeconds, unsigned int timeoutMicroSeconds);
+	std::string receivePacket(
+	    std::chrono::milliseconds timeout = std::chrono::milliseconds(5));
+	void setReceiveTimeout(unsigned int timeoutSeconds, unsigned int timeoutMicroSeconds);
 
   private:
-	int                           receive(char* buffer, std::size_t bufferSize = maxSocketSize, int timeoutMicroSeconds = -1);
+	int                           receive(char*       buffer,
+	                                      std::size_t bufferSize          = maxSocketSize,
+	                                      int         timeoutMicroSeconds = -1);
 	static constexpr unsigned int maxSocketSize = 65536;
 };
 }  // namespace ots

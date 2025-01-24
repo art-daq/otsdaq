@@ -46,14 +46,19 @@ void DQMHistosBase::save(void)
 	if(theFile_ != nullptr)
 	{
 		if(autoSave_)
-			theFile_->Write("", TObject::kOverwrite);  // write the histogram to the file with kOverwrite update option
+			theFile_->Write(
+			    "",
+			    TObject::
+			        kOverwrite);  // write the histogram to the file with kOverwrite update option
 		else
 			theFile_->Write();  // Lorenzo changed 2023-04-07 to kOverwrite
 	}
 }
 
 //==============================================================================
-void DQMHistosBase::autoSave(bool force)  // The file will be saved if currentTime - beginTimeTime_ is >= autoSaveInterval_
+void DQMHistosBase::autoSave(
+    bool
+        force)  // The file will be saved if currentTime - beginTimeTime_ is >= autoSaveInterval_
 {
 	if(!autoSave_)
 		return;
@@ -62,14 +67,20 @@ void DQMHistosBase::autoSave(bool force)  // The file will be saved if currentTi
 	time(&currentTime);
 	if(beginTime_ == 0)
 	{
-		theFile_->Write("", TObject::kOverwrite);  // write the histogram to the file with kOverwrite update option
+		theFile_->Write(
+		    "",
+		    TObject::
+		        kOverwrite);  // write the histogram to the file with kOverwrite update option
 		beginTime_ = currentTime;
 		return;
 	}
 
 	if(force || currentTime - beginTime_ >= autoSaveInterval_)
 	{
-		theFile_->Write("", TObject::kOverwrite);  // write the histogram to the file with kOverwrite update option
+		theFile_->Write(
+		    "",
+		    TObject::
+		        kOverwrite);  // write the histogram to the file with kOverwrite update option
 		beginTime_ = currentTime;
 	}
 }

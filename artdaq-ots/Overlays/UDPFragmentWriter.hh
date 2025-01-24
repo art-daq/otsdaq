@@ -61,7 +61,8 @@ class ots::UDPFragmentWriter : public ots::UDPFragment
 // passed to contain the artdaq::Fragment header + the
 // UDPFragment::Metadata object, otherwise it throws
 
-ots::UDPFragmentWriter::UDPFragmentWriter(artdaq::Fragment& f) : UDPFragment(f), artdaq_Fragment_(f)
+ots::UDPFragmentWriter::UDPFragmentWriter(artdaq::Fragment& f)
+    : UDPFragment(f), artdaq_Fragment_(f)
 {
 	if(!f.hasMetadata() || f.dataSizeBytes() > 0)
 	{
@@ -77,11 +78,15 @@ ots::UDPFragmentWriter::UDPFragmentWriter(artdaq::Fragment& f) : UDPFragment(f),
 inline uint8_t* ots::UDPFragmentWriter::dataBegin()
 {
 	// Make sure there's data past the UDPFragment header
-	assert(artdaq_Fragment_.dataSizeBytes() >= sizeof(Header) + sizeof(artdaq::Fragment::value_type));
+	assert(artdaq_Fragment_.dataSizeBytes() >=
+	       sizeof(Header) + sizeof(artdaq::Fragment::value_type));
 	return reinterpret_cast<uint8_t*>(header_() + 1);
 }
 
-inline uint8_t* ots::UDPFragmentWriter::dataEnd() { return dataBegin() + udp_data_words(); }
+inline uint8_t* ots::UDPFragmentWriter::dataEnd()
+{
+	return dataBegin() + udp_data_words();
+}
 
 inline void ots::UDPFragmentWriter::resize(size_t nBytes)
 {
@@ -89,7 +94,10 @@ inline void ots::UDPFragmentWriter::resize(size_t nBytes)
 	header_()->event_size = calc_event_size_words_(nBytes);
 }
 
-inline size_t ots::UDPFragmentWriter::calc_event_size_words_(size_t nBytes) { return bytes_to_words_(nBytes) + hdr_size_words(); }
+inline size_t ots::UDPFragmentWriter::calc_event_size_words_(size_t nBytes)
+{
+	return bytes_to_words_(nBytes) + hdr_size_words();
+}
 
 inline size_t ots::UDPFragmentWriter::bytes_to_words_(size_t nBytes)
 {

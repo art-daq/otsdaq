@@ -15,14 +15,20 @@ using namespace ots;
 XDAQ_INSTANTIATOR_IMPL(SimpleSoap)
 
 //==============================================================================
-SimpleSoap::SimpleSoap(xdaq::ApplicationStub* s) : xdaq::Application(s), SOAPMessenger(this)
+SimpleSoap::SimpleSoap(xdaq::ApplicationStub* s)
+    : xdaq::Application(s), SOAPMessenger(this)
 {
 	xgi::bind(this, &SimpleSoap::Default, "Default");
 	xgi::bind(this, &SimpleSoap::StateMachineXgiHandler, "StateMachineXgiHandler");
 
-	xoap::bind(this, &SimpleSoap::Start, RunControlStateMachine::START_TRANSITION_NAME, XDAQ_NS_URI);
-	fsm_.addState('I', RunControlStateMachine::INITIAL_STATE_NAME, this, &SimpleSoap::stateInitial);
-	fsm_.addState('H', RunControlStateMachine::HALTED_STATE_NAME, this, &SimpleSoap::stateHalted);
+	xoap::bind(this,
+	           &SimpleSoap::Start,
+	           RunControlStateMachine::START_TRANSITION_NAME,
+	           XDAQ_NS_URI);
+	fsm_.addState(
+	    'I', RunControlStateMachine::INITIAL_STATE_NAME, this, &SimpleSoap::stateInitial);
+	fsm_.addState(
+	    'H', RunControlStateMachine::HALTED_STATE_NAME, this, &SimpleSoap::stateHalted);
 	fsm_.addStateTransition('I', 'H', RunControlStateMachine::INIT_TRANSITION_NAME);
 }
 
@@ -36,7 +42,8 @@ void SimpleSoap::Default(xgi::Input* in, xgi::Output* out)
 	*out << cgicc::html().set("lang", "en").set("dir", "ltr") << std::endl;
 	*out << cgicc::title("Simple button page") << std::endl;
 	*out << "<body>" << std::endl;
-	*out << "  <form name=\"input\" method=\"get\" action=\"" << url << "/StateMachineXgiHandler"
+	*out << "  <form name=\"input\" method=\"get\" action=\"" << url
+	     << "/StateMachineXgiHandler"
 	     << "\" enctype=\"multipart/form-data\">" << std::endl;
 	*out << "    <p align=\"left\"><input type=\"submit\" name=\"StateInput\" "
 	        "value=\"PushStart\"/></p>"
@@ -64,18 +71,28 @@ void SimpleSoap::StateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 		xoap::MessageReference reply = Start(msg);
 
 		if(receive(reply) == "StartDone")
-			std::cout << __COUT_HDR_FL__ << "Everything started correctly!" << std::endl << std::endl;
+			std::cout << __COUT_HDR_FL__ << "Everything started correctly!" << std::endl
+			          << std::endl;
 		else
-			std::cout << __COUT_HDR_FL__ << "All underlying Supervisors could not be started by browser button!" << std::endl << std::endl;
+			std::cout
+			    << __COUT_HDR_FL__
+			    << "All underlying Supervisors could not be started by browser button!"
+			    << std::endl
+			    << std::endl;
 	}
 	else if(Command == "Start")
 	{
 		// std::set<xdaq::ApplicationDescriptor*> set_SimpleSoap =
 		// getApplicationContext()->getDefaultZone()->getApplicationGroup("rivera")->getApplicationDescriptors("SimpleSoap::SimpleSoap");
 		std::set<xdaq::ApplicationDescriptor*> set_SimpleSoap =
-		    getApplicationContext()->getDefaultZone()->getApplicationGroup("daq")->getApplicationDescriptors("SimpleSoap::SimpleSoap");
+		    getApplicationContext()
+		        ->getDefaultZone()
+		        ->getApplicationGroup("daq")
+		        ->getApplicationDescriptors("SimpleSoap::SimpleSoap");
 
-		for(std::set<xdaq::ApplicationDescriptor*>::iterator i_set_SimpleSoap = set_SimpleSoap.begin(); i_set_SimpleSoap != set_SimpleSoap.end();
+		for(std::set<xdaq::ApplicationDescriptor*>::iterator i_set_SimpleSoap =
+		        set_SimpleSoap.begin();
+		    i_set_SimpleSoap != set_SimpleSoap.end();
 		    ++i_set_SimpleSoap)
 		{
 			try
@@ -83,7 +100,9 @@ void SimpleSoap::StateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 				std::string sReply = send(*i_set_SimpleSoap, Command.c_str());
 
 				if(sReply == "StartDone")
-					std::cout << __COUT_HDR_FL__ << "Everything started correctly!" << std::endl << std::endl;
+					std::cout << __COUT_HDR_FL__ << "Everything started correctly!"
+					          << std::endl
+					          << std::endl;
 				else
 					std::cout << __COUT_HDR_FL__
 					          << "All underlying Supervisors could not be started by "
@@ -101,7 +120,8 @@ void SimpleSoap::StateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	}
 	else
 	{
-		std::cout << __COUT_HDR_FL__ << "Don't understand the command: " << Command << std::endl;
+		std::cout << __COUT_HDR_FL__ << "Don't understand the command: " << Command
+		          << std::endl;
 	}
 
 	this->Default(in, out);
@@ -117,7 +137,8 @@ xoap::MessageReference SimpleSoap::Start(xoap::MessageReference msg)
 //==============================================================================
 void SimpleSoap::stateInitial(toolbox::fsm::FiniteStateMachine& fsm)
 {
-	std::cout << __COUT_HDR_FL__ << "--- SimpleWeb is in its Initial state ---" << std::endl;
+	std::cout << __COUT_HDR_FL__ << "--- SimpleWeb is in its Initial state ---"
+	          << std::endl;
 	state_ = fsm_.getStateName(fsm_.getCurrentState());
 
 	// diagService_->reportError("PixelSupervisor::stateInitial: workloop active:
@@ -128,6 +149,7 @@ void SimpleSoap::stateInitial(toolbox::fsm::FiniteStateMachine& fsm)
 //==============================================================================
 void SimpleSoap::stateHalted(toolbox::fsm::FiniteStateMachine& fsm)
 {
-	std::cout << __COUT_HDR_FL__ << "--- SimpleWeb is in its Halted state ---" << std::endl;
+	std::cout << __COUT_HDR_FL__ << "--- SimpleWeb is in its Halted state ---"
+	          << std::endl;
 	state_ = fsm_.getStateName(fsm_.getCurrentState());
 }

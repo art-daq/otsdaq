@@ -2,7 +2,8 @@
 
 //========================================================================================================================
 template<class T>
-void FEVInterface::sendToFrontEnd(const std::string& targetInterfaceID, const T& value) const
+void FEVInterface::sendToFrontEnd(const std::string& targetInterfaceID,
+                                  const T&           value) const
 {
 	__FE_COUTV__(targetInterfaceID);
 	std::stringstream ss;
@@ -11,7 +12,8 @@ void FEVInterface::sendToFrontEnd(const std::string& targetInterfaceID, const T&
 
 	__FE_COUTV__(VStateMachine::parentSupervisor_);
 
-	xoap::MessageReference message = SOAPUtilities::makeSOAPMessageReference("FECommunication");
+	xoap::MessageReference message =
+	    SOAPUtilities::makeSOAPMessageReference("FECommunication");
 
 	SOAPParameters parameters;
 	parameters.addParameter("type", "feSend");
@@ -20,12 +22,19 @@ void FEVInterface::sendToFrontEnd(const std::string& targetInterfaceID, const T&
 	parameters.addParameter("value", ss.str());
 	SOAPUtilities::addParameters(message, parameters);
 
-	__FE_COUT__ << "Sending FE communication: " << SOAPUtilities::translate(message) << __E__;
+	__FE_COUT__ << "Sending FE communication: " << SOAPUtilities::translate(message)
+	            << __E__;
 
-	xoap::MessageReference replyMessage = VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
-	    VStateMachine::parentSupervisor_->allSupervisorInfo_.getAllMacroMakerTypeSupervisorInfo().begin()->second.getDescriptor(), message);
+	xoap::MessageReference replyMessage =
+	    VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
+	        VStateMachine::parentSupervisor_->allSupervisorInfo_
+	            .getAllMacroMakerTypeSupervisorInfo()
+	            .begin()
+	            ->second.getDescriptor(),
+	        message);
 
-	__FE_COUT__ << "Response received: " << SOAPUtilities::translate(replyMessage) << __E__;
+	__FE_COUT__ << "Response received: " << SOAPUtilities::translate(replyMessage)
+	            << __E__;
 
 	SOAPParameters rxParameters;
 	rxParameters.addParameter("Error");
@@ -36,8 +45,9 @@ void FEVInterface::sendToFrontEnd(const std::string& targetInterfaceID, const T&
 	if(error != "")
 	{
 		// error occurred!
-		__FE_SS__ << "Error transmitting request to target interface '" << targetInterfaceID << "' from '" << FEVInterface::interfaceUID_ << ".' " << error
-		          << __E__;
+		__FE_SS__ << "Error transmitting request to target interface '"
+		          << targetInterfaceID << "' from '" << FEVInterface::interfaceUID_
+		          << ".' " << error << __E__;
 		__FE_SS_THROW__;
 	}
 
@@ -48,7 +58,9 @@ void FEVInterface::sendToFrontEnd(const std::string& targetInterfaceID, const T&
 //	* can be used for source interface ID to accept a message from any front-end
 // NOTE: can not overload functions based on return type, so T& passed as value
 template<class T>
-void FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID, T& retValue, unsigned int timeoutInSeconds) const
+void FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID,
+                                       T&                 retValue,
+                                       unsigned int       timeoutInSeconds) const
 {
 	__FE_COUTV__(sourceInterfaceID);
 	__FE_COUTV__(VStateMachine::parentSupervisor_);
@@ -67,7 +79,8 @@ void FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID, T& 
 // NOTE: can not overload functions based on return type, so calls function with T& passed
 // as value
 template<class T>
-T FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID, unsigned int timeoutInSeconds) const
+T FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID,
+                                    unsigned int       timeoutInSeconds) const
 {
 	T retValue;
 	// call receiveFromFrontEnd without <T> so strings are handled well
@@ -77,7 +90,9 @@ T FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID, unsign
 
 //========================================================================================================================
 template<class T>
-std::string& FEVInterface::setFEMacroArgumentValue(frontEndMacroArgs_t args, const std::string& argName, const T& value) const
+std::string& FEVInterface::setFEMacroArgumentValue(frontEndMacroArgs_t args,
+                                                   const std::string&  argName,
+                                                   const T&            value) const
 {
 	// modify existing pair
 	std::string&      arg = getFEMacroArgument(args, argName);
@@ -89,7 +104,9 @@ std::string& FEVInterface::setFEMacroArgumentValue(frontEndMacroArgs_t args, con
 
 //========================================================================================================================
 template<class T>
-std::string& FEVInterface::emplaceFEMacroArgumentValue(frontEndMacroArgs_t args, const std::string& argName, const T& value) const
+std::string& FEVInterface::emplaceFEMacroArgumentValue(frontEndMacroArgs_t args,
+                                                       const std::string&  argName,
+                                                       const T&            value) const
 {
 	// insert new pair
 	std::stringstream ss;
@@ -101,9 +118,9 @@ std::string& FEVInterface::emplaceFEMacroArgumentValue(frontEndMacroArgs_t args,
 //========================================================================================================================
 // Note: not a member of FEVInterface
 template<class T>
-T getFEMacroConstArgumentValue(FEVInterface::frontEndMacroConstArgs_t args, 
-							   const std::string& argName,
-							   const T& defaultValue)
+T getFEMacroConstArgumentValue(FEVInterface::frontEndMacroConstArgs_t args,
+                               const std::string&                     argName,
+                               const T&                               defaultValue)
 {
 	// stolen from TableView
 	// only handles number types (strings are handled in non-template function override)
@@ -111,7 +128,7 @@ T getFEMacroConstArgumentValue(FEVInterface::frontEndMacroConstArgs_t args,
 	const std::string& data = FEVInterface::getFEMacroConstArgument(args, argName);
 
 	// default value is used only if the user leave "Default"
-	if (data == "Default")
+	if(data == "Default")
 		return defaultValue;
 
 	T retValue;
@@ -120,7 +137,8 @@ T getFEMacroConstArgumentValue(FEVInterface::frontEndMacroConstArgs_t args,
 
 	if(!StringMacros::getNumber(data, retValue))
 	{
-		__SS__ << "Error extracting value for input argument named '" << argName << ".' The value '" << data << "' is not a number!" << std::endl;
+		__SS__ << "Error extracting value for input argument named '" << argName
+		       << ".' The value '" << data << "' is not a number!" << std::endl;
 		__SS_THROW__;
 	}
 
@@ -130,7 +148,8 @@ T getFEMacroConstArgumentValue(FEVInterface::frontEndMacroConstArgs_t args,
 //========================================================================================================================
 // Note: not a member of FEVInterface
 template<class T>
-T getFEMacroArgumentValue(FEVInterface::frontEndMacroArgs_t args, const std::string& argName)
+T getFEMacroArgumentValue(FEVInterface::frontEndMacroArgs_t args,
+                          const std::string&                argName)
 {
 	// stolen from TableView
 	//	only handles number types (strings are handled in non-template function override
@@ -141,7 +160,8 @@ T getFEMacroArgumentValue(FEVInterface::frontEndMacroArgs_t args, const std::str
 
 	if(!StringMacros::getNumber(data, retValue))
 	{
-		__SS__ << "Error extracting value for output argument named '" << argName << ".' The value '" << data << "' is not a number!" << std::endl;
+		__SS__ << "Error extracting value for output argument named '" << argName
+		       << ".' The value '" << data << "' is not a number!" << std::endl;
 		__COUT__ << "\n" << ss.str();
 		__SS_THROW__;
 	}

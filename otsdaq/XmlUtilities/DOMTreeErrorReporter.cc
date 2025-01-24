@@ -42,15 +42,18 @@ void DOMTreeErrorReporter::fatalError(const xercesc::SAXParseException& ex)
 void DOMTreeErrorReporter::resetErrors() {}
 
 //==============================================================================
-std::string DOMTreeErrorReporter::reportParseException(const xercesc::SAXParseException& exception)
+std::string DOMTreeErrorReporter::reportParseException(
+    const xercesc::SAXParseException& exception)
 {
-	__SS__ << "\n"
-	       << "\tIn file \"" << xercesc::XMLString::transcode(exception.getSystemId()) << "\", line " << exception.getLineNumber() << ", column "
-	       << exception.getColumnNumber() << std::endl
-	       << "\tMessage: "
-	       << xercesc::XMLString::transcode(exception.getMessage())
-	       //<< " (check against xsd file)" //RAR commented, has no meaning to me or users..
-	       << "\n\n";
+	__SS__
+	    << "\n"
+	    << "\tIn file \"" << xercesc::XMLString::transcode(exception.getSystemId())
+	    << "\", line " << exception.getLineNumber() << ", column "
+	    << exception.getColumnNumber() << std::endl
+	    << "\tMessage: "
+	    << xercesc::XMLString::transcode(exception.getMessage())
+	    //<< " (check against xsd file)" //RAR commented, has no meaning to me or users..
+	    << "\n\n";
 	__COUT__ << "\n" << ss.str() << std::endl;
 	return ss.str();
-} //end reportParseException()
+}  //end reportParseException()

@@ -19,8 +19,14 @@ class ReceiverSocket : public virtual Socket
 	ReceiverSocket(std::string IPAddress, unsigned int port = 0);
 	virtual ~ReceiverSocket(void);
 
-	int receive(std::string& buffer, unsigned int timeoutSeconds = 1, unsigned int timeoutUSeconds = 0, bool verbose = false);
-	int receive(std::vector<uint32_t>& buffer, unsigned int timeoutSeconds = 1, unsigned int timeoutUSeconds = 0, bool verbose = false);
+	int receive(std::string& buffer,
+	            unsigned int timeoutSeconds  = 1,
+	            unsigned int timeoutUSeconds = 0,
+	            bool         verbose         = false);
+	int receive(std::vector<uint32_t>& buffer,
+	            unsigned int           timeoutSeconds  = 1,
+	            unsigned int           timeoutUSeconds = 0,
+	            bool                   verbose         = false);
 	int receive(std::string&    buffer,
 	            unsigned long&  fromIPAddress,
 	            unsigned short& fromPort,
@@ -34,8 +40,8 @@ class ReceiverSocket : public virtual Socket
 	            unsigned int           timeoutUSeconds = 0,
 	            bool                   verbose         = false);
 
-	std::string 			getLastIncomingIPAddress(void); 
-	unsigned short		 	getLastIncomingPort(void);
+	std::string    getLastIncomingIPAddress(void);
+	unsigned short getLastIncomingPort(void);
 
   protected:
 	ReceiverSocket(void);
@@ -48,11 +54,11 @@ class ReceiverSocket : public virtual Socket
 	int                numberOfBytes_;
 
 	unsigned long  lastIncomingIPAddress_ = 0;
-	unsigned short lastIncomingPort_ = 0;
+	unsigned short lastIncomingPort_      = 0;
 	unsigned int   readCounter_;
 
 	std::mutex receiveMutex_;  // to make receiver socket thread safe
-	                           //	i.e. multiple threads can share a socket and call receive()
+	    //	i.e. multiple threads can share a socket and call receive()
 };
 
 }  // namespace ots

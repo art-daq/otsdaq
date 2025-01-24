@@ -13,7 +13,7 @@ using namespace ots;
 #define __COUT_HDR__ ("TableBase-" + getTableName() + "\t<> ")
 
 const std::string TableBase::GROUP_CACHE_PREPEND = "GroupCache_";
-const std::string TableBase::JSON_DOC_PREPEND = "JSONDoc_";
+const std::string TableBase::JSON_DOC_PREPEND    = "JSONDoc_";
 
 //==============================================================================
 // TableBase
@@ -51,12 +51,14 @@ TableBase::TableBase(const std::string& tableName,
 	}
 
 	//if special GROUP CACHE table, handle construction in a special way
-	if(tableName.substr(0,TableBase::GROUP_CACHE_PREPEND.length()) == TableBase::GROUP_CACHE_PREPEND ||
-		tableName.substr(0,TableBase::JSON_DOC_PREPEND.length()) == TableBase::JSON_DOC_PREPEND)
+	if(tableName.substr(0, TableBase::GROUP_CACHE_PREPEND.length()) ==
+	       TableBase::GROUP_CACHE_PREPEND ||
+	   tableName.substr(0, TableBase::JSON_DOC_PREPEND.length()) ==
+	       TableBase::JSON_DOC_PREPEND)
 	{
 		__COUTT__ << "TableBase for '" << tableName << "' constructed." << __E__;
 		return;
-	} //end special GROUP CACHE table construction
+	}  //end special GROUP CACHE table construction
 
 	bool dbg = false;  // tableName == "ARTDAQEventBuilderTable";
 	if(dbg)
@@ -96,7 +98,8 @@ TableBase::TableBase(const std::string& tableName,
 		if(dbg)
 			__COUT__ << "Init." << __E__;
 	}
-	catch(std::runtime_error& e)  // if accumulating exceptions, continue to and return, else throw
+	catch(std::runtime_error&
+	          e)  // if accumulating exceptions, continue to and return, else throw
 	{
 		if(accumulatedExceptions)
 			*accumulatedExceptions += std::string("\n") + e.what();
@@ -117,7 +120,8 @@ TableBase::TableBase(bool specialTable, const std::string& specialTableName)
     , activeTableView_(0)
     , mockupTableView_(specialTableName)
 {
-	__COUT__ << "Special table '" << tableName_ << "' constructed. " << specialTable << __E__;
+	__COUT__ << "Special table '" << tableName_ << "' constructed. " << specialTable
+	         << __E__;
 }  // special table constructor()
 
 ////==============================================================================
@@ -173,7 +177,8 @@ void TableBase::setupMockupView(TableVersion version)
 	if(!isStored(version))
 	{
 		tableViews_.emplace(std::make_pair(version, TableView(tableName_)));
-		tableViews_.at(version).copy(mockupTableView_, version, mockupTableView_.getAuthor());
+		tableViews_.at(version).copy(
+		    mockupTableView_, version, mockupTableView_.getAuthor());
 		trimCache();
 		if(!isStored(version))  // the trim cache is misbehaving!
 		{
@@ -185,7 +190,8 @@ void TableBase::setupMockupView(TableVersion version)
 	}
 	else
 	{
-		__SS__ << "View to fill with mockup already exists: " << version << ". Cannot overwrite!" << __E__;
+		__SS__ << "View to fill with mockup already exists: " << version
+		       << ". Cannot overwrite!" << __E__;
 		ss << StringMacros::stackTrace() << __E__;
 		__SS_THROW__;
 	}
@@ -245,9 +251,10 @@ void TableBase::trimTemporary(TableVersion targetVersion)
 			if(it->first.isTemporaryVersion())
 			{
 				//__COUT__ << "Trimming temporary version: " << it->first << __E__;
-				if(activeTableView_ && getViewVersion() == it->first)  // if activeVersion is being erased!
-					deactivate();                                      // deactivate active view, instead of guessing at next
-					                                                   // active view
+				if(activeTableView_ &&
+				   getViewVersion() == it->first)  // if activeVersion is being erased!
+					deactivate();  // deactivate active view, instead of guessing at next
+					               // active view
 				tableViews_.erase(it++);
 			}
 			else
@@ -262,7 +269,8 @@ void TableBase::trimTemporary(TableVersion targetVersion)
 	else
 	{
 		// else this is a persistent version!
-		__SS__ << "Temporary trim target was a persistent version: " << targetVersion << __E__;
+		__SS__ << "Temporary trim target was a persistent version: " << targetVersion
+		       << __E__;
 		__SS_THROW__;
 	}
 }
@@ -276,7 +284,8 @@ void TableBase::trimTemporary(TableVersion targetVersion)
 //		like when converting from temporary to persistent
 //
 //	Return invalid if no matches
-TableVersion TableBase::checkForDuplicate(TableVersion needleVersion, TableVersion ignoreVersion) const
+TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
+                                          TableVersion ignoreVersion) const
 {
 	auto needleIt = tableViews_.find(needleVersion);
 	if(needleIt == tableViews_.end())
@@ -310,7 +319,8 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion, TableVersi
 		if(viewPairReverseIterator->second.getNumberOfRows() != rows)
 			continue;  // row mismatch
 
-		if(viewPairReverseIterator->second.getDataColumnSize() != cols || viewPairReverseIterator->second.getSourceColumnMismatch() != 0)
+		if(viewPairReverseIterator->second.getDataColumnSize() != cols ||
+		   viewPairReverseIterator->second.getSourceColumnMismatch() != 0)
 			continue;  // col mismatch
 
 		++potentialMatchCount;
@@ -322,13 +332,17 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion, TableVersi
 		//	source names are potentially different from
 		// getColumnsInfo()/getColumnStorageNames
 
-		match = viewPairReverseIterator->second.getSourceColumnNames().size() == needleView->getSourceColumnNames().size();
+		match = viewPairReverseIterator->second.getSourceColumnNames().size() ==
+		        needleView->getSourceColumnNames().size();
 		if(match)
 		{
-			for(auto& haystackColName : viewPairReverseIterator->second.getSourceColumnNames())
-				if(needleView->getSourceColumnNames().find(haystackColName) == needleView->getSourceColumnNames().end())
+			for(auto& haystackColName :
+			    viewPairReverseIterator->second.getSourceColumnNames())
+				if(needleView->getSourceColumnNames().find(haystackColName) ==
+				   needleView->getSourceColumnNames().end())
 				{
-					__COUT__ << "Found column name mismatch for '" << haystackColName << "'... So allowing same data!" << __E__;
+					__COUT__ << "Found column name mismatch for '" << haystackColName
+					         << "'... So allowing same data!" << __E__;
 
 					match = false;
 					break;
@@ -352,8 +366,10 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion, TableVersi
 
 		for(unsigned int row = 0; match && row < rows; ++row)
 		{
-			for(unsigned int col = 0; col < cols - 2; ++col)  // do not consider author and timestamp
-				if(viewPairReverseIterator->second.getDataView()[row][col] != needleView->getDataView()[row][col])
+			for(unsigned int col = 0; col < cols - 2;
+			    ++col)  // do not consider author and timestamp
+				if(viewPairReverseIterator->second.getDataView()[row][col] !=
+				   needleView->getDataView()[row][col])
 				{
 					match = false;
 
@@ -376,45 +392,49 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion, TableVersi
 		}
 		if(match)
 		{
-			__COUT_INFO__ << "Duplicate version found: " << viewPairReverseIterator->first << __E__;
+			__COUT_INFO__ << "Duplicate version found: " << viewPairReverseIterator->first
+			              << __E__;
 			return viewPairReverseIterator->first;
 		}
 	}  // end table version loop
 
-	__COUT__ << "No duplicates found in " << potentialMatchCount << " potential matches." << __E__;
+	__COUT__ << "No duplicates found in " << potentialMatchCount << " potential matches."
+	         << __E__;
 	return TableVersion();  // return invalid if no matches
 }  // end checkForDuplicate()
-
 
 //==============================================================================
 // diffTwoVersions
 //	return a report of differences among two versions
-bool TableBase::diffTwoVersions(TableVersion v1, TableVersion v2, 
-	std::stringstream* diffReport /* = 0 */,
-	std::map<std::string /* uid */, std::vector<std::string /* colName */>>* v1ModifiedRecords /* = 0 */) const
+bool TableBase::diffTwoVersions(
+    TableVersion       v1,
+    TableVersion       v2,
+    std::stringstream* diffReport /* = 0 */,
+    std::map<std::string /* uid */, std::vector<std::string /* colName */>>*
+        v1ModifiedRecords /* = 0 */) const
 {
 	__COUTT__ << "Diffing version... " << v1 << " vs " << v2 << __E__;
 	auto v1It = tableViews_.find(v1);
 	if(v1It == tableViews_.end())
 	{
 		// else this is a persistent version!
-		__SS__ << "Version v" << v1 << " does not exist." << __E__;		
+		__SS__ << "Version v" << v1 << " does not exist." << __E__;
 		__SS_THROW__;
 	}
 	auto v2It = tableViews_.find(v2);
 	if(v2It == tableViews_.end())
 	{
 		// else this is a persistent version!
-		__SS__ << "Version v" << v2 << " does not exist." << __E__;		
+		__SS__ << "Version v" << v2 << " does not exist." << __E__;
 		__SS_THROW__;
 	}
 
 	const TableView* view1 = &(v1It->second);
 	const TableView* view2 = &(v2It->second);
-	unsigned int     rows1       = view1->getNumberOfRows();
-	unsigned int     cols1       = view1->getNumberOfColumns();
+	unsigned int     rows1 = view1->getNumberOfRows();
+	unsigned int     cols1 = view1->getNumberOfColumns();
 
-	bool         noDifference = true;
+	bool noDifference = true;
 
 	//	check each row,col
 
@@ -424,53 +444,70 @@ bool TableBase::diffTwoVersions(TableVersion v1, TableVersion v2,
 
 	if(view1->getSourceColumnNames().size() != view2->getSourceColumnNames().size())
 	{
-		__COUT__ << "Found column count mismatch for '" << view1->getSourceColumnNames().size() << 
-			" vs " << view2->getSourceColumnNames().size() << __E__;
+		__COUT__ << "Found column count mismatch for '"
+		         << view1->getSourceColumnNames().size() << " vs "
+		         << view2->getSourceColumnNames().size() << __E__;
 
-		if(diffReport) *diffReport << "<li>Found column count mismatch. The v" << v1 << " column count is <b>'" << view1->getSourceColumnNames().size() << 
-			"'</b> and the v" << v2 << " column count is <b>'" << view2->getSourceColumnNames().size() << "'</b>." << __E__;
+		if(diffReport)
+			*diffReport << "<li>Found column count mismatch. The v" << v1
+			            << " column count is <b>'" << view1->getSourceColumnNames().size()
+			            << "'</b> and the v" << v2 << " column count is <b>'"
+			            << view2->getSourceColumnNames().size() << "'</b>." << __E__;
 
-		noDifference = false;	
-		if(!diffReport) return noDifference; //do not need to continue to create report
+		noDifference = false;
+		if(!diffReport)
+			return noDifference;  //do not need to continue to create report
 	}
 
 	for(auto& colName1 : view1->getSourceColumnNames())
-		if(view2->getSourceColumnNames().find(colName1) == view2->getSourceColumnNames().end())
+		if(view2->getSourceColumnNames().find(colName1) ==
+		   view2->getSourceColumnNames().end())
 		{
 			__COUT__ << "Found column name mismatch for '" << colName1 << __E__;
 
-			if(diffReport) *diffReport << "<li>Found column name mismatch. The v" << v1 << " column <b>'" << colName1 << 
-				"'</b> was not found in v" << v2 << "." << __E__;
+			if(diffReport)
+				*diffReport << "<li>Found column name mismatch. The v" << v1
+				            << " column <b>'" << colName1 << "'</b> was not found in v"
+				            << v2 << "." << __E__;
 
-			noDifference = false;	
-			if(!diffReport) return noDifference; //do not need to continue to create report
+			noDifference = false;
+			if(!diffReport)
+				return noDifference;  //do not need to continue to create report
 		}
 	for(auto& colName2 : view2->getSourceColumnNames())
-		if(view1->getSourceColumnNames().find(colName2) == view1->getSourceColumnNames().end())
+		if(view1->getSourceColumnNames().find(colName2) ==
+		   view1->getSourceColumnNames().end())
 		{
 			__COUT__ << "Found column name mismatch for '" << colName2 << __E__;
 
-			if(diffReport) *diffReport << "<li>Found column name mismatch. The v" << v1 << " does not have column <b>'" << colName2 << 
-				"'</b> that was found in v" << v2 << "." << __E__;
+			if(diffReport)
+				*diffReport << "<li>Found column name mismatch. The v" << v1
+				            << " does not have column <b>'" << colName2
+				            << "'</b> that was found in v" << v2 << "." << __E__;
 
-			noDifference = false;	
-			if(!diffReport) return noDifference; //do not need to continue to create report
+			noDifference = false;
+			if(!diffReport)
+				return noDifference;  //do not need to continue to create report
 		}
 
 	if(rows1 != view2->getNumberOfRows())
 	{
-		__COUT__ << "Found row count mismatch for '" << rows1 << 
-			" vs " << view2->getNumberOfRows() << __E__;
+		__COUT__ << "Found row count mismatch for '" << rows1 << " vs "
+		         << view2->getNumberOfRows() << __E__;
 
-		if(diffReport) *diffReport << "<li>Found row count mismatch. The v" << v1 << " row count is <b>'" << rows1 << 
-			"'</b> and the v" << v2 << " row count is <b>'" << view2->getNumberOfRows() << "'</b>." << __E__;
+		if(diffReport)
+			*diffReport << "<li>Found row count mismatch. The v" << v1
+			            << " row count is <b>'" << rows1 << "'</b> and the v" << v2
+			            << " row count is <b>'" << view2->getNumberOfRows() << "'</b>."
+			            << __E__;
 
-		noDifference = false;	
-		if(!diffReport) return noDifference; //do not need to continue to create report
+		noDifference = false;
+		if(!diffReport)
+			return noDifference;  //do not need to continue to create report
 	}
 
 	//report on missing UIDs
-	std::set<std::string /*uid*/> uidSet1,uidSet2;
+	std::set<std::string /*uid*/> uidSet1, uidSet2;
 	for(unsigned int row = 0; row < rows1; ++row)
 		uidSet1.insert(view1->getDataView()[row][view1->getColUID()]);
 	for(unsigned int row = 0; row < view2->getNumberOfRows(); ++row)
@@ -481,126 +518,149 @@ bool TableBase::diffTwoVersions(TableVersion v1, TableVersion v2,
 		{
 			__COUT__ << "Found record name mismatch for '" << uid1 << __E__;
 
-			if(diffReport) *diffReport << "<li>Found record name mismatch. The v" << v1 << " record <b>'" << uid1 << 
-				"'</b> was not found in v" << v2 << "." << __E__;
+			if(diffReport)
+				*diffReport << "<li>Found record name mismatch. The v" << v1
+				            << " record <b>'" << uid1 << "'</b> was not found in v" << v2
+				            << "." << __E__;
 
-			noDifference = false;	
-			if(!diffReport) return noDifference; //do not need to continue to create report
+			noDifference = false;
+			if(!diffReport)
+				return noDifference;  //do not need to continue to create report
 		}
 	for(auto& uid2 : uidSet2)
 		if(uidSet1.find(uid2) == uidSet1.end())
 		{
 			__COUT__ << "Found record name mismatch for '" << uid2 << __E__;
 
-			if(diffReport) *diffReport << "<li>Found record name mismatch. v" << v1 << " does not have record <b>'" << uid2 << 
-				"'</b> that was found in v" << v2 << "." << __E__;
+			if(diffReport)
+				*diffReport << "<li>Found record name mismatch. v" << v1
+				            << " does not have record <b>'" << uid2
+				            << "'</b> that was found in v" << v2 << "." << __E__;
 
-			noDifference = false;	
-			if(!diffReport) return noDifference; //do not need to continue to create report
+			noDifference = false;
+			if(!diffReport)
+				return noDifference;  //do not need to continue to create report
 		}
-
 
 	unsigned int row2, col2;
 	for(unsigned int row = 0; row < rows1 && row < view2->getNumberOfRows(); ++row)
 	{
 		//do not evaluate if UIDs do not match
 		row2 = row;
-		if(view1->getDataView()[row][view1->getColUID()] != 
-			view2->getDataView()[row2][view2->getColUID()])
+		if(view1->getDataView()[row][view1->getColUID()] !=
+		   view2->getDataView()[row2][view2->getColUID()])
 		{
 			bool foundUid2 = false;
 
 			for(row2 = 0; row2 < view2->getNumberOfRows(); ++row2)
-				if(view1->getDataView()[row][view1->getColUID()] == 
-					view2->getDataView()[row2][view2->getColUID()])
+				if(view1->getDataView()[row][view1->getColUID()] ==
+				   view2->getDataView()[row2][view2->getColUID()])
 				{
 					foundUid2 = true;
 					break;
 				}
-			__COUTT__ << "Found row ? '" << foundUid2 << " " << row << "," << row2 << __E__;
-			if(!foundUid2) continue; //skip view1 record because no matching record found in view2
+			__COUTT__ << "Found row ? '" << foundUid2 << " " << row << "," << row2
+			          << __E__;
+			if(!foundUid2)
+				continue;  //skip view1 record because no matching record found in view2
 		}
-		
-		__COUTT__ << "Found row " << " " << row << "," << row2 << __E__;
-		for(unsigned int col = 0; col < cols1 - 2 && 
-			col < view2->getNumberOfColumns() - 2; ++col)  // do not consider author and timestamp
+
+		__COUTT__ << "Found row "
+		          << " " << row << "," << row2 << __E__;
+		for(unsigned int col = 0;
+		    col < cols1 - 2 && col < view2->getNumberOfColumns() - 2;
+		    ++col)  // do not consider author and timestamp
 		{
 			//do not evaluate if column names do not match
 			col2 = col;
-			if(view1->getColumnInfo(col).getName() != 
-				view2->getColumnInfo(col2).getName())
+			if(view1->getColumnInfo(col).getName() !=
+			   view2->getColumnInfo(col2).getName())
 			{
 				bool foundCol2 = false;
 
 				for(col2 = 0; col2 < view2->getNumberOfColumns() - 2; ++col2)
-					if(view1->getColumnInfo(col).getName() == 
-						view2->getColumnInfo(col2).getName())
+					if(view1->getColumnInfo(col).getName() ==
+					   view2->getColumnInfo(col2).getName())
 					{
 						foundCol2 = true;
 						break;
 					}
-				
-				__COUTT__ << "Found column ? '" << foundCol2 << " " << col << "," << col2 << __E__;
-				if(!foundCol2) continue; //skip view1 column because no matching column name was found in view2
+
+				__COUTT__ << "Found column ? '" << foundCol2 << " " << col << "," << col2
+				          << __E__;
+				if(!foundCol2)
+					continue;  //skip view1 column because no matching column name was found in view2
 			}
 
-			__COUTT__ << "Found column " << " " << col << "," << col2 << __E__;
+			__COUTT__ << "Found column "
+			          << " " << col << "," << col2 << __E__;
 			if(view1->getDataView()[row][col] != view2->getDataView()[row2][col2])
 			{
-				__COUT__ << "Found column value mismatch for '" << row << "," << col << " " << 
-					view1->getDataView()[row][col] << __E__;
+				__COUT__ << "Found column value mismatch for '" << row << "," << col
+				         << " " << view1->getDataView()[row][col] << __E__;
 
-				if(diffReport) *diffReport << "<li><b>" <<
-					view1->getColumnInfo(col).getName()
-					<< "</b> value mismatch at v" << v1 << " {UID,r,c}:{<b>" <<
-					view1->getDataView()[row][view1->getColUID()] << "</b>," <<
-					row << "," << col << "}: <b>'"
-					<<
-					view1->getDataView()[row][col]
-					<< "'</b> vs value in v" << v2 << ": <b>'" <<
-					view2->getDataView()[row2][col2] << "'</b>." << __E__;
+				if(diffReport)
+					*diffReport << "<li><b>" << view1->getColumnInfo(col).getName()
+					            << "</b> value mismatch at v" << v1 << " {UID,r,c}:{<b>"
+					            << view1->getDataView()[row][view1->getColUID()]
+					            << "</b>," << row << "," << col << "}: <b>'"
+					            << view1->getDataView()[row][col] << "'</b> vs value in v"
+					            << v2 << ": <b>'" << view2->getDataView()[row2][col2]
+					            << "'</b>." << __E__;
 
-				noDifference = false;	
-				if(!diffReport) return noDifference; //do not need to continue to create report
+				noDifference = false;
+				if(!diffReport)
+					return noDifference;  //do not need to continue to create report
 
-				if(v1ModifiedRecords) //add uid/colName difference
-					(*v1ModifiedRecords)[view1->getDataView()[row][view1->getColUID()]].push_back(
-						view1->getColumnInfo(col).getName());
+				if(v1ModifiedRecords)  //add uid/colName difference
+					(*v1ModifiedRecords)[view1->getDataView()[row][view1->getColUID()]]
+					    .push_back(view1->getColumnInfo(col).getName());
 			}
 		}
 	}
 
-	if(noDifference && diffReport) *diffReport << "<li>No difference found between v" << v1 << " and v" << v2 << "." << __E__;
+	if(noDifference && diffReport)
+		*diffReport << "<li>No difference found between v" << v1 << " and v" << v2 << "."
+		            << __E__;
 
-	return noDifference;  
+	return noDifference;
 }  // end diffTwoVersions()
 
 //==============================================================================
-void TableBase::changeVersionAndActivateView(TableVersion temporaryVersion, TableVersion version)
+void TableBase::changeVersionAndActivateView(TableVersion temporaryVersion,
+                                             TableVersion version)
 {
 	auto tmpIt = tableViews_.find(temporaryVersion);
 	if(tableViews_.find(temporaryVersion) == tableViews_.end())
 	{
-		__SS__ << "ERROR: Temporary view version " << temporaryVersion << " doesn't exists!" << __E__;
+		__SS__ << "ERROR: Temporary view version " << temporaryVersion
+		       << " doesn't exists!" << __E__;
 		__SS_THROW__;
 	}
 	if(version.isInvalid())
 	{
-		__SS__ << "ERROR: Attempting to create an invalid version " << version << "! Did you really run out of versions? (this should never happen)" << __E__;
+		__SS__ << "ERROR: Attempting to create an invalid version " << version
+		       << "! Did you really run out of versions? (this should never happen)"
+		       << __E__;
 		__SS_THROW__;
 	}
 
 	if(tableViews_.find(version) != tableViews_.end())
-		__COUT_WARN__ << "WARNING: View version " << version << " already exists! Overwriting." << __E__;
+		__COUT_WARN__ << "WARNING: View version " << version
+		              << " already exists! Overwriting." << __E__;
 
-	auto emplacePair /*it,bool*/ = tableViews_.emplace(std::make_pair(version, TableView(tableName_)));
+	auto emplacePair /*it,bool*/ =
+	    tableViews_.emplace(std::make_pair(version, TableView(tableName_)));
 	emplacePair.first->second.copy(tmpIt->second, version, tmpIt->second.getAuthor());
 	setActiveView(version);
 	eraseView(temporaryVersion);  // delete temp version from tableViews_
 }
 
 //==============================================================================
-bool TableBase::isStored(const TableVersion& version) const { return (tableViews_.find(version) != tableViews_.end()); }
+bool TableBase::isStored(const TableVersion& version) const
+{
+	return (tableViews_.find(version) != tableViews_.end());
+}
 
 //==============================================================================
 bool TableBase::eraseView(TableVersion version)
@@ -608,8 +668,9 @@ bool TableBase::eraseView(TableVersion version)
 	if(!isStored(version))
 		return false;
 
-	if(activeTableView_ && getViewVersion() == version)  // if activeVersion is being erased!
-		deactivate();                                    // deactivate active view, instead of guessing at next active view
+	if(activeTableView_ &&
+	   getViewVersion() == version)  // if activeVersion is being erased!
+		deactivate();  // deactivate active view, instead of guessing at next active view
 
 	tableViews_.erase(version);
 
@@ -620,10 +681,16 @@ bool TableBase::eraseView(TableVersion version)
 const std::string& TableBase::getTableName(void) const { return tableName_; }
 
 //==============================================================================
-const std::string& TableBase::getTableDescription(void) const { return tableDescription_; }
+const std::string& TableBase::getTableDescription(void) const
+{
+	return tableDescription_;
+}
 
 //==============================================================================
-const TableVersion& TableBase::getViewVersion(void) const { return getView().getVersion(); }
+const TableVersion& TableBase::getViewVersion(void) const
+{
+	return getView().getVersion();
+}
 
 //==============================================================================
 // latestAndMockupColumnNumberMismatch
@@ -633,7 +700,8 @@ bool TableBase::latestAndMockupColumnNumberMismatch(void) const
 	std::set<TableVersion> retSet = getStoredVersions();
 	if(retSet.size() && !retSet.rbegin()->isTemporaryVersion())
 	{
-		return tableViews_.find(*(retSet.rbegin()))->second.getNumberOfColumns() != mockupTableView_.getNumberOfColumns();
+		return tableViews_.find(*(retSet.rbegin()))->second.getNumberOfColumns() !=
+		       mockupTableView_.getNumberOfColumns();
 	}
 	// there are no latest non-temporary tables so there is a mismatch (by default)
 	return true;
@@ -668,7 +736,8 @@ unsigned int TableBase::getNumberOfStoredViews(void) const
 			// but it would be better to fix the cause.
 
 			// FIXME... for now just auto correcting
-			__COUT__ << "There is an invalid version now!.. where did it come from?" << __E__;
+			__COUT__ << "There is an invalid version now!.. where did it come from?"
+			         << __E__;
 		}
 		else
 			++sz;
@@ -676,7 +745,8 @@ unsigned int TableBase::getNumberOfStoredViews(void) const
 }  // end getNumberOfStoredViews()
 
 //==============================================================================
-const TableView& TableBase::getView(TableVersion version /* = TableVersion::INVALID */) const
+const TableView& TableBase::getView(
+    TableVersion version /* = TableVersion::INVALID */) const
 {
 	try
 	{
@@ -685,14 +755,16 @@ const TableView& TableBase::getView(TableVersion version /* = TableVersion::INVA
 	}
 	catch(...)
 	{
-		__SS__ << "Table '" << tableName_ << "' does not have version v" << version << 
-			" in the cache." << __E__;
+		__SS__ << "Table '" << tableName_ << "' does not have version v" << version
+		       << " in the cache." << __E__;
 		__SS_THROW__;
 	}
 
 	if(!activeTableView_)
 	{
-		__SS__ << "There is no active table view setup! Please check your system configuration." << __E__;
+		__SS__ << "There is no active table view setup! Please check your system "
+		          "configuration."
+		       << __E__;
 		__SS_ONLY_THROW__;
 	}
 	return *activeTableView_;
@@ -708,14 +780,16 @@ TableView* TableBase::getViewP(TableVersion version /* = TableVersion::INVALID *
 	}
 	catch(...)
 	{
-		__SS__ << "Table '" << tableName_ << "' does not have version v" << version << 
-			" in the cache." << __E__;
+		__SS__ << "Table '" << tableName_ << "' does not have version v" << version
+		       << " in the cache." << __E__;
 		__SS_THROW__;
 	}
 
 	if(!activeTableView_)
 	{
-		__SS__ << "There is no active table view setup! Please check your system configuration." << __E__;
+		__SS__ << "There is no active table view setup! Please check your system "
+		          "configuration."
+		       << __E__;
 		__SS_ONLY_THROW__;
 	}
 	return activeTableView_;
@@ -728,7 +802,10 @@ TableView* TableBase::getMockupViewP(void) { return &mockupTableView_; }
 void TableBase::setTableName(const std::string& tableName) { tableName_ = tableName; }
 
 //==============================================================================
-void TableBase::setTableDescription(const std::string& tableDescription) { tableDescription_ = tableDescription; }
+void TableBase::setTableDescription(const std::string& tableDescription)
+{
+	tableDescription_ = tableDescription;
+}
 
 //==============================================================================
 // deactivate
@@ -743,11 +820,12 @@ bool TableBase::isActive() { return activeTableView_ ? true : false; }
 bool TableBase::setActiveView(TableVersion version)
 {
 	if(!isStored(version))
-	{  // we don't call else load for the user, because the table manager would lose
-	   // track.. (I think?)
+	{   // we don't call else load for the user, because the table manager would lose
+		// track.. (I think?)
 		// so load new versions for the first time through the table manager only. (I
 		// think??)
-		__SS__ << "\nsetActiveView() ERROR: View with version " << version << " has never been stored before!" << __E__;
+		__SS__ << "\nsetActiveView() ERROR: View with version " << version
+		       << " has never been stored before!" << __E__;
 		__SS_THROW__;
 		return false;
 	}
@@ -771,18 +849,21 @@ bool TableBase::setActiveView(TableVersion version)
 //
 //	Returns version of new temporary view that was created.
 TableVersion TableBase::mergeViews(
-    const TableView&                                                                                                    sourceViewA,
-    const TableView&                                                                                                    sourceViewB,
-    TableVersion                                                                                                        destinationVersion,
-    const std::string&                                                                                                  author,
-    const std::string&                                                                                                  mergeApproach /*Rename,Replace,Skip*/,
-    std::map<std::pair<std::string /*original table*/, std::string /*original uidB*/>, std::string /*converted uidB*/>& uidConversionMap,
-    std::map<std::pair<std::string /*original table*/, std::pair<std::string /*group linkid*/, std::string /*original gidB*/> >,
-             std::string /*converted gidB*/>&                                                                           groupidConversionMap,
-    bool                                                                                                                fillRecordConversionMaps,
-    bool                                                                                                                applyRecordConversionMaps,
-    bool                                                                                                                generateUniqueDataColumns /*=false*/,
-    std::stringstream*                                                                                                  mergeReport /*=nullptr*/)
+    const TableView&                          sourceViewA,
+    const TableView&                          sourceViewB,
+    TableVersion                              destinationVersion,
+    const std::string&                        author,
+    const std::string&                        mergeApproach /*Rename,Replace,Skip*/,
+    std::map<std::pair<std::string /*original table*/, std::string /*original uidB*/>,
+             std::string /*converted uidB*/>& uidConversionMap,
+    std::map<
+        std::pair<std::string /*original table*/,
+                  std::pair<std::string /*group linkid*/, std::string /*original gidB*/>>,
+        std::string /*converted gidB*/>& groupidConversionMap,
+    bool                                 fillRecordConversionMaps,
+    bool                                 applyRecordConversionMaps,
+    bool                                 generateUniqueDataColumns /*=false*/,
+    std::stringstream*                   mergeReport /*=nullptr*/)
 {
 	__COUT__ << "mergeViews starting..." << __E__;
 
@@ -796,7 +877,8 @@ TableVersion TableBase::mergeViews(
 	// clang-format on
 
 	// check valid mode
-	if(!(mergeApproach == "Rename" || mergeApproach == "Replace" || mergeApproach == "Skip"))
+	if(!(mergeApproach == "Rename" || mergeApproach == "Replace" ||
+	     mergeApproach == "Skip"))
 	{
 		__SS__ << "Error! Invalid merge approach '" << mergeApproach << ".'" << __E__;
 		__SS_THROW__;
@@ -807,8 +889,9 @@ TableVersion TableBase::mergeViews(
 	{
 		__SS__ << "Error! Number of Columns of source view A must match destination "
 		          "mock-up view."
-		       << "Dimension of source is [" << sourceViewA.getNumberOfColumns() << "] and of destination mockup is [" << mockupTableView_.getNumberOfColumns()
-		       << "]." << __E__;
+		       << "Dimension of source is [" << sourceViewA.getNumberOfColumns()
+		       << "] and of destination mockup is ["
+		       << mockupTableView_.getNumberOfColumns() << "]." << __E__;
 		__SS_THROW__;
 	}
 	// check that column sizes match
@@ -816,8 +899,9 @@ TableVersion TableBase::mergeViews(
 	{
 		__SS__ << "Error! Number of Columns of source view B must match destination "
 		          "mock-up view."
-		       << "Dimension of source is [" << sourceViewB.getNumberOfColumns() << "] and of destination mockup is [" << mockupTableView_.getNumberOfColumns()
-		       << "]." << __E__;
+		       << "Dimension of source is [" << sourceViewB.getNumberOfColumns()
+		       << "] and of destination mockup is ["
+		       << mockupTableView_.getNumberOfColumns() << "]." << __E__;
 		__SS_THROW__;
 	}
 
@@ -827,7 +911,8 @@ TableVersion TableBase::mergeViews(
 	sourceViewB.print();
 
 	if(mergeReport)
-		(*mergeReport) << "\n'" << mergeApproach << "'-Merging table '" << getTableName() << "' A=v" << sourceViewA.getVersion() << " with B=v"
+		(*mergeReport) << "\n'" << mergeApproach << "'-Merging table '" << getTableName()
+		               << "' A=v" << sourceViewA.getVersion() << " with B=v"
 		               << sourceViewB.getVersion() << __E__;
 
 	if(fillRecordConversionMaps && mergeApproach == "Rename")
@@ -852,26 +937,34 @@ TableVersion TableBase::mergeViews(
 		for(unsigned int cb = 0; cb < sourceViewB.getNumberOfColumns(); ++cb)
 		{
 			// skip columns that are not UID or GroupID columns
-			if(!(sourceViewA.getColumnInfo(cb).isUID() || sourceViewA.getColumnInfo(cb).isGroupID()))
+			if(!(sourceViewA.getColumnInfo(cb).isUID() ||
+			     sourceViewA.getColumnInfo(cb).isGroupID()))
 				continue;
 
-			__COUT__ << "Have an ID column: " << cb << " " << sourceViewA.getColumnInfo(cb).getType() << __E__;
+			__COUT__ << "Have an ID column: " << cb << " "
+			         << sourceViewA.getColumnInfo(cb).getType() << __E__;
 
 			// at this point we have an ID column, verify B and mockup are the same
-			if(sourceViewA.getColumnInfo(cb).getType() != sourceViewB.getColumnInfo(cb).getType() ||
-			   sourceViewA.getColumnInfo(cb).getType() != mockupTableView_.getColumnInfo(cb).getType())
+			if(sourceViewA.getColumnInfo(cb).getType() !=
+			       sourceViewB.getColumnInfo(cb).getType() ||
+			   sourceViewA.getColumnInfo(cb).getType() !=
+			       mockupTableView_.getColumnInfo(cb).getType())
 			{
-				__SS__ << "Error! " << sourceViewA.getColumnInfo(cb).getType() << " column " << cb
+				__SS__ << "Error! " << sourceViewA.getColumnInfo(cb).getType()
+				       << " column " << cb
 				       << " of source view A must match source B and destination mock-up "
 				          "view."
-				       << " Column of source B is [" << sourceViewA.getColumnInfo(cb).getType() << "] and of destination mockup is ["
+				       << " Column of source B is ["
+				       << sourceViewA.getColumnInfo(cb).getType()
+				       << "] and of destination mockup is ["
 				       << mockupTableView_.getColumnInfo(cb).getType() << "]." << __E__;
 				__SS_THROW__;
 			}
 
 			// getLinkGroupIDColumn(childLinkIndex)
 
-			std::vector<std::string /*converted uidB*/> localConvertedIds;  // used for conflict completeness check
+			std::vector<std::string /*converted uidB*/>
+			    localConvertedIds;  // used for conflict completeness check
 
 			if(sourceViewA.getColumnInfo(cb).isGroupID())
 			{
@@ -884,7 +977,8 @@ TableVersion TableBase::mergeViews(
 						continue;
 
 					// if here, found conflict
-					__COUT__ << "found conflict: " << getTableName() << "/" << bGroupid << __E__;
+					__COUT__ << "found conflict: " << getTableName() << "/" << bGroupid
+					         << __E__;
 
 					// extract starting uniqueId number
 					{
@@ -892,12 +986,14 @@ TableVersion TableBase::mergeViews(
 						numericStartIndex      = str.size();
 
 						// find first non-numeric character
-						while(numericStartIndex - 1 < str.size() && str[numericStartIndex - 1] >= '0' && str[numericStartIndex - 1] <= '9')
+						while(numericStartIndex - 1 < str.size() &&
+						      str[numericStartIndex - 1] >= '0' &&
+						      str[numericStartIndex - 1] <= '9')
 							--numericStartIndex;
 
 						if(numericStartIndex < str.size())
 						{
-							uniqueId     = atoi(str.substr(numericStartIndex).c_str()) + 1;
+							uniqueId = atoi(str.substr(numericStartIndex).c_str()) + 1;
 							uniqueIdBase = str.substr(0, numericStartIndex);
 						}
 						else
@@ -939,9 +1035,11 @@ TableVersion TableBase::mergeViews(
 							// check converted records and source A and B for conflicts
 							if(aGroupids.find(uniqueIdString) != aGroupids.end())
 								found = true;
-							if(!found && bGroupids.find(uniqueIdString) != bGroupids.end())
+							if(!found &&
+							   bGroupids.find(uniqueIdString) != bGroupids.end())
 								found = true;
-							if(!found && bGroupids.find(uniqueIdString) != bGroupids.end())
+							if(!found &&
+							   bGroupids.find(uniqueIdString) != bGroupids.end())
 								found = true;
 							for(ra = 0; !found && ra < localConvertedIds.size(); ++ra)
 								if(localConvertedIds[ra] == uniqueIdString)
@@ -952,18 +1050,26 @@ TableVersion TableBase::mergeViews(
 					// have unique id string now
 					__COUTV__(uniqueIdString);
 
-					groupidConversionMap[std::pair<std::string /*original table*/, std::pair<std::string /*group linkid*/, std::string /*original gidB*/> >(
-					    getTableName(),
-					    std::pair<std::string /*group linkid*/, std::string /*original gidB*/>(sourceViewB.getColumnInfo(cb).getChildLinkIndex(), bGroupid))] =
-					    uniqueIdString;
+					groupidConversionMap
+					    [std::pair<std::string /*original table*/,
+					               std::pair<std::string /*group linkid*/,
+					                         std::string /*original gidB*/>>(
+					        getTableName(),
+					        std::pair<std::string /*group linkid*/,
+					                  std::string /*original gidB*/>(
+					            sourceViewB.getColumnInfo(cb).getChildLinkIndex(),
+					            bGroupid))] = uniqueIdString;
 					localConvertedIds.push_back(uniqueIdString);  // save to vector for
 					                                              // future conflict
 					                                              // checking within table
 
 					if(mergeReport)
-						(*mergeReport) << "\t"
-						               << "Found conflicting B groupID for linkIndex '" << sourceViewB.getColumnInfo(cb).getChildLinkIndex()
-						               << "' and renamed '" << bGroupid << "' to '" << uniqueIdString << "'" << __E__;
+						(*mergeReport)
+						    << "\t"
+						    << "Found conflicting B groupID for linkIndex '"
+						    << sourceViewB.getColumnInfo(cb).getChildLinkIndex()
+						    << "' and renamed '" << bGroupid << "' to '" << uniqueIdString
+						    << "'" << __E__;
 
 				}  // end row find unique id string loop for groupid
 
@@ -978,7 +1084,8 @@ TableVersion TableBase::mergeViews(
 					found = false;
 
 					for(ra = 0; ra < sourceViewA.getDataView().size(); ++ra)
-						if(sourceViewA.getValueAsString(ra, cb) == sourceViewB.getValueAsString(rb, cb))
+						if(sourceViewA.getValueAsString(ra, cb) ==
+						   sourceViewB.getValueAsString(rb, cb))
 						{
 							found = true;
 							break;
@@ -988,7 +1095,8 @@ TableVersion TableBase::mergeViews(
 						continue;
 
 					// found conflict
-					__COUT__ << "found conflict: " << getTableName() << "/" << sourceViewB.getDataView()[rb][cb] << __E__;
+					__COUT__ << "found conflict: " << getTableName() << "/"
+					         << sourceViewB.getDataView()[rb][cb] << __E__;
 
 					// extract starting uniqueId number
 					{
@@ -996,12 +1104,14 @@ TableVersion TableBase::mergeViews(
 						numericStartIndex      = str.size();
 
 						// find first non-numeric character
-						while(numericStartIndex - 1 < str.size() && str[numericStartIndex - 1] >= '0' && str[numericStartIndex - 1] <= '9')
+						while(numericStartIndex - 1 < str.size() &&
+						      str[numericStartIndex - 1] >= '0' &&
+						      str[numericStartIndex - 1] <= '9')
 							--numericStartIndex;
 
 						if(numericStartIndex < str.size())
 						{
-							uniqueId     = atoi(str.substr(numericStartIndex).c_str()) + 1;
+							uniqueId = atoi(str.substr(numericStartIndex).c_str()) + 1;
 							uniqueIdBase = str.substr(0, numericStartIndex);
 						}
 						else
@@ -1028,7 +1138,8 @@ TableVersion TableBase::mergeViews(
 						for(ra = 0; !found && ra < sourceViewB.getDataView().size(); ++ra)
 							if(ra == rb)
 								continue;  // skip record in question
-							else if(sourceViewB.getValueAsString(ra, cb) == uniqueIdString)
+							else if(sourceViewB.getValueAsString(ra, cb) ==
+							        uniqueIdString)
 								found = true;
 						for(ra = 0; !found && ra < localConvertedIds.size(); ++ra)
 							if(localConvertedIds[ra] == uniqueIdString)
@@ -1043,13 +1154,16 @@ TableVersion TableBase::mergeViews(
 
 							found = false;
 							// check converted records and source A and B for conflicts
-							for(ra = 0; !found && ra < sourceViewA.getDataView().size(); ++ra)
+							for(ra = 0; !found && ra < sourceViewA.getDataView().size();
+							    ++ra)
 								if(sourceViewA.getValueAsString(ra, cb) == uniqueIdString)
 									found = true;
-							for(ra = 0; !found && ra < sourceViewB.getDataView().size(); ++ra)
+							for(ra = 0; !found && ra < sourceViewB.getDataView().size();
+							    ++ra)
 								if(ra == rb)
 									continue;  // skip record in question
-								else if(sourceViewB.getValueAsString(ra, cb) == uniqueIdString)
+								else if(sourceViewB.getValueAsString(ra, cb) ==
+								        uniqueIdString)
 									found = true;
 							for(ra = 0; !found && ra < localConvertedIds.size(); ++ra)
 								if(localConvertedIds[ra] == uniqueIdString)
@@ -1060,16 +1174,19 @@ TableVersion TableBase::mergeViews(
 					// have unique id string now
 					__COUTV__(uniqueIdString);
 
-					uidConversionMap[std::pair<std::string /*original table*/, std::string /*original uidB*/>(
-					    getTableName(), sourceViewB.getValueAsString(rb, cb))] = uniqueIdString;
+					uidConversionMap[std::pair<std::string /*original table*/,
+					                           std::string /*original uidB*/>(
+					    getTableName(), sourceViewB.getValueAsString(rb, cb))] =
+					    uniqueIdString;
 					localConvertedIds.push_back(uniqueIdString);  // save to vector for
 					                                              // future conflict
 					                                              // checking within table
 
 					if(mergeReport)
 						(*mergeReport) << "\t"
-						               << "Found conflicting B UID and renamed '" << sourceViewB.getValueAsString(rb, cb) << "' to '" << uniqueIdString << "'"
-						               << __E__;
+						               << "Found conflicting B UID and renamed '"
+						               << sourceViewB.getValueAsString(rb, cb) << "' to '"
+						               << uniqueIdString << "'" << __E__;
 				}  // end row find unique id string loop
 
 				// done creating conversion map
@@ -1097,23 +1214,32 @@ TableVersion TableBase::mergeViews(
 	// if destinationVersion is INVALID, creates next available temporary version
 	destinationVersion = createTemporaryView(TableVersion(), destinationVersion);
 
-	__COUT__ << "Merging from (A) " << sourceViewA.getTableName() << "_v" << sourceViewA.getVersion() << " and (B) " << sourceViewB.getTableName() << "_v"
-	         << sourceViewB.getVersion() << "  to " << getTableName() << "_v" << destinationVersion << " with approach '" << mergeApproach << ".'" << __E__;
+	__COUT__ << "Merging from (A) " << sourceViewA.getTableName() << "_v"
+	         << sourceViewA.getVersion() << " and (B) " << sourceViewB.getTableName()
+	         << "_v" << sourceViewB.getVersion() << "  to " << getTableName() << "_v"
+	         << destinationVersion << " with approach '" << mergeApproach << ".'"
+	         << __E__;
 
 	// if the merge fails then delete the destinationVersion view
 	try
 	{
 		// start with a copy of source view A
 
-		tableViews_.emplace(std::make_pair(destinationVersion, TableView(getTableName())));
-		TableView* destinationView = &(tableViews_.at(destinationVersion).copy(sourceViewA, destinationVersion, author));
+		tableViews_.emplace(
+		    std::make_pair(destinationVersion, TableView(getTableName())));
+		TableView* destinationView =
+		    &(tableViews_.at(destinationVersion)
+		          .copy(sourceViewA, destinationVersion, author));
 
 		unsigned int destRow, destSize = destinationView->getDataView().size();
 		unsigned int cb;
 		bool         found;
-		std::map<std::pair<std::string /*original table*/, std::string /*original uidB*/>, std::string /*converted uidB*/>::iterator uidConversionIt;
-		std::map<std::pair<std::string /*original table*/, std::pair<std::string /*group linkid*/, std::string /*original gidB*/> >,
-		         std::string /*converted uidB*/>::iterator                                                                           groupidConversionIt;
+		std::map<std::pair<std::string /*original table*/, std::string /*original uidB*/>,
+		         std::string /*converted uidB*/>::iterator uidConversionIt;
+		std::map<std::pair<std::string /*original table*/,
+		                   std::pair<std::string /*group linkid*/,
+		                             std::string /*original gidB*/>>,
+		         std::string /*converted uidB*/>::iterator groupidConversionIt;
 
 		bool                                                               linkIsGroup;
 		std::pair<unsigned int /*link col*/, unsigned int /*link id col*/> linkPair;
@@ -1136,7 +1262,12 @@ TableVersion TableBase::mergeViews(
 				// created, always take and append the B record  copy row from B to new
 				// row
 				destRow = destinationView->copyRows(
-				    author, sourceViewB, rb, 1 /*srcRowsToCopy*/, -1 /*destOffsetRow*/, generateUniqueDataColumns /*generateUniqueDataColumns*/);
+				    author,
+				    sourceViewB,
+				    rb,
+				    1 /*srcRowsToCopy*/,
+				    -1 /*destOffsetRow*/,
+				    generateUniqueDataColumns /*generateUniqueDataColumns*/);
 
 				// check every column and remap conflicting names
 
@@ -1150,19 +1281,28 @@ TableVersion TableBase::mergeViews(
 						sourceViewB.getChildLink(cb, linkIsGroup, linkPair);
 
 						// if table and uid are in conversion map, convert
-						if((uidConversionIt = uidConversionMap.find(std::pair<std::string /*original table*/, std::string /*original uidB*/>(
-						        sourceViewB.getValueAsString(rb, linkPair.first), sourceViewB.getValueAsString(rb, linkPair.second)))) !=
-						   uidConversionMap.end())
+						if((uidConversionIt = uidConversionMap.find(
+						        std::pair<std::string /*original table*/,
+						                  std::string /*original uidB*/>(
+						            sourceViewB.getValueAsString(rb, linkPair.first),
+						            sourceViewB.getValueAsString(
+						                rb, linkPair.second)))) != uidConversionMap.end())
 						{
-							__COUT__ << "Found entry to remap: " << sourceViewB.getDataView()[rb][linkPair.second] << " ==> " << uidConversionIt->second
-							         << __E__;
+							__COUT__ << "Found entry to remap: "
+							         << sourceViewB.getDataView()[rb][linkPair.second]
+							         << " ==> " << uidConversionIt->second << __E__;
 
 							if(mergeReport)
-								(*mergeReport) << "\t\t"
-								               << "Found entry to remap [r,c]=[" << rb << "," << cb << "]"
-								               << ": " << sourceViewB.getDataView()[rb][linkPair.second] << " ==> [" << destRow << "," << linkPair.second
-								               << uidConversionIt->second << __E__;
-							destinationView->setValueAsString(uidConversionIt->second, destRow, linkPair.second);
+								(*mergeReport)
+								    << "\t\t"
+								    << "Found entry to remap [r,c]=[" << rb << "," << cb
+								    << "]"
+								    << ": "
+								    << sourceViewB.getDataView()[rb][linkPair.second]
+								    << " ==> [" << destRow << "," << linkPair.second
+								    << uidConversionIt->second << __E__;
+							destinationView->setValueAsString(
+							    uidConversionIt->second, destRow, linkPair.second);
 						}
 					}
 					else if(sourceViewB.getColumnInfo(cb).isChildLinkGroupID())
@@ -1172,56 +1312,87 @@ TableVersion TableBase::mergeViews(
 
 						// if table and uid are in conversion map, convert
 						if((groupidConversionIt = groupidConversionMap.find(
-						        std::pair<std::string /*original table*/, std::pair<std::string /*group linkid*/, std::string /*original gidB*/> >(
+						        std::pair<std::string /*original table*/,
+						                  std::pair<std::string /*group linkid*/,
+						                            std::string /*original gidB*/>>(
 						            sourceViewB.getValueAsString(rb, linkPair.first),
-						            std::pair<std::string /*group linkid*/, std::string /*original gidB*/>(
-						                sourceViewB.getColumnInfo(cb).getChildLinkIndex(), sourceViewB.getValueAsString(rb, linkPair.second))))) !=
+						            std::pair<std::string /*group linkid*/,
+						                      std::string /*original gidB*/>(
+						                sourceViewB.getColumnInfo(cb).getChildLinkIndex(),
+						                sourceViewB.getValueAsString(
+						                    rb, linkPair.second))))) !=
 						   groupidConversionMap.end())
 						{
-							__COUT__ << "Found entry to remap: " << sourceViewB.getDataView()[rb][linkPair.second] << " ==> " << groupidConversionIt->second
-							         << __E__;
+							__COUT__ << "Found entry to remap: "
+							         << sourceViewB.getDataView()[rb][linkPair.second]
+							         << " ==> " << groupidConversionIt->second << __E__;
 
 							if(mergeReport)
-								(*mergeReport) << "\t\t"
-								               << "Found entry to remap [r,c]=[" << rb << "," << cb << "]"
-								               << ": " << sourceViewB.getDataView()[rb][linkPair.second] << " ==> [" << destRow << "," << linkPair.second
-								               << "] " << groupidConversionIt->second << __E__;
-							destinationView->setValueAsString(groupidConversionIt->second, destRow, linkPair.second);
+								(*mergeReport)
+								    << "\t\t"
+								    << "Found entry to remap [r,c]=[" << rb << "," << cb
+								    << "]"
+								    << ": "
+								    << sourceViewB.getDataView()[rb][linkPair.second]
+								    << " ==> [" << destRow << "," << linkPair.second
+								    << "] " << groupidConversionIt->second << __E__;
+							destinationView->setValueAsString(
+							    groupidConversionIt->second, destRow, linkPair.second);
 						}
 					}
 					else if(sourceViewB.getColumnInfo(cb).isUID())
 					{
 						__COUT__ << "Checking UID... col=" << cb << __E__;
-						if((uidConversionIt = uidConversionMap.find(std::pair<std::string /*original table*/, std::string /*original uidB*/>(
-						        getTableName(), sourceViewB.getValueAsString(rb, cb)))) != uidConversionMap.end())
+						if((uidConversionIt = uidConversionMap.find(
+						        std::pair<std::string /*original table*/,
+						                  std::string /*original uidB*/>(
+						            getTableName(),
+						            sourceViewB.getValueAsString(rb, cb)))) !=
+						   uidConversionMap.end())
 						{
-							__COUT__ << "Found entry to remap: " << sourceViewB.getDataView()[rb][cb] << " ==> " << uidConversionIt->second << __E__;
+							__COUT__ << "Found entry to remap: "
+							         << sourceViewB.getDataView()[rb][cb] << " ==> "
+							         << uidConversionIt->second << __E__;
 
 							if(mergeReport)
-								(*mergeReport) << "\t\t"
-								               << "Found entry to remap [r,c]=[" << rb << "," << cb << "]"
-								               << ": " << sourceViewB.getDataView()[rb][cb] << " ==> [" << destRow << "," << cb << "] "
-								               << uidConversionIt->second << __E__;
-							destinationView->setValueAsString(uidConversionIt->second, destRow, cb);
+								(*mergeReport)
+								    << "\t\t"
+								    << "Found entry to remap [r,c]=[" << rb << "," << cb
+								    << "]"
+								    << ": " << sourceViewB.getDataView()[rb][cb]
+								    << " ==> [" << destRow << "," << cb << "] "
+								    << uidConversionIt->second << __E__;
+							destinationView->setValueAsString(
+							    uidConversionIt->second, destRow, cb);
 						}
 					}
 					else if(sourceViewB.getColumnInfo(cb).isGroupID())
 					{
 						__COUT__ << "Checking GroupID... col=" << cb << __E__;
 						if((groupidConversionIt = groupidConversionMap.find(
-						        std::pair<std::string /*original table*/, std::pair<std::string /*group linkid*/, std::string /*original gidB*/> >(
+						        std::pair<std::string /*original table*/,
+						                  std::pair<std::string /*group linkid*/,
+						                            std::string /*original gidB*/>>(
 						            getTableName(),
-						            std::pair<std::string /*group linkid*/, std::string /*original gidB*/>(sourceViewB.getColumnInfo(cb).getChildLinkIndex(),
-						                                                                                   sourceViewB.getValueAsString(rb, cb))))) !=
+						            std::pair<std::string /*group linkid*/,
+						                      std::string /*original gidB*/>(
+						                sourceViewB.getColumnInfo(cb).getChildLinkIndex(),
+						                sourceViewB.getValueAsString(rb, cb))))) !=
 						   groupidConversionMap.end())
 						{
-							__COUT__ << "Found entry to remap: " << sourceViewB.getDataView()[rb][cb] << " ==> " << groupidConversionIt->second << __E__;
+							__COUT__ << "Found entry to remap: "
+							         << sourceViewB.getDataView()[rb][cb] << " ==> "
+							         << groupidConversionIt->second << __E__;
 
 							if(mergeReport)
-								(*mergeReport) << "\t\t"
-								               << "Found entry to remap [r,c]=[" << rb << "," << cb << "]" << sourceViewB.getDataView()[rb][cb] << " ==> ["
-								               << destRow << "," << cb << "] " << groupidConversionIt->second << __E__;
-							destinationView->setValueAsString(groupidConversionIt->second, destRow, cb);
+								(*mergeReport)
+								    << "\t\t"
+								    << "Found entry to remap [r,c]=[" << rb << "," << cb
+								    << "]" << sourceViewB.getDataView()[rb][cb]
+								    << " ==> [" << destRow << "," << cb << "] "
+								    << groupidConversionIt->second << __E__;
+							destinationView->setValueAsString(
+							    groupidConversionIt->second, destRow, cb);
 						}
 					}
 					else
@@ -1236,25 +1407,43 @@ TableVersion TableBase::mergeViews(
 							// see if there is an entry in p
 							for(const auto& mapPairToPair : uidConversionMap)
 							{
-								if((stri = strb.find(mapPairToPair.first.first + "/" + mapPairToPair.first.second)) != std::string::npos)
+								if((stri = strb.find(mapPairToPair.first.first + "/" +
+								                     mapPairToPair.first.second)) !=
+								   std::string::npos)
 								{
-									__COUT__ << "Found a text link match (stri=" << stri << ")! "
-									         << (mapPairToPair.first.first + "/" + mapPairToPair.first.second) << " ==> " << mapPairToPair.second << __E__;
+									__COUT__ << "Found a text link match (stri=" << stri
+									         << ")! "
+									         << (mapPairToPair.first.first + "/" +
+									             mapPairToPair.first.second)
+									         << " ==> " << mapPairToPair.second << __E__;
 
 									// insert mapped substitution into string
 									destinationView->setValueAsString(
-									    strb.substr(0, stri) + (mapPairToPair.first.first + "/" + mapPairToPair.first.second) +
-									        strb.substr(stri + (mapPairToPair.first.first + "/" + mapPairToPair.first.second).size()),
+									    strb.substr(0, stri) +
+									        (mapPairToPair.first.first + "/" +
+									         mapPairToPair.first.second) +
+									        strb.substr(stri +
+									                    (mapPairToPair.first.first + "/" +
+									                     mapPairToPair.first.second)
+									                        .size()),
 									    destRow,
 									    cb);
 
-									__COUT__ << "Found entry to remap: " << sourceViewB.getDataView()[rb][cb] << " ==> "
-									         << destinationView->getDataView()[destRow][cb] << __E__;
+									__COUT__
+									    << "Found entry to remap: "
+									    << sourceViewB.getDataView()[rb][cb] << " ==> "
+									    << destinationView->getDataView()[destRow][cb]
+									    << __E__;
 
 									if(mergeReport)
-										(*mergeReport) << "\t\t"
-										               << "Found entry to remap [r,c]=[" << rb << "," << cb << "] " << sourceViewB.getDataView()[rb][cb]
-										               << " ==> [" << destRow << "," << cb << "] " << destinationView->getDataView()[destRow][cb] << __E__;
+										(*mergeReport)
+										    << "\t\t"
+										    << "Found entry to remap [r,c]=[" << rb << ","
+										    << cb << "] "
+										    << sourceViewB.getDataView()[rb][cb]
+										    << " ==> [" << destRow << "," << cb << "] "
+										    << destinationView->getDataView()[destRow][cb]
+										    << __E__;
 									break;
 								}
 							}  // end uid conversion map loop
@@ -1270,7 +1459,8 @@ TableVersion TableBase::mergeViews(
 			found = false;
 
 			for(destRow = 0; destRow < destSize; ++destRow)
-				if(destinationView->getValueAsString(destRow, colUID) == sourceViewB.getValueAsString(rb, colUID))
+				if(destinationView->getValueAsString(destRow, colUID) ==
+				   sourceViewB.getValueAsString(rb, colUID))
 				{
 					found = true;
 					break;
@@ -1283,7 +1473,8 @@ TableVersion TableBase::mergeViews(
 				{
 					// no conflict so append the B record
 					// copy row from B to new row
-					destinationView->copyRows(author, sourceViewB, rb, 1 /*srcRowsToCopy*/);
+					destinationView->copyRows(
+					    author, sourceViewB, rb, 1 /*srcRowsToCopy*/);
 				}
 				else
 
@@ -1292,13 +1483,16 @@ TableVersion TableBase::mergeViews(
 
 			// if here, then there was a conflict
 
-			__COUT__ << "found " << mergeApproach << " conflict: " << sourceViewB.getDataView()[rb][colUID] << __E__;
+			__COUT__ << "found " << mergeApproach
+			         << " conflict: " << sourceViewB.getDataView()[rb][colUID] << __E__;
 
 			if(mergeApproach == "replace")
 			{
 				if(mergeReport)
-					(*mergeReport) << "\t\t"
-					               << "Found UID conflict, replacing A with B record row=" << rb << " " << sourceViewB.getDataView()[rb][colUID] << __E__;
+					(*mergeReport)
+					    << "\t\t"
+					    << "Found UID conflict, replacing A with B record row=" << rb
+					    << " " << sourceViewB.getDataView()[rb][colUID] << __E__;
 				//	replace		-- Any UID conflicts for a record are replaced by the
 				// record from group B.
 
@@ -1313,8 +1507,10 @@ TableVersion TableBase::mergeViews(
 			else if(mergeApproach == "skip")  // then do nothing with conflicting B record
 			{
 				if(mergeReport)
-					(*mergeReport) << "\t\t"
-					               << "Found UID conflict, skipping B record row=" << rb << " " << sourceViewB.getDataView()[rb][colUID] << __E__;
+					(*mergeReport)
+					    << "\t\t"
+					    << "Found UID conflict, skipping B record row=" << rb << " "
+					    << sourceViewB.getDataView()[rb][colUID] << __E__;
 			}
 		}
 
@@ -1322,9 +1518,12 @@ TableVersion TableBase::mergeViews(
 	}
 	catch(...)  // if the copy fails then delete the destinationVersion view
 	{
-		__COUT_ERR__ << "Failed to merge " << sourceViewA.getTableName() << "_v" << sourceViewA.getVersion() << " and " << sourceViewB.getTableName() << "_v"
-		             << sourceViewB.getVersion() << " into " << getTableName() << "_v" << destinationVersion << __E__;
-		__COUT_WARN__ << "Deleting the failed destination version " << destinationVersion << __E__;
+		__COUT_ERR__ << "Failed to merge " << sourceViewA.getTableName() << "_v"
+		             << sourceViewA.getVersion() << " and " << sourceViewB.getTableName()
+		             << "_v" << sourceViewB.getVersion() << " into " << getTableName()
+		             << "_v" << destinationVersion << __E__;
+		__COUT_WARN__ << "Deleting the failed destination version " << destinationVersion
+		              << __E__;
 		eraseView(destinationVersion);
 		throw;  // and rethrow
 	}
@@ -1340,31 +1539,38 @@ TableVersion TableBase::mergeViews(
 //	if conflict, throw exception
 //
 //	Returns version of new temporary view that was created.
-TableVersion TableBase::copyView(const TableView& sourceView, TableVersion destinationVersion, 
-	const std::string& author, bool looseColumnMatching /* = false */)
+TableVersion TableBase::copyView(const TableView&   sourceView,
+                                 TableVersion       destinationVersion,
+                                 const std::string& author,
+                                 bool               looseColumnMatching /* = false */)
 {
 	// check that column sizes match
-	if(!looseColumnMatching && sourceView.getNumberOfColumns() != mockupTableView_.getNumberOfColumns())
+	if(!looseColumnMatching &&
+	   sourceView.getNumberOfColumns() != mockupTableView_.getNumberOfColumns())
 	{
 		__SS__ << "Error! Number of Columns of source view must match destination "
 		          "mock-up view."
-		       << "Dimension of source is [" << sourceView.getNumberOfColumns() << "] and of destination mockup is [" << mockupTableView_.getNumberOfColumns()
-		       << "]." << __E__;
+		       << "Dimension of source is [" << sourceView.getNumberOfColumns()
+		       << "] and of destination mockup is ["
+		       << mockupTableView_.getNumberOfColumns() << "]." << __E__;
 		__SS_THROW__;
 	}
 
 	// check for destination version confict
-	if(!destinationVersion.isInvalid() && tableViews_.find(destinationVersion) != tableViews_.end())
+	if(!destinationVersion.isInvalid() &&
+	   tableViews_.find(destinationVersion) != tableViews_.end())
 	{
-		__SS__ << "Error! Asked to copy a view with a conflicting version: " << destinationVersion << __E__;
+		__SS__ << "Error! Asked to copy a view with a conflicting version: "
+		       << destinationVersion << __E__;
 		__SS_THROW__;
 	}
 
 	// if destinationVersion is INVALID, creates next available temporary version
 	destinationVersion = createTemporaryView(TableVersion(), destinationVersion);
 
-	__COUT__ << "Copying from " << sourceView.getTableName() << "_v" << sourceView.getVersion() << " to " << getTableName() << "_v" << destinationVersion
-	         << __E__;
+	__COUT__ << "Copying from " << sourceView.getTableName() << "_v"
+	         << sourceView.getVersion() << " to " << getTableName() << "_v"
+	         << destinationVersion << __E__;
 
 	try
 	{
@@ -1373,9 +1579,11 @@ TableVersion TableBase::copyView(const TableView& sourceView, TableVersion desti
 	}
 	catch(...)  // if the copy fails then delete the destinationVersion view
 	{
-		__COUT_ERR__ << "Failed to copy from " << sourceView.getTableName() << "_v" << sourceView.getVersion() << " to " << getTableName() << "_v"
+		__COUT_ERR__ << "Failed to copy from " << sourceView.getTableName() << "_v"
+		             << sourceView.getVersion() << " to " << getTableName() << "_v"
 		             << destinationVersion << __E__;
-		__COUT_WARN__ << "Deleting the failed destination version " << destinationVersion << __E__;
+		__COUT_WARN__ << "Deleting the failed destination version " << destinationVersion
+		              << __E__;
 		eraseView(destinationVersion);
 		throw;  // and rethrow
 	}
@@ -1390,12 +1598,13 @@ TableVersion TableBase::copyView(const TableView& sourceView, TableVersion desti
 // versions. 	if destTemporaryViewVersion is invalid, starts search at
 // TableVersion::getNextTemporaryVersion().
 // 	returns new temporary version number (which is always negative)
-TableVersion TableBase::createTemporaryView(TableVersion sourceViewVersion, TableVersion destTemporaryViewVersion)
+TableVersion TableBase::createTemporaryView(TableVersion sourceViewVersion,
+                                            TableVersion destTemporaryViewVersion)
 {
-	__COUTT__ << "Table: " << getTableName() << __E__ <<
-		 "Num of Views: " << tableViews_.size()
-		<< " (Temporary Views: " << (tableViews_.size() - getNumberOfStoredViews())
-		<< ")" << __E__;
+	__COUTT__ << "Table: " << getTableName() << __E__
+	          << "Num of Views: " << tableViews_.size()
+	          << " (Temporary Views: " << (tableViews_.size() - getNumberOfStoredViews())
+	          << ")" << __E__;
 
 	TableVersion tmpVersion = destTemporaryViewVersion;
 	if(tmpVersion.isInvalid())
@@ -1405,11 +1614,13 @@ TableVersion TableBase::createTemporaryView(TableVersion sourceViewVersion, Tabl
 		;
 	if(isStored(tmpVersion) || tmpVersion.isInvalid())
 	{
-		__SS__ << "Invalid destination temporary version: " << destTemporaryViewVersion << ". Expected next temporary version < " << tmpVersion << __E__;
+		__SS__ << "Invalid destination temporary version: " << destTemporaryViewVersion
+		       << ". Expected next temporary version < " << tmpVersion << __E__;
 		__SS_THROW__;
 	}
 
-	if(sourceViewVersion == TableVersion::INVALID ||  // use mockup if sourceVersion is -1 or not found
+	if(sourceViewVersion ==
+	       TableVersion::INVALID ||  // use mockup if sourceVersion is -1 or not found
 	   tableViews_.find(sourceViewVersion) == tableViews_.end())
 	{
 		if(sourceViewVersion != -1)
@@ -1422,19 +1633,25 @@ TableVersion TableBase::createTemporaryView(TableVersion sourceViewVersion, Tabl
 		}
 		__COUTT__ << "Using Mock-up view" << __E__;
 		tableViews_.emplace(std::make_pair(tmpVersion, TableView(tableName_)));
-		tableViews_.at(tmpVersion).copy(mockupTableView_, tmpVersion, mockupTableView_.getAuthor());
+		tableViews_.at(tmpVersion)
+		    .copy(mockupTableView_, tmpVersion, mockupTableView_.getAuthor());
 	}
 	else
 	{
 		try  // do not allow init to throw an exception here..
 		{    // it's ok to copy invalid data, the user may be trying to change it
 			tableViews_.emplace(std::make_pair(tmpVersion, TableView(tableName_)));
-			tableViews_.at(tmpVersion).copy(tableViews_.at(sourceViewVersion), tmpVersion, tableViews_.at(sourceViewVersion).getAuthor());
+			tableViews_.at(tmpVersion)
+			    .copy(tableViews_.at(sourceViewVersion),
+			          tmpVersion,
+			          tableViews_.at(sourceViewVersion).getAuthor());
 		}
 		catch(...)
 		{
-			__COUT_WARN__ << "createTemporaryView() Source view failed init(). "
-			              << "This is being ignored (hopefully the new copy is being fixed)." << __E__;
+			__COUT_WARN__
+			    << "createTemporaryView() Source view failed init(). "
+			    << "This is being ignored (hopefully the new copy is being fixed)."
+			    << __E__;
 		}
 	}
 
@@ -1462,7 +1679,7 @@ TableVersion TableBase::getNextTemporaryVersion() const
 		__SS_THROW__;
 	}
 	return tmpVersion;
-} //end getNextTemporaryVersion()
+}  //end getNextTemporaryVersion()
 
 //==============================================================================
 // getNextVersion
@@ -1485,7 +1702,7 @@ TableVersion TableBase::getNextVersion() const
 		__SS_THROW__;
 	}
 	return tmpVersion;
-} //end getNextVersion()
+}  //end getNextVersion()
 
 //==============================================================================
 // getTemporaryView
@@ -1500,7 +1717,7 @@ TableView* TableBase::getTemporaryView(TableVersion temporaryVersion)
 		__SS_THROW__;
 	}
 	return &tableViews_.at(temporaryVersion);
-} //end getTemporaryView()
+}  //end getTemporaryView()
 
 //==============================================================================
 // convertToCaps
@@ -1520,8 +1737,11 @@ std::string TableBase::convertToCaps(std::string& str, bool isTableName)
 		if(str[c] >= 'A' && str[c] <= 'Z')
 		{
 			// add _ before table and if lower case to uppercase
-			if(c == configPos || (c && str[c - 1] >= 'a' && str[c - 1] <= 'z') ||  // if this is a new start of upper case
-			   (c && str[c - 1] >= 'A' && str[c - 1] <= 'Z' &&                     // if this is a new start from running caps
+			if(c == configPos ||
+			   (c && str[c - 1] >= 'a' &&
+			    str[c - 1] <= 'z') ||  // if this is a new start of upper case
+			   (c && str[c - 1] >= 'A' &&
+			    str[c - 1] <= 'Z' &&  // if this is a new start from running caps
 			    c + 1 < str.size() && str[c + 1] >= 'a' && str[c + 1] <= 'z'))
 				capsStr += "_";
 			capsStr += str[c];
@@ -1533,19 +1753,24 @@ std::string TableBase::convertToCaps(std::string& str, bool isTableName)
 		else                    // error! non-alpha
 		{
 			//allow underscores for group cache document name
-			if((str.substr(0,TableBase::GROUP_CACHE_PREPEND.length()) == TableBase::GROUP_CACHE_PREPEND ||
-				str.substr(0,TableBase::JSON_DOC_PREPEND.length()) == TableBase::JSON_DOC_PREPEND) &&
-			 	str[c] == '_') 
+			if((str.substr(0, TableBase::GROUP_CACHE_PREPEND.length()) ==
+			        TableBase::GROUP_CACHE_PREPEND ||
+			    str.substr(0, TableBase::JSON_DOC_PREPEND.length()) ==
+			        TableBase::JSON_DOC_PREPEND) &&
+			   str[c] == '_')
 			{
 				capsStr += '-';
 				continue;
 			}
 
 			std::stringstream ss;
-			ss << __COUT_HDR_FL__ << "TableBase::convertToCaps: Invalid character found in name (allowed: A-Z, a-z, 0-9) '" << str << "'" << __E__;
+			ss << __COUT_HDR_FL__
+			   << "TableBase::convertToCaps: Invalid character found in name (allowed: "
+			      "A-Z, a-z, 0-9) '"
+			   << str << "'" << __E__;
 			TLOG(TLVL_ERROR) << ss.str();
 			__SS_ONLY_THROW__;
 		}
 
 	return capsStr;
-} //end convertToCaps()
+}  //end convertToCaps()

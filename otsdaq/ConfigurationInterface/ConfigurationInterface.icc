@@ -34,10 +34,10 @@ void get(TableBase*&                          table,
          TableVersion                         version             = TableVersion(),
          bool                                 resetConfiguration  = true,
          bool                                 looseColumnMatching = false,
-         bool                                 rawDataOnly 		  = false,
+         bool                                 rawDataOnly         = false,
          std::string*                         accumulatedErrors   = 0)
 {
-	bool dbg = false; //tableName == "ARTDAQEventBuilderTable";
+	bool dbg = false;  //tableName == "ARTDAQEventBuilderTable";
 
 	if(table == 0)
 	{
@@ -71,20 +71,23 @@ void get(TableBase*&                          table,
 				throw;
 			}
 		}
-		if(dbg) __COUT__ << tableName << " Table constructed!" << std::endl;
+		if(dbg)
+			__COUT__ << tableName << " Table constructed!" << std::endl;
 	}
 
 	if(groupKey != 0 && groupName != 0)
 	{  // FIXME -- new TableGroup and TableGroupKey should be used!
 		// version = configurations->getConditionVersion(*groupKey,
 		// table->getTableName());
-		__SS__ << "FATAL ERROR: new TableGroup and TableGroupKey should be used!" << std::endl;
+		__SS__ << "FATAL ERROR: new TableGroup and TableGroupKey should be used!"
+		       << std::endl;
 		__SS_THROW__;
 	}
 	else if(!dontFill)
 	{
 		// check version choice
-		if(version == TableVersion::INVALID && (version = findLatestVersion(table)) == TableVersion::INVALID)
+		if(version == TableVersion::INVALID &&
+		   (version = findLatestVersion(table)) == TableVersion::INVALID)
 		{
 			__COUT__ << "FATAL ERROR: Can't ask to fill a table object with "
 			            "a negative version! "
@@ -110,7 +113,7 @@ void get(TableBase*&                          table,
 	}
 
 	if(resetConfiguration)  // reset to empty table views and no active view
-	{                       // EXCEPT, keep temporary views! (call TableBase::reset to really reset all)
+	{  // EXCEPT, keep temporary views! (call TableBase::reset to really reset all)
 		table->deactivate();
 		std::set<TableVersion> versions = table->getStoredVersions();
 		for(auto& version : versions)
@@ -145,7 +148,8 @@ void get(TableBase*&                          table,
 			}
 			catch(const std::runtime_error& e)
 			{
-				__SS__ << "Error occurred while getting and filling Table \"" << tableName << "\" version:" << version << std::endl;
+				__SS__ << "Error occurred while getting and filling Table \"" << tableName
+				       << "\" version:" << version << std::endl;
 				ss << "\n" << e.what() << __E__;
 				__COUT__ << StringMacros::stackTrace() << __E__;
 
@@ -177,12 +181,15 @@ void get(TableBase*&                          table,
 		// loose column matching can be used to ignore column names
 		table->getViewP()->setLooseColumnMatching(looseColumnMatching);
 		table->getViewP()->doGetSourceRawData(rawDataOnly);
-		if(dbg) __COUT__ << tableName << " Table filling...!" << std::endl;
+		if(dbg)
+			__COUT__ << tableName << " Table filling...!" << std::endl;
 		fill(table, version);
-		if(dbg) __COUT__ << tableName << " Table filled!" << std::endl;
+		if(dbg)
+			__COUT__ << tableName << " Table filled!" << std::endl;
 		if(looseColumnMatching)
 			table->getViewP()->setLooseColumnMatching(false);
-		table->getViewP()->doGetSourceRawData(false); //make sure it is cleared, although it should have been cleared in TableView::fillFromJSON()
+		table->getViewP()->doGetSourceRawData(
+		    false);  //make sure it is cleared, although it should have been cleared in TableView::fillFromJSON()
 		table->getViewP()->setLastAccessTime();
 
 		//if raw data only, leave early!
@@ -193,14 +200,17 @@ void get(TableBase*&                          table,
 		// verify the new view
 		if(table->getViewP()->getVersion() != version)
 		{
-			__SS__ << "Version mismatch!! " << table->getViewP()->getVersion() << " vs " << version << std::endl;
+			__SS__ << "Version mismatch!! " << table->getViewP()->getVersion() << " vs "
+			       << version << std::endl;
 			__SS_THROW__;
 		}
 
 		// match key by ignoring '_'
 		bool         nameIsMatch = true;
 		unsigned int nameIsMatchIndex, nameIsMatchStorageIndex;
-		for(nameIsMatchIndex = 0, nameIsMatchStorageIndex = 0; nameIsMatchIndex < table->getViewP()->getTableName().size(); ++nameIsMatchIndex)
+		for(nameIsMatchIndex = 0, nameIsMatchStorageIndex = 0;
+		    nameIsMatchIndex < table->getViewP()->getTableName().size();
+		    ++nameIsMatchIndex)
 		{
 			if(table->getMockupViewP()->getTableName()[nameIsMatchStorageIndex] == '_')
 				++nameIsMatchStorageIndex;  // skip to next storage character
@@ -208,8 +218,10 @@ void get(TableBase*&                          table,
 				continue;  // skip to next character
 
 			// match to storage name
-			if(nameIsMatchStorageIndex >= table->getMockupViewP()->getTableName().size() ||
-			   table->getViewP()->getTableName()[nameIsMatchIndex] != table->getMockupViewP()->getTableName()[nameIsMatchStorageIndex])
+			if(nameIsMatchStorageIndex >=
+			       table->getMockupViewP()->getTableName().size() ||
+			   table->getViewP()->getTableName()[nameIsMatchIndex] !=
+			       table->getMockupViewP()->getTableName()[nameIsMatchStorageIndex])
 			{
 				// size mismatch or character mismatch
 				nameIsMatch = false;
@@ -219,12 +231,13 @@ void get(TableBase*&                          table,
 		}
 
 		if(!nameIsMatch)  // if name is considered match by above rule, then force
-			// matchup
-			//table->getViewP()->setTableName(table->getMockupViewP()->getTableName());
+		                  // matchup
+		    //table->getViewP()->setTableName(table->getMockupViewP()->getTableName());
 		//else  // table->getViewP()->getTableName() !=
-		      // table->getMockupViewP()->getTableName())
+		// table->getMockupViewP()->getTableName())
 		{
-			__SS__ << "View Table Name mismatch!! " << table->getViewP()->getTableName() << " vs " << table->getMockupViewP()->getTableName() << std::endl;
+			__SS__ << "View Table Name mismatch!! " << table->getViewP()->getTableName()
+			       << " vs " << table->getMockupViewP()->getTableName() << std::endl;
 			__SS_THROW__;
 		}
 
@@ -235,7 +248,8 @@ void get(TableBase*&                          table,
 		}
 		catch(const std::runtime_error& e)
 		{
-			__SS__ << "Error occurred while getting and filling Table \"" << tableName << "\" version:" << version << std::endl;
+			__SS__ << "Error occurred while getting and filling Table \"" << tableName
+			       << "\" version:" << version << std::endl;
 			ss << "\n" << e.what() << __E__;
 			__COUT__ << StringMacros::stackTrace() << __E__;
 
@@ -251,19 +265,26 @@ void get(TableBase*&                          table,
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "Error occurred while getting and filling Table \"" << tableName << "\" version:" << version << std::endl;
+		__SS__ << "Error occurred while getting and filling Table \"" << tableName
+		       << "\" version:" << version << std::endl;
 		ss << "\n" << e.what() << __E__;
 		__SS_ONLY_THROW__;
 	}
 	catch(...)
 	{
-		__SS__ << "Unknown error occurred while getting and filling Table \"" << tableName << "\" version:" << version << std::endl;
-		try	{ throw; } //one more try to printout extra info
-		catch(const std::exception &e)
+		__SS__ << "Unknown error occurred while getting and filling Table \"" << tableName
+		       << "\" version:" << version << std::endl;
+		try
+		{
+			throw;
+		}  //one more try to printout extra info
+		catch(const std::exception& e)
 		{
 			ss << "Exception message: " << e.what();
 		}
-		catch(...){}
+		catch(...)
+		{
+		}
 		__SS_THROW__;
 	}
 

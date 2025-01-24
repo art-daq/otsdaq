@@ -17,7 +17,10 @@ class Parameter
 	// Getters
 	const N&              getName(void) const { return name_; }
 	const V&              getValue(void) const { return value_; }
-	const std::pair<N, V> getParameterPair(void) { return std::pair<N, V>(name_, value_); }
+	const std::pair<N, V> getParameterPair(void)
+	{
+		return std::pair<N, V>(name_, value_);
+	}
 
 	// Setters
 	void setName(const N name) { name_ = name; }
@@ -68,12 +71,21 @@ class Parameters
 		}
 		return it->second;
 	}
-	Parameter<N, V> getParameter(const N name) { return Parameter<N, V>(name, getValue(name)); }
+	Parameter<N, V> getParameter(const N name)
+	{
+		return Parameter<N, V>(name, getValue(name));
+	}
 
 	// Setters
 	void addParameter(const N name, const V value) { theParameters_[name] = value; }
-	void addParameter(const Parameter<N, V> parameter) { theParameters_[parameter.getName()] = parameter.getValue(); }
-	void addParameter(const std::pair<N, V> parameterPair) { theParameters_[parameterPair.first] = parameterPair.second; }
+	void addParameter(const Parameter<N, V> parameter)
+	{
+		theParameters_[parameter.getName()] = parameter.getValue();
+	}
+	void addParameter(const std::pair<N, V> parameterPair)
+	{
+		theParameters_[parameterPair.first] = parameterPair.second;
+	}
 
 	// Iterators
 	iterator       begin(void) { return theParameters_.begin(); }

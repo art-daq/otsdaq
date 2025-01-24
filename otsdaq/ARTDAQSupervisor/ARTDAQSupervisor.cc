@@ -24,12 +24,15 @@ using namespace ots;
 XDAQ_INSTANTIATOR_IMPL(ARTDAQSupervisor)
 
 #define FAKE_CONFIG_NAME "ots_config"
-#define DAQINTERFACE_PORT std::atoi(__ENV__("ARTDAQ_BASE_PORT")) + (partition_ * std::atoi(__ENV__("ARTDAQ_PORTS_PER_PARTITION")))
+#define DAQINTERFACE_PORT                    \
+	std::atoi(__ENV__("ARTDAQ_BASE_PORT")) + \
+	    (partition_ * std::atoi(__ENV__("ARTDAQ_PORTS_PER_PARTITION")))
 
-static ARTDAQSupervisor*                         instance        = nullptr;
-static std::unordered_map<int, struct sigaction> old_actions     = std::unordered_map<int, struct sigaction>();
-static bool                                      sighandler_init = false;
-static void                                      signal_handler(int signum)
+static ARTDAQSupervisor*                         instance = nullptr;
+static std::unordered_map<int, struct sigaction> old_actions =
+    std::unordered_map<int, struct sigaction>();
+static bool sighandler_init = false;
+static void signal_handler(int signum)
 {
 	// Messagefacility may already be gone at this point, TRACE ONLY!
 #if TRACE_REVNUM < 1459
@@ -78,7 +81,16 @@ static void init_sighandler(ARTDAQSupervisor* inst)
 		sighandler_init          = true;
 		instance                 = inst;
 		std::vector<int> signals = {
-		    SIGINT, SIGILL, SIGABRT, SIGFPE, SIGSEGV, SIGPIPE, SIGALRM, SIGTERM, SIGUSR2, SIGHUP};  // SIGQUIT is used by art in normal operation
+		    SIGINT,
+		    SIGILL,
+		    SIGABRT,
+		    SIGFPE,
+		    SIGSEGV,
+		    SIGPIPE,
+		    SIGALRM,
+		    SIGTERM,
+		    SIGUSR2,
+		    SIGHUP};  // SIGQUIT is used by art in normal operation
 		for(auto signal : signals)
 		{
 			struct sigaction old_action;
@@ -128,53 +140,88 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 	std::ofstream o(settings_file, std::ios::trunc);
 
 	setenv("DAQINTERFACE_PARTITION_NUMBER", std::to_string(partition_).c_str(), 1);
-	auto logfileName = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/DAQInteface/DAQInterface_partition" + std::to_string(partition_) + ".log";
+	auto logfileName = std::string(__ENV__("OTSDAQ_LOG_DIR")) +
+	                   "/DAQInteface/DAQInterface_partition" +
+	                   std::to_string(partition_) + ".log";
 	setenv("DAQINTERFACE_LOGFILE", logfileName.c_str(), 1);
 
-	o << "log_directory: " << getSupervisorProperty("log_directory", std::string(__ENV__("OTSDAQ_LOG_DIR"))) << std::endl;
+	o << "log_directory: "
+	  << getSupervisorProperty("log_directory", std::string(__ENV__("OTSDAQ_LOG_DIR")))
+	  << std::endl;
 
 	{
-		const std::string record_directory = getSupervisorProperty("record_directory", ARTDAQTableBase::ARTDAQ_FCL_PATH + "/run_records/");
+		const std::string record_directory = getSupervisorProperty(
+		    "record_directory", ARTDAQTableBase::ARTDAQ_FCL_PATH + "/run_records/");
 		mkdir(record_directory.c_str(), 0755);
 		o << "record_directory: " << record_directory << std::endl;
 	}
 
-	o << "package_hashes_to_save: " << getSupervisorProperty("package_hashes_to_save", "[artdaq]") << std::endl;
+	o << "package_hashes_to_save: "
+	  << getSupervisorProperty("package_hashes_to_save", "[artdaq]") << std::endl;
 	// Note that productsdir_for_bash_scripts is REQUIRED!
-	__SUP_COUT__ << "Use spack is " << getSupervisorProperty("use_spack", false) << ", spack_root is "
-	             << getSupervisorProperty("spack_root_for_bash_scripts", "NOT SET") << ", productsdir is "
-	             << getSupervisorProperty("productsdir_for_bash_scripts", "NOT SET") << __E__;
+	__SUP_COUT__ << "Use spack is " << getSupervisorProperty("use_spack", false)
+	             << ", spack_root is "
+	             << getSupervisorProperty("spack_root_for_bash_scripts", "NOT SET")
+	             << ", productsdir is "
+	             << getSupervisorProperty("productsdir_for_bash_scripts", "NOT SET")
+	             << __E__;
 	if(getSupervisorProperty("use_spack", false))
 	{
-		o << "spack_root_for_bash_scripts: " << getSupervisorProperty("spack_root_for_bash_scripts", std::string(__ENV__("SPACK_ROOT"))) << std::endl;
+		o << "spack_root_for_bash_scripts: "
+		  << getSupervisorProperty("spack_root_for_bash_scripts",
+		                           std::string(__ENV__("SPACK_ROOT")))
+		  << std::endl;
 	}
 	else
 	{
-		o << "productsdir_for_bash_scripts: " << getSupervisorProperty("productsdir_for_bash_scripts", std::string(__ENV__("OTS_PRODUCTS"))) << std::endl;
+		o << "productsdir_for_bash_scripts: "
+		  << getSupervisorProperty("productsdir_for_bash_scripts",
+		                           std::string(__ENV__("OTS_PRODUCTS")))
+		  << std::endl;
 	}
-	o << "boardreader timeout: " << getSupervisorProperty("boardreader_timeout", 30) << std::endl;
-	o << "eventbuilder timeout: " << getSupervisorProperty("eventbuilder_timeout", 30) << std::endl;
-	o << "datalogger timeout: " << getSupervisorProperty("datalogger_timeout", 30) << std::endl;
-	o << "dispatcher timeout: " << getSupervisorProperty("dispatcher_timeout", 30) << std::endl;
+	o << "boardreader timeout: " << getSupervisorProperty("boardreader_timeout", 30)
+	  << std::endl;
+	o << "eventbuilder timeout: " << getSupervisorProperty("eventbuilder_timeout", 30)
+	  << std::endl;
+	o << "datalogger timeout: " << getSupervisorProperty("datalogger_timeout", 30)
+	  << std::endl;
+	o << "dispatcher timeout: " << getSupervisorProperty("dispatcher_timeout", 30)
+	  << std::endl;
 	// Only put max_fragment_size_bytes into DAQInterface settings file if advanced_memory_usage is disabled
 	if(!getSupervisorProperty("advanced_memory_usage", false))
 	{
-		o << "max_fragment_size_bytes: " << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
+		o << "max_fragment_size_bytes: "
+		  << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
 	}
-	o << "transfer_plugin_to_use: " << getSupervisorProperty("transfer_plugin_to_use", "Autodetect") << std::endl;
-	o << "all_events_to_all_dispatchers: " << std::boolalpha << getSupervisorProperty("all_events_to_all_dispatchers", true) << std::endl;
-	o << "data_directory_override: " << getSupervisorProperty("data_directory_override", std::string(__ENV__("ARTDAQ_OUTPUT_DIR"))) << std::endl;
-	o << "max_configurations_to_list: " << getSupervisorProperty("max_configurations_to_list", 10) << std::endl;
-	o << "disable_unique_rootfile_labels: " << getSupervisorProperty("disable_unique_rootfile_labels", false) << std::endl;
-	o << "use_messageviewer: " << std::boolalpha << getSupervisorProperty("use_messageviewer", false) << std::endl;
-	o << "use_messagefacility: " << std::boolalpha << getSupervisorProperty("use_messagefacility", true) << std::endl;
-	o << "fake_messagefacility: " << std::boolalpha << getSupervisorProperty("fake_messagefacility", false) << std::endl;
-	o << "kill_existing_processes: " << std::boolalpha << getSupervisorProperty("kill_existing_processes", true) << std::endl;
-	o << "advanced_memory_usage: " << std::boolalpha << getSupervisorProperty("advanced_memory_usage", false) << std::endl;
-	o << "strict_fragment_id_mode: " << std::boolalpha << getSupervisorProperty("strict_fragment_id_mode", false) << std::endl;
-	o << "disable_private_network_bookkeeping: " << std::boolalpha << getSupervisorProperty("disable_private_network_bookkeeping", false) << std::endl;
+	o << "transfer_plugin_to_use: "
+	  << getSupervisorProperty("transfer_plugin_to_use", "Autodetect") << std::endl;
+	o << "all_events_to_all_dispatchers: " << std::boolalpha
+	  << getSupervisorProperty("all_events_to_all_dispatchers", true) << std::endl;
+	o << "data_directory_override: "
+	  << getSupervisorProperty("data_directory_override",
+	                           std::string(__ENV__("ARTDAQ_OUTPUT_DIR")))
+	  << std::endl;
+	o << "max_configurations_to_list: "
+	  << getSupervisorProperty("max_configurations_to_list", 10) << std::endl;
+	o << "disable_unique_rootfile_labels: "
+	  << getSupervisorProperty("disable_unique_rootfile_labels", false) << std::endl;
+	o << "use_messageviewer: " << std::boolalpha
+	  << getSupervisorProperty("use_messageviewer", false) << std::endl;
+	o << "use_messagefacility: " << std::boolalpha
+	  << getSupervisorProperty("use_messagefacility", true) << std::endl;
+	o << "fake_messagefacility: " << std::boolalpha
+	  << getSupervisorProperty("fake_messagefacility", false) << std::endl;
+	o << "kill_existing_processes: " << std::boolalpha
+	  << getSupervisorProperty("kill_existing_processes", true) << std::endl;
+	o << "advanced_memory_usage: " << std::boolalpha
+	  << getSupervisorProperty("advanced_memory_usage", false) << std::endl;
+	o << "strict_fragment_id_mode: " << std::boolalpha
+	  << getSupervisorProperty("strict_fragment_id_mode", false) << std::endl;
+	o << "disable_private_network_bookkeeping: " << std::boolalpha
+	  << getSupervisorProperty("disable_private_network_bookkeeping", false) << std::endl;
 	o << "allowed_processors: " << getSupervisorProperty("allowed_processors", "0-255")
-	  << std::endl;  // Note this sets a taskset for ALL processes, on all nodes (ex. "1,2,5-7")
+	  << std::
+	         endl;  // Note this sets a taskset for ALL processes, on all nodes (ex. "1,2,5-7")
 
 	o.close();
 
@@ -182,11 +229,14 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 	if(CorePropertySupervisorBase::theTRACEController_)
 	{
 		__SUP_COUT__ << "Destroying TRACE Controller..." << __E__;
-		delete CorePropertySupervisorBase::theTRACEController_;  // destruct current TRACEController
+		delete CorePropertySupervisorBase::
+		    theTRACEController_;  // destruct current TRACEController
 		CorePropertySupervisorBase::theTRACEController_ = nullptr;
 	}
-	CorePropertySupervisorBase::theTRACEController_ = new ARTDAQSupervisorTRACEController();
-	((ARTDAQSupervisorTRACEController*)CorePropertySupervisorBase::theTRACEController_)->setSupervisorPtr(this);
+	CorePropertySupervisorBase::theTRACEController_ =
+	    new ARTDAQSupervisorTRACEController();
+	((ARTDAQSupervisorTRACEController*)CorePropertySupervisorBase::theTRACEController_)
+	    ->setSupervisorPtr(this);
 
 	__SUP_COUT__ << "Constructed." << __E__;
 }  // end constructor()
@@ -209,14 +259,16 @@ void ARTDAQSupervisor::destroy(void)
 		__SUP_COUT__ << "Calling recover transition" << __E__;
 		std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
 		PyObject*                             pName = PyUnicode_FromString("do_recover");
-		/*PyObject*                             res   =*/PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
+		/*PyObject*                             res   =*/PyObject_CallMethodObjArgs(
+		    daqinterface_ptr_, pName, NULL);
 
 		__SUP_COUT__ << "Making sure that correct state has been reached" << __E__;
 		getDAQState_();
 		while(daqinterface_state_ != "stopped")
 		{
 			getDAQState_();
-			__SUP_COUT__ << "State is " << daqinterface_state_ << ", waiting 1s and retrying..." << __E__;
+			__SUP_COUT__ << "State is " << daqinterface_state_
+			             << ", waiting 1s and retrying..." << __E__;
 			usleep(1000000);
 		}
 
@@ -358,64 +410,76 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 	__SUP_COUT__ << "transitionConfiguring" << __E__;
 
 	// activate the configuration tree (the first iteration)
-	if(RunControlStateMachine::getIterationIndex() == 0 && RunControlStateMachine::getSubIterationIndex() == 0)
+	if(RunControlStateMachine::getIterationIndex() == 0 &&
+	   RunControlStateMachine::getSubIterationIndex() == 0)
 	{
 		thread_error_message_ = "";
 		thread_progress_bar_.resetProgressBar(0);
 		last_thread_progress_update_ = time(0);  // initialize timeout timer
 
 		std::pair<std::string /*group name*/, TableGroupKey> theGroup(
-		    SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getParameters().getValue("ConfigurationTableGroupName"),
-		    TableGroupKey(SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getParameters().getValue("ConfigurationTableGroupKey")));
+		    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+		        .getParameters()
+		        .getValue("ConfigurationTableGroupName"),
+		    TableGroupKey(SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+		                      .getParameters()
+		                      .getValue("ConfigurationTableGroupKey")));
 
-		__SUP_COUT__ << "Configuration table group name: " << theGroup.first << " key: " << theGroup.second << __E__;
+		__SUP_COUT__ << "Configuration table group name: " << theGroup.first
+		             << " key: " << theGroup.second << __E__;
 
 		try
 		{
 			// disable version tracking to accept untracked versions to be selected by the FSM transition source
-			theConfigurationManager_->loadTableGroup(theGroup.first,
-			                                         theGroup.second,
-			                                         true /*doActivate*/,
-			                                         0,
-			                                         0,
-			                                         0,
-			                                         0,
-			                                         0,
-			                                         0,
-			                                         false,
-			                                         0,
-			                                         0,
-			                                         ConfigurationManager::LoadGroupType::ALL_TYPES,
-			                                         true /*ignoreVersionTracking*/);
+			theConfigurationManager_->loadTableGroup(
+			    theGroup.first,
+			    theGroup.second,
+			    true /*doActivate*/,
+			    0,
+			    0,
+			    0,
+			    0,
+			    0,
+			    0,
+			    false,
+			    0,
+			    0,
+			    ConfigurationManager::LoadGroupType::ALL_TYPES,
+			    true /*ignoreVersionTracking*/);
 		}
 		catch(const std::runtime_error& e)
 		{
-			__SS__ << "Error loading table group '" << theGroup.first << "(" << theGroup.second << ")! \n" << e.what() << __E__;
+			__SS__ << "Error loading table group '" << theGroup.first << "("
+			       << theGroup.second << ")! \n"
+			       << e.what() << __E__;
 			__SUP_COUT_ERR__ << ss.str();
 			// ExceptionHandler(ExceptionHandlerRethrow::no, ss.str());
 
 			//__SS_THROW_ONLY__;
 			theStateMachine_.setErrorMessage(ss.str());
-			throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
-			                                         ss.str() /* message*/,
-			                                         "ARTDAQSupervisor::transitionConfiguring" /*module*/,
-			                                         __LINE__ /*line*/,
-			                                         __FUNCTION__ /*function*/
+			throw toolbox::fsm::exception::Exception(
+			    "Transition Error" /*name*/,
+			    ss.str() /* message*/,
+			    "ARTDAQSupervisor::transitionConfiguring" /*module*/,
+			    __LINE__ /*line*/,
+			    __FUNCTION__ /*function*/
 			);
 		}
 		catch(...)
 		{
-			__SS__ << "Unknown error loading table group '" << theGroup.first << "(" << theGroup.second << ")!" << __E__;
+			__SS__ << "Unknown error loading table group '" << theGroup.first << "("
+			       << theGroup.second << ")!" << __E__;
 			__SUP_COUT_ERR__ << ss.str();
 			// ExceptionHandler(ExceptionHandlerRethrow::no, ss.str());
 
 			//__SS_THROW_ONLY__;
 			theStateMachine_.setErrorMessage(ss.str());
-			throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
-			                                         ss.str() /* message*/,
-			                                         "ARTDAQSupervisor::transitionConfiguring" /*module*/,
-			                                         __LINE__ /*line*/,
-			                                         __FUNCTION__ /*function*/
+			throw toolbox::fsm::exception::Exception(
+			    "Transition Error" /*name*/,
+			    ss.str() /* message*/,
+			    "ARTDAQSupervisor::transitionConfiguring" /*module*/,
+			    __LINE__ /*line*/,
+			    __FUNCTION__ /*function*/
 			);
 		}
 
@@ -424,14 +488,16 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 		__SUP_COUT__ << "Configuring thread started." << __E__;
 
-		RunControlStateMachine::indicateIterationWork();  // use Iteration to allow other steps to complete in the system
+		RunControlStateMachine::
+		    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 	}
 	else  // not first time
 	{
 		std::string errorMessage;
 		{
-			std::lock_guard<std::mutex> lock(thread_mutex_);  // lock out for remainder of scope
-			errorMessage = thread_error_message_;             // theStateMachine_.getErrorMessage();
+			std::lock_guard<std::mutex> lock(
+			    thread_mutex_);                    // lock out for remainder of scope
+			errorMessage = thread_error_message_;  // theStateMachine_.getErrorMessage();
 		}
 		int progress = thread_progress_bar_.read();
 		__SUP_COUTV__(errorMessage);
@@ -442,7 +508,8 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 		if(errorMessage == "" &&  // if no update in 600 seconds, give up
 		   time(0) - last_thread_progress_update_ > 600)
 		{
-			__SUP_SS__ << "There has been no update from the configuration thread for " << (time(0) - last_thread_progress_update_)
+			__SUP_SS__ << "There has been no update from the configuration thread for "
+			           << (time(0) - last_thread_progress_update_)
 			           << " seconds, assuming something is wrong and giving up! "
 			           << "Last progress received was " << progress << __E__;
 			errorMessage = ss.str();
@@ -450,21 +517,24 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 		if(errorMessage != "")
 		{
-			__SUP_SS__ << "Error was caught in configuring thread: " << errorMessage << __E__;
+			__SUP_SS__ << "Error was caught in configuring thread: " << errorMessage
+			           << __E__;
 			__SUP_COUT_ERR__ << "\n" << ss.str();
 
 			theStateMachine_.setErrorMessage(ss.str());
-			throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
-			                                         ss.str() /* message*/,
-			                                         "CoreSupervisorBase::transitionConfiguring" /*module*/,
-			                                         __LINE__ /*line*/,
-			                                         __FUNCTION__ /*function*/
+			throw toolbox::fsm::exception::Exception(
+			    "Transition Error" /*name*/,
+			    ss.str() /* message*/,
+			    "CoreSupervisorBase::transitionConfiguring" /*module*/,
+			    __LINE__ /*line*/,
+			    __FUNCTION__ /*function*/
 			);
 		}
 
 		if(!thread_progress_bar_.isComplete())
 		{
-			RunControlStateMachine::indicateIterationWork();  // use Iteration to allow other steps to complete in the system
+			RunControlStateMachine::
+			    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 
 			if(last_thread_progress_read_ != progress)
 			{
@@ -488,10 +558,11 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 void ARTDAQSupervisor::configuringThread()
 try
 {
-	std::string uid =
-	    theConfigurationManager_
-	        ->getNode(ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME + "/" + CorePropertySupervisorBase::getSupervisorUID() + "/" + "LinkToSupervisorTable")
-	        .getValueAsString();
+	std::string uid = theConfigurationManager_
+	                      ->getNode(ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME +
+	                                "/" + CorePropertySupervisorBase::getSupervisorUID() +
+	                                "/" + "LinkToSupervisorTable")
+	                      .getValueAsString();
 
 	__COUT__ << "Supervisor uid is " << uid << ", getting supervisor table node" << __E__;
 
@@ -503,13 +574,14 @@ try
 
 	set_thread_message_("ConfigGen");
 
-	auto info = ARTDAQTableBase::extractARTDAQInfo(theSupervisorNode,
-	                                               false /*getStatusFalseNodes*/,
-	                                               true /*doWriteFHiCL*/,
-	                                               getSupervisorProperty("max_fragment_size_bytes", 8888),
-	                                               getSupervisorProperty("routing_timeout_ms", 1999),
-	                                               getSupervisorProperty("routing_retry_count", 12),
-	                                               &thread_progress_bar_);
+	auto info = ARTDAQTableBase::extractARTDAQInfo(
+	    theSupervisorNode,
+	    false /*getStatusFalseNodes*/,
+	    true /*doWriteFHiCL*/,
+	    getSupervisorProperty("max_fragment_size_bytes", 8888),
+	    getSupervisorProperty("routing_timeout_ms", 1999),
+	    getSupervisorProperty("routing_retry_count", 12),
+	    &thread_progress_bar_);
 
 	// Check lists
 	if(info.processes.count(ARTDAQTableBase::ARTDAQAppType::BoardReader) == 0)
@@ -530,7 +602,7 @@ try
 
 	__GEN_COUT__ << "Writing boot.txt" << __E__;
 
-	int         debugLevel  = theSupervisorNode.getNode("DAQInterfaceDebugLevel").getValue<int>();
+	int debugLevel = theSupervisorNode.getNode("DAQInterfaceDebugLevel").getValue<int>();
 	std::string setupScript = theSupervisorNode.getNode("DAQSetupScript").getValue();
 
 	std::ofstream o(ARTDAQTableBase::ARTDAQ_FCL_PATH + "/boot.txt", std::ios::trunc);
@@ -572,7 +644,8 @@ try
 		}
 		if(builder.allowed_processors != "")
 		{
-			o << "EventBuilder allowed_processors" << builder.allowed_processors << std::endl;
+			o << "EventBuilder allowed_processors" << builder.allowed_processors
+			  << std::endl;
 		}
 		o << std::endl;
 	}
@@ -587,7 +660,8 @@ try
 		}
 		if(logger.allowed_processors != "")
 		{
-			o << "DataLogger allowed_processors" << logger.allowed_processors << std::endl;
+			o << "DataLogger allowed_processors" << logger.allowed_processors
+			  << std::endl;
 		}
 		o << std::endl;
 	}
@@ -603,7 +677,8 @@ try
 		}
 		if(dispatcher.allowed_processors != "")
 		{
-			o << "Dispatcher allowed_processors" << dispatcher.allowed_processors << std::endl;
+			o << "Dispatcher allowed_processors" << dispatcher.allowed_processors
+			  << std::endl;
 		}
 		o << std::endl;
 	}
@@ -618,7 +693,8 @@ try
 		}
 		if(rmanager.allowed_processors != "")
 		{
-			o << "RoutingManager allowed_processors" << rmanager.allowed_processors << std::endl;
+			o << "RoutingManager allowed_processors" << rmanager.allowed_processors
+			  << std::endl;
 		}
 		o << std::endl;
 	}
@@ -630,33 +706,54 @@ try
 	__GEN_COUT__ << "Building configuration directory" << __E__;
 
 	boost::system::error_code ignored;
-	boost::filesystem::remove_all(ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME, ignored);
+	boost::filesystem::remove_all(ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME,
+	                              ignored);
 	mkdir((ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME).c_str(), 0755);
 
 	for(auto& reader : info.processes[ARTDAQTableBase::ARTDAQAppType::BoardReader])
 	{
-		symlink(ARTDAQTableBase::getFlatFHICLFilename(ARTDAQTableBase::ARTDAQAppType::BoardReader, reader.label).c_str(),
-		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" + reader.label + ".fcl").c_str());
+		symlink(ARTDAQTableBase::getFlatFHICLFilename(
+		            ARTDAQTableBase::ARTDAQAppType::BoardReader, reader.label)
+		            .c_str(),
+		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" +
+		         reader.label + ".fcl")
+		            .c_str());
 	}
 	for(auto& builder : info.processes[ARTDAQTableBase::ARTDAQAppType::EventBuilder])
 	{
-		symlink(ARTDAQTableBase::getFlatFHICLFilename(ARTDAQTableBase::ARTDAQAppType::EventBuilder, builder.label).c_str(),
-		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" + builder.label + ".fcl").c_str());
+		symlink(ARTDAQTableBase::getFlatFHICLFilename(
+		            ARTDAQTableBase::ARTDAQAppType::EventBuilder, builder.label)
+		            .c_str(),
+		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" +
+		         builder.label + ".fcl")
+		            .c_str());
 	}
 	for(auto& logger : info.processes[ARTDAQTableBase::ARTDAQAppType::DataLogger])
 	{
-		symlink(ARTDAQTableBase::getFlatFHICLFilename(ARTDAQTableBase::ARTDAQAppType::DataLogger, logger.label).c_str(),
-		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" + logger.label + ".fcl").c_str());
+		symlink(ARTDAQTableBase::getFlatFHICLFilename(
+		            ARTDAQTableBase::ARTDAQAppType::DataLogger, logger.label)
+		            .c_str(),
+		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" +
+		         logger.label + ".fcl")
+		            .c_str());
 	}
 	for(auto& dispatcher : info.processes[ARTDAQTableBase::ARTDAQAppType::Dispatcher])
 	{
-		symlink(ARTDAQTableBase::getFlatFHICLFilename(ARTDAQTableBase::ARTDAQAppType::Dispatcher, dispatcher.label).c_str(),
-		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" + dispatcher.label + ".fcl").c_str());
+		symlink(ARTDAQTableBase::getFlatFHICLFilename(
+		            ARTDAQTableBase::ARTDAQAppType::Dispatcher, dispatcher.label)
+		            .c_str(),
+		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" +
+		         dispatcher.label + ".fcl")
+		            .c_str());
 	}
 	for(auto& rmanager : info.processes[ARTDAQTableBase::ARTDAQAppType::RoutingManager])
 	{
-		symlink(ARTDAQTableBase::getFlatFHICLFilename(ARTDAQTableBase::ARTDAQAppType::RoutingManager, rmanager.label).c_str(),
-		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" + rmanager.label + ".fcl").c_str());
+		symlink(ARTDAQTableBase::getFlatFHICLFilename(
+		            ARTDAQTableBase::ARTDAQAppType::RoutingManager, rmanager.label)
+		            .c_str(),
+		        (ARTDAQTableBase::ARTDAQ_FCL_PATH + FAKE_CONFIG_NAME + "/" +
+		         rmanager.label + ".fcl")
+		            .c_str());
 	}
 
 	thread_progress_bar_.step();
@@ -683,21 +780,24 @@ try
 
 		int list_size = reader.allowed_processors != "" ? 4 : 3;
 
-		PyObject* readerData      = PyList_New(list_size);
-		PyObject* readerHost      = PyUnicode_FromString(reader.hostname.c_str());
-		PyObject* readerPort      = PyUnicode_FromString("-1");
-		PyObject* readerSubsystem = PyUnicode_FromString(std::to_string(reader.subsystem).c_str());
+		PyObject* readerData = PyList_New(list_size);
+		PyObject* readerHost = PyUnicode_FromString(reader.hostname.c_str());
+		PyObject* readerPort = PyUnicode_FromString("-1");
+		PyObject* readerSubsystem =
+		    PyUnicode_FromString(std::to_string(reader.subsystem).c_str());
 		PyList_SetItem(readerData, 0, readerHost);
 		PyList_SetItem(readerData, 1, readerPort);
 		PyList_SetItem(readerData, 2, readerSubsystem);
 		if(reader.allowed_processors != "")
 		{
-			PyObject* readerAllowedProcessors = PyUnicode_FromString(reader.allowed_processors.c_str());
+			PyObject* readerAllowedProcessors =
+			    PyUnicode_FromString(reader.allowed_processors.c_str());
 			PyList_SetItem(readerData, 3, readerAllowedProcessors);
 		}
 		PyDict_SetItem(readerDict, readerName, readerData);
 	}
-	PyObject* res1 = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName1, readerDict, NULL);
+	PyObject* res1 =
+	    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName1, readerDict, NULL);
 	Py_DECREF(readerDict);
 
 	if(res1 == NULL)
@@ -713,9 +813,11 @@ try
 	set_thread_message_("Calling do_boot");
 	__GEN_COUT__ << "Calling do_boot" << __E__;
 	__GEN_COUT__ << "Status before boot: " << daqinterface_state_ << __E__;
-	PyObject* pName2      = PyUnicode_FromString("do_boot");
-	PyObject* pStateArgs1 = PyUnicode_FromString((ARTDAQTableBase::ARTDAQ_FCL_PATH + "/boot.txt").c_str());
-	PyObject* res2        = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName2, pStateArgs1, NULL);
+	PyObject* pName2 = PyUnicode_FromString("do_boot");
+	PyObject* pStateArgs1 =
+	    PyUnicode_FromString((ARTDAQTableBase::ARTDAQ_FCL_PATH + "/boot.txt").c_str());
+	PyObject* res2 =
+	    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName2, pStateArgs1, NULL);
 
 	if(res2 == NULL)
 	{
@@ -736,7 +838,8 @@ try
 		set_thread_message_("Calling do_boot (retry)");
 		__GEN_COUT__ << "Calling do_boot again" << __E__;
 		__GEN_COUT__ << "Status before boot: " << daqinterface_state_ << __E__;
-		PyObject* res3 = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName2, pStateArgs1, NULL);
+		PyObject* res3 =
+		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName2, pStateArgs1, NULL);
 
 		if(res3 == NULL)
 		{
@@ -761,7 +864,8 @@ try
 	__GEN_COUT__ << "Status before config: " << daqinterface_state_ << __E__;
 	PyObject* pName3      = PyUnicode_FromString("do_config");
 	PyObject* pStateArgs2 = Py_BuildValue("[s]", FAKE_CONFIG_NAME);
-	PyObject* res3        = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName3, pStateArgs2, NULL);
+	PyObject* res3 =
+	    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName3, pStateArgs2, NULL);
 
 	if(res3 == NULL)
 	{
@@ -772,7 +876,9 @@ try
 	getDAQState_();
 	if(daqinterface_state_ != "ready")
 	{
-		__GEN_SS__ << "DAQInterface config transition failed!" << __E__ << "Supervisor state: \"" << daqinterface_state_ << "\" != \"ready\" " << __E__;
+		__GEN_SS__ << "DAQInterface config transition failed!" << __E__
+		           << "Supervisor state: \"" << daqinterface_state_ << "\" != \"ready\" "
+		           << __E__;
 		__GEN_SS_THROW__;
 	}
 	__GEN_COUT__ << "Status after config: " << daqinterface_state_ << __E__;
@@ -792,7 +898,8 @@ catch(const std::runtime_error& e)
 catch(...)
 {
 	set_thread_message_("ERROR");
-	__SS__ << "Unknown error was caught while configuring. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while configuring. Please checked the logs."
+	       << __E__;
 	__COUT_ERR__ << "\n" << ss.str();
 
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
@@ -845,23 +952,28 @@ catch(const std::runtime_error& e)
 {
 	const std::string transitionName = "Halting";
 	// if halting from Failed state, then ignore errors
-	if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::FAILED_STATE_NAME ||
-	   theStateMachine_.getProvenanceStateName() == RunControlStateMachine::HALTED_STATE_NAME)
+	if(theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::FAILED_STATE_NAME ||
+	   theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::HALTED_STATE_NAME)
 	{
 		__SUP_COUT_INFO__ << "Error was caught while halting (but ignoring because "
 		                     "previous state was '"
-		                  << RunControlStateMachine::FAILED_STATE_NAME << "'): " << e.what() << __E__;
+		                  << RunControlStateMachine::FAILED_STATE_NAME
+		                  << "'): " << e.what() << __E__;
 	}
 	else  // if not previously in Failed state, then fail
 	{
-		__SUP_SS__ << "Error was caught while " << transitionName << ": " << e.what() << __E__;
+		__SUP_SS__ << "Error was caught while " << transitionName << ": " << e.what()
+		           << __E__;
 		__SUP_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
-		throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
-		                                         ss.str() /* message*/,
-		                                         "ARTDAQSupervisorBase::transition" + transitionName /*module*/,
-		                                         __LINE__ /*line*/,
-		                                         __FUNCTION__ /*function*/
+		throw toolbox::fsm::exception::Exception(
+		    "Transition Error" /*name*/,
+		    ss.str() /* message*/,
+		    "ARTDAQSupervisorBase::transition" + transitionName /*module*/,
+		    __LINE__ /*line*/,
+		    __FUNCTION__ /*function*/
 		);
 	}
 }  // end transitionHalting() std::runtime_error exception handling
@@ -869,8 +981,10 @@ catch(...)
 {
 	const std::string transitionName = "Halting";
 	// if halting from Failed state, then ignore errors
-	if(theStateMachine_.getProvenanceStateName() == RunControlStateMachine::FAILED_STATE_NAME ||
-	   theStateMachine_.getProvenanceStateName() == RunControlStateMachine::HALTED_STATE_NAME)
+	if(theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::FAILED_STATE_NAME ||
+	   theStateMachine_.getProvenanceStateName() ==
+	       RunControlStateMachine::HALTED_STATE_NAME)
 	{
 		__SUP_COUT_INFO__ << "Unknown error was caught while halting (but ignoring "
 		                     "because previous state was '"
@@ -878,17 +992,19 @@ catch(...)
 	}
 	else  // if not previously in Failed state, then fail
 	{
-		__SUP_SS__ << "Unknown error was caught while " << transitionName << ". Please checked the logs." << __E__;
+		__SUP_SS__ << "Unknown error was caught while " << transitionName
+		           << ". Please checked the logs." << __E__;
 		__SUP_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
 		artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 
-		throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
-		                                         ss.str() /* message*/,
-		                                         "ARTDAQSupervisorBase::transition" + transitionName /*module*/,
-		                                         __LINE__ /*line*/,
-		                                         __FUNCTION__ /*function*/
+		throw toolbox::fsm::exception::Exception(
+		    "Transition Error" /*name*/,
+		    ss.str() /* message*/,
+		    "ARTDAQSupervisorBase::transition" + transitionName /*module*/,
+		    __LINE__ /*line*/,
+		    __FUNCTION__ /*function*/
 		);
 	}
 }  // end transitionHalting() exception handling
@@ -910,7 +1026,8 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknown error was caught while Initializing. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while Initializing. Please checked the logs."
+	       << __E__;
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 	__SS_THROW__;
 }  // end transitionInitializing() error handling
@@ -987,7 +1104,8 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknown error was caught while Resuming. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while Resuming. Please checked the logs."
+	       << __E__;
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 	__SS_THROW__;
 }  // end transitionResuming() error handling
@@ -999,7 +1117,8 @@ try
 	__SUP_COUT__ << "transitionStarting" << __E__;
 
 	// first time launch thread because artdaq Supervisor may take a while
-	if(RunControlStateMachine::getIterationIndex() == 0 && RunControlStateMachine::getSubIterationIndex() == 0)
+	if(RunControlStateMachine::getIterationIndex() == 0 &&
+	   RunControlStateMachine::getSubIterationIndex() == 0)
 	{
 		thread_error_message_ = "";
 		thread_progress_bar_.resetProgressBar(0);
@@ -1010,14 +1129,16 @@ try
 
 		__SUP_COUT__ << "Starting thread started." << __E__;
 
-		RunControlStateMachine::indicateIterationWork();  // use Iteration to allow other steps to complete in the system
+		RunControlStateMachine::
+		    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 	}
 	else  // not first time
 	{
 		std::string errorMessage;
 		{
-			std::lock_guard<std::mutex> lock(thread_mutex_);  // lock out for remainder of scope
-			errorMessage = thread_error_message_;             // theStateMachine_.getErrorMessage();
+			std::lock_guard<std::mutex> lock(
+			    thread_mutex_);                    // lock out for remainder of scope
+			errorMessage = thread_error_message_;  // theStateMachine_.getErrorMessage();
 		}
 		int progress = thread_progress_bar_.read();
 		__SUP_COUTV__(errorMessage);
@@ -1028,7 +1149,8 @@ try
 		if(errorMessage == "" &&  // if no update in 600 seconds, give up
 		   time(0) - last_thread_progress_update_ > 600)
 		{
-			__SUP_SS__ << "There has been no update from the start thread for " << (time(0) - last_thread_progress_update_)
+			__SUP_SS__ << "There has been no update from the start thread for "
+			           << (time(0) - last_thread_progress_update_)
 			           << " seconds, assuming something is wrong and giving up! "
 			           << "Last progress received was " << progress << __E__;
 			errorMessage = ss.str();
@@ -1036,21 +1158,24 @@ try
 
 		if(errorMessage != "")
 		{
-			__SUP_SS__ << "Error was caught in starting thread: " << errorMessage << __E__;
+			__SUP_SS__ << "Error was caught in starting thread: " << errorMessage
+			           << __E__;
 			__SUP_COUT_ERR__ << "\n" << ss.str();
 
 			theStateMachine_.setErrorMessage(ss.str());
-			throw toolbox::fsm::exception::Exception("Transition Error" /*name*/,
-			                                         ss.str() /* message*/,
-			                                         "CoreSupervisorBase::transitionStarting" /*module*/,
-			                                         __LINE__ /*line*/,
-			                                         __FUNCTION__ /*function*/
+			throw toolbox::fsm::exception::Exception(
+			    "Transition Error" /*name*/,
+			    ss.str() /* message*/,
+			    "CoreSupervisorBase::transitionStarting" /*module*/,
+			    __LINE__ /*line*/,
+			    __FUNCTION__ /*function*/
 			);
 		}
 
 		if(!thread_progress_bar_.isComplete())
 		{
-			RunControlStateMachine::indicateIterationWork();  // use Iteration to allow other steps to complete in the system
+			RunControlStateMachine::
+			    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 
 			if(last_thread_progress_read_ != progress)
 			{
@@ -1077,7 +1202,8 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknown error was caught while Starting. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while Starting. Please checked the logs."
+	       << __E__;
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 	__SS_THROW__;
 }  // end transitionStarting() error handling
@@ -1086,10 +1212,11 @@ catch(...)
 void ARTDAQSupervisor::startingThread()
 try
 {
-	std::string uid =
-	    theConfigurationManager_
-	        ->getNode(ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME + "/" + CorePropertySupervisorBase::getSupervisorUID() + "/" + "LinkToSupervisorTable")
-	        .getValueAsString();
+	std::string uid = theConfigurationManager_
+	                      ->getNode(ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME +
+	                                "/" + CorePropertySupervisorBase::getSupervisorUID() +
+	                                "/" + "LinkToSupervisorTable")
+	                      .getValueAsString();
 
 	__COUT__ << "Supervisor uid is " << uid << ", getting supervisor table node" << __E__;
 	const std::string mfSubject_ = supervisorClassNoNamespace_ + "-" + uid;
@@ -1102,14 +1229,17 @@ try
 		std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
 		getDAQState_();
 		__GEN_COUT__ << "Status before start: " << daqinterface_state_ << __E__;
-		auto runNumber = SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getParameters().getValue("RunNumber");
+		auto runNumber = SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+		                     .getParameters()
+		                     .getValue("RunNumber");
 
 		thread_progress_bar_.step();
 
 		PyObject* pName      = PyUnicode_FromString("do_start_running");
 		int       run_number = std::stoi(runNumber);
 		PyObject* pStateArgs = PyLong_FromLong(run_number);
-		PyObject* res        = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pStateArgs, NULL);
+		PyObject* res =
+		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pStateArgs, NULL);
 
 		thread_progress_bar_.step();
 
@@ -1149,7 +1279,8 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknown error was caught while Starting. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while Starting. Please checked the logs."
+	       << __E__;
 	__COUT_ERR__ << "\n" << ss.str();
 
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
@@ -1188,7 +1319,8 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknown error was caught while Stopping. Please checked the logs." << __E__;
+	__SS__ << "Unknown error was caught while Stopping. Please checked the logs."
+	       << __E__;
 	artdaq::ExceptionHandler(artdaq::ExceptionHandlerRethrow::no, ss.str());
 	__SS_THROW__;
 }  // end transitionStopping() error handling
@@ -1224,13 +1356,14 @@ std::vector<SupervisorInfo::SubappInfo> ots::ARTDAQSupervisor::getSubappInfo(voi
 	{
 		SupervisorInfo::SubappInfo info;
 
-		info.name           = app.label;
-		info.detail         = "Rank " + std::to_string(app.rank) + ", subsystem " + std::to_string(app.subsystem);
+		info.name   = app.label;
+		info.detail = "Rank " + std::to_string(app.rank) + ", subsystem " +
+		              std::to_string(app.subsystem);
 		info.lastStatusTime = time(0);
 		info.progress       = 100;
 		info.status         = artdaqStateToOtsState(app.state);
-		info.url            = "http://" + app.host + ":" + std::to_string(app.port) + "/RPC2";
-		info.class_name     = "ARTDAQ " + labelToProcType_(app.label);
+		info.url        = "http://" + app.host + ":" + std::to_string(app.port) + "/RPC2";
+		info.class_name = "ARTDAQ " + labelToProcType_(app.label);
 
 		output.push_back(info);
 	}
@@ -1278,7 +1411,8 @@ std::string ots::ARTDAQSupervisor::getProcessInfo_(void)
 	PyObject* pName = PyUnicode_FromString("artdaq_process_info");
 	PyObject* pArg  = PyUnicode_FromString("DAQInterface");
 	PyObject* pArg2 = PyBool_FromLong(true);
-	PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, pArg2, NULL);
+	PyObject* res =
+	    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, pArg2, NULL);
 
 	if(res == NULL)
 	{
@@ -1318,7 +1452,8 @@ std::string ots::ARTDAQSupervisor::labelToProcType_(std::string label)
 }
 
 //==============================================================================
-std::list<ots::ARTDAQSupervisor::DAQInterfaceProcessInfo> ots::ARTDAQSupervisor::getAndParseProcessInfo_()
+std::list<ots::ARTDAQSupervisor::DAQInterfaceProcessInfo>
+ots::ARTDAQSupervisor::getAndParseProcessInfo_()
 {
 	std::list<ots::ARTDAQSupervisor::DAQInterfaceProcessInfo> output;
 	auto                                                      info  = getProcessInfo_();
@@ -1354,11 +1489,14 @@ std::list<ots::ARTDAQSupervisor::DAQInterfaceProcessInfo> ots::ARTDAQSupervisor:
 }  // end getAndParseProcessInfo_()
 
 //==============================================================================
-std::list<std::pair<ots::ARTDAQSupervisor::DAQInterfaceProcessInfo, std::unique_ptr<artdaq::CommanderInterface>>>
+std::list<std::pair<ots::ARTDAQSupervisor::DAQInterfaceProcessInfo,
+                    std::unique_ptr<artdaq::CommanderInterface>>>
 ots::ARTDAQSupervisor::makeCommandersFromProcessInfo()
 {
-	std::list<std::pair<DAQInterfaceProcessInfo, std::unique_ptr<artdaq::CommanderInterface>>> output;
-	auto                                                                                       infos = getAndParseProcessInfo_();
+	std::list<
+	    std::pair<DAQInterfaceProcessInfo, std::unique_ptr<artdaq::CommanderInterface>>>
+	     output;
+	auto infos = getAndParseProcessInfo_();
 
 	for(auto& info : infos)
 	{
@@ -1369,8 +1507,9 @@ ots::ARTDAQSupervisor::makeCommandersFromProcessInfo()
 		ps.put<int>("id", info.port);
 		ps.put<std::string>("server_url", info.host);
 
-		output.emplace_back(
-		    std::make_pair<DAQInterfaceProcessInfo, std::unique_ptr<artdaq::CommanderInterface>>(std::move(info), artdaq::MakeCommanderPlugin(ps, cm)));
+		output.emplace_back(std::make_pair<DAQInterfaceProcessInfo,
+		                                   std::unique_ptr<artdaq::CommanderInterface>>(
+		    std::move(info), artdaq::MakeCommanderPlugin(ps, cm)));
 	}
 
 	return output;
@@ -1414,14 +1553,17 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 			getDAQState_();
 			std::string state_before = daqinterface_state_;
 
-			if(daqinterface_state_ == "running" || daqinterface_state_ == "ready" || daqinterface_state_ == "booted")
+			if(daqinterface_state_ == "running" || daqinterface_state_ == "ready" ||
+			   daqinterface_state_ == "booted")
 			{
 				try
 				{
 					TLOG(TLVL_TRACE) << "Calling DAQInterface::check_proc_heartbeats";
 					PyObject* pName = PyUnicode_FromString("check_proc_heartbeats");
-					PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
-					TLOG(TLVL_TRACE) << "Done with DAQInterface::check_proc_heartbeats call";
+					PyObject* res =
+					    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
+					TLOG(TLVL_TRACE)
+					    << "Done with DAQInterface::check_proc_heartbeats call";
 
 					if(res == NULL)
 					{
@@ -1456,7 +1598,8 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 				{
 					runner_running_ = false;
 					PyErr_Print();
-					__SS__ << "An unknown Error occurred while calling runner function" << __E__;
+					__SS__ << "An unknown Error occurred while calling runner function"
+					       << __E__;
 					__SUP_SS_THROW__;
 					break;
 				}
@@ -1467,7 +1610,8 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 				{
 					runner_running_ = false;
 					lk.unlock();
-					__SS__ << "DAQInterface state unexpectedly changed from " << state_before << " to " << daqinterface_state_
+					__SS__ << "DAQInterface state unexpectedly changed from "
+					       << state_before << " to " << daqinterface_state_
 					       << ". Check supervisor log file for more info!" << __E__;
 					__SUP_SS_THROW__;
 					break;
@@ -1499,5 +1643,6 @@ void ots::ARTDAQSupervisor::stop_runner_()
 void ots::ARTDAQSupervisor::start_runner_()
 {
 	stop_runner_();
-	runner_thread_ = std::make_unique<std::thread>(&ots::ARTDAQSupervisor::daqinterfaceRunner_, this);
+	runner_thread_ =
+	    std::make_unique<std::thread>(&ots::ARTDAQSupervisor::daqinterfaceRunner_, this);
 }  // end start_runner_()

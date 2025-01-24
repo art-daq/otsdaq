@@ -5,7 +5,8 @@ using namespace ots;
 XDAQ_INSTANTIATOR_IMPL(CodeEditorSupervisor)
 
 //==============================================================================
-CodeEditorSupervisor::CodeEditorSupervisor(xdaq::ApplicationStub* stub) : CoreSupervisorBase(stub)
+CodeEditorSupervisor::CodeEditorSupervisor(xdaq::ApplicationStub* stub)
+    : CoreSupervisorBase(stub)
 {
 	__SUP_COUT__ << "Constructed." << __E__;
 }  // end constructor
@@ -21,7 +22,8 @@ CodeEditorSupervisor::~CodeEditorSupervisor(void)
 //==============================================================================
 void CodeEditorSupervisor::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
 {
-	__SUP_COUT__ << "ApplicationDescriptor LID=" << getApplicationDescriptor()->getLocalId() << __E__;
+	__SUP_COUT__ << "ApplicationDescriptor LID="
+	             << getApplicationDescriptor()->getLocalId() << __E__;
 	*out << "<!DOCTYPE HTML><html lang='en'><frameset col='100%' row='100%'><frame "
 	        "src='/WebPath/html/CodeEditor.html?urn="
 	     << getApplicationDescriptor()->getLocalId() << "'></frameset></html>";
@@ -33,8 +35,9 @@ void CodeEditorSupervisor::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
 // override)
 void CodeEditorSupervisor::setSupervisorPropertyDefaults()
 {
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
-	                                                  std::string() + "*=1 | codeEditor=-1");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
+	    std::string() + "*=1 | codeEditor=-1");
 
 }  // end setSupervisorPropertyDefaults()
 
@@ -43,8 +46,12 @@ void CodeEditorSupervisor::setSupervisorPropertyDefaults()
 //		override to force supervisor property values (and ignore user settings)
 void CodeEditorSupervisor::forceSupervisorPropertyValues()
 {
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes, "codeEditor");
-	CorePropertySupervisorBase::setSupervisorProperty(CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireSecurityRequestTypes, "codeEditor");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
+	    "codeEditor");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireSecurityRequestTypes,
+	    "codeEditor");
 
 }  // end forceSupervisorPropertyValues()
 
@@ -52,7 +59,10 @@ void CodeEditorSupervisor::forceSupervisorPropertyValues()
 //	Request
 //		Handles Web Interface requests to Console supervisor.
 //		Does not refresh cookie for automatic update checks.
-void CodeEditorSupervisor::request(const std::string& requestType, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut, const WebUsers::RequestUserInfo& userInfo)
+void CodeEditorSupervisor::request(const std::string&               requestType,
+                                   cgicc::Cgicc&                    cgiIn,
+                                   HttpXmlDocument&                 xmlOut,
+                                   const WebUsers::RequestUserInfo& userInfo)
 {
 	// Commands:
 	// 	codeEditor
@@ -77,7 +87,8 @@ void CodeEditorSupervisor::request(const std::string& requestType, cgicc::Cgicc&
 	}
 	else
 	{
-		__SUP_SS__ << "requestType Request, " << requestType << ", not recognized." << __E__;
+		__SUP_SS__ << "requestType Request, " << requestType << ", not recognized."
+		           << __E__;
 		__SUP_SS_THROW__;
 	}
 }  // end request()
