@@ -2371,7 +2371,7 @@ otsActionHandler() {
 		trap "handleExitSignal $sig" $sig 2>/dev/null
 	done
 
-	if [[ ($ISCONFIG == 1) || ("${THIS_HOST}" == "${gatewayHostname}") ]]; then
+	if [[ ($ISCONFIG == 1) || ($ISMACROMAKER == 1) || ("${THIS_HOST}" == "${gatewayHostname}") ]]; then
 		out "The script, on ${THIS_HOST}, is the gateway ots script, so it will drive the exit of ots scripts running on other hosts."
 
 		if [ $REMOTELAUNCH == 1 ]; then #only kill other ots scripts if remote launch was enabled
