@@ -217,6 +217,7 @@ class ConfigurationTree
 	const std::string&       					getValueAsString			(bool returnLinkTableValue = false) const;
 	const std::string&       					getUIDAsString				(void) const;
 	const std::string&       					getComment					(void) const;
+	const std::string&       					getAuthor					(void) const;
 	const std::string&       					getValueDataType			(void) const;
 	const std::string&       					getValueType				(void) const;
 	const std::string&       					getValueName				(void) const;
