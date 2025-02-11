@@ -71,9 +71,9 @@ if(BTYPE_UC STREQUAL DEBUG)
 	endif()
 endif()
 
-find_package(artdaq_core 3.09.00 REQUIRED EXPORT)
+find_package(artdaq-core 3.09.00 REQUIRED EXPORT)
 find_package(artdaq 3.12.00 REQUIRED EXPORT)
-find_package(artdaq_database 1.07.00 REQUIRED)
+find_package(artdaq-database 1.07.00 REQUIRED)
 find_package(Python 3.6 COMPONENTS Development.Embed REQUIRED)
 
 if (EXISTS ${artdaq_database_DIR})

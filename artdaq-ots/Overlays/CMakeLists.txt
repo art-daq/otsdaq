@@ -1,8 +1,8 @@
 cet_make_library(LIBRARY_NAME artdaq-ots_Overlays
 SOURCE FragmentType.cc UDPFragment.cc
     LIBRARIES PUBLIC
-  artdaq_core::artdaq-core_Utilities
-  artdaq_core::artdaq-core_Data
+  artdaq-core::Utilities
+  artdaq-core::Data
   TRACE::TRACE
   )
 
