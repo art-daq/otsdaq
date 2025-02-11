@@ -40,9 +40,9 @@ LIBRARIES CONDITIONAL otsdaq::ConfigurationInterface)
 include(otsdaq::configInterface)
 cet_build_plugin(Database otsdaq::configInterface
 LIBRARIES REG
-artdaq-database::ConfigurationDB
+artdaq_database::artdaq-database_ConfigurationDB
 PRIVATE
-artdaq-database::ConfigurationDB
+artdaq_database::artdaq-database_ConfigurationDB
 )
 
 cet_build_plugin(File otsdaq::configInterface)

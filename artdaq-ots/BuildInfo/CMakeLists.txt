@@ -44,7 +44,7 @@ configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/GetPackageBuildInfo.cc.in
 cet_make_library( 
                   SOURCE
 		  ${CMAKE_CURRENT_BINARY_DIR}/GetPackageBuildInfo.cc
-			LIBRARIES artdaq-core::Data
+			LIBRARIES artdaq_core::artdaq-core_Data
                  )
 
 install_headers()
