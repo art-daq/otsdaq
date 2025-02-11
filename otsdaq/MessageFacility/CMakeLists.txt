@@ -2,7 +2,7 @@ cet_make_library(LIBRARY_NAME MessageFacility
 	SOURCE MessageFacility.cc TRACEController.cc
   LIBRARIES PUBLIC
   otsdaq::Macros
-  artdaq_core::artdaq-core_Utilities
+  artdaq-core::Utilities
   )
 
 install_headers()
