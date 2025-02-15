@@ -145,12 +145,12 @@ catch(...)
 	{
 	}
 	__SS_THROW__;
-}
+}  // end configureSlowControls() catch
 
 //==============================================================================
-// addSlowControlsChannels
-//	Usually subInterfaceID = "" and mapOfSlowControlsChannels =
-//&mapOfSlowControlsChannels_
+/// addSlowControlsChannels
+///	Usually subInterfaceID = "" and mapOfSlowControlsChannels =
+///&mapOfSlowControlsChannels_
 void FEVInterface::addSlowControlsChannels(
     ConfigurationTree                                          slowControlsGroupLink,
     std::map<std::string /* ROC UID*/, FESlowControlsChannel>* mapOfSlowControlsChannels)
@@ -226,14 +226,14 @@ void FEVInterface::addSlowControlsChannels(
 }  // end addSlowControlsChannels()
 
 //==============================================================================
-// virtual in case channels are handled in multiple maps, for example
+/// virtual in case channels are handled in multiple maps, for example
 void FEVInterface::resetSlowControlsChannelIterator(void)
 {
 	slowControlsChannelsIterator_ = mapOfSlowControlsChannels_.begin();
 }  // end resetSlowControlsChannelIterator()
 
 //==============================================================================
-// virtual in case channels are handled in multiple maps, for example
+/// virtual in case channels are handled in multiple maps, for example
 FESlowControlsChannel* FEVInterface::getNextSlowControlsChannel(void)
 {
 	if(slowControlsChannelsIterator_ == mapOfSlowControlsChannels_.end())
@@ -244,7 +244,7 @@ FESlowControlsChannel* FEVInterface::getNextSlowControlsChannel(void)
 }  // end getNextSlowControlsChannel()
 
 //==============================================================================
-// virtual in case channels are handled in multiple maps, for example
+/// virtual in case channels are handled in multiple maps, for example
 unsigned int FEVInterface::getSlowControlsChannelCount(void)
 {
 	return mapOfSlowControlsChannels_.size();
@@ -671,13 +671,13 @@ catch(...)  //
 }  // end slowControlsRunning()
 
 //==============================================================================
-// SendAsyncErrorToGateway
-//	Static -- thread
-//	Send async error or soft error to gateway
-//	Call this as thread so that parent calling function (workloop) can end.
+/// SendAsyncErrorToGateway
+///	Static -- thread
+///	Send async error or soft error to gateway
+///	Call this as thread so that parent calling function (workloop) can end.
 //
-//	Note: be careful not to access fe pointer after HALT
-//		has potentially propagated.. because the pointer might be destructed!
+///	Note: be careful not to access fe pointer after HALT
+///		has potentially propagated.. because the pointer might be destructed!
 void FEVInterface::sendAsyncExceptionToGateway(FEVInterface*      fe,
                                                const std::string& errorMessage,
                                                bool               isPauseException,
@@ -755,8 +755,8 @@ catch(...)
 }  // end SendAsyncErrorToGateway()
 
 //==============================================================================
-// override WorkLoop::workLoopThread
-//	return false to stop the workloop from calling the thread again
+/// override WorkLoop::workLoopThread
+///	return false to stop the workloop from calling the thread again
 bool FEVInterface::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)
 {
 	try
@@ -836,13 +836,13 @@ bool FEVInterface::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)
 }  // end workLoopThread()
 
 //==============================================================================
-// registerFEMacroFunction
-//	used by user-defined front-end interface implementations of this
-//	virtual interface class to register their macro functions.
+/// registerFEMacroFunction
+///	used by user-defined front-end interface implementations of this
+///	virtual interface class to register their macro functions.
 //
-//	Front-end Macro Functions are then made accessible through the ots Control System
-//	web interfaces. The menu consisting of all enabled FEs macros is assembled
-//	by the FE Supervisor (and its FE Interface Manager).
+///	Front-end Macro Functions are then made accessible through the ots Control System
+///	web interfaces. The menu consisting of all enabled FEs macros is assembled
+///	by the FE Supervisor (and its FE Interface Manager).
 void FEVInterface::registerFEMacroFunction(
     const std::string&              feMacroName,
     frontEndMacroFunction_t         feMacroFunction,
@@ -889,10 +889,10 @@ void FEVInterface::registerFEMacroFunction(
 }  // end registerFEMacroFunction()
 
 //==============================================================================
-// getFEMacroConstArgument
-//	helper function for getting the value of an argument
+/// getFEMacroConstArgument
+///	helper function for getting the value of an argument
 //
-//	Note: static function
+///	Note: static function
 const std::string& FEVInterface::getFEMacroConstArgument(frontEndMacroConstArgs_t& args,
                                                          const std::string& argName)
 {
@@ -909,8 +909,8 @@ const std::string& FEVInterface::getFEMacroConstArgument(frontEndMacroConstArgs_
 }
 
 //==============================================================================
-// getFEMacroConstArgumentValue
-//	helper function for getting the copy of the value of an argument
+/// getFEMacroConstArgumentValue
+///	helper function for getting the copy of the value of an argument
 template<>
 std::string ots::getFEMacroConstArgumentValue<std::string>(
     FEVInterface::frontEndMacroConstArgs_t& args,
@@ -926,8 +926,8 @@ std::string ots::getFEMacroConstArgumentValue<std::string>(
 	return data;
 }
 //==============================================================================
-// getFEMacroArgumentValue
-//	helper function for getting the copy of the value of an argument
+/// getFEMacroArgumentValue
+///	helper function for getting the copy of the value of an argument
 template<>
 std::string ots::getFEMacroArgumentValue<std::string>(
     FEVInterface::frontEndMacroArgs_t& args, const std::string& argName)
@@ -936,10 +936,10 @@ std::string ots::getFEMacroArgumentValue<std::string>(
 }
 
 //==============================================================================
-// getFEMacroOutputArgument
-//	helper function for getting the value of an argument
+/// getFEMacroOutputArgument
+///	helper function for getting the value of an argument
 //
-//	Note: static function
+///	Note: static function
 std::string& FEVInterface::getFEMacroArgument(frontEndMacroArgs_t& args,
                                               const std::string&   argName)
 {
@@ -954,10 +954,10 @@ std::string& FEVInterface::getFEMacroArgument(frontEndMacroArgs_t& args,
 }
 
 //==============================================================================
-// runSequenceOfCommands
-//	runs a sequence of write commands from a linked section of the configuration tree
-//		based on these fields:
-//			- WriteAddress,  WriteValue, StartingBitPosition, BitFieldSize
+/// runSequenceOfCommands
+///	runs a sequence of write commands from a linked section of the configuration tree
+///		based on these fields:
+///			- WriteAddress,  WriteValue, StartingBitPosition, BitFieldSize
 void FEVInterface::runSequenceOfCommands(const std::string& treeLinkName)
 {
 	std::map<uint64_t, uint64_t> writeHistory;
@@ -1042,13 +1042,13 @@ void FEVInterface::runSequenceOfCommands(const std::string& treeLinkName)
 }  // end runSequenceOfCommands()
 
 //==============================================================================
-// runFrontEndMacro
-//	Helper function to run this FEInterface's own front-end macro
-// and gets the output arguments back.
+/// runFrontEndMacro
+///	Helper function to run this FEInterface's own front-end macro
+/// and gets the output arguments back.
 //
-//	Very similar to FEVInterfacesManager::runFEMacro()
+///	Very similar to FEVInterfacesManager::runFEMacro()
 //
-//	Note: that argsOut are populated for caller, can just pass empty vector.
+///	Note: that argsOut are populated for caller, can just pass empty vector.
 void FEVInterface::runSelfFrontEndMacro(
     const std::string& feMacroName,
     // not equivalent to __ARGS__
@@ -1116,9 +1116,9 @@ void FEVInterface::runSelfFrontEndMacro(
 }  // end runSelfFrontEndMacro()
 
 //==============================================================================
-// runFrontEndMacro
-//	run a front-end macro in the target interface plug-in and gets the output arguments
-// back
+/// runFrontEndMacro
+///	run a front-end macro in the target interface plug-in and gets the output arguments
+/// back
 void FEVInterface::runFrontEndMacro(
     const std::string&                                   targetInterfaceID,
     const std::string&                                   feMacroName,
@@ -1192,10 +1192,10 @@ void FEVInterface::runFrontEndMacro(
 }  // end runFrontEndMacro()
 
 //==============================================================================
-// receiveFromFrontEnd
-//	specialized template function for T=std::string
+/// receiveFromFrontEnd
+///	specialized template function for T=std::string
 //
-//	Note: requester can be a wildcard string as defined in StringMacros
+///	Note: requester can be a wildcard string as defined in StringMacros
 void FEVInterface::receiveFromFrontEnd(const std::string& requester,
                                        std::string&       retValue,
                                        unsigned int       timeoutInSeconds) const
@@ -1275,10 +1275,10 @@ void FEVInterface::receiveFromFrontEnd(const std::string& requester,
 }  // end receiveFromFrontEnd()
 
 //==============================================================================
-// receiveFromFrontEnd
-//	specialized template function for T=std::string
-//	Note: if called without template <T> syntax, necessary because types of
-// std::basic_string<char> cause compiler problems if no string specific function
+/// receiveFromFrontEnd
+///	specialized template function for T=std::string
+///	Note: if called without template <T> syntax, necessary because types of
+/// std::basic_string<char> cause compiler problems if no string specific function
 std::string FEVInterface::receiveFromFrontEnd(const std::string& requester,
                                               unsigned int       timeoutInSeconds) const
 {
@@ -1288,7 +1288,7 @@ std::string FEVInterface::receiveFromFrontEnd(const std::string& requester,
 }  // end receiveFromFrontEnd()
 
 //==============================================================================
-// macroStruct_t constructor
+/// macroStruct_t constructor
 FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 {
 	__COUTVS__(20, macroString);
@@ -1572,7 +1572,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 }  // end macroStruct_t constructor
 
 //==============================================================================
-// runMacro
+/// runMacro
 void FEVInterface::runMacro(
     FEVInterface::macroStruct_t&                        macro,
     std::map<std::string /*name*/, uint64_t /*value*/>& variableMap)
