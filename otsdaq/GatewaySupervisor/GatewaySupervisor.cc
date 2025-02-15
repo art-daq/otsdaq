@@ -2568,7 +2568,11 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 			}
 		}
 		else
+		{
+			__COUT_TYPE__(TLVL_DEBUG + 9)
+			    << __COUT_HDR__ << "UDP State Changer waiting..." << __E__;
 			sleep(1);
+		}
 	}
 }  // end StateChangerWorkLoop()
 

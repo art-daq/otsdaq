@@ -77,9 +77,15 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 
 	try
 	{
+		__SUP_COUTV__(application->getApplicationContext()->getContextDescriptor()->getURL());
 		theConfigurationManager_ = new ConfigurationManager();
 		CorePropertySupervisorBase::supervisorContextUID_ =
 		    theConfigurationManager_->__GET_CONFIG__(XDAQContextTable)->getContextUID(application->getApplicationContext()->getContextDescriptor()->getURL());
+		if(CorePropertySupervisorBase::supervisorContextUID_ == "")
+		{
+			__SUP_SS__ << "Illegal empty Supervisor Context UID identified. Please try again or contact admins." << __E__;
+			__SUP_SS_THROW__;
+		}
 	}
 	catch(...)
 	{
@@ -92,9 +98,15 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 
 	try
 	{
+		__SUP_COUTV__(application->getApplicationDescriptor()->getLocalId());
 		CorePropertySupervisorBase::supervisorApplicationUID_ = theConfigurationManager_->__GET_CONFIG__(XDAQContextTable)
 		                                                            ->getApplicationUID(application->getApplicationContext()->getContextDescriptor()->getURL(),
 		                                                                                application->getApplicationDescriptor()->getLocalId());
+		if(CorePropertySupervisorBase::supervisorApplicationUID_ == "")
+		{
+			__SUP_SS__ << "Illegal empty Supervisor Application UID identified. Please try again or contact admins." << __E__;
+			__SUP_SS_THROW__;
+		}
 	}
 	catch(...)
 	{
