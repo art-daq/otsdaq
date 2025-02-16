@@ -675,7 +675,7 @@ catch(...)  //
 ///	Static -- thread
 ///	Send async error or soft error to gateway
 ///	Call this as thread so that parent calling function (workloop) can end.
-//
+///
 ///	Note: be careful not to access fe pointer after HALT
 ///		has potentially propagated.. because the pointer might be destructed!
 void FEVInterface::sendAsyncExceptionToGateway(FEVInterface*      fe,
@@ -839,7 +839,7 @@ bool FEVInterface::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)
 /// registerFEMacroFunction
 ///	used by user-defined front-end interface implementations of this
 ///	virtual interface class to register their macro functions.
-//
+///
 ///	Front-end Macro Functions are then made accessible through the ots Control System
 ///	web interfaces. The menu consisting of all enabled FEs macros is assembled
 ///	by the FE Supervisor (and its FE Interface Manager).
@@ -891,7 +891,7 @@ void FEVInterface::registerFEMacroFunction(
 //==============================================================================
 /// getFEMacroConstArgument
 ///	helper function for getting the value of an argument
-//
+///
 ///	Note: static function
 const std::string& FEVInterface::getFEMacroConstArgument(frontEndMacroConstArgs_t& args,
                                                          const std::string& argName)
@@ -938,7 +938,7 @@ std::string ots::getFEMacroArgumentValue<std::string>(
 //==============================================================================
 /// getFEMacroOutputArgument
 ///	helper function for getting the value of an argument
-//
+///
 ///	Note: static function
 std::string& FEVInterface::getFEMacroArgument(frontEndMacroArgs_t& args,
                                               const std::string&   argName)
@@ -1045,9 +1045,9 @@ void FEVInterface::runSequenceOfCommands(const std::string& treeLinkName)
 /// runFrontEndMacro
 ///	Helper function to run this FEInterface's own front-end macro
 /// and gets the output arguments back.
-//
+///
 ///	Very similar to FEVInterfacesManager::runFEMacro()
-//
+///
 ///	Note: that argsOut are populated for caller, can just pass empty vector.
 void FEVInterface::runSelfFrontEndMacro(
     const std::string& feMacroName,
@@ -1194,7 +1194,7 @@ void FEVInterface::runFrontEndMacro(
 //==============================================================================
 /// receiveFromFrontEnd
 ///	specialized template function for T=std::string
-//
+///
 ///	Note: requester can be a wildcard string as defined in StringMacros
 void FEVInterface::receiveFromFrontEnd(const std::string& requester,
                                        std::string&       retValue,

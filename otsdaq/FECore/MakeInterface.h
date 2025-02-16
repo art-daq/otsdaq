@@ -1,7 +1,7 @@
 #ifndef _ots_MakeInterface_h_
 #define _ots_MakeInterface_h_
-// Using LibraryManager, find the correct library and return an instance
-// of the specified interface.
+/// Using LibraryManager, find the correct library and return an instance
+/// of the specified interface.
 
 #include <memory>
 #include <string>

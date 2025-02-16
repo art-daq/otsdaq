@@ -17,7 +17,7 @@ class FESlowControlsWorkLoop : public WorkLoop
 	    : WorkLoop(name), interface_(interface)
 	{
 	}
-	~FESlowControlsWorkLoop() { ; }  // do not own interface_, so do not delete
+	~FESlowControlsWorkLoop() { ; }  ///< do not own interface_, so do not delete
 
 	bool workLoopThread(toolbox::task::WorkLoop* workLoop);
 

@@ -34,7 +34,6 @@
 #define __GET_ARG_IN_CHOOSER__(...) \
 	GET_4TH_ARG(__VA_ARGS__, __GET_ARG_IN_DEFAULT__, __GET_ARG_IN_NO_DEFAULT__, )
 #define __GET_ARG_IN__(...) __GET_ARG_IN_CHOOSER__(__VA_ARGS__)(__VA_ARGS__)
-// #define __GET_ARG_IN_DEFAULT__(X, Y, D) getFEMacroConstArgumentValueWithDefault<Y>(argsIn, X, D)
 #define __GET_ARG_OUT__(X, Y) getFEMacroArgumentValue<Y>(argsOut, X)
 
 #define __SET_ARG_IN__(X, Y) FEVInterface::emplaceFEMacroArgumentValue(argsIn, X, Y)
@@ -44,15 +43,15 @@ namespace ots
 {
 class FEVInterfacesManager;
 
-// FEVInterface
-//	This class is a virtual class defining the features of front-end interface plugin
-// class. 	The features include configuration hooks, finite state machine handlers,
-// Front-end Macros for web accessible C++ handlers, slow controls hooks, as well as
-// universal write and read for 	Macro Maker compatibility.
-//
-//	It inherits workloop as 'public virtual' for the case that other classes like
-// DataProducer 	 will also be inherited by child class and only one workloop is
-// desired.
+/// FEVInterface
+///	This class is a virtual class defining the features of front-end interface plugin
+/// class. 	The features include configuration hooks, finite state machine handlers,
+/// Front-end Macros for web accessible C++ handlers, slow controls hooks, as well as
+/// universal write and read for 	Macro Maker compatibility.
+///
+///	It inherits workloop as 'public virtual' for the case that other classes like
+/// DataProducer 	 will also be inherited by child class and only one workloop is
+/// desired.
 class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 {
 	// clang-format off
@@ -72,12 +71,12 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	const std::string&  				getInterfaceUID				(void) const { return interfaceUID_; } 
 	const std::string&  				getInterfaceType			(void) const { return interfaceType_; }
 
-	virtual void 						universalRead				(char* address, char* returnValue) = 0;  // throw std::runtime_error exception on error/timeout
+	virtual void 						universalRead				(char* address, char* returnValue) = 0;  ///< throw std::runtime_error exception on error/timeout
 	virtual void        				universalWrite				(char* address, char* writeValue) = 0;
 	const unsigned int& 				getUniversalAddressSize		(void) { return universalAddressSize_; }
 	const unsigned int& 				getUniversalDataSize		(void) { return universalDataSize_; }
 	virtual void 						universalBlockRead			(char* address, char* returnValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK READ"); /* to make compiler happy, use params */ __COUTV__((void*)address); __COUTV__((void*)returnValue); __COUTV__(numberOfBytes); }
-	bool 								universalBlockReadImplementationConfirmed = false; //is confirmed by slow controls handling (for example) that universalBlockRead is implemented by the FE plugin
+	bool 								universalBlockReadImplementationConfirmed = false; ///<is confirmed by slow controls handling (for example) that universalBlockRead is implemented by the FE plugin
 	virtual void        				universalBlockWrite			(char* address, char* writeValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK WRITE"); /* to make compiler happy, use params */ __COUTV__((void*)address); __COUTV__((void*)writeValue); __COUTV__(numberOfBytes); }
 	
 
@@ -106,7 +105,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	virtual void 								halt						(void) { stop(); }
 	virtual void 								pause						(void) { stop(); }
 	virtual void 								resume						(void) { start(""); }
-	virtual bool 								running						(void) { /*while(WorkLoop::continueWorkLoop_){;}*/ return false; } //return true to have running() called again
+	virtual bool 								running						(void) { /*while(WorkLoop::continueWorkLoop_){;}*/ return false; } ///<return true to have running() called again
 	// end State Machine handlers
 	/////////
 
@@ -118,7 +117,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	virtual void						resetSlowControlsChannelIterator (void);
 	virtual FESlowControlsChannel*		getNextSlowControlsChannel	(void);
 	virtual unsigned int				getSlowControlsChannelCount	(void);
-	bool 								slowControlsRunning			(void);  // slow controls workloop calls this
+	bool 								slowControlsRunning			(void);  ///< slow controls workloop calls this
 	void 								startSlowControlsWorkLoop	(void) { slowControlsWorkLoop_.startWorkLoop(); }
 	void 								stopSlowControlsWorkLoop	(void) { slowControlsWorkLoop_.stopWorkLoop(); }
 
@@ -141,9 +140,9 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	using frontEndMacroArg_t 		= std::pair<const std::string /* arg name */, std::string /* arg return value */>;
 	using frontEndMacroArgs_t      	= std::vector<frontEndMacroArg_t>&;
 	using frontEndMacroConstArgs_t 	= const std::vector<frontEndMacroArg_t>&;
-	struct frontEndMacroStruct_t;  // declare name for __ARGS__
-	using frontEndMacroFunction_t 	= void (ots::FEVInterface::*)(__ARGS__); // void function (vector-of-inputs, vector-of-outputs)
-	struct frontEndMacroStruct_t  // members fully define a front-end macro function
+	struct frontEndMacroStruct_t;  ///< declare name for __ARGS__
+	using frontEndMacroFunction_t 	= void (ots::FEVInterface::*)(__ARGS__); ///< void function (vector-of-inputs, vector-of-outputs)
+	struct frontEndMacroStruct_t  ///< members fully define a front-end macro function
 	{
 		frontEndMacroStruct_t(
 		    const std::string&              feMacroName,
@@ -164,7 +163,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 		}
 
 		const std::string 				feMacroName_;
-		const frontEndMacroFunction_t	macroFunction_;  // Note: must be called using this instance
+		const frontEndMacroFunction_t	macroFunction_;  ///< Note: must be called using this instance
 		const std::vector<std::string> 	namesOfInputArguments_, namesOfOutputArguments_;
 		const std::string              	requiredUserPermissions_;
 		const std::string              	allowedCallingFrontEnds_;
@@ -215,7 +214,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 
 		struct delayOp_t
 		{
-			uint64_t    delay_;  // milliseconds
+			uint64_t    delay_;  ///< milliseconds
 			bool        delayIsVar_;
 			std::string delayVarName_;
 		};  // end macroStruct_t::writeOp_t declaration
@@ -228,7 +227,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 		std::vector<macroStruct_t::writeOp_t> 	writeOps_;
 		std::vector<macroStruct_t::delayOp_t> 	delayOps_;
 		std::set<std::string> 					namesOfInputArguments_, namesOfOutputArguments_;
-		bool                  					lsbf_;  // least significant byte first
+		bool                  					lsbf_;  ///< least significant byte first
 	}; // end macroStruct_t declaration
   protected:
 	void runMacro(FEVInterface::macroStruct_t&                        macro,
@@ -267,7 +266,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	bool        					workLoopThread				(toolbox::task::WorkLoop* workLoop);
 	
 	std::string 									interfaceUID_, interfaceType_;
-	std::string                                     mfSubject_; // for __GEN_COUT__ decorations which would be safe in destructors, e.g. mirror interfaceUID_ 
+	std::string                                     mfSubject_; ///< for __GEN_COUT__ decorations which would be safe in destructors, e.g. mirror interfaceUID_ 
 
 	unsigned int 									universalAddressSize_ = 0;
 	unsigned int 									universalDataSize_    = 0;
@@ -275,7 +274,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 
 	// FE Macro Function members and helper functions:
 
-	std::map<std::string, frontEndMacroStruct_t>	mapOfFEMacroFunctions_;  // Map of FE Macro functions members
+	std::map<std::string, frontEndMacroStruct_t>	mapOfFEMacroFunctions_;  ///< Map of FE Macro functions members
 	void 							registerFEMacroFunction		(
 	    const std::string&              							feMacroName,
 	    frontEndMacroFunction_t         							feMacroFunction,
@@ -293,7 +292,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	    const std::string& 											allowedCallingFEs = "*" /*StringMacros:: wild card set match string (i.e. string-to-set, then wild-card-set match)*/,
 		const std::string&											feMacroTooltip = "");
 
-  public:  // for external specialized template access
+  public:  ///< for external specialized template access
 	static const std::string& 		getFEMacroConstArgument		(frontEndMacroConstArgs_t args, const std::string& argName);
 	static std::string&       		getFEMacroArgument			(frontEndMacroArgs_t args, const std::string&  argName);
 
@@ -310,18 +309,18 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 template<class T>
 T 				getFEMacroConstArgumentValue					(FEVInterface::frontEndMacroConstArgs_t args, const std::string& argName, const T& defaultValue = T());
 
-// specialized template version of getFEMacroConstArgumentValue for string
+/// specialized template version of getFEMacroConstArgumentValue for string
 template<>
 std::string 	getFEMacroConstArgumentValue<std::string>		(FEVInterface::frontEndMacroConstArgs_t args, const std::string& argName, const std::string& defaultValue);
 
 template<class T>
 T 				getFEMacroArgumentValue							(FEVInterface::frontEndMacroArgs_t args, const std::string& argName);
 
-// specialized template version of getFEMacroArgumentValue for string
+/// specialized template version of getFEMacroArgumentValue for string
 template<>
 std::string 	getFEMacroArgumentValue<std::string>			(FEVInterface::frontEndMacroArgs_t argsIn, const std::string& argName);
 
-// include template definitions required at include level for compiler
+/// include template definitions required at include level for compiler
 #include "otsdaq/FECore/FEVInterface.icc"
 
 // clang-format on
