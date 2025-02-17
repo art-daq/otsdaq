@@ -490,7 +490,7 @@ void DataManager::destroyBuffers(void)
 //	if (deleteBuffer(bufferUID))
 //		buffers_.erase(bufferUID);
 //} //end eraseBuffer()
-//
+
 ////==============================================================================
 //
 // bool DataManager::deleteBuffer(const std::string& bufferUID)
@@ -517,7 +517,7 @@ void DataManager::destroyBuffers(void)
 //	}
 //	return false;
 //} //end deleteBuffer()
-//
+
 ////==============================================================================
 ////unregisterConsumer
 ////	Unregister consumer from its DataBuffer buffers. And destroy the processor!
@@ -592,7 +592,7 @@ void DataManager::destroyBuffers(void)
 ////		catch(...)
 ////		{} //ignore not found
 ////	}
-//
+// 
 ////	RAR commented.. this was bypassing unregister at CircularBuffer level
 ////	for (auto it = buffers_.begin(); it != buffers_.end(); it++)
 ////		for (auto& itc : it->second.consumers_)
@@ -613,7 +613,7 @@ void DataManager::destroyBuffers(void)
 //			"' not found!" << __E__;
 //	__CFG_SS_THROW__;
 //} //end unregisterConsumer()
-//
+
 ////==============================================================================
 // void DataManager::unregisterProducer(const std::string& bufferID, const std::string&
 // producerID)
