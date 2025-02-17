@@ -6,14 +6,14 @@
 #include "otsdaq/DataProcessorPlugins/ARTDAQConsumer.h"
 // #include "otsdaq/Macros/CoutMacros.h"
 // #include "otsdaq/MessageFacility/MessageFacility.h"
-//
+
 // #include <cstdint>
 // #include <fstream>
 // #include <iostream>
 // #include <set>
 
 using namespace ots;
-//
+
 // #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
 
 //==============================================================================
