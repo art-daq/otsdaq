@@ -1059,8 +1059,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 				                     << "] number of iterations := "
 				                     << dimensionIterations[dimension] << __E__;
 
-				        // update current value to initial value for this dimension's
-				        // parameters
+				        // update current value to initial value for this dimension's parameters
 				        {
 					        for(auto& longPair : longDimensionParameters[dimension])
 					        {
@@ -1072,8 +1071,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 						            << __E__;
 					        }  // end long loop
 
-				        }  // end update current value to initial value for all
-				           // dimensional parameters
+				        }  // end update current value to initial value for all dimensional parameters
 
 				        for(dimensionIterationCnt[dimension] =
 				                0;  // reset each time through dimension loop
@@ -1086,8 +1084,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 
 					        localRecurse(dimension + 1);
 
-					        // update current value to next value for this dimension's
-					        // parameters
+					        // update current value to next value for this dimension's parameters
 					        {
 						        for(auto& longPair : longDimensionParameters[dimension])
 						        {
@@ -1099,8 +1096,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 							            << __E__;
 						        }  // end long loop
 
-					        }  // end update current value to next value for all
-					           // dimensional parameters
+					        }  // end update current value to next value for all dimensional parameters
 				        }
 				        __GEN_COUT__ << "Completed dimension[" << dimension
 				                     << "] number of iterations := "
