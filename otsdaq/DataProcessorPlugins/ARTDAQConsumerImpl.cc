@@ -14,8 +14,7 @@
 
 using namespace ots;
 //
-// #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" +
-//"ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
+// #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
 
 //==============================================================================
 ARTDAQConsumer::ARTDAQConsumer(std::string              supervisorApplicationUID,
