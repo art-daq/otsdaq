@@ -493,7 +493,7 @@ AllSupervisorInfo::getOrderedSupervisorDescriptors(
 						orderedByPriority
 						    [XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY]
 						        .push_back(app.id_);  // if no priority, then default to
-						    // XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
+					// XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
 					else  // take value, and do not allow DEFAULT value of 0 -> force to
 					      // XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
 						orderedByPriority[it->second ? it->second

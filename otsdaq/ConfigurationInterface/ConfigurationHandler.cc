@@ -257,7 +257,7 @@ void ConfigurationHandler::readXML(TableBase& table, TableVersion version)
 	parser->setDoSchema(
 	    false);  // RAR set to false to get rid of "error reading primary document *.xsd"
 	             // uses if true:
-	    // rootElement->setAttribute(CONVERT_TO_XML("xsi:noNamespaceSchemaLocation"),CONVERT_TO_XML("TableBase.xsd"));
+	// rootElement->setAttribute(CONVERT_TO_XML("xsi:noNamespaceSchemaLocation"),CONVERT_TO_XML("TableBase.xsd"));
 	parser->useCachedGrammarInParse(false);
 	DOMTreeErrorReporter* errorHandler = new DOMTreeErrorReporter();
 	parser->setErrorHandler(errorHandler);

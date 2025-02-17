@@ -3267,7 +3267,7 @@ ConfigurationManager::getActiveGroupAliases(void)
 	    "" /* pathToActiveGroupsFile */,
 	    ConfigurationManager::LoadGroupType::
 	        ONLY_BACKBONE_TYPE);  // make sure the active configuration backbone is
-	    // loaded from disk (i.e. the latest activated at the ConfigurationGUISupervisor)!
+	// loaded from disk (i.e. the latest activated at the ConfigurationGUISupervisor)!
 
 	std::map<std::string /*groupAlias*/,
 	         std::pair<std::string /*groupName*/, TableGroupKey>>

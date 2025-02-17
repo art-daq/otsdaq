@@ -57,8 +57,8 @@ CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
 	           "TRACESupervisorRequest",
 	           XDAQ_NS_URI);
 
-	__SUP_COUT__ << "Constructed. getpid()=" << getpid() <<
-		" gettid()=" << gettid() << __E__;
+	__SUP_COUT__ << "Constructed. getpid()=" << getpid() << " gettid()=" << gettid()
+	             << __E__;
 }  // end constructor
 
 //==============================================================================
@@ -406,8 +406,9 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 {
 	// send back status and progress parameters
 
-	__SUP_COUTVS__(20, std::to_string(getpid()) + ":" +  std::to_string(gettid()) + ":" + 
-		theStateMachine_.getCurrentStateName());
+	__SUP_COUTVS__(20,
+	               std::to_string(getpid()) + ":" + std::to_string(gettid()) + ":" +
+	                   theStateMachine_.getCurrentStateName());
 
 	const std::string& err = theStateMachine_.getErrorMessage();
 	// std::string status = err == "" ? (theStateMachine_.isInTransition() ? theStateMachine_.getProvenanceStateName() : theStateMachine_.getCurrentStateName())
@@ -486,7 +487,6 @@ std::string CoreSupervisorBase::getStatusProgressDetail(void)
 	}
 	*/
 
-
 	if(!theStateMachine_.isInTransition() &&
 	   (theStateMachine_.getCurrentStateName() ==
 	        RunControlStateMachine::HALTED_STATE_NAME ||
@@ -497,7 +497,8 @@ std::string CoreSupervisorBase::getStatusProgressDetail(void)
 		         StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(
 		             CorePropertySupervisorBase::getSupervisorUptime())) +
 		         ", Time-in-state: " +
-		         StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(theStateMachine_.getTimeInState()));
+		         StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(
+		             theStateMachine_.getTimeInState()));
 		return detail;
 	}
 
