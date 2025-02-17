@@ -2043,48 +2043,6 @@ std::string WebUsers::getUsersUsername(uint64_t uid)
 	return Users_[i].username_;
 }  // end getUsersUsername()
 
-/// //==============================================================================
-/// // WebUsers::getUsersDisplayName --- public version which considers remote users
-/// std::string WebUsers::getUsersDisplayName(uint64_t uid, uint64_t remoteSessionID)
-// {
-// 	uint64_t i;
-// 	if((i = searchUsersDatabaseForUserId(uid)) == NOT_FOUND_IN_DATABASE)
-// 		return "";
-// 	return Users_[i].displayName_;
-// }  // end getUsersDisplayName()
-
-/// //==============================================================================
-/// // WebUsers::getUsersUsername --- public version which considers remote users
-/// std::string WebUsers::getUsersUsername(uint64_t uid, uint64_t remoteSessionID)
-// {
-// 	if(uid == ACCOUNT_REMOTE) return getRemoteUsersUsername(remoteSessionID);
-
-/// 	uint64_t i;
-/// 	if((i = searchUsersDatabaseForUserId(uid)) == NOT_FOUND_IN_DATABASE)
-/// 		return "";
-/// 	return Users_[i].username_;
-/// }  // end getUsersUsername()
-///
-/// //==============================================================================
-/// // WebUsers::getRemoteUsersDisplayName ---
-/// std::string WebUsers::getRemoteUsersDisplayName(uint64_t remoteSessionID)
-// {
-// 	auto it = RemoteSessions_.find(remoteSessionID);
-// 	if(it == RemoteSessions_.end())
-// 		return "";
-// 	return it->second.second.displayName_;
-// }  // end getRemoteUsersDisplayName()
-
-/// //==============================================================================
-/// // WebUsers::getRemoteUsersUsername ---
-/// std::string WebUsers::getRemoteUsersUsername(uint64_t remoteSessionID)
-// {
-// 	auto it = RemoteSessions_.find(remoteSessionID);
-// 	if(it == RemoteSessions_.end())
-// 		return "";
-// 	return it->second.second.username_;
-// }  // end getRemoteUsersUsername()
-
 //==============================================================================
 /// WebUsers::cookieCodeLogout ---
 ///	Used to logout user based on cookieCode and ActiveSessionIndex
