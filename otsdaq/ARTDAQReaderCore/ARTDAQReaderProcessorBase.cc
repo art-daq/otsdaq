@@ -141,10 +141,10 @@ ARTDAQReaderProcessorBase::ARTDAQReaderProcessorBase(
 }  // end constructor()
 
 //==============================================================================
-// ARTDAQReaderProcessorBase::ARTDAQReaderProcessorBase(std::string interfaceID, MPI_Comm
-// local_group_comm, std::string name) :FEVInterface     (feId, 0)
-// ,local_group_comm_(local_group_comm)
-//,name_            (name)
+/// ARTDAQReaderProcessorBase::ARTDAQReaderProcessorBase(std::string interfaceID, MPI_Comm
+/// local_group_comm, std::string name) :FEVInterface     (feId, 0)
+/// ,local_group_comm_(local_group_comm)
+///,name_            (name)
 //{}
 
 //==============================================================================

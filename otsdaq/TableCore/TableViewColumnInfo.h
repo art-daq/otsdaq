@@ -22,8 +22,8 @@ class TableViewColumnInfo
 						const std::string* maxValue,
 	                    std::string*       capturedExceptionString);
 
-	TableViewColumnInfo(const TableViewColumnInfo& c);             // copy constructor because of bitmap pointer
-	TableViewColumnInfo& operator=(const TableViewColumnInfo& c);  // assignment operator because of bitmap pointer
+	TableViewColumnInfo(const TableViewColumnInfo& c);             ///< copy constructor because of bitmap pointer
+	TableViewColumnInfo& operator=(const TableViewColumnInfo& c);  ///< assignment operator because of bitmap pointer
 
 	virtual ~TableViewColumnInfo(void);
 
@@ -39,7 +39,7 @@ class TableViewColumnInfo
 	static const std::string&       getMaxDefaultValue(const std::string& dataType);
 	const std::vector<std::string>& getDataChoices(void) const;
 
-	struct BitMapInfo  // uses dataChoices CSV fields if type is TYPE_BITMAP_DATA
+	struct BitMapInfo  ///< uses dataChoices CSV fields if type is TYPE_BITMAP_DATA
 	{
 		BitMapInfo() : minColor_(""), midColor_(""), maxColor_("") {}
 		unsigned int numOfRows_, numOfColumns_, cellBitSize_;
@@ -49,7 +49,7 @@ class TableViewColumnInfo
 		std::string  absMinColor_, absMaxColor_;
 		bool         rowsAscending_, colsAscending_, snakeRows_, snakeCols_;
 	};
-	const BitMapInfo& getBitMapInfo(void) const;  // uses dataChoices CSV fields if type is TYPE_BITMAP_DATA
+	const BitMapInfo& getBitMapInfo(void) const;  ///< uses dataChoices CSV fields if type is TYPE_BITMAP_DATA
 
 	static std::vector<std::string>                                   getAllTypesForGUI(void);
 	static std::map<std::pair<std::string, std::string>, std::string> getAllDefaultsForGUI(void);
@@ -92,7 +92,7 @@ class TableViewColumnInfo
 	static const std::string COL_NAME_STATUS, COL_NAME_ENABLED, COL_NAME_PRIORITY, COL_NAME_COMMENT, COL_NAME_AUTHOR, COL_NAME_CREATION;
 
   private:
-	TableViewColumnInfo();  // private constructor, only used in assignment operator
+	TableViewColumnInfo();  ///< private constructor, only used in assignment operator
 	void extractBitMapInfo();
 
 	std::vector<std::string>        getDataChoicesFromString(const std::string& dataChoicesCSV) const;

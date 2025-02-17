@@ -27,16 +27,16 @@ void CircularBufferBase::registerConsumer(DataProcessor* consumer)
 	registerConsumer(consumer->getProcessorID(), HighConsumerPriority);
 	consumer->setCircularBuffer(this);
 }
-//
+///
 ////==============================================================================
-// void CircularBufferBase::unregisterProducer(DataProcessor* producer)
+/// void CircularBufferBase::unregisterProducer(DataProcessor* producer)
 //{
 //	unregisterProducer(producer->getProcessorID());
 //	producer->setCircularBuffer(0);
 //}
 //
 ////==============================================================================
-// void CircularBufferBase::unregisterConsumer(DataProcessor* consumer)
+/// void CircularBufferBase::unregisterConsumer(DataProcessor* consumer)
 //{
 //	unregisterConsumer(consumer->getProcessorID());
 //	consumer->setCircularBuffer(0);

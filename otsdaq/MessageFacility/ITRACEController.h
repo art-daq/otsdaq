@@ -38,23 +38,23 @@ class ITRACEController
 	ITRACEController() {}
 	virtual ~ITRACEController() = default;
 
-	virtual const HostTraceLevelMap& getTraceLevels(void) = 0;  // pure virtual
+	virtual const HostTraceLevelMap& getTraceLevels(void) = 0;  ///< pure virtual
 	virtual void                     setTraceLevelMask(std::string const& name,
 	                                                   TraceMasks const&  lvl,
 	                                                   std::string const& hostname = "localhost",
-	                                                   std::string const& mode = "ALL") = 0;  // pure virtual
+	                                                   std::string const& mode = "ALL") = 0;  ///< pure virtual
 
-	virtual bool getIsTriggered(void)                         = 0;  // pure virtual
-	virtual void setTriggerEnable(size_t entriesAfterTrigger) = 0;  // pure virtual
+	virtual bool getIsTriggered(void)                         = 0;  ///< pure virtual
+	virtual void setTriggerEnable(size_t entriesAfterTrigger) = 0;  ///< pure virtual
 
-	virtual void resetTraceBuffer(void)          = 0;  // pure virtual
-	virtual void enableTrace(bool enable = true) = 0;  // pure virtual
+	virtual void resetTraceBuffer(void)          = 0;  ///< pure virtual
+	virtual void enableTrace(bool enable = true) = 0;  ///< pure virtual
 
 	//=====================================
 	std::string getTraceBufferDump(std::string const& filterFor = "",
 	                               std::string const& filterOut = "")
 	{
-		std::string command = "";  //"trace_cntl show";
+		std::string command = "";  ///<"trace_cntl show";
 
 		std::vector<std::string> grepArr;
 		StringMacros::getVectorFromString(filterFor, grepArr, {','});
@@ -79,7 +79,7 @@ class ITRACEController
 		}
 		std::cout << "safeGrep = " << safeGrep << std::endl;
 
-		grepArr.clear();  // reset
+		grepArr.clear();  ///< reset
 		StringMacros::getVectorFromString(filterOut, grepArr, {','});
 
 		for(const auto& grepVal : grepArr)
@@ -106,7 +106,7 @@ class ITRACEController
 		// command += " | test -n \"${PAGER-}\" && trace_delta \"$@\" | $PAGER || trace_delta \"$@\";";
 		//  try source $TRACE_BIN/trace_functions.sh; tshow | tdelta
 		command += " source $TRACE_BIN/trace_functions.sh; tshow ";
-		// command += " | grep Console ";// 2>/dev/null ;
+		// command += " | grep Console ";///< 2>/dev/null ;
 		command += safeGrep;
 		command += " | tdelta -d 1 ";
 		TLOG(TLVL_DEBUG) << "getTraceBufferDump command: " << command;

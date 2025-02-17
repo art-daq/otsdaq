@@ -7,8 +7,8 @@ namespace ots
 {
 class ConfigurationManager;
 
-// ARTDAQDataManager
-//	This class provides the otsdaq interface to a single artdaq Board Reader.
+/// ARTDAQDataManager
+///	This class provides the otsdaq interface to a single artdaq Board Reader.
 class ARTDAQDataManager : public DataManager
 {
   public:

@@ -8,16 +8,16 @@ class TCPSocket
   public:
 	virtual ~TCPSocket();
 
-	// Designed to be a base class not used used directly.
+	/// Designed to be a base class not used used directly.
 	TCPSocket(int socketId = invalidSocketId);
 
-	// Moveable but not Copyable
+	/// Moveable but not Copyable
 	TCPSocket(TCPSocket&& move);
 
 	TCPSocket& operator=(TCPSocket&& move);
 	void       swap(TCPSocket& other);
 
-	// Explicitly deleting copy constructor
+	/// Explicitly deleting copy constructor
 	TCPSocket(TCPSocket const&)            = delete;
 	TCPSocket& operator=(TCPSocket const&) = delete;
 

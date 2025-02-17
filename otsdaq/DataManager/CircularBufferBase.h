@@ -7,17 +7,17 @@ namespace ots
 {
 class DataProcessor;
 
-// CircularBufferBase
-//	This class is the base class for the otsdaq Buffer
+/// CircularBufferBase
+///	This class is the base class for the otsdaq Buffer
 class CircularBufferBase
 {
   public:
 	enum ConsumerPriority
 	{
-		LowConsumerPriority,  // If the buffers are full because a low priority consumer
-		                      // didn't emptied them then overwrite
-		HighConsumerPriority  // Can't overwrite but need to wait for sometime before
-		                      // writing a buffer
+		LowConsumerPriority,  ///< If the buffers are full because a low priority consumer
+		                      ///< didn't emptied them then overwrite
+		HighConsumerPriority  ///< Can't overwrite but need to wait for sometime before
+		                      ///< writing a buffer
 	};
 
 	CircularBufferBase(const std::string& bufferID);

@@ -27,7 +27,7 @@ class TCPReceiverSocket : public virtual TCPSocket
 		buffer.resize(length);
 		// std::cout << __PRETTY_FUNCTION__ << "Message received-" << fBuffer << "-" <<
 		// std::endl;
-		return buffer;  // c++11 doesn't make a copy anymore when returned
+		return buffer;  ///< c++11 doesn't make a copy anymore when returned
 	}
 	std::string receivePacket(
 	    std::chrono::milliseconds timeout = std::chrono::milliseconds(5));

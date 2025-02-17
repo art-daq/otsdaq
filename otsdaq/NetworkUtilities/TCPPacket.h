@@ -16,11 +16,11 @@ class TCPPacket
 	static std::string encode(const std::string& message);
 
 	bool decode(std::string& message);
-	// Resets the storage buffer
+	/// Resets the storage buffer
 	void reset(void);
 	bool isEmpty(void);
 
-	// Operator overload
+	/// Operator overload
 	TCPPacket& operator+=(const std::string& buffer)
 	{
 		this->fBuffer += buffer;
@@ -32,13 +32,13 @@ class TCPPacket
 		// out << packet.fBuffer.substr(TCPPacket::headerLength);
 		out << packet.fBuffer;
 
-		return out;  // return std::ostream so we can chain calls to operator<<
+		return out;  ///< return std::ostream so we can chain calls to operator<<
 	}
 
   private:
-	static constexpr uint32_t headerLength = 4;  // sizeof(uint32_t); //THIS MUST BE 4
+	static constexpr uint32_t headerLength = 4;  ///< sizeof(uint32_t); //THIS MUST BE 4
 
-	std::string fBuffer;  // This is Header + Message
+	std::string fBuffer;  ///< This is Header + Message
 };
 }  // namespace ots
 #endif

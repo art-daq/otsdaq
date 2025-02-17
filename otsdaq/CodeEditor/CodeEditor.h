@@ -19,14 +19,14 @@ namespace ots
 {
 class HttpXmlDocument;
 
-// CodeEditor
-//	This class provides the functionality for editing, saving, and building code
+/// CodeEditor
+///	This class provides the functionality for editing, saving, and building code
 class CodeEditor
 {
   public:
 	CodeEditor();
 
-	// request are handled here
+	/// request are handled here
 	void xmlRequest(const std::string& option,
 	                bool               readOnlyMode,
 	                cgicc::Cgicc&      cgiIn,

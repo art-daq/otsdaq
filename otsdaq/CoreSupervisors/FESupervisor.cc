@@ -7,28 +7,28 @@
 
 #include "artdaq-core/Utilities/ExceptionHandler.hh" /*for artdaq::ExceptionHandler*/
 
-// https://cdcvs.fnal.gov/redmine/projects/artdaq/repository/revisions/develop/entry/artdaq/DAQdata/Globals.hh
-// for metric manager include
-// https://cdcvs.fnal.gov/redmine/projects/artdaq/repository/revisions/develop/entry/artdaq/Application/DataReceiverCore.cc
-// for metric manager configuration example
-
-// get pset from Board Reader metric manager table
-//  try
-//        {
-//                metricMan->initialize(metric_pset, app_name);
-//        }
-//        catch (...)
-//        {
-//                ExceptionHandler(ExceptionHandlerRethrow::no,
-//                                                 "Error loading metrics in
-//                                                 DataReceiverCore::initialize()");
-//        }
-//..
-//
-// metricMan->do_start();
-// ..
-//  metricMan->shutdown();
-
+/// https://cdcvs.fnal.gov/redmine/projects/artdaq/repository/revisions/develop/entry/artdaq/DAQdata/Globals.hh
+/// for metric manager include
+/// https://cdcvs.fnal.gov/redmine/projects/artdaq/repository/revisions/develop/entry/artdaq/Application/DataReceiverCore.cc
+/// for metric manager configuration example
+///
+/// get pset from Board Reader metric manager table
+///  try
+///        {
+///                metricMan->initialize(metric_pset, app_name);
+///        }
+///        catch (...)
+///        {
+///                ExceptionHandler(ExceptionHandlerRethrow::no,
+///                                                 "Error loading metrics in
+///                                                 DataReceiverCore::initialize()");
+///        }
+///..
+///
+/// metricMan->do_start();
+/// ..
+///  metricMan->shutdown();
+///
 using namespace ots;
 
 XDAQ_INSTANTIATOR_IMPL(FESupervisor)
@@ -571,12 +571,12 @@ catch(...)
 }  // end frontEndCommunicationRequest()
 
 //==============================================================================
-// macroMakerSupervisorRequest
-//	 Handles all MacroMaker Requests:
-//		- GetInterfaces (returns interface type and id)
-//
-//	Note: this code assumes a CoreSupervisorBase has only one
-//		FEVInterfacesManager in its vector of state machines
+/// macroMakerSupervisorRequest
+///	 Handles all MacroMaker Requests:
+///		- GetInterfaces (returns interface type and id)
+///
+///	Note: this code assumes a CoreSupervisorBase has only one
+///		FEVInterfacesManager in its vector of state machines
 xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
     xoap::MessageReference message)
 {
@@ -1131,13 +1131,13 @@ xoap::MessageReference FESupervisor::workLoopStatusRequest(
 }  // end workLoopStatusRequest()
 
 //==============================================================================
-// extractFEInterfaceManager
-//
-//	locates theFEInterfacesManager in state machines vector and
-//		returns 0 if not found.
-//
-//	Note: this code assumes a CoreSupervisorBase has only one
-//		FEVInterfacesManager in its vector of state machines
+/// extractFEInterfaceManager
+///
+///	locates theFEInterfacesManager in state machines vector and
+///		returns 0 if not found.
+///
+///	Note: this code assumes a CoreSupervisorBase has only one
+///		FEVInterfacesManager in its vector of state machines
 FEVInterfacesManager* FESupervisor::extractFEInterfacesManager()
 {
 	theFEInterfacesManager_ = 0;

@@ -11,9 +11,9 @@
 // #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
 // #include "artdaq-database/JsonDocument/JSONDocument.h"
 
-// usage:
-// otsdaq_load_json_document <document_name_to_load> <document_version_to_load> <path_to_save_JSON>
-
+/// usage:
+/// otsdaq_load_json_document <document_name_to_load> <document_version_to_load> <path_to_save_JSON>
+///
 #define TRACE_NAME "LoadJSON_Document"
 
 #undef __COUT__

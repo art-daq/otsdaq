@@ -4,7 +4,7 @@
 using namespace ots;
 
 //==============================================================================
-// getConfigurationStatusXML
+/// getConfigurationStatusXML
 void ConfigurationSupervisorBase::getConfigurationStatusXML(
     HttpXmlDocument& xmlOut, ConfigurationManagerRW* cfgMgr, const std::string& username)
 {
@@ -68,13 +68,13 @@ void ConfigurationSupervisorBase::getConfigurationStatusXML(
 }  // end getConfigurationStatusXML()
 
 //==============================================================================
-// handleCreateTableXML
-//
-//	Save the detail of specific table specified
-//		by tableName and version
-//		...starting from dataOffset
-//
-//	Note: if starting version is -1 start from mock-up
+/// handleCreateTableXML
+///
+///	Save the detail of specific table specified
+///		by tableName and version
+///		...starting from dataOffset
+///
+///	Note: if starting version is -1 start from mock-up
 void ConfigurationSupervisorBase::handleCreateTableXML(HttpXmlDocument&        xmlOut,
                                                        ConfigurationManagerRW* cfgMgr,
                                                        const std::string&      tableName,
@@ -275,10 +275,10 @@ catch(...)
 }  // end handleCreateTableXML() catch
 
 //==============================================================================
-// saveModifiedVersionXML
-//
-// once source version has been modified in temporary version
-//	this function finishes it off.
+/// saveModifiedVersionXML
+///
+/// once source version has been modified in temporary version
+///	this function finishes it off.
 TableVersion ConfigurationSupervisorBase::saveModifiedVersionXML(
     HttpXmlDocument&        xmlOut,
     ConfigurationManagerRW* cfgMgr,
@@ -313,24 +313,24 @@ TableVersion ConfigurationSupervisorBase::saveModifiedVersionXML(
 }  // end saveModifiedVersionXML()
 
 //==============================================================================
-//	handleCreateTableGroupXML
-//
-//		Save a new TableGroup:
-//			Search for existing TableGroupKeys for this TableGroup
-//			Append a "bumped" system key to name
-//			Save based on list of tableName/TableVersion
-//
-//		tableList parameter is comma separated table name and version
-//
-//		Note: if version of -1 (INVALID/MOCKUP) is given and there are no other existing
-// table versions... 			a new table version is generated using the mockup table.
-//
-//		Table Version Alias Handling:
-//			Allow table versions to be specified as an alias with ALIAS: preamble. Aliased
-// versions 			will be translated according to the active backbone at activation
-// time.
-//
-//
+///	handleCreateTableGroupXML
+///
+///		Save a new TableGroup:
+///			Search for existing TableGroupKeys for this TableGroup
+///			Append a "bumped" system key to name
+///			Save based on list of tableName/TableVersion
+///
+///		tableList parameter is comma separated table name and version
+///
+///		Note: if version of -1 (INVALID/MOCKUP) is given and there are no other existing
+/// table versions... 			a new table version is generated using the mockup table.
+///
+///		Table Version Alias Handling:
+///			Allow table versions to be specified as an alias with ALIAS: preamble. Aliased
+/// versions 			will be translated according to the active backbone at activation
+/// time.
+///
+///
 void ConfigurationSupervisorBase::handleCreateTableGroupXML(
     HttpXmlDocument&        xmlOut,
     ConfigurationManagerRW* cfgMgr,
@@ -683,28 +683,28 @@ catch(...)
 }  // end handleCreateTableGroupXML() catch
 
 //==============================================================================
-// handleGetTableGroupXML
-//
-//	give the detail of specific table specified
-//		groupKey=-1 returns latest
-//
-//	Find historical group keys
-//		and figure out all member configurations versions
-
-//
-//	return this information
-//	<group name=xxx key=xxx>
-//		<historical key=xxx>
-//		<historical key=xxx>
-//		....
-//		<table name=xxx version=xxx />
-//			<historical version=xxx>
-//			<historical version=xxx>
-//			...
-//		</table>
-//		<table name=xxx version=xxx>
-//		...
-//		</table>
+/// handleGetTableGroupXML
+///
+///	give the detail of specific table specified
+///		groupKey=-1 returns latest
+///
+///	Find historical group keys
+///		and figure out all member configurations versions
+///
+///
+///	return this information
+///	<group name=xxx key=xxx>
+///		<historical key=xxx>
+///		<historical key=xxx>
+///		....
+///		<table name=xxx version=xxx />
+///			<historical version=xxx>
+///			<historical version=xxx>
+///			...
+///		</table>
+///		<table name=xxx version=xxx>
+///		...
+///		</table>
 void ConfigurationSupervisorBase::handleGetTableGroupXML(HttpXmlDocument&        xmlOut,
                                                          ConfigurationManagerRW* cfgMgr,
                                                          const std::string& groupName,
@@ -1761,7 +1761,7 @@ try
 		bool groupAliasChange = false;
 		bool tableAliasChange = false;
 
-		{   // check group aliases ... a la
+		{  // check group aliases ... a la
 			// ConfigurationGUISupervisor::handleSetGroupAliasInBackboneXML
 
 			TableBase* table =

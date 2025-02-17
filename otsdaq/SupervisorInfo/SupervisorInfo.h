@@ -24,13 +24,13 @@ namespace ots
 class SupervisorInfo
 {
   public:
-	// when no configuration, e.g. Wizard Mode, then
-	// name and contextName are derived from the class name and LID
+	/// when no configuration, e.g. Wizard Mode, then
+	/// name and contextName are derived from the class name and LID
 	SupervisorInfo(XDAQ_CONST_CALL xdaq::ApplicationDescriptor* descriptor, const std::string& name, const std::string& contextName)
 	    : descriptor_(descriptor)
 	    , contextDescriptor_(descriptor ? descriptor->getContextDescriptor() : 0)
-	    , name_(name)  // this is the config app name
-	    , contextName_(contextName)  // this is the config parent context name
+	    , name_(name)  ///< this is the config app name
+	    , contextName_(contextName)  ///< this is the config parent context name
 	    , id_(descriptor ? descriptor->getLocalId() : 0)
 	    , class_(descriptor ? descriptor->getClassName() : "")
 	    , contextURL_(contextDescriptor_ ? contextDescriptor_->getURL() : "")
@@ -61,7 +61,7 @@ class SupervisorInfo
 
 
 	struct SubappInfo {
-		std::string 	name; // Also key in map
+		std::string 	name; ///< Also key in map
 		std::string 	status;
 		unsigned int 	progress, id;
 		std::string 	detail;
@@ -73,7 +73,7 @@ class SupervisorInfo
 	static const std::string APP_STATUS_UNKNOWN;
 	static const std::string APP_STATUS_NOT_MONITORED;
 
-	// BOOLs	-------------------
+	/// BOOLs	-------------------
 	bool 		isGatewaySupervisor					(void) const { return class_ == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS; }
 	bool 		isWizardSupervisor					(void) const { return class_ == XDAQContextTable::WIZARD_SUPERVISOR_CLASS; }
 	bool 		isTypeFESupervisor					(void) const { return XDAQContextTable::FETypeClassNames_.find(class_) != XDAQContextTable::FETypeClassNames_.end(); }
@@ -86,7 +86,7 @@ class SupervisorInfo
 	bool 		isTypeCodeEditorSupervisor			(void) const { return XDAQContextTable::CodeEditorTypeClassNames_.find(class_) != XDAQContextTable::CodeEditorTypeClassNames_.end(); }
 	bool 		isTypeARTDAQSupervisor				(void) const { return class_ == XDAQContextTable::ARTDAQ_SUPERVISOR_CLASS; }
 
-	// Getters -------------------
+	/// Getters -------------------
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getDescriptor					(void) const { return descriptor_; }
 	const xdaq::ContextDescriptor*               getContextDescriptor			(void) const { return contextDescriptor_; }
 	const std::string&                           getName						(void) const { return name_; }
@@ -104,7 +104,7 @@ class SupervisorInfo
 	const uint16_t&                              getPort						(void) const { return port_; }
 	const std::map<std::string, SubappInfo>&     getSubappInfo					(void) const { return subapps_; }
 
-	// Setters -------------------
+	/// Setters -------------------
 	void setStatus(const std::string& status, const unsigned int progress, const std::string& detail = "");
 	void setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail = "" );
 	void copySubappStatus(const SubappInfo& info);
@@ -115,7 +115,7 @@ class SupervisorInfo
 	static std::vector<SubappInfo> deserializeSubappInfos(std::string info_string);
 
   private:
-	// Helpers -------------------
+	/// Helpers -------------------
 	static std::string							extractHostname					(const std::string& URL);
 
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* descriptor_;

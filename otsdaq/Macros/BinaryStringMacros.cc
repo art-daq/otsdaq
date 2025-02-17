@@ -3,11 +3,11 @@
 using namespace ots;
 
 //==============================================================================
-// binaryToHexString
-//	convert a data buffer of <len> bytes to a hex string 2*len characters long
-//	Note: no preamble is applied by default (but "0x" could be nice)
-//
-//	Note: this is used with defaults by VisualSupervisor
+/// binaryToHexString
+///	convert a data buffer of <len> bytes to a hex string 2*len characters long
+///	Note: no preamble is applied by default (but "0x" could be nice)
+///
+///	Note: this is used with defaults by VisualSupervisor
 std::string BinaryStringMacros::binaryStringToHexString(
     const void*        binaryBuffer,
     unsigned int       numberOfBytes,
@@ -29,9 +29,9 @@ std::string BinaryStringMacros::binaryStringToHexString(
 }  // end binaryToHexString
 
 //==============================================================================
-// binaryNumberToHexString
-//	convert a data buffer string a hex string
-//		8 bytes at a time with the least significant byte last.
+/// binaryNumberToHexString
+///	convert a data buffer string a hex string
+///		8 bytes at a time with the least significant byte last.
 std::string BinaryStringMacros::binaryNumberToHexString(
     const std::string& binaryBuffer,
     const std::string& resultPreamble /*"0x"*/,
@@ -42,9 +42,9 @@ std::string BinaryStringMacros::binaryNumberToHexString(
 }  // end binaryNumberToHexString()
 
 //==============================================================================
-// binaryNumberToHexString
-//	convert a data buffer string a hex string
-//		8 bytes at a time with the least significant byte last.
+/// binaryNumberToHexString
+///	convert a data buffer string a hex string
+///		8 bytes at a time with the least significant byte last.
 std::string BinaryStringMacros::binaryNumberToHexString(
     const void*        binaryBuffer,
     unsigned int       numberOfBytes,
@@ -83,8 +83,8 @@ std::string BinaryStringMacros::binaryNumberToHexString(
 }  // end binaryNumberToHexString()
 
 //==============================================================================
-// insertValueInBinaryString
-// 	static and specialized for string value
+/// insertValueInBinaryString
+/// 	static and specialized for string value
 void BinaryStringMacros::insertValueInBinaryString(std::string&       binaryBuffer,
                                                    const std::string& value,
                                                    unsigned int       bitIndex /* = 0 */)
@@ -122,9 +122,9 @@ void BinaryStringMacros::insertValueInBinaryString(std::string&       binaryBuff
 }  // end insertValueInBinaryString()
 
 //==============================================================================
-// extractValueFromBinaryString
-//	static template function
-//	Extract value from buffer starting at bitIndex position
+/// extractValueFromBinaryString
+///	static template function
+///	Extract value from buffer starting at bitIndex position
 void BinaryStringMacros::extractValueFromBinaryString(const void*  binaryBufferVoid,
                                                       unsigned int bufferNumberOfBytes,
                                                       void*        valueVoid,
@@ -197,9 +197,9 @@ void BinaryStringMacros::extractValueFromBinaryString(const void*  binaryBufferV
 }  // end extractValueFromBinaryString()
 
 //==============================================================================
-// extractValueFromBinaryString
-//	static template function
-//	Extract value from buffer starting at bitIndex position
+/// extractValueFromBinaryString
+///	static template function
+///	Extract value from buffer starting at bitIndex position
 void BinaryStringMacros::extractValueFromBinaryString(const std::string& binaryBuffer,
                                                       std::string&       value,
                                                       unsigned int valueNumberOfBits,

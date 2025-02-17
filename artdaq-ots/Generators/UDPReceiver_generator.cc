@@ -392,5 +392,5 @@ void ots::UDPReceiver::start_()
 	// #pragma message "Using default implementation of UDPReceiver::start_()"
 }
 
-// The following macro is defined in artdaq's GeneratorMacros.hh header
+/// The following macro is defined in artdaq's GeneratorMacros.hh header
 DEFINE_ARTDAQ_COMMANDABLE_GENERATOR(ots::UDPReceiver)

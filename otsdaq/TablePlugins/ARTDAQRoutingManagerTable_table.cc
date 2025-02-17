@@ -173,7 +173,7 @@ unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
 }  // end slowControlsHandlerConfig()
 
 //==============================================================================
-// return out file path
+/// return out file path
 std::string ARTDAQRoutingManagerTable::setFilePath() const
 {
 	return SLOWCONTROL_PV_FILE_PATH;

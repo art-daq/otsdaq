@@ -27,7 +27,7 @@ const std::set<std::string> XDAQContextTable::CodeEditorTypeClassNames_ 		= { "o
 const std::set<std::string> XDAQContextTable::VisualizerTypeClassNames_ 		= { "ots::VisualSupervisor"};
 const std::set<std::string> XDAQContextTable::SlowControlsTypeClassNames_ 		= { "ots::SlowControlsDashboardSupervisor"};
 
-//NOTE!!! std::next + offset reads std::set from right-to-left above (end to beginning)
+///NOTE!!! std::next + offset reads std::set from right-to-left above (end to beginning)
 const std::map<std::string /*class*/, std::string /*module*/> XDAQContextTable::AppClassModuleLookup_ = {
 	std::make_pair(XDAQContextTable::GATEWAY_SUPERVISOR_CLASS,							"${OTSDAQ_LIB}/libGatewaySupervisor.so"),
 	std::make_pair(XDAQContextTable::ARTDAQ_SUPERVISOR_CLASS,							"${OTSDAQ_LIB}/libARTDAQSupervisor.so"),
@@ -47,45 +47,45 @@ const std::map<std::string /*class*/, std::string /*module*/> XDAQContextTable::
 	std::make_pair(*(XDAQContextTable::VisualizerTypeClassNames_.begin()),				"${OTSDAQ_UTILITIES_LIB}/libVisualization.so"),
 	std::make_pair(*(XDAQContextTable::SlowControlsTypeClassNames_.begin()),			"${OTSDAQ_UTILITIES_LIB}/libSlowControlsDashboard.so")
 };
-// Module Choices from fixed choice XDAQApp table:
-//		${OTSDAQ_LIB}/libGatewaySupervisor.so
-//		${OTSDAQ_LIB}/libCoreSupervisors.so
-//		${OTSDAQ_LIB}/libEventBuilderApp.so
-//		${OTSDAQ_UTILITIES_LIB}/libChat.so
-//		${OTSDAQ_UTILITIES_LIB}/libConsole.so
-//		${OTSDAQ_UTILITIES_LIB}/libLogbook.so
-//		${OTSDAQ_UTILITIES_LIB}/libVisualization.so
-//		${OTSDAQ_UTILITIES_LIB}/libConfigurationGUI.so
-//		${OTSDAQ_UTILITIES_LIB}/libSlowControlsDashboard.so
-//		${OTSDAQ_UTILITIES_LIB}/libMacroMaker.so
-//		${OTSDAQ_LIB}/libARTDAQSupervisor.so
-//		${OTSDAQ_LIB}/libARTDAQOnlineMonitor.so
-//		${OTSDAQ_LIB}/libDispatcherApp.so
-//		${OTSDAQ_LIB}/libDataLoggerApp.so
-//		${OTSDAQ_LIB}/libCodeEditor.so
-
-// Class Choices from fixed choice XDAQApp table:
-//		ots::GatewaySupervisor
-//		ots::FESupervisor
-//		ots::DataManagerSupervisor
-//		ots::FEDataManagerSupervisor
-//		ots::ARTDAQDataManagerSupervisor
-//		ots::ARTDAQFEDataManagerSupervisor
-//		ots::ARTDAQSupervisor
-//		ots::ARTDAQOnlineMonitorSupervisor
-//		ots::EventBuilderApp
-//		ots::DispatcherApp
-//		ots::DataLoggerApp
-//		ots::ConfigurationGUISupervisor
-//		ots::MacroMakerSupervisor
-//		ots::VisualSupervisor
-//		ots::ChatSupervisor
-//		ots::ConsoleSupervisor
-//		ots::LogbookSupervisor
-//		ots::SlowControlsDashboardSupervisor
-//		ots::CodeEditorSupervisor
-
-
+/// Module Choices from fixed choice XDAQApp table:
+///		${OTSDAQ_LIB}/libGatewaySupervisor.so
+///		${OTSDAQ_LIB}/libCoreSupervisors.so
+///		${OTSDAQ_LIB}/libEventBuilderApp.so
+///		${OTSDAQ_UTILITIES_LIB}/libChat.so
+///		${OTSDAQ_UTILITIES_LIB}/libConsole.so
+///		${OTSDAQ_UTILITIES_LIB}/libLogbook.so
+///		${OTSDAQ_UTILITIES_LIB}/libVisualization.so
+///		${OTSDAQ_UTILITIES_LIB}/libConfigurationGUI.so
+///		${OTSDAQ_UTILITIES_LIB}/libSlowControlsDashboard.so
+///		${OTSDAQ_UTILITIES_LIB}/libMacroMaker.so
+///		${OTSDAQ_LIB}/libARTDAQSupervisor.so
+///		${OTSDAQ_LIB}/libARTDAQOnlineMonitor.so
+///		${OTSDAQ_LIB}/libDispatcherApp.so
+///		${OTSDAQ_LIB}/libDataLoggerApp.so
+///		${OTSDAQ_LIB}/libCodeEditor.so
+///
+/// Class Choices from fixed choice XDAQApp table:
+///		ots::GatewaySupervisor
+///		ots::FESupervisor
+///		ots::DataManagerSupervisor
+///		ots::FEDataManagerSupervisor
+///		ots::ARTDAQDataManagerSupervisor
+///		ots::ARTDAQFEDataManagerSupervisor
+///		ots::ARTDAQSupervisor
+///		ots::ARTDAQOnlineMonitorSupervisor
+///		ots::EventBuilderApp
+///		ots::DispatcherApp
+///		ots::DataLoggerApp
+///		ots::ConfigurationGUISupervisor
+///		ots::MacroMakerSupervisor
+///		ots::VisualSupervisor
+///		ots::ChatSupervisor
+///		ots::ConsoleSupervisor
+///		ots::LogbookSupervisor
+///		ots::SlowControlsDashboardSupervisor
+///		ots::CodeEditorSupervisor
+///
+///
 const uint8_t		 	XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY 	= 100;
 const unsigned int 		XDAQContextTable::XDAQApplication::GATEWAY_APP_ID 		= 200;
 
@@ -207,9 +207,9 @@ ConfigurationTree XDAQContextTable::getSupervisorConfigNode(
 }  // end getSupervisorConfigNode()
 
 //==============================================================================
-// extractContexts
-//	Could be called by other tables if they need to access the context.
-//		This doesn't re-write config files, it just re-makes constructs in software.
+/// extractContexts
+///	Could be called by other tables if they need to access the context.
+///		This doesn't re-write config files, it just re-makes constructs in software.
 void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 {
 	//__COUT__ << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
@@ -721,7 +721,7 @@ std::string XDAQContextTable::getApplicationUID(const std::string& url,
 }  // end getApplicationUID()
 
 //==============================================================================
-// only considers ON contexts and applications
+/// only considers ON contexts and applications
 std::string XDAQContextTable::getContextOfApplication(ConfigurationManager* configManager,
                                                       const std::string&    appUID) const
 {
@@ -758,7 +758,7 @@ std::string XDAQContextTable::getContextOfApplication(ConfigurationManager* conf
 }  // end getContextOfApplication()
 
 //==============================================================================
-// only considers ON contexts and applications
+/// only considers ON contexts and applications
 std::string XDAQContextTable::getContextOfGateway(
     ConfigurationManager* configManager) const
 {

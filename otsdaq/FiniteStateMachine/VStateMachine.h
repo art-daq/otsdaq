@@ -21,7 +21,7 @@ class VStateMachine
 	}
 	virtual ~VStateMachine(void) { ; }
 
-	// Transitions
+	/// Transitions
 	virtual void configure(void)              = 0;
 	virtual void halt(void)                   = 0;
 	virtual void pause(void)                  = 0;
@@ -29,7 +29,7 @@ class VStateMachine
 	virtual void start(std::string runNumber) = 0;
 	virtual void stop(void)                   = 0;
 
-	// States
+	/// States
 	virtual bool running(void) { return false; }
 	virtual void paused(void) { ; }
 	virtual void halted(void) { ; }
@@ -37,10 +37,10 @@ class VStateMachine
 	virtual void initial(void) { ; }
 	virtual void inError(void) { ; }
 
-	// Status
+	/// Status
 	//==============================================================================
-	// virtual progress detail string that can be overridden with more info
-	//	e.g. step and sub-step aliases, etc
+	/// virtual progress detail string that can be overridden with more info
+	///	e.g. step and sub-step aliases, etc
 	virtual std::string getStatusProgressDetail(void)
 	{
 		std::string progress = "";
@@ -59,7 +59,7 @@ class VStateMachine
 				                .at(VStateMachine::getIterationIndex());
 			else
 				progress +=
-				    std::to_string(VStateMachine::getIterationIndex());  // just index
+				    std::to_string(VStateMachine::getIterationIndex());  ///< just index
 
 			progress += ":";
 
@@ -73,7 +73,7 @@ class VStateMachine
 				                .at(VStateMachine::getSubIterationIndex());
 			else
 				progress +=
-				    std::to_string(VStateMachine::getSubIterationIndex());  // just index
+				    std::to_string(VStateMachine::getSubIterationIndex());  ///< just index
 		}
 		else if(VStateMachine::getIterationWork())
 		{
@@ -89,7 +89,7 @@ class VStateMachine
 				                .at(VStateMachine::getIterationIndex());
 			else
 				progress +=
-				    std::to_string(VStateMachine::getIterationIndex());  // just index
+				    std::to_string(VStateMachine::getIterationIndex());  ///< just index
 		}
 		else if(transitionName_ != "")
 			progress += name_ + ":" + transitionName_;
@@ -117,8 +117,8 @@ class VStateMachine
 	void               clearSubIterationWork(void) { subIterationWorkFlag_ = false; }
 	bool               getSubIterationWork(void) { return subIterationWorkFlag_; }
 
-	CoreSupervisorBase* parentSupervisor_;  // e.g. to communicate error fault and start
-	                                        // transition to error for entire system
+	CoreSupervisorBase* parentSupervisor_;  ///< e.g. to communicate error fault and start
+	                                        ///< transition to error for entire system
   protected:
 	std::map<std::string /*transition*/,
 	         std::map<unsigned int /*step index*/, std::string /*step alias*/>>

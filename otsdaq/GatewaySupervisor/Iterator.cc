@@ -700,9 +700,9 @@ catch(...)
 }  // end startCommand()
 
 //==============================================================================
-// checkCommand
-//	when busy for a while, start to sleep
-//		use sleep() or nanosleep()
+/// checkCommand
+///	when busy for a while, start to sleep
+///		use sleep() or nanosleep()
 bool Iterator::checkCommand(IteratorWorkLoopStruct* iteratorStruct)
 try
 {
@@ -880,7 +880,7 @@ void Iterator::startCommandChooseFSM(IteratorWorkLoopStruct* iteratorStruct,
 }  // end startCommandChooseFSM()
 
 //==============================================================================
-// return true if an action was attempted
+/// return true if an action was attempted
 bool Iterator::haltIterator(Iterator*               iterator,
                             IteratorWorkLoopStruct* iteratorStruct /* = 0 */,
                             bool                    doNotHaltFSM /* = false */)
@@ -1577,14 +1577,14 @@ void Iterator::startCommandModifyActive(IteratorWorkLoopStruct* iteratorStruct)
 }  // end startCommandModifyActive()
 
 //==============================================================================
-// checkCommandRun
-//	return true if done
-//
-//	Either will be done on (priority 1) running threads (for Frontends) ending
-//		or (priority 2 and ignored if <= 0) duration timeout
-//
-//	Note: use command structure strings to maintain duration left
-//	Note: watch iterator->doPauseAction and iterator->doHaltAction and respond
+/// checkCommandRun
+///	return true if done
+///
+///	Either will be done on (priority 1) running threads (for Frontends) ending
+///		or (priority 2 and ignored if <= 0) duration timeout
+///
+///	Note: use command structure strings to maintain duration left
+///	Note: watch iterator->doPauseAction and iterator->doHaltAction and respond
 bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 {
 	sleep(1);  // sleep to give FSM time to transition
@@ -1907,7 +1907,7 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 }  // end checkCommandRun()
 
 //==============================================================================
-// return true if done
+/// return true if done
 bool Iterator::checkCommandConfigure(IteratorWorkLoopStruct* iteratorStruct)
 {
 	sleep(1);  // sleep to give FSM time to transition
@@ -1987,7 +1987,7 @@ bool Iterator::checkCommandConfigure(IteratorWorkLoopStruct* iteratorStruct)
 }  // end checkCommandConfigure()
 
 //==============================================================================
-// return true if done
+/// return true if done
 bool Iterator::checkCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
                                          const std::string&      finalState)
 {
@@ -2037,7 +2037,7 @@ bool Iterator::checkCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
 }  // end checkCommandConfigure()
 
 //==============================================================================
-// -1 durationSeconds means open-ended single run
+/// -1 durationSeconds means open-ended single run
 std::vector<IterateTable::Command> Iterator::generateIterationPlan(
     const std::string& fsmName,
     const std::string& configAlias,
@@ -2321,7 +2321,7 @@ void Iterator::playGeneratedIterationPlan(HttpXmlDocument&   xmldoc,
 }  //end playGeneratedIterationPlan()
 
 //==============================================================================
-//called by both playIterationPlan and playGeneratedIterationPlan
+///called by both playIterationPlan and playGeneratedIterationPlan
 void Iterator::playIterationPlanPrivate(HttpXmlDocument&   xmldoc,
                                         const std::string& planName)
 {
@@ -2438,7 +2438,7 @@ void Iterator::haltIterationPlan(HttpXmlDocument& /*xmldoc*/)
 }  //end haltIterationPlan()
 
 //==============================================================================
-//	return state machine and iterator status
+///	return state machine and iterator status
 void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 {
 	xmldoc.addTextElementToData(

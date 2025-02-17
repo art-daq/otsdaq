@@ -69,7 +69,7 @@ void TCPDataReceiverProducer::stopProcessingData(void)
 
 //==============================================================================
 bool TCPDataReceiverProducer::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)
-// bool TCPDataReceiverProducer::getNextFragment(void)
+/// bool TCPDataReceiverProducer::getNextFragment(void)
 {
 	// std::cout << __COUT_HDR_FL__ << __PRETTY_FUNCTION__ << DataProcessor::processorUID_
 	// << " running, because workloop: " << WorkLoop::continueWorkLoop_ << std::endl;

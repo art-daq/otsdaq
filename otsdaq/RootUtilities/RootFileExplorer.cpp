@@ -125,7 +125,7 @@ xercesc::DOMDocument * RootFileExplorer::initialize(bool liveDQMFlag)
 //==========================================================================================
 xercesc::DOMElement * RootFileExplorer::populateBinaryTreeNode(xercesc::DOMElement * anchorNode, 
                                                                std::string           name      ,
-//                                                               int                   level     ,
+///                                                               int                   level     ,
                                                                bool                  isLeaf    )
 {
     ss_.str(""); ss_ << "fRFoldersPath_: " << fRFoldersPath_   ; STDLINE(ss_.str(),ACGreen) ;
@@ -218,29 +218,29 @@ xercesc::DOMElement * RootFileExplorer::populateBinaryTreeNode(xercesc::DOMEleme
     xercesc::DOMText    * leafVal = theDocument_->createTextNode(xercesc::XMLString::transcode(isALeaf_[isLeaf].c_str()));
     leaf->appendChild(leafVal);
     
-//    theSerializer_->write(theDocument_, theOutput_);
+///    theSerializer_->write(theDocument_, theOutput_);
     
-//     xercesc::DOMElement * iconCls = theDocument_->createElement( xercesc::XMLString::transcode("iconCls"              ));
-//     node->appendChild(iconCls); 
-//  
-//     if(isLeaf)
-//     {
-//      xercesc::DOMText    * iconVal = theDocument_->createTextNode(xercesc::XMLString::transcode("histogram-leaf-icon"  ));
-//      iconCls->appendChild(iconVal);
-//     } else {
-//      xercesc::DOMText    * iconVal = theDocument_->createTextNode(xercesc::XMLString::transcode("x-tree-icon x-tree-icon-parent"  ));
-//      iconCls->appendChild(iconVal);
-//     }
+///     xercesc::DOMElement * iconCls = theDocument_->createElement( xercesc::XMLString::transcode("iconCls"              ));
+///     node->appendChild(iconCls); 
+///  
+///     if(isLeaf)
+///     {
+///      xercesc::DOMText    * iconVal = theDocument_->createTextNode(xercesc::XMLString::transcode("histogram-leaf-icon"  ));
+///      iconCls->appendChild(iconVal);
+///     } else {
+///      xercesc::DOMText    * iconVal = theDocument_->createTextNode(xercesc::XMLString::transcode("x-tree-icon x-tree-icon-parent"  ));
+///      iconCls->appendChild(iconVal);
+///     }
     
-//     if( debug_ ) 
-//     {
-//         STDLINE(string("fSystemPath_  : ")+fSystemPath_  ,ACRed);
-//         STDLINE(string("fRootPath_    : ")+fRootPath_    ,ACRed);
-//         STDLINE(string("fFoldersPath_ : ")+fFoldersPath_ ,ACRed);
-//         STDLINE(string("fFileName_    : ")+fFileName_    ,ACRed);
-//         STDLINE(string("fRFoldersPath_: ")+fRFoldersPath_,string(ACRed)+string(ACReverse));
-//         STDLINE(string("fHistName_    : ")+name          ,ACRed);
-//     }
+///     if( debug_ ) 
+///     {
+///         STDLINE(string("fSystemPath_  : ")+fSystemPath_  ,ACRed);
+///         STDLINE(string("fRootPath_    : ")+fRootPath_    ,ACRed);
+///         STDLINE(string("fFoldersPath_ : ")+fFoldersPath_ ,ACRed);
+///         STDLINE(string("fFileName_    : ")+fFileName_    ,ACRed);
+///         STDLINE(string("fRFoldersPath_: ")+fRFoldersPath_,string(ACRed)+string(ACReverse));
+///         STDLINE(string("fHistName_    : ")+name          ,ACRed);
+///     }
     return node;
 }
 //================================================================================================
@@ -249,16 +249,16 @@ void RootFileExplorer::makeLiveDQMBinaryTree(TDirectory          * currentDir,
                                              std::string           subDirName,
                                              xercesc::DOMElement * anchorNode )
 {
-// xercesc::DOMElement * node  = NULL ;
+/// xercesc::DOMElement * node  = NULL ;
  if( !anchorNode) anchorNode = rootElement_ ;
  currentDir = currentDir->GetDirectory(subDirName.c_str()) ;
  if(currentDir != 0) 
  {
-//  STDLINE(currentDir->GetName(),string(ACCyan)+string(ACReverse)) ;
+///  STDLINE(currentDir->GetName(),string(ACCyan)+string(ACReverse)) ;
   TObject* obj;
   TIter    nextobj(currentDir->GetList());
-//  STDLINE("currentDir->ls()",ACReverse) ;
-//  currentDir->ls() ;
+///  STDLINE("currentDir->ls()",ACReverse) ;
+///  currentDir->ls() ;
   while((obj = (TObject*)nextobj()))
   {
    string objName = obj->GetName() ;
@@ -312,12 +312,12 @@ void RootFileExplorer::makeDirectoryBinaryTree(TDirectory          * currentDire
 
     TKey * keyH = NULL ;
     TIter hList(currentDirectory->GetListOfKeys());
-//    STDLINE(currentDirectory->GetName(),string(ACCyan)+string(ACReverse)) ;
+///    STDLINE(currentDirectory->GetName(),string(ACCyan)+string(ACReverse)) ;
     while((keyH = (TKey*)hList()))
     {
         std::string objName = keyH->GetName() ;
         ss_.str("") ; ss_ << "Exploring " << objName << " level: " << level << " COUNTER: " << ++counter_;
-//        STDLINE(ss_.str(),"") ;
+///        STDLINE(ss_.str(),"") ;
         string what = keyH->GetClassName () ;
         if( what == "TTree"       ) continue ;
         if( what == "TNtuple"     ) continue ;
@@ -326,7 +326,7 @@ void RootFileExplorer::makeDirectoryBinaryTree(TDirectory          * currentDire
         if( what == "TDirectoryFile" )
         {
             ss_.str("") ; ss_ << "Enter     " << objName << " level: " << level ;
-//            STDLINE(ss_.str(),"") ;
+///            STDLINE(ss_.str(),"") ;
             previousAncestor_ = currentDirectory->GetName() ;
             currentDirectory->cd(objName.c_str());
             TDirectory * subDir = gDirectory ;
@@ -334,7 +334,7 @@ void RootFileExplorer::makeDirectoryBinaryTree(TDirectory          * currentDire
 
             computeRFoldersPath() ;
             fHistName_      = ""  ;
-//            anchorNodeLast_ = this->populateBinaryTreeNode(anchorNode, objName, level, false) ;
+///            anchorNodeLast_ = this->populateBinaryTreeNode(anchorNode, objName, level, false) ;
             anchorNodeLast_ = this->populateBinaryTreeNode(anchorNode, objName, false) ;
             this->makeDirectoryBinaryTree(subDir,level+1,anchorNodeLast_) ;
             this->shrinkHierarchyPaths(1) ; 
@@ -345,7 +345,7 @@ void RootFileExplorer::makeDirectoryBinaryTree(TDirectory          * currentDire
             fHistName_        = objName ;
             STDLINE(fHistName_,ACCyan) ;
             previousAncestor_ = currentDirectory->GetName() ;
-//            anchorNode        = this->populateBinaryTreeNode(anchorNodeLast_, objName, level, true  ) ;            
+///            anchorNode        = this->populateBinaryTreeNode(anchorNodeLast_, objName, level, true  ) ;            
             anchorNode        = this->populateBinaryTreeNode(anchorNodeLast_, objName, true  ) ;            
         }
     }

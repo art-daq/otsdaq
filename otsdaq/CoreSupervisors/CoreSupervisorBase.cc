@@ -57,8 +57,8 @@ CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
 	           "TRACESupervisorRequest",
 	           XDAQ_NS_URI);
 
-	__SUP_COUT__ << "Constructed. getpid()=" << getpid() <<
-		" gettid()=" << gettid() << __E__;
+	__SUP_COUT__ << "Constructed. getpid()=" << getpid() << " gettid()=" << gettid()
+	             << __E__;
 }  // end constructor
 
 //==============================================================================
@@ -80,7 +80,7 @@ void CoreSupervisorBase::destroy(void)
 }  // end destroy()
 
 //==============================================================================
-// wrapper for inheritance call
+/// wrapper for inheritance call
 void CoreSupervisorBase::defaultPageWrapper(xgi::Input* in, xgi::Output* out)
 {
 	return defaultPage(in, out);
@@ -102,8 +102,8 @@ void CoreSupervisorBase::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
 }  // end defaultPage()
 
 //==============================================================================
-// requestWrapper ~
-//	wrapper for inheritance Supervisor request call
+/// requestWrapper ~
+///	wrapper for inheritance Supervisor request call
 void CoreSupervisorBase::requestWrapper(xgi::Input* in, xgi::Output* out)
 try
 {
@@ -283,11 +283,11 @@ catch(...)
 }  // end requestWrapper() error handling
 
 //==============================================================================
-// request
-//		Supervisors should override this function. It will be called after user access has
-// been verified 		according to the Supervisor Property settings. The
-// CoreSupervisorBase class provides consistent 		access, responses, and error
-// handling  across all inheriting supervisors that use ::request.
+/// request
+///		Supervisors should override this function. It will be called after user access has
+/// been verified 		according to the Supervisor Property settings. The
+/// CoreSupervisorBase class provides consistent 		access, responses, and error
+/// handling  across all inheriting supervisors that use ::request.
 void CoreSupervisorBase::request(const std::string& /*requestType*/,
                                  cgicc::Cgicc& /*cgiIn*/,
                                  HttpXmlDocument& xmlOut,
@@ -349,11 +349,11 @@ void CoreSupervisorBase::request(const std::string& /*requestType*/,
 }  // end request()
 
 //==============================================================================
-// nonXmlRequest
-//		Supervisors should override this function. It will be called after user access has
-// been verified 		according to the Supervisor Property settings. The
-// CoreSupervisorBase class provides consistent 		access, responses, and error
-// handling  across all inheriting supervisors that use ::request.
+/// nonXmlRequest
+///		Supervisors should override this function. It will be called after user access has
+/// been verified 		according to the Supervisor Property settings. The
+/// CoreSupervisorBase class provides consistent 		access, responses, and error
+/// handling  across all inheriting supervisors that use ::request.
 void CoreSupervisorBase::nonXmlRequest(const std::string& /*requestType*/,
                                        cgicc::Cgicc& /*cgiIn*/,
                                        std::ostream& out,
@@ -384,7 +384,7 @@ xoap::MessageReference CoreSupervisorBase::stateMachineXoapHandler(
 }  // end stateMachineXoapHandler()
 
 //==============================================================================
-// indirection to allow for overriding handler
+/// indirection to allow for overriding handler
 xoap::MessageReference CoreSupervisorBase::workLoopStatusRequestWrapper(
     xoap::MessageReference message)
 {
@@ -406,8 +406,9 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 {
 	// send back status and progress parameters
 
-	__SUP_COUTVS__(20, std::to_string(getpid()) + ":" +  std::to_string(gettid()) + ":" + 
-		theStateMachine_.getCurrentStateName());
+	__SUP_COUTVS__(20,
+	               std::to_string(getpid()) + ":" + std::to_string(gettid()) + ":" +
+	                   theStateMachine_.getCurrentStateName());
 
 	const std::string& err = theStateMachine_.getErrorMessage();
 	// std::string status = err == "" ? (theStateMachine_.isInTransition() ? theStateMachine_.getProvenanceStateName() : theStateMachine_.getCurrentStateName())
@@ -460,10 +461,10 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 }  // end applicationStatusRequest()
 
 //==============================================================================
-// virtual progress string that can be overridden with more info
-//	e.g. steps and sub-steps
-//	however integer 0-100 should be first number, then separated by : colons
-//	e.g. 94:FE0:1:2
+/// virtual progress string that can be overridden with more info
+///	e.g. steps and sub-steps
+///	however integer 0-100 should be first number, then separated by : colons
+///	e.g. 94:FE0:1:2
 std::string CoreSupervisorBase::getStatusProgressDetail(void)
 {
 	std::string  detail;
@@ -486,7 +487,6 @@ std::string CoreSupervisorBase::getStatusProgressDetail(void)
 	}
 	*/
 
-
 	if(!theStateMachine_.isInTransition() &&
 	   (theStateMachine_.getCurrentStateName() ==
 	        RunControlStateMachine::HALTED_STATE_NAME ||
@@ -497,7 +497,8 @@ std::string CoreSupervisorBase::getStatusProgressDetail(void)
 		         StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(
 		             CorePropertySupervisorBase::getSupervisorUptime())) +
 		         ", Time-in-state: " +
-		         StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(theStateMachine_.getTimeInState()));
+		         StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(
+		             theStateMachine_.getTimeInState()));
 		return detail;
 	}
 
@@ -889,8 +890,8 @@ void CoreSupervisorBase::transitionConfiguringFSMs()
 }  // end transitionConfiguringFSMs()
 
 //==============================================================================
-// transitionHalting
-//	Ignore errors if coming from Failed state
+/// transitionHalting
+///	Ignore errors if coming from Failed state
 void CoreSupervisorBase::transitionHalting(toolbox::Event::Reference /*event*/)
 {
 	const std::string transitionName = "Halting";
@@ -983,8 +984,8 @@ void CoreSupervisorBase::transitionHalting(toolbox::Event::Reference /*event*/)
 }  // end transitionHalting()
 
 //==============================================================================
-// Inheriting supervisor classes should not override this function, or should at least
-// also call it in the override 	to maintain property functionality.
+/// Inheriting supervisor classes should not override this function, or should at least
+/// also call it in the override 	to maintain property functionality.
 void CoreSupervisorBase::transitionInitializing(toolbox::Event::Reference /*event*/)
 {
 	__SUP_COUT__ << "transitionInitializing" << __E__;
@@ -1273,10 +1274,10 @@ void CoreSupervisorBase::transitionStopping(toolbox::Event::Reference /*event*/)
 }  // end transitionStopping()
 
 //==============================================================================
-// SendAsyncErrorToGateway
-//	Static -- thread
-//	Send async error or soft error to gateway
-//	Call this as thread so that parent calling function (workloop) can end.
+/// SendAsyncErrorToGateway
+///	Static -- thread
+///	Send async error or soft error to gateway
+///	Call this as thread so that parent calling function (workloop) can end.
 void CoreSupervisorBase::sendAsyncExceptionToGateway(const std::string& errorMessage,
                                                      bool               isPauseException,
                                                      bool               isStopException)

@@ -11,11 +11,11 @@
 
 namespace ots
 {
-// FEProducerVInterface
-//	This class is a virtual class defining the features of front-end interface plugin
-// class. 	The features include configuration hooks, finite state machine handlers,
-// Front-end Macros for web accessible C++ handlers, slow controls hooks, as well as
-// universal write and read for 	Macro Maker compatibility.
+/// FEProducerVInterface
+///	This class is a virtual class defining the features of front-end interface plugin
+/// class. 	The features include configuration hooks, finite state machine handlers,
+/// Front-end Macros for web accessible C++ handlers, slow controls hooks, as well as
+/// universal write and read for 	Macro Maker compatibility.
 class FEProducerVInterface : public FEVInterface, public DataProducerBase
 {
   public:

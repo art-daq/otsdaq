@@ -23,7 +23,7 @@ TransceiverSocket::TransceiverSocket(std::string IPAddress, unsigned int port)
 TransceiverSocket::~TransceiverSocket(void) {}
 
 //==============================================================================
-// returns 0 on success
+/// returns 0 on success
 int TransceiverSocket::acknowledge(const std::string& buffer, bool verbose)
 {
 	// lockout other senders for the remainder of the scope

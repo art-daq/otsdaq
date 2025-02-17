@@ -5,7 +5,7 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 #include "otsdaq/TableCore/TableBase.h"
 
-// helpers
+/// helpers
 #define OUT out << tabStr << commentStr
 #define PUSHTAB tabStr += "\t"
 #define POPTAB tabStr.resize(tabStr.size() - 1)
@@ -15,7 +15,7 @@
 namespace ots
 {
 // clang-format off
-class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can inherit from multiple table base classes
+class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins can inherit from multiple table base classes
 {
   public:
 	ARTDAQTableBase();
@@ -67,10 +67,10 @@ class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can
 		int         id;
 		std::string label;
 
-		std::set<int> sources;      // by subsystem id
-		int           destination;  // destination subsystem id, 0 := no destination
+		std::set<int> sources;      ///< by subsystem id
+		int           destination;  ///< destination subsystem id, 0 := no destination
 
-		bool eventMode; // Whether art sends events or Fragments
+		bool eventMode; ///< Whether art sends events or Fragments
 		bool hasRoutingManager;
 		std::string routingManagerHost;
 
@@ -204,7 +204,7 @@ class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can
 		const std::map<std::string /*processType*/, std::string /*typeTable*/> 		mapToTable_, mapToGroupIDAppend_, mapToLinkGroupIDColumn_, mapToGroupIDColumn_;
 	} processTypes_;
 
-	// ARTDAQ Supervisor Column names
+	/// ARTDAQ Supervisor Column names
 	static struct ColARTDAQSupervisor
 	{
 		std::string const colDAQInterfaceDebugLevel_ 		= "DAQInterfaceDebugLevel";
@@ -222,35 +222,35 @@ class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can
 		std::string const colLinkToRoutingManagersGroupID_ 	= "RoutingManagersLinkGroupID";
 	} colARTDAQSupervisor_;
 
-	// ARTDAQ Subsystem Column names
+	/// ARTDAQ Subsystem Column names
 	static struct ColARTDAQSubsystem
 	{
 		std::string const colLinkToDestination_    			= "SubsystemDestinationLink";
 		std::string const colLinkToDestinationUID_ 			= "SubsystemDestinationUID";
 	} colARTDAQSubsystem_;
 
-	// ARTDAQ Reader Column names
+	/// ARTDAQ Reader Column names
 	static struct ColARTDAQReader
 	{
 		std::string const colLinkToDaqParameters_    		= "daqParametersLink";
 		std::string const colLinkToDaqParametersGroupID_ 	= "daqParametersLinkGroupID";
 	} colARTDAQReader_;
 
-	// ARTDAQ Builder/Logger/Dispatcher Column names
+	/// ARTDAQ Builder/Logger/Dispatcher Column names
 	static struct ColARTDAQNotReader
 	{
 		std::string const colLinkToDaq_    					= "daqLink";
 		std::string const colLinkToDaqUID_ 					= "daqLinkUID";
 	} colARTDAQNotReader_;
 
-	// ARTDAQ DAQ Column names
+	/// ARTDAQ DAQ Column names
 	static struct ColARTDAQDaq
 	{
 		std::string const colLinkToDaqParameters_    		= "daqParametersLink";
 		std::string const colLinkToDaqParametersGroupID_ 	= "daqParametersLinkGroupID";
 	} colARTDAQDaq_;
 
-	// ARTDAQ DAQ Parameter Column names
+	/// ARTDAQ DAQ Parameter Column names
 	static struct ColARTDAQDaqParameter
 	{
 		std::string const colDaqParameterKey_    			= "daqParameterKey";

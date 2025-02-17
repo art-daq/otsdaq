@@ -41,7 +41,7 @@ class Iterator
 	static std::vector<
 				IterateTable::Command> 	generateIterationPlan		(const std::string& fsmName, const std::string& configAlias, uint64_t durationSeconds = -1, unsigned int numberOfRuns = 1);
 
-	// begin declaration of iterator workloop members
+	/// begin declaration of iterator workloop members
 	struct IteratorWorkLoopStruct
 	{
 		IteratorWorkLoopStruct(Iterator* iterator, ConfigurationManagerRW* cfgMgr)
@@ -118,9 +118,9 @@ class Iterator
 	volatile bool activePlanIsRunning_;
 	volatile bool iteratorBusy_;
 	volatile bool commandPlay_, commandPause_,
-	    commandHalt_;  // commands are set by
-	                   // supervisor thread, and
-	                   // cleared by iterator thread
+	    commandHalt_;  ///< commands are set by
+	                   ///< supervisor thread, and
+	                   ///< cleared by iterator thread
 	std::string               activePlanName_, lastStartedPlanName_, lastFinishedPlanName_;
 	volatile unsigned int     activeCommandIndex_, activeCommandIteration_, activeNumberOfCommands_;
 	std::string				  activeCommandType_;
@@ -137,7 +137,7 @@ class Iterator
 
 	GatewaySupervisor* theSupervisor_;
 
-	template<class T>  // defined in included .icc source
+	template<class T>  ///< defined in included .icc source
 	static void helpCommandModifyActive(IteratorWorkLoopStruct* iteratorStruct, const T& setValue, bool doTrackGroupChanges);
 };
 

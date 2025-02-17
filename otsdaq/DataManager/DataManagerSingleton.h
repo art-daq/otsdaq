@@ -14,7 +14,7 @@ class ConfigurationTree;
 class DataManagerSingleton
 {
   public:
-	// There is no way I can realize that the singletonized class has been deleted!
+	/// There is no way I can realize that the singletonized class has been deleted!
 	static void deleteInstance(std::string instanceUID)
 	{
 		// std::string instanceUID = composeUniqueName(supervisorContextUID,
@@ -72,7 +72,7 @@ class DataManagerSingleton
 	~DataManagerSingleton(void) { ; }
 	static std::map<std::string, DataManager*> theInstances_;
 	// static std::string composeUniqueName(std::string supervisorContextUID, std::string
-	// supervisorApplicationUID){return supervisorContextUID+supervisorApplicationUID;}
+	/// supervisorApplicationUID){return supervisorContextUID+supervisorApplicationUID;}
 };
 
 }  // namespace ots

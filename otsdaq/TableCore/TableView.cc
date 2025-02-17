@@ -47,9 +47,9 @@ TableView::TableView(const std::string& tableName)
 TableView::~TableView(void) {}
 
 //==============================================================================
-// operator=
-//	Do NOT allow!... use TableView::copy
-//	copy is used to maintain consistency with version, creationTime, lastAccessTime, etc)
+/// operator=
+///	Do NOT allow!... use TableView::copy
+///	copy is used to maintain consistency with version, creationTime, lastAccessTime, etc)
 TableView& TableView::operator=(const TableView /*src*/)
 {
 	__SS__ << "Invalid use of operator=... Should not directly copy a TableView. Please "
@@ -120,8 +120,8 @@ TableView& TableView::copy(const TableView&   src,
 }  // end copy()
 
 //==============================================================================
-// copyRows
-//	return row offset of first row copied in
+/// copyRows
+///	return row offset of first row copied in
 unsigned int TableView::copyRows(const std::string& author,
                                  const TableView&   src,
                                  unsigned int       srcOffsetRow /* = 0 */,
@@ -180,12 +180,12 @@ unsigned int TableView::copyRows(const std::string& author,
 }  // end copyRows()
 
 //==============================================================================
-// init
-//	Should be called after table is filled to setup special members
-//		and verify consistency.
-//	e.g. identifying the UID column, checking unique data fields, etc.
-//
-// 	Note: this function also sanitizes yes/no, on/off, and true/false types
+/// init
+///	Should be called after table is filled to setup special members
+///		and verify consistency.
+///	e.g. identifying the UID column, checking unique data fields, etc.
+///
+/// 	Note: this function also sanitizes yes/no, on/off, and true/false types
 void TableView::init(void)
 {
 	//__COUT__ << "Starting table verification..." << StringMacros::stackTrace() << __E__;
@@ -872,10 +872,10 @@ void TableView::init(void)
 }  // end init()
 
 //==============================================================================
-// getValue
-//	string version
-//	Note: necessary because types of std::basic_string<char> cause compiler problems if no
-// string specific function
+/// getValue
+///	string version
+///	Note: necessary because types of std::basic_string<char> cause compiler problems if no
+/// string specific function
 void TableView::getValue(std::string& value,
                          unsigned int row,
                          unsigned int col,
@@ -894,10 +894,10 @@ void TableView::getValue(std::string& value,
 }  // end getValue()
 
 //==============================================================================
-// validateValueForColumn
-//	string version
-//	Note: necessary because types of std::basic_string<char>
-//	cause compiler problems if no string specific function
+/// validateValueForColumn
+///	string version
+///	Note: necessary because types of std::basic_string<char>
+///	cause compiler problems if no string specific function
 std::string TableView::validateValueForColumn(const std::string& value,
                                               unsigned int       col,
                                               bool doConvertEnvironmentVariables) const
@@ -963,9 +963,9 @@ std::string TableView::validateValueForColumn(const std::string& value,
 }  // end validateValueForColumn()
 
 //==============================================================================
-// getValueAsString
-//	gets the value with the proper data type and converts to string
-//	as though getValue was called.
+/// getValueAsString
+///	gets the value with the proper data type and converts to string
+///	as though getValue was called.
 std::string TableView::getValueAsString(unsigned int row,
                                         unsigned int col,
                                         bool         doConvertEnvironmentVariables) const
@@ -1010,11 +1010,11 @@ std::string TableView::getValueAsString(unsigned int row,
 }
 
 //==============================================================================
-// getEscapedValueAsString
-//	gets the value with the proper data type and converts to string
-//	as though getValue was called.
-//	then escapes all special characters with slash.
-//	Note: this should be useful for values placed in double quotes, i.e. JSON.
+/// getEscapedValueAsString
+///	gets the value with the proper data type and converts to string
+///	as though getValue was called.
+///	then escapes all special characters with slash.
+///	Note: this should be useful for values placed in double quotes, i.e. JSON.
 std::string TableView::getEscapedValueAsString(unsigned int row,
                                                unsigned int col,
                                                bool doConvertEnvironmentVariables) const
@@ -1042,8 +1042,8 @@ std::string TableView::getEscapedValueAsString(unsigned int row,
 }
 
 //==============================================================================
-// setValue
-//	string version
+/// setValue
+///	string version
 void TableView::setValue(const std::string& value, unsigned int row, unsigned int col)
 {
 	if(!(col < columnsInfo_.size() && row < getNumberOfRows()))
@@ -1073,8 +1073,8 @@ void TableView::setValue(const char* value, unsigned int row, unsigned int col)
 }  // end setValue()
 
 //==============================================================================
-// setValueAsString
-//	string version
+/// setValueAsString
+///	string version
 void TableView::setValueAsString(const std::string& value,
                                  unsigned int       row,
                                  unsigned int       col)
@@ -1089,12 +1089,12 @@ void TableView::setValueAsString(const std::string& value,
 }  // end setValueAsString()
 
 //==============================================================================
-// setUniqueColumnValue
-//	Auto-generates a unique value for the specified column and places
-//	 value at row,col position (a la add row unique value handling)
-//
-//	Note: doMathAppendStrategy enables appending with a match string
-//		e.g. ${PORT} + 1 .. then + 2, etc. (i.e. baseValueAsString = "${PORT}")
+/// setUniqueColumnValue
+///	Auto-generates a unique value for the specified column and places
+///	 value at row,col position (a la add row unique value handling)
+///
+///	Note: doMathAppendStrategy enables appending with a match string
+///		e.g. ${PORT} + 1 .. then + 2, etc. (i.e. baseValueAsString = "${PORT}")
 const std::string& TableView::setUniqueColumnValue(
     unsigned int row,
     unsigned int col,
@@ -1278,8 +1278,8 @@ const std::string& TableView::setUniqueColumnValue(
 }  // end setUniqueColumnValue()
 
 //==============================================================================
-// initColUID
-//	if column not found throw error
+/// initColUID
+///	if column not found throw error
 unsigned int TableView::initColUID(void)
 {
 	if(colUID_ != INVALID)
@@ -1299,9 +1299,9 @@ unsigned int TableView::initColUID(void)
 	return colUID_;
 }
 //==============================================================================
-// getColOfUID
-//	const version, so don't attempt to lookup
-//	if column not found throw error
+/// getColOfUID
+///	const version, so don't attempt to lookup
+///	if column not found throw error
 unsigned int TableView::getColUID(void) const
 {
 	if(colUID_ != INVALID)
@@ -1323,8 +1323,8 @@ unsigned int TableView::getColUID(void) const
 }
 
 //==============================================================================
-// initColStatus
-//	if column not found throw error
+/// initColStatus
+///	if column not found throw error
 unsigned int TableView::initColStatus(void)
 {
 	if(colStatus_ != INVALID)
@@ -1359,8 +1359,8 @@ unsigned int TableView::initColStatus(void)
 }  // end initColStatus()
 
 //==============================================================================
-// initColPriority
-//	if column not found throw error
+/// initColPriority
+///	if column not found throw error
 unsigned int TableView::initColPriority(void)
 {
 	if(colPriority_ != INVALID)
@@ -1384,9 +1384,9 @@ unsigned int TableView::initColPriority(void)
 }
 
 //==============================================================================
-// getColStatus
-//	const version, so don't attempt to lookup
-//	if column not found throw error
+/// getColStatus
+///	const version, so don't attempt to lookup
+///	if column not found throw error
 unsigned int TableView::getColStatus(void) const
 {
 	if(colStatus_ != INVALID)
@@ -1412,12 +1412,12 @@ unsigned int TableView::getColStatus(void) const
 }  // end getColStatus()
 
 //==============================================================================
-// getColPriority
-//	const version, so don't attempt to lookup
-//	if column not found throw error
-//
-//	Note: common for Priority column to not exist, so be quiet with printouts
-//	 so as to not scare people.
+/// getColPriority
+///	const version, so don't attempt to lookup
+///	if column not found throw error
+///
+///	Note: common for Priority column to not exist, so be quiet with printouts
+///	 so as to not scare people.
 unsigned int TableView::getColPriority(void) const
 {
 	if(colPriority_ != INVALID)
@@ -1443,12 +1443,12 @@ unsigned int TableView::getColPriority(void) const
 }  // end getColPriority()
 
 //==============================================================================
-// addRowToGroup
-//	Group entry can include | to place a record in multiple groups
+/// addRowToGroup
+///	Group entry can include | to place a record in multiple groups
 void TableView::addRowToGroup(const unsigned int& row,
                               const unsigned int& col,
                               const std::string&  groupID)  //,
-    // const std::string &colDefault)
+// const std::string &colDefault)
 {
 	if(isEntryInGroupCol(row, col, groupID))
 	{
@@ -1472,11 +1472,11 @@ void TableView::addRowToGroup(const unsigned int& row,
 }  // end addRowToGroup()
 
 //==============================================================================
-// getGroupRows
-//	Get the rows of all records with groupID
-//	with consideration for status on/off and priority, if enabled with flags
-//
-//	Note: empty group id of "" or '*' will return all rows
+/// getGroupRows
+///	Get the rows of all records with groupID
+///	with consideration for status on/off and priority, if enabled with flags
+///
+///	Note: empty group id of "" or '*' will return all rows
 std::vector<unsigned int /*group row*/> TableView::getGroupRows(
     const unsigned int groupIdCol,
     const std::string& groupID,
@@ -1495,11 +1495,11 @@ std::vector<unsigned int /*group row*/> TableView::getGroupRows(
 }  // end getGroupRows()
 
 //==============================================================================
-// getGroupRowsByPriority
-//	Get the rows of all records with groupID
-//	with consideration for status on/off and priority, if enabled with flags
-//
-//	Note: empty group id of "" or '*' will return all rows
+/// getGroupRowsByPriority
+///	Get the rows of all records with groupID
+///	with consideration for status on/off and priority, if enabled with flags
+///
+///	Note: empty group id of "" or '*' will return all rows
 std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsByPriority(
     const unsigned int groupIdCol,
     const std::string& groupID,
@@ -1510,13 +1510,13 @@ std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsByPr
 }  // end getGroupRowsByPriority()
 
 //==============================================================================
-// getGroupRowsInVectors
-//	Private function to allows byPriority switch.
-//
-//	Get the rows of all records with groupID
-//	with consideration for status on/off and priority, if enabled with flags
-//
-//	Note: empty group id of "" or '*' will return all rows
+/// getGroupRowsInVectors
+///	Private function to allows byPriority switch.
+///
+///	Get the rows of all records with groupID
+///	with consideration for status on/off and priority, if enabled with flags
+///
+///	Note: empty group id of "" or '*' will return all rows
 std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsInVectors(
     const unsigned int groupIdCol,
     const std::string& groupID,
@@ -1575,10 +1575,10 @@ std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsInVe
 }  // end getGroupRowsInVectors()
 
 //==============================================================================
-// removeRowFromGroup
-//	Group entry can include | to place a record in multiple groups
-//
-//	returns true if row was deleted because it had no group left
+/// removeRowFromGroup
+///	Group entry can include | to place a record in multiple groups
+///
+///	returns true if row was deleted because it had no group left
 bool TableView::removeRowFromGroup(const unsigned int& row,
                                    const unsigned int& col,
                                    const std::string&  groupNeedle,
@@ -1627,11 +1627,11 @@ bool TableView::removeRowFromGroup(const unsigned int& row,
 }  // end removeRowFromGroup()
 
 //==============================================================================
-// isEntryInGroup
-//	All group link checking should use this function
-// 	so that handling is consistent
-//
-//	Group entry can include | to place a record in multiple groups
+/// isEntryInGroup
+///	All group link checking should use this function
+/// 	so that handling is consistent
+///
+///	Group entry can include | to place a record in multiple groups
 bool TableView::isEntryInGroup(const unsigned int& r,
                                const std::string&  childLinkIndex,
                                const std::string&  groupNeedle) const
@@ -1642,14 +1642,14 @@ bool TableView::isEntryInGroup(const unsigned int& r,
 }  // end isEntryInGroup()
 
 //==============================================================================
-//	isEntryInGroupCol
-//
-//	if *groupIDList != 0 return set of groupIDs found
-//		useful for removing groupIDs.
-//
-//	Group entry can include | to place a record in multiple groups
-//
-// Note: should mirror what happens in TableView::getSetOfGroupIDs
+///	isEntryInGroupCol
+///
+///	if *groupIDList != 0 return set of groupIDs found
+///		useful for removing groupIDs.
+///
+///	Group entry can include | to place a record in multiple groups
+///
+/// Note: should mirror what happens in TableView::getSetOfGroupIDs
 bool TableView::isEntryInGroupCol(const unsigned int&    r,
                                   const unsigned int&    c,
                                   const std::string&     groupNeedle,
@@ -1709,13 +1709,13 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 }  // end isEntryInGroupCol()
 
 //==============================================================================
-// getSetOfGroupIDs
-//	if row == -1, then considers all rows
-//	else just that row
-//	returns unique set of groupIds in GroupID column
-//		associate with childLinkIndex
-//
-// Note: should mirror what happens in TableView::isEntryInGroupCol
+/// getSetOfGroupIDs
+///	if row == -1, then considers all rows
+///	else just that row
+///	returns unique set of groupIds in GroupID column
+///		associate with childLinkIndex
+///
+/// Note: should mirror what happens in TableView::isEntryInGroupCol
 std::set<std::string> TableView::getSetOfGroupIDs(const std::string& childLinkIndex,
                                                   unsigned int       r) const
 {
@@ -1815,8 +1815,8 @@ std::set<std::string> TableView::getSetOfGroupIDs(const unsigned int& c,
 }
 
 //==============================================================================
-// getColOfLinkGroupID
-//	const version, if column not found throw error
+/// getColOfLinkGroupID
+///	const version, if column not found throw error
 unsigned int TableView::getLinkGroupIDColumn(const std::string& childLinkIndex) const
 {
 	if(!childLinkIndex.size())
@@ -1930,8 +1930,8 @@ unsigned int TableView::findRowInGroup(unsigned int       col,
 }  // end findRowInGroup()
 
 //==============================================================================
-// findCol
-//	throws exception if column not found by name
+/// findCol
+///	throws exception if column not found by name
 unsigned int TableView::findCol(const std::string& wildCardName) const
 {
 	for(unsigned int col = 0; col < columnsInfo_.size(); ++col)
@@ -1953,8 +1953,8 @@ unsigned int TableView::findCol(const std::string& wildCardName) const
 }  // end findCol()
 
 //==============================================================================
-// findColByType
-//	return invalid if type not found
+/// findColByType
+///	return invalid if type not found
 unsigned int TableView::findColByType(const std::string& type,
                                       unsigned int       startingCol) const
 {
@@ -1969,10 +1969,10 @@ unsigned int TableView::findColByType(const std::string& type,
 	return INVALID;
 }  // end findColByType()
 
-// Getters:
-
+/// Getters:
+///
 //==============================================================================
-// getDataColumnSize
+/// getDataColumnSize
 unsigned int TableView::getDataColumnSize(void) const
 {
 	// if no data, give benefit of the doubt that phantom data has mockup column size
@@ -2085,8 +2085,8 @@ const TableViewColumnInfo& TableView::getColumnInfo(unsigned int column) const
 	return columnsInfo_[column];
 }  // end getColumnInfo()
 
-// Setters
-
+/// Setters
+///
 //==============================================================================
 void TableView::setURIEncodedComment(const std::string& uriComment)
 {
@@ -2279,8 +2279,8 @@ void TableView::printJSON(std::ostream& out) const
 }  // end printJSON()
 
 //==============================================================================
-// restoreJSONStringEntities
-//	returns string with literals \n \t \" \r \\ replaced with char
+/// restoreJSONStringEntities
+///	returns string with literals \n \t \" \r \\ replaced with char
 std::string restoreJSONStringEntities(const std::string& str)
 {
 	unsigned int sz = str.size();
@@ -2327,13 +2327,13 @@ std::string restoreJSONStringEntities(const std::string& str)
 }  // end restoreJSONStringEntities()
 
 //==============================================================================
-// fillFromJSON
-//	Clears and fills the view from the JSON string.
-//	Returns -1 on failure
-//
-//	first level keys:
-//		NAME
-//		DATA_SET
+/// fillFromJSON
+///	Clears and fills the view from the JSON string.
+///	Returns -1 on failure
+///
+///	first level keys:
+///		NAME
+///		DATA_SET
 int TableView::fillFromJSON(const std::string& json)
 {
 	{
@@ -3051,10 +3051,10 @@ bool TableView::isURIEncodedCommentTheSame(const std::string& comment) const
 	std::string compareStr = StringMacros::decodeURIComponent(comment);
 	return comment_ == compareStr;
 }
-//
+///
 ////==============================================================================
-// bool TableView::isValueTheSame(const std::string &valueStr,
-//		unsigned int r, unsigned int c) const
+/// bool TableView::isValueTheSame(const std::string &valueStr,
+///		unsigned int r, unsigned int c) const
 //{
 //	__COUT__ << "valueStr " << valueStr << __E__;
 //
@@ -3083,31 +3083,31 @@ bool TableView::isURIEncodedCommentTheSame(const std::string& comment) const
 //}
 
 //==============================================================================
-// fillFromCSV
-//	Fills the view from the CSV string.
-//
-//	Note: converts all %## to the ascii character, # is hex nibble
-// (e.g. '%' must be represented as "%25")
-//
-//	dataOffset := starting destination row
-//
-//	while there are row entries in the data.. replace
-// data range from [dataOffset, dataOffset+chunkSize-1]
-// ... note if less rows, this means rows were deleted
-// ... if more, then rows were added.
-//
-//	',' next cell delimiter
-//  ';' next row delimiter
-//
-//
-//	if author == "", do nothing special for author and timestamp column
-//	if author != "", assign author for any row that has been modified, and assign now as
-// timestamp
-//
-//	Returns -1 if data was same and pre-existing content
-//	Returns 1 if data was same, but columns are different
-//	otherwise 0
-//
+/// fillFromCSV
+///	Fills the view from the CSV string.
+///
+///	Note: converts all %## to the ascii character, # is hex nibble
+/// (e.g. '%' must be represented as "%25")
+///
+///	dataOffset := starting destination row
+///
+///	while there are row entries in the data.. replace
+/// data range from [dataOffset, dataOffset+chunkSize-1]
+/// ... note if less rows, this means rows were deleted
+/// ... if more, then rows were added.
+///
+///	',' next cell delimiter
+///  ';' next row delimiter
+///
+///
+///	if author == "", do nothing special for author and timestamp column
+///	if author != "", assign author for any row that has been modified, and assign now as
+/// timestamp
+///
+///	Returns -1 if data was same and pre-existing content
+///	Returns 1 if data was same, but columns are different
+///	otherwise 0
+///
 int TableView::fillFromCSV(const std::string& data,
                            const int&         dataOffset,
                            const std::string& author)
@@ -3236,14 +3236,14 @@ int TableView::fillFromCSV(const std::string& data,
 }  // end fillFromCSV()
 
 //==============================================================================
-// setURIEncodedValue
-//	converts all %## to the ascii character
-//	returns true if value was different than original value
-//
-//
-//	if author == "", do nothing special for author and timestamp column
-//	if author != "", assign author for any row that has been modified, and assign now as
-// timestamp
+/// setURIEncodedValue
+///	converts all %## to the ascii character
+///	returns true if value was different than original value
+///
+///
+///	if author == "", do nothing special for author and timestamp column
+///	if author != "", assign author for any row that has been modified, and assign now as
+/// timestamp
 bool TableView::setURIEncodedValue(const std::string&  value,
                                    const unsigned int& r,
                                    const unsigned int& c,
@@ -3330,12 +3330,12 @@ void TableView::resizeDataView(unsigned int nRows, unsigned int nCols)
 }
 
 //==============================================================================
-// addRow
-//	returns index of added row, always is last row
-//	return -1 on failure (throw error)
-//
-//	if baseNameAutoUID != "", creates a UID based on this base name
-//		and increments and appends an integer relative to the previous last row
+/// addRow
+///	returns index of added row, always is last row
+///	return -1 on failure (throw error)
+///
+///	if baseNameAutoUID != "", creates a UID based on this base name
+///		and increments and appends an integer relative to the previous last row
 unsigned int TableView::addRow(
     const std::string& author,
     unsigned char
@@ -3419,8 +3419,8 @@ unsigned int TableView::addRow(
 }  // end addRow()
 
 //==============================================================================
-// deleteRow
-//	throws exception on failure
+/// deleteRow
+///	throws exception on failure
 void TableView::deleteRow(int r)
 {
 	if(r >= (int)getNumberOfRows())
@@ -3436,21 +3436,21 @@ void TableView::deleteRow(int r)
 }  // end deleteRow()
 
 //==============================================================================
-// getChildLink ~
-//	find the pair of columns associated with a child link.
-//
-//	c := a member column of the pair
-//
-//	returns:
-//		isGroup := indicates pair found is a group link
-//		linkPair := pair of columns that are part of the link
-//
-//	a unique link is defined by two columns: TYPE_START_CHILD_LINK,
-// TYPE_START_CHILD_LINK_UID
-//  a group link is defined by two columns: TYPE_START_CHILD_LINK,
-//  TYPE_START_CHILD_LINK_GROUP_ID
-//
-//	returns true if column is member of a group or unique link.
+/// getChildLink ~
+///	find the pair of columns associated with a child link.
+///
+///	c := a member column of the pair
+///
+///	returns:
+///		isGroup := indicates pair found is a group link
+///		linkPair := pair of columns that are part of the link
+///
+///	a unique link is defined by two columns: TYPE_START_CHILD_LINK,
+/// TYPE_START_CHILD_LINK_UID
+///  a group link is defined by two columns: TYPE_START_CHILD_LINK,
+///  TYPE_START_CHILD_LINK_GROUP_ID
+///
+///	returns true if column is member of a group or unique link.
 bool TableView::getChildLink(
     const unsigned int&                                                 c,
     bool&                                                               isGroup,

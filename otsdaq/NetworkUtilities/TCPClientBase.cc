@@ -131,7 +131,7 @@ bool TCPClientBase::disconnect(void)
 }
 
 //==============================================================================
-// private
+/// private
 void TCPClientBase::resolveServer(std::string& serverIP)
 {
 	const std::string ipv4(

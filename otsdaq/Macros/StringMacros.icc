@@ -1,10 +1,10 @@
 
 //========================================================================================================================
-// getWildCardMatchFromMap ~
-//	static template function
-//
-//	returns value if needle is in haystack otherwise throws exception
-//	(considering wildcards AND match priority as defined by StringMacros::wildCardMatch)
+/// getWildCardMatchFromMap ~
+///	static template function
+///
+///	returns value if needle is in haystack otherwise throws exception
+///	(considering wildcards AND match priority as defined by StringMacros::wildCardMatch)
 template<class T>
 T& StringMacros::getWildCardMatchFromMap(const std::string&        needle,
                                          std::map<std::string, T>& haystack,
@@ -69,8 +69,8 @@ T& StringMacros::getWildCardMatchFromMap(const std::string&        needle,
 
 //==============================================================================
 // static template function
-//	for all numbers, but not bools (bools has a specialized template definition)
-//	return false if string is not a number
+///	for all numbers, but not bools (bools has a specialized template definition)
+///	return false if string is not a number
 template<class T>
 bool StringMacros::getNumber(const std::string& s, T& retValue)
 {
@@ -235,9 +235,9 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 }  // end static getNumber<T>()
 
 //==============================================================================
-// validateValueForDefaultStringDataType
-//	static template function
-//	special validation ignoring any table info - just assuming type string
+/// validateValueForDefaultStringDataType
+///	static template function
+///	special validation ignoring any table info - just assuming type string
 template<class T>
 T StringMacros::validateValueForDefaultStringDataType(const std::string& value,
                                                       bool doConvertEnvironmentVariables)
@@ -275,7 +275,7 @@ T StringMacros::validateValueForDefaultStringDataType(const std::string& value,
 
 //==============================================================================
 // static template function
-//	Note: that empty names are not allowed (or at least are confusing)!
+///	Note: that empty names are not allowed (or at least are confusing)!
 template<class T /*value type*/, class S /*name string or const string*/>
 void StringMacros::getMapFromString(
     const std::string&    inputString,

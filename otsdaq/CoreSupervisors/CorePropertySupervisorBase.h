@@ -48,12 +48,12 @@ namespace ots
 
 class ITRACEController;
 
-// CorePropertySupervisorBase
-//	This class provides supervisor property get and set functionality. It has member
-// variables 		generally useful to the configuration of client supervisors.
+/// CorePropertySupervisorBase
+///	This class provides supervisor property get and set functionality. It has member
+/// variables 		generally useful to the configuration of client supervisors.
 class CorePropertySupervisorBase
 {
-	friend class GatewaySupervisor;  // for access to indicateOtsAlive()
+	friend class GatewaySupervisor;  ///< for access to indicateOtsAlive()
 
   public:
 	CorePropertySupervisorBase(xdaq::Application* application);
@@ -62,15 +62,15 @@ class CorePropertySupervisorBase
 	AllSupervisorInfo     allSupervisorInfo_;
 	ConfigurationManager* theConfigurationManager_;
 
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getGatewaySupervisorDescriptor		(void); //will be wizard supervisor in wiz mode
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getGatewaySupervisorDescriptor		(void); ///<will be wizard supervisor in wiz mode
 
-	virtual void 					setSupervisorPropertyDefaults					(void);  // override to control supervisor specific defaults
-	virtual void 					forceSupervisorPropertyValues					(void){;}  // override to force supervisor property values (and ignore user settings)
+	virtual void 					setSupervisorPropertyDefaults					(void);  ///< override to control supervisor specific defaults
+	virtual void 					forceSupervisorPropertyValues					(void){;}  ///< override to force supervisor property values (and ignore user settings)
 
 	void 							getRequestUserInfo								(WebUsers::RequestUserInfo& requestUserInfo);
 
-	// supervisors should use these two static functions to standardize permissions
-	// access:
+	/// supervisors should use these two static functions to standardize permissions
+	/// access:
 	static void 					extractPermissionsMapFromString					(const std::string& permissionsString, std::map<std::string, WebUsers::permissionLevel_t>& permissionsMap);
 	static bool 					doPermissionsGrantAccess						(std::map<std::string, WebUsers::permissionLevel_t>& permissionLevelsMap, std::map<std::string, WebUsers::permissionLevel_t>& permissionThresholdsMap);
 
@@ -116,9 +116,9 @@ class CorePropertySupervisorBase
 	const std::string&				enableTRACE										(std::string const& host, bool enable);
 	const std::string&				getTraceSnapshot								(std::string const& host, std::string const& filterFor, std::string const& filterOut);
 
-	// Supervisor Property names
-	//	to access, use CorePropertySupervisorBase::getSupervisorProperty and
-	// CorePropertySupervisorBase::setSupervisorProperty
+	/// Supervisor Property names
+	///	to access, use CorePropertySupervisorBase::getSupervisorProperty and
+	/// CorePropertySupervisorBase::setSupervisorProperty
 	static const struct SupervisorProperties
 	{
 		SupervisorProperties()
@@ -149,13 +149,13 @@ class CorePropertySupervisorBase
 	} SUPERVISOR_PROPERTIES;
 
   private:
-	// property private members
+	/// property private members
 	void          					checkSupervisorPropertySetup						(void);
 	volatile bool propertiesAreSetup_;
 
-	// for public access to property map,..
-	//	use CorePropertySupervisorBase::getSupervisorProperty and
-	// CorePropertySupervisorBase::setSupervisorProperty
+	/// for public access to property map,..
+	///	use CorePropertySupervisorBase::getSupervisorProperty and
+	/// CorePropertySupervisorBase::setSupervisorProperty
 	std::map<std::string, std::string> propertyMap_;
 	struct CoreSupervisorPropertyStruct
 	{
@@ -251,7 +251,7 @@ class CorePropertySupervisorBase
 	time_t		 						getSupervisorUptime								(void) const { return time(0) - constructedTime_;}				
 
   protected:
-	ITRACEController* 					theTRACEController_; //only define for an app that receives a command
+	ITRACEController* 					theTRACEController_; ///<only define for an app that receives a command
   private:
 	std::string 						traceReturnString_, traceReturnHostString_;
 	bool								readOnly_;

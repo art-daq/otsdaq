@@ -15,7 +15,7 @@ using namespace ots;
 #define USE_WEB_BOOL_FILE                 	std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/UseWebConsole.bool"
 #define USE_QT_BOOL_FILE                  	std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/UseQTViewer.bool"
 
-// MessageFacilityTable Column names
+/// MessageFacilityTable Column names
 #define COL_NAME 							"UID"
 #define COL_STATUS 							TableViewColumnInfo::COL_NAME_STATUS
 #define COL_ENABLE_FWD 						"EnableUDPForwarding"

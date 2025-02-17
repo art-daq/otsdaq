@@ -86,8 +86,8 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 }  //end constructor()
 
 //==============================================================================
-// read table from database
-// version = -1 means latest version
+/// read table from database
+/// version = -1 means latest version
 void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version) const
 
 {
@@ -121,7 +121,7 @@ void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version
 }  // end fill()
 
 //==============================================================================
-// write table to database
+/// write table to database
 void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
                                                        bool             overwrite) const
 
@@ -157,7 +157,7 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
 }  //end saveActiveVersion()
 
 //==============================================================================
-// find the latest configuration version by configuration type
+/// find the latest configuration version by configuration type
 TableVersion DatabaseConfigurationInterface::findLatestVersion(
     const TableBase* table) const noexcept
 {
@@ -177,7 +177,7 @@ TableVersion DatabaseConfigurationInterface::findLatestVersion(
 }  //end findLatestVersion()
 
 //==============================================================================
-// find all configuration versions by configuration type
+/// find all configuration versions by configuration type
 std::set<TableVersion> DatabaseConfigurationInterface::getVersions(
     const TableBase* table) const noexcept
 try
@@ -220,7 +220,7 @@ catch(std::exception const& e)
 }  //end getVersions() catch
 
 //==============================================================================
-// returns a list of all configuration names
+/// returns a list of all configuration names
 std::set<std::string /*name*/> DatabaseConfigurationInterface::getAllTableNames() const
 try
 {
@@ -253,7 +253,7 @@ catch(...)
 }  //end getAllTableNames() catch
 
 //==============================================================================
-// find all configuration groups in database
+/// find all configuration groups in database
 std::set<std::string /*name*/> DatabaseConfigurationInterface::getAllTableGroupNames(
     std::string const& filterString) const
 try
@@ -272,8 +272,8 @@ try
 		result = ifc.findGlobalConfigurations(filterString + "*");  // GConfig will return
 		                                                            // all GConfig* with
 		                                                            // filesystem db.. for
-		    // mongodb would require
-		    // reg expr
+	// mongodb would require
+	// reg expr
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration =
 	    std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -296,8 +296,8 @@ catch(...)
 }  //end getAllTableGroupNames() catch
 
 //==============================================================================
-// find the latest configuration group key by group name
-// 	if not found, return invalid
+/// find the latest configuration group key by group name
+/// 	if not found, return invalid
 TableGroupKey DatabaseConfigurationInterface::findLatestGroupKey(
     const std::string& groupName) const noexcept
 {
@@ -310,7 +310,7 @@ TableGroupKey DatabaseConfigurationInterface::findLatestGroupKey(
 }
 
 //==============================================================================
-// find all configuration groups in database
+/// find all configuration groups in database
 std::set<TableGroupKey /*key*/> DatabaseConfigurationInterface::getKeys(
     const std::string& groupName) const
 {
@@ -323,7 +323,7 @@ std::set<TableGroupKey /*key*/> DatabaseConfigurationInterface::getKeys(
 }
 
 //==============================================================================
-// return the contents of a configuration group
+/// return the contents of a configuration group
 table_version_map_t DatabaseConfigurationInterface::getTableGroupMembers(
     std::string const& tableGroup, bool includeMetaDataTable /* = false */) const
 try
@@ -432,8 +432,8 @@ catch(...)
 }  // end getTableGroupMembers() catch
 
 //==============================================================================
-// get cached Table Group members
-//	throw exception on failure or missing cache
+/// get cached Table Group members
+///	throw exception on failure or missing cache
 table_version_map_t DatabaseConfigurationInterface::getCachedTableGroupMembers(
     std::string const& tableGroup) const
 try
@@ -505,7 +505,7 @@ catch(...)
 }  //end getCachedTableGroupMembers() catch
 
 //==============================================================================
-// create a new configuration group from the contents map
+/// create a new configuration group from the contents map
 void DatabaseConfigurationInterface::saveTableGroupMemberCache(
     table_version_map_t const& memberMap, std::string const& tableGroup) const
 try
@@ -572,7 +572,7 @@ catch(...)
 }  //end saveTableGroupMemberCache() catch
 
 //==============================================================================
-// create a new configuration group from the contents map
+/// create a new configuration group from the contents map
 void DatabaseConfigurationInterface::saveTableGroup(table_version_map_t const& memberMap,
                                                     std::string const& tableGroup) const
 try

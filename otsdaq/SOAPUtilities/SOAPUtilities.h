@@ -11,7 +11,7 @@ namespace ots
 {
 class SOAPUtilities
 {
-  private:  // private constructor because all static members, should never instantiate
+  private:  ///< private constructor because all static members, should never instantiate
 	        // this class
 	SOAPUtilities(void);
 	~SOAPUtilities(void);

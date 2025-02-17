@@ -28,7 +28,7 @@ class BufferImplementation
 
 		CircularBufferBase::ConsumerPriority priority_;
 		int                                  readPointer_;
-		std::atomic_bool* subBuffersStatus_;  // Status of the Circular Buffer:
+		std::atomic_bool* subBuffersStatus_;  ///< Status of the Circular Buffer:
 	};
 
   public:
@@ -50,10 +50,10 @@ class BufferImplementation
 	int read(D& buffer, const std::string& consumer);
 	int read(D& buffer, H& header, const std::string& consumer);
 	int read(D*& buffer, H*& header, const std::string& consumer);
-	int setReadSubBuffer(const std::string& consumer);  // Must be used in conjunction
-	                                                    // with attachToEmptySubBuffer
-	                                                    // because it attach to the
-	                                                    // nextWritePointer buffer
+	int setReadSubBuffer(const std::string& consumer);  ///< Must be used in conjunction
+	                                                    ///< with attachToEmptySubBuffer
+	                                                    ///< because it attach to the
+	                                                    ///< nextWritePointer buffer
 
 	bool         isEmpty(void) const;
 	unsigned int bufferSize(void) const { return numberOfSubBuffers_; }
@@ -81,16 +81,16 @@ class BufferImplementation
 	const std::string producerName_;
 	unsigned int      numberOfSubBuffers_;
 	std::map<std::string, ConsumerStruct>
-	    consumers_;     // Pointers to the blocks which the consumers are reading
-	int writePointer_;  // Pointer to the available free buffer, -1 means no free buffers!
-	std::atomic_bool* subBuffersStatus_;  // Status of the Circular Buffer:
-	std::vector<H>    headers_;           // Buffer Header
-	std::vector<D>    subBuffers_;        // Buffers filled with data
+	    consumers_;     ///< Pointers to the blocks which the consumers are reading
+	int writePointer_;  ///< Pointer to the available free buffer, -1 means no free buffers!
+	std::atomic_bool* subBuffersStatus_;  ///< Status of the Circular Buffer:
+	std::vector<H>    headers_;           ///< Buffer Header
+	std::vector<D>    subBuffers_;        ///< Buffers filled with data
 	const bool        bufferFree_;
 
 	unsigned int nextWritePointer(void);
 	unsigned int nextReadPointer(const std::string& consumer);
-	int          getFreeBufferIndex(void);  // can return -1 if there are no free buffers!
+	int          getFreeBufferIndex(void);  ///< can return -1 if there are no free buffers!
 	unsigned int getReadPointer(const std::string& consumer);
 	void         setWritten(unsigned int subBuffer);
 	void         setFree(unsigned int subBuffer, const std::string& consumer);

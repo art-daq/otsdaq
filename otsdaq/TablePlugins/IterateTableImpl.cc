@@ -6,8 +6,8 @@
 
 using namespace ots;
 
-// instantiate static members
-
+/// instantiate static members
+///
 const std::string IterateTable::COMMAND_BEGIN_LABEL            = "BEGIN_LABEL";
 const std::string IterateTable::COMMAND_CHOOSE_FSM             = "CHOOSE_FSM";
 const std::string IterateTable::COMMAND_CONFIGURE_ACTIVE_GROUP = "CONFIGURE_ACTIVE_GROUP";
@@ -168,7 +168,7 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 					commands.back().targets_.back().UID_   = targetNode.getUIDAsString();
 				}
 			}
-			else if(commandSpecificFields[i].first == // treat FE and Macro the same
+			else if(commandSpecificFields[i].first ==  // treat FE and Macro the same
 			        IterateTable::commandExecuteMacroParams_.MacroParameterLink_)
 			{
 				// get Macro parameters, place them in params_

@@ -14,7 +14,7 @@ class ARTDAQBoardReaderTable : public ARTDAQTableBase, public SlowControlsTableB
 	ARTDAQBoardReaderTable(void);
 	virtual ~ARTDAQBoardReaderTable(void);
 
-	// Methods
+	/// Methods
 	void 					init						(ConfigurationManager* configManager) override;
 
 	virtual unsigned int	slowControlsHandlerConfig	(

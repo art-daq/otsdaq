@@ -64,28 +64,28 @@ FEProducerVInterface::~FEProducerVInterface(void)
 }
 
 //==============================================================================
-// copyToNextBuffer
-//	This function copies a data string into the next
-//		available buffer.
-//
-//	Here is example code for filling a data string to write
-//
-//			unsigned long long value = 0xA5; //this is 8-bytes
-//			std::string buffer;
-//			buffer.resize(8); //NOTE: this is inexpensive according to
-// Lorenzo/documentation  in C++11 (only increases size once and doesn't decrease size)
-// memcpy((void
-//*)&buffer /*dest*/,(void *)&value /*src*/, 8 /*numOfBytes*/);
-//
-//	Note: This is somewhat inefficient because it makes a copy of the data.
-//		It would be more efficient to call
-//			FEProducerVInterface::getNextBuffer()
-//			... fill the retrieved data string
-//			FEProducerVInterface::writeCurrentBuffer()
-//
-//	If you are using the same dataToWrite string over and over.. it might not be that
-// inefficient to use this.
-//
+/// copyToNextBuffer
+///	This function copies a data string into the next
+///		available buffer.
+///
+///	Here is example code for filling a data string to write
+///
+///			unsigned long long value = 0xA5; //this is 8-bytes
+///			std::string buffer;
+///			buffer.resize(8); //NOTE: this is inexpensive according to
+/// Lorenzo/documentation  in C++11 (only increases size once and doesn't decrease size)
+/// memcpy((void
+///*)&buffer /*dest*/,(void *)&value /*src*/, 8 /*numOfBytes*/);
+///
+///	Note: This is somewhat inefficient because it makes a copy of the data.
+///		It would be more efficient to call
+///			FEProducerVInterface::getNextBuffer()
+///			... fill the retrieved data string
+///			FEProducerVInterface::writeCurrentBuffer()
+///
+///	If you are using the same dataToWrite string over and over.. it might not be that
+/// inefficient to use this.
+///
 void FEProducerVInterface::copyToNextBuffer(const std::string& dataToWrite)
 {
 	__FE_COUT__ << "Write Data: "
@@ -123,16 +123,16 @@ void FEProducerVInterface::copyToNextBuffer(const std::string& dataToWrite)
 }  // end copyToNextBuffer()
 
 //==============================================================================
-// getNextBuffer
-//	This function retrieves the next buffer data string.
-
-//	Note: This is more efficient than FEProducerVInterface::writeToBuffer
-//		because it does NOT makes a copy of the data.
-//
-//		You need to now
-//			... fill the retrieved data string
-//			FEProducerVInterface::writeCurrentBuffer()
-//
+/// getNextBuffer
+///	This function retrieves the next buffer data string.
+///
+///	Note: This is more efficient than FEProducerVInterface::writeToBuffer
+///		because it does NOT makes a copy of the data.
+///
+///		You need to now
+///			... fill the retrieved data string
+///			FEProducerVInterface::writeCurrentBuffer()
+///
 std::string* FEProducerVInterface::getNextBuffer(void)
 {
 	if(DataProducerBase::attachToEmptySubBuffer(FEProducerVInterface::dataP_,
@@ -148,9 +148,9 @@ std::string* FEProducerVInterface::getNextBuffer(void)
 }  // end getNextBuffer()
 
 //==============================================================================
-// writeCurrentBuffer
-//	This function writes the current buffer data string to the buffer.
-//
+/// writeCurrentBuffer
+///	This function writes the current buffer data string to the buffer.
+///
 void FEProducerVInterface::writeCurrentBuffer(void)
 {
 	__FE_COUT__ << "Writing data of size " << FEProducerVInterface::dataP_->size()

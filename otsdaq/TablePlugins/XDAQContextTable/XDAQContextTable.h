@@ -54,14 +54,14 @@ class XDAQContextTable : public TableBase
 	XDAQContextTable											(void);
 	virtual ~XDAQContextTable									(void);
 
-	// Methods
+	/// Methods
 	void 							init						(ConfigurationManager* configManager);
 	void 							extractContexts				(ConfigurationManager* configManager);
 	void 							outputXDAQXML				(std::ostream& out);
-	// void 								outputAppPriority		(std::ostream &out,
-	// const std::string& stateMachineCommand);  void outputXDAQScript (std::ostream
-	// &out); void outputARTDAQScript		(std::ostream &out);
-
+	/// void 								outputAppPriority		(std::ostream &out,
+	/// const std::string& stateMachineCommand);  void outputXDAQScript (std::ostream
+	/// &out); void outputARTDAQScript		(std::ostream &out);
+	///
 	std::string 					getContextUID				(const std::string& url) const;
 	std::string 					getApplicationUID			(const std::string& url, unsigned int id) const;
 	std::string 					getContextOfApplication		(ConfigurationManager* configManager, const std::string& appUID) const;
@@ -74,7 +74,7 @@ class XDAQContextTable : public TableBase
 	static ConfigurationTree 		getSupervisorConfigNode		(const ConfigurationManager* configManager, const std::string& contextUID, const std::string& appUID);
 	std::string  					getContextAddress			(const std::string& contextUID = "X", bool wantHttp = false) const;
 
-	// artdaq specific get methods
+	/// artdaq specific get methods
 	const XDAQContext* 				getTheARTDAQSupervisorContext	(void) const;
 
   private:
@@ -82,7 +82,7 @@ class XDAQContextTable : public TableBase
 	unsigned int /*contextIndex*/ 	artdaqSupervisorContext_;
 
   public:
-	// XDAQ Context Column names
+	/// XDAQ Context Column names
 	static struct ColContext
 	{
 		std::string const colContextUID_               	= "ContextUID";
@@ -94,7 +94,7 @@ class XDAQContextTable : public TableBase
 		std::string const colPort_    					= "Port";
 	} colContext_;
 
-	// XDAQ App Column names
+	/// XDAQ App Column names
 	static struct ColApplication
 	{
 		std::string const colApplicationGroupID_    	= "ApplicationGroupID";
@@ -115,7 +115,7 @@ class XDAQContextTable : public TableBase
 		std::string const colLinkToPropertyGroupID_ 	= "LinkToPropertyGroupID";
 	} colApplication_;
 
-	// XDAQ App Property Column names
+	/// XDAQ App Property Column names
 	static struct ColApplicationProperty
 	{
 		std::string const colPropertyGroupID_ 			= "PropertyGroupID";

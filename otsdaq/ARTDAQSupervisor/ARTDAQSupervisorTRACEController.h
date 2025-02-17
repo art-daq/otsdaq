@@ -20,7 +20,7 @@ class ARTDAQSupervisorTRACEController : public ITRACEController
 
 	void setSupervisorPtr(ARTDAQSupervisor* ptr) { theSupervisor_ = ptr; }
 
-	// These functions are defaulted because ARTDAQSupervisorTRACEController doesn't have direct access to the ARTDAQ TRACE Buffers
+	/// These functions are defaulted because ARTDAQSupervisorTRACEController doesn't have direct access to the ARTDAQ TRACE Buffers
 	virtual bool getIsTriggered(void) { return false; }
 	virtual void setTriggerEnable(size_t) {}
 

@@ -10,7 +10,7 @@
 
 namespace ots
 {
-// A class that can write to a socket
+/// A class that can write to a socket
 class TCPTransmitterSocket : public virtual TCPSocket
 {
   public:

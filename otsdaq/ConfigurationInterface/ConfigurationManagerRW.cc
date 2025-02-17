@@ -19,7 +19,7 @@ using namespace ots;
 std::atomic<bool> ConfigurationManagerRW::firstTimeConstructed_ = true;
 
 //==============================================================================
-// ConfigurationManagerRW
+/// ConfigurationManagerRW
 ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username)
     : ConfigurationManager(username)  // for use as author of new views
 {
@@ -195,12 +195,12 @@ ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username)
 }  // end constructor
 
 //==============================================================================
-// getAllTableInfo
-//	Used by ConfigurationGUISupervisor to get all the info for the existing tables.
-//	Can also be used to get and cache group info.
-//
-// if(accumulatedWarnings)
-//	this implies allowing column errors and accumulating such errors in given string
+/// getAllTableInfo
+///	Used by ConfigurationGUISupervisor to get all the info for the existing tables.
+///	Can also be used to get and cache group info.
+///
+/// if(accumulatedWarnings)
+///	this implies allowing column errors and accumulating such errors in given string
 const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
     bool               refresh,
     std::string*       accumulatedWarnings /* = 0 */,
@@ -732,7 +732,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 }  // end getAllTableInfo()
 
 //==============================================================================
-// loadTableInfoThread()
+/// loadTableInfoThread()
 void ConfigurationManagerRW::loadTableInfoThread(
     ConfigurationManagerRW*            cfgMgr,
     std::string                        tableName,
@@ -870,7 +870,7 @@ catch(...)
 }  // end loadTableInfoThread catch
 
 //==============================================================================
-// loadTableGroupThread()
+/// loadTableGroupThread()
 void ConfigurationManagerRW::loadTableGroupThread(
     ConfigurationManagerRW*            cfgMgr,
     std::string                        groupName,
@@ -908,7 +908,7 @@ catch(...)
 }  // end loadTableGroupThread catch
 
 //==============================================================================
-// compareTableGroupThread()
+/// compareTableGroupThread()
 void ConfigurationManagerRW::compareTableGroupThread(
     ConfigurationManagerRW*                                      cfgMgr,
     std::string                                                  groupName,
@@ -1003,9 +1003,9 @@ catch(...)
 }  // end compareTableGroupThread catch
 
 //==============================================================================
-// getVersionAliases()
-//	get version aliases organized by table, for currently active backbone tables
-//	add scratch versions to the alias map returned by ConfigurationManager
+/// getVersionAliases()
+///	get version aliases organized by table, for currently active backbone tables
+///	add scratch versions to the alias map returned by ConfigurationManager
 std::map<std::string /*table name*/,
          std::map<std::string /*version alias*/, TableVersion /*aliased version*/>>
 ConfigurationManagerRW::getVersionAliases(void) const
@@ -1027,9 +1027,9 @@ ConfigurationManagerRW::getVersionAliases(void) const
 }  // end getVersionAliases()
 
 //==============================================================================
-// setActiveGlobalConfiguration
-//	load table group and activate
-//	deactivates previous table group of same type if necessary
+/// setActiveGlobalConfiguration
+///	load table group and activate
+///	deactivates previous table group of same type if necessary
 void ConfigurationManagerRW::activateTableGroup(const std::string& tableGroupName,
                                                 TableGroupKey      tableGroupKey,
                                                 std::string*       accumulatedTreeErrors,
@@ -1148,9 +1148,9 @@ void ConfigurationManagerRW::activateTableGroup(const std::string& tableGroupNam
 }  // end activateTableGroup()
 
 //==============================================================================
-// createTemporaryBackboneView
-//	sourceViewVersion of INVALID is from MockUp, else from valid view version
-// 	returns temporary version number (which is always negative)
+/// createTemporaryBackboneView
+///	sourceViewVersion of INVALID is from MockUp, else from valid view version
+/// 	returns temporary version number (which is always negative)
 TableVersion ConfigurationManagerRW::createTemporaryBackboneView(
     TableVersion sourceViewVersion)
 {
@@ -1228,10 +1228,10 @@ TableBase* ConfigurationManagerRW::getTableByName(const std::string& tableName)
 }  // end getTableByName()
 
 //==============================================================================
-// getVersionedTableByName
-//	Used by table GUI to load a particular table-version pair as the active version.
-// 	This table instance must already exist and be owned by ConfigurationManager.
-//	return null pointer on failure, on success return table pointer.
+/// getVersionedTableByName
+///	Used by table GUI to load a particular table-version pair as the active version.
+/// 	This table instance must already exist and be owned by ConfigurationManager.
+///	return null pointer on failure, on success return table pointer.
 TableBase* ConfigurationManagerRW::getVersionedTableByName(
     const std::string& tableName,
     TableVersion       version,
@@ -1280,12 +1280,12 @@ TableBase* ConfigurationManagerRW::getVersionedTableByName(
 }  // end getVersionedTableByName()
 
 //==============================================================================
-// saveNewTable
-//	saves version, makes the new version the active version, and returns new version
+/// saveNewTable
+///	saves version, makes the new version the active version, and returns new version
 TableVersion ConfigurationManagerRW::saveNewTable(const std::string& tableName,
                                                   TableVersion       temporaryVersion,
                                                   bool               makeTemporary)  //,
-// bool saveToScratchVersion)
+/// bool saveToScratchVersion)
 {
 	TableVersion newVersion(temporaryVersion);
 
@@ -1343,10 +1343,10 @@ TableVersion ConfigurationManagerRW::saveNewTable(const std::string& tableName,
 }  // end saveNewTable()
 
 //==============================================================================
-// eraseTemporaryVersion
-//	if version is invalid then erases ALL temporary versions
-//
-//	maintains allTableInfo_ also while erasing
+/// eraseTemporaryVersion
+///	if version is invalid then erases ALL temporary versions
+///
+///	maintains allTableInfo_ also while erasing
 void ConfigurationManagerRW::eraseTemporaryVersion(const std::string& tableName,
                                                    TableVersion       targetVersion)
 {
@@ -1392,10 +1392,10 @@ void ConfigurationManagerRW::eraseTemporaryVersion(const std::string& tableName,
 }  // end eraseTemporaryVersion()
 
 //==============================================================================
-// clearCachedVersions
-//	clear ALL cached persistent versions (does not erase temporary versions)
-//
-//	maintains allTableInfo_ also while erasing (trivial, do nothing)
+/// clearCachedVersions
+///	clear ALL cached persistent versions (does not erase temporary versions)
+///
+///	maintains allTableInfo_ also while erasing (trivial, do nothing)
 void ConfigurationManagerRW::clearCachedVersions(const std::string& tableName)
 {
 	TableBase* table = getTableByName(tableName);
@@ -1404,10 +1404,10 @@ void ConfigurationManagerRW::clearCachedVersions(const std::string& tableName)
 }  // end clearCachedVersions()
 
 //==============================================================================
-// clearAllCachedVersions
-//	clear ALL cached persistent versions (does not erase temporary versions)
-//
-//	maintains allTableInfo_ also while erasing (trivial, do nothing)
+/// clearAllCachedVersions
+///	clear ALL cached persistent versions (does not erase temporary versions)
+///
+///	maintains allTableInfo_ also while erasing (trivial, do nothing)
 void ConfigurationManagerRW::clearAllCachedVersions()
 {
 	for(auto configInfo : allTableInfo_)
@@ -1415,7 +1415,7 @@ void ConfigurationManagerRW::clearAllCachedVersions()
 }  // end clearAllCachedVersions()
 
 //==============================================================================
-// copyViewToCurrentColumns
+/// copyViewToCurrentColumns
 TableVersion ConfigurationManagerRW::copyViewToCurrentColumns(
     const std::string& tableName, TableVersion sourceVersion)
 {
@@ -1437,7 +1437,7 @@ TableVersion ConfigurationManagerRW::copyViewToCurrentColumns(
 }  // end copyViewToCurrentColumns()
 
 //==============================================================================
-// cacheGroupKey
+/// cacheGroupKey
 void ConfigurationManagerRW::cacheGroupKey(const std::string& groupName,
                                            TableGroupKey      key)
 {
@@ -1450,9 +1450,9 @@ void ConfigurationManagerRW::cacheGroupKey(const std::string& groupName,
 }  // end cacheGroupKey()
 
 //==============================================================================
-// getGroupInfo
-//	the interface is slow when there are a lot of groups..
-//	so plan is to maintain local cache of recent group info
+/// getGroupInfo
+///	the interface is slow when there are a lot of groups..
+///	so plan is to maintain local cache of recent group info
 const GroupInfo& ConfigurationManagerRW::getGroupInfo(const std::string& groupName)
 {
 	//	//NOTE: seems like this filter is taking the long amount of time
@@ -1474,16 +1474,16 @@ const GroupInfo& ConfigurationManagerRW::getGroupInfo(const std::string& groupNa
 }  // end getGroupInfo()
 
 //==============================================================================
-// findTableGroup
-//	return group with same name and same members and same aliases
-//	else return invalid key
-//
-// Note: if aliases, then member alias is matched (not member
-//
-// Note: this is taking too long when there are a ton of groups.
-//	Change to going back only a limited number.. (but the order also comes in alpha order
-// from 	theInterface_->getAllTableGroupNames which is a problem for choosing
-// the 	most recent to check. )
+/// findTableGroup
+///	return group with same name and same members and same aliases
+///	else return invalid key
+///
+/// Note: if aliases, then member alias is matched (not member
+///
+/// Note: this is taking too long when there are a ton of groups.
+///	Change to going back only a limited number.. (but the order also comes in alpha order
+/// from 	theInterface_->getAllTableGroupNames which is a problem for choosing
+/// the 	most recent to check. )
 TableGroupKey ConfigurationManagerRW::findTableGroup(
     const std::string&                                           groupName,
     const std::map<std::string, TableVersion>&                   groupMemberMap,
@@ -1713,12 +1713,12 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 }  // end findTableGroup()
 
 //==============================================================================
-// saveNewTableGroup
-//	saves new group and returns the new group key
-//	if previousVersion is provided, attempts to just bump that version
-//	else, bumps latest version found in db
-//
-//	Note: groupMembers map will get modified with group metadata table version
+/// saveNewTableGroup
+///	saves new group and returns the new group key
+///	if previousVersion is provided, attempts to just bump that version
+///	else, bumps latest version found in db
+///
+///	Note: groupMembers map will get modified with group metadata table version
 TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
     const std::string&                                      groupName,
     std::map<std::string, TableVersion>&                    groupMembers,
@@ -1877,9 +1877,9 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 }  // end saveNewTableGroup()
 
 //==============================================================================
-// saveNewBackbone
-//	makes the new version the active version and returns new version number
-//	INVALID will give a new backbone from mockup
+/// saveNewBackbone
+///	makes the new version the active version and returns new version number
+///	INVALID will give a new backbone from mockup
 TableVersion ConfigurationManagerRW::saveNewBackbone(TableVersion temporaryVersion)
 {
 	__GEN_COUT_INFO__ << "Creating new backbone from temporary version "
@@ -1919,10 +1919,10 @@ TableVersion ConfigurationManagerRW::saveNewBackbone(TableVersion temporaryVersi
 }  // end saveNewBackbone()
 
 //==============================================================================
-// saveModifiedVersionXML
-//
-// once source version has been modified in temporary version
-//	this function finishes it off.
+/// saveModifiedVersionXML
+///
+/// once source version has been modified in temporary version
+///	this function finishes it off.
 TableVersion ConfigurationManagerRW::saveModifiedVersion(
     const std::string& tableName,
     TableVersion       originalVersion,
@@ -2124,7 +2124,7 @@ GroupEditStruct::~GroupEditStruct()
 }  // end GroupEditStruct destructor()
 
 //==============================================================================
-// Note: if markModified, and table not found in group, this function will try to add it to group
+/// Note: if markModified, and table not found in group, this function will try to add it to group
 TableEditStruct& GroupEditStruct::getTableEditStruct(const std::string& tableName,
                                                      bool markModified /*= false*/)
 {
@@ -2469,7 +2469,7 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 }  // end GroupEditStruct::saveChanges()
 
 //==============================================================================
-//Used for debugging Configuration calls during development
+///Used for debugging Configuration calls during development
 void ConfigurationManagerRW::testXDAQContext()
 {
 	if(1)

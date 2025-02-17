@@ -25,7 +25,7 @@ class FEDataManagerSupervisor : public FESupervisor
 	DataManager* theDataManager_;
 
   private:
-	DataManager* extractDataManager();  // likely, just used in constructor
+	DataManager* extractDataManager();  ///< likely, just used in constructor
 };
 
 }  // namespace ots

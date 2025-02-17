@@ -5,8 +5,8 @@
 
 namespace ots
 {
-// ARTDAQDataManagerSupervisor
-//	This class handles a single artdaq Board Reader instance.
+/// ARTDAQDataManagerSupervisor
+///	This class handles a single artdaq Board Reader instance.
 class ARTDAQDataManagerSupervisor : public CoreSupervisorBase
 {
   public:
