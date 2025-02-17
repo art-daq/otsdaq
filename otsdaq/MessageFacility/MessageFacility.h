@@ -60,7 +60,7 @@ inline void INIT_MF(const char* name)
 		}
 
 		setenv(
-		    "DAQINTERFACE_MESSAGEFACILITY_FHICL",  // make sure fcl always allows logging
+		    "DAQINTERFACE_MESSAGEFACILITY_FHICL",  ///< make sure fcl always allows logging
 		    (std::string(userDataString) +
 		     "/MessageFacilityConfigurations/ARTDAQInterfaceMessageFacilityGen.fcl")
 		        .c_str(),

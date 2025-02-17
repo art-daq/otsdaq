@@ -46,7 +46,7 @@ class FESlowControlsChannel
 	const std::string&     	getSample                	() const { return sample_; }
 	void  					handleSample				(const std::string& universalReadValue, std::string& txBuffer, FILE* fpAggregate = 0, bool aggregateIsBinaryFormat = false, bool txBufferUsed = true);
 	const std::string&		getLastSampleReadValue		() const { return universalReadValue_; };	
-	void  					clearAlarms					(int targetAlarm = -1);  // default to all
+	void  					clearAlarms					(int targetAlarm = -1);  ///< default to all
 
 	const std::string&  	getInterfaceUID				(void) const;
 	const std::string& 		getInterfaceType			(void) const;
@@ -60,8 +60,8 @@ class FESlowControlsChannel
 
 	FEVInterface* 			interface_;
 
-//Some members can be public because they are const and can avoid an extra Get method.
-//	Naming convention in general is for no trailing underscore in public member names (TODO):
+///Some members can be public because they are const and can avoid an extra Get method.
+///	Naming convention in general is for no trailing underscore in public member names (TODO):
   public: 
 	const std::string 		channelName;
 	const std::string 		fullChannelName;
@@ -69,8 +69,8 @@ class FESlowControlsChannel
 	const std::string  		transformation; 
 
   private:
-	unsigned int 			sizeOfDataTypeBits_;  // defines the size of all data string buffers,
-	                                   // must be less than or equal to universalDataSize
+	unsigned int 			sizeOfDataTypeBits_;  ///< defines the size of all data string buffers,
+	                                   ///< must be less than or equal to universalDataSize
 	unsigned int  			sizeOfDataTypeBytes_, sizeOfReadBytes_;
 	unsigned int  			universalDataBitOffset_;
 	unsigned char 			txPacketSequenceNumber_;
@@ -89,7 +89,7 @@ class FESlowControlsChannel
 
   private:  
 	std::string 			universalReadValue_;
-	std::string  			universalAddress_;    // get size from parent FE interface
+	std::string  			universalAddress_;    ///< get size from parent FE interface
 
 	std::string 			sample_, lastSample_;
 	std::string 			lolo_, lo_, hi_, hihi_;

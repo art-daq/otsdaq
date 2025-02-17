@@ -69,15 +69,15 @@ class FiniteStateMachine : public toolbox::fsm::FiniteStateMachine
   protected:
 	time_t stateEntranceTime_;
 
-	// The volatile keyword indicates that a field might be modified by multiple
-	// concurrently executing threads.  Fields that are declared volatile are not subject
-	// to compiler optimizations that assume access by a single thread.  This ensures that
-	// the most up-to-date value is present in the field at all times.  If you don't mark
-	// it volatile, the generated code might optimize the value into a registry and your
-	// thread will never see the change  The atomicity has nothing to do with the
-	// visibility between threads...  just because an operation is executed in one CPU
-	// cycle (atomic) it doesn't mean that the result will be visible to the other threads
-	// unless the value is marked volatile
+	/// The volatile keyword indicates that a field might be modified by multiple
+	/// concurrently executing threads.  Fields that are declared volatile are not subject
+	/// to compiler optimizations that assume access by a single thread.  This ensures that
+	/// the most up-to-date value is present in the field at all times.  If you don't mark
+	/// it volatile, the generated code might optimize the value into a registry and your
+	/// thread will never see the change  The atomicity has nothing to do with the
+	/// visibility between threads...  just because an operation is executed in one CPU
+	/// cycle (atomic) it doesn't mean that the result will be visible to the other threads
+	/// unless the value is marked volatile
 	volatile bool                              	inTransition_;
 	toolbox::fsm::State                         provenanceState_;
 	std::string									currentTransition_;

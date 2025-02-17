@@ -38,9 +38,9 @@ UDPDataStreamerConsumer::UDPDataStreamerConsumer(
     , DataConsumer(
           supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)
-//, Socket         ("192.168.133.1", 47200)
-//, DataConsumer   ("ARTDAQDataManager", 1, "ARTDAQBuffer", "ARTDAQDataStreamer0",
-// HighConsumerPriority) , streamToSocket_("192.168.133.1", 50100)
+///, Socket         ("192.168.133.1", 47200)
+///, DataConsumer   ("ARTDAQDataManager", 1, "ARTDAQBuffer", "ARTDAQDataStreamer0",
+/// HighConsumerPriority) , streamToSocket_("192.168.133.1", 50100)
 {
 	// Socket::initialize(); //dont call this! UDPDataStreamerBase() calls it
 	__COUT__ << "done!" << std::endl;

@@ -6,8 +6,8 @@
 
 using namespace ots;
 
-// instantiate static members
-
+/// instantiate static members
+///
 const std::string IterateTable::COMMAND_BEGIN_LABEL            = "BEGIN_LABEL";
 const std::string IterateTable::COMMAND_CHOOSE_FSM             = "CHOOSE_FSM";
 const std::string IterateTable::COMMAND_CONFIGURE_ACTIVE_GROUP = "CONFIGURE_ACTIVE_GROUP";

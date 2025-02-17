@@ -27,10 +27,10 @@ class UDPDataListenerProducer : public DataProducer,
 	bool workLoopThread(toolbox::task::WorkLoop* workLoop);
 	void slowWrite(void);
 	void fastWrite(void);
-	// For slow write
+	/// For slow write
 	std::string                        data_;
 	std::map<std::string, std::string> header_;
-	// For fast write
+	/// For fast write
 	std::string*                        dataP_;
 	std::map<std::string, std::string>* headerP_;
 

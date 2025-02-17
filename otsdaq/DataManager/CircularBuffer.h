@@ -21,7 +21,7 @@ class CircularBuffer : public CircularBufferBase
 	CircularBuffer(const std::string& dataBufferId);
 	virtual ~CircularBuffer(void);
 
-	void         reset(void);  // This DOES NOT reset the consumer list
+	void         reset(void);  ///< This DOES NOT reset the consumer list
 	void         resetConsumerList(void);
 	bool         isEmpty(void) const;
 	unsigned int getTotalNumberOfSubBuffers(void) const;

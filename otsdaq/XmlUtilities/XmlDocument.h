@@ -33,7 +33,7 @@ namespace ots
 {
 class XmlDocument
 {
-	//---------------------------------------------------------------------------------------------------------------
+	///---------------------------------------------------------------------------------------------------------------
   public:
 										XmlDocument(const std::string& rootName = "ROOT");
 										XmlDocument(const XmlDocument& doc);
@@ -52,7 +52,7 @@ class XmlDocument
 	void                 				setDocument(xercesc::DOMDocument* doc);
 	void                 				setDarioStyle(bool darioStyle);
 	void                 				setRootPath(const std::string& rootPath) { fRootPath_ = rootPath; }
-	//---------------------------------------------------------------------------------------------------------------
+	///---------------------------------------------------------------------------------------------------------------
   protected:
 	void        						copyDocument(const xercesc::DOMDocument* toCopy, xercesc::DOMDocument* copy);
 	void        						recursiveElementCopy(const xercesc::DOMElement* toCopy, xercesc::DOMElement* copy);

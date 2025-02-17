@@ -15,7 +15,7 @@ class TransceiverSocket : public TransmitterSocket, public ReceiverSocket
 	virtual ~TransceiverSocket(void);
 
 	int acknowledge(const std::string& buffer,
-	                bool verbose = false);  // responds to last receive location
+	                bool verbose = false);  ///< responds to last receive location
 
 	std::string sendAndReceive(Socket&            toSocket,
 	                           const std::string& sendBuffer,

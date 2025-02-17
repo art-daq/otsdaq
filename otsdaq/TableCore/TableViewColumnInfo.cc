@@ -13,7 +13,7 @@ using namespace ots;
 
 // clang-format off
 
-// NOTE: Do NOT put '-' in static const TYPEs because it will mess up javascript handling in the web gui
+/// NOTE: Do NOT put '-' in static const TYPEs because it will mess up javascript handling in the web gui
 const std::string TableViewColumnInfo::TYPE_UID 						= "UID";
 
 const std::string TableViewColumnInfo::TYPE_DATA 						= "Data";
@@ -34,8 +34,8 @@ const std::string TableViewColumnInfo::TYPE_START_GROUP_ID 				= "GroupID";
 const std::string TableViewColumnInfo::TYPE_COMMENT 					= "Comment";
 const std::string TableViewColumnInfo::TYPE_AUTHOR 						= "Author";
 const std::string TableViewColumnInfo::TYPE_TIMESTAMP 					= "Timestamp";
-// NOTE: Do NOT put '-' in static const TYPEs because it will mess up javascript handling in the web gui
-
+/// NOTE: Do NOT put '-' in static const TYPEs because it will mess up javascript handling in the web gui
+///
 const std::string TableViewColumnInfo::DATATYPE_NUMBER 					= "NUMBER";
 const std::string TableViewColumnInfo::DATATYPE_STRING 					= "STRING";
 const std::string TableViewColumnInfo::DATATYPE_TIME 					= "TIMESTAMP WITH TIMEZONE";
@@ -68,9 +68,9 @@ const std::string TableViewColumnInfo::COL_NAME_CREATION 				= "RecordInsertionT
 // clang-format on
 
 //==============================================================================
-// TableViewColumnInfo
-// if(capturedExceptionString) *capturedExceptionString = ""; //indicates no error found
-// if(!capturedExceptionString) then exception is thrown on error
+/// TableViewColumnInfo
+/// if(capturedExceptionString) *capturedExceptionString = ""; //indicates no error found
+/// if(!capturedExceptionString) then exception is thrown on error
 TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
                                          const std::string& name,
                                          const std::string& storageName,
@@ -350,7 +350,7 @@ void TableViewColumnInfo::extractBitMapInfo()
 }
 
 //==============================================================================
-// private empty default constructor. Only used by assignment operator.
+/// private empty default constructor. Only used by assignment operator.
 TableViewColumnInfo::TableViewColumnInfo(void) {}
 
 //==============================================================================
@@ -471,7 +471,7 @@ const std::string& TableViewColumnInfo::getDefaultDefaultValue(
 }  // end getDefaultDefaultValue()
 
 //==============================================================================
-// function to get min default value
+/// function to get min default value
 const std::string& TableViewColumnInfo::getMinDefaultValue(const std::string& dataType)
 {
 	if(dataType == TableViewColumnInfo::DATATYPE_STRING)
@@ -494,7 +494,7 @@ const std::string& TableViewColumnInfo::getMinDefaultValue(const std::string& da
 }
 
 //==============================================================================
-// function to get max default value
+/// function to get max default value
 const std::string& TableViewColumnInfo::getMaxDefaultValue(const std::string& dataType)
 {
 	if(dataType == TableViewColumnInfo::DATATYPE_STRING)
@@ -545,7 +545,7 @@ std::vector<std::string> TableViewColumnInfo::getAllDataTypesForGUI(void)
 }
 
 //==============================================================================
-// map of datatype,type to default value
+/// map of datatype,type to default value
 std::map<std::pair<std::string, std::string>, std::string>
 TableViewColumnInfo::getAllDefaultsForGUI(void)
 {
@@ -567,16 +567,16 @@ TableViewColumnInfo::getAllDefaultsForGUI(void)
 	    DATATYPE_STRING_DEFAULT;
 	return all;
 }
-// TODO check if min and max values need a function called getallminmaxforgui or something like that for someplace
+/// TODO check if min and max values need a function called getallminmaxforgui or something like that for someplace
 //==============================================================================
-// isBoolType
+/// isBoolType
 bool TableViewColumnInfo::isBoolType(void) const
 {
 	return (type_ == TYPE_ON_OFF || type_ == TYPE_TRUE_FALSE || type_ == TYPE_YES_NO);
 }  // end isBoolType()
 
 //==============================================================================
-// isNumberDataType
+/// isNumberDataType
 bool TableViewColumnInfo::isNumberDataType(void) const
 {
 	return (dataType_ == DATATYPE_NUMBER);
@@ -601,8 +601,8 @@ const std::vector<std::string>& TableViewColumnInfo::getDataChoices(void) const
 }
 
 //==============================================================================
-// getBitMapInfo
-//	uses dataChoices CSV fields if type is TYPE_BITMAP_DATA
+/// getBitMapInfo
+///	uses dataChoices CSV fields if type is TYPE_BITMAP_DATA
 const TableViewColumnInfo::BitMapInfo& TableViewColumnInfo::getBitMapInfo(void) const
 {
 	if(bitMapInfoP_)
@@ -618,9 +618,9 @@ const TableViewColumnInfo::BitMapInfo& TableViewColumnInfo::getBitMapInfo(void) 
 }
 
 //==============================================================================
-// isChildLink
-//	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
-//	so don't allow alpha character immediately after
+/// isChildLink
+///	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
+///	so don't allow alpha character immediately after
 bool TableViewColumnInfo::isChildLink(const std::string& type)
 {
 	return (type.find(TYPE_START_CHILD_LINK) == 0 &&
@@ -629,9 +629,9 @@ bool TableViewColumnInfo::isChildLink(const std::string& type)
 }
 
 //==============================================================================
-// isChildLink
-//	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
-//	so don't allow alpha character immediately after
+/// isChildLink
+///	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
+///	so don't allow alpha character immediately after
 bool TableViewColumnInfo::isChildLink(void) const
 {
 	return (type_.find(TYPE_START_CHILD_LINK) == 0 &&
@@ -640,9 +640,9 @@ bool TableViewColumnInfo::isChildLink(void) const
 }
 
 //==============================================================================
-// isChildLinkUID
-//	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
-//	so don't allow alpha character immediately after
+/// isChildLinkUID
+///	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
+///	so don't allow alpha character immediately after
 bool TableViewColumnInfo::isChildLinkUID(void) const
 {
 	return (type_.find(TYPE_START_CHILD_LINK_UID) == 0 &&
@@ -651,9 +651,9 @@ bool TableViewColumnInfo::isChildLinkUID(void) const
 }
 
 //==============================================================================
-// isChildLinkGroupID
-//	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
-//	so don't allow alpha character immediately after
+/// isChildLinkGroupID
+///	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
+///	so don't allow alpha character immediately after
 bool TableViewColumnInfo::isChildLinkGroupID(void) const
 {
 	return (type_.find(TYPE_START_CHILD_LINK_GROUP_ID) == 0 &&
@@ -662,9 +662,9 @@ bool TableViewColumnInfo::isChildLinkGroupID(void) const
 }
 
 //==============================================================================
-// isGroupID
-//	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
-//	so don't allow alpha character immediately after in group index
+/// isGroupID
+///	note: TYPE_START_CHILD_LINK index may be a subset of UID and GROUP_ID
+///	so don't allow alpha character immediately after in group index
 bool TableViewColumnInfo::isGroupID(void) const
 {
 	return (type_.find(TYPE_START_GROUP_ID) == 0 &&
@@ -673,11 +673,11 @@ bool TableViewColumnInfo::isGroupID(void) const
 }
 
 //==============================================================================
-// isUID
+/// isUID
 bool TableViewColumnInfo::isUID(void) const { return (type_ == TYPE_UID); }
 
 //==============================================================================
-// getChildLinkIndex
+/// getChildLinkIndex
 std::string TableViewColumnInfo::getChildLinkIndex(void) const
 {
 	// note: +1 to skip '-'

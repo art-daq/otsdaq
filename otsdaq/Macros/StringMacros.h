@@ -15,7 +15,7 @@ struct StringMacros
 {
 	// clang-format off
 
-  private:  // private constructor because all static members, should never instantiate
+  private:  ///< private constructor because all static members, should never instantiate
 	        // this class
 	StringMacros	(void);
 	~StringMacros	(void);
@@ -23,53 +23,53 @@ struct StringMacros
   public:
 
 	//========================================================================================================================
-	// Here is the list of static helper functions:
-	//
-	//		wildCardMatch
-	//		inWildCardSet
-	//		getWildCardMatchFromMap
-	//
-	//		decodeURIComponent
-	//		convertEnvironmentVariables
-	//		isNumber
-	//		getNumber
-	//		getTimestampString
-	//		getTimeDurationString
-	//
-	//		validateValueForDefaultStringDataType
-	//
-	//		getSetFromString
-	//		getVectorFromString
-	//		getMapFromString
-	//
-	//		setToString
-	//		vectorToString
-	//		mapToString
-	//
-	//		demangleTypeName
-	//		getTypeName
-	//		stackTrace
-	//		exec
-	//		otsGetEnvironmentVarable
-	//		extractXmlField
-	//		rextractXmlField
-	//
-	// End  list of static helper functions:
+	/// Here is the list of static helper functions:
+	///
+	///		wildCardMatch
+	///		inWildCardSet
+	///		getWildCardMatchFromMap
+	///
+	///		decodeURIComponent
+	///		convertEnvironmentVariables
+	///		isNumber
+	///		getNumber
+	///		getTimestampString
+	///		getTimeDurationString
+	///
+	///		validateValueForDefaultStringDataType
+	///
+	///		getSetFromString
+	///		getVectorFromString
+	///		getMapFromString
+	///
+	///		setToString
+	///		vectorToString
+	///		mapToString
+	///
+	///		demangleTypeName
+	///		getTypeName
+	///		stackTrace
+	///		exec
+	///		otsGetEnvironmentVarable
+	///		extractXmlField
+	///		rextractXmlField
+	///
+	/// End  list of static helper functions:
 	//========================================================================================================================
 
 	static bool 				wildCardMatch				(const std::string& needle, const std::string& haystack, unsigned int* priorityIndex = 0);
 	static bool 				inWildCardSet				(const std::string& needle, const std::set<std::string>& haystack);
 
 	//========================================================================================================================
-	// getWildCardMatchFromMap ~
-	//	returns value if needle is in haystack otherwise throws exception
-	//	(considering wildcards AND match priority as defined by
-	// StringMacros::wildCardMatch)
+	/// getWildCardMatchFromMap ~
+	///	returns value if needle is in haystack otherwise throws exception
+	///	(considering wildcards AND match priority as defined by
+	/// StringMacros::wildCardMatch)
 	template<class T>
 	static T& 					getWildCardMatchFromMap		(
 	    const std::string&        								needle,
 	    std::map<std::string, T>& 								haystack,
-	    std::string*              								foundKey = 0);  // defined in included .icc source
+	    std::string*              								foundKey = 0);  ///< defined in included .icc source
 
 	static std::string 			decodeURIComponent			(const std::string& data);
 	static std::string        	encodeURIComponent			(const std::string& data);
@@ -77,22 +77,22 @@ struct StringMacros
 	static std::string			escapeString				(std::string inString, bool allowWhiteSpace = false);
 	static std::string 			convertEnvironmentVariables	(const std::string& data);
 	
-	static bool        			isNumber					(const std::string& stringToCheck); // Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
-	static std::string  		getNumberType				(const std::string& stringToCheck); // Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
+	static bool        			isNumber					(const std::string& stringToCheck); ///< Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
+	static std::string  		getNumberType				(const std::string& stringToCheck); ///< Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
 	template<class T>
-	static bool        			getNumber					(const std::string& s, T& retValue);  // defined in included .icc source // Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
-	//template<>
-	static bool        			getNumber		 			(const std::string& s, bool& retValue);  // defined in included .icc source // Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
+	static bool        			getNumber					(const std::string& s, T& retValue);  ///< defined in included .icc source // Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
+	///template<>
+	static bool        			getNumber		 			(const std::string& s, bool& retValue);  ///< defined in included .icc source // Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
 
 	static std::string 			getTimestampString			(const std::string& linuxTimeInSeconds);
 	static std::string 			getTimestampString			(const time_t linuxTimeInSeconds = time(0));
 	static std::string 			getTimeDurationString		(const time_t durationInSeconds = time(0));
 
 	//========================================================================================================================
-	// validateValueForDefaultStringDataType ~
-	// 	special validation ignoring any table info - just assuming type string
+	/// validateValueForDefaultStringDataType ~
+	/// 	special validation ignoring any table info - just assuming type string
 	template<class T>
-	static T 					validateValueForDefaultStringDataType	( // defined in included .icc source
+	static T 					validateValueForDefaultStringDataType	( ///< defined in included .icc source
 	    const std::string& 										value,
 	    bool 													doConvertEnvironmentVariables = true);
 	static std::string 			validateValueForDefaultStringDataType	(
@@ -102,10 +102,10 @@ struct StringMacros
 	static void 				getSetFromString			(const std::string& inputString, std::set<std::string>& setToReturn, const std::set<char>&  delimiter  = {',', '|', '&'}, const std::set<char>&  whitespace = {' ', '\t', '\n', '\r'});
 
 	//========================================================================================================================
-	// getMapFromString ~
+	/// getMapFromString ~
 	template<class T /*value type*/,
 	         class S = std::string /*name string or const string*/>
-	static void 				getMapFromString			( // defined in included .icc source
+	static void 				getMapFromString			( ///< defined in included .icc source
 	    const std::string&    									inputString,
 	    std::map<S, T>&       									mapToReturn,
 	    const std::set<char>& 									pairPairDelimiter  	= {',', '|', '&'},
@@ -132,10 +132,10 @@ struct StringMacros
 		bool													decodeURIComponents = false);
 
 	//========================================================================================================================
-	// mapToString ~
-	//	*ToString declarations (template definitions are in included .icc source)
+	/// mapToString ~
+	///	*ToString declarations (template definitions are in included .icc source)
 	template<class T>
-	static std::string 			mapToString					( // defined in included .icc source
+	static std::string 			mapToString					( ///< defined in included .icc source
 		const std::map<std::string, T>& 						mapToReturn,
 	   	const std::string& 										primaryDelimeter   	= ", ",
 	   	const std::string& 										secondaryDelimeter 	= ": ");
@@ -177,9 +177,9 @@ struct StringMacros
 	
 
 	//========================================================================================================================
-	// setToString ~
+	/// setToString ~
 	template<class T>
-	static std::string 			setToString					( // defined in included .icc source
+	static std::string 			setToString					( ///< defined in included .icc source
 		const std::set<T>& 										setToReturn,
 	    const std::string& 										delimeter 			= ", ");
 	static std::string 			setToString					(
@@ -193,9 +193,9 @@ struct StringMacros
 
 
 	//========================================================================================================================
-	// vectorToString ~
+	/// vectorToString ~
 	template<class T>
-	static std::string 			vectorToString				( // defined in included .icc source
+	static std::string 			vectorToString				( ///< defined in included .icc source
 		const std::vector<T>& 									setToReturn,
 	    const std::string&    									delimeter 			= ", ");
 	static std::string 			vectorToString				(
@@ -234,8 +234,8 @@ struct StringMacros
 															 const std::string &quoteType = "'");
 
 
-	struct IgnoreCaseCompareStruct { //get string in order ignoring letter case
-		bool 					operator() 					(const std::string& lhs, const std::string& rhs) const; //comparison handler
+	struct IgnoreCaseCompareStruct { ///<get string in order ignoring letter case
+		bool 					operator() 					(const std::string& lhs, const std::string& rhs) const; ///<comparison handler
 	}; //end IgnoreCaseCompareStruct
 
 	// clang-format on

@@ -26,7 +26,7 @@ OtsDataSaverConsumer::~OtsDataSaverConsumer(void) {}
 void OtsDataSaverConsumer::writeHeader(void) {}
 
 //==============================================================================
-// add one byte quad-word count before each packet
+/// add one byte quad-word count before each packet
 void OtsDataSaverConsumer::writePacketHeader(const std::string& data)
 {
 	unsigned char quadWordsCount = (data.length() - 2) / 8;

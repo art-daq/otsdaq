@@ -14,7 +14,7 @@ class ARTDAQDispatcherTable : public ARTDAQTableBase, public SlowControlsTableBa
 	ARTDAQDispatcherTable(void);
 	virtual ~ARTDAQDispatcherTable(void);
 
-	// Methods
+	/// Methods
 	void 					init						(ConfigurationManager* configManager) override;
 
 	virtual unsigned int	slowControlsHandlerConfig	(

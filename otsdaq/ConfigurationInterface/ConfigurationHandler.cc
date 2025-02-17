@@ -35,8 +35,8 @@ using namespace ots;
 #undef __COUT_HDR__
 #define __COUT_HDR__ "ConfigHandler"
 
-// The tag values must be given after the XML platform is initialized so they are defined
-// in initPlatform
+/// The tag values must be given after the XML platform is initialized so they are defined
+/// in initPlatform
 XMLCh* ConfigurationHandler::rootTag_               = 0;
 XMLCh* ConfigurationHandler::headerTag_             = 0;
 XMLCh* ConfigurationHandler::typeTag_               = 0;
@@ -683,8 +683,8 @@ std::string ConfigurationHandler::writeXML(const TableBase& table)
 	return configFile;
 }
 
-//    return errorCode;
-
+///    return errorCode;
+///
 //==============================================================================
 void ConfigurationHandler::outputXML(xercesc::DOMDocument* pmyDOMDocument,
                                      std::string           fileName)

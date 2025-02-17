@@ -23,7 +23,7 @@ ReceiverSocket::ReceiverSocket(std::string IPAddress, unsigned int port)
 }
 
 //==============================================================================
-// protected constructor
+/// protected constructor
 ReceiverSocket::ReceiverSocket(void)
     : addressLength_(sizeof(fromAddress_)), numberOfBytes_(0), readCounter_(0)
 {
@@ -67,9 +67,9 @@ int ReceiverSocket::receive(std::string& buffer,
 }  //end receive()
 
 //==============================================================================
-// receive ~~
-//	returns 0 on success, -1 on failure
-//	NOTE: must call Socket::initialize before receiving!
+/// receive ~~
+///	returns 0 on success, -1 on failure
+///	NOTE: must call Socket::initialize before receiving!
 int ReceiverSocket::receive(std::string&    buffer,
                             unsigned long&  fromIPAddress,
                             unsigned short& fromPort,
@@ -193,9 +193,9 @@ int ReceiverSocket::receive(std::vector<uint32_t>& buffer,
 }  //end receive()
 
 //==============================================================================
-// receive ~~
-//	returns 0 on success, -1 on failure
-//	NOTE: must call Socket::initialize before receiving!
+/// receive ~~
+///	returns 0 on success, -1 on failure
+///	NOTE: must call Socket::initialize before receiving!
 int ReceiverSocket::receive(std::vector<uint32_t>& buffer,
                             unsigned long&         fromIPAddress,
                             unsigned short&        fromPort,

@@ -7,9 +7,9 @@ namespace ots
 {
 class FEVInterfacesManager;
 
-// FESupervisor
-//	This class handles a collection of front-end interface plugins. It
-//	provides an interface to Macro Maker for writes and reads to the front-end interfaces.
+/// FESupervisor
+///	This class handles a collection of front-end interface plugins. It
+///	provides an interface to Macro Maker for writes and reads to the front-end interfaces.
 class FESupervisor : public CoreSupervisorBase
 {
 	// friend FEVInterface;
@@ -33,7 +33,7 @@ class FESupervisor : public CoreSupervisorBase
 
   private:
 	FEVInterfacesManager*
-	extractFEInterfacesManager();  // likely, just used in constructor
+	extractFEInterfacesManager();  ///< likely, just used in constructor
 };
 
 }  // namespace ots

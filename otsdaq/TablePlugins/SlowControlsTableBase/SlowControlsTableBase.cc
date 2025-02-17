@@ -9,11 +9,11 @@ using namespace ots;
 #define __MF_SUBJECT__ "SlowControlsTableBase"
 
 //==============================================================================
-// TableBase
-//	If a valid string pointer is passed in accumulatedExceptions
-//	then allowIllegalColumns is set for InfoReader
-//	If accumulatedExceptions pointer = 0, then illegal columns throw std::runtime_error
-// exception
+/// TableBase
+///	If a valid string pointer is passed in accumulatedExceptions
+///	then allowIllegalColumns is set for InfoReader
+///	If accumulatedExceptions pointer = 0, then illegal columns throw std::runtime_error
+/// exception
 SlowControlsTableBase::SlowControlsTableBase(std::string  tableName,
                                              std::string* accumulatedExceptions /* =0 */)
     : TableBase(tableName, accumulatedExceptions)
@@ -34,8 +34,8 @@ SlowControlsTableBase::SlowControlsTableBase(std::string  tableName,
 }  // end constuctor()
 
 //==============================================================================
-// SlowControlsTableBase
-//	Default constructor should never be used because table type is lost
+/// SlowControlsTableBase
+///	Default constructor should never be used because table type is lost
 SlowControlsTableBase::SlowControlsTableBase(void) : TableBase("SlowControlsTableBase")
 {
 	__SS__ << "Should not call void constructor, table type is lost!" << __E__;
@@ -236,7 +236,7 @@ unsigned int SlowControlsTableBase::slowControlsHandler(
 }  // end localSlowControlsHandler
 
 //==============================================================================
-// return channel list if pointer passed
+/// return channel list if pointer passed
 bool SlowControlsTableBase::outputEpicsPVFile(
     ConfigurationManager* configManager,
     std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*

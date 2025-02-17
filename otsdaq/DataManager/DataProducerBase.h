@@ -9,9 +9,9 @@
 
 namespace ots
 {
-// DataProducerBase
-//	This class provides base class functionality for Data Producer plugin classes to
-//	receive incoming streaming data and places it in a Buffer.
+/// DataProducerBase
+///	This class provides base class functionality for Data Producer plugin classes to
+///	receive incoming streaming data and places it in a Buffer.
 class DataProducerBase : public DataProcessor
 {
   public:

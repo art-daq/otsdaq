@@ -1,8 +1,8 @@
 #ifndef _ots_MakeDataProcessor_h_
 #define _ots_MakeDataProcessor_h_
-// Using LibraryManager, find the correct library and return an instance
-// of the specified interface.
-
+/// Using LibraryManager, find the correct library and return an instance
+/// of the specified interface.
+///
 #include <string>
 
 namespace ots

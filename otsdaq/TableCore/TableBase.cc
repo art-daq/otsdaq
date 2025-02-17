@@ -16,11 +16,11 @@ const std::string TableBase::GROUP_CACHE_PREPEND = "GroupCache_";
 const std::string TableBase::JSON_DOC_PREPEND    = "JSONDoc_";
 
 //==============================================================================
-// TableBase
-//	If a valid string pointer is passed in accumulatedExceptions
-//	then allowIllegalColumns is set for InfoReader
-//	If accumulatedExceptions pointer = 0, then illegal columns throw std::runtime_error
-// exception
+/// TableBase
+///	If a valid string pointer is passed in accumulatedExceptions
+///	then allowIllegalColumns is set for InfoReader
+///	If accumulatedExceptions pointer = 0, then illegal columns throw std::runtime_error
+/// exception
 TableBase::TableBase(const std::string& tableName,
                      std::string*       accumulatedExceptions)
     : MAX_VIEWS_IN_CACHE(20)  // This is done, so that inheriting table classes could have
@@ -109,10 +109,10 @@ TableBase::TableBase(const std::string& tableName,
 }  // end constructor()
 
 //==============================================================================
-// TableBase
-//	Default constructor is only used  to create special tables
-//		not based on an ...Info.xml file
-//	e.g. the TableGroupMetadata table in ConfigurationManager
+/// TableBase
+///	Default constructor is only used  to create special tables
+///		not based on an ...Info.xml file
+///	e.g. the TableGroupMetadata table in ConfigurationManager
 TableBase::TableBase(bool specialTable, const std::string& specialTableName)
     : MAX_VIEWS_IN_CACHE(1)  // This is done, so that inheriting table classes could have
                              // varying amounts of cache
@@ -125,14 +125,14 @@ TableBase::TableBase(bool specialTable, const std::string& specialTableName)
 }  // special table constructor()
 
 ////==============================================================================
-// TableBase::TableBase(void)
-//  : MAX_VIEWS_IN_CACHE(1)
-//  {
-//	__SS__ << "Should not call void constructor, table type is lost!" << __E__;
-//	ss << StringMacros::stackTrace() << __E__;
-//	__SS_THROW__;
-// }
-
+/// TableBase::TableBase(void)
+///  : MAX_VIEWS_IN_CACHE(1)
+///  {
+///	__SS__ << "Should not call void constructor, table type is lost!" << __E__;
+///	ss << StringMacros::stackTrace() << __E__;
+///	__SS_THROW__;
+/// }
+///
 //==============================================================================
 TableBase::~TableBase(void) {}
 
@@ -170,8 +170,8 @@ void TableBase::print(std::ostream& out) const
 }
 
 //==============================================================================
-// makes active version the specified table view version
-//  if the version is not already stored, then creates a mockup version
+/// makes active version the specified table view version
+///  if the version is not already stored, then creates a mockup version
 void TableBase::setupMockupView(TableVersion version)
 {
 	if(!isStored(version))
@@ -198,10 +198,10 @@ void TableBase::setupMockupView(TableVersion version)
 }  // end setupMockupView()
 
 //==============================================================================
-// trimCache
-//	if there are more views than MAX_VIEWS_IN_CACHE, erase them.
-//	choose wisely the view to delete
-//		(by access time)
+/// trimCache
+///	if there are more views than MAX_VIEWS_IN_CACHE, erase them.
+///	choose wisely the view to delete
+///		(by access time)
 void TableBase::trimCache(unsigned int trimSize)
 {
 	// delete cached views, if necessary
@@ -238,10 +238,10 @@ void TableBase::trimCache(unsigned int trimSize)
 }
 
 //==============================================================================
-// trimCache
-//	if there are more views than MAX_VIEWS_IN_CACHE, erase them.
-//	choose wisely the view to delete
-//		(by access time)
+/// trimCache
+///	if there are more views than MAX_VIEWS_IN_CACHE, erase them.
+///	choose wisely the view to delete
+///		(by access time)
 void TableBase::trimTemporary(TableVersion targetVersion)
 {
 	if(targetVersion.isInvalid())  // erase all temporary
@@ -276,14 +276,14 @@ void TableBase::trimTemporary(TableVersion targetVersion)
 }
 
 //==============================================================================
-// checkForDuplicate
-// look for a duplicate of the needleVersion in the haystack
-//	which is the cached views in tableViews_
-//
-//	Note: ignoreVersion is useful if you know another view is already identical
-//		like when converting from temporary to persistent
-//
-//	Return invalid if no matches
+/// checkForDuplicate
+/// look for a duplicate of the needleVersion in the haystack
+///	which is the cached views in tableViews_
+///
+///	Note: ignoreVersion is useful if you know another view is already identical
+///		like when converting from temporary to persistent
+///
+///	Return invalid if no matches
 TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
                                           TableVersion ignoreVersion) const
 {
@@ -404,8 +404,8 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 }  // end checkForDuplicate()
 
 //==============================================================================
-// diffTwoVersions
-//	return a report of differences among two versions
+/// diffTwoVersions
+///	return a report of differences among two versions
 bool TableBase::diffTwoVersions(
     TableVersion       v1,
     TableVersion       v2,
@@ -693,8 +693,8 @@ const TableVersion& TableBase::getViewVersion(void) const
 }
 
 //==============================================================================
-// latestAndMockupColumnNumberMismatch
-//	intended to check if the column count was recently changed
+/// latestAndMockupColumnNumberMismatch
+///	intended to check if the column count was recently changed
 bool TableBase::latestAndMockupColumnNumberMismatch(void) const
 {
 	std::set<TableVersion> retSet = getStoredVersions();
@@ -717,9 +717,9 @@ std::set<TableVersion> TableBase::getStoredVersions(void) const
 }
 
 //==============================================================================
-// getNumberOfStoredViews
-//	count number of stored views, not including temporary views
-//	(invalid views should be impossible)
+/// getNumberOfStoredViews
+///	count number of stored views, not including temporary views
+///	(invalid views should be impossible)
 unsigned int TableBase::getNumberOfStoredViews(void) const
 {
 	unsigned int sz = 0;
@@ -808,12 +808,12 @@ void TableBase::setTableDescription(const std::string& tableDescription)
 }
 
 //==============================================================================
-// deactivate
-//	reset the active view
+/// deactivate
+///	reset the active view
 void TableBase::deactivate() { activeTableView_ = 0; }
 
 //==============================================================================
-// isActive
+/// isActive
 bool TableBase::isActive() { return activeTableView_ ? true : false; }
 
 //==============================================================================
@@ -841,13 +841,13 @@ bool TableBase::setActiveView(TableVersion version)
 }
 
 //==============================================================================
-// mergeViews
-//	merges source view A and B and places in
-//	destination temporary version.
-//	if destination version is invalid, then next available temporary version is chosen
-//	one error, throw exception
-//
-//	Returns version of new temporary view that was created.
+/// mergeViews
+///	merges source view A and B and places in
+///	destination temporary version.
+///	if destination version is invalid, then next available temporary version is chosen
+///	one error, throw exception
+///
+///	Returns version of new temporary view that was created.
 TableVersion TableBase::mergeViews(
     const TableView&                          sourceViewA,
     const TableView&                          sourceViewB,
@@ -1532,13 +1532,13 @@ TableVersion TableBase::mergeViews(
 }  // end mergeViews
 
 //==============================================================================
-// copyView
-//	copies source view (including version) and places in self
-//	as destination temporary version.
-//	if destination version is invalid, then next available temporary version is chosen
-//	if conflict, throw exception
-//
-//	Returns version of new temporary view that was created.
+/// copyView
+///	copies source view (including version) and places in self
+///	as destination temporary version.
+///	if destination version is invalid, then next available temporary version is chosen
+///	if conflict, throw exception
+///
+///	Returns version of new temporary view that was created.
 TableVersion TableBase::copyView(const TableView&   sourceView,
                                  TableVersion       destinationVersion,
                                  const std::string& author,
@@ -1592,12 +1592,12 @@ TableVersion TableBase::copyView(const TableView&   sourceView,
 }  // end copyView()
 
 //==============================================================================
-// createTemporaryView
-//	-1, from MockUp, else from valid view version
-//	destTemporaryViewVersion is starting point for search for available temporary
-// versions. 	if destTemporaryViewVersion is invalid, starts search at
-// TableVersion::getNextTemporaryVersion().
-// 	returns new temporary version number (which is always negative)
+/// createTemporaryView
+///	-1, from MockUp, else from valid view version
+///	destTemporaryViewVersion is starting point for search for available temporary
+/// versions. 	if destTemporaryViewVersion is invalid, starts search at
+/// TableVersion::getNextTemporaryVersion().
+/// 	returns new temporary version number (which is always negative)
 TableVersion TableBase::createTemporaryView(TableVersion sourceViewVersion,
                                             TableVersion destTemporaryViewVersion)
 {
@@ -1659,9 +1659,9 @@ TableVersion TableBase::createTemporaryView(TableVersion sourceViewVersion,
 }  // end createTemporaryView()
 
 //==============================================================================
-// getNextAvailableTemporaryView
-//	TableVersion::INVALID is always MockUp
-// returns next available temporary version number (which is always negative)
+/// getNextAvailableTemporaryView
+///	TableVersion::INVALID is always MockUp
+/// returns next available temporary version number (which is always negative)
 TableVersion TableBase::getNextTemporaryVersion() const
 {
 	TableVersion tmpVersion;
@@ -1682,9 +1682,9 @@ TableVersion TableBase::getNextTemporaryVersion() const
 }  //end getNextTemporaryVersion()
 
 //==============================================================================
-// getNextVersion
-// 	returns next available new version
-//	the implication is any version number equal or greater is available.
+/// getNextVersion
+/// 	returns next available new version
+///	the implication is any version number equal or greater is available.
 TableVersion TableBase::getNextVersion() const
 {
 	TableVersion tmpVersion;
@@ -1705,10 +1705,10 @@ TableVersion TableBase::getNextVersion() const
 }  //end getNextVersion()
 
 //==============================================================================
-// getTemporaryView
-//	must be a valid temporary version, and the view must be stored in table.
-// 	temporary version indicates it has not been saved to database and assigned a version
-// number
+/// getTemporaryView
+///	must be a valid temporary version, and the view must be stored in table.
+/// 	temporary version indicates it has not been saved to database and assigned a version
+/// number
 TableView* TableBase::getTemporaryView(TableVersion temporaryVersion)
 {
 	if(!temporaryVersion.isTemporaryVersion() || !isStored(temporaryVersion))
@@ -1720,9 +1720,9 @@ TableView* TableBase::getTemporaryView(TableVersion temporaryVersion)
 }  //end getTemporaryView()
 
 //==============================================================================
-// convertToCaps
-//	static utility for converting table and column names to the caps version
-//	throw std::runtime_error if not completely alpha-numeric input
+/// convertToCaps
+///	static utility for converting table and column names to the caps version
+///	throw std::runtime_error if not completely alpha-numeric input
 std::string TableBase::convertToCaps(std::string& str, bool isTableName)
 {
 	// append Table to be nice to user

@@ -73,12 +73,12 @@ const ConfigurationInterface::CONFIGURATION_MODE& ConfigurationInterface::getMod
 }
 
 //==============================================================================
-// saveNewVersion
-// 	If newVersion is 0, then save the temporaryVersion as the next positive version
-// number,
-//		save using the interface, and return the new version number
-//	If newVersion is non 0, attempt to save as given newVersion number, else throw
-// exception. 	return TableVersion::INVALID on failure
+/// saveNewVersion
+/// 	If newVersion is 0, then save the temporaryVersion as the next positive version
+/// number,
+///		save using the interface, and return the new version number
+///	If newVersion is non 0, attempt to save as given newVersion number, else throw
+/// exception. 	return TableVersion::INVALID on failure
 TableVersion ConfigurationInterface::saveNewVersion(TableBase*   table,
                                                     TableVersion temporaryVersion,
                                                     TableVersion newVersion)

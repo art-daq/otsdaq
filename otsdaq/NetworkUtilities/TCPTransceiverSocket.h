@@ -6,7 +6,7 @@
 
 namespace ots
 {
-// A class that can read/write to a socket
+/// A class that can read/write to a socket
 class TCPTransceiverSocket : public TCPReceiverSocket, public TCPTransmitterSocket
 {
   public:

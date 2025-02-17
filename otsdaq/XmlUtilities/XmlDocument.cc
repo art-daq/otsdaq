@@ -184,9 +184,9 @@ void XmlDocument::terminatePlatform(void)
 }
 
 //==============================================================================
-// addTextElementToParent
-//	add to parent by pointer to parent
-//	returns pointer to element that is added
+/// addTextElementToParent
+///	add to parent by pointer to parent
+///	returns pointer to element that is added
 xercesc::DOMElement* XmlDocument::addTextElementToParent(const std::string&   childName,
                                                          const std::string&   childText,
                                                          xercesc::DOMElement* parent)
@@ -231,9 +231,9 @@ xercesc::DOMElement* XmlDocument::addTextElementToParent(const std::string&   ch
 }
 
 //==============================================================================
-// addTextElementToParent
-//	add to parent by instance number of parent name
-//	returns pointer to element that is added
+/// addTextElementToParent
+///	add to parent by instance number of parent name
+///	returns pointer to element that is added
 xercesc::DOMElement* XmlDocument::addTextElementToParent(const std::string& childName,
                                                          const std::string& childText,
                                                          const std::string& parentName,
@@ -289,12 +289,12 @@ void XmlDocument::recursiveElementCopy(const xercesc::DOMElement* toCopy,
 }
 
 //==============================================================================
-// XmlDocument::addElementToParent
-//	Add field/value element to XML doc at parent
-// 	On Success, The child index of the added element with respect to the parent is
-// returned and can be used to add
-//		children to the new element
-//	On Failure, return -1
+/// XmlDocument::addElementToParent
+///	Add field/value element to XML doc at parent
+/// 	On Success, The child index of the added element with respect to the parent is
+/// returned and can be used to add
+///		children to the new element
+///	On Failure, return -1
 /*
 unsigned int XmlDocument::addElementToParent(std::string field, std::string value,
 xercesc::DOMElement *parentEl, bool verbose)
@@ -325,13 +325,13 @@ child index among parent's children
 }
 */
 //==============================================================================
-// XmlDocument::addDataElement
-//	Add field/value element to XML doc at parent which is returned from
-// getElementsByTagName(parentName), entry number parentNameIndex
-// 	On Success, The child index of the added element with respect to the parent is
-// returned and can be used to add
-//		children to the new element
-//	On Failure, return -1
+/// XmlDocument::addDataElement
+///	Add field/value element to XML doc at parent which is returned from
+/// getElementsByTagName(parentName), entry number parentNameIndex
+/// 	On Success, The child index of the added element with respect to the parent is
+/// returned and can be used to add
+///		children to the new element
+///	On Failure, return -1
 /*
 unsigned int XmlDocument::addDataElement ( std::string field, std::string value,
 std::string parentName, unsigned int parentNameIndex)
@@ -348,15 +348,15 @@ theDocument_->getElementsByTagName(CONVERT_TO_XML(parentName));
 }
 */
 //==============================================================================
-// XmlDocument::addDataElement
-//	Add field/value element to XML doc at parentIndexArray (with depth of parent indicated
-// by parentIndexArraySize) 	If parentIndexArray = NULL, element is added with <DATA>
-// parent 		otherwise, parentIndexArray indicates the parent within the node list for
-//<DATA> where 		the element will be added
-// 	On Success, The child index of the added element with respect to the parent is
-// returned and can be used to add
-//		children to the new element
-//	On Failure, return -1
+/// XmlDocument::addDataElement
+///	Add field/value element to XML doc at parentIndexArray (with depth of parent indicated
+/// by parentIndexArraySize) 	If parentIndexArray = NULL, element is added with <DATA>
+/// parent 		otherwise, parentIndexArray indicates the parent within the node list for
+///<DATA> where 		the element will be added
+/// 	On Success, The child index of the added element with respect to the parent is
+/// returned and can be used to add
+///		children to the new element
+///	On Failure, return -1
 /*
 unsigned int XmlDocument::addDataElement ( std::string field, std::string value, unsigned
 int *parentIndexArray, unsigned int parentIndexArraySize)
@@ -397,7 +397,7 @@ parentEl->getFirstChild()->getNodeType() == DOMNode::TEXT_NODE) ++tmpi;
             if(tmpi >= nodeList->getLength()) {
                 __COUT__ << "illegal child index attempted in nested parents: " <<
 parentIndexArray[i] << ", depth: " << i << ", tmpi: " << tmpi << std::endl; return -1;
-//illegal child index attempted in nested parents
+///illegal child index attempted in nested parents
             }
 
             parentEl = (DOMElement*)(nodeList->item(tmpi));
@@ -408,10 +408,10 @@ parentIndexArray[i] << ", depth: " << i << ", tmpi: " << tmpi << std::endl; retu
 }
 */
 //==============================================================================
-// XmlDocument::addXmlData
-//	Append <DATA> from xmldoc to this XML doc
-// 	On Success, The child index within <DATA> of the first element is returned
-//	On Failure, return -1
+/// XmlDocument::addXmlData
+///	Append <DATA> from xmldoc to this XML doc
+/// 	On Success, The child index within <DATA> of the first element is returned
+///	On Failure, return -1
 /*
 unsigned int XmlDocument::addXmlData (XmlDocument *xmldoc)
 {
@@ -434,8 +434,8 @@ children continue;
 }
 */
 //==============================================================================
-// XmlDocument::recursiveAddElementToParent
-//	add currEl and its children tree to parentEl
+/// XmlDocument::recursiveAddElementToParent
+///	add currEl and its children tree to parentEl
 /*
 void XmlDocument::recursiveAddElementToParent (DOMElement *currEl, DOMElement *parentEl)
 {
@@ -465,9 +465,9 @@ children continue;
 }
 */
 //==============================================================================
-// XmlDocument::outputXmlDocument
-//	recurse through XML theDocument_ and std out and output to stream parameter if not
-// null
+/// XmlDocument::outputXmlDocument
+///	recurse through XML theDocument_ and std out and output to stream parameter if not
+/// null
 void XmlDocument::outputXmlDocument(std::ostringstream* out, bool dispStdOut)
 {
 	recursiveOutputXmlDocument(theDocument_->getDocumentElement(), out, dispStdOut);
@@ -476,8 +476,8 @@ void XmlDocument::outputXmlDocument(std::ostringstream* out, bool dispStdOut)
 //==============================================================================
 void XmlDocument::setDocument(xercesc::DOMDocument* doc) { theDocument_ = doc; }
 //==============================================================================
-// XmlDocument::recursiveOutputXmlDocument
-//	recursively printout XML theDocument_ to std out and output stream if not null
+/// XmlDocument::recursiveOutputXmlDocument
+///	recursively printout XML theDocument_ to std out and output stream if not null
 void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
                                              std::ostringstream*  out,
                                              bool                 dispStdOut,
@@ -549,9 +549,9 @@ void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 }
 
 //==============================================================================
-// XmlDocument::getDataElement
-//  returns the value for field found occurance number of times
-//  returns empty std::string "" if field was not found
+/// XmlDocument::getDataElement
+///  returns the value for field found occurance number of times
+///  returns empty std::string "" if field was not found
 /*
 std::string XmlDocument::getDataElement (const std::string field, const unsigned int
 occurance)
@@ -561,8 +561,8 @@ occurance)
 }
 */
 //==============================================================================
-// XmlDocument::recursiveFindElement
-//  recursively searches and returns the value for field found occurance number of times
+/// XmlDocument::recursiveFindElement
+///  recursively searches and returns the value for field found occurance number of times
 /*
 std::string XmlDocument::recursiveFindElement (DOMElement *currEl, const std::string
 field, const unsigned int occurance, unsigned int &count)
@@ -573,7 +573,7 @@ done!!
         if( currEl->getFirstChild() != NULL && currEl->getFirstChild()->getNodeType() ==
 DOMNode::TEXT_NODE) //if has a text node first, return as value attribute return
 StringMacros::escapeString(XML_TO_CHAR(currEl->getFirstChild()->getNodeValue())); else return "";
-//empty value attribute
+///empty value attribute
     }
 
     std::string retStr;
@@ -585,16 +585,16 @@ children
         {
             retStr = recursiveFindElement
 ((DOMElement*)(nodeList->item(i)),field,occurance,count); if(retStr != "") return retStr;
-//found among children already, done
+///found among children already, done
             //else continue search within children recursively
         }
     return ""; //nothing found
 }
 */
 //==============================================================================
-// XmlDocument::getAllDataElements
-//  returns all of the values found for the field in a vector
-//  if none found vector will have size 0
+/// XmlDocument::getAllDataElements
+///  returns all of the values found for the field in a vector
+///  if none found vector will have size 0
 /*
 std::vector<std::string> XmlDocument::getAllDataElements (std::string field)
 {
@@ -606,8 +606,8 @@ std::vector<std::string> XmlDocument::getAllDataElements (std::string field)
 }
 */
 //==============================================================================
-// XmlDocument::recursiveFindElement
-//  recursively searches and returns the value for field found occurance number of times
+/// XmlDocument::recursiveFindElement
+///  recursively searches and returns the value for field found occurance number of times
 /*
 void XmlDocument::recursiveFindAllElements (DOMElement *currEl, const std::string
 field,std::vector<std::string> *retVec)
@@ -627,8 +627,8 @@ children recursiveFindAllElements ((DOMElement*)(nodeList->item(i)),field,retVec
 */
 
 //==============================================================================
-// XmlDocument::recursiveRemoveChild
-//	remove child and all of child's sub-tree from parent
+/// XmlDocument::recursiveRemoveChild
+///	remove child and all of child's sub-tree from parent
 void XmlDocument::recursiveRemoveChild(xercesc::DOMElement* childEl,
                                        xercesc::DOMElement* parentEl)
 {
@@ -646,9 +646,9 @@ void XmlDocument::recursiveRemoveChild(xercesc::DOMElement* childEl,
 }
 
 //==============================================================================
-// XmlDocument::saveXmlDocument
-//	wrapper for private outputXML
-//	Warning: filePath must be accessible or program will crash!
+/// XmlDocument::saveXmlDocument
+///	wrapper for private outputXML
+///	Warning: filePath must be accessible or program will crash!
 void XmlDocument::saveXmlDocument(const std::string& filePath)
 {
 	__COUT__ << "Saving theDocument_ to file: " << filePath << std::endl;
@@ -1005,8 +1005,8 @@ void XmlDocument::setDarioStyle(bool darioStyle)
 }
 // clang-format on
 //==============================================================================
-// XmlDocument::recursiveOutputXmlDocument
-//	recursively printout XML theDocument_ to std out and output stream if not null
+/// XmlDocument::recursiveOutputXmlDocument
+///	recursively printout XML theDocument_ to std out and output stream if not null
 /*
 void XmlDocument::recursiveFixTextFields(DOMElement *currEl)
 {
@@ -1016,7 +1016,7 @@ void XmlDocument::recursiveFixTextFields(DOMElement *currEl)
     for(unsigned int i = 0; i<nodeList->getLength();++i)
         if(nodeList->item(i)->getNodeType() == DOMNode::TEXT_NODE) //fix text nodes
             ((DOMElement*)(nodeList->item(i)))->setTextContent(CONVERT_TO_XML(
-//change text value to escaped version
+///change text value to escaped version
                 StringMacros::escapeString(XML_TO_CHAR(((DOMElement*)(nodeList->item(i)))->getNodeValue()))));
         else
             recursiveFixTextFields ((DOMElement*)(nodeList->item(i)));

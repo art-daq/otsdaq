@@ -11,10 +11,10 @@
 // #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
 // #include "artdaq-database/JsonDocument/JSONDocument.h"
 
-// usage:
-// otsdaq_save_json_document <path_to_source_JSON> <document_name_to_save>
-//
-
+/// usage:
+/// otsdaq_save_json_document <path_to_source_JSON> <document_name_to_save>
+///
+///
 #define TRACE_NAME "SaveJSON_Document"
 
 // #define __FILENAME__ 		(__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)

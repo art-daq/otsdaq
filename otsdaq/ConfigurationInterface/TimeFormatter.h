@@ -12,7 +12,7 @@ class TimeFormatter
 	TimeFormatter(std::string source);
 	~TimeFormatter(void);
 
-	// Static memebers
+	/// Static memebers
 	static std::string getTime(void);
 	static std::string getmSecTime(void);
 

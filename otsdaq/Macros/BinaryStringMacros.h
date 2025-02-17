@@ -14,19 +14,19 @@ namespace ots
 struct BinaryStringMacros
 {
 	// clang-format off
-  private:  // private constructor because all static members, should never instantiate
+  private:  ///< private constructor because all static members, should never instantiate
 	        // this class
 	BinaryStringMacros(void);
 	~BinaryStringMacros(void);
 
   public:
-	// Here is the list of static helper functions:
-	//
-	//		binaryStringToHexString
-	//		binaryNumberToHexString
-	//
-
-
+	/// Here is the list of static helper functions:
+	///
+	///		binaryStringToHexString
+	///		binaryNumberToHexString
+	///
+	///
+	///
 	//=======================================================
 	static std::string 	binaryStringToHexString			(
 		const void*        							binaryBuffer,
@@ -52,12 +52,12 @@ struct BinaryStringMacros
 
 	//=======================================================
 	template<class T>
-	static void 		insertValueInBinaryString	( // defined in included .icc source
+	static void 		insertValueInBinaryString	( ///< defined in included .icc source
 		std::string& 								binaryBuffer, 
         T            								value,
         unsigned int 								bitIndex  = 0);
 	
-	// specialized for string value
+	/// specialized for string value
 	static void 		insertValueInBinaryString	( 
 		std::string&       							binaryBuffer,
         const std::string& 							value,
@@ -65,19 +65,19 @@ struct BinaryStringMacros
 
 	//=======================================================
     template<class T>
-	static void 		extractValueFromBinaryString( // defined in included .icc source
+	static void 		extractValueFromBinaryString( ///< defined in included .icc source
 		const std::string&							binaryBuffer, 
         T&            								value,
         unsigned int 								bitIndex  = 0);
 	
-	// specialized for string value
+	/// specialized for string value
 	static void 		extractValueFromBinaryString( 
 		const std::string&       					binaryBuffer,
         std::string& 								value,
 		unsigned int       							valueNumberOfBits,
         unsigned int       							bitIndex  = 0);   
 
-	// specialized for generic void* handling (actually does the work)
+	/// specialized for generic void* handling (actually does the work)
 	static void 		extractValueFromBinaryString( 
 		const void*       							binaryBuffer,
 		unsigned int       							bufferNumberOfBytes,

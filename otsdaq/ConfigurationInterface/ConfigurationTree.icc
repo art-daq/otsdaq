@@ -1,8 +1,8 @@
 
 //==============================================================================
-// getValue (not std::string value)
-//	throw exception unless it value node
-// NOTE: can not overload functions based on return type, so T& passed as value
+/// getValue (not std::string value)
+///	throw exception unless it value node
+/// NOTE: can not overload functions based on return type, so T& passed as value
 template<class T>
 void ConfigurationTree::getValue(T& value) const
 {
@@ -71,10 +71,10 @@ void ConfigurationTree::getValue(T& value) const
 }  // end getValue<T>()
 
 //==============================================================================
-// getValue (not std::string value)
-//	throw exception unless it value node
-// NOTE: can not overload functions based on return type, so calls function with T& passed
-// as value
+/// getValue (not std::string value)
+///	throw exception unless it value node
+/// NOTE: can not overload functions based on return type, so calls function with T& passed
+/// as value
 template<class T>
 T ConfigurationTree::getValue(void) const
 {
@@ -84,10 +84,10 @@ T ConfigurationTree::getValue(void) const
 }  // end T getValue()
 
 //==============================================================================
-// getValueWithDefault (not std::string value)
-//	throw exception unless it value node
-// NOTE: can not overload functions based on return type, so calls function with T& passed
-// as value
+/// getValueWithDefault (not std::string value)
+///	throw exception unless it value node
+/// NOTE: can not overload functions based on return type, so calls function with T& passed
+/// as value
 template<class T>
 T ConfigurationTree::getValueWithDefault(const T& defaultValue) const
 {

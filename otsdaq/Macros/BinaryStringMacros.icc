@@ -1,9 +1,9 @@
 
 //========================================================================================================================
-// binaryNumberToHexString
-//	static template function
-//	convert a data buffer string a hex string
-//		8 bytes at a time with the least significant byte last.
+/// binaryNumberToHexString
+///	static template function
+///	convert a data buffer string a hex string
+///		8 bytes at a time with the least significant byte last.
 template<class T>
 std::string BinaryStringMacros::binaryNumberToHexString(
     const T&           binaryBuffer,
@@ -15,9 +15,9 @@ std::string BinaryStringMacros::binaryNumberToHexString(
 }  // end binaryNumberToHexString()
 
 //========================================================================================================================
-// insertValueInBinaryString
-//	static template function
-//	Insert value in at buffer starting at bitIndex position
+/// insertValueInBinaryString
+///	static template function
+///	Insert value in at buffer starting at bitIndex position
 template<class T>
 void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer,
                                                    T            value,
@@ -62,9 +62,9 @@ void BinaryStringMacros::insertValueInBinaryString(std::string& binaryBuffer,
 }  // end insertValueInBinaryString()
 
 //========================================================================================================================
-// extractValueFromBinaryString
-//	static template function
-//	Extract value from buffer starting at bitIndex position
+/// extractValueFromBinaryString
+///	static template function
+///	Extract value from buffer starting at bitIndex position
 template<class T>
 void BinaryStringMacros::extractValueFromBinaryString(const std::string& binaryBuffer,
                                                       T&                 value,

@@ -7,18 +7,18 @@
 
 namespace ots
 {
-// DataConsumer
-//	This class provides base class functionality for Data Consumer plugin classes to
-//	extracts and process streaming data from a Buffer.
+/// DataConsumer
+///	This class provides base class functionality for Data Consumer plugin classes to
+///	extracts and process streaming data from a Buffer.
 class DataConsumer : public DataProcessor, public virtual WorkLoop
 {
   public:
 	enum ConsumerPriority
 	{
-		LowConsumerPriority,  // If the buffers are full because a low priority consumer
-		                      // didn't emptied them then overwrite
-		HighConsumerPriority  // Can't overwrite but need to wait for sometime before
-		                      // writing a buffer
+		LowConsumerPriority,  ///< If the buffers are full because a low priority consumer
+		                      ///< didn't emptied them then overwrite
+		HighConsumerPriority  ///< Can't overwrite but need to wait for sometime before
+		                      ///< writing a buffer
 	};
 	DataConsumer(std::string      supervisorApplicationUID,
 	             std::string      bufferUID,
@@ -33,7 +33,7 @@ class DataConsumer : public DataProcessor, public virtual WorkLoop
 	virtual void startProcessingData(std::string runNumber);
 	virtual void stopProcessingData(void);
 
-	// Copies the buffer into the passed parameters
+	/// Copies the buffer into the passed parameters
 	template<class D, class H>
 	int read(D& buffer, H& header)
 	{
@@ -41,7 +41,7 @@ class DataConsumer : public DataProcessor, public virtual WorkLoop
 		    ->read(buffer, header, processorUID_);
 	}
 
-	// Fast version where you point to the buffer without copying
+	/// Fast version where you point to the buffer without copying
 	template<class D, class H>
 	int read(D*& buffer, H*& header)
 	{

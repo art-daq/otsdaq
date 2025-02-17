@@ -72,10 +72,10 @@ std::string FiniteStateMachine::getCurrentStateName(void)
 }
 
 //==============================================================================
-// getTimeInState
-//	returns number of seconds elapsed while in current state
-//	returns 0 if invalid (i.e. stateEntranceTime_ is not set - stateEntranceTime_ is
-// initialized to 0)
+/// getTimeInState
+///	returns number of seconds elapsed while in current state
+///	returns 0 if invalid (i.e. stateEntranceTime_ is not set - stateEntranceTime_ is
+/// initialized to 0)
 time_t FiniteStateMachine::getTimeInState(void) const
 {
 	return stateEntranceTime_ ? (time(0) - stateEntranceTime_) : 0;
@@ -192,13 +192,13 @@ bool FiniteStateMachine::execTransition(const std::string& transition)
 }  // end execTransition()
 
 //==============================================================================
-// execTransition
-//
-//	Returns true if transition is successfully executed
-//		else false if this exec did not complete a transition.
-//
-//	Note: For iteration handling, there is iterationIndex_ and iterationWorkFlag_.
-//		These are different (higher level) than the members of VStateMachine.
+/// execTransition
+///
+///	Returns true if transition is successfully executed
+///		else false if this exec did not complete a transition.
+///
+///	Note: For iteration handling, there is iterationIndex_ and iterationWorkFlag_.
+///		These are different (higher level) than the members of VStateMachine.
 bool FiniteStateMachine::execTransition(const std::string&            transition,
                                         const xoap::MessageReference& message)
 {

@@ -54,9 +54,9 @@ void FEVInterface::sendToFrontEnd(const std::string& targetInterfaceID,
 }  // end sendToFrontEnd()
 
 //========================================================================================================================
-// receiveFromFrontEnd
-//	* can be used for source interface ID to accept a message from any front-end
-// NOTE: can not overload functions based on return type, so T& passed as value
+/// receiveFromFrontEnd
+///	* can be used for source interface ID to accept a message from any front-end
+/// NOTE: can not overload functions based on return type, so T& passed as value
 template<class T>
 void FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID,
                                        T&                 retValue,
@@ -76,8 +76,8 @@ void FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID,
 }  // end receiveFromFrontEnd()
 
 //========================================================================================================================
-// NOTE: can not overload functions based on return type, so calls function with T& passed
-// as value
+/// NOTE: can not overload functions based on return type, so calls function with T& passed
+/// as value
 template<class T>
 T FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID,
                                     unsigned int       timeoutInSeconds) const
@@ -116,7 +116,7 @@ std::string& FEVInterface::emplaceFEMacroArgumentValue(frontEndMacroArgs_t args,
 }  // end emplaceFEMacroArgumentValue()
 
 //========================================================================================================================
-// Note: not a member of FEVInterface
+/// Note: not a member of FEVInterface
 template<class T>
 T getFEMacroConstArgumentValue(FEVInterface::frontEndMacroConstArgs_t args,
                                const std::string&                     argName,
@@ -146,7 +146,7 @@ T getFEMacroConstArgumentValue(FEVInterface::frontEndMacroConstArgs_t args,
 }  // end getFEMacroConstArgumentValue()
 
 //========================================================================================================================
-// Note: not a member of FEVInterface
+/// Note: not a member of FEVInterface
 template<class T>
 T getFEMacroArgumentValue(FEVInterface::frontEndMacroArgs_t args,
                           const std::string&                argName)

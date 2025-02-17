@@ -18,81 +18,14 @@ using namespace ots;
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "RemoteWebUsers"
 
-// clang-format off
 //==============================================================================
-// User Notes:
-//	- use xmlRequestGateway to check security from outside the Supervisor and Wizard
-//
-//	Example usage:
-//
-//
-//
-//			void exampleClass::exampleRequestHandler(xgi::Input * in, xgi::Output * out)
-//
-//			{
-//				cgicc::Cgicc cgi(in);
-//
-//				//...
-//
-//				HttpXmlDocument xmldoc;
-//				std::string userWithLock, userName, displayName;
-//				uint64_t activeSessionIndex;
-//				uint8_t userPermissions;
-//
-//				//**** start LOGIN GATEWAY CODE ***//
-//				//check cookieCode, sequence, userWithLock, and permissions access all in
-// one  shot!
-//				{
-//					bool automaticCommand = 0; //automatic commands should not refresh
-// cookie  code.. only user initiated commands should! 					bool checkLock =
-// true; 					bool lockRequired = true;
-//
-//					if(!theRemoteWebUsers_.xmlRequestToGateway(
-//							cgi,out,&xmldoc,theSupervisorsConfiguration_
-//							,&userPermissions  			//acquire user's access level
-//(optionally  null  pointer)//
-//							,!automaticCommand			//true/false refresh cookie code
-//							,USER_PERMISSIONS_THRESHOLD //set access level requirement to
-// pass  gateway
-//							,checkLock					//true/false enable check that
-// system  is  unlocked  or  this user has the lock ,lockRequired
-////true/false requires this user has the lock to  proceed
-//							,&userWithLock				//acquire username with lock
-//(optionally  null  pointer)
-//							,&userName					//acquire username of this user
-//(optionally
-// null  pointer) 							,0//,&displayName			//acquire user's
-// Display  Name
-//							,0//,&activeSessionIndex	//acquire user's session index
-// associated  with  the cookieCode
-//							))
-//					{	//failure
-//						//std::cout << out->str() << std::endl; //could print out return
-// string  on  failure 						return;
-//					}
-//				}
-//				//done checking cookieCode, sequence, userWithLock, and permissions access
-// all  in one shot!
-//				//**** end LOGIN GATEWAY CODE ***//
-//
-//				//Success! if here.
-//				//
-//				//... use acquired values below
-//				//...
-//
-//				//add to xml document, for example:
-//				//DOMElement* parentEl;
-//				//parentEl = xmldoc.addTextElementToData("ExampleTag", "parent-data");
-//				//xmldoc.addTextElementToParent("ExampleChild", "child-data", parentEl);
-//
-//				//return xml doc holding server response
-//				//xmldoc.outputXmlDocument((std::ostringstream*) out, true); //true to
-// also  print to std::cout
-//			}
-//
-//
-// clang-format on
-
+/// User Notes:
+///	- use xmlRequestGateway to check security from outside the Supervisor and Wizard
+///
+///	Example usage: at void CoreSupervisorBase::requestWrapper(xgi::Input* in, xgi::Output* out)
+///
+///
+///
 //==============================================================================
 RemoteWebUsers::RemoteWebUsers(
     xdaq::Application* application,
@@ -105,9 +38,9 @@ RemoteWebUsers::RemoteWebUsers(
 }  // end constructor()
 
 //==============================================================================
-// xmlRequestGateway
-//	if false, user code should just return.. out is handled on false; on true, out is
-// untouched
+/// xmlRequestGateway
+///	if false, user code should just return.. out is handled on false; on true, out is
+/// untouched
 bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
                                          std::ostringstream*        out,
                                          HttpXmlDocument*           xmldoc,
@@ -234,9 +167,9 @@ HANDLE_ACCESS_FAILURE:
 }  // end xmlRequestToGateway()
 
 //==============================================================================
-// getActiveUserList
-//	if lastUpdateTime is not too recent as spec'd by ACTIVE_USERS_UPDATE_THRESHOLD
-//	if server responds with
+/// getActiveUserList
+///	if lastUpdateTime is not too recent as spec'd by ACTIVE_USERS_UPDATE_THRESHOLD
+///	if server responds with
 std::string RemoteWebUsers::getActiveUserList()
 {
 	if(time(0) - ActiveUserLastUpdateTime_ >
@@ -259,11 +192,11 @@ std::string RemoteWebUsers::getActiveUserList()
 }  // end getActiveUserList()
 
 //==============================================================================
-// getLastTableGroups
-//	request last "Configured" or "Started" group, for example
-//	returns empty "" for actionTimeString on failure
-//	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
-// has occurred
+/// getLastTableGroups
+///	request last "Configured" or "Started" group, for example
+///	returns empty "" for actionTimeString on failure
+///	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
+/// has occurred
 void RemoteWebUsers::getLastTableGroups(
     std::map<std::string /* group type */,
              std::tuple<std::string /*group name*/,
@@ -320,11 +253,11 @@ void RemoteWebUsers::getLastTableGroups(
 }  // end getLastTableGroup()
 
 //==============================================================================
-// getLastTableGroup
-//	request last "Configured" or "Started" group, for example
-//	returns empty "" for actionTimeString on failure
-//	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
-// has occurred
+/// getLastTableGroup
+///	request last "Configured" or "Started" group, for example
+///	returns empty "" for actionTimeString on failure
+///	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
+/// has occurred
 std::pair<std::string /*group name*/, TableGroupKey> RemoteWebUsers::getLastTableGroup(
     const std::string& actionOfLastGroup, std::string& actionTimeString)
 {
@@ -359,9 +292,9 @@ std::pair<std::string /*group name*/, TableGroupKey> RemoteWebUsers::getLastTabl
 }  // end getLastTableGroup()
 
 //==============================================================================
-// sendSystemMessage
-//	send system message to toUser through Supervisor
-//	toUser wild card * is to all users
+/// sendSystemMessage
+///	send system message to toUser through Supervisor
+///	toUser wild card * is to all users
 void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
                                        const std::string& message,
                                        bool               doEmail /*=false*/)
@@ -370,9 +303,9 @@ void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
 }  // end sendSystemMessage)
 
 //==============================================================================
-// sendSystemMessage
-//	send system message to toUser comma separate variable (CSV) list through Supervisor
-//	toUser wild card * is to all users
+/// sendSystemMessage
+///	send system message to toUser comma separate variable (CSV) list through Supervisor
+///	toUser wild card * is to all users
 void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
                                        const std::string& subject,
                                        const std::string& message,
@@ -391,8 +324,8 @@ void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
 }  // end sendSystemMessage)
 
 //==============================================================================
-// makeSystemLogEntry
-//	make system logbook through Supervisor
+/// makeSystemLogEntry
+///	make system logbook through Supervisor
 void RemoteWebUsers::makeSystemLogEntry(const std::string& entryText)
 {
 	SOAPParameters parameters;

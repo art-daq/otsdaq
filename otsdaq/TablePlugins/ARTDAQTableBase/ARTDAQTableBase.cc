@@ -56,17 +56,17 @@ ARTDAQTableBase::ColARTDAQNotReader 	ARTDAQTableBase::colARTDAQNotReader_;
 ARTDAQTableBase::ColARTDAQDaq 			ARTDAQTableBase::colARTDAQDaq_;
 ARTDAQTableBase::ColARTDAQDaqParameter 	ARTDAQTableBase::colARTDAQDaqParameter_;
 
-//Note!!!! processTypes_ must be instantiate after the static artdaq table names (to construct map in constructor in .h)
+///Note!!!! processTypes_ must be instantiate after the static artdaq table names (to construct map in constructor in .h)
 ARTDAQTableBase::ProcessTypes 			ARTDAQTableBase::processTypes_;
 
 // clang-format on
 
 //==============================================================================
-// TableBase
-//	If a valid string pointer is passed in accumulatedExceptions
-//	then allowIllegalColumns is set for InfoReader
-//	If accumulatedExceptions pointer = 0, then illegal columns throw std::runtime_error
-// exception
+/// TableBase
+///	If a valid string pointer is passed in accumulatedExceptions
+///	then allowIllegalColumns is set for InfoReader
+///	If accumulatedExceptions pointer = 0, then illegal columns throw std::runtime_error
+/// exception
 ARTDAQTableBase::ARTDAQTableBase(std::string  tableName,
                                  std::string* accumulatedExceptions /* =0 */)
     : TableBase(tableName, accumulatedExceptions)
@@ -91,8 +91,8 @@ ARTDAQTableBase::ARTDAQTableBase(std::string  tableName,
 }  // end constuctor()
 
 //==============================================================================
-// ARTDAQTableBase
-//	Default constructor should never be used because table type is lost
+/// ARTDAQTableBase
+///	Default constructor should never be used because table type is lost
 ARTDAQTableBase::ARTDAQTableBase(void) : TableBase("ARTDAQTableBase")
 {
 	__SS__ << "Should not call void constructor, table type is lost!" << __E__;
@@ -203,12 +203,12 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType type, const std::string& name)
 }  // end flattenFHICL()
 
 //==============================================================================
-// insertParameters
-//	Inserts parameters in FHiCL outputs stream.
-//
-// 	onlyInsertAtTableParameters allows @table:: parameters only,
-//	so that calling code can do two passes (i.e. top of fcl block, @table:: only,
-//	and bottom of fcl block, ignore/skip @table:: as default behavior).
+/// insertParameters
+///	Inserts parameters in FHiCL outputs stream.
+///
+/// 	onlyInsertAtTableParameters allows @table:: parameters only,
+///	so that calling code can do two passes (i.e. top of fcl block, @table:: only,
+///	and bottom of fcl block, ignore/skip @table:: as default behavior).
 void ARTDAQTableBase::insertParameters(std::ostream&      out,
                                        std::string&       tabStr,
                                        std::string&       commentStr,
@@ -279,8 +279,8 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 }  // end insertParameters()
 
 //==============================================================================
-// insertModuleType
-//	Inserts module type field, with consideration for @table::
+/// insertModuleType
+///	Inserts module type field, with consideration for @table::
 std::string ARTDAQTableBase::insertModuleType(std::ostream&     out,
                                               std::string&      tabStr,
                                               std::string&      commentStr,
@@ -297,7 +297,7 @@ std::string ARTDAQTableBase::insertModuleType(std::ostream&     out,
 }  // end insertModuleType()
 
 //==============================================================================
-// insertMetricsBlock
+/// insertMetricsBlock
 void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
                                          std::string&      tabStr,
                                          std::string&      commentStr,
@@ -649,8 +649,8 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 }  // end outputReaderFHICL()
 
 //==============================================================================
-// outputDataReceiverFHICL
-//	Note: currently selfRank and selfPort are unused by artdaq fcl
+/// outputDataReceiverFHICL
+///	Note: currently selfRank and selfPort are unused by artdaq fcl
 void ARTDAQTableBase::outputDataReceiverFHICL(
     const ConfigurationTree& receiverNode,
     ARTDAQAppType            appType,
@@ -839,8 +839,8 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 }  // end outputDataReceiverFHICL()
 
 //==============================================================================
-// outputOnlineMonitorFHICL
-//	Note: currently selfRank and selfPort are unused by artdaq fcl
+/// outputOnlineMonitorFHICL
+///	Note: currently selfRank and selfPort are unused by artdaq fcl
 void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorNode)
 {
 	std::string filename =
@@ -1029,8 +1029,8 @@ void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorN
 }  // end outputDataReceiverFHICL()
 
 //==============================================================================
-// insertArtProcessBlock
-//	Note: currently selfRank and selfPort are unused by artdaq fcl
+/// insertArtProcessBlock
+///	Note: currently selfRank and selfPort are unused by artdaq fcl
 void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
                                             std::string&      tabStr,
                                             std::string&      commentStr,
@@ -2198,7 +2198,7 @@ void ARTDAQTableBase::extractDispatchersInfo(ConfigurationTree artdaqSupervisorN
 }  // end extractDispatchersInfo()
 
 //==============================================================================
-//	isARTDAQEnabled
+///	isARTDAQEnabled
 bool ARTDAQTableBase::isARTDAQEnabled(const ConfigurationManager* cfgMgr)
 {
 	auto contexts =
@@ -2224,14 +2224,14 @@ bool ARTDAQTableBase::isARTDAQEnabled(const ConfigurationManager* cfgMgr)
 }  // end isARTDAQEnabled()
 
 //==============================================================================
-//	getARTDAQSystem
-//
-//		static function to retrive the active ARTDAQ system configuration.
-//
-//	Subsystem map to destination subsystem name.
-//	Node properties: {status,hostname,subsystemName,(nodeArrString),(hostnameArrString),(hostnameFixedWidth)}
-//	artdaqSupervisoInfo: {name, status, context address, context port}
-//
+///	getARTDAQSystem
+///
+///		static function to retrive the active ARTDAQ system configuration.
+///
+///	Subsystem map to destination subsystem name.
+///	Node properties: {status,hostname,subsystemName,(nodeArrString),(hostnameArrString),(hostnameFixedWidth)}
+///	artdaqSupervisoInfo: {name, status, context address, context port}
+///
 const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
     ConfigurationManagerRW* cfgMgr,
     std::map<std::string /*type*/,
@@ -2856,14 +2856,14 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 }  // end getARTDAQSystem()
 
 //==============================================================================
-//	setAndActivateARTDAQSystem
-//
-//		static function to modify the active configuration based on
-//	node object and subsystem object.
-//
-//	Subsystem map to destination subsystem name.
-//	Node properties: {originalName,status,hostname,subsystemName,(nodeArrString),(hostnameArrString),(hostnameFixedWidth)}
-//
+///	setAndActivateARTDAQSystem
+///
+///		static function to modify the active configuration based on
+///	node object and subsystem object.
+///
+///	Subsystem map to destination subsystem name.
+///	Node properties: {originalName,status,hostname,subsystemName,(nodeArrString),(hostnameArrString),(hostnameFixedWidth)}
+///
 void ARTDAQTableBase::setAndActivateARTDAQSystem(
     ConfigurationManagerRW*                                          cfgMgr,
     const std::map<std::string /*type*/,

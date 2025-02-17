@@ -14,8 +14,8 @@ FESlowControlsTable::FESlowControlsTable(void) : TableBase("FESlowControlsTable"
 FESlowControlsTable::~FESlowControlsTable(void) {}
 
 //==============================================================================
-// init
-//	Validates user inputs for data type.
+/// init
+///	Validates user inputs for data type.
 void FESlowControlsTable::init(ConfigurationManager* configManager)
 {
 	// use isFirstAppInContext to only run once per context, for example to avoie

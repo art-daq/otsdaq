@@ -1,31 +1,31 @@
 //==============================================================================
-// get
-//	Note: If filling, assume, new view becomes active view.
-//
-//	Loose column matching can be used to ignore column names when filling.
-//
-//	if accumulatedErrors, then invalid data is allowed
-//		(not the same as "warnings allowed", because could create invalid tree
-// situations)
-// void ConfigurationInterface::get(
-//		TableBase*&                          table,
-//		const std::string                    tableName,
-//		std::shared_ptr<const TableGroupKey> groupKey            /*= 0*/,
-//		const std::string*                   groupName           /*= 0*/,
-//		bool                                 dontFill            /*= false*/,
-//		TableVersion                         version             /*= TableVersion()*/,
-//		bool                                 resetConfiguration  /*= true*/,
-//		bool                                 looseColumnMatching /*= false*/,
-//		std::string*                         accumulatedErrors   /*= 0*/)
-
+/// get
+///	Note: If filling, assume, new view becomes active view.
+///
+///	Loose column matching can be used to ignore column names when filling.
+///
+///	if accumulatedErrors, then invalid data is allowed
+///		(not the same as "warnings allowed", because could create invalid tree
+/// situations)
+/// void ConfigurationInterface::get(
+///		TableBase*&                          table,
+///		const std::string                    tableName,
+///		std::shared_ptr<const TableGroupKey> groupKey            /*= 0*/,
+///		const std::string*                   groupName           /*= 0*/,
+///		bool                                 dontFill            /*= false*/,
+///		TableVersion                         version             /*= TableVersion()*/,
+///		bool                                 resetConfiguration  /*= true*/,
+///		bool                                 looseColumnMatching /*= false*/,
+///		std::string*                         accumulatedErrors   /*= 0*/)
+///
 //==============================================================================
-// get
-//	Note: If filling, assume, new view becomes active view.
-//
-//	Loose column matching can be used to ignore column names when filling.
-//
-//	if accumulatedErrors, then invalid data is allowed
-//		(not the same as "warnings allowed", because could create invalid tree situations)
+/// get
+///	Note: If filling, assume, new view becomes active view.
+///
+///	Loose column matching can be used to ignore column names when filling.
+///
+///	if accumulatedErrors, then invalid data is allowed
+///		(not the same as "warnings allowed", because could create invalid tree situations)
 void get(TableBase*&                          table,
          const std::string                    tableName,
          std::shared_ptr<const TableGroupKey> groupKey            = 0,

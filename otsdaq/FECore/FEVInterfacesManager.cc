@@ -169,10 +169,10 @@ void FEVInterfacesManager::createInterfaces(void)
 }  // end createInterfaces()
 
 //==============================================================================
-// virtual progress string that can be overridden with more info
-//	e.g. steps and substeps
-//	however integer 0-100 should be first number, then separated by : colons
-//	e.g. 94:FE0:1:2
+/// virtual progress string that can be overridden with more info
+///	e.g. steps and substeps
+///	however integer 0-100 should be first number, then separated by : colons
+///	e.g. 94:FE0:1:2
 std::string FEVInterfacesManager::getStatusProgressDetail(void)
 {
 	std::string  progress = "";
@@ -494,7 +494,7 @@ void FEVInterfacesManager::stop(void)
 }  // end stop()
 
 //==============================================================================
-// getFEInterfaceP
+/// getFEInterfaceP
 FEVInterface* FEVInterfacesManager::getFEInterfaceP(const std::string& interfaceID)
 {
 	try
@@ -510,7 +510,7 @@ FEVInterface* FEVInterfacesManager::getFEInterfaceP(const std::string& interface
 }  // end getFEInterfaceP()
 
 //==============================================================================
-// getFEInterface
+/// getFEInterface
 const FEVInterface& FEVInterfacesManager::getFEInterface(
     const std::string& interfaceID) const
 {
@@ -527,9 +527,9 @@ const FEVInterface& FEVInterfacesManager::getFEInterface(
 }  // end getFEInterface()
 
 //==============================================================================
-// universalRead
-//	used by MacroMaker
-//	throw std::runtime_error on error/timeout
+/// universalRead
+///	used by MacroMaker
+///	throw std::runtime_error on error/timeout
 void FEVInterfacesManager::universalRead(const std::string& interfaceID,
                                          char*              address,
                                          char*              returnValue)
@@ -538,8 +538,8 @@ void FEVInterfacesManager::universalRead(const std::string& interfaceID,
 }  // end universalRead()
 
 //==============================================================================
-// getInterfaceUniversalAddressSize
-//	used by MacroMaker
+/// getInterfaceUniversalAddressSize
+///	used by MacroMaker
 unsigned int FEVInterfacesManager::getInterfaceUniversalAddressSize(
     const std::string& interfaceID)
 {
@@ -547,8 +547,8 @@ unsigned int FEVInterfacesManager::getInterfaceUniversalAddressSize(
 }  // end getInterfaceUniversalAddressSize()
 
 //==============================================================================
-// getInterfaceUniversalDataSize
-//	used by MacroMaker
+/// getInterfaceUniversalDataSize
+///	used by MacroMaker
 unsigned int FEVInterfacesManager::getInterfaceUniversalDataSize(
     const std::string& interfaceID)
 {
@@ -556,8 +556,8 @@ unsigned int FEVInterfacesManager::getInterfaceUniversalDataSize(
 }  // end getInterfaceUniversalDataSize()
 
 //==============================================================================
-// universalWrite
-//	used by MacroMaker
+/// universalWrite
+///	used by MacroMaker
 void FEVInterfacesManager::universalWrite(const std::string& interfaceID,
                                           char*              address,
                                           char*              writeValue)
@@ -566,10 +566,10 @@ void FEVInterfacesManager::universalWrite(const std::string& interfaceID,
 }  // end universalWrite()
 
 //==============================================================================
-// getFEListString
-//	returns string with each new line for each FE
-//	each line:
-//		<interface type>:<parent supervisor lid>:<interface UID>
+/// getFEListString
+///	returns string with each new line for each FE
+///	each line:
+///		<interface type>:<parent supervisor lid>:<interface UID>
 std::string FEVInterfacesManager::getFEListString(const std::string& supervisorLid)
 {
 	std::string retList = "";
@@ -585,22 +585,22 @@ std::string FEVInterfacesManager::getFEListString(const std::string& supervisorL
 }  // end getFEListString()
 
 //==============================================================================
-// startMacroMultiDimensional
-//	Launches a thread that manages the multi-dimensional loop
-//		running the Macro on the specified FE interface.
-//	Called by iterator (for now).
-//
-//	Note: no output arguments are returned, but outputs are
-//		optionally saved to file.
-//
-//
-//	inputs:
-//		- inputArgs: dimensional semi-colon-separated,
-//			comma separated: dimension iterations and arguments (colon-separated
-// name/value/stepsize sets)
-//
-//	outputs:
-//		- throws exception on failure
+/// startMacroMultiDimensional
+///	Launches a thread that manages the multi-dimensional loop
+///		running the Macro on the specified FE interface.
+///	Called by iterator (for now).
+///
+///	Note: no output arguments are returned, but outputs are
+///		optionally saved to file.
+///
+///
+///	inputs:
+///		- inputArgs: dimensional semi-colon-separated,
+///			comma separated: dimension iterations and arguments (colon-separated
+/// name/value/stepsize sets)
+///
+///	outputs:
+///		- throws exception on failure
 void FEVInterfacesManager::startMacroMultiDimensional(const std::string& requester,
                                                       const std::string& interfaceID,
                                                       const std::string& macroName,
@@ -1158,22 +1158,22 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 }  // end startMacroMultiDimensional()
 
 //==============================================================================
-// startFEMacroMultiDimensional
-//	Launches a thread that manages the multi-dimensional loop
-//		running the FE Macro in the specified FE interface.
-//	Called by iterator (for now).
-//
-//	Note: no output arguments are returned, but outputs are
-//		optionally saved to file.
-//
-//
-//	inputs:
-//		- inputArgs: dimensional semi-colon-separated,
-//			comma separated: dimension iterations and arguments (colon-separated
-// name/value/stepsize sets)
-//
-//	outputs:
-//		- throws exception on failure
+/// startFEMacroMultiDimensional
+///	Launches a thread that manages the multi-dimensional loop
+///		running the FE Macro in the specified FE interface.
+///	Called by iterator (for now).
+///
+///	Note: no output arguments are returned, but outputs are
+///		optionally saved to file.
+///
+///
+///	inputs:
+///		- inputArgs: dimensional semi-colon-separated,
+///			comma separated: dimension iterations and arguments (colon-separated
+/// name/value/stepsize sets)
+///
+///	outputs:
+///		- throws exception on failure
 void FEVInterfacesManager::startFEMacroMultiDimensional(
     const std::string& requester,
     const std::string& interfaceID,
@@ -1864,12 +1864,12 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 }  // end startFEMacroMultiDimensional()
 
 //==============================================================================
-// checkFEMacroMultiDimensional
-//	Checks for the completion of the thread that manages the multi-dimensional loop
-//		running the FE Macro or MacroMaker Macro in the specified FE interface.
-//	Called by iterator (for now).
-//
-//	Returns true if multi-dimensional launch is done
+/// checkFEMacroMultiDimensional
+///	Checks for the completion of the thread that manages the multi-dimensional loop
+///		running the FE Macro or MacroMaker Macro in the specified FE interface.
+///	Called by iterator (for now).
+///
+///	Returns true if multi-dimensional launch is done
 bool FEVInterfacesManager::checkMacroMultiDimensional(const std::string& interfaceID,
                                                       const std::string& macroName)
 {
@@ -1908,17 +1908,17 @@ bool FEVInterfacesManager::checkMacroMultiDimensional(const std::string& interfa
 }  // end checkMacroMultiDimensional()
 
 //==============================================================================
-// runFEMacroByFE
-//	Runs the FE Macro in the specified FE interface. Called by another FE.
-//
-//	inputs:
-//		- inputArgs: colon-separated name/value pairs, and then comma-separated
-//		- outputArgs: comma-separated (Note: resolved for FE, allowing FE to not know
-// output  arguments)
-//
-//	outputs:
-//		- throws exception on failure
-//		- outputArgs: colon-separate name/value pairs, and then comma-separated
+/// runFEMacroByFE
+///	Runs the FE Macro in the specified FE interface. Called by another FE.
+///
+///	inputs:
+///		- inputArgs: colon-separated name/value pairs, and then comma-separated
+///		- outputArgs: comma-separated (Note: resolved for FE, allowing FE to not know
+/// output  arguments)
+///
+///	outputs:
+///		- throws exception on failure
+///		- outputArgs: colon-separate name/value pairs, and then comma-separated
 void FEVInterfacesManager::runFEMacroByFE(const std::string& callingInterfaceID,
                                           const std::string& interfaceID,
                                           const std::string& feMacroName,
@@ -1974,16 +1974,16 @@ void FEVInterfacesManager::runFEMacroByFE(const std::string& callingInterfaceID,
 }  // end runFEMacroByFE()
 
 //==============================================================================
-// runMacro
-//	Runs the MacroMaker Macro in the specified FE interface.
-//
-//	inputs:
-//		- inputArgs: colon-separated name/value pairs, and then comma-separated
-//		- outputArgs: comma-separated
-//
-//	outputs:
-//		- throws exception on failure
-//		- outputArgs: colon-separate name/value pairs, and then comma-separated
+/// runMacro
+///	Runs the MacroMaker Macro in the specified FE interface.
+///
+///	inputs:
+///		- inputArgs: colon-separated name/value pairs, and then comma-separated
+///		- outputArgs: comma-separated
+///
+///	outputs:
+///		- throws exception on failure
+///		- outputArgs: colon-separate name/value pairs, and then comma-separated
 void FEVInterfacesManager::runMacro(const std::string& interfaceID,
                                     const std::string& macroObjectString,
                                     const std::string& inputArgs,
@@ -2128,16 +2128,16 @@ void FEVInterfacesManager::runMacro(const std::string& interfaceID,
 }  // end runMacro()
 
 //==============================================================================
-// runFEMacro
-//	Runs the FE Macro in the specified FE interface.
-//
-//	inputs:
-//		- inputArgs: colon-separated name/value pairs, and then comma-separated
-//		- outputArgs: comma-separated
-//
-//	outputs:
-//		- throws exception on failure
-//		- outputArgs: colon-separate name/value pairs, and then comma-separated
+/// runFEMacro
+///	Runs the FE Macro in the specified FE interface.
+///
+///	inputs:
+///		- inputArgs: colon-separated name/value pairs, and then comma-separated
+///		- outputArgs: comma-separated
+///
+///	outputs:
+///		- throws exception on failure
+///		- outputArgs: colon-separate name/value pairs, and then comma-separated
 void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
                                       const std::string& feMacroName,
                                       const std::string& inputArgs,
@@ -2161,16 +2161,16 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 }  // end runFEMacro()
 
 //==============================================================================
-// runFEMacro
-//	Runs the FE Macro in the specified FE interface.
-//
-//	inputs:
-//		- inputArgs: semicolon-separated name/value pairs, and then comma-separated
-//		- outputArgs: comma-separated
-//
-//	outputs:
-//		- throws exception on failure
-//		- outputArgs: colon-separate name/value pairs, and then comma-separated
+/// runFEMacro
+///	Runs the FE Macro in the specified FE interface.
+///
+///	inputs:
+///		- inputArgs: semicolon-separated name/value pairs, and then comma-separated
+///		- outputArgs: comma-separated
+///
+///	outputs:
+///		- throws exception on failure
+///		- outputArgs: colon-separate name/value pairs, and then comma-separated
 void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
                                       const FEVInterface::frontEndMacroStruct_t& feMacro,
                                       const std::string& inputArgs,
@@ -2327,14 +2327,14 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 }  // end runFEMacro()
 
 //==============================================================================
-// getFEMacrosString
-//	returns string with each new line indicating the macros for a FE
-//	each line:
-//		<parent supervisor name>;<parent supervisor lid>;<interface type>;<interface UID>
-//		;<macro name>;<macro permissions req>;<macro tooltip>;<macro num of inputs>;...<input names ;
-// separated>...
-//		;<macro num of outputs>;...<output names ; separated>...
-//	do not use :-separator because of the : in user permissions strings
+/// getFEMacrosString
+///	returns string with each new line indicating the macros for a FE
+///	each line:
+///		<parent supervisor name>;<parent supervisor lid>;<interface type>;<interface UID>
+///		;<macro name>;<macro permissions req>;<macro tooltip>;<macro num of inputs>;...<input names ;
+/// separated>...
+///		;<macro num of outputs>;...<output names ; separated>...
+///	do not use :-separator because of the : in user permissions strings
 std::string FEVInterfacesManager::getFEMacrosString(const std::string& supervisorName,
                                                     const std::string& supervisorLid)
 {
@@ -2452,8 +2452,8 @@ void FEVInterfacesManager::preStateMachineExecution(unsigned int       i,
 }  // end preStateMachineExecution()
 
 //==============================================================================
-// postStateMachineExecution
-//	return false to indicate state machine is NOT done with transition
+/// postStateMachineExecution
+///	return false to indicate state machine is NOT done with transition
 bool FEVInterfacesManager::postStateMachineExecution(unsigned int i)
 {
 	if(i >= theFENamesByPriority_.size())

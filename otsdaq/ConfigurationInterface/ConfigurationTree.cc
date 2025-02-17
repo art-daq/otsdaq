@@ -116,18 +116,18 @@ ConfigurationTree::ConfigurationTree(const ConfigurationManager* const& configMg
 }  // end full constructor
 
 //==============================================================================
-// destructor
+/// destructor
 ConfigurationTree::~ConfigurationTree(void)
 {
 	//__COUT__ << __E__;
 }  // end destructor
 
 //==============================================================================
-// print
-//	print out tree from this node for desired depth
-//	depth of 0 means print out only this node's value
-//	depth of 1 means include this node's children's values, etc..
-//	depth of -1 means print full tree
+/// print
+///	print out tree from this node for desired depth
+///	depth of 0 means print out only this node's value
+///	depth of 1 means include this node's children's values, etc..
+///	depth of -1 means print full tree
 void ConfigurationTree::print(const unsigned int& depth, std::ostream& out) const
 {
 	recursivePrint(*this, depth, out, "\t");
@@ -191,10 +191,10 @@ std::string ConfigurationTree::handleValidateValueForColumn(
 }  // end std::string handleValidateValueForColumn()
 
 //==============================================================================
-// getValue (only std::string value)
-// special version of getValue for string type
-//	Note: necessary because types of std::basic_string<char> cause compiler problems if no
-// string specific function
+/// getValue (only std::string value)
+/// special version of getValue for string type
+///	Note: necessary because types of std::basic_string<char> cause compiler problems if no
+/// string specific function
 void ConfigurationTree::getValue(std::string& value) const
 {
 	//__COUT__ << row_ << " " << col_ << " p: " << tableView_<< __E__;
@@ -259,18 +259,18 @@ void ConfigurationTree::getValue(std::string& value) const
 }  // end getValue()
 
 //==============================================================================
-// getValue
-//	Only std::string value will work.
-//		If this is a value node, and not type string, configView->getValue should
-//		throw exception.
-//
-//	NOTE: getValueAsString() method should be preferred if getting the Link UID
-//		because when disconnected will return "X". getValue() would return the
-//		column name of the link when disconnected.
-//
+/// getValue
+///	Only std::string value will work.
+///		If this is a value node, and not type string, configView->getValue should
+///		throw exception.
+///
+///	NOTE: getValueAsString() method should be preferred if getting the Link UID
+///		because when disconnected will return "X". getValue() would return the
+///		column name of the link when disconnected.
+///
 ////special version of getValue for string type
-//	Note: if called without template, necessary because types of std::basic_string<char>
-// cause compiler problems if no string specific function
+///	Note: if called without template, necessary because types of std::basic_string<char>
+/// cause compiler problems if no string specific function
 std::string ConfigurationTree::getValue() const
 {
 	std::string value;
@@ -278,18 +278,18 @@ std::string ConfigurationTree::getValue() const
 	return value;
 }  // end getValue()
 //==============================================================================
-// getValueWithDefault
-//	Only std::string value will work.
-//		If this is a value node, and not type string, configView->getValue should
-//		throw exception.
-//
-//	NOTE: getValueAsString() method should be preferred if getting the Link UID
-//		because when disconnected will return "X". getValue() would return the
-//		column name of the link when disconnected.
-//
+/// getValueWithDefault
+///	Only std::string value will work.
+///		If this is a value node, and not type string, configView->getValue should
+///		throw exception.
+///
+///	NOTE: getValueAsString() method should be preferred if getting the Link UID
+///		because when disconnected will return "X". getValue() would return the
+///		column name of the link when disconnected.
+///
 ////special version of getValue for string type
-//	Note: if called without template, necessary because types of std::basic_string<char>
-// cause compiler problems if no string specific function
+///	Note: if called without template, necessary because types of std::basic_string<char>
+/// cause compiler problems if no string specific function
 std::string ConfigurationTree::getValueWithDefault(const std::string& defaultValue) const
 {
 	if(isDefaultValue())
@@ -299,10 +299,10 @@ std::string ConfigurationTree::getValueWithDefault(const std::string& defaultVal
 }  // end getValueWithDefault()
 
 //==============================================================================
-// getValue (only ConfigurationTree::BitMap value)
-// special version of getValue for string type
-//	Note: necessary because types of std::basic_string<char> cause compiler problems if no
-// string specific function
+/// getValue (only ConfigurationTree::BitMap value)
+/// special version of getValue for string type
+///	Note: necessary because types of std::basic_string<char> cause compiler problems if no
+/// string specific function
 void ConfigurationTree::getValueAsBitMap(ConfigurationTree::BitMap& bitmap) const
 {
 	//__COUT__ << row_ << " " << col_ << " p: " << tableView_<< __E__;
@@ -421,9 +421,9 @@ void ConfigurationTree::getValueAsBitMap(ConfigurationTree::BitMap& bitmap) cons
 }  // end getValueAsBitMap()
 
 //==============================================================================
-// getValue
-//
-//	special version of getValue for ConfigurationTree::BitMap type
+/// getValue
+///
+///	special version of getValue for ConfigurationTree::BitMap type
 ConfigurationTree::BitMap ConfigurationTree::getValueAsBitMap() const
 {
 	ConfigurationTree::BitMap value;
@@ -432,8 +432,8 @@ ConfigurationTree::BitMap ConfigurationTree::getValueAsBitMap() const
 }  // end getValueAsBitMap()
 
 //==============================================================================
-// getEscapedValue
-//	Only works if a value node, other exception thrown
+/// getEscapedValue
+///	Only works if a value node, other exception thrown
 std::string ConfigurationTree::getEscapedValue() const
 {
 	if(row_ != TableView::INVALID &&
@@ -448,7 +448,7 @@ std::string ConfigurationTree::getEscapedValue() const
 }  // end getEscapedValue()
 
 //==============================================================================
-// getTableName
+/// getTableName
 const std::string& ConfigurationTree::getTableName(void) const
 {
 	if(!table_)
@@ -474,7 +474,7 @@ const std::string& ConfigurationTree::getTableName(void) const
 }  // end getTableName()
 
 //==============================================================================
-// getParentTableName
+/// getParentTableName
 const std::string& ConfigurationTree::getParentTableName(void) const
 {
 	if(linkParentTable_)
@@ -486,7 +486,7 @@ const std::string& ConfigurationTree::getParentTableName(void) const
 }  // end getParentTableName()
 
 //==============================================================================
-// getNodeRow
+/// getNodeRow
 const unsigned int& ConfigurationTree::getNodeRow(void) const
 {
 	if(isUIDNode() || isValueNode())
@@ -511,10 +511,10 @@ const unsigned int& ConfigurationTree::getNodeRow(void) const
 }  // end getNodeRow()
 
 //==============================================================================
-// getFieldTableName
-//	returns the configuration name for the node's field.
-//		Note: for link nodes versus value nodes this has different functionality than
-// getTableName()
+/// getFieldTableName
+///	returns the configuration name for the node's field.
+///		Note: for link nodes versus value nodes this has different functionality than
+/// getTableName()
 const std::string& ConfigurationTree::getFieldTableName(void) const
 {
 	// if link node, need config name from parent
@@ -535,7 +535,7 @@ const std::string& ConfigurationTree::getFieldTableName(void) const
 }  // end getFieldTableName()
 
 //==============================================================================
-// getDisconnectedTableName
+/// getDisconnectedTableName
 const std::string& ConfigurationTree::getDisconnectedTableName(void) const
 {
 	if(isLinkNode() && isDisconnected())
@@ -550,7 +550,7 @@ const std::string& ConfigurationTree::getDisconnectedTableName(void) const
 }  // end getDisconnectedTableName()
 
 //==============================================================================
-// getDisconnectedLinkID
+/// getDisconnectedLinkID
 const std::string& ConfigurationTree::getDisconnectedLinkID(void) const
 {
 	if(isLinkNode() && isDisconnected())
@@ -565,7 +565,7 @@ const std::string& ConfigurationTree::getDisconnectedLinkID(void) const
 }  // end getDisconnectedLinkID()
 
 //==============================================================================
-// getTableVersion
+/// getTableVersion
 const TableVersion& ConfigurationTree::getTableVersion(void) const
 {
 	if(!tableView_)
@@ -580,7 +580,7 @@ const TableVersion& ConfigurationTree::getTableVersion(void) const
 }  // end getTableVersion()
 
 //==============================================================================
-// getTableCreationTime
+/// getTableCreationTime
 const time_t& ConfigurationTree::getTableCreationTime(void) const
 {
 	if(!tableView_)
@@ -596,8 +596,8 @@ const time_t& ConfigurationTree::getTableCreationTime(void) const
 }  // end getTableCreationTime()
 
 //==============================================================================
-// getSetOfGroupIDs
-//	returns set of group IDs if groupID value node
+/// getSetOfGroupIDs
+///	returns set of group IDs if groupID value node
 std::set<std::string> ConfigurationTree::getSetOfGroupIDs(void) const
 {
 	if(!isGroupIDNode())
@@ -614,9 +614,9 @@ std::set<std::string> ConfigurationTree::getSetOfGroupIDs(void) const
 }  // end getSetOfGroupIDs()
 
 //==============================================================================
-// getFixedChoices
-//	returns vector of default + data choices
-//	Used as choices for tree-view, for example.
+/// getFixedChoices
+///	returns vector of default + data choices
+///	Used as choices for tree-view, for example.
 std::vector<std::string> ConfigurationTree::getFixedChoices(void) const
 {
 	if(getValueType() != TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA &&
@@ -685,7 +685,7 @@ std::vector<std::string> ConfigurationTree::getFixedChoices(void) const
 }  // end getFixedChoices()
 
 //==============================================================================
-// getComment
+/// getComment
 const std::string& ConfigurationTree::getComment(void) const
 {
 	return getNode(TableViewColumnInfo::COL_NAME_COMMENT).getValueAsString() == ""
@@ -694,20 +694,20 @@ const std::string& ConfigurationTree::getComment(void) const
 }  // end getComment()
 
 //==============================================================================
-// getAuthor
+/// getAuthor
 const std::string& ConfigurationTree::getAuthor(void) const
 {
 	return getNode(TableViewColumnInfo::COL_NAME_AUTHOR).getValueAsString();
 }  // end getAuthor()
 
 //==============================================================================
-// getValueAsString
-//	NOTE: getValueAsString() method should be preferred if getting the Link UID
-//		because when disconnected will return "X". getValue() would return the
-//		column name of the link when disconnected.
-//
-//	returnLinkTableValue returns the value in the source table as though link was
-//		not followed to destination table.
+/// getValueAsString
+///	NOTE: getValueAsString() method should be preferred if getting the Link UID
+///		because when disconnected will return "X". getValue() would return the
+///		column name of the link when disconnected.
+///
+///	returnLinkTableValue returns the value in the source table as though link was
+///		not followed to destination table.
 const std::string& ConfigurationTree::getValueAsString(bool returnLinkTableValue) const
 {
 	//__COUTV__(col_);__COUTV__(row_);__COUTV__(table_);__COUTV__(tableView_);
@@ -762,9 +762,9 @@ const std::string& ConfigurationTree::getValueAsString(bool returnLinkTableValue
 }  // end getValueAsString()
 
 //==============================================================================
-// getUIDAsString
-//	returns UID associated with current value node or UID-Link node
-//
+/// getUIDAsString
+///	returns UID associated with current value node or UID-Link node
+///
 const std::string& ConfigurationTree::getUIDAsString(void) const
 {
 	if(isValueNode() || isUIDLinkNode() || isUIDNode())
@@ -781,8 +781,8 @@ const std::string& ConfigurationTree::getUIDAsString(void) const
 }  // end getUIDAsString()
 
 //==============================================================================
-// getValueDataType
-//	e.g. used to determine if node is type NUMBER
+/// getValueDataType
+///	e.g. used to determine if node is type NUMBER
 const std::string& ConfigurationTree::getValueDataType(void) const
 {
 	if(isValueNode())
@@ -792,8 +792,8 @@ const std::string& ConfigurationTree::getValueDataType(void) const
 }  // end getValueDataType()
 
 //==============================================================================
-// isDefaultValue
-//	returns true if is a value node and value is the default for the type
+/// isDefaultValue
+///	returns true if is a value node and value is the default for the type
 bool ConfigurationTree::isDefaultValue(void) const
 {
 	if(!isValueNode())
@@ -823,9 +823,9 @@ bool ConfigurationTree::isDefaultValue(void) const
 }  // end isDefaultValue()
 
 //==============================================================================
-// getDefaultValue
-//	returns default value if is value node
-// TODO: should a function to get if it is min and max value be included here??
+/// getDefaultValue
+///	returns default value if is value node
+/// TODO: should a function to get if it is min and max value be included here??
 const std::string& ConfigurationTree::getDefaultValue(void) const
 {
 	if(!isValueNode())
@@ -865,8 +865,8 @@ const std::string& ConfigurationTree::getDefaultValue(void) const
 }  // end isDefaultValue()
 
 //==============================================================================
-// getValueType
-//	e.g. used to determine if node is type TYPE_DATA, TYPE_ON_OFF, etc.
+/// getValueType
+///	e.g. used to determine if node is type TYPE_DATA, TYPE_ON_OFF, etc.
 const std::string& ConfigurationTree::getValueType(void) const
 {
 	if(isValueNode())
@@ -878,8 +878,8 @@ const std::string& ConfigurationTree::getValueType(void) const
 }  // end getValueType()
 
 //==============================================================================
-// getColumnInfo
-//	only sensible for value node
+/// getColumnInfo
+///	only sensible for value node
 const TableViewColumnInfo& ConfigurationTree::getColumnInfo(void) const
 {
 	if(isValueNode())
@@ -895,16 +895,16 @@ const TableViewColumnInfo& ConfigurationTree::getColumnInfo(void) const
 }  // end getColumnInfo()
 
 //==============================================================================
-// getRow
+/// getRow
 const unsigned int& ConfigurationTree::getRow(void) const { return row_; }
 
 //==============================================================================
-// getColumn
+/// getColumn
 const unsigned int& ConfigurationTree::getColumn(void) const { return col_; }
 
 //==============================================================================
-// getFieldRow
-//	return field's row (different handling for value vs. link node)
+/// getFieldRow
+///	return field's row (different handling for value vs. link node)
 const unsigned int& ConfigurationTree::getFieldRow(void) const
 {
 	if(isLinkNode())
@@ -917,8 +917,8 @@ const unsigned int& ConfigurationTree::getFieldRow(void) const
 }  // end getFieldRow()
 
 //==============================================================================
-// getFieldColumn
-//	return field's column (different handling for value vs. link node)
+/// getFieldColumn
+///	return field's column (different handling for value vs. link node)
 const unsigned int& ConfigurationTree::getFieldColumn(void) const
 {
 	if(isLinkNode())
@@ -931,7 +931,7 @@ const unsigned int& ConfigurationTree::getFieldColumn(void) const
 }  // end getFieldColumn()
 
 //==============================================================================
-// getChildLinkIndex
+/// getChildLinkIndex
 const std::string& ConfigurationTree::getChildLinkIndex(void) const
 {
 	if(!isLinkNode())
@@ -946,8 +946,8 @@ const std::string& ConfigurationTree::getChildLinkIndex(void) const
 }  // end getChildLinkIndex()
 
 //==============================================================================
-// getValueName
-//	e.g. used to determine column name of value node
+/// getValueName
+///	e.g. used to determine column name of value node
 const std::string& ConfigurationTree::getValueName(void) const
 {
 	if(isValueNode())
@@ -964,8 +964,8 @@ const std::string& ConfigurationTree::getValueName(void) const
 }  // end getValueName()
 
 //==============================================================================
-// recurse
-//	Used by ConfigurationTree to handle / syntax of getNode
+/// recurse
+///	Used by ConfigurationTree to handle / syntax of getNode
 ConfigurationTree ConfigurationTree::recurse(const ConfigurationTree& tree,
                                              const std::string&       childPath,
                                              bool doNotThrowOnBrokenUIDLinks,
@@ -982,15 +982,15 @@ ConfigurationTree ConfigurationTree::recurse(const ConfigurationTree& tree,
 }  // end recurse()
 
 //==============================================================================
-// getNode
-//	Connected to recursiveGetNode()
-//
-//	nodeString can be a multi-part path using / delimiter
-//	use:
-//			getNode(/uid/col) or getNode(uid)->getNode(col)
-//
-// if doNotThrowOnBrokenUIDLinks
-//		then catch exceptions on UID links and call disconnected
+/// getNode
+///	Connected to recursiveGetNode()
+///
+///	nodeString can be a multi-part path using / delimiter
+///	use:
+///			getNode(/uid/col) or getNode(uid)->getNode(col)
+///
+/// if doNotThrowOnBrokenUIDLinks
+///		then catch exceptions on UID links and call disconnected
 ConfigurationTree ConfigurationTree::getNode(const std::string& nodeString,
                                              bool doNotThrowOnBrokenUIDLinks) const
 {
@@ -1338,7 +1338,7 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(
 }  // end recursiveGetNode()
 
 //==============================================================================
-// getNodes
+/// getNodes
 std::map<std::string, ConfigurationTree> ConfigurationTree::getNodes(
     const std::string& nodeString) const
 {
@@ -1350,8 +1350,8 @@ std::map<std::string, ConfigurationTree> ConfigurationTree::getNodes(
 	return getNode(nodeString).getChildrenMap();
 }
 //==============================================================================
-// nodeDump
-//	Useful for debugging a node failure, like when throwing an exception
+/// nodeDump
+///	Useful for debugging a node failure, like when throwing an exception
 std::string ConfigurationTree::nodeDump(void) const
 {
 	__SS__ << __E__ << __E__;
@@ -1446,34 +1446,34 @@ ConfigurationTree ConfigurationTree::getForwardNode(std::string  nodeName,
 }  // end getForwardNode()
 
 //==============================================================================
-// isValueNode
-//	if true, then this is a leaf node, i.e. there can be no children, only a value
+/// isValueNode
+///	if true, then this is a leaf node, i.e. there can be no children, only a value
 bool ConfigurationTree::isValueNode(void) const
 {
 	return (row_ != TableView::INVALID && col_ != TableView::INVALID);
 }  // end isValueNode()
 
 //==============================================================================
-// isValueBoolType
-//	if true, then this is a leaf node with BOOL type
+/// isValueBoolType
+///	if true, then this is a leaf node with BOOL type
 bool ConfigurationTree::isValueBoolType(void) const
 {
 	return isValueNode() && tableView_->getColumnInfo(col_).isBoolType();
 }  // end isValueBoolType()
 
 //==============================================================================
-// isValueNumberDataType
-//	if true, then this is a leaf node with NUMBER data type
+/// isValueNumberDataType
+///	if true, then this is a leaf node with NUMBER data type
 bool ConfigurationTree::isValueNumberDataType(void) const
 {
 	return isValueNode() && tableView_->getColumnInfo(col_).isNumberDataType();
 }  // end isValueBoolType()
 
 //==============================================================================
-// isDisconnected
-//	if true, then this is a disconnected node, i.e. there is a configuration link missing
-//	(this is possible when the configuration is loaded in stages and the complete tree
-//		may not be available, yet)
+/// isDisconnected
+///	if true, then this is a disconnected node, i.e. there is a configuration link missing
+///	(this is possible when the configuration is loaded in stages and the complete tree
+///		may not be available, yet)
 bool ConfigurationTree::isDisconnected(void) const
 {
 	if(!isLinkNode())
@@ -1492,13 +1492,13 @@ bool ConfigurationTree::isDisconnected(void) const
 }  // end isDisconnected()
 
 //==============================================================================
-// isLinkNode
-//	if true, then this is a link node
+/// isLinkNode
+///	if true, then this is a link node
 bool ConfigurationTree::isLinkNode(void) const { return linkColName_ != ""; }
 
 //==============================================================================
-// getNodeType
-//	return node type as string
+/// getNodeType
+///	return node type as string
 const std::string ConfigurationTree::NODE_TYPE_GROUP_TABLE = "GroupTableNode";
 const std::string ConfigurationTree::NODE_TYPE_TABLE       = "TableNode";
 const std::string ConfigurationTree::NODE_TYPE_GROUP_LINK  = "GroupLinkNode";
@@ -1525,53 +1525,53 @@ std::string ConfigurationTree::getNodeType(void) const
 }  // end getNodeType()
 
 //==============================================================================
-// isGroupLinkNode
-//	if true, then this is a group link node
+/// isGroupLinkNode
+///	if true, then this is a group link node
 bool ConfigurationTree::isGroupLinkNode(void) const
 {
 	return (isLinkNode() && groupId_ != "");
 }
 
 //==============================================================================
-// isUIDLinkNode
-//	if true, then this is a uid link node
+/// isUIDLinkNode
+///	if true, then this is a uid link node
 bool ConfigurationTree::isUIDLinkNode(void) const
 {
 	return (isLinkNode() && groupId_ == "");
 }  // end isUIDLinkNode()
 
 //==============================================================================
-// isGroupIDNode
-//	if true, then this is a Group ID node
+/// isGroupIDNode
+///	if true, then this is a Group ID node
 bool ConfigurationTree::isGroupIDNode(void) const
 {
 	return (isValueNode() && tableView_->getColumnInfo(col_).isGroupID());
 }  // end isGroupIDNode()
 
 //==============================================================================
-// isUIDNode
-//	if true, then this is a uid node
+/// isUIDNode
+///	if true, then this is a uid node
 bool ConfigurationTree::isUIDNode(void) const
 {
 	return (row_ != TableView::INVALID && col_ == TableView::INVALID);
 }
 
 //==============================================================================
-// getCommonFields
-//	wrapper for ...recursiveGetCommonFields
-//
-//	returns common fields in order encountered
-//		including through UID links depending on depth specified
-//
-//	Field := {Table, UID, Column Name, Relative Path, TableViewColumnInfo}
-//
-//	if fieldAcceptList or fieldRejectList are not empty,
-//		then reject any that are not in field accept filter list
-//		and reject any that are in field reject filter list
-//
-//	will only go to specified depth looking for fields
-//		(careful to prevent infinite loops in tree navigation)
-//
+/// getCommonFields
+///	wrapper for ...recursiveGetCommonFields
+///
+///	returns common fields in order encountered
+///		including through UID links depending on depth specified
+///
+///	Field := {Table, UID, Column Name, Relative Path, TableViewColumnInfo}
+///
+///	if fieldAcceptList or fieldRejectList are not empty,
+///		then reject any that are not in field accept filter list
+///		and reject any that are in field reject filter list
+///
+///	will only go to specified depth looking for fields
+///		(careful to prevent infinite loops in tree navigation)
+///
 std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
     const std::vector<std::string /*uid*/>&           recordList,
     const std::vector<std::string /*relative-path*/>& fieldAcceptList,
@@ -1867,11 +1867,11 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 }  // end getCommonFields()
 
 //==============================================================================
-// getUniqueValuesForField
-//
-//	returns sorted unique values for the specified records and field
-//	Note: treat GroupIDs special, parse the | out of the value to get the distinct values.
-//
+/// getUniqueValuesForField
+///
+///	returns sorted unique values for the specified records and field
+///	Note: treat GroupIDs special, parse the | out of the value to get the distinct values.
+///
 std::set<std::string /*unique-value*/> ConfigurationTree::getUniqueValuesForField(
     const std::vector<std::string /*relative-path*/>& recordList,
     const std::string&                                fieldName,
@@ -1946,8 +1946,8 @@ std::set<std::string /*unique-value*/> ConfigurationTree::getUniqueValuesForFiel
 }  // end getUniqueValuesForField()
 
 //==============================================================================
-// recursiveGetCommonFields
-//	wrapper is ...getCommonFields
+/// recursiveGetCommonFields
+///	wrapper is ...getCommonFields
 void ConfigurationTree::recursiveGetCommonFields(
     std::vector<ConfigurationTree::RecordField>&      fieldCandidateList,
     std::vector<int>&                                 fieldCount,
@@ -2245,11 +2245,11 @@ void ConfigurationTree::recursiveGetCommonFields(
 }  // end recursiveGetCommonFields()
 
 //==============================================================================
-// getChildrenByPriority
-//	returns them in order encountered in the table
-//	if filterMap criteria, then rejects any that do not meet all criteria
-//
-//	value can be comma-separated for OR of multiple values
+/// getChildrenByPriority
+///	returns them in order encountered in the table
+///	if filterMap criteria, then rejects any that do not meet all criteria
+///
+///	value can be comma-separated for OR of multiple values
 std::vector<std::vector<std::pair<std::string, ConfigurationTree>>>
 ConfigurationTree::getChildrenByPriority(
     std::map<std::string /*relative-path*/, std::string /*value*/> filterMap,
@@ -2297,8 +2297,8 @@ ConfigurationTree::getChildrenByPriority(
 }  // end getChildrenByPriority()
 
 //==============================================================================
-// passFilterMap
-//		returns true if childName meets all critera
+/// passFilterMap
+///		returns true if childName meets all critera
 bool ConfigurationTree::passFilterMap(
     const std::string&                                             childName,
     std::map<std::string /*relative-path*/, std::string /*value*/> filterMap) const
@@ -2400,14 +2400,14 @@ bool ConfigurationTree::passFilterMap(
 }  //end passFilterMap()
 
 //==============================================================================
-// getChildren
-//	returns them in order encountered in the table
-//	if filterMap criteria, then rejects any that do not meet all criteria
-//		filterMap-value can be comma-separated for OR of multiple values
-//
-//	Note: filterMap is handled special for groupID fields
-//		matches are considered after parsing | for set of groupIDs
-//
+/// getChildren
+///	returns them in order encountered in the table
+///	if filterMap criteria, then rejects any that do not meet all criteria
+///		filterMap-value can be comma-separated for OR of multiple values
+///
+///	Note: filterMap is handled special for groupID fields
+///		matches are considered after parsing | for set of groupIDs
+///
 std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationTree::getChildren(
     std::map<std::string /*relative-path*/, std::string /*value*/> filterMap,
     bool                                                           byPriority,
@@ -2437,9 +2437,9 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationTree::getChi
 }  // end getChildren()
 
 //==============================================================================
-// getChildrenMap
-//	does not return them in order encountered in the table,
-//	instead, in alphabetical order of map
+/// getChildrenMap
+///	does not return them in order encountered in the table,
+///	instead, in alphabetical order of map
 std::map<std::string, ConfigurationTree> ConfigurationTree::getChildrenMap(
     std::map<std::string /*relative-path*/, std::string /*value*/> filterMap,
     bool                                                           onlyStatusTrue) const
@@ -2468,7 +2468,7 @@ std::map<std::string, ConfigurationTree> ConfigurationTree::getChildrenMap(
 }  // end getChildrenMap()
 
 //==============================================================================
-// same as status()
+/// same as status()
 bool ConfigurationTree::isEnabled(void) const
 {
 	if(!isUIDNode())
@@ -2502,8 +2502,8 @@ bool ConfigurationTree::isStatusNode(void) const
 }  // end isStatusNode()
 
 //==============================================================================
-// getChildrenNamesByPriority
-//	returns them in priority order encountered in the table
+/// getChildrenNamesByPriority
+///	returns them in priority order encountered in the table
 std::vector<std::vector<std::string>> ConfigurationTree::getChildrenNamesByPriority(
     bool onlyStatusTrue) const
 {
@@ -2588,8 +2588,8 @@ std::vector<std::vector<std::string>> ConfigurationTree::getChildrenNamesByPrior
 }  // end getChildrenNamesByPriority()
 
 //==============================================================================
-// getChildrenNames
-//	returns them in order encountered in the table
+/// getChildrenNames
+///	returns them in order encountered in the table
 std::vector<std::string> ConfigurationTree::getChildrenNames(bool byPriority,
                                                              bool onlyStatusTrue) const
 {
@@ -2738,9 +2738,9 @@ std::vector<std::string> ConfigurationTree::getChildrenNames(bool byPriority,
 }  // end getChildrenNames()
 
 //==============================================================================
-// getValueAsTreeNode
-//	returns tree node for value of this node, treating the value
-//		as a string for the absolute path string from root of tree
+/// getValueAsTreeNode
+///	returns tree node for value of this node, treating the value
+///		as a string for the absolute path string from root of tree
 ConfigurationTree ConfigurationTree::getValueAsTreeNode(void) const
 {
 	// check if first character is a /, .. if so try to get value in tree

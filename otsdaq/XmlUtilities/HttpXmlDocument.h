@@ -36,7 +36,7 @@ class HttpXmlDocument : public XmlDocument
 	void                  		outputXmlDocument               (      std::ostringstream   * out					,   	  bool                                dispStdOut = false,  		  bool                   			allowWhiteSpace = false	);
 	bool                  		loadXmlDocument                 (const std::string          & filePath             );
 	unsigned int 	      		getChildrenCount                (      xercesc::DOMElement  * parent         = 0   );
-	void 		      			removeDataElement               (  	   unsigned int           dataChildIndex = 0   );  // default to first child
+	void 		      			removeDataElement               (  	   unsigned int           dataChildIndex = 0   );  ///< default to first child
 
 	std::stringstream			dataSs_		   ; /* use for large xml response construction */
   private:

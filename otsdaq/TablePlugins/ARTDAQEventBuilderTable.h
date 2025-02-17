@@ -14,7 +14,7 @@ class ARTDAQEventBuilderTable : public ARTDAQTableBase, public SlowControlsTable
 	ARTDAQEventBuilderTable(void);
 	virtual ~ARTDAQEventBuilderTable(void);
 
-	// Methods
+	/// Methods
 	void 					init						(ConfigurationManager* configManager) override;
 
 	virtual unsigned int	slowControlsHandlerConfig	(

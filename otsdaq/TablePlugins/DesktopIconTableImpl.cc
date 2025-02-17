@@ -13,8 +13,8 @@ using namespace ots;
 #define DESKTOP_ICONS_FILE \
 	std::string(__ENV__("SERVICE_DATA_PATH")) + "/OtsWizardData/iconList.dat"
 
-// DesktopIconTable Column names
-
+/// DesktopIconTable Column names
+///
 const std::string DesktopIconTable::COL_NAME    = "IconName";
 const std::string DesktopIconTable::COL_STATUS  = TableViewColumnInfo::COL_NAME_STATUS;
 const std::string DesktopIconTable::COL_CAPTION = "Caption";
@@ -52,7 +52,7 @@ const std::string DesktopIconTable::PARAMETER_TABLE = "DesktopWindowParameterTab
 // #define COL_PARAMETER_VALUE "windowParameterValue"
 // #define COL_FOLDER_PATH "FolderPath"
 
-// XDAQ App Column names
+/// XDAQ App Column names
 const std::string DesktopIconTable::COL_APP_ID = "Id";
 // #define COL_APP_ID "Id"
 
@@ -264,7 +264,7 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 }  // end init()
 
 //==============================================================================
-//Convert to remote URL assuming port forwarding to primary Gateway Port
+///Convert to remote URL assuming port forwarding to primary Gateway Port
 std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager,
                                            const std::string&    localURL) const
 {

@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       UDPDump
-// Module Type: analyzer
-// File:        UDPDump_module.cc
-// Description: Prints out information about each event.
+/// Class:       UDPDump
+/// Module Type: analyzer
+/// File:        UDPDump_module.cc
+/// Description: Prints out information about each event.
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDAnalyzer.h"

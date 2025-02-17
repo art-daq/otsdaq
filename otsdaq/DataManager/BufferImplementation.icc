@@ -19,8 +19,8 @@ BufferImplementation<D, H>::BufferImplementation(const std::string& producerName
 	reset();
 }
 
-// FIXME -- get rid of the map creation of things... the copy constructor really should
-// not be allowed!
+/// FIXME -- get rid of the map creation of things... the copy constructor really should
+/// not be allowed!
 //========================================================================================================================
 template<class D, class H>
 BufferImplementation<D, H>::BufferImplementation(const BufferImplementation<D, H>& toCopy)
@@ -345,10 +345,10 @@ void BufferImplementation<D, H>::registerConsumer(
 			consumers_[consumer].subBuffersStatus_[i] = bufferFree_;
 	}
 }
-//
+
 ////========================================================================================================================
-// template<class D, class H>
-// void BufferImplementation<D,H>::unregisterConsumer(const std::string& consumer)
+/// template<class D, class H>
+/// void BufferImplementation<D,H>::unregisterConsumer(const std::string& consumer)
 //{
 //	auto toBeErased = consumers_.find(consumer);
 //	if(toBeErased != consumers_.end())
@@ -373,8 +373,8 @@ void BufferImplementation<D, H>::writeSubBuffer(unsigned int subBuffer,
 }
 
 //========================================================================================================================
-// template<class D, class H>
-// void BufferImplementation<D,H>::flush(std::string consumer)
+/// template<class D, class H>
+/// void BufferImplementation<D,H>::flush(std::string consumer)
 //{
 //	__GEN_COUT__ << "MUST BE IMPLEMENTED!" << std::endl;
 //}
