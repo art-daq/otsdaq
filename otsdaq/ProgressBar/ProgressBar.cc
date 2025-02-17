@@ -36,8 +36,8 @@ ProgressBar::ProgressBar()
 }  //end constructor()
 
 //==============================================================================
-//		reset() ~~
-//		Resets progress bar to 0% complete
+///		reset() ~~
+///		Resets progress bar to 0% complete
 void ProgressBar::reset(std::string file, std::string lineNumber, int id)
 {
 	std::lock_guard<std::mutex> lock(theMutex_);  // lock out for remainder of scope
@@ -117,7 +117,7 @@ void ProgressBar::complete()
 }  //end complete()
 
 //==============================================================================
-// return percentage complete as integer
+/// return percentage complete as integer
 int ProgressBar::read()
 {
 	std::lock_guard<std::mutex> lock(theMutex_);  // lock out for remainder of scope
@@ -132,7 +132,7 @@ int ProgressBar::read()
 }  //end read()
 
 //==============================================================================
-// return percentage complete as std::string
+/// return percentage complete as std::string
 std::string ProgressBar::readPercentageString()
 {
 	char pct[5];

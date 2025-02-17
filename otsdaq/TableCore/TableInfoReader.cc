@@ -31,8 +31,8 @@ using namespace ots;
 #undef __COUT_HDR__
 #define __COUT_HDR__ "TableInfoReader <>"
 
-// const std::string TableInfoReader::CONFIGURATION_BACKEND_TYPE_ =
-//    __ENV__("CONFIGURATION_TYPE");
+/// const std::string TableInfoReader::CONFIGURATION_BACKEND_TYPE_ =
+///    __ENV__("CONFIGURATION_TYPE");
 #define CONFIGURATION_BACKEND_TYPE_ __ENV__("CONFIGURATION_TYPE")
 
 //==============================================================================
@@ -491,6 +491,6 @@ std::string TableInfoReader::read(TableBase& table)
 }
 
 //==============================================================================
-// returns accumulated exception string (while allowIllegalColumns == true)
-// otherwise "" if no exceptions
+/// returns accumulated exception string (while allowIllegalColumns == true)
+/// otherwise "" if no exceptions
 std::string TableInfoReader::read(TableBase* table) { return read(*table); }

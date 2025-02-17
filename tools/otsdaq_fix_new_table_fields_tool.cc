@@ -9,12 +9,12 @@
 // #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
 // #include "artdaq-database/JsonDocument/JSONDocument.h"
 
-// usage:
-// otsdaq_flatten_system_aliases <baseFlatVersion> <pathToSwapIn (optional)>
-//
-// if baseFlatVersion is invalid or temporary nothing is saved in the new db
-//	(Note: this can be used to swap dbs using pathToSwapIn)
-
+/// usage:
+/// otsdaq_flatten_system_aliases <baseFlatVersion> <pathToSwapIn (optional)>
+///
+/// if baseFlatVersion is invalid or temporary nothing is saved in the new db
+///	(Note: this can be used to swap dbs using pathToSwapIn)
+///
 using namespace ots;
 
 void FixNewTableFields(int argc, char* argv[])

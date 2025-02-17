@@ -33,7 +33,7 @@ class NetworkDevice
 	};
 
 	struct sockaddr_in deviceAddress_;
-	//    socket,socket port
+	///    socket,socket port
 	std::map<int, int> openSockets_;
 
   private:
@@ -45,8 +45,8 @@ class NetworkDevice
 
 	int getInterface(std::string partialIpAddress);
 
-	struct ifaddrs* communicationInterface_;  // Interface communicating with device aka
-	                                          // computer interface
+	struct ifaddrs* communicationInterface_;  ///< Interface communicating with device aka
+	                                          ///< computer interface
 };
 
 }  // namespace ots

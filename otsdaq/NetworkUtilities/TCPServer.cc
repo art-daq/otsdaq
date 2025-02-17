@@ -23,8 +23,8 @@ TCPServer::TCPServer(unsigned int serverPort, unsigned int maxNumberOfClients)
 TCPServer::~TCPServer(void) { fInDestructor = true; }
 
 //==============================================================================
-// time out or protection for this receive method?
-// void TCPServer::connectClient(int fdClientSocket)
+/// time out or protection for this receive method?
+/// void TCPServer::connectClient(int fdClientSocket)
 void TCPServer::connectClient(TCPTransceiverSocket* socket)
 {
 	while(true)

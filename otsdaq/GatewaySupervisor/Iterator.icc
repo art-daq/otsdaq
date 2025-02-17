@@ -1,8 +1,8 @@
 
 //========================================================================================================================
-// helpCommandModifyActive
-//	static function definition
-//	set the value to all targets
+/// helpCommandModifyActive
+///	static function definition
+///	set the value to all targets
 template<class T>
 void Iterator::helpCommandModifyActive(IteratorWorkLoopStruct* iteratorStruct,
                                        const T&                setValue,

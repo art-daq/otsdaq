@@ -29,9 +29,9 @@ ARTDAQConsumer::ARTDAQConsumer(std::string              supervisorApplicationUID
                                 processorUID,
                                 theXDAQContextConfigTree,
                                 configurationPath)
-//    : WorkLoop(processorUID)
-//    , DataConsumer(supervisorApplicationUID, bufferUID, processorUID,
-//    LowConsumerPriority) , Configurable(theXDAQContextConfigTree, configurationPath)
+///    : WorkLoop(processorUID)
+///    , DataConsumer(supervisorApplicationUID, bufferUID, processorUID,
+///    LowConsumerPriority) , Configurable(theXDAQContextConfigTree, configurationPath)
 {
 	__COUT__ << "ARTDAQ Consumer constructed." << __E__;
 	//__COUT__ << "Configuration string:-" <<
@@ -125,9 +125,9 @@ ARTDAQConsumer::ARTDAQConsumer(std::string              supervisorApplicationUID
 }
 
 //==============================================================================
-// ARTDAQConsumer::ARTDAQConsumer(std::string interfaceID, MPI_Comm local_group_comm,
-// std::string name) :FEVInterface     (feId, 0) ,local_group_comm_(local_group_comm)
-//,name_            (name)
+/// ARTDAQConsumer::ARTDAQConsumer(std::string interfaceID, MPI_Comm local_group_comm,
+/// std::string name) :FEVInterface     (feId, 0) ,local_group_comm_(local_group_comm)
+///,name_            (name)
 //{}
 
 //==============================================================================
@@ -138,7 +138,7 @@ ARTDAQConsumer::~ARTDAQConsumer(void)
 }
 
 ////==============================================================================
-// void ARTDAQConsumer::initLocalGroup(int rank)
+/// void ARTDAQConsumer::initLocalGroup(int rank)
 //{
 //	name_ = "BoardReader_" + DataConsumer::processorUID_;
 //	configure(rank);
@@ -147,7 +147,7 @@ ARTDAQConsumer::~ARTDAQConsumer(void)
 // #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
 
 ////==============================================================================
-// void ARTDAQConsumer::configure(int rank)
+/// void ARTDAQConsumer::configure(int rank)
 //{
 //	__COUT__ << "\tConfigure" << __E__;
 //
@@ -183,7 +183,7 @@ ARTDAQConsumer::~ARTDAQConsumer(void)
 //}
 
 ////==============================================================================
-// void ARTDAQConsumer::halt(void)
+/// void ARTDAQConsumer::halt(void)
 //{
 //	__COUT__ << "\tHalt" << __E__;
 //	// FIXME These are passed as parameters

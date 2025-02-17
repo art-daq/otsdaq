@@ -11,7 +11,7 @@
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////
-//handles rotation operations
+///handles rotation operations
 void transform(float& x, float& y, float m1, float m2, float m3, float m4)
 {
 	float tx, ty;
@@ -55,9 +55,9 @@ PixelHistoPicGen::~PixelHistoPicGen()
 	}
 }
 
-// ////////////////////////////////////////////////////////////////////////
-// //default(0)-is all black,
-// void PixelHistoPicGen::initImgBuffer(int sourceKey)
+/// ////////////////////////////////////////////////////////////////////////
+/// //default(0)-is all black,
+/// void PixelHistoPicGen::initImgBuffer(int sourceKey)
 // {
 // 	switch(sourceKey){
 // 		case 1:  //FPix disc bg img
@@ -74,9 +74,9 @@ PixelHistoPicGen::~PixelHistoPicGen()
 //   }
 // }
 
-// ////////////////////////////////////////////////////////////////////////
-// //default(0)-is all black,
-// void PixelHistoPicGen::initBImgBuffer(int sourceKey)
+/// ////////////////////////////////////////////////////////////////////////
+/// //default(0)-is all black,
+/// void PixelHistoPicGen::initBImgBuffer(int sourceKey)
 // {
 // 	switch(sourceKey){
 // 		case 1:  //BPix layer bg img
@@ -93,8 +93,8 @@ PixelHistoPicGen::~PixelHistoPicGen()
 //   }
 // }
 
-// ////////////////////////////////////////////////////////////////////////
-// void PixelHistoPicGen::initImgBuffer(int r,int g,int b)
+/// ////////////////////////////////////////////////////////////////////////
+/// void PixelHistoPicGen::initImgBuffer(int r,int g,int b)
 // {
 // 	for(int x=0;x<IMG_WIDTH;++x)
 // 		for(int y=0;y<IMG_HEIGHT;++y){
@@ -104,8 +104,8 @@ PixelHistoPicGen::~PixelHistoPicGen()
 // 		}
 // }
 
-// ////////////////////////////////////////////////////////////////////////
-// void PixelHistoPicGen::initBImgBuffer(int r,int g,int b)
+/// ////////////////////////////////////////////////////////////////////////
+/// void PixelHistoPicGen::initBImgBuffer(int r,int g,int b)
 // {
 // 	for(int x=0;x<BIMG_WIDTH;++x)
 // 		for(int y=0;y<BIMG_HEIGHT;++y){
@@ -116,7 +116,7 @@ PixelHistoPicGen::~PixelHistoPicGen()
 // }
 
 ////////////////////////////////////////////////////////////////////////
-//read bmp file to readImg_ buffer
+///read bmp file to readImg_ buffer
 void PixelHistoPicGen::readBmpToReadImg(const string& filename)
 {
 	//   string mthn = "[PicGen::readBMPToReadImg()]\t";
@@ -198,9 +198,9 @@ void PixelHistoPicGen::readBmpToReadImg(const string& filename)
 	file.close();
 }
 
-// ////////////////////////////////////////////////////////////////////////
-// //transfer readImg_ buffer to img_ buffer
-// void PixelHistoPicGen::transferReadImgToImg()
+/// ////////////////////////////////////////////////////////////////////////
+/// //transfer readImg_ buffer to img_ buffer
+/// void PixelHistoPicGen::transferReadImgToImg()
 // {
 //   cout << "[PicGen::transferRimgToImg()]\t" << IMG_WIDTH << " " << IMG_HEIGHT << " " << readImgW_ << " " << readImgH_ << endl;
 //   if(IMG_WIDTH != readImgW_ && IMG_HEIGHT != readImgH_){
@@ -215,9 +215,9 @@ void PixelHistoPicGen::readBmpToReadImg(const string& filename)
 //     }
 // }
 
-// ////////////////////////////////////////////////////////////////////////
-// //transfer readImg_ buffer to bimg_ buffer
-// void PixelHistoPicGen::transferReadImgToBImg()
+/// ////////////////////////////////////////////////////////////////////////
+/// //transfer readImg_ buffer to bimg_ buffer
+/// void PixelHistoPicGen::transferReadImgToBImg()
 // {
 //   cout << "[PicGen::transferRimgToBImg()]\t" << BIMG_WIDTH << " " << BIMG_HEIGHT << " " << readImgW_ << " " << readImgH_ << endl;
 //   if(BIMG_WIDTH != readImgW_ && BIMG_HEIGHT != readImgH_){
@@ -233,7 +233,7 @@ void PixelHistoPicGen::readBmpToReadImg(const string& filename)
 // }
 
 ////////////////////////////////////////////////////////////////////////
-//write img buffer to bmp file
+///write img buffer to bmp file
 void PixelHistoPicGen::writeImgToBmp(string filename)
 {
 	// BMP Header				Stores general information about the BMP file.
@@ -309,7 +309,7 @@ void PixelHistoPicGen::drawFillRectAng(
 }
 
 ////////////////////////////////////////////////////////////////////////
-//draws rect to img buffer. {x,y} is lower left corner. d is degrees of rotation around z-axis.
+///draws rect to img buffer. {x,y} is lower left corner. d is degrees of rotation around z-axis.
 void PixelHistoPicGen::drawFillRect(int   x,
                                     int   y,
                                     int   w,
@@ -355,8 +355,8 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b)
 	img_[x][y][2] = b;
 }
 
-// ////////////////////////////////////////////////////////////////////////
-// void PixelHistoPicGen::fillFPixColors()
+/// ////////////////////////////////////////////////////////////////////////
+/// void PixelHistoPicGen::fillFPixColors()
 // {
 // 	//fpix_[4][2][2][12][24][3];
 // 	for(int a=0;a<4;++a)
@@ -370,8 +370,8 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b)
 // 					}
 // }
 
-// ////////////////////////////////////////////////////////////////////////
-// void PixelHistoPicGen::setRocColor(string stdName,int rd,int gn,int bl)
+/// ////////////////////////////////////////////////////////////////////////
+/// void PixelHistoPicGen::setRocColor(string stdName,int rd,int gn,int bl)
 // {
 // 	if(stdName[0] == 'F'){
 // 		int a,b,c,d,e;
@@ -485,10 +485,10 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 	convertBmp(tmpPath, filepath + "generated/turtle.png");
 }  //end generateTurtle()
 
-// ////////////////////////////////////////////////////////////////////////
-// //creates the png's for the different angled ROC highlights for js mouseover
-// // and the good/bad boxes
-// void PixelHistoPicGen::createAuxImages()
+/// ////////////////////////////////////////////////////////////////////////
+/// //creates the png's for the different angled ROC highlights for js mouseover
+/// // and the good/bad boxes
+/// void PixelHistoPicGen::createAuxImages()
 // {
 // 
 // 		//create good/bad boxes
@@ -587,7 +587,7 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 // }
 
 ////////////////////////////////////////////////////////////////////////
-//initializes aux buffer to all invisible black pixels
+///initializes aux buffer to all invisible black pixels
 void PixelHistoPicGen::clearTurtleBuffer(int r, int g, int b, int a)
 {
 	for(int x = 0; x < TUR_IMG_WIDTH; ++x)
@@ -772,8 +772,8 @@ void PixelHistoPicGen::writeAuxToBmp(char* fn)
 }
 
 ////////////////////////////////////////////////////////////////////////
-//DIFFERENT THAN drawFillRect... x,y is CENTER!!
-//draws rect to aux img buffer. {x,y} is center. m1-4 is rotation matrix around z-axis.
+///DIFFERENT THAN drawFillRect... x,y is CENTER!!
+///draws rect to aux img buffer. {x,y} is center. m1-4 is rotation matrix around z-axis.
 void PixelHistoPicGen::drawFillRectAux(int   x,
                                        int   y,
                                        int   w,
@@ -813,8 +813,8 @@ void PixelHistoPicGen::drawFillRectAux(int   x,
 }
 
 ////////////////////////////////////////////////////////////////////////
-//DIFFERENT THAN drawFillRect... x,y is CENTER!!
-//draws rect to aux img buffer. {x,y} is center. d is degrees of rotation around z-axis.
+///DIFFERENT THAN drawFillRect... x,y is CENTER!!
+///draws rect to aux img buffer. {x,y} is center. d is degrees of rotation around z-axis.
 void PixelHistoPicGen::drawFillRectAngAux(
     int x, int y, int w, int h, int r, int g, int b, float deg)
 {

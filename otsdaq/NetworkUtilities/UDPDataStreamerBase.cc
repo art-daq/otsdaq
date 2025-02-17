@@ -5,8 +5,8 @@
 
 using namespace ots;
 
-// NOTE: if you want to inherit from this one you MUST initialize
-// the Socket Constructor that is commented out here in your class
+/// NOTE: if you want to inherit from this one you MUST initialize
+/// the Socket Constructor that is commented out here in your class
 //==============================================================================
 UDPDataStreamerBase::UDPDataStreamerBase(std::string  IPAddress,
                                          unsigned int port,

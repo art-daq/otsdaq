@@ -36,7 +36,7 @@ DataConsumer::~DataConsumer(void)
 DataConsumer::ConsumerPriority DataConsumer::getPriority(void) { return priority_; }
 
 //==============================================================================
-// mirror DataProducerBase::registerToBuffer
+/// mirror DataProducerBase::registerToBuffer
 void DataConsumer::registerToBuffer(void)
 {
 	__GEN_COUT__ << "Consumer '" << DataProcessor::processorUID_
@@ -73,7 +73,7 @@ void DataConsumer::registerToBuffer(void)
 
 ////==============================================================================
 ////mirror DataProducerBase::unregisterFromBuffer
-// void DataConsumer::unregisterFromBuffer(void)
+/// void DataConsumer::unregisterFromBuffer(void)
 //{
 //	__GEN_COUT__ << "Consumer '" << DataProcessor::processorUID_ <<
 //			"' is unregistering to DataManager Supervisor Buffer '" <<

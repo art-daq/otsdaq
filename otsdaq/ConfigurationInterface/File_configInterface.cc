@@ -20,8 +20,8 @@ void FileConfigurationInterface::fill(TableBase*   configuration,
 }
 
 //==============================================================================
-// findLatestVersion
-//	return INVALID if no existing versions
+/// findLatestVersion
+///	return INVALID if no existing versions
 TableVersion FileConfigurationInterface::findLatestVersion(
     const TableBase* configuration) const
 {
@@ -32,7 +32,7 @@ TableVersion FileConfigurationInterface::findLatestVersion(
 }
 
 //==============================================================================
-// save active configuration view to file
+/// save active configuration view to file
 void FileConfigurationInterface::saveActiveVersion(const TableBase* configuration,
                                                    bool /*overwrite*/) const
 {

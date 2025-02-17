@@ -13,15 +13,15 @@ class DesktopIconTable : public TableBase
 	DesktopIconTable(void);
 	virtual ~DesktopIconTable(void);
 
-	// Methods
+	/// Methods
 	void init(ConfigurationManager* configManager);
 
 	struct DesktopIcon
 	{
 		bool        enforceOneWindowInstance_;
 		std::string caption_, alternateText_, imageURL_, windowContentURL_, folderPath_;
-		std::string permissionThresholdString_;  // <groupName>:<permissionsThreshold>
-		                                         // pairs separated by ',' '&' or '|'
+		std::string permissionThresholdString_;  ///< <groupName>:<permissionsThreshold>
+		                                         ///< pairs separated by ',' '&' or '|'
 		std::string recordUID_;
 	};
 
@@ -30,7 +30,7 @@ class DesktopIconTable : public TableBase
 		return activeDesktopIcons_;
 	}  // activeDesktopIcons_ is setup in init
 	void        setAllDesktopIcons(const std::vector<DesktopIconTable::DesktopIcon>&
-	                                   newIcons);  // overwrite dynamically the init result
+	                                   newIcons);  ///< overwrite dynamically the init result
 	std::string getRemoteURL(ConfigurationManager* configManager,
 	                         const std::string&    localURL) const;
 
@@ -63,7 +63,7 @@ class DesktopIconTable : public TableBase
 	                         bool               andHTMLReplace = false);
 
 	std::vector<DesktopIconTable::DesktopIcon>
-	    activeDesktopIcons_;  // only icons with status=true
+	    activeDesktopIcons_;  ///< only icons with status=true
 };
 }  // namespace ots
 #endif

@@ -14,7 +14,7 @@ const unsigned int TableGroupKey::DEFAULT = 0;
 TableGroupKey::TableGroupKey(unsigned int key) : key_(key) {}
 
 //==============================================================================
-// groupString parameter can be the full group name, or just the group key
+/// groupString parameter can be the full group name, or just the group key
 TableGroupKey::TableGroupKey(char* const& groupString)
 {
 	if(!groupString)
@@ -58,7 +58,7 @@ TableGroupKey::~TableGroupKey(void) {}
 unsigned int TableGroupKey::key(void) const { return key_; }
 
 //==============================================================================
-// operator==
+/// operator==
 bool TableGroupKey::operator==(unsigned int key) const { return (key_ == key); }
 bool TableGroupKey::operator==(const TableGroupKey& key) const
 {
@@ -66,40 +66,40 @@ bool TableGroupKey::operator==(const TableGroupKey& key) const
 }
 
 //==============================================================================
-// operator*=
-//	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
+/// operator*=
+///	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
 TableGroupKey& TableGroupKey::operator*=(const unsigned int a)
 {
 	key_ *= a;
 	return *this;
 }
 //==============================================================================
-// operator*=
-//	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
+/// operator*=
+///	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
 TableGroupKey& TableGroupKey::operator*=(const TableGroupKey a)
 {
 	key_ *= a.key_;
 	return *this;
 }
 //==============================================================================
-// operator+=
-//	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
+/// operator+=
+///	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
 TableGroupKey& TableGroupKey::operator+=(const TableGroupKey a)
 {
 	key_ += a.key_;
 	return *this;
 }
 //==============================================================================
-// operator+=
-//	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
+/// operator+=
+///	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
 TableGroupKey& TableGroupKey::operator-=(const TableGroupKey a)
 {
 	key_ -= a.key_;
 	return *this;
 }
 //==============================================================================
-// operator/=
-//	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
+/// operator/=
+///	Only implemented to support StringMacros on TableGroupKey types (e.g. getMapFromString in StringMacros.icc)
 TableGroupKey& TableGroupKey::operator/=(const TableGroupKey a)
 {
 	key_ /= a.key_;
@@ -107,7 +107,7 @@ TableGroupKey& TableGroupKey::operator/=(const TableGroupKey a)
 }
 
 //==============================================================================
-// toString
+/// toString
 std::string TableGroupKey::toString(void) const
 {
 	// represent invalid/temporary versions as negative number strings
@@ -115,7 +115,7 @@ std::string TableGroupKey::toString(void) const
 }
 
 //==============================================================================
-// assignment operator with type int
+/// assignment operator with type int
 TableGroupKey& TableGroupKey::operator=(const unsigned int key)
 {
 	key_ = key;
@@ -130,29 +130,29 @@ bool TableGroupKey::operator!=(const TableGroupKey& key) const
 }
 
 //==============================================================================
-// operator<
+/// operator<
 bool TableGroupKey::operator<(const TableGroupKey& key) const
 {
 	return (key_ < key.key_);
 }
 
 //==============================================================================
-// operator>
+/// operator>
 bool TableGroupKey::operator>(const TableGroupKey& key) const
 {
 	return (key_ > key.key_);
 }
 
 //==============================================================================
-// isInvalid
+/// isInvalid
 bool TableGroupKey::isInvalid() const { return (key_ == INVALID); }
 
 //==============================================================================
-// getNextKey
-//	returns next key given the most recent key
-//		if given nothing returns DEFAULT as first key
-//		if given 0, returns 1, etc.
-//	if no available keys left return INVALID
+/// getNextKey
+///	returns next key given the most recent key
+///		if given nothing returns DEFAULT as first key
+///		if given 0, returns 1, etc.
+///	if no available keys left return INVALID
 TableGroupKey TableGroupKey::getNextKey(const TableGroupKey& key)
 {
 	TableGroupKey retKey(key.key_ + 1);  // DEFAULT := INVALID + 1
@@ -166,11 +166,11 @@ unsigned int TableGroupKey::getDefaultKey(void) { return DEFAULT; }
 unsigned int TableGroupKey::getInvalidKey(void) { return INVALID; }
 
 //==============================================================================
-// getGroupNameWithKey
-//	returns next key given the most recent key
-//		if given nothing returns DEFAULT as first key
-//		if given 0, returns 1, etc.
-//	if no available keys left return INVALID
+/// getGroupNameWithKey
+///	returns next key given the most recent key
+///		if given nothing returns DEFAULT as first key
+///		if given 0, returns 1, etc.
+///	if no available keys left return INVALID
 std::string TableGroupKey::getFullGroupString(const std::string&   groupName,
                                               const TableGroupKey& key,
                                               const std::string&   preKey /* = "_v" */,
@@ -216,7 +216,7 @@ std::string TableGroupKey::getFullGroupString(const std::string&   groupName,
 }
 
 //==============================================================================
-// requires fullGroupString created as name + "_v" + key + ""
+/// requires fullGroupString created as name + "_v" + key + ""
 void TableGroupKey::getGroupNameAndKey(const std::string& fullGroupString,
                                        std::string&       groupName,
                                        TableGroupKey&     key)

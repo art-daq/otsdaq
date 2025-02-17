@@ -65,7 +65,7 @@ XDAQ_INSTANTIATOR_IMPL(WizardSupervisor)
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "Wizard"
 
-// init allowed file upload types
+/// init allowed file upload types
 const std::vector<std::string>	WizardSupervisor::allowedFileUploadTypes_ = {
 		"image/png",
 		"image/jpeg",
@@ -469,8 +469,8 @@ void WizardSupervisor::toggleSecurityCodeGeneration(xgi::Input* in, xgi::Output*
 }  //end toggleSecurityCodeGeneration()
 
 //==============================================================================
-// xoap::supervisorSequenceCheck
-//	verify cookie
+/// xoap::supervisorSequenceCheck
+///	verify cookie
 xoap::MessageReference WizardSupervisor::supervisorSequenceCheck(
     xoap::MessageReference message)
 {
@@ -507,10 +507,10 @@ xoap::MessageReference WizardSupervisor::supervisorSequenceCheck(
 }  //end supervisorSequenceCheck()
 
 //===================================================================================================================
-// xoap::supervisorLastTableGroupRequest
-//	return the group name and key for the last state machine activity
-//
-//	Note: same as Supervisor::supervisorLastTableGroupRequest
+/// xoap::supervisorLastTableGroupRequest
+///	return the group name and key for the last state machine activity
+///
+///	Note: same as Supervisor::supervisorLastTableGroupRequest
 xoap::MessageReference WizardSupervisor::supervisorLastTableGroupRequest(
     xoap::MessageReference message)
 {
@@ -963,8 +963,8 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 }  //end UserSettings()
 
 //==============================================================================
-//	validateUploadFileType
-//      returns "" if file type is invalid, else returns file extension to use
+///	validateUploadFileType
+///      returns "" if file type is invalid, else returns file extension to use
 std::string WizardSupervisor::validateUploadFileType(const std::string fileType)
 {
 	for(unsigned int i = 0; i < allowedFileUploadTypes_.size(); ++i)
@@ -975,9 +975,9 @@ std::string WizardSupervisor::validateUploadFileType(const std::string fileType)
 }  //end validateUploadFileType()
 
 //==============================================================================
-//	cleanUpPreviews
-//      cleanup logbook preview directory
-//      all names have time_t creation time + "_" + incremented index
+///	cleanUpPreviews
+///      cleanup logbook preview directory
+///      all names have time_t creation time + "_" + incremented index
 void WizardSupervisor::cleanUpPreviews()
 {
 	std::string userData = (std::string)USER_IMPORT_EXPORT_PATH;
@@ -1029,8 +1029,8 @@ void WizardSupervisor::cleanUpPreviews()
 }  //end cleanUpPreviews()
 
 //==============================================================================
-//	savePostPreview
-//      save post to preview directory named with time and incremented index
+///	savePostPreview
+///      save post to preview directory named with time and incremented index
 void WizardSupervisor::savePostPreview(std::string& /*subject*/,
                                        std::string& /*text*/,
                                        const std::vector<cgicc::FormFile>& /*files*/,

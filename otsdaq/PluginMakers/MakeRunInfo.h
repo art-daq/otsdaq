@@ -1,8 +1,8 @@
 #ifndef _ots_MakeRunInfo_h_
 #define _ots_MakeRunInfo_h_
-// Using LibraryManager, find the correct library and return an instance of the specified
-// Run Info Interface.
-
+/// Using LibraryManager, find the correct library and return an instance of the specified
+/// Run Info Interface.
+///
 #include <string>
 
 namespace ots

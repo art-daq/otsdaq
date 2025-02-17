@@ -33,9 +33,9 @@ SOAPCommand::SOAPCommand(std::string command, SOAPParameter parameter)
 //==============================================================================
 SOAPCommand::~SOAPCommand(void) {}
 
-// Getters
+/// Getters
 //==============================================================================
-// const xoap::MessageReference SOAPCommand::translate(void)
+/// const xoap::MessageReference SOAPCommand::translate(void)
 //{
 // FIXME
 //}
@@ -59,7 +59,7 @@ std::string SOAPCommand::getParameterValue(std::string parameterName) const
 
 //==============================================================================
 unsigned int SOAPCommand::getParametersSize(void) const { return parameters_.size(); }
-// Setters
+/// Setters
 //==============================================================================
 void SOAPCommand::translate(const xoap::MessageReference& message)
 {

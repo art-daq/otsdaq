@@ -26,7 +26,7 @@ using namespace ots;
 //==============================================================================
 Socket::Socket(const std::string& IPAddress, unsigned int port)
     : socketNumber_(-1), IPAddress_(IPAddress), requestedPort_(port)
-//    maxSocketSize_(maxSocketSize)
+///    maxSocketSize_(maxSocketSize)
 {
 	__COUTT__ << "Socket constructor " << IPAddress << ":" << port << __E__;
 
@@ -58,7 +58,7 @@ Socket::Socket(const std::string& IPAddress, unsigned int port)
 }  //end constructor
 
 //==============================================================================
-// protected constructor
+/// protected constructor
 Socket::Socket(void)
 {
 	__SS__ << "ERROR: This method should never be called. This is the protected "

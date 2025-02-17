@@ -38,10 +38,10 @@ class RawDataSaverConsumerBase : public DataConsumer, public Configurable
 	virtual void slowRead(void);
 
 	std::ofstream outFile_;
-	// For fast read
+	/// For fast read
 	std::string*                        dataP_;
 	std::map<std::string, std::string>* headerP_;
-	// For slow read
+	/// For slow read
 	std::string                        data_;
 	std::map<std::string, std::string> header_;
 

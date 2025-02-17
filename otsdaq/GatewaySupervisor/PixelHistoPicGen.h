@@ -14,7 +14,7 @@ class PixelHistoPicGen
 	void readBmpToReadImg(const std::string& filename);
 	void convertBmp(const std::string& fileBMP, const std::string& convertFile);
 
-	void initImgBuffer(int sourceKey);  //fpix buffer
+	void initImgBuffer(int sourceKey);  ///<fpix buffer
 	void initImgBuffer(int r, int g, int b);
 	void writeImgToBmp(std::string filename);
 	void transferReadImgToImg(void);
@@ -49,7 +49,7 @@ class PixelHistoPicGen
 	void getFPixIndices(
 	    std::string stdName, int& disc, int& panel, int& halfDisc, int& blade, int& roc);
 
-	void        initBImgBuffer(int sourceKey);  //bpix buffer
+	void        initBImgBuffer(int sourceKey);  ///<bpix buffer
 	void        initBImgBuffer(int r, int g, int b);
 	void        writeBImgToBmp(std::string filename);
 	void        transferReadImgToBImg(void);
@@ -59,11 +59,11 @@ class PixelHistoPicGen
 	std::string getBPixStandardName(int layer, int pm, int row, int col);
 	void getBPixIndices(std::string stdName, int& layer, int& pm, int& row, int& col);
 
-	//common
+	///common
 	void setRocColor(std::string stdName, int r, int g, int b);
 	void setRocColor(std::string stdName, bool isGood);
 
-	//auxiliary buffer
+	///auxiliary buffer
 	void clearAuxBuffer(int r, int g, int b, int a);
 	void drawFillRectAux(int   x,
 	                     int   y,
@@ -79,13 +79,13 @@ class PixelHistoPicGen
 	void drawFillRectAngAux(int x, int y, int w, int h, int r, int g, int b, float deg);
 	void setAuxPixel(int x, int y, int r, int g, int b);
 	void writeAuxToBmp(char* fn);
-	void createRocAlphaMasks(void);  //added 2nd trip
+	void createRocAlphaMasks(void);  ///<added 2nd trip
 
-	void PrepareDetectorNavigatorHtml(void);  //web page essentials
+	void PrepareDetectorNavigatorHtml(void);  ///<web page essentials
 	void PrepareDetectorNavigatorJava(void);
 
 	void createClickMask(std::string maskString, int size);
-	void createAuxImages(void);  // generates pre-made images for web-client
+	void createAuxImages(void);  ///< generates pre-made images for web-client
 
 	void clearTurtleBuffer(int r, int g, int b, int a);
 	void writeTurtleToBmp(const char* fn);
@@ -117,7 +117,7 @@ class PixelHistoPicGen
 	{
 		//fpix enums
 		IMG_DIM_MULT    = 1,
-		IMG_WIDTH       = 600 * IMG_DIM_MULT,  //1200*IMG_DIM_MULT,
+		IMG_WIDTH       = 600 * IMG_DIM_MULT,  ///<1200*IMG_DIM_MULT,
 		IMG_HEIGHT      = 600 * IMG_DIM_MULT,
 		IMG_HEADER_SIZE = 54,
 		IMG_RAW_SIZE    = IMG_WIDTH * IMG_HEIGHT * 3,
@@ -134,7 +134,7 @@ class PixelHistoPicGen
 
 		//bpix enums
 		BIMG_DIM_MULT    = 1,
-		BIMG_WIDTH       = 300 * BIMG_DIM_MULT,  //600*BIMG_DIM_MULT,
+		BIMG_WIDTH       = 300 * BIMG_DIM_MULT,  ///<600*BIMG_DIM_MULT,
 		BIMG_HEIGHT      = 600 * BIMG_DIM_MULT,
 		BIMG_HEADER_SIZE = 54,
 		BIMG_RAW_SIZE    = BIMG_WIDTH * BIMG_HEIGHT * 3,
@@ -238,18 +238,18 @@ class PixelHistoPicGen
 	unsigned char bpixLyr2_[2][BPIX_LYR2_ROWS][BPIX_LYR_COLS][3];
 	unsigned char bpixLyr3_[2][BPIX_LYR3_ROWS][BPIX_LYR_COLS][3];
 
-	int* clickMask_;  //array of roc indices that have been clicked
+	int* clickMask_;  ///<array of roc indices that have been clicked
 
-	unsigned char img_[IMG_WIDTH][IMG_HEIGHT][3];  //RGB img representation {x,y,rgb}
+	unsigned char img_[IMG_WIDTH][IMG_HEIGHT][3];  ///<RGB img representation {x,y,rgb}
 	unsigned char bimg_[BIMG_WIDTH][BIMG_HEIGHT]
-	                   [3];  //barrel RGB img representation {x,y,rgb}
+	                   [3];  ///<barrel RGB img representation {x,y,rgb}
 	unsigned char auxImg_[AUX_IMG_WIDTH][AUX_IMG_HEIGHT]
-	                     [4];   //RGB alpha img representation {x,y,rgba}
-	unsigned char*** readImg_;  //RGB read img representation {x,y,rgb}
+	                     [4];   ///<RGB alpha img representation {x,y,rgba}
+	unsigned char*** readImg_;  ///<RGB read img representation {x,y,rgb}
 	int              readImgW_, readImgH_;
 
 	unsigned char turtleImg_[TUR_IMG_WIDTH][TUR_IMG_HEIGHT]
-	                        [4];  //RGB alpha img representation {x,y,rgba}
+	                        [4];  ///<RGB alpha img representation {x,y,rgba}
 	bool firstTurtle;
 };
 

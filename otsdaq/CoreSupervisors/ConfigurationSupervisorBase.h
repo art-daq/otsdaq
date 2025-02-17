@@ -10,8 +10,8 @@ namespace ots
 {
 // clang-format off
 
-// ConfigurationSupervisorBase
-//	This class provides supervisor level features for manipulating the configuration
+/// ConfigurationSupervisorBase
+///	This class provides supervisor level features for manipulating the configuration
 class ConfigurationSupervisorBase
 {
 public:

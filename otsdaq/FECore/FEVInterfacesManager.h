@@ -22,12 +22,12 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	                     const std::string&       supervisorConfigurationPath);
 	virtual ~FEVInterfacesManager(void);
 
-	// Methods
+	/// Methods
 	void init(void);
 	void destroy(void);
 	void createInterfaces(void);
 
-	// State Machine Methods
+	/// State Machine Methods
 	virtual void        configure(void) override;
 	virtual void        halt(void) override;
 	virtual void        pause(void) override;
@@ -101,14 +101,14 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	}
 	FEVInterface* getFEInterfaceP(const std::string& interfaceID);
 
-	// FE communication helpers
+	/// FE communication helpers
 	std::mutex frontEndCommunicationReceiveMutex_;
 	std::map<std::string /*targetInterfaceID*/,  ///< map of target to buffers organized by
 	                                             ///< source
 	         std::map<std::string /*requester*/, std::queue<std::string /*value*/> > >
 	    frontEndCommunicationReceiveBuffer_;
 
-	// multi-dimensional FE Macro helpers
+	/// multi-dimensional FE Macro helpers
 	std::mutex macroMultiDimensionalDoneMutex_;
 	std::map<std::string /*targetInterfaceID*/,  ///< set of active multi-dimensional Macro
 	                                             ///< launches
@@ -119,7 +119,7 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	std::map<std::string /*name*/, std::unique_ptr<FEVInterface> > theFEInterfaces_;
 	std::vector<std::string /*name*/>                              theFENamesByPriority_;
 
-	// for managing transition iterations
+	/// for managing transition iterations
 	std::map<std::string /*name*/, bool /*isDone*/> stateMachinesIterationDone_;
 	unsigned int                                    stateMachinesIterationWorkCount_;
 	unsigned int                                    subIterationWorkStateMachineIndex_;

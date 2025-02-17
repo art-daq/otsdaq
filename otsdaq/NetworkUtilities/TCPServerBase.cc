@@ -84,7 +84,7 @@ void TCPServerBase::startAccept(void)
 	//	__COUT__ << "Done startAccept" << std::endl;
 }
 
-// An accepts waits for a connection and returns the opened socket number
+/// An accepts waits for a connection and returns the opened socket number
 //==============================================================================
 int TCPServerBase::accept(bool blocking)
 {
@@ -174,7 +174,7 @@ int TCPServerBase::accept(bool blocking)
 }
 
 //==============================================================================
-// This method is called in the distructor so I need to wait for the threads to be done!
+/// This method is called in the distructor so I need to wait for the threads to be done!
 void TCPServerBase::closeClientSockets(void)
 {
 	for(auto& socket : fConnectedClients)

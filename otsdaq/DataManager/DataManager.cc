@@ -460,8 +460,8 @@ void DataManager::stop()
 }  // end stop()
 
 //==============================================================================
-// destroyBuffers
-//	Stop all Buffers, deletes all pointers, and delete Buffer struct
+/// destroyBuffers
+///	Stop all Buffers, deletes all pointers, and delete Buffer struct
 void DataManager::destroyBuffers(void)
 {
 	DataManager::stopAllBuffers();
@@ -485,15 +485,15 @@ void DataManager::destroyBuffers(void)
 }  // end destroyBuffers()
 
 ////==============================================================================
-// void DataManager::eraseBuffer(const std::string& bufferUID)
+/// void DataManager::eraseBuffer(const std::string& bufferUID)
 //{
 //	if (deleteBuffer(bufferUID))
 //		buffers_.erase(bufferUID);
 //} //end eraseBuffer()
 
 ////==============================================================================
-//
-// bool DataManager::deleteBuffer(const std::string& bufferUID)
+///
+/// bool DataManager::deleteBuffer(const std::string& bufferUID)
 //{
 //	auto it = buffers_.find(bufferUID);
 //	if (it != buffers_.end())
@@ -524,8 +524,8 @@ void DataManager::destroyBuffers(void)
 ////	Assumes that the DataManager has ownership of processor object.
 ////
 ////	Note: there should only be one DataBuffer with that consumer registered!
-// void DataManager::unregisterConsumer(const std::string& bufferID, const std::string&
-// consumerID)
+/// void DataManager::unregisterConsumer(const std::string& bufferID, const std::string&
+/// consumerID)
 //{
 //	__CFG_COUT__ << "Un-Registering consumer '" << consumerID <<
 //			"' from buffer '" << bufferID << "'..." << __E__;
@@ -615,8 +615,8 @@ void DataManager::destroyBuffers(void)
 //} //end unregisterConsumer()
 
 ////==============================================================================
-// void DataManager::unregisterProducer(const std::string& bufferID, const std::string&
-// producerID)
+/// void DataManager::unregisterProducer(const std::string& bufferID, const std::string&
+/// producerID)
 //{
 //	__CFG_COUT__ << "Un-Registering producer '" << producerID <<
 //			"' from buffer '" << bufferID << "'..." << __E__;
@@ -681,11 +681,11 @@ void DataManager::unregisterFEProducer(const std::string& bufferID,
 }  // end unregisterFEProducer()
 
 //==============================================================================
-// registerProducer
-//	DataManager takes ownership of producer pointer
-//		and is now responsible for destructing.
-//	Note: in the future, we could pass a shared_ptr, so that source of pointer could
-//		share in destructing responsibility.
+/// registerProducer
+///	DataManager takes ownership of producer pointer
+///		and is now responsible for destructing.
+///	Note: in the future, we could pass a shared_ptr, so that source of pointer could
+///		share in destructing responsibility.
 void DataManager::registerProducer(const std::string& bufferUID,
                                    DataProducerBase*  producer)
 {

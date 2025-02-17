@@ -25,13 +25,13 @@ class WorkLoopManager
 	WorkLoopManager(toolbox::task::ActionSignature* job);
 	~WorkLoopManager(void);
 
-	// All requests that can change the request map like
-	// forceDeleteAllRequests, deleteAllInactiveRequests, deleteAllTimedOutRequests
-	// forceThisRequest -> even if there are already maxWorkLoops this request must be
-	// accepted!!
-	// and more...
-	// MUST BE HANDLED LIKE ALL THE OTHER REQUESTS!!!!!! THROUGH THE processRequest
-	// Method!
+	/// All requests that can change the request map like
+	/// forceDeleteAllRequests, deleteAllInactiveRequests, deleteAllTimedOutRequests
+	/// forceThisRequest -> even if there are already maxWorkLoops this request must be
+	/// accepted!!
+	/// and more...
+	/// MUST BE HANDLED LIKE ALL THE OTHER REQUESTS!!!!!! THROUGH THE processRequest
+	/// Method!
 	HttpXmlDocument processRequest(cgicc::Cgicc& cgi);
 	HttpXmlDocument processRequest(const xoap::MessageReference& message);
 	bool            report(toolbox::task::WorkLoop* workLoop,
@@ -43,7 +43,7 @@ class WorkLoopManager
 	void            translateWorkLoopName(toolbox::task::WorkLoop* workLoop,
 	                                      SOAPCommand&             soapCommand);
 
-	// Getters
+	/// Getters
 	bool                   getRequestResult(cgicc::Cgicc& cgi, HttpXmlDocument& xmldoc);
 	xoap::MessageReference getMessage(toolbox::task::WorkLoop* workLoop);
 
@@ -72,15 +72,15 @@ class WorkLoopManager
 	std::string     composeWorkLoopName(RequestNumber                 requestNumber,
 	                                    const xoap::MessageReference& message);
 	RequestNumber   getWorkLoopRequestNumber(toolbox::task::WorkLoop* workLoop);
-	RequestNumber getWorkLoopRequestNumber(std::string workLoopName);  // This can only be
+	RequestNumber getWorkLoopRequestNumber(std::string workLoopName);  ///< This can only be
 	    // used by the class
 	    // because it is
 	    // careful to use
 	    // the right format
-	std::string getWorkLoopRequest(std::string workLoopName);  // This can only be used by
-	                                                           // the class because it is
-	                                                           // careful to use the right
-	                                                           // format
+	std::string getWorkLoopRequest(std::string workLoopName);  ///< This can only be used by
+	                                                           ///< the class because it is
+	                                                           ///< careful to use the right
+	                                                           ///< format
 
 	std::map<RequestNumber, WorkLoopStruct> workLoops_;
 	toolbox::task::ActionSignature*         job_;

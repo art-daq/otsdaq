@@ -13,10 +13,10 @@
 // #include <set>
 
 using namespace ots;
-//
-// #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" +
-//"ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
-
+///
+/// #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" +
+///"ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
+///
 //==============================================================================
 ARTDAQProducer::ARTDAQProducer(std::string              supervisorApplicationUID,
                                std::string              bufferUID,
@@ -30,12 +30,12 @@ ARTDAQProducer::ARTDAQProducer(std::string              supervisorApplicationUID
                                 processorUID,
                                 theXDAQContextConfigTree,
                                 configurationPath)
-//    : WorkLoop(processorUID)
-//    , DataProducer(supervisorApplicationUID, bufferUID, processorUID)
-//    //
-//    theXDAQContextConfigTree.getNode(configurationPath).getNode("BufferSize").getValue<unsigned
-//    // int>())
-//    , Configurable(theXDAQContextConfigTree, configurationPath)
+///    : WorkLoop(processorUID)
+///    , DataProducer(supervisorApplicationUID, bufferUID, processorUID)
+///    //
+///    theXDAQContextConfigTree.getNode(configurationPath).getNode("BufferSize").getValue<unsigned
+///    // int>())
+///    , Configurable(theXDAQContextConfigTree, configurationPath)
 {
 	// Tell me why this printout does not happen
 	__COUT__ << "ARTDAQ Producer constructed." << __E__;
@@ -131,9 +131,9 @@ ARTDAQProducer::ARTDAQProducer(std::string              supervisorApplicationUID
 }
 
 //==============================================================================
-// ARTDAQProducer::ARTDAQProducer(std::string interfaceID, MPI_Comm local_group_comm,
-// std::string name) :FEVInterface     (feId, 0) ,local_group_comm_(local_group_comm)
-//,name_            (name)
+/// ARTDAQProducer::ARTDAQProducer(std::string interfaceID, MPI_Comm local_group_comm,
+/// std::string name) :FEVInterface     (feId, 0) ,local_group_comm_(local_group_comm)
+///,name_            (name)
 //{}
 
 //==============================================================================
@@ -142,19 +142,19 @@ ARTDAQProducer::~ARTDAQProducer(void)
 	halt();
 	__COUT__ << "Destructor." << __E__;
 }
-//
+///
 ////==============================================================================
-// void ARTDAQProducer::initLocalGroup(int rank)
+/// void ARTDAQProducer::initLocalGroup(int rank)
 //{
 //	name_ = "BoardReader_" + DataProducer::processorUID_;
 //	configure(rank);
 //}
 //
 // #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" +
-//"ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
-//
+///"ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
+///
 ////==============================================================================
-// void ARTDAQProducer::configure(int rank)
+/// void ARTDAQProducer::configure(int rank)
 //{
 //	__COUT__ << "\tConfigure" << __E__;
 //
@@ -190,7 +190,7 @@ ARTDAQProducer::~ARTDAQProducer(void)
 //}
 //
 ////==============================================================================
-// void ARTDAQProducer::halt(void)
+/// void ARTDAQProducer::halt(void)
 //{
 //	__COUT__ << "\tHalt" << __E__;
 //	// FIXME These are passed as parameters
@@ -207,83 +207,83 @@ ARTDAQProducer::~ARTDAQProducer(void)
 //
 //==============================================================================
 void ARTDAQProducer::pauseProcessingData(void) { ARTDAQReaderProcessorBase::pause(); }
-//	__COUT__ << "\tPause" << __E__;
-//	// FIXME These are passed as parameters
-//	uint64_t timeout         = 45;
-//	uint64_t timestamp       = 184467440737095516;
-//	report_string_           = "";
-//	external_request_status_ = fragment_receiver_ptr_->pause(timeout, timestamp);
-//	if(!external_request_status_)
-//	{
-//		report_string_ = "Error pausing ";
-//		report_string_.append(name_ + ".");
-//	}
-//}
-//
+///	__COUT__ << "\tPause" << __E__;
+///	// FIXME These are passed as parameters
+///	uint64_t timeout         = 45;
+///	uint64_t timestamp       = 184467440737095516;
+///	report_string_           = "";
+///	external_request_status_ = fragment_receiver_ptr_->pause(timeout, timestamp);
+///	if(!external_request_status_)
+///	{
+///		report_string_ = "Error pausing ";
+///		report_string_.append(name_ + ".");
+///	}
+///}
+///
 //==============================================================================
 void ARTDAQProducer::resumeProcessingData(void) { ARTDAQReaderProcessorBase::resume(); }
-//	__COUT__ << "\tResume" << __E__;
-//	// FIXME These are passed as parameters
-//	uint64_t timeout         = 45;
-//	uint64_t timestamp       = 184467440737095516;
-//	report_string_           = "";
-//	external_request_status_ = fragment_receiver_ptr_->resume(timeout, timestamp);
-//	if(!external_request_status_)
-//	{
-//		report_string_ = "Error resuming ";
-//		report_string_.append(name_ + ".");
-//	}
-//}
-//
+///	__COUT__ << "\tResume" << __E__;
+///	// FIXME These are passed as parameters
+///	uint64_t timeout         = 45;
+///	uint64_t timestamp       = 184467440737095516;
+///	report_string_           = "";
+///	external_request_status_ = fragment_receiver_ptr_->resume(timeout, timestamp);
+///	if(!external_request_status_)
+///	{
+///		report_string_ = "Error resuming ";
+///		report_string_.append(name_ + ".");
+///	}
+///}
+///
 //==============================================================================
 void ARTDAQProducer::startProcessingData(std::string runNumber)
 {
 	ARTDAQReaderProcessorBase::start(runNumber);
 }
-//	__COUT__ << "\tStart" << __E__;
-//
-//	art::RunID runId((art::RunNumber_t)boost::lexical_cast<art::RunNumber_t>(runNumber));
-//
-//	// FIXME These are passed as parameters
-//	uint64_t timeout   = 45;
-//	uint64_t timestamp = 184467440737095516;
-//
-//	report_string_ = "";
-//	__COUT__ << "\tStart run: " << runId << __E__;
-//	external_request_status_ = fragment_receiver_ptr_->start(runId, timeout, timestamp);
-//	__COUT__ << "\tStart already crashed " << __E__;
-//	if(!external_request_status_)
-//	{
-//		report_string_ = "Error starting ";
-//		report_string_.append(name_ + " ");
-//		report_string_.append("for run number ");
-//		report_string_.append(boost::lexical_cast<std::string>(runId.run()));
-//		report_string_.append(", timeout ");
-//		report_string_.append(boost::lexical_cast<std::string>(timeout));
-//		report_string_.append(", timestamp ");
-//		report_string_.append(boost::lexical_cast<std::string>(timestamp));
-//		report_string_.append(".");
-//	}
-//}
-//
+///	__COUT__ << "\tStart" << __E__;
+///
+///	art::RunID runId((art::RunNumber_t)boost::lexical_cast<art::RunNumber_t>(runNumber));
+///
+///	// FIXME These are passed as parameters
+///	uint64_t timeout   = 45;
+///	uint64_t timestamp = 184467440737095516;
+///
+///	report_string_ = "";
+///	__COUT__ << "\tStart run: " << runId << __E__;
+///	external_request_status_ = fragment_receiver_ptr_->start(runId, timeout, timestamp);
+///	__COUT__ << "\tStart already crashed " << __E__;
+///	if(!external_request_status_)
+///	{
+///		report_string_ = "Error starting ";
+///		report_string_.append(name_ + " ");
+///		report_string_.append("for run number ");
+///		report_string_.append(boost::lexical_cast<std::string>(runId.run()));
+///		report_string_.append(", timeout ");
+///		report_string_.append(boost::lexical_cast<std::string>(timeout));
+///		report_string_.append(", timestamp ");
+///		report_string_.append(boost::lexical_cast<std::string>(timestamp));
+///		report_string_.append(".");
+///	}
+///}
+///
 //==============================================================================
 void ARTDAQProducer::stopProcessingData(void) { ARTDAQReaderProcessorBase::stop(); }
-//	__COUT__ << "\tStop" << __E__;
-//	// FIXME These are passed as parameters
-//	uint64_t timeout   = 45;
-//	uint64_t timestamp = 184467440737095516;
-//	report_string_     = "";
-//
-//	auto sts = fragment_receiver_ptr_->status();
-//	if(sts == "Ready")
-//		return;  // Already stopped/never started
-//
-//	external_request_status_ = fragment_receiver_ptr_->stop(timeout, timestamp);
-//	if(!external_request_status_)
-//	{
-//		report_string_ = "Error stopping ";
-//		report_string_.append(name_ + ".");
-//		// return false;
-//	}
-//}
+///	__COUT__ << "\tStop" << __E__;
+///	// FIXME These are passed as parameters
+///	uint64_t timeout   = 45;
+///	uint64_t timestamp = 184467440737095516;
+///	report_string_     = "";
+///
+///	auto sts = fragment_receiver_ptr_->status();
+///	if(sts == "Ready")
+///		return;  // Already stopped/never started
+///
+///	external_request_status_ = fragment_receiver_ptr_->stop(timeout, timestamp);
+///	if(!external_request_status_)
+///	{
+///		report_string_ = "Error stopping ";
+///		report_string_.append(name_ + ".");
+///		// return false;
+///	}
+///}
 //

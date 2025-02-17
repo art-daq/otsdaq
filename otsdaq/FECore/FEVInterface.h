@@ -85,7 +85,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	static void 						sendAsyncExceptionToGateway		(FEVInterface* fe, const std::string& errMsg, bool isPauseException, bool isStopException);
 
 	/////////===========================
-	// start State Machine handlers
+	/// start State Machine handlers
 	virtual void 								configure					(void)
 	{
 		__COUT__ << "\t Configure" << std::endl;
@@ -106,11 +106,11 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	virtual void 								pause						(void) { stop(); }
 	virtual void 								resume						(void) { start(""); }
 	virtual bool 								running						(void) { /*while(WorkLoop::continueWorkLoop_){;}*/ return false; } ///<return true to have running() called again
-	// end State Machine handlers
+	/// end State Machine handlers
 	/////////
-
+	///
 	/////////===========================
-	// start Slow Controls
+	/// start Slow Controls
 	virtual void 						configureSlowControls		(void);
 	void								addSlowControlsChannels		(ConfigurationTree slowControlsGroupLink, std::map<std::string /* ROC UID*/, FESlowControlsChannel>* mapOfSlowControlsChannels);
 
@@ -125,18 +125,18 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	static const std::string 						UNKNOWN_TYPE;
 
   protected:
-	// Slow Controls members
+	/// Slow Controls members
 	std::map<std::string, FESlowControlsChannel> 	mapOfSlowControlsChannels_;
 	std::map<std::string,
 		FESlowControlsChannel>::iterator			slowControlsChannelsIterator_;
 	FESlowControlsWorkLoop                       	slowControlsWorkLoop_;
-	// end Slow Controls
+	/// end Slow Controls
 	/////////
-
+	///
 	/////////===========================
-	// start FE Macros
+	/// start FE Macros
   public:
-	// public types and functions for map of FE macros
+	/// public types and functions for map of FE macros
 	using frontEndMacroArg_t 		= std::pair<const std::string /* arg name */, std::string /* arg return value */>;
 	using frontEndMacroArgs_t      	= std::vector<frontEndMacroArg_t>&;
 	using frontEndMacroConstArgs_t 	= const std::vector<frontEndMacroArg_t>&;
@@ -177,11 +177,11 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	    const std::string&                                   	feMacroName,
 	    const std::vector<FEVInterface::frontEndMacroArg_t>& 	inputArgs,
 	    std::vector<FEVInterface::frontEndMacroArg_t>&       	outputArgs);
-	// end FE Macros
+	/// end FE Macros
 	/////////
-
+	///
 	/////////===========================
-	// start Macros
+	/// start Macros
 	struct macroStruct_t
 	{
 		macroStruct_t(const std::string& macroString);
@@ -234,34 +234,34 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	              std::map<std::string /*name*/, uint64_t /*value*/>& variableMap);
 
   public:
-	// end FE Macros
+	/// end FE Macros
 	/////////
-
+	///
 	/////////===========================
-	// start FE communication helpers
-
+	/// start FE communication helpers
+	///
 	template<class T>
 	void 							sendToFrontEnd				(const std::string& targetInterfaceID, const T& value) const;
 	void 							runFrontEndMacro			(const std::string& targetInterfaceID,const std::string& feMacroName, const std::vector<FEVInterface::frontEndMacroArg_t>& inputArgs, std::vector<FEVInterface::frontEndMacroArg_t>& outputArgs) const;
 
 	/////////
-	// receiveFromFrontEnd
-	//	* can be used for source interface ID to accept a message from any front-end
-	// NOTE: can not overload functions based on return type, so T& passed as value
+	/// receiveFromFrontEnd
+	///	* can be used for source interface ID to accept a message from any front-end
+	/// NOTE: can not overload functions based on return type, so T& passed as value
 	template<class T>
 	void 							receiveFromFrontEnd			(const std::string& requester, T& retValue, unsigned int timeoutInSeconds = 1) const;
-	//	specialized template function for T=std::string
+	///	specialized template function for T=std::string
 	void 							receiveFromFrontEnd			(const std::string& requester, std::string& retValue, unsigned int timeoutInSeconds = 1) const;
-	// NOTE: can not overload functions based on return type, so calls function with T&
-	// passed as value
+	/// NOTE: can not overload functions based on return type, so calls function with T&
+	/// passed as value
 	template<class T>
 	T 								receiveFromFrontEnd			(const std::string& requester = "*", unsigned int timeoutInSeconds = 1) const;
-	//	specialized template function for T=std::string
+	///	specialized template function for T=std::string
 	std::string 					receiveFromFrontEnd			(const std::string& requester = "*", unsigned int timeoutInSeconds = 1) const;
 
-	// end FE Communication helpers
+	/// end FE Communication helpers
 	/////////
-
+	///
   protected:
 	bool        					workLoopThread				(toolbox::task::WorkLoop* workLoop);
 	
@@ -272,8 +272,8 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	unsigned int 									universalDataSize_    = 0;
 
 
-	// FE Macro Function members and helper functions:
-
+	/// FE Macro Function members and helper functions:
+	///
 	std::map<std::string, frontEndMacroStruct_t>	mapOfFEMacroFunctions_;  ///< Map of FE Macro functions members
 	void 							registerFEMacroFunction		(
 	    const std::string&              							feMacroName,

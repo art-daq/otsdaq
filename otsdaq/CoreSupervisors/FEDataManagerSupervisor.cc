@@ -75,9 +75,9 @@ FEDataManagerSupervisor::~FEDataManagerSupervisor(void)
 }  // end destructor()
 
 //==============================================================================
-// transitionConfiguring
-//	swap order of state machine vector for configuring
-//		so that DataManager gets configured first.
+/// transitionConfiguring
+///	swap order of state machine vector for configuring
+///		so that DataManager gets configured first.
 void FEDataManagerSupervisor::transitionConfiguring(toolbox::Event::Reference e)
 {
 	__SUP_COUT__ << "transitionConfiguring" << __E__;
@@ -119,10 +119,10 @@ void FEDataManagerSupervisor::transitionConfiguring(toolbox::Event::Reference e)
 }  // end transitionConfiguring()
 
 //==============================================================================
-// transitionStarting
-//	swap order of state machine vector for starting
-//		so that DataManager gets configured first.
-//	buffers need to be ready before FEs start writing to them
+/// transitionStarting
+///	swap order of state machine vector for starting
+///		so that DataManager gets configured first.
+///	buffers need to be ready before FEs start writing to them
 void FEDataManagerSupervisor::transitionStarting(toolbox::Event::Reference e)
 {
 	__SUP_COUT__ << "transitionStarting" << __E__;
@@ -150,10 +150,10 @@ void FEDataManagerSupervisor::transitionStarting(toolbox::Event::Reference e)
 }  // end transitionStarting()
 
 //==============================================================================
-// transitionResuming
-//	swap order of state machine vector for resuming
-//		so that DataManager gets configured first.
-//	buffers need to be ready before FEs start writing to them
+/// transitionResuming
+///	swap order of state machine vector for resuming
+///		so that DataManager gets configured first.
+///	buffers need to be ready before FEs start writing to them
 void FEDataManagerSupervisor::transitionResuming(toolbox::Event::Reference e)
 {
 	__SUP_COUT__ << "transitionStarting" << __E__;
@@ -181,13 +181,13 @@ void FEDataManagerSupervisor::transitionResuming(toolbox::Event::Reference e)
 }  // end transitionResuming()
 
 //==============================================================================
-// extractDataManager
-//
-//	locates theDataManager in state machines vector and
-//		returns 0 if not found.
-//
-//	Note: this code assumes a CoreSupervisorBase has only one
-//		DataManager in its vector of state machines
+/// extractDataManager
+///
+///	locates theDataManager in state machines vector and
+///		returns 0 if not found.
+///
+///	Note: this code assumes a CoreSupervisorBase has only one
+///		DataManager in its vector of state machines
 DataManager* FEDataManagerSupervisor::extractDataManager()
 {
 	theDataManager_ = 0;

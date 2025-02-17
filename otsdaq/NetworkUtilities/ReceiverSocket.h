@@ -11,8 +11,8 @@ namespace ots
 {
 class ReceiverSocket : public virtual Socket
 {
-	// TransceiverSocket is a "Friend" class of ReceiverSocket so has access to private
-	// members.
+	/// TransceiverSocket is a "Friend" class of ReceiverSocket so has access to private
+	/// members.
 	friend class TransceiverSocket;
 
   public:
@@ -57,7 +57,7 @@ class ReceiverSocket : public virtual Socket
 	unsigned short lastIncomingPort_      = 0;
 	unsigned int   readCounter_;
 
-	std::mutex receiveMutex_;  // to make receiver socket thread safe
+	std::mutex receiveMutex_;  ///< to make receiver socket thread safe
 	    //	i.e. multiple threads can share a socket and call receive()
 };
 

@@ -40,17 +40,17 @@
 using namespace ots;
 
 //==============================================================================
-// HttpXmlDocument::HttpXmlDocument
-//	Constructor to initialize XML theDocument_ for ots.
-//	The XML theDocument_ can be written to xdaq output stream to client
-//
-//	theDocument_ result:
-//	<ROOT>
-//		<HEADER>
-//			--optional with value <CookieCode>, <DisplayName> added in constructor
-//		<DATA>
-//			--optional data elements with value and any field name
-//
+/// HttpXmlDocument::HttpXmlDocument
+///	Constructor to initialize XML theDocument_ for ots.
+///	The XML theDocument_ can be written to xdaq output stream to client
+///
+///	theDocument_ result:
+///	<ROOT>
+///		<HEADER>
+///			--optional with value <CookieCode>, <DisplayName> added in constructor
+///		<DATA>
+///			--optional data elements with value and any field name
+///
 HttpXmlDocument::HttpXmlDocument(std::string cookieCode, std::string displayName)
     : XmlDocument("ROOT")
     , headerElement_(0)
@@ -162,8 +162,8 @@ xercesc::DOMElement* HttpXmlDocument::addBinaryStringToData(const std::string& c
 }
 
 //==============================================================================
-// HttpXmlDocument::getChildrenCount
-//	get count of children ignoring text nodes.
+/// HttpXmlDocument::getChildrenCount
+///	get count of children ignoring text nodes.
 unsigned int HttpXmlDocument::getChildrenCount(xercesc::DOMElement* parent)
 {
 	if(!parent)
@@ -184,9 +184,9 @@ unsigned int HttpXmlDocument::getChildrenCount(xercesc::DOMElement* parent)
 }
 
 //==============================================================================
-// HttpXmlDocument::removeDataElement
-//	Remove child and child's sub-tree from dataElement. The child is
-//	identified with dataChildIndex.
+/// HttpXmlDocument::removeDataElement
+///	Remove child and child's sub-tree from dataElement. The child is
+///	identified with dataChildIndex.
 void HttpXmlDocument::removeDataElement(unsigned int dataChildIndex)
 {
 	xercesc::DOMNodeList* nodeList =
@@ -211,8 +211,8 @@ void HttpXmlDocument::removeDataElement(unsigned int dataChildIndex)
 }  // end removeDataElement()
 
 //==============================================================================
-// HttpXmlDocument::addXmlData
-//	Append <DATA> from xmldoc to this XML doc
+/// HttpXmlDocument::addXmlData
+///	Append <DATA> from xmldoc to this XML doc
 void HttpXmlDocument::copyDataChildren(HttpXmlDocument& document)
 {
 	// add all first level child elements of data and recurse on them
@@ -230,9 +230,9 @@ void HttpXmlDocument::copyDataChildren(HttpXmlDocument& document)
 }  // end copyDataChildren()
 
 //==============================================================================
-// HttpXmlDocument::outputXmlDocument
-//	recurse through XML theDocument_ and std out and output to stream parameter if not
-// null
+/// HttpXmlDocument::outputXmlDocument
+///	recurse through XML theDocument_ and std out and output to stream parameter if not
+/// null
 void HttpXmlDocument::outputXmlDocument(std::ostringstream* out,
                                         bool                dispStdOut,
                                         bool                allowWhiteSpace)
@@ -242,8 +242,8 @@ void HttpXmlDocument::outputXmlDocument(std::ostringstream* out,
 }  // end outputXmlDocument()
 
 //==============================================================================
-// HttpXmlDocument::recursiveOutputXmlDocument
-//	recursively printout XML theDocument_ to std out and output stream if not null
+/// HttpXmlDocument::recursiveOutputXmlDocument
+///	recursively printout XML theDocument_ to std out and output stream if not null
 void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
                                                  std::ostringstream*  out,
                                                  bool                 dispStdOut,
@@ -361,9 +361,9 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 }  // end recursiveOutputXmlDocument()
 
 //==============================================================================
-// HttpXmlDocument::getMatchingValue
-//  returns the value for field found occurance number of times
-//  returns empty std::string "" if field was not found
+/// HttpXmlDocument::getMatchingValue
+///  returns the value for field found occurance number of times
+///  returns empty std::string "" if field was not found
 std::string HttpXmlDocument::getMatchingValue(const std::string& field,
                                               const unsigned int occurance)
 {
@@ -373,8 +373,8 @@ std::string HttpXmlDocument::getMatchingValue(const std::string& field,
 }
 
 //==============================================================================
-// HttpXmlDocument::recursiveFindElement
-//  recursively searches and returns the value for field found occurance number of times
+/// HttpXmlDocument::recursiveFindElement
+///  recursively searches and returns the value for field found occurance number of times
 std::string HttpXmlDocument::recursiveFindElementValue(xercesc::DOMElement* currEl,
                                                        const std::string&   field,
                                                        const unsigned int   occurance,
@@ -410,9 +410,9 @@ std::string HttpXmlDocument::recursiveFindElementValue(xercesc::DOMElement* curr
 }
 
 //==============================================================================
-// HttpXmlDocument::getAllMatchingValues
-//  returns all of the values found for the field in a vector
-//  if none found vector will have size 0
+/// HttpXmlDocument::getAllMatchingValues
+///  returns all of the values found for the field in a vector
+///  if none found vector will have size 0
 void HttpXmlDocument::getAllMatchingValues(const std::string&        field,
                                            std::vector<std::string>& retVec)
 {
@@ -420,8 +420,8 @@ void HttpXmlDocument::getAllMatchingValues(const std::string&        field,
 }
 
 //==============================================================================
-// HttpXmlDocument::recursiveFindElement
-//  recursively searches and returns the value for field found occurance number of times
+/// HttpXmlDocument::recursiveFindElement
+///  recursively searches and returns the value for field found occurance number of times
 void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*      currEl,
                                                const std::string&        field,
                                                std::vector<std::string>* retVec)
@@ -442,9 +442,9 @@ void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*      currEl,
 }
 
 //==============================================================================
-// HttpXmlDocument::getMatchingElement
-//  returns the element for field found occurance number of times
-//  returns null if field was not found
+/// HttpXmlDocument::getMatchingElement
+///  returns the element for field found occurance number of times
+///  returns null if field was not found
 xercesc::DOMElement* HttpXmlDocument::getMatchingElement(const std::string& field,
                                                          const unsigned int occurance)
 {
@@ -453,10 +453,10 @@ xercesc::DOMElement* HttpXmlDocument::getMatchingElement(const std::string& fiel
 }
 
 //==============================================================================
-// HttpXmlDocument::getMatchingElementInSubtree
-//  returns the element for field found occurance number of times within the subtree
-//		specified by parentEl
-//  returns null if field was not found
+/// HttpXmlDocument::getMatchingElementInSubtree
+///  returns the element for field found occurance number of times within the subtree
+///		specified by parentEl
+///  returns null if field was not found
 xercesc::DOMElement* HttpXmlDocument::getMatchingElementInSubtree(
     xercesc::DOMElement* parentEl, const std::string& field, const unsigned int occurance)
 {
@@ -465,8 +465,8 @@ xercesc::DOMElement* HttpXmlDocument::getMatchingElementInSubtree(
 }
 
 //==============================================================================
-// HttpXmlDocument::recursiveFindElement
-//  recursively searches and returns the element for field found occurance number of times
+/// HttpXmlDocument::recursiveFindElement
+///  recursively searches and returns the element for field found occurance number of times
 xercesc::DOMElement* HttpXmlDocument::recursiveFindElement(xercesc::DOMElement* currEl,
                                                            const std::string&   field,
                                                            const unsigned int   occurance,
@@ -501,9 +501,9 @@ xercesc::DOMElement* HttpXmlDocument::recursiveFindElement(xercesc::DOMElement* 
 }
 
 //==============================================================================
-// HttpXmlDocument::recursiveAddElementToParent
-//	add currEl and its children tree to parentEl
-//	note: attributes are not considered here
+/// HttpXmlDocument::recursiveAddElementToParent
+///	add currEl and its children tree to parentEl
+///	note: attributes are not considered here
 void HttpXmlDocument::recursiveAddElementToParent(xercesc::DOMElement* child,
                                                   xercesc::DOMElement* parent,
                                                   bool                 html)
@@ -543,9 +543,9 @@ void HttpXmlDocument::recursiveAddElementToParent(xercesc::DOMElement* child,
 }
 
 //==============================================================================
-// HttpXmlDocument::getAllMatchingElements
-//  returns all of the values found for the field in a vector
-//  if none found vector will have size 0
+/// HttpXmlDocument::getAllMatchingElements
+///  returns all of the values found for the field in a vector
+///  if none found vector will have size 0
 void HttpXmlDocument::getAllMatchingElements(const std::string&                 field,
                                              std::vector<xercesc::DOMElement*>& retVec)
 {
@@ -553,8 +553,8 @@ void HttpXmlDocument::getAllMatchingElements(const std::string&                 
 }
 
 //==============================================================================
-// HttpXmlDocument::recursiveFindElement
-//  recursively searches and returns the value for field found occurance number of times
+/// HttpXmlDocument::recursiveFindElement
+///  recursively searches and returns the value for field found occurance number of times
 void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*               currEl,
                                                const std::string&                 field,
                                                std::vector<xercesc::DOMElement*>* retVec)
@@ -574,10 +574,10 @@ void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*             
 			    (xercesc::DOMElement*)(nodeList->item(i)), field, retVec);
 }
 //==============================================================================
-// HttpXmlDocument::StringMacros::escapeString
-//	convert quotes to html quote characters &apos = ' and &quot = "
-//	remove new line characters
-//	and remove white space (so that read from file white space artifact removed)
+/// HttpXmlDocument::StringMacros::escapeString
+///	convert quotes to html quote characters &apos = ' and &quot = "
+///	remove new line characters
+///	and remove white space (so that read from file white space artifact removed)
 /*
 std::string	HttpXmlDocument::StringMacros::escapeString(string inString)
 {
@@ -606,8 +606,8 @@ before quotes inString.replace(i+5,1,1,';');        // replace special character
 }
 */
 //==============================================================================
-// loadXmlDocument
-//	returns false if file does not exist
+/// loadXmlDocument
+///	returns false if file does not exist
 bool HttpXmlDocument::loadXmlDocument(const std::string& filePath)
 {
 	// __COUT__<< "Loading theDocument_ from file: " << filePath <<
@@ -683,8 +683,8 @@ bool HttpXmlDocument::loadXmlDocument(const std::string& filePath)
 }
 
 //==============================================================================
-// HttpXmlDocument::recursiveFixTextFields
-//	recursively printout XML theDocument_ to std out and output stream if not null
+/// HttpXmlDocument::recursiveFixTextFields
+///	recursively printout XML theDocument_ to std out and output stream if not null
 void HttpXmlDocument::recursiveFixTextFields(xercesc::DOMElement* currEl)
 {
 	xercesc::DOMNodeList* nodeList = currEl->getChildNodes();  // get all children
@@ -702,15 +702,15 @@ void HttpXmlDocument::recursiveFixTextFields(xercesc::DOMElement* currEl)
 }
 
 //==============================================================================
-// HttpXmlDocument::addDataElement
-//	Add field/value element to XML doc at parentIndexArray (with depth of parent indicated
-// by parentIndexArraySize) 	If parentIndexArray = NULL, element is added with <DATA>
-// parent 		otherwise, parentIndexArray indicates the parent within the node list for
-//<DATA> where 		the element will be added
-// 	On Success, The child index of the added element with respect to the parent is
-// returned and can be used to add
-//		children to the new element
-//	On Failure, return -1
+/// HttpXmlDocument::addDataElement
+///	Add field/value element to XML doc at parentIndexArray (with depth of parent indicated
+/// by parentIndexArraySize) 	If parentIndexArray = NULL, element is added with <DATA>
+/// parent 		otherwise, parentIndexArray indicates the parent within the node list for
+///<DATA> where 		the element will be added
+/// 	On Success, The child index of the added element with respect to the parent is
+/// returned and can be used to add
+///		children to the new element
+///	On Failure, return -1
 /*
 xercesc::DOMElement* HttpXmlDocument::addDataElement ( std::string field, std::string
 value, unsigned int *parentIndexArray, unsigned int parentIndexArraySize)

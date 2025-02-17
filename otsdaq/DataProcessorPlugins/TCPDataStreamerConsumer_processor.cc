@@ -23,9 +23,9 @@ TCPDataStreamerConsumer::TCPDataStreamerConsumer(
     , DataConsumer(
           supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)
-//, Socket         ("192.168.133.1", 47200)
-//, DataConsumer   ("ARTDAQDataManager", 1, "ARTDAQBuffer", "ARTDAQDataStreamer0",
-// HighConsumerPriority) , streamToSocket_("192.168.133.1", 50100)
+///, Socket         ("192.168.133.1", 47200)
+///, DataConsumer   ("ARTDAQDataManager", 1, "ARTDAQBuffer", "ARTDAQDataStreamer0",
+/// HighConsumerPriority) , streamToSocket_("192.168.133.1", 50100)
 {
 	std::cout << __COUT_HDR_FL__ << __PRETTY_FUNCTION__ << std::endl;
 	std::cout << __COUT_HDR_FL__ << __PRETTY_FUNCTION__ << std::endl;

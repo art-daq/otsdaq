@@ -14,13 +14,13 @@ class FESlowControlsTable : public TableBase
 	FESlowControlsTable(void);
 	virtual ~FESlowControlsTable(void);
 
-	// Methods
+	/// Methods
 	void init(ConfigurationManager* configManager);
 
-	// Getters
-
+	/// Getters
+	///
   private:
-	// Column names
+	/// Column names
 	struct ColSlowControls
 	{
 		std::string const colDataType_ = "ChannelDataType";

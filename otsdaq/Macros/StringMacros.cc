@@ -5,16 +5,16 @@
 using namespace ots;
 
 //==============================================================================
-// wildCardMatch
-//	find needle in haystack
-//		allow needle to have leading and/or trailing wildcard '*'
-//		consider priority in matching, no matter the order in the haystack:
-//			- 0: no match!
-//			- 1: highest priority is exact match
-//			- 2: next highest is partial TRAILING-wildcard match
-//			- 3: next highest is partial LEADING-wildcard match
-//			- 4: lowest priority is partial full-wildcard match
-//		return priority found by reference
+/// wildCardMatch
+///	find needle in haystack
+///		allow needle to have leading and/or trailing wildcard '*'
+///		consider priority in matching, no matter the order in the haystack:
+///			- 0: no match!
+///			- 1: highest priority is exact match
+///			- 2: next highest is partial TRAILING-wildcard match
+///			- 3: next highest is partial LEADING-wildcard match
+///			- 4: lowest priority is partial full-wildcard match
+///		return priority found by reference
 bool StringMacros::wildCardMatch(const std::string& needle,
                                  const std::string& haystack,
                                  unsigned int*      priorityIndex)
@@ -88,9 +88,9 @@ catch(...)
 }  //end wildCardMatch() catch
 
 //==============================================================================
-// inWildCardSet ~
-//	returns true if needle is in haystack (considering wildcards)
-//	allow inverted haystack strings by first character being '!'
+/// inWildCardSet ~
+///	returns true if needle is in haystack (considering wildcards)
+///	allow inverted haystack strings by first character being '!'
 bool StringMacros::inWildCardSet(const std::string&           needle,
                                  const std::set<std::string>& haystack)
 {
@@ -110,8 +110,8 @@ bool StringMacros::inWildCardSet(const std::string&           needle,
 }
 
 //==============================================================================
-// decodeURIComponent
-//	converts all %## to the ascii character
+/// decodeURIComponent
+///	converts all %## to the ascii character
 std::string StringMacros::decodeURIComponent(const std::string& data)
 {
 	std::string  decodeURIString(data.size(), 0);  // init to same size
@@ -158,7 +158,7 @@ std::string StringMacros::encodeURIComponent(const std::string& sourceStr)
 }  // end encodeURIComponent()
 
 //==============================================================================
-// StringMacros::sanitizeForSQL
+/// StringMacros::sanitizeForSQL
 void StringMacros::sanitizeForSQL(std::string& str)
 {
 	std::map<char, std::string> replacements = {
@@ -185,14 +185,14 @@ void StringMacros::sanitizeForSQL(std::string& str)
 }  //end sanitizeForSQL
 
 //==============================================================================
-// StringMacros::escapeString
-//	convert quotes to html quote characters &apos; = ' and &quot; = "
-//	remove new line characters
-//	and (if !allowWhiteSpace) remove white space (so that read from file white space
-// artifact removed)
-//
-//	convert &amp; = &
-//	if(allowWhiteSpace) convert \t to 8 &#160; spaces and \n to <br>
+/// StringMacros::escapeString
+///	convert quotes to html quote characters &apos; = ' and &quot; = "
+///	remove new line characters
+///	and (if !allowWhiteSpace) remove white space (so that read from file white space
+/// artifact removed)
+///
+///	convert &amp; = &
+///	if(allowWhiteSpace) convert \t to 8 &#160; spaces and \n to <br>
 std::string StringMacros::escapeString(std::string inString,
                                        bool        allowWhiteSpace /* = false */)
 {
@@ -371,10 +371,10 @@ std::string StringMacros::escapeString(std::string inString,
 }  // end escapeString()
 
 //==============================================================================
-// convertEnvironmentVariables ~
-//	static recursive function
-//
-//	allows environment variables entered as $NAME or ${NAME}
+/// convertEnvironmentVariables ~
+///	static recursive function
+///
+///	allows environment variables entered as $NAME or ${NAME}
 std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 {
 	size_t begin = data.find("$");
@@ -441,10 +441,10 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 }  //end convertEnvironmentVariables()
 
 //==============================================================================
-// isNumber ~~
-//	returns true if one or many numbers separated by operations (+,-,/,*) is
-//		present in the string.
-//	Numbers can be hex ("0x.."), binary("b..."), or base10.
+/// isNumber ~~
+///	returns true if one or many numbers separated by operations (+,-,/,*) is
+///		present in the string.
+///	Numbers can be hex ("0x.."), binary("b..."), or base10.
 bool StringMacros::isNumber(const std::string& s)
 {
 	// extract set of potential numbers and operators
@@ -517,11 +517,11 @@ bool StringMacros::isNumber(const std::string& s)
 }  // end isNumber()
 
 //==============================================================================
-// getNumberType ~~
-//	returns string of number type: "unsigned long long", "double"
-//	or else "nan" for not-a-number
-//
-//	Numbers can be hex ("0x.."), binary("b..."), or base10.
+/// getNumberType ~~
+///	returns string of number type: "unsigned long long", "double"
+///	or else "nan" for not-a-number
+///
+///	Numbers can be hex ("0x.."), binary("b..."), or base10.
 std::string StringMacros::getNumberType(const std::string& s)
 {
 	// extract set of potential numbers and operators
@@ -598,10 +598,10 @@ std::string StringMacros::getNumberType(const std::string& s)
 
 //==============================================================================
 // static template function
-//	for bool, but not all other number types
-//	return false if string is not a bool
-// template<>
-// inline bool StringMacros::getNumber<bool>(const std::string& s, bool& retValue)
+///	for bool, but not all other number types
+///	return false if string is not a bool
+/// template<>
+/// inline bool StringMacros::getNumber<bool>(const std::string& s, bool& retValue)
 bool StringMacros::getNumber(const std::string& s, bool& retValue)
 {
 	if(s.size() < 1)
@@ -630,9 +630,9 @@ bool StringMacros::getNumber(const std::string& s, bool& retValue)
 }  // end static getNumber<bool>
 
 //==============================================================================
-// getTimestampString ~~
-//	returns ots style timestamp string
-//	of known fixed size: Thu Aug 23 14:55:02 2001 CST
+/// getTimestampString ~~
+///	returns ots style timestamp string
+///	of known fixed size: Thu Aug 23 14:55:02 2001 CST
 std::string StringMacros::getTimestampString(const std::string& linuxTimeInSeconds)
 {
 	time_t timestamp(strtol(linuxTimeInSeconds.c_str(), 0, 10));
@@ -640,9 +640,9 @@ std::string StringMacros::getTimestampString(const std::string& linuxTimeInSecon
 }  // end getTimestampString()
 
 //==============================================================================
-// getTimestampString ~~
-//	returns ots style timestamp string
-//	of known fixed size: Thu Aug 23 14:55:02 2001 CST
+/// getTimestampString ~~
+///	returns ots style timestamp string
+///	of known fixed size: Thu Aug 23 14:55:02 2001 CST
 std::string StringMacros::getTimestampString(const time_t linuxTimeInSeconds)
 {
 	std::string retValue(30, '\0');  // known fixed size: Thu Aug 23 14:55:02 2001 CST
@@ -656,8 +656,8 @@ std::string StringMacros::getTimestampString(const time_t linuxTimeInSeconds)
 }  // end getTimestampString()
 
 //==============================================================================
-// getTimeDurationString
-//	returns the duration HH:MM:SS with consideration for day(s)
+/// getTimeDurationString
+///	returns the duration HH:MM:SS with consideration for day(s)
 std::string StringMacros::getTimeDurationString(time_t t)
 {
 	//e.g., used by CoreSupervisorBase::getStatusProgressDetail(void)
@@ -678,8 +678,8 @@ std::string StringMacros::getTimeDurationString(time_t t)
 }  //end getTimeDurationString()
 
 //==============================================================================
-// validateValueForDefaultStringDataType
-//
+/// validateValueForDefaultStringDataType
+///
 std::string StringMacros::validateValueForDefaultStringDataType(
     const std::string& value, bool doConvertEnvironmentVariables)
 try
@@ -696,9 +696,9 @@ catch(const std::runtime_error& e)
 }
 
 //==============================================================================
-// getSetFromString
-//	extracts the set of elements from string that uses a delimiter
-//		ignoring whitespace
+/// getSetFromString
+///	extracts the set of elements from string that uses a delimiter
+///		ignoring whitespace
 void StringMacros::getSetFromString(const std::string&     inputString,
                                     std::set<std::string>& setToReturn,
                                     const std::set<char>&  delimiter,
@@ -735,17 +735,17 @@ void StringMacros::getSetFromString(const std::string&     inputString,
 }  // end getSetFromString()
 
 //==============================================================================
-// getVectorFromString
-//	extracts the list of elements from string that uses a delimiter
-//		ignoring whitespace
-//	optionally returns the list of delimiters encountered, which may be useful
-//		for extracting which operator was used.
-//
-//
-//	Note: lists are returned as vectors
-//	Note: the size() of delimiters will be one less than the size() of the returned values
-//		unless there is a leading delimiter, in which case vectors will have the same
-// size.
+/// getVectorFromString
+///	extracts the list of elements from string that uses a delimiter
+///		ignoring whitespace
+///	optionally returns the list of delimiters encountered, which may be useful
+///		for extracting which operator was used.
+///
+///
+///	Note: lists are returned as vectors
+///	Note: the size() of delimiters will be one less than the size() of the returned values
+///		unless there is a leading delimiter, in which case vectors will have the same
+/// size.
 void StringMacros::getVectorFromString(const std::string&        inputString,
                                        std::vector<std::string>& listToReturn,
                                        const std::set<char>&     delimiter,
@@ -854,17 +854,17 @@ void StringMacros::getVectorFromString(const std::string&        inputString,
 }  // end getVectorFromString()
 
 //==============================================================================
-// getVectorFromString
-//	extracts the list of elements from string that uses a delimiter
-//		ignoring whitespace
-//	optionally returns the list of delimiters encountered, which may be useful
-//		for extracting which operator was used.
-//
-//
-//	Note: lists are returned as vectors
-//	Note: the size() of delimiters will be one less than the size() of the returned values
-//		unless there is a leading delimiter, in which case vectors will have the same
-// size.
+/// getVectorFromString
+///	extracts the list of elements from string that uses a delimiter
+///		ignoring whitespace
+///	optionally returns the list of delimiters encountered, which may be useful
+///		for extracting which operator was used.
+///
+///
+///	Note: lists are returned as vectors
+///	Note: the size() of delimiters will be one less than the size() of the returned values
+///		unless there is a leading delimiter, in which case vectors will have the same
+/// size.
 std::vector<std::string> StringMacros::getVectorFromString(
     const std::string&    inputString,
     const std::set<char>& delimiter,
@@ -884,9 +884,9 @@ std::vector<std::string> StringMacros::getVectorFromString(
 }  // end getVectorFromString()
 
 //==============================================================================
-// getMapFromString
-//	extracts the map of name-value pairs from string that uses two delimiters
-//		ignoring whitespace
+/// getMapFromString
+///	extracts the map of name-value pairs from string that uses two delimiters
+///		ignoring whitespace
 void StringMacros::getMapFromString(const std::string&                  inputString,
                                     std::map<std::string, std::string>& mapToReturn,
                                     const std::set<char>&               pairPairDelimiter,
@@ -991,7 +991,7 @@ catch(const std::runtime_error& e)
 }
 
 //==============================================================================
-// mapToString
+/// mapToString
 std::string StringMacros::mapToString(const std::map<std::string, uint8_t>& mapToReturn,
                                       const std::string& primaryDelimeter,
                                       const std::string& secondaryDelimeter)
@@ -1010,7 +1010,7 @@ std::string StringMacros::mapToString(const std::map<std::string, uint8_t>& mapT
 }  // end mapToString()
 
 //==============================================================================
-// setToString
+/// setToString
 std::string StringMacros::setToString(const std::set<uint8_t>& setToReturn,
                                       const std::string&       delimeter)
 {
@@ -1028,7 +1028,7 @@ std::string StringMacros::setToString(const std::set<uint8_t>& setToReturn,
 }  // end setToString()
 
 //==============================================================================
-// vectorToString
+/// vectorToString
 std::string StringMacros::vectorToString(const std::vector<uint8_t>& setToReturn,
                                          const std::string&          delimeter)
 {
@@ -1048,15 +1048,15 @@ std::string StringMacros::vectorToString(const std::vector<uint8_t>& setToReturn
 }  // end vectorToString()
 
 //==============================================================================
-// extractCommonChunks
-//	return the common chunks from the vector of strings
-//		e.g. if the strings were created from a template
-//	string like reader*_east*, this function will return
-//	a vector of size 3 := {"reader","_east",""} and
-//	a vector of wildcards that would replace the *
-//
-//	Returns true if common chunks and wildcards found,
-//	returns false if all inputs were the same (i.e. no wildcards needed)
+/// extractCommonChunks
+///	return the common chunks from the vector of strings
+///		e.g. if the strings were created from a template
+///	string like reader*_east*, this function will return
+///	a vector of size 3 := {"reader","_east",""} and
+///	a vector of wildcards that would replace the *
+///
+///	Returns true if common chunks and wildcards found,
+///	returns false if all inputs were the same (i.e. no wildcards needed)
 bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
                                        std::vector<std::string>& commonChunksToReturn,
                                        std::vector<std::string>& wildcardStringsToReturn,
@@ -1289,9 +1289,9 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 }  // end extractCommonChunks()
 
 //==============================================================================
-// IgnoreCaseCompareStruct operator used to order
-//	std::set, etc ignoring letter case
-// e.g. used here: void ConfigurationGUISupervisor::handleTablesXML
+/// IgnoreCaseCompareStruct operator used to order
+///	std::set, etc ignoring letter case
+/// e.g. used here: void ConfigurationGUISupervisor::handleTablesXML
 bool StringMacros::IgnoreCaseCompareStruct::operator()(const std::string& lhs,
                                                        const std::string& rhs) const
 {
@@ -1335,8 +1335,8 @@ bool StringMacros::IgnoreCaseCompareStruct::operator()(const std::string& lhs,
 }  // end IgnoreCaseCompareStruct::operator() comparison handler
 
 //==============================================================================
-// exec
-//	run linux command and get result back in string
+/// exec
+///	run linux command and get result back in string
 std::string StringMacros::exec(const char* cmd)
 {
 	__COUTV__(cmd);
@@ -1356,9 +1356,9 @@ std::string StringMacros::exec(const char* cmd)
 }  // end exec()
 
 //==============================================================================
-// stackTrace
-//	static function
-//	https://gist.github.com/fmela/591333/c64f4eb86037bb237862a8283df70cdfc25f01d3
+/// stackTrace
+///	static function
+///	https://gist.github.com/fmela/591333/c64f4eb86037bb237862a8283df70cdfc25f01d3
 #include <cxxabi.h>    //for abi::__cxa_demangle
 #include <execinfo.h>  //for back trace of stack
 // #include "TUnixSystem.h"
@@ -1452,10 +1452,10 @@ std::string StringMacros::stackTrace()
 }  // end stackTrace
 
 //==============================================================================
-// otsGetEnvironmentVarable
-// 		declare special ots environment variable get,
-//		that throws exception instead of causing crashes with null pointer.
-//		Note: usually called with __ENV__(X) in CoutMacros.h
+/// otsGetEnvironmentVarable
+/// 		declare special ots environment variable get,
+///		that throws exception instead of causing crashes with null pointer.
+///		Note: usually called with __ENV__(X) in CoutMacros.h
 char* StringMacros::otsGetEnvironmentVarable(const char*         name,
                                              const std::string&  location,
                                              const unsigned int& line)
@@ -1472,8 +1472,8 @@ char* StringMacros::otsGetEnvironmentVarable(const char*         name,
 }  // end otsGetEnvironmentVarable()
 
 //=========================================================================
-//extract valueField for field from xml looking forwards from after
-// occurence = 0 is first occurence
+///extract valueField for field from xml looking forwards from after
+/// occurence = 0 is first occurence
 std::string StringMacros::extractXmlField(const std::string& xml,
                                           const std::string& field,
                                           uint32_t           occurrence,
@@ -1557,8 +1557,8 @@ std::string StringMacros::extractXmlField(const std::string& xml,
 }  //end extractXmlField()
 
 //=========================================================================
-//extract valueField for field from xml looking backwards from before
-// occurence = 0 is first occurence
+///extract valueField for field from xml looking backwards from before
+/// occurence = 0 is first occurence
 std::string StringMacros::rextractXmlField(const std::string& xml,
                                            const std::string& field,
                                            uint32_t           occurrence,
@@ -1643,7 +1643,7 @@ std::string StringMacros::rextractXmlField(const std::string& xml,
 #include <memory>
 
 //==============================================================================
-// demangleTypeName
+/// demangleTypeName
 std::string StringMacros::demangleTypeName(const char* name)
 {
 	int status = -4;  // some arbitrary value to eliminate the compiler warning
@@ -1657,7 +1657,7 @@ std::string StringMacros::demangleTypeName(const char* name)
 
 #else  // does nothing if not g++
 //==============================================================================
-// demangleTypeName
-//
+/// demangleTypeName
+///
 std::string StringMacros::demangleTypeName(const char* name) { return name; }
 #endif

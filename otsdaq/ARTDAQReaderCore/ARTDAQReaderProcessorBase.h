@@ -10,10 +10,10 @@
 
 namespace ots
 {
-// ARTDAQReaderProcessorBase
-//	This class is a Data Processor base class for the Consumer and Producer Plugin that
-//	allows a single artdaq Board Reader to be
-// instantiated on an otsdaq Buffer.
+/// ARTDAQReaderProcessorBase
+///	This class is a Data Processor base class for the Consumer and Producer Plugin that
+///	allows a single artdaq Board Reader to be
+/// instantiated on an otsdaq Buffer.
 class ARTDAQReaderProcessorBase : public Configurable
 {
   public:
@@ -27,7 +27,7 @@ class ARTDAQReaderProcessorBase : public Configurable
 	// void destroy          (void);
 	// void configure         (fhicl::ParameterSet const& pset);
 
-	// these functions are not inherited, they define the core reader functionality
+	/// these functions are not inherited, they define the core reader functionality
 	void initLocalGroup(int rank);
 	void configure(int rank);
 	void halt(void);
@@ -43,10 +43,10 @@ class ARTDAQReaderProcessorBase : public Configurable
 
 	// int universalRead	  (char *address, char *returnValue) override {;}
 	// void universalWrite	  (char *address, char *writeValue) override {;}
-	// artdaq::BoardReaderCore* getFragmentReceiverPtr(){return
-	// fragment_receiver_ptr_.get();}  void ProcessData_(artdaq::FragmentPtrs & frags)
-	// override;
-
+	/// artdaq::BoardReaderCore* getFragmentReceiverPtr(){return
+	/// fragment_receiver_ptr_.get();}  void ProcessData_(artdaq::FragmentPtrs & frags)
+	/// override;
+	///
   private:
 	// bool workLoopThread(toolbox::task::WorkLoop* workLoop) { return false; }
 

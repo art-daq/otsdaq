@@ -51,15 +51,15 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 
 
 
-	virtual void 										configure(void) override {;} //by default do nothing on FSM transitions
-	virtual void 										halt(void) override {;} //by default do nothing on FSM transitions
-	virtual void 										pause(void) override {;} //by default do nothing on FSM transitions
-	virtual void 										resume(void) override {;} //by default do nothing on FSM transitions
-	virtual void 										start(std::string /*runNumber*/) override {;} //by default do nothing on FSM transitions
-	virtual void 										stop(void) override {;} //by default do nothing on FSM transitions
+	virtual void 										configure(void) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										halt(void) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										pause(void) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										resume(void) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										start(std::string /*runNumber*/) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										stop(void) override {;} ///<by default do nothing on FSM transitions
 
-	// States
-	virtual bool 										running(void) override { return false; } //This is a workloop/thread, by default do nothing and end thread during running (Note: return true would repeat call)
+	/// States
+	virtual bool 										running(void) override { return false; } ///<This is a workloop/thread, by default do nothing and end thread during running (Note: return true would repeat call)
 
     void 												setNewAlarmCallback(std::function<void()> callback) { newAlarmCallback_ = callback; }
 

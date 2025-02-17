@@ -24,9 +24,9 @@ VisualDataManager::VisualDataManager(const ConfigurationTree& theXDAQContextConf
     , doNotStop_(false)
     , ready_(false)
     , theLiveDQMHistos_(false)
-//, theFileDQMHistos_ (supervisorType, supervisorInstance, "VisualBuffer",
-//"FileDQMHistos") , theFileDQMHistos_ (supervisorType, supervisorInstance,
-//"VisualBuffer", "FileDQMHistos",0) , theFileDQMHistos_ ()
+///, theFileDQMHistos_ (supervisorType, supervisorInstance, "VisualBuffer",
+///"FileDQMHistos") , theFileDQMHistos_ (supervisorType, supervisorInstance,
+///"VisualBuffer", "FileDQMHistos",0) , theFileDQMHistos_ ()
 {
 }
 
@@ -195,13 +195,13 @@ TFile* VisualDataManager::openFile(std::string fileName)
 }
 
 ////==============================================================================
-// const Visual3DEvents& VisualDataManager::getVisual3DEvents(void)
+/// const Visual3DEvents& VisualDataManager::getVisual3DEvents(void)
 //{
 //	return theMonicelliEventAnalyzer_.getEvents();
 //}
 //
 ////==============================================================================
-// const Visual3DGeometry& VisualDataManager::getVisual3DGeometry(void)
+/// const Visual3DGeometry& VisualDataManager::getVisual3DGeometry(void)
 //{
 //	return theMonicelliGeometryConverter_.getGeometry();
 //}

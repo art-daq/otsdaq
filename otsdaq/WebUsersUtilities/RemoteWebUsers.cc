@@ -19,13 +19,13 @@ using namespace ots;
 #define __MF_SUBJECT__ "RemoteWebUsers"
 
 //==============================================================================
-// User Notes:
-//	- use xmlRequestGateway to check security from outside the Supervisor and Wizard
-//
-//	Example usage: at void CoreSupervisorBase::requestWrapper(xgi::Input* in, xgi::Output* out)
-//
-//
-
+/// User Notes:
+///	- use xmlRequestGateway to check security from outside the Supervisor and Wizard
+///
+///	Example usage: at void CoreSupervisorBase::requestWrapper(xgi::Input* in, xgi::Output* out)
+///
+///
+///
 //==============================================================================
 RemoteWebUsers::RemoteWebUsers(
     xdaq::Application* application,
@@ -38,9 +38,9 @@ RemoteWebUsers::RemoteWebUsers(
 }  // end constructor()
 
 //==============================================================================
-// xmlRequestGateway
-//	if false, user code should just return.. out is handled on false; on true, out is
-// untouched
+/// xmlRequestGateway
+///	if false, user code should just return.. out is handled on false; on true, out is
+/// untouched
 bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
                                          std::ostringstream*        out,
                                          HttpXmlDocument*           xmldoc,
@@ -167,9 +167,9 @@ HANDLE_ACCESS_FAILURE:
 }  // end xmlRequestToGateway()
 
 //==============================================================================
-// getActiveUserList
-//	if lastUpdateTime is not too recent as spec'd by ACTIVE_USERS_UPDATE_THRESHOLD
-//	if server responds with
+/// getActiveUserList
+///	if lastUpdateTime is not too recent as spec'd by ACTIVE_USERS_UPDATE_THRESHOLD
+///	if server responds with
 std::string RemoteWebUsers::getActiveUserList()
 {
 	if(time(0) - ActiveUserLastUpdateTime_ >
@@ -192,11 +192,11 @@ std::string RemoteWebUsers::getActiveUserList()
 }  // end getActiveUserList()
 
 //==============================================================================
-// getLastTableGroups
-//	request last "Configured" or "Started" group, for example
-//	returns empty "" for actionTimeString on failure
-//	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
-// has occurred
+/// getLastTableGroups
+///	request last "Configured" or "Started" group, for example
+///	returns empty "" for actionTimeString on failure
+///	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
+/// has occurred
 void RemoteWebUsers::getLastTableGroups(
     std::map<std::string /* group type */,
              std::tuple<std::string /*group name*/,
@@ -253,11 +253,11 @@ void RemoteWebUsers::getLastTableGroups(
 }  // end getLastTableGroup()
 
 //==============================================================================
-// getLastTableGroup
-//	request last "Configured" or "Started" group, for example
-//	returns empty "" for actionTimeString on failure
-//	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
-// has occurred
+/// getLastTableGroup
+///	request last "Configured" or "Started" group, for example
+///	returns empty "" for actionTimeString on failure
+///	returns "Wed Dec 31 18:00:01 1969 CST" for actionTimeString (in CST) if action never
+/// has occurred
 std::pair<std::string /*group name*/, TableGroupKey> RemoteWebUsers::getLastTableGroup(
     const std::string& actionOfLastGroup, std::string& actionTimeString)
 {
@@ -292,9 +292,9 @@ std::pair<std::string /*group name*/, TableGroupKey> RemoteWebUsers::getLastTabl
 }  // end getLastTableGroup()
 
 //==============================================================================
-// sendSystemMessage
-//	send system message to toUser through Supervisor
-//	toUser wild card * is to all users
+/// sendSystemMessage
+///	send system message to toUser through Supervisor
+///	toUser wild card * is to all users
 void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
                                        const std::string& message,
                                        bool               doEmail /*=false*/)
@@ -303,9 +303,9 @@ void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
 }  // end sendSystemMessage)
 
 //==============================================================================
-// sendSystemMessage
-//	send system message to toUser comma separate variable (CSV) list through Supervisor
-//	toUser wild card * is to all users
+/// sendSystemMessage
+///	send system message to toUser comma separate variable (CSV) list through Supervisor
+///	toUser wild card * is to all users
 void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
                                        const std::string& subject,
                                        const std::string& message,
@@ -324,8 +324,8 @@ void RemoteWebUsers::sendSystemMessage(const std::string& toUser,
 }  // end sendSystemMessage)
 
 //==============================================================================
-// makeSystemLogEntry
-//	make system logbook through Supervisor
+/// makeSystemLogEntry
+///	make system logbook through Supervisor
 void RemoteWebUsers::makeSystemLogEntry(const std::string& entryText)
 {
 	SOAPParameters parameters;

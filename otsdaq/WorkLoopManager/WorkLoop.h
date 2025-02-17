@@ -22,7 +22,7 @@ class WorkLoop : public virtual toolbox::lang::Class
 
 	virtual bool workLoopThread(toolbox::task::WorkLoop* workLoop) = 0;
 
-	// Getters
+	/// Getters
 	const std::string& getWorkLoopName(void) const { return workLoopName_; }
 
   private:

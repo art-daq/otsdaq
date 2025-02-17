@@ -9,7 +9,7 @@
 namespace ots
 {
 
-class RunInfoVInterface  // : public Configurable
+class RunInfoVInterface  ///< : public Configurable
 {
   public:
 	enum class RunStopType
@@ -22,15 +22,15 @@ class RunInfoVInterface  // : public Configurable
 		START
 	};
 
-	// NOTE: Memory access violations were happening when we tried to pass  const ConfigurationTree& theXDAQContextConfigTree
-	//	If needed in future, possibly passing a copy of ConfigureTree would make everything happy.. but for now, it is not needed.
+	/// NOTE: Memory access violations were happening when we tried to pass  const ConfigurationTree& theXDAQContextConfigTree
+	///	If needed in future, possibly passing a copy of ConfigureTree would make everything happy.. but for now, it is not needed.
 	RunInfoVInterface(const std::string& interfaceUID)
 	    :  //, const ConfigurationTree& theXDAQContextConfigTree, const std::string& configurationPath) :
 	       // Configurable(theXDAQContextConfigTree, configurationPath)
 	       //,
 	    mfSubject_(interfaceUID)
-	// , theXDAQContextConfigTree_(theXDAQContextConfigTree)
-	// , configurationPath_(configurationPath)
+	/// , theXDAQContextConfigTree_(theXDAQContextConfigTree)
+	/// , configurationPath_(configurationPath)
 	{
 		;
 	}
