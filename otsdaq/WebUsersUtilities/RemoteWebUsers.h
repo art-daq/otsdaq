@@ -38,20 +38,6 @@ class RemoteWebUsers : public SOAPMessenger
 	// on true, out is untouched
 	bool 		xmlRequestToGateway(cgicc::Cgicc& cgi, std::ostringstream* out, HttpXmlDocument* xmldoc, const AllSupervisorInfo& allSupervisorInfo, WebUsers::RequestUserInfo& userInfo);
 
-	//			uint8_t* 						userPermissions = 0,
-	//			const uint8_t					permissionsThreshold = 1,
-	//			const bool						allowNoUser = false,
-	//			const std::set<std::string>&	groupsAllowed = {},
-	//			const std::set<std::string>&	groupsDisallowed = {},
-	//			const bool						refreshCookie = true,
-	//			const bool						checkLock = false,
-	//			const bool						lockRequired = false,
-	//			std::string* 					userWithLock = 0,
-	//			std::string* 					username = 0,
-	//			std::string* 					displayName = 0,
-	//			std::string* 					userGroups = 0,
-	//			uint64_t* 						activeSessionIndex = 0);
-
 	std::string getActiveUserList		(void);
 	void        sendSystemMessage		(const std::string& toUser, const std::string& message, bool doEmail = false);
 	void        sendSystemMessage		(const std::string& toUser, const std::string& subject, const std::string& message, bool doEmail = false);
@@ -71,8 +57,6 @@ class RemoteWebUsers : public SOAPMessenger
 	{
 		ACTIVE_USERS_UPDATE_THRESHOLD = 2,  // seconds, min amount of time between Supervisor requests
 	};
-
-	//std::string tmpUserWithLock_, tmpUserGroups_, tmpUsername_;
 
 };
 // clang-format on
