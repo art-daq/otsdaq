@@ -2920,7 +2920,7 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::get
 	// if(accumulatedTreeErrors)
 	//	*accumulatedTreeErrors = "";
 
-	bool filtering = memberMap->size();
+	bool filtering = memberMap && memberMap->size();
 
 	//from root node, want active tables:
 	for(auto& tablePair : nameToTableMap_)
@@ -3030,7 +3030,7 @@ ConfigurationManager::getChildrenMap(std::map<std::string, TableVersion>* member
 	// if(accumulatedTreeErrors)
 	//	*accumulatedTreeErrors = "";
 
-	bool filtering = memberMap->size();
+	bool filtering = memberMap && memberMap->size();
 
 	//from root node, want active tables:
 	for(auto& tablePair : nameToTableMap_)

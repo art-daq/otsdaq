@@ -168,7 +168,7 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 					commands.back().targets_.back().UID_   = targetNode.getUIDAsString();
 				}
 			}
-			else if(commandSpecificFields[i].first ==
+			else if(commandSpecificFields[i].first == // treat FE and Macro the same
 			        IterateTable::commandExecuteMacroParams_.MacroParameterLink_)
 			{
 				// get Macro parameters, place them in params_
