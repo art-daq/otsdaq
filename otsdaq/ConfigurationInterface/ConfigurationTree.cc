@@ -688,9 +688,9 @@ std::vector<std::string> ConfigurationTree::getFixedChoices(void) const
 // getComment
 const std::string& ConfigurationTree::getComment(void) const
 {
-	return getNode(TableViewColumnInfo::COL_NAME_COMMENT).getValueAsString() == ""?
-		TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT :
-		getNode(TableViewColumnInfo::COL_NAME_COMMENT).getValueAsString();
+	return getNode(TableViewColumnInfo::COL_NAME_COMMENT).getValueAsString() == ""
+	           ? TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT
+	           : getNode(TableViewColumnInfo::COL_NAME_COMMENT).getValueAsString();
 }  // end getComment()
 
 //==============================================================================
@@ -2394,7 +2394,7 @@ bool ConfigurationTree::passFilterMap(
 
 		if(skip)
 			break;  // no match for this field, so stop checking and skip this
-			    // record
+			        // record
 	}
 	return !skip;
 }  //end passFilterMap()

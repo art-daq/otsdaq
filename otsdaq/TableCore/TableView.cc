@@ -1448,7 +1448,7 @@ unsigned int TableView::getColPriority(void) const
 void TableView::addRowToGroup(const unsigned int& row,
                               const unsigned int& col,
                               const std::string&  groupID)  //,
-    // const std::string &colDefault)
+// const std::string &colDefault)
 {
 	if(isEntryInGroupCol(row, col, groupID))
 	{

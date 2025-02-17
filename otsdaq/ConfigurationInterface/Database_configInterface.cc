@@ -272,8 +272,8 @@ try
 		result = ifc.findGlobalConfigurations(filterString + "*");  // GConfig will return
 		                                                            // all GConfig* with
 		                                                            // filesystem db.. for
-		    // mongodb would require
-		    // reg expr
+	// mongodb would require
+	// reg expr
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration =
 	    std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();

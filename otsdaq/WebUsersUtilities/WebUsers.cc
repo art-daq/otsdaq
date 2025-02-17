@@ -3568,8 +3568,8 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers,
 	    (subject == "" ? "" : (subject + ": ")) + message);
 
 	//	Note: do not printout message, because if it was a Console trigger, it will fire repeatedly
-	std::cout << __COUT_HDR_FL__
-	          << "addSystemMessage() fullMessage: " << fullMessage << __E__;
+	std::cout << __COUT_HDR_FL__ << "addSystemMessage() fullMessage: " << fullMessage
+	          << __E__;
 	__COUTV__(StringMacros::vectorToString(targetUsers));
 
 	std::set<std::string> targetEmails;

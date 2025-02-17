@@ -2337,8 +2337,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 			for(auto& artdaqNode : it->second)
 			{
 				// check skip set
-				if(skipSet.find(StringMacros::encodeURIComponent(artdaqNode.label)) != 
-						skipSet.end())
+				if(skipSet.find(StringMacros::encodeURIComponent(artdaqNode.label)) !=
+				   skipSet.end())
 					continue;
 
 				__COUT__ << "\t\t"
@@ -2661,7 +2661,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								{
 									if(i < hyphenLo)
 										hyphenLo = i;  // start hyphen
-									                   //else continue hyphen
+										               //else continue hyphen
 								}
 								else  // new comma
 								{
@@ -2769,7 +2769,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									{
 										if(i < hyphenLo)
 											hyphenLo = i;  // start hyphen
-										                   //else continue hyphen
+											               //else continue hyphen
 									}
 									else  // new comma
 									{

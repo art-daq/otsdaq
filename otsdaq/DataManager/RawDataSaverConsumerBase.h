@@ -26,7 +26,7 @@ class RawDataSaverConsumerBase : public DataConsumer, public Configurable
 	virtual void writeHeader(void) { ; }
 	virtual void writeFooter(void) { ; }
 	virtual void writePacketHeader(const std::string& /*data*/)
-	{   // unsigned char quadWordsCount = (data.length()-2)/8; outFile_.write(
+	{  // unsigned char quadWordsCount = (data.length()-2)/8; outFile_.write(
 		// (char*)&quadWordsCount, 1);
 		;
 	}

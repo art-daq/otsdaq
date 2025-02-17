@@ -820,7 +820,7 @@ bool TableBase::isActive() { return activeTableView_ ? true : false; }
 bool TableBase::setActiveView(TableVersion version)
 {
 	if(!isStored(version))
-	{   // we don't call else load for the user, because the table manager would lose
+	{  // we don't call else load for the user, because the table manager would lose
 		// track.. (I think?)
 		// so load new versions for the first time through the table manager only. (I
 		// think??)

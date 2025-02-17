@@ -145,8 +145,8 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 
 	init();
 
-	__SUP_COUT__ << "Constructed. getpid()=" << getpid() <<
-		" gettid()=" << gettid() << __E__;
+	__SUP_COUT__ << "Constructed. getpid()=" << getpid() << " gettid()=" << gettid()
+	             << __E__;
 }  // end constructor
 
 //==============================================================================
@@ -216,7 +216,6 @@ void GatewaySupervisor::init(void)
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				loadRemoteGatewaySettings(remoteGatewayApps_);
 			}
-
 
 			// start state changer UDP listener thread
 			std::thread(
@@ -389,13 +388,15 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						               .getCurrentTransitionName(
 						                   theSupervisor->stateMachineLastCommandInput_)
 						         : (std::string("Uptime: ") +
-						            StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(
-						                theSupervisor->CorePropertySupervisorBase::
-						                    getSupervisorUptime())) +
+						            StringMacros::encodeURIComponent(
+						                StringMacros::getTimeDurationString(
+						                    theSupervisor->CorePropertySupervisorBase::
+						                        getSupervisorUptime())) +
 						            ", Time-in-state: " +
-						            StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(
-						                theSupervisor->theStateMachine_
-						                    .getTimeInState()))));
+						            StringMacros::encodeURIComponent(
+						                StringMacros::getTimeDurationString(
+						                    theSupervisor->theStateMachine_
+						                        .getTimeInState()))));
 						// make sure broadcast message status is not being updated
 						std::lock_guard<std::mutex> lock(
 						    theSupervisor->broadcastCommandStatusUpdateMutex_);
@@ -1166,12 +1167,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 				xoap::MessageReference tempMessage =
 				    SOAPUtilities::makeSOAPMessageReference("ApplicationStatusRequest");
-				
+
 				__COUT_TYPE__(TLVL_DEBUG + 39)
 				    << __COUT_HDR__ << "tempMessage... "
 				    << SOAPUtilities::translate(tempMessage) << std::endl;
-				
-				
 
 				try
 				{
@@ -1207,7 +1206,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					if(progress.empty())
 						progress = "100";
 
-					detail = parameters.getValue("Detail");					
+					detail = parameters.getValue("Detail");
 					if(appInfo.isTypeConsoleSupervisor())
 					{
 						//parse detail
@@ -1245,7 +1244,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							__COUTVS__(36, closeTimePos);
 							theSupervisor->lastConsoleErr_ =
 							    parseDetail[3].substr(closeTimePos + 2);
-							size_t openTimePos                 = parseDetail[3].find('(');
+							size_t openTimePos = parseDetail[3].find('(');
 							__COUTVS__(36, openTimePos);
 							theSupervisor->lastConsoleErrTime_ = parseDetail[3].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
@@ -1378,15 +1377,18 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								try
 								{
 									theSupervisor->runControlMessageHandler(
-										SOAPUtilities::makeSOAPMessageReference(
-											RunControlStateMachine::ERROR_TRANSITION_NAME));
+									    SOAPUtilities::makeSOAPMessageReference(
+									        RunControlStateMachine::
+									            ERROR_TRANSITION_NAME));
 								}
 								catch(...)
 								{
 								}  //ignore any errors
 							}
-							else 
-								__COUT__ << "Ignoring that Console type supervisor crashed." << __E__;
+							else
+								__COUT__
+								    << "Ignoring that Console type supervisor crashed."
+								    << __E__;
 
 							break;  //only send one Error, then restart status loop
 						}
@@ -1401,17 +1403,18 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					}  //one more try to printout extra info
 					catch(const std::runtime_error& e)
 					{
-						__COUT_ERR__ << "Exception of type runtime_error message: " << e.what();
+						__COUT_ERR__ << "Exception of type runtime_error message: "
+						             << e.what();
 					}
 					catch(const std::exception& e)
 					{
-						__COUT_ERR__ << "Exception of type " << 
-							typeid(e).name() << " message: " << e.what();
+						__COUT_ERR__ << "Exception of type " << typeid(e).name()
+						             << " message: " << e.what();
 					}
 					catch(...)
 					{
 					}
-					
+
 					status                = SupervisorInfo::APP_STATUS_UNKNOWN;
 					progress              = "0";
 					detail                = "Unknown SOAP Message Error";

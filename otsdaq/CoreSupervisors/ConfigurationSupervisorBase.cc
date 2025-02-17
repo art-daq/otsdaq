@@ -1761,7 +1761,7 @@ try
 		bool groupAliasChange = false;
 		bool tableAliasChange = false;
 
-		{   // check group aliases ... a la
+		{  // check group aliases ... a la
 			// ConfigurationGUISupervisor::handleSetGroupAliasInBackboneXML
 
 			TableBase* table =
