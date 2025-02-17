@@ -345,7 +345,7 @@ void BufferImplementation<D, H>::registerConsumer(
 			consumers_[consumer].subBuffersStatus_[i] = bufferFree_;
 	}
 }
-//
+
 ////========================================================================================================================
 // template<class D, class H>
 // void BufferImplementation<D,H>::unregisterConsumer(const std::string& consumer)
