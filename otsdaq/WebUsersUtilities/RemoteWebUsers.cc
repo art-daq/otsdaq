@@ -18,80 +18,13 @@ using namespace ots;
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "RemoteWebUsers"
 
-// clang-format off
 //==============================================================================
 // User Notes:
 //	- use xmlRequestGateway to check security from outside the Supervisor and Wizard
 //
-//	Example usage:
+//	Example usage: at void CoreSupervisorBase::requestWrapper(xgi::Input* in, xgi::Output* out)
 //
 //
-//
-//			void exampleClass::exampleRequestHandler(xgi::Input * in, xgi::Output * out)
-//
-//			{
-//				cgicc::Cgicc cgi(in);
-//
-//				//...
-//
-//				HttpXmlDocument xmldoc;
-//				std::string userWithLock, userName, displayName;
-//				uint64_t activeSessionIndex;
-//				uint8_t userPermissions;
-//
-//				//**** start LOGIN GATEWAY CODE ***//
-//				//check cookieCode, sequence, userWithLock, and permissions access all in
-// one  shot!
-//				{
-//					bool automaticCommand = 0; //automatic commands should not refresh
-// cookie  code.. only user initiated commands should! 					bool checkLock =
-// true; 					bool lockRequired = true;
-//
-//					if(!theRemoteWebUsers_.xmlRequestToGateway(
-//							cgi,out,&xmldoc,theSupervisorsConfiguration_
-//							,&userPermissions  			//acquire user's access level
-//(optionally  null  pointer)//
-//							,!automaticCommand			//true/false refresh cookie code
-//							,USER_PERMISSIONS_THRESHOLD //set access level requirement to
-// pass  gateway
-//							,checkLock					//true/false enable check that
-// system  is  unlocked  or  this user has the lock ,lockRequired
-////true/false requires this user has the lock to  proceed
-//							,&userWithLock				//acquire username with lock
-//(optionally  null  pointer)
-//							,&userName					//acquire username of this user
-//(optionally
-// null  pointer) 							,0//,&displayName			//acquire user's
-// Display  Name
-//							,0//,&activeSessionIndex	//acquire user's session index
-// associated  with  the cookieCode
-//							))
-//					{	//failure
-//						//std::cout << out->str() << std::endl; //could print out return
-// string  on  failure 						return;
-//					}
-//				}
-//				//done checking cookieCode, sequence, userWithLock, and permissions access
-// all  in one shot!
-//				//**** end LOGIN GATEWAY CODE ***//
-//
-//				//Success! if here.
-//				//
-//				//... use acquired values below
-//				//...
-//
-//				//add to xml document, for example:
-//				//DOMElement* parentEl;
-//				//parentEl = xmldoc.addTextElementToData("ExampleTag", "parent-data");
-//				//xmldoc.addTextElementToParent("ExampleChild", "child-data", parentEl);
-//
-//				//return xml doc holding server response
-//				//xmldoc.outputXmlDocument((std::ostringstream*) out, true); //true to
-// also  print to std::cout
-//			}
-//
-//
-// clang-format on
 
 //==============================================================================
 RemoteWebUsers::RemoteWebUsers(
