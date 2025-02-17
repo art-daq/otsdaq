@@ -14,7 +14,7 @@
 // clang-format off
 namespace ots
 {
-// key is the crate number
+	
 typedef std::map<xdata::UnsignedIntegerT, XDAQ_CONST_CALL xdaq::ApplicationDescriptor*>
     SupervisorDescriptors;
 
@@ -53,7 +53,7 @@ class SupervisorDescriptorInfoBase
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getARTDAQDispatcherDescriptor		(xdata::UnsignedIntegerT instance) const;
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getVisualDescriptor				(xdata::UnsignedIntegerT instance) const;
 
-	std::string getFEURL(xdata::UnsignedIntegerT instance) const;
+	std::string 								 getFEURL							(xdata::UnsignedIntegerT instance) const;
 
 	//    std::string getARTDAQFEURL         (xdata::UnsignedIntegerT instance) const;
 	//    std::string getARTDAQBuilderURL    (xdata::UnsignedIntegerT instance) const;
@@ -61,20 +61,20 @@ class SupervisorDescriptorInfoBase
 	//    std::string getARTDAQDispatcherURL (xdata::UnsignedIntegerT instance) const;
 
   protected:
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* theSupervisor_;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* theWizard_;
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* theLogbookSupervisor_;
-	SupervisorDescriptors                        theVisualSupervisors_;
-	SupervisorDescriptors                        theDataManagerSupervisors_;
-	SupervisorDescriptors                        theFESupervisors_;
-	SupervisorDescriptors                        theDTCSupervisors_;
-	SupervisorDescriptors                        theFEDataManagerSupervisors_;
-	// SupervisorDescriptors        theARTDAQFESupervisors_;
-	SupervisorDescriptors theARTDAQFEDataManagerSupervisors_;
-	SupervisorDescriptors theARTDAQDataManagerSupervisors_;
-	SupervisorDescriptors theARTDAQBuilderSupervisors_;
-	SupervisorDescriptors theARTDAQDataLoggerSupervisors_;
-	SupervisorDescriptors theARTDAQDispatcherSupervisors_;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* 	theSupervisor_;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* 	theWizard_;
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* 	theLogbookSupervisor_;
+	SupervisorDescriptors                        	theVisualSupervisors_;
+	SupervisorDescriptors                        	theDataManagerSupervisors_;
+	SupervisorDescriptors                        	theFESupervisors_;
+	SupervisorDescriptors                        	theDTCSupervisors_;
+	SupervisorDescriptors                        	theFEDataManagerSupervisors_;
+	// SupervisorDescriptors        				theARTDAQFESupervisors_;
+	SupervisorDescriptors 							theARTDAQFEDataManagerSupervisors_;
+	SupervisorDescriptors 							theARTDAQDataManagerSupervisors_;
+	SupervisorDescriptors 							theARTDAQBuilderSupervisors_;
+	SupervisorDescriptors 							theARTDAQDataLoggerSupervisors_;
+	SupervisorDescriptors 							theARTDAQDispatcherSupervisors_;
 };
 }  // namespace ots
 // clang-format on
