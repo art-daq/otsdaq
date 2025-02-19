@@ -2,7 +2,7 @@ name: Git Whitespace Check Workflow
 
 on:
   push:
-    branches: 
+    branches:
       - develop
     paths-ignore:
       - 'docs/**'

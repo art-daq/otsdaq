@@ -27,18 +27,18 @@ class SupervisorInfo
 	/// when no configuration, e.g. Wizard Mode, then
 	/// name and contextName are derived from the class name and LID
 	SupervisorInfo(XDAQ_CONST_CALL xdaq::ApplicationDescriptor* descriptor, const std::string& name, const std::string& contextName)
-	    : descriptor_(descriptor)
-	    , contextDescriptor_(descriptor ? descriptor->getContextDescriptor() : 0)
-	    , name_(name)  ///< this is the config app name
-	    , contextName_(contextName)  ///< this is the config parent context name
-	    , id_(descriptor ? descriptor->getLocalId() : 0)
-	    , class_(descriptor ? descriptor->getClassName() : "")
-	    , contextURL_(contextDescriptor_ ? contextDescriptor_->getURL() : "")
-  	    , hostname_(SupervisorInfo::extractHostname(contextURL_))
-	    , URN_(descriptor ? descriptor->getURN() : "")
-	    , URL_(contextURL_ + "/" + URN_)
-	    , port_(0)
-	    , status_(SupervisorInfo::APP_STATUS_UNKNOWN)
+		: descriptor_(descriptor)
+		, contextDescriptor_(descriptor ? descriptor->getContextDescriptor() : 0)
+		, name_(name)  ///< this is the config app name
+		, contextName_(contextName)  ///< this is the config parent context name
+		, id_(descriptor ? descriptor->getLocalId() : 0)
+		, class_(descriptor ? descriptor->getClassName() : "")
+		, contextURL_(contextDescriptor_ ? contextDescriptor_->getURL() : "")
+		, hostname_(SupervisorInfo::extractHostname(contextURL_))
+		, URN_(descriptor ? descriptor->getURN() : "")
+		, URL_(contextURL_ + "/" + URN_)
+		, port_(0)
+		, status_(SupervisorInfo::APP_STATUS_UNKNOWN)
 	{
 		// when no configuration, e.g. Wizard Mode, then
 		// name and contextName are derived from the class name and LID

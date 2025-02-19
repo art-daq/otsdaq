@@ -21,8 +21,8 @@ class XDAQContextTable : public TableBase
 
 	struct XDAQApplication
 	{
-		static const uint8_t 		DEFAULT_PRIORITY;
-		static const unsigned int 	GATEWAY_APP_ID;
+		static const uint8_t		DEFAULT_PRIORITY;
+		static const unsigned int	GATEWAY_APP_ID;
 
 		std::string  applicationGroupID_;
 		std::string  applicationUID_;
@@ -35,7 +35,7 @@ class XDAQContextTable : public TableBase
 		std::string  module_;
 		std::string  sourceConfig_;
 		std::map<std::string /*FSM command*/, uint8_t /*priority*/>
-		    stateMachineCommandPriority_;
+			stateMachineCommandPriority_;
 
 		std::vector<XDAQApplicationProperty> properties_;
 	};
@@ -129,12 +129,12 @@ class XDAQContextTable : public TableBase
 
   public:
 	static const std::set<std::string> 					FETypeClassNames_, DMTypeClassNames_,
-	    												LogbookTypeClassNames_, MacroMakerTypeClassNames_, ChatTypeClassNames_,
-	    												ConsoleTypeClassNames_, ConfigurationGUITypeClassNames_, CodeEditorTypeClassNames_,
+														LogbookTypeClassNames_, MacroMakerTypeClassNames_, ChatTypeClassNames_,
+														ConsoleTypeClassNames_, ConfigurationGUITypeClassNames_, CodeEditorTypeClassNames_,
 														VisualizerTypeClassNames_, SlowControlsTypeClassNames_;
 	static const std::string 							GATEWAY_SUPERVISOR_CLASS, WIZARD_SUPERVISOR_CLASS,
-	    												DEPRECATED_SUPERVISOR_CLASS, ARTDAQ_SUPERVISOR_CLASS;
-	static const std::map<std::string /*class*/, 
+														DEPRECATED_SUPERVISOR_CLASS, ARTDAQ_SUPERVISOR_CLASS;
+	static const std::map<std::string /*class*/,
 		std::string /*module*/> 						AppClassModuleLookup_;
 }; //end XDAQContextTable class
 }  // namespace ots

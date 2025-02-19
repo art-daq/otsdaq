@@ -42,8 +42,9 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	                          char*              returnValue);  ///< used by MacroMaker
 	void        universalWrite(const std::string& interfaceID,
 	                           char*              address,
-	                           char*              writeValue);                   ///< used by MacroMaker
-	std::string getFEListString(const std::string& supervisorLid);  ///< used by MacroMaker
+	                           char*              writeValue);  ///< used by MacroMaker
+	std::string getFEListString(
+	    const std::string& supervisorLid);  ///< used by MacroMaker
 	std::string getFEMacrosString(
 	    const std::string& supervisorName,
 	    const std::string& supervisorLid);  ///< used by MacroMaker
@@ -103,16 +104,18 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 
 	/// FE communication helpers
 	std::mutex frontEndCommunicationReceiveMutex_;
-	std::map<std::string /*targetInterfaceID*/,  ///< map of target to buffers organized by
-	                                             ///< source
-	         std::map<std::string /*requester*/, std::queue<std::string /*value*/> > >
+	std::map<
+	    std::string /*targetInterfaceID*/,  ///< map of target to buffers organized by
+	                                        ///< source
+	    std::map<std::string /*requester*/, std::queue<std::string /*value*/> > >
 	    frontEndCommunicationReceiveBuffer_;
 
 	/// multi-dimensional FE Macro helpers
 	std::mutex macroMultiDimensionalDoneMutex_;
-	std::map<std::string /*targetInterfaceID*/,  ///< set of active multi-dimensional Macro
-	                                             ///< launches
-	         std::string /*status := Active, Done, Error: <message> */>
+	std::map<
+	    std::string /*targetInterfaceID*/,  ///< set of active multi-dimensional Macro
+	                                        ///< launches
+	    std::string /*status := Active, Done, Error: <message> */>
 	    macroMultiDimensionalStatusMap_;
 
   private:

@@ -60,7 +60,7 @@ class XmlDocument
 	void        						initPlatform(void);
 	void        						terminatePlatform(void);
 	void        						recursiveOutputXmlDocument(xercesc::DOMElement* currEl, std::ostringstream* out, bool dispStdOut = false, const std::string& tabStr = "");
-	
+
 	xercesc::DOMImplementation* 		theImplementation_;
 	xercesc::DOMDocument*       		theDocument_;
 	xercesc::DOMElement*        		rootElement_;

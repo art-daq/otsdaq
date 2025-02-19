@@ -391,7 +391,6 @@ void PixelHistoPicGen::setImgPixel(int x, int y, int r, int g, int b)
 // 		cout << "PixelHistoPicGen::setRocColor()\tFailed." << endl;
 // }
 
-
 void recurseForBg(unsigned char*** d, int r, int c, int rm, int cm)
 {
 	if(r == rm || c == cm || r < 0 || c < 0)
@@ -490,47 +489,47 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 /// // and the good/bad boxes
 /// void PixelHistoPicGen::createAuxImages()
 // {
-// 
+//
 // 		//create good/bad boxes
 // 	char tmpPath[] = "images/generated/tmp.bmp";
-// 
+//
 // 	clearAuxBuffer(COLOR_GOOD_R,COLOR_GOOD_G,COLOR_GOOD_B,0);
 // 	writeAuxToBmp(tmpPath);
 // 	convertBmp(tmpPath,"images/generated/good.png");
-// 
+//
 // 	clearAuxBuffer(COLOR_BAD_R,COLOR_BAD_G,COLOR_BAD_B,0);
 // 	writeAuxToBmp(tmpPath);
 // 	convertBmp(tmpPath,"images/generated/bad.png");
-// 
+//
 // 	clearAuxBuffer(COLOR_INIT_R,COLOR_INIT_G,COLOR_INIT_B,0);
 // 	writeAuxToBmp(tmpPath);
 // 	convertBmp(tmpPath,"images/generated/off.png");
-// 
+//
 // 	clearAuxBuffer(0,0,0,255);
 // 	writeAuxToBmp(tmpPath);
 // 	convertBmp(tmpPath,"images/generated/invisible.png");
-// 
+//
 // 	clearAuxBuffer(COLOR_HIGHLIGHT_R,COLOR_HIGHLIGHT_G,COLOR_HIGHLIGHT_B,0);
 // 	writeAuxToBmp(tmpPath);
 // 	convertBmp(tmpPath,"images/generated/rocHighlight.png");
-// 
+//
 // 		//create alpha-background roc highlights
 //   char convertPng[1000];
 //   for(int i=0;i<6;++i){ //draw all 6 angles
 //     clearAuxBuffer(0,0,0,255);
-// 
+//
 //     drawFillRectAngAux(AUX_IMG_WIDTH/2+1,
 //        AUX_IMG_HEIGHT/2+1,
 //        WEB_ROC_SIZE*2+8,
 //        WEB_ROC_SIZE*2+8,
 //        COLOR_HIGHLIGHT_R,COLOR_HIGHLIGHT_G,COLOR_HIGHLIGHT_B,
 //        7.5+i*15);
-// 
+//
 //     writeAuxToBmp(tmpPath);
 //     sprintf(convertPng,"images/generated/rocHighlight%d.png",i);
 //   	convertBmp(tmpPath,convertPng);
 //   }
-// 
+//
 // 		//create summary color keys
 // 	//for boolean
 // 	for(int x=0;x<IMG_WIDTH;++x)
@@ -539,10 +538,10 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 // 				x>IMG_WIDTH/2?COLOR_GOOD_R:COLOR_BAD_R,
 // 				x>IMG_WIDTH/2?COLOR_GOOD_G:COLOR_BAD_G,
 // 				x>IMG_WIDTH/2?COLOR_GOOD_B:COLOR_BAD_B);
-// 
+//
 // 	writeImgToBmp(tmpPath);
 // 	convertBmp(tmpPath,"images/generated/summaryColorKeyBoolean.png");
-// 
+//
 // 	//must be the same code as invoid PixelHistoViewer::colorRocsWithField(TTree *summary, string field) to match key
 // 	int numOfColors = 6;
 // 	int colors[6][3] = {
@@ -553,16 +552,16 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 // 		{255,255,0},
 // 		{255,0,0},
 // 	};
-// 
+//
 // 	float v;
 // 	float sizeOfGrade = 1.0/(numOfColors-1);
 // 	int ci;
-// 
+//
 // 		//blended color key
 // 	for(int x=0;x<IMG_WIDTH;++x)
 // 		for(int y=0;y<IMG_HEIGHT;++y)
 // 		{
-// 
+//
 // 			v = (float)x/IMG_WIDTH;
 // 			ci = (int)(v/sizeOfGrade);
 // 			v -= ci*sizeOfGrade;
@@ -572,10 +571,10 @@ void PixelHistoPicGen::generateTurtle(const std::string& filepath)
 // 				(int)(colors[ci][1]*(1-v) + colors[ci+1][1]*v),
 // 				(int)(colors[ci][2]*(1-v) + colors[ci+1][2]*v));
 // 		}
-// 
+//
 // 	writeImgToBmp(tmpPath);
 // 	convertBmp(tmpPath,"images/generated/summaryColorKey.png");
-// 
+//
 // 		//for overflow
 // 	clearAuxBuffer(COLOR_HI_R,COLOR_HI_G,COLOR_HI_B,0);
 // 	writeAuxToBmp(tmpPath);
@@ -830,4 +829,3 @@ void PixelHistoPicGen::setAuxPixel(int x, int y, int r, int g, int b)
 	auxImg_[x][y][2] = b;
 	auxImg_[x][y][3] = 0;
 }
-

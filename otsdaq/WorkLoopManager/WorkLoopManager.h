@@ -72,15 +72,12 @@ class WorkLoopManager
 	std::string     composeWorkLoopName(RequestNumber                 requestNumber,
 	                                    const xoap::MessageReference& message);
 	RequestNumber   getWorkLoopRequestNumber(toolbox::task::WorkLoop* workLoop);
-	RequestNumber getWorkLoopRequestNumber(std::string workLoopName);  ///< This can only be
-	    // used by the class
-	    // because it is
-	    // careful to use
-	    // the right format
-	std::string getWorkLoopRequest(std::string workLoopName);  ///< This can only be used by
-	                                                           ///< the class because it is
-	                                                           ///< careful to use the right
-	                                                           ///< format
+
+	/// This can only be used by the class because it is careful to use the right format
+	RequestNumber getWorkLoopRequestNumber(std::string workLoopName);
+
+	/// This can only be used by the class because it is careful to use the right format
+	std::string getWorkLoopRequest(std::string workLoopName);
 
 	std::map<RequestNumber, WorkLoopStruct> workLoops_;
 	toolbox::task::ActionSignature*         job_;

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-SCRIPT_DIR="$( 
+SCRIPT_DIR="$(
  cd "$(dirname "$(readlink "$0" || printf %s "$0")")"
- pwd -P 
+ pwd -P
 )"
 
 
@@ -77,12 +77,3 @@ elif [ "$OTS_MODE" == "Wiz" ]; then
 else
   error "Unrecognized ots mode: $OTS_MODE"
 fi
-
-
-
-
-
-
-
-
-

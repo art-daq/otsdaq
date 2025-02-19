@@ -15,15 +15,15 @@ cet_build_plugin(ARTDAQProducer  otsdaq::dataProcessor LIBRARIES REG otsdaq::ART
 cet_build_plugin(UDPDataListenerProducer  otsdaq::dataProcessor )
 
 cet_build_plugin(UDPDataStreamerConsumer  otsdaq::dataProcessor )
-  
+
 cet_build_plugin(TCPDataReceiverProducer otsdaq::dataProcessor )
 
 cet_build_plugin(TCPDataListenerProducer otsdaq::dataProcessor )
 
 cet_build_plugin(RawDataSaverConsumer  otsdaq::dataProcessor )
 
-cet_make_library(LIBRARY_NAME RawDataVisualizerConsumer SOURCE RawDataVisualizerConsumerImpl.cc 
-	LIBRARIES PUBLIC 
+cet_make_library(LIBRARY_NAME RawDataVisualizerConsumer SOURCE RawDataVisualizerConsumerImpl.cc
+	LIBRARIES PUBLIC
 		otsdaq::DataManager
 		otsdaq::Configurable
 		PRIVATE

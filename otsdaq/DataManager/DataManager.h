@@ -44,12 +44,14 @@ class DataManager : public Configurable, public VStateMachine
 		buffers_[bufferUID].status_ = Initialized;
 	}
 
-	void registerProducer(const std::string& bufferUID,
-	                      DataProducerBase*  producer);  ///< The data manager becomes the
-	                                                    ///< owner of the producer object!
-	void registerConsumer(const std::string& bufferUID,
-	                      DataConsumer* consumer);  ///< The data manager becomes the owner
-	                                                ///< of the consumer object!
+	void registerProducer(
+	    const std::string& bufferUID,
+	    DataProducerBase*
+	        producer);  ///< The data manager becomes the owner of the producer object!
+	void registerConsumer(
+	    const std::string& bufferUID,
+	    DataConsumer*
+	        consumer);  ///< The data manager becomes the owner of the consumer object!
 
 	void unregisterFEProducer(const std::string& bufferID,
 	                          const std::string& feProducerID);
@@ -61,10 +63,9 @@ class DataManager : public Configurable, public VStateMachine
 	void dumpStatus(std::ostream* out = (std::ostream*)&(std::cout)) const;
 
   protected:
-	void destroyBuffers(void);  ///<!!!!!Delete all Buffers and all the pointers of the
-	                            ///<! producers and consumers
-	// void destroyBuffer     		(const std::string& bufferUID);//!!!!!Delete all the
-	/// pointers of the producers and consumers
+	void destroyBuffers(
+	    void);  ///<!!!!!Delete all Buffers and all the pointers of the producers and consumers
+	// void destroyBuffer     		(const std::string& bufferUID);//!!!!!Delete all the pointers of the producers and consumers
 	///
 	void configureAllBuffers(void);
 	void startAllBuffers(const std::string& runNumber);

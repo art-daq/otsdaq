@@ -86,7 +86,7 @@ class RootFileExplorer
                                                   string                fFileName       ,
                                                   TFile               * rootFile = NULL  )  ;
                         ~RootFileExplorer        (void                                   ) {;}
-  xercesc::DOMDocument * initialize              (bool                  liveDQMFlag      )  ; 
+  xercesc::DOMDocument * initialize              (bool                  liveDQMFlag      )  ;
   void                   makeDirectoryBinaryTree (TDirectory          * currentDirectory,
                                                   int                   indent          ,
                                                   xercesc::DOMElement * anchorNode       )  ;
@@ -99,7 +99,7 @@ class RootFileExplorer
                                                   ///<int                   level           ,
                                                   bool                  isLeaf           )  ;
   void                   initializeXMLWriter     (void                                   )  ;
- 
+
  private:
 
   std::string            blanks                  (int                    level           )  ;

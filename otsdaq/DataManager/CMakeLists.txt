@@ -26,7 +26,7 @@ cet_make_library(LIBRARY_NAME dataProcessorMaker
 cet_register_export_set(SET_NAME dataManager SET_DEFAULT)
 cet_make_library(LIBRARY_NAME DataManager
 SOURCE CircularBufferBase.cc DataConsumer.cc DataManager.cc DataManagerSingleton.cc DataProcessor.cc DataProducer.cc DataProducerBase.cc RawDataSaverConsumerBase.cc
-		LIBRARIES 
+		LIBRARIES
 		otsdaq_plugin_support::dataProcessorMaker
 		PRIVATE
 		otsdaq::WorkLoopManager

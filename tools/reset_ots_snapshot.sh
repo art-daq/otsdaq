@@ -1,10 +1,10 @@
 #!/bin/bash
 # reset_ots_snapshot.sh
-#	Launches the specified otsdaq snapshot. 
+#	Launches the specified otsdaq snapshot.
 #
 # usage: --snapshot <snapshot name>
 #
-#   snapshot 
+#   snapshot
 #		e.g. a, b, or c
 #
 #  example run:
@@ -50,7 +50,7 @@ fi
 
 
 #echo -e `date +"%h%y %T"` "reset_ots_snapshot.sh [${LINENO}]  \t SNAPSHOT \t= $SNAPSHOT"
-echo		
+echo
 
 source setup_ots.sh
 
@@ -62,10 +62,10 @@ killall -9 ots_udp_hw_emulator
 wget https://github.com/art-daq/otsdaq_demo/raw/develop/tools/get_snapshot_data.sh -O get_snapshot_data.sh --no-check-certificate
 chmod 755 get_snapshot_data.sh
 ./get_snapshot_data.sh --snapshot ${SNAPSHOT}
-	
+
 #download and run get_snapshot_database script
-# wget https://cdcvs.fnal.gov/redmine/projects/otsdaq/repository/demo/revisions/develop/raw/tools/get_snapshot_database.sh -O get_snapshot_database.sh --no-check-certificate	
-wget https://github.com/art-daq/otsdaq_demo/raw/develop/tools/get_snapshot_database.sh -O get_snapshot_database.sh --no-check-certificate	
+# wget https://cdcvs.fnal.gov/redmine/projects/otsdaq/repository/demo/revisions/develop/raw/tools/get_snapshot_database.sh -O get_snapshot_database.sh --no-check-certificate
+wget https://github.com/art-daq/otsdaq_demo/raw/develop/tools/get_snapshot_database.sh -O get_snapshot_database.sh --no-check-certificate
 chmod 755 get_snapshot_database.sh
 ./get_snapshot_database.sh --snapshot ${SNAPSHOT}
 
@@ -74,15 +74,9 @@ rm get_snapshot_database.sh
 rm get_snapshot_data.sh
 
 
-#ots --wiz #just to test activate the saved groups  
+#ots --wiz #just to test activate the saved groups
 #ots  #launch normal mode and open firefox
 
 echo
 echo
 echo -e `date +"%h%y %T"` "reset_ots_snapshot.sh [${LINENO}]  \t Snapshot reset script complete."
-
-
-
-
-
-

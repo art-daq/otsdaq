@@ -72,8 +72,8 @@ class VStateMachine
 				progress += subIterationAliasMap_.at(transitionName_)
 				                .at(VStateMachine::getSubIterationIndex());
 			else
-				progress +=
-				    std::to_string(VStateMachine::getSubIterationIndex());  ///< just index
+				progress += std::to_string(
+				    VStateMachine::getSubIterationIndex());  ///< just index
 		}
 		else if(VStateMachine::getIterationWork())
 		{

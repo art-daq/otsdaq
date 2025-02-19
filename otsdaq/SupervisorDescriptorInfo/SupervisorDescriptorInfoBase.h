@@ -14,9 +14,9 @@
 // clang-format off
 namespace ots
 {
-	
+
 typedef std::map<xdata::UnsignedIntegerT, XDAQ_CONST_CALL xdaq::ApplicationDescriptor*>
-    SupervisorDescriptors;
+	SupervisorDescriptors;
 
 class SupervisorDescriptorInfoBase
 {

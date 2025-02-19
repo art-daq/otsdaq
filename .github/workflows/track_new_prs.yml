@@ -23,7 +23,7 @@ jobs:
             }' -f org=$ORGANIZATION -F number=$PROJECT_NUMBER > project_data.json
 
           echo 'PROJECT_ID='$(jq '.data.organization.projectV2.id' project_data.json) >> $GITHUB_ENV
-                    
+
       - name: Add issue to project
         env:
           GITHUB_TOKEN: ${{ secrets.BOT_CI_ISSUES }}
@@ -37,4 +37,4 @@ jobs:
                   id
                 }
               }
-            }' -f project=$PROJECT_ID -f issue=$node_id --jq '.data.addProjectV2ItemById.item.id')"    
+            }' -f project=$PROJECT_ID -f issue=$node_id --jq '.data.addProjectV2ItemById.item.id')"

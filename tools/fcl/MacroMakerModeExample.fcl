@@ -32,7 +32,7 @@ dtc0: {
 					EventWindowDelayOffset:	10
 					EmulateInDTCHardware:	"0"
 					//ROCTypeLinkTable_ROCTypeLinkTable:	{}
-						
+
 				}
 				roc1:					{
 					Status:					"1"
@@ -41,9 +41,9 @@ dtc0: {
 					EventWindowDelayOffset:	10
 					EmulateInDTCHardware:	"0"
 					//ROCTypeLinkTable_ROCTypeLinkTable:	{}
-						
+
 				}
-					
+
 			} //end ROCInterfaceTable group link records
 		}
 	} //end DTCInterfaceTable link record

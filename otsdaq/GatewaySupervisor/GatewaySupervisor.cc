@@ -8811,10 +8811,10 @@ void GatewaySupervisor::addRequiredFsmLogInputToXML(HttpXmlDocument&   xmlOut,
 		{
 			// clang-format off
 			try //ignore errors
-			{ 
+			{
 				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
 				try { requireUserLogInputOnConfigure = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnConfigureTransition not set."; }
-				try { requireUserLogInputOnRun = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnRunTransition not set."; }				
+				try { requireUserLogInputOnRun = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnRunTransition not set."; }
 			}
 			catch(...)
 			{ __SUP_COUTT__ << "Settings not set for fsm name = " << fsmName << __E__; }

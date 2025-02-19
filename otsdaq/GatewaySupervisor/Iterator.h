@@ -26,7 +26,7 @@ class Iterator
 	static const std::string RESERVED_GEN_PLAN_NAME;
 
 	void 								playIterationPlan			(HttpXmlDocument& xmldoc, const std::string& planName);
-	void 								playGeneratedIterationPlan	(HttpXmlDocument& xmldoc, const std::string& parametersCSV); 
+	void 								playGeneratedIterationPlan	(HttpXmlDocument& xmldoc, const std::string& parametersCSV);
 	void 								playGeneratedIterationPlan	(HttpXmlDocument& xmldoc, const std::string& fsmName, const std::string& configAlias, uint64_t durationSeconds = -1, unsigned int numberOfRuns = 1, bool keepConfiguration = false, const std::string& logEntry = "");
 	void 								pauseIterationPlan			(HttpXmlDocument& xmldoc);
 	void 								haltIterationPlan			(HttpXmlDocument& xmldoc);
@@ -124,7 +124,7 @@ class Iterator
 	std::string               activePlanName_, lastStartedPlanName_, lastFinishedPlanName_;
 	volatile unsigned int     activeCommandIndex_, activeCommandIteration_, activeNumberOfCommands_;
 	std::string				  activeCommandType_;
-	
+
 	volatile uint64_t 		  genPlanDurationSeconds_ = -1;
 	volatile unsigned int 	  genPlanNumberOfRuns_ = 1;
 	std::string 	  		  genFsmName_, genConfigAlias_, genLogEntry_;

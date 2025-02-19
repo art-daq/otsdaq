@@ -45,8 +45,8 @@ class TableView
 
 	template<class T>  ///< in included .icc source
 	unsigned int 								findRow						(unsigned int col,
-									                   						 const T&     value,
-									                   						 unsigned int offsetRow = 0,
+																			 const T&     value,
+																			 unsigned int offsetRow = 0,
 																			 bool			   doNotThrow = false) const;
 	unsigned int 								findRow						(unsigned int       col,
 																			 const std::string& value,
@@ -128,33 +128,33 @@ public:
 
 	template<class T>  ///< in included .icc source
 	void 										getValue					(T&           value,
-																		     unsigned int row,
-																		     unsigned int col,
-																		     bool         doConvertEnvironmentVariables = true) const;
+																			 unsigned int row,
+																			 unsigned int col,
+																			 bool         doConvertEnvironmentVariables = true) const;
 	/// special version of getValue for string type
 	///	Note: necessary because types of std::basic_string<char> cause compiler problems
 	/// if no string specific function
 	void 										getValue					(std::string& value,
-																		     unsigned int row,
-																		     unsigned int col,
-																		     bool         doConvertEnvironmentVariables = true) const;
+																			 unsigned int row,
+																			 unsigned int col,
+																			 bool         doConvertEnvironmentVariables = true) const;
 
 	template<class T>  ///< in included .icc source
 	T 											validateValueForColumn		(const std::string& value,
-	                        												 unsigned int       col,
-	                        												 bool doConvertEnvironmentVariables = true) const;
+																			 unsigned int       col,
+																			 bool doConvertEnvironmentVariables = true) const;
 	/// special version of getValue for string type
 	///	Note: necessary because types of std::basic_string<char> cause compiler problems
 	/// if no string specific function
 	std::string 								validateValueForColumn		(const std::string& value,
-	                                  										 unsigned int       col,
-	                                  										 bool convertEnvironmentVariables = true) const;
+																			 unsigned int       col,
+																			 bool convertEnvironmentVariables = true) const;
 	std::string 								getValueAsString			(unsigned int row,
 																			 unsigned int col,
 																			 bool         convertEnvironmentVariables = true) const;
 	std::string 								getEscapedValueAsString		(unsigned int row,
-	            								                       		 unsigned int col,
-	            								                       		 bool convertEnvironmentVariables = true) const;
+																			 unsigned int col,
+																			 bool convertEnvironmentVariables = true) const;
 	bool        								isURIEncodedCommentTheSame	(const std::string& comment) const;
 
 	const DataView&                         	getDataView					(void) const { return theDataView_; }
@@ -184,20 +184,20 @@ public:
 	/// Careful: The setValueAsString method is used to set the value without any
 	/// consistency check with the data type
 	void 										setValueAsString			(const std::string& value, unsigned int row, unsigned int col);
-	const std::string&							setUniqueColumnValue		(unsigned int row, unsigned int col, std::string baseValueAsString = "", 
+	const std::string&							setUniqueColumnValue		(unsigned int row, unsigned int col, std::string baseValueAsString = "",
 																			 bool doMathAppendStrategy = false,
 																			 std::string 		  childLinkIndex = "", ///<to allow for handling TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA
-							   												 std::string 		  groupId = "");
+																			 std::string 		  groupId = "");
 	void         								resizeDataView				(unsigned int nRows, unsigned int nCols);
 	unsigned int 								addRow						(const std::string& author = "",
-																		     unsigned char      incrementUniqueData = false,  ///< leave as unsigned char rather than
-																		                                                 ///< bool, too many things (e.g. strings)
-																		                                                 ///< evaluate successfully to bool values
+																			 unsigned char      incrementUniqueData = false,  ///< leave as unsigned char rather than
+																														 ///< bool, too many things (e.g. strings)
+																														 ///< evaluate successfully to bool values
 																			 const std::string&  baseNameAutoUID = "",
-																		     unsigned int rowToAdd =
-																		         (unsigned int)-1,  ///< returns index of added row, default is last row
+																			 unsigned int rowToAdd =
+																				 (unsigned int)-1,  ///< returns index of added row, default is last row
 																			 std::string 		  childLinkIndex = "", ///<to allow for handling TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA
-							   												 std::string 		  groupId = "");
+																			 std::string 		  groupId = "");
 	void 										deleteRow					(int r);
 	void 										deleteAllRows				(void) {theDataView_.clear();}
 
@@ -219,9 +219,9 @@ public:
 																			 const int&         dataOffset = 0,
 																			 const std::string& author     = "");
 	bool           								setURIEncodedValue			(const std::string&  value,
-	               								                  			 const unsigned int& row,
-	               								                  			 const unsigned int& col,
-	               								                  			 const std::string&  author = "");
+																			 const unsigned int& row,
+																			 const unsigned int& col,
+																			 const std::string&  author = "");
 
   private:
 	unsigned int 								initColUID					(void);
@@ -230,8 +230,8 @@ public:
 	const std::vector<std::string /*per col*/>&	initRowDefaults				(void);
 
 	TableView& 									operator=					(const TableView src);  ///< operator= is purposely undefined and
-														                                            ///< private (DO NOT USE IT!) - should use
-														                                            ///< TableView::copy()
+																									///< private (DO NOT USE IT!) - should use
+																									///< TableView::copy()
 
 	std::string 													storageData_;  				///< starts empty "", used to implement re-writable views ("temporary views") in artdaq db
 	const std::string												tableName_;               	///< View name (extensionTableName in xml)
@@ -247,7 +247,7 @@ public:
 
 	bool                  											fillWithLooseColumnMatching_;
 	bool                  											getSourceRawData_;
-	std::string														sourceRawData_;	
+	std::string														sourceRawData_;
 	unsigned int          											sourceColumnMismatchCount_, sourceColumnMissingCount_;
 	std::set<std::string> 											sourceColumnNames_;
 

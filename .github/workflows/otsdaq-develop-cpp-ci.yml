@@ -4,7 +4,7 @@ name: build-develop
 # or API.
 on:
   push:
-    branches-ignore: 
+    branches-ignore:
       - develop
       - stable
     paths-ignore:
@@ -20,5 +20,5 @@ on:
 
 jobs:
   build_against_dev_release:
-    name: Build against develop  
+    name: Build against develop
     uses: art-daq/.github/.github/workflows/otsdaq-develop-cpp-ci.yml@stable

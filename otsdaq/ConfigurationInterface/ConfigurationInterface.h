@@ -29,7 +29,7 @@ protected:
 public:
 	virtual ~ConfigurationInterface() { ; }
 
-	enum class CONFIGURATION_MODE 
+	enum class CONFIGURATION_MODE
 	{
 		DO_NOT_CREATE,
 		XML_FILE,
@@ -79,7 +79,7 @@ protected:
 
 private:
 	static ConfigurationInterface* 			theInstance_;
-	static CONFIGURATION_MODE     			theMode_;  				
+	static CONFIGURATION_MODE     			theMode_;
 	static bool								theVersionTrackingEnabled_;  	///< tracking versions 1 is enabled, 0 is disabled
 
 	std::mutex								tableReaderMutex_;

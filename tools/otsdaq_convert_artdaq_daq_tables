@@ -18,14 +18,14 @@ echo -e `date +"%h%y %T"` "convert_artdaq_daq_tables.sh [${LINENO}]  \t You must
 return  >/dev/null 2>&1 #return is used if script is sourced
 
 echo
-echo	
+echo
 echo -e `date +"%h%y %T"` "convert_artdaq_daq_tables.sh [${LINENO}]  \t Checking environment..."
-		
+
 if [[ "x$USER_DATA" == "x" ]]; then
 	echo -e `date +"%h%y %T"` "convert_artdaq_daq_tables.sh [${LINENO}]  \t USER_DATA environment variable must be setup. Is your ots instance setup?"
 	exit
 fi
-	
+
 TABLE_DIR=$USER_DATA/TableInfo
 if [ ! -d $TABLE_DIR ]; then
 	echo -e `date +"%h%y %T"` "convert_artdaq_daq_tables.sh [${LINENO}]  \t TABLE_DIR=${TABLE_DIR} path does not exists. Is your ots instance setup?"
@@ -35,7 +35,7 @@ fi
 echo
 echo
 
-ARTDAQ_DATABASE_DIR=`echo ${ARTDAQ_DATABASE_URI}|sed 's|.*//|/|'`	
+ARTDAQ_DATABASE_DIR=`echo ${ARTDAQ_DATABASE_URI}|sed 's|.*//|/|'`
 
 
 if [[ "x$ARTDAQ_DATABASE_DIR" == "x" ]]; then
@@ -73,8 +73,8 @@ sed -i s/ARTDAQDaq/ARTDAQ/g *.xml
 sed -i s/ARTDAQ_DAQ/ARTDAQ/g *.xml
 
 echo -e `date +"%h%y %T"` "convert_artdaq_daq_tables.sh [${LINENO}]  \t Renaming Table Info files..."
-  
-for f in ARTDAQDaq*.xml; do [ -f "$f" ] && mv -- "$f" "${f/ARTDAQDaq/ARTDAQ}"; echo $f; done; 
+
+for f in ARTDAQDaq*.xml; do [ -f "$f" ] && mv -- "$f" "${f/ARTDAQDaq/ARTDAQ}"; echo $f; done;
 
 
 
@@ -90,16 +90,16 @@ echo -e `date +"%h%y %T"` "convert_artdaq_daq_tables.sh [${LINENO}]  \t Modifyin
 
 #delete the destination location of ARTDAQDaq* and then move the ARTDAQDaq* to ARTDAQ*
 for f in ARTDAQDaq*; do [ -f "$f" ]; rm -rf "${f/ARTDAQDaq/ARTDAQ}"; mv -- "$f" "${f/ARTDAQDaq/ARTDAQ}"; echo $f; done;
-#for f in ARTDAQDaq*; do [ -f "$f" ]; mv -- "${f/ARTDAQDaq/ARTDAQ}" "${f/ARTDAQDaq/ARTDAQ}.bad"; mv -- "$f" "${f/ARTDAQDaq/ARTDAQ}"; echo $f; done; 
+#for f in ARTDAQDaq*; do [ -f "$f" ]; mv -- "${f/ARTDAQDaq/ARTDAQ}" "${f/ARTDAQDaq/ARTDAQ}.bad"; mv -- "$f" "${f/ARTDAQDaq/ARTDAQ}"; echo $f; done;
 
 #hide index from transformation
-for f in *Table; do mv -n "$f/index.json" "$f/index.txt"; done; 
+for f in *Table; do mv -n "$f/index.json" "$f/index.txt"; done;
 
 sed -i s/ARTDAQDaq/ARTDAQ/g *Table/*.json #*/ end C++ comment coloring
 sed -i s/ARTDAQ_DAQ/ARTDAQ/g *Table/*.json #*/ end C++ comment coloring
 
 #return index after transformation
-for f in *Table; do mv -n "$f/index.txt" "$f/index.json"; done; 
+for f in *Table; do mv -n "$f/index.txt" "$f/index.json"; done;
 
 #convert TheSupervisor to GatewaySupervisor
 echo -e `date +"%h%y %T"` "convert_artdaq_daq_tables.sh [${LINENO}]  \t Converting TheSupervisor Table to GatewaySupervisor..."

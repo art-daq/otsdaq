@@ -2,7 +2,7 @@ name: Build Single Pkg Workflow
 
 on:
   push:
-    branches: 
+    branches:
       - develop
     paths-ignore:
       - 'docs/**'

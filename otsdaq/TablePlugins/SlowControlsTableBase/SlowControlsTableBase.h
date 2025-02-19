@@ -27,16 +27,16 @@ class SlowControlsTableBase : virtual public TableBase ///<virtual so future plu
 	virtual void	getSlowControlsChannelList			(std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>& channelList) const;
 
 	///boardReader{
-	///	build vector .. based on table 1,2,3,4,5.. 
+	///	build vector .. based on table 1,2,3,4,5..
 	///	pass vector outputPV()
 	///}
 	///DTC {
 	///	build vector from config Tree
 	///	pass vector to outputPV()
 	///}
-	
+
 	///use table name to have different file names! (instead of DEFINES like in DTC)
-	
+
 	///is channel binary or not?.. then can handle all the same
 	virtual bool 			outputEpicsPVFile			(ConfigurationManager* configManager, std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList = 0) const;
 

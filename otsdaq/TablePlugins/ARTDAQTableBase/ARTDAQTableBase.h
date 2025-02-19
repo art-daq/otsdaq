@@ -89,59 +89,59 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	static void        						flattenFHICL				(ARTDAQAppType type, const std::string& name);
 
 	static void        						insertParameters			(std::ostream&      out,
-	                   						                			 std::string&       tabStr,
-	                   						                			 std::string&       commentStr,
-	                   						                			 ConfigurationTree  parameterLink,
-	                   						                			 const std::string& parameterPreamble,
-	                   						                			 bool               onlyInsertAtTableParameters = false,
-	                   						                			 bool               includeAtTableParameters    = false);
+																		 std::string&       tabStr,
+																		 std::string&       commentStr,
+																		 ConfigurationTree  parameterLink,
+																		 const std::string& parameterPreamble,
+																		 bool               onlyInsertAtTableParameters = false,
+																		 bool               includeAtTableParameters    = false);
 	static std::string 						insertModuleType			(std::ostream& out, std::string& tabStr, std::string& commentStr, ConfigurationTree moduleTypeNode);
 	static void        						insertMetricsBlock			(std::ostream& out, std::string& tabStr, std::string& commentStr, ConfigurationTree daqNode);
 	static void                             insertArtProcessBlock(std::ostream& out, std::string& tabStr, std::string& commentStr, ConfigurationTree art,
 																		 ConfigurationTree subsystemLink = ConfigurationTree(),
-	            							                      		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-	            							                      		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT );
+																		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT );
 
 	static void 							outputBoardReaderFHICL		(const ConfigurationTree& boardReaderNode,
-	            							                      		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
-	            							                      		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-	            							                      		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT);
+																		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
+																		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT);
 
 	static void 							outputDataReceiverFHICL		(const ConfigurationTree& receiverNode,
-	            							                       		 ARTDAQAppType            appType,
-	            							                       		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
-	            							                       		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-	            							                       		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT);
+																		 ARTDAQAppType            appType,
+																		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
+																		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT);
 
 	static void 							outputRoutingManagerFHICL	(const ConfigurationTree& routingManagerNode,
-	            							                        	 size_t                   routingTimeoutMs  = DEFAULT_ROUTING_TIMEOUT_MS,
-	            							                        	 size_t                   routingRetryCount = DEFAULT_ROUTING_RETRY_COUNT);
+																		 size_t                   routingTimeoutMs  = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t                   routingRetryCount = DEFAULT_ROUTING_RETRY_COUNT);
 
 	static void                             outputOnlineMonitorFHICL 	(const ConfigurationTree& onlineMonitorNode);
 
 	static bool               				isARTDAQEnabled				(const ConfigurationManager* cfgMgr);
 	static const ARTDAQInfo& 				extractARTDAQInfo			(ConfigurationTree artdaqSupervisorNode,
-			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 bool			   getStatusFalseNodes  = false,
-	                  						                 			 bool              doWriteFHiCL         = false,
-	                  						                 			 size_t            maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
-	                  						                 			 size_t            routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-	                  						                 			 size_t            routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT,
-	                  						                 			 ProgressBar*      progressBar          = 0);
+																		 bool			   getStatusFalseNodes  = false,
+																		 bool              doWriteFHiCL         = false,
+																		 size_t            maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
+																		 size_t            routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t            routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT,
+																		 ProgressBar*      progressBar          = 0);
 
 	static const ARTDAQInfo&       			getARTDAQSystem				(ConfigurationManagerRW* cfgMgr,
-																         std::map<std::string /*type*/,
-																		 	 std::map<std::string /*record*/,
-																			 	 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
-																         std::map<std::string /*subsystemName*/,
-																		 	 std::string /*destinationSubsystemName*/>& 	subsystemObjectMap,
+																		 std::map<std::string /*type*/,
+																			 std::map<std::string /*record*/,
+																				 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
+																		 std::map<std::string /*subsystemName*/,
+																			 std::string /*destinationSubsystemName*/>& 	subsystemObjectMap,
 																			 std::vector<std::string /*property*/>& 		artdaqSupervisoInfo);
 
 	static void       						setAndActivateARTDAQSystem	(ConfigurationManagerRW* cfgMgr,
-																         const std::map<std::string /*type*/,
-																		 	 std::map<std::string /*record*/,
-																			 	 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
-																         const std::map<std::string /*subsystemName*/,
-																		 	 std::string /*destinationSubsystemName*/>&   	subsystemObjectMap);
+																		 const std::map<std::string /*type*/,
+																			 std::map<std::string /*record*/,
+																				 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
+																		 const std::map<std::string /*subsystemName*/,
+																			 std::string /*destinationSubsystemName*/>&   	subsystemObjectMap);
 
   private:
 	static int  							getSubsytemId				(ConfigurationTree subsystemNode);
@@ -150,7 +150,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	static void       						extractEventBuildersInfo	(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
 	static void       						extractDataLoggersInfo		(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
 	static void       						extractDispatchersInfo		(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
-		
+
 	static ARTDAQInfo 						info_;
 
   public:
@@ -178,20 +178,20 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 				std::make_pair(DISPATCHER, 	ARTDAQTableBase::ARTDAQ_DISPATCHER_TABLE),
 				std::make_pair(MONITOR, 	ARTDAQTableBase::ARTDAQ_MONITOR_TABLE),
 				std::make_pair(ROUTER, 		ARTDAQTableBase::ARTDAQ_ROUTER_TABLE)})
-		    , mapToGroupIDAppend_({		    	
+			, mapToGroupIDAppend_({
 				std::make_pair(READER, 		"BoardReaders"),
 				std::make_pair(BUILDER, 	"EventBuilders"),
 				std::make_pair(LOGGER, 		"DataLoggers"),
 				std::make_pair(DISPATCHER, 	"Dispatchers"),
 				std::make_pair(MONITOR, 	"Monitors"),
 				std::make_pair(ROUTER, 		"RoutingManagers")})
-		    , mapToLinkGroupIDColumn_({		    	
+			, mapToLinkGroupIDColumn_({
 				std::make_pair(READER, 		ARTDAQTableBase::colARTDAQSupervisor_.colLinkToBoardReadersGroupID_),
 				std::make_pair(BUILDER, 	ARTDAQTableBase::colARTDAQSupervisor_.colLinkToEventBuildersGroupID_),
 				std::make_pair(LOGGER, 		ARTDAQTableBase::colARTDAQSupervisor_.colLinkToDataLoggersGroupID_),
 				std::make_pair(DISPATCHER, 	ARTDAQTableBase::colARTDAQSupervisor_.colLinkToDispatchersGroupID_),
 				std::make_pair(ROUTER, 		ARTDAQTableBase::colARTDAQSupervisor_.colLinkToRoutingManagersGroupID_)})
-		    , mapToGroupIDColumn_({		    	
+			, mapToGroupIDColumn_({
 				std::make_pair(READER, 		"BoardReaderGroupID"),
 				std::make_pair(BUILDER, 	"EventBuilderGroupID"),
 				std::make_pair(LOGGER, 		"DataLoggerGroupID"),
