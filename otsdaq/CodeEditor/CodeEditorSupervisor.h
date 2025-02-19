@@ -25,10 +25,8 @@ class CodeEditorSupervisor : public CoreSupervisorBase
 
 	virtual void setSupervisorPropertyDefaults(
 	    void) override;  ///< override to control supervisor specific defaults
-	virtual void forceSupervisorPropertyValues(void) override;  ///< override to force
-	                                                            ///< supervisor property
-	                                                            ///< values (and ignore user
-	                                                            ///< settings)
+	virtual void forceSupervisorPropertyValues(void)
+	    override;  ///< override to force supervisor property values (and ignore user settings)
   private:
 	CodeEditor codeEditor_;
 };

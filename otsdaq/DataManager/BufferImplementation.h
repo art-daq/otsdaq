@@ -90,10 +90,10 @@ class BufferImplementation
 
 	unsigned int nextWritePointer(void);
 	unsigned int nextReadPointer(const std::string& consumer);
-	int          getFreeBufferIndex(void);  ///< can return -1 if there are no free buffers!
-	unsigned int getReadPointer(const std::string& consumer);
-	void         setWritten(unsigned int subBuffer);
-	void         setFree(unsigned int subBuffer, const std::string& consumer);
+	int getFreeBufferIndex(void);  ///< can return -1 if there are no free buffers!
+	unsigned int      getReadPointer(const std::string& consumer);
+	void              setWritten(unsigned int subBuffer);
+	void              setFree(unsigned int subBuffer, const std::string& consumer);
 	std::atomic_bool& isFree(unsigned int subBuffer) const;
 	std::atomic_bool& isFree(unsigned int subBuffer, const std::string& consumer) const;
 

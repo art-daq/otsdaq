@@ -21,8 +21,10 @@ class ConfigurationHandler
 
 	static void        readXML(TableBase& configuration, TableVersion version);
 	static void        readXML(TableBase* configuration, TableVersion version);
-	static std::string writeXML(const TableBase& configuration);  ///< returns the file name
-	static std::string writeXML(const TableBase* configuration);  ///< returns the file name
+	static std::string writeXML(
+	    const TableBase& configuration);  ///< returns the file name
+	static std::string writeXML(
+	    const TableBase* configuration);  ///< returns the file name
 
 	/// FIXME These are methods that should not exist as public but I don't know what to do
 	/// until I know how to make the database interface

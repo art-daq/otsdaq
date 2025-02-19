@@ -47,7 +47,7 @@ class ARTDAQConsumer
 	///
   private:
 	bool workLoopThread(toolbox::task::WorkLoop* /*workLoop*/) override { return false; }
-	
+
 	//	std::unique_ptr<artdaq::BoardReaderApp> fragment_receiver_ptr_;
 	//	std::string                             name_;
 	//

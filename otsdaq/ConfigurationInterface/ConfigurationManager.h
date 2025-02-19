@@ -66,9 +66,10 @@ class ConfigurationManager
 	static const uint8_t METADATA_COL_AUTHOR;
 	static const uint8_t METADATA_COL_TIMESTAMP;
 
-	static const std::set<std::string> contextMemberNames_;   ///< list of context members
-	static const std::set<std::string> backboneMemberNames_;  ///< list of backbone members
-	static const std::set<std::string> iterateMemberNames_;   ///< list of iterate members
+	static const std::set<std::string> contextMemberNames_;  ///< list of context members
+	static const std::set<std::string>
+	    backboneMemberNames_;                                ///< list of backbone members
+	static const std::set<std::string> iterateMemberNames_;  ///< list of iterate members
 	std::set<std::string>
 	    configurationMemberNames_;  ///< list of 'active' configuration members
 

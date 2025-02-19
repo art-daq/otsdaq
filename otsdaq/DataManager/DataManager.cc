@@ -592,7 +592,7 @@ void DataManager::destroyBuffers(void)
 ////		catch(...)
 ////		{} //ignore not found
 ////	}
-// 
+//
 ////	RAR commented.. this was bypassing unregister at CircularBuffer level
 ////	for (auto it = buffers_.begin(); it != buffers_.end(); it++)
 ////		for (auto& itc : it->second.consumers_)
