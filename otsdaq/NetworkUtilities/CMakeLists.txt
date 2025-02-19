@@ -1,4 +1,4 @@
-cet_make_library(LIBRARY_NAME NetworkUtilities 
+cet_make_library(LIBRARY_NAME NetworkUtilities
 SOURCE
 NetworkConverters.cc
 NetworkDevice.cc

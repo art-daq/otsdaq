@@ -50,7 +50,7 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		__SUP_COUTV__(CorePropertySupervisorBase::supervisorConfigurationPath_);
 
 		//move to after configure for MacroMaker mode
-		// CorePropertySupervisorBase::indicateOtsAlive(0); 
+		// CorePropertySupervisorBase::indicateOtsAlive(0);
 
 		return;
 	}
@@ -125,10 +125,10 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 	__SUP_COUTV__(CorePropertySupervisorBase::supervisorConfigurationPath_);
 
 	//try to verify binding port for context was established
-	//All this code failed to do the trick 
+	//All this code failed to do the trick
 	// {
 	// 			application->ptr_;
-			
+
 	// 			PeerTransportHTTP(this)
 	// 			const xdaq::NetGroup* netGroupPtr = application->getApplicationContext()->getNetGroup();
 	// 			auto netVector = netGroupPtr->getNetworks();

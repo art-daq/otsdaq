@@ -46,7 +46,7 @@ class TableBase
 	void         				trimCache						(unsigned int trimSize = -1);
 	void         				trimTemporary					(TableVersion targetVersion = TableVersion());
 	TableVersion 				checkForDuplicate				(TableVersion needleVersion, TableVersion ignoreVersion = TableVersion()) const;
-	bool		 				diffTwoVersions					(TableVersion v1, TableVersion v2, std::stringstream* diffReport = 0, 
+	bool		 				diffTwoVersions					(TableVersion v1, TableVersion v2, std::stringstream* diffReport = 0,
 																std::map<std::string /* uid */, std::vector<std::string /* colName */>>* v1ModifiedRecords = 0) const;
 
 	/// Getters
@@ -99,8 +99,8 @@ class TableBase
   // ----- member variables
 
   public:
-	static const std::string			GROUP_CACHE_PREPEND;	
-	static const std::string			JSON_DOC_PREPEND;	
+	static const std::string			GROUP_CACHE_PREPEND;
+	static const std::string			JSON_DOC_PREPEND;
 
   protected:
 	std::string 						tableName_;
@@ -112,7 +112,7 @@ class TableBase
 	/// Version and data associated to make it work like a cache.
 	/// It will be very likely just 1 version
 	/// NOTE: must be very careful to setVersion of view after manipulating (e.g. copy from different version view)
-	std::map<TableVersion, TableView> 	tableViews_;	
+	std::map<TableVersion, TableView> 	tableViews_;
 
 };
 // clang-format on

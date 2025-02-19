@@ -8,4 +8,3 @@ cet_make_library(LIBRARY_NAME Configurable
 
 install_headers()
 install_source()
-

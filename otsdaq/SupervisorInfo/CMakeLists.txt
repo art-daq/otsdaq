@@ -3,7 +3,7 @@ cet_make_library(LIBRARY_NAME SupervisorInfo
 			AllSupervisorInfo.cc
 			SupervisorDescriptorInfoBase.cc
 			SupervisorInfo.cc
-		 LIBRARIES 
+		 LIBRARIES
 		 PUBLIC
 		 ${XDAQ_BASIC_LIB_LIST}
 		 PRIVATE

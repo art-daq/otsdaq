@@ -26,24 +26,24 @@ are loaded prior instantiation of plugins -->
     <aliasName xsi:type="xsd:string">/UserWebPath</aliasName>
     <aliasPath xsi:type="xsd:string">${USER_WEB_PATH}</aliasPath> -->
   </properties>
-  
+
  </xp:Application>
- 
 
 
-  
- 
+
+
+
  <xp:Module>${XDAQ_ROOT}/lib/libpthttp.so</xp:Module>
 
 <xp:Application class="pt::fifo::PeerTransportFifo" id="8"  network="local"/>
- 
+
  <xp:Module>${XDAQ_ROOT}/lib/libptfifo.so</xp:Module>
- 
+
  <!-- XRelay -->
  <xp:Application class="xrelay::Application" id="4"  service="xrelay" network="local"/>
  <xp:Module>${XDAQ_ROOT}/lib/libxrelay.so</xp:Module>
- 
+
  <!-- HyperDAQ -->
  <xp:Application class="hyperdaq::Application" id="3"  service="hyperdaq" network="local"/>
- <xp:Module>${XDAQ_ROOT}/lib/libhyperdaq.so</xp:Module>        
+ <xp:Module>${XDAQ_ROOT}/lib/libhyperdaq.so</xp:Module>
 </xp:Profile>

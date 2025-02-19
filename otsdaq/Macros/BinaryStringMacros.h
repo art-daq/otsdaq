@@ -15,7 +15,7 @@ struct BinaryStringMacros
 {
 	// clang-format off
   private:  ///< private constructor because all static members, should never instantiate
-	        // this class
+			// this class
 	BinaryStringMacros(void);
 	~BinaryStringMacros(void);
 
@@ -33,7 +33,7 @@ struct BinaryStringMacros
 		unsigned int       							numberOfBytes,
 		const std::string& 							resultPreamble  = "",
 		const std::string& 							resultDelimiter = "");
-		
+
 	template<class T>
 	static std::string 	binaryNumberToHexString		(
 		const T& 									binaryBuffer,
@@ -53,37 +53,37 @@ struct BinaryStringMacros
 	//=======================================================
 	template<class T>
 	static void 		insertValueInBinaryString	( ///< defined in included .icc source
-		std::string& 								binaryBuffer, 
-        T            								value,
-        unsigned int 								bitIndex  = 0);
-	
+		std::string& 								binaryBuffer,
+		T            								value,
+		unsigned int 								bitIndex  = 0);
+
 	/// specialized for string value
-	static void 		insertValueInBinaryString	( 
+	static void 		insertValueInBinaryString	(
 		std::string&       							binaryBuffer,
-        const std::string& 							value,
-        unsigned int       							bitIndex  = 0);
+		const std::string& 							value,
+		unsigned int       							bitIndex  = 0);
 
 	//=======================================================
-    template<class T>
+	template<class T>
 	static void 		extractValueFromBinaryString( ///< defined in included .icc source
-		const std::string&							binaryBuffer, 
-        T&            								value,
-        unsigned int 								bitIndex  = 0);
-	
+		const std::string&							binaryBuffer,
+		T&            								value,
+		unsigned int 								bitIndex  = 0);
+
 	/// specialized for string value
-	static void 		extractValueFromBinaryString( 
+	static void 		extractValueFromBinaryString(
 		const std::string&       					binaryBuffer,
-        std::string& 								value,
+		std::string& 								value,
 		unsigned int       							valueNumberOfBits,
-        unsigned int       							bitIndex  = 0);   
+		unsigned int       							bitIndex  = 0);
 
 	/// specialized for generic void* handling (actually does the work)
-	static void 		extractValueFromBinaryString( 
+	static void 		extractValueFromBinaryString(
 		const void*       							binaryBuffer,
 		unsigned int       							bufferNumberOfBytes,
-        void* 										value,
+		void* 										value,
 		unsigned int       							valueNumberOfBits,
-        unsigned int       							bitIndex  = 0);   
+		unsigned int       							bitIndex  = 0);
 
 };  // end BinaryStringMacros static class
 

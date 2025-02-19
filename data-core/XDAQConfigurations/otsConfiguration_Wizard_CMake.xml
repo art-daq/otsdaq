@@ -1,6 +1,6 @@
 <?xml version='1.0'?>
-<xc:Partition xmlns:xsi     = "http://www.w3.org/2001/XMLSchema-instance"  
-              xmlns:soapenc = "http://schemas.xmlsoap.org/soap/encoding/" 
+<xc:Partition xmlns:xsi     = "http://www.w3.org/2001/XMLSchema-instance"
+              xmlns:soapenc = "http://schemas.xmlsoap.org/soap/encoding/"
               xmlns:xc      = "http://xdaq.web.cern.ch/xdaq/xsd/2004/XMLConfiguration-30">
 
   <xc:Context id="0" url="http://${SUPERVISOR_SERVER}:${PORT}">
@@ -16,8 +16,7 @@
 
     <xc:Application class="ots::CodeEditorSupervisor" id="${CODE_EDITOR_SUPERVISOR_ID}" instance="1" network="local" group="daq"/>
     <xc:Module>${OTSDAQ_LIB}/libCodeEditor.so</xc:Module>
-    
+
   </xc:Context>
 
 </xc:Partition>
-

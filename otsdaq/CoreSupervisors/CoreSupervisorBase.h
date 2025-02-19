@@ -42,12 +42,12 @@ namespace ots
 ///		with access verified by the Gateway Supervisor,
 ///		or that need a state machines driven by the Gateway Supervisor.
 class CoreSupervisorBase : public xdaq::Application,
-                           public SOAPMessenger,
-                           public CorePropertySupervisorBase,
-                           public RunControlStateMachine
+						   public SOAPMessenger,
+						   public CorePropertySupervisorBase,
+						   public RunControlStateMachine
 {
 	friend class MacroMakerSupervisor;  ///< to allow MacroMakerSupervisor to call
-	                                    ///< requestWrapper in Macro Maker mode
+										///< requestWrapper in Macro Maker mode
 
   public:
 	CoreSupervisorBase(xdaq::ApplicationStub* stub);
@@ -56,7 +56,7 @@ class CoreSupervisorBase : public xdaq::Application,
 	void destroy(void);
 
 	unsigned int 					getSupervisorLID				(void) const { return getApplicationDescriptor()->getLocalId(); }
-	
+
 
 	/// Here are the common web request handlers:
 	///	defaultPage returns the public html page
@@ -71,7 +71,7 @@ class CoreSupervisorBase : public xdaq::Application,
 																	HttpXmlDocument&                 xmlOut,
 																	const WebUsers::RequestUserInfo& userInfo);
 	virtual void 					nonXmlRequest					(const std::string&               requestType,
-															   	   	cgicc::Cgicc&                    cgiIn,
+																	cgicc::Cgicc&                    cgiIn,
 																	std::ostream&                    out,
 																	const WebUsers::RequestUserInfo& userInfo);
 	virtual std::string 			getStatusProgressDetail			(void);

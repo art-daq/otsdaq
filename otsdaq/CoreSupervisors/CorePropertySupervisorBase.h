@@ -248,7 +248,7 @@ class CorePropertySupervisorBase
 	std::string                 		getSupervisorProperty							(const std::string& propertyName, const std::string& defaultValue);
 	WebUsers::permissionLevel_t 		getSupervisorPropertyUserPermissionsThreshold	(const std::string& requestType);
 
-	time_t		 						getSupervisorUptime								(void) const { return time(0) - constructedTime_;}				
+	time_t		 						getSupervisorUptime								(void) const { return time(0) - constructedTime_;}
 
   protected:
 	ITRACEController* 					theTRACEController_; ///<only define for an app that receives a command

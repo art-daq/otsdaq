@@ -82,7 +82,7 @@ class WorkLoopManager;
 		static std::string			getIconHeaderString(void);
 		static bool					handleAddDesktopIconRequest(const std::string& author, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut, std::vector<DesktopIconTable::DesktopIcon>* newIcons = nullptr);
 		static void 				handleGetApplicationIdRequest(AllSupervisorInfo* applicationInfo, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut);
-		
+
 		xoap::MessageReference 		stateMachineXoapHandler(xoap::MessageReference msg);
 
 		bool 						stateMachineThread(toolbox::task::WorkLoop* workLoop);
@@ -127,7 +127,7 @@ class WorkLoopManager;
 		// CorePropertySupervisorBase override functions
 		virtual void 					setSupervisorPropertyDefaults					(void) override;  ///< override to control supervisor specific defaults
 		virtual void 					forceSupervisorPropertyValues					(void) override;  ///< override to force supervisor property values (and ignore user settings)
-		
+
 
 	private:
 		unsigned int 					getNextRunNumber								(const std::string& fsmName = "");
@@ -298,21 +298,21 @@ class WorkLoopManager;
 		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; ///<cached at Configure transition
 		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; ///<cached at Configure transition
 		std::string 		activeStateMachineRunInfoPluginType_; ///<cached at Configure transition
-		std::map<std::string /* fsmName */, std::string /* logEntry */>			
+		std::map<std::string /* fsmName */, std::string /* logEntry */>
 							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_, stateMachineStopLogEntry_;
 		std::string 		activeStateMachineRunNumber_, activeStateMachineRunAlias_, activeStateMachineConfigurationAlias_;
 		bool				activeStateMachineRollOverLogOnConfigure_, activeStateMachineRollOverLogOnStart_;
-		std::chrono::steady_clock::time_point 
+		std::chrono::steady_clock::time_point
 							activeStateMachineRunStartTime;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
 
 
-		std::mutex			systemStatusMutex_;	
+		std::mutex			systemStatusMutex_;
 		std::string 		lastLogbookEntry_;
 		time_t				lastLogbookEntryTime_ = 0;
 
 		std::string 		lastConsoleErr_, lastConsoleWarn_, lastConsoleInfo_, lastConsoleErrTime_, lastConsoleWarnTime_, lastConsoleInfoTime_;
-		std::string 		firstConsoleErr_, firstConsoleWarn_, firstConsoleInfo_, firstConsoleErrTime_, firstConsoleWarnTime_, firstConsoleInfoTime_;		
+		std::string 		firstConsoleErr_, firstConsoleWarn_, firstConsoleInfo_, firstConsoleErrTime_, firstConsoleWarnTime_, firstConsoleInfoTime_;
 		size_t				systemConsoleErrCount_ = 0, systemConsoleWarnCount_ = 0, systemConsoleInfoCount_ = 0;
 
 		std::pair<std::string /*group name*/, TableGroupKey>
@@ -351,7 +351,7 @@ public:	//used by remote subsystem control and status
 		struct RemoteGatewayInfo {
 			SupervisorInfo::SubappInfo 			appInfo;
 
-			std::string 						command, fsmName; ///<when not "", need to send 
+			std::string 						command, fsmName; ///<when not "", need to send
 			std::string							error, config_dump;
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
 
@@ -374,9 +374,9 @@ public:	//used by remote subsystem control and status
 				OnlyConfigure, ///<(e.g. for DCS/DQM)
 			};
 			FSM_ModeTypes 						fsm_mode = FSM_ModeTypes::Follow_FSM; ///<used for remote gateway subapp control
-			bool								fsm_included = true; 
+			bool								fsm_included = true;
 
-			std::string							getFsmMode() const { 
+			std::string							getFsmMode() const {
 				switch(fsm_mode)
 				{
 					case FSM_ModeTypes::Follow_FSM: return "Follow FSM";

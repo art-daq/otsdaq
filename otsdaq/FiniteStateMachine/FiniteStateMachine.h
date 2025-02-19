@@ -81,17 +81,17 @@ class FiniteStateMachine : public toolbox::fsm::FiniteStateMachine
 	volatile bool                              	inTransition_;
 	toolbox::fsm::State                         provenanceState_;
 	std::string									currentTransition_;
-	std::map<toolbox::fsm::State, 
-		std::map<std::string, std::string, 
+	std::map<toolbox::fsm::State,
+		std::map<std::string, std::string,
 		std::less<std::string> > > 				stateTransitionNameTable_;
-	std::map<toolbox::fsm::State, 
-		std::map<std::string, std::string, 
+	std::map<toolbox::fsm::State,
+		std::map<std::string, std::string,
 		std::less<std::string> > > 				stateTransitionParameterTable_;
 
 	xoap::MessageReference 						theMessage_;
 	std::string            						theErrorMessage_;
 	std::string            						stateMachineName_;
-	
+
 
   private:
 };

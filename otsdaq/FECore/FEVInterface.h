@@ -25,8 +25,8 @@
 
 #define __ARGS__                                                               \
 	[[maybe_unused]] const frontEndMacroStruct_t &              feMacroStruct, \
-	    [[maybe_unused]] FEVInterface::frontEndMacroConstArgs_t argsIn,        \
-	    [[maybe_unused]] FEVInterface::frontEndMacroArgs_t      argsOut
+		[[maybe_unused]] FEVInterface::frontEndMacroConstArgs_t argsIn,        \
+		[[maybe_unused]] FEVInterface::frontEndMacroArgs_t      argsOut
 
 #define __GET_ARG_IN_NO_DEFAULT__(X, Y) getFEMacroConstArgumentValue<Y>(argsIn, X)
 #define __GET_ARG_IN_DEFAULT__(X, Y, D) getFEMacroConstArgumentValue<Y>(argsIn, X, D)
@@ -68,7 +68,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 
 	FEVInterfacesManager* 				parentInterfaceManager_;
 
-	const std::string&  				getInterfaceUID				(void) const { return interfaceUID_; } 
+	const std::string&  				getInterfaceUID				(void) const { return interfaceUID_; }
 	const std::string&  				getInterfaceType			(void) const { return interfaceType_; }
 
 	virtual void 						universalRead				(char* address, char* returnValue) = 0;  ///< throw std::runtime_error exception on error/timeout
@@ -78,7 +78,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	virtual void 						universalBlockRead			(char* address, char* returnValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK READ"); /* to make compiler happy, use params */ __COUTV__((void*)address); __COUTV__((void*)returnValue); __COUTV__(numberOfBytes); }
 	bool 								universalBlockReadImplementationConfirmed = false; ///<is confirmed by slow controls handling (for example) that universalBlockRead is implemented by the FE plugin
 	virtual void        				universalBlockWrite			(char* address, char* writeValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK WRITE"); /* to make compiler happy, use params */ __COUTV__((void*)address); __COUTV__((void*)writeValue); __COUTV__(numberOfBytes); }
-	
+
 
 	void 								runSequenceOfCommands		(const std::string& treeLinkName);
 
@@ -90,7 +90,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	{
 		__COUT__ << "\t Configure" << std::endl;
 		runSequenceOfCommands(
-		    "LinkToConfigureSequence"); /*Run Configure Sequence Commands*/
+			"LinkToConfigureSequence"); /*Run Configure Sequence Commands*/
 	}
 	virtual void 								start						(std::string /*runNumber*/)
 	{
@@ -145,19 +145,19 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	struct frontEndMacroStruct_t  ///< members fully define a front-end macro function
 	{
 		frontEndMacroStruct_t(
-		    const std::string&              feMacroName,
-		    const frontEndMacroFunction_t&  feMacroFunction,
-		    const std::vector<std::string>& namesOfInputArgs,
-		    const std::vector<std::string>& namesOfOutputArgs,
-		    const std::string& 				requiredUserPermissions = "1" /*Level definition: 0:no-access,1:=user,255:=admin*/,
-		    const std::string& 				allowedCallingFrontEnds = "*" /*StringMacros:: wild card set match string (i.e. string-to-set, then wild-card-set match)*/,
-		    const std::string& 				feMacroTooltip = "")
-		    : feMacroName_					(feMacroName)
-		    , macroFunction_				(feMacroFunction)
-		    , namesOfInputArguments_		(namesOfInputArgs)
-		    , namesOfOutputArguments_		(namesOfOutputArgs)
-		    , requiredUserPermissions_		(requiredUserPermissions)
-		    , allowedCallingFrontEnds_		(allowedCallingFrontEnds)
+			const std::string&              feMacroName,
+			const frontEndMacroFunction_t&  feMacroFunction,
+			const std::vector<std::string>& namesOfInputArgs,
+			const std::vector<std::string>& namesOfOutputArgs,
+			const std::string& 				requiredUserPermissions = "1" /*Level definition: 0:no-access,1:=user,255:=admin*/,
+			const std::string& 				allowedCallingFrontEnds = "*" /*StringMacros:: wild card set match string (i.e. string-to-set, then wild-card-set match)*/,
+			const std::string& 				feMacroTooltip = "")
+			: feMacroName_					(feMacroName)
+			, macroFunction_				(feMacroFunction)
+			, namesOfInputArguments_		(namesOfInputArgs)
+			, namesOfOutputArguments_		(namesOfOutputArgs)
+			, requiredUserPermissions_		(requiredUserPermissions)
+			, allowedCallingFrontEnds_		(allowedCallingFrontEnds)
 			, feMacroTooltip_				(feMacroTooltip)
 		{
 		}
@@ -174,9 +174,9 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 		return mapOfFEMacroFunctions_;
 	}
 	void 								runSelfFrontEndMacro		(
-	    const std::string&                                   	feMacroName,
-	    const std::vector<FEVInterface::frontEndMacroArg_t>& 	inputArgs,
-	    std::vector<FEVInterface::frontEndMacroArg_t>&       	outputArgs);
+		const std::string&                                   	feMacroName,
+		const std::vector<FEVInterface::frontEndMacroArg_t>& 	inputArgs,
+		std::vector<FEVInterface::frontEndMacroArg_t>&       	outputArgs);
 	/// end FE Macros
 	/////////
 	///
@@ -221,8 +221,8 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 
 		std::string 							macroName_;
 		std::vector<std::pair<unsigned int /*op type*/,
-		                      unsigned int /*index in specific type vector*/> >
-		                                      	operations_;
+							  unsigned int /*index in specific type vector*/> >
+												operations_;
 		std::vector<macroStruct_t::readOp_t>  	readOps_;
 		std::vector<macroStruct_t::writeOp_t> 	writeOps_;
 		std::vector<macroStruct_t::delayOp_t> 	delayOps_;
@@ -231,7 +231,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	}; // end macroStruct_t declaration
   protected:
 	void runMacro(FEVInterface::macroStruct_t&                        macro,
-	              std::map<std::string /*name*/, uint64_t /*value*/>& variableMap);
+				  std::map<std::string /*name*/, uint64_t /*value*/>& variableMap);
 
   public:
 	/// end FE Macros
@@ -264,9 +264,9 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	///
   protected:
 	bool        					workLoopThread				(toolbox::task::WorkLoop* workLoop);
-	
+
 	std::string 									interfaceUID_, interfaceType_;
-	std::string                                     mfSubject_; ///< for __GEN_COUT__ decorations which would be safe in destructors, e.g. mirror interfaceUID_ 
+	std::string                                     mfSubject_; ///< for __GEN_COUT__ decorations which would be safe in destructors, e.g. mirror interfaceUID_
 
 	unsigned int 									universalAddressSize_ = 0;
 	unsigned int 									universalDataSize_    = 0;
@@ -276,20 +276,20 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	///
 	std::map<std::string, frontEndMacroStruct_t>	mapOfFEMacroFunctions_;  ///< Map of FE Macro functions members
 	void 							registerFEMacroFunction		(
-	    const std::string&              							feMacroName,
-	    frontEndMacroFunction_t         							feMacroFunction,
-	    const std::vector<std::string>& 							namesOfInputArgs,
-	    const std::vector<std::string>& 							namesOfOutputArgs,
-	    uint8_t            											requiredUserPermissions = 1 /*Level definition: 0:no-access,1:=user,255:=admin*/,
-	    const std::string& 											allowedCallingFEs = "*" /*StringMacros:: wild card set match string (i.e. string-to-set, then wild-card-set match)*/,
+		const std::string&              							feMacroName,
+		frontEndMacroFunction_t         							feMacroFunction,
+		const std::vector<std::string>& 							namesOfInputArgs,
+		const std::vector<std::string>& 							namesOfOutputArgs,
+		uint8_t            											requiredUserPermissions = 1 /*Level definition: 0:no-access,1:=user,255:=admin*/,
+		const std::string& 											allowedCallingFEs = "*" /*StringMacros:: wild card set match string (i.e. string-to-set, then wild-card-set match)*/,
 		const std::string&											feMacroTooltip = "");
 	void 							registerFEMacroFunction		(
-	    const std::string&              							feMacroName,
-	    frontEndMacroFunction_t         							feMacroFunction,
-	    const std::vector<std::string>& 							namesOfInputArgs,
-	    const std::vector<std::string>& 							namesOfOutputArgs,
-	    const std::string& 											requiredUserPermissions = WebUsers::DEFAULT_USER_GROUP + ":1" /*Level definition: 0:no-access,1:=user,255:=admin*/,
-	    const std::string& 											allowedCallingFEs = "*" /*StringMacros:: wild card set match string (i.e. string-to-set, then wild-card-set match)*/,
+		const std::string&              							feMacroName,
+		frontEndMacroFunction_t         							feMacroFunction,
+		const std::vector<std::string>& 							namesOfInputArgs,
+		const std::vector<std::string>& 							namesOfOutputArgs,
+		const std::string& 											requiredUserPermissions = WebUsers::DEFAULT_USER_GROUP + ":1" /*Level definition: 0:no-access,1:=user,255:=admin*/,
+		const std::string& 											allowedCallingFEs = "*" /*StringMacros:: wild card set match string (i.e. string-to-set, then wild-card-set match)*/,
 		const std::string&											feMacroTooltip = "");
 
   public:  ///< for external specialized template access
