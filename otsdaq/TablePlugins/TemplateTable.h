@@ -11,13 +11,13 @@ class TemplateTable : public TableBase
 	TemplateTable(void);
 	virtual ~TemplateTable(void);
 
-	// Methods
+	/// Methods
 	void init(ConfigurationManager* configManager);
 
-	// Getters
-
+	/// Getters
+	///
   private:
-	// Column names
+	/// Column names
 	struct ColTemplate
 	{
 		std::string const colColumnName_ = "ColumnName";

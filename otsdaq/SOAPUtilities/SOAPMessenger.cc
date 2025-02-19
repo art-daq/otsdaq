@@ -32,10 +32,10 @@ SOAPMessenger::SOAPMessenger(const SOAPMessenger& aSOAPMessenger)
 }
 
 //==============================================================================
-// in xdaq
-//    xdaq::ApplicationDescriptor* sourceptr;
-// void getURN()
-//
+/// in xdaq
+///    xdaq::ApplicationDescriptor* sourceptr;
+/// void getURN()
+///
 std::string SOAPMessenger::send(XDAQ_CONST_CALL xdaq::ApplicationDescriptor* ind,
                                 xoap::MessageReference                       message)
 

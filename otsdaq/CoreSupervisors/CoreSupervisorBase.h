@@ -36,18 +36,18 @@ namespace ots
 {
 // clang-format off
 
-// CoreSupervisorBase
-//	This class should be the base class for all client otsdaq, XDAQ-based, supervisors.
-//	That is, all supervisors that need web requests through the ots desktop
-//		with access verified by the Gateway Supervisor,
-//		or that need a state machines driven by the Gateway Supervisor.
+/// CoreSupervisorBase
+///	This class should be the base class for all client otsdaq, XDAQ-based, supervisors.
+///	That is, all supervisors that need web requests through the ots desktop
+///		with access verified by the Gateway Supervisor,
+///		or that need a state machines driven by the Gateway Supervisor.
 class CoreSupervisorBase : public xdaq::Application,
-                           public SOAPMessenger,
-                           public CorePropertySupervisorBase,
-                           public RunControlStateMachine
+						   public SOAPMessenger,
+						   public CorePropertySupervisorBase,
+						   public RunControlStateMachine
 {
-	friend class MacroMakerSupervisor;  // to allow MacroMakerSupervisor to call
-	                                    // requestWrapper in Macro Maker mode
+	friend class MacroMakerSupervisor;  ///< to allow MacroMakerSupervisor to call
+										///< requestWrapper in Macro Maker mode
 
   public:
 	CoreSupervisorBase(xdaq::ApplicationStub* stub);
@@ -56,22 +56,22 @@ class CoreSupervisorBase : public xdaq::Application,
 	void destroy(void);
 
 	unsigned int 					getSupervisorLID				(void) const { return getApplicationDescriptor()->getLocalId(); }
-	
 
-	// Here are the common web request handlers:
-	//	defaultPage returns the public html page
-	//	request checks the login before proceeding to virtual request
-	//		- All Supervisors should implement request for their actions (and they will
-	// get  the security wrapper for free)
-	//		- The security setting defaults can be setup or forced by overriding
-	// setSupervisorPropertyDefaults and forceSupervisorProperties
+
+	/// Here are the common web request handlers:
+	///	defaultPage returns the public html page
+	///	request checks the login before proceeding to virtual request
+	///		- All Supervisors should implement request for their actions (and they will
+	/// get  the security wrapper for free)
+	///		- The security setting defaults can be setup or forced by overriding
+	/// setSupervisorPropertyDefaults and forceSupervisorProperties
 	virtual void 					defaultPage						(xgi::Input* in, xgi::Output* out);
 	virtual void 					request							(const std::string&               requestType,
 																	cgicc::Cgicc&                    cgiIn,
 																	HttpXmlDocument&                 xmlOut,
 																	const WebUsers::RequestUserInfo& userInfo);
 	virtual void 					nonXmlRequest					(const std::string&               requestType,
-															   	   	cgicc::Cgicc&                    cgiIn,
+																	cgicc::Cgicc&                    cgiIn,
 																	std::ostream&                    out,
 																	const WebUsers::RequestUserInfo& userInfo);
 	virtual std::string 			getStatusProgressDetail			(void);
@@ -84,7 +84,7 @@ class CoreSupervisorBase : public xdaq::Application,
 	xoap::MessageReference 			TRACESupervisorRequest			(xoap::MessageReference message);
 
   public:
-	// State Machine request handlers
+	/// State Machine request handlers
 	void                   			stateMachineXgiHandler			(xgi::Input* in, xgi::Output* out);
 	xoap::MessageReference 			stateMachineXoapHandler			(xoap::MessageReference message);
 
@@ -124,7 +124,7 @@ class CoreSupervisorBase : public xdaq::Application,
 	toolbox::BSem               stateMachineSemaphore_;
 	std::vector<VStateMachine*> theStateMachineImplementation_;
 
-	// for managing transition iterations
+	/// for managing transition iterations
 	std::vector<bool> stateMachinesIterationDone_;
 	unsigned int      stateMachinesIterationWorkCount_;
 	unsigned int      subIterationWorkStateMachineIndex_;

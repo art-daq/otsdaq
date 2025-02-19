@@ -13,7 +13,7 @@ class MessageFacilityTable : public TableBase
 	MessageFacilityTable(void);
 	virtual ~MessageFacilityTable(void);
 
-	// Methods
+	/// Methods
 	void init(ConfigurationManager* configManager);
 
   private:

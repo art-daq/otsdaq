@@ -145,13 +145,13 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 
 	init();
 
-	__SUP_COUT__ << "Constructed. getpid()=" << getpid() <<
-		" gettid()=" << gettid() << __E__;
+	__SUP_COUT__ << "Constructed. getpid()=" << getpid() << " gettid()=" << gettid()
+	             << __E__;
 }  // end constructor
 
 //==============================================================================
-//	TODO: Lore needs to detect program quit through killall or ctrl+c so that Logbook
-// entry is made when ots is killed
+///	TODO: Lore needs to detect program quit through killall or ctrl+c so that Logbook
+/// entry is made when ots is killed
 GatewaySupervisor::~GatewaySupervisor(void)
 {
 	delete CorePropertySupervisorBase::theConfigurationManager_;
@@ -171,7 +171,7 @@ GatewaySupervisor::~GatewaySupervisor(void)
 }  // end destructor
 
 //==============================================================================
-//For Wizard Supervisor to call
+///For Wizard Supervisor to call
 void GatewaySupervisor::indicateOtsAlive(const CorePropertySupervisorBase* properties)
 {
 	CorePropertySupervisorBase::indicateOtsAlive(properties);
@@ -216,7 +216,6 @@ void GatewaySupervisor::init(void)
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				loadRemoteGatewaySettings(remoteGatewayApps_);
 			}
-
 
 			// start state changer UDP listener thread
 			std::thread(
@@ -272,8 +271,8 @@ void GatewaySupervisor::init(void)
 }  // end init()
 
 //==============================================================================
-// AppStatusWorkLoop
-//	child thread
+/// AppStatusWorkLoop
+///	child thread
 void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 {
 	sleep(5);  // wait for apps to get started
@@ -389,13 +388,15 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						               .getCurrentTransitionName(
 						                   theSupervisor->stateMachineLastCommandInput_)
 						         : (std::string("Uptime: ") +
-						            StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(
-						                theSupervisor->CorePropertySupervisorBase::
-						                    getSupervisorUptime())) +
+						            StringMacros::encodeURIComponent(
+						                StringMacros::getTimeDurationString(
+						                    theSupervisor->CorePropertySupervisorBase::
+						                        getSupervisorUptime())) +
 						            ", Time-in-state: " +
-						            StringMacros::encodeURIComponent(StringMacros::getTimeDurationString(
-						                theSupervisor->theStateMachine_
-						                    .getTimeInState()))));
+						            StringMacros::encodeURIComponent(
+						                StringMacros::getTimeDurationString(
+						                    theSupervisor->theStateMachine_
+						                        .getTimeInState()))));
 						// make sure broadcast message status is not being updated
 						std::lock_guard<std::mutex> lock(
 						    theSupervisor->broadcastCommandStatusUpdateMutex_);
@@ -1166,12 +1167,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 
 				xoap::MessageReference tempMessage =
 				    SOAPUtilities::makeSOAPMessageReference("ApplicationStatusRequest");
-				
+
 				__COUT_TYPE__(TLVL_DEBUG + 39)
 				    << __COUT_HDR__ << "tempMessage... "
 				    << SOAPUtilities::translate(tempMessage) << std::endl;
-				
-				
 
 				try
 				{
@@ -1207,7 +1206,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					if(progress.empty())
 						progress = "100";
 
-					detail = parameters.getValue("Detail");					
+					detail = parameters.getValue("Detail");
 					if(appInfo.isTypeConsoleSupervisor())
 					{
 						//parse detail
@@ -1245,7 +1244,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							__COUTVS__(36, closeTimePos);
 							theSupervisor->lastConsoleErr_ =
 							    parseDetail[3].substr(closeTimePos + 2);
-							size_t openTimePos                 = parseDetail[3].find('(');
+							size_t openTimePos = parseDetail[3].find('(');
 							__COUTVS__(36, openTimePos);
 							theSupervisor->lastConsoleErrTime_ = parseDetail[3].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
@@ -1378,15 +1377,18 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								try
 								{
 									theSupervisor->runControlMessageHandler(
-										SOAPUtilities::makeSOAPMessageReference(
-											RunControlStateMachine::ERROR_TRANSITION_NAME));
+									    SOAPUtilities::makeSOAPMessageReference(
+									        RunControlStateMachine::
+									            ERROR_TRANSITION_NAME));
 								}
 								catch(...)
 								{
 								}  //ignore any errors
 							}
-							else 
-								__COUT__ << "Ignoring that Console type supervisor crashed." << __E__;
+							else
+								__COUT__
+								    << "Ignoring that Console type supervisor crashed."
+								    << __E__;
 
 							break;  //only send one Error, then restart status loop
 						}
@@ -1401,17 +1403,18 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					}  //one more try to printout extra info
 					catch(const std::runtime_error& e)
 					{
-						__COUT_ERR__ << "Exception of type runtime_error message: " << e.what();
+						__COUT_ERR__ << "Exception of type runtime_error message: "
+						             << e.what();
 					}
 					catch(const std::exception& e)
 					{
-						__COUT_ERR__ << "Exception of type " << 
-							typeid(e).name() << " message: " << e.what();
+						__COUT_ERR__ << "Exception of type " << typeid(e).name()
+						             << " message: " << e.what();
 					}
 					catch(...)
 					{
 					}
-					
+
 					status                = SupervisorInfo::APP_STATUS_UNKNOWN;
 					progress              = "0";
 					detail                = "Unknown SOAP Message Error";
@@ -1501,8 +1504,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 }  // end AppStatusWorkLoop()
 
 //==============================================================================
-// GetRemoteGatewayIcons
-//	static function
+/// GetRemoteGatewayIcons
+///	static function
 void GatewaySupervisor::GetRemoteGatewayIcons(
     GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp,
     const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */
@@ -1596,9 +1599,9 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 }  //end GetRemoteGatewayIcons()
 
 //==============================================================================
-// SendRemoteGatewayCommand
-//	static function
-//		Format is FiniteStateMachineName,Command,Parameter(s)
+/// SendRemoteGatewayCommand
+///	static function
+///		Format is FiniteStateMachineName,Command,Parameter(s)
 void GatewaySupervisor::SendRemoteGatewayCommand(
     GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp,
     const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */
@@ -1679,9 +1682,9 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 }  //end SendRemoteGatewayCommand()
 
 //==============================================================================
-// CheckRemoteGatewayStatus
-//	static function
-//		Just need status, progress, and detail of ots::GatewaySupervisor extracted from GetRemoteGatewayStatus
+/// CheckRemoteGatewayStatus
+///	static function
+///		Just need status, progress, and detail of ots::GatewaySupervisor extracted from GetRemoteGatewayStatus
 void GatewaySupervisor::CheckRemoteGatewayStatus(
     GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp,
     const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */
@@ -1863,8 +1866,8 @@ catch(const std::runtime_error& e)
 }  //end CheckRemoteGatewayStatus() catch
 
 //==============================================================================
-// StateChangerWorkLoop
-//	child thread
+/// StateChangerWorkLoop
+///	child thread
 void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 {
 	ConfigurationTree configLinkNode =
@@ -2577,10 +2580,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 }  // end StateChangerWorkLoop()
 
 //==============================================================================
-// makeSystemLogEntry
-//	makes a logbook entry into all Logbook supervisors
-//		and specifically the current active experiments within the logbook
-//	escape entryText to make it html/xml safe!!
+/// makeSystemLogEntry
+///	makes a logbook entry into all Logbook supervisors
+///		and specifically the current active experiments within the logbook
+///	escape entryText to make it html/xml safe!!
 ////      reserved: ", ', &, <, >, \n, double-space
 void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText,
                                            const std::string& subjectText /* = "" */)
@@ -2750,9 +2753,9 @@ void GatewaySupervisor::XGI_Turtle(xgi::Input* /*in*/, xgi::Output* out)
 }  //end XGI_Turtle()
 
 //==============================================================================
-// stateMachineIterationBreakpoint
-//		get/set the state machine iteration breakpoint
-//		If the iteration index >= breakpoint, then pause.
+/// stateMachineIterationBreakpoint
+///		get/set the state machine iteration breakpoint
+///		If the iteration index >= breakpoint, then pause.
 void GatewaySupervisor::stateMachineIterationBreakpoint(xgi::Input* in, xgi::Output* out)
 try
 {
@@ -3657,11 +3660,11 @@ xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(
 }  // end stateMachineXoapHandler()
 
 //==============================================================================
-// stateMachineThread
-//		This asynchronously sends the xoap message to its own RunControlStateMachine
-//			(that the Gateway inherits from), which then calls the Gateway
-//			transition functions and eventually the broadcast to transition the global
-// state  machine.
+/// stateMachineThread
+///		This asynchronously sends the xoap message to its own RunControlStateMachine
+///			(that the Gateway inherits from), which then calls the Gateway
+///			transition functions and eventually the broadcast to transition the global
+/// state  machine.
 bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 {
 	stateMachineSemaphore_.take();
@@ -5580,11 +5583,11 @@ catch(...)
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 //==============================================================================
-// handleBroadcastMessageTarget
-//	Sends message and gets reply
-//	Handles sub-iterations at same target
-//		if failure, THROW state machine exception
-//	returns true if iterations are done, else false
+/// handleBroadcastMessageTarget
+///	Sends message and gets reply
+///	Handles sub-iterations at same target
+///		if failure, THROW state machine exception
+///	returns true if iterations are done, else false
 bool GatewaySupervisor::handleBroadcastMessageTarget(const SupervisorInfo&  appInfo,
                                                      xoap::MessageReference message,
                                                      const std::string&     command,
@@ -5925,9 +5928,9 @@ catch(...)
 }
 
 //==============================================================================
-// broadcastMessageThread
-//	Sends transition command message and gets reply
-//		if failure, THROW
+/// broadcastMessageThread
+///	Sends transition command message and gets reply
+///		if failure, THROW
 void GatewaySupervisor::broadcastMessageThread(
     GatewaySupervisor*                                        supervisorPtr,
     std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct)
@@ -5996,10 +5999,10 @@ void GatewaySupervisor::broadcastMessageThread(
 }  // end broadcastMessageThread()
 
 //==============================================================================
-// broadcastMessage
-//	Broadcast state transition to all xdaq Supervisors and remote Gateway Supervisors.
-//		- Transition in order of, remote Gateways first, then priority as given by AllSupervisorInfo
-//	Update Supervisor Info based on result of transition.
+/// broadcastMessage
+///	Broadcast state transition to all xdaq Supervisors and remote Gateway Supervisors.
+///		- Transition in order of, remote Gateways first, then priority as given by AllSupervisorInfo
+///	Update Supervisor Info based on result of transition.
 void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 {
 	{  // create lock scope and clear status
@@ -6552,10 +6555,10 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 }  // end broadcastMessageToRemoteGatewaysComplete()
 
 //==============================================================================
-// LoginRequest
-//  handles all users login/logout actions from web GUI.
-//  NOTE: there are two ways for a user to be logged out: timeout or manual logout
-//      System logbook messages are generated for login and logout
+/// LoginRequest
+///  handles all users login/logout actions from web GUI.
+///  NOTE: there are two ways for a user to be logged out: timeout or manual logout
+///      System logbook messages are generated for login and logout
 void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 {
 	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
@@ -6981,9 +6984,9 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 }  // end tooltipRequest()
 
 //==============================================================================
-// setSupervisorPropertyDefaults
-//		override to set defaults for supervisor property values (before user settings
-// override)
+/// setSupervisorPropertyDefaults
+///		override to set defaults for supervisor property values (before user settings
+/// override)
 void GatewaySupervisor::setSupervisorPropertyDefaults()
 {
 	CorePropertySupervisorBase::setSupervisorProperty(
@@ -7004,8 +7007,8 @@ void GatewaySupervisor::setSupervisorPropertyDefaults()
 }  // end setSupervisorPropertyDefaults()
 
 //==============================================================================
-// forceSupervisorPropertyValues
-//		override to force supervisor property values (and ignore user settings)
+/// forceSupervisorPropertyValues
+///		override to force supervisor property values (and ignore user settings)
 void GatewaySupervisor::forceSupervisorPropertyValues()
 {
 	// note used by these handlers:
@@ -8808,10 +8811,10 @@ void GatewaySupervisor::addRequiredFsmLogInputToXML(HttpXmlDocument&   xmlOut,
 		{
 			// clang-format off
 			try //ignore errors
-			{ 
+			{
 				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
 				try { requireUserLogInputOnConfigure = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnConfigureTransition not set."; }
-				try { requireUserLogInputOnRun = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnRunTransition not set."; }				
+				try { requireUserLogInputOnRun = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnRunTransition not set."; }
 			}
 			catch(...)
 			{ __SUP_COUTT__ << "Settings not set for fsm name = " << fsmName << __E__; }
@@ -9024,10 +9027,10 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(HttpXmlDocument&   xmlOut,
 }  //end addFilteredConfigAliasesToXML()
 
 //==============================================================================
-// launchStartOneServerCommand
-//	static function (so WizardSupervisor can use it)
-//	throws exception if command fails to start a server
-// Note: to get the Gateway's Context name: getContextUID()
+/// launchStartOneServerCommand
+///	static function (so WizardSupervisor can use it)
+///	throws exception if command fails to start a server
+/// Note: to get the Gateway's Context name: getContextUID()
 void GatewaySupervisor::launchStartOneServerCommand(const std::string&    command,
                                                     ConfigurationManager* cfgMgr,
                                                     const std::string&    contextName)
@@ -9111,9 +9114,9 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 }  // end launchStartOneServerCommand
 
 //==============================================================================
-// launchStartOTSCommand
-//	static function (so WizardSupervisor can use it)
-//	throws exception if command fails to start
+/// launchStartOTSCommand
+///	static function (so WizardSupervisor can use it)
+///	throws exception if command fails to start
 void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
                                               ConfigurationManager* cfgMgr)
 {
@@ -9203,8 +9206,8 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 }  // end launchStartOTSCommand
 
 //==============================================================================
-// xoap::supervisorCookieCheck
-//	verify cookie
+/// xoap::supervisorCookieCheck
+///	verify cookie
 xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
     xoap::MessageReference message)
 
@@ -9261,8 +9264,8 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 }  // end supervisorCookieCheck()
 
 //==============================================================================
-// xoap::supervisorGetActiveUsers
-//	get display names for all active users
+/// xoap::supervisorGetActiveUsers
+///	get display names for all active users
 xoap::MessageReference GatewaySupervisor::supervisorGetActiveUsers(
     xoap::MessageReference /*message*/)
 {
@@ -9273,10 +9276,10 @@ xoap::MessageReference GatewaySupervisor::supervisorGetActiveUsers(
 }  // end supervisorGetActiveUsers()
 
 //==============================================================================
-// xoap::supervisorSystemMessage
-//	SOAPUtilities::receive a new system Message from a supervisor
-//	ToUser wild card * is to all users
-//	or comma-separated variable  (CSV) to multiple users
+/// xoap::supervisorSystemMessage
+///	SOAPUtilities::receive a new system Message from a supervisor
+///	ToUser wild card * is to all users
+///	or comma-separated variable  (CSV) to multiple users
 xoap::MessageReference GatewaySupervisor::supervisorSystemMessage(
     xoap::MessageReference message)
 {
@@ -9310,9 +9313,9 @@ void GatewaySupervisor::addSystemMessage(std::string toUserCSV, std::string mess
 }  //end addSystemMessage
 
 //===================================================================================================================
-// xoap::supervisorSystemLogbookEntry
-//	SOAPUtilities::receive a new system Message from a supervisor
-//	ToUser wild card * is to all users
+/// xoap::supervisorSystemLogbookEntry
+///	SOAPUtilities::receive a new system Message from a supervisor
+///	ToUser wild card * is to all users
 xoap::MessageReference GatewaySupervisor::supervisorSystemLogbookEntry(
     xoap::MessageReference message)
 {
@@ -9328,10 +9331,10 @@ xoap::MessageReference GatewaySupervisor::supervisorSystemLogbookEntry(
 }  //end supervisorSystemLogbookEntry()
 
 //===================================================================================================================
-// supervisorLastTableGroupRequest
-//	return the group name and key for the last state machine activity
-//
-//	Note: same as OtsConfigurationWizardSupervisor::supervisorLastTableGroupRequest
+/// supervisorLastTableGroupRequest
+///	return the group name and key for the last state machine activity
+///
+///	Note: same as OtsConfigurationWizardSupervisor::supervisorLastTableGroupRequest
 xoap::MessageReference GatewaySupervisor::supervisorLastTableGroupRequest(
     xoap::MessageReference message)
 {
@@ -9343,11 +9346,11 @@ xoap::MessageReference GatewaySupervisor::supervisorLastTableGroupRequest(
 }  //end supervisorLastTableGroupRequest()
 
 //===================================================================================================================
-// xoap::lastTableGroupRequestHandler
-//	handles last config group request.
-//	called by both:
-//		GatewaySupervisor::supervisorLastTableGroupRequest
-//		OtsConfigurationWizardSupervisor::supervisorLastTableGroupRequest
+/// xoap::lastTableGroupRequestHandler
+///	handles last config group request.
+///	called by both:
+///		GatewaySupervisor::supervisorLastTableGroupRequest
+///		OtsConfigurationWizardSupervisor::supervisorLastTableGroupRequest
 xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(
     const SOAPParameters& parameters)
 {
@@ -9431,12 +9434,12 @@ xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(
 }  //end lastTableGroupRequestHandler()
 
 //==============================================================================
-// getNextRunNumber
-//
-//	If fsmName is passed, then get next run number for that FSM name
-//	Else get next run number for the active FSM name, activeStateMachineName_
-//
-// 	Note: the FSM name is sanitized of special characters and used in the filename.
+/// getNextRunNumber
+///
+///	If fsmName is passed, then get next run number for that FSM name
+///	Else get next run number for the active FSM name, activeStateMachineName_
+///
+/// 	Note: the FSM name is sanitized of special characters and used in the filename.
 unsigned int GatewaySupervisor::getNextRunNumber(const std::string& fsmNameIn)
 {
 	std::string runNumberFileName = RUN_NUMBER_PATH + "/";
@@ -9502,12 +9505,12 @@ void GatewaySupervisor::setNextRunNumber(unsigned int       runNumber,
 }  // end setNextRunNumber()
 
 //==============================================================================
-// getLastLogEntry
-//
-//	If fsmName is passed, then get last log entry for that FSM name and transition type
-//	Else for the active FSM name, activeStateMachineName_
-//
-// 	Note: the FSM name is sanitized of special characters and used in the filename.
+/// getLastLogEntry
+///
+///	If fsmName is passed, then get last log entry for that FSM name and transition type
+///	Else for the active FSM name, activeStateMachineName_
+///
+/// 	Note: the FSM name is sanitized of special characters and used in the filename.
 std::string GatewaySupervisor::getLastLogEntry(const std::string& logType,
                                                const std::string& fsmNameIn /* = "" */)
 {
@@ -9564,12 +9567,12 @@ std::string GatewaySupervisor::getLastLogEntry(const std::string& logType,
 }  // end getLastLogEntry()
 
 //==============================================================================
-// setLastLogEntry
-//
-//	If fsmName is passed, then get last log entry for that FSM name and transition type
-//	Else for the active FSM name, activeStateMachineName_
-//
-// 	Note: the FSM name is sanitized of special characters and used in the filename.
+/// setLastLogEntry
+///
+///	If fsmName is passed, then get last log entry for that FSM name and transition type
+///	Else for the active FSM name, activeStateMachineName_
+///
+/// 	Note: the FSM name is sanitized of special characters and used in the filename.
 void GatewaySupervisor::setLastLogEntry(const std::string& logType,
                                         const std::string& logEntry,
                                         const std::string& fsmNameIn /* = "" */)
@@ -9615,12 +9618,12 @@ void GatewaySupervisor::setLastLogEntry(const std::string& logType,
 }  // end setLastLogEntry()
 
 //==============================================================================
-// loadRemoteGatewaySettings
-//
-//	 If editing remoteGatewayApps_, assume already locked remoteGatewayAppsMutex_
-//
-//	Load from file into vector of Remote Gateways passed by reference.
-//	onlyNotFound := load only settings for remoteGateways not currently in vector (keep existing settings, e.g. right before a save)
+/// loadRemoteGatewaySettings
+///
+///	 If editing remoteGatewayApps_, assume already locked remoteGatewayAppsMutex_
+///
+///	Load from file into vector of Remote Gateways passed by reference.
+///	onlyNotFound := load only settings for remoteGateways not currently in vector (keep existing settings, e.g. right before a save)
 void GatewaySupervisor::loadRemoteGatewaySettings(
     std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways,
     bool                                               onlyNotFound /* = false */) const

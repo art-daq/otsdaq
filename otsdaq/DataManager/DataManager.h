@@ -19,9 +19,9 @@ class DataProducerBase;
 class DataConsumer;
 class CircularBufferBase;
 
-// DataManager
-//	This class is the base class that handles a collection of Buffers and associated Data
-// Processor plugins.
+/// DataManager
+///	This class is the base class that handles a collection of Buffers and associated Data
+/// Processor plugins.
 class DataManager : public Configurable, public VStateMachine
 {
   public:
@@ -29,7 +29,7 @@ class DataManager : public Configurable, public VStateMachine
 	            const std::string&       supervisorConfigurationPath);
 	virtual ~DataManager(void);
 
-	// State Machine Methods
+	/// State Machine Methods
 	virtual void configure(void);
 	virtual void halt(void);
 	virtual void pause(void);
@@ -44,28 +44,29 @@ class DataManager : public Configurable, public VStateMachine
 		buffers_[bufferUID].status_ = Initialized;
 	}
 
-	void registerProducer(const std::string& bufferUID,
-	                      DataProducerBase*  producer);  // The data manager becomes the
-	                                                    // owner of the producer object!
-	void registerConsumer(const std::string& bufferUID,
-	                      DataConsumer* consumer);  // The data manager becomes the owner
-	                                                // of the consumer object!
+	void registerProducer(
+	    const std::string& bufferUID,
+	    DataProducerBase*
+	        producer);  ///< The data manager becomes the owner of the producer object!
+	void registerConsumer(
+	    const std::string& bufferUID,
+	    DataConsumer*
+	        consumer);  ///< The data manager becomes the owner of the consumer object!
 
 	void unregisterFEProducer(const std::string& bufferID,
 	                          const std::string& feProducerID);
 
-	// void unregisterConsumer		(const std::string& bufferID, const std::string&
-	// consumerID);  void unregisterProducer		(const std::string& bufferID, const
-	// std::string& producerID);
-
+	/// void unregisterConsumer		(const std::string& bufferID, const std::string&
+	/// consumerID);  void unregisterProducer		(const std::string& bufferID, const
+	/// std::string& producerID);
+	///
 	void dumpStatus(std::ostream* out = (std::ostream*)&(std::cout)) const;
 
   protected:
-	void destroyBuffers(void);  //!!!!!Delete all Buffers and all the pointers of the
-	                            //! producers and consumers
-	// void destroyBuffer     		(const std::string& bufferUID);//!!!!!Delete all the
-	// pointers of the producers and consumers
-
+	void destroyBuffers(
+	    void);  ///<!!!!!Delete all Buffers and all the pointers of the producers and consumers
+	// void destroyBuffer     		(const std::string& bufferUID);//!!!!!Delete all the pointers of the producers and consumers
+	///
 	void configureAllBuffers(void);
 	void startAllBuffers(const std::string& runNumber);
 	void stopAllBuffers(void);
@@ -96,9 +97,9 @@ class DataManager : public Configurable, public VStateMachine
 	    buffers_;
 
   public:
-	bool parentSupervisorHasFrontends_;  // if parent supervisor has front-ends, then
-	                                     // allow no producers... that will be checked
-	                                     // later by parent supervisor
+	bool parentSupervisorHasFrontends_;  ///< if parent supervisor has front-ends, then
+	                                     ///< allow no producers... that will be checked
+	                                     ///< later by parent supervisor
 
 	const std::map<std::string /*dataBufferId*/, Buffer>& getBuffers(void) const
 	{

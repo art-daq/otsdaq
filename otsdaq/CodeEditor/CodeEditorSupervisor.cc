@@ -30,9 +30,9 @@ void CodeEditorSupervisor::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
 }  // end defaultPage()
 
 //==============================================================================
-// setSupervisorPropertyDefaults
-//		override to set defaults for supervisor property values (before user settings
-// override)
+/// setSupervisorPropertyDefaults
+///		override to set defaults for supervisor property values (before user settings
+/// override)
 void CodeEditorSupervisor::setSupervisorPropertyDefaults()
 {
 	CorePropertySupervisorBase::setSupervisorProperty(
@@ -42,8 +42,8 @@ void CodeEditorSupervisor::setSupervisorPropertyDefaults()
 }  // end setSupervisorPropertyDefaults()
 
 //==============================================================================
-// forceSupervisorPropertyValues
-//		override to force supervisor property values (and ignore user settings)
+/// forceSupervisorPropertyValues
+///		override to force supervisor property values (and ignore user settings)
 void CodeEditorSupervisor::forceSupervisorPropertyValues()
 {
 	CorePropertySupervisorBase::setSupervisorProperty(
@@ -56,9 +56,9 @@ void CodeEditorSupervisor::forceSupervisorPropertyValues()
 }  // end forceSupervisorPropertyValues()
 
 //==============================================================================
-//	Request
-//		Handles Web Interface requests to Console supervisor.
-//		Does not refresh cookie for automatic update checks.
+///	Request
+///		Handles Web Interface requests to Console supervisor.
+///		Does not refresh cookie for automatic update checks.
 void CodeEditorSupervisor::request(const std::string&               requestType,
                                    cgicc::Cgicc&                    cgiIn,
                                    HttpXmlDocument&                 xmlOut,

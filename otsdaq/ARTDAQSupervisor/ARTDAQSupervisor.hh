@@ -19,8 +19,8 @@
 
 namespace ots
 {
-// ARTDAQSupervisor
-//	This class provides the otsdaq Supervisor interface to a single artdaq Data Logger.
+/// ARTDAQSupervisor
+///	This class provides the otsdaq Supervisor interface to a single artdaq Data Logger.
 class ARTDAQSupervisor : public CoreSupervisorBase
 {
   public:

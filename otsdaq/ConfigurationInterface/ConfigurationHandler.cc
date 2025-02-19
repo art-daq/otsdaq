@@ -35,8 +35,8 @@ using namespace ots;
 #undef __COUT_HDR__
 #define __COUT_HDR__ "ConfigHandler"
 
-// The tag values must be given after the XML platform is initialized so they are defined
-// in initPlatform
+/// The tag values must be given after the XML platform is initialized so they are defined
+/// in initPlatform
 XMLCh* ConfigurationHandler::rootTag_               = 0;
 XMLCh* ConfigurationHandler::headerTag_             = 0;
 XMLCh* ConfigurationHandler::typeTag_               = 0;
@@ -257,7 +257,7 @@ void ConfigurationHandler::readXML(TableBase& table, TableVersion version)
 	parser->setDoSchema(
 	    false);  // RAR set to false to get rid of "error reading primary document *.xsd"
 	             // uses if true:
-	    // rootElement->setAttribute(CONVERT_TO_XML("xsi:noNamespaceSchemaLocation"),CONVERT_TO_XML("TableBase.xsd"));
+	// rootElement->setAttribute(CONVERT_TO_XML("xsi:noNamespaceSchemaLocation"),CONVERT_TO_XML("TableBase.xsd"));
 	parser->useCachedGrammarInParse(false);
 	DOMTreeErrorReporter* errorHandler = new DOMTreeErrorReporter();
 	parser->setErrorHandler(errorHandler);
@@ -683,8 +683,8 @@ std::string ConfigurationHandler::writeXML(const TableBase& table)
 	return configFile;
 }
 
-//    return errorCode;
-
+///    return errorCode;
+///
 //==============================================================================
 void ConfigurationHandler::outputXML(xercesc::DOMDocument* pmyDOMDocument,
                                      std::string           fileName)

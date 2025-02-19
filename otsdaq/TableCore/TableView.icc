@@ -25,10 +25,10 @@ unsigned int TableView::findRowInGroup(unsigned int       col,
 }  // end findRowInGroup<T>()
 
 //==============================================================================
-// Philosophy: force type validation by passing value to fill by reference..
-//	do not allow string to be returned.. (at least not easily)
-// Since there is no environmental variable that can just be a number they will all be
-// converted no matter what.
+/// Philosophy: force type validation by passing value to fill by reference..
+///	do not allow string to be returned.. (at least not easily)
+/// Since there is no environmental variable that can just be a number they will all be
+/// converted no matter what.
 template<class T>
 void TableView::getValue(T&           value,
                          unsigned int row,
@@ -46,11 +46,11 @@ void TableView::getValue(T&           value,
 }  // end getValue<T>()
 
 //==============================================================================
-// validateValueForColumn
-//	validates value against data rules for specified column.
-//	throws exception if invalid.
-//
-//	on success returns what the value would be for get value
+/// validateValueForColumn
+///	validates value against data rules for specified column.
+///	throws exception if invalid.
+///
+///	on success returns what the value would be for get value
 template<class T>
 T TableView::validateValueForColumn(const std::string& value,
                                     unsigned int       col,
@@ -236,7 +236,7 @@ void TableView::setVersion(const T& version)
 }  // end setVersion<>()
 
 //==============================================================================
-// These two methods check for basic type consistency
+/// These two methods check for basic type consistency
 template<class T>
 void TableView::setValue(const T& value, unsigned int row, unsigned int col)
 {

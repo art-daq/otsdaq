@@ -179,7 +179,7 @@ unsigned int ARTDAQDispatcherTable::slowControlsHandlerConfig(
 }  // end slowControlsHandlerConfig()
 
 //==============================================================================
-// return out file path
+/// return out file path
 std::string ARTDAQDispatcherTable::setFilePath() const
 {
 	return SLOWCONTROL_PV_FILE_PATH;

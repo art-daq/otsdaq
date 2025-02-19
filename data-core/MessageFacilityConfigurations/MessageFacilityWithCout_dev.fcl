@@ -1,13 +1,13 @@
-console : { 
- 	type : 					OTS 
- 	threshold : 			DEBUG
+console : {
+	type : 					OTS
+	threshold : 			DEBUG
 	filename_delimit: 		"/srcs/"
 	format_string: 			"|%T:%L:%N: %f:%u |\t%m"
 }
 
 #file: {
-#	type: "file" 
-#	filename: "/dev/null" 
+#	type: "file"
+#	filename: "/dev/null"
 #}
 file:""
 udp : {}

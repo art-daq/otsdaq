@@ -31,7 +31,7 @@ class VisualDataManager : public DataManager
 	void stop(void) override;
 
 	void load(std::string fileName, std::string type);
-	// Getters
+	/// Getters
 	const std::vector<DQMHistosBase*>& getLiveDQMs(void) { return theLiveDQMs_; };
 
 	void   setDoNotStop(bool doNotStop) { doNotStop_ = doNotStop; }
@@ -39,8 +39,8 @@ class VisualDataManager : public DataManager
 	TFile* openFile(std::string fileName);
 
 	bool               getLiveDQMHistos(void);
-	DQMHistosBase&     getFileDQMHistos(void);  // TO BE DELETED
-	const std::string& getRawData(void);        // TO BE DELETED
+	DQMHistosBase&     getFileDQMHistos(void);  ///< TO BE DELETED
+	const std::string& getRawData(void);        ///< TO BE DELETED
 	    // const Visual3DEvents&   getVisual3DEvents   (void);
 	    // const Visual3DGeometry& getVisual3DGeometry (void);
 
@@ -53,8 +53,8 @@ class VisualDataManager : public DataManager
 	// MonicelliGeometryConverter theMonicelliGeometryConverter_;
 	// Visual3DData           the3DData_;
 
-	bool          theLiveDQMHistos_;  // TO BE DELETED
-	DQMHistosBase theFileDQMHistos_;  // TO BE DELETED
+	bool          theLiveDQMHistos_;  ///< TO BE DELETED
+	DQMHistosBase theFileDQMHistos_;  ///< TO BE DELETED
 };
 }  // namespace ots
 

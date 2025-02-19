@@ -8,7 +8,7 @@ run_number: 101
 fragment_receiver: {
 
    # Parameters defining and configuring the fragment generator to be used
-   		    
+
    generator: UDPReceiver
    fragment_type: UDP        # Make sure downstream modules know about this fragment_type!
 
@@ -19,7 +19,7 @@ fragment_receiver: {
    board_id: 0
    board_port: 3000
    board_address: "127.0.0.1"
-}  		  
+}
 
 event_builder: {
 
@@ -87,6 +87,3 @@ resume_after_timeout: true
 }
 
 process_name: Driver
-
-
-

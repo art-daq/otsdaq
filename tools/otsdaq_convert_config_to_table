@@ -21,9 +21,9 @@ echo -e `date +"%h%y %T"` "convert_config_to_table.sh [${LINENO}]  \t You must h
 return  >/dev/null 2>&1 #return is used if script is sourced
 
 echo
-echo	
+echo
 echo -e `date +"%h%y %T"` "convert_config_to_table.sh [${LINENO}]  \t Checking environment..."
-		
+
 if [[ "x$USER_DATA" == "x" ]]; then
 	echo -e `date +"%h%y %T"` "convert_config_to_table.sh [${LINENO}]  \t USER_DATA environment variable must be setup. Is your ots instance setup?"
 	exit
@@ -34,7 +34,7 @@ if [ ! -d $TABLE_DIR ]; then
 	echo -e `date +"%h%y %T"` "convert_config_to_table.sh [${LINENO}]  \t TABLE_DIR=${TABLE_DIR} path does not exist. Is your ots instance setup? Perhaps you already did this conversion?"
 	#exit
 fi
-	
+
 NEW_TABLE_DIR=$USER_DATA/TableInfo
 if [ -d $NEW_TABLE_DIR ]; then
 	echo -e `date +"%h%y %T"` "convert_config_to_table.sh [${LINENO}]  \t NEW_TABLE_DIR=${NEW_TABLE_DIR} path already exists. Perhaps you already did this conversion?"
@@ -44,7 +44,7 @@ fi
 echo
 echo
 
-ARTDAQ_DATABASE_DIR=`echo ${ARTDAQ_DATABASE_URI}|sed 's|.*//|/|'`	
+ARTDAQ_DATABASE_DIR=`echo ${ARTDAQ_DATABASE_URI}|sed 's|.*//|/|'`
 
 
 if [[ "x$ARTDAQ_DATABASE_DIR" == "x" ]]; then
@@ -80,7 +80,7 @@ mv $TABLE_DIR $NEW_TABLE_DIR
 cd $NEW_TABLE_DIR
 
 echo -e `date +"%h%y %T"` "convert_config_to_table.sh [${LINENO}]  \t Renaming Table Info files..."
-for f in *ConfigurationInfo.xml; do [ -f "$f" ] && mv -- "$f" "${f/ConfigurationInfo.xml}TableInfo.xml"; echo $f; done; 
+for f in *ConfigurationInfo.xml; do [ -f "$f" ] && mv -- "$f" "${f/ConfigurationInfo.xml}TableInfo.xml"; echo $f; done;
 
 mv ConfigurationInfo.xsd TableInfo.xsd
 
@@ -122,7 +122,7 @@ echo -e `date +"%h%y %T"` "convert_config_to_table.sh [${LINENO}]  \t Renaming T
 for f in *Configuration; do [ -f "$f" ]; rm -rf "${f/Configuration}Table"; mv -- "$f" "${f/Configuration}Table"; done;
 
 #hide index from transformation
-for f in *Table; do mv -n "$f/index.json" "$f/index.txt"; done; 
+for f in *Table; do mv -n "$f/index.json" "$f/index.txt"; done;
 
 sed -i s/Configuration/Table/g *Table/*.json #*/ end C++ comment coloring
 sed -i s/CONFIGURATION/TABLE/g *Table/*.json #*/ end C++ comment coloring
@@ -140,7 +140,7 @@ sed -i s/TableDump/ConfigurationDump/g *Table/*.json #*/ end C++ comment colorin
 
 
 #return index after transformation
-for f in *Table; do mv -n "$f/index.txt" "$f/index.json"; done; 
+for f in *Table; do mv -n "$f/index.txt" "$f/index.json"; done;
 
 
 #convert TheSupervisor to GatewaySupervisor
@@ -194,15 +194,15 @@ REPO_DIR="$(find $OTS_SOURCE/* -maxdepth 1 -iname 'otsdaq*')"
 
 
 for p in ${REPO_DIR[@]}; do
-	if [ -d $p ]; then    
+	if [ -d $p ]; then
 	if [ -d $p/ConfigurationPluginDataFormats ]; then
 		echo -e `date +"%h%y %T"` "convert_config_to_table.sh [${LINENO}]  \t Plugin directory $p/ConfigurationPluginDataFormats"
-		
+
 		cd $p/ConfigurationPluginDataFormats
-		
+
 		for f in *Configuration*.cc ; do mv $f ${f//configuration/table} ; done
 		for f in *Configuration* ; do mv $f ${f//Configuration/Table} ; done
-		
+
 		sed -i s/Configuration/Table/g *Table*;
 		sed -i s/CONFIGURATION/TABLE/g *Table*;
 		sed -i s/configuration/table/g *Table*;
@@ -219,25 +219,25 @@ for p in ${REPO_DIR[@]}; do
 		sed -i s/XMLTable-30/XMLConfiguration-30/g *Table*;
 		sed -i s/TableGUI/ConfigurationGUI/g *Table*;
 		sed -i s/TableSubset/ConfigurationSubset/g *Table*;
-		
-		
+
+
 		sed -i s/"configuration"/"table"/g CMakeLists.txt;
 		sed -i s/Configuration/Table/g CMakeLists.txt;
 		sed -i s/TableInterface/ConfigurationInterface/g CMakeLists.txt;
-		
+
 		cd ..
 		mv $p/ConfigurationPluginDataFormats $p/TablePluginDataFormats
 	fi
-	
+
 
 	if [ -d $p/UserConfigurationDataFormats ]; then
 		echo -e `date +"%h%y %T"` "convert_config_to_table.sh [${LINENO}]  \t Plugin directory $p/UserConfigurationDataFormats"
-		
+
 		cd $p/UserConfigurationDataFormats
-		
+
 		for f in *Configuration*.cc ; do mv $f ${f//configuration/table} ; done
 		for f in *Configuration* ; do mv $f ${f//Configuration/Table} ; done
-		
+
 		sed -i s/Configuration/Table/g *Table*;
 		sed -i s/CONFIGURATION/TABLE/g *Table*;
 		sed -i s/configuration/table/g *Table*;
@@ -252,16 +252,16 @@ for p in ${REPO_DIR[@]}; do
 		sed -i s/XDAQ_TABLE_DATA_PATH/XDAQ_CONFIGURATION_DATA_PATH/g *Table*;
 		sed -i s/XDAQ_TABLE_XML/XDAQ_CONFIGURATION_XML/g *Table*;
 		sed -i s/XMLTable-30/XMLConfiguration-30/g *Table*;
-		
-		
+
+
 		sed -i s/"configuration"/"table"/g CMakeLists.txt;
 		sed -i s/Configuration/Table/g CMakeLists.txt;
 		sed -i s/TableInterface/ConfigurationInterface/g CMakeLists.txt;
-		
+
 		cd ..
 		mv $p/UserConfigurationDataFormats $p/UserTableDataFormats
 	fi
-	
+
 	fi
 done
 

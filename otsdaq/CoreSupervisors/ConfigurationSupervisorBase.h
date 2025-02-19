@@ -10,8 +10,8 @@ namespace ots
 {
 // clang-format off
 
-// ConfigurationSupervisorBase
-//	This class provides supervisor level features for manipulating the configuration
+/// ConfigurationSupervisorBase
+///	This class provides supervisor level features for manipulating the configuration
 class ConfigurationSupervisorBase
 {
 public:
@@ -71,15 +71,15 @@ public:
 	static void					recursiveCopyTreeUIDNode	(
 										HttpXmlDocument&        xmlOut,
 										ConfigurationManagerRW* cfgMgr,
-										std::map<std::string /*modified table*/, TableVersion /* modified version */>& modifiedTablesMap,										
+										std::map<std::string /*modified table*/, TableVersion /* modified version */>& modifiedTablesMap,
 										const unsigned int 		startingDepth,
 										const unsigned int      depth,
 										const unsigned int 		numberOfInstances,
 										TableView*				cfgView,
 										const std::string&		uidToCopy
 										);
-	
-	
+
+
 };
 
 // clang-format on

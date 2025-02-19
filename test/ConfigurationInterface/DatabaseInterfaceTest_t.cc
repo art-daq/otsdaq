@@ -74,7 +74,7 @@ struct TestData
 	artdaq::database::configuration::debug::enableDBOperationMongo();
 	artdaq::database::configuration::debug::enableDBOperationFileSystem();
 
-//    debug::registerUngracefullExitHandlers();
+///    debug::registerUngracefullExitHandlers();
 	artdaq::database::dataformats::useFakeTime(true);
  */
 		std::cout << "setup fixture\n";

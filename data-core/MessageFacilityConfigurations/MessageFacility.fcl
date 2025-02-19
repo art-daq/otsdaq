@@ -1,12 +1,12 @@
-udp: { 
-	type: 					UDP 
-	threshold: 				DEBUG 
+udp: {
+	type: 					UDP
+	threshold: 				DEBUG
 	filename_delimit: 		"/tdaq-v"
-	port: 					30000 
-	host: 					"127.0.0.1" 
+	port: 					30000
+	host: 					"127.0.0.1"
 }
 
-console: { 
+console: {
 	type: 					OTS
 	threshold: 				DEBUG
 	filename_delimit: 		"/tdaq-v"
@@ -14,8 +14,7 @@ console: {
 }
 
 #file: {
-#	type: "file" 
-#	filename: "/dev/null" 
+#	type: "file"
+#	filename: "/dev/null"
 #}
 file:""
-

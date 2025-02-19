@@ -15,18 +15,18 @@ namespace ots
 typedef std::map<unsigned int, const SupervisorInfo&> SupervisorInfoMap;
 
 ////// class define
-// AllSupervisorInfo
-//	xdaq Supervisors can use this class to gain access to
-//	info for all supervisors in the xdaq Context. Supervisors
-//	are organized by type/class. Note that if a supervisor is
-//	encountered in the xdaq context that is of unknown type, then
-//	it is ignored and not organized.
-//
-//	Supervisors should call init to setup data members of this class.
-//
-//	This class, when in normal mode, also interprets the active configuration
-//	to associate configuration UID/names to the supervisors in the xdaq context.
-//	In wizard mode, UID/name is taken from class name.
+/// AllSupervisorInfo
+///	xdaq Supervisors can use this class to gain access to
+///	info for all supervisors in the xdaq Context. Supervisors
+///	are organized by type/class. Note that if a supervisor is
+///	encountered in the xdaq context that is of unknown type, then
+///	it is ignored and not organized.
+///
+///	Supervisors should call init to setup data members of this class.
+///
+///	This class, when in normal mode, also interprets the active configuration
+///	to associate configuration UID/names to the supervisors in the xdaq context.
+///	In wizard mode, UID/name is taken from class name.
 class AllSupervisorInfo : public SupervisorDescriptorInfoBase
 {
   public:
@@ -37,17 +37,17 @@ class AllSupervisorInfo : public SupervisorDescriptorInfoBase
 	void 													init								(xdaq::ApplicationContext* applicationContext);
 	void 													destroy								(void);
 
-	// BOOLs
+	/// BOOLs
 	bool 													isWizardMode						(void) const { return theWizardInfo_ ? true : false; }
 	bool 													isMacroMakerMode					(void) const { return AllSupervisorInfo::MACROMAKER_MODE; }
 
-	// SETTERs
+	/// SETTERs
 	void 													setSupervisorStatus					(xdaq::Application* app, const std::string& status, const unsigned int progress = 100, const std::string& detail = "", std::vector<SupervisorInfo::SubappInfo> subapps = {});
 	void 													setSupervisorStatus					(const SupervisorInfo& appInfo, const std::string& status, const unsigned int progress = 100, const std::string& detail = "", std::vector<SupervisorInfo::SubappInfo> subapps = {});
 	void 													setSupervisorStatus					(const unsigned int& id, const std::string& status, const unsigned int progress = 100, const std::string& detail = "", std::vector<SupervisorInfo::SubappInfo> subapps = {});
 	void 													clearSupervisorSubappsStatus		(const SupervisorInfo& appInfo);
 
-	// GETTERs (so searching and iterating is easier)
+	/// GETTERs (so searching and iterating is easier)
 	const std::map<unsigned int /* lid */, SupervisorInfo>& getAllSupervisorInfo				(void) const { return allSupervisorInfo_; }
 	const SupervisorInfoMap&                                getAllFETypeSupervisorInfo			(void) const { return allFETypeSupervisorInfo_; }
 	const SupervisorInfoMap&                                getAllDMTypeSupervisorInfo			(void) const { return allDMTypeSupervisorInfo_; }
@@ -70,9 +70,9 @@ class AllSupervisorInfo : public SupervisorDescriptorInfoBase
 	SupervisorInfo* 											theARTDAQSupervisorInfo_;
 
 	std::map<unsigned int /* lid */, SupervisorInfo>			allSupervisorInfo_;
-	std::map<unsigned int /* lid */, std::recursive_mutex> 		allSupervisorInfoMutex_; //recursive_mutex so the same thread can lock multiple times (remember to unlock the same amount)
+	std::map<unsigned int /* lid */, std::recursive_mutex> 		allSupervisorInfoMutex_; ///<recursive_mutex so the same thread can lock multiple times (remember to unlock the same amount)
 	SupervisorInfoMap 											allFETypeSupervisorInfo_, allDMTypeSupervisorInfo_, allLogbookTypeSupervisorInfo_, allMacroMakerTypeSupervisorInfo_;
-	//,
+	///,
 	std::map<std::string /*hostname*/, const SupervisorInfo&> 	allTraceControllerSupervisorInfo_;
 
 	static const bool 											MACROMAKER_MODE;

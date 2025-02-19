@@ -21,8 +21,8 @@ class XDAQContextTable : public TableBase
 
 	struct XDAQApplication
 	{
-		static const uint8_t 		DEFAULT_PRIORITY;
-		static const unsigned int 	GATEWAY_APP_ID;
+		static const uint8_t		DEFAULT_PRIORITY;
+		static const unsigned int	GATEWAY_APP_ID;
 
 		std::string  applicationGroupID_;
 		std::string  applicationUID_;
@@ -35,7 +35,7 @@ class XDAQContextTable : public TableBase
 		std::string  module_;
 		std::string  sourceConfig_;
 		std::map<std::string /*FSM command*/, uint8_t /*priority*/>
-		    stateMachineCommandPriority_;
+			stateMachineCommandPriority_;
 
 		std::vector<XDAQApplicationProperty> properties_;
 	};
@@ -54,14 +54,14 @@ class XDAQContextTable : public TableBase
 	XDAQContextTable											(void);
 	virtual ~XDAQContextTable									(void);
 
-	// Methods
+	/// Methods
 	void 							init						(ConfigurationManager* configManager);
 	void 							extractContexts				(ConfigurationManager* configManager);
 	void 							outputXDAQXML				(std::ostream& out);
-	// void 								outputAppPriority		(std::ostream &out,
-	// const std::string& stateMachineCommand);  void outputXDAQScript (std::ostream
-	// &out); void outputARTDAQScript		(std::ostream &out);
-
+	/// void 								outputAppPriority		(std::ostream &out,
+	/// const std::string& stateMachineCommand);  void outputXDAQScript (std::ostream
+	/// &out); void outputARTDAQScript		(std::ostream &out);
+	///
 	std::string 					getContextUID				(const std::string& url) const;
 	std::string 					getApplicationUID			(const std::string& url, unsigned int id) const;
 	std::string 					getContextOfApplication		(ConfigurationManager* configManager, const std::string& appUID) const;
@@ -74,7 +74,7 @@ class XDAQContextTable : public TableBase
 	static ConfigurationTree 		getSupervisorConfigNode		(const ConfigurationManager* configManager, const std::string& contextUID, const std::string& appUID);
 	std::string  					getContextAddress			(const std::string& contextUID = "X", bool wantHttp = false) const;
 
-	// artdaq specific get methods
+	/// artdaq specific get methods
 	const XDAQContext* 				getTheARTDAQSupervisorContext	(void) const;
 
   private:
@@ -82,7 +82,7 @@ class XDAQContextTable : public TableBase
 	unsigned int /*contextIndex*/ 	artdaqSupervisorContext_;
 
   public:
-	// XDAQ Context Column names
+	/// XDAQ Context Column names
 	static struct ColContext
 	{
 		std::string const colContextUID_               	= "ContextUID";
@@ -94,7 +94,7 @@ class XDAQContextTable : public TableBase
 		std::string const colPort_    					= "Port";
 	} colContext_;
 
-	// XDAQ App Column names
+	/// XDAQ App Column names
 	static struct ColApplication
 	{
 		std::string const colApplicationGroupID_    	= "ApplicationGroupID";
@@ -115,7 +115,7 @@ class XDAQContextTable : public TableBase
 		std::string const colLinkToPropertyGroupID_ 	= "LinkToPropertyGroupID";
 	} colApplication_;
 
-	// XDAQ App Property Column names
+	/// XDAQ App Property Column names
 	static struct ColApplicationProperty
 	{
 		std::string const colPropertyGroupID_ 			= "PropertyGroupID";
@@ -129,12 +129,12 @@ class XDAQContextTable : public TableBase
 
   public:
 	static const std::set<std::string> 					FETypeClassNames_, DMTypeClassNames_,
-	    												LogbookTypeClassNames_, MacroMakerTypeClassNames_, ChatTypeClassNames_,
-	    												ConsoleTypeClassNames_, ConfigurationGUITypeClassNames_, CodeEditorTypeClassNames_,
+														LogbookTypeClassNames_, MacroMakerTypeClassNames_, ChatTypeClassNames_,
+														ConsoleTypeClassNames_, ConfigurationGUITypeClassNames_, CodeEditorTypeClassNames_,
 														VisualizerTypeClassNames_, SlowControlsTypeClassNames_;
 	static const std::string 							GATEWAY_SUPERVISOR_CLASS, WIZARD_SUPERVISOR_CLASS,
-	    												DEPRECATED_SUPERVISOR_CLASS, ARTDAQ_SUPERVISOR_CLASS;
-	static const std::map<std::string /*class*/, 
+														DEPRECATED_SUPERVISOR_CLASS, ARTDAQ_SUPERVISOR_CLASS;
+	static const std::map<std::string /*class*/,
 		std::string /*module*/> 						AppClassModuleLookup_;
 }; //end XDAQContextTable class
 }  // namespace ots

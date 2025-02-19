@@ -14,8 +14,9 @@ namespace ots
 class TCPServerBase : public virtual TCPSocket
 {
   public:
-	TCPServerBase(unsigned int serverPort,
-	              unsigned int maxNumberOfClients = 0);  // Means as many unsigned allows
+	TCPServerBase(
+	    unsigned int serverPort,
+	    unsigned int maxNumberOfClients = 0);  ///< Means as many unsigned allows
 	virtual ~TCPServerBase(void);
 
 	void startAccept(void);
@@ -48,7 +49,7 @@ class TCPServerBase : public virtual TCPSocket
 
   private:
 	void closeClientSockets(
-	    void);  // This one will also wait until the socket thread is done!
+	    void);  ///< This one will also wait until the socket thread is done!
 	int  accept(bool blocking = true);
 	void shutdownAccept(void);
 

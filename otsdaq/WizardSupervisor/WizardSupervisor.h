@@ -34,15 +34,15 @@ namespace ots
 class HttpXmlDocument;
 class ITRACEController;
 
-// WizardSupervisor
-//	This class is a xdaq application.
-//
-//	It is instantiated by the xdaq context when otsdaq is in "Wiz Mode."
-//
-//	It is different from the "Normal Mode" Gateway Supervisor in that
-//	it does not have a state machine and does not inherit properties
-//	from CorePropertySupervisorBase. The assumption is that only admins
-//	have access to wiz mode, and they have access to all features of it.
+/// WizardSupervisor
+///	This class is a xdaq application.
+///
+///	It is instantiated by the xdaq context when otsdaq is in "Wiz Mode."
+///
+///	It is different from the "Normal Mode" Gateway Supervisor in that
+///	it does not have a state machine and does not inherit properties
+///	from CorePropertySupervisorBase. The assumption is that only admins
+///	have access to wiz mode, and they have access to all features of it.
 class WizardSupervisor : public xdaq::Application, public SOAPMessenger
 {
   public:
@@ -74,7 +74,7 @@ class WizardSupervisor : public xdaq::Application, public SOAPMessenger
 	                            std::string                         creator,
 	                            HttpXmlDocument*                    xmldoc = nullptr);
 
-	// External Supervisor XOAP handlers
+	/// External Supervisor XOAP handlers
 	xoap::MessageReference 		supervisorSequenceCheck			(xoap::MessageReference message);
 	xoap::MessageReference 		supervisorLastTableGroupRequest	(xoap::MessageReference message);
 
@@ -94,7 +94,7 @@ class WizardSupervisor : public xdaq::Application, public SOAPMessenger
 		ADMIN_PERMISSIONS_THRESHOLD = 255,
 		EXPERIMENT_NAME_MIN_LENTH   = 3,
 		EXPERIMENT_NAME_MAX_LENTH   = 25,
-		USER_DATA_EXPIRATION_TIME   = 60 * 20,  // 20 minutes
+		USER_DATA_EXPIRATION_TIME   = 60 * 20,  ///< 20 minutes
 	};
 };
 // clang-format on

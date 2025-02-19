@@ -31,7 +31,7 @@ DataProducerBase::~DataProducerBase(void)
 }  // end destructor()
 
 //==============================================================================
-// mirror DataConsumer::registerToBuffer
+/// mirror DataConsumer::registerToBuffer
 void DataProducerBase::registerToBuffer(void)
 {
 	__GEN_COUT__ << "Producer '" << DataProcessor::processorUID_
@@ -53,10 +53,10 @@ void DataProducerBase::registerToBuffer(void)
 	__GEN_COUT__ << "Producer '" << DataProcessor::processorUID_ << "' Registered."
 	             << __E__;
 }  // end registerToBuffer()
-//
+
 ////==============================================================================
 ////mirror DataConsumer::unregisterFromBuffer
-// void DataProducerBase::unregisterFromBuffer(void)
+/// void DataProducerBase::unregisterFromBuffer(void)
 //{
 //	__GEN_COUT__ << "Producer '" << DataProcessor::processorUID_ <<
 //			"' is unregistering to DataManager Supervisor Buffer '" <<

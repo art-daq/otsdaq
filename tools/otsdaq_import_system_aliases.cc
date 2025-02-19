@@ -6,12 +6,12 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 
-// usage:
-// otsdaq_import_system_aliases <pathOfDatabaseToImport> <(optional) prependLabel>
-//
-// all system aliases are imported to current db and are prepended with a label
-//
-
+/// usage:
+/// otsdaq_import_system_aliases <pathOfDatabaseToImport> <(optional) prependLabel>
+///
+/// all system aliases are imported to current db and are prepended with a label
+///
+///
 using namespace ots;
 
 void ImportSystemAliasTableGroups(int argc, char* argv[])

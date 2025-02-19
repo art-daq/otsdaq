@@ -7,7 +7,7 @@
 // #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/Macros/ProcessorPluginMacros.h"
 // #include "otsdaq/MessageFacility/MessageFacility.h"
-//
+
 // #include <cstdint>
 // #include <fstream>
 // #include <iostream>

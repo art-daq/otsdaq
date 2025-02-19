@@ -14,7 +14,7 @@ using namespace ots;
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "ConfigurationManager"
 
-//may return 0 when not able to detect number of processors
+///may return 0 when not able to detect number of processors
 const unsigned int ConfigurationManager::PROCESSOR_COUNT =
     std::thread::hardware_concurrency();
 
@@ -45,7 +45,7 @@ const std::string ConfigurationManager::VERSION_ALIASES_TABLE_NAME =
 const std::string ConfigurationManager::ARTDAQ_TOP_TABLE_NAME   = "ARTDAQSupervisorTable";
 const std::string ConfigurationManager::DESKTOP_ICON_TABLE_NAME = "DesktopIconTable";
 
-// added env check for otsdaq_flatten_active_to_version to function
+/// added env check for otsdaq_flatten_active_to_version to function
 const std::string ConfigurationManager::ACTIVE_GROUPS_FILENAME =
     ((getenv("SERVICE_DATA_PATH") == NULL)
          ? (std::string(__ENV__("USER_DATA")) + "/ServiceData")
@@ -222,11 +222,11 @@ ConfigurationManager::ConfigurationManager(const std::string& username)
 ConfigurationManager::~ConfigurationManager() { destroy(); }
 
 //==============================================================================
-// init
-//	if accumulatedErrors is not null.. fill it with errors
-//	else throw errors (but do not ask restoreActiveTableGroups to throw errors)
-//	Notes: Errors are handled separately from Warnings. Errors are used to monitor
-//		errors but do not allow, and warnings are used to allow warnings and monitor.
+/// init
+///	if accumulatedErrors is not null.. fill it with errors
+///	else throw errors (but do not ask restoreActiveTableGroups to throw errors)
+///	Notes: Errors are handled separately from Warnings. Errors are used to monitor
+///		errors but do not allow, and warnings are used to allow warnings and monitor.
 void ConfigurationManager::init(std::string* accumulatedErrors /*=0*/,
                                 bool         initForWriteAccess /*= false*/,
                                 std::string* accumulatedWarnings /*=0*/)
@@ -274,10 +274,10 @@ void ConfigurationManager::init(std::string* accumulatedErrors /*=0*/,
 }  // end init()
 
 //==============================================================================
-// restoreActiveTableGroups
-//	load the active groups from file
-//	Note: this should be used by the Supervisor to maintain
-//		the same configurationGroups surviving software system restarts
+/// restoreActiveTableGroups
+///	load the active groups from file
+///	Note: this should be used by the Supervisor to maintain
+///		the same configurationGroups surviving software system restarts
 void ConfigurationManager::restoreActiveTableGroups(
     bool               throwErrors /*=false*/,
     const std::string& pathToActiveGroupsFile /*=""*/,
@@ -457,10 +457,10 @@ void ConfigurationManager::restoreActiveTableGroups(
 }  // end restoreActiveTableGroups()
 
 //==============================================================================
-// destroyTableGroup
-//	destroy all if theGroup == ""
-//	else destroy that group
-// 	if onlyDeactivate, then don't delete, just deactivate view
+/// destroyTableGroup
+///	destroy all if theGroup == ""
+///	else destroy that group
+/// 	if onlyDeactivate, then don't delete, just deactivate view
 void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
                                              bool               onlyDeactivate)
 {
@@ -588,11 +588,11 @@ void ConfigurationManager::destroy(void)
 }
 
 //==============================================================================
-// convertGroupTypeIdToName
-//	return translation:
-//		0 for context
-//		1 for backbone
-//		2 for configuration (others)
+/// convertGroupTypeIdToName
+///	return translation:
+///		0 for context
+///		1 for backbone
+///		2 for configuration (others)
 const std::string& ConfigurationManager::convertGroupTypeToName(
     const ConfigurationManager::GroupType& groupTypeId)
 {
@@ -609,12 +609,12 @@ const std::string& ConfigurationManager::convertGroupTypeToName(
 }  // end convertGroupTypeToName()
 
 //==============================================================================
-// getTypeOfGroup static
-//	return
-//		CONTEXT_TYPE for context
-//		BACKBONE_TYPE for backbone
-//		ITERATE_TYPE for iterate
-//		CONFIGURATION_TYPE for configuration (others)
+/// getTypeOfGroup static
+///	return
+///		CONTEXT_TYPE for context
+///		BACKBONE_TYPE for backbone
+///		ITERATE_TYPE for iterate
+///		CONFIGURATION_TYPE for configuration (others)
 ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
     const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap)
 {
@@ -788,8 +788,8 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 }  // end getTypeOfGroup()
 
 //==============================================================================
-// getTypeNameOfGroup
-//	return string for group type
+/// getTypeNameOfGroup
+///	return string for group type
 const std::string& ConfigurationManager::getTypeNameOfGroup(
     const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap)
 {
@@ -797,11 +797,11 @@ const std::string& ConfigurationManager::getTypeNameOfGroup(
 }  // end getTypeNameOfGroup()
 
 //==============================================================================
-// dumpMacroMakerModeFhicl
-//	Generates functional configuration file for MacroMaker mode
-//	based on current configuration.
-
-// helpers
+/// dumpMacroMakerModeFhicl
+///	Generates functional configuration file for MacroMaker mode
+///	based on current configuration.
+///
+/// helpers
 #define OUT out << tabStr << commentStr
 #define PUSHTAB tabStr += "\t"
 #define POPTAB tabStr.resize(tabStr.size() - 1)
@@ -887,14 +887,14 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 }  // end dumpMacroMakerModeFhicl()
 
 //==============================================================================
-// recursiveTreeToFhicl static
-//		Output from treeRecord to specified depth
-//		depth of -1 is translated to "a lot" (e.g. 10)
-//		to avoid infinite loops.
-//
-//		The node must be a UID or link node
-//
-//	e.g., out = std::cout, tabStr = "", commentStr = ""
+/// recursiveTreeToFhicl static
+///		Output from treeRecord to specified depth
+///		depth of -1 is translated to "a lot" (e.g. 10)
+///		to avoid infinite loops.
+///
+///		The node must be a UID or link node
+///
+///	e.g., out = std::cout, tabStr = "", commentStr = ""
 void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
                                                 std::ostream&     out /* = std::cout */,
                                                 std::string&      tabStr /* = "" */,
@@ -987,8 +987,8 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 }  // end recursiveTreeToFhicl
 
 //==============================================================================
-// dumpActiveConfiguration
-//	if filePath == "", then output to cout
+/// dumpActiveConfiguration
+///	if filePath == "", then output to cout
 void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
                                                    const std::string& dumpType,
                                                    const std::string& configurationAlias,
@@ -1215,11 +1215,11 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 }  //end dumpActiveConfiguration()
 
 //==============================================================================
-// loadMemberMap
-//	loads tables given by name/version pairs in memberMap
-//	Note: does not activate them.
-//
-// if accumulateWarnings, then put in string, do not throw
+/// loadMemberMap
+///	loads tables given by name/version pairs in memberMap
+///	Note: does not activate them.
+///
+/// if accumulateWarnings, then put in string, do not throw
 void ConfigurationManager::loadMemberMap(
     const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap,
     std::string* accumulatedWarnings /* =0 */)
@@ -1488,27 +1488,27 @@ void ConfigurationManager::loadMemberMap(
 }  // end loadMemberMap()
 
 //==============================================================================
-// loadTableGroup
-//	load all members of configuration group
-//	if doActivate
-//		DOES set theConfigurationTableGroup_, theContextTableGroup_, or
-// theBackboneTableGroup_ on success 			this also happens with
-// ConfigurationManagerRW::activateTableGroup 		for each member
-//			configBase->init()
-//
-//	if progressBar != 0, then do step handling, for finer granularity
-//
-// 	if(doNotLoadMembers) return memberMap; //this is useful if just getting group metadata
-//	else NOTE: active views are changed! (when loading member map)
-//
-//	Regarding Member Table Aliases: alias names are tracked in the metadata table,
-//		however! The group member versions are decided at group save time
-//		(loadTableGroup should always return the same groupName -> memberMap translation).
-//		The group member versions do not undergo alias translation at load time (i.e. loadTableGroup).
-//		The alias map can be retrieved using the groupAliases parameter.
-//
-//	throws exception on failure.
-// 	if accumulatedTreeErrors, then "ignore warnings"
+/// loadTableGroup
+///	load all members of configuration group
+///	if doActivate
+///		DOES set theConfigurationTableGroup_, theContextTableGroup_, or
+/// theBackboneTableGroup_ on success 			this also happens with
+/// ConfigurationManagerRW::activateTableGroup 		for each member
+///			configBase->init()
+///
+///	if progressBar != 0, then do step handling, for finer granularity
+///
+/// 	if(doNotLoadMembers) return memberMap; //this is useful if just getting group metadata
+///	else NOTE: active views are changed! (when loading member map)
+///
+///	Regarding Member Table Aliases: alias names are tracked in the metadata table,
+///		however! The group member versions are decided at group save time
+///		(loadTableGroup should always return the same groupName -> memberMap translation).
+///		The group member versions do not undergo alias translation at load time (i.e. loadTableGroup).
+///		The alias map can be retrieved using the groupAliases parameter.
+///
+///	throws exception on failure.
+/// 	if accumulatedTreeErrors, then "ignore warnings"
 void ConfigurationManager::loadTableGroup(
     const std::string&   groupName,
     const TableGroupKey& groupKey,
@@ -2159,8 +2159,8 @@ void ConfigurationManager::loadTableGroup(
 }  // end loadTableGroup()
 
 //==============================================================================
-// copyTableGroupFromCache()
-//	Used, for example, to copy tables from ConfigurationManager to another ConfigurationManager without making db requests
+/// copyTableGroupFromCache()
+///	Used, for example, to copy tables from ConfigurationManager to another ConfigurationManager without making db requests
 void ConfigurationManager::copyTableGroupFromCache(
     const ConfigurationManager&                cacheConfigMgr,
     const std::map<std::string, TableVersion>& memberMap,
@@ -2489,7 +2489,7 @@ ConfigurationManager::getGroupOfLoadedTable(const std::string& tableName) const
 }  // end getGroupOfLoadedTable()
 
 //==============================================================================
-// initTableThread()
+/// initTableThread()
 void ConfigurationManager::initTableThread(ConfigurationManager* cfgMgr,
                                            ots::TableBase*       table,
                                            std::string*          accumulatedWarnings,
@@ -2555,7 +2555,7 @@ catch(...)
 }  // end initTableThread catch
 
 //==============================================================================
-// fillTableThread()
+/// fillTableThread()
 void ConfigurationManager::fillTableThread(
     ConfigurationInterface*                 theInterface,
     std::map<std::string, ots::TableBase*>* nameToTableMap,
@@ -2728,11 +2728,11 @@ catch(...)
 }  // end fillTableThread catch
 
 //==============================================================================
-// getActiveTableGroups
-//	get the active table groups map
-//   map<type,        pair     <groupName  , TableGroupKey> >
-//
-//	Note: invalid TableGroupKey means no active group currently
+/// getActiveTableGroups
+///	get the active table groups map
+///   map<type,        pair     <groupName  , TableGroupKey> >
+///
+///	Note: invalid TableGroupKey means no active group currently
 std::map<std::string, std::pair<std::string, TableGroupKey>>
 ConfigurationManager::getActiveTableGroups(void) const
 {
@@ -2820,7 +2820,7 @@ ConfigurationTree ConfigurationManager::getSupervisorTableNode(
 }  // end getSupervisorTableNode()
 
 //==============================================================================
-//There can only be one active Gateway Superivsor app, so find it
+///There can only be one active Gateway Superivsor app, so find it
 ConfigurationTree ConfigurationManager::getGatewaySupervisorNode() const
 {
 	auto contextChildren =
@@ -2895,22 +2895,22 @@ std::map<std::string, ConfigurationTree> ConfigurationManager::getNodes(
 }
 
 //==============================================================================
-// getFirstPathToNode
+/// getFirstPathToNode
 std::string ConfigurationManager::getFirstPathToNode(
     const ConfigurationTree& /*node*/, const std::string& /*startPath*/) const
-// void ConfigurationManager::getFirstPathToNode(const ConfigurationTree &node, const
-// ConfigurationTree &startNode) const
+/// void ConfigurationManager::getFirstPathToNode(const ConfigurationTree &node, const
+/// ConfigurationTree &startNode) const
 {
 	std::string path = "/";
 	return path;
 }  // end getFirstPathToNode()
 
 //==============================================================================
-// getChildren
-//	if memberMap is passed then only consider children in the map
-//
-//	if accumulatedTreeErrors is non null, check for disconnects occurs.
-//		check is 2 levels deep which should get to the links starting at tables.
+/// getChildren
+///	if memberMap is passed then only consider children in the map
+///
+///	if accumulatedTreeErrors is non null, check for disconnects occurs.
+///		check is 2 levels deep which should get to the links starting at tables.
 std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::getChildren(
     std::map<std::string, TableVersion>* memberMap,
     std::string*                         accumulatedTreeErrors) const
@@ -3016,11 +3016,11 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::get
 }  // end getChildren()
 
 //==============================================================================
-// getChildrenMap
-//	if memberMap is passed then only consider children in the map
-//
-//	if accumulatedTreeErrors is non null, check for disconnects occurs.
-//		check is 2 levels deep which should get to the links starting at tables.
+/// getChildrenMap
+///	if memberMap is passed then only consider children in the map
+///
+///	if accumulatedTreeErrors is non null, check for disconnects occurs.
+///		check is 2 levels deep which should get to the links starting at tables.
 std::map<std::string /* childName */, ConfigurationTree>
 ConfigurationManager::getChildrenMap(std::map<std::string, TableVersion>* memberMap,
                                      std::string* accumulatedTreeErrors) const
@@ -3126,10 +3126,10 @@ ConfigurationManager::getChildrenMap(std::map<std::string, TableVersion>* member
 }  // end getChildrenMap()
 
 //==============================================================================
-// getTableByName
-//	Get read-only pointer to configuration.
-//	If Read/Write access is needed use ConfigurationManagerWithWriteAccess
-//		(For general use, Write access should be avoided)
+/// getTableByName
+///	Get read-only pointer to configuration.
+///	If Read/Write access is needed use ConfigurationManagerWithWriteAccess
+///		(For general use, Write access should be avoided)
 const TableBase* ConfigurationManager::getTableByName(const std::string& tableName) const
 {
 	std::map<std::string, TableBase*>::const_iterator it;
@@ -3165,9 +3165,9 @@ const TableBase* ConfigurationManager::getTableByName(const std::string& tableNa
 }  // end getTableByName()
 
 //==============================================================================
-// loadConfigurationBackbone
-//	loads the active backbone configuration group
-//	returns the active group key that was loaded
+/// loadConfigurationBackbone
+///	loads the active backbone configuration group
+///	returns the active group key that was loaded
 TableGroupKey ConfigurationManager::loadConfigurationBackbone()
 {
 	if(!theBackboneTableGroupKey_)  // no active backbone
@@ -3183,19 +3183,19 @@ TableGroupKey ConfigurationManager::loadConfigurationBackbone()
 	return *theBackboneTableGroupKey_;
 }  // end loadConfigurationBackbone()
 
-// Getters
+/// Getters
 //==============================================================================
-// getTableGroupKey
-//	use backbone to determine default key for systemAlias.
-//		- runType translates to group key alias,
-//			which maps to a group name and key pair
-//
-//	NOTE: temporary special aliases are also allowed
-//		with the following format:
-//		GROUP:<name>:<key>
-//
-//	return INVALID on failure
-//   else, pair<group name , TableGroupKey>
+/// getTableGroupKey
+///	use backbone to determine default key for systemAlias.
+///		- runType translates to group key alias,
+///			which maps to a group name and key pair
+///
+///	NOTE: temporary special aliases are also allowed
+///		with the following format:
+///		GROUP:<name>:<key>
+///
+///	return INVALID on failure
+///   else, pair<group name , TableGroupKey>
 std::pair<std::string, TableGroupKey> ConfigurationManager::getTableGroupFromAlias(
     std::string systemAlias, ProgressBar* progressBar)
 {
@@ -3257,8 +3257,8 @@ std::pair<std::string, TableGroupKey> ConfigurationManager::getTableGroupFromAli
 }  // end getTableGroupFromAlias()
 
 //==============================================================================
-// Aliases are pulled from latest active Backbone group
-//  (i.e. the latest activated at the ConfigurationGUISupervisor)!
+/// Aliases are pulled from latest active Backbone group
+///  (i.e. the latest activated at the ConfigurationGUISupervisor)!
 std::map<std::string /*groupAlias*/, std::pair<std::string /*groupName*/, TableGroupKey>>
 ConfigurationManager::getActiveGroupAliases(void)
 {
@@ -3267,7 +3267,7 @@ ConfigurationManager::getActiveGroupAliases(void)
 	    "" /* pathToActiveGroupsFile */,
 	    ConfigurationManager::LoadGroupType::
 	        ONLY_BACKBONE_TYPE);  // make sure the active configuration backbone is
-	    // loaded from disk (i.e. the latest activated at the ConfigurationGUISupervisor)!
+	// loaded from disk (i.e. the latest activated at the ConfigurationGUISupervisor)!
 
 	std::map<std::string /*groupAlias*/,
 	         std::pair<std::string /*groupName*/, TableGroupKey>>
@@ -3285,8 +3285,8 @@ ConfigurationManager::getActiveGroupAliases(void)
 }  // end getActiveGroupAliases()
 
 //==============================================================================
-// getVersionAliases()
-//	get version aliases organized by table, for currently active backbone tables
+/// getVersionAliases()
+///	get version aliases organized by table, for currently active backbone tables
 std::map<std::string /*table name*/,
          std::map<std::string /*version alias*/, TableVersion /*aliased version*/>>
 ConfigurationManager::getVersionAliases(void) const
@@ -3336,7 +3336,7 @@ ConfigurationManager::getVersionAliases(void) const
 }  // end getVersionAliases()
 
 //==============================================================================
-// getActiveVersions
+/// getActiveVersions
 std::map<std::string, TableVersion> ConfigurationManager::getActiveVersions(void) const
 {
 	std::map<std::string, TableVersion> retMap;
@@ -3357,7 +3357,7 @@ std::map<std::string, TableVersion> ConfigurationManager::getActiveVersions(void
 }  // end getActiveVersions()
 
 ////==============================================================================
-// const DACStream& ConfigurationManager::getDACStream(std::string fecName)
+/// const DACStream& ConfigurationManager::getDACStream(std::string fecName)
 //{
 //
 //	//fixme/todo this is called before setupAll so it breaks!
@@ -3642,10 +3642,10 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 }  // end initializeFromFhicl()
 
 //==============================================================================
-// recursiveInitFromFhiclPSet
-//		Add records and all children parameters starting at table
-//			recursively. If groupName given then loop through
-//			records and add to table.
+/// recursiveInitFromFhiclPSet
+///		Add records and all children parameters starting at table
+///			recursively. If groupName given then loop through
+///			records and add to table.
 void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableName,
                                                       const fhicl::ParameterSet& pset,
                                                       const std::string& recordName,
@@ -4163,7 +4163,7 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 }  //end getOtherSubsystemActiveTableGroups()
 
 //==============================================================================
-//Ignore any System Aliases with "Context" or "Iterat" in the name
+///Ignore any System Aliases with "Context" or "Iterat" in the name
 std::set<std::string /* configAlias */>
 ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSubsystemUID)
 {
@@ -4220,7 +4220,7 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 }  //end getOtherSubsystemActiveTableGroups()
 
 //==============================================================================
-//Ignore any System Aliases with "Context" or "Iterat" in the name
+///Ignore any System Aliases with "Context" or "Iterat" in the name
 std::set<std::string /* configAlias */>
 ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
     const std::string& otherSubsystemUID, const std::string& otherSubsystemFsmName)
@@ -4400,7 +4400,7 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 }  //end getOtherSubsystemFilteredConfigAliases()
 
 //==============================================================================
-// returns configAlias translation group info by reference
+/// returns configAlias translation group info by reference
 void ConfigurationManager::getOtherSubsystemConfigAliasInfo(
     const std::string&                     otherSubsystemUID,
     const std::string&                     configAlias,
@@ -4494,7 +4494,7 @@ void ConfigurationManager::getOtherSubsystemConfigAliasInfo(
 }  //end getOtherSubsystemConfigAliasInfo()
 
 //==============================================================================
-// allow for just the desktop icons of the Context to be changed during run-time
+/// allow for just the desktop icons of the Context to be changed during run-time
 TableBase* ConfigurationManager::getDesktopIconTable(void)
 {
 	if(nameToTableMap_.find(DESKTOP_ICON_TABLE_NAME) == nameToTableMap_.end())
@@ -4528,11 +4528,11 @@ void ConfigurationManager::saveGroupNameAndKey(
 }  // end saveGroupNameAndKey()
 
 //==============================================================================
-// loadGroupNameAndKey static
-//	loads group name and key (and time) from specified file
-//	returns time string in returnedTimeString
-//
-//	Note: this is static so the GatewaySupervisor and WizardSupervisor can call it
+/// loadGroupNameAndKey static
+///	loads group name and key (and time) from specified file
+///	returns time string in returnedTimeString
+///
+///	Note: this is static so the GatewaySupervisor and WizardSupervisor can call it
 std::pair<std::string /*group name*/, TableGroupKey>
 ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
                                           std::string&       returnedTimeString)

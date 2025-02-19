@@ -4,7 +4,7 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "otsdaq/TableCore/TableBase.h"
 
-// helpers
+/// helpers
 #define OUT out << tabStr << commentStr
 #define PUSHTAB tabStr += "\t"
 #define POPTAB tabStr.resize(tabStr.size() - 1)
@@ -14,7 +14,7 @@
 namespace ots
 {
 // clang-format off
-class SlowControlsTableBase : virtual public TableBase //virtual so future plugins can inherit from multiple table base classes
+class SlowControlsTableBase : virtual public TableBase ///<virtual so future plugins can inherit from multiple table base classes
 {
   public:
 	SlowControlsTableBase(void);
@@ -22,22 +22,22 @@ class SlowControlsTableBase : virtual public TableBase //virtual so future plugi
 
 	virtual ~SlowControlsTableBase(void);
 
-	// Getters
+	/// Getters
 	virtual bool	slowControlsChannelListHasChanged 	(void) const;
 	virtual void	getSlowControlsChannelList			(std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>& channelList) const;
 
-	//boardReader{
-	//	build vector .. based on table 1,2,3,4,5.. 
-	//	pass vector outputPV()
-	//}
-	//DTC {
-	//	build vector from config Tree
-	//	pass vector to outputPV()
-	//}
-	
-	//use table name to have different file names! (instead of DEFINES like in DTC)
-	
-	//is channel binary or not?.. then can handle all the same
+	///boardReader{
+	///	build vector .. based on table 1,2,3,4,5..
+	///	pass vector outputPV()
+	///}
+	///DTC {
+	///	build vector from config Tree
+	///	pass vector to outputPV()
+	///}
+
+	///use table name to have different file names! (instead of DEFINES like in DTC)
+
+	///is channel binary or not?.. then can handle all the same
 	virtual bool 			outputEpicsPVFile			(ConfigurationManager* configManager, std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList = 0) const;
 
 	virtual unsigned int	slowControlsHandlerConfig	(
@@ -57,7 +57,7 @@ class SlowControlsTableBase : virtual public TableBase //virtual so future plugi
 														) const;
 	virtual std::string		setFilePath					()  const = 0;
 
-	// Column names
+	/// Column names
 	struct ColChannel
 	{
 		std::string const colMetricName_ 			= "MetricName";
@@ -70,8 +70,8 @@ class SlowControlsTableBase : virtual public TableBase //virtual so future plugi
 		std::string const colHighHighThreshold_ 	= "HighHighThreshold";
 	} channelColNames_;
 
-	bool					isFirstAppInContext_ 	= false; //for managing if PV list has changed
-	bool					channelListHasChanged_ 	= false; //for managing if PV list has changed
+	bool					isFirstAppInContext_ 	= false; ///<for managing if PV list has changed
+	bool					channelListHasChanged_ 	= false; ///<for managing if PV list has changed
 	ConfigurationManager* 	lastConfigManager_		= nullptr;
 
 private:

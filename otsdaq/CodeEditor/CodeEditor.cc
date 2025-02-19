@@ -32,7 +32,7 @@ const std::string CodeEditor::OTSDAQ_WEB_PATH =
     std::string(__ENV__("OTSDAQ_WEB_PATH")) + "/";
 
 //==============================================================================
-// CodeEditor
+/// CodeEditor
 CodeEditor::CodeEditor()
     : ALLOWED_FILE_EXTENSIONS_({"h",   "hh",  "hpp", "hxx", "c",   "cc",  "cpp",
                                 "cxx", "icc", "dat", "txt", "sh",  "css", "html",
@@ -52,8 +52,8 @@ CodeEditor::CodeEditor()
 }  // end CodeEditor()
 
 //==============================================================================
-// xmlRequest
-//	all requests are handled here
+/// xmlRequest
+///	all requests are handled here
 void CodeEditor::xmlRequest(const std::string& option,
                             bool               readOnlyMode,
                             cgicc::Cgicc&      cgiIn,
@@ -120,7 +120,7 @@ catch(...)
 }  // end xmlRequest()
 
 //==============================================================================
-// safePathString
+/// safePathString
 std::string CodeEditor::safePathString(const std::string& path)
 {
 	__COUTVS__(20, path);
@@ -140,8 +140,8 @@ std::string CodeEditor::safePathString(const std::string& path)
 }  // end safePathString()
 
 //==============================================================================
-// safeExtensionString
-//	remove all non ascii and make lower case
+/// safeExtensionString
+///	remove all non ascii and make lower case
 std::string CodeEditor::safeExtensionString(const std::string& extension)
 {
 	//__COUTV__(extension);
@@ -175,7 +175,7 @@ std::string CodeEditor::safeExtensionString(const std::string& extension)
 }  // end safeExtensionString()
 
 //==============================================================================
-// getDirectoryContent
+/// getDirectoryContent
 void CodeEditor::getDirectoryContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 {
 	std::string path = CgiDataUtilities::getData(cgiIn, "path");
@@ -283,7 +283,7 @@ void CodeEditor::getDirectoryContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOu
 }  // end getDirectoryContent()
 
 //==============================================================================
-// getPathContent
+/// getPathContent
 void CodeEditor::getPathContent(const std::string& basepath,
                                 const std::string& path,
                                 HttpXmlDocument*   xmlOut)
@@ -407,7 +407,7 @@ void CodeEditor::getPathContent(const std::string& basepath,
 }  // end getPathContent()
 
 //==============================================================================
-// getFileContent
+/// getFileContent
 void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 {
 	std::string path = CgiDataUtilities::getData(cgiIn, "path");
@@ -464,7 +464,7 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 }  // end getFileContent()
 
 //==============================================================================
-// getFileGitURL
+/// getFileGitURL
 void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 {
 	std::string path = CgiDataUtilities::getData(cgiIn, "path");
@@ -516,7 +516,7 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 }  // end getFileGitURL()
 
 //==============================================================================
-// getFileGitURL
+/// getFileGitURL
 std::string CodeEditor::getFileGitURL(const std::string& basepath,
                                       const std::string& path)
 {
@@ -538,7 +538,7 @@ std::string CodeEditor::getFileGitURL(const std::string& basepath,
 }  // end getFileGitURL()
 
 //==============================================================================
-// readFile
+/// readFile
 void CodeEditor::readFile(const std::string& basepath,
                           const std::string& path,
                           std::string&       contents,
@@ -602,7 +602,7 @@ void CodeEditor::readFile(const std::string& basepath,
 }  // end readFile
 
 //==============================================================================
-// writeFile
+/// writeFile
 void CodeEditor::writeFile(const std::string&        basepath,
                            const std::string&        path,
                            const std::string&        contents,
@@ -676,7 +676,7 @@ void CodeEditor::writeFile(const std::string&        basepath,
 }  // end writeFile
 
 //==============================================================================
-// saveFileContent
+/// saveFileContent
 void CodeEditor::saveFileContent(cgicc::Cgicc&      cgiIn,
                                  HttpXmlDocument*   xmlOut,
                                  const std::string& username)
@@ -735,8 +735,8 @@ void CodeEditor::saveFileContent(cgicc::Cgicc&      cgiIn,
 }  // end saveFileContent
 
 //==============================================================================
-// build
-//	cleanBuild and incrementalBuild
+/// build
+///	cleanBuild and incrementalBuild
 void CodeEditor::build(cgicc::Cgicc& cgiIn,
                        HttpXmlDocument* /*xmlOut*/,
                        const std::string& username)

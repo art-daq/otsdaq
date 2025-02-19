@@ -14,7 +14,7 @@ class Parameter
   public:
 	Parameter(N name, V value) : name_(name), value_(value) { ; }
 	virtual ~Parameter(void) { ; }
-	// Getters
+	/// Getters
 	const N&              getName(void) const { return name_; }
 	const V&              getValue(void) const { return value_; }
 	const std::pair<N, V> getParameterPair(void)
@@ -22,7 +22,7 @@ class Parameter
 		return std::pair<N, V>(name_, value_);
 	}
 
-	// Setters
+	/// Setters
 	void setName(const N name) { name_ = name; }
 	void setValue(const V value) { value_ = value; }
 	void set(const N name, const V& value)
@@ -53,7 +53,7 @@ class Parameters
 	Parameters(N name, V value) { addParameter(name, value); }
 	Parameters(Parameter<N, V> parameter) { addParameter(parameter); }
 	virtual ~Parameters(void) { ; }
-	// Getters
+	/// Getters
 	std::set<N> getNames(void) const
 	{
 		std::set<N> names;
@@ -76,7 +76,7 @@ class Parameters
 		return Parameter<N, V>(name, getValue(name));
 	}
 
-	// Setters
+	/// Setters
 	void addParameter(const N name, const V value) { theParameters_[name] = value; }
 	void addParameter(const Parameter<N, V> parameter)
 	{
@@ -87,7 +87,7 @@ class Parameters
 		theParameters_[parameterPair.first] = parameterPair.second;
 	}
 
-	// Iterators
+	/// Iterators
 	iterator       begin(void) { return theParameters_.begin(); }
 	iterator       end(void) { return theParameters_.end(); }
 	const_iterator begin(void) const { return theParameters_.begin(); }
@@ -95,7 +95,7 @@ class Parameters
 	iterator       find(N name) { return theParameters_.find(name); }
 	const_iterator find(N name) const { return theParameters_.find(name); }
 
-	// Methods
+	/// Methods
 	unsigned int size(void) const { return theParameters_.size(); }
 	void         clear(void) { theParameters_.clear(); }
 

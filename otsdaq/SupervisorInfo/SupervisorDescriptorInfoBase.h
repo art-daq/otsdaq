@@ -20,13 +20,13 @@
 
 namespace ots
 {
-// key is the crate number
+/// key is the crate number
 typedef std::map<xdata::UnsignedIntegerT, XDAQ_CONST_CALL xdaq::ApplicationDescriptor*>
     SupervisorDescriptors;
 
 class SupervisorDescriptorInfoBase
 {
-	friend class SupervisorInfo;  //"Friend" class needs access to private members
+	friend class SupervisorInfo;  ///<"Friend" class needs access to private members
   public:
 	SupervisorDescriptorInfoBase(void);
 	SupervisorDescriptorInfoBase(xdaq::ApplicationContext* applicationContext);

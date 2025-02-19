@@ -14,7 +14,7 @@ class ARTDAQRoutingManagerTable : public ARTDAQTableBase, public SlowControlsTab
 	ARTDAQRoutingManagerTable(void);
 	virtual ~ARTDAQRoutingManagerTable(void);
 
-	// Methods
+	/// Methods
 	void 					init						(ConfigurationManager* configManager) override;
 
 	virtual unsigned int	slowControlsHandlerConfig	(

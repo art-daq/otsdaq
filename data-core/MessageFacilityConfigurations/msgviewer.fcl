@@ -25,13 +25,13 @@ receivers:
   #{
     #receiverType: "LogReader"
     #filename: "/tmp/eventbuilder/eventbuilder-20150424163410-ironwork-22507.log"
-  #} 
+  #}
 
   syslog:
   {
     receiverType: "UDP"
     port: 30000
-  }   
+  }
 }
 
 threshold : DEBUG

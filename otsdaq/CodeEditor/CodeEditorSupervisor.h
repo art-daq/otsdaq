@@ -6,8 +6,8 @@
 
 namespace ots
 {
-// CodeEditorSupervisor
-//	This class handles the Code Editor interface
+/// CodeEditorSupervisor
+///	This class handles the Code Editor interface
 class CodeEditorSupervisor : public CoreSupervisorBase
 {
   public:
@@ -16,7 +16,7 @@ class CodeEditorSupervisor : public CoreSupervisorBase
 	CodeEditorSupervisor(xdaq::ApplicationStub* s);
 	virtual ~CodeEditorSupervisor(void);
 
-	// CorePropertySupervisorBase override functions
+	/// CorePropertySupervisorBase override functions
 	virtual void defaultPage(xgi::Input* in, xgi::Output* out) override;
 	virtual void request(const std::string&               requestType,
 	                     cgicc::Cgicc&                    cgiIn,
@@ -24,11 +24,9 @@ class CodeEditorSupervisor : public CoreSupervisorBase
 	                     const WebUsers::RequestUserInfo& userInfo) override;
 
 	virtual void setSupervisorPropertyDefaults(
-	    void) override;  // override to control supervisor specific defaults
-	virtual void forceSupervisorPropertyValues(void) override;  // override to force
-	                                                            // supervisor property
-	                                                            // values (and ignore user
-	                                                            // settings)
+	    void) override;  ///< override to control supervisor specific defaults
+	virtual void forceSupervisorPropertyValues(void)
+	    override;  ///< override to force supervisor property values (and ignore user settings)
   private:
 	CodeEditor codeEditor_;
 };

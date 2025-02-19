@@ -99,8 +99,8 @@ void CircularBuffer<D, H>::registerConsumer(const std::string& consumerID,
 	lastReadBuffer_[consumerID] = theBuffer_.begin();
 }
 ////========================================================================================================================
-// template<class D, class H>
-// void CircularBuffer<D,H>::unregisterConsumer(const std::string& consumerID)
+/// template<class D, class H>
+/// void CircularBuffer<D,H>::unregisterConsumer(const std::string& consumerID)
 //{
 //
 //	for(auto& it: theBuffer_)
@@ -124,8 +124,8 @@ void CircularBuffer<D, H>::registerConsumer(const std::string& consumerID,
 //}
 //
 ////========================================================================================================================
-// template<class D, class H>
-// void CircularBuffer<D,H>::unregisterProducer(const std::string& producerID)
+/// template<class D, class H>
+/// void CircularBuffer<D,H>::unregisterProducer(const std::string& producerID)
 //{
 //	int numberErased = theBuffer_.erase(producerID);
 //	if(numberErased != 1)

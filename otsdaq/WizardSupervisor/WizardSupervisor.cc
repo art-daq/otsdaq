@@ -65,7 +65,7 @@ XDAQ_INSTANTIATOR_IMPL(WizardSupervisor)
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "Wizard"
 
-// init allowed file upload types
+/// init allowed file upload types
 const std::vector<std::string>	WizardSupervisor::allowedFileUploadTypes_ = {
 		"image/png",
 		"image/jpeg",
@@ -183,72 +183,72 @@ void WizardSupervisor::requestIcons(xgi::Input* in, xgi::Output* out)
 	// clang-format off
 	*out << "Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,/"
 
-	     << ",Table Editor,TBL,0,1,icon-ControlsDashboard.png,"
-		 	"/urn:xdaq-application:lid=280/?configWindowName=tableEditor,/"
+		 << ",Table Editor,TBL,0,1,icon-ControlsDashboard.png,"
+			"/urn:xdaq-application:lid=280/?configWindowName=tableEditor,/"
 
-	     << ",Desktop Icon Editor,ICON,0,1,icon-IconEditor.png,"
-		 	"/WebPath/html/ConfigurationGUI_subset.html?urn=280&subsetBasePath=DesktopIconTable&"
-	        "recordAlias=Icons&groupingFieldList=Status%2CFolderPath%2CRequiredPermissionLevel,/"
+		 << ",Desktop Icon Editor,ICON,0,1,icon-IconEditor.png,"
+			"/WebPath/html/ConfigurationGUI_subset.html?urn=280&subsetBasePath=DesktopIconTable&"
+			"recordAlias=Icons&groupingFieldList=Status%2CFolderPath%2CRequiredPermissionLevel,/"
 
 		 //User Settings ------------------
 		 << ",Edit User Accounts,USER,1,1,"
-		 				 "/WebPath/images/dashboardImages/icon-Settings.png,/WebPath/html/UserSettings.html,/User Settings"
+						 "/WebPath/images/dashboardImages/icon-Settings.png,/WebPath/html/UserSettings.html,/User Settings"
 
 		 << ",Security Settings,SEC,1,1,icon-SecuritySettings.png,"
-		 	"/WebPath/html/SecuritySettings.html,/User Settings"
+			"/WebPath/html/SecuritySettings.html,/User Settings"
 
-	     << ",Edit User Data,USER,1,1,icon-EditUserData.png,/WebPath/html/EditUserData.html,/User Settings"
+		 << ",Edit User Data,USER,1,1,icon-EditUserData.png,/WebPath/html/EditUserData.html,/User Settings"
 
 		 //end User Settings ------------------
 
-	     << ",Console,C,1,1,icon-Console.png,/urn:xdaq-application:lid=260/,/" 
-		 
+		 << ",Console,C,1,1,icon-Console.png,/urn:xdaq-application:lid=260/,/"
+
 		 //Configuration Wizards ------------------
 		 << ",Front-end Wizard,CFG,0,1,icon-Configure.png,"
-		 	"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Front%2Dend,Config Wizards"
+			"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Front%2Dend,Config Wizards"
 
-	     << ",Processor Wizard,CFG,0,1,icon-Configure.png,"
-		 	"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Processor,Config Wizards"
+		 << ",Processor Wizard,CFG,0,1,icon-Configure.png,"
+			"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Processor,Config Wizards"
 
-	     << ",artdaq Config Editor,CFG,0,1,icon-Configure.png,"
-		 	"/WebPath/html/ConfigurationGUI_artdaq.html?urn=280,Config Wizards"
+		 << ",artdaq Config Editor,CFG,0,1,icon-Configure.png,"
+			"/WebPath/html/ConfigurationGUI_artdaq.html?urn=280,Config Wizards"
 
-	     << ",Block Diagram,CFG,0,1,icon-Configure.png,"
-		 	"/WebPath/html/ConfigurationSubsetBlockDiagram.html?urn=280,Config Wizards"
+		 << ",Block Diagram,CFG,0,1,icon-Configure.png,"
+			"/WebPath/html/ConfigurationSubsetBlockDiagram.html?urn=280,Config Wizards"
 		 //end Configuration Wizards ------------------
 
-	     << ",Code Editor,CODE,0,1,icon-CodeEditor.png,/urn:xdaq-application:lid=240/,/"
+		 << ",Code Editor,CODE,0,1,icon-CodeEditor.png,/urn:xdaq-application:lid=240/,/"
 
 		 //Documentation ------------------
-	     << ",State Machine Screenshot,FSM-SS,1,1,icon-Physics.gif,"
-		 	"/WebPath/images/windowContentImages/state_machine_screenshot.png,/Documentation"
+		 << ",State Machine Screenshot,FSM-SS,1,1,icon-Physics.gif,"
+			"/WebPath/images/windowContentImages/state_machine_screenshot.png,/Documentation"
 
-		 	 //uniqueWin mode == 2 for new tab
+			 //uniqueWin mode == 2 for new tab
 		 << ",Redmine Project for otsdaq,RED,2,1,../otsdaqIcons/android-icon-36x36.png,"
-		 	"https://cdcvs.fnal.gov/redmine/projects/otsdaq,/Documentation"
-		 	 //uniqueWin mode == 2 for new tab
+			"https://cdcvs.fnal.gov/redmine/projects/otsdaq,/Documentation"
+			 //uniqueWin mode == 2 for new tab
 		 << ",Homepage for otsdaq,OTS,2,1,../otsdaqIcons/android-icon-36x36.png,"
-		 		 	"https://otsdaq.fnal.gov,/Documentation"
+					"https://otsdaq.fnal.gov,/Documentation"
 		 //end Documentation ------------------
 
-	    //",Iterate,IT,0,1,icon-Iterate.png,/urn:xdaq-application:lid=280/?configWindowName=iterate,/"
-	    //<<
-	    //",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder"
-	    //<<
-	    //",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,/myFolder/mySub.folder"
-	    //<<
-	    //",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder/"
-	    //<<
+		//",Iterate,IT,0,1,icon-Iterate.png,/urn:xdaq-application:lid=280/?configWindowName=iterate,/"
+		//<<
+		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder"
+		//<<
+		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,/myFolder/mySub.folder"
+		//<<
+		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder/"
+		//<<
 
-	    
-	    //",Consumer
-	    // Wizard,CFG,0,1,icon-Configure.png,/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&subsetBasePath=FEInterfaceConfiguration&recordAlias=Consumer,Config
-	    // Wizards" <<
 
-	    //",DB Utilities,DB,1,1,0,http://127.0.0.1:8080/db/client.html" <<
-        
+		//",Consumer
+		// Wizard,CFG,0,1,icon-Configure.png,/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&subsetBasePath=FEInterfaceConfiguration&recordAlias=Consumer,Config
+		// Wizards" <<
 
-	     << "";
+		//",DB Utilities,DB,1,1,0,http://127.0.0.1:8080/db/client.html" <<
+
+
+		 << "";
 	// clang-format on
 	return;
 }  // end requestIcons()
@@ -469,8 +469,8 @@ void WizardSupervisor::toggleSecurityCodeGeneration(xgi::Input* in, xgi::Output*
 }  //end toggleSecurityCodeGeneration()
 
 //==============================================================================
-// xoap::supervisorSequenceCheck
-//	verify cookie
+/// xoap::supervisorSequenceCheck
+///	verify cookie
 xoap::MessageReference WizardSupervisor::supervisorSequenceCheck(
     xoap::MessageReference message)
 {
@@ -507,10 +507,10 @@ xoap::MessageReference WizardSupervisor::supervisorSequenceCheck(
 }  //end supervisorSequenceCheck()
 
 //===================================================================================================================
-// xoap::supervisorLastTableGroupRequest
-//	return the group name and key for the last state machine activity
-//
-//	Note: same as Supervisor::supervisorLastTableGroupRequest
+/// xoap::supervisorLastTableGroupRequest
+///	return the group name and key for the last state machine activity
+///
+///	Note: same as Supervisor::supervisorLastTableGroupRequest
 xoap::MessageReference WizardSupervisor::supervisorLastTableGroupRequest(
     xoap::MessageReference message)
 {
@@ -963,8 +963,8 @@ void WizardSupervisor::UserSettings(xgi::Input* in, xgi::Output* out)
 }  //end UserSettings()
 
 //==============================================================================
-//	validateUploadFileType
-//      returns "" if file type is invalid, else returns file extension to use
+///	validateUploadFileType
+///      returns "" if file type is invalid, else returns file extension to use
 std::string WizardSupervisor::validateUploadFileType(const std::string fileType)
 {
 	for(unsigned int i = 0; i < allowedFileUploadTypes_.size(); ++i)
@@ -975,9 +975,9 @@ std::string WizardSupervisor::validateUploadFileType(const std::string fileType)
 }  //end validateUploadFileType()
 
 //==============================================================================
-//	cleanUpPreviews
-//      cleanup logbook preview directory
-//      all names have time_t creation time + "_" + incremented index
+///	cleanUpPreviews
+///      cleanup logbook preview directory
+///      all names have time_t creation time + "_" + incremented index
 void WizardSupervisor::cleanUpPreviews()
 {
 	std::string userData = (std::string)USER_IMPORT_EXPORT_PATH;
@@ -1029,8 +1029,8 @@ void WizardSupervisor::cleanUpPreviews()
 }  //end cleanUpPreviews()
 
 //==============================================================================
-//	savePostPreview
-//      save post to preview directory named with time and incremented index
+///	savePostPreview
+///      save post to preview directory named with time and incremented index
 void WizardSupervisor::savePostPreview(std::string& /*subject*/,
                                        std::string& /*text*/,
                                        const std::vector<cgicc::FormFile>& /*files*/,
@@ -1039,7 +1039,7 @@ void WizardSupervisor::savePostPreview(std::string& /*subject*/,
 {
 	/*if(activeExperiment_ == "") //no active experiment!
 	{
-	    if(xmldoc) xmldoc->addTextElementToData(XML_STATUS,"Failed - no active experiment
+		if(xmldoc) xmldoc->addTextElementToData(XML_STATUS,"Failed - no active experiment
 	currently!"); return;
 	}
 */
@@ -1098,30 +1098,30 @@ void WizardSupervisor::savePostPreview(std::string& /*subject*/,
 	for (unsigned int i=0; i<files.size(); ++i)
 	{
 
-	    previewXml.addTextElementToParent(XML_LOGBOOK_ENTRY_FILE, files[i].getDataType(),
+		previewXml.addTextElementToParent(XML_LOGBOOK_ENTRY_FILE, files[i].getDataType(),
 	XML_LOGBOOK_ENTRY); if(xmldoc)
 	xmldoc->addTextElementToData(XML_LOGBOOK_ENTRY_FILE,files[i].getDataType()); //return
 	file type
 
-	    if((filename = validateUploadFileType(files[i].getDataType())) == "") //invalid
+		if((filename = validateUploadFileType(files[i].getDataType())) == "") //invalid
 	file type
-	    {
-	        if(xmldoc) xmldoc->addTextElementToData(XML_STATUS,"Failed - invalid file
+		{
+			if(xmldoc) xmldoc->addTextElementToData(XML_STATUS,"Failed - invalid file
 	type, " + files[i].getDataType() + "."); return;
-	    }*/
+		}*/
 
 	/*//file validated, so save upload to temp directory
-	    sprintf(fileIndex,"%d",i);
-	    filename = previewPath + "/" + (std::string)LOGBOOK_PREVIEW_UPLOAD_PREFACE +
-	            (std::string)fileIndex + "." + filename;
+		sprintf(fileIndex,"%d",i);
+		filename = previewPath + "/" + (std::string)LOGBOOK_PREVIEW_UPLOAD_PREFACE +
+				(std::string)fileIndex + "." + filename;
 
-	    __COUT__ << "file " << i << " - " << filename << std::endl;
-	    myfile.open(filename.c_str());
-	    if (myfile.is_open())
-	    {
-	        files[i].writeToStream(myfile);
-	        myfile.close();
-	    }
+		__COUT__ << "file " << i << " - " << filename << std::endl;
+		myfile.open(filename.c_str());
+		if (myfile.is_open())
+		{
+			files[i].writeToStream(myfile);
+			myfile.close();
+		}
 	}*/
 	/*
 	//save xml doc for preview entry

@@ -5,11 +5,11 @@
 
 namespace ots
 {
-// TableVersion is the type used for version associated with a configuration table
-//(whereas TableGroupKey is the type used for versions association with global
-// configurations)
-//
-// Designed so that version type could be changed easily, e.g. to string
+/// TableVersion is the type used for version associated with a configuration table
+///(whereas TableGroupKey is the type used for versions association with global
+/// configurations)
+///
+/// Designed so that version type could be changed easily, e.g. to string
 class TableVersion
 {
   public:
@@ -29,7 +29,7 @@ class TableVersion
 	bool         isInvalid(void) const;
 	std::string  toString(void) const;
 
-	// Operators
+	/// Operators
 	TableVersion& operator=(const unsigned int version);
 	bool          operator==(unsigned int version) const;
 	bool          operator==(const TableVersion& version) const;
@@ -40,15 +40,15 @@ class TableVersion
 	bool operator<=(const TableVersion& version) const { return !operator>(version); }
 	bool operator>=(const TableVersion& version) const { return !operator<(version); }
 	TableVersion& operator*=(
-	    const unsigned int a);  //to support StringMacros on TableVersion types
+	    const unsigned int a);  ///<to support StringMacros on TableVersion types
 	TableVersion& operator*=(
-	    const TableVersion a);  //to support StringMacros on TableVersion types
+	    const TableVersion a);  ///<to support StringMacros on TableVersion types
 	TableVersion& operator+=(
-	    const TableVersion a);  //to support StringMacros on TableVersion types
+	    const TableVersion a);  ///<to support StringMacros on TableVersion types
 	TableVersion& operator-=(
-	    const TableVersion a);  //to support StringMacros on TableVersion types
+	    const TableVersion a);  ///<to support StringMacros on TableVersion types
 	TableVersion& operator/=(
-	    const TableVersion a);  //to support StringMacros on TableVersion types
+	    const TableVersion a);  ///<to support StringMacros on TableVersion types
 
 	friend std::ostream& operator<<(std::ostream& out, const TableVersion& version)
 	{

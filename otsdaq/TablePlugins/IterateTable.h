@@ -11,11 +11,11 @@ class IterateTable : public TableBase
 	IterateTable(void);
 	virtual ~IterateTable(void);
 
-	// Methods
+	/// Methods
 	void init(ConfigurationManager* configManager);
 
-	// Getters
-
+	/// Getters
+	///
 	struct CommandTarget
 	{
 		std::string table_;
@@ -61,7 +61,7 @@ class IterateTable : public TableBase
 		std::map<std::string, std::string> m;
 		m[COMMAND_BEGIN_LABEL]            = "IterationCommandBeginLabelTable";
 		m[COMMAND_CHOOSE_FSM]             = "IterationCommandChooseFSMTable";
-		m[COMMAND_CONFIGURE_ACTIVE_GROUP] = "";  // no parameters
+		m[COMMAND_CONFIGURE_ACTIVE_GROUP] = "";  ///< no parameters
 		m[COMMAND_CONFIGURE_ALIAS]        = "IterationCommandConfigureAliasTable";
 		m[COMMAND_CONFIGURE_GROUP]        = "IterationCommandConfigureGroupTable";
 		m[COMMAND_ACTIVATE_ALIAS]         = "IterationCommandConfigureAliasTable";
@@ -71,11 +71,11 @@ class IterateTable : public TableBase
 		m[COMMAND_MODIFY_ACTIVE_GROUP]    = "IterationCommandModifyGroupTable";
 		m[COMMAND_REPEAT_LABEL]           = "IterationCommandRepeatLabelTable";
 		m[COMMAND_RUN]                    = "IterationCommandRunTable";
-		m[COMMAND_START]                  = "";  // no parameters
-		m[COMMAND_STOP]                   = "";  // no parameters
-		m[COMMAND_PAUSE]                  = "";  // no parameters
-		m[COMMAND_RESUME]                 = "";  // no parameters
-		m[COMMAND_HALT]                   = "";  // no parameters
+		m[COMMAND_START]                  = "";  ///< no parameters
+		m[COMMAND_STOP]                   = "";  ///< no parameters
+		m[COMMAND_PAUSE]                  = "";  ///< no parameters
+		m[COMMAND_RESUME]                 = "";  ///< no parameters
+		m[COMMAND_HALT]                   = "";  ///< no parameters
 		return m;
 	}
 
@@ -85,7 +85,7 @@ class IterateTable : public TableBase
 	} commandBeginLabelParams_;
 	static struct CommandChooseFSMParams
 	{
-		const std::string NameOfFSM_ = "NameOfStateMachine";  // by default ""
+		const std::string NameOfFSM_ = "NameOfStateMachine";  ///< by default ""
 	} commandChooseFSMParams_;
 	static struct CommandConfigureActiveParams
 	{
@@ -109,7 +109,7 @@ class IterateTable : public TableBase
 		const std::string GroupName_ = "GroupName";
 		const std::string GroupKey_  = "GroupKey";
 	} commandActivateGroupParams_;
-	static struct CommandExecuteMacroParams  // treat FE and Macro the same
+	static struct CommandExecuteMacroParams  ///< treat FE and Macro the same
 	{
 		// targets
 		const std::string MacroName_          = "MacroName";
@@ -141,7 +141,7 @@ class IterateTable : public TableBase
 		const std::string DurationInSeconds_    = "DurationInSeconds";
 	} commandRunParams_;
 
-	// for targets
+	/// for targets
 	static struct TargetParams
 	{
 		const std::string Tables_ = "CSVTargetTables";
@@ -160,7 +160,7 @@ class IterateTable : public TableBase
 		const std::string TargetLinkUID_ = "LinkToTargetUID";
 	} targetCols_;
 
-	// for macro dimensional loop parameters
+	/// for macro dimensional loop parameters
 	static struct MacroDimLoopTableColumns
 	{
 		const std::string Priority_           = "DimensionalLoopPriority";
@@ -175,15 +175,15 @@ class IterateTable : public TableBase
 
 	} macroParamCols_;
 
-	// Table hierarchy is as follows:
-	//	Iterate
-	//		|- Plan
-	//			|-Command Type 1
-	//			|-Command Type 2 ...
-	//			|-Command Type n
-
-	// Column names
-
+	/// Table hierarchy is as follows:
+	///	Iterate
+	///		|- Plan
+	///			|-Command Type 1
+	///			|-Command Type 2 ...
+	///			|-Command Type n
+	///
+	/// Column names
+	///
 	static struct IterateTableColumns
 	{
 		const std::string PlanLink_ = "LinkToIterationPlanTable";

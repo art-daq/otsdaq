@@ -39,4 +39,3 @@ LIBRARIES CONDITIONAL otsdaq::TableCore otsdaq::ConfigurationInterface)
 
 install_headers()
 install_source()
-  

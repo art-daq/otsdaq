@@ -5,7 +5,7 @@ SOURCE ARTDAQReaderProcessorBase.cc
 		otsdaq::Configurable
 		artdaq::Application
 		PRIVATE
-		
+
         )
 install_headers()
 install_source()

@@ -302,9 +302,9 @@ void RunControlStateMachine::reset(void)
 }  // end reset()
 
 ////==============================================================================
-//(RunControlStateMachine::stateMachineFunction_t)
-// RunControlStateMachine::getTransitionName( 		const toolbox::fsm::State from,
-//		const std::string& transition)
+///(RunControlStateMachine::stateMachineFunction_t)
+/// RunControlStateMachine::getTransitionName( 		const toolbox::fsm::State from,
+///		const std::string& transition)
 //{
 //	auto itFrom = stateTransitionFunctionTable_.find(from);
 //	if(itFrom == stateTransitionFunctionTable_.end())
@@ -326,10 +326,10 @@ void RunControlStateMachine::reset(void)
 //}
 
 //==============================================================================
-// runControlMessageHandler
-//	Handles the command broadcast message from the Gateway Supervisor
-//	and maps the command to a transition function, allowing for multiple iteration
-//	passes through the transition function.
+/// runControlMessageHandler
+///	Handles the command broadcast message from the Gateway Supervisor
+///	and maps the command to a transition function, allowing for multiple iteration
+///	passes through the transition function.
 xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
     xoap::MessageReference message)
 {

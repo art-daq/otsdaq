@@ -15,7 +15,7 @@ enum FragmentType : artdaq::Fragment::type_t
 	INVALID  // Should always be last.
 };
 
-// Safety check.
+/// Safety check.
 static_assert(artdaq::Fragment::isUserFragmentType(FragmentType::INVALID - 1),
               "Too many user-defined fragments!");
 }  // namespace detail

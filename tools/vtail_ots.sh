@@ -11,7 +11,7 @@ if [ "x$1" == "x" ]; then
     echo
     echo
     exit
-fi 
+fi
 
 basename=$(basename "$1")
 #parse as gateway log file first, then non-gateway
@@ -24,5 +24,3 @@ echo $hostname
 echo "Viewing file with 'tail -f' from node ${hostname}: $1"
 
 ssh ${hostname} tail -f $1
-
-

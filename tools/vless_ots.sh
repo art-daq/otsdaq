@@ -11,7 +11,7 @@ if [ "x$1" == "x" ]; then
     echo
     echo
     exit
-fi 
+fi
 
 basename=$(basename "$1")
 #parse as gateway log file first, then non-gateway
@@ -24,6 +24,3 @@ echo $hostname
 echo "Opening file in 'less' from node $hostname: $1"
 
 scp ${hostname}:$1 .tmpLogFile && less .tmpLogFile && rm .tmpLogFile
-
-
-

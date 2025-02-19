@@ -10,28 +10,28 @@
 #define TRACEMF_USE_VERBATIM 1 //for trace longer path filenames
 #include "TRACE/tracemf.h"
 
-// take filename only after srcs/ (this gives by repo name)
-// use 'builtin' to try to define at compile time
+/// take filename only after srcs/ (this gives by repo name)
+/// use 'builtin' to try to define at compile time
 #define __SHORTFILE__ 		(__builtin_strstr(&__FILE__[0], "/srcs/") ? __builtin_strstr(&__FILE__[0], "/srcs/") + 6 : __FILE__)
 
-// take only file name
+/// take only file name
 #define __FILENAME__ 		(__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define __E__ 				std::endl
 
 #define __THROW__(X) 		throw std::runtime_error(X)
 
-//un-comment __COUT_TO_STD__ to send __COUT__ directly to std::cout, rather than through message facility
-//#define __COUT_TO_STD__		1
-
+///un-comment __COUT_TO_STD__ to send __COUT__ directly to std::cout, rather than through message facility
+///#define __COUT_TO_STD__		1
+///
 #define __MF_SUBJECT__ __FILENAME__  // default subject.. others can #undef and re-#define
-// Note: to turn off MF everywhere, just replace with std::cout here at __MF_TYPE__(X)!
-
+/// Note: to turn off MF everywhere, just replace with std::cout here at __MF_TYPE__(X)!
+///
 #define QQQQ(X) #X
 #define QUOTE(X) QQQQ(X)
 //#define __MF_TYPE__(X)	FIXME ?? how to do this ...(__ENV__("OTSDAQ_USING_MF")=="1"?
-// mf::X (__MF_SUBJECT__) : std::cout << QUOTE(X) << ":" << __MF_SUBJECT__ << ":")
-
+/// mf::X (__MF_SUBJECT__) : std::cout << QUOTE(X) << ":" << __MF_SUBJECT__ << ":")
+///
 #define __COUT_HDR_F__ 		__SHORTFILE__ << ""
 #define __COUT_HDR_L__ 		":" << std::dec        << __LINE__ << " |\t"
 #define __COUT_HDR_P__ 		__PRETTY_FUNCTION__    << "\t"
@@ -69,7 +69,7 @@
 #define __SSV__(X) 			__SS__ << QUOTE(X) << " = " << X
 
 //////// ==============================================================
-// for configurable objects, add name to subject
+/// for configurable objects, add name to subject
 #define __CFG_MF_DECOR__		(theConfigurationRecordName_ + "\t<> ")
 #define __CFG_MF_TYPE__(X) 		TLOG(X, __MF_SUBJECT__) << __CFG_MF_DECOR__
 
@@ -93,7 +93,7 @@
 
 //////// ==============================================================
 
-// for front-end interface objects, add name to subject
+/// for front-end interface objects, add name to subject
 #define __FE_MF_DECOR__			("FE:" + getInterfaceType() + std::string(":") + getInterfaceUID() + ":" + theConfigurationRecordName_ + "\t<> ")
 #define __FE_MF_TYPE__(X)      	TLOG(X, __MF_SUBJECT__) << __FE_MF_DECOR__
 
@@ -117,7 +117,7 @@
 
 //////// ==============================================================
 
-// for generic decoration override, just have mfSubject declared
+/// for generic decoration override, just have mfSubject declared
 #define __GEN_MF_DECOR__		(mfSubject_ + "\t<> ")
 #define __GEN_MF_TYPE__(X) 		TLOG(X, __MF_SUBJECT__) << __GEN_MF_DECOR__
 
@@ -141,8 +141,8 @@
 
 //////// ==============================================================
 
-// for core supervisor objects (with supervisorClassNoNamespace_ defined), add class to
-// subject
+/// for core supervisor objects (with supervisorClassNoNamespace_ defined), add class to
+/// subject
 #define __SUP_MF_DECOR__		(supervisorClassNoNamespace_ + std::string(":") + CorePropertySupervisorBase::getSupervisorUID() + "\t<> ")
 #define __SUP_MF_TYPE__(X)      TLOG(X, __MF_SUBJECT__) << __SUP_MF_DECOR__ //mf::X(supervisorClassNoNamespace_ + "-" + CorePropertySupervisorBase::getSupervisorUID())
 
@@ -165,13 +165,13 @@
 #define __SUP_SS__              std::stringstream ss; ss << "|" << __SUP_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #define __SUP_SS_THROW__        { __SUP_COUT_ERR__ << "\n" << ss.str(); throw std::runtime_error(ss.str()); }
 
-//To use __ENV__, will need to include #include "otsdaq/Macros/StringMacros.h"
+///To use __ENV__, will need to include #include "otsdaq/Macros/StringMacros.h"
 #define __ENV__(X) 				StringMacros::otsGetEnvironmentVarable(X, std::string(__SHORTFILE__), __LINE__)
 
 //========================================================================================================================
-// const_cast away the const
-//	so that otsdaq is compatible with slf6 and slf7 versions of xdaq
-//	where they changed to const xdaq::ApplicationDescriptor* in slf7
+/// const_cast away the const
+///	so that otsdaq is compatible with slf6 and slf7 versions of xdaq
+///	where they changed to const xdaq::ApplicationDescriptor* in slf7
 #ifdef XDAQ_NOCONST
 #define XDAQ_CONST_CALL
 #else
@@ -180,9 +180,9 @@
 //========================================================================================================================
 
 //========================================================================================================================
-// declare special ots soft PAUSE exception
-//	a PAUSE exception thrown during a running workloop by a state machine plugin will
-//	PAUSE the global state machine and allow for manual intervention to resume a run.
+/// declare special ots soft PAUSE exception
+///	a PAUSE exception thrown during a running workloop by a state machine plugin will
+///	PAUSE the global state machine and allow for manual intervention to resume a run.
 namespace ots
 {
 struct __OTS_PAUSE_EXCEPTION__ : public std::exception
@@ -193,9 +193,9 @@ struct __OTS_PAUSE_EXCEPTION__ : public std::exception
 };
 }  // end namespace ots
 //========================================================================================================================
-// declare special ots harder STOP exception
-//	a STOP exception thrown during a running workloop by a state machine plugin will
-//	STOP the global state machine and allow for manual intervention to resume a run.
+/// declare special ots harder STOP exception
+///	a STOP exception thrown during a running workloop by a state machine plugin will
+///	STOP the global state machine and allow for manual intervention to resume a run.
 namespace ots
 {
 struct __OTS_STOP_EXCEPTION__ : public std::exception

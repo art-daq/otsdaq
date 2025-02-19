@@ -6,16 +6,15 @@
 #include "otsdaq/DataProcessorPlugins/ARTDAQConsumer.h"
 // #include "otsdaq/Macros/CoutMacros.h"
 // #include "otsdaq/MessageFacility/MessageFacility.h"
-//
+
 // #include <cstdint>
 // #include <fstream>
 // #include <iostream>
 // #include <set>
 
 using namespace ots;
-//
-// #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" +
-//"ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
+
+// #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
 
 //==============================================================================
 ARTDAQConsumer::ARTDAQConsumer(std::string              supervisorApplicationUID,
@@ -30,9 +29,9 @@ ARTDAQConsumer::ARTDAQConsumer(std::string              supervisorApplicationUID
                                 processorUID,
                                 theXDAQContextConfigTree,
                                 configurationPath)
-//    : WorkLoop(processorUID)
-//    , DataConsumer(supervisorApplicationUID, bufferUID, processorUID,
-//    LowConsumerPriority) , Configurable(theXDAQContextConfigTree, configurationPath)
+///    : WorkLoop(processorUID)
+///    , DataConsumer(supervisorApplicationUID, bufferUID, processorUID,
+///    LowConsumerPriority) , Configurable(theXDAQContextConfigTree, configurationPath)
 {
 	__COUT__ << "ARTDAQ Consumer constructed." << __E__;
 	//__COUT__ << "Configuration string:-" <<
@@ -126,9 +125,9 @@ ARTDAQConsumer::ARTDAQConsumer(std::string              supervisorApplicationUID
 }
 
 //==============================================================================
-// ARTDAQConsumer::ARTDAQConsumer(std::string interfaceID, MPI_Comm local_group_comm,
-// std::string name) :FEVInterface     (feId, 0) ,local_group_comm_(local_group_comm)
-//,name_            (name)
+/// ARTDAQConsumer::ARTDAQConsumer(std::string interfaceID, MPI_Comm local_group_comm,
+/// std::string name) :FEVInterface     (feId, 0) ,local_group_comm_(local_group_comm)
+///,name_            (name)
 //{}
 
 //==============================================================================
@@ -137,19 +136,18 @@ ARTDAQConsumer::~ARTDAQConsumer(void)
 	halt();
 	__COUT__ << "Destructed." << __E__;
 }
-//
+
 ////==============================================================================
-// void ARTDAQConsumer::initLocalGroup(int rank)
+/// void ARTDAQConsumer::initLocalGroup(int rank)
 //{
 //	name_ = "BoardReader_" + DataConsumer::processorUID_;
 //	configure(rank);
 //}
-//
-// #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" +
-//"ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
-//
+
+// #define ARTDAQ_FCL_PATH std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/" #define ARTDAQ_FILE_PREAMBLE "boardReader"
+
 ////==============================================================================
-// void ARTDAQConsumer::configure(int rank)
+/// void ARTDAQConsumer::configure(int rank)
 //{
 //	__COUT__ << "\tConfigure" << __E__;
 //
@@ -183,9 +181,9 @@ ARTDAQConsumer::~ARTDAQConsumer(void)
 //	}
 //	__COUT__ << "\tDone Configure" << __E__;
 //}
-//
+
 ////==============================================================================
-// void ARTDAQConsumer::halt(void)
+/// void ARTDAQConsumer::halt(void)
 //{
 //	__COUT__ << "\tHalt" << __E__;
 //	// FIXME These are passed as parameters
@@ -199,9 +197,10 @@ ARTDAQConsumer::~ARTDAQConsumer(void)
 //		report_string_.append(name_ + ".");
 //	}
 //}
-//
+
 //==============================================================================
 void ARTDAQConsumer::pauseProcessingData(void) { ARTDAQReaderProcessorBase::pause(); }
+//{
 //	__COUT__ << "\tPause" << __E__;
 //	// FIXME These are passed as parameters
 //	uint64_t timeout         = 45;
@@ -214,9 +213,10 @@ void ARTDAQConsumer::pauseProcessingData(void) { ARTDAQReaderProcessorBase::paus
 //		report_string_.append(name_ + ".");
 //	}
 //}
-//
+
 //==============================================================================
 void ARTDAQConsumer::resumeProcessingData(void) { ARTDAQReaderProcessorBase::resume(); }
+//{
 //	__COUT__ << "\tResume" << __E__;
 //	// FIXME These are passed as parameters
 //	uint64_t timeout         = 45;
@@ -229,12 +229,13 @@ void ARTDAQConsumer::resumeProcessingData(void) { ARTDAQReaderProcessorBase::res
 //		report_string_.append(name_ + ".");
 //	}
 //}
-//
+
 //==============================================================================
 void ARTDAQConsumer::startProcessingData(std::string runNumber)
 {
 	ARTDAQReaderProcessorBase::start(runNumber);
 }
+//{
 //	__COUT__ << "\tStart" << __E__;
 //
 //	art::RunID runId((art::RunNumber_t)boost::lexical_cast<art::RunNumber_t>(runNumber));
@@ -262,9 +263,10 @@ void ARTDAQConsumer::startProcessingData(std::string runNumber)
 //
 //	__COUT__ << "STARTING BOARD READER THREAD" << __E__;
 //}
-//
+
 //==============================================================================
 void ARTDAQConsumer::stopProcessingData(void) { ARTDAQReaderProcessorBase::stop(); }
+//{
 //	__COUT__ << "\tStop" << __E__;
 //	// FIXME These are passed as parameters
 //	uint64_t timeout   = 45;

@@ -4,10 +4,10 @@
 using namespace ots;
 
 //==============================================================================
-// getOrPostData
-// 	return std::string value of needle from get or post std::string
-//		post format is expected to be: needle1=value1&needle2=value2...
-//	if not found, return ""
+/// getOrPostData
+/// 	return std::string value of needle from get or post std::string
+///		post format is expected to be: needle1=value1&needle2=value2...
+///	if not found, return ""
 std::string CgiDataUtilities::getOrPostData(cgicc::Cgicc& cgi, const std::string& needle)
 {
 	std::string postData = "";
@@ -18,10 +18,10 @@ std::string CgiDataUtilities::getOrPostData(cgicc::Cgicc& cgi, const std::string
 }
 
 //==============================================================================
-// getPostData
-// 	return std::string value of needle from post std::string
-//		post format is expected to be: needle1=value1&needle2=value2...
-//	if not found, return ""
+/// getPostData
+/// 	return std::string value of needle from post std::string
+///		post format is expected to be: needle1=value1&needle2=value2...
+///	if not found, return ""
 std::string CgiDataUtilities::postData(cgicc::Cgicc& cgi, const std::string& needle)
 {
 	std::string postData = "&" + cgi.getEnvironment().getPostData();
@@ -47,9 +47,9 @@ std::string CgiDataUtilities::postData(cgicc::Cgicc& cgi, const std::string& nee
 }
 
 //==============================================================================
-// getData
-//	returns "" if not found
-//		get query data format is expected to be: needle1=value1&needle2=value2...
+/// getData
+///	returns "" if not found
+///		get query data format is expected to be: needle1=value1&needle2=value2...
 std::string CgiDataUtilities::getData(cgicc::Cgicc& cgi, const std::string& needle)
 {
 	std::string getData = "&" + cgi.getEnvironment().getQueryString();
@@ -90,11 +90,11 @@ int CgiDataUtilities::getDataAsInt(cgicc::Cgicc& cgi, const std::string& needle)
 {
 	return atoi(getData(cgi, needle).c_str());
 }
-//
+///
 ////==============================================================================
 //// decodeURIComponent
 ////	converts all %## to the ascii character
-// std::string StringMacros::decodeURIComponent(const std::string& data)
+/// std::string StringMacros::decodeURIComponent(const std::string& data)
 //{
 //	std::string  decodeURIString(data.size(), 0);  // init to same size
 //	unsigned int j = 0;

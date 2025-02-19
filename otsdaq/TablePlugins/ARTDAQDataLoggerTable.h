@@ -14,7 +14,7 @@ class ARTDAQDataLoggerTable : public ARTDAQTableBase, public SlowControlsTableBa
 	ARTDAQDataLoggerTable(void);
 	virtual ~ARTDAQDataLoggerTable(void);
 
-	// Methods
+	/// Methods
 	void 					init						(ConfigurationManager* configManager) override;
 
 	virtual unsigned int	slowControlsHandlerConfig	(

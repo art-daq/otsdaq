@@ -14,20 +14,20 @@ using namespace ots;
 #define mfSubject_ (interface_->getInterfaceUID() + "-" + channelName)
 
 ////////////////////////////////////
-// Packet Types sent in txBuffer:
-//
-//			create value packet:
-//			  1B type (0: value, 1: loloalarm, 2: loalarm, 3: hioalarm, 4: hihialarm)
-//				1B sequence count from channel
-//				8B time
-//				4B sz of name
-//				name
-//				1B sz of value in bytes
-//				1B sz of value in bits
-//				value or alarm threshold value
-//
+/// Packet Types sent in txBuffer:
+///
+///			create value packet:
+///			  1B type (0: value, 1: loloalarm, 2: loalarm, 3: hioalarm, 4: hihialarm)
+///				1B sequence count from channel
+///				8B time
+///				4B sz of name
+///				name
+///				1B sz of value in bytes
+///				1B sz of value in bits
+///				value or alarm threshold value
+///
 ////////////////////////////////////
-
+///
 //==============================================================================
 FESlowControlsChannel::FESlowControlsChannel(FEVInterface*      interface,
                                              const std::string& channelNameIn,
@@ -356,8 +356,8 @@ void FESlowControlsChannel::print(std::ostream& out) const
 }  // end print()
 
 //==============================================================================
-// underscoreString
-//	replace all non-alphanumeric with underscore
+/// underscoreString
+///	replace all non-alphanumeric with underscore
 std::string FESlowControlsChannel::underscoreString(const std::string& str)
 {
 	std::string retStr;
@@ -372,10 +372,10 @@ std::string FESlowControlsChannel::underscoreString(const std::string& str)
 }  // end underscoreString()
 
 //==============================================================================
-// convertStringToBuffer
-//	if useDataType == false, then assume unsigned long long
-//
-// 	Note: buffer is expected to sized properly in advance, e.g. buffer.resize(#)
+/// convertStringToBuffer
+///	if useDataType == false, then assume unsigned long long
+///
+/// 	Note: buffer is expected to sized properly in advance, e.g. buffer.resize(#)
 void FESlowControlsChannel::convertStringToBuffer(const std::string& inString,
                                                   std::string&       buffer,
                                                   bool useDataType /*  = false */)
@@ -436,8 +436,8 @@ void FESlowControlsChannel::convertStringToBuffer(const std::string& inString,
 }  // end convertStringToBuffer()
 
 //==============================================================================
-// handleSample
-//	adds to txBuffer if sample should be sent to monitor server
+/// handleSample
+///	adds to txBuffer if sample should be sent to monitor server
 void FESlowControlsChannel::handleSample(const std::string& universalReadValue,
                                          std::string&       txBuffer,
                                          FILE*              fpAggregate,
@@ -864,9 +864,9 @@ void FESlowControlsChannel::handleSample(const std::string& universalReadValue,
 }
 
 //==============================================================================
-// extractSample
-//	extract sample from universalReadValue
-//		considering bit size and offset
+/// extractSample
+///	extract sample from universalReadValue
+///		considering bit size and offset
 void FESlowControlsChannel::extractSample()
 {
 	const std::string& universalReadValue = universalReadValue_;  //do not modify
@@ -900,9 +900,9 @@ void FESlowControlsChannel::extractSample()
 }  // end extractSample()
 
 //==============================================================================
-// clearAlarms
-//	clear target alarm
-// 	if -1 clear all
+/// clearAlarms
+///	clear target alarm
+/// 	if -1 clear all
 void FESlowControlsChannel::clearAlarms(int targetAlarm)
 {
 	if(targetAlarm == -1 || targetAlarm == 0)
@@ -916,10 +916,10 @@ void FESlowControlsChannel::clearAlarms(int targetAlarm)
 }  // end clearAlarms()
 
 //==============================================================================
-// checkAlarms
-//	if current value is a new alarm, set alarmed and add alarm packet to buffer
-//
-//	return mask of alarms that fired during this check.
+/// checkAlarms
+///	if current value is a new alarm, set alarmed and add alarm packet to buffer
+///
+///	return mask of alarms that fired during this check.
 char FESlowControlsChannel::checkAlarms(std::string& txBuffer)
 {
 	// procedure:

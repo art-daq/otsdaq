@@ -8,8 +8,8 @@
 
 namespace ots
 {
-// DataProcessor
-//	This class provides common functionality for Data Producers and Consumers.
+/// DataProcessor
+///	This class provides common functionality for Data Producers and Consumers.
 class DataProcessor
 {
   public:
@@ -27,7 +27,7 @@ class DataProcessor
 	virtual void pauseProcessingData(void) { stopProcessingData(); }
 	virtual void resumeProcessingData(void) { startProcessingData(""); }
 
-	// Getters
+	/// Getters
 	const std::string& getProcessorID(void) const { return processorUID_; }
 
 	void setCircularBuffer(CircularBufferBase* circularBuffer);

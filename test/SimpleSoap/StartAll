@@ -1,1 +1,1 @@
-${XDAQ_ROOT}/bin/xdaq.exe -p 1974 -e xml/SimpleSoap.xml -c xml/SimpleSoapNoRU.xml 
+${XDAQ_ROOT}/bin/xdaq.exe -p 1974 -e xml/SimpleSoap.xml -c xml/SimpleSoapNoRU.xml

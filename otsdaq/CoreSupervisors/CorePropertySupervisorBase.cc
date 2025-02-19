@@ -50,7 +50,7 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		__SUP_COUTV__(CorePropertySupervisorBase::supervisorConfigurationPath_);
 
 		//move to after configure for MacroMaker mode
-		// CorePropertySupervisorBase::indicateOtsAlive(0); 
+		// CorePropertySupervisorBase::indicateOtsAlive(0);
 
 		return;
 	}
@@ -125,10 +125,10 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 	__SUP_COUTV__(CorePropertySupervisorBase::supervisorConfigurationPath_);
 
 	//try to verify binding port for context was established
-	//All this code failed to do the trick 
+	//All this code failed to do the trick
 	// {
 	// 			application->ptr_;
-			
+
 	// 			PeerTransportHTTP(this)
 	// 			const xdaq::NetGroup* netGroupPtr = application->getApplicationContext()->getNetGroup();
 	// 			auto netVector = netGroupPtr->getNetworks();
@@ -272,7 +272,7 @@ void CorePropertySupervisorBase::indicateOtsDead(
 }  // end indicateOtsDead()
 
 //==============================================================================
-// will be wizard supervisor in wiz mode, otherwise Gateway Supervisor descriptor
+/// will be wizard supervisor in wiz mode, otherwise Gateway Supervisor descriptor
 XDAQ_CONST_CALL xdaq::ApplicationDescriptor*
                 CorePropertySupervisorBase::getGatewaySupervisorDescriptor(void)
 {
@@ -284,9 +284,9 @@ XDAQ_CONST_CALL xdaq::ApplicationDescriptor*
 }  // end getGatewaySupervisorDescriptor()
 
 //==============================================================================
-// When overriding, setup default property values here
-// called by CorePropertySupervisorBase constructor before loading user defined property
-// values
+/// When overriding, setup default property values here
+/// called by CorePropertySupervisorBase constructor before loading user defined property
+/// values
 void CorePropertySupervisorBase::setSupervisorPropertyDefaults(void)
 {
 	// This can be done in the constructor because when you start xdaq it loads the
@@ -330,20 +330,20 @@ void CorePropertySupervisorBase::setSupervisorPropertyDefaults(void)
 }  // end setSupervisorPropertyDefaults()
 
 //==============================================================================
-// extractPermissionsMapFromString
-//	Static function that extract map function to standardize approach
-//		in case needed by supervisors for special permissions handling.
-//	For example, used to serve Desktop Icons.
-//
-//	permissionsString format is as follows:
-//		<groupName>:<permissionsThreshold> pairs separated by ',' '&' or '|'
-//		for example, to give access admins and pixel team but not calorimeter team:
-//			allUsers:255 | pixelTeam:1 | calorimeterTeam:0
-//
-//	Note: WebUsers::DEFAULT_USER_GROUP = allUsers
-//
-//	Use with CorePropertySupervisorBase::doPermissionsGrantAccess to determine
-//		if access is allowed.
+/// extractPermissionsMapFromString
+///	Static function that extract map function to standardize approach
+///		in case needed by supervisors for special permissions handling.
+///	For example, used to serve Desktop Icons.
+///
+///	permissionsString format is as follows:
+///		<groupName>:<permissionsThreshold> pairs separated by ',' '&' or '|'
+///		for example, to give access admins and pixel team but not calorimeter team:
+///			allUsers:255 | pixelTeam:1 | calorimeterTeam:0
+///
+///	Note: WebUsers::DEFAULT_USER_GROUP = allUsers
+///
+///	Use with CorePropertySupervisorBase::doPermissionsGrantAccess to determine
+///		if access is allowed.
 void CorePropertySupervisorBase::extractPermissionsMapFromString(
     const std::string&                                  permissionsString,
     std::map<std::string, WebUsers::permissionLevel_t>& permissionsMap)
@@ -358,23 +358,23 @@ void CorePropertySupervisorBase::extractPermissionsMapFromString(
 }  // end extractPermissionsMapFromString()
 
 //==============================================================================
-// doPermissionsGrantAccess
-//	Static function that checks permissionLevelsMap against permissionThresholdsMap and
-// returns true if 	access requirements are met.
-//
-//	This is useful in standardizing approach for supervisors in case of
-//		of special permissions handling.
-//	For example, used to serve Desktop Icons.
-//
-//	permissionLevelsString format is as follows:
-//		<groupName>:<permissionsLevel> pairs separated by ',' '&' or '|'
-//		for example, to be a standard user and an admin on the pixel team and no access to
-// calorimeter team: 			allUsers:1 | pixelTeam:255 | calorimeterTeam:0
-//
-//	permissionThresoldsString format is as follows:
-//		<groupName>:<permissionsThreshold> pairs separated by ',' '&' or '|'
-//		for example, to give access admins and pixel team but not calorimeter team:
-//			allUsers:255 | pixelTeam:1 | calorimeterTeam:0
+/// doPermissionsGrantAccess
+///	Static function that checks permissionLevelsMap against permissionThresholdsMap and
+/// returns true if 	access requirements are met.
+///
+///	This is useful in standardizing approach for supervisors in case of
+///		of special permissions handling.
+///	For example, used to serve Desktop Icons.
+///
+///	permissionLevelsString format is as follows:
+///		<groupName>:<permissionsLevel> pairs separated by ',' '&' or '|'
+///		for example, to be a standard user and an admin on the pixel team and no access to
+/// calorimeter team: 			allUsers:1 | pixelTeam:255 | calorimeterTeam:0
+///
+///	permissionThresoldsString format is as follows:
+///		<groupName>:<permissionsThreshold> pairs separated by ',' '&' or '|'
+///		for example, to give access admins and pixel team but not calorimeter team:
+///			allUsers:255 | pixelTeam:1 | calorimeterTeam:0
 bool CorePropertySupervisorBase::doPermissionsGrantAccess(
     std::map<std::string, WebUsers::permissionLevel_t>& permissionLevelsMap,
     std::map<std::string, WebUsers::permissionLevel_t>& permissionThresholdsMap)
@@ -490,8 +490,8 @@ void CorePropertySupervisorBase::checkSupervisorPropertySetup()
 }  // end checkSupervisorPropertySetup()
 
 //==============================================================================
-// getSupervisorTreeNode ~
-//	try to get this Supervisors configuration tree node
+/// getSupervisorTreeNode ~
+///	try to get this Supervisors configuration tree node
 ConfigurationTree CorePropertySupervisorBase::getSupervisorTreeNode(void)
 try
 {
@@ -516,8 +516,8 @@ catch(...)
 }  // end getSupervisorTreeNode() exception handling
 
 //==============================================================================
-// loadUserSupervisorProperties ~
-//	try to get user supervisor properties
+/// loadUserSupervisorProperties ~
+///	try to get user supervisor properties
 void CorePropertySupervisorBase::loadUserSupervisorProperties(void)
 {
 	//	__SUP_COUT__ << "Loading user properties for supervisor '" <<
@@ -575,8 +575,8 @@ void CorePropertySupervisorBase::addSupervisorProperty(const std::string& proper
 }  // end addSupervisorProperty()
 
 //==============================================================================
-// getSupervisorProperty
-//		string version of template function
+/// getSupervisorProperty
+///		string version of template function
 std::string CorePropertySupervisorBase::getSupervisorProperty(
     const std::string& propertyName)
 {
@@ -593,7 +593,7 @@ std::string CorePropertySupervisorBase::getSupervisorProperty(
 }  // end getSupervisorProperty()
 
 //==============================================================================
-// getSupervisorProperty
+/// getSupervisorProperty
 std::string CorePropertySupervisorBase::getSupervisorProperty(
     const std::string& propertyName, const std::string& defaultValue)
 {
@@ -610,8 +610,8 @@ std::string CorePropertySupervisorBase::getSupervisorProperty(
 }  // end getSupervisorProperty()
 
 //==============================================================================
-// getSupervisorPropertyUserPermissionsThreshold
-//	returns the threshold based on the requestType
+/// getSupervisorPropertyUserPermissionsThreshold
+///	returns the threshold based on the requestType
 WebUsers::permissionLevel_t
 CorePropertySupervisorBase::getSupervisorPropertyUserPermissionsThreshold(
     const std::string& requestType)
@@ -624,8 +624,8 @@ CorePropertySupervisorBase::getSupervisorPropertyUserPermissionsThreshold(
 }  // end getSupervisorPropertyUserPermissionsThreshold()
 
 //==============================================================================
-// getRequestUserInfo ~
-//	extract user info for request based on property configuration
+/// getRequestUserInfo ~
+///	extract user info for request based on property configuration
 void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& userInfo)
 {
 	checkSupervisorPropertySetup();

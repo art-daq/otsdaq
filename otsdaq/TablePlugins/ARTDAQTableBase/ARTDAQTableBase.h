@@ -5,7 +5,7 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 #include "otsdaq/TableCore/TableBase.h"
 
-// helpers
+/// helpers
 #define OUT out << tabStr << commentStr
 #define PUSHTAB tabStr += "\t"
 #define POPTAB tabStr.resize(tabStr.size() - 1)
@@ -15,7 +15,7 @@
 namespace ots
 {
 // clang-format off
-class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can inherit from multiple table base classes
+class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins can inherit from multiple table base classes
 {
   public:
 	ARTDAQTableBase();
@@ -67,10 +67,10 @@ class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can
 		int         id;
 		std::string label;
 
-		std::set<int> sources;      // by subsystem id
-		int           destination;  // destination subsystem id, 0 := no destination
+		std::set<int> sources;      ///< by subsystem id
+		int           destination;  ///< destination subsystem id, 0 := no destination
 
-		bool eventMode; // Whether art sends events or Fragments
+		bool eventMode; ///< Whether art sends events or Fragments
 		bool hasRoutingManager;
 		std::string routingManagerHost;
 
@@ -89,59 +89,59 @@ class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can
 	static void        						flattenFHICL				(ARTDAQAppType type, const std::string& name);
 
 	static void        						insertParameters			(std::ostream&      out,
-	                   						                			 std::string&       tabStr,
-	                   						                			 std::string&       commentStr,
-	                   						                			 ConfigurationTree  parameterLink,
-	                   						                			 const std::string& parameterPreamble,
-	                   						                			 bool               onlyInsertAtTableParameters = false,
-	                   						                			 bool               includeAtTableParameters    = false);
+																		 std::string&       tabStr,
+																		 std::string&       commentStr,
+																		 ConfigurationTree  parameterLink,
+																		 const std::string& parameterPreamble,
+																		 bool               onlyInsertAtTableParameters = false,
+																		 bool               includeAtTableParameters    = false);
 	static std::string 						insertModuleType			(std::ostream& out, std::string& tabStr, std::string& commentStr, ConfigurationTree moduleTypeNode);
 	static void        						insertMetricsBlock			(std::ostream& out, std::string& tabStr, std::string& commentStr, ConfigurationTree daqNode);
 	static void                             insertArtProcessBlock(std::ostream& out, std::string& tabStr, std::string& commentStr, ConfigurationTree art,
 																		 ConfigurationTree subsystemLink = ConfigurationTree(),
-	            							                      		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-	            							                      		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT );
+																		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT );
 
 	static void 							outputBoardReaderFHICL		(const ConfigurationTree& boardReaderNode,
-	            							                      		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
-	            							                      		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-	            							                      		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT);
+																		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
+																		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT);
 
 	static void 							outputDataReceiverFHICL		(const ConfigurationTree& receiverNode,
-	            							                       		 ARTDAQAppType            appType,
-	            							                       		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
-	            							                       		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-	            							                       		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT);
+																		 ARTDAQAppType            appType,
+																		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
+																		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT);
 
 	static void 							outputRoutingManagerFHICL	(const ConfigurationTree& routingManagerNode,
-	            							                        	 size_t                   routingTimeoutMs  = DEFAULT_ROUTING_TIMEOUT_MS,
-	            							                        	 size_t                   routingRetryCount = DEFAULT_ROUTING_RETRY_COUNT);
+																		 size_t                   routingTimeoutMs  = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t                   routingRetryCount = DEFAULT_ROUTING_RETRY_COUNT);
 
 	static void                             outputOnlineMonitorFHICL 	(const ConfigurationTree& onlineMonitorNode);
 
 	static bool               				isARTDAQEnabled				(const ConfigurationManager* cfgMgr);
 	static const ARTDAQInfo& 				extractARTDAQInfo			(ConfigurationTree artdaqSupervisorNode,
-			 	 	 	 	 	 	 	 	 	 	 	 	 	 	 	 bool			   getStatusFalseNodes  = false,
-	                  						                 			 bool              doWriteFHiCL         = false,
-	                  						                 			 size_t            maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
-	                  						                 			 size_t            routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-	                  						                 			 size_t            routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT,
-	                  						                 			 ProgressBar*      progressBar          = 0);
+																		 bool			   getStatusFalseNodes  = false,
+																		 bool              doWriteFHiCL         = false,
+																		 size_t            maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
+																		 size_t            routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
+																		 size_t            routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT,
+																		 ProgressBar*      progressBar          = 0);
 
 	static const ARTDAQInfo&       			getARTDAQSystem				(ConfigurationManagerRW* cfgMgr,
-																         std::map<std::string /*type*/,
-																		 	 std::map<std::string /*record*/,
-																			 	 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
-																         std::map<std::string /*subsystemName*/,
-																		 	 std::string /*destinationSubsystemName*/>& 	subsystemObjectMap,
+																		 std::map<std::string /*type*/,
+																			 std::map<std::string /*record*/,
+																				 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
+																		 std::map<std::string /*subsystemName*/,
+																			 std::string /*destinationSubsystemName*/>& 	subsystemObjectMap,
 																			 std::vector<std::string /*property*/>& 		artdaqSupervisoInfo);
 
 	static void       						setAndActivateARTDAQSystem	(ConfigurationManagerRW* cfgMgr,
-																         const std::map<std::string /*type*/,
-																		 	 std::map<std::string /*record*/,
-																			 	 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
-																         const std::map<std::string /*subsystemName*/,
-																		 	 std::string /*destinationSubsystemName*/>&   	subsystemObjectMap);
+																		 const std::map<std::string /*type*/,
+																			 std::map<std::string /*record*/,
+																				 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
+																		 const std::map<std::string /*subsystemName*/,
+																			 std::string /*destinationSubsystemName*/>&   	subsystemObjectMap);
 
   private:
 	static int  							getSubsytemId				(ConfigurationTree subsystemNode);
@@ -150,7 +150,7 @@ class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can
 	static void       						extractEventBuildersInfo	(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
 	static void       						extractDataLoggersInfo		(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
 	static void       						extractDispatchersInfo		(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
-		
+
 	static ARTDAQInfo 						info_;
 
   public:
@@ -178,20 +178,20 @@ class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can
 				std::make_pair(DISPATCHER, 	ARTDAQTableBase::ARTDAQ_DISPATCHER_TABLE),
 				std::make_pair(MONITOR, 	ARTDAQTableBase::ARTDAQ_MONITOR_TABLE),
 				std::make_pair(ROUTER, 		ARTDAQTableBase::ARTDAQ_ROUTER_TABLE)})
-		    , mapToGroupIDAppend_({		    	
+			, mapToGroupIDAppend_({
 				std::make_pair(READER, 		"BoardReaders"),
 				std::make_pair(BUILDER, 	"EventBuilders"),
 				std::make_pair(LOGGER, 		"DataLoggers"),
 				std::make_pair(DISPATCHER, 	"Dispatchers"),
 				std::make_pair(MONITOR, 	"Monitors"),
 				std::make_pair(ROUTER, 		"RoutingManagers")})
-		    , mapToLinkGroupIDColumn_({		    	
+			, mapToLinkGroupIDColumn_({
 				std::make_pair(READER, 		ARTDAQTableBase::colARTDAQSupervisor_.colLinkToBoardReadersGroupID_),
 				std::make_pair(BUILDER, 	ARTDAQTableBase::colARTDAQSupervisor_.colLinkToEventBuildersGroupID_),
 				std::make_pair(LOGGER, 		ARTDAQTableBase::colARTDAQSupervisor_.colLinkToDataLoggersGroupID_),
 				std::make_pair(DISPATCHER, 	ARTDAQTableBase::colARTDAQSupervisor_.colLinkToDispatchersGroupID_),
 				std::make_pair(ROUTER, 		ARTDAQTableBase::colARTDAQSupervisor_.colLinkToRoutingManagersGroupID_)})
-		    , mapToGroupIDColumn_({		    	
+			, mapToGroupIDColumn_({
 				std::make_pair(READER, 		"BoardReaderGroupID"),
 				std::make_pair(BUILDER, 	"EventBuilderGroupID"),
 				std::make_pair(LOGGER, 		"DataLoggerGroupID"),
@@ -204,7 +204,7 @@ class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can
 		const std::map<std::string /*processType*/, std::string /*typeTable*/> 		mapToTable_, mapToGroupIDAppend_, mapToLinkGroupIDColumn_, mapToGroupIDColumn_;
 	} processTypes_;
 
-	// ARTDAQ Supervisor Column names
+	/// ARTDAQ Supervisor Column names
 	static struct ColARTDAQSupervisor
 	{
 		std::string const colDAQInterfaceDebugLevel_ 		= "DAQInterfaceDebugLevel";
@@ -222,35 +222,35 @@ class ARTDAQTableBase : virtual public TableBase //virtual so future plugins can
 		std::string const colLinkToRoutingManagersGroupID_ 	= "RoutingManagersLinkGroupID";
 	} colARTDAQSupervisor_;
 
-	// ARTDAQ Subsystem Column names
+	/// ARTDAQ Subsystem Column names
 	static struct ColARTDAQSubsystem
 	{
 		std::string const colLinkToDestination_    			= "SubsystemDestinationLink";
 		std::string const colLinkToDestinationUID_ 			= "SubsystemDestinationUID";
 	} colARTDAQSubsystem_;
 
-	// ARTDAQ Reader Column names
+	/// ARTDAQ Reader Column names
 	static struct ColARTDAQReader
 	{
 		std::string const colLinkToDaqParameters_    		= "daqParametersLink";
 		std::string const colLinkToDaqParametersGroupID_ 	= "daqParametersLinkGroupID";
 	} colARTDAQReader_;
 
-	// ARTDAQ Builder/Logger/Dispatcher Column names
+	/// ARTDAQ Builder/Logger/Dispatcher Column names
 	static struct ColARTDAQNotReader
 	{
 		std::string const colLinkToDaq_    					= "daqLink";
 		std::string const colLinkToDaqUID_ 					= "daqLinkUID";
 	} colARTDAQNotReader_;
 
-	// ARTDAQ DAQ Column names
+	/// ARTDAQ DAQ Column names
 	static struct ColARTDAQDaq
 	{
 		std::string const colLinkToDaqParameters_    		= "daqParametersLink";
 		std::string const colLinkToDaqParametersGroupID_ 	= "daqParametersLinkGroupID";
 	} colARTDAQDaq_;
 
-	// ARTDAQ DAQ Parameter Column names
+	/// ARTDAQ DAQ Parameter Column names
 	static struct ColARTDAQDaqParameter
 	{
 		std::string const colDaqParameterKey_    			= "daqParameterKey";

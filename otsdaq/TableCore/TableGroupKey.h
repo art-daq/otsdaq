@@ -5,9 +5,9 @@
 
 namespace ots
 {
-// TableGroupKey is the type used for versions association with global configurations
-//(whereas TableVersion is the type used for version associated with a configuration
-// table)
+/// TableGroupKey is the type used for versions association with global configurations
+///(whereas TableVersion is the type used for version associated with a configuration
+/// table)
 class TableGroupKey
 {
   public:
@@ -19,9 +19,9 @@ class TableGroupKey
 	unsigned int key(void) const;
 	bool         isInvalid(void) const;
 	std::string  toString(void) const;
-	std::string  str() const { return toString(); }  // alternative alias method
+	std::string  str() const { return toString(); }  ///< alternative alias method
 
-	// Operators
+	/// Operators
 	TableGroupKey& operator=(const unsigned int key);
 	bool           operator==(unsigned int key) const;
 	bool           operator==(const TableGroupKey& key) const;
@@ -32,15 +32,15 @@ class TableGroupKey
 	bool           operator<=(const TableGroupKey& key) const { return !operator>(key); }
 	bool           operator>=(const TableGroupKey& key) const { return !operator<(key); }
 	TableGroupKey& operator*=(
-	    const unsigned int a);  //to support StringMacros on TableGroupKey types
+	    const unsigned int a);  ///<to support StringMacros on TableGroupKey types
 	TableGroupKey& operator*=(
-	    const TableGroupKey a);  //to support StringMacros on TableGroupKey types
+	    const TableGroupKey a);  ///<to support StringMacros on TableGroupKey types
 	TableGroupKey& operator+=(
-	    const TableGroupKey a);  //to support StringMacros on TableGroupKey types
+	    const TableGroupKey a);  ///<to support StringMacros on TableGroupKey types
 	TableGroupKey& operator-=(
-	    const TableGroupKey a);  //to support StringMacros on TableGroupKey types
+	    const TableGroupKey a);  ///<to support StringMacros on TableGroupKey types
 	TableGroupKey& operator/=(
-	    const TableGroupKey a);  //to support StringMacros on TableGroupKey types
+	    const TableGroupKey a);  ///<to support StringMacros on TableGroupKey types
 
 	friend std::ostream& operator<<(std::ostream& out, const TableGroupKey& key)
 	{

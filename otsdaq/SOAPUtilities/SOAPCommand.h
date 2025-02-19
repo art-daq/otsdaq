@@ -21,15 +21,15 @@ class SOAPCommand
 	SOAPCommand(std::string command, SOAPParameter parameter);
 	~SOAPCommand(void);
 
-	// Getters
-	// FIXMEconst xoap::MessageReference translate         (void) const;
+	/// Getters
+	/// FIXMEconst xoap::MessageReference translate         (void) const;
 	const std::string&    getCommand(void) const;
 	const SOAPParameters& getParameters(void) const;
 	SOAPParameters&       getParametersRef(void);
 	std::string           getParameterValue(std::string parameterName) const;
 	unsigned int          getParametersSize(void) const;
 
-	// Setters
+	/// Setters
 	void translate(const xoap::MessageReference& message);
 	void setCommand(const std::string command);
 	void setParameters(const SOAPParameters& parameters);

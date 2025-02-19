@@ -307,9 +307,9 @@ bool WorkLoopManager::removeTimedOutRequests(void)
 	return false;
 }
 
-// WorkLoopName Format:
-// RequestNumber-CommandToExecute<Argument1Name:Argument1Value,Argument2Name:Argument2Value...>
-// Then the WorkLoop adds at the end /waiting
+/// WorkLoopName Format:
+/// RequestNumber-CommandToExecute<Argument1Name:Argument1Value,Argument2Name:Argument2Value...>
+/// Then the WorkLoop adds at the end /waiting
 //==============================================================================
 std::string WorkLoopManager::composeWorkLoopName(RequestNumber requestNumber,
                                                  cgicc::Cgicc& cgi)

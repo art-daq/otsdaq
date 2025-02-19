@@ -14,14 +14,14 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 {
   public:
 	SlowControlsVInterface(const std::string&       interfaceType,
-	                       const std::string&       interfaceUID,
-	                       const ConfigurationTree& theXDAQContextConfigTree,
-	                       const std::string&       configurationPath)
-	    : Configurable(theXDAQContextConfigTree, configurationPath)
-  	    , VStateMachine(Configurable::theConfigurationRecordName_)
-	    , interfaceUID_(interfaceUID)
-	    , interfaceType_(interfaceType)
-	    , mfSubject_("controls-" + interfaceType_ + "-" + interfaceUID_)
+						   const std::string&       interfaceUID,
+						   const ConfigurationTree& theXDAQContextConfigTree,
+						   const std::string&       configurationPath)
+		: Configurable(theXDAQContextConfigTree, configurationPath)
+		, VStateMachine(Configurable::theConfigurationRecordName_)
+		, interfaceUID_(interfaceUID)
+		, interfaceType_(interfaceType)
+		, mfSubject_("controls-" + interfaceType_ + "-" + interfaceUID_)
 		, newAlarmCallback_(nullptr)
 	{
 		// inheriting children classes should use __GEN_COUT_*
@@ -51,17 +51,17 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 
 
 
-	virtual void 										configure(void) override {;} //by default do nothing on FSM transitions
-	virtual void 										halt(void) override {;} //by default do nothing on FSM transitions
-	virtual void 										pause(void) override {;} //by default do nothing on FSM transitions
-	virtual void 										resume(void) override {;} //by default do nothing on FSM transitions
-	virtual void 										start(std::string /*runNumber*/) override {;} //by default do nothing on FSM transitions
-	virtual void 										stop(void) override {;} //by default do nothing on FSM transitions
+	virtual void 										configure(void) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										halt(void) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										pause(void) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										resume(void) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										start(std::string /*runNumber*/) override {;} ///<by default do nothing on FSM transitions
+	virtual void 										stop(void) override {;} ///<by default do nothing on FSM transitions
 
-	// States
-	virtual bool 										running(void) override { return false; } //This is a workloop/thread, by default do nothing and end thread during running (Note: return true would repeat call)
+	/// States
+	virtual bool 										running(void) override { return false; } ///<This is a workloop/thread, by default do nothing and end thread during running (Note: return true would repeat call)
 
-    void 												setNewAlarmCallback(std::function<void()> callback) { newAlarmCallback_ = callback; }
+	void 												setNewAlarmCallback(std::function<void()> callback) { newAlarmCallback_ = callback; }
 
   protected:
 	const std::string 		interfaceUID_;

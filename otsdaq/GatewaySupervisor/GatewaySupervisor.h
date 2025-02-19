@@ -30,7 +30,7 @@
 #include <sstream>
 #include <string>
 
-// defines used also by OtsConfigurationWizardSupervisor
+/// defines used also by OtsConfigurationWizardSupervisor
 #define FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE \
 	std::string("FSMLastConfiguredGroupAlias.hist")
 #define FSM_LAST_STARTED_GROUP_ALIAS_FILE std::string("FSMLastStartedGroupAlias.hist")
@@ -43,10 +43,10 @@ class WorkLoopManager;
 
 // clang-format off
 
-	// GatewaySupervisor
-	//	This class is the gateway server for all otsdaq requests in "Normal Mode." It
-	// validates user access 	for every request. It synchronizes 	the state machines of all
-	// other supervisors.
+	/// GatewaySupervisor
+	///	This class is the gateway server for all otsdaq requests in "Normal Mode." It
+	/// validates user access 	for every request. It synchronizes 	the state machines of all
+	/// other supervisors.
 	class GatewaySupervisor : public xdaq::Application,
 		public SOAPMessenger,
 		public RunControlStateMachine,
@@ -82,7 +82,7 @@ class WorkLoopManager;
 		static std::string			getIconHeaderString(void);
 		static bool					handleAddDesktopIconRequest(const std::string& author, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut, std::vector<DesktopIconTable::DesktopIcon>* newIcons = nullptr);
 		static void 				handleGetApplicationIdRequest(AllSupervisorInfo* applicationInfo, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut);
-		
+
 		xoap::MessageReference 		stateMachineXoapHandler(xoap::MessageReference msg);
 
 		bool 						stateMachineThread(toolbox::task::WorkLoop* workLoop);
@@ -125,9 +125,9 @@ class WorkLoopManager;
 		void 						checkForAsyncError(void);
 
 		// CorePropertySupervisorBase override functions
-		virtual void 					setSupervisorPropertyDefaults					(void) override;  // override to control supervisor specific defaults
-		virtual void 					forceSupervisorPropertyValues					(void) override;  // override to force supervisor property values (and ignore user settings)
-		
+		virtual void 					setSupervisorPropertyDefaults					(void) override;  ///< override to control supervisor specific defaults
+		virtual void 					forceSupervisorPropertyValues					(void) override;  ///< override to force supervisor property values (and ignore user settings)
+
 
 	private:
 		unsigned int 					getNextRunNumber								(const std::string& fsmName = "");
@@ -285,42 +285,42 @@ class WorkLoopManager;
 
 		// Member Variables -----------------------
 
-		bool 				supervisorGuiHasBeenLoaded_;  // use to indicate first access by user of ots since execution
+		bool 				supervisorGuiHasBeenLoaded_;  ///< use to indicate first access by user of ots since execution
 		static WebUsers   	theWebUsers_;
 
 		WorkLoopManager 	stateMachineWorkLoopManager_;
 		toolbox::BSem   	stateMachineSemaphore_;
 
-		std::string 		activeStateMachineName_;  // when multiple state machines, this is the name of the state machine which executed the configure transition
+		std::string 		activeStateMachineName_;  ///< when multiple state machines, this is the name of the state machine which executed the configure transition
 		std::string 		activeStateMachineWindowName_;
-		std::string 		activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; //cached at Configure transition
-		bool				activeStateMachineConfigurationDumpOnRunEnable_, activeStateMachineConfigurationDumpOnConfigureEnable_; //cached at Configure transition
-		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; //cached at Configure transition
-		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; //cached at Configure transition
-		std::string 		activeStateMachineRunInfoPluginType_; //cached at Configure transition
-		std::map<std::string /* fsmName */, std::string /* logEntry */>			
+		std::string 		activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; ///<cached at Configure transition
+		bool				activeStateMachineConfigurationDumpOnRunEnable_, activeStateMachineConfigurationDumpOnConfigureEnable_; ///<cached at Configure transition
+		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; ///<cached at Configure transition
+		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; ///<cached at Configure transition
+		std::string 		activeStateMachineRunInfoPluginType_; ///<cached at Configure transition
+		std::map<std::string /* fsmName */, std::string /* logEntry */>
 							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_, stateMachineStopLogEntry_;
 		std::string 		activeStateMachineRunNumber_, activeStateMachineRunAlias_, activeStateMachineConfigurationAlias_;
 		bool				activeStateMachineRollOverLogOnConfigure_, activeStateMachineRollOverLogOnStart_;
-		std::chrono::steady_clock::time_point 
+		std::chrono::steady_clock::time_point
 							activeStateMachineRunStartTime;
-		int					activeStateMachineRunDuration_ms; // For paused runs, don't count time spent in pause state
+		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
 
 
-		std::mutex			systemStatusMutex_;	
+		std::mutex			systemStatusMutex_;
 		std::string 		lastLogbookEntry_;
 		time_t				lastLogbookEntryTime_ = 0;
 
 		std::string 		lastConsoleErr_, lastConsoleWarn_, lastConsoleInfo_, lastConsoleErrTime_, lastConsoleWarnTime_, lastConsoleInfoTime_;
-		std::string 		firstConsoleErr_, firstConsoleWarn_, firstConsoleInfo_, firstConsoleErrTime_, firstConsoleWarnTime_, firstConsoleInfoTime_;		
+		std::string 		firstConsoleErr_, firstConsoleWarn_, firstConsoleInfo_, firstConsoleErrTime_, firstConsoleWarnTime_, firstConsoleInfoTime_;
 		size_t				systemConsoleErrCount_ = 0, systemConsoleWarnCount_ = 0, systemConsoleInfoCount_ = 0;
 
 		std::pair<std::string /*group name*/, TableGroupKey>
-							theConfigurationTableGroup_;  // used to track the active configuration group atstates after the configure state
+							theConfigurationTableGroup_;  ///< used to track the active configuration group atstates after the configure state
 
 		Iterator   			theIterator_;
-		std::mutex 			stateMachineAccessMutex_;  // for sharing state machine access with
-											  // iterator thread
+		std::mutex 			stateMachineAccessMutex_;  ///< for sharing state machine access with
+											  ///< iterator thread
 		std::string 		stateMachineLastCommandInput_;
 		std::string			lastConfigurationAlias_;
 		enum
@@ -334,11 +334,11 @@ class WorkLoopManager;
 		unsigned int 		broadcastCommandMessageIndex_;
 		bool         		broadcastIterationsDone_;
 		std::mutex   		broadcastIterationBreakpointMutex_;
-		unsigned int 		broadcastIterationBreakpoint_;  // pause transition when iteration index
-													 // matches breakpoint index
+		unsigned int 		broadcastIterationBreakpoint_;  ///< pause transition when iteration index
+													 ///< matches breakpoint index
 		std::mutex			broadcastCommandStatusUpdateMutex_;
 		std::string			broadcastCommandStatus_;
-		static std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>> broadcastThreadStructs_; //moving to static, instead of a local instance inside broadcastMessage() seems to avoid crashing when multiple error stack up and threads get stuck waiting for app replies
+		static std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>> broadcastThreadStructs_; ///<moving to static, instead of a local instance inside broadcastMessage() seems to avoid crashing when multiple error stack up and threads get stuck waiting for app replies
 
 		std::string        	securityType_;
 		PixelHistoPicGen	picGen_;
@@ -351,32 +351,32 @@ public:	//used by remote subsystem control and status
 		struct RemoteGatewayInfo {
 			SupervisorInfo::SubappInfo 			appInfo;
 
-			std::string 						command, fsmName; //when not "", need to send 
+			std::string 						command, fsmName; ///<when not "", need to send
 			std::string							error, config_dump;
-			size_t								ignoreStatusCount = 0; //if non-zero, do not ask for status
+			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
 
 			std::string							fullName;
-			std::string 						user_data_path_record; //used for remote gateway subapp control
-			std::string							setupType, instancePath, instanceHost, instanceUser; //used for remote ots instance ssh launch
+			std::string 						user_data_path_record; ///<used for remote gateway subapp control
+			std::string							setupType, instancePath, instanceHost, instanceUser; ///<used for remote ots instance ssh launch
 
-			std::string 						selected_config_alias; //used for remote gateway subapp control
-			std::set<std::string> 				config_aliases; //used for remote gateway subapp control
-			std::string 						iconString, parentIconFolderPath, landingPage, permissionThresholdString; //used for desktop icons
+			std::string 						selected_config_alias; ///<used for remote gateway subapp control
+			std::set<std::string> 				config_aliases; ///<used for remote gateway subapp control
+			std::string 						iconString, parentIconFolderPath, landingPage, permissionThresholdString; ///<used for desktop icons
 
 			std::string							usernameWithLock;
 
-			enum class FSM_ModeTypes //FSM Modes: 'Follow FSM,' 'Do not Halt' (artdaq),  or 'Only Configure' (DCS/DQM)
+			enum class FSM_ModeTypes ///<FSM Modes: 'Follow FSM,' 'Do not Halt' (artdaq),  or 'Only Configure' (DCS/DQM)
 			{
 				Follow_FSM,
-				DoNotHalt, //(e.g. for artdaq)
-				OnlyConfigure, //(e.g. for DCS/DQM)
+				DoNotHalt, ///<(e.g. for artdaq)
+				OnlyConfigure, ///<(e.g. for DCS/DQM)
 			};
-			FSM_ModeTypes 						fsm_mode = FSM_ModeTypes::Follow_FSM; //used for remote gateway subapp control
-			bool								fsm_included = true; 
+			FSM_ModeTypes 						fsm_mode = FSM_ModeTypes::Follow_FSM; ///<used for remote gateway subapp control
+			bool								fsm_included = true;
 
-			std::string							getFsmMode() const { 
+			std::string							getFsmMode() const {
 				switch(fsm_mode)
 				{
 					case FSM_ModeTypes::Follow_FSM: return "Follow FSM";
@@ -386,7 +386,7 @@ public:	//used by remote subsystem control and status
 				}
 			} //end getFsmMode()
 
-			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; //remote gateways can have subapps
+			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///<remote gateways can have subapps
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;

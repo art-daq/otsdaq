@@ -74,16 +74,16 @@ defineColors ()
   On_IWhite=`printf '\033[0;107m'`   # White
 
   RstClr=`printf '\033[0m'`         # Reset color
-  Bold=`tput bold -T xterm`          # Select bold mode                  
-  DIM=`tput dim -T xterm`            # Select dim (half-bright) mode     
-  Blink=`tput blink -T xterm`        # Select dim (half-bright) mode 
-  EUNDERLINE=`tput smul -T xterm`    # Enable underline mode             
-  DUNDERLINE=`tput rmul -T xterm`    # Disable underline mode            
-  REV=`tput rev -T xterm`            # Turn on reverse video mode        
+  Bold=`tput bold -T xterm`          # Select bold mode
+  DIM=`tput dim -T xterm`            # Select dim (half-bright) mode
+  Blink=`tput blink -T xterm`        # Select dim (half-bright) mode
+  EUNDERLINE=`tput smul -T xterm`    # Enable underline mode
+  DUNDERLINE=`tput rmul -T xterm`    # Disable underline mode
+  REV=`tput rev -T xterm`            # Turn on reverse video mode
 #Reset=`tput init -T xterm`         # Reset all
   Reset=`tput init -T xterm 2>/dev/null;tput sgr0 -T xterm`         # Reset all
-  EBold=`tput smso -T xterm`         # Enter standout (bold) mode        
-  DBold=`tput rmso -T xterm`         # Exit standout mode              
+  EBold=`tput smso -T xterm`         # Enter standout (bold) mode
+  DBold=`tput rmso -T xterm`         # Exit standout mode
 }
 
 defineColors
@@ -97,12 +97,11 @@ error()   { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlu
 die()     { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IRed";    do_out TLVL_FATAL   "$*"; exit 1; }
 
 do_out() {
-    tlvl=$1;shift
-    if hash trace_cntl >/dev/null 2>&1;then
+	tlvl=$1;shift
+	if hash trace_cntl >/dev/null 2>&1;then
 	TRACE_TIME_FMT=%d%h%y.%T TRACE_PRINT="${part1}%T $part2 %n:$Cyan${BASH_LINENO[1]}$RstClr $part3" \
-	    trace_cntl -n`basename "${BASH_SOURCE[2]}"` -L${BASH_LINENO[1]} TRACE TLVL_LOG "$(echo -e "$*")${RstClr}"
-    else
+		trace_cntl -n`basename "${BASH_SOURCE[2]}"` -L${BASH_LINENO[1]} TRACE TLVL_LOG "$(echo -e "$*")${RstClr}"
+	else
 	echo -e "${part1}`date +%d%h%y.%T` $part2 `basename "${BASH_SOURCE[2]}"`:$Cyan${BASH_LINENO[0]}$RstClr ${part3}${*}${RstClr}"
-    fi
+	fi
 }
-
