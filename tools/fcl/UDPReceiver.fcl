@@ -2,4 +2,3 @@
 // Port and Address of OtS DAQ HW
 port: %{port}
 ip: "%{address}"
-

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-SCRIPT_DIR="$( 
+SCRIPT_DIR="$(
  cd "$(dirname "$(readlink "$0" || printf %s "$0")")"
- pwd -P 
+ pwd -P
 )"
 
 
@@ -74,12 +74,3 @@ fi
 # -x is a special "remote launch" flag to handle that similarly to the -s case but with less printouts
 # Exec since this is the last thing this script does and we don't need a pointless fork (plus the process stays the same for ssh)
 exec ots -x || die "Couldn't launch ots on ${THIS_HOST}"
-
-
-
-
-
-
-
-
-
