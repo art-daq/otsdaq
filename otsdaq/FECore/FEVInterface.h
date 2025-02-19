@@ -25,8 +25,8 @@
 
 #define __ARGS__                                                               \
 	[[maybe_unused]] const frontEndMacroStruct_t &              feMacroStruct, \
-		[[maybe_unused]] FEVInterface::frontEndMacroConstArgs_t argsIn,        \
-		[[maybe_unused]] FEVInterface::frontEndMacroArgs_t      argsOut
+	    [[maybe_unused]] FEVInterface::frontEndMacroConstArgs_t argsIn,        \
+	    [[maybe_unused]] FEVInterface::frontEndMacroArgs_t      argsOut
 
 #define __GET_ARG_IN_NO_DEFAULT__(X, Y) getFEMacroConstArgumentValue<Y>(argsIn, X)
 #define __GET_ARG_IN_DEFAULT__(X, Y, D) getFEMacroConstArgumentValue<Y>(argsIn, X, D)
