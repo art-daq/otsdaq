@@ -74,10 +74,10 @@ class WorkLoopManager
 	RequestNumber   getWorkLoopRequestNumber(toolbox::task::WorkLoop* workLoop);
 	RequestNumber   getWorkLoopRequestNumber(
 	      std::string workLoopName);  ///< This can only be
-	    // used by the class
-	    // because it is
-	    // careful to use
-	    // the right format
+	// used by the class
+	// because it is
+	// careful to use
+	// the right format
 	std::string getWorkLoopRequest(
 	    std::string workLoopName);  ///< This can only be used by
 	                                ///< the class because it is
