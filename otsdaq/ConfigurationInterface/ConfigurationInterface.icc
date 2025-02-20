@@ -230,8 +230,7 @@ void get(TableBase*&                          table,
 			++nameIsMatchStorageIndex;
 		}
 
-		if(!nameIsMatch)  // if name is considered match by above rule, then force
-		                  // matchup
+		if(!nameIsMatch)  // if name is considered match by above rule, then force matchup
 		    //table->getViewP()->setTableName(table->getMockupViewP()->getTableName());
 		//else  // table->getViewP()->getTableName() !=
 		// table->getMockupViewP()->getTableName())
