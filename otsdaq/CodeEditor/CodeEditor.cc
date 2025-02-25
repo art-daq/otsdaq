@@ -754,7 +754,7 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn,
 		    {
 			    // clean
 			    {
-				    cmd = "mrb z 2>&1";
+				    cmd = "mz 2>&1";
 
 				    std::array<char, 128> buffer;
 				    std::string           result;
@@ -773,53 +773,19 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn,
 
 						    // each time there is a new line print out
 						    i = result.find('\n');
-						    __COUTV__(result.substr(0, i));
 						    __COUT__ << result.substr(0, i);
 						    result = result.substr(i + 1);  // discard before new line
 					    }
 				    }
 
-				    __COUTV__(result);
 				    __COUT__ << result.substr(0, i);
+					return;
 			    }
-
-			    sleep(1);
-			    // mrbsetenv
-			    {
-				    cmd = "source mrbSetEnv 2>&1";
-
-				    std::array<char, 128> buffer;
-				    std::string           result;
-				    std::shared_ptr<FILE> pipe(popen(cmd.c_str(), "r"), pclose);
-				    if(!pipe)
-					    __THROW__("popen() failed!");
-
-				    size_t i = 0;
-				    // size_t j;
-
-				    while(!feof(pipe.get()))
-				    {
-					    if(fgets(buffer.data(), 128, pipe.get()) != nullptr)
-					    {
-						    result += buffer.data();
-
-						    // each time there is a new line print out
-						    i = result.find('\n');
-						    __COUTV__(result.substr(0, i));
-						    __COUT__ << result.substr(0, i);
-						    result = result.substr(i + 1);  // discard before new line
-					    }
-				    }
-
-				    __COUTV__(result);
-				    __COUT__ << result.substr(0, i);
-			    }
-			    sleep(1);
-		    }
+		    } //end clean build
 
 		    // build
 		    {
-			    cmd = "mrb b 2>&1";
+			    cmd = "mb 2>&1";
 
 			    std::array<char, 128> buffer;
 			    std::string           result;
@@ -838,13 +804,11 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn,
 
 					    // each time there is a new line print out
 					    i = result.find('\n');
-					    //__COUTV__(result.substr(0,i));
 					    __COUT__ << result.substr(0, i);
 					    result = result.substr(i + 1);  // discard before new line
 				    }
 			    }
 
-			    //__COUTV__(result);
 			    __COUT__ << result.substr(0, i);
 		    }
 	    },
