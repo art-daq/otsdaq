@@ -1716,7 +1716,7 @@ try
 
 		std::string value, name;
 		bool        foundGateway = false;
-		size_t      after        = 0, lastAfter = 0;
+		size_t      after = 0, lastAfter = 0;
 		while((name = StringMacros::extractXmlField(
 		           remoteStatusString, "name", 0, after, &after)) != "")
 		{

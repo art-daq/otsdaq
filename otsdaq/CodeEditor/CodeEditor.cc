@@ -779,9 +779,9 @@ void CodeEditor::build(cgicc::Cgicc& cgiIn,
 				    }
 
 				    __COUT__ << result.substr(0, i);
-					return;
+				    return;
 			    }
-		    } //end clean build
+		    }  //end clean build
 
 		    // build
 		    {
