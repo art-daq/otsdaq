@@ -890,7 +890,8 @@ void FEVInterface::registerFEMacroFunction(
 
 //==============================================================================
 /// getFEMacroConstArgument
-///	helper function for getting the value of an argument
+///	 Helper function for getting the value of an argument.
+///  For matching names, ignore after open parenthesis '(' to allow Defaults/Notes to change over time, while not breaking user history
 ///
 ///	Note: static function
 const std::string& FEVInterface::getFEMacroConstArgument(frontEndMacroConstArgs_t& args,
@@ -898,15 +899,22 @@ const std::string& FEVInterface::getFEMacroConstArgument(frontEndMacroConstArgs_
 {
 	for(const frontEndMacroArg_t& pair : args)
 	{
-		if(pair.first == argName)
+		//check arg names and ignore after ( to allow Defaults/Notes to change over time, while not breaking user history
+		if(pair.first.substr(0,
+				pair.first.find('(')) == 
+			argName.substr(0,
+				argName.find('(')))
 		{
 			__COUT__ << argName << ": " << pair.second << __E__;
 			return pair.second;
 		}
 	}
-	__SS__ << "Requested input argument not found with name '" << argName << "'" << __E__;
+	__SS__ << "Requested input argument '" << argName << "' not found in list of arguments." << __E__;
+	ss << "\nHere is the list of arguments: \n";
+	for(const frontEndMacroArg_t& pair : args)
+		ss << "\t - " << pair.first << "\n";
 	__SS_THROW__;
-}
+} //end getFEMacroConstArgument()
 
 //==============================================================================
 /// getFEMacroConstArgumentValue
@@ -924,7 +932,7 @@ std::string ots::getFEMacroConstArgumentValue<std::string>(
 		return defaultValue;
 
 	return data;
-}
+} //end getFEMacroConstArgumentValue()
 //==============================================================================
 /// getFEMacroArgumentValue
 ///	helper function for getting the copy of the value of an argument
@@ -933,7 +941,7 @@ std::string ots::getFEMacroArgumentValue<std::string>(
     FEVInterface::frontEndMacroArgs_t& args, const std::string& argName)
 {
 	return FEVInterface::getFEMacroArgument(args, argName);
-}
+} //end getFEMacroArgumentValue()
 
 //==============================================================================
 /// getFEMacroOutputArgument
@@ -951,7 +959,7 @@ std::string& FEVInterface::getFEMacroArgument(frontEndMacroArgs_t& args,
 	}
 	__SS__ << "Requested argument not found with name '" << argName << "'" << __E__;
 	__SS_THROW__;
-}
+} //end getFEMacroArgument()
 
 //==============================================================================
 /// runSequenceOfCommands

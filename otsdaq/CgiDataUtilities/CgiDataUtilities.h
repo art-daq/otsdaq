@@ -6,6 +6,7 @@
 #include <xgi/Method.h>  //for cgicc::Cgicc
 #pragma GCC diagnostic pop
 #include <string>
+#include <cstdint> //for uint64_t
 
 namespace ots
 {
@@ -23,8 +24,9 @@ class CgiDataUtilities
 	static int postDataAsInt(cgicc::Cgicc& cgi, const std::string& needle);
 	static int getDataAsInt(cgicc::Cgicc& cgi, const std::string& needle);
 
-	/// decodeURIComponent moved to StringMacros::
-	/// static std::string decodeURIComponent(const std::string& data);
+	static uint64_t getOrPostDataAsUint64_t(cgicc::Cgicc& cgi, const std::string& needle);
+	static uint64_t postDataAsUint64_t(cgicc::Cgicc& cgi, const std::string& needle);
+	static uint64_t getDataAsUint64_t(cgicc::Cgicc& cgi, const std::string& needle);
 };
 
 }  // namespace ots

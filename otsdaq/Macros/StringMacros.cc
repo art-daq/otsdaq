@@ -199,6 +199,8 @@ std::string StringMacros::escapeString(std::string inString,
 	unsigned int ws = -1;
 	char         htmlTmp[10];
 
+	__COUTVS__(30,allowWhiteSpace);
+	
 	for(unsigned int i = 0; i < inString.length(); i++)
 		if(inString[i] != ' ')
 		{
@@ -238,8 +240,7 @@ std::string StringMacros::escapeString(std::string inString,
 					continue;
 				}
 
-				if(  // maintain new lines and tabs
-				    inString[i] == '\n')
+				if(inString[i] == '\n') // maintain new lines and tabs
 				{
 					if(allowWhiteSpace)
 					{
@@ -254,8 +255,7 @@ std::string StringMacros::escapeString(std::string inString,
 					else  // translate to ' '
 						inString[i] = ' ';
 				}
-				else if(  // maintain new lines and tabs
-				    inString[i] == '\t')
+				else if(inString[i] == '\t') // maintain new lines and tabs
 				{
 					if(allowWhiteSpace)
 					{

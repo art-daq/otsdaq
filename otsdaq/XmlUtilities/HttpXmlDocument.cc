@@ -211,8 +211,9 @@ void HttpXmlDocument::removeDataElement(unsigned int dataChildIndex)
 }  // end removeDataElement()
 
 //==============================================================================
-/// HttpXmlDocument::addXmlData
-///	Append <DATA> from xmldoc to this XML doc
+/// HttpXmlDocument::copyDataChildren
+///	Append <DATA> from xmldoc to this XML doc.
+/// Similar to deprecated XmlDocument::addXmlData
 void HttpXmlDocument::copyDataChildren(HttpXmlDocument& document)
 {
 	// add all first level child elements of data and recurse on them
@@ -225,7 +226,7 @@ void HttpXmlDocument::copyDataChildren(HttpXmlDocument& document)
 			continue;
 
 		recursiveAddElementToParent(
-		    (xercesc::DOMElement*)(nodeList->item(i)), dataElement_, true);
+		    (xercesc::DOMElement*)(nodeList->item(i)), dataElement_, true /* html*/);
 	}
 }  // end copyDataChildren()
 
@@ -370,7 +371,7 @@ std::string HttpXmlDocument::getMatchingValue(const std::string& field,
 	unsigned int count = 0;
 	return recursiveFindElementValue(
 	    theDocument_->getDocumentElement(), field, occurance, count);
-}
+} //end getMatchingValue()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFindElement
@@ -407,7 +408,7 @@ std::string HttpXmlDocument::recursiveFindElementValue(xercesc::DOMElement* curr
 				                // else continue search within children recursively
 		}
 	return "";  // nothing found
-}
+} //end recursiveFindElementValue()
 
 //==============================================================================
 /// HttpXmlDocument::getAllMatchingValues
@@ -417,7 +418,7 @@ void HttpXmlDocument::getAllMatchingValues(const std::string&        field,
                                            std::vector<std::string>& retVec)
 {
 	recursiveFindAllElements(theDocument_->getDocumentElement(), field, &retVec);
-}
+} //end getAllMatchingValues()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFindElement
@@ -439,7 +440,7 @@ void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*      currEl,
 		   xercesc::DOMNode::TEXT_NODE)  // ignore text node children
 			recursiveFindAllElements(
 			    (xercesc::DOMElement*)(nodeList->item(i)), field, retVec);
-}
+} //end recursiveFindAllElements()
 
 //==============================================================================
 /// HttpXmlDocument::getMatchingElement
@@ -450,7 +451,7 @@ xercesc::DOMElement* HttpXmlDocument::getMatchingElement(const std::string& fiel
 {
 	return getMatchingElementInSubtree(
 	    theDocument_->getDocumentElement(), field, occurance);
-}
+} //end getMatchingElement()
 
 //==============================================================================
 /// HttpXmlDocument::getMatchingElementInSubtree
@@ -462,7 +463,7 @@ xercesc::DOMElement* HttpXmlDocument::getMatchingElementInSubtree(
 {
 	unsigned int count = 0;
 	return recursiveFindElement(parentEl, field, occurance, count);
-}
+} //end getMatchingElementInSubtree()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFindElement
@@ -498,7 +499,7 @@ xercesc::DOMElement* HttpXmlDocument::recursiveFindElement(xercesc::DOMElement* 
 				               // else continue search within children recursively
 		}
 	return 0;  // nothing found
-}
+} //end recursiveFindElement()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveAddElementToParent
@@ -515,22 +516,24 @@ void HttpXmlDocument::recursiveAddElementToParent(xercesc::DOMElement* child,
 
 	if(child->getFirstChild() != NULL &&
 	   child->getFirstChild()->getNodeType() ==
-	       xercesc::DOMNode::TEXT_NODE)  // if has a text node first, insert as value
-	                                     // attribute
+	       xercesc::DOMNode::TEXT_NODE)  // if has a text node first, insert as value attribute
 	{
 		childText = XML_TO_CHAR(child->getFirstChild()->getNodeValue());
-		if(html)
-			childText = StringMacros::escapeString(childText);
+		if(0 && html) //RAR stopped doing this escape as of Feb-2025 because it seems to double escape html characters like &#009; into &amp;#009; which doesnt work at the browser (tested with MacroMakerSupervisor)
+		{
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__<< "pre escape childText " << childText << std::endl;
+			childText = StringMacros::escapeString(childText, true /* allowWhiteSpace*/);
+			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__<< "post escape childText " << childText << std::endl;
+		}
 	}
-	// __COUT__<< "childName " << childName <<  " childText " <<
-	// childText << std::endl;
+	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__<< "childName " << childName <<  " childText " << childText << std::endl;
 
 	// insert child
 	xercesc::DOMElement* newParent = addTextElementToParent(childName, childText, parent);
 
 	// insert rest of child tree
 	xercesc::DOMNodeList* nodeList =
-	    child->getChildNodes();  // get all children	of child
+	    child->getChildNodes();  // get all children of child
 	for(unsigned int i = 0; i < nodeList->getLength(); ++i)
 	{
 		if(nodeList->item(i)->getNodeType() ==
@@ -540,7 +543,7 @@ void HttpXmlDocument::recursiveAddElementToParent(xercesc::DOMElement* child,
 		recursiveAddElementToParent(
 		    (xercesc::DOMElement*)(nodeList->item(i)), newParent, html);
 	}
-}
+} //end recursiveAddElementToParent()
 
 //==============================================================================
 /// HttpXmlDocument::getAllMatchingElements
@@ -550,7 +553,7 @@ void HttpXmlDocument::getAllMatchingElements(const std::string&                 
                                              std::vector<xercesc::DOMElement*>& retVec)
 {
 	recursiveFindAllElements(theDocument_->getDocumentElement(), field, &retVec);
-}
+} //end getAllMatchingElements()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFindElement
@@ -572,39 +575,8 @@ void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*             
 		   xercesc::DOMNode::TEXT_NODE)  // ignore text node children
 			recursiveFindAllElements(
 			    (xercesc::DOMElement*)(nodeList->item(i)), field, retVec);
-}
-//==============================================================================
-/// HttpXmlDocument::StringMacros::escapeString
-///	convert quotes to html quote characters &apos = ' and &quot = "
-///	remove new line characters
-///	and remove white space (so that read from file white space artifact removed)
-/*
-std::string	HttpXmlDocument::StringMacros::escapeString(string inString)
-{
-    unsigned int ws = -1;
-    for(unsigned int i=0;i<inString.length();++i)
-        if(inString[i] != ' ')
-        {
-            if(inString[i] == '\r' || inString[i] == '\n') //remove new line chars
-            {
-                inString.erase(i,1);        // replace special character with ;
-                --i; //step back so next char to check is correct
-                continue;
-            }
+} //end recursiveFindAllElements()
 
-            ws = i; //last non white space char
-            if(inString[i] == '\"' || inString[i] == '\'')
-            {
-                inString.insert(i,(inString[i] == '\'')?"&apos":"&quot"); //insert \
-before quotes inString.replace(i+5,1,1,';');        // replace special character with ;
-                i+=5; //skip to next char to check
-            }
-        }
-
-    if(ws == (unsigned int)-1) return ""; //empty std::string since all white space
-    return inString.substr(0,ws+1); //trim right white space
-}
-*/
 //==============================================================================
 /// loadXmlDocument
 ///	returns false if file does not exist
@@ -680,7 +652,7 @@ bool HttpXmlDocument::loadXmlDocument(const std::string& filePath)
 	delete parser;
 
 	return true;
-}
+} //end loadXmlDocument()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFixTextFields
@@ -699,66 +671,5 @@ void HttpXmlDocument::recursiveFixTextFields(xercesc::DOMElement* currEl)
 			            ((xercesc::DOMElement*)(nodeList->item(i)))->getNodeValue()))));
 		else
 			recursiveFixTextFields((xercesc::DOMElement*)(nodeList->item(i)));
-}
+} //end recursiveFixTextFields()
 
-//==============================================================================
-/// HttpXmlDocument::addDataElement
-///	Add field/value element to XML doc at parentIndexArray (with depth of parent indicated
-/// by parentIndexArraySize) 	If parentIndexArray = NULL, element is added with <DATA>
-/// parent 		otherwise, parentIndexArray indicates the parent within the node list for
-///<DATA> where 		the element will be added
-/// 	On Success, The child index of the added element with respect to the parent is
-/// returned and can be used to add
-///		children to the new element
-///	On Failure, return -1
-/*
-xercesc::DOMElement* HttpXmlDocument::addDataElement ( std::string field, std::string
-value, unsigned int *parentIndexArray, unsigned int parentIndexArraySize)
-{
-
-    //__COUT__ << "field: " << field << ", value: " << value << ",
-parent: " << parentIndexArraySize << std::endl;
-
-    xercesc::DOMElement* parentEl = dataElement_; // initialize parent to <DATA>
-
-    if(parentIndexArray) //if there passed an array find parent relative to data element
-    {
-        //__COUT__<< "Using Parent Index Array" << std::endl;
-
-        xercesc::DOMNodeList *nodeList;
-
-        //iterate through nested parents based on parentIndexArray
-        unsigned int tmpi,cntNotTxt;
-        for(unsigned int i=0;i<parentIndexArraySize;++i)
-        {
-            nodeList = parentEl->getChildNodes();	 //get all children
-            cntNotTxt = 0;
-
-            //get cntNotTxt to proper non text node
-            for(tmpi=0;tmpi<nodeList->getLength();++tmpi)
-            {
-                if(((xercesc::DOMElement*)(nodeList->item(tmpi)))->getNodeType() ==
-xercesc::DOMNode::TEXT_NODE) continue; //skip text nodes
-
-                if(cntNotTxt == parentIndexArray[i]) break; //at proper parent node!
-                ++cntNotTxt; //else look for next
-            }
-
-            //in theory, only first child can be text - ignore text node children
-            //if(parentEl->getFirstChild() != NULL &&
-parentEl->getFirstChild()->getNodeType() == xercesc::DOMNode::TEXT_NODE) ++tmpi;
-
-            if(tmpi >= nodeList->getLength())
-            {
-                __COUT__ << "illegal child index attempted in nested
-parents: " << parentIndexArray[i] << ", depth: " << i << ", tmpi: " << tmpi << std::endl;
-                return 0; //illegal child index attempted in nested parents
-            }
-
-            parentEl = (xercesc::DOMElement*)(nodeList->item(tmpi));
-        }
-    }
-
-    return addTextElementToParent(field,value,parentEl);
-}
-*/
