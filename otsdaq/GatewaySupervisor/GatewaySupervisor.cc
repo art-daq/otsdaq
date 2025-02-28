@@ -1716,11 +1716,12 @@ try
 
 		std::string value, name;
 		bool        foundGateway = false;
-		size_t      after        = 0;
+		size_t      after = 0, lastAfter = 0;
 		while((name = StringMacros::extractXmlField(
 		           remoteStatusString, "name", 0, after, &after)) != "")
 		{
 			after += std::string("name").size();  //move beyond found pos
+			lastAfter = after;
 
 			//find class associated with record
 			value = StringMacros::extractXmlField(remoteStatusString, "class", 0, after);
@@ -1811,6 +1812,8 @@ try
 			       << "' - no Gateway app status reported!" << __E__;
 			__SS_THROW__;
 		}
+		after = lastAfter;
+		__COUTVS__(25, after);
 
 		//get system messages
 		value = StringMacros::extractXmlField(
