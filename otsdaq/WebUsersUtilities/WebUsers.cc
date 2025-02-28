@@ -1489,6 +1489,33 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 		    remoteLoginVerificationIP_, remoteLoginVerificationPort_);
 	}
 
+	//============================
+	///Declare lambda function to check lock handling
+	auto lockHandling = [this, refresh](
+		std::string username, uint64_t verifiedUserId) -> uint64_t 
+	{
+		__COUTT__ << "lambda lockHandling()" << __E__;
+
+		// now, need to check lock handling! like line 1610
+		// goto LOCK_HANDLING;
+		if(!CareAboutCookieCodes_ && refresh &&
+			(usersUsernameWithLock_ == DEFAULT_ADMIN_USERNAME || 
+				usersUsernameWithLock_ == "") &&
+			usersUsernameWithLock_ != username)
+		{
+			__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
+						<< "' with remote user-with-lock 'Remote:" << username << "'"
+						<< __E__;
+			usersUsernameWithLock_ =
+				username;  //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
+			addSystemMessage(  //broadcast change!
+				"*",
+				getUserWithLock() + " has locked REMOTE ots (overriding anonymous " +
+					DEFAULT_ADMIN_USERNAME + " user).");
+		}
+		return verifiedUserId;
+	}; //end lambda function lockHandling()
+
 	//check if cookie code is cached locally
 	cleanupExpiredRemoteEntries();  // remove expired cookies
 	__COUTTV__(cookieCode);
@@ -1497,8 +1524,19 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 	if(it != RemoteSessions_.end())  //then found cached cookie code
 	{
 		__COUTT__ << "cookieCode still active locally!" << __E__;
-		__COUTV__(it->second.userId_);
-		return it->second.userId_;
+		__COUTV__(it->second.userId_);		
+		uint64_t j = searchUsersDatabaseForUserId(it->second.userId_);
+		if(j == NOT_FOUND_IN_DATABASE)
+		{
+			__SS__ << "Could not find cache entry for remote user ID '" << it->second.userId_
+						<< "' - notify admins." << __E__;
+			__SS_THROW__;
+		}
+		__COUTV__( Users_[j].username_);
+		
+		// now, need to check lock handling!
+		return lockHandling(Users_[j].username_, it->second.userId_);
+		// return it->second.userId_;
 	}
 	//else ask Remote server to verify login
 
@@ -1519,7 +1557,7 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 	                      "," + ip + "," + remoteGatewaySelfName_;
 
 	__COUTV__(request);
-	__COUT_TYPE__(TLVL_DEBUG + 40) << __COUT_HDR__ << StringMacros::stackTrace() << __E__;
+	__COUTS__(40) << StringMacros::stackTrace() << __E__;
 
 	std::string requestResponseString = remoteLoginVerificationSocket_->sendAndReceive(
 	    *remoteLoginVerificationSocketTarget_, request, 10 /*timeoutSeconds*/);
@@ -1588,24 +1626,30 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 	sscanf(rxParams[5].c_str(), "%lu", &newRemoteSession.sessionIndex_);
 	newRemoteSession.startTime_ = time(0);
 
-	//handle local user-with-lock
-	if(!CareAboutCookieCodes_ && refresh &&
-	   usersUsernameWithLock_ == DEFAULT_ADMIN_USERNAME &&
-	   usersUsernameWithLock_ != username)
-	{
-		__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
-		              << "' with remote user-with-lock 'Remote:" << username << "'"
-		              << __E__;
-		usersUsernameWithLock_ =
-		    username;  //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
-		addSystemMessage(  //broadcast change!
-		    "*",
-		    getUserWithLock() + " has locked REMOTE ots (overriding anonymous " +
-		        DEFAULT_ADMIN_USERNAME + " user).");
-	}
+	// now, need to check lock handling!
+	return lockHandling(Users_[j].username_, Users_[j].userId_); 
+// LOCK_HANDLING:
+	// //handle local user-with-lock
+	// __COUTTV__(verifiedUserId);
+	// __COUTTV__(username);
+	// if(!CareAboutCookieCodes_ && refresh &&
+	//    (usersUsernameWithLock_ == DEFAULT_ADMIN_USERNAME || 
+	//    	usersUsernameWithLock_ == "") &&
+	//    usersUsernameWithLock_ != username)
+	// {
+	// 	__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
+	// 	              << "' with remote user-with-lock 'Remote:" << username << "'"
+	// 	              << __E__;
+	// 	usersUsernameWithLock_ =
+	// 	    username;  //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
+	// 	addSystemMessage(  //broadcast change!
+	// 	    "*",
+	// 	    getUserWithLock() + " has locked REMOTE ots (overriding anonymous " +
+	// 	        DEFAULT_ADMIN_USERNAME + " user).");
+	// }
 
-	__COUTT__ << "Returning remote login success" << __E__;
-	return Users_[j].userId_;
+	// __COUTT__ << "Returning remote login success" << __E__;
+	// return verifiedUserId;
 }  //end checkRemoteLoginVerification()
 
 //==============================================================================
@@ -2137,7 +2181,8 @@ bool WebUsers::cookieCodeIsActiveForRequest(
     std::string*                                                      userWithLock,
     uint64_t*                                                         userSessionIndex)
 {
-	//__COUTV__(ip);
+	__COUTS__(50) << StringMacros::stackTrace() << __E__;
+	__COUTVS__(51,ip);
 
 	// check ip black list and increment counter if cookie code not found
 	if(!checkIpAccess(ip))
@@ -3180,10 +3225,10 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	__COUTV__(username);
 	__COUTV__(isUserActive);
 
-	if(lock && (isUserActive || !CareAboutCookieCodes_))  // lock and currently active
+	if(lock && (isUserActive || !WebUsers::CareAboutCookieCodes_))  // lock and currently active
 	{
-		if(!CareAboutCookieCodes_ && !isUserActive &&
-		   username != DEFAULT_ADMIN_USERNAME)  // enforce wiz mode only use admin account
+		if(!WebUsers::CareAboutCookieCodes_ && !isUserActive &&
+		   username != DEFAULT_ADMIN_USERNAME)  // enforce wiz mode & no security only use admin account
 		{
 			__COUT_ERR__
 			    << "User '" << actingUser
@@ -3785,8 +3830,7 @@ std::string WebUsers::getAllSystemMessages()
 /// 	Note: targetUser is by display name
 std::string WebUsers::getSystemMessage(const std::string& targetUser)
 {
-	__COUT_TYPE__(TLVL_DEBUG + 20)
-	    << __COUT_HDR__ << "Current System Messages: " << targetUser << __E__;
+	__COUTS__(20) << "Current System Messages: " << targetUser << __E__;
 	std::string retStr = "";
 	{
 		int  cnt = 0;
@@ -3795,8 +3839,7 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 		// lock for remainder of scope
 		std::lock_guard<std::mutex> lock(systemMessageLock_);
 
-		__COUT_TYPE__(TLVL_DEBUG + 20)
-		    << __COUT_HDR__
+		__COUTS__(20)
 		    << "Number of users with system messages: " << systemMessages_.size()
 		    << __E__;
 
@@ -3819,8 +3862,7 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 		if(TTEST(20))
 		{
 			for(auto systemMessagePair : systemMessages_)
-				__COUT_TYPE__(TLVL_DEBUG + 20)
-				    << __COUT_HDR__ << systemMessagePair.first << " "
+				__COUTS__(20) << systemMessagePair.first << " "
 				    << systemMessagePair.second.size() << " "
 				    << (systemMessagePair.second.size()
 				            ? systemMessagePair.second[0].message_
@@ -3829,8 +3871,7 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 		}
 		if(it != systemMessages_.end())
 		{
-			__COUT_TYPE__(TLVL_DEBUG + 20)
-			    << __COUT_HDR__ << "Message count: " << it->second.size()
+			__COUTS__(20) << "Message count: " << it->second.size()
 			    << ", Last Message: "
 			    << (it->second.size() ? it->second.back().message_ : "") << __E__;
 		}
@@ -3848,7 +3889,7 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 		}
 	}  //end mutex scope
 
-	__COUT_TYPE__(TLVL_DEBUG + 20) << __COUT_HDR__ << "retStr: " << retStr << __E__;
+	__COUTS__(20) << "retStr: " << retStr << __E__;
 
 	systemMessageCleanup();  //NOTE: also locks mutex within!
 	return retStr;

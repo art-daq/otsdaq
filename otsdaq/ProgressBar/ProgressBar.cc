@@ -61,8 +61,7 @@ void ProgressBar::reset(std::string file, std::string lineNumber, int id)
 	{
 		fscanf(fp, "%d", &stepsToComplete_);
 		fclose(fp);
-		__COUT_TYPE__(TLVL_DEBUG + 10)
-		    << __COUT_HDR__ << "File Found - stepsToComplete = " << stepsToComplete_
+		__COUTS__(10) << "File Found - stepsToComplete = " << stepsToComplete_
 		    << std::endl;
 	}
 	else
@@ -81,7 +80,7 @@ void ProgressBar::step()
 	if(stepsToComplete_ && stepCount_ >= stepsToComplete_)
 		stepsToComplete_ = stepCount_ + 1;
 
-	__COUT_TYPE__(TLVL_DEBUG + 10) << __COUT_HDR__ << totalStepsFileName_ << " "
+	__COUTS__(10) << totalStepsFileName_ << " "
 	                               << readPercentageString() << "% complete" << std::endl;
 }  //end step()
 
@@ -104,7 +103,7 @@ void ProgressBar::complete()
 
 	// done, save steps to file
 
-	__COUT_TYPE__(TLVL_DEBUG + 10) << __COUT_HDR__ << totalStepsFileName_ << std::endl;
+	__COUTS__(10) << totalStepsFileName_ << std::endl;
 
 	FILE* fp = fopen(totalStepsFileName_.c_str(), "w");
 	if(fp)

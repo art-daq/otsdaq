@@ -175,8 +175,7 @@ std::string RemoteWebUsers::getActiveUserList()
 	if(time(0) - ActiveUserLastUpdateTime_ >
 	   ACTIVE_USERS_UPDATE_THRESHOLD)  // need to update
 	{
-		__COUT_TYPE__(TLVL_DEBUG + 2)
-		    << __COUT_HDR__ << "Need to update active user list" << std::endl;
+		__COUTS__(2) << "Need to update active user list" << std::endl;
 
 		xoap::MessageReference retMsg = ots::SOAPMessenger::sendWithSOAPReply(
 		    gatewaySupervisorDescriptor_, "SupervisorGetActiveUsers");

@@ -867,8 +867,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							}
 						}
 
-						__COUT_TYPE__(TLVL_DEBUG + 38)
-						    << __COUT_HDR__ << "commandRemoteIdleCount "
+						__COUTS__(38) << "commandRemoteIdleCount "
 						    << commandRemoteIdleCount << " " << allAppsAreIdle << " "
 						    << commandingRemoteGatewayApps << __E__;
 
@@ -877,8 +876,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					//if possible, get remote icon list for desktop from each remote app
 					if(resetRemoteGatewayApps)
 					{
-						__COUT_TYPE__(TLVL_DEBUG + 35)
-						    << __COUT_HDR__
+						__COUTS__(35)
 						    << "Attempting to get Remote Desktop Icons... size="
 						    << remoteApps.size() << __E__;
 
@@ -889,8 +887,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							if(remoteGatewayApp.command != "")
 								continue;  //skip if command to be sent
 
-							__COUT_TYPE__(TLVL_DEBUG + 14)
-							    << __COUT_HDR__ << remoteGatewayApp.appInfo.name << ": "
+							__COUTS__(14) << remoteGatewayApp.appInfo.name << ": "
 							    << remoteGatewayApp.appInfo.status << __E__;
 							if(remoteGatewayApp.appInfo.status ==
 							   SupervisorInfo::APP_STATUS_UNKNOWN)
@@ -1168,8 +1165,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 				xoap::MessageReference tempMessage =
 				    SOAPUtilities::makeSOAPMessageReference("ApplicationStatusRequest");
 
-				__COUT_TYPE__(TLVL_DEBUG + 39)
-				    << __COUT_HDR__ << "tempMessage... "
+				__COUTS__(39) << "tempMessage... "
 				    << SOAPUtilities::translate(tempMessage) << std::endl;
 
 				try
@@ -1179,14 +1175,12 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					                                     tempMessage);
 
 					if("ContextARTDAQ" == appInfo.getContextName())
-						__COUT_TYPE__(TLVL_DEBUG + 41)
-						    << __COUT_HDR__ << " Supervisor instance = '" << appName
+						__COUTS__(41) << " Supervisor instance = '" << appName
 						    << "' [LID=" << appInfo.getId() << "] in Context '"
 						    << appInfo.getContextName() << " statusMessage... "
 						    << SOAPUtilities::translate(statusMessage) << std::endl;
 					else
-						__COUT_TYPE__(TLVL_DEBUG + 40)
-						    << __COUT_HDR__ << " Supervisor instance = '" << appName
+						__COUTS__(40) << " Supervisor instance = '" << appName
 						    << "' [LID=" << appInfo.getId() << "] in Context '"
 						    << appInfo.getContextName() << " statusMessage... "
 						    << SOAPUtilities::translate(statusMessage) << std::endl;
@@ -1707,12 +1701,10 @@ try
 			requestString += "," + ipForReverseLoginOverUDP + "," +
 			                 std::to_string(portForReverseLoginOverUDP) + "," +
 			                 remoteGatewayApp.appInfo.name;
-		__COUT_TYPE__(TLVL_DEBUG + 24)
-		    << __COUT_HDR__ << "requestString = " << requestString << __E__;
+		__COUTS__(24) << "requestString = " << requestString << __E__;
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, requestString, 2 /*timeoutSeconds*/);
-		__COUT_TYPE__(TLVL_DEBUG + 24)
-		    << __COUT_HDR__ << "remoteStatusString = " << remoteStatusString << __E__;
+		__COUTS__(24) << "remoteStatusString = " << remoteStatusString << __E__;
 
 		std::string value, name;
 		bool        foundGateway = false;
@@ -1818,8 +1810,7 @@ try
 		//get system messages
 		value = StringMacros::extractXmlField(
 		    remoteStatusString, "systemMessages", 0, after, &after);
-		__COUT_TYPE__(TLVL_DEBUG + 2)
-		    << __COUT_HDR__ << "Remote System Messages:" << value << __E__;
+		__COUTS__(2) << "Remote System Messages:" << value << __E__;
 		std::vector<std::string> parsedSysMsgs;
 		StringMacros::getVectorFromString(value, parsedSysMsgs, {'|'});
 
@@ -1836,8 +1827,7 @@ try
 		//get user with lock
 		value = StringMacros::extractXmlField(
 		    remoteStatusString, "usernameWithLock", 0, after, &after);
-		__COUT_TYPE__(TLVL_DEBUG + 2)
-		    << __COUT_HDR__ << "Remote User with Lock:" << value << __E__;
+		__COUTS__(2) << "Remote User with Lock:" << value << __E__;
 		remoteGatewayApp.usernameWithLock = value;
 
 		//get Console err/warn count
@@ -1929,8 +1919,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		       buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) !=
 		   -1)
 		{
-			__COUT_TYPE__(TLVL_DEBUG + 9)
-			    << __COUT_HDR__ << "UDP State Changer packet received from ip:port "
+			__COUTS__(9) << "UDP State Changer packet received from ip:port "
 			    << sock.getLastIncomingIPAddress() << ":" << sock.getLastIncomingPort()
 			    << " of size = " << buffer.size() << __E__;
 			__COUTVS__(11, buffer);
@@ -2095,8 +2084,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/,
 					                         false /*allowWhiteSpace*/);
-					__COUT_TYPE__(TLVL_DEBUG + 23)
-					    << __COUT_HDR__ << "App status to monitor: " << out.str()
+					__COUTS__(23) << "App status to monitor: " << out.str()
 					    << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
@@ -2258,8 +2246,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								if(it != userGroupPermissionsMap.end() &&
 								   it2 != userGroupPermissionsMap.end())
 								{
-									__COUT_TYPE__(TLVL_DEBUG + 21)
-									    << __COUT_HDR__ << "Found user group '"
+									__COUTS__(21) << "Found user group '"
 									    << it->first
 									    << "' to modify: " << (uint16_t)it2->second
 									    << " --> " << (uint16_t)it->second << __E__;
@@ -2387,8 +2374,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							   icon.windowContentURL_[2] == 's' &&
 							   icon.windowContentURL_[3] == ':')
 							{
-								__COUT_TYPE__(TLVL_DEBUG + 10)
-								    << __COUT_HDR__ << "Retrieving remote icons at "
+								__COUTS__(10) << "Retrieving remote icons at "
 								    << icon.windowContentURL_ << __E__;
 
 								std::vector<std::string> parsedFields =
@@ -2575,8 +2561,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		}
 		else
 		{
-			__COUT_TYPE__(TLVL_DEBUG + 9)
-			    << __COUT_HDR__ << "UDP State Changer waiting..." << __E__;
+			__COUTS__(9) << "UDP State Changer waiting..." << __E__;
 			sleep(1);
 		}
 	}
@@ -7007,6 +6992,7 @@ void GatewaySupervisor::setSupervisorPropertyDefaults()
 	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AllowNoLoginRequestTypes,
 	    "getCurrentState "
 	    " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
+
 }  // end setSupervisorPropertyDefaults()
 
 //==============================================================================
@@ -7021,11 +7007,13 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 	CorePropertySupervisorBase::setSupervisorProperty(
 	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AutomatedRequestTypes,
 	    "getSystemMessages | getCurrentState | getIterationPlanStatus"
-	    " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus");
+	    " | getAppStatus | getRemoteSubsystems | getRemoteSubsystemStatus | getAppId");
+
 	CorePropertySupervisorBase::addSupervisorProperty(
 	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
 	    "gatewayLaunchOTS | gatewayLaunchWiz | gatewayLaunchOTSInstance"
 	    " | commandRemoteSubsystem");
+
 	CorePropertySupervisorBase::addSupervisorProperty(
 	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes,
 	    "StateMachine-*");  //for all stateMachineXgiHandler requests
@@ -9240,6 +9228,7 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 	            userGroupPermissionsMap;
 	std::string userWithLock = "";
 	uint64_t    uid, userSessionIndex;
+	__COUTTV__(refreshOption);
 	theWebUsers_.cookieCodeIsActiveForRequest(cookieCode,
 	                                          &userGroupPermissionsMap,
 	                                          &uid /*uid is not given to remote users*/,

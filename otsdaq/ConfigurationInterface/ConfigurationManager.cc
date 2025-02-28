@@ -4320,24 +4320,21 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 			tmp = stateMachineAliasFilter.substr(i, f - i);
 			i   = f + 1;
 			filterArr.push_back(tmp);
-			__COUT_TYPE__(TLVL_DEBUG + 20)
-			    << __COUT_HDR__ << filterArr[filterArr.size() - 1] << " " << i << " of "
+			__COUTS__(20) << filterArr[filterArr.size() - 1] << " " << i << " of "
 			    << stateMachineAliasFilter.size() << __E__;
 		}
 		if(i <= stateMachineAliasFilter.size())
 		{
 			tmp = stateMachineAliasFilter.substr(i);
 			filterArr.push_back(tmp);
-			__COUT_TYPE__(TLVL_DEBUG + 20)
-			    << __COUT_HDR__ << filterArr[filterArr.size() - 1] << " last." << __E__;
+			__COUTS__(20) << filterArr[filterArr.size() - 1] << " last." << __E__;
 		}
 
 		bool filterMatch;
 
 		for(auto& aliasMapPair : entries)
 		{
-			__COUT_TYPE__(TLVL_DEBUG + 20)
-			    << __COUT_HDR__ << "aliasMapPair.first: " << aliasMapPair.first << __E__;
+			__COUTS__(20) << "aliasMapPair.first: " << aliasMapPair.first << __E__;
 
 			filterMatch = true;
 
@@ -4384,8 +4381,7 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 			if(invertFilter)
 				filterMatch = !filterMatch;
 
-			__COUT_TYPE__(TLVL_DEBUG + 20)
-			    << __COUT_HDR__ << "filterMatch=" << filterMatch << __E__;
+			__COUTS__(20) << "filterMatch=" << filterMatch << __E__;
 
 			if(!filterMatch)
 				continue;
