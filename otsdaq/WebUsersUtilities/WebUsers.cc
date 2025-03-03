@@ -1628,28 +1628,6 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 
 	// now, need to check lock handling!
 	return lockHandling(Users_[j].username_, Users_[j].userId_); 
-// LOCK_HANDLING:
-	// //handle local user-with-lock
-	// __COUTTV__(verifiedUserId);
-	// __COUTTV__(username);
-	// if(!CareAboutCookieCodes_ && refresh &&
-	//    (usersUsernameWithLock_ == DEFAULT_ADMIN_USERNAME || 
-	//    	usersUsernameWithLock_ == "") &&
-	//    usersUsernameWithLock_ != username)
-	// {
-	// 	__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
-	// 	              << "' with remote user-with-lock 'Remote:" << username << "'"
-	// 	              << __E__;
-	// 	usersUsernameWithLock_ =
-	// 	    username;  //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
-	// 	addSystemMessage(  //broadcast change!
-	// 	    "*",
-	// 	    getUserWithLock() + " has locked REMOTE ots (overriding anonymous " +
-	// 	        DEFAULT_ADMIN_USERNAME + " user).");
-	// }
-
-	// __COUTT__ << "Returning remote login success" << __E__;
-	// return verifiedUserId;
 }  //end checkRemoteLoginVerification()
 
 //==============================================================================
