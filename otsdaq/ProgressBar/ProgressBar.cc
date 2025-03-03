@@ -62,7 +62,7 @@ void ProgressBar::reset(std::string file, std::string lineNumber, int id)
 		fscanf(fp, "%d", &stepsToComplete_);
 		fclose(fp);
 		__COUTS__(10) << "File Found - stepsToComplete = " << stepsToComplete_
-		    << std::endl;
+		              << std::endl;
 	}
 	else
 		__COUTT__ << "File Not there: " << totalStepsFileName_ << __E__;
@@ -80,8 +80,8 @@ void ProgressBar::step()
 	if(stepsToComplete_ && stepCount_ >= stepsToComplete_)
 		stepsToComplete_ = stepCount_ + 1;
 
-	__COUTS__(10) << totalStepsFileName_ << " "
-	                               << readPercentageString() << "% complete" << std::endl;
+	__COUTS__(10) << totalStepsFileName_ << " " << readPercentageString() << "% complete"
+	              << std::endl;
 }  //end step()
 
 //==============================================================================

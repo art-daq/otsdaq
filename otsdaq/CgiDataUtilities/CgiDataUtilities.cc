@@ -92,20 +92,20 @@ int CgiDataUtilities::getDataAsInt(cgicc::Cgicc& cgi, const std::string& needle)
 }
 
 //==============================================================================
-uint64_t CgiDataUtilities::getOrPostDataAsUint64_t(cgicc::Cgicc& cgi, const std::string& needle)
+uint64_t CgiDataUtilities::getOrPostDataAsUint64_t(cgicc::Cgicc&      cgi,
+                                                   const std::string& needle)
 {
 	__COUTS__(20) << "getDataAsUint64_t() " << getData(cgi, needle).c_str() << __E__;
-	return std::strtoull(getOrPostData(cgi, needle).c_str(),nullptr,10);
+	return std::strtoull(getOrPostData(cgi, needle).c_str(), nullptr, 10);
 }
-uint64_t CgiDataUtilities::postDataAsUint64_t(cgicc::Cgicc& cgi, const std::string& needle)
+uint64_t CgiDataUtilities::postDataAsUint64_t(cgicc::Cgicc&      cgi,
+                                              const std::string& needle)
 {
 	__COUTS__(20) << "getDataAsUint64_t() " << getData(cgi, needle).c_str() << __E__;
-	return std::strtoull(postData(cgi, needle).c_str(),nullptr,10);
+	return std::strtoull(postData(cgi, needle).c_str(), nullptr, 10);
 }
 uint64_t CgiDataUtilities::getDataAsUint64_t(cgicc::Cgicc& cgi, const std::string& needle)
 {
 	__COUTS__(20) << "getDataAsUint64_t() " << getData(cgi, needle).c_str() << __E__;
-	return std::strtoull(getData(cgi, needle).c_str(),nullptr,10);
+	return std::strtoull(getData(cgi, needle).c_str(), nullptr, 10);
 }
-
-

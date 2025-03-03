@@ -199,13 +199,13 @@ std::string StringMacros::escapeString(std::string inString,
 	unsigned int ws = -1;
 	char         htmlTmp[10];
 
-	__COUTVS__(30,allowWhiteSpace);
-	
+	__COUTVS__(30, allowWhiteSpace);
+
 	for(unsigned int i = 0; i < inString.length(); i++)
 		if(inString[i] != ' ')
 		{
-			__COUTS__(30) << i << ". " << inString[i]
-			                               << ":" << (int)inString[i] << std::endl;
+			__COUTS__(30) << i << ". " << inString[i] << ":" << (int)inString[i]
+			              << std::endl;
 
 			// remove new lines and unprintable characters
 			if(inString[i] == '\r' || inString[i] == '\n' ||  // remove new line chars
@@ -240,7 +240,7 @@ std::string StringMacros::escapeString(std::string inString,
 					continue;
 				}
 
-				if(inString[i] == '\n') // maintain new lines and tabs
+				if(inString[i] == '\n')  // maintain new lines and tabs
 				{
 					if(allowWhiteSpace)
 					{
@@ -255,7 +255,7 @@ std::string StringMacros::escapeString(std::string inString,
 					else  // translate to ' '
 						inString[i] = ' ';
 				}
-				else if(inString[i] == '\t') // maintain new lines and tabs
+				else if(inString[i] == '\t')  // maintain new lines and tabs
 				{
 					if(allowWhiteSpace)
 					{
@@ -390,9 +390,8 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			begin = data.find("$", begin + 1);  //find next
 			if(begin == std::string::npos)
 			{
-				__COUTS__(50)
-				    << "Only found escaped $'s that will not be converted: " << converted
-				    << __E__;
+				__COUTS__(50) << "Only found escaped $'s that will not be converted: "
+				              << converted << __E__;
 				return converted;
 			}
 		}
@@ -1494,9 +1493,9 @@ std::string StringMacros::extractXmlField(const std::string& xml,
 		      findpos + 1 + field.size() < xml.size())
 		{
 			__COUTS__(40) << "find: ---- '<" << field << " findpos=" << findpos
-			    << "findpos " << findpos << " " << xml[findpos] << " "
-			    << xml[findpos + 1 + field.size()] << " "
-			    << (int)xml[findpos + 1 + field.size()] << __E__;
+			              << "findpos " << findpos << " " << xml[findpos] << " "
+			              << xml[findpos + 1 + field.size()] << " "
+			              << (int)xml[findpos + 1 + field.size()] << __E__;
 
 			findpos +=
 			    1 +
@@ -1523,11 +1522,11 @@ std::string StringMacros::extractXmlField(const std::string& xml,
 
 	if(TTEST(40) && quoteType.size())
 	{
-		__COUTS__(40) << "Neighbors of field '" << field << "' and value '"
-		    << valueField << "' w/quote = " << quoteType << __E__;
+		__COUTS__(40) << "Neighbors of field '" << field << "' and value '" << valueField
+		              << "' w/quote = " << quoteType << __E__;
 		for(size_t i = lo - valueField.size(); i < lo + 10 && i < xml.size(); ++i)
-			__COUTS__(40) << "xml[" << i << "] " << xml[i] << " vs " << quoteType
-			    << " ? " << (int)xml[i] << " vs " << (int)quoteType[0] << __E__;
+			__COUTS__(40) << "xml[" << i << "] " << xml[i] << " vs " << quoteType << " ? "
+			              << (int)xml[i] << " vs " << (int)quoteType[0] << __E__;
 	}
 
 	if((hi = xml.find(
@@ -1541,8 +1540,8 @@ std::string StringMacros::extractXmlField(const std::string& xml,
 	if(returnFindPos)
 		*returnFindPos = findpos - (1 + field.size());  //remove offset that was added
 
-	__COUTS__(40) << "after: " << after << ", findpos: " << findpos
-	    << ", hi/lo: " << hi << "/" << lo << ", size: " << xml.size() << __E__;
+	__COUTS__(40) << "after: " << after << ", findpos: " << findpos << ", hi/lo: " << hi
+	              << "/" << lo << ", size: " << xml.size() << __E__;
 	__COUTVS__(40, xml.substr(lo, hi - lo));
 	return xml.substr(lo, hi - lo);
 }  //end extractXmlField()
@@ -1572,9 +1571,9 @@ std::string StringMacros::rextractXmlField(const std::string& xml,
 		                     findpos)) != std::string::npos &&
 		      findpos + 1 + field.size() < xml.size())
 		{
-			__COUTS__(40) << "rfind: ---- '<" << field << " findpos=" << findpos
-			    << " " << xml[findpos] << " " << xml[findpos + 1 + field.size()] << " "
-			    << (int)xml[findpos + 1 + field.size()] << __E__;
+			__COUTS__(40) << "rfind: ---- '<" << field << " findpos=" << findpos << " "
+			              << xml[findpos] << " " << xml[findpos + 1 + field.size()] << " "
+			              << (int)xml[findpos + 1 + field.size()] << __E__;
 
 			findpos += 1 + field.size();
 
@@ -1601,8 +1600,8 @@ std::string StringMacros::rextractXmlField(const std::string& xml,
 	{
 		__COUTS__(40) << "Neighbors?" << __E__;
 		for(size_t i = findpos; i < lo + 10 && i < xml.size(); ++i)
-			__COUTS__(40) << "xml[" << i << "] " << xml[i] << " vs " << quoteType
-			    << " ? " << (int)xml[i] << " vs " << (int)quoteType[0] << __E__;
+			__COUTS__(40) << "xml[" << i << "] " << xml[i] << " vs " << quoteType << " ? "
+			              << (int)xml[i] << " vs " << (int)quoteType[0] << __E__;
 	}
 
 	if((hi = xml.find(
@@ -1617,8 +1616,8 @@ std::string StringMacros::rextractXmlField(const std::string& xml,
 		*returnFindPos =
 		    findpos - (1 + field.size());  //return found position of "< + field"
 
-	__COUTS__(40) << "before: " << before << ", findpos: " << findpos
-	    << ", hi/lo: " << hi << "/" << lo << ", size: " << xml.size() << __E__;
+	__COUTS__(40) << "before: " << before << ", findpos: " << findpos << ", hi/lo: " << hi
+	              << "/" << lo << ", size: " << xml.size() << __E__;
 	__COUTVS__(40, xml.substr(lo, hi - lo));
 	return xml.substr(lo, hi - lo);
 }  //end rextractXmlField()

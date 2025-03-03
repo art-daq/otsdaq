@@ -50,7 +50,7 @@ XmlDocument::XmlDocument(const std::string& rootName) : rootTagName_(rootName)
 
 	rootElement_ = theDocument_->getDocumentElement();
 	__COUTS__(50) << "out" << std::endl;
-} //end constructor()
+}  //end constructor()
 
 //==============================================================================
 XmlDocument::XmlDocument(const XmlDocument& doc) : rootTagName_(doc.rootTagName_)
@@ -58,7 +58,7 @@ XmlDocument::XmlDocument(const XmlDocument& doc) : rootTagName_(doc.rootTagName_
 	__COUTS__(50) << "in" << std::endl;
 	*this = doc;
 	__COUTS__(50) << "out" << std::endl;
-} //end constructor()
+}  //end constructor()
 
 //==============================================================================
 XmlDocument& XmlDocument::operator=(const XmlDocument& doc)
@@ -69,14 +69,14 @@ XmlDocument& XmlDocument::operator=(const XmlDocument& doc)
 	recursiveElementCopy(doc.rootElement_, rootElement_);
 	__COUTS__(50) << "out" << std::endl;
 	return *this;
-} //end assignment operator
+}  //end assignment operator
 
 //==============================================================================
 XmlDocument::~XmlDocument(void)
 {
 	__COUTS__(50) << "Xml Destructor" << std::endl;
 	terminatePlatform();
-} //end destructor()
+}  //end destructor()
 
 //==============================================================================
 void XmlDocument::initDocument(void)
@@ -138,7 +138,7 @@ void XmlDocument::initDocument(void)
 	darioXMLStyle_  = false;
 	isALeaf_[true]  = "true";
 	isALeaf_[false] = "false";
-} //end initDocument()
+}  //end initDocument()
 
 //==============================================================================
 void XmlDocument::initPlatform(void)
@@ -154,7 +154,7 @@ void XmlDocument::initPlatform(void)
 		__COUT__ << "XML toolkit initialization error: " << XML_TO_CHAR(e.getMessage())
 		         << std::endl;
 	}
-} //end initPlatform()
+}  //end initPlatform()
 
 //==============================================================================
 void XmlDocument::terminatePlatform(void)
@@ -181,7 +181,7 @@ void XmlDocument::terminatePlatform(void)
 		         << std::endl;
 		// XMLString::release(&message);
 	}
-} //end terminatePlatform()
+}  //end terminatePlatform()
 
 //==============================================================================
 /// addTextElementToParent
@@ -227,7 +227,7 @@ xercesc::DOMElement* XmlDocument::addTextElementToParent(const std::string&   ch
 	}
 
 	return child;
-} //end addTextElementToParent()
+}  //end addTextElementToParent()
 
 //==============================================================================
 /// addTextElementToParent
@@ -250,14 +250,14 @@ xercesc::DOMElement* XmlDocument::addTextElementToParent(const std::string& chil
 
 	return addTextElementToParent(
 	    childName, childText, (xercesc::DOMElement*)(nodeList->item(parentIndex)));
-} //end addTextElementToParent()
+}  //end addTextElementToParent()
 
 //==============================================================================
 void XmlDocument::copyDocument(const xercesc::DOMDocument* toCopy,
                                xercesc::DOMDocument*       copy)
 {
 	recursiveElementCopy(toCopy->getDocumentElement(), copy->getDocumentElement());
-} //end copyDocument()
+}  //end copyDocument()
 
 //==============================================================================
 void XmlDocument::recursiveElementCopy(const xercesc::DOMElement* toCopy,
@@ -285,7 +285,7 @@ void XmlDocument::recursiveElementCopy(const xercesc::DOMElement* toCopy,
 			recursiveElementCopy((xercesc::DOMElement*)(iNode), child);
 		}
 	}
-} //end recursiveElementCopy()
+}  //end recursiveElementCopy()
 
 //==============================================================================
 /// XmlDocument::outputXmlDocument
@@ -294,7 +294,7 @@ void XmlDocument::recursiveElementCopy(const xercesc::DOMElement* toCopy,
 void XmlDocument::outputXmlDocument(std::ostringstream* out, bool dispStdOut)
 {
 	recursiveOutputXmlDocument(theDocument_->getDocumentElement(), out, dispStdOut);
-} //end outputXmlDocument()
+}  //end outputXmlDocument()
 
 //==============================================================================
 void XmlDocument::setDocument(xercesc::DOMDocument* doc) { theDocument_ = doc; }
@@ -369,7 +369,7 @@ void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 			*out << tabStr << "</" << XML_TO_CHAR(currEl->getNodeName()) << ">"
 			     << std::endl;
 	}
-} //end recursiveOutputXmlDocument()
+}  //end recursiveOutputXmlDocument()
 
 //==============================================================================
 /// XmlDocument::recursiveRemoveChild
@@ -388,7 +388,7 @@ void XmlDocument::recursiveRemoveChild(xercesc::DOMElement* childEl,
 	// then release child
 	parentEl->removeChild(childEl);
 	childEl->release();
-} //end recursiveRemoveChild()
+}  //end recursiveRemoveChild()
 
 //==============================================================================
 /// XmlDocument::saveXmlDocument
@@ -500,7 +500,7 @@ void XmlDocument::saveXmlDocument(const std::string& filePath)
 	__COUTS__(50) << "delete output1" << std::endl;
 
 #endif
-} //end saveXmlDocument()
+}  //end saveXmlDocument()
 
 //==============================================================================
 bool XmlDocument::loadXmlDocument(const std::string& filePath)
@@ -546,71 +546,63 @@ bool XmlDocument::loadXmlDocument(const std::string& filePath)
 	delete parser;
 
 	return true;
-} //end loadXmlDocument()
+}  //end loadXmlDocument()
 
 //============================================================================
-void XmlDocument::setAnchors(const std::string& fSystemPath,
-	const std::string& fRootPath)
+void XmlDocument::setAnchors(const std::string& fSystemPath, const std::string& fRootPath)
 {
 	fSystemPath_ = fSystemPath;
-	fRootPath_ = fRootPath;
-} //end setAnchors()
+	fRootPath_   = fRootPath;
+}  //end setAnchors()
 
 //============================================================================
-void XmlDocument::makeDirectoryBinaryTree(const std::string&           fSystemPath,
-	const std::string&           fRootPath,
-	int                   indent,
-	xercesc::DOMElement* anchorNode)
+void XmlDocument::makeDirectoryBinaryTree(const std::string&   fSystemPath,
+                                          const std::string&   fRootPath,
+                                          int                  indent,
+                                          xercesc::DOMElement* anchorNode)
 {
-	DIR* dir;
-	struct  dirent* entry;
+	DIR*           dir;
+	struct dirent* entry;
 
 	std::string newFullPath = "";
-	char fchar = '.';
-	char schar = '.';
+	char        fchar       = '.';
+	char        schar       = '.';
 
 	fSystemPath_ = fSystemPath;
-	fRootPath_ = fRootPath;
+	fRootPath_   = fRootPath;
 
-	std::string fullPathName = fSystemPath_ +
-		std::string("/") +
-		fRootPath_ +
-		std::string("/") +
-		fFoldersPath_;
+	std::string fullPathName =
+	    fSystemPath_ + std::string("/") + fRootPath_ + std::string("/") + fFoldersPath_;
 
-	if (!anchorNode) anchorNode = rootElement_;
+	if(!anchorNode)
+		anchorNode = rootElement_;
 
-	if (!(dir = opendir(fullPathName.c_str()))) return;
+	if(!(dir = opendir(fullPathName.c_str())))
+		return;
 
-	while ((entry = readdir(dir)) != NULL)
+	while((entry = readdir(dir)) != NULL)
 	{
 		std::string sName = std::string(entry->d_name);
-		fchar = sName.at(0);
-		if (  sName.size() == 2) schar    = sName.at(1);
-		if (((sName.size() == 1) && fchar == '.') ||
-	            ((sName.size() == 2) && schar == '.'))
+		fchar             = sName.at(0);
+		if(sName.size() == 2)
+			schar = sName.at(1);
+		if(((sName.size() == 1) && fchar == '.') || ((sName.size() == 2) && schar == '.'))
 		{
-			continue; // do not consider . and .. pseudo-folders
+			continue;  // do not consider . and .. pseudo-folders
 		}
 
-		if (entry->d_type == DT_DIR)
+		if(entry->d_type == DT_DIR)
 		{
 			fThisFolderPath_ = std::string(entry->d_name);
-			newFullPath = fSystemPath_ +
-				fRootPath +
-				std::string("/") +
-				fThisFolderPath_;
+			newFullPath = fSystemPath_ + fRootPath + std::string("/") + fThisFolderPath_;
 			hierarchyPaths_.push_back(std::string(entry->d_name) + std::string(""));
 			fFoldersPath_ += hierarchyPaths_.back() + "/";
 			xercesc::DOMElement* node = this->populateBinaryTreeNode(
-				anchorNode,
-				std::string(entry->d_name),
-				indent,
-				false
-			);
+			    anchorNode, std::string(entry->d_name), indent, false);
 			this->makeDirectoryBinaryTree(fSystemPath, fRootPath, indent + 1, node);
-			if (hierarchyPaths_.size() > 0) hierarchyPaths_.pop_back();
-			if (hierarchyPaths_.size() > 0)
+			if(hierarchyPaths_.size() > 0)
+				hierarchyPaths_.pop_back();
+			if(hierarchyPaths_.size() > 0)
 			{
 				fFoldersPath_ = hierarchyPaths_.back() + "/";
 			}
@@ -618,40 +610,34 @@ void XmlDocument::makeDirectoryBinaryTree(const std::string&           fSystemPa
 			{
 				fFoldersPath_ = "/";
 			}
-
 		}
 		else
 		{
 			newFullPath = fSystemPath_ + std::string("/") + std::string(entry->d_name);
 			boost::smatch what;
-			boost::regex re{ ".*\\.root$" };
-			if (boost::regex_search(newFullPath, what, re))
+			boost::regex  re{".*\\.root$"};
+			if(boost::regex_search(newFullPath, what, re))
 			{
-				fFileName_ = std::string(entry->d_name);
-                                fFoldersPath_ = "" ;
-                                for(unsigned int i=0; i<hierarchyPaths_.size(); ++i)
-                                {
-                                 fFoldersPath_ += hierarchyPaths_[i] + std::string("/") ;
-                                }
-                                this->populateBinaryTreeNode(
-					anchorNode,
-					fFileName_,
-					indent,
-					true
-				);
+				fFileName_    = std::string(entry->d_name);
+				fFoldersPath_ = "";
+				for(unsigned int i = 0; i < hierarchyPaths_.size(); ++i)
+				{
+					fFoldersPath_ += hierarchyPaths_[i] + std::string("/");
+				}
+				this->populateBinaryTreeNode(anchorNode, fFileName_, indent, true);
 			}
 		}
 	}
 	closedir(dir);
-} //end makeDirectoryBinaryTree()
+}  //end makeDirectoryBinaryTree()
 
 //==========================================================================================
 xercesc::DOMElement* XmlDocument::populateBinaryTreeNode(xercesc::DOMElement* anchorNode,
-	const std::string&           name,
-	int                   indent,
-	bool                  isLeaf)
+                                                         const std::string&   name,
+                                                         int                  indent,
+                                                         bool                 isLeaf)
 {
-	std::string                nm = "unassigned";
+	std::string          nm    = "unassigned";
 	xercesc::DOMElement* nodes = NULL;
 
 	//  if( isLeaf )
@@ -664,10 +650,12 @@ xercesc::DOMElement* XmlDocument::populateBinaryTreeNode(xercesc::DOMElement* an
 	//  }
 	//  else
 	//  {
-	if (theNodes_.find(indent) != theNodes_.end()) // a new node
+	if(theNodes_.find(indent) != theNodes_.end())  // a new node
 	{
-		if (theNodes_.find(indent) != theNodes_.end()) nodes = theNodes_.find(indent)->second;
-		if (theNames_.find(indent) != theNames_.end()) nm = theNames_.find(indent)->second;
+		if(theNodes_.find(indent) != theNodes_.end())
+			nodes = theNodes_.find(indent)->second;
+		if(theNames_.find(indent) != theNames_.end())
+			nm = theNames_.find(indent)->second;
 	}
 	else
 	{
@@ -677,55 +665,73 @@ xercesc::DOMElement* XmlDocument::populateBinaryTreeNode(xercesc::DOMElement* an
 		anchorNode->appendChild(nodes);
 	}
 	//  }
-	xercesc::DOMElement* node = theDocument_->createElement(xercesc::XMLString::transcode("node"));
+	xercesc::DOMElement* node =
+	    theDocument_->createElement(xercesc::XMLString::transcode("node"));
 	nodes->appendChild(node);
 
-	xercesc::DOMElement* nChilds = theDocument_->createElement(xercesc::XMLString::transcode("nChilds"));
+	xercesc::DOMElement* nChilds =
+	    theDocument_->createElement(xercesc::XMLString::transcode("nChilds"));
 	node->appendChild(nChilds);
 
-	xercesc::DOMText* nChildsVal = theDocument_->createTextNode(xercesc::XMLString::transcode("x"));
+	xercesc::DOMText* nChildsVal =
+	    theDocument_->createTextNode(xercesc::XMLString::transcode("x"));
 	nChilds->appendChild(nChildsVal);
 
-	xercesc::DOMElement* fSystemPathNode = theDocument_->createElement(xercesc::XMLString::transcode("fSystemPath"));
+	xercesc::DOMElement* fSystemPathNode =
+	    theDocument_->createElement(xercesc::XMLString::transcode("fSystemPath"));
 	node->appendChild(fSystemPathNode);
 
-	xercesc::DOMText* fSystemPathVal = theDocument_->createTextNode(xercesc::XMLString::transcode(fSystemPath_.c_str()));
+	xercesc::DOMText* fSystemPathVal =
+	    theDocument_->createTextNode(xercesc::XMLString::transcode(fSystemPath_.c_str()));
 	fSystemPathNode->appendChild(fSystemPathVal);
 
-	xercesc::DOMElement* fRootPathNode = theDocument_->createElement(xercesc::XMLString::transcode("fRootPath"));
+	xercesc::DOMElement* fRootPathNode =
+	    theDocument_->createElement(xercesc::XMLString::transcode("fRootPath"));
 	node->appendChild(fRootPathNode);
 
-	xercesc::DOMText* fRootPathVal = theDocument_->createTextNode(xercesc::XMLString::transcode(fRootPath_.c_str()));
+	xercesc::DOMText* fRootPathVal =
+	    theDocument_->createTextNode(xercesc::XMLString::transcode(fRootPath_.c_str()));
 	fRootPathNode->appendChild(fRootPathVal);
 
-	xercesc::DOMElement* fFoldersPathNode = theDocument_->createElement(xercesc::XMLString::transcode("fFoldersPath"));
+	xercesc::DOMElement* fFoldersPathNode =
+	    theDocument_->createElement(xercesc::XMLString::transcode("fFoldersPath"));
 	node->appendChild(fFoldersPathNode);
 
-	xercesc::DOMText* foldersPathVal = theDocument_->createTextNode(xercesc::XMLString::transcode(fFoldersPath_.c_str()));
+	xercesc::DOMText* foldersPathVal = theDocument_->createTextNode(
+	    xercesc::XMLString::transcode(fFoldersPath_.c_str()));
 	fFoldersPathNode->appendChild(foldersPathVal);
 
-	xercesc::DOMElement* fThisFolderPath = NULL;
-	xercesc::DOMElement* fFileOrHistName = NULL;
-	xercesc::DOMText* fileOrDirNameVal = NULL;
-	xercesc::DOMText* thisFolderNameVal = NULL;
+	xercesc::DOMElement* fThisFolderPath   = NULL;
+	xercesc::DOMElement* fFileOrHistName   = NULL;
+	xercesc::DOMText*    fileOrDirNameVal  = NULL;
+	xercesc::DOMText*    thisFolderNameVal = NULL;
 
-	fThisFolderPath = theDocument_->createElement(xercesc::XMLString::transcode("fDisplayName"));
+	fThisFolderPath =
+	    theDocument_->createElement(xercesc::XMLString::transcode("fDisplayName"));
 
-	if (isLeaf)
+	if(isLeaf)
 	{
-		fFileOrHistName = theDocument_->createElement(xercesc::XMLString::transcode("fFileName"));
-		fileOrDirNameVal = theDocument_->createTextNode(xercesc::XMLString::transcode(name.c_str()));
-		thisFolderNameVal = theDocument_->createTextNode(xercesc::XMLString::transcode(name.c_str()));
-		ss_.str(""); ss_ << "name: " << ACRed << name << ACPlain << "/" << ACGreen << name;
+		fFileOrHistName =
+		    theDocument_->createElement(xercesc::XMLString::transcode("fFileName"));
+		fileOrDirNameVal =
+		    theDocument_->createTextNode(xercesc::XMLString::transcode(name.c_str()));
+		thisFolderNameVal =
+		    theDocument_->createTextNode(xercesc::XMLString::transcode(name.c_str()));
+		ss_.str("");
+		ss_ << "name: " << ACRed << name << ACPlain << "/" << ACGreen << name;
 		STDLINE(ss_.str(), "");
 	}
 	else
 	{
 		std::string blank;
-		fFileOrHistName = theDocument_->createElement(xercesc::XMLString::transcode("fFileName"));
-		fileOrDirNameVal = theDocument_->createTextNode(xercesc::XMLString::transcode(blank.c_str()));
-		thisFolderNameVal = theDocument_->createTextNode(xercesc::XMLString::transcode(fThisFolderPath_.c_str()));
-		ss_.str(""); ss_ << "name: " << ACRed << fThisFolderPath_ << ACPlain << "/" << ACGreen << name;
+		fFileOrHistName =
+		    theDocument_->createElement(xercesc::XMLString::transcode("fFileName"));
+		fileOrDirNameVal =
+		    theDocument_->createTextNode(xercesc::XMLString::transcode(blank.c_str()));
+		thisFolderNameVal = theDocument_->createTextNode(
+		    xercesc::XMLString::transcode(fThisFolderPath_.c_str()));
+		ss_.str("");
+		ss_ << "name: " << ACRed << fThisFolderPath_ << ACPlain << "/" << ACGreen << name;
 		STDLINE(ss_.str(), "");
 	}
 
@@ -735,19 +741,20 @@ xercesc::DOMElement* XmlDocument::populateBinaryTreeNode(xercesc::DOMElement* an
 	node->appendChild(fThisFolderPath);
 	fThisFolderPath->appendChild(thisFolderNameVal);
 
-	xercesc::DOMElement* leaf = theDocument_->createElement(xercesc::XMLString::transcode("leaf"));
+	xercesc::DOMElement* leaf =
+	    theDocument_->createElement(xercesc::XMLString::transcode("leaf"));
 	node->appendChild(leaf);
 
-	xercesc::DOMText* leafVal = theDocument_->createTextNode(xercesc::XMLString::transcode(isALeaf_[isLeaf].c_str()));
+	xercesc::DOMText* leafVal = theDocument_->createTextNode(
+	    xercesc::XMLString::transcode(isALeaf_[isLeaf].c_str()));
 	leaf->appendChild(leafVal);
 
 	return node;
-} //end populateBinaryTreeNode()
+}  //end populateBinaryTreeNode()
 
 //==========================================================================================
 /// Used by developer Dario Menasce for alternative XML requests at web user interface.
 void XmlDocument::setDarioStyle(bool darioStyle)
 {
 	darioXMLStyle_ = darioStyle;
-} //end setDarioStyle()
-
+}  //end setDarioStyle()

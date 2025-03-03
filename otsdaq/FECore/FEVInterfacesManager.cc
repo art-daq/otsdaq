@@ -2208,10 +2208,9 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 	}
 	//check input arg names and ignore after ( to allow Defaults/Notes to change over time, while not breaking user history
 	for(unsigned int i = 0; i < argsIn.size(); ++i)
-		if(argsIn[i].first.substr(0,
-				argsIn[i].first.find('(')) != 
-			feMacro.namesOfInputArguments_[i].substr(0,
-				feMacro.namesOfInputArguments_[i].find('(')))
+		if(argsIn[i].first.substr(0, argsIn[i].first.find('(')) !=
+		   feMacro.namesOfInputArguments_[i].substr(
+		       0, feMacro.namesOfInputArguments_[i].find('(')))
 		{
 			__CFG_SS__ << "FE Macro '" << feMacro.feMacroName_ << "' of interfaceID '"
 			           << interfaceID << "' was attempted with a mismatch in"

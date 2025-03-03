@@ -371,7 +371,7 @@ std::string HttpXmlDocument::getMatchingValue(const std::string& field,
 	unsigned int count = 0;
 	return recursiveFindElementValue(
 	    theDocument_->getDocumentElement(), field, occurance, count);
-} //end getMatchingValue()
+}  //end getMatchingValue()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFindElement
@@ -408,7 +408,7 @@ std::string HttpXmlDocument::recursiveFindElementValue(xercesc::DOMElement* curr
 				                // else continue search within children recursively
 		}
 	return "";  // nothing found
-} //end recursiveFindElementValue()
+}  //end recursiveFindElementValue()
 
 //==============================================================================
 /// HttpXmlDocument::getAllMatchingValues
@@ -418,7 +418,7 @@ void HttpXmlDocument::getAllMatchingValues(const std::string&        field,
                                            std::vector<std::string>& retVec)
 {
 	recursiveFindAllElements(theDocument_->getDocumentElement(), field, &retVec);
-} //end getAllMatchingValues()
+}  //end getAllMatchingValues()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFindElement
@@ -440,7 +440,7 @@ void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*      currEl,
 		   xercesc::DOMNode::TEXT_NODE)  // ignore text node children
 			recursiveFindAllElements(
 			    (xercesc::DOMElement*)(nodeList->item(i)), field, retVec);
-} //end recursiveFindAllElements()
+}  //end recursiveFindAllElements()
 
 //==============================================================================
 /// HttpXmlDocument::getMatchingElement
@@ -451,7 +451,7 @@ xercesc::DOMElement* HttpXmlDocument::getMatchingElement(const std::string& fiel
 {
 	return getMatchingElementInSubtree(
 	    theDocument_->getDocumentElement(), field, occurance);
-} //end getMatchingElement()
+}  //end getMatchingElement()
 
 //==============================================================================
 /// HttpXmlDocument::getMatchingElementInSubtree
@@ -463,7 +463,7 @@ xercesc::DOMElement* HttpXmlDocument::getMatchingElementInSubtree(
 {
 	unsigned int count = 0;
 	return recursiveFindElement(parentEl, field, occurance, count);
-} //end getMatchingElementInSubtree()
+}  //end getMatchingElementInSubtree()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFindElement
@@ -499,7 +499,7 @@ xercesc::DOMElement* HttpXmlDocument::recursiveFindElement(xercesc::DOMElement* 
 				               // else continue search within children recursively
 		}
 	return 0;  // nothing found
-} //end recursiveFindElement()
+}  //end recursiveFindElement()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveAddElementToParent
@@ -516,24 +516,25 @@ void HttpXmlDocument::recursiveAddElementToParent(xercesc::DOMElement* child,
 
 	if(child->getFirstChild() != NULL &&
 	   child->getFirstChild()->getNodeType() ==
-	       xercesc::DOMNode::TEXT_NODE)  // if has a text node first, insert as value attribute
+	       xercesc::DOMNode::
+	           TEXT_NODE)  // if has a text node first, insert as value attribute
 	{
 		childText = XML_TO_CHAR(child->getFirstChild()->getNodeValue());
-		if(0 && html) //RAR stopped doing this escape as of Feb-2025 because it seems to double escape html characters like &#009; into &amp;#009; which doesnt work at the browser (tested with MacroMakerSupervisor)
+		if(0 &&
+		   html)  //RAR stopped doing this escape as of Feb-2025 because it seems to double escape html characters like &#009; into &amp;#009; which doesnt work at the browser (tested with MacroMakerSupervisor)
 		{
 			__COUTS__(20) << "pre escape childText " << childText << std::endl;
 			childText = StringMacros::escapeString(childText, true /* allowWhiteSpace*/);
 			__COUTS__(20) << "post escape childText " << childText << std::endl;
 		}
 	}
-	__COUTS__(20) << "childName " << childName <<  " childText " << childText << std::endl;
+	__COUTS__(20) << "childName " << childName << " childText " << childText << std::endl;
 
 	// insert child
 	xercesc::DOMElement* newParent = addTextElementToParent(childName, childText, parent);
 
 	// insert rest of child tree
-	xercesc::DOMNodeList* nodeList =
-	    child->getChildNodes();  // get all children of child
+	xercesc::DOMNodeList* nodeList = child->getChildNodes();  // get all children of child
 	for(unsigned int i = 0; i < nodeList->getLength(); ++i)
 	{
 		if(nodeList->item(i)->getNodeType() ==
@@ -543,7 +544,7 @@ void HttpXmlDocument::recursiveAddElementToParent(xercesc::DOMElement* child,
 		recursiveAddElementToParent(
 		    (xercesc::DOMElement*)(nodeList->item(i)), newParent, html);
 	}
-} //end recursiveAddElementToParent()
+}  //end recursiveAddElementToParent()
 
 //==============================================================================
 /// HttpXmlDocument::getAllMatchingElements
@@ -553,7 +554,7 @@ void HttpXmlDocument::getAllMatchingElements(const std::string&                 
                                              std::vector<xercesc::DOMElement*>& retVec)
 {
 	recursiveFindAllElements(theDocument_->getDocumentElement(), field, &retVec);
-} //end getAllMatchingElements()
+}  //end getAllMatchingElements()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFindElement
@@ -575,7 +576,7 @@ void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*             
 		   xercesc::DOMNode::TEXT_NODE)  // ignore text node children
 			recursiveFindAllElements(
 			    (xercesc::DOMElement*)(nodeList->item(i)), field, retVec);
-} //end recursiveFindAllElements()
+}  //end recursiveFindAllElements()
 
 //==============================================================================
 /// loadXmlDocument
@@ -652,7 +653,7 @@ bool HttpXmlDocument::loadXmlDocument(const std::string& filePath)
 	delete parser;
 
 	return true;
-} //end loadXmlDocument()
+}  //end loadXmlDocument()
 
 //==============================================================================
 /// HttpXmlDocument::recursiveFixTextFields
@@ -671,5 +672,4 @@ void HttpXmlDocument::recursiveFixTextFields(xercesc::DOMElement* currEl)
 			            ((xercesc::DOMElement*)(nodeList->item(i)))->getNodeValue()))));
 		else
 			recursiveFixTextFields((xercesc::DOMElement*)(nodeList->item(i)));
-} //end recursiveFixTextFields()
-
+}  //end recursiveFixTextFields()

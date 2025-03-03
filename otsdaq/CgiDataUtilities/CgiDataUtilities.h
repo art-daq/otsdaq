@@ -5,8 +5,8 @@
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #include <xgi/Method.h>  //for cgicc::Cgicc
 #pragma GCC diagnostic pop
+#include <cstdint>  //for uint64_t
 #include <string>
-#include <cstdint> //for uint64_t
 
 namespace ots
 {

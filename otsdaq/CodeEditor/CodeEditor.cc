@@ -315,8 +315,7 @@ void CodeEditor::getPathContent(const std::string& basepath,
 			while((d = (std::toupper(*a) - std::toupper(*b))) == 0 && *a)
 				++a, ++b;
 
-			__COUTS__(20) << as << " vs " << bs << " = "
-			                               << d << " " << (d < 0) << __E__;
+			__COUTS__(20) << as << " vs " << bs << " = " << d << " " << (d < 0) << __E__;
 
 			return d < 0;
 		}
@@ -332,8 +331,7 @@ void CodeEditor::getPathContent(const std::string& basepath,
 		name = std::string(entry->d_name);
 		type = int(entry->d_type);
 
-		__COUTS__(2) << type << " " << name << "\n"
-		                              << std::endl;
+		__COUTS__(2) << type << " " << name << "\n" << std::endl;
 
 		if(name[0] != '.' &&
 		   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
@@ -355,7 +353,7 @@ void CodeEditor::getPathContent(const std::string& basepath,
 				}
 				else  //assume file
 					__COUTS__(2) << "Unable to open path as directory: "
-					    << (basepath + path + "/" + name) << __E__;
+					             << (basepath + path + "/" + name) << __E__;
 			}
 
 			if(type == 4)
@@ -371,8 +369,7 @@ void CodeEditor::getPathContent(const std::string& basepath,
 			}
 			else  // type 8 or 0 is file
 			{
-				__COUTS__(2) << "File: " << type << " " << name << "\n"
-				    << std::endl;
+				__COUTS__(2) << "File: " << type << " " << name << "\n" << std::endl;
 
 				try
 				{

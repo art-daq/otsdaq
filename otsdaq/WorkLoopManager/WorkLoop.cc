@@ -85,10 +85,10 @@ bool WorkLoop::stopWorkLoop()
 	continueWorkLoop_ = false;
 	if(workLoop_ == 0)
 	{
-		__COUTT__
-		    << "WorkLoop " << workLoopName_
-		    << " was never created, so nothing to stop! Was the primary instance ever created?"
-		    << __E__;
+		__COUTT__ << "WorkLoop " << workLoopName_
+		          << " was never created, so nothing to stop! Was the primary instance "
+		             "ever created?"
+		          << __E__;
 		return false;
 	}
 

@@ -19,7 +19,7 @@ inline void INIT_MF(const char* name)
 	if(logRootString == nullptr)
 	{
 		__COUT_WARN__ << "WARNING: OTSDAQ_LOG_ROOT environment variable was not set!"
-		             << std::endl;		
+		              << std::endl;
 		// exit(0);
 	}
 	else
@@ -29,7 +29,7 @@ inline void INIT_MF(const char* name)
 	if(logFhiclCode == nullptr)
 	{
 		__COUT_WARN__ << "WARNING: OTSDAQ_LOG_FHICL environment variable was not set!"
-		             << std::endl;
+		              << std::endl;
 		// exit(0);
 	}
 	else
@@ -50,7 +50,6 @@ inline void INIT_MF(const char* name)
 		        .c_str(),
 		    1);
 
-		
 		__COUT__ << "Configuring message facility with " << logFhiclCode << __E__;
 		//display Message Facility fcl settings
 		if(TTEST(0))
@@ -74,7 +73,8 @@ inline void INIT_MF(const char* name)
 
 				if(charCount < 10)
 				{
-					std::cout << "Retry - Was file really empty? " << logFhiclCode << __E__;
+					std::cout << "Retry - Was file really empty? " << logFhiclCode
+					          << __E__;
 					sleep(1);
 					fp = fopen(logFhiclCode, "r");
 				}

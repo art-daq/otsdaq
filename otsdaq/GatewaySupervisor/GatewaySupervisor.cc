@@ -868,17 +868,16 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 
 						__COUTS__(38) << "commandRemoteIdleCount "
-						    << commandRemoteIdleCount << " " << allAppsAreIdle << " "
-						    << commandingRemoteGatewayApps << __E__;
+						              << commandRemoteIdleCount << " " << allAppsAreIdle
+						              << " " << commandingRemoteGatewayApps << __E__;
 
 					}  //end remote app status update
 
 					//if possible, get remote icon list for desktop from each remote app
 					if(resetRemoteGatewayApps)
 					{
-						__COUTS__(35)
-						    << "Attempting to get Remote Desktop Icons... size="
-						    << remoteApps.size() << __E__;
+						__COUTS__(35) << "Attempting to get Remote Desktop Icons... size="
+						              << remoteApps.size() << __E__;
 
 						for(auto& remoteGatewayApp : remoteApps)
 						{
@@ -888,7 +887,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								continue;  //skip if command to be sent
 
 							__COUTS__(14) << remoteGatewayApp.appInfo.name << ": "
-							    << remoteGatewayApp.appInfo.status << __E__;
+							              << remoteGatewayApp.appInfo.status << __E__;
 							if(remoteGatewayApp.appInfo.status ==
 							   SupervisorInfo::APP_STATUS_UNKNOWN)
 								continue;  //skip if no status yet
@@ -1166,7 +1165,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 				    SOAPUtilities::makeSOAPMessageReference("ApplicationStatusRequest");
 
 				__COUTS__(39) << "tempMessage... "
-				    << SOAPUtilities::translate(tempMessage) << std::endl;
+				              << SOAPUtilities::translate(tempMessage) << std::endl;
 
 				try
 				{
@@ -1175,12 +1174,14 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 					                                     tempMessage);
 
 					if("ContextARTDAQ" == appInfo.getContextName())
-						__COUTS__(41) << " Supervisor instance = '" << appName
+						__COUTS__(41)
+						    << " Supervisor instance = '" << appName
 						    << "' [LID=" << appInfo.getId() << "] in Context '"
 						    << appInfo.getContextName() << " statusMessage... "
 						    << SOAPUtilities::translate(statusMessage) << std::endl;
 					else
-						__COUTS__(40) << " Supervisor instance = '" << appName
+						__COUTS__(40)
+						    << " Supervisor instance = '" << appName
 						    << "' [LID=" << appInfo.getId() << "] in Context '"
 						    << appInfo.getContextName() << " statusMessage... "
 						    << SOAPUtilities::translate(statusMessage) << std::endl;
@@ -1920,8 +1921,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		   -1)
 		{
 			__COUTS__(9) << "UDP State Changer packet received from ip:port "
-			    << sock.getLastIncomingIPAddress() << ":" << sock.getLastIncomingPort()
-			    << " of size = " << buffer.size() << __E__;
+			             << sock.getLastIncomingIPAddress() << ":"
+			             << sock.getLastIncomingPort() << " of size = " << buffer.size()
+			             << __E__;
 			__COUTVS__(11, buffer);
 
 			try
@@ -2084,8 +2086,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/,
 					                         false /*allowWhiteSpace*/);
-					__COUTS__(23) << "App status to monitor: " << out.str()
-					    << __E__;
+					__COUTS__(23) << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
 				}  //end GetRemoteAppStatus
@@ -2246,8 +2247,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								if(it != userGroupPermissionsMap.end() &&
 								   it2 != userGroupPermissionsMap.end())
 								{
-									__COUTS__(21) << "Found user group '"
-									    << it->first
+									__COUTS__(21)
+									    << "Found user group '" << it->first
 									    << "' to modify: " << (uint16_t)it2->second
 									    << " --> " << (uint16_t)it->second << __E__;
 									it2->second = it->second;
@@ -2375,7 +2376,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							   icon.windowContentURL_[3] == ':')
 							{
 								__COUTS__(10) << "Retrieving remote icons at "
-								    << icon.windowContentURL_ << __E__;
+								              << icon.windowContentURL_ << __E__;
 
 								std::vector<std::string> parsedFields =
 								    StringMacros::getVectorFromString(

@@ -4321,7 +4321,7 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 			i   = f + 1;
 			filterArr.push_back(tmp);
 			__COUTS__(20) << filterArr[filterArr.size() - 1] << " " << i << " of "
-			    << stateMachineAliasFilter.size() << __E__;
+			              << stateMachineAliasFilter.size() << __E__;
 		}
 		if(i <= stateMachineAliasFilter.size())
 		{

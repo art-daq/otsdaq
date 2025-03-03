@@ -479,13 +479,14 @@ try
 	fill(&localGroupMemberCacheSaver, localVersion);
 
 	__COUTS__(20) << "Loaded cache member map string "
-	    << localGroupMemberCacheSaver.getViewP()->getCustomStorageData() << __E__;
+	              << localGroupMemberCacheSaver.getViewP()->getCustomStorageData()
+	              << __E__;
 
 	StringMacros::getMapFromString(
 	    localGroupMemberCacheSaver.getViewP()->getCustomStorageData(), retMap);
 
 	__COUTS__(20) << "Loaded cache member map string "
-	                               << StringMacros::mapToString(retMap) << __E__;
+	              << StringMacros::mapToString(retMap) << __E__;
 
 	return retMap;
 }  //end getCachedTableGroupMembers()
