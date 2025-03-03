@@ -34,7 +34,7 @@ namespace ots
 /// Note that XmlDocument functionality is extended by HttpXmlDocument class
 class XmlDocument
 {
-	///---------------------------------------------------------------------------------------------------------------	
+	///---------------------------------------------------------------------------------------------------------------
   public:
 										XmlDocument(const std::string& rootName = "ROOT");
 										XmlDocument(const XmlDocument& doc);
