@@ -2766,7 +2766,7 @@ fi
 
 sleep 2 #attempt to avoid false starts by xdaq
 #after gateway node has been decided and xdaq has been launched, start action handler
-# exec #rrivera commented: Ron and iternet say this exec does nothing
+# exec #rrivera commented: Ron and internet say this exec does nothing
 otsActionHandler >/tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$ 2>&1 <&- &
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
