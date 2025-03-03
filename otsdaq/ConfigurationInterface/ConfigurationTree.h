@@ -350,6 +350,8 @@ class ConfigurationTree
 	const unsigned int 						row_;             			///< uid node
 	const unsigned int 						col_;             			///< value node
 	const TableView*   						tableView_;
+
+	static time_t							LAST_NODE_DUMP_TIME;
 };
 
 #include "otsdaq/ConfigurationInterface/ConfigurationTree.icc"  //define template functions

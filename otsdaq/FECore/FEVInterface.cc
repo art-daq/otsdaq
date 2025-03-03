@@ -40,7 +40,7 @@ FEVInterface::FEVInterface(const std::string&       interfaceUID,
 	}
 	catch(...)  //ignore exception, but give warning
 	{
-		__GEN_COUT_WARN__
+		__GEN_COUT__
 		    << "FEInterface type could not be determined in base class from "
 		       "configuration tree path; "
 		       "the type may be defined subsequently by the inheriting class (e.g. to "

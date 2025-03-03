@@ -85,9 +85,9 @@ bool WorkLoop::stopWorkLoop()
 	continueWorkLoop_ = false;
 	if(workLoop_ == 0)
 	{
-		__COUT__
-		    << "MEASSAGE: WorkLoop " << workLoopName_
-		    << " was not created at all! This message will be commented in the future"
+		__COUTT__
+		    << "WorkLoop " << workLoopName_
+		    << " was never created, so nothing to stop! Was the primary instance ever created?"
 		    << __E__;
 		return false;
 	}
@@ -97,7 +97,7 @@ bool WorkLoop::stopWorkLoop()
 
 	try
 	{
-		// THis method waits until the workloop job returns! Super cool!
+		// This method waits until the workloop job returns! Super cool!
 		workLoop_->cancel();
 	}
 	catch(xcept::Exception& e)

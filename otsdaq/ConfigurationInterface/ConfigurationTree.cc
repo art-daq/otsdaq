@@ -15,6 +15,7 @@ const std::string ConfigurationTree::DISCONNECTED_VALUE      = "X";
 const std::string ConfigurationTree::VALUE_TYPE_DISCONNECTED = "Disconnected";
 const std::string ConfigurationTree::VALUE_TYPE_NODE         = "Node";
 const std::string ConfigurationTree::ROOT_NAME               = "/";
+time_t ConfigurationTree::LAST_NODE_DUMP_TIME               = 0;
 
 //==============================================================================
 ConfigurationTree::ConfigurationTree()
@@ -1350,6 +1351,15 @@ std::map<std::string, ConfigurationTree> ConfigurationTree::getNodes(
 ///	Useful for debugging a node failure, like when throwing an exception
 std::string ConfigurationTree::nodeDump(void) const
 {
+	//block cascading node dumps for a couple seconds
+	//	so that user can see the lowest level failure more easily
+	if(time(0) - ConfigurationTree::LAST_NODE_DUMP_TIME < 3)
+	{
+		__COUTS__(20) << "Blocking cascading node dumps..." << __E__;
+		return "";
+	}
+	ConfigurationTree::LAST_NODE_DUMP_TIME = time(0); 
+
 	__SS__ << __E__ << __E__;
 
 	ss << "Row=" << (int)row_ << ", Col=" << (int)col_ << ", TablePointer=" << table_
@@ -1364,7 +1374,7 @@ std::string ConfigurationTree::nodeDump(void) const
 	{
 	}  // ignore errors
 
-	ss << "ConfigurationTree::nodeDump() "
+	ss << "ConfigurationTree::nodeDump() start"
 	      "=====================================\nConfigurationTree::nodeDump():"
 	   << __E__;
 
@@ -1386,6 +1396,7 @@ std::string ConfigurationTree::nodeDump(void) const
 	catch(...)
 	{
 	}  // ignore errors
+	ss << __E__; //add newline in case of exceptions mid-stringstream
 
 	try
 	{
@@ -1404,12 +1415,25 @@ std::string ConfigurationTree::nodeDump(void) const
 				tableView_->print(ss);
 			}
 		}
+
+		if(isLinkNode() && isDisconnected())
+		{
+			ss << "Is link node." << __E__;
+			ss << "disconnectedTargetName_ = " << disconnectedTargetName_ <<
+				", disconnectedLinkID_ = " << disconnectedLinkID_ << __E__;
+			
+			auto tables = getConfigurationManager()->getActiveVersions();
+			ss << "\n\t"
+			   << "Here is the list of active tables:" << __E__;
+			for(auto& table : tables)
+				ss << "\t\t" << table.first << __E__;	
+		}
 	}
 	catch(...)
 	{
 	}  // ignore errors trying to show children
 
-	ss << "\n\nend ConfigurationTree::nodeDump() ====================================="
+	ss << "\n\nConfigurationTree::nodeDump() end ====================================="
 	   << __E__;
 
 	return ss.str();

@@ -99,14 +99,14 @@ std::string& FEVInterface::setFEMacroArgumentValue(frontEndMacroArgs_t args,
 	std::stringstream ss;
 	ss << value;
 	arg = ss.str();
-	return arg;
+	return arg; 
 }  // end setFEMacroArgumentValue()
 
 //========================================================================================================================
 template<class T>
 std::string& FEVInterface::emplaceFEMacroArgumentValue(frontEndMacroArgs_t args,
                                                        const std::string&  argName,
-                                                       const T&            value) const
+                                                       const T&            value)
 {
 	// insert new pair
 	std::stringstream ss;
