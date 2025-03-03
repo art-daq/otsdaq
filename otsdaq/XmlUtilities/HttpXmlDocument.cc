@@ -521,12 +521,12 @@ void HttpXmlDocument::recursiveAddElementToParent(xercesc::DOMElement* child,
 		childText = XML_TO_CHAR(child->getFirstChild()->getNodeValue());
 		if(0 && html) //RAR stopped doing this escape as of Feb-2025 because it seems to double escape html characters like &#009; into &amp;#009; which doesnt work at the browser (tested with MacroMakerSupervisor)
 		{
-			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__<< "pre escape childText " << childText << std::endl;
+			__COUTS__(20) << "pre escape childText " << childText << std::endl;
 			childText = StringMacros::escapeString(childText, true /* allowWhiteSpace*/);
-			__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__<< "post escape childText " << childText << std::endl;
+			__COUTS__(20) << "post escape childText " << childText << std::endl;
 		}
 	}
-	__COUT_TYPE__(TLVL_DEBUG+20) << __COUT_HDR__<< "childName " << childName <<  " childText " << childText << std::endl;
+	__COUTS__(20) << "childName " << childName <<  " childText " << childText << std::endl;
 
 	// insert child
 	xercesc::DOMElement* newParent = addTextElementToParent(childName, childText, parent);

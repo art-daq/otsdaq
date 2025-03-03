@@ -45,36 +45,36 @@ using namespace ots;
 //==============================================================================
 XmlDocument::XmlDocument(const std::string& rootName) : rootTagName_(rootName)
 {
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "in" << std::endl;
+	__COUTS__(50) << "in" << std::endl;
 	initDocument();
 
 	rootElement_ = theDocument_->getDocumentElement();
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "out" << std::endl;
+	__COUTS__(50) << "out" << std::endl;
 } //end constructor()
 
 //==============================================================================
 XmlDocument::XmlDocument(const XmlDocument& doc) : rootTagName_(doc.rootTagName_)
 {
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "in" << std::endl;
+	__COUTS__(50) << "in" << std::endl;
 	*this = doc;
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "out" << std::endl;
+	__COUTS__(50) << "out" << std::endl;
 } //end constructor()
 
 //==============================================================================
 XmlDocument& XmlDocument::operator=(const XmlDocument& doc)
 {
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "in" << std::endl;
+	__COUTS__(50) << "in" << std::endl;
 	initDocument();
 	rootElement_ = theDocument_->getDocumentElement();
 	recursiveElementCopy(doc.rootElement_, rootElement_);
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "out" << std::endl;
+	__COUTS__(50) << "out" << std::endl;
 	return *this;
 } //end assignment operator
 
 //==============================================================================
 XmlDocument::~XmlDocument(void)
 {
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "Xml Destructor" << std::endl;
+	__COUTS__(50) << "Xml Destructor" << std::endl;
 	terminatePlatform();
 } //end destructor()
 
@@ -161,9 +161,9 @@ void XmlDocument::terminatePlatform(void)
 {
 	try
 	{
-		__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "Releasing the document" << std::endl;
+		__COUTS__(50) << "Releasing the document" << std::endl;
 		theDocument_->release();
-		__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "document released" << std::endl;
+		__COUTS__(50) << "document released" << std::endl;
 	}
 	catch(...)
 	{
@@ -491,13 +491,13 @@ void XmlDocument::saveXmlDocument(const std::string& filePath)
 #endif
 
 	// Cleanup.
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "delete format target" << std::endl;
+	__COUTS__(50) << "delete format target" << std::endl;
 
 #if _XERCES_VERSION >= 30000
 
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__ << "delete output0" << std::endl;
+	__COUTS__(50) << "delete output0" << std::endl;
 	output->release();
-	__COUT_TYPE__(TLVL_DEBUG+50) << __COUT_HDR__<< "delete output1" << std::endl;
+	__COUTS__(50) << "delete output1" << std::endl;
 
 #endif
 } //end saveXmlDocument()
