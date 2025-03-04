@@ -1960,8 +1960,7 @@ unsigned int TableView::findColByType(const std::string& type,
 {
 	for(unsigned int col = startingCol; col < columnsInfo_.size(); ++col)
 	{
-		__COUT_TYPE__(TLVL_DEBUG + 40)
-		    << __COUT_HDR__ << columnsInfo_[col].getType() << __E__;
+		__COUTS__(40) << columnsInfo_[col].getType() << __E__;
 		if(columnsInfo_[col].getType() == type)
 			return col;
 	}
@@ -2354,8 +2353,7 @@ int TableView::fillFromJSON(const std::string& json)
 		//if special GROUP CACHE table, handle construction in a special way
 		if(tableName_.substr(0, tmpCachePrepend.length()) == tmpCachePrepend)
 		{
-			__COUT_TYPE__(TLVL_DEBUG + 20)
-			    << __COUT_HDR__ << "Group Cache JSON doc: " << json << __E__;
+			__COUTS__(20) << "Group Cache JSON doc: " << json << __E__;
 
 			//remove json { } and all " characters
 			std::string jsonClean = "";

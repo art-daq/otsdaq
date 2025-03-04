@@ -315,8 +315,7 @@ void CodeEditor::getPathContent(const std::string& basepath,
 			while((d = (std::toupper(*a) - std::toupper(*b))) == 0 && *a)
 				++a, ++b;
 
-			__COUT_TYPE__(TLVL_DEBUG + 20) << __COUT_HDR__ << as << " vs " << bs << " = "
-			                               << d << " " << (d < 0) << __E__;
+			__COUTS__(20) << as << " vs " << bs << " = " << d << " " << (d < 0) << __E__;
 
 			return d < 0;
 		}
@@ -332,8 +331,7 @@ void CodeEditor::getPathContent(const std::string& basepath,
 		name = std::string(entry->d_name);
 		type = int(entry->d_type);
 
-		__COUT_TYPE__(TLVL_DEBUG + 2) << __COUT_HDR__ << type << " " << name << "\n"
-		                              << std::endl;
+		__COUTS__(2) << type << " " << name << "\n" << std::endl;
 
 		if(name[0] != '.' &&
 		   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
@@ -354,9 +352,8 @@ void CodeEditor::getPathContent(const std::string& basepath,
 					closedir(pTmpDIR);
 				}
 				else  //assume file
-					__COUT_TYPE__(TLVL_DEBUG + 2)
-					    << __COUT_HDR__ << "Unable to open path as directory: "
-					    << (basepath + path + "/" + name) << __E__;
+					__COUTS__(2) << "Unable to open path as directory: "
+					             << (basepath + path + "/" + name) << __E__;
 			}
 
 			if(type == 4)
@@ -366,23 +363,19 @@ void CodeEditor::getPathContent(const std::string& basepath,
 
 			if(isDir)
 			{
-				__COUT_TYPE__(TLVL_DEBUG + 2)
-				    << __COUT_HDR__ << "Directory: " << type << " " << name << __E__;
+				__COUTS__(2) << "Directory: " << type << " " << name << __E__;
 
 				orderedDirectories.emplace(name);
 			}
 			else  // type 8 or 0 is file
 			{
-				__COUT_TYPE__(TLVL_DEBUG + 2)
-				    << __COUT_HDR__ << "File: " << type << " " << name << "\n"
-				    << std::endl;
+				__COUTS__(2) << "File: " << type << " " << name << "\n" << std::endl;
 
 				try
 				{
 					if(name != "ots")
 						safeExtensionString(name.substr(name.rfind('.')));
-					__COUT_TYPE__(TLVL_DEBUG + 2)
-					    << __COUT_HDR__ << "EditFile: " << type << " " << name << __E__;
+					__COUTS__(2) << "EditFile: " << type << " " << name << __E__;
 
 					orderedFiles.emplace(name);
 				}

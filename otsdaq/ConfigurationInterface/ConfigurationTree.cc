@@ -15,6 +15,7 @@ const std::string ConfigurationTree::DISCONNECTED_VALUE      = "X";
 const std::string ConfigurationTree::VALUE_TYPE_DISCONNECTED = "Disconnected";
 const std::string ConfigurationTree::VALUE_TYPE_NODE         = "Node";
 const std::string ConfigurationTree::ROOT_NAME               = "/";
+time_t            ConfigurationTree::LAST_NODE_DUMP_TIME     = 0;
 
 //==============================================================================
 ConfigurationTree::ConfigurationTree()
@@ -971,10 +972,8 @@ ConfigurationTree ConfigurationTree::recurse(const ConfigurationTree& tree,
                                              bool doNotThrowOnBrokenUIDLinks,
                                              const std::string& originalNodeString)
 {
-	__COUT_TYPE__(TLVL_DEBUG + 50)
-	    << __COUT_HDR__ << tree.row_ << " " << tree.col_ << __E__;
-	__COUT_TYPE__(TLVL_DEBUG + 51) << __COUT_HDR__ << "childPath=" << childPath << " "
-	                               << childPath.length() << __E__;
+	__COUTS__(50) << tree.row_ << " " << tree.col_ << __E__;
+	__COUTS__(51) << "childPath=" << childPath << " " << childPath.length() << __E__;
 	if(childPath.length() <= 1)  // only "/" or ""
 		return tree;
 	return tree.recursiveGetNode(
@@ -1003,11 +1002,9 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(
     bool               doNotThrowOnBrokenUIDLinks,
     const std::string& originalNodeString) const
 {
-	__COUT_TYPE__(TLVL_DEBUG + 51) << __COUT_HDR__ << "nodeString=" << nodeString
-	                               << " len=" << nodeString.length() << __E__;
-	__COUT_TYPE__(TLVL_DEBUG + 52)
-	    << __COUT_HDR__ << "doNotThrowOnBrokenUIDLinks=" << doNotThrowOnBrokenUIDLinks
-	    << __E__;
+	__COUTS__(51) << "nodeString=" << nodeString << " len=" << nodeString.length()
+	              << __E__;
+	__COUTS__(52) << "doNotThrowOnBrokenUIDLinks=" << doNotThrowOnBrokenUIDLinks << __E__;
 
 	// get nodeName (in case of / syntax)
 	if(nodeString.length() < 1)
@@ -1028,23 +1025,21 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(
 		endingIndex = nodeString.length();
 
 	std::string nodeName = nodeString.substr(startingIndex, endingIndex - startingIndex);
-	__COUT_TYPE__(TLVL_DEBUG + 51) << __COUT_HDR__ << "nodeName=" << nodeName
-	                               << " len=" << nodeName.length() << __E__;
+	__COUTS__(51) << "nodeName=" << nodeName << " len=" << nodeName.length() << __E__;
 
 	++endingIndex;
 	std::string childPath =
 	    (endingIndex >= nodeString.length() ? "" : nodeString.substr(endingIndex));
-	__COUT_TYPE__(TLVL_DEBUG + 51)
-	    << __COUT_HDR__ << "childPath=" << childPath << " len=" << childPath.length()
-	    << " endingIndex=" << endingIndex
-	    << " nodeString.length()=" << nodeString.length() << __E__;
+	__COUTS__(51) << "childPath=" << childPath << " len=" << childPath.length()
+	              << " endingIndex=" << endingIndex
+	              << " nodeString.length()=" << nodeString.length() << __E__;
 
 	// if this tree is beginning at a configuration.. then go to uid, and vice versa
 
 	try
 	{
-		__COUT_TYPE__(TLVL_DEBUG + 50) << __COUT_HDR__ << row_ << " " << col_ << " "
-		                               << groupId_ << " " << tableView_ << __E__;
+		__COUTS__(50) << row_ << " " << col_ << " " << groupId_ << " " << tableView_
+		              << __E__;
 		if(isRootNode())
 		{
 			// root node
@@ -1105,8 +1100,7 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(
 			// this node is uid node, so return link, group link, disconnected, or value
 			// node
 
-			__COUT_TYPE__(TLVL_DEBUG + 51) << __COUT_HDR__ << "nodeName=" << nodeName
-			                               << " " << nodeName.length() << __E__;
+			__COUTS__(51) << "nodeName=" << nodeName << " " << nodeName.length() << __E__;
 
 			// if the value is a unique link ..
 			// return a uid node!
@@ -1130,8 +1124,8 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(
 			if((isLink = tableView_->getChildLink(c, isGroupLink, linkPair)) &&
 			   !isGroupLink)
 			{
-				__COUT_TYPE__(TLVL_DEBUG + 50) << __COUT_HDR__ << "nodeName=" << nodeName
-				                               << " " << nodeName.length() << __E__;
+				__COUTS__(50) << "nodeName=" << nodeName << " " << nodeName.length()
+				              << __E__;
 				//is a unique link, return uid node in new configuration
 				//	need new configuration pointer
 				//	and row of linkUID in new configuration
@@ -1152,8 +1146,8 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(
 				}
 				catch(...)
 				{
-					__COUT_TYPE__(TLVL_DEBUG + 50)
-					    << __COUT_HDR__ << "Found disconnected node! (" << nodeName << ":"
+					__COUTS__(50)
+					    << "Found disconnected node! (" << nodeName << ":"
 					    << tableView_->getDataView()[row_][linkPair.first] << ")"
 					    << " at entry with UID "
 					    << tableView_->getDataView()[row_][tableView_->getColUID()]
@@ -1203,8 +1197,8 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(
 			}
 			else if(isLink)
 			{
-				__COUT_TYPE__(TLVL_DEBUG + 50) << __COUT_HDR__ << "nodeName=" << nodeName
-				                               << " " << nodeName.length() << __E__;
+				__COUTS__(50) << "nodeName=" << nodeName << " " << nodeName.length()
+				              << __E__;
 				// is a group link, return new configuration with group string
 				//	need new configuration pointer
 				//	and group string
@@ -1270,8 +1264,8 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(
 			}
 			else
 			{
-				__COUT_TYPE__(TLVL_DEBUG + 50) << __COUT_HDR__ << "nodeName=" << nodeName
-				                               << " " << nodeName.length() << __E__;
+				__COUTS__(50) << "nodeName=" << nodeName << " " << nodeName.length()
+				              << __E__;
 				//return value node
 				return ConfigurationTree(configMgr_,
 				                         table_,
@@ -1354,6 +1348,15 @@ std::map<std::string, ConfigurationTree> ConfigurationTree::getNodes(
 ///	Useful for debugging a node failure, like when throwing an exception
 std::string ConfigurationTree::nodeDump(void) const
 {
+	//block cascading node dumps for a couple seconds
+	//	so that user can see the lowest level failure more easily
+	if(time(0) - ConfigurationTree::LAST_NODE_DUMP_TIME < 3)
+	{
+		__COUTS__(20) << "Blocking cascading node dumps..." << __E__;
+		return "";
+	}
+	ConfigurationTree::LAST_NODE_DUMP_TIME = time(0);
+
 	__SS__ << __E__ << __E__;
 
 	ss << "Row=" << (int)row_ << ", Col=" << (int)col_ << ", TablePointer=" << table_
@@ -1368,7 +1371,7 @@ std::string ConfigurationTree::nodeDump(void) const
 	{
 	}  // ignore errors
 
-	ss << "ConfigurationTree::nodeDump() "
+	ss << "ConfigurationTree::nodeDump() start"
 	      "=====================================\nConfigurationTree::nodeDump():"
 	   << __E__;
 
@@ -1389,7 +1392,8 @@ std::string ConfigurationTree::nodeDump(void) const
 	}
 	catch(...)
 	{
-	}  // ignore errors
+	}             // ignore errors
+	ss << __E__;  //add newline in case of exceptions mid-stringstream
 
 	try
 	{
@@ -1408,12 +1412,25 @@ std::string ConfigurationTree::nodeDump(void) const
 				tableView_->print(ss);
 			}
 		}
+
+		if(isLinkNode() && isDisconnected())
+		{
+			ss << "Is link node." << __E__;
+			ss << "disconnectedTargetName_ = " << disconnectedTargetName_
+			   << ", disconnectedLinkID_ = " << disconnectedLinkID_ << __E__;
+
+			auto tables = getConfigurationManager()->getActiveVersions();
+			ss << "\n\t"
+			   << "Here is the list of active tables:" << __E__;
+			for(auto& table : tables)
+				ss << "\t\t" << table.first << __E__;
+		}
 	}
 	catch(...)
 	{
 	}  // ignore errors trying to show children
 
-	ss << "\n\nend ConfigurationTree::nodeDump() ====================================="
+	ss << "\n\nConfigurationTree::nodeDump() end ====================================="
 	   << __E__;
 
 	return ss.str();
@@ -1640,8 +1657,7 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 
 		for(unsigned int col = 0; col < colInfo.size(); ++col)
 		{
-			__COUT_TYPE__(TLVL_DEBUG + 11) << __COUT_HDR__ << "Considering field "
-			                               << colInfo[col].getName() << __E__;
+			__COUTS__(11) << "Considering field " << colInfo[col].getName() << __E__;
 
 			// check field accept filter list
 			found = fieldAcceptList.size() ? false : true;  // accept if no filter
@@ -1669,13 +1685,12 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 			// if found, new field (since this is first record)
 			if(found)
 			{
-				__COUT_TYPE__(TLVL_DEBUG + 11)
-				    << __COUT_HDR__ << "FOUND field " << colInfo[col].getName() << __E__;
+				__COUTS__(11) << "FOUND field " << colInfo[col].getName() << __E__;
 
 				if(colInfo[col].isChildLink())
 				{
-					__COUT_TYPE__(TLVL_DEBUG + 11) << __COUT_HDR__ << "isGroupLinkNode "
-					                               << colInfo[col].getName() << __E__;
+					__COUTS__(11)
+					    << "isGroupLinkNode " << colInfo[col].getName() << __E__;
 
 					// must get column info differently for group link column
 
@@ -1718,8 +1733,7 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 
 	for(unsigned int i = 0; i < recordList.size(); ++i)
 	{
-		__COUT_TYPE__(TLVL_DEBUG + 11)
-		    << __COUT_HDR__ << "Checking " << recordList[i] << __E__;
+		__COUTS__(11) << "Checking " << recordList[i] << __E__;
 		ConfigurationTree node = getNode(recordList[i]);
 
 		node.recursiveGetCommonFields(fieldCandidateList,
@@ -1740,15 +1754,14 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 	//	remove those with <field count> != num of records
 	for(unsigned int i = 0; i < fieldCandidateList.size(); ++i)
 	{
-		__COUT_TYPE__(TLVL_DEBUG + 11)
-		    << __COUT_HDR__ << "Checking " << fieldCandidateList[i].relativePath_
-		    << fieldCandidateList[i].columnName_ << " = " << fieldCount[i] << __E__;
+		__COUTS__(11) << "Checking " << fieldCandidateList[i].relativePath_
+		              << fieldCandidateList[i].columnName_ << " = " << fieldCount[i]
+		              << __E__;
 		if(recordList.size() != 0 && fieldCount[i] != -1 &&
 		   fieldCount[i] != (int)recordList.size())
 		{
-			__COUT_TYPE__(TLVL_DEBUG + 11)
-			    << __COUT_HDR__ << "Erasing " << fieldCandidateList[i].relativePath_
-			    << fieldCandidateList[i].columnName_ << __E__;
+			__COUTS__(11) << "Erasing " << fieldCandidateList[i].relativePath_
+			              << fieldCandidateList[i].columnName_ << __E__;
 
 			fieldCount.erase(fieldCount.begin() + i);
 			fieldCandidateList.erase(fieldCandidateList.begin() + i);
@@ -1757,9 +1770,8 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 	}
 
 	for(unsigned int i = 0; i < fieldCandidateList.size(); ++i)
-		__COUT_TYPE__(TLVL_DEBUG + 11)
-		    << __COUT_HDR__ << "Pre-Final " << fieldCandidateList[i].relativePath_
-		    << fieldCandidateList[i].columnName_ << __E__;
+		__COUTS__(11) << "Pre-Final " << fieldCandidateList[i].relativePath_
+		              << fieldCandidateList[i].columnName_ << __E__;
 
 	if(autoSelectFilterFields)
 	{
@@ -1771,12 +1783,11 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 		unsigned int priorityPenalty;
 		for(unsigned int i = 0; i < fieldCandidateList.size(); ++i)
 		{
-			__COUT_TYPE__(TLVL_DEBUG + 11)
-			    << __COUT_HDR__ << "Option [" << i << "] "
-			    << fieldCandidateList[i].relativePath_
-			    << fieldCandidateList[i].columnName_ << " : "
-			    << fieldCandidateList[i].columnInfo_->getType() << ":"
-			    << fieldCandidateList[i].columnInfo_->getDataType() << __E__;
+			__COUTS__(11) << "Option [" << i << "] "
+			              << fieldCandidateList[i].relativePath_
+			              << fieldCandidateList[i].columnName_ << " : "
+			              << fieldCandidateList[i].columnInfo_->getType() << ":"
+			              << fieldCandidateList[i].columnInfo_->getDataType() << __E__;
 
 			priorityPenalty = std::count(fieldCandidateList[i].relativePath_.begin(),
 			                             fieldCandidateList[i].relativePath_.end(),
@@ -1817,13 +1828,12 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 			}
 			prioritySet.emplace(
 			    std::make_pair(priorityPenalty /*fieldPriority*/, i /*fieldIndex*/));
-			__COUT_TYPE__(TLVL_DEBUG + 11)
-			    << __COUT_HDR__ << "Option [" << i << "] "
-			    << fieldCandidateList[i].relativePath_
-			    << fieldCandidateList[i].columnName_ << " : "
-			    << fieldCandidateList[i].columnInfo_->getType() << ":"
-			    << fieldCandidateList[i].columnInfo_->getDataType()
-			    << "... priority = " << priorityPenalty << __E__;
+			__COUTS__(11) << "Option [" << i << "] "
+			              << fieldCandidateList[i].relativePath_
+			              << fieldCandidateList[i].columnName_ << " : "
+			              << fieldCandidateList[i].columnInfo_->getType() << ":"
+			              << fieldCandidateList[i].columnInfo_->getDataType()
+			              << "... priority = " << priorityPenalty << __E__;
 
 		}  // done ranking fields
 
@@ -1836,8 +1846,8 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 			for(const auto& priorityFieldIndex : prioritySet)
 				if(++cnt > 3)  // then mark for erasing
 				{
-					__COUT_TYPE__(TLVL_DEBUG + 11)
-					    << __COUT_HDR__ << cnt << " marking "
+					__COUTS__(11)
+					    << cnt << " marking "
 					    << fieldCandidateList[priorityFieldIndex.second].relativePath_
 					    << fieldCandidateList[priorityFieldIndex.second].columnName_
 					    << __E__;
@@ -1850,9 +1860,8 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 		{
 			if(fieldCandidateList[i].tableName_ == "")  // then erase
 			{
-				__COUT_TYPE__(TLVL_DEBUG + 11)
-				    << __COUT_HDR__ << "Erasing " << fieldCandidateList[i].relativePath_
-				    << fieldCandidateList[i].columnName_ << __E__;
+				__COUTS__(11) << "Erasing " << fieldCandidateList[i].relativePath_
+				              << fieldCandidateList[i].columnName_ << __E__;
 				fieldCandidateList.erase(fieldCandidateList.begin() + i);
 				--i;  // rewind to look at next after deleted
 			}

@@ -57,9 +57,13 @@ function setupTrace()
 
 setupTrace
 
+xdaqPrefix="setsid"			 #setsid to disassociate from terminal, in case terminal group failure brings down all associations
+otsConsoleFwdPrefix="setsid" #setsid to disassociate from terminal, in case terminal group failure brings down all associations
+
 # Handle SIGHUP which likely means the ssh connection starting ots was closed and we want to continue with outputs redirected
 handler () {
-	exec >/dev/null 2>&1 </dev/null
+	# exec >/dev/null 2>&1 </dev/null
+	exec /tmp/otsActionsHandler2_${OTS_SETUP_TYPE}.$$  2>&1 </dev/null
 }
 # Install the redirection
 trap 'handler' HUP
@@ -410,12 +414,8 @@ function killprocs
 		out "Killing processes $1..."
 	fi
 
-	if [[ "x$1" == "x" ]]; then #kill all ots processes that share "$USER_DATA/" (without the trailing /, shift will kill shift1)
-
-		pids=`ps aux|grep -v grep|grep [o]ts.exe|grep "${USER_DATA}/"|awk '{print $2}'`
-		for pid in $pids;do
-			killproc $pid ots.exe &
-		done
+	if [[ "x$1" == "x" ]]; then #kill all ots processes that share "$USER_DATA/" (Note: without the trailing /, shift will kill shift1)
+		
 		pids=`ps aux|grep -v grep|grep [x]daq.exe|grep "${USER_DATA}/"|awk '{print $2}'`
 		for pid in $pids;do
 			killproc $pid xdaq.exe &
@@ -424,11 +424,6 @@ function killprocs
 		for pid in $pids;do
 			killproc $pid otsConsoleFwd &
 		done
-		pids=`ps aux|grep -v grep|grep [m]f_rcv_n_fwd|grep "${USER_DATA}/"|awk '{print $2}'`
-		for pid in $pids;do
-			killproc $pid mf_rcv_n_fwd &
-		done
-
 
 		# for now (Aug-2023), stop killing artdaq and trust artdaq cleanup (this will also allowed share user accounts)
 		# usershort=`echo $USER|cut -c 1-10`
@@ -448,7 +443,6 @@ function killprocs
 			else
 				out "${Red}${Rev}Killing Non-gateway context ${ContextPIDNameArray[$i]}, PID ${contextPID}${RstClr}"
 			fi
-
 
 			killproc ${contextPID} non-gateway &
 
@@ -690,50 +684,52 @@ ARTDAQ_DATABASE_TYPE=$(echo ${ARTDAQ_DATABASE_URI}|sed 's|:.*||')
 #if not using filesystem point to a db "services" folder
 if [ "x$ARTDAQ_DATABASE_TYPE" == "xfilesystemdb" ]; then
 
-
-	#basic philosophy:
-	#	use this section to up data user data and databases
-	#	after update, save a file
-	#	check for that file's existence before doing update procedure
-
 	ARTDAQ_DATABASE_FILESYSTEM_PATH=`echo ${ARTDAQ_DATABASE_URI}|sed 's|.*//|/|'`
 
-	if [ ! -e ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/fromIndexRebuild ]; then
-		# Rebuild ARTDAQ_DATABASE indicies
-		out "Rebuilding database indices..."
-		rebuild_database_index >/dev/null 2>&1; rebuild_database_index --uri=${ARTDAQ_DATABASE_URI} >/dev/null 2>&1
+	if [ $ISMACROMAKER == 0 ]; then
+		#basic philosophy:
+		#	use this section to update user data and databases
+		#	after update, save a file
+		#	check for that file's existence before doing update procedure
 
-		mv ${ARTDAQ_DATABASE_FILESYSTEM_PATH} ${ARTDAQ_DATABASE_FILESYSTEM_PATH}.bak.$$
-		mv ${ARTDAQ_DATABASE_FILESYSTEM_PATH}_new ${ARTDAQ_DATABASE_FILESYSTEM_PATH}
-		echo "rebuilt" > ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/fromIndexRebuild
-		out "Database indices rebuilt. Marked complete at ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/fromIndexRebuild"
-	fi
+		if [ ! -e ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/fromIndexRebuild ]; then
+			# Rebuild ARTDAQ_DATABASE indicies
+			out "Rebuilding database indices..."
+			rebuild_database_index >/dev/null 2>&1; rebuild_database_index --uri=${ARTDAQ_DATABASE_URI} >/dev/null 2>&1
 
-	if [ ! -e ${USER_DATA}/ServiceData/.updateDB_nov9_2019a.cmd ]; then
-		out "Updating DB to comply with November 2019 changes..."
-		otsdaq_beautify_artdaq_tables
-		echo "done" > ${USER_DATA}/ServiceData/.updateDB_nov9_2019a.cmd
-	fi
+			mv ${ARTDAQ_DATABASE_FILESYSTEM_PATH} ${ARTDAQ_DATABASE_FILESYSTEM_PATH}.bak.$$
+			mv ${ARTDAQ_DATABASE_FILESYSTEM_PATH}_new ${ARTDAQ_DATABASE_FILESYSTEM_PATH}
+			echo "rebuilt" > ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/fromIndexRebuild
+			out "Database indices rebuilt. Marked complete at ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/fromIndexRebuild"
+		fi
 
-	# As of 27-Oct-2023, no longer... check for somewhat-antiquated(pre-configuration-to-table) artdaq database
+		if [ ! -e ${USER_DATA}/ServiceData/.updateDB_nov9_2019a.cmd ]; then
+			out "Updating DB to comply with November 2019 changes..."
+			otsdaq_beautify_artdaq_tables
+			echo "done" > ${USER_DATA}/ServiceData/.updateDB_nov9_2019a.cmd
+		fi
+
+		# As of 27-Oct-2023, no longer... check for somewhat-antiquated(pre-configuration-to-table) artdaq database
 
 
-	#check for somewhat-antiquated artdaq 'DAQ' tables and auto-fix
-	if [ ! -e ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/artdaqDaqTableConversion ]; then
-		out "Converting artdaq 'daq' tables in databases..."
+		#check for somewhat-antiquated artdaq 'DAQ' tables and auto-fix
+		if [ ! -e ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/artdaqDaqTableConversion ]; then
+			out "Converting artdaq 'daq' tables in databases..."
 
-		#backup because we are scared
-		cp -r ${ARTDAQ_DATABASE_FILESYSTEM_PATH} ${ARTDAQ_DATABASE_FILESYSTEM_PATH}bk12346
-		cp -r ${USER_DATA} ${USER_DATA}bk12346
+			#backup because we are scared
+			cp -r ${ARTDAQ_DATABASE_FILESYSTEM_PATH} ${ARTDAQ_DATABASE_FILESYSTEM_PATH}bk12346
+			cp -r ${USER_DATA} ${USER_DATA}bk12346
 
-		otsdaq_convert_artdaq_daq_tables
-		echo "converted" > ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/artdaqDaqTableConversion
-		out "Conversion complete. You must run wiz mode once now to activate the configuration changes."
+			otsdaq_convert_artdaq_daq_tables
+			echo "converted" > ${ARTDAQ_DATABASE_FILESYSTEM_PATH}/artdaqDaqTableConversion
+			out "Conversion complete. You must run wiz mode once now to activate the configuration changes."
 
-		if [ $ISCONFIG == 0 ]; then
-			exit
+			if [ $ISCONFIG == 0 ]; then
+				exit
+			fi
 		fi
 	fi
+	
 elif [ "x$ARTDAQ_DATABASE_TYPE" == "xmongodb" ]; then
 	out "mongodb identified."
 else
@@ -944,7 +940,7 @@ launchOTSMacromaker() {
 		out #blank line
 
 		# echo "${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt &"
-		${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt &
+		${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt <&- & # <&- to close standard in
 	else
 		${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml &
 	fi
@@ -1005,7 +1001,7 @@ launchOTSMacromaker() {
 				out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}MacroMaker Mode${RstClr}' output into ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt ***  "
 				out #blank line
 				echo -e "\n\nAttempting restart\n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
-				${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt &
+				${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt <&- &
 			else
 				${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml &
 			fi
@@ -1145,7 +1141,7 @@ launchOTSWiz() {
 			fi
 
 			#out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Message Facility${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt${RstClr}"
-			otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt &
+			${otsConsoleFwdPrefix} otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt <&- &
 		#else
 		#	otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &
 		#fi
@@ -1213,7 +1209,7 @@ launchOTSWiz() {
 		out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Wiz Mode${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt${RstClr}"
 		out #blank line
 
-		${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt &
+		${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt <&- &
 	else
 		${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml &
 	fi
@@ -1264,7 +1260,7 @@ launchOTSWiz() {
 				out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Wiz Mode${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt${RstClr}"
 				out #blank line
 				echo -e "\n\nAttempting restart\n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
-				${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt &
+				${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt <&- &
 			else
 				${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml &
 			fi
@@ -1431,7 +1427,7 @@ launchOTS() {
 				fi
 
 				#out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Message Facility${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt${RstClr}"
-				otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt &
+				${otsConsoleFwdPrefix} otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt <&- &
 			#else
 			#	otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &
 			#fi
@@ -1679,7 +1675,7 @@ launchOTS() {
 
 
 								out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Gateway${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt${RstClr}"
-								${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt &
+								${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt <&- &
 							else
 								${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &
 							fi
@@ -1735,7 +1731,7 @@ launchOTS() {
 										echo -e "\n\nXDAQ xml:\n\n ${value} \n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
 										echo -e "\n\nAttempting restart on extracted host ${THIS_HOST} PORT ${PORT} \n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
 
-										${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt &
+										${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt <&- &
 									else
 										${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &
 									fi
@@ -1859,7 +1855,7 @@ launchOTS() {
 			fi
 
 			out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}${xdaqContextUID[$i]}${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt${RstClr}"
-			${xdaqPrefix} xdaq.exe -h ${xdaqHost[$i]} -p ${PORT} -e ${XDAQ_ARGS} &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt &
+			${xdaqPrefix} xdaq.exe -h ${xdaqHost[$i]} -p ${PORT} -e ${XDAQ_ARGS} &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt <&- &
 		else
 			${xdaqPrefix} xdaq.exe -h ${xdaqHost[$i]} -p ${PORT} -e ${XDAQ_ARGS} &
 		fi
@@ -1955,7 +1951,7 @@ launchOTS() {
 					out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}${xdaqContextUID[$i]}${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt${RstClr}"
 					echo -e "\n\nXDAQ xml:\n\n ${value} \n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
 					echo -e "\n\nAttempting restart on extracted host '${THIS_HOST}' PORT ${PORT} \n\n" >>  ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
-					${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt &
+					${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt <&- &
 				else
 					${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &
 				fi
@@ -2530,7 +2526,7 @@ otsActionHandler() {
 			#kill all and exit action loop
 			out "Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 
-			killprocs ownedProcesses #do not call killall and kill whichever process asked for kill
+			killprocs
 
 			if [ $ISREMOTE == 1 ]; then
 				out "Done killing (stale) processes"
@@ -2770,8 +2766,8 @@ fi
 
 sleep 2 #attempt to avoid false starts by xdaq
 #after gateway node has been decided and xdaq has been launched, start action handler
-exec
-otsActionHandler &
+# exec #rrivera commented: Ron and internet say this exec does nothing
+otsActionHandler >/tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$ 2>&1 <&- &
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
 

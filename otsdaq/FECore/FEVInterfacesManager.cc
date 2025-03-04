@@ -1936,6 +1936,10 @@ void FEVInterfacesManager::runFEMacroByFE(const std::string& callingInterfaceID,
 	{
 		__CFG_SS__ << "FE Macro '" << feMacroName << "' of interfaceID '" << interfaceID
 		           << "' was not found!" << __E__;
+		ss << "\nHere is the list of available FE Macros:\n";
+		for(const auto& feMacro : fe->getMapOfFEMacroFunctions())
+			ss << feMacro.first << "... ";
+		ss << __E__;
 		__CFG_COUT_ERR__ << "\n" << ss.str();
 		__CFG_SS_THROW__;
 	}
@@ -2202,8 +2206,11 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 		__CFG_COUT_ERR__ << "\n" << ss.str();
 		__CFG_SS_THROW__;
 	}
+	//check input arg names and ignore after ( to allow Defaults/Notes to change over time, while not breaking user history
 	for(unsigned int i = 0; i < argsIn.size(); ++i)
-		if(argsIn[i].first != feMacro.namesOfInputArguments_[i])
+		if(argsIn[i].first.substr(0, argsIn[i].first.find('(')) !=
+		   feMacro.namesOfInputArguments_[i].substr(
+		       0, feMacro.namesOfInputArguments_[i].find('(')))
 		{
 			__CFG_SS__ << "FE Macro '" << feMacro.feMacroName_ << "' of interfaceID '"
 			           << interfaceID << "' was attempted with a mismatch in"
@@ -2262,15 +2269,7 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 	for(auto& argIn : argsIn)
 		__CFG_COUT__ << argIn.first << ": " << argIn.second << __E__;
 
-	//	__CFG_COUT__ << "# of output args = " << argsOut.size() << __E__;
-	//	for(unsigned int i=0;i<argsOut.size();++i)
-	//		__CFG_COUT__ << i << ": " << argsOut[i].first << __E__;
-	//	for(unsigned int i=0;i<returnStrings.size();++i)
-	//		__CFG_COUT__ << i << ": " << returnStrings[i] << __E__;
-
-	__COUT__ << "Launching FE Macro '" << feMacro.feMacroName_ << "' ..." << __E__;
 	__CFG_COUT__ << "Launching FE Macro '" << feMacro.feMacroName_ << "' ..." << __E__;
-
 	// have pointer to Macro structure, so run it
 	(getFEInterfaceP(interfaceID)->*(feMacro.macroFunction_))(feMacro, argsIn, argsOut);
 
