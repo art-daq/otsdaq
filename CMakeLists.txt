@@ -33,13 +33,13 @@ else()
 endif()
 
 cet_set_compiler_flags(
- DIAGS
+ DIAGS 
  VIGILANT
  WERROR
  NO_UNDEFINED
  EXTRA_FLAGS -pedantic -D_LIBCPP_ENABLE_CXX17_REMOVED_FEATURES=1 ${DT_FLAG}
  )
-
+  
 # Debug streamer.
 string(TOUPPER ${CMAKE_BUILD_TYPE} BTYPE_UC)
 if(BTYPE_UC STREQUAL DEBUG)
@@ -71,9 +71,9 @@ if(BTYPE_UC STREQUAL DEBUG)
 	endif()
 endif()
 
-find_package(artdaq_core 3.09.00 REQUIRED EXPORT)
+find_package(artdaq-core 3.09.00 REQUIRED EXPORT)
 find_package(artdaq 3.12.00 REQUIRED EXPORT)
-find_package(artdaq_database 1.07.00 REQUIRED)
+find_package(artdaq-database 1.07.00 REQUIRED)
 find_package(Python 3.6 COMPONENTS Development.Embed REQUIRED)
 
 if (EXISTS ${artdaq_database_DIR})
@@ -86,7 +86,7 @@ find_package(Boost QUIET COMPONENTS date_time program_options regex thread REQUI
  # XDAQ Extra setup
  include_directories($ENV{XDAQ_ROOT}/include/linux $ENV{XDAQ_ROOT}/include)
 link_directories($ENV{XDAQ_ROOT}/lib)
- set(XDAQ_BASIC_LIB_LIST
+ set(XDAQ_BASIC_LIB_LIST 
    xcept
    xoap
    xdaq
