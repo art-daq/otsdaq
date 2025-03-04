@@ -31,10 +31,9 @@ void FESlowControlsTable::init(ConfigurationManager* configManager)
 	for(auto& childPair : childrenMap)
 	{
 		// check each row in table
-		__COUT_TYPE__(TLVL_DEBUG + 20) << __COUT_HDR__ << childPair.first << std::endl;
+		__COUTS__(20) << childPair.first << std::endl;
 		childPair.second.getNode(colNames_.colDataType_).getValue(childType);
-		__COUT_TYPE__(TLVL_DEBUG + 20)
-		    << __COUT_HDR__ << "childType=" << childType << std::endl;
+		__COUTS__(20) << "childType=" << childType << std::endl;
 
 		if(childType[childType.size() - 1] ==
 		   'b')  // if ends in 'b' then take that many bits

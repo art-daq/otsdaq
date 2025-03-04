@@ -292,16 +292,15 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 		const std::string& 											allowedCallingFEs = "*" /*StringMacros:: wild card set match string (i.e. string-to-set, then wild-card-set match)*/,
 		const std::string&											feMacroTooltip = "");
 
-  public:  ///< for external specialized template access
+  public:  ///< for specialized access to FE Macro in/out arguments
 	static const std::string& 		getFEMacroConstArgument		(frontEndMacroConstArgs_t args, const std::string& argName);
 	static std::string&       		getFEMacroArgument			(frontEndMacroArgs_t args, const std::string&  argName);
-
   protected:
 	template<class T>
 	std::string& 					setFEMacroArgumentValue		(frontEndMacroArgs_t args, const std::string& argName, const T& value) const;
-
+  public:
 	template<class T>
-	std::string& 					emplaceFEMacroArgumentValue	(frontEndMacroArgs_t args, const std::string&  argName, const T& value) const;
+	static std::string& 			emplaceFEMacroArgumentValue	(frontEndMacroArgs_t args, const std::string&  argName, const T& value);
 
 
 };  // end FEVInterface class

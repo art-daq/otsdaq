@@ -90,35 +90,22 @@ int CgiDataUtilities::getDataAsInt(cgicc::Cgicc& cgi, const std::string& needle)
 {
 	return atoi(getData(cgi, needle).c_str());
 }
-///
-////==============================================================================
-//// decodeURIComponent
-////	converts all %## to the ascii character
-/// std::string StringMacros::decodeURIComponent(const std::string& data)
-//{
-//	std::string  decodeURIString(data.size(), 0);  // init to same size
-//	unsigned int j = 0;
-//	for(unsigned int i = 0; i < data.size(); ++i, ++j)
-//	{
-//		if(data[i] == '%')
-//		{
-//			// high order hex nibble digit
-//			if(data[i + 1] > '9')  // then ABCDEF
-//				decodeURIString[j] += (data[i + 1] - 55) * 16;
-//			else
-//				decodeURIString[j] += (data[i + 1] - 48) * 16;
-//
-//			// low order hex nibble digit
-//			if(data[i + 2] > '9')  // then ABCDEF
-//				decodeURIString[j] += (data[i + 2] - 55);
-//			else
-//				decodeURIString[j] += (data[i + 2] - 48);
-//
-//			i += 2;  // skip to next char
-//		}
-//		else
-//			decodeURIString[j] = data[i];
-//	}
-//	decodeURIString.resize(j);
-//	return decodeURIString;
-//}
+
+//==============================================================================
+uint64_t CgiDataUtilities::getOrPostDataAsUint64_t(cgicc::Cgicc&      cgi,
+                                                   const std::string& needle)
+{
+	__COUTS__(20) << "getDataAsUint64_t() " << getData(cgi, needle).c_str() << __E__;
+	return std::strtoull(getOrPostData(cgi, needle).c_str(), nullptr, 10);
+}
+uint64_t CgiDataUtilities::postDataAsUint64_t(cgicc::Cgicc&      cgi,
+                                              const std::string& needle)
+{
+	__COUTS__(20) << "getDataAsUint64_t() " << getData(cgi, needle).c_str() << __E__;
+	return std::strtoull(postData(cgi, needle).c_str(), nullptr, 10);
+}
+uint64_t CgiDataUtilities::getDataAsUint64_t(cgicc::Cgicc& cgi, const std::string& needle)
+{
+	__COUTS__(20) << "getDataAsUint64_t() " << getData(cgi, needle).c_str() << __E__;
+	return std::strtoull(getData(cgi, needle).c_str(), nullptr, 10);
+}
