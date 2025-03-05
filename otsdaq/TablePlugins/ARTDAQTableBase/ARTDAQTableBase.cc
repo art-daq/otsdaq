@@ -311,6 +311,9 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 	{
 		auto metrics = metricsGroup.getChildren();
 
+        bool sendSystemMetrics = false;
+		bool sendProcessMetrics = false;
+
 		for(auto& metric : metrics)
 		{
 			if(!metric.second.status())
@@ -319,9 +322,18 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 			OUT << metric.second.getNode("metricKey").getValue() << ": {\n";
 			PUSHTAB;
 
+            if (metric.second.getNode("sendSystemMetrics").getValue() == "true") {
+				sendSystemMetrics = true;
+			}
+			if(metric.second.getNode("sendProcessMetrics").getValue() == "true")
+			{
+				sendProcessMetrics = true;
+			}
+
 			OUT << "metricPluginType: "
 			    << metric.second.getNode("metricPluginType").getValue() << "\n";
-			OUT << "level: " << metric.second.getNode("metricLevel").getValue() << "\n";
+			OUT << "level_string: "
+			    << metric.second.getNode("metricLevelString").getValue() << "\n";
 
 			auto metricParametersGroup = metric.second.getNode("metricParametersLink");
 			if(!metricParametersGroup.isDisconnected())
@@ -343,6 +355,14 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 				}
 			}
 			POPTAB;
+			if(sendSystemMetrics)
+			{
+				OUT << "send_system_metrics: true\n";
+			}
+			if(sendProcessMetrics)
+			{
+				OUT << "send_process_metrics: true\n";
+			}
 			OUT << "}\n\n";  // end metric
 
 			if(!metric.second.status())
