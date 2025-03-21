@@ -319,7 +319,8 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 			OUT << metric.second.getNode("metricKey").getValue() << ": {\n";
 			PUSHTAB;
 
-                        if (metric.second.getNode("sendSystemMetrics").getValue<bool>()) {
+			if(metric.second.getNode("sendSystemMetrics").getValue<bool>())
+			{
 				sendSystemMetrics = true;
 			}
 			if(metric.second.getNode("sendProcessMetrics").getValue<bool>())
@@ -358,13 +359,13 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 		}
 
 		if(sendSystemMetrics)
-		  {
-		    OUT << "send_system_metrics: true\n";
-		  }
+		{
+			OUT << "send_system_metrics: true\n";
+		}
 		if(sendProcessMetrics)
-		  {
-		    OUT << "send_process_metrics: true\n";
-		  }
+		{
+			OUT << "send_process_metrics: true\n";
+		}
 	}
 
 	POPTAB;
