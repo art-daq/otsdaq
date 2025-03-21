@@ -76,11 +76,11 @@ find_package(artdaq 3.12.00 REQUIRED EXPORT)
 find_package(artdaq-database 1.07.00 REQUIRED)
 find_package(Python 3.6 COMPONENTS Development.Embed REQUIRED)
 
-#if (EXISTS ${artdaq-database_DIR})
-#set(bsoncxx_DIR ${artdaq-database_DIR})
-#set(mongocxx_DIR ${artdaq-database_DIR})
-#find_package(mongocxx REQUIRED)
-#endif()
+if (EXISTS ${artdaq-database_DIR})
+set(bsoncxx_DIR ${artdaq-database_DIR})
+set(mongocxx_DIR ${artdaq-database_DIR})
+find_package(mongocxx REQUIRED)
+endif()
 find_package(Boost QUIET COMPONENTS date_time program_options regex thread REQUIRED EXPORT)
 
  # XDAQ Extra setup
