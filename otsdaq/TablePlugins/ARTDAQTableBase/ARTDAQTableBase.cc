@@ -310,7 +310,7 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 	if(!metricsGroup.isDisconnected())
 	{
 		auto metrics = metricsGroup.getChildren();
-
+		bool sendSystemMetrics(false), sendProcessMetrics(false);
 		for(auto& metric : metrics)
 		{
 			if(!metric.second.status())
@@ -330,7 +330,7 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 
 			OUT << "metricPluginType: "
 			    << metric.second.getNode("metricPluginType").getValue() << "\n";
-			OUT << "level: " << metric.second.getNode("metricLevel").getValue() << "\n";
+			OUT << "level_string: " << metric.second.getNode("metricLevelString").getValue() << "\n";
 
 			auto metricParametersGroup = metric.second.getNode("metricParametersLink");
 			if(!metricParametersGroup.isDisconnected())
