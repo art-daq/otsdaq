@@ -365,7 +365,6 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 		  {
 		    OUT << "send_process_metrics: true\n";
 		  }
-		
 	}
 
 	POPTAB;
