@@ -56,7 +56,8 @@ bool TCPClientBase::connect(int retry, unsigned int sleepMilliSeconds)
 	int totalTries = retry;
 	while(!fConnected && (unsigned int)retry-- > 0)
 	{
-		std::cout << __PRETTY_FUNCTION__ << "Trying to connect" << std::endl;
+		std::cout << __PRETTY_FUNCTION__ << "Trying to connect with socket ID "
+			  << getSocketId() << std::endl;
 		TCPSocket::open();
 		status = ::connect(getSocketId(),
 		                   (struct sockaddr*)&serverSocketAddress,
