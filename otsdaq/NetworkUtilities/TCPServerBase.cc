@@ -251,7 +251,8 @@ void TCPServerBase::broadcastPacket(const std::string& message)
 	{
 		try
 		{
-			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second); sock != nullptr)
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
 				sock->sendPacket(message);
 		}
 		catch(const std::exception& e)
@@ -276,7 +277,8 @@ void TCPServerBase::broadcast(const char* message, std::size_t length)
 	{
 		try
 		{
-			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second); sock != nullptr)
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
 				sock->send(message, length);
 		}
 		catch(const std::exception& e)
@@ -300,7 +302,8 @@ void TCPServerBase::broadcast(const std::string& message)
 	{
 		try
 		{
-			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second); sock != nullptr)
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
 				sock->send(message);
 		}
 		catch(const std::exception& e)
@@ -324,7 +327,8 @@ void TCPServerBase::broadcast(const std::vector<char>& message)
 	{
 		try
 		{
-			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second); sock != nullptr)
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
 				sock->send(message);
 		}
 		catch(const std::exception& e)
@@ -348,7 +352,8 @@ void TCPServerBase::broadcast(const std::vector<uint16_t>& message)
 	{
 		try
 		{
-			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second); sock != nullptr)
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
 				sock->send(message);
 		}
 		catch(const std::exception& e)
@@ -375,7 +380,8 @@ void TCPServerBase::pingActiveClients()
 		__COUT__ << "Pinging client " << it->first << " : " << it->second << std::endl;
 		try
 		{
-			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second); sock != nullptr)
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
 				sock->send("", 0, true);
 		}
 		catch(const std::exception& e)
