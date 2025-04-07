@@ -30,8 +30,8 @@ TCPClientBase::~TCPClientBase(void)
 bool TCPClientBase::connect(int retry, unsigned int sleepMilliSeconds)
 {
 	__COUT__ << __PRETTY_FUNCTION__ << "Connecting Client socket to server name-"
-	          << fServerIP << "-serverPort: " << fServerPort << " already connected? "
-	          << fConnected << std::endl;
+	         << fServerIP << "-serverPort: " << fServerPort << " already connected? "
+	         << fConnected << std::endl;
 	if(fConnected)
 	{
 		std::stringstream error;
@@ -42,7 +42,7 @@ bool TCPClientBase::connect(int retry, unsigned int sleepMilliSeconds)
 	}
 
 	__COUT__ << __PRETTY_FUNCTION__ << "Connecting Client socket to server name-"
-	          << fServerIP << "-serverPort: " << fServerPort << std::endl;
+	         << fServerIP << "-serverPort: " << fServerPort << std::endl;
 	std::string serverName = fServerIP;
 	resolveServer(fServerIP);
 	__COUT__ << "Connecting Client socket to server ip  -" << fServerIP
@@ -57,21 +57,21 @@ bool TCPClientBase::connect(int retry, unsigned int sleepMilliSeconds)
 	while(!fConnected && (unsigned int)retry-- > 0)
 	{
 		__COUT__ << __PRETTY_FUNCTION__ << "Trying to connect with socket ID "
-			  << getSocketId() << std::endl;
+		         << getSocketId() << std::endl;
 		TCPSocket::open();
 		status = ::connect(getSocketId(),
 		                   (struct sockaddr*)&serverSocketAddress,
 		                   sizeof(serverSocketAddress));
 		__COUT__ << __PRETTY_FUNCTION__ << "Done Connect with status: " << status
-		          << std::endl;
+		         << std::endl;
 		if(status == -1)
 		{
 			if((unsigned int)retry > 0)
 			{
 				__COUT__ << __PRETTY_FUNCTION__ << "WARNING: Can't connect to "
-				          << serverName << ". The server might still be down...Sleeping "
-				          << sleepMilliSeconds << "ms and then retry "
-				          << (unsigned int)retry << " more times." << std::endl;
+				         << serverName << ". The server might still be down...Sleeping "
+				         << sleepMilliSeconds << "ms and then retry "
+				         << (unsigned int)retry << " more times." << std::endl;
 				std::this_thread::sleep_for(std::chrono::milliseconds(sleepMilliSeconds));
 				continue;
 			}
