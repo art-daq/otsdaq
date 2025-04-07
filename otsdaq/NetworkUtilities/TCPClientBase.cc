@@ -29,7 +29,7 @@ TCPClientBase::~TCPClientBase(void)
 //==============================================================================
 bool TCPClientBase::connect(int retry, unsigned int sleepMilliSeconds)
 {
-	std::cout << __PRETTY_FUNCTION__ << "Connecting Client socket to server name-"
+	__COUT__ << __PRETTY_FUNCTION__ << "Connecting Client socket to server name-"
 	          << fServerIP << "-serverPort: " << fServerPort << " already connected? "
 	          << fConnected << std::endl;
 	if(fConnected)
@@ -41,7 +41,7 @@ bool TCPClientBase::connect(int retry, unsigned int sleepMilliSeconds)
 		throw std::runtime_error(error.str());
 	}
 
-	std::cout << __PRETTY_FUNCTION__ << "Connecting Client socket to server name-"
+	__COUT__ << __PRETTY_FUNCTION__ << "Connecting Client socket to server name-"
 	          << fServerIP << "-serverPort: " << fServerPort << std::endl;
 	std::string serverName = fServerIP;
 	resolveServer(fServerIP);
@@ -56,19 +56,19 @@ bool TCPClientBase::connect(int retry, unsigned int sleepMilliSeconds)
 	int totalTries = retry;
 	while(!fConnected && (unsigned int)retry-- > 0)
 	{
-		std::cout << __PRETTY_FUNCTION__ << "Trying to connect with socket ID "
+		__COUT__ << __PRETTY_FUNCTION__ << "Trying to connect with socket ID "
 			  << getSocketId() << std::endl;
 		TCPSocket::open();
 		status = ::connect(getSocketId(),
 		                   (struct sockaddr*)&serverSocketAddress,
 		                   sizeof(serverSocketAddress));
-		std::cout << __PRETTY_FUNCTION__ << "Done Connect with status: " << status
+		__COUT__ << __PRETTY_FUNCTION__ << "Done Connect with status: " << status
 		          << std::endl;
 		if(status == -1)
 		{
 			if((unsigned int)retry > 0)
 			{
-				std::cout << __PRETTY_FUNCTION__ << "WARNING: Can't connect to "
+				__COUT__ << __PRETTY_FUNCTION__ << "WARNING: Can't connect to "
 				          << serverName << ". The server might still be down...Sleeping "
 				          << sleepMilliSeconds << "ms and then retry "
 				          << (unsigned int)retry << " more times." << std::endl;
@@ -100,7 +100,7 @@ bool TCPClientBase::connect(int retry, unsigned int sleepMilliSeconds)
 		//			socketLength = sendBufferSize;
 		//			status = setsockopt(getSocketId(), SOL_SOCKET, SO_SNDBUF,
 		//&socketLength,  sizeOfSocketLength); 			if (status == -1)
-		// std::cout <<
+		// __COUT__ <<
 		//__PRETTY_FUNCTION__ <<  "Error with setsockopt sendBufferSize " << errno <<
 		// std::endl ; 			socketLength = 0;
 		//			status = getsockopt(getSocketId(), SOL_SOCKET, SO_SNDBUF,
@@ -108,7 +108,7 @@ bool TCPClientBase::connect(int retry, unsigned int sleepMilliSeconds)
 		//* 2)) 				__COUT__ <<  "sendBufferSize " <<
 		// socketLength
 		//<< " not expected (" << sendBufferSize << " status/errno=" << status << "/" <<
-		// errno << ")" << std::endl; 			else 				std::cout <<
+		// errno << ")" << std::endl; 			else 				__COUT__ <<
 		//__PRETTY_FUNCTION__ <<  "sendBufferSize " << socketLength << " status/errno=" <<
 		// status << "/" << errno << std::endl;
 		//		}
@@ -159,6 +159,6 @@ void TCPClientBase::resolveServer(std::string& serverIP)
 		}
 		in_addr* address = (in_addr*)resolvedHost->h_addr;
 		serverIP         = inet_ntoa(*address);
-		std::cout << "IP: (" << serverIP << ")\n";
+		__COUT__ << "IP: (" << serverIP << ")\n";
 	}
 }
