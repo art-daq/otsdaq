@@ -20,6 +20,7 @@ const std::string IterateTable::COMMAND_EXECUTE_MACRO          = "EXECUTE_MACRO"
 const std::string IterateTable::COMMAND_MODIFY_ACTIVE_GROUP    = "MODIFY_ACTIVE_GROUP";
 const std::string IterateTable::COMMAND_REPEAT_LABEL           = "REPEAT_LABEL";
 const std::string IterateTable::COMMAND_RUN                    = "RUN";
+const std::string IterateTable::COMMAND_WAIT                   = "WAIT";
 const std::string IterateTable::COMMAND_START                  = "START";
 const std::string IterateTable::COMMAND_STOP                   = "STOP";
 const std::string IterateTable::COMMAND_PAUSE                  = "PAUSE";
@@ -45,7 +46,10 @@ IterateTable::CommandActivateGroupParams   IterateTable::commandActivateGroupPar
 IterateTable::CommandExecuteMacroParams    IterateTable::commandExecuteMacroParams_;
 IterateTable::CommandModifyActiveParams    IterateTable::commandModifyActiveParams_;
 IterateTable::CommandRepeatLabelParams     IterateTable::commandRepeatLabelParams_;
+
 IterateTable::CommandRunParams             IterateTable::commandRunParams_;
+IterateTable::CommandWaitParams            IterateTable::commandWaitParams_;
+
 IterateTable::CommandChooseFSMParams       IterateTable::commandChooseFSMParams_;
 
 IterateTable::TargetParams         IterateTable::targetParams_;

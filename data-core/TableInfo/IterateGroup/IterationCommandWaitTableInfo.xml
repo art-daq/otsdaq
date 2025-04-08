@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+	<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TableInfo.xsd">
+		<TABLE Name="IterationCommandWaitTable">
+			<VIEW Name="ITERATION_COMMAND_WAIT_TABLE" Type="File,Database,DatabaseTest" Description="'WaitForAllFrontEndsRunningThread'%20-%20if%20true%2C%20will%20ignore%20Duration%2C%20and%20instead%20run%20for%20as%20long%20as%20there%20is%20at%20least%20one%20front-end%20still%20executing%20its%20running()%20thread.">
+				<COLUMN Type="UID" 	 Name="CommandID" 	 StorageName="COMMAND_ID" 		DataType="VARCHAR2" 		DataChoices=""/>
+				<COLUMN Type="TrueFalse" 	 Name="WaitForAllFrontEndsRunningThread" 	 StorageName="WAIT_FOR_ALL_FRONT_ENDS_RUNNING_THREAD" 		DataType="VARCHAR2" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="DurationInSeconds" 	 StorageName="DURATION_IN_SECONDS" 		DataType="NUMBER" 		DataChoices=""/>
+				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="VARCHAR2" 		DataChoices=""/>
+				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="VARCHAR2" 		DataChoices=""/>
+				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE" 		DataChoices=""/>
+			</VIEW>
+		</TABLE>
+	</ROOT>
