@@ -1610,8 +1610,8 @@ void Iterator::startCommandModifyActive(IteratorWorkLoopStruct* iteratorStruct)
 //	Either will be done on (priority 1) running threads (for Frontends) ending
 //		or (priority 2 and ignored if <= 0) duration timeout
 //
-//	Note: use command structure strings to maintain duration left
-//	Note: watch iterator->doPauseAction and iterator->doHaltAction and respond
+///	Note: use command structure strings to maintain duration left
+///	Note: watch iterator->doPauseAction and iterator->doHaltAction and respond
 bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 {
 	sleep(1);  // sleep to give FSM time to transition

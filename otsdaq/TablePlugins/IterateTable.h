@@ -72,7 +72,7 @@ class IterateTable : public TableBase
 		m[COMMAND_MODIFY_ACTIVE_GROUP]    = "IterationCommandModifyGroupTable";
 		m[COMMAND_REPEAT_LABEL]           = "IterationCommandRepeatLabelTable";
 		m[COMMAND_RUN]                    = "IterationCommandRunTable";
-		m[COMMAND_WAIT]                   = "IterationCommandWaitTable";
+		m[COMMAND_WAIT]                   = "IterationCommandRunTable"; 
 		m[COMMAND_START]                  = "";  ///< no parameters
 		m[COMMAND_STOP]                   = "";  ///< no parameters
 		m[COMMAND_PAUSE]                  = "";  ///< no parameters

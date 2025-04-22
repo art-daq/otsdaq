@@ -97,9 +97,8 @@ const std::set<std::string> ConfigurationManager::iterateMemberNames_ = {
     "IterationCommandMacroDimensionalLoopParameterTable",
     "IterationCommandModifyGroupTable",
     "IterationCommandRepeatLabelTable",
-    "IterationCommandRunTable",
-	"IterationCommandWaitTable"};
-
+    "IterationCommandRunTable"};
+	
 //==============================================================================
 ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/,
                                            bool doInitializeFromFhicl /*=false*/)
