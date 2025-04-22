@@ -73,7 +73,6 @@ class Iterator
 		unsigned int                       commandIndex_;
 		std::vector<unsigned int>          stepIndexStack_;
 		time_t                             originalDurationInSeconds_;
-		
 
 		// associated with FSM
 		std::string  fsmName_, fsmRunAlias_;

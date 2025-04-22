@@ -98,7 +98,7 @@ const std::set<std::string> ConfigurationManager::iterateMemberNames_ = {
     "IterationCommandModifyGroupTable",
     "IterationCommandRepeatLabelTable",
     "IterationCommandRunTable"};
-	
+
 //==============================================================================
 ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/,
                                            bool doInitializeFromFhicl /*=false*/)
