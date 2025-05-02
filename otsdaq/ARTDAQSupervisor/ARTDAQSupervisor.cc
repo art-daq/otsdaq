@@ -194,7 +194,22 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 		  << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
 	}
 	o << "transfer_plugin_to_use: "
-	  << getSupervisorProperty("transfer_plugin_to_use", "Autodetect") << std::endl;
+	  << getSupervisorProperty("transfer_plugin_to_use", "TCPSocket") << std::endl;
+	if(getSupervisorProperty("transfer_plugin_from_brs", "") != "")
+	{
+		o << "transfer_plugin_from_brs: "
+		  << getSupervisorProperty("transfer_plugin_from_brs", "") << std::endl;
+	}
+	if(getSupervisorProperty("transfer_plugin_from_ebs", "") != "")
+	{
+		o << "transfer_plugin_from_ebs: "
+		  << getSupervisorProperty("transfer_plugin_from_ebs", "") << std::endl;
+	}
+	if(getSupervisorProperty("transfer_plugin_from_dls", "") != "")
+	{
+		o << "transfer_plugin_from_dls: "
+		  << getSupervisorProperty("transfer_plugin_from_dls", "") << std::endl;
+	}
 	o << "all_events_to_all_dispatchers: " << std::boolalpha
 	  << getSupervisorProperty("all_events_to_all_dispatchers", true) << std::endl;
 	o << "data_directory_override: "
