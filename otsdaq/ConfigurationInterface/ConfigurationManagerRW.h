@@ -78,7 +78,7 @@ class ConfigurationManagerRW : public ConfigurationManager
 	TableBase*    								getTableByName					(const std::string& tableName);
 	TableGroupKey 								findTableGroup					(const std::string& groupName, 	const std::map<std::string, TableVersion>& 						groupMembers,
 																												const std::map<std::string /*name*/, std::string /*alias*/>& 	groupAliases =	std::map<std::string /*name*/, std::string /*alias*/>());
-	TableBase* 									getMetadataTable				(void) { return &groupMetadataTable_; /* created for use in otsdaq_flatten_system_aliases, e.g. */ }
+	TableBase* 									getMetadataTable				(TableVersion fillVersion = TableVersion()); ///< created for use in otsdaq_flatten_system_aliases and otsdaq_export_system_aliases, e.g.
 
 	//==============================================================================
 	/// modifiers of generic TableBase
@@ -102,7 +102,7 @@ class ConfigurationManagerRW : public ConfigurationManager
 	/// modifiers of table groups
 	void 										activateTableGroup				(const std::string& tableGroupName, TableGroupKey tableGroupKey, std::string* accumulatedTreeErrors = 0, std::string* groupTypeString = 0);
 
-	TableVersion 								createTemporaryBackboneView		(TableVersion sourceViewVersion = TableVersion());  ///<-1, from MockUp, else from valid backbone view version
+	TableVersion 								createTemporaryBackboneView		(TableVersion sourceViewVersion = TableVersion());  ///< -1, from MockUp, else from valid backbone view version
 	TableVersion 								saveNewBackbone					(TableVersion temporaryVersion 	= TableVersion());
 
 	//==============================================================================

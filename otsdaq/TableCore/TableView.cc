@@ -2194,7 +2194,7 @@ void TableView::printJSON(std::ostream& out) const
 		tmpCachePrepend               = TableBase::convertToCaps(tmpCachePrepend);
 		std::string tmpJsonDocPrepend = TableBase::JSON_DOC_PREPEND;
 		tmpJsonDocPrepend             = TableBase::convertToCaps(tmpJsonDocPrepend);
-		__COUT__ << " '" << tableName_ << "' vs " << tmpCachePrepend << " or "
+		__COUTS__(32) << " '" << tableName_ << "' vs " << tmpCachePrepend << " or "
 		         << tmpJsonDocPrepend << __E__;
 		//if special GROUP CACHE table, handle construction in a special way
 		if(tableName_.substr(0, tmpCachePrepend.length()) == tmpCachePrepend ||
@@ -2327,7 +2327,7 @@ std::string restoreJSONStringEntities(const std::string& str)
 
 //==============================================================================
 /// fillFromJSON
-///	Clears and fills the view from the JSON string.
+///	Fills (does not clear) the view from the JSON string.
 ///	Returns -1 on failure
 ///
 ///	first level keys:
@@ -2368,7 +2368,7 @@ int TableView::fillFromJSON(const std::string& json)
 		}              //end special GROUP CACHE table construction
 	}                  //end handle special GROUP CACHE table
 
-	bool dbg     = false;  // tableName_ == "ARTDAQEventBuilderTable" || tableName_ == "";
+	bool dbg     = false; //tableName_ == "TABLE_GROUP_METADATA";
 	bool rawData = getSourceRawData_;
 	if(getSourceRawData_)
 	{  // only get source raw data once, then revert member variable
@@ -2396,9 +2396,11 @@ int TableView::fillFromJSON(const std::string& json)
 	};
 
 	if(dbg)
+	{
 		__COUTV__(tableName_);
-	if(dbg)
+		__COUTTV__(getNumberOfRows());				
 		__COUTV__(json);
+	}
 
 	sourceColumnMismatchCount_ = 0;
 	sourceColumnMissingCount_  = 0;
@@ -2680,7 +2682,7 @@ int TableView::fillFromJSON(const std::string& json)
 		// handle a new completed value
 		if(newValue)
 		{
-			if(0 && tableName_ == "ARTDAQ_DATALOGGER_TABLE")  // for debugging
+			if(dbg)  // for debugging
 			{
 				std::cout << i << ":\t" << json[i] << " - ";
 
@@ -2706,7 +2708,8 @@ int TableView::fillFromJSON(const std::string& json)
 				std::cout << startNumber << "-";
 				std::cout << endNumber << " ";
 				std::cout << "\n";
-				__COUTV__(fillWithLooseColumnMatching_);
+				__COUTTV__(fillWithLooseColumnMatching_);
+				__COUTTV__(getNumberOfRows());			
 			}
 
 			// extract only what we care about
@@ -2743,8 +2746,9 @@ int TableView::fillFromJSON(const std::string& json)
 			}
 			else if(matchedKey != (unsigned int)-1)
 			{
-				// std::cout << "New Data for:: key[" << matchedKey << "]-" <<
-				//		keys[matchedKey] << "\n";
+				if(dbg)
+					__COUTT__ << "New Data for:: key[" << matchedKey << "]-" <<
+							keys[matchedKey] << "\n";
 
 				switch(matchedKey)
 				{
@@ -2777,12 +2781,10 @@ int TableView::fillFromJSON(const std::string& json)
 					//
 					// break;
 				case CV_JSON_FILL_DATA_SET:
-					//					std::cout << "CV_JSON_FILL_DATA_SET New Data for::
-					//"
-					//<<  matchedKey << "]-" << 						keys[matchedKey]
-					//<<
-					//"/" << currDepth << ".../" << 						currKey <<
-					//"\n";
+					if(dbg)
+						__COUTT__ << "CV_JSON_FILL_DATA_SET New Data for::"
+							<< matchedKey << "]-" << keys[matchedKey]
+							<< "/" << currDepth << ".../" << currKey <<	"\n";
 
 					if(currDepth == 2)  // second level depth
 					{
@@ -2879,6 +2881,16 @@ int TableView::fillFromJSON(const std::string& json)
 
 									++keyIsMatchStorageIndex;  // go to next character
 								}
+								
+								if(dbg)
+								{
+									__COUTTV__(keyIsMatch);
+									__COUTTV__(keyIsComment);
+									__COUTTV__(currKey);
+									__COUTTV__(columnsInfo_[col]
+									       .getStorageName());
+									__COUTTV__(getNumberOfRows());									
+								}
 
 								if(keyIsMatch || keyIsComment)  // currKey ==
 								    // columnsInfo_[c].getStorageName())
@@ -2966,7 +2978,8 @@ int TableView::fillFromJSON(const std::string& json)
 	}
 
 	//__COUT__ << "Done!" << __E__;
-	//__COUTV__(fillWithLooseColumnMatching_);
+	__COUTTV__(fillWithLooseColumnMatching_);
+	__COUTTV__(sourceColumnNames_.size());
 	//__COUTV__(tableName_); //  << "tableName_ = " << tableName_
 
 	if(!fillWithLooseColumnMatching_ && sourceColumnMissingCount_ > 0)
@@ -2977,6 +2990,12 @@ int TableView::fillFromJSON(const std::string& json)
 		       << ". Please see the details below:\n\n"
 		       << getMismatchColumnInfo() << StringMacros::stackTrace();
 		__SS_ONLY_THROW__;
+	}
+
+	if(sourceColumnNames_.size() == 0) //if not populated by data (i.e. zero records), then use default column names
+	{
+		for(unsigned int i = 0; i < getNumberOfColumns(); ++i)
+			sourceColumnNames_.emplace(getColumnsInfo()[i].getStorageName());
 	}
 
 	// print();

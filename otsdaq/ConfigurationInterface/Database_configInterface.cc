@@ -302,7 +302,7 @@ TableGroupKey DatabaseConfigurationInterface::findLatestGroupKey(
     const std::string& groupName) const noexcept
 {
 	std::set<TableGroupKey> keys = DatabaseConfigurationInterface::getKeys(groupName);
-	if(keys.size())  // if keys exist, bump the last
+	if(keys.size())  // if keys exist, return the last
 		return *(keys.crbegin());
 
 	// else, return invalid
@@ -636,6 +636,7 @@ catch(...)
 }  //end saveTableGroup() catch
 
 //==============================================================================
+/// Save a json string as a document in the document database.
 std::pair<std::string, TableVersion> DatabaseConfigurationInterface::saveCustomJSON(
     const std::string& json, const std::string& documentNameToSave) const
 try
@@ -685,6 +686,7 @@ catch(...)
 }  //end saveCustomJSON() catch
 
 //==============================================================================
+/// Load a document in the document database and return content as a json string
 std::string DatabaseConfigurationInterface::loadCustomJSON(
     const std::string& documentNameToLoad, TableVersion documentVersionToLoad) const
 try

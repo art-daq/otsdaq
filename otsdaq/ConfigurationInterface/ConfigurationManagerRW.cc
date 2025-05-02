@@ -909,6 +909,8 @@ catch(...)
 
 //==============================================================================
 /// compareTableGroupThread()
+///  Compares the input group member map to a group name/key's member map. 
+///	 Note: the input member map should not include the Meta Data Table
 void ConfigurationManagerRW::compareTableGroupThread(
     ConfigurationManagerRW*                                      cfgMgr,
     std::string                                                  groupName,
@@ -942,6 +944,16 @@ try
 	                       0 /*groupTypeString*/,
 	                       compareToMemberTableAliasesPtr);
 
+	bool debug = false;
+	if(TTEST(9)) // = DEBUG+9
+	{
+		debug = true;
+		for(auto& memberPair : groupMemberMap)
+			__COUTS__(9) << "member " << memberPair.first << " (" << memberPair.second << ")" << __E__;
+		for(auto& memberPair : compareToMemberMap)
+			__COUTS__(9) << "compare " << groupName << " (" << groupKeyToCompare << ") member:" << memberPair.first << " (" << memberPair.second << ")" << __E__;		
+	}
+
 	bool isDifferent = false;
 	for(auto& memberPair : groupMemberMap)
 	{
@@ -954,6 +966,8 @@ try
 			       compareToMemberTableAliases.at(memberPair.first))
 			{  // then different
 				isDifferent = true;
+				if(debug)
+					__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare << ") on alias " << memberPair.first << __E__;
 				break;
 			}
 			else
@@ -964,6 +978,8 @@ try
 		{
 			// then different
 			isDifferent = true;
+			if(debug)
+				__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare << ") on reverse alias " << memberPair.first << __E__;
 			break;
 
 		}  // else handle as table version comparison
@@ -974,14 +990,20 @@ try
 		{
 			// then different
 			isDifferent = true;
+			if(debug)
+				__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare << ") on mismatch " << memberPair.first << __E__;
 			break;
 		}
 	}
 
 	// check member size for exact match
-	if(!isDifferent && groupMemberMap.size() != compareToMemberMap.size())
-		isDifferent =
-		    true;  // different size, so not same (groupMemberMap is a subset of memberPairs)
+	if(!isDifferent && groupMemberMap.size() != compareToMemberMap.size()) // different size, so not same (groupMemberMap is a subset of memberPairs)
+	{
+		isDifferent = true;  
+		
+		if(debug)
+			__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare << ") on size " << __E__;
+	}
 
 	if(!isDifferent)  //found an exact match!
 	{
@@ -1711,6 +1733,63 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 		return TableGroupKey();  // return invalid key
 	}                            //end multi-thread handling
 }  // end findTableGroup()
+
+//==============================================================================
+/// getMetadataTable
+/// Created for use in otsdaq_flatten_system_aliases and otsdaq_export_system_aliases, e.g.
+///
+///	If default fill version, then just return meta table as is
+TableBase* ConfigurationManagerRW::getMetadataTable(TableVersion fillVersion /* = TableVersion()*/)
+{ 
+	if(fillVersion.isInvalid())
+		return &groupMetadataTable_; 
+	//else load specified fill version
+
+	//only lock metadata table since it is shared by all group accesses
+	std::lock_guard<std::mutex> lock(metaDataTableMutex_);
+
+	// clear table
+	while(groupMetadataTable_.getView().getNumberOfRows())
+		groupMetadataTable_.getViewP()->deleteRow(0);
+
+	// retrieve metadata from database
+	try
+	{
+		theInterface_->fill(&groupMetadataTable_, fillVersion);
+	}
+	catch(const std::runtime_error& e)
+	{
+		__GEN_COUT_WARN__
+			<< "Failed to load " << groupMetadataTable_.getTableName() << "-v"
+			<< fillVersion << ". Metadata error: " << e.what()
+			<< __E__;
+	}
+	catch(...)
+	{
+		__GEN_COUT_WARN__
+			<< "Failed to load " << groupMetadataTable_.getTableName() << "-v"
+			<<fillVersion << ". Ignoring unknown metadata error. "
+			<< __E__;
+	}
+
+	// check that there is only 1 row
+	if(groupMetadataTable_.getView().getNumberOfRows() != 1)
+	{
+		groupMetadataTable_.print();
+		__GEN_COUT_ERR__ << "Ignoring that groupMetadataTable_ v" << fillVersion << " has wrong "
+							"number of rows!' Must "
+							"be 1. Going with anonymous defaults."
+							<< __E__;
+
+		// fix metadata table
+		while(groupMetadataTable_.getViewP()->getNumberOfRows() > 1)
+			groupMetadataTable_.getViewP()->deleteRow(0);
+		if(groupMetadataTable_.getViewP()->getNumberOfRows() == 0)
+			groupMetadataTable_.getViewP()->addRow();
+	}
+
+	return &groupMetadataTable_; 
+}  // end getMetadataTable()
 
 //==============================================================================
 /// saveNewTableGroup

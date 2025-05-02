@@ -154,7 +154,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	}
 
 	std::fstream bfs;
-	// output use web bool for StartOTS.sh
+	// output use web bool for ots script
 	bfs.open(USE_WEB_BOOL_FILE, std::fstream::out | std::fstream::trunc);
 	if(bfs.fail())
 	{
@@ -165,7 +165,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	bfs << (useWeb ? 1 : 0);
 	bfs.close();
 
-	// output use web bool for StartOTS.sh
+	// output use web bool for ots script
 	bfs.open(USE_QT_BOOL_FILE, std::fstream::out | std::fstream::trunc);
 	if(bfs.fail())
 	{

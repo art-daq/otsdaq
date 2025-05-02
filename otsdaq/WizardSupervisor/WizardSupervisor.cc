@@ -339,10 +339,6 @@ void WizardSupervisor::generateURL()
 	         << this->getApplicationDescriptor()->getLocalId()
 	         << "/Verify?code=" << securityCode_ << std::endl;
 
-	// Note: print out handled by StartOTS.sh now
-	// std::thread([&](WizardSupervisor *ptr, std::string securityCode)
-	//		{printURL(ptr,securityCode);},this,securityCode_).detach();
-
 	fp = fopen((SEQUENCE_OUT_FILE_NAME).c_str(), "w");
 	if(fp)
 	{
@@ -356,6 +352,7 @@ void WizardSupervisor::generateURL()
 	return;
 }  // end generateURL()
 
+//==============================================================================
 void WizardSupervisor::printURL(WizardSupervisor* ptr, std::string securityCode)
 {
 	// child process

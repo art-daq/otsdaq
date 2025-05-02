@@ -9166,7 +9166,7 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 	}
 
 	sleep(2 /*seconds*/);  // then verify that the commands were read
-	// note: StartOTS.sh has a sleep of 1 second
+	// note: ots script has a sleep of 1 second
 
 	for(const auto& hostname : hostnames)
 	{

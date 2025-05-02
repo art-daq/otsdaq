@@ -302,13 +302,17 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 	bool         match;
 	unsigned int potentialMatchCount = 0;
 
-	// needleView->print();
+	if(TTEST(9))
+		needleView->print();
+
+	__COUTTV__(ignoreVersion);
 
 	// for each table in cache
 	//	check each row,col
 	auto viewPairReverseIterator = tableViews_.rbegin();
 	for(; viewPairReverseIterator != tableViews_.rend(); ++viewPairReverseIterator)
 	{
+		__COUTTV__(viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first == needleVersion)
 			continue;  // skip needle version
 		if(viewPairReverseIterator->first == ignoreVersion)
@@ -334,6 +338,8 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 
 		match = viewPairReverseIterator->second.getSourceColumnNames().size() ==
 		        needleView->getSourceColumnNames().size();
+		__COUTTV__(viewPairReverseIterator->second.getSourceColumnNames().size());
+		__COUTTV__(needleView->getSourceColumnNames().size());
 		if(match)
 		{
 			for(auto& haystackColName :
@@ -348,6 +354,17 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 					break;
 				}
 		}
+		else if(TTEST(1))
+		{
+			int i = 0;
+			for(auto& srcCol : viewPairReverseIterator->second.getSourceColumnNames())
+				__COUTT__ << "compare Col #" << i++ << " " << srcCol << __E__;
+			i = 0;
+			for(auto& srcCol : needleView->getSourceColumnNames())
+				__COUTT__ << "source Col #" << i++ << " " << srcCol << __E__;
+		}
+
+		__COUTTV__(match);
 
 		// checking columnsInfo seems to be wrong approach, use getSourceColumnNames
 		// (above) 		auto viewColInfoIt =
@@ -373,19 +390,19 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 				{
 					match = false;
 
-					//					__COUT__ << "Value name mismatch " << col << ":"
-					//							<<
-					//							viewPairReverseIterator->second.getDataView()[row][col]
-					//																			   << "[" <<
-					//																			   viewPairReverseIterator->second.getDataView()[row][col].size()
-					//																			   << "]" << 							" vs " <<
-					//																			   needleView->getDataView()[row][col] << "["
-					//																			   <<
-					//																			   needleView->getDataView()[row][col].size()
-					//																			   <<
-					//																			   "]"
-					//																			   <<
-					//																			   __E__;
+					__COUTT__ << "Value name mismatch " << col << ":"
+							<<
+							viewPairReverseIterator->second.getDataView()[row][col]
+																				<< "[" <<
+																				viewPairReverseIterator->second.getDataView()[row][col].size()
+																				<< "]" << 							" vs " <<
+																				needleView->getDataView()[row][col] << "["
+																				<<
+																				needleView->getDataView()[row][col].size()
+																				<<
+																				"]"
+																				<<
+																				__E__;
 
 					break;
 				}
