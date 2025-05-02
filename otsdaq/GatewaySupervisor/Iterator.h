@@ -78,9 +78,11 @@ class Iterator
 		std::string  fsmName_, fsmRunAlias_;
 		unsigned int fsmNextRunNumber_;
 		bool         runIsDone_;
+		bool 		 waitIsDone_;
 
 		std::vector<std::string> fsmCommandParameters_;
 		std::vector<bool>        targetsDone_;
+
 
 	};  // end declaration of iterator workloop members
 
@@ -105,6 +107,9 @@ class Iterator
 
 	static void startCommandRun(IteratorWorkLoopStruct* iteratorStruct);
 	static bool checkCommandRun(IteratorWorkLoopStruct* iteratorStruct);
+
+	static void startCommandWait(IteratorWorkLoopStruct* iteratorStruct);
+	static bool checkCommandWait(IteratorWorkLoopStruct* iteratorStruct);
 
 	static void startCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct, const std::string& transitionCommand);
 	static bool checkCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct, const std::string& finalState);
