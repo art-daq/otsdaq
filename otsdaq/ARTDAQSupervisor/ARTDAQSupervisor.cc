@@ -659,7 +659,7 @@ try
 		}
 		if(builder.allowed_processors != "")
 		{
-			o << "EventBuilder allowed_processors" << builder.allowed_processors
+			o << "EventBuilder allowed_processors: " << builder.allowed_processors
 			  << std::endl;
 		}
 		o << std::endl;
@@ -675,7 +675,7 @@ try
 		}
 		if(logger.allowed_processors != "")
 		{
-			o << "DataLogger allowed_processors" << logger.allowed_processors
+			o << "DataLogger allowed_processors: " << logger.allowed_processors
 			  << std::endl;
 		}
 		o << std::endl;
@@ -692,7 +692,7 @@ try
 		}
 		if(dispatcher.allowed_processors != "")
 		{
-			o << "Dispatcher allowed_processors" << dispatcher.allowed_processors
+			o << "Dispatcher allowed_processors: " << dispatcher.allowed_processors
 			  << std::endl;
 		}
 		o << std::endl;
@@ -708,7 +708,7 @@ try
 		}
 		if(rmanager.allowed_processors != "")
 		{
-			o << "RoutingManager allowed_processors" << rmanager.allowed_processors
+			o << "RoutingManager allowed_processors: " << rmanager.allowed_processors
 			  << std::endl;
 		}
 		o << std::endl;
