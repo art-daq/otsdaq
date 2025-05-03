@@ -2784,7 +2784,8 @@ if [ $FIREFOX == 1 ]; then
 fi
 
 if [ $CHECK_GIT_REPO_STATUS == 1 ]; then
-	UpdateOTS.sh --warn &
+	out "Will report a warning if any uncommitted code found..."
+	UpdateOTS.sh --warn 2>&1 >/dev/null &
 fi
 
 #sleep 5 #so that the terminal comes back after the printouts are done ( in quiet mode )
