@@ -58,6 +58,7 @@ class FiniteStateMachine : public toolbox::fsm::FiniteStateMachine
 
 	const xoap::MessageReference& 	getCurrentMessage			(void) { return theMessage_; }
 
+	bool 							tryTransition				(const std::string& transition);
 	bool 							execTransition				(const std::string& transition);
 	bool 							execTransition				(const std::string& transition, const xoap::MessageReference& message);
 	bool 							isInTransition				(void);
@@ -94,6 +95,7 @@ class FiniteStateMachine : public toolbox::fsm::FiniteStateMachine
 
 
   private:
+	bool 					assertValidTransition		(const std::string& transition, bool fail = true);
 };
 // clang-format on
 }  // namespace ots

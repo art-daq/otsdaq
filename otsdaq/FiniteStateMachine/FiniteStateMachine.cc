@@ -184,6 +184,38 @@ std::string FiniteStateMachine::getTransitionFinalStateName(const std::string& t
 	return getStateName(getTransitionFinalState(transition));
 }
 
+bool FiniteStateMachine::assertValidTransition(const std::string& transition, bool fail)
+{
+	std::map<std::string, toolbox::fsm::State> transitions =
+		getTransitions(getCurrentState());
+	if(transitions.find(transition) == transitions.end())
+	{
+		inTransition_ = false;
+		std::ostringstream error;
+		error << transition
+		      << " is not in the list of the transitions from current state "
+		      << getStateName(getCurrentState());
+		__GEN_COUT_ERR__ << error.str() << __E__;
+		__GEN_COUTV__(getErrorMessage());
+		if(fail)
+			XCEPT_RAISE(toolbox::fsm::exception::Exception, error.str());
+		//__GEN_COUT__ << error << __E__;
+		//		__GEN_COUT__ << "Transition?" << inTransition_ << __E__;
+		return false;
+	}
+	return true;
+}
+
+bool FiniteStateMachine::tryTransition(const std::string& transition)
+{
+	if(!FiniteStateMachine::assertValidTransition(transition, false))
+	{
+		return false;
+	}
+
+	return FiniteStateMachine::execTransition(transition);
+}
+
 //==============================================================================
 bool FiniteStateMachine::execTransition(const std::string& transition)
 {
@@ -278,18 +310,9 @@ bool FiniteStateMachine::execTransition(const std::string&            transition
 
 	std::map<std::string, toolbox::fsm::State> transitions =
 	    getTransitions(getCurrentState());
-	if(transitions.find(transition) == transitions.end())
+
+	if(!FiniteStateMachine::assertValidTransition(transition, true))
 	{
-		inTransition_ = false;
-		std::ostringstream error;
-		error << transition
-		      << " is not in the list of the transitions from current state "
-		      << getStateName(getCurrentState());
-		__GEN_COUT_ERR__ << error.str() << __E__;
-		__GEN_COUTV__(getErrorMessage());
-		XCEPT_RAISE(toolbox::fsm::exception::Exception, error.str());
-		//__GEN_COUT__ << error << __E__;
-		//		__GEN_COUT__ << "Transition?" << inTransition_ << __E__;
 		return false;
 	}
 
