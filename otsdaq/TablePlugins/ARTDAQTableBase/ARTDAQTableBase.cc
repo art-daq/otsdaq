@@ -620,8 +620,8 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 				__SS__ << "Invalid 'daqFragmentIDs' - the value must be a valid fcl array with starting and ending square brackets: [ ]" << __E__;
 				__SS_THROW__;
 			}
-			OUT << "fragment_ids: " << fragmentId.getValue() << __E__;	
-			__COUTS__(20) << "fragment_ids: " << fragmentId.getValue() << __E__;			
+			OUT << "fragment_ids: " << fragmentId.getValue() << __E__;
+			__COUTS__(20) << "fragment_ids: " << fragmentId.getValue() << __E__;
 		}
 		catch(...)
 		{
