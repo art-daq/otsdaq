@@ -592,12 +592,12 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 				if(!parameter.second.status())
 					PUSHCOMMENT;
 
-				//				__COUT__ <<
-				// parameter.second.getNode("daqParameterKey").getValue() <<
-				//						": " <<
-				//						parameter.second.getNode("daqParameterValue").getValue()
-				//						<<
-				//						"\n";
+				__COUTS__(20) <<
+					parameter.second.getNode("daqParameterKey").getValue() <<
+										": " <<
+										parameter.second.getNode("daqParameterValue").getValue()
+										<<
+										"\n";
 
 				auto comment =
 				    parameter.second.getNode(TableViewColumnInfo::COL_NAME_COMMENT);
@@ -610,6 +610,24 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 					POPCOMMENT;
 			}
 		}
+
+		try //try to get daqFragmentId
+		{
+			auto fragmentId = boardReaderNode.getNode("daqFragmentIDs");
+			std::string value = fragmentId.getValue();
+			if(value.size() < 2 || value[0] != '[' || value[value.size()-1] != ']')
+			{
+				__SS__ << "Invalid 'daqFragmentIDs' - the value must be a valid fcl array with starting and ending square brackets: [ ]" << __E__;
+				__SS_THROW__;
+			}
+			OUT << "fragment_ids: " << fragmentId.getValue() << __E__;	
+			__COUTS__(20) << "fragment_ids: " << fragmentId.getValue() << __E__;			
+		}
+		catch(...)
+		{
+			__COUT__ << "Ignoring missing fragment_id column associated with Board Reader." << __E__;
+		}
+
 		OUT << "\n";  // end daq board reader parameters
 	}
 
