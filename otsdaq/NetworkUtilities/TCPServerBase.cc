@@ -103,11 +103,19 @@ int TCPServerBase::accept(bool blocking)
 		//__COUT__ << "Number of connected clients: " << fConnectedClients.size() << std::endl;
 		// clientSocket = ::accept4(getSocketId(),(struct sockaddr *)&clientAddress,  &clientAddressSize, 0);
 		// unsigned counter = 0;
+		__COUT__ << "Client list on input:\n";
+		for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
+		{
+			__COUT__ << " --> Client: " << it->first << " : " << it->second << std::endl;
+		}
 		while(true)
 		{
 			clientSocket = ::accept(
 			    getSocketId(), (struct sockaddr*)&clientAddress, &clientAddressSize);
-			pingActiveClients();  // This message is to check if there are clients that disconnected and, if so, they are removed from the client list
+			__COUT__ << ": clientSocket returned = " << clientSocket << std::endl;
+
+			//FIXME: Commenting out this line to avoid seg-fault in the case there are two clients connecting from the same process...
+			// pingActiveClients();  // This message is to check if there are clients that disconnected and, if so, they are removed from the client list
 			if(fAccept && fMaxNumberOfClients > 0 &&
 			   fConnectedClients.size() >= fMaxNumberOfClients)
 			{
@@ -210,7 +218,8 @@ void TCPServerBase::closeClientSocket(int socket)
 		{
 			try
 			{
-				it->second->sendClose();
+				if(it->second != nullptr)
+					it->second->sendClose();
 			}
 			catch(const std::exception& e)
 			{
@@ -242,7 +251,9 @@ void TCPServerBase::broadcastPacket(const std::string& message)
 	{
 		try
 		{
-			dynamic_cast<TCPTransmitterSocket*>(it->second)->sendPacket(message);
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
+				sock->sendPacket(message);
 		}
 		catch(const std::exception& e)
 		{
@@ -266,7 +277,9 @@ void TCPServerBase::broadcast(const char* message, std::size_t length)
 	{
 		try
 		{
-			dynamic_cast<TCPTransmitterSocket*>(it->second)->send(message, length);
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
+				sock->send(message, length);
 		}
 		catch(const std::exception& e)
 		{
@@ -289,7 +302,9 @@ void TCPServerBase::broadcast(const std::string& message)
 	{
 		try
 		{
-			dynamic_cast<TCPTransmitterSocket*>(it->second)->send(message);
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
+				sock->send(message);
 		}
 		catch(const std::exception& e)
 		{
@@ -312,7 +327,9 @@ void TCPServerBase::broadcast(const std::vector<char>& message)
 	{
 		try
 		{
-			dynamic_cast<TCPTransmitterSocket*>(it->second)->send(message);
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
+				sock->send(message);
 		}
 		catch(const std::exception& e)
 		{
@@ -335,14 +352,20 @@ void TCPServerBase::broadcast(const std::vector<uint16_t>& message)
 	{
 		try
 		{
-			dynamic_cast<TCPTransmitterSocket*>(it->second)->send(message);
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
+				sock->send(message);
 		}
 		catch(const std::exception& e)
 		{
 			// __COUT__ << "This should only happen with the TCPSubscribeServer because it doesn't keep track of the connected clients..." << std::endl;
-			// __COUT__ << "Error: " << e.what() << std::endl;
+			__COUT__ << "Error: " << e.what() << std::endl;
 			if(fConnectedClientsFuture.find(it->first) != fConnectedClientsFuture.end())
+			{
+				__COUT__ << "Removing client entry from future connected clients list\n";
 				fConnectedClientsFuture.erase(fConnectedClientsFuture.find(it->first));
+			}
+			__COUT__ << "Removing client entry from connected clients list\n";
 			delete it->second;
 			fConnectedClients.erase(it--);
 		}
@@ -354,18 +377,25 @@ void TCPServerBase::pingActiveClients()
 {
 	for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
 	{
+		__COUT__ << "Pinging client " << it->first << " : " << it->second << std::endl;
 		try
 		{
-			dynamic_cast<TCPTransmitterSocket*>(it->second)->send("", 0, true);
+			if(auto sock = dynamic_cast<TCPTransmitterSocket*>(it->second);
+			   sock != nullptr)
+				sock->send("", 0, true);
 		}
 		catch(const std::exception& e)
 		{
 			// __COUT__ << "I don't think that this error is possible because I close the socket when I get disconnected...if you see this then you should
 			// contact Lorenzo Uplegger" << std::endl;
 			// __COUT__ << "This should only happen with the TCPSubscribeServer because it doesn't keep track of the connected clients..." << std::endl;
-			// __COUT__ << "Error: " << e.what() << std::endl;
+			__COUT__ << "Error: " << e.what() << std::endl;
 			if(fConnectedClientsFuture.find(it->first) != fConnectedClientsFuture.end())
+			{
+				__COUT__ << "Removing client entry from future connected clients list\n";
 				fConnectedClientsFuture.erase(fConnectedClientsFuture.find(it->first));
+			}
+			__COUT__ << "Removing client entry from connected clients list\n";
 			delete it->second;
 			fConnectedClients.erase(it--);
 		}
