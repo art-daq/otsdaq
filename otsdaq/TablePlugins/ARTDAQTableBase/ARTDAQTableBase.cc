@@ -311,7 +311,7 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 	{
 		auto metrics = metricsGroup.getChildren();
 
-    bool sendSystemMetrics = false;
+		bool sendSystemMetrics  = false;
 		bool sendProcessMetrics = false;
 		for(auto& metric : metrics)
 		{
@@ -321,7 +321,8 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 			OUT << metric.second.getNode("metricKey").getValue() << ": {\n";
 			PUSHTAB;
 
-      if (metric.second.getNode("sendSystemMetrics").getValue() == "true") {
+			if(metric.second.getNode("sendSystemMetrics").getValue() == "true")
+			{
 				sendSystemMetrics = true;
 			}
 			if(metric.second.getNode("sendProcessMetrics").getValue() == "true")
