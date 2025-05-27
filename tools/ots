@@ -284,7 +284,7 @@ if [ "x$OTS_DISABLE_TRACE_DEFAULT" == "x" ]; then
 	if [ "$OTS_DEBUG_MODE" == "1" ]; then
 		# tonSg DEBUG+7 #to enable targeted bitmask
 
-		tonSg 0-8 #enable all slow
+		tonSg 0-8 #enable up to DEBUG only
 
 		#enable kernel trace to memory buffer:
 		#+test -f /proc/trace/buffer && { export TRACE_FILE=/proc/trace/buffer; tlvls | grep 'KERNEL 0xffffffff00ffffff' >/dev/null || { tonMg 0-63; toffM 24-31 -nKERNEL; }; }
