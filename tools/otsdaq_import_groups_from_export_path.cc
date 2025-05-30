@@ -216,15 +216,133 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 									true /* initializeActiveGroups */);
 		__COUTV__(allTableInfo.size());
 		auto groups = cfgMgr->getAllGroupInfo();
-		__COUTV__(groups.size());
-		for(auto& group: groups)
-		{
-			__COUTV__(group.first);
-		}
+		__COUTTV__(groups.size());
+		if(TTEST(1))
+			for(auto& group: groups)
+			{
+				__COUTTV__(group.first);
+			}
 	}
-	
+
 	ConfigurationInterface* theInterface_ = ConfigurationInterface::getInstance(
 	    ConfigurationInterface::CONFIGURATION_MODE::ARTDAQ_DATABASE);
+		
+	if(0)
+	{ 
+		__COUT__ << "Test finding equivalent backbone table versions" << __E__;
+
+		auto table = cfgMgr->getTableByName(ConfigurationManager::VERSION_ALIASES_TABLE_NAME);
+		__COUTV__(table->getTableName());
+		__COUTV__(table->getViewVersion());
+
+		auto cfgView      = table->getViewP();
+		unsigned int col0 = cfgView->findCol("VersionAlias");
+		unsigned int col1 = cfgView->findCol("TableName");
+		unsigned int col2 = cfgView->findCol("Version");
+
+		unsigned int row;
+
+		cfgView->print();
+
+		TableVersion duplicateVersion;
+
+		// 	-- insert new aliases for imported tables
+		//		- should be basename+alias connection to (hop through maps) new
+		// tableName & tableVersion
+		for(auto& aliasPair : importTableAliasMap)
+		{
+			__COUT__ << "\t" << aliasPair.first << " ==> " << aliasPair.second.first << "-"
+					<< aliasPair.second.second << std::endl;
+
+			auto tableIt =
+				importTableMap.find(std::pair<std::string, TableVersion>(
+					aliasPair.second.first, aliasPair.second.second));
+
+			if(tableIt == importTableMap.end())
+			{
+				__COUT__
+					<< "Error! Could not find the new entry for the original table "
+					<< aliasPair.second.first << "(" << aliasPair.second.second << ")"
+					<< __E__;
+				continue;
+			}
+			row = cfgView->addRow(prepend + 
+				"import_aliases", true /*incrementUniqueData*/);
+			cfgView->setValue(prepend + aliasPair.first, row, col0);
+			cfgView->setValue(aliasPair.second.first, row, col1);
+			cfgView->setValue(tableIt->second.toString(), row, col2);
+		}  // end group alias edit
+
+		if(!importTableAliasMap.size())
+			duplicateVersion = table->getViewVersion(); //mark duplicate as self if nothing to add
+
+		cfgView->print();
+		TableVersion       originalVersion = table->getViewVersion(); //save version because cache fill will change active version
+
+		if(duplicateVersion.isInvalid())
+		{
+			auto tableName = ConfigurationManager::VERSION_ALIASES_TABLE_NAME;
+			__COUT__ << "Checking for duplicate '" << tableName << "' tables..." << __E__;
+
+			{
+				//"DEEP" checking
+				//	load into cache 'recent' versions for this table
+				//		'recent' := those already in cache, plus highest version numbers not in cache
+				const std::map<std::string, TableInfo>& allTableInfo =
+					cfgMgr->getAllTableInfo();  // do not refresh
+
+				auto versionReverseIterator =
+					allTableInfo.at(tableName).versions_.rbegin();  // get reverse iterator
+				__COUT__ << "Filling up '" << tableName << "' cache from "
+								<< table->getNumberOfStoredViews() << " to max count of "
+								<< table->MAX_VIEWS_IN_CACHE << __E__;
+				for(; table->getNumberOfStoredViews() < table->MAX_VIEWS_IN_CACHE &&
+						versionReverseIterator != allTableInfo.at(tableName).versions_.rend();
+					++versionReverseIterator)
+				{
+					__COUTT__ << "'" << tableName << "' versions in reverse order "
+									<< *versionReverseIterator << __E__;
+					try
+					{
+						cfgMgr->getVersionedTableByName(tableName,
+												*versionReverseIterator);  // load to cache
+					}
+					catch(const std::runtime_error& e)
+					{
+						// ignore error
+						__COUTT__ << "'" << tableName << "' version failed to load: "
+										<< *versionReverseIterator << __E__;
+					}
+				}
+			}
+
+			__COUT__ << "Checking '" << tableName << "' for duplicate..." << __E__;
+			duplicateVersion = table->checkForDuplicate(
+				originalVersion, 
+				TableVersion()); // then all versions in search
+
+		} //end check duplicate
+
+		if(!duplicateVersion.isInvalid())
+		{
+			// found an equivalent!
+			__COUT__ << "Equivalent table found in version v"
+						<< duplicateVersion << __E__;
+		}
+		else
+		{
+			__COUTV__(table->getViewVersion());
+			auto newVersion =
+				TableVersion::getNextVersion(theInterface_->findLatestVersion(table));
+			__COUTV__(newVersion);
+			// cfgView->setVersion(newVersion);
+			// theInterface_->saveActiveVersion(table);
+		}
+		
+	} //end test version alias new version
+
+	// return;
+	
 
 	//if missing Active Groups File, create empty backbone group (e.g., to seed a new database)
 	FILE* fp = nullptr;
@@ -421,7 +539,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		       << std::endl;
 		__SS_THROW__;
 	}
-	return; //FIXME - uncomment for production functionality
+	//return; //comment for production functionality
 
 	// ------------
 	// At this point, all groups to import have been identified! and which import is Backbone has been identified ------------
@@ -557,7 +675,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 						groupPair.second.getNode("VersionAlias").getValueAsString() << 
 						": " << 
 						groupPair.second.getNode("TableName").getValueAsString() << " (" <<
-						TableGroupKey(groupPair.second.getNode("TableVersion").getValueAsString()) << ")" << __E__;
+						TableGroupKey(groupPair.second.getNode("Version").getValueAsString()) << ")" << __E__;
 
 				currentAliases.emplace(groupPair.second.getNode("VersionAlias").getValueAsString());
 			}
@@ -622,11 +740,11 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 	__COUT__ << "Identified group aliases to import:" << std::endl;
 	for(auto& groupAlias : importGroupAliasMap)
-		__COUT__ << "\t" << groupAlias.first << " ==> " << groupAlias.second.first << "-"
-		         << groupAlias.second.second << std::endl;
+		__COUT__ << "\t" << groupAlias.first << " ==> " << groupAlias.second.first << " ("
+		         << groupAlias.second.second << ")" << std::endl;
 	__COUT__ << "Identified table aliases to import:" << std::endl;
 	for(auto& tableAlias : importTableAliasMap)
-		__COUT__ << "\t" << tableAlias.first << " ==> " << tableAlias.second.first << "-"
+		__COUT__ << "\t" << tableAlias.first << " ==> " << tableAlias.second.first << "-v"
 		         << tableAlias.second.second << std::endl;
 	// return;
 
@@ -899,6 +1017,8 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 		cfgView->print();
 
+		TableVersion duplicateVersion;
+
 		// 	-- insert new aliases for imported groups
 		//		- should be basename+alias connection to (hop through maps) new
 		// groupName & groupKey
@@ -925,18 +1045,77 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			cfgView->setValue(groupIt->second.toString(), row, col2);
 		}  // end group alias edit
 
+		if(!importGroupAliasMap.size())
+			duplicateVersion = table->getViewVersion(); //mark duplicate as self if nothing to add
+
 		cfgView->print();
 
-		auto newVersion =
-		    TableVersion::getNextVersion(theInterface_->findLatestVersion(table));
-		__COUTV__(newVersion);
-		cfgView->setVersion(newVersion);
-		theInterface_->saveActiveVersion(table);
+		TableVersion originalVersion = table->getViewVersion(); //save version because cache fill will change active version
+		if(duplicateVersion.isInvalid())
+		{
+			auto tableName = ConfigurationManager::GROUP_ALIASES_TABLE_NAME;
+			__COUT__ << "Checking for duplicate '" << tableName << "' tables..." << __E__;
 
-		__COUT__ << "Updated backbone table " << ConfigurationManager::GROUP_ALIASES_TABLE_NAME << " from v" <<
-				 backboneMemberMap.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) << 
-				 " to v" << newVersion << std::endl;
-		backboneMemberMap.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) = newVersion;  // change version in the member map
+			{
+				//"DEEP" checking
+				//	load into cache 'recent' versions for this table
+				//		'recent' := those already in cache, plus highest version numbers not in cache
+				const std::map<std::string, TableInfo>& allTableInfo =
+					cfgMgr->getAllTableInfo();  // do not refresh
+
+				auto versionReverseIterator =
+					allTableInfo.at(tableName).versions_.rbegin();  // get reverse iterator
+				__COUT__ << "Filling up '" << tableName << "' cache from "
+								<< table->getNumberOfStoredViews() << " to max count of "
+								<< table->MAX_VIEWS_IN_CACHE << __E__;
+				for(; table->getNumberOfStoredViews() < table->MAX_VIEWS_IN_CACHE &&
+						versionReverseIterator != allTableInfo.at(tableName).versions_.rend();
+					++versionReverseIterator)
+				{
+					__COUTT__ << "'" << tableName << "' versions in reverse order "
+									<< *versionReverseIterator << __E__;
+					try
+					{
+						cfgMgr->getVersionedTableByName(tableName,
+												*versionReverseIterator);  // load to cache
+					}
+					catch(const std::runtime_error& e)
+					{
+						// ignore error
+						__COUTT__ << "'" << tableName << "' version failed to load: "
+										<< *versionReverseIterator << __E__;
+					}
+				}
+			}
+
+			__COUT__ << "Checking '" << tableName << "' for duplicate..." << __E__;
+			duplicateVersion = table->checkForDuplicate(
+				originalVersion, 
+				TableVersion()); // then all versions in search
+
+		} //end check duplicate
+
+
+		if(!duplicateVersion.isInvalid())
+		{
+			// found an equivalent!
+			__COUT__ << "Equivalent " << ConfigurationManager::GROUP_ALIASES_TABLE_NAME << " table found in version v"
+						<< duplicateVersion << __E__;
+			backboneMemberMap.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) = duplicateVersion;
+		}
+		else
+		{
+			auto newVersion =
+				TableVersion::getNextVersion(theInterface_->findLatestVersion(table));
+			__COUTV__(newVersion);
+			cfgView->setVersion(newVersion);
+			theInterface_->saveActiveVersion(table);
+
+			__COUT__ << "Updated backbone table " << ConfigurationManager::GROUP_ALIASES_TABLE_NAME << " from v" <<
+					backboneMemberMap.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) << 
+					" to v" << newVersion << std::endl;
+			backboneMemberMap.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) = newVersion;  // change version in the member map
+		}
 		
 	} //end insert new aliases for imported groups in current active backbone	
 	{ //insert new aliases for imported tables in current active backbone
@@ -952,6 +1131,8 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		unsigned int row;
 
 		cfgView->print();
+
+		TableVersion duplicateVersion;
 
 		// 	-- insert new aliases for imported tables
 		//		- should be basename+alias connection to (hop through maps) new
@@ -980,18 +1161,77 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			cfgView->setValue(tableIt->second.toString(), row, col2);
 		}  // end group alias edit
 
+		if(!importTableAliasMap.size())
+			duplicateVersion = table->getViewVersion(); //mark duplicate as self if nothing to add
+
 		cfgView->print();
 
-		auto newVersion =
-		    TableVersion::getNextVersion(theInterface_->findLatestVersion(table));
-		__COUTV__(newVersion);
-		cfgView->setVersion(newVersion);
-		theInterface_->saveActiveVersion(table);
+		TableVersion originalVersion = table->getViewVersion(); //save version because cache fill will change active version
+		if(duplicateVersion.isInvalid())
+		{
+			auto tableName = ConfigurationManager::VERSION_ALIASES_TABLE_NAME;
+			__COUT__ << "Checking for duplicate '" << tableName << "' tables..." << __E__;
 
-		__COUT__ << "Updated backbone table " << ConfigurationManager::VERSION_ALIASES_TABLE_NAME << " from v" <<
-				 backboneMemberMap.at(ConfigurationManager::VERSION_ALIASES_TABLE_NAME) << 
-				 " to v" << newVersion << std::endl;
-		backboneMemberMap.at(ConfigurationManager::VERSION_ALIASES_TABLE_NAME) = newVersion;  // change version in the member map
+			{
+				//"DEEP" checking
+				//	load into cache 'recent' versions for this table
+				//		'recent' := those already in cache, plus highest version numbers not in cache
+				const std::map<std::string, TableInfo>& allTableInfo =
+					cfgMgr->getAllTableInfo();  // do not refresh
+
+				auto versionReverseIterator =
+					allTableInfo.at(tableName).versions_.rbegin();  // get reverse iterator
+				__COUT__ << "Filling up '" << tableName << "' cache from "
+								<< table->getNumberOfStoredViews() << " to max count of "
+								<< table->MAX_VIEWS_IN_CACHE << __E__;
+				for(; table->getNumberOfStoredViews() < table->MAX_VIEWS_IN_CACHE &&
+						versionReverseIterator != allTableInfo.at(tableName).versions_.rend();
+					++versionReverseIterator)
+				{
+					__COUTT__ << "'" << tableName << "' versions in reverse order "
+									<< *versionReverseIterator << __E__;
+					try
+					{
+						cfgMgr->getVersionedTableByName(tableName,
+												*versionReverseIterator);  // load to cache
+					}
+					catch(const std::runtime_error& e)
+					{
+						// ignore error
+						__COUTT__ << "'" << tableName << "' version failed to load: "
+										<< *versionReverseIterator << __E__;
+					}
+				}
+			}
+
+			__COUT__ << "Checking '" << tableName << "' for duplicate..." << __E__;
+			duplicateVersion = table->checkForDuplicate(
+				originalVersion, 
+				TableVersion()); // then all versions in search
+
+		} //end check duplicate
+
+
+		if(!duplicateVersion.isInvalid())
+		{
+			// found an equivalent!
+			__COUT__ << "Equivalent " << ConfigurationManager::VERSION_ALIASES_TABLE_NAME << " table found in version v"
+						<< duplicateVersion << __E__;
+			backboneMemberMap.at(ConfigurationManager::VERSION_ALIASES_TABLE_NAME) = duplicateVersion;  // change version in the member map
+		}
+		else
+		{
+			auto newVersion =
+				TableVersion::getNextVersion(theInterface_->findLatestVersion(table));
+			__COUTV__(newVersion);
+			cfgView->setVersion(newVersion);
+			theInterface_->saveActiveVersion(table);
+
+			__COUT__ << "Updated backbone table " << ConfigurationManager::VERSION_ALIASES_TABLE_NAME << " from v" <<
+					backboneMemberMap.at(ConfigurationManager::VERSION_ALIASES_TABLE_NAME) << 
+					" to v" << newVersion << std::endl;
+			backboneMemberMap.at(ConfigurationManager::VERSION_ALIASES_TABLE_NAME) = newVersion;  // change version in the member map
+		}
 		
 	} //end insert new aliases for imported tables in current active backbone
 
@@ -1004,32 +1244,72 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		__COUT__ << "Backbone member map to create:" << std::endl;
 		for(auto& member : backboneMemberMap)
 			__COUT__ << " ==> Member to create: " << member.first << "-v"
-					<< member.second << std::endl;
-		
+					<< member.second << std::endl;		
 
-		auto newKey = TableGroupKey::getNextKey(
-				theInterface_->findLatestGroupKey(activeBackboneGroupName));
-		
-		__COUT__ << "Updating backbone group from (" << 
-			cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::BACKBONE_TYPE) << ") to (" <<
-			newKey << ")" << __E__;
-
-		// memberMap should now consist of members with new flat version, so save
-		theInterface_->saveTableGroup(
-			backboneMemberMap,
-			TableGroupKey::getFullGroupString(activeBackboneGroupName, newKey));
-
-		//	-- backup the file ConfigurationManager::ACTIVE_GROUPS_FILENAME with time
-		std::string renameFile =
-			ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + nowTime;
-		rename(ConfigurationManager::ACTIVE_GROUPS_FILENAME.c_str(), renameFile.c_str());
-
-		__COUT__ << "Backing up '" << ConfigurationManager::ACTIVE_GROUPS_FILENAME
-					<< "' to ... '" << renameFile << "'" << std::endl;
+		bool foundExistingEmptyBackbone = false;
+		{ //check if group is a duplicate 
+			__COUT__ << "Checking for duplicate backbone groups..." << __E__;
+			try
+			{
+				TableGroupKey foundKey =
+					cfgMgr->findTableGroup(activeBackboneGroupName, backboneMemberMap); //, memberTableAliases); std::map<std::string /*name*/, std::string /*alias*/>    memberTableAliases
+				
+				if(!foundKey.isInvalid())
+				{
+					__COUT_WARN__ << "Found equivalent empty backbone group key (" << foundKey << ") for "
+							<< activeBackboneGroupName << ". Skipping creation and activating existing key!" << __E__;		
+					foundExistingEmptyBackbone = true;	
 					
-		//	-- activate the new backbone group
-		cfgMgr->activateTableGroup(activeBackboneGroupName,
-									newKey);  // and write to active group file
+					//	-- backup the file ConfigurationManager::ACTIVE_GROUPS_FILENAME with time
+					std::string renameFile =
+						ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + nowTime;
+					rename(ConfigurationManager::ACTIVE_GROUPS_FILENAME.c_str(), renameFile.c_str());
+
+					__COUT__ << "Backing up '" << ConfigurationManager::ACTIVE_GROUPS_FILENAME
+								<< "' to ... '" << renameFile << "'" << std::endl;
+								
+					//	-- activate the existing empty backbone group
+					cfgMgr->activateTableGroup(activeBackboneGroupName,
+												foundKey);  // and write to active group file							
+				}
+
+				__COUT__ << "Check for existing backbone duplicate groups complete." << __E__;
+			}
+			catch(...)
+			{
+				__COUT_WARN__ << "Ignoring errors looking for existing backbone duplicate groups! Proceeding "
+								"with new group creation."
+							<< __E__;
+			}
+		} //end check if group is a duplicate 
+		__COUTV__(foundExistingEmptyBackbone);
+
+		if(!foundExistingEmptyBackbone)
+		{
+			auto newKey = TableGroupKey::getNextKey(
+					theInterface_->findLatestGroupKey(activeBackboneGroupName));
+			
+			__COUT__ << "Updating backbone group from (" << 
+				cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::BACKBONE_TYPE) << ") to (" <<
+				newKey << ")" << __E__;
+
+			// memberMap should now consist of members with new flat version, so save
+			theInterface_->saveTableGroup(
+				backboneMemberMap,
+				TableGroupKey::getFullGroupString(activeBackboneGroupName, newKey));
+
+			//	-- backup the file ConfigurationManager::ACTIVE_GROUPS_FILENAME with time
+			std::string renameFile =
+				ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + nowTime;
+			rename(ConfigurationManager::ACTIVE_GROUPS_FILENAME.c_str(), renameFile.c_str());
+
+			__COUT__ << "Backing up '" << ConfigurationManager::ACTIVE_GROUPS_FILENAME
+						<< "' to ... '" << renameFile << "'" << std::endl;
+						
+			//	-- activate the new backbone group
+			cfgMgr->activateTableGroup(activeBackboneGroupName,
+										newKey);  // and write to active group file
+		}
 	}
 
 	__COUT__ << "End of Importing Table Groups from path!\n\n\n" << std::endl;

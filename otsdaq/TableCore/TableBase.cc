@@ -305,7 +305,10 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 	if(TTEST(9))
 		needleView->print();
 
+	__COUTTV__(needleVersion);
 	__COUTTV__(ignoreVersion);
+	__COUTTV__(rows);
+	__COUTTV__(cols);
 
 	// for each table in cache
 	//	check each row,col
@@ -315,14 +318,16 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 		__COUTTV__(viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first == needleVersion)
 			continue;  // skip needle version
+		__COUTVS__(2,viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first == ignoreVersion)
 			continue;  // skip ignore version
+		__COUTVS__(2,viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first.isTemporaryVersion())
 			continue;  // skip temporary versions
-
+		__COUTVS__(2,viewPairReverseIterator->first);
 		if(viewPairReverseIterator->second.getNumberOfRows() != rows)
 			continue;  // row mismatch
-
+		__COUTVS__(2,viewPairReverseIterator->first);
 		if(viewPairReverseIterator->second.getDataColumnSize() != cols ||
 		   viewPairReverseIterator->second.getSourceColumnMismatch() != 0)
 			continue;  // col mismatch

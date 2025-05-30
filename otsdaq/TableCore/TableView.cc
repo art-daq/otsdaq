@@ -1151,17 +1151,17 @@ const std::string& TableView::setUniqueColumnValue(
 		foundAny  = false;
 		tmpString = theDataView_[r][col];
 
-		__COUTT__ << "row[" << r << "] tmpString " << tmpString << __E__;
+		__COUTS__(3) << "row[" << r << "] tmpString " << tmpString << __E__;
 
 		for(index = tmpString.length() - 1; index < tmpString.length(); --index)
 		{
-			__COUTT__ << index << " tmpString[index] " << tmpString[index] << __E__;
+			__COUTS__(3) << index << " tmpString[index] " << tmpString[index] << __E__;
 			if(!(tmpString[index] >= '0' && tmpString[index] <= '9'))
 				break;  // if not numeric, break
 			foundAny = true;
 		}
 
-		__COUTT__ << "index " << index << " foundAny " << foundAny << __E__;
+		__COUTS__(3) << "index " << index << " foundAny " << foundAny << __E__;
 
 		if(tmpString.length() && foundAny)  // then found a numeric substring
 		{
@@ -1177,8 +1177,7 @@ const std::string& TableView::setUniqueColumnValue(
 				foundAny = false;
 				for(index = tmpString.length() - 1; index < tmpString.length(); --index)
 				{
-					//__COUT__ << index << " tmpString[index] " << tmpString[index] <<
-					//__E__;
+					__COUTS__(4) << index << " tmpString[index] " << tmpString[index] << __E__;
 					if(!(tmpString[index] == '+' || tmpString[index] == ' '))
 						break;  // if not plus op, break
 					foundAny = true;
@@ -1194,12 +1193,12 @@ const std::string& TableView::setUniqueColumnValue(
 				}
 			}
 
-			__COUTT__ << tmpString << " vs " << baseValueAsString << __E__;
+			__COUTS__(3) << tmpString << " vs " << baseValueAsString << __E__;
 
 			if(baseValueAsString != "" && tmpString != baseValueAsString)
 				continue;  // skip max unique number if basestring does not match
 
-			__COUTT__ << "Found unique data base string '" << tmpString
+			__COUTS__(3) << "Found unique data base string '" << tmpString
 			          << "' and number string '" << numString << "' in last record '"
 			          << theDataView_[r][col] << "'" << __E__;
 
@@ -2345,7 +2344,7 @@ int TableView::fillFromJSON(const std::string& json)
 		//if special JSON DOC table, handle construction in a special way
 		if(tableName_.substr(0, tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
 		{
-			__COUTT__ << "Special JSON doc: " << json << __E__;
+			__COUTS__(3) << "Special JSON doc: " << json << __E__;
 			setCustomStorageData(json);
 			return 0;  //success
 		}              //end special JSON DOC table construction

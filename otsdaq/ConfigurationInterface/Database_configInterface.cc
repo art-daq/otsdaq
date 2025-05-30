@@ -598,6 +598,8 @@ try
 	                  ? ifc.storeGlobalConfiguration(to_list(memberMap), tableGroup)
 	                  : ifc.storeGlobalConfiguration_mt(to_list(memberMap), tableGroup);
 
+	__COUTTV__(result.first);
+	__COUTTV__(result.second);
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration =
 	    std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();

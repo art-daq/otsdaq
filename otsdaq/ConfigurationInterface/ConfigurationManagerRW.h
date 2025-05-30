@@ -203,7 +203,6 @@ struct TableEditStruct
 	}
 };  // end TableEditStruct declaration
 
-
 //==============================================================================
 /// GroupEditStruct public class
 ///

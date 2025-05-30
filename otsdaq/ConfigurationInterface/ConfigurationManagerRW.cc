@@ -486,7 +486,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			//threads done now, so copy table info
 			for(auto& tableInfo : sharedTableInfoPtrs)
 			{
-				__GEN_COUT_TYPE__(TLVL_DEBUG + 2)
+				__GEN_COUT_TYPE__(TLVL_DEBUG + 3)
 				    << __COUT_HDR__ << "Copying table info for "
 				    << tableInfo->tablePtr_->getTableName() << __E__;
 				nameToTableMap_[tableInfo->tablePtr_->getTableName()] =
@@ -2018,7 +2018,7 @@ TableVersion ConfigurationManagerRW::saveModifiedVersion(
 	if(foundEquivalent)
 		*foundEquivalent = false;  // initialize
 
-	// check for duplicate tables already in cache
+	// check for duplicate tables already in cache, plus highest version numbers not in cache
 	if(!ignoreDuplicates)
 	{
 		__GEN_COUT__ << "Checking for duplicate '" << tableName << "' tables..." << __E__;
@@ -2028,8 +2028,7 @@ TableVersion ConfigurationManagerRW::saveModifiedVersion(
 		{
 			//"DEEP" checking
 			//	load into cache 'recent' versions for this table
-			//		'recent' := those already in cache, plus highest version numbers not
-			// in  cache
+			//		'recent' := those already in cache, plus highest version numbers not in cache
 			const std::map<std::string, TableInfo>& allTableInfo =
 			    getAllTableInfo();  // do not refresh
 
@@ -2052,18 +2051,19 @@ TableVersion ConfigurationManagerRW::saveModifiedVersion(
 				catch(const std::runtime_error& e)
 				{
 					// ignore error
+					__COUTT__ << "'" << tableName << "' version failed to load: "
+									<< *versionReverseIterator << __E__;
 				}
 			}
 		}
 
-		__GEN_COUT__ << "Checking '" << tableName << "' duplicate..." << __E__;
+		__GEN_COUT__ << "Checking '" << tableName << "' for duplicate..." << __E__;
 
 		duplicateVersion = table->checkForDuplicate(
 		    temporaryModifiedVersion,
 		    (!originalVersion.isTemporaryVersion() && !makeTemporary)
 		        ? TableVersion()
-		        :  // if from persistent to persistent, then
-		           // include original version in search
+		        :  // if from persistent to persistent, then include original version in search
 		        originalVersion);
 
 		if(lookForEquivalent && !duplicateVersion.isInvalid())
@@ -2561,6 +2561,8 @@ void ConfigurationManagerRW::testXDAQContext()
 	// get Group Info too!
 	try
 	{
+		std::string debugGroupName = "Mu2eHWEmulatorContext";
+
 		// build allGroupInfo_ for the ConfigurationManagerRW
 
 		std::set<std::string /*name*/> tableGroups =
@@ -2568,14 +2570,63 @@ void ConfigurationManagerRW::testXDAQContext()
 		__GEN_COUT__ << "Number of Groups: " << tableGroups.size() << __E__;
 
 		__GEN_COUTV__(runTimeSeconds());
+		// return;
+
 		TableGroupKey key;
 		std::string   name;
 		for(const auto& fullName : tableGroups)
 		{
 			TableGroupKey::getGroupNameAndKey(fullName, name, key);
 			cacheGroupKey(name, key);
+
+			if(name == debugGroupName)
+			{
+				__GEN_COUTV__(key);
+			}
 		}
 		__GEN_COUTV__(runTimeSeconds());
+
+		std::set<std::string /*name*/> tableNames =
+		    theInterface_->getAllTableNames();
+		__GEN_COUT__ << "Number of Tables: " << tableNames.size() << __E__;
+
+		__GEN_COUTV__(runTimeSeconds());
+
+		for(const auto& fullName : tableNames)
+		{
+			if(fullName.find(debugGroupName) != std::string::npos)
+			{
+				__GEN_COUTV__(fullName);
+			}
+		}
+		__GEN_COUTV__(runTimeSeconds());
+
+		TableGroupKey latestGroupKey = 
+			theInterface_->findLatestGroupKey(debugGroupName);
+		__GEN_COUTV__(latestGroupKey);
+
+		__GEN_COUTV__(runTimeSeconds());
+
+
+		TableBase    localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + debugGroupName);
+		TableVersion lastestGroupCacheKey = 
+			theInterface_->findLatestVersion(&localGroupMemberCacheSaver);
+		__GEN_COUTV__(lastestGroupCacheKey);
+
+		__GEN_COUTV__(runTimeSeconds());
+
+
+		//test a group save that already exists
+		{
+			TableGroupKey groupKey(int(0));
+			__GEN_COUT__ << "Testing group save of " << debugGroupName << "(" << groupKey << ")" << __E__;
+			std::map<std::string, TableVersion>  groupMembers;
+			groupMembers["DesktopIconTable"] = TableVersion(123);
+			theInterface_->saveTableGroup(groupMembers, 
+				TableGroupKey::getFullGroupString(debugGroupName, groupKey));
+		}
+		return;
+
 		// for each group get member map & comment, author, time, and type for latest key
 		for(auto& groupInfo : allGroupInfo_)
 		{
@@ -2649,10 +2700,11 @@ void ConfigurationManagerRW::testXDAQContext()
 			*accumulatedWarnings += ss.str();
 		else
 			throw;
-	}
-	__GEN_COUT__ << "Group Info end runTimeSeconds()=" << runTimeSeconds() << __E__;
-
+	} //end catch
+	
+	__GEN_COUT__ << "testXDAQContext() end runTimeSeconds()=" << runTimeSeconds() << __E__;
 	return;
+
 	try
 	{
 		__GEN_COUT__ << "Loading table..." << __E__;
@@ -2672,4 +2724,4 @@ void ConfigurationManagerRW::testXDAQContext()
 	{
 		__GEN_COUT__ << "Failed to load table..." << __E__;
 	}
-}
+} //end testXDAQContext()
