@@ -86,9 +86,10 @@ unsigned int SlowControlsTableBase::slowControlsHandler(
     std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
         channelList /*= 0*/
 ) const
+try
 {
 	unsigned int numberOfChannels = 0;
-	__COUT__ << "slowControlsHandler" << __E__;
+	__COUT__ << "slowControlsHandler \n" << StringMacros::stackTrace() << __E__;
 
 	if(!slowControlsLink.isDisconnected())
 	// if(1)
@@ -96,6 +97,7 @@ unsigned int SlowControlsTableBase::slowControlsHandler(
 		std::vector<std::pair<std::string, ConfigurationTree>> channelChildren =
 		    slowControlsLink.getChildren();
 
+		__COUTV__(channelChildren.size());
 		// first do single bit binary fields
 		bool first = true;
 		for(auto& channel : channelChildren)
@@ -148,6 +150,7 @@ unsigned int SlowControlsTableBase::slowControlsHandler(
 		first = true;
 		for(auto& channel : channelChildren)
 		{
+			__COUTV__(channel.first);
 			if(channel.second.getNode(channelColNames_.colChannelDataType_)
 			       .getValue<std::string>() == "1b")
 				continue;  // skip non-binary fields
@@ -164,6 +167,10 @@ unsigned int SlowControlsTableBase::slowControlsHandler(
 			}
 
 			++numberOfChannels;
+
+			std::string experimentName = "";
+			try { experimentName = __ENV__ ("OTS_EPICS_OWNER");} catch (...) {experimentName = __ENV__ ("OTS_OWNER");}
+			__COUT__ << "experimentName has metricParameterValue: " << experimentName << __E__;
 
 			std::string pvName = channel.first;
 			std::string comment =
@@ -197,7 +204,7 @@ unsigned int SlowControlsTableBase::slowControlsHandler(
 				pvSettings.push_back(precision);
 				pvSettings.push_back(units);
 				channelList->push_back(std::make_pair(
-				    "Mu2e:" + subsystem + ":" + location + ":" + pvName, pvSettings));
+				    experimentName + ":" + subsystem + ":" + location + ":" + pvName, pvSettings));
 			}
 
 			// output channel
@@ -234,6 +241,11 @@ unsigned int SlowControlsTableBase::slowControlsHandler(
 
 	return numberOfChannels;
 }  // end localSlowControlsHandler
+catch(const std::runtime_error& e)
+{
+	__COUTV__(e.what());
+	throw;
+}
 
 //==============================================================================
 /// return channel list if pointer passed
