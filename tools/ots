@@ -1077,6 +1077,18 @@ launchOTSWiz() {
 	unset ContextPIDNameArray #reset
 	unset ContextPIDIsAliveArray #reset
 
+	#(re)setup user ssh tunnels in case they have timed out
+	if declare -F otsUserSshTunnels > /dev/null; then
+		out "otsUserSshTunnels() function is defined, so setting up user ssh tunnels..."
+		otsUserSshTunnels &
+
+		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
+			out "otsUserSshTunnels() is set to auto refresh mode."
+		fi
+	else
+		out "otsUserSshTunnels() funtion is not defined, define to setup user ssh tunnels."
+	fi
+
 	#setup wiz mode environment variables
 	export CODE_EDITOR_SUPERVISOR_ID=240
 	export CONSOLE_SUPERVISOR_ID=260
@@ -1533,7 +1545,7 @@ launchOTS() {
 	#(re)setup user ssh tunnels in case they have timed out
 	if declare -F otsUserSshTunnels > /dev/null; then
 		out "otsUserSshTunnels() function is defined, so setting up user ssh tunnels..."
-		otsUserSshTunnels
+		otsUserSshTunnels &
 
 		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
 			out "otsUserSshTunnels() is set to auto refresh mode."

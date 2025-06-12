@@ -3678,12 +3678,18 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			TableEditStruct& typeTable =
 			    configGroupEdit.getTableEditStruct(it->second, true /*markModified*/);
 
+			unsigned int commentCol   = typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_COMMENT);
+			unsigned int authorCol    = typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
+			unsigned int timestampCol = typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
+			
 			// keep track of records to delete, initialize to all in current table
 			std::map<unsigned int /*type record row*/, bool /*doDelete*/> deleteRecordMap;
+			unsigned int maxRowToDelete = typeTable.tableView_->getNumberOfRows();
 			for(unsigned int r = 0; r < typeTable.tableView_->getNumberOfRows(); ++r)
 				deleteRecordMap.emplace(std::make_pair(
 				    r,  // typeTable.tableView_->getDataView()[i][typeTable.tableView_->getColUID()],
 				    true));  // init to delete
+			__COUTTV__(maxRowToDelete);
 
 			// keep a map of original multinode values, to maintain node specific links
 			//	(emplace when original node is deleted)
@@ -3910,7 +3916,9 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 													.isUID()  ||
 											col == typeTable.tableView_->getColStatus() || 
 											typeTable.tableView_->getColumnInfo(col)
-												.isGroupID())
+												.isGroupID() || 
+											col == timestampCol || 
+											col == authorCol) //always go with now author/timestamp on touched records (too easy to misidentify change vs nochange)
 											continue;  // skip subsystem link, etc that is modified by fields maintained in the GUI
 										else// if(typeTable.tableView_->getColumnInfo(col)
 											//		.isChildLink() ||
@@ -4015,15 +4023,15 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 									} //end col loop
 								} //end cache handling
 									
-								// now.. if have a new 'seed' valid row, then delete last valid row
-								if(originalRow != TableView::INVALID &&
-								   lastOriginalRow != TableView::INVALID)
-								{
-									__COUTT__ << "Deleting row " << lastOriginalRow << __E__;
-									typeTable.tableView_->deleteRow(lastOriginalRow);
-									if(originalRow > lastOriginalRow)
-										--originalRow;  // modify after delete
-								}
+								// // now.. if have a new 'seed' valid row, then delete last valid row
+								// if(originalRow != TableView::INVALID &&
+								//    lastOriginalRow != TableView::INVALID)
+								// {
+								// 	__COUTT__ << "Deleting row " << lastOriginalRow << __E__;
+								// 	typeTable.tableView_->deleteRow(lastOriginalRow);
+								// 	if(originalRow > lastOriginalRow)
+								// 		--originalRow;  // modify after delete
+								// }
 
 								if(originalRow != TableView::INVALID) // save last original valid row for future cache/deletion									
 									lastOriginalRow = originalRow;  
@@ -4292,7 +4300,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						__COUTV__(row);
 
 						// remove from delete map
-						deleteRecordMap[row] = false;
+						if(row < maxRowToDelete)
+							deleteRecordMap[row] = false;
 
 						__COUTV__(StringMacros::mapToString(
 						    processTypes_.mapToLinkGroupIDColumn_));
@@ -4569,7 +4578,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 						if(isFirst)  // take current row
 						{
-							__COUTT__ << "Replacing row UID '" << 
+							__COUTT__ << author << "... Replacing row UID '" << 
 								 typeTable.tableView_
 										->getDataView()[row]
 										[ typeTable.tableView_->getColUID()] << 
@@ -4581,10 +4590,16 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							    hostname, row, hostnameCol);
 
 							// remove from delete map
-							deleteRecordMap[row] = false;
+							if(row < maxRowToDelete)
+								deleteRecordMap[row] = false;
 						}
 						else  // copy row
 						{
+							__COUTT__ << author << "... Copying row UID '" << 
+								 typeTable.tableView_
+										->getDataView()[row]
+										[ typeTable.tableView_->getColUID()] << 
+									"' to UID '" << name << "'" << __E__;
 							unsigned int copyRow = typeTable.tableView_->copyRows(
 							    author,
 							    *(typeTable.tableView_),
@@ -4598,17 +4613,30 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							    hostname, copyRow, hostnameCol);
 
 							// remove from delete map
-							deleteRecordMap[copyRow] = false;
+							if(row < maxRowToDelete)
+								deleteRecordMap[copyRow] = false;
 							row = copyRow;
 						}
-
-						Customize row based on original value map, originalMultinodeSameSiblingValues and originalMultinodeAllSiblingEmbeddedName
-						// Strategy: ?
+						//NOTE: changing UID and copyRows does not change author or date! So change it if not an exact match; so change it now and fill with original archive if exact match						
+						typeTable.tableView_->setValue(TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT, row, commentCol);
+						typeTable.tableView_->setValue(author, row, authorCol);
+						typeTable.tableView_->setValue(time(0), row, timestampCol);
+					
+						__COUTTV__(typeTable.tableView_ //comment
+														->getDataView()[row]
+														[commentCol]);
+						__COUTTV__(typeTable.tableView_ //author
+														->getDataView()[row]
+														[authorCol]);
+						__COUTTV__(typeTable.tableView_ //creation time
+														->getDataView()[row]
+														[timestampCol]);
+						// Strategy:
 						// 	- Take values from best original node match
 						//	- Then overwrite with same values
 						//	- Then overwrite with embedded name values
-
-						// customize row if in original value map
+						//	- If name matches exactly the original name, then keep Comment, Author, and CreationTime
+						//i.e., Customize row based on original value map, originalMultinodeSameSiblingValues and originalMultinodeAllSiblingEmbeddedName						
 						{
 							//find highest score match to original node
 							__COUT__ << "Looking for best original node match for row=" << row << 
@@ -4637,16 +4665,33 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 									__COUTV__(bestOriginalNodeName);
 									__COUTV__(bestScore);
 								}
-							}
+							} //end scoring loop for best match in originalMultinodeValues
 
-							if(originalMultinodeValues.find(bestOriginalNodeName) !=
+
+							bool exactMatch = (bestOriginalNodeName == name);
+							if(exactMatch || originalMultinodeValues.find(bestOriginalNodeName) !=
 								originalMultinodeValues.end())
 							{
 								__COUT__ << "Populating original multinode value from '" << bestOriginalNodeName << 
 									"' into '" << name << ".'" << __E__;
+								
 								for(const auto& valuePair :
 									originalMultinodeValues.at(bestOriginalNodeName))
 								{
+									//(keep new creation time always!) if not exact match then keep new meta info and skip Comment, Author, and CreationTime
+									if(!exactMatch && (valuePair.first == commentCol || 
+										valuePair.first == authorCol || 
+										valuePair.first == timestampCol))
+									{
+										__COUTT__ << "Not exact node name match, so keeping default meta info for node: " << name << "["
+											<< row << "][" << valuePair.first
+											<< "] /= " << valuePair.second << 
+											" keep= " << typeTable.tableView_
+														->getDataView()[row]
+														[valuePair.first] <<  __E__;
+										continue;
+									}									
+
 									__COUTT__ << "Customizing node: " << name << "["
 											<< row << "][" << valuePair.first
 											<< "] = " << valuePair.second << __E__;
@@ -4657,7 +4702,55 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							else 
 								__COUT__ << "Did not find '" << name << "' in original value cache. Looking for bestOriginalNodeName=" << bestOriginalNodeName << __E__;
 
-							
+							if(!exactMatch) //not exact match, so apply sibling rules
+							{
+								__COUT__ << "Applying multinode sibling same value rules for row=" << row << 
+									" UID='" << name << "'" << __E__;
+								for(const auto& sameValuePair : originalMultinodeSameSiblingValues.at(nodePair.first))
+								{
+									if(!sameValuePair.second.first) continue;
+									__COUTT__ << "Found originalMultinodeSameSiblingValues[" << nodePair.first << 
+															"][" << sameValuePair.first /* col */ << "] = " << 
+															sameValuePair.second.first << 
+															" --> " << 
+															sameValuePair.second.second << __E__;	
+									typeTable.tableView_->setValueAsString(
+											sameValuePair.second.second, row, sameValuePair.first);
+								} //end loop to apply multinode same sibling values
+
+								__COUT__ << "Applying multinode sibling embbeded name rules for row=" << row << 
+									" UID='" << name << "'" << __E__;
+								for(const auto& embedValuePair : originalMultinodeAllSiblingEmbeddedName.at(nodePair.first))
+								{
+									if(!embedValuePair.second.first || embedValuePair.second.second.size() < 2) continue;
+									__COUTT__ << "Found originalMultinodeAllSiblingEmbeddedName[" << nodePair.first << 
+															"][" << embedValuePair.first /* col */ << "] = " << 
+															embedValuePair.second.first << 
+															" --> " << 
+															StringMacros::vectorToString(embedValuePair.second.second) << __E__;	
+									std::string embedValue = StringMacros::vectorToString(embedValuePair.second.second, name); 
+									__COUTTV__(embedValue);
+									typeTable.tableView_->setValueAsString(
+											embedValue, row, embedValuePair.first);
+								} //end loop to apply multinode same sibling values
+							}
+
+							if(TTEST(1))
+							{
+								__COUTTV__(row);
+								if(row < maxRowToDelete)
+									__COUTTV__(deleteRecordMap[row]);
+								
+								__COUTTV__(typeTable.tableView_ //comment
+																->getDataView()[row]
+																[commentCol]);
+								__COUTTV__(typeTable.tableView_ //author
+																->getDataView()[row]
+																[authorCol]);
+								__COUTTV__(typeTable.tableView_ //creation time
+																->getDataView()[row]
+																[timestampCol]);
+							}
 						} // end copy and customize row handling
 
 						isFirst = false;
@@ -4672,12 +4765,14 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 				// unsigned int           row;
 				std::set<unsigned int> orderedRowSet;  // need to delete in reverse order
 				for(auto& deletePair : deleteRecordMap)
-				{
-					__COUTTV__(deletePair.first);
+				{					
 					if(!deletePair.second)
+					{
+						__COUTT__ << "Row keep = " << deletePair.first << __E__;
 						continue;  // only delete if true
+					}
 
-					__COUTTV__(deletePair.first);
+					__COUTT__ << "Row delete = " << deletePair.first << __E__;
 					orderedRowSet.emplace(deletePair.first);
 				}
 

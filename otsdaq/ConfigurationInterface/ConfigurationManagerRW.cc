@@ -418,6 +418,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 					{
 						//find availableThreadIndex
 						foundThreadIndex = -1;
+						size_t ii = 0;
 						while(foundThreadIndex == -1)
 						{
 							for(int i = 0; i < numOfThreads; ++i)
@@ -429,8 +430,13 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 							if(foundThreadIndex == -1)
 							{
 								__GEN_COUT_TYPE__(TLVL_DEBUG + 2)
-								    << __COUT_HDR__ << "Waiting for available thread..."
+								    << __COUT_HDR__ << "Waiting for available thread... iteration # " << ii
 								    << __E__;
+								if(++ii > 100 /* 1s */ * 10)
+								{
+									__GEN_SS__ << "Threads seem to be stuck getting table info! Timeout while waiting..." << __E__;
+									__GEN_SS_THROW__;
+								} 
 								usleep(10000);
 							}
 						}  //end thread search loop
