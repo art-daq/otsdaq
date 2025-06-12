@@ -89,7 +89,7 @@ unsigned int SlowControlsTableBase::slowControlsHandler(
 try
 {
 	unsigned int numberOfChannels = 0;
-	__COUT__ << "slowControlsHandler \n" << StringMacros::stackTrace() << __E__;
+	__COUTS__(2) << "slowControlsHandler \n" << StringMacros::stackTrace() << __E__;
 
 	if(!slowControlsLink.isDisconnected())
 	// if(1)
@@ -97,7 +97,7 @@ try
 		std::vector<std::pair<std::string, ConfigurationTree>> channelChildren =
 		    slowControlsLink.getChildren();
 
-		__COUTV__(channelChildren.size());
+		__COUTVS__(2, channelChildren.size());
 		// first do single bit binary fields
 		bool first = true;
 		for(auto& channel : channelChildren)
@@ -150,7 +150,7 @@ try
 		first = true;
 		for(auto& channel : channelChildren)
 		{
-			__COUTV__(channel.first);
+			__COUTVS__(2, channel.first);
 			if(channel.second.getNode(channelColNames_.colChannelDataType_)
 			       .getValue<std::string>() == "1b")
 				continue;  // skip non-binary fields
