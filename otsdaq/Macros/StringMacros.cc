@@ -1181,6 +1181,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 				}
 			}
 
+		__COUTTV__(StringMacros::vectorToString(commonChunksToReturn));
 		//confirm valid multi-commonChunksToReturn for all haystack entries (only first can be certain at this point)
 		for(unsigned int c = 1; c < commonChunksToReturn.size(); ++c)
 		{
@@ -1190,7 +1191,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 				__COUT__ << "Checking chunks work with haystack [" << n << "]: " << haystack[n] << __E__;
 				__COUTV__(commonChunksToReturn[0].size());
 				std::string wildCardValue = haystack[n].substr(commonChunksToReturn[0].size(),
-					haystack[n].find(commonChunksToReturn[1], commonChunksToReturn[0].size() + 1));
+					haystack[n].find(commonChunksToReturn[1], commonChunksToReturn[0].size() + 1) - commonChunksToReturn[0].size());
 				__COUTTV__(wildCardValue);
 
 				std::string builtString = "";

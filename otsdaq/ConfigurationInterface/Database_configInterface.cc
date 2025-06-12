@@ -113,9 +113,19 @@ void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version
 		table->getViewP()->setVersion(version);
 		return;
 	}
+	if(result.second.find("failed to create a client session") != std::string::npos || 
+		result.second.find("closed connection. calling hello") != std::string::npos)
+	{
+		__SS__ << "\n\nDBI Error while filling '" << table->getTableName() << "' version '"
+	       << versionstring << "' - it appears that the connection to the database been lost. Please check the database server and route to server.\n\n"
+	       << "Here is the error detail:\n\n"
+	       << result.second << __E__;
+		__SS_ONLY_THROW__;
+	}
+
 	__SS__ << "\n\nDBI Error while filling '" << table->getTableName() << "' version '"
-	       << versionstring << "' - are you sure this version exists?\n"
-	       << "Here is the error:\n\n"
+	       << versionstring << "' - are you sure this version exists? Or has the connection to the database been lost?\n\n"
+	       << "Here is the error detail:\n\n"
 	       << result.second << __E__;
 	__SS_ONLY_THROW__;
 }  // end fill()

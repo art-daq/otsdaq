@@ -3690,6 +3690,15 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			std::map<std::string /*originalMultiNode name*/,
 						std::map<unsigned int /*col*/, std::string /*value*/>>
 				originalMultinodeValues;
+			std::map<std::string /*multinode key*/,
+						std::map<unsigned int /*col*/, 
+						std::pair<bool /* all siblings have same value */, std::string /* sameValue */ >>>
+				originalMultinodeSameSiblingValues;
+			std::map<std::string /*multinode key*/,
+						std::map<unsigned int /*col*/, 
+						std::pair<bool /* all siblings have embedded name */, 
+							std::vector<std::string /* splitForEmbeddedValue */ >>>>						
+				originalMultinodeAllSiblingEmbeddedName;
 				
 			// node instance loop
 			for(auto& nodePair : nodeTypePair.second)
@@ -3725,6 +3734,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							// format:
 							//	:<nodeNameFixedWidth>:<nodeVectorIndexString>:<nodeNameTemplate>
 
+							std::string lastOriginalName;
 							std::vector<std::string> originalParameterArr =
 							    StringMacros::getVectorFromString(
 							        &(nodePair.second[i].c_str()[1]),
@@ -3786,6 +3796,11 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								}
 							}  // end printer syntax loop
 
+							__COUTTV__(originalParameterArr[2]);
+							//remove ;status=
+							originalParameterArr[2] = originalParameterArr[2].substr(0,
+								originalParameterArr[2].find(";status="));
+							__COUTV__(originalParameterArr[2]);
 							std::vector<std::string> originalNamePieces =
 							    StringMacros::getVectorFromString(originalParameterArr[2],
 							                                      {'*'} /*delimiter*/);
@@ -3805,6 +3820,20 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								typeTable.tableView_->print(ss);
 								__COUT_MULTI__(1,ss.str());
 							}
+
+							//create matching bools to decide copy stategy
+							__COUT__ << "originalMultinodeSameSiblingValues init col map for " << nodePair.first << __E__;
+							originalMultinodeSameSiblingValues.emplace(std::make_pair(
+								nodePair.first,
+								std::map<unsigned int /*col*/,
+											std::pair<bool /* all siblings have same value */, 
+											std::string /* sameValue */ >>()));
+							__COUT__ << "originalMultinodeAllSiblingEmbeddedName init col map for " << nodePair.first << __E__;
+							originalMultinodeAllSiblingEmbeddedName.emplace(std::make_pair(
+								nodePair.first,
+								std::map<unsigned int /*col*/,
+											std::pair<bool /* all siblings have embedded name */, 
+											std::vector<std::string /* splitForEmbeddedValue */ >>>()));
 
 							// bool         isFirst     = true;
 							unsigned int originalRow     = TableView::INVALID,
@@ -3844,102 +3873,212 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								    true /*doNotThrow*/);
 								__COUTTV__(originalRow);
 
-								// if have a new valid row, then delete last valid row
-								if(originalRow != TableView::INVALID &&
-								   lastOriginalRow != TableView::INVALID)
+								// if have a new 'seed' valid row, then delete last valid row
+								// before deleting, record all customizing values to draw from when creating new multinode records
+								auto result = originalMultinodeValues.emplace(std::make_pair(
+									originalName,
+									std::map<unsigned int /*col*/,
+												std::string /*value*/>()));
+								if(!result.second)
+									__COUT__ << "originalName '" << originalName << "' already in original multinode value cache." << __E__;									
+								else //keep original cache values
 								{
-									// before deleting, record all customizing values and maintain when saving
-									auto result = originalMultinodeValues.emplace(std::make_pair(
-									    nodeName,
-									    std::map<unsigned int /*col*/,
-									             std::string /*value*/>()));
-									if(!result.second)
-										__COUT__ << "nodeName '" << nodeName << "' already in original multinode value cache." << __E__;									
-
-									__COUT__ << "Saving multinode value " << nodeName
-									         << "[" << lastOriginalRow
-									         << "][*] with row count = "
-									         << typeTable.tableView_->getNumberOfRows()
-									         << __E__;
+									__COUT__ << "Saving multinode value " << originalName
+												<< "[" << originalRow
+												<< "][*] with row count = "
+												<< typeTable.tableView_->getNumberOfRows()
+												<< __E__;
 
 									// save all link values
 									for(unsigned int col = 0;
-									    col < typeTable.tableView_->getNumberOfColumns();
-									    ++col)										
+										col < typeTable.tableView_->getNumberOfColumns();
+										++col)	
+									{									
 										if(typeTable.tableView_->getColumnInfo(col)
-										           .getName() ==
-										       ARTDAQTableBase::
-										           ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK ||
-										   typeTable.tableView_->getColumnInfo(col)
-										           .getName() ==
-										       ARTDAQTableBase::
-										           ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID)
-											continue;  // skip subsystem link
-										else if(typeTable.tableView_->getColumnInfo(col)
-										            .isChildLink() ||
-										        typeTable.tableView_->getColumnInfo(col)
-										            .isChildLinkGroupID() ||
-										        typeTable.tableView_->getColumnInfo(col)
-										            .isChildLinkUID())
+													.getName() ==
+												ARTDAQTableBase::
+													ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK ||
+											typeTable.tableView_->getColumnInfo(col)
+													.getName() ==
+												ARTDAQTableBase::
+													ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID ||
+											typeTable.tableView_->getColumnInfo(col)
+													.getName() ==
+												ARTDAQTableBase::
+													ARTDAQ_TYPE_TABLE_HOSTNAME ||
+											typeTable.tableView_->getColumnInfo(col)
+													.isUID()  ||
+											col == typeTable.tableView_->getColStatus() || 
+											typeTable.tableView_->getColumnInfo(col)
+												.isGroupID())
+											continue;  // skip subsystem link, etc that is modified by fields maintained in the GUI
+										else// if(typeTable.tableView_->getColumnInfo(col)
+											//		.isChildLink() ||
+											//	typeTable.tableView_->getColumnInfo(col)
+											//		.isChildLinkGroupID() ||
+											//	typeTable.tableView_->getColumnInfo(col)
+											//		.isChildLinkUID())
 										{
-											__COUTT__ << "Caching node value: " << nodeName << "["
-													<< lastOriginalRow << "][" << col
-													<< "] = " << typeTable.tableView_
-											            ->getDataView()[lastOriginalRow]
-											                           [col] << __E__;
-											originalMultinodeValues.at(nodeName).emplace(
-											    std::make_pair(
-											        col,
-											        typeTable.tableView_
-											            ->getDataView()[lastOriginalRow]
-											                           [col]));
-										}
+											__COUTT__ << "Caching node value: " << originalName << "["
+													<< originalRow << "][" << col
+													<< "/" << typeTable.tableView_->getColumnInfo(col)
+													.getName() << "] = " << typeTable.tableView_
+														->getDataView()[originalRow]
+																		[col] << __E__;
+											originalMultinodeValues.at(originalName).emplace(
+												std::make_pair(
+													col,
+													typeTable.tableView_
+														->getDataView()[originalRow]
+																		[col]));
 
+											//the first time, set to true and then prove wrong
+											
+											for(const auto& pair : originalMultinodeSameSiblingValues)
+												__COUTT__ << "originalMultinodeSameSiblingValues[" << pair.first << "]" << __E__;
+											auto result2 = originalMultinodeSameSiblingValues.at(nodePair.first).emplace(
+													std::make_pair(
+														col,
+														//same value
+														std::make_pair(true,typeTable.tableView_
+															->getDataView()[originalRow]
+																			[col])
+												));
+
+											for(const auto& pair : originalMultinodeAllSiblingEmbeddedName)
+												__COUTT__ << "originalMultinodeAllSiblingEmbeddedName[" << pair.first << "]" << __E__;											
+											originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).emplace(
+													std::make_pair(
+														col,
+														std::make_pair( //bool
+															typeTable.tableView_
+															->getDataView()[originalRow]
+																			[col].find(originalName) != std::string::npos,
+															//split string
+															std::vector<std::string>())		
+												));
+
+											
+											if(result2.second)
+											{
+												__COUTTV__(originalMultinodeSameSiblingValues.at(nodePair.first).at(col).second);
+												if(originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).first)
+												{
+													__COUTT__ << "Determine string splits for embedded name" << __E__;
+													const std::string& val = typeTable.tableView_
+														->getDataView()[originalRow]
+																		[col];
+													size_t pos = val.find(originalName);
+													originalMultinodeAllSiblingEmbeddedName.at(nodePair.first)
+														.at(col).second.push_back(val.substr(0,pos));
+													originalMultinodeAllSiblingEmbeddedName.at(nodePair.first)
+														.at(col).second.push_back(val.substr(pos + originalName.size()));
+													__COUTTV__(StringMacros::vectorToString(originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).second));
+												}												
+											}
+											else //not first time, so prove wrong
+											{					
+
+												if(originalMultinodeSameSiblingValues.at(nodePair.first).at(col).first)
+												{
+													__COUTT__ << "Checking sibling same values... for " << nodePair.first << __E__;
+													if(typeTable.tableView_
+														->getDataView()[originalRow]
+																		[col] != typeTable.tableView_
+														->getDataView()[lastOriginalRow]
+																		[col])
+													{
+														__COUT__ << "Found different sibling values at col=" << col << " for " << nodePair.first << __E__;
+														originalMultinodeSameSiblingValues.at(nodePair.first).at(col).first = false;
+													}
+												}
+												if(originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).first)
+												{
+													__COUTT__ << "Checking sibling embedded name... for " << nodePair.first << ":" << originalName << __E__;
+													if(typeTable.tableView_
+														->getDataView()[originalRow]
+																		[col].find(originalName) == std::string::npos)																
+													{
+														__COUT__ << "Found no embedded name at col=" << col << " for " << originalName << __E__;
+														originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).first = false;
+													}
+												}
+											}
+											
+											__COUTT__ << "originalMultinodeSameSiblingValues[" << nodePair.first << 
+														"][" << col << "] = " << 
+														originalMultinodeSameSiblingValues.at(nodePair.first).at(col).first << __E__;	
+											__COUTT__ << "originalMultinodeAllSiblingEmbeddedName[" << nodePair.first << 
+														"][" << col << "] = " << 
+														originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).first << __E__;	
+										} //end col caching handling
+									} //end col loop
+								} //end cache handling
+									
+								// now.. if have a new 'seed' valid row, then delete last valid row
+								if(originalRow != TableView::INVALID &&
+								   lastOriginalRow != TableView::INVALID)
+								{
 									__COUTT__ << "Deleting row " << lastOriginalRow << __E__;
 									typeTable.tableView_->deleteRow(lastOriginalRow);
 									if(originalRow > lastOriginalRow)
 										--originalRow;  // modify after delete
 								}
 
-								if(originalRow != TableView::INVALID)
-								{
-									lastOriginalRow =
-									    originalRow;  // save last valid row for future deletion
-									nodeName = originalName;
-								}
-								__COUTTV__(lastOriginalRow);
+								if(originalRow != TableView::INVALID) // save last original valid row for future cache/deletion									
+									lastOriginalRow = originalRow;  
 
+								__COUTTV__(lastOriginalRow);
+								lastOriginalName = originalName;
 							}  // end loop through multi-node instances
+
+							for(const auto& pair : originalMultinodeSameSiblingValues.at(nodePair.first))
+								__COUTT__ << "originalMultinodeSameSiblingValues[" << nodePair.first << 
+									"][" << pair.first << "]  = " << pair.second.first << __E__;
+							for(const auto& pair : originalMultinodeAllSiblingEmbeddedName.at(nodePair.first))
+								__COUTT__ << "originalMultinodeAllSiblingEmbeddedName[" << nodePair.first << 
+									"][" << pair.first << "]  = " << pair.second.first << __E__;
 
 							__COUTTV__(lastOriginalRow);
 							row = lastOriginalRow;  // take last valid row to proceed
-
-							__COUTV__(nodeName);
 							__COUTV__(row);
-
 						}  // end handling of original multinode
 						else
 						{
+							std::string originalName =  nodePair.second[i].substr(0,
+								 nodePair.second[i].find(";status="));
+							__COUTV__(originalName);
+
 							// attempt to find original 'single' node name
 							row = typeTable.tableView_->findRow(
 							    typeTable.tableView_->getColUID(),
-							    nodePair.second[i],
+							    originalName,
 							    0 /*offsetRow*/,
 							    true /*doNotThrow*/);
-							__COUTV__(row);
-
-							nodeName = nodePair.first;  // take new node name
-							__COUTTV__(nodeName);
-							//remove ;status=
-							nodeName = nodeName.substr(0,nodeName.find(";status=")); 							
+							__COUTV__(row);			
 						}
+
+						//if no original nodes, there may be *'s in node name, so remove them
+						{
+							nodeName = nodePair.first;  // take new node name
+							__COUTV__(nodeName);
+							//remove ;status=
+							nodeName = nodeName.substr(0,nodeName.find(";status=")); 	
+
+							//remove stars for seed nodename
+							std::string tmpNodeName = nodeName;
+							nodeName = ""; //clear
+							for(size_t c = 0; c < tmpNodeName.size(); ++c)
+								if(tmpNodeName[c] != '*') nodeName += tmpNodeName[c];
+						} //end removing *'s from node name
 
 						__COUTV__(nodeName);
 						if(row == TableView::INVALID)
 						{
-							// create artdaq type instance record
+							// No original record, so create artdaq type instance record
 							row = typeTable.tableView_->addRow(
-							    author, true /*incrementUniqueData*/, nodeName);
+							    author, true /*incrementUniqueData*/, 
+								nodeName);
 
 							// fill defaults properties/parameters here!
 							if(nodeTypePair.first == processTypes_.READER)
@@ -4142,7 +4281,12 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						}
 						else  // set UID
 						{
-							typeTable.tableView_->setValueAsString(
+							__COUT__ << "Reusing row " << row << " current-UID=" << 
+								typeTable.tableView_
+										->getDataView()[row]
+										[typeTable.tableView_->getColUID()] << 
+										" as (temporaril to basename if multinode) new-UID=" << nodeName << __E__;
+							typeTable.tableView_->setValueAsString( //if single record, this renaming is final; if multi record, this renaming to basename is temporary
 							    nodeName, row, typeTable.tableView_->getColUID());
 						}
 						__COUTV__(row);
@@ -4429,7 +4573,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								 typeTable.tableView_
 										->getDataView()[row]
 										[ typeTable.tableView_->getColUID()] << 
-									"' with UID '" << name << ".'" << __E__;
+									"' with UID '" << name << "'" << __E__;
 							typeTable.tableView_->setValueAsString(
 							    name, row, typeTable.tableView_->getColUID());
 
@@ -4453,28 +4597,68 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							typeTable.tableView_->setValueAsString(
 							    hostname, copyRow, hostnameCol);
 
-							// customize row if in original value map
-							if(originalMultinodeValues.find(name) !=
-							   originalMultinodeValues.end())
+							// remove from delete map
+							deleteRecordMap[copyRow] = false;
+							row = copyRow;
+						}
+
+						Customize row based on original value map, originalMultinodeSameSiblingValues and originalMultinodeAllSiblingEmbeddedName
+						// Strategy: ?
+						// 	- Take values from best original node match
+						//	- Then overwrite with same values
+						//	- Then overwrite with embedded name values
+
+						// customize row if in original value map
+						{
+							//find highest score match to original node
+							__COUT__ << "Looking for best original node match for row=" << row << 
+								" UID='" << name << "'" << __E__;
+							size_t bestScore = 0;
+							std::string bestOriginalNodeName;
+							for(const auto& originalNodePair : originalMultinodeValues)
 							{
-								__COUT__ << "Populating original multinode value from '" << name << 
+								size_t score = 0;
+								for(size_t c = 0, d = 0; c < originalNodePair.first.size() && d < name.size(); ++c, ++d)
+								{
+									if(name[d] == originalNodePair.first[c])
+										++score;
+									else if(d+1 < name.size() && name[d+1] == originalNodePair.first[c])
+										--c; //rewind one for dropped character
+									else if(c+1 < originalNodePair.first.size() && name[d] == originalNodePair.first[c+1])
+										--d; //rewind one for dropped character
+								}
+								if(originalNodePair.first.size() == name.size()) 
+									++score;
+								__COUTTV__(score);
+								if(score > bestScore)
+								{
+									bestOriginalNodeName = originalNodePair.first;
+									bestScore = score;
+									__COUTV__(bestOriginalNodeName);
+									__COUTV__(bestScore);
+								}
+							}
+
+							if(originalMultinodeValues.find(bestOriginalNodeName) !=
+								originalMultinodeValues.end())
+							{
+								__COUT__ << "Populating original multinode value from '" << bestOriginalNodeName << 
 									"' into '" << name << ".'" << __E__;
 								for(const auto& valuePair :
-								    originalMultinodeValues.at(name))
+									originalMultinodeValues.at(bestOriginalNodeName))
 								{
 									__COUTT__ << "Customizing node: " << name << "["
-									         << copyRow << "][" << valuePair.first
-									         << "] = " << valuePair.second << __E__;
+											<< row << "][" << valuePair.first
+											<< "] = " << valuePair.second << __E__;
 									typeTable.tableView_->setValueAsString(
-									    valuePair.second, copyRow, valuePair.first);
+										valuePair.second, row, valuePair.first);
 								}
 							}
 							else 
-								__COUT__ << "Did not find '" << name << "' in original value cache." << __E__;
+								__COUT__ << "Did not find '" << name << "' in original value cache. Looking for bestOriginalNodeName=" << bestOriginalNodeName << __E__;
 
-							// remove from delete map
-							deleteRecordMap[copyRow] = false;
-						}  // end copy and customize row handling
+							
+						} // end copy and customize row handling
 
 						isFirst = false;
 					} // end multi-node loop
