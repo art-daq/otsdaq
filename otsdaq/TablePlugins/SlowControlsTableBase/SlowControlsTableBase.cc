@@ -169,7 +169,14 @@ try
 			++numberOfChannels;
 
 			std::string experimentName = "";
-			try { experimentName = __ENV__ ("OTS_EPICS_OWNER");} catch (...) {experimentName = __ENV__ ("OTS_OWNER");}
+			try
+			{
+				experimentName = __ENV__ ("OTS_EPICS_OWNER");
+			}
+			catch (...)
+			{
+				experimentName = __ENV__ ("OTS_OWNER");
+			}
 			__COUT__ << "experimentName has metricParameterValue: " << experimentName << __E__;
 
 			std::string pvName = channel.first;
