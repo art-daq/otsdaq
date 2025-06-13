@@ -146,7 +146,7 @@ try
 			out << "}" << __E__;
 		}
 
-		// then do 'analog' fieldsª
+		// then do 'analog' fields
 		first = true;
 		for(auto& channel : channelChildren)
 		{
