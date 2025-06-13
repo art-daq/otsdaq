@@ -146,7 +146,7 @@ try
 			out << "}" << __E__;
 		}
 
-		// then do 'analog' fields
+		// then do 'analog' fieldsª
 		first = true;
 		for(auto& channel : channelChildren)
 		{
@@ -171,13 +171,14 @@ try
 			std::string experimentName = "";
 			try
 			{
-				experimentName = __ENV__ ("OTS_EPICS_OWNER");
+				experimentName = __ENV__("OTS_EPICS_OWNER");
 			}
-			catch (...)
+			catch(...)
 			{
-				experimentName = __ENV__ ("OTS_OWNER");
+				experimentName = __ENV__("OTS_OWNER");
 			}
-			__COUT__ << "experimentName has metricParameterValue: " << experimentName << __E__;
+			__COUT__ << "experimentName has metricParameterValue: " << experimentName
+			         << __E__;
 
 			std::string pvName = channel.first;
 			std::string comment =
@@ -211,7 +212,8 @@ try
 				pvSettings.push_back(precision);
 				pvSettings.push_back(units);
 				channelList->push_back(std::make_pair(
-				    experimentName + ":" + subsystem + ":" + location + ":" + pvName, pvSettings));
+				    experimentName + ":" + subsystem + ":" + location + ":" + pvName,
+				    pvSettings));
 			}
 
 			// output channel
@@ -331,7 +333,7 @@ bool SlowControlsTableBase::outputEpicsPVFile(
 	std::stringstream out;
 	unsigned int      numberOfParameters =
 	    slowControlsHandlerConfig(out, configManager, channelList);
-	__COUTV__(numberOfParameters);
+	__COUTVS__(2, numberOfParameters);
 
 	// check if need to restart EPICS ioc
 	//	if dbg string has changed, then mark ioc configuration dirty
