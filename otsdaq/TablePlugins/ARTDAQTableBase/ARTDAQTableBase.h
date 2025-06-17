@@ -233,6 +233,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	/// ARTDAQ Reader Column names
 	static struct ColARTDAQReader
 	{
+		std::string const colDaqFragmentIDs_    			= "daqFragmentIDs";
 		std::string const colLinkToDaqParameters_    		= "daqParametersLink";
 		std::string const colLinkToDaqParametersGroupID_ 	= "daqParametersLinkGroupID";
 	} colARTDAQReader_;

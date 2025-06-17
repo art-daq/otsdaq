@@ -2175,7 +2175,7 @@ GroupEditStruct::GroupEditStruct(const ConfigurationManager::GroupType& groupTyp
 	               : (groupType == ConfigurationManager::GroupType::ITERATE_TYPE
 	                      ? ConfigurationManager::getIterateMemberNames()
 	                      : cfgMgr->getConfigurationMemberNames()));
-
+	
 	for(auto& memberName : memberNames)
 		try
 		{
@@ -2187,12 +2187,13 @@ GroupEditStruct::GroupEditStruct(const ConfigurationManager::GroupType& groupTyp
 		}
 		catch(...)
 		{
+			__GEN_COUTV__(StringMacros::mapToString(activeTables));
 			__SS__ << "Error! Could not find group member table '" << memberName
 			       << "' for group type '"
 			       << ConfigurationManager::convertGroupTypeToName(groupType)
 			       << ".' All group members must be present to create the group editing "
 			          "structure."
-			       << __E__;
+			       << __E__ << __E__ << StringMacros::stackTrace() << __E__;
 			__SS_THROW__;
 		}
 
@@ -2354,196 +2355,215 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 	bool groupAliasChange = false;
 	bool tableAliasChange = false;
 
-	GroupEditStruct backboneGroupEdit(ConfigurationManager::GroupType::BACKBONE_TYPE,
-	                                  cfgMgr);
-
-	if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE && updateGroupAliases)
+	if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE) //if not backbone group save, consider changing aliases (not if it is backbone group, tables not necessarily active yet, which causes error in GroupEditStruct backboneGroupEdit)
 	{
-		// check group aliases ... a la
-		// ConfigurationGUISupervisor::handleSetGroupAliasInBackboneXML
+		GroupEditStruct backboneGroupEdit(ConfigurationManager::GroupType::BACKBONE_TYPE,
+										cfgMgr);
 
-		TableEditStruct& groupAliasTable = backboneGroupEdit.getTableEditStruct(
-		    ConfigurationManager::GROUP_ALIASES_TABLE_NAME, true /*markModified*/);
-		TableView* tableView = groupAliasTable.tableView_;
-
-		// unsigned int col;
-		unsigned int row = 0;
-
-		std::vector<std::pair<std::string, ConfigurationTree>> aliasNodePairs =
-		    cfgMgr->getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
-		std::string groupName, groupKey;
-		for(auto& aliasNodePair : aliasNodePairs)
+		if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE && updateGroupAliases)
 		{
-			groupName = aliasNodePair.second.getNode("GroupName").getValueAsString();
-			groupKey  = aliasNodePair.second.getNode("GroupKey").getValueAsString();
+			// check group aliases ... a la
+			// ConfigurationGUISupervisor::handleSetGroupAliasInBackboneXML
 
-			__GEN_COUT__ << "Group Alias: " << aliasNodePair.first << " => " << groupName
-			             << "(" << groupKey << "); row=" << row << __E__;
-
-			if(groupName == originalGroupName_ &&
-			   TableGroupKey(groupKey) == originalGroupKey_)
-			{
-				__GEN_COUT__ << "Found alias! Changing group key from ("
-				             << originalGroupKey_ << ") to (" << newGroupKey << ")"
-				             << __E__;
-
-				groupAliasChange = true;
-
-				tableView->setValueAsString(
-				    newGroupKey.toString(), row, tableView->findCol("GroupKey"));
-			}
-
-			++row;
-		}
-
-		if(groupAliasChange)
-		{
-			std::stringstream ss;
-			tableView->print(ss);
-			__GEN_COUT__ << ss.str();
-			//
-			////			// save or find equivalent
-			////			backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) =
-			////					cfgMgr->saveModifiedVersion(
-			////							groupAliasTable.tableName_,
-			////							groupAliasTable.originalVersion_,
-			////							false /*makeTemporary*/,
-			////							groupAliasTable.table_,
-			////							groupAliasTable.temporaryVersion_,
-			////							false /*ignoreDuplicates*/,
-			////							true /*lookForEquivalent*/);
-			//
-			//			backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) =
-			//					cfgMgr->saveModifiedVersion(
-			//							groupAliasTable.tableName_,
-			//							groupAliasTable.originalVersion_,
-			//							true /*make temporary*/,
-			//							groupAliasTable.table_,
-			//							groupAliasTable.temporaryVersion_,
-			//							true /*ignoreDuplicates*/);  // make temporary version to save persistent version properly
-			//
-			//			__GEN_COUT__ << "Temporary target version is " <<
-			//					groupAliasTable.table_->getTableName() << "-v"
-			//					<< backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) << "-v"
-			//					<< groupAliasTable.temporaryVersion_ << __E__;
-			//
-			//			backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) =
-			//					cfgMgr->saveModifiedVersion(
-			//							groupAliasTable.tableName_,
-			//							groupAliasTable.originalVersion_,
-			//							false /*make temporary*/,
-			//							groupAliasTable.table_,
-			//							groupAliasTable.temporaryVersion_,
-			//							false /*ignoreDuplicates*/,
-			//							true /*lookForEquivalent*/);  // save persistent version properly
-			//
-			//			__GEN_COUT__
-			//			    << "Original version is "
-			//				<< groupAliasTable.table_->getTableName() << "-v"
-			//			    << groupAliasTable.originalVersion_ << " and new version is v"
-			//			    << backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
-			//			    << __E__;
-		}
-	}  // end updateGroupAliases handling
-
-	if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE && updateTableAliases)
-	{
-		// update all table version aliases
-		TableView* tableView =
-		    backboneGroupEdit
-		        .getTableEditStruct(ConfigurationManager::VERSION_ALIASES_TABLE_NAME,
-		                            true /*markModified*/)
-		        .tableView_;
-
-		for(auto& groupTable : groupTables_)
-		{
-			if(groupTable.second.originalVersion_ ==
-			   groupMembers_.at(groupTable.second.tableName_))
-				continue;  // skip if no change
-
-			__GEN_COUT__ << "Checking alias... original version is "
-			             << groupTable.second.tableName_ << "-v"
-			             << groupTable.second.originalVersion_ << " and new version is v"
-			             << groupMembers_.at(groupTable.second.tableName_) << __E__;
+			TableEditStruct& groupAliasTable = backboneGroupEdit.getTableEditStruct(
+				ConfigurationManager::GROUP_ALIASES_TABLE_NAME, true /*markModified*/);
+			TableView* tableView = groupAliasTable.tableView_;
 
 			// unsigned int col;
 			unsigned int row = 0;
 
 			std::vector<std::pair<std::string, ConfigurationTree>> aliasNodePairs =
-			    cfgMgr->getNode(ConfigurationManager::VERSION_ALIASES_TABLE_NAME)
-			        .getChildren();
-			std::string tableName, tableVersion;
+				cfgMgr->getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
+			std::string groupName, groupKey;
 			for(auto& aliasNodePair : aliasNodePairs)
 			{
-				tableName = aliasNodePair.second.getNode("TableName").getValueAsString();
-				tableVersion = aliasNodePair.second.getNode("Version").getValueAsString();
+				groupName = aliasNodePair.second.getNode("GroupName").getValueAsString();
+				groupKey  = aliasNodePair.second.getNode("GroupKey").getValueAsString();
 
-				__GEN_COUT__ << "Table Alias: " << aliasNodePair.first << " => "
-				             << tableName << "-v" << tableVersion << "" << __E__;
+				__GEN_COUT__ << "Group Alias: " << aliasNodePair.first << " => " << groupName
+							<< "(" << groupKey << "); row=" << row << __E__;
 
-				if(tableName == groupTable.second.tableName_ &&
-				   TableVersion(tableVersion) == groupTable.second.originalVersion_)
+				if(groupName == originalGroupName_ &&
+				TableGroupKey(groupKey) == originalGroupKey_)
 				{
-					__GEN_COUT__ << "Found alias! Changing icon table version alias."
-					             << __E__;
+					__GEN_COUT__ << "Found alias! Changing group key from ("
+								<< originalGroupKey_ << ") to (" << newGroupKey << ")"
+								<< __E__;
 
-					tableAliasChange = true;
+					groupAliasChange = true;
 
 					tableView->setValueAsString(
-					    groupMembers_.at(groupTable.second.tableName_).toString(),
-					    row,
-					    tableView->findCol("Version"));
+						newGroupKey.toString(), row, tableView->findCol("GroupKey"));
 				}
 
 				++row;
 			}
-		}
 
-		if(tableAliasChange)
+			if(groupAliasChange)
+			{
+				std::stringstream ss;
+				tableView->print(ss);
+				__GEN_COUT__ << ss.str();
+				//
+				////			// save or find equivalent
+				////			backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) =
+				////					cfgMgr->saveModifiedVersion(
+				////							groupAliasTable.tableName_,
+				////							groupAliasTable.originalVersion_,
+				////							false /*makeTemporary*/,
+				////							groupAliasTable.table_,
+				////							groupAliasTable.temporaryVersion_,
+				////							false /*ignoreDuplicates*/,
+				////							true /*lookForEquivalent*/);
+				//
+				//			backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) =
+				//					cfgMgr->saveModifiedVersion(
+				//							groupAliasTable.tableName_,
+				//							groupAliasTable.originalVersion_,
+				//							true /*make temporary*/,
+				//							groupAliasTable.table_,
+				//							groupAliasTable.temporaryVersion_,
+				//							true /*ignoreDuplicates*/);  // make temporary version to save persistent version properly
+				//
+				//			__GEN_COUT__ << "Temporary target version is " <<
+				//					groupAliasTable.table_->getTableName() << "-v"
+				//					<< backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) << "-v"
+				//					<< groupAliasTable.temporaryVersion_ << __E__;
+				//
+				//			backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) =
+				//					cfgMgr->saveModifiedVersion(
+				//							groupAliasTable.tableName_,
+				//							groupAliasTable.originalVersion_,
+				//							false /*make temporary*/,
+				//							groupAliasTable.table_,
+				//							groupAliasTable.temporaryVersion_,
+				//							false /*ignoreDuplicates*/,
+				//							true /*lookForEquivalent*/);  // save persistent version properly
+				//
+				//			__GEN_COUT__
+				//			    << "Original version is "
+				//				<< groupAliasTable.table_->getTableName() << "-v"
+				//			    << groupAliasTable.originalVersion_ << " and new version is v"
+				//			    << backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
+				//			    << __E__;
+			}
+		}  // end updateGroupAliases handling
+
+		if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE && updateTableAliases)
 		{
-			std::stringstream ss;
-			tableView->print(ss);
-			__GEN_COUT__ << ss.str();
-		}
-	}  // end updateTableAliases handling
+			// update all table version aliases
+			TableView* tableView =
+				backboneGroupEdit
+					.getTableEditStruct(ConfigurationManager::VERSION_ALIASES_TABLE_NAME,
+										true /*markModified*/)
+					.tableView_;
 
-	//	if backbone modified, save group and activate it
+			for(auto& groupTable : groupTables_)
+			{
+				if(groupTable.second.originalVersion_ ==
+				groupMembers_.at(groupTable.second.tableName_))
+					continue;  // skip if no change
 
-	TableGroupKey localNewBackboneKey;
-	if(groupAliasChange || tableAliasChange)
-	{
-		for(auto& table : backboneGroupEdit.groupMembers_)
+				__GEN_COUT__ << "Checking alias... original version is "
+							<< groupTable.second.tableName_ << "-v"
+							<< groupTable.second.originalVersion_ << " and new version is v"
+							<< groupMembers_.at(groupTable.second.tableName_) << __E__;
+
+				// unsigned int col;
+				unsigned int row = 0;
+
+				std::vector<std::pair<std::string, ConfigurationTree>> aliasNodePairs =
+					cfgMgr->getNode(ConfigurationManager::VERSION_ALIASES_TABLE_NAME)
+						.getChildren();
+				std::string tableName, tableVersion;
+				for(auto& aliasNodePair : aliasNodePairs)
+				{
+					tableName = aliasNodePair.second.getNode("TableName").getValueAsString();
+					tableVersion = aliasNodePair.second.getNode("Version").getValueAsString();
+
+					__GEN_COUT__ << "Table Alias: " << aliasNodePair.first << " => "
+								<< tableName << "-v" << tableVersion << "" << __E__;
+
+					if(tableName == groupTable.second.tableName_ &&
+					TableVersion(tableVersion) == groupTable.second.originalVersion_)
+					{
+						__GEN_COUT__ << "Found alias! Changing icon table version alias."
+									<< __E__;
+
+						tableAliasChange = true;
+
+						tableView->setValueAsString(
+							groupMembers_.at(groupTable.second.tableName_).toString(),
+							row,
+							tableView->findCol("Version"));
+					}
+
+					++row;
+				}
+			}
+
+			if(tableAliasChange)
+			{
+				std::stringstream ss;
+				tableView->print(ss);
+				__GEN_COUT__ << ss.str();
+			}
+		}  // end updateTableAliases handling
+
+		TableGroupKey localNewBackboneKey;
+		//	if backbone modified, save group and activate it
+		if(groupAliasChange || tableAliasChange)
 		{
-			__GEN_COUT__ << table.first << " v" << table.second << __E__;
+			for(auto& table : backboneGroupEdit.groupMembers_)
+			{
+				__GEN_COUT__ << table.first << " v" << table.second << __E__;
+			}
+			backboneGroupEdit.saveChanges(
+				backboneGroupEdit.originalGroupName_,
+				localNewBackboneKey,
+				foundEquivalentBackboneKey ? foundEquivalentBackboneKey : nullptr);
+
+			if(newBackboneKey)
+				*newBackboneKey = localNewBackboneKey;
 		}
-		backboneGroupEdit.saveChanges(
-		    backboneGroupEdit.originalGroupName_,
-		    localNewBackboneKey,
-		    foundEquivalentBackboneKey ? foundEquivalentBackboneKey : nullptr);
 
-		if(newBackboneKey)
-			*newBackboneKey = localNewBackboneKey;
-	}
+		// acquire all active groups and ignore errors, so that activateTableGroup does not
+		// erase other active groups
+		{
+			__GEN_COUT__ << "Restoring active table groups, before activating new groups..."
+						<< __E__;
 
-	// acquire all active groups and ignore errors, so that activateTableGroup does not
-	// erase other active groups
+			std::string localAccumulatedWarnings;
+			cfgMgr->restoreActiveTableGroups(false /*throwErrors*/,
+											"" /*pathToActiveGroupsFile*/,
+											ConfigurationManager::LoadGroupType::
+												ALL_TYPES /*onlyLoadIfBackboneOrContext*/,
+											&localAccumulatedWarnings);
+		}
+
+		// activate new groups
+		if(!localNewBackboneKey.isInvalid())
+			cfgMgr->activateTableGroup(backboneGroupEdit.originalGroupName_,
+									localNewBackboneKey,
+									accumulatedWarnings ? accumulatedWarnings : nullptr);
+									
+	} //end non-backbone save type handling
+	else //is backbone save type
 	{
-		__GEN_COUT__ << "Restoring active table groups, before activating new groups..."
-		             << __E__;
+		// acquire all active groups and ignore errors, so that activateTableGroup does not
+		// erase other active groups
+		{
+			__GEN_COUT__ << "Restoring active table groups, before activating new groups..."
+						<< __E__;
 
-		std::string localAccumulatedWarnings;
-		cfgMgr->restoreActiveTableGroups(false /*throwErrors*/,
-		                                 "" /*pathToActiveGroupsFile*/,
-		                                 ConfigurationManager::LoadGroupType::
-		                                     ALL_TYPES /*onlyLoadIfBackboneOrContext*/,
-		                                 &localAccumulatedWarnings);
-	}
-
-	// activate new groups
-	if(!localNewBackboneKey.isInvalid())
-		cfgMgr->activateTableGroup(backboneGroupEdit.originalGroupName_,
-		                           localNewBackboneKey,
-		                           accumulatedWarnings ? accumulatedWarnings : nullptr);
+			std::string localAccumulatedWarnings;
+			cfgMgr->restoreActiveTableGroups(false /*throwErrors*/,
+											"" /*pathToActiveGroupsFile*/,
+											ConfigurationManager::LoadGroupType::
+												ALL_TYPES /*onlyLoadIfBackboneOrContext*/,
+											&localAccumulatedWarnings);
+		}
+	} //end backbone save type handling
 
 	if(activateNewGroup)
 		cfgMgr->activateTableGroup(groupNameToSave,
