@@ -1120,7 +1120,7 @@ const std::string& TableView::setUniqueColumnValue(
 		__COUTVS__(12, childLinkIndexCol);  //set TRACE level to TLVL_DEBUG + 12
 	}
 
-	__COUT__ << "Current '" << columnsInfo_[col].getName() << "' "
+	__COUTT__ << "Current '" << columnsInfo_[col].getName() << "' "
 	         << (isUniqueGroupCol ? "(Unique in Group) " : "")
 	         << "unique data entry is data[" << row << "][" << col << "] = '"
 	         << theDataView_[row][col] << "' baseValueAsString = " << baseValueAsString
@@ -1177,7 +1177,8 @@ const std::string& TableView::setUniqueColumnValue(
 				foundAny = false;
 				for(index = tmpString.length() - 1; index < tmpString.length(); --index)
 				{
-					__COUTS__(4) << index << " tmpString[index] " << tmpString[index] << __E__;
+					__COUTS__(4)
+					    << index << " tmpString[index] " << tmpString[index] << __E__;
 					if(!(tmpString[index] == '+' || tmpString[index] == ' '))
 						break;  // if not plus op, break
 					foundAny = true;
@@ -1199,8 +1200,8 @@ const std::string& TableView::setUniqueColumnValue(
 				continue;  // skip max unique number if basestring does not match
 
 			__COUTS__(3) << "Found unique data base string '" << tmpString
-			          << "' and number string '" << numString << "' in last record '"
-			          << theDataView_[r][col] << "'" << __E__;
+			             << "' and number string '" << numString << "' in last record '"
+			             << theDataView_[r][col] << "'" << __E__;
 
 			if(firstConflict)
 			{
@@ -1268,10 +1269,15 @@ const std::string& TableView::setUniqueColumnValue(
 			theDataView_[row][col] = baseValueAsString + indexString;
 	}
 
-	__COUT__ << "New unique data entry is data[" << row << "][" << col << "] = '"
+	__COUTT__ << "New unique data entry is data[" << row << "][" << col << "] = '"
 	         << theDataView_[row][col] << "'" << __E__;
 
-	// this->print();
+	if(TTEST(13)) 
+	{
+		std::stringstream ss;
+		this->print(ss);
+		__COUT_MULTI__(13, ss.str());
+	}
 
 	return theDataView_[row][col];
 }  // end setUniqueColumnValue()
@@ -2194,7 +2200,7 @@ void TableView::printJSON(std::ostream& out) const
 		std::string tmpJsonDocPrepend = TableBase::JSON_DOC_PREPEND;
 		tmpJsonDocPrepend             = TableBase::convertToCaps(tmpJsonDocPrepend);
 		__COUTS__(32) << " '" << tableName_ << "' vs " << tmpCachePrepend << " or "
-		         << tmpJsonDocPrepend << __E__;
+		              << tmpJsonDocPrepend << __E__;
 		//if special GROUP CACHE table, handle construction in a special way
 		if(tableName_.substr(0, tmpCachePrepend.length()) == tmpCachePrepend ||
 		   tableName_.substr(0, tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
@@ -2367,7 +2373,7 @@ int TableView::fillFromJSON(const std::string& json)
 		}              //end special GROUP CACHE table construction
 	}                  //end handle special GROUP CACHE table
 
-	bool dbg     = false; //tableName_ == "TABLE_GROUP_METADATA";
+	bool dbg     = false;  //tableName_ == "TABLE_GROUP_METADATA";
 	bool rawData = getSourceRawData_;
 	if(getSourceRawData_)
 	{  // only get source raw data once, then revert member variable
@@ -2397,7 +2403,7 @@ int TableView::fillFromJSON(const std::string& json)
 	if(dbg)
 	{
 		__COUTV__(tableName_);
-		__COUTTV__(getNumberOfRows());				
+		__COUTTV__(getNumberOfRows());
 		__COUTV__(json);
 	}
 
@@ -2708,7 +2714,7 @@ int TableView::fillFromJSON(const std::string& json)
 				std::cout << endNumber << " ";
 				std::cout << "\n";
 				__COUTTV__(fillWithLooseColumnMatching_);
-				__COUTTV__(getNumberOfRows());			
+				__COUTTV__(getNumberOfRows());
 			}
 
 			// extract only what we care about
@@ -2746,8 +2752,8 @@ int TableView::fillFromJSON(const std::string& json)
 			else if(matchedKey != (unsigned int)-1)
 			{
 				if(dbg)
-					__COUTT__ << "New Data for:: key[" << matchedKey << "]-" <<
-							keys[matchedKey] << "\n";
+					__COUTT__ << "New Data for:: key[" << matchedKey << "]-"
+					          << keys[matchedKey] << "\n";
 
 				switch(matchedKey)
 				{
@@ -2781,9 +2787,9 @@ int TableView::fillFromJSON(const std::string& json)
 					// break;
 				case CV_JSON_FILL_DATA_SET:
 					if(dbg)
-						__COUTT__ << "CV_JSON_FILL_DATA_SET New Data for::"
-							<< matchedKey << "]-" << keys[matchedKey]
-							<< "/" << currDepth << ".../" << currKey <<	"\n";
+						__COUTT__ << "CV_JSON_FILL_DATA_SET New Data for::" << matchedKey
+						          << "]-" << keys[matchedKey] << "/" << currDepth
+						          << ".../" << currKey << "\n";
 
 					if(currDepth == 2)  // second level depth
 					{
@@ -2880,15 +2886,14 @@ int TableView::fillFromJSON(const std::string& json)
 
 									++keyIsMatchStorageIndex;  // go to next character
 								}
-								
+
 								if(dbg)
 								{
 									__COUTTV__(keyIsMatch);
 									__COUTTV__(keyIsComment);
 									__COUTTV__(currKey);
-									__COUTTV__(columnsInfo_[col]
-									       .getStorageName());
-									__COUTTV__(getNumberOfRows());									
+									__COUTTV__(columnsInfo_[col].getStorageName());
+									__COUTTV__(getNumberOfRows());
 								}
 
 								if(keyIsMatch || keyIsComment)  // currKey ==
@@ -2991,7 +2996,8 @@ int TableView::fillFromJSON(const std::string& json)
 		__SS_ONLY_THROW__;
 	}
 
-	if(sourceColumnNames_.size() == 0) //if not populated by data (i.e. zero records), then use default column names
+	if(sourceColumnNames_.size() ==
+	   0)  //if not populated by data (i.e. zero records), then use default column names
 	{
 		for(unsigned int i = 0; i < getNumberOfColumns(); ++i)
 			sourceColumnNames_.emplace(getColumnsInfo()[i].getStorageName());

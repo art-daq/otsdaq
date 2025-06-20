@@ -12,7 +12,7 @@
 // #include "artdaq-database/JsonDocument/JSONDocument.h"
 
 /// Exports all active groups and system alias groups (specified by the active backbone)
-///		to the path specified. Each group's member tables will be organized in a folder with metadata.		
+///		to the path specified. Each group's member tables will be organized in a folder with metadata.
 ///		Each table is exported as a json format text file.
 /// usage:
 /// otsdaq_export_system_aliases <path to export to>
@@ -33,9 +33,7 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	std::cout << "=================================================\n";
 	__COUT__ << "\nExporting Active System Aliases!" << std::endl;
 
-	std::cout << "\n\nusage: One argument:\n\t <export path> \n\n"
-	          << std::endl;
-
+	std::cout << "\n\nusage: One argument:\n\t <export path> \n\n" << std::endl;
 
 	std::cout << "argc = " << argc << std::endl;
 	for(int i = 0; i < argc; i++)
@@ -56,8 +54,9 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	DIR* dp;
 	if((dp = opendir(exportPath.c_str())) == 0)
 	{
-		__COUT_ERR__ << "ERROR:(" << errno << ").  Can't open directory for export: " << exportPath
-					<< std::endl;
+		__COUT_ERR__ << "ERROR:(" << errno
+		             << ").  Can't open directory for export: " << exportPath
+		             << std::endl;
 		exit(0);
 	}
 	closedir(dp);
@@ -109,18 +108,18 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 
 	if(0)
 	{
-		std::string accumulatedWarnings;
+		std::string                             accumulatedWarnings;
 		const std::map<std::string, TableInfo>& allTableInfo =
-			cfgMgr->getAllTableInfo(true /* refresh */,
-									&accumulatedWarnings,
-									"" /* errorFilterName */,
-									true /* getGroupKeys*/,
-									false /* getGroupInfo */,
-									true /* initializeActiveGroups */);
+		    cfgMgr->getAllTableInfo(true /* refresh */,
+		                            &accumulatedWarnings,
+		                            "" /* errorFilterName */,
+		                            true /* getGroupKeys*/,
+		                            false /* getGroupInfo */,
+		                            true /* initializeActiveGroups */);
 		__COUTV__(allTableInfo.size());
 		auto groups = cfgMgr->getAllGroupInfo();
 		__COUTV__(groups.size());
-		for(auto& group: groups)
+		for(auto& group : groups)
 		{
 			__COUTV__(group.first);
 		}
@@ -149,7 +148,6 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	// for each group in set
 	//	load/activate group
 	//		export each table as json doc to a folder <group name>_<export time>/
-	
 
 	/* map<<groupName, origKey>, newKey> */
 	std::map<std::pair<std::string, TableGroupKey>, TableGroupKey> groupSet;
@@ -164,7 +162,6 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	std::string activeConfigGroupName   = "";
 
 	std::string nowTime = std::to_string(time(0));
-
 
 	// add active groups to set
 	std::map<std::string, std::pair<std::string, TableGroupKey>> activeGroupsMap =
@@ -220,9 +217,9 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	if(activeBackboneGroupName == "" || !foundAnyActiveGroups)
 	{
 		__SS__ << "Did not find valid active groups to export! "
-		          "Must have a backbone at least. Is the current database URI correct? ARTDAQ_DATABASE_URI = " 
-				  << ARTDAQ_DATABASE_URI
-		       << std::endl;
+		          "Must have a backbone at least. Is the current database URI correct? "
+		          "ARTDAQ_DATABASE_URI = "
+		       << ARTDAQ_DATABASE_URI << std::endl;
 		__SS_THROW__;
 	}
 
@@ -275,44 +272,47 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	//	load/activate group
 	//		export each table as json doc to a folder <group name>_<export time>/
 
-	bool        errDetected = false;
+	bool errDetected = false;
 	for(auto& group : groupSet)
-	{	
+	{
 		__COUT__ << " ==> Group to export: " << group.first.first << " ("
 		         << group.first.second << ")" << std::endl;
 
-		std::string groupPath = exportPath + "/" + group.first.first + "_" + 
-				group.first.second.str();
+		std::string groupPath =
+		    exportPath + "/" + group.first.first + "_" + group.first.second.str();
 		__COUTV__(groupPath);
-		//check if output directory already exists, and do not overwrite throw error 
+		//check if output directory already exists, and do not overwrite throw error
 		{
 			DIR* dp;
 			if((dp = opendir(groupPath.c_str())) != 0)
 			{
 				closedir(dp);
-				__COUT__ << "ERROR: Can't export to directory (already exists! Please choose a different export path.): " << groupPath
-							<< std::endl;
+				__COUT__ << "ERROR: Can't export to directory (already exists! Please "
+				            "choose a different export path.): "
+				         << groupPath << std::endl;
 				exit(0);
 			}
 		}
 		mkdir(groupPath.c_str(), 0755);
 
-		if(group.first.first == activeBackboneGroupName) //create special metadata file to flag the active Backbone group
+		if(group.first.first ==
+		   activeBackboneGroupName)  //create special metadata file to flag the active Backbone group
 		{
 			std::string groupIsBackbonePath = groupPath + "/" + "groupIsBackbone.txt";
 			__COUTV__(groupIsBackbonePath);
 			FILE* fp = std::fopen(groupIsBackbonePath.c_str(), "w");
 			if(!fp)
 			{
-				__COUT_ERR__ << "\n\nERROR! Could not open file at " << groupIsBackbonePath
-						<< ". Error: " << errno << " - " << strerror(errno) << __E__;
+				__COUT_ERR__ << "\n\nERROR! Could not open file at "
+				             << groupIsBackbonePath << ". Error: " << errno << " - "
+				             << strerror(errno) << __E__;
 				return;
 			}
 			fputs("1", fp);
 			fclose(fp);
 		}
 
-		std::string 										  accumulateErrors = "";
+		std::string                                           accumulateErrors = "";
 		std::map<std::string /*name*/, TableVersion>          memberMap;
 		std::map<std::string /*name*/, std::string /*alias*/> groupAliases;
 		std::string                                           groupComment;
@@ -328,7 +328,7 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 			cfgMgr->loadTableGroup(group.first.first,
 			                       group.first.second,
 			                       true /*doActivate*/,
-			                       0, //&memberMap /*memberMap*/,
+			                       0,  //&memberMap /*memberMap*/,
 			                       0 /*progressBar*/,
 			                       &accumulateErrors,
 			                       &groupComment,
@@ -362,22 +362,24 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 		{
 			// std::map<std::string /*name*/, TableVersion /*version*/> memberMap =
 			memberMap = theInterface_->getTableGroupMembers(
-				TableGroupKey::getFullGroupString(group.first.first, group.first.second),
-				true /*include meta data table*/);
+			    TableGroupKey::getFullGroupString(group.first.first, group.first.second),
+			    true /*include meta data table*/);
 
 			// save meta data table separately, since there is no table definition, and then remove from member map
 			auto metaTablePair =
-				memberMap.find(ConfigurationInterface::GROUP_METADATA_TABLE_NAME);
+			    memberMap.find(ConfigurationInterface::GROUP_METADATA_TABLE_NAME);
 			if(metaTablePair != memberMap.end())
-			{				
-				__COUT__ << ConfigurationInterface::GROUP_METADATA_TABLE_NAME << ":v" << metaTablePair->second << std::endl;
-				
-				std::string tablePath = groupPath + "/" + ConfigurationInterface::GROUP_METADATA_TABLE_NAME + "_v" + 
-					metaTablePair->second.str() + ".json";
+			{
+				__COUT__ << ConfigurationInterface::GROUP_METADATA_TABLE_NAME << ":v"
+				         << metaTablePair->second << std::endl;
+
+				std::string tablePath =
+				    groupPath + "/" + ConfigurationInterface::GROUP_METADATA_TABLE_NAME +
+				    "_v" + metaTablePair->second.str() + ".json";
 				__COUTV__(tablePath);
 
 				auto groupMetadataTable = cfgMgr->getMetadataTable(metaTablePair->second);
-				
+
 				__COUTV__(tablePath);
 				std::stringstream json;
 				groupMetadataTable->getViewP()->printJSON(json);
@@ -387,20 +389,22 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 				if(!fp)
 				{
 					__COUT_ERR__ << "\n\nERROR! Could not open file at " << tablePath
-							<< ". Error: " << errno << " - " << strerror(errno) << __E__;
+					             << ". Error: " << errno << " - " << strerror(errno)
+					             << __E__;
 					return;
 				}
 				fputs(json.str().c_str(), fp);
 				fclose(fp);
 
-				memberMap.erase(metaTablePair);  // remove from member map that is returned
+				memberMap.erase(
+				    metaTablePair);  // remove from member map that is returned
 
 			}  // end metadata handling
 			else
 			{
 				__COUT_ERR__ << "Ignoring that groupMetadataTable_ is missing for group '"
-								<< group.first.first << "(" << group.first.second
-								<< "). Going with anonymous defaults." << __E__;
+				             << group.first.first << "(" << group.first.second
+				             << "). Going with anonymous defaults." << __E__;
 			}
 		}
 
@@ -414,9 +418,9 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 			for(auto& memberPair : memberMap)
 			{
 				__COUT__ << memberPair.first << ":v" << memberPair.second << std::endl;
-				
-				std::string tablePath = groupPath + "/" + memberPair.first + "_v" + 
-					memberPair.second.str() + ".json";
+
+				std::string tablePath = groupPath + "/" + memberPair.first + "_v" +
+				                        memberPair.second.str() + ".json";
 				__COUTV__(tablePath);
 
 				std::stringstream json;
@@ -426,12 +430,12 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 				if(!fp)
 				{
 					__COUT_ERR__ << "\n\nERROR! Could not open file at " << tablePath
-							<< ". Error: " << errno << " - " << strerror(errno) << __E__;
+					             << ". Error: " << errno << " - " << strerror(errno)
+					             << __E__;
 					return;
 				}
 				fputs(json.str().c_str(), fp);
 				fclose(fp);
-
 
 				// change the version of the active view to flatVersion and save it
 				// config  = cfgMgr->getTableByName(memberPair.first);
@@ -439,7 +443,7 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 				// cfgView->setVersion(TableVersion(flatVersion));
 				// theInterface_->saveActiveVersion(config);
 
-			} //end member table loop
+			}  //end member table loop
 
 			// Note: this code copies actions in ConfigurationManagerRW::saveNewTableGroup
 
@@ -484,24 +488,24 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 			                                              group.first.second),
 			        "Error caught exporting the group."));
 		}
-	} //end group export loop
+	}  //end group export loop
 
 	if(errDetected)
 	{
 		__COUT_ERR__ << "There was an error detected while exporting groups." << __E__;
 	}
 
-
 	__COUT_INFO__ << "Exported group summary: " << groupSet.size() << std::endl;
 	for(auto& group : groupSet)
-		__COUT_INFO__ << " ==> Group: " << group.first.first << " ("
-		         << group.first.second << ")" << std::endl;
-
+		__COUT_INFO__ << " ==> Group: " << group.first.first << " (" << group.first.second
+		              << ")" << std::endl;
 
 	__COUT_INFO__ << "****************************" << std::endl;
-	__COUT_INFO__ << "There were " << groupSet.size() << " groups considered, and there were "
-	         << groupErrors.size() << " errors found handling those groups. The groups were exported in text/json format to the export path: " <<
-			 exportPath << std::endl;
+	__COUT_INFO__ << "There were " << groupSet.size()
+	              << " groups considered, and there were " << groupErrors.size()
+	              << " errors found handling those groups. The groups were exported in "
+	                 "text/json format to the export path: "
+	              << exportPath << std::endl;
 	if(groupErrors.size())
 	{
 		__COUT_ERR__ << "There were " << groupErrors.size()
@@ -516,8 +520,8 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	else
 		__COUT_INFO__ << "There were NO ERRORS found while loading and exporting groups."
 		              << __E__;
-	
-} //end ExportActiveSystemAliasTableGroups()
+
+}  //end ExportActiveSystemAliasTableGroups()
 
 int main(int argc, char* argv[])
 {

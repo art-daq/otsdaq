@@ -38,6 +38,7 @@ const std::string 	ARTDAQTableBase::ARTDAQ_ROUTER_TABLE = "ARTDAQRoutingManagerT
 const std::string 	ARTDAQTableBase::ARTDAQ_SUBSYSTEM_TABLE = "ARTDAQSubsystemTable";
 const std::string 	ARTDAQTableBase::ARTDAQ_DAQ_TABLE = "ARTDAQDaqTable";
 const std::string 	ARTDAQTableBase::ARTDAQ_DAQ_PARAMETER_TABLE = "ARTDAQDaqParameterTable";
+const std::string 	ARTDAQTableBase::ARTDAQ_ART_TABLE = "ARTDAQArtTable";
 
 const std::string 	ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME = "ExecutionHostname";
 const std::string   ARTDAQTableBase::ARTDAQ_TYPE_TABLE_ALLOWED_PROCESSORS = "AllowedProcessors";
@@ -56,6 +57,7 @@ ARTDAQTableBase::ColARTDAQReader 		ARTDAQTableBase::colARTDAQReader_;
 ARTDAQTableBase::ColARTDAQNotReader 	ARTDAQTableBase::colARTDAQNotReader_;
 ARTDAQTableBase::ColARTDAQDaq 			ARTDAQTableBase::colARTDAQDaq_;
 ARTDAQTableBase::ColARTDAQDaqParameter 	ARTDAQTableBase::colARTDAQDaqParameter_;
+ARTDAQTableBase::ColARTDAQArt			ARTDAQTableBase::colARTDAQArt_;
 
 ///Note!!!! processTypes_ must be instantiate after the static artdaq table names (to construct map in constructor in .h)
 ARTDAQTableBase::ProcessTypes 			ARTDAQTableBase::processTypes_;
@@ -825,7 +827,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 	//--------------------------------------
 	// handle art
 	//__COUT__ << "Filling art block..." << __E__;
-	auto art = receiverNode.getNode("artLink");
+	auto art = receiverNode.getNode(ARTDAQTableBase::colARTDAQNotReader_.colLinkToArt_);
 	if(!art.isDisconnected())
 	{
 		OUT << "art: {\n";
@@ -928,7 +930,7 @@ void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorN
 	//--------------------------------------
 	// handle art
 	//__COUT__ << "Filling art block..." << __E__;
-	auto art = monitorNode.getNode("artLink");
+	auto art = monitorNode.getNode(ARTDAQTableBase::colARTDAQNotReader_.colLinkToArt_);
 	if(!art.isDisconnected())
 	{
 		insertArtProcessBlock(out, tabStr, commentStr, art);
@@ -1419,7 +1421,8 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 	//--------------------------------------
 	// handle process_name
 	//__COUT__ << "Writing art.process_name" << __E__;
-	OUT << "process_name: " << art.getNode("ProcessName") << "\n";
+	OUT << "process_name: " << art.getNode(ARTDAQTableBase::colARTDAQArt_.colProcessName_)
+	    << "\n";
 
 	//--------------------------------------
 	// handle art @table:: art add on parameters
@@ -1623,8 +1626,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::extractARTDAQInfo(
 	                           getStatusFalseNodes,
 	                           doWriteFHiCL,
 	                           routingTimeoutMs,
-	                           routingRetryCount);	
-	__COUT__ << "artdaqSupervisorNode RoutingManager size: " << info_.processes.at(ARTDAQAppType::RoutingManager).size() << __E__;				
+	                           routingRetryCount);
+	__COUT__ << "artdaqSupervisorNode RoutingManager size: "
+	         << info_.processes.at(ARTDAQAppType::RoutingManager).size() << __E__;
 
 	if(progressBar)
 		progressBar->step();
@@ -1635,28 +1639,32 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::extractARTDAQInfo(
 	                        maxFragmentSizeBytes,
 	                        routingTimeoutMs,
 	                        routingRetryCount);
-	__COUT__ << "artdaqSupervisorNode BoardReader size: " << info_.processes.at(ARTDAQAppType::BoardReader).size() << __E__;				
+	__COUT__ << "artdaqSupervisorNode BoardReader size: "
+	         << info_.processes.at(ARTDAQAppType::BoardReader).size() << __E__;
 
 	if(progressBar)
 		progressBar->step();
 
 	extractEventBuildersInfo(
-	    artdaqSupervisorNode, getStatusFalseNodes, doWriteFHiCL, maxFragmentSizeBytes);	
-	__COUT__ << "artdaqSupervisorNode EventBuilder size: " << info_.processes.at(ARTDAQAppType::EventBuilder).size() << __E__;				
+	    artdaqSupervisorNode, getStatusFalseNodes, doWriteFHiCL, maxFragmentSizeBytes);
+	__COUT__ << "artdaqSupervisorNode EventBuilder size: "
+	         << info_.processes.at(ARTDAQAppType::EventBuilder).size() << __E__;
 
 	if(progressBar)
 		progressBar->step();
 
 	extractDataLoggersInfo(
-	    artdaqSupervisorNode, getStatusFalseNodes, doWriteFHiCL, maxFragmentSizeBytes);	
-	__COUT__ << "artdaqSupervisorNode DataLogger size: " << info_.processes.at(ARTDAQAppType::DataLogger).size() << __E__;				
+	    artdaqSupervisorNode, getStatusFalseNodes, doWriteFHiCL, maxFragmentSizeBytes);
+	__COUT__ << "artdaqSupervisorNode DataLogger size: "
+	         << info_.processes.at(ARTDAQAppType::DataLogger).size() << __E__;
 
 	if(progressBar)
 		progressBar->step();
 
 	extractDispatchersInfo(
-	    artdaqSupervisorNode, getStatusFalseNodes, doWriteFHiCL, maxFragmentSizeBytes);	
-	__COUT__ << "artdaqSupervisorNode Dispatcher size: " << info_.processes.at(ARTDAQAppType::Dispatcher).size() << __E__;				
+	    artdaqSupervisorNode, getStatusFalseNodes, doWriteFHiCL, maxFragmentSizeBytes);
+	__COUT__ << "artdaqSupervisorNode Dispatcher size: "
+	         << info_.processes.at(ARTDAQAppType::Dispatcher).size() << __E__;
 
 	if(progressBar)
 		progressBar->step();
@@ -2299,25 +2307,24 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 	__COUTV__(artdaqContext->applications_.size());
 
 	// load artdaq node layout as multi-node printer-syntax guide
-	std::map<std::string /*type*/,
-             std::set<std::string /*node-names*/>> nodeLayoutNames;
-	{ //copied from handleLoadArtdaqNodeLayoutXML() at otsdaq-utilities/otsdaq-utilities/ConfigurationGUI/ConfigurationGUISupervisor.cc:8054
-		const std::string& finalContextGroupName = 
-			cfgMgr->getActiveGroupName(ConfigurationManager::GroupType::CONTEXT_TYPE);
-		const TableGroupKey& finalContextGroupKey = 
-			cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::CONTEXT_TYPE);
+	std::map<std::string /*type*/, std::set<std::string /*node-names*/>> nodeLayoutNames;
+	{  //copied from handleLoadArtdaqNodeLayoutXML() at otsdaq-utilities/otsdaq-utilities/ConfigurationGUI/ConfigurationGUISupervisor.cc:8054
+		const std::string& finalContextGroupName =
+		    cfgMgr->getActiveGroupName(ConfigurationManager::GroupType::CONTEXT_TYPE);
+		const TableGroupKey& finalContextGroupKey =
+		    cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::CONTEXT_TYPE);
 
 		std::stringstream layoutPath;
-		layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH << finalContextGroupName << "_"
-				<< finalContextGroupKey << ".dat";
+		layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH << finalContextGroupName
+		           << "_" << finalContextGroupKey << ".dat";
 		__COUTV__(layoutPath.str());
 
 		FILE* fp = fopen(layoutPath.str().c_str(), "r");
 		if(!fp)
 		{
 			__COUT__ << "Layout file not found for '" << finalContextGroupName << "("
-						<< finalContextGroupKey << ")'" << __E__;
-			// return; 
+			         << finalContextGroupKey << ")'" << __E__;
+			// return;
 			//ignore that file does not exist, and generate printer syntax from 1st principles
 		}
 		else
@@ -2354,9 +2361,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 			__COUTTV__(StringMacros::mapToString(nodeLayoutNames));
 		}
-	} //end load node layout helper guide
-	
-	//Strategy: 
+	}  //end load node layout helper guide
+
+	//Strategy:
 	//	- Check for a count that match layout names
 	//		-- if any match, then keep those matching with that node layout name
 	//		-- otherwise allow auto-deduction of multinodes
@@ -2395,7 +2402,6 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 		{
 			const std::string& typeString = nameTypePair.first;
 			__COUTV__(typeString);
-			
 
 			nodeTypeToObjectMap.emplace(
 			    std::make_pair(typeString,
@@ -2425,24 +2431,27 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 			{
 				std::stringstream ss;
 				cfgMgr->getTableByName(tableIt->second)->getView().print(ss);
-				__COUT_MULTI__(1,ss.str());
+				__COUT_MULTI__(1, ss.str());
 			}
 
 			auto allNodes = cfgMgr->getNode(tableIt->second).getChildren();
 
-			std::set<std::string /* encodeURI nodeName */> //use StringMacros::encodeURIComponent because dashes will confuse printer syntax later!
+			std::set<
+			    std::
+			        string /* encodeURI nodeName */>  //use StringMacros::encodeURIComponent because dashes will confuse printer syntax later!
 			    skipSet;  // use to skip nodes when constructing multi-nodes
 
 			const std::set<std::string /*colName*/> skipColumns(
 			    {ARTDAQ_TYPE_TABLE_HOSTNAME,
 			     ARTDAQ_TYPE_TABLE_ALLOWED_PROCESSORS,
 			     ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK,
-				 colARTDAQReader_.colDaqFragmentIDs_, //for board readers, skip the 'unique' fragment IDs when considering for multinode
+			     colARTDAQReader_
+			         .colDaqFragmentIDs_,  //for board readers, skip the 'unique' fragment IDs when considering for multinode
 			     TableViewColumnInfo::COL_NAME_COMMENT,
 			     TableViewColumnInfo::COL_NAME_AUTHOR,
 			     TableViewColumnInfo::
 			         COL_NAME_CREATION});  // note: also skip UID and Status
-	
+
 			if(TTEST(1) && nodeLayoutNames.find(typeString) != nodeLayoutNames.end())
 			{
 				__COUTTV__(StringMacros::setToString(nodeLayoutNames.at(typeString)));
@@ -2478,9 +2487,10 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 				std::vector<std::string> multiNodeNames, hostnameArray;
 				// unsigned int             hostnameFixedWidth = 0;
 
-				skipSet.emplace( //emplace self into skipset since this node is handled now (and should not be considered in future multinode instances)
-					StringMacros::encodeURIComponent(nodeName));
-					
+				skipSet
+				    .emplace(  //emplace self into skipset since this node is handled now (and should not be considered in future multinode instances)
+				        StringMacros::encodeURIComponent(nodeName));
+
 				__COUTV__(allNodes.size());
 				for(auto& otherNode : allNodes)  // start multi-node search loop
 				{
@@ -2572,46 +2582,54 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 					__COUTTV__(StringMacros::vectorToString(hostnameArray));
 					__COUTTV__(StringMacros::setToString(skipSet));
 
-
-					//		- if match to layout nodes, then maintain layout template, and trim outliers from skipset					
+					//		- if match to layout nodes, then maintain layout template, and trim outliers from skipset
 					if(nodeLayoutNames.find(typeString) != nodeLayoutNames.end())
 					{
-						__COUTTV__(StringMacros::setToString(nodeLayoutNames.at(typeString)));
+						__COUTTV__(
+						    StringMacros::setToString(nodeLayoutNames.at(typeString)));
 
 						// Strategy to use node layout as guide:
 						//	- do two passes
 						//	- find best node layout name based on narrowest match (i.e. smallest match count)
 						std::string bestNodeLayoutName = "";
-						size_t bestNodeLayoutMatchCount = multiNodeNames.size() + 1; //init to 'infinite'
+						size_t      bestNodeLayoutMatchCount =
+						    multiNodeNames.size() + 1;  //init to 'infinite'
 						//first pass
 						for(const auto& layoutNameFull : nodeLayoutNames.at(typeString))
 						{
 							__COUTTV__(layoutNameFull);
-							size_t statusPos = layoutNameFull.find(";status=");
-							std::string layoutName = layoutNameFull.substr(0,statusPos);
-							bool layoutStatus = true;
-							if(statusPos == std::string::npos) //not specified in layout, so take this status and hope!
+							size_t      statusPos  = layoutNameFull.find(";status=");
+							std::string layoutName = layoutNameFull.substr(0, statusPos);
+							bool        layoutStatus = true;
+							if(statusPos ==
+							   std::string::
+							       npos)  //not specified in layout, so take this status and hope!
 								layoutStatus = status;
-							else if("0" == layoutNameFull.substr(statusPos + std::string(";status=").size()))
+							else if("0" ==
+							        layoutNameFull.substr(statusPos +
+							                              std::string(";status=").size()))
 								layoutStatus = false;
-						
+
 							__COUTTV__(layoutStatus);
 
 							if(layoutStatus != status)
 							{
 								__COUTT__ << "Status mismatch for template" << __E__;
 								break;
-							}					
+							}
 
-							auto layoutSplit = StringMacros::getVectorFromString(layoutName,{'*'});
+							auto layoutSplit =
+							    StringMacros::getVectorFromString(layoutName, {'*'});
 							__COUTTV__(StringMacros::vectorToString(layoutSplit));
 
-							bool exactMatch = true;
-							size_t pos = 0;
+							bool   exactMatch = true;
+							size_t pos        = 0;
 							for(const auto& layoutSeg : layoutSplit)
-								if((pos = nodeName.find(layoutSeg, pos)) == std::string::npos)
+								if((pos = nodeName.find(layoutSeg, pos)) ==
+								   std::string::npos)
 								{
-									__COUTT__ << "Did not find '" << layoutSeg << "' in '" << nodeName << "'" << __E__;
+									__COUTT__ << "Did not find '" << layoutSeg << "' in '"
+									          << nodeName << "'" << __E__;
 									exactMatch = false;
 									break;
 								}
@@ -2619,46 +2637,52 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							__COUTTV__(exactMatch);
 							if(exactMatch)
 							{
-								size_t nodeLayoutMatchCount	= 1;
+								size_t nodeLayoutMatchCount = 1;
 
-								__COUT__ << "Found layout template name match! '" << layoutName << "' for node '" 
-									<< nodeName << ".' Trimming multinode candidates to match..." << __E__;
+								__COUT__ << "Found layout template name match! '"
+								         << layoutName << "' for node '" << nodeName
+								         << ".' Trimming multinode candidates to match..."
+								         << __E__;
 
 								for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
 								{
 									__COUTTV__(multiNodeNames[i]);
-									std::string multiNodeName = StringMacros::decodeURIComponent(multiNodeNames[i]);
+									std::string multiNodeName =
+									    StringMacros::decodeURIComponent(
+									        multiNodeNames[i]);
 									__COUTTV__(multiNodeName);
-									bool exactMatch = true;
-									size_t pos = 0;
+									bool   exactMatch = true;
+									size_t pos        = 0;
 									for(const auto& layoutSeg : layoutSplit)
-										if((pos = multiNodeName.find(layoutSeg, pos)) == std::string::npos)
+										if((pos = multiNodeName.find(layoutSeg, pos)) ==
+										   std::string::npos)
 										{
-											__COUTT__ << "Did not find '" << layoutSeg << "' in '" << 
-												multiNodeName << "'" << __E__;
+											__COUTT__ << "Did not find '" << layoutSeg
+											          << "' in '" << multiNodeName << "'"
+											          << __E__;
 											exactMatch = false;
 											break;
 										}
 
-									if(exactMatch) 
+									if(exactMatch)
 									{
 										++nodeLayoutMatchCount;
-										__COUTT__ << "Found '" << layoutName << "' in '" << 
-												multiNodeName << "'" << __E__;
+										__COUTT__ << "Found '" << layoutName << "' in '"
+										          << multiNodeName << "'" << __E__;
 									}
-									
-								} //end loop to trim multinode candidates
-								
+
+								}  //end loop to trim multinode candidates
+
 								__COUTTV__(nodeLayoutMatchCount);
 								if(nodeLayoutMatchCount < bestNodeLayoutMatchCount)
 								{
-									bestNodeLayoutName = layoutNameFull;
+									bestNodeLayoutName       = layoutNameFull;
 									bestNodeLayoutMatchCount = nodeLayoutMatchCount;
 									__COUTTV__(bestNodeLayoutName);
 									__COUTTV__(bestNodeLayoutMatchCount);
 								}
 							}
-						} //end first loop to find best layout node
+						}  //end first loop to find best layout node
 
 						__COUTV__(nodeName);
 						__COUTV__(StringMacros::vectorToString(multiNodeNames));
@@ -2671,43 +2695,49 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							__COUTV__(bestNodeLayoutName);
 							std::string layoutNameFull = bestNodeLayoutName;
 							__COUTTV__(layoutNameFull);
-							size_t statusPos = layoutNameFull.find(";status=");
-							std::string layoutName = layoutNameFull.substr(0,statusPos);
-							
+							size_t      statusPos  = layoutNameFull.find(";status=");
+							std::string layoutName = layoutNameFull.substr(0, statusPos);
 
-							auto layoutSplit = StringMacros::getVectorFromString(layoutName,{'*'});
+							auto layoutSplit =
+							    StringMacros::getVectorFromString(layoutName, {'*'});
 							__COUTTV__(StringMacros::vectorToString(layoutSplit));
 
-							__COUT__ << "Found layout template name match! '" << layoutName << "' for node '" 
-								<< nodeName << ".' Trimming multinode candidates to match..." << __E__;
+							__COUT__ << "Found layout template name match! '"
+							         << layoutName << "' for node '" << nodeName
+							         << ".' Trimming multinode candidates to match..."
+							         << __E__;
 
 							for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
 							{
 								__COUTTV__(multiNodeNames[i]);
-								std::string multiNodeName = StringMacros::decodeURIComponent(multiNodeNames[i]);
+								std::string multiNodeName =
+								    StringMacros::decodeURIComponent(multiNodeNames[i]);
 								__COUTTV__(multiNodeName);
-								bool exactMatch = true;
-								size_t pos = 0;
+								bool   exactMatch = true;
+								size_t pos        = 0;
 								for(const auto& layoutSeg : layoutSplit)
-									if((pos = multiNodeName.find(layoutSeg, pos)) == std::string::npos)
+									if((pos = multiNodeName.find(layoutSeg, pos)) ==
+									   std::string::npos)
 									{
-										__COUTT__ << "Did not find '" << layoutSeg << "' in '" << 
-											multiNodeName << "'" << __E__;
+										__COUTT__ << "Did not find '" << layoutSeg
+										          << "' in '" << multiNodeName << "'"
+										          << __E__;
 										exactMatch = false;
 										break;
 									}
 
 								if(!exactMatch)
 								{
-									__COUT__ << "Trimming multinode candidate '" << multiNodeName << "'" << __E__;
+									__COUT__ << "Trimming multinode candidate '"
+									         << multiNodeName << "'" << __E__;
 									skipSet.erase(multiNodeNames[i]);
 									multiNodeNames.erase(multiNodeNames.begin() + i);
 									hostnameArray.erase(hostnameArray.begin() + i);
-									--i; //rewind for multiNodeNames[i] erase
+									--i;  //rewind for multiNodeNames[i] erase
 								}
-							} //end loop to trim multinode candidates							
-						} //end applying layout template name rule
-					} //end match to layout name templates
+							}  //end loop to trim multinode candidates
+						}      //end applying layout template name rule
+					}          //end match to layout name templates
 
 					__COUTV__(nodeName);
 					__COUTV__(StringMacros::vectorToString(multiNodeNames));
@@ -2725,7 +2755,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						{
 							score = 0;
 
-							__COUTS__(3) << multiNodeNames[0] << " vs " << multiNodeNames[i] << __E__;
+							__COUTS__(3) << multiNodeNames[0] << " vs "
+							             << multiNodeNames[i] << __E__;
 
 							// start forward score loop
 							for(unsigned int j = 0, k = 0; j < multiNodeNames[0].size() &&
@@ -2749,16 +2780,16 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								      multiNodeNames[0][j] != multiNodeNames[i][k])
 									++k;  // skip non-matching alpha characters
 
-								__COUTS__(3) << j << "-" << k << " of " <<
-										multiNodeNames[0].size() << "-" <<
-										multiNodeNames[i].size() << __E__;
+								__COUTS__(3)
+								    << j << "-" << k << " of " << multiNodeNames[0].size()
+								    << "-" << multiNodeNames[i].size() << __E__;
 
 								if(j < multiNodeNames[0].size() &&
 								   k < multiNodeNames[i].size())
 									++score;  // found a matching letter!
 							}                 // end forward score loop
 
-							__COUTVS__(3,score);
+							__COUTVS__(3, score);
 
 							// start backward score loop
 							for(unsigned int j = multiNodeNames[0].size() - 1,
@@ -2784,16 +2815,16 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								      multiNodeNames[0][j] != multiNodeNames[i][k])
 									--k;  // skip non-matching alpha characters
 
-								__COUTS__(3) << "BACK" << j << "-" << k << " of " <<
-										multiNodeNames[0].size() << "-" <<
-										multiNodeNames[i].size() << __E__;
+								__COUTS__(3) << "BACK" << j << "-" << k << " of "
+								             << multiNodeNames[0].size() << "-"
+								             << multiNodeNames[i].size() << __E__;
 
 								if(j < multiNodeNames[0].size() &&
 								   k < multiNodeNames[i].size())
 									++score;  // found a matching letter!
 							}                 // end backward score loop
 
-							__COUTVS__(3,score/2.0);
+							__COUTVS__(3, score / 2.0);
 
 							scoreVector.push_back(score);
 
@@ -2809,8 +2840,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 						}  // end multi-node member scoring loop
 
-						__COUTVS__(2,minScore);
-						__COUTVS__(2,maxScore);
+						__COUTVS__(2, minScore);
+						__COUTVS__(2, maxScore);
 
 						__COUT__ << "Trimming multi-node members with low match score..."
 						         << __E__;
@@ -2828,8 +2859,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								continue;
 
 							// else trim
-							__COUT__ << "Trimming low score match " << multiNodeNames[i] << " for node name " 
-								<< nodeName << __E__;
+							__COUT__ << "Trimming low score match " << multiNodeNames[i]
+							         << " for node name " << nodeName << __E__;
 
 							skipSet.erase(multiNodeNames[i]);
 							multiNodeNames.erase(multiNodeNames.begin() + i);
@@ -2838,7 +2869,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						}  // end multi-node trim loop
 
 					}  // done with multi-node member trim
-						
+
 					__COUTV__(nodeName);
 					__COUTV__(StringMacros::vectorToString(multiNodeNames));
 					__COUTV__(StringMacros::vectorToString(hostnameArray));
@@ -2846,10 +2877,14 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 					//set of names fully defined, reorder alphabettically
 					{
-						__COUT__ << "Reorganizing multinode '" << nodeName << "' alphabetically..." << __E__;
-						std::set<std::pair<std::string /* node */, std::string /* host */>> reorderSet;
+						__COUT__ << "Reorganizing multinode '" << nodeName
+						         << "' alphabetically..." << __E__;
+						std::set<
+						    std::pair<std::string /* node */, std::string /* host */>>
+						    reorderSet;
 						for(unsigned int i = 0; i < multiNodeNames.size(); ++i)
-							reorderSet.emplace(std::make_pair(multiNodeNames[i],hostnameArray[i]));
+							reorderSet.emplace(
+							    std::make_pair(multiNodeNames[i], hostnameArray[i]));
 
 						__COUTV__(StringMacros::setToString(reorderSet));
 						//skipset is unchanged, multiNodeNames and hostnameArray are reordered
@@ -2862,7 +2897,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							hostnameArray.push_back(orderedPair.second);
 						}
 
-					} //end reorder alphabetically
+					}  //end reorder alphabetically
 					__COUTV__(nodeName);
 					__COUTV__(StringMacros::vectorToString(multiNodeNames));
 					__COUTV__(StringMacros::vectorToString(hostnameArray));
@@ -2983,8 +3018,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						else  // not all integers, so csv
 						{
 							multiNodeString = StringMacros::vectorToString(wildcards);
-							nodeFixedWildcardLength = 0; //wipe out fixed length rule if not all numbers
-						}  // end not-all integer handling
+							nodeFixedWildcardLength =
+							    0;  //wipe out fixed length rule if not all numbers
+						}           // end not-all integer handling
 
 						__COUTV__(multiNodeString);
 						__COUTV__(nodeFixedWildcardLength);
@@ -3006,7 +3042,6 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						__COUTV__(wildcardsNeeded);
 						__COUTV__(StringMacros::vectorToString(commonChunks));
 						__COUTV__(StringMacros::vectorToString(wildcards));
-
 
 						hostname   = "";
 						bool first = true;
@@ -3097,25 +3132,30 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							else  // not all integers, so csv
 							{
 								hostArrayString = StringMacros::vectorToString(wildcards);
-								hostFixedWildcardLength = 0; //wipe out fixed length rule if not all numbers
-							}  // end not-all integer handling
-						}      // end wildcard need handling
+								hostFixedWildcardLength =
+								    0;  //wipe out fixed length rule if not all numbers
+							}           // end not-all integer handling
+						}               // end wildcard need handling
 						__COUTV__(hostArrayString);
 						__COUTV__(hostFixedWildcardLength);
 					}  // end node name printer syntax handling
 
 				}  // end multi node printer syntax handling
 
-				nodeName += ";status=" + std::string(status ? "1" : "0"); //include status in name to avoid collissions
+				nodeName +=
+				    ";status=" +
+				    std::string(status
+				                    ? "1"
+				                    : "0");  //include status in name to avoid collissions
 				auto result = nodeTypeToObjectMap.at(typeString)
-				    .emplace(std::make_pair(nodeName, 
-				                            std::vector<std::string /*property*/>()));
+				                  .emplace(std::make_pair(
+				                      nodeName, std::vector<std::string /*property*/>()));
 				if(!result.second)
 				{
-					__SS__
-						<< "Impossible printer syntax handling result! Collision of base names. Please notify "
-							"admins or try to simplify record naming convention."
-						<< __E__;
+					__SS__ << "Impossible printer syntax handling result! Collision of "
+					          "base names. Please notify "
+					          "admins or try to simplify record naming convention."
+					       << __E__;
 					__SS_THROW__;
 				}
 
@@ -3152,8 +3192,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 				__COUTV__(StringMacros::decodeURIComponent(hostname));
 				__COUTV__(hostArrayString);
 				__COUT__ << "Done with extraction of node '" << nodeName << "'" << __E__;
-			} //end main node extraction loop
-		}  // end processor type handling
+			}  //end main node extraction loop
+		}      // end processor type handling
 
 	}  // end artdaq app loop
 
@@ -3205,16 +3245,56 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 	bool needArtdaqSupervisorParents  = true;
 	bool needArtdaqSupervisorCreation = false;
 
+	__COUTV__(artdaqContext);
 	if(artdaqContext)  // check for full connection to supervisor
 	{
 		try
 		{
+			const std::string& activeContextGroupName =
+			    cfgMgr->getActiveGroupName(ConfigurationManager::GroupType::CONTEXT_TYPE);
+			const TableGroupKey& activeContextGroupKey =
+			    cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::CONTEXT_TYPE);
+			const std::string& activeConfigGroupName = cfgMgr->getActiveGroupName(
+			    ConfigurationManager::GroupType::CONFIGURATION_TYPE);
+			const TableGroupKey& activeConfigGroupKey = cfgMgr->getActiveGroupKey(
+			    ConfigurationManager::GroupType::CONFIGURATION_TYPE);
+
+			__COUTV__(activeContextGroupName);
+			__COUTV__(activeContextGroupKey);
+			__COUTV__(activeConfigGroupName);
+			__COUTV__(activeConfigGroupKey);
+			__COUTV__(cfgMgr->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
+			              .getNode(artdaqContext->contextUID_)
+			              .getValueAsString());
+			__COUTV__(
+			    cfgMgr->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
+			        .getNode(artdaqContext->contextUID_)
+			        .getNode(XDAQContextTable::colContext_.colLinkToApplicationTable_)
+			        .getValueAsString());
+			__COUTV__(
+			    cfgMgr->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
+			        .getNode(artdaqContext->contextUID_)
+			        .getNode(XDAQContextTable::colContext_.colLinkToApplicationTable_)
+			        .getNode(artdaqContext->applications_[0].applicationUID_)
+			        .getValueAsString());
+			__COUTV__(artdaqContext->applications_[0].applicationUID_);
+			__COUTV__(XDAQContextTable::colApplication_.colLinkToSupervisorTable_);
+			__COUTV__(
+			    cfgMgr->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
+			        .getNode(artdaqContext->contextUID_)
+			        .getNode(XDAQContextTable::colContext_.colLinkToApplicationTable_)
+			        .getNode(artdaqContext->applications_[0].applicationUID_)
+			        .getNode(XDAQContextTable::colApplication_.colLinkToSupervisorTable_)
+			        .getValueAsString());
+
 			ConfigurationTree artdaqSupervisorNode =
 			    cfgMgr->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
 			        .getNode(artdaqContext->contextUID_)
 			        .getNode(XDAQContextTable::colContext_.colLinkToApplicationTable_)
 			        .getNode(artdaqContext->applications_[0].applicationUID_)
 			        .getNode(XDAQContextTable::colApplication_.colLinkToSupervisorTable_);
+
+			__COUTV__(artdaqSupervisorNode.isDisconnected());
 
 			if(artdaqSupervisorNode.isDisconnected())
 				needArtdaqSupervisorCreation = true;
@@ -3227,6 +3307,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 		{
 			needArtdaqSupervisorCreation = true;
 		}
+		__COUTV__(needArtdaqSupervisorCreation);
 	}
 
 	if(!artdaqContext || needArtdaqSupervisorCreation)
@@ -3244,6 +3325,13 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 		{
 			TableEditStruct& artdaqSupervisorTable = configGroupEdit.getTableEditStruct(
 			    ARTDAQ_SUPERVISOR_TABLE, true /*markModified*/);
+
+			if(TTEST(0))
+			{
+				std::stringstream ss;
+				artdaqSupervisorTable.tableView_->print(ss);
+				__COUT_MULTI__(0, ss.str());
+			}
 
 			// create artdaq Supervisor context record
 			row = artdaqSupervisorTable.tableView_->addRow(
@@ -3334,10 +3422,11 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			    artdaqSupervisorUID +
 			        processTypes_.mapToGroupIDAppend_.at(processTypes_.ROUTER));
 
+			if(TTEST(0))
 			{
 				std::stringstream ss;
 				artdaqSupervisorTable.tableView_->print(ss);
-				__COUT_MULTI__(0,ss.str());	
+				__COUT_MULTI__(0, ss.str());
 			}
 		}  // end create artdaq Supervisor in configuration group
 
@@ -3355,6 +3444,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			    true /*markModified*/);
 
 			// open try for decorating errors and for clean code scope
+			std::string appUID;
 			try
 			{
 				std::string contextUID;
@@ -3405,7 +3495,6 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 				}  // end create context entry
 
-				std::string appUID;
 				std::string appPropertiesGroupID;
 
 				// create artdaq Supervisor app
@@ -3585,17 +3674,17 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 				{
 					std::stringstream ss;
 					contextTable.tableView_->print(ss);
-					__COUT_MULTI__(0,ss.str());
+					__COUT_MULTI__(0, ss.str());
 				}
 				{
 					std::stringstream ss;
 					appTable.tableView_->print(ss);
-					__COUT_MULTI__(0,ss.str());
+					__COUT_MULTI__(0, ss.str());
 				}
 				{
 					std::stringstream ss;
 					appPropertyTable.tableView_->print(ss);
-					__COUT_MULTI__(0,ss.str());
+					__COUT_MULTI__(0, ss.str());
 				}
 
 				contextTable.tableView_
@@ -3613,8 +3702,14 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 				throw;  // re-throw
 			}           // end catch
 
-			__COUT__ << "Edits complete for new artdaq Supervisor!" << __E__;
+			__COUT_INFO__ << "Edits complete for new artdaq Supervisor! Created '"
+			              << appUID << "'" << __E__;
 
+			if(1)  //keep for debugging save process
+			{
+				__SS__ << "FIXME blocking artdaq supervisor save!" << __E__;
+				__SS_THROW__;
+			}
 			TableGroupKey newContextGroupKey;
 			contextGroupEdit.saveChanges(contextGroupEdit.originalGroupName_,
 			                             newContextGroupKey,
@@ -3793,7 +3888,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			{
 				std::stringstream ss;
 				artdaqSupervisorTable.tableView_->print(ss);
-				__COUT_MULTI__(0,ss.str());
+				__COUT_MULTI__(0, ss.str());
 			}
 		}  // end fixing links
 
@@ -3832,7 +3927,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			// else leave disconnected link
 
 		}  // end subsystem loop
-
+		
 		// Step	2. for each node, create/verify records
 		for(auto& nodeTypePair : nodeTypeToObjectMap)
 		{
@@ -3868,10 +3963,40 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			TableEditStruct& typeTable =
 			    configGroupEdit.getTableEditStruct(it->second, true /*markModified*/);
 
-			unsigned int commentCol   = typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_COMMENT);
-			unsigned int authorCol    = typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
-			unsigned int timestampCol = typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
-			
+			TableEditStruct* artTable          = nullptr;
+			bool             hasArtProcessName = false;
+			unsigned int     artProcessNameCol = -1;
+			if(nodeTypePair.first != ARTDAQTableBase::processTypes_.READER &&
+			   nodeTypePair.first != ARTDAQTableBase::processTypes_.ROUTER)
+			{
+				__COUT__ << "Identified non-Reader, no-Router type '"
+				         << nodeTypePair.first
+				         << "' that has an art link and thus Process Name, so creating "
+				            "table edit structure to ART table."
+				         << __E__;
+				artTable          = &configGroupEdit.getTableEditStruct(ARTDAQTableBase::ARTDAQ_ART_TABLE,
+                                                               true /*markModified*/);
+				if(TTEST(1))
+				{
+					std::stringstream ss;
+					artTable->tableView_->print(ss);
+					__COUT_MULTI__(1, ss.str());
+				}
+				artProcessNameCol = artTable->tableView_->findCol(
+				    ARTDAQTableBase::colARTDAQArt_.colProcessName_);
+				__COUTTV__(artProcessNameCol);
+
+				hasArtProcessName = true;
+			}
+			__COUTV__(hasArtProcessName);
+
+			const unsigned int commentCol =
+			    typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_COMMENT);
+			const unsigned int authorCol =
+			    typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
+			const unsigned int timestampCol =
+			    typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
+
 			// keep track of records to delete, initialize to all in current table
 			std::map<unsigned int /*type record row*/, bool /*doDelete*/> deleteRecordMap;
 			unsigned int maxRowToDelete = typeTable.tableView_->getNumberOfRows();
@@ -3883,28 +4008,34 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 			// keep a map of original multinode values, to maintain node specific links
 			//	(emplace when original node is deleted)
+			// Note special (hierarchical) columns are defined as follows:
+			//	 [-1] := ARTDAQTableBase::colARTDAQNotReader_.colLinkToArt_ / ARTDAQTableBase::colARTDAQArt_.colProcessName_
+			const unsigned int ORIG_MAP_ART_PROC_NAME_COL = -1;
 			std::map<std::string /*originalMultiNode name*/,
-						std::map<unsigned int /*col*/, std::string /*value*/>>
-				originalMultinodeValues;
+			         std::map<unsigned int /*col*/, std::string /*value*/>>
+			    originalMultinodeValues;
 			std::map<std::string /*multinode key*/,
-						std::map<unsigned int /*col*/, 
-						std::pair<bool /* all siblings have same value */, std::string /* sameValue */ >>>
-				originalMultinodeSameSiblingValues;
-			std::map<std::string /*multinode key*/,
-						std::map<unsigned int /*col*/, 
-						std::pair<bool /* all siblings have embedded name */, 
-							std::vector<std::string /* splitForEmbeddedValue */ >>>>						
-				originalMultinodeAllSiblingEmbeddedName;
-			std::map<std::string /*multinode key*/,
-						std::map<unsigned int /*col*/, 
-						std::pair<bool /* all siblings have embedded printer index */, 
-							std::vector<std::string /* splitForEmbeddedIndex */ >>>>						
-				originalMultinodeAllSiblingEmbeddedPrinterIndex;
-				
+			         std::map<unsigned int /*col*/,
+			                  std::pair<bool /* all siblings have same value */,
+			                            std::string /* sameValue */>>>
+			    originalMultinodeSameSiblingValues;
+			std::map<
+			    std::string /*multinode key*/,
+			    std::map<unsigned int /*col*/,
+			             std::pair<bool /* all siblings have embedded name */,
+			                       std::vector<std::string /* splitForEmbeddedValue */>>>>
+			    originalMultinodeAllSiblingEmbeddedName;
+			std::map<
+			    std::string /*multinode key*/,
+			    std::map<unsigned int /*col*/,
+			             std::pair<bool /* all siblings have embedded printer index */,
+			                       std::vector<std::string /* splitForEmbeddedIndex */>>>>
+			    originalMultinodeAllSiblingEmbeddedPrinterIndex;
+
 			// node instance loop
 			for(auto& nodePair : nodeTypePair.second)
 			{
-				__COUTV__(nodePair.first); //new name
+				__COUTV__(nodePair.first);  //new name
 
 				// default multi-node and array hostname info to empty
 				std::vector<std::string> nodeIndices, hostnameIndices;
@@ -3918,7 +4049,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 				// node parameter loop
 				for(unsigned int i = 0; i < nodePair.second.size(); ++i)
 				{
-					__COUTV__(nodePair.second[i]); //original name
+					__COUTV__(nodePair.second[i]);  //original name
 
 					if(i == 0)  // original UID
 					{
@@ -3935,7 +4066,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							// format:
 							//	:<nodeNameFixedWidth>:<nodeVectorIndexString>:<nodeNameTemplate>
 
-							std::string lastOriginalName;
+							std::string              lastOriginalName;
 							std::vector<std::string> originalParameterArr =
 							    StringMacros::getVectorFromString(
 							        &(nodePair.second[i].c_str()[1]),
@@ -3947,7 +4078,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								       << nodePair.second[i] << "!'" << __E__;
 								__SS_THROW__;
 							}
-							__COUTTV__(StringMacros::vectorToString(originalParameterArr));
+							__COUTTV__(
+							    StringMacros::vectorToString(originalParameterArr));
 
 							unsigned int fixedWidth;
 							sscanf(originalParameterArr[0].c_str(), "%u", &fixedWidth);
@@ -3999,8 +4131,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 							__COUTTV__(originalParameterArr[2]);
 							//remove ;status=
-							originalParameterArr[2] = originalParameterArr[2].substr(0,
-								originalParameterArr[2].find(";status="));
+							originalParameterArr[2] = originalParameterArr[2].substr(
+							    0, originalParameterArr[2].find(";status="));
 							__COUTV__(originalParameterArr[2]);
 							std::vector<std::string> originalNamePieces =
 							    StringMacros::getVectorFromString(originalParameterArr[2],
@@ -4016,37 +4148,54 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								__SS_THROW__;
 							}
 
+							if(TTEST(1))
 							{
 								std::stringstream ss;
 								typeTable.tableView_->print(ss);
-								__COUT_MULTI__(1,ss.str());
+								__COUT_MULTI__(1, ss.str());
 							}
 
 							//create matching bools to decide copy stategy
-							__COUT__ << "originalMultinodeSameSiblingValues init col map for " << nodePair.first << __E__;
+							__COUT__
+							    << "originalMultinodeSameSiblingValues init col map for "
+							    << nodePair.first << __E__;
 							originalMultinodeSameSiblingValues.emplace(std::make_pair(
-								nodePair.first,
-								std::map<unsigned int /*col*/,
-											std::pair<bool /* all siblings have same value */, 
-											std::string /* sameValue */ >>()));
-							__COUT__ << "originalMultinodeAllSiblingEmbeddedName init col map for " << nodePair.first << __E__;
+							    nodePair.first,
+							    std::map<
+							        unsigned int /*col*/,
+							        std::pair<bool /* all siblings have same value */,
+							                  std::string /* sameValue */>>()));
+							__COUT__ << "originalMultinodeAllSiblingEmbeddedName init "
+							            "col map for "
+							         << nodePair.first << __E__;
 							originalMultinodeAllSiblingEmbeddedName.emplace(std::make_pair(
-								nodePair.first,
-								std::map<unsigned int /*col*/,
-											std::pair<bool /* all siblings have embedded name */, 
-											std::vector<std::string /* splitForEmbeddedValue */ >>>()));
-							__COUT__ << "originalMultinodeAllSiblingEmbeddedPrinterIndex init col map for " << nodePair.first << __E__;
-							originalMultinodeAllSiblingEmbeddedPrinterIndex.emplace(std::make_pair(
-								nodePair.first,
-								std::map<unsigned int /*col*/,
-											std::pair<bool /* all siblings have embedded printed index */, 
-											std::vector<std::string /* splitForEmbeddedIndex */ >>>()));
-
-									
+							    nodePair.first,
+							    std::map<
+							        unsigned int /*col*/,
+							        std::pair<
+							            bool /* all siblings have embedded name */,
+							            std::vector<
+							                std::
+							                    string /* splitForEmbeddedValue */>>>()));
+							__COUT__ << "originalMultinodeAllSiblingEmbeddedPrinterIndex "
+							            "init col map for "
+							         << nodePair.first << __E__;
+							originalMultinodeAllSiblingEmbeddedPrinterIndex.emplace(
+							    std::make_pair(
+							        nodePair.first,
+							        std::map<
+							            unsigned int /*col*/,
+							            std::pair<
+							                bool /* all siblings have embedded printed index */
+							                ,
+							                std::vector<
+							                    std::
+							                        string /* splitForEmbeddedIndex */>>>()));
 
 							// bool         isFirst     = true;
 							unsigned int originalRow     = TableView::INVALID,
-							             lastOriginalRow = TableView::INVALID;
+							             lastOriginalRow = TableView::INVALID,
+							             lastArtProcessRow = TableView::INVALID;
 							for(unsigned int i = 0; i < originalNodeIndices.size(); ++i)
 							{
 								std::string originalName = originalNamePieces[0];
@@ -4084,190 +4233,623 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 								// if have a new 'seed' valid row, then delete last valid row
 								// before deleting, record all customizing values to draw from when creating new multinode records
-								auto result = originalMultinodeValues.emplace(std::make_pair(
-									originalName,
-									std::map<unsigned int /*col*/,
-												std::string /*value*/>()));
+								auto result = originalMultinodeValues.emplace(
+								    std::make_pair(originalName,
+								                   std::map<unsigned int /*col*/,
+								                            std::string /*value*/>()));
 								if(!result.second)
-									__COUT__ << "originalName '" << originalName << "' already in original multinode value cache." << __E__;									
-								else //keep original cache values
+									__COUT__
+									    << "originalName '" << originalName
+									    << "' already in original multinode value cache."
+									    << __E__;
+								else  //keep original cache values
 								{
 									__COUT__ << "Saving multinode value " << originalName
-												<< "[" << originalRow
-												<< "][*] with row count = "
-												<< typeTable.tableView_->getNumberOfRows()
-												<< __E__;
+									         << "[" << originalRow
+									         << "][*] with row count = "
+									         << typeTable.tableView_->getNumberOfRows()
+									         << __E__;
 
 									// save all link values
 									for(unsigned int col = 0;
-										col < typeTable.tableView_->getNumberOfColumns();
-										++col)	
-									{									
+									    col < typeTable.tableView_->getNumberOfColumns();
+									    ++col)
+									{
 										if(typeTable.tableView_->getColumnInfo(col)
-													.getName() ==
-												ARTDAQTableBase::
-													ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK ||
-											typeTable.tableView_->getColumnInfo(col)
-													.getName() ==
-												ARTDAQTableBase::
-													ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID ||
-											typeTable.tableView_->getColumnInfo(col)
-													.getName() ==
-												ARTDAQTableBase::
-													ARTDAQ_TYPE_TABLE_HOSTNAME ||
-											typeTable.tableView_->getColumnInfo(col)
-													.isUID()  ||
-											col == typeTable.tableView_->getColStatus() || 
-											typeTable.tableView_->getColumnInfo(col)
-												.isGroupID() || 
-											col == timestampCol || 
-											col == authorCol) //always go with now author/timestamp on touched records (too easy to misidentify change vs nochange)
+										           .getName() ==
+										       ARTDAQTableBase::
+										           ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK ||
+										   typeTable.tableView_->getColumnInfo(col)
+										           .getName() ==
+										       ARTDAQTableBase::
+										           ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID ||
+										   typeTable.tableView_->getColumnInfo(col)
+										           .getName() ==
+										       ARTDAQTableBase::
+										           ARTDAQ_TYPE_TABLE_HOSTNAME ||
+										   typeTable.tableView_->getColumnInfo(col)
+										       .isUID() ||
+										   col == typeTable.tableView_->getColStatus() ||
+										   typeTable.tableView_->getColumnInfo(col)
+										       .isGroupID() ||
+										   col == timestampCol ||
+										   col ==
+										       authorCol)  //always go with now author/timestamp on touched records (too easy to misidentify change vs nochange)
 											continue;  // skip subsystem link, etc that is modified by fields maintained in the GUI
-										else// if(typeTable.tableView_->getColumnInfo(col)
-											//		.isChildLink() ||
-											//	typeTable.tableView_->getColumnInfo(col)
-											//		.isChildLinkGroupID() ||
-											//	typeTable.tableView_->getColumnInfo(col)
-											//		.isChildLinkUID())
+										else
 										{
-											__COUTT__ << "Caching node value: " << originalName << "["
-													<< originalRow << "][" << col
-													<< "/" << typeTable.tableView_->getColumnInfo(col)
-													.getName() << "] = " << typeTable.tableView_
-														->getDataView()[originalRow]
-																		[col] << __E__;
-											originalMultinodeValues.at(originalName).emplace(
-												std::make_pair(
-													col,
-													typeTable.tableView_
-														->getDataView()[originalRow]
-																		[col]));
+											__COUTT__
+											    << "Caching node value: " << originalName
+											    << "[" << originalRow << "][" << col
+											    << "/"
+											    << typeTable.tableView_
+											           ->getColumnInfo(col)
+											           .getName()
+											    << "] = "
+											    << typeTable.tableView_
+											           ->getDataView()[originalRow][col]
+											    << __E__;
+											originalMultinodeValues.at(originalName)
+											    .emplace(std::make_pair(
+											        col,
+											        typeTable.tableView_
+											            ->getDataView()[originalRow]
+											                           [col]));
 
 											//the first time, set to true and then prove wrong
-											
-											for(const auto& pair : originalMultinodeSameSiblingValues)
-												__COUTT__ << "originalMultinodeSameSiblingValues[" << pair.first << "]" << __E__;
-											auto result2 = originalMultinodeSameSiblingValues.at(nodePair.first).emplace(
-													std::make_pair(
-														col,
-														//same value
-														std::make_pair(true,typeTable.tableView_
-															->getDataView()[originalRow]
-																			[col])
-												));
 
-											for(const auto& pair : originalMultinodeAllSiblingEmbeddedName)
-												__COUTT__ << "originalMultinodeAllSiblingEmbeddedName[" << pair.first << "]" << __E__;											
-											originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).emplace(
-													std::make_pair(
-														col,
-														std::make_pair( //bool
-															typeTable.tableView_
-															->getDataView()[originalRow]
-																			[col].find(originalName) != std::string::npos,
-															//split string
-															std::vector<std::string>())		
-												));		
+											for(const auto& pair :
+											    originalMultinodeSameSiblingValues)
+												__COUTT__ << "originalMultinodeSameSiblin"
+												             "gValues["
+												          << pair.first << "]" << __E__;
+											auto result2 =
+											    originalMultinodeSameSiblingValues
+											        .at(nodePair.first)
+											        .emplace(std::make_pair(
+											            col,
+											            //same value
+											            std::make_pair(
+											                true,
+											                typeTable.tableView_
+											                    ->getDataView()
+											                        [originalRow][col])));
 
-											for(const auto& pair : originalMultinodeAllSiblingEmbeddedPrinterIndex)
-												__COUTT__ << "originalMultinodeAllSiblingEmbeddedPrinterIndex[" << pair.first << "]" << __E__;											
-											originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first).emplace(
-													std::make_pair(
-														col,
-														std::make_pair( //bool
-															typeTable.tableView_
-															->getDataView()[originalRow]
-																			[col].find(nodeNameIndex) != std::string::npos,
-															//split string
-															std::vector<std::string>())		
-												));
-											
-											if(result2.second) //emplace always should work first time
+											for(const auto& pair :
+											    originalMultinodeAllSiblingEmbeddedName)
+												__COUTT__ << "originalMultinodeAllSibling"
+												             "EmbeddedName["
+												          << pair.first << "]" << __E__;
+											originalMultinodeAllSiblingEmbeddedName
+											    .at(nodePair.first)
+											    .emplace(std::make_pair(
+											        col,
+											        std::make_pair(  //bool
+											            typeTable.tableView_
+											                    ->getDataView()
+											                        [originalRow][col]
+											                    .find(originalName) !=
+											                std::string::npos,
+											            //split string
+											            std::vector<std::string>())));
+
+											for(const auto& pair :
+											    originalMultinodeAllSiblingEmbeddedPrinterIndex)
+												__COUTT__ << "originalMultinodeAllSibling"
+												             "EmbeddedPrinterIndex["
+												          << pair.first << "]" << __E__;
+											originalMultinodeAllSiblingEmbeddedPrinterIndex
+											    .at(nodePair.first)
+											    .emplace(std::make_pair(
+											        col,
+											        std::make_pair(  //bool
+											            typeTable.tableView_
+											                    ->getDataView()
+											                        [originalRow][col]
+											                    .find(nodeNameIndex) !=
+											                std::string::npos,
+											            //split string
+											            std::vector<std::string>())));
+
+											if(result2
+											       .second)  //emplace always should work first time
 											{
-												__COUTTV__(originalMultinodeSameSiblingValues.at(nodePair.first).at(col).second);
+												__COUTTV__(
+												    originalMultinodeSameSiblingValues
+												        .at(nodePair.first)
+												        .at(col)
+												        .second);
 
-												__COUTTV__(originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).first);
-												if(originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).first)
+												__COUTTV__(
+												    originalMultinodeAllSiblingEmbeddedName
+												        .at(nodePair.first)
+												        .at(col)
+												        .first);
+												if(originalMultinodeAllSiblingEmbeddedName
+												       .at(nodePair.first)
+												       .at(col)
+												       .first)
 												{
-													__COUTT__ << "Determine string splits for embedded name" << __E__;
-													const std::string& val = typeTable.tableView_
-														->getDataView()[originalRow]
-																		[col];
+													__COUTT__
+													    << "Determine string splits for "
+													       "embedded name"
+													    << __E__;
+													const std::string& val =
+													    typeTable.tableView_
+													        ->getDataView()[originalRow]
+													                       [col];
 													size_t pos = val.find(originalName);
-													originalMultinodeAllSiblingEmbeddedName.at(nodePair.first)
-														.at(col).second.push_back(val.substr(0,pos));
-													originalMultinodeAllSiblingEmbeddedName.at(nodePair.first)
-														.at(col).second.push_back(val.substr(pos + originalName.size()));
-													__COUTTV__(StringMacros::vectorToString(originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).second));
-												}	
-												__COUTTV__(originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first).at(col).first);
-												if(originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first).at(col).first)
+													originalMultinodeAllSiblingEmbeddedName
+													    .at(nodePair.first)
+													    .at(col)
+													    .second.push_back(
+													        val.substr(0, pos));
+													originalMultinodeAllSiblingEmbeddedName
+													    .at(nodePair.first)
+													    .at(col)
+													    .second.push_back(val.substr(
+													        pos + originalName.size()));
+													__COUTTV__(StringMacros::vectorToString(
+													    originalMultinodeAllSiblingEmbeddedName
+													        .at(nodePair.first)
+													        .at(col)
+													        .second));
+												}
+												__COUTTV__(
+												    originalMultinodeAllSiblingEmbeddedPrinterIndex
+												        .at(nodePair.first)
+												        .at(col)
+												        .first);
+												if(originalMultinodeAllSiblingEmbeddedPrinterIndex
+												       .at(nodePair.first)
+												       .at(col)
+												       .first)
 												{
-													__COUTT__ << "Determine string splits for embedded printer syntax index: " << nodeNameIndex << __E__;
-													const std::string& val = typeTable.tableView_
-														->getDataView()[originalRow]
-																		[col];
+													__COUTT__ << "Determine string "
+													             "splits for embedded "
+													             "printer syntax index: "
+													          << nodeNameIndex << __E__;
+													const std::string& val =
+													    typeTable.tableView_
+													        ->getDataView()[originalRow]
+													                       [col];
 													size_t pos = val.find(nodeNameIndex);
-													originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first)
-														.at(col).second.push_back(val.substr(0,pos));
-													originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first)
-														.at(col).second.push_back(val.substr(pos + nodeNameIndex.size()));
-													__COUTTV__(StringMacros::vectorToString(originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first).at(col).second));
-												}														
+													originalMultinodeAllSiblingEmbeddedPrinterIndex
+													    .at(nodePair.first)
+													    .at(col)
+													    .second.push_back(
+													        val.substr(0, pos));
+													originalMultinodeAllSiblingEmbeddedPrinterIndex
+													    .at(nodePair.first)
+													    .at(col)
+													    .second.push_back(val.substr(
+													        pos + nodeNameIndex.size()));
+													__COUTTV__(StringMacros::vectorToString(
+													    originalMultinodeAllSiblingEmbeddedPrinterIndex
+													        .at(nodePair.first)
+													        .at(col)
+													        .second));
+												}
 											}
-											else //not first time, so prove wrong
-											{					
+											else  //not first time, so prove wrong
+											{
+												if(originalMultinodeSameSiblingValues
+												       .at(nodePair.first)
+												       .at(col)
+												       .first)
+												{
+													__COUTT__ << "Checking sibling same "
+													             "values... for "
+													          << nodePair.first << __E__;
+													if(typeTable.tableView_
+													       ->getDataView()[originalRow]
+													                      [col] !=
+													   typeTable.tableView_->getDataView()
+													       [lastOriginalRow][col])
+													{
+														__COUT__
+														    << "Found different sibling "
+														       "values at col="
+														    << col << " for "
+														    << nodePair.first << __E__;
+														originalMultinodeSameSiblingValues
+														    .at(nodePair.first)
+														    .at(col)
+														    .first = false;
+													}
+												}
+												if(originalMultinodeAllSiblingEmbeddedName
+												       .at(nodePair.first)
+												       .at(col)
+												       .first)
+												{
+													__COUTT__ << "Checking sibling "
+													             "embedded name... for "
+													          << nodePair.first << ":"
+													          << originalName << __E__;
+													if(typeTable.tableView_
+													       ->getDataView()[originalRow]
+													                      [col]
+													       .find(originalName) ==
+													   std::string::npos)
+													{
+														__COUT__ << "Found no embedded "
+														            "name at col="
+														         << col << " looking for "
+														         << originalName << __E__;
+														originalMultinodeAllSiblingEmbeddedName
+														    .at(nodePair.first)
+														    .at(col)
+														    .first = false;
+													}
+												}
+												if(originalMultinodeAllSiblingEmbeddedPrinterIndex
+												       .at(nodePair.first)
+												       .at(col)
+												       .first)
+												{
+													__COUTT__
+													    << "Checking sibling embedded "
+													       "printer syntax index... for "
+													    << nodePair.first << ":"
+													    << nodeNameIndex << __E__;
+													if(typeTable.tableView_
+													       ->getDataView()[originalRow]
+													                      [col]
+													       .find(nodeNameIndex) ==
+													   std::string::npos)
+													{
+														__COUT__ << "Found no embedded "
+														            "printer syntax "
+														            "index at col="
+														         << col << " looking for "
+														         << nodeNameIndex
+														         << __E__;
+														originalMultinodeAllSiblingEmbeddedPrinterIndex
+														    .at(nodePair.first)
+														    .at(col)
+														    .first = false;
+													}
+												}
+											}
 
-												if(originalMultinodeSameSiblingValues.at(nodePair.first).at(col).first)
+											__COUTT__
+											    << "originalMultinodeSameSiblingValues["
+											    << nodePair.first << "][" << col << "] = "
+											    << originalMultinodeSameSiblingValues
+											           .at(nodePair.first)
+											           .at(col)
+											           .first
+											    << __E__;
+											__COUTT__
+											    << "originalMultinodeAllSiblingEmbeddedNa"
+											       "me["
+											    << nodePair.first << "][" << col << "] = "
+											    << originalMultinodeAllSiblingEmbeddedName
+											           .at(nodePair.first)
+											           .at(col)
+											           .first
+											    << __E__;
+											__COUTT__
+											    << "originalMultinodeAllSiblingEmbeddedPr"
+											       "interIndex["
+											    << nodePair.first << "][" << col << "] = "
+											    << originalMultinodeAllSiblingEmbeddedPrinterIndex
+											           .at(nodePair.first)
+											           .at(col)
+											           .first
+											    << __E__;
+
+											if(hasArtProcessName && artTable &&
+											   typeTable.tableView_->getColumnInfo(col)
+											           .getName() ==
+											       ARTDAQTableBase::colARTDAQNotReader_
+											           .colLinkToArtUID_)
+											{
+												//note at this point, col = Link to art record 
+												__COUT__
+												    << "Checking ART Process Name... for "
+												       "originalName='"
+												    << originalName << "' / "
+												    << typeTable.tableView_
+												           ->getDataView()[originalRow]
+												                          [col]
+												    << __E__;
+												unsigned int artRow =
+												    artTable->tableView_->findRow(
+												        artTable->tableView_->getColUID(),
+												        /* art UID record name */
+												        typeTable.tableView_
+												            ->getDataView()[originalRow]
+												                           [col]);
+												__COUTTV__(artRow);
+
+												__COUTT__
+												    << "Found ART Process Name = "
+												    << artTable->tableView_
+												           ->getDataView()
+												               [artRow][artProcessNameCol]
+												    << __E__;
+
+												//original value tracking/emplace handling copied from above L4284
+												originalMultinodeValues.at(originalName)
+													.emplace(std::make_pair(
+														ORIG_MAP_ART_PROC_NAME_COL,
+														artTable->tableView_
+												            ->getDataView()
+												                [artRow]
+												                [artProcessNameCol]));											
+												__COUTTV__(
+													originalMultinodeValues
+														.at(originalName)
+														.at(ORIG_MAP_ART_PROC_NAME_COL));
+
+												//the first time, set to true and then prove wrong
+												originalMultinodeSameSiblingValues
+												    .at(nodePair.first)
+												    .emplace(std::make_pair(
+												        ORIG_MAP_ART_PROC_NAME_COL,
+												        //same value
+												        std::make_pair(
+											                true,
+											                artTable->tableView_
+												            ->getDataView()
+												                [artRow]
+												                [artProcessNameCol])));
+												originalMultinodeAllSiblingEmbeddedName
+												    .at(nodePair.first)
+												    .emplace(std::make_pair(
+												        ORIG_MAP_ART_PROC_NAME_COL,
+												        std::make_pair(  //bool
+												            artTable->tableView_
+												                    ->getDataView()
+												                        [artRow]
+												                        [artProcessNameCol]
+												                    .find(originalName) !=
+												                std::string::npos,
+												            //split string
+												            std::vector<std::string>())));
+												originalMultinodeAllSiblingEmbeddedPrinterIndex
+												    .at(nodePair.first)
+												    .emplace(std::make_pair(
+												        ORIG_MAP_ART_PROC_NAME_COL,
+												        std::make_pair(  //bool
+												            artTable->tableView_
+												                    ->getDataView()
+												                        [artRow]
+												                        [artProcessNameCol]
+												                    .find(
+												                        nodeNameIndex) !=
+												                std::string::npos,
+												            //split string
+												            std::vector<std::string>())));
+
+												if(result2
+												       .second)  //emplace always should work first time
 												{
-													__COUTT__ << "Checking sibling same values... for " << nodePair.first << __E__;
-													if(typeTable.tableView_
-														->getDataView()[originalRow]
-																		[col] != typeTable.tableView_
-														->getDataView()[lastOriginalRow]
-																		[col])
+													__COUTTV__(
+													    originalMultinodeSameSiblingValues
+													        .at(nodePair.first)
+													        .at(ORIG_MAP_ART_PROC_NAME_COL)
+													        .second);
+
+													__COUTTV__(
+													    originalMultinodeAllSiblingEmbeddedName
+													        .at(nodePair.first)
+													        .at(ORIG_MAP_ART_PROC_NAME_COL)
+													        .first);
+													if(originalMultinodeAllSiblingEmbeddedName
+													       .at(nodePair.first)
+													       .at(ORIG_MAP_ART_PROC_NAME_COL)
+													       .first)
 													{
-														__COUT__ << "Found different sibling values at col=" << col << " for " << nodePair.first << __E__;
-														originalMultinodeSameSiblingValues.at(nodePair.first).at(col).first = false;
+														__COUTT__
+														    << "Determine string splits "
+														       "for embedded name"
+														    << __E__;
+														const std::string& val =
+														    artTable->tableView_
+												                    ->getDataView()
+												                        [artRow]
+												                        [artProcessNameCol];
+														size_t pos =
+														    val.find(originalName);
+														originalMultinodeAllSiblingEmbeddedName
+														    .at(nodePair.first)
+														    .at(ORIG_MAP_ART_PROC_NAME_COL)
+														    .second.push_back(
+														        val.substr(0, pos));
+														originalMultinodeAllSiblingEmbeddedName
+														    .at(nodePair.first)
+														    .at(ORIG_MAP_ART_PROC_NAME_COL)
+														    .second.push_back(val.substr(
+														        pos +
+														        originalName.size()));
+														__COUTTV__(
+														    StringMacros::vectorToString(
+														        originalMultinodeAllSiblingEmbeddedName
+														            .at(nodePair.first)
+														            .at(ORIG_MAP_ART_PROC_NAME_COL)
+														            .second));
+													}
+													__COUTTV__(
+													    originalMultinodeAllSiblingEmbeddedPrinterIndex
+													        .at(nodePair.first)
+													        .at(ORIG_MAP_ART_PROC_NAME_COL)
+													        .first);
+													if(originalMultinodeAllSiblingEmbeddedPrinterIndex
+													       .at(nodePair.first)
+													       .at(ORIG_MAP_ART_PROC_NAME_COL)
+													       .first)
+													{
+														__COUTT__
+														    << "Determine string splits "
+														       "for embedded printer "
+														       "syntax index: "
+														    << nodeNameIndex << __E__;
+														const std::string& val =
+														    artTable->tableView_
+												                    ->getDataView()
+												                        [artRow]
+												                        [artProcessNameCol];
+														size_t pos =
+														    val.find(nodeNameIndex);
+														originalMultinodeAllSiblingEmbeddedPrinterIndex
+														    .at(nodePair.first)
+														    .at(ORIG_MAP_ART_PROC_NAME_COL)
+														    .second.push_back(
+														        val.substr(0, pos));
+														originalMultinodeAllSiblingEmbeddedPrinterIndex
+														    .at(nodePair.first)
+														    .at(ORIG_MAP_ART_PROC_NAME_COL)
+														    .second.push_back(val.substr(
+														        pos +
+														        nodeNameIndex.size()));
+														__COUTTV__(
+														    StringMacros::vectorToString(
+														        originalMultinodeAllSiblingEmbeddedPrinterIndex
+														            .at(nodePair.first)
+														            .at(ORIG_MAP_ART_PROC_NAME_COL)
+														            .second));
 													}
 												}
-												if(originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).first)
+												else  //not first time, so prove wrong
 												{
-													__COUTT__ << "Checking sibling embedded name... for " << nodePair.first << ":" << originalName << __E__;
-													if(typeTable.tableView_
-														->getDataView()[originalRow]
-																		[col].find(originalName) == std::string::npos)																
+													if(originalMultinodeSameSiblingValues
+													       .at(nodePair.first)
+													       .at(ORIG_MAP_ART_PROC_NAME_COL)
+													       .first)
 													{
-														__COUT__ << "Found no embedded name at col=" << col << " looking for " << originalName << __E__;
-														originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).first = false;
+														__COUTT__ << "Checking sibling "
+														             "same values... for "
+														          << nodePair.first
+														          << __E__;
+														if(artTable->tableView_
+												                    ->getDataView()
+												                        [artRow]
+												                        [artProcessNameCol] !=
+														   artTable->tableView_
+												                    ->getDataView()
+														           [lastArtProcessRow][artProcessNameCol])
+														{
+															__COUT__ << "Found different "
+															            "sibling values "
+															            "at artProcessNameCol="
+															         << artProcessNameCol << " for "
+															         << nodePair.first
+															         << __E__;
+															originalMultinodeSameSiblingValues
+															    .at(nodePair.first)
+															    .at(ORIG_MAP_ART_PROC_NAME_COL)
+															    .first = false;
+														}
+													}
+													if(originalMultinodeAllSiblingEmbeddedName
+													       .at(nodePair.first)
+													       .at(ORIG_MAP_ART_PROC_NAME_COL)
+													       .first)
+													{
+														__COUTT__
+														    << "Checking sibling "
+														       "embedded name... for "
+														    << nodePair.first << ":"
+														    << originalName << __E__;
+														if(artTable->tableView_
+												                    ->getDataView()
+												                        [artRow]
+												                        [artProcessNameCol]
+														       .find(originalName) ==
+														   std::string::npos)
+														{
+															__COUT__
+															    << "Found no embedded "
+															       "name at artProcessNameCol="
+															    << artProcessNameCol << " looking for "
+															    << originalName << __E__;
+															originalMultinodeAllSiblingEmbeddedName
+															    .at(nodePair.first)
+															    .at(ORIG_MAP_ART_PROC_NAME_COL)
+															    .first = false;
+														}
+													}
+													if(originalMultinodeAllSiblingEmbeddedPrinterIndex
+													       .at(nodePair.first)
+													       .at(ORIG_MAP_ART_PROC_NAME_COL)
+													       .first)
+													{
+														__COUTT__
+														    << "Checking sibling "
+														       "embedded printer syntax "
+														       "index... for "
+														    << nodePair.first << ":"
+														    << nodeNameIndex << __E__;
+														if(artTable->tableView_
+												                    ->getDataView()
+												                        [artRow]
+												                        [artProcessNameCol]
+														       .find(nodeNameIndex) ==
+														   std::string::npos)
+														{
+															__COUT__
+															    << "Found no embedded "
+															       "printer syntax index "
+															       "at artProcessNameCol="
+															    << artProcessNameCol << " looking for "
+															    << nodeNameIndex << __E__;
+															originalMultinodeAllSiblingEmbeddedPrinterIndex
+															    .at(nodePair.first)
+															    .at(ORIG_MAP_ART_PROC_NAME_COL)
+															    .first = false;
+														}
 													}
 												}
-												if(originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first).at(col).first)
-												{
-													__COUTT__ << "Checking sibling embedded printer syntax index... for " << nodePair.first << ":" << nodeNameIndex << __E__;
-													if(typeTable.tableView_
-														->getDataView()[originalRow]
-																		[col].find(nodeNameIndex) == std::string::npos)																
-													{
-														__COUT__ << "Found no embedded printer syntax index at col=" << col << " looking for " << nodeNameIndex << __E__;
-														originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first).at(col).first = false;
-													}
-												}
-											}
-											
-											__COUTT__ << "originalMultinodeSameSiblingValues[" << nodePair.first << 
-														"][" << col << "] = " << 
-														originalMultinodeSameSiblingValues.at(nodePair.first).at(col).first << __E__;	
-											__COUTT__ << "originalMultinodeAllSiblingEmbeddedName[" << nodePair.first << 
-														"][" << col << "] = " << 
-														originalMultinodeAllSiblingEmbeddedName.at(nodePair.first).at(col).first << __E__;	
-											__COUTT__ << "originalMultinodeAllSiblingEmbeddedPrinterIndex[" << nodePair.first << 
-														"][" << col << "] = " << 
-														originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first).at(col).first << __E__;	
-										} //end col caching handling
-									} //end col loop
-								} //end cache handling
-									
+
+												__COUTT__
+												    << "originalMultinodeSameSiblingValue"
+												       "s["
+												    << nodePair.first << "][" << ORIG_MAP_ART_PROC_NAME_COL
+												    << "] = "
+												    << originalMultinodeSameSiblingValues
+												           .at(nodePair.first)
+												           .at(ORIG_MAP_ART_PROC_NAME_COL)
+												           .first
+												    << __E__;
+												__COUTT__
+												    << "originalMultinodeAllSiblingEmbedd"
+												       "edName["
+												    << nodePair.first << "][" << ORIG_MAP_ART_PROC_NAME_COL
+												    << "] = "
+												    << originalMultinodeAllSiblingEmbeddedName
+												           .at(nodePair.first)
+												           .at(ORIG_MAP_ART_PROC_NAME_COL)
+												           .first
+												    << __E__;
+												__COUTT__
+												    << "originalMultinodeAllSiblingEmbedd"
+												       "edPrinterIndex["
+												    << nodePair.first << "][" << ORIG_MAP_ART_PROC_NAME_COL
+												    << "] = "
+												    << originalMultinodeAllSiblingEmbeddedPrinterIndex
+												           .at(nodePair.first)
+												           .at(ORIG_MAP_ART_PROC_NAME_COL)
+												           .first
+												    << __E__;
+
+												__COUT__
+												    << "Checking ART Process Name "
+												       "complete for originalName='"
+												    << originalName << "' / "
+												    << typeTable.tableView_
+												           ->getDataView()[originalRow]
+												                          [col]
+												    << __E__;
+												lastArtProcessRow = artRow; //save for next comparison
+											}  //end ART Process Name cache handling
+
+										}  //end col caching handling
+									}      //end col loop
+								}          //end cache handling
+
 								// // now.. if have a new 'seed' valid row, then delete last valid row
 								// if(originalRow != TableView::INVALID &&
 								//    lastOriginalRow != TableView::INVALID)
@@ -4278,22 +4860,33 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								// 		--originalRow;  // modify after delete
 								// }
 
-								if(originalRow != TableView::INVALID) // save last original valid row for future cache/deletion									
-									lastOriginalRow = originalRow;  
+								if(originalRow !=
+								   TableView::
+								       INVALID)  // save last original valid row for future cache/deletion
+									lastOriginalRow = originalRow;
 
 								__COUTTV__(lastOriginalRow);
 								lastOriginalName = originalName;
 							}  // end loop through multi-node instances
 
-							for(const auto& pair : originalMultinodeSameSiblingValues.at(nodePair.first))
-								__COUTT__ << "originalMultinodeSameSiblingValues[" << nodePair.first << 
-									"][" << pair.first << "]  = " << pair.second.first << __E__;
-							for(const auto& pair : originalMultinodeAllSiblingEmbeddedName.at(nodePair.first))
-								__COUTT__ << "originalMultinodeAllSiblingEmbeddedName[" << nodePair.first << 
-									"][" << pair.first << "]  = " << pair.second.first << __E__;
-							for(const auto& pair : originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first))
-								__COUTT__ << "originalMultinodeAllSiblingEmbeddedPrinterIndex[" << nodePair.first << 
-									"][" << pair.first << "]  = " << pair.second.first << __E__;
+							for(const auto& pair :
+							    originalMultinodeSameSiblingValues.at(nodePair.first))
+								__COUTT__ << "originalMultinodeSameSiblingValues["
+								          << nodePair.first << "][" << pair.first
+								          << "]  = " << pair.second.first << __E__;
+							for(const auto& pair :
+							    originalMultinodeAllSiblingEmbeddedName.at(
+							        nodePair.first))
+								__COUTT__ << "originalMultinodeAllSiblingEmbeddedName["
+								          << nodePair.first << "][" << pair.first
+								          << "]  = " << pair.second.first << __E__;
+							for(const auto& pair :
+							    originalMultinodeAllSiblingEmbeddedPrinterIndex.at(
+							        nodePair.first))
+								__COUTT__
+								    << "originalMultinodeAllSiblingEmbeddedPrinterIndex["
+								    << nodePair.first << "][" << pair.first
+								    << "]  = " << pair.second.first << __E__;
 
 							__COUTTV__(lastOriginalRow);
 							row = lastOriginalRow;  // take last valid row to proceed
@@ -4301,8 +4894,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						}  // end handling of original multinode
 						else
 						{
-							std::string originalName =  nodePair.second[i].substr(0,
-								 nodePair.second[i].find(";status="));
+							std::string originalName = nodePair.second[i].substr(
+							    0, nodePair.second[i].find(";status="));
 							__COUTV__(originalName);
 
 							// attempt to find original 'single' node name
@@ -4311,7 +4904,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							    originalName,
 							    0 /*offsetRow*/,
 							    true /*doNotThrow*/);
-							__COUTV__(row);			
+							__COUTV__(row);
 						}
 
 						//if no original nodes, there may be *'s in node name, so remove them
@@ -4319,22 +4912,22 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							nodeName = nodePair.first;  // take new node name
 							__COUTV__(nodeName);
 							//remove ;status=
-							nodeName = nodeName.substr(0,nodeName.find(";status=")); 	
+							nodeName = nodeName.substr(0, nodeName.find(";status="));
 
 							//remove stars for seed nodename
 							std::string tmpNodeName = nodeName;
-							nodeName = ""; //clear
+							nodeName                = "";  //clear
 							for(size_t c = 0; c < tmpNodeName.size(); ++c)
-								if(tmpNodeName[c] != '*') nodeName += tmpNodeName[c];
-						} //end removing *'s from node name
+								if(tmpNodeName[c] != '*')
+									nodeName += tmpNodeName[c];
+						}  //end removing *'s from node name
 
 						__COUTV__(nodeName);
 						if(row == TableView::INVALID)
 						{
 							// No original record, so create artdaq type instance record
 							row = typeTable.tableView_->addRow(
-							    author, true /*incrementUniqueData*/, 
-								nodeName);
+							    author, true /*incrementUniqueData*/, nodeName);
 
 							// fill defaults properties/parameters here!
 							if(nodeTypePair.first == processTypes_.READER)
@@ -4364,7 +4957,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								{
 									std::stringstream ss;
 									typeTable.tableView_->print(ss);
-									__COUT_MULTI__(1,ss.str());
+									__COUT_MULTI__(1, ss.str());
 								}
 
 								// now create parameters at target link
@@ -4537,13 +5130,18 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						}
 						else  // set UID
 						{
-							__COUT__ << "Reusing row " << row << " current-UID=" << 
-								typeTable.tableView_
-										->getDataView()[row]
-										[typeTable.tableView_->getColUID()] << 
-										" as (temporarily to basename if multinode) new-UID=" << nodeName << __E__;
-							typeTable.tableView_->setValueAsString( //if single record, this renaming is final; if multi record, this renaming to basename is temporary
-							    nodeName, row, typeTable.tableView_->getColUID());
+							__COUT__
+							    << "Reusing row " << row << " current-UID="
+							    << typeTable.tableView_
+							           ->getDataView()[row]
+							                          [typeTable.tableView_->getColUID()]
+							    << " as (temporarily to basename if multinode) new-UID="
+							    << nodeName << __E__;
+							typeTable.tableView_
+							    ->setValueAsString(  //if single record, this renaming is final; if multi record, this renaming to basename is temporary
+							        nodeName,
+							        row,
+							        typeTable.tableView_->getColUID());
 						}
 						__COUTV__(row);
 
@@ -4694,7 +5292,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								}
 								for(; lo <= hi; ++lo)
 								{
-									__COUTVS__(5,lo);
+									__COUTVS__(5, lo);
 									if(i == 4 /*nodeArrayString*/)
 										nodeIndices.push_back(std::to_string(lo));
 									else
@@ -4736,8 +5334,9 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 					//	then copy for remaining instances
 
 					std::vector<std::string> namePieces =
-					    StringMacros::getVectorFromString(nodePair.first.substr(0,nodePair.first.find(";status=")), 
-					                                      {'*'} /*delimiter*/);
+					    StringMacros::getVectorFromString(
+					        nodePair.first.substr(0, nodePair.first.find(";status=")),
+					        {'*'} /*delimiter*/);
 					__COUTV__(StringMacros::vectorToString(namePieces));
 
 					if(namePieces.size() < 2)
@@ -4767,6 +5366,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 					}
 
 					bool isFirst = true;
+					unsigned int lastArtRow = TableView::INVALID;
 					for(unsigned int i = 0; i < nodeIndices.size(); ++i)
 					{
 						std::string name = namePieces[0];
@@ -4826,16 +5426,12 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 						if(isFirst)  // take current row
 						{
-							__COUTT__ << author << "... Replacing row UID '" << 
-								 typeTable.tableView_
-										->getDataView()[row]
-										[ typeTable.tableView_->getColUID()] << 
-									"' with UID '" << name << "'" << __E__;
-							typeTable.tableView_->setValueAsString(
-							    name, row, typeTable.tableView_->getColUID());
-
-							typeTable.tableView_->setValueAsString(
-							    hostname, row, hostnameCol);
+							__COUTT__
+							    << author << "... Replacing row UID '"
+							    << typeTable.tableView_
+							           ->getDataView()[row]
+							                          [typeTable.tableView_->getColUID()]
+							    << "' with UID '" << name << "'" << __E__;
 
 							// remove from delete map
 							if(row < maxRowToDelete)
@@ -4843,11 +5439,12 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						}
 						else  // copy row
 						{
-							__COUTT__ << author << "... Copying row UID '" << 
-								 typeTable.tableView_
-										->getDataView()[row]
-										[ typeTable.tableView_->getColUID()] << 
-									"' to UID '" << name << "'" << __E__;
+							__COUTT__
+							    << author << "... Copying row UID '"
+							    << typeTable.tableView_
+							           ->getDataView()[row]
+							                          [typeTable.tableView_->getColUID()]
+							    << "' to UID '" << name << "'" << __E__;
 							unsigned int copyRow = typeTable.tableView_->copyRows(
 							    author,
 							    *(typeTable.tableView_),
@@ -4855,184 +5452,355 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							    1 /*srcRowsToCopy*/,
 							    -1 /*destOffsetRow*/,
 							    true /*generateUniqueDataColumns*/);
-							typeTable.tableView_->setValueAsString(
-							    name, copyRow, typeTable.tableView_->getColUID());
-							typeTable.tableView_->setValueAsString(
-							    hostname, copyRow, hostnameCol);
 
 							// remove from delete map
 							if(row < maxRowToDelete)
 								deleteRecordMap[copyRow] = false;
 							row = copyRow;
 						}
-						//NOTE: changing UID and copyRows does not change author or date! So change it if not an exact match; so change it now and fill with original archive if exact match						
-						typeTable.tableView_->setValue(TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT, row, commentCol);
-						typeTable.tableView_->setValue(author, row, authorCol);
+
+						typeTable.tableView_->setValueAsString(
+							name, row, typeTable.tableView_->getColUID());
+						typeTable.tableView_->setValueAsString(
+							hostname, row, hostnameCol);
+						//NOTE: changing UID and copyRows does not change author or date! So change it if not an exact match; so change it now and fill with original archive if exact match
+						typeTable.tableView_->setValueAsString(
+						    TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT,
+						    row,
+						    commentCol);
+						typeTable.tableView_->setValueAsString(author, row, authorCol);
 						typeTable.tableView_->setValue(time(0), row, timestampCol);
-					
-						__COUTTV__(typeTable.tableView_ //comment
-														->getDataView()[row]
-														[commentCol]);
-						__COUTTV__(typeTable.tableView_ //author
-														->getDataView()[row]
-														[authorCol]);
-						__COUTTV__(typeTable.tableView_ //creation time
-														->getDataView()[row]
-														[timestampCol]);
+
+						__COUTTV__(typeTable
+						               .tableView_  //comment
+						               ->getDataView()[row][commentCol]);
+						__COUTTV__(typeTable
+						               .tableView_  //author
+						               ->getDataView()[row][authorCol]);
+						__COUTTV__(typeTable
+						               .tableView_  //creation time
+						               ->getDataView()[row][timestampCol]);
 						// Strategy:
 						// 	- Take values from best original node match
 						//	- Then overwrite with same values
 						//	- Then overwrite with embedded name values
 						//	- If name matches exactly the original name, then keep Comment, Author, and CreationTime
-						//i.e., Customize row based on original value map, originalMultinodeSameSiblingValues and originalMultinodeAllSiblingEmbeddedName and originalMultinodeAllSiblingEmbeddedPrinterIndex					
+						//i.e., Customize row based on original value map, originalMultinodeSameSiblingValues and originalMultinodeAllSiblingEmbeddedName and originalMultinodeAllSiblingEmbeddedPrinterIndex
 						{
 							//find highest score match to original node
-							__COUT__ << "Looking for best original node match for row=" << row << 
-								" UID='" << name << "'" << __E__;
-							size_t bestScore = 0;
+							__COUT__
+							    << "Looking for best original node match for row=" << row
+							    << " UID='" << name << "'" << __E__;
+							size_t      bestScore = 0;
 							std::string bestOriginalNodeName;
 							for(const auto& originalNodePair : originalMultinodeValues)
 							{
+								__COUTTV__(originalNodePair.second
+														.at(ORIG_MAP_ART_PROC_NAME_COL));
 								size_t score = 0;
-								for(size_t c = 0, d = 0; c < originalNodePair.first.size() && d < name.size(); ++c, ++d)
+								for(size_t c = 0, d = 0;
+								    c < originalNodePair.first.size() && d < name.size();
+								    ++c, ++d)
 								{
 									if(name[d] == originalNodePair.first[c])
 										++score;
-									else if(d+1 < name.size() && name[d+1] == originalNodePair.first[c])
-										--c; //rewind one for dropped character
-									else if(c+1 < originalNodePair.first.size() && name[d] == originalNodePair.first[c+1])
-										--d; //rewind one for dropped character
+									else if(d + 1 < name.size() &&
+									        name[d + 1] == originalNodePair.first[c])
+										--c;  //rewind one for dropped character
+									else if(c + 1 < originalNodePair.first.size() &&
+									        name[d] == originalNodePair.first[c + 1])
+										--d;  //rewind one for dropped character
 								}
-								if(originalNodePair.first.size() == name.size()) 
+								if(originalNodePair.first.size() == name.size())
 									++score;
-								__COUTTV__(score);
+								__COUTVS__(2,score);
 								if(score > bestScore)
 								{
 									bestOriginalNodeName = originalNodePair.first;
-									bestScore = score;
-									__COUTV__(bestOriginalNodeName);
-									__COUTV__(bestScore);
+									bestScore            = score;
+									__COUTVS__(2,bestOriginalNodeName);
+									__COUTVS__(2,bestScore);
 								}
-							} //end scoring loop for best match in originalMultinodeValues
-
+							}  //end scoring loop for best match in originalMultinodeValues
 
 							bool exactMatch = (bestOriginalNodeName == name);
-							if(exactMatch || originalMultinodeValues.find(bestOriginalNodeName) !=
-								originalMultinodeValues.end())
+							bool needToHandleArtProcessName = false;
+							std::string artProcessName;
+
+							if(exactMatch ||
+							   originalMultinodeValues.find(bestOriginalNodeName) !=
+							       originalMultinodeValues.end())
 							{
-								__COUT__ << "Populating original multinode value from '" << bestOriginalNodeName << 
-									"' into '" << name << ".'" << __E__;
-								
+								__COUT__ << "Populating original multinode value from '"
+								         << bestOriginalNodeName << "' into '" << name
+								         << ".'" << __E__;
+
 								for(const auto& valuePair :
-									originalMultinodeValues.at(bestOriginalNodeName))
+								    originalMultinodeValues.at(bestOriginalNodeName))
 								{
 									//(keep new creation time always!) if not exact match then keep new meta info and skip Comment, Author, and CreationTime
-									if(!exactMatch && (valuePair.first == commentCol || 
-										valuePair.first == authorCol || 
-										valuePair.first == timestampCol))
+									if(!exactMatch && (valuePair.first == commentCol ||
+									                   valuePair.first == authorCol ||
+									                   valuePair.first == timestampCol))
 									{
-										__COUTT__ << "Not exact node name match, so keeping default meta info for node: " << name << "["
-											<< row << "][" << valuePair.first
-											<< "] /= " << valuePair.second << 
-											" keep= " << typeTable.tableView_
-														->getDataView()[row]
-														[valuePair.first] <<  __E__;
+										__COUTT__
+										    << "Not exact node name match, so keeping "
+										       "default meta info for node: "
+										    << name << "[" << row << "]["
+										    << valuePair.first
+										    << "] /= " << valuePair.second << " keep= "
+										    << typeTable.tableView_
+										           ->getDataView()[row][valuePair.first]
+										    << __E__;
 										continue;
-									}									
+									}
 
 									__COUTT__ << "Customizing node: " << name << "["
-											<< row << "][" << valuePair.first
-											<< "] = " << valuePair.second << __E__;
-									typeTable.tableView_->setValueAsString(
-										valuePair.second, row, valuePair.first);
+									          << row << "][" << valuePair.first
+									          << "] = " << valuePair.second << __E__;
+									//handle special columns, otherwise normal columns in type table
+									if(valuePair.first == ORIG_MAP_ART_PROC_NAME_COL)
+									{
+										__COUTT__ << "NEED Special art Process Name column value: " << valuePair.second << __E__;
+										needToHandleArtProcessName = true;
+										artProcessName = valuePair.second;
+										continue;										
+										artTable->tableView_->setValueAsString(
+											valuePair.second, row, artProcessNameCol);
+									}
+									else
+										typeTable.tableView_->setValueAsString(
+											valuePair.second, row, valuePair.first);
 								}
 							}
-							else 
-								__COUT__ << "Did not find '" << name << "' in original value cache. Looking for bestOriginalNodeName=" << bestOriginalNodeName << __E__;
+							else
+								__COUT__ << "Did not find '" << name
+								         << "' in original value cache. Looking for "
+								            "bestOriginalNodeName="
+								         << bestOriginalNodeName << __E__;
 
 							__COUTV__(exactMatch);
-							if(!exactMatch) //not exact match, so apply sibling rules
+							if(!exactMatch)  //not exact match, so apply sibling rules
 							{
-								if(originalMultinodeSameSiblingValues.find(nodePair.first) != originalMultinodeSameSiblingValues.end())
+								if(originalMultinodeSameSiblingValues.find(
+								       nodePair.first) !=
+								   originalMultinodeSameSiblingValues.end())
 								{
-									__COUT__ << "Applying multinode sibling same value rules for row=" << row << 
-										" UID='" << name << "'" << __E__;
-									for(const auto& sameValuePair : originalMultinodeSameSiblingValues.at(nodePair.first))
+									__COUT__ << "Applying multinode sibling same value "
+									            "rules for row="
+									         << row << " UID='" << name << "'" << __E__;
+									for(const auto& sameValuePair :
+									    originalMultinodeSameSiblingValues.at(
+									        nodePair.first))
 									{
-										if(!sameValuePair.second.first) continue;
-										__COUTT__ << "Found originalMultinodeSameSiblingValues[" << nodePair.first << 
-																"][" << sameValuePair.first /* col */ << "] = " << 
-																sameValuePair.second.first << 
-																" --> " << 
-																sameValuePair.second.second << __E__;	
-										typeTable.tableView_->setValueAsString(
-												sameValuePair.second.second, row, sameValuePair.first);
-									} //end loop to apply multinode same sibling values
+										if(!sameValuePair.second.first)
+											continue;
+										__COUTT__
+										    << "Found originalMultinodeSameSiblingValues["
+										    << nodePair.first << "]["
+										    << sameValuePair.first /* col */ << "] = "
+										    << sameValuePair.second.first << " --> "
+										    << sameValuePair.second.second << __E__;
+
+										//handle special columns, otherwise normal columns in type table
+										if(sameValuePair.first == ORIG_MAP_ART_PROC_NAME_COL)
+										{
+											__COUTT__ << "NEED Special art Process Name column value: " << sameValuePair.second.second << __E__;
+											needToHandleArtProcessName = true;
+											artProcessName = sameValuePair.second.second;
+											continue;
+											 artTable->tableView_->setValueAsString(
+												sameValuePair.second.second, row, artProcessNameCol);
+										}
+										else
+											typeTable.tableView_->setValueAsString(
+												sameValuePair.second.second,
+												row,
+												sameValuePair.first);
+									}  //end loop to apply multinode same sibling values
 								}
 
 								//do originalMultinodeAllSiblingEmbeddedPrinterIndex before originalMultinodeAllSiblingEmbeddedName, so that originalMultinodeAllSiblingEmbeddedName has priority
-								if(originalMultinodeAllSiblingEmbeddedPrinterIndex.find(nodePair.first) != originalMultinodeAllSiblingEmbeddedPrinterIndex.end())
+								if(originalMultinodeAllSiblingEmbeddedPrinterIndex.find(
+								       nodePair.first) !=
+								   originalMultinodeAllSiblingEmbeddedPrinterIndex.end())
 								{
-									__COUT__ << "Applying multinode sibling embbeded printer syntax index rules for row=" << row << 
-										" UID='" << name << "' and printer index='" << nodeNameIndex << "'" << __E__;
-									for(const auto& embedValuePair : originalMultinodeAllSiblingEmbeddedPrinterIndex.at(nodePair.first))
+									__COUT__ << "Applying multinode sibling embbeded "
+									            "printer syntax index rules for row="
+									         << row << " UID='" << name
+									         << "' and printer index='" << nodeNameIndex
+									         << "'" << __E__;
+									for(const auto& embedValuePair :
+									    originalMultinodeAllSiblingEmbeddedPrinterIndex
+									        .at(nodePair.first))
 									{
-										if(!embedValuePair.second.first || embedValuePair.second.second.size() < 2) continue;
-										__COUTT__ << "Found originalMultinodeAllSiblingEmbeddedPrinterIndex[" << nodePair.first << 
-																"][" << embedValuePair.first /* col */ << "] = " << 
-																embedValuePair.second.first << 
-																" --> " << 
-																StringMacros::vectorToString(embedValuePair.second.second) << __E__;	
-										std::string embedValue = StringMacros::vectorToString(embedValuePair.second.second, nodeNameIndex); 
+										if(!embedValuePair.second.first ||
+										   embedValuePair.second.second.size() < 2)
+											continue;
+										__COUTT__
+										    << "Found "
+										       "originalMultinodeAllSiblingEmbeddedPrinte"
+										       "rIndex["
+										    << nodePair.first << "]["
+										    << embedValuePair.first /* col */ << "] = "
+										    << embedValuePair.second.first << " --> "
+										    << StringMacros::vectorToString(
+										           embedValuePair.second.second)
+										    << __E__;
+										std::string embedValue =
+										    StringMacros::vectorToString(
+										        embedValuePair.second.second,
+										        nodeNameIndex);
 										__COUTTV__(embedValue);
-										typeTable.tableView_->setValueAsString(
+
+										//handle special columns, otherwise normal columns in type table
+										if(embedValuePair.first == ORIG_MAP_ART_PROC_NAME_COL)
+										{
+											__COUTT__ << "NEED Special art Process Name column value: " << embedValue << __E__;
+											needToHandleArtProcessName = true;
+											artProcessName = embedValue;
+											continue;
+											 artTable->tableView_->setValueAsString(
+												embedValue, row, artProcessNameCol);
+										}
+										else
+											typeTable.tableView_->setValueAsString(
 												embedValue, row, embedValuePair.first);
-									} //end loop to apply multinode same sibling values
+									}  //end loop to apply multinode same sibling values
 								}
 
-								if(originalMultinodeAllSiblingEmbeddedName.find(nodePair.first) != originalMultinodeAllSiblingEmbeddedName.end())
+								if(originalMultinodeAllSiblingEmbeddedName.find(
+								       nodePair.first) !=
+								   originalMultinodeAllSiblingEmbeddedName.end())
 								{
-									__COUT__ << "Applying multinode sibling embbeded name rules for row=" << row << 
-										" UID='" << name << "'" << __E__;
-									for(const auto& embedValuePair : originalMultinodeAllSiblingEmbeddedName.at(nodePair.first))
+									__COUT__ << "Applying multinode sibling embbeded "
+									            "name rules for row="
+									         << row << " UID='" << name << "'" << __E__;
+									for(const auto& embedValuePair :
+									    originalMultinodeAllSiblingEmbeddedName.at(
+									        nodePair.first))
 									{
-										if(!embedValuePair.second.first || embedValuePair.second.second.size() < 2) continue;
-										__COUTT__ << "Found originalMultinodeAllSiblingEmbeddedName[" << nodePair.first << 
-																"][" << embedValuePair.first /* col */ << "] = " << 
-																embedValuePair.second.first << 
-																" --> " << 
-																StringMacros::vectorToString(embedValuePair.second.second) << __E__;	
-										std::string embedValue = StringMacros::vectorToString(embedValuePair.second.second, name); 
+										if(!embedValuePair.second.first ||
+										   embedValuePair.second.second.size() < 2)
+											continue;
+										__COUTT__
+										    << "Found "
+										       "originalMultinodeAllSiblingEmbeddedName["
+										    << nodePair.first << "]["
+										    << embedValuePair.first /* col */ << "] = "
+										    << embedValuePair.second.first << " --> "
+										    << StringMacros::vectorToString(
+										           embedValuePair.second.second)
+										    << __E__;
+										std::string embedValue =
+										    StringMacros::vectorToString(
+										        embedValuePair.second.second, name);
 										__COUTTV__(embedValue);
+
+										//handle special columns, otherwise normal columns in type table
+										if(embedValuePair.first == ORIG_MAP_ART_PROC_NAME_COL)
+										{
+											__COUTT__ << "NEED Special art Process Name column value: " << embedValue << __E__;
+											needToHandleArtProcessName = true;
+											artProcessName = embedValue;
+											continue;
+											 artTable->tableView_->setValueAsString(
+												embedValue, row, artProcessNameCol);
+										}
+										else
 										typeTable.tableView_->setValueAsString(
-												embedValue, row, embedValuePair.first);
-									} //end loop to apply multinode same sibling values
-								}								
-								
-							}
+										    embedValue, row, embedValuePair.first);
+									}  //end loop to apply multinode same sibling values
+								}
+
+								__COUTV__(needToHandleArtProcessName);
+								if(needToHandleArtProcessName)
+								{
+									__COUTT__ << "Special art Process Name column value: " << artProcessName << __E__;
+									//need to find row or make row for art record	
+									std::string artRecord = typeTable.tableView_
+														->getDataView()[row]
+																		[typeTable.tableView_->findCol(ARTDAQTableBase::colARTDAQNotReader_
+													.colLinkToArtUID_)];
+									__COUTTV__(artRecord);
+							
+									const unsigned int artCommentCol =
+										typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_COMMENT);
+									const unsigned int artAuthorCol =
+										typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
+									const unsigned int artTimestampCol =
+										typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
+									
+									unsigned int artRow =  artTable->tableView_->findRow(
+													artTable->tableView_->getColUID(),
+													artRecord, 0 /* offsetRow */, true /* doNotThrow*/);
+									__COUTTV__(artRow);
+									if(artRow == TableView::INVALID) //need to make row!
+									{
+										__COUTT__ << "Need to make art Process record... artRecord=" << artRecord << __E__;
+										if(lastArtRow != TableView::INVALID)
+										{
+											__COUTT__ << "Copying art Process record... from lastArtRow=" << lastArtRow << __E__;
+											unsigned int copyRow = artTable->tableView_->copyRows(
+												author,
+												*(artTable->tableView_),
+												lastArtRow,
+												1 /*srcRowsToCopy*/,
+												-1 /*destOffsetRow*/,
+												true /*generateUniqueDataColumns*/);
+											artTable->tableView_->setValueAsString(
+												artRecord, copyRow, artTable->tableView_->getColUID());
+											artRow = copyRow;
+
+											//NOTE: changing UID and copyRows does not change author or date! So change it if not an exact match; so change it now and fill with original archive if exact match
+											artTable->tableView_->setValueAsString(
+												TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT,
+												artRow,
+												artCommentCol);
+											artTable->tableView_->setValueAsString(author, artRow, artAuthorCol);
+											artTable->tableView_->setValue(time(0), artRow, artTimestampCol);
+										}
+										else
+										{
+											__COUTT__ << "Creating art Process record... artRecord=" << artRecord << __E__;
+											
+											artRow = artTable->tableView_->addRow(
+							    				author, true /*incrementUniqueData*/, artRecord);
+										}
+										__COUTT__ << "Made art Process record... artRecord=" << artRecord << __E__;											
+									} //end making row
+
+									__COUTT__ << "Modify art Process record based on sibling rules... artRecord=" << artRecord << 
+										" artProcessName=" << artProcessName <<__E__;
+									
+									artTable->tableView_->setValueAsString(
+											artProcessName, artRow, artProcessNameCol);
+									lastArtRow = artRow;
+								}
+							} //end applying sibling value rules
 
 							if(TTEST(1))
 							{
 								__COUTTV__(row);
 								if(row < maxRowToDelete)
 									__COUTTV__(deleteRecordMap[row]);
-								
-								__COUTTV__(typeTable.tableView_ //comment
-																->getDataView()[row]
-																[commentCol]);
-								__COUTTV__(typeTable.tableView_ //author
-																->getDataView()[row]
-																[authorCol]);
-								__COUTTV__(typeTable.tableView_ //creation time
-																->getDataView()[row]
-																[timestampCol]);
+
+								__COUTTV__(typeTable
+								               .tableView_  //comment
+								               ->getDataView()[row][commentCol]);
+								__COUTTV__(typeTable
+								               .tableView_  //author
+								               ->getDataView()[row][authorCol]);
+								__COUTTV__(typeTable
+								               .tableView_  //creation time
+								               ->getDataView()[row][timestampCol]);
 							}
-						} // end copy and customize row handling
+						}  // end copy and customize row handling
 
 						isFirst = false;
-					} // end multi-node loop
-				} // end multi-node handling
-			} // end node record loop
+					}  // end multi-node loop
+				}      // end multi-node handling
+			}          // end node record loop
 
 			{  // delete record handling
 				__COUT__ << "Deleting '" << nodeTypePair.first
@@ -5041,7 +5809,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 				// unsigned int           row;
 				std::set<unsigned int> orderedRowSet;  // need to delete in reverse order
 				for(auto& deletePair : deleteRecordMap)
-				{					
+				{
 					if(!deletePair.second)
 					{
 						__COUTT__ << "Row keep = " << deletePair.first << __E__;
@@ -5060,25 +5828,39 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 			}  // end delete record handling
 
+			if(TTEST(1) && artTable) 
+			{
+				std::stringstream ss;
+				artTable->tableView_->print(ss);
+				__COUT_MULTI__(1, ss.str());
+			}
+
+			if(hasArtProcessName && artTable)
+				artTable->tableView_->init();  // verify new art table modifications (throws runtime_errors)
+
+			if(TTEST(1)) 
 			{
 				std::stringstream ss;
 				typeTable.tableView_->print(ss);
-				__COUT_MULTI__(1,ss.str());
+				__COUT_MULTI__(1, ss.str());
 			}
 
 			typeTable.tableView_->init();  // verify new table (throws runtime_errors)
 
 		}  // end node type loop
 
+		if(TTEST(1))
 		{
-			std::stringstream ss;
-			artdaqSupervisorTable.tableView_->print(ss);
-			__COUT_MULTI__(1,ss.str());
-		}
-		{
-			std::stringstream ss;
-			artdaqSubsystemTable.tableView_->print(ss);
-			__COUT_MULTI__(1,ss.str());
+			{
+				std::stringstream ss;
+				artdaqSupervisorTable.tableView_->print(ss);
+				__COUT_MULTI__(1, ss.str());
+			}
+			{
+				std::stringstream ss;
+				artdaqSubsystemTable.tableView_->print(ss);
+				__COUT_MULTI__(1, ss.str());
+			}
 		}
 
 		artdaqSupervisorTable.tableView_
@@ -5099,7 +5881,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 	         << __E__;
 
 	TableGroupKey newConfigurationGroupKey;
-	if(0) //keep for debugging save process
+	if(1)  //keep for debugging save process
 	{
 		__SS__ << "FIXME blocking save!" << __E__;
 		__SS_THROW__;

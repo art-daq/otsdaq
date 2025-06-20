@@ -113,18 +113,22 @@ void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version
 		table->getViewP()->setVersion(version);
 		return;
 	}
-	if(result.second.find("failed to create a client session") != std::string::npos || 
-		result.second.find("closed connection. calling hello") != std::string::npos)
+	if(result.second.find("failed to create a client session") != std::string::npos ||
+	   result.second.find("closed connection. calling hello") != std::string::npos)
 	{
-		__SS__ << "\n\n======> Database Interface Error while filling '" << table->getTableName() << "' version '"
-	       << versionstring << "' - it appears that the connection to the database been lost. Please check the database server and route to server.\n\n"
-	       << "Here is the error detail:\n\n"
-	       << result.second << __E__;
+		__SS__ << "\n\n======> Database Interface Error while filling '"
+		       << table->getTableName() << "' version '" << versionstring
+		       << "' - it appears that the connection to the database been lost. Please "
+		          "check the database server and route to server.\n\n"
+		       << "Here is the error detail:\n\n"
+		       << result.second << __E__;
 		__SS_ONLY_THROW__;
 	}
 
-	__SS__ << "\n\n======> Database Interface Error while filling '" << table->getTableName() << "' version '"
-	       << versionstring << "' - are you sure this version exists? Or has the connection to the database been lost?\n\n"
+	__SS__ << "\n\n======> Database Interface Error while filling '"
+	       << table->getTableName() << "' version '" << versionstring
+	       << "' - are you sure this version exists? Or has the connection to the "
+	          "database been lost?\n\n"
 	       << "Here is the error detail:\n\n"
 	       << result.second << __E__;
 	__SS_ONLY_THROW__;
@@ -295,13 +299,14 @@ try
 }  //end getAllTableGroupNames()
 catch(std::exception const& e)
 {
-	__SS__ << "Filter string '" << filterString << "' yielded Database Interface Exception:" << e.what()
-	       << "\n";
+	__SS__ << "Filter string '" << filterString
+	       << "' yielded Database Interface Exception:" << e.what() << "\n";
 	__SS_THROW__;
 }
 catch(...)
 {
-	__SS__ << "Filter string '" << filterString << "' yielded Database Interface Unknown exception.\n";
+	__SS__ << "Filter string '" << filterString
+	       << "' yielded Database Interface Unknown exception.\n";
 	__SS_THROW__;
 }  //end getAllTableGroupNames() catch
 
@@ -422,8 +427,8 @@ try
 }  // end getTableGroupMembers()
 catch(std::exception const& e)
 {
-	__SS__ << "Database Interface Exception getting Group's member tables for '" << tableGroup
-	       << "':\n\n"
+	__SS__ << "Database Interface Exception getting Group's member tables for '"
+	       << tableGroup << "':\n\n"
 	       << e.what() << "\n";
 	if(std::string(e.what()).find("connection refused") != std::string::npos)
 	{
@@ -434,8 +439,8 @@ catch(std::exception const& e)
 }
 catch(...)
 {
-	__SS__ << "Database Interface Unknown exception getting Group's member tables for '" << tableGroup
-	       << ".'\n";
+	__SS__ << "Database Interface Unknown exception getting Group's member tables for '"
+	       << tableGroup << ".'\n";
 	__COUT_ERR__ << ss.str();
 	__SS_THROW__;
 }  // end getTableGroupMembers() catch
@@ -502,14 +507,15 @@ try
 }  //end getCachedTableGroupMembers()
 catch(std::exception const& e)
 {
-	__SS__ << "Database Interface Exception getCachedTableGroupMembers for '" << tableGroup << "':\n\n"
+	__SS__ << "Database Interface Exception getCachedTableGroupMembers for '"
+	       << tableGroup << "':\n\n"
 	       << e.what() << "\n";
 	__SS_THROW__;
 }
 catch(...)
 {
-	__SS__ << "Database Interface Unknown exception getCachedTableGroupMembers for '" << tableGroup
-	       << ".'\n";
+	__SS__ << "Database Interface Unknown exception getCachedTableGroupMembers for '"
+	       << tableGroup << ".'\n";
 	__SS_THROW__;
 }  //end getCachedTableGroupMembers() catch
 
@@ -567,15 +573,16 @@ try
 }  //end saveTableGroupMemberCache()
 catch(std::exception const& e)
 {
-	__SS__ << "Database Interface Exception saveTableGroupMemberCache for '" << tableGroup << "':\n\n"
+	__SS__ << "Database Interface Exception saveTableGroupMemberCache for '" << tableGroup
+	       << "':\n\n"
 	       << e.what() << "\n";
 	__COUT_ERR__ << ss.str();
 	__SS_THROW__;
 }
 catch(...)
 {
-	__SS__ << "Database Interface Unknown exception saveTableGroupMemberCache for '" << tableGroup
-	       << ".'\n";
+	__SS__ << "Database Interface Unknown exception saveTableGroupMemberCache for '"
+	       << tableGroup << ".'\n";
 	__COUT_ERR__ << ss.str();
 	__SS_THROW__;
 }  //end saveTableGroupMemberCache() catch
@@ -637,13 +644,15 @@ try
 }  // end saveTableGroup()
 catch(std::exception const& e)
 {
-	__SS__ << "Database Interface Exception saveTableGroup for '" << tableGroup << "':\n\n"
+	__SS__ << "Database Interface Exception saveTableGroup for '" << tableGroup
+	       << "':\n\n"
 	       << e.what() << "\n";
 	__SS_THROW__;
 }
 catch(...)
 {
-	__SS__ << "Database Interface Unknown exception saveTableGroup for '" << tableGroup << ".'\n";
+	__SS__ << "Database Interface Unknown exception saveTableGroup for '" << tableGroup
+	       << ".'\n";
 	__SS_THROW__;
 }  //end saveTableGroup() catch
 
@@ -684,15 +693,16 @@ try
 }  //end saveCustomJSON()
 catch(std::exception const& e)
 {
-	__SS__ << "Database Interface Exception saveCustomJSON for '" << documentNameToSave << "':\n\n"
+	__SS__ << "Database Interface Exception saveCustomJSON for '" << documentNameToSave
+	       << "':\n\n"
 	       << e.what() << "\n";
 	__COUT_ERR__ << ss.str();
 	__SS_THROW__;
 }
 catch(...)
 {
-	__SS__ << "Database Interface Unknown exception saveCustomJSON for '" << documentNameToSave
-	       << ".'\n";
+	__SS__ << "Database Interface Unknown exception saveCustomJSON for '"
+	       << documentNameToSave << ".'\n";
 	__COUT_ERR__ << ss.str();
 	__SS_THROW__;
 }  //end saveCustomJSON() catch
@@ -720,16 +730,16 @@ try
 }  //end loadCustomJSON()
 catch(std::exception const& e)
 {
-	__SS__ << "Database Interface Exception saveCustomJSON for '" << documentNameToLoad << "-v"
-	       << documentVersionToLoad << "':\n\n"
+	__SS__ << "Database Interface Exception saveCustomJSON for '" << documentNameToLoad
+	       << "-v" << documentVersionToLoad << "':\n\n"
 	       << e.what() << "\n";
 	__COUT_ERR__ << ss.str();
 	__SS_THROW__;
 }
 catch(...)
 {
-	__SS__ << "Database Interface Unknown exception saveCustomJSON for '" << documentNameToLoad << "-v"
-	       << documentVersionToLoad << ".'\n";
+	__SS__ << "Database Interface Unknown exception saveCustomJSON for '"
+	       << documentNameToLoad << "-v" << documentVersionToLoad << ".'\n";
 	__COUT_ERR__ << ss.str();
 	__SS_THROW__;
 }  //end loadCustomJSON() catch

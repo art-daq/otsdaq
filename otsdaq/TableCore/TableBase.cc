@@ -318,16 +318,16 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 		__COUTTV__(viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first == needleVersion)
 			continue;  // skip needle version
-		__COUTVS__(2,viewPairReverseIterator->first);
+		__COUTVS__(2, viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first == ignoreVersion)
 			continue;  // skip ignore version
-		__COUTVS__(2,viewPairReverseIterator->first);
+		__COUTVS__(2, viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first.isTemporaryVersion())
 			continue;  // skip temporary versions
-		__COUTVS__(2,viewPairReverseIterator->first);
+		__COUTVS__(2, viewPairReverseIterator->first);
 		if(viewPairReverseIterator->second.getNumberOfRows() != rows)
 			continue;  // row mismatch
-		__COUTVS__(2,viewPairReverseIterator->first);
+		__COUTVS__(2, viewPairReverseIterator->first);
 		if(viewPairReverseIterator->second.getDataColumnSize() != cols ||
 		   viewPairReverseIterator->second.getSourceColumnMismatch() != 0)
 			continue;  // col mismatch
@@ -395,19 +395,13 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 				{
 					match = false;
 
-					__COUTT__ << "Value name mismatch " << col << ":"
-							<<
-							viewPairReverseIterator->second.getDataView()[row][col]
-																				<< "[" <<
-																				viewPairReverseIterator->second.getDataView()[row][col].size()
-																				<< "]" << 							" vs " <<
-																				needleView->getDataView()[row][col] << "["
-																				<<
-																				needleView->getDataView()[row][col].size()
-																				<<
-																				"]"
-																				<<
-																				__E__;
+					__COUTT__
+					    << "Value name mismatch " << col << ":"
+					    << viewPairReverseIterator->second.getDataView()[row][col] << "["
+					    << viewPairReverseIterator->second.getDataView()[row][col].size()
+					    << "]"
+					    << " vs " << needleView->getDataView()[row][col] << "["
+					    << needleView->getDataView()[row][col].size() << "]" << __E__;
 
 					break;
 				}

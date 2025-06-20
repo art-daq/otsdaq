@@ -418,7 +418,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 					{
 						//find availableThreadIndex
 						foundThreadIndex = -1;
-						size_t ii = 0;
+						size_t ii        = 0;
 						while(foundThreadIndex == -1)
 						{
 							for(int i = 0; i < numOfThreads; ++i)
@@ -430,13 +430,16 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 							if(foundThreadIndex == -1)
 							{
 								__GEN_COUT_TYPE__(TLVL_DEBUG + 2)
-								    << __COUT_HDR__ << "Waiting for available thread... iteration # " << ii
-								    << __E__;
+								    << __COUT_HDR__
+								    << "Waiting for available thread... iteration # "
+								    << ii << __E__;
 								if(++ii > 100 /* 1s */ * 10)
 								{
-									__GEN_SS__ << "Threads seem to be stuck getting table info! Timeout while waiting..." << __E__;
+									__GEN_SS__ << "Threads seem to be stuck getting "
+									              "table info! Timeout while waiting..."
+									           << __E__;
 									__GEN_SS_THROW__;
-								} 
+								}
 								usleep(10000);
 							}
 						}  //end thread search loop
@@ -915,7 +918,7 @@ catch(...)
 
 //==============================================================================
 /// compareTableGroupThread()
-///  Compares the input group member map to a group name/key's member map. 
+///  Compares the input group member map to a group name/key's member map.
 ///	 Note: the input member map should not include the Meta Data Table
 void ConfigurationManagerRW::compareTableGroupThread(
     ConfigurationManagerRW*                                      cfgMgr,
@@ -951,13 +954,16 @@ try
 	                       compareToMemberTableAliasesPtr);
 
 	bool debug = false;
-	if(TTEST(9)) // = DEBUG+9
+	if(TTEST(9))  // = DEBUG+9
 	{
 		debug = true;
 		for(auto& memberPair : groupMemberMap)
-			__COUTS__(9) << "member " << memberPair.first << " (" << memberPair.second << ")" << __E__;
+			__COUTS__(9) << "member " << memberPair.first << " (" << memberPair.second
+			             << ")" << __E__;
 		for(auto& memberPair : compareToMemberMap)
-			__COUTS__(9) << "compare " << groupName << " (" << groupKeyToCompare << ") member:" << memberPair.first << " (" << memberPair.second << ")" << __E__;		
+			__COUTS__(9) << "compare " << groupName << " (" << groupKeyToCompare
+			             << ") member:" << memberPair.first << " (" << memberPair.second
+			             << ")" << __E__;
 	}
 
 	bool isDifferent = false;
@@ -973,7 +979,8 @@ try
 			{  // then different
 				isDifferent = true;
 				if(debug)
-					__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare << ") on alias " << memberPair.first << __E__;
+					__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare
+					          << ") on alias " << memberPair.first << __E__;
 				break;
 			}
 			else
@@ -985,7 +992,8 @@ try
 			// then different
 			isDifferent = true;
 			if(debug)
-				__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare << ") on reverse alias " << memberPair.first << __E__;
+				__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare
+				          << ") on reverse alias " << memberPair.first << __E__;
 			break;
 
 		}  // else handle as table version comparison
@@ -997,18 +1005,23 @@ try
 			// then different
 			isDifferent = true;
 			if(debug)
-				__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare << ") on mismatch " << memberPair.first << __E__;
+				__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare
+				          << ") on mismatch " << memberPair.first << __E__;
 			break;
 		}
 	}
 
 	// check member size for exact match
-	if(!isDifferent && groupMemberMap.size() != compareToMemberMap.size()) // different size, so not same (groupMemberMap is a subset of memberPairs)
+	if(!isDifferent &&
+	   groupMemberMap.size() !=
+	       compareToMemberMap
+	           .size())  // different size, so not same (groupMemberMap is a subset of memberPairs)
 	{
-		isDifferent = true;  
-		
+		isDifferent = true;
+
 		if(debug)
-			__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare << ") on size " << __E__;
+			__COUTT__ << "diff " << groupName << " (" << groupKeyToCompare << ") on size "
+			          << __E__;
 	}
 
 	if(!isDifferent)  //found an exact match!
@@ -1745,10 +1758,11 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 /// Created for use in otsdaq_flatten_system_aliases and otsdaq_export_system_aliases, e.g.
 ///
 ///	If default fill version, then just return meta table as is
-TableBase* ConfigurationManagerRW::getMetadataTable(TableVersion fillVersion /* = TableVersion()*/)
-{ 
+TableBase* ConfigurationManagerRW::getMetadataTable(
+    TableVersion fillVersion /* = TableVersion()*/)
+{
 	if(fillVersion.isInvalid())
-		return &groupMetadataTable_; 
+		return &groupMetadataTable_;
 	//else load specified fill version
 
 	//only lock metadata table since it is shared by all group accesses
@@ -1765,27 +1779,26 @@ TableBase* ConfigurationManagerRW::getMetadataTable(TableVersion fillVersion /* 
 	}
 	catch(const std::runtime_error& e)
 	{
-		__GEN_COUT_WARN__
-			<< "Failed to load " << groupMetadataTable_.getTableName() << "-v"
-			<< fillVersion << ". Metadata error: " << e.what()
-			<< __E__;
+		__GEN_COUT_WARN__ << "Failed to load " << groupMetadataTable_.getTableName()
+		                  << "-v" << fillVersion << ". Metadata error: " << e.what()
+		                  << __E__;
 	}
 	catch(...)
 	{
-		__GEN_COUT_WARN__
-			<< "Failed to load " << groupMetadataTable_.getTableName() << "-v"
-			<<fillVersion << ". Ignoring unknown metadata error. "
-			<< __E__;
+		__GEN_COUT_WARN__ << "Failed to load " << groupMetadataTable_.getTableName()
+		                  << "-v" << fillVersion << ". Ignoring unknown metadata error. "
+		                  << __E__;
 	}
 
 	// check that there is only 1 row
 	if(groupMetadataTable_.getView().getNumberOfRows() != 1)
 	{
 		groupMetadataTable_.print();
-		__GEN_COUT_ERR__ << "Ignoring that groupMetadataTable_ v" << fillVersion << " has wrong "
-							"number of rows!' Must "
-							"be 1. Going with anonymous defaults."
-							<< __E__;
+		__GEN_COUT_ERR__ << "Ignoring that groupMetadataTable_ v" << fillVersion
+		                 << " has wrong "
+		                    "number of rows!' Must "
+		                    "be 1. Going with anonymous defaults."
+		                 << __E__;
 
 		// fix metadata table
 		while(groupMetadataTable_.getViewP()->getNumberOfRows() > 1)
@@ -1794,7 +1807,7 @@ TableBase* ConfigurationManagerRW::getMetadataTable(TableVersion fillVersion /* 
 			groupMetadataTable_.getViewP()->addRow();
 	}
 
-	return &groupMetadataTable_; 
+	return &groupMetadataTable_;
 }  // end getMetadataTable()
 
 //==============================================================================
@@ -2057,8 +2070,9 @@ TableVersion ConfigurationManagerRW::saveModifiedVersion(
 				catch(const std::runtime_error& e)
 				{
 					// ignore error
-					__COUTT__ << "'" << tableName << "' version failed to load: "
-									<< *versionReverseIterator << __E__;
+					__COUTT__ << "'" << tableName
+					          << "' version failed to load: " << *versionReverseIterator
+					          << __E__;
 				}
 			}
 		}
@@ -2175,7 +2189,7 @@ GroupEditStruct::GroupEditStruct(const ConfigurationManager::GroupType& groupTyp
 	               : (groupType == ConfigurationManager::GroupType::ITERATE_TYPE
 	                      ? ConfigurationManager::getIterateMemberNames()
 	                      : cfgMgr->getConfigurationMemberNames()));
-	
+
 	for(auto& memberName : memberNames)
 		try
 		{
@@ -2355,45 +2369,49 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 	bool groupAliasChange = false;
 	bool tableAliasChange = false;
 
-	if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE) //if not backbone group save, consider changing aliases (not if it is backbone group, tables not necessarily active yet, which causes error in GroupEditStruct backboneGroupEdit)
+	if(groupType_ !=
+	   ConfigurationManager::GroupType::
+	       BACKBONE_TYPE)  //if not backbone group save, consider changing aliases (not if it is backbone group, tables not necessarily active yet, which causes error in GroupEditStruct backboneGroupEdit)
 	{
 		GroupEditStruct backboneGroupEdit(ConfigurationManager::GroupType::BACKBONE_TYPE,
-										cfgMgr);
+		                                  cfgMgr);
 
-		if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE && updateGroupAliases)
+		if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE &&
+		   updateGroupAliases)
 		{
 			// check group aliases ... a la
 			// ConfigurationGUISupervisor::handleSetGroupAliasInBackboneXML
 
 			TableEditStruct& groupAliasTable = backboneGroupEdit.getTableEditStruct(
-				ConfigurationManager::GROUP_ALIASES_TABLE_NAME, true /*markModified*/);
+			    ConfigurationManager::GROUP_ALIASES_TABLE_NAME, true /*markModified*/);
 			TableView* tableView = groupAliasTable.tableView_;
 
 			// unsigned int col;
 			unsigned int row = 0;
 
 			std::vector<std::pair<std::string, ConfigurationTree>> aliasNodePairs =
-				cfgMgr->getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
+			    cfgMgr->getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
+			        .getChildren();
 			std::string groupName, groupKey;
 			for(auto& aliasNodePair : aliasNodePairs)
 			{
 				groupName = aliasNodePair.second.getNode("GroupName").getValueAsString();
 				groupKey  = aliasNodePair.second.getNode("GroupKey").getValueAsString();
 
-				__GEN_COUT__ << "Group Alias: " << aliasNodePair.first << " => " << groupName
-							<< "(" << groupKey << "); row=" << row << __E__;
+				__GEN_COUT__ << "Group Alias: " << aliasNodePair.first << " => "
+				             << groupName << "(" << groupKey << "); row=" << row << __E__;
 
 				if(groupName == originalGroupName_ &&
-				TableGroupKey(groupKey) == originalGroupKey_)
+				   TableGroupKey(groupKey) == originalGroupKey_)
 				{
 					__GEN_COUT__ << "Found alias! Changing group key from ("
-								<< originalGroupKey_ << ") to (" << newGroupKey << ")"
-								<< __E__;
+					             << originalGroupKey_ << ") to (" << newGroupKey << ")"
+					             << __E__;
 
 					groupAliasChange = true;
 
 					tableView->setValueAsString(
-						newGroupKey.toString(), row, tableView->findCol("GroupKey"));
+					    newGroupKey.toString(), row, tableView->findCol("GroupKey"));
 				}
 
 				++row;
@@ -2449,53 +2467,57 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 			}
 		}  // end updateGroupAliases handling
 
-		if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE && updateTableAliases)
+		if(groupType_ != ConfigurationManager::GroupType::BACKBONE_TYPE &&
+		   updateTableAliases)
 		{
 			// update all table version aliases
 			TableView* tableView =
-				backboneGroupEdit
-					.getTableEditStruct(ConfigurationManager::VERSION_ALIASES_TABLE_NAME,
-										true /*markModified*/)
-					.tableView_;
+			    backboneGroupEdit
+			        .getTableEditStruct(ConfigurationManager::VERSION_ALIASES_TABLE_NAME,
+			                            true /*markModified*/)
+			        .tableView_;
 
 			for(auto& groupTable : groupTables_)
 			{
 				if(groupTable.second.originalVersion_ ==
-				groupMembers_.at(groupTable.second.tableName_))
+				   groupMembers_.at(groupTable.second.tableName_))
 					continue;  // skip if no change
 
 				__GEN_COUT__ << "Checking alias... original version is "
-							<< groupTable.second.tableName_ << "-v"
-							<< groupTable.second.originalVersion_ << " and new version is v"
-							<< groupMembers_.at(groupTable.second.tableName_) << __E__;
+				             << groupTable.second.tableName_ << "-v"
+				             << groupTable.second.originalVersion_
+				             << " and new version is v"
+				             << groupMembers_.at(groupTable.second.tableName_) << __E__;
 
 				// unsigned int col;
 				unsigned int row = 0;
 
 				std::vector<std::pair<std::string, ConfigurationTree>> aliasNodePairs =
-					cfgMgr->getNode(ConfigurationManager::VERSION_ALIASES_TABLE_NAME)
-						.getChildren();
+				    cfgMgr->getNode(ConfigurationManager::VERSION_ALIASES_TABLE_NAME)
+				        .getChildren();
 				std::string tableName, tableVersion;
 				for(auto& aliasNodePair : aliasNodePairs)
 				{
-					tableName = aliasNodePair.second.getNode("TableName").getValueAsString();
-					tableVersion = aliasNodePair.second.getNode("Version").getValueAsString();
+					tableName =
+					    aliasNodePair.second.getNode("TableName").getValueAsString();
+					tableVersion =
+					    aliasNodePair.second.getNode("Version").getValueAsString();
 
 					__GEN_COUT__ << "Table Alias: " << aliasNodePair.first << " => "
-								<< tableName << "-v" << tableVersion << "" << __E__;
+					             << tableName << "-v" << tableVersion << "" << __E__;
 
 					if(tableName == groupTable.second.tableName_ &&
-					TableVersion(tableVersion) == groupTable.second.originalVersion_)
+					   TableVersion(tableVersion) == groupTable.second.originalVersion_)
 					{
 						__GEN_COUT__ << "Found alias! Changing icon table version alias."
-									<< __E__;
+						             << __E__;
 
 						tableAliasChange = true;
 
 						tableView->setValueAsString(
-							groupMembers_.at(groupTable.second.tableName_).toString(),
-							row,
-							tableView->findCol("Version"));
+						    groupMembers_.at(groupTable.second.tableName_).toString(),
+						    row,
+						    tableView->findCol("Version"));
 					}
 
 					++row;
@@ -2519,9 +2541,9 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 				__GEN_COUT__ << table.first << " v" << table.second << __E__;
 			}
 			backboneGroupEdit.saveChanges(
-				backboneGroupEdit.originalGroupName_,
-				localNewBackboneKey,
-				foundEquivalentBackboneKey ? foundEquivalentBackboneKey : nullptr);
+			    backboneGroupEdit.originalGroupName_,
+			    localNewBackboneKey,
+			    foundEquivalentBackboneKey ? foundEquivalentBackboneKey : nullptr);
 
 			if(newBackboneKey)
 				*newBackboneKey = localNewBackboneKey;
@@ -2530,40 +2552,45 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 		// acquire all active groups and ignore errors, so that activateTableGroup does not
 		// erase other active groups
 		{
-			__GEN_COUT__ << "Restoring active table groups, before activating new groups..."
-						<< __E__;
+			__GEN_COUT__
+			    << "Restoring active table groups, before activating new groups..."
+			    << __E__;
 
 			std::string localAccumulatedWarnings;
-			cfgMgr->restoreActiveTableGroups(false /*throwErrors*/,
-											"" /*pathToActiveGroupsFile*/,
-											ConfigurationManager::LoadGroupType::
-												ALL_TYPES /*onlyLoadIfBackboneOrContext*/,
-											&localAccumulatedWarnings);
+			cfgMgr->restoreActiveTableGroups(
+			    false /*throwErrors*/,
+			    "" /*pathToActiveGroupsFile*/,
+			    ConfigurationManager::LoadGroupType::
+			        ALL_TYPES /*onlyLoadIfBackboneOrContext*/,
+			    &localAccumulatedWarnings);
 		}
 
 		// activate new groups
 		if(!localNewBackboneKey.isInvalid())
-			cfgMgr->activateTableGroup(backboneGroupEdit.originalGroupName_,
-									localNewBackboneKey,
-									accumulatedWarnings ? accumulatedWarnings : nullptr);
-									
-	} //end non-backbone save type handling
-	else //is backbone save type
+			cfgMgr->activateTableGroup(
+			    backboneGroupEdit.originalGroupName_,
+			    localNewBackboneKey,
+			    accumulatedWarnings ? accumulatedWarnings : nullptr);
+
+	}     //end non-backbone save type handling
+	else  //is backbone save type
 	{
 		// acquire all active groups and ignore errors, so that activateTableGroup does not
 		// erase other active groups
 		{
-			__GEN_COUT__ << "Restoring active table groups, before activating new groups..."
-						<< __E__;
+			__GEN_COUT__
+			    << "Restoring active table groups, before activating new groups..."
+			    << __E__;
 
 			std::string localAccumulatedWarnings;
-			cfgMgr->restoreActiveTableGroups(false /*throwErrors*/,
-											"" /*pathToActiveGroupsFile*/,
-											ConfigurationManager::LoadGroupType::
-												ALL_TYPES /*onlyLoadIfBackboneOrContext*/,
-											&localAccumulatedWarnings);
+			cfgMgr->restoreActiveTableGroups(
+			    false /*throwErrors*/,
+			    "" /*pathToActiveGroupsFile*/,
+			    ConfigurationManager::LoadGroupType::
+			        ALL_TYPES /*onlyLoadIfBackboneOrContext*/,
+			    &localAccumulatedWarnings);
 		}
-	} //end backbone save type handling
+	}  //end backbone save type handling
 
 	if(activateNewGroup)
 		cfgMgr->activateTableGroup(groupNameToSave,
@@ -2612,8 +2639,7 @@ void ConfigurationManagerRW::testXDAQContext()
 		}
 		__GEN_COUTV__(runTimeSeconds());
 
-		std::set<std::string /*name*/> tableNames =
-		    theInterface_->getAllTableNames();
+		std::set<std::string /*name*/> tableNames = theInterface_->getAllTableNames();
 		__GEN_COUT__ << "Number of Tables: " << tableNames.size() << __E__;
 
 		__GEN_COUTV__(runTimeSeconds());
@@ -2627,29 +2653,29 @@ void ConfigurationManagerRW::testXDAQContext()
 		}
 		__GEN_COUTV__(runTimeSeconds());
 
-		TableGroupKey latestGroupKey = 
-			theInterface_->findLatestGroupKey(debugGroupName);
+		TableGroupKey latestGroupKey = theInterface_->findLatestGroupKey(debugGroupName);
 		__GEN_COUTV__(latestGroupKey);
 
 		__GEN_COUTV__(runTimeSeconds());
 
-
-		TableBase    localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + debugGroupName);
-		TableVersion lastestGroupCacheKey = 
-			theInterface_->findLatestVersion(&localGroupMemberCacheSaver);
+		TableBase    localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND +
+                                             debugGroupName);
+		TableVersion lastestGroupCacheKey =
+		    theInterface_->findLatestVersion(&localGroupMemberCacheSaver);
 		__GEN_COUTV__(lastestGroupCacheKey);
 
 		__GEN_COUTV__(runTimeSeconds());
 
-
 		//test a group save that already exists
 		{
 			TableGroupKey groupKey(int(0));
-			__GEN_COUT__ << "Testing group save of " << debugGroupName << "(" << groupKey << ")" << __E__;
-			std::map<std::string, TableVersion>  groupMembers;
+			__GEN_COUT__ << "Testing group save of " << debugGroupName << "(" << groupKey
+			             << ")" << __E__;
+			std::map<std::string, TableVersion> groupMembers;
 			groupMembers["DesktopIconTable"] = TableVersion(123);
-			theInterface_->saveTableGroup(groupMembers, 
-				TableGroupKey::getFullGroupString(debugGroupName, groupKey));
+			theInterface_->saveTableGroup(
+			    groupMembers,
+			    TableGroupKey::getFullGroupString(debugGroupName, groupKey));
 		}
 		return;
 
@@ -2726,9 +2752,10 @@ void ConfigurationManagerRW::testXDAQContext()
 			*accumulatedWarnings += ss.str();
 		else
 			throw;
-	} //end catch
-	
-	__GEN_COUT__ << "testXDAQContext() end runTimeSeconds()=" << runTimeSeconds() << __E__;
+	}  //end catch
+
+	__GEN_COUT__ << "testXDAQContext() end runTimeSeconds()=" << runTimeSeconds()
+	             << __E__;
 	return;
 
 	try
@@ -2750,4 +2777,4 @@ void ConfigurationManagerRW::testXDAQContext()
 	{
 		__GEN_COUT__ << "Failed to load table..." << __E__;
 	}
-} //end testXDAQContext()
+}  //end testXDAQContext()
