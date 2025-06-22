@@ -3705,9 +3705,9 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			__COUT_INFO__ << "Edits complete for new artdaq Supervisor! Created '"
 			              << appUID << "'" << __E__;
 
-			if(1)  //keep for debugging save process
+			if(0)  //keep for debugging save process
 			{
-				__SS__ << "FIXME blocking artdaq supervisor save!" << __E__;
+				__SS__ << "DEBUG blocking artdaq supervisor save!" << __E__;
 				__SS_THROW__;
 			}
 			TableGroupKey newContextGroupKey;
@@ -5924,7 +5924,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 	TableGroupKey newConfigurationGroupKey;
 	if(0)  //keep for debugging save process
 	{
-		__SS__ << "FIXME blocking save!" << __E__;
+		__SS__ << "DEBUG blocking save!" << __E__;
 		__SS_THROW__;
 	}
 	{
