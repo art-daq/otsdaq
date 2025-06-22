@@ -2604,7 +2604,7 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 ///Used for debugging Configuration calls during development
 void ConfigurationManagerRW::testXDAQContext()
 {
-	if(1)
+	if(0)
 		return;  //if 0 to debug
 	__GEN_COUTV__(runTimeSeconds());
 
