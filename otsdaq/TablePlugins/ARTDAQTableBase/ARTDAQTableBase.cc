@@ -5495,7 +5495,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							std::string bestOriginalNodeName;
 							for(const auto& originalNodePair : originalMultinodeValues)
 							{
-								__COUTTV__(originalNodePair.second
+								if(originalNodePair.second.find(ORIG_MAP_ART_PROC_NAME_COL) != originalNodePair.second.end())
+									__COUTTV__(originalNodePair.second
 														.at(ORIG_MAP_ART_PROC_NAME_COL));
 								size_t score = 0;
 								for(size_t c = 0, d = 0;
@@ -5723,13 +5724,13 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 																		[typeTable.tableView_->findCol(ARTDAQTableBase::colARTDAQNotReader_
 													.colLinkToArtUID_)];
 									__COUTTV__(artRecord);
-							
+
 									const unsigned int artCommentCol =
-										typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_COMMENT);
+										artTable->tableView_->findColByType(TableViewColumnInfo::TYPE_COMMENT);
 									const unsigned int artAuthorCol =
-										typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
+										artTable->tableView_->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
 									const unsigned int artTimestampCol =
-										typeTable.tableView_->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
+										artTable->tableView_->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
 									
 									unsigned int artRow =  artTable->tableView_->findRow(
 													artTable->tableView_->getColUID(),
@@ -5738,6 +5739,30 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 									if(artRow == TableView::INVALID) //need to make row!
 									{
 										__COUTT__ << "Need to make art Process record... artRecord=" << artRecord << __E__;
+
+										//change lastArtRow to best match's art row
+										{
+											__COUTTV__(bestOriginalNodeName);
+											const unsigned int bestMatchRow = typeTable.tableView_->findRow(
+												typeTable.tableView_->getColUID(),
+												bestOriginalNodeName);
+											__COUTTV__(bestMatchRow);
+
+											std::string bestMatchArtRecord = typeTable.tableView_
+															->getDataView()[bestMatchRow]
+																			[typeTable.tableView_->findCol(ARTDAQTableBase::colARTDAQNotReader_
+														.colLinkToArtUID_)];
+											__COUTTV__(bestMatchArtRecord);
+
+											unsigned int bestMatchArtRow =  artTable->tableView_->findRow(
+														artTable->tableView_->getColUID(),
+														bestMatchArtRecord, 0 /* offsetRow */, true /* doNotThrow*/);
+											__COUTTV__(bestMatchArtRow);
+											if(bestMatchArtRow != TableView::INVALID) //found best match's art record
+												lastArtRow = bestMatchArtRow; //use best match's art record for copy
+											__COUTTV__(lastArtRow);
+										}
+
 										if(lastArtRow != TableView::INVALID)
 										{
 											__COUTT__ << "Copying art Process record... from lastArtRow=" << lastArtRow << __E__;
@@ -5778,6 +5803,22 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 									lastArtRow = artRow;
 								}
 							} //end applying sibling value rules
+							else if(needToHandleArtProcessName) //get lastArtRow for future multirecord siblings
+							{
+								std::string artRecord = typeTable.tableView_
+													->getDataView()[row]
+																	[typeTable.tableView_->findCol(ARTDAQTableBase::colARTDAQNotReader_
+												.colLinkToArtUID_)];
+								__COUTTV__(artRecord);
+								unsigned int artRow =  artTable->tableView_->findRow(
+													artTable->tableView_->getColUID(),
+													artRecord, 0 /* offsetRow */, true /* doNotThrow*/);
+								__COUTTV__(artRow);
+								if(artRow != TableView::INVALID) //found valid art record row
+									lastArtRow = artRow;
+							}
+
+							__COUTTV__(lastArtRow);
 
 							if(TTEST(1))
 							{
@@ -5881,7 +5922,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 	         << __E__;
 
 	TableGroupKey newConfigurationGroupKey;
-	if(1)  //keep for debugging save process
+	if(0)  //keep for debugging save process
 	{
 		__SS__ << "FIXME blocking save!" << __E__;
 		__SS_THROW__;

@@ -130,9 +130,9 @@ unsigned int TableView::copyRows(const std::string& author,
                                  unsigned char generateUniqueDataColumns /* = false */,
                                  const std::string& baseNameAutoUID /*= "" */)
 {
-	//__COUTV__(destOffsetRow);
-	//__COUTV__(srcOffsetRow);
-	//__COUTV__(srcRowsToCopy);
+	__COUTTV__(destOffsetRow);
+	__COUTTV__(srcOffsetRow);
+	__COUTTV__(srcRowsToCopy);
 
 	unsigned int retRow = (unsigned int)-1;
 
@@ -169,8 +169,13 @@ unsigned int TableView::copyRows(const std::string& author,
 			        TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA))
 				continue;  // if leaving unique data, then skip copy
 			else
+			{
+				__COUTT__ << "Copying [" << r + srcOffsetRow << "][" << 
+					col << "] to [" << destOffsetRow << "][" << col << "] = " << 
+					src.theDataView_[r + srcOffsetRow][col] << __E__;
 				theDataView_[destOffsetRow][col] =
 				    src.theDataView_[r + srcOffsetRow][col];
+			}
 
 		// prepare for next row
 		++destOffsetRow;
