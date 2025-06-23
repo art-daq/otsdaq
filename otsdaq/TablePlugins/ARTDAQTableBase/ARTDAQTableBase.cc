@@ -3927,7 +3927,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			// else leave disconnected link
 
 		}  // end subsystem loop
-		
+
 		// Step	2. for each node, create/verify records
 		for(auto& nodeTypePair : nodeTypeToObjectMap)
 		{
@@ -3974,8 +3974,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 				         << "' that has an art link and thus Process Name, so creating "
 				            "table edit structure to ART table."
 				         << __E__;
-				artTable          = &configGroupEdit.getTableEditStruct(ARTDAQTableBase::ARTDAQ_ART_TABLE,
-                                                               true /*markModified*/);
+				artTable = &configGroupEdit.getTableEditStruct(
+				    ARTDAQTableBase::ARTDAQ_ART_TABLE, true /*markModified*/);
 				if(TTEST(1))
 				{
 					std::stringstream ss;
@@ -4193,8 +4193,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							                        string /* splitForEmbeddedIndex */>>>()));
 
 							// bool         isFirst     = true;
-							unsigned int originalRow     = TableView::INVALID,
-							             lastOriginalRow = TableView::INVALID,
+							unsigned int originalRow       = TableView::INVALID,
+							             lastOriginalRow   = TableView::INVALID,
 							             lastArtProcessRow = TableView::INVALID;
 							for(unsigned int i = 0; i < originalNodeIndices.size(); ++i)
 							{
@@ -4546,7 +4546,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 											       ARTDAQTableBase::colARTDAQNotReader_
 											           .colLinkToArtUID_)
 											{
-												//note at this point, col = Link to art record 
+												//note at this point, col = Link to art record
 												__COUT__
 												    << "Checking ART Process Name... for "
 												       "originalName='"
@@ -4566,23 +4566,22 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 												__COUTT__
 												    << "Found ART Process Name = "
-												    << artTable->tableView_
-												           ->getDataView()
-												               [artRow][artProcessNameCol]
+												    << artTable->tableView_->getDataView()
+												           [artRow][artProcessNameCol]
 												    << __E__;
 
 												//original value tracking/emplace handling copied from above L4284
 												originalMultinodeValues.at(originalName)
-													.emplace(std::make_pair(
-														ORIG_MAP_ART_PROC_NAME_COL,
-														artTable->tableView_
+												    .emplace(std::make_pair(
+												        ORIG_MAP_ART_PROC_NAME_COL,
+												        artTable->tableView_
 												            ->getDataView()
 												                [artRow]
-												                [artProcessNameCol]));											
+												                [artProcessNameCol]));
 												__COUTTV__(
-													originalMultinodeValues
-														.at(originalName)
-														.at(ORIG_MAP_ART_PROC_NAME_COL));
+												    originalMultinodeValues
+												        .at(originalName)
+												        .at(ORIG_MAP_ART_PROC_NAME_COL));
 
 												//the first time, set to true and then prove wrong
 												originalMultinodeSameSiblingValues
@@ -4591,11 +4590,11 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 												        ORIG_MAP_ART_PROC_NAME_COL,
 												        //same value
 												        std::make_pair(
-											                true,
-											                artTable->tableView_
-												            ->getDataView()
-												                [artRow]
-												                [artProcessNameCol])));
+												            true,
+												            artTable->tableView_
+												                ->getDataView()
+												                    [artRow]
+												                    [artProcessNameCol])));
 												originalMultinodeAllSiblingEmbeddedName
 												    .at(nodePair.first)
 												    .emplace(std::make_pair(
@@ -4649,9 +4648,9 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 														    << __E__;
 														const std::string& val =
 														    artTable->tableView_
-												                    ->getDataView()
-												                        [artRow]
-												                        [artProcessNameCol];
+														        ->getDataView()
+														            [artRow]
+														            [artProcessNameCol];
 														size_t pos =
 														    val.find(originalName);
 														originalMultinodeAllSiblingEmbeddedName
@@ -4665,12 +4664,11 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 														    .second.push_back(val.substr(
 														        pos +
 														        originalName.size()));
-														__COUTTV__(
-														    StringMacros::vectorToString(
-														        originalMultinodeAllSiblingEmbeddedName
-														            .at(nodePair.first)
-														            .at(ORIG_MAP_ART_PROC_NAME_COL)
-														            .second));
+														__COUTTV__(StringMacros::vectorToString(
+														    originalMultinodeAllSiblingEmbeddedName
+														        .at(nodePair.first)
+														        .at(ORIG_MAP_ART_PROC_NAME_COL)
+														        .second));
 													}
 													__COUTTV__(
 													    originalMultinodeAllSiblingEmbeddedPrinterIndex
@@ -4689,9 +4687,9 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 														    << nodeNameIndex << __E__;
 														const std::string& val =
 														    artTable->tableView_
-												                    ->getDataView()
-												                        [artRow]
-												                        [artProcessNameCol];
+														        ->getDataView()
+														            [artRow]
+														            [artProcessNameCol];
 														size_t pos =
 														    val.find(nodeNameIndex);
 														originalMultinodeAllSiblingEmbeddedPrinterIndex
@@ -4705,12 +4703,11 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 														    .second.push_back(val.substr(
 														        pos +
 														        nodeNameIndex.size()));
-														__COUTTV__(
-														    StringMacros::vectorToString(
-														        originalMultinodeAllSiblingEmbeddedPrinterIndex
-														            .at(nodePair.first)
-														            .at(ORIG_MAP_ART_PROC_NAME_COL)
-														            .second));
+														__COUTTV__(StringMacros::vectorToString(
+														    originalMultinodeAllSiblingEmbeddedPrinterIndex
+														        .at(nodePair.first)
+														        .at(ORIG_MAP_ART_PROC_NAME_COL)
+														        .second));
 													}
 												}
 												else  //not first time, so prove wrong
@@ -4725,19 +4722,22 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 														          << nodePair.first
 														          << __E__;
 														if(artTable->tableView_
-												                    ->getDataView()
-												                        [artRow]
-												                        [artProcessNameCol] !=
+														       ->getDataView()
+														           [artRow]
+														           [artProcessNameCol] !=
 														   artTable->tableView_
-												                    ->getDataView()
-														           [lastArtProcessRow][artProcessNameCol])
+														       ->getDataView()
+														           [lastArtProcessRow]
+														           [artProcessNameCol])
 														{
-															__COUT__ << "Found different "
-															            "sibling values "
-															            "at artProcessNameCol="
-															         << artProcessNameCol << " for "
-															         << nodePair.first
-															         << __E__;
+															__COUT__
+															    << "Found different "
+															       "sibling values "
+															       "at artProcessNameCol="
+															    << artProcessNameCol
+															    << " for "
+															    << nodePair.first
+															    << __E__;
 															originalMultinodeSameSiblingValues
 															    .at(nodePair.first)
 															    .at(ORIG_MAP_ART_PROC_NAME_COL)
@@ -4755,16 +4755,18 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 														    << nodePair.first << ":"
 														    << originalName << __E__;
 														if(artTable->tableView_
-												                    ->getDataView()
-												                        [artRow]
-												                        [artProcessNameCol]
+														       ->getDataView()
+														           [artRow]
+														           [artProcessNameCol]
 														       .find(originalName) ==
 														   std::string::npos)
 														{
 															__COUT__
 															    << "Found no embedded "
-															       "name at artProcessNameCol="
-															    << artProcessNameCol << " looking for "
+															       "name at "
+															       "artProcessNameCol="
+															    << artProcessNameCol
+															    << " looking for "
 															    << originalName << __E__;
 															originalMultinodeAllSiblingEmbeddedName
 															    .at(nodePair.first)
@@ -4784,9 +4786,9 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 														    << nodePair.first << ":"
 														    << nodeNameIndex << __E__;
 														if(artTable->tableView_
-												                    ->getDataView()
-												                        [artRow]
-												                        [artProcessNameCol]
+														       ->getDataView()
+														           [artRow]
+														           [artProcessNameCol]
 														       .find(nodeNameIndex) ==
 														   std::string::npos)
 														{
@@ -4794,7 +4796,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 															    << "Found no embedded "
 															       "printer syntax index "
 															       "at artProcessNameCol="
-															    << artProcessNameCol << " looking for "
+															    << artProcessNameCol
+															    << " looking for "
 															    << nodeNameIndex << __E__;
 															originalMultinodeAllSiblingEmbeddedPrinterIndex
 															    .at(nodePair.first)
@@ -4807,7 +4810,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 												__COUTT__
 												    << "originalMultinodeSameSiblingValue"
 												       "s["
-												    << nodePair.first << "][" << ORIG_MAP_ART_PROC_NAME_COL
+												    << nodePair.first << "]["
+												    << ORIG_MAP_ART_PROC_NAME_COL
 												    << "] = "
 												    << originalMultinodeSameSiblingValues
 												           .at(nodePair.first)
@@ -4817,7 +4821,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 												__COUTT__
 												    << "originalMultinodeAllSiblingEmbedd"
 												       "edName["
-												    << nodePair.first << "][" << ORIG_MAP_ART_PROC_NAME_COL
+												    << nodePair.first << "]["
+												    << ORIG_MAP_ART_PROC_NAME_COL
 												    << "] = "
 												    << originalMultinodeAllSiblingEmbeddedName
 												           .at(nodePair.first)
@@ -4827,7 +4832,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 												__COUTT__
 												    << "originalMultinodeAllSiblingEmbedd"
 												       "edPrinterIndex["
-												    << nodePair.first << "][" << ORIG_MAP_ART_PROC_NAME_COL
+												    << nodePair.first << "]["
+												    << ORIG_MAP_ART_PROC_NAME_COL
 												    << "] = "
 												    << originalMultinodeAllSiblingEmbeddedPrinterIndex
 												           .at(nodePair.first)
@@ -4843,7 +4849,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 												           ->getDataView()[originalRow]
 												                          [col]
 												    << __E__;
-												lastArtProcessRow = artRow; //save for next comparison
+												lastArtProcessRow =
+												    artRow;  //save for next comparison
 											}  //end ART Process Name cache handling
 
 										}  //end col caching handling
@@ -5365,7 +5372,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						}
 					}
 
-					bool isFirst = true;
+					bool         isFirst    = true;
 					unsigned int lastArtRow = TableView::INVALID;
 					for(unsigned int i = 0; i < nodeIndices.size(); ++i)
 					{
@@ -5460,9 +5467,9 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						}
 
 						typeTable.tableView_->setValueAsString(
-							name, row, typeTable.tableView_->getColUID());
+						    name, row, typeTable.tableView_->getColUID());
 						typeTable.tableView_->setValueAsString(
-							hostname, row, hostnameCol);
+						    hostname, row, hostnameCol);
 						//NOTE: changing UID and copyRows does not change author or date! So change it if not an exact match; so change it now and fill with original archive if exact match
 						typeTable.tableView_->setValueAsString(
 						    TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT,
@@ -5495,9 +5502,11 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							std::string bestOriginalNodeName;
 							for(const auto& originalNodePair : originalMultinodeValues)
 							{
-								if(originalNodePair.second.find(ORIG_MAP_ART_PROC_NAME_COL) != originalNodePair.second.end())
-									__COUTTV__(originalNodePair.second
-														.at(ORIG_MAP_ART_PROC_NAME_COL));
+								if(originalNodePair.second.find(
+								       ORIG_MAP_ART_PROC_NAME_COL) !=
+								   originalNodePair.second.end())
+									__COUTTV__(originalNodePair.second.at(
+									    ORIG_MAP_ART_PROC_NAME_COL));
 								size_t score = 0;
 								for(size_t c = 0, d = 0;
 								    c < originalNodePair.first.size() && d < name.size();
@@ -5514,18 +5523,18 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								}
 								if(originalNodePair.first.size() == name.size())
 									++score;
-								__COUTVS__(2,score);
+								__COUTVS__(2, score);
 								if(score > bestScore)
 								{
 									bestOriginalNodeName = originalNodePair.first;
 									bestScore            = score;
-									__COUTVS__(2,bestOriginalNodeName);
-									__COUTVS__(2,bestScore);
+									__COUTVS__(2, bestOriginalNodeName);
+									__COUTVS__(2, bestScore);
 								}
 							}  //end scoring loop for best match in originalMultinodeValues
 
-							bool exactMatch = (bestOriginalNodeName == name);
-							bool needToHandleArtProcessName = false;
+							bool        exactMatch = (bestOriginalNodeName == name);
+							bool        needToHandleArtProcessName = false;
 							std::string artProcessName;
 
 							if(exactMatch ||
@@ -5562,16 +5571,18 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 									//handle special columns, otherwise normal columns in type table
 									if(valuePair.first == ORIG_MAP_ART_PROC_NAME_COL)
 									{
-										__COUTT__ << "NEED Special art Process Name column value: " << valuePair.second << __E__;
+										__COUTT__ << "NEED Special art Process Name "
+										             "column value: "
+										          << valuePair.second << __E__;
 										needToHandleArtProcessName = true;
-										artProcessName = valuePair.second;
-										continue;										
+										artProcessName             = valuePair.second;
+										continue;
 										artTable->tableView_->setValueAsString(
-											valuePair.second, row, artProcessNameCol);
+										    valuePair.second, row, artProcessNameCol);
 									}
 									else
 										typeTable.tableView_->setValueAsString(
-											valuePair.second, row, valuePair.first);
+										    valuePair.second, row, valuePair.first);
 								}
 							}
 							else
@@ -5604,20 +5615,26 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 										    << sameValuePair.second.second << __E__;
 
 										//handle special columns, otherwise normal columns in type table
-										if(sameValuePair.first == ORIG_MAP_ART_PROC_NAME_COL)
+										if(sameValuePair.first ==
+										   ORIG_MAP_ART_PROC_NAME_COL)
 										{
-											__COUTT__ << "NEED Special art Process Name column value: " << sameValuePair.second.second << __E__;
+											__COUTT__ << "NEED Special art Process Name "
+											             "column value: "
+											          << sameValuePair.second.second
+											          << __E__;
 											needToHandleArtProcessName = true;
 											artProcessName = sameValuePair.second.second;
 											continue;
-											 artTable->tableView_->setValueAsString(
-												sameValuePair.second.second, row, artProcessNameCol);
+											artTable->tableView_->setValueAsString(
+											    sameValuePair.second.second,
+											    row,
+											    artProcessNameCol);
 										}
 										else
 											typeTable.tableView_->setValueAsString(
-												sameValuePair.second.second,
-												row,
-												sameValuePair.first);
+											    sameValuePair.second.second,
+											    row,
+											    sameValuePair.first);
 									}  //end loop to apply multinode same sibling values
 								}
 
@@ -5655,18 +5672,21 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 										__COUTTV__(embedValue);
 
 										//handle special columns, otherwise normal columns in type table
-										if(embedValuePair.first == ORIG_MAP_ART_PROC_NAME_COL)
+										if(embedValuePair.first ==
+										   ORIG_MAP_ART_PROC_NAME_COL)
 										{
-											__COUTT__ << "NEED Special art Process Name column value: " << embedValue << __E__;
+											__COUTT__ << "NEED Special art Process Name "
+											             "column value: "
+											          << embedValue << __E__;
 											needToHandleArtProcessName = true;
-											artProcessName = embedValue;
+											artProcessName             = embedValue;
 											continue;
-											 artTable->tableView_->setValueAsString(
-												embedValue, row, artProcessNameCol);
+											artTable->tableView_->setValueAsString(
+											    embedValue, row, artProcessNameCol);
 										}
 										else
 											typeTable.tableView_->setValueAsString(
-												embedValue, row, embedValuePair.first);
+											    embedValue, row, embedValuePair.first);
 									}  //end loop to apply multinode same sibling values
 								}
 
@@ -5699,122 +5719,166 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 										__COUTTV__(embedValue);
 
 										//handle special columns, otherwise normal columns in type table
-										if(embedValuePair.first == ORIG_MAP_ART_PROC_NAME_COL)
+										if(embedValuePair.first ==
+										   ORIG_MAP_ART_PROC_NAME_COL)
 										{
-											__COUTT__ << "NEED Special art Process Name column value: " << embedValue << __E__;
+											__COUTT__ << "NEED Special art Process Name "
+											             "column value: "
+											          << embedValue << __E__;
 											needToHandleArtProcessName = true;
-											artProcessName = embedValue;
+											artProcessName             = embedValue;
 											continue;
-											 artTable->tableView_->setValueAsString(
-												embedValue, row, artProcessNameCol);
+											artTable->tableView_->setValueAsString(
+											    embedValue, row, artProcessNameCol);
 										}
 										else
-										typeTable.tableView_->setValueAsString(
-										    embedValue, row, embedValuePair.first);
+											typeTable.tableView_->setValueAsString(
+											    embedValue, row, embedValuePair.first);
 									}  //end loop to apply multinode same sibling values
 								}
 
 								__COUTV__(needToHandleArtProcessName);
 								if(needToHandleArtProcessName)
 								{
-									__COUTT__ << "Special art Process Name column value: " << artProcessName << __E__;
-									//need to find row or make row for art record	
-									std::string artRecord = typeTable.tableView_
-														->getDataView()[row]
-																		[typeTable.tableView_->findCol(ARTDAQTableBase::colARTDAQNotReader_
-													.colLinkToArtUID_)];
+									__COUTT__ << "Special art Process Name column value: "
+									          << artProcessName << __E__;
+									//need to find row or make row for art record
+									std::string artRecord =
+									    typeTable.tableView_->getDataView()
+									        [row][typeTable.tableView_->findCol(
+									            ARTDAQTableBase::colARTDAQNotReader_
+									                .colLinkToArtUID_)];
 									__COUTTV__(artRecord);
 
 									const unsigned int artCommentCol =
-										artTable->tableView_->findColByType(TableViewColumnInfo::TYPE_COMMENT);
+									    artTable->tableView_->findColByType(
+									        TableViewColumnInfo::TYPE_COMMENT);
 									const unsigned int artAuthorCol =
-										artTable->tableView_->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
+									    artTable->tableView_->findColByType(
+									        TableViewColumnInfo::TYPE_AUTHOR);
 									const unsigned int artTimestampCol =
-										artTable->tableView_->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
-									
-									unsigned int artRow =  artTable->tableView_->findRow(
-													artTable->tableView_->getColUID(),
-													artRecord, 0 /* offsetRow */, true /* doNotThrow*/);
+									    artTable->tableView_->findColByType(
+									        TableViewColumnInfo::TYPE_TIMESTAMP);
+
+									unsigned int artRow = artTable->tableView_->findRow(
+									    artTable->tableView_->getColUID(),
+									    artRecord,
+									    0 /* offsetRow */,
+									    true /* doNotThrow*/);
 									__COUTTV__(artRow);
-									if(artRow == TableView::INVALID) //need to make row!
+									if(artRow == TableView::INVALID)  //need to make row!
 									{
-										__COUTT__ << "Need to make art Process record... artRecord=" << artRecord << __E__;
+										__COUTT__ << "Need to make art Process record... "
+										             "artRecord="
+										          << artRecord << __E__;
 
 										//change lastArtRow to best match's art row
 										{
 											__COUTTV__(bestOriginalNodeName);
-											const unsigned int bestMatchRow = typeTable.tableView_->findRow(
-												typeTable.tableView_->getColUID(),
-												bestOriginalNodeName);
+											const unsigned int bestMatchRow =
+											    typeTable.tableView_->findRow(
+											        typeTable.tableView_->getColUID(),
+											        bestOriginalNodeName);
 											__COUTTV__(bestMatchRow);
 
-											std::string bestMatchArtRecord = typeTable.tableView_
-															->getDataView()[bestMatchRow]
-																			[typeTable.tableView_->findCol(ARTDAQTableBase::colARTDAQNotReader_
-														.colLinkToArtUID_)];
+											std::string bestMatchArtRecord =
+											    typeTable.tableView_->getDataView()
+											        [bestMatchRow]
+											        [typeTable.tableView_->findCol(
+											            ARTDAQTableBase::
+											                colARTDAQNotReader_
+											                    .colLinkToArtUID_)];
 											__COUTTV__(bestMatchArtRecord);
 
-											unsigned int bestMatchArtRow =  artTable->tableView_->findRow(
-														artTable->tableView_->getColUID(),
-														bestMatchArtRecord, 0 /* offsetRow */, true /* doNotThrow*/);
+											unsigned int bestMatchArtRow =
+											    artTable->tableView_->findRow(
+											        artTable->tableView_->getColUID(),
+											        bestMatchArtRecord,
+											        0 /* offsetRow */,
+											        true /* doNotThrow*/);
 											__COUTTV__(bestMatchArtRow);
-											if(bestMatchArtRow != TableView::INVALID) //found best match's art record
-												lastArtRow = bestMatchArtRow; //use best match's art record for copy
+											if(bestMatchArtRow !=
+											   TableView::
+											       INVALID)  //found best match's art record
+												lastArtRow =
+												    bestMatchArtRow;  //use best match's art record for copy
 											__COUTTV__(lastArtRow);
 										}
 
 										if(lastArtRow != TableView::INVALID)
 										{
-											__COUTT__ << "Copying art Process record... from lastArtRow=" << lastArtRow << __E__;
-											unsigned int copyRow = artTable->tableView_->copyRows(
-												author,
-												*(artTable->tableView_),
-												lastArtRow,
-												1 /*srcRowsToCopy*/,
-												-1 /*destOffsetRow*/,
-												true /*generateUniqueDataColumns*/);
+											__COUTT__ << "Copying art Process record... "
+											             "from lastArtRow="
+											          << lastArtRow << __E__;
+											unsigned int copyRow =
+											    artTable->tableView_->copyRows(
+											        author,
+											        *(artTable->tableView_),
+											        lastArtRow,
+											        1 /*srcRowsToCopy*/,
+											        -1 /*destOffsetRow*/,
+											        true /*generateUniqueDataColumns*/);
 											artTable->tableView_->setValueAsString(
-												artRecord, copyRow, artTable->tableView_->getColUID());
+											    artRecord,
+											    copyRow,
+											    artTable->tableView_->getColUID());
 											artRow = copyRow;
 
 											//NOTE: changing UID and copyRows does not change author or date! So change it if not an exact match; so change it now and fill with original archive if exact match
 											artTable->tableView_->setValueAsString(
-												TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT,
-												artRow,
-												artCommentCol);
-											artTable->tableView_->setValueAsString(author, artRow, artAuthorCol);
-											artTable->tableView_->setValue(time(0), artRow, artTimestampCol);
+											    TableViewColumnInfo::
+											        DATATYPE_COMMENT_DEFAULT,
+											    artRow,
+											    artCommentCol);
+											artTable->tableView_->setValueAsString(
+											    author, artRow, artAuthorCol);
+											artTable->tableView_->setValue(
+											    time(0), artRow, artTimestampCol);
 										}
 										else
 										{
-											__COUTT__ << "Creating art Process record... artRecord=" << artRecord << __E__;
-											
-											artRow = artTable->tableView_->addRow(
-							    				author, true /*incrementUniqueData*/, artRecord);
-										}
-										__COUTT__ << "Made art Process record... artRecord=" << artRecord << __E__;											
-									} //end making row
+											__COUTT__ << "Creating art Process record... "
+											             "artRecord="
+											          << artRecord << __E__;
 
-									__COUTT__ << "Modify art Process record based on sibling rules... artRecord=" << artRecord << 
-										" artProcessName=" << artProcessName <<__E__;
-									
+											artRow = artTable->tableView_->addRow(
+											    author,
+											    true /*incrementUniqueData*/,
+											    artRecord);
+										}
+										__COUTT__
+										    << "Made art Process record... artRecord="
+										    << artRecord << __E__;
+									}  //end making row
+
+									__COUTT__ << "Modify art Process record based on "
+									             "sibling rules... artRecord="
+									          << artRecord
+									          << " artProcessName=" << artProcessName
+									          << __E__;
+
 									artTable->tableView_->setValueAsString(
-											artProcessName, artRow, artProcessNameCol);
+									    artProcessName, artRow, artProcessNameCol);
 									lastArtRow = artRow;
 								}
-							} //end applying sibling value rules
-							else if(needToHandleArtProcessName) //get lastArtRow for future multirecord siblings
+							}  //end applying sibling value rules
+							else if(
+							    needToHandleArtProcessName)  //get lastArtRow for future multirecord siblings
 							{
-								std::string artRecord = typeTable.tableView_
-													->getDataView()[row]
-																	[typeTable.tableView_->findCol(ARTDAQTableBase::colARTDAQNotReader_
-												.colLinkToArtUID_)];
+								std::string artRecord =
+								    typeTable.tableView_->getDataView()
+								        [row][typeTable.tableView_->findCol(
+								            ARTDAQTableBase::colARTDAQNotReader_
+								                .colLinkToArtUID_)];
 								__COUTTV__(artRecord);
-								unsigned int artRow =  artTable->tableView_->findRow(
-													artTable->tableView_->getColUID(),
-													artRecord, 0 /* offsetRow */, true /* doNotThrow*/);
+								unsigned int artRow = artTable->tableView_->findRow(
+								    artTable->tableView_->getColUID(),
+								    artRecord,
+								    0 /* offsetRow */,
+								    true /* doNotThrow*/);
 								__COUTTV__(artRow);
-								if(artRow != TableView::INVALID) //found valid art record row
+								if(artRow !=
+								   TableView::INVALID)  //found valid art record row
 									lastArtRow = artRow;
 							}
 
@@ -5869,7 +5933,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 			}  // end delete record handling
 
-			if(TTEST(1) && artTable) 
+			if(TTEST(1) && artTable)
 			{
 				std::stringstream ss;
 				artTable->tableView_->print(ss);
@@ -5877,9 +5941,10 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			}
 
 			if(hasArtProcessName && artTable)
-				artTable->tableView_->init();  // verify new art table modifications (throws runtime_errors)
+				artTable->tableView_
+				    ->init();  // verify new art table modifications (throws runtime_errors)
 
-			if(TTEST(1)) 
+			if(TTEST(1))
 			{
 				std::stringstream ss;
 				typeTable.tableView_->print(ss);

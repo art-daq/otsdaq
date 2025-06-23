@@ -29,7 +29,7 @@ echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t\t .
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t          or..."
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t\t ./otsdaq_import_system_aliases.sh filesystemdb:///home/mu2ehwdev/ots_dev/databases_HWDev/filesystemdb/test_db /home/mu2eshift/ots_v4/Data_shift shift_v4"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t"
-echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t All system aliases (specified by Backbone in the active groups file) are imported to current db, and imported Group Names and System Aliases are prepended with the optional label." 
+echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t All system aliases (specified by Backbone in the active groups file) are imported to current db, and imported Group Names and System Aliases are prepended with the optional label."
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t To export only to tmp/ and not import..."
@@ -76,7 +76,7 @@ ARTDAQ_DATABASE_URI=$IMPORT_URI
 USER_DATA=$IMPORT_USER_DATA_PATH
 rm -rf tmp/export_system_aliases
 mkdir tmp/export_system_aliases
-otsdaq_export_system_aliases tmp/export_system_aliases 
+otsdaq_export_system_aliases tmp/export_system_aliases
 
 if [[ $EXPORT_ONLY = 0 ]]; then
 	#####################
@@ -89,7 +89,7 @@ if [[ $EXPORT_ONLY = 0 ]]; then
 
 	echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t Completed Import from = $IMPORT_URI"
 	echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t Completed Import to = $CURRENT_URI"
-else 
+else
 	echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t Exporting only, skipping import"
 	echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t Completed Export from = $IMPORT_URI"
 fi
