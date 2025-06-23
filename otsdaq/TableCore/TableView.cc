@@ -170,9 +170,9 @@ unsigned int TableView::copyRows(const std::string& author,
 				continue;  // if leaving unique data, then skip copy
 			else
 			{
-				__COUTT__ << "Copying [" << r + srcOffsetRow << "][" << 
-					col << "] to [" << destOffsetRow << "][" << col << "] = " << 
-					src.theDataView_[r + srcOffsetRow][col] << __E__;
+				__COUTT__ << "Copying [" << r + srcOffsetRow << "][" << col << "] to ["
+				          << destOffsetRow << "][" << col
+				          << "] = " << src.theDataView_[r + srcOffsetRow][col] << __E__;
 				theDataView_[destOffsetRow][col] =
 				    src.theDataView_[r + srcOffsetRow][col];
 			}
@@ -1126,10 +1126,10 @@ const std::string& TableView::setUniqueColumnValue(
 	}
 
 	__COUTT__ << "Current '" << columnsInfo_[col].getName() << "' "
-	         << (isUniqueGroupCol ? "(Unique in Group) " : "")
-	         << "unique data entry is data[" << row << "][" << col << "] = '"
-	         << theDataView_[row][col] << "' baseValueAsString = " << baseValueAsString
-	         << " doMathAppendStrategy = " << doMathAppendStrategy << __E__;
+	          << (isUniqueGroupCol ? "(Unique in Group) " : "")
+	          << "unique data entry is data[" << row << "][" << col << "] = '"
+	          << theDataView_[row][col] << "' baseValueAsString = " << baseValueAsString
+	          << " doMathAppendStrategy = " << doMathAppendStrategy << __E__;
 
 	bool         firstConflict = true;
 	int          maxUniqueData = -1;
@@ -1275,9 +1275,9 @@ const std::string& TableView::setUniqueColumnValue(
 	}
 
 	__COUTT__ << "New unique data entry is data[" << row << "][" << col << "] = '"
-	         << theDataView_[row][col] << "'" << __E__;
+	          << theDataView_[row][col] << "'" << __E__;
 
-	if(TTEST(13)) 
+	if(TTEST(13))
 	{
 		std::stringstream ss;
 		this->print(ss);
