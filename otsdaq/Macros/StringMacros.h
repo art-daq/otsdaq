@@ -233,7 +233,7 @@ struct StringMacros
 															size_t *returnFindPos = nullptr,
 															 const std::string &valueField = "value=",
 															 const std::string &quoteType = "'");
-	static void 				coutSplit					(const std::string &str, 
+	static void 				coutSplit					(const std::string &str,
 															 uint8_t traceLevel = TLVL_DEBUG,
 															 const std::set<char>& delimiter = {',', '\n', ';'});
 
