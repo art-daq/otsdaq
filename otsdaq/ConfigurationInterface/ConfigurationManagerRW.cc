@@ -2421,49 +2421,7 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 			{
 				std::stringstream ss;
 				tableView->print(ss);
-				__GEN_COUT__ << ss.str();
-				//
-				////			// save or find equivalent
-				////			backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) =
-				////					cfgMgr->saveModifiedVersion(
-				////							groupAliasTable.tableName_,
-				////							groupAliasTable.originalVersion_,
-				////							false /*makeTemporary*/,
-				////							groupAliasTable.table_,
-				////							groupAliasTable.temporaryVersion_,
-				////							false /*ignoreDuplicates*/,
-				////							true /*lookForEquivalent*/);
-				//
-				//			backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) =
-				//					cfgMgr->saveModifiedVersion(
-				//							groupAliasTable.tableName_,
-				//							groupAliasTable.originalVersion_,
-				//							true /*make temporary*/,
-				//							groupAliasTable.table_,
-				//							groupAliasTable.temporaryVersion_,
-				//							true /*ignoreDuplicates*/);  // make temporary version to save persistent version properly
-				//
-				//			__GEN_COUT__ << "Temporary target version is " <<
-				//					groupAliasTable.table_->getTableName() << "-v"
-				//					<< backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) << "-v"
-				//					<< groupAliasTable.temporaryVersion_ << __E__;
-				//
-				//			backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME) =
-				//					cfgMgr->saveModifiedVersion(
-				//							groupAliasTable.tableName_,
-				//							groupAliasTable.originalVersion_,
-				//							false /*make temporary*/,
-				//							groupAliasTable.table_,
-				//							groupAliasTable.temporaryVersion_,
-				//							false /*ignoreDuplicates*/,
-				//							true /*lookForEquivalent*/);  // save persistent version properly
-				//
-				//			__GEN_COUT__
-				//			    << "Original version is "
-				//				<< groupAliasTable.table_->getTableName() << "-v"
-				//			    << groupAliasTable.originalVersion_ << " and new version is v"
-				//			    << backboneGroupEdit.groupMembers_.at(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
-				//			    << __E__;
+				__GEN_COUT__ << ss.str();				
 			}
 		}  // end updateGroupAliases handling
 
