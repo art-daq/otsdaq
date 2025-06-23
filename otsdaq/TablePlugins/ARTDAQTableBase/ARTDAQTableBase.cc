@@ -4855,17 +4855,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 										}  //end col caching handling
 									}      //end col loop
-								}          //end cache handling
-
-								// // now.. if have a new 'seed' valid row, then delete last valid row
-								// if(originalRow != TableView::INVALID &&
-								//    lastOriginalRow != TableView::INVALID)
-								// {
-								// 	__COUTT__ << "Deleting row " << lastOriginalRow << __E__;
-								// 	typeTable.tableView_->deleteRow(lastOriginalRow);
-								// 	if(originalRow > lastOriginalRow)
-								// 		--originalRow;  // modify after delete
-								// }
+								}          //end cache handling							
 
 								if(originalRow !=
 								   TableView::
