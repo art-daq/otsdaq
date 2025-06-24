@@ -71,7 +71,7 @@ class TableView
 	const std::string&                          getCustomStorageData		(void) const { return storageData_; }
 	const std::string&                          getTableName				(void) const { return tableName_; }
 	const TableVersion&                         getVersion					(void) const { return version_; }
-	const std::string&                          getComment					(void) const { return comment_; }
+	const std::string&                          getComment					(void) const { return comment_ == "" ?  TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT : comment_; }
 	const std::string&                          getAuthor					(void) const { return author_; }
 	const time_t&                               getCreationTime				(void) const { return creationTime_; }
 	const time_t&                               getLastAccessTime			(void) const { return lastAccessTime_; }

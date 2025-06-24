@@ -1058,7 +1058,8 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
                                        std::vector<std::string>& wildcardStringsToReturn,
                                        unsigned int&             fixedWildcardLength)
 {
-	fixedWildcardLength = 0;  // default
+	fixedWildcardLength = 0;  // init to default
+	__COUTTV__(StringMacros::vectorToString(haystack));
 
 	// Steps:
 	//	- find start and end common chunks first in haystack strings
@@ -1102,7 +1103,8 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 			else
 				break;
 		}
-	// __COUT__ << "Low side = " << wildcardBounds.first << " " << haystack[0].substr(0, wildcardBounds.first) << __E__;
+	__COUTS__(3) << "Low side = " << wildcardBounds.first << " "
+	             << haystack[0].substr(0, wildcardBounds.first) << __E__;
 
 	// look for end matching segment
 	for(unsigned int n = 1; n < haystack.size(); ++n)
@@ -1122,7 +1124,8 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 				break;
 		}
 
-	// __COUT__ << "High side = " << wildcardBounds.second << " " << haystack[0].substr(wildcardBounds.second) << __E__;
+	__COUTS__(3) << "High side = " << wildcardBounds.second << " "
+	             << haystack[0].substr(wildcardBounds.second) << __E__;
 
 	// add first common chunk
 	commonChunksToReturn.push_back(haystack[0].substr(0, wildcardBounds.first));
@@ -1139,7 +1142,8 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 			{
 				std::string multiWildcardString =
 				    haystack[0].substr(i, wildcardBounds.second - i);
-				__COUT__ << "Multi-wildcard found: " << multiWildcardString << __E__;
+				__COUT__ << "Potential multi-wildcard found: " << multiWildcardString
+				         << " at position i=" << i << __E__;
 
 				std::vector<unsigned int /*lo index*/> wildCardInstances;
 				// add front one now, and back one later
@@ -1169,18 +1173,66 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 
 				for(unsigned int w = 0; w < wildCardInstances.size() - 1; ++w)
 				{
+					__COUTV__(wildCardInstances[w]);
+					__COUTV__(wildCardInstances[w + 1]);
+					__COUTV__(wildCardInstances.size());
 					commonChunksToReturn.push_back(haystack[0].substr(
-					    wildCardInstances[w] + wildCardInstances.size(),
+					    wildCardInstances[w] + multiWildcardString.size(),
 					    wildCardInstances[w + 1] -
-					        (wildCardInstances[w] + wildCardInstances.size())));
+					        (wildCardInstances[w] + multiWildcardString.size())));
 				}
 			}
 
-		// check if all common chunks end in 0 to add fixed length
+		__COUTTV__(StringMacros::vectorToString(commonChunksToReturn));
+		//confirm valid multi-commonChunksToReturn for all haystack entries (only first can be certain at this point)
+		for(unsigned int c = 1; c < commonChunksToReturn.size(); ++c)
+		{
+			__COUT__ << "Checking [" << c << "]: " << commonChunksToReturn[c] << __E__;
+			for(unsigned int n = 1; n < haystack.size(); ++n)
+			{
+				__COUT__ << "Checking chunks work with haystack [" << n
+				         << "]: " << haystack[n] << __E__;
+				__COUTV__(commonChunksToReturn[0].size());
+				std::string wildCardValue = haystack[n].substr(
+				    commonChunksToReturn[0].size(),
+				    haystack[n].find(commonChunksToReturn[1],
+				                     commonChunksToReturn[0].size() + 1) -
+				        commonChunksToReturn[0].size());
+				__COUTTV__(wildCardValue);
 
+				std::string builtString = "";
+				for(unsigned int cc = 0; cc < commonChunksToReturn.size(); ++cc)
+					builtString += commonChunksToReturn[cc] + wildCardValue;
+				__COUTTV__(builtString);
+				__COUTTV__(wildCardValue);
+
+				if(haystack[n].find(builtString) != 0)
+				{
+					__COUT__ << "Dropping common chunk " << commonChunksToReturn[c]
+					         << ", built '" << builtString << "' not found in "
+					         << haystack[n] << __E__;
+					commonChunksToReturn.erase(commonChunksToReturn.begin() + c);
+					--c;    //rewind
+					break;  //check next chunk
+				}
+				else
+					__COUTT__ << "Found built '" << builtString << "' in " << haystack[n]
+					          << __E__;
+			}  //end haystack loop
+		}      //end common chunk loop
+
+		__COUTTV__(StringMacros::vectorToString(commonChunksToReturn));
+		__COUTTV__(commonChunksToReturn[0].size());
+
+		__COUTTV__(fixedWildcardLength);
+		// check if all common chunks END in 0 to add fixed length
 		for(unsigned int i = 0; i < commonChunksToReturn[0].size(); ++i)
 			if(commonChunksToReturn[0][commonChunksToReturn[0].size() - 1 - i] == '0')
+			{
 				++fixedWildcardLength;
+				__COUTT__ << "Trying for added fixed length +1 to " << fixedWildcardLength
+				          << __E__;
+			}
 			else
 				break;
 
@@ -1204,7 +1256,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 				__SS_THROW__;
 			}
 		}
-		// __COUTV__(fixedWildcardLength);
+		__COUTTV__(fixedWildcardLength);
 
 		if(fixedWildcardLength)  // take trailing 0s out of common chunks
 			for(unsigned int c = 0; c < commonChunksToReturn.size(); ++c)
@@ -1214,12 +1266,15 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 		// add last common chunk
 		commonChunksToReturn.push_back(haystack[0].substr(wildcardBounds.second));
 	}  // end handling more chunks
+	__COUTTV__(StringMacros::vectorToString(commonChunksToReturn));
 
 	// now determine wildcard strings
 	size_t       k;
 	unsigned int i;
-	unsigned int ioff            = fixedWildcardLength;
-	bool         wildcardsNeeded = false;
+	unsigned int ioff                 = fixedWildcardLength;
+	bool         wildcardsNeeded      = false;
+	bool         someLeadingZeros     = false;
+	bool         allWildcardsSameSize = true;
 
 	for(unsigned int n = 0; n < haystack.size(); ++n)
 	{
@@ -1240,15 +1295,16 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 				if(wildcard == "")
 				{
 					// set wildcard for first time
-					// __COUTV__(i);
-					// __COUTV__(k);
-					// __COUTV__(k - i);
+					__COUTVS__(3, i);
+					__COUTVS__(3, k);
+					__COUTVS__(3, k - i);
 
 					wildcard = haystack[n].substr(i, k - i);
 					if(fixedWildcardLength && n == 0)
 						fixedWildcardLength += wildcard.size();
 
-					// __COUT__ << "name[" << n << "] = " << wildcard << " fixed @ " << fixedWildcardLength << __E__;
+					__COUTS__(3) << "name[" << n << "] = " << wildcard << " fixed @ "
+					             << fixedWildcardLength << __E__;
 
 					break;
 				}
@@ -1266,13 +1322,31 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 			}  // end commonChunksToReturn loop
 
 		if(wildcard.size())
+		{
 			wildcardsNeeded = true;
+
+			//track if need for leading 0s in wildcards
+			if(wildcard[0] == '0' && !fixedWildcardLength)
+			{
+				someLeadingZeros = true;
+				if(wildcardStringsToReturn.size() &&
+				   wildcard.size() != wildcardStringsToReturn[0].size())
+					allWildcardsSameSize = false;
+			}
+		}
 		wildcardStringsToReturn.push_back(wildcard);
 
 	}  // end name loop
 
-	// __COUTV__(StringMacros::vectorToString(commonChunksToReturn));
-	// __COUTV__(StringMacros::vectorToString(wildcardStringsToReturn));
+	__COUTTV__(StringMacros::vectorToString(commonChunksToReturn));
+	__COUTTV__(StringMacros::vectorToString(wildcardStringsToReturn));
+
+	if(someLeadingZeros && allWildcardsSameSize)
+	{
+		__COUTTV__(fixedWildcardLength);  //should be 0 in this case
+		fixedWildcardLength = wildcardStringsToReturn[0].size();
+		__COUT__ << "Enforce wildcard size of " << fixedWildcardLength << __E__;
+	}
 
 	if(wildcardStringsToReturn.size() != haystack.size())
 	{
@@ -1621,6 +1695,19 @@ std::string StringMacros::rextractXmlField(const std::string& xml,
 	__COUTVS__(40, xml.substr(lo, hi - lo));
 	return xml.substr(lo, hi - lo);
 }  //end rextractXmlField()
+
+//=========================================================================
+/// Breaks up long string into multiple TRACE TLOG calls split on the delimiter
+///	to avoid truncation by a single TLOG call. The lvl parameter is the offset from TLVL_DEBUG.
+void StringMacros::coutSplit(const std::string&    str,
+                             uint8_t               lvl /* = 0 */,
+                             const std::set<char>& delimiter /* = {',', '\n', ';'} */)
+{
+	auto splitArr =
+	    StringMacros::getVectorFromString(str, delimiter, {} /* whitespace */);
+	for(const auto& split : splitArr)
+		__COUTS__(lvl) << split;
+}  //end coutSplit()
 
 #ifdef __GNUG__
 #include <cxxabi.h>

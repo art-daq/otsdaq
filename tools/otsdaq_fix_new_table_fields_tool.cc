@@ -62,7 +62,7 @@ void FixNewTableFields(int argc, char* argv[])
 	// return;
 	//==============================================================================
 	// Define environment variables
-	//	Note: normally these environment variables are set by StartOTS.sh
+	//	Note: normally these environment variables are set by ots script
 
 	// These are needed by
 	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [207]

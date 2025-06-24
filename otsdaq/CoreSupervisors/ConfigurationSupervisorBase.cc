@@ -747,8 +747,10 @@ try
 		__COUTT__ << "Active tables: "
 		          << StringMacros::mapToString(cfgMgr->getActiveVersions()) << __E__;
 
-		if(groupKey.isInvalid() ||  // if invalid or not found, get latest
-		   sortedKeys.find(groupKey) == sortedKeys.end())
+		if(groupKey
+		       .isInvalid() ||  // if invalid or not found, likely key info not loaded, so get latest
+		   sortedKeys.find(groupKey) == sortedKeys.end() ||
+		   sortedKeys.size() < 2)
 		{
 			// report error if group key not found
 			if(!groupKey.isInvalid() || sortedKeys.size() == 0)

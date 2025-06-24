@@ -20,7 +20,7 @@ fi
 source ${SCRIPT_DIR}/common.sh ots_remote_instance_start
 
 
-STARTTIME=`date +"%d%h%y.%T"` #to fully ID one StartOTS from another
+STARTTIME=`date +"%d%h%y.%T"` #to fully ID one ots from another
 out "${Green}=========================== ots REMOTE INSTANCE on {${THIS_HOST}} ============================="
 # info "ots script path = ${SCRIPT_DIR}/ots_remote_instance_start"
 
