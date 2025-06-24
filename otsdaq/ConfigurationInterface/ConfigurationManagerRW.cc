@@ -2421,7 +2421,7 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 			{
 				std::stringstream ss;
 				tableView->print(ss);
-				__GEN_COUT__ << ss.str();				
+				__GEN_COUT__ << ss.str();
 			}
 		}  // end updateGroupAliases handling
 

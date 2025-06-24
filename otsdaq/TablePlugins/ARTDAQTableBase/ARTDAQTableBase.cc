@@ -4855,7 +4855,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 										}  //end col caching handling
 									}      //end col loop
-								}          //end cache handling							
+								}          //end cache handling
 
 								if(originalRow !=
 								   TableView::
