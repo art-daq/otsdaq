@@ -138,13 +138,14 @@ void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version
 /// write table to database
 void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
                                                        bool             overwrite) const
-
 {
 	auto start = std::chrono::high_resolution_clock::now();
 
 	auto ifc = db::ConfigurationInterface{default_dbprovider};
 
 	auto versionstring = table->getView().getVersion().toString();
+	std::stringstream preSaveJSON;
+	table->getView().printJSON(preSaveJSON);
 	//__COUT__ << "versionstring: " << versionstring << "\n";
 
 	// auto result =
@@ -163,8 +164,54 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
 	          << table->getTableName() << ", versionstring=" << versionstring << ") "
 	          << duration << " milliseconds" << std::endl;
 
+	__COUTTV__(result.first);
+	__COUTTV__(result.second);
+
 	if(result.first)
+	{
+		{ //check that table save worked (FIXME -- this is temporary while waiting for permanent solution from artdaq-database developments)
+
+			TableBase localDocLoader(table->getTableName());
+			localDocLoader.changeVersionAndActivateView(localDocLoader.createTemporaryView(),
+															table->getView().getVersion());
+			fill(&localDocLoader, table->getView().getVersion());
+
+			std::stringstream postSaveJSON;
+			localDocLoader.getView().printJSON(postSaveJSON);
+
+			__COUTTV__(preSaveJSON.str());
+			__COUTTV__(postSaveJSON.str());
+			if(preSaveJSON.str() == postSaveJSON.str())
+				__COUTT__ << "Same";
+			else
+			{
+				__COUT__ << "NOT Same";
+				auto end = std::chrono::high_resolution_clock::now();
+				auto duration =
+					std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+				__COUTT__ << "Time taken to call "
+							"DatabaseConfigurationInterface::saveActiveVersion(tableName="
+						<< table->getTableName() << ", versionstring=" << versionstring << ") "
+						<< duration << " milliseconds" << std::endl;
+
+				__SS__ << "Error saving table '" << table->getTableName() << "'-v" << versionstring <<
+						" (perhaps there was a collision with another user saving the same table name/version?! Please try again with an incremented table version). "
+						<< "Expected data size is " << preSaveJSON.str().size() << " and readback found size of " << 
+						postSaveJSON.str().size() << " with character mismatches." << __E__;
+				__SS_THROW__;
+			}
+
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration =
+				std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			__COUTT__ << "Time taken to call "
+						"DatabaseConfigurationInterface::saveActiveVersion(tableName="
+					<< table->getTableName() << ", versionstring=" << versionstring << ") "
+					<< duration << " milliseconds" << std::endl;
+
+		} //end check that table save worked
 		return;
+	}
 
 	__SS__ << "Database Interface saveActiveVersion Error:" << result.second << __E__;
 	__SS_THROW__;
@@ -388,8 +435,11 @@ try
 	auto ifc    = db::ConfigurationInterface{default_dbprovider};
 	auto result = ifc.loadGlobalConfiguration(tableGroup);
 
-	// for(auto &item:result)
-	// 	__COUTT__ << "====================> " << item.configuration << ": " << item.version << __E__;
+	if(TTEST(1))
+	{
+		for(auto &item:result)
+			__COUTT__ << "====================> " << item.configuration << ": " << item.version << __E__;
+	}
 
 	auto to_map = [](auto const& inputList, bool includeMetaDataTable) {
 		auto resultMap = table_version_map_t{};
@@ -617,6 +667,7 @@ try
 
 	__COUTTV__(result.first);
 	__COUTTV__(result.second);
+
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration =
 	    std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -626,6 +677,58 @@ try
 
 	if(result.first)
 	{
+		{ //check that group save worked (FIXME -- this is temporary while waiting for permanent solution from artdaq-database developments)
+			auto readbackResult = ifc.loadGlobalConfiguration(tableGroup);
+
+			for(auto &item:readbackResult)
+			{
+				__COUTT__ << "====================> " << item.configuration << ": " << item.version << __E__;
+				size_t countOfMatches = 0;
+				const auto& it = memberMap.find(item.configuration);
+				if(it == memberMap.end() || it->second != TableVersion(std::stol(item.version, 0, 10)))
+				{
+					auto end = std::chrono::high_resolution_clock::now();
+					auto duration =
+						std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+					__COUTT__
+						<< "Time taken to call DatabaseConfigurationInterface::saveTableGroup(tableGroup="
+						<< tableGroup << ") " << duration << " milliseconds." << std::endl;
+					__SS__ << "Error saving group '" << tableGroup << "' (perhaps there was a collision with another user saving the same group name?! Please try again with an incremented group key)). Table '" << 
+						item.configuration << "'-v" << item.version << 
+						" was unexpectedly read back as a member table after the attempted group save. Expected member tables of group '" << 
+						tableGroup << "' are as follows:" << __E__;
+					for(const auto& memberPair : memberMap)
+						ss << "\t" << memberPair.first << "-v" << memberPair.second << __E__;
+					__SS_THROW__;				
+				}
+				else 
+					++countOfMatches;
+
+				if(countOfMatches != memberMap.size())
+				{
+					auto end = std::chrono::high_resolution_clock::now();
+					auto duration =
+						std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+					__COUTT__
+						<< "Time taken to call DatabaseConfigurationInterface::saveTableGroup(tableGroup="
+						<< tableGroup << ") " << duration << " milliseconds." << std::endl;
+					__SS__ << "Error saving group '" << tableGroup << "' (perhaps there was a collision with another user saving the same group name?! Please try again with an incremented group key). "
+						<< "Expected group count is " << memberMap.size() << ", and found " << countOfMatches << " matching tables during readback check." << __E__;
+					__SS_THROW__;
+				}
+			}
+			__COUTT__ << "Readback check passed." << __E__;
+		} //end check that group save worked
+
+		{
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration =
+				std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			__COUTT__
+				<< "Time taken to call DatabaseConfigurationInterface::saveTableGroup(tableGroup="
+				<< tableGroup << ") " << duration << " milliseconds." << std::endl;
+		}
+
 		//now save to db cache for reverse index lookup of group members
 		try
 		{
@@ -635,6 +738,15 @@ try
 		{
 			__COUT_WARN__ << "Ignoring errors during saveTableGroupMemberCache()"
 			              << __E__;
+		}
+
+		{
+			auto end = std::chrono::high_resolution_clock::now();
+			auto duration =
+				std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+			__COUTT__
+				<< "Time taken to call DatabaseConfigurationInterface::saveTableGroup(tableGroup="
+				<< tableGroup << ") " << duration << " milliseconds." << std::endl;
 		}
 
 		return;

@@ -2667,6 +2667,7 @@ void ConfigurationManagerRW::testXDAQContext()
 		__GEN_COUTV__(runTimeSeconds());
 
 		//test a group save that already exists
+		try
 		{
 			TableGroupKey groupKey(int(0));
 			__GEN_COUT__ << "Testing group save of " << debugGroupName << "(" << groupKey
@@ -2677,6 +2678,66 @@ void ConfigurationManagerRW::testXDAQContext()
 			    groupMembers,
 			    TableGroupKey::getFullGroupString(debugGroupName, groupKey));
 		}
+		catch(...)
+		{
+			__GEN_COUT__ << "Exception during group save." << __E__;
+		}
+		__GEN_COUTV__(runTimeSeconds());
+
+		//test a table save that already exists
+		{			
+			std::string documentNameToLoad = "XDAQApplicationTable";
+			TableVersion documentVersionToLoad(134);
+
+			{ //load to prove it exists
+				TableBase localDocLoader(documentNameToLoad);
+				localDocLoader.changeVersionAndActivateView(localDocLoader.createTemporaryView(),
+															documentVersionToLoad);
+				theInterface_->fill(&localDocLoader, documentVersionToLoad);
+				__SS__;
+				localDocLoader.print(ss);
+				__GEN_COUTV__(ss.str());
+			}
+			__GEN_COUTV__(runTimeSeconds());
+
+			try
+			{ //attempt to save over existing version
+				std::string documentNameToSave = documentNameToLoad;
+				TableBase localDocSaver(documentNameToSave);
+				localDocSaver.changeVersionAndActivateView(localDocSaver.createTemporaryView(),
+														documentVersionToLoad);
+				
+				std::string json = "{ }";
+				localDocSaver.getViewP()->setCustomStorageData(json);
+
+				__COUTT__ << "Saving JSON string: "
+						<< localDocSaver.getViewP()->getCustomStorageData() << __E__;
+
+				__COUTT__ << "Saving JSON doc as " << localDocSaver.getView().getTableName() << "("
+						<< localDocSaver.getView().getVersion().toString() << ")" << __E__;
+
+				// save to db, and do not allow overwrite
+				theInterface_->saveActiveVersion(&localDocSaver, false /* overwrite */);
+			}
+			catch(...)
+			{
+				__GEN_COUT__ << "Exception during table save." << __E__;
+			}
+			__GEN_COUTV__(runTimeSeconds());
+
+			{ //load to prove it exists
+				TableBase localDocLoader(documentNameToLoad);
+				localDocLoader.changeVersionAndActivateView(localDocLoader.createTemporaryView(),
+															documentVersionToLoad);
+				theInterface_->fill(&localDocLoader, documentVersionToLoad);
+				__SS__;
+				localDocLoader.print(ss);
+				__GEN_COUTV__(ss.str());
+			}
+			__GEN_COUTV__(runTimeSeconds());
+
+		}
+		__GEN_COUTV__(runTimeSeconds());
 		return;
 
 		// for each group get member map & comment, author, time, and type for latest key
