@@ -6,6 +6,7 @@
 #include <sys/stat.h>  //for mkdir
 #include <cctype>      //for std::toupper
 #include <thread>      //for std::thread
+#include <map>		   //for std::map
 
 using namespace ots;
 
@@ -516,6 +517,25 @@ std::string CodeEditor::getFileGitURL(const std::string& basepath,
 	//TODO! October 2024 by rrivera
 	//TODO! request with linux exec to spack environment
 
+	static const std::map<std:: string, std::string> repoMap = {
+		{"otsdaq", "https://github.com/art-daq/otsdaq"},
+		{"otsdaq-components", "https://github.com/art-daq/otsdaq-components"},
+		{"otsdaq-demo", "https://github.com/art-daq/otsdaq-demo"},
+		{"otsdaq-epics", "https://github.com/art-daq/otsdaq-epics"},
+		{"otsdaq-prepmodernization", "https://github.com/art-daq/otsdaq-prepmodernization"},
+		{"otsdaq-utilities", "https://github.com/art-daq/otsdaq-utilities"}
+	};
+
+	std::string rel = path.substr(basepath.size());
+	if(!rel.empty() && (rel[0] == '/' || rel[0] == '\\'))
+		rel.erase(0,1);
+
+	auto pos = rel.find('/');
+	
+	std::string repo = rel.substr(0, pos);
+	std::string filePath = rel.substr(pos + 1);
+	
+
 	__COUTV__(basepath);
 	__COUTV__(path);
 	std::string fullpath;
@@ -527,7 +547,7 @@ std::string CodeEditor::getFileGitURL(const std::string& basepath,
 
 	//look for environments
 
-	return "unknown";
+	return "https://github.com/art-daq/" + repo + "/blob/" + filePath + "/";
 }  // end getFileGitURL()
 
 //==============================================================================
