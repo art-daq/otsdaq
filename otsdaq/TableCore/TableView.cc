@@ -2345,38 +2345,21 @@ std::string restoreJSONStringEntities(const std::string& str)
 ///		DATA_SET
 int TableView::fillFromJSON(const std::string& json)
 {
-	{
-		//handle special GROUP CACHE table
+	{ //handle special GROUP CACHE table		
 		std::string tmpCachePrepend   = TableBase::GROUP_CACHE_PREPEND;
 		tmpCachePrepend               = TableBase::convertToCaps(tmpCachePrepend);
 		std::string tmpJsonDocPrepend = TableBase::JSON_DOC_PREPEND;
 		tmpJsonDocPrepend             = TableBase::convertToCaps(tmpJsonDocPrepend);
 
 		//if special JSON DOC table, handle construction in a special way
-		if(tableName_.substr(0, tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
+		if(tableName_.substr(0, tmpJsonDocPrepend.length()) == tmpJsonDocPrepend ||
+			tableName_.substr(0, tmpCachePrepend.length()) == tmpCachePrepend)
 		{
 			__COUTS__(3) << "Special JSON doc: " << json << __E__;
 			setCustomStorageData(json);
 			return 0;  //success
-		}              //end special JSON DOC table construction
-
-		//if special GROUP CACHE table, handle construction in a special way
-		if(tableName_.substr(0, tmpCachePrepend.length()) == tmpCachePrepend)
-		{
-			__COUTS__(20) << "Group Cache JSON doc: " << json << __E__;
-
-			//remove json { } and all " characters
-			std::string jsonClean = "";
-			for(auto& c : json)
-				if(c == '{' || c == '}' || c == '"' || c == ' ')
-					continue;
-				else
-					jsonClean += c;
-
-			setCustomStorageData(jsonClean);
-			return 0;  //success
-		}              //end special GROUP CACHE table construction
-	}                  //end handle special GROUP CACHE table
+		} //end special JSON DOC table construction or special GROUP CACHE table construction
+	} //end handle special GROUP CACHE table
 
 	bool dbg     = false;  //tableName_ == "TABLE_GROUP_METADATA";
 	bool rawData = getSourceRawData_;

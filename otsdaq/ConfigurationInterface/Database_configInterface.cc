@@ -17,6 +17,12 @@
 #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb.h"
 #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
 
+//artdaq database may set TRACE_NAME
+#ifdef TRACE_NAME
+#undef TRACE_NAME
+#endif
+#define TRACE_NAME __MF_DECOR__
+
 using namespace ots;
 
 using artdaq::database::basictypes::FhiclData;
@@ -59,7 +65,7 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 		artdaq::database::configuration::debug::UconDB();
 		artdaq::database::configuration::debug::FileSystemDB();
 
-		// artdaq::database::filesystem::index::debug::enable();
+		artdaq::database::filesystem::index::debug::enable();
 
 		// THIS TURNS OFF TRACE SLOW PATH!!! (bug? Gennadiy says was trying to avoid slowing down TRACE with too many messages on slow path)
 		artdaq::database::filesystem::debug::enable();
@@ -144,8 +150,8 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
 	auto ifc = db::ConfigurationInterface{default_dbprovider};
 
 	auto versionstring = table->getView().getVersion().toString();
-	std::stringstream preSaveJSON;
-	table->getView().printJSON(preSaveJSON);
+	std::stringstream preSaveJSONss;
+	table->getView().printJSON(preSaveJSONss);
 	//__COUT__ << "versionstring: " << versionstring << "\n";
 
 	// auto result =
@@ -165,23 +171,57 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
 	          << duration << " milliseconds" << std::endl;
 
 	__COUTTV__(result.first);
-	__COUTTV__(result.second);
+	__COUTVS__(10,result.second);
 
 	if(result.first)
 	{
 		{ //check that table save worked (FIXME -- this is temporary while waiting for permanent solution from artdaq-database developments)
 
-			TableBase localDocLoader(table->getTableName());
+			TableBase localDocLoader(table->getTableName()); //can not use special table when filling
 			localDocLoader.changeVersionAndActivateView(localDocLoader.createTemporaryView(),
 															table->getView().getVersion());
 			fill(&localDocLoader, table->getView().getVersion());
 
-			std::stringstream postSaveJSON;
-			localDocLoader.getView().printJSON(postSaveJSON);
+			std::stringstream postSaveJSONss;
+			localDocLoader.getView().printJSON(postSaveJSONss);
 
-			__COUTTV__(preSaveJSON.str());
-			__COUTTV__(postSaveJSON.str());
-			if(preSaveJSON.str() == postSaveJSON.str())
+			__COUTVS__(2,preSaveJSONss.str());
+			__COUTVS__(2,postSaveJSONss.str());
+			bool same = true;
+			//compare and ignore white space (since json might shift)
+			{
+				auto preSaveJSON = preSaveJSONss.str();
+				auto postSaveJSON = postSaveJSONss.str();
+				size_t prec = 0, postc = 0;
+				for(;prec < preSaveJSON.size() && postc < postSaveJSON.size(); ++prec, ++postc)
+				{
+					if(preSaveJSON[prec] == '\n' || preSaveJSON[prec] == '\t' || preSaveJSON[prec] == ' ')
+					{
+						//advance only prec to skip whitespace
+						--postc;
+						continue; 
+					}
+					else if(postSaveJSON[postc] == '\n' || postSaveJSON[postc] == '\t' || postSaveJSON[postc] == ' ')
+					{
+						//advance only postc to skip whitespace
+						--prec;
+						continue; 
+					}
+					if(preSaveJSON[prec] != postSaveJSON[postc])
+					{
+						__COUTT__ << "Mismatch at preSaveJSON[" << prec << 
+							"] != postSaveJSON[" << postc <<
+							"] ... " << preSaveJSON[prec] << " != "  <<
+							postSaveJSON[postc] << __E__;
+						same = false;
+						break;
+					}
+				}
+				//Note: is ok to not consider the case when prec != postc 
+				//	because json must have a closing bracket and must have been matched to be same.
+			}
+
+			if(same)
 				__COUTT__ << "Same";
 			else
 			{
@@ -196,8 +236,8 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
 
 				__SS__ << "Error saving table '" << table->getTableName() << "'-v" << versionstring <<
 						" (perhaps there was a collision with another user saving the same table name/version?! Please try again with an incremented table version). "
-						<< "Expected data size is " << preSaveJSON.str().size() << " and readback found size of " << 
-						postSaveJSON.str().size() << " with character mismatches." << __E__;
+						<< "Expected data size is " << preSaveJSONss.str().size() << " and readback found size of " << 
+						postSaveJSONss.str().size() << " with character mismatches." << __E__;
 				__SS_THROW__;
 			}
 
@@ -224,12 +264,15 @@ TableVersion DatabaseConfigurationInterface::findLatestVersion(
 {
 	auto versions = getVersions(table);
 
-	// __COUT__ << "Table Name: " << table->getTableName() << __E__;
-	// __SS__ << "All Versions: ";
-	// for(auto& v : versions)
-	// 	ss << v << " ";
-	// ss << __E__;
-	// __COUT__ << ss.str();
+	if(TTEST(1))
+	{
+		__COUTT__ << "Table Name: " << table->getTableName() << __E__;
+		__SS__ << "All Versions: ";
+		for(auto& v : versions)
+			ss << v << " ";
+		ss << __E__;
+		__COUTT__ << "\n" << ss.str();
+	}
 
 	if(!versions.size())
 		return TableVersion();  // return INVALID
@@ -363,13 +406,29 @@ catch(...)
 TableGroupKey DatabaseConfigurationInterface::findLatestGroupKey(
     const std::string& groupName) const noexcept
 {
+	//attempt to use cache first! (potentially way faster .04 s vs 4 s)
+	try
+	{
+		TableBase    localGroupMemberCacheLoader(true /*special table*/, //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),,
+			TableBase::GROUP_CACHE_PREPEND + groupName);
+		TableVersion lastestGroupCacheKey =
+		    findLatestVersion(&localGroupMemberCacheLoader);
+		__COUTTV__(lastestGroupCacheKey);
+		if(!lastestGroupCacheKey.isInvalid())
+			return TableGroupKey(lastestGroupCacheKey.version());
+	}
+	catch(...)
+	{
+		__COUT__ << "Ignoring cache loading error." << __E__;
+	}
+
 	std::set<TableGroupKey> keys = DatabaseConfigurationInterface::getKeys(groupName);
 	if(keys.size())  // if keys exist, return the last
 		return *(keys.crbegin());
 
 	// else, return invalid
 	return TableGroupKey();
-}
+} //end findLatestGroupKey()
 
 //==============================================================================
 /// find all configuration groups in database
@@ -382,7 +441,7 @@ std::set<TableGroupKey /*key*/> DatabaseConfigurationInterface::getKeys(
 		if(n.find(groupName) == 0)
 			retSet.insert(TableGroupKey(n));
 	return retSet;
-}
+} // end getKeys()
 
 //==============================================================================
 /// return the contents of a configuration group
@@ -412,7 +471,7 @@ try
 		if(!includeMetaDataTable)
 		{
 			// remove special meta data table from member map
-			auto metaTable = retMap.find(GROUP_METADATA_TABLE_NAME);
+			auto metaTable = retMap.find(TableBase::GROUP_METADATA_TABLE_NAME);
 			if(metaTable != retMap.end())
 				retMap.erase(metaTable);
 		}
@@ -451,7 +510,7 @@ try
 		if(!includeMetaDataTable)
 		{
 			// remove special meta data table from member map
-			auto metaTable = resultMap.find(GROUP_METADATA_TABLE_NAME);
+			auto metaTable = resultMap.find(TableBase::GROUP_METADATA_TABLE_NAME);
 			if(metaTable != resultMap.end())
 				resultMap.erase(metaTable);
 		}
@@ -521,7 +580,8 @@ try
 	std::string groupKey  = tableGroup.substr(vi + 2);
 	__COUTT__ << "Getting cache for " << groupName << "(" << groupKey << ")" << __E__;
 
-	TableBase    localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + groupName);
+	TableBase    localGroupMemberCacheSaver(true /*special table*/, //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),
+		TableBase::GROUP_CACHE_PREPEND + groupName);
 	TableVersion localVersion(atoi(groupKey.c_str()));
 
 	//if filesystem db, as of April 2024, artdaq_database returned latest version when version is missing...
@@ -547,8 +607,18 @@ try
 	              << localGroupMemberCacheSaver.getViewP()->getCustomStorageData()
 	              << __E__;
 
-	StringMacros::getMapFromString(
-	    localGroupMemberCacheSaver.getViewP()->getCustomStorageData(), retMap);
+	{ //get table member map from cleaned json string
+		//remove json { } and all " characters
+		std::string jsonClean = "";
+		const std::string& json = localGroupMemberCacheSaver.getViewP()->getCustomStorageData();
+		for(auto& c : json)
+			if(c == '{' || c == '}' || c == '"' || c == ' ')
+				continue;
+			else
+				jsonClean += c;
+		__COUTVS__(21,jsonClean);
+		StringMacros::getMapFromString(jsonClean, retMap);
+	}
 
 	__COUTS__(20) << "Loaded cache member map string "
 	              << StringMacros::mapToString(retMap) << __E__;
@@ -592,7 +662,8 @@ try
 	std::string groupKey  = tableGroup.substr(vi + 2);
 	__COUTT__ << "Saving cache for " << groupName << "(" << groupKey << ")" << __E__;
 
-	TableBase localGroupMemberCacheSaver(TableBase::GROUP_CACHE_PREPEND + groupName);
+	TableBase localGroupMemberCacheSaver(true /*special table*/, //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),
+		TableBase::GROUP_CACHE_PREPEND + groupName);
 	localGroupMemberCacheSaver.changeVersionAndActivateView(
 	    localGroupMemberCacheSaver.createTemporaryView(),
 	    TableVersion(atoi(groupKey.c_str())));
@@ -660,14 +731,15 @@ try
 
 		return resultList;
 	};
+	__COUTTV__(StringMacros::mapToString(memberMap));
 
 	auto result = IS_FILESYSTEM_DB
 	                  ? ifc.storeGlobalConfiguration(to_list(memberMap), tableGroup)
 	                  : ifc.storeGlobalConfiguration_mt(to_list(memberMap), tableGroup);
 
 	__COUTTV__(result.first);
-	__COUTTV__(result.second);
-
+	__COUTVS__(10,result.second);
+	
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration =
 	    std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -680,10 +752,14 @@ try
 		{ //check that group save worked (FIXME -- this is temporary while waiting for permanent solution from artdaq-database developments)
 			auto readbackResult = ifc.loadGlobalConfiguration(tableGroup);
 
+			if(TTEST(1))
+				for(auto &item:readbackResult)
+					__COUTT__ << "--==> " << item.configuration << ": " << item.version << __E__;
+
+			size_t countOfMatches = 0;
 			for(auto &item:readbackResult)
 			{
-				__COUTT__ << "====================> " << item.configuration << ": " << item.version << __E__;
-				size_t countOfMatches = 0;
+				__COUTT__ << "====================> " << item.configuration << ": " << item.version << __E__;				
 				const auto& it = memberMap.find(item.configuration);
 				if(it == memberMap.end() || it->second != TableVersion(std::stol(item.version, 0, 10)))
 				{
@@ -702,20 +778,21 @@ try
 					__SS_THROW__;				
 				}
 				else 
-					++countOfMatches;
+					++countOfMatches;				
+			} //end individual member check
 
-				if(countOfMatches != memberMap.size())
-				{
-					auto end = std::chrono::high_resolution_clock::now();
-					auto duration =
-						std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-					__COUTT__
-						<< "Time taken to call DatabaseConfigurationInterface::saveTableGroup(tableGroup="
-						<< tableGroup << ") " << duration << " milliseconds." << std::endl;
-					__SS__ << "Error saving group '" << tableGroup << "' (perhaps there was a collision with another user saving the same group name?! Please try again with an incremented group key). "
-						<< "Expected group count is " << memberMap.size() << ", and found " << countOfMatches << " matching tables during readback check." << __E__;
-					__SS_THROW__;
-				}
+			//make sure all members were found			
+			if(countOfMatches != memberMap.size())
+			{
+				auto end = std::chrono::high_resolution_clock::now();
+				auto duration =
+					std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+				__COUTT__
+					<< "Time taken to call DatabaseConfigurationInterface::saveTableGroup(tableGroup="
+					<< tableGroup << ") " << duration << " milliseconds." << std::endl;
+				__SS__ << "Error saving group '" << tableGroup << "' (perhaps there was a collision with another user saving the same group name?! Please try again with an incremented group key). "
+					<< "Expected group count is " << memberMap.size() << ", and found " << countOfMatches << " matching tables during readback check." << __E__;
+				__SS_THROW__;
 			}
 			__COUTT__ << "Readback check passed." << __E__;
 		} //end check that group save worked
@@ -776,7 +853,8 @@ try
 {
 	__COUTT__ << "Saving doc '" << documentNameToSave << "'" << __E__;
 
-	TableBase localDocSaver(TableBase::JSON_DOC_PREPEND + documentNameToSave);
+	TableBase localDocSaver(true /*special table*/, //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table)
+		TableBase::JSON_DOC_PREPEND + documentNameToSave);
 
 	std::set<TableVersion> versions = getVersions(&localDocSaver);
 	TableVersion           version;
@@ -791,7 +869,7 @@ try
 
 	localDocSaver.getViewP()->setCustomStorageData(json);
 
-	__COUTT__ << "Saving JSON string: "
+	__COUTS__(10) << "Saving JSON string: "
 	          << localDocSaver.getViewP()->getCustomStorageData() << __E__;
 
 	__COUTT__ << "Saving JSON doc as " << localDocSaver.getView().getTableName() << "("
@@ -828,14 +906,15 @@ try
 	__COUTT__ << "Loading doc '" << documentNameToLoad << "-v" << documentVersionToLoad
 	          << "'" << __E__;
 
-	TableBase localDocLoader(TableBase::JSON_DOC_PREPEND + documentNameToLoad);
+	TableBase localDocLoader(true /*special table*/, //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),
+		TableBase::JSON_DOC_PREPEND + documentNameToLoad);
 
 	localDocLoader.changeVersionAndActivateView(localDocLoader.createTemporaryView(),
 	                                            documentVersionToLoad);
 
 	fill(&localDocLoader, documentVersionToLoad);
 
-	__COUTT__ << "Loaded JSON doc string "
+	__COUTS__(10) << "Loaded JSON doc string "
 	          << localDocLoader.getViewP()->getCustomStorageData() << __E__;
 
 	return localDocLoader.getViewP()->getCustomStorageData();

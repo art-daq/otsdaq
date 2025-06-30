@@ -19,9 +19,6 @@ ConfigurationInterface::CONFIGURATION_MODE ConfigurationInterface::theMode_ =
     ConfigurationInterface::CONFIGURATION_MODE::DO_NOT_CREATE;
 bool ConfigurationInterface::theVersionTrackingEnabled_ = true;
 
-const std::string ConfigurationInterface::GROUP_METADATA_TABLE_NAME =
-    "TableGroupMetadata";
-
 //==============================================================================
 ConfigurationInterface::ConfigurationInterface() {}
 

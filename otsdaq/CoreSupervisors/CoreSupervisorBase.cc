@@ -182,7 +182,6 @@ try
 	std::chrono::steady_clock::time_point requestStart = std::chrono::steady_clock::now();
 	time_t                                requestStartTime = time(0);
 
-	std::stringstream xmlDataSs;
 	try
 	{
 		// call derived class' request()
@@ -230,30 +229,32 @@ try
 		                        ->getChildNodes()
 		                        ->getLength();
 
-	__SUP_COUTT__ << "Number of xml data element children: " << numberOfChildren << __E__;
+	__SUP_COUTT__ << "Number of '" << requestType << "' xml data element children: " << numberOfChildren << __E__;
 
-	if(numberOfChildren < 1000)
-	{
-		unsigned int occurance = 0;
-		std::string  err       = xmlOut.getMatchingValue("Error", occurance++);
-		while(err != "")
-		{
-			__SUP_COUT_ERR__ << "'" << requestType << "' ERROR encountered: " << err
-			                 << __E__;
-			err = xmlOut.getMatchingValue("Error", occurance++);
-		}
-		__SUP_COUTT__ << "Elapsed time after error check: "
-		              << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
-	}
-
-	// __SUP_COUTV__(xmlDataSs.str());
-
+	__SUP_COUTT__ << "Request '" << requestType
+	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
+	              << __E__;
+				  
 	// return xml doc holding server response
 	xmlOut.outputXmlDocument((std::ostringstream*)out,
 	                         false /*print to cout*/,
-	                         !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/);
+	                         !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/,
+							 true /* printErrors */);
 
-	__SUP_COUTT__ << "Total xml request time: "
+	__SUP_COUTT__ << "Request '" << requestType
+	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
+	              << __E__;
+	std::stringstream oss;
+	xmlOut.outputXmlDocument((std::ostringstream*)&oss,
+	                         false /*print to cout*/,
+	                         !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/,
+							 true /* printErrors */);
+	__SUP_COUTT__ << "Request '" << requestType
+	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
+	              << __E__;
+	__SUP_COUTV__(oss.str());
+
+	__SUP_COUTT__ << "Total '" << requestType << "' xml request time: "
 	              << artdaq::TimeUtils::GetElapsedTime(requestStart) << " = "
 	              << time(0) - requestStartTime << __E__;
 }  // end requestWrapper()

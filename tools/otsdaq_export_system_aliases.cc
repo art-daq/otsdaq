@@ -367,14 +367,14 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 
 			// save meta data table separately, since there is no table definition, and then remove from member map
 			auto metaTablePair =
-			    memberMap.find(ConfigurationInterface::GROUP_METADATA_TABLE_NAME);
+			    memberMap.find(TableBase::GROUP_METADATA_TABLE_NAME);
 			if(metaTablePair != memberMap.end())
 			{
-				__COUT__ << ConfigurationInterface::GROUP_METADATA_TABLE_NAME << ":v"
+				__COUT__ << TableBase::GROUP_METADATA_TABLE_NAME << ":v"
 				         << metaTablePair->second << std::endl;
 
 				std::string tablePath =
-				    groupPath + "/" + ConfigurationInterface::GROUP_METADATA_TABLE_NAME +
+				    groupPath + "/" + TableBase::GROUP_METADATA_TABLE_NAME +
 				    "_v" + metaTablePair->second.str() + ".json";
 				__COUTV__(tablePath);
 

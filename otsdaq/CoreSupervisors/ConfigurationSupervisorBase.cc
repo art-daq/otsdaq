@@ -347,16 +347,18 @@ try
 
 	xmlOut.addTextElementToData("AttemptedNewGroupName", groupName);
 
-	// make sure not using partial tables or anything weird when creating the group
-	//	so start from scratch and load backbone, but allow errors
+	// Only need table info for aliases and to check table names are valid
+	//  ... so do not refresh, unless there is no info present.
 	std::string                             accumulatedWarnings;
-	const std::map<std::string, TableInfo>& allTableInfo =
+	const std::map<std::string, TableInfo>& allTableInfo = cfgMgr->getAllTableInfo(); //no need to refresh
+	if(!allTableInfo.size()) //getAllTableInfo() will update allTableInfo by reference	
 	    cfgMgr->getAllTableInfo(true /* refresh */,
 	                            &accumulatedWarnings,
 	                            "" /* errorFilterName */,
 	                            true /* getGroupKeys*/,
 	                            false /* getGroupInfo */,
 	                            true /* initializeActiveGroups */);
+								
 	__COUT_WARN__ << "Ignoring these errors: " << accumulatedWarnings << __E__;
 	// cfgMgr->loadConfigurationBackbone(); //already loaded by initializeActiveGroups of getAllTableInfo
 
@@ -423,7 +425,7 @@ try
 				__SS__ << "version alias '"
 				       << versionStr.substr(
 				              ConfigurationManager::ALIAS_VERSION_PREAMBLE.size())
-				       << "' was not found in active version aliases!" << __E__;
+				       << "' was not found in active version aliases! Please check your active backbone!" << __E__;
 				__COUT_ERR__ << "\n" << ss.str();
 				xmlOut.addTextElementToData("Error", ss.str());
 				return;
@@ -515,7 +517,7 @@ try
 
 					// insert get table info
 					handleGetTableGroupXML(
-					    xmlOut, cfgMgr, groupName, foundKey, ignoreWarnings);
+					    xmlOut, cfgMgr, groupName, foundKey, ignoreWarnings, true /* cacheOnly */);
 					return;
 				}
 				else  // treat as error, if not looking for equivalent
@@ -652,7 +654,7 @@ try
 
 	// insert get table info
 	__COUT__ << "Loading new table group..." << __E__;
-	handleGetTableGroupXML(xmlOut, cfgMgr, groupName, newKey, ignoreWarnings);
+	handleGetTableGroupXML(xmlOut, cfgMgr, groupName, newKey, ignoreWarnings, true /* cacheOnly */);
 
 	__COUTT__ << "handleCreateTableGroupXML end runtime=" << cfgMgr->runTimeSeconds()
 	          << __E__;
@@ -691,6 +693,8 @@ catch(...)
 ///	Find historical group keys
 ///		and figure out all member configurations versions
 ///
+///	Use cacheOnly to only return group info previously cached (avoid reloading from database)
+///
 ///
 ///	return this information
 ///	<group name=xxx key=xxx>
@@ -709,7 +713,8 @@ void ConfigurationSupervisorBase::handleGetTableGroupXML(HttpXmlDocument&       
                                                          ConfigurationManagerRW* cfgMgr,
                                                          const std::string& groupName,
                                                          TableGroupKey      groupKey,
-                                                         bool ignoreWarnings)
+                                                         bool ignoreWarnings /* = false */,
+														 bool cacheOnly /* = false */)
 try
 {
 	// char                 tmpIntStr[100];
@@ -736,6 +741,8 @@ try
 	//		sortedKeys.emplace(key);
 	//	}
 
+	__COUTTV__(cacheOnly);
+
 	{
 		const GroupInfo&               groupInfo  = cfgMgr->getGroupInfo(groupName);
 		const std::set<TableGroupKey>& sortedKeys = groupInfo.keys_;  // rename
@@ -747,10 +754,10 @@ try
 		__COUTT__ << "Active tables: "
 		          << StringMacros::mapToString(cfgMgr->getActiveVersions()) << __E__;
 
-		if(groupKey
+		if(!cacheOnly && (groupKey
 		       .isInvalid() ||  // if invalid or not found, likely key info not loaded, so get latest
 		   sortedKeys.find(groupKey) == sortedKeys.end() ||
-		   sortedKeys.size() < 2)
+		   sortedKeys.size() < 2))
 		{
 			// report error if group key not found
 			if(!groupKey.isInvalid() || sortedKeys.size() == 0)
@@ -934,8 +941,9 @@ try
 		it = allTableInfo.find(memberPair.first);
 		if(it == allTableInfo.end())
 		{
-			xmlOut.addTextElementToData(
-			    "Error", "Table \"" + memberPair.first + "\" can not be retrieved!");
+			if(!cacheOnly) //only an 'error' if not cacheOnly
+				xmlOut.addTextElementToData(
+			    	"Error", "Table \"" + memberPair.first + "\" can not be retrieved!");
 			continue;
 		}
 
@@ -952,6 +960,7 @@ try
 			xmlOut.addTextElementToParent(
 			    "TableExistingVersion", version.toString(), configEl);
 	}
+
 	// Seperate loop just for getting the Member Comment
 	for(auto& memberPair : memberMap)
 	{

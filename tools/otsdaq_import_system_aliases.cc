@@ -608,7 +608,35 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 				    theInterface_->findLatestVersion(config));
 				__COUTV__(newVersion);
 				cfgView->setVersion(newVersion);
-				theInterface_->saveActiveVersion(config);
+
+				// save table, and retry on save collision
+				uint16_t retries = 0;
+				while(1)
+				{			
+					try
+					{
+						theInterface_->saveActiveVersion(config);
+					}
+					catch(const std::runtime_error& e)
+					{
+						__COUT__ << "Caught runtime_error exception during table save." << __E__;
+						if(std::string(e.what()).find("there was a collision") != std::string::npos)
+						{
+							__COUT_WARN__ << "There was a collision saving the new table " <<
+								*cfgView << "(" << newVersion << "), trying incremented table version... retries=" << retries << __E__;
+							if(++retries > 10) //give up
+								throw;
+							newVersion = TableVersion::getNextVersion(newVersion); //increment table version
+							cfgView->setVersion(newVersion);
+							__COUT__ << "New version for table: " << *cfgView << " found as " << newVersion << __E__;
+							continue;
+						}
+						else throw;
+					}
+					
+					__COUT__ << "Created table: " << *cfgView << "-v" << newVersion << __E__;
+					break;
+				} //end collission retry loop
 
 				// set it back for the table so that future groups can re-use cached
 				// version
@@ -668,7 +696,35 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 			    theInterface_->findLatestVersion(groupMetadataTable));
 			__COUTV__(newVersion);
 			groupMetadataTable->getViewP()->setVersion(newVersion);
-			theInterface_->saveActiveVersion(groupMetadataTable);
+			
+			// save table, and retry on save collision
+			uint16_t retries = 0;
+			while(1)
+			{			
+				try
+				{
+					theInterface_->saveActiveVersion(groupMetadataTable);
+				}
+				catch(const std::runtime_error& e)
+				{
+					__COUT__ << "Caught runtime_error exception during table save." << __E__;
+					if(std::string(e.what()).find("there was a collision") != std::string::npos)
+					{
+						__COUT_WARN__ << "There was a collision saving the new table " <<
+							groupMetadataTable << "(" << newVersion << "), trying incremented table version... retries=" << retries << __E__;
+						if(++retries > 10) //give up
+							throw;
+						newVersion = TableVersion::getNextVersion(newVersion); //increment table version
+						groupMetadataTable->getViewP()->setVersion(newVersion);
+						__COUT__ << "New version for table: " << groupMetadataTable << " found as " << newVersion << __E__;
+						continue;
+					}
+					else throw;
+				}
+				
+				__COUT__ << "Created table: " << groupMetadataTable << "-v" << newVersion << __E__;
+				break;
+			} //end collission retry loop
 
 			// force groupMetadataTable_ to be a member for the group
 			memberMap[groupMetadataTable->getTableName()] =
@@ -682,9 +738,36 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 			__COUTV__(newKey);
 
 			// memberMap should now consist of members with new flat version, so save
-			theInterface_->saveTableGroup(
-			    memberMap,
-			    TableGroupKey::getFullGroupString(groupPair.first.first, newKey));
+
+			// save group, and retry on save collision
+			uint16_t retries = 0;
+			while(1)
+			{			
+				try
+				{
+					theInterface_->saveTableGroup(
+						memberMap,
+						TableGroupKey::getFullGroupString(groupPair.first.first, newKey));
+				}
+				catch(const std::runtime_error& e)
+				{
+					__COUT__ << "Caught runtime_error exception during group save." << __E__;
+					if(std::string(e.what()).find("there was a collision") != std::string::npos)
+					{
+						__COUT_WARN__ << "There was a collision saving the new group " <<
+							groupPair.first.first << "(" << newKey << "), trying incremented group key... retries=" << retries << __E__;
+						if(++retries > 10) //give up
+							throw;
+						newKey = TableGroupKey::getNextKey(newKey); //increment group key
+						__COUT__ << "New Key for group: " << groupPair.first.first << " found as " << newKey << __E__;
+						continue;
+					}
+					else throw;
+				}
+				
+				__COUT__ << "Created table group: " << groupPair.first.first << "(" << newKey << ")" << __E__;
+				break;
+			} //end collission retry loop
 
 			// and modify groupSet and activeGroupKeys keys
 			groupPair.second = newKey;
@@ -897,8 +980,36 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 		    TableVersion::getNextVersion(theInterface_->findLatestVersion(config));
 		__COUTV__(newVersion);
 		cfgView->setVersion(newVersion);
-		theInterface_->saveActiveVersion(config);
 
+		// save table, and retry on save collision
+		uint16_t retries = 0;
+		while(1)
+		{			
+			try
+			{
+				theInterface_->saveActiveVersion(config);
+			}
+			catch(const std::runtime_error& e)
+			{
+				__COUT__ << "Caught runtime_error exception during table save." << __E__;
+				if(std::string(e.what()).find("there was a collision") != std::string::npos)
+				{
+					__COUT_WARN__ << "There was a collision saving the new table " <<
+						*cfgView << "(" << newVersion << "), trying incremented table version... retries=" << retries << __E__;
+					if(++retries > 10) //give up
+						throw;
+					newVersion = TableVersion::getNextVersion(newVersion); //increment table version
+					cfgView->setVersion(newVersion);
+					__COUT__ << "New version for table: " << *cfgView << " found as " << newVersion << __E__;
+					continue;
+				}
+				else throw;
+			}
+			
+			__COUT__ << "Created table: " << *cfgView << "-v" << newVersion << __E__;
+			break;
+		} //end collission retry loop
+		
 		memberMap[groupAliasesTableName] = newVersion;  // change version in the member
 		                                                // map
 
@@ -914,7 +1025,35 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 		    TableVersion::getNextVersion(theInterface_->findLatestVersion(config));
 		__COUTV__(newVersion);
 		cfgView->setVersion(newVersion);
-		theInterface_->saveActiveVersion(config);
+		
+		// save table, and retry on save collision
+		uint16_t retries = 0;
+		while(1)
+		{			
+			try
+			{
+				theInterface_->saveActiveVersion(config);
+			}
+			catch(const std::runtime_error& e)
+			{
+				__COUT__ << "Caught runtime_error exception during table save." << __E__;
+				if(std::string(e.what()).find("there was a collision") != std::string::npos)
+				{
+					__COUT_WARN__ << "There was a collision saving the new table " <<
+						*cfgView << "(" << newVersion << "), trying incremented table version... retries=" << retries << __E__;
+					if(++retries > 10) //give up
+						throw;
+					newVersion = TableVersion::getNextVersion(newVersion); //increment table version
+					cfgView->setVersion(newVersion);
+					__COUT__ << "New version for table: " << *cfgView << " found as " << newVersion << __E__;
+					continue;
+				}
+				else throw;
+			}
+			
+			__COUT__ << "Created table: " << *cfgView << "-v" << newVersion << __E__;
+			break;
+		} //end collission retry loop
 
 		memberMap[versionAliasesTableName] =
 		    newVersion;  // change version in the member map
@@ -931,9 +1070,36 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 		__COUTV__(newKey);
 
 		// memberMap should now consist of members with new flat version, so save
-		theInterface_->saveTableGroup(
-		    memberMap,
-		    TableGroupKey::getFullGroupString(activeBackboneGroupName, newKey));
+
+		// save group, and retry on save collision
+		uint16_t retries = 0;
+		while(1)
+		{		
+			try
+			{	
+				theInterface_->saveTableGroup(
+					memberMap,
+					TableGroupKey::getFullGroupString(activeBackboneGroupName, newKey));
+			}
+			catch(const std::runtime_error& e)
+			{
+				__COUT__ << "Caught runtime_error exception during group save." << __E__;
+				if(std::string(e.what()).find("there was a collision") != std::string::npos)
+				{
+					__COUT_WARN__ << "There was a collision saving the new group " <<
+						activeBackboneGroupName << "(" << newKey << "), trying incremented group key... retries=" << retries << __E__;
+					if(++retries > 10) //give up
+						throw;
+					newKey = TableGroupKey::getNextKey(newKey); //increment group key
+					__COUT__ << "New Key for group: " << activeBackboneGroupName << " found as " << newKey << __E__;
+					continue;
+				}
+				else throw;
+			}
+			
+			__COUT__ << "Created table group: " << activeBackboneGroupName << "(" << newKey << ")" << __E__;
+			break;
+		} //end collission retry loop
 
 		std::string renameFile =
 		    ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + nowTime;
