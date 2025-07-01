@@ -1807,7 +1807,7 @@ void ConfigurationManager::loadTableGroup(
 				getChildren(&memberMap, accumulatedWarnings);
 				if(*accumulatedWarnings != "")
 				{
-					__GEN_COUT_ERR__
+					__GEN_COUT_WARN__
 					    << "Errors detected while loading Table Group: " << groupName
 					    << "(" << groupKey << "). Ignoring the following errors: "
 					    << "\n"
@@ -3148,7 +3148,7 @@ const TableBase* ConfigurationManager::getTableByName(const std::string& tableNa
 			      "Group that was loaded.\n"
 			   << "\nYou may need to enter wiz mode to remedy the situation, use the "
 			      "following:\n"
-			   << "\n\t StartOTS.sh --wiz"
+			   << "\n\t ots --wiz"
 			   << "\n\n\n\n"
 			   << __E__;
 

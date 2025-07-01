@@ -202,7 +202,7 @@ void CorePropertySupervisorBase::indicateOtsAlive(
 		__COUTV__(hostname);
 	}
 
-	// indicate ots is alive (for StartOTS.sh to verify launch was successful)
+	// indicate ots is alive (for ots script to verify launch was successful)
 	std::string filename = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/otsdaq_is_alive-" +
 	                       hostname + "-" + portStr + ".dat";
 	FILE* fp = fopen(filename.c_str(), "w");
@@ -257,7 +257,7 @@ void CorePropertySupervisorBase::indicateOtsDead(
 		__COUTV__(hostname);
 	}
 
-	// indicate ots is dead (for StartOTS.sh to verify launch was successful)
+	// indicate ots is dead (for ots script to verify launch was successful)
 	std::string filename = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/otsdaq_is_alive-" +
 	                       hostname + "-" + portStr + ".dat";
 	FILE* fp = fopen(filename.c_str(), "w");

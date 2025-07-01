@@ -73,7 +73,7 @@ trap 'handler' HUP
 ulimit -c unlimited
 
 
-STARTTIME=`date +"%d%h%y.%T"` #to fully ID one StartOTS from another
+STARTTIME=`date +"%d%h%y.%T"` #to fully ID one ots script from another
 
 #export products, used by artdaq daqInterface
 export OTS_PRODUCTS=`echo $PRODUCTS|tr ':' '\n'|grep -v localProducts|head -1`
@@ -346,21 +346,21 @@ fi
 
 #attempt to mkdir for full path so that it exists to move the database to
 # assuming mkdir is non-destructive
-#Note: quit file added to universally quit StartOTS scripts originating from same USER_DATA
-#Note: local path quit file added to universally quit StartOTS scripts originating from same directory (regardless of USER_DATA)
-# can not come from action file because individual StartOTS scripts need to respond to that one.
-# The gateway supervisor StartOTS script drives the quit file.
+#Note: quit file added to universally quit ots scripts originating from same USER_DATA
+#Note: local path quit file added to universally quit ots scripts originating from same directory (regardless of USER_DATA)
+# can not come from action file because individual ots scripts need to respond to that one.
+# The gateway supervisor ots script drives the quit file.
 
 OTSDAQ_STARTOTS_ACTION_FILE="${USER_DATA}/ServiceData/StartOTS_action_${THIS_HOST}.cmd" #the targeted hostname action script gives commands to StartOTS scripts running on that host
 OTSDAQ_STARTOTS_QUIT_FILE="${USER_DATA}/ServiceData/StartOTS_action_quit.cmd" #the global quit gives exit commonds to the non-gateway StartOTS scripts
 OTSDAQ_STARTOTS_LOCAL_QUIT_FILE=".StartOTS_${OTS_OWNER}_action_quit.cmd" #the local quit is used to remove other StartOTS calls from the same directory (it catches the case when switching USER_DATA paths)
 
-#if [ $ISREMOTE == 0 ]; then
-	#out "ots script path     = ${SCRIPT_DIR}/ots         "
-	#out "ots action path     = ${OTSDAQ_STARTOTS_ACTION_FILE}    "
-	#out "ots quit path       = ${OTSDAQ_STARTOTS_QUIT_FILE}      "
-	#out "ots local quit path = ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE}"
-#fi
+if [ $ISREMOTE == 0 ]; then
+	out "ots script path     = ${SCRIPT_DIR}/ots         "
+	out "ots action path     = ${OTSDAQ_STARTOTS_ACTION_FILE}    "
+	out "ots quit path       = ${OTSDAQ_STARTOTS_QUIT_FILE}      "
+	out "ots local quit path = ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE}"
+fi
 
 SAP_ARR=$(echo "${USER_DATA}/ServiceData" | tr '/' "\n")
 SAP_PATH=""
@@ -517,7 +517,7 @@ if [[ $SOFTKILLALL != 0 ]]; then
 	out "${Yellow}${Bold}${REV}*************       kill otsdaq!        ************** ${OTS_OWNER} ${RstClr}"
 	out "${Yellow}${Bold}${REV}******************************************************${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 
-	#try to force kill other StartOTS scripts
+	#try to force kill other ots scripts
 	echo "KILL_ALL" > $OTSDAQ_STARTOTS_QUIT_FILE
 	echo "KILL_ALL ${THIS_HOST}" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
 
@@ -536,7 +536,7 @@ if [[ $KILLALL != 0 ]]; then
 	out "${Yellow}${Bold}${REV}*************       kill ALL otsdaq!        **************${RstClr}"
 	out "${Yellow}${Bold}${REV}******************************************************${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 
-	#try to force kill other StartOTS scripts
+	#try to force kill other ots scripts
 	echo "KILL_ALL" > $OTSDAQ_STARTOTS_QUIT_FILE
 	echo "KILL_ALL ${THIS_HOST}" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
 
@@ -936,7 +936,7 @@ launchOTSMacromaker() {
 		fi
 
 		out #blank line
-		out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}MacroMaker Mode${RstClr}' output into ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt ***  "
+		out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}MacroMaker Mode${RstClr}' logging to ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt ***  "
 		out #blank line
 
 		# echo "${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt &"
@@ -949,7 +949,7 @@ launchOTSMacromaker() {
 	if [ $RELAUNCHCHECK == 1 ]; then
 
 		#test for relaunch
-		# 4 times quietly, then get louder
+		# 4 times quietly, then get longer
 
 		sleep 2
 		OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
@@ -998,7 +998,7 @@ launchOTSMacromaker() {
 
 			if [ $QUIET == 1 ]; then
 				out #blank line
-				out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}MacroMaker Mode${RstClr}' output into ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt ***  "
+				out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}MacroMaker Mode${RstClr}' logging to ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt ***  "
 				out #blank line
 				echo -e "\n\nAttempting restart\n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
 				${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_MacroMaker_CMake_Run.xml &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt <&- &
@@ -1021,6 +1021,7 @@ launchOTSMacromaker() {
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
+					sleep 3 #give extra time in case slow web server startup
 					OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
 					# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 					if [ "$OTS_CONTEXT_UP" == "bad" ]; then
@@ -1075,6 +1076,18 @@ launchOTSWiz() {
 	unset ContextPIDArray #reset
 	unset ContextPIDNameArray #reset
 	unset ContextPIDIsAliveArray #reset
+
+	#(re)setup user ssh tunnels in case they have timed out
+	if declare -F otsUserSshTunnels > /dev/null; then
+		out "otsUserSshTunnels() function is defined, so setting up user ssh tunnels..."
+		otsUserSshTunnels &
+
+		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
+			out "otsUserSshTunnels() is set to auto refresh mode."
+		fi
+	else
+		out "otsUserSshTunnels() funtion is not defined, define to setup user ssh tunnels."
+	fi
 
 	#setup wiz mode environment variables
 	export CODE_EDITOR_SUPERVISOR_ID=240
@@ -1140,7 +1153,7 @@ launchOTSWiz() {
 				mv ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.${DATESTRING}.txt
 			fi
 
-			#out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Message Facility${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt${RstClr}"
+			#out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Message Facility${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt${RstClr}"
 			${otsConsoleFwdPrefix} otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt <&- &
 		#else
 		#	otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &
@@ -1206,7 +1219,7 @@ launchOTSWiz() {
 		fi
 
 		out #blank line
-		out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Wiz Mode${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt${RstClr}"
+		out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Wiz Mode${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt${RstClr}"
 		out #blank line
 
 		${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt <&- &
@@ -1218,7 +1231,7 @@ launchOTSWiz() {
 	if [ $RELAUNCHCHECK == 1 ]; then
 
 		#test for relaunch
-		# 4 times quietly, then get louder
+		# 4 times quietly, then get longer
 
 		sleep 2
 		OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
@@ -1257,7 +1270,7 @@ launchOTSWiz() {
 
 			if [ $QUIET == 1 ]; then
 				out #blank line
-				out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Wiz Mode${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt${RstClr}"
+				out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Wiz Mode${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt${RstClr}"
 				out #blank line
 				echo -e "\n\nAttempting restart\n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
 				${xdaqPrefix} xdaq.exe -p ${PORT} -h ${THIS_HOST} -e ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_CMake.xml -c ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt <&- &
@@ -1276,6 +1289,7 @@ launchOTSWiz() {
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
+					sleep 3 #give extra time in case slow web server startup
 					OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
 					# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 					if [ "$OTS_CONTEXT_UP" == "bad" ]; then
@@ -1426,7 +1440,7 @@ launchOTS() {
 					mv ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.${DATESTRING}.txt
 				fi
 
-				#out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Message Facility${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt${RstClr}"
+				#out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Message Facility${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt${RstClr}"
 				${otsConsoleFwdPrefix} otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt <&- &
 			#else
 			#	otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &
@@ -1531,7 +1545,7 @@ launchOTS() {
 	#(re)setup user ssh tunnels in case they have timed out
 	if declare -F otsUserSshTunnels > /dev/null; then
 		out "otsUserSshTunnels() function is defined, so setting up user ssh tunnels..."
-		otsUserSshTunnels
+		otsUserSshTunnels &
 
 		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
 			out "otsUserSshTunnels() is set to auto refresh mode."
@@ -1674,7 +1688,7 @@ launchOTS() {
 								fi
 
 
-								out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Gateway${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt${RstClr}"
+								out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Gateway${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt${RstClr}"
 								${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt <&- &
 							else
 								${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &
@@ -1685,7 +1699,7 @@ launchOTS() {
 							if [ $RELAUNCHCHECK == 1 ]; then
 
 								#test for relaunch
-								# 4 times quietly, then get louder
+								# 4 times quietly, then get longer
 
 								sleep 2
 								OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
@@ -1726,7 +1740,7 @@ launchOTS() {
 									sleep 2
 
 									if [ $QUIET == 1 ]; then
-										out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Gateway${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt${RstClr}"
+										out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Gateway${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt${RstClr}"
 
 										echo -e "\n\nXDAQ xml:\n\n ${value} \n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
 										echo -e "\n\nAttempting restart on extracted host ${THIS_HOST} PORT ${PORT} \n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
@@ -1747,6 +1761,7 @@ launchOTS() {
 											OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 											out "Checking http://${THIS_HOST}:${PORT}..."
 										else  # found the supervisor!
+											sleep 3 #give extra time in case slow web server startup
 											OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
 											# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 											if [ "$OTS_CONTEXT_UP" == "bad" ]; then
@@ -1854,7 +1869,7 @@ launchOTS() {
 				mv ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.${DATESTRING}.txt
 			fi
 
-			out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}${xdaqContextUID[$i]}${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt${RstClr}"
+			out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}${xdaqContextUID[$i]}${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt${RstClr}"
 			${xdaqPrefix} xdaq.exe -h ${xdaqHost[$i]} -p ${PORT} -e ${XDAQ_ARGS} &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt <&- &
 		else
 			${xdaqPrefix} xdaq.exe -h ${xdaqHost[$i]} -p ${PORT} -e ${XDAQ_ARGS} &
@@ -1911,7 +1926,7 @@ launchOTS() {
 			LAST_OTS_PID=${TempContextPIDArray[$j]}
 
 			#test for relaunch
-			# 4 times quietly, then get louder
+			# 4 times quietly, then get longer
 
 			sleep 2
 			OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
@@ -1948,7 +1963,7 @@ launchOTS() {
 				sleep 2
 
 				if [ $QUIET == 1 ]; then
-					out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}${xdaqContextUID[$i]}${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt${RstClr}"
+					out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}${xdaqContextUID[$i]}${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt${RstClr}"
 					echo -e "\n\nXDAQ xml:\n\n ${value} \n\n" >> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
 					echo -e "\n\nAttempting restart on extracted host '${THIS_HOST}' PORT ${PORT} \n\n" >>  ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
 					${xdaqPrefix} xdaq.exe -h ${THIS_HOST} -p ${PORT} -e ${XDAQ_ARGS} &>> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt <&- &
@@ -1990,6 +2005,7 @@ launchOTS() {
 						OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 						out "Checking http://${THIS_HOST}:${PORT}..."
 					else   # found the supervisor!
+						sleep 3 #give extra time in case slow web server startup
 						OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
 						# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 						if [ "$OTS_CONTEXT_UP" == "bad" ]; then
@@ -2244,7 +2260,7 @@ launchOTSLogFind() {
 						gatewayPort=${PORT}
 						gatewayUID=${contextUID}
 						fn="otsdaq_quiet_run-gateway-${host}-${PORT}"
-						out "${Red}${Bold}Log file for gateway${RstClr} '${Bold}${contextUID}${RstClr}' on host${RstClr} '${Bold}${host}${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"
+						out "${Red}${Bold}Log file for gateway${RstClr} '${Bold}${contextUID}${RstClr}' on host${RstClr} '${Bold}${host}${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"
 
 					fi
 				elif [[ ($haveXDAQContextPort == false) && ($gatewayHostname != $host || $gatewayPort != $PORT) ]]; then
@@ -2255,7 +2271,7 @@ launchOTSLogFind() {
 					haveXDAQContextPort=true
 					# out "$contextUID"
 					fn="otsdaq_quiet_run-${host}-${PORT}"
-					out "${Red}${Bold}Log file for${RstClr} '${Bold}${contextUID}${RstClr}' on host${RstClr} '${Bold}${host}${RstClr}' output into ${Yellow}${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"
+					out "${Red}${Bold}Log file for${RstClr} '${Bold}${contextUID}${RstClr}' on host${RstClr} '${Bold}${host}${RstClr}' logging to ${Yellow}${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"
 				fi
 
 			  #IF THERE IS AT LEAST ONE NOT ARTDAQ APP THEN I CAN GET OUT OF THIS CONTEXT AND RUN XDAQ ONCE JUST FOR THIS
@@ -2308,6 +2324,8 @@ export -f launchOTSLogFind
 #########################################################
 #########################################################
 
+ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$"
+
 #make URL print out a function so that & syntax can be used to run in background (user has immediate terminal access)
 printMainURL() {
 
@@ -2340,10 +2358,12 @@ printMainURL() {
 		#echo -e "${Reset}"
 
 		if [ $QUIET == 1 ]; then
+			out "Action handler log is here, e.g.: less -R ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 			exit
 		fi
 		sleep 2 #for delay between each printout
 	done
+	out "Action handler log is here, e.g.: less -R ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 }  #end printMainURL
 export -f printMainURL
 
@@ -2508,7 +2528,7 @@ otsActionHandler() {
 					mv ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-flatten-${THIS_HOST}.txt ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-flatten-${THIS_HOST}.${DATESTRING}.txt
 				fi
 
-				out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Flattening${RstClr}' output into ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-flatten-${THIS_HOST}.txt ***  "
+				out "${Red}${Bold}Quiet mode${RstClr}. '${Bold}Flattening${RstClr}' logging to ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-flatten-${THIS_HOST}.txt ***  "
 				otsdaq_flatten_system_aliases 0 &> ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-flatten-${THIS_HOST}.txt &
 			else
 				otsdaq_flatten_system_aliases 0 &
@@ -2767,7 +2787,8 @@ fi
 sleep 2 #attempt to avoid false starts by xdaq
 #after gateway node has been decided and xdaq has been launched, start action handler
 # exec #rrivera commented: Ron and internet say this exec does nothing
-otsActionHandler >/tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$ 2>&1 <&- &
+otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
+out "Action handler log is here, e.g.: less -R ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
 
@@ -2781,6 +2802,13 @@ fi
 if [ $FIREFOX == 1 ]; then
 	sleep 3 #give time for server to be alive
 	firefox $MAIN_URL &
+fi
+
+if [ $CHECK_GIT_REPO_STATUS == 1 ]; then
+	out "Will report a warning if any uncommitted code found..."
+	echo
+	UpdateOTS.sh --warn 2>&1 >/dev/null
+	echo
 fi
 
 #sleep 5 #so that the terminal comes back after the printouts are done ( in quiet mode )
