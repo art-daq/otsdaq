@@ -98,7 +98,7 @@ try
 		    StringMacros::setToString(ALLOWED_FILE_EXTENSIONS_, ","));
 	}
 	else if(option == "getFileGitURL")
-	{
+	{ 
 		getFileGitURL(cgiIn, xmlOut);
 	}
 	else
@@ -514,22 +514,6 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 std::string CodeEditor::getFileGitURL(const std::string& basepath,
 	const std::string& path)
 {
-	// //TODO! October 2024 by rrivera
-	// //TODO! request with linux exec to spack environment
-
-	__COUTV__(basepath);
-	__COUTV__(path);
-	// std::string fullpath;
-	// if(path.find(basepath) == 0)  //check if path is already complete
-	// fullpath = path;
-	// else
-	// fullpath = basepath + "/" + path;
-	// __COUTV__(fullpath);
-
-	// //look for environments
-
-	// return "unknown";
-
 	std::string localPath = path;
 
 	std::string package = localPath.substr(0, localPath.find("/"));
@@ -572,7 +556,6 @@ std::string CodeEditor::getFileGitURL(const std::string& basepath,
 		branch = branchMatch[1];
 
 	return gitUrl + "/blob/" + branch + "/" + localPath + lineAnchor;
-
 }  // end getFileGitURL()
 
 //==============================================================================
