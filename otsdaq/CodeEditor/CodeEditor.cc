@@ -7,7 +7,7 @@
 #include <cctype>      //for std::toupper
 #include <thread>      //for std::thread
 #include <map>		   //for std::map
-
+#include <regex>	   //for std::regex
 using namespace ots;
 
 #define CODE_EDITOR_DATA_PATH \
@@ -512,42 +512,67 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 //==============================================================================
 /// getFileGitURL
 std::string CodeEditor::getFileGitURL(const std::string& basepath,
-                                      const std::string& path)
+	const std::string& path)
 {
-	//TODO! October 2024 by rrivera
-	//TODO! request with linux exec to spack environment
-
-	static const std::map<std:: string, std::string> repoMap = {
-		{"otsdaq", "https://github.com/art-daq/otsdaq"},
-		{"otsdaq-components", "https://github.com/art-daq/otsdaq-components"},
-		{"otsdaq-demo", "https://github.com/art-daq/otsdaq-demo"},
-		{"otsdaq-epics", "https://github.com/art-daq/otsdaq-epics"},
-		{"otsdaq-prepmodernization", "https://github.com/art-daq/otsdaq-prepmodernization"},
-		{"otsdaq-utilities", "https://github.com/art-daq/otsdaq-utilities"}
-	};
-
-	std::string rel = path.substr(basepath.size());
-	if(!rel.empty() && (rel[0] == '/' || rel[0] == '\\'))
-		rel.erase(0,1);
-
-	auto pos = rel.find('/');
-	
-	std::string repo = rel.substr(0, pos);
-	std::string filePath = rel.substr(pos + 1);
-	
+	// //TODO! October 2024 by rrivera
+	// //TODO! request with linux exec to spack environment
 
 	__COUTV__(basepath);
 	__COUTV__(path);
-	std::string fullpath;
-	if(path.find(basepath) == 0)  //check if path is already complete
-		fullpath = path;
-	else
-		fullpath = basepath + "/" + path;
-	__COUTV__(fullpath);
+	// std::string fullpath;
+	// if(path.find(basepath) == 0)  //check if path is already complete
+	// fullpath = path;
+	// else
+	// fullpath = basepath + "/" + path;
+	// __COUTV__(fullpath);
 
-	//look for environments
+	// //look for environments
 
-	return "https://github.com/art-daq/" + repo + "/blob/" + filePath + "/";
+	// return "unknown";
+
+	std::string localPath = path;
+
+	std::string package = localPath.substr(0, localPath.find("/"));
+
+	std::string::size_type colonPos = localPath.find(":");
+	std::string lineAnchor = "";
+	if (colonPos != std::string::npos)
+	{
+		std::string lineStr = localPath.substr(colonPos + 1);
+		if (!lineStr.empty())
+			lineAnchor = "#L" + lineStr;
+		localPath = localPath.substr(0, colonPos);
+	}
+
+	std::string cmd = "spack info " + package;
+	FILE* pipe = popen(cmd.c_str(), "r");
+	if (!pipe) return "";
+
+	std::stringstream result;
+	char buffer[256];
+	while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+		result << buffer;
+	pclose(pipe);
+
+	std::string outStr = result.str();
+
+	std::regex urlRegex(R"(https:\/\/github\.com\/[^\s]+)");
+	std::smatch urlMatch;
+	if (!std::regex_search(outStr, urlMatch, urlRegex))
+		return "";
+
+	std::string gitUrl = urlMatch[0];
+	if (gitUrl.size() > 4 && gitUrl.substr(gitUrl.size() - 4) == ".git")
+		gitUrl = gitUrl.substr(0, gitUrl.size() - 4);
+
+	std::regex branchRegex(R"(\[git\]\s+https:\/\/github\.com\/[^\s]+ on branch (\w+))");
+	std::smatch branchMatch;
+	std::string branch = "develop";
+	if (std::regex_search(outStr, branchMatch, branchRegex))
+		branch = branchMatch[1];
+
+	return gitUrl + "/blob/" + branch + "/" + localPath + lineAnchor;
+
 }  // end getFileGitURL()
 
 //==============================================================================
