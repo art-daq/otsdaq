@@ -10,14 +10,14 @@
 
 #include "artdaq-database/BasicTypes/basictypes.h"
 #include "artdaq-database/ConfigurationDB/configurationdbifc.h"
-#include "otsdaq/TableCore/TableBase.h"
 #include "otsdaq/CodeEditor/CodeEditor.h"
+#include "otsdaq/TableCore/TableBase.h"
 
+#include "artdaq-core/Utilities/TraceLock.hh"
 #include "artdaq-database/ConfigurationDB/configuration_common.h"
 #include "artdaq-database/ConfigurationDB/dispatch_common.h"
 #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb.h"
 #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
-#include "artdaq-core/Utilities/TraceLock.hh"
 
 using namespace ots;
 
