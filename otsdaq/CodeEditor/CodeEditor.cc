@@ -99,7 +99,7 @@ try
 		    StringMacros::setToString(ALLOWED_FILE_EXTENSIONS_, ","));
 	}
 	else if(option == "getFileGitURL")
-	{ 
+	{
 		getFileGitURL(cgiIn, xmlOut);
 	}
 	else
