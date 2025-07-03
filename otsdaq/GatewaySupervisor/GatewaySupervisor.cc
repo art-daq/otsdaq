@@ -2880,7 +2880,8 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 		return;  // access failed
 
 	std::string fsmName       = CgiDataUtilities::getData(cgiIn, "fsmName");
-	std::string fsmWindowName = CgiDataUtilities::getData(cgiIn, "fsmWindowName");
+	std::string fsmWindowName = CgiDataUtilities::postData(cgiIn, "fsmWindowName");
+	// std::string fsmWindowName = CgiDataUtilities::getData(cgiIn, "fsmWindowName");
 	fsmWindowName             = StringMacros::decodeURIComponent(fsmWindowName);
 	std::string currentState  = theStateMachine_.getCurrentStateName();
 
