@@ -525,13 +525,12 @@ std::string CodeEditor::getFileGitURL(const std::string& basepath,
 
 	std::string lineAnchor = "";
 	if (!line.empty())
-	{
 		lineAnchor = "#L" + line;
-	}
 
 	std::string cmd = "spack info " + package;
 	FILE* pipe = popen(cmd.c_str(), "r");
-	if (!pipe) return "";
+	if (!pipe)
+		return "";
 
 	std::stringstream result;
 	char buffer[256];
