@@ -72,7 +72,7 @@ class CodeEditor
 	                             const std::string&        insertString = "");
 	static std::string getFileGitURL(const std::string& basepath,
 	                                 const std::string& path,
-									 const std::string line);
+	                                 const std::string  line);
 
 	const std::set<std::string> ALLOWED_FILE_EXTENSIONS_;
 };
