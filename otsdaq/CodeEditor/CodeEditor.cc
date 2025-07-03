@@ -514,6 +514,7 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 std::string CodeEditor::getFileGitURL(const std::string& basepath,
 	const std::string& path)
 {
+	__COUTV__(basepath);
 	std::string localPath = path;
 
 	std::string package = localPath.substr(0, localPath.find("/"));
