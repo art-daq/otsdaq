@@ -5,9 +5,9 @@
 #include <dirent.h>    //DIR and dirent
 #include <sys/stat.h>  //for mkdir
 #include <cctype>      //for std::toupper
+#include <map>         //for std::map
+#include <regex>       //for std::regex
 #include <thread>      //for std::thread
-#include <map>		   //for std::map
-#include <regex>	   //for std::regex
 
 using namespace ots;
 
@@ -485,29 +485,34 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::USER_DATA_PATH,
 		                              path.substr(i + std::string("$USER_DATA/").size()) +
-		                                  (extension.size() ? "." : "") + extension, line);
+		                                  (extension.size() ? "." : "") + extension,
+		                              line);
 	else if((i = path.find("$OTSDAQ_WEB_PATH/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath = CodeEditor::getFileGitURL(
 		    CodeEditor::OTSDAQ_WEB_PATH,
 		    path.substr(i + std::string("$OTSDAQ_WEB_PATH/").size()) +
-		        (extension.size() ? "." : "") + extension, line);
+		        (extension.size() ? "." : "") + extension,
+		    line);
 	else if((i = path.find("/WebPath/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::OTSDAQ_WEB_PATH,
 		                              path.substr(i + std::string("/WebPath/").size()) +
-		                                  (extension.size() ? "." : "") + extension, line);
+		                                  (extension.size() ? "." : "") + extension,
+		                              line);
 	else if((i = path.find("$OTSDAQ_DATA/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::OTSDAQ_DATA_PATH,
 		                              path.substr(std::string("/$OTSDAQ_DATA/").size()) +
-		                                  (extension.size() ? "." : "") + extension, line);
+		                                  (extension.size() ? "." : "") + extension,
+		                              line);
 	else
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::SOURCE_BASE_PATH,
-		                              path + (extension.size() ? "." : "") + extension, line);
+		                              path + (extension.size() ? "." : "") + extension,
+		                              line);
 
 	xmlOut->addTextElementToData("gitPath", gitPath);
 
@@ -516,7 +521,8 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 //==============================================================================
 /// getFileGitURL
 std::string CodeEditor::getFileGitURL(const std::string& basepath,
-	const std::string& path, const std::string line)
+                                      const std::string& path,
+                                      const std::string  line)
 {
 	__COUTV__(basepath);
 	std::string localPath = path;
@@ -524,35 +530,35 @@ std::string CodeEditor::getFileGitURL(const std::string& basepath,
 	std::string package = localPath.substr(0, localPath.find("/"));
 
 	std::string lineAnchor = "";
-	if (!line.empty())
+	if(!line.empty())
 		lineAnchor = "#L" + line;
 
-	std::string cmd = "spack info " + package;
-	FILE* pipe = popen(cmd.c_str(), "r");
-	if (!pipe)
+	std::string cmd  = "spack info " + package;
+	FILE*       pipe = popen(cmd.c_str(), "r");
+	if(!pipe)
 		return "";
 
 	std::stringstream result;
-	char buffer[256];
-	while (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+	char              buffer[256];
+	while(fgets(buffer, sizeof(buffer), pipe) != nullptr)
 		result << buffer;
 	pclose(pipe);
 
 	std::string outStr = result.str();
 
-	std::regex urlRegex(R"(https:\/\/github\.com\/[^\s]+)");
+	std::regex  urlRegex(R"(https:\/\/github\.com\/[^\s]+)");
 	std::smatch urlMatch;
-	if (!std::regex_search(outStr, urlMatch, urlRegex))
+	if(!std::regex_search(outStr, urlMatch, urlRegex))
 		return "";
 
 	std::string gitUrl = urlMatch[0];
-	if (gitUrl.size() > 4 && gitUrl.substr(gitUrl.size() - 4) == ".git")
+	if(gitUrl.size() > 4 && gitUrl.substr(gitUrl.size() - 4) == ".git")
 		gitUrl = gitUrl.substr(0, gitUrl.size() - 4);
 
-	std::regex branchRegex(R"(\[git\]\s+https:\/\/github\.com\/[^\s]+ on branch (\w+))");
+	std::regex  branchRegex(R"(\[git\]\s+https:\/\/github\.com\/[^\s]+ on branch (\w+))");
 	std::smatch branchMatch;
 	std::string branch = "develop";
-	if (std::regex_search(outStr, branchMatch, branchRegex))
+	if(std::regex_search(outStr, branchMatch, branchRegex))
 		branch = branchMatch[1];
 
 	return gitUrl + "/blob/" + branch + "/" + localPath + lineAnchor;
