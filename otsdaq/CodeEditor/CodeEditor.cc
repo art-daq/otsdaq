@@ -8,6 +8,7 @@
 #include <thread>      //for std::thread
 #include <map>		   //for std::map
 #include <regex>	   //for std::regex
+
 using namespace ots;
 
 #define CODE_EDITOR_DATA_PATH \
@@ -474,6 +475,9 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 		extension = safeExtensionString(extension);
 	xmlOut->addTextElementToData("ext", extension);
 
+	std::string line = CgiDataUtilities::getData(cgiIn, "line");
+	xmlOut->addTextElementToData("line", line);
+
 	std::string gitPath;
 	size_t      i;
 	if((i = path.find("$USER_DATA/")) == 0 ||
@@ -481,29 +485,29 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::USER_DATA_PATH,
 		                              path.substr(i + std::string("$USER_DATA/").size()) +
-		                                  (extension.size() ? "." : "") + extension);
+		                                  (extension.size() ? "." : "") + extension, line);
 	else if((i = path.find("$OTSDAQ_WEB_PATH/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath = CodeEditor::getFileGitURL(
 		    CodeEditor::OTSDAQ_WEB_PATH,
 		    path.substr(i + std::string("$OTSDAQ_WEB_PATH/").size()) +
-		        (extension.size() ? "." : "") + extension);
+		        (extension.size() ? "." : "") + extension, line);
 	else if((i = path.find("/WebPath/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::OTSDAQ_WEB_PATH,
 		                              path.substr(i + std::string("/WebPath/").size()) +
-		                                  (extension.size() ? "." : "") + extension);
+		                                  (extension.size() ? "." : "") + extension, line);
 	else if((i = path.find("$OTSDAQ_DATA/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::OTSDAQ_DATA_PATH,
 		                              path.substr(std::string("/$OTSDAQ_DATA/").size()) +
-		                                  (extension.size() ? "." : "") + extension);
+		                                  (extension.size() ? "." : "") + extension, line);
 	else
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::SOURCE_BASE_PATH,
-		                              path + (extension.size() ? "." : "") + extension);
+		                              path + (extension.size() ? "." : "") + extension, line);
 
 	xmlOut->addTextElementToData("gitPath", gitPath);
 
@@ -512,21 +516,16 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 //==============================================================================
 /// getFileGitURL
 std::string CodeEditor::getFileGitURL(const std::string& basepath,
-	const std::string& path)
+	const std::string& path, const std::string line)
 {
 	__COUTV__(basepath);
 	std::string localPath = path;
 
 	std::string package = localPath.substr(0, localPath.find("/"));
 
-	std::string::size_type colonPos = localPath.find(":");
 	std::string lineAnchor = "";
-	if (colonPos != std::string::npos)
-	{
-		std::string lineStr = localPath.substr(colonPos + 1);
-		if (!lineStr.empty())
-			lineAnchor = "#L" + lineStr;
-		localPath = localPath.substr(0, colonPos);
+	if (!line.empty()) {
+		lineAnchor = "#L" + line;
 	}
 
 	std::string cmd = "spack info " + package;
