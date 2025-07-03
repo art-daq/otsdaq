@@ -524,7 +524,8 @@ std::string CodeEditor::getFileGitURL(const std::string& basepath,
 	std::string package = localPath.substr(0, localPath.find("/"));
 
 	std::string lineAnchor = "";
-	if (!line.empty()) {
+	if (!line.empty())
+	{
 		lineAnchor = "#L" + line;
 	}
 

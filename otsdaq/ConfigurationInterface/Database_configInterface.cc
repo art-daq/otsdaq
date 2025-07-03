@@ -36,12 +36,12 @@ constexpr auto default_entity     = "OTSROOT";
 //==============================================================================
 DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 {
-	std::mutex x;
-	auto i = TraceLock(x, TLVL_INFO ,"");
+	// std::mutex x;
+	// auto i = TraceLock(x, TLVL_INFO ,"");
 #ifdef ARTDAQ_DATABASE_DEBUG_ENABLE
 	// to enable debugging
 	{
-		__COUT_INFO__ << "TRACE_LOG_FUNCTION = " << QUOTE(TRACE_LOG_FUNCTION);
+		// __COUT_INFO__ << "TRACE_LOG_FUNCTION = " << QUOTE(TRACE_LOG_FUNCTION);
 
 		artdaq::database::configuration::debug::ExportImport();
 		artdaq::database::configuration::debug::ManageAliases();
@@ -65,22 +65,22 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 		artdaq::database::configuration::debug::UconDB();
 		artdaq::database::configuration::debug::FileSystemDB();
 
-		 artdaq::database::filesystem::index::debug::enable();
+		// artdaq::database::filesystem::index::debug::enable();
 
 		// THIS TURNS OFF TRACE SLOW PATH!!! (bug? Gennadiy says was trying to avoid slowing down TRACE with too many messages on slow path)
 		artdaq::database::filesystem::debug::enable();
 
 		// artdaq::database::mongo::debug::enable();
 
-		artdaq::database::docrecord::debug::JSONDocumentBuilder();
-		artdaq::database::docrecord::debug::JSONDocument();
+		// artdaq::database::docrecord::debug::JSONDocumentBuilder();
+		// artdaq::database::docrecord::debug::JSONDocument();
 
 		// debug::registerUngracefullExitHandlers();
 		//  artdaq::database::useFakeTime(true);
 		artdaq::database::configuration::Multitasker();
 		TRACE_CNTL("modeS", true);  //TURN BACK ON TRACE SLOW PATH
 
-		__COUT_INFO__ << "TRACE_LOG_FUNCTION = " << QUOTE(TRACE_LOG_FUNCTION);
+		// __COUT_INFO__ << "TRACE_LOG_FUNCTION = " << QUOTE(TRACE_LOG_FUNCTION);
 	}
 #endif
 
