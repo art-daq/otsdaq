@@ -475,9 +475,6 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 		extension = safeExtensionString(extension);
 	xmlOut->addTextElementToData("ext", extension);
 
-	std::string line = CgiDataUtilities::getData(cgiIn, "line");
-	xmlOut->addTextElementToData("line", line);
-
 	std::string gitPath;
 	size_t      i;
 	if((i = path.find("$USER_DATA/")) == 0 ||
