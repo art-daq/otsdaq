@@ -523,7 +523,10 @@ std::string CodeEditor::getFileGitURL(const std::string& basepath,
 	std::string cmd  = "spack info " + package;
 	FILE*       pipe = popen(cmd.c_str(), "r");
 	if(!pipe)
-		return "";
+	{
+		__SS__ << "Error executing shell command: " << cmd.c_str();
+		__SS_THROW__;
+	}
 
 	std::stringstream result;
 	char              buffer[256];
@@ -536,7 +539,10 @@ std::string CodeEditor::getFileGitURL(const std::string& basepath,
 	std::regex  urlRegex(R"(https:\/\/github\.com\/[^\s]+)");
 	std::smatch urlMatch;
 	if(!std::regex_search(outStr, urlMatch, urlRegex))
-		return "";
+	{
+		__SS__ << "Error finding GitHub repository in shell output: " << outStr;
+		__SS_THROW__;
+	}
 
 	std::string gitUrl = urlMatch[0];
 	if(gitUrl.size() > 4 && gitUrl.substr(gitUrl.size() - 4) == ".git")
