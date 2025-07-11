@@ -255,8 +255,9 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
                                                  bool                 allowWhiteSpace,
 												 bool 				  printErrors)
 {
-	if(0)
-		auto start = std::chrono::high_resolution_clock::now();
+#if 0
+	auto start = std::chrono::high_resolution_clock::now();
+#endif
 
 	// open field tag
 	if(dispStdOut)
@@ -288,23 +289,25 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 					XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()) << __E__;
 	}
 
-	if(0)
+#if 0
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration =
 			std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " -- Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
 	}
+#endif
 
 	xercesc::DOMNodeList* nodeList = currEl->getChildNodes();  // get all children
 
-	if(0)
+#if 0
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration =
 			std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " -- Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
 	}
+#endif
 
 	// close opening field tag
 	if(dispStdOut)
@@ -347,7 +350,7 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 		}
 	}
 
-	if(0)
+#if 0
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration =
@@ -355,6 +358,7 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " " << nodeList->getLength() <<
 			" -- Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
 	}
+#endif
 
 	// insert children
 	std::string newTabStr = tabStr + "\t";
@@ -368,13 +372,14 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 			                           allowWhiteSpace);
 
 
-	if(0)
+#if 0
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration =
 			std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " -- Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
 	}
+#endif
 
 	if(currEl == dataElement_ &&  //append the data string stream
 	   dataSs_.str().length())    //(for large data blocks that do not need to be escaped)
@@ -398,13 +403,14 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 			     << std::endl;
 	}
 
-	if(0)
+#if 0
 	{
 		auto end = std::chrono::high_resolution_clock::now();
 		auto duration =
 			std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " -- DONE Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
 	}
+#endif
 }  // end recursiveOutputXmlDocument()
 
 //==============================================================================
