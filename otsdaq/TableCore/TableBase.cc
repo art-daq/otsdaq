@@ -12,8 +12,8 @@ using namespace ots;
 #undef __COUT_HDR__
 #define __COUT_HDR__ ("TableBase-" + getTableName() + "\t<> ")
 
-const std::string TableBase::GROUP_CACHE_PREPEND = "GroupCache_";
-const std::string TableBase::JSON_DOC_PREPEND    = "JSONDoc_";
+const std::string TableBase::GROUP_CACHE_PREPEND       = "GroupCache_";
+const std::string TableBase::JSON_DOC_PREPEND          = "JSONDoc_";
 const std::string TableBase::GROUP_METADATA_TABLE_NAME = "TableGroupMetadata";
 
 //==============================================================================
@@ -43,14 +43,13 @@ TableBase::TableBase(const std::string& tableName,
 		std::cout << "TableBase After traceTID=" << traceTID << __E__;
 		__COUT__ << "TableBase TRACE reinit and Constructed." << __E__;
 	}
-	
+
 	if(tableName == "")
 	{
 		__SS__ << "Do not allow anonymous table view construction!" << __E__;
 		ss << StringMacros::stackTrace() << __E__;
 		__SS_THROW__;
 	}
-
 
 	// initialize special group metadata table
 	if(tableName_ == TableBase::GROUP_METADATA_TABLE_NAME)
@@ -65,7 +64,8 @@ TableBase::TableBase(const std::string& tableName,
 	   tableName.substr(0, TableBase::JSON_DOC_PREPEND.length()) ==
 	       TableBase::JSON_DOC_PREPEND)
 	{
-		__COUTT__ << "TableBase for special table '" << tableName << "' constructed." << __E__;
+		__COUTT__ << "TableBase for special table '" << tableName << "' constructed."
+		          << __E__;
 		return;
 	}  //end special GROUP CACHE table construction
 
@@ -90,7 +90,9 @@ TableBase::TableBase(const std::string& tableName,
 	catch(...)  // if accumulating exceptions, continue to and return, else throw
 	{
 		__SS__ << "Failure reading table schema info for table '" << tableName << "!' "
-		       << "Perhaps you need to run otsdaq_convert_config_to_table? Or the XML table definition has moved or link broken?" << __E__;
+		       << "Perhaps you need to run otsdaq_convert_config_to_table? Or the XML "
+		          "table definition has moved or link broken?"
+		       << __E__;
 		__COUT_ERR__ << "\n" << ss.str();
 		if(accumulatedExceptions)
 			*accumulatedExceptions += std::string("\n") + ss.str();
@@ -142,10 +144,10 @@ TableBase::TableBase(bool specialTable, const std::string& specialTableName)
 		std::cout << "TableBase After traceTID=" << traceTID << __E__;
 		__COUT__ << "TableBase TRACE reinit and Constructed." << __E__;
 	}
-	
+
 	__COUT__ << "Special table '" << tableName_ << "' constructed. " << specialTable
 	         << __E__;
-	
+
 	// initialize special group metadata table
 	if(tableName_ == TableBase::GROUP_METADATA_TABLE_NAME)
 		specialMetaTableConstructor();
@@ -153,7 +155,7 @@ TableBase::TableBase(bool specialTable, const std::string& specialTableName)
 }  // special table constructor()
 
 //==============================================================================
-/// Handle construction of special meta data table 
+/// Handle construction of special meta data table
 void TableBase::specialMetaTableConstructor()
 {
 	__COUTT__ << "Special table '" << tableName_ << "' constructing..." << __E__;
@@ -169,63 +171,62 @@ void TableBase::specialMetaTableConstructor()
 
 	// groupMetadataTable_.setTableName(
 	//     TableBase::GROUP_METADATA_TABLE_NAME);
-	std::vector<TableViewColumnInfo>* colInfo =
-		getMockupViewP()->getColumnsInfoP();
-	colInfo->push_back(TableViewColumnInfo(
-		TableViewColumnInfo::TYPE_UID,  // just to make init() happy
-		"UnusedUID",
-		"UNUSED_UID",
-		TableViewColumnInfo::DATATYPE_NUMBER,
-		0 /*Default*/,
-		"",
-		0 /*Min*/,
-		0 /*Max*/,
-		0));
+	std::vector<TableViewColumnInfo>* colInfo = getMockupViewP()->getColumnsInfoP();
+	colInfo->push_back(
+	    TableViewColumnInfo(TableViewColumnInfo::TYPE_UID,  // just to make init() happy
+	                        "UnusedUID",
+	                        "UNUSED_UID",
+	                        TableViewColumnInfo::DATATYPE_NUMBER,
+	                        0 /*Default*/,
+	                        "",
+	                        0 /*Min*/,
+	                        0 /*Max*/,
+	                        0));
 	colInfo->push_back(TableViewColumnInfo(TableViewColumnInfo::TYPE_DATA,
-											"GroupAliases",
-											"GROUP_ALIASES",
-											TableViewColumnInfo::DATATYPE_STRING,
-											0 /*Default*/,
-											"",
-											0 /*Min*/,
-											0 /*Max*/,
-											0));
+	                                       "GroupAliases",
+	                                       "GROUP_ALIASES",
+	                                       TableViewColumnInfo::DATATYPE_STRING,
+	                                       0 /*Default*/,
+	                                       "",
+	                                       0 /*Min*/,
+	                                       0 /*Max*/,
+	                                       0));
 	colInfo->push_back(TableViewColumnInfo(
-		TableViewColumnInfo::TYPE_COMMENT,  // just to make init() happy
-		TableViewColumnInfo::COL_NAME_COMMENT,
-		"COMMENT_DESCRIPTION",
-		TableViewColumnInfo::DATATYPE_STRING,
-		0 /*Default*/,
-		"",
-		0 /*Min*/,
-		0 /*Max*/,
-		0));
+	    TableViewColumnInfo::TYPE_COMMENT,  // just to make init() happy
+	    TableViewColumnInfo::COL_NAME_COMMENT,
+	    "COMMENT_DESCRIPTION",
+	    TableViewColumnInfo::DATATYPE_STRING,
+	    0 /*Default*/,
+	    "",
+	    0 /*Min*/,
+	    0 /*Max*/,
+	    0));
 	colInfo->push_back(TableViewColumnInfo(
-		TableViewColumnInfo::TYPE_AUTHOR,  // just to make init() happy
-		"GroupAuthor",
-		"AUTHOR",
-		TableViewColumnInfo::DATATYPE_STRING,
-		0 /*Default*/,
-		"",
-		0 /*Min*/,
-		0 /*Max*/,
-		0));
+	    TableViewColumnInfo::TYPE_AUTHOR,  // just to make init() happy
+	    "GroupAuthor",
+	    "AUTHOR",
+	    TableViewColumnInfo::DATATYPE_STRING,
+	    0 /*Default*/,
+	    "",
+	    0 /*Min*/,
+	    0 /*Max*/,
+	    0));
 	colInfo->push_back(TableViewColumnInfo(TableViewColumnInfo::TYPE_TIMESTAMP,
-											"GroupCreationTime",
-											"GROUP_CREATION_TIME",
-											TableViewColumnInfo::DATATYPE_TIME,
-											0 /*Default*/,
-											"",
-											0 /*Min*/,
-											0 /*Max*/,
-											0));
+	                                       "GroupCreationTime",
+	                                       "GROUP_CREATION_TIME",
+	                                       TableViewColumnInfo::DATATYPE_TIME,
+	                                       0 /*Default*/,
+	                                       "",
+	                                       0 /*Min*/,
+	                                       0 /*Max*/,
+	                                       0));
 	auto tmpVersion = createTemporaryView();
 	setActiveView(tmpVersion);
 	// only need this one and only row for all time
 	getViewP()->addRow();
 
 	__COUTT__ << "Special table '" << tableName_ << "' constructed." << __E__;
-} //end specialMetaTableConstructor()
+}  //end specialMetaTableConstructor()
 
 ////==============================================================================
 /// TableBase::TableBase(void)

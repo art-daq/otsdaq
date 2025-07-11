@@ -217,25 +217,26 @@ try
 	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
 	              << __E__;
 
-	
 	// used to print xml errors only if there are a reasonable number of children
-	if(TTEST(1)) //now just check child size if debugging
+	if(TTEST(1))  //now just check child size if debugging
 	{
-		size_t numberOfChildren = xmlOut.getRootDataElement()->getChildNodes()->getLength();
+		size_t numberOfChildren =
+		    xmlOut.getRootDataElement()->getChildNodes()->getLength();
 		if(numberOfChildren &&
-		xmlOut.getRootDataElement()->getChildNodes()->item(0)->getNodeType() !=
-			xercesc::DOMNode::TEXT_NODE)
+		   xmlOut.getRootDataElement()->getChildNodes()->item(0)->getNodeType() !=
+		       xercesc::DOMNode::TEXT_NODE)
 			numberOfChildren += xmlOut.getRootDataElement()
-									->getChildNodes()
-									->item(0)
-									->getChildNodes()
-									->getLength();
+			                        ->getChildNodes()
+			                        ->item(0)
+			                        ->getChildNodes()
+			                        ->getLength();
 
-		__SUP_COUTT__ << "Number of '" << requestType << "' xml data element children: " << numberOfChildren << __E__;
+		__SUP_COUTT__ << "Number of '" << requestType
+		              << "' xml data element children: " << numberOfChildren << __E__;
 
 		__SUP_COUTT__ << "Request '" << requestType
-	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
-	              << __E__;
+		              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
+		              << __E__;
 	}
 	//Note: the above XML-children-count only looks at depth 1, if there are too many nodes (including deeper nodes) then outputing the xml will be slow (4K nodes takes ~2 seconds)
 
@@ -243,7 +244,7 @@ try
 	xmlOut.outputXmlDocument((std::ostringstream*)out,
 	                         false /*print to cout*/,
 	                         !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/,
-							 true /* printErrors */); // report any errors encountered
+	                         true /* printErrors */);  // report any errors encountered
 
 	// __SUP_COUTT__ << "Request '" << requestType
 	//               << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)

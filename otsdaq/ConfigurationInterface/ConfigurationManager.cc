@@ -113,8 +113,7 @@ ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/,
     , theConfigurationTableGroup_("")
     , theContextTableGroup_("")
     , theBackboneTableGroup_("")
-    , groupMetadataTable_(true /*special table*/,
-                          TableBase::GROUP_METADATA_TABLE_NAME)
+    , groupMetadataTable_(true /*special table*/, TableBase::GROUP_METADATA_TABLE_NAME)
 {
 	__GEN_COUTTV__(runTimeSeconds());
 	theInterface_ = ConfigurationInterface::getInstance(
@@ -1581,8 +1580,7 @@ void ConfigurationManager::loadTableGroup(
 			progressBar->step();
 
 		// remove meta data table and extract info
-		auto metaTablePair =
-		    memberMap.find(TableBase::GROUP_METADATA_TABLE_NAME);
+		auto metaTablePair = memberMap.find(TableBase::GROUP_METADATA_TABLE_NAME);
 		if(metaTablePair != memberMap.end())
 		{
 			//only lock metadata table if metadata is needed

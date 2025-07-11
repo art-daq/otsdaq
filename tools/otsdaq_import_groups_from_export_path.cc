@@ -435,39 +435,46 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		{
 			TableGroupKey newKey = TableGroupKey::getNextKey(
 			    theInterface_->findLatestGroupKey(importedBackboneGroupName));
-			
+
 			// save group, and retry on save collision
 			uint16_t retries = 0;
 			while(1)
 			{
-				__COUT__ << "New Key for empty backbone group: " << importedBackboneGroupName
-						<< " found as " << newKey << __E__;
+				__COUT__ << "New Key for empty backbone group: "
+				         << importedBackboneGroupName << " found as " << newKey << __E__;
 
 				try
 				{
-					theInterface_->saveTableGroup(
-						backboneMemberMap,
-						TableGroupKey::getFullGroupString(importedBackboneGroupName, newKey));
+					theInterface_->saveTableGroup(backboneMemberMap,
+					                              TableGroupKey::getFullGroupString(
+					                                  importedBackboneGroupName, newKey));
 				}
 				catch(const std::runtime_error& e)
 				{
-					__COUT__ << "Caught runtime_error exception during group save." << __E__;
-					if(std::string(e.what()).find("there was a collision") != std::string::npos)
+					__COUT__ << "Caught runtime_error exception during group save."
+					         << __E__;
+					if(std::string(e.what()).find("there was a collision") !=
+					   std::string::npos)
 					{
-						__COUT_WARN__ << "There was a collision saving the new group " <<
-							importedBackboneGroupName << "(" << newKey << "), trying incremented group key... retries=" << retries << __E__;
-						if(++retries > 10) //give up
+						__COUT_WARN__
+						    << "There was a collision saving the new group "
+						    << importedBackboneGroupName << "(" << newKey
+						    << "), trying incremented group key... retries=" << retries
+						    << __E__;
+						if(++retries > 10)  //give up
 							throw;
-						newKey = TableGroupKey::getNextKey(newKey); //increment group key
-						__COUT__ << "New Key for group: " << importedBackboneGroupName << " found as " << newKey << __E__;
+						newKey = TableGroupKey::getNextKey(newKey);  //increment group key
+						__COUT__ << "New Key for group: " << importedBackboneGroupName
+						         << " found as " << newKey << __E__;
 						continue;
 					}
-					else throw;
+					else
+						throw;
 				}
 				__COUT__ << "Created new empty backbone table group: "
-						<< importedBackboneGroupName << "(" << newKey << ")" << __E__;
+				         << importedBackboneGroupName << "(" << newKey << ")" << __E__;
 				break;
-			} //end collission retry loop
+			}  //end collission retry loop
 
 			//	-- activate the new empty backbone group
 			cfgMgr->activateTableGroup(importedBackboneGroupName,
@@ -900,10 +907,9 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 			__COUTV__(json);
 
-			auto memberTable =
-			    member.first == TableBase::GROUP_METADATA_TABLE_NAME
-			        ? cfgMgr->getMetadataTable()
-			        : cfgMgr->getTableByName(member.first);
+			auto memberTable = member.first == TableBase::GROUP_METADATA_TABLE_NAME
+			                       ? cfgMgr->getMetadataTable()
+			                       : cfgMgr->getTableByName(member.first);
 
 			TableVersion newAssignedVersion;
 			if(member.first == TableBase::GROUP_METADATA_TABLE_NAME)
@@ -930,31 +936,40 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 				// save table, and retry on save collision
 				uint16_t retries = 0;
 				while(1)
-				{			
+				{
 					try
 					{
 						theInterface_->saveActiveVersion(memberTable);
 					}
 					catch(const std::runtime_error& e)
 					{
-						__COUT__ << "Caught runtime_error exception during table save." << __E__;
-						if(std::string(e.what()).find("there was a collision") != std::string::npos)
+						__COUT__ << "Caught runtime_error exception during table save."
+						         << __E__;
+						if(std::string(e.what()).find("there was a collision") !=
+						   std::string::npos)
 						{
-							__COUT_WARN__ << "There was a collision saving the new table " <<
-								*tableView << "(" << newAssignedVersion << "), trying incremented table version... retries=" << retries << __E__;
-							if(++retries > 10) //give up
+							__COUT_WARN__
+							    << "There was a collision saving the new table "
+							    << *tableView << "(" << newAssignedVersion
+							    << "), trying incremented table version... retries="
+							    << retries << __E__;
+							if(++retries > 10)  //give up
 								throw;
-							newAssignedVersion = TableVersion::getNextVersion(newAssignedVersion); //increment table version
+							newAssignedVersion = TableVersion::getNextVersion(
+							    newAssignedVersion);  //increment table version
 							tableView->setVersion(newAssignedVersion);
-							__COUT__ << "New version for table: " << *tableView << " found as " << newAssignedVersion << __E__;
+							__COUT__ << "New version for table: " << *tableView
+							         << " found as " << newAssignedVersion << __E__;
 							continue;
 						}
-						else throw;
+						else
+							throw;
 					}
-					
-					__COUT__ << "Created table: " << tableView << "-v" << newAssignedVersion << __E__;
+
+					__COUT__ << "Created table: " << tableView << "-v"
+					         << newAssignedVersion << __E__;
 					break;
-				} //end collission retry loop
+				}  //end collission retry loop
 
 				__COUTV__(memberTable->getViewVersion());
 			}
@@ -1045,31 +1060,38 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		// save group, and retry on save collision
 		uint16_t retries = 0;
 		while(1)
-		{	
+		{
 			try
 			{
 				theInterface_->saveTableGroup(
-					groupMembers, TableGroupKey::getFullGroupString(group.first.first, newKey));
+				    groupMembers,
+				    TableGroupKey::getFullGroupString(group.first.first, newKey));
 			}
 			catch(const std::runtime_error& e)
 			{
 				__COUT__ << "Caught runtime_error exception during group save." << __E__;
-				if(std::string(e.what()).find("there was a collision") != std::string::npos)
+				if(std::string(e.what()).find("there was a collision") !=
+				   std::string::npos)
 				{
-					__COUT_WARN__ << "There was a collision saving the new group " <<
-						group.first.first << "(" << newKey << "), trying incremented group key... retries=" << retries << __E__;
-					if(++retries > 10) //give up
+					__COUT_WARN__
+					    << "There was a collision saving the new group "
+					    << group.first.first << "(" << newKey
+					    << "), trying incremented group key... retries=" << retries
+					    << __E__;
+					if(++retries > 10)  //give up
 						throw;
-					newKey = TableGroupKey::getNextKey(newKey); //increment group key
-					__COUT__ << "New Key for group: " << group.first.first << " found as " << newKey << __E__;
+					newKey = TableGroupKey::getNextKey(newKey);  //increment group key
+					__COUT__ << "New Key for group: " << group.first.first << " found as "
+					         << newKey << __E__;
 					continue;
 				}
-				else throw;
+				else
+					throw;
 			}
-			__COUT__ << "Created table group: " << group.first.first << "(" << newKey << ")"
-		         << __E__;
+			__COUT__ << "Created table group: " << group.first.first << "(" << newKey
+			         << ")" << __E__;
 			break;
-		} //end collission retry loop
+		}  //end collission retry loop
 
 		anyNewGroupSaved = true;
 
@@ -1265,31 +1287,38 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			// save table, and retry on save collision
 			uint16_t retries = 0;
 			while(1)
-			{			
+			{
 				try
 				{
 					theInterface_->saveActiveVersion(table);
 				}
 				catch(const std::runtime_error& e)
 				{
-					__COUT__ << "Caught runtime_error exception during table save." << __E__;
-					if(std::string(e.what()).find("there was a collision") != std::string::npos)
+					__COUT__ << "Caught runtime_error exception during table save."
+					         << __E__;
+					if(std::string(e.what()).find("there was a collision") !=
+					   std::string::npos)
 					{
-						__COUT_WARN__ << "There was a collision saving the new table " <<
-							*cfgView << "(" << newVersion << "), trying incremented table version... retries=" << retries << __E__;
-						if(++retries > 10) //give up
+						__COUT_WARN__ << "There was a collision saving the new table "
+						              << *cfgView << "(" << newVersion
+						              << "), trying incremented table version... retries="
+						              << retries << __E__;
+						if(++retries > 10)  //give up
 							throw;
-						newVersion = TableVersion::getNextVersion(newVersion); //increment table version
+						newVersion = TableVersion::getNextVersion(
+						    newVersion);  //increment table version
 						cfgView->setVersion(newVersion);
-						__COUT__ << "New version for table: " << *cfgView << " found as " << newVersion << __E__;
+						__COUT__ << "New version for table: " << *cfgView << " found as "
+						         << newVersion << __E__;
 						continue;
 					}
-					else throw;
+					else
+						throw;
 				}
-				
+
 				__COUT__ << "Created table: " << *cfgView << "-v" << newVersion << __E__;
 				break;
-			} //end collission retry loop
+			}  //end collission retry loop
 
 			__COUT__ << "Updated backbone table "
 			         << ConfigurationManager::GROUP_ALIASES_TABLE_NAME << " from v"
@@ -1417,31 +1446,38 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			// save table, and retry on save collision
 			uint16_t retries = 0;
 			while(1)
-			{			
+			{
 				try
 				{
 					theInterface_->saveActiveVersion(table);
 				}
 				catch(const std::runtime_error& e)
 				{
-					__COUT__ << "Caught runtime_error exception during table save." << __E__;
-					if(std::string(e.what()).find("there was a collision") != std::string::npos)
+					__COUT__ << "Caught runtime_error exception during table save."
+					         << __E__;
+					if(std::string(e.what()).find("there was a collision") !=
+					   std::string::npos)
 					{
-						__COUT_WARN__ << "There was a collision saving the new table " <<
-							*cfgView << "(" << newVersion << "), trying incremented table version... retries=" << retries << __E__;
-						if(++retries > 10) //give up
+						__COUT_WARN__ << "There was a collision saving the new table "
+						              << *cfgView << "(" << newVersion
+						              << "), trying incremented table version... retries="
+						              << retries << __E__;
+						if(++retries > 10)  //give up
 							throw;
-						newVersion = TableVersion::getNextVersion(newVersion); //increment table version
+						newVersion = TableVersion::getNextVersion(
+						    newVersion);  //increment table version
 						cfgView->setVersion(newVersion);
-						__COUT__ << "New version for table: " << *cfgView << " found as " << newVersion << __E__;
+						__COUT__ << "New version for table: " << *cfgView << " found as "
+						         << newVersion << __E__;
 						continue;
 					}
-					else throw;
+					else
+						throw;
 				}
-				
+
 				__COUT__ << "Created table: " << *cfgView << "-v" << newVersion << __E__;
 				break;
-			} //end collission retry loop
+			}  //end collission retry loop
 
 			__COUT__ << "Updated backbone table "
 			         << ConfigurationManager::VERSION_ALIASES_TABLE_NAME << " from v"
@@ -1526,32 +1562,40 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			// save group, and retry on save collision
 			uint16_t retries = 0;
 			while(1)
-			{	
+			{
 				try
 				{
-					theInterface_->saveTableGroup(
-						backboneMemberMap,
-						TableGroupKey::getFullGroupString(activeBackboneGroupName, newKey));
+					theInterface_->saveTableGroup(backboneMemberMap,
+					                              TableGroupKey::getFullGroupString(
+					                                  activeBackboneGroupName, newKey));
 				}
 				catch(const std::runtime_error& e)
 				{
-					__COUT__ << "Caught runtime_error exception during group save." << __E__;
-					if(std::string(e.what()).find("there was a collision") != std::string::npos)
+					__COUT__ << "Caught runtime_error exception during group save."
+					         << __E__;
+					if(std::string(e.what()).find("there was a collision") !=
+					   std::string::npos)
 					{
-						__COUT_WARN__ << "There was a collision saving the new group " <<
-							activeBackboneGroupName << "(" << newKey << "), trying incremented group key... retries=" << retries << __E__;
-						if(++retries > 10) //give up
+						__COUT_WARN__
+						    << "There was a collision saving the new group "
+						    << activeBackboneGroupName << "(" << newKey
+						    << "), trying incremented group key... retries=" << retries
+						    << __E__;
+						if(++retries > 10)  //give up
 							throw;
-						newKey = TableGroupKey::getNextKey(newKey); //increment group key
-						__COUT__ << "New Key for group: " << activeBackboneGroupName << " found as " << newKey << __E__;
+						newKey = TableGroupKey::getNextKey(newKey);  //increment group key
+						__COUT__ << "New Key for group: " << activeBackboneGroupName
+						         << " found as " << newKey << __E__;
 						continue;
 					}
-					else throw;
+					else
+						throw;
 				}
-			
-				__COUT__ << "Created table group: " << activeBackboneGroupName << "(" << newKey << ")" << __E__;
+
+				__COUT__ << "Created table group: " << activeBackboneGroupName << "("
+				         << newKey << ")" << __E__;
 				break;
-			} //end collission retry loop
+			}  //end collission retry loop
 
 			//	-- backup the file ConfigurationManager::ACTIVE_GROUPS_FILENAME with time
 			std::string renameFile =

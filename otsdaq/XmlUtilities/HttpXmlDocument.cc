@@ -37,7 +37,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <chrono> //for std::chrono
+#include <chrono>  //for std::chrono
 
 using namespace ots;
 
@@ -239,10 +239,14 @@ void HttpXmlDocument::copyDataChildren(HttpXmlDocument& document)
 void HttpXmlDocument::outputXmlDocument(std::ostringstream* out,
                                         bool                dispStdOut /* = false */,
                                         bool                allowWhiteSpace /* = false */,
-										bool 				printErrors /* = false */)
+                                        bool                printErrors /* = false */)
 {
-	recursiveOutputXmlDocument(
-	    theDocument_->getDocumentElement(), out, dispStdOut, "", allowWhiteSpace, printErrors);
+	recursiveOutputXmlDocument(theDocument_->getDocumentElement(),
+	                           out,
+	                           dispStdOut,
+	                           "",
+	                           allowWhiteSpace,
+	                           printErrors);
 }  // end outputXmlDocument()
 
 //==============================================================================
@@ -253,7 +257,7 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
                                                  bool                 dispStdOut,
                                                  std::string          tabStr,
                                                  bool                 allowWhiteSpace,
-												 bool 				  printErrors)
+                                                 bool                 printErrors)
 {
 #if 0
 	auto start = std::chrono::high_resolution_clock::now();
@@ -283,10 +287,10 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 			            XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()),
 			            allowWhiteSpace)
 			     << "'";
-		
-		if(printErrors && strcmp(XML_TO_CHAR(currEl->getNodeName()),"Error") == 0)
-			__COUT_ERR__ << "xml field 'Error' encountered:\n" << 
-					XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()) << __E__;
+
+		if(printErrors && strcmp(XML_TO_CHAR(currEl->getNodeName()), "Error") == 0)
+			__COUT_ERR__ << "xml field 'Error' encountered:\n"
+			             << XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()) << __E__;
 	}
 
 #if 0
@@ -323,30 +327,32 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 	{
 		// Dario-style... means always full node name closing tag
 		if(darioXMLStyle_ &&
-			!(std::string(XML_TO_CHAR(currEl->getNodeName())) == "ROOT" ||
-				std::string(XML_TO_CHAR(currEl->getNodeName())) == "HEADER" ||
-				std::string(XML_TO_CHAR(currEl->getNodeName())) == "DATA" ||
-				std::string(XML_TO_CHAR(currEl->getNodeName())) == "node" ||
-				std::string(XML_TO_CHAR(currEl->getNodeName())) == "nodes"))
+		   !(std::string(XML_TO_CHAR(currEl->getNodeName())) == "ROOT" ||
+		     std::string(XML_TO_CHAR(currEl->getNodeName())) == "HEADER" ||
+		     std::string(XML_TO_CHAR(currEl->getNodeName())) == "DATA" ||
+		     std::string(XML_TO_CHAR(currEl->getNodeName())) == "node" ||
+		     std::string(XML_TO_CHAR(currEl->getNodeName())) == "nodes"))
 		{
-			*out << ">" << StringMacros::escapeString(
-					XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()),
-					allowWhiteSpace) << "</" << XML_TO_CHAR(currEl->getNodeName())
-					<< ">" << std::endl;
+			*out << ">"
+			     << StringMacros::escapeString(
+			            XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()),
+			            allowWhiteSpace)
+			     << "</" << XML_TO_CHAR(currEl->getNodeName()) << ">" << std::endl;
 		}
 		else
 		{
 			*out << ((nodeList->getLength() == 0 ||
-						(nodeList->getLength() == 1 &&
-						currEl->getFirstChild()->getNodeType() ==
-							xercesc::DOMNode::TEXT_NODE))
-							? "/"
-							: "")
-					<< ">" << std::endl;
-				
-			if(printErrors && strcmp(XML_TO_CHAR(currEl->getNodeName()),"Error") == 0)
-				__COUT_ERR__ << "xml field 'Error' encountered:\n" << 
-						XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()) << __E__;
+			          (nodeList->getLength() == 1 &&
+			           currEl->getFirstChild()->getNodeType() ==
+			               xercesc::DOMNode::TEXT_NODE))
+			             ? "/"
+			             : "")
+			     << ">" << std::endl;
+
+			if(printErrors && strcmp(XML_TO_CHAR(currEl->getNodeName()), "Error") == 0)
+				__COUT_ERR__ << "xml field 'Error' encountered:\n"
+				             << XML_TO_CHAR(currEl->getFirstChild()->getNodeValue())
+				             << __E__;
 		}
 	}
 
@@ -365,12 +371,12 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 	for(unsigned int i = 0; i < nodeList->getLength(); ++i)
 		if(nodeList->item(i)->getNodeType() !=
 		   xercesc::DOMNode::TEXT_NODE)  // ignore text node children
-			recursiveOutputXmlDocument((xercesc::DOMElement*)(nodeList->item(i)),
-			                           out,
-			                           dispStdOut,
-			                           newTabStr, //save for debug decor: + " i=" + std::to_string(i) + " ",
-			                           allowWhiteSpace);
-
+			recursiveOutputXmlDocument(
+			    (xercesc::DOMElement*)(nodeList->item(i)),
+			    out,
+			    dispStdOut,
+			    newTabStr,  //save for debug decor: + " i=" + std::to_string(i) + " ",
+			    allowWhiteSpace);
 
 #if 0
 	{
