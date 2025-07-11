@@ -42,10 +42,12 @@ class RunInfoVInterface  ///< : public Configurable
 	    unsigned int conditionID, const std::string& runInfoConditions = "") = 0;
 	virtual void updateRunInfo(unsigned int                   runNumber,
 	                           RunInfoVInterface::RunStopType runStopType)   = 0;
-	
+
 	//start queryFilter with 'AND' to fiter more the selection
-	virtual std::vector<std::vector<std::string>>
-		getRunRecords(unsigned int startTime, unsigned int endTime, const std::string& queryFilter = "") = 0;
+	virtual std::vector<std::vector<std::string>> getRunRecords(
+	    unsigned int       startTime,
+	    unsigned int       endTime,
+	    const std::string& queryFilter = "") = 0;
 
   private:
 	const std::string mfSubject_;
