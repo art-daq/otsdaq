@@ -229,7 +229,7 @@ public:
 		out << view.getTableName();
 		return out;
 	}
-	
+
   private:
 	unsigned int 								initColUID					(void);
 	unsigned int 								initColStatus				(void);
