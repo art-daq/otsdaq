@@ -7949,7 +7949,12 @@ try
 						{
 							__SUP_SS__ << "Illegal missing remote icon definition for "
 							              "icon record UID '"
-							           << icon.recordUID_ << ".' Please notify admins."
+							           << icon.recordUID_
+							           << ".' If the corresponding subsystem should "
+							              "exist, perhaps Gateway Application Status "
+							              "Monitoring is disabled. It must be enabled "
+							              "for subsystem management. Please notify "
+							              "admins if the problem persists."
 							           << __E__;
 							__SUP_SS_THROW__;
 						}
@@ -9166,7 +9171,7 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 	}
 
 	sleep(2 /*seconds*/);  // then verify that the commands were read
-	// note: StartOTS.sh has a sleep of 1 second
+	// note: ots script has a sleep of 1 second
 
 	for(const auto& hostname : hostnames)
 	{

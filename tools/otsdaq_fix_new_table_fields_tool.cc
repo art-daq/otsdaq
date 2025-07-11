@@ -62,7 +62,7 @@ void FixNewTableFields(int argc, char* argv[])
 	// return;
 	//==============================================================================
 	// Define environment variables
-	//	Note: normally these environment variables are set by StartOTS.sh
+	//	Note: normally these environment variables are set by ots script
 
 	// These are needed by
 	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [207]
@@ -413,18 +413,6 @@ void FixNewTableFields(int argc, char* argv[])
 				TableVersion persistentVersion = cfgMgr->saveNewTable(
 				    memberPair.first /*table name*/, temporaryVersion);
 
-				//				//change the version of the active view to flatVersion and
-				// save  it 				config =
-				// cfgMgr->getTableByName(memberPair.first); 				cfgView =
-				// config->getViewP();
-				//				cfgView->setVersion(TableVersion(flatVersion));
-				//				theInterface_->saveActiveVersion(config);
-				//
-				//				//set it back for the table so that future groups can
-				// re-use  cached version
-				// cfgView->setVersion(memberPair.second);
-				////IMPORTANT
-
 				// save new version to modifiedTables
 				modifiedTables.insert(
 				    std::pair<std::pair<std::string, TableVersion>, TableVersion>(
@@ -450,56 +438,6 @@ void FixNewTableFields(int argc, char* argv[])
 			                              memberMap,
 			                              groupComment,
 			                              &groupAliases);
-
-			//
-			//
-			//
-			//			//Note: this code copies actions in
-			// ConfigurationManagerRW::saveNewTableGroup
-			//
-			//			//add meta data
-			//			__COUTV__(StringMacros::mapToString(groupAliases));
-			//			__COUTV__(groupComment);
-			//			__COUTV__(groupAuthor);
-			//			__COUTV__(groupCreateTime);
-			//			sscanf(groupCreateTime.c_str(),"%ld",&groupCreateTime_t);
-			//			__COUTV__(groupCreateTime_t);
-			//
-			//			//to compensate for unusual errors upstream, make sure the
-			// metadata  table has one row
-			//			while(groupMetadataTable->getViewP()->getNumberOfRows() > 1)
-			//				groupMetadataTable->getViewP()->deleteRow(0);
-			//			if(groupMetadataTable->getViewP()->getNumberOfRows() == 0)
-			//				groupMetadataTable->getViewP()->addRow();
-			//
-			//			//columns are uid,comment,author,time
-			//			//ConfigurationManager::METADATA_COL_ALIASES TODO
-			//			groupMetadataTable->getViewP()->setValue(
-			//					StringMacros::mapToString(groupAliases,
-			//							"," /*primary delimiter*/,":" /*secondary
-			// delimeter*/),
-			//							0,ConfigurationManager::METADATA_COL_ALIASES);
-			//			groupMetadataTable->getViewP()->setValue(groupComment
-			//,0,ConfigurationManager::METADATA_COL_COMMENT);
-			//			groupMetadataTable->getViewP()->setValue(groupAuthor
-			//,0,ConfigurationManager::METADATA_COL_AUTHOR);
-			//			groupMetadataTable->getViewP()->setValue(groupCreateTime_t
-			//,0,ConfigurationManager::METADATA_COL_TIMESTAMP);
-			//
-			//			//set version of metadata table
-			//			groupMetadataTable->getViewP()->setVersion(TableVersion(flatVersion));
-			//			theInterface_->saveActiveVersion(groupMetadataTable);
-			//
-			//			//force groupMetadataTable_ to be a member for the group
-			//			memberMap[groupMetadataTable->getTableName()] =
-			//					groupMetadataTable->getViewVersion();
-			//
-			//			//memberMap should now consist of members with new flat version,
-			// so  save group 			theInterface_->saveTableGroup(memberMap,
-			//					TableGroupKey::getFullGroupString(
-			//							groupPair.first.first,
-			//							TableGroupKey(flatVersion)));
-			//
 
 			// and modify groupSet and activeGroupKeys keys
 			groupPair.second = TableGroupKey(newGroupKey);
@@ -768,12 +706,6 @@ void FixNewTableFields(int argc, char* argv[])
 			TableVersion persistentVersion =
 			    cfgMgr->saveNewTable(versionAliasesName /*table name*/, temporaryVersion);
 
-			//		//change the version of the active view to flatVersion and save it
-			//		config = cfgMgr->getTableByName(versionAliasesName);
-			//		cfgView = config->getViewP();
-			//		cfgView->setVersion(TableVersion(flatVersion));
-			//		theInterface_->saveActiveVersion(config);
-
 			memberMap[versionAliasesName] =
 			    persistentVersion;  // change version in the member map
 
@@ -790,12 +722,6 @@ void FixNewTableFields(int argc, char* argv[])
 		    memberMap,
 		    groupComment,
 		    0 /*groupAliases*/);  // Do we need groupAliases for backbone here?
-
-		// TableGroupKey cfgMgr->saveNewTableGroup
-		//		theInterface_->saveTableGroup(memberMap,
-		//				TableGroupKey::getFullGroupString(
-		//						activeBackboneGroupName,
-		//						TableGroupKey(flatVersion)));
 
 		activeGroupKeys[activeBackboneGroupName].second = TableGroupKey(newGroupKey);
 

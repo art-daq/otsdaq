@@ -12,7 +12,7 @@ using namespace ots;
 #define XDAQ_RUN_FILE         std::string(__ENV__("XDAQ_CONFIGURATION_DATA_PATH")) + "/" + std::string(__ENV__("XDAQ_CONFIGURATION_XML")) + ".xml"
 #define APP_PRIORITY_FILE     std::string(__ENV__("XDAQ_CONFIGURATION_DATA_PATH")) + "/" + "xdaqAppStateMachinePriority"
 
-const std::string XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS 				= "ots::Supervisor";  // still allowed for now, in StartOTS
+const std::string XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS 				= "ots::Supervisor";  // still allowed for now, in ots script
 const std::string XDAQContextTable::GATEWAY_SUPERVISOR_CLASS 					= "ots::GatewaySupervisor";
 const std::string XDAQContextTable::WIZARD_SUPERVISOR_CLASS  					= "ots::WizardSupervisor";
 const std::string XDAQContextTable::ARTDAQ_SUPERVISOR_CLASS  					= "ots::ARTDAQSupervisor";
