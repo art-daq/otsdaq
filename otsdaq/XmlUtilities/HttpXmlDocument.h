@@ -33,7 +33,7 @@ class HttpXmlDocument : public XmlDocument
 	xercesc::DOMElement* 		getMatchingElement              (const std::string          & field					,	const unsigned int                        occurance = 0 	);
 	xercesc::DOMElement* 		getMatchingElementInSubtree     (      xercesc::DOMElement  * currEl				, 	const std::string                       & field,  				const unsigned int           			occurance = 0     		);
 	void                  		getAllMatchingElements          (const std::string          & field					,   	  std::vector<xercesc::DOMElement*> & retVec        	);
-	void                  		outputXmlDocument               (      std::ostringstream   * out					,   	  bool                                dispStdOut = false,  		  bool                   			allowWhiteSpace = false	);
+	void                  		outputXmlDocument               (      std::ostringstream   * out					,   	  bool                                dispStdOut = false,  		  bool                   			allowWhiteSpace = false	, bool printErrors = false);
 	bool                  		loadXmlDocument                 (const std::string          & filePath             );
 	unsigned int 	      		getChildrenCount                (      xercesc::DOMElement  * parent         = 0   );
 	void 		      			removeDataElement               (  	   unsigned int           dataChildIndex = 0   );  ///< default to first child
@@ -43,7 +43,7 @@ class HttpXmlDocument : public XmlDocument
 	void 		      			recursiveAddElementToParent     (      xercesc::DOMElement  * child           		, 	xercesc::DOMElement               		* parent         	,     	  bool                                html = false          );
 	void 		      			recursiveFindAllElements        (      xercesc::DOMElement  * currEl          		, 	const std::string                       & field          	, 		  std::vector<std::string>          * retVec                );
 	void 		      			recursiveFindAllElements        (      xercesc::DOMElement  * currEl          		, 	const std::string                       & field          	,   	  std::vector<xercesc::DOMElement*> * retVec                );
-	void                  		recursiveOutputXmlDocument      (      xercesc::DOMElement  * currEl          		, 	std::ostringstream                		* out            	,		  bool                                dispStdOut = false 	,	std::string   tabStr = ""    , bool allowWhiteSpace = false);
+	void                  		recursiveOutputXmlDocument      (      xercesc::DOMElement  * currEl          		, 	std::ostringstream                		* out            	,		  bool                                dispStdOut = false 	,	std::string   tabStr = ""    , bool allowWhiteSpace = false, bool printErrors = false);
 	void                  		recursiveFixTextFields          (      xercesc::DOMElement  * currEl     			);
 	std::string           		recursiveFindElementValue       (      xercesc::DOMElement  * currEl               	, 	const std::string                       & field          	,	const unsigned int                        occurance             ,   unsigned int  & count        );
 	xercesc::DOMElement* 		recursiveFindElement            (      xercesc::DOMElement  * currEl               	, 	const std::string                       & field          	,	const unsigned int                        occurance             ,  	unsigned int  & count        );

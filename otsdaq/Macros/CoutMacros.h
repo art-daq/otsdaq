@@ -58,7 +58,7 @@
 #define __COUTT__ 			__COUT_TYPE__(TLVL_TRACE) 			<< __COUT_HDR__
 #define __COUTV__(X) 		__COUT__ << QUOTE(X) << " = " << X << __E__
 #define __COUTTV__(X) 		__COUTT__ << QUOTE(X) << " = " << X << __E__
-#define __COUTVS__(LVL,X)	TLOG(TLVL_DEBUG + LVL) << __COUT_HDR__ << QUOTE(X) << " = " << X << __E__
+#define __COUTVS__(LVL,X)	__COUT_TYPE__(TLVL_DEBUG + LVL) << __COUT_HDR__ << QUOTE(X) << " = " << X << __E__
 
 #define __COUT_MULTI__(LVL,X) if(TTEST(LVL)) { __COUTS__(LVL) << "Multi-line printout:" << __E__; StringMacros::coutSplit(X,LVL); }
 
@@ -161,7 +161,7 @@
 #define __SUP_COUTT__ 			__SUP_COUT_TYPE__(TLVL_TRACE) 			<< __COUT_HDR__
 #define __SUP_COUTV__(X) 		__SUP_COUT__ << QUOTE(X) << " = " << X << __E__
 #define __SUP_COUTTV__(X) 		__SUP_COUTT__ << QUOTE(X) << " = " << X << __E__
-#define __SUP_COUTVS__(LVL,X)	TLOG(TLVL_DEBUG + LVL) << __SUP_MF_DECOR__ << __COUT_HDR__ << QUOTE(X) << " = " << X << __E__
+#define __SUP_COUTVS__(LVL,X)	__SUP_COUT_TYPE__(TLVL_DEBUG + LVL) << __SUP_MF_DECOR__ << __COUT_HDR__ << QUOTE(X) << " = " << X << __E__
 
 #define __SUP_SS__              std::stringstream ss; ss << "|" << __SUP_MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
 #define __SUP_SS_THROW__        { __SUP_COUT_ERR__ << "\n" << ss.str(); throw std::runtime_error(ss.str()); }
