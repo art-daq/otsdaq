@@ -217,42 +217,46 @@ try
 	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
 	              << __E__;
 
-	// report any errors encountered
-	// but only if there are a reasonable number of children
-	size_t numberOfChildren = xmlOut.getRootDataElement()->getChildNodes()->getLength();
-	if(numberOfChildren &&
-	   xmlOut.getRootDataElement()->getChildNodes()->item(0)->getNodeType() !=
-	       xercesc::DOMNode::TEXT_NODE)
-		numberOfChildren += xmlOut.getRootDataElement()
-		                        ->getChildNodes()
-		                        ->item(0)
-		                        ->getChildNodes()
-		                        ->getLength();
+	
+	// used to print xml errors only if there are a reasonable number of children
+	if(TTEST(1)) //now just check child size if debugging
+	{
+		size_t numberOfChildren = xmlOut.getRootDataElement()->getChildNodes()->getLength();
+		if(numberOfChildren &&
+		xmlOut.getRootDataElement()->getChildNodes()->item(0)->getNodeType() !=
+			xercesc::DOMNode::TEXT_NODE)
+			numberOfChildren += xmlOut.getRootDataElement()
+									->getChildNodes()
+									->item(0)
+									->getChildNodes()
+									->getLength();
 
-	__SUP_COUTT__ << "Number of '" << requestType << "' xml data element children: " << numberOfChildren << __E__;
+		__SUP_COUTT__ << "Number of '" << requestType << "' xml data element children: " << numberOfChildren << __E__;
 
-	__SUP_COUTT__ << "Request '" << requestType
+		__SUP_COUTT__ << "Request '" << requestType
 	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
 	              << __E__;
-				  
-	// return xml doc holding server response
+	}
+	//Note: the above XML-children-count only looks at depth 1, if there are too many nodes (including deeper nodes) then outputing the xml will be slow (4K nodes takes ~2 seconds)
+
+	// return xml doc holding server response to request
 	xmlOut.outputXmlDocument((std::ostringstream*)out,
 	                         false /*print to cout*/,
 	                         !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/,
-							 true /* printErrors */);
+							 true /* printErrors */); // report any errors encountered
 
-	__SUP_COUTT__ << "Request '" << requestType
-	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
-	              << __E__;
-	std::stringstream oss;
-	xmlOut.outputXmlDocument((std::ostringstream*)&oss,
-	                         false /*print to cout*/,
-	                         !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/,
-							 true /* printErrors */);
-	__SUP_COUTT__ << "Request '" << requestType
-	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
-	              << __E__;
-	__SUP_COUTV__(oss.str());
+	// __SUP_COUTT__ << "Request '" << requestType
+	//               << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
+	//               << __E__;
+	// std::stringstream oss;
+	// xmlOut.outputXmlDocument((std::ostringstream*)&oss,
+	//                          false /*print to cout*/,
+	//                          !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/,
+	// 						 true /* printErrors */);
+	// __SUP_COUTT__ << "Request '" << requestType
+	//               << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
+	//               << __E__;
+	// __SUP_COUTV__(oss.str());
 
 	__SUP_COUTT__ << "Total '" << requestType << "' xml request time: "
 	              << artdaq::TimeUtils::GetElapsedTime(requestStart) << " = "

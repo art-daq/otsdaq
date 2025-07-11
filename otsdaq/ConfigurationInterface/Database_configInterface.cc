@@ -95,7 +95,6 @@ DatabaseConfigurationInterface::DatabaseConfigurationInterface()
 /// read table from database
 /// version = -1 means latest version
 void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version) const
-
 {
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -718,7 +717,10 @@ try
 
 	auto ifc = db::ConfigurationInterface{default_dbprovider};
 
-	auto to_list = [](auto const& inputMap) {
+	//======
+	/// Lambda function to convert map to list
+	auto to_list = [](auto const& inputMap) 
+	{
 		auto resultList = VersionInfoList_t{};
 		std::transform(
 		    inputMap.begin(),
