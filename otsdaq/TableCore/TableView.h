@@ -223,6 +223,13 @@ public:
 																			 const unsigned int& col,
 																			 const std::string&  author = "");
 
+	/// output table name for ostream operator
+	friend std::ostream& operator<<(std::ostream& out, const TableView& view)
+	{
+		out << view.getTableName();
+		return out;
+	}
+
   private:
 	unsigned int 								initColUID					(void);
 	unsigned int 								initColStatus				(void);

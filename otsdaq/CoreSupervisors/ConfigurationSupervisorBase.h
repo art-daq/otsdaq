@@ -53,7 +53,8 @@ public:
 										ConfigurationManagerRW* cfgMgr,
 										const std::string&      groupName,
 										TableGroupKey           groupKey,
-										bool                    ignoreWarnings = false);
+										bool                    ignoreWarnings = false,
+										bool                    cacheOnly = false);
 
 	static bool					handleAddDesktopIconXML(
 										HttpXmlDocument&        xmlOut,

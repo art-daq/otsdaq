@@ -37,6 +37,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <chrono>  //for std::chrono
+
 using namespace ots;
 
 //==============================================================================
@@ -235,11 +237,16 @@ void HttpXmlDocument::copyDataChildren(HttpXmlDocument& document)
 ///	recurse through XML theDocument_ and std out and output to stream parameter if not
 /// null
 void HttpXmlDocument::outputXmlDocument(std::ostringstream* out,
-                                        bool                dispStdOut,
-                                        bool                allowWhiteSpace)
+                                        bool                dispStdOut /* = false */,
+                                        bool                allowWhiteSpace /* = false */,
+                                        bool                printErrors /* = false */)
 {
-	recursiveOutputXmlDocument(
-	    theDocument_->getDocumentElement(), out, dispStdOut, "", allowWhiteSpace);
+	recursiveOutputXmlDocument(theDocument_->getDocumentElement(),
+	                           out,
+	                           dispStdOut,
+	                           "",
+	                           allowWhiteSpace,
+	                           printErrors);
 }  // end outputXmlDocument()
 
 //==============================================================================
@@ -249,8 +256,13 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
                                                  std::ostringstream*  out,
                                                  bool                 dispStdOut,
                                                  std::string          tabStr,
-                                                 bool                 allowWhiteSpace)
+                                                 bool                 allowWhiteSpace,
+                                                 bool                 printErrors)
 {
+#if 0
+	auto start = std::chrono::high_resolution_clock::now();
+#endif
+
 	// open field tag
 	if(dispStdOut)
 		std::cout << tabStr << "<" << XML_TO_CHAR(currEl->getNodeName());
@@ -275,9 +287,31 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 			            XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()),
 			            allowWhiteSpace)
 			     << "'";
+
+		if(printErrors && strcmp(XML_TO_CHAR(currEl->getNodeName()), "Error") == 0)
+			__COUT_ERR__ << "xml field 'Error' encountered:\n"
+			             << XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()) << __E__;
 	}
 
+#if 0
+	{
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration =
+			std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " -- Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
+	}
+#endif
+
 	xercesc::DOMNodeList* nodeList = currEl->getChildNodes();  // get all children
+
+#if 0
+	{
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration =
+			std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " -- Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
+	}
+#endif
 
 	// close opening field tag
 	if(dispStdOut)
@@ -291,52 +325,67 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 		          << " len:" << nodeList->getLength() << std::endl;
 	if(out)
 	{
-		//  		*out << ((nodeList->getLength() == 0 ||
-		// 		          (nodeList->getLength() == 1 &&
-		// 		           currEl->getFirstChild()->getNodeType() == xercesc::DOMNode::TEXT_NODE))
-		// 		             ? "/"
-		// 		             : "")
-		// 		     << ">" << std::endl;
-		// Dario-style...
-		std::string outText = "";
-		if(currEl->getFirstChild() != NULL &&
-		   currEl->getFirstChild()->getNodeType() == xercesc::DOMNode::TEXT_NODE)
-			outText = StringMacros::escapeString(
-			    XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()), allowWhiteSpace);
+		// Dario-style... means always full node name closing tag
+		if(darioXMLStyle_ &&
+		   !(std::string(XML_TO_CHAR(currEl->getNodeName())) == "ROOT" ||
+		     std::string(XML_TO_CHAR(currEl->getNodeName())) == "HEADER" ||
+		     std::string(XML_TO_CHAR(currEl->getNodeName())) == "DATA" ||
+		     std::string(XML_TO_CHAR(currEl->getNodeName())) == "node" ||
+		     std::string(XML_TO_CHAR(currEl->getNodeName())) == "nodes"))
 		{
-			if(darioXMLStyle_ &&
-			   !(std::string(XML_TO_CHAR(currEl->getNodeName())) == "ROOT" ||
-			     std::string(XML_TO_CHAR(currEl->getNodeName())) == "HEADER" ||
-			     std::string(XML_TO_CHAR(currEl->getNodeName())) == "DATA" ||
-			     std::string(XML_TO_CHAR(currEl->getNodeName())) == "node" ||
-			     std::string(XML_TO_CHAR(currEl->getNodeName())) == "nodes"))
-			{
-				*out << ">" << outText << "</" << XML_TO_CHAR(currEl->getNodeName())
-				     << ">" << std::endl;
-			}
-			else
-			{
-				*out << ((nodeList->getLength() == 0 ||
-				          (nodeList->getLength() == 1 &&
-				           currEl->getFirstChild()->getNodeType() ==
-				               xercesc::DOMNode::TEXT_NODE))
-				             ? "/"
-				             : "")
-				     << ">" << std::endl;
-			}
+			*out << ">"
+			     << StringMacros::escapeString(
+			            XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()),
+			            allowWhiteSpace)
+			     << "</" << XML_TO_CHAR(currEl->getNodeName()) << ">" << std::endl;
 		}
-		// Dario-style...
+		else
+		{
+			*out << ((nodeList->getLength() == 0 ||
+			          (nodeList->getLength() == 1 &&
+			           currEl->getFirstChild()->getNodeType() ==
+			               xercesc::DOMNode::TEXT_NODE))
+			             ? "/"
+			             : "")
+			     << ">" << std::endl;
+
+			if(printErrors && strcmp(XML_TO_CHAR(currEl->getNodeName()), "Error") == 0)
+				__COUT_ERR__ << "xml field 'Error' encountered:\n"
+				             << XML_TO_CHAR(currEl->getFirstChild()->getNodeValue())
+				             << __E__;
+		}
 	}
+
+#if 0
+	{
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration =
+			std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " " << nodeList->getLength() <<
+			" -- Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
+	}
+#endif
+
 	// insert children
 	std::string newTabStr = tabStr + "\t";
 	for(unsigned int i = 0; i < nodeList->getLength(); ++i)
 		if(nodeList->item(i)->getNodeType() !=
 		   xercesc::DOMNode::TEXT_NODE)  // ignore text node children
-			recursiveOutputXmlDocument((xercesc::DOMElement*)(nodeList->item(i)),
-			                           out,
-			                           dispStdOut,
-			                           newTabStr,
-			                           allowWhiteSpace);
+			recursiveOutputXmlDocument(
+			    (xercesc::DOMElement*)(nodeList->item(i)),
+			    out,
+			    dispStdOut,
+			    newTabStr,  //save for debug decor: + " i=" + std::to_string(i) + " ",
+			    allowWhiteSpace);
+
+#if 0
+	{
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration =
+			std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " -- Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
+	}
+#endif
 
 	if(currEl == dataElement_ &&  //append the data string stream
 	   dataSs_.str().length())    //(for large data blocks that do not need to be escaped)
@@ -359,6 +408,15 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 			*out << tabStr << "</" << XML_TO_CHAR(currEl->getNodeName()) << ">"
 			     << std::endl;
 	}
+
+#if 0
+	{
+		auto end = std::chrono::high_resolution_clock::now();
+		auto duration =
+			std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+		__COUTT__ << tabStr << XML_TO_CHAR(currEl->getNodeName()) << " -- DONE Time taken to call recurse xml out = " << duration << " milliseconds." << std::endl;
+	}
+#endif
 }  // end recursiveOutputXmlDocument()
 
 //==============================================================================

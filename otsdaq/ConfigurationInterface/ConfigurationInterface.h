@@ -40,8 +40,6 @@ public:
 	static bool                    			isVersionTrackingEnabled		(void);
 	static void                    			setVersionTrackingEnabled		(bool setValue);
 
-	static const std::string GROUP_METADATA_TABLE_NAME;
-
 	/// table handling
 	#include "otsdaq/ConfigurationInterface/ConfigurationInterface.icc"  	///<define ConfigurationInterface::get() source code
 	virtual std::set<std::string /*name*/> 	getAllTableNames				(void) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getAllTableNames in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }

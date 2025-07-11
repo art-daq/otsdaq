@@ -347,16 +347,19 @@ try
 
 	xmlOut.addTextElementToData("AttemptedNewGroupName", groupName);
 
-	// make sure not using partial tables or anything weird when creating the group
-	//	so start from scratch and load backbone, but allow errors
+	// Only need table info for aliases and to check table names are valid
+	//  ... so do not refresh, unless there is no info present.
 	std::string                             accumulatedWarnings;
 	const std::map<std::string, TableInfo>& allTableInfo =
-	    cfgMgr->getAllTableInfo(true /* refresh */,
-	                            &accumulatedWarnings,
-	                            "" /* errorFilterName */,
-	                            true /* getGroupKeys*/,
-	                            false /* getGroupInfo */,
-	                            true /* initializeActiveGroups */);
+	    cfgMgr->getAllTableInfo();  //no need to refresh
+	if(!allTableInfo.size())  //getAllTableInfo() will update allTableInfo by reference
+		cfgMgr->getAllTableInfo(true /* refresh */,
+		                        &accumulatedWarnings,
+		                        "" /* errorFilterName */,
+		                        true /* getGroupKeys*/,
+		                        false /* getGroupInfo */,
+		                        true /* initializeActiveGroups */);
+
 	__COUT_WARN__ << "Ignoring these errors: " << accumulatedWarnings << __E__;
 	// cfgMgr->loadConfigurationBackbone(); //already loaded by initializeActiveGroups of getAllTableInfo
 
@@ -423,7 +426,9 @@ try
 				__SS__ << "version alias '"
 				       << versionStr.substr(
 				              ConfigurationManager::ALIAS_VERSION_PREAMBLE.size())
-				       << "' was not found in active version aliases!" << __E__;
+				       << "' was not found in active version aliases! Please check your "
+				          "active backbone!"
+				       << __E__;
 				__COUT_ERR__ << "\n" << ss.str();
 				xmlOut.addTextElementToData("Error", ss.str());
 				return;
@@ -514,8 +519,12 @@ try
 					xmlOut.addTextElementToData("foundEquivalentKey", "1");  // indicator
 
 					// insert get table info
-					handleGetTableGroupXML(
-					    xmlOut, cfgMgr, groupName, foundKey, ignoreWarnings);
+					handleGetTableGroupXML(xmlOut,
+					                       cfgMgr,
+					                       groupName,
+					                       foundKey,
+					                       ignoreWarnings,
+					                       true /* cacheOnly */);
 					return;
 				}
 				else  // treat as error, if not looking for equivalent
@@ -652,7 +661,8 @@ try
 
 	// insert get table info
 	__COUT__ << "Loading new table group..." << __E__;
-	handleGetTableGroupXML(xmlOut, cfgMgr, groupName, newKey, ignoreWarnings);
+	handleGetTableGroupXML(
+	    xmlOut, cfgMgr, groupName, newKey, ignoreWarnings, true /* cacheOnly */);
 
 	__COUTT__ << "handleCreateTableGroupXML end runtime=" << cfgMgr->runTimeSeconds()
 	          << __E__;
@@ -691,6 +701,8 @@ catch(...)
 ///	Find historical group keys
 ///		and figure out all member configurations versions
 ///
+///	Use cacheOnly to only return group info previously cached (avoid reloading from database)
+///
 ///
 ///	return this information
 ///	<group name=xxx key=xxx>
@@ -705,11 +717,13 @@ catch(...)
 ///		<table name=xxx version=xxx>
 ///		...
 ///		</table>
-void ConfigurationSupervisorBase::handleGetTableGroupXML(HttpXmlDocument&        xmlOut,
-                                                         ConfigurationManagerRW* cfgMgr,
-                                                         const std::string& groupName,
-                                                         TableGroupKey      groupKey,
-                                                         bool ignoreWarnings)
+void ConfigurationSupervisorBase::handleGetTableGroupXML(
+    HttpXmlDocument&        xmlOut,
+    ConfigurationManagerRW* cfgMgr,
+    const std::string&      groupName,
+    TableGroupKey           groupKey,
+    bool                    ignoreWarnings /* = false */,
+    bool                    cacheOnly /* = false */)
 try
 {
 	// char                 tmpIntStr[100];
@@ -736,6 +750,85 @@ try
 	//		sortedKeys.emplace(key);
 	//	}
 
+	__COUTTV__(cacheOnly);
+
+	//======
+	/// Lambda function to output historic values in spans
+	auto SpanToXML = [](auto const& sortedKeys, auto& xmlOut) {
+		//add lo and hi spans, instead of each individual value
+		size_t lo = -1, hi = -1;
+		for(auto& keyInOrder : sortedKeys)
+		{
+			if(lo == size_t(-1))  //establish start of potential span
+			{
+				hi = lo = keyInOrder.key();
+				continue;
+			}
+			else if(hi + 1 == keyInOrder.key())  //span is growing
+			{
+				hi = keyInOrder.key();
+				continue;
+			}
+			//else jump by more than one, so close out span
+
+			if(lo == hi)  //single value
+				xmlOut.addNumberElementToData("HistoricalTableGroupKey", lo);
+			else  //span
+				xmlOut.addTextElementToData(
+				    "HistoricalTableGroupKey",
+				    "_" + std::to_string(lo) + "_" + std::to_string(hi));
+			hi = lo = keyInOrder.key();
+		}
+
+		if(lo != size_t(-1))  //check if last one to do!
+		{
+			if(lo == hi)  //single value
+				xmlOut.addNumberElementToData("HistoricalTableGroupKey", lo);
+			else  //span
+				xmlOut.addTextElementToData(
+				    "HistoricalTableGroupKey",
+				    "_" + std::to_string(lo) + "_" + std::to_string(hi));
+		}
+	};  //end local lambda SpanToXML()
+	auto vSpanToXML = [](auto const& sortedKeys, auto& xmlOut, auto& configEl) {
+		//add lo and hi spans, instead of each individual value
+		size_t lo = -1, hi = -1;
+		for(auto& keyInOrder : sortedKeys)
+		{
+			if(lo == size_t(-1))  //establish start of potential span
+			{
+				hi = lo = keyInOrder.version();
+				continue;
+			}
+			else if(hi + 1 == keyInOrder.version())  //span is growing
+			{
+				hi = keyInOrder.version();
+				continue;
+			}
+			//else jump by more than one, so close out span
+
+			if(lo == hi)  //single value
+				xmlOut.addNumberElementToParent("TableExistingVersion", lo, configEl);
+			else  //span
+				xmlOut.addTextElementToParent(
+				    "TableExistingVersion",
+				    "_" + std::to_string(lo) + "_" + std::to_string(hi),
+				    configEl);
+			hi = lo = keyInOrder.version();
+		}
+
+		if(lo != size_t(-1))  //check if last one to do!
+		{
+			if(lo == hi)  //single value
+				xmlOut.addNumberElementToParent("TableExistingVersion", lo, configEl);
+			else  //span
+				xmlOut.addTextElementToParent(
+				    "TableExistingVersion",
+				    "_" + std::to_string(lo) + "_" + std::to_string(hi),
+				    configEl);
+		}
+	};  //end local lambda vSpanToXML()
+
 	{
 		const GroupInfo&               groupInfo  = cfgMgr->getGroupInfo(groupName);
 		const std::set<TableGroupKey>& sortedKeys = groupInfo.keys_;  // rename
@@ -747,10 +840,11 @@ try
 		__COUTT__ << "Active tables: "
 		          << StringMacros::mapToString(cfgMgr->getActiveVersions()) << __E__;
 
-		if(groupKey
-		       .isInvalid() ||  // if invalid or not found, likely key info not loaded, so get latest
-		   sortedKeys.find(groupKey) == sortedKeys.end() ||
-		   sortedKeys.size() < 2)
+		if(!cacheOnly &&
+		   (groupKey
+		        .isInvalid() ||  // if invalid or not found, likely key info not loaded, so get latest
+		    sortedKeys.find(groupKey) == sortedKeys.end() ||
+		    sortedKeys.size() < 2))
 		{
 			// report error if group key not found
 			if(!groupKey.isInvalid() || sortedKeys.size() == 0)
@@ -786,10 +880,7 @@ try
 						ss << "\t" << keyInOrder << __E__;
 					__COUT_WARN__ << "\n" << ss.str() << __E__;
 				}
-
-				for(auto& keyInOrder : sortedKeys2)
-					xmlOut.addTextElementToData("HistoricalTableGroupKey",
-					                            keyInOrder.toString());
+				SpanToXML(sortedKeys2, xmlOut);
 			}
 			else
 			{
@@ -800,17 +891,47 @@ try
 				    << groupKey << __E__;
 
 				// add all other sorted keys for this groupName
-				for(auto& keyInOrder : sortedKeys)
-					xmlOut.addTextElementToData("HistoricalTableGroupKey",
-					                            keyInOrder.toString());
+				SpanToXML(sortedKeys, xmlOut);
+
+				// //add lo and hi spans, instead of each individual value
+				// size_t lo = -1, hi = -1;
+				// for(auto& keyInOrder : sortedKeys)
+				// {
+				// 	if(lo == size_t(-1)) //establish start of potential span
+				// 	{
+				// 		hi = lo = keyInOrder.key();
+				// 		continue;
+				// 	}
+				// 	else if(hi + 1 == keyInOrder.key()) //span is growing
+				// 	{
+				// 		hi = keyInOrder.key();
+				// 		continue;
+				// 	}
+				// 	//else jump by more than one, so close out span
+
+				// 	if(lo == hi) //single value
+				// 		xmlOut.addNumberElementToData("HistoricalTableGroupKey", lo);
+				// 	else //span
+				// 		xmlOut.addTextElementToData("HistoricalTableGroupKey",
+				// 			"_" + std::to_string(lo) + "_" + std::to_string(hi));
+				// 	lo = -1;
+				// }
+				// //need to do last one!
+				// if(lo == hi) //single value
+				// 	xmlOut.addNumberElementToData("HistoricalTableGroupKey", lo);
+				// else //span
+				// 	xmlOut.addTextElementToData("HistoricalTableGroupKey",
+				// 		"_" + std::to_string(lo) + "_" + std::to_string(hi));
+
+				// for(auto& keyInOrder : sortedKeys)
+				// 	xmlOut.addTextElementToData("HistoricalTableGroupKey",
+				// 	                            keyInOrder.toString());
 			}
 		}
 		else
 		{
 			// add all other sorted keys for this groupName
-			for(auto& keyInOrder : sortedKeys)
-				xmlOut.addTextElementToData("HistoricalTableGroupKey",
-				                            keyInOrder.toString());
+			SpanToXML(sortedKeys, xmlOut);
 		}
 
 		if(cfgMgr->getActiveVersions().size() == 0)
@@ -934,10 +1055,14 @@ try
 		it = allTableInfo.find(memberPair.first);
 		if(it == allTableInfo.end())
 		{
-			xmlOut.addTextElementToData(
-			    "Error", "Table \"" + memberPair.first + "\" can not be retrieved!");
+			if(!cacheOnly)  //only an 'error' if not cacheOnly
+				xmlOut.addTextElementToData(
+				    "Error", "Table \"" + memberPair.first + "\" can not be retrieved!");
 			continue;
 		}
+
+		xmlOut.addTextElementToParent(
+		    "MemberComment", it->second.tablePtr_->getView().getComment(), parentEl);
 
 		if(versionAliases.find(it->first) != versionAliases.end())
 			for(auto& aliasVersion : versionAliases[it->first])
@@ -946,57 +1071,86 @@ try
 				    ConfigurationManager::ALIAS_VERSION_PREAMBLE + aliasVersion.first,
 				    configEl);
 
-		for(auto& version : it->second.versions_)
-			// if(version == memberPair.second) continue; //CHANGED by RAR on 11/14/2016
-			// (might as well show all versions in list to avoid user confusion)  else
-			xmlOut.addTextElementToParent(
-			    "TableExistingVersion", version.toString(), configEl);
-	}
-	// Seperate loop just for getting the Member Comment
-	for(auto& memberPair : memberMap)
-	{
-		//__COUT__ << "\tMember table " << memberPair.first << ":" <<
-		//		memberPair.second << __E__;
+		vSpanToXML(it->second.versions_, xmlOut, configEl);
+		// //add lo and hi spans, instead of each individual value
+		// size_t lo = -1, hi = -1;
+		// for(auto& version : it->second.versions_)
+		// {
+		// 	if(lo == size_t(-1)) //establish start of potential span
+		// 	{
+		// 		hi = lo = version.version();
+		// 		continue;
+		// 	}
+		// 	else if(hi + 1 == version.version()) //span is growing
+		// 	{
+		// 		hi = version.version();
+		// 		continue;
+		// 	}
+		// 	//else jump by more than one, so close out span
 
-		// xmlOut.addTextElementToParent("MemberName", memberPair.first, parentEl);
-		// if(commentsLoaded)
-		xmlOut.addTextElementToParent(
-		    "MemberComment",
-		    allTableInfo.at(memberPair.first).tablePtr_->getView().getComment(),
-		    parentEl);
-		// else
-		//	xmlOut.addTextElementToParent("MemberComment", "", parentEl);
+		// 	if(lo == hi) //single value
+		// 		xmlOut.addNumberElementToParent("TableExistingVersion", lo, configEl);
+		// 	else //span
+		// 		xmlOut.addTextElementToParent("TableExistingVersion",
+		// 			"_" + std::to_string(lo) + "_" + std::to_string(hi), configEl);
+		// 	lo = -1;
+		// }
+		// //need to do last one!
+		// if(lo == hi) //single value
+		// 	xmlOut.addNumberElementToParent("TableExistingVersion", lo, configEl);
+		// else //span
+		// 	xmlOut.addTextElementToParent("TableExistingVersion",
+		// 		"_" + std::to_string(lo) + "_" + std::to_string(hi), configEl);
+		// // for(auto& version : it->second.versions_)
+		// // 	xmlOut.addTextElementToParent(
+		// // 	    "TableExistingVersion", version.toString(), configEl);
+	}  //end member map loop
 
-		//	__COUT__ << "\tMember table " << memberPair.first << ":" <<
-		//	memberPair.second << __E__;
+	// // Seperate loop just for getting the Member Comment
+	// for(auto& memberPair : memberMap)
+	// {
+	// 	//__COUT__ << "\tMember table " << memberPair.first << ":" <<
+	// 	//		memberPair.second << __E__;
 
-		// configEl = xmlOut.addTextElementToParent("MemberVersion",
-		// memberPair.second.toString(), parentEl);
+	// 	// xmlOut.addTextElementToParent("MemberName", memberPair.first, parentEl);
+	// 	// if(commentsLoaded)
+	// 	xmlOut.addTextElementToParent(
+	// 	    "MemberComment",
+	// 	    allTableInfo.at(memberPair.first).tablePtr_->getView().getComment(),
+	// 	    parentEl);
+	// 	// else
+	// 	//	xmlOut.addTextElementToParent("MemberComment", "", parentEl);
 
-		/*	it = allTableInfo.find(memberPair.first);
-		if(it == allTableInfo.end())
-		{
-		    xmlOut.addTextElementToData("Error","Table \"" +
-		            memberPair.first +
-		            "\" can not be retrieved!");
-		    return;
-		}
-		*/
-		// include aliases for this table
-		/*if(versionAliases.find(it->first) != versionAliases.end())
-		    for (auto& aliasVersion:versionAliases[it->first])
-		        xmlOut.addTextElementToParent("TableExistingVersion",
-		                ConfigurationManager::ALIAS_VERSION_PREAMBLE + aliasVersion.first,
-		                configEl);
+	// 	//	__COUT__ << "\tMember table " << memberPair.first << ":" <<
+	// 	//	memberPair.second << __E__;
 
-		for (auto& version:it->second.versions_)
-		    //if(version == memberPair.second) continue; //CHANGED by RAR on 11/14/2016
-		(might as well show all versions in list to avoid user confusion)
-		    //else
-		    xmlOut.addTextElementToParent("TableExistingVersion",
-		version.toString(), configEl);
-		*/
-	}
+	// 	// configEl = xmlOut.addTextElementToParent("MemberVersion",
+	// 	// memberPair.second.toString(), parentEl);
+
+	// 	/*	it = allTableInfo.find(memberPair.first);
+	// 	if(it == allTableInfo.end())
+	// 	{
+	// 	    xmlOut.addTextElementToData("Error","Table \"" +
+	// 	            memberPair.first +
+	// 	            "\" can not be retrieved!");
+	// 	    return;
+	// 	}
+	// 	*/
+	// 	// include aliases for this table
+	// 	/*if(versionAliases.find(it->first) != versionAliases.end())
+	// 	    for (auto& aliasVersion:versionAliases[it->first])
+	// 	        xmlOut.addTextElementToParent("TableExistingVersion",
+	// 	                ConfigurationManager::ALIAS_VERSION_PREAMBLE + aliasVersion.first,
+	// 	                configEl);
+
+	// 	for (auto& version:it->second.versions_)
+	// 	    //if(version == memberPair.second) continue; //CHANGED by RAR on 11/14/2016
+	// 	(might as well show all versions in list to avoid user confusion)
+	// 	    //else
+	// 	    xmlOut.addTextElementToParent("TableExistingVersion",
+	// 	version.toString(), configEl);
+	// 	*/
+	// }
 
 }  // end handleGetTableGroupXML()
 catch(std::runtime_error& e)
