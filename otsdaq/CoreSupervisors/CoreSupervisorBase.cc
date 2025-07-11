@@ -182,7 +182,6 @@ try
 	std::chrono::steady_clock::time_point requestStart = std::chrono::steady_clock::now();
 	time_t                                requestStartTime = time(0);
 
-	std::stringstream xmlDataSs;
 	try
 	{
 		// call derived class' request()
@@ -218,42 +217,49 @@ try
 	              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
 	              << __E__;
 
-	// report any errors encountered
-	// but only if there are a reasonable number of children
-	size_t numberOfChildren = xmlOut.getRootDataElement()->getChildNodes()->getLength();
-	if(numberOfChildren &&
-	   xmlOut.getRootDataElement()->getChildNodes()->item(0)->getNodeType() !=
-	       xercesc::DOMNode::TEXT_NODE)
-		numberOfChildren += xmlOut.getRootDataElement()
-		                        ->getChildNodes()
-		                        ->item(0)
-		                        ->getChildNodes()
-		                        ->getLength();
-
-	__SUP_COUTT__ << "Number of xml data element children: " << numberOfChildren << __E__;
-
-	if(numberOfChildren < 1000)
+	// used to print xml errors only if there are a reasonable number of children
+	if(TTEST(1))  //now just check child size if debugging
 	{
-		unsigned int occurance = 0;
-		std::string  err       = xmlOut.getMatchingValue("Error", occurance++);
-		while(err != "")
-		{
-			__SUP_COUT_ERR__ << "'" << requestType << "' ERROR encountered: " << err
-			                 << __E__;
-			err = xmlOut.getMatchingValue("Error", occurance++);
-		}
-		__SUP_COUTT__ << "Elapsed time after error check: "
-		              << artdaq::TimeUtils::GetElapsedTime(requestStart) << __E__;
+		size_t numberOfChildren =
+		    xmlOut.getRootDataElement()->getChildNodes()->getLength();
+		if(numberOfChildren &&
+		   xmlOut.getRootDataElement()->getChildNodes()->item(0)->getNodeType() !=
+		       xercesc::DOMNode::TEXT_NODE)
+			numberOfChildren += xmlOut.getRootDataElement()
+			                        ->getChildNodes()
+			                        ->item(0)
+			                        ->getChildNodes()
+			                        ->getLength();
+
+		__SUP_COUTT__ << "Number of '" << requestType
+		              << "' xml data element children: " << numberOfChildren << __E__;
+
+		__SUP_COUTT__ << "Request '" << requestType
+		              << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
+		              << __E__;
 	}
+	//Note: the above XML-children-count only looks at depth 1, if there are too many nodes (including deeper nodes) then outputing the xml will be slow (4K nodes takes ~2 seconds)
 
-	// __SUP_COUTV__(xmlDataSs.str());
-
-	// return xml doc holding server response
+	// return xml doc holding server response to request
 	xmlOut.outputXmlDocument((std::ostringstream*)out,
 	                         false /*print to cout*/,
-	                         !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/);
+	                         !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/,
+	                         true /* printErrors */);  // report any errors encountered
 
-	__SUP_COUTT__ << "Total xml request time: "
+	// __SUP_COUTT__ << "Request '" << requestType
+	//               << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
+	//               << __E__;
+	// std::stringstream oss;
+	// xmlOut.outputXmlDocument((std::ostringstream*)&oss,
+	//                          false /*print to cout*/,
+	//                          !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/,
+	// 						 true /* printErrors */);
+	// __SUP_COUTT__ << "Request '" << requestType
+	//               << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
+	//               << __E__;
+	// __SUP_COUTV__(oss.str());
+
+	__SUP_COUTT__ << "Total '" << requestType << "' xml request time: "
 	              << artdaq::TimeUtils::GetElapsedTime(requestStart) << " = "
 	              << time(0) - requestStartTime << __E__;
 }  // end requestWrapper()

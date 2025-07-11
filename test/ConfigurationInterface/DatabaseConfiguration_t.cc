@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(readxml_writedb_configurations)
 
 	std::vector<std::string> configTables;
 
-	// normally CONFIGURATION_TYPE is set by StartOTS.sh
+	// normally CONFIGURATION_TYPE is set by ots script
 	setenv("CONFIGURATION_DATA_PATH",
 	       (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
 	       1);
@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE(readdb_writexml_configurations)
 	// return;
 	std::vector<std::string> configTables;
 
-	// normally CONFIGURATION_TYPE is set by StartOTS.sh
+	// normally CONFIGURATION_TYPE is set by ots script
 	setenv("CONFIGURATION_DATA_PATH",
 	       (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
 	       1);

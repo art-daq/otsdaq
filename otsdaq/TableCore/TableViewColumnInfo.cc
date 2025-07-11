@@ -48,7 +48,7 @@ const std::string TableViewColumnInfo::TYPE_VALUE_ON 					= "On";
 const std::string TableViewColumnInfo::TYPE_VALUE_OFF 					= "Off";
 
 const std::string TableViewColumnInfo::DATATYPE_STRING_DEFAULT 			= "DEFAULT";
-const std::string TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT 		= "No Comment";
+const std::string TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT 		= "No comment.";
 const std::string TableViewColumnInfo::DATATYPE_BOOL_DEFAULT 			= "0";
 const std::string TableViewColumnInfo::DATATYPE_NUMBER_DEFAULT 			= "0";
 
