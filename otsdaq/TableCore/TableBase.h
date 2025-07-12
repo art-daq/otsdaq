@@ -28,6 +28,7 @@ class TableBase
 	virtual ~TableBase(void);
 
 	/// Methods
+	void						specialMetaTableConstructor		(void);
 	virtual void 				init							(ConfigurationManager* configManager);
 
 	void 						destroy							(void) { ; }
@@ -95,12 +96,19 @@ class TableBase
 
 	unsigned int 				getNumberOfStoredViews			(void) const;
 
+	/// output table name for ostream operator
+	friend std::ostream& operator<<(std::ostream& out, const TableBase& table)
+	{
+		out << table.getTableName();
+		return out;
+	}
 
   // ----- member variables
 
   public:
 	static const std::string			GROUP_CACHE_PREPEND;
 	static const std::string			JSON_DOC_PREPEND;
+	static const std::string 			GROUP_METADATA_TABLE_NAME;
 
   protected:
 	std::string 						tableName_;
