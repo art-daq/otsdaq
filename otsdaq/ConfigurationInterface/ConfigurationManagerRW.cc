@@ -2445,16 +2445,15 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 		    false /*ignoreDuplicates*/,
 		    true /*lookForEquivalent*/);  // save persistent version properly
 
-
 		if(groupTable.second.originalVersion_ != groupMembers_.at(groupTable.first))
 		{
 			anyTableNew = true;
-			__GEN_COUT__ << "Final NEW target version is " << groupTable.second.tableName_ << "-v"
-						<< groupMembers_.at(groupTable.first) << __E__;
+			__GEN_COUT__ << "Final NEW target version is " << groupTable.second.tableName_
+			             << "-v" << groupMembers_.at(groupTable.first) << __E__;
 		}
-		else 
-			__GEN_COUT__ << "Final target version is " << groupTable.second.tableName_ << "-v"
-						<< groupMembers_.at(groupTable.first) << __E__;
+		else
+			__GEN_COUT__ << "Final target version is " << groupTable.second.tableName_
+			             << "-v" << groupMembers_.at(groupTable.first) << __E__;
 
 		groupTable.second.modified_                = false;  // clear modified flag
 		groupTable.second.createdTemporaryVersion_ = false;  // modified version is gone
@@ -2465,7 +2464,7 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 		__GEN_COUT__ << table.first << " v" << table.second << __E__;
 	}
 
-	if(!anyTableNew) //then could be duplicate group
+	if(!anyTableNew)  //then could be duplicate group
 	{
 		__GEN_COUT__ << "Checking for duplicate groups..." << __E__;
 		newGroupKey = cfgMgr->findTableGroup(groupNameToSave, groupMembers_);
@@ -2762,8 +2761,8 @@ void ConfigurationManagerRW::testXDAQContext()
 		try
 		{
 			TableGroupKey groupKey(int(0));
-			__GEN_COUT__ << "Testing group save of pre-existing " << debugGroupName << "(" << groupKey
-			             << ")" << __E__;
+			__GEN_COUT__ << "Testing group save of pre-existing " << debugGroupName << "("
+			             << groupKey << ")" << __E__;
 			std::map<std::string, TableVersion> groupMembers;
 			groupMembers["DesktopIconTable"] = TableVersion(123);
 			theInterface_->saveTableGroup(
@@ -2781,8 +2780,8 @@ void ConfigurationManagerRW::testXDAQContext()
 		{
 			std::string   debugGroupName = "testGroupSave";
 			TableGroupKey groupKey(int(1));
-			__GEN_COUT__ << "Testing group save of non-existing " << debugGroupName << "(" << groupKey
-			             << ")" << __E__;
+			__GEN_COUT__ << "Testing group save of non-existing " << debugGroupName << "("
+			             << groupKey << ")" << __E__;
 			std::map<std::string, TableVersion> groupMembers;
 			groupMembers["DesktopIconTable"]     = TableVersion(123);
 			groupMembers["MessageFacilityTable"] = TableVersion(7);
@@ -2801,12 +2800,14 @@ void ConfigurationManagerRW::testXDAQContext()
 			std::string  documentNameToLoad = "XDAQApplicationTable";
 			TableVersion documentVersionToLoad(134);
 
-			__GEN_COUT__ << "Testing table save of pre-existing " << documentNameToLoad << __E__;
+			__GEN_COUT__ << "Testing table save of pre-existing " << documentNameToLoad
+			             << __E__;
 
-			{ //load to prove it exists
-				TableBase localDocLoader(documentNameToLoad); //can not use special table when filling
-				localDocLoader.changeVersionAndActivateView(localDocLoader.createTemporaryView(),
-															documentVersionToLoad);
+			{  //load to prove it exists
+				TableBase localDocLoader(
+				    documentNameToLoad);  //can not use special table when filling
+				localDocLoader.changeVersionAndActivateView(
+				    localDocLoader.createTemporaryView(), documentVersionToLoad);
 				theInterface_->fill(&localDocLoader, documentVersionToLoad);
 				__SS__;
 				localDocLoader.print(ss);
@@ -2817,11 +2818,12 @@ void ConfigurationManagerRW::testXDAQContext()
 			try
 			{  //attempt to save over existing version
 				std::string documentNameToSave = documentNameToLoad;
-				TableBase localDocSaver(//true /*special table*/, //special table only allows 1 view in cache and does not load schema (which is perfect for this check), 
-					documentNameToSave); //can not use special table when filling
-				localDocSaver.changeVersionAndActivateView(localDocSaver.createTemporaryView(),
-														documentVersionToLoad);
-				
+				TableBase
+				    localDocSaver(  //true /*special table*/, //special table only allows 1 view in cache and does not load schema (which is perfect for this check),
+				        documentNameToSave);  //can not use special table when filling
+				localDocSaver.changeVersionAndActivateView(
+				    localDocSaver.createTemporaryView(), documentVersionToLoad);
+
 				std::string json = "{ }";
 				localDocSaver.getViewP()->setCustomStorageData(json);
 
@@ -2863,11 +2865,12 @@ void ConfigurationManagerRW::testXDAQContext()
 			TableBase    localDocLoader(
                 documentNameToLoad);  //can not use special table when filling
 
-			__GEN_COUT__ << "Testing table save of non-existing " << documentNameToLoad << __E__;
-			
-			{ //load to prove it exists				
-				localDocLoader.changeVersionAndActivateView(localDocLoader.createTemporaryView(),
-															documentVersionToLoad);
+			__GEN_COUT__ << "Testing table save of non-existing " << documentNameToLoad
+			             << __E__;
+
+			{  //load to prove it exists
+				localDocLoader.changeVersionAndActivateView(
+				    localDocLoader.createTemporaryView(), documentVersionToLoad);
 				theInterface_->fill(&localDocLoader, documentVersionToLoad);
 				__SS__;
 				localDocLoader.print(ss);

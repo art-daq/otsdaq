@@ -1,9 +1,9 @@
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 
+#include <dirent.h>  //DIR and dirent
 #include <fstream>   // for std::ofstream
 #include <iostream>  // std::cout
 #include <typeinfo>
-#include <dirent.h>    //DIR and dirent
 
 #include "otsdaq/Macros/CoutMacros.h"
 #define TRACE_NAME "ARTDAQTableBase"
@@ -2334,48 +2334,48 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 		    cfgMgr->getActiveGroupName(ConfigurationManager::GroupType::CONTEXT_TYPE);
 		const TableGroupKey& finalContextGroupKey =
 		    cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::CONTEXT_TYPE);
-		const std::string& finalConfigGroupName =
-		    cfgMgr->getActiveGroupName(ConfigurationManager::GroupType::CONFIGURATION_TYPE);
-		const TableGroupKey& finalConfigGroupKey =
-		    cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::CONFIGURATION_TYPE);
+		const std::string& finalConfigGroupName = cfgMgr->getActiveGroupName(
+		    ConfigurationManager::GroupType::CONFIGURATION_TYPE);
+		const TableGroupKey& finalConfigGroupKey = cfgMgr->getActiveGroupKey(
+		    ConfigurationManager::GroupType::CONFIGURATION_TYPE);
 
 		FILE* fp = nullptr;
 		//first try context+config name only
 		{
 			std::stringstream layoutPath;
-			layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH << finalContextGroupName
-					<< "_" << finalContextGroupKey << "." << finalConfigGroupName
-					<< "_" << finalConfigGroupKey << ".dat";
+			layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH
+			           << finalContextGroupName << "_" << finalContextGroupKey << "."
+			           << finalConfigGroupName << "_" << finalConfigGroupKey << ".dat";
 
 			fp = fopen(layoutPath.str().c_str(), "r");
 			if(!fp)
 			{
 				__COUT__ << "Layout file not found for '" << finalContextGroupName << "("
-							<< finalContextGroupKey << ") + " << finalConfigGroupName << "(" 
-							<< finalConfigGroupKey << ")': " << layoutPath.str() << __E__;
+				         << finalContextGroupKey << ") + " << finalConfigGroupName << "("
+				         << finalConfigGroupKey << ")': " << layoutPath.str() << __E__;
 				// return; //try context only!
 			}
-			else 
+			else
 				__COUTV__(layoutPath.str());
 		}
 		//last try context name only
 		{
 			std::stringstream layoutPath;
-			layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH << finalContextGroupName
-					<< "_" << finalContextGroupKey << ".dat";
+			layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH
+			           << finalContextGroupName << "_" << finalContextGroupKey << ".dat";
 			__COUTV__(layoutPath.str());
 
 			fp = fopen(layoutPath.str().c_str(), "r");
 			if(!fp)
 			{
 				__COUT__ << "Layout file not found for '" << finalContextGroupName << "("
-						<< finalContextGroupKey << ")': " << layoutPath.str() << __E__;
+				         << finalContextGroupKey << ")': " << layoutPath.str() << __E__;
 			}
-			else 
+			else
 				__COUTV__(layoutPath.str());
 		}
 
-		if(!fp) //since exact context name was not found, see if there is a best match layout file
+		if(!fp)  //since exact context name was not found, see if there is a best match layout file
 		{
 			DIR*           pDIR;
 			struct dirent* entry;
@@ -2383,15 +2383,16 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 			std::string    name;
 			int            type;
 
-			float bestScore = 0, score; //high score wins
-			std::string bestName = "";
+			float       bestScore = 0, score;  //high score wins
+			std::string bestName  = "";
 
-			if(!(pDIR = opendir((ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH ).c_str())))
+			if(!(pDIR = opendir((ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH).c_str())))
 			{
-				__SS__ << "Path '" << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH  << "' could not be opened!" << __E__;
+				__SS__ << "Path '" << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH
+				       << "' could not be opened!" << __E__;
 				__SS_THROW__;
 			}
-			
+
 			// else directory good, get all folders, .h, .cc, .txt files
 			while((entry = readdir(pDIR)))
 			{
@@ -2401,18 +2402,21 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 				__COUTS__(2) << type << " " << name << "\n" << std::endl;
 
 				if(name[0] != '.' &&
-				(type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
-					type == 4 ||  // directory type
-					type == 8 ||  // file type
-					type == 10    // 10 == link (could be directory or file, treat as unknown)
-					))
+				   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
+				    type == 4 ||  // directory type
+				    type == 8 ||  // file type
+				    type ==
+				        10  // 10 == link (could be directory or file, treat as unknown)
+				    ))
 				{
 					isDir = false;
 
 					if(type == 0 || type == 10)
 					{
 						// unknown type .. determine if directory
-						DIR* pTmpDIR = opendir((ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH + "/" + name).c_str());
+						DIR* pTmpDIR = opendir(
+						    (ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH + "/" + name)
+						        .c_str());
 						if(pTmpDIR)
 						{
 							isDir = true;
@@ -2420,7 +2424,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						}
 						else  //assume file
 							__COUTS__(2) << "Unable to open path as directory: "
-										<< (ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH  + "/" + name) << __E__;
+							             << (ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH +
+							                 "/" + name)
+							             << __E__;
 					}
 
 					if(type == 4)
@@ -2434,35 +2440,49 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 					}
 					else
 					{
-						__COUTS__(2) << "File: " << type << " " << name << "\n" << std::endl;
-						if(name.find(".dat") != name.size() - 4) //skip if not proper file extension
+						__COUTS__(2) << "File: " << type << " " << name << "\n"
+						             << std::endl;
+						if(name.find(".dat") !=
+						   name.size() - 4)  //skip if not proper file extension
 							continue;
 
 						__COUTS__(2) << "Contender: " << name << "\n" << std::endl;
-						score = 0; //reset for score calc
+						score = 0;  //reset for score calc
 
-						auto nameSplit = StringMacros::getVectorFromString(name,{'.'});
-						
-						if(nameSplit.size() > 1) //include config group in score
-						{						
+						auto nameSplit = StringMacros::getVectorFromString(name, {'.'});
+
+						if(nameSplit.size() > 1)  //include config group in score
+						{
 							//match key to right of decimal and name to left of decimal
 							auto keyi = nameSplit[1].rfind('_');
 							if(keyi != std::string::npos)
 							{
-								int key = atoi(nameSplit[1].substr(keyi, nameSplit[1].size()-4-keyi).c_str());
-								__COUTVS__(2,key);
-								float tmpscore = finalConfigGroupKey.key() - key; //will be negative if comparing to newer key	
-								if(tmpscore < 0) tmpscore = -1 * tmpscore - 1; //give penalty for newer keys (favor older keys) 							
-								__COUTVS__(2,tmpscore);
-								tmpscore = 1.0/tmpscore; //make high score be closest, and put value in decimal
-								__COUTVS__(2,tmpscore);
+								int key =
+								    atoi(nameSplit[1]
+								             .substr(keyi, nameSplit[1].size() - 4 - keyi)
+								             .c_str());
+								__COUTVS__(2, key);
+								float tmpscore =
+								    finalConfigGroupKey.key() -
+								    key;  //will be negative if comparing to newer key
+								if(tmpscore < 0)
+									tmpscore =
+									    -1 * tmpscore -
+									    1;  //give penalty for newer keys (favor older keys)
+								__COUTVS__(2, tmpscore);
+								tmpscore =
+								    1.0 /
+								    tmpscore;  //make high score be closest, and put value in decimal
+								__COUTVS__(2, tmpscore);
 
 								//now for each matching letter +1, for matching size +3
-								std::string nameToCompare = nameSplit[1].substr(0,keyi);
-								__COUTVS__(2,nameToCompare);
+								std::string nameToCompare = nameSplit[1].substr(0, keyi);
+								__COUTVS__(2, nameToCompare);
 								size_t i = 0, j = 0;
 								//match with both strings driving in case of jumps in the words
-								for(;i < nameToCompare.size() && j < finalConfigGroupName.size(); ++i)
+								for(; i < nameToCompare.size() &&
+								      j < finalConfigGroupName.size();
+								    ++i)
 								{
 									if(nameToCompare[i] == finalConfigGroupName[j])
 									{
@@ -2470,9 +2490,11 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 										++j;
 									}
 								}
-								__COUTVS__(2,tmpscore);
-								i = 0, j = 0;							
-								for(;i < nameToCompare.size() && j < finalConfigGroupName.size(); ++j)
+								__COUTVS__(2, tmpscore);
+								i = 0, j = 0;
+								for(; i < nameToCompare.size() &&
+								      j < finalConfigGroupName.size();
+								    ++j)
 								{
 									if(nameToCompare[i] == finalConfigGroupName[j])
 									{
@@ -2480,31 +2502,43 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 										++i;
 									}
 								}
-								__COUTVS__(2,tmpscore);
+								__COUTVS__(2, tmpscore);
 								score += tmpscore;
 							}
-							__COUTVS__(2,score);
-						} //end config group score calc
-						if(nameSplit.size() > 0) //include context group in score
+							__COUTVS__(2, score);
+						}                         //end config group score calc
+						if(nameSplit.size() > 0)  //include context group in score
 						{
 							//match key to right of decimal and name to left of decimal
 							auto keyi = nameSplit[0].rfind('_');
 							if(keyi != std::string::npos)
 							{
-								int key = atoi(nameSplit[0].substr(keyi, nameSplit[0].size()-4-keyi).c_str());
-								__COUTVS__(2,key);
-								float tmpscore = finalContextGroupKey.key() - key; //will be negative if comparing to newer key	
-								if(tmpscore < 0) tmpscore = -1 * tmpscore - 1; //give penalty for newer keys (favor older keys) 							
-								__COUTVS__(2,tmpscore);
-								tmpscore = 1.0/tmpscore; //make high score be closest, and put value in decimal
-								__COUTVS__(2,tmpscore);
+								int key =
+								    atoi(nameSplit[0]
+								             .substr(keyi, nameSplit[0].size() - 4 - keyi)
+								             .c_str());
+								__COUTVS__(2, key);
+								float tmpscore =
+								    finalContextGroupKey.key() -
+								    key;  //will be negative if comparing to newer key
+								if(tmpscore < 0)
+									tmpscore =
+									    -1 * tmpscore -
+									    1;  //give penalty for newer keys (favor older keys)
+								__COUTVS__(2, tmpscore);
+								tmpscore =
+								    1.0 /
+								    tmpscore;  //make high score be closest, and put value in decimal
+								__COUTVS__(2, tmpscore);
 
 								//now for each matching letter +1, for matching size +3
-								std::string nameToCompare = nameSplit[0].substr(0,keyi);
-								__COUTVS__(2,nameToCompare);
+								std::string nameToCompare = nameSplit[0].substr(0, keyi);
+								__COUTVS__(2, nameToCompare);
 								size_t i = 0, j = 0;
 								//match with both strings driving in case of jumps in the words
-								for(;i < nameToCompare.size() && j < finalContextGroupName.size(); ++i)
+								for(; i < nameToCompare.size() &&
+								      j < finalContextGroupName.size();
+								    ++i)
 								{
 									if(nameToCompare[i] == finalContextGroupName[j])
 									{
@@ -2512,9 +2546,11 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 										++j;
 									}
 								}
-								__COUTVS__(2,tmpscore);
-								i = 0, j = 0;							
-								for(;i < nameToCompare.size() && j < finalContextGroupName.size(); ++j)
+								__COUTVS__(2, tmpscore);
+								i = 0, j = 0;
+								for(; i < nameToCompare.size() &&
+								      j < finalContextGroupName.size();
+								    ++j)
 								{
 									if(nameToCompare[i] == finalContextGroupName[j])
 									{
@@ -2522,39 +2558,42 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 										++i;
 									}
 								}
-								__COUTVS__(2,tmpscore);
+								__COUTVS__(2, tmpscore);
 								score += tmpscore;
 							}
-							__COUTVS__(2,score);
-						} //end context group score calc
+							__COUTVS__(2, score);
+						}  //end context group score calc
 
 						if(score > bestScore)
 						{
 							bestScore = score;
-							bestName = name;
-							__COUTVS__(2,bestName);
+							bestName  = name;
+							__COUTVS__(2, bestName);
 						}
-					} //end score handling
-				} //end file handling
-			} //end directory search loop for best layout file
-		
+					}  //end score handling
+				}      //end file handling
+			}          //end directory search loop for best layout file
+
 			if(bestName != "")
 			{
-				__COUT__ << "Found closest layout file name: " << bestName << ".dat" << __E__;
+				__COUT__ << "Found closest layout file name: " << bestName << ".dat"
+				         << __E__;
 				std::stringstream layoutPath;
-				layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH << bestName << ".dat";
+				layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH << bestName
+				           << ".dat";
 				__COUTV__(layoutPath.str());
-				 fp = fopen(layoutPath.str().c_str(), "r");
+				fp = fopen(layoutPath.str().c_str(), "r");
 				if(!fp)
 				{
-					__COUT__ << "Closest layout file not found for '" << bestName << "'" << __E__;
+					__COUT__ << "Closest layout file not found for '" << bestName << "'"
+					         << __E__;
 				}
 			}
 
 			//if(!fp) just ignore that file does not exist, and generate printer syntax from 1st principles
-		} //end no layout file handling
+		}  //end no layout file handling
 
-		if(fp) //else if(!fp) just ignore that file does not exist, and generate printer syntax from 1st principles
+		if(fp)  //else if(!fp) just ignore that file does not exist, and generate printer syntax from 1st principles
 		{
 			__COUT__ << "Extract info from layout file.." << __E__;
 
