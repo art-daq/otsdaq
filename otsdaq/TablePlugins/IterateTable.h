@@ -45,6 +45,7 @@ class IterateTable : public TableBase
 	static const std::string COMMAND_MODIFY_ACTIVE_GROUP;
 	static const std::string COMMAND_REPEAT_LABEL;
 	static const std::string COMMAND_RUN;
+	static const std::string COMMAND_WAIT;
 	static const std::string COMMAND_START;
 	static const std::string COMMAND_STOP;
 	static const std::string COMMAND_PAUSE;
@@ -71,6 +72,7 @@ class IterateTable : public TableBase
 		m[COMMAND_MODIFY_ACTIVE_GROUP]    = "IterationCommandModifyGroupTable";
 		m[COMMAND_REPEAT_LABEL]           = "IterationCommandRepeatLabelTable";
 		m[COMMAND_RUN]                    = "IterationCommandRunTable";
+		m[COMMAND_WAIT]                   = "IterationCommandRunTable";
 		m[COMMAND_START]                  = "";  ///< no parameters
 		m[COMMAND_STOP]                   = "";  ///< no parameters
 		m[COMMAND_PAUSE]                  = "";  ///< no parameters
@@ -140,7 +142,11 @@ class IterateTable : public TableBase
 		const std::string WaitOnRunningThreads_ = "WaitForAllFrontEndsRunningThread";
 		const std::string DurationInSeconds_    = "DurationInSeconds";
 	} commandRunParams_;
-
+	static struct CommandWaitParams
+	{
+		const std::string WaitOnRunningThreads_ = "WaitForAllFrontEndsRunningThread";
+		const std::string DurationInSeconds_    = "DurationInSeconds";
+	} commandWaitParams_;
 	/// for targets
 	static struct TargetParams
 	{

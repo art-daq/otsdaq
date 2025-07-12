@@ -24,9 +24,10 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	virtual ~ARTDAQTableBase(void);
 
 	static const std::string ARTDAQ_FCL_PATH;
+	static const std::string ARTDAQ_CONFIG_LAYOUTS_PATH;
 	static const std::string ARTDAQ_SUPERVISOR_CLASS, ARTDAQ_SUPERVISOR_TABLE;
 	static const std::string ARTDAQ_READER_TABLE, ARTDAQ_BUILDER_TABLE, ARTDAQ_LOGGER_TABLE, ARTDAQ_DISPATCHER_TABLE, ARTDAQ_MONITOR_TABLE, ARTDAQ_ROUTER_TABLE;
-	static const std::string ARTDAQ_SUBSYSTEM_TABLE, ARTDAQ_DAQ_TABLE, ARTDAQ_DAQ_PARAMETER_TABLE;
+	static const std::string ARTDAQ_SUBSYSTEM_TABLE, ARTDAQ_DAQ_TABLE, ARTDAQ_DAQ_PARAMETER_TABLE, ARTDAQ_ART_TABLE;
 	static const std::string ARTDAQ_TYPE_TABLE_HOSTNAME, ARTDAQ_TYPE_TABLE_ALLOWED_PROCESSORS, ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK, ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID;
 
 	enum class ARTDAQAppType
@@ -232,6 +233,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	/// ARTDAQ Reader Column names
 	static struct ColARTDAQReader
 	{
+		std::string const colDaqFragmentIDs_    			= "daqFragmentIDs";
 		std::string const colLinkToDaqParameters_    		= "daqParametersLink";
 		std::string const colLinkToDaqParametersGroupID_ 	= "daqParametersLinkGroupID";
 	} colARTDAQReader_;
@@ -241,6 +243,8 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	{
 		std::string const colLinkToDaq_    					= "daqLink";
 		std::string const colLinkToDaqUID_ 					= "daqLinkUID";
+		std::string const colLinkToArt_    					= "artLink";
+		std::string const colLinkToArtUID_ 					= "artLinkUID";
 	} colARTDAQNotReader_;
 
 	/// ARTDAQ DAQ Column names
@@ -257,6 +261,12 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 		std::string const colDaqParameterValue_ 			= "daqParameterValue";
 		std::string const colDaqParameterGroupID_ 			= "daqParameterGroupID";
 	} colARTDAQDaqParameter_;
+
+	/// ARTDAQ ART Column names
+	static struct ColARTDAQArt
+	{
+		std::string const colProcessName_    		= "ProcessName";
+	} colARTDAQArt_;
 };
 // clang-format on
 }  // namespace ots

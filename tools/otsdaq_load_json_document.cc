@@ -54,7 +54,7 @@ void LoadJSON_Document(int argc, char* argv[])
 
 	//==============================================================================
 	// Define environment variables
-	//	Note: normally these environment variables are set by StartOTS.sh
+	//	Note: normally these environment variables are set by ots script
 
 	// These are needed by
 	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [207]
@@ -87,7 +87,7 @@ void LoadJSON_Document(int argc, char* argv[])
 	ConfigurationInterface* theInterface_ = cfgMgr->getConfigurationInterface();
 	std::string             json =
 	    theInterface_->loadCustomJSON(argv[1], TableVersion(atoi(argv[2])));
-	__COUTV__(json);
+	__COUTVS__(3, json);
 	FILE* fp = std::fopen(argv[3], "w");
 	if(!fp)
 	{

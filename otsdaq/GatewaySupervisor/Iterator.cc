@@ -648,6 +648,10 @@ try
 	{
 		return startCommandRun(iteratorStruct);
 	}
+	else if(type == IterateTable::COMMAND_WAIT)
+	{
+		return startCommandWait(iteratorStruct);
+	}
 	else if(type == IterateTable::COMMAND_START)
 	{
 		return startCommandFSMTransition(iteratorStruct,
@@ -758,6 +762,10 @@ try
 	else if(type == IterateTable::COMMAND_RUN)
 	{
 		return checkCommandRun(iteratorStruct);
+	}
+	else if(type == IterateTable::COMMAND_WAIT)
+	{
+		return checkCommandWait(iteratorStruct);
 	}
 	else if(type == IterateTable::COMMAND_START)
 	{
@@ -1128,6 +1136,24 @@ void Iterator::startCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 	    << __E__;
 	__COUT__ << "startCommandRun success." << __E__;
 }  // end startCommandRun()
+
+//==============================================================================
+void Iterator::startCommandWait(IteratorWorkLoopStruct* iteratorStruct)
+{
+	__COUT__ << "startCommandWait " << __E__;
+
+	iteratorStruct->waitIsDone_ = false;
+
+	// Get original duration
+	sscanf(iteratorStruct->commands_[iteratorStruct->commandIndex_]
+	           .params_[IterateTable::commandWaitParams_.DurationInSeconds_]
+	           .c_str(),
+	       "%ld",
+	       &iteratorStruct->originalDurationInSeconds_);
+	__COUTV__(iteratorStruct->originalDurationInSeconds_);
+
+	__COUT__ << "startCommandWait success." << __E__;
+}
 
 //==============================================================================
 void Iterator::startCommandConfigureActive(IteratorWorkLoopStruct* iteratorStruct)
@@ -1905,6 +1931,75 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 	}
 	return false;
 }  // end checkCommandRun()
+
+//==============================================================================
+bool Iterator::checkCommandWait(IteratorWorkLoopStruct* iteratorStruct)
+{
+	sleep(1);  // sleep for a second
+
+	// Get the remaining time
+	long remainingDurationInSeconds;
+	sscanf(iteratorStruct->commands_[iteratorStruct->commandIndex_]
+	           .params_[IterateTable::commandWaitParams_.DurationInSeconds_]
+	           .c_str(),
+	       "%ld",
+	       &remainingDurationInSeconds);
+
+	__COUT__ << "Wait remaining time: " << remainingDurationInSeconds << " seconds."
+	         << __E__;
+
+	// If this is the first check, reset the command start time for the display
+	if(remainingDurationInSeconds == iteratorStruct->originalDurationInSeconds_)
+	{
+		iteratorStruct->theIterator_->activeCommandStartTime_ = time(0);
+		__COUT__ << "Starting wait duration of " << remainingDurationInSeconds
+		         << " [s] at time = "
+		         << iteratorStruct->theIterator_->activeCommandStartTime_ << " "
+		         << StringMacros::getTimestampString(
+		                iteratorStruct->theIterator_->activeCommandStartTime_)
+		         << __E__;
+	}
+
+	// Handle pause and halt actions if requested
+	if(iteratorStruct->doPauseAction_ || iteratorStruct->doHaltAction_)
+	{
+		// Restore the original duration before exiting
+		char str[200];
+		sprintf(str, "%ld", iteratorStruct->originalDurationInSeconds_);
+		iteratorStruct->commands_[iteratorStruct->commandIndex_]
+		    .params_[IterateTable::commandWaitParams_.DurationInSeconds_] = str;
+
+		return true;  // Command is done when pause or halt is requested
+	}
+
+	// Check if we're done waiting
+	if(remainingDurationInSeconds <= 1)
+	{
+		__COUT__ << "Wait duration complete!" << __E__;
+
+		// Restore the original duration
+		char str[200];
+		sprintf(str, "%ld", iteratorStruct->originalDurationInSeconds_);
+		iteratorStruct->commands_[iteratorStruct->commandIndex_]
+		    .params_[IterateTable::commandWaitParams_.DurationInSeconds_] = str;
+
+		iteratorStruct->waitIsDone_ = true;
+		return true;  // Command is done
+	}
+	else
+	{
+		// Decrement the remaining time
+		--remainingDurationInSeconds;
+
+		// Write back to string
+		char str[200];
+		sprintf(str, "%ld", remainingDurationInSeconds);
+		iteratorStruct->commands_[iteratorStruct->commandIndex_]
+		    .params_[IterateTable::commandWaitParams_.DurationInSeconds_] = str;
+	}
+
+	return false;  // Command still in progress
+}
 
 //==============================================================================
 /// return true if done

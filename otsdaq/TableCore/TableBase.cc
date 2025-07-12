@@ -12,8 +12,9 @@ using namespace ots;
 #undef __COUT_HDR__
 #define __COUT_HDR__ ("TableBase-" + getTableName() + "\t<> ")
 
-const std::string TableBase::GROUP_CACHE_PREPEND = "GroupCache_";
-const std::string TableBase::JSON_DOC_PREPEND    = "JSONDoc_";
+const std::string TableBase::GROUP_CACHE_PREPEND       = "GroupCache_";
+const std::string TableBase::JSON_DOC_PREPEND          = "JSONDoc_";
+const std::string TableBase::GROUP_METADATA_TABLE_NAME = "TableGroupMetadata";
 
 //==============================================================================
 /// TableBase
@@ -29,13 +30,6 @@ TableBase::TableBase(const std::string& tableName,
     , activeTableView_(0)
     , mockupTableView_(tableName)
 {
-	if(tableName == "")
-	{
-		__SS__ << "Do not allow anonymous table view construction!" << __E__;
-		ss << StringMacros::stackTrace() << __E__;
-		__SS_THROW__;
-	}
-
 	// December 2021 started seeing an issue where traceTID is found to be cleared to 0
 	//	which crashes TRACE if __COUT__ is used in a Table plugin constructor
 	//	This check and re-initialization seems to cover up the issue for now.
@@ -50,13 +44,28 @@ TableBase::TableBase(const std::string& tableName,
 		__COUT__ << "TableBase TRACE reinit and Constructed." << __E__;
 	}
 
+	if(tableName == "")
+	{
+		__SS__ << "Do not allow anonymous table view construction!" << __E__;
+		ss << StringMacros::stackTrace() << __E__;
+		__SS_THROW__;
+	}
+
+	// initialize special group metadata table
+	if(tableName_ == TableBase::GROUP_METADATA_TABLE_NAME)
+	{
+		specialMetaTableConstructor();
+		return;
+	}
+
 	//if special GROUP CACHE table, handle construction in a special way
 	if(tableName.substr(0, TableBase::GROUP_CACHE_PREPEND.length()) ==
 	       TableBase::GROUP_CACHE_PREPEND ||
 	   tableName.substr(0, TableBase::JSON_DOC_PREPEND.length()) ==
 	       TableBase::JSON_DOC_PREPEND)
 	{
-		__COUTT__ << "TableBase for '" << tableName << "' constructed." << __E__;
+		__COUTT__ << "TableBase for special table '" << tableName << "' constructed."
+		          << __E__;
 		return;
 	}  //end special GROUP CACHE table construction
 
@@ -80,8 +89,10 @@ TableBase::TableBase(const std::string& tableName,
 	}
 	catch(...)  // if accumulating exceptions, continue to and return, else throw
 	{
-		__SS__ << "Failure in tableInfoReader.read(this). "
-		       << "Perhaps you need to run otsdaq_convert_config_to_table ?" << __E__;
+		__SS__ << "Failure reading table schema info for table '" << tableName << "!' "
+		       << "Perhaps you need to run otsdaq_convert_config_to_table? Or the XML "
+		          "table definition has moved or link broken?"
+		       << __E__;
 		__COUT_ERR__ << "\n" << ss.str();
 		if(accumulatedExceptions)
 			*accumulatedExceptions += std::string("\n") + ss.str();
@@ -120,9 +131,102 @@ TableBase::TableBase(bool specialTable, const std::string& specialTableName)
     , activeTableView_(0)
     , mockupTableView_(specialTableName)
 {
+	// December 2021 started seeing an issue where traceTID is found to be cleared to 0
+	//	which crashes TRACE if __COUT__ is used in a Table plugin constructor
+	//	This check and re-initialization seems to cover up the issue for now.
+	//	Why it is cleared to 0 after the constructor sets it to -1 is still unknown.
+	//		Note: it seems to only happen on the first alphabetially ARTDAQ Configure Table plugin.
+	if(traceTID == 0)
+	{
+		std::cout << "TableBase Before traceTID=" << traceTID << __E__;
+		char buf[40];
+		traceInit(trace_name(TRACE_NAME, __TRACE_FILE__, buf, sizeof(buf)), 0);
+		std::cout << "TableBase After traceTID=" << traceTID << __E__;
+		__COUT__ << "TableBase TRACE reinit and Constructed." << __E__;
+	}
+
 	__COUT__ << "Special table '" << tableName_ << "' constructed. " << specialTable
 	         << __E__;
+
+	// initialize special group metadata table
+	if(tableName_ == TableBase::GROUP_METADATA_TABLE_NAME)
+		specialMetaTableConstructor();
+
 }  // special table constructor()
+
+//==============================================================================
+/// Handle construction of special meta data table
+void TableBase::specialMetaTableConstructor()
+{
+	__COUTT__ << "Special table '" << tableName_ << "' constructing..." << __E__;
+	// Note: "TableGroupMetadata" should never be in conflict
+	//	because all other tables end in "...Table"
+
+	// This is a table called TableGroupMetadata
+	//	with 4 fields:
+	//		- GroupAliases
+	//		- GroupAuthor
+	//		- GroupCreationTime
+	//		- CommentDescription
+
+	// groupMetadataTable_.setTableName(
+	//     TableBase::GROUP_METADATA_TABLE_NAME);
+	std::vector<TableViewColumnInfo>* colInfo = getMockupViewP()->getColumnsInfoP();
+	colInfo->push_back(
+	    TableViewColumnInfo(TableViewColumnInfo::TYPE_UID,  // just to make init() happy
+	                        "UnusedUID",
+	                        "UNUSED_UID",
+	                        TableViewColumnInfo::DATATYPE_NUMBER,
+	                        0 /*Default*/,
+	                        "",
+	                        0 /*Min*/,
+	                        0 /*Max*/,
+	                        0));
+	colInfo->push_back(TableViewColumnInfo(TableViewColumnInfo::TYPE_DATA,
+	                                       "GroupAliases",
+	                                       "GROUP_ALIASES",
+	                                       TableViewColumnInfo::DATATYPE_STRING,
+	                                       0 /*Default*/,
+	                                       "",
+	                                       0 /*Min*/,
+	                                       0 /*Max*/,
+	                                       0));
+	colInfo->push_back(TableViewColumnInfo(
+	    TableViewColumnInfo::TYPE_COMMENT,  // just to make init() happy
+	    TableViewColumnInfo::COL_NAME_COMMENT,
+	    "COMMENT_DESCRIPTION",
+	    TableViewColumnInfo::DATATYPE_STRING,
+	    0 /*Default*/,
+	    "",
+	    0 /*Min*/,
+	    0 /*Max*/,
+	    0));
+	colInfo->push_back(TableViewColumnInfo(
+	    TableViewColumnInfo::TYPE_AUTHOR,  // just to make init() happy
+	    "GroupAuthor",
+	    "AUTHOR",
+	    TableViewColumnInfo::DATATYPE_STRING,
+	    0 /*Default*/,
+	    "",
+	    0 /*Min*/,
+	    0 /*Max*/,
+	    0));
+	colInfo->push_back(TableViewColumnInfo(TableViewColumnInfo::TYPE_TIMESTAMP,
+	                                       "GroupCreationTime",
+	                                       "GROUP_CREATION_TIME",
+	                                       TableViewColumnInfo::DATATYPE_TIME,
+	                                       0 /*Default*/,
+	                                       "",
+	                                       0 /*Min*/,
+	                                       0 /*Max*/,
+	                                       0));
+	auto tmpVersion = createTemporaryView();
+	setActiveView(tmpVersion);
+	// only need this one and only row for all time
+	getViewP()->addRow();
+
+	__COUTT__ << "Special table '" << tableName_ << "' constructed." << __E__;
+}  //end specialMetaTableConstructor()
 
 ////==============================================================================
 /// TableBase::TableBase(void)
@@ -302,23 +406,32 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 	bool         match;
 	unsigned int potentialMatchCount = 0;
 
-	// needleView->print();
+	if(TTEST(9))
+		needleView->print();
+
+	__COUTTV__(needleVersion);
+	__COUTTV__(ignoreVersion);
+	__COUTTV__(rows);
+	__COUTTV__(cols);
 
 	// for each table in cache
 	//	check each row,col
 	auto viewPairReverseIterator = tableViews_.rbegin();
 	for(; viewPairReverseIterator != tableViews_.rend(); ++viewPairReverseIterator)
 	{
+		__COUTTV__(viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first == needleVersion)
 			continue;  // skip needle version
+		__COUTVS__(2, viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first == ignoreVersion)
 			continue;  // skip ignore version
+		__COUTVS__(2, viewPairReverseIterator->first);
 		if(viewPairReverseIterator->first.isTemporaryVersion())
 			continue;  // skip temporary versions
-
+		__COUTVS__(2, viewPairReverseIterator->first);
 		if(viewPairReverseIterator->second.getNumberOfRows() != rows)
 			continue;  // row mismatch
-
+		__COUTVS__(2, viewPairReverseIterator->first);
 		if(viewPairReverseIterator->second.getDataColumnSize() != cols ||
 		   viewPairReverseIterator->second.getSourceColumnMismatch() != 0)
 			continue;  // col mismatch
@@ -334,6 +447,8 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 
 		match = viewPairReverseIterator->second.getSourceColumnNames().size() ==
 		        needleView->getSourceColumnNames().size();
+		__COUTTV__(viewPairReverseIterator->second.getSourceColumnNames().size());
+		__COUTTV__(needleView->getSourceColumnNames().size());
 		if(match)
 		{
 			for(auto& haystackColName :
@@ -348,6 +463,17 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 					break;
 				}
 		}
+		else if(TTEST(1))
+		{
+			int i = 0;
+			for(auto& srcCol : viewPairReverseIterator->second.getSourceColumnNames())
+				__COUTT__ << "compare Col #" << i++ << " " << srcCol << __E__;
+			i = 0;
+			for(auto& srcCol : needleView->getSourceColumnNames())
+				__COUTT__ << "source Col #" << i++ << " " << srcCol << __E__;
+		}
+
+		__COUTTV__(match);
 
 		// checking columnsInfo seems to be wrong approach, use getSourceColumnNames
 		// (above) 		auto viewColInfoIt =
@@ -373,19 +499,13 @@ TableVersion TableBase::checkForDuplicate(TableVersion needleVersion,
 				{
 					match = false;
 
-					//					__COUT__ << "Value name mismatch " << col << ":"
-					//							<<
-					//							viewPairReverseIterator->second.getDataView()[row][col]
-					//																			   << "[" <<
-					//																			   viewPairReverseIterator->second.getDataView()[row][col].size()
-					//																			   << "]" << 							" vs " <<
-					//																			   needleView->getDataView()[row][col] << "["
-					//																			   <<
-					//																			   needleView->getDataView()[row][col].size()
-					//																			   <<
-					//																			   "]"
-					//																			   <<
-					//																			   __E__;
+					__COUTT__
+					    << "Value name mismatch " << col << ":"
+					    << viewPairReverseIterator->second.getDataView()[row][col] << "["
+					    << viewPairReverseIterator->second.getDataView()[row][col].size()
+					    << "]"
+					    << " vs " << needleView->getDataView()[row][col] << "["
+					    << needleView->getDataView()[row][col].size() << "]" << __E__;
 
 					break;
 				}
