@@ -2880,7 +2880,7 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 		return;  // access failed
 
 	std::string fsmName       = CgiDataUtilities::getData(cgiIn, "fsmName");
-	std::string fsmWindowName = CgiDataUtilities::getData(cgiIn, "fsmWindowName");
+	std::string fsmWindowName = CgiDataUtilities::getOrPostData(cgiIn, "fsmWindowName");
 	fsmWindowName             = StringMacros::decodeURIComponent(fsmWindowName);
 	std::string currentState  = theStateMachine_.getCurrentStateName();
 
@@ -7949,7 +7949,12 @@ try
 						{
 							__SUP_SS__ << "Illegal missing remote icon definition for "
 							              "icon record UID '"
-							           << icon.recordUID_ << ".' Please notify admins."
+							           << icon.recordUID_
+							           << ".' If the corresponding subsystem should "
+							              "exist, perhaps Gateway Application Status "
+							              "Monitoring is disabled. It must be enabled "
+							              "for subsystem management. Please notify "
+							              "admins if the problem persists."
 							           << __E__;
 							__SUP_SS_THROW__;
 						}
