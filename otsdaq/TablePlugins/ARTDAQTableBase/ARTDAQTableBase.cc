@@ -170,18 +170,19 @@ std::string ARTDAQTableBase::getFlatFHICLFilename(ARTDAQAppType      type,
 }  // end getFlatFHICLFilename()
 
 //==============================================================================
-void ARTDAQTableBase::flattenFHICL(ARTDAQAppType type, const std::string& name,
-    std::string* returnFcl /* = nullptr */)
+void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
+                                   const std::string& name,
+                                   std::string*       returnFcl /* = nullptr */)
 {
 	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
 	__COUTS__(3) << "flattenFHICL()" << __ENV__("FHICL_FILE_PATH") << __E__;
-	__COUTVS__(4,StringMacros::stackTrace());
+	__COUTVS__(4, StringMacros::stackTrace());
 
 	std::string inFile  = getFHICLFilename(type, name);
 	std::string outFile = getFlatFHICLFilename(type, name);
 
-	__COUTVS__(3,inFile);
-	__COUTVS__(3,outFile);
+	__COUTVS__(3, inFile);
+	__COUTVS__(3, outFile);
 
 	cet::filepath_lookup_nonabsolute policy("FHICL_FILE_PATH");
 	fhicl::ParameterSet              pset;
@@ -194,33 +195,33 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType type, const std::string& name,
 		pset = fhicl::ParameterSet::make(inFile, policy);
 		__COUTT__ << "document: " << inFile << " parsed";
 		__COUTT__ << "got pset from table:";
-		
+
 		std::ofstream ofs{outFile};
 		if(!ofs)
 		{
-			__SS__ << "Failed to open fhicl output file '" << outFile << 
-				"!'" << __E__;
+			__SS__ << "Failed to open fhicl output file '" << outFile << "!'" << __E__;
 			__SS_THROW__;
 		}
 		std::ostringstream out;
 		ofs << pset.to_indented_string(
-		    0);  // , fhicl::detail::print_mode::annotated); // Only really useful for debugging		
+		    0);  // , fhicl::detail::print_mode::annotated); // Only really useful for debugging
 
 		if(returnFcl)
 		{
-			*returnFcl	= out.str();
-			__COUTVS__(21,returnFcl);
+			*returnFcl = out.str();
+			__COUTVS__(21, returnFcl);
 		}
 	}
 	catch(cet::exception const& e)
 	{
-		__SS__ << "Failed to parse fhicl into output file '" << outFile << 
-			"' - here is the error: " << e.what() << __E__;
+		__SS__ << "Failed to parse fhicl into output file '" << outFile
+		       << "' - here is the error: " << e.what() << __E__;
 		__SS_THROW__;
 	}
 
-	__COUTT__ << name << " Flatten Clock time = "
-		          << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
+	__COUTT__ << name
+	          << " Flatten Clock time = " << artdaq::TimeUtils::GetElapsedTime(startClock)
+	          << __E__;
 }  // end flattenFHICL()
 
 //==============================================================================
@@ -717,15 +718,15 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
     const ConfigurationTree& receiverNode,
     ARTDAQAppType            appType,
     size_t /*maxFragmentSizeBytes */ /* = DEFAULT_MAX_FRAGMENT_SIZE */,
-    size_t routingTimeoutMs /* = DEFAULT_ROUTING_TIMEOUT_MS */,
-    size_t routingRetryCount /* = DEFAULT_ROUTING_RETRY_COUNT */,
+    size_t       routingTimeoutMs /* = DEFAULT_ROUTING_TIMEOUT_MS */,
+    size_t       routingRetryCount /* = DEFAULT_ROUTING_RETRY_COUNT */,
     std::string* returnFcl /* = nullptr */)
 {
 	std::string filename = getFHICLFilename(appType, receiverNode.getValue());
 
 	/////////////////////////
 	// generate xdaq run parameter file
-	std::fstream outf;
+	std::fstream       outf;
 	std::ostringstream out;
 
 	std::string tabStr     = "";
@@ -903,7 +904,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 	if(returnFcl)
 	{
 		*returnFcl = out.str();
-		__COUTVS__(21,*returnFcl);
+		__COUTVS__(21, *returnFcl);
 	}
 	outf << out.str();
 	outf.close();
@@ -2054,13 +2055,14 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 
 				if(doWriteFHiCL)
 				{
-					std::string returnFclWithoutProcessName; 
-					outputDataReceiverFHICL(builder.second,
-					                        ARTDAQAppType::EventBuilder,
-					                        maxFragmentSizeBytes,
-											DEFAULT_ROUTING_TIMEOUT_MS,
-											DEFAULT_ROUTING_RETRY_COUNT,
-											builders.size()?&returnFclWithoutProcessName:nullptr);
+					std::string returnFclWithoutProcessName;
+					outputDataReceiverFHICL(
+					    builder.second,
+					    ARTDAQAppType::EventBuilder,
+					    maxFragmentSizeBytes,
+					    DEFAULT_ROUTING_TIMEOUT_MS,
+					    DEFAULT_ROUTING_RETRY_COUNT,
+					    builders.size() ? &returnFclWithoutProcessName : nullptr);
 
 					if(lastBuilderFcl == returnFclWithoutProcessName)
 					{

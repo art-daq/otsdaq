@@ -1,7 +1,7 @@
 #include "otsdaq/Macros/TablePluginMacros.h"
 #include "otsdaq/TablePlugins/ARTDAQEventBuilderTable.h"
 
-#include <fstream>   // for std::ofstream
+#include <fstream>  // for std::ofstream
 
 using namespace ots;
 
@@ -60,45 +60,47 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 	// handle fcl file generation, wherever the level of this table
 
 	auto builders = lastConfigManager_->getNode(ARTDAQTableBase::getTableName())
-	                   .getChildren(
-	                       /*default filterMap*/ std::map<std::string /*relative-path*/,
-	                                                      std::string /*value*/>(),
-	                       /*default byPriority*/ false,
-	                       /*TRUE! onlyStatusTrue*/ true);
+	                    .getChildren(
+	                        /*default filterMap*/ std::map<std::string /*relative-path*/,
+	                                                       std::string /*value*/>(),
+	                        /*default byPriority*/ false,
+	                        /*TRUE! onlyStatusTrue*/ true);
 
-	std::string lastBuilderFcl[2], flattenedLastFclParts[2];	
+	std::string lastBuilderFcl[2], flattenedLastFclParts[2];
 	for(auto& builder : builders)
 	{
-		std::string returnFcl, processName; 
-		bool needToFlatten = true;
-		bool captureAsLastFcl = builders.size() && //init to true if multiple builders left to handle
-			(&builder != &builders.back()); 
+		std::string returnFcl, processName;
+		bool        needToFlatten = true;
+		bool        captureAsLastFcl =
+		    builders.size() &&  //init to true if multiple builders left to handle
+		    (&builder != &builders.back());
 		outputDataReceiverFHICL(builder.second,
-								ARTDAQAppType::EventBuilder,
-								DEFAULT_MAX_FRAGMENT_SIZE,
-								DEFAULT_ROUTING_TIMEOUT_MS,
-								DEFAULT_ROUTING_RETRY_COUNT,
-								captureAsLastFcl?&returnFcl:nullptr);
+		                        ARTDAQAppType::EventBuilder,
+		                        DEFAULT_MAX_FRAGMENT_SIZE,
+		                        DEFAULT_ROUTING_TIMEOUT_MS,
+		                        DEFAULT_ROUTING_RETRY_COUNT,
+		                        captureAsLastFcl ? &returnFcl : nullptr);
 
 		//Speed-up Philosophy:
 		// flattenFHICL is expensive, so try to identify multinodes with fcl that only differ by process_name,
 		//	i.e., ignore starting comments and process name, then compare fcl.
 		//	Note: not much gain for any other node types but Event Builders, which tend to only differ by process_name in their fcl
-		
-		auto cmi = returnFcl.find("#	otsdaq-ARTDAQ builder UID:"); //find starting comments
+
+		auto cmi =
+		    returnFcl.find("#	otsdaq-ARTDAQ builder UID:");  //find starting comments
 		if(cmi != std::string::npos)
 			cmi = returnFcl.find('\n', cmi);
 		if(cmi != std::string::npos)
 		{
 			size_t pnj = std::string::npos;
-			auto pni = returnFcl.find("\tprocess_name: ", cmi); //find process name
+			auto   pni = returnFcl.find("\tprocess_name: ", cmi);  //find process name
 			if(pni != std::string::npos)
 				pnj = returnFcl.find('\n', pni);
 			if(pnj != std::string::npos)
 			{
 				processName = returnFcl.substr(pni, pnj - pni);
 				__COUT__ << "Found process name = " << processName << __E__;
-				
+
 				bool sameFirst = false;
 				//check before process name (ignoring comments)
 				std::string newPiece = returnFcl.substr(cmi, pni - cmi);
@@ -107,24 +109,26 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 					__COUT__ << "Same first fcl" << __E__;
 					sameFirst = true;
 				}
-				else if (TTEST(20))
+				else if(TTEST(20))
 				{
-					__COUTVS__(20,lastBuilderFcl[0]);
-					__COUTVS__(20,newPiece);
-					for(size_t i=0,j=0;i<lastBuilderFcl[0].size() && j<newPiece.size();++i,++j)
+					__COUTVS__(20, lastBuilderFcl[0]);
+					__COUTVS__(20, newPiece);
+					for(size_t i = 0, j = 0;
+					    i < lastBuilderFcl[0].size() && j < newPiece.size();
+					    ++i, ++j)
 					{
 						if(lastBuilderFcl[0][i] != newPiece[j])
 						{
-							__COUTVS__(20,i);
-							__COUTVS__(20,j);
-							__COUTVS__(20,lastBuilderFcl[0].substr(i,30));
-							__COUTVS__(20,newPiece.substr(j,30));
+							__COUTVS__(20, i);
+							__COUTVS__(20, j);
+							__COUTVS__(20, lastBuilderFcl[0].substr(i, 30));
+							__COUTVS__(20, newPiece.substr(j, 30));
 							break;
 						}
 					}
 				}
-				if(captureAsLastFcl) //if more, save piece
-					lastBuilderFcl[0] = newPiece;  
+				if(captureAsLastFcl)  //if more, save piece
+					lastBuilderFcl[0] = newPiece;
 
 				//check after process name
 				newPiece = returnFcl.substr(pnj);
@@ -133,54 +137,58 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 					__COUT__ << "Same second fcl" << __E__;
 					if(sameFirst)
 					{
-						__COUT__ << "Found fcl match! Reuse for " << builder.first << __E__;
-						captureAsLastFcl = false; //do not overwrite current last fcl now!	
-						needToFlatten = false;					
+						__COUT__ << "Found fcl match! Reuse for " << builder.first
+						         << __E__;
+						captureAsLastFcl =
+						    false;  //do not overwrite current last fcl now!
+						needToFlatten = false;
 
 						//do rapid flatten here
-						std::string outFile = getFlatFHICLFilename(ARTDAQAppType::EventBuilder, builder.second.getValue());
-						__COUTVS__(3,outFile);
+						std::string outFile = getFlatFHICLFilename(
+						    ARTDAQAppType::EventBuilder, builder.second.getValue());
+						__COUTVS__(3, outFile);
 						std::ofstream ofs{outFile};
 						if(!ofs)
 						{
-							__SS__ << "Failed to open fhicl output file '" << outFile << 
-								"!'" << __E__;
+							__SS__ << "Failed to open fhicl output file '" << outFile
+							       << "!'" << __E__;
 							__SS_THROW__;
 						}
-						ofs << flattenedLastFclParts[0] << "process_name: \"" << processName << "\"" << flattenedLastFclParts[1];
+						ofs << flattenedLastFclParts[0] << "process_name: \""
+						    << processName << "\"" << flattenedLastFclParts[1];
 					}
 				}
-				if(captureAsLastFcl) //if interesting for more, save piece
-					lastBuilderFcl[1] = newPiece;  
+				if(captureAsLastFcl)  //if interesting for more, save piece
+					lastBuilderFcl[1] = newPiece;
 			}
 		}
-
 
 		// ARTDAQTableBase::outputDataReceiverFHICL(
 		//     builder.second, ARTDAQTableBase::ARTDAQAppType::EventBuilder);
 		if(needToFlatten)
 			ARTDAQTableBase::flattenFHICL(ARTDAQAppType::EventBuilder,
-		                              builder.second.getValue(),
-									  captureAsLastFcl?&returnFcl:nullptr);
-		else 
+			                              builder.second.getValue(),
+			                              captureAsLastFcl ? &returnFcl : nullptr);
+		else
 			__COUT__ << "Skipping full flatten for " << builder.first << __E__;
 
 		//save parts without process name
 		if(captureAsLastFcl)
 		{
 			size_t pnj = std::string::npos;
-			auto pni = returnFcl.find("\tprocess_name: "); //find process name
+			auto   pni = returnFcl.find("\tprocess_name: ");  //find process name
 			if(pni != std::string::npos)
 				pnj = returnFcl.find('\n', pni);
 			if(pnj != std::string::npos)
 			{
-				__COUT__ << "Found flattened process name = " << returnFcl.substr(pni, pnj - pni) <<
-					" at pos " << pni << " of " << returnFcl.size() << __E__;
-				flattenedLastFclParts[0] = returnFcl.substr(0, pni);				
+				__COUT__ << "Found flattened process name = "
+				         << returnFcl.substr(pni, pnj - pni) << " at pos " << pni
+				         << " of " << returnFcl.size() << __E__;
+				flattenedLastFclParts[0] = returnFcl.substr(0, pni);
 				flattenedLastFclParts[1] = returnFcl.substr(pnj);
 			}
 		}
-	} //end builder fcl handling loop
+	}  //end builder fcl handling loop
 	__COUTS__(3) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
 }  // end init()
 
