@@ -41,6 +41,7 @@ include(otsdaq::configInterface)
 cet_build_plugin(Database otsdaq::configInterface
 LIBRARIES REG
 artdaq-database::ConfigurationDB
+otsdaq::XmlUtilities
 PRIVATE
 artdaq-database::ConfigurationDB
 )
