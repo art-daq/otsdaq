@@ -87,7 +87,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	static const std::string& 				getTypeString				(ARTDAQAppType type);
 	static std::string        				getFHICLFilename			(ARTDAQAppType type, const std::string& name);
 	static std::string        				getFlatFHICLFilename		(ARTDAQAppType type, const std::string& name);
-	static void        						flattenFHICL				(ARTDAQAppType type, const std::string& name);
+	static void        						flattenFHICL				(ARTDAQAppType type, const std::string& name, std::string* returnFcl = nullptr);
 
 	static void        						insertParameters			(std::ostream&      out,
 																		 std::string&       tabStr,
@@ -112,7 +112,8 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 																		 ARTDAQAppType            appType,
 																		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
 																		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT);
+																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT,																		 
+																		 std::string*			  returnFcl = nullptr);
 
 	static void 							outputRoutingManagerFHICL	(const ConfigurationTree& routingManagerNode,
 																		 size_t                   routingTimeoutMs  = DEFAULT_ROUTING_TIMEOUT_MS,

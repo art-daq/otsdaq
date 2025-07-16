@@ -170,40 +170,57 @@ std::string ARTDAQTableBase::getFlatFHICLFilename(ARTDAQAppType      type,
 }  // end getFlatFHICLFilename()
 
 //==============================================================================
-void ARTDAQTableBase::flattenFHICL(ARTDAQAppType type, const std::string& name)
+void ARTDAQTableBase::flattenFHICL(ARTDAQAppType type, const std::string& name,
+    std::string* returnFcl /* = nullptr */)
 {
 	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
-	//__COUT__ << "flattenFHICL()" << __ENV__("FHICL_FILE_PATH") << __E__;
+	__COUTS__(3) << "flattenFHICL()" << __ENV__("FHICL_FILE_PATH") << __E__;
+	__COUTVS__(4,StringMacros::stackTrace());
 
 	std::string inFile  = getFHICLFilename(type, name);
 	std::string outFile = getFlatFHICLFilename(type, name);
 
-	//__COUTV__(inFile);
-	//__COUTV__(outFile);
+	__COUTVS__(3,inFile);
+	__COUTVS__(3,outFile);
 
 	cet::filepath_lookup_nonabsolute policy("FHICL_FILE_PATH");
 	fhicl::ParameterSet              pset;
 
 	try
 	{
-		TLOG(TLVL_INFO) << "parsing document: " << inFile;
+		__COUT_INFO__ << "parsing document: " << inFile;
 		// tbl = fhicl::parse_document(inFile, policy);
 		// pset = fhicl::ParameterSet::make(tbl);
 		pset = fhicl::ParameterSet::make(inFile, policy);
-		TLOG(TLVL_TRACE) << "document: " << inFile << " parsed";
-		TLOG(TLVL_TRACE) << "got pset from table:";
-
+		__COUTT__ << "document: " << inFile << " parsed";
+		__COUTT__ << "got pset from table:";
+		
 		std::ofstream ofs{outFile};
+		if(!ofs)
+		{
+			__SS__ << "Failed to open fhicl output file '" << outFile << 
+				"!'" << __E__;
+			__SS_THROW__;
+		}
+		std::ostringstream out;
 		ofs << pset.to_indented_string(
-		    0);  // , fhicl::detail::print_mode::annotated); // Only really useful for debugging
-		__COUTT__ << name << " Flatten Clock time = "
-		          << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
+		    0);  // , fhicl::detail::print_mode::annotated); // Only really useful for debugging		
+
+		if(returnFcl)
+		{
+			*returnFcl	= out.str();
+			__COUTVS__(21,returnFcl);
+		}
 	}
 	catch(cet::exception const& e)
 	{
-		__SS__ << "Failed to parse fhicl: " << e.what() << __E__;
+		__SS__ << "Failed to parse fhicl into output file '" << outFile << 
+			"' - here is the error: " << e.what() << __E__;
 		__SS_THROW__;
 	}
+
+	__COUTT__ << name << " Flatten Clock time = "
+		          << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
 }  // end flattenFHICL()
 
 //==============================================================================
@@ -694,25 +711,28 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 
 //==============================================================================
 /// outputDataReceiverFHICL
-///	Note: currently selfRank and selfPort are unused by artdaq fcl
+///	 Note: currently selfRank and selfPort are unused by artdaq fcl.
+///  Could use returnFcl to compare if two nodes have the same fcl.
 void ARTDAQTableBase::outputDataReceiverFHICL(
     const ConfigurationTree& receiverNode,
     ARTDAQAppType            appType,
     size_t /*maxFragmentSizeBytes */ /* = DEFAULT_MAX_FRAGMENT_SIZE */,
     size_t routingTimeoutMs /* = DEFAULT_ROUTING_TIMEOUT_MS */,
-    size_t routingRetryCount /* = DEFAULT_ROUTING_RETRY_COUNT */)
+    size_t routingRetryCount /* = DEFAULT_ROUTING_RETRY_COUNT */,
+    std::string* returnFcl /* = nullptr */)
 {
 	std::string filename = getFHICLFilename(appType, receiverNode.getValue());
 
 	/////////////////////////
 	// generate xdaq run parameter file
-	std::fstream out;
+	std::fstream outf;
+	std::ostringstream out;
 
 	std::string tabStr     = "";
 	std::string commentStr = "";
 
-	out.open(filename, std::fstream::out | std::fstream::trunc);
-	if(out.fail())
+	outf.open(filename, std::fstream::out | std::fstream::trunc);
+	if(outf.fail())
 	{
 		__SS__ << "Failed to open ARTDAQ fcl file: " << filename << __E__;
 		__SS_THROW__;
@@ -740,20 +760,21 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 		{
 			// create empty fcl
 			OUT << "{}\n\n";
-			out.close();
+			outf << out.str();
+			outf.close();
 			return;
 		}
 	}
 	catch(const std::runtime_error&)
 	{
-		//__COUT__ << "Ignoring error, assume this a valid UID node." << __E__;
+		__COUTT__ << "Ignoring error, assume this a valid UID node." << __E__;
 		// error is expected here for UIDs.. so just ignore
 		// this check is valuable if source node is a unique-Link node, rather than UID
 	}
 
 	//--------------------------------------
 	// handle preamble parameters
-	//_COUT__ << "Inserting preamble parameters..." << __E__;
+	__COUTT__ << "Inserting preamble parameters..." << __E__;
 	insertParameters(out,
 	                 tabStr,
 	                 commentStr,
@@ -764,7 +785,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 
 	//--------------------------------------
 	// handle daq
-	//__COUT__ << "Generating daq block..." << __E__;
+	__COUTT__ << "Generating daq block..." << __E__;
 	auto daq = receiverNode.getNode("daqLink");
 	if(!daq.isDisconnected())
 	{
@@ -796,7 +817,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 
 		//--------------------------------------
 		// handle ALL daq parameters
-		//__COUT__ << "Inserting DAQ Parameters..." << __E__;
+		__COUTT__ << "Inserting DAQ Parameters..." << __E__;
 		insertParameters(out,
 		                 tabStr,
 		                 commentStr,
@@ -832,7 +853,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 			OUT << "}\n";  // end routing_token_config
 		}
 
-		//__COUT__ << "Adding sources placeholder" << __E__;
+		__COUTT__ << "Adding sources placeholder" << __E__;
 		OUT << "sources: {\n"
 		    << "}\n\n";  // end sources
 
@@ -847,7 +868,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 
 	//--------------------------------------
 	// handle art
-	//__COUT__ << "Filling art block..." << __E__;
+	__COUTT__ << "Filling art block..." << __E__;
 	auto art = receiverNode.getNode(ARTDAQTableBase::colARTDAQNotReader_.colLinkToArt_);
 	if(!art.isDisconnected())
 	{
@@ -869,7 +890,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 
 	//--------------------------------------
 	// handle ALL add-on parameters
-	//__COUT__ << "Inserting add-on parameters" << __E__;
+	__COUTT__ << "Inserting add-on parameters" << __E__;
 	insertParameters(out,
 	                 tabStr,
 	                 commentStr,
@@ -878,8 +899,14 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 	                 false /*onlyInsertAtTableParameters*/,
 	                 true /*includeAtTableParameters*/);
 
-	//__COUT__ << "outputDataReceiverFHICL DONE" << __E__;
-	out.close();
+	__COUTT__ << "outputDataReceiverFHICL DONE" << __E__;
+	if(returnFcl)
+	{
+		*returnFcl = out.str();
+		__COUTVS__(21,*returnFcl);
+	}
+	outf << out.str();
+	outf.close();
 }  // end outputDataReceiverFHICL()
 
 //==============================================================================
@@ -1955,6 +1982,7 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 		std::vector<std::pair<std::string, ConfigurationTree>> builders =
 		    buildersLink.getChildren();
 
+		std::string lastBuilderFcl;
 		for(auto& builder : builders)
 		{
 			const std::string& builderUID = builder.first;
@@ -2026,9 +2054,20 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 
 				if(doWriteFHiCL)
 				{
+					std::string returnFclWithoutProcessName; 
 					outputDataReceiverFHICL(builder.second,
 					                        ARTDAQAppType::EventBuilder,
-					                        maxFragmentSizeBytes);
+					                        maxFragmentSizeBytes,
+											DEFAULT_ROUTING_TIMEOUT_MS,
+											DEFAULT_ROUTING_RETRY_COUNT,
+											builders.size()?&returnFclWithoutProcessName:nullptr);
+
+					if(lastBuilderFcl == returnFclWithoutProcessName)
+					{
+						__COUT__ << "Same fcl" << __E__;
+					}
+					if(builders.size())
+						lastBuilderFcl = returnFclWithoutProcessName;
 
 					flattenFHICL(ARTDAQAppType::EventBuilder, builder.second.getValue());
 				}
