@@ -69,6 +69,8 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 	std::string lastBuilderFcl[2], flattenedLastFclParts[2];
 	for(auto& builder : builders)
 	{
+		__COUTV__(builder.first);
+
 		std::string returnFcl, processName;
 		bool        needToFlatten = true;
 		bool        captureAsLastFcl =
@@ -95,7 +97,10 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 			size_t pnj = std::string::npos;
 			auto   pni = returnFcl.find("\tprocess_name: ", cmi);  //find process name
 			if(pni != std::string::npos)
+			{
+				pni += std::string("\tprocess_name: ").size();  //move past field name
 				pnj = returnFcl.find('\n', pni);
+			}
 			if(pnj != std::string::npos)
 			{
 				processName = returnFcl.substr(pni, pnj - pni);
@@ -136,8 +141,10 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 				if(lastBuilderFcl[0].size() && lastBuilderFcl[1] == newPiece)
 				{
 					__COUT__ << "Same second fcl" << __E__;
-					if(sameFirst)
+					if(sameFirst)  //found opportunity for shortcut-to-flatten!
 					{
+						std::chrono::steady_clock::time_point startClock =
+						    std::chrono::steady_clock::now();
 						__COUT__ << "Found fcl match! Reuse for " << builder.first
 						         << __E__;
 						captureAsLastFcl =
@@ -146,7 +153,7 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 
 						//do rapid flatten here
 						std::string outFile = getFlatFHICLFilename(
-						    ARTDAQAppType::EventBuilder, builder.second.getValue());
+						    ARTDAQAppType::EventBuilder, builder.first);
 						__COUTVS__(3, outFile);
 						std::ofstream ofs{outFile};
 						if(!ofs)
@@ -157,7 +164,11 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 						}
 						ofs << flattenedLastFclParts[0] << "process_name: \""
 						    << processName << "\"" << flattenedLastFclParts[1];
-					}
+						__COUTT__ << builder.first << " Flatten Clock time = "
+						          << artdaq::TimeUtils::GetElapsedTime(startClock)
+						          << __E__;
+						continue;  //done with shortcut-to-flatten
+					}              //end shortcut-to-flatten handling
 				}
 				if(captureAsLastFcl)  //if interesting for more, save piece
 					lastBuilderFcl[1] = newPiece;
@@ -166,7 +177,7 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 
 		if(needToFlatten)
 			ARTDAQTableBase::flattenFHICL(ARTDAQAppType::EventBuilder,
-			                              builder.second.getValue(),
+			                              builder.first,
 			                              captureAsLastFcl ? &returnFcl : nullptr);
 		else
 			__COUT__ << "Skipping full flatten for " << builder.first << __E__;
@@ -186,9 +197,10 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 			}
 			if(pnj != std::string::npos)
 			{
-				__COUT__ << "Found flattened process name = "
-				         << returnFcl.substr(pni, pnj - pni) << " at pos " << pni
-				         << " of " << returnFcl.size() << __E__;
+				__COUT__
+				    << "Found flattened '"  //Note: returnFcl.substr(pni, pnj - pni) includes "process_name:"
+				    << returnFcl.substr(pni, pnj - pni) << "' at pos " << pni << " of "
+				    << returnFcl.size() << __E__;
 				flattenedLastFclParts[0] = returnFcl.substr(0, pni);
 				flattenedLastFclParts[1] = returnFcl.substr(pnj);
 			}

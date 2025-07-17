@@ -203,14 +203,14 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 			__SS_THROW__;
 		}
 		std::ostringstream out;
-		ofs << pset.to_indented_string(
+		out << pset.to_indented_string(
 		    0);  // , fhicl::detail::print_mode::annotated); // Only really useful for debugging
-
 		if(returnFcl)
 		{
 			*returnFcl = out.str();
 			__COUTVS__(21, returnFcl);
 		}
+		ofs << out.str();
 	}
 	catch(cet::exception const& e)
 	{
