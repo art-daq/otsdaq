@@ -112,7 +112,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 																		 ARTDAQAppType            appType,
 																		 size_t                   maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
 																		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
-																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT,																		 
+																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT,
 																		 std::string*			  returnFcl = nullptr);
 
 	static void 							outputRoutingManagerFHICL	(const ConfigurationTree& routingManagerNode,

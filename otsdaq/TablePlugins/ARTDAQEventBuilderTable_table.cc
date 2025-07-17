@@ -104,7 +104,7 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 				bool sameFirst = false;
 				//check before process name (ignoring comments)
 				std::string newPiece = returnFcl.substr(cmi, pni - cmi);
-				if(flattenedLastFclParts[0].size() && 
+				if(flattenedLastFclParts[0].size() &&
 					lastBuilderFcl[0].size() && lastBuilderFcl[0] == newPiece)
 				{
 					__COUT__ << "Same first fcl" << __E__;
