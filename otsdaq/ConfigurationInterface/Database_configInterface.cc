@@ -314,20 +314,7 @@ try
 
 	__COUTTV__(StringMacros::setToString(resultSet));
 
-	//	auto to_set = [](auto const& inputList)
-	//	{
-	//		auto resultSet = std::set<TableVersion>{};
-	//		std::for_each(inputList.begin(), inputList.end(),
-	//				[&resultSet](std::string const& version)
-	//				{ resultSet.insert(std::stol(version, 0, 10)); });
-	//		return resultSet;
-	//	};
-
-	// auto vs = to_set(result);
-	// for(auto &v:vs)
-	//	__COUT__ << "\tversion " << v << __E__;
-
-	return resultSet;  // to_set(result);
+	return resultSet;
 }  //end getVersions()
 catch(std::exception const& e)
 {
