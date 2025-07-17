@@ -1984,7 +1984,7 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 						    << groupMetadataTable_ << "(" << newVersion
 						    << "), trying incremented table version... retries="
 						    << retries << __E__;
-						if(++retries > 0)  //give up
+						if(++retries > 3)  //give up
 							throw;
 						newVersion = TableVersion::getNextVersion(
 						    newVersion);  //increment table version
@@ -2036,7 +2036,7 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 						    << "(" << newKey
 						    << "), trying incremented group key... retries=" << retries
 						    << __E__;
-						if(++retries > 0)  //give up
+						if(++retries > 3)  //give up
 							throw;
 						newKey = TableGroupKey::getNextKey(newKey);  //increment group key
 						__GEN_COUT__ << "New Key for group: " << groupName << " found as "

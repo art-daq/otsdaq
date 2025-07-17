@@ -214,7 +214,7 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
 					{
 						__COUTT__ << "Mismatch at preSaveJSON[" << prec
 						          << "] != postSaveJSON[" << postc << "] ... "
-						          << preSaveJSON[prec] << " != " << postSaveJSON[postc]
+						          << preSaveJSON.substr(prec,30) << " != " << postSaveJSON.substr(postc,30)
 						          << __E__;
 						same = false;
 						break;
@@ -311,6 +311,8 @@ try
 	auto resultSet = std::set<TableVersion>{};
 	for(std::string const& version : result)
 		resultSet.insert(TableVersion(std::stol(version, 0, 10)));
+		
+	__COUTTV__(StringMacros::setToString(resultSet));
 
 	//	auto to_set = [](auto const& inputList)
 	//	{
