@@ -104,8 +104,8 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 				bool sameFirst = false;
 				//check before process name (ignoring comments)
 				std::string newPiece = returnFcl.substr(cmi, pni - cmi);
-				if(flattenedLastFclParts[0].size() &&
-					lastBuilderFcl[0].size() && lastBuilderFcl[0] == newPiece)
+				if(flattenedLastFclParts[0].size() && lastBuilderFcl[0].size() &&
+				   lastBuilderFcl[0] == newPiece)
 				{
 					__COUT__ << "Same first fcl" << __E__;
 					sameFirst = true;
@@ -180,10 +180,8 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 			if(pni != std::string::npos)
 			{
 				//enforce white space before process name
-				if(pni && (returnFcl[pni-1] == ' ' ||
-				returnFcl[pni-1] == '\n' ||
-				returnFcl[pni-1] == '\t'
-				))
+				if(pni && (returnFcl[pni - 1] == ' ' || returnFcl[pni - 1] == '\n' ||
+				           returnFcl[pni - 1] == '\t'))
 					pnj = returnFcl.find('\n', pni);
 			}
 			if(pnj != std::string::npos)
@@ -196,7 +194,8 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 			}
 			else
 			{
-				__COUT_WARN__ << "Failed to capture fcl for " << processName << "!" << __E__;
+				__COUT_WARN__ << "Failed to capture fcl for " << processName << "!"
+				              << __E__;
 			}
 		}
 	}  //end builder fcl handling loop
