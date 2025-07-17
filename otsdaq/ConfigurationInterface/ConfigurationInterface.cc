@@ -82,9 +82,7 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase*   table,
 {
 	if(!temporaryVersion.isTemporaryVersion() || !table->isStored(temporaryVersion))
 	{
-		std::cout << __COUT_HDR_FL__
-		          << "Invalid temporary version number: " << temporaryVersion
-		          << std::endl;
+		__COUT__ << "Invalid temporary version number: " << temporaryVersion << std::endl;
 		return TableVersion();  // return INVALID
 	}
 
@@ -95,19 +93,25 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase*   table,
 	bool rewriteableExists = false;
 
 	std::set<TableVersion> versions = getVersions(table);
+	__COUTTV__(StringMacros::setToString(versions));
 	if(newVersion == TableVersion::INVALID)
 	{
+		if(versions.size())
+			__COUTTV__(*(versions.rbegin()));
+		if(versions.size() > 1)
+			__COUTTV__(*(++versions.rbegin()));
+
 		if(versions
 		       .size() &&  // 1 more than last version, if any non-scratch versions exist
 		   *(versions.rbegin()) != TableVersion(TableVersion::SCRATCH))
 			newVersion = TableVersion::getNextVersion(*(versions.rbegin()));
 		else if(versions.size() >
 		        1)  // if scratch exists, take 1 more than second to last version
-			newVersion = TableVersion::getNextVersion(*(--(versions.rbegin())));
+			newVersion = TableVersion::getNextVersion(
+			    *(++(versions.rbegin())));  //NOTE: ++ is reverse for a reverse_iterator!!
 		else
 			newVersion = TableVersion::DEFAULT;
-		std::cout << __COUT_HDR_FL__ << "Next available version number is " << newVersion
-		          << std::endl;
+		__COUT__ << "Next available version number is " << newVersion << std::endl;
 		//
 		//		//for sanity check, compare with config's idea of next version
 		//		TableVersion baseNextVersion = table->getNextVersion();
@@ -120,21 +124,18 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase*   table,
 	}
 	else if(versions.find(newVersion) != versions.end())
 	{
-		std::cout << __COUT_HDR_FL__ << "newVersion(" << newVersion << ") already exists!"
-		          << std::endl;
+		__COUT__ << "newVersion(" << newVersion << ") already exists!" << std::endl;
 		rewriteableExists = newVersion == TableVersion::SCRATCH;
 
 		// throw error if version already exists and this is not the rewriteable version
 		if(!rewriteableExists || ConfigurationInterface::isVersionTrackingEnabled())
 		{
 			__SS__ << ("New version already exists!") << std::endl;
-			std::cout << __COUT_HDR_FL__ << ss.str();
 			__SS_THROW__;
 		}
 	}
 
-	std::cout << __COUT_HDR_FL__ << "Version number to save is " << newVersion
-	          << std::endl;
+	__COUT__ << "Version number to save is " << newVersion << std::endl;
 
 	// copy to new version
 	table->changeVersionAndActivateView(temporaryVersion, newVersion);
@@ -142,8 +143,41 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase*   table,
 	// save to disk
 	//	only allow overwrite if version tracking is disabled AND the rewriteable version
 	//		already exists.
-	saveActiveVersion(
-	    table, !ConfigurationInterface::isVersionTrackingEnabled() && rewriteableExists);
+	bool overwrite =
+	    !ConfigurationInterface::isVersionTrackingEnabled() && rewriteableExists;
+	uint16_t retries   = overwrite ? 4 : 0;  //only allow retries if not overwriting
+	auto     tableView = table->getViewP();
+	while(1)
+	{
+		try
+		{
+			saveActiveVersion(table, overwrite);
+		}
+		catch(const std::runtime_error& e)
+		{
+			__COUT__ << "Caught runtime_error exception during table save." << __E__;
+			if(std::string(e.what()).find("there was a collision") != std::string::npos)
+			{
+				__COUT_WARN__ << "There was a collision saving the new table "
+				              << *tableView << "(" << newVersion
+				              << "), trying incremented table version... retries="
+				              << retries << __E__;
+				if(++retries > 3)  //give up
+					throw;
+				newVersion =
+				    TableVersion::getNextVersion(newVersion);  //increment table version
+				tableView->setVersion(newVersion);
+				__COUT__ << "New version for table: " << *tableView << " found as "
+				         << newVersion << __E__;
+				continue;
+			}
+			else
+				throw;
+		}
+
+		__COUT__ << "Created table: " << *tableView << "-v" << newVersion << __E__;
+		break;
+	}  //end collission retry loop
 
 	return newVersion;
 }  //end saveNewVersion()
