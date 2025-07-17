@@ -104,7 +104,8 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 				bool sameFirst = false;
 				//check before process name (ignoring comments)
 				std::string newPiece = returnFcl.substr(cmi, pni - cmi);
-				if(lastBuilderFcl[0].size() && lastBuilderFcl[0] == newPiece)
+				if(flattenedLastFclParts[0].size() && 
+					lastBuilderFcl[0].size() && lastBuilderFcl[0] == newPiece)
 				{
 					__COUT__ << "Same first fcl" << __E__;
 					sameFirst = true;
@@ -163,8 +164,6 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 			}
 		}
 
-		// ARTDAQTableBase::outputDataReceiverFHICL(
-		//     builder.second, ARTDAQTableBase::ARTDAQAppType::EventBuilder);
 		if(needToFlatten)
 			ARTDAQTableBase::flattenFHICL(ARTDAQAppType::EventBuilder,
 			                              builder.second.getValue(),
@@ -173,12 +172,20 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 			__COUT__ << "Skipping full flatten for " << builder.first << __E__;
 
 		//save parts without process name
+		__COUTV__(captureAsLastFcl);
 		if(captureAsLastFcl)
 		{
 			size_t pnj = std::string::npos;
-			auto   pni = returnFcl.find("\tprocess_name: ");  //find process name
+			auto   pni = returnFcl.find("process_name:");  //find process name
 			if(pni != std::string::npos)
-				pnj = returnFcl.find('\n', pni);
+			{
+				//enforce white space before process name
+				if(pni && (returnFcl[pni-1] == ' ' ||
+				returnFcl[pni-1] == '\n' ||
+				returnFcl[pni-1] == '\t'
+				))
+					pnj = returnFcl.find('\n', pni);
+			}
 			if(pnj != std::string::npos)
 			{
 				__COUT__ << "Found flattened process name = "
@@ -186,6 +193,10 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 				         << " of " << returnFcl.size() << __E__;
 				flattenedLastFclParts[0] = returnFcl.substr(0, pni);
 				flattenedLastFclParts[1] = returnFcl.substr(pnj);
+			}
+			else
+			{
+				__COUT_WARN__ << "Failed to capture fcl for " << processName << "!" << __E__;
 			}
 		}
 	}  //end builder fcl handling loop
