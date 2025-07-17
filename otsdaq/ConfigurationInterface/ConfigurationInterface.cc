@@ -164,8 +164,8 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase*   table,
 				              << retries << __E__;
 				if(++retries > 3)  //give up
 					throw;
-				// newVersion = TableVersion::getNextVersion(
-				// 	newVersion);  //increment table version
+				newVersion = TableVersion::getNextVersion(
+					newVersion);  //increment table version
 				tableView->setVersion(newVersion);
 				__COUT__ << "New version for table: " << *tableView << " found as "
 				         << newVersion << __E__;
