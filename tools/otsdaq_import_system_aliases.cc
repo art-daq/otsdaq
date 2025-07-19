@@ -629,7 +629,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 							    << *cfgView << "(" << newVersion
 							    << "), trying incremented table version... retries="
 							    << retries << __E__;
-							if(++retries > 10)  //give up
+							if(++retries > 3)  //give up
 								throw;
 							newVersion = TableVersion::getNextVersion(
 							    newVersion);  //increment table version
@@ -725,7 +725,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 						              << groupMetadataTable << "(" << newVersion
 						              << "), trying incremented table version... retries="
 						              << retries << __E__;
-						if(++retries > 10)  //give up
+						if(++retries > 3)  //give up
 							throw;
 						newVersion = TableVersion::getNextVersion(
 						    newVersion);  //increment table version
@@ -778,7 +778,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 						    << groupPair.first.first << "(" << newKey
 						    << "), trying incremented group key... retries=" << retries
 						    << __E__;
-						if(++retries > 10)  //give up
+						if(++retries > 3)  //give up
 							throw;
 						newKey = TableGroupKey::getNextKey(newKey);  //increment group key
 						__COUT__ << "New Key for group: " << groupPair.first.first
@@ -1025,7 +1025,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 					    << "(" << newVersion
 					    << "), trying incremented table version... retries=" << retries
 					    << __E__;
-					if(++retries > 10)  //give up
+					if(++retries > 3)  //give up
 						throw;
 					newVersion = TableVersion::getNextVersion(
 					    newVersion);  //increment table version
@@ -1077,7 +1077,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 					    << "(" << newVersion
 					    << "), trying incremented table version... retries=" << retries
 					    << __E__;
-					if(++retries > 10)  //give up
+					if(++retries > 3)  //give up
 						throw;
 					newVersion = TableVersion::getNextVersion(
 					    newVersion);  //increment table version
@@ -1131,7 +1131,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 					    << activeBackboneGroupName << "(" << newKey
 					    << "), trying incremented group key... retries=" << retries
 					    << __E__;
-					if(++retries > 10)  //give up
+					if(++retries > 3)  //give up
 						throw;
 					newKey = TableGroupKey::getNextKey(newKey);  //increment group key
 					__COUT__ << "New Key for group: " << activeBackboneGroupName
