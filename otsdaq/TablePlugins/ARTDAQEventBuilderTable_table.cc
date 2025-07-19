@@ -66,7 +66,9 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 	                        /*default byPriority*/ false,
 	                        /*TRUE! onlyStatusTrue*/ true);
 
-	std::string lastBuilderFcl[2], flattenedLastFclParts[2]; //same handling as otsdaq/otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.cc:1986
+	std::string lastBuilderFcl[2],
+	    flattenedLastFclParts
+	        [2];  //same handling as otsdaq/otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.cc:1986
 	for(auto& builder : builders)
 	{
 		const std::string& builderUID = builder.first;
@@ -146,15 +148,14 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 					{
 						std::chrono::steady_clock::time_point startClock =
 						    std::chrono::steady_clock::now();
-						__COUT__ << "Found fcl match! Reuse for " << builderUID
-						         << __E__;
+						__COUT__ << "Found fcl match! Reuse for " << builderUID << __E__;
 						captureAsLastFcl =
 						    false;  //do not overwrite current last fcl now!
 						needToFlatten = false;
 
 						//do rapid flatten here
-						std::string outFile = getFlatFHICLFilename(
-						    ARTDAQAppType::EventBuilder, builderUID);
+						std::string outFile =
+						    getFlatFHICLFilename(ARTDAQAppType::EventBuilder, builderUID);
 						__COUTVS__(3, outFile);
 						std::ofstream ofs{outFile};
 						if(!ofs)
