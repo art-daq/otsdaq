@@ -66,10 +66,11 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 	                        /*default byPriority*/ false,
 	                        /*TRUE! onlyStatusTrue*/ true);
 
-	std::string lastBuilderFcl[2], flattenedLastFclParts[2];
+	std::string lastBuilderFcl[2], flattenedLastFclParts[2]; //same handling as otsdaq/otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.cc:1986
 	for(auto& builder : builders)
 	{
-		__COUTV__(builder.first);
+		const std::string& builderUID = builder.first;
+		__COUTV__(builderUID);
 
 		std::string returnFcl, processName;
 		bool        needToFlatten = true;
@@ -145,7 +146,7 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 					{
 						std::chrono::steady_clock::time_point startClock =
 						    std::chrono::steady_clock::now();
-						__COUT__ << "Found fcl match! Reuse for " << builder.first
+						__COUT__ << "Found fcl match! Reuse for " << builderUID
 						         << __E__;
 						captureAsLastFcl =
 						    false;  //do not overwrite current last fcl now!
@@ -153,7 +154,7 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 
 						//do rapid flatten here
 						std::string outFile = getFlatFHICLFilename(
-						    ARTDAQAppType::EventBuilder, builder.first);
+						    ARTDAQAppType::EventBuilder, builderUID);
 						__COUTVS__(3, outFile);
 						std::ofstream ofs{outFile};
 						if(!ofs)
@@ -164,7 +165,7 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 						}
 						ofs << flattenedLastFclParts[0] << "process_name: \""
 						    << processName << "\"" << flattenedLastFclParts[1];
-						__COUTT__ << builder.first << " Flatten Clock time = "
+						__COUTT__ << builderUID << " Flatten Clock time = "
 						          << artdaq::TimeUtils::GetElapsedTime(startClock)
 						          << __E__;
 						continue;  //done with shortcut-to-flatten
@@ -177,10 +178,10 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 
 		if(needToFlatten)
 			ARTDAQTableBase::flattenFHICL(ARTDAQAppType::EventBuilder,
-			                              builder.first,
+			                              builderUID,
 			                              captureAsLastFcl ? &returnFcl : nullptr);
 		else
-			__COUT__ << "Skipping full flatten for " << builder.first << __E__;
+			__COUT__ << "Skipping full flatten for " << builderUID << __E__;
 
 		//save parts without process name
 		__COUTV__(captureAsLastFcl);

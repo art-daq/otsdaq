@@ -1983,10 +1983,11 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 		std::vector<std::pair<std::string, ConfigurationTree>> builders =
 		    buildersLink.getChildren();
 
-		std::string lastBuilderFcl;
+		std::string lastBuilderFcl[2], flattenedLastFclParts[2]; //same handling as otsdaq/otsdaq/TablePlugins/ARTDAQEventBuilderTable_table.cc:69
 		for(auto& builder : builders)
 		{
 			const std::string& builderUID = builder.first;
+			__COUTV__(builderUID);
 
 			if(getStatusFalseNodes || builder.second.status())
 			{
@@ -2055,24 +2056,147 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 
 				if(doWriteFHiCL)
 				{
-					std::string returnFclWithoutProcessName;
+					std::string returnFcl, processName;
+					bool        needToFlatten = true;
+					bool        captureAsLastFcl =
+						builders.size() &&  //init to true if multiple builders left to handle
+						(&builder != &builders.back());
 					outputDataReceiverFHICL(
 					    builder.second,
 					    ARTDAQAppType::EventBuilder,
 					    maxFragmentSizeBytes,
 					    DEFAULT_ROUTING_TIMEOUT_MS,
 					    DEFAULT_ROUTING_RETRY_COUNT,
-					    builders.size() ? &returnFclWithoutProcessName : nullptr);
+						captureAsLastFcl ? &returnFcl : nullptr);
 
-					if(lastBuilderFcl == returnFclWithoutProcessName)
+					//Speed-up Philosophy:
+					// flattenFHICL is expensive, so try to identify multinodes with fcl that only differ by process_name,
+					//	i.e., ignore starting comments and process name, then compare fcl.
+					//	Note: not much gain for any other node types but Event Builders, which tend to only differ by process_name in their fcl
+
+					auto cmi =
+						returnFcl.find("#	otsdaq-ARTDAQ builder UID:");  //find starting comments
+					if(cmi != std::string::npos)
+						cmi = returnFcl.find('\n', cmi);
+					if(cmi != std::string::npos)
 					{
-						__COUT__ << "Same fcl" << __E__;
-					}
-					if(builders.size())
-						lastBuilderFcl = returnFclWithoutProcessName;
+						size_t pnj = std::string::npos;
+						auto   pni = returnFcl.find("\tprocess_name: ", cmi);  //find process name
+						if(pni != std::string::npos)
+						{
+							pni += std::string("\tprocess_name: ").size();  //move past field name
+							pnj = returnFcl.find('\n', pni);
+						}
+						if(pnj != std::string::npos)
+						{
+							processName = returnFcl.substr(pni, pnj - pni);
+							__COUT__ << "Found process name = " << processName << __E__;
 
-					flattenFHICL(ARTDAQAppType::EventBuilder, builder.second.getValue());
-				}
+							bool sameFirst = false;
+							//check before process name (ignoring comments)
+							std::string newPiece = returnFcl.substr(cmi, pni - cmi);
+							if(flattenedLastFclParts[0].size() && lastBuilderFcl[0].size() &&
+							lastBuilderFcl[0] == newPiece)
+							{
+								__COUT__ << "Same first fcl" << __E__;
+								sameFirst = true;
+							}
+							else if(TTEST(20))
+							{
+								__COUTVS__(20, lastBuilderFcl[0]);
+								__COUTVS__(20, newPiece);
+								for(size_t i = 0, j = 0;
+									i < lastBuilderFcl[0].size() && j < newPiece.size();
+									++i, ++j)
+								{
+									if(lastBuilderFcl[0][i] != newPiece[j])
+									{
+										__COUTVS__(20, i);
+										__COUTVS__(20, j);
+										__COUTVS__(20, lastBuilderFcl[0].substr(i, 30));
+										__COUTVS__(20, newPiece.substr(j, 30));
+										break;
+									}
+								}
+							}
+							if(captureAsLastFcl)  //if more, save piece
+								lastBuilderFcl[0] = newPiece;
+
+							//check after process name
+							newPiece = returnFcl.substr(pnj);
+							if(lastBuilderFcl[0].size() && lastBuilderFcl[1] == newPiece)
+							{
+								__COUT__ << "Same second fcl" << __E__;
+								if(sameFirst)  //found opportunity for shortcut-to-flatten!
+								{
+									std::chrono::steady_clock::time_point startClock =
+										std::chrono::steady_clock::now();
+									__COUT__ << "Found fcl match! Reuse for " << builderUID
+											<< __E__;
+									captureAsLastFcl =
+										false;  //do not overwrite current last fcl now!
+									needToFlatten = false;
+
+									//do rapid flatten here
+									std::string outFile = getFlatFHICLFilename(
+										ARTDAQAppType::EventBuilder, builderUID);
+									__COUTVS__(3, outFile);
+									std::ofstream ofs{outFile};
+									if(!ofs)
+									{
+										__SS__ << "Failed to open fhicl output file '" << outFile
+											<< "!'" << __E__;
+										__SS_THROW__;
+									}
+									ofs << flattenedLastFclParts[0] << "process_name: \""
+										<< processName << "\"" << flattenedLastFclParts[1];
+									__COUTT__ << builderUID << " Flatten Clock time = "
+											<< artdaq::TimeUtils::GetElapsedTime(startClock)
+											<< __E__;
+									continue;  //done with shortcut-to-flatten
+								}              //end shortcut-to-flatten handling
+							}
+							if(captureAsLastFcl)  //if interesting for more, save piece
+								lastBuilderFcl[1] = newPiece;
+						}
+					}
+
+					if(needToFlatten)
+						ARTDAQTableBase::flattenFHICL(ARTDAQAppType::EventBuilder,
+													builderUID,
+													captureAsLastFcl ? &returnFcl : nullptr);
+					else
+						__COUT__ << "Skipping full flatten for " << builderUID << __E__;
+
+					//save parts without process name
+					__COUTV__(captureAsLastFcl);
+					if(captureAsLastFcl)
+					{
+						size_t pnj = std::string::npos;
+						auto   pni = returnFcl.find("process_name:");  //find process name
+						if(pni != std::string::npos)
+						{
+							//enforce white space before process name
+							if(pni && (returnFcl[pni - 1] == ' ' || returnFcl[pni - 1] == '\n' ||
+									returnFcl[pni - 1] == '\t'))
+								pnj = returnFcl.find('\n', pni);
+						}
+						if(pnj != std::string::npos)
+						{
+							__COUT__
+								<< "Found flattened '"  //Note: returnFcl.substr(pni, pnj - pni) includes "process_name:"
+								<< returnFcl.substr(pni, pnj - pni) << "' at pos " << pni << " of "
+								<< returnFcl.size() << __E__;
+							flattenedLastFclParts[0] = returnFcl.substr(0, pni);
+							flattenedLastFclParts[1] = returnFcl.substr(pnj);
+						}
+						else
+						{
+							__COUT_WARN__ << "Failed to capture fcl for " << processName << "!"
+										<< __E__;
+						}
+					}
+				} //end doWriteFHiCL
 			}
 			else  // disabled
 			{
