@@ -722,9 +722,10 @@ std::string XDAQContextTable::getApplicationUID(const std::string& url,
 
 //==============================================================================
 /// only considers ON contexts and applications, unless off contexts allows
-std::string XDAQContextTable::getContextOfApplication(ConfigurationManager* configManager,
-                                                      const std::string&    appUID,
-													  bool allowOffContexts /* = false */) const
+std::string XDAQContextTable::getContextOfApplication(
+    ConfigurationManager* configManager,
+    const std::string&    appUID,
+    bool                  allowOffContexts /* = false */) const
 {
 	// look through all contexts until first appUID found
 
@@ -732,7 +733,8 @@ std::string XDAQContextTable::getContextOfApplication(ConfigurationManager* conf
 
 	for(auto& context : childrenMap)
 	{
-		if(!allowOffContexts && !context.second.getNode(XDAQContextTable::colContext_.colStatus_)
+		if(!allowOffContexts &&
+		   !context.second.getNode(XDAQContextTable::colContext_.colStatus_)
 		        .getValue<bool>())
 			continue;
 
@@ -744,7 +746,8 @@ std::string XDAQContextTable::getContextOfApplication(ConfigurationManager* conf
 		auto appMap = appLink.getChildren();
 		for(auto& app : appMap)
 		{
-			if(!allowOffContexts && !app.second.getNode(XDAQContextTable::colApplication_.colStatus_)
+			if(!allowOffContexts &&
+			   !app.second.getNode(XDAQContextTable::colApplication_.colStatus_)
 			        .getValue<bool>())
 				continue;
 
