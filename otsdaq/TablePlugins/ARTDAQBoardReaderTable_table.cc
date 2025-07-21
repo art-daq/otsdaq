@@ -66,8 +66,8 @@ void ARTDAQBoardReaderTable::init(ConfigurationManager* configManager)
 	// make directory just in case
 	mkdir((ARTDAQTableBase::ARTDAQ_FCL_PATH).c_str(), 0755);
 
-	__COUT__ << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
-	__COUT__ << configManager->__SELF_NODE__ << __E__;
+	__COUTS__(3) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
+	__COUTS__(3) << configManager->__SELF_NODE__ << __E__;
 
 	// handle fcl file generation, wherever the level of this table
 
@@ -84,6 +84,7 @@ void ARTDAQBoardReaderTable::init(ConfigurationManager* configManager)
 		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::BoardReader,
 		                              reader.second.getValue());
 	}
+	__COUTS__(3) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
 }  // end init()
 
 //==============================================================================

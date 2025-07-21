@@ -5,6 +5,8 @@
 #include <dirent.h>    //DIR and dirent
 #include <sys/stat.h>  //for mkdir
 #include <cctype>      //for std::toupper
+#include <map>         //for std::map
+#include <regex>       //for std::regex
 #include <thread>      //for std::thread
 
 using namespace ots;
@@ -513,21 +515,46 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 std::string CodeEditor::getFileGitURL(const std::string& basepath,
                                       const std::string& path)
 {
-	//TODO! October 2024 by rrivera
-	//TODO! request with linux exec to spack environment
-
 	__COUTV__(basepath);
-	__COUTV__(path);
-	std::string fullpath;
-	if(path.find(basepath) == 0)  //check if path is already complete
-		fullpath = path;
-	else
-		fullpath = basepath + "/" + path;
-	__COUTV__(fullpath);
+	std::string localPath = path;
 
-	//look for environments
+	std::string package = localPath.substr(0, localPath.find("/"));
 
-	return "unknown";
+	std::string cmd  = "spack info " + package;
+	FILE*       pipe = popen(cmd.c_str(), "r");
+	if(!pipe)
+	{
+		__SS__ << "Error executing shell command: " << cmd.c_str();
+		__SS_THROW__;
+	}
+
+	std::stringstream result;
+	char              buffer[256];
+	while(fgets(buffer, sizeof(buffer), pipe) != nullptr)
+		result << buffer;
+	pclose(pipe);
+
+	std::string outStr = result.str();
+
+	std::regex  urlRegex(R"(https:\/\/github\.com\/[^\s]+)");
+	std::smatch urlMatch;
+	if(!std::regex_search(outStr, urlMatch, urlRegex))
+	{
+		__SS__ << "Error finding GitHub repository in shell output: " << outStr;
+		__SS_THROW__;
+	}
+
+	std::string gitUrl = urlMatch[0];
+	if(gitUrl.size() > 4 && gitUrl.substr(gitUrl.size() - 4) == ".git")
+		gitUrl = gitUrl.substr(0, gitUrl.size() - 4);
+
+	std::regex  branchRegex(R"(\[git\]\s+https:\/\/github\.com\/[^\s]+ on branch (\w+))");
+	std::smatch branchMatch;
+	std::string branch = "develop";
+	if(std::regex_search(outStr, branchMatch, branchRegex))
+		branch = branchMatch[1];
+
+	return gitUrl + "/blob/" + branch + "/" + localPath;
 }  // end getFileGitURL()
 
 //==============================================================================
