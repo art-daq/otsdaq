@@ -64,7 +64,7 @@ class XDAQContextTable : public TableBase
 	///
 	std::string 					getContextUID				(const std::string& url) const;
 	std::string 					getApplicationUID			(const std::string& url, unsigned int id) const;
-	std::string 					getContextOfApplication		(ConfigurationManager* configManager, const std::string& appUID) const;
+	std::string 					getContextOfApplication		(ConfigurationManager* configManager, const std::string& appUID, bool allowOffContexts = false) const;
 	std::string 					getContextOfGateway			(ConfigurationManager* configManager) const;
 
 	const std::vector<XDAQContext>& getContexts					(void) const { return contexts_; }
