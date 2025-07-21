@@ -2804,7 +2804,7 @@ if [ $FIREFOX == 1 ]; then
 	firefox $MAIN_URL &
 fi
 
-if [ $CHECK_GIT_REPO_STATUS == 1 ]; then
+if [ "x$CHECK_GIT_REPO_STATUS" == "x1" ]; then
 	out "Will report a warning if any uncommitted code found..."
 	echo
 	UpdateOTS.sh --warn 2>&1 >/dev/null
