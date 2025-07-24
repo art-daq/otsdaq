@@ -1,5 +1,6 @@
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 
+#include <dirent.h>  //DIR and dirent
 #include <fstream>   // for std::ofstream
 #include <iostream>  // std::cout
 #include <typeinfo>
@@ -169,40 +170,58 @@ std::string ARTDAQTableBase::getFlatFHICLFilename(ARTDAQAppType      type,
 }  // end getFlatFHICLFilename()
 
 //==============================================================================
-void ARTDAQTableBase::flattenFHICL(ARTDAQAppType type, const std::string& name)
+void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
+                                   const std::string& name,
+                                   std::string*       returnFcl /* = nullptr */)
 {
 	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
-	//__COUT__ << "flattenFHICL()" << __ENV__("FHICL_FILE_PATH") << __E__;
+	__COUTS__(3) << "flattenFHICL()" << __ENV__("FHICL_FILE_PATH") << __E__;
+	__COUTVS__(4, StringMacros::stackTrace());
 
 	std::string inFile  = getFHICLFilename(type, name);
 	std::string outFile = getFlatFHICLFilename(type, name);
 
-	//__COUTV__(inFile);
-	//__COUTV__(outFile);
+	__COUTVS__(3, inFile);
+	__COUTVS__(3, outFile);
 
 	cet::filepath_lookup_nonabsolute policy("FHICL_FILE_PATH");
 	fhicl::ParameterSet              pset;
 
 	try
 	{
-		TLOG(TLVL_INFO) << "parsing document: " << inFile;
+		__COUT_INFO__ << "parsing document: " << inFile;
 		// tbl = fhicl::parse_document(inFile, policy);
 		// pset = fhicl::ParameterSet::make(tbl);
 		pset = fhicl::ParameterSet::make(inFile, policy);
-		TLOG(TLVL_TRACE) << "document: " << inFile << " parsed";
-		TLOG(TLVL_TRACE) << "got pset from table:";
+		__COUTT__ << "document: " << inFile << " parsed";
+		__COUTT__ << "got pset from table:";
 
 		std::ofstream ofs{outFile};
-		ofs << pset.to_indented_string(
+		if(!ofs)
+		{
+			__SS__ << "Failed to open fhicl output file '" << outFile << "!'" << __E__;
+			__SS_THROW__;
+		}
+		std::ostringstream out;
+		out << pset.to_indented_string(
 		    0);  // , fhicl::detail::print_mode::annotated); // Only really useful for debugging
-		__COUTT__ << name << " Flatten Clock time = "
-		          << artdaq::TimeUtils::GetElapsedTime(startClock) << __E__;
+		if(returnFcl)
+		{
+			*returnFcl = out.str();
+			__COUTVS__(21, returnFcl);
+		}
+		ofs << out.str();
 	}
 	catch(cet::exception const& e)
 	{
-		__SS__ << "Failed to parse fhicl: " << e.what() << __E__;
+		__SS__ << "Failed to parse fhicl into output file '" << outFile
+		       << "' - here is the error: " << e.what() << __E__;
 		__SS_THROW__;
 	}
+
+	__COUTT__ << name
+	          << " Flatten Clock time = " << artdaq::TimeUtils::GetElapsedTime(startClock)
+	          << __E__;
 }  // end flattenFHICL()
 
 //==============================================================================
@@ -703,25 +722,28 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 
 //==============================================================================
 /// outputDataReceiverFHICL
-///	Note: currently selfRank and selfPort are unused by artdaq fcl
+///	 Note: currently selfRank and selfPort are unused by artdaq fcl.
+///  Could use returnFcl to compare if two nodes have the same fcl.
 void ARTDAQTableBase::outputDataReceiverFHICL(
     const ConfigurationTree& receiverNode,
     ARTDAQAppType            appType,
     size_t /*maxFragmentSizeBytes */ /* = DEFAULT_MAX_FRAGMENT_SIZE */,
     size_t routingTimeoutMs /* = DEFAULT_ROUTING_TIMEOUT_MS */,
-    size_t routingRetryCount /* = DEFAULT_ROUTING_RETRY_COUNT */)
+    size_t       routingRetryCount /* = DEFAULT_ROUTING_RETRY_COUNT */,
+    std::string* returnFcl /* = nullptr */)
 {
 	std::string filename = getFHICLFilename(appType, receiverNode.getValue());
 
 	/////////////////////////
 	// generate xdaq run parameter file
-	std::fstream out;
+	std::fstream       outf;
+	std::ostringstream out;
 
 	std::string tabStr     = "";
 	std::string commentStr = "";
 
-	out.open(filename, std::fstream::out | std::fstream::trunc);
-	if(out.fail())
+	outf.open(filename, std::fstream::out | std::fstream::trunc);
+	if(outf.fail())
 	{
 		__SS__ << "Failed to open ARTDAQ fcl file: " << filename << __E__;
 		__SS_THROW__;
@@ -749,20 +771,21 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 		{
 			// create empty fcl
 			OUT << "{}\n\n";
-			out.close();
+			outf << out.str();
+			outf.close();
 			return;
 		}
 	}
 	catch(const std::runtime_error&)
 	{
-		//__COUT__ << "Ignoring error, assume this a valid UID node." << __E__;
+		__COUTT__ << "Ignoring error, assume this a valid UID node." << __E__;
 		// error is expected here for UIDs.. so just ignore
 		// this check is valuable if source node is a unique-Link node, rather than UID
 	}
 
 	//--------------------------------------
 	// handle preamble parameters
-	//_COUT__ << "Inserting preamble parameters..." << __E__;
+	__COUTT__ << "Inserting preamble parameters..." << __E__;
 	insertParameters(out,
 	                 tabStr,
 	                 commentStr,
@@ -773,7 +796,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 
 	//--------------------------------------
 	// handle daq
-	//__COUT__ << "Generating daq block..." << __E__;
+	__COUTT__ << "Generating daq block..." << __E__;
 	auto daq = receiverNode.getNode("daqLink");
 	if(!daq.isDisconnected())
 	{
@@ -805,7 +828,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 
 		//--------------------------------------
 		// handle ALL daq parameters
-		//__COUT__ << "Inserting DAQ Parameters..." << __E__;
+		__COUTT__ << "Inserting DAQ Parameters..." << __E__;
 		insertParameters(out,
 		                 tabStr,
 		                 commentStr,
@@ -841,7 +864,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 			OUT << "}\n";  // end routing_token_config
 		}
 
-		//__COUT__ << "Adding sources placeholder" << __E__;
+		__COUTT__ << "Adding sources placeholder" << __E__;
 		OUT << "sources: {\n"
 		    << "}\n\n";  // end sources
 
@@ -856,7 +879,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 
 	//--------------------------------------
 	// handle art
-	//__COUT__ << "Filling art block..." << __E__;
+	__COUTT__ << "Filling art block..." << __E__;
 	auto art = receiverNode.getNode(ARTDAQTableBase::colARTDAQNotReader_.colLinkToArt_);
 	if(!art.isDisconnected())
 	{
@@ -878,7 +901,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 
 	//--------------------------------------
 	// handle ALL add-on parameters
-	//__COUT__ << "Inserting add-on parameters" << __E__;
+	__COUTT__ << "Inserting add-on parameters" << __E__;
 	insertParameters(out,
 	                 tabStr,
 	                 commentStr,
@@ -887,8 +910,14 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 	                 false /*onlyInsertAtTableParameters*/,
 	                 true /*includeAtTableParameters*/);
 
-	//__COUT__ << "outputDataReceiverFHICL DONE" << __E__;
-	out.close();
+	__COUTT__ << "outputDataReceiverFHICL DONE" << __E__;
+	if(returnFcl)
+	{
+		*returnFcl = out.str();
+		__COUTVS__(21, *returnFcl);
+	}
+	outf << out.str();
+	outf.close();
 }  // end outputDataReceiverFHICL()
 
 //==============================================================================
@@ -1964,9 +1993,13 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 		std::vector<std::pair<std::string, ConfigurationTree>> builders =
 		    buildersLink.getChildren();
 
+		std::string lastBuilderFcl[2],
+		    flattenedLastFclParts
+		        [2];  //same handling as otsdaq/otsdaq/TablePlugins/ARTDAQEventBuilderTable_table.cc:69
 		for(auto& builder : builders)
 		{
 			const std::string& builderUID = builder.first;
+			__COUTV__(builderUID);
 
 			if(getStatusFalseNodes || builder.second.status())
 			{
@@ -2035,12 +2068,153 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 
 				if(doWriteFHiCL)
 				{
+					std::string returnFcl, processName;
+					bool        needToFlatten = true;
+					bool        captureAsLastFcl =
+					    builders
+					        .size() &&  //init to true if multiple builders left to handle
+					    (&builder != &builders.back());
 					outputDataReceiverFHICL(builder.second,
 					                        ARTDAQAppType::EventBuilder,
-					                        maxFragmentSizeBytes);
+					                        maxFragmentSizeBytes,
+					                        DEFAULT_ROUTING_TIMEOUT_MS,
+					                        DEFAULT_ROUTING_RETRY_COUNT,
+					                        captureAsLastFcl ? &returnFcl : nullptr);
 
-					flattenFHICL(ARTDAQAppType::EventBuilder, builder.second.getValue());
+					//Speed-up Philosophy:
+					// flattenFHICL is expensive, so try to identify multinodes with fcl that only differ by process_name,
+					//	i.e., ignore starting comments and process name, then compare fcl.
+					//	Note: not much gain for any other node types but Event Builders, which tend to only differ by process_name in their fcl
+
+					auto cmi = returnFcl.find(
+					    "#	otsdaq-ARTDAQ builder UID:");  //find starting comments
+					if(cmi != std::string::npos)
+						cmi = returnFcl.find('\n', cmi);
+					if(cmi != std::string::npos)
+					{
+						size_t pnj = std::string::npos;
+						auto   pni =
+						    returnFcl.find("\tprocess_name: ", cmi);  //find process name
+						if(pni != std::string::npos)
+						{
+							pni += std::string("\tprocess_name: ")
+							           .size();  //move past field name
+							pnj = returnFcl.find('\n', pni);
 				}
+						if(pnj != std::string::npos)
+						{
+							processName = returnFcl.substr(pni, pnj - pni);
+							__COUT__ << "Found process name = " << processName << __E__;
+
+							bool sameFirst = false;
+							//check before process name (ignoring comments)
+							std::string newPiece = returnFcl.substr(cmi, pni - cmi);
+							if(flattenedLastFclParts[0].size() &&
+							   lastBuilderFcl[0].size() && lastBuilderFcl[0] == newPiece)
+							{
+								__COUT__ << "Same first fcl" << __E__;
+								sameFirst = true;
+							}
+							else if(TTEST(20))
+							{
+								__COUTVS__(20, lastBuilderFcl[0]);
+								__COUTVS__(20, newPiece);
+								for(size_t i = 0, j = 0;
+								    i < lastBuilderFcl[0].size() && j < newPiece.size();
+								    ++i, ++j)
+								{
+									if(lastBuilderFcl[0][i] != newPiece[j])
+									{
+										__COUTVS__(20, i);
+										__COUTVS__(20, j);
+										__COUTVS__(20, lastBuilderFcl[0].substr(i, 30));
+										__COUTVS__(20, newPiece.substr(j, 30));
+										break;
+									}
+								}
+							}
+							if(captureAsLastFcl)  //if more, save piece
+								lastBuilderFcl[0] = newPiece;
+
+							//check after process name
+							newPiece = returnFcl.substr(pnj);
+							if(lastBuilderFcl[0].size() && lastBuilderFcl[1] == newPiece)
+							{
+								__COUT__ << "Same second fcl" << __E__;
+								if(sameFirst)  //found opportunity for shortcut-to-flatten!
+								{
+									std::chrono::steady_clock::time_point startClock =
+									    std::chrono::steady_clock::now();
+									__COUT__ << "Found fcl match! Reuse for "
+									         << builderUID << __E__;
+									captureAsLastFcl =
+									    false;  //do not overwrite current last fcl now!
+									needToFlatten = false;
+
+									//do rapid flatten here
+									std::string outFile = getFlatFHICLFilename(
+									    ARTDAQAppType::EventBuilder, builderUID);
+									__COUTVS__(3, outFile);
+									std::ofstream ofs{outFile};
+									if(!ofs)
+									{
+										__SS__ << "Failed to open fhicl output file '"
+										       << outFile << "!'" << __E__;
+										__SS_THROW__;
+									}
+									ofs << flattenedLastFclParts[0] << "process_name: \""
+									    << processName << "\""
+									    << flattenedLastFclParts[1];
+									__COUTT__
+									    << builderUID << " Flatten Clock time = "
+									    << artdaq::TimeUtils::GetElapsedTime(startClock)
+									    << __E__;
+									continue;  //done with shortcut-to-flatten
+								}              //end shortcut-to-flatten handling
+							}
+							if(captureAsLastFcl)  //if interesting for more, save piece
+								lastBuilderFcl[1] = newPiece;
+						}
+					}
+
+					if(needToFlatten)
+						ARTDAQTableBase::flattenFHICL(
+						    ARTDAQAppType::EventBuilder,
+						    builderUID,
+						    captureAsLastFcl ? &returnFcl : nullptr);
+					else
+						__COUT__ << "Skipping full flatten for " << builderUID << __E__;
+
+					//save parts without process name
+					__COUTV__(captureAsLastFcl);
+					if(captureAsLastFcl)
+					{
+						size_t pnj = std::string::npos;
+						auto   pni = returnFcl.find("process_name:");  //find process name
+						if(pni != std::string::npos)
+						{
+							//enforce white space before process name
+							if(pni &&
+							   (returnFcl[pni - 1] == ' ' || returnFcl[pni - 1] == '\n' ||
+							    returnFcl[pni - 1] == '\t'))
+								pnj = returnFcl.find('\n', pni);
+						}
+						if(pnj != std::string::npos)
+						{
+							__COUT__
+							    << "Found flattened '"  //Note: returnFcl.substr(pni, pnj - pni) includes "process_name:"
+							    << returnFcl.substr(pni, pnj - pni) << "' at pos " << pni
+							    << " of " << returnFcl.size() << __E__;
+							flattenedLastFclParts[0] = returnFcl.substr(0, pni);
+							flattenedLastFclParts[1] = returnFcl.substr(pnj);
+						}
+						else
+						{
+							__COUT_WARN__ << "Failed to capture fcl for " << processName
+							              << "!" << __E__;
+						}
+					}
+				}  //end doWriteFHiCL
 			}
 			else  // disabled
 			{
@@ -2343,21 +2517,266 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 		    cfgMgr->getActiveGroupName(ConfigurationManager::GroupType::CONTEXT_TYPE);
 		const TableGroupKey& finalContextGroupKey =
 		    cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::CONTEXT_TYPE);
+		const std::string& finalConfigGroupName = cfgMgr->getActiveGroupName(
+		    ConfigurationManager::GroupType::CONFIGURATION_TYPE);
+		const TableGroupKey& finalConfigGroupKey = cfgMgr->getActiveGroupKey(
+		    ConfigurationManager::GroupType::CONFIGURATION_TYPE);
 
+		FILE* fp = nullptr;
+		//first try context+config name only
+		{
 		std::stringstream layoutPath;
-		layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH << finalContextGroupName
-		           << "_" << finalContextGroupKey << ".dat";
-		__COUTV__(layoutPath.str());
+			layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH
+			           << finalContextGroupName << "_" << finalContextGroupKey << "."
+			           << finalConfigGroupName << "_" << finalConfigGroupKey << ".dat";
 
-		FILE* fp = fopen(layoutPath.str().c_str(), "r");
+			fp = fopen(layoutPath.str().c_str(), "r");
 		if(!fp)
 		{
 			__COUT__ << "Layout file not found for '" << finalContextGroupName << "("
-			         << finalContextGroupKey << ")'" << __E__;
-			// return;
-			//ignore that file does not exist, and generate printer syntax from 1st principles
+				         << finalContextGroupKey << ") + " << finalConfigGroupName << "("
+				         << finalConfigGroupKey << ")': " << layoutPath.str() << __E__;
+				// return; //try context only!
 		}
 		else
+				__COUTV__(layoutPath.str());
+		}
+		//last try context name only
+		{
+			std::stringstream layoutPath;
+			layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH
+			           << finalContextGroupName << "_" << finalContextGroupKey << ".dat";
+			__COUTV__(layoutPath.str());
+
+			fp = fopen(layoutPath.str().c_str(), "r");
+			if(!fp)
+			{
+				__COUT__ << "Layout file not found for '" << finalContextGroupName << "("
+				         << finalContextGroupKey << ")': " << layoutPath.str() << __E__;
+			}
+			else
+				__COUTV__(layoutPath.str());
+		}
+
+		if(!fp)  //since exact context name was not found, see if there is a best match layout file
+		{
+			DIR*           pDIR;
+			struct dirent* entry;
+			bool           isDir;
+			std::string    name;
+			int            type;
+
+			float       bestScore = 0, score;  //high score wins
+			std::string bestName  = "";
+
+			if(!(pDIR = opendir((ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH).c_str())))
+			{
+				__SS__ << "Path '" << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH
+				       << "' could not be opened!" << __E__;
+				__SS_THROW__;
+			}
+
+			// else directory good, get all folders, .h, .cc, .txt files
+			while((entry = readdir(pDIR)))
+			{
+				name = std::string(entry->d_name);
+				type = int(entry->d_type);
+
+				__COUTS__(2) << type << " " << name << "\n" << std::endl;
+
+				if(name[0] != '.' &&
+				   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
+				    type == 4 ||  // directory type
+				    type == 8 ||  // file type
+				    type ==
+				        10  // 10 == link (could be directory or file, treat as unknown)
+				    ))
+				{
+					isDir = false;
+
+					if(type == 0 || type == 10)
+					{
+						// unknown type .. determine if directory
+						DIR* pTmpDIR = opendir(
+						    (ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH + "/" + name)
+						        .c_str());
+						if(pTmpDIR)
+						{
+							isDir = true;
+							closedir(pTmpDIR);
+						}
+						else  //assume file
+							__COUTS__(2) << "Unable to open path as directory: "
+							             << (ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH +
+							                 "/" + name)
+							             << __E__;
+					}
+
+					if(type == 4)
+						isDir = true;  // flag directory types
+
+					// handle directories and files
+
+					if(isDir)
+					{
+						__COUTS__(2) << "Directory: " << type << " " << name << __E__;
+					}
+					else
+					{
+						__COUTS__(2) << "File: " << type << " " << name << "\n"
+						             << std::endl;
+						if(name.find(".dat") !=
+						   name.size() - 4)  //skip if not proper file extension
+							continue;
+
+						__COUTS__(2) << "Contender: " << name << "\n" << std::endl;
+						score = 0;  //reset for score calc
+
+						auto nameSplit = StringMacros::getVectorFromString(name, {'.'});
+
+						if(nameSplit.size() > 1)  //include config group in score
+						{
+							//match key to right of decimal and name to left of decimal
+							auto keyi = nameSplit[1].rfind('_');
+							if(keyi != std::string::npos)
+							{
+								int key =
+								    atoi(nameSplit[1]
+								             .substr(keyi, nameSplit[1].size() - 4 - keyi)
+								             .c_str());
+								__COUTVS__(2, key);
+								float tmpscore =
+								    finalConfigGroupKey.key() -
+								    key;  //will be negative if comparing to newer key
+								if(tmpscore < 0)
+									tmpscore =
+									    -1 * tmpscore -
+									    1;  //give penalty for newer keys (favor older keys)
+								__COUTVS__(2, tmpscore);
+								tmpscore =
+								    1.0 /
+								    tmpscore;  //make high score be closest, and put value in decimal
+								__COUTVS__(2, tmpscore);
+
+								//now for each matching letter +1, for matching size +3
+								std::string nameToCompare = nameSplit[1].substr(0, keyi);
+								__COUTVS__(2, nameToCompare);
+								size_t i = 0, j = 0;
+								//match with both strings driving in case of jumps in the words
+								for(; i < nameToCompare.size() &&
+								      j < finalConfigGroupName.size();
+								    ++i)
+								{
+									if(nameToCompare[i] == finalConfigGroupName[j])
+									{
+										tmpscore += 1.0;
+										++j;
+									}
+								}
+								__COUTVS__(2, tmpscore);
+								i = 0, j = 0;
+								for(; i < nameToCompare.size() &&
+								      j < finalConfigGroupName.size();
+								    ++j)
+								{
+									if(nameToCompare[i] == finalConfigGroupName[j])
+									{
+										tmpscore += 1.0;
+										++i;
+									}
+								}
+								__COUTVS__(2, tmpscore);
+								score += tmpscore;
+							}
+							__COUTVS__(2, score);
+						}                         //end config group score calc
+						if(nameSplit.size() > 0)  //include context group in score
+						{
+							//match key to right of decimal and name to left of decimal
+							auto keyi = nameSplit[0].rfind('_');
+							if(keyi != std::string::npos)
+							{
+								int key =
+								    atoi(nameSplit[0]
+								             .substr(keyi, nameSplit[0].size() - 4 - keyi)
+								             .c_str());
+								__COUTVS__(2, key);
+								float tmpscore =
+								    finalContextGroupKey.key() -
+								    key;  //will be negative if comparing to newer key
+								if(tmpscore < 0)
+									tmpscore =
+									    -1 * tmpscore -
+									    1;  //give penalty for newer keys (favor older keys)
+								__COUTVS__(2, tmpscore);
+								tmpscore =
+								    1.0 /
+								    tmpscore;  //make high score be closest, and put value in decimal
+								__COUTVS__(2, tmpscore);
+
+								//now for each matching letter +1, for matching size +3
+								std::string nameToCompare = nameSplit[0].substr(0, keyi);
+								__COUTVS__(2, nameToCompare);
+								size_t i = 0, j = 0;
+								//match with both strings driving in case of jumps in the words
+								for(; i < nameToCompare.size() &&
+								      j < finalContextGroupName.size();
+								    ++i)
+								{
+									if(nameToCompare[i] == finalContextGroupName[j])
+									{
+										tmpscore += 1.0;
+										++j;
+									}
+								}
+								__COUTVS__(2, tmpscore);
+								i = 0, j = 0;
+								for(; i < nameToCompare.size() &&
+								      j < finalContextGroupName.size();
+								    ++j)
+								{
+									if(nameToCompare[i] == finalContextGroupName[j])
+									{
+										tmpscore += 1.0;
+										++i;
+									}
+								}
+								__COUTVS__(2, tmpscore);
+								score += tmpscore;
+							}
+							__COUTVS__(2, score);
+						}  //end context group score calc
+
+						if(score > bestScore)
+						{
+							bestScore = score;
+							bestName  = name;
+							__COUTVS__(2, bestName);
+						}
+					}  //end score handling
+				}      //end file handling
+			}          //end directory search loop for best layout file
+
+			if(bestName != "")
+			{
+				__COUT__ << "Found closest layout file name: " << bestName << ".dat"
+				         << __E__;
+				std::stringstream layoutPath;
+				layoutPath << ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH << bestName
+				           << ".dat";
+				__COUTV__(layoutPath.str());
+				fp = fopen(layoutPath.str().c_str(), "r");
+				if(!fp)
+				{
+					__COUT__ << "Closest layout file not found for '" << bestName << "'"
+					         << __E__;
+				}
+			}
+
+			//if(!fp) just ignore that file does not exist, and generate printer syntax from 1st principles
+		}  //end no layout file handling
+
+		if(fp)  //else if(!fp) just ignore that file does not exist, and generate printer syntax from 1st principles
 		{
 			__COUT__ << "Extract info from layout file.." << __E__;
 

@@ -774,13 +774,13 @@ void TableBase::changeVersionAndActivateView(TableVersion temporaryVersion,
 	emplacePair.first->second.copy(tmpIt->second, version, tmpIt->second.getAuthor());
 	setActiveView(version);
 	eraseView(temporaryVersion);  // delete temp version from tableViews_
-}
+}  //emd changeVersionAndActivateView()
 
 //==============================================================================
 bool TableBase::isStored(const TableVersion& version) const
 {
 	return (tableViews_.find(version) != tableViews_.end());
-}
+}  //end isStored()
 
 //==============================================================================
 bool TableBase::eraseView(TableVersion version)
@@ -795,7 +795,7 @@ bool TableBase::eraseView(TableVersion version)
 	tableViews_.erase(version);
 
 	return true;
-}
+}  //end eraseView()
 
 //==============================================================================
 const std::string& TableBase::getTableName(void) const { return tableName_; }
@@ -804,13 +804,13 @@ const std::string& TableBase::getTableName(void) const { return tableName_; }
 const std::string& TableBase::getTableDescription(void) const
 {
 	return tableDescription_;
-}
+}  //end getTableDescription()
 
 //==============================================================================
 const TableVersion& TableBase::getViewVersion(void) const
 {
 	return getView().getVersion();
-}
+}  //end getViewVersion()
 
 //==============================================================================
 /// latestAndMockupColumnNumberMismatch
@@ -825,7 +825,7 @@ bool TableBase::latestAndMockupColumnNumberMismatch(void) const
 	}
 	// there are no latest non-temporary tables so there is a mismatch (by default)
 	return true;
-}
+}  //end latestAndMockupColumnNumberMismatch()
 
 //==============================================================================
 std::set<TableVersion> TableBase::getStoredVersions(void) const
@@ -834,7 +834,7 @@ std::set<TableVersion> TableBase::getStoredVersions(void) const
 	for(auto& configs : tableViews_)
 		retSet.emplace(configs.first);
 	return retSet;
-}
+}  //end getStoredVersions()
 
 //==============================================================================
 /// getNumberOfStoredViews
@@ -888,7 +888,7 @@ const TableView& TableBase::getView(
 		__SS_ONLY_THROW__;
 	}
 	return *activeTableView_;
-}
+}  //end getView()
 
 //==============================================================================
 TableView* TableBase::getViewP(TableVersion version /* = TableVersion::INVALID */)
@@ -913,7 +913,7 @@ TableView* TableBase::getViewP(TableVersion version /* = TableVersion::INVALID *
 		__SS_ONLY_THROW__;
 	}
 	return activeTableView_;
-}
+}  //end getViewP()
 
 //==============================================================================
 TableView* TableBase::getMockupViewP(void) { return &mockupTableView_; }
@@ -925,7 +925,7 @@ void TableBase::setTableName(const std::string& tableName) { tableName_ = tableN
 void TableBase::setTableDescription(const std::string& tableDescription)
 {
 	tableDescription_ = tableDescription;
-}
+}  //end setTableDescription()
 
 //==============================================================================
 /// deactivate
@@ -958,7 +958,7 @@ bool TableBase::setActiveView(TableVersion version)
 	}
 
 	return true;
-}
+}  //end setActiveView()
 
 //==============================================================================
 /// mergeViews
