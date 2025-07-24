@@ -848,7 +848,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							else  //skip absent subsystems for a while
 								remoteGatewayApp.ignoreStatusCount =
 								    3;  //if non-zero, do not ask for status
-						}               //end remote app status update loop
+						}  //end remote app status update loop
 
 						if(allApssAreUnknown)  //then remove ignore status, and give user feedback faster
 						{
@@ -1344,7 +1344,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						__COUT_WARN__ << "Failed to send getStatus SOAP Message - will "
 						                 "suppress repeat errors: "
 						              << e.what() << __E__;
-					}     // else quiet repeat error messages
+					}  // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
 						std::lock_guard<std::mutex> lock(
@@ -1433,7 +1433,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						              << appName << "' [LID=" << appInfo.getId()
 						              << "] in Context '" << appInfo.getContextName()
 						              << "' [URL=" << appInfo.getURL() << "]." << __E__;
-					}     // else quiet repeat error messages
+					}  // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
 						std::lock_guard<std::mutex> lock(
@@ -1758,7 +1758,7 @@ try
 				__COUTVS__(25, value);
 				remoteGatewayApp.appInfo.id = atoi(value.c_str());
 
-			}     //end found Remote Gateway status
+			}  //end found Remote Gateway status
 			else  //found remote subapp
 			{
 				//get remote subapp class name
@@ -1928,8 +1928,32 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 			try
 			{
+                if (buffer.find("Help") == 0 || buffer.find("help") == 0)
+				{
+					std::stringstream out;
+
+                    out << "Supported Commands:\nHelp (this message)"
+					    << "\n"
+					    << "GetRemoteGatewayStatus"
+					    << "\n"
+					    << "GetRemoteAppStatus"
+					    << "\n"
+					    << "GetStateMachineNames"
+					    << "\n"
+					    << "ResetConsoleCounts"
+					    << "\n"
+					    << "loginVerify"
+					    << "\n"
+					    << "GetRemoteDesktopIcons"
+					    << "\n"
+					    << "FiniteStateMachineName,Command,Parameter(s)" << "\n";
+
+					sock.acknowledge(out.str(), false /* verbose */);
+					continue;
+                }
+
 				bool remoteGatewayStatus = buffer.find("GetRemoteGatewayStatus") == 0;
-				if(remoteGatewayStatus || buffer == "GetRemoteAppStatus")
+				if(remoteGatewayStatus || buffer.find("GetRemoteAppStatus") == 0)
 				{
 					__COUT_TYPE__(TLVL_DEBUG + 12)
 					    << "Giving app status to remote monitor..." << __E__;
@@ -2090,7 +2114,36 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
 				}  //end GetRemoteAppStatus
-				if(buffer == "ResetConsoleCounts")
+				if(buffer.find("GetStateMachineNames") == 0)
+				{
+					__COUT_TYPE__(TLVL_DEBUG + 12)
+					    << "Giving state machine names to remote monitor..." << __E__;
+					std::vector<std::string> fsmNames;
+					if(!configLinkNode.isDisconnected())
+					{
+						fsmNames = configLinkNode.getNode("LinkToStateMachineTable")
+						               .getChildrenNames();
+					}
+
+					HttpXmlDocument xmlOut;
+					for(auto& fsm : fsmNames)
+					{
+						xmlOut.addTextElementToData("fsm", fsm);
+					}
+                    if (theSupervisor->activeStateMachineName_ != "") {
+						xmlOut.addTextElementToData(
+						    "active", theSupervisor->activeStateMachineName_);
+                    }
+
+					std::stringstream out;
+					xmlOut.outputXmlDocument((std::ostringstream*)&out,
+					                         false /*dispStdOut*/,
+					                         false /*allowWhiteSpace*/);
+					__COUTS__(23) << "State machines to monitor: " << out.str() << __E__;
+					sock.acknowledge(out.str(), false /* verbose */);
+					continue;
+				}
+				if(buffer.find("ResetConsoleCounts") == 0)
 				{
 					__COUT__ << "Remote request to reset Console Counts..." << __E__;
 
@@ -2298,7 +2351,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					sock.acknowledge(retStr, false /* verbose */);
 					continue;
 				}
-				else if(buffer == "GetRemoteDesktopIcons")
+				else if(buffer.find("GetRemoteDesktopIcons") == 0)
 				{
 					__COUT__ << "Giving desktop icons to remote gateway..." << __E__;
 
@@ -2429,7 +2482,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					sock.acknowledge(iconString, true /* verbose */);
 					continue;
-				}                             //end GetRemoteDesktopIcons
+				}  //end GetRemoteDesktopIcons
 				else if(!enableStateChanges)  //else it is an FSM Command!
 				{
 					__COUT_WARN__ << "Skipping potential FSM Command because "
@@ -2663,8 +2716,7 @@ void GatewaySupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots</title>"
 	     << GatewaySupervisor::getIconHeaderString() <<
 	    // end show ots icon
-	    "</head>"
-	     << "<frameset col='100%' row='100%'>"
+	    "</head>" << "<frameset col='100%' row='100%'>"
 	     << "<frame src='/WebPath/html/Desktop.html?urn="
 	     << this->getApplicationDescriptor()->getLocalId()
 	     << "&securityType=" << securityType_ << "'></frameset></html>";
@@ -3766,7 +3818,7 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 }  // end statePaused()
 
 //==============================================================================
@@ -3844,7 +3896,7 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 }  // end stateRunning()
 
 //==============================================================================
@@ -3930,7 +3982,7 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 }  // end stateHalted()
 
 //==============================================================================
@@ -4017,7 +4069,7 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 
 }  // end stateConfigured()
 
@@ -4108,7 +4160,7 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 
 }  // end inError()
 
@@ -6114,7 +6166,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			{  // start mutex scope
 				std::lock_guard<std::mutex> lock(broadcastIterationBreakpointMutex_);
 				iterationBreakpoint = broadcastIterationBreakpoint_;  // get breakpoint
-			}                                                         // end mutex scope
+			}  // end mutex scope
 
 			if(iterationBreakpoint < (unsigned int)-1)
 				__COUT__ << "Iteration breakpoint currently is " << iterationBreakpoint
@@ -7943,7 +7995,7 @@ try
 
 							iconString += remoteGatewayApp.iconString;
 							break;  //done with cache retrieval
-						}           //end loop retrieval
+						}  //end loop retrieval
 
 						if(!found)
 						{
