@@ -171,7 +171,18 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 				try
 				{
 					std::string contextUID = contextTable->getContextOfApplication(
-					    configManager, appLink.getValueAsString());
+					    configManager,
+					    appLink.getValueAsString(),
+					    true /* allowOffContexts */);
+
+					if(!appLink
+					        .isEnabled())  //demoting off apps, from exception to error, to make it less annoying for users that are disabling apps
+						__COUT_WARN__
+						    << "Warning! The target app '" << appLink.getValueAsString()
+						    << "' is disabled, which will likely break the behavior of "
+						       "the Desktop Icon '"
+						    << child.first << ".' To fix, reenable the target app."
+						    << __E__;
 
 					// only prepend address if not same as gateway
 					if(contextUID != gatewayContextUID)
@@ -179,6 +190,17 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 						// __COUTV__(contextUID);
 						ConfigurationTree contextNode =
 						    contextTableNode.getNode(contextUID);
+
+						if(!contextNode
+						        .isEnabled())  //demoting off apps, from exception to error, to make it less annoying for users that are disabling apps
+							__COUT_WARN__
+							    << "Warning! The parent context '" << contextUID
+							    << "' of the target app '" << appLink.getValueAsString()
+							    << "' is disabled, which will likely break the behavior "
+							       "of the Desktop Icon '"
+							    << child.first
+							    << ".' To fix, reenable the target app's parent context."
+							    << __E__;
 
 						std::string contextAddress =
 						    contextNode.getNode(XDAQContextTable::colContext_.colAddress_)

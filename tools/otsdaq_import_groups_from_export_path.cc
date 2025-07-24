@@ -461,7 +461,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 						    << importedBackboneGroupName << "(" << newKey
 						    << "), trying incremented group key... retries=" << retries
 						    << __E__;
-						if(++retries > 10)  //give up
+						if(++retries > 3)  //give up
 							throw;
 						newKey = TableGroupKey::getNextKey(newKey);  //increment group key
 						__COUT__ << "New Key for group: " << importedBackboneGroupName
@@ -953,7 +953,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 							    << *tableView << "(" << newAssignedVersion
 							    << "), trying incremented table version... retries="
 							    << retries << __E__;
-							if(++retries > 10)  //give up
+							if(++retries > 3)  //give up
 								throw;
 							newAssignedVersion = TableVersion::getNextVersion(
 							    newAssignedVersion);  //increment table version
@@ -966,7 +966,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 							throw;
 					}
 
-					__COUT__ << "Created table: " << tableView << "-v"
+					__COUT__ << "Created table: " << *tableView << "-v"
 					         << newAssignedVersion << __E__;
 					break;
 				}  //end collission retry loop
@@ -1078,7 +1078,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 					    << group.first.first << "(" << newKey
 					    << "), trying incremented group key... retries=" << retries
 					    << __E__;
-					if(++retries > 10)  //give up
+					if(++retries > 3)  //give up
 						throw;
 					newKey = TableGroupKey::getNextKey(newKey);  //increment group key
 					__COUT__ << "New Key for group: " << group.first.first << " found as "
@@ -1303,7 +1303,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 						              << *cfgView << "(" << newVersion
 						              << "), trying incremented table version... retries="
 						              << retries << __E__;
-						if(++retries > 10)  //give up
+						if(++retries > 3)  //give up
 							throw;
 						newVersion = TableVersion::getNextVersion(
 						    newVersion);  //increment table version
@@ -1462,7 +1462,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 						              << *cfgView << "(" << newVersion
 						              << "), trying incremented table version... retries="
 						              << retries << __E__;
-						if(++retries > 10)  //give up
+						if(++retries > 3)  //give up
 							throw;
 						newVersion = TableVersion::getNextVersion(
 						    newVersion);  //increment table version
@@ -1581,7 +1581,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 						    << activeBackboneGroupName << "(" << newKey
 						    << "), trying incremented group key... retries=" << retries
 						    << __E__;
-						if(++retries > 10)  //give up
+						if(++retries > 3)  //give up
 							throw;
 						newKey = TableGroupKey::getNextKey(newKey);  //increment group key
 						__COUT__ << "New Key for group: " << activeBackboneGroupName
