@@ -17,3 +17,4 @@ obj/*
 .StartOTS_*.cmd
 spack-build-*
 build-linux-*
+__pycache__
