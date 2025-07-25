@@ -848,7 +848,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 							else  //skip absent subsystems for a while
 								remoteGatewayApp.ignoreStatusCount =
 								    3;  //if non-zero, do not ask for status
-						}  //end remote app status update loop
+						}               //end remote app status update loop
 
 						if(allApssAreUnknown)  //then remove ignore status, and give user feedback faster
 						{
@@ -1344,7 +1344,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						__COUT_WARN__ << "Failed to send getStatus SOAP Message - will "
 						                 "suppress repeat errors: "
 						              << e.what() << __E__;
-					}  // else quiet repeat error messages
+					}     // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
 						std::lock_guard<std::mutex> lock(
@@ -1433,7 +1433,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						              << appName << "' [LID=" << appInfo.getId()
 						              << "] in Context '" << appInfo.getContextName()
 						              << "' [URL=" << appInfo.getURL() << "]." << __E__;
-					}  // else quiet repeat error messages
+					}     // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
 						std::lock_guard<std::mutex> lock(
@@ -1758,7 +1758,7 @@ try
 				__COUTVS__(25, value);
 				remoteGatewayApp.appInfo.id = atoi(value.c_str());
 
-			}  //end found Remote Gateway status
+			}     //end found Remote Gateway status
 			else  //found remote subapp
 			{
 				//get remote subapp class name
@@ -1928,11 +1928,11 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 			try
 			{
-                if (buffer.find("Help") == 0 || buffer.find("help") == 0)
+				if(buffer.find("Help") == 0 || buffer.find("help") == 0)
 				{
 					std::stringstream out;
 
-                    out << "Supported Commands:\nHelp (this message)"
+					out << "Supported Commands:\nHelp (this message)"
 					    << "\n"
 					    << "GetRemoteGatewayStatus"
 					    << "\n"
@@ -1946,14 +1946,186 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					    << "\n"
 					    << "GetRemoteDesktopIcons"
 					    << "\n"
-					    << "FiniteStateMachineName,Command,Parameter(s)" << "\n";
+					    << "FiniteStateMachineName,Command,Parameter(s)"
+					    << "\n";
 
 					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
-                }
+				}
 
 				bool remoteGatewayStatus = buffer.find("GetRemoteGatewayStatus") == 0;
-				if(remoteGatewayStatus || buffer.find("GetRemoteAppStatus") == 0)
+				bool remoteGatewayStatusXML =
+				    buffer.find("GetRemoteGatewayStatusXML") == 0;
+				if(remoteGatewayStatusXML || buffer.find("GetRemoteAppStatusXML") == 0)
+				{
+					__COUT_TYPE__(TLVL_DEBUG + 12)
+					    << "Giving app status to remote monitor..." << __E__;
+
+					if(remoteGatewayStatus &&
+					   buffer.size() > strlen("GetRemoteGatewayStatusXML") + 1)
+					{
+						std::vector<std::string> params =
+						    StringMacros::getVectorFromString(buffer, {','});
+						if(params.size() == 4)
+						{
+							//Parameters are 	"," + ipForReverseLoginOverUDP +
+							// 					"," + std::to_string(portForReverseLoginOverUDP) +
+							// 					"," + remoteGatewayApp.appInfo.name;
+
+							__COUTVS__(23, StringMacros::vectorToString(params));
+							std::string tmpIP   = params[1];
+							int         tmpPort = atoi(params[2].c_str());
+
+							if(!theSupervisor->theWebUsers_
+							        .remoteLoginVerificationEnabled_ ||
+							   theSupervisor->theWebUsers_.remoteLoginVerificationIP_ !=
+							       tmpIP ||
+							   theSupervisor->theWebUsers_.remoteLoginVerificationPort_ !=
+							       tmpPort)
+							{
+								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ =
+								    tmpIP;
+								theSupervisor->theWebUsers_.remoteLoginVerificationPort_ =
+								    tmpPort;
+								theSupervisor->theWebUsers_.remoteGatewaySelfName_ =
+								    params[3];
+								theSupervisor->theWebUsers_
+								    .remoteLoginVerificationEnabled_ =
+								    true;  //mark as under remote control
+								__COUT_INFO__
+								    << "This Gateway '"
+								    << theSupervisor->theWebUsers_.remoteGatewaySelfName_
+								    << "' is now under remote control and will validate "
+								       "logins through remote Gateway Supervisor at "
+								    << theSupervisor->theWebUsers_
+								           .remoteLoginVerificationIP_
+								    << ":"
+								    << theSupervisor->theWebUsers_
+								           .remoteLoginVerificationPort_
+								    << __E__;
+							}
+						}
+						else
+							__COUT_ERR__ << "Parameter count is not 4, it is "
+							             << params.size() << __E__;
+					}
+
+					XmlDocument xmlOut;
+					auto        rootNode = xmlOut.getRootElement();
+
+					for(const auto& it :
+					    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+					{
+						const auto& appInfo = it.second;
+						if(0 &&  //always return full status
+						   remoteGatewayStatus &&
+						   appInfo.getClass() !=
+						       XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+							continue;  //only return Gateway status
+
+						auto supervisorNode =
+						    xmlOut.createChildElement("supervisor", rootNode);
+						xmlOut.addAttributeToNode(
+						    "name",
+						    appInfo.getName(),
+						    supervisorNode);  // get application name
+						xmlOut.addAttributeToNode("id",
+						                          std::to_string(appInfo.getId()),
+						                          supervisorNode);  // get application id
+						xmlOut.addAttributeToNode(
+						    "status", appInfo.getStatus(), supervisorNode);  // get status
+						xmlOut.addAttributeToNode(
+						    "time",
+						    std::to_string(appInfo.getLastStatusTime()),
+						    supervisorNode);  // ? StringMacros::getTimestampString(appInfo.getLastStatusTime()) : "0");  // get time stamp
+						xmlOut.addAttributeToNode(
+						    "stale",
+						    std::to_string(time(0) - appInfo.getLastStatusTime()),
+						    supervisorNode);  // time since update
+						xmlOut.addAttributeToNode("progress",
+						                          std::to_string(appInfo.getProgress()),
+						                          supervisorNode);  // get progress
+						xmlOut.addTextElementToParent(
+						    "detail", appInfo.getDetail(), supervisorNode);  // get detail
+						xmlOut.addAttributeToNode(
+						    "class",
+						    appInfo.getClass(),
+						    supervisorNode);  // get application class
+						xmlOut.addAttributeToNode("url",
+						                          appInfo.getURL(),
+						                          supervisorNode);  // get application url
+						xmlOut.addAttributeToNode("context",
+						                          appInfo.getContextName(),
+						                          supervisorNode);  // get context
+
+						for(auto& subappInfoPair : appInfo.getSubappInfo())
+						{
+							auto subappElement =
+							    xmlOut.createChildElement("subapp", supervisorNode);
+							xmlOut.addAttributeToNode(
+							    "name", subappInfoPair.first, subappElement);
+							xmlOut.addAttributeToNode("status",
+							                          subappInfoPair.second.status,
+							                          subappElement);  // get status
+							xmlOut.addAttributeToNode(
+							    "time",
+							    subappInfoPair.second.lastStatusTime
+							        ? StringMacros::getTimestampString(
+							              subappInfoPair.second.lastStatusTime)
+							        : "0",
+							    subappElement);  // get time stamp
+							xmlOut.addAttributeToNode(
+							    "stale",
+							    std::to_string(time(0) -
+							                   subappInfoPair.second.lastStatusTime),
+							    subappElement);  // time since update
+							xmlOut.addAttributeToNode(
+							    "progress",
+							    std::to_string(subappInfoPair.second.progress),
+							    subappElement);  // get progress
+							xmlOut.addTextElementToParent("detail",
+							                              subappInfoPair.second.detail,
+							                              subappElement);  // get detail
+							xmlOut.addAttributeToNode("url",
+							                          subappInfoPair.second.url,
+							                          subappElement);  // get url
+							xmlOut.addAttributeToNode("class",
+							                          subappInfoPair.second.class_name,
+							                          subappElement);  // get class
+						}
+					}
+
+					if(remoteGatewayStatus)  //also return System Messages and console count and user-with-lock
+					{
+						__COUT_TYPE__(TLVL_DEBUG + 12)
+						    << "Giving extra Gateway info to remote monitor..." << __E__;
+
+						xmlOut.addTextElementToParent("systemMessages",
+						                              theWebUsers_.getAllSystemMessages(),
+						                              rootNode);
+						xmlOut.addTextElementToParent(
+						    "usernameWithLock", theWebUsers_.getUserWithLock(), rootNode);
+
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->systemStatusMutex_);  //lock for rest of scope
+						xmlOut.addTextElementToParent(
+						    "console_err_count",
+						    std::to_string(theSupervisor->systemConsoleErrCount_),
+						    rootNode);
+						xmlOut.addTextElementToParent(
+						    "console_warn_count",
+						    std::to_string(theSupervisor->systemConsoleWarnCount_),
+						    rootNode);
+					}
+
+					std::stringstream out;
+					xmlOut.outputXmlDocument((std::ostringstream*)&out,
+					                         false /*dispStdOut*/);
+					__COUTS__(23) << "App status to monitor: " << out.str() << __E__;
+					sock.acknowledge(out.str(), false /* verbose */);
+					continue;
+				}
+				else if(remoteGatewayStatus || buffer.find("GetRemoteAppStatus") == 0)
 				{
 					__COUT_TYPE__(TLVL_DEBUG + 12)
 					    << "Giving app status to remote monitor..." << __E__;
@@ -2130,10 +2302,11 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					{
 						xmlOut.addTextElementToData("fsm", fsm);
 					}
-                    if (theSupervisor->activeStateMachineName_ != "") {
+					if(theSupervisor->activeStateMachineName_ != "")
+					{
 						xmlOut.addTextElementToData(
 						    "active", theSupervisor->activeStateMachineName_);
-                    }
+					}
 
 					std::stringstream out;
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
@@ -2482,7 +2655,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					sock.acknowledge(iconString, true /* verbose */);
 					continue;
-				}  //end GetRemoteDesktopIcons
+				}                             //end GetRemoteDesktopIcons
 				else if(!enableStateChanges)  //else it is an FSM Command!
 				{
 					__COUT_WARN__ << "Skipping potential FSM Command because "
@@ -2716,7 +2889,8 @@ void GatewaySupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots</title>"
 	     << GatewaySupervisor::getIconHeaderString() <<
 	    // end show ots icon
-	    "</head>" << "<frameset col='100%' row='100%'>"
+	    "</head>"
+	     << "<frameset col='100%' row='100%'>"
 	     << "<frame src='/WebPath/html/Desktop.html?urn="
 	     << this->getApplicationDescriptor()->getLocalId()
 	     << "&securityType=" << securityType_ << "'></frameset></html>";
@@ -3818,7 +3992,7 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
-	}  // end update Run Info handling
+	}      // end update Run Info handling
 }  // end statePaused()
 
 //==============================================================================
@@ -3896,7 +4070,7 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
-	}  // end update Run Info handling
+	}      // end update Run Info handling
 }  // end stateRunning()
 
 //==============================================================================
@@ -3982,7 +4156,7 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}  // end update Run Info handling
+	}      // end update Run Info handling
 }  // end stateHalted()
 
 //==============================================================================
@@ -4069,7 +4243,7 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}  // end update Run Info handling
+	}      // end update Run Info handling
 
 }  // end stateConfigured()
 
@@ -4160,7 +4334,7 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}  // end update Run Info handling
+	}      // end update Run Info handling
 
 }  // end inError()
 
@@ -6166,7 +6340,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			{  // start mutex scope
 				std::lock_guard<std::mutex> lock(broadcastIterationBreakpointMutex_);
 				iterationBreakpoint = broadcastIterationBreakpoint_;  // get breakpoint
-			}  // end mutex scope
+			}                                                         // end mutex scope
 
 			if(iterationBreakpoint < (unsigned int)-1)
 				__COUT__ << "Iteration breakpoint currently is " << iterationBreakpoint
@@ -7995,7 +8169,7 @@ try
 
 							iconString += remoteGatewayApp.iconString;
 							break;  //done with cache retrieval
-						}  //end loop retrieval
+						}           //end loop retrieval
 
 						if(!found)
 						{
