@@ -224,8 +224,8 @@ void WizardSupervisor::requestIcons(xgi::Input* in, xgi::Output* out)
 			"/WebPath/images/windowContentImages/state_machine_screenshot.png,/Documentation"
 
 			 //uniqueWin mode == 2 for new tab
-		 << ",Redmine Project for otsdaq,RED,2,1,../otsdaqIcons/android-icon-36x36.png,"
-			"https://cdcvs.fnal.gov/redmine/projects/otsdaq,/Documentation"
+		 << ",GitHub Project for otsdaq,GIT,2,1,../otsdaqIcons/android-icon-36x36.png,"
+			"https://github.com/art-daq/otsdaq"
 			 //uniqueWin mode == 2 for new tab
 		 << ",Homepage for otsdaq,OTS,2,1,../otsdaqIcons/android-icon-36x36.png,"
 					"https://otsdaq.fnal.gov,/Documentation"

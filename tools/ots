@@ -263,53 +263,54 @@ if [ "x$OTS_DISABLE_TRACE_DEFAULT" == "x" ]; then
 	#Trace setup and helpful commented lines:
 	export TRACE_MSGMAX=0 #Activating TRACE
 
-	#echo Turning on all memory tracing via: tonMg 0-63
-	#tonMg 0-63
-	#type toffS
+	if type trace_cntl >/dev/null 2>&1; then
+		#echo Turning on all memory tracing via: tonMg 0-63
+		#tonMg 0-63
+		#type toffS
 
-	#tonSg 0-63 #turn on all slow paths
+		#tonSg 0-63 #turn on all slow paths
 
-	# turn on err|warn|dbg|trace
-	#${TRACE_BIN}/trace_cntl lvlset 0 0x1f 0
+		# turn on err|warn|dbg|trace
+		#trace_cntl lvlset 0 0x1f 0
 
-	# Default setup moved from setup_trace to here so it can be disabled
-##	tonMg 0-4  #enable trace to memory
-#	tonSg 0-3  #enable trace to slow path (i.e. UDP)
-#	toffSg 4-64 #apparently not turned off by default?
-#	${TRACE_BIN}/trace_cntl lvlsetg 0x1f 0 0 # tonMg 0-4
-#	${TRACE_BIN}/trace_cntl lvlclrg 0 0xffffffffffffffff 0 # toffSg 0-63, clear all
-	${TRACE_BIN}/trace_cntl lvlmskg 0xfff 0x1ff 0  # <memory> <slow> <trigger>, tonSg 0-8 (debug is 8 := TLVL_{FATAL,ALERT,CRIT,ERROR,WARNING,NOTICE,INFO,LOG,DEBUG})
-	${TRACE_BIN}/trace_cntl mode 3   # ton*
+		# Default setup moved from setup_trace to here so it can be disabled
+	##	tonMg 0-4  #enable trace to memory
+	#	tonSg 0-3  #enable trace to slow path (i.e. UDP)
+	#	toffSg 4-64 #apparently not turned off by default?
+	#	trace_cntl lvlsetg 0x1f 0 0 # tonMg 0-4
+	#	trace_cntl lvlclrg 0 0xffffffffffffffff 0 # toffSg 0-63, clear all
+		trace_cntl lvlmskg 0xfff 0x1ff 0  # <memory> <slow> <trigger>, tonSg 0-8 (debug is 8 := TLVL_{FATAL,ALERT,CRIT,ERROR,WARNING,NOTICE,INFO,LOG,DEBUG})
+		trace_cntl mode 3   # ton*
 
-	if [ "$OTS_DEBUG_MODE" == "1" ]; then
-		# tonSg DEBUG+7 #to enable targeted bitmask
+		if [ "$OTS_DEBUG_MODE" == "1" ]; then
+			# tonSg DEBUG+7 #to enable targeted bitmask
 
-		tonSg 0-8 #enable up to DEBUG only
+			tonSg 0-8 #enable up to DEBUG only
 
-		#enable kernel trace to memory buffer:
-		#+test -f /proc/trace/buffer && { export TRACE_FILE=/proc/trace/buffer; tlvls | grep 'KERNEL 0xffffffff00ffffff' >/dev/null || { tonMg 0-63; toffM 24-31 -nKERNEL; }; }
+			#enable kernel trace to memory buffer:
+			#+test -f /proc/trace/buffer && { export TRACE_FILE=/proc/trace/buffer; tlvls | grep 'KERNEL 0xffffffff00ffffff' >/dev/null || { tonMg 0-63; toffM 24-31 -nKERNEL; }; }
 
-		#tlvls #to see what is enabled by name
-		#tonS -N DTC* 0-63 #to enable by name
-		#tshow | grep DTC #to see memory printouts by name
+			#tlvls #to see what is enabled by name
+			#tonS -N DTC* 0-63 #to enable by name
+			#tshow | grep DTC #to see memory printouts by name
 
-		#end Trace helpful info
-		#============================
-	fi
+			#end Trace helpful info
+			#============================
+		fi
 
-	# Disable some very verbose trace outputs (e.g. from artdaq_database)
-#	toffS 0-63 -n CONF:OpBase_C
-#	toffS 0-63 -n CONF:OpLdStr_C
-#	toffS 0-63 -n CONF:CrtCfD_C
-#	toffS 0-63 -n COFS:DpFle_C
-#	toffS 0-63 -n PRVDR:FileDB_C
-#	toffS 0-63 -n PRVDR:FileDBIX_C
-#	toffS 0-63 -n JSNU:Document_C
-#	toffS 0-63 -n JSNU:DocUtils_C
-#	toffS 0-63 -n CONF:LdStrD_C
-#	toffS 0-63 -n FileDB:RDWRT_C
+		# Disable some very verbose trace outputs (e.g. from artdaq_database)
+	#	toffS 0-63 -n CONF:OpBase_C
+	#	toffS 0-63 -n CONF:OpLdStr_C
+	#	toffS 0-63 -n CONF:CrtCfD_C
+	#	toffS 0-63 -n COFS:DpFle_C
+	#	toffS 0-63 -n PRVDR:FileDB_C
+	#	toffS 0-63 -n PRVDR:FileDBIX_C
+	#	toffS 0-63 -n JSNU:Document_C
+	#	toffS 0-63 -n JSNU:DocUtils_C
+	#	toffS 0-63 -n CONF:LdStrD_C
+	#	toffS 0-63 -n FileDB:RDWRT_C
 
-	TRACE_NAMLVLSET="\
+		TRACE_NAMLVLSET="\
 CONF:LdStrD_C    0x1ff 0 0
 FileDB:RDWRT_C   0x1ff 0 0
 CONF:CrtCfD_C    0x1ff 0 0
@@ -333,10 +334,10 @@ filesystem_functions.cpp 0x1ff 0 0
 options_operation_base.cpp 0x1ff 0 0
 JSONDocument_utils.cpp  0x1ff 0 0
 options_operation_managedocument.cpp  0x1ff 0 0
-" ${TRACE_BIN}/trace_cntl namlvlset
+" trace_cntl namlvlset
 
 
-
+	fi
 fi
 
 
@@ -2804,7 +2805,7 @@ if [ $FIREFOX == 1 ]; then
 	firefox $MAIN_URL &
 fi
 
-if [ $CHECK_GIT_REPO_STATUS == 1 ]; then
+if [ "x$CHECK_GIT_REPO_STATUS" == "x1" ]; then
 	out "Will report a warning if any uncommitted code found..."
 	echo
 	UpdateOTS.sh --warn 2>&1 >/dev/null
