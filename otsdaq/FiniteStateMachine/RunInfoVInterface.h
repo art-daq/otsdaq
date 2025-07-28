@@ -50,7 +50,7 @@ class RunInfoVInterface  ///< : public Configurable
 	    const std::string& queryFilter = "") = 0;
 
 	virtual std::vector<std::vector<std::string>> getRunConditionByID(
-		uint64_t conditionID) =0;
+	    uint64_t conditionID) = 0;
 
   private:
 	const std::string mfSubject_;
