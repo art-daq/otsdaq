@@ -118,61 +118,66 @@ def get_state_machines(ctx):
 def get_app_status(ctx, detail):
     host, port = host_port_from_ctx(ctx)
     result = send_gateway_command(host, port, "GetRemoteGatewayStatusXML", [])
-    root = ET.fromstring(result)
     console = Console()
-    systemmessages = root.find("./systemMessages")
-    if systemmessages is not None:
-        # Format is: targetUser | time | msg | targetUser | time | msg...etc
-        messagestr = unquote(systemmessages.get("value"))
-        messagearr = messagestr.split("|")
-        if len(messagearr) > 1:
-            table = Table(title="System Messages")
-            table.add_column("User")
-            table.add_column("Time")
-            table.add_column("Message")
 
-            user, time, msg, *rest = messagearr
-            ts = datetime.fromtimestamp(int(time))
-            table.add_row(user, ts, msg)
-            while len(rest) > 0:
-                user, time, msg, *rest = rest
-                ts = datetime.fromtimestamp(int(time))
+    try:
+        root = ET.fromstring(result)
+        systemmessages = root.find("./systemMessages")
+        if systemmessages is not None:
+            # Format is: targetUser | time | msg | targetUser | time | msg...etc
+            messagestr = unquote(systemmessages.get("value"))
+            messagearr = messagestr.split("|")
+            if len(messagearr) > 1:
+                table = Table(title="System Messages")
+                table.add_column("User")
+                table.add_column("Time")
+                table.add_column("Message")
+
+                user, time, msg, *rest = messagearr
+                ts = str(datetime.fromtimestamp(int(time)))
                 table.add_row(user, ts, msg)
-            console.print(table)
+                while len(rest) > 0:
+                    user, time, msg, *rest = rest
+                    ts = str(datetime.fromtimestamp(int(time)))
+                    table.add_row(user, ts, msg)
+                console.print(table)
 
-    userlock = root.find("./usernameWithLock")
-    if userlock is not None:
-        print(f"User [bold]{userlock.get('value')}[/bold] has the lock")
+        userlock = root.find("./usernameWithLock")
+        if userlock is not None:
+            print(f"User [bold]{userlock.get('value')}[/bold] has the lock")
 
-    consolewarn = root.find("./console_warn_count")
-    consoleerr = root.find("./console_err_count")
-    if consolewarn is not None and consoleerr is not None:
-        print(
-            f"There have been {consoleerr.get('value')} error(s) and {consolewarn.get('value')} warning(s) reported to the ots console"
-        )
+        consolewarn = root.find("./console_warn_count")
+        consoleerr = root.find("./console_err_count")
+        if consolewarn is not None and consoleerr is not None:
+            print(
+                f"There have been {consoleerr.get('value')} error(s) and {consolewarn.get('value')} warning(s) reported to the ots console"
+            )
 
-    stable = Table(title="Supervisor Status")
-    stable.add_column("Context Name")
-    stable.add_column("App Name")
-    stable.add_column("Status")
-    stable.add_column("Progress")
-    stable.add_column("Detail")
-    stable.add_column("App Type")
-    stable.add_column("App URL")
-    stable.add_column("App ID")
-    for supervisor in root.iter("supervisor"):
-        context = unquote(supervisor.get("context"))
-        name = unquote(supervisor.get("name"))
-        status = unquote(supervisor.get("status"))
-        progressPercentage = int(supervisor.get("progress"))
-        progress = ProgressBar(completed=progressPercentage,width=10)
-        detail = unquote(supervisor.find("detail").get("value"))
-        apptype = unquote(supervisor.get("class"))
-        appurl = unquote(supervisor.get("url"))
-        appid = unquote(supervisor.get("id"))
-        stable.add_row(context, name, status, progress, detail, apptype, appurl, appid)
+        stable = Table(title="Supervisor Status")
+        stable.add_column("Context Name")
+        stable.add_column("App Name")
+        stable.add_column("Status")
+        stable.add_column("Progress")
+        stable.add_column("Detail")
+        stable.add_column("App Type")
+        stable.add_column("App URL")
+        stable.add_column("App ID")
+        for supervisor in root.iter("supervisor"):
+            context = unquote(supervisor.get("context"))
+            name = unquote(supervisor.get("name"))
+            status = unquote(supervisor.get("status"))
+            progressPercentage = int(supervisor.get("progress"))
+            progress = ProgressBar(completed=progressPercentage,width=10)
+            detail = unquote(supervisor.find("detail").get("value"))
+            apptype = unquote(supervisor.get("class"))
+            appurl = unquote(supervisor.get("url"))
+            appid = unquote(supervisor.get("id"))
+            stable.add_row(context, name, status, progress, detail, apptype, appurl, appid)
 
-    console.print(stable)
+        console.print(stable)
+    except ET.ParseError as ex:
+        print(f"Exception from XML Parser: {ex}. Printing XML document:")
+        print(result)
 
 
 if __name__ == "__main__":

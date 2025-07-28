@@ -378,9 +378,9 @@ void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 	{
 		if(dispStdOut)
 			std::cout << " value='"
-			          << (XML_TO_CHAR(currEl->getFirstChild()->getNodeValue())) << "'";
+			          << StringMacros::escapeString(XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()), true) << "'";
 		if(out)
-			*out << " value='" << (XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()))
+			*out << " value='" << StringMacros::escapeString(XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()), true)
 			     << "'";
 	}
 
@@ -391,10 +391,10 @@ void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 		{
 			if(dispStdOut)
 				std::cout << " " << XML_TO_CHAR(attrList->item(ii)->getNodeName()) << "='"
-				          << (XML_TO_CHAR(attrList->item(ii)->getNodeValue())) << "'";
+				          << StringMacros::escapeString(XML_TO_CHAR(attrList->item(ii)->getNodeValue()),true) << "'";
 			if(out)
 				*out << " " << XML_TO_CHAR(attrList->item(ii)->getNodeName()) << "='"
-				     << (XML_TO_CHAR(attrList->item(ii)->getNodeValue())) << "'";
+				     << StringMacros::escapeString(XML_TO_CHAR(attrList->item(ii)->getNodeValue()), true) << "'";
 		}
 	}
 
