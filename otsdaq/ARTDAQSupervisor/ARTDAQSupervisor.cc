@@ -158,27 +158,11 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 
 	o << "package_hashes_to_save: "
 	  << getSupervisorProperty("package_hashes_to_save", "[artdaq]") << std::endl;
-	// Note that productsdir_for_bash_scripts is REQUIRED!
-	__SUP_COUT__ << "Use spack is " << getSupervisorProperty("use_spack", false)
-	             << ", spack_root is "
-	             << getSupervisorProperty("spack_root_for_bash_scripts", "NOT SET")
-	             << ", productsdir is "
-	             << getSupervisorProperty("productsdir_for_bash_scripts", "NOT SET")
-	             << __E__;
-	if(getSupervisorProperty("use_spack", false))
-	{
+
 		o << "spack_root_for_bash_scripts: "
 		  << getSupervisorProperty("spack_root_for_bash_scripts",
 		                           std::string(__ENV__("SPACK_ROOT")))
 		  << std::endl;
-	}
-	else
-	{
-		o << "productsdir_for_bash_scripts: "
-		  << getSupervisorProperty("productsdir_for_bash_scripts",
-		                           std::string(__ENV__("OTS_PRODUCTS")))
-		  << std::endl;
-	}
 	o << "boardreader timeout: " << getSupervisorProperty("boardreader_timeout", 30)
 	  << std::endl;
 	o << "eventbuilder timeout: " << getSupervisorProperty("eventbuilder_timeout", 30)

@@ -162,8 +162,14 @@ def get_app_status(ctx, detail):
         stable.add_column("App Type")
         stable.add_column("App URL")
         stable.add_column("App ID")
+        prevcontext = ""
         for supervisor in root.iter("supervisor"):
             context = unquote(supervisor.get("context"))
+            if context == prevcontext:
+                context = ""
+            else:
+                prevcontext = context
+                stable.add_row(context)
             name = unquote(supervisor.get("name"))
             status = unquote(supervisor.get("status"))
             progressPercentage = int(supervisor.get("progress"))
@@ -172,7 +178,17 @@ def get_app_status(ctx, detail):
             apptype = unquote(supervisor.get("class"))
             appurl = unquote(supervisor.get("url"))
             appid = unquote(supervisor.get("id"))
-            stable.add_row(context, name, status, progress, detail, apptype, appurl, appid)
+            stable.add_row("", name, status, progress, detail, apptype, appurl, appid)
+            for subapp in supervisor.iter("subapp"):
+                name = "--> " + unquote(subapp.get("name"))
+                status = unquote(subapp.get("status"))
+                progressPercentage = int(subapp.get("progress"))
+                progress = ProgressBar(completed=progressPercentage,width=10)
+                detail = unquote(subapp.find("detail").get("value"))
+                apptype = unquote(subapp.get("class"))
+                appurl = unquote(subapp.get("url"))
+                stable.add_row("", name, status, progress, detail, apptype, appurl, "")
+                
 
         console.print(stable)
     except ET.ParseError as ex:
