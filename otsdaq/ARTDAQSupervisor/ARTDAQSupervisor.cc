@@ -159,10 +159,10 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 	o << "package_hashes_to_save: "
 	  << getSupervisorProperty("package_hashes_to_save", "[artdaq]") << std::endl;
 
-		o << "spack_root_for_bash_scripts: "
-		  << getSupervisorProperty("spack_root_for_bash_scripts",
-		                           std::string(__ENV__("SPACK_ROOT")))
-		  << std::endl;
+	o << "spack_root_for_bash_scripts: "
+	  << getSupervisorProperty("spack_root_for_bash_scripts",
+	                           std::string(__ENV__("SPACK_ROOT")))
+	  << std::endl;
 	o << "boardreader timeout: " << getSupervisorProperty("boardreader_timeout", 30)
 	  << std::endl;
 	o << "eventbuilder timeout: " << getSupervisorProperty("eventbuilder_timeout", 30)

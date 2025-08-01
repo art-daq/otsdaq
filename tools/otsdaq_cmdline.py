@@ -188,7 +188,6 @@ def get_app_status(ctx, detail):
                 apptype = unquote(subapp.get("class"))
                 appurl = unquote(subapp.get("url"))
                 stable.add_row("", name, status, progress, detail, apptype, appurl, "")
-                
 
         console.print(stable)
     except ET.ParseError as ex:

@@ -19,13 +19,13 @@ def send_gateway_command(host, port, command, parameters):
             data, addr = s.recvfrom(2048)
             response += data.decode('UTF-8')
         except socket.timeout:
-            break    
+            break
     return response
 
 def main(argv):
     if len(argv) < 3: print(USAGE); sys.exit()
     node,port = argv[1].split(':')
-    
+
     response = send_gateway_command(node, port, argv[2], argv[3:])
     print(response)
     pass

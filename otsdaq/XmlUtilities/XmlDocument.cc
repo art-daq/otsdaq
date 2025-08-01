@@ -378,9 +378,13 @@ void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 	{
 		if(dispStdOut)
 			std::cout << " value='"
-			          << StringMacros::escapeString(XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()), true) << "'";
+			          << StringMacros::escapeString(
+			                 XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()), true)
+			          << "'";
 		if(out)
-			*out << " value='" << StringMacros::escapeString(XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()), true)
+			*out << " value='"
+			     << StringMacros::escapeString(
+			            XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()), true)
 			     << "'";
 	}
 
@@ -391,10 +395,14 @@ void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 		{
 			if(dispStdOut)
 				std::cout << " " << XML_TO_CHAR(attrList->item(ii)->getNodeName()) << "='"
-				          << StringMacros::escapeString(XML_TO_CHAR(attrList->item(ii)->getNodeValue()),true) << "'";
+				          << StringMacros::escapeString(
+				                 XML_TO_CHAR(attrList->item(ii)->getNodeValue()), true)
+				          << "'";
 			if(out)
 				*out << " " << XML_TO_CHAR(attrList->item(ii)->getNodeName()) << "='"
-				     << StringMacros::escapeString(XML_TO_CHAR(attrList->item(ii)->getNodeValue()), true) << "'";
+				     << StringMacros::escapeString(
+				            XML_TO_CHAR(attrList->item(ii)->getNodeValue()), true)
+				     << "'";
 		}
 	}
 
