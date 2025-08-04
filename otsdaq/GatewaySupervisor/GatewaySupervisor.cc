@@ -1934,7 +1934,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					out << "Supported Commands:\nHelp (this message)"
 					    << "\n"
-					    << "GetRemoteGatewayStatus(XML) - The XML version sends real XML, without sends the format Gateways use to communicate with each other"
+					    << "GetRemoteGatewayStatus(XML) - The XML version sends real "
+					       "XML, without sends the format Gateways use to communicate "
+					       "with each other"
 					    << "\n"
 					    << "GetRemoteAppStatus(XML)"
 					    << "\n"
