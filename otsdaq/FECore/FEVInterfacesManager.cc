@@ -2311,11 +2311,11 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 	{
 		if(i >= argsOut.size() - BUILT_IN_ARGOUT_COUNT && //remove built-in args if DEFAULT
 				argsOut[i].second == ARG_OUT_DEFAULT)
-			continue;		
-		
+			continue;
+
 		if(!first)
 			outputArgs += ";";
-		else 
+		else
 			first = false;
 
 		// attempt to get number, and output hex version
