@@ -2272,9 +2272,8 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 	{
 		returnStrings.push_back(ARG_OUT_DEFAULT);  // std::string());
 		argsOut.push_back(FEVInterface::frontEndMacroArg_t(
-				PLOTLY_PLOT,
-				returnStrings[returnStrings.size() - 1]));
-	} //end always add built-in special output args -----------
+		    PLOTLY_PLOT, returnStrings[returnStrings.size() - 1]));
+	}  //end always add built-in special output args -----------
 
 	__CFG_COUT__ << "# of input args = " << argsIn.size() << __E__;
 	for(auto& argIn : argsIn)
@@ -2286,8 +2285,8 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 
 	__CFG_COUT__ << "FE Macro complete!" << __E__;
 
-	__CFG_COUT__ << "# of output args = " << argsOut.size() <<
-		" including " << BUILT_IN_ARGOUT_COUNT << " built-in args." << __E__;
+	__CFG_COUT__ << "# of output args = " << argsOut.size() << " including "
+	             << BUILT_IN_ARGOUT_COUNT << " built-in args." << __E__;
 	for(const auto& arg : argsOut)
 		__CFG_COUT__ << arg.first << ": " << arg.second << __E__;
 
@@ -2309,8 +2308,9 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 	bool first = true;
 	for(unsigned int i = 0; i < argsOut.size(); ++i)
 	{
-		if(i >= argsOut.size() - BUILT_IN_ARGOUT_COUNT && //remove built-in args if DEFAULT
-				argsOut[i].second == ARG_OUT_DEFAULT)
+		if(i >= argsOut.size() -
+		            BUILT_IN_ARGOUT_COUNT &&  //remove built-in args if DEFAULT
+		   argsOut[i].second == ARG_OUT_DEFAULT)
 			continue;
 
 		if(!first)

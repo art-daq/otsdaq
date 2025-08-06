@@ -39,29 +39,30 @@
 #define __SET_ARG_IN__(X, Y) FEVInterface::emplaceFEMacroArgumentValue(argsIn, X, Y)
 #define __SET_ARG_OUT__(X, Y) FEVInterface::setFEMacroArgumentValue(argsOut, X, Y)
 
-#define PLOTLY_PLOT	"Plotly_Plot" 	///< arg out for built-in auto plotly plotting at client, for example:
-									///< 	__SET_ARG_OUT__(PLOTLY_PLOT,  //use built-in auto plotting using plotly
-									///< 		R"({
-									///<			"data" : [{
-									///<					"x": [1, 2, 3],
-									///<					"y": [4, 5, 6],
-									///<					"mode": "lines+markers",
-									///<					"type": "scatter",
-									///<					"name": "Line 1"
-									///<				},
-									///<				{
-									///<					"x": [1, 2, 3],
-									///<					"y": [8, 3, 4],
-									///<					"mode": "lines+markers",
-									///<					"type": "scatter",
-									///<					"name": "Line 2"
-									///<				}],
-									///<			"layout" : {
-									///<					"title" : { "text" : "Awesome plot"},
-									///<					"xaxis" : { "title" : {"text" : "time"}, "titlefont": { "size" : 10 }, "showticklabels" : true },
-									///<					"yaxis" : { "title" : {"text" : "amplitude"}, "titlefont": { "size" : 10 }, "zeroline" : true }
-									///<				}
-									///< 		})");
+#define PLOTLY_PLOT                                                                                                \
+	"Plotly_Plot"  ///< arg out for built-in auto plotly plotting at client, for example:                          \
+	    ///< 	__SET_ARG_OUT__(PLOTLY_PLOT,  //use built-in auto plotting using plotly                              \
+	    ///< 		R"({                                                                                                \
+	    ///<			"data" : [{                                                                                         \
+	    ///<					"x": [1, 2, 3],                                                                                   \
+	    ///<					"y": [4, 5, 6],                                                                                   \
+	    ///<					"mode": "lines+markers",                                                                          \
+	    ///<					"type": "scatter",                                                                                \
+	    ///<					"name": "Line 1"                                                                                  \
+	    ///<				},                                                                                                 \
+	    ///<				{                                                                                                  \
+	    ///<					"x": [1, 2, 3],                                                                                   \
+	    ///<					"y": [8, 3, 4],                                                                                   \
+	    ///<					"mode": "lines+markers",                                                                          \
+	    ///<					"type": "scatter",                                                                                \
+	    ///<					"name": "Line 2"                                                                                  \
+	    ///<				}],                                                                                                \
+	    ///<			"layout" : {                                                                                        \
+	    ///<					"title" : { "text" : "Awesome plot"},                                                             \
+	    ///<					"xaxis" : { "title" : {"text" : "time"}, "titlefont": { "size" : 10 }, "showticklabels" : true }, \
+	    ///<					"yaxis" : { "title" : {"text" : "amplitude"}, "titlefont": { "size" : 10 }, "zeroline" : true }   \
+	    ///<				}                                                                                                  \
+	    ///< 		})");
 
 namespace ots
 {
