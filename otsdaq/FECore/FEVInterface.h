@@ -39,6 +39,7 @@
 #define __SET_ARG_IN__(X, Y) FEVInterface::emplaceFEMacroArgumentValue(argsIn, X, Y)
 #define __SET_ARG_OUT__(X, Y) FEVInterface::setFEMacroArgumentValue(argsOut, X, Y)
 
+// clang-format off
 #define PLOTLY_PLOT "Plotly_Plot"  ///< arg out for built-in auto plotly plotting at client, for example:
 					///< 	__SET_ARG_OUT__(PLOTLY_PLOT,  //use built-in auto plotting using plotl
 					///< 		R"({
@@ -78,8 +79,6 @@ class FEVInterfacesManager;
 /// desired.
 class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 {
-	// clang-format off
-
 	friend class FEVInterfacesManager;
 
   public:
