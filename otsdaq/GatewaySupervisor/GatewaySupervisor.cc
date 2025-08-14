@@ -7130,7 +7130,7 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 		                                              &uid,
 		                                              "0" /*dummy ip*/,
 		                                              false /*refresh*/,
-		                                              true /*doNotGoRemote*/))
+		                                              false /*doNotGoRemote*/))
 		{
 			*out << cookieCode;
 			return;
