@@ -315,14 +315,26 @@ void TableViewColumnInfo::extractBitMapInfo()
 		// 12		  1,//"Display Rows in Ascending Order",
 		// 13		  2,//"Display Columns in Ascending Order",
 		// 14		  1,//"Snake Double Rows",
-		// 15		  1];//"Snake Double Columns"];
+		// 15		  1,//"Snake Double Columns",
+		// 16		  1,// "Allow Floating Point",
+		// 17		  0// "Value Map to Strings"
+		// 	  ];
 
 		if(dataChoices_.size() < 16)
 		{
 			__SS__ << "The Bit-Map data parameters for column " << name_
 			       << " should be size 16, but is size " << dataChoices_.size()
-			       << ". Bit-Map parameters should be rows, cols, cellBitSize, and min, "
-			          "mid, max color."
+			       << ". Bit-Map parameters should be e.g. rows, cols, cellBitSize, and min, "
+			          "mid, max color, etc."
+			       << std::endl;
+			__SS_THROW__;
+		}
+		if(dataChoices_.size() > 18)
+		{
+			__SS__ << "The Bit-Map data parameters for column " << name_
+			       << " should be size 18, but is size " << dataChoices_.size()
+			       << ". Bit-Map parameters should be e.g. rows, cols, cellBitSize, and min, "
+			          "mid, max color, etc."
 			       << std::endl;
 			__SS_THROW__;
 		}
@@ -346,8 +358,22 @@ void TableViewColumnInfo::extractBitMapInfo()
 		bitMapInfoP_->colsAscending_ = dataChoices_[13] == "Yes" ? 1 : 0;
 		bitMapInfoP_->snakeRows_     = dataChoices_[14] == "Yes" ? 1 : 0;
 		bitMapInfoP_->snakeCols_     = dataChoices_[15] == "Yes" ? 1 : 0;
+
+		bitMapInfoP_->snakeCols_     = dataChoices_[15] == "Yes" ? 1 : 0;
+		if(dataChoices_.size() > 16)
+			bitMapInfoP_->floatingPoint_ = dataChoices_[16] == "Yes" ? 1 : 0;
+		if(dataChoices_.size() > 17)
+			bitMapInfoP_->mapToStrings_	 = dataChoices_[17];
+
+		if(bitMapInfoP_->floatingPoint_ && bitMapInfoP_->cellBitSize_ != 32) //check floating point
+		{
+			__SS__ << "Illegal Bit-Map data parameters for column " << name_
+			       << " - if floating point is allowed, the Bit-field size must be 32."
+			       << std::endl;
+			__SS_THROW__;
+		}
 	}
-}
+} //end extractBitMapInfo()
 
 //==============================================================================
 /// private empty default constructor. Only used by assignment operator.

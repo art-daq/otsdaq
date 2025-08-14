@@ -211,7 +211,7 @@ ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/,
 ConfigurationManager::ConfigurationManager(const std::string& username)
     : ConfigurationManager(true /*initForWriteAccess*/)
 {
-	__GEN_COUT_INFO__ << "Private constructor for write access called." << __E__;
+	__GEN_COUT__ << "Private constructor for write access called." << __E__;
 	// overwrite read-only username initialization with write-access username:
 	mfSubject_ = username;
 	username_  = username;

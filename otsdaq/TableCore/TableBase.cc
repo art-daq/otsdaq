@@ -91,8 +91,13 @@ TableBase::TableBase(const std::string& tableName,
 	{
 		__SS__ << "Failure reading table schema info for table '" << tableName << "!' "
 		       << "Perhaps you need to run otsdaq_convert_config_to_table? Or the XML "
-		          "table definition has moved or link broken?"
+		          "table definition has moved or link broken? or corrupted? Check your Table Info area."
 		       << __E__;
+		try { throw; } catch (const std::runtime_error& e) 
+		{
+			ss << "Here was the error:\n" << e.what() << __E__;
+		}
+		catch(...) {;} //ignore unknown types
 		__COUT_ERR__ << "\n" << ss.str();
 		if(accumulatedExceptions)
 			*accumulatedExceptions += std::string("\n") + ss.str();
