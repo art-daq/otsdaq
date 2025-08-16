@@ -316,8 +316,8 @@ void TableViewColumnInfo::extractBitMapInfo()
 		// 13		  2,//"Display Columns in Ascending Order",
 		// 14		  1,//"Snake Double Rows",
 		// 15		  1,//"Snake Double Columns",
-		// 16		  1,// "Allow Floating Point",
-		// 17		  0// "Value Map to Strings"
+		// 16		  1,//"Allow Floating Point",
+		// 17		  0 //"Value Map to Strings"
 		// 	  ];
 
 		if(dataChoices_.size() < 16)
