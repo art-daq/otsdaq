@@ -2763,11 +2763,11 @@ void WebUsers::tooltipSetNeverShowForUsername(const std::string& username,
 	std::string filename;
 	bool        isForAll = (srcFile == "ALL" && srcFunc == "ALL" && srcId == "ALL");
 
-
 	if(isForAll)
 	{
 		__COUT__ << "Disabling ALL tooltips for user '" << username << "' is now set to "
-		         << doNeverShow << " (temporarySilence=" << temporarySilence << ")" << __E__;
+		         << doNeverShow << " (temporarySilence=" << temporarySilence << ")"
+		         << __E__;
 		filename = getTooltipFilename(username, SILENCE_ALL_TOOLTIPS_FILENAME, "", "");
 	}
 	else
