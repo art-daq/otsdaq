@@ -158,27 +158,11 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 
 	o << "package_hashes_to_save: "
 	  << getSupervisorProperty("package_hashes_to_save", "[artdaq]") << std::endl;
-	// Note that productsdir_for_bash_scripts is REQUIRED!
-	__SUP_COUT__ << "Use spack is " << getSupervisorProperty("use_spack", false)
-	             << ", spack_root is "
-	             << getSupervisorProperty("spack_root_for_bash_scripts", "NOT SET")
-	             << ", productsdir is "
-	             << getSupervisorProperty("productsdir_for_bash_scripts", "NOT SET")
-	             << __E__;
-	if(getSupervisorProperty("use_spack", false))
-	{
-		o << "spack_root_for_bash_scripts: "
-		  << getSupervisorProperty("spack_root_for_bash_scripts",
-		                           std::string(__ENV__("SPACK_ROOT")))
-		  << std::endl;
-	}
-	else
-	{
-		o << "productsdir_for_bash_scripts: "
-		  << getSupervisorProperty("productsdir_for_bash_scripts",
-		                           std::string(__ENV__("OTS_PRODUCTS")))
-		  << std::endl;
-	}
+
+	o << "spack_root_for_bash_scripts: "
+	  << getSupervisorProperty("spack_root_for_bash_scripts",
+	                           std::string(__ENV__("SPACK_ROOT")))
+	  << std::endl;
 	o << "boardreader timeout: " << getSupervisorProperty("boardreader_timeout", 30)
 	  << std::endl;
 	o << "eventbuilder timeout: " << getSupervisorProperty("eventbuilder_timeout", 30)
@@ -194,7 +178,22 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 		  << getSupervisorProperty("max_fragment_size_bytes", 1048576) << std::endl;
 	}
 	o << "transfer_plugin_to_use: "
-	  << getSupervisorProperty("transfer_plugin_to_use", "Autodetect") << std::endl;
+	  << getSupervisorProperty("transfer_plugin_to_use", "TCPSocket") << std::endl;
+	if(getSupervisorProperty("transfer_plugin_from_brs", "") != "")
+	{
+		o << "transfer_plugin_from_brs: "
+		  << getSupervisorProperty("transfer_plugin_from_brs", "") << std::endl;
+	}
+	if(getSupervisorProperty("transfer_plugin_from_ebs", "") != "")
+	{
+		o << "transfer_plugin_from_ebs: "
+		  << getSupervisorProperty("transfer_plugin_from_ebs", "") << std::endl;
+	}
+	if(getSupervisorProperty("transfer_plugin_from_dls", "") != "")
+	{
+		o << "transfer_plugin_from_dls: "
+		  << getSupervisorProperty("transfer_plugin_from_dls", "") << std::endl;
+	}
 	o << "all_events_to_all_dispatchers: " << std::boolalpha
 	  << getSupervisorProperty("all_events_to_all_dispatchers", true) << std::endl;
 	o << "data_directory_override: "
@@ -644,7 +643,7 @@ try
 		}
 		if(builder.allowed_processors != "")
 		{
-			o << "EventBuilder allowed_processors" << builder.allowed_processors
+			o << "EventBuilder allowed_processors: " << builder.allowed_processors
 			  << std::endl;
 		}
 		o << std::endl;
@@ -660,7 +659,7 @@ try
 		}
 		if(logger.allowed_processors != "")
 		{
-			o << "DataLogger allowed_processors" << logger.allowed_processors
+			o << "DataLogger allowed_processors: " << logger.allowed_processors
 			  << std::endl;
 		}
 		o << std::endl;
@@ -677,7 +676,7 @@ try
 		}
 		if(dispatcher.allowed_processors != "")
 		{
-			o << "Dispatcher allowed_processors" << dispatcher.allowed_processors
+			o << "Dispatcher allowed_processors: " << dispatcher.allowed_processors
 			  << std::endl;
 		}
 		o << std::endl;
@@ -693,7 +692,7 @@ try
 		}
 		if(rmanager.allowed_processors != "")
 		{
-			o << "RoutingManager allowed_processors" << rmanager.allowed_processors
+			o << "RoutingManager allowed_processors: " << rmanager.allowed_processors
 			  << std::endl;
 		}
 		o << std::endl;

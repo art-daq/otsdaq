@@ -2225,6 +2225,8 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 	std::vector<std::string>                      returnStrings;
 	std::vector<FEVInterface::frontEndMacroArg_t> argsOut;
 
+	const std::string ARG_OUT_DEFAULT = "DEFAULT";
+
 	{
 		std::istringstream inputStream(outputArgs);
 		std::string        argName;
@@ -2232,7 +2234,7 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 		{
 			__CFG_COUT__ << "argName " << argName << __E__;
 
-			returnStrings.push_back("DEFAULT");  // std::string());
+			returnStrings.push_back(ARG_OUT_DEFAULT);  // std::string());
 			argsOut.push_back(FEVInterface::frontEndMacroArg_t(
 			    StringMacros::decodeURIComponent(argName),
 			    returnStrings[returnStrings.size() - 1]));
@@ -2265,6 +2267,14 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 			__CFG_SS_THROW__;
 		}
 
+	//always add built-in special output args -----------
+	const uint16_t BUILT_IN_ARGOUT_COUNT = 1;
+	{
+		returnStrings.push_back(ARG_OUT_DEFAULT);  // std::string());
+		argsOut.push_back(FEVInterface::frontEndMacroArg_t(
+		    PLOTLY_PLOT, returnStrings[returnStrings.size() - 1]));
+	}  //end always add built-in special output args -----------
+
 	__CFG_COUT__ << "# of input args = " << argsIn.size() << __E__;
 	for(auto& argIn : argsIn)
 		__CFG_COUT__ << argIn.first << ": " << argIn.second << __E__;
@@ -2275,12 +2285,13 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 
 	__CFG_COUT__ << "FE Macro complete!" << __E__;
 
-	__CFG_COUT__ << "# of output args = " << argsOut.size() << __E__;
+	__CFG_COUT__ << "# of output args = " << argsOut.size() << " including "
+	             << BUILT_IN_ARGOUT_COUNT << " built-in args." << __E__;
 	for(const auto& arg : argsOut)
 		__CFG_COUT__ << arg.first << ": " << arg.second << __E__;
 
 	// check namesOfOutputArguments_ size
-	if(feMacro.namesOfOutputArguments_.size() != argsOut.size())
+	if(feMacro.namesOfOutputArguments_.size() != argsOut.size() - BUILT_IN_ARGOUT_COUNT)
 	{
 		__CFG_SS__ << "FE Macro '" << feMacro.feMacroName_ << "' of interfaceID '"
 		           << interfaceID
@@ -2294,10 +2305,18 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 
 	// Success! at this point so return the output string
 	outputArgs = "";
+	bool first = true;
 	for(unsigned int i = 0; i < argsOut.size(); ++i)
 	{
-		if(i)
+		if(i >= argsOut.size() -
+		            BUILT_IN_ARGOUT_COUNT &&  //remove built-in args if DEFAULT
+		   argsOut[i].second == ARG_OUT_DEFAULT)
+			continue;
+
+		if(!first)
 			outputArgs += ";";
+		else
+			first = false;
 
 		// attempt to get number, and output hex version
 		// otherwise just output result
