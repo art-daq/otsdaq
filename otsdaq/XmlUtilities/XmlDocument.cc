@@ -183,6 +183,60 @@ void XmlDocument::terminatePlatform(void)
 	}
 }  //end terminatePlatform()
 
+xercesc::DOMElement* XmlDocument::createChildElement(const std::string&   childClass,
+                                                     xercesc::DOMElement* parent)
+{
+	if(parent == nullptr)
+	{
+		__SS__ << "Illegal Null Parent Pointer!" << __E__;
+		__SS_THROW__;
+	}
+	xercesc::DOMElement* child = nullptr;
+	try
+	{
+		child = theDocument_->createElement(CONVERT_TO_XML(childClass));
+	}
+	catch(xercesc::DOMException& e)
+	{
+		__COUT__ << "Can't use the class: " << childClass
+		         << " to create the child element because the exception says: "
+		         << XML_TO_CHAR(e.getMessage())
+		         << ". Very likely you have a name that starts with a number and that's "
+		            "not allowed!"
+		         << std::endl;
+	}
+	parent->appendChild(child);
+
+	return child;
+}
+
+xercesc::DOMElement* XmlDocument::addAttributeToNode(const std::string&   attributeName,
+                                                     const std::string&   attributeValue,
+                                                     xercesc::DOMElement* node)
+{
+	if(node == nullptr)
+	{
+		__SS__ << "Illegal Null Parent Pointer!" << __E__;
+		__SS_THROW__;
+	}
+
+	try
+	{
+		node->setAttribute(CONVERT_TO_XML(attributeName), CONVERT_TO_XML(attributeValue));
+	}
+	catch(xercesc::DOMException& e)
+	{
+		__COUT__ << "Can't use the name: " << attributeName
+		         << " to create the attribute because the exception says: "
+		         << XML_TO_CHAR(e.getMessage())
+		         << ". Very likely you have a name that starts with a number and that's "
+		            "not allowed!"
+		         << std::endl;
+	}
+
+	return node;
+}
+
 //==============================================================================
 /// addTextElementToParent
 ///	add to parent by pointer to parent
@@ -191,7 +245,7 @@ xercesc::DOMElement* XmlDocument::addTextElementToParent(const std::string&   ch
                                                          const std::string&   childText,
                                                          xercesc::DOMElement* parent)
 {
-	if(parent == 0)
+	if(parent == nullptr)
 	{
 		__SS__ << "Illegal Null Parent Pointer!" << __E__;
 		__SS_THROW__;
@@ -324,10 +378,32 @@ void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 	{
 		if(dispStdOut)
 			std::cout << " value='"
-			          << (XML_TO_CHAR(currEl->getFirstChild()->getNodeValue())) << "'";
+			          << StringMacros::escapeString(
+			                 XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()), true)
+			          << "'";
 		if(out)
-			*out << " value='" << (XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()))
+			*out << " value='"
+			     << StringMacros::escapeString(
+			            XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()), true)
 			     << "'";
+	}
+
+	xercesc::DOMNamedNodeMap* attrList = currEl->getAttributes();
+	if(attrList)
+	{
+		for(XMLSize_t ii = 0; ii < attrList->getLength(); ++ii)
+		{
+			if(dispStdOut)
+				std::cout << " " << XML_TO_CHAR(attrList->item(ii)->getNodeName()) << "='"
+				          << StringMacros::escapeString(
+				                 XML_TO_CHAR(attrList->item(ii)->getNodeValue()), true)
+				          << "'";
+			if(out)
+				*out << " " << XML_TO_CHAR(attrList->item(ii)->getNodeName()) << "='"
+				     << StringMacros::escapeString(
+				            XML_TO_CHAR(attrList->item(ii)->getNodeValue()), true)
+				     << "'";
+		}
 	}
 
 	xercesc::DOMNodeList* nodeList = currEl->getChildNodes();  // get all children

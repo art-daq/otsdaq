@@ -425,6 +425,7 @@ function killprocs
 		for pid in $pids;do
 			killproc $pid otsConsoleFwd &
 		done
+		unset MF_FWD_PID
 
 		# for now (Aug-2023), stop killing artdaq and trust artdaq cleanup (this will also allowed share user accounts)
 		# usershort=`echo $USER|cut -c 1-10`
@@ -1159,7 +1160,7 @@ launchOTSWiz() {
 		#else
 		#	otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &
 		#fi
-
+		MF_FWD_PID=$!
 	fi
 
 	if [[ $USE_QT_VIEWER == "1" ]]; then
@@ -1446,7 +1447,7 @@ launchOTS() {
 			#else
 			#	otsConsoleFwd ${USER_DATA}/MessageFacilityConfigurations/QuietForwarder.cfg  &
 			#fi
-
+			MF_FWD_PID=$!
 		fi
 
 		if [[ $USE_QT_VIEWER == "1" ]]; then
@@ -2646,6 +2647,8 @@ otsActionHandler() {
 
 		#manage log file rollover with $OTS_LOG_ROLLOVER or ots commands
 		if [[ "x$OTS_LOG_ROLLOVER" != "x" || $DO_LOG_ROLLOVER == 1 ]]; then
+
+			#handle non-gateway logs on this host
 			i=0
 			for contextPID in "${ContextPIDArray[@]}"
 			do
@@ -2699,8 +2702,9 @@ otsActionHandler() {
 					fi
 				fi
 				i=$(( $i + 1 ))
-			done
+			done #end handle non-gateway logs on this host
 
+			#handle gateway logs on this host
 			if [[ -v GATEWAY_PID ]]; then
 				logFileSize=$(stat -c %s "${OTSDAQ_LOG_DIR}/${gatewayLogFilename}")
 				if [ "x$logFileSize" == "x" ]; then
@@ -2746,7 +2750,57 @@ otsActionHandler() {
 						info "Completed log rollover of Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort}"
 					fi
 				fi
-			fi
+			fi #end handle gateway logs on this host
+
+			#handle mf forwarder 'otsConsoleFwd' logs on this host
+			if [[ -v MF_FWD_PID ]]; then
+				logFileSize=$(stat -c %s "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mf-${THIS_HOST}.txt")
+				if [ "x$logFileSize" == "x" ]; then
+					logFileSize=0
+					# out "File empty"
+				fi
+				# out "Found otsConsoleFwd process ID ${MF_FWD_PID} > otsdaq_quiet_run-mf-${THIS_HOST}.txt size=${logFileSize}"
+
+				# if log file > 100MB, export OTS_LOG_ROLLOVER=100000000
+				if [[ $logFileSize -gt $OTS_LOG_ROLLOVER || $DO_LOG_ROLLOVER == 1 ]]; then
+					DATESTRING=`date +'%s'`
+					out "Found otsConsoleFwd process ID ${MF_FWD_PID} > otsdaq_quiet_run-mf-${THIS_HOST}.txt size=${logFileSize}"
+					tmpLogFilename="otsdaq_quiet_run-mf-${THIS_HOST}.txt"
+					mfLogFilename="otsdaq_quiet_run-mf-${THIS_HOST}${log_label}-${DATESTRING}.txt"
+					out "${Red}${Bold}Redirecting${RstClr} ${Bold}otsConsoleFwd${RstClr}' process ID ${MF_FWD_PID} > ${Yellow}${OTSDAQ_LOG_DIR}/${mfLogFilename}${RstClr}"
+
+					#from https://github.com/jerome-pouiller/reredirect/
+					# reredirect overwrites the file, so do not attempt to create in advance
+					# echo "Redirecting otsConsoleFwd process ID ${MF_FWD_PID} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${mfLogFilename}
+					# echo "...to this file: ${OTSDAQ_LOG_DIR}/${mfLogFilename}" >> ${OTSDAQ_LOG_DIR}/${mfLogFilename}
+
+					REDIRECT_FAILED=1
+					MAX_RETRIES=20
+					RETRY_COUNT=0
+					while [ $REDIRECT_FAILED -ne 0 ] && [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+						out "Attempt $((RETRY_COUNT + 1)) to redirect process ID ${MF_FWD_PID} on host ${THIS_HOST}..."
+						timeout 2s reredirect -N -m "${OTSDAQ_LOG_DIR}/${mfLogFilename}" ${MF_FWD_PID} && REDIRECT_FAILED=0 || REDIRECT_FAILED=1
+
+						if [ $REDIRECT_FAILED -ne 0 ]; then
+							error "Redirect failed on attempt $((RETRY_COUNT + 1)). Retrying..."
+							RETRY_COUNT=$((RETRY_COUNT + 1))
+							# sleep 1  # Optional delay before retrying
+						fi
+					done
+
+					if [ $REDIRECT_FAILED == 1 ]; then
+						out "To manually retry: reredirect -N -m "${OTSDAQ_LOG_DIR}/${mfLogFilename}" ${MF_FWD_PID}"
+						mfLogFilename=$tmpLogFilename
+						error "Redirect failed!.. Reverting to ${OTSDAQ_LOG_DIR}/${mfLogFilename}"
+					else
+						echo "Redirecting otsConsoleFwd process ID ${MF_FWD_PID} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
+						echo "Redirected otsConsoleFwd process ID ${MF_FWD_PID} > ${OTSDAQ_LOG_DIR}/${mfLogFilename}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
+						info "Completed log rollover of otsConsoleFwd process ID ${MF_FWD_PID}"
+					fi
+				fi
+			fi #end handle mf forwarder 'otsConsoleFwd' logs on this host
+
+
 		fi
 
 		DO_LOG_ROLLOVER=0 #clear do rollover command

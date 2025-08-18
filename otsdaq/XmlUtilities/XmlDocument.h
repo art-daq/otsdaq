@@ -41,7 +41,9 @@ class XmlDocument
 										XmlDocument& operator=(const XmlDocument& doc);
 										~XmlDocument(void);
 
-	xercesc::DOMElement* 				addTextElementToParent(const std::string& childName, const std::string& childText, xercesc::DOMElement* parent);
+    xercesc::DOMElement*                createChildElement(const std::string& childClass, xercesc::DOMElement* parent);
+    xercesc::DOMElement*                addAttributeToNode(const std::string& attributeName, const std::string& attributeValue, xercesc::DOMElement* node);
+    xercesc::DOMElement* 				addTextElementToParent(const std::string& childName, const std::string& childText, xercesc::DOMElement* parent);
 	xercesc::DOMElement* 				addTextElementToParent(const std::string& childName, const std::string& childText, const std::string& parentName, unsigned int parentIndex = 0);
 	void                 				saveXmlDocument(const std::string& filePath);
 	void                 				recursiveRemoveChild(xercesc::DOMElement* childEl, xercesc::DOMElement* parentEl);
@@ -53,6 +55,7 @@ class XmlDocument
 	void                 				setDocument(xercesc::DOMDocument* doc);
 	void                 				setDarioStyle(bool darioStyle);
 	void                 				setRootPath(const std::string& rootPath) { fRootPath_ = rootPath; }
+    xercesc::DOMElement*                getRootElement() { return rootElement_; }
 	///---------------------------------------------------------------------------------------------------------------
   protected:
 	void        						copyDocument(const xercesc::DOMDocument* toCopy, xercesc::DOMDocument* copy);

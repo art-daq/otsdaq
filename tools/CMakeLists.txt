@@ -27,7 +27,10 @@ cet_script(ALWAYS_COPY
     reset_ots_snapshot.sh
     StartOTS.sh
     vless_ots.sh
-    vtail_ots.sh)
+    vtail_ots.sh
+    otsdaq_cmdline.py
+    send_gateway_command.py
+)
 
 install_fhicl(SUBDIRS fcl)
 install_headers()
