@@ -93,7 +93,7 @@ TableBase::TableBase(const std::string& tableName,
 		       << "Perhaps you need to run otsdaq_convert_config_to_table? Or the XML "
 		          "table definition has moved or link broken? or corrupted? Check your Table Info area."
 		       << __E__;
-		try { throw; } catch (const std::runtime_error& e) 
+		try { throw; } catch (const std::runtime_error& e)
 		{
 			ss << "Here was the error:\n" << e.what() << __E__;
 		}
