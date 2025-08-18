@@ -46,8 +46,8 @@ class TableViewColumnInfo
 		uint64_t     minValue_, maxValue_, stepValue_;
 		std::string  aspectRatio_;
 		std::string  minColor_, midColor_, maxColor_;
-		std::string  absMinColor_, absMaxColor_;
-		bool         rowsAscending_, colsAscending_, snakeRows_, snakeCols_;
+		std::string  absMinColor_, absMaxColor_, mapToStrings_ = "";
+		bool         rowsAscending_, colsAscending_, snakeRows_, snakeCols_, floatingPoint_ = false;
 	};
 	const BitMapInfo& getBitMapInfo(void) const;  ///< uses dataChoices CSV fields if type is TYPE_BITMAP_DATA
 

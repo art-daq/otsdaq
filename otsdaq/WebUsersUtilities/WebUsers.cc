@@ -2766,7 +2766,8 @@ void WebUsers::tooltipSetNeverShowForUsername(const std::string& username,
 	if(isForAll)
 	{
 		__COUT__ << "Disabling ALL tooltips for user '" << username << "' is now set to "
-		         << doNeverShow << __E__;
+		         << doNeverShow << " (temporarySilence=" << temporarySilence << ")"
+		         << __E__;
 		filename = getTooltipFilename(username, SILENCE_ALL_TOOLTIPS_FILENAME, "", "");
 	}
 	else
@@ -2775,6 +2776,15 @@ void WebUsers::tooltipSetNeverShowForUsername(const std::string& username,
 		__COUT__ << "Setting tooltip never show for user '" << username << "' to "
 		         << doNeverShow << " (temporarySilence=" << temporarySilence << ")"
 		         << __E__;
+	}
+	if(TTEST(1))
+	{
+		__COUTTV__(doNeverShow);
+		__COUTTV__(temporarySilence);
+		__COUTTV__(srcId);
+		__COUTTV__(srcFunc);
+		__COUTTV__(srcFile);
+		__COUTTV__(filename);
 	}
 
 	FILE* fp = fopen(filename.c_str(), "w");
@@ -2823,16 +2833,19 @@ void WebUsers::tooltipCheckForUsername(const std::string& username,
 		return;
 	}
 
-	//	__COUT__ << "username " << username << __E__;
-	//	__COUT__ << "srcFile " << srcFile << __E__;
-	//	__COUT__ << "srcFunc " << srcFunc << __E__;
-	//	__COUT__ << "srcId " << srcId << __E__;
-	//__COUT__ << "Checking tooltip for user: " << username << __E__;
-
 	// if the silence file exists, silence all tooltips
 	std::string silencefilename =
 	    getTooltipFilename(username, SILENCE_ALL_TOOLTIPS_FILENAME, "", "");
-	//__COUTV__(silencefilename);
+
+	if(TTEST(1))
+	{
+		__COUTTV__(username);
+		__COUTTV__(srcId);
+		__COUTTV__(srcFunc);
+		__COUTTV__(srcFile);
+		__COUTTV__(silencefilename);
+	}
+
 	FILE* silencefp = fopen(silencefilename.c_str(), "r");
 	if(silencefp != NULL)
 	{

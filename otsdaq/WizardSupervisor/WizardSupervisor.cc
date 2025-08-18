@@ -225,7 +225,7 @@ void WizardSupervisor::requestIcons(xgi::Input* in, xgi::Output* out)
 
 			 //uniqueWin mode == 2 for new tab
 		 << ",GitHub Project for otsdaq,GIT,2,1,../otsdaqIcons/android-icon-36x36.png,"
-			"https://github.com/art-daq/otsdaq"
+			"https://github.com/art-daq/otsdaq,/Documentation"
 			 //uniqueWin mode == 2 for new tab
 		 << ",Homepage for otsdaq,OTS,2,1,../otsdaqIcons/android-icon-36x36.png,"
 					"https://otsdaq.fnal.gov,/Documentation"
