@@ -1197,14 +1197,14 @@ launchOTSWiz() {
 	out "Wiz mode ots context is defined by ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml"
 
 	#attempt to avoid false starts by xdaq by detecting constructor, and relaunching
-	rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat >/dev/null 2>&1 #hide output #remove alive file
-	OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
+	rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat >/dev/null 2>&1 #hide output #remove alive file	
+	OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if previous http server has gone down
 	# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 	if [ "$OTS_CONTEXT_UP" != "bad" ]; then
 		#sometimes the PORT takes extra time to close
 		out "Retrying... Wiz context http PORT is already in use! http://${THIS_HOST}:${PORT}"
 		sleep 4
-		OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
+		OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if previous http server has gone down
 		# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 		if [ "$OTS_CONTEXT_UP" != "bad" ]; then
 			die "Wiz context http PORT is already in use! http://${THIS_HOST}:${PORT}"
@@ -1244,6 +1244,7 @@ launchOTSWiz() {
 				OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 				out "Checking http://${THIS_HOST}:${PORT}..."
 			else # found the supervisor!
+				sleep 3 #give extra time in case slow web server startup or late startup crash (e.g. when testing the configuration)
 				# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 				# so clear alive, if ots script can not connect to PORT
 				OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
