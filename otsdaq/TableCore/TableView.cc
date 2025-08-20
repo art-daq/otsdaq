@@ -1022,7 +1022,8 @@ std::string TableView::getValueAsString(unsigned int row,
 ///	Note: this should be useful for values placed in double quotes, i.e. JSON.
 std::string TableView::getEscapedValueAsString(unsigned int row,
                                                unsigned int col,
-                                               bool doConvertEnvironmentVariables) const
+                                               bool doConvertEnvironmentVariables /* = true */,
+											   bool quotesToDoubleQuotes /* = false */) const
 {
 	std::string val    = getValueAsString(row, col, doConvertEnvironmentVariables);
 	std::string retVal = "";
@@ -1038,8 +1039,12 @@ std::string TableView::getEscapedValueAsString(unsigned int row,
 		else
 		{
 			// escaped characters need a
-			if(val[i] == '"' || val[i] == '\\')
+			if(val[i] == '\\')
 				retVal += '\\';
+			if(quotesToDoubleQuotes && val[i] == '"')
+				retVal += '"'; //convert " to "" for excel style CSV
+			else if(!quotesToDoubleQuotes && val[i] == '"')
+				retVal += '\\'; 
 			retVal += val[i];
 		}
 	}
@@ -2286,6 +2291,51 @@ void TableView::printJSON(std::ostream& out) const
 
 	out << "}";
 }  // end printJSON()
+
+//==============================================================================
+void TableView::printCSV(std::ostream& out /* = std::cout */, const std::string& valueDelimeter /* = "," */, 
+	const std::string& recordDelimeter /* = "\n" */, bool includeColumnNames /* = false */ ) const
+{
+	{  //handle special GROUP CACHE table
+		std::string tmpCachePrepend   = TableBase::GROUP_CACHE_PREPEND;
+		tmpCachePrepend               = TableBase::convertToCaps(tmpCachePrepend);
+		std::string tmpJsonDocPrepend = TableBase::JSON_DOC_PREPEND;
+		tmpJsonDocPrepend             = TableBase::convertToCaps(tmpJsonDocPrepend);
+		__COUTS__(32) << " '" << tableName_ << "' vs " << tmpCachePrepend << " or "
+		              << tmpJsonDocPrepend << __E__;
+		//if special GROUP CACHE table, handle construction in a special way
+		if(tableName_.substr(0, tmpCachePrepend.length()) == tmpCachePrepend ||
+		   tableName_.substr(0, tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
+		{
+			__SS__ << "Cannot convert custom storage data to CSV!" << __E__;
+			__SS_THROW__;
+			// out << getCustomStorageData();
+			// return;
+		}  //end special GROUP CACHE table construction
+	}      //end handle special GROUP CACHE table
+
+	for(int c = 0; includeColumnNames && c < (int)getNumberOfColumns(); ++c)
+	{
+		if(c)
+			out << valueDelimeter;
+		out << "\"" << columnsInfo_[c].getStorageName() << "\"";
+	}
+	if(includeColumnNames)
+		out << recordDelimeter;
+
+	for(int r = 0; r < (int)getNumberOfRows(); ++r)
+	{
+		for(int c = 0; c < (int)getNumberOfColumns(); ++c)
+		{			
+			if(c)
+				out << valueDelimeter;
+			out << "\"" << getEscapedValueAsString(r, c, false, true /* quotesToDoubleQuotes*/)
+			    << "\"";  // do not convert env variables, convert " to "" for excel style
+		}
+		out << recordDelimeter;
+	}
+	
+}  // end printCSV()
 
 //==============================================================================
 /// restoreJSONStringEntities

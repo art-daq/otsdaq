@@ -154,7 +154,8 @@ public:
 																			 bool         convertEnvironmentVariables = true) const;
 	std::string 								getEscapedValueAsString		(unsigned int row,
 																			 unsigned int col,
-																			 bool convertEnvironmentVariables = true) const;
+																			 bool convertEnvironmentVariables = true,
+																			 bool quotesToDoubleQuotes = false) const;
 	bool        								isURIEncodedCommentTheSame	(const std::string& comment) const;
 
 	const DataView&                         	getDataView					(void) const { return theDataView_; }
@@ -214,6 +215,7 @@ public:
 	void           								reset						(void);
 	void           								print						(std::ostream& out = std::cout) const;
 	void           								printJSON					(std::ostream& out = std::cout) const;
+	void           								printCSV					(std::ostream& out = std::cout, const std::string& valueDelimeter = ",", const std::string& recordDelimeter = "\n", bool includeColumnNames = true) const;
 	int            								fillFromJSON				(const std::string& json);
 	int            								fillFromCSV					(const std::string& data,
 																			 const int&         dataOffset = 0,
