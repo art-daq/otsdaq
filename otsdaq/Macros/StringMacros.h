@@ -30,6 +30,10 @@ struct StringMacros
 	///		getWildCardMatchFromMap
 	///
 	///		decodeURIComponent
+	///		encodeURIComponent
+	///		sanitizeForSQL
+	///		escapeString
+	///		trim
 	///		convertEnvironmentVariables
 	///		isNumber
 	///		getNumber
@@ -76,6 +80,7 @@ struct StringMacros
 	static std::string        	encodeURIComponent			(const std::string& data);
 	static void		        	sanitizeForSQL				(std::string& data);
 	static std::string			escapeString				(std::string inString, bool allowWhiteSpace = false);
+	static const std::string&	trim						(std::string& s);
 	static std::string 			convertEnvironmentVariables	(const std::string& data);
 
 	static bool        			isNumber					(const std::string& stringToCheck); ///< Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)

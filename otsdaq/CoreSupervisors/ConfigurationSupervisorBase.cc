@@ -161,7 +161,7 @@ try
 	try
 	{
 		// returns -1 on error that data was unchanged
-		retVal = sourceTableAsIs ? 0 : cfgView->fillFromCSV(data, dataOffset, author);
+		retVal = sourceTableAsIs ? 0 : cfgView->fillFromEncodedCSV(data, dataOffset, author);
 
 		if(retVal == 1)  // data was same but columns are different!
 		{
