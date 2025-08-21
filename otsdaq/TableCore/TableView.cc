@@ -1,6 +1,6 @@
 #include "otsdaq/TableCore/TableView.h"
-#include "otsdaq/TableCore/TableBase.h"
 #include "otsdaq/Macros/StringMacros.h"
+#include "otsdaq/TableCore/TableBase.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -1021,10 +1021,11 @@ std::string TableView::getValueAsString(unsigned int row,
 ///	as though getValue was called.
 ///	then escapes all special characters with slash.
 ///	Note: this should be useful for values placed in double quotes, i.e. JSON.
-std::string TableView::getEscapedValueAsString(unsigned int row,
-                                               unsigned int col,
-                                               bool doConvertEnvironmentVariables /* = true */,
-											   bool quotesToDoubleQuotes /* = false */) const
+std::string TableView::getEscapedValueAsString(
+    unsigned int row,
+    unsigned int col,
+    bool         doConvertEnvironmentVariables /* = true */,
+    bool         quotesToDoubleQuotes /* = false */) const
 {
 	std::string val    = getValueAsString(row, col, doConvertEnvironmentVariables);
 	std::string retVal = "";
@@ -1043,7 +1044,7 @@ std::string TableView::getEscapedValueAsString(unsigned int row,
 			if(val[i] == '\\')
 				retVal += '\\';
 			if(quotesToDoubleQuotes && val[i] == '"')
-				retVal += '"'; //convert " to "" for excel style CSV
+				retVal += '"';  //convert " to "" for excel style CSV
 			else if(!quotesToDoubleQuotes && val[i] == '"')
 				retVal += '\\';
 			retVal += val[i];
@@ -2294,8 +2295,10 @@ void TableView::printJSON(std::ostream& out) const
 }  // end printJSON()
 
 //==============================================================================
-void TableView::printCSV(std::ostream& out /* = std::cout */, const std::string& valueDelimeter /* = "," */,
-	const std::string& recordDelimeter /* = "\n" */, bool includeColumnNames /* = false */ ) const
+void TableView::printCSV(std::ostream&      out /* = std::cout */,
+                         const std::string& valueDelimeter /* = "," */,
+                         const std::string& recordDelimeter /* = "\n" */,
+                         bool               includeColumnNames /* = false */) const
 {
 	{  //handle special GROUP CACHE table
 		std::string tmpCachePrepend   = TableBase::GROUP_CACHE_PREPEND;
@@ -2330,7 +2333,8 @@ void TableView::printCSV(std::ostream& out /* = std::cout */, const std::string&
 		{
 			if(c)
 				out << valueDelimeter;
-			out << "\"" << getEscapedValueAsString(r, c, false, true /* quotesToDoubleQuotes*/)
+			out << "\""
+			    << getEscapedValueAsString(r, c, false, true /* quotesToDoubleQuotes*/)
 			    << "\"";  // do not convert env variables, convert " to "" for excel style
 		}
 		out << recordDelimeter;
@@ -3143,7 +3147,6 @@ bool TableView::isURIEncodedCommentTheSame(const std::string& comment) const
 //	}
 //}
 
-
 //==============================================================================
 /// fillFromCSV
 /// CSV parser that correctly handles:
@@ -3156,58 +3159,58 @@ bool TableView::isURIEncodedCommentTheSame(const std::string& comment) const
 ///
 ///	Throws exceptions on error
 void TableView::fillFromCSV(const std::string& data,
-                           const int&         dataOffset /* = 0 */,
-                           const std::string& author /* = "" */,
-						   const char 		  rowDelimter /* = ',' */,
-						   const char 		  colDelimter /* = '\n' */)
-{	
-	int row = dataOffset;
-	int col = 0;
+                            const int&         dataOffset /* = 0 */,
+                            const std::string& author /* = "" */,
+                            const char         rowDelimter /* = ',' */,
+                            const char         colDelimter /* = '\n' */)
+{
+	int         row          = dataOffset;
+	int         col          = 0;
 	std::string currentValue = "";
-	bool insideQuotes = false;
-	int authorCol    = findColByType(TableViewColumnInfo::TYPE_AUTHOR);
-	int timestampCol = findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
+	bool        insideQuotes = false;
+	int         authorCol    = findColByType(TableViewColumnInfo::TYPE_AUTHOR);
+	int         timestampCol = findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
 
-    for (size_t i = 0; i < data.size(); ++i) 
+	for(size_t i = 0; i < data.size(); ++i)
 	{
-        char c = data[i];
-		const char nextChar = (i+1 < data.size() ? data[i+1] : ' ');
+		char       c        = data[i];
+		const char nextChar = (i + 1 < data.size() ? data[i + 1] : ' ');
 
-		if (c == '"') 
+		if(c == '"')
 		{
-			if (insideQuotes && nextChar == '"') // "" will escape a double-quote in CSV
+			if(insideQuotes && nextChar == '"')  // "" will escape a double-quote in CSV
 			{
 				// Escaped double-quote
 				currentValue += '"';
-				++i; //skip next quote
-			} 
-			else 
+				++i;  //skip next quote
+			}
+			else
 			{
 				// Toggle quote mode
 				insideQuotes = !insideQuotes;
 			}
-		} 
-		else if (c == rowDelimter && !insideQuotes) 
-		{			
-			if(col == 0 && row >= (int)getNumberOfRows()) 
+		}
+		else if(c == rowDelimter && !insideQuotes)
+		{
+			if(col == 0 && row >= (int)getNumberOfRows())
 				addRow(author);
-			setValueAsString(StringMacros::trim(currentValue),row,col);
+			setValueAsString(StringMacros::trim(currentValue), row, col);
 			++col;
 			currentValue = "";
-		} 
-		else if ((c == colDelimter || c == '\r') && !insideQuotes) 
+		}
+		else if((c == colDelimter || c == '\r') && !insideQuotes)
 		{
-			if (col > 0) 
+			if(col > 0)
 			{
-				setValueAsString(StringMacros::trim(currentValue),row,col);	
-				__COUTV__(getValueAsString(row,col));
+				setValueAsString(StringMacros::trim(currentValue), row, col);
+				__COUTV__(getValueAsString(row, col));
 
 				//if row is actually column names, then delete the row
-				if(getValueAsString(row,col) == getColumnsInfo()[col].getStorageName())
+				if(getValueAsString(row, col) == getColumnsInfo()[col].getStorageName())
 				{
 					__COUT__ << "First row detected as column names." << __E__;
 					deleteRow(row);
-					--row; //rewind
+					--row;  //rewind
 				}
 				else
 				{
@@ -3217,29 +3220,29 @@ void TableView::fillFromCSV(const std::string& data,
 				}
 
 				col = 0;
-				++row; //prepare for next row
+				++row;  //prepare for next row
 				currentValue = "";
 			}
-		} 
-		else 
+		}
+		else
 		{
 			currentValue += c;
 		}
-	} //end text loop
+	}  //end text loop
 
 	// Add last value if any
-	if (col > 0) 
+	if(col > 0)
 	{
-		setValueAsString(StringMacros::trim(currentValue),row,col);	
-		__COUTV__(getValueAsString(row,col));
-		__COUTV__(getValueAsString(row,timestampCol));
+		setValueAsString(StringMacros::trim(currentValue), row, col);
+		__COUTV__(getValueAsString(row, col));
+		__COUTV__(getValueAsString(row, timestampCol));
 
 		//if row is actually column names, then delete the row
-		if(getValueAsString(row,col) == getColumnsInfo()[col].getStorageName())
+		if(getValueAsString(row, col) == getColumnsInfo()[col].getStorageName())
 		{
 			__COUT__ << "First row detected as column names." << __E__;
 			deleteRow(row);
-			--row; //rewind
+			--row;  //rewind
 		}
 		else
 		{
@@ -3247,15 +3250,15 @@ void TableView::fillFromCSV(const std::string& data,
 			setValue(author, row, authorCol);
 			setValue(time(0), row, timestampCol);
 		}
-		
+
 		col = 0;
-		++row; //prepare for next row
+		++row;  //prepare for next row
 		currentValue = "";
 	}
 
 	init();  // verify new table (throws runtime_errors)
 
-} //end fillFromCSV
+}  //end fillFromCSV
 
 //==============================================================================
 /// fillFromEncodedCSV
@@ -3284,8 +3287,8 @@ void TableView::fillFromCSV(const std::string& data,
 ///	otherwise 0
 ///
 int TableView::fillFromEncodedCSV(const std::string& data,
-                           const int&         dataOffset,
-                           const std::string& author)
+                                  const int&         dataOffset,
+                                  const std::string& author)
 {
 	int retVal = 0;
 

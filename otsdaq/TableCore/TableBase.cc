@@ -1860,8 +1860,10 @@ std::string TableBase::convertToCaps(std::string& str, bool isTableName)
 {
 	// append Table to be nice to user
 	unsigned int tablePos = (unsigned int)std::string::npos;
-	if(isTableName && ((tablePos = str.find("Table")) != str.size() - strlen("Table") || 
-			tablePos == (unsigned int)std::string::npos)) //avoid case when tableName is length 4
+	if(isTableName &&
+	   ((tablePos = str.find("Table")) != str.size() - strlen("Table") ||
+	    tablePos ==
+	        (unsigned int)std::string::npos))  //avoid case when tableName is length 4
 		str += "Table";
 
 	// create all caps name and validate
@@ -1876,7 +1878,7 @@ std::string TableBase::convertToCaps(std::string& str, bool isTableName)
 			    str[c - 1] <= 'z') ||  // if this is a new start of upper case
 			   (c && str[c - 1] >= 'A' &&
 			    str[c - 1] <= 'Z' &&  // if this is a new start from running caps
-			    c + 1 < str.size() && str[c + 1] >= 'a' && str[c + 1] <= 'z') || 				
+			    c + 1 < str.size() && str[c + 1] >= 'a' && str[c + 1] <= 'z') ||
 			   (c && str[c - 1] >= '0' &&
 			    str[c - 1] <= '9' &&  // if this is a new start from numbers
 			    c + 1 < str.size() && str[c + 1] >= 'a' && str[c + 1] <= 'z'))

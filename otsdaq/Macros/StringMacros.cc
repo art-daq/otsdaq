@@ -1,7 +1,7 @@
 #include "otsdaq/Macros/StringMacros.h"
 
+#include <algorithm>  // for find_if
 #include <array>
-#include <algorithm> // for find_if
 
 using namespace ots;
 
@@ -375,12 +375,15 @@ std::string StringMacros::escapeString(std::string inString,
 const std::string& StringMacros::trim(std::string& s)
 {
 	// remove leading whitespace
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-        [](unsigned char ch) { return !std::isspace(ch); }));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+		        return !std::isspace(ch);
+	        }));
 
-    // remove trailing whitespace
-    s.erase(std::find_if(s.rbegin(), s.rend(),
-        [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
+	// remove trailing whitespace
+	s.erase(std::find_if(
+	            s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); })
+	            .base(),
+	        s.end());
 
 	return s;
 }  // end trim()
