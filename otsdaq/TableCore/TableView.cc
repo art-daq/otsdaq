@@ -2138,7 +2138,7 @@ void TableView::reset(void)
 }  // end reset()
 
 //==============================================================================
-void TableView::print(std::ostream& out) const
+void TableView::print(std::ostream& out /* = std::cout */) const
 {
 	out << "============================================================================="
 	       "="
@@ -2204,7 +2204,7 @@ void TableView::print(std::ostream& out) const
 }  // end print()
 
 //==============================================================================
-void TableView::printJSON(std::ostream& out) const
+void TableView::printJSON(std::ostream& out /* = std::cout */) const
 {
 	{  //handle special GROUP CACHE table
 		std::string tmpCachePrepend   = TableBase::GROUP_CACHE_PREPEND;

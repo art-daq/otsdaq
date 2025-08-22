@@ -424,8 +424,7 @@ std::string TableInfoReader::read(TableBase& table)
 				}
 
 				// automatically delete the persistent version of the column info
-				std::string capturedException;
-				// TODO add reading of min / max
+				std::string capturedException;				
 				table.getMockupViewP()->getColumnsInfoP()->push_back(TableViewColumnInfo(
 				    XML_TO_CHAR(columnElement->getAttribute(columnTypeAttributeTag_)),
 				    XML_TO_CHAR(columnElement->getAttribute(columnNameAttributeTag_)),

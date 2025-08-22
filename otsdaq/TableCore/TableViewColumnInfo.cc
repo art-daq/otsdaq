@@ -97,8 +97,10 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
                        : getMaxDefaultValue(dataType_))
     ,  // there was a time during JS GUI development when "null" was being injected into data files rather than empty strings. Because this member variable is
        // constant, this is the single cleansing point.
-    bitMapInfoP_(0)
+    bitMapInfoP_(nullptr)
 {
+	//keep lightweight because tables+columns get copied around a lot
+
 	// verify type
 	if((type_ != TYPE_UID) && (type_ != TYPE_DATA) && (type_ != TYPE_UNIQUE_DATA) &&
 	   (type_ != TYPE_UNIQUE_GROUP_DATA) && (type_ != TYPE_MULTILINE_DATA) &&
@@ -233,24 +235,6 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 				__SS_THROW__;
 		}
 
-	// RAR moved to call from initialization of constructor!
-
-	// build data choices vector from URI encoded data
-	//__COUT__ << "dataChoicesCSV " << dataChoicesCSV << std::endl;
-	//	{
-	//		std::istringstream f(dataChoicesCSV);
-	//		std::string        s;
-	//		while (getline(f, s, ','))
-	//			dataChoices_.push_back(StringMacros::decodeURIComponent(s));
-	//		// for(const auto &dc: dataChoices_)
-	//		//	__COUT__ << dc << std::endl;
-	//	}
-	//	__COUTV__(dataChoicesCSV);
-	//	__COUTV__(StringMacros::vectorToString(dataChoices_));
-	//	__COUTV__(dataChoices_.size());
-	//	__COUTV__ (defaultValue);
-	//	__COUTV__ (defaultValue_);
-
 	try
 	{
 		extractBitMapInfo();
@@ -262,9 +246,7 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 		else
 			throw;
 	}
-
-	//__COUT__ << "dataChoicesCSV " << dataChoicesCSV << std::endl;
-}
+} //end TableViewColumnInfo() constructor
 
 //==============================================================================
 std::vector<std::string> TableViewColumnInfo::getDataChoicesFromString(
@@ -282,7 +264,7 @@ std::vector<std::string> TableViewColumnInfo::getDataChoicesFromString(
 		//	__COUT__ << dc << std::endl;
 	}
 	return dataChoices;
-}  // end getDataChoicesFromString
+}  // end getDataChoicesFromString()
 
 //==============================================================================
 void TableViewColumnInfo::extractBitMapInfo()
@@ -378,9 +360,7 @@ void TableViewColumnInfo::extractBitMapInfo()
 
 		if(bitMapInfoP_->mapToStrings_ != "" &&
 		   bitMapInfoP_->mapToStrings_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
-		{
-			__COUT__ << "Mapping integer values to strings for bitmap: "
-			         << bitMapInfoP_->mapToStrings_ << __E__;
+		{			
 			if(bitMapInfoP_->floatingPoint_)
 			{
 				__SS__ << "Illegal Bit-Map data parameters for column " << name_
@@ -391,7 +371,10 @@ void TableViewColumnInfo::extractBitMapInfo()
 				       << std::endl;
 				__SS_THROW__;
 			}
+			bitMapInfoP_->mapsToStrings_ = true;
 		}
+		else 
+			bitMapInfoP_->mapsToStrings_  = false;
 	}
 }  //end extractBitMapInfo()
 
@@ -410,7 +393,7 @@ TableViewColumnInfo::TableViewColumnInfo(
     , dataChoices_(c.dataChoices_)
     , minValue_(c.minValue_)
     , maxValue_(c.maxValue_)
-    , bitMapInfoP_(0)
+    , bitMapInfoP_(nullptr)
 {
 	// extract bitmap info if necessary
 	extractBitMapInfo();
@@ -473,7 +456,7 @@ TableViewColumnInfo::~TableViewColumnInfo(void)
 {
 	if(bitMapInfoP_)
 		delete bitMapInfoP_;
-}
+} //end destructor
 
 //==============================================================================
 const std::string& TableViewColumnInfo::getType(void) const { return type_; }
