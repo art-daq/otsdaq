@@ -377,12 +377,6 @@ void ConfigurationTree::getValueAsBitMap(
 					{
 						//ignore ,'s outside of row [ ] array
 						continue;
-						// __SS__
-						//     << "Too many ']' or ',' characters in bit map configuration"
-						//     << __E__;
-
-						// ss << nodeDump() << __E__;
-						// __SS_ONLY_THROW__;
 					}
 				}
 				else if(startInt == (unsigned int)-1)  // need to find start of number
