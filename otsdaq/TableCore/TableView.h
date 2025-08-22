@@ -203,7 +203,7 @@ public:
 
 
 	/// Note add Column is not allowed, freely; instead requires special access through Table Editor
-	/// "Database Management" 
+	/// "Database Management"
 	///		int		addColumn(std::string name, std::string viewName, std::string viewType); //returns index of added column, always is last column
 
 
