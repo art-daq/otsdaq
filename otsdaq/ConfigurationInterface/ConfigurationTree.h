@@ -136,37 +136,7 @@ class ConfigurationTree
 			return bitmap_[row].size();
 		}
 		void print(std::ostream& out = std::cout) const;
-		// {
-		// 	if(!bitmap_.size())
-		// 	{
-		// 		out << "Bitmap print of empty bitmap.";
-		// 		return;
-		// 	}
-
-		// 	out << "Bitmap print of size " << bitmap_.size() << " x " << bitmap_[0].size() << __E__;
-		// 	out << " r x c : ";
-		// 	for(unsigned int c = 0; c < bitmap_[0].size(); ++c)
-		// 		out << std::right << std::setw(10) << c << ' ';
-		// 	out << "\n-------+-";
-		// 	for(unsigned int c = 0; c < bitmap_[0].size(); ++c)
-		// 		out << "----------+";
-		// 	for(unsigned int r = 0; r < bitmap_.size(); ++r)
-		// 	{
-		// 		out << "\n" << std::right << std::setw(6) << r << " : ";
-		// 		if(sizeof(T) == 1) //force 8-bit to number display
-		// 			for(unsigned int c = 0; c < bitmap_[r].size(); ++c)									
-		// 				out << std::right << std::setw(10) << std::fixed << std::setprecision(3) << (uint16_t)get(r,c) << ' ';
-		// 		else
-		// 			for(unsigned int c = 0; c < bitmap_[r].size(); ++c)									
-		// 				out << std::right << std::setw(10) << std::fixed << std::setprecision(3) << get(r,c) << ' ';
-		// 	}
-		// 	out << "\n=======+=";
-		// 	for(unsigned int c = 0; c < bitmap_[0].size(); ++c)
-		// 		out << "==========+";
-
-		// 	out << "\n";
-		// } //end print()
-
+		
 	  private:
 		std::vector<std::vector<T>> bitmap_;
 		bool                        isDefault_;  ///< when default always return 0
