@@ -205,8 +205,8 @@ public:
 	/// Note add Column is not allowed, freely; instead requires special access through Table Editor
 	/// "Database Management" 
 	///		int		addColumn(std::string name, std::string viewName, std::string viewType); //returns index of added column, always is last column
-	/// 
-	
+
+
 	iterator       								begin						(void) { return theDataView_.begin(); }
 	iterator       								end							(void) { return theDataView_.end(); }
 	const_iterator 								begin						(void) const { return theDataView_.begin(); }
