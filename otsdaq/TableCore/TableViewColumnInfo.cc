@@ -246,7 +246,7 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 		else
 			throw;
 	}
-} //end TableViewColumnInfo() constructor
+}  //end TableViewColumnInfo() constructor
 
 //==============================================================================
 std::vector<std::string> TableViewColumnInfo::getDataChoicesFromString(
@@ -360,7 +360,7 @@ void TableViewColumnInfo::extractBitMapInfo()
 
 		if(bitMapInfoP_->mapToStrings_ != "" &&
 		   bitMapInfoP_->mapToStrings_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
-		{			
+		{
 			if(bitMapInfoP_->floatingPoint_)
 			{
 				__SS__ << "Illegal Bit-Map data parameters for column " << name_
@@ -373,8 +373,8 @@ void TableViewColumnInfo::extractBitMapInfo()
 			}
 			bitMapInfoP_->mapsToStrings_ = true;
 		}
-		else 
-			bitMapInfoP_->mapsToStrings_  = false;
+		else
+			bitMapInfoP_->mapsToStrings_ = false;
 	}
 }  //end extractBitMapInfo()
 
@@ -456,7 +456,7 @@ TableViewColumnInfo::~TableViewColumnInfo(void)
 {
 	if(bitMapInfoP_)
 		delete bitMapInfoP_;
-} //end destructor
+}  //end destructor
 
 //==============================================================================
 const std::string& TableViewColumnInfo::getType(void) const { return type_; }
