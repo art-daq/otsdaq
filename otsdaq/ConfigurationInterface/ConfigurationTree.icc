@@ -114,3 +114,237 @@ T ConfigurationTree::handleValidateValueForColumn(const TableView* configView,
 	__COUT__ << "handleValidateValueForColumn<T>" << __E__;
 	return configView->validateValueForColumn<T>(value, col);
 }  // end T handleValidateValueForColumn()
+
+//==============================================================================
+/// getValueAsBitMap = getValue (only ConfigurationTree::BitMap value)
+/// 	Essentially a special version of getValue for ConfigurationTree::BitMap number types
+///		Note that if string map is enabled for this bitmap, then the BitMap number types will
+///			will return the index of the string as found in the list of strings (where the first string maps to the bitmaps minimum value).
+template<typename T>
+void ConfigurationTree::getValueAsBitMap(ConfigurationTree::BitMap<T>& bitmap) const
+{
+	__COUTS__(2) << row_ << " " << col_ << " p: " << tableView_ << __E__;
+
+	if(row_ != TableView::INVALID &&
+	   col_ != TableView::INVALID)  // this node is a value node
+	{
+		std::string bitmapString;
+		tableView_->getValue(bitmapString, row_, col_);
+
+		auto bmp = tableView_->getColumnInfo(col_).getBitMapInfo();
+
+		__COUTV__(bitmapString);
+		if(bitmapString == TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
+		{
+			bitmap.isDefault_ = true;
+			//create empty bitmap so size is known
+			for(unsigned int r = 0; r < bmp.numOfRows_; ++r)
+			{
+				bitmap.bitmap_.push_back(std::vector<T>());
+				for(unsigned int c = 0; c < bmp.numOfColumns_; ++c)
+					bitmap.bitmap_[r].push_back(T());
+			}
+			return;
+		}
+		else
+			bitmap.isDefault_ = false;
+
+		T value;
+
+		std::map<std::string, size_t> valueMap;
+		if(bmp.mapsToStrings_)
+		{
+			std::vector<std::string> list =
+			    StringMacros::getVectorFromString(bmp.mapToStrings_);
+			__COUTTV__(StringMacros::vectorToString(list));
+			for(size_t i = 0; i < list.size(); ++i)
+				valueMap.emplace(std::make_pair(list[i], i));
+			__COUTTV__(StringMacros::mapToString(valueMap));
+		}
+
+		// extract bit map
+		{
+			bitmap.bitmap_.clear();
+			int          row      = -1;
+			bool         openRow  = false;
+			unsigned int startInt = -1;
+			for(unsigned int i = 0; i < bitmapString.length(); i++)
+			{
+				__COUTVS__(2, bitmapString[i]);
+				__COUTVS__(2, row);
+				__COUTVS__(2, openRow);
+				__COUTVS__(2, startInt);
+				__COUTVS__(2, i);
+
+				if(!openRow)  // need start of row
+				{
+					if(bitmapString[i] == '[')
+					{  // open a new row
+						openRow = true;
+						++row;
+						bitmap.bitmap_.push_back(std::vector<T>());
+					}
+					else if(bitmapString[i] == ']')
+					{
+						break;  // ending bracket, done with string
+					}
+					else if(bitmapString[i] == ',')  // end characters found not within
+					                                 // row
+					{
+						//ignore ,'s outside of row [ ] array
+						continue;
+						// __SS__
+						//     << "Too many ']' or ',' characters in bit map configuration"
+						//     << __E__;
+
+						// ss << nodeDump() << __E__;
+						// __SS_ONLY_THROW__;
+					}
+				}
+				else if(startInt == (unsigned int)-1)  // need to find start of number
+				{
+					if(bitmapString[i] == ']')  // found end of row, instead of start of
+					                            // number, assume row ended
+					{
+						openRow = false;
+					}
+					else if((bitmapString[i] >= '0' &&
+					         bitmapString[i] <= '9') ||  // found start of number
+					        (bmp.mapsToStrings_ && bitmapString[i] >= 'a' &&
+					         bitmapString[i] <=
+					             'z') ||  // found start of string in map-to-string mode
+					        (bmp.mapsToStrings_ && bitmapString[i] >= 'A' &&
+					         bitmapString[i] <= 'Z'))
+					{
+						startInt = i;
+					}
+					else if(bitmapString[i] == ',')  // comma found without number
+					{
+						__SS__ << "Too many ',' characters in bit map configuration"
+						       << __E__;
+
+						ss << nodeDump() << __E__;
+						__SS_ONLY_THROW__;
+					}
+				}
+				else
+				{
+					// looking for end of number (or string map)
+
+					if(bitmapString[i] ==
+					   ']')  // found end of row, assume row and number ended
+					{
+						openRow = false;
+
+						__COUTVS__(2, bitmapString.substr(startInt, i - startInt));
+						if(bmp.mapsToStrings_)  //convert string to number (since this template function is assumed to handle numbers only; i.e., it is not the special strings version)
+						{
+							//drop space or end quote
+							unsigned int ii = i;
+							while(ii - startInt > 2 && (bitmapString[ii - 1] == ' ' ||
+							                            bitmapString[ii - 1] == '\r' ||
+							                            bitmapString[ii - 1] == '\n' ||
+							                            bitmapString[ii - 1] == '\t' ||
+							                            bitmapString[ii - 1] == '"'))
+								--ii;  //rewind to last character of string
+
+							value =
+							    valueMap.at(bitmapString.substr(startInt, ii - startInt));
+						}
+						else if(!StringMacros::getNumber<T>(
+						            bitmapString.substr(startInt, i - startInt), value))
+						{
+							__SS__
+							    << "Illegal not-a-number entry in bitmap at position i="
+							    << i << ": "
+							    << bitmapString.substr(startInt, i - startInt) << __E__;
+							__SS_THROW__;
+						}
+						__COUTVS__(2, value);
+						bitmap.bitmap_[row].push_back(value);
+
+						// bitmap.bitmap_[row].push_back(strtoul(
+						//     bitmapString.substr(startInt, i - startInt).c_str(), 0, 0));
+						startInt = -1;
+					}
+					else if(bitmapString[i] == ',')  // comma found, assume end of number
+					{
+						__COUTVS__(2, bitmapString.substr(startInt, i - startInt));
+						if(bmp.mapsToStrings_)  //convert string to number (since this template function is assumed to handle numbers only; i.e., it is not the special strings version)
+						{
+							//drop space or end quote
+							unsigned int ii = i;
+							while(ii - startInt > 2 && (bitmapString[ii - 1] == ' ' ||
+							                            bitmapString[ii - 1] == '\r' ||
+							                            bitmapString[ii - 1] == '\n' ||
+							                            bitmapString[ii - 1] == '\t' ||
+							                            bitmapString[ii - 1] == '"'))
+								--ii;  //rewind to last character of string
+
+							value =
+							    valueMap.at(bitmapString.substr(startInt, ii - startInt));
+						}
+						else if(!StringMacros::getNumber<T>(
+						            bitmapString.substr(startInt, i - startInt), value))
+						{
+							__SS__
+							    << "Illegal not-a-number entry in bitmap at position i="
+							    << i << ": "
+							    << bitmapString.substr(startInt, i - startInt) << __E__;
+							__SS_THROW__;
+						}
+						__COUTVS__(2, value);
+						bitmap.bitmap_[row].push_back(value);
+						// bitmap.bitmap_[row].push_back(strtoul(
+						//     bitmapString.substr(startInt, i - startInt).c_str(), 0, 0));
+						startInt = -1;
+					}
+				}
+			}  //ene main string parsing loop
+
+			if(TTEST(1))
+			{
+				for(unsigned int r = 0; r < bitmap.bitmap_.size(); ++r)
+				{
+					for(unsigned int c = 0; c < bitmap.bitmap_[r].size(); ++c)
+					{
+						__COUTT__ << r << "," << c << " = " << bitmap.bitmap_[r][c]
+						          << __E__;
+					}
+					__COUTT__ << "================" << __E__;
+				}
+			}
+		}
+
+		if(bitmap.bitmap_.size() != bmp.numOfRows_ ||
+		   (bmp.numOfRows_ && bitmap.bitmap_[0].size() != bmp.numOfColumns_))
+		{
+			__SS__
+			    << "Illegal mismatch in number of rows and columns. Extracted data was "
+			    << bitmap.bitmap_.size() << " x "
+			    << (bitmap.bitmap_.size() ? bitmap.bitmap_[0].size() : 0)
+			    << " and the expected size is " << bmp.numOfRows_ << " x "
+			    << bmp.numOfColumns_ << __E__;
+			__SS_THROW__;
+		}
+	}
+	else
+	{
+		__SS__ << "Requesting getValue must be on a value node." << __E__;
+
+		ss << nodeDump() << __E__;
+		__SS_THROW__;
+	}
+}  // end getValueAsBitMap()
+
+//==============================================================================
+/// getValueAsBitMap = getValue (only ConfigurationTree::BitMap value)
+///
+///	Special version of getValue for ConfigurationTree::BitMap type
+template<typename T>
+ConfigurationTree::BitMap<T> ConfigurationTree::getValueAsBitMap() const
+{
+	ConfigurationTree::BitMap<T> value;
+	ConfigurationTree::getValueAsBitMap(value);
+	return value;
+}  // end getValueAsBitMap()

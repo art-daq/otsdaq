@@ -1859,8 +1859,11 @@ TableView* TableBase::getTemporaryView(TableVersion temporaryVersion)
 std::string TableBase::convertToCaps(std::string& str, bool isTableName)
 {
 	// append Table to be nice to user
-	unsigned int configPos = (unsigned int)std::string::npos;
-	if(isTableName && (configPos = str.find("Table")) != str.size() - strlen("Table"))
+	unsigned int tablePos = (unsigned int)std::string::npos;
+	if(isTableName &&
+	   ((tablePos = str.find("Table")) != str.size() - strlen("Table") ||
+	    tablePos ==
+	        (unsigned int)std::string::npos))  //avoid case when tableName is length 4
 		str += "Table";
 
 	// create all caps name and validate
@@ -1870,11 +1873,14 @@ std::string TableBase::convertToCaps(std::string& str, bool isTableName)
 		if(str[c] >= 'A' && str[c] <= 'Z')
 		{
 			// add _ before table and if lower case to uppercase
-			if(c == configPos ||
+			if(c == tablePos ||
 			   (c && str[c - 1] >= 'a' &&
 			    str[c - 1] <= 'z') ||  // if this is a new start of upper case
 			   (c && str[c - 1] >= 'A' &&
 			    str[c - 1] <= 'Z' &&  // if this is a new start from running caps
+			    c + 1 < str.size() && str[c + 1] >= 'a' && str[c + 1] <= 'z') ||
+			   (c && str[c - 1] >= '0' &&
+			    str[c - 1] <= '9' &&  // if this is a new start from numbers
 			    c + 1 < str.size() && str[c + 1] >= 'a' && str[c + 1] <= 'z'))
 				capsStr += "_";
 			capsStr += str[c];

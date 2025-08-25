@@ -120,12 +120,13 @@ class ConfigurationTree
 
 	static const std::string ROOT_NAME;
 
+	template<typename T>
 	struct BitMap
 	{
-		BitMap() : isDefault_(true), zero_(0) {}
+		BitMap() : isDefault_(true), zero_(T()) {}
 
 		friend ConfigurationTree;  ///< so ConfigurationTree can access private
-		const uint64_t& get(unsigned int row, unsigned int col) const
+		const T& get(unsigned int row, unsigned int col) const
 		{
 			return isDefault_ ? zero_ : bitmap_[row][col];
 		}
@@ -134,11 +135,12 @@ class ConfigurationTree
 		{
 			return bitmap_[row].size();
 		}
+		void print(std::ostream& out = std::cout) const;
 
 	  private:
-		std::vector<std::vector<uint64_t>> bitmap_;
-		bool                               isDefault_;  ///< when default always return 0
-		uint64_t                           zero_;
+		std::vector<std::vector<T>> bitmap_;
+		bool                        isDefault_;  ///< when default always return 0
+		T                           zero_;
 	};
 
 	/// Methods
@@ -153,7 +155,9 @@ class ConfigurationTree
 	///	Note: necessary because types of std::basic_string<char> cause compiler problems
 	/// if no string specific function
 	void 										getValue					(std::string& value) const;
-	void 										getValueAsBitMap			(ConfigurationTree::BitMap& value) const;
+	template<class T>
+	void 										getValueAsBitMap			(ConfigurationTree::BitMap<T>& value) const;
+	void 										getValueAsBitMap			(ConfigurationTree::BitMap<std::string>& value) const; ///< special version of getValueAsBitMap for string type
 
 	//==============================================================================
 	/// getValue (not std::string value)
@@ -169,7 +173,9 @@ class ConfigurationTree
 	/// if no string specific function
 	std::string               					getValue					(void) const;
 	std::string               					getValueWithDefault			(const std::string& defaultValue) const;
-	ConfigurationTree::BitMap 					getValueAsBitMap			(void) const;
+	template<class T>
+	ConfigurationTree::BitMap<T>				getValueAsBitMap			(void) const;
+	ConfigurationTree::BitMap<std::string>		getValueAsBitMap			(void) const; ///< special version of getValueAsBitMap for string type
 
   private:
 	template<typename T>
@@ -260,12 +266,14 @@ class ConfigurationTree
 		return out;
 	}
 
+	const TableViewColumnInfo& 					getColumnInfo				(void) const;
+
   protected:
 	const unsigned int&        					getRow						(void) const;
 	const unsigned int&        					getColumn					(void) const;
 	const unsigned int&        					getFieldRow					(void) const;
 	const unsigned int&        					getFieldColumn				(void) const;
-	const TableViewColumnInfo& 					getColumnInfo				(void) const;
+
 
 	/// extracting information from a list of records
 	struct RecordField
@@ -355,6 +363,76 @@ class ConfigurationTree
 };
 
 #include "otsdaq/ConfigurationInterface/ConfigurationTree.icc"  //define template functions
+
+//==============================================================================
+/// BitMap print
+///	 Generic type (for numbers) definition
+///	 Use inline to avoid multiple definition errors since defined in .h
+template<typename T>
+inline void ConfigurationTree::BitMap<T>::print(std::ostream& out) const
+{
+	if(!bitmap_.size())
+	{
+		out << "Bitmap print of empty bitmap.";
+		return;
+	}
+
+	out << "Bitmap print of size " << bitmap_.size() << " x " << bitmap_[0].size() << __E__;
+	out << " r x c : ";
+	for(unsigned int c = 0; c < bitmap_[0].size(); ++c)
+		out << std::right << std::setw(15) << c << ' ';
+	out << "\n-------+-";
+	for(unsigned int c = 0; c < bitmap_[0].size(); ++c)
+		out << "---------------+";
+	for(unsigned int r = 0; r < bitmap_.size(); ++r)
+	{
+		out << "\n" << std::right << std::setw(6) << r << " : ";
+		if(sizeof(T) == 1) //force 8-bit to number display
+			for(unsigned int c = 0; c < bitmap_[r].size(); ++c)
+				out << std::right << std::setw(15) << std::fixed << std::setprecision(3) << (uint16_t)get(r,c) << ' ';
+		else
+			for(unsigned int c = 0; c < bitmap_[r].size(); ++c)
+				out << std::right << std::setw(15) << std::fixed << std::setprecision(3) << get(r,c) << ' ';
+	}
+	out << "\n=======+=";
+	for(unsigned int c = 0; c < bitmap_[0].size(); ++c)
+		out << "===============+";
+
+	out << "\n";
+} //end print()
+
+//==============================================================================
+/// BitMap print
+///	 Specialization just for std::string
+///	 Use inline to avoid multiple definition errors since defined in .h
+template<>
+inline void ConfigurationTree::BitMap<std::string>::print(std::ostream& out) const
+{
+	if(!bitmap_.size())
+	{
+		out << "Bitmap print of empty bitmap.";
+		return;
+	}
+
+	out << "Bitmap print of size " << bitmap_.size() << " x " << bitmap_[0].size() << __E__;
+	out << " r x c : ";
+	for(unsigned int c = 0; c < bitmap_[0].size(); ++c)
+		out << std::right << std::setw(15) << c << ' ';
+	out << "\n-------+-";
+	for(unsigned int c = 0; c < bitmap_[0].size(); ++c)
+		out << "---------------+";
+	for(unsigned int r = 0; r < bitmap_.size(); ++r)
+	{
+		out << "\n" << std::right << std::setw(6) << r << " : ";
+		for(unsigned int c = 0; c < bitmap_[r].size(); ++c)
+			out << std::right << std::setw(15) << get(r,c) << ' ';
+	}
+	out << "\n=======+=";
+	for(unsigned int c = 0; c < bitmap_[0].size(); ++c)
+		out << "===============+";
+
+	out << "\n";
+} //end print() T=std:string
 
 // clang-format on
 }  // namespace ots

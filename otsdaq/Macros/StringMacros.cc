@@ -1,5 +1,6 @@
 #include "otsdaq/Macros/StringMacros.h"
 
+#include <algorithm>  // for find_if
 #include <array>
 
 using namespace ots;
@@ -367,6 +368,25 @@ std::string StringMacros::escapeString(std::string inString,
 		return "";                      // empty std::string since all white space
 	return inString.substr(0, ws + 1);  // trim right white space
 }  // end escapeString()
+
+//==============================================================================
+/// StringMacros::trim
+///		Remove whitespace like JavaScript trim()
+const std::string& StringMacros::trim(std::string& s)
+{
+	// remove leading whitespace
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+		        return !std::isspace(ch);
+	        }));
+
+	// remove trailing whitespace
+	s.erase(std::find_if(
+	            s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); })
+	            .base(),
+	        s.end());
+
+	return s;
+}  // end trim()
 
 //==============================================================================
 /// convertEnvironmentVariables ~

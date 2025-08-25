@@ -154,7 +154,8 @@ public:
 																			 bool         convertEnvironmentVariables = true) const;
 	std::string 								getEscapedValueAsString		(unsigned int row,
 																			 unsigned int col,
-																			 bool convertEnvironmentVariables = true) const;
+																			 bool convertEnvironmentVariables = true,
+																			 bool quotesToDoubleQuotes = false) const;
 	bool        								isURIEncodedCommentTheSame	(const std::string& comment) const;
 
 	const DataView&                         	getDataView					(void) const { return theDataView_; }
@@ -189,24 +190,23 @@ public:
 																			 std::string 		  childLinkIndex = "", ///<to allow for handling TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA
 																			 std::string 		  groupId = "");
 	void         								resizeDataView				(unsigned int nRows, unsigned int nCols);
-	unsigned int 								addRow						(const std::string& author = "",
-																			 unsigned char      incrementUniqueData = false,  ///< leave as unsigned char rather than
-																														 ///< bool, too many things (e.g. strings)
-																														 ///< evaluate successfully to bool values
-																			 const std::string&  baseNameAutoUID = "",
-																			 unsigned int rowToAdd =
-																				 (unsigned int)-1,  ///< returns index of added row, default is last row
-																			 std::string 		  childLinkIndex = "", ///<to allow for handling TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA
+	unsigned int 								addRow						(const std::string&   author = "",
+																			 unsigned char        incrementUniqueData = false, 	///< leave as unsigned char rather than
+																																///< bool, too many things (e.g. strings)
+																																///< evaluate successfully to bool values
+																			 const std::string&   baseNameAutoUID = "",
+																			 unsigned int 		  rowToAdd = (unsigned int)-1,  ///< returns index of added row, default is last row
+																			 std::string 		  childLinkIndex = "", 			///<to allow for handling TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA
 																			 std::string 		  groupId = "");
 	void 										deleteRow					(int r);
 	void 										deleteAllRows				(void) {theDataView_.clear();}
 
 
-	/// Lore did not like this.. wants special access through separate Supervisor for
-	/// "Database Management" int		addColumn(std::string name, std::string viewName,
-	/// std::string viewType); //returns index of added column, always is last column
-	/// unless
-	///
+	/// Note add Column is not allowed, freely; instead requires special access through Table Editor
+	/// "Database Management"
+	///		int		addColumn(std::string name, std::string viewName, std::string viewType); //returns index of added column, always is last column
+
+
 	iterator       								begin						(void) { return theDataView_.begin(); }
 	iterator       								end							(void) { return theDataView_.end(); }
 	const_iterator 								begin						(void) const { return theDataView_.begin(); }
@@ -214,8 +214,14 @@ public:
 	void           								reset						(void);
 	void           								print						(std::ostream& out = std::cout) const;
 	void           								printJSON					(std::ostream& out = std::cout) const;
+	void           								printCSV					(std::ostream& out = std::cout, const std::string& valueDelimeter = ",", const std::string& recordDelimeter = "\n", bool includeColumnNames = true) const;
 	int            								fillFromJSON				(const std::string& json);
-	int            								fillFromCSV					(const std::string& data,
+	void           								fillFromCSV					(const std::string& data,
+																			 const int&         dataOffset = 0,
+																			 const std::string& author     = "",
+																			 const char 		rowDelimter = ',',
+																			 const char 		colDelimter = '\n');
+	int            								fillFromEncodedCSV			(const std::string& data,
 																			 const int&         dataOffset = 0,
 																			 const std::string& author     = "");
 	bool           								setURIEncodedValue			(const std::string&  value,
