@@ -25,6 +25,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 
 	static const std::string ARTDAQ_FCL_PATH;
 	static const std::string ARTDAQ_CONFIG_LAYOUTS_PATH;
+	static const bool 		 ARTDAQ_DONOTWRITE_FCL;
 	static const std::string ARTDAQ_SUPERVISOR_CLASS, ARTDAQ_SUPERVISOR_TABLE;
 	static const std::string ARTDAQ_READER_TABLE, ARTDAQ_BUILDER_TABLE, ARTDAQ_LOGGER_TABLE, ARTDAQ_DISPATCHER_TABLE, ARTDAQ_MONITOR_TABLE, ARTDAQ_ROUTER_TABLE;
 	static const std::string ARTDAQ_SUBSYSTEM_TABLE, ARTDAQ_DAQ_TABLE, ARTDAQ_DAQ_PARAMETER_TABLE, ARTDAQ_ART_TABLE;

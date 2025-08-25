@@ -25,6 +25,7 @@ using namespace ots;
 
 const std::string 	ARTDAQTableBase::ARTDAQ_FCL_PATH = std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/";
 const std::string 	ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH = std::string(__ENV__("SERVICE_DATA_PATH")) + "/ConfigurationGUI_artdaqLayouts/";
+const bool			ARTDAQTableBase::ARTDAQ_DONOTWRITE_FCL = ((getenv("OTS_FCL_DONOTWRITE") == NULL) ? false : true);
 
 const std::string 	ARTDAQTableBase::ARTDAQ_SUPERVISOR_CLASS = "ots::ARTDAQSupervisor";
 const std::string 	ARTDAQTableBase::ARTDAQ_SUPERVISOR_TABLE = "ARTDAQSupervisorTable";
@@ -402,6 +403,12 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
     size_t routingTimeoutMs /* = DEFAULT_ROUTING_TIMEOUT_MS */,
     size_t routingRetryCount /* = DEFAULT_ROUTING_RETRY_COUNT */)
 {
+	if(ARTDAQ_DONOTWRITE_FCL)
+	{
+		__COUT__ << "Skipping fcl generation." << __E__;
+		return;
+	}
+
 	/*
 	    the file will look something like this:
 
@@ -722,6 +729,12 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
     size_t       routingRetryCount /* = DEFAULT_ROUTING_RETRY_COUNT */,
     std::string* returnFcl /* = nullptr */)
 {
+	if(ARTDAQ_DONOTWRITE_FCL)
+	{
+		__COUT__ << "Skipping fcl generation." << __E__;
+		return;
+	}
+
 	std::string filename = getFHICLFilename(appType, receiverNode.getValue());
 
 	/////////////////////////
@@ -915,6 +928,12 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 ///	Note: currently selfRank and selfPort are unused by artdaq fcl
 void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorNode)
 {
+	if(ARTDAQ_DONOTWRITE_FCL)
+	{
+		__COUT__ << "Skipping fcl generation." << __E__;
+		return;
+	}
+
 	std::string filename =
 	    getFHICLFilename(ARTDAQAppType::Monitor, monitorNode.getValue());
 
@@ -1491,6 +1510,12 @@ void ARTDAQTableBase::outputRoutingManagerFHICL(
     size_t                   routingTimeoutMs /* = DEFAULT_ROUTING_TIMEOUT_MS */,
     size_t                   routingRetryCount /* = DEFAULT_ROUTING_RETRY_COUNT */)
 {
+	if(ARTDAQ_DONOTWRITE_FCL)
+	{
+		__COUT__ << "Skipping fcl generation." << __E__;
+		return;
+	}
+
 	std::string filename =
 	    getFHICLFilename(ARTDAQAppType::RoutingManager, routingManagerNode.getValue());
 
