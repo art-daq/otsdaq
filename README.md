@@ -90,7 +90,7 @@ Brief Description
 
 This class is the gateway server for all otsdaq requests in "Normal Mode." It validates user access for every request. It synchronizes the state machines of all other superviso
 
-[WizardSupervisor](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1_wizard_supervisor.html)
+[WizardSupervisor](#WizardSupervisor)
 
 This class is a xdaq application. It is instantiated by the xdaq context when otsdaq is in "Wiz Mode." It is different from the "Normal Mode" Gateway Supervisor in that it does not have a state machine and does not inherit properties from CorePropertySupervisorBase. The assumption is that only admins have access to wiz mode, and they have access to all features of it.
 
