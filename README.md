@@ -86,15 +86,15 @@ Class Name and Link
 
 Brief Description
 
-[GatewaySupervisor](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1_gateway_supervisor.html)
+[GatewaySupervisor](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1GatewaySupervisor.html)
 
 This class is the gateway server for all otsdaq requests in "Normal Mode." It validates user access for every request. It synchronizes the state machines of all other superviso
 
-[WizardSupervisor](#WizardSupervisor)
+[WizardSupervisor](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1WizardSupervisor.html)
 
 This class is a xdaq application. It is instantiated by the xdaq context when otsdaq is in "Wiz Mode." It is different from the "Normal Mode" Gateway Supervisor in that it does not have a state machine and does not inherit properties from CorePropertySupervisorBase. The assumption is that only admins have access to wiz mode, and they have access to all features of it.
 
-[FESupervisor](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1_f_e_supervisor.html)
+[FESupervisor](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1FESupervisor.html)
 
 This class handles a collection of front-end interface pluginss. It provides an interface to Macro Maker for writes and reads to the front-end interfaces.
 
