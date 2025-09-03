@@ -516,7 +516,7 @@ export -f killprocs
 if [[ $SOFTKILLALL != 0 ]]; then
 
 	out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
-	out "${Yellow}${Bold}${REV}*************       kill otsdaq!        ************** ${OTS_OWNER} ${RstClr}"
+	out "${Yellow}${Bold}${REV}*************       kill otsdaq!        ************** OTS_OWNER = ${OTS_OWNER}, ARTDAQ_PARTITION = ${ARTDAQ_PARTITION} ${RstClr}"
 	out "${Yellow}${Bold}${REV}******************************************************${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 
 	#try to force kill other ots scripts
@@ -535,7 +535,7 @@ fi
 if [[ $KILLALL != 0 ]]; then
 
 	out "${Yellow}${Bold}${REV}******************************************************${RstClr}"
-	out "${Yellow}${Bold}${REV}*************       kill ALL otsdaq!        **************${RstClr}"
+	out "${Yellow}${Bold}${REV}*************       kill ALL otsdaq!        **********${RstClr}"
 	out "${Yellow}${Bold}${REV}******************************************************${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 
 	#try to force kill other ots scripts
@@ -555,6 +555,7 @@ if [[ $KILLALL != 0 ]]; then
 	#in case art processes were kept alive by artdaq
 	killall -9 art &>/dev/null 2>&1 #hide output
 	#killprocs
+	killall -9 ots_udp_hw_emulator &>/dev/null 2>&1 #hide output
 
 	out "Done with ots hard kill-all."
 
