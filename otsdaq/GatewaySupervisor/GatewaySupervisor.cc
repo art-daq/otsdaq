@@ -8760,7 +8760,7 @@ try
 		}
 		else
 		{
-			__SS__ << "requestType Request, " << requestType << ", not recognized."
+			__SS__ << "requestType Request, " << requestType << ", not recognized by the Gateway Supervisor (was it intended for another Supervisor?)."
 			       << __E__;
 			__SS_THROW__;
 		}

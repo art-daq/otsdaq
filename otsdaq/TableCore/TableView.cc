@@ -375,7 +375,7 @@ void TableView::init(void)
 				      theDataView_[row][colUID_][i] == '_')))
 				{
 					__SS__ << "An invalid UID '" << theDataView_[row][colUID_] << "' "
-					       << " was identified. UIDs must contain only letters, numbers,"
+					       << " was identified. UIDs must contain only letters, numbers, "
 					       << "dashes, and underscores." << __E__;
 					__SS_THROW__;
 				}
