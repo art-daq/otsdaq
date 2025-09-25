@@ -1356,12 +1356,13 @@ try
 					catch(...)
 					{
 						// failed to treat like class, so throw original
-						__SS__ << "Failed to create an icon linking to XDAQ Supervisor app '"
-						       << windowLinkedApp
-						       << ".' Please make sure the Supervisor exists in the "
-							   << ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME << " table. "
-							   << "\n\nThe following error occurred: " << e.what()
-						       << __E__;
+						__SS__
+						    << "Failed to create an icon linking to XDAQ Supervisor app '"
+						    << windowLinkedApp
+						    << ".' Please make sure the Supervisor exists in the "
+						    << ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME
+						    << " table. "
+						    << "\n\nThe following error occurred: " << e.what() << __E__;
 						appTable.tableView_->print(ss);
 						__SS_THROW__;
 					}
