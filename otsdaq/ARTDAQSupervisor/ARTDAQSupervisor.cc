@@ -273,10 +273,11 @@ void ARTDAQSupervisor::destroy(void)
 			usleep(1000000);
 		}
 
+		
+
+
 		// Cleanup
 		Py_XDECREF(daqinterface_ptr_);
-		Py_XDECREF(stringIO_out);
-		Py_XDECREF(stringIO_err);
 		// Py_XDECREF(pStateArgs2);
 		// Py_XDECREF(out_text);
 		// Py_XDECREF(err_text);
@@ -289,6 +290,21 @@ void ARTDAQSupervisor::destroy(void)
 		daqinterface_ptr_ = NULL;
 	}
 
+	__SUP_COUT__ << "Flusing printouts" << __E__;
+
+	//make sure to flush printouts
+	PyRun_SimpleString(R"(
+import sys
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
+)");
+	Py_XDECREF(stringIO_out);
+	Py_XDECREF(stringIO_err);
+
+	__SUP_COUT__ << "Thread and garbage cleanup" << __E__;
+	//force python thread cleanup:
+	PyRun_SimpleString("import threading; [t.join() for t in threading.enumerate() if t is not threading.main_thread()]");
+	PyRun_SimpleString("import gc; gc.collect()");
 	Py_Finalize();
 
 	// CorePropertySupervisorBase would destroy, but since it was created here, attempt to destroy
@@ -959,7 +975,9 @@ try
 		           << "Supervisor state: \"" << daqinterface_state_ << "\" != \"ready\" "
 		           << __E__;
 		auto doConfigOutput_recover_i = doConfigOutput.find("RECOVER transition underway");
-		if(doConfigOutput_recover_i > OUT_ON_ERR_SIZE) //last OUT_ON_ERR_SIZE chars only
+		if (doConfigOutput_recover_i == std::string::npos)
+			ss << doConfigOutput;
+		else if(doConfigOutput_recover_i > OUT_ON_ERR_SIZE) //last OUT_ON_ERR_SIZE chars only
 			ss << "... tail of " << OUT_ON_ERR_SIZE << " characters before recovery: " << 
 				doConfigOutput.substr(doConfigOutput_recover_i - OUT_ON_ERR_SIZE + 
 					std::string("RECOVER transition underway").size(), OUT_ON_ERR_SIZE);
@@ -1549,23 +1567,31 @@ void ots::ARTDAQSupervisor::getDAQState_()
 		return;
 	}
 
-	PyObject* pName = PyUnicode_FromString("state");
-	PyObject* pArg  = PyUnicode_FromString("DAQInterface");
-	PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, NULL);
+	int tries=0;
+	while (tries < 5){
 
-	if(res == NULL)
-	{		
-		std::string err = capturePyErr("getDAQState_");		
-		__SS__ << "Error calling state function from getDAQState_() - here was the error: " <<
-			err << "\n\n" << StringMacros::stackTrace() << __E__;
-		// __SUP_SS_THROW__;
-		//do not throw, just mark state empty
-		daqinterface_state_ = "";
-		__COUT_ERR__ << ss.str();
-		return;
+		PyObject* pName = PyUnicode_FromString("state");
+		PyObject* pArg  = PyUnicode_FromString("DAQInterface");
+		PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, NULL);
+
+		if(res == NULL)
+		{		
+			std::string err = capturePyErr("getDAQState_");		
+			__SS__ << "Retry n " << tries << ". Error calling state function from getDAQState_() - here was the error: " <<
+				err << "\n\n" << StringMacros::stackTrace() << __E__;
+			// __SUP_SS_THROW__;
+			//do not throw, just mark state empty
+			daqinterface_state_ = "";
+			__COUT_ERR__ << ss.str();
+			tries++;
+			usleep(100000);
+			continue;
+		}
+		daqinterface_state_ = std::string(PyUnicode_AsUTF8(res));
+		__SUP_COUTS__(2) << "getDAQState_ state=" << daqinterface_state_ << __E__;
+		break;
 	}
-	daqinterface_state_ = std::string(PyUnicode_AsUTF8(res));
-	__SUP_COUTS__(2) << "getDAQState_ state=" << daqinterface_state_ << __E__;
+
 
 }  // end getDAQState_()
 
@@ -1734,7 +1760,7 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 					PyObject* pName = PyUnicode_FromString("check_proc_heartbeats");
 					PyObject* res =
 					    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
-					__COUT_MULTI_LBL__(0,captureStderrAndStdout_("check_proc_heartbeats"),"check_proc_heartbeats");
+					__COUT_MULTI_LBL__(1,captureStderrAndStdout_("check_proc_heartbeats"),"check_proc_heartbeats");
 					TLOG(TLVL_TRACE)
 					    << "Done with DAQInterface::check_proc_heartbeats call";
 
