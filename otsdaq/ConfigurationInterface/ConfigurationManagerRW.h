@@ -43,7 +43,7 @@ struct GroupInfo
 	}
 };
 
-#define __GETCFG_RW__(X) getConfigurationRW<X>(QUOTE(X))
+#define __GET_TABLE_PTR__(X) getTablePtr<X>(QUOTE(X))
 
 //==============================================================================
 /// ConfigurationManagerRW
@@ -73,12 +73,16 @@ class ConfigurationManagerRW : public ConfigurationManager
 			 TableVersion /*version*/> >		getVersionAliases				(void) const;
 
 	template<class T>
-	T* 											getConfigurationRW				(std::string name) { return (T*)getTableByName(name); }
+	T* 											getTablePtr						(const std::string& tableName) { return (T*)getTableByName(tableName); }
 	TableBase*    								getVersionedTableByName			(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false);
 	TableBase*    								getTableByName					(const std::string& tableName);
 	TableGroupKey 								findTableGroup					(const std::string& groupName, 	const std::map<std::string, TableVersion>& 						groupMembers,
 																												const std::map<std::string /*name*/, std::string /*alias*/>& 	groupAliases =	std::map<std::string /*name*/, std::string /*alias*/>());
 	TableBase* 									getMetadataTable				(TableVersion fillVersion = TableVersion()); ///< created for use in otsdaq_flatten_system_aliases and otsdaq_export_system_aliases, e.g.
+
+	//==============================================================================
+	/// Setters
+	const std::string&      					setUsername						(const std::string& username) { username_ = username; return username_; }
 
 	//==============================================================================
 	/// modifiers of generic TableBase
@@ -141,13 +145,9 @@ class ConfigurationManagerRW : public ConfigurationManager
   private:
 
 	//==============================================================================
-	/// group cache handling
-	void 										cacheGroupKey					(const std::string& groupName, TableGroupKey key);
-
-	//==============================================================================
 	/// private members
-	std::map<std::string, TableInfo> 								allTableInfo_;
-	std::map<std::string, GroupInfo> 								allGroupInfo_;
+	std::map<std::string, TableInfo> 								allTableInfo_; //local cache of table info
+	std::map<std::string, GroupInfo> 								allGroupInfo_; //local cache of group info
 
 	static std::atomic<bool>										firstTimeConstructed_;
 };

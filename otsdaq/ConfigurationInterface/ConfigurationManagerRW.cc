@@ -546,7 +546,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			for(const auto& fullName : tableGroups)
 			{
 				TableGroupKey::getGroupNameAndKey(fullName, name, key);
-				cacheGroupKey(name, key);
+				allGroupInfo_[name].keys_.emplace(key); //store in cache
 			}
 
 			__GEN_COUTT__ << "Group Keys end runTimeSeconds()=" << runTimeSeconds()
@@ -1478,19 +1478,6 @@ TableVersion ConfigurationManagerRW::copyViewToCurrentColumns(
 }  // end copyViewToCurrentColumns()
 
 //==============================================================================
-/// cacheGroupKey
-void ConfigurationManagerRW::cacheGroupKey(const std::string& groupName,
-                                           TableGroupKey      key)
-{
-	allGroupInfo_[groupName].keys_.emplace(key);
-
-	//	__SS__ << "Now keys are: " << __E__;
-	//	for(auto& key:allGroupInfo_[groupName].keys_)
-	//		ss << "\t" << key << __E__;
-	//	__GEN_COUT__ << ss.str() << __E__;
-}  // end cacheGroupKey()
-
-//==============================================================================
 /// getGroupInfo
 ///	the interface is slow when there are a lot of groups..
 ///	so plan is to maintain local cache of recent group info
@@ -1923,6 +1910,11 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 	__GEN_COUT__ << "New Key for group: " << groupName << " found as " << newKey << __E__;
 	__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
+	time_t groupCreationTime = time(0);	
+	// capture group type before adding metadata table!
+	std::string groupType = getTypeNameOfGroup(groupMembers);
+	std::map<std::string /*name*/, TableVersion /*version*/> groupMembersWithoutMeta = groupMembers; 
+	
 	// verify groupNameWithKey and attempt to store
 	try
 	{
@@ -1931,8 +1923,8 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 		if(groupAliases)
 			groupAliasesString = StringMacros::mapToString(
 			    *groupAliases, "," /*primary delimeter*/, ":" /*secondary delimeter*/);
-		__GEN_COUT__ << "Metadata: " << username_ << " " << time(0) << " " << groupComment
-		             << " " << groupAliasesString << __E__;
+		__GEN_COUT__ << "Metadata: " << username_ << " " << groupCreationTime << " " << groupComment
+		             << " " << groupAliasesString << " " << groupType << __E__;
 
 		// to compensate for unusual errors upstream, make sure the metadata table has one
 		// row
@@ -1949,7 +1941,7 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 		groupMetadataTable_.getViewP()->setValue(
 		    username_, 0, ConfigurationManager::METADATA_COL_AUTHOR);
 		groupMetadataTable_.getViewP()->setValue(
-		    time(0), 0, ConfigurationManager::METADATA_COL_TIMESTAMP);
+		    groupCreationTime, 0, ConfigurationManager::METADATA_COL_TIMESTAMP);
 
 		if(TTEST(2))
 		{
@@ -2073,7 +2065,16 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 	__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
 	// store cache of recent groups
-	cacheGroupKey(groupName, newKey);
+	allGroupInfo_[groupName].keys_.emplace(newKey);
+	//update latest group info with this group's info
+	allGroupInfo_.at(groupName).latestKeyGroupAuthor_ = username_;
+	allGroupInfo_.at(groupName).latestKeyGroupComment_ = groupComment;
+	allGroupInfo_.at(groupName).latestKeyGroupCreationTime_ = groupCreationTime;
+	allGroupInfo_.at(groupName).latestKeyGroupTypeString_ = groupType;
+	allGroupInfo_.at(groupName).latestKeyMemberMap_ = groupMembersWithoutMeta;
+	
+	__GEN_COUT__ << "Saved " << groupName << "(" << newKey << ") of type " <<
+		groupType << __E__;
 
 	__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
@@ -2719,8 +2720,8 @@ void ConfigurationManagerRW::testXDAQContext()
 		for(const auto& fullName : tableGroups)
 		{
 			TableGroupKey::getGroupNameAndKey(fullName, name, key);
-			cacheGroupKey(name, key);
-
+			allGroupInfo_[name].keys_.emplace(key);
+			
 			if(name == debugGroupName)
 			{
 				__GEN_COUTV__(key);
