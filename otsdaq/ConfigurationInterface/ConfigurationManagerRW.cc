@@ -546,7 +546,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			for(const auto& fullName : tableGroups)
 			{
 				TableGroupKey::getGroupNameAndKey(fullName, name, key);
-				allGroupInfo_[name].keys_.emplace(key); //store in cache
+				allGroupInfo_[name].keys_.emplace(key);  //store in cache
 			}
 
 			__GEN_COUTT__ << "Group Keys end runTimeSeconds()=" << runTimeSeconds()
@@ -1910,11 +1910,12 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 	__GEN_COUT__ << "New Key for group: " << groupName << " found as " << newKey << __E__;
 	__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
-	time_t groupCreationTime = time(0);	
+	time_t groupCreationTime = time(0);
 	// capture group type before adding metadata table!
 	std::string groupType = getTypeNameOfGroup(groupMembers);
-	std::map<std::string /*name*/, TableVersion /*version*/> groupMembersWithoutMeta = groupMembers; 
-	
+	std::map<std::string /*name*/, TableVersion /*version*/> groupMembersWithoutMeta =
+	    groupMembers;
+
 	// verify groupNameWithKey and attempt to store
 	try
 	{
@@ -1923,8 +1924,9 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 		if(groupAliases)
 			groupAliasesString = StringMacros::mapToString(
 			    *groupAliases, "," /*primary delimeter*/, ":" /*secondary delimeter*/);
-		__GEN_COUT__ << "Metadata: " << username_ << " " << groupCreationTime << " " << groupComment
-		             << " " << groupAliasesString << " " << groupType << __E__;
+		__GEN_COUT__ << "Metadata: " << username_ << " " << groupCreationTime << " "
+		             << groupComment << " " << groupAliasesString << " " << groupType
+		             << __E__;
 
 		// to compensate for unusual errors upstream, make sure the metadata table has one
 		// row
@@ -2067,14 +2069,14 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 	// store cache of recent groups
 	allGroupInfo_[groupName].keys_.emplace(newKey);
 	//update latest group info with this group's info
-	allGroupInfo_.at(groupName).latestKeyGroupAuthor_ = username_;
-	allGroupInfo_.at(groupName).latestKeyGroupComment_ = groupComment;
+	allGroupInfo_.at(groupName).latestKeyGroupAuthor_       = username_;
+	allGroupInfo_.at(groupName).latestKeyGroupComment_      = groupComment;
 	allGroupInfo_.at(groupName).latestKeyGroupCreationTime_ = groupCreationTime;
-	allGroupInfo_.at(groupName).latestKeyGroupTypeString_ = groupType;
-	allGroupInfo_.at(groupName).latestKeyMemberMap_ = groupMembersWithoutMeta;
-	
-	__GEN_COUT__ << "Saved " << groupName << "(" << newKey << ") of type " <<
-		groupType << __E__;
+	allGroupInfo_.at(groupName).latestKeyGroupTypeString_   = groupType;
+	allGroupInfo_.at(groupName).latestKeyMemberMap_         = groupMembersWithoutMeta;
+
+	__GEN_COUT__ << "Saved " << groupName << "(" << newKey << ") of type " << groupType
+	             << __E__;
 
 	__GEN_COUTT__ << "saveNewTableGroup runTimeSeconds()=" << runTimeSeconds() << __E__;
 
@@ -2721,7 +2723,7 @@ void ConfigurationManagerRW::testXDAQContext()
 		{
 			TableGroupKey::getGroupNameAndKey(fullName, name, key);
 			allGroupInfo_[name].keys_.emplace(key);
-			
+
 			if(name == debugGroupName)
 			{
 				__GEN_COUTV__(key);

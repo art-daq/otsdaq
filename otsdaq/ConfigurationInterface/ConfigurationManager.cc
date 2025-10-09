@@ -1524,7 +1524,7 @@ void ConfigurationManager::loadTableGroup(
     std::map<std::string /*name*/, std::string /*alias*/>*
         groupAliases /*=0 , note: in metadata */,
     ConfigurationManager::LoadGroupType
-        groupTypeToLoad /*=ConfigurationManager::LoadGroupType::ALL_TYPES*/,
+         groupTypeToLoad /*=ConfigurationManager::LoadGroupType::ALL_TYPES*/,
     bool ignoreVersionTracking /*=false*/)
 {
 	// clear to defaults
