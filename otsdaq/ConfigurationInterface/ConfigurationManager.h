@@ -145,7 +145,7 @@ class ConfigurationManager
 	    bool                                                   doNotLoadMember    = false,
 	    std::string*                                           groupTypeString    = 0,
 	    std::map<std::string /*name*/, std::string /*alias*/>* groupAliases       = 0,
-	    ConfigurationManager::LoadGroupType					   onlyLoadIfBackboneOrContext = ConfigurationManager::LoadGroupType::ALL_TYPES,
+	    ConfigurationManager::LoadGroupType					   groupTypeToLoad    = ConfigurationManager::LoadGroupType::ALL_TYPES,
 		bool												   ignoreVersionTracking = false);
 	void 								copyTableGroupFromCache		(
 		const ConfigurationManager&								cacheConfigMgr,

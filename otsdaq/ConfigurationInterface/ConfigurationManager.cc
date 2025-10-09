@@ -1524,7 +1524,7 @@ void ConfigurationManager::loadTableGroup(
     std::map<std::string /*name*/, std::string /*alias*/>*
         groupAliases /*=0 , note: in metadata */,
     ConfigurationManager::LoadGroupType
-         onlyLoadIfBackboneOrContext /*=ConfigurationManager::LoadGroupType::ALL_TYPES*/,
+         groupTypeToLoad /*=ConfigurationManager::LoadGroupType::ALL_TYPES*/,
     bool ignoreVersionTracking /*=false*/)
 {
 	// clear to defaults
@@ -1734,7 +1734,7 @@ void ConfigurationManager::loadTableGroup(
 			if(!groupTypeString)
 				groupType = getTypeOfGroup(memberMap);
 
-			if(onlyLoadIfBackboneOrContext ==
+			if(groupTypeToLoad ==
 			       ConfigurationManager::LoadGroupType::ONLY_BACKBONE_OR_CONTEXT_TYPES &&
 			   groupType != ConfigurationManager::GroupType::CONTEXT_TYPE &&
 			   groupType != ConfigurationManager::GroupType::BACKBONE_TYPE)
@@ -1744,7 +1744,7 @@ void ConfigurationManager::loadTableGroup(
 				             << convertGroupTypeToName(groupType) << "')." << __E__;
 				return;
 			}
-			else if(onlyLoadIfBackboneOrContext ==
+			else if(groupTypeToLoad ==
 			            ConfigurationManager::LoadGroupType::ONLY_BACKBONE_TYPE &&
 			        groupType != ConfigurationManager::GroupType::BACKBONE_TYPE)
 			{
