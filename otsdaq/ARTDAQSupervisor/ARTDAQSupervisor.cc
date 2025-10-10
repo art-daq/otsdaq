@@ -940,6 +940,10 @@ try
 	{
 		__GEN_SS__ << "DAQInterface boot transition failed! "
 		           << "Status after boot attempt: " << daqinterface_state_ << __E__;
+		if(doBootOutput.size() > OUT_ON_ERR_SIZE) //last OUT_ON_ERR_SIZE chars only
+			ss << "... last " << OUT_ON_ERR_SIZE << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
+		else
+			ss << doBootOutput;
 		__GEN_SS_THROW__;
 	}
 	__GEN_COUT__ << "Status after boot: " << daqinterface_state_ << __E__;
