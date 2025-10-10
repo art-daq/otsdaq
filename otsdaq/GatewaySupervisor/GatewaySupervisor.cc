@@ -4518,19 +4518,26 @@ try
 		__COUT__ << "Sending FE communication: " << SOAPUtilities::translate(message)
 		         << __E__;
 
+		xoap::MessageReference replyMessage = SOAPMessenger::sendWithSOAPReply(
+		    CorePropertySupervisorBase::allSupervisorInfo_
+		        .getAllMacroMakerTypeSupervisorInfo()
+		        .begin()
+		        ->second.getDescriptor(),
+		    message);
 		std::string reply =
-		    SOAPMessenger::send(CorePropertySupervisorBase::allSupervisorInfo_
-		                            .getAllMacroMakerTypeSupervisorInfo()
-		                            .begin()
-		                            ->second.getDescriptor(),
-		                        message);
+		    SOAPUtilities::receive(replyMessage);  //get primary message response
 
 		__COUT__ << "Macro Maker init reply: " << reply << __E__;
 		if(reply == "Error")
 		{
 			__SS__ << "\nTransition to Configuring interrupted! There was an error "
-			          "identified initializing Macro Maker.\n\n "
-			       << __E__;
+			          "identified initializing Macro Maker.\n\n ";
+
+			//extract full error message
+			SOAPParameters retParameters("Error");
+			SOAPUtilities::receive(replyMessage, retParameters);
+			ss << "Here was the error: " << retParameters.getValue("Error") << __E__;
+
 			__COUT_ERR__ << "\n" << ss.str();
 			XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 			return;
