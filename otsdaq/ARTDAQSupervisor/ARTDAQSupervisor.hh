@@ -75,7 +75,7 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	void configuringThread(void);
 	void startingThread(void);
 
-	PyObject	                 *daqinterface_ptr_, *stringIO_out, *stringIO_err;
+	PyObject *                   daqinterface_ptr_, *stringIO_out, *stringIO_err;
 	std::recursive_mutex         daqinterface_mutex_;
 	int                          partition_;
 	std::string                  daqinterface_state_;

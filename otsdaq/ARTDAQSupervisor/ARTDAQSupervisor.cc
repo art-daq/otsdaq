@@ -19,7 +19,7 @@
 #include <signal.h>
 #include <regex>
 
-#define OUT_ON_ERR_SIZE 1000  	//tail size of output to include on error
+#define OUT_ON_ERR_SIZE 1000  //tail size of output to include on error
 
 using namespace ots;
 
@@ -273,9 +273,6 @@ void ARTDAQSupervisor::destroy(void)
 			usleep(1000000);
 		}
 
-		
-
-
 		// Cleanup
 		Py_XDECREF(daqinterface_ptr_);
 		// Py_XDECREF(pStateArgs2);
@@ -303,7 +300,9 @@ sys.stderr = sys.__stderr__
 
 	__SUP_COUT__ << "Thread and garbage cleanup" << __E__;
 	//force python thread cleanup:
-	PyRun_SimpleString("import threading; [t.join() for t in threading.enumerate() if t is not threading.main_thread()]");
+	PyRun_SimpleString(
+	    "import threading; [t.join() for t in threading.enumerate() if t is not "
+	    "threading.main_thread()]");
 	PyRun_SimpleString("import gc; gc.collect()");
 	Py_Finalize();
 
@@ -411,7 +410,7 @@ void ARTDAQSupervisor::init(void)
 					stringIO_err = PyObject_CallMethod(io, "StringIO", NULL);
 
 					// Save originals (not needed, since just keep the redirection until daqinterface_ptr_ is destructed)
-					// PyObject* sys_stdout = PyObject_GetAttrString(sys, "stdout");					
+					// PyObject* sys_stdout = PyObject_GetAttrString(sys, "stdout");
 					// PyObject* sys_stderr = PyObject_GetAttrString(sys, "stderr");
 
 					// Redirect
@@ -421,22 +420,22 @@ void ARTDAQSupervisor::init(void)
 
 					daqinterface_ptr_ = PyObject_Call(di_obj_ptr, pArgs, kwargs);
 
-
-					if(0) //example printout handling
+					if(0)  //example printout handling
 					{
 						// Force an error
 						PyObject* bad = PyObject_CallMethod(sys, "does_not_exist", NULL);
-						if (!bad) 
-							PyErr_Print();   // <-- this writes into stringIO_err, not the terminal
-						
+						if(!bad)
+							PyErr_Print();  // <-- this writes into stringIO_err, not the terminal
 
 						// Grab stderr contents
-						PyObject* err_text = PyObject_CallMethod(stringIO_err, "getvalue", NULL);
-						if (err_text) 
-							__COUT__ << "Captured stderr:\n" << PyUnicode_AsUTF8(err_text) << "\n";						
-						else 
+						PyObject* err_text =
+						    PyObject_CallMethod(stringIO_err, "getvalue", NULL);
+						if(err_text)
+							__COUT__ << "Captured stderr:\n"
+							         << PyUnicode_AsUTF8(err_text) << "\n";
+						else
 							__COUT__ << "Capture of stderr failed.";
-					} //end example printout handling
+					}  //end example printout handling
 
 					// Cleanup
 					Py_DECREF(di_obj_ptr);
@@ -867,7 +866,7 @@ try
 	}
 	PyObject* res1 =
 	    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName1, readerDict, NULL);
-	__COUT_MULTI_LBL__(0,captureStderrAndStdout_("setdaqcomps"),"setdaqcomps");
+	__COUT_MULTI_LBL__(0, captureStderrAndStdout_("setdaqcomps"), "setdaqcomps");
 
 	Py_DECREF(readerDict);
 
@@ -877,7 +876,6 @@ try
 		__GEN_SS__ << "Error calling setdaqcomps transition: " << err << __E__;
 		__GEN_SS_THROW__;
 	}
-
 
 	getDAQState_();
 	__GEN_COUT__ << "Status after setdaqcomps: " << daqinterface_state_ << __E__;
@@ -892,23 +890,25 @@ try
 	PyObject* res2 =
 	    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName2, pStateArgs1, NULL);
 	std::string doBootOutput = captureStderrAndStdout_("do_boot");
-	__COUT_MULTI_LBL__(0,doBootOutput,"do_boot");
+	__COUT_MULTI_LBL__(0, doBootOutput, "do_boot");
 
 	if(res2 == NULL)
 	{
 		std::string err = capturePyErr();
-		__GEN_COUT__ << "Error on first boost attempt, recovering and retrying: " << err << __E__;
+		__GEN_COUT__ << "Error on first boost attempt, recovering and retrying: " << err
+		             << __E__;
 
 		PyObject* pName = PyUnicode_FromString("do_recover");
 		PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
-		__COUT_MULTI_LBL__(0,captureStderrAndStdout_("do_recover"),"do_recover");
+		__COUT_MULTI_LBL__(0, captureStderrAndStdout_("do_recover"), "do_recover");
 
 		if(res == NULL)
 		{
 			std::string err = capturePyErr();
 			__GEN_SS__ << "Error calling recover transition!!!! " << err << __E__;
-			if(doBootOutput.size() > OUT_ON_ERR_SIZE) //last OUT_ON_ERR_SIZE chars only
-				ss << "... last " << OUT_ON_ERR_SIZE << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
+			if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
+				ss << "... last " << OUT_ON_ERR_SIZE
+				   << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
 			else
 				ss << doBootOutput;
 			__GEN_SS_THROW__;
@@ -921,14 +921,15 @@ try
 		PyObject* res3 =
 		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName2, pStateArgs1, NULL);
 		doBootOutput = captureStderrAndStdout_("do_boot (retry)");
-		__COUT_MULTI_LBL__(0,doBootOutput,"do_boot (retry)");
+		__COUT_MULTI_LBL__(0, doBootOutput, "do_boot (retry)");
 
 		if(res3 == NULL)
 		{
 			std::string err = capturePyErr();
 			__GEN_SS__ << "Error calling boot transition (2nd try): " << err << __E__;
-			if(doBootOutput.size() > OUT_ON_ERR_SIZE) //last OUT_ON_ERR_SIZE chars only
-				ss << "... last " << OUT_ON_ERR_SIZE << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
+			if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
+				ss << "... last " << OUT_ON_ERR_SIZE
+				   << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
 			else
 				ss << doBootOutput;
 			__GEN_SS_THROW__;
@@ -940,8 +941,9 @@ try
 	{
 		__GEN_SS__ << "DAQInterface boot transition failed! "
 		           << "Status after boot attempt: " << daqinterface_state_ << __E__;
-		if(doBootOutput.size() > OUT_ON_ERR_SIZE) //last OUT_ON_ERR_SIZE chars only
-			ss << "... last " << OUT_ON_ERR_SIZE << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
+		if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
+			ss << "... last " << OUT_ON_ERR_SIZE
+			   << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
 		else
 			ss << doBootOutput;
 		__GEN_SS_THROW__;
@@ -953,24 +955,22 @@ try
 	__GEN_COUT__ << "Calling do_config" << __E__;
 	__GEN_COUT__ << "Status before config: " << daqinterface_state_ << __E__;
 	std::string doConfigOutput = "";
-	{ //do_config call		
+	{  //do_config call
 		PyObject* pName3      = PyUnicode_FromString("do_config");
 		PyObject* pStateArgs2 = Py_BuildValue("[s]", FAKE_CONFIG_NAME);
 		PyObject* res3 =
-			PyObject_CallMethodObjArgs(daqinterface_ptr_, pName3, pStateArgs2, NULL);
+		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName3, pStateArgs2, NULL);
 		doConfigOutput = captureStderrAndStdout_("do_config");
-		__COUT_MULTI_LBL__(0,doConfigOutput,"do_config");
+		__COUT_MULTI_LBL__(0, doConfigOutput, "do_config");
 		if(res3 == NULL)
 		{
 			std::string err = capturePyErr("do_config");
 			__GEN_SS__ << "Error calling config transition: " << err << __E__;
 			__GEN_SS_THROW__;
-		}		
+		}
 		const char* res_cstr = PyUnicode_AsUTF8(res3);
 		__SUP_COUTT__ << "do_config result=" << (res_cstr ? res_cstr : "") << __E__;
-	} //end do_config call
-
-
+	}  //end do_config call
 
 	getDAQState_();
 	if(daqinterface_state_ != "ready")
@@ -978,16 +978,22 @@ try
 		__GEN_SS__ << "DAQInterface config transition failed!" << __E__
 		           << "Supervisor state: \"" << daqinterface_state_ << "\" != \"ready\" "
 		           << __E__;
-		auto doConfigOutput_recover_i = doConfigOutput.find("RECOVER transition underway");
-		if (doConfigOutput_recover_i == std::string::npos)
+		auto doConfigOutput_recover_i =
+		    doConfigOutput.find("RECOVER transition underway");
+		if(doConfigOutput_recover_i == std::string::npos)
 			ss << doConfigOutput;
-		else if(doConfigOutput_recover_i > OUT_ON_ERR_SIZE) //last OUT_ON_ERR_SIZE chars only
-			ss << "... tail of " << OUT_ON_ERR_SIZE << " characters before recovery: " << 
-				doConfigOutput.substr(doConfigOutput_recover_i - OUT_ON_ERR_SIZE + 
-					std::string("RECOVER transition underway").size(), OUT_ON_ERR_SIZE);
+		else if(doConfigOutput_recover_i >
+		        OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
+			ss << "... tail of " << OUT_ON_ERR_SIZE << " characters before recovery: "
+			   << doConfigOutput.substr(
+			          doConfigOutput_recover_i - OUT_ON_ERR_SIZE +
+			              std::string("RECOVER transition underway").size(),
+			          OUT_ON_ERR_SIZE);
 		else
-			ss << doConfigOutput.substr(0,doConfigOutput_recover_i + 
-				std::string("RECOVER transition underway").size());
+			ss << doConfigOutput.substr(
+			    0,
+			    doConfigOutput_recover_i +
+			        std::string("RECOVER transition underway").size());
 		__GEN_SS_THROW__;
 	}
 	__GEN_COUT__ << "Status after config: " << daqinterface_state_ << __E__;
@@ -1032,7 +1038,8 @@ try
 		// First stop before halting
 		PyObject* pName = PyUnicode_FromString("do_stop_running");
 		PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
-		__COUT_MULTI_LBL__(0,captureStderrAndStdout_("do_stop_running"),"do_stop_running");
+		__COUT_MULTI_LBL__(
+		    0, captureStderrAndStdout_("do_stop_running"), "do_stop_running");
 
 		if(res == NULL)
 		{
@@ -1045,7 +1052,8 @@ try
 	PyObject* pName = PyUnicode_FromString("do_command");
 	PyObject* pArg  = PyUnicode_FromString("Shutdown");
 	PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, NULL);
-	__COUT_MULTI_LBL__(0,captureStderrAndStdout_("do_command Shutdown"),"do_command Shutdown");
+	__COUT_MULTI_LBL__(
+	    0, captureStderrAndStdout_("do_command Shutdown"), "do_command Shutdown");
 
 	if(res == NULL)
 	{
@@ -1157,7 +1165,8 @@ try
 	PyObject* pName = PyUnicode_FromString("do_command");
 	PyObject* pArg  = PyUnicode_FromString("Pause");
 	PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, NULL);
-	__COUT_MULTI_LBL__(0,captureStderrAndStdout_("do_command Pause"),"do_command Pause");
+	__COUT_MULTI_LBL__(
+	    0, captureStderrAndStdout_("do_command Pause"), "do_command Pause");
 
 	if(res == NULL)
 	{
@@ -1197,7 +1206,8 @@ try
 	PyObject* pName = PyUnicode_FromString("do_command");
 	PyObject* pArg  = PyUnicode_FromString("Resume");
 	PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, NULL);
-	__COUT_MULTI_LBL__(0,captureStderrAndStdout_("do_command Resume"),"do_command Resume");
+	__COUT_MULTI_LBL__(
+	    0, captureStderrAndStdout_("do_command Resume"), "do_command Resume");
 
 	if(res == NULL)
 	{
@@ -1353,7 +1363,8 @@ try
 		PyObject* pStateArgs = PyLong_FromLong(run_number);
 		PyObject* res =
 		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pStateArgs, NULL);
-		__COUT_MULTI_LBL__(0,captureStderrAndStdout_("do_start_running"),"do_start_running");
+		__COUT_MULTI_LBL__(
+		    0, captureStderrAndStdout_("do_start_running"), "do_start_running");
 
 		thread_progress_bar_.step();
 
@@ -1414,7 +1425,7 @@ try
 	__SUP_COUT__ << "Status before stop: " << daqinterface_state_ << __E__;
 	PyObject* pName = PyUnicode_FromString("do_stop_running");
 	PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
-	__COUT_MULTI_LBL__(0,captureStderrAndStdout_("do_stop_running"),"do_stop_running");
+	__COUT_MULTI_LBL__(0, captureStderrAndStdout_("do_stop_running"), "do_stop_running");
 
 	if(res == NULL)
 	{
@@ -1450,7 +1461,7 @@ void ots::ARTDAQSupervisor::enteringError(toolbox::Event::Reference /*event*/)
 
 	PyObject* pName = PyUnicode_FromString("do_recover");
 	PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
-	__COUT_MULTI_LBL__(0,captureStderrAndStdout_("do_recover"),"do_recover");
+	__COUT_MULTI_LBL__(0, captureStderrAndStdout_("do_recover"), "do_recover");
 
 	if(res == NULL)
 	{
@@ -1488,17 +1499,18 @@ std::vector<SupervisorInfo::SubappInfo> ots::ARTDAQSupervisor::getSubappInfo(voi
 
 //==============================================================================
 std::string ots::ARTDAQSupervisor::capturePyErr(std::string label /* = "" */)
-{	
-	PyErr_Print(); // dump the Python exception <-- this writes into stringIO_err, not the terminal
-	if(label.size()) label += ' '; //for nice printing
+{
+	PyErr_Print();  // dump the Python exception <-- this writes into stringIO_err, not the terminal
+	if(label.size())
+		label += ' ';  //for nice printing
 
-	PyObject* err_text = PyObject_CallMethod(stringIO_err, "getvalue", NULL);	
-	std::string err = "";
+	PyObject*   err_text = PyObject_CallMethod(stringIO_err, "getvalue", NULL);
+	std::string err      = "";
 	if(!err_text)
 		err = "Capture of " + label + "PyErr failed.";
-	else	
+	else
 		err = "Capture of " + label + "PyErr: " + std::string(PyUnicode_AsUTF8(err_text));
-	
+
 	//clear buffer for reuse
 	{
 		PyObject* r1 = PyObject_CallMethod(stringIO_err, "seek", "i", 0);
@@ -1507,36 +1519,39 @@ std::string ots::ARTDAQSupervisor::capturePyErr(std::string label /* = "" */)
 		Py_XDECREF(r2);
 	}
 	return err;
-} //end captureStderr()
+}  //end captureStderr()
 
 //==============================================================================
 std::string ots::ARTDAQSupervisor::captureStderrAndStdout_(std::string label /* = "" */)
-{	
-	if(label.size()) label += ' '; //for nice printing
+{
+	if(label.size())
+		label += ' ';  //for nice printing
 
 	std::string outString = "";
 	//------------- capture stdout and stderr
-	PyObject* out_text = PyObject_CallMethod(stringIO_out, "getvalue", NULL);	
+	PyObject* out_text = PyObject_CallMethod(stringIO_out, "getvalue", NULL);
 	if(!out_text)
 		PyErr_Print();  // dump the Python exception <-- this writes into stringIO_err, not the terminal
 	else
 	{
 		const char* out_cstr = PyUnicode_AsUTF8(out_text);
 		if(out_cstr && strlen(out_cstr))
-			outString = "Captured " + label + "stdout:\n" + std::string(out_cstr ? out_cstr : "") + "\n";
+			outString = "Captured " + label + "stdout:\n" +
+			            std::string(out_cstr ? out_cstr : "") + "\n";
 		else
 			outString = "Captured " + label + "stdout empty.\n";
 	}
-	
+
 	std::string errString = "";
-	PyObject* err_text = PyObject_CallMethod(stringIO_err, "getvalue", NULL);	
+	PyObject*   err_text  = PyObject_CallMethod(stringIO_err, "getvalue", NULL);
 	if(!err_text)
 		__SUP_COUT__ << "Capture of " << label << "stderr failed.";
-	else	
+	else
 	{
 		const char* err_cstr = PyUnicode_AsUTF8(err_text);
 		if(err_cstr && strlen(err_cstr))
-			errString = "Captured " + label + "stderr:\n" + std::string(err_cstr ? err_cstr : "") + "\n";
+			errString = "Captured " + label + "stderr:\n" +
+			            std::string(err_cstr ? err_cstr : "") + "\n";
 		else
 			errString = "Captured " + label + "stderr empty.\n";
 	}
@@ -1557,7 +1572,7 @@ std::string ots::ARTDAQSupervisor::captureStderrAndStdout_(std::string label /* 
 	//------------- end capture stdout and stderr
 
 	return errString + outString;
-} //end captureStderrAndStdout_()
+}  //end captureStderrAndStdout_()
 
 //==============================================================================
 void ots::ARTDAQSupervisor::getDAQState_()
@@ -1571,18 +1586,21 @@ void ots::ARTDAQSupervisor::getDAQState_()
 		return;
 	}
 
-	int tries=0;
-	while (tries < 5){
-
+	int tries = 0;
+	while(tries < 5)
+	{
 		PyObject* pName = PyUnicode_FromString("state");
 		PyObject* pArg  = PyUnicode_FromString("DAQInterface");
-		PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, NULL);
+		PyObject* res = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, pArg, NULL);
 
 		if(res == NULL)
-		{		
-			std::string err = capturePyErr("getDAQState_");		
-			__SS__ << "Retry n " << tries << ". Error calling state function from getDAQState_() - here was the error: " <<
-				err << "\n\n" << StringMacros::stackTrace() << __E__;
+		{
+			std::string err = capturePyErr("getDAQState_");
+			__SS__ << "Retry n " << tries
+			       << ". Error calling state function from getDAQState_() - here was the "
+			          "error: "
+			       << err << "\n\n"
+			       << StringMacros::stackTrace() << __E__;
 			// __SUP_SS_THROW__;
 			//do not throw, just mark state empty
 			daqinterface_state_ = "";
@@ -1595,7 +1613,6 @@ void ots::ARTDAQSupervisor::getDAQState_()
 		__SUP_COUTS__(2) << "getDAQState_ state=" << daqinterface_state_ << __E__;
 		break;
 	}
-
 
 }  // end getDAQState_()
 
@@ -1619,7 +1636,7 @@ std::string ots::ARTDAQSupervisor::getProcessInfo_(void)
 	if(res == NULL)
 	{
 		std::string err = capturePyErr();
-		__SS__ << "Error calling artdaq_process_info function: " << err <<__E__;
+		__SS__ << "Error calling artdaq_process_info function: " << err << __E__;
 		__SUP_SS_THROW__;
 		return "";
 	}
@@ -1764,7 +1781,9 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 					PyObject* pName = PyUnicode_FromString("check_proc_heartbeats");
 					PyObject* res =
 					    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
-					__COUT_MULTI_LBL__(1,captureStderrAndStdout_("check_proc_heartbeats"),"check_proc_heartbeats");
+					__COUT_MULTI_LBL__(1,
+					                   captureStderrAndStdout_("check_proc_heartbeats"),
+					                   "check_proc_heartbeats");
 					TLOG(TLVL_TRACE)
 					    << "Done with DAQInterface::check_proc_heartbeats call";
 
@@ -1772,7 +1791,8 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 					{
 						runner_running_ = false;
 						std::string err = capturePyErr("check_proc_heartbeats");
-						__SS__ << "Error calling check_proc_heartbeats function: " << err << __E__;
+						__SS__ << "Error calling check_proc_heartbeats function: " << err
+						       << __E__;
 						__SUP_SS_THROW__;
 						break;
 					}
@@ -1793,7 +1813,8 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 					std::string err = capturePyErr("check_proc_heartbeats");
 					__SS__ << "An std::exception occurred while calling "
 					          "check_proc_heartbeats function: "
-					       << ex.what() << "\n\n" << err << __E__;
+					       << ex.what() << "\n\n"
+					       << err << __E__;
 					__SUP_SS_THROW__;
 					break;
 				}
@@ -1801,9 +1822,9 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 				{
 					runner_running_ = false;
 					std::string err = capturePyErr("check_proc_heartbeats");
-					__SS__ << "An unknown Error occurred while calling check_proc_heartbeats function: "
-						<< err
-					       << __E__;
+					__SS__ << "An unknown Error occurred while calling "
+					          "check_proc_heartbeats function: "
+					       << err << __E__;
 					__SUP_SS_THROW__;
 					break;
 				}
