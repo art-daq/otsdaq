@@ -563,9 +563,10 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 					{
 						try
 						{
+							groupInfo.second.latestKey_ = groupInfo.second.getLastKey();
 							loadTableGroup(
 							    groupInfo.first /*groupName*/,
-							    groupInfo.second.getLatestKey(),
+							    groupInfo.second.latestKey_,
 							    false /*doActivate*/,
 							    &groupInfo.second.latestKeyMemberMap_ /*groupMembers*/,
 							    0 /*progressBar*/,
@@ -581,8 +582,9 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 							__GEN_COUT_WARN__ << "Error occurred loading latest group "
 							                     "info into cache for '"
 							                  << groupInfo.first << "("
-							                  << groupInfo.second.getLatestKey()
+							                  << groupInfo.second.latestKey_
 							                  << ")'..." << __E__;
+							groupInfo.second.latestKey_ = TableGroupKey::INVALID;
 							groupInfo.second.latestKeyGroupComment_ =
 							    ConfigurationManager::UNKNOWN_INFO;
 							groupInfo.second.latestKeyGroupAuthor_ =
@@ -633,7 +635,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 						}
 						__GEN_COUTT__ << "Starting thread... " << foundThreadIndex
 						              << " for " << groupInfo.first << "("
-						              << groupInfo.second.getLatestKey() << ")" << __E__;
+						              << groupInfo.second.getLastKey() << ")" << __E__;
 
 						*(threadDone[foundThreadIndex]) = false;
 
@@ -652,7 +654,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 						    },
 						    this,
 						    groupInfo.first,
-						    groupInfo.second.getLatestKey(),
+						    groupInfo.second.getLastKey(),
 						    sharedGroupInfoPtrs.back(),
 						    threadDone[foundThreadIndex])
 						    .detach();
@@ -683,6 +685,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 					size_t i = 0;
 					for(auto& groupInfo : allGroupInfo_)
 					{
+						groupInfo.second.latestKey_ = sharedGroupInfoPtrs[i]->latestKey_;
 						groupInfo.second.latestKeyGroupComment_ =
 						    sharedGroupInfoPtrs[i]->latestKeyGroupComment_;
 						groupInfo.second.latestKeyGroupAuthor_ =
@@ -878,6 +881,65 @@ catch(...)
 	*(threadDone) = true;
 }  // end loadTableInfoThread catch
 
+
+//==============================================================================
+/// loadTableGroup
+///	ConfigurationManagerRW version manages latestKey as a wrapper around the ConfigurationManager version
+void ConfigurationManagerRW::loadTableGroup(
+    const std::string&   groupName,
+    const TableGroupKey& groupKey,
+    bool                 doActivate /*=false*/,
+    std::map<std::string /*table name*/, TableVersion>*
+                 groupMembers /*=0 , note: db time intensive! */,
+    ProgressBar* progressBar /*=0*/,
+    std::string* accumulatedWarnings /*=0*/,
+    std::string* groupComment /*=0 , note: in metadata */,
+    std::string* groupAuthor /*=0 , note: in metadata */,
+    std::string* groupCreateTime /*=0 , note: in metadata */,
+    bool         doNotLoadMembers /*=false*/,
+    std::string* groupTypeString /*=0 , note: db time intensive! */,
+    std::map<std::string /*name*/, std::string /*alias*/>*
+        groupAliases /*=0 , note: in metadata */,
+    ConfigurationManager::LoadGroupType
+         groupTypeToLoad /*=ConfigurationManager::LoadGroupType::ALL_TYPES*/,
+    bool ignoreVersionTracking /*=false*/)
+{
+	ConfigurationManager::loadTableGroup(
+		groupName,
+		groupKey,
+		doActivate,
+		groupMembers,
+		progressBar,
+		accumulatedWarnings,
+		groupComment,
+		groupAuthor,
+		groupCreateTime,
+		doNotLoadMembers,
+		groupTypeString,
+		groupAliases,
+		groupTypeToLoad,
+		ignoreVersionTracking
+	);
+	
+	if(!groupMembers || !groupMembers->size() || 
+		!groupComment || groupKey.isInvalid() || 
+		!groupAuthor || !groupCreateTime) 
+		return;
+
+	//treat successfull load as latest group key
+	auto groupInfo = allGroupInfo_.find(groupName);
+	if(groupInfo == allGroupInfo_.end()) return; //ignore if no group info cache
+
+	groupInfo->second.latestKey_     			  = groupKey;
+	groupInfo->second.latestKeyGroupComment_      = *groupComment;
+	groupInfo->second.latestKeyGroupAuthor_       = *groupAuthor;
+	groupInfo->second.latestKeyGroupCreationTime_ = *groupCreateTime;
+	if(groupTypeString) //assume unlikely to change types
+		groupInfo->second.latestKeyGroupTypeString_ = *groupTypeString;
+	groupInfo->second.latestKeyMemberMap_         = *groupMembers;
+
+} //end loadTableGroup() RW version
+
 //==============================================================================
 /// loadTableGroupThread()
 void ConfigurationManagerRW::loadTableGroupThread(
@@ -890,8 +952,9 @@ try
 {
 	__COUTT__ << "Thread started... " << groupName << "(" << groupKey << ")" << __E__;
 
-	cfgMgr->loadTableGroup(groupName /*groupName*/,
-	                       groupKey,  //groupInfo->getLatestKey(),
+	groupInfo->latestKey_ = groupKey;
+	cfgMgr->loadTableGroup(groupName,
+	                       groupKey,
 	                       false /*doActivate*/,
 	                       &(groupInfo->latestKeyMemberMap_) /*groupMembers*/,
 	                       0 /*progressBar*/,
@@ -907,7 +970,8 @@ try
 catch(...)
 {
 	__COUT_WARN__ << "Error occurred loading latest group info into cache for '"
-	              << groupName << "(" << groupInfo->getLatestKey() << ")'..." << __E__;
+	              << groupName << "(" << groupInfo->latestKey_ << ")'..." << __E__;
+	groupInfo->latestKey_     			   = TableGroupKey::INVALID;
 	groupInfo->latestKeyGroupComment_      = ConfigurationManager::UNKNOWN_INFO;
 	groupInfo->latestKeyGroupAuthor_       = ConfigurationManager::UNKNOWN_INFO;
 	groupInfo->latestKeyGroupCreationTime_ = ConfigurationManager::UNKNOWN_TIME;
@@ -2106,6 +2170,7 @@ TableGroupKey ConfigurationManagerRW::saveNewTableGroup(
 	// store cache of recent groups
 	allGroupInfo_[groupName].keys_.emplace(newKey);
 	//update latest group info with this group's info
+	allGroupInfo_.at(groupName).latestKey_      			= newKey;
 	allGroupInfo_.at(groupName).latestKeyGroupAuthor_       = username_;
 	allGroupInfo_.at(groupName).latestKeyGroupComment_      = groupComment;
 	allGroupInfo_.at(groupName).latestKeyGroupCreationTime_ = groupCreationTime;
@@ -2956,8 +3021,9 @@ void ConfigurationManagerRW::testXDAQContext()
 		{
 			try
 			{
+				groupInfo.second.latestKey_ = groupInfo.second.getLastKey();
 				loadTableGroup(groupInfo.first /*groupName*/,
-				               groupInfo.second.getLatestKey(),
+				               groupInfo.second.latestKey_,
 				               false /*doActivate*/,
 				               &groupInfo.second.latestKeyMemberMap_ /*groupMembers*/,
 				               0 /*progressBar*/,
@@ -2972,10 +3038,11 @@ void ConfigurationManagerRW::testXDAQContext()
 			{
 				__GEN_COUT_WARN__
 				    << "Error occurred loading latest group info into cache for '"
-				    << groupInfo.first << "(" << groupInfo.second.getLatestKey()
+				    << groupInfo.first << "(" << groupInfo.second.latestKey_
 				    << ")': \n"
 				    << e.what() << __E__;
 
+				groupInfo.second.latestKey_ = TableGroupKey::INVALID;
 				groupInfo.second.latestKeyGroupComment_ =
 				    ConfigurationManager::UNKNOWN_INFO;
 				groupInfo.second.latestKeyGroupAuthor_ =
@@ -2990,8 +3057,10 @@ void ConfigurationManagerRW::testXDAQContext()
 			{
 				__GEN_COUT_WARN__
 				    << "Error occurred loading latest group info into cache for '"
-				    << groupInfo.first << "(" << groupInfo.second.getLatestKey()
+				    << groupInfo.first << "(" << groupInfo.second.latestKey_
 				    << ")'..." << __E__;
+
+				groupInfo.second.latestKey_ = TableGroupKey::INVALID;
 				groupInfo.second.latestKeyGroupComment_ =
 				    ConfigurationManager::UNKNOWN_INFO;
 				groupInfo.second.latestKeyGroupAuthor_ =

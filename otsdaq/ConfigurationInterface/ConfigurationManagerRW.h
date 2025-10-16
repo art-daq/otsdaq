@@ -16,7 +16,7 @@ struct TableInfo
 	std::set<TableVersion> versions_;
 	TableBase*             tablePtr_;
 	std::string            accumulatedWarnings_;
-};
+}; //end TableInfo struct
 
 struct GroupInfo
 {
@@ -30,18 +30,19 @@ struct GroupInfo
 	}
 
 	std::set<TableGroupKey> keys_;
+	TableGroupKey			latestKey_;
 	std::string             latestKeyGroupAuthor_, latestKeyGroupComment_,
 	    latestKeyGroupCreationTime_, latestKeyGroupTypeString_;
 	std::map<std::string /*name*/, TableVersion /*version*/> latestKeyMemberMap_;
 
-	TableGroupKey getLatestKey()
+	TableGroupKey getLastKey()
 	{
 		if(keys_.size())
 			return *(keys_.rbegin());
 		else
 			return TableGroupKey();
-	}
-};
+	} //end getLastKey()
+}; //end GroupInfo struct
 
 #define __GET_TABLE_PTR__(X) getTablePtr<X>(QUOTE(X))
 
@@ -119,6 +120,21 @@ class ConfigurationManagerRW : public ConfigurationManager
 	/// public group cache handling
 	const GroupInfo&                        	getGroupInfo					(const std::string& groupName, bool attemptToReloadKeys = false);
 	const std::map<std::string, GroupInfo>& 	getAllGroupInfo					(void) { return allGroupInfo_; }
+	void 										loadTableGroup					(
+																				const std::string&                                     tableGroupName,
+																				const TableGroupKey&                                   tableGroupKey,
+																				bool                                                   doActivate         = false,
+																				std::map<std::string, TableVersion>*                   groupMembers       = 0,
+																				ProgressBar*                                           progressBar        = 0,
+																				std::string*                                           accumulateWarnings = 0,
+																				std::string*                                           groupComment       = 0,
+																				std::string*                                           groupAuthor        = 0,
+																				std::string*                                           groupCreateTime    = 0,
+																				bool                                                   doNotLoadMember    = false,
+																				std::string*                                           groupTypeString    = 0,
+																				std::map<std::string /*name*/, std::string /*alias*/>* groupAliases       = 0,
+																				ConfigurationManager::LoadGroupType					   groupTypeToLoad    = ConfigurationManager::LoadGroupType::ALL_TYPES,
+																				bool												   ignoreVersionTracking = false);
 
 	void 										testXDAQContext					(void);  ///< for debugging
 
