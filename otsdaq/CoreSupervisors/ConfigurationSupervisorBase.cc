@@ -831,7 +831,8 @@ try
 	};  //end local lambda vSpanToXML()
 
 	{
-		const GroupInfo&               groupInfo  = cfgMgr->getGroupInfo(groupName, !cacheOnly /* attemptToReloadKeys */);
+		const GroupInfo& groupInfo =
+		    cfgMgr->getGroupInfo(groupName, !cacheOnly /* attemptToReloadKeys */);
 		const std::set<TableGroupKey>& sortedKeys = groupInfo.keys_;  // rename
 
 		__COUTT__ << groupName << " keys: " << StringMacros::setToString(groupInfo.keys_)

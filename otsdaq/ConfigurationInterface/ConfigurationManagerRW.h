@@ -16,7 +16,7 @@ struct TableInfo
 	std::set<TableVersion> versions_;
 	TableBase*             tablePtr_;
 	std::string            accumulatedWarnings_;
-}; //end TableInfo struct
+};  //end TableInfo struct
 
 struct GroupInfo
 {
@@ -30,7 +30,7 @@ struct GroupInfo
 	}
 
 	std::set<TableGroupKey> keys_;
-	TableGroupKey			latestKey_;
+	TableGroupKey           latestKey_;
 	std::string             latestKeyGroupAuthor_, latestKeyGroupComment_,
 	    latestKeyGroupCreationTime_, latestKeyGroupTypeString_;
 	std::map<std::string /*name*/, TableVersion /*version*/> latestKeyMemberMap_;
@@ -41,8 +41,8 @@ struct GroupInfo
 			return *(keys_.rbegin());
 		else
 			return TableGroupKey();
-	} //end getLastKey()
-}; //end GroupInfo struct
+	}  //end getLastKey()
+};     //end GroupInfo struct
 
 #define __GET_TABLE_PTR__(X) getTablePtr<X>(QUOTE(X))
 
