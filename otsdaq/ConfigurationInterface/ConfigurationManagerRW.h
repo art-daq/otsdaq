@@ -117,7 +117,7 @@ class ConfigurationManagerRW : public ConfigurationManager
 
 	//==============================================================================
 	/// public group cache handling
-	const GroupInfo&                        	getGroupInfo					(const std::string& groupName);
+	const GroupInfo&                        	getGroupInfo					(const std::string& groupName, bool attemptToReloadKeys = false);
 	const std::map<std::string, GroupInfo>& 	getAllGroupInfo					(void) { return allGroupInfo_; }
 
 	void 										testXDAQContext					(void);  ///< for debugging

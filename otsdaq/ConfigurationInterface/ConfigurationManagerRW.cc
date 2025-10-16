@@ -1481,7 +1481,7 @@ TableVersion ConfigurationManagerRW::copyViewToCurrentColumns(
 /// getGroupInfo
 ///	the interface is slow when there are a lot of groups..
 ///	so plan is to maintain local cache of recent group info
-const GroupInfo& ConfigurationManagerRW::getGroupInfo(const std::string& groupName)
+const GroupInfo& ConfigurationManagerRW::getGroupInfo(const std::string& groupName, bool attemptToReloadKeys /* = false */)
 {
 	//	//NOTE: seems like this filter is taking the long amount of time
 	//	std::set<std::string /*name*/> fullGroupNames =
@@ -1497,6 +1497,43 @@ const GroupInfo& ConfigurationManagerRW::getGroupInfo(const std::string& groupNa
 		//__SS_THROW__;
 		return allGroupInfo_[groupName];
 	}
+
+	if(attemptToReloadKeys) //load keys from Interface group cache
+	{
+		__GEN_COUT__ << "Reloading keys from special db group cache if it exists..." << __E__;
+
+		std::set<TableGroupKey> keys;
+		{  //load keys from special db group cache (this avoids pre-cache filling and avoids long db lookup, unless speed table cache missing for this group)
+			//attempt to use cache first! (potentially way faster .04 s vs 4 s)
+			bool cacheFailed = false;
+			try
+			{
+				TableBase localGroupMemberCacheLoader(
+					true /*special table*/
+					,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),,
+					TableBase::GROUP_CACHE_PREPEND + groupName);
+				auto versions = theInterface_->getVersions(&localGroupMemberCacheLoader);
+				for(const auto& version : versions)
+					keys.emplace(TableGroupKey(version.version()));
+			}
+			catch(...)
+			{
+				__GEN_COUT__ << "Ignoring cache loading error. Doing full load of keys..."
+						<< __E__;
+				cacheFailed = true;
+			}
+
+			if(cacheFailed && 0)  //could consider full load if cache failed
+				keys = theInterface_->getKeys(groupName);
+
+			if(!cacheFailed) //take keys
+			{
+				__GEN_COUT__ << "Key from special db group cache were loaded." << __E__;
+				it->second.keys_ = keys; //update ConfigManager cache!
+			}
+		}
+	}
+
 	return it->second;
 }  // end getGroupInfo()
 
