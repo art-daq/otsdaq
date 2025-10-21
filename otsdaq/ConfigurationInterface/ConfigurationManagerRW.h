@@ -20,6 +20,8 @@ struct TableInfo
 
 struct GroupInfo
 {
+	friend class ConfigurationManagerRW; //ConfigurationManagerRW can access GroupInfo private members
+
 	GroupInfo()
 	    :  //constructor
 	    latestKeyGroupAuthor_(ConfigurationManager::UNKNOWN_INFO)
@@ -29,19 +31,27 @@ struct GroupInfo
 	{
 	}
 
-	std::set<TableGroupKey> keys_;
-	TableGroupKey           latestKey_;
-	std::string             latestKeyGroupAuthor_, latestKeyGroupComment_,
-	    latestKeyGroupCreationTime_, latestKeyGroupTypeString_;
-	std::map<std::string /*name*/, TableVersion /*version*/> latestKeyMemberMap_;
-
-	TableGroupKey getLastKey()
+	const std::set<TableGroupKey>& getKeys() const {return keys_;}
+	const TableGroupKey& getLatestKey() const {return latestKey_;}
+	const std::string& getLatestKeyGroupAuthor() const {return latestKeyGroupAuthor_;}
+	const std::string& getLatestKeyGroupComment() const {return latestKeyGroupComment_;}
+	const std::string& getLatestKeyGroupCreationTime() const {return latestKeyGroupCreationTime_;}
+	const std::string& getLatestKeyGroupTypeString() const {return latestKeyGroupTypeString_;}
+	const std::map<std::string /*name*/, TableVersion /*version*/>& getLatestKeyMemberMap() const {return latestKeyMemberMap_;}
+	TableGroupKey getLastKey() const
 	{
 		if(keys_.size())
 			return *(keys_.rbegin());
 		else
 			return TableGroupKey();
 	}  //end getLastKey()
+
+private:
+	std::set<TableGroupKey> keys_;
+	TableGroupKey           latestKey_;
+	std::string             latestKeyGroupAuthor_, latestKeyGroupComment_,
+	    latestKeyGroupCreationTime_, latestKeyGroupTypeString_;
+	std::map<std::string /*name*/, TableVersion /*version*/> latestKeyMemberMap_;
 };     //end GroupInfo struct
 
 #define __GET_TABLE_PTR__(X) getTablePtr<X>(QUOTE(X))
