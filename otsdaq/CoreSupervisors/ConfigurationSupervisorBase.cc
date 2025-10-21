@@ -870,7 +870,8 @@ try
 				// xmlOut.addTextElementToData("Error", ss.str());
 
 				const GroupInfo& groupInfo2 = cfgMgr->getGroupInfo(groupName);
-				const std::set<TableGroupKey>& sortedKeys2 = groupInfo2.getKeys();  // rename
+				const std::set<TableGroupKey>& sortedKeys2 =
+				    groupInfo2.getKeys();  // rename
 
 				if(sortedKeys2.find(groupKey) == sortedKeys2.end())
 				{
