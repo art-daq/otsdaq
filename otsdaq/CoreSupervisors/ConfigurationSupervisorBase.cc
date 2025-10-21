@@ -833,9 +833,9 @@ try
 	{
 		const GroupInfo& groupInfo =
 		    cfgMgr->getGroupInfo(groupName, !cacheOnly /* attemptToReloadKeys */);
-		const std::set<TableGroupKey>& sortedKeys = groupInfo.keys_;  // rename
+		const std::set<TableGroupKey>& sortedKeys = groupInfo.getKeys();  // rename
 
-		__COUTT__ << groupName << " keys: " << StringMacros::setToString(groupInfo.keys_)
+		__COUTT__ << groupName << " keys: " << StringMacros::setToString(sortedKeys)
 		          << __E__;
 		__COUTT__ << "Active groups: "
 		          << StringMacros::mapToString(cfgMgr->getActiveTableGroups()) << __E__;
@@ -870,7 +870,8 @@ try
 				// xmlOut.addTextElementToData("Error", ss.str());
 
 				const GroupInfo& groupInfo2 = cfgMgr->getGroupInfo(groupName);
-				const std::set<TableGroupKey>& sortedKeys2 = groupInfo2.keys_;  // rename
+				const std::set<TableGroupKey>& sortedKeys2 =
+				    groupInfo2.getKeys();  // rename
 
 				if(sortedKeys2.find(groupKey) == sortedKeys2.end())
 				{
