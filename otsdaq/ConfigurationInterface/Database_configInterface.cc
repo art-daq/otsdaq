@@ -122,12 +122,13 @@ void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version
 	   result.second.find("closed connection. calling hello") != std::string::npos)
 	{
 		__SS__ << "Error at time: " << time(0)
-				<< "\n\n======> Database Interface Error while filling '"
+		       << "\n\n======> Database Interface Error while filling '"
 		       << table->getTableName() << "' version '" << versionstring
 		       << "' - it appears that the connection to the database been lost. Please "
 		          "check the database server and route to server.\n\n"
 		       << "Here is the error detail:\n\n"
-		       << result.second << "\n\n" << StringMacros::stackTrace() << __E__;
+		       << result.second << "\n\n"
+		       << StringMacros::stackTrace() << __E__;
 		__SS_ONLY_THROW__;
 	}
 

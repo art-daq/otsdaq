@@ -151,25 +151,28 @@ void WizardSupervisor::init(void)
 
 	//since wiz mode is not very useful without a connection to the configuration db, test the connection
 	//allow exception to bring down supervisor if no connection
-	__COUT__ << "Testing Configuration Interface DB connection..."
-					<< __E__;
+	__COUT__ << "Testing Configuration Interface DB connection..." << __E__;
 	auto instance = ConfigurationInterface::getInstance(
-	    ConfigurationInterface::CONFIGURATION_MODE::
-	        ARTDAQ_DATABASE);
+	    ConfigurationInterface::CONFIGURATION_MODE::ARTDAQ_DATABASE);
 
 	try
 	{
-		instance->loadCustomJSON("testDBconn",TableVersion(1));
+		instance->loadCustomJSON("testDBconn", TableVersion(1));
 	}
 	catch(const std::runtime_error& e)
 	{
-		if(std::string(e.what()).find("it appears that the connection to the database been lost") != std::string::npos)
+		if(std::string(e.what()).find(
+		       "it appears that the connection to the database been lost") !=
+		   std::string::npos)
 		{
-			__COUT_ERR__ << "Error at time: " << time(0) << ". DB connection appears to be down! Aborting..." << __E__;
+			__COUT_ERR__ << "Error at time: " << time(0)
+			             << ". DB connection appears to be down! Aborting..." << __E__;
 			throw;
 		}
 		else
-			__COUT__ << "DB connection test seems to have passed. Ignoring this exception: " << e.what() << __E__;
+			__COUT__
+			    << "DB connection test seems to have passed. Ignoring this exception: "
+			    << e.what() << __E__;
 	}
 
 }  // end init()
