@@ -69,6 +69,7 @@ else # no setup type
   info "Launching ots on ${EBold}${THIS_HOST}${DBold}..."
 fi
 
+info "ARTDAQ_DATABASE_URI=${ARTDAQ_DATABASE_URI}"
 
 
 # -x is a special "remote launch" flag to handle that similarly to the -s case but with less printouts
