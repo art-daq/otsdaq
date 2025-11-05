@@ -8153,11 +8153,23 @@ try
 							if(remoteGatewayApp.iconString ==
 							   "")  //then either error or still loading...
 							{
+								__COUTVS__(21, remoteGatewayApp.error);
+								__COUTVS__(21, remoteGatewayApp.appInfo.status);
+
 								//add error if it has to do with icons
 								if(remoteGatewayApp.error.find("desktop icons") !=
 								   std::string::npos)
 									xmlOut.addTextElementToData("Error",
 									                            remoteGatewayApp.error);
+								else if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
+								{
+									__SS__ << "Connection failed for '" << remoteGatewayApp.parentIconFolderPath << 
+										"' icon retrieval from Remote Gateway '" << 
+										remoteGatewayApp.appInfo.name << "' at " << remoteGatewayApp.appInfo.url << 
+										". Please check that the target is up and running at the correct IP address." << __E__; 
+									xmlOut.addTextElementToData("Error",
+									                            ss.str());
+								}
 
 								//add placeholder "Loading icon"
 								if(firstIcon)
@@ -8189,6 +8201,7 @@ try
 
 								break;  //done adding error/loading icon
 							}
+							__COUTVS__(21, remoteGatewayApp.iconString);
 
 							if(firstIcon)
 								firstIcon = false;

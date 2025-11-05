@@ -882,7 +882,7 @@ try
 
 	thread_progress_bar_.step();
 	set_thread_message_("Calling do_boot");
-	__GEN_COUT__ << "Calling do_boot" << __E__;
+	__GEN_COUT_INFO__ << "Calling do_boot" << __E__;
 	__GEN_COUT__ << "Status before boot: " << daqinterface_state_ << __E__;
 	PyObject* pName2 = PyUnicode_FromString("do_boot");
 	PyObject* pStateArgs1 =
@@ -895,7 +895,7 @@ try
 	if(res2 == NULL)
 	{
 		std::string err = capturePyErr();
-		__GEN_COUT__ << "Error on first boost attempt, recovering and retrying: " << err
+		__GEN_COUT_INFO__ << "Error on first boost attempt, recovering and retrying: " << err
 		             << __E__;
 
 		PyObject* pName = PyUnicode_FromString("do_recover");
@@ -916,7 +916,7 @@ try
 
 		thread_progress_bar_.step();
 		set_thread_message_("Calling do_boot (retry)");
-		__GEN_COUT__ << "Calling do_boot again" << __E__;
+		__GEN_COUT_INFO__ << "Calling do_boot again" << __E__;
 		__GEN_COUT__ << "Status before boot: " << daqinterface_state_ << __E__;
 		PyObject* res3 =
 		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName2, pStateArgs1, NULL);
@@ -939,6 +939,7 @@ try
 	getDAQState_();
 	if(daqinterface_state_ != "booted")
 	{
+		std::cout << "Do boot output on error: \n" << doBootOutput << __E__;		
 		__GEN_SS__ << "DAQInterface boot transition failed! "
 		           << "Status after boot attempt: " << daqinterface_state_ << __E__;
 		if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
@@ -1597,15 +1598,17 @@ void ots::ARTDAQSupervisor::getDAQState_()
 		{
 			std::string err = capturePyErr("getDAQState_");
 			__SS__ << "Retry n " << tries
-			       << ". Error calling state function from getDAQState_() - here was the "
-			          "error: "
+			       << ". Calling state function from getDAQState_() - here was the "
+			          "value: "
 			       << err << "\n\n"
 			       << StringMacros::stackTrace() << __E__;
 			// __SUP_SS_THROW__;
 			//do not throw, just mark state empty
 			daqinterface_state_ = "";
-			__COUT_ERR__ << ss.str();
+			__COUT__ << ss.str();
 			tries++;
+			if(tries >= 5)
+				__COUT_ERR__ << ss.str();
 			usleep(100000);
 			continue;
 		}

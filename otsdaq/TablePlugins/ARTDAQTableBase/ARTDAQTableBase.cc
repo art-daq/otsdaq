@@ -217,6 +217,11 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 	{
 		__SS__ << "Failed to parse fhicl into output file '" << outFile
 		       << "' - here is the error: " << e.what() << __E__;
+
+		//add additional user helper information, based on error keywords
+		if(std::string(e.what()).find("TriggerEpilogs") != std::string::npos)
+			ss << "\n\n" << "The Trigger Epilogs are located at $USER_DATA/TriggerConfigurations/TriggerEpilogs. " << 
+				"Please check that the Trigger Epilogs were properly generated, or copy them from a previously working area." << __E__;
 		__SS_THROW__;
 	}
 
