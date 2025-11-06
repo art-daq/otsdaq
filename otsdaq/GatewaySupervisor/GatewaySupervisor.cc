@@ -7355,13 +7355,14 @@ try
 		}
 		else if(requestType == "setSettings")
 		{
-			std::string bgcolor   = CgiDataUtilities::postData(cgiIn, "bgcolor");
-			std::string dbcolor   = CgiDataUtilities::postData(cgiIn, "dbcolor");
-			std::string wincolor  = CgiDataUtilities::postData(cgiIn, "wincolor");
-			std::string layout = CgiDataUtilities::postData(cgiIn, "layout");
-			std::string syslayout = CgiDataUtilities::postData(cgiIn, "syslayout");
+			std::string bgcolor     = CgiDataUtilities::postData(cgiIn, "bgcolor");
+			std::string dbcolor     = CgiDataUtilities::postData(cgiIn, "dbcolor");
+			std::string wincolor    = CgiDataUtilities::postData(cgiIn, "wincolor");
+			std::string layout      = CgiDataUtilities::postData(cgiIn, "layout");
+			std::string syslayout   = CgiDataUtilities::postData(cgiIn, "syslayout");
 			std::string aliasLayout = CgiDataUtilities::postData(cgiIn, "aliaslayout");
-			std::string sysAliaslayout = CgiDataUtilities::postData(cgiIn, "sysAliaslayout");
+			std::string sysAliaslayout =
+			    CgiDataUtilities::postData(cgiIn, "sysAliaslayout");
 
 			__COUT__ << "Set Settings Request" << __E__;
 			__COUT__ << "bgcolor = " << bgcolor << __E__;
@@ -7372,8 +7373,14 @@ try
 			__COUT__ << "aliasLayout = " << aliasLayout << __E__;
 			__COUT__ << "sysAliaslayout = " << sysAliaslayout << __E__;
 
-			theWebUsers_.changeSettingsForUser(
-			    userInfo.uid_, bgcolor, dbcolor, wincolor, layout, syslayout, aliasLayout, sysAliaslayout);
+			theWebUsers_.changeSettingsForUser(userInfo.uid_,
+			                                   bgcolor,
+			                                   dbcolor,
+			                                   wincolor,
+			                                   layout,
+			                                   syslayout,
+			                                   aliasLayout,
+			                                   sysAliaslayout);
 			theWebUsers_.insertSettingsForUser(
 			    userInfo.uid_, &xmlOut, true);  // include user accounts
 		}

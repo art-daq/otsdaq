@@ -3159,8 +3159,8 @@ void WebUsers::changeSettingsForUser(uint64_t           uid,
                                      const std::string& wincolor,
                                      const std::string& layout,
                                      const std::string& syslayout,
-									 const std::string& aliaslayout,
-									 const std::string& sysaliaslayout)
+                                     const std::string& aliaslayout,
+                                     const std::string& sysaliaslayout)
 {
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> permissionMap =
 	    getPermissionsForUser(uid);
