@@ -46,6 +46,8 @@ using namespace ots;
 #define PREF_XML_WINCOLOR_FIELD 			"pref_wincolor"  	// -window color
 #define PREF_XML_LAYOUT_FIELD 				"pref_layout"  		// -3 defaults window layouts(and current)
 #define PREF_XML_SYSLAYOUT_FIELD 			"pref_syslayout"  	// -2 defaults window layouts
+#define PREF_XML_ALIAS_LAYOUT_FIELD			"pref_aliaslayout"
+#define PREF_XML_SYSALIAS_LAYOUT_FIELD		"pref_sysalias_layout"
 #define PREF_XML_PERMISSIONS_FIELD 			"desktop_user_permissions"  // 0-255 permissions value (255 is admin super user)
 #define PREF_XML_USERLOCK_FIELD 			"username_with_lock"        // user with lock (to lockout others)
 #define PREF_XML_USERNAME_FIELD 			"pref_username"  	// user with lock (to lockout others)
@@ -3156,7 +3158,9 @@ void WebUsers::changeSettingsForUser(uint64_t           uid,
                                      const std::string& dbcolor,
                                      const std::string& wincolor,
                                      const std::string& layout,
-                                     const std::string& syslayout)
+                                     const std::string& syslayout,
+									 const std::string& aliaslayout,
+									 const std::string& sysaliaslayout)
 {
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> permissionMap =
 	    getPermissionsForUser(uid);
@@ -3177,6 +3181,7 @@ void WebUsers::changeSettingsForUser(uint64_t           uid,
 	prefXml.addTextElementToData(PREF_XML_DBCOLOR_FIELD, dbcolor);
 	prefXml.addTextElementToData(PREF_XML_WINCOLOR_FIELD, wincolor);
 	prefXml.addTextElementToData(PREF_XML_LAYOUT_FIELD, layout);
+	prefXml.addTextElementToData(PREF_XML_ALIAS_LAYOUT_FIELD, aliaslayout);
 
 	prefXml.saveXmlDocument(fn);
 
@@ -3191,6 +3196,7 @@ void WebUsers::changeSettingsForUser(uint64_t           uid,
 
 	HttpXmlDocument sysPrefXml;
 	sysPrefXml.addTextElementToData(PREF_XML_SYSLAYOUT_FIELD, syslayout);
+	sysPrefXml.addTextElementToData(PREF_XML_SYSALIAS_LAYOUT_FIELD, sysaliaslayout);
 
 	sysPrefXml.saveXmlDocument(fn);
 }  // end changeSettingsForUser()
