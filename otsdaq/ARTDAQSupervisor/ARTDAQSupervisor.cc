@@ -953,7 +953,7 @@ try
 
 	thread_progress_bar_.step();
 	set_thread_message_("Calling do_config");
-	__GEN_COUT__ << "Calling do_config" << __E__;
+	__GEN_COUT_INFO__ << "Calling do_config" << __E__;
 	__GEN_COUT__ << "Status before config: " << daqinterface_state_ << __E__;
 	std::string doConfigOutput = "";
 	{  //do_config call
@@ -1000,7 +1000,7 @@ try
 	__GEN_COUT__ << "Status after config: " << daqinterface_state_ << __E__;
 	thread_progress_bar_.complete();
 	set_thread_message_("Configured");
-	__GEN_COUT__ << "Configured." << __E__;
+	__GEN_COUT_INFO__ << "Configured." << __E__;
 
 }  // end configuringThread()
 catch(const std::runtime_error& e)
@@ -1251,7 +1251,7 @@ try
 		// start configuring thread
 		std::thread(&ARTDAQSupervisor::startingThread, this).detach();
 
-		__SUP_COUT__ << "Starting thread started." << __E__;
+		__SUP_COUT_INFO__ << "Starting thread started." << __E__;
 
 		RunControlStateMachine::
 		    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
@@ -1311,7 +1311,7 @@ try
 		}
 		else
 		{
-			__SUP_COUT_INFO__ << "Complete starting transition!" << __E__;
+			__SUP_COUT_INFO__ << "Starting transition completed!" << __E__;
 			__SUP_COUTV__(getProcessInfo_());
 		}
 	}
@@ -1359,6 +1359,7 @@ try
 
 		thread_progress_bar_.step();
 
+		__GEN_COUT_INFO__ << "Calling do_start_running" << __E__;
 		PyObject* pName      = PyUnicode_FromString("do_start_running");
 		int       run_number = std::stoi(runNumber);
 		PyObject* pStateArgs = PyLong_FromLong(run_number);
@@ -1392,7 +1393,7 @@ try
 	set_thread_message_("Started");
 	thread_progress_bar_.step();
 
-	__GEN_COUT__ << "Started." << __E__;
+	__GEN_COUT_INFO__ << "Started." << __E__;
 	thread_progress_bar_.complete();
 
 }  // end startingThread()
