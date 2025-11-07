@@ -1040,7 +1040,7 @@ try
 				    ConfigurationManager::ALIAS_VERSION_PREAMBLE + aliasVersion.first,
 				    configEl);
 
-		vSpanToXML(it->second.versions_, xmlOut, configEl);		
+		vSpanToXML(it->second.versions_, xmlOut, configEl);
 	}  //end member map loop
 
 	// // Seperate loop just for getting the Member Comment
