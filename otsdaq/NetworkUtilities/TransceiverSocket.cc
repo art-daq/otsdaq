@@ -84,7 +84,7 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
 		       << toSocket.getIPAddress() << ":" << toSocket.getPort()
 		       << " to this ip:port " << Socket::getIPAddress() << ":"
 		       << Socket::getPort() << __E__;
-		__SS_THROW__;
+		__SS_ONLY_THROW__;
 	}
 
 	//assume response may be multiple packets! (and give 200 ms unless called with low timeout)

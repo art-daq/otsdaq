@@ -1215,7 +1215,6 @@ launchOTSWiz() {
 
 	if [ $QUIET == 1 ]; then
 
-
 		if [ $BACKUPLOGS == 1 ]; then
 			DATESTRING=`date +'%s'`
 			out "     Backing up logfile to *** ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.${DATESTRING}.txt ***"
@@ -1246,6 +1245,7 @@ launchOTSWiz() {
 				OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 				out "Checking http://${THIS_HOST}:${PORT}..."
 			else # found the supervisor!
+				# out "Found OTS_IS_ALIVE=${OTS_IS_ALIVE}"
 				sleep 3 #give extra time in case slow web server startup or late startup crash (e.g. when testing the configuration)
 				# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 				# so clear alive, if ots script can not connect to PORT

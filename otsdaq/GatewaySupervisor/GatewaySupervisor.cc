@@ -846,9 +846,29 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								}
 							}
 							else  //skip absent subsystems for a while
+							{
 								remoteGatewayApp.ignoreStatusCount =
 								    3;  //if non-zero, do not ask for status
-						}               //end remote app status update loop
+
+								//alert on new failure of status retrieval
+								if(appLastStatusGood.find(
+								       remoteGatewayApp.appInfo.url +
+								       remoteGatewayApp.appInfo.name) ==
+								       appLastStatusGood.end() ||
+								   appLastStatusGood[remoteGatewayApp.appInfo.url +
+								                     remoteGatewayApp.appInfo.name])
+									__COUT_WARN__
+									    << "New failure getting '"
+									    << remoteGatewayApp.appInfo.name
+									    << "' Remote Gateway App status at url: "
+									    << remoteGatewayApp.appInfo.url << __E__;
+
+								//mark last status bad
+								appLastStatusGood[remoteGatewayApp.appInfo.url +
+								                  remoteGatewayApp.appInfo.name] = false;
+							}
+
+						}  //end remote app status update loop
 
 						if(allApssAreUnknown)  //then remove ignore status, and give user feedback faster
 						{
@@ -1848,10 +1868,9 @@ try
 }  //end CheckRemoteGatewayStatus()
 catch(const std::runtime_error& e)
 {
-	__COUT_WARN__ << "Failure getting Remote Gateway App status of '"
-	              << remoteGatewayApp.appInfo.name
-	              << "' at url: " << remoteGatewayApp.appInfo.url
-	              << " due to error: " << e.what() << __E__;
+	__COUTT__ << "Failure getting '" << remoteGatewayApp.appInfo.name
+	          << "' Remote Gateway App status at url: " << remoteGatewayApp.appInfo.url
+	          << " due to error: " << e.what() << __E__;
 
 	remoteGatewayApp.appInfo.status         = SupervisorInfo::APP_STATUS_UNKNOWN;
 	remoteGatewayApp.appInfo.progress       = 0;

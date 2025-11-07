@@ -121,12 +121,14 @@ void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version
 	if(result.second.find("failed to create a client session") != std::string::npos ||
 	   result.second.find("closed connection. calling hello") != std::string::npos)
 	{
-		__SS__ << "\n\n======> Database Interface Error while filling '"
+		__SS__ << "Error at time: " << time(0)
+		       << "\n\n======> Database Interface Error while filling '"
 		       << table->getTableName() << "' version '" << versionstring
 		       << "' - it appears that the connection to the database been lost. Please "
 		          "check the database server and route to server.\n\n"
 		       << "Here is the error detail:\n\n"
-		       << result.second << __E__;
+		       << result.second << "\n\n"
+		       << StringMacros::stackTrace() << __E__;
 		__SS_ONLY_THROW__;
 	}
 
@@ -957,15 +959,15 @@ catch(std::exception const& e)
 	__SS__ << "Database Interface Exception saveCustomJSON for '" << documentNameToLoad
 	       << "-v" << documentVersionToLoad << "':\n\n"
 	       << e.what() << "\n";
-	__COUT_ERR__ << ss.str();
-	__SS_THROW__;
+	__COUTT__ << ss.str();
+	__SS_ONLY_THROW__;
 }
 catch(...)
 {
 	__SS__ << "Database Interface Unknown exception saveCustomJSON for '"
 	       << documentNameToLoad << "-v" << documentVersionToLoad << ".'\n";
-	__COUT_ERR__ << ss.str();
-	__SS_THROW__;
+	__COUTT__ << ss.str();
+	__SS_ONLY_THROW__;
 }  //end loadCustomJSON() catch
 
 DEFINE_OTS_CONFIGURATION_INTERFACE(DatabaseConfigurationInterface)
