@@ -707,7 +707,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			__SS__
 			    << "A fatal error occurred reading the info for all table groups. Error: "
 			    << e.what() << __E__;
-			__GEN_COUT_ERR__ << "\n" << ss.str();
+			__GEN_COUT_ERR__ << "Error at time: " << time(0) << "\n" << ss.str();
 			if(accumulatedWarnings)
 				*accumulatedWarnings += ss.str();
 			else
