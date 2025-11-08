@@ -346,24 +346,23 @@ void ARTDAQSupervisor::init(void)
 
 			//setup Python output to tee output to stdout/err and to StringIO buffer "tee_buffer"
 			PyRun_SimpleString(
-				"import sys\n"
-				"from io import StringIO\n"
-				"\n"
-				"class TeeOut:\n"
-				"    def __init__(self, real, buf):\n"
-				"        self.real = real\n"
-				"        self.buf = buf\n"
-				"    def write(self, data):\n"
-				"        self.real.write(data)\n"
-				"        self.buf.write(data)\n"
-				"    def flush(self):\n"
-				"        self.real.flush()\n"
-				"        self.buf.flush()\n"
-				"\n"
-				"tee_buffer = StringIO()\n"
-				"sys.stdout = TeeOut(sys.stdout, tee_buffer)\n"
-				"sys.stderr = TeeOut(sys.stderr, tee_buffer)\n"
-			);
+			    "import sys\n"
+			    "from io import StringIO\n"
+			    "\n"
+			    "class TeeOut:\n"
+			    "    def __init__(self, real, buf):\n"
+			    "        self.real = real\n"
+			    "        self.buf = buf\n"
+			    "    def write(self, data):\n"
+			    "        self.real.write(data)\n"
+			    "        self.buf.write(data)\n"
+			    "    def flush(self):\n"
+			    "        self.real.flush()\n"
+			    "        self.buf.flush()\n"
+			    "\n"
+			    "tee_buffer = StringIO()\n"
+			    "sys.stdout = TeeOut(sys.stdout, tee_buffer)\n"
+			    "sys.stderr = TeeOut(sys.stderr, tee_buffer)\n");
 
 			__SUP_COUT__ << "Adding DAQInterface directory to PYTHON_PATH" << __E__;
 			PyObject* sysPath     = PySys_GetObject((char*)"path");
@@ -442,12 +441,14 @@ void ARTDAQSupervisor::init(void)
 						PyObject_SetAttrString(sys, "stderr", stringIO_err);
 						//------------- end redirect stdout to string
 					}
-					else //capture tee buffer instead so output to console continues
+					else  //capture tee buffer instead so output to console continues
 					{
-						PyObject* mainmod = PyImport_AddModule("__main__");       // borrowed ref
-						PyObject* globals = PyModule_GetDict(mainmod);            // borrowed ref
+						PyObject* mainmod =
+						    PyImport_AddModule("__main__");             // borrowed ref
+						PyObject* globals = PyModule_GetDict(mainmod);  // borrowed ref
 
-						stringIO_out = PyDict_GetItemString(globals, "tee_buffer"); // borrowed
+						stringIO_out =
+						    PyDict_GetItemString(globals, "tee_buffer");  // borrowed
 						// Do not Py_DECREF borrowed references.
 					}
 
@@ -601,9 +602,9 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 			errorMessage = thread_error_message_;  // theStateMachine_.getErrorMessage();
 		}
 		int progress = thread_progress_bar_.read();
-		__SUP_COUTVS__(2,errorMessage);
-		__SUP_COUTVS__(2,progress);
-		__SUP_COUTVS__(2,thread_progress_bar_.isComplete());
+		__SUP_COUTVS__(2, errorMessage);
+		__SUP_COUTVS__(2, progress);
+		__SUP_COUTVS__(2, thread_progress_bar_.isComplete());
 
 		// check for done and error messages
 		if(errorMessage == "" &&  // if no update in 600 seconds, give up
@@ -635,7 +636,7 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 		if(!thread_progress_bar_.isComplete())
 		{
 			__SUP_COUT__ << "Not done yet..." << __E__;
-			//attempt to get live view of python output			
+			//attempt to get live view of python output
 			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
 
 			RunControlStateMachine::
@@ -932,8 +933,8 @@ try
 	if(res2 == NULL)
 	{
 		std::string err = capturePyErr();
-		__GEN_COUT_INFO__ << "Error on first boost attempt, recovering and retrying: " << err
-		             << __E__;
+		__GEN_COUT_INFO__ << "Error on first boost attempt, recovering and retrying: "
+		                  << err << __E__;
 
 		PyObject* pName = PyUnicode_FromString("do_recover");
 		PyObject* res   = PyObject_CallMethodObjArgs(daqinterface_ptr_, pName, NULL);
@@ -976,10 +977,10 @@ try
 	getDAQState_();
 	if(daqinterface_state_ != "booted")
 	{
-		std::cout << "Do boot output on error: \n" << doBootOutput << __E__;		
+		std::cout << "Do boot output on error: \n" << doBootOutput << __E__;
 		__GEN_SS__ << "DAQInterface boot transition failed! "
 		           << "Status after boot attempt: " << daqinterface_state_ << __E__;
-		
+
 		if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
 			ss << "... last " << OUT_ON_ERR_SIZE
 			   << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
@@ -1337,7 +1338,7 @@ try
 		if(!thread_progress_bar_.isComplete())
 		{
 			__SUP_COUT__ << "Not done yet..." << __E__;
-			//attempt to get live view of python output			
+			//attempt to get live view of python output
 			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
 
 			RunControlStateMachine::
@@ -1572,15 +1573,15 @@ std::string ots::ARTDAQSupervisor::captureStderrAndStdout_(std::string label /* 
 		label += ' ';  //for nice printing
 
 	std::string outString = "";
-	PyObject* out = PyObject_CallMethod(stringIO_out, "getvalue", NULL);
-	const char* text = PyUnicode_AsUTF8(out);
+	PyObject*   out       = PyObject_CallMethod(stringIO_out, "getvalue", NULL);
+	const char* text      = PyUnicode_AsUTF8(out);
 	// use text
 	Py_DECREF(out);
 
 	return text;
-	
+
 	try
-	{			
+	{
 		//------------- capture stdout and stderr
 		PyObject* out_text = PyObject_CallMethod(stringIO_out, "getvalue", NULL);
 		if(!out_text)
@@ -1590,7 +1591,7 @@ std::string ots::ARTDAQSupervisor::captureStderrAndStdout_(std::string label /* 
 			const char* out_cstr = PyUnicode_AsUTF8(out_text);
 			if(out_cstr && strlen(out_cstr))
 				outString = "Captured " + label + "stdout:\n" +
-							std::string(out_cstr ? out_cstr : "") + "\n";
+				            std::string(out_cstr ? out_cstr : "") + "\n";
 			else
 				outString = "Captured " + label + "stdout empty.\n";
 		}
@@ -1604,7 +1605,7 @@ std::string ots::ARTDAQSupervisor::captureStderrAndStdout_(std::string label /* 
 			const char* err_cstr = PyUnicode_AsUTF8(err_text);
 			if(err_cstr && strlen(err_cstr))
 				errString = "Captured " + label + "stderr:\n" +
-							std::string(err_cstr ? err_cstr : "") + "\n";
+				            std::string(err_cstr ? err_cstr : "") + "\n";
 			else
 				errString = "Captured " + label + "stderr empty.\n";
 		}
@@ -1625,11 +1626,11 @@ std::string ots::ARTDAQSupervisor::captureStderrAndStdout_(std::string label /* 
 		//------------- end capture stdout and stderr
 		return errString + outString;
 	}
-	catch(...) //make sure to release python thread lock
+	catch(...)  //make sure to release python thread lock
 	{
 		__COUT_ERR__ << "Exception caught while capturing python output!" << __E__;
 		throw;
-	}	
+	}
 
 }  //end captureStderrAndStdout_()
 
@@ -1747,9 +1748,9 @@ ots::ARTDAQSupervisor::getAndParseProcessInfo_()
 		std::lock_guard<std::mutex> lock(daqinterface_statusMutex_);
 		info = daqinterface_status_;
 	}
-	__COUTVS__(2,info);
+	__COUTVS__(2, info);
 
-	auto                                                      procs = tokenize_(info);
+	auto procs = tokenize_(info);
 
 	// 0: Whole string
 	// 1: Process Label

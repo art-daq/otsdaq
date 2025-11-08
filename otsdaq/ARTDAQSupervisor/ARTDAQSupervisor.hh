@@ -77,8 +77,8 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 
 	PyObject *                   daqinterface_ptr_, *stringIO_out, *stringIO_err;
 	std::recursive_mutex         daqinterface_pythonMutex_;
-	std::mutex					 daqinterface_statusMutex_;
-	std::string					 daqinterface_status_;
+	std::mutex                   daqinterface_statusMutex_;
+	std::string                  daqinterface_status_;
 	int                          partition_;
 	std::string                  daqinterface_state_;
 	std::unique_ptr<std::thread> runner_thread_;

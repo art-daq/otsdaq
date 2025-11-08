@@ -5973,12 +5973,11 @@ try
 			// set app status, but leave progress and detail alone
 			allSupervisorInfo_.setSupervisorStatus(
 			    appInfo, givenAppStatus, givenAppProgress, givenAppDetail);
-			
+
 			__COUT__ << "here in lock " << appInfo.getId() << __E__;
 
-			
 			__COUT__ << "Broadcast thread in lock " << threadIndex << "\t"
-		         << "Sending... \t" << SOAPUtilities::translate(message) << std::endl;
+			         << "Sending... \t" << SOAPUtilities::translate(message) << std::endl;
 			// for transition attempt, set status for app, in case the request occupies the target app
 			std::string tmpReply = send(appInfo.getDescriptor(), message);
 			__COUTV__(tmpReply);
@@ -8168,14 +8167,18 @@ try
 								   std::string::npos)
 									xmlOut.addTextElementToData("Error",
 									                            remoteGatewayApp.error);
-								else if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
+								else if(remoteGatewayApp.appInfo.status ==
+								        SupervisorInfo::APP_STATUS_UNKNOWN)
 								{
-									__SS__ << "Connection failed for '" << remoteGatewayApp.parentIconFolderPath << 
-										"' icon retrieval from Remote Gateway '" << 
-										remoteGatewayApp.appInfo.name << "' at " << remoteGatewayApp.appInfo.url << 
-										". Please check that the target is up and running at the correct IP address." << __E__; 
-									xmlOut.addTextElementToData("Error",
-									                            ss.str());
+									__SS__ << "Connection failed for '"
+									       << remoteGatewayApp.parentIconFolderPath
+									       << "' icon retrieval from Remote Gateway '"
+									       << remoteGatewayApp.appInfo.name << "' at "
+									       << remoteGatewayApp.appInfo.url
+									       << ". Please check that the target is up and "
+									          "running at the correct IP address."
+									       << __E__;
+									xmlOut.addTextElementToData("Error", ss.str());
 								}
 
 								//add placeholder "Loading icon"
