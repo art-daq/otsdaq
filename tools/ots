@@ -741,7 +741,7 @@ if [ "x$ARTDAQ_DATABASE_TYPE" == "xfilesystemdb" ]; then
 elif [ "x$ARTDAQ_DATABASE_TYPE" == "xmongodb" ]; then
 
 	if [ $ISREMOTE == 0 ]; then #dont printout if remote
-		out "mongodb identified at $ARTDAQ_DATABASE_URI"
+		out "mongodb identified as configuration DB"
 	fi
 
 else

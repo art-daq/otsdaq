@@ -19,7 +19,7 @@
 #include <signal.h>
 #include <regex>
 
-#define OUT_ON_ERR_SIZE 1000  //tail size of output to include on error
+#define OUT_ON_ERR_SIZE 2000  //tail size of output to include on error
 
 using namespace ots;
 
@@ -258,7 +258,7 @@ void ARTDAQSupervisor::destroy(void)
 	if(daqinterface_ptr_ != NULL)
 	{
 		__SUP_COUT__ << "Calling recover transition" << __E__;
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 		PyObject*                             pName = PyUnicode_FromString("do_recover");
 		/*PyObject*                             res   =*/PyObject_CallMethodObjArgs(
 		    daqinterface_ptr_, pName, NULL);
@@ -324,7 +324,7 @@ void ARTDAQSupervisor::init(void)
 
 	__SUP_COUT__ << "Initializing..." << __E__;
 	{
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 
 		// allSupervisorInfo_.init(getApplicationContext());
 		artdaq::configureMessageFacility("ARTDAQSupervisor");
@@ -343,6 +343,27 @@ void ARTDAQSupervisor::init(void)
 		{
 			__SUP_COUT__ << "Initializing Python" << __E__;
 			Py_Initialize();
+
+			//setup Python output to tee output to stdout/err and to StringIO buffer "tee_buffer"
+			PyRun_SimpleString(
+				"import sys\n"
+				"from io import StringIO\n"
+				"\n"
+				"class TeeOut:\n"
+				"    def __init__(self, real, buf):\n"
+				"        self.real = real\n"
+				"        self.buf = buf\n"
+				"    def write(self, data):\n"
+				"        self.real.write(data)\n"
+				"        self.buf.write(data)\n"
+				"    def flush(self):\n"
+				"        self.real.flush()\n"
+				"        self.buf.flush()\n"
+				"\n"
+				"tee_buffer = StringIO()\n"
+				"sys.stdout = TeeOut(sys.stdout, tee_buffer)\n"
+				"sys.stderr = TeeOut(sys.stderr, tee_buffer)\n"
+			);
 
 			__SUP_COUT__ << "Adding DAQInterface directory to PYTHON_PATH" << __E__;
 			PyObject* sysPath     = PySys_GetObject((char*)"path");
@@ -400,23 +421,35 @@ void ARTDAQSupervisor::init(void)
 
 					__SUP_COUT__ << "Calling DAQInterface Object Constructor" << __E__;
 
-					//------------- redirect stdout to string
 					// Get sys and io
 					PyObject* sys = PyImport_ImportModule("sys");
 					PyObject* io  = PyImport_ImportModule("io");
 
-					// Create StringIO objects for stdout and stderr
-					stringIO_out = PyObject_CallMethod(io, "StringIO", NULL);
-					stringIO_err = PyObject_CallMethod(io, "StringIO", NULL);
+					if(0)
+					{
+						//------------- redirect stdout to string
 
-					// Save originals (not needed, since just keep the redirection until daqinterface_ptr_ is destructed)
-					// PyObject* sys_stdout = PyObject_GetAttrString(sys, "stdout");
-					// PyObject* sys_stderr = PyObject_GetAttrString(sys, "stderr");
+						// Create StringIO objects for stdout and stderr
+						stringIO_out = PyObject_CallMethod(io, "StringIO", NULL);
+						stringIO_err = PyObject_CallMethod(io, "StringIO", NULL);
 
-					// Redirect
-					PyObject_SetAttrString(sys, "stdout", stringIO_out);
-					PyObject_SetAttrString(sys, "stderr", stringIO_err);
-					//------------- end redirect stdout to string
+						// Save originals (not needed, since just keep the redirection until daqinterface_ptr_ is destructed)
+						// PyObject* sys_stdout = PyObject_GetAttrString(sys, "stdout");
+						// PyObject* sys_stderr = PyObject_GetAttrString(sys, "stderr");
+
+						// Redirect
+						PyObject_SetAttrString(sys, "stdout", stringIO_out);
+						PyObject_SetAttrString(sys, "stderr", stringIO_err);
+						//------------- end redirect stdout to string
+					}
+					else //capture tee buffer instead so output to console continues
+					{
+						PyObject* mainmod = PyImport_AddModule("__main__");       // borrowed ref
+						PyObject* globals = PyModule_GetDict(mainmod);            // borrowed ref
+
+						stringIO_out = PyDict_GetItemString(globals, "tee_buffer"); // borrowed
+						// Do not Py_DECREF borrowed references.
+					}
 
 					daqinterface_ptr_ = PyObject_Call(di_obj_ptr, pArgs, kwargs);
 
@@ -449,7 +482,7 @@ void ARTDAQSupervisor::init(void)
 
 		// { //attempt to cleanup old artdaq processes DOES NOT WORK because artdaq interface knows it hasn't started
 		// 	__SUP_COUT__ << "Attempting artdaq stale cleanup..." << __E__;
-		// 	std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+		// 	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 		// 	getDAQState_();
 		// 	__SUP_COUT__ << "Status before cleanup: " << daqinterface_state_ << __E__;
 
@@ -568,9 +601,9 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 			errorMessage = thread_error_message_;  // theStateMachine_.getErrorMessage();
 		}
 		int progress = thread_progress_bar_.read();
-		__SUP_COUTV__(errorMessage);
-		__SUP_COUTV__(progress);
-		__SUP_COUTV__(thread_progress_bar_.isComplete());
+		__SUP_COUTVS__(2,errorMessage);
+		__SUP_COUTVS__(2,progress);
+		__SUP_COUTVS__(2,thread_progress_bar_.isComplete());
 
 		// check for done and error messages
 		if(errorMessage == "" &&  // if no update in 600 seconds, give up
@@ -601,6 +634,10 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 		if(!thread_progress_bar_.isComplete())
 		{
+			__SUP_COUT__ << "Not done yet..." << __E__;
+			//attempt to get live view of python output			
+			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
+
 			RunControlStateMachine::
 			    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 
@@ -826,7 +863,7 @@ try
 
 	thread_progress_bar_.step();
 
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 	getDAQState_();
 	if(daqinterface_state_ != "stopped" && daqinterface_state_ != "")
 	{
@@ -942,6 +979,7 @@ try
 		std::cout << "Do boot output on error: \n" << doBootOutput << __E__;		
 		__GEN_SS__ << "DAQInterface boot transition failed! "
 		           << "Status after boot attempt: " << daqinterface_state_ << __E__;
+		
 		if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
 			ss << "... last " << OUT_ON_ERR_SIZE
 			   << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
@@ -1030,7 +1068,7 @@ try
 {
 	set_thread_message_("Halting");
 	__SUP_COUT__ << "Halting..." << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 	getDAQState_();
 	__SUP_COUT__ << "Status before halt: " << daqinterface_state_ << __E__;
 
@@ -1158,7 +1196,7 @@ try
 {
 	set_thread_message_("Pausing");
 	__SUP_COUT__ << "Pausing..." << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 
 	getDAQState_();
 	__SUP_COUT__ << "Status before pause: " << daqinterface_state_ << __E__;
@@ -1200,7 +1238,7 @@ try
 {
 	set_thread_message_("Resuming");
 	__SUP_COUT__ << "Resuming..." << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 
 	getDAQState_();
 	__SUP_COUT__ << "Status before resume: " << daqinterface_state_ << __E__;
@@ -1298,6 +1336,10 @@ try
 
 		if(!thread_progress_bar_.isComplete())
 		{
+			__SUP_COUT__ << "Not done yet..." << __E__;
+			//attempt to get live view of python output			
+			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
+
 			RunControlStateMachine::
 			    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 
@@ -1350,7 +1392,7 @@ try
 	thread_progress_bar_.step();
 	stop_runner_();
 	{
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 		getDAQState_();
 		__GEN_COUT__ << "Status before start: " << daqinterface_state_ << __E__;
 		auto runNumber = SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
@@ -1422,7 +1464,7 @@ try
 {
 	__SUP_COUT__ << "Stopping..." << __E__;
 	set_thread_message_("Stopping");
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 	getDAQState_();
 	__SUP_COUT__ << "Status before stop: " << daqinterface_state_ << __E__;
 	PyObject* pName = PyUnicode_FromString("do_stop_running");
@@ -1457,7 +1499,7 @@ catch(...)
 void ots::ARTDAQSupervisor::enteringError(toolbox::Event::Reference /*event*/)
 {
 	__SUP_COUT__ << "Entering error recovery state" << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 	getDAQState_();
 	__SUP_COUT__ << "Status before error: " << daqinterface_state_ << __E__;
 
@@ -1530,57 +1572,73 @@ std::string ots::ARTDAQSupervisor::captureStderrAndStdout_(std::string label /* 
 		label += ' ';  //for nice printing
 
 	std::string outString = "";
-	//------------- capture stdout and stderr
-	PyObject* out_text = PyObject_CallMethod(stringIO_out, "getvalue", NULL);
-	if(!out_text)
-		PyErr_Print();  // dump the Python exception <-- this writes into stringIO_err, not the terminal
-	else
-	{
-		const char* out_cstr = PyUnicode_AsUTF8(out_text);
-		if(out_cstr && strlen(out_cstr))
-			outString = "Captured " + label + "stdout:\n" +
-			            std::string(out_cstr ? out_cstr : "") + "\n";
+	PyObject* out = PyObject_CallMethod(stringIO_out, "getvalue", NULL);
+	const char* text = PyUnicode_AsUTF8(out);
+	// use text
+	Py_DECREF(out);
+
+	return text;
+	
+	try
+	{			
+		//------------- capture stdout and stderr
+		PyObject* out_text = PyObject_CallMethod(stringIO_out, "getvalue", NULL);
+		if(!out_text)
+			PyErr_Print();  // dump the Python exception <-- this writes into stringIO_err, not the terminal
 		else
-			outString = "Captured " + label + "stdout empty.\n";
-	}
+		{
+			const char* out_cstr = PyUnicode_AsUTF8(out_text);
+			if(out_cstr && strlen(out_cstr))
+				outString = "Captured " + label + "stdout:\n" +
+							std::string(out_cstr ? out_cstr : "") + "\n";
+			else
+				outString = "Captured " + label + "stdout empty.\n";
+		}
 
-	std::string errString = "";
-	PyObject*   err_text  = PyObject_CallMethod(stringIO_err, "getvalue", NULL);
-	if(!err_text)
-		__SUP_COUT__ << "Capture of " << label << "stderr failed.";
-	else
-	{
-		const char* err_cstr = PyUnicode_AsUTF8(err_text);
-		if(err_cstr && strlen(err_cstr))
-			errString = "Captured " + label + "stderr:\n" +
-			            std::string(err_cstr ? err_cstr : "") + "\n";
+		std::string errString = "";
+		PyObject*   err_text  = PyObject_CallMethod(stringIO_err, "getvalue", NULL);
+		if(!err_text)
+			__SUP_COUT__ << "Capture of " << label << "stderr failed.";
 		else
-			errString = "Captured " + label + "stderr empty.\n";
-	}
+		{
+			const char* err_cstr = PyUnicode_AsUTF8(err_text);
+			if(err_cstr && strlen(err_cstr))
+				errString = "Captured " + label + "stderr:\n" +
+							std::string(err_cstr ? err_cstr : "") + "\n";
+			else
+				errString = "Captured " + label + "stderr empty.\n";
+		}
 
-	//clear buffers for reuse
-	{
-		PyObject* r1 = PyObject_CallMethod(stringIO_out, "seek", "i", 0);
-		Py_XDECREF(r1);
-		PyObject* r2 = PyObject_CallMethod(stringIO_out, "truncate", NULL);
-		Py_XDECREF(r2);
+		//clear buffers for reuse
+		{
+			PyObject* r1 = PyObject_CallMethod(stringIO_out, "seek", "i", 0);
+			Py_XDECREF(r1);
+			PyObject* r2 = PyObject_CallMethod(stringIO_out, "truncate", NULL);
+			Py_XDECREF(r2);
+		}
+		{
+			PyObject* r1 = PyObject_CallMethod(stringIO_err, "seek", "i", 0);
+			Py_XDECREF(r1);
+			PyObject* r2 = PyObject_CallMethod(stringIO_err, "truncate", NULL);
+			Py_XDECREF(r2);
+		}
+		//------------- end capture stdout and stderr
+		return errString + outString;
 	}
+	catch(...) //make sure to release python thread lock
 	{
-		PyObject* r1 = PyObject_CallMethod(stringIO_err, "seek", "i", 0);
-		Py_XDECREF(r1);
-		PyObject* r2 = PyObject_CallMethod(stringIO_err, "truncate", NULL);
-		Py_XDECREF(r2);
-	}
-	//------------- end capture stdout and stderr
+		__COUT_ERR__ << "Exception caught while capturing python output!" << __E__;
+		throw;
+	}	
 
-	return errString + outString;
 }  //end captureStderrAndStdout_()
 
 //==============================================================================
 void ots::ARTDAQSupervisor::getDAQState_()
 {
-	//__SUP_COUT__ << "Getting DAQInterface state" << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+	__SUP_COUTS__(50) << "Getting DAQInterface state lock" << __E__;
+	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	__SUP_COUTS__(50) << "Have DAQInterface state lock" << __E__;
 
 	if(daqinterface_ptr_ == nullptr)
 	{
@@ -1623,8 +1681,9 @@ void ots::ARTDAQSupervisor::getDAQState_()
 //==============================================================================
 std::string ots::ARTDAQSupervisor::getProcessInfo_(void)
 {
-	//__SUP_COUT__ << "Getting DAQInterface state" << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_mutex_);
+	__SUP_COUTS__(2) << "Getting DAQInterface state lock" << __E__;
+	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	__SUP_COUTS__(2) << "Have DAQInterface state lock" << __E__;
 
 	if(daqinterface_ptr_ == nullptr)
 	{
@@ -1644,8 +1703,10 @@ std::string ots::ARTDAQSupervisor::getProcessInfo_(void)
 		__SUP_SS_THROW__;
 		return "";
 	}
-	return std::string(PyUnicode_AsUTF8(res));
-	//__SUP_COUT__ << "getDAQState_ DONE: state=" << result << __E__;
+	//cache status as latest
+	std::lock_guard<std::mutex> lock(daqinterface_statusMutex_);
+	daqinterface_status_ = std::string(PyUnicode_AsUTF8(res));
+	return daqinterface_status_;
 }  // end getProcessInfo_()
 
 std::string ots::ARTDAQSupervisor::artdaqStateToOtsState(std::string state)
@@ -1679,7 +1740,15 @@ std::list<ots::ARTDAQSupervisor::DAQInterfaceProcessInfo>
 ots::ARTDAQSupervisor::getAndParseProcessInfo_()
 {
 	std::list<ots::ARTDAQSupervisor::DAQInterfaceProcessInfo> output;
-	auto                                                      info  = getProcessInfo_();
+	// full acquire from getProcessInfo_ creates mutex locking up!
+	// auto                                                      info  = getProcessInfo_();
+	std::string info;
+	{
+		std::lock_guard<std::mutex> lock(daqinterface_statusMutex_);
+		info = daqinterface_status_;
+	}
+	__COUTVS__(2,info);
+
 	auto                                                      procs = tokenize_(info);
 
 	// 0: Whole string
@@ -1772,7 +1841,7 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 	{
 		if(daqinterface_ptr_ != NULL)
 		{
-			std::unique_lock<std::recursive_mutex> lk(daqinterface_mutex_);
+			std::unique_lock<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 			getDAQState_();
 			std::string state_before = daqinterface_state_;
 

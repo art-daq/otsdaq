@@ -19,6 +19,9 @@ hostname=$(echo "$basename" | sed -n 's/otsdaq_quiet_run-gateway-\([a-zA-Z0-9.-]
 if [ "x$hostname" == "x" ]; then
     hostname=$(echo "$basename" | sed -n 's/otsdaq_quiet_run-\([a-zA-Z0-9.-]*\)-[0-9]*\.txt/\1/p')
 fi
+if [ "x$hostname" == "x" ]; then #then as artdaq file
+    hostname=$(echo "$basename" | sed -n 's/.*launch_attempt_\([^_]*\)_.*/\1/p')
+fi
 echo $hostname
 
 echo "Opening file in 'less' from node $hostname: $1"

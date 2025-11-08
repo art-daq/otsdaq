@@ -5965,13 +5965,20 @@ try
 				sleep(2);
 			}
 
+			__COUT__ << "Grabbing lock " << appInfo.getId() << __E__;
 			// start recursive mutex scope (same thread can lock multiple times, but needs to unlock the same)
 			std::lock_guard<std::recursive_mutex> lock(
 			    allSupervisorInfo_.getSupervisorInfoMutex(appInfo.getId()));
+			__COUT__ << "Have lock " << appInfo.getId() << __E__;
 			// set app status, but leave progress and detail alone
 			allSupervisorInfo_.setSupervisorStatus(
 			    appInfo, givenAppStatus, givenAppProgress, givenAppDetail);
+			
+			__COUT__ << "here in lock " << appInfo.getId() << __E__;
 
+			
+			__COUT__ << "Broadcast thread in lock " << threadIndex << "\t"
+		         << "Sending... \t" << SOAPUtilities::translate(message) << std::endl;
 			// for transition attempt, set status for app, in case the request occupies the target app
 			std::string tmpReply = send(appInfo.getDescriptor(), message);
 			__COUTV__(tmpReply);
