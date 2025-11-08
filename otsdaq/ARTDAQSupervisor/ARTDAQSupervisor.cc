@@ -1744,9 +1744,18 @@ ots::ARTDAQSupervisor::getAndParseProcessInfo_()
 	// full acquire from getProcessInfo_ creates mutex locking up!
 	// auto                                                      info  = getProcessInfo_();
 	std::string info;
+
+	std::unique_lock<std::recursive_mutex> lk(daqinterface_pythonMutex_, std::try_to_lock);
+	if (!lk.owns_lock()) //if lock not availabe, just report last status
 	{
+		__COUTS__(2) << "Do not have python lock." << __E__;
 		std::lock_guard<std::mutex> lock(daqinterface_statusMutex_);
 		info = daqinterface_status_;
+	}
+	else //have lock! so retrieve Python Interface status
+	{
+		__COUTS__(2) << "Have python lock!" << __E__;
+		info  = getProcessInfo_();
 	}
 	__COUTVS__(2, info);
 
