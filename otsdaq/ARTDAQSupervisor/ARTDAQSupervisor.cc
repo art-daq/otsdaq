@@ -196,10 +196,11 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 	}
 	o << "all_events_to_all_dispatchers: " << std::boolalpha
 	  << getSupervisorProperty("all_events_to_all_dispatchers", true) << std::endl;
-	o << "data_directory_override: "
-	  << getSupervisorProperty("data_directory_override",
-	                           std::string(__ENV__("ARTDAQ_OUTPUT_DIR")))
-	  << std::endl;
+	if(getSupervisorProperty("data_directory_override", "") != "")
+	{
+		o << "data_directory_override: "
+		  << getSupervisorProperty("data_directory_override", "") << std::endl;
+	}
 	o << "max_configurations_to_list: "
 	  << getSupervisorProperty("max_configurations_to_list", 10) << std::endl;
 	o << "disable_unique_rootfile_labels: "
