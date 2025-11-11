@@ -75,7 +75,7 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	void configuringThread(void);
 	void startingThread(void);
 
-	PyObject*                    daqinterface_ptr_;
+	PyObject *                   daqinterface_ptr_, *stringIO_out, *stringIO_err;
 	std::recursive_mutex         daqinterface_mutex_;
 	int                          partition_;
 	std::string                  daqinterface_state_;
@@ -90,6 +90,8 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	time_t                             last_thread_progress_update_;
 	std::map<std::string, std::string> label_to_proc_type_map_;
 
+	std::string                        capturePyErr(std::string label = "");
+	std::string                        captureStderrAndStdout_(std::string label = "");
 	void                               getDAQState_(void);
 	std::string                        getProcessInfo_(void);
 	std::string                        artdaqStateToOtsState(std::string state);

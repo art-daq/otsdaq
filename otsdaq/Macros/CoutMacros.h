@@ -61,6 +61,7 @@
 #define __COUTVS__(LVL,X)	__COUT_TYPE__(TLVL_DEBUG + LVL) << __COUT_HDR__ << QUOTE(X) << " = " << (X) << __E__
 
 #define __COUT_MULTI__(LVL,X) if(TTEST(LVL)) { __COUTS__(LVL) << "Multi-line printout:" << __E__; StringMacros::coutSplit(X,LVL); }
+#define __COUT_MULTI_LBL__(LVL,X,LABEL) if(TTEST(LVL)) { __COUTS__(LVL) << "Multi-line " << LABEL << " printout:" << __E__; StringMacros::coutSplit(X,LVL); }
 
 //////// ==============================================================
 

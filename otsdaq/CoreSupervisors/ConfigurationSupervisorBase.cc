@@ -831,10 +831,11 @@ try
 	};  //end local lambda vSpanToXML()
 
 	{
-		const GroupInfo&               groupInfo  = cfgMgr->getGroupInfo(groupName);
-		const std::set<TableGroupKey>& sortedKeys = groupInfo.keys_;  // rename
+		const GroupInfo& groupInfo =
+		    cfgMgr->getGroupInfo(groupName, !cacheOnly /* attemptToReloadKeys */);
+		const std::set<TableGroupKey>& sortedKeys = groupInfo.getKeys();  // rename
 
-		__COUTT__ << groupName << " keys: " << StringMacros::setToString(groupInfo.keys_)
+		__COUTT__ << groupName << " keys: " << StringMacros::setToString(sortedKeys)
 		          << __E__;
 		__COUTT__ << "Active groups: "
 		          << StringMacros::mapToString(cfgMgr->getActiveTableGroups()) << __E__;
@@ -869,7 +870,8 @@ try
 				// xmlOut.addTextElementToData("Error", ss.str());
 
 				const GroupInfo& groupInfo2 = cfgMgr->getGroupInfo(groupName);
-				const std::set<TableGroupKey>& sortedKeys2 = groupInfo2.keys_;  // rename
+				const std::set<TableGroupKey>& sortedKeys2 =
+				    groupInfo2.getKeys();  // rename
 
 				if(sortedKeys2.find(groupKey) == sortedKeys2.end())
 				{
@@ -893,40 +895,6 @@ try
 
 				// add all other sorted keys for this groupName
 				SpanToXML(sortedKeys, xmlOut);
-
-				// //add lo and hi spans, instead of each individual value
-				// size_t lo = -1, hi = -1;
-				// for(auto& keyInOrder : sortedKeys)
-				// {
-				// 	if(lo == size_t(-1)) //establish start of potential span
-				// 	{
-				// 		hi = lo = keyInOrder.key();
-				// 		continue;
-				// 	}
-				// 	else if(hi + 1 == keyInOrder.key()) //span is growing
-				// 	{
-				// 		hi = keyInOrder.key();
-				// 		continue;
-				// 	}
-				// 	//else jump by more than one, so close out span
-
-				// 	if(lo == hi) //single value
-				// 		xmlOut.addNumberElementToData("HistoricalTableGroupKey", lo);
-				// 	else //span
-				// 		xmlOut.addTextElementToData("HistoricalTableGroupKey",
-				// 			"_" + std::to_string(lo) + "_" + std::to_string(hi));
-				// 	lo = -1;
-				// }
-				// //need to do last one!
-				// if(lo == hi) //single value
-				// 	xmlOut.addNumberElementToData("HistoricalTableGroupKey", lo);
-				// else //span
-				// 	xmlOut.addTextElementToData("HistoricalTableGroupKey",
-				// 		"_" + std::to_string(lo) + "_" + std::to_string(hi));
-
-				// for(auto& keyInOrder : sortedKeys)
-				// 	xmlOut.addTextElementToData("HistoricalTableGroupKey",
-				// 	                            keyInOrder.toString());
 			}
 		}
 		else
@@ -1073,38 +1041,6 @@ try
 				    configEl);
 
 		vSpanToXML(it->second.versions_, xmlOut, configEl);
-		// //add lo and hi spans, instead of each individual value
-		// size_t lo = -1, hi = -1;
-		// for(auto& version : it->second.versions_)
-		// {
-		// 	if(lo == size_t(-1)) //establish start of potential span
-		// 	{
-		// 		hi = lo = version.version();
-		// 		continue;
-		// 	}
-		// 	else if(hi + 1 == version.version()) //span is growing
-		// 	{
-		// 		hi = version.version();
-		// 		continue;
-		// 	}
-		// 	//else jump by more than one, so close out span
-
-		// 	if(lo == hi) //single value
-		// 		xmlOut.addNumberElementToParent("TableExistingVersion", lo, configEl);
-		// 	else //span
-		// 		xmlOut.addTextElementToParent("TableExistingVersion",
-		// 			"_" + std::to_string(lo) + "_" + std::to_string(hi), configEl);
-		// 	lo = -1;
-		// }
-		// //need to do last one!
-		// if(lo == hi) //single value
-		// 	xmlOut.addNumberElementToParent("TableExistingVersion", lo, configEl);
-		// else //span
-		// 	xmlOut.addTextElementToParent("TableExistingVersion",
-		// 		"_" + std::to_string(lo) + "_" + std::to_string(hi), configEl);
-		// // for(auto& version : it->second.versions_)
-		// // 	xmlOut.addTextElementToParent(
-		// // 	    "TableExistingVersion", version.toString(), configEl);
 	}  //end member map loop
 
 	// // Seperate loop just for getting the Member Comment

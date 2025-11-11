@@ -17,7 +17,7 @@ else
 fi
 
 # Get color code variables
-source ${SCRIPT_DIR}/common.sh ots_remote_instance_start
+source ${SCRIPT_DIR}/ots_common.sh ots_remote_instance_start
 
 
 STARTTIME=`date +"%d%h%y.%T"` #to fully ID one ots from another
