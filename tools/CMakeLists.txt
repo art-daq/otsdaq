@@ -12,7 +12,7 @@ cet_make_exec(NAME otsdaq_load_json_document LIBRARIES otsdaq::ConfigurationInte
 
 
 cet_script(ALWAYS_COPY
-    common.sh
+    ots_common.sh
     EclipseBuild.sh
     ots
     ots_remote_start
