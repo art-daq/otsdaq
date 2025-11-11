@@ -9,7 +9,7 @@ SCRIPT_DIR="$(
 #Note: &>/dev/null is the same as >/dev/null 2>&1
 
 # Bash defines HOSTNAME but it's possible that it might not be a FQDN, this specifically enforces that it will be
-HOSTNAME="$(hostname -f)"
+export HOSTNAME=${HOSTNAME:-`hostname -f`}
 
 if [ "x$THIS_HOST" == "x" ]; then
 	THIS_HOST="${HOSTNAME}"
