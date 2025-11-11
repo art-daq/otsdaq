@@ -440,7 +440,9 @@ class WebUsers
 									  const std::string& dbcolor,
 									  const std::string& wincolor,
 									  const std::string& layout,
-									  const std::string& syslayout);
+									  const std::string& syslayout,
+									  const std::string& aliaslayout,
+									  const std::string& sysaliaslayout);
 	void        setGenericPreference(uint64_t           uid,
 									 const std::string& preferenceName,
 									 const std::string& preferenceValue);
