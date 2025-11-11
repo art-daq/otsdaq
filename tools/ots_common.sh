@@ -89,11 +89,11 @@ defineColors ()
 defineColors
 
 #SCRIPT_NAME=$1
-first()   { 
+first()   {
 	numberOfSpaces=$((${#THIS_HOST}-13)) #10 for __THIS_HOST__ + ots:LINE_|\t
 	echo "numberOfSpaces = $numberOfSpaces"
 	if (( result < 0 )); then
-    	numberOfSpaces=1                # <- default value when negative
+		numberOfSpaces=1                # <- default value when negative
 	fi
 	echo "2numberOfSpaces = $numberOfSpaces"
 	printf -v spaces '%*s' "$numberOfSpaces" #create var spaces of correct size
