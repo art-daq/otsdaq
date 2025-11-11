@@ -89,7 +89,15 @@ defineColors ()
 defineColors
 
 #SCRIPT_NAME=$1
-first()   { part1="${RstClr}${IRed}  LAUNCH_TIME   ${RstClr}-${Green}" part2="${IBlue}   THIS_HOST   ${RstClr}" part3="|${IBlack}	${RstClr}";               do_out FIRST    "Messages look like this."; }
+first()   {
+	numberOfSpaces=$((${#THIS_HOST}-13)) #10 for __THIS_HOST__ + ots:LINE_|\t
+	echo "numberOfSpaces = $numberOfSpaces"
+	if (( result < 0 )); then
+		numberOfSpaces=1                # <- default value when negative
+	fi
+	echo "2numberOfSpaces = $numberOfSpaces"
+	printf -v spaces '%*s' "$numberOfSpaces" #create var spaces of correct size
+	part1="${RstClr}${IRed}  LAUNCH_TIME   ${RstClr}-${Green}" part2="${IBlue}   THIS_HOST ${spaces}${RstClr}" part3="|${IBlack}	${RstClr}"; do_out FIRST    "        ${Bold}Messages${RstClr}"; }
 out()     { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}";         do_out TLVL_LOG     "$*"; }
 info()    { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IBlue";   do_out TLVL_INFO    "$*"; }
 success() { part1="${RstClr}${IRed}${STARTTIME}${RstClr}-${Green}" part2="${IBlue}${THIS_HOST}${RstClr}" part3="|${IBlack}	${RstClr}$IGreen";  do_out TLVL_NOTICE  "$*"; }
