@@ -9,7 +9,7 @@ SCRIPT_DIR="$(
 #Note: &>/dev/null is the same as >/dev/null 2>&1
 
 # Bash defines HOSTNAME but it's possible that it might not be a FQDN, this specifically enforces that it will be
-HOSTNAME="$(hostname -f)"
+export HOSTNAME=${HOSTNAME:-`hostname -f`}
 
 if [ "x$THIS_HOST" == "x" ]; then
 	THIS_HOST="${HOSTNAME}"
@@ -99,9 +99,8 @@ export MACROMAKER_MODE #this environment variable is used by source code
 log_label=""
 #############################
 
-# Output startup banner
-first #display output header info
-out "ots -h #for usage help"
+
+
 #at least enable messages from self
 tonS 0-9 -N ots
 tonS 0-9 -N ots_remote_start
@@ -109,11 +108,16 @@ tonS 0-9 -N ots_remote_start
 if [ "x$OTS_SETUP_TYPE" == "x" ]; then
 	export OTS_SETUP_TYPE="$(cat .ots_setup_type.txt)"; #keep ots setup type so that it does not change from (remote) start to (remote) start (in a shared directory scenario)
 fi
-if [ "x$OTS_SETUP_TYPE" != "x" ]; then
-	info "Found setup_ots.sh type as ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
-fi
 
-if [ "$1" != "-x" ]; then
+# Output startup banner
+if [ "$1" != "-x" ]; then #if not remote start, show more printouts
+
+	first #display output header info
+	out "ots -h #for usage help"
+
+	if [ "x$OTS_SETUP_TYPE" != "x" ]; then
+		info "Found setup_ots.sh type as ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+	fi
 
 	if [ "x$OTS_OWNER" == "x" ]; then
 		out "Consider setting the OTS_ONWER enviroment variable to your project name..."
@@ -735,7 +739,11 @@ if [ "x$ARTDAQ_DATABASE_TYPE" == "xfilesystemdb" ]; then
 	fi
 	
 elif [ "x$ARTDAQ_DATABASE_TYPE" == "xmongodb" ]; then
-	out "mongodb identified."
+
+	if [ $ISREMOTE == 0 ]; then #dont printout if remote
+		out "mongodb identified as configuration DB"
+	fi
+
 else
 
 	out "${Red}${Bold}${Blink}Fatal Error${RstClr}."
@@ -767,7 +775,9 @@ if [ "x$OTSDAQ_DATA" == "x" ];then
 fi
 
 # Make directories if they do not exist
-out "Checking directories..."
+if [ $ISREMOTE == 0 ]; then #dont printout if remote
+	out "Checking directories..."
+fi
 
 if [ "x$ROOT_BROWSER_PATH" == "x" ];then
 	export ROOT_BROWSER_PATH=${OTSDAQ_DATA}
@@ -1084,7 +1094,7 @@ launchOTSWiz() {
 	#(re)setup user ssh tunnels in case they have timed out
 	if declare -F otsUserSshTunnels > /dev/null; then
 		out "otsUserSshTunnels() function is defined, so setting up user ssh tunnels..."
-		otsUserSshTunnels &
+		otsUserSshTunnels
 
 		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
 			out "otsUserSshTunnels() is set to auto refresh mode."
@@ -1550,12 +1560,12 @@ launchOTS() {
 	#(re)setup user ssh tunnels in case they have timed out
 	if declare -F otsUserSshTunnels > /dev/null; then
 		out "otsUserSshTunnels() function is defined, so setting up user ssh tunnels..."
-		otsUserSshTunnels &
+		otsUserSshTunnels
 
 		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
 			out "otsUserSshTunnels() is set to auto refresh mode."
 		fi
-	else
+	elif [ $ISREMOTE == 0 ]; then #only display tip if not remote
 		out "otsUserSshTunnels() funtion is not defined, define to setup user ssh tunnels."
 	fi
 
@@ -2862,7 +2872,8 @@ if [ $FIREFOX == 1 ]; then
 	firefox $MAIN_URL &
 fi
 
-if [ "x$CHECK_GIT_REPO_STATUS" == "x1" ]; then
+#only report warning if not remote launch and enabled
+if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then
 	out "Will report a warning if any uncommitted code found..."
 	echo
 	UpdateOTS.sh --warn 2>&1 >/dev/null
