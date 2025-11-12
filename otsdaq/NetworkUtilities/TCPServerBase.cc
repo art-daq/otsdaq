@@ -51,12 +51,15 @@ TCPServerBase::~TCPServerBase(void)
 //==============================================================================
 void TCPServerBase::startAccept(void)
 {
+	if(fAccept == true)
+		return;
 	//	__COUT__ << "Begin startAccept" << std::endl;
 	int opt = 1;  // SO_REUSEADDR - man socket(7)
 	if(::setsockopt(getSocketId(), SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int)) == -1)
 	{
 		close();
-		throw std::runtime_error(std::string("Setsockopt: ") + strerror(errno));
+		__SS__ << "Setsockopt: " << strerror(errno) << __E__;
+		__SS_THROW__;
 	}
 
 	struct sockaddr_in serverAddr;
@@ -68,14 +71,16 @@ void TCPServerBase::startAccept(void)
 	if(::bind(getSocketId(), (struct sockaddr*)&serverAddr, sizeof(serverAddr)) != 0)
 	{
 		close();
-		throw std::runtime_error(std::string("Bind: ") + strerror(errno));
+		__SS__ << "Bind: " << strerror(errno) << __E__;
+		__SS_THROW__;
 	}
 	// freeaddrinfo(serverAddr); // all done with this structure
 
 	if(::listen(getSocketId(), fMaxConnectionBacklog) != 0)
 	{
 		close();
-		throw std::runtime_error(std::string("Listen: ") + strerror(errno));
+		__SS__ << "Listen: " << strerror(errno) << __E__;
+		__SS_THROW__;
 	}
 
 	fAccept = true;
@@ -91,8 +96,8 @@ int TCPServerBase::accept(bool blocking)
 	__COUT__ << "Now server accept connections on socket: " << getSocketId() << std::endl;
 	if(getSocketId() == invalidSocketId)
 	{
-		throw std::logic_error(
-		    "Accept called on a bad socket object (this object was moved)");
+		__SS__ << "Accept called on a bad socket object (this object was moved)" << __E__;
+		__SS_THROW__;
 	}
 
 	struct sockaddr_storage clientAddress;  // connector's address information
@@ -134,7 +139,8 @@ int TCPServerBase::accept(bool blocking)
 		{
 			__COUT__ << "New socket invalid?: " << clientSocket << " errno: " << errno
 			         << std::endl;
-			throw std::runtime_error(std::string("Accept: ") + strerror(errno));
+			__SS__ << "Accept: " << strerror(errno) << __E__;
+			__SS_THROW__;
 		}
 
 		__COUT__ << "Server just accepted a connection on socket: " << getSocketId()
@@ -171,7 +177,8 @@ int TCPServerBase::accept(bool blocking)
 				{
 					__COUT__ << "New socket invalid?: " << clientSocket
 					         << " errno: " << errno << std::endl;
-					throw std::runtime_error(std::string("Accept: ") + strerror(errno));
+					__SS__ << "Accept: " << strerror(errno) << __E__;
+					__SS_THROW__;
 				}
 				return clientSocket;
 			}
@@ -232,8 +239,10 @@ void TCPServerBase::closeClientSocket(int socket)
 		}
 		else
 		{
-			throw std::runtime_error(std::string(
-			    "SocketId in fConnectedClients != socketId in TCPSocket! Impossible!!!"));
+			__SS__
+			    << "SocketId in fConnectedClients != socketId in TCPSocket! Impossible!!!"
+			    << __E__;
+			__SS_THROW__;
 		}
 	}
 }

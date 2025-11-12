@@ -60,6 +60,7 @@ void TCPDataListenerProducer::startProcessingData(std::string runNumber)
 void TCPDataListenerProducer::stopProcessingData(void)
 {
 	DataProducer::stopProcessingData();
+	TCPListenServer::shutdownAccept();
 }
 
 //==============================================================================
