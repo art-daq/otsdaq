@@ -20,6 +20,7 @@ class TCPServerBase : public virtual TCPSocket
 	virtual ~TCPServerBase(void);
 
 	void startAccept(void);
+	void shutdownAccept(void);
 	void broadcastPacket(const char* message, std::size_t length);
 	void broadcastPacket(const std::string& message);
 	void broadcast(const char* message, std::size_t length);
@@ -50,8 +51,7 @@ class TCPServerBase : public virtual TCPSocket
   private:
 	void closeClientSockets(
 	    void);  ///< This one will also wait until the socket thread is done!
-	int  accept(bool blocking = true);
-	void shutdownAccept(void);
+	int accept(bool blocking = true);
 
 	const int        fMaxConnectionBacklog = 5;
 	unsigned int     fMaxNumberOfClients;

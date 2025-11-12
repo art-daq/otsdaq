@@ -1507,7 +1507,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 	                 tabStr,
 	                 commentStr,
 	                 art.getNode("AddOnParametersLink"),
-	                 "artParameter" /*parameterType*/,
+	                 "daqParameter" /*parameterType*/,
 	                 false /*onlyInsertAtTableParameters*/,
 	                 true /*includeAtTableParameters*/);
 
