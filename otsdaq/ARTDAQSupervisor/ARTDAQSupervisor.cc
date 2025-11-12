@@ -1356,7 +1356,7 @@ try
 		if(!thread_progress_bar_.isComplete())
 		{
 			__SUP_COUT__ << "Not done yet..." << __E__;
-			//attempt to get live view of python output
+			//attempt to get live view of python output (not working and not needed with new Tee Buffer solution)
 			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
 
 			RunControlStateMachine::
