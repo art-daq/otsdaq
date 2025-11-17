@@ -300,6 +300,9 @@ void GatewaySupervisor::init(void)
 				{
 					++lineNumber;
 
+					if(strlen(line) == 0 || line[0] == '#') //skip empty or commented lines
+						continue;
+
 					// Process each line to populate portTranslationMap_
 					std::vector<std::string> parts =
 					    StringMacros::getVectorFromString(std::string(line), {'|'});
