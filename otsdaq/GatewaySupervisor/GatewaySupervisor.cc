@@ -10250,11 +10250,10 @@ void GatewaySupervisor::handleGetApplicationIdRequest(
 	if(portTranslationMap && portTranslationMap->size())
 	{
 		__COUTTV__(StringMacros::mapToString(*portTranslationMap));
-
 		__COUTTV__(requestOrigin);
-		if(requestOrigin.find(requestOrigin) != std::string::npos)
+		if(portTranslationMap->find(requestOrigin) != portTranslationMap->end())
 		{
-			__COUTT__ << "Doing address translation for application ID." << __E__;
+			__COUTT__ << "Doing address translation for application ID request from origin: " << requestOrigin << __E__;
 			doAddressTranslation = true;
 		}
 	}
