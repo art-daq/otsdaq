@@ -300,7 +300,8 @@ void GatewaySupervisor::init(void)
 				{
 					++lineNumber;
 
-					if(strlen(line) == 0 || line[0] == '#') //skip empty or commented lines
+					if(strlen(line) == 0 ||
+					   line[0] == '#')  //skip empty or commented lines
 						continue;
 
 					// Process each line to populate portTranslationMap_
@@ -10253,7 +10254,9 @@ void GatewaySupervisor::handleGetApplicationIdRequest(
 		__COUTTV__(requestOrigin);
 		if(portTranslationMap->find(requestOrigin) != portTranslationMap->end())
 		{
-			__COUTT__ << "Doing address translation for application ID request from origin: " << requestOrigin << __E__;
+			__COUTT__
+			    << "Doing address translation for application ID request from origin: "
+			    << requestOrigin << __E__;
 			doAddressTranslation = true;
 		}
 	}
