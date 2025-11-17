@@ -277,23 +277,24 @@ void GatewaySupervisor::init(void)
 		}
 		catch(...)
 		{
-			__COUT__ << "OTS_PORT_TRANSLATION_FILE_PATH not set; no port translation will be used."
+			__COUT__ << "OTS_PORT_TRANSLATION_FILE_PATH not set; no port translation "
+			            "will be used."
 			         << __E__;
 		}
-	
+
 		portTranslationMap_.clear();
 		if(portTranslationPath != "")
 		{
 			// example load outcome:
 			//	portTranslationMap_["http://localhost:3075"]["http://mu2edaq14-data.fnal.gov:3076"] = "http://localhost:3079";
 			//	portTranslationMap_["http://localhost:3075"]["http://mu2edaq13-data.fnal.gov:3077"] = "http://localhost:3078"
-			
+
 			__COUTV__(portTranslationPath);
-			FILE *fp = fopen(portTranslationPath.c_str(), "r");
+			FILE* fp = fopen(portTranslationPath.c_str(), "r");
 			if(fp)
 			{
 				// Read and process the port translation file
-				char line[5000];
+				char     line[5000];
 				uint32_t lineNumber = 0;
 				while(fgets(line, sizeof(line), fp))
 				{
@@ -315,8 +316,8 @@ void GatewaySupervisor::init(void)
 					}
 					else
 					{
-						__SS__ << "Invalid line #" << lineNumber << " in port translation file: " << line
-						             << __E__;
+						__SS__ << "Invalid line #" << lineNumber
+						       << " in port translation file: " << line << __E__;
 						__SS_THROW__;
 					}
 				}
@@ -324,8 +325,9 @@ void GatewaySupervisor::init(void)
 			}
 			else
 			{
-				__COUT_ERR__ << "Could not open port translation file at " << portTranslationPath
-				         << "; no port translation will be used." << __E__;
+				__COUT_ERR__ << "Could not open port translation file at "
+				             << portTranslationPath
+				             << "; no port translation will be used." << __E__;
 			}
 			__SUP_COUTTV__(StringMacros::mapToString(portTranslationMap_));
 		}
@@ -8191,8 +8193,8 @@ try
 				remoteGatewayApps = remoteGatewayApps_;
 			}
 
-			
-			std::string requestOrigin = StringMacros::decodeURIComponent(CgiDataUtilities::postData(cgiIn, "RequestOrigin"));
+			std::string requestOrigin = StringMacros::decodeURIComponent(
+			    CgiDataUtilities::postData(cgiIn, "RequestOrigin"));
 			bool doAddressTranslation = false;
 			if(requestOrigin.size() && portTranslationMap_.size())
 			{
@@ -8201,7 +8203,9 @@ try
 				__SUP_COUTTV__(requestOrigin);
 				if(portTranslationMap_.find(requestOrigin) != portTranslationMap_.end())
 				{
-					__SUP_COUT__ << "Doing address translation for icons from request origin: " << requestOrigin << __E__;
+					__SUP_COUT__
+					    << "Doing address translation for icons from request origin: "
+					    << requestOrigin << __E__;
 					doAddressTranslation = true;
 				}
 			}
@@ -8349,9 +8353,8 @@ try
 				{
 					__COUTTV__(requestOrigin);
 					__COUTTV__(icon.windowContentURL_);
-					std::string translatedURL =
-					    translateURLForRequestOrigin(
-					        icon.windowContentURL_, requestOrigin, portTranslationMap_);
+					std::string translatedURL = translateURLForRequestOrigin(
+					    icon.windowContentURL_, requestOrigin, portTranslationMap_);
 					__COUTTV__(translatedURL);
 					iconString += "," + translatedURL;
 				}
@@ -10165,8 +10168,8 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 //==============================================================================
 /// translateURLForRequestOrigin
 ///		Converts url host:port to a new host:port based on the translation
-///			table (to be provided by system admin prior to starting ots in normal mode). 
-///	
+///			table (to be provided by system admin prior to starting ots in normal mode).
+///
 ///	Note: requestOrigin must be parsed in advance to be http(s)://host:port
 ///
 ///	Steps:
@@ -10175,64 +10178,71 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 /// 		if combo found, then return translation host+port + rest of url
 /// 		else return url unchanged
 /// 	else return url unchanged
-/// 
+///
 ///  for example, requestOrigin == "https://gateway1:8443" and url = "http://host:2016/urnblah"
 ///  requestHost = requestOrigin.substr(0,pos(:))
 ///  portTranslationMap_.find(requestHost) then 'host matches translation host'
-/// 	
-/// 
+///
+///
 ///  of for example, requestOrigin == "http://host:2015"  and url = "http://host:2016/urnblah"
-/// 
+///
 ///  of for example, requestOrigin == "http://localhost:2015"  and url = "http://host:2016/urnblah"
-std::string GatewaySupervisor::translateURLForRequestOrigin(const std::string& url, const std::string& requestOrigin,
-	std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, 
-			std::string /* translatedHostPort */>>&
-							portTranslationMap)
+std::string GatewaySupervisor::translateURLForRequestOrigin(
+    const std::string&                                        url,
+    const std::string&                                        requestOrigin,
+    std::map<std::string /* requestOrigin */,
+             std::map<std::string /* requestUrlHostPort */,
+                      std::string /* translatedHostPort */>>& portTranslationMap)
 {
 	__COUT__ << "Translating URL: " << url << " for request origin: " << requestOrigin
 	         << __E__;
 
-	// Have: std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, 
+	// Have: std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */,
 	// 		std::string /* translatedHostPort */>>
 	// 						portTranslationMap_
-	__COUTVS__(2,StringMacros::mapToString(portTranslationMap));	
+	__COUTVS__(2, StringMacros::mapToString(portTranslationMap));
 
 	auto it = portTranslationMap.find(requestOrigin);
 	if(it == portTranslationMap.end())
 	{
 		__COUTT__ << "No port translation found for request origin: " << requestOrigin
-		         << __E__;
+		          << __E__;
 		return url;
 	}
-	size_t pos = 0; //url host+port end position
+	size_t pos = 0;  //url host+port end position
 	if(url.size() > 7 && url[0] == 'h' && url[1] == 't' && url[2] == 't' &&
-		url[3] == 'p' && (
-			(url[4] == ':' && url[5] == '/' && url[6] == '/') || 
-			(url[4] == 's' && url[5] == ':' && url[6] == '/' && url[7] == '/'))) 
+	   url[3] == 'p' &&
+	   ((url[4] == ':' && url[5] == '/' && url[6] == '/') ||
+	    (url[4] == 's' && url[5] == ':' && url[6] == '/' && url[7] == '/')))
 		pos = url.find("/", 7);  //after "http(s)://"
 	else
 		pos = url.find("/", 0);  //from beginning
 	std::string urlHostPort = url.substr(0, pos);
-	auto it2 = it->second.find(urlHostPort);
+	auto        it2         = it->second.find(urlHostPort);
 	if(it2 == it->second.end())
 	{
-		__COUTT__ << "No port translation found for URL host+port '" << urlHostPort <<
-		         "' for request origin: " << requestOrigin << __E__;
+		__COUTT__ << "No port translation found for URL host+port '" << urlHostPort
+		          << "' for request origin: " << requestOrigin << __E__;
 		return url;
 	}
-	__COUTT__ << "Port translation found: " << urlHostPort << " --> "
-	         << it2->second << " for request origin: " << requestOrigin << __E__;
+	__COUTT__ << "Port translation found: " << urlHostPort << " --> " << it2->second
+	          << " for request origin: " << requestOrigin << __E__;
 
 	return it2->second + (pos != std::string::npos ? url.substr(pos) : "");
 }  // end translateURLForRequestOrigin()
 
 //==============================================================================
 void GatewaySupervisor::handleGetApplicationIdRequest(
-    AllSupervisorInfo* allSupervisorInfo, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut,
-	std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, 
-			std::string /* translatedHostPort */>>* portTranslationMap /* = nullptr */)
+    AllSupervisorInfo* allSupervisorInfo,
+    cgicc::Cgicc&      cgiIn,
+    HttpXmlDocument&   xmlOut,
+    std::map<std::string /* requestOrigin */,
+             std::map<std::string /* requestUrlHostPort */,
+                      std::string /* translatedHostPort */>>*
+        portTranslationMap /* = nullptr */)
 {
-	std::string requestOrigin = StringMacros::decodeURIComponent(CgiDataUtilities::postData(cgiIn, "RequestOrigin"));
+	std::string requestOrigin = StringMacros::decodeURIComponent(
+	    CgiDataUtilities::postData(cgiIn, "RequestOrigin"));
 	bool doAddressTranslation = false;
 	if(portTranslationMap && portTranslationMap->size())
 	{
@@ -10245,7 +10255,7 @@ void GatewaySupervisor::handleGetApplicationIdRequest(
 			doAddressTranslation = true;
 		}
 	}
-	
+
 	std::string classNeedle =
 	    StringMacros::decodeURIComponent(CgiDataUtilities::getData(cgiIn, "classNeedle"));
 	__COUTV__(classNeedle);
@@ -10270,16 +10280,15 @@ void GatewaySupervisor::handleGetApplicationIdRequest(
 		{
 			__COUTTV__(requestOrigin);
 			__COUTTV__(appInfo.getURL());
-			std::string translatedURL =
-				translateURLForRequestOrigin(
-					appInfo.getURL(), requestOrigin, *portTranslationMap);
+			std::string translatedURL = translateURLForRequestOrigin(
+			    appInfo.getURL(), requestOrigin, *portTranslationMap);
 			__COUTTV__(translatedURL);
 			xmlOut.addTextElementToData("url",
-								translatedURL);  // get application url
+			                            translatedURL);  // get application url
 		}
 		else
 			xmlOut.addTextElementToData("url",
-								appInfo.getURL());  // get application url
+			                            appInfo.getURL());  // get application url
 
 		xmlOut.addTextElementToData("context",
 		                            appInfo.getContextName());  // get context
