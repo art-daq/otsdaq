@@ -287,7 +287,7 @@ class WorkLoopManager;
 
 		bool 				supervisorGuiHasBeenLoaded_;  ///< use to indicate first access by user of ots since execution
 		static WebUsers   	theWebUsers_;
-		std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, 
+		std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */,
 			std::string /* translatedHostPort */>>
 							portTranslationMap_;  ///< map of translation ports, if only certain host+port ranges are allowed at gateway for example
 
