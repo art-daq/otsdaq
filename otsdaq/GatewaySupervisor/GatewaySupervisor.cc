@@ -286,8 +286,8 @@ void GatewaySupervisor::init(void)
 		if(portTranslationPath != "")
 		{
 			// example load outcome:
-			//	portTranslationMap_["http://localhost:3075"]["http://mu2edaq14-data.fnal.gov:3076"] = "http://localhost:3079";
-			//	portTranslationMap_["http://localhost:3075"]["http://mu2edaq13-data.fnal.gov:3077"] = "http://localhost:3078"
+			//	portTranslationMap_["http://localhost:3075"]["http://hostname1:3076"] = "http://localhost:3079";
+			//	portTranslationMap_["http://localhost:3075"]["http://hostname2:3077"] = "http://localhost:3078"
 
 			__COUTV__(portTranslationPath);
 			FILE* fp = fopen(portTranslationPath.c_str(), "r");
@@ -8872,7 +8872,7 @@ try
 
 					GatewaySupervisor::launchStartOneServerCommand(
 					    commandSs.str(),
-					    //"LAUNCH_INSTANCE;mu2ehwdev;mu2e-cfo-01.fnal.gov;/home/mu2ehwdev/ots_spack_fast;Normal;shift1",
+					    //"LAUNCH_INSTANCE;user;hostname;/home/user/ots_spack_fast;Normal;shift1",
 					    CorePropertySupervisorBase::theConfigurationManager_,
 					    getContextUID());
 
