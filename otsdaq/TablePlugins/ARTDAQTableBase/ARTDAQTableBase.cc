@@ -275,8 +275,13 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 
 					// skip connecting : if special keywords found
 					OUT << parameter.second.getNode(parameterPreamble + "Value")
-					           .getValue()
-					    << "\n";
+					           .getValue();
+					
+					// add comment indicating where parameter came from
+					OUT << " // from table " << parameterGroupLink.getTableName() << "/" 
+						<< parameter.first;
+
+					OUT << "\n";
 
 					if(!parameter.second.status())
 						POPCOMMENT;
@@ -298,8 +303,13 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 			// skip connecting : if special keywords found
 			if(key.find("#include") == std::string::npos)
 				OUT << ":";
-			OUT << parameter.second.getNode(parameterPreamble + "Value").getValue()
-			    << "\n";
+			OUT << parameter.second.getNode(parameterPreamble + "Value").getValue();
+			
+			// add comment indicating where parameter came from
+			OUT << " // from table " << parameterGroupLink.getTableName() << "/" 
+				<< parameter.first;
+
+			OUT << "\n";
 
 			if(!parameter.second.status())
 				POPCOMMENT;

@@ -49,6 +49,21 @@ FEVInterface::FEVInterface(const std::string&       interfaceUID,
 		    << __E__;
 	}
 
+	//add generic FE Macros that exist for all FEVInterfaces
+	{
+		registerFEMacroFunction(
+			"Slow Controls Pause/Resume",
+				static_cast<FEVInterface::frontEndMacroFunction_t>(
+						&FEVInterface::PauseResumeSlowControls),
+							std::vector<std::string>{"Pause Slow Controls (Default = false)"
+												},
+							std::vector<std::string>{"Result"},
+						1,   // requiredUserPermissions
+						"255",
+						"This FE Macro is used to Pause or Resume the Slow Controls workloop, which could be valuable while debugging front-ends."
+		);
+	} //end add generic FE Macros that exist for all FEVInterfaces
+
 	__GEN_COUT__ << "Constructed." << __E__;
 }  // end constructor()
 
@@ -60,6 +75,19 @@ FEVInterface::~FEVInterface(void)
 	// Instead use __GEN_COUT__ which decorates using mfSubject_
 	__GEN_COUT__ << "Destructed." << __E__;
 }  // end destructor()
+
+//========================================================================
+void FEVInterface::PauseResumeSlowControls(__ARGS__)
+{
+	slowControlsWorkLoopShouldRun_ = __GET_ARG_IN__("Pause Slow Controls (Default = false)", bool, false);
+	__FE_COUTV__(slowControlsWorkLoopShouldRun_);
+
+	std::stringstream outss;
+	outss << "Slow Controls workloop is " << (slowControlsWorkLoopShouldRun_ ? "paused." : "active.");
+	
+	__SET_ARG_OUT__(
+	    "Result", outss.str());
+}  // end PauseResumeSlowControls()
 
 //==============================================================================
 void FEVInterface::configureSlowControls(void)
@@ -374,13 +402,14 @@ try
 
 	unsigned int numOfReadAccessChannels = 0;
 	bool         firstTime               = true;
-
 	while(slowControlsWorkLoop_.getContinueWorkLoop())
 	{
 		// __FE_COUT__ << "..." << __E__;
 
 		sleep(1);  // seconds
 		++timeCounter;
+		if(!slowControlsWorkLoopShouldRun_)
+			continue;
 
 		if(txBuffer.size())
 			__FE_COUT__ << "txBuffer sz=" << txBuffer.size() << __E__;

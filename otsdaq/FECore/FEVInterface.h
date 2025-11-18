@@ -144,7 +144,6 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	void 								startSlowControlsWorkLoop	(void) { slowControlsWorkLoop_.startWorkLoop(); }
 	void 								stopSlowControlsWorkLoop	(void) { slowControlsWorkLoop_.stopWorkLoop(); }
 
-
 	static const std::string 						UNKNOWN_TYPE;
 
   protected:
@@ -153,6 +152,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	std::map<std::string,
 		FESlowControlsChannel>::iterator			slowControlsChannelsIterator_;
 	FESlowControlsWorkLoop                       	slowControlsWorkLoop_;
+	std::atomic<bool> 								slowControlsWorkLoopShouldRun_{true};
 	/// end Slow Controls
 	/////////
 	///
@@ -267,6 +267,8 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	void 							sendToFrontEnd				(const std::string& targetInterfaceID, const T& value) const;
 	void 							runFrontEndMacro			(const std::string& targetInterfaceID,const std::string& feMacroName, const std::vector<FEVInterface::frontEndMacroArg_t>& inputArgs, std::vector<FEVInterface::frontEndMacroArg_t>& outputArgs) const;
 
+	void 							PauseResumeSlowControls		(__ARGS__);
+	
 	/////////
 	/// receiveFromFrontEnd
 	///	* can be used for source interface ID to accept a message from any front-end
