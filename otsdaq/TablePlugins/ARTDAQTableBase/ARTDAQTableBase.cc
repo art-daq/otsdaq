@@ -372,6 +372,7 @@ std::string ARTDAQTableBase::insertModuleType(std::ostream&     out,
                                               ConfigurationTree moduleTypeNode)
 {
 	std::string value = moduleTypeNode.getValue();
+	__COUTTV__(parentPath);
 	OUTCF((value.find("@table::") == std::string::npos ? "module_type: " : "" ) << 
 		value,
 		"" /* comment */,
