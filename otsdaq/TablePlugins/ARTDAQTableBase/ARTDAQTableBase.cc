@@ -23,6 +23,23 @@ using namespace ots;
 
 // clang-format off
 
+#define				FCL_COMMENT_POSITION	65
+#define				TABSZ					4
+
+/// OUTCF:   (X)string + (C)comment, with tree-path + (F)field
+#define				OUTCF(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << parentPath << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
+/// OUTC:    (X)string + (C)comment, with tree-path
+#define				OUTC(X,C)				OUTCF(X,C,"")	
+/// OUTCLF:  (X)string + (C)comment, with local tree-path + (F)field
+#define				OUTCLF(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath << std::string(std::string(F).size()?("/" + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
+/// OUTCL:   (X)string + (C)comment, with local tree-path
+#define				OUTCL(X,C)				OUTCLF(X,C,"")	
+/// OUTCL2F: (X)string + (C)comment, with local2 tree-path + (F)field
+#define				OUTCL2F(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath2 << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
+/// OUTCL2:  (X)string + (C)comment, with local2 tree-path
+#define				OUTCL2(X,C)				OUTCL2F(X,C,"")
+
+
 const std::string 	ARTDAQTableBase::ARTDAQ_FCL_PATH = std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/";
 const std::string 	ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH = std::string(__ENV__("SERVICE_DATA_PATH")) + "/ConfigurationGUI_artdaqLayouts/";
 const bool			ARTDAQTableBase::ARTDAQ_DONOTWRITE_FCL = ((getenv("OTS_FCL_DONOTWRITE") == NULL) ? false : true);
@@ -244,6 +261,7 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 void ARTDAQTableBase::insertParameters(std::ostream&      out,
                                        std::string&       tabStr,
                                        std::string&       commentStr,
+									   const std::string& parentPath,
                                        ConfigurationTree  parameterGroupLink,
                                        const std::string& parameterPreamble,
                                        bool onlyInsertAtTableParameters /*=false*/,
@@ -256,10 +274,21 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 		auto otherParameters = parameterGroupLink.getChildren();
 
 		std::string key;
-		//__COUTV__(otherParameters.size());
+		if(TTEST(3))
+		{
+			__COUTVS__(3,otherParameters.size());
+			__COUTVS__(3,onlyInsertAtTableParameters);
+			__COUTVS__(3,includeAtTableParameters);
+		}
+		size_t paramCount = 0;
 		for(auto& parameter : otherParameters)
 		{
 			key = parameter.second.getNode(parameterPreamble + "Key").getValue();
+
+			std::string localParentPath = parentPath + "/" +
+						parameterGroupLink.getParentLinkColumnName() + ":" +
+						parameter.second.getTableName() + "/"
+						+ parameter.second.getValue();
 
 			// handle special keyword @table:: (which imports full tables, usually as
 			// defaults)
@@ -268,20 +297,15 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 				// include @table::
 				if(onlyInsertAtTableParameters || includeAtTableParameters)
 				{
+					++paramCount;
 					if(!parameter.second.status())
 						PUSHCOMMENT;
-
-					OUT << key;
+					
+					__COUTT__ << "Inserting parameter... " << localParentPath << __E__;
 
 					// skip connecting : if special keywords found
-					OUT << parameter.second.getNode(parameterPreamble + "Value")
-					           .getValue();
-
-					// add comment indicating where parameter came from
-					OUT << " // from table " << parameterGroupLink.getTableName() << "/"
-					    << parameter.first;
-
-					OUT << "\n";
+					OUTCL(key << parameter.second.getNode(parameterPreamble + "Value").getValue(),
+						parameter.second.hasComment()?parameter.second.getComment():"");
 
 					if(!parameter.second.status())
 						POPCOMMENT;
@@ -295,28 +319,46 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 			if(onlyInsertAtTableParameters)
 				continue;  // skip all other types
 
+			++paramCount;
 			if(!parameter.second.status())
 				PUSHCOMMENT;
 
-			OUT << key;
+			__COUTT__ << "Inserting parameter... " << localParentPath << __E__;
 
 			// skip connecting : if special keywords found
 			if(key.find("#include") == std::string::npos)
-				OUT << ":";
-			OUT << parameter.second.getNode(parameterPreamble + "Value").getValue();
-
-			// add comment indicating where parameter came from
-			OUT << " // from table " << parameterGroupLink.getTableName() << "/"
-			    << parameter.first;
-
-			OUT << "\n";
+			{
+				OUTCL(key << ": " << 
+					parameter.second.getNode(parameterPreamble + "Value").getValue(),
+					parameter.second.hasComment()?parameter.second.getComment():"");
+			}
+			else //#include can not have a comment at end of line, so do before!
+			{
+				OUTCL("# comment for " << key << parameter.second.getNode(parameterPreamble + "Value").getValue(),
+					parameter.second.hasComment()?parameter.second.getComment():"");
+				OUT << key << 
+					parameter.second.getNode(parameterPreamble + "Value").getValue() << "\n";
+			}
 
 			if(!parameter.second.status())
 				POPCOMMENT;
 		}
+
+		if(!paramCount)
+		{
+			__COUTS__(3) << "Empty parameter set found" << __E__;
+			std::string localParentPath = parentPath + "/" +
+						parameterGroupLink.getParentLinkColumnName();
+			OUTCL("# empty parameter set found", "" /* comment*/);
+		}
 	}
-	// else
-	//	__COUT__ << "No parameters found" << __E__;
+	else
+	{
+		__COUTS__(3) << "No parameters found" << __E__;
+		std::string localParentPath = parentPath + "/" +
+					parameterGroupLink.getParentLinkColumnName();
+		OUTCL("# no parameters inserted", "" /* comment*/);
+	}
 
 }  // end insertParameters()
 
@@ -326,15 +368,14 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 std::string ARTDAQTableBase::insertModuleType(std::ostream&     out,
                                               std::string&      tabStr,
                                               std::string&      commentStr,
+                                         const std::string&      parentPath,
                                               ConfigurationTree moduleTypeNode)
 {
 	std::string value = moduleTypeNode.getValue();
-
-	OUT;
-	if(value.find("@table::") == std::string::npos)
-		out << "module_type: ";
-	out << value << "\n";
-
+	OUTCF((value.find("@table::") == std::string::npos ? "module_type: " : "" ) << 
+		value,
+		"" /* comment */,
+		moduleTypeNode.getFieldName());
 	return value;
 }  // end insertModuleType()
 
@@ -343,14 +384,16 @@ std::string ARTDAQTableBase::insertModuleType(std::ostream&     out,
 void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
                                          std::string&      tabStr,
                                          std::string&      commentStr,
+                                         const std::string&      parentPath,
                                          ConfigurationTree daqNode)
 {
-	OUT << "\n\nmetrics: {\n";
-
-	PUSHTAB;
 	auto metricsGroup = daqNode.getNode("daqMetricsLink");
+
+	out << "\n";
+	OUTCF("metrics: {","",metricsGroup.getParentLinkColumnName());
+	PUSHTAB;
 	if(!metricsGroup.isDisconnected())
-	{
+	{						
 		auto metrics = metricsGroup.getChildren();
 		bool sendSystemMetrics(false), sendProcessMetrics(false);
 		for(auto& metric : metrics)
@@ -358,7 +401,15 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 			if(!metric.second.status())
 				PUSHCOMMENT;
 
-			OUT << metric.second.getNode("metricKey").getValue() << ": {\n";
+			__COUTT__ << "Inserting metric... " << parentPath << __E__;
+			std::string localParentPath = parentPath + "/" +
+					metricsGroup.getParentLinkColumnName() + ":" +
+					metric.second.getTableName() + "/"
+					+ metric.second.getValue();
+			__COUTT__ << "Inserting metric... " << localParentPath << __E__;
+
+			OUTCL(metric.second.getNode("metricKey").getValue() << ": {",
+				metric.second.hasComment()?metric.second.getComment():"");
 			PUSHTAB;
 
 			if(metric.second.getNode("sendSystemMetrics").getValue<bool>())
@@ -370,10 +421,12 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 				sendProcessMetrics = true;
 			}
 
-			OUT << "metricPluginType: "
-			    << metric.second.getNode("metricPluginType").getValue() << "\n";
-			OUT << "level_string: "
-			    << metric.second.getNode("metricLevelString").getValue() << "\n";
+			OUTCLF("metricPluginType: "
+					<< metric.second.getNode("metricPluginType").getValue(),
+					"" /* comment */, "metricPluginType");
+			OUTCLF("level_string: "
+					<< metric.second.getNode("metricLevelString").getValue(),
+					"" /* comment */, "metricLevelString");
 
 			auto metricParametersGroup = metric.second.getNode("metricParametersLink");
 			if(!metricParametersGroup.isDisconnected())
@@ -383,36 +436,63 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&     out,
 				{
 					if(!metricParameter.second.status())
 						PUSHCOMMENT;
-
-					OUT << metricParameter.second.getNode("metricParameterKey").getValue()
-					    << ": "
-					    << metricParameter.second.getNode("metricParameterValue")
-					           .getValue()
-					    << "\n";
+					
+					__COUTT__ << "Inserting metric... " << localParentPath << __E__;
+					std::string localParentPath2 = localParentPath + "/" + 
+									metricParametersGroup.getParentLinkColumnName() + ":" +
+									metricParameter.second.getTableName() + "/"
+									+ metricParameter.second.getValue();
+					__COUTT__ << "Inserting metric... " << localParentPath2 << __E__;
+					OUTCL2(metricParameter.second.getNode("metricParameterKey").getValue() << ": " << metricParameter.second.getNode("metricParameterValue").getValue(),
+							metricParameter.second.hasComment()?metricParameter.second.getComment():"");
 
 					if(!metricParameter.second.status())
 						POPCOMMENT;
 				}
 			}
 			POPTAB;
-			OUT << "}\n\n";  // end metric
+			OUT << "} # end " << metric.second.getNode("metricKey").getValue() << "\n\n";  // end metric
 
 			if(!metric.second.status())
 				POPCOMMENT;
-		}
+		} //end metricsGroup children loop
 
+		
+		__COUTT__ << "Inserting metric send... " << parentPath << __E__;
+		std::string localParentPath = parentPath + "/" +
+						metricsGroup.getParentLinkColumnName() + ":" +
+						metricsGroup.getTableName() + "/"
+						+ metricsGroup.getValue();
 		if(sendSystemMetrics)
 		{
-			OUT << "send_system_metrics: true\n";
+			__COUTT__ << "Inserting send_system_metrics... " << localParentPath << __E__;	
+			OUTCLF("send_system_metrics: true ", 
+				"true, if any children are true","*/sendSystemMetrics");
 		}
+		else 
+			OUTCLF("# send_system_metrics: false ", 
+				"true, if any children are true","*/sendSystemMetrics");
+
 		if(sendProcessMetrics)
 		{
-			OUT << "send_process_metrics: true\n";
+			__COUTT__ << "Inserting send_process_metrics... " << localParentPath << __E__;	
+			OUTCLF("send_process_metrics: true ", 
+				"true, if any children are true","*/sendProcessMetrics");
 		}
+		else 
+			OUTCLF("# send_process_metrics: false ", 
+				"true, if any children are true","*/sendProcessMetrics");
+	} //end connected daq metrics link handling
+	else 
+	{
+		__COUTS__(3) << "No metrics found" << __E__;
+		std::string localParentPath = parentPath + "/" +
+					metricsGroup.getParentLinkColumnName();
+		OUTCL("# no metrics found", "" /* comment*/);
 	}
 
 	POPTAB;
-	OUT << "}\n\n";  // end metrics
+	OUT << "} # end metrics\n\n";  // end metrics
 }  // end insertMetricsBlock()
 
 //==============================================================================
@@ -563,6 +643,7 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 	std::string tabStr     = "";
 	std::string commentStr = "";
 
+	__COUTV__(filename);
 	out.open(filename, std::fstream::out | std::fstream::trunc);
 	if(out.fail())
 	{
@@ -570,171 +651,238 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 		__SS_THROW__;
 	}
 
-	//--------------------------------------
-	// header
-	OUT << "###########################################################" << __E__;
-	OUT << "#" << __E__;
-	OUT << "# artdaq reader fcl configuration file produced by otsdaq." << __E__;
-	OUT << "# 	Creation time:           \t" << StringMacros::getTimestampString()
-	    << __E__;
-	OUT << "# 	Original filename:       \t" << filename << __E__;
-	OUT << "#	otsdaq-ARTDAQ Reader UID:\t" << boardReaderNode.getValue() << __E__;
-	OUT << "#" << __E__;
-	OUT << "###########################################################" << __E__;
-	OUT << "\n\n";
-
-	// no primary link to table tree for reader node!
-	try
+	try //catch and give error in fcl file if issue!
 	{
-		if(boardReaderNode.isDisconnected())
+		//--------------------------------------
+		// header
+		OUT << "###########################################################" << __E__;
+		OUT << "#" << __E__;
+		OUT << "# artdaq " << getTypeString(ARTDAQAppType::BoardReader) << " fcl configuration file produced by otsdaq." << __E__;
+		OUT << "# 	Creation time:           \t" << StringMacros::getTimestampString()
+			<< __E__;
+		OUT << "# 	Original filename:       \t" << filename << __E__;
+		OUT << "#	otsdaq-ARTDAQ " << getTypeString(ARTDAQAppType::BoardReader) << " UID:\t" << boardReaderNode.getValue() << __E__;
+		OUT << "#" << __E__;
+		OUT << "###########################################################" << __E__;
+		OUT << "\n\n";
+
+		
+		// no primary link to table tree for reader node!
+		try
 		{
-			// create empty fcl
-			OUT << "{}\n\n";
-			out.close();
-			return;
-		}
-	}
-	catch(const std::runtime_error&)
-	{
-		//__COUT__ << "Ignoring error, assume this a valid UID node." << __E__;
-		// error is expected here for UIDs.. so just ignore
-		// this check is valuable if source node is a unique-Link node, rather than UID
-	}
-
-	//--------------------------------------
-	// handle preamble parameters
-	//_COUT__ << "Inserting preamble parameters..." << __E__;
-	insertParameters(out,
-	                 tabStr,
-	                 commentStr,
-	                 boardReaderNode.getNode("preambleParametersLink"),
-	                 "daqParameter" /*parameterType*/,
-	                 false /*onlyInsertAtTableParameters*/,
-	                 true /*includeAtTableParameters*/);
-
-	//--------------------------------------
-	// handle daq
-	OUT << "daq: {\n";
-
-	// fragment_receiver
-	PUSHTAB;
-	OUT << "fragment_receiver: {\n";
-
-	PUSHTAB;
-	{
-		// plugin type and fragment data-type
-		OUT << "generator"
-		    << ": " << boardReaderNode.getNode("daqGeneratorPluginType").getValue()
-		    << ("\t #daq generator plug-in type") << "\n";
-		OUT << "fragment_type"
-		    << ": " << boardReaderNode.getNode("daqGeneratorFragmentType").getValue()
-		    << ("\t #generator data fragment type") << "\n\n";
-
-		// shared and unique parameters
-		auto parametersLink = boardReaderNode.getNode("daqParametersLink");
-		if(!parametersLink.isDisconnected())
-		{
-			auto parameters = parametersLink.getChildren();
-			for(auto& parameter : parameters)
+			if(boardReaderNode.isDisconnected())
 			{
-				if(!parameter.second.status())
-					PUSHCOMMENT;
-
-				__COUTS__(20) << parameter.second.getNode("daqParameterKey").getValue()
-				              << ": "
-				              << parameter.second.getNode("daqParameterValue").getValue()
-				              << "\n";
-
-				auto comment =
-				    parameter.second.getNode(TableViewColumnInfo::COL_NAME_COMMENT);
-				OUT << parameter.second.getNode("daqParameterKey").getValue() << ": "
-				    << parameter.second.getNode("daqParameterValue").getValue()
-				    << (comment.isDefaultValue() ? "" : ("\t # " + comment.getValue()))
-				    << "\n";
-
-				if(!parameter.second.status())
-					POPCOMMENT;
+				// create empty fcl
+				OUT << "{}\n\n";
+				out.close();
+				return;
 			}
 		}
-
-		try  //try to get daqFragmentId
+		catch(const std::runtime_error&)
 		{
-			auto        fragmentId = boardReaderNode.getNode("daqFragmentIDs");
-			std::string value      = fragmentId.getValue();
-			if(value.size() < 2 || value[0] != '[' || value[value.size() - 1] != ']')
+			__COUTT__ << "Ignoring error, assume this a valid UID node." << __E__;
+			// error is expected here for UIDs.. so just ignore
+			// this check is valuable if source node is a unique-Link node, rather than UID
+		}
+
+		std::string parentPath = 
+							boardReaderNode.getTableName() + "/"
+							+ boardReaderNode.getValue();
+
+		OUTC("# start of " << getTypeString(ARTDAQAppType::BoardReader) << 
+			" '" << boardReaderNode.getValue() << "' fcl",
+			"" /* comment */);		
+
+		//--------------------------------------
+		// handle preamble parameters
+		__COUTT__ << "Inserting " << getTypeString(ARTDAQAppType::BoardReader) << " preamble parameters... " << parentPath << __E__;
+		out << "\n";
+		insertParameters(out,
+						tabStr,
+						commentStr,
+						parentPath,
+						boardReaderNode.getNode("preambleParametersLink"),
+						"daqParameter" /*parameterType*/,
+						false /*onlyInsertAtTableParameters*/,
+						true /*includeAtTableParameters*/);
+
+		//--------------------------------------
+		// handle daq
+		__COUTT__ << "Generating daq block..." << __E__;
+		out << "\n";
+		OUTC("daq: {","" /* comment */);
+		PUSHTAB;
+
+		// fragment_receiver
+		out << "\n";
+		OUT << "fragment_receiver: {\n";
+		PUSHTAB;
+		{
+			// plugin type and fragment data-type
+			OUTCF("generator" << ": " << boardReaderNode.getNode("daqGeneratorPluginType").getValue(),
+				"daq generator plug-in type" /* comment */, "daqGeneratorPluginType" /* field*/);
+			OUTCF("fragment_type" << ": " << boardReaderNode.getNode("daqGeneratorFragmentType").getValue(),
+				"generator data fragment type" /* comment */, "daqGeneratorFragmentType" /* field*/);
+
+			// shared and unique parameters
+			auto parametersLink = boardReaderNode.getNode("daqParametersLink");
+			if(!parametersLink.isDisconnected())
 			{
-				__SS__ << "Invalid 'daqFragmentIDs' - the value must be a valid fcl "
-				          "array with starting and ending square brackets: [ ]"
-				       << __E__;
-				__SS_THROW__;
+				auto parameters = parametersLink.getChildren();
+				for(auto& parameter : parameters)
+				{
+					if(!parameter.second.status())
+						PUSHCOMMENT;
+
+					__COUTS__(20) << parameter.second.getNode("daqParameterKey").getValue()
+								<< ": "
+								<< parameter.second.getNode("daqParameterValue").getValue()
+								<< "\n";
+					
+					__COUTT__ << "Inserting " << getTypeString(ARTDAQAppType::BoardReader) << " DAQ Parameters... " << parentPath << __E__;
+					std::string localParentPath = parametersLink.getParentTableName() + "/" + 
+										parametersLink.getParentRecordName() + "/" +
+										parametersLink.getParentLinkColumnName() + ":" +
+										parameter.second.getTableName() + "/"
+										+ parameter.second.getValue();
+					__COUTT__ << "Inserting " << getTypeString(ARTDAQAppType::BoardReader) << " DAQ Parameters... " << localParentPath << __E__;
+
+					OUTCL(parameter.second.getNode("daqParameterKey").getValue() << ": " << parameter.second.getNode("daqParameterValue").getValue(),
+						parameter.second.hasComment()?parameter.second.getComment():"");
+
+					if(!parameter.second.status())
+						POPCOMMENT;
+				}
 			}
-			OUT << "fragment_ids: " << fragmentId.getValue() << __E__;
-			__COUTS__(20) << "fragment_ids: " << fragmentId.getValue() << __E__;
+			else
+			{
+				__COUTS__(3) << "No daq parameters found" << __E__;
+				std::string localParentPath = parentPath + "/" +
+							parametersLink.getParentLinkColumnName();
+				OUTCL("# no daq parametersfound", "" /* comment*/);
+			}
+
+			try  //try to get daqFragmentId
+			{
+				auto        fragmentId = boardReaderNode.getNode("daqFragmentIDs");
+				std::string value      = fragmentId.getValue();
+				if(value.size() < 2 || value[0] != '[' || value[value.size() - 1] != ']')
+				{
+					__SS__ << "Invalid 'daqFragmentIDs' - the value must be a valid fcl "
+							"array with starting and ending square brackets: [ ]"
+						<< __E__;
+					__SS_THROW__;
+				}
+				__COUTS__(20) << "fragment_ids: " << fragmentId.getValue() << __E__;
+				OUTCF("fragment_ids: " << fragmentId.getValue(),"" /* comment */, "daqFragmentIDs");				
+			}
+			catch(...)
+			{
+				__COUT__
+					<< "Ignoring missing fragment_id column associated with Board Reader."
+					<< __E__;
+				
+				OUTCF("# fragment_ids not specified, but could be","", "daqFragmentIDs");
+			}
+
+			OUT << "\n";  // end daq board reader parameters
 		}
-		catch(...)
+
+		OUT << "destinations: { # empty placeholder, '" << getTypeString(ARTDAQAppType::BoardReader) << 
+			"' destinations handled by artdaq interface\n";
+		OUT << "}\n\n";  // end destinations
+
+		OUT << "routing_table_config: {\n";
+		PUSHTAB;
+
+		auto readerSubsystemID   = 1;
+		auto readerSubsystemLink = boardReaderNode.getNode("SubsystemLink");
+		if(!readerSubsystemLink.isDisconnected())
 		{
-			__COUT__
-			    << "Ignoring missing fragment_id column associated with Board Reader."
-			    << __E__;
+			readerSubsystemID = getSubsytemId(readerSubsystemLink);
+		}
+		if(info_.subsystems[readerSubsystemID].hasRoutingManager)
+		{
+			std::string localParentPath = parentPath + "/" +
+				readerSubsystemLink.getParentLinkColumnName() + ":" + 
+				readerSubsystemLink.getTableName() + "/" + 
+				readerSubsystemLink.getValue();
+			__COUTT__ << "Inserting routing manager... " << localParentPath << __E__;
+			OUTCL("use_routing_manager: true","auto-generated because subsystem '" +
+					std::to_string(readerSubsystemID) + "' has Routing Manager added");
+
+			OUTCLF("routing_manager_hostname: \""
+				<< info_.subsystems[readerSubsystemID].routingManagerHost << "\"",
+				"" /* comment */,
+				ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME);
+			OUT << "table_update_port: 0\n";
+			OUT << "table_update_address: \"0.0.0.0\"\n";
+			OUT << "table_update_multicast_interface: \"0.0.0.0\"\n";
+			OUT << "table_acknowledge_port : 0\n";
+			OUT << "routing_timeout_ms: " << routingTimeoutMs << "\n";
+			OUT << "routing_retry_count: " << routingRetryCount << "\n";
+		}
+		else
+		{
+			OUTCF("use_routing_manager: false","auto-generated if subsystem '" +
+					std::to_string(readerSubsystemID) + "' has Routing Manager added",
+					readerSubsystemLink.getParentLinkColumnName());
 		}
 
-		OUT << "\n";  // end daq board reader parameters
+		POPTAB;
+		OUT << "}\n";  // end routing_table_config
+
+		POPTAB;
+		OUT << "} # end fragment_receiver\n";  // end fragment_receiver
+		
+		insertMetricsBlock(OUT, tabStr, commentStr, parentPath, boardReaderNode);
+
+		POPTAB;
+		OUT << "} # end daq\n\n";  // end daq
+
+		//--------------------------------------
+		// handle ALL add-on parameters
+		parentPath = boardReaderNode.getTableName() + "/"
+							+ boardReaderNode.getValue();
+		__COUTT__ << "Inserting " << getTypeString(ARTDAQAppType::BoardReader) << " add-on parameters... " << parentPath << __E__;
+		insertParameters(out,
+						tabStr,
+						commentStr,
+						parentPath,
+						boardReaderNode.getNode("addOnParametersLink"),
+						"daqParameter" /*parameterType*/,
+						false /*onlyInsertAtTableParameters*/,
+						true /*includeAtTableParameters*/);
+		out << "\n";
+		OUTC("# end of " << getTypeString(ARTDAQAppType::BoardReader) << 
+			" '" << boardReaderNode.getValue() << "' fcl",
+			"" /* comment */);
+		__COUTT__ << "outputBoardReaderFHICL DONE" << __E__;
 	}
-
-	OUT << "destinations: {\n";
-
-	OUT << "}\n\n";  // end destinations
-
-	OUT << "routing_table_config: {\n";
-	PUSHTAB;
-
-	auto readerSubsystemID   = 1;
-	auto readerSubsystemLink = boardReaderNode.getNode("SubsystemLink");
-	if(!readerSubsystemLink.isDisconnected())
+	catch(...)
 	{
-		readerSubsystemID = getSubsytemId(readerSubsystemLink);
+		__SS__ << "\n\nError while generating FHiCL for " << getTypeString(ARTDAQAppType::BoardReader) << " node at filename '"
+		             << filename << "'"
+		             << __E__;
+		try
+		{
+			throw;
+		}
+		catch(const std::runtime_error& e)
+		{
+			ss << " Here is the error: " << e.what() << __E__;
+		}
+		catch(const std::exception& e)
+		{
+			ss << " Here is the error: " << e.what() << __E__;
+		}
+		out << ss.str();
+		out.close();
+		__SS_THROW__;
 	}
-	if(info_.subsystems[readerSubsystemID].hasRoutingManager)
-	{
-		OUT << "use_routing_manager: true\n";
-		OUT << "routing_manager_hostname: \""
-		    << info_.subsystems[readerSubsystemID].routingManagerHost << "\"\n";
-		OUT << "table_update_port: 0\n";
-		OUT << "table_update_address: \"0.0.0.0\"\n";
-		OUT << "table_update_multicast_interface: \"0.0.0.0\"\n";
-		OUT << "table_acknowledge_port : 0\n";
-		OUT << "routing_timeout_ms: " << routingTimeoutMs << "\n";
-		OUT << "routing_retry_count: " << routingRetryCount << "\n";
-	}
-	else
-	{
-		OUT << "use_routing_manager: false\n";
-	}
-
-	POPTAB;
-	OUT << "}\n";  // end routing_table_config
-
-	POPTAB;
-	OUT << "}\n\n";  // end fragment_receiver
-
-	insertMetricsBlock(OUT, tabStr, commentStr, boardReaderNode);
-
-	POPTAB;
-	OUT << "}\n\n";  // end daq
-
-	//--------------------------------------
-	// handle ALL add-on parameters
-	//__COUT__ << "Inserting add-on parameters" << __E__;
-	insertParameters(out,
-	                 tabStr,
-	                 commentStr,
-	                 boardReaderNode.getNode("addOnParametersLink"),
-	                 "daqParameter" /*parameterType*/,
-	                 false /*onlyInsertAtTableParameters*/,
-	                 true /*includeAtTableParameters*/);
 
 	out.close();
-}  // end outputReaderFHICL()
+}  // end outputBoardReaderFHICL()
 
 //==============================================================================
 /// outputDataReceiverFHICL
@@ -764,6 +912,7 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 	std::string tabStr     = "";
 	std::string commentStr = "";
 
+	__COUTV__(filename);
 	outf.open(filename, std::fstream::out | std::fstream::trunc);
 	if(outf.fail())
 	{
@@ -771,168 +920,263 @@ void ARTDAQTableBase::outputDataReceiverFHICL(
 		__SS_THROW__;
 	}
 
-	//--------------------------------------
-	// header
-	OUT << "###########################################################" << __E__;
-	OUT << "#" << __E__;
-	OUT << "# artdaq " << getTypeString(appType)
-	    << " fcl configuration file produced by otsdaq." << __E__;
-	OUT << "# 	Creation time:                  \t" << StringMacros::getTimestampString()
-	    << __E__;
-	OUT << "# 	Original filename:              \t" << filename << __E__;
-	OUT << "#	otsdaq-ARTDAQ " << getTypeString(appType) << " UID:\t"
-	    << receiverNode.getValue() << __E__;
-	OUT << "#" << __E__;
-	OUT << "###########################################################" << __E__;
-	OUT << "\n\n";
-
-	// no primary link to table tree for data receiver node!
-	try
+	try //catch and give error in fcl file if issue!
 	{
-		if(receiverNode.isDisconnected())
+		//--------------------------------------
+		// header
+		OUT << "###########################################################" << __E__;
+		OUT << "#" << __E__;
+		OUT << "# artdaq " << getTypeString(appType)
+			<< " fcl configuration file produced by otsdaq." << __E__;
+		OUT << "# 	Creation time:                  \t" << StringMacros::getTimestampString()
+			<< __E__;
+		OUT << "# 	Original filename:              \t" << filename << __E__;
+		OUT << "#	otsdaq-ARTDAQ " << getTypeString(appType) << " UID:\t"
+			<< receiverNode.getValue() << __E__;
+		OUT << "#" << __E__;
+		OUT << "###########################################################" << __E__;
+		OUT << "\n\n";
+
+		// no primary link to table tree for data receiver node!
+		try
 		{
-			// create empty fcl
-			OUT << "{}\n\n";
-			outf << out.str();
-			outf.close();
-			return;
+			if(receiverNode.isDisconnected())
+			{
+				// create empty fcl
+				OUT << "{}\n\n";
+				if(returnFcl)
+				{
+					*returnFcl = out.str();
+					__COUTVS__(21, *returnFcl);
+				}
+				outf << out.str();
+				outf.close();
+				return;
+			}
 		}
-	}
-	catch(const std::runtime_error&)
-	{
-		__COUTT__ << "Ignoring error, assume this a valid UID node." << __E__;
-		// error is expected here for UIDs.. so just ignore
-		// this check is valuable if source node is a unique-Link node, rather than UID
-	}
-
-	//--------------------------------------
-	// handle preamble parameters
-	__COUTT__ << "Inserting preamble parameters..." << __E__;
-	insertParameters(out,
-	                 tabStr,
-	                 commentStr,
-	                 receiverNode.getNode("preambleParametersLink"),
-	                 "daqParameter" /*parameterType*/,
-	                 false /*onlyInsertAtTableParameters*/,
-	                 true /*includeAtTableParameters*/);
-
-	//--------------------------------------
-	// handle daq
-	__COUTT__ << "Generating daq block..." << __E__;
-	auto daq = receiverNode.getNode("daqLink");
-	if(!daq.isDisconnected())
-	{
-		///////////////////////
-		OUT << "daq: {\n";
-
-		PUSHTAB;
-		if(appType == ARTDAQAppType::EventBuilder)
+		catch(const std::runtime_error&)
 		{
-			// event_builder
-			OUT << "event_builder: {\n";
+			__COUTT__ << "Ignoring error, assume this a valid UID node." << __E__;
+			// error is expected here for UIDs.. so just ignore
+			// this check is valuable if source node is a unique-Link node, rather than UID
+		}
+
+		std::string parentPath = 
+							receiverNode.getTableName() + "/"
+							+ receiverNode.getValue();
+
+		OUTC("# start of " << getTypeString(appType) << 
+			" '" << receiverNode.getValue() << "' fcl",
+			"" /* comment */);	
+
+		//--------------------------------------
+		// handle preamble parameters
+		__COUTT__ << "Inserting " << getTypeString(appType) << " preamble parameters... " << parentPath <<__E__;
+		out << "\n";
+		insertParameters(out,
+						tabStr,
+						commentStr,
+						parentPath,
+						receiverNode.getNode("preambleParametersLink"),
+						"daqParameter" /*parameterType*/,
+						false /*onlyInsertAtTableParameters*/,
+						true /*includeAtTableParameters*/);
+
+		//--------------------------------------
+		// handle daq
+		__COUTT__ << "Generating daq block..." << __E__;
+		out << "\n";
+		auto daq = receiverNode.getNode("daqLink");
+		if(!daq.isDisconnected())
+		{
+			///////////////////////
+			OUTCF("daq: {","" /* comment */, daq.getParentLinkColumnName());
+
+			PUSHTAB;
+			if(appType == ARTDAQAppType::EventBuilder)
+				OUT << "event_builder: {\n";
+			else // both datalogger and dispatcher use aggregator for now
+				OUT << "aggregator: {\n";
+
+			PUSHTAB;
+
+			{ //define datalogger vs dispatcher
+				std::stringstream outSs;
+				if(appType == ARTDAQAppType::DataLogger)
+					outSs << "is_datalogger: true";
+				else if(appType == ARTDAQAppType::Dispatcher)
+					outSs << "is_dispatcher: true";
+				if(outSs.str().size())
+				{
+					addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size());
+					outSs << "auto-generated based on app type '" << getTypeString(appType) << "'\n";
+					OUT << outSs.str();
+				}
+			}
+
+			//--------------------------------------
+			// handle ALL daq parameters
+			std::string parentPath = daq.getParentTableName() + "/" + 
+								daq.getParentRecordName() + "/" +
+								daq.getParentLinkColumnName() + ":" +
+								daq.getTableName() + "/"
+								+ daq.getValue();
+			__COUTT__ << "Inserting " << getTypeString(appType) << " DAQ Parameters... " << parentPath << __E__;
+			insertParameters(out,
+							tabStr,
+							commentStr,
+							parentPath,
+							daq.getNode("daqParametersLink"),
+							"daqParameter" /*parameterType*/,
+							false /*onlyInsertAtTableParameters*/,
+							true /*includeAtTableParameters*/);
+
+			if(appType == ARTDAQAppType::EventBuilder)
+			{
+				out << "\n";
+				OUT << "routing_token_config: {\n";
+				PUSHTAB;
+
+				auto builderSubsystemID   = 1;
+				auto builderSubsystemLink = receiverNode.getNode("SubsystemLink");
+				if(!builderSubsystemLink.isDisconnected())
+				{
+					builderSubsystemID = getSubsytemId(builderSubsystemLink);
+				}
+				if(info_.subsystems[builderSubsystemID].hasRoutingManager)
+				{
+					std::string localParentPath = parentPath + "/" +
+						builderSubsystemLink.getParentLinkColumnName() + ":" + 
+						builderSubsystemLink.getTableName() + "/" + 
+						builderSubsystemLink.getValue();
+					__COUTT__ << "Inserting routing manager... " << localParentPath << __E__;
+					OUTCL("use_routing_manager: true","auto-generated because subsystem '" +
+							std::to_string(builderSubsystemID) + "' has Routing Manager added");
+					
+					OUTCLF("routing_manager_hostname: \""
+						<< info_.subsystems[builderSubsystemID].routingManagerHost << "\"",
+						"" /* comment */,
+						ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME);
+					OUT << "routing_token_port: 0\n";
+				}
+				else
+				{
+					OUTCF("use_routing_manager: false","auto-generated if subsystem '" +
+							std::to_string(builderSubsystemID) + "' has Routing Manager added",
+							builderSubsystemLink.getParentLinkColumnName());
+				}
+				POPTAB;
+				OUT << "}\n";  // end routing_token_config
+			}
+
+			__COUTT__ << "Adding sources placeholder" << __E__;
+			out << "\n";
+			OUT << "sources: { # empty placeholder, '" << 
+					getTypeString(appType) << "' sources handled by artdaq interface\n";
+			OUT<< "}\n\n";  // end sources
+
+			POPTAB;
+
+			if(appType == ARTDAQAppType::EventBuilder)
+				OUT << "} # end event_builder\n";  // end event builder
+			else // both datalogger and dispatcher use aggregator for now
+				OUT << "} # end aggregator\n";  // end aggregator
+
+			insertMetricsBlock(OUT, tabStr, commentStr, parentPath, daq);
+
+			POPTAB;
+			OUT << "} # end daq\n\n";  // end daq
 		}
 		else
 		{
-			// both datalogger and dispatcher use aggregator for now
-			OUT << "aggregator: {\n";
+			__COUTS__(3) << "No daq found" << __E__;
+			std::string localParentPath = parentPath + "/" +
+						daq.getParentLinkColumnName();
+			OUTCL("# no daq found", "" /* comment*/);
 		}
 
-		PUSHTAB;
 
-		if(appType == ARTDAQAppType::DataLogger)
+		//--------------------------------------
+		// handle art
+		__COUTT__ << "Filling art block..." << __E__;
+		out << "\n";
+		auto art = receiverNode.getNode(ARTDAQTableBase::colARTDAQNotReader_.colLinkToArt_);
+		if(!art.isDisconnected())
 		{
-			OUT << "is_datalogger: true\n";
+			std::string localParentPath = parentPath + "/" +
+						art.getParentLinkColumnName() + ":" +
+						art.getTableName() + "/"
+						+ art.getValue();
+			OUTCF("art: {","" /* comment */, art.getParentLinkColumnName());
+
+			PUSHTAB;
+
+			insertArtProcessBlock(out,
+								tabStr,
+								commentStr,
+								localParentPath,
+								art,
+								receiverNode.getNode("SubsystemLink"),
+								routingTimeoutMs,
+								routingRetryCount);
+
+			POPTAB;
+			OUT << "} # end art\n\n";  // end art
 		}
-		else if(appType == ARTDAQAppType::Dispatcher)
+		else
 		{
-			OUT << "is_dispatcher: true\n";
+			__COUTS__(3) << "No art found" << __E__;
+			std::string localParentPath = parentPath + "/" +
+						art.getParentLinkColumnName();
+			OUTCL("# no art found", "" /* comment*/);
 		}
 
 		//--------------------------------------
-		// handle ALL daq parameters
-		__COUTT__ << "Inserting DAQ Parameters..." << __E__;
+		// handle ALL add-on parameters
+		__COUTT__ << "Inserting " << getTypeString(appType) << " add-on parameters... " << parentPath << __E__;
 		insertParameters(out,
-		                 tabStr,
-		                 commentStr,
-		                 daq.getNode("daqParametersLink"),
-		                 "daqParameter" /*parameterType*/,
-		                 false /*onlyInsertAtTableParameters*/,
-		                 true /*includeAtTableParameters*/);
+						tabStr,
+						commentStr,
+						parentPath,
+						receiverNode.getNode("addOnParametersLink"),
+						"daqParameter" /*parameterType*/,
+						false /*onlyInsertAtTableParameters*/,
+						true /*includeAtTableParameters*/);
 
-		if(appType == ARTDAQAppType::EventBuilder)
-		{
-			OUT << "routing_token_config: {\n";
-			PUSHTAB;
-
-			auto builderSubsystemID   = 1;
-			auto builderSubsystemLink = receiverNode.getNode("SubsystemLink");
-			if(!builderSubsystemLink.isDisconnected())
-			{
-				builderSubsystemID = getSubsytemId(builderSubsystemLink);
-			}
-
-			if(info_.subsystems[builderSubsystemID].hasRoutingManager)
-			{
-				OUT << "use_routing_manager: true\n";
-				OUT << "routing_manager_hostname: \""
-				    << info_.subsystems[builderSubsystemID].routingManagerHost << "\"\n";
-				OUT << "routing_token_port: 0\n";
-			}
-			else
-			{
-				OUT << "use_routing_manager: false\n";
-			}
-			POPTAB;
-			OUT << "}\n";  // end routing_token_config
-		}
-
-		__COUTT__ << "Adding sources placeholder" << __E__;
-		OUT << "sources: {\n"
-		    << "}\n\n";  // end sources
-
-		POPTAB;
-		OUT << "}\n\n";  // end event builder
-
-		insertMetricsBlock(OUT, tabStr, commentStr, daq);
-
-		POPTAB;
-		OUT << "}\n\n";  // end daq
+		out << "\n";
+		OUTC("# end of " << getTypeString(appType) << 
+			" '" << receiverNode.getValue() << "' fcl",
+			"" /* comment */);
+		__COUTT__ << "outputDataReceiverFHICL DONE" << __E__;
 	}
-
-	//--------------------------------------
-	// handle art
-	__COUTT__ << "Filling art block..." << __E__;
-	auto art = receiverNode.getNode(ARTDAQTableBase::colARTDAQNotReader_.colLinkToArt_);
-	if(!art.isDisconnected())
+	catch(...)
 	{
-		OUT << "art: {\n";
-
-		PUSHTAB;
-
-		insertArtProcessBlock(out,
-		                      tabStr,
-		                      commentStr,
-		                      art,
-		                      receiverNode.getNode("SubsystemLink"),
-		                      routingTimeoutMs,
-		                      routingRetryCount);
-
-		POPTAB;
-		OUT << "}\n\n";  // end art
+		__SS__ << "\n\nError while generating FHiCL for " << getTypeString(appType) << " node at filename '"
+		             << filename << "'"
+		             << __E__;
+		try
+		{
+			throw;
+		}
+		catch(const std::runtime_error& e)
+		{
+			ss << " Here is the error: " << e.what() << __E__;
+		}
+		catch(const std::exception& e)
+		{
+			ss << " Here is the error: " << e.what() << __E__;
+		}
+		out << ss.str();
+		if(returnFcl)
+		{
+			*returnFcl = out.str();
+			__COUTVS__(21, *returnFcl);
+		}
+		outf << out.str();
+		outf.close();
+		__SS_THROW__;
 	}
 
-	//--------------------------------------
-	// handle ALL add-on parameters
-	__COUTT__ << "Inserting add-on parameters" << __E__;
-	insertParameters(out,
-	                 tabStr,
-	                 commentStr,
-	                 receiverNode.getNode("addOnParametersLink"),
-	                 "daqParameter" /*parameterType*/,
-	                 false /*onlyInsertAtTableParameters*/,
-	                 true /*includeAtTableParameters*/);
-
-	__COUTT__ << "outputDataReceiverFHICL DONE" << __E__;
 	if(returnFcl)
 	{
 		*returnFcl = out.str();
@@ -963,6 +1207,7 @@ void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorN
 	std::string tabStr     = "";
 	std::string commentStr = "";
 
+	__COUTV__(filename);
 	out.open(filename, std::fstream::out | std::fstream::trunc);
 	if(out.fail())
 	{
@@ -970,173 +1215,210 @@ void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorN
 		__SS_THROW__;
 	}
 
-	//--------------------------------------
-	// header
-	OUT << "###########################################################" << __E__;
-	OUT << "#" << __E__;
-	OUT << "# artdaq " << getTypeString(ARTDAQAppType::Monitor)
-	    << " fcl configuration file produced by otsdaq." << __E__;
-	OUT << "# 	Creation time:                  \t" << StringMacros::getTimestampString()
-	    << __E__;
-	OUT << "# 	Original filename:              \t" << filename << __E__;
-	OUT << "#	otsdaq-ARTDAQ " << getTypeString(ARTDAQAppType::Monitor) << " UID:\t"
-	    << monitorNode.getValue() << __E__;
-	OUT << "#" << __E__;
-	OUT << "###########################################################" << __E__;
-	OUT << "\n\n";
-
-	// no primary link to table tree for data receiver node!
-	try
+	try //catch and give error in fcl file if issue!
 	{
-		if(monitorNode.isDisconnected())
+		//--------------------------------------
+		// header
+		OUT << "###########################################################" << __E__;
+		OUT << "#" << __E__;
+		OUT << "# artdaq " << getTypeString(ARTDAQAppType::Monitor)
+			<< " fcl configuration file produced by otsdaq." << __E__;
+		OUT << "# 	Creation time:                  \t" << StringMacros::getTimestampString()
+			<< __E__;
+		OUT << "# 	Original filename:              \t" << filename << __E__;
+		OUT << "#	otsdaq-ARTDAQ " << getTypeString(ARTDAQAppType::Monitor) << " UID:\t"
+			<< monitorNode.getValue() << __E__;
+		OUT << "#" << __E__;
+		OUT << "###########################################################" << __E__;
+		OUT << "\n\n";
+
+		// no primary link to table tree for data receiver node!
+		try
 		{
-			// create empty fcl
-			OUT << "{}\n\n";
-			out.close();
-			return;
-		}
-	}
-	catch(const std::runtime_error&)
-	{
-		//__COUT__ << "Ignoring error, assume this a valid UID node." << __E__;
-		// error is expected here for UIDs.. so just ignore
-		// this check is valuable if source node is a unique-Link node, rather than UID
-	}
-
-	//--------------------------------------
-	// handle preamble parameters
-	//_COUT__ << "Inserting preamble parameters..." << __E__;
-	insertParameters(out,
-	                 tabStr,
-	                 commentStr,
-	                 monitorNode.getNode("preambleParametersLink"),
-	                 "daqParameter" /*parameterType*/,
-	                 false /*onlyInsertAtTableParameters*/,
-	                 true /*includeAtTableParameters*/);
-
-	//--------------------------------------
-	// handle art
-	//__COUT__ << "Filling art block..." << __E__;
-	auto art = monitorNode.getNode(ARTDAQTableBase::colARTDAQNotReader_.colLinkToArt_);
-	if(!art.isDisconnected())
-	{
-		insertArtProcessBlock(out, tabStr, commentStr, art);
-		OUT << "services.message: { "
-		    << artdaq::generateMessageFacilityConfiguration(
-		           mf::GetApplicationName().c_str(), true, false)
-		    << "}\n";
-		OUT << "services.message.destinations.file: {type: \"GenFile\" threshold: "
-		       "\"INFO\" seperator: \"-\""
-		    << " pattern: \"" << monitorNode.getValue() << "-%?H%t-%p.log"
-		    << "\""
-		    << " timestamp_pattern: \"%Y%m%d%H%M%S\""
-		    << " directory: \"" << __ENV__("OTSDAQ_LOG_ROOT") << "/"
-		    << monitorNode.getValue() << "\""
-		    << " append : false }\n";
-	}
-
-	auto dispatcherLink = monitorNode.getNode("dispatcherLink");
-	if(!dispatcherLink.isDisconnected())
-	{
-		std::string monitorHost =
-		    monitorNode.getNode(ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME)
-		        .getValueWithDefault("localhost");
-		std::string dispatcherHost =
-		    dispatcherLink.getNode(ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME)
-		        .getValueWithDefault("localhost");
-		OUT << "source.dispatcherHost: \"" << dispatcherHost << "\"\n";
-		int dispatcherPort = dispatcherLink.getNode("DispatcherPort").getValue<int>();
-		OUT << "source.dispatcherPort: " << dispatcherPort << "\n";
-		OUT << "source.commanderPluginType: xmlrpc\n";
-
-		int om_rank = monitorNode.getNode("MonitorID").getValue<int>();
-		int disp_fake_rank =
-		    dispatcherLink.getNode("DispatcherID").getValueWithDefault<int>(200);
-
-		size_t max_fragment_size =
-		    monitorNode.getNode("max_fragment_size_words").getValueWithDefault(0x100000);
-		std::string transfer_plugin_type =
-		    monitorNode.getNode("transfer_plugin_type").getValueWithDefault("Autodetect");
-
-		OUT << "TransferPluginConfig: {\n";
-		PUSHTAB;
-		OUT << "transferPluginType: " << transfer_plugin_type << "\n";
-		OUT << "host_map: [{ rank: " << disp_fake_rank << " host: \"" << dispatcherHost
-		    << "\"}, { rank: " << om_rank << " host: \"" << monitorHost << "\"}]\n";
-		OUT << "max_fragment_size_words: " << max_fragment_size << "\n";
-		OUT << "source_rank: " << disp_fake_rank << "\n";
-		OUT << "destination_rank: " << om_rank << "\n";
-		OUT << "unique_label: " << monitorNode.getValue() << "_to_"
-		    << dispatcherLink.getValue() << "\n";
-		POPTAB;
-		OUT << "}\n";
-		OUT << "source.transfer_plugin: @local::TransferPluginConfig \n";
-		auto dispatcherArt = monitorNode.getNode("dispatcherArtLink");
-		if(!dispatcherArt.isDisconnected())
-		{
-			OUT << "source.dispatcher_config: {\n";
-
-			PUSHTAB;
-
-			OUT << "path: " << monitorNode.getNode("dispatcher_path").getValue() << "\n";
-			OUT << "filter_paths: [\n";
-
-			PUSHTAB;
-
-			auto filterPathsLink = monitorNode.getNode("filterPathsLink");
-			if(!filterPathsLink.isDisconnected())
+			if(monitorNode.isDisconnected())
 			{
-				///////////////////////
-				auto filterPaths = filterPathsLink.getChildren();
-				bool first       = true;
-
-				//__COUTV__(otherParameters.size());
-				for(auto& filterPath : filterPaths)
-				{
-					if(!first)
-						OUT << ",";
-					OUT << "{ ";
-
-					if(!filterPath.second.status())
-						PUSHCOMMENT;
-
-					OUT << "name: " << filterPath.second.getNode("Name").getValue()
-					    << " ";
-					OUT << "path: " << filterPath.second.getNode("Path").getValue()
-					    << " ";
-
-					OUT << "}\n";
-					if(!filterPath.second.status())
-						POPCOMMENT;
-					first = false;
-				}
+				// create empty fcl
+				OUT << "{}\n\n";
+				out.close();
+				return;
 			}
-
-			POPTAB;
-
-			OUT << "]\n";
-			OUT << "unique_label: " << monitorNode.getValue() << "\n";
-			insertArtProcessBlock(out, tabStr, commentStr, dispatcherArt);
-
-			POPTAB;
-			OUT << "}\n\n";  // end art
 		}
+		catch(const std::runtime_error&)
+		{
+			__COUTT__ << "Ignoring error, assume this a valid UID node." << __E__;
+			// error is expected here for UIDs.. so just ignore
+			// this check is valuable if source node is a unique-Link node, rather than UID
+		}
+
+		//--------------------------------------
+		// handle preamble parameters
+		std::string parentPath = monitorNode.getParentTableName() + "/" + 
+							monitorNode.getParentRecordName() + "/" +
+							monitorNode.getParentLinkColumnName() + ":" +
+							monitorNode.getTableName() + "/"
+							+ monitorNode.getValue();
+		__COUTT__ << "Inserting " << getTypeString(ARTDAQAppType::Monitor) << " preamble parameters... " << parentPath << __E__;
+		insertParameters(out,
+						tabStr,
+						commentStr,
+						parentPath,
+						monitorNode.getNode("preambleParametersLink"),
+						"daqParameter" /*parameterType*/,
+						false /*onlyInsertAtTableParameters*/,
+						true /*includeAtTableParameters*/);
+
+		//--------------------------------------
+		// handle art
+		//__COUT__ << "Filling art block..." << __E__;
+		auto art = monitorNode.getNode(ARTDAQTableBase::colARTDAQNotReader_.colLinkToArt_);
+		if(!art.isDisconnected())
+		{
+			insertArtProcessBlock(out, tabStr, commentStr, parentPath, art);
+			OUT << "services.message: { "
+				<< artdaq::generateMessageFacilityConfiguration(
+					mf::GetApplicationName().c_str(), true, false)
+				<< "}\n";
+			OUT << "services.message.destinations.file: {type: \"GenFile\" threshold: "
+				"\"INFO\" seperator: \"-\""
+				<< " pattern: \"" << monitorNode.getValue() << "-%?H%t-%p.log"
+				<< "\""
+				<< " timestamp_pattern: \"%Y%m%d%H%M%S\""
+				<< " directory: \"" << __ENV__("OTSDAQ_LOG_ROOT") << "/"
+				<< monitorNode.getValue() << "\""
+				<< " append : false }\n";
+		}
+
+		auto dispatcherLink = monitorNode.getNode("dispatcherLink");
+		if(!dispatcherLink.isDisconnected())
+		{
+			std::string monitorHost =
+				monitorNode.getNode(ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME)
+					.getValueWithDefault("localhost");
+			std::string dispatcherHost =
+				dispatcherLink.getNode(ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME)
+					.getValueWithDefault("localhost");
+			OUT << "source.dispatcherHost: \"" << dispatcherHost << "\"\n";
+			int dispatcherPort = dispatcherLink.getNode("DispatcherPort").getValue<int>();
+			OUT << "source.dispatcherPort: " << dispatcherPort << "\n";
+			OUT << "source.commanderPluginType: xmlrpc\n";
+
+			int om_rank = monitorNode.getNode("MonitorID").getValue<int>();
+			int disp_fake_rank =
+				dispatcherLink.getNode("DispatcherID").getValueWithDefault<int>(200);
+
+			size_t max_fragment_size =
+				monitorNode.getNode("max_fragment_size_words").getValueWithDefault(0x100000);
+			std::string transfer_plugin_type =
+				monitorNode.getNode("transfer_plugin_type").getValueWithDefault("Autodetect");
+
+			OUT << "TransferPluginConfig: {\n";
+			PUSHTAB;
+			OUT << "transferPluginType: " << transfer_plugin_type << "\n";
+			OUT << "host_map: [{ rank: " << disp_fake_rank << " host: \"" << dispatcherHost
+				<< "\"}, { rank: " << om_rank << " host: \"" << monitorHost << "\"}]\n";
+			OUT << "max_fragment_size_words: " << max_fragment_size << "\n";
+			OUT << "source_rank: " << disp_fake_rank << "\n";
+			OUT << "destination_rank: " << om_rank << "\n";
+			OUT << "unique_label: " << monitorNode.getValue() << "_to_"
+				<< dispatcherLink.getValue() << "\n";
+			POPTAB;
+			OUT << "}\n";
+			OUT << "source.transfer_plugin: @local::TransferPluginConfig \n";
+			auto dispatcherArt = monitorNode.getNode("dispatcherArtLink");
+			if(!dispatcherArt.isDisconnected())
+			{
+				OUT << "source.dispatcher_config: {\n";
+
+				PUSHTAB;
+
+				OUT << "path: " << monitorNode.getNode("dispatcher_path").getValue() << "\n";
+				OUT << "filter_paths: [\n";
+
+				PUSHTAB;
+
+				auto filterPathsLink = monitorNode.getNode("filterPathsLink");
+				if(!filterPathsLink.isDisconnected())
+				{
+					///////////////////////
+					auto filterPaths = filterPathsLink.getChildren();
+					bool first       = true;
+
+					//__COUTV__(otherParameters.size());
+					for(auto& filterPath : filterPaths)
+					{
+						if(!first)
+							OUT << ",";
+						OUT << "{ ";
+
+						if(!filterPath.second.status())
+							PUSHCOMMENT;
+
+						OUT << "name: " << filterPath.second.getNode("Name").getValue()
+							<< " ";
+						OUT << "path: " << filterPath.second.getNode("Path").getValue()
+							<< " ";
+
+						OUT << "}\n";
+						if(!filterPath.second.status())
+							POPCOMMENT;
+						first = false;
+					}
+				}
+
+				POPTAB;
+
+				OUT << "]\n";
+				OUT << "unique_label: " << monitorNode.getValue() << "\n";
+				insertArtProcessBlock(out, tabStr, commentStr, parentPath, dispatcherArt);
+
+				POPTAB;
+				OUT << "}\n\n";  // end art
+			}
+		}
+
+		//--------------------------------------
+		// handle ALL add-on parameters
+		parentPath = monitorNode.getParentTableName() + "/" + 
+							monitorNode.getParentRecordName() + "/" +
+							monitorNode.getParentLinkColumnName() + ":" +
+							monitorNode.getTableName() + "/"
+							+ monitorNode.getValue();
+		__COUTT__ << "Inserting " << getTypeString(ARTDAQAppType::Monitor) << " add-on parameters... " << parentPath << __E__;
+		insertParameters(out,
+						tabStr,
+						commentStr,
+						parentPath,
+						monitorNode.getNode("addOnParametersLink"),
+						"daqParameter" /*parameterType*/,
+						false /*onlyInsertAtTableParameters*/,
+						true /*includeAtTableParameters*/);
+
+		__COUTT__ << "outputOnlineMonitorFHICL DONE" << __E__;
+	}
+	catch(...)
+	{
+		__SS__ << "\n\nError while generating FHiCL for " << getTypeString(ARTDAQAppType::Monitor) << " node at filename '"
+		             << filename << "'"
+		             << __E__;
+		try
+		{
+			throw;
+		}
+		catch(const std::runtime_error& e)
+		{
+			ss << " Here is the error: " << e.what() << __E__;
+		}
+		catch(const std::exception& e)
+		{
+			ss << " Here is the error: " << e.what() << __E__;
+		}
+		out << ss.str();
+		out.close();
+		__SS_THROW__;
 	}
 
-	//--------------------------------------
-	// handle ALL add-on parameters
-	//__COUT__ << "Inserting add-on parameters" << __E__;
-	insertParameters(out,
-	                 tabStr,
-	                 commentStr,
-	                 monitorNode.getNode("addOnParametersLink"),
-	                 "daqParameter" /*parameterType*/,
-	                 false /*onlyInsertAtTableParameters*/,
-	                 true /*includeAtTableParameters*/);
-
-	//__COUT__ << "outputDataReceiverFHICL DONE" << __E__;
 	out.close();
-}  // end outputDataReceiverFHICL()
+}  // end outputOnlineMonitorFHICL()
 
 //==============================================================================
 /// insertArtProcessBlock
@@ -1144,6 +1426,7 @@ void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorN
 void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
                                             std::string&      tabStr,
                                             std::string&      commentStr,
+											const std::string&      parentPath,
                                             ConfigurationTree art,
                                             ConfigurationTree subsystemLink,
                                             size_t            routingTimeoutMs,
@@ -1151,63 +1434,88 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 {
 	//--------------------------------------
 	// handle services
-	//__COUT__ << "Filling art.services" << __E__;
+	__COUTT__ << "Filling art.services parentPath =" << parentPath << __E__;
 	auto services = art.getNode("servicesLink");
 	if(!services.isDisconnected())
-	{
-		OUT << "services: {\n";
-
+	{		
+		std::string localParentPath = parentPath + "/" + 
+							services.getParentLinkColumnName() + ":" +
+							services.getTableName() + "/"
+							+ services.getValue(); //unique link so can go further
+		__COUTT__ << "Inserting services... " << localParentPath <<__E__;
+		OUTCL("services: {",
+			services.hasComment()?services.getComment():"");
 		PUSHTAB;
 
 		//--------------------------------------
 		// handle services @table:: parameters
+		__COUTT__ << "Inserting services parameters... " << localParentPath << __E__;
 		insertParameters(out,
 		                 tabStr,
 		                 commentStr,
+						 localParentPath,
 		                 services.getNode("ServicesParametersLink"),
 		                 "daqParameter" /*parameterType*/,
 		                 true /*onlyInsertAtTableParameters*/,
 		                 false /*includeAtTableParameters*/);
-
-		OUT << "ArtdaqSharedMemoryServiceInterface: { service_provider: "
+						
+		out << "\n";
+		OUT << "ArtdaqSharedMemoryServiceInterface: {\n";
+		PUSHTAB;
+		OUT << "service_provider: "
 		       "ArtdaqSharedMemoryService \n";
 
-		OUT << "waiting_time: " << services.getNode("sharedMemoryWaitingTime").getValue()
-		    << "\n";
-		OUT << "resume_after_timeout: "
-		    << (services.getNode("sharedMemoryResumeAfterTimeout").getValue<bool>()
+		OUTCLF("waiting_time: " << services.getNode("sharedMemoryWaitingTime").getValue(),
+			"" /* comment */, "sharedMemoryWaitingTime");
+		OUTCLF("resume_after_timeout: " << (services.getNode("sharedMemoryResumeAfterTimeout").getValue<bool>()
 		            ? "true"
-		            : "false")
-		    << "\n";
-		OUT << "}\n\n";
+		            : "false"),
+			"" /* comment */, "sharedMemoryResumeAfterTimeout");
+		POPTAB;
+		OUT << "} # end ArtdaqSharedMemoryServiceInterface\n\n";
 
-		OUT << "ArtdaqFragmentNamingServiceInterface: { service_provider: "
-		       "ArtdaqFragmentNamingService helper_plugin: "
-		    << (services.getNode("fragmentNamingServiceProvider").getValue<std::string>())
-		    << "}\n\n";
+		OUT << "ArtdaqFragmentNamingServiceInterface: {\n";
+		PUSHTAB;
+		OUT << "service_provider: "
+		       "ArtdaqFragmentNamingService \n";
+		OUTCLF("helper_plugin: " << services.getNode("fragmentNamingServiceProvider").getValue(),
+			"" /* comment */, "fragmentNamingServiceProvider");
+		POPTAB;
+		OUT << "} # end ArtdaqFragmentNamingServiceInterface\n\n";
 
 		//--------------------------------------
 		// handle services NOT @table:: parameters
+		__COUTT__ << "Inserting services parameters... " << localParentPath <<__E__;
 		insertParameters(out,
 		                 tabStr,
 		                 commentStr,
+						 localParentPath,
 		                 services.getNode("ServicesParametersLink"),
 		                 "daqParameter" /*parameterType*/,
 		                 false /*onlyInsertAtTableParameters*/,
 		                 false /*includeAtTableParameters*/);
 
 		POPTAB;
-		OUT << "}\n\n";  // end services
+		OUT << "} # end services\n\n";  // end services
+	} //end services
+	else
+	{
+		__COUTS__(3) << "No services found" << __E__;
+		std::string localParentPath = parentPath + "/" +
+					services.getParentLinkColumnName();
+		OUTCL("# no services found", "" /* comment*/);
 	}
 
 	//--------------------------------------
 	// handle outputs
-	//__COUT__ << "Filling art.outputs" << __E__;
+	__COUTT__ << "Filling art.outputs parentPath =" << parentPath << __E__;
 	auto outputs = art.getNode("outputsLink");
 	if(!outputs.isDisconnected())
 	{
-		OUT << "outputs: {\n";
-
+		std::string localParentPath = parentPath + "/" + 
+			outputs.getParentLinkColumnName(); //group link so cannot go further
+		__COUTT__ << "Inserting output... " << localParentPath <<__E__;
+		OUTCL("outputs: {","" /* comment */);
 		PUSHTAB;
 
 		auto outputPlugins = outputs.getChildren();
@@ -1216,17 +1524,27 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 			if(!outputPlugin.second.status())
 				PUSHCOMMENT;
 
-			OUT << outputPlugin.second.getNode("outputKey").getValue() << ": {\n";
+			__COUTT__ << "Inserting output parameters... " << localParentPath <<__E__;
+			std::string localParentPath2 = localParentPath + ":" + 
+								outputPlugin.second.getTableName() + "/"
+								+ outputPlugin.second.getValue();		
+			__COUTT__ << "Inserting output... " << localParentPath2 << __E__;
+			OUTCL2F(outputPlugin.second.getNode("outputKey").getValue() << ": {",
+				outputPlugin.second.hasComment()?outputPlugin.second.getComment():"",
+				"outputKey");
 			PUSHTAB;
-
+		
+			__COUTT__ << "insertModuleType... " << localParentPath2 << __E__;
 			std::string moduleType = insertModuleType(
-			    out, tabStr, commentStr, outputPlugin.second.getNode("outputModuleType"));
+			    out, tabStr, commentStr, localParentPath2, outputPlugin.second.getNode("outputModuleType"));
 
 			//--------------------------------------
 			// handle ALL output parameters
+			__COUTT__ << "Inserting output parameters... " << localParentPath <<__E__;
 			insertParameters(out,
 			                 tabStr,
 			                 commentStr,
+							 localParentPath,
 			                 outputPlugin.second.getNode("outputModuleParameterLink"),
 			                 "outputParameter" /*parameterType*/,
 			                 false /*onlyInsertAtTableParameters*/,
@@ -1237,8 +1555,10 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 			   outputPlugin.second.getNode("outputModuleType").getValue() ==
 			       "RootNetOutput")
 			{
-				OUT << "destinations: {\n";
+				OUT << "destinations: { # empty placeholder, '" << 
+					outputPlugin.second.getNode("outputModuleType").getValue() << "' destinations handled by artdaq interface\n";
 				OUT << "}\n\n";  // end destinations
+
 				OUT << "routing_table_config: {\n";
 				PUSHTAB;
 
@@ -1251,10 +1571,18 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 				destinationSubsystemID = info_.subsystems[mySubsystemID].destination;
 				if(info_.subsystems[destinationSubsystemID].hasRoutingManager)
 				{
-					OUT << "use_routing_manager: true\n";
-					OUT << "routing_manager_hostname: \""
-					    << info_.subsystems[destinationSubsystemID].routingManagerHost
-					    << "\"\n";
+					std::string localParentPath = parentPath + "/" +
+						subsystemLink.getParentLinkColumnName() + ":" + 
+						subsystemLink.getTableName() + "/" + 
+						subsystemLink.getValue();
+					__COUTT__ << "Inserting routing manager... " << localParentPath << __E__;
+					OUTCL("use_routing_manager: true","auto-generated because subsystem '" +
+							std::to_string(destinationSubsystemID) + "' has Routing Manager added");
+
+					OUTCLF("routing_manager_hostname: \""
+						<< info_.subsystems[destinationSubsystemID].routingManagerHost << "\"",
+						"" /* comment */,
+						ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME);							
 					OUT << "table_update_port: 0\n";
 					OUT << "table_update_address: \"0.0.0.0\"\n";
 					OUT << "table_update_multicast_interface: \"0.0.0.0\"\n";
@@ -1264,7 +1592,9 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 				}
 				else
 				{
-					OUT << "use_routing_manager: false\n";
+					OUTCF("use_routing_manager: false","auto-generated if subsystem '" +
+						std::to_string(destinationSubsystemID) + "' has Routing Manager added",
+						subsystemLink.getParentLinkColumnName());
 				}
 
 				if(outputPlugin.second.getNode("outputModuleType").getValue() ==
@@ -1285,32 +1615,48 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 			}
 
 			POPTAB;
-			OUT << "}\n\n";  // end output module
+			OUT << "} # end " << outputPlugin.second.getNode("outputKey").getValue() << "\n\n";  // end output module
 
 			if(!outputPlugin.second.status())
 				POPCOMMENT;
 		}
 
 		POPTAB;
-		OUT << "}\n\n";  // end outputs
+		OUT << "} # end outputs\n\n";  // end outputs
+	} //end outputs
+	else
+	{
+		__COUTS__(3) << "No outputs found" << __E__;
+		std::string localParentPath = parentPath + "/" +
+					outputs.getParentLinkColumnName();
+		OUTCL("# no outputs found", "" /* comment*/);
 	}
 
 	//--------------------------------------
 	// handle physics
-	//__COUT__ << "Filling art.physics" << __E__;
+	__COUTT__ << "Filling art.physics parentPath =" << parentPath << __E__;
 	auto physics = art.getNode("physicsLink");
 	if(!physics.isDisconnected())
 	{
-		///////////////////////
-		OUT << "physics: {\n";
+		__COUTT__ << "Inserting physics... " << parentPath <<__E__;
+		std::string localParentPath = parentPath + "/" + 
+							physics.getParentLinkColumnName() + ":" +
+							physics.getTableName() + "/"
+							+ physics.getValue(); //unique link so can go further
+
+		///////////////////////		
+		OUTCL("physics: {",
+			physics.hasComment()?services.getComment():"");
 
 		PUSHTAB;
 
 		//--------------------------------------
 		// handle only @table:: physics parameters
+		__COUTT__ << "Inserting physics other parameters... " << localParentPath <<__E__;
 		insertParameters(out,
 		                 tabStr,
 		                 commentStr,
+						 localParentPath,
 		                 physics.getNode("physicsOtherParametersLink"),
 		                 "physicsParameter" /*parameterType*/,
 		                 true /*onlyInsertAtTableParameters*/,
@@ -1319,23 +1665,40 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 		auto analyzers = physics.getNode("analyzersLink");
 		if(!analyzers.isDisconnected())
 		{
+			__COUTT__ << "Inserting art.physics.analyzers... " << localParentPath <<__E__;
+			std::string localParentPath2 = localParentPath + "/" + 
+				analyzers.getParentLinkColumnName(); //group link
+			__COUTT__ << "Inserting art.physics.analyzers... " << localParentPath2 <<__E__;
+								
 			///////////////////////
-			OUT << "analyzers: {\n";
-
+			out << "\n";
+			OUTCL2("analyzers: {","" /* comment */);
 			PUSHTAB;
 
+			bool first = true;
 			auto modules = analyzers.getChildren();
 			for(auto& module : modules)
 			{
 				if(!module.second.status())
 					PUSHCOMMENT;
 
+				if(!first)
+					out << "\n";
+				first = false;
+
+				auto analyzerNodeParameterLink = module.second.getNode("analyzerModuleParameterLink");
 				//--------------------------------------
-				// handle only @table:: analyzer parameters
+				// handle only @table:: analyzer parameters				
+				__COUTT__ << "Inserting analyzer @table parameters... " << localParentPath2 <<__E__;
+				std::string localParentPath3 = localParentPath2 + ":" + 
+									module.second.getTableName() + "/"
+									+ module.second.getValue();
+				__COUTT__ << "Inserting analyzer @table parameters... " << localParentPath3 <<__E__;
 				insertParameters(out,
 				                 tabStr,
 				                 commentStr,
-				                 module.second.getNode("analyzerModuleParameterLink"),
+				                 localParentPath3,
+				                 analyzerNodeParameterLink,
 				                 "analyzerParameter" /*parameterType*/,
 				                 true /*onlyInsertAtTableParameters*/,
 				                 false /*includeAtTableParameters*/);
@@ -1343,162 +1706,257 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 				OUT << module.second.getNode("analyzerKey").getValue() << ": {\n";
 				PUSHTAB;
 				insertModuleType(
-				    out, tabStr, commentStr, module.second.getNode("analyzerModuleType"));
+				    out, tabStr, commentStr, localParentPath3, module.second.getNode("analyzerModuleType"));
 
 				//--------------------------------------
-				// handle NOT @table:: producer parameters
+				// handle NOT @table:: producer parameters				
+				__COUTT__ << "Inserting analayzer not @table parameters... " << localParentPath3 <<__E__;
 				insertParameters(out,
 				                 tabStr,
 				                 commentStr,
-				                 module.second.getNode("analyzerModuleParameterLink"),
+								 localParentPath3,
+				                 analyzerNodeParameterLink,
 				                 "analyzerParameter" /*parameterType*/,
 				                 false /*onlyInsertAtTableParameters*/,
 				                 false /*includeAtTableParameters*/);
 
 				POPTAB;
-				OUT << "}\n\n";  // end analyzer module
+				OUT << "}\n";  // end analyzer module
 
 				if(!module.second.status())
 					POPCOMMENT;
-			}
+			} //end analyzer module loop
 			POPTAB;
-			OUT << "}\n\n";  // end analyzer
+			OUT << "} # end physics.analyzers\n\n";  // end analyzers
+		}
+		else
+		{
+			__COUTS__(3) << "No analyzers found" << __E__;
+			std::string localParentPath2 = localParentPath + "/" +
+						analyzers.getParentLinkColumnName();
+			OUTCL2("# no analyzers found", "" /* comment*/);
 		}
 
 		auto producers = physics.getNode("producersLink");
 		if(!producers.isDisconnected())
 		{
-			///////////////////////
-			OUT << "producers: {\n";
+			__COUTT__ << "Inserting art.physics.producers... " << localParentPath <<__E__;
+			std::string localParentPath2 = localParentPath + "/" + 
+				producers.getParentLinkColumnName(); //group link
 
+			///////////////////////
+			out << "\n";
+			OUTCL2("producers: {","" /* comment */);
 			PUSHTAB;
 
+			bool first = true;
 			auto modules = producers.getChildren();
 			for(auto& module : modules)
 			{
 				if(!module.second.status())
 					PUSHCOMMENT;
 
+				if(!first)
+					out << "\n";
+				first = false;
+
+				auto producerNodeParameterLink = module.second.getNode("producerModuleParameterLink");
 				//--------------------------------------
-				// handle only @table:: producer parameters
+				// handle only @table:: producer parameters				
+				__COUTT__ << "Inserting producer @table parameters... " << localParentPath2 <<__E__;				
+				std::string localParentPath3 = localParentPath2 + ":" + 
+									module.second.getTableName() + "/"
+									+ module.second.getValue();
+				__COUTT__ << "Inserting producer @table parameters... " << localParentPath3 <<__E__;
 				insertParameters(out,
 				                 tabStr,
 				                 commentStr,
-				                 module.second.getNode("producerModuleParameterLink"),
+								 localParentPath3,
+				                 producerNodeParameterLink,
 				                 "producerParameter" /*parameterType*/,
 				                 true /*onlyInsertAtTableParameters*/,
 				                 false /*includeAtTableParameters*/);
 
 				if(module.second.status() &&
 				   module.second.getNode("producerModuleType").getValue() == "")
+				{
+					std::string tmp = localParentPath2;
+					localParentPath2 = localParentPath3;
+					OUTCL2F("# skipping '" << module.second.getValue() << "' with empty module type",
+						"" /* comment */,
+						"producerModuleType");
+					localParentPath2 = tmp;
 					continue;
+				}
+
 				OUT << module.second.getNode("producerKey").getValue() << ": {\n";
 				PUSHTAB;
 
 				insertModuleType(
-				    out, tabStr, commentStr, module.second.getNode("producerModuleType"));
+				    out, tabStr, commentStr, localParentPath3, module.second.getNode("producerModuleType"));
 
 				//--------------------------------------
 				// handle NOT @table:: producer parameters
+				__COUTT__ << "Inserting producer not @table parameters... " << localParentPath3 <<__E__;
 				insertParameters(out,
 				                 tabStr,
 				                 commentStr,
-				                 module.second.getNode("producerModuleParameterLink"),
+								 localParentPath3,
+				                 producerNodeParameterLink,
 				                 "producerParameter" /*parameterType*/,
 				                 false /*onlyInsertAtTableParameters*/,
 				                 false /*includeAtTableParameters*/);
 
 				POPTAB;
-				OUT << "}\n\n";  // end producer module
+				OUT << "}\n";  // end producer module
 
 				if(!module.second.status())
 					POPCOMMENT;
-			}
+			} //end producer module loop
 			POPTAB;
-			OUT << "}\n\n";  // end producer
+			OUT << "} # end physics.producers\n\n";  // end producers
+		}
+		else
+		{
+			__COUTS__(3) << "No producers found" << __E__;
+			std::string localParentPath2 = localParentPath + "/" +
+						producers.getParentLinkColumnName();
+			OUTCL2("# no producers found", "" /* comment*/);
 		}
 
 		auto filters = physics.getNode("filtersLink");
 		if(!filters.isDisconnected())
 		{
-			///////////////////////
-			OUT << "filters: {\n";
+			__COUTT__ << "Inserting art.physics.filters... " << localParentPath <<__E__;
+			std::string localParentPath2 = localParentPath + "/" + 
+				filters.getParentLinkColumnName(); //group link
 
+			///////////////////////
+			out << "\n";
+			OUTCL2("filters: {","" /* comment */);
 			PUSHTAB;
 
+			bool first = true;
 			auto modules = filters.getChildren();
 			for(auto& module : modules)
 			{
 				if(!module.second.status())
 					PUSHCOMMENT;
 
+				if(!first)
+					out << "\n";
+				first = false;
+
+				auto filterNodeParameterLink = module.second.getNode("filterModuleParameterLink");
 				//--------------------------------------
 				// handle only @table:: filter parameters
+				__COUTT__ << "Inserting filter @table parameters... " << localParentPath2 <<__E__;
+				std::string localParentPath3 = localParentPath2 + ":" + 
+									module.second.getTableName() + "/"
+									+ module.second.getValue();
+				__COUTT__ << "Inserting filter @table parameters... " << localParentPath3 <<__E__;
 				insertParameters(out,
 				                 tabStr,
 				                 commentStr,
-				                 module.second.getNode("filterModuleParameterLink"),
+								 localParentPath3,
+				                 filterNodeParameterLink,
 				                 "filterParameter" /*parameterType*/,
 				                 true /*onlyInsertAtTableParameters*/,
 				                 false /*includeAtTableParameters*/);
 				if(module.second.status() &&
 				   module.second.getNode("filterModuleType").getValue() == "")
+				{
+					std::string tmp = localParentPath2;
+					localParentPath2 = localParentPath3;
+					OUTCL2F("# skipping '" << module.second.getValue() << "' with empty module type",
+						"" /* comment */,
+						"filterModuleType");
+					localParentPath2 = tmp;
 					continue;
+				}
+
 				OUT << module.second.getNode("filterKey").getValue() << ": {\n";
 				PUSHTAB;
 
 				insertModuleType(
-				    out, tabStr, commentStr, module.second.getNode("filterModuleType"));
+				    out, tabStr, commentStr, localParentPath3, module.second.getNode("filterModuleType"));
 
 				//--------------------------------------
 				// handle NOT @table:: filter parameters
+				__COUTT__ << "Inserting filter not @table parameters... " << localParentPath3 <<__E__;
 				insertParameters(out,
 				                 tabStr,
 				                 commentStr,
-				                 module.second.getNode("filterModuleParameterLink"),
+								 localParentPath3,
+				                 filterNodeParameterLink,
 				                 "filterParameter" /*parameterType*/,
 				                 false /*onlyInsertAtTableParameters*/,
 				                 false /*includeAtTableParameters*/);
 
 				POPTAB;
-				OUT << "}\n\n";  // end filter module
+				OUT << "}\n";  // end filter module
 
 				if(!module.second.status())
 					POPCOMMENT;
-			}
+			} //end filter module loop
 			POPTAB;
-			OUT << "}\n\n";  // end filter
+			OUT << "} # end physics.filters\n\n";  // end filters
+		}
+		else
+		{
+			__COUTS__(3) << "No filters found" << __E__;
+			std::string localParentPath2 = localParentPath + "/" +
+						services.getParentLinkColumnName();
+			OUTCL2("# no filters found", "" /* comment*/);
 		}
 
 		//--------------------------------------
 		// handle NOT @table:: physics parameters
+		__COUTT__ << "Inserting art.physics not @table parameters... " << localParentPath <<__E__;
 		insertParameters(out,
 		                 tabStr,
 		                 commentStr,
+						 localParentPath,
 		                 physics.getNode("physicsOtherParametersLink"),
 		                 "physicsParameter" /*parameterType*/,
 		                 false /*onlyInsertAtTableParameters*/,
 		                 false /*includeAtTableParameters*/);
 
 		POPTAB;
-		OUT << "}\n\n";  // end physics
+		OUT << "} # end physics\n\n";  // end physics
+	}
+	else
+	{
+		__COUTS__(3) << "No physics found" << __E__;
+		std::string localParentPath = parentPath + "/" +
+					physics.getParentLinkColumnName();
+		OUTCL("# no physics found", "" /* comment*/);
 	}
 
 	//--------------------------------------
 	// handle source
-	//__COUT__ << "Filling art.source" << __E__;
+	__COUTT__ << "Filling art.source" << __E__;
 	auto source = art.getNode("sourceLink");
 	if(!source.isDisconnected())
 	{
-		OUT << "source: {\n";
+		__COUTT__ << "Inserting source... " << parentPath <<__E__;
+		std::string localParentPath = parentPath + "/" + 
+							source.getParentLinkColumnName() + ":" +
+							source.getTableName() + "/"
+							+ source.getValue(); //unique link so can go further
+		OUTCL("source: {",
+			source.hasComment()?source.getComment():"");
 		PUSHTAB;
-		insertModuleType(out, tabStr, commentStr, source.getNode("sourceModuleType"));
+		insertModuleType(out, tabStr, commentStr, parentPath, source.getNode("sourceModuleType"));
 		POPTAB;
 		OUT << "}\n\n";  // end source
 	}
 	else
 	{
-		OUT << "source: {\n";
+		std::string localParentPath = parentPath + "/" +
+					source.getParentLinkColumnName();
+		OUTCL("source: { # auto-generated default, to change provide a source link", 
+			"" /* comment*/);
 		PUSHTAB;
 		OUT << "module_type: ArtdaqInput";
 		POPTAB;
@@ -1507,15 +1965,17 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&     out,
 
 	//--------------------------------------
 	// handle process_name
-	//__COUT__ << "Writing art.process_name" << __E__;
-	OUT << "process_name: " << art.getNode(ARTDAQTableBase::colARTDAQArt_.colProcessName_)
-	    << "\n";
+	__COUTT__ << "Writing art.process_name" << __E__;
+	OUTCF("process_name: " << art.getNode(ARTDAQTableBase::colARTDAQArt_.colProcessName_),
+		"",ARTDAQTableBase::colARTDAQArt_.colProcessName_);
 
 	//--------------------------------------
 	// handle art @table:: art add on parameters
+	__COUTT__ << "Inserting art @table parameters... " << parentPath <<__E__;
 	insertParameters(out,
 	                 tabStr,
 	                 commentStr,
+					 parentPath,
 	                 art.getNode("AddOnParametersLink"),
 	                 "daqParameter" /*parameterType*/,
 	                 false /*onlyInsertAtTableParameters*/,
@@ -1545,6 +2005,7 @@ void ARTDAQTableBase::outputRoutingManagerFHICL(
 	std::string tabStr     = "";
 	std::string commentStr = "";
 
+	__COUTV__(filename);
 	out.open(filename, std::fstream::out | std::fstream::trunc);
 	if(out.fail())
 	{
@@ -1552,135 +2013,164 @@ void ARTDAQTableBase::outputRoutingManagerFHICL(
 		__SS_THROW__;
 	}
 
-	//--------------------------------------
-	// header
-	OUT << "###########################################################" << __E__;
-	OUT << "#" << __E__;
-	OUT << "# artdaq routingManager fcl configuration file produced by otsdaq." << __E__;
-	OUT << "# 	Creation time:                  \t" << StringMacros::getTimestampString()
-	    << __E__;
-	OUT << "# 	Original filename:              \t" << filename << __E__;
-	OUT << "#	otsdaq-ARTDAQ RoutingManager UID:\t" << routingManagerNode.getValue()
-	    << __E__;
-	OUT << "#" << __E__;
-	OUT << "###########################################################" << __E__;
-	OUT << "\n\n";
-
-	// no primary link to table tree for reader node!
-	try
+	try //catch and give error in fcl file if issue!
 	{
-		if(routingManagerNode.isDisconnected())
+		//--------------------------------------
+		// header
+		OUT << "###########################################################" << __E__;
+		OUT << "#" << __E__;
+		OUT << "# artdaq " << getTypeString(ARTDAQAppType::RoutingManager) << " fcl configuration file produced by otsdaq." << __E__;
+		OUT << "# 	Creation time:                  \t" << StringMacros::getTimestampString()
+			<< __E__;
+		OUT << "# 	Original filename:              \t" << filename << __E__;
+		OUT << "#	otsdaq-ARTDAQ RoutingManager UID:\t" << routingManagerNode.getValue()
+			<< __E__;
+		OUT << "#" << __E__;
+		OUT << "###########################################################" << __E__;
+		OUT << "\n\n";
+
+		// no primary link to table tree for reader node!
+		try
 		{
-			// create empty fcl
-			OUT << "{}\n\n";
-			out.close();
-			return;
+			if(routingManagerNode.isDisconnected())
+			{
+				// create empty fcl
+				OUT << "{}\n\n";
+				out.close();
+				return;
+			}
 		}
-	}
-	catch(const std::runtime_error&)
-	{
-		//__COUT__ << "Ignoring error, assume this a valid UID node." << __E__;
-		// error is expected here for UIDs.. so just ignore
-		// this check is valuable if source node is a unique-Link node, rather than UID
-	}
-
-	//--------------------------------------
-	// handle daq
-	OUT << "daq: {\n";
-	PUSHTAB;
-
-	OUT << "policy: {\n";
-	PUSHTAB;
-	auto policyName = routingManagerNode.getNode("routingPolicyPluginType").getValue();
-	if(policyName == "DEFAULT")
-		policyName = "NoOp";
-	OUT << "policy: " << policyName << "\n";
-	OUT << "receiver_ranks: []\n";
-
-	// shared and unique parameters
-	auto parametersLink = routingManagerNode.getNode("routingPolicyParametersLink");
-	if(!parametersLink.isDisconnected())
-	{
-		auto parameters = parametersLink.getChildren();
-		for(auto& parameter : parameters)
+		catch(const std::runtime_error&)
 		{
-			if(!parameter.second.status())
-				PUSHCOMMENT;
-
-			//				__COUT__ <<
-			// parameter.second.getNode("daqParameterKey").getValue() <<
-			//						": " <<
-			//						parameter.second.getNode("daqParameterValue").getValue()
-			//						<<
-			//						"\n";
-
-			auto comment =
-			    parameter.second.getNode(TableViewColumnInfo::COL_NAME_COMMENT);
-			OUT << parameter.second.getNode("daqParameterKey").getValue() << ": "
-			    << parameter.second.getNode("daqParameterValue").getValue()
-			    << (comment.isDefaultValue() ? "" : ("\t # " + comment.getValue()))
-			    << "\n";
-
-			if(!parameter.second.status())
-				POPCOMMENT;
+			//__COUT__ << "Ignoring error, assume this a valid UID node." << __E__;
+			// error is expected here for UIDs.. so just ignore
+			// this check is valuable if source node is a unique-Link node, rather than UID
 		}
+
+		//--------------------------------------
+		// handle daq
+		OUT << "daq: {\n";
+		PUSHTAB;
+
+		OUT << "policy: {\n";
+		PUSHTAB;
+		auto policyName = routingManagerNode.getNode("routingPolicyPluginType").getValue();
+		if(policyName == "DEFAULT")
+			policyName = "NoOp";
+		OUT << "policy: " << policyName << "\n";
+		OUT << "receiver_ranks: []\n";
+
+		// shared and unique parameters
+		auto parametersLink = routingManagerNode.getNode("routingPolicyParametersLink");
+		if(!parametersLink.isDisconnected())
+		{
+			auto parameters = parametersLink.getChildren();
+			for(auto& parameter : parameters)
+			{
+				if(!parameter.second.status())
+					PUSHCOMMENT;
+
+				//				__COUT__ <<
+				// parameter.second.getNode("daqParameterKey").getValue() <<
+				//						": " <<
+				//						parameter.second.getNode("daqParameterValue").getValue()
+				//						<<
+				//						"\n";
+
+				auto comment =
+					parameter.second.getNode(TableViewColumnInfo::COL_NAME_COMMENT);
+				OUT << parameter.second.getNode("daqParameterKey").getValue() << ": "
+					<< parameter.second.getNode("daqParameterValue").getValue()
+					<< (comment.isDefaultValue() ? "" : ("\t # " + comment.getValue()))
+					<< "\n";
+
+				if(!parameter.second.status())
+					POPCOMMENT;
+			}
+		}
+
+		POPTAB;
+		OUT << "}\n";
+
+		OUT << "use_routing_manager: true\n";
+
+		auto        routingManagerSubsystemID   = 1;
+		auto        routingManagerSubsystemLink = routingManagerNode.getNode("SubsystemLink");
+		std::string rmHost                      = "localhost";
+		if(!routingManagerSubsystemLink.isDisconnected())
+		{
+			routingManagerSubsystemID = getSubsytemId(routingManagerSubsystemLink);
+			rmHost = info_.subsystems[routingManagerSubsystemID].routingManagerHost;
+		}
+		if(rmHost == "localhost" || rmHost == "127.0.0.1")
+		{
+			char hostbuf[HOST_NAME_MAX + 1];
+			gethostname(hostbuf, HOST_NAME_MAX);
+			rmHost = std::string(hostbuf);
+		}
+
+		// Bookkept parameters
+		OUT << "routing_manager_hostname: \"" << rmHost << "\"\n";
+		OUT << "sender_ranks: []\n";
+		OUT << "table_update_port: 0\n";
+		OUT << "table_update_address: \"0.0.0.0\"\n";
+		OUT << "table_acknowledge_port: 0\n";
+		OUT << "token_receiver: {\n";
+		PUSHTAB;
+
+		OUT << "routing_token_port: 0\n";
+
+		POPTAB;
+		OUT << "}\n";
+
+		// Optional parameters
+		auto tableUpdateIntervalMs =
+			routingManagerNode.getNode("tableUpdateIntervalMs").getValue();
+		if(tableUpdateIntervalMs != "DEFAULT")
+		{
+			OUT << "table_update_interval_ms: " << tableUpdateIntervalMs << "\n";
+		}
+		auto tableAckRetryCount = routingManagerNode.getNode("tableAckRetryCount").getValue();
+		if(tableAckRetryCount != "DEFAULT")
+		{
+			OUT << "table_ack_retry_count: " << tableAckRetryCount << "\n";
+		}
+
+		OUT << "routing_timeout_ms: " << routingTimeoutMs << "\n";
+		OUT << "routing_retry_count: " << routingRetryCount << "\n";
+
+		std::string parentPath = routingManagerNode.getParentTableName() + "/" + 
+							routingManagerNode.getParentRecordName() + "/" +
+							routingManagerNode.getParentLinkColumnName() + ":" +
+							routingManagerNode.getTableName() + "/"
+							+ routingManagerNode.getValue();
+		insertMetricsBlock(OUT, tabStr, commentStr, parentPath, routingManagerNode);
+
+		POPTAB;
+		OUT << "}\n\n";  // end daq
+		__COUTT__ << "outputReaderFHICL DONE" << __E__;
 	}
-
-	POPTAB;
-	OUT << "}\n";
-
-	OUT << "use_routing_manager: true\n";
-
-	auto        routingManagerSubsystemID   = 1;
-	auto        routingManagerSubsystemLink = routingManagerNode.getNode("SubsystemLink");
-	std::string rmHost                      = "localhost";
-	if(!routingManagerSubsystemLink.isDisconnected())
+	catch(...)
 	{
-		routingManagerSubsystemID = getSubsytemId(routingManagerSubsystemLink);
-		rmHost = info_.subsystems[routingManagerSubsystemID].routingManagerHost;
+		__SS__ << "\n\nError while generating FHiCL for " << getTypeString(ARTDAQAppType::RoutingManager) << " node at filename '"
+		             << filename << "'"
+		             << __E__;
+		try
+		{
+			throw;
+		}
+		catch(const std::runtime_error& e)
+		{
+			ss << " Here is the error: " << e.what() << __E__;
+		}
+		catch(const std::exception& e)
+		{
+			ss << " Here is the error: " << e.what() << __E__;
+		}
+		out << ss.str();
+		out.close();
+		__SS_THROW__;
 	}
-	if(rmHost == "localhost" || rmHost == "127.0.0.1")
-	{
-		char hostbuf[HOST_NAME_MAX + 1];
-		gethostname(hostbuf, HOST_NAME_MAX);
-		rmHost = std::string(hostbuf);
-	}
-
-	// Bookkept parameters
-	OUT << "routing_manager_hostname: \"" << rmHost << "\"\n";
-	OUT << "sender_ranks: []\n";
-	OUT << "table_update_port: 0\n";
-	OUT << "table_update_address: \"0.0.0.0\"\n";
-	OUT << "table_acknowledge_port: 0\n";
-	OUT << "token_receiver: {\n";
-	PUSHTAB;
-
-	OUT << "routing_token_port: 0\n";
-
-	POPTAB;
-	OUT << "}\n";
-
-	// Optional parameters
-	auto tableUpdateIntervalMs =
-	    routingManagerNode.getNode("tableUpdateIntervalMs").getValue();
-	if(tableUpdateIntervalMs != "DEFAULT")
-	{
-		OUT << "table_update_interval_ms: " << tableUpdateIntervalMs << "\n";
-	}
-	auto tableAckRetryCount = routingManagerNode.getNode("tableAckRetryCount").getValue();
-	if(tableAckRetryCount != "DEFAULT")
-	{
-		OUT << "table_ack_retry_count: " << tableAckRetryCount << "\n";
-	}
-
-	OUT << "routing_timeout_ms: " << routingTimeoutMs << "\n";
-	OUT << "routing_retry_count: " << routingRetryCount << "\n";
-
-	insertMetricsBlock(OUT, tabStr, commentStr, routingManagerNode);
-
-	POPTAB;
-	OUT << "}\n\n";  // end daq
-
 	out.close();
 }  // end outputReaderFHICL()
 
@@ -6488,3 +6978,18 @@ int ARTDAQTableBase::getSubsytemId(ConfigurationTree subsystemNode)
 
 	return subsystemNode.getNodeRow() + 2;
 }  // end getSubsytemId()
+
+//==============================================================================
+/// add whitespace so comments lineup in fcl for nicer presentation
+void ARTDAQTableBase::addCommentWhitespace(std::ostream& os, size_t lineLength)
+{
+	for(size_t i = 0; true; i+=20)
+	{	
+		if(lineLength < FCL_COMMENT_POSITION + i)	// pad to FCL_COMMENT_POSITION + i
+		{
+			os << std::string(FCL_COMMENT_POSITION + i - lineLength, ' ');
+			break;
+		}
+	}
+	os << " // ";
+} //end addCommentWhitespace()

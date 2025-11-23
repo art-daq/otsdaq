@@ -49,6 +49,7 @@ const std::string TableViewColumnInfo::TYPE_VALUE_OFF 					= "Off";
 
 const std::string TableViewColumnInfo::DATATYPE_STRING_DEFAULT 			= "DEFAULT";
 const std::string TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT 		= "No comment.";
+const std::string TableViewColumnInfo::DATATYPE_COMMENT_OLD_DEFAULT 	= "No Comment";
 const std::string TableViewColumnInfo::DATATYPE_BOOL_DEFAULT 			= "0";
 const std::string TableViewColumnInfo::DATATYPE_NUMBER_DEFAULT 			= "0";
 
@@ -462,6 +463,7 @@ TableViewColumnInfo::~TableViewColumnInfo(void)
 const std::string& TableViewColumnInfo::getType(void) const { return type_; }
 
 //==============================================================================
+/// returns the configued default value value for this particular column
 const std::string& TableViewColumnInfo::getDefaultValue(void) const
 {
 	return defaultValue_;
@@ -470,6 +472,8 @@ const std::string& TableViewColumnInfo::getMinValue(void) const { return minValu
 const std::string& TableViewColumnInfo::getMaxValue(void) const { return maxValue_; }
 
 //==============================================================================
+/// returns default (i.e. standard) default value, for a specified coluumn type, without any awareness of a particular
+/// table nor its schema.
 const std::string& TableViewColumnInfo::getDefaultDefaultValue(
     const std::string& type, const std::string& dataType)
 {

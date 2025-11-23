@@ -2,7 +2,7 @@
 # otsdaq/tools/otsdaq_import_system_aliases.sh
 
 # usage:
-# otsdaq_import_system_aliases.sh <path_to_import_database_folder> <path_to_import_user_data> <import_prepend_base_name (optional)>
+# otsdaq_import_system_aliases.sh <import database URI> <import USER_DATA path> <import prepend base name (optional)>
 #
 # All group aliases and active groups are imported to current db and are prepended with a label if the optional arugment is provided.
 # The steps of the import are as follows:
@@ -21,19 +21,19 @@ echo " _|_"
 echo " \ /"
 echo "  V "
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t ========================================================"
-echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t usage: ./otsdaq_import_system_aliases.sh <import database URI> <import USER_DATA path> <import prepend base name (optional)>"
+echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t usage: otsdaq_import_system_aliases.sh <import database URI> <import USER_DATA path> <import prepend base name (optional)>"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t for example..."
-echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t\t ./otsdaq_import_system_aliases.sh mongodb://user:pass@localhost:port/teststand_db?authSource=user /home/mu2eshift/ots_v4/Data_shift shift_v4"
+echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t\t otsdaq_import_system_aliases.sh mongodb://user:pass@localhost:port/teststand_db?authSource=user /home/mu2eshift/ots_v4/Data_shift shift_v4"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t          or..."
-echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t\t ./otsdaq_import_system_aliases.sh filesystemdb:///home/mu2ehwdev/ots_dev/databases_HWDev/filesystemdb/test_db /home/mu2eshift/ots_v4/Data_shift shift_v4"
+echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t\t otsdaq_import_system_aliases.sh filesystemdb:///home/mu2ehwdev/ots_dev/databases_HWDev/filesystemdb/test_db /home/mu2eshift/ots_v4/Data_shift shift_v4"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t All system aliases (specified by Backbone in the active groups file) are imported to current db, and imported Group Names and System Aliases are prepended with the optional label."
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t To export only to tmp/ and not import..."
-echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t\t ./otsdaq_import_system_aliases.sh EXPORT_ONLY <import database URI> <import USER_DATA path>"
+echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t\t\t otsdaq_import_system_aliases.sh EXPORT_ONLY <import database URI> <import USER_DATA path>"
 echo -e `date +"%h%y %T"` "otsdaq_import_system_aliases.sh [${LINENO}]  \t"
 
 #return  >/dev/null 2>&1 #return is used if script is sourced

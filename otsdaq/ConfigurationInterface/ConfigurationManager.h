@@ -244,7 +244,7 @@ class ConfigurationManager
 	void 								recursiveTreeToFhicl		(ConfigurationTree node, std::ostream& out, std::string& tabStr, std::string& commentStr, unsigned int depth = -1);
 	static void 						initTableThread				(ConfigurationManager* 					cfgMgr,
 																	ots::TableBase*							table,
-																	std::string*		 					accumulatedWarnings,
+																	std::string*		 					threadErrors,
 																	std::mutex* 							threadMutex,
 																	std::shared_ptr<std::atomic<bool>> 		threadDone);
 	static void 						fillTableThread				(ConfigurationInterface* 				theInterface,
@@ -252,7 +252,7 @@ class ConfigurationManager
 																	ots::TableBase*							table,
 																	std::string								tableName,
 																	ots::TableVersion						version,
-																	std::string*		 					accumulatedWarnings,
+																	std::string*		 					threadErrors,
 																	std::mutex* 							threadMutex,
 																	std::shared_ptr<std::atomic<bool>> 		threadDone);
 
