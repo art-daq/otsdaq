@@ -29,11 +29,11 @@ using namespace ots;
 /// OUTCF:   (X)string + (C)comment, with tree-path + (F)field
 #define				OUTCF(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << parentPath << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
 /// OUTC:    (X)string + (C)comment, with tree-path
-#define				OUTC(X,C)				OUTCF(X,C,"")	
+#define				OUTC(X,C)				OUTCF(X,C,"")
 /// OUTCLF:  (X)string + (C)comment, with local tree-path + (F)field
 #define				OUTCLF(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath << std::string(std::string(F).size()?("/" + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
 /// OUTCL:   (X)string + (C)comment, with local tree-path
-#define				OUTCL(X,C)				OUTCLF(X,C,"")	
+#define				OUTCL(X,C)				OUTCLF(X,C,"")
 /// OUTCL2F: (X)string + (C)comment, with local2 tree-path + (F)field
 #define				OUTCL2F(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath2 << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
 /// OUTCL2:  (X)string + (C)comment, with local2 tree-path

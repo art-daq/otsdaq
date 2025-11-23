@@ -155,7 +155,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	static void       						extractDataLoggersInfo		(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
 	static void       						extractDispatchersInfo		(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
 	static void       						addCommentWhitespace		(std::ostream& os, size_t lineLength);
-	
+
 	static ARTDAQInfo 						info_;
 
   public:

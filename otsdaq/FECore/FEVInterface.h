@@ -268,7 +268,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	void 							runFrontEndMacro			(const std::string& targetInterfaceID,const std::string& feMacroName, const std::vector<FEVInterface::frontEndMacroArg_t>& inputArgs, std::vector<FEVInterface::frontEndMacroArg_t>& outputArgs) const;
 
 	void 							PauseResumeSlowControls		(__ARGS__);
-	
+
 	/////////
 	/// receiveFromFrontEnd
 	///	* can be used for source interface ID to accept a message from any front-end
