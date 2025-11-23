@@ -81,7 +81,7 @@ class WorkLoopManager;
 
 		static std::string			getIconHeaderString(void);
 		static bool					handleAddDesktopIconRequest(const std::string& author, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut, std::vector<DesktopIconTable::DesktopIcon>* newIcons = nullptr);
-		static void 				handleGetApplicationIdRequest(AllSupervisorInfo* applicationInfo, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut);
+		static void 				handleGetApplicationIdRequest(AllSupervisorInfo* applicationInfo, cgicc::Cgicc& cgiIn, HttpXmlDocument& xmlOut, std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, std::string /* translatedHostPort */>>* portTranslationMap = nullptr);
 
 		xoap::MessageReference 		stateMachineXoapHandler(xoap::MessageReference msg);
 
@@ -287,6 +287,9 @@ class WorkLoopManager;
 
 		bool 				supervisorGuiHasBeenLoaded_;  ///< use to indicate first access by user of ots since execution
 		static WebUsers   	theWebUsers_;
+		std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */,
+			std::string /* translatedHostPort */>>
+							portTranslationMap_;  ///< map of translation ports, if only certain host+port ranges are allowed at gateway for example
 
 		WorkLoopManager 	stateMachineWorkLoopManager_;
 		toolbox::BSem   	stateMachineSemaphore_;
@@ -397,6 +400,7 @@ public:	//used by remote subsystem control and status
 		static void 				GetRemoteGatewayIcons		(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
 		void						loadRemoteGatewaySettings	(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways, bool onlyNotFound = false) const;
 		void						saveRemoteGatewaySettings	(void) const;
+		static std::string			translateURLForRequestOrigin(const std::string& url, const std::string& requestOrigin, std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, std::string /* translatedHostPort */>>& portTranslationMap);
 
 	};
 // clang-format on

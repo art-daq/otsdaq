@@ -244,7 +244,7 @@ void WebUsers::initializeRequestUserInfo(cgicc::Cgicc&              cgi,
 	userInfo.usernameWithLock_ = "";
 	userInfo.userSessionIndex_ = NOT_FOUND_IN_DATABASE;
 	userInfo.setGroupPermissionLevels("");  // always init to inactive
-}
+}  //end initializeRequestUserInfo()
 
 //==============================================================================
 /// checkRequestAccess
