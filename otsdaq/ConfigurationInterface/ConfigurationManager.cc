@@ -1565,7 +1565,7 @@ void ConfigurationManager::loadTableGroup(
 	// theBackboneTableGroup_ on success
 
 	__GEN_COUTT__ << "Loading Table Group: " << groupName << "(" << groupKey << ")"
-	              << " accumulatedWarnings=" << (accumulatedWarnings?1:0) << __E__;
+	              << " accumulatedWarnings=" << (accumulatedWarnings ? 1 : 0) << __E__;
 
 	//failing member map load should be an exception!
 
@@ -1824,10 +1824,9 @@ void ConfigurationManager::loadTableGroup(
 			{
 				const int numOfThreads = PROCESSOR_COUNT / 2;
 				__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
-				             << numOfThreads << " threads for initializing tables for Table Group '"
-							    << groupName << "(" << groupKey
-							    << ")'."
-				             << __E__;
+				             << numOfThreads
+				             << " threads for initializing tables for Table Group '"
+				             << groupName << "(" << groupKey << ")'." << __E__;
 				if(groupType != ConfigurationManager::GroupType::CONFIGURATION_TYPE ||
 				   numOfThreads < 2)  // no multi-threading
 				{
@@ -1899,10 +1898,10 @@ void ConfigurationManager::loadTableGroup(
 				}
 				else  //multi-threading
 				{
-					int        threadsLaunched  = 0;
-					int        foundThreadIndex = 0;
+					int         threadsLaunched  = 0;
+					int         foundThreadIndex = 0;
 					std::string threadErrors;
-					std::mutex threadMutex;  // to protect accumulatedWarnings
+					std::mutex  threadMutex;  // to protect accumulatedWarnings
 					std::vector<std::shared_ptr<std::atomic<bool>>> threadDone;
 					for(int i = 0; i < numOfThreads; ++i)
 						threadDone.push_back(std::make_shared<std::atomic<bool>>(true));
@@ -1963,12 +1962,11 @@ void ConfigurationManager::loadTableGroup(
 						       std::string*                       theThreadErrors,
 						       std::mutex*                        theThreadMutex,
 						       std::shared_ptr<std::atomic<bool>> theThreadDone) {
-							    ConfigurationManager::initTableThread(
-							        cfgMgr,
-							        theTable,
-							        theThreadErrors,
-							        theThreadMutex,
-							        theThreadDone);
+							    ConfigurationManager::initTableThread(cfgMgr,
+							                                          theTable,
+							                                          theThreadErrors,
+							                                          theThreadMutex,
+							                                          theThreadDone);
 						    },
 						    this,
 						    nameToTableMap_.at(memberPair.first),
@@ -2002,8 +2000,9 @@ void ConfigurationManager::loadTableGroup(
 
 					if(threadErrors != "")
 					{
-						__SS__ << "Error identified in threads during init of table group: \n"
-							<< threadErrors << __E__;
+						__SS__ << "Error identified in threads during init of table "
+						          "group: \n"
+						       << threadErrors << __E__;
 						__GEN_COUTT__ << "\n" << ss.str() << __E__;
 						if(accumulatedWarnings)
 							*accumulatedWarnings += ss.str();
@@ -2117,9 +2116,8 @@ void ConfigurationManager::loadTableGroup(
 			}
 		}
 
-		__GEN_COUTT__ << "loadTableGroup() complete for Table Group '"
-							    << groupName << "(" << groupKey
-							    << ")'." << __E__;
+		__GEN_COUTT__ << "loadTableGroup() complete for Table Group '" << groupName << "("
+		              << groupKey << ")'." << __E__;
 		lastGroupLoad_[convertGroupTypeToName(groupType)] =
 		    std::make_pair(std::make_pair(groupName, TableGroupKey(groupKey)), memberMap);
 		return;
@@ -2512,7 +2510,8 @@ void ConfigurationManager::initTableThread(ConfigurationManager* cfgMgr,
 try
 {
 	__COUTT__ << "Thread init of " << table->getTableName() << "-v"
-	           << table->getViewVersion() << " threadErrors=" << (threadErrors?1:0) << __E__;
+	          << table->getViewVersion() << " threadErrors=" << (threadErrors ? 1 : 0)
+	          << __E__;
 
 	// attempt to init using the configuration's specific init
 	//	this could be risky user code, try and catch
@@ -2568,8 +2567,8 @@ try
 }  // end initTableThread()
 catch(...)
 {
-	__SS__ << "Error occurred initializing table '" << table->getTableName()
-	              << "-v" << table->getViewVersion() << "'..." << __E__;
+	__SS__ << "Error occurred initializing table '" << table->getTableName() << "-v"
+	       << table->getViewVersion() << "'..." << __E__;
 	try
 	{
 		throw;
@@ -2739,7 +2738,7 @@ catch(const std::runtime_error& e)
 	__SS__ << "Error occurred filling table '" << tableName << "-v" << version
 	       << "': " << e.what() << __E__;
 	__COUT_ERR__ << ss.str();
-	
+
 	if(threadErrors)
 	{
 		std::lock_guard<std::mutex> lock(*threadMutex);
@@ -2764,7 +2763,7 @@ catch(...)
 	{
 	}
 	__COUT_ERR__ << ss.str();
-	
+
 	if(threadErrors)
 	{
 		std::lock_guard<std::mutex> lock(*threadMutex);

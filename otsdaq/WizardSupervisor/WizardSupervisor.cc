@@ -170,11 +170,10 @@ void WizardSupervisor::init(void)
 			throw;
 		}
 		else
-			__COUT_INFO__
-			    << "DB connection test seems to have passed." << __E__;
-				
+			__COUT_INFO__ << "DB connection test seems to have passed." << __E__;
+
 		__COUTS__(3) << "Ignoring this exception during the DB connection test: "
-			    << e.what() << __E__;
+		             << e.what() << __E__;
 	}
 
 }  // end init()
