@@ -336,10 +336,7 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 			}
 			else  //#include can not have a comment at end of line, so do before!
 			{
-				OUTCL("# comment for "
-				          << key
-				          << parameter.second.getNode(parameterPreamble + "Value")
-				                 .getValue(),
+				OUTCL("# comment for #include below:",
 				      parameter.second.hasComment() ? parameter.second.getComment() : "");
 				OUT << key
 				    << parameter.second.getNode(parameterPreamble + "Value").getValue()
