@@ -70,7 +70,7 @@ const uint8_t ConfigurationManager::METADATA_COL_TIMESTAMP = 4;
 
 const std::string ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE =
     "SubsystemUserDataPathsTable";
-const std::set<std::string> ConfigurationManager::contextMemberNames_ = {
+const std::set<std::string> ConfigurationManager::fixedContextMemberNames_ = {
     ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME,
     ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME,
     "XDAQApplicationPropertyTable",
@@ -637,7 +637,7 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 			inContext = true;
 		}
 		else
-			for(auto& contextMemberString : contextMemberNames_)
+			for(auto& contextMemberString : fixedContextMemberNames_)
 				if(memberPair.first == contextMemberString)
 				{
 					inGroup   = true;
@@ -655,7 +655,7 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 				   << "the following members (w/ or wo/ the optional table "
 				   << CONTEXT_SUBSYSTEM_OPTIONAL_TABLE << "):\n";
 				int i = 0;
-				for(const auto& memberName : contextMemberNames_)
+				for(const auto& memberName : fixedContextMemberNames_)
 					ss << ++i << ". " << memberName << "\n";
 				ss << "\nThe members are as follows::\n";
 				i = 0;
@@ -726,19 +726,20 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 		}
 	}
 
-	if((isContext || inContext) && matchCount != contextMemberNames_.size())
+	if((isContext || inContext) && matchCount != fixedContextMemberNames_.size())
 	{
 		__SS__ << "This group is an incomplete match to a Context group: "
 		       << " Size=" << matchCount << " but should be "
-		       << contextMemberNames_.size() << __E__;
+		       << fixedContextMemberNames_.size() << __E__;
 		ss << "\nThe members currently are...\n";
 		int i = 0;
 		for(auto& memberPair : memberMap)
 			ss << ++i << ". " << memberPair.first << "\n";
 		ss << "\nThe expected Context members are...\n";
 		i = 0;
-		for(auto& memberName : contextMemberNames_)
+		for(auto& memberName : fixedContextMemberNames_)
 			ss << ++i << ". " << memberName << "\n";
+		ss << "optional. (" << CONTEXT_SUBSYSTEM_OPTIONAL_TABLE << ")\n";
 		//__COUT_ERR__ << "\n" << ss.str();
 		__SS_ONLY_THROW__;
 	}
@@ -3439,9 +3440,23 @@ std::shared_ptr<TableGroupKey> ConfigurationManager::makeTheTableGroupKey(
 }  // end makeTheTableGroupKey()
 
 //==============================================================================
-const std::set<std::string>& ConfigurationManager::getContextMemberNames()
+const std::set<std::string>& ConfigurationManager::getActiveContextMemberNames()
 {
-	return ConfigurationManager::contextMemberNames_;
+	std::map<std::string, TableVersion> activeTables = getActiveVersions();
+	
+	//copy fixed context tables, then add optional tables if active
+	contextMemberNames_ = ConfigurationManager::fixedContextMemberNames_;
+
+	if(activeTables.find(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE) != 
+		activeTables.end())
+		contextMemberNames_.emplace(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE);
+	return contextMemberNames_;
+}  // end getContextMemberNames()
+
+//==============================================================================
+const std::set<std::string>& ConfigurationManager::getFixedContextMemberNames()
+{
+	return ConfigurationManager::fixedContextMemberNames_;
 }  // end getContextMemberNames()
 
 //==============================================================================
@@ -3456,6 +3471,7 @@ const std::set<std::string>& ConfigurationManager::getIterateMemberNames()
 	return ConfigurationManager::iterateMemberNames_;
 }  // end getIterateMemberNames()
 
+//==============================================================================
 const std::set<std::string>& ConfigurationManager::getConfigurationMemberNames(void)
 {
 	configurationMemberNames_.clear();
@@ -3465,6 +3481,7 @@ const std::set<std::string>& ConfigurationManager::getConfigurationMemberNames(v
 	for(auto& tablePair : activeTables)
 		if(ConfigurationManager::contextMemberNames_.find(tablePair.first) ==
 		       ConfigurationManager::contextMemberNames_.end() &&
+		   tablePair.first != ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE &&
 		   ConfigurationManager::backboneMemberNames_.find(tablePair.first) ==
 		       ConfigurationManager::backboneMemberNames_.end() &&
 		   ConfigurationManager::iterateMemberNames_.find(tablePair.first) ==

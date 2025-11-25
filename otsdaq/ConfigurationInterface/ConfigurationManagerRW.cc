@@ -41,7 +41,7 @@ ConfigurationManagerRW::ConfigurationManagerRW(const std::string& username)
 		// make table group history directory here and at Gateway Supervisor (just in case)
 		mkdir((ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH).c_str(), 0755);
 
-		const std::set<std::string>& contextMemberNames  = getContextMemberNames();
+		const std::set<std::string>& contextMemberNames  = getFixedContextMemberNames();
 		const std::set<std::string>& backboneMemberNames = getBackboneMemberNames();
 		const std::set<std::string>& iterateMemberNames  = getIterateMemberNames();
 
@@ -2394,7 +2394,7 @@ GroupEditStruct::GroupEditStruct(const ConfigurationManager::GroupType& groupTyp
 
 	const std::set<std::string>& memberNames =
 	    groupType == ConfigurationManager::GroupType::CONTEXT_TYPE
-	        ? ConfigurationManager::getContextMemberNames()
+	        ? cfgMgr->getActiveContextMemberNames()
 	        : (groupType == ConfigurationManager::GroupType::BACKBONE_TYPE
 	               ? ConfigurationManager::getBackboneMemberNames()
 	               : (groupType == ConfigurationManager::GroupType::ITERATE_TYPE

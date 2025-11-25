@@ -7427,7 +7427,7 @@ try
 	// getAliasList
 	// getAppStatus
 	// getAppId					-- convert URL/host:port based on RequestOrigin
-	// getContextMemberNames
+	// getContextNames
 	// getSystemMessages
 	// setUserWithLock
 	// getStateMachine
@@ -7903,7 +7903,7 @@ try
 			GatewaySupervisor::handleGetApplicationIdRequest(
 			    &allSupervisorInfo_, cgiIn, xmlOut, &portTranslationMap_);
 		}
-		else if(requestType == "getContextMemberNames")
+		else if(requestType == "getContextNames")
 		{
 			const XDAQContextTable* contextTable =
 			    CorePropertySupervisorBase::theConfigurationManager_->__GET_CONFIG__(
