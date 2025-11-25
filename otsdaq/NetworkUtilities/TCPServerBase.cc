@@ -51,15 +51,15 @@ TCPServerBase::~TCPServerBase(void)
 //==============================================================================
 void TCPServerBase::startAccept(void)
 {
-    struct sockaddr_in checkAddr;
-    socklen_t addrLen = sizeof(checkAddr);
-    if(::getsockname(getSocketId(), (struct sockaddr*)&checkAddr, &addrLen) == 0
-        && checkAddr.sin_port != 0)
-    {
-        __COUT__ << "Socket " << getSocketId() << " is already bound to port "
-                 << ntohs(checkAddr.sin_port) << std::endl;
-        return;
-    }
+	struct sockaddr_in checkAddr;
+	socklen_t          addrLen = sizeof(checkAddr);
+	if(::getsockname(getSocketId(), (struct sockaddr*)&checkAddr, &addrLen) == 0 &&
+	   checkAddr.sin_port != 0)
+	{
+		__COUT__ << "Socket " << getSocketId() << " is already bound to port "
+		         << ntohs(checkAddr.sin_port) << std::endl;
+		return;
+	}
 
 	//	__COUT__ << "Begin startAccept" << std::endl;
 	int opt = 1;  // SO_REUSEADDR - man socket(7)

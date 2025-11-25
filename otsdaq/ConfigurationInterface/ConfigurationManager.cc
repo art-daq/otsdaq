@@ -3443,13 +3443,14 @@ std::shared_ptr<TableGroupKey> ConfigurationManager::makeTheTableGroupKey(
 const std::set<std::string>& ConfigurationManager::getActiveContextMemberNames()
 {
 	std::map<std::string, TableVersion> activeTables = getActiveVersions();
-	
+
 	//copy fixed context tables, then add optional tables if active
 	contextMemberNames_ = ConfigurationManager::fixedContextMemberNames_;
 
-	if(activeTables.find(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE) != 
-		activeTables.end())
-		contextMemberNames_.emplace(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE);
+	if(activeTables.find(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE) !=
+	   activeTables.end())
+		contextMemberNames_.emplace(
+		    ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE);
 	return contextMemberNames_;
 }  // end getContextMemberNames()
 
