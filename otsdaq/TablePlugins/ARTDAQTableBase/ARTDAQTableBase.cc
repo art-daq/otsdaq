@@ -38,7 +38,7 @@ using namespace ots;
 #define				OUTCL2F(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath2 << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
 /// OUTCL2:  (X)string + (C)comment, with local2 tree-path
 #define				OUTCL2(X,C)				OUTCL2F(X,C,"")
-/// Tree-path rule is, if the last link in the path is a group link with a specified group ID, then include in the last link  
+/// Tree-path rule is, if the last link in the path is a group link with a specified group ID, then include in the last link
 
 
 const std::string 	ARTDAQTableBase::ARTDAQ_FCL_PATH = std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/";
