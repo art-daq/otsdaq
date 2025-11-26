@@ -203,6 +203,8 @@ class ConfigurationTree
 	const std::string&          				getParentTableName			(void) const;
 	const std::string&          				getParentRecordName			(void) const;
 	const std::string&          				getParentLinkColumnName		(void) const;
+	std::string									getParentLinkID				(void) const;
+	std::string									getParentLinkIndex			(void) const;
 	const std::string&          				getFieldTableName			(void) const;
 	const TableVersion&         				getTableVersion				(void) const;
 	const time_t&               				getTableCreationTime		(void) const;

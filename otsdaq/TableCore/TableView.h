@@ -108,11 +108,11 @@ class TableView
 	bool                 						isEntryInGroup				(const unsigned int& row,
 																			 const std::string&  childLinkIndex,
 																			 const std::string&  groupNeedle) const;
-	 bool            							getChildLink				(const unsigned int&                      col,
+	bool            							getChildLink				(const unsigned int&                      col,
 																			 bool&                                    isGroup,
 																			 std::pair<unsigned int /*link col*/,
 																			 unsigned int /*link id col*/>& linkPair) const;
-	 unsigned int    							getLinkGroupIDColumn		(const std::string& childLinkIndex) const;
+	unsigned int    							getLinkGroupIDColumn		(const std::string& childLinkIndex) const;
 	std::vector<unsigned int /*row*/>			getGroupRows				(const unsigned int groupIdCol, const std::string& groupID, bool onlyStatusTrue = false, bool orderedByPriority = false) const;
 	std::vector<std::vector<unsigned int /*row*/>> getGroupRowsByPriority	(const unsigned int groupIdCol, const std::string& groupID, bool onlyStatusTrue = false) const;
 private:
