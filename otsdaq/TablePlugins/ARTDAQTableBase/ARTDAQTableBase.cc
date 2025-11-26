@@ -477,9 +477,8 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&      out,
 		__COUTT__ << "Inserting metric send... " << parentPath << __E__;
 		std::string localParentPath =
 		    parentPath + "/" + metricsGroup.getParentLinkColumnName() + ":" +
-		    metricsGroup.getTableName() + ":" +
-		    metricsGroup.getParentLinkIndex() + ":" +
-			metricsGroup.getParentLinkID(); 
+		    metricsGroup.getTableName() + ":" + metricsGroup.getParentLinkIndex() + ":" +
+		    metricsGroup.getParentLinkID();
 		if(sendSystemMetrics)
 		{
 			__COUTT__ << "Inserting send_system_metrics... " << localParentPath << __E__;
