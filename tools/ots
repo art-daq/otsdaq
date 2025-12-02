@@ -196,10 +196,20 @@ while :; do
 		;;
 	--killall | --kill | --kx | -k)
 		info "KILL OTS!"
+		read -p "Are you sure (you want to kill the ots processes associated with this subsystem)? [Y/N] " answer
+		if [[ "$answer" != "Y" && "$answer" != "y" ]]; then
+			warning "Aborting kill."
+			exit 1
+		fi
 		SOFTKILLALL=1
 		;;
 	--hardkill | -K)
 		info "KILL ALL OTS!"
+		read -p "Are you sure (you want to kill all ots processes on this node)? [Y/N] " answer
+		if [[ "$answer" != "Y" && "$answer" != "y" ]]; then
+			warning "Aborting kill all."
+			exit 1
+		fi
 		KILLALL=1
 		;;
 	--)
