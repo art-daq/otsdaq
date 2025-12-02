@@ -201,6 +201,8 @@ class ConfigurationTree
 	const ConfigurationManager* 				getConfigurationManager		(void) const { return configMgr_; }
 	const std::string&          				getTableName				(void) const;
 	const std::string&          				getParentTableName			(void) const;
+	const std::string&          				getParentRecordName			(void) const;
+	const std::string&          				getParentLinkColumnName		(void) const;
 	const std::string&          				getFieldTableName			(void) const;
 	const TableVersion&         				getTableVersion				(void) const;
 	const time_t&               				getTableCreationTime		(void) const;
@@ -223,6 +225,7 @@ class ConfigurationTree
 	const std::string&       					getValueAsString			(bool returnLinkTableValue = false) const;
 	const std::string&       					getUIDAsString				(void) const;
 	const std::string&       					getComment					(void) const;
+	bool 										hasComment					(void) const;
 	const std::string&       					getAuthor					(void) const;
 	const std::string&       					getValueDataType			(void) const;
 	const std::string&       					getValueType				(void) const;
@@ -256,7 +259,7 @@ class ConfigurationTree
 	inline bool									status						(void) const { return isEnabled(); } ///<same as isEnabled()
 
 	void 										print						(const unsigned int& depth = -1, std::ostream& out = std::cout) const;
-	std::string 								nodeDump					(void) const;  ///< used for debugging (when throwing exception)
+	std::string 								nodeDump					(bool forcePrintout = false) const;  ///< used for debugging (when throwing exception)
 
 	/// make stream output easy
 	friend std::ostream& 						operator<<					(

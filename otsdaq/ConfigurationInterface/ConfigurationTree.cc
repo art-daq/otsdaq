@@ -558,8 +558,47 @@ const std::string& ConfigurationTree::getParentTableName(void) const
 
 	__SS__ << "Can not get parent table name of node with no parent table pointer! "
 	       << "Was this node initialized correctly? " << __E__;
+	ss << ConfigurationTree::nodeDump(true /* forcePrintout */) << __E__;
 	__SS_ONLY_THROW__;
 }  // end getParentTableName()
+
+//==============================================================================
+/// getParentRecordName
+const std::string& ConfigurationTree::getParentRecordName(void) const
+{
+	if(linkParentTable_ && linkBackRow_ != TableView::INVALID)
+	{
+		//return parent UID
+		return linkParentTable_->getView()
+		    .getDataView()[linkBackRow_][linkParentTable_->getView().getColUID()];
+	}
+
+	__SS__ << "Can not get parent record name of node without the parent table pointer "
+	       << (linkParentTable_ ? "" : "= null ") << "and row (row = " << linkBackRow_
+	       << ")! Was this node initialized correctly? " << __E__;
+	ss << ConfigurationTree::nodeDump(true /* forcePrintout */) << __E__;
+	__SS_ONLY_THROW__;
+}  // end getParentRecordName()
+
+//==============================================================================
+/// getParentLinkColumnName
+const std::string& ConfigurationTree::getParentLinkColumnName(void) const
+{
+	if(linkParentTable_ && linkBackRow_ != TableView::INVALID &&
+	   linkBackCol_ != TableView::INVALID)
+	{
+		//return parent link column name
+		return linkParentTable_->getView().getColumnInfo(linkBackCol_).getName();
+	}
+
+	__SS__
+	    << "Can not get parent link column name of node without the parent table pointer "
+	    << (linkParentTable_ ? "" : "= null ") << "and row (row = " << linkBackRow_
+	    << ") and col (col = " << linkBackCol_
+	    << ")! Was this node initialized correctly? " << __E__;
+	ss << ConfigurationTree::nodeDump(true /* forcePrintout */) << __E__;
+	__SS_ONLY_THROW__;
+}  // end getParentLinkColumnName()
 
 //==============================================================================
 /// getNodeRow
@@ -759,6 +798,17 @@ std::vector<std::string> ConfigurationTree::getFixedChoices(void) const
 
 	return retVec;
 }  // end getFixedChoices()
+
+//==============================================================================
+/// hasComment
+bool ConfigurationTree::hasComment(void) const
+{
+	auto        commentNode = getNode(TableViewColumnInfo::COL_NAME_COMMENT);
+	std::string comment     = commentNode.getValueAsString();
+	return comment != "" && comment != TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT &&
+	       comment != TableViewColumnInfo::DATATYPE_COMMENT_OLD_DEFAULT &&
+	       comment != commentNode.getColumnInfo().getDefaultValue();
+}  // end hasComment()
 
 //==============================================================================
 /// getComment
@@ -1417,17 +1467,20 @@ std::map<std::string, ConfigurationTree> ConfigurationTree::getNodes(
 	}
 
 	return getNode(nodeString).getChildrenMap();
-}
+}  //end getNodes()
+
 //==============================================================================
 /// nodeDump
 ///	Useful for debugging a node failure, like when throwing an exception
-std::string ConfigurationTree::nodeDump(void) const
+std::string ConfigurationTree::nodeDump(bool forcePrintout) const
 {
 	//block cascading node dumps for a couple seconds
 	//	so that user can see the lowest level failure more easily
-	if(time(0) - ConfigurationTree::LAST_NODE_DUMP_TIME < 3)
+	if(!forcePrintout && time(0) - ConfigurationTree::LAST_NODE_DUMP_TIME < 3)
 	{
-		__COUTS__(20) << "Blocking cascading node dumps..." << __E__;
+		__COUTS__(20) << "Blocking cascading node dumps... "
+		                 "ConfigurationTree::LAST_NODE_DUMP_TIME = "
+		              << ConfigurationTree::LAST_NODE_DUMP_TIME << __E__;
 		return "";
 	}
 	ConfigurationTree::LAST_NODE_DUMP_TIME = time(0);

@@ -60,6 +60,17 @@ setupTrace
 xdaqPrefix="setsid"			 #setsid to disassociate from terminal, in case terminal group failure brings down all associations
 otsConsoleFwdPrefix="setsid" #setsid to disassociate from terminal, in case terminal group failure brings down all associations
 
+# Handle CTRL+C which is interpreted to mean stop launch and kill all launched processes
+ctrlChandler () {
+	out "Caught Ctrl+C -- exiting all launched otsdaq processes..."
+	#try to force kill other ots scripts
+	echo "KILL_ALL" > $OTSDAQ_STARTOTS_QUIT_FILE
+	echo "KILL_ALL ${THIS_HOST}" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
+	exit 130   # standard exit code for SIGINT
+}
+# Install the redirection
+trap 'ctrlChandler' SIGINT
+
 # Handle SIGHUP which likely means the ssh connection starting ots was closed and we want to continue with outputs redirected
 handler () {
 	# exec >/dev/null 2>&1 </dev/null
@@ -1384,10 +1395,9 @@ launchOTS() {
 
 	fi
 
-	#clear files initially
-	echo "0" > $OTSDAQ_STARTOTS_ACTION_FILE
-	echo "0" > $OTSDAQ_STARTOTS_QUIT_FILE
-	echo "0" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
+	
+	echo "0" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE #clear action file initially (local or remote)
+	echo "0" > $OTSDAQ_STARTOTS_ACTION_FILE #clear action file initially (local or remote)
 
 
 	##############################################################################
@@ -1395,6 +1405,8 @@ launchOTS() {
 	##############################################################################
 
 	if [ $ISREMOTE == 0 ]; then
+
+		echo "0" > $OTSDAQ_STARTOTS_QUIT_FILE #clear action file initially only if not remote
 
 		out #blank line
 		out "${Purple}${REV}                                                       ${RstClr}"
@@ -1948,6 +1960,25 @@ launchOTS() {
 			#out "OTS_IS_ALIVE=${OTS_IS_ALIVE}"
 
 			for t in {1..8}; do
+
+				OTSDAQ_STARTOTS_ACTION="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE})"
+				OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
+				OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
+				if [[ "$OTSDAQ_STARTOTS_ACTION" == "KILL_ALL" || "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
+
+					out "Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+
+					killprocs
+
+					if [ $ISREMOTE == 1 ]; then
+						out "Done killing (stale) processes"
+					fi
+
+					exit
+				fi
+
+				# out "test of exit ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+
 				if [ "x$OTS_IS_ALIVE" == "x" ]; then
 					sleep 2
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
@@ -2003,6 +2034,7 @@ launchOTS() {
 						OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
 						OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
 
+						# out "test of exit ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 						if [[ "$OTSDAQ_STARTOTS_ACTION" == "KILL_ALL" || "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
 
 							out "Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
@@ -2853,6 +2885,13 @@ if [ $ISREMOTE == 0 ]; then
 fi
 
 sleep 2 #attempt to avoid false starts by xdaq
+
+if [[ ${#remoteLaunchHosts[@]} > 0 ]]; then #part 1 delay, so user has better chance of seeing UpdateOTS.sh warnings before remote hosts start
+	out "Remote launch hosts were requested, waiting for them to start.. (CTRL+C to abort)"
+	sleep 10 #give time for remote hosts to start (and for user to exit with CTRL+C if needed)
+fi
+
+
 #after gateway node has been decided and xdaq has been launched, start action handler
 # exec #rrivera commented: Ron and internet say this exec does nothing
 otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
@@ -2880,7 +2919,10 @@ if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then
 	echo
 fi
 
-#sleep 5 #so that the terminal comes back after the printouts are done ( in quiet mode )
+if [[ ${#remoteLaunchHosts[@]} > 0 ]]; then
+	out "Remote launch hosts were requested, waiting for them to start... (ots -k to abort, not -K which will kill all users on node)"
+	sleep 20 #give time for remote hosts to start (and for user to exit with CTRL+C if needed)
+fi
 
+sleep 1 #so that the terminal comes back after the printouts are done ( in quiet mode )
 
-# This does all we really needed from reset

@@ -151,7 +151,7 @@ void WizardSupervisor::init(void)
 
 	//since wiz mode is not very useful without a connection to the configuration db, test the connection
 	//allow exception to bring down supervisor if no connection
-	__COUT__ << "Testing Configuration Interface DB connection..." << __E__;
+	__COUT_INFO__ << "Testing Configuration Interface DB connection..." << __E__;
 	auto instance = ConfigurationInterface::getInstance(
 	    ConfigurationInterface::CONFIGURATION_MODE::ARTDAQ_DATABASE);
 
@@ -170,9 +170,10 @@ void WizardSupervisor::init(void)
 			throw;
 		}
 		else
-			__COUT__
-			    << "DB connection test seems to have passed. Ignoring this exception: "
-			    << e.what() << __E__;
+			__COUT_INFO__ << "DB connection test seems to have passed." << __E__;
+
+		__COUTS__(3) << "Ignoring this exception during the DB connection test: "
+		             << e.what() << __E__;
 	}
 
 }  // end init()

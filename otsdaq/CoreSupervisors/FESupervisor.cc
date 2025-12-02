@@ -1278,7 +1278,7 @@ void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 			std::string        tabString      = "";
 			std::string        commentsString = "";
 			ARTDAQTableBase::insertMetricsBlock(
-			    oss, tabString, commentsString, feSupervisorNode);
+			    oss, tabString, commentsString, "" /* parentPath*/, feSupervisorNode);
 			metric_string = oss.str();
 		}
 		catch(...)

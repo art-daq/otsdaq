@@ -93,13 +93,14 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	static void        						insertParameters			(std::ostream&      out,
 																		 std::string&       tabStr,
 																		 std::string&       commentStr,
+																		 const std::string& parentPath,
 																		 ConfigurationTree  parameterLink,
 																		 const std::string& parameterPreamble,
 																		 bool               onlyInsertAtTableParameters = false,
 																		 bool               includeAtTableParameters    = false);
-	static std::string 						insertModuleType			(std::ostream& out, std::string& tabStr, std::string& commentStr, ConfigurationTree moduleTypeNode);
-	static void        						insertMetricsBlock			(std::ostream& out, std::string& tabStr, std::string& commentStr, ConfigurationTree daqNode);
-	static void                             insertArtProcessBlock(std::ostream& out, std::string& tabStr, std::string& commentStr, ConfigurationTree art,
+	static std::string 						insertModuleType			(std::ostream& out, std::string& tabStr, std::string& commentStr, const std::string& parentPath, ConfigurationTree moduleTypeNode);
+	static void        						insertMetricsBlock			(std::ostream& out, std::string& tabStr, std::string& commentStr, const std::string& parentPath, ConfigurationTree daqNode);
+	static void                             insertArtProcessBlock		(std::ostream& out, std::string& tabStr, std::string& commentStr, const std::string& parentPath, ConfigurationTree art,
 																		 ConfigurationTree subsystemLink = ConfigurationTree(),
 																		 size_t                   routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
 																		 size_t                   routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT );
@@ -153,6 +154,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	static void       						extractEventBuildersInfo	(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
 	static void       						extractDataLoggersInfo		(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
 	static void       						extractDispatchersInfo		(ConfigurationTree artdaqSupervisorNode, bool getStatusFalseNodes, bool doWriteFHiCL, size_t maxFragmentSizeBytes);
+	static void       						addCommentWhitespace		(std::ostream& os, size_t lineLength);
 
 	static ARTDAQInfo 						info_;
 

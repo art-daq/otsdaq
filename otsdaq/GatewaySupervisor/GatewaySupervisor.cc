@@ -926,11 +926,38 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 								       appLastStatusGood.end() ||
 								   appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                     remoteGatewayApp.appInfo.name])
-									__COUT_WARN__
-									    << "New failure getting '"
-									    << remoteGatewayApp.appInfo.name
-									    << "' Remote Gateway App status at url: "
-									    << remoteGatewayApp.appInfo.url << __E__;
+								{
+									//lookup context name (hostname)
+									std::string contextName = "";
+									for(const auto& it : theSupervisor->allSupervisorInfo_
+									                         .getAllSupervisorInfo())
+									{
+										const auto& appInfo = it.second;
+
+										if(remoteGatewayApp.appInfo.url ==
+										   appInfo.getURL())
+										{
+											contextName = appInfo.getContextName();
+											break;
+										}
+									}
+
+									std::stringstream ss;
+									ss << "New failure getting '"
+									   << remoteGatewayApp.appInfo.name
+									   << "' Remote Gateway App status at url: "
+									   << remoteGatewayApp.appInfo.url;
+									if(contextName != "")
+										ss << " (" << contextName << ")" << __E__;
+
+									__COUT_WARN__ << ss.str();
+									if(appLastStatusGood.find(
+									       remoteGatewayApp.appInfo.url +
+									       remoteGatewayApp.appInfo.name) !=
+									   appLastStatusGood
+									       .end())  //only system message if status was good before
+										theSupervisor->addSystemMessage("*", ss.str());
+								}
 
 								//mark last status bad
 								appLastStatusGood[remoteGatewayApp.appInfo.url +
@@ -1422,13 +1449,18 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 						firstError = false;
 						break;
 					}
+
 					if(appLastStatusGood[appName])
 					{
-						__COUT__ << "Failed getting status from "
-						         << " Supervisor instance = '" << appName
-						         << "' [LID=" << appInfo.getId() << "] in Context '"
-						         << appInfo.getContextName()
-						         << "' [URL=" << appInfo.getURL() << "].\n\n";
+						std::stringstream errSs;
+						errSs << "Failed getting status from "
+						      << " Supervisor instance = '" << appName
+						      << "' [LID=" << appInfo.getId() << "] in Context '"
+						      << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+						      << "].\n\n";
+						__COUT_WARN__ << errSs.str();
+						theSupervisor->addSystemMessage("*", errSs.str());
+
 						__COUTTV__(SOAPUtilities::translate(tempMessage));
 						__COUT_WARN__ << "Failed to send getStatus SOAP Message - will "
 						                 "suppress repeat errors: "

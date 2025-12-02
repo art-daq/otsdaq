@@ -82,6 +82,7 @@ class TableViewColumnInfo
 
 	static const std::string DATATYPE_STRING_DEFAULT;
 	static const std::string DATATYPE_COMMENT_DEFAULT;
+	static const std::string DATATYPE_COMMENT_OLD_DEFAULT;
 	static const std::string DATATYPE_BOOL_DEFAULT;
 	static const std::string DATATYPE_NUMBER_DEFAULT;
 	static const std::string DATATYPE_NUMBER_MIN_DEFAULT;

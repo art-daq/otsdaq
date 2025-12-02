@@ -314,7 +314,7 @@ try
 	for(std::string const& version : result)
 		resultSet.insert(TableVersion(std::stol(version, 0, 10)));
 
-	__COUTTV__(StringMacros::setToString(resultSet));
+	__COUTVS__(10, StringMacros::setToString(resultSet));
 
 	return resultSet;
 }  //end getVersions()
@@ -959,14 +959,14 @@ catch(std::exception const& e)
 	__SS__ << "Database Interface Exception saveCustomJSON for '" << documentNameToLoad
 	       << "-v" << documentVersionToLoad << "':\n\n"
 	       << e.what() << "\n";
-	__COUTT__ << ss.str();
+	__COUTS__(3) << ss.str();
 	__SS_ONLY_THROW__;
 }
 catch(...)
 {
 	__SS__ << "Database Interface Unknown exception saveCustomJSON for '"
 	       << documentNameToLoad << "-v" << documentVersionToLoad << ".'\n";
-	__COUTT__ << ss.str();
+	__COUTS__(3) << ss.str();
 	__SS_ONLY_THROW__;
 }  //end loadCustomJSON() catch
 
