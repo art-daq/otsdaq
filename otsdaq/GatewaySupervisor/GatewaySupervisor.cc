@@ -959,10 +959,6 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										theSupervisor->addSystemMessage("*", ss.str());
 								}
 
-									__COUT_WARN__ << ss.str();
-									theSupervisor->addSystemMessage("*",ss.str());
-								}
-
 								//mark last status bad
 								appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                  remoteGatewayApp.appInfo.name] = false;
@@ -4765,21 +4761,22 @@ try
 			catch(const std::runtime_error& e)
 			{
 				__SS__ << "Run Info interface plugin construction failed of type "
-				       << activeStateMachineRunInfoPluginType_ << " with error: "
-				       << e.what() << __E__;
+				       << activeStateMachineRunInfoPluginType_
+				       << " with error: " << e.what() << __E__;
 				__SS_THROW__;
 			}
 			catch(const std::exception& e)
 			{
 				__SS__ << "Run Info interface plugin construction failed of type "
-				       << activeStateMachineRunInfoPluginType_ << " with error: "
-				       << e.what() << __E__;
+				       << activeStateMachineRunInfoPluginType_
+				       << " with error: " << e.what() << __E__;
 				__SS_THROW__;
 			}
 			catch(...)
 			{
 				__SS__ << "Run Info interface plugin construction failed of type "
-				       << activeStateMachineRunInfoPluginType_ << " with unknown error. Run Condition record of char size "
+				       << activeStateMachineRunInfoPluginType_
+				       << " with unknown error. Run Condition record of char size "
 				       << activeStateMachineConfigurationDumpOnConfigure_.size() << __E__;
 				__SS_THROW__;
 			}
