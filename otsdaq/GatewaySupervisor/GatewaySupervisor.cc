@@ -3565,14 +3565,17 @@ try
 						__SS_THROW__;
 					}
 					else
-						__COUT_INFO__ << "FSM configuration dump Link disconnected at '"
-						              << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME
-						              << "/" << supervisorContextUID_ << "/"
-						              << supervisorApplicationUID_ << "/"
-						              << "LinkToStateMachineTable/" << fsmName << "/"
-						              << "EnableConfigurationDumpOnConfigureTransition "
-						                 "and/or EnableConfigurationDumpOnRunTransition"
-						              << __E__;
+						__COUT_INFO__
+						    << "FSM configuration dump Link disconnected at '"
+						    << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
+						    << supervisorContextUID_ << "/" << supervisorApplicationUID_
+						    << "/"
+						    << "LinkToStateMachineTable/" << fsmName
+						    << "... check the link from the Gateway Superivsor to the "
+						       "State Machine table. Looking for FSM fields "
+						    << "EnableConfigurationDumpOnConfigureTransition "
+						       "and/or EnableConfigurationDumpOnRunTransition"
+						    << __E__;
 				}
 			}  //end configuration dump check/handling
 			else
@@ -7427,7 +7430,7 @@ try
 	// getAliasList
 	// getAppStatus
 	// getAppId					-- convert URL/host:port based on RequestOrigin
-	// getContextMemberNames
+	// getContextNames
 	// getSystemMessages
 	// setUserWithLock
 	// getStateMachine
@@ -7903,7 +7906,7 @@ try
 			GatewaySupervisor::handleGetApplicationIdRequest(
 			    &allSupervisorInfo_, cgiIn, xmlOut, &portTranslationMap_);
 		}
-		else if(requestType == "getContextMemberNames")
+		else if(requestType == "getContextNames")
 		{
 			const XDAQContextTable* contextTable =
 			    CorePropertySupervisorBase::theConfigurationManager_->__GET_CONFIG__(
@@ -10268,6 +10271,7 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 }  // end translateURLForRequestOrigin()
 
 //==============================================================================
+/// static function to lookup the XDAQ Application LID
 void GatewaySupervisor::handleGetApplicationIdRequest(
     AllSupervisorInfo* allSupervisorInfo,
     cgicc::Cgicc&      cgiIn,
@@ -10297,15 +10301,17 @@ void GatewaySupervisor::handleGetApplicationIdRequest(
 	    StringMacros::decodeURIComponent(CgiDataUtilities::getData(cgiIn, "classNeedle"));
 	__COUTV__(classNeedle);
 
+	bool                  found = false;
+	std::set<std::string> setOfClasses;
 	for(auto it : allSupervisorInfo->getAllSupervisorInfo())
 	{
-		// bool pass = true;
-
 		auto appInfo = it.second;
 
+		setOfClasses.emplace(appInfo.getClass());
 		if(classNeedle != appInfo.getClass())
 			continue;  // skip non-matches
 
+		found = true;
 		xmlOut.addTextElementToData("name",
 		                            appInfo.getName());  // get application name
 		xmlOut.addTextElementToData(
@@ -10329,6 +10335,17 @@ void GatewaySupervisor::handleGetApplicationIdRequest(
 
 		xmlOut.addTextElementToData("context",
 		                            appInfo.getContextName());  // get context
+	}                                                           //end app search loop
+
+	if(!found)
+	{
+		__SS__ << "Could not find any XDAQ Applications with classname '" << classNeedle
+		       << "' - does the app exist in the active Context?" << __E__;
+		ss << "\n\nHere are the instantiated app classes:";
+		for(auto appClass : setOfClasses)
+			ss << "\n\t - " << appClass;
+		ss << "\n";
+		__SS_THROW__;
 	}
 
 }  // end handleGetApplicationIdRequest()

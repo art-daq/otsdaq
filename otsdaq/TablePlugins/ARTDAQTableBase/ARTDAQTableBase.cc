@@ -38,6 +38,7 @@ using namespace ots;
 #define				OUTCL2F(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath2 << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
 /// OUTCL2:  (X)string + (C)comment, with local2 tree-path
 #define				OUTCL2(X,C)				OUTCL2F(X,C,"")
+/// Tree-path rule is, if the last link in the path is a group link with a specified group ID, then include in the last link
 
 
 const std::string 	ARTDAQTableBase::ARTDAQ_FCL_PATH = std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/";
@@ -287,7 +288,9 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 
 			std::string localParentPath =
 			    parentPath + "/" + parameterGroupLink.getParentLinkColumnName() + ":" +
-			    parameter.second.getTableName() + "/" + parameter.second.getValue();
+			    parameter.second.getTableName() + ":" +
+			    parameterGroupLink.getParentLinkIndex() + ":" +
+			    parameterGroupLink.getParentLinkID() + "/" + parameter.second.getValue();
 
 			// handle special keyword @table:: (which imports full tables, usually as
 			// defaults)
@@ -336,10 +339,7 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 			}
 			else  //#include can not have a comment at end of line, so do before!
 			{
-				OUTCL("# comment for "
-				          << key
-				          << parameter.second.getNode(parameterPreamble + "Value")
-				                 .getValue(),
+				OUTCL("# comment for #include below:",
 				      parameter.second.hasComment() ? parameter.second.getComment() : "");
 				OUT << key
 				    << parameter.second.getNode(parameterPreamble + "Value").getValue()
@@ -410,7 +410,8 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&      out,
 			__COUTT__ << "Inserting metric... " << parentPath << __E__;
 			std::string localParentPath =
 			    parentPath + "/" + metricsGroup.getParentLinkColumnName() + ":" +
-			    metric.second.getTableName() + "/" + metric.second.getValue();
+			    metric.second.getTableName() + ":" + metricsGroup.getParentLinkIndex() +
+			    ":" + metricsGroup.getParentLinkID() + "/" + metric.second.getValue();
 			__COUTT__ << "Inserting metric... " << localParentPath << __E__;
 
 			OUTCL(metric.second.getNode("metricKey").getValue() << ": {",
@@ -448,7 +449,9 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&      out,
 					std::string localParentPath2 =
 					    localParentPath + "/" +
 					    metricParametersGroup.getParentLinkColumnName() + ":" +
-					    metricParameter.second.getTableName() + "/" +
+					    metricParameter.second.getTableName() + ":" +
+					    metricParametersGroup.getParentLinkIndex() + ":" +
+					    metricParametersGroup.getParentLinkID() + "/" +
 					    metricParameter.second.getValue();
 					__COUTT__ << "Inserting metric... " << localParentPath2 << __E__;
 					OUTCL2(metricParameter.second.getNode("metricParameterKey").getValue()
@@ -474,7 +477,8 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&      out,
 		__COUTT__ << "Inserting metric send... " << parentPath << __E__;
 		std::string localParentPath =
 		    parentPath + "/" + metricsGroup.getParentLinkColumnName() + ":" +
-		    metricsGroup.getTableName() + "/" + metricsGroup.getValue();
+		    metricsGroup.getTableName() + ":" + metricsGroup.getParentLinkIndex() + ":" +
+		    metricsGroup.getParentLinkID();
 		if(sendSystemMetrics)
 		{
 			__COUTT__ << "Inserting send_system_metrics... " << localParentPath << __E__;
@@ -747,49 +751,15 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 			      "generator data fragment type" /* comment */,
 			      "daqGeneratorFragmentType" /* field*/);
 
+			__COUTT__ << "Inserting " << getTypeString(ARTDAQAppType::BoardReader)
+			          << " DAQ Parameters... " << parentPath << __E__;
 			// shared and unique parameters
-			auto parametersLink = boardReaderNode.getNode("daqParametersLink");
-			if(!parametersLink.isDisconnected())
-			{
-				auto parameters = parametersLink.getChildren();
-				for(auto& parameter : parameters)
-				{
-					if(!parameter.second.status())
-						PUSHCOMMENT;
-
-					__COUTS__(20)
-					    << parameter.second.getNode("daqParameterKey").getValue() << ": "
-					    << parameter.second.getNode("daqParameterValue").getValue()
-					    << "\n";
-
-					__COUTT__ << "Inserting " << getTypeString(ARTDAQAppType::BoardReader)
-					          << " DAQ Parameters... " << parentPath << __E__;
-					std::string localParentPath =
-					    parametersLink.getParentTableName() + "/" +
-					    parametersLink.getParentRecordName() + "/" +
-					    parametersLink.getParentLinkColumnName() + ":" +
-					    parameter.second.getTableName() + "/" +
-					    parameter.second.getValue();
-					__COUTT__ << "Inserting " << getTypeString(ARTDAQAppType::BoardReader)
-					          << " DAQ Parameters... " << localParentPath << __E__;
-
-					OUTCL(parameter.second.getNode("daqParameterKey").getValue()
-					          << ": "
-					          << parameter.second.getNode("daqParameterValue").getValue(),
-					      parameter.second.hasComment() ? parameter.second.getComment()
-					                                    : "");
-
-					if(!parameter.second.status())
-						POPCOMMENT;
-				}
-			}
-			else
-			{
-				__COUTS__(3) << "No daq parameters found" << __E__;
-				std::string localParentPath =
-				    parentPath + "/" + parametersLink.getParentLinkColumnName();
-				OUTCL("# no daq parametersfound", "" /* comment*/);
-			}
+			insertParameters(out,
+			                 tabStr,
+			                 commentStr,
+			                 parentPath,
+			                 boardReaderNode.getNode("daqParametersLink"),
+			                 "daqParameter");
 
 			try  //try to get daqFragmentId
 			{
@@ -1575,9 +1545,10 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				PUSHCOMMENT;
 
 			__COUTT__ << "Inserting output parameters... " << localParentPath << __E__;
-			std::string localParentPath2 = localParentPath + ":" +
-			                               outputPlugin.second.getTableName() + "/" +
-			                               outputPlugin.second.getValue();
+			std::string localParentPath2 =
+			    localParentPath + ":" + outputPlugin.second.getTableName() + ":" +
+			    outputs.getParentLinkIndex() + ":" + outputs.getParentLinkID() + "/" +
+			    outputPlugin.second.getValue();
 			__COUTT__ << "Inserting output... " << localParentPath2 << __E__;
 			OUTCL2F(
 			    outputPlugin.second.getNode("outputKey").getValue() << ": {",
@@ -1756,9 +1727,10 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				// handle only @table:: analyzer parameters
 				__COUTT__ << "Inserting analyzer @table parameters... "
 				          << localParentPath2 << __E__;
-				std::string localParentPath3 = localParentPath2 + ":" +
-				                               module.second.getTableName() + "/" +
-				                               module.second.getValue();
+				std::string localParentPath3 =
+				    localParentPath2 + ":" + module.second.getTableName() + ":" +
+				    analyzers.getParentLinkIndex() + ":" + analyzers.getParentLinkID() +
+				    "/" + module.second.getValue();
 				__COUTT__ << "Inserting analyzer @table parameters... "
 				          << localParentPath3 << __E__;
 				insertParameters(out,
@@ -1838,9 +1810,10 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				// handle only @table:: producer parameters
 				__COUTT__ << "Inserting producer @table parameters... "
 				          << localParentPath2 << __E__;
-				std::string localParentPath3 = localParentPath2 + ":" +
-				                               module.second.getTableName() + "/" +
-				                               module.second.getValue();
+				std::string localParentPath3 =
+				    localParentPath2 + ":" + module.second.getTableName() + ":" +
+				    producers.getParentLinkIndex() + ":" + producers.getParentLinkID() +
+				    "/" + module.second.getValue();
 				__COUTT__ << "Inserting producer @table parameters... "
 				          << localParentPath3 << __E__;
 				insertParameters(out,
@@ -1933,9 +1906,10 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				// handle only @table:: filter parameters
 				__COUTT__ << "Inserting filter @table parameters... " << localParentPath2
 				          << __E__;
-				std::string localParentPath3 = localParentPath2 + ":" +
-				                               module.second.getTableName() + "/" +
-				                               module.second.getValue();
+				std::string localParentPath3 =
+				    localParentPath2 + ":" + module.second.getTableName() + ":" +
+				    filters.getParentLinkIndex() + ":" + filters.getParentLinkID() + "/" +
+				    module.second.getValue();
 				__COUTT__ << "Inserting filter @table parameters... " << localParentPath3
 				          << __E__;
 				insertParameters(out,

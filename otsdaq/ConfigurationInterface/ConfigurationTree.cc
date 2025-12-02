@@ -601,6 +601,54 @@ const std::string& ConfigurationTree::getParentLinkColumnName(void) const
 }  // end getParentLinkColumnName()
 
 //==============================================================================
+/// getParentLinkID
+std::string ConfigurationTree::getParentLinkID(void) const
+{
+	if(linkParentTable_ && linkBackRow_ != TableView::INVALID &&
+	   linkBackCol_ != TableView::INVALID)
+	{
+		//get all info associated with the link
+		bool                                                               isGroup;
+		std::pair<unsigned int /*link col*/, unsigned int /*link id col*/> linkPair;
+		linkParentTable_->getView().getChildLink(linkBackCol_, isGroup, linkPair);
+
+		std::string linkId;
+		linkParentTable_->getView().getValue(
+		    linkId, linkBackRow_, linkPair.second /* link id col */);
+
+		return linkId;
+	}
+
+	__SS__ << "Can not get parent link ID of node without the parent table pointer "
+	       << (linkParentTable_ ? "" : "= null ") << "and row (row = " << linkBackRow_
+	       << ") and col (col = " << linkBackCol_
+	       << ")! Was this node initialized correctly? " << __E__;
+	ss << ConfigurationTree::nodeDump(true /* forcePrintout */) << __E__;
+	__SS_ONLY_THROW__;
+}  // end getParentLinkID()
+
+//==============================================================================
+/// getParentLinkIndex
+std::string ConfigurationTree::getParentLinkIndex(void) const
+{
+	if(linkParentTable_ && linkBackRow_ != TableView::INVALID &&
+	   linkBackCol_ != TableView::INVALID)
+	{
+		//return parent link index
+		return linkParentTable_->getView()
+		    .getColumnInfo(linkBackCol_)
+		    .getChildLinkIndex();
+	}
+
+	__SS__ << "Can not get parent link index of node without the parent table pointer "
+	       << (linkParentTable_ ? "" : "= null ") << "and row (row = " << linkBackRow_
+	       << ") and col (col = " << linkBackCol_
+	       << ")! Was this node initialized correctly? " << __E__;
+	ss << ConfigurationTree::nodeDump(true /* forcePrintout */) << __E__;
+	__SS_ONLY_THROW__;
+}  // end getParentLinkIndex()
+
+//==============================================================================
 /// getNodeRow
 const unsigned int& ConfigurationTree::getNodeRow(void) const
 {

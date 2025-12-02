@@ -66,11 +66,12 @@ class ConfigurationManager
 	static const uint8_t METADATA_COL_AUTHOR;
 	static const uint8_t METADATA_COL_TIMESTAMP;
 
-	static const std::set<std::string> contextMemberNames_;  ///< list of context members
+	static const std::set<std::string>
+	    fixedContextMemberNames_;  ///< list of context members (not including optiona context tables)
 	static const std::set<std::string>
 	    backboneMemberNames_;                                ///< list of backbone members
 	static const std::set<std::string> iterateMemberNames_;  ///< list of iterate members
-	std::set<std::string>
+	std::set<std::string>              contextMemberNames_,
 	    configurationMemberNames_;  ///< list of 'active' configuration members
 
 	static const std::string CONTEXT_SUBSYSTEM_OPTIONAL_TABLE;
@@ -95,9 +96,10 @@ class ConfigurationManager
 
 	// clang-format off
 
-	static const std::set<std::string>& getContextMemberNames		(void);
+	static const std::set<std::string>& getFixedContextMemberNames	(void);
 	static const std::set<std::string>& getBackboneMemberNames		(void);
 	static const std::set<std::string>& getIterateMemberNames		(void);
+	const std::set<std::string>& 		getActiveContextMemberNames	(void);
 	const std::set<std::string>& 		getConfigurationMemberNames	(void);
 
 	static const std::string& 			convertGroupTypeToName		(const ConfigurationManager::GroupType& groupTypeId);
