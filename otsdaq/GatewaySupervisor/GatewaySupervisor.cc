@@ -959,6 +959,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor)
 										theSupervisor->addSystemMessage("*", ss.str());
 								}
 
+									__COUT_WARN__ << ss.str();
+									theSupervisor->addSystemMessage("*",ss.str());
+								}
+
 								//mark last status bad
 								appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                  remoteGatewayApp.appInfo.name] = false;
@@ -4758,9 +4762,26 @@ try
 				runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_,
 				                                   activeStateMachineName_));
 			}
+			catch(const std::runtime_error& e)
+			{
+				__SS__ << "Run Info interface plugin construction failed of type "
+				       << activeStateMachineRunInfoPluginType_ << " with error: "
+				       << e.what() << __E__;
+				__SS_THROW__;
+			}
+			catch(const std::exception& e)
+			{
+				__SS__ << "Run Info interface plugin construction failed of type "
+				       << activeStateMachineRunInfoPluginType_ << " with error: "
+				       << e.what() << __E__;
+				__SS_THROW__;
+			}
 			catch(...)
 			{
-				;
+				__SS__ << "Run Info interface plugin construction failed of type "
+				       << activeStateMachineRunInfoPluginType_ << " with unknown error. Run Condition record of char size "
+				       << activeStateMachineConfigurationDumpOnConfigure_.size() << __E__;
+				__SS_THROW__;
 			}
 			if(runInfoInterface == nullptr)
 			{
@@ -9725,7 +9746,9 @@ xoap::MessageReference GatewaySupervisor::supervisorSystemMessage(
 }  // end supervisorSystemMessage()
 
 //===================================================================================================================
-//static add system message (e.g. from remote monitoring)
+///static add system message (e.g. from remote monitoring)
+///	toUserCSV can be "*" for all users
+/// Note: intended to be thread safe.
 void GatewaySupervisor::addSystemMessage(std::string toUserCSV, std::string message)
 {
 	__COUTTV__(toUserCSV);

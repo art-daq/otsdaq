@@ -2384,8 +2384,10 @@ printMainURL() {
 		sleep 4 #give a little time for other StartOTS printouts to occur (so this one is last)
 	fi
 
-	echo #empty line
-	echo #empty line
+	if [ $ISREMOTE == 0 ]; then
+		echo #empty line
+		echo #empty line
+	fi
 
 	if [ $MAIN_URL == "unknown_url" ]; then
 		if [ $ISREMOTE == 0 ]; then

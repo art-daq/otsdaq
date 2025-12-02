@@ -1801,7 +1801,7 @@ void ConfigurationManager::loadTableGroup(
 
 			if(accumulatedWarnings)
 			{
-				//__GEN_COUT__ << "Checking chosen group for tree errors..." << __E__;
+				__GEN_COUTT__ << accumulatedWarnings << "-Checking chosen group for tree errors... " << time(0) << __E__;
 
 				getChildren(&memberMap, accumulatedWarnings);
 				if(*accumulatedWarnings != "")
@@ -1812,6 +1812,7 @@ void ConfigurationManager::loadTableGroup(
 					    << "\n"
 					    << *accumulatedWarnings << __E__;
 				}
+				__GEN_COUTT__ << accumulatedWarnings << "-Checking chosen group for tree errors done. " << time(0) << __E__;
 			}
 
 			if(progressBar)
