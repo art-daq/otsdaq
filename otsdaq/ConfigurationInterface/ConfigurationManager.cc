@@ -1802,7 +1802,7 @@ void ConfigurationManager::loadTableGroup(
 			if(accumulatedWarnings)
 			{
 				__GEN_COUTT__ << "Checking chosen group for tree errors... here are the current warnings: " <<
-					accumulatedWarnings << __E__;
+					*accumulatedWarnings << __E__;
 
 				getChildren(&memberMap, accumulatedWarnings);
 				if(*accumulatedWarnings != "")
