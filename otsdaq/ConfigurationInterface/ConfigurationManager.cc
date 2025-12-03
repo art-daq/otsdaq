@@ -1813,7 +1813,7 @@ void ConfigurationManager::loadTableGroup(
 					    << "\n"
 					    << *accumulatedWarnings << __E__;
 				}
-				__GEN_COUTT__ << "After checking childern warnings: " << accumulatedWarnings << __E__;
+				__GEN_COUTT__ << "After checking children warnings: " << *accumulatedWarnings << __E__;
 			}
 
 			if(progressBar)
