@@ -3534,7 +3534,7 @@ void WebUsers::loadUserWithLock()
 
 //==============================================================================
 /// addSystemMessage
-///	targetUser can be "*" for all users
+///	targetUsersCSV can be "*" for all users
 void WebUsers::addSystemMessage(const std::string& targetUsersCSV,
                                 const std::string& message)
 {
