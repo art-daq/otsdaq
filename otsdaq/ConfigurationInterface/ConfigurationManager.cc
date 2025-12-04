@@ -4575,7 +4575,7 @@ TableBase* ConfigurationManager::getDesktopIconTable(void)
 void ConfigurationManager::saveGroupNameAndKey(
     const std::pair<std::string /*group name*/, TableGroupKey>& theGroup,
     const std::string&                                          fileName,
-	bool			appendMode /* = false */)
+    bool                                                        appendMode /* = false */)
 {
 	std::string fullPath =
 	    ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + fileName;
@@ -4584,7 +4584,7 @@ void ConfigurationManager::saveGroupNameAndKey(
 	if(appendMode)
 		groupFile.open(fullPath.c_str(), std::ios::app);
 	else
-		groupFile.open(fullPath.c_str());		 
+		groupFile.open(fullPath.c_str());
 	if(!groupFile.is_open())
 	{
 		__SS__ << "Error. Can't open file to save group activity: " << fullPath << __E__;

@@ -30,7 +30,6 @@
 #include <sstream>
 #include <string>
 
- 
 // clang-format off
 
 /// defines used also by OtsConfigurationWizardSupervisor

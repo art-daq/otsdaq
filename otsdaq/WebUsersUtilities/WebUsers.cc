@@ -1281,7 +1281,7 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 
 	__COUTTV__(ActiveSessions_.size());
 	// if only one user, then attempt to take lock for user friendliness
-	if(ActiveSessions_.size() == 1)  
+	if(ActiveSessions_.size() == 1)
 	{
 		__COUT__ << "Attempting to auto-lock for first login user '"
 		         << Users_[i].username_ << "'... " << __E__;
@@ -1499,8 +1499,8 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 		__COUTTV__(ActiveSessions_.size());
 		__COUTTV__(RemoteSessions_.size());
 
-		if((!CareAboutCookieCodes_) //if passwords not on for subsystem			
-			&& refresh &&
+		if((!CareAboutCookieCodes_)  //if passwords not on for subsystem
+		   && refresh &&
 		   (usersUsernameWithLock_ == DEFAULT_ADMIN_USERNAME ||
 		    usersUsernameWithLock_ == "") &&
 		   usersUsernameWithLock_ != username)
@@ -1515,10 +1515,10 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 			    getUserWithLock() + " has locked REMOTE ots (overriding anonymous " +
 			        DEFAULT_ADMIN_USERNAME + " user).");
 		}
-		else if((ActiveSessions_.size() == 0 && RemoteSessions_.size() == 1) // if first remote user
-			&& refresh &&
-		   (usersUsernameWithLock_ == "") &&
-		   usersUsernameWithLock_ != username)
+		else if((ActiveSessions_.size() == 0 &&
+		         RemoteSessions_.size() == 1)  // if first remote user
+		        && refresh && (usersUsernameWithLock_ == "") &&
+		        usersUsernameWithLock_ != username)
 		{
 			__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
 			              << "' with remote user-with-lock 'Remote:" << username << "'"

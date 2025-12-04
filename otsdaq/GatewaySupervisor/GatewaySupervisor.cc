@@ -354,7 +354,8 @@ void GatewaySupervisor::init(void)
 //==============================================================================
 /// AppStatusWorkLoop
 ///	child thread
-void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  const bool doDisconnected /* = false */ )
+void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
+                                          const bool         doDisconnected /* = false */)
 {
 	sleep(5);  // wait for apps to get started
 
@@ -375,7 +376,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 	int    portForReverseLoginOverUDP  = 0;  //if 0, then not reverse login not enabled
 	std::string ipAddressForStateChangesOverUDP = "";  //if "", then not enabled
 
-	__COUTV__(doDisconnected);	
+	__COUTV__(doDisconnected);
 	while(1)
 	{
 		++loopCount;
@@ -386,17 +387,17 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 		//	sleep
 
 		oneStatusReqHasFailed = false;
-		__COUTS__(TLVL_StatusWorkloop) << "App status checking, doDisconnected = " << doDisconnected << __E__;
+		__COUTS__(TLVL_StatusWorkloop)
+		    << "App status checking, doDisconnected = " << doDisconnected << __E__;
 		for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 		{
 			auto appInfo = it.second;
 			appName      = appInfo.getName();
-			__COUTS__(TLVL_StatusWorkloop) << "Getting Status, doDisconnected = " << doDisconnected 
-					<< " Supervisor instance = '" << appName
-					<< "' [LID=" << appInfo.getId() << "] in Context '"
-					<< appInfo.getContextName() << "' [URL=" <<
-				appInfo.getURL()
-					<< "].\n\n";
+			__COUTS__(TLVL_StatusWorkloop)
+			    << "Getting Status, doDisconnected = " << doDisconnected
+			    << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId()
+			    << "] in Context '" << appInfo.getContextName()
+			    << "' [URL=" << appInfo.getURL() << "].\n\n";
 
 			// if the application is the gateway supervisor, we do not send a SOAP message
 			if(appInfo.isGatewaySupervisor())  // get gateway status
@@ -408,13 +409,15 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 					    theSupervisor->theStateMachine_.getErrorMessage();
 					try
 					{
-						__COUTVS__(TLVL_StatusWorkloop, theSupervisor->theStateMachine_.isInTransition());
+						__COUTVS__(TLVL_StatusWorkloop,
+						           theSupervisor->theStateMachine_.isInTransition());
 						if(theSupervisor->theStateMachine_.isInTransition())
 							__COUTVS__(TLVL_StatusWorkloop,
 							           theSupervisor->theStateMachine_
 							               .getCurrentTransitionName());
 						__COUTVS__(
-						    TLVL_StatusWorkloop, theSupervisor->theStateMachine_.getProvenanceStateName());
+						    TLVL_StatusWorkloop,
+						    theSupervisor->theStateMachine_.getProvenanceStateName());
 						__COUTVS__(TLVL_StatusWorkloop,
 						           theSupervisor->theStateMachine_.getCurrentStateName());
 					}
@@ -834,7 +837,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 					   commandingRemoteGatewayApps)
 					{
 						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop, theSupervisor->remoteGatewayApps_[0].error);
+							__COUTVS__(TLVL_StatusRemoteWorkloop,
+							           theSupervisor->remoteGatewayApps_[0].error);
 
 						//check for commands first
 						bool commandSent = false;
@@ -881,7 +885,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 						}
 
 						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop, theSupervisor->remoteGatewayApps_[0].error);
+							__COUTVS__(TLVL_StatusRemoteWorkloop,
+							           theSupervisor->remoteGatewayApps_[0].error);
 
 						//then get status
 						bool allAppsAreIdle    = true;
@@ -996,27 +1001,31 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 							}
 						}
 
-						__COUTS__(TLVL_StatusRemoteWorkloop) << "commandRemoteIdleCount "
-						              << commandRemoteIdleCount << " " << allAppsAreIdle
-						              << " " << commandingRemoteGatewayApps << __E__;
+						__COUTS__(TLVL_StatusRemoteWorkloop)
+						    << "commandRemoteIdleCount " << commandRemoteIdleCount << " "
+						    << allAppsAreIdle << " " << commandingRemoteGatewayApps
+						    << __E__;
 
 					}  //end remote app status update
 
 					//if possible, get remote icon list for desktop from each remote app
 					if(resetRemoteGatewayApps)
 					{
-						__COUTS__(TLVL_RemoteDesktopIcons) << "Attempting to get Remote Desktop Icons... size="
-						              << remoteApps.size() << __E__;
+						__COUTS__(TLVL_RemoteDesktopIcons)
+						    << "Attempting to get Remote Desktop Icons... size="
+						    << remoteApps.size() << __E__;
 
 						for(auto& remoteGatewayApp : remoteApps)
 						{
-							__COUTVS__(TLVL_RemoteDesktopIcons, remoteGatewayApp.appInfo.name);
+							__COUTVS__(TLVL_RemoteDesktopIcons,
+							           remoteGatewayApp.appInfo.name);
 							__COUTVS__(TLVL_RemoteDesktopIcons, remoteGatewayApp.command);
 							if(remoteGatewayApp.command != "")
 								continue;  //skip if command to be sent
 
-							__COUTS__(TLVL_RemoteDesktopIcons) << remoteGatewayApp.appInfo.name << ": "
-							              << remoteGatewayApp.appInfo.status << __E__;
+							__COUTS__(TLVL_RemoteDesktopIcons)
+							    << remoteGatewayApp.appInfo.name << ": "
+							    << remoteGatewayApp.appInfo.status << __E__;
 							if(remoteGatewayApp.appInfo.status ==
 							   SupervisorInfo::APP_STATUS_UNKNOWN)
 								continue;  //skip if no status yet
@@ -1078,7 +1087,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 					   commandingRemoteGatewayApps)
 					{
 						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop, theSupervisor->remoteGatewayApps_[0].error);
+							__COUTVS__(TLVL_StatusRemoteWorkloop,
+							           theSupervisor->remoteGatewayApps_[0].error);
 
 						//replace info in supervisor remote gateway list
 						{
@@ -1237,7 +1247,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 						}
 
 						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop, theSupervisor->remoteGatewayApps_[0].error);
+							__COUTVS__(TLVL_StatusRemoteWorkloop,
+							           theSupervisor->remoteGatewayApps_[0].error);
 					}
 
 					//copy to subapps for display of primary Gateway
@@ -1293,8 +1304,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 				xoap::MessageReference tempMessage =
 				    SOAPUtilities::makeSOAPMessageReference("ApplicationStatusRequest");
 
-				__COUTS__(TLVL_StatusWorkloop) << "tempMessage... "
-				              << SOAPUtilities::translate(tempMessage) << std::endl;
+				__COUTS__(TLVL_StatusWorkloop)
+				    << "tempMessage... " << SOAPUtilities::translate(tempMessage)
+				    << std::endl;
 
 				try
 				{
@@ -1345,7 +1357,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,  con
 
 						__COUTVS__(TLVL_StatusFullDetail, detail);
 						__COUTVS__(TLVL_StatusFullDetail, parseDetail.size());
-						__COUTVS__(TLVL_StatusFullDetail, StringMacros::vectorToString(parseDetail));
+						__COUTVS__(TLVL_StatusFullDetail,
+						           StringMacros::vectorToString(parseDetail));
 
 						std::lock_guard<std::mutex> lock(
 						    theSupervisor->systemStatusMutex_);  //lock for rest of scope
@@ -2053,10 +2066,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		       buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) !=
 		   -1)
 		{
-			__COUTS__(TLVL_StateChanger) << "UDP State Changer packet received from ip:port "
-			             << sock.getLastIncomingIPAddress() << ":"
-			             << sock.getLastIncomingPort() << " of size = " << buffer.size()
-			             << __E__;
+			__COUTS__(TLVL_StateChanger)
+			    << "UDP State Changer packet received from ip:port "
+			    << sock.getLastIncomingIPAddress() << ":" << sock.getLastIncomingPort()
+			    << " of size = " << buffer.size() << __E__;
 			__COUTVS__(TLVL_StateChangerDetail, buffer);
 
 			try
@@ -2107,7 +2120,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							// 					"," + std::to_string(portForReverseLoginOverUDP) +
 							// 					"," + remoteGatewayApp.appInfo.name;
 
-							__COUTVS__(TLVL_StatusParams, StringMacros::vectorToString(params));
+							__COUTVS__(TLVL_StatusParams,
+							           StringMacros::vectorToString(params));
 							std::string tmpIP   = params[1];
 							int         tmpPort = atoi(params[2].c_str());
 
@@ -2256,7 +2270,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					std::stringstream out;
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/);
-					__COUTS__(TLVL_StatusParams) << "App status to monitor: " << out.str() << __E__;
+					__COUTS__(TLVL_StatusParams)
+					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
 				}
@@ -2276,7 +2291,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							// 					"," + std::to_string(portForReverseLoginOverUDP) +
 							// 					"," + remoteGatewayApp.appInfo.name;
 
-							__COUTVS__(TLVL_StatusParams, StringMacros::vectorToString(params));
+							__COUTVS__(TLVL_StatusParams,
+							           StringMacros::vectorToString(params));
 							std::string tmpIP   = params[1];
 							int         tmpPort = atoi(params[2].c_str());
 
@@ -2417,7 +2433,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/,
 					                         false /*allowWhiteSpace*/);
-					__COUTS__(TLVL_StatusParams) << "App status to monitor: " << out.str() << __E__;
+					__COUTS__(TLVL_StatusParams)
+					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
 				}  //end GetRemoteAppStatus
@@ -2447,7 +2464,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/,
 					                         false /*allowWhiteSpace*/);
-					__COUTS__(TLVL_StatusParams) << "State machines to monitor: " << out.str() << __E__;
+					__COUTS__(TLVL_StatusParams)
+					    << "State machines to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
 				}
@@ -4829,32 +4847,49 @@ try
 	}  // End write run condition into db
 	RunControlStateMachine::theProgressBar_.step();
 
-	// save last configured group names/keys											
-	{							
+	// save last configured group names/keys
+	{
 		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-												FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
+		                                          FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
 		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-												FSM_CONFIGURED_GROUP_ALIASES_FILE, true /* appendMode */);
-		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-												FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE, true /* appendMode */);
-												
-		auto activeGroupMap = CorePropertySupervisorBase::theConfigurationManager_->getActiveTableGroups();
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
-												FSM_CONFIGURED_CONTEXTS_FILE, true /* appendMode */);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
-												FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE, true /* appendMode */);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
-												FSM_CONFIGURED_BACKBONES_FILE, true /* appendMode */);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
-												FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE, true /* appendMode */);
-		if(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE).second.isValid())
-		{										
-			ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
-													FSM_CONFIGURED_ITERATORS_FILE, true /* appendMode */);
-			ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
-													FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE, true /* appendMode */);
+		                                          FSM_CONFIGURED_GROUP_ALIASES_FILE,
+		                                          true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    theConfigurationTableGroup_,
+		    FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE,
+		    true /* appendMode */);
+
+		auto activeGroupMap =
+		    CorePropertySupervisorBase::theConfigurationManager_->getActiveTableGroups();
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    FSM_CONFIGURED_CONTEXTS_FILE,
+		    true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE,
+		    true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
+		    FSM_CONFIGURED_BACKBONES_FILE,
+		    true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
+		    FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE,
+		    true /* appendMode */);
+		if(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
+		       .second.isValid())
+		{
+			ConfigurationManager::saveGroupNameAndKey(
+			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
+			    FSM_CONFIGURED_ITERATORS_FILE,
+			    true /* appendMode */);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
+			    FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE,
+			    true /* appendMode */);
 		}
-	} //end save last configured group names/keys
+	}  //end save last configured group names/keys
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -5713,31 +5748,48 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 	// save last started group names/keys
-	{							
+	{
 		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-												FSM_LAST_STARTED_GROUP_ALIAS_FILE);
+		                                          FSM_LAST_STARTED_GROUP_ALIAS_FILE);
 		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-												FSM_STARTED_GROUP_ALIASES_FILE, true /* appendMode */);
-		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-												FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE, true /* appendMode */);
-												
-		auto activeGroupMap = CorePropertySupervisorBase::theConfigurationManager_->getActiveTableGroups();
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
-												FSM_STARTED_CONTEXTS_FILE, true /* appendMode */);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
-												FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE, true /* appendMode */);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
-												FSM_STARTED_BACKBONES_FILE, true /* appendMode */);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
-												FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE, true /* appendMode */);
-		if(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE).second.isValid())
-		{										
-			ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
-													FSM_STARTED_ITERATORS_FILE, true /* appendMode */);
-			ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
-													FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE, true /* appendMode */);
+		                                          FSM_STARTED_GROUP_ALIASES_FILE,
+		                                          true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    theConfigurationTableGroup_,
+		    FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE,
+		    true /* appendMode */);
+
+		auto activeGroupMap =
+		    CorePropertySupervisorBase::theConfigurationManager_->getActiveTableGroups();
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    FSM_STARTED_CONTEXTS_FILE,
+		    true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE,
+		    true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
+		    FSM_STARTED_BACKBONES_FILE,
+		    true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
+		    FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE,
+		    true /* appendMode */);
+		if(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
+		       .second.isValid())
+		{
+			ConfigurationManager::saveGroupNameAndKey(
+			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
+			    FSM_STARTED_ITERATORS_FILE,
+			    true /* appendMode */);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
+			    FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE,
+			    true /* appendMode */);
 		}
-	} //end save last started group names/keys
+	}  //end save last started group names/keys
 
 	RunControlStateMachine::theProgressBar_.step();
 
