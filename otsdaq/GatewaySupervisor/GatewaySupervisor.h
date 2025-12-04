@@ -30,10 +30,28 @@
 #include <sstream>
 #include <string>
 
+// clang-format off
+
 /// defines used also by OtsConfigurationWizardSupervisor
-#define FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE \
-	std::string("FSMLastConfiguredGroupAlias.hist")
-#define FSM_LAST_STARTED_GROUP_ALIAS_FILE std::string("FSMLastStartedGroupAlias.hist")
+#define FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE 			std::string("FSMLastConfiguredGroupAlias.hist")
+#define FSM_LAST_STARTED_GROUP_ALIAS_FILE 				std::string("FSMLastStartedGroupAlias.hist")
+
+#define FSM_CONFIGURED_GROUP_ALIASES_FILE 				std::string("FSMConfiguredGroupAliases.hist")
+#define FSM_STARTED_GROUP_ALIASES_FILE 					std::string("FSMStartedGroupAlias.hist")
+#define FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE 	std::string("FSMConfiguredOrStartedGroupAlias.hist")
+
+#define FSM_CONFIGURED_CONTEXTS_FILE 					std::string("FSMConfiguredContexts.hist")
+#define FSM_STARTED_CONTEXTS_FILE 						std::string("FSMStartedContexts.hist")
+#define FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE 		std::string("FSMConfiguredOrStartedContexts.hist")
+
+#define FSM_CONFIGURED_BACKBONES_FILE 					std::string("FSMConfiguredBackbones.hist")
+#define FSM_STARTED_BACKBONES_FILE 						std::string("FSMStartedBackbones.hist")
+#define FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE 		std::string("FSMConfiguredOrStartedBackbones.hist")
+
+#define FSM_CONFIGURED_ITERATORS_FILE 					std::string("FSMConfiguredIterators.hist")
+#define FSM_STARTED_ITERATORS_FILE 						std::string("FSMStartedIterators.hist")
+#define FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE 		std::string("FSMConfiguredOrStartedIterators.hist")
+
 
 namespace ots
 {
@@ -41,7 +59,6 @@ class ConfigurationManager;
 class TableGroupKey;
 class WorkLoopManager;
 
-// clang-format off
 
 	/// GatewaySupervisor
 	///	This class is the gateway server for all otsdaq requests in "Normal Mode." It
@@ -144,7 +161,7 @@ class WorkLoopManager;
 		xoap::MessageReference 			TRACESupervisorRequest							(xoap::MessageReference message);
 
 		static void 					StateChangerWorkLoop							(GatewaySupervisor* supervisorPtr);
-		static void 					AppStatusWorkLoop								(GatewaySupervisor* supervisorPtr);
+		static void 					AppStatusWorkLoop								(GatewaySupervisor* supervisorPtr, const bool doDisconnected = false);
 
 		std::string 					attemptStateMachineTransition					(HttpXmlDocument* xmldoc,
 																						std::ostringstream* out,
@@ -319,7 +336,7 @@ class WorkLoopManager;
 		size_t				systemConsoleErrCount_ = 0, systemConsoleWarnCount_ = 0, systemConsoleInfoCount_ = 0;
 
 		std::pair<std::string /*group name*/, TableGroupKey>
-							theConfigurationTableGroup_;  ///< used to track the active configuration group atstates after the configure state
+							theConfigurationTableGroup_;  ///< used to track the active configuration group at states after the configure state
 
 		Iterator   			theIterator_;
 		std::mutex 			stateMachineAccessMutex_;  ///< for sharing state machine access with

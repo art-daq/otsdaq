@@ -230,7 +230,7 @@ class ConfigurationManager
 
 	void 								setOwnerContext				(const std::string& contextUID) { ownerContextUID_ = contextUID; }
 	void 								setOwnerApp					(const std::string& appUID) { ownerAppUID_ = appUID; }
-	static void							saveGroupNameAndKey			(const std::pair<std::string /*group name*/, TableGroupKey>& theGroup,const std::string& fileName);
+	static void							saveGroupNameAndKey			(const std::pair<std::string /*group name*/, TableGroupKey>& theGroup,const std::string& fileName, bool appendMode = false);
 	static std::pair<
 			std::string /*group name*/,
 			TableGroupKey> 				loadGroupNameAndKey			(const std::string& fileName, std::string& returnedTimeString);

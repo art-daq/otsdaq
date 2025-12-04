@@ -390,8 +390,7 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 		__COUT_INFO__ << "User '" << userInfo.username_
 		              << "' must have lock to proceed. ('" << userInfo.usernameWithLock_
 		              << "' has lock.)" << std::endl;
-		return false;  // failed due to lock being required, and this user does not have
-		               // it
+		return false;  // failed due to lock being required, and this user does not have it
 	}
 
 	return true;  // access success!
@@ -1280,8 +1279,9 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 	newAccountCode = createNewActiveSession(Users_[i].userId_,
 	                                        ip);  // return cookie code by reference
 
-	if(ActiveSessions_.size() ==
-	   1)  // if only one user, then attempt to take lock for user friendliness
+	__COUTTV__(ActiveSessions_.size());
+	// if only one user, then attempt to take lock for user friendliness
+	if(ActiveSessions_.size() == 1)
 	{
 		__COUT__ << "Attempting to auto-lock for first login user '"
 		         << Users_[i].username_ << "'... " << __E__;
@@ -1492,14 +1492,15 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 	}
 
 	//============================
-	///Declare lambda function to check lock handling
+	///Declare lambda function to check lock handling, for user friendliness
 	auto lockHandling = [this, refresh](std::string username,
 	                                    uint64_t    verifiedUserId) -> uint64_t {
 		__COUTT__ << "lambda lockHandling()" << __E__;
+		__COUTTV__(ActiveSessions_.size());
+		__COUTTV__(RemoteSessions_.size());
 
-		// now, need to check lock handling! like line 1610
-		// goto LOCK_HANDLING;
-		if(!CareAboutCookieCodes_ && refresh &&
+		if((!CareAboutCookieCodes_)  //if passwords not on for subsystem
+		   && refresh &&
 		   (usersUsernameWithLock_ == DEFAULT_ADMIN_USERNAME ||
 		    usersUsernameWithLock_ == "") &&
 		   usersUsernameWithLock_ != username)
@@ -1513,6 +1514,20 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 			    "*",
 			    getUserWithLock() + " has locked REMOTE ots (overriding anonymous " +
 			        DEFAULT_ADMIN_USERNAME + " user).");
+		}
+		else if((ActiveSessions_.size() == 0 &&
+		         RemoteSessions_.size() == 1)  // if first remote user
+		        && refresh && (usersUsernameWithLock_ == "") &&
+		        usersUsernameWithLock_ != username)
+		{
+			__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
+			              << "' with remote user-with-lock 'Remote:" << username << "'"
+			              << __E__;
+			usersUsernameWithLock_ =
+			    username;  //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
+			addSystemMessage(  //broadcast change!
+			    "*",
+			    getUserWithLock() + " has locked REMOTE ots (which was unlocked).");
 		}
 		return verifiedUserId;
 	};  //end lambda function lockHandling()

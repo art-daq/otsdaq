@@ -18,6 +18,7 @@ class TableGroupKey
 
 	unsigned int key(void) const;
 	bool         isInvalid(void) const;
+	bool         isValid(void) const { return !isInvalid(); };
 	std::string  toString(void) const;
 	std::string  str() const { return toString(); }  ///< alternative alias method
 
