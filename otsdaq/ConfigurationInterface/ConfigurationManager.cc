@@ -489,6 +489,8 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 			__GEN_COUT__ << dbgHeader << " Configuration group: " << theGroup << __E__;
 	}
 
+	getActiveContextMemberNames();  // make sure active contextMemberNames_ are up to date
+
 	std::set<std::string>::const_iterator contextFindIt, backboneFindIt, iterateFindIt;
 	for(auto it = nameToTableMap_.begin(); it != nameToTableMap_.end();
 	    /*no increment*/)
@@ -496,6 +498,12 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		contextFindIt  = contextMemberNames_.find(it->first);
 		backboneFindIt = backboneMemberNames_.find(it->first);
 		iterateFindIt  = iterateMemberNames_.find(it->first);
+
+		__GEN_COUTT__ << "Considering table: " << it->first << " contextFindIt:" << (contextFindIt != contextMemberNames_.end() ? "Y" : "N")
+		              << " backboneFindIt:" << (backboneFindIt != backboneMemberNames_.end() ? "Y" : "N")
+		              << " iterateFindIt:" << (iterateFindIt != iterateMemberNames_.end() ? "Y" : "N")
+		              <<
+			__E__;
 		if(theGroup == "" ||
 		   ((isContext &&
 		     contextFindIt !=
@@ -513,9 +521,8 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		     backboneFindIt == backboneMemberNames_.end() &&
 		     iterateFindIt == iterateMemberNames_.end())))
 		{
-			//__GEN_COUT__ << "\t" << it->first << __E__;
-			// if(it->second->isActive())
-			//	__GEN_COUT__ << "\t\t..._v" << it->second->getViewVersion() << __E__;
+			__GEN_COUTT__ << "\t" << dbgHeader << ".. " << it->first << 
+				(it->second->isActive() ? "_v" + it->second->getViewVersion().str() : "") << __E__;			
 
 			if(onlyDeactivate)  // only deactivate
 			{
@@ -541,8 +548,6 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 			             << *theConfigurationTableGroupKey_ << __E__;
 			theConfigurationTableGroupKey_.reset();
 		}
-
-		//		theDACStreams_.clear();
 	}
 	if(isBackbone)
 	{
@@ -574,17 +579,13 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 			theContextTableGroupKey_.reset();
 		}
 	}
-}
+} //end destroyTableGroup()
 
 //==============================================================================
 void ConfigurationManager::destroy(void)
 {
-	// NOTE: Moved to ConfigurationGUISupervisor [FIXME is this correct?? should we use
-	// shared_ptr??]
-	//    if( ConfigurationInterface::getInstance(true) != 0 )
-	//        delete theInterface_;
 	destroyTableGroup();
-}
+} //end destroy()
 
 //==============================================================================
 /// convertGroupTypeIdToName
@@ -1755,6 +1756,8 @@ void ConfigurationManager::loadTableGroup(
 				return;
 			}
 
+			
+			__GEN_COUTTV__(StringMacros::mapToString(getActiveVersions()));
 			if(doActivate)
 				__GEN_COUT__
 				    << "------------------------------------- init start    \t [for all "
@@ -1778,15 +1781,18 @@ void ConfigurationManager::loadTableGroup(
 				//		deactivate all of that type (invalidate active view)
 				if(groupToDeactivate != "")  // deactivate only if pre-existing group
 				{
-					//__GEN_COUT__ << "groupToDeactivate '" << groupToDeactivate << "'" <<
-					// __E__;
+						__GEN_COUT__ << "groupToDeactivate '" << groupToDeactivate << "' of type " <<
+							convertGroupTypeToName(groupType) <<
+							__E__;
 					destroyTableGroup(groupToDeactivate, true);
 				}
-				//		else
-				//		{
-				//			//Getting here, is kind of strange:
-				//			//	- this group may have only been partially loaded before?
-				//		}
+				else
+				{
+					//Getting here, is kind of strange:
+					//	- this group may have only been partially loaded before?
+					__GEN_COUT__ << "no group to deactivate of type " << convertGroupTypeToName(groupType) << __E__;
+				}
+				__GEN_COUTTV__(StringMacros::mapToString(getActiveVersions()));
 			}
 
 			if(progressBar)
@@ -1827,6 +1833,8 @@ void ConfigurationManager::loadTableGroup(
 			//		if doActivate, configBase->init()
 			if(doActivate)
 			{
+				__GEN_COUTTV__(StringMacros::mapToString(getActiveVersions()));
+
 				const int numOfThreads = PROCESSOR_COUNT / 2;
 				__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
 				             << numOfThreads
@@ -2015,6 +2023,8 @@ void ConfigurationManager::loadTableGroup(
 							__SS_THROW__;
 					}
 				}  //end multi-thread handling
+				
+				__GEN_COUTTV__(StringMacros::mapToString(getActiveVersions()));
 			}      //end activate/init of member tables
 
 			if(progressBar)
@@ -2522,6 +2532,7 @@ try
 	//	this could be risky user code, try and catch
 	try
 	{
+		__COUTTV__(StringMacros::mapToString(cfgMgr->getActiveVersions()));
 		table->init(cfgMgr);
 	}
 	catch(std::runtime_error& e)
@@ -3391,19 +3402,19 @@ ConfigurationManager::getVersionAliases(void) const
 std::map<std::string, TableVersion> ConfigurationManager::getActiveVersions(void) const
 {
 	std::map<std::string, TableVersion> retMap;
-	for(auto& config : nameToTableMap_)
+	for(auto& table : nameToTableMap_)
 	{
-		//__GEN_COUT__ << config.first << __E__;
+		__GEN_COUTS__(2) << table.first << __E__;
 
 		// check configuration pointer is not null and that there is an active view
-		if(config.second && config.second->isActive())
+		if(table.second && table.second->isActive())
 		{
-			//__GEN_COUT__ << config.first << "_v" << config.second->getViewVersion() <<
-			// __E__;
+			__GEN_COUTS__(2) << table.first << "_v" << table.second->getViewVersion() << __E__;
 			retMap.insert(std::pair<std::string, TableVersion>(
-			    config.first, config.second->getViewVersion()));
+			    table.first, table.second->getViewVersion()));
 		}
 	}
+
 	return retMap;
 }  // end getActiveVersions()
 
@@ -3446,15 +3457,18 @@ std::shared_ptr<TableGroupKey> ConfigurationManager::makeTheTableGroupKey(
 //==============================================================================
 const std::set<std::string>& ConfigurationManager::getActiveContextMemberNames()
 {
-	std::map<std::string, TableVersion> activeTables = getActiveVersions();
-
 	//copy fixed context tables, then add optional tables if active
 	contextMemberNames_ = ConfigurationManager::fixedContextMemberNames_;
 
-	if(activeTables.find(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE) !=
-	   activeTables.end())
+	auto it = nameToTableMap_.find(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE);
+	if(it == nameToTableMap_.end())
+		return contextMemberNames_;
+
+	if(!it->second->isActive()) //if optional table is active, add it
+	{
 		contextMemberNames_.emplace(
 		    ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE);
+	}
 	return contextMemberNames_;
 }  // end getContextMemberNames()
 
@@ -3484,14 +3498,24 @@ const std::set<std::string>& ConfigurationManager::getConfigurationMemberNames(v
 	std::map<std::string, TableVersion> activeTables = getActiveVersions();
 
 	for(auto& tablePair : activeTables)
-		if(ConfigurationManager::contextMemberNames_.find(tablePair.first) ==
-		       ConfigurationManager::contextMemberNames_.end() &&
-		   tablePair.first != ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE &&
+		if(
+			//check if not context table
+			ConfigurationManager::fixedContextMemberNames_.find(tablePair.first) ==
+		       ConfigurationManager::fixedContextMemberNames_.end() &&			
+		   	tablePair.first != ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE &&
+
+			//check if not backbone table
 		   ConfigurationManager::backboneMemberNames_.find(tablePair.first) ==
 		       ConfigurationManager::backboneMemberNames_.end() &&
+
+			//check if not iterate table
 		   ConfigurationManager::iterateMemberNames_.find(tablePair.first) ==
-		       ConfigurationManager::iterateMemberNames_.end())
+		       ConfigurationManager::iterateMemberNames_.end()
+			)
+		{ 
+			// else, it is a configuration table
 			configurationMemberNames_.emplace(tablePair.first);
+		}			
 
 	return configurationMemberNames_;
 }  // end getConfigurationMemberNames()
