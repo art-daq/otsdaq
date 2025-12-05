@@ -337,6 +337,12 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 				                 .getValue(),
 				      parameter.second.hasComment() ? parameter.second.getComment() : "");
 			}
+			else if(key == "")
+			{
+				OUTCL(parameter.second.getNode(parameterPreamble + "Value")
+				                 .getValue(),
+				      parameter.second.hasComment() ? parameter.second.getComment() : "");
+			}
 			else  //#include can not have a comment at end of line, so do before!
 			{
 				OUTCL("# comment for #include below:",
