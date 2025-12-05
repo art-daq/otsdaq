@@ -352,10 +352,11 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 
 		if(!paramCount)
 		{
-			__COUTS__(3) << "Empty parameter set found onlyInsertAtTableParameters=" << onlyInsertAtTableParameters << __E__;
+			__COUTS__(3) << "Empty parameter set found onlyInsertAtTableParameters="
+			             << onlyInsertAtTableParameters << __E__;
 			std::string localParentPath =
 			    parentPath + "/" + parameterGroupLink.getParentLinkColumnName();
-			
+
 			if(onlyInsertAtTableParameters)
 			{
 				OUTCL("# no @table parameters found", "" /* comment*/);
