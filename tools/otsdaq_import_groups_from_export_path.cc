@@ -358,7 +358,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		              << importedBackboneGroupName << __E__;
 
 		std::map<std::string, TableVersion> backboneMemberMap;
-		for(auto& memberName : ConfigurationManager::backboneMemberNames_)
+		for(auto& memberName : ConfigurationManager::getBackboneMemberNames())
 		{
 			//create empty mockup version
 			// if mockup, then generate a new persistent version to use based on mockup
