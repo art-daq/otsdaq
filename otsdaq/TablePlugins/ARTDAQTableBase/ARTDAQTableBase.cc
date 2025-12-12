@@ -1325,6 +1325,8 @@ void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorN
 			OUT << "source.commanderPluginType: xmlrpc\n";
 
 			int om_rank = monitorNode.getNode("MonitorID").getValue<int>();
+            int om_tcp_listen_port =
+			    monitorNode.getNode("MonitorTCPListenPort").getValue<int>();
 			int disp_fake_rank =
 			    dispatcherLink.getNode("DispatcherID").getValueWithDefault<int>(200);
 
@@ -1342,6 +1344,7 @@ void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorN
 			OUT << "max_fragment_size_words: " << max_fragment_size << "\n";
 			OUT << "source_rank: " << disp_fake_rank << "\n";
 			OUT << "destination_rank: " << om_rank << "\n";
+			OUT << "port: " << om_tcp_listen_port << "\n";
 			OUT << "unique_label: " << monitorNode.getValue() << "_to_"
 			    << dispatcherLink.getValue() << "\n";
 			POPTAB;
