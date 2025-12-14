@@ -31,6 +31,7 @@
 
 #include <sys/stat.h>  // for mkdir
 #include <chrono>      // std::chrono::seconds
+#include <cstring>     // for strlen
 #include <fstream>
 #include <thread>  // std::this_thread::sleep_for
 
@@ -3439,6 +3440,8 @@ try
 		    false;  //clear (and set if enabled during configure transition)
 		activeStateMachineRunInfoPluginType_ = TableViewColumnInfo::
 		    DATATYPE_STRING_DEFAULT;  //clear (and set if enabled during configure transition)
+		activeStateMachineRunTypeName_ = "";   //clear (and set if enabled during configure transition, default to "default")
+		activeStateMachineRunTypeId_   = -1;    //clear (and set if enabled during configure transition)
 
 		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
 		   currentState != RunControlStateMachine::
@@ -3460,6 +3463,16 @@ try
 			          "Alias parameter is provided."
 			       << __E__;
 			__SS_THROW__;
+		}
+
+		// Add run_type to SOAP parameters if available
+		if(activeStateMachineRunTypeId_ != (unsigned int)-1)
+		{
+			parameters.addParameter("RunTypeId", static_cast<unsigned long>(activeStateMachineRunTypeId_));
+		}
+		if(!activeStateMachineRunTypeName_.empty())
+		{
+			parameters.addParameter("RunTypeName", activeStateMachineRunTypeName_);
 		}
 
 		// check if configuration dump is enabled on configure transition
@@ -3546,6 +3559,39 @@ try
 						            "configuration info to an external location."
 						         << __E__;
 					}
+
+					// Load run_type from Mu2eGlobalsTable (in Configuration group)
+					// Fall back to environment variable if not found
+					activeStateMachineRunTypeName_ = "";  // initialize to empty
+					try
+					{
+						auto mu2eGlobalRecords =
+						    CorePropertySupervisorBase::theConfigurationManager_
+						        ->getNode("/Mu2eGlobalsTable")
+						        .getChildren();
+						if(mu2eGlobalRecords.size())  // take first record
+						{
+							activeStateMachineRunTypeName_ =
+							    mu2eGlobalRecords[0]
+							        .second.getNode("RunType")
+							        .getValueWithDefault<std::string>("" /* defaultValue */);
+						}
+					}
+					catch(...)
+					{
+                        __COUT_INFO__ << "RunType not found in Mu2eGlobalsTable, will fall back to environment variable `OTSDAQ_RUNINFO_DATABASE_RUNTYPE`" << __E__;
+						// Table or field not found, will fall back to environment variable
+					}
+
+					// Fall back to environment variable if Mu2eGlobalsTable didn't provide a value
+					if(activeStateMachineRunTypeName_.empty())
+					{
+						char* envRunType = getenv("OTSDAQ_RUNINFO_DATABASE_RUNTYPE");
+						if(envRunType && strlen(envRunType) > 0)
+						{
+							activeStateMachineRunTypeName_ = envRunType;
+						}
+					} // if not found we keep it empty
 
 					activeStateMachineConfigurationDumpOnConfigureEnable_ =
 					    fsmLinkNode
@@ -3935,8 +3981,13 @@ try
 				}
 
 				//FIXME -- October 2024, by rrivera (need future simplification from agioiosa) -  Should this 2nd param be activeStateMachineConfigurationDumpOnConfigure_?! What is the 2nd param for? Is conditionID_ enough?
+				// Convert run_type_id to string for the call (interface uses string for flexibility)
+				// If we have a validated ID, use it; otherwise use the name string
+				std::string runTypeParam = (activeStateMachineRunTypeId_ != (unsigned int)-1)
+				    ? std::to_string(activeStateMachineRunTypeId_)
+				    : activeStateMachineRunTypeName_;
 				runNumber = runInfoInterface->claimNextRunNumber(
-				    conditionID_, activeStateMachineConfigurationDumpOnRun_);
+				    conditionID_, activeStateMachineConfigurationDumpOnRun_, runTypeParam);
 			}  // end Run Info Plugin handling
 
 			setNextRunNumber(runNumber + 1);
@@ -3950,6 +4001,14 @@ try
 
 		setLastLogEntry(command, "Run #" + std::to_string(runNumber) + ": " + logEntry);
 		parameters.addParameter("RunNumber", runNumber);
+		if(activeStateMachineRunTypeId_ > 0)
+		{
+			parameters.addParameter("RunTypeId", static_cast<unsigned long>(activeStateMachineRunTypeId_));
+		}
+		if(!activeStateMachineRunTypeName_.empty())
+		{
+			parameters.addParameter("RunTypeName", activeStateMachineRunTypeName_);
+		}
 	}  //end Start transition
 	else if(!(command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 	          command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME ||
@@ -4653,6 +4712,15 @@ try
 	                        theConfigurationTableGroup_.first);
 	parameters.addParameter("ConfigurationTableGroupKey",
 	                        theConfigurationTableGroup_.second.toString());
+	// Add run_type to SOAP parameters if available
+	if(activeStateMachineRunTypeId_ != (unsigned int)-1)
+	{
+		parameters.addParameter("RunTypeId", static_cast<unsigned long>(activeStateMachineRunTypeId_));
+	}
+	if(!activeStateMachineRunTypeName_.empty())
+	{
+		parameters.addParameter("RunTypeName", activeStateMachineRunTypeName_);
+	}
 
 	// update Macro Maker front end list
 	if(CorePropertySupervisorBase::allSupervisorInfo_.getAllMacroMakerTypeSupervisorInfo()
@@ -4820,6 +4888,14 @@ try
 				__SS_THROW__;
 			}
 
+            // Validate run_type_name and look up corresponding run_type_id
+            if(!activeStateMachineRunTypeName_.empty())
+            {
+                auto runTypeInfo = runInfoInterface->getRunTypeInfo(activeStateMachineRunTypeName_);
+                activeStateMachineRunTypeId_ = runTypeInfo.first;
+                activeStateMachineRunTypeName_ = runTypeInfo.second;
+            }
+ 
 			conditionID_ = runInfoInterface->insertRunCondition(
 			    activeStateMachineConfigurationDumpOnConfigure_ + remoteSubsystemDump);
 		}  // end Run Info Plugin handling

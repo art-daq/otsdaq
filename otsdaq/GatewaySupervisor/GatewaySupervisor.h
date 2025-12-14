@@ -318,6 +318,8 @@ class WorkLoopManager;
 		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; ///<cached at Configure transition
 		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; ///<cached at Configure transition
 		std::string 		activeStateMachineRunInfoPluginType_; ///<cached at Configure transition
+		std::string 		activeStateMachineRunTypeName_; ///<cached at Configure transition (name/string)
+		unsigned int		activeStateMachineRunTypeId_; ///<cached at Configure transition (database ID)
 		std::map<std::string /* fsmName */, std::string /* logEntry */>
 							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_, stateMachineStopLogEntry_;
 		std::string 		activeStateMachineRunNumber_, activeStateMachineRunAlias_, activeStateMachineConfigurationAlias_;

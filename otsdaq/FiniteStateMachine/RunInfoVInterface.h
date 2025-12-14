@@ -39,7 +39,7 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual unsigned int insertRunCondition(
 	    const std::string& runInfoConditions = "") = 0;
 	virtual unsigned int claimNextRunNumber(
-	    unsigned int conditionID, const std::string& runInfoConditions = "") = 0;
+	    unsigned int conditionID, const std::string& runInfoConditions = "", const std::string& runType = "") = 0;
 	virtual void updateRunInfo(unsigned int                   runNumber,
 	                           RunInfoVInterface::RunStopType runStopType)   = 0;
 
@@ -51,6 +51,12 @@ class RunInfoVInterface  ///< : public Configurable
 
 	virtual std::vector<std::vector<std::string>> getRunConditionByID(
 	    uint64_t conditionID) = 0;
+
+	// Helper method to look up and validate run_type_id and run_type_name from run_type string
+	// Returns pair: (run_type_id, run_type_name). Returns (-1, argument runType) if not found or feature not used.
+	virtual std::pair<unsigned int, std::string> getRunTypeInfo(const std::string& runType)  {
+        return std::make_pair(-1, runType);
+    }
 
   private:
 	const std::string mfSubject_;
