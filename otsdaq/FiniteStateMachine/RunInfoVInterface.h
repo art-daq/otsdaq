@@ -52,6 +52,9 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual std::vector<std::vector<std::string>> getRunConditionByID(
 	    uint64_t conditionID) = 0;
 
+	virtual std::vector<std::vector<std::string>> getRunConfigSubsystemInfo(
+		uint64_t configID) = 0;
+
   private:
 	const std::string mfSubject_;
 	// ConfigurationTree 	theXDAQContextConfigTree_;

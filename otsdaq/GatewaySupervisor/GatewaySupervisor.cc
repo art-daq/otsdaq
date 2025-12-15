@@ -3548,8 +3548,7 @@ try
 					}
 
 					activeStateMachineConfigurationDumpOnConfigureEnable_ =
-					    fsmLinkNode
-					        .getNode("EnableConfigurationDumpOnConfigureTransition")
+					    fsmLinkNode.getNode("EnableConfigurationDumpOnConfigureTransition")
 					        .getValue<bool>();
 					activeStateMachineConfigurationDumpOnRunEnable_ =
 					    fsmLinkNode.getNode("EnableConfigurationDumpOnRunTransition")
@@ -3586,6 +3585,8 @@ try
 				    std::runtime_error&
 				        e)  // throw exception on missing fields if dumpConfiguration set
 				{
+					__COUTTV__(e.what());
+
 					if(doThrow &&
 					   (activeStateMachineConfigurationDumpOnConfigureEnable_ ||
 					    activeStateMachineConfigurationDumpOnRunEnable_))
@@ -3859,6 +3860,11 @@ try
 				        dumpSs);
 
 				activeStateMachineConfigurationDumpOnConfigure_ = dumpSs.str();
+
+				__COUT__ << "Active State Machine Config Dump on Configure " << __E__;
+				__COUT__ << activeStateMachineConfigurationDumpOnConfigure_ << __E__;
+				__COUT_MULTI__(2, activeStateMachineConfigurationDumpOnConfigure_);
+
 			}
 			else
 				__COUT_INFO__
@@ -4706,6 +4712,7 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 	//check for remote subsystem dumps (after broadcast!)
+	__COUT__ << "Check for remote subsystem dumps." << __E__;
 	std::string remoteSubsystemDump = "";
 	{
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
