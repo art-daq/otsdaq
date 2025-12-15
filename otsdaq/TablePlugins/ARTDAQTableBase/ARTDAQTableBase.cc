@@ -1325,7 +1325,7 @@ void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorN
 			OUT << "source.commanderPluginType: xmlrpc\n";
 
 			int om_rank = monitorNode.getNode("MonitorID").getValue<int>();
-            int om_tcp_listen_port =
+			int om_tcp_listen_port =
 			    monitorNode.getNode("MonitorTCPListenPort").getValue<int>();
 			int disp_fake_rank =
 			    dispatcherLink.getNode("DispatcherID").getValueWithDefault<int>(200);
