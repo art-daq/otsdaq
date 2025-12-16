@@ -4749,7 +4749,7 @@ try
 			    remoteGatewayApps[i].config_dump.find("Type of dump") + sizeof("Type of dump") - 1);
 
 			isJSONdump = (configDumpType.find("JSON all") != std::string::npos);
-			__COUT__ << "Remote gateway " << << " is using JSON dump: " << isJSONdump << __E__;
+			__COUT__ << "Remote gateway " << remoteGatewayApps[i].fullName << " is using JSON dump: " << isJSONdump << __E__;
 
 			remoteSubsystemDump += remoteGatewayApps[i].config_dump;
 
@@ -4855,11 +4855,20 @@ try
 				__SS_THROW__;
 			}
 
+			std::string configDumpType = activeStateMachineConfigurationDumpOnConfigure_.substr(
+			    activeStateMachineConfigurationDumpOnConfigure_.find("Type of dump") + sizeof("Type of dump") - 1);
+			isJSONdump = (configDumpType.find("JSON all") != std::string::npos);
 			if(isJSONdump)
 			{
 				activeStateMachineConfigurationDumpOnConfigure_ += ",\n\"Remote Gateways\": [";
 				activeStateMachineConfigurationDumpOnConfigure_ += remoteSubsystemDump;
+				if(remoteSubsystemDump.size() == 0)
+					activeStateMachineConfigurationDumpOnConfigure_ += "\n]}\n";
+
 			}
+
+			__COUT__ << "Final config dump: " << __E__;
+			__COUT_MULTI__(2, activeStateMachineConfigurationDumpOnConfigure_);
 
 			conditionID_ = runInfoInterface->insertRunCondition(
 			    activeStateMachineConfigurationDumpOnConfigure_);
