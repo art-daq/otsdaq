@@ -2229,6 +2229,8 @@ void TableView::printJSON(std::ostream& out /* = std::cout */) const
 	out << "{\n";
 	out << "\"NAME\" : \"" << tableName_ << "\",\n";
 
+    out << "\"VERSION\": \"" << version_.toString() << "\",\n";
+
 	// out << "\"VERSION\" : \"" << version_ <<  "\"\n";
 
 	out << "\"COMMENT\" : ";
