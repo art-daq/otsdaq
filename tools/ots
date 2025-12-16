@@ -57,9 +57,6 @@ function setupTrace()
 
 setupTrace
 
-xdaqPrefix="setsid"			 #setsid to disassociate from terminal, in case terminal group failure brings down all associations
-otsConsoleFwdPrefix="setsid" #setsid to disassociate from terminal, in case terminal group failure brings down all associations
-
 # Handle CTRL+C which is interpreted to mean stop launch and kill all launched processes
 ctrlChandler () {
 	out "Caught Ctrl+C -- exiting all launched otsdaq processes..."
@@ -106,6 +103,7 @@ RELAUNCHCHECK=1
 REMOTELAUNCH=1
 ISREMOTE=0
 MACROMAKER_MODE=0
+VALGRIND=0
 export MACROMAKER_MODE #this environment variable is used by source code
 log_label=""
 #############################
@@ -157,6 +155,11 @@ while :; do
 		# Enable verbose mode (disable quiet mode)
 		info "VERBOSE MODE ENABLED!"
 		QUIET=0
+		;;
+	--Valgrind | -V)
+		# Enable verbose mode (disable quiet mode)
+		info "VALGRIND MODE ENABLED!"
+		VALGRIND=1
 		;;
 	--logfind | -l)
 		# Printout the potential location of all log files based on current xdaq xml launch configuration
@@ -275,13 +278,20 @@ while :; do
 	shift
 done
 
-# TODO: move config down here and output current config if the quiet option isn't set
-# (this prevents multiple outputs if people specify a flag twice)
+
+xdaqPrefix="setsid"			 #setsid to disassociate from terminal, in case terminal group failure brings down all associations
+otsConsoleFwdPrefix="setsid" #setsid to disassociate from terminal, in case terminal group failure brings down all associations
+
+if [ $VALGRIND ==  1 ]; then
+	valgrindTimestamp=$(date +%Y%m%d_%H%M%S)
+	xdaqPrefix="setsid valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=valgrind_xdaq_${valgrindTimestamp}.log"
+	info "Using xdaq launch prefix: ${xdaqPrefix}"	
+fi
 
 # Setup trace default config if not specifically disabled
 
-# TODO: Trace is handled all over the place, the best place for this is actually in setup_ots.sh since that
-# file gets sourced on remote sides so we get a consistent startup environment
+# Note: Trace is handled all over the place, the best place for this is actually in setup_ots.sh since that
+# file gets sourced on the side of remote ots launches so we get a consistent startup environment
 if [ "x$OTS_DISABLE_TRACE_DEFAULT" == "x" ]; then
 	out "Setting up TRACE defaults..."
 
@@ -1052,7 +1062,7 @@ launchOTSMacromaker() {
 			# Test for start 16 times with short sleep
 			for t in {1..16}; do
 				if [ "x$OTS_IS_ALIVE" == "x" ]; then
-					sleep 2
+					sleep "$((2 + t))"
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
@@ -1321,7 +1331,7 @@ launchOTSWiz() {
 			# Test for start 16 times with short sleep
 			for t in {1..16}; do
 				if [ "x$OTS_IS_ALIVE" == "x" ]; then
-					sleep 2
+					sleep "$((2 + t))"
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
@@ -1794,7 +1804,7 @@ launchOTS() {
 									# Test for start 16 times with short sleep
 									for t in {1..16}; do
 										if [ "x$OTS_IS_ALIVE" == "x" ]; then
-											sleep 2
+											sleep "$((2 + t))"
 											OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 											out "Checking http://${THIS_HOST}:${PORT}..."
 										else  # found the supervisor!
@@ -2037,7 +2047,7 @@ launchOTS() {
 				OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)"
 				for t in {1..16}; do
 					if [ "x$OTS_IS_ALIVE" == "x" ]; then
-						sleep 2
+						sleep "$((2 + t))"
 
 						#check if exit requested to avoid endless looping (e.g. on remote hosts)
 						OTSDAQ_STARTOTS_ACTION="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE})"
