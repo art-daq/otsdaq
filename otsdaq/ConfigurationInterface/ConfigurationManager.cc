@@ -1035,10 +1035,23 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			(*out) << "\t\"HOSTNAME\": \"" << __ENV__("HOSTNAME") << "\"," << __E__;
 			(*out) << "\t\"HOSTNAME filepath\": \"" << filePath << "\"," << __E__;
 		}
-		(*out) << "\t\"Active ots users\": \t\""
-			<< (activeUsers.size() ? activeUsers : "no active users") << "\"," << __E__;
-		(*out) << "\t\"Type of dump\": \t\t\"" << dumpType << "\"," << __E__;
-		(*out) << "\t\"Time of dump\": \t\t\"" << rawtime << "\"," << __E__;
+		(*out) << "\t\"active_users\": \t[";
+		if(activeUsers.size())
+		{
+			std::istringstream iss(activeUsers);
+			std::string user;
+			bool first = true;
+			while(std::getline(iss, user, ','))
+			{
+				if(!first)
+					(*out) << ",";
+				(*out) << "\n\t\t\"" << user << "\"";
+				first = false;
+			}
+		}
+		(*out) << "\n\t]," << __E__;
+		(*out) << "\t\"dump_type\": \t\t\"" << dumpType << "\"," << __E__;
+		(*out) << "\t\"dump_time\": \t\t\"" << rawtime << "\"," << __E__;
 		// {
 		// 	struct tm* timeinfo = localtime(&rawtime);
 		// 	char       buffer[100];
@@ -1073,20 +1086,22 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 	if(dumpType == "JSON all")
 	{
-		(*out) << "\t\"Configuration Alias\": \t\t\t\"" << configurationAlias << "\",\n";
-		(*out) << "\t\"Configuration Alias translation version\": \t\"" << configurationTableGroup.second << "\",\n";
-		(*out) << "\t\"Configuration Alias translation\": \t\"" << configurationTableGroup.first << "\",\n";
+        // Include in "active"
+		// (*out) << "\t\"Configuration Alias\": \t\t\t\"" << configurationAlias << "\",\n";
+		// (*out) << "\t\"Configuration Alias translation version\": \t\"" << configurationTableGroup.second << "\",\n";
+		//(*out) << "\t\"Configuration Alias translation\": \t\"" << configurationTableGroup.first << "\",\n";
 	}
 	else
 	{
 		(*out) << "Configuration Alias: \t\t\t" << configurationAlias << "\n";
 		(*out) << "Configuration Alias translation: \t" << configurationTableGroup.first
 			<< "(" << configurationTableGroup.second << ")\n\n";
-	}
+	
 
-	if(logEntry.size())
-		(*out) << "User Log Entry (" << logEntry.size() << " chars):\n"
-		       << logEntry << __E__;
+    	if(logEntry.size())
+		    (*out) << "User Log Entry (" << logEntry.size() << " chars):\n"
+		           << logEntry << __E__;
+    }
 
 	// define local "lambda" functions
 	//	active groups
@@ -1096,13 +1111,14 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 	auto localDumpActiveGroups = [](const ConfigurationManager* cfgMgr,
 	                                std::ostream*               out, 
-									bool jsonify=false) {
+									bool jsonify=false,
+                                    std::string configurationAlias="") {
 		std::map<std::string, std::pair<std::string, TableGroupKey>> activeGroups =
 		    cfgMgr->getActiveTableGroups();
 
 		if(jsonify) 
 		{
-			(*out) << "\n\t\"Active Groups\": {\n";
+			(*out) << "\n\t\"groups\": {\n";
 		}
 		else 
 		{
@@ -1117,8 +1133,13 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			if(jsonify)
 			{
 				(*out) << "\t\t\"" << it->first << "\": \"" << it->second.first << "\",\n";
-				(*out) << "\t\t\""<< it->first << "_version\": \"" << it->second.second << "\""
-						<< (std::next(it)==activeGroups.end() ? "" : ",") << "\n";
+				(*out) << "\t\t\""<< it->first << "_version\": \"" << it->second.second << "\"";
+                if(it->first == "Configuration")
+                {
+                    (*out) << ",\n";
+                    (*out) << "\t\t\"" << "Configuration_alias\": \"" << configurationAlias << "\"";
+                }
+				(*out) << (std::next(it)==activeGroups.end() ? "" : ",") << "\n";
 			}
 			else
 			{
@@ -1139,7 +1160,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 		if(jsonify)
 		{
-			(*out) << "\t\"Active Tables\": { " << __E__;
+			(*out) << "\t\"tables\": { " << __E__;
 		}
 		else 
 		{
@@ -1176,7 +1197,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 		if(jsonify)
 		{
-			(*out) << "\t\"Active Group Members\": { " << __E__;
+			(*out) << "\t\"group_members\": { " << __E__;
 		}
 		else
 		{
@@ -1233,19 +1254,19 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 			if(jsonify)
 			{
-				(*out) << "\t\t\t\"Version\": \t\"" << it->second.second << "\"," << __E__;
-				(*out) << "\t\t\t\"Group Comment\": \t\"" << groupComment << "\"," << __E__;
-				(*out) << "\t\t\t\"Group Author\": \t\"" << groupAuthor << "\"," << __E__;
+				(*out) << "\t\t\t\"version\": \t\"" << it->second.second << "\"," << __E__;
+				(*out) << "\t\t\t\"comment\": \t\"" << groupComment << "\"," << __E__;
+				(*out) << "\t\t\t\"author\": \t\"" << groupAuthor << "\"," << __E__;
 
 				sscanf(groupCreateTime.c_str(), "%ld", &groupCreateTime_t);
 				std::string timeCreated = ctime(&groupCreateTime_t);
-				(*out) << "\t\t\t\"Group Create Time\": \t\"" << timeCreated.erase(timeCreated.find('\n', 0), 1)  << "\"," << __E__;
-				(*out) << "\t\t\t\"Group Aliases\": \t\"" << StringMacros::mapToString(groupAliases) << "\"," << __E__;
+				(*out) << "\t\t\t\"create_time\": \t\"" << timeCreated.erase(timeCreated.find('\n', 0), 1)  << "\"," << __E__;
+				(*out) << "\t\t\t\"group_aliases\": \t\"" << StringMacros::mapToString(groupAliases) << "\"," << __E__;
 
-				(*out) << "\t\t\t\"Member table count\": \t\"" << memberMap.size() << "\"," << __E__;
+				(*out) << "\t\t\t\"table_count\": \t\"" << memberMap.size() << "\"," << __E__;
 				tableCount += memberMap.size();
 
-				(*out) << "\t\t\t\"Member tables\": {" << __E__;
+				(*out) << "\t\t\t\"tables\": {" << __E__;
 
 				std::map<std::string /*name*/, TableVersion /*version*/>::iterator iterMap;
 				for (iterMap = memberMap.begin(); iterMap != memberMap.end(); ++iterMap)
@@ -1280,7 +1301,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 		if(jsonify)
 		{
-			(*out) << "\t\"Active Group Members total table count\": \"" << tableCount << "\"" << __E__;
+			(*out) << "\t\"total_table_count\": \"" << tableCount << "\"" << __E__;
 			(*out) << "\t}";
 		}
 		else
@@ -1296,7 +1317,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 		if(jsonify)
 		{
-			(*out) << "\t\"Active Table Contents\": [" << __E__;
+			(*out) << "\t\"tables\": {" << __E__;
 		}
 		else
 		{
@@ -1312,7 +1333,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			if(jsonify)
 			{
 				__COUT__ << "localDumpActiveTableContents table: " << it->first << __E__;
-				cfgMgr->nameToTableMap_.find(it->first)->second->getViewP()->printJSON(*out);
+                auto table = cfgMgr->nameToTableMap_.find(it->first)->second->getViewP();
+                (*out) << "\t\t\"" << it->first << "\": ";
+				table->printJSON(*out);
 				(*out) << (std::next(it)==activeTables.end() ? "" : ",") << __E__;
 			}
 			else
@@ -1331,7 +1354,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 		if(jsonify) 
 		{
-			(*out) << "\t]" << __E__;
+			(*out) << "\t}" << __E__;
 		}
 	};
 
@@ -1390,12 +1413,12 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	}
 	else if(dumpType == "JSON all")
 	{
-		localDumpActiveGroups(this, out, true);
+		localDumpActiveGroups(this, out, true, configurationAlias);
 		(*out) << ",\n";
 		localDumpActiveGroupMembers(this, out, true);
 		(*out) << ",\n";
-		localDumpActiveTables(this, out, true);
-		(*out) << ",\n" << __E__;
+		//localDumpActiveTables(this, out, true);
+		//(*out) << ",\n" << __E__;
 		localDumpActiveTableContents(this, out, true);
 		(*out) << ",\n" << __E__;
 		localDumpActiveTableStructureStatus(this, out);
