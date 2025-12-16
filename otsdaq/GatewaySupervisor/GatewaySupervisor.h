@@ -372,7 +372,7 @@ public:	//used by remote subsystem control and status
 			SupervisorInfo::SubappInfo 			appInfo;
 
 			std::string 						command, fsmName; ///<when not "", need to send
-			std::string							error, config_dump;
+			std::string							error, config_dump, config_dump_type = "";
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
