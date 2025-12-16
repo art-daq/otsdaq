@@ -1335,32 +1335,38 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		}
 	};
 
-	// auto localDumpActiveTableStructureStatus = [](const ConfigurationManager* cfgMgr,
-	//                                        std::ostream*               out) {
-	// 	std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
+	auto localDumpActiveTableStructureStatus = [](const ConfigurationManager* cfgMgr,
+	                                       std::ostream*               out) {
+		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
-	// 	(*out) << "\t\"Active Table Structure Status\": [" << __E__;
+		(*out) << "\t\"Active Table Structure Status\": [" << __E__;
 
-	// 	std::string activeTableStructure = "";
-	// 	std::map<std::string, TableVersion>::iterator it;
-	// 	for (it = activeTables.begin(); it != activeTables.end(); ++it)
-	// 	{
-	// 		try 
-	// 		{
-	// 			activeTableStructure = cfgMgr->nameToTableMap_.find(it->first)
-	// 					->second->getStructureStatusAsJSON(cfgMgr);
-	// 			(*out) << (std::next(it)==activeTables.end() ? "" : ",") << __E__;
-	// 		}
-	// 		catch(const std::exception& e)
-	// 		{
+		bool firstPrint = true;
+		std::string activeTableStructure = "";
+		std::map<std::string, TableVersion>::iterator it;
+		for (it = activeTables.begin(); it != activeTables.end(); ++it)
+		{
+			try 
+			{
+				activeTableStructure = cfgMgr->nameToTableMap_.find(it->first)
+						->second->getStructureStatusAsJSON(cfgMgr);
+				if (activeTableStructure != "" && !firstPrint)
+				{
+					(*out) << (std::next(it)==activeTables.end() ? "" : ",") << __E__;
+					(*out) << activeTableStructure << __E__;
+				}
+					firstPrint = false;
+			}
+			catch(const std::exception& e)
+			{
 
-	// 			__COUT__ << "Error caught in localDumpActiveTableStructureStatus(): " << e.what();
-	// 			__COUT__ << "Structure Status may not be implemented." << __E__;
-	// 		}
-	// 	}
+				__COUT__ << "Error caught in localDumpActiveTableStructureStatus(): " << e.what();
+				__COUT__ << "Structure Status may not be implemented." << __E__;
+			}
+		}
 
-	// 	(*out) << "\t]" << __E__;
-	// };
+		(*out) << "\t]" << __E__;
+	};
 
 	if(dumpType == "GroupKeys")
 	{
@@ -1391,10 +1397,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		localDumpActiveTables(this, out, true);
 		(*out) << ",\n" << __E__;
 		localDumpActiveTableContents(this, out, true);
-		(*out) << "}\n";
-
-		// (*out) << ",\n" << __E__;
-		// localDumpActiveTableStructureStatus(this, out);
+		(*out) << ",\n" << __E__;
+		localDumpActiveTableStructureStatus(this, out);
+		// (*out) << "}\n";
 	}
 	else
 	{
