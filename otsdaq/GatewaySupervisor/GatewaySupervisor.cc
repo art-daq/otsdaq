@@ -3941,8 +3941,9 @@ try
 				}
 
 				//FIXME -- October 2024, by rrivera (need future simplification from agioiosa) -  Should this 2nd param be activeStateMachineConfigurationDumpOnConfigure_?! What is the 2nd param for? Is conditionID_ enough?
+				std::string startLogEntry = getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME);
 				runNumber = runInfoInterface->claimNextRunNumber(
-				    conditionID_, activeStateMachineConfigurationDumpOnRun_);
+				    conditionID_, activeStateMachineConfigurationDumpOnRun_, startLogEntry);
 			}  // end Run Info Plugin handling
 
 			setNextRunNumber(runNumber + 1);
@@ -4828,7 +4829,8 @@ try
 			}
 
 			conditionID_ = runInfoInterface->insertRunCondition(
-			    activeStateMachineConfigurationDumpOnConfigure_ + remoteSubsystemDump);
+			    activeStateMachineConfigurationDumpOnConfigure_ + remoteSubsystemDump,
+			    activeStateMachineName_);
 		}  // end Run Info Plugin handling
 	}
 	catch(const std::runtime_error& e)

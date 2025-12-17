@@ -37,9 +37,12 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual ~RunInfoVInterface(void) { ; }
 
 	virtual unsigned int insertRunCondition(
-	    const std::string& runInfoConditions = "") = 0;
+	    const std::string& runInfoConditions = "",
+	    const std::string& configTypeName = "") = 0;
 	virtual unsigned int claimNextRunNumber(
-	    unsigned int conditionID, const std::string& runInfoConditions = "") = 0;
+	    unsigned int conditionID, 
+	    const std::string& runInfoConditions = "",
+	    const std::string& comment = "") = 0;
 	virtual void updateRunInfo(unsigned int                   runNumber,
 	                           RunInfoVInterface::RunStopType runStopType)   = 0;
 
