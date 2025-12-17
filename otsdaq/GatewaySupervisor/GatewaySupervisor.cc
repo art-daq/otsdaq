@@ -1797,12 +1797,23 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		if(commandResponseString.size() > strlen("Done") + 1)
 		{
 			//assume have config dump response!
-			remoteGatewayApp.config_dump = "\n\n************************\n";
-			remoteGatewayApp.config_dump +=
-			    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
-			    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
-			remoteGatewayApp.config_dump += "* \n";
-			remoteGatewayApp.config_dump += "\n\n";
+			// //extract dump type from config dump
+			std::string configDumpType = commandResponseString.substr(
+			    commandResponseString.find("Type of dump") + sizeof("Type of dump") - 1);
+			if(!(configDumpType.find("JSON all") != std::string::npos)) 
+			{
+				remoteGatewayApp.config_dump = "\n\n************************\n";
+				remoteGatewayApp.config_dump +=
+					"* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
+					"' at url: " + remoteGatewayApp.appInfo.url + "\n";
+				remoteGatewayApp.config_dump += "* \n";
+				remoteGatewayApp.config_dump += "\n\n";
+			}
+			else
+			{
+				__COUT__ << "Found JSON all dump type" << __E__;
+				remoteGatewayApp.config_dump_type = "JSON all";
+			}
 			remoteGatewayApp.config_dump +=
 			    commandResponseString.substr(strlen("Done") + 1);
 
@@ -4714,6 +4725,7 @@ try
 
 	//check for remote subsystem dumps (after broadcast!)
 	__COUT__ << "Check for remote subsystem dumps." << __E__;
+	bool isJSONdump = false;
 	std::string remoteSubsystemDump = "";
 	{
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
@@ -4726,13 +4738,29 @@ try
 				    << __COUT_HDR__ << remoteGatewayApps_[0].command << " "
 				    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 		}
-		for(auto& remoteGatewayApp : remoteGatewayApps)
+
+		__COUT__ << "Number of remote gateways: " << remoteGatewayApps.size() << __E__;
+		for(size_t i=0; i<remoteGatewayApps.size(); ++i)
 		{
-			if(!remoteGatewayApp.fsm_included)
+			if(!remoteGatewayApps[i].fsm_included)
 				continue;  //skip if not included
-			remoteSubsystemDump += remoteGatewayApp.config_dump;
+
+			//extract dump type from config dump
+			std::string configDumpType = remoteGatewayApps[i].config_dump.substr(
+			    remoteGatewayApps[i].config_dump.find("Type of dump") + sizeof("Type of dump") - 1);
+
+			isJSONdump = (configDumpType.find("JSON all") != std::string::npos);
+			__COUT__ << "Remote gateway " << remoteGatewayApps[i].fullName << " is using JSON dump: " << isJSONdump << __E__;
+
+			remoteSubsystemDump += remoteGatewayApps[i].config_dump;
+
+			if(isJSONdump && (i<remoteGatewayApps.size()-1))
+				remoteSubsystemDump	+= ",\n";
+			else if(isJSONdump && (i==remoteGatewayApps.size()-1))
+				remoteSubsystemDump	+= "]}\n";
 		}
 
+		__COUT__ << "Remote gateway dump: " << remoteSubsystemDump << __E__;
 		if(remoteSubsystemDump.size())
 			__COUTV__(remoteSubsystemDump);
 	}  //end check for remote subsystem dumps
@@ -4828,8 +4856,23 @@ try
 				__SS_THROW__;
 			}
 
+			std::string configDumpType = activeStateMachineConfigurationDumpOnConfigure_.substr(
+			    activeStateMachineConfigurationDumpOnConfigure_.find("Type of dump") + sizeof("Type of dump") - 1);
+			isJSONdump = (configDumpType.find("JSON all") != std::string::npos);
+			if(isJSONdump)
+			{
+				activeStateMachineConfigurationDumpOnConfigure_ += ",\n\"Remote Gateways\": [";
+				activeStateMachineConfigurationDumpOnConfigure_ += remoteSubsystemDump;
+				if(remoteSubsystemDump.size() == 0)
+					activeStateMachineConfigurationDumpOnConfigure_ += "\n]}\n";
+
+			}
+
+			__COUT__ << "Final config dump: " << __E__;
+			__COUT_MULTI__(2, activeStateMachineConfigurationDumpOnConfigure_);
+
 			conditionID_ = runInfoInterface->insertRunCondition(
-			    activeStateMachineConfigurationDumpOnConfigure_ + remoteSubsystemDump,
+			    activeStateMachineConfigurationDumpOnConfigure_,
 			    activeStateMachineName_);
 		}  // end Run Info Plugin handling
 	}
