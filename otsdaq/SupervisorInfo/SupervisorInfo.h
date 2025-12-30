@@ -94,10 +94,13 @@ class SupervisorInfo
 	const std::string&                           getContextName					(void) const { return contextName_; }
 	const unsigned int&                          getId							(void) const { return id_; }
 	const std::string&                           getClass						(void) const { return class_; }
+
+	/// Note: be careful accessing status_ in multithreaded code (need higher level lock, a la getSupervisorInfoMutex)
 	const std::string&                           getStatus						(void) const { return status_; }
 	time_t                                 		 getLastStatusTime				(void) const { return lastStatusTime_; }
 	const unsigned int&                          getProgress					(void) const { return progress_; }
 	const std::string&                           getDetail						(void) const { return detail_; }
+	
 	const std::string&                           getURL							(void) const { return contextURL_; }
 	const std::string&                           getURN							(void) const { return URN_; }
 	const std::string&                           getFullURL						(void) const { return URL_; }

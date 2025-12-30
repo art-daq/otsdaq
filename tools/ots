@@ -2942,7 +2942,8 @@ if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then
 fi
 
 if [[ ${#remoteLaunchHosts[@]} > 0 ]]; then
-	out "Remote launch hosts were requested, waiting for them to start... (ots -k to abort, not -K which will kill all users on node)"
+	out "Remote launch hosts were requested, waiting for them to start...\n\
+(CTRL+C to abort now; CTRL+Z;bg to return to terminal; ots -k to kill, not -K which will kill all users on node)"
 	sleep 20 #give time for remote hosts to start (and for user to exit with CTRL+C if needed)
 fi
 
