@@ -257,8 +257,17 @@ void GatewaySupervisor::init(void)
 		{
 			__COUT__ << "Enabling App Status checking..." << __E__;
 
+			//make one thread for rapid status checking
+			// and one for disconnected status checking (with long timeouts)
 			std::thread(
 			    [](GatewaySupervisor* s) { GatewaySupervisor::AppStatusWorkLoop(s); },
+			    this)
+			    .detach();
+
+			std::thread(
+			    [](GatewaySupervisor* s) {
+				    GatewaySupervisor::AppStatusWorkLoop(s, true /* doDisconnected */);
+			    },
 			    this)
 			    .detach();
 		}
@@ -356,6 +365,7 @@ void GatewaySupervisor::init(void)
 ///	child thread
 void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
                                           const bool         doDisconnected /* = false */)
+try
 {
 	sleep(5);  // wait for apps to get started
 
@@ -370,17 +380,24 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 
 	std::unique_ptr<TransceiverSocket>
 	       remoteGatewaySocket;  //use to get remote gateway status
-	bool   resetRemoteGatewayApps      = false;
 	bool   commandingRemoteGatewayApps = false;
 	size_t commandRemoteIdleCount      = 0;
 	int    portForReverseLoginOverUDP  = 0;  //if 0, then not reverse login not enabled
 	std::string ipAddressForStateChangesOverUDP = "";  //if "", then not enabled
 
+	if(doDisconnected)
+		sleep(5);  // stagger the two loops a bit
 	__COUTV__(doDisconnected);
 	while(1)
 	{
 		++loopCount;
-		sleep(1);
+		usleep(500000 /* 0.5 seconds */);
+
+		//lock to access appLastStatusGood_ map
+		{
+			std::lock_guard<std::mutex> lock(theSupervisor->dualStatusThreadMutex_);
+			appLastStatusGood = theSupervisor->appLastStatusGood_;
+		}
 
 		// workloop procedure
 		//	Loop through all Apps and request status
@@ -388,139 +405,236 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 
 		oneStatusReqHasFailed = false;
 		__COUTS__(TLVL_StatusWorkloop)
-		    << "App status checking, doDisconnected = " << doDisconnected << __E__;
+		    << "App status checking, doDisconnected = " << doDisconnected
+		    << " loopCount=" << loopCount << __E__;
+
+		if(TTEST(1) ||
+		   doDisconnected)  //printout the true/false handling of apps (emulating anticipated flow)
+		{
+			uint32_t handlingAppCount = 0;
+			for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+			{
+				bool isDisconnected =
+				    appLastStatusGood.find(appName) != appLastStatusGood.end() &&
+				    !appLastStatusGood.at(appName);
+
+				auto appInfo = it.second;
+				if(appInfo.isGatewaySupervisor())  // get gateway status
+				{
+					std::vector<GatewaySupervisor::RemoteGatewayInfo>
+					    remoteApps;  //local copy
+					{                //lock for remainder of scope
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->remoteGatewayAppsMutex_);
+						remoteApps = theSupervisor->remoteGatewayApps_;
+					}
+
+					for(auto& remoteGatewayApp : remoteApps)
+					{
+						bool isRemoteAppDisconnected =
+						    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
+						                           remoteGatewayApp.appInfo.name) !=
+						        appLastStatusGood.end() &&
+						    !appLastStatusGood.at(remoteGatewayApp.appInfo.url +
+						                          remoteGatewayApp.appInfo.name);
+
+						//skip based on disconnected status
+						if(doDisconnected && !isRemoteAppDisconnected)
+							continue;
+						if(!doDisconnected && isRemoteAppDisconnected)
+							continue;
+
+						++handlingAppCount;
+						__COUTT__
+						    << "Status loop remote apps #" << handlingAppCount
+						    << ", doDisconnected = " << doDisconnected
+						    << " Remote subapp = '" << remoteGatewayApp.appInfo.name
+						    << "' [URL=" << remoteGatewayApp.appInfo.url
+						    << "] isRemoteAppDisconnected = " << isRemoteAppDisconnected
+						    << ".\n\n";
+					}  //end remote app loop
+				}
+
+				//skip based on disconnected status
+				if(doDisconnected && !isDisconnected)
+					continue;
+				if(!doDisconnected && isDisconnected)
+					continue;
+
+				++handlingAppCount;
+				__COUTT__ << "Status Loop apps #" << handlingAppCount
+				          << ", doDisconnected = " << doDisconnected
+				          << " Supervisor instance = '" << appName
+				          << "' [LID=" << appInfo.getId() << "] in Context '"
+				          << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+				          << "] isDisconnected = " << isDisconnected << ".\n\n";
+			}  //end app loop
+
+			if(doDisconnected)
+			{
+				__COUTTV__(handlingAppCount);
+				//when nothinig to do, still proceed to reset remote gateway apps and get icon updates
+			}
+		}  //end debugging of handling of apps
+
 		for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 		{
 			auto appInfo = it.second;
 			appName      = appInfo.getName();
+
+			bool isDisconnected =
+			    appLastStatusGood.find(appName) != appLastStatusGood.end() &&
+			    !appLastStatusGood.at(appName);
+
 			__COUTS__(TLVL_StatusWorkloop)
-			    << "Getting Status, doDisconnected = " << doDisconnected
+			    << "Start of status loop, doDisconnected = " << doDisconnected
 			    << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId()
 			    << "] in Context '" << appInfo.getContextName()
-			    << "' [URL=" << appInfo.getURL() << "].\n\n";
+			    << "' [URL=" << appInfo.getURL()
+			    << "] isDisconnected = " << isDisconnected << ".\n\n";
+
+			//if doDisconnected is true, only check disconnected apps
+			//	AND disconnected subapps within gateway!
+			//skip all connected non-gateway supervisors
 
 			// if the application is the gateway supervisor, we do not send a SOAP message
 			if(appInfo.isGatewaySupervisor())  // get gateway status
 			{
+				bool resetRemoteGatewayApps = false;
+
 				try
 				{
-					// send back status and progress parameters
-					const std::string& err =
-					    theSupervisor->theStateMachine_.getErrorMessage();
-					try
+					if(!doDisconnected)  //primary gateway (self) is never disconnected
 					{
-						__COUTVS__(TLVL_StatusWorkloop,
-						           theSupervisor->theStateMachine_.isInTransition());
-						if(theSupervisor->theStateMachine_.isInTransition())
-							__COUTVS__(TLVL_StatusWorkloop,
-							           theSupervisor->theStateMachine_
-							               .getCurrentTransitionName());
-						__COUTVS__(
-						    TLVL_StatusWorkloop,
-						    theSupervisor->theStateMachine_.getProvenanceStateName());
-						__COUTVS__(TLVL_StatusWorkloop,
-						           theSupervisor->theStateMachine_.getCurrentStateName());
-					}
-					catch(...)
-					{
-						;
-					}
-
-					if(err == "")
-					{
-						if(theSupervisor->theStateMachine_
-						       .isInTransition())  // || theSupervisor->theProgressBar_.read() < 100)
+						// send back status and progress parameters
+						const std::string& err =
+						    theSupervisor->theStateMachine_.getErrorMessage();
+						try
 						{
-							// attempt to get transition name, otherwise give provenance state
-							try
+							__COUTVS__(TLVL_StatusWorkloop,
+							           theSupervisor->theStateMachine_.isInTransition());
+							if(theSupervisor->theStateMachine_.isInTransition())
+								__COUTVS__(TLVL_StatusWorkloop,
+								           theSupervisor->theStateMachine_
+								               .getCurrentTransitionName());
+							__COUTVS__(
+							    TLVL_StatusWorkloop,
+							    theSupervisor->theStateMachine_.getProvenanceStateName());
+							__COUTVS__(
+							    TLVL_StatusWorkloop,
+							    theSupervisor->theStateMachine_.getCurrentStateName());
+						}
+						catch(...)
+						{
+							;
+						}
+
+						if(err == "")
+						{
+							if(theSupervisor->theStateMachine_
+							       .isInTransition())  // || theSupervisor->theProgressBar_.read() < 100)
 							{
-								status = theSupervisor->theStateMachine_
-								             .getCurrentTransitionName();
+								// attempt to get transition name, otherwise give provenance state
+								try
+								{
+									status = theSupervisor->theStateMachine_
+									             .getCurrentTransitionName();
+								}
+								catch(...)
+								{
+									status = theSupervisor->theStateMachine_
+									             .getProvenanceStateName();
+								}
+								progress =
+								    theSupervisor->theProgressBar_.readPercentageString();
 							}
-							catch(...)
+							else
 							{
-								status = theSupervisor->theStateMachine_
-								             .getProvenanceStateName();
+								status =
+								    theSupervisor->theStateMachine_.getCurrentStateName();
+								progress = "100";  //if not in transition, then 100
 							}
-							progress =
-							    theSupervisor->theProgressBar_.readPercentageString();
 						}
 						else
 						{
 							status =
-							    theSupervisor->theStateMachine_.getCurrentStateName();
-							progress = "100";  //if not in transition, then 100
+							    (theSupervisor->theStateMachine_.getCurrentStateName() ==
+							             RunControlStateMachine::PAUSED_STATE_NAME
+							         ? "Soft-Error:::"
+							         : "Failed:::") +
+							    err;
+							progress =
+							    theSupervisor->theProgressBar_.readPercentageString();
 						}
-					}
-					else
-					{
-						status = (theSupervisor->theStateMachine_.getCurrentStateName() ==
-						                  RunControlStateMachine::PAUSED_STATE_NAME
-						              ? "Soft-Error:::"
-						              : "Failed:::") +
-						         err;
-						progress = theSupervisor->theProgressBar_.readPercentageString();
-					}
 
-					__COUTVS__(TLVL_StatusWorkloop, status);
-					__COUTVS__(TLVL_StatusWorkloop, progress);
+						__COUTVS__(TLVL_StatusWorkloop, status);
+						__COUTVS__(TLVL_StatusWorkloop, progress);
 
-					try
-					{
-						detail =
-						    (theSupervisor->theStateMachine_.isInTransition()
-						         ? theSupervisor->theStateMachine_
-						               .getCurrentTransitionName(
-						                   theSupervisor->stateMachineLastCommandInput_)
-						         : (std::string("Uptime: ") +
-						            StringMacros::encodeURIComponent(
-						                StringMacros::getTimeDurationString(
-						                    theSupervisor->CorePropertySupervisorBase::
-						                        getSupervisorUptime())) +
-						            ", Time-in-state: " +
-						            StringMacros::encodeURIComponent(
-						                StringMacros::getTimeDurationString(
-						                    theSupervisor->theStateMachine_
-						                        .getTimeInState()))));
-						// make sure broadcast message status is not being updated
-						std::lock_guard<std::mutex> lock(
-						    theSupervisor->broadcastCommandStatusUpdateMutex_);
-						if(detail != "" && theSupervisor->broadcastCommandStatus_ != "")
-							detail += " - " + theSupervisor->broadcastCommandStatus_;
-
-						if(!theSupervisor->theStateMachine_.isInTransition() &&
-						   (theSupervisor->theStateMachine_.getCurrentStateName() ==
-						        RunControlStateMachine::CONFIGURED_STATE_NAME ||
-						    theSupervisor->theStateMachine_.getCurrentStateName() ==
-						        RunControlStateMachine::RUNNING_STATE_NAME ||
-						    theSupervisor->theStateMachine_.getCurrentStateName() ==
-						        RunControlStateMachine::PAUSED_STATE_NAME))
+						try
 						{
-							//add Configuration details
-							detail +=
-							    " - Configured with System Configuration Alias '" +
-							    theSupervisor->activeStateMachineConfigurationAlias_ +
-							    "' which translates to " +
-							    theSupervisor->theConfigurationTableGroup_.first + "(" +
-							    theSupervisor->theConfigurationTableGroup_.second.str() +
-							    "). Active Context Group " +
-							    theSupervisor
-							        ->CorePropertySupervisorBase::theConfigurationManager_
-							        ->getActiveGroupName(
-							            ConfigurationManager::GroupType::CONTEXT_TYPE) +
-							    "(" +
-							    theSupervisor
-							        ->CorePropertySupervisorBase::theConfigurationManager_
-							        ->getActiveGroupKey(
-							            ConfigurationManager::GroupType::CONTEXT_TYPE)
-							        .str() +
-							    ").";
+							detail = (theSupervisor->theStateMachine_.isInTransition()
+							              ? theSupervisor->theStateMachine_
+							                    .getCurrentTransitionName(
+							                        theSupervisor
+							                            ->stateMachineLastCommandInput_)
+							              : (std::string("Uptime: ") +
+							                 StringMacros::encodeURIComponent(
+							                     StringMacros::getTimeDurationString(
+							                         theSupervisor
+							                             ->CorePropertySupervisorBase::
+							                                 getSupervisorUptime())) +
+							                 ", Time-in-state: " +
+							                 StringMacros::encodeURIComponent(
+							                     StringMacros::getTimeDurationString(
+							                         theSupervisor->theStateMachine_
+							                             .getTimeInState()))));
+							// make sure broadcast message status is not being updated
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->broadcastCommandStatusUpdateMutex_);
+							if(detail != "" &&
+							   theSupervisor->broadcastCommandStatus_ != "")
+								detail += " - " + theSupervisor->broadcastCommandStatus_;
+
+							if(!theSupervisor->theStateMachine_.isInTransition() &&
+							   (theSupervisor->theStateMachine_.getCurrentStateName() ==
+							        RunControlStateMachine::CONFIGURED_STATE_NAME ||
+							    theSupervisor->theStateMachine_.getCurrentStateName() ==
+							        RunControlStateMachine::RUNNING_STATE_NAME ||
+							    theSupervisor->theStateMachine_.getCurrentStateName() ==
+							        RunControlStateMachine::PAUSED_STATE_NAME))
+							{
+								//add Configuration details
+								detail +=
+								    " - Configured with System Configuration Alias '" +
+								    theSupervisor->activeStateMachineConfigurationAlias_ +
+								    "' which translates to " +
+								    theSupervisor->theConfigurationTableGroup_.first +
+								    "(" +
+								    theSupervisor->theConfigurationTableGroup_.second
+								        .str() +
+								    "). Active Context Group " +
+								    theSupervisor
+								        ->CorePropertySupervisorBase::
+								            theConfigurationManager_->getActiveGroupName(
+								                ConfigurationManager::GroupType::
+								                    CONTEXT_TYPE) +
+								    "(" +
+								    theSupervisor
+								        ->CorePropertySupervisorBase::
+								            theConfigurationManager_
+								        ->getActiveGroupKey(
+								            ConfigurationManager::GroupType::CONTEXT_TYPE)
+								        .str() +
+								    ").";
+							}
 						}
-					}
-					catch(...)
-					{
-						detail = "";
-					}
+						catch(...)
+						{
+							detail = "";
+						}
+					}  //end gateway supervisor primary status retrieval
+
+					//now handle remote gateway info gathering
 
 					std::vector<GatewaySupervisor::RemoteGatewayInfo>
 					    remoteApps;  //local copy to avoid long mutex lock
@@ -537,19 +651,40 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 								if(remoteApp.command != "")
 								{
 									//latch until all remote apps are stable
-									commandingRemoteGatewayApps = true;
+									commandingRemoteGatewayApps =
+									    doDisconnected
+									        ? false
+									        : true;  //only command in primary (non-disconnected-handling) status thread
 									break;
 								}
 							}
 						}
-					}
-					__COUTVS__(TLVL_StatusRemoteWorkloop, commandingRemoteGatewayApps);
+					}  //end copy of remote apps
+					__COUTS__(TLVL_StatusRemoteWorkloop)
+					    << "doDisconnected=" << doDisconnected << " commanding? "
+					    << commandingRemoteGatewayApps
+					    << " remoteApps.size()=" << remoteApps.size()
+					    << " loopCount=" << loopCount << __E__;
 
 					//Add sub-apps for each Remote Gateway specified as a Remote Desktop Icon
-					if((!commandingRemoteGatewayApps && loopCount % 20 == 0) ||
-					   loopCount ==
-					       0)  //periodically refresh Remote Gateway list based on icon list
+					if(  //periodically refresh Remote Gateway list based on icon list
+					    //disconnect version will handle refreshing
+					    //primary version does first time to init apps and socket
+					    (loopCount ==
+					     0) ||  //must init socket first time! (for both thread types)
+					    (remoteApps.size() &&
+					     !remoteGatewaySocket) ||  //if there are app (from other loop) but socket not init'd
+					    (doDisconnected &&
+					     loopCount))  //% 20 == 0) ) //!commandingRemoteGatewayApps &&
 					{
+						__COUTS__(TLVL_StatusWorkloop)
+						    << "Doing remote gateway icon/subapp refresh, doDisconnected "
+						       "= "
+						    << doDisconnected << " Supervisor instance = '" << appName
+						    << "' [LID=" << appInfo.getId() << "] in Context '"
+						    << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+						    << "].\n\n";
+
 						// use latest context always from temporary configuration manager,
 						//	to get updated icons every time...
 						//(so icon changes do no require an ots restart)
@@ -642,9 +777,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									}
 								}  //end remote URL parameter handling
 
-								thisInfo.appInfo.name = icon.recordUID_;
-								thisInfo.appInfo.status =
-								    SupervisorInfo::APP_STATUS_UNKNOWN;
+								thisInfo.appInfo.name   = icon.recordUID_;
+								thisInfo.appInfo.status = SupervisorInfo::
+								    APP_STATUS_UNKNOWN;  //non-empty string indicates this app exists
 								thisInfo.appInfo.progress = 0;
 								thisInfo.appInfo.detail   = "";
 								thisInfo.appInfo.url =
@@ -737,7 +872,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									       "targeting a UID in the "
 									       "SubsystemUserDataPathsTable."
 									    << __E__;
-									ss << "\n\nHere was the error: " << e.what() << __E__;
+									ss << "\n\nHere was the error getting remote "
+									      "aliases:\n"
+									   << e.what() << __E__;
 									__COUT__ << ss.str();
 									remoteApps[i].error = ss.str();
 
@@ -781,9 +918,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 						if(remoteAppsExist &&
 						   !remoteGatewaySocket)  //instantiate socket first time there are remote apps
 						{
-							__COUT_INFO__
-							    << "Instantiating Remote Gateway App Status Socket!"
-							    << __E__;
+							__COUT_INFO__ << "Instantiating Remote Gateway App Status "
+							                 "Socket (doDisconnected = "
+							              << doDisconnected << ")!" << __E__;
 							ConfigurationTree configLinkNode =
 							    theSupervisor->CorePropertySupervisorBase::
 							        getSupervisorTableNode();
@@ -827,56 +964,87 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							remoteGatewaySocket = std::make_unique<TransceiverSocket>(
 							    ipAddressForStateChangesOverUDP);
 							remoteGatewaySocket->initialize();
-						}
+
+							__COUTT__
+							    << "Remote Gateway App Status Socket initialized. Port: "
+							    << remoteGatewaySocket->getPort()
+							    << ", doDisconnected=" << doDisconnected << __E__;
+						}  //end initializing remote gateway socket
 
 					}  //end periodic Remote Gateway refresh
 
-					//for each remote gateway, request app status with "GetRemoteAppStatus"
-					if(loopCount % 3 == 0 ||
-					   resetRemoteGatewayApps ||  //a little less frequently
-					   commandingRemoteGatewayApps)
+					//assert socket is initialized if there are remote apps
+					if(remoteApps.size() && !remoteGatewaySocket)
 					{
-						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop,
-							           theSupervisor->remoteGatewayApps_[0].error);
+						__SS__ << "Impossible no remote gateway socket available, "
+						          "doDisconnected = "
+						       << doDisconnected << __E__;
+						__SS_THROW__;
+					}
+
+					//request icons more often from disconnected thread, and not from primary thread
+					__COUTT__ << "(doDisconnected = " << doDisconnected
+					          << ") resetRemoteGatewayApps = " << resetRemoteGatewayApps
+					          << __E__;
+
+					std::set<std::string /* appName */>
+					    remoteAppsHandedByThread;  //track which apps are handled in this pass, so they can be updated at the end
+
+					//for each remote gateway, request app status with "GetRemoteAppStatus"
+					bool gettingRemoteStatus = false;
+					if(1 || loopCount % 3 == 0 ||    //most frequent
+					   resetRemoteGatewayApps ||     //a little less frequently
+					   commandingRemoteGatewayApps)  //least frequent
+					{
+						gettingRemoteStatus = true;
+						__COUTT__ << "(doDisconnected = " << doDisconnected
+						          << ") gettingRemoteStatus = " << gettingRemoteStatus
+						          << __E__;
 
 						//check for commands first
 						bool commandSent = false;
 
-						for(auto& remoteGatewayApp : remoteApps)
-							if(remoteGatewayApp.command != "")
-							{
-								GatewaySupervisor::SendRemoteGatewayCommand(
-								    remoteGatewayApp, remoteGatewaySocket);
-								if(remoteGatewayApp.error == "")
+						if(!doDisconnected)  //only primary sends commands
+							for(auto& remoteGatewayApp : remoteApps)
+								if(remoteGatewayApp.command != "")
 								{
-									remoteGatewayApp.ignoreStatusCount =
-									    0;  //if non-zero, do not ask for status
-									commandSent = true;
-								}
+									remoteAppsHandedByThread
+									    .emplace(  //mark handled by this thread
+									        remoteGatewayApp.appInfo.url +
+									        remoteGatewayApp.appInfo.name);
 
-								//give feedback immediately to user!!
-								{
-									__COUT__ << "remoteGatewayApp "
-									         << remoteGatewayApp.appInfo.name
-									         << " error: " << remoteGatewayApp.error
-									         << __E__;
-									//lock for remainder of scope
-									std::lock_guard<std::mutex> lock(
-									    theSupervisor->remoteGatewayAppsMutex_);
-									for(size_t i = 0;
-									    i < theSupervisor->remoteGatewayApps_.size();
-									    ++i)
-										if(remoteGatewayApp.appInfo.name ==
-										   theSupervisor->remoteGatewayApps_[i]
-										       .appInfo.name)
-										{
-											theSupervisor->remoteGatewayApps_[i].error =
-											    remoteGatewayApp.error;
-											break;
-										}
-								}
-							}
+									GatewaySupervisor::SendRemoteGatewayCommand(
+									    remoteGatewayApp, remoteGatewaySocket);
+									if(remoteGatewayApp.error == "")
+									{
+										remoteGatewayApp.ignoreStatusCount =
+										    0;  //if non-zero, do not ask for status
+										commandSent = true;
+									}
+
+									//give feedback immediately to user!!
+									{
+										__COUT__ << "remoteGatewayApp (doDisconnected="
+										         << doDisconnected << ") "
+										         << remoteGatewayApp.appInfo.name
+										         << " error: " << remoteGatewayApp.error
+										         << __E__;
+										//lock for remainder of scope
+										std::lock_guard<std::mutex> lock(
+										    theSupervisor->remoteGatewayAppsMutex_);
+										for(size_t i = 0;
+										    i < theSupervisor->remoteGatewayApps_.size();
+										    ++i)
+											if(remoteGatewayApp.appInfo.name ==
+											   theSupervisor->remoteGatewayApps_[i]
+											       .appInfo.name)
+											{
+												theSupervisor->remoteGatewayApps_[i]
+												    .error = remoteGatewayApp.error;
+												break;
+											}
+									}
+								}  //end primary command handling loop
 
 						if(commandSent)
 						{
@@ -884,20 +1052,61 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							sleep(1);  //gives some time for command to sink in
 						}
 
-						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop,
-							           theSupervisor->remoteGatewayApps_[0].error);
-
-						//then get status
+						//then get status (primary and disconnected threads)
 						bool allAppsAreIdle    = true;
 						bool allApssAreUnknown = true;
 						for(auto& remoteGatewayApp : remoteApps)
 						{
+							bool isRemoteAppDisconnected =
+							    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
+							                           remoteGatewayApp.appInfo.name) !=
+							        appLastStatusGood.end() &&
+							    !appLastStatusGood.at(remoteGatewayApp.appInfo.url +
+							                          remoteGatewayApp.appInfo.name);
+
+							__COUTS__(TLVL_StatusWorkloop)
+							    << "Status needed? doDisconnected = " << doDisconnected
+							    << " Remote subapp = '" << remoteGatewayApp.appInfo.name
+							    << "' [URL=" << remoteGatewayApp.appInfo.url
+							    << "] isRemoteAppDisconnected = "
+							    << isRemoteAppDisconnected << ".\n\n";
+
+							//skip based on disconnected status
+							bool skipApp = false;
+							if(doDisconnected && !isRemoteAppDisconnected)
+								skipApp = true;
+							if(!doDisconnected && isRemoteAppDisconnected)
+								skipApp = true;
+
+							if(remoteAppsHandedByThread
+							       .find(  //already handled by command send, so get status!
+							           remoteGatewayApp.appInfo.url +
+							           remoteGatewayApp.appInfo.name) !=
+							   remoteAppsHandedByThread.end())
+								skipApp = false;
+
+							if(skipApp)
+								continue;
+
+							remoteAppsHandedByThread
+							    .emplace(  //mark handled by this thread
+							        remoteGatewayApp.appInfo.url +
+							        remoteGatewayApp.appInfo.name);
+
+							__COUTS__(TLVL_StatusWorkloop)
+							    << "Calling CheckRemoteGatewayStatus, doDisconnected = "
+							    << doDisconnected << " Remote subapp = '"
+							    << remoteGatewayApp.appInfo.name
+							    << "' [URL=" << remoteGatewayApp.appInfo.url
+							    << "] isRemoteAppDisconnected = "
+							    << isRemoteAppDisconnected << ".\n\n";
+
 							GatewaySupervisor::CheckRemoteGatewayStatus(
 							    remoteGatewayApp,
 							    remoteGatewaySocket,
 							    ipAddressForStateChangesOverUDP,
 							    portForReverseLoginOverUDP);
+
 							if(remoteGatewayApp.appInfo.status !=
 							   SupervisorInfo::APP_STATUS_UNKNOWN)
 							{
@@ -906,14 +1115,21 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 								                      remoteGatewayApp.appInfo.name])
 								{
 									__COUT_INFO__
-									    << "First good status from "
-									    << " Remote subapp = '"
+									    << "First good status (doDisconnected = "
+									    << doDisconnected << ") from Remote subapp = '"
 									    << remoteGatewayApp.appInfo.name
 									    << "' [URL=" << remoteGatewayApp.appInfo.url
 									    << "].\n\n";
 								}
 								appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                  remoteGatewayApp.appInfo.name] = true;
+								{  //propagate status change to list of truth
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->dualStatusThreadMutex_);
+									theSupervisor->appLastStatusGood_
+									    [remoteGatewayApp.appInfo.url +
+									     remoteGatewayApp.appInfo.name] = true;
+								}
 
 								if(!(remoteGatewayApp.appInfo.progress ==
 								         0 ||  //if !(idle)
@@ -932,8 +1148,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									allAppsAreIdle = false;
 								}
 							}
-							else  //skip absent subsystems for a while
+							else  //status is unknown (make sure in disconnected pile)
 							{
+								//mark so could ignore/skip absent subsystems for a while
 								remoteGatewayApp.ignoreStatusCount =
 								    3;  //if non-zero, do not ask for status
 
@@ -968,7 +1185,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									if(contextName != "")
 										ss << " (" << contextName << ")" << __E__;
 
-									__COUT_WARN__ << ss.str();
+									__COUT_WARN__
+									    << "(doDisconnected = " << doDisconnected << ") "
+									    << ss.str();
 									if(appLastStatusGood.find(
 									       remoteGatewayApp.appInfo.url +
 									       remoteGatewayApp.appInfo.name) !=
@@ -980,6 +1199,13 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 								//mark last status bad
 								appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                  remoteGatewayApp.appInfo.name] = false;
+								{  //propagate status change to list of truth
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->dualStatusThreadMutex_);
+									theSupervisor->appLastStatusGood_
+									    [remoteGatewayApp.appInfo.url +
+									     remoteGatewayApp.appInfo.name] = false;
+								}
 							}
 
 						}  //end remote app status update loop
@@ -996,15 +1222,18 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							++commandRemoteIdleCount;
 							if(commandRemoteIdleCount >= 3)
 							{
-								__COUTT__ << "Back to idle statusing" << __E__;
+								__COUTT__ << "Back to idle statusing (doDisconnected = "
+								          << doDisconnected << ")" << __E__;
 								commandingRemoteGatewayApps = false;
 							}
 						}
 
 						__COUTS__(TLVL_StatusRemoteWorkloop)
-						    << "commandRemoteIdleCount " << commandRemoteIdleCount << " "
-						    << allAppsAreIdle << " " << commandingRemoteGatewayApps
-						    << __E__;
+						    << "(doDisconnected = " << doDisconnected
+						    << ") commandRemoteIdleCount=" << commandRemoteIdleCount
+						    << " allAppsAreIdle=" << allAppsAreIdle
+						    << " commandingRemoteGatewayApps="
+						    << commandingRemoteGatewayApps << __E__;
 
 					}  //end remote app status update
 
@@ -1012,20 +1241,23 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 					if(resetRemoteGatewayApps)
 					{
 						__COUTS__(TLVL_RemoteDesktopIcons)
-						    << "Attempting to get Remote Desktop Icons... size="
-						    << remoteApps.size() << __E__;
+						    << "Attempting to get Remote Desktop Icons (doDisconnected = "
+						    << doDisconnected << ")... size=" << remoteApps.size()
+						    << __E__;
 
 						for(auto& remoteGatewayApp : remoteApps)
 						{
 							__COUTVS__(TLVL_RemoteDesktopIcons,
 							           remoteGatewayApp.appInfo.name);
 							__COUTVS__(TLVL_RemoteDesktopIcons, remoteGatewayApp.command);
+
 							if(remoteGatewayApp.command != "")
 								continue;  //skip if command to be sent
 
 							__COUTS__(TLVL_RemoteDesktopIcons)
 							    << remoteGatewayApp.appInfo.name << ": "
 							    << remoteGatewayApp.appInfo.status << __E__;
+
 							if(remoteGatewayApp.appInfo.status ==
 							   SupervisorInfo::APP_STATUS_UNKNOWN)
 								continue;  //skip if no status yet
@@ -1055,8 +1287,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							if(remoteGatewayApp.error ==
 							   "")  //only request icons if no errors
 							{
+								//only sets iconString or error!
 								GatewaySupervisor::GetRemoteGatewayIcons(
 								    remoteGatewayApp, remoteGatewaySocket);
+
 								if(remoteGatewayApp.error !=
 								   "")  //give feedback immediately to user!!
 								{
@@ -1076,40 +1310,79 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 											break;
 										}
 								}
-							}
-						}
-
-					}  //end remote desktop icon gathering
+								else  //give icon feedback immediately
+								{
+									__COUTV__(remoteGatewayApp.iconString);
+									//lock for remainder of scope
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->remoteGatewayAppsMutex_);
+									for(size_t i = 0;
+									    i < theSupervisor->remoteGatewayApps_.size();
+									    ++i)
+										if(remoteGatewayApp.appInfo.name ==
+										   theSupervisor->remoteGatewayApps_[i]
+										       .appInfo.name)
+										{
+											theSupervisor->remoteGatewayApps_[i]
+											    .iconString = remoteGatewayApp.iconString;
+											break;
+										}
+								}
+							}  //end remote app icon request handling
+						}      //end remote app icon request loop
+					}          //end remote desktop icon gathering
 
 					//for each remote gateway, copy info to Gateway supervisor remote gateway structure
-					if(loopCount % 3 == 0 ||
-					   resetRemoteGatewayApps ||  //a little less frequently
-					   commandingRemoteGatewayApps)
+					if(gettingRemoteStatus)
 					{
-						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop,
-							           theSupervisor->remoteGatewayApps_[0].error);
+						__COUTT__ << "(doDisconnected = " << doDisconnected
+						          << ") copy over... gettingRemoteStatus = "
+						          << gettingRemoteStatus << __E__;
 
 						//replace info in supervisor remote gateway list
 						{
 							//lock for remainder of scope
 							std::lock_guard<std::mutex> lock(
 							    theSupervisor->remoteGatewayAppsMutex_);
+
+							__COUTT__ << "(doDisconnected = " << doDisconnected
+							          << ") size?... "
+							             "theSupervisor->remoteGatewayApps_.size() = "
+							          << theSupervisor->remoteGatewayApps_.size()
+							          << __E__;
+
+							//first clear any stale status info, if in correct thread role
 							for(size_t i = 0;
 							    !commandingRemoteGatewayApps &&
 							    i < theSupervisor->remoteGatewayApps_.size();
 							    ++i)
 							{
+								//only clear status if status was handled by this thread
+								if(remoteAppsHandedByThread.find(
+								       theSupervisor->remoteGatewayApps_[i].appInfo.url +
+								       theSupervisor->remoteGatewayApps_[i]
+								           .appInfo.name) ==
+								   remoteAppsHandedByThread.end())
+									continue;
+
 								__COUTVS__(TLVL_StatusFullDetail,
 								           theSupervisor->remoteGatewayApps_[i].command);
 								if(theSupervisor->remoteGatewayApps_[i].command ==
 								   "")  //make sure not mid-command
 									theSupervisor->remoteGatewayApps_[i].appInfo.status =
 									    "";  //clear status as indicator to be erased
-							}
+							}                //end clear stale status loop
 
+							//now copy over updated status info, if in correct thread role
 							for(auto& remoteGatewayApp : remoteApps)
 							{
+								//only copy status if status was handled by this thread
+								if(remoteAppsHandedByThread.find(
+								       remoteGatewayApp.appInfo.url +
+								       remoteGatewayApp.appInfo.name) ==
+								   remoteAppsHandedByThread.end())
+									continue;
+
 								bool found = false;
 								for(size_t i = 0;
 								    i < theSupervisor->remoteGatewayApps_.size();
@@ -1119,6 +1392,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									   theSupervisor->remoteGatewayApps_[i].appInfo.name)
 									{
 										found = true;
+
 										//copy over updated status (but not control info, which may be have been changed while mutex was dropped)
 
 										if(remoteGatewayApp.command ==
@@ -1146,8 +1420,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 										theSupervisor->remoteGatewayApps_[i]
 										    .user_data_path_record =
 										    remoteGatewayApp.user_data_path_record;
-										theSupervisor->remoteGatewayApps_[i].iconString =
-										    remoteGatewayApp.iconString;
+										// theSupervisor->remoteGatewayApps_[i].iconString = // do not overwrite icon string!
+										//     remoteGatewayApp.iconString;
 										theSupervisor->remoteGatewayApps_[i]
 										    .parentIconFolderPath =
 										    remoteGatewayApp.parentIconFolderPath;
@@ -1226,15 +1500,33 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									}
 								}
 								if(!found)  //add
+								{
+									__COUT__ << "Adding '"
+									         << remoteGatewayApp.appInfo.name
+									         << "' to Gateway app list." << __E__;
 									theSupervisor->remoteGatewayApps_.push_back(
 									    remoteGatewayApp);
-							}
+								}
+							}  //end copy over updated status info, if in correct thread role
 
+							__COUTT__ << "(doDisconnected = " << doDisconnected
+							          << ") done copy over... "
+							             "theSupervisor->remoteGatewayApps_.size() = "
+							          << theSupervisor->remoteGatewayApps_.size()
+							          << __E__;
 							//cleanup unused remoteGatewayApps_
 							for(size_t i = 0;
 							    i < theSupervisor->remoteGatewayApps_.size();
 							    ++i)
 							{
+								//only delete if status was handled by this thread
+								if(remoteAppsHandedByThread.find(
+								       theSupervisor->remoteGatewayApps_[i].appInfo.url +
+								       theSupervisor->remoteGatewayApps_[i]
+								           .appInfo.name) ==
+								   remoteAppsHandedByThread.end())
+									continue;
+
 								if(theSupervisor->remoteGatewayApps_[i].appInfo.status ==
 								   "")
 								{
@@ -1244,24 +1536,23 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									--i;
 								}
 							}
-						}
 
-						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop,
-							           theSupervisor->remoteGatewayApps_[0].error);
-					}
+							//copy to subapps for display of primary Gateway
+							for(const auto& remoteGatewayApp :
+							    theSupervisor->remoteGatewayApps_)
+								subapps.push_back(remoteGatewayApp.appInfo);
 
-					//copy to subapps for display of primary Gateway
-					{
-						std::lock_guard<std::mutex> lock(
-						    theSupervisor->remoteGatewayAppsMutex_);
-						for(const auto& remoteGatewayApp :
-						    theSupervisor->remoteGatewayApps_)
-							subapps.push_back(remoteGatewayApp.appInfo);
-					}
+							__COUTT__ << "(doDisconnected = " << doDisconnected
+							          << ") done copy over... "
+							             "theSupervisor->remoteGatewayApps_.size() = "
+							          << theSupervisor->remoteGatewayApps_.size()
+							          << __E__;
 
-					resetRemoteGatewayApps = false;  //reset
-				}
+						}  //end scope lock for copying over remote app status
+
+					}  //end handling of copy info to Gateway supervisor remote gateway structure
+
+				}  //end main status try
 				catch(const std::runtime_error& e)
 				{
 					status                = SupervisorInfo::APP_STATUS_UNKNOWN;
@@ -1294,9 +1585,19 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 					                 "unknown error."
 					              << __E__;
 				}
+
+				//disconnected thread only handles remote gateway apps, do not proceed with setting app status
+				if(doDisconnected)
+					continue;
 			}
 			else  // get non-gateway status
 			{
+				//skip based on disconnected status
+				if(doDisconnected && !isDisconnected)
+					continue;
+				if(!doDisconnected && isDisconnected)
+					continue;
+
 				// pass the application as a parameter to tempMessage
 				SOAPParameters appPointer;
 				appPointer.addParameter("ApplicationPointer");
@@ -1463,6 +1764,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 						__COUTTV__(SOAPUtilities::translate(tempMessage));
 					}
 					appLastStatusGood[appName] = true;
+					{  //propagate status change to list of truth
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->dualStatusThreadMutex_);
+						theSupervisor->appLastStatusGood_[appName] = true;
+					}
 				}
 				catch(const xdaq::exception::Exception& e)
 				{
@@ -1536,6 +1842,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 						}
 					}
 					appLastStatusGood[appName] = false;
+					{  //propagate status change to list of truth
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->dualStatusThreadMutex_);
+						theSupervisor->appLastStatusGood_[appName] = false;
+					}
 				}
 				catch(...)
 				{
@@ -1614,11 +1925,25 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 						}
 					}
 					appLastStatusGood[appName] = false;
+					{  //propagate status change to list of truth
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->dualStatusThreadMutex_);
+						theSupervisor->appLastStatusGood_[appName] = false;
+					}
 				}
 			}  // end with non-gateway status request handling
 
 			__COUTVS__(TLVL_StatusRemoteWorkloop, status);
 			__COUTVS__(TLVL_StatusRemoteWorkloop, progress);
+
+			if(progress.empty())
+			{
+				__SS__ << "Empty progress string should not happen (doDisconnected = "
+				       << doDisconnected << ")! Supervisor instance = '" << appName
+				       << "' [LID=" << appInfo.getId() << "] in Context '"
+				       << appInfo.getContextName() << __E__;
+				__SS_THROW__;
+			}
 
 			// set status and progress
 			// convert the progress string into an integer in order to call
@@ -1629,7 +1954,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 			if("ContextARTDAQ" == appInfo.getContextName())
 				__COUTVS__(41, progressInteger);
 			else
+			{
 				__COUTVS__(40, progressInteger);
+				if(progressInteger > 100)
+					__COUT__ << "What happened? " << progressInteger << __E__;
+			}
 
 			theSupervisor->allSupervisorInfo_.setSupervisorStatus(
 			    appInfo, status, progressInteger, detail, subapps);
@@ -1644,6 +1973,12 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 
 	}  // end of infinite status checking loop
 }  // end AppStatusWorkLoop()
+catch(...)
+{
+	__COUT_ERR__ << "Unhandled exception in GatewaySupervisor::AppStatusWorkLoop "
+	                "(doDisconnected = "
+	             << doDisconnected << "). Exiting thread." << __E__;
+}  //end AppStatusWorkLoop() catch
 
 //==============================================================================
 /// GetRemoteGatewayIcons
@@ -2046,6 +2381,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		return;
 	}
 
+	std::map<unsigned int /* lid */, SupervisorInfo>
+	    localAllSupervisorInfo;  //only use in this workloop thread, stable copy of app status
 	std::size_t              commaPosition;
 	unsigned int             commaCounter = 0;
 	std::size_t              begin        = 0;
@@ -2165,8 +2502,36 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					for(const auto& it :
 					    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 					{
-						const auto& appInfo = it.second;
-						if(0 &&  //always return full status
+						// non-blocking here, it's ok if the status is stale
+						if(theSupervisor->allSupervisorInfo_
+						       .getSupervisorInfoMutex(it.second.getId())
+						       .try_lock())
+						{
+							//if doesnt exist, create it
+							if(localAllSupervisorInfo.find(it.second.getId()) ==
+							   localAllSupervisorInfo.end())
+								localAllSupervisorInfo.emplace(
+								    std::pair<unsigned int, SupervisorInfo>(
+								        it.second.getId(),  // descriptor.first,
+								        SupervisorInfo(0 /* descriptor */,
+								                       it.second.getName(),
+								                       it.second.getContextName())));
+
+							//copy if have lock
+							localAllSupervisorInfo.at(it.second.getId()) = it.second;
+							theSupervisor->allSupervisorInfo_
+							    .getSupervisorInfoMutex(it.second.getId())
+							    .unlock();
+						}  //else use stale status already in
+						else if(localAllSupervisorInfo.find(it.second.getId()) ==
+						        localAllSupervisorInfo.end())
+							continue;  //unless no stale value, then skip for now
+
+						// const auto& appInfo = it.second;
+						const auto& appInfo =
+						    localAllSupervisorInfo.at(it.second.getId());
+
+						if(0 &&  //always return all app status
 						   remoteGatewayStatus &&
 						   appInfo.getClass() !=
 						       XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
@@ -2941,10 +3306,13 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		}
 		else
 		{
-			__COUTS__(TLVL_StateChanger) << "UDP State Changer waiting..." << __E__;
+			__COUTS__(TLVL_StateChangerDetail)
+			    << "Waiting for UDP State Changer packet on "
+			    << ipAddressForStateChangesOverUDP << ":" << portForStateChangesOverUDP
+			    << "..." << __E__;
 			sleep(1);
 		}
-	}
+	}  // end while(1) loop
 }  // end StateChangerWorkLoop()
 
 //==============================================================================
@@ -7900,9 +8268,41 @@ try
 		}
 		else if(requestType == "getAppStatus")
 		{
+			//loop through all apps and return status
 			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
 			{
-				const auto& appInfo = it.second;
+				// non-blocking here, it's ok if the status is stale
+				if(allSupervisorInfo_.getSupervisorInfoMutex(it.second.getId())
+				       .try_lock())
+				{
+					//if doesnt exist, create it
+					if(localAllSupervisorInfo_.find(it.second.getId()) ==
+					   localAllSupervisorInfo_.end())
+						localAllSupervisorInfo_.emplace(
+						    std::pair<unsigned int, SupervisorInfo>(
+						        it.second.getId(),  // descriptor.first,
+						        SupervisorInfo(0 /* descriptor */,
+						                       it.second.getName(),
+						                       it.second.getContextName())));
+
+					//copy if have lock
+					localAllSupervisorInfo_.at(it.second.getId()) = it.second;
+					allSupervisorInfo_.getSupervisorInfoMutex(it.second.getId()).unlock();
+				}  //else use stale status already in
+				else if(localAllSupervisorInfo_.find(it.second.getId()) ==
+				        localAllSupervisorInfo_.end())
+					continue;  //unless no stale value, then skip for now
+
+				// const auto& appInfo = it.second;
+				const auto& appInfo = localAllSupervisorInfo_.at(it.second.getId());
+
+				if(appInfo.getProgress() != 100 &&
+				   appInfo.getClass() == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+				{
+					__COUTT__ << "In transition? " << appInfo.getName()
+					          << " status=" << appInfo.getStatus()
+					          << " progress=" << appInfo.getProgress() << __E__;
+				}
 
 				xmlOut.addTextElementToData("name",
 				                            appInfo.getName());  // get application name

@@ -346,7 +346,7 @@ const SupervisorInfo& AllSupervisorInfo::getSupervisorInfo(xdaq::Application* ap
 		__SS_THROW__;
 	}
 	return it->second;
-}
+}  //end getSupervisorInfo()
 
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
@@ -358,7 +358,7 @@ void AllSupervisorInfo::setSupervisorStatus(
 {
 	setSupervisorStatus(
 	    app->getApplicationDescriptor()->getLocalId(), status, progress, detail, subapps);
-}
+}  // end setSupervisorStatus()
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
     const SupervisorInfo&                   appInfo,
@@ -368,7 +368,7 @@ void AllSupervisorInfo::setSupervisorStatus(
     std::vector<SupervisorInfo::SubappInfo> subapps)
 {
 	setSupervisorStatus(appInfo.getId(), status, progress, detail, subapps);
-}
+}  // end setSupervisorStatus()
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
     const unsigned int&                     id,
@@ -386,6 +386,8 @@ void AllSupervisorInfo::setSupervisorStatus(
 	// non-blocking here, it's ok if the status is not updated (it is probably blocked on purpose, for exampled by the GatewaySupervisor broadcast threads)
 	if(allSupervisorInfoMutex_[id].try_lock())
 	{
+		if(progress > 100)
+			__COUT__ << "What happened 2? " << progress << __E__;
 		it->second.setStatus(status, progress, detail);
 		//if subapps size mismatch, then clear to eliminate renamed subapps
 		if(it->second.getSubappInfo().size() != subapps.size())
