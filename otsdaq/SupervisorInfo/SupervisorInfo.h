@@ -100,7 +100,7 @@ class SupervisorInfo
 	time_t                                 		 getLastStatusTime				(void) const { return lastStatusTime_; }
 	const unsigned int&                          getProgress					(void) const { return progress_; }
 	const std::string&                           getDetail						(void) const { return detail_; }
-	
+
 	const std::string&                           getURL							(void) const { return contextURL_; }
 	const std::string&                           getURN							(void) const { return URN_; }
 	const std::string&                           getFullURL						(void) const { return URL_; }
