@@ -9,7 +9,7 @@ const std::string SupervisorInfo::APP_STATUS_NOT_MONITORED = "Not Monitored";
 void SupervisorInfo::setStatus(const std::string& status,
                                const unsigned int progress,
                                const std::string& detail)
-{ 
+{
 	/// Note: be careful accessing status_ in multithreaded code (need higher level lock, a la getSupervisorInfoMutex)
 	status_   = status;
 	progress_ = progress;

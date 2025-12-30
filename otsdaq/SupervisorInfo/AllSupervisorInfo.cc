@@ -346,7 +346,7 @@ const SupervisorInfo& AllSupervisorInfo::getSupervisorInfo(xdaq::Application* ap
 		__SS_THROW__;
 	}
 	return it->second;
-} //end getSupervisorInfo()
+}  //end getSupervisorInfo()
 
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
@@ -358,7 +358,7 @@ void AllSupervisorInfo::setSupervisorStatus(
 {
 	setSupervisorStatus(
 	    app->getApplicationDescriptor()->getLocalId(), status, progress, detail, subapps);
-} // end setSupervisorStatus()
+}  // end setSupervisorStatus()
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
     const SupervisorInfo&                   appInfo,
@@ -368,7 +368,7 @@ void AllSupervisorInfo::setSupervisorStatus(
     std::vector<SupervisorInfo::SubappInfo> subapps)
 {
 	setSupervisorStatus(appInfo.getId(), status, progress, detail, subapps);
-} // end setSupervisorStatus()
+}  // end setSupervisorStatus()
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
     const unsigned int&                     id,

@@ -2241,7 +2241,7 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 			//
 			//			__CFG_COUT__ << argsOut[argsOut.size()-1].first << __E__;
 			__CFG_COUTT__ << (uint64_t) & (returnStrings[returnStrings.size() - 1])
-			                                 << __E__;
+			                                  << __E__;
 		}
 	}
 
