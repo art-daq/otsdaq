@@ -391,7 +391,6 @@ try
 	while(1)
 	{
 		++loopCount;
-		// sleep(1);
 		usleep(500000 /* 0.5 seconds */);
 
 		//lock to access appLastStatusGood_ map
@@ -415,7 +414,7 @@ try
 			uint32_t handlingAppCount = 0;
 			for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 			{
-				bool isDiconnected =
+				bool isDisconnected =
 				    appLastStatusGood.find(appName) != appLastStatusGood.end() &&
 				    !appLastStatusGood.at(appName);
 
@@ -432,7 +431,7 @@ try
 
 					for(auto& remoteGatewayApp : remoteApps)
 					{
-						bool isRemoteAppDiconnected =
+						bool isRemoteAppDisconnected =
 						    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
 						                           remoteGatewayApp.appInfo.name) !=
 						        appLastStatusGood.end() &&
@@ -440,9 +439,9 @@ try
 						                          remoteGatewayApp.appInfo.name);
 
 						//skip based on disconnected status
-						if(doDisconnected && !isRemoteAppDiconnected)
+						if(doDisconnected && !isRemoteAppDisconnected)
 							continue;
-						if(!doDisconnected && isRemoteAppDiconnected)
+						if(!doDisconnected && isRemoteAppDisconnected)
 							continue;
 
 						++handlingAppCount;
@@ -451,15 +450,15 @@ try
 						    << ", doDisconnected = " << doDisconnected
 						    << " Remote subapp = '" << remoteGatewayApp.appInfo.name
 						    << "' [URL=" << remoteGatewayApp.appInfo.url
-						    << "] isRemoteAppDiconnected = " << isRemoteAppDiconnected
+						    << "] isRemoteAppDisconnected = " << isRemoteAppDisconnected
 						    << ".\n\n";
 					}  //end remote app loop
 				}
 
 				//skip based on disconnected status
-				if(doDisconnected && !isDiconnected)
+				if(doDisconnected && !isDisconnected)
 					continue;
-				if(!doDisconnected && isDiconnected)
+				if(!doDisconnected && isDisconnected)
 					continue;
 
 				++handlingAppCount;
@@ -468,8 +467,7 @@ try
 				          << " Supervisor instance = '" << appName
 				          << "' [LID=" << appInfo.getId() << "] in Context '"
 				          << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
-				          << "] isDiconnected = " << isDiconnected << ".\n\n";
-
+				          << "] isDisconnected = " << isDisconnected << ".\n\n";
 			}  //end app loop
 
 			if(doDisconnected)
@@ -484,7 +482,7 @@ try
 			auto appInfo = it.second;
 			appName      = appInfo.getName();
 
-			bool isDiconnected =
+			bool isDisconnected =
 			    appLastStatusGood.find(appName) != appLastStatusGood.end() &&
 			    !appLastStatusGood.at(appName);
 
@@ -492,7 +490,7 @@ try
 			    << "Start of status loop, doDisconnected = " << doDisconnected
 			    << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId()
 			    << "] in Context '" << appInfo.getContextName()
-			    << "' [URL=" << appInfo.getURL() << "] isDiconnected = " << isDiconnected
+			    << "' [URL=" << appInfo.getURL() << "] isDisconnected = " << isDisconnected
 			    << ".\n\n";
 
 			//if doDisconnected is true, only check disconnected apps
@@ -1059,7 +1057,7 @@ try
 						bool allApssAreUnknown = true;
 						for(auto& remoteGatewayApp : remoteApps)
 						{
-							bool isRemoteAppDiconnected =
+							bool isRemoteAppDisconnected =
 							    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
 							                           remoteGatewayApp.appInfo.name) !=
 							        appLastStatusGood.end() &&
@@ -1070,14 +1068,14 @@ try
 							    << "Status needed? doDisconnected = " << doDisconnected
 							    << " Remote subapp = '" << remoteGatewayApp.appInfo.name
 							    << "' [URL=" << remoteGatewayApp.appInfo.url
-							    << "] isRemoteAppDiconnected = " << isRemoteAppDiconnected
+							    << "] isRemoteAppDisconnected = " << isRemoteAppDisconnected
 							    << ".\n\n";
 
 							//skip based on disconnected status
 							bool skipApp = false;
-							if(doDisconnected && !isRemoteAppDiconnected)
+							if(doDisconnected && !isRemoteAppDisconnected)
 								skipApp = true;
-							if(!doDisconnected && isRemoteAppDiconnected)
+							if(!doDisconnected && isRemoteAppDisconnected)
 								skipApp = true;
 
 							if(remoteAppsHandedByThread
@@ -1100,7 +1098,7 @@ try
 							    << doDisconnected << " Remote subapp = '"
 							    << remoteGatewayApp.appInfo.name
 							    << "' [URL=" << remoteGatewayApp.appInfo.url
-							    << "] isRemoteAppDiconnected = " << isRemoteAppDiconnected
+							    << "] isRemoteAppDisconnected = " << isRemoteAppDisconnected
 							    << ".\n\n";
 
 							GatewaySupervisor::CheckRemoteGatewayStatus(
@@ -1595,9 +1593,9 @@ try
 			else  // get non-gateway status
 			{
 				//skip based on disconnected status
-				if(doDisconnected && !isDiconnected)
+				if(doDisconnected && !isDisconnected)
 					continue;
-				if(!doDisconnected && isDiconnected)
+				if(!doDisconnected && isDisconnected)
 					continue;
 
 				// pass the application as a parameter to tempMessage
