@@ -490,8 +490,8 @@ try
 			    << "Start of status loop, doDisconnected = " << doDisconnected
 			    << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId()
 			    << "] in Context '" << appInfo.getContextName()
-			    << "' [URL=" << appInfo.getURL() << "] isDisconnected = " << isDisconnected
-			    << ".\n\n";
+			    << "' [URL=" << appInfo.getURL()
+			    << "] isDisconnected = " << isDisconnected << ".\n\n";
 
 			//if doDisconnected is true, only check disconnected apps
 			//	AND disconnected subapps within gateway!
@@ -1068,8 +1068,8 @@ try
 							    << "Status needed? doDisconnected = " << doDisconnected
 							    << " Remote subapp = '" << remoteGatewayApp.appInfo.name
 							    << "' [URL=" << remoteGatewayApp.appInfo.url
-							    << "] isRemoteAppDisconnected = " << isRemoteAppDisconnected
-							    << ".\n\n";
+							    << "] isRemoteAppDisconnected = "
+							    << isRemoteAppDisconnected << ".\n\n";
 
 							//skip based on disconnected status
 							bool skipApp = false;
@@ -1098,8 +1098,8 @@ try
 							    << doDisconnected << " Remote subapp = '"
 							    << remoteGatewayApp.appInfo.name
 							    << "' [URL=" << remoteGatewayApp.appInfo.url
-							    << "] isRemoteAppDisconnected = " << isRemoteAppDisconnected
-							    << ".\n\n";
+							    << "] isRemoteAppDisconnected = "
+							    << isRemoteAppDisconnected << ".\n\n";
 
 							GatewaySupervisor::CheckRemoteGatewayStatus(
 							    remoteGatewayApp,
