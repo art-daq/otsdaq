@@ -411,7 +411,7 @@ public:	//used by remote subsystem control and status
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
 		std::mutex											remoteGatewayAppsMutex_;
-		std::map<std::string /* appName */, 
+		std::map<std::string /* appName */,
 			bool /* lastStatusGood */> 						appLastStatusGood_;
 		std::mutex											dualStatusThreadMutex_;
 
