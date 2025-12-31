@@ -4201,7 +4201,7 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 	if(cmdResult.find("Permission denied") != std::string::npos)
 	{
 		__GEN_SS__
-		    << "Permission denied accessing user data path specified for subsystem '"
+		    << "\n\nPermission denied accessing user data path specified for subsystem '"
 		    << otherSubsystemUID << "': ";
 		if(username != "")
 			ss << username << "@";
