@@ -2232,7 +2232,7 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 		std::string        argName;
 		while(getline(inputStream, argName, ','))
 		{
-			__CFG_COUT__ << "argName " << argName << __E__;
+			__CFG_COUTT__ << "argName " << argName << __E__;
 
 			returnStrings.push_back(ARG_OUT_DEFAULT);  // std::string());
 			argsOut.push_back(FEVInterface::frontEndMacroArg_t(
@@ -2240,8 +2240,8 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 			    returnStrings[returnStrings.size() - 1]));
 			//
 			//			__CFG_COUT__ << argsOut[argsOut.size()-1].first << __E__;
-			__CFG_COUT__ << (uint64_t) & (returnStrings[returnStrings.size() - 1])
-			                                 << __E__;
+			__CFG_COUTT__ << (uint64_t) & (returnStrings[returnStrings.size() - 1])
+			                                  << __E__;
 		}
 	}
 
