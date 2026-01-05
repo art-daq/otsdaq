@@ -2076,7 +2076,6 @@ try
 				}
 				availableDiskSpaceKB_map[appInfo.getContextName()].second =
 				    availableDataSpaceKB;
-				availableDataSpaceKB = availableDataSpaceKB;
 			}
 			else if(spaceIt !=
 			        availableDiskSpaceKB_map.end())  //else use last known value
