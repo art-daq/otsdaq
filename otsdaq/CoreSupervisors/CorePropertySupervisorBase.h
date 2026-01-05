@@ -266,7 +266,7 @@ class CorePropertySupervisorBase
 	void								getAvailableDiskSpace							(void);
 
 	std::atomic<uint64_t>				availableLogSpaceKB_{0}, availableDataSpaceKB_{0};
-	time_t								lastDiskSpaceCheckTime_ = 0;	
+	time_t								lastDiskSpaceCheckTime_ = 0;
 	const std::string 					OTSDAQ_LOG_DIR, OTSDAQ_DATA_DIR;
 };
 
