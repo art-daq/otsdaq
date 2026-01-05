@@ -1,6 +1,7 @@
 #ifndef _ots_SupervisorInfo_h_
 #define _ots_SupervisorInfo_h_
 
+#include <algorithm>
 #include <string>
 #include "otsdaq/Macros/CoutMacros.h" /* also for XDAQ_CONST_CALL */
 #include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
@@ -30,6 +31,7 @@ class SupervisorInfo
 		: descriptor_(descriptor)
 		, contextDescriptor_(descriptor ? descriptor->getContextDescriptor() : 0)
 		, name_(name)  ///< this is the config app name
+		, mfSubject_(name_)  ///< this is the subject for message facility printouts using __GEN_COUT__
 		, contextName_(contextName)  ///< this is the config parent context name
 		, id_(descriptor ? descriptor->getLocalId() : 0)
 		, class_(descriptor ? descriptor->getClassName() : "")
@@ -46,16 +48,7 @@ class SupervisorInfo
 			name_ = "LID-" + std::to_string(id_);
 		if(contextName_ == "")
 			contextName_ = class_;
-
-		//		  __COUTV__(name_);
-		//		  __COUTV__(contextName_);
-		//		  __COUTV__(id_);
-		//		  __COUTV__(contextURL_);
-		//		  __COUTV__(URN_);
-		//		  __COUTV__(URL_);
-		//		  __COUTV__(port_);
-		//		  __COUTV__(class_);
-	}
+	} //end constructor
 
 	~SupervisorInfo(void) { ; }
 
@@ -65,9 +58,12 @@ class SupervisorInfo
 		std::string 	status;
 		unsigned int 	progress, id;
 		std::string 	detail;
+		int64_t 		availableLogSpaceKB = 0, availableDataSpaceKB = 0;
+		float			logUsageRateKBps = 0, dataUsageRateKBps = 0;
 		time_t 			lastStatusTime;
 		std::string 	url, parent_url;
 		std::string 	class_name;
+		std::deque<std::pair<time_t, int64_t>>	 availableLogSpaceKB_, availableDataSpaceKB_; //keep time series of last, 3.75 minutes, 7.5, 15, 30, 60 minutes to monitor rate trends
 	}; // end SubappInfo struct
 
 	static const std::string APP_STATUS_UNKNOWN;
@@ -107,12 +103,31 @@ class SupervisorInfo
 	const uint16_t&                              getPort						(void) const { return port_; }
 	const std::map<std::string, SubappInfo>&     getSubappInfo					(void) const { return subapps_; }
 
+
+	int64_t										 getAvailableLogSpaceKB         	(void) const { return availableLogSpaceKB_.size()  > 0 ? availableLogSpaceKB_.front().second : 0; }
+	int64_t										 getAvailableDataSpaceKB        	(void) const { return availableDataSpaceKB_.size() > 0 ? availableDataSpaceKB_.front().second : 0; }
+
+	float	                                     getLogUsageRateLastHourKBps   		(void) const { return availableLogSpaceKB_.size()  > 9 ? (availableLogSpaceKB_[9].second - availableLogSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[9].first) : 0; }
+	float	                                     getLogUsageRateLastHalfHourKBps	(void) const { return availableLogSpaceKB_.size()  > 7 ? (availableLogSpaceKB_[7].second - availableLogSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[7].first): 0; }
+	float	                                     getLogUsageRateLastQuarterHourKBps	(void) const { return availableLogSpaceKB_.size()  > 5 ? (availableLogSpaceKB_[5].second - availableLogSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[5].first): 0; }
+	float	                                     getLogUsageRateNowKBps   			(void) const { return availableLogSpaceKB_.size()  > 1 ? (availableLogSpaceKB_[1].second - availableLogSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[1].first) : 0; }
+	float	                                     getDataUsageRateLastHourKBps   	(void) const { return availableDataSpaceKB_.size() > 9 ? (availableDataSpaceKB_[9].second - availableDataSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[9].first) : 0; }
+	float	                                     getDataUsageRateLastHalfHourKBps	(void) const { return availableDataSpaceKB_.size() > 7 ? (availableDataSpaceKB_[7].second - availableDataSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[7].first): 0; }
+	float	                                     getDataUsageRateLastQuarterHourKBps(void) const { return availableDataSpaceKB_.size() > 5 ? (availableDataSpaceKB_[5].second - availableDataSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[5].first): 0; }
+	float	                                     getDataUsageRateNowKBps   			(void) const { return availableDataSpaceKB_.size() > 1 ? (availableDataSpaceKB_[1].second - availableDataSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[1].first) : 0; }
 	/// Setters -------------------
-	void setStatus(const std::string& status, const unsigned int progress, const std::string& detail = "");
-	void setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail = "" );
+	void setStatus(const std::string& status, const unsigned int progress, const std::string& detail = "", const int64_t availableLogSpaceKB = 0, const int64_t availableDataSpaceKB = 0);
+	void setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail = "", const int64_t availableLogSpaceKB = 0, const int64_t availableDataSpaceKB = 0);
 	void copySubappStatus(const SubappInfo& info);
 	void clearSubapps() { subapps_.clear(); };
-	void clear(void);
 
 	static std::string serializeSubappInfos(std::vector<SubappInfo> infos);
 	static std::vector<SubappInfo> deserializeSubappInfos(std::string info_string);
@@ -120,10 +135,12 @@ class SupervisorInfo
   private:
 	/// Helpers -------------------
 	static std::string							extractHostname					(const std::string& URL);
+	void										emplaceAvailableSpace			(const int64_t availableSpaceKB, std::deque<std::pair<time_t, int64_t>>& availableSpaceDeque);
+
 
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* descriptor_;
 	XDAQ_CONST_CALL xdaq::ContextDescriptor* contextDescriptor_;
-	std::string                              name_;
+	std::string                              name_, mfSubject_;
 	std::string                              contextName_;
 	unsigned int                             id_;
 	std::string                              class_;
@@ -137,6 +154,7 @@ class SupervisorInfo
 	std::string                              detail_;
 	time_t                                   lastStatusTime_;
 	std::map<std::string, SubappInfo>        subapps_;
+	std::deque<std::pair<time_t, int64_t>>	 availableLogSpaceKB_, availableDataSpaceKB_; //keep time series of last, 3.75 minutes, 7.5, 15, 30, 60 minutes to monitor rate trends
 };
 // clang-format on
 }  // namespace ots
