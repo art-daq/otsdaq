@@ -2566,7 +2566,7 @@ otsDataDiskCheck() {
 			fi
 
 			out "Deleting oldest data file (at least ${OTSDAQ_DATA_DISK_STALE_HOURS} hours old): $OLDEST_DATA_FILE"
-			# rm -f "$OLDEST_DATA_FILE"
+			rm -f "$OLDEST_DATA_FILE"
 			sleep 2 #give time for file system to update and user to respond if needed
 
 			# refresh available disk space for next iteration
