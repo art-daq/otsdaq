@@ -2236,7 +2236,13 @@ launchOTSLogFind() {
 	out "${Purple}${REV} *********************************************************************** ${RstClr}"
 	out "${Purple}${REV}                                                                         ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	out #blank line
-	out "XDAQ Configuration XML   = ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml"
+	out #blank line
+	out #blank line
+	LEFT_SPLIT="${ACTION_HANDLER_LOG%%_*}"
+	out "${Bold}ots script action handling logs:${RstClr} less -R ${LEFT_SPLIT}*"
+	out "${Bold}ots logs:${RstClr} OTSDAQ_LOG_DIR = ${OTSDAQ_LOG_DIR}/"
+	out "${Bold}XDAQ Configuration XML${RstClr}   = ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml"
+	out #blank line
 
 	value=`cat ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml`
 
@@ -2350,6 +2356,8 @@ launchOTSLogFind() {
 
 
 	out #blank line
+	out #blank line
+	out #blank line
 	out "Here are example commands for viewing all potential log files:"
 	out #blank line
 
@@ -2386,13 +2394,10 @@ launchOTSLogFind() {
 	# out #blank line
 
 }   #end launchOTSLogFind
-export -f launchOTSLogFind
+
 
 #########################################################
 #########################################################
-
-ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$"
-
 #make URL print out a function so that & syntax can be used to run in background (user has immediate terminal access)
 printMainURL() {
 
@@ -2427,32 +2432,173 @@ printMainURL() {
 		#echo -e "${Reset}"
 
 		if [ $QUIET == 1 ]; then
-			out "Action handler log is here, e.g.: less -R ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+			# out "Action handler log is here, e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 			exit
 		fi
 		sleep 2 #for delay between each printout
 	done
-	out "Action handler log is here, e.g.: less -R ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+	# out "Action handler log is here, e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 }  #end printMainURL
-export -f printMainURL
 
 
+#########################################################
+#########################################################
 # Function to handle signals
 handleExitSignal() {
 	if [ $1 != 17 ]; then # 17 is child process activity, ignore it
 		info "Script terminated by signal: $1"
 		exit 1
 	fi
-}
+} #end handleExitSignal
+
 
 #########################################################
 #########################################################
+# Function to check disk space of log area, and delete old logs
+# Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
+if [ "x$OTSDAQ_LOG_DISK_MINIMUM" == "x" ];then
+	export OTSDAQ_LOG_DISK_MINIMUM=1000000 #1 GB default in KBs
+fi
+if [ "x$OTSDAQ_LOG_DISK_STALE_THRESHOLD" == "x" ];then
+	export OTSDAQ_LOG_DISK_STALE_THRESHOLD=86400 #24 hours default in seconds
+fi
+OTSDAQ_LOG_DISK_STALE_HOURS=$(( $OTSDAQ_LOG_DISK_STALE_THRESHOLD / 3600 ))
+#if min is not 0, print settings
+if [ "$OTSDAQ_LOG_DISK_MINIMUM" -ne 0 ]; then
+	out "Log file disk min set to ${OTSDAQ_LOG_DISK_MINIMUM} KBs and automatic deletion threshold set to ${OTSDAQ_LOG_DISK_STALE_HOURS} hours."
+fi
+otsLogDiskCheck() {
+	# Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
+	AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_LOG_DIR/" | awk 'NR==2 {print $4}')
+	# out "Available disk space in log directory ${OTSDAQ_LOG_DIR}/: ${AVAILABLE_DISK_SPACE} KB..."
+	if [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_LOG_DISK_MINIMUM" ]; then	
+
+		#find and delete oldest log files until we are above threshold
+		# but only if older than 24 hours
+
+		while [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_LOG_DISK_MINIMUM" ]; do
+			warning "Available disk space in log directory ${OTSDAQ_LOG_DIR}/ is below minimum threshold of ${OTSDAQ_LOG_DISK_MINIMUM} KB. Available: ${AVAILABLE_DISK_SPACE} KB. Deleting old log files..."
+
+			# find oldest matching log file (print mtime as epoch and path), pick oldest
+			OLDEST_LOG_FILE=$(find "$OTSDAQ_LOG_DIR/" -type f -name "otsdaq_quiet_run-*.txt" -printf '%T@ %p\n' | sort -n | head -n 1 | awk '{print $2}')
+			if [ -z "$OLDEST_LOG_FILE" ]; then
+				warning "No more matching log files to delete, but disk space is still below threshold."
+				break
+			fi
+
+			# get file modification time and compare to 24 hours ago
+			FILE_MTIME=$(stat -c %Y "$OLDEST_LOG_FILE" 2>/dev/null || echo 0)
+			AGE_THRESHOLD=$(( $(date +%s) - $OTSDAQ_LOG_DISK_STALE_THRESHOLD )) # in seconds
+
+			OTSDAQ_LOG_DISK_STALE_HOURS=$(( $OTSDAQ_LOG_DISK_STALE_THRESHOLD / 3600 ))
+			if [ "$FILE_MTIME" -gt "$AGE_THRESHOLD" ]; then
+				warning "Oldest log file '$OLDEST_LOG_FILE' is less than ${OTSDAQ_LOG_DISK_STALE_HOURS} hours old; will not delete. Aborting cleanup to avoid removing recent logs."
+				break
+			fi
+
+			out "Deleting oldest log file (at least ${OTSDAQ_LOG_DISK_STALE_HOURS} hours old): $OLDEST_LOG_FILE"
+			rm -f "$OLDEST_LOG_FILE"
+			sleep 2 #give time for file system to update and user to respond if needed
+
+			# refresh available disk space for next iteration
+			AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_LOG_DIR/" | awk 'NR==2 {print $4}')
+		done
+
+		if [ "$AVAILABLE_DISK_SPACE" -ge "$OTSDAQ_LOG_DISK_MINIMUM" ]; then
+			info "Disk space in log directory ${OTSDAQ_LOG_DIR}/ is now above minimum threshold. Available: ${AVAILABLE_DISK_SPACE} KB."
+		else
+			warning "Disk space in log directory ${OTSDAQ_LOG_DIR}/ is still below minimum threshold of ${OTSDAQ_LOG_DISK_MINIMUM} KB after attempt to delete old logs. Available: ${AVAILABLE_DISK_SPACE} KB."
+			sleep 20 #to avoid rapid looping of error message
+		fi
+	fi
+} #end otsLogDiskCheck
+
+
+#########################################################
+#########################################################
+# Function to check disk space of data area, and delete old data files
+# Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
+if [ "x$OTSDAQ_DATA_DISK_MINIMUM" == "x" ];then
+	export OTSDAQ_DATA_DISK_MINIMUM=0 #0 to disable or #100000000 for 100 GB default in KBs
+fi
+if [ "x$OTSDAQ_DATA_DISK_STALE_THRESHOLD" == "x" ];then
+	export OTSDAQ_DATA_DISK_STALE_THRESHOLD=31536000 #1 year default in seconds
+fi
+OTSDAQ_DATA_DISK_STALE_HOURS=$(( $OTSDAQ_DATA_DISK_STALE_THRESHOLD / 3600 ))
+#if min is not 0, print settings
+if [ "$OTSDAQ_DATA_DISK_MINIMUM" -ne 0 ]; then
+	out "Data file disk min set to ${OTSDAQ_DATA_DISK_MINIMUM} KBs and automatic deletion threshold set to ${OTSDAQ_DATA_DISK_STALE_HOURS} hours."
+fi
+otsDataDiskCheck() {
+	# Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
+	AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_DATA/" | awk 'NR==2 {print $4}')
+	if [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_DATA_DISK_MINIMUM" ]; then	
+		#find and delete oldest data files until we are above threshold
+		# but only if older than stale threshold
+
+		while [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_DATA_DISK_MINIMUM" ]; do
+			warning "Available disk space in data directory ${OTSDAQ_DATA}/ is below minimum threshold of ${OTSDAQ_DATA_DISK_MINIMUM} KB. Available: ${AVAILABLE_DISK_SPACE} KB. Deleting old data files..."
+			# find oldest matching log file (print mtime as epoch and path), pick oldest
+			# Recursively find oldest matching data file (follow symlinks, handle spaces)
+			OLDEST_DATA_FILE=""
+			oldest_time=0
+			while IFS= read -r -d '' file; do
+				mtime=$(stat -c %Y "$file" 2>/dev/null || echo 0)
+				if [ -z "$OLDEST_DATA_FILE" ] || [ "$mtime" -lt "$oldest_time" ]; then
+					OLDEST_DATA_FILE="$file"
+					oldest_time=$mtime
+				fi
+			done < <(find -L "$OTSDAQ_DATA" -type f \( -name '*.bin' -o -name '*.dat' -o -name '*.txt' -o -name '*.root' \) -print0)
+			if [ -z "$OLDEST_DATA_FILE" ]; then
+				warning "No more matching data files to delete, but disk space is still below threshold."
+				break
+			fi
+
+			# get file modification time and compare to stale threshold
+			FILE_MTIME=$(stat -c %Y "$OLDEST_DATA_FILE" 2>/dev/null || echo 0)
+			AGE_THRESHOLD=$(( $(date +%s) - $OTSDAQ_DATA_DISK_STALE_THRESHOLD )) # in seconds
+
+			OTSDAQ_DATA_DISK_STALE_HOURS=$(( $OTSDAQ_DATA_DISK_STALE_THRESHOLD / 3600 ))
+
+			if [ "$FILE_MTIME" -gt "$AGE_THRESHOLD" ]; then
+				warning "Oldest data file '$OLDEST_DATA_FILE' is less than ${OTSDAQ_DATA_DISK_STALE_HOURS} hours old; will not delete. Aborting cleanup to avoid removing recent data files."
+				break
+			fi
+
+			out "Deleting oldest data file (at least ${OTSDAQ_DATA_DISK_STALE_HOURS} hours old): $OLDEST_DATA_FILE"
+			# rm -f "$OLDEST_DATA_FILE"
+			sleep 2 #give time for file system to update and user to respond if needed
+
+			# refresh available disk space for next iteration
+			AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_DATA/" | awk 'NR==2 {print $4}')
+		done
+
+		if [ "$AVAILABLE_DISK_SPACE" -ge "$OTSDAQ_DATA_DISK_MINIMUM" ]; then
+			info "Disk space in data directory ${OTSDAQ_DATA}/ is now above minimum threshold. Available: ${AVAILABLE_DISK_SPACE} KB."
+		else
+			warning "Disk space in data directory ${OTSDAQ_DATA}/ is still below minimum threshold of ${OTSDAQ_DATA_DISK_MINIMUM} KB after attempt to delete old data files. Available: ${AVAILABLE_DISK_SPACE} KB."
+			sleep 20 #to avoid rapid looping of error message
+		fi
+	fi
+} #end otsDataDiskCheck
+
+#########################################################
+#########################################################
+# Function to handle ots actions and commands from local XDAQ Contexts
+#  such as rebuild, restart, exit, etc.
+# Action Handler Logs are written to tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$
+# Log rollover is also handled.
+ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.$$"
 otsActionHandler() {
 
-	info "Starting action handler on ${THIS_HOST}..."
+	lsof "${ACTION_HANDLER_LOG}" 2>/dev/null
+	pid=$(lsof "$ACTION_HANDLER_LOG" 2>/dev/null \
+        | awk 'NR>1 && $1=="ots" {print $2; exit}')
+
+	info "Starting action handler on ${THIS_HOST}... pid=${pid}"
 
 	# Trap specific signals and call the exit handler
-	for sig in {1..31}; do
+	for sig in {1..3}; do #1=SIGHUP, 2=SIGINT, 3=SIGQUIT, was ..31
 		trap "handleExitSignal $sig" $sig 2>/dev/null
 	done
 
@@ -2711,9 +2857,15 @@ otsActionHandler() {
 		fi
 
 		sleep 1
+		# Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
+		otsDataDiskCheck
 
 		#manage log file rollover with $OTS_LOG_ROLLOVER or ots commands
 		if [[ "x$OTS_LOG_ROLLOVER" != "x" || $DO_LOG_ROLLOVER == 1 ]]; then
+
+			#check disk space before rollover
+			# Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
+			otsLogDiskCheck
 
 			#handle non-gateway logs on this host
 			i=0
@@ -2917,7 +3069,7 @@ fi
 #after gateway node has been decided and xdaq has been launched, start action handler
 # exec #rrivera commented: Ron and internet say this exec does nothing
 otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
-out "Action handler log is here, e.g.: less -R ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+out "Action handler log is here, e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
 

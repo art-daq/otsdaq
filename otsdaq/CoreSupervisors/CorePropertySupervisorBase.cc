@@ -2,6 +2,8 @@
 #include "otsdaq/MessageFacility/ITRACEController.h"
 #include "otsdaq/MessageFacility/TRACEController.h"
 
+#include <sys/statvfs.h> // for disk space checking with statvfs
+
 using namespace ots;
 
 const CorePropertySupervisorBase::SupervisorProperties
@@ -20,6 +22,8 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
     , supervisorConfigurationPath_("UNINITIALIZED_supervisorConfigurationPath")  // MUST BE INITIALIZED INSIDE THE CONTRUCTOR TO THROW EXCEPTIONS on bad conditions
     , propertiesAreSetup_(false)
 	, theTRACEController_(nullptr)
+	, OTSDAQ_LOG_DIR(__ENV__("OTSDAQ_LOG_DIR"))
+	, OTSDAQ_DATA_DIR(__ENV__("OTSDAQ_DATA"))
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
@@ -140,6 +144,7 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 	theConfigurationManager_->setOwnerContext(CorePropertySupervisorBase::supervisorContextUID_);
 	theConfigurationManager_->setOwnerApp(CorePropertySupervisorBase::supervisorApplicationUID_);
 
+	CorePropertySupervisorBase::isFirstAppInContext_ = theConfigurationManager_->isOwnerFirstAppInContext();
 }  // end constructor
 // clang-format on
 
@@ -161,6 +166,43 @@ CorePropertySupervisorBase::~CorePropertySupervisorBase(void)
 	}
 	__SUP_COUT__ << "Destructed." << __E__;
 }  // end destructor
+
+//==============================================================================
+/// If app is first in context (i.e., only one app on each host), 
+///  get available space updated every 10 seconds in KBs
+void CorePropertySupervisorBase::getAvailableDiskSpace()
+{
+	if(!isFirstAppInContext_) return;
+
+	time_t t = time(0);
+	if(t - lastDiskSpaceCheckTime_ <= 10)
+		return;  //only check every 10 seconds
+
+	struct statvfs logStat;
+	if(statvfs((OTSDAQ_LOG_DIR + "/").c_str(), &logStat) != 0)
+	{
+		__SUP_SS__ << "Disk space retrieval failed for log directory: " << OTSDAQ_LOG_DIR << __E__;
+		__SUP_SS_THROW__;
+	}
+	uint64_t availableLogSpaceKB =
+	    (logStat.f_bavail * logStat.f_frsize) / 1024;  // in KB
+	__SUP_COUTTV__(availableLogSpaceKB);
+
+	struct statvfs dataStat;
+	if(statvfs((OTSDAQ_DATA_DIR + "/").c_str(), &dataStat) != 0)
+	{
+		__SUP_SS__ << "Disk space retrieval failed for data directory: " << OTSDAQ_DATA_DIR << __E__;
+		__SUP_SS_THROW__;
+	}
+	uint64_t availableDataSpaceKB =
+	    (dataStat.f_bavail * dataStat.f_frsize) / 1024;  // in KB
+	__SUP_COUTTV__(availableDataSpaceKB);	
+
+	availableLogSpaceKB_  = availableLogSpaceKB;
+	availableDataSpaceKB_ = availableDataSpaceKB;
+	
+	lastDiskSpaceCheckTime_ = time(0);
+} //end getAvailableDiskSpace()
 
 //==============================================================================
 void CorePropertySupervisorBase::indicateOtsAlive(
