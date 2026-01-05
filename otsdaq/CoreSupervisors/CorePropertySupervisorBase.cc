@@ -186,7 +186,8 @@ void CorePropertySupervisorBase::getAvailableDiskSpace()
 		           << __E__;
 		__SUP_SS_THROW__;
 	}
-	uint64_t availableLogSpaceKB = (uint64_t)logStat.f_bavail * logStat.f_frsize / 1024;  // in KB
+	uint64_t availableLogSpaceKB =
+	    (uint64_t)logStat.f_bavail * logStat.f_frsize / 1024;  // in KB
 	__SUP_COUTTV__(availableLogSpaceKB);
 
 	struct statvfs dataStat;
