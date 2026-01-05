@@ -417,7 +417,7 @@ public:	//used by remote subsystem control and status
 
 		std::map<unsigned int /* lid */, SupervisorInfo>	localAllSupervisorInfo_; //only use in main thread, stable copy of app status
 
-		
+
 
 		static void 				CheckRemoteGatewayStatus	(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);
 		static void 				SendRemoteGatewayCommand	(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);

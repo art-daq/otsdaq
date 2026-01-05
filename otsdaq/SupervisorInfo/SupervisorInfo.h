@@ -145,7 +145,7 @@ class SupervisorInfo
 	/// Helpers -------------------
 	static std::string							extractHostname					(const std::string& URL);
 	void										emplaceAvailableSpace			(const int64_t availableSpaceKB, std::deque<std::pair<time_t, int64_t>>& availableSpaceDeque);
-	
+
 
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* descriptor_;
 	XDAQ_CONST_CALL xdaq::ContextDescriptor* contextDescriptor_;
