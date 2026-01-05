@@ -1825,18 +1825,11 @@ try
 					subapps = SupervisorInfo::deserializeSubappInfos(
 					    parameters.getValue("Subapps"));
 
-					if(appName == "ConsoleSupervisor" && subapps.size())
-					{
-						__COUTT__
-						    << "ConsoleSupervisor Status subapp count=" << subapps.size()
-						    << __E__;
-					}
-
-					availableLogSpaceKB = std::strtoull(
-					    parameters.getValue("AvailableLogSpaceKB").c_str(), nullptr, 10);
+					availableLogSpaceKB =
+					    std::stoull(parameters.getValue("AvailableLogSpaceKB"));
 					__COUTVS__(TLVL_DebugStatusDetail, availableLogSpaceKB);
-					availableDataSpaceKB = std::strtoull(
-					    parameters.getValue("AvailableDataSpaceKB").c_str(), nullptr, 10);
+					availableDataSpaceKB =
+					    std::stoull(parameters.getValue("AvailableDataSpaceKB"));
 					__COUTVS__(TLVL_DebugStatusDetail, availableDataSpaceKB);
 
 					if(!appLastStatusGood[appName])
@@ -2550,14 +2543,14 @@ try
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
 					value = "0";
-				remoteGatewayApp.appInfo.availableLogSpaceKB = stoull(value);
+				remoteGatewayApp.appInfo.availableLogSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "availableDataSpaceKB", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
 					value = "0";
-				remoteGatewayApp.appInfo.availableDataSpaceKB = stoull(value);
+				remoteGatewayApp.appInfo.availableDataSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "logUsageRateKBps", 0, after);
@@ -2616,14 +2609,14 @@ try
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
 					value = "0";
-				remoteGatewayApp.subapps[name].availableLogSpaceKB = stoull(value);
+				remoteGatewayApp.subapps[name].availableLogSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "availableDataSpaceKB", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
 					value = "0";
-				remoteGatewayApp.subapps[name].availableDataSpaceKB = stoull(value);
+				remoteGatewayApp.subapps[name].availableDataSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "logUsageRateKBps", 0, after);
