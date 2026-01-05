@@ -2857,14 +2857,14 @@ otsActionHandler() {
 		fi
 
 		sleep 1
-		# Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
+		# Note!! User can prevent data check with export OTSDAQ_DATA_DISK_MINIMUM=0
 		otsDataDiskCheck
 
 		#manage log file rollover with $OTS_LOG_ROLLOVER or ots commands
 		if [[ "x$OTS_LOG_ROLLOVER" != "x" || $DO_LOG_ROLLOVER == 1 ]]; then
 
 			#check disk space before rollover
-			# Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
+			# Note!! User can prevent data check with export OTSDAQ_LOG_DISK_MINIMUM=0
 			otsLogDiskCheck
 
 			#handle non-gateway logs on this host
