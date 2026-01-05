@@ -52,20 +52,6 @@ void SupervisorInfo::copySubappStatus(const SubappInfo& info)
 	subapps_[info.name] = info;
 }  // end setSubappStatus()
 
-// //=====================================================================================
-// void SupervisorInfo::clear(void)
-// {
-// 	descriptor_        = 0;
-// 	progress_          = 0;
-// 	contextDescriptor_ = 0;
-// 	name_              = "";
-// 	id_                = 0;
-// 	contextName_       = "";
-// 	status_            = SupervisorInfo::APP_STATUS_UNKNOWN;
-// 	availableLogSpaceKB_.clear();
-// 	availableDataSpaceKB_.clear();
-// }  // end clear()
-
 //=====================================================================================
 std::string SupervisorInfo::extractHostname(const std::string& URL)
 {

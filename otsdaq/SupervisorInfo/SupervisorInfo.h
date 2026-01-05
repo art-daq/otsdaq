@@ -47,16 +47,7 @@ class SupervisorInfo
 			name_ = "LID-" + std::to_string(id_);
 		if(contextName_ == "")
 			contextName_ = class_;
-
-		//		  __COUTV__(name_);
-		//		  __COUTV__(contextName_);
-		//		  __COUTV__(id_);
-		//		  __COUTV__(contextURL_);
-		//		  __COUTV__(URN_);
-		//		  __COUTV__(URL_);
-		//		  __COUTV__(port_);
-		//		  __COUTV__(class_);
-	}
+	} //end constructor
 
 	~SupervisorInfo(void) { ; }
 
@@ -136,7 +127,6 @@ class SupervisorInfo
 	void setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail = "", const int64_t availableLogSpaceKB = 0, const int64_t availableDataSpaceKB = 0);
 	void copySubappStatus(const SubappInfo& info);
 	void clearSubapps() { subapps_.clear(); };
-	// void clear(void);
 
 	static std::string serializeSubappInfos(std::vector<SubappInfo> infos);
 	static std::vector<SubappInfo> deserializeSubappInfos(std::string info_string);
