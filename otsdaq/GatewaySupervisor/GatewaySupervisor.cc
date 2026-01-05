@@ -374,8 +374,8 @@ try
 {
 	sleep(5);  // wait for apps to get started
 
-	bool                                    firstError = true;
-	size_t loopCount = -1;  //first time through loop will be 0
+	bool   firstError = true;
+	size_t loopCount  = -1;  //first time through loop will be 0
 
 	std::map<std::string /* appName */, bool /* lastStatusGood */> appLastStatusGood;
 
@@ -386,41 +386,39 @@ try
 	int    portForReverseLoginOverUDP  = 0;  //if 0, then not reverse login not enabled
 	std::string ipAddressForStateChangesOverUDP = "";  //if "", then not enabled
 
-	std::map<std::string /* context uid */, 
-		std::pair<int64_t /* available log space KB */, 
-		int64_t /* available data space KB */>> availableDiskSpaceKB_map;
-	std::map<std::string /* context uid */, 
-		time_t /* last alert */> rateToLogDiskLastHourAlert_map, 
-			rateToLogDiskLastHalfHourAlert_map, rateToLogDiskLastQuarterHourAlert_map, 
-			rateToLogDiskNowAlert_map;
-	std::map<std::string /* context uid */, 
-		time_t /* last alert */> rateToDataDiskLastHourAlert_map, 
-			rateToDataDiskLastHalfHourAlert_map, rateToDataDiskLastQuarterHourAlert_map, 
-			rateToDataDiskNowAlert_map;
+	std::map<std::string /* context uid */,
+	         std::pair<int64_t /* available log space KB */,
+	                   int64_t /* available data space KB */>>
+	    availableDiskSpaceKB_map;
+	std::map<std::string /* context uid */, time_t /* last alert */>
+	    rateToLogDiskLastHourAlert_map, rateToLogDiskLastHalfHourAlert_map,
+	    rateToLogDiskLastQuarterHourAlert_map, rateToLogDiskNowAlert_map;
+	std::map<std::string /* context uid */, time_t /* last alert */>
+	    rateToDataDiskLastHourAlert_map, rateToDataDiskLastHalfHourAlert_map,
+	    rateToDataDiskLastQuarterHourAlert_map, rateToDataDiskNowAlert_map;
 
-	
 	int64_t availableLogSpaceKB_MIN = 0, availableDataSpaceKB_MIN = 0;
 
-	try // Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
+	try  // Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
 	{
 		availableLogSpaceKB_MIN = std::stoull(__ENV__("OTSDAQ_LOG_DISK_MINIMUM"));
 	}
 	catch(...)
 	{
-		availableLogSpaceKB_MIN = 1000000;  //1 GB default in KBs; 
+		availableLogSpaceKB_MIN = 1000000;  //1 GB default in KBs;
 	}
 	__COUTV__(availableLogSpaceKB_MIN);
 
-	try // Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
+	try  // Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
 	{
 		availableDataSpaceKB_MIN = std::stoull(__ENV__("OTSDAQ_DATA_DISK_MINIMUM"));
 	}
 	catch(...)
 	{
-		availableDataSpaceKB_MIN = 1000000;  //1 GB default in KBs; 
+		availableDataSpaceKB_MIN = 1000000;  //1 GB default in KBs;
 	}
 	__COUTV__(availableDataSpaceKB_MIN);
-	const std::string otsdaq_log_dir = __ENV__("OTSDAQ_LOG_DIR");
+	const std::string otsdaq_log_dir  = __ENV__("OTSDAQ_LOG_DIR");
 	const std::string otsdaq_data_dir = __ENV__("OTSDAQ_DATA");
 
 	if(doDisconnected)
@@ -430,7 +428,7 @@ try
 	{
 		bool oneStatusReqHasFailed = false;
 
-		++loopCount;		
+		++loopCount;
 		usleep(500000 /* 0.5 seconds */);
 
 		//lock to access appLastStatusGood_ map (between disconnected and connected handling threads)
@@ -453,8 +451,8 @@ try
 			uint32_t handlingAppCount = 0;
 			for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 			{
-				auto appInfo = it.second;
-				const std::string& appName      = appInfo.getName();
+				auto               appInfo = it.second;
+				const std::string& appName = appInfo.getName();
 
 				bool isDisconnected =
 				    appLastStatusGood.find(appName) != appLastStatusGood.end() &&
@@ -523,10 +521,10 @@ try
 			std::string                             status, progress, detail;
 			std::vector<SupervisorInfo::SubappInfo> subapps;
 			int                                     progressInteger;
-			
-			int64_t availableLogSpaceKB = 0, availableDataSpaceKB = 0;
-			auto appInfo = it.second;
-			const std::string& appName      = appInfo.getName();
+
+			int64_t            availableLogSpaceKB = 0, availableDataSpaceKB = 0;
+			auto               appInfo = it.second;
+			const std::string& appName = appInfo.getName();
 
 			bool isDisconnected =
 			    appLastStatusGood.find(appName) != appLastStatusGood.end() &&
@@ -552,8 +550,12 @@ try
 				{
 					if(!doDisconnected)  //primary gateway (self) is never disconnected
 					{
-						availableLogSpaceKB =  theSupervisor->CorePropertySupervisorBase::getAvailableLogSpaceKB();
-						availableDataSpaceKB = theSupervisor->CorePropertySupervisorBase::getAvailableDataSpaceKB();
+						availableLogSpaceKB =
+						    theSupervisor
+						        ->CorePropertySupervisorBase::getAvailableLogSpaceKB();
+						availableDataSpaceKB =
+						    theSupervisor
+						        ->CorePropertySupervisorBase::getAvailableDataSpaceKB();
 
 						__COUTVS__(TLVL_StatusWorkloop, availableLogSpaceKB);
 						__COUTVS__(TLVL_StatusWorkloop, availableDataSpaceKB);
@@ -1583,10 +1585,11 @@ try
 								   "")
 								{
 									__COUT__ << "(doDisconnected = " << doDisconnected
-							          	<< ") Erasing stale '"
-									         <<  theSupervisor->remoteGatewayApps_[i].appInfo.url + 
-											 	theSupervisor->remoteGatewayApps_[i]
-									                .appInfo.name
+									         << ") Erasing stale '"
+									         << theSupervisor->remoteGatewayApps_[i]
+									                    .appInfo.url +
+									                theSupervisor->remoteGatewayApps_[i]
+									                    .appInfo.name
 									         << "' from Gateway app list." << __E__;
 									//rewind and erase
 									theSupervisor->remoteGatewayApps_.erase(
@@ -1733,8 +1736,10 @@ try
 							    atoi(parseDetail[2]
 							             .substr(parseDetail[2].find(':') + 1)
 							             .c_str());
-						__COUTVS__(TLVL_DebugStatusDetail, theSupervisor->systemConsoleErrCount_);
-						__COUTVS__(TLVL_DebugStatusDetail, theSupervisor->systemConsoleWarnCount_);
+						__COUTVS__(TLVL_DebugStatusDetail,
+						           theSupervisor->systemConsoleErrCount_);
+						__COUTVS__(TLVL_DebugStatusDetail,
+						           theSupervisor->systemConsoleWarnCount_);
 						if(parseDetail.size() >
 						   3)  //e.g. Last Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
@@ -1746,7 +1751,8 @@ try
 							__COUTVS__(TLVL_DebugStatusDetail, openTimePos);
 							theSupervisor->lastConsoleErrTime_ = parseDetail[3].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(TLVL_DebugStatusDetail, theSupervisor->lastConsoleErrTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->lastConsoleErrTime_);
 						}
 						if(parseDetail.size() >
 						   4)  //e.g. Last Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
@@ -1757,7 +1763,8 @@ try
 							size_t openTimePos = parseDetail[4].find('(');
 							theSupervisor->lastConsoleWarnTime_ = parseDetail[4].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(TLVL_DebugStatusDetail, theSupervisor->lastConsoleWarnTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->lastConsoleWarnTime_);
 						}
 						if(parseDetail.size() >
 						   5)  //e.g. Last Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
@@ -1768,7 +1775,8 @@ try
 							size_t openTimePos = parseDetail[5].find('(');
 							theSupervisor->lastConsoleInfoTime_ = parseDetail[5].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(TLVL_DebugStatusDetail, theSupervisor->lastConsoleInfoTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->lastConsoleInfoTime_);
 						}
 						if(parseDetail.size() > 6)
 							theSupervisor->systemConsoleInfoCount_ =
@@ -1785,7 +1793,8 @@ try
 							size_t openTimePos = parseDetail[7].find('(');
 							theSupervisor->firstConsoleErrTime_ = parseDetail[7].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(TLVL_DebugStatusDetail, theSupervisor->firstConsoleErrTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->firstConsoleErrTime_);
 						}
 						if(parseDetail.size() >
 						   8)  //e.g. First Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
@@ -1796,7 +1805,8 @@ try
 							size_t openTimePos = parseDetail[8].find('(');
 							theSupervisor->firstConsoleWarnTime_ = parseDetail[8].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(TLVL_DebugStatusDetail, theSupervisor->firstConsoleWarnTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->firstConsoleWarnTime_);
 						}
 						if(parseDetail.size() >
 						   9)  //e.g. First Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
@@ -1807,24 +1817,26 @@ try
 							size_t openTimePos = parseDetail[9].find('(');
 							theSupervisor->firstConsoleInfoTime_ = parseDetail[9].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(TLVL_DebugStatusDetail, theSupervisor->firstConsoleInfoTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->firstConsoleInfoTime_);
 						}
 					}
 
 					subapps = SupervisorInfo::deserializeSubappInfos(
 					    parameters.getValue("Subapps"));
-					
+
 					if(appName == "ConsoleSupervisor" && subapps.size())
 					{
 						__COUTT__
-							<< "ConsoleSupervisor Status subapp count="
-							<< subapps.size() << __E__;
+						    << "ConsoleSupervisor Status subapp count=" << subapps.size()
+						    << __E__;
 					}
 
-
-					availableLogSpaceKB = std::strtoull(parameters.getValue("AvailableLogSpaceKB").c_str(), nullptr, 10);
+					availableLogSpaceKB = std::strtoull(
+					    parameters.getValue("AvailableLogSpaceKB").c_str(), nullptr, 10);
 					__COUTVS__(TLVL_DebugStatusDetail, availableLogSpaceKB);
-					availableDataSpaceKB = std::strtoull(parameters.getValue("AvailableDataSpaceKB").c_str(), nullptr, 10);
+					availableDataSpaceKB = std::strtoull(
+					    parameters.getValue("AvailableDataSpaceKB").c_str(), nullptr, 10);
 					__COUTVS__(TLVL_DebugStatusDetail, availableDataSpaceKB);
 
 					if(!appLastStatusGood[appName])
@@ -2038,213 +2050,237 @@ try
 
 			//alert and record available disk space
 			auto spaceIt = availableDiskSpaceKB_map.find(appInfo.getContextName());
-			if(availableLogSpaceKB)//if non-zero, then assume is latest valid value
+			if(availableLogSpaceKB)  //if non-zero, then assume is latest valid value
 			{
-				if ( (spaceIt == availableDiskSpaceKB_map.end() || //and new value
-						spaceIt->second.first > availableLogSpaceKB) && 
-						availableLogSpaceKB < availableLogSpaceKB_MIN) //and below threshold
-				{ //then alert users!				
+				if((spaceIt == availableDiskSpaceKB_map.end() ||  //and new value
+				    spaceIt->second.first > availableLogSpaceKB) &&
+				   availableLogSpaceKB < availableLogSpaceKB_MIN)  //and below threshold
+				{                                                  //then alert users!
 					theSupervisor->makeSystemLogEntry(
-						"Available log disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_log_dir + "/'): " +
-						std::to_string(availableLogSpaceKB / 1024) +
-						" MB remaining.");
+					    "Available log disk space low (at host='" +
+					    appInfo.getHostname() + "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining.");
 				}
-				availableDiskSpaceKB_map[appInfo.getContextName()].first = availableLogSpaceKB;				
+				availableDiskSpaceKB_map[appInfo.getContextName()].first =
+				    availableLogSpaceKB;
 			}
-			else if(spaceIt != availableDiskSpaceKB_map.end()) //else use last known value
+			else if(spaceIt !=
+			        availableDiskSpaceKB_map.end())  //else use last known value
 				availableLogSpaceKB = spaceIt->second.first;
 
-
-			if(availableDataSpaceKB)//if non-zero, then assume is latest valid value
+			if(availableDataSpaceKB)  //if non-zero, then assume is latest valid value
 			{
-				if ( (spaceIt == availableDiskSpaceKB_map.end() || //and new value
-						spaceIt->second.second > availableDataSpaceKB) && 
-						availableDataSpaceKB < availableDataSpaceKB_MIN) //and below threshold
-				{ //then alert users!				
+				if((spaceIt == availableDiskSpaceKB_map.end() ||  //and new value
+				    spaceIt->second.second > availableDataSpaceKB) &&
+				   availableDataSpaceKB < availableDataSpaceKB_MIN)  //and below threshold
+				{                                                    //then alert users!
 					theSupervisor->makeSystemLogEntry(
-						"Available data disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_data_dir + "/'): " +
-						std::to_string(availableDataSpaceKB / 1024) +
-						" MB remaining.");
+					    "Available data disk space low (at host='" +
+					    appInfo.getHostname() + "' and path='" + otsdaq_data_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining.");
 				}
-				availableDiskSpaceKB_map[appInfo.getContextName()].second = availableDataSpaceKB;
+				availableDiskSpaceKB_map[appInfo.getContextName()].second =
+				    availableDataSpaceKB;
 				availableDataSpaceKB = availableDataSpaceKB;
 			}
-			else if(spaceIt != availableDiskSpaceKB_map.end()) //else use last known value
+			else if(spaceIt !=
+			        availableDiskSpaceKB_map.end())  //else use last known value
 				availableDataSpaceKB = spaceIt->second.second;
 
 			__COUTVS__(TLVL_DebugStatusWorkloop, availableLogSpaceKB);
 			__COUTVS__(TLVL_DebugStatusWorkloop, availableDataSpaceKB);
 
-			theSupervisor->allSupervisorInfo_.setSupervisorStatus( //====================================== set supervisor status
-			    appInfo, status, progressInteger, detail, subapps, 
-				availableLogSpaceKB, availableDataSpaceKB);
+			theSupervisor->allSupervisorInfo_
+			    .setSupervisorStatus(  //====================================== set supervisor status
+			        appInfo,
+			        status,
+			        progressInteger,
+			        detail,
+			        subapps,
+			        availableLogSpaceKB,
+			        availableDataSpaceKB);
 
 			//if no recent alert, check if rate to disk is too high ------------
-			auto rateIt = rateToLogDiskLastHourAlert_map.find(appInfo.getContextName());
-			time_t now = time(0);
-			if(rateIt == rateToLogDiskLastHourAlert_map.end() || 
-			   now - rateIt->second >
-			       30*60) //alert at most every 30 minutes
+			auto   rateIt = rateToLogDiskLastHourAlert_map.find(appInfo.getContextName());
+			time_t now    = time(0);
+			if(rateIt == rateToLogDiskLastHourAlert_map.end() ||
+			   now - rateIt->second > 30 * 60)  //alert at most every 30 minutes
 			{
-				float logUsageRateLastHourKBps = theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(appInfo.getId()).getLogUsageRateLastHourKBps();
+				float logUsageRateLastHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getLogUsageRateLastHourKBps();
 
-				if(availableLogSpaceKB - logUsageRateLastHourKBps * 3600 < availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
+				   availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-						"Log disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_log_dir + "/'): " +
-						std::to_string(availableLogSpaceKB / 1024) +
-						" MB remaining and log usage rate over last hour is " +
-						std::to_string(logUsageRateLastHourKBps) +
-						" KB/s.");
-					rateToLogDiskLastHourAlert_map[appInfo.getContextName()] = now; //record time of this alert
+					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining and log usage rate over last hour is " +
+					    std::to_string(logUsageRateLastHourKBps) + " KB/s.");
+					rateToLogDiskLastHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
 				}
-			} //end last hour log rate alert
-			rateIt = rateToLogDiskLastHalfHourAlert_map.find(appInfo.getContextName());			
-			if(rateIt == rateToLogDiskLastHalfHourAlert_map.end() || 
-			   now - rateIt->second >
-			       15*60) //alert at most every 15 minutes
+			}  //end last hour log rate alert
+			rateIt = rateToLogDiskLastHalfHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToLogDiskLastHalfHourAlert_map.end() ||
+			   now - rateIt->second > 15 * 60)  //alert at most every 15 minutes
 			{
-				float logUsageRateLastHalfHourKBps = theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(appInfo.getId()).getLogUsageRateLastHalfHourKBps();
+				float logUsageRateLastHalfHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getLogUsageRateLastHalfHourKBps();
 
-				if(availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 < availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
+				   availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-						"Log disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_log_dir + "/'): " +
-						std::to_string(availableLogSpaceKB / 1024) +
-						" MB remaining and log usage rate over last half-hour is " +
-						std::to_string(logUsageRateLastHalfHourKBps) +
-						" KB/s.");
-					rateToLogDiskLastHalfHourAlert_map[appInfo.getContextName()] = now; //record time of this alert
+					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining and log usage rate over last half-hour is " +
+					    std::to_string(logUsageRateLastHalfHourKBps) + " KB/s.");
+					rateToLogDiskLastHalfHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
 				}
-			} //end last half-hour log rate alert
-			rateIt = rateToLogDiskLastQuarterHourAlert_map.find(appInfo.getContextName());			
-			if(rateIt == rateToLogDiskLastQuarterHourAlert_map.end() || 
-			   now - rateIt->second >
-			       15*30) //alert at most every 7.5 minutes
+			}  //end last half-hour log rate alert
+			rateIt = rateToLogDiskLastQuarterHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToLogDiskLastQuarterHourAlert_map.end() ||
+			   now - rateIt->second > 15 * 30)  //alert at most every 7.5 minutes
 			{
-				float logUsageRateLastQuarterHourKBps = theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(appInfo.getId()).getLogUsageRateLastQuarterHourKBps();
+				float logUsageRateLastQuarterHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getLogUsageRateLastQuarterHourKBps();
 
-				if(availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 < availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
+				   availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-						"Log disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_log_dir + "/'): " +
-						std::to_string(availableLogSpaceKB / 1024) +
-						" MB remaining and log usage rate over last quarter-hour is " +
-						std::to_string(logUsageRateLastQuarterHourKBps) +
-						" KB/s.");
-					rateToLogDiskLastQuarterHourAlert_map[appInfo.getContextName()] = now; //record time of this alert
+					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining and log usage rate over last quarter-hour is " +
+					    std::to_string(logUsageRateLastQuarterHourKBps) + " KB/s.");
+					rateToLogDiskLastQuarterHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
 				}
-			} //end last quarter-hour log rate alert
+			}  //end last quarter-hour log rate alert
 			rateIt = rateToLogDiskNowAlert_map.find(appInfo.getContextName());
-			if(rateIt == rateToLogDiskNowAlert_map.end() || 
-			   now - rateIt->second >
-			       15*15) //alert at most every 3.75 minutes
+			if(rateIt == rateToLogDiskNowAlert_map.end() ||
+			   now - rateIt->second > 15 * 15)  //alert at most every 3.75 minutes
 			{
-				float logUsageRateNowKBps = theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(appInfo.getId()).getLogUsageRateNowKBps();
+				float logUsageRateNowKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getLogUsageRateNowKBps();
 
-				if(availableLogSpaceKB - logUsageRateNowKBps * 450 < availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB - logUsageRateNowKBps * 450 <
+				   availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-						"Log disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_log_dir + "/'): " +
-						std::to_string(availableLogSpaceKB / 1024) +
-						" MB remaining and log usage rate over last few minutes is " +
-						std::to_string(logUsageRateNowKBps) +
-						" KB/s.");
-					rateToLogDiskNowAlert_map[appInfo.getContextName()] = now; //record time of this alert
+					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining and log usage rate over last few minutes is " +
+					    std::to_string(logUsageRateNowKBps) + " KB/s.");
+					rateToLogDiskNowAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
 				}
-			} //end last few minutes log rate alert
-			rateIt = rateToDataDiskLastHourAlert_map.find(appInfo.getContextName());			
-			if(rateIt == rateToDataDiskLastHourAlert_map.end() || 
-			   now - rateIt->second >
-			       30*60) //alert at most every 30 minutes
+			}  //end last few minutes log rate alert
+			rateIt = rateToDataDiskLastHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToDataDiskLastHourAlert_map.end() ||
+			   now - rateIt->second > 30 * 60)  //alert at most every 30 minutes
 			{
-				float dataUsageRateLastHourKBps = theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(appInfo.getId()).getDataUsageRateLastHourKBps();
+				float dataUsageRateLastHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getDataUsageRateLastHourKBps();
 
-				if(availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 < availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
+				   availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-						"Data disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_log_dir + "/'): " +
-						std::to_string(availableDataSpaceKB / 1024) +
-						" MB remaining and data usage rate over last hour is " +
-						std::to_string(dataUsageRateLastHourKBps) +
-						" KB/s.");
-					rateToDataDiskLastHourAlert_map[appInfo.getContextName()] = now; //record time of this alert
+					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining and data usage rate over last hour is " +
+					    std::to_string(dataUsageRateLastHourKBps) + " KB/s.");
+					rateToDataDiskLastHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
 				}
-			} //end last hour data rate alert
-			rateIt = rateToDataDiskLastHalfHourAlert_map.find(appInfo.getContextName());			
-			if(rateIt == rateToDataDiskLastHalfHourAlert_map.end() || 
-			   now - rateIt->second >
-			       15*60) //alert at most every 15 minutes
+			}  //end last hour data rate alert
+			rateIt = rateToDataDiskLastHalfHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToDataDiskLastHalfHourAlert_map.end() ||
+			   now - rateIt->second > 15 * 60)  //alert at most every 15 minutes
 			{
-				float dataUsageRateLastHalfHourKBps = theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(appInfo.getId()).getDataUsageRateLastHalfHourKBps();
-				if(availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 < availableDataSpaceKB_MIN)
+				float dataUsageRateLastHalfHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getDataUsageRateLastHalfHourKBps();
+				if(availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
+				   availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-						"Data disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_log_dir + "/'): " +
-						std::to_string(availableDataSpaceKB / 1024) +
-						" MB remaining and data usage rate over last half-hour is " +
-						std::to_string(dataUsageRateLastHalfHourKBps) +
-						" KB/s.");
-					rateToDataDiskLastHalfHourAlert_map[appInfo.getContextName()] = now; //record time of this alert
+					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining and data usage rate over last half-hour is " +
+					    std::to_string(dataUsageRateLastHalfHourKBps) + " KB/s.");
+					rateToDataDiskLastHalfHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
 				}
-			} //end last half-hour data rate alert
-			rateIt = rateToDataDiskLastQuarterHourAlert_map.find(appInfo.getContextName());			
-			if(rateIt == rateToDataDiskLastQuarterHourAlert_map.end() || 
-			   now - rateIt->second >
-			       15*30) //alert at most every 7.5 minutes
+			}  //end last half-hour data rate alert
+			rateIt =
+			    rateToDataDiskLastQuarterHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToDataDiskLastQuarterHourAlert_map.end() ||
+			   now - rateIt->second > 15 * 30)  //alert at most every 7.5 minutes
 			{
-				float dataUsageRateLastQuarterHourKBps = theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(appInfo.getId()).getDataUsageRateLastQuarterHourKBps();
+				float dataUsageRateLastQuarterHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getDataUsageRateLastQuarterHourKBps();
 
-				if(availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 < availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
+				   availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-						"Data disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_log_dir + "/'): " +
-						std::to_string(availableDataSpaceKB / 1024) +
-						" MB remaining and data usage rate over last quarter-hour is " +
-						std::to_string(dataUsageRateLastQuarterHourKBps) +
-						" KB/s.");
-					rateToDataDiskLastQuarterHourAlert_map[appInfo.getContextName()] = now; //record time of this alert
+					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining and data usage rate over last quarter-hour is " +
+					    std::to_string(dataUsageRateLastQuarterHourKBps) + " KB/s.");
+					rateToDataDiskLastQuarterHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
 				}
-			} //end last quarter-hour data rate alert
+			}  //end last quarter-hour data rate alert
 			rateIt = rateToDataDiskNowAlert_map.find(appInfo.getContextName());
-			if(rateIt == rateToDataDiskNowAlert_map.end() || 
-			   now - rateIt->second >
-			       15*15) //alert at most every 3.75 minutes
+			if(rateIt == rateToDataDiskNowAlert_map.end() ||
+			   now - rateIt->second > 15 * 15)  //alert at most every 3.75 minutes
 			{
-				float dataUsageRateNowKBps = theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(appInfo.getId()).getDataUsageRateNowKBps();
+				float dataUsageRateNowKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getDataUsageRateNowKBps();
 
-				if(availableDataSpaceKB - dataUsageRateNowKBps * 450 < availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB - dataUsageRateNowKBps * 450 <
+				   availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-						"Data disk space low (at host='" + 
-						appInfo.getHostname() +
-						"' and path='" + otsdaq_log_dir + "/'): " +
-						std::to_string(availableDataSpaceKB / 1024) +
-						" MB remaining and data usage rate over last few minutes is " +
-						std::to_string(dataUsageRateNowKBps) +
-						" KB/s.");
-					rateToDataDiskNowAlert_map[appInfo.getContextName()] = now; //record time of this alert
+					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining and data usage rate over last few minutes is " +
+					    std::to_string(dataUsageRateNowKBps) + " KB/s.");
+					rateToDataDiskNowAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
 				}
-			} //end last few minutes data rate alert
-		}  // end of app loop
+			}  //end last few minutes data rate alert
+		}      // end of app loop
 
 		if(oneStatusReqHasFailed)
 		{
@@ -2465,10 +2501,12 @@ try
 			requestString += "," + ipForReverseLoginOverUDP + "," +
 			                 std::to_string(portForReverseLoginOverUDP) + "," +
 			                 remoteGatewayApp.appInfo.name;
-		__COUTS__(TLVL_RemoteStatusVerbose) << "requestString = " << requestString << __E__;
+		__COUTS__(TLVL_RemoteStatusVerbose)
+		    << "requestString = " << requestString << __E__;
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, requestString, 2 /*timeoutSeconds*/);
-		__COUTS__(TLVL_RemoteStatusVerbose) << "remoteStatusString = " << remoteStatusString << __E__;
+		__COUTS__(TLVL_RemoteStatusVerbose)
+		    << "remoteStatusString = " << remoteStatusString << __E__;
 
 		std::string value, name;
 		bool        foundGateway = false;
@@ -2572,7 +2610,7 @@ try
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				remoteGatewayApp.subapps[name].detail =
 				    value;  //StringMacros::decodeURIComponent(value);
-				
+
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "availableLogSpaceKB", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
@@ -2898,9 +2936,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						                          supervisorNode);  // get progress
 						xmlOut.addTextElementToParent(
 						    "detail", appInfo.getDetail(), supervisorNode);  // get detail
-						xmlOut.addAttributeToNode("availableLogSpaceKB", 
-								std::to_string(appInfo.getAvailableLogSpaceKB()), supervisorNode);  // get log space
-						xmlOut.addAttributeToNode("availableDataSpaceKB", std::to_string(appInfo.getAvailableDataSpaceKB()), supervisorNode);  // get data space
+						xmlOut.addAttributeToNode(
+						    "availableLogSpaceKB",
+						    std::to_string(appInfo.getAvailableLogSpaceKB()),
+						    supervisorNode);  // get log space
+						xmlOut.addAttributeToNode(
+						    "availableDataSpaceKB",
+						    std::to_string(appInfo.getAvailableDataSpaceKB()),
+						    supervisorNode);  // get data space
 						float rate = appInfo.getLogUsageRateLastHourKBps();
 						if(rate == 0)
 							rate = appInfo.getLogUsageRateLastHalfHourKBps();
@@ -2908,7 +2951,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							rate = appInfo.getLogUsageRateLastQuarterHourKBps();
 						if(rate == 0)
 							rate = appInfo.getLogUsageRateNowKBps();
-						xmlOut.addAttributeToNode("logUsageRateKBps", std::to_string(rate), supervisorNode);  // get log usage rate
+						xmlOut.addAttributeToNode("logUsageRateKBps",
+						                          std::to_string(rate),
+						                          supervisorNode);  // get log usage rate
 						rate = appInfo.getDataUsageRateLastHourKBps();
 						if(rate == 0)
 							rate = appInfo.getDataUsageRateLastHalfHourKBps();
@@ -2916,7 +2961,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							rate = appInfo.getDataUsageRateLastQuarterHourKBps();
 						if(rate == 0)
 							rate = appInfo.getDataUsageRateNowKBps();
-						xmlOut.addAttributeToNode("dataUsageRateKBps", std::to_string(rate), supervisorNode);  // get data usage rate
+						xmlOut.addAttributeToNode("dataUsageRateKBps",
+						                          std::to_string(rate),
+						                          supervisorNode);  // get data usage rate
 						xmlOut.addAttributeToNode(
 						    "class",
 						    appInfo.getClass(),
@@ -3084,8 +3131,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    std::to_string(appInfo.getProgress()));  // get progress
 						xmlOut.addTextElementToData("detail",
 						                            appInfo.getDetail());  // get detail
-						xmlOut.addNumberElementToData("availableLogSpaceKB", appInfo.getAvailableLogSpaceKB());  // get log space
-						xmlOut.addNumberElementToData("availableDataSpaceKB", appInfo.getAvailableDataSpaceKB());  // get data space
+						xmlOut.addNumberElementToData(
+						    "availableLogSpaceKB",
+						    appInfo.getAvailableLogSpaceKB());  // get log space
+						xmlOut.addNumberElementToData(
+						    "availableDataSpaceKB",
+						    appInfo.getAvailableDataSpaceKB());  // get data space
 						float rate = appInfo.getLogUsageRateLastHourKBps();
 						if(rate == 0)
 							rate = appInfo.getLogUsageRateLastHalfHourKBps();
@@ -3093,7 +3144,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							rate = appInfo.getLogUsageRateLastQuarterHourKBps();
 						if(rate == 0)
 							rate = appInfo.getLogUsageRateNowKBps();
-						xmlOut.addNumberElementToData("logUsageRateKBps", rate);  // get log usage rate
+						xmlOut.addNumberElementToData("logUsageRateKBps",
+						                              rate);  // get log usage rate
 						rate = appInfo.getDataUsageRateLastHourKBps();
 						if(rate == 0)
 							rate = appInfo.getDataUsageRateLastHalfHourKBps();
@@ -3101,7 +3153,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							rate = appInfo.getDataUsageRateLastQuarterHourKBps();
 						if(rate == 0)
 							rate = appInfo.getDataUsageRateNowKBps();
-						xmlOut.addNumberElementToData("dataUsageRateKBps", rate);  // get data usage rate
+						xmlOut.addNumberElementToData("dataUsageRateKBps",
+						                              rate);  // get data usage rate
 						xmlOut.addTextElementToData(
 						    "class",
 						    appInfo.getClass());  // get application class
@@ -3480,7 +3533,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					for(const auto& icon : icons)
 					{
 						__COUTVS__(TLVL_DebugStatusWorkloop, icon.caption_);
-						__COUTVS__(TLVL_DebugStatusWorkloop, icon.permissionThresholdString_);
+						__COUTVS__(TLVL_DebugStatusWorkloop,
+						           icon.permissionThresholdString_);
 
 						//ignore permission level, and give all icons
 
@@ -8678,11 +8732,11 @@ try
 					          << " progress=" << appInfo.getProgress() << __E__;
 				}
 
-				if(appInfo.getName() == "ConsoleSupervisor" && appInfo.getSubappInfo().size())
+				if(appInfo.getName() == "ConsoleSupervisor" &&
+				   appInfo.getSubappInfo().size())
 				{
-					__SUP_COUTT__
-					    << "ConsoleSupervisor subapp count="
-					    << appInfo.getSubappInfo().size() << __E__;
+					__SUP_COUTT__ << "ConsoleSupervisor subapp count="
+					              << appInfo.getSubappInfo().size() << __E__;
 				}
 
 				xmlOut.addTextElementToData("name",
@@ -8700,8 +8754,12 @@ try
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.getProgress());  // get progress
 				xmlOut.addTextElementToData("detail", appInfo.getDetail());  // get detail
-				xmlOut.addNumberElementToData("availableLogSpaceKB", appInfo.getAvailableLogSpaceKB());  // get log space
-				xmlOut.addNumberElementToData("availableDataSpaceKB", appInfo.getAvailableDataSpaceKB());  // get data space
+				xmlOut.addNumberElementToData(
+				    "availableLogSpaceKB",
+				    appInfo.getAvailableLogSpaceKB());  // get log space
+				xmlOut.addNumberElementToData(
+				    "availableDataSpaceKB",
+				    appInfo.getAvailableDataSpaceKB());  // get data space
 				float rate = appInfo.getLogUsageRateLastHourKBps();
 				if(rate == 0)
 					rate = appInfo.getLogUsageRateLastHalfHourKBps();
@@ -8709,7 +8767,8 @@ try
 					rate = appInfo.getLogUsageRateLastQuarterHourKBps();
 				if(rate == 0)
 					rate = appInfo.getLogUsageRateNowKBps();
-				xmlOut.addNumberElementToData("logUsageRateKBps", rate);  // get log usage rate
+				xmlOut.addNumberElementToData("logUsageRateKBps",
+				                              rate);  // get log usage rate
 				rate = appInfo.getDataUsageRateLastHourKBps();
 				if(rate == 0)
 					rate = appInfo.getDataUsageRateLastHalfHourKBps();
@@ -8718,7 +8777,8 @@ try
 				if(rate == 0)
 					rate = appInfo.getDataUsageRateNowKBps();
 				__SUP_COUTT__ << appInfo.getName() << " rate=" << rate << __E__;
-				xmlOut.addNumberElementToData("dataUsageRateKBps", rate);  // get data usage rate
+				xmlOut.addNumberElementToData("dataUsageRateKBps",
+				                              rate);  // get data usage rate
 				xmlOut.addTextElementToData("class",
 				                            appInfo.getClass());  // get application class
 				xmlOut.addTextElementToData("url",
@@ -8750,11 +8810,22 @@ try
 					xmlOut.addTextElementToParent("subapp_detail",
 					                              subappInfoPair.second.detail,
 					                              subappElement);  // get detail
-					xmlOut.addNumberElementToParent("subapp_availableLogSpaceKB", subappInfoPair.second.availableLogSpaceKB,
-						subappElement);  // get log space
-					xmlOut.addNumberElementToParent("subapp_availableDataSpaceKB", subappInfoPair.second.availableDataSpaceKB, subappElement);  // get data space				
-					xmlOut.addNumberElementToParent("subapp_logUsageRateKBps", subappInfoPair.second.logUsageRateKBps, subappElement);  // get log usage rate				
-					xmlOut.addNumberElementToParent("subapp_dataUsageRateKBps", subappInfoPair.second.dataUsageRateKBps, subappElement);  // get data usage rate
+					xmlOut.addNumberElementToParent(
+					    "subapp_availableLogSpaceKB",
+					    subappInfoPair.second.availableLogSpaceKB,
+					    subappElement);  // get log space
+					xmlOut.addNumberElementToParent(
+					    "subapp_availableDataSpaceKB",
+					    subappInfoPair.second.availableDataSpaceKB,
+					    subappElement);  // get data space
+					xmlOut.addNumberElementToParent(
+					    "subapp_logUsageRateKBps",
+					    subappInfoPair.second.logUsageRateKBps,
+					    subappElement);  // get log usage rate
+					xmlOut.addNumberElementToParent(
+					    "subapp_dataUsageRateKBps",
+					    subappInfoPair.second.dataUsageRateKBps,
+					    subappElement);  // get data usage rate
 					xmlOut.addTextElementToParent("subapp_url",
 					                              subappInfoPair.second.url,
 					                              subappElement);  // get detail
@@ -8796,10 +8867,16 @@ try
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.progress);        // get progress
 				xmlOut.addTextElementToData("detail", appInfo.detail);  // get detail
-				xmlOut.addNumberElementToData("availableLogSpaceKB", appInfo.availableLogSpaceKB);  // get log space
-				xmlOut.addNumberElementToData("availableDataSpaceKB", appInfo.availableDataSpaceKB);  // get data space				
-				xmlOut.addNumberElementToData("logUsageRateKBps", appInfo.logUsageRateKBps);  // get log usage rate				
-				xmlOut.addNumberElementToData("dataUsageRateKBps", appInfo.dataUsageRateKBps);  // get data usage rate
+				xmlOut.addNumberElementToData(
+				    "availableLogSpaceKB", appInfo.availableLogSpaceKB);  // get log space
+				xmlOut.addNumberElementToData(
+				    "availableDataSpaceKB",
+				    appInfo.availableDataSpaceKB);  // get data space
+				xmlOut.addNumberElementToData(
+				    "logUsageRateKBps", appInfo.logUsageRateKBps);  // get log usage rate
+				xmlOut.addNumberElementToData(
+				    "dataUsageRateKBps",
+				    appInfo.dataUsageRateKBps);  // get data usage rate
 				xmlOut.addTextElementToData("class",
 				                            appInfo.class_name);  // get application class
 				xmlOut.addTextElementToData("url",
@@ -8831,11 +8908,22 @@ try
 					xmlOut.addTextElementToParent("subapp_detail",
 					                              subappInfoPair.second.detail,
 					                              subappElement);  // get detail
-					xmlOut.addNumberElementToParent("subapp_availableLogSpaceKB", subappInfoPair.second.availableLogSpaceKB,
-						subappElement);  // get log space
-					xmlOut.addNumberElementToParent("subapp_availableDataSpaceKB", subappInfoPair.second.availableDataSpaceKB, subappElement);  // get data space				
-					xmlOut.addNumberElementToParent("subapp_logUsageRateKBps", subappInfoPair.second.logUsageRateKBps, subappElement);  // get log usage rate				
-					xmlOut.addNumberElementToParent("subapp_dataUsageRateKBps", subappInfoPair.second.dataUsageRateKBps, subappElement);  // get data usage rate
+					xmlOut.addNumberElementToParent(
+					    "subapp_availableLogSpaceKB",
+					    subappInfoPair.second.availableLogSpaceKB,
+					    subappElement);  // get log space
+					xmlOut.addNumberElementToParent(
+					    "subapp_availableDataSpaceKB",
+					    subappInfoPair.second.availableDataSpaceKB,
+					    subappElement);  // get data space
+					xmlOut.addNumberElementToParent(
+					    "subapp_logUsageRateKBps",
+					    subappInfoPair.second.logUsageRateKBps,
+					    subappElement);  // get log usage rate
+					xmlOut.addNumberElementToParent(
+					    "subapp_dataUsageRateKBps",
+					    subappInfoPair.second.dataUsageRateKBps,
+					    subappElement);  // get data usage rate
 					xmlOut.addTextElementToParent("subapp_url",
 					                              subappInfoPair.second.parent_url,
 					                              subappElement);  // get detail

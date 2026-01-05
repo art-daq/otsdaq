@@ -2775,8 +2775,8 @@ std::vector<std::vector<std::string>> ConfigurationTree::getChildrenNamesByPrior
 //==============================================================================
 /// getChildrenNames
 ///	returns them in order encountered in the table
-std::vector<std::string> ConfigurationTree::getChildrenNames(bool byPriority /* = false */,
-                                                             bool onlyStatusTrue /* = false */) const
+std::vector<std::string> ConfigurationTree::getChildrenNames(
+    bool byPriority /* = false */, bool onlyStatusTrue /* = false */) const
 {
 	std::vector<std::string /*child name*/> retVector;
 

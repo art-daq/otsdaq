@@ -2,7 +2,7 @@
 #include "otsdaq/MessageFacility/ITRACEController.h"
 #include "otsdaq/MessageFacility/TRACEController.h"
 
-#include <sys/statvfs.h> // for disk space checking with statvfs
+#include <sys/statvfs.h>  // for disk space checking with statvfs
 
 using namespace ots;
 
@@ -168,11 +168,12 @@ CorePropertySupervisorBase::~CorePropertySupervisorBase(void)
 }  // end destructor
 
 //==============================================================================
-/// If app is first in context (i.e., only one app on each host), 
+/// If app is first in context (i.e., only one app on each host),
 ///  get available space updated every 10 seconds in KBs
 void CorePropertySupervisorBase::getAvailableDiskSpace()
 {
-	if(!isFirstAppInContext_) return;
+	if(!isFirstAppInContext_)
+		return;
 
 	time_t t = time(0);
 	if(t - lastDiskSpaceCheckTime_ <= 10)
@@ -181,28 +182,29 @@ void CorePropertySupervisorBase::getAvailableDiskSpace()
 	struct statvfs logStat;
 	if(statvfs((OTSDAQ_LOG_DIR + "/").c_str(), &logStat) != 0)
 	{
-		__SUP_SS__ << "Disk space retrieval failed for log directory: " << OTSDAQ_LOG_DIR << __E__;
+		__SUP_SS__ << "Disk space retrieval failed for log directory: " << OTSDAQ_LOG_DIR
+		           << __E__;
 		__SUP_SS_THROW__;
 	}
-	uint64_t availableLogSpaceKB =
-	    (logStat.f_bavail * logStat.f_frsize) / 1024;  // in KB
+	uint64_t availableLogSpaceKB = (logStat.f_bavail * logStat.f_frsize) / 1024;  // in KB
 	__SUP_COUTTV__(availableLogSpaceKB);
 
 	struct statvfs dataStat;
 	if(statvfs((OTSDAQ_DATA_DIR + "/").c_str(), &dataStat) != 0)
 	{
-		__SUP_SS__ << "Disk space retrieval failed for data directory: " << OTSDAQ_DATA_DIR << __E__;
+		__SUP_SS__ << "Disk space retrieval failed for data directory: "
+		           << OTSDAQ_DATA_DIR << __E__;
 		__SUP_SS_THROW__;
 	}
 	uint64_t availableDataSpaceKB =
 	    (dataStat.f_bavail * dataStat.f_frsize) / 1024;  // in KB
-	__SUP_COUTTV__(availableDataSpaceKB);	
+	__SUP_COUTTV__(availableDataSpaceKB);
 
 	availableLogSpaceKB_  = availableLogSpaceKB;
 	availableDataSpaceKB_ = availableDataSpaceKB;
-	
+
 	lastDiskSpaceCheckTime_ = time(0);
-} //end getAvailableDiskSpace()
+}  //end getAvailableDiskSpace()
 
 //==============================================================================
 void CorePropertySupervisorBase::indicateOtsAlive(

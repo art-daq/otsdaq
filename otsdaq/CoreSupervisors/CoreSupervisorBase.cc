@@ -473,7 +473,7 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 		retParameters.addParameter("AvailableDataSpaceKB",
 		                           std::to_string(availableDataSpaceKB));
 	}
-	else // just return 0 since not responsible for disk space
+	else  // just return 0 since not responsible for disk space
 	{
 		retParameters.addParameter("AvailableLogSpaceKB", "0");
 		retParameters.addParameter("AvailableDataSpaceKB", "0");

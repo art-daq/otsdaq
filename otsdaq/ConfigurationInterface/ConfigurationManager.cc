@@ -102,10 +102,10 @@ const std::set<std::string> ConfigurationManager::iterateMemberNames_ = {
 //==============================================================================
 ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/,
                                            bool doInitializeFromFhicl /*=false*/,
-										   bool forceNotFirstInContext /*=false*/)
+                                           bool forceNotFirstInContext /*=false*/)
     : startClockTime_(std::chrono::steady_clock::now())
     , deltaClockTime_(std::chrono::steady_clock::now())
-	, forceNotFirstInContext_(forceNotFirstInContext)
+    , forceNotFirstInContext_(forceNotFirstInContext)
     , mfSubject_(ConfigurationManager::READONLY_USER)
     , username_(ConfigurationManager::READONLY_USER)
     , theInterface_(0)
@@ -4001,8 +4001,9 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 ///	 generating files on local disk multiple times.
 bool ConfigurationManager::isOwnerFirstAppInContext()
 {
-	__GEN_COUTS__(11) << "Checking if owner '" << ownerContextUID_ << "/" << ownerAppUID_ << "' is first App in Context:\n" <<
-		StringMacros::stackTrace() << __E__;
+	__GEN_COUTS__(11) << "Checking if owner '" << ownerContextUID_ << "/" << ownerAppUID_
+	                  << "' is first App in Context:\n"
+	                  << StringMacros::stackTrace() << __E__;
 
 	if(ownerContextUID_ == "" || ownerAppUID_ == "")
 	{
@@ -4010,36 +4011,39 @@ bool ConfigurationManager::isOwnerFirstAppInContext()
 		return !forceNotFirstInContext_;  // default to 'yes' unless forced
 	}
 
-	__GEN_COUTVS__(10,ownerContextUID_);
-	__GEN_COUTVS__(10,ownerAppUID_);
+	__GEN_COUTVS__(10, ownerContextUID_);
+	__GEN_COUTVS__(10, ownerAppUID_);
 
 	try
 	{
-		auto contextChildren = getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME +
-		                               "/" + ownerContextUID_ + "/LinkToApplicationTable")
-		                           .getChildrenNames(false /* byPriority */, true /* onlyStatusTrue */);
+		auto contextChildren =
+		    getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
+		            ownerContextUID_ + "/LinkToApplicationTable")
+		        .getChildrenNames(false /* byPriority */, true /* onlyStatusTrue */);
 
-		if(contextChildren.size() == 0) // no enabled apps, check if owner is app[0]
+		if(contextChildren.size() == 0)  // no enabled apps, check if owner is app[0]
 		{
-			contextChildren = getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME +
-		                               "/" + ownerContextUID_ + "/LinkToApplicationTable")
-		                           .getChildrenNames(false /* byPriority */, false /* onlyStatusTrue */);			
-			__GEN_COUTVS__(10,StringMacros::vectorToString(contextChildren));
+			contextChildren =
+			    getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
+			            ownerContextUID_ + "/LinkToApplicationTable")
+			        .getChildrenNames(false /* byPriority */, false /* onlyStatusTrue */);
+			__GEN_COUTVS__(10, StringMacros::vectorToString(contextChildren));
 		}
 		else
-			__GEN_COUTVS__(10,StringMacros::vectorToString(contextChildren));
+			__GEN_COUTVS__(10, StringMacros::vectorToString(contextChildren));
 
 		bool isFirstAppInContext =
 		    contextChildren.size() == 0 || contextChildren[0] == ownerAppUID_;
 
-		__GEN_COUTVS__(10,isFirstAppInContext);
+		__GEN_COUTVS__(10, isFirstAppInContext);
 
 		return isFirstAppInContext;
 	}
 	catch(...)
 	{
-		__GEN_COUTS__(10) << "Exception caught looking for XDAQ Context '" << ownerContextUID_
-		              << "' in tree, so defaulting to 'yes'." << __E__;
+		__GEN_COUTS__(10) << "Exception caught looking for XDAQ Context '"
+		                  << ownerContextUID_ << "' in tree, so defaulting to 'yes'."
+		                  << __E__;
 		return true;  // default to 'yes' if XDAQ Context doesn't exist
 	}
 }  // end isOwnerFirstAppInContext()
