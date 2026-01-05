@@ -2199,7 +2199,7 @@ try
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Data disk space low (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_log_dir +
+					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last hour is " +
 					    std::to_string(dataUsageRateLastHourKBps) + " KB/s.");
@@ -2220,7 +2220,7 @@ try
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Data disk space low (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_log_dir +
+					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last half-hour is " +
 					    std::to_string(dataUsageRateLastHalfHourKBps) + " KB/s.");
@@ -2243,7 +2243,7 @@ try
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Data disk space low (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_log_dir +
+					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last quarter-hour is " +
 					    std::to_string(dataUsageRateLastQuarterHourKBps) + " KB/s.");
@@ -2265,7 +2265,7 @@ try
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Data disk space low (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_log_dir +
+					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last few minutes is " +
 					    std::to_string(dataUsageRateNowKBps) + " KB/s.");
