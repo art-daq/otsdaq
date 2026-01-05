@@ -1,6 +1,7 @@
 #ifndef _ots_SupervisorInfo_h_
 #define _ots_SupervisorInfo_h_
 
+#include <algorithm>
 #include <string>
 #include "otsdaq/Macros/CoutMacros.h" /* also for XDAQ_CONST_CALL */
 #include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
@@ -107,21 +108,21 @@ class SupervisorInfo
 	int64_t										 getAvailableDataSpaceKB        	(void) const { return availableDataSpaceKB_.size() > 0 ? availableDataSpaceKB_.front().second : 0; }
 
 	float	                                     getLogUsageRateLastHourKBps   		(void) const { return availableLogSpaceKB_.size()  > 9 ? (availableLogSpaceKB_[9].second - availableLogSpaceKB_.front().second)*1.0f/
-																																			  (1 + availableLogSpaceKB_.front().first - availableLogSpaceKB_[9].first) : 0; }
+																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[9].first) : 0; }
 	float	                                     getLogUsageRateLastHalfHourKBps	(void) const { return availableLogSpaceKB_.size()  > 7 ? (availableLogSpaceKB_[7].second - availableLogSpaceKB_.front().second)*1.0f/
-																																			  (1 + availableLogSpaceKB_.front().first - availableLogSpaceKB_[7].first): 0; }
+																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[7].first): 0; }
 	float	                                     getLogUsageRateLastQuarterHourKBps	(void) const { return availableLogSpaceKB_.size()  > 5 ? (availableLogSpaceKB_[5].second - availableLogSpaceKB_.front().second)*1.0f/
-																																			  (1 + availableLogSpaceKB_.front().first - availableLogSpaceKB_[5].first): 0; }
+																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[5].first): 0; }
 	float	                                     getLogUsageRateNowKBps   			(void) const { return availableLogSpaceKB_.size()  > 1 ? (availableLogSpaceKB_[1].second - availableLogSpaceKB_.front().second)*1.0f/
-																																			  (1 + availableLogSpaceKB_.front().first - availableLogSpaceKB_[1].first) : 0; }
+																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[1].first) : 0; }
 	float	                                     getDataUsageRateLastHourKBps   	(void) const { return availableDataSpaceKB_.size() > 9 ? (availableDataSpaceKB_[9].second - availableDataSpaceKB_.front().second)*1.0f/
-																																			  (1 + availableDataSpaceKB_.front().first - availableDataSpaceKB_[9].first) : 0; }
+																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[9].first) : 0; }
 	float	                                     getDataUsageRateLastHalfHourKBps	(void) const { return availableDataSpaceKB_.size() > 7 ? (availableDataSpaceKB_[7].second - availableDataSpaceKB_.front().second)*1.0f/
-																																			  (1 + availableDataSpaceKB_.front().first - availableDataSpaceKB_[7].first): 0; }
+																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[7].first): 0; }
 	float	                                     getDataUsageRateLastQuarterHourKBps(void) const { return availableDataSpaceKB_.size() > 5 ? (availableDataSpaceKB_[5].second - availableDataSpaceKB_.front().second)*1.0f/
-																																			  (1 + availableDataSpaceKB_.front().first - availableDataSpaceKB_[5].first): 0; }
+																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[5].first): 0; }
 	float	                                     getDataUsageRateNowKBps   			(void) const { return availableDataSpaceKB_.size() > 1 ? (availableDataSpaceKB_[1].second - availableDataSpaceKB_.front().second)*1.0f/
-																																			  (1 + availableDataSpaceKB_.front().first - availableDataSpaceKB_[1].first) : 0; }
+																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[1].first) : 0; }
 	/// Setters -------------------
 	void setStatus(const std::string& status, const unsigned int progress, const std::string& detail = "", const int64_t availableLogSpaceKB = 0, const int64_t availableDataSpaceKB = 0);
 	void setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail = "", const int64_t availableLogSpaceKB = 0, const int64_t availableDataSpaceKB = 0);
