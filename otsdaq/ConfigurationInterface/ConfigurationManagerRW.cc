@@ -2883,7 +2883,7 @@ void ConfigurationManagerRW::testXDAQContext()
 		try
 		{
 			std::string   debugGroupName = "testGroupSave";
-			TableGroupKey groupKey(int(1));
+			TableGroupKey groupKey(int(2));
 			__GEN_COUT__ << "Testing group save of non-existing " << debugGroupName << "("
 			             << groupKey << ")" << __E__;
 			std::map<std::string, TableVersion> groupMembers;
@@ -3004,7 +3004,7 @@ void ConfigurationManagerRW::testXDAQContext()
 				__GEN_COUTV__(ss.str());
 
 				// save to db, and do not allow overwrite
-				// theInterface_->saveActiveVersion(&localDocLoader, false /* overwrite */);
+				theInterface_->saveActiveVersion(&localDocLoader, false /* overwrite */);
 			}
 			catch(...)
 			{
