@@ -1543,8 +1543,9 @@ void ots::ARTDAQSupervisor::enteringError(toolbox::Event::Reference /*event*/)
 
 std::vector<SupervisorInfo::SubappInfo> ots::ARTDAQSupervisor::getSubappInfo(void)
 {
-	auto                                    apps = getAndParseProcessInfo_();
-	std::vector<SupervisorInfo::SubappInfo> output;
+	auto apps = getAndParseProcessInfo_();
+
+	std::map<int, SupervisorInfo::SubappInfo> subapp_infos;
 	for(auto& app : apps)
 	{
 		SupervisorInfo::SubappInfo info;
@@ -1558,6 +1559,12 @@ std::vector<SupervisorInfo::SubappInfo> ots::ARTDAQSupervisor::getSubappInfo(voi
 		info.url        = "http://" + app.host + ":" + std::to_string(app.port) + "/RPC2";
 		info.class_name = "ARTDAQ " + labelToProcType_(app.label);
 
+		subapp_infos[app.rank] = info;
+	}
+
+	std::vector<SupervisorInfo::SubappInfo> output;
+	for(auto& [rank, info] : subapp_infos)
+	{
 		output.push_back(info);
 	}
 	return output;

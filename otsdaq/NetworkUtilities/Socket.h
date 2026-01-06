@@ -18,6 +18,7 @@ class Socket
 	const struct sockaddr_in& getSocketAddress(void);
 	const std::string&        getIPAddress() { return IPAddress_; }
 	uint16_t                  getPort();
+	bool                      isInitialized() { return isInitialized_; }
 
   protected:
 	enum
@@ -39,6 +40,7 @@ class Socket
 	};
 	std::string  IPAddress_;
 	unsigned int requestedPort_;
+	bool         isInitialized_ = false;
 };
 
 }  // namespace ots

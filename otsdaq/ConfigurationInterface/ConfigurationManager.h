@@ -102,7 +102,8 @@ class ConfigurationManager
 	/// Construct/Destruct
 	///
 	ConfigurationManager(bool initForWriteAccess  = false,
-	                     bool initializeFromFhicl = false);
+	                     bool initializeFromFhicl = false,
+						 bool forceNotFirstInContext = false);
 	virtual ~ConfigurationManager(void);
 
 
@@ -227,6 +228,8 @@ class ConfigurationManager
 			std::string /*group name*/,
 			TableGroupKey> 				loadGroupNameAndKey			(const std::string& fileName, std::string& returnedTimeString);
 
+
+	bool 												forceNotFirstInContext_ = false;
 
   private:
 										ConfigurationManager		(const std::string& userName);  ///< private constructor called by ConfigurationManagerRW

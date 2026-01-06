@@ -65,7 +65,7 @@ Socket::Socket(void)
 	          "constructor. There is something wrong in your inheritance scheme!"
 	       << std::endl;
 	__SS_THROW__;
-}
+}  //end protected constructor
 
 //==============================================================================
 Socket::~Socket(void)
@@ -75,7 +75,7 @@ Socket::~Socket(void)
 	          << std::endl;
 	if(socketNumber_ != -1)
 		close(socketNumber_);
-}
+}  //end destructor
 
 //==============================================================================
 void Socket::initialize(unsigned int socketReceiveBufferSize)
@@ -195,7 +195,9 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 			__SS_THROW__;
 		}
 	}
-}
+
+	isInitialized_ = true;
+}  //end initialize()
 
 uint16_t Socket::getPort()
 {
@@ -206,7 +208,7 @@ uint16_t Socket::getPort()
 	//	socklen_t len = sizeof(sin);
 	//	getsockname(socketNumber_, (struct sockaddr *)&sin, &len);
 	//	return ntohs(sin.sin_port);
-}
+}  //end getPort()
 
 //==============================================================================
 const struct sockaddr_in& Socket::getSocketAddress(void) { return socketAddress_; }

@@ -176,6 +176,8 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
 
 	if(result.first)
 	{
+		//removing readback check - it seems collision checking was fixed by https://github.com/art-daq/artdaq-database/pull/36
+		if(0)
 		{  //check that table save worked (FIXME -- this is temporary while waiting for permanent solution from artdaq-database developments)
 
 			TableBase localDocLoader(
@@ -760,6 +762,7 @@ try
 
 	if(result.first)
 	{
+		if(0)  //removing readback check - it seems collision checking was fixed by https://github.com/art-daq/artdaq-database/pull/36
 		{  //check that group save worked (FIXME -- this is temporary while waiting for permanent solution from artdaq-database developments)
 			auto readbackResult = ifc.loadGlobalConfiguration(tableGroup);
 

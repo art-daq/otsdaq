@@ -12,7 +12,7 @@ cmake_minimum_required (VERSION 3.19 FATAL_ERROR)
 
 find_package(cetmodules 3.16.00 REQUIRED)
 
-project(otsdaq VERSION 3.03.00)
+project(otsdaq VERSION 3.04.01)
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -75,6 +75,7 @@ find_package(artdaq-core 3.09.00 REQUIRED EXPORT)
 find_package(artdaq 3.12.00 REQUIRED EXPORT)
 find_package(artdaq-database 1.07.00 REQUIRED)
 find_package(Python 3.6 COMPONENTS Development.Embed REQUIRED)
+find_package(CURL REQUIRED EXPORT) # Curl required by artdaq-database, unclear why EXPORT command isn't working
 
 if (EXISTS ${artdaq-database_DIR})
 set(bsoncxx_DIR ${artdaq-database_DIR})

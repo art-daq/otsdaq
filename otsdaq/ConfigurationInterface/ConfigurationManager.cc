@@ -101,9 +101,11 @@ const std::set<std::string> ConfigurationManager::iterateMemberNames_ = {
 
 //==============================================================================
 ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/,
-                                           bool doInitializeFromFhicl /*=false*/)
+                                           bool doInitializeFromFhicl /*=false*/,
+                                           bool forceNotFirstInContext /*=false*/)
     : startClockTime_(std::chrono::steady_clock::now())
     , deltaClockTime_(std::chrono::steady_clock::now())
+    , forceNotFirstInContext_(forceNotFirstInContext)
     , mfSubject_(ConfigurationManager::READONLY_USER)
     , username_(ConfigurationManager::READONLY_USER)
     , theInterface_(0)
@@ -4228,30 +4230,54 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 }  // end recursiveInitFromFhiclPSet()
 
 //==============================================================================
+/// Returns true if the app is the first ENABLED app in the context. If there are no enabled apps, then return true if app[0].
+///	Use isOwnerFirstAppInContext() to only run something once per context, for example to avoid
+///	 generating files on local disk multiple times.
 bool ConfigurationManager::isOwnerFirstAppInContext()
 {
-	//__GEN_COUT__ << "Checking if owner is first App in Context." << __E__;
-	if(ownerContextUID_ == "" || ownerAppUID_ == "")
-		return true;  // default to 'yes'
+	__GEN_COUTS__(11) << "Checking if owner '" << ownerContextUID_ << "/" << ownerAppUID_
+	                  << "' is first App in Context:\n"
+	                  << StringMacros::stackTrace() << __E__;
 
-	//__GEN_COUTV__(ownerContextUID_);
-	//__GEN_COUTV__(ownerAppUID_);
+	if(ownerContextUID_ == "" || ownerAppUID_ == "")
+	{
+		__GEN_COUTTV__(!forceNotFirstInContext_);
+		return !forceNotFirstInContext_;  // default to 'yes' unless forced
+	}
+
+	__GEN_COUTVS__(10, ownerContextUID_);
+	__GEN_COUTVS__(10, ownerAppUID_);
 
 	try
 	{
-		auto contextChildren = getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME +
-		                               "/" + ownerContextUID_)
-		                           .getChildrenNames();
+		auto contextChildren =
+		    getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
+		            ownerContextUID_ + "/LinkToApplicationTable")
+		        .getChildrenNames(false /* byPriority */, true /* onlyStatusTrue */);
+
+		if(contextChildren.size() == 0)  // no enabled apps, check if owner is app[0]
+		{
+			contextChildren =
+			    getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
+			            ownerContextUID_ + "/LinkToApplicationTable")
+			        .getChildrenNames(false /* byPriority */, false /* onlyStatusTrue */);
+			__GEN_COUTVS__(10, StringMacros::vectorToString(contextChildren));
+		}
+		else
+			__GEN_COUTVS__(10, StringMacros::vectorToString(contextChildren));
 
 		bool isFirstAppInContext =
 		    contextChildren.size() == 0 || contextChildren[0] == ownerAppUID_;
 
-		//__GEN_COUTV__(isFirstAppInContext);
+		__GEN_COUTVS__(10, isFirstAppInContext);
 
 		return isFirstAppInContext;
 	}
 	catch(...)
 	{
+		__GEN_COUTS__(10) << "Exception caught looking for XDAQ Context '"
+		                  << ownerContextUID_ << "' in tree, so defaulting to 'yes'."
+		                  << __E__;
 		return true;  // default to 'yes' if XDAQ Context doesn't exist
 	}
 }  // end isOwnerFirstAppInContext()
@@ -4435,7 +4461,7 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 	if(cmdResult.find("Permission denied") != std::string::npos)
 	{
 		__GEN_SS__
-		    << "Permission denied accessing user data path specified for subsystem '"
+		    << "\n\nPermission denied accessing user data path specified for subsystem '"
 		    << otherSubsystemUID << "': ";
 		if(username != "")
 			ss << username << "@";

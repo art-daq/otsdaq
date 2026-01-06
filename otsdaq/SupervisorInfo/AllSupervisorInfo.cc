@@ -117,7 +117,9 @@ void AllSupervisorInfo::init(xdaq::ApplicationContext* applicationContext)
 	std::unique_ptr<ConfigurationManager> cfgMgr(
 	    (isWizardMode || AllSupervisorInfo::MACROMAKER_MODE)
 	        ? 0
-	        : new ConfigurationManager());
+	        : new ConfigurationManager(false /* initForWriteAccess */,
+	                                   false /* doInitializeFromFhicl */,
+	                                   true /* forceNotFirstInContext */));
 	const XDAQContextTable* contextConfig =
 	    (isWizardMode || AllSupervisorInfo::MACROMAKER_MODE)
 	        ? nullptr
@@ -346,7 +348,7 @@ const SupervisorInfo& AllSupervisorInfo::getSupervisorInfo(xdaq::Application* ap
 		__SS_THROW__;
 	}
 	return it->second;
-}
+}  //end getSupervisorInfo()
 
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
@@ -354,28 +356,45 @@ void AllSupervisorInfo::setSupervisorStatus(
     const std::string&                      status,
     const unsigned int                      progress,
     const std::string&                      detail,
-    std::vector<SupervisorInfo::SubappInfo> subapps)
+    std::vector<SupervisorInfo::SubappInfo> subapps,
+    const uint64_t                          availableLogSpaceKB,
+    const uint64_t                          availableDataSpaceKB)
 {
-	setSupervisorStatus(
-	    app->getApplicationDescriptor()->getLocalId(), status, progress, detail, subapps);
-}
+	setSupervisorStatus(app->getApplicationDescriptor()->getLocalId(),
+	                    status,
+	                    progress,
+	                    detail,
+	                    subapps,
+	                    availableLogSpaceKB,
+	                    availableDataSpaceKB);
+}  // end setSupervisorStatus()
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
     const SupervisorInfo&                   appInfo,
     const std::string&                      status,
     const unsigned int                      progress,
     const std::string&                      detail,
-    std::vector<SupervisorInfo::SubappInfo> subapps)
+    std::vector<SupervisorInfo::SubappInfo> subapps,
+    const uint64_t                          availableLogSpaceKB,
+    const uint64_t                          availableDataSpaceKB)
 {
-	setSupervisorStatus(appInfo.getId(), status, progress, detail, subapps);
-}
+	setSupervisorStatus(appInfo.getId(),
+	                    status,
+	                    progress,
+	                    detail,
+	                    subapps,
+	                    availableLogSpaceKB,
+	                    availableDataSpaceKB);
+}  // end setSupervisorStatus()
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
     const unsigned int&                     id,
     const std::string&                      status,
     const unsigned int                      progress,
     const std::string&                      detail,
-    std::vector<SupervisorInfo::SubappInfo> subapps)
+    std::vector<SupervisorInfo::SubappInfo> subapps,
+    const uint64_t                          availableLogSpaceKB,
+    const uint64_t                          availableDataSpaceKB)
 {
 	auto it = allSupervisorInfo_.find(id);
 	if(it == allSupervisorInfo_.end())
@@ -386,7 +405,10 @@ void AllSupervisorInfo::setSupervisorStatus(
 	// non-blocking here, it's ok if the status is not updated (it is probably blocked on purpose, for exampled by the GatewaySupervisor broadcast threads)
 	if(allSupervisorInfoMutex_[id].try_lock())
 	{
-		it->second.setStatus(status, progress, detail);
+		if(progress > 100)
+			__COUT__ << "What happened 2? " << progress << __E__;
+		it->second.setStatus(
+		    status, progress, detail, availableLogSpaceKB, availableDataSpaceKB);
 		//if subapps size mismatch, then clear to eliminate renamed subapps
 		if(it->second.getSubappInfo().size() != subapps.size())
 			it->second.clearSubapps();

@@ -458,6 +458,27 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 	retParameters.addParameter(
 	    "Detail",
 	    getStatusProgressDetail());  // call virtual progress detail string generation
+
+	//return available disk space if first app in context
+	__SUP_COUTTV__(CorePropertySupervisorBase::isFirstAppInContext());
+	if(CorePropertySupervisorBase::isFirstAppInContext())
+	{
+		uint64_t availableLogSpaceKB =
+		    CorePropertySupervisorBase::getAvailableLogSpaceKB();
+		uint64_t availableDataSpaceKB =
+		    CorePropertySupervisorBase::getAvailableDataSpaceKB();
+
+		retParameters.addParameter("AvailableLogSpaceKB",
+		                           std::to_string(availableLogSpaceKB));
+		retParameters.addParameter("AvailableDataSpaceKB",
+		                           std::to_string(availableDataSpaceKB));
+	}
+	else  // just return 0 since not responsible for disk space
+	{
+		retParameters.addParameter("AvailableLogSpaceKB", "0");
+		retParameters.addParameter("AvailableDataSpaceKB", "0");
+	}
+
 	auto subappInfo = getSubappInfo();
 	retParameters.addParameter("Subapps",
 	                           SupervisorInfo::serializeSubappInfos(subappInfo));
