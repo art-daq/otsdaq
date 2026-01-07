@@ -151,7 +151,7 @@ try
 
 	auto ifc = db::ConfigurationInterface{default_dbprovider};
 
-	auto              versionstring = table->getView().getVersion().toString();
+	auto versionstring = table->getView().getVersion().toString();
 	__COUTTV__(versionstring);
 	std::stringstream preSaveJSONss;
 	table->getView().printJSON(preSaveJSONss);
@@ -170,8 +170,8 @@ try
 	__COUTT__ << "Time taken to call "
 	             "DatabaseConfigurationInterface::saveActiveVersion(tableName="
 	          << table->getTableName() << ", versionstring=" << versionstring
-			  << " overwrite=" << overwrite << ") "
-	          << duration << " milliseconds" << std::endl;
+	          << " overwrite=" << overwrite << ") " << duration << " milliseconds"
+	          << std::endl;
 
 	__COUTTV__(result.first);
 	__COUTVS__(10, result.second);
@@ -269,24 +269,25 @@ try
 		return;
 	}
 
-	__SS__ << "Return value indicates error in Database Interface saveActiveVersion attempting to save "
-			<< table->getTableName() << "-v" << table->getView().getVersion().toString() <<
-			": " << result.second << __E__;
+	__SS__ << "Return value indicates error in Database Interface saveActiveVersion "
+	          "attempting to save "
+	       << table->getTableName() << "-v" << table->getView().getVersion().toString()
+	       << ": " << result.second << __E__;
 	__SS_THROW__;
 }  //end saveActiveVersion()
 catch(std::exception const& e)
 {
 	__SS__ << "Database Interface Exception in saveActiveVersion attempting to save "
-			<< table->getTableName() << "-v" << table->getView().getVersion().toString()
-			<< ": " << e.what()
-	       << __E__;
+	       << table->getTableName() << "-v" << table->getView().getVersion().toString()
+	       << ": " << e.what() << __E__;
 	__SS_THROW__;
 }  //end saveActiveVersion() catch
 catch(...)
 {
-	__SS__ << "Database Interface Unknown exception in saveActiveVersion attempting to save "
-			<< table->getTableName() << "-v" << table->getView().getVersion().toString() 
-			<< "." << __E__;
+	__SS__
+	    << "Database Interface Unknown exception in saveActiveVersion attempting to save "
+	    << table->getTableName() << "-v" << table->getView().getVersion().toString()
+	    << "." << __E__;
 	__SS_THROW__;
 }  //end saveActiveVersion() catch
 
@@ -746,7 +747,9 @@ try
 {
 	if(memberMap.size() == 0)
 	{
-		__SS__ << "Error: Attempting to save table group '" << tableGroup << "' with empty member map! Please provide at least one member table for the group."
+		__SS__ << "Error: Attempting to save table group '" << tableGroup
+		       << "' with empty member map! Please provide at least one member table for "
+		          "the group."
 		       << __E__;
 		__SS_THROW__;
 	}
@@ -889,8 +892,7 @@ try
 		return;
 	}
 
-	__SS__ << "Return value indicates failure to save group '"
-	       << tableGroup << "':\n"
+	__SS__ << "Return value indicates failure to save group '" << tableGroup << "':\n"
 	       << result.second << __E__;
 	__SS_THROW__;
 }  // end saveTableGroup()

@@ -3203,7 +3203,6 @@ const TableBase* ConfigurationManager::getTableByName(const std::string& tableNa
 	{
 		__SS__ << "Cannot find table named '" << tableName
 		       << "' - you need to load the table before it can be used.";
-			
 
 		if(nameToTableMap_.size() == 0)
 			ss << "\n\nAll tables are missing. Your configuration database connection "
@@ -3213,27 +3212,29 @@ const TableBase* ConfigurationManager::getTableByName(const std::string& tableNa
 		{
 			if(tableName == XDAQ_CONTEXT_TABLE_NAME)
 				ss << "\n\nThe XDAQ Context Table is essential to the operation of ots. "
-						"Without it, ots can not determine which applications are running "
-						"on which hosts. Make sure that you have loaded a valid "
-						"Configuration Context group that contains the XDAQ Context "
-						"Table."
-				<< __E__;
+				      "Without it, ots can not determine which applications are running "
+				      "on which hosts. Make sure that you have loaded a valid "
+				      "Configuration Context group that contains the XDAQ Context "
+				      "Table."
+				   << __E__;
 			else
 				ss << " It is likely missing from the member list of the Table "
-						"Group that was loaded." << __E__;
-			
+				      "Group that was loaded."
+				   << __E__;
+
 			ss << "\nYou may need to enter wiz mode to remedy the situation, use the "
-							"following:\n"
-						"\n\t ots --wiz"
-						"\n\n\n"
-				<< __E__;
+			      "following:\n"
+			      "\n\t ots --wiz"
+			      "\n\n\n"
+			   << __E__;
 
 			ss << __E__ << StringMacros::stackTrace() << __E__;
 		}
 
 		__SS_ONLY_THROW__;
 	}
-	TLOG_DEBUG(55) << "Table " << tableName << " is at " << static_cast<void*>(it->second);
+	TLOG_DEBUG(55) << "Table " << tableName << " is at "
+	               << static_cast<void*>(it->second);
 	return it->second;
 }  // end getTableByName()
 

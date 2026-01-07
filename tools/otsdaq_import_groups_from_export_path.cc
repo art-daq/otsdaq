@@ -43,10 +43,11 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		return;
 	}
 
-	std::string importPath  = argv[1];
-	std::string prepend     = argc > 2 ? argv[2] : "";  //get prepend arg or empty default
-	bool		forceBackboneSave = argc > 3 ? true : false;  //get force backbone save arg or false
-	int         flatVersion = 0;
+	std::string importPath = argv[1];
+	std::string prepend    = argc > 2 ? argv[2] : "";  //get prepend arg or empty default
+	bool        forceBackboneSave =
+        argc > 3 ? true : false;  //get force backbone save arg or false
+	int flatVersion = 0;
 
 	__COUTV__(importPath);
 	__COUTV__(flatVersion);
@@ -948,8 +949,8 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 					}
 					catch(const std::runtime_error& e)
 					{
-						__COUT__ << "Caught runtime_error exception during table save: " << e.what()
-						         << __E__;
+						__COUT__ << "Caught runtime_error exception during table save: "
+						         << e.what() << __E__;
 						if(std::string(e.what()).find("there was a collision") !=
 						   std::string::npos)
 						{
@@ -1007,7 +1008,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			    newAssignedVersion;
 			groupMembers[member.first] = newAssignedVersion;
 			// return;
-		} //end member table import and find loop
+		}  //end member table import and find loop
 
 		__COUT__ << "Tables imported so far: " << importTableMap.size() << std::endl;
 		for(auto& table : importTableMap)
@@ -1075,7 +1076,8 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			}
 			catch(const std::runtime_error& e)
 			{
-				__COUT__ << "Caught runtime_error exception during group save: " << e.what() << __E__;
+				__COUT__ << "Caught runtime_error exception during group save: "
+				         << e.what() << __E__;
 				if(std::string(e.what()).find("there was a collision") !=
 				   std::string::npos)
 				{
@@ -1660,11 +1662,10 @@ int main(int argc, char* argv[])
 	catch(...)
 	{
 		__COUT_ERR__ << "Unhandled exception caught in main()!" << __E__
-			<< StringMacros::stackTrace() << std::endl;
+		             << StringMacros::stackTrace() << std::endl;
 		throw;
 	}
 
 	return 0;
-
 }
 // BOOST_AUTO_TEST_SUITE_END()

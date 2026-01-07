@@ -321,7 +321,7 @@ void GatewaySupervisor::init(void)
 			///		and so translation might return "https://gateway1:8444"
 			///		... in which case, the entry in file would be: https://gateway1:8443 | host:2016 | https://gateway1:8444
 			///
-			portTranslationPath = __ENV__("OTS_PORT_TRANSLATION_MAP_FILE");			
+			portTranslationPath = __ENV__("OTS_PORT_TRANSLATION_MAP_FILE");
 		}
 		catch(...)
 		{
@@ -367,23 +367,27 @@ void GatewaySupervisor::init(void)
 						    translatedHostPort;
 					}
 					else if(strlen(line) == 0 ||
-					         line[0] == '#')  //skip empty or commented lines
+					        line[0] == '#')  //skip empty or commented lines
 					{
-						__SUP_COUT__ << "Ignroing (comment?) line #" << lineNumber
-						       << " in port translation file (length = " << strlen(line) << "): " << line << __E__;
+						__SUP_COUT__
+						    << "Ignroing (comment?) line #" << lineNumber
+						    << " in port translation file (length = " << strlen(line)
+						    << "): " << line << __E__;
 						continue;
 					}
 					else if(parts.size() < 2)
 					{
-						__SUP_COUT__ << "Ignroing (comment?) line #" << lineNumber
-						       << " in port translation file (length = " << strlen(line) << "): " << line << __E__;
+						__SUP_COUT__
+						    << "Ignroing (comment?) line #" << lineNumber
+						    << " in port translation file (length = " << strlen(line)
+						    << "): " << line << __E__;
 						continue;
 					}
 					else
 					{
 						__SS__ << "Invalid line #" << lineNumber
-						       << " in port translation file with too many args (count = " << 
-							parts.size() << "): " << line << __E__;
+						       << " in port translation file with too many args (count = "
+						       << parts.size() << "): " << line << __E__;
 						__SS_THROW__;
 					}
 				}
@@ -3412,7 +3416,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						if(remoteName == remoteGatewayApp.appInfo.name)
 						{
 							found = true;
-							__COUTVS__(TLVL_RemoteStatusParams, remoteGatewayApp.permissionThresholdString);
+							__COUTVS__(TLVL_RemoteStatusParams,
+							           remoteGatewayApp.permissionThresholdString);
 
 							std::map<std::string /*groupName*/,
 							         WebUsers::permissionLevel_t>
@@ -3451,7 +3456,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 									    << "' to modify: " << (uint16_t)it2->second
 									    << " --> " << (uint16_t)it->second << __E__;
 									it2->second = it->second;
-									__COUTVS__(TLVL_StateChangerDetail, (uint16_t)it2->second);
+									__COUTVS__(TLVL_StateChangerDetail,
+									           (uint16_t)it2->second);
 								}
 								else if(
 								    it ==
@@ -9281,7 +9287,8 @@ try
 			std::map<std::string, WebUsers::permissionLevel_t>
 			    iconPermissionThresholdsMap;
 
-			__COUTVS__(TLVL_Permissions, StringMacros::mapToString(userPermissionLevelsMap));
+			__COUTVS__(TLVL_Permissions,
+			           StringMacros::mapToString(userPermissionLevelsMap));
 
 			bool getRemoteIcons =
 			    true;  //could potentially enable from configuration in future
@@ -9353,8 +9360,10 @@ try
 							if(remoteGatewayApp.iconString ==
 							   "")  //then either error or still loading...
 							{
-								__SUP_COUTVS__(TLVL_GetDesktopIcons, remoteGatewayApp.error);
-								__SUP_COUTVS__(TLVL_GetDesktopIcons, remoteGatewayApp.appInfo.status);
+								__SUP_COUTVS__(TLVL_GetDesktopIcons,
+								               remoteGatewayApp.error);
+								__SUP_COUTVS__(TLVL_GetDesktopIcons,
+								               remoteGatewayApp.appInfo.status);
 
 								//add error if it has to do with icons
 								if(remoteGatewayApp.error.find("desktop icons") !=
@@ -9405,19 +9414,23 @@ try
 
 								break;  //done adding error/loading icon
 							}
-							__SUP_COUTVS__(TLVL_GetDesktopIcons, remoteGatewayApp.iconString);
+							__SUP_COUTVS__(TLVL_GetDesktopIcons,
+							               remoteGatewayApp.iconString);
 
 							if(firstIcon)
 								firstIcon = false;
 							else
 								iconString += ",";
-							
+
 							if(doAddressTranslation)
 							{
 								__COUTTV__(requestOrigin);
 								__COUTTV__(remoteGatewayApp.iconString);
-								std::string translatedIconString = translateRemoteIconStringForRequestOrigin(
-									remoteGatewayApp.iconString, requestOrigin, portTranslationMap_);
+								std::string translatedIconString =
+								    translateRemoteIconStringForRequestOrigin(
+								        remoteGatewayApp.iconString,
+								        requestOrigin,
+								        portTranslationMap_);
 								__COUTTV__(translatedIconString);
 								iconString += translatedIconString;
 							}
@@ -11324,9 +11337,9 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 	}
 
 	//extract before get parameters and after
-	size_t getParamPos = url.find("?");
-	std::string preUrl = url.substr(0, getParamPos);
-	std::string getParams = "";
+	size_t      getParamPos = url.find("?");
+	std::string preUrl      = url.substr(0, getParamPos);
+	std::string getParams   = "";
 	if(getParamPos != std::string::npos)
 	{
 		getParams = url.substr(getParamPos + 1);
@@ -11343,8 +11356,9 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 			{
 				__COUTT__ << "Found encoded url host+port: " << encodedUrlHostPort
 				          << " at pos " << pos << __E__;
-				getParams.replace(
-				    pos, encodedUrlHostPort.size(), StringMacros::encodeURIComponent(it3->second));		
+				getParams.replace(pos,
+				                  encodedUrlHostPort.size(),
+				                  StringMacros::encodeURIComponent(it3->second));
 				pos += StringMacros::encodeURIComponent(it3->second).size();
 
 				__COUTT__ << "Replaced with: "
@@ -11352,7 +11366,7 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 			}
 		}
 		__COUTTV__(getParams);
-	} //end handling get parameters
+	}  //end handling get parameters
 
 	size_t pos = 0;  //url host+port end position
 	if(url.size() > 7 && url[0] == 'h' && url[1] == 't' && url[2] == 't' &&
@@ -11368,12 +11382,13 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 	{
 		__COUTT__ << "No port translation found for URL host+port '" << urlHostPort
 		          << "' for request origin: " << requestOrigin << __E__;
-		return url + (getParams.size()?("?"+getParams):"");
+		return url + (getParams.size() ? ("?" + getParams) : "");
 	}
 	__COUTT__ << "Port translation found: " << urlHostPort << " --> " << it2->second
 	          << " for request origin: " << requestOrigin << __E__;
 
-	return it2->second + (pos != std::string::npos ? preUrl.substr(pos) : "")  + (getParams.size()?("?"+getParams):"");
+	return it2->second + (pos != std::string::npos ? preUrl.substr(pos) : "") +
+	       (getParams.size() ? ("?" + getParams) : "");
 }  // end translateURLForRequestOrigin()
 
 //==============================================================================
@@ -11384,7 +11399,7 @@ std::string GatewaySupervisor::translateRemoteIconStringForRequestOrigin(
     std::map<std::string /* requestOrigin */,
              std::map<std::string /* requestUrlHostPort */,
                       std::string /* translatedHostPort */>>& portTranslationMap)
-{	
+{
 	__COUT__ << "Translating Remote Icon String for request origin: " << requestOrigin
 	         << __E__;
 	auto parts = StringMacros::getVectorFromString(iconString, {','});
@@ -11405,18 +11420,20 @@ std::string GatewaySupervisor::translateRemoteIconStringForRequestOrigin(
 	{
 		if(TTEST(TLVL_RemoteDesktopIcons))
 		{
-			__COUTS__(TLVL_RemoteDesktopIcons) << "Translating icon string part: " << parts[i] << "," << parts[i+1]
-			          << "," << parts[i+2] << "," << parts[i+3] << "," << parts[i+4]
-			          << "," << parts[i+5] << "," << parts[i+6] << __E__;
-			__COUTVS__(TLVL_RemoteDesktopIcons, parts[i+5]);
+			__COUTS__(TLVL_RemoteDesktopIcons)
+			    << "Translating icon string part: " << parts[i] << "," << parts[i + 1]
+			    << "," << parts[i + 2] << "," << parts[i + 3] << "," << parts[i + 4]
+			    << "," << parts[i + 5] << "," << parts[i + 6] << __E__;
+			__COUTVS__(TLVL_RemoteDesktopIcons, parts[i + 5]);
 		}
-		std::string translatedLinkURL = translateURLForRequestOrigin(
-		    parts[i + 5], requestOrigin, portTranslationMap);
+		std::string translatedLinkURL =
+		    translateURLForRequestOrigin(parts[i + 5], requestOrigin, portTranslationMap);
 		if(TTEST(TLVL_RemoteDesktopIcons))
 		{
-			__COUTS__(TLVL_RemoteDesktopIcons) << "Translated icon string part: " << parts[i] << "," << parts[i+1]
-			          << "," << parts[i+2] << "," << parts[i+3] << "," << parts[i+4]
-			          << "," << translatedLinkURL << "," << parts[i+6] << __E__;			
+			__COUTS__(TLVL_RemoteDesktopIcons)
+			    << "Translated icon string part: " << parts[i] << "," << parts[i + 1]
+			    << "," << parts[i + 2] << "," << parts[i + 3] << "," << parts[i + 4]
+			    << "," << translatedLinkURL << "," << parts[i + 6] << __E__;
 			__COUTVS__(TLVL_RemoteDesktopIcons, translatedLinkURL);
 		}
 
@@ -11424,8 +11441,8 @@ std::string GatewaySupervisor::translateRemoteIconStringForRequestOrigin(
 			result += ",";  //add separator if not first entry
 		result += parts[i] + "," + parts[i + 1] + "," + parts[i + 2] + "," +
 		          parts[i + 3] + "," + parts[i + 4] + "," + translatedLinkURL + "," +
-		          parts[i + 6];		
-	} //end primary translation loop
+		          parts[i + 6];
+	}  //end primary translation loop
 
 	return result;
 }  // end translateRemoteIconStringForRequestOrigin()

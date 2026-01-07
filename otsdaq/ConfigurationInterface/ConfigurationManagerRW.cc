@@ -1617,9 +1617,8 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 {
 	if(!groupMemberMap.size() || groupName.empty())
 	{
-		__SS__ << "Illegal name/members for requested group of name '" << groupName << 
-				"' and member count = " << groupMemberMap.size()
-		       << __E__;
+		__SS__ << "Illegal name/members for requested group of name '" << groupName
+		       << "' and member count = " << groupMemberMap.size() << __E__;
 		__SS_THROW__;
 	}
 
