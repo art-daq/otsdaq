@@ -45,11 +45,13 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 	std::string importPath  = argv[1];
 	std::string prepend     = argc > 2 ? argv[2] : "";  //get prepend arg or empty default
+	bool		forceBackboneSave = argc > 3 ? true : false;  //get force backbone save arg or false
 	int         flatVersion = 0;
 
 	__COUTV__(importPath);
 	__COUTV__(flatVersion);
 	__COUTV__(prepend);
+	__COUTV__(forceBackboneSave);
 
 	//==============================================================================
 	// Steps:
@@ -326,6 +328,9 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			                             TableVersion());  // then all versions in search
 
 		}  //end check duplicate
+
+		//return the original version to active
+		table->setActiveView(originalVersion);
 
 		if(!duplicateVersion.isInvalid())
 		{
@@ -943,7 +948,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 					}
 					catch(const std::runtime_error& e)
 					{
-						__COUT__ << "Caught runtime_error exception during table save."
+						__COUT__ << "Caught runtime_error exception during table save: " << e.what()
 						         << __E__;
 						if(std::string(e.what()).find("there was a collision") !=
 						   std::string::npos)
@@ -1002,7 +1007,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			    newAssignedVersion;
 			groupMembers[member.first] = newAssignedVersion;
 			// return;
-		}
+		} //end member table import and find loop
 
 		__COUT__ << "Tables imported so far: " << importTableMap.size() << std::endl;
 		for(auto& table : importTableMap)
@@ -1011,6 +1016,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 		__COUT__ << "Saving group '" << group.first.first
 		         << "' members: " << groupMembers.size() << std::endl;
+
 		std::map<std::string, TableVersion> groupMembersWithoutMeta;
 		for(auto& table : groupMembers)
 		{
@@ -1069,7 +1075,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			}
 			catch(const std::runtime_error& e)
 			{
-				__COUT__ << "Caught runtime_error exception during group save." << __E__;
+				__COUT__ << "Caught runtime_error exception during group save: " << e.what() << __E__;
 				if(std::string(e.what()).find("there was a collision") !=
 				   std::string::npos)
 				{
@@ -1100,7 +1106,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		// return;
 	}  //end group import loop
 
-	if(!anyNewGroupSaved)
+	if(!forceBackboneSave && !anyNewGroupSaved)
 	{
 		__SS__ << "All groups to import already exist in current db! Was the wrong db "
 		          "selected from which to import?"
@@ -1269,6 +1275,9 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 		}  //end check duplicate
 
+		//return the original version to active
+		table->setActiveView(originalVersion);
+
 		if(!duplicateVersion.isInvalid())
 		{
 			// found an equivalent!
@@ -1340,6 +1349,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		unsigned int col0    = cfgView->findCol("VersionAlias");
 		unsigned int col1    = cfgView->findCol("TableName");
 		unsigned int col2    = cfgView->findCol("Version");
+		__COUTV__(table->getViewVersion());
 
 		unsigned int row;
 
@@ -1371,12 +1381,15 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			cfgView->setValue(aliasPair.second.first, row, col1);
 			cfgView->setValue(tableIt->second.toString(), row, col2);
 		}  // end group alias edit
+		__COUTV__(table->getViewVersion());
 
 		if(!importTableAliasMap.size())
 			duplicateVersion =
 			    table->getViewVersion();  //mark duplicate as self if nothing to add
 
+		__COUTV__(table->getViewVersion());
 		cfgView->print();
+		__COUTV__(table->getViewVersion());
 
 		TableVersion originalVersion =
 		    table
@@ -1392,6 +1405,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 				//		'recent' := those already in cache, plus highest version numbers not in cache
 				const std::map<std::string, TableInfo>& allTableInfo =
 				    cfgMgr->getAllTableInfo();  // do not refresh
+				__COUTV__(table->getViewVersion());
 
 				auto versionReverseIterator =
 				    allTableInfo.at(tableName)
@@ -1418,6 +1432,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 						__COUTT__ << "'" << tableName << "' version failed to load: "
 						          << *versionReverseIterator << __E__;
 					}
+					__COUTV__(table->getViewVersion());
 				}
 			}
 
@@ -1426,7 +1441,11 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			    table->checkForDuplicate(originalVersion,
 			                             TableVersion());  // then all versions in search
 
+			__COUTV__(table->getViewVersion());
 		}  //end check duplicate
+
+		//return the original version to active
+		table->setActiveView(originalVersion);
 
 		if(!duplicateVersion.isInvalid())
 		{
@@ -1438,10 +1457,14 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		}
 		else
 		{
+			__COUTV__(table->getViewVersion());
 			auto newVersion =
 			    TableVersion::getNextVersion(theInterface_->findLatestVersion(table));
 			__COUTV__(newVersion);
 			cfgView->setVersion(newVersion);
+			__COUTV__(cfgView->getVersion().toString());
+			// table->setActiveView(newVersion);
+			__COUTV__(table->getViewVersion());
 
 			// save table, and retry on save collision
 			uint16_t retries = 0;
@@ -1630,7 +1653,18 @@ int main(int argc, char* argv[])
 		    "OTSDAQ_LOG_ROOT", (std::string(__ENV__("USER_DATA")) + "/Logs").c_str(), 1);
 
 	INIT_MF("ImportGroupsFromPath");
-	ImportTableGroupsFromPath(argc, argv);
+	try
+	{
+		ImportTableGroupsFromPath(argc, argv);
+	}
+	catch(...)
+	{
+		__COUT_ERR__ << "Unhandled exception caught in main()!" << __E__
+			<< StringMacros::stackTrace() << std::endl;
+		throw;
+	}
+
 	return 0;
+
 }
 // BOOST_AUTO_TEST_SUITE_END()

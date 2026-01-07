@@ -1034,7 +1034,30 @@ launchOTSMacromaker() {
 			warning "Could not verify successful ots Macro Maker mode context launch (check log for details)..."
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-				tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
+				# tail -n 20
+				awk '
+				BEGIN { IGNORECASE=1 }
+				{
+					lines[NR] = $0
+					if ($0 ~ /error/) last = NR
+				}
+				END {
+					# If no "error" found, or not enough lines after it, do last 30 lines
+					if (!last || NR - last < 30) {
+						start = (NR - 29 > 1) ? NR - 29 : 1
+						for (i = start; i <= NR; i++)
+							print lines[i]
+						exit
+					}
+
+					# Normal case: 3 before, 30 after
+					start = (last - 3 > 1) ? last - 3 : 1
+					end   = last + 30
+
+					for (i = start; i <= end && i <= NR; i++)
+						print lines[i]
+				}
+				' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
 				echo
 				echo
 			fi
@@ -1307,7 +1330,30 @@ launchOTSWiz() {
 			warning "Could not verify successful ots wiz context launch (check log for details)..."
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-				tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
+				# tail -n 20 
+				awk '
+				BEGIN { IGNORECASE=1 }
+				{
+					lines[NR] = $0
+					if ($0 ~ /error/) last = NR
+				}
+				END {
+					# If no "error" found, or not enough lines after it, do last 30 lines
+					if (!last || NR - last < 30) {
+						start = (NR - 29 > 1) ? NR - 29 : 1
+						for (i = start; i <= NR; i++)
+							print lines[i]
+						exit
+					}
+
+					# Normal case: 3 before, 30 after
+					start = (last - 3 > 1) ? last - 3 : 1
+					end   = last + 30
+
+					for (i = start; i <= end && i <= NR; i++)
+						print lines[i]
+				}
+				'${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
 				echo
 				echo
 			fi
@@ -1778,8 +1824,33 @@ launchOTS() {
 								while [ "x$OTS_IS_ALIVE" == "x" ]; do
 									warning "Could not verify successful ots gateway context launch (check log for details)..."
 									killproc ${LAST_OTS_PID} xdaq.exe
-									if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-										tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
+									if [ $QUIET == 1 ]; then #display log tail for user to 
+									
+										# tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
+										awk '
+										BEGIN { IGNORECASE=1 }
+										{
+											lines[NR] = $0
+											if ($0 ~ /error/) last = NR
+										}
+										END {
+											# If no "error" found, or not enough lines after it, do last 30 lines
+											if (!last || NR - last < 30) {
+												start = (NR - 29 > 1) ? NR - 29 : 1
+												for (i = start; i <= NR; i++)
+													print lines[i]
+												exit
+											}
+
+											# Normal case: 3 before, 30 after
+											start = (last - 3 > 1) ? last - 3 : 1
+											end   = last + 30
+
+											for (i = start; i <= end && i <= NR; i++)
+												print lines[i]
+										}
+										' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
+
 										echo
 										echo
 									fi
@@ -2021,7 +2092,30 @@ launchOTS() {
 				warning "Could not verify successful ots non-gateway context launch (check log for details)..."
 				killproc ${LAST_OTS_PID} xdaq.exe
 				if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-					tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
+					# tail -n 20 
+					awk '
+					BEGIN { IGNORECASE=1 }
+					{
+						lines[NR] = $0
+						if ($0 ~ /error/) last = NR
+					}
+					END {
+						# If no "error" found, or not enough lines after it, do last 30 lines
+						if (!last || NR - last < 30) {
+							start = (NR - 29 > 1) ? NR - 29 : 1
+							for (i = start; i <= NR; i++)
+								print lines[i]
+							exit
+						}
+
+						# Normal case: 3 before, 30 after
+						start = (last - 3 > 1) ? last - 3 : 1
+						end   = last + 30
+
+						for (i = start; i <= end && i <= NR; i++)
+							print lines[i]
+					}
+					' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
 					echo
 					echo
 				fi
@@ -2412,6 +2506,88 @@ printMainURL() {
 	if [ $ISREMOTE == 0 ]; then
 		echo #empty line
 		echo #empty line
+
+
+		# if port translation map file exists, print out additional URL info
+		if [[ -n ${OTSDAQ_PORT_TRANSLATION_MAP_FILE:-} && -f ${OTSDAQ_PORT_TRANSLATION_MAP_FILE} ]]; then
+			out #empty line
+			out "Port translation map file found.\n \
+If you are accessing otsdaq from outside the local network, you may need port translation.\n\
+You can modify the URL host:port translation using this file: at ${Yellow}${OTSDAQ_PORT_TRANSLATION_MAP_FILE}${RstClr}"
+			
+			
+			# -------------------------------------------------
+			#  parse_and_print  –  split each line on "|"
+			# -------------------------------------------------
+
+			showTranslation=0
+
+			while IFS= read -r line || [[ -n $line ]]; do
+				# -------------------------------------------------
+				# Split the line on the literal pipe character.
+				# -------------------------------------------------
+				IFS='|' read -ra raw_fields <<< "$line"
+
+				# -------------------------------------------------
+				# Guard: we need at least three columns.
+				# -------------------------------------------------
+				(( ${#raw_fields[@]} < 3 )) && continue
+
+				# -------------------------------------------------
+				# whitespace **inline** and assign to variables.
+				# -------------------------------------------------
+				url1=$(printf '%s' "${raw_fields[0]}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+				url2=$(printf '%s' "${raw_fields[1]}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+				url3=$(printf '%s' "${raw_fields[2]}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+
+				# remove scheme
+				transTmp="${url2#*://}"
+
+				# split host and port
+				transHost="${transTmp%%:*}"
+				transPort="${transTmp##*:}"
+
+				isThisPortMarker=''
+				showThisTranslation=0
+				if [[ "${THIS_HOST}" == "$transHost" && "${PORT}" == "$transPort" ]]; then
+
+					if [[ $showTranslation == 0 ]]; then #first found, print header
+						echo "Showing current port translation associated with ${THIS_HOST}:${PORT}:"
+						echo "--------------------------------------------------"
+					fi
+					showTranslation=1
+					showThisTranslation=1
+				fi
+				if [[ "${gatewayHostname}" == "$transHost" && "${gatewayPort}" == "$transPort" ]]; then
+
+					if [[ $showTranslation == 0 ]]; then #first found, print header
+						echo "Showing current port translation associated with ${gatewayHostname}:${gatewayPort}:"
+						echo "--------------------------------------------------"
+					fi
+					showTranslation=1
+					showThisTranslation=1
+				fi
+
+				if [[ $showThisTranslation == 1 ]]; then
+					
+					isThisPortMarker='*'
+					echo -e "$url1 | $url2\t==> $url3 ${isThisPortMarker}"					
+				fi
+
+				# -------------------------------------------------
+				# Print everything on ONE line with labels
+				# -------------------------------------------------				
+				# echo -e "$url1 | $url2\t==> $url3 ${isThisPortMarker}"
+				
+				
+			done < "$OTSDAQ_PORT_TRANSLATION_MAP_FILE"
+
+			if [[ $showTranslation == 1 ]]; then
+				echo "--------------------------------------------------"
+			fi
+			out #empty line
+		fi
 	fi
 
 	if [ $MAIN_URL == "unknown_url" ]; then
@@ -3086,7 +3262,7 @@ if [ $FIREFOX == 1 ]; then
 fi
 
 #only report warning if not remote launch and enabled
-if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then
+if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then	
 	out "Will report a warning if any uncommitted code found..."
 	echo
 	UpdateOTS.sh --warn 2>&1 >/dev/null

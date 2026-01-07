@@ -42,7 +42,7 @@ using namespace ots;
 
 
 const std::string 	ARTDAQTableBase::ARTDAQ_FCL_PATH = std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/";
-const std::string 	ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH = std::string(__ENV__("SERVICE_DATA_PATH")) + "/ConfigurationGUI_artdaqLayouts/";
+const std::string 	ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH = ((getenv("SERVICE_DATA_PATH") == NULL) ? (std::string(getenv("USER_DATA")) + "/ServiceData") : (std::string(getenv("SERVICE_DATA_PATH")))) + "/ConfigurationGUI_artdaqLayouts/";
 const bool			ARTDAQTableBase::ARTDAQ_DONOTWRITE_FCL = ((getenv("OTS_FCL_DONOTWRITE") == NULL) ? false : true);
 
 const std::string 	ARTDAQTableBase::ARTDAQ_SUPERVISOR_CLASS = "ots::ARTDAQSupervisor";
