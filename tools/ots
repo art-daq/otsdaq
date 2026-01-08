@@ -3262,7 +3262,7 @@ if [ $FIREFOX == 1 ]; then
 fi
 
 #only report warning if not remote launch and enabled
-if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then	
+if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then
 	out "Will report a warning if any uncommitted code found..."
 	echo
 	UpdateOTS.sh --warn 2>&1 >/dev/null
