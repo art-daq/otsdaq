@@ -2509,11 +2509,11 @@ printMainURL() {
 
 
 		# if port translation map file exists, print out additional URL info
-		if [[ -n ${OTSDAQ_PORT_TRANSLATION_MAP_FILE:-} && -f ${OTSDAQ_PORT_TRANSLATION_MAP_FILE} ]]; then
+		if [[ -n ${OTS_PORT_TRANSLATION_MAP_FILE:-} && -f ${OTS_PORT_TRANSLATION_MAP_FILE} ]]; then
 			out #empty line
 			out "Port translation map file found.\n \
 If you are accessing otsdaq from outside the local network, you may need port translation.\n\
-You can modify the URL host:port translation using this file: at ${Yellow}${OTSDAQ_PORT_TRANSLATION_MAP_FILE}${RstClr}"
+You can modify the URL host:port translation using this file: at ${Yellow}${OTS_PORT_TRANSLATION_MAP_FILE}${RstClr}"
 			
 			
 			# -------------------------------------------------
@@ -2581,7 +2581,7 @@ You can modify the URL host:port translation using this file: at ${Yellow}${OTSD
 				# echo -e "$url1 | $url2\t==> $url3 ${isThisPortMarker}"
 				
 				
-			done < "$OTSDAQ_PORT_TRANSLATION_MAP_FILE"
+			done < "$OTS_PORT_TRANSLATION_MAP_FILE"
 
 			if [[ $showTranslation == 1 ]]; then
 				echo "--------------------------------------------------"
