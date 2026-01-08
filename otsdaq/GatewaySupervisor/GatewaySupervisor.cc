@@ -375,7 +375,7 @@ void GatewaySupervisor::init(void)
 					        line[0] == '#')  //skip empty or commented lines
 					{
 						__SUP_COUT__
-						    << "Ignroing (comment?) line #" << lineNumber
+						    << "Ignoring (comment?) line #" << lineNumber
 						    << " in port translation file (length = " << strlen(line)
 						    << "): " << line << __E__;
 						continue;
@@ -383,7 +383,7 @@ void GatewaySupervisor::init(void)
 					else if(parts.size() < 2)
 					{
 						__SUP_COUT__
-						    << "Ignroing (comment?) line #" << lineNumber
+						    << "Ignoring (comment?) line #" << lineNumber
 						    << " in port translation file (length = " << strlen(line)
 						    << "): " << line << __E__;
 						continue;
