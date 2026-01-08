@@ -1330,7 +1330,7 @@ launchOTSWiz() {
 			warning "Could not verify successful ots wiz context launch (check log for details)..."
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-				# tail -n 20 
+				# tail -n 20
 				awk '
 				BEGIN { IGNORECASE=1 }
 				{
