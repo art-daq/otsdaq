@@ -1459,14 +1459,10 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		}
 		else
 		{
-			__COUTV__(table->getViewVersion());
 			auto newVersion =
 			    TableVersion::getNextVersion(theInterface_->findLatestVersion(table));
-			__COUTV__(newVersion);
 			cfgView->setVersion(newVersion);
-			__COUTV__(cfgView->getVersion().toString());
 			// table->setActiveView(newVersion);
-			__COUTV__(table->getViewVersion());
 
 			// save table, and retry on save collision
 			uint16_t retries = 0;
