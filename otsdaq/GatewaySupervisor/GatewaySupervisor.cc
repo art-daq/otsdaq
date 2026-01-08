@@ -382,7 +382,7 @@ void GatewaySupervisor::init(void)
 					else
 					{
 						__SS__ << "Invalid line #" << lineNumber
-						       << " in port translation file with wrong number of args "
+						       << " in port translation file with too many args "
 						          "(count = "
 						       << parts.size() << ", expected 3): " << line << __E__;
 						__SS_THROW__;
