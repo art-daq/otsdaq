@@ -11323,7 +11323,7 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 ///	 such that the longer one is replaced first.
 ///	 For example, if there are host+ports translations for both "host:2016" and "host:201",
 ///		then "host:2016" should be listed first, so it is replaced first,
-//		to avoid partial replacement that would block the full replacement later.
+///		to avoid partial replacement that would block the full replacement later.
 std::string GatewaySupervisor::translateURLForRequestOrigin(
     const std::string&                                        url,
     const std::string&                                        requestOrigin,
