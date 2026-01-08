@@ -321,6 +321,11 @@ void GatewaySupervisor::init(void)
 			///		and so translation might return "https://gateway1:8444"
 			///		... in which case, the entry in file would be: https://gateway1:8443 | host:2016 | https://gateway1:8444
 			///
+			///	Note!! that the priority matters for host+ports that are substrings of each other,
+			///		such that the longer one is replaced first.  
+			///	 	For example, if there are host+ports translations for both "host:2016" and "host:201",
+			///		then "host:2016" should be listed first, so it is replaced first, 
+			///			to avoid partial replacement that would block the full replacement later.
 			portTranslationPath = __ENV__("OTS_PORT_TRANSLATION_MAP_FILE");
 		}
 		catch(...)
@@ -11310,9 +11315,15 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 ///  portTranslationMap_.find(requestHost) then 'host matches translation host'
 ///
 ///
-///  of for example, requestOrigin == "http://host:2015"  and url = "http://host:2016/urnblah"
+///  or for example, requestOrigin == "http://host:2015"  and url = "http://host:2016/urnblah"
 ///
-///  of for example, requestOrigin == "http://localhost:2015"  and url = "http://host:2016/urnblah"
+///  or for example, requestOrigin == "http://localhost:2015"  and url = "http://host:2016/urnblah"
+///
+///	Note!! that the priority matters for host+ports that are substrings of each other, 
+///	 such that the longer one is replaced first.  
+///	 For example, if there are host+ports translations for both "host:2016" and "host:201",
+///		then "host:2016" should be listed first, so it is replaced first, 
+//		to avoid partial replacement that would block the full replacement later.
 std::string GatewaySupervisor::translateURLForRequestOrigin(
     const std::string&                                        url,
     const std::string&                                        requestOrigin,
@@ -11349,9 +11360,12 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 		for(auto it3 = it->second.begin(); it3 != it->second.end(); ++it3)
 		{
 			std::string encodedUrlHostPort = StringMacros::encodeURIComponent(it3->first);
-			__COUTT__ << "Searching for encoded url host+port: " << encodedUrlHostPort
+			__COUTS__(2) << "Searching params for encoded url host+port: " << encodedUrlHostPort
 			          << __E__;
 			size_t pos = 0;
+			//Note!! that the priority matters for encoded host+ports that are substrings of each other, so that the longer one is replaced first.  
+			// For example, if there are encoded host+ports for both "host:2016" and "host:201", 
+			//	then the encoded "host:2016" should be replaced first to avoid partial replacement that would block the full replacement later.
 			while((pos = getParams.find(encodedUrlHostPort, pos)) != std::string::npos)
 			{
 				__COUTT__ << "Found encoded url host+port: " << encodedUrlHostPort
@@ -11382,7 +11396,7 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 	{
 		__COUTT__ << "No port translation found for URL host+port '" << urlHostPort
 		          << "' for request origin: " << requestOrigin << __E__;
-		return url + (getParams.size() ? ("?" + getParams) : "");
+		return preUrl + (getParams.size() ? ("?" + getParams) : "");
 	}
 	__COUTT__ << "Port translation found: " << urlHostPort << " --> " << it2->second
 	          << " for request origin: " << requestOrigin << __E__;
