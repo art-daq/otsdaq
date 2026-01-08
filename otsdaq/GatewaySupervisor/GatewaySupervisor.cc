@@ -374,7 +374,7 @@ void GatewaySupervisor::init(void)
 					else if(parts.size() < 2)
 					{
 						__SUP_COUT__
-						    << "Ignroing (and treating as comment) line #" << lineNumber
+						    << "Ignoring (and treating as comment) line #" << lineNumber
 						    << " in port translation file (length = " << strlen(line)
 						    << "): " << line << __E__;
 						continue;
