@@ -1353,7 +1353,7 @@ launchOTSWiz() {
 					for (i = start; i <= end && i <= NR; i++)
 						print lines[i]
 				}
-				'${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
+				' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
 				echo
 				echo
 			fi
