@@ -371,19 +371,10 @@ void GatewaySupervisor::init(void)
 						portTranslationMap_[requestOrigin][requestUrlHostPort] =
 						    translatedHostPort;
 					}
-					else if(strlen(line) == 0 ||
-					        line[0] == '#')  //skip empty or commented lines
-					{
-						__SUP_COUT__
-						    << "Ignroing (comment?) line #" << lineNumber
-						    << " in port translation file (length = " << strlen(line)
-						    << "): " << line << __E__;
-						continue;
-					}
 					else if(parts.size() < 2)
 					{
 						__SUP_COUT__
-						    << "Ignroing (comment?) line #" << lineNumber
+						    << "Ignoring (and treating as comment) line #" << lineNumber
 						    << " in port translation file (length = " << strlen(line)
 						    << "): " << line << __E__;
 						continue;
@@ -391,8 +382,9 @@ void GatewaySupervisor::init(void)
 					else
 					{
 						__SS__ << "Invalid line #" << lineNumber
-						       << " in port translation file with too many args (count = "
-						       << parts.size() << "): " << line << __E__;
+						       << " in port translation file with too many args "
+						          "(count = "
+						       << parts.size() << ", expected 3): " << line << __E__;
 						__SS_THROW__;
 					}
 				}
@@ -1428,8 +1420,8 @@ try
 										}
 								}
 							}  //end remote app icon request handling
-						}      //end remote app icon request loop
-					}          //end remote desktop icon gathering
+						}  //end remote app icon request loop
+					}  //end remote desktop icon gathering
 
 					//for each remote gateway, copy info to Gateway supervisor remote gateway structure
 					if(gettingRemoteStatus)
@@ -1470,7 +1462,7 @@ try
 								   "")  //make sure not mid-command
 									theSupervisor->remoteGatewayApps_[i].appInfo.status =
 									    "";  //clear status as indicator to be erased
-							}                //end clear stale status loop
+							}  //end clear stale status loop
 
 							//now copy over updated status info, if in correct thread role
 							for(auto& remoteGatewayApp : remoteApps)
@@ -1879,11 +1871,11 @@ try
 
 					if(!appLastStatusGood[appName])
 					{
-						__COUT_INFO__ << "First good status from "
-						              << " Supervisor instance = '" << appName
-						              << "' [LID=" << appInfo.getId() << "] in Context '"
-						              << appInfo.getContextName()
-						              << "' [URL=" << appInfo.getURL() << "].\n\n";
+						__COUT_INFO__
+						    << "First good status from " << " Supervisor instance = '"
+						    << appName << "' [LID=" << appInfo.getId() << "] in Context '"
+						    << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+						    << "].\n\n";
 						__COUTTV__(SOAPUtilities::translate(tempMessage));
 					}
 					appLastStatusGood[appName] = true;
@@ -1920,7 +1912,7 @@ try
 						__COUT_WARN__ << "Failed to send getStatus SOAP Message - will "
 						                 "suppress repeat errors: "
 						              << e.what() << __E__;
-					}     // else quiet repeat error messages
+					}  // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
 						std::lock_guard<std::mutex> lock(
@@ -2002,11 +1994,11 @@ try
 					}
 					if(appLastStatusGood[appName])
 					{
-						__COUT__ << "Failed getting status from "
-						         << " Supervisor instance = '" << appName
-						         << "' [LID=" << appInfo.getId() << "] in Context '"
-						         << appInfo.getContextName()
-						         << "' [URL=" << appInfo.getURL() << "].\n\n";
+						__COUT__
+						    << "Failed getting status from " << " Supervisor instance = '"
+						    << appName << "' [LID=" << appInfo.getId() << "] in Context '"
+						    << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+						    << "].\n\n";
 						__COUTV__(SOAPUtilities::translate(tempMessage));
 						__COUT_WARN__ << "Failed to send getStatus SOAP Message due to "
 						                 "unknown error. Will suppress repeat errors "
@@ -2014,7 +2006,7 @@ try
 						              << appName << "' [LID=" << appInfo.getId()
 						              << "] in Context '" << appInfo.getContextName()
 						              << "' [URL=" << appInfo.getURL() << "]." << __E__;
-					}     // else quiet repeat error messages
+					}  // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
 						std::lock_guard<std::mutex> lock(
@@ -2317,7 +2309,7 @@ try
 					    now;  //record time of this alert
 				}
 			}  //end last few minutes data rate alert
-		}      // end of app loop
+		}  // end of app loop
 
 		if(oneStatusReqHasFailed)
 		{
@@ -2624,7 +2616,7 @@ try
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				remoteGatewayApp.appInfo.id = atoi(value.c_str());
 
-			}     //end found Remote Gateway status
+			}  //end found Remote Gateway status
 			else  //found remote subapp
 			{
 				//get remote subapp class name
@@ -2827,24 +2819,17 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				{
 					std::stringstream out;
 
-					out << "Supported Commands:\nHelp (this message)"
-					    << "\n"
+					out << "Supported Commands:\nHelp (this message)" << "\n"
 					    << "GetRemoteGatewayStatus(XML) - The XML version sends real "
 					       "XML, without sends the format Gateways use to communicate "
 					       "with each other"
 					    << "\n"
-					    << "GetRemoteAppStatus(XML)"
-					    << "\n"
-					    << "GetStateMachineNames"
-					    << "\n"
-					    << "ResetConsoleCounts"
-					    << "\n"
-					    << "loginVerify"
-					    << "\n"
-					    << "GetRemoteDesktopIcons"
-					    << "\n"
-					    << "FiniteStateMachineName,Command,Parameter(s)"
-					    << "\n";
+					    << "GetRemoteAppStatus(XML)" << "\n"
+					    << "GetStateMachineNames" << "\n"
+					    << "ResetConsoleCounts" << "\n"
+					    << "loginVerify" << "\n"
+					    << "GetRemoteDesktopIcons" << "\n"
+					    << "FiniteStateMachineName,Command,Parameter(s)" << "\n";
 
 					sock.acknowledge(out.str(), false /* verbose */);
 					continue;
@@ -3640,7 +3625,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					sock.acknowledge(iconString, true /* verbose */);
 					continue;
-				}                             //end GetRemoteDesktopIcons
+				}  //end GetRemoteDesktopIcons
 				else if(!enableStateChanges)  //else it is an FSM Command!
 				{
 					__COUT_WARN__ << "Skipping potential FSM Command because "
@@ -3877,8 +3862,7 @@ void GatewaySupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots</title>"
 	     << GatewaySupervisor::getIconHeaderString() <<
 	    // end show ots icon
-	    "</head>"
-	     << "<frameset col='100%' row='100%'>"
+	    "</head>" << "<frameset col='100%' row='100%'>"
 	     << "<frame src='/WebPath/html/Desktop.html?urn="
 	     << this->getApplicationDescriptor()->getLocalId()
 	     << "&securityType=" << securityType_ << "'></frameset></html>";
@@ -4435,8 +4419,7 @@ try
 						    << "FSM configuration dump Link disconnected at '"
 						    << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
 						    << supervisorContextUID_ << "/" << supervisorApplicationUID_
-						    << "/"
-						    << "LinkToStateMachineTable/" << fsmName
+						    << "/" << "LinkToStateMachineTable/" << fsmName
 						    << "... check the link from the Gateway Superivsor to the "
 						       "State Machine table. Looking for FSM fields "
 						    << "EnableConfigurationDumpOnConfigureTransition "
@@ -4983,7 +4966,7 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 }  // end statePaused()
 
 //==============================================================================
@@ -5061,7 +5044,7 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 }  // end stateRunning()
 
 //==============================================================================
@@ -5147,7 +5130,7 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 }  // end stateHalted()
 
 //==============================================================================
@@ -5234,15 +5217,15 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 
 }  // end stateConfigured()
 
 //==============================================================================
 void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 {
-	__COUT__ << "Error occured - FSM current state: "
-	         << "Failed? = " << theStateMachine_.getCurrentStateName()
+	__COUT__ << "Error occured - FSM current state: " << "Failed? = "
+	         << theStateMachine_.getCurrentStateName()
 	         <<  // There may be a race condition here
 	    //	when async errors occur (e.g. immediately in running)
 	    " from " << theStateMachine_.getProvenanceStateName() << __E__;
@@ -5325,7 +5308,7 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 
 }  // end inError()
 
@@ -5351,8 +5334,7 @@ void GatewaySupervisor::enteringError(toolbox::Event::Reference e)
 	// handle async error message differently
 	if(RunControlStateMachine::asyncFailureReceived_)
 	{
-		ss << "\nAn asynchronous failure was encountered."
-		   << ".\n\nException:\n"
+		ss << "\nAn asynchronous failure was encountered." << ".\n\nException:\n"
 		   << failedException.message() << __E__;  // rbegin()->at("message") << __E__;
 		//<< failedEvent.getException().what() << __E__;
 		RunControlStateMachine::asyncFailureReceived_ = false;  // clear async error
@@ -5428,9 +5410,7 @@ try
 		__COUT_INFO__ << "Rolling over log file on Configure transition..." << __E__;
 		std::stringstream runSs;
 		runSs << "LOG_ROLLOVER";
-		runSs << ";"
-		      << "Configure"
-		      << "_" << theConfigurationTableGroup_.first << "_v"
+		runSs << ";" << "Configure" << "_" << theConfigurationTableGroup_.first << "_v"
 		      << theConfigurationTableGroup_.second;
 
 		GatewaySupervisor::launchStartOTSCommand(
@@ -7002,8 +6982,8 @@ try
 			SOAPUtilities::addParameters(message, parameters);
 		}
 
-		__COUT__ << "Broadcast thread " << threadIndex << "\t"
-		         << "Sending... \t" << SOAPUtilities::translate(message) << std::endl;
+		__COUT__ << "Broadcast thread " << threadIndex << "\t" << "Sending... \t"
+		         << SOAPUtilities::translate(message) << std::endl;
 
 		try  // attempt transmit of transition command
 		{
@@ -7072,8 +7052,8 @@ try
 
 			try
 			{
-				__COUT__ << "Broadcast thread " << threadIndex << "\t"
-				         << "Try again.." << __E__;
+				__COUT__ << "Broadcast thread " << threadIndex << "\t" << "Try again.."
+				         << __E__;
 
 				{
 					// add a second try parameter flag
@@ -7094,9 +7074,8 @@ try
 					SOAPUtilities::addParameters(message, parameters);
 				}
 
-				__COUT__ << "Broadcast thread " << threadIndex << "\t"
-				         << "Re-Sending... " << SOAPUtilities::translate(message)
-				         << std::endl;
+				__COUT__ << "Broadcast thread " << threadIndex << "\t" << "Re-Sending... "
+				         << SOAPUtilities::translate(message) << std::endl;
 
 				reply = send(appInfo.getDescriptor(), message);
 			}
@@ -7106,13 +7085,13 @@ try
 				             << "Second try failed.." << __E__;
 				XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 			}
-			__COUT__ << "Broadcast thread " << threadIndex << "\t"
-			         << "2nd try passed.." << __E__;
+			__COUT__ << "Broadcast thread " << threadIndex << "\t" << "2nd try passed.."
+			         << __E__;
 		}  // end send catch
 
-		__COUT__ << "Broadcast thread " << threadIndex << "\t"
-		         << "Reply received from " << appInfo.getName()
-		         << " [LID=" << appInfo.getId() << "]: " << reply << __E__;
+		__COUT__ << "Broadcast thread " << threadIndex << "\t" << "Reply received from "
+		         << appInfo.getName() << " [LID=" << appInfo.getId() << "]: " << reply
+		         << __E__;
 
 		if((reply != command + "Done") && (reply != command + "Response") &&
 		   (reply != command + "Iterate") && (reply != command + "SubIterate"))
@@ -7313,8 +7292,8 @@ void GatewaySupervisor::broadcastMessageThread(
 
 	}  // end primary while loop
 
-	__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t"
-	         << "exited." << __E__;
+	__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t" << "exited."
+	         << __E__;
 	threadStruct->working_ = false;  // indicate exiting
 }  // end broadcastMessageThread()
 
@@ -7445,7 +7424,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			{  // start mutex scope
 				std::lock_guard<std::mutex> lock(broadcastIterationBreakpointMutex_);
 				iterationBreakpoint = broadcastIterationBreakpoint_;  // get breakpoint
-			}                                                         // end mutex scope
+			}  // end mutex scope
 
 			if(iterationBreakpoint < (unsigned int)-1)
 				__COUT__ << "Iteration breakpoint currently is " << iterationBreakpoint
@@ -8187,8 +8166,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 	catch(...)
 	{
 		__SS__ << "An unknown error was encountered handling Command '" << Command
-		       << ".' "
-		       << "Please check the printouts to debug." << __E__;
+		       << ".' " << "Please check the printouts to debug." << __E__;
 		try
 		{
 			throw;
@@ -8280,8 +8258,7 @@ void GatewaySupervisor::tooltipRequest(xgi::Input* in, xgi::Output* out)
 	catch(...)
 	{
 		__SS__ << "An unknown error was encountered handling Tooltip Command '" << Command
-		       << ".' "
-		       << "Please check the printouts to debug." << __E__;
+		       << ".' " << "Please check the printouts to debug." << __E__;
 		try
 		{
 			throw;
@@ -9442,7 +9419,7 @@ try
 							else
 								iconString += remoteGatewayApp.iconString;
 							break;  //done with cache retrieval
-						}           //end loop retrieval
+						}  //end loop retrieval
 
 						if(!found)
 						{
@@ -9989,8 +9966,7 @@ try
 						commandSs << ";" << remoteGatewayApp.instancePath.substr(0, i);
 					else
 						commandSs << ";" << remoteGatewayApp.instancePath;
-					commandSs << ";"
-					          << "Normal";
+					commandSs << ";" << "Normal";
 					commandSs << ";" << remoteGatewayApp.setupType;
 					commandSs << ";"
 					          << remoteGatewayApp.instancePath;  //full USER_DATA path
@@ -10027,8 +10003,7 @@ try
 		else if(requestType == "restartApps") /*NEW: ADDED FOR APPS RESTART*/
 		{
 			std::string contextName = CgiDataUtilities::getData(cgiIn, "contextName");
-			__COUT__ << "launch ots script Command = "
-			         << "OTS_APP_SHUTDOWN" << __E__;
+			__COUT__ << "launch ots script Command = " << "OTS_APP_SHUTDOWN" << __E__;
 			GatewaySupervisor::launchStartOneServerCommand(
 			    "OTS_APP_SHUTDOWN",
 			    CorePropertySupervisorBase::theConfigurationManager_,
@@ -10060,8 +10035,7 @@ try
 	catch(...)
 	{
 		__SS__ << "An unknown error was encountered handling requestType '" << requestType
-		       << ".' "
-		       << "Please check the printouts to debug." << __E__;
+		       << ".' " << "Please check the printouts to debug." << __E__;
 		try
 		{
 			throw;
@@ -11526,7 +11500,7 @@ void GatewaySupervisor::handleGetApplicationIdRequest(
 
 		xmlOut.addTextElementToData("context",
 		                            appInfo.getContextName());  // get context
-	}                                                           //end app search loop
+	}  //end app search loop
 
 	if(!found)
 	{
