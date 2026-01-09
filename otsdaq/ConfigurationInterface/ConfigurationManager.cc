@@ -3201,7 +3201,7 @@ const TableBase* ConfigurationManager::getTableByName(const std::string& tableNa
 	std::map<std::string, TableBase*>::const_iterator it;
 	if((it = nameToTableMap_.find(tableName)) == nameToTableMap_.end())
 	{
-		__SS__ << "Can not find table named '" << tableName
+		__SS__ << "Cannot find table named '" << tableName
 		       << "' - you need to load the table before it can be used.";
 
 		if(nameToTableMap_.size() == 0)
@@ -3210,23 +3210,31 @@ const TableBase* ConfigurationManager::getTableByName(const std::string& tableNa
 			   << __E__;
 		else
 		{
-			ss << " It probably is missing from the member list of the Table "
-			      "Group that was loaded.\n"
-			   << "\nYou may need to enter wiz mode to remedy the situation, use the "
+			if(tableName == XDAQ_CONTEXT_TABLE_NAME)
+				ss << "\n\nThe XDAQ Context Table is essential to the operation of ots. "
+				      "Without it, ots can not determine which applications are running "
+				      "on which hosts. Make sure that you have loaded a valid "
+				      "Configuration Context group that contains the XDAQ Context "
+				      "Table."
+				   << __E__;
+			else
+				ss << " It is likely missing from the member list of the Table "
+				      "Group that was loaded."
+				   << __E__;
+
+			ss << "\nYou may need to enter wiz mode to remedy the situation, use the "
 			      "following:\n"
-			   << "\n\t ots --wiz"
-			   << "\n\n\n\n"
+			      "\n\t ots --wiz"
+			      "\n\n\n"
 			   << __E__;
 
 			ss << __E__ << StringMacros::stackTrace() << __E__;
 		}
 
-		// prints out too often, so only throw
-		// if(tableName != TableViewColumnInfo::DATATYPE_LINK_DEFAULT)
-		//	__GEN_COUT_WARN__ << "\n" << ss.str();
 		__SS_ONLY_THROW__;
 	}
-	// TLOG_DEBUG(30) << "Table " << tableName << " is at " << static_cast<void*>(it->second);
+	TLOG_DEBUG(55) << "Table " << tableName << " is at "
+	               << static_cast<void*>(it->second);
 	return it->second;
 }  // end getTableByName()
 
@@ -4644,7 +4652,7 @@ void ConfigurationManager::saveGroupNameAndKey(
 		__SS_THROW__;
 	}
 	std::stringstream outss;
-	outss << theGroup.first << "\n" << theGroup.second << "\n" << time(0);
+	outss << theGroup.first << "\n" << theGroup.second << "\n" << time(0) << "\n";
 	groupFile << outss.str().c_str();
 	groupFile.close();
 }  // end saveGroupNameAndKey()

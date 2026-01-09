@@ -48,6 +48,8 @@ using namespace ots;
 
 #define TLVL_StateChanger		 	9	// = TLVL_DEBUG + 9
 #define TLVL_StateChangerDetail	 	11	// = TLVL_DEBUG + 11
+#define TLVL_Permissions		 	20	// = TLVL_DEBUG + 20
+#define TLVL_GetDesktopIcons	 	21	// = TLVL_DEBUG + 21
 #define TLVL_RemoteFSMRequests	 	22	// = TLVL_DEBUG + 22
 #define TLVL_StatusParams		 	23	// = TLVL_DEBUG + 23
 #define TLVL_RemoteStatusVerbose 	24	// = TLVL_DEBUG + 24
@@ -299,11 +301,36 @@ void GatewaySupervisor::init(void)
 		std::string portTranslationPath = "";
 		try
 		{
-			portTranslationPath = __ENV__("OTS_PORT_TRANSLATION_FILE_PATH");
+			///	portTranslationMap_ ~ used by GatewaySupervisor::translateURLForRequestOrigin
+			///
+			///		Converts url host:port to a new host:port based on the translation
+			///			table (to be provided by system admin prior to starting ots in normal mode).
+			///
+			///	File format is:
+			///		- each line: requestOrigin host:port | url host:port | translation host:port
+			///
+			///	Steps:
+			/// 	if requestOrigin host matches translation host
+			/// 		then look for url host+port combo in translation map
+			/// 		if combo found, then return translation host+port + rest of url
+			/// 		else return url unchanged
+			/// 	else return url unchanged
+			///
+			///  for example, requestOrigin == "https://gateway1:8443" and executable url = "http://host:2016/urnblah"
+			///  	(the user needs the host:port accessible to them, which might be forwarded through a firewall or NAT)
+			///		and so translation might return "https://gateway1:8444"
+			///		... in which case, the entry in file would be: https://gateway1:8443 | host:2016 | https://gateway1:8444
+			///
+			///	Note!! that the priority matters for host+ports that are substrings of each other,
+			///		such that the longer one is replaced first.
+			///	 	For example, if there are host+ports translations for both "host:2016" and "host:201",
+			///		then "host:2016" should be listed first, so it is replaced first,
+			///			to avoid partial replacement that would block the full replacement later.
+			portTranslationPath = __ENV__("OTS_PORT_TRANSLATION_MAP_FILE");
 		}
 		catch(...)
 		{
-			__COUT__ << "OTS_PORT_TRANSLATION_FILE_PATH not set; no port translation "
+			__COUT__ << "OTS_PORT_TRANSLATION_MAP_FILE not set; no port translation "
 			            "will be used."
 			         << __E__;
 		}
@@ -344,10 +371,20 @@ void GatewaySupervisor::init(void)
 						portTranslationMap_[requestOrigin][requestUrlHostPort] =
 						    translatedHostPort;
 					}
+					else if(parts.size() < 2)
+					{
+						__SUP_COUT__
+						    << "Ignoring (and treating as comment) line #" << lineNumber
+						    << " in port translation file (length = " << strlen(line)
+						    << "): " << line << __E__;
+						continue;
+					}
 					else
 					{
 						__SS__ << "Invalid line #" << lineNumber
-						       << " in port translation file: " << line << __E__;
+						       << " in port translation file with too many args "
+						          "(count = "
+						       << parts.size() << ", expected 3): " << line << __E__;
 						__SS_THROW__;
 					}
 				}
@@ -3376,7 +3413,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						if(remoteName == remoteGatewayApp.appInfo.name)
 						{
 							found = true;
-							__COUTVS__(21, remoteGatewayApp.permissionThresholdString);
+							__COUTVS__(TLVL_RemoteStatusParams,
+							           remoteGatewayApp.permissionThresholdString);
 
 							std::map<std::string /*groupName*/,
 							         WebUsers::permissionLevel_t>
@@ -3410,12 +3448,13 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								if(it != userGroupPermissionsMap.end() &&
 								   it2 != userGroupPermissionsMap.end())
 								{
-									__COUTS__(21)
+									__COUTS__(TLVL_StateChangerDetail)
 									    << "Found user group '" << it->first
 									    << "' to modify: " << (uint16_t)it2->second
 									    << " --> " << (uint16_t)it->second << __E__;
 									it2->second = it->second;
-									__COUTVS__(21, (uint16_t)it2->second);
+									__COUTVS__(TLVL_StateChangerDetail,
+									           (uint16_t)it2->second);
 								}
 								else if(
 								    it ==
@@ -8967,7 +9006,7 @@ try
 			    "username_with_lock",
 			    theWebUsers_.getUserWithLock());  // always give system lock update
 
-			__COUTVS__(20, theWebUsers_.getUserWithLock());
+			__COUTVS__(TLVL_Permissions, theWebUsers_.getUserWithLock());
 
 			//Also add Remote Subystems users-with-lock!
 			std::vector<GatewaySupervisor::RemoteGatewayInfo>
@@ -8979,7 +9018,7 @@ try
 
 			for(const auto& remoteGatewayApp : remoteGatewayApps)
 			{
-				__COUTVS__(21, remoteGatewayApp.appInfo.status);
+				__COUTVS__(TLVL_StatusFullDetail, remoteGatewayApp.appInfo.status);
 
 				//skip disconnected remote gateways
 				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
@@ -9074,7 +9113,7 @@ try
 		else if(requestType == "getStateMachine")
 		{
 			std::string fsmName = CgiDataUtilities::getData(cgiIn, "fsmName");
-			__SUP_COUTVS__(20, fsmName);
+			__SUP_COUTVS__(TLVL_RemoteFSMRequests, fsmName);
 
 			addRequiredFsmLogInputToXML(xmlOut, fsmName);
 
@@ -9245,7 +9284,8 @@ try
 			std::map<std::string, WebUsers::permissionLevel_t>
 			    iconPermissionThresholdsMap;
 
-			__COUTVS__(20, StringMacros::mapToString(userPermissionLevelsMap));
+			__COUTVS__(TLVL_Permissions,
+			           StringMacros::mapToString(userPermissionLevelsMap));
 
 			bool getRemoteIcons =
 			    true;  //could potentially enable from configuration in future
@@ -9280,8 +9320,8 @@ try
 			bool firstIcon = true;
 			for(const auto& icon : icons)
 			{
-				__SUP_COUTVS__(21, icon.caption_);
-				__SUP_COUTVS__(21, icon.permissionThresholdString_);
+				__SUP_COUTVS__(TLVL_GetDesktopIcons, icon.caption_);
+				__SUP_COUTVS__(TLVL_GetDesktopIcons, icon.permissionThresholdString_);
 
 				CorePropertySupervisorBase::extractPermissionsMapFromString(
 				    icon.permissionThresholdString_, iconPermissionThresholdsMap);
@@ -9294,7 +9334,7 @@ try
 					continue;  // skip icon if no access
 				}
 
-				__SUP_COUTVS__(21, icon.caption_);
+				__SUP_COUTVS__(TLVL_GetDesktopIcons, icon.caption_);
 
 				if(getRemoteIcons)
 				{
@@ -9311,14 +9351,16 @@ try
 						{
 							if(icon.recordUID_ != remoteGatewayApp.appInfo.name)
 								continue;
-							__SUP_COUTVS__(21, icon.caption_);
+							__SUP_COUTVS__(TLVL_GetDesktopIcons, icon.caption_);
 							found = true;
 
 							if(remoteGatewayApp.iconString ==
 							   "")  //then either error or still loading...
 							{
-								__SUP_COUTVS__(21, remoteGatewayApp.error);
-								__SUP_COUTVS__(21, remoteGatewayApp.appInfo.status);
+								__SUP_COUTVS__(TLVL_GetDesktopIcons,
+								               remoteGatewayApp.error);
+								__SUP_COUTVS__(TLVL_GetDesktopIcons,
+								               remoteGatewayApp.appInfo.status);
 
 								//add error if it has to do with icons
 								if(remoteGatewayApp.error.find("desktop icons") !=
@@ -9369,14 +9411,28 @@ try
 
 								break;  //done adding error/loading icon
 							}
-							__SUP_COUTVS__(21, remoteGatewayApp.iconString);
+							__SUP_COUTVS__(TLVL_GetDesktopIcons,
+							               remoteGatewayApp.iconString);
 
 							if(firstIcon)
 								firstIcon = false;
 							else
 								iconString += ",";
 
-							iconString += remoteGatewayApp.iconString;
+							if(doAddressTranslation)
+							{
+								__COUTTV__(requestOrigin);
+								__COUTTV__(remoteGatewayApp.iconString);
+								std::string translatedIconString =
+								    translateRemoteIconStringForRequestOrigin(
+								        remoteGatewayApp.iconString,
+								        requestOrigin,
+								        portTranslationMap_);
+								__COUTTV__(translatedIconString);
+								iconString += translatedIconString;
+							}
+							else
+								iconString += remoteGatewayApp.iconString;
 							break;  //done with cache retrieval
 						}           //end loop retrieval
 
@@ -11130,7 +11186,7 @@ void GatewaySupervisor::loadRemoteGatewaySettings(
 				done = true;
 				break;
 			}
-			__SUP_COUTVS__(20, values[i]);
+			__SUP_COUTVS__(TLVL_RemoteFSMRequests, values[i]);
 
 			if(i < 3 &&
 			   values[i] == "")  //do not allow blank lines, except for selected alias
@@ -11251,9 +11307,15 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 ///  portTranslationMap_.find(requestHost) then 'host matches translation host'
 ///
 ///
-///  of for example, requestOrigin == "http://host:2015"  and url = "http://host:2016/urnblah"
+///  or for example, requestOrigin == "http://host:2015"  and url = "http://host:2016/urnblah"
 ///
-///  of for example, requestOrigin == "http://localhost:2015"  and url = "http://host:2016/urnblah"
+///  or for example, requestOrigin == "http://localhost:2015"  and url = "http://host:2016/urnblah"
+///
+///	Note!! that the priority matters for host+ports that are substrings of each other,
+///	 such that the longer one is replaced first.
+///	 For example, if there are host+ports translations for both "host:2016" and "host:201",
+///		then "host:2016" should be listed first, so it is replaced first,
+///		to avoid partial replacement that would block the full replacement later.
 std::string GatewaySupervisor::translateURLForRequestOrigin(
     const std::string&                                        url,
     const std::string&                                        requestOrigin,
@@ -11261,7 +11323,7 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
              std::map<std::string /* requestUrlHostPort */,
                       std::string /* translatedHostPort */>>& portTranslationMap)
 {
-	__COUT__ << "Translating URL: " << url << " for request origin: " << requestOrigin
+	__COUT__ << "Translating URL '" << url << "' for request origin: " << requestOrigin
 	         << __E__;
 
 	// Have: std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */,
@@ -11276,6 +11338,42 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 		          << __E__;
 		return url;
 	}
+
+	//extract before get parameters and after
+	size_t      getParamPos = url.find("?");
+	std::string preUrl      = url.substr(0, getParamPos);
+	std::string getParams   = "";
+	if(getParamPos != std::string::npos)
+	{
+		getParams = url.substr(getParamPos + 1);
+		__COUTT__ << "Translating encoded get parameters: " << getParams << __E__;
+
+		//for each encoded host port, search and replace all instances in get parameters
+		for(auto it3 = it->second.begin(); it3 != it->second.end(); ++it3)
+		{
+			std::string encodedUrlHostPort = StringMacros::encodeURIComponent(it3->first);
+			__COUTS__(2) << "Searching params for encoded url host+port: "
+			             << encodedUrlHostPort << __E__;
+			size_t pos = 0;
+			//Note!! that the priority matters for encoded host+ports that are substrings of each other, so that the longer one is replaced first.
+			// For example, if there are encoded host+ports for both "host:2016" and "host:201",
+			//	then the encoded "host:2016" should be replaced first to avoid partial replacement that would block the full replacement later.
+			while((pos = getParams.find(encodedUrlHostPort, pos)) != std::string::npos)
+			{
+				__COUTT__ << "Found encoded url host+port: " << encodedUrlHostPort
+				          << " at pos " << pos << __E__;
+				getParams.replace(pos,
+				                  encodedUrlHostPort.size(),
+				                  StringMacros::encodeURIComponent(it3->second));
+				pos += StringMacros::encodeURIComponent(it3->second).size();
+
+				__COUTT__ << "Replaced with: "
+				          << StringMacros::encodeURIComponent(it3->second) << __E__;
+			}
+		}
+		__COUTTV__(getParams);
+	}  //end handling get parameters
+
 	size_t pos = 0;  //url host+port end position
 	if(url.size() > 7 && url[0] == 'h' && url[1] == 't' && url[2] == 't' &&
 	   url[3] == 'p' &&
@@ -11290,13 +11388,70 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 	{
 		__COUTT__ << "No port translation found for URL host+port '" << urlHostPort
 		          << "' for request origin: " << requestOrigin << __E__;
-		return url;
+		return preUrl + (getParams.size() ? ("?" + getParams) : "");
 	}
 	__COUTT__ << "Port translation found: " << urlHostPort << " --> " << it2->second
 	          << " for request origin: " << requestOrigin << __E__;
 
-	return it2->second + (pos != std::string::npos ? url.substr(pos) : "");
+	return it2->second + (pos != std::string::npos ? preUrl.substr(pos) : "") +
+	       (getParams.size() ? ("?" + getParams) : "");
 }  // end translateURLForRequestOrigin()
+
+//==============================================================================
+/// translateRemoteIconStringForRequestOrigin
+std::string GatewaySupervisor::translateRemoteIconStringForRequestOrigin(
+    const std::string&                                        iconString,
+    const std::string&                                        requestOrigin,
+    std::map<std::string /* requestOrigin */,
+             std::map<std::string /* requestUrlHostPort */,
+                      std::string /* translatedHostPort */>>& portTranslationMap)
+{
+	__COUT__ << "Translating Remote Icon String for request origin: " << requestOrigin
+	         << __E__;
+	auto parts = StringMacros::getVectorFromString(iconString, {','});
+
+	// comma-separated icon string, 7 fields:
+	//				0 - caption 		= text below icon
+	//				1 - altText 		= text icon if no image given
+	//				2 - uniqueWin 		= if true, only one window is allowed,
+	// 										else  multiple instances of window
+	//				3 - permissions 	= security level needed to see icon
+	//				4 - picfn 			= icon image filename
+	//				5 - linkurl 		= url of the window to open
+	// 				6 - folderPath 		= folder and subfolder location '/' separated
+	//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
+
+	std::string result = "";
+	for(size_t i = 0; i < parts.size(); i += 7)
+	{
+		if(TTEST(TLVL_RemoteDesktopIcons))
+		{
+			__COUTS__(TLVL_RemoteDesktopIcons)
+			    << "Translating icon string part: " << parts[i] << "," << parts[i + 1]
+			    << "," << parts[i + 2] << "," << parts[i + 3] << "," << parts[i + 4]
+			    << "," << parts[i + 5] << "," << parts[i + 6] << __E__;
+			__COUTVS__(TLVL_RemoteDesktopIcons, parts[i + 5]);
+		}
+		std::string translatedLinkURL =
+		    translateURLForRequestOrigin(parts[i + 5], requestOrigin, portTranslationMap);
+		if(TTEST(TLVL_RemoteDesktopIcons))
+		{
+			__COUTS__(TLVL_RemoteDesktopIcons)
+			    << "Translated icon string part: " << parts[i] << "," << parts[i + 1]
+			    << "," << parts[i + 2] << "," << parts[i + 3] << "," << parts[i + 4]
+			    << "," << translatedLinkURL << "," << parts[i + 6] << __E__;
+			__COUTVS__(TLVL_RemoteDesktopIcons, translatedLinkURL);
+		}
+
+		if(i)
+			result += ",";  //add separator if not first entry
+		result += parts[i] + "," + parts[i + 1] + "," + parts[i + 2] + "," +
+		          parts[i + 3] + "," + parts[i + 4] + "," + translatedLinkURL + "," +
+		          parts[i + 6];
+	}  //end primary translation loop
+
+	return result;
+}  // end translateRemoteIconStringForRequestOrigin()
 
 //==============================================================================
 /// static function to lookup the XDAQ Application LID

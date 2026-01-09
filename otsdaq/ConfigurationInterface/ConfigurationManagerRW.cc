@@ -1615,6 +1615,13 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
     const std::map<std::string, TableVersion>&                   groupMemberMap,
     const std::map<std::string /*name*/, std::string /*alias*/>& memberTableAliases)
 {
+	if(!groupMemberMap.size() || groupName.empty())
+	{
+		__SS__ << "Illegal name/members for requested group of name '" << groupName
+		       << "' and member count = " << groupMemberMap.size() << __E__;
+		__SS_THROW__;
+	}
+
 	//	//NOTE: seems like this filter is taking the long amount of time
 	//	std::set<std::string /*name*/> fullGroupNames =
 	//			theInterface_->getAllTableGroupNames(groupName); //db filter bygroup  name

@@ -145,15 +145,16 @@ void DatabaseConfigurationInterface::fill(TableBase* table, TableVersion version
 /// write table to database
 void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
                                                        bool             overwrite) const
+try
 {
 	auto start = std::chrono::high_resolution_clock::now();
 
 	auto ifc = db::ConfigurationInterface{default_dbprovider};
 
-	auto              versionstring = table->getView().getVersion().toString();
+	auto versionstring = table->getView().getVersion().toString();
+	__COUTTV__(versionstring);
 	std::stringstream preSaveJSONss;
 	table->getView().printJSON(preSaveJSONss);
-	//__COUT__ << "versionstring: " << versionstring << "\n";
 
 	// auto result =
 	//	ifc.template storeVersion<decltype(configuration), JsonData>(configuration,
@@ -168,8 +169,9 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
 	    std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	__COUTT__ << "Time taken to call "
 	             "DatabaseConfigurationInterface::saveActiveVersion(tableName="
-	          << table->getTableName() << ", versionstring=" << versionstring << ") "
-	          << duration << " milliseconds" << std::endl;
+	          << table->getTableName() << ", versionstring=" << versionstring
+	          << " overwrite=" << overwrite << ") " << duration << " milliseconds"
+	          << std::endl;
 
 	__COUTTV__(result.first);
 	__COUTVS__(10, result.second);
@@ -267,9 +269,27 @@ void DatabaseConfigurationInterface::saveActiveVersion(const TableBase* table,
 		return;
 	}
 
-	__SS__ << "Database Interface saveActiveVersion Error:" << result.second << __E__;
+	__SS__ << "Return value indicates error in Database Interface saveActiveVersion "
+	          "attempting to save "
+	       << table->getTableName() << "-v" << table->getView().getVersion().toString()
+	       << ": " << result.second << __E__;
 	__SS_THROW__;
 }  //end saveActiveVersion()
+catch(std::exception const& e)
+{
+	__SS__ << "Database Interface Exception in saveActiveVersion attempting to save "
+	       << table->getTableName() << "-v" << table->getView().getVersion().toString()
+	       << ": " << e.what() << __E__;
+	__SS_THROW__;
+}  //end saveActiveVersion() catch
+catch(...)
+{
+	__SS__
+	    << "Database Interface Unknown exception in saveActiveVersion attempting to save "
+	    << table->getTableName() << "-v" << table->getView().getVersion().toString()
+	    << "." << __E__;
+	__SS_THROW__;
+}  //end saveActiveVersion() catch
 
 //==============================================================================
 /// find the latest configuration version by configuration type
@@ -725,6 +745,15 @@ void DatabaseConfigurationInterface::saveTableGroup(table_version_map_t const& m
                                                     std::string const& tableGroup) const
 try
 {
+	if(memberMap.size() == 0)
+	{
+		__SS__ << "Error: Attempting to save table group '" << tableGroup
+		       << "' with empty member map! Please provide at least one member table for "
+		          "the group."
+		       << __E__;
+		__SS_THROW__;
+	}
+
 	auto start = std::chrono::high_resolution_clock::now();
 
 	auto ifc = db::ConfigurationInterface{default_dbprovider};
@@ -863,7 +892,9 @@ try
 		return;
 	}
 
-	__THROW__(result.second);
+	__SS__ << "Return value indicates failure to save group '" << tableGroup << "':\n"
+	       << result.second << __E__;
+	__SS_THROW__;
 }  // end saveTableGroup()
 catch(std::exception const& e)
 {
