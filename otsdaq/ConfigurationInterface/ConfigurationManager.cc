@@ -1360,27 +1360,30 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		}
 	};
 
-	auto localDumpActiveTableStructureStatus = [](const ConfigurationManager* cfgMgr,
+	auto localDumpActiveTableStructureStatus = [](ConfigurationManager* cfgMgr,
 	                                       std::ostream*               out) {
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
+		__COUT__ << "Active Table size: " << activeTables.size() << __E__;
 		(*out) << "\t\"Active Table Structure Status\": [" << __E__;
 
-		bool firstPrint = true;
+		// bool firstPrint = true;
 		std::string activeTableStructure = "";
 		std::map<std::string, TableVersion>::iterator it;
 		for (it = activeTables.begin(); it != activeTables.end(); ++it)
 		{
 			try 
 			{
+				__COUT__ << "Trying to retreive " << it->first << " Structure Status" << __E__;
 				activeTableStructure = cfgMgr->nameToTableMap_.find(it->first)
 						->second->getStructureStatusAsJSON(cfgMgr);
-				if (activeTableStructure != "" && !firstPrint)
+				if (activeTableStructure != "")
 				{
+					__COUT__ << "Found Structure Status for Active Table: " << it->first << __E__;
 					(*out) << (std::next(it)==activeTables.end() ? "" : ",") << __E__;
 					(*out) << activeTableStructure << __E__;
 				}
-					firstPrint = false;
+				// firstPrint = false;
 			}
 			catch(const std::exception& e)
 			{

@@ -4749,7 +4749,7 @@ try
 		else
 		{
 			sscanf(commandParameters[0].c_str(), "%lu", &runNumber);
-			__COUTV__(runNumber);
+			// __COUT__(runNumber);
 			setNextRunNumber(runNumber + 1);
 		}
 
@@ -5016,7 +5016,7 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		}
 		catch(...)
 		{
-			// ERROR
+			// 
 			__SS__ << "RUN INFO RESUME TIME UPDATE INTO DATABASE FAILED!!! " << __E__;
 			try
 			{
@@ -5513,6 +5513,7 @@ try
 	//check for remote subsystem dumps (after broadcast!)
 	__COUT__ << "Check for remote subsystem dumps." << __E__;
 	bool isJSONdump = false;
+	std::map<std::string, std::string> mapGatewayDump;
 	std::string remoteSubsystemDump = "";
 	{
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
@@ -5539,6 +5540,7 @@ try
 			isJSONdump = (configDumpType.find("JSON all") != std::string::npos);
 			__COUT__ << "Remote gateway " << remoteGatewayApps[i].fullName << " is using JSON dump: " << isJSONdump << __E__;
 
+			mapGatewayDump.insert({remoteGatewayApps[i].fullName, remoteGatewayApps[i].config_dump});
 			remoteSubsystemDump += remoteGatewayApps[i].config_dump;
 
 			if(isJSONdump && (i<remoteGatewayApps.size()-1))
@@ -5646,6 +5648,7 @@ try
 			std::string configDumpType = activeStateMachineConfigurationDumpOnConfigure_.substr(
 			    activeStateMachineConfigurationDumpOnConfigure_.find("Type of dump") + sizeof("Type of dump") - 1);
 			isJSONdump = (configDumpType.find("JSON all") != std::string::npos);
+			std::string configTypeName = (isJSONdump) ? "JSON all" : "Other";
 			if(isJSONdump)
 			{
 				activeStateMachineConfigurationDumpOnConfigure_ += ",\n\"Remote Gateways\": [";
@@ -5658,8 +5661,9 @@ try
 			__COUT__ << "Final config dump: " << __E__;
 			__COUT_MULTI__(2, activeStateMachineConfigurationDumpOnConfigure_);
 
-			conditionID_ = runInfoInterface->insertRunCondition(
-			    activeStateMachineConfigurationDumpOnConfigure_);
+			// conditionID_ = runInfoInterface->insertRunCondition(
+			//     activeStateMachineConfigurationDumpOnConfigure_,
+			// 	configTypeName);
 		}  // end Run Info Plugin handling
 	}
 	catch(const std::runtime_error& e)
