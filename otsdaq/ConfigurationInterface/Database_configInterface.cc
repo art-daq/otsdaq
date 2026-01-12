@@ -1008,7 +1008,7 @@ catch(...)
 /// findGroupsWithTable() returns the set of table groups that contain the specified table
 /// name and version
 std::set<std::string /*group*/> DatabaseConfigurationInterface::findGroupsWithTable(
-	std::string const& table, std::string const& version) const
+	std::string const& tableName, TableVersion version) const
 try
 {
 	auto start = std::chrono::high_resolution_clock::now();
@@ -1018,21 +1018,21 @@ try
 
 	std::set<std::string> returnSet = 
 		ifc.findGlobalConfigurationsContaining(
-			table, version);
+			tableName, version.toString());
 	
-	__COUTT__ << "Number of Groups containing table '" << table << "-v" << version << "': "
+	__COUTT__ << "Number of Groups containing table '" << tableName << "-v" << version << "': "
 		<< returnSet.size() << __E__;
 
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
 	__COUTT__ << "Time taken to call "
 	             "DatabaseConfigurationInterface::findGroupsWithTable(table="
-	          << table << "-v" << version << ") " << duration << " milliseconds." << std::endl;
+	          << tableName << "-v" << version << ") " << duration << " milliseconds." << std::endl;
 
 	return returnSet;
 } //end findGroupsWithTable()
 catch(std::exception const& e)
 {
-	__SS__ << "Database Interface Exception running findGroupsWithTable for '" << table
+	__SS__ << "Database Interface Exception running findGroupsWithTable for '" << tableName
 	       << "-v" << version << "':\n\n"
 	       << e.what() << "\n";
 	__SS_THROW__;
@@ -1040,7 +1040,7 @@ catch(std::exception const& e)
 catch(...)
 {
 	__SS__ << "Database Interface Unknown exception running findGroupsWithTable for '"
-	       << table << "-v" << version << ".'\n";
+	       << tableName << "-v" << version << ".'\n";
 	__SS_THROW__;
 }  //end findGroupsWithTable() catch
 

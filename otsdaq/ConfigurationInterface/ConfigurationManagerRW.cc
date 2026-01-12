@@ -2803,6 +2803,22 @@ void ConfigurationManagerRW::testXDAQContext()
 	// get Group Info too!
 	try
 	{
+		//test lookup of which groups a table is in
+		{
+			std::string  documentNameToLoad = "XDAQApplicationTable";
+			TableVersion documentVersionToLoad((int)1); //134
+
+			std::set<std::string> groupsContainingTable =
+			    theInterface_->findGroupsWithTable(documentNameToLoad,
+			                                            documentVersionToLoad);
+			__GEN_COUT__ << "Groups containing " << documentNameToLoad << "-v"
+			             << documentVersionToLoad << " count: " << groupsContainingTable.size() << __E__;
+			for(const auto& group : groupsContainingTable)
+			{				
+				__GEN_COUT__ << "\t" << group << __E__;
+			}	
+		}
+
 		std::string debugGroupName = "Mu2eHWEmulatorContext";
 
 		//final solution demo of getting latest group key:
