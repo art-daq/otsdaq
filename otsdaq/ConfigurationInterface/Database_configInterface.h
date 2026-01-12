@@ -43,7 +43,7 @@ class DatabaseConfigurationInterface : public ConfigurationInterface
 	std::set<std::string /*name+version*/> 	getAllTableGroupNames	(std::string const& filterString = "") const override;
 	std::set<TableGroupKey> 				getKeys					(const std::string& groupName) const override;
 	std::set<std::string /*group*/>			findGroupsWithTable		(std::string const& tableName, TableVersion version) const override;
-	
+
 	TableGroupKey							findLatestGroupKey		(const std::string& groupName) const noexcept override;
 
 	/// return the contents of a table group
