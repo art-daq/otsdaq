@@ -17,10 +17,20 @@
 // #include "otsdaq-components/FEInterfaces/FEWOtsUDPFSSRInterface.h"
 // #include "otsdaq-components/FEInterfaces/FEWOtsUDPHCALInterface.h"
 
+// Shared test utilities
+#include "otsdaq/Macros/TestUtilities.h"
+
 using namespace ots;
 
 int main()
 {
+	//==============================================================================
+	// Define environment variables
+	//	Note: normally these environment variables are set by ots script
+
+	test::util::check_and_make_envs();
+	////////////////////////////////////////////////////
+
 	// Variables
 	std::string supervisorContextUID_     = "MainContext";
 	std::string supervisorApplicationUID_ = "FeSupervisor0";
