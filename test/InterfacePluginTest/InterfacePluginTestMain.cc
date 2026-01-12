@@ -24,7 +24,6 @@ using namespace ots;
 
 int main()
 {
-
 	//==============================================================================
 	// Define environment variables
 	//	Note: normally these environment variables are set by ots script

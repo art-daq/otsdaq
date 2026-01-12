@@ -992,7 +992,7 @@ CLEAN_UP:
 }
 
 int main(int argc, char* argv[])
-{	
+{
 	FlattenActiveSystemAliasTableGroups(argc, argv);
 	return 0;
 }

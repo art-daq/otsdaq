@@ -37,7 +37,6 @@ void readxml_writedb_configurations()
 	std::vector<std::string>
 	    failedConfigVersions;  // list of tables/versions that failed to migrate
 
-	
 	//==============================================================================
 	// Define environment variables
 	//	Note: normally these environment variables are set by ots script

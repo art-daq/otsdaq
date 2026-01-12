@@ -33,7 +33,6 @@ void check_and_make_envs()
 		       (std::string(__ENV__("USER_DATA")) + "/ServiceData").c_str(),
 		       1);
 
-
 	// These are needed by
 	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [207]
 	if(getenv("CONFIGURATION_TYPE") == NULL)
@@ -41,12 +40,13 @@ void check_and_make_envs()
 
 	if(getenv("CONFIGURATION_DATA_PATH") == NULL)
 		setenv("CONFIGURATION_DATA_PATH",
-	       (std::string(getenv("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
-	       1);
+		       (std::string(getenv("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
+		       1);
 
 	if(getenv("TABLE_INFO_PATH") == NULL)
-		setenv(
-			"TABLE_INFO_PATH", (std::string(getenv("USER_DATA")) + "/TableInfo").c_str(), 1);
+		setenv("TABLE_INFO_PATH",
+		       (std::string(getenv("USER_DATA")) + "/TableInfo").c_str(),
+		       1);
 	////////////////////////////////////////////////////
 
 	// Some configuration plug-ins use __ENV__("OTSDAQ_LIB") and
@@ -54,7 +54,8 @@ void check_and_make_envs()
 	if(getenv("OTSDAQ_LIB") == NULL)
 		setenv("OTSDAQ_LIB", (std::string(getenv("USER_DATA")) + "/").c_str(), 1);
 	if(getenv("OTSDAQ_UTILITIES_LIB") == NULL)
-		setenv("OTSDAQ_UTILITIES_LIB", (std::string(getenv("USER_DATA")) + "/").c_str(), 1);
+		setenv(
+		    "OTSDAQ_UTILITIES_LIB", (std::string(getenv("USER_DATA")) + "/").c_str(), 1);
 
 	// Some configuration plug-ins use __ENV__("OTS_MAIN_PORT") in init() so define it
 	if(getenv("OTS_MAIN_PORT") == NULL)
@@ -63,8 +64,8 @@ void check_and_make_envs()
 	// also xdaq envs for XDAQContextTable
 	if(getenv("XDAQ_CONFIGURATION_DATA_PATH") == NULL)
 		setenv("XDAQ_CONFIGURATION_DATA_PATH",
-			(std::string(getenv("USER_DATA")) + "/XDAQConfigurations").c_str(),
-			1);
+		       (std::string(getenv("USER_DATA")) + "/XDAQConfigurations").c_str(),
+		       1);
 
 	if(getenv("XDAQ_CONFIGURATION_XML") == NULL)
 		setenv("XDAQ_CONFIGURATION_XML", "otsConfigurationNoRU_CMake", 1);

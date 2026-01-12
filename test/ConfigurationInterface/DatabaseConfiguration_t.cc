@@ -35,7 +35,6 @@ BOOST_AUTO_TEST_CASE(readxml_writedb_configurations)
 
 	std::vector<std::string> configTables;
 
-	
 	//==============================================================================
 	// Define environment variables
 	//	Note: normally these environment variables are set by ots script
@@ -120,7 +119,7 @@ BOOST_AUTO_TEST_CASE(readdb_writexml_configurations)
 {
 	// return;
 	std::vector<std::string> configTables;
-	
+
 	//==============================================================================
 	// Define environment variables
 	//	Note: normally these environment variables are set by ots script

@@ -59,7 +59,7 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	closedir(dp);
 
 	// return;
-	
+
 	//==============================================================================
 	// Define environment variables
 	//	Note: normally these environment variables are set by ots script
