@@ -50,7 +50,7 @@ public:
 	/// group handling
 	virtual std::set<std::string /*name*/> 	getAllTableGroupNames			(const std::string& /*filterString*/ = "") const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getAllTableGroupNames in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
 	virtual std::set<TableGroupKey> 		getKeys							(const std::string& /*groupName*/) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getKeys in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
- 	virtual std::set<std::string /*group*/> findGroupsWithTable				(std::string const& /*table*/, std::string const& /*version*/) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call findGroupsWithTable in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); } ///> returns the set of table groups that contain the specified table name and version
+	virtual std::set<std::string /*group*/> findGroupsWithTable				(std::string const& /*tableName*/, TableVersion /*version*/) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call findGroupsWithTable in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); } ///> returns the set of table groups that contain the specified table name and version
 
 	/// Caution: getTableGroupMembers must be carefully used.. the table versions
 	/// are as initially defined for table versions aliases, i.e. not converted according
