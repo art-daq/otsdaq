@@ -21,6 +21,9 @@
 #include "otsdaq/PluginMakers/MakeInterface.h"
 #include "otsdaq/PluginMakers/MakeInterfaceTable.h"
 
+// Shared test utilities
+#include "otsdaq/Macros/TestUtilities.h"
+
 using namespace ots;
 
 BOOST_AUTO_TEST_SUITE(databaseconfiguration_test)
@@ -32,16 +35,15 @@ BOOST_AUTO_TEST_CASE(readxml_writedb_configurations)
 
 	std::vector<std::string> configTables;
 
-	// normally CONFIGURATION_TYPE is set by ots script
-	setenv("CONFIGURATION_DATA_PATH",
-	       (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
-	       1);
-	std::string configDir = std::string(__ENV__("CONFIGURATION_DATA_PATH")) + '/';
+	
+	//==============================================================================
+	// Define environment variables
+	//	Note: normally these environment variables are set by ots script
 
-	// CONFIGURATION_TYPE needed by
-	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [187]  Can
-	// be File, Database, DatabaseTest
-	setenv("CONFIGURATION_TYPE", "File", 1);
+	test::util::check_and_make_envs();
+	////////////////////////////////////////////////////
+
+	std::string configDir = std::string(__ENV__("CONFIGURATION_DATA_PATH")) + '/';
 
 	// add configurations to vector list from directory
 	{
@@ -118,17 +120,15 @@ BOOST_AUTO_TEST_CASE(readdb_writexml_configurations)
 {
 	// return;
 	std::vector<std::string> configTables;
+	
+	//==============================================================================
+	// Define environment variables
+	//	Note: normally these environment variables are set by ots script
 
-	// normally CONFIGURATION_TYPE is set by ots script
-	setenv("CONFIGURATION_DATA_PATH",
-	       (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
-	       1);
+	test::util::check_and_make_envs();
+	////////////////////////////////////////////////////
+
 	std::string configDir = std::string(__ENV__("CONFIGURATION_DATA_PATH")) + '/';
-
-	// CONFIGURATION_TYPE needed by
-	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [187]  Can
-	// be File, Database, DatabaseTest
-	setenv("CONFIGURATION_TYPE", "File", 1);
 
 	// add configurations to vector list from directory
 	{
