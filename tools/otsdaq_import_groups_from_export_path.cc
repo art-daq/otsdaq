@@ -9,6 +9,9 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 
+// Shared test utilities
+#include "otsdaq/Macros/TestUtilities.h"
+
 /// Imports all groups and group/table aliases (from backbone group) found at path
 ///		to the current database and active backbone group. New table version and group keys will be assigned
 ///		to the imported tables and groups.
@@ -20,12 +23,6 @@ using namespace ots;
 
 void ImportTableGroupsFromPath(int argc, char* argv[])
 {
-	// The configuration uses __ENV__("SERVICE_DATA_PATH") in init() so define it if it is not defined
-	if(getenv("SERVICE_DATA_PATH") == NULL)
-		setenv("SERVICE_DATA_PATH",
-		       (std::string(__ENV__("USER_DATA")) + "/ServiceData").c_str(),
-		       1);
-
 	std::cout << "=================================================\n";
 	std::cout << "=================================================\n";
 	std::cout << "=================================================\n";
@@ -43,13 +40,16 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		return;
 	}
 
-	std::string importPath  = argv[1];
-	std::string prepend     = argc > 2 ? argv[2] : "";  //get prepend arg or empty default
-	int         flatVersion = 0;
+	std::string importPath = argv[1];
+	std::string prepend    = argc > 2 ? argv[2] : "";  //get prepend arg or empty default
+	bool        forceBackboneSave =
+        argc > 3 ? true : false;  //get force backbone save arg or false
+	int flatVersion = 0;
 
 	__COUTV__(importPath);
 	__COUTV__(flatVersion);
 	__COUTV__(prepend);
+	__COUTV__(forceBackboneSave);
 
 	//==============================================================================
 	// Steps:
@@ -164,32 +164,10 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 	// Define environment variables
 	//	Note: normally these environment variables are set by ots script
 
-	// These are needed by
-	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [207]
-	setenv("CONFIGURATION_TYPE", "File", 1);  // Can be File, Database, DatabaseTest
-	setenv("CONFIGURATION_DATA_PATH",
-	       (std::string(getenv("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
-	       1);
-	setenv(
-	    "TABLE_INFO_PATH", (std::string(getenv("USER_DATA")) + "/TableInfo").c_str(), 1);
+	test::util::check_and_make_envs();
+
 	////////////////////////////////////////////////////
 
-	// Some configuration plug-ins use __ENV__("OTSDAQ_LIB") and
-	// __ENV__("OTSDAQ_UTILITIES_LIB") in init() so define it 	to a non-sense place is ok
-	setenv("OTSDAQ_LIB", (std::string(getenv("USER_DATA")) + "/").c_str(), 1);
-	setenv("OTSDAQ_UTILITIES_LIB", (std::string(getenv("USER_DATA")) + "/").c_str(), 1);
-
-	// Some configuration plug-ins use __ENV__("OTS_MAIN_PORT") in init() so define it
-	setenv("OTS_MAIN_PORT", "2015", 1);
-
-	// also xdaq envs for XDAQContextTable
-	setenv("XDAQ_CONFIGURATION_DATA_PATH",
-	       (std::string(getenv("USER_DATA")) + "/XDAQConfigurations").c_str(),
-	       1);
-	setenv("XDAQ_CONFIGURATION_XML", "otsConfigurationNoRU_CMake", 1);
-	////////////////////////////////////////////////////
-
-	//==============================================================================
 	// get prepared with initial source db
 
 	// ConfigurationManager instance immediately loads active groups
@@ -326,6 +304,9 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			                             TableVersion());  // then all versions in search
 
 		}  //end check duplicate
+
+		//return the original version to active
+		table->setActiveView(originalVersion);
 
 		if(!duplicateVersion.isInvalid())
 		{
@@ -943,8 +924,8 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 					}
 					catch(const std::runtime_error& e)
 					{
-						__COUT__ << "Caught runtime_error exception during table save."
-						         << __E__;
+						__COUT__ << "Caught runtime_error exception during table save: "
+						         << e.what() << __E__;
 						if(std::string(e.what()).find("there was a collision") !=
 						   std::string::npos)
 						{
@@ -1002,7 +983,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			    newAssignedVersion;
 			groupMembers[member.first] = newAssignedVersion;
 			// return;
-		}
+		}  //end member table import and find loop
 
 		__COUT__ << "Tables imported so far: " << importTableMap.size() << std::endl;
 		for(auto& table : importTableMap)
@@ -1011,6 +992,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 		__COUT__ << "Saving group '" << group.first.first
 		         << "' members: " << groupMembers.size() << std::endl;
+
 		std::map<std::string, TableVersion> groupMembersWithoutMeta;
 		for(auto& table : groupMembers)
 		{
@@ -1069,7 +1051,8 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			}
 			catch(const std::runtime_error& e)
 			{
-				__COUT__ << "Caught runtime_error exception during group save." << __E__;
+				__COUT__ << "Caught runtime_error exception during group save: "
+				         << e.what() << __E__;
 				if(std::string(e.what()).find("there was a collision") !=
 				   std::string::npos)
 				{
@@ -1100,7 +1083,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		// return;
 	}  //end group import loop
 
-	if(!anyNewGroupSaved)
+	if(!forceBackboneSave && !anyNewGroupSaved)
 	{
 		__SS__ << "All groups to import already exist in current db! Was the wrong db "
 		          "selected from which to import?"
@@ -1269,6 +1252,9 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 		}  //end check duplicate
 
+		//return the original version to active
+		table->setActiveView(originalVersion);
+
 		if(!duplicateVersion.isInvalid())
 		{
 			// found an equivalent!
@@ -1340,6 +1326,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		unsigned int col0    = cfgView->findCol("VersionAlias");
 		unsigned int col1    = cfgView->findCol("TableName");
 		unsigned int col2    = cfgView->findCol("Version");
+		__COUTV__(table->getViewVersion());
 
 		unsigned int row;
 
@@ -1371,12 +1358,15 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			cfgView->setValue(aliasPair.second.first, row, col1);
 			cfgView->setValue(tableIt->second.toString(), row, col2);
 		}  // end group alias edit
+		__COUTV__(table->getViewVersion());
 
 		if(!importTableAliasMap.size())
 			duplicateVersion =
 			    table->getViewVersion();  //mark duplicate as self if nothing to add
 
+		__COUTV__(table->getViewVersion());
 		cfgView->print();
+		__COUTV__(table->getViewVersion());
 
 		TableVersion originalVersion =
 		    table
@@ -1392,6 +1382,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 				//		'recent' := those already in cache, plus highest version numbers not in cache
 				const std::map<std::string, TableInfo>& allTableInfo =
 				    cfgMgr->getAllTableInfo();  // do not refresh
+				__COUTV__(table->getViewVersion());
 
 				auto versionReverseIterator =
 				    allTableInfo.at(tableName)
@@ -1418,6 +1409,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 						__COUTT__ << "'" << tableName << "' version failed to load: "
 						          << *versionReverseIterator << __E__;
 					}
+					__COUTV__(table->getViewVersion());
 				}
 			}
 
@@ -1426,7 +1418,11 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			    table->checkForDuplicate(originalVersion,
 			                             TableVersion());  // then all versions in search
 
+			__COUTV__(table->getViewVersion());
 		}  //end check duplicate
+
+		//return the original version to active
+		table->setActiveView(originalVersion);
 
 		if(!duplicateVersion.isInvalid())
 		{
@@ -1440,8 +1436,8 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		{
 			auto newVersion =
 			    TableVersion::getNextVersion(theInterface_->findLatestVersion(table));
-			__COUTV__(newVersion);
 			cfgView->setVersion(newVersion);
+			// table->setActiveView(newVersion);
 
 			// save table, and retry on save collision
 			uint16_t retries = 0;
@@ -1618,19 +1614,17 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-	if(getenv("OTSDAQ_LOG_FHICL") == NULL)
-		setenv("OTSDAQ_LOG_FHICL",
-		       (std::string(__ENV__("USER_DATA")) +
-		        "/MessageFacilityConfigurations/MessageFacilityWithCout.fcl")
-		           .c_str(),
-		       1);
+	try
+	{
+		ImportTableGroupsFromPath(argc, argv);
+	}
+	catch(...)
+	{
+		__COUT_ERR__ << "Unhandled exception caught in main()!" << __E__
+		             << StringMacros::stackTrace() << std::endl;
+		throw;
+	}
 
-	if(getenv("OTSDAQ_LOG_ROOT") == NULL)
-		setenv(
-		    "OTSDAQ_LOG_ROOT", (std::string(__ENV__("USER_DATA")) + "/Logs").c_str(), 1);
-
-	INIT_MF("ImportGroupsFromPath");
-	ImportTableGroupsFromPath(argc, argv);
 	return 0;
 }
 // BOOST_AUTO_TEST_SUITE_END()

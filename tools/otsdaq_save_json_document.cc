@@ -11,6 +11,9 @@
 // #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
 // #include "artdaq-database/JsonDocument/JSONDocument.h"
 
+// Shared test utilities
+#include "otsdaq/Macros/TestUtilities.h"
+
 /// usage:
 /// otsdaq_save_json_document <path_to_source_JSON> <document_name_to_save>
 ///
@@ -35,12 +38,6 @@ using namespace ots;
 
 void SaveJSON_Document(int argc, char* argv[])
 {
-	// The configuration uses __ENV__("SERVICE_DATA_PATH") in init() so define it if it is not defined
-	if(getenv("SERVICE_DATA_PATH") == NULL)
-		setenv("SERVICE_DATA_PATH",
-		       (std::string(__ENV__("USER_DATA")) + "/ServiceData").c_str(),
-		       1);
-
 	__COUT__ << "=================================================\n";
 	__COUT__ << "=================================================\n";
 	__COUT__ << "=================================================\n";
@@ -65,24 +62,8 @@ void SaveJSON_Document(int argc, char* argv[])
 	// Define environment variables
 	//	Note: normally these environment variables are set by ots script
 
-	// These are needed by
-	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [207]
-	// setenv("CONFIGURATION_TYPE", "File", 1);  // Can be File, Database, DatabaseTest
-	// setenv("CONFIGURATION_DATA_PATH", (std::string(getenv("USER_DATA")) + "/ConfigurationDataExamples").c_str(), 1);
-	// setenv("TABLE_INFO_PATH", (std::string(getenv("USER_DATA")) + "/TableInfo").c_str(), 1);
-	////////////////////////////////////////////////////
+	test::util::check_and_make_envs();
 
-	// Some configuration plug-ins use __ENV__("OTSDAQ_LIB") and
-	// __ENV__("OTSDAQ_UTILITIES_LIB") in init() so define it 	to a non-sense place is ok
-	// setenv("OTSDAQ_LIB", (std::string(getenv("USER_DATA")) + "/").c_str(), 1);
-	// setenv("OTSDAQ_UTILITIES_LIB", (std::string(getenv("USER_DATA")) + "/").c_str(), 1);
-
-	// // Some configuration plug-ins use __ENV__("OTS_MAIN_PORT") in init() so define it
-	// setenv("OTS_MAIN_PORT", "2015", 1);
-
-	// // also xdaq envs for XDAQContextTable
-	// setenv("XDAQ_CONFIGURATION_DATA_PATH", (std::string(getenv("USER_DATA")) + "/XDAQConfigurations").c_str(), 1);
-	// setenv("XDAQ_CONFIGURATION_XML", "otsConfigurationNoRU_CMake", 1);
 	////////////////////////////////////////////////////
 
 	//==============================================================================
@@ -124,18 +105,6 @@ void SaveJSON_Document(int argc, char* argv[])
 
 int main(int argc, char* argv[])
 {
-	if(getenv("OTSDAQ_LOG_FHICL") == NULL)
-		setenv("OTSDAQ_LOG_FHICL",
-		       (std::string(__ENV__("USER_DATA")) +
-		        "/MessageFacilityConfigurations/MessageFacilityWithCout.fcl")
-		           .c_str(),
-		       1);
-
-	if(getenv("OTSDAQ_LOG_ROOT") == NULL)
-		setenv(
-		    "OTSDAQ_LOG_ROOT", (std::string(__ENV__("USER_DATA")) + "/Logs").c_str(), 1);
-
-	// INIT_MF("SaveJSON_Document");
 	SaveJSON_Document(argc, argv);
 	return 0;
 }

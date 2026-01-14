@@ -1615,6 +1615,13 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
     const std::map<std::string, TableVersion>&                   groupMemberMap,
     const std::map<std::string /*name*/, std::string /*alias*/>& memberTableAliases)
 {
+	if(!groupMemberMap.size() || groupName.empty())
+	{
+		__SS__ << "Illegal name/members for requested group of name '" << groupName
+		       << "' and member count = " << groupMemberMap.size() << __E__;
+		__SS_THROW__;
+	}
+
 	//	//NOTE: seems like this filter is taking the long amount of time
 	//	std::set<std::string /*name*/> fullGroupNames =
 	//			theInterface_->getAllTableGroupNames(groupName); //db filter bygroup  name
@@ -2796,6 +2803,23 @@ void ConfigurationManagerRW::testXDAQContext()
 	// get Group Info too!
 	try
 	{
+		//test lookup of which groups a table is in
+		{
+			std::string  documentNameToLoad = "XDAQApplicationTable";
+			TableVersion documentVersionToLoad((int)1);  //134
+
+			std::set<std::string> groupsContainingTable =
+			    theInterface_->findGroupsWithTable(documentNameToLoad,
+			                                       documentVersionToLoad);
+			__GEN_COUT__ << "Groups containing " << documentNameToLoad << "-v"
+			             << documentVersionToLoad
+			             << " count: " << groupsContainingTable.size() << __E__;
+			for(const auto& group : groupsContainingTable)
+			{
+				__GEN_COUT__ << "\t" << group << __E__;
+			}
+		}
+
 		std::string debugGroupName = "Mu2eHWEmulatorContext";
 
 		//final solution demo of getting latest group key:
