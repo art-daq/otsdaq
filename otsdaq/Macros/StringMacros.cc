@@ -5,11 +5,11 @@
 
 using namespace ots;
 
-std::map<std::string /* system variable */, 
-		std::map<std::string /* property */, 
-		std::string /* value */>> 				StringMacros::systemVariables_;
-const std::string						 		StringMacros::TBD = "To-be-defined";
-		
+std::map<std::string /* system variable */,
+         std::map<std::string /* property */, std::string /* value */>>
+                  StringMacros::systemVariables_;
+const std::string StringMacros::TBD = "To-be-defined";
+
 //==============================================================================
 /// wildCardMatch
 ///	find needle in haystack
@@ -401,7 +401,7 @@ const std::string& StringMacros::trim(std::string& s)
 ///  or system variables entered as ${OTS.<variable>.<property>} (only bracket syntax allowed!)
 ///		e.g. ${OTS.ActiveStateMachine.name}
 ///		e.g. ${OTS.ActiveStateMachine.fileNameAlias}
-///	System variable are read from the static StringMacros map, 
+///	System variable are read from the static StringMacros map,
 /// 	which is generally filled by the host Supervisor.
 std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 {
@@ -445,26 +445,28 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		}
 		__COUTVS__(50, data);
 		__COUTVS__(50, envVariable);
-		if(envVariable.size() > 3 && envVariable[0] == 'O'
-	 		&& envVariable[1] == 'T' && envVariable[2] == 'S'
-			&& envVariable[3] == '.')
+		if(envVariable.size() > 3 && envVariable[0] == 'O' && envVariable[1] == 'T' &&
+		   envVariable[2] == 'S' && envVariable[3] == '.')
 		{
 			__COUT__ << "OTS system variable detected!" << __E__;
-			auto sysVarSplit = StringMacros::getVectorFromString(envVariable,{'.'});
+			auto sysVarSplit = StringMacros::getVectorFromString(envVariable, {'.'});
 			__COUTV__(StringMacros::vectorToString(sysVarSplit));
 
-			if(sysVarSplit.size() != 3 || 
-				systemVariables_.find(sysVarSplit[1]) == systemVariables_.end() || 
-				systemVariables_.at(sysVarSplit[1]).find(sysVarSplit[2]) == systemVariables_.at(sysVarSplit[1]).end())
+			if(sysVarSplit.size() != 3 ||
+			   systemVariables_.find(sysVarSplit[1]) == systemVariables_.end() ||
+			   systemVariables_.at(sysVarSplit[1]).find(sysVarSplit[2]) ==
+			       systemVariables_.at(sysVarSplit[1]).end())
 			{
-				__SS__ << "System variable ${" << envVariable << "} is not valid or was not found!" << __E__;
+				__SS__ << "System variable ${" << envVariable
+				       << "} is not valid or was not found!" << __E__;
 				__SS_THROW__;
 			}
 			//else successful
 			// proceed recursively
-			return convertEnvironmentVariables(
-				converted.replace(begin, end - begin, systemVariables_.at(sysVarSplit[1]).at(sysVarSplit[2])));
-
+			return convertEnvironmentVariables(converted.replace(
+			    begin,
+			    end - begin,
+			    systemVariables_.at(sysVarSplit[1]).at(sysVarSplit[2])));
 		}
 		else
 		{
@@ -474,13 +476,13 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			{
 				// proceed recursively
 				return convertEnvironmentVariables(
-					converted.replace(begin, end - begin, envResult));
+				    converted.replace(begin, end - begin, envResult));
 			}
 			else
 			{
 				__SS__ << ("The environmental variable '" + envVariable +
-						"' is not set! Please make sure you set it before continuing!")
-					<< std::endl;
+				           "' is not set! Please make sure you set it before continuing!")
+				       << std::endl;
 				__SS_THROW__;
 			}
 		}

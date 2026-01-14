@@ -76,7 +76,8 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
                                               bool         verbose /* = false */)
 {
 	// lockout other sender and receive attempts for the remainder of the scope
-	std::lock_guard<std::mutex> lock(sendAndReceiveMutex_); //note that TransmitterSocket::sendMutex_ is not enough
+	std::lock_guard<std::mutex> lock(
+	    sendAndReceiveMutex_);  //note that TransmitterSocket::sendMutex_ is not enough
 
 	flush();  //make sure nothing to read before sending
 	send(toSocket, sendBuffer, verbose);

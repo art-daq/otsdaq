@@ -2360,7 +2360,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 		__COUTVS__(10, StringMacros::vectorToString(parsedFields));
 		__COUTVS__(10, command);
 
-		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+		Socket gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
 
 		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
@@ -2462,7 +2462,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		__COUT__ << "Sending to subsystem '" << remoteGatewayApp.appInfo.name
 		         << "' the command: " << command << __E__;
 
-		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+		Socket gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
 
 		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
@@ -2481,38 +2481,41 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 				if(rootPos > 0)
 				{
 					rootPos += 7;
-					donePos = commandResponseString.find("Done",rootPos);
+					donePos = commandResponseString.find("Done", rootPos);
 				}
 				if(donePos > 0 && (donePos == rootPos || donePos == rootPos + 1))
 				{
 					__COUT__ << "Found DONE appended after status xml!" << __E__;
 					commandResponseString = commandResponseString.substr(donePos);
 					__COUTV__(commandResponseString);
-					donePos = 0; //mark good
+					donePos = 0;  //mark good
 				}
 				else
 				{
-					donePos = -1; //clear
-					commandResponseString = ""; //clear
-					if(remoteGatewaySocket->receive(commandResponseString, 10 /*timeoutSeconds*/) == 0 /* success */)
+					donePos               = -1;  //clear
+					commandResponseString = "";  //clear
+					if(remoteGatewaySocket->receive(commandResponseString,
+					                                10 /*timeoutSeconds*/) ==
+					   0 /* success */)
 					{
-						__COUT__ << "Response 2 from subsystem '" << remoteGatewayApp.appInfo.name
-								<< "' received: " << commandResponseString << __E__;
+						__COUT__ << "Response 2 from subsystem '"
+						         << remoteGatewayApp.appInfo.name
+						         << "' received: " << commandResponseString << __E__;
 						donePos = commandResponseString.find("Done");
 					}
-					else //timeout occurred
+					else  //timeout occurred
 					{
-						donePos = -1; //clear
+						donePos               = -1;  //clear
 						commandResponseString = "TIMEOUT!";
 					}
 				}
 			}
-			
+
 			if(donePos != 0)  //then error
 			{
 				__SS__ << "Unsuccessful response received from Remote Gateway '"
-					<< remoteGatewayApp.appInfo.name + "' - here was the response: "
-					<< commandResponseString << __E__;
+				       << remoteGatewayApp.appInfo.name + "' - here was the response: "
+				       << commandResponseString << __E__;
 				__SS_THROW__;
 			}
 		}
@@ -2523,13 +2526,13 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 			// //extract dump type from config dump
 			std::string configDumpType = commandResponseString.substr(
 			    commandResponseString.find("Type of dump") + sizeof("Type of dump") - 1);
-			if(!(configDumpType.find("JSON all") != std::string::npos)) 
+			if(!(configDumpType.find("JSON all") != std::string::npos))
 			{
 				__COUT__ << "Found not JSON all dump type" << __E__;
 				remoteGatewayApp.config_dump = "\n\n************************\n";
 				remoteGatewayApp.config_dump +=
-					"* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
-					"' at url: " + remoteGatewayApp.appInfo.url + "\n";
+				    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
+				    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
 				remoteGatewayApp.config_dump += "* \n";
 				remoteGatewayApp.config_dump += "\n\n";
 			}
@@ -2542,16 +2545,17 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 			//make sure we received everything
 			int tryCnt = 0;
 			while(++tryCnt < 100 && commandResponseString.size() > 10 &&
-				(commandResponseString[commandResponseString.size() - 1] != '-' ||
-				commandResponseString[commandResponseString.size() - 2] != '-' ||
-				commandResponseString[commandResponseString.size() - 3] != '-' ||
-				commandResponseString[commandResponseString.size() - 4] != 'D' ||
-				commandResponseString[commandResponseString.size() - 5] != 'N' ||
-				commandResponseString[commandResponseString.size() - 6] != 'E'))
+			      (commandResponseString[commandResponseString.size() - 1] != '-' ||
+			       commandResponseString[commandResponseString.size() - 2] != '-' ||
+			       commandResponseString[commandResponseString.size() - 3] != '-' ||
+			       commandResponseString[commandResponseString.size() - 4] != 'D' ||
+			       commandResponseString[commandResponseString.size() - 5] != 'N' ||
+			       commandResponseString[commandResponseString.size() - 6] != 'E'))
 			{
 				__COUT__ << "There must be more, try = " << tryCnt << __E__;
 				std::string more;
-				if(remoteGatewaySocket->receive(more, 1 /*timeoutSeconds*/) == 0 /* success */)
+				if(remoteGatewaySocket->receive(more, 1 /*timeoutSeconds*/) ==
+				   0 /* success */)
 					commandResponseString += more;
 				else
 				{
@@ -2608,9 +2612,11 @@ try
 			                 remoteGatewayApp.appInfo.name;
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "requestString = " << requestString << __E__;
-		
+
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(
-		    gatewayRemoteSocket, requestString, 2 /*timeoutSeconds*/); //When TRACE slow path is over utilized, we see 3 second slow down frequently
+		    gatewayRemoteSocket,
+		    requestString,
+		    2 /*timeoutSeconds*/);  //When TRACE slow path is over utilized, we see 3 second slow down frequently
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "remoteStatusString = " << remoteStatusString << __E__;
 
@@ -3783,14 +3789,15 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					    WebUsers::DEFAULT_STATECHANGER_USERNAME,
 					    parameters);
 
-					if(0 && //no longer returning dump on configure (it takes too long, and is incorrect if subsystems configure multiple times)
-						errorStr == "" &&
+					if(0 &&  //no longer returning dump on configure (it takes too long, and is incorrect if subsystems configure multiple times)
+					   errorStr == "" &&
 					   command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 						extraDoneContent =
 						    theSupervisor
 						        ->activeStateMachineConfigurationDumpOnConfigure_;
 
-					if(errorStr == "" && //start transition is where subusystem configure dump is aggregated!
+					if(errorStr ==
+					       "" &&  //start transition is where subusystem configure dump is aggregated!
 					   command == RunControlStateMachine::START_TRANSITION_NAME)
 						extraDoneContent =
 						    theSupervisor->activeStateMachineConfigurationDumpOnRun_;
@@ -4370,8 +4377,8 @@ try
 		}
 
 		// check if configuration dump is enabled on configure transition
-		activeStateMachineDumpFormatOnRun_ = ""; //clear
-		activeStateMachineDumpFormatOnConfigure_ = ""; //clear
+		activeStateMachineDumpFormatOnRun_       = "";  //clear
+		activeStateMachineDumpFormatOnConfigure_ = "";  //clear
 		{
 			ConfigurationTree configLinkNode =
 			    CorePropertySupervisorBase::theConfigurationManager_
@@ -4456,7 +4463,8 @@ try
 					}
 
 					activeStateMachineConfigurationDumpOnConfigureEnable_ =
-					    fsmLinkNode.getNode("EnableConfigurationDumpOnConfigureTransition")
+					    fsmLinkNode
+					        .getNode("EnableConfigurationDumpOnConfigureTransition")
 					        .getValue<bool>();
 					activeStateMachineConfigurationDumpOnRunEnable_ =
 					    fsmLinkNode.getNode("EnableConfigurationDumpOnRunTransition")
@@ -4467,8 +4475,9 @@ try
 					activeStateMachineDumpFormatOnConfigure_ =
 					    fsmLinkNode.getNode("ConfigurationDumpOnConfigureFormat")
 					        .getValue<std::string>();
-					activeStateMachineDumpFormatOnRun_ = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat")
-					                      .getValue<std::string>();
+					activeStateMachineDumpFormatOnRun_ =
+					    fsmLinkNode.getNode("ConfigurationDumpOnRunFormat")
+					        .getValue<std::string>();
 
 					std::string dumpFilePath, dumpFileRadix;
 					dumpFilePath =
@@ -4587,10 +4596,10 @@ try
 		//Note: Remote Subsystems must respond with Configuration Dump immediately in the udp reply.
 		//	Since Configuration Dump can take a long time and since a subsystem might configure multiple times
 		//		asynchronously, only collect the pre-assemble configuration dump on the Start transition.
-		//	Configure transition Configuration Dumps can be saved independently by subsystem 
+		//	Configure transition Configuration Dumps can be saved independently by subsystem
 		//		(including to their own Run Info Plugin) if desired.
-		
-		//Based on Config Tree settings, the configuration dump is cached into 
+
+		//Based on Config Tree settings, the configuration dump is cached into
 		//	activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_
 
 	}  //end Configure transition
@@ -4926,7 +4935,7 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		}
 		catch(...)
 		{
-			// 
+			//
 			__SS__ << "RUN INFO RESUME TIME UPDATE INTO DATABASE FAILED!!! " << __E__;
 			try
 			{
@@ -5297,8 +5306,7 @@ try
 	__COUT__ << "Transition parameter ConfigurationAlias: " << configurationAlias
 	         << __E__;
 
-
-	{ //do configuration dump handling
+	{  //do configuration dump handling
 		try
 		{
 			CorePropertySupervisorBase::theConfigurationManager_
@@ -5357,7 +5365,7 @@ try
 			    0 /*groupCreateTime   */,
 			    true /*doNotLoadMember */,
 			    &groupTypeString);
-			
+
 			RunControlStateMachine::theProgressBar_.step();
 
 			if(groupTypeString != ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
@@ -5497,7 +5505,6 @@ try
 				__COUT__ << "Active State Machine Config Dump on Configure " << __E__;
 				__COUT__ << activeStateMachineConfigurationDumpOnConfigure_ << __E__;
 				__COUT_MULTI__(2, activeStateMachineConfigurationDumpOnConfigure_);
-
 			}
 			else
 				__COUT_INFO__
@@ -5516,7 +5523,7 @@ try
 			__SS__ << "Unknown error encoutered during configuration dump.";
 			__SS_THROW__;
 		}
-	} //end configuration dump handling
+	}  //end configuration dump handling
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -5641,7 +5648,6 @@ try
 	broadcastMessage(message);  // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
 
-
 	if(activeStateMachineConfigurationDumpOnConfigureEnable_)
 	{
 		//write local configuration dump file
@@ -5671,11 +5677,14 @@ try
 
 		if(activeStateMachineConfigurationDumpOnConfigure_.size())
 		{
-			fwrite(&activeStateMachineConfigurationDumpOnConfigure_, 1, activeStateMachineConfigurationDumpOnConfigure_.size(), fp);
+			fwrite(&activeStateMachineConfigurationDumpOnConfigure_,
+			       1,
+			       activeStateMachineConfigurationDumpOnConfigure_.size(),
+			       fp);
 
 			__COUT__ << "Wrote remote subsystem configuration dump of char count "
-			         << activeStateMachineConfigurationDumpOnConfigure_.size() << " to file: " << fullfilename
-			         << __E__;
+			         << activeStateMachineConfigurationDumpOnConfigure_.size()
+			         << " to file: " << fullfilename << __E__;
 		}
 		fclose(fp);
 
@@ -5733,7 +5742,8 @@ try
 			}
 
 			//in case user wants, insert local configuration blob at each configure transition
-			runInfoInterface->insertLocalConfigureBlob(activeStateMachineConfigurationDumpOnConfigure_);
+			runInfoInterface->insertLocalConfigureBlob(
+			    activeStateMachineConfigurationDumpOnConfigure_);
 
 			// std::string configDumpType = activeStateMachineConfigurationDumpOnConfigure_.substr(
 			//     activeStateMachineConfigurationDumpOnConfigure_.find("Type of dump") + sizeof("Type of dump") - 1);
@@ -6576,12 +6586,13 @@ try
 	        .getCurrentMessage());  // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
 
-	//now that broadcast message done (all subsystems are done with transition!), 
+	//now that broadcast message done (all subsystems are done with transition!),
 	//	check for remote subsystem dumps (after broadcast!)
 	__COUT__ << "Broadcast done. Check for remote subsystem dumps." << __E__;
 
-	std::map<std::string /* subsystem */, 
-		std::map<std::string /*type/name/field */, std::string /* value */>> gatewayDumpMap;
+	std::map<std::string /* subsystem */,
+	         std::map<std::string /*type/name/field */, std::string /* value */>>
+	    gatewayDumpMap;
 	{
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
 		{  //lock for remainder of scope
@@ -6596,11 +6607,13 @@ try
 
 		//include self
 		gatewayDumpMap["Gateway"]["name"] = getSupervisorUID();
-		gatewayDumpMap["Gateway"]["url"] = allSupervisorInfo_.getGatewayInfo().getURL();
+		gatewayDumpMap["Gateway"]["url"]  = allSupervisorInfo_.getGatewayInfo().getURL();
 		gatewayDumpMap["Gateway"]["configAlias"] = lastConfigurationAlias_;
-		gatewayDumpMap["Gateway"]["consoleErrCount"] = std::to_string(systemConsoleErrCount_);
-		gatewayDumpMap["Gateway"]["consoleWarnCount"] = std::to_string(systemConsoleWarnCount_);
-		gatewayDumpMap["Gateway"]["fsmMode"] = "Follow FSM";
+		gatewayDumpMap["Gateway"]["consoleErrCount"] =
+		    std::to_string(systemConsoleErrCount_);
+		gatewayDumpMap["Gateway"]["consoleWarnCount"] =
+		    std::to_string(systemConsoleWarnCount_);
+		gatewayDumpMap["Gateway"]["fsmMode"]     = "Follow FSM";
 		gatewayDumpMap["Gateway"]["fsmIncluded"] = "1";
 		gatewayDumpMap["Gateway"]["dump"] = activeStateMachineConfigurationDumpOnRun_;
 
@@ -6609,49 +6622,66 @@ try
 			if(!remoteGatewayApp.fsm_included)
 				continue;  //skip if not included
 
-			gatewayDumpMap[remoteGatewayApp.fullName]["name"] = remoteGatewayApp.appInfo.name;
-			gatewayDumpMap[remoteGatewayApp.fullName]["url"] = remoteGatewayApp.appInfo.url;
-			gatewayDumpMap[remoteGatewayApp.fullName]["configAlias"] = remoteGatewayApp.selected_config_alias;
-			gatewayDumpMap[remoteGatewayApp.fullName]["consoleErrCount"] = std::to_string(remoteGatewayApp.consoleErrCount);
-			gatewayDumpMap[remoteGatewayApp.fullName]["consoleWarnCount"] = std::to_string(remoteGatewayApp.consoleWarnCount);
-			gatewayDumpMap[remoteGatewayApp.fullName]["fsmMode"] = remoteGatewayApp.getFsmMode();
-			gatewayDumpMap[remoteGatewayApp.fullName]["fsmIncluded"] = std::string(remoteGatewayApp.fsm_included ? "1" : "0");
-			
+			gatewayDumpMap[remoteGatewayApp.fullName]["name"] =
+			    remoteGatewayApp.appInfo.name;
+			gatewayDumpMap[remoteGatewayApp.fullName]["url"] =
+			    remoteGatewayApp.appInfo.url;
+			gatewayDumpMap[remoteGatewayApp.fullName]["configAlias"] =
+			    remoteGatewayApp.selected_config_alias;
+			gatewayDumpMap[remoteGatewayApp.fullName]["consoleErrCount"] =
+			    std::to_string(remoteGatewayApp.consoleErrCount);
+			gatewayDumpMap[remoteGatewayApp.fullName]["consoleWarnCount"] =
+			    std::to_string(remoteGatewayApp.consoleWarnCount);
+			gatewayDumpMap[remoteGatewayApp.fullName]["fsmMode"] =
+			    remoteGatewayApp.getFsmMode();
+			gatewayDumpMap[remoteGatewayApp.fullName]["fsmIncluded"] =
+			    std::string(remoteGatewayApp.fsm_included ? "1" : "0");
+
 			if(remoteGatewayApp.config_dump.size() > 10 &&
-					(remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 1] != '-' ||
-					remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 2] != '-' ||
-					remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 3] != '-' ||
-					remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 4] != 'D' ||
-					remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 5] != 'N' ||
-					remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 6] != 'E'))
-				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] = remoteGatewayApp.config_dump.substr(0,remoteGatewayApp.config_dump.size()-6);
-			else //non standard format??
-				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] = remoteGatewayApp.config_dump;
-		} //end remote app loop
-			
+			   (remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 1] !=
+			        '-' ||
+			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 2] !=
+			        '-' ||
+			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 3] !=
+			        '-' ||
+			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 4] !=
+			        'D' ||
+			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 5] !=
+			        'N' ||
+			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 6] !=
+			        'E'))
+				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] =
+				    remoteGatewayApp.config_dump.substr(
+				        0, remoteGatewayApp.config_dump.size() - 6);
+			else  //non standard format??
+				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] =
+				    remoteGatewayApp.config_dump;
+		}  //end remote app loop
+
 		if(TTEST(2))
 		{
 			__COUT__ << "..." << __E__;
 			std::string mapDumpStr = "";
-			for (const auto& mapPair : gatewayDumpMap)
-				for (const auto& [key, value] : mapPair.second)
-				{	
-					mapDumpStr = mapPair.first + " ~~ \n" + key + " : " + value + "\nEND!!!";
-					__COUT_MULTI__(2, mapDumpStr);					
+			for(const auto& mapPair : gatewayDumpMap)
+				for(const auto& [key, value] : mapPair.second)
+				{
+					mapDumpStr =
+					    mapPair.first + " ~~ \n" + key + " : " + value + "\nEND!!!";
+					__COUT_MULTI__(2, mapDumpStr);
 				}
 		}
 
 		__COUTV__(activeStateMachineRunInfoPluginType_);
 
 		if(activeStateMachineRunInfoPluginType_ !=
-				TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-			activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
+		       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+		   activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
 		{
 			std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
 			try
 			{
-				runInfoInterface.reset(makeRunInfo(
-					activeStateMachineRunInfoPluginType_, activeStateMachineName_));
+				runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_,
+				                                   activeStateMachineName_));
 			}
 			catch(...)
 			{
@@ -6660,14 +6690,14 @@ try
 			if(runInfoInterface == nullptr)
 			{
 				__SS__ << "Run Info interface plugin construction failed of type "
-						<< activeStateMachineRunInfoPluginType_
-						<< " for claiming next run number!" << __E__;
+				       << activeStateMachineRunInfoPluginType_
+				       << " for claiming next run number!" << __E__;
 				__SS_THROW__;
 			}
 
-			//FIXME -- uncomment after testing!			
+			//FIXME -- uncomment after testing!
 			// runInfoInterface->insertRunCondition(gatewayDumpMap); // TODO: uncomment after testing dump
-			
+
 		}  // end Run Info Plugin handling
 
 	}  //end check for remote subsystem dumps
@@ -6701,11 +6731,14 @@ try
 
 		if(activeStateMachineConfigurationDumpOnRun_.size())
 		{
-			fwrite(&activeStateMachineConfigurationDumpOnRun_, 1, activeStateMachineConfigurationDumpOnRun_.size(), fp);
+			fwrite(&activeStateMachineConfigurationDumpOnRun_,
+			       1,
+			       activeStateMachineConfigurationDumpOnRun_.size(),
+			       fp);
 
 			__COUT__ << "Wrote remote subsystem configuration dump of char count "
-			         << activeStateMachineConfigurationDumpOnRun_.size() << " to file: " << fullfilename
-			         << __E__;
+			         << activeStateMachineConfigurationDumpOnRun_.size()
+			         << " to file: " << fullfilename << __E__;
 		}
 		fclose(fp);
 
@@ -6829,7 +6862,6 @@ try
 				   << activeStateMachineConfigurationDumpOnRun_;
 				ss << "\nEND Remote Configuration dump:\n-----------------\n";
 			}
-
 		}
 
 		makeSystemLogEntry(ss.str(),
@@ -7933,7 +7965,8 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 		}
 
-		std::map<std::string /* fullName */, int /* unknownCount */> unknownResponseCounts;
+		std::map<std::string /* fullName */, int /* unknownCount */>
+		    unknownResponseCounts;
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			//skip remote gateways that were not commanded
@@ -7973,23 +8006,24 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				{
 					unknownResponseCounts[remoteGatewayApp.fullName]++;
 					if(unknownResponseCounts[remoteGatewayApp.fullName] > 2)
-					{					
+					{
 						__SS__ << "Can not complete FSM command '" << command
-							<< "' with unknown status from Remote gateway '"
-							<< remoteGatewayApp.appInfo.name
-							<< "' - it seems communication was lost. Please check the "
-								"connection or notify admins."
-							<< __E__;
+						       << "' with unknown status from Remote gateway '"
+						       << remoteGatewayApp.appInfo.name
+						       << "' - it seems communication was lost. Please check the "
+						          "connection or notify admins."
+						       << __E__;
 						__SS_THROW__;
 					}
 				}
-				else unknownResponseCounts[remoteGatewayApp.fullName] = 0;
+				else
+					unknownResponseCounts[remoteGatewayApp.fullName] = 0;
 				__COUT__ << "Remote gateway '" << remoteGatewayApp.appInfo.name
 				         << "' not done w/command '" << command
 				         << "' status = " << remoteGatewayApp.appInfo.status
 				         << ",... progress = " << remoteGatewayApp.appInfo.progress
-						 << ",... unkCnt = " << unknownResponseCounts.at(remoteGatewayApp.fullName)
-				         << __E__;
+				         << ",... unkCnt = "
+				         << unknownResponseCounts.at(remoteGatewayApp.fullName) << __E__;
 
 				done = false;
 			}

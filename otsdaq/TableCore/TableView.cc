@@ -1027,7 +1027,7 @@ std::string TableView::getEscapedValueAsString(
     bool         doConvertEnvironmentVariables /* = true */,
     bool         quotesToDoubleQuotes /* = false */) const
 {
-	std::string val    = getValueAsString(row, col, doConvertEnvironmentVariables);
+	std::string val = getValueAsString(row, col, doConvertEnvironmentVariables);
 
 	__COUT__ << "String before edits: " << val << __E__;
 	std::replace(val.begin(), val.end(), '"', '\'');
@@ -2229,7 +2229,7 @@ void TableView::printJSON(std::ostream& out /* = std::cout */) const
 	out << "{\n";
 	out << "\"NAME\" : \"" << tableName_ << "\",\n";
 
-    out << "\"VERSION\": \"" << version_.toString() << "\",\n";
+	out << "\"VERSION\": \"" << version_.toString() << "\",\n";
 
 	// out << "\"VERSION\" : \"" << version_ <<  "\"\n";
 
