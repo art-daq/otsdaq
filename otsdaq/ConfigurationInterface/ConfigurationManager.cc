@@ -999,6 +999,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
                                                    const std::string& configurationAlias,
                                                    const std::string& logEntry,
                                                    const std::string& activeUsers,
+												   const std::string& activeStateMachine,
                                                    std::ostream& altOut /* = std::cout */)
 {
 	time_t rawtime = time(0);
@@ -1035,6 +1036,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		{
 			(*out) << "\t\"HOSTNAME\": \"" << __ENV__("HOSTNAME") << "\"," << __E__;
 			(*out) << "\t\"HOSTNAME filepath\": \"" << filePath << "\"," << __E__;
+			(*out) << "\t\"Active State Machine\": \"" << activeStateMachine << "\"," << __E__;
 		}
 		(*out) << "\t\"active_users\": \t[";
 		if(activeUsers.size())

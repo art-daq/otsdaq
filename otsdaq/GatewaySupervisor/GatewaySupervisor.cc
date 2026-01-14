@@ -5465,6 +5465,7 @@ try
 				        getLastLogEntry(
 				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
 				        theWebUsers_.getActiveUsersString(),
+						theStateMachine_.getCurrentStateName(),
 				        dumpSs);
 
 				activeStateMachineConfigurationDumpOnRun_ = dumpSs.str();
@@ -5498,6 +5499,7 @@ try
 				        getLastLogEntry(
 				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
 				        theWebUsers_.getActiveUsersString(),
+						theStateMachine_.getCurrentStateName(),
 				        dumpSs);
 
 				activeStateMachineConfigurationDumpOnConfigure_ = dumpSs.str();
