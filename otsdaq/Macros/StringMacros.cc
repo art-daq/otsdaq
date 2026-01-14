@@ -1760,7 +1760,10 @@ void StringMacros::coutSplit(const std::string&    str,
 	auto splitArr =
 	    StringMacros::getVectorFromString(str, delimiter, {} /* whitespace */);
 	for(const auto& split : splitArr)
+	{
 		__COUTS__(lvl) << split;
+		usleep(10000);
+	}
 }  //end coutSplit()
 
 #ifdef __GNUG__

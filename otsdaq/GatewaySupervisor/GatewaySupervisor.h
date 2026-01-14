@@ -313,6 +313,7 @@ class WorkLoopManager;
 
 		std::string 		activeStateMachineName_;  ///< when multiple state machines, this is the name of the state machine which executed the configure transition
 		std::string 		activeStateMachineWindowName_;
+		std::string 		activeStateMachineDumpFormatOnRun_, activeStateMachineDumpFormatOnConfigure_; ///<cached at Configure transition
 		std::string 		activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; ///<cached at Configure transition
 		bool				activeStateMachineConfigurationDumpOnRunEnable_, activeStateMachineConfigurationDumpOnConfigureEnable_; ///<cached at Configure transition
 		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; ///<cached at Configure transition
