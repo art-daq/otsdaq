@@ -1026,7 +1026,6 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		out = &(altOut);
 	}
 
-	// TODO: Add below to JSON dump
 	if(dumpType == "JSON all")
 	{
 		(*out) << "{\n";
