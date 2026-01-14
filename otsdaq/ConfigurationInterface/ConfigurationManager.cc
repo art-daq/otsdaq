@@ -1085,14 +1085,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	std::pair<std::string, ots::TableGroupKey> configurationTableGroup =
 	    getTableGroupFromAlias(configurationAlias);
 
-	if(dumpType == "JSON all")
-	{
-		// Include in "active"
-		// (*out) << "\t\"Configuration Alias\": \t\t\t\"" << configurationAlias << "\",\n";
-		// (*out) << "\t\"Configuration Alias translation version\": \t\"" << configurationTableGroup.second << "\",\n";
-		//(*out) << "\t\"Configuration Alias translation\": \t\"" << configurationTableGroup.first << "\",\n";
-	}
-	else
+	if(dumpType != "JSON all")
 	{
 		(*out) << "Configuration Alias: \t\t\t" << configurationAlias << "\n";
 		(*out) << "Configuration Alias translation: \t" << configurationTableGroup.first
