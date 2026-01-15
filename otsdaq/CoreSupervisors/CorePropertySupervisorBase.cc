@@ -494,9 +494,12 @@ void CorePropertySupervisorBase::checkSupervisorPropertySetup()
 	readOnly_ = getSupervisorProperty("ReadOnly", "0") == "1" ? true : false;
 	__SUP_COUTV__(readOnly_);
 
-	__SUP_COUTT__ << "Setting up supervisor specific FORCED properties for supervisor..." << __E__;
+	__SUP_COUTT__ << "Setting up supervisor specific FORCED properties for supervisor..."
+	              << __E__;
 	forceSupervisorPropertyValues();  // calls override forced values
-	__SUP_COUTT__ << "Done setting up supervisor specific FORCED properties for supervisor." <<	__E__;
+	__SUP_COUTT__
+	    << "Done setting up supervisor specific FORCED properties for supervisor."
+	    << __E__;
 
 	CorePropertySupervisorBase::extractPermissionsMapFromString(
 	    getSupervisorProperty(

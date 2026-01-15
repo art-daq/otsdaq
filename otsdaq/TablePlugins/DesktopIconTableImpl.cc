@@ -291,41 +291,41 @@ std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager,
                                            const std::string&    localURL) const
 {
 	std::string contextAddress;
-	{ //get context address of gateway to use as origin for remote icons
+	{  //get context address of gateway to use as origin for remote icons
 		ConfigurationTree contextTableNode =
-			configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
+		    configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
 		const XDAQContextTable* contextTable = configManager->getTable<XDAQContextTable>(
-			ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
+		    ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
 
 		std::string gatewayContextUID = contextTable->getContextOfGateway(configManager);
 		ConfigurationTree contextNode = contextTableNode.getNode(gatewayContextUID);
 
 		contextAddress = contextNode.getNode(XDAQContextTable::colContext_.colAddress_)
-								.getValue<std::string>();
+		                     .getValue<std::string>();
 		unsigned int contextPort =
-			contextNode.getNode(XDAQContextTable::colContext_.colPort_)
-				.getValue<unsigned int>();
+		    contextNode.getNode(XDAQContextTable::colContext_.colPort_)
+		        .getValue<unsigned int>();
 
 		try
 		{
 			if(__ENV__(
-					"OTS_REMOTE_ICONS_NO_PORT_FOWARDING"))  //define this environment variable to not use localhost port forwarding to browser
+			       "OTS_REMOTE_ICONS_NO_PORT_FOWARDING"))  //define this environment variable to not use localhost port forwarding to browser
 				contextAddress += ":" + std::to_string(contextPort);
 			else
 				contextAddress = std::string("http://") + "localhost" + ":" +
-									std::to_string(contextPort);
+				                 std::to_string(contextPort);
 		}
 		catch(...)
 		{
 			__COUTT__ << "Ignoring missing environment variable "
-							"OTS_REMOTE_ICONS_NO_PORT_FOWARDING, and assuming localhost "
-							"port forwarding to web browser."
-						<< __E__;
+			             "OTS_REMOTE_ICONS_NO_PORT_FOWARDING, and assuming localhost "
+			             "port forwarding to web browser."
+			          << __E__;
 			contextAddress =
-				std::string("http://") + "localhost" + ":" + std::to_string(contextPort);
+			    std::string("http://") + "localhost" + ":" + std::to_string(contextPort);
 		}
-	} //end context address retrieval block
-	
+	}  //end context address retrieval block
+
 	std::string retURL;
 	{
 		__COUTTV__(localURL);

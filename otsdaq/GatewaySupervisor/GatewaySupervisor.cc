@@ -967,9 +967,11 @@ try
 									       "targeting a UID in the "
 									       "SubsystemUserDataPathsTable."
 									    << __E__;
-									if(std::string(e.what()).find("Backbone") != std::string::npos)
+									if(std::string(e.what()).find("Backbone") !=
+									   std::string::npos)
 										ss << "\n\n" << REMOTE_BACKBONE_ERR;
-									ss << "\n\nHere was the error getting the list of Remote Subsystem "
+									ss << "\n\nHere was the error getting the list of "
+									      "Remote Subsystem "
 									      "Configuration Aliases:\n"
 									   << e.what() << __E__;
 									__COUT__ << ss.str();
@@ -1352,11 +1354,11 @@ try
 								continue;  //skip if command to be sent
 
 							bool isRemoteAppDisconnected =
-								appLastStatusGood.find(remoteGatewayApp.appInfo.url +
-													remoteGatewayApp.appInfo.name) !=
-									appLastStatusGood.end() &&
-								!appLastStatusGood.at(remoteGatewayApp.appInfo.url +
-													remoteGatewayApp.appInfo.name);
+							    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
+							                           remoteGatewayApp.appInfo.name) !=
+							        appLastStatusGood.end() &&
+							    !appLastStatusGood.at(remoteGatewayApp.appInfo.url +
+							                          remoteGatewayApp.appInfo.name);
 
 							__COUTVS__(TLVL_RemoteDesktopIcons, isRemoteAppDisconnected);
 
@@ -3410,33 +3412,37 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					const std::string& remoteName = rxParams[4];
 					__COUTVS__(TLVL_Permissions, remoteName);
 
-					//lookup RequiredPermissionLevel of Icon with this remoteName as FolderPath	
-					std::map<std::string /*groupName*/,
-								WebUsers::permissionLevel_t>
-						subsystemIconPermissionLevelMap;
-					{				
+					//lookup RequiredPermissionLevel of Icon with this remoteName as FolderPath
+					std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
+					    subsystemIconPermissionLevelMap;
+					{
 						std::string subsystemIconPermissionLevel = "";
 
-						{ //mutex scope
-							std::lock_guard<std::mutex> lock(theSupervisor->latestGatewayIconsMutex_);
-							const std::vector<DesktopIconTable::DesktopIcon>& icons = theSupervisor->latestGatewayIcons_;
-						
+						{  //mutex scope
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->latestGatewayIconsMutex_);
+							const std::vector<DesktopIconTable::DesktopIcon>& icons =
+							    theSupervisor->latestGatewayIcons_;
+
 							for(const auto& icon : icons)
 							{
 								if(icon.recordUID_ == remoteName)
 								{
-									subsystemIconPermissionLevel = icon.permissionThresholdString_;
-									__COUTVS__(TLVL_Permissions,
-											subsystemIconPermissionLevel);  //the permission threshold for the icon that matches the remote subsystem name
+									subsystemIconPermissionLevel =
+									    icon.permissionThresholdString_;
+									__COUTVS__(
+									    TLVL_Permissions,
+									    subsystemIconPermissionLevel);  //the permission threshold for the icon that matches the remote subsystem name
 									break;
 								}
-							} //search for icon that matches subsystem name
+							}  //search for icon that matches subsystem name
 						}
-						StringMacros::getMapFromString(
-							subsystemIconPermissionLevel,
-							subsystemIconPermissionLevelMap);
-					} //end subsystemIconPermissionLevelMap construction
-					__COUTVS__(TLVL_Permissions, StringMacros::mapToString(subsystemIconPermissionLevelMap));
+						StringMacros::getMapFromString(subsystemIconPermissionLevel,
+						                               subsystemIconPermissionLevelMap);
+					}  //end subsystemIconPermissionLevelMap construction
+					__COUTVS__(
+					    TLVL_Permissions,
+					    StringMacros::mapToString(subsystemIconPermissionLevelMap));
 
 					std::vector<GatewaySupervisor::RemoteGatewayInfo>
 					    remoteGatewayApps;  //local copy
@@ -3445,7 +3451,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    theSupervisor->remoteGatewayAppsMutex_);
 						remoteGatewayApps = theSupervisor->remoteGatewayApps_;
 						__COUTVS__(TLVL_Permissions, remoteGatewayApps.size());
-					}					
+					}
 
 					bool found = false;
 					for(const auto& remoteGatewayApp : remoteGatewayApps)
@@ -3470,7 +3476,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							//
 							//	... this way the user is considered an expert at the remote subsystem
 							//
-							//	if requesting remote gateway side has not specified advanced permissions threshold, e.g. allUsers: 1, then 
+							//	if requesting remote gateway side has not specified advanced permissions threshold, e.g. allUsers: 1, then
 							//		if user is 'HW: 255, allUsers: 1' and there is 'HW: 1' for the icon, then give user
 							//			HW: 255, allUsers: 255'
 
@@ -3496,8 +3502,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 									    << "' to modify: " << (uint16_t)it2->second
 									    << " --> " << (uint16_t)it->second << __E__;
 									it2->second = it->second;
-									__COUTVS__(TLVL_Permissions,
-									           (uint16_t)it2->second);
+									__COUTVS__(TLVL_Permissions, (uint16_t)it2->second);
 								}
 								else if(
 								    it ==
@@ -3508,15 +3513,15 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 									        WebUsers::PERMISSION_LEVEL_INACTIVE;
 							}
 							else if(remoteIconPermissionsMap.size() == 1 &&
-							   remoteIconPermissionsMap.begin()->first ==
-							       WebUsers::DEFAULT_USER_GROUP && 
-								subsystemIconPermissionLevelMap.size() == 1 &&
-								subsystemIconPermissionLevelMap.begin()->first !=
-							       WebUsers::DEFAULT_USER_GROUP)
+							        remoteIconPermissionsMap.begin()->first ==
+							            WebUsers::DEFAULT_USER_GROUP &&
+							        subsystemIconPermissionLevelMap.size() == 1 &&
+							        subsystemIconPermissionLevelMap.begin()->first !=
+							            WebUsers::DEFAULT_USER_GROUP)
 							{
-								__COUTVS__(
-								    TLVL_Permissions,
-								    subsystemIconPermissionLevelMap.begin()->first);  //the group
+								__COUTVS__(TLVL_Permissions,
+								           subsystemIconPermissionLevelMap.begin()
+								               ->first);  //the group
 
 								auto it = userGroupPermissionsMap.find(
 								    subsystemIconPermissionLevelMap.begin()->first);
@@ -3532,8 +3537,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 									    << "' to modify: " << (uint16_t)it2->second
 									    << " --> " << (uint16_t)it->second << __E__;
 									it2->second = it->second;
-									__COUTVS__(TLVL_Permissions,
-									           (uint16_t)it2->second);
+									__COUTVS__(TLVL_Permissions, (uint16_t)it2->second);
 								}
 								else if(
 								    it ==
@@ -3541,9 +3545,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								        .end())  //if special group not found, then no access on default user group!
 								{
 									__COUTS__(TLVL_Permissions)
-									    << "Did not find user group '" << subsystemIconPermissionLevelMap.begin()->first
-									    << "' when required by subsystem icon, so deny access for user: " << WebUsers::DEFAULT_USER_GROUP
-									    << " --> " << WebUsers::PERMISSION_LEVEL_INACTIVE << __E__;
+									    << "Did not find user group '"
+									    << subsystemIconPermissionLevelMap.begin()->first
+									    << "' when required by subsystem icon, so deny "
+									       "access for user: "
+									    << WebUsers::DEFAULT_USER_GROUP << " --> "
+									    << WebUsers::PERMISSION_LEVEL_INACTIVE << __E__;
 									userGroupPermissionsMap
 									    [WebUsers::DEFAULT_USER_GROUP] =
 									        WebUsers::PERMISSION_LEVEL_INACTIVE;
@@ -3559,7 +3566,6 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						                "login verify from '"
 						             << remoteName << "' attempted!" << __E__;
 					}
-					
 
 					// Returned user info:
 					// retParameters.addParameter("CookieCode", cookieCode);
@@ -3569,7 +3575,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					// "DisplayName", theWebUsers_.getUsersDisplayName(uid));
 					// "UserSessionIndex"
 
-					__COUTVS__(TLVL_Permissions, StringMacros::mapToString(userGroupPermissionsMap));
+					__COUTVS__(TLVL_Permissions,
+					           StringMacros::mapToString(userGroupPermissionsMap));
 
 					std::string retStr   = "";
 					std::string username = theWebUsers_.getUsersUsername(uid);
@@ -8527,8 +8534,11 @@ try
 
 			__COUT__ << "Get Settings Request" << __E__;
 			__COUT__ << "accounts = " << accounts << __E__;
-			theWebUsers_.insertSettingsForUser(userInfo.uid_, &xmlOut, accounts == "1", //include user accounts if requested
-				userInfo.getGroupPermissionLevels());
+			theWebUsers_.insertSettingsForUser(
+			    userInfo.uid_,
+			    &xmlOut,
+			    accounts == "1",  //include user accounts if requested
+			    userInfo.getGroupPermissionLevels());
 		}
 		else if(requestType == "setSettings")
 		{
@@ -8558,9 +8568,10 @@ try
 			                                   syslayout,
 			                                   aliasLayout,
 			                                   sysAliaslayout);
-			theWebUsers_.insertSettingsForUser(
-			    userInfo.uid_, &xmlOut, true,  // include user accounts
-				userInfo.getGroupPermissionLevels());
+			theWebUsers_.insertSettingsForUser(userInfo.uid_,
+			                                   &xmlOut,
+			                                   true,  // include user accounts
+			                                   userInfo.getGroupPermissionLevels());
 		}
 		else if(requestType == "accountSettings")
 		{
@@ -8593,8 +8604,11 @@ try
 
 			__COUT__ << "accounts = " << accounts << __E__;
 
-			theWebUsers_.insertSettingsForUser(userInfo.uid_, &xmlOut, accounts == "1", //include user accounts if requested
-				userInfo.getGroupPermissionLevels());
+			theWebUsers_.insertSettingsForUser(
+			    userInfo.uid_,
+			    &xmlOut,
+			    accounts == "1",  //include user accounts if requested
+			    userInfo.getGroupPermissionLevels());
 		}
 		else if(requestType == "stateMatchinePreferences")
 		{
@@ -9140,8 +9154,11 @@ try
 				                "permissions and ") +
 				        "locking user must be currently logged in.");
 
-			theWebUsers_.insertSettingsForUser(userInfo.uid_, &xmlOut, accounts == "1", // include accounts if admin
-				userInfo.getGroupPermissionLevels());  
+			theWebUsers_.insertSettingsForUser(
+			    userInfo.uid_,
+			    &xmlOut,
+			    accounts == "1",  // include accounts if admin
+			    userInfo.getGroupPermissionLevels());
 
 			if(tmpUserWithLock !=
 			   theWebUsers_
@@ -9357,12 +9374,12 @@ try
 			const DesktopIconTable* iconTable =
 			    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
 			{
-				std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);				
+				std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
 				latestGatewayIcons_ =
-					iconTable->getAllDesktopIcons(); //cache latest icons (for use, e.g., in remote login verify)
+				    iconTable
+				        ->getAllDesktopIcons();  //cache latest icons (for use, e.g., in remote login verify)
 			}
 			const std::vector<DesktopIconTable::DesktopIcon>& icons = latestGatewayIcons_;
-			
 
 			std::string iconString = "";
 			// comma-separated icon string, 7 fields:
@@ -9461,9 +9478,9 @@ try
 
 								//add error if it has to do with icons
 								if(remoteGatewayApp.error.find("desktop icons") !=
-								   std::string::npos || 
-									remoteGatewayApp.error.find(REMOTE_BACKBONE_ERR) !=
-								   std::string::npos)
+								       std::string::npos ||
+								   remoteGatewayApp.error.find(REMOTE_BACKBONE_ERR) !=
+								       std::string::npos)
 									xmlOut.addTextElementToData("Error",
 									                            remoteGatewayApp.error);
 								else if(remoteGatewayApp.appInfo.status ==
@@ -9537,15 +9554,16 @@ try
 
 						if(!found)
 						{
-							__SUP_COUT_ERR__ << "Illegal missing remote icon definition for "
-							              "icon record UID '"
-							           << icon.recordUID_
-							           << ".' If the corresponding subsystem should "
-							              "exist, perhaps Gateway Application Status "
-							              "Monitoring is disabled. It must be enabled "
-							              "for subsystem management. Please notify "
-							              "admins if the problem persists."
-							           << __E__;
+							__SUP_COUT_ERR__
+							    << "Illegal missing remote icon definition for "
+							       "icon record UID '"
+							    << icon.recordUID_
+							    << ".' If the corresponding subsystem should "
+							       "exist, perhaps Gateway Application Status "
+							       "Monitoring is disabled. It must be enabled "
+							       "for subsystem management. Please notify "
+							       "admins if the problem persists."
+							    << __E__;
 							// __SUP_SS_THROW__;
 						}
 

@@ -2953,11 +2953,12 @@ void WebUsers::silenceAllUserTooltips(const std::string& username)
 /// subname>, <win url>, <x>, <y>, <w>, <h>]...];0;0
 ///
 /// Pass permission map as parameter to override local permissions (for example if permissions are given from top level login verification)
-void WebUsers::insertSettingsForUser(uint64_t         uid,
-                                     HttpXmlDocument* xmldoc,
-                                     bool             includeAccounts,
-									 std::map<std::string /*groupName*/, 
-									 	WebUsers::permissionLevel_t> permissionMap /* = {} */ )
+void WebUsers::insertSettingsForUser(
+    uint64_t         uid,
+    HttpXmlDocument* xmldoc,
+    bool             includeAccounts,
+    std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
+        permissionMap /* = {} */)
 {
 	if(permissionMap.size() == 0)
 	{
