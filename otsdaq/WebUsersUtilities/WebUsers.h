@@ -398,17 +398,16 @@ class WebUsers
 															 std::string&       newAccountCode,
 															 const std::string& ip);
 	uint64_t				attemptActiveSessionWithCert	(const std::string& uuid,
-													  		 std::string&       jumbledEmail,
-													  		 std::string&       cookieCode,
-													  		 std::string&       username,
-													  		 const std::string& ip);
+															 std::string&       jumbledEmail,
+															 std::string&       cookieCode,
+															 std::string&       username,
+															 const std::string& ip);
 	uint64_t				isCookieCodeActiveForLogin		(const std::string& uuid,
 															 std::string&       cookieCode,
 															 std::string&       username);
 	bool     				cookieCodeIsActiveForRequest	(
 															 std::string& cookieCode,
-															 std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>*
-															 				userPermissions        = 0,
+															 std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>* userPermissions        = 0,
 															 uint64_t*          uid                    = 0,
 															 const std::string& ip                     = "0",
 															 bool               refresh                = true,
@@ -428,22 +427,22 @@ class WebUsers
 
 	uint64_t    			getActiveSessionCountForUser	(uint64_t uid);
 	void        			insertSettingsForUser			(uint64_t         uid,
-												 			 HttpXmlDocument* xmldoc,
-												 			 bool             includeAccounts = false,
-												 			 std::map<std::string /*groupName*/, 
-												 					WebUsers::permissionLevel_t> permissionMap = {});
+															 HttpXmlDocument* xmldoc,
+															 bool             includeAccounts = false,
+															 std::map<std::string /*groupName*/, 
+																	WebUsers::permissionLevel_t> permissionMap = {});
 	std::string 			getGenericPreference			(uint64_t           uid,
 														 	 const std::string& preferenceName,
 														 	 HttpXmlDocument*   xmldoc = 0) const;
 
 	void        			changeSettingsForUser			(uint64_t           uid,
-												 			 const std::string& bgcolor,
-												 			 const std::string& dbcolor,
-												 			 const std::string& wincolor,
-												 			 const std::string& layout,
-												 			 const std::string& syslayout,
-												 			 const std::string& aliaslayout,
-												 			 const std::string& sysaliaslayout);
+															 const std::string& bgcolor,
+															 const std::string& dbcolor,
+															 const std::string& wincolor,
+															 const std::string& layout,
+															 const std::string& syslayout,
+															 const std::string& aliaslayout,
+															 const std::string& sysaliaslayout);
 	void        			setGenericPreference			(uint64_t           uid,
 															 const std::string& preferenceName,
 															 const std::string& preferenceValue);
@@ -453,19 +452,19 @@ class WebUsers
 															 const std::string& srcFunc,
 															 const std::string& srcId);
 	static void 			tooltipSetNeverShowForUsername	(const std::string& username,
-														   	 HttpXmlDocument*   xmldoc,
-														   	 const std::string& srcFile,
-														   	 const std::string& srcFunc,
-														   	 const std::string& srcId,
-														   	 bool               doNeverShow,
-														   	 bool               temporarySilence);
+															 HttpXmlDocument*   xmldoc,
+															 const std::string& srcFile,
+															 const std::string& srcFunc,
+															 const std::string& srcId,
+															 bool               doNeverShow,
+															 bool               temporarySilence);
 
 	void					modifyAccountSettings			(uint64_t           actingUid,
-												 			 uint8_t            cmd_type,
-												 			 const std::string& username,
-												 			 const std::string& displayname,
-												 			 const std::string& email,
-												 			 const std::string& permissions);
+															 uint8_t            cmd_type,
+															 const std::string& username,
+															 const std::string& displayname,
+															 const std::string& email,
+															 const std::string& permissions);
 	bool 					setUserWithLock					(uint64_t actingUid, bool lock, const std::string& username);
 	std::string 			getUserWithLock					(void) { return usersUsernameWithLock_; }
 
