@@ -3480,9 +3480,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							//		if user is 'HW: 255, allUsers: 1' and there is 'HW: 1' for the icon, then give user
 							//			HW: 255, allUsers: 255'
 
-							if(remoteIconPermissionsMap.size() == 1 &&
-							   remoteIconPermissionsMap.begin()->first !=
-							       WebUsers::DEFAULT_USER_GROUP)
+							if(  //if permission map is only size 1,
+							    //	then modify WebUsers::DEFAULT_USER_GROUP for user with the icon's group level of the user
+							    //	e.g. if user is 'HW: 255, allUsers: 1'
+							    //		and icon is 'HW: 1'
+							    //	then give to remote subsystem the user permission as 'HW: 255, allUsers: 255'
+							    remoteIconPermissionsMap.size() == 1 &&
+							    remoteIconPermissionsMap.begin()->first !=
+							        WebUsers::DEFAULT_USER_GROUP)
 							{
 								__COUTVS__(
 								    TLVL_Permissions,
@@ -3512,12 +3517,15 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 									    [remoteIconPermissionsMap.begin()->first] =
 									        WebUsers::PERMISSION_LEVEL_INACTIVE;
 							}
-							else if(remoteIconPermissionsMap.size() == 1 &&
-							        remoteIconPermissionsMap.begin()->first ==
-							            WebUsers::DEFAULT_USER_GROUP &&
-							        subsystemIconPermissionLevelMap.size() == 1 &&
-							        subsystemIconPermissionLevelMap.begin()->first !=
-							            WebUsers::DEFAULT_USER_GROUP)
+							else if(  //	if requesting remote gateway side has not specified advanced permissions threshold, e.g. allUsers: 1, then
+							    //		if user is 'HW: 255, allUsers: 1' and there is 'HW: 1' for the icon, then give user
+							    //			HW: 255, allUsers: 255'
+							    remoteIconPermissionsMap.size() == 1 &&
+							    remoteIconPermissionsMap.begin()->first ==
+							        WebUsers::DEFAULT_USER_GROUP &&
+							    subsystemIconPermissionLevelMap.size() == 1 &&
+							    subsystemIconPermissionLevelMap.begin()->first !=
+							        WebUsers::DEFAULT_USER_GROUP)
 							{
 								__COUTVS__(TLVL_Permissions,
 								           subsystemIconPermissionLevelMap.begin()
@@ -3558,7 +3566,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							}
 
 							break;
-						}
+						}  //end handling of matching remote subsystem for login verification
 
 					if(!found)
 					{
