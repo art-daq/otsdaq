@@ -1015,7 +1015,7 @@ try
 
 	auto ifc = db::ConfigurationInterface{default_dbprovider};
 
-	std::set<std::string> returnSet;// =
+	std::set<std::string> returnSet;  // =
 	    // ifc.findGlobalConfigurationsContaining(tableName, version.toString());
 
 	__COUTT__ << "Number of Groups containing table '" << tableName << "-v" << version

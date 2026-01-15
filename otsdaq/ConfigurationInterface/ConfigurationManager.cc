@@ -979,7 +979,6 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 
 	}        // close UID content
 	POPTAB;  // close UID decoration
-	OUT << "} //end " << node.getValueAsString() << " record" << __E__;
 
 	// handle link closing decoration
 	if(node.isLinkNode())
@@ -1382,7 +1381,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				__COUT__ << "Trying to retreive " << it->first << " Structure Status"
 				         << __E__;
 				activeTableStructure = cfgMgr->nameToTableMap_.find(it->first)
-				                           ->second->getStructureStatusAsJSON(cfgMgr);
+				                           ->second->getStructureAsJSON(cfgMgr);
 				if(activeTableStructure != "")
 				{
 					__COUT__ << "Found Structure Status for Active Table: " << it->first
