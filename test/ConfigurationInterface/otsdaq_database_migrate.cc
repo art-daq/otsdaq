@@ -37,16 +37,12 @@ void readxml_writedb_configurations()
 	std::vector<std::string>
 	    failedConfigVersions;  // list of tables/versions that failed to migrate
 
-	// normally CONFIGURATION_TYPE is set by ots script
-	setenv("CONFIGURATION_DATA_PATH",
-	       (std::string(__ENV__("USER_DATA")) + "/ConfigurationDataExamples").c_str(),
-	       1);
-	std::string configDir = std::string(__ENV__("CONFIGURATION_DATA_PATH")) + '/';
+	//==============================================================================
+	// Define environment variables
+	//	Note: normally these environment variables are set by ots script
 
-	// CONFIGURATION_TYPE needed by
-	// otsdaq/otsdaq/ConfigurationDataFormats/ConfigurationInfoReader.cc [187]  Can
-	// be File, Database, DatabaseTest
-	setenv("CONFIGURATION_TYPE", "File", 1);
+	test::util::check_and_make_envs();
+	////////////////////////////////////////////////////
 
 	// add tables to vector list from directory
 	{

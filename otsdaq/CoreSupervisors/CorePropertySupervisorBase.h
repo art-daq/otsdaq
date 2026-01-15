@@ -250,12 +250,24 @@ class CorePropertySupervisorBase
 
 	time_t		 						getSupervisorUptime								(void) const { return time(0) - constructedTime_;}
 
+	bool 								isFirstAppInContext								(void) const { return isFirstAppInContext_;}
+	uint64_t 							getAvailableLogSpaceKB							(void) { getAvailableDiskSpace(); return availableLogSpaceKB_.load(); }
+	uint64_t 							getAvailableDataSpaceKB							(void) { getAvailableDiskSpace(); return availableDataSpaceKB_.load(); }
+
   protected:
 	ITRACEController* 					theTRACEController_; ///<only define for an app that receives a command
   private:
 	std::string 						traceReturnString_, traceReturnHostString_;
 	bool								readOnly_;
 	const time_t						constructedTime_ = time(0);
+	bool								isFirstAppInContext_ = false;
+
+
+	void								getAvailableDiskSpace							(void);
+
+	std::atomic<uint64_t>				availableLogSpaceKB_{0}, availableDataSpaceKB_{0};
+	time_t								lastDiskSpaceCheckTime_ = 0;
+	const std::string 					OTSDAQ_LOG_DIR, OTSDAQ_DATA_DIR;
 };
 
 // clang-format on

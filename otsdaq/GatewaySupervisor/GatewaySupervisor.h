@@ -413,13 +413,21 @@ public:	//used by remote subsystem control and status
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
 		std::mutex											remoteGatewayAppsMutex_;
+		std::map<std::string /* appName */,
+			bool /* lastStatusGood */> 						appLastStatusGood_;
+		std::mutex											dualStatusThreadMutex_;
 
-		static void 				CheckRemoteGatewayStatus	(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);
-		static void 				SendRemoteGatewayCommand	(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
-		static void 				GetRemoteGatewayIcons		(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
-		void						loadRemoteGatewaySettings	(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways, bool onlyNotFound = false) const;
-		void						saveRemoteGatewaySettings	(void) const;
-		static std::string			translateURLForRequestOrigin(const std::string& url, const std::string& requestOrigin, std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, std::string /* translatedHostPort */>>& portTranslationMap);
+		std::map<unsigned int /* lid */, SupervisorInfo>	localAllSupervisorInfo_; //only use in main thread, stable copy of app status
+
+
+
+		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);
+		static void 				SendRemoteGatewayCommand					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
+		static void 				GetRemoteGatewayIcons						(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
+		void						loadRemoteGatewaySettings					(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways, bool onlyNotFound = false) const;
+		void						saveRemoteGatewaySettings					(void) const;
+		static std::string			translateURLForRequestOrigin				(const std::string& url, const std::string& requestOrigin, std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, std::string /* translatedHostPort */>>& portTranslationMap);
+		static std::string			translateRemoteIconStringForRequestOrigin	(const std::string& iconString, const std::string& requestOrigin, std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, std::string /* translatedHostPort */>>& portTranslationMap);
 
 	};
 // clang-format on

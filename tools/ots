@@ -57,9 +57,6 @@ function setupTrace()
 
 setupTrace
 
-xdaqPrefix="setsid"			 #setsid to disassociate from terminal, in case terminal group failure brings down all associations
-otsConsoleFwdPrefix="setsid" #setsid to disassociate from terminal, in case terminal group failure brings down all associations
-
 # Handle CTRL+C which is interpreted to mean stop launch and kill all launched processes
 ctrlChandler () {
 	out "Caught Ctrl+C -- exiting all launched otsdaq processes..."
@@ -106,6 +103,7 @@ RELAUNCHCHECK=1
 REMOTELAUNCH=1
 ISREMOTE=0
 MACROMAKER_MODE=0
+VALGRIND=0
 export MACROMAKER_MODE #this environment variable is used by source code
 log_label=""
 #############################
@@ -157,6 +155,11 @@ while :; do
 		# Enable verbose mode (disable quiet mode)
 		info "VERBOSE MODE ENABLED!"
 		QUIET=0
+		;;
+	--Valgrind | -V)
+		# Enable verbose mode (disable quiet mode)
+		info "VALGRIND MODE ENABLED!"
+		VALGRIND=1
 		;;
 	--logfind | -l)
 		# Printout the potential location of all log files based on current xdaq xml launch configuration
@@ -275,13 +278,20 @@ while :; do
 	shift
 done
 
-# TODO: move config down here and output current config if the quiet option isn't set
-# (this prevents multiple outputs if people specify a flag twice)
+
+xdaqPrefix="setsid"			 #setsid to disassociate from terminal, in case terminal group failure brings down all associations
+otsConsoleFwdPrefix="setsid" #setsid to disassociate from terminal, in case terminal group failure brings down all associations
+
+if [ $VALGRIND ==  1 ]; then
+	valgrindTimestamp=$(date +%Y%m%d_%H%M%S)
+	xdaqPrefix="setsid valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=valgrind_xdaq_${valgrindTimestamp}.log"
+	info "Using xdaq launch prefix: ${xdaqPrefix}"	
+fi
 
 # Setup trace default config if not specifically disabled
 
-# TODO: Trace is handled all over the place, the best place for this is actually in setup_ots.sh since that
-# file gets sourced on remote sides so we get a consistent startup environment
+# Note: Trace is handled all over the place, the best place for this is actually in setup_ots.sh since that
+# file gets sourced on the side of remote ots launches so we get a consistent startup environment
 if [ "x$OTS_DISABLE_TRACE_DEFAULT" == "x" ]; then
 	out "Setting up TRACE defaults..."
 
@@ -1024,7 +1034,30 @@ launchOTSMacromaker() {
 			warning "Could not verify successful ots Macro Maker mode context launch (check log for details)..."
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-				tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
+				# tail -n 20
+				awk '
+				BEGIN { IGNORECASE=1 }
+				{
+					lines[NR] = $0
+					if ($0 ~ /error/) last = NR
+				}
+				END {
+					# If no "error" found, or not enough lines after it, do last 30 lines
+					if (!last || NR - last < 30) {
+						start = (NR - 29 > 1) ? NR - 29 : 1
+						for (i = start; i <= NR; i++)
+							print lines[i]
+						exit
+					}
+
+					# Normal case: 3 before, 30 after
+					start = (last - 3 > 1) ? last - 3 : 1
+					end   = last + 30
+
+					for (i = start; i <= end && i <= NR; i++)
+						print lines[i]
+				}
+				' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
 				echo
 				echo
 			fi
@@ -1052,7 +1085,7 @@ launchOTSMacromaker() {
 			# Test for start 16 times with short sleep
 			for t in {1..16}; do
 				if [ "x$OTS_IS_ALIVE" == "x" ]; then
-					sleep 2
+					sleep "$((2 + t))"
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
@@ -1297,7 +1330,30 @@ launchOTSWiz() {
 			warning "Could not verify successful ots wiz context launch (check log for details)..."
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-				tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
+				# tail -n 20
+				awk '
+				BEGIN { IGNORECASE=1 }
+				{
+					lines[NR] = $0
+					if ($0 ~ /error/) last = NR
+				}
+				END {
+					# If no "error" found, or not enough lines after it, do last 30 lines
+					if (!last || NR - last < 30) {
+						start = (NR - 29 > 1) ? NR - 29 : 1
+						for (i = start; i <= NR; i++)
+							print lines[i]
+						exit
+					}
+
+					# Normal case: 3 before, 30 after
+					start = (last - 3 > 1) ? last - 3 : 1
+					end   = last + 30
+
+					for (i = start; i <= end && i <= NR; i++)
+						print lines[i]
+				}
+				' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
 				echo
 				echo
 			fi
@@ -1321,7 +1377,7 @@ launchOTSWiz() {
 			# Test for start 16 times with short sleep
 			for t in {1..16}; do
 				if [ "x$OTS_IS_ALIVE" == "x" ]; then
-					sleep 2
+					sleep "$((2 + t))"
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
@@ -1768,8 +1824,33 @@ launchOTS() {
 								while [ "x$OTS_IS_ALIVE" == "x" ]; do
 									warning "Could not verify successful ots gateway context launch (check log for details)..."
 									killproc ${LAST_OTS_PID} xdaq.exe
-									if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-										tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
+									if [ $QUIET == 1 ]; then #display log tail for user to 
+									
+										# tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
+										awk '
+										BEGIN { IGNORECASE=1 }
+										{
+											lines[NR] = $0
+											if ($0 ~ /error/) last = NR
+										}
+										END {
+											# If no "error" found, or not enough lines after it, do last 30 lines
+											if (!last || NR - last < 30) {
+												start = (NR - 29 > 1) ? NR - 29 : 1
+												for (i = start; i <= NR; i++)
+													print lines[i]
+												exit
+											}
+
+											# Normal case: 3 before, 30 after
+											start = (last - 3 > 1) ? last - 3 : 1
+											end   = last + 30
+
+											for (i = start; i <= end && i <= NR; i++)
+												print lines[i]
+										}
+										' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
+
 										echo
 										echo
 									fi
@@ -1794,7 +1875,7 @@ launchOTS() {
 									# Test for start 16 times with short sleep
 									for t in {1..16}; do
 										if [ "x$OTS_IS_ALIVE" == "x" ]; then
-											sleep 2
+											sleep "$((2 + t))"
 											OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 											out "Checking http://${THIS_HOST}:${PORT}..."
 										else  # found the supervisor!
@@ -2011,7 +2092,30 @@ launchOTS() {
 				warning "Could not verify successful ots non-gateway context launch (check log for details)..."
 				killproc ${LAST_OTS_PID} xdaq.exe
 				if [ $QUIET == 1 ]; then #display log tail for user to diagnose
-					tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
+					# tail -n 20
+					awk '
+					BEGIN { IGNORECASE=1 }
+					{
+						lines[NR] = $0
+						if ($0 ~ /error/) last = NR
+					}
+					END {
+						# If no "error" found, or not enough lines after it, do last 30 lines
+						if (!last || NR - last < 30) {
+							start = (NR - 29 > 1) ? NR - 29 : 1
+							for (i = start; i <= NR; i++)
+								print lines[i]
+							exit
+						}
+
+						# Normal case: 3 before, 30 after
+						start = (last - 3 > 1) ? last - 3 : 1
+						end   = last + 30
+
+						for (i = start; i <= end && i <= NR; i++)
+							print lines[i]
+					}
+					' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
 					echo
 					echo
 				fi
@@ -2037,7 +2141,7 @@ launchOTS() {
 				OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)"
 				for t in {1..16}; do
 					if [ "x$OTS_IS_ALIVE" == "x" ]; then
-						sleep 2
+						sleep "$((2 + t))"
 
 						#check if exit requested to avoid endless looping (e.g. on remote hosts)
 						OTSDAQ_STARTOTS_ACTION="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE})"
@@ -2226,7 +2330,13 @@ launchOTSLogFind() {
 	out "${Purple}${REV} *********************************************************************** ${RstClr}"
 	out "${Purple}${REV}                                                                         ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	out #blank line
-	out "XDAQ Configuration XML   = ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml"
+	out #blank line
+	out #blank line
+	LEFT_SPLIT="${ACTION_HANDLER_LOG%%_*}"
+	out "${Bold}ots script action handling logs:${RstClr} less -R ${LEFT_SPLIT}*"
+	out "${Bold}ots logs:${RstClr} OTSDAQ_LOG_DIR = ${OTSDAQ_LOG_DIR}/"
+	out "${Bold}XDAQ Configuration XML${RstClr}   = ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml"
+	out #blank line
 
 	value=`cat ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml`
 
@@ -2340,6 +2450,8 @@ launchOTSLogFind() {
 
 
 	out #blank line
+	out #blank line
+	out #blank line
 	out "Here are example commands for viewing all potential log files:"
 	out #blank line
 
@@ -2376,13 +2488,10 @@ launchOTSLogFind() {
 	# out #blank line
 
 }   #end launchOTSLogFind
-export -f launchOTSLogFind
+
 
 #########################################################
 #########################################################
-
-ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$"
-
 #make URL print out a function so that & syntax can be used to run in background (user has immediate terminal access)
 printMainURL() {
 
@@ -2397,6 +2506,88 @@ printMainURL() {
 	if [ $ISREMOTE == 0 ]; then
 		echo #empty line
 		echo #empty line
+
+
+		# if port translation map file exists, print out additional URL info
+		if [[ -n ${OTS_PORT_TRANSLATION_MAP_FILE:-} && -f ${OTS_PORT_TRANSLATION_MAP_FILE} ]]; then
+			out #empty line
+			out "Port translation map file found.\n \
+If you are accessing otsdaq from outside the local network, you may need port translation.\n\
+You can modify the URL host:port translation using this file: at ${Yellow}${OTS_PORT_TRANSLATION_MAP_FILE}${RstClr}"
+			
+			
+			# -------------------------------------------------
+			#  parse_and_print  –  split each line on "|"
+			# -------------------------------------------------
+
+			showTranslation=0
+
+			while IFS= read -r line || [[ -n $line ]]; do
+				# -------------------------------------------------
+				# Split the line on the literal pipe character.
+				# -------------------------------------------------
+				IFS='|' read -ra raw_fields <<< "$line"
+
+				# -------------------------------------------------
+				# Guard: we need at least three columns.
+				# -------------------------------------------------
+				(( ${#raw_fields[@]} < 3 )) && continue
+
+				# -------------------------------------------------
+				# whitespace **inline** and assign to variables.
+				# -------------------------------------------------
+				url1=$(printf '%s' "${raw_fields[0]}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+				url2=$(printf '%s' "${raw_fields[1]}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+				url3=$(printf '%s' "${raw_fields[2]}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+
+
+				# remove scheme
+				transTmp="${url2#*://}"
+
+				# split host and port
+				transHost="${transTmp%%:*}"
+				transPort="${transTmp##*:}"
+
+				isThisPortMarker=''
+				showThisTranslation=0
+				if [[ "${THIS_HOST}" == "$transHost" && "${PORT}" == "$transPort" ]]; then
+
+					if [[ $showTranslation == 0 ]]; then #first found, print header
+						echo "Showing current port translation associated with ${THIS_HOST}:${PORT}:"
+						echo "--------------------------------------------------"
+					fi
+					showTranslation=1
+					showThisTranslation=1
+				fi
+				if [[ "${gatewayHostname}" == "$transHost" && "${gatewayPort}" == "$transPort" ]]; then
+
+					if [[ $showTranslation == 0 ]]; then #first found, print header
+						echo "Showing current port translation associated with ${gatewayHostname}:${gatewayPort}:"
+						echo "--------------------------------------------------"
+					fi
+					showTranslation=1
+					showThisTranslation=1
+				fi
+
+				if [[ $showThisTranslation == 1 ]]; then
+					
+					isThisPortMarker='*'
+					echo -e "$url1 | $url2\t==> $url3 ${isThisPortMarker}"					
+				fi
+
+				# -------------------------------------------------
+				# Print everything on ONE line with labels
+				# -------------------------------------------------				
+				# echo -e "$url1 | $url2\t==> $url3 ${isThisPortMarker}"
+				
+				
+			done < "$OTS_PORT_TRANSLATION_MAP_FILE"
+
+			if [[ $showTranslation == 1 ]]; then
+				echo "--------------------------------------------------"
+			fi
+			out #empty line
+		fi
 	fi
 
 	if [ $MAIN_URL == "unknown_url" ]; then
@@ -2417,32 +2608,173 @@ printMainURL() {
 		#echo -e "${Reset}"
 
 		if [ $QUIET == 1 ]; then
-			out "Action handler log is here, e.g.: less -R ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+			# out "Action handler log is here, e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 			exit
 		fi
 		sleep 2 #for delay between each printout
 	done
-	out "Action handler log is here, e.g.: less -R ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+	# out "Action handler log is here, e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 }  #end printMainURL
-export -f printMainURL
 
 
+#########################################################
+#########################################################
 # Function to handle signals
 handleExitSignal() {
 	if [ $1 != 17 ]; then # 17 is child process activity, ignore it
 		info "Script terminated by signal: $1"
 		exit 1
 	fi
-}
+} #end handleExitSignal
+
 
 #########################################################
 #########################################################
+# Function to check disk space of log area, and delete old logs
+# Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
+if [ "x$OTSDAQ_LOG_DISK_MINIMUM" == "x" ];then
+	export OTSDAQ_LOG_DISK_MINIMUM=1000000 #1 GB default in KBs
+fi
+if [ "x$OTSDAQ_LOG_DISK_STALE_THRESHOLD" == "x" ];then
+	export OTSDAQ_LOG_DISK_STALE_THRESHOLD=86400 #24 hours default in seconds
+fi
+OTSDAQ_LOG_DISK_STALE_HOURS=$(( $OTSDAQ_LOG_DISK_STALE_THRESHOLD / 3600 ))
+#if min is not 0, print settings
+if [ "$OTSDAQ_LOG_DISK_MINIMUM" -ne 0 ]; then
+	out "Log file disk min set to ${OTSDAQ_LOG_DISK_MINIMUM} KBs and automatic deletion threshold set to ${OTSDAQ_LOG_DISK_STALE_HOURS} hours."
+fi
+otsLogDiskCheck() {
+	# Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
+	AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_LOG_DIR/" | awk 'NR==2 {print $4}')
+	# out "Available disk space in log directory ${OTSDAQ_LOG_DIR}/: ${AVAILABLE_DISK_SPACE} KB..."
+	if [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_LOG_DISK_MINIMUM" ]; then	
+
+		#find and delete oldest log files until we are above threshold
+		# but only if older than 24 hours
+
+		while [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_LOG_DISK_MINIMUM" ]; do
+			warning "Available disk space in log directory ${OTSDAQ_LOG_DIR}/ is below minimum threshold of ${OTSDAQ_LOG_DISK_MINIMUM} KB. Available: ${AVAILABLE_DISK_SPACE} KB. Deleting old log files..."
+
+			# find oldest matching log file (print mtime as epoch and path), pick oldest
+			OLDEST_LOG_FILE=$(find "$OTSDAQ_LOG_DIR/" -type f -name "otsdaq_quiet_run-*.txt" -printf '%T@ %p\n' | sort -n | head -n 1 | awk '{print $2}')
+			if [ -z "$OLDEST_LOG_FILE" ]; then
+				warning "No more matching log files to delete, but disk space is still below threshold."
+				break
+			fi
+
+			# get file modification time and compare to 24 hours ago
+			FILE_MTIME=$(stat -c %Y "$OLDEST_LOG_FILE" 2>/dev/null || echo 0)
+			AGE_THRESHOLD=$(( $(date +%s) - $OTSDAQ_LOG_DISK_STALE_THRESHOLD )) # in seconds
+
+			OTSDAQ_LOG_DISK_STALE_HOURS=$(( $OTSDAQ_LOG_DISK_STALE_THRESHOLD / 3600 ))
+			if [ "$FILE_MTIME" -gt "$AGE_THRESHOLD" ]; then
+				warning "Oldest log file '$OLDEST_LOG_FILE' is less than ${OTSDAQ_LOG_DISK_STALE_HOURS} hours old; will not delete. Aborting cleanup to avoid removing recent logs."
+				break
+			fi
+
+			out "Deleting oldest log file (at least ${OTSDAQ_LOG_DISK_STALE_HOURS} hours old): $OLDEST_LOG_FILE"
+			rm -f "$OLDEST_LOG_FILE"
+			sleep 2 #give time for file system to update and user to respond if needed
+
+			# refresh available disk space for next iteration
+			AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_LOG_DIR/" | awk 'NR==2 {print $4}')
+		done
+
+		if [ "$AVAILABLE_DISK_SPACE" -ge "$OTSDAQ_LOG_DISK_MINIMUM" ]; then
+			info "Disk space in log directory ${OTSDAQ_LOG_DIR}/ is now above minimum threshold. Available: ${AVAILABLE_DISK_SPACE} KB."
+		else
+			warning "Disk space in log directory ${OTSDAQ_LOG_DIR}/ is still below minimum threshold of ${OTSDAQ_LOG_DISK_MINIMUM} KB after attempt to delete old logs. Available: ${AVAILABLE_DISK_SPACE} KB."
+			sleep 20 #to avoid rapid looping of error message
+		fi
+	fi
+} #end otsLogDiskCheck
+
+
+#########################################################
+#########################################################
+# Function to check disk space of data area, and delete old data files
+# Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
+if [ "x$OTSDAQ_DATA_DISK_MINIMUM" == "x" ];then
+	export OTSDAQ_DATA_DISK_MINIMUM=0 #0 to disable or #100000000 for 100 GB default in KBs
+fi
+if [ "x$OTSDAQ_DATA_DISK_STALE_THRESHOLD" == "x" ];then
+	export OTSDAQ_DATA_DISK_STALE_THRESHOLD=31536000 #1 year default in seconds
+fi
+OTSDAQ_DATA_DISK_STALE_HOURS=$(( $OTSDAQ_DATA_DISK_STALE_THRESHOLD / 3600 ))
+#if min is not 0, print settings
+if [ "$OTSDAQ_DATA_DISK_MINIMUM" -ne 0 ]; then
+	out "Data file disk min set to ${OTSDAQ_DATA_DISK_MINIMUM} KBs and automatic deletion threshold set to ${OTSDAQ_DATA_DISK_STALE_HOURS} hours."
+fi
+otsDataDiskCheck() {
+	# Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
+	AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_DATA/" | awk 'NR==2 {print $4}')
+	if [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_DATA_DISK_MINIMUM" ]; then	
+		#find and delete oldest data files until we are above threshold
+		# but only if older than stale threshold
+
+		while [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_DATA_DISK_MINIMUM" ]; do
+			warning "Available disk space in data directory ${OTSDAQ_DATA}/ is below minimum threshold of ${OTSDAQ_DATA_DISK_MINIMUM} KB. Available: ${AVAILABLE_DISK_SPACE} KB. Deleting old data files..."
+			# find oldest matching log file (print mtime as epoch and path), pick oldest
+			# Recursively find oldest matching data file (follow symlinks, handle spaces)
+			OLDEST_DATA_FILE=""
+			oldest_time=0
+			while IFS= read -r -d '' file; do
+				mtime=$(stat -c %Y "$file" 2>/dev/null || echo 0)
+				if [ -z "$OLDEST_DATA_FILE" ] || [ "$mtime" -lt "$oldest_time" ]; then
+					OLDEST_DATA_FILE="$file"
+					oldest_time=$mtime
+				fi
+			done < <(find -L "$OTSDAQ_DATA" -type f \( -name '*.bin' -o -name '*.dat' -o -name '*.txt' -o -name '*.root' \) -print0)
+			if [ -z "$OLDEST_DATA_FILE" ]; then
+				warning "No more matching data files to delete, but disk space is still below threshold."
+				break
+			fi
+
+			# get file modification time and compare to stale threshold
+			FILE_MTIME=$(stat -c %Y "$OLDEST_DATA_FILE" 2>/dev/null || echo 0)
+			AGE_THRESHOLD=$(( $(date +%s) - $OTSDAQ_DATA_DISK_STALE_THRESHOLD )) # in seconds
+
+			OTSDAQ_DATA_DISK_STALE_HOURS=$(( $OTSDAQ_DATA_DISK_STALE_THRESHOLD / 3600 ))
+
+			if [ "$FILE_MTIME" -gt "$AGE_THRESHOLD" ]; then
+				warning "Oldest data file '$OLDEST_DATA_FILE' is less than ${OTSDAQ_DATA_DISK_STALE_HOURS} hours old; will not delete. Aborting cleanup to avoid removing recent data files."
+				break
+			fi
+
+			out "Deleting oldest data file (at least ${OTSDAQ_DATA_DISK_STALE_HOURS} hours old): $OLDEST_DATA_FILE"
+			rm -f "$OLDEST_DATA_FILE"
+			sleep 2 #give time for file system to update and user to respond if needed
+
+			# refresh available disk space for next iteration
+			AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_DATA/" | awk 'NR==2 {print $4}')
+		done
+
+		if [ "$AVAILABLE_DISK_SPACE" -ge "$OTSDAQ_DATA_DISK_MINIMUM" ]; then
+			info "Disk space in data directory ${OTSDAQ_DATA}/ is now above minimum threshold. Available: ${AVAILABLE_DISK_SPACE} KB."
+		else
+			warning "Disk space in data directory ${OTSDAQ_DATA}/ is still below minimum threshold of ${OTSDAQ_DATA_DISK_MINIMUM} KB after attempt to delete old data files. Available: ${AVAILABLE_DISK_SPACE} KB."
+			sleep 20 #to avoid rapid looping of error message
+		fi
+	fi
+} #end otsDataDiskCheck
+
+#########################################################
+#########################################################
+# Function to handle ots actions and commands from local XDAQ Contexts
+#  such as rebuild, restart, exit, etc.
+# Action Handler Logs are written to tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$
+# Log rollover is also handled.
+ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.$$"
 otsActionHandler() {
 
-	info "Starting action handler on ${THIS_HOST}..."
+	lsof "${ACTION_HANDLER_LOG}" 2>/dev/null
+	pid=$(lsof "$ACTION_HANDLER_LOG" 2>/dev/null \
+        | awk 'NR>1 && $1=="ots" {print $2; exit}')
+
+	info "Starting action handler on ${THIS_HOST}... pid=${pid}"
 
 	# Trap specific signals and call the exit handler
-	for sig in {1..31}; do
+	for sig in {1..3}; do #1=SIGHUP, 2=SIGINT, 3=SIGQUIT, was ..31 (avoid ctrl+Z killing script)
 		trap "handleExitSignal $sig" $sig 2>/dev/null
 	done
 
@@ -2701,9 +3033,15 @@ otsActionHandler() {
 		fi
 
 		sleep 1
+		# Note!! User can prevent data check with export OTSDAQ_DATA_DISK_MINIMUM=0
+		otsDataDiskCheck
 
 		#manage log file rollover with $OTS_LOG_ROLLOVER or ots commands
 		if [[ "x$OTS_LOG_ROLLOVER" != "x" || $DO_LOG_ROLLOVER == 1 ]]; then
+
+			#check disk space before rollover
+			# Note!! User can prevent data check with export OTSDAQ_LOG_DISK_MINIMUM=0
+			otsLogDiskCheck
 
 			#handle non-gateway logs on this host
 			i=0
@@ -2907,7 +3245,7 @@ fi
 #after gateway node has been decided and xdaq has been launched, start action handler
 # exec #rrivera commented: Ron and internet say this exec does nothing
 otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
-out "Action handler log is here, e.g.: less -R ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+out "Action handler log is here, e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
 
@@ -2932,7 +3270,8 @@ if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then
 fi
 
 if [[ ${#remoteLaunchHosts[@]} > 0 ]]; then
-	out "Remote launch hosts were requested, waiting for them to start... (ots -k to abort, not -K which will kill all users on node)"
+	out "Remote launch hosts were requested, waiting for them to start...\n\
+(CTRL+C to abort now; CTRL+Z;bg to return to terminal; ots -k to kill, not -K which will kill all users on node)"
 	sleep 20 #give time for remote hosts to start (and for user to exit with CTRL+C if needed)
 fi
 

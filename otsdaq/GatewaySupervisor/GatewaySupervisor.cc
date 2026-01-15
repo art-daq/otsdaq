@@ -47,15 +47,22 @@ using namespace ots;
 
 #define REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME "RemoteSubsystems.txt"
 
-#define TLVL_StatusWorkloop 		39	// = TLVL_DEBUG + 39
-#define TLVL_StatusRemoteWorkloop 	38	// = TLVL_DEBUG + 38
-#define TLVL_StatusParams		 	23	// = TLVL_DEBUG + 23
-#define TLVL_StatusFullDetail	 	50	// = TLVL_DEBUG + 50
-#define TLVL_RemoteStatusParams	 	25	// = TLVL_DEBUG + 25
-#define TLVL_RemoteDesktopIcons	 	35	// = TLVL_DEBUG + 35
 #define TLVL_StateChanger		 	9	// = TLVL_DEBUG + 9
 #define TLVL_StateChangerDetail	 	11	// = TLVL_DEBUG + 11
+#define TLVL_Permissions		 	20	// = TLVL_DEBUG + 20
+#define TLVL_GetDesktopIcons	 	21	// = TLVL_DEBUG + 21
 #define TLVL_RemoteFSMRequests	 	22	// = TLVL_DEBUG + 22
+#define TLVL_StatusParams		 	23	// = TLVL_DEBUG + 23
+#define TLVL_RemoteStatusVerbose 	24	// = TLVL_DEBUG + 24
+#define TLVL_RemoteStatusParams	 	25	// = TLVL_DEBUG + 25
+#define TLVL_RemoteDesktopIcons	 	35	// = TLVL_DEBUG + 35
+#define TLVL_DebugStatusDetail 		36	// = TLVL_DEBUG + 36
+#define TLVL_StatusRemoteWorkloop 	38	// = TLVL_DEBUG + 38
+#define TLVL_StatusWorkloop 		39	// = TLVL_DEBUG + 39
+#define TLVL_DebugStatusWorkloop 	40	// = TLVL_DEBUG + 40
+#define TLVL_DebugArtdaqStatus 		41	// = TLVL_DEBUG + 41
+#define TLVL_DebugRequests 			42	// = TLVL_DEBUG + 42
+#define TLVL_StatusFullDetail	 	50	// = TLVL_DEBUG + 50
 
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "GatewaySupervisor"
@@ -258,8 +265,17 @@ void GatewaySupervisor::init(void)
 		{
 			__COUT__ << "Enabling App Status checking..." << __E__;
 
+			//make one thread for rapid status checking
+			// and one for disconnected status checking (with long timeouts)
 			std::thread(
 			    [](GatewaySupervisor* s) { GatewaySupervisor::AppStatusWorkLoop(s); },
+			    this)
+			    .detach();
+
+			std::thread(
+			    [](GatewaySupervisor* s) {
+				    GatewaySupervisor::AppStatusWorkLoop(s, true /* doDisconnected */);
+			    },
 			    this)
 			    .detach();
 		}
@@ -286,11 +302,36 @@ void GatewaySupervisor::init(void)
 		std::string portTranslationPath = "";
 		try
 		{
-			portTranslationPath = __ENV__("OTS_PORT_TRANSLATION_FILE_PATH");
+			///	portTranslationMap_ ~ used by GatewaySupervisor::translateURLForRequestOrigin
+			///
+			///		Converts url host:port to a new host:port based on the translation
+			///			table (to be provided by system admin prior to starting ots in normal mode).
+			///
+			///	File format is:
+			///		- each line: requestOrigin host:port | url host:port | translation host:port
+			///
+			///	Steps:
+			/// 	if requestOrigin host matches translation host
+			/// 		then look for url host+port combo in translation map
+			/// 		if combo found, then return translation host+port + rest of url
+			/// 		else return url unchanged
+			/// 	else return url unchanged
+			///
+			///  for example, requestOrigin == "https://gateway1:8443" and executable url = "http://host:2016/urnblah"
+			///  	(the user needs the host:port accessible to them, which might be forwarded through a firewall or NAT)
+			///		and so translation might return "https://gateway1:8444"
+			///		... in which case, the entry in file would be: https://gateway1:8443 | host:2016 | https://gateway1:8444
+			///
+			///	Note!! that the priority matters for host+ports that are substrings of each other,
+			///		such that the longer one is replaced first.
+			///	 	For example, if there are host+ports translations for both "host:2016" and "host:201",
+			///		then "host:2016" should be listed first, so it is replaced first,
+			///			to avoid partial replacement that would block the full replacement later.
+			portTranslationPath = __ENV__("OTS_PORT_TRANSLATION_MAP_FILE");
 		}
 		catch(...)
 		{
-			__COUT__ << "OTS_PORT_TRANSLATION_FILE_PATH not set; no port translation "
+			__COUT__ << "OTS_PORT_TRANSLATION_MAP_FILE not set; no port translation "
 			            "will be used."
 			         << __E__;
 		}
@@ -331,10 +372,20 @@ void GatewaySupervisor::init(void)
 						portTranslationMap_[requestOrigin][requestUrlHostPort] =
 						    translatedHostPort;
 					}
+					else if(parts.size() < 2)
+					{
+						__SUP_COUT__
+						    << "Ignoring (and treating as comment) line #" << lineNumber
+						    << " in port translation file (length = " << strlen(line)
+						    << "): " << line << __E__;
+						continue;
+					}
 					else
 					{
 						__SS__ << "Invalid line #" << lineNumber
-						       << " in port translation file: " << line << __E__;
+						       << " in port translation file with too many args "
+						          "(count = "
+						       << parts.size() << ", expected 3): " << line << __E__;
 						__SS_THROW__;
 					}
 				}
@@ -357,171 +408,325 @@ void GatewaySupervisor::init(void)
 ///	child thread
 void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
                                           const bool         doDisconnected /* = false */)
+try
 {
 	sleep(5);  // wait for apps to get started
 
-	bool                                    firstError = true;
-	std::string                             status, progress, detail, appName;
-	std::vector<SupervisorInfo::SubappInfo> subapps;
-	int                                     progressInteger;
-	bool                                    oneStatusReqHasFailed = false;
-	size_t loopCount = -1;  //first time through loop will be 0
+	bool   firstError = true;
+	size_t loopCount  = -1;  //first time through loop will be 0
 
 	std::map<std::string /* appName */, bool /* lastStatusGood */> appLastStatusGood;
 
 	std::unique_ptr<TransceiverSocket>
 	       remoteGatewaySocket;  //use to get remote gateway status
-	bool   resetRemoteGatewayApps      = false;
 	bool   commandingRemoteGatewayApps = false;
 	size_t commandRemoteIdleCount      = 0;
 	int    portForReverseLoginOverUDP  = 0;  //if 0, then not reverse login not enabled
 	std::string ipAddressForStateChangesOverUDP = "";  //if "", then not enabled
 
+	std::map<std::string /* context uid */,
+	         std::pair<int64_t /* available log space KB */,
+	                   int64_t /* available data space KB */>>
+	    availableDiskSpaceKB_map;
+	std::map<std::string /* context uid */, time_t /* last alert */>
+	    rateToLogDiskLastHourAlert_map, rateToLogDiskLastHalfHourAlert_map,
+	    rateToLogDiskLastQuarterHourAlert_map, rateToLogDiskNowAlert_map;
+	std::map<std::string /* context uid */, time_t /* last alert */>
+	    rateToDataDiskLastHourAlert_map, rateToDataDiskLastHalfHourAlert_map,
+	    rateToDataDiskLastQuarterHourAlert_map, rateToDataDiskNowAlert_map;
+
+	int64_t availableLogSpaceKB_MIN = 0, availableDataSpaceKB_MIN = 0;
+
+	try  // Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
+	{
+		availableLogSpaceKB_MIN = std::stoull(__ENV__("OTSDAQ_LOG_DISK_MINIMUM"));
+	}
+	catch(...)
+	{
+		availableLogSpaceKB_MIN = 1000000;  //1 GB default in KBs;
+	}
+	__COUTV__(availableLogSpaceKB_MIN);
+
+	try  // Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
+	{
+		availableDataSpaceKB_MIN = std::stoull(__ENV__("OTSDAQ_DATA_DISK_MINIMUM"));
+	}
+	catch(...)
+	{
+		availableDataSpaceKB_MIN = 1000000;  //1 GB default in KBs;
+	}
+	__COUTV__(availableDataSpaceKB_MIN);
+	const std::string otsdaq_log_dir  = __ENV__("OTSDAQ_LOG_DIR");
+	const std::string otsdaq_data_dir = __ENV__("OTSDAQ_DATA");
+
+	if(doDisconnected)
+		sleep(5);  // stagger the two loops a bit
 	__COUTV__(doDisconnected);
 	while(1)
 	{
+		bool oneStatusReqHasFailed = false;
+
 		++loopCount;
-		sleep(1);
+		usleep(500000 /* 0.5 seconds */);
+
+		//lock to access appLastStatusGood_ map (between disconnected and connected handling threads)
+		{
+			std::lock_guard<std::mutex> lock(theSupervisor->dualStatusThreadMutex_);
+			appLastStatusGood = theSupervisor->appLastStatusGood_;
+		}
 
 		// workloop procedure
 		//	Loop through all Apps and request status
 		//	sleep
 
-		oneStatusReqHasFailed = false;
 		__COUTS__(TLVL_StatusWorkloop)
-		    << "App status checking, doDisconnected = " << doDisconnected << __E__;
+		    << "App status checking, doDisconnected = " << doDisconnected
+		    << " loopCount=" << loopCount << __E__;
+
+		if(TTEST(1) ||
+		   doDisconnected)  //printout the true/false handling of apps (emulating anticipated flow)
+		{
+			uint32_t handlingAppCount = 0;
+			for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
+			{
+				auto               appInfo = it.second;
+				const std::string& appName = appInfo.getName();
+
+				bool isDisconnected =
+				    appLastStatusGood.find(appName) != appLastStatusGood.end() &&
+				    !appLastStatusGood.at(appName);
+
+				if(appInfo.isGatewaySupervisor())  // get gateway status
+				{
+					std::vector<GatewaySupervisor::RemoteGatewayInfo>
+					    remoteApps;  //local copy
+					{                //lock for remainder of scope
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->remoteGatewayAppsMutex_);
+						remoteApps = theSupervisor->remoteGatewayApps_;
+					}
+
+					for(auto& remoteGatewayApp : remoteApps)
+					{
+						bool isRemoteAppDisconnected =
+						    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
+						                           remoteGatewayApp.appInfo.name) !=
+						        appLastStatusGood.end() &&
+						    !appLastStatusGood.at(remoteGatewayApp.appInfo.url +
+						                          remoteGatewayApp.appInfo.name);
+
+						//skip based on disconnected status
+						if(doDisconnected && !isRemoteAppDisconnected)
+							continue;
+						if(!doDisconnected && isRemoteAppDisconnected)
+							continue;
+
+						++handlingAppCount;
+						__COUTT__
+						    << "Status loop remote apps #" << handlingAppCount
+						    << ", doDisconnected = " << doDisconnected
+						    << " Remote subapp = '" << remoteGatewayApp.appInfo.name
+						    << "' [URL=" << remoteGatewayApp.appInfo.url
+						    << "] isRemoteAppDisconnected = " << isRemoteAppDisconnected
+						    << ".\n\n";
+					}  //end remote app loop
+				}
+
+				//skip based on disconnected status
+				if(doDisconnected && !isDisconnected)
+					continue;
+				if(!doDisconnected && isDisconnected)
+					continue;
+
+				++handlingAppCount;
+				__COUTT__ << "Status Loop apps #" << handlingAppCount
+				          << ", doDisconnected = " << doDisconnected
+				          << " Supervisor instance = '" << appName
+				          << "' [LID=" << appInfo.getId() << "] in Context '"
+				          << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+				          << "] isDisconnected = " << isDisconnected << ".\n\n";
+			}  //end app loop
+
+			if(doDisconnected)
+			{
+				__COUTTV__(handlingAppCount);
+				//when nothinig to do, still proceed to reset remote gateway apps and get icon updates
+			}
+		}  //end debugging of handling of apps
+
 		for(const auto& it : theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 		{
-			auto appInfo = it.second;
-			appName      = appInfo.getName();
+			std::string                             status, progress, detail;
+			std::vector<SupervisorInfo::SubappInfo> subapps;
+			int                                     progressInteger;
+
+			int64_t            availableLogSpaceKB = 0, availableDataSpaceKB = 0;
+			auto               appInfo = it.second;
+			const std::string& appName = appInfo.getName();
+
+			bool isDisconnected =
+			    appLastStatusGood.find(appName) != appLastStatusGood.end() &&
+			    !appLastStatusGood.at(appName);
+
 			__COUTS__(TLVL_StatusWorkloop)
-			    << "Getting Status, doDisconnected = " << doDisconnected
+			    << "Start of status loop, doDisconnected = " << doDisconnected
 			    << " Supervisor instance = '" << appName << "' [LID=" << appInfo.getId()
 			    << "] in Context '" << appInfo.getContextName()
-			    << "' [URL=" << appInfo.getURL() << "].\n\n";
+			    << "' [URL=" << appInfo.getURL()
+			    << "] isDisconnected = " << isDisconnected << ".\n\n";
+
+			//if doDisconnected is true, only check disconnected apps
+			//	AND disconnected subapps within gateway!
+			//skip all connected non-gateway supervisors
 
 			// if the application is the gateway supervisor, we do not send a SOAP message
 			if(appInfo.isGatewaySupervisor())  // get gateway status
 			{
+				bool resetRemoteGatewayApps = false;
+
 				try
 				{
-					// send back status and progress parameters
-					const std::string& err =
-					    theSupervisor->theStateMachine_.getErrorMessage();
-					try
+					if(!doDisconnected)  //primary gateway (self) is never disconnected
 					{
-						__COUTVS__(TLVL_StatusWorkloop,
-						           theSupervisor->theStateMachine_.isInTransition());
-						if(theSupervisor->theStateMachine_.isInTransition())
-							__COUTVS__(TLVL_StatusWorkloop,
-							           theSupervisor->theStateMachine_
-							               .getCurrentTransitionName());
-						__COUTVS__(
-						    TLVL_StatusWorkloop,
-						    theSupervisor->theStateMachine_.getProvenanceStateName());
-						__COUTVS__(TLVL_StatusWorkloop,
-						           theSupervisor->theStateMachine_.getCurrentStateName());
-					}
-					catch(...)
-					{
-						;
-					}
+						availableLogSpaceKB =
+						    theSupervisor
+						        ->CorePropertySupervisorBase::getAvailableLogSpaceKB();
+						availableDataSpaceKB =
+						    theSupervisor
+						        ->CorePropertySupervisorBase::getAvailableDataSpaceKB();
 
-					if(err == "")
-					{
-						if(theSupervisor->theStateMachine_
-						       .isInTransition())  // || theSupervisor->theProgressBar_.read() < 100)
+						__COUTVS__(TLVL_StatusWorkloop, availableLogSpaceKB);
+						__COUTVS__(TLVL_StatusWorkloop, availableDataSpaceKB);
+
+						// send back status and progress parameters
+						const std::string& err =
+						    theSupervisor->theStateMachine_.getErrorMessage();
+						try
 						{
-							// attempt to get transition name, otherwise give provenance state
-							try
+							__COUTVS__(TLVL_StatusWorkloop,
+							           theSupervisor->theStateMachine_.isInTransition());
+							if(theSupervisor->theStateMachine_.isInTransition())
+								__COUTVS__(TLVL_StatusWorkloop,
+								           theSupervisor->theStateMachine_
+								               .getCurrentTransitionName());
+							__COUTVS__(
+							    TLVL_StatusWorkloop,
+							    theSupervisor->theStateMachine_.getProvenanceStateName());
+							__COUTVS__(
+							    TLVL_StatusWorkloop,
+							    theSupervisor->theStateMachine_.getCurrentStateName());
+						}
+						catch(...)
+						{
+							;
+						}
+
+						if(err == "")
+						{
+							if(theSupervisor->theStateMachine_
+							       .isInTransition())  // || theSupervisor->theProgressBar_.read() < 100)
 							{
-								status = theSupervisor->theStateMachine_
-								             .getCurrentTransitionName();
+								// attempt to get transition name, otherwise give provenance state
+								try
+								{
+									status = theSupervisor->theStateMachine_
+									             .getCurrentTransitionName();
+								}
+								catch(...)
+								{
+									status = theSupervisor->theStateMachine_
+									             .getProvenanceStateName();
+								}
+								progress =
+								    theSupervisor->theProgressBar_.readPercentageString();
 							}
-							catch(...)
+							else
 							{
-								status = theSupervisor->theStateMachine_
-								             .getProvenanceStateName();
+								status =
+								    theSupervisor->theStateMachine_.getCurrentStateName();
+								progress = "100";  //if not in transition, then 100
 							}
-							progress =
-							    theSupervisor->theProgressBar_.readPercentageString();
 						}
 						else
 						{
 							status =
-							    theSupervisor->theStateMachine_.getCurrentStateName();
-							progress = "100";  //if not in transition, then 100
+							    (theSupervisor->theStateMachine_.getCurrentStateName() ==
+							             RunControlStateMachine::PAUSED_STATE_NAME
+							         ? "Soft-Error:::"
+							         : "Failed:::") +
+							    err;
+							progress =
+							    theSupervisor->theProgressBar_.readPercentageString();
 						}
-					}
-					else
-					{
-						status = (theSupervisor->theStateMachine_.getCurrentStateName() ==
-						                  RunControlStateMachine::PAUSED_STATE_NAME
-						              ? "Soft-Error:::"
-						              : "Failed:::") +
-						         err;
-						progress = theSupervisor->theProgressBar_.readPercentageString();
-					}
 
-					__COUTVS__(TLVL_StatusWorkloop, status);
-					__COUTVS__(TLVL_StatusWorkloop, progress);
+						__COUTVS__(TLVL_StatusWorkloop, status);
+						__COUTVS__(TLVL_StatusWorkloop, progress);
 
-					try
-					{
-						detail =
-						    (theSupervisor->theStateMachine_.isInTransition()
-						         ? theSupervisor->theStateMachine_
-						               .getCurrentTransitionName(
-						                   theSupervisor->stateMachineLastCommandInput_)
-						         : (std::string("Uptime: ") +
-						            StringMacros::encodeURIComponent(
-						                StringMacros::getTimeDurationString(
-						                    theSupervisor->CorePropertySupervisorBase::
-						                        getSupervisorUptime())) +
-						            ", Time-in-state: " +
-						            StringMacros::encodeURIComponent(
-						                StringMacros::getTimeDurationString(
-						                    theSupervisor->theStateMachine_
-						                        .getTimeInState()))));
-						// make sure broadcast message status is not being updated
-						std::lock_guard<std::mutex> lock(
-						    theSupervisor->broadcastCommandStatusUpdateMutex_);
-						if(detail != "" && theSupervisor->broadcastCommandStatus_ != "")
-							detail += " - " + theSupervisor->broadcastCommandStatus_;
-
-						if(!theSupervisor->theStateMachine_.isInTransition() &&
-						   (theSupervisor->theStateMachine_.getCurrentStateName() ==
-						        RunControlStateMachine::CONFIGURED_STATE_NAME ||
-						    theSupervisor->theStateMachine_.getCurrentStateName() ==
-						        RunControlStateMachine::RUNNING_STATE_NAME ||
-						    theSupervisor->theStateMachine_.getCurrentStateName() ==
-						        RunControlStateMachine::PAUSED_STATE_NAME))
+						try
 						{
-							//add Configuration details
-							detail +=
-							    " - Configured with System Configuration Alias '" +
-							    theSupervisor->activeStateMachineConfigurationAlias_ +
-							    "' which translates to " +
-							    theSupervisor->theConfigurationTableGroup_.first + "(" +
-							    theSupervisor->theConfigurationTableGroup_.second.str() +
-							    "). Active Context Group " +
-							    theSupervisor
-							        ->CorePropertySupervisorBase::theConfigurationManager_
-							        ->getActiveGroupName(
-							            ConfigurationManager::GroupType::CONTEXT_TYPE) +
-							    "(" +
-							    theSupervisor
-							        ->CorePropertySupervisorBase::theConfigurationManager_
-							        ->getActiveGroupKey(
-							            ConfigurationManager::GroupType::CONTEXT_TYPE)
-							        .str() +
-							    ").";
+							detail = (theSupervisor->theStateMachine_.isInTransition()
+							              ? theSupervisor->theStateMachine_
+							                    .getCurrentTransitionName(
+							                        theSupervisor
+							                            ->stateMachineLastCommandInput_)
+							              : (std::string("Uptime: ") +
+							                 StringMacros::encodeURIComponent(
+							                     StringMacros::getTimeDurationString(
+							                         theSupervisor
+							                             ->CorePropertySupervisorBase::
+							                                 getSupervisorUptime())) +
+							                 ", Time-in-state: " +
+							                 StringMacros::encodeURIComponent(
+							                     StringMacros::getTimeDurationString(
+							                         theSupervisor->theStateMachine_
+							                             .getTimeInState()))));
+							// make sure broadcast message status is not being updated
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->broadcastCommandStatusUpdateMutex_);
+							if(detail != "" &&
+							   theSupervisor->broadcastCommandStatus_ != "")
+								detail += " - " + theSupervisor->broadcastCommandStatus_;
+
+							if(!theSupervisor->theStateMachine_.isInTransition() &&
+							   (theSupervisor->theStateMachine_.getCurrentStateName() ==
+							        RunControlStateMachine::CONFIGURED_STATE_NAME ||
+							    theSupervisor->theStateMachine_.getCurrentStateName() ==
+							        RunControlStateMachine::RUNNING_STATE_NAME ||
+							    theSupervisor->theStateMachine_.getCurrentStateName() ==
+							        RunControlStateMachine::PAUSED_STATE_NAME))
+							{
+								//add Configuration details
+								detail +=
+								    " - Configured with System Configuration Alias '" +
+								    theSupervisor->activeStateMachineConfigurationAlias_ +
+								    "' which translates to " +
+								    theSupervisor->theConfigurationTableGroup_.first +
+								    "(" +
+								    theSupervisor->theConfigurationTableGroup_.second
+								        .str() +
+								    "). Active Context Group " +
+								    theSupervisor
+								        ->CorePropertySupervisorBase::
+								            theConfigurationManager_->getActiveGroupName(
+								                ConfigurationManager::GroupType::
+								                    CONTEXT_TYPE) +
+								    "(" +
+								    theSupervisor
+								        ->CorePropertySupervisorBase::
+								            theConfigurationManager_
+								        ->getActiveGroupKey(
+								            ConfigurationManager::GroupType::CONTEXT_TYPE)
+								        .str() +
+								    ").";
+							}
 						}
-					}
-					catch(...)
-					{
-						detail = "";
-					}
+						catch(...)
+						{
+							detail = "";
+						}
+					}  //end gateway supervisor primary status retrieval
+
+					//now handle remote gateway info gathering
 
 					std::vector<GatewaySupervisor::RemoteGatewayInfo>
 					    remoteApps;  //local copy to avoid long mutex lock
@@ -538,19 +743,40 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 								if(remoteApp.command != "")
 								{
 									//latch until all remote apps are stable
-									commandingRemoteGatewayApps = true;
+									commandingRemoteGatewayApps =
+									    doDisconnected
+									        ? false
+									        : true;  //only command in primary (non-disconnected-handling) status thread
 									break;
 								}
 							}
 						}
-					}
-					__COUTVS__(TLVL_StatusRemoteWorkloop, commandingRemoteGatewayApps);
+					}  //end copy of remote apps
+					__COUTS__(TLVL_StatusRemoteWorkloop)
+					    << "doDisconnected=" << doDisconnected << " commanding? "
+					    << commandingRemoteGatewayApps
+					    << " remoteApps.size()=" << remoteApps.size()
+					    << " loopCount=" << loopCount << __E__;
 
 					//Add sub-apps for each Remote Gateway specified as a Remote Desktop Icon
-					if((!commandingRemoteGatewayApps && loopCount % 20 == 0) ||
-					   loopCount ==
-					       0)  //periodically refresh Remote Gateway list based on icon list
+					if(  //periodically refresh Remote Gateway list based on icon list
+					    //disconnect version will handle refreshing
+					    //primary version does first time to init apps and socket
+					    (loopCount ==
+					     0) ||  //must init socket first time! (for both thread types)
+					    (remoteApps.size() &&
+					     !remoteGatewaySocket) ||  //if there are app (from other loop) but socket not init'd
+					    (doDisconnected &&
+					     loopCount))  //% 20 == 0) ) //!commandingRemoteGatewayApps &&
 					{
+						__COUTS__(TLVL_StatusWorkloop)
+						    << "Doing remote gateway icon/subapp refresh, doDisconnected "
+						       "= "
+						    << doDisconnected << " Supervisor instance = '" << appName
+						    << "' [LID=" << appInfo.getId() << "] in Context '"
+						    << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+						    << "].\n\n";
+
 						// use latest context always from temporary configuration manager,
 						//	to get updated icons every time...
 						//(so icon changes do no require an ots restart)
@@ -643,9 +869,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									}
 								}  //end remote URL parameter handling
 
-								thisInfo.appInfo.name = icon.recordUID_;
-								thisInfo.appInfo.status =
-								    SupervisorInfo::APP_STATUS_UNKNOWN;
+								thisInfo.appInfo.name   = icon.recordUID_;
+								thisInfo.appInfo.status = SupervisorInfo::
+								    APP_STATUS_UNKNOWN;  //non-empty string indicates this app exists
 								thisInfo.appInfo.progress = 0;
 								thisInfo.appInfo.detail   = "";
 								thisInfo.appInfo.url =
@@ -738,7 +964,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									       "targeting a UID in the "
 									       "SubsystemUserDataPathsTable."
 									    << __E__;
-									ss << "\n\nHere was the error: " << e.what() << __E__;
+									ss << "\n\nHere was the error getting remote "
+									      "aliases:\n"
+									   << e.what() << __E__;
 									__COUT__ << ss.str();
 									remoteApps[i].error = ss.str();
 
@@ -782,9 +1010,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 						if(remoteAppsExist &&
 						   !remoteGatewaySocket)  //instantiate socket first time there are remote apps
 						{
-							__COUT_INFO__
-							    << "Instantiating Remote Gateway App Status Socket!"
-							    << __E__;
+							__COUT_INFO__ << "Instantiating Remote Gateway App Status "
+							                 "Socket (doDisconnected = "
+							              << doDisconnected << ")!" << __E__;
 							ConfigurationTree configLinkNode =
 							    theSupervisor->CorePropertySupervisorBase::
 							        getSupervisorTableNode();
@@ -828,56 +1056,87 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							remoteGatewaySocket = std::make_unique<TransceiverSocket>(
 							    ipAddressForStateChangesOverUDP);
 							remoteGatewaySocket->initialize();
-						}
+
+							__COUTT__
+							    << "Remote Gateway App Status Socket initialized. Port: "
+							    << remoteGatewaySocket->getPort()
+							    << ", doDisconnected=" << doDisconnected << __E__;
+						}  //end initializing remote gateway socket
 
 					}  //end periodic Remote Gateway refresh
 
-					//for each remote gateway, request app status with "GetRemoteAppStatus"
-					if(loopCount % 3 == 0 ||
-					   resetRemoteGatewayApps ||  //a little less frequently
-					   commandingRemoteGatewayApps)
+					//assert socket is initialized if there are remote apps
+					if(remoteApps.size() && !remoteGatewaySocket)
 					{
-						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop,
-							           theSupervisor->remoteGatewayApps_[0].error);
+						__SS__ << "Impossible no remote gateway socket available, "
+						          "doDisconnected = "
+						       << doDisconnected << __E__;
+						__SS_THROW__;
+					}
+
+					//request icons more often from disconnected thread, and not from primary thread
+					__COUTT__ << "(doDisconnected = " << doDisconnected
+					          << ") resetRemoteGatewayApps = " << resetRemoteGatewayApps
+					          << __E__;
+
+					std::set<std::string /* appName */>
+					    remoteAppsHandedByThread;  //track which apps are handled in this pass, so they can be updated at the end
+
+					//for each remote gateway, request app status with "GetRemoteAppStatus"
+					bool gettingRemoteStatus = false;
+					if(1 || loopCount % 3 == 0 ||    //most frequent
+					   resetRemoteGatewayApps ||     //a little less frequently
+					   commandingRemoteGatewayApps)  //least frequent
+					{
+						gettingRemoteStatus = true;
+						__COUTT__ << "(doDisconnected = " << doDisconnected
+						          << ") gettingRemoteStatus = " << gettingRemoteStatus
+						          << __E__;
 
 						//check for commands first
 						bool commandSent = false;
 
-						for(auto& remoteGatewayApp : remoteApps)
-							if(remoteGatewayApp.command != "")
-							{
-								GatewaySupervisor::SendRemoteGatewayCommand(
-								    remoteGatewayApp, remoteGatewaySocket);
-								if(remoteGatewayApp.error == "")
+						if(!doDisconnected)  //only primary sends commands
+							for(auto& remoteGatewayApp : remoteApps)
+								if(remoteGatewayApp.command != "")
 								{
-									remoteGatewayApp.ignoreStatusCount =
-									    0;  //if non-zero, do not ask for status
-									commandSent = true;
-								}
+									remoteAppsHandedByThread
+									    .emplace(  //mark handled by this thread
+									        remoteGatewayApp.appInfo.url +
+									        remoteGatewayApp.appInfo.name);
 
-								//give feedback immediately to user!!
-								{
-									__COUT__ << "remoteGatewayApp "
-									         << remoteGatewayApp.appInfo.name
-									         << " error: " << remoteGatewayApp.error
-									         << __E__;
-									//lock for remainder of scope
-									std::lock_guard<std::mutex> lock(
-									    theSupervisor->remoteGatewayAppsMutex_);
-									for(size_t i = 0;
-									    i < theSupervisor->remoteGatewayApps_.size();
-									    ++i)
-										if(remoteGatewayApp.appInfo.name ==
-										   theSupervisor->remoteGatewayApps_[i]
-										       .appInfo.name)
-										{
-											theSupervisor->remoteGatewayApps_[i].error =
-											    remoteGatewayApp.error;
-											break;
-										}
-								}
-							}
+									GatewaySupervisor::SendRemoteGatewayCommand(
+									    remoteGatewayApp, remoteGatewaySocket);
+									if(remoteGatewayApp.error == "")
+									{
+										remoteGatewayApp.ignoreStatusCount =
+										    0;  //if non-zero, do not ask for status
+										commandSent = true;
+									}
+
+									//give feedback immediately to user!!
+									{
+										__COUT__ << "remoteGatewayApp (doDisconnected="
+										         << doDisconnected << ") "
+										         << remoteGatewayApp.appInfo.name
+										         << " error: " << remoteGatewayApp.error
+										         << __E__;
+										//lock for remainder of scope
+										std::lock_guard<std::mutex> lock(
+										    theSupervisor->remoteGatewayAppsMutex_);
+										for(size_t i = 0;
+										    i < theSupervisor->remoteGatewayApps_.size();
+										    ++i)
+											if(remoteGatewayApp.appInfo.name ==
+											   theSupervisor->remoteGatewayApps_[i]
+											       .appInfo.name)
+											{
+												theSupervisor->remoteGatewayApps_[i]
+												    .error = remoteGatewayApp.error;
+												break;
+											}
+									}
+								}  //end primary command handling loop
 
 						if(commandSent)
 						{
@@ -885,20 +1144,61 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							sleep(1);  //gives some time for command to sink in
 						}
 
-						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop,
-							           theSupervisor->remoteGatewayApps_[0].error);
-
-						//then get status
+						//then get status (primary and disconnected threads)
 						bool allAppsAreIdle    = true;
 						bool allApssAreUnknown = true;
 						for(auto& remoteGatewayApp : remoteApps)
 						{
+							bool isRemoteAppDisconnected =
+							    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
+							                           remoteGatewayApp.appInfo.name) !=
+							        appLastStatusGood.end() &&
+							    !appLastStatusGood.at(remoteGatewayApp.appInfo.url +
+							                          remoteGatewayApp.appInfo.name);
+
+							__COUTS__(TLVL_StatusWorkloop)
+							    << "Status needed? doDisconnected = " << doDisconnected
+							    << " Remote subapp = '" << remoteGatewayApp.appInfo.name
+							    << "' [URL=" << remoteGatewayApp.appInfo.url
+							    << "] isRemoteAppDisconnected = "
+							    << isRemoteAppDisconnected << ".\n\n";
+
+							//skip based on disconnected status
+							bool skipApp = false;
+							if(doDisconnected && !isRemoteAppDisconnected)
+								skipApp = true;
+							if(!doDisconnected && isRemoteAppDisconnected)
+								skipApp = true;
+
+							if(remoteAppsHandedByThread
+							       .find(  //already handled by command send, so get status!
+							           remoteGatewayApp.appInfo.url +
+							           remoteGatewayApp.appInfo.name) !=
+							   remoteAppsHandedByThread.end())
+								skipApp = false;
+
+							if(skipApp)
+								continue;
+
+							remoteAppsHandedByThread
+							    .emplace(  //mark handled by this thread
+							        remoteGatewayApp.appInfo.url +
+							        remoteGatewayApp.appInfo.name);
+
+							__COUTS__(TLVL_StatusWorkloop)
+							    << "Calling CheckRemoteGatewayStatus, doDisconnected = "
+							    << doDisconnected << " Remote subapp = '"
+							    << remoteGatewayApp.appInfo.name
+							    << "' [URL=" << remoteGatewayApp.appInfo.url
+							    << "] isRemoteAppDisconnected = "
+							    << isRemoteAppDisconnected << ".\n\n";
+
 							GatewaySupervisor::CheckRemoteGatewayStatus(
 							    remoteGatewayApp,
 							    remoteGatewaySocket,
 							    ipAddressForStateChangesOverUDP,
 							    portForReverseLoginOverUDP);
+
 							if(remoteGatewayApp.appInfo.status !=
 							   SupervisorInfo::APP_STATUS_UNKNOWN)
 							{
@@ -907,14 +1207,21 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 								                      remoteGatewayApp.appInfo.name])
 								{
 									__COUT_INFO__
-									    << "First good status from "
-									    << " Remote subapp = '"
+									    << "First good status (doDisconnected = "
+									    << doDisconnected << ") from Remote subapp = '"
 									    << remoteGatewayApp.appInfo.name
 									    << "' [URL=" << remoteGatewayApp.appInfo.url
 									    << "].\n\n";
 								}
 								appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                  remoteGatewayApp.appInfo.name] = true;
+								{  //propagate status change to list of truth
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->dualStatusThreadMutex_);
+									theSupervisor->appLastStatusGood_
+									    [remoteGatewayApp.appInfo.url +
+									     remoteGatewayApp.appInfo.name] = true;
+								}
 
 								if(!(remoteGatewayApp.appInfo.progress ==
 								         0 ||  //if !(idle)
@@ -933,8 +1240,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									allAppsAreIdle = false;
 								}
 							}
-							else  //skip absent subsystems for a while
+							else  //status is unknown (make sure in disconnected pile)
 							{
+								//mark so could ignore/skip absent subsystems for a while
 								remoteGatewayApp.ignoreStatusCount =
 								    3;  //if non-zero, do not ask for status
 
@@ -969,7 +1277,9 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									if(contextName != "")
 										ss << " (" << contextName << ")" << __E__;
 
-									__COUT_WARN__ << ss.str();
+									__COUT_WARN__
+									    << "(doDisconnected = " << doDisconnected << ") "
+									    << ss.str();
 									if(appLastStatusGood.find(
 									       remoteGatewayApp.appInfo.url +
 									       remoteGatewayApp.appInfo.name) !=
@@ -981,6 +1291,13 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 								//mark last status bad
 								appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                  remoteGatewayApp.appInfo.name] = false;
+								{  //propagate status change to list of truth
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->dualStatusThreadMutex_);
+									theSupervisor->appLastStatusGood_
+									    [remoteGatewayApp.appInfo.url +
+									     remoteGatewayApp.appInfo.name] = false;
+								}
 							}
 
 						}  //end remote app status update loop
@@ -997,15 +1314,18 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							++commandRemoteIdleCount;
 							if(commandRemoteIdleCount >= 3)
 							{
-								__COUTT__ << "Back to idle statusing" << __E__;
+								__COUTT__ << "Back to idle statusing (doDisconnected = "
+								          << doDisconnected << ")" << __E__;
 								commandingRemoteGatewayApps = false;
 							}
 						}
 
 						__COUTS__(TLVL_StatusRemoteWorkloop)
-						    << "commandRemoteIdleCount " << commandRemoteIdleCount << " "
-						    << allAppsAreIdle << " " << commandingRemoteGatewayApps
-						    << __E__;
+						    << "(doDisconnected = " << doDisconnected
+						    << ") commandRemoteIdleCount=" << commandRemoteIdleCount
+						    << " allAppsAreIdle=" << allAppsAreIdle
+						    << " commandingRemoteGatewayApps="
+						    << commandingRemoteGatewayApps << __E__;
 
 					}  //end remote app status update
 
@@ -1013,20 +1333,23 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 					if(resetRemoteGatewayApps)
 					{
 						__COUTS__(TLVL_RemoteDesktopIcons)
-						    << "Attempting to get Remote Desktop Icons... size="
-						    << remoteApps.size() << __E__;
+						    << "Attempting to get Remote Desktop Icons (doDisconnected = "
+						    << doDisconnected << ")... size=" << remoteApps.size()
+						    << __E__;
 
 						for(auto& remoteGatewayApp : remoteApps)
 						{
 							__COUTVS__(TLVL_RemoteDesktopIcons,
 							           remoteGatewayApp.appInfo.name);
 							__COUTVS__(TLVL_RemoteDesktopIcons, remoteGatewayApp.command);
+
 							if(remoteGatewayApp.command != "")
 								continue;  //skip if command to be sent
 
 							__COUTS__(TLVL_RemoteDesktopIcons)
 							    << remoteGatewayApp.appInfo.name << ": "
 							    << remoteGatewayApp.appInfo.status << __E__;
+
 							if(remoteGatewayApp.appInfo.status ==
 							   SupervisorInfo::APP_STATUS_UNKNOWN)
 								continue;  //skip if no status yet
@@ -1056,8 +1379,10 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							if(remoteGatewayApp.error ==
 							   "")  //only request icons if no errors
 							{
+								//only sets iconString or error!
 								GatewaySupervisor::GetRemoteGatewayIcons(
 								    remoteGatewayApp, remoteGatewaySocket);
+
 								if(remoteGatewayApp.error !=
 								   "")  //give feedback immediately to user!!
 								{
@@ -1077,40 +1402,79 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 											break;
 										}
 								}
-							}
-						}
-
-					}  //end remote desktop icon gathering
+								else  //give icon feedback immediately
+								{
+									__COUTV__(remoteGatewayApp.iconString);
+									//lock for remainder of scope
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->remoteGatewayAppsMutex_);
+									for(size_t i = 0;
+									    i < theSupervisor->remoteGatewayApps_.size();
+									    ++i)
+										if(remoteGatewayApp.appInfo.name ==
+										   theSupervisor->remoteGatewayApps_[i]
+										       .appInfo.name)
+										{
+											theSupervisor->remoteGatewayApps_[i]
+											    .iconString = remoteGatewayApp.iconString;
+											break;
+										}
+								}
+							}  //end remote app icon request handling
+						}      //end remote app icon request loop
+					}          //end remote desktop icon gathering
 
 					//for each remote gateway, copy info to Gateway supervisor remote gateway structure
-					if(loopCount % 3 == 0 ||
-					   resetRemoteGatewayApps ||  //a little less frequently
-					   commandingRemoteGatewayApps)
+					if(gettingRemoteStatus)
 					{
-						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop,
-							           theSupervisor->remoteGatewayApps_[0].error);
+						__COUTT__ << "(doDisconnected = " << doDisconnected
+						          << ") copy over... gettingRemoteStatus = "
+						          << gettingRemoteStatus << __E__;
 
 						//replace info in supervisor remote gateway list
 						{
 							//lock for remainder of scope
 							std::lock_guard<std::mutex> lock(
 							    theSupervisor->remoteGatewayAppsMutex_);
+
+							__COUTT__ << "(doDisconnected = " << doDisconnected
+							          << ") size?... "
+							             "theSupervisor->remoteGatewayApps_.size() = "
+							          << theSupervisor->remoteGatewayApps_.size()
+							          << __E__;
+
+							//first clear any stale status info, if in correct thread role
 							for(size_t i = 0;
 							    !commandingRemoteGatewayApps &&
 							    i < theSupervisor->remoteGatewayApps_.size();
 							    ++i)
 							{
+								//only clear status if status was handled by this thread
+								if(remoteAppsHandedByThread.find(
+								       theSupervisor->remoteGatewayApps_[i].appInfo.url +
+								       theSupervisor->remoteGatewayApps_[i]
+								           .appInfo.name) ==
+								   remoteAppsHandedByThread.end())
+									continue;
+
 								__COUTVS__(TLVL_StatusFullDetail,
 								           theSupervisor->remoteGatewayApps_[i].command);
 								if(theSupervisor->remoteGatewayApps_[i].command ==
 								   "")  //make sure not mid-command
 									theSupervisor->remoteGatewayApps_[i].appInfo.status =
 									    "";  //clear status as indicator to be erased
-							}
+							}                //end clear stale status loop
 
+							//now copy over updated status info, if in correct thread role
 							for(auto& remoteGatewayApp : remoteApps)
 							{
+								//only copy status if status was handled by this thread
+								if(remoteAppsHandedByThread.find(
+								       remoteGatewayApp.appInfo.url +
+								       remoteGatewayApp.appInfo.name) ==
+								   remoteAppsHandedByThread.end())
+									continue;
+
 								bool found = false;
 								for(size_t i = 0;
 								    i < theSupervisor->remoteGatewayApps_.size();
@@ -1120,6 +1484,7 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									   theSupervisor->remoteGatewayApps_[i].appInfo.name)
 									{
 										found = true;
+
 										//copy over updated status (but not control info, which may be have been changed while mutex was dropped)
 
 										if(remoteGatewayApp.command ==
@@ -1147,8 +1512,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 										theSupervisor->remoteGatewayApps_[i]
 										    .user_data_path_record =
 										    remoteGatewayApp.user_data_path_record;
-										theSupervisor->remoteGatewayApps_[i].iconString =
-										    remoteGatewayApp.iconString;
+										// theSupervisor->remoteGatewayApps_[i].iconString = // do not overwrite icon string!
+										//     remoteGatewayApp.iconString;
 										theSupervisor->remoteGatewayApps_[i]
 										    .parentIconFolderPath =
 										    remoteGatewayApp.parentIconFolderPath;
@@ -1227,42 +1592,66 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 									}
 								}
 								if(!found)  //add
+								{
+									__COUT__ << "Adding '"
+									         << remoteGatewayApp.appInfo.name
+									         << "' to Gateway app list." << __E__;
 									theSupervisor->remoteGatewayApps_.push_back(
 									    remoteGatewayApp);
-							}
+								}
+							}  //end copy over updated status info, if in correct thread role
 
+							__COUTT__ << "(doDisconnected = " << doDisconnected
+							          << ") done copy over... "
+							             "theSupervisor->remoteGatewayApps_.size() = "
+							          << theSupervisor->remoteGatewayApps_.size()
+							          << __E__;
 							//cleanup unused remoteGatewayApps_
 							for(size_t i = 0;
 							    i < theSupervisor->remoteGatewayApps_.size();
 							    ++i)
 							{
+								//only delete if status was handled by this thread
+								if(remoteAppsHandedByThread.find(
+								       theSupervisor->remoteGatewayApps_[i].appInfo.url +
+								       theSupervisor->remoteGatewayApps_[i]
+								           .appInfo.name) ==
+								   remoteAppsHandedByThread.end())
+									continue;
+
 								if(theSupervisor->remoteGatewayApps_[i].appInfo.status ==
 								   "")
 								{
+									__COUT__ << "(doDisconnected = " << doDisconnected
+									         << ") Erasing stale '"
+									         << theSupervisor->remoteGatewayApps_[i]
+									                    .appInfo.url +
+									                theSupervisor->remoteGatewayApps_[i]
+									                    .appInfo.name
+									         << "' from Gateway app list." << __E__;
 									//rewind and erase
 									theSupervisor->remoteGatewayApps_.erase(
 									    theSupervisor->remoteGatewayApps_.begin() + i);
 									--i;
 								}
 							}
-						}
 
-						if(theSupervisor->remoteGatewayApps_.size())
-							__COUTVS__(TLVL_StatusRemoteWorkloop,
-							           theSupervisor->remoteGatewayApps_[0].error);
-					}
+							//copy to subapps for display of primary Gateway
+							for(const auto& remoteGatewayApp :
+							    theSupervisor->remoteGatewayApps_)
+								subapps.push_back(remoteGatewayApp.appInfo);
 
-					//copy to subapps for display of primary Gateway
-					{
-						std::lock_guard<std::mutex> lock(
-						    theSupervisor->remoteGatewayAppsMutex_);
-						for(const auto& remoteGatewayApp :
-						    theSupervisor->remoteGatewayApps_)
-							subapps.push_back(remoteGatewayApp.appInfo);
-					}
+							__COUTT__ << "(doDisconnected = " << doDisconnected
+							          << ") done copy over... "
+							             "theSupervisor->remoteGatewayApps_.size() = "
+							          << theSupervisor->remoteGatewayApps_.size()
+							          << __E__;
 
-					resetRemoteGatewayApps = false;  //reset
-				}
+						}  //end scope lock for copying over remote app status
+
+					}  //end handling of copy info to Gateway supervisor remote gateway structure
+
+				}  //end main status try
 				catch(const std::runtime_error& e)
 				{
 					status                = SupervisorInfo::APP_STATUS_UNKNOWN;
@@ -1295,9 +1684,19 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 					                 "unknown error."
 					              << __E__;
 				}
+
+				//disconnected thread only handles remote gateway apps, do not proceed with setting Gateway Supervisor app status
+				if(doDisconnected)
+					continue;
 			}
 			else  // get non-gateway status
 			{
+				//skip based on disconnected status
+				if(doDisconnected && !isDisconnected)
+					continue;
+				if(!doDisconnected && isDisconnected)
+					continue;
+
 				// pass the application as a parameter to tempMessage
 				SOAPParameters appPointer;
 				appPointer.addParameter("ApplicationPointer");
@@ -1316,13 +1715,13 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 					                                     tempMessage);
 
 					if("ContextARTDAQ" == appInfo.getContextName())
-						__COUTS__(41)
+						__COUTS__(TLVL_DebugArtdaqStatus)
 						    << " Supervisor instance = '" << appName
 						    << "' [LID=" << appInfo.getId() << "] in Context '"
 						    << appInfo.getContextName() << " statusMessage... "
 						    << SOAPUtilities::translate(statusMessage) << std::endl;
 					else
-						__COUTS__(40)
+						__COUTS__(TLVL_DebugStatusWorkloop)
 						    << " Supervisor instance = '" << appName
 						    << "' [LID=" << appInfo.getId() << "] in Context '"
 						    << appInfo.getContextName() << " statusMessage... "
@@ -1333,6 +1732,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 					parameters.addParameter("Progress");
 					parameters.addParameter("Detail");
 					parameters.addParameter("Subapps");
+					parameters.addParameter("AvailableLogSpaceKB");
+					parameters.addParameter("AvailableDataSpaceKB");
 					SOAPUtilities::receive(statusMessage, parameters);
 
 					status = parameters.getValue("Status");
@@ -1373,20 +1774,23 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							    atoi(parseDetail[2]
 							             .substr(parseDetail[2].find(':') + 1)
 							             .c_str());
-						__COUTVS__(36, theSupervisor->systemConsoleErrCount_);
-						__COUTVS__(36, theSupervisor->systemConsoleWarnCount_);
+						__COUTVS__(TLVL_DebugStatusDetail,
+						           theSupervisor->systemConsoleErrCount_);
+						__COUTVS__(TLVL_DebugStatusDetail,
+						           theSupervisor->systemConsoleWarnCount_);
 						if(parseDetail.size() >
 						   3)  //e.g. Last Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
 						{
 							size_t closeTimePos = parseDetail[3].find(')');
-							__COUTVS__(36, closeTimePos);
+							__COUTVS__(TLVL_DebugStatusDetail, closeTimePos);
 							theSupervisor->lastConsoleErr_ =
 							    parseDetail[3].substr(closeTimePos + 2);
 							size_t openTimePos = parseDetail[3].find('(');
-							__COUTVS__(36, openTimePos);
+							__COUTVS__(TLVL_DebugStatusDetail, openTimePos);
 							theSupervisor->lastConsoleErrTime_ = parseDetail[3].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(36, theSupervisor->lastConsoleErrTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->lastConsoleErrTime_);
 						}
 						if(parseDetail.size() >
 						   4)  //e.g. Last Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
@@ -1397,7 +1801,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							size_t openTimePos = parseDetail[4].find('(');
 							theSupervisor->lastConsoleWarnTime_ = parseDetail[4].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(36, theSupervisor->lastConsoleWarnTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->lastConsoleWarnTime_);
 						}
 						if(parseDetail.size() >
 						   5)  //e.g. Last Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
@@ -1408,7 +1813,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							size_t openTimePos = parseDetail[5].find('(');
 							theSupervisor->lastConsoleInfoTime_ = parseDetail[5].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(36, theSupervisor->lastConsoleInfoTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->lastConsoleInfoTime_);
 						}
 						if(parseDetail.size() > 6)
 							theSupervisor->systemConsoleInfoCount_ =
@@ -1425,7 +1831,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							size_t openTimePos = parseDetail[7].find('(');
 							theSupervisor->firstConsoleErrTime_ = parseDetail[7].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(36, theSupervisor->firstConsoleErrTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->firstConsoleErrTime_);
 						}
 						if(parseDetail.size() >
 						   8)  //e.g. First Warn (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
@@ -1436,7 +1843,8 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							size_t openTimePos = parseDetail[8].find('(');
 							theSupervisor->firstConsoleWarnTime_ = parseDetail[8].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(36, theSupervisor->firstConsoleWarnTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->firstConsoleWarnTime_);
 						}
 						if(parseDetail.size() >
 						   9)  //e.g. First Info (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
@@ -1447,12 +1855,20 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 							size_t openTimePos = parseDetail[9].find('(');
 							theSupervisor->firstConsoleInfoTime_ = parseDetail[9].substr(
 							    openTimePos, closeTimePos - openTimePos + 1);
-							__COUTVS__(36, theSupervisor->firstConsoleInfoTime_);
+							__COUTVS__(TLVL_DebugStatusDetail,
+							           theSupervisor->firstConsoleInfoTime_);
 						}
 					}
 
 					subapps = SupervisorInfo::deserializeSubappInfos(
 					    parameters.getValue("Subapps"));
+
+					availableLogSpaceKB =
+					    std::stoull(parameters.getValue("AvailableLogSpaceKB"));
+					__COUTVS__(TLVL_DebugStatusDetail, availableLogSpaceKB);
+					availableDataSpaceKB =
+					    std::stoull(parameters.getValue("AvailableDataSpaceKB"));
+					__COUTVS__(TLVL_DebugStatusDetail, availableDataSpaceKB);
 
 					if(!appLastStatusGood[appName])
 					{
@@ -1464,6 +1880,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 						__COUTTV__(SOAPUtilities::translate(tempMessage));
 					}
 					appLastStatusGood[appName] = true;
+					{  //propagate status change to list of truth
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->dualStatusThreadMutex_);
+						theSupervisor->appLastStatusGood_[appName] = true;
+					}
 				}
 				catch(const xdaq::exception::Exception& e)
 				{
@@ -1537,6 +1958,11 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 						}
 					}
 					appLastStatusGood[appName] = false;
+					{  //propagate status change to list of truth
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->dualStatusThreadMutex_);
+						theSupervisor->appLastStatusGood_[appName] = false;
+					}
 				}
 				catch(...)
 				{
@@ -1615,11 +2041,25 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 						}
 					}
 					appLastStatusGood[appName] = false;
+					{  //propagate status change to list of truth
+						std::lock_guard<std::mutex> lock(
+						    theSupervisor->dualStatusThreadMutex_);
+						theSupervisor->appLastStatusGood_[appName] = false;
+					}
 				}
 			}  // end with non-gateway status request handling
 
 			__COUTVS__(TLVL_StatusRemoteWorkloop, status);
 			__COUTVS__(TLVL_StatusRemoteWorkloop, progress);
+
+			if(progress.empty())
+			{
+				__SS__ << "Empty progress string should not happen (doDisconnected = "
+				       << doDisconnected << ")! Supervisor instance = '" << appName
+				       << "' [LID=" << appInfo.getId() << "] in Context '"
+				       << appInfo.getContextName() << __E__;
+				__SS_THROW__;
+			}
 
 			// set status and progress
 			// convert the progress string into an integer in order to call
@@ -1628,23 +2068,264 @@ void GatewaySupervisor::AppStatusWorkLoop(GatewaySupervisor* theSupervisor,
 			ssProgress >> progressInteger;
 
 			if("ContextARTDAQ" == appInfo.getContextName())
-				__COUTVS__(41, progressInteger);
+				__COUTVS__(TLVL_DebugArtdaqStatus, progressInteger);
 			else
-				__COUTVS__(40, progressInteger);
+			{
+				__COUTVS__(TLVL_DebugStatusWorkloop, progressInteger);
+				if(progressInteger > 100)
+					__COUT__ << "What happened? " << progressInteger << __E__;
+			}
 
-			theSupervisor->allSupervisorInfo_.setSupervisorStatus(
-			    appInfo, status, progressInteger, detail, subapps);
+			__COUTVS__(TLVL_DebugStatusWorkloop, availableLogSpaceKB);
+			__COUTVS__(TLVL_DebugStatusWorkloop, availableDataSpaceKB);
 
-		}  // end of app loop
+			//alert and record available disk space
+			auto spaceIt = availableDiskSpaceKB_map.find(appInfo.getContextName());
+			if(availableLogSpaceKB)  //if non-zero, then assume is latest valid value
+			{
+				if((spaceIt == availableDiskSpaceKB_map.end() ||  //and new value
+				    spaceIt->second.first > availableLogSpaceKB) &&
+				   availableLogSpaceKB < availableLogSpaceKB_MIN)  //and below threshold
+				{                                                  //then alert users!
+					theSupervisor->makeSystemLogEntry(
+					    "Available log disk space low (at host='" +
+					    appInfo.getHostname() + "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining.");
+				}
+				availableDiskSpaceKB_map[appInfo.getContextName()].first =
+				    availableLogSpaceKB;
+			}
+			else if(spaceIt !=
+			        availableDiskSpaceKB_map.end())  //else use last known value
+				availableLogSpaceKB = spaceIt->second.first;
+
+			if(availableDataSpaceKB)  //if non-zero, then assume is latest valid value
+			{
+				if((spaceIt == availableDiskSpaceKB_map.end() ||  //and new value
+				    spaceIt->second.second > availableDataSpaceKB) &&
+				   availableDataSpaceKB < availableDataSpaceKB_MIN)  //and below threshold
+				{                                                    //then alert users!
+					theSupervisor->makeSystemLogEntry(
+					    "Available data disk space low (at host='" +
+					    appInfo.getHostname() + "' and path='" + otsdaq_data_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining.");
+				}
+				availableDiskSpaceKB_map[appInfo.getContextName()].second =
+				    availableDataSpaceKB;
+			}
+			else if(spaceIt !=
+			        availableDiskSpaceKB_map.end())  //else use last known value
+				availableDataSpaceKB = spaceIt->second.second;
+
+			__COUTVS__(TLVL_DebugStatusWorkloop, availableLogSpaceKB);
+			__COUTVS__(TLVL_DebugStatusWorkloop, availableDataSpaceKB);
+
+			theSupervisor->allSupervisorInfo_
+			    .setSupervisorStatus(  //====================================== set supervisor status
+			        appInfo,
+			        status,
+			        progressInteger,
+			        detail,
+			        subapps,
+			        availableLogSpaceKB,
+			        availableDataSpaceKB);
+
+			//if no recent alert, check if rate to disk is too high ------------
+			auto   rateIt = rateToLogDiskLastHourAlert_map.find(appInfo.getContextName());
+			time_t now    = time(0);
+			if(rateIt == rateToLogDiskLastHourAlert_map.end() ||
+			   now - rateIt->second > 30 * 60)  //alert at most every 30 minutes
+			{
+				float logUsageRateLastHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getLogUsageRateLastHourKBps();
+
+				if(availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
+				   availableLogSpaceKB_MIN)
+				{
+					theSupervisor->makeSystemLogEntry(
+					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining and log usage rate over last hour is " +
+					    std::to_string(logUsageRateLastHourKBps) + " KB/s.");
+					rateToLogDiskLastHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
+				}
+			}  //end last hour log rate alert
+			rateIt = rateToLogDiskLastHalfHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToLogDiskLastHalfHourAlert_map.end() ||
+			   now - rateIt->second > 15 * 60)  //alert at most every 15 minutes
+			{
+				float logUsageRateLastHalfHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getLogUsageRateLastHalfHourKBps();
+
+				if(availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
+				   availableLogSpaceKB_MIN)
+				{
+					theSupervisor->makeSystemLogEntry(
+					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining and log usage rate over last half-hour is " +
+					    std::to_string(logUsageRateLastHalfHourKBps) + " KB/s.");
+					rateToLogDiskLastHalfHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
+				}
+			}  //end last half-hour log rate alert
+			rateIt = rateToLogDiskLastQuarterHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToLogDiskLastQuarterHourAlert_map.end() ||
+			   now - rateIt->second > 15 * 30)  //alert at most every 7.5 minutes
+			{
+				float logUsageRateLastQuarterHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getLogUsageRateLastQuarterHourKBps();
+
+				if(availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
+				   availableLogSpaceKB_MIN)
+				{
+					theSupervisor->makeSystemLogEntry(
+					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining and log usage rate over last quarter-hour is " +
+					    std::to_string(logUsageRateLastQuarterHourKBps) + " KB/s.");
+					rateToLogDiskLastQuarterHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
+				}
+			}  //end last quarter-hour log rate alert
+			rateIt = rateToLogDiskNowAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToLogDiskNowAlert_map.end() ||
+			   now - rateIt->second > 15 * 15)  //alert at most every 3.75 minutes
+			{
+				float logUsageRateNowKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getLogUsageRateNowKBps();
+
+				if(availableLogSpaceKB - logUsageRateNowKBps * 450 <
+				   availableLogSpaceKB_MIN)
+				{
+					theSupervisor->makeSystemLogEntry(
+					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_log_dir +
+					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					    " MB remaining and log usage rate over last few minutes is " +
+					    std::to_string(logUsageRateNowKBps) + " KB/s.");
+					rateToLogDiskNowAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
+				}
+			}  //end last few minutes log rate alert
+			rateIt = rateToDataDiskLastHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToDataDiskLastHourAlert_map.end() ||
+			   now - rateIt->second > 30 * 60)  //alert at most every 30 minutes
+			{
+				float dataUsageRateLastHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getDataUsageRateLastHourKBps();
+
+				if(availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
+				   availableDataSpaceKB_MIN)
+				{
+					theSupervisor->makeSystemLogEntry(
+					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_data_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining and data usage rate over last hour is " +
+					    std::to_string(dataUsageRateLastHourKBps) + " KB/s.");
+					rateToDataDiskLastHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
+				}
+			}  //end last hour data rate alert
+			rateIt = rateToDataDiskLastHalfHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToDataDiskLastHalfHourAlert_map.end() ||
+			   now - rateIt->second > 15 * 60)  //alert at most every 15 minutes
+			{
+				float dataUsageRateLastHalfHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getDataUsageRateLastHalfHourKBps();
+				if(availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
+				   availableDataSpaceKB_MIN)
+				{
+					theSupervisor->makeSystemLogEntry(
+					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_data_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining and data usage rate over last half-hour is " +
+					    std::to_string(dataUsageRateLastHalfHourKBps) + " KB/s.");
+					rateToDataDiskLastHalfHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
+				}
+			}  //end last half-hour data rate alert
+			rateIt =
+			    rateToDataDiskLastQuarterHourAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToDataDiskLastQuarterHourAlert_map.end() ||
+			   now - rateIt->second > 15 * 30)  //alert at most every 7.5 minutes
+			{
+				float dataUsageRateLastQuarterHourKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getDataUsageRateLastQuarterHourKBps();
+
+				if(availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
+				   availableDataSpaceKB_MIN)
+				{
+					theSupervisor->makeSystemLogEntry(
+					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_data_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining and data usage rate over last quarter-hour is " +
+					    std::to_string(dataUsageRateLastQuarterHourKBps) + " KB/s.");
+					rateToDataDiskLastQuarterHourAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
+				}
+			}  //end last quarter-hour data rate alert
+			rateIt = rateToDataDiskNowAlert_map.find(appInfo.getContextName());
+			if(rateIt == rateToDataDiskNowAlert_map.end() ||
+			   now - rateIt->second > 15 * 15)  //alert at most every 3.75 minutes
+			{
+				float dataUsageRateNowKBps =
+				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
+				        .at(appInfo.getId())
+				        .getDataUsageRateNowKBps();
+
+				if(availableDataSpaceKB - dataUsageRateNowKBps * 450 <
+				   availableDataSpaceKB_MIN)
+				{
+					theSupervisor->makeSystemLogEntry(
+					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "' and path='" + otsdaq_data_dir +
+					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					    " MB remaining and data usage rate over last few minutes is " +
+					    std::to_string(dataUsageRateNowKBps) + " KB/s.");
+					rateToDataDiskNowAlert_map[appInfo.getContextName()] =
+					    now;  //record time of this alert
+				}
+			}  //end last few minutes data rate alert
+		}      // end of app loop
 
 		if(oneStatusReqHasFailed)
 		{
 			__COUTT__ << "oneStatusReqHasFailed" << __E__;
-			sleep(5);  // sleep to not overwhelm server with errors
+			// sleep(5);  // sleep to not overwhelm server with errors
 		}
 
 	}  // end of infinite status checking loop
 }  // end AppStatusWorkLoop()
+catch(...)
+{
+	__COUT_ERR__ << "Unhandled exception in GatewaySupervisor::AppStatusWorkLoop "
+	                "(doDisconnected = "
+	             << doDisconnected << "). Exiting thread." << __E__;
+}  //end AppStatusWorkLoop() catch
 
 //==============================================================================
 /// GetRemoteGatewayIcons
@@ -1850,10 +2531,12 @@ try
 			requestString += "," + ipForReverseLoginOverUDP + "," +
 			                 std::to_string(portForReverseLoginOverUDP) + "," +
 			                 remoteGatewayApp.appInfo.name;
-		__COUTS__(24) << "requestString = " << requestString << __E__;
+		__COUTS__(TLVL_RemoteStatusVerbose)
+		    << "requestString = " << requestString << __E__;
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, requestString, 2 /*timeoutSeconds*/);
-		__COUTS__(24) << "remoteStatusString = " << remoteStatusString << __E__;
+		__COUTS__(TLVL_RemoteStatusVerbose)
+		    << "remoteStatusString = " << remoteStatusString << __E__;
 
 		std::string value, name;
 		bool        foundGateway = false;
@@ -1892,6 +2575,34 @@ try
 				remoteGatewayApp.appInfo.detail =
 				    value;  //StringMacros::decodeURIComponent(value);
 
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "availableLogSpaceKB", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.appInfo.availableLogSpaceKB = std::stoull(value);
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "availableDataSpaceKB", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.appInfo.availableDataSpaceKB = std::stoull(value);
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "logUsageRateKBps", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.appInfo.logUsageRateKBps = std::stof(value);
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "dataUsageRateKBps", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.appInfo.dataUsageRateKBps = std::stof(value);
+
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
@@ -1929,6 +2640,34 @@ try
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				remoteGatewayApp.subapps[name].detail =
 				    value;  //StringMacros::decodeURIComponent(value);
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "availableLogSpaceKB", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.subapps[name].availableLogSpaceKB = std::stoull(value);
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "availableDataSpaceKB", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.subapps[name].availableDataSpaceKB = std::stoull(value);
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "logUsageRateKBps", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.subapps[name].logUsageRateKBps = std::stof(value);
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "dataUsageRateKBps", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.subapps[name].dataUsageRateKBps = std::stof(value);
 
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
@@ -2047,6 +2786,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		return;
 	}
 
+	std::map<unsigned int /* lid */, SupervisorInfo>
+	    localAllSupervisorInfo;  //only use in this workloop thread, stable copy of app status
 	std::size_t              commaPosition;
 	unsigned int             commaCounter = 0;
 	std::size_t              begin        = 0;
@@ -2166,8 +2907,36 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					for(const auto& it :
 					    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
 					{
-						const auto& appInfo = it.second;
-						if(0 &&  //always return full status
+						// non-blocking here, it's ok if the status is stale
+						if(theSupervisor->allSupervisorInfo_
+						       .getSupervisorInfoMutex(it.second.getId())
+						       .try_lock())
+						{
+							//if doesnt exist, create it
+							if(localAllSupervisorInfo.find(it.second.getId()) ==
+							   localAllSupervisorInfo.end())
+								localAllSupervisorInfo.emplace(
+								    std::pair<unsigned int, SupervisorInfo>(
+								        it.second.getId(),  // descriptor.first,
+								        SupervisorInfo(0 /* descriptor */,
+								                       it.second.getName(),
+								                       it.second.getContextName())));
+
+							//copy if have lock
+							localAllSupervisorInfo.at(it.second.getId()) = it.second;
+							theSupervisor->allSupervisorInfo_
+							    .getSupervisorInfoMutex(it.second.getId())
+							    .unlock();
+						}  //else use stale status already in
+						else if(localAllSupervisorInfo.find(it.second.getId()) ==
+						        localAllSupervisorInfo.end())
+							continue;  //unless no stale value, then skip for now
+
+						// const auto& appInfo = it.second;
+						const auto& appInfo =
+						    localAllSupervisorInfo.at(it.second.getId());
+
+						if(0 &&  //always return all app status
 						   remoteGatewayStatus &&
 						   appInfo.getClass() !=
 						       XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
@@ -2197,6 +2966,34 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						                          supervisorNode);  // get progress
 						xmlOut.addTextElementToParent(
 						    "detail", appInfo.getDetail(), supervisorNode);  // get detail
+						xmlOut.addAttributeToNode(
+						    "availableLogSpaceKB",
+						    std::to_string(appInfo.getAvailableLogSpaceKB()),
+						    supervisorNode);  // get log space
+						xmlOut.addAttributeToNode(
+						    "availableDataSpaceKB",
+						    std::to_string(appInfo.getAvailableDataSpaceKB()),
+						    supervisorNode);  // get data space
+						float rate = appInfo.getLogUsageRateLastHourKBps();
+						if(rate == 0)
+							rate = appInfo.getLogUsageRateLastHalfHourKBps();
+						if(rate == 0)
+							rate = appInfo.getLogUsageRateLastQuarterHourKBps();
+						if(rate == 0)
+							rate = appInfo.getLogUsageRateNowKBps();
+						xmlOut.addAttributeToNode("logUsageRateKBps",
+						                          std::to_string(rate),
+						                          supervisorNode);  // get log usage rate
+						rate = appInfo.getDataUsageRateLastHourKBps();
+						if(rate == 0)
+							rate = appInfo.getDataUsageRateLastHalfHourKBps();
+						if(rate == 0)
+							rate = appInfo.getDataUsageRateLastQuarterHourKBps();
+						if(rate == 0)
+							rate = appInfo.getDataUsageRateNowKBps();
+						xmlOut.addAttributeToNode("dataUsageRateKBps",
+						                          std::to_string(rate),
+						                          supervisorNode);  // get data usage rate
 						xmlOut.addAttributeToNode(
 						    "class",
 						    appInfo.getClass(),
@@ -2364,6 +3161,30 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    std::to_string(appInfo.getProgress()));  // get progress
 						xmlOut.addTextElementToData("detail",
 						                            appInfo.getDetail());  // get detail
+						xmlOut.addNumberElementToData(
+						    "availableLogSpaceKB",
+						    appInfo.getAvailableLogSpaceKB());  // get log space
+						xmlOut.addNumberElementToData(
+						    "availableDataSpaceKB",
+						    appInfo.getAvailableDataSpaceKB());  // get data space
+						float rate = appInfo.getLogUsageRateLastHourKBps();
+						if(rate == 0)
+							rate = appInfo.getLogUsageRateLastHalfHourKBps();
+						if(rate == 0)
+							rate = appInfo.getLogUsageRateLastQuarterHourKBps();
+						if(rate == 0)
+							rate = appInfo.getLogUsageRateNowKBps();
+						xmlOut.addNumberElementToData("logUsageRateKBps",
+						                              rate);  // get log usage rate
+						rate = appInfo.getDataUsageRateLastHourKBps();
+						if(rate == 0)
+							rate = appInfo.getDataUsageRateLastHalfHourKBps();
+						if(rate == 0)
+							rate = appInfo.getDataUsageRateLastQuarterHourKBps();
+						if(rate == 0)
+							rate = appInfo.getDataUsageRateNowKBps();
+						xmlOut.addNumberElementToData("dataUsageRateKBps",
+						                              rate);  // get data usage rate
 						xmlOut.addTextElementToData(
 						    "class",
 						    appInfo.getClass());  // get application class
@@ -2593,7 +3414,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						if(remoteName == remoteGatewayApp.appInfo.name)
 						{
 							found = true;
-							__COUTVS__(21, remoteGatewayApp.permissionThresholdString);
+							__COUTVS__(TLVL_RemoteStatusParams,
+							           remoteGatewayApp.permissionThresholdString);
 
 							std::map<std::string /*groupName*/,
 							         WebUsers::permissionLevel_t>
@@ -2627,12 +3449,13 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								if(it != userGroupPermissionsMap.end() &&
 								   it2 != userGroupPermissionsMap.end())
 								{
-									__COUTS__(21)
+									__COUTS__(TLVL_StateChangerDetail)
 									    << "Found user group '" << it->first
 									    << "' to modify: " << (uint16_t)it2->second
 									    << " --> " << (uint16_t)it->second << __E__;
 									it2->second = it->second;
-									__COUTVS__(21, (uint16_t)it2->second);
+									__COUTVS__(TLVL_StateChangerDetail,
+									           (uint16_t)it2->second);
 								}
 								else if(
 								    it ==
@@ -2741,8 +3564,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					for(const auto& icon : icons)
 					{
-						__COUTVS__(40, icon.caption_);
-						__COUTVS__(40, icon.permissionThresholdString_);
+						__COUTVS__(TLVL_DebugStatusWorkloop, icon.caption_);
+						__COUTVS__(TLVL_DebugStatusWorkloop,
+						           icon.permissionThresholdString_);
 
 						//ignore permission level, and give all icons
 
@@ -2942,10 +3766,13 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		}
 		else
 		{
-			__COUTS__(TLVL_StateChanger) << "UDP State Changer waiting..." << __E__;
+			__COUTS__(TLVL_StateChangerDetail)
+			    << "Waiting for UDP State Changer packet on "
+			    << ipAddressForStateChangesOverUDP << ":" << portForStateChangesOverUDP
+			    << "..." << __E__;
 			sleep(1);
 		}
-	}
+	}  // end while(1) loop
 }  // end StateChangerWorkLoop()
 
 //==============================================================================
@@ -7620,7 +8447,7 @@ try
 	cgicc::Cgicc cgiIn(in);
 
 	std::string requestType = CgiDataUtilities::getData(cgiIn, "RequestType");
-	__COUTVS__(40, requestType);
+	__COUTVS__(TLVL_DebugRequests, requestType);
 
 	HttpXmlDocument           xmlOut;
 	WebUsers::RequestUserInfo userInfo(requestType,
@@ -7976,9 +8803,48 @@ try
 		}
 		else if(requestType == "getAppStatus")
 		{
+			//loop through all apps and return status
 			for(const auto& it : allSupervisorInfo_.getAllSupervisorInfo())
 			{
-				const auto& appInfo = it.second;
+				// non-blocking here, it's ok if the status is stale
+				if(allSupervisorInfo_.getSupervisorInfoMutex(it.second.getId())
+				       .try_lock())
+				{
+					//if doesnt exist, create it
+					if(localAllSupervisorInfo_.find(it.second.getId()) ==
+					   localAllSupervisorInfo_.end())
+						localAllSupervisorInfo_.emplace(
+						    std::pair<unsigned int, SupervisorInfo>(
+						        it.second.getId(),  // descriptor.first,
+						        SupervisorInfo(0 /* descriptor */,
+						                       it.second.getName(),
+						                       it.second.getContextName())));
+
+					//copy if have lock
+					localAllSupervisorInfo_.at(it.second.getId()) = it.second;
+					allSupervisorInfo_.getSupervisorInfoMutex(it.second.getId()).unlock();
+				}  //else use stale status already in
+				else if(localAllSupervisorInfo_.find(it.second.getId()) ==
+				        localAllSupervisorInfo_.end())
+					continue;  //unless no stale value, then skip for now
+
+				// const auto& appInfo = it.second;
+				const auto& appInfo = localAllSupervisorInfo_.at(it.second.getId());
+
+				if(appInfo.getProgress() != 100 &&
+				   appInfo.getClass() == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS)
+				{
+					__COUTT__ << "In transition? " << appInfo.getName()
+					          << " status=" << appInfo.getStatus()
+					          << " progress=" << appInfo.getProgress() << __E__;
+				}
+
+				if(appInfo.getName() == "ConsoleSupervisor" &&
+				   appInfo.getSubappInfo().size())
+				{
+					__SUP_COUTT__ << "ConsoleSupervisor subapp count="
+					              << appInfo.getSubappInfo().size() << __E__;
+				}
 
 				xmlOut.addTextElementToData("name",
 				                            appInfo.getName());  // get application name
@@ -7995,6 +8861,31 @@ try
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.getProgress());  // get progress
 				xmlOut.addTextElementToData("detail", appInfo.getDetail());  // get detail
+				xmlOut.addNumberElementToData(
+				    "availableLogSpaceKB",
+				    appInfo.getAvailableLogSpaceKB());  // get log space
+				xmlOut.addNumberElementToData(
+				    "availableDataSpaceKB",
+				    appInfo.getAvailableDataSpaceKB());  // get data space
+				float rate = appInfo.getLogUsageRateLastHourKBps();
+				if(rate == 0)
+					rate = appInfo.getLogUsageRateLastHalfHourKBps();
+				if(rate == 0)
+					rate = appInfo.getLogUsageRateLastQuarterHourKBps();
+				if(rate == 0)
+					rate = appInfo.getLogUsageRateNowKBps();
+				xmlOut.addNumberElementToData("logUsageRateKBps",
+				                              rate);  // get log usage rate
+				rate = appInfo.getDataUsageRateLastHourKBps();
+				if(rate == 0)
+					rate = appInfo.getDataUsageRateLastHalfHourKBps();
+				if(rate == 0)
+					rate = appInfo.getDataUsageRateLastQuarterHourKBps();
+				if(rate == 0)
+					rate = appInfo.getDataUsageRateNowKBps();
+				__SUP_COUTT__ << appInfo.getName() << " rate=" << rate << __E__;
+				xmlOut.addNumberElementToData("dataUsageRateKBps",
+				                              rate);  // get data usage rate
 				xmlOut.addTextElementToData("class",
 				                            appInfo.getClass());  // get application class
 				xmlOut.addTextElementToData("url",
@@ -8026,6 +8917,22 @@ try
 					xmlOut.addTextElementToParent("subapp_detail",
 					                              subappInfoPair.second.detail,
 					                              subappElement);  // get detail
+					xmlOut.addNumberElementToParent(
+					    "subapp_availableLogSpaceKB",
+					    subappInfoPair.second.availableLogSpaceKB,
+					    subappElement);  // get log space
+					xmlOut.addNumberElementToParent(
+					    "subapp_availableDataSpaceKB",
+					    subappInfoPair.second.availableDataSpaceKB,
+					    subappElement);  // get data space
+					xmlOut.addNumberElementToParent(
+					    "subapp_logUsageRateKBps",
+					    subappInfoPair.second.logUsageRateKBps,
+					    subappElement);  // get log usage rate
+					xmlOut.addNumberElementToParent(
+					    "subapp_dataUsageRateKBps",
+					    subappInfoPair.second.dataUsageRateKBps,
+					    subappElement);  // get data usage rate
 					xmlOut.addTextElementToParent("subapp_url",
 					                              subappInfoPair.second.url,
 					                              subappElement);  // get detail
@@ -8067,6 +8974,16 @@ try
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.progress);        // get progress
 				xmlOut.addTextElementToData("detail", appInfo.detail);  // get detail
+				xmlOut.addNumberElementToData(
+				    "availableLogSpaceKB", appInfo.availableLogSpaceKB);  // get log space
+				xmlOut.addNumberElementToData(
+				    "availableDataSpaceKB",
+				    appInfo.availableDataSpaceKB);  // get data space
+				xmlOut.addNumberElementToData(
+				    "logUsageRateKBps", appInfo.logUsageRateKBps);  // get log usage rate
+				xmlOut.addNumberElementToData(
+				    "dataUsageRateKBps",
+				    appInfo.dataUsageRateKBps);  // get data usage rate
 				xmlOut.addTextElementToData("class",
 				                            appInfo.class_name);  // get application class
 				xmlOut.addTextElementToData("url",
@@ -8098,6 +9015,22 @@ try
 					xmlOut.addTextElementToParent("subapp_detail",
 					                              subappInfoPair.second.detail,
 					                              subappElement);  // get detail
+					xmlOut.addNumberElementToParent(
+					    "subapp_availableLogSpaceKB",
+					    subappInfoPair.second.availableLogSpaceKB,
+					    subappElement);  // get log space
+					xmlOut.addNumberElementToParent(
+					    "subapp_availableDataSpaceKB",
+					    subappInfoPair.second.availableDataSpaceKB,
+					    subappElement);  // get data space
+					xmlOut.addNumberElementToParent(
+					    "subapp_logUsageRateKBps",
+					    subappInfoPair.second.logUsageRateKBps,
+					    subappElement);  // get log usage rate
+					xmlOut.addNumberElementToParent(
+					    "subapp_dataUsageRateKBps",
+					    subappInfoPair.second.dataUsageRateKBps,
+					    subappElement);  // get data usage rate
 					xmlOut.addTextElementToParent("subapp_url",
 					                              subappInfoPair.second.parent_url,
 					                              subappElement);  // get detail
@@ -8149,7 +9082,7 @@ try
 			    "username_with_lock",
 			    theWebUsers_.getUserWithLock());  // always give system lock update
 
-			__COUTVS__(20, theWebUsers_.getUserWithLock());
+			__COUTVS__(TLVL_Permissions, theWebUsers_.getUserWithLock());
 
 			//Also add Remote Subystems users-with-lock!
 			std::vector<GatewaySupervisor::RemoteGatewayInfo>
@@ -8161,7 +9094,7 @@ try
 
 			for(const auto& remoteGatewayApp : remoteGatewayApps)
 			{
-				__COUTVS__(21, remoteGatewayApp.appInfo.status);
+				__COUTVS__(TLVL_StatusFullDetail, remoteGatewayApp.appInfo.status);
 
 				//skip disconnected remote gateways
 				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
@@ -8256,7 +9189,7 @@ try
 		else if(requestType == "getStateMachine")
 		{
 			std::string fsmName = CgiDataUtilities::getData(cgiIn, "fsmName");
-			__SUP_COUTVS__(20, fsmName);
+			__SUP_COUTVS__(TLVL_RemoteFSMRequests, fsmName);
 
 			addRequiredFsmLogInputToXML(xmlOut, fsmName);
 
@@ -8427,7 +9360,8 @@ try
 			std::map<std::string, WebUsers::permissionLevel_t>
 			    iconPermissionThresholdsMap;
 
-			__COUTVS__(20, StringMacros::mapToString(userPermissionLevelsMap));
+			__COUTVS__(TLVL_Permissions,
+			           StringMacros::mapToString(userPermissionLevelsMap));
 
 			bool getRemoteIcons =
 			    true;  //could potentially enable from configuration in future
@@ -8462,8 +9396,8 @@ try
 			bool firstIcon = true;
 			for(const auto& icon : icons)
 			{
-				__SUP_COUTVS__(21, icon.caption_);
-				__SUP_COUTVS__(21, icon.permissionThresholdString_);
+				__SUP_COUTVS__(TLVL_GetDesktopIcons, icon.caption_);
+				__SUP_COUTVS__(TLVL_GetDesktopIcons, icon.permissionThresholdString_);
 
 				CorePropertySupervisorBase::extractPermissionsMapFromString(
 				    icon.permissionThresholdString_, iconPermissionThresholdsMap);
@@ -8476,7 +9410,7 @@ try
 					continue;  // skip icon if no access
 				}
 
-				__SUP_COUTVS__(21, icon.caption_);
+				__SUP_COUTVS__(TLVL_GetDesktopIcons, icon.caption_);
 
 				if(getRemoteIcons)
 				{
@@ -8493,14 +9427,16 @@ try
 						{
 							if(icon.recordUID_ != remoteGatewayApp.appInfo.name)
 								continue;
-							__SUP_COUTVS__(21, icon.caption_);
+							__SUP_COUTVS__(TLVL_GetDesktopIcons, icon.caption_);
 							found = true;
 
 							if(remoteGatewayApp.iconString ==
 							   "")  //then either error or still loading...
 							{
-								__SUP_COUTVS__(21, remoteGatewayApp.error);
-								__SUP_COUTVS__(21, remoteGatewayApp.appInfo.status);
+								__SUP_COUTVS__(TLVL_GetDesktopIcons,
+								               remoteGatewayApp.error);
+								__SUP_COUTVS__(TLVL_GetDesktopIcons,
+								               remoteGatewayApp.appInfo.status);
 
 								//add error if it has to do with icons
 								if(remoteGatewayApp.error.find("desktop icons") !=
@@ -8551,14 +9487,28 @@ try
 
 								break;  //done adding error/loading icon
 							}
-							__SUP_COUTVS__(21, remoteGatewayApp.iconString);
+							__SUP_COUTVS__(TLVL_GetDesktopIcons,
+							               remoteGatewayApp.iconString);
 
 							if(firstIcon)
 								firstIcon = false;
 							else
 								iconString += ",";
 
-							iconString += remoteGatewayApp.iconString;
+							if(doAddressTranslation)
+							{
+								__COUTTV__(requestOrigin);
+								__COUTTV__(remoteGatewayApp.iconString);
+								std::string translatedIconString =
+								    translateRemoteIconStringForRequestOrigin(
+								        remoteGatewayApp.iconString,
+								        requestOrigin,
+								        portTranslationMap_);
+								__COUTTV__(translatedIconString);
+								iconString += translatedIconString;
+							}
+							else
+								iconString += remoteGatewayApp.iconString;
 							break;  //done with cache retrieval
 						}           //end loop retrieval
 
@@ -10312,7 +11262,7 @@ void GatewaySupervisor::loadRemoteGatewaySettings(
 				done = true;
 				break;
 			}
-			__SUP_COUTVS__(20, values[i]);
+			__SUP_COUTVS__(TLVL_RemoteFSMRequests, values[i]);
 
 			if(i < 3 &&
 			   values[i] == "")  //do not allow blank lines, except for selected alias
@@ -10433,9 +11383,15 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 ///  portTranslationMap_.find(requestHost) then 'host matches translation host'
 ///
 ///
-///  of for example, requestOrigin == "http://host:2015"  and url = "http://host:2016/urnblah"
+///  or for example, requestOrigin == "http://host:2015"  and url = "http://host:2016/urnblah"
 ///
-///  of for example, requestOrigin == "http://localhost:2015"  and url = "http://host:2016/urnblah"
+///  or for example, requestOrigin == "http://localhost:2015"  and url = "http://host:2016/urnblah"
+///
+///	Note!! that the priority matters for host+ports that are substrings of each other,
+///	 such that the longer one is replaced first.
+///	 For example, if there are host+ports translations for both "host:2016" and "host:201",
+///		then "host:2016" should be listed first, so it is replaced first,
+///		to avoid partial replacement that would block the full replacement later.
 std::string GatewaySupervisor::translateURLForRequestOrigin(
     const std::string&                                        url,
     const std::string&                                        requestOrigin,
@@ -10443,7 +11399,7 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
              std::map<std::string /* requestUrlHostPort */,
                       std::string /* translatedHostPort */>>& portTranslationMap)
 {
-	__COUT__ << "Translating URL: " << url << " for request origin: " << requestOrigin
+	__COUT__ << "Translating URL '" << url << "' for request origin: " << requestOrigin
 	         << __E__;
 
 	// Have: std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */,
@@ -10458,6 +11414,42 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 		          << __E__;
 		return url;
 	}
+
+	//extract before get parameters and after
+	size_t      getParamPos = url.find("?");
+	std::string preUrl      = url.substr(0, getParamPos);
+	std::string getParams   = "";
+	if(getParamPos != std::string::npos)
+	{
+		getParams = url.substr(getParamPos + 1);
+		__COUTT__ << "Translating encoded get parameters: " << getParams << __E__;
+
+		//for each encoded host port, search and replace all instances in get parameters
+		for(auto it3 = it->second.begin(); it3 != it->second.end(); ++it3)
+		{
+			std::string encodedUrlHostPort = StringMacros::encodeURIComponent(it3->first);
+			__COUTS__(2) << "Searching params for encoded url host+port: "
+			             << encodedUrlHostPort << __E__;
+			size_t pos = 0;
+			//Note!! that the priority matters for encoded host+ports that are substrings of each other, so that the longer one is replaced first.
+			// For example, if there are encoded host+ports for both "host:2016" and "host:201",
+			//	then the encoded "host:2016" should be replaced first to avoid partial replacement that would block the full replacement later.
+			while((pos = getParams.find(encodedUrlHostPort, pos)) != std::string::npos)
+			{
+				__COUTT__ << "Found encoded url host+port: " << encodedUrlHostPort
+				          << " at pos " << pos << __E__;
+				getParams.replace(pos,
+				                  encodedUrlHostPort.size(),
+				                  StringMacros::encodeURIComponent(it3->second));
+				pos += StringMacros::encodeURIComponent(it3->second).size();
+
+				__COUTT__ << "Replaced with: "
+				          << StringMacros::encodeURIComponent(it3->second) << __E__;
+			}
+		}
+		__COUTTV__(getParams);
+	}  //end handling get parameters
+
 	size_t pos = 0;  //url host+port end position
 	if(url.size() > 7 && url[0] == 'h' && url[1] == 't' && url[2] == 't' &&
 	   url[3] == 'p' &&
@@ -10472,13 +11464,70 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 	{
 		__COUTT__ << "No port translation found for URL host+port '" << urlHostPort
 		          << "' for request origin: " << requestOrigin << __E__;
-		return url;
+		return preUrl + (getParams.size() ? ("?" + getParams) : "");
 	}
 	__COUTT__ << "Port translation found: " << urlHostPort << " --> " << it2->second
 	          << " for request origin: " << requestOrigin << __E__;
 
-	return it2->second + (pos != std::string::npos ? url.substr(pos) : "");
+	return it2->second + (pos != std::string::npos ? preUrl.substr(pos) : "") +
+	       (getParams.size() ? ("?" + getParams) : "");
 }  // end translateURLForRequestOrigin()
+
+//==============================================================================
+/// translateRemoteIconStringForRequestOrigin
+std::string GatewaySupervisor::translateRemoteIconStringForRequestOrigin(
+    const std::string&                                        iconString,
+    const std::string&                                        requestOrigin,
+    std::map<std::string /* requestOrigin */,
+             std::map<std::string /* requestUrlHostPort */,
+                      std::string /* translatedHostPort */>>& portTranslationMap)
+{
+	__COUT__ << "Translating Remote Icon String for request origin: " << requestOrigin
+	         << __E__;
+	auto parts = StringMacros::getVectorFromString(iconString, {','});
+
+	// comma-separated icon string, 7 fields:
+	//				0 - caption 		= text below icon
+	//				1 - altText 		= text icon if no image given
+	//				2 - uniqueWin 		= if true, only one window is allowed,
+	// 										else  multiple instances of window
+	//				3 - permissions 	= security level needed to see icon
+	//				4 - picfn 			= icon image filename
+	//				5 - linkurl 		= url of the window to open
+	// 				6 - folderPath 		= folder and subfolder location '/' separated
+	//	for example:  State Machine,FSM,1,200,icon-Physics.gif,/WebPath/html/StateMachine.html?fsm_name=OtherRuns0,,Chat,CHAT,1,1,icon-Chat.png,/urn:xdaq-application:lid=250,,Visualizer,VIS,0,10,icon-Visualizer.png,/WebPath/html/Visualization.html?urn=270,,Configure,CFG,0,10,icon-Configure.png,/urn:xdaq-application:lid=281,,Front-ends,CFG,0,15,icon-Configure.png,/WebPath/html/ConfigurationGUI_subset.html?urn=281&subsetBasePath=FEInterfaceTable&groupingFieldList=Status%2CFEInterfacePluginName&recordAlias=Front%2Dends&editableFieldList=%21%2ACommentDescription%2C%21SlowControls%2A,Config Subsets
+
+	std::string result = "";
+	for(size_t i = 0; i < parts.size(); i += 7)
+	{
+		if(TTEST(TLVL_RemoteDesktopIcons))
+		{
+			__COUTS__(TLVL_RemoteDesktopIcons)
+			    << "Translating icon string part: " << parts[i] << "," << parts[i + 1]
+			    << "," << parts[i + 2] << "," << parts[i + 3] << "," << parts[i + 4]
+			    << "," << parts[i + 5] << "," << parts[i + 6] << __E__;
+			__COUTVS__(TLVL_RemoteDesktopIcons, parts[i + 5]);
+		}
+		std::string translatedLinkURL =
+		    translateURLForRequestOrigin(parts[i + 5], requestOrigin, portTranslationMap);
+		if(TTEST(TLVL_RemoteDesktopIcons))
+		{
+			__COUTS__(TLVL_RemoteDesktopIcons)
+			    << "Translated icon string part: " << parts[i] << "," << parts[i + 1]
+			    << "," << parts[i + 2] << "," << parts[i + 3] << "," << parts[i + 4]
+			    << "," << translatedLinkURL << "," << parts[i + 6] << __E__;
+			__COUTVS__(TLVL_RemoteDesktopIcons, translatedLinkURL);
+		}
+
+		if(i)
+			result += ",";  //add separator if not first entry
+		result += parts[i] + "," + parts[i + 1] + "," + parts[i + 2] + "," +
+		          parts[i + 3] + "," + parts[i + 4] + "," + translatedLinkURL + "," +
+		          parts[i + 6];
+	}  //end primary translation loop
+
+	return result;
+}  // end translateRemoteIconStringForRequestOrigin()
 
 //==============================================================================
 /// static function to lookup the XDAQ Application LID
