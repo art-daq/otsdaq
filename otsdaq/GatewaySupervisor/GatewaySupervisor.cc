@@ -9138,7 +9138,7 @@ try
 				{
 					std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
 					const std::vector<DesktopIconTable::DesktopIcon>& icons =
-							    latestGatewayIcons_;
+					    latestGatewayIcons_;
 
 					for(const auto& icon : icons)
 						if(icon.recordUID_ == remoteGatewayApp.appInfo.name)
@@ -9149,6 +9149,7 @@ try
 				}
 				xmlOut.addTextElementToData("RemoteGateway_desktopFolderIcon",
 				                            desktopFolderIcon);
+
 			}  //end remote subsystem loop
 		}
 		else if(requestType == "setUserWithLock")
@@ -9203,6 +9204,22 @@ try
 				                            remoteGatewayApp.appInfo.name);
 				xmlOut.addTextElementToData("RemoteGateway_usernameWithLock",
 				                            remoteGatewayApp.usernameWithLock);
+				//attempt to find associated icon desktop folder (for use with focus view)
+				std::string desktopFolderIcon = "";
+				{
+					std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
+					const std::vector<DesktopIconTable::DesktopIcon>& icons =
+					    latestGatewayIcons_;
+
+					for(const auto& icon : icons)
+						if(icon.recordUID_ == remoteGatewayApp.appInfo.name)
+						{
+							desktopFolderIcon = icon.folderPath_;
+							break;
+						}
+				}
+				xmlOut.addTextElementToData("RemoteGateway_desktopFolderIcon",
+				                            desktopFolderIcon);
 			}  //end remote subsystem loop
 		}
 		else if(requestType == "getStateMachineLastLogEntry")
