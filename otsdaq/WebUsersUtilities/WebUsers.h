@@ -429,11 +429,11 @@ class WebUsers
 	void        			insertSettingsForUser			(uint64_t         uid,
 															 HttpXmlDocument* xmldoc,
 															 bool             includeAccounts = false,
-															 std::map<std::string /*groupName*/, 
+															 std::map<std::string /*groupName*/,
 																	WebUsers::permissionLevel_t> permissionMap = {});
 	std::string 			getGenericPreference			(uint64_t           uid,
-														 	 const std::string& preferenceName,
-														 	 HttpXmlDocument*   xmldoc = 0) const;
+															 const std::string& preferenceName,
+															 HttpXmlDocument*   xmldoc = 0) const;
 
 	void        			changeSettingsForUser			(uint64_t           uid,
 															 const std::string& bgcolor,
