@@ -393,7 +393,7 @@ public:	//used by remote subsystem control and status
 				DoNotHalt, ///<(e.g. for artdaq)
 				OnlyConfigure, ///<(e.g. for DCS/DQM)
 			};
-			FSM_ModeTypes 						fsm_mode = FSM_ModeTypes::Follow_FSM; ///<used for remote gateway subapp control
+			FSM_ModeTypes 						fsm_mode = FSM_ModeTypes::Follow_FSM; ///< used for remote gateway subapp control
 			bool								fsm_included = true;
 
 			std::string							getFsmMode() const {
@@ -406,7 +406,7 @@ public:	//used by remote subsystem control and status
 				}
 			} //end getFsmMode()
 
-			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///<remote gateways can have subapps
+			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///< remote gateways can have subapps
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
@@ -415,8 +415,11 @@ public:	//used by remote subsystem control and status
 			bool /* lastStatusGood */> 						appLastStatusGood_;
 		std::mutex											dualStatusThreadMutex_;
 
-		std::map<unsigned int /* lid */, SupervisorInfo>	localAllSupervisorInfo_; //only use in main thread, stable copy of app status
+		std::map<unsigned int /* lid */, SupervisorInfo>	localAllSupervisorInfo_; ///< only use in main thread, stable copy of app status
 
+		
+		std::mutex											latestGatewayIconsMutex_;
+		std::vector<DesktopIconTable::DesktopIcon>			latestGatewayIcons_; ///< used to track the latest desktop icons (which are defined by the active context but allowed to change dynamically)
 
 
 		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);

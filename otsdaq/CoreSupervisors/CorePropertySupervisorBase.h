@@ -254,11 +254,13 @@ class CorePropertySupervisorBase
 	uint64_t 							getAvailableLogSpaceKB							(void) { getAvailableDiskSpace(); return availableLogSpaceKB_.load(); }
 	uint64_t 							getAvailableDataSpaceKB							(void) { getAvailableDiskSpace(); return availableDataSpaceKB_.load(); }
 
+	bool 								isReadOnly										(void) const { return readOnly_; }
+
   protected:
 	ITRACEController* 					theTRACEController_; ///<only define for an app that receives a command
   private:
 	std::string 						traceReturnString_, traceReturnHostString_;
-	bool								readOnly_;
+	bool								readOnly_ = false;
 	const time_t						constructedTime_ = time(0);
 	bool								isFirstAppInContext_ = false;
 
