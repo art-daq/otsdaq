@@ -417,7 +417,7 @@ public:	//used by remote subsystem control and status
 
 		std::map<unsigned int /* lid */, SupervisorInfo>	localAllSupervisorInfo_; ///< only use in main thread, stable copy of app status
 
-		
+
 		std::mutex											latestGatewayIconsMutex_;
 		std::vector<DesktopIconTable::DesktopIcon>			latestGatewayIcons_; ///< used to track the latest desktop icons (which are defined by the active context but allowed to change dynamically)
 
