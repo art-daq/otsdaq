@@ -329,7 +329,7 @@ void ConfigurationManager::restoreActiveTableGroups(
 
 	__GEN_COUTT__ << "ACTIVE_GROUPS_FILENAME = " << fn << __E__;
 	__GEN_COUTS__(10) << "ARTDAQ_DATABASE_URI = "
-	             << std::string(__ENV__("ARTDAQ_DATABASE_URI")) << __E__;
+	                  << std::string(__ENV__("ARTDAQ_DATABASE_URI")) << __E__;
 
 	if(!fp)
 	{
@@ -337,7 +337,7 @@ void ConfigurationManager::restoreActiveTableGroups(
 		return;
 	}
 
-	__GEN_COUTVS__(10,throwErrors);
+	__GEN_COUTVS__(10, throwErrors);
 
 	char tmp[500];
 	char strVal[500];
@@ -587,7 +587,7 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		if(theConfigurationTableGroupKey_ != 0)
 		{
 			__GEN_COUTT__ << "Destroying Configuration Key: "
-			             << *theConfigurationTableGroupKey_ << __E__;
+			              << *theConfigurationTableGroupKey_ << __E__;
 			theConfigurationTableGroupKey_.reset();
 		}
 	}
@@ -597,7 +597,7 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		if(theBackboneTableGroupKey_ != 0)
 		{
 			__GEN_COUTT__ << "Destroying Backbone Key: " << *theBackboneTableGroupKey_
-			             << __E__;
+			              << __E__;
 			theBackboneTableGroupKey_.reset();
 		}
 	}
@@ -607,7 +607,7 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		if(theIterateTableGroupKey_ != 0)
 		{
 			__GEN_COUTT__ << "Destroying Iterate Key: " << *theIterateTableGroupKey_
-			             << __E__;
+			              << __E__;
 			theIterateTableGroupKey_.reset();
 		}
 	}
@@ -617,7 +617,7 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		if(theContextTableGroupKey_ != 0)
 		{
 			__GEN_COUTT__ << "Destroying Context Key: " << *theContextTableGroupKey_
-			             << __E__;
+			              << __E__;
 			theContextTableGroupKey_.reset();
 		}
 	}
@@ -1410,8 +1410,8 @@ void ConfigurationManager::loadMemberMap(
 	else  //multi-threading
 	{
 		__GEN_COUTT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads
-		             << " threads for loading member map of size " << memberMap.size()
-		             << __E__;
+		              << " threads for loading member map of size " << memberMap.size()
+		              << __E__;
 
 		int         threadsLaunched  = 0;
 		int         foundThreadIndex = 0;
@@ -1697,8 +1697,8 @@ void ConfigurationManager::loadTableGroup(
 		else
 		{
 			__GEN_COUT__ << "Ignoring that groupMetadataTable_ is missing for group '"
-			                 << groupName << "(" << groupKey
-			                 << "). Going with anonymous defaults." << __E__;
+			             << groupName << "(" << groupKey
+			             << "). Going with anonymous defaults." << __E__;
 		}
 
 		//NEVER modify members based on aliases
@@ -1820,8 +1820,8 @@ void ConfigurationManager::loadTableGroup(
 				if(groupToDeactivate != "")  // deactivate only if pre-existing group
 				{
 					__GEN_COUTT__ << "groupToDeactivate '" << groupToDeactivate
-					             << "' of type " << convertGroupTypeToName(groupType)
-					             << __E__;
+					              << "' of type " << convertGroupTypeToName(groupType)
+					              << __E__;
 					destroyTableGroup(groupToDeactivate, true);
 				}
 				else
@@ -1829,7 +1829,7 @@ void ConfigurationManager::loadTableGroup(
 					//Getting here, is kind of strange:
 					//	- this group may have only been partially loaded before?
 					__GEN_COUTT__ << "no group to deactivate of type "
-					             << convertGroupTypeToName(groupType) << __E__;
+					              << convertGroupTypeToName(groupType) << __E__;
 				}
 				__GEN_COUTTV__(StringMacros::mapToString(getActiveVersions()));
 			}
@@ -1876,9 +1876,9 @@ void ConfigurationManager::loadTableGroup(
 
 				const int numOfThreads = PROCESSOR_COUNT / 2;
 				__GEN_COUTT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
-				             << numOfThreads
-				             << " threads for initializing tables for Table Group '"
-				             << groupName << "(" << groupKey << ")'." << __E__;
+				              << numOfThreads
+				              << " threads for initializing tables for Table Group '"
+				              << groupName << "(" << groupKey << ")'." << __E__;
 				if(groupType != ConfigurationManager::GroupType::CONFIGURATION_TYPE ||
 				   numOfThreads < 2)  // no multi-threading
 				{
@@ -4313,9 +4313,9 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 		catch(const std::runtime_error& e)
 		{
 			__GEN_COUTT__ << "Ignoring error loading subsystem '" << otherSubsystemUID
-			             << "' group " << subsystemActiveGroupMap[i] << "("
-			             << subsystemActiveGroupMap[i + 1] << "): " << __E__ << e.what()
-			             << __E__;
+			              << "' group " << subsystemActiveGroupMap[i] << "("
+			              << subsystemActiveGroupMap[i + 1] << "): " << __E__ << e.what()
+			              << __E__;
 			groupType = ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN;
 		}
 		retMap[groupType] = std::make_pair(subsystemActiveGroupMap[i],
@@ -4683,7 +4683,7 @@ void ConfigurationManager::saveGroupNameAndKey(
 	{
 		//force size to MAX record count
 		const size_t MAX_RECORDS = 200;
-		auto records = loadGroupHistory(fullPath);
+		auto         records     = loadGroupHistory(fullPath);
 		while(records.size() >= MAX_RECORDS)
 			records.erase(records.begin());  //remove oldest record
 		//rewrite file
@@ -4693,9 +4693,9 @@ void ConfigurationManager::saveGroupNameAndKey(
 			groupFile << record.at("groupName") << "\n"
 			          << record.at("groupKey") << "\n"
 			          << record.at("time") << " , " << record.at("user") << "\n";
-		} //end rewrite records loop
+		}  //end rewrite records loop
 	}
-	else //if not append mode, just overwrite
+	else  //if not append mode, just overwrite
 		groupFile.open(fullPath.c_str());
 	if(!groupFile.is_open())
 	{
@@ -4718,8 +4718,8 @@ void ConfigurationManager::saveGroupNameAndKey(
 ///	returns time string in returnedTimeString
 ///
 ///	Note: this is static so the GatewaySupervisor and WizardSupervisor can call it
-std::pair<std::string /*group name*/, 
-	TableGroupKey> ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
+std::pair<std::string /*group name*/, TableGroupKey>
+ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
                                           std::string&       returnedTimeString)
 {
 	std::string fullPath =
@@ -4766,12 +4766,14 @@ std::pair<std::string /*group name*/,
 
 //==============================================================================
 /// loadGroupHistory static
-std::vector<std::map<std::string /* group field key */, 
-			std::string /* group field value */>> ConfigurationManager::loadGroupHistory(const std::string& groupAction, const std::string& groupType)
+std::vector<
+    std::map<std::string /* group field key */, std::string /* group field value */>>
+ConfigurationManager::loadGroupHistory(const std::string& groupAction,
+                                       const std::string& groupType)
 {
 	__COUTV__(groupAction);
 	__COUTV__(groupType);
-	
+
 	std::string fullPath = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/";
 
 	if(groupAction == "Activated")
@@ -4826,22 +4828,25 @@ std::vector<std::map<std::string /* group field key */,
 		__SS_THROW__;
 	}
 	return loadGroupHistory(fullPath);
-} // end loadGroupHistory()
+}  // end loadGroupHistory()
 
 //==============================================================================
 /// loadGroupHistory static
-std::vector<std::map<std::string /* group field key */, 
-			std::string /* group field value */>> ConfigurationManager::loadGroupHistory(const std::string& fullPath)
+std::vector<
+    std::map<std::string /* group field key */, std::string /* group field value */>>
+ConfigurationManager::loadGroupHistory(const std::string& fullPath)
 {
-	std::vector<std::map<std::string /* group field key */, std::string /* group field value */>>
+	std::vector<
+	    std::map<std::string /* group field key */, std::string /* group field value */>>
 	    retVec;
 
-	__COUTV__(fullPath);	
+	__COUTV__(fullPath);
 	FILE* groupFile = fopen(fullPath.c_str(), "r");
 	if(!groupFile)
 	{
-		__COUT_WARN__ << "Can't open group history file (assuming no history yet): " << fullPath << __E__;
-		
+		__COUT_WARN__ << "Can't open group history file (assuming no history yet): "
+		              << fullPath << __E__;
+
 		__COUTV__(retVec.size());
 		return retVec;
 	}
@@ -4850,7 +4855,7 @@ std::vector<std::map<std::string /* group field key */,
 	// name and then key
 	std::pair<std::string /*group name*/, TableGroupKey> theGroup;
 	std::string returnedTimeString, associatedUser;
-	char user[500];
+	char        user[500];
 
 	while(fgets(line, 500, groupFile))  // name
 	{
@@ -4865,24 +4870,25 @@ std::vector<std::map<std::string /* group field key */,
 
 		fgets(line, 500, groupFile);  // time
 		time_t timestamp;
-		user[0] = '\0'; //clear in case not present in line
+		user[0] = '\0';                              //clear in case not present in line
 		sscanf(line, "%ld , %s", &timestamp, user);  // type long int
-										//	struct tm tmstruct;
-										//	::localtime_r(&timestamp, &tmstruct);
-										//	::strftime(line, 30, "%c %Z", &tmstruct);
-		
-		__COUTS__(20) << "Read group from history file: " << theGroup.first << "(" << theGroup.second
-		          << "), timestamp=" << timestamp << ", user=" << user << __E__;
-		
+		                                             //	struct tm tmstruct;
+		    //	::localtime_r(&timestamp, &tmstruct);
+		    //	::strftime(line, 30, "%c %Z", &tmstruct);
+
+		__COUTS__(20) << "Read group from history file: " << theGroup.first << "("
+		              << theGroup.second << "), timestamp=" << timestamp
+		              << ", user=" << user << __E__;
+
 		retVec.push_back({{"groupName", theGroup.first},
-		                 {"groupKey", theGroup.second.toString()},
-		                 {"time",  StringMacros::getTimestampString(timestamp)},
-		                 {"user", user}});
-	} //end traversing group history file
+		                  {"groupKey", theGroup.second.toString()},
+		                  {"time", StringMacros::getTimestampString(timestamp)},
+		                  {"user", user}});
+	}  //end traversing group history file
 
 	fclose(groupFile);
 
 	__COUTV__(retVec.size());
 
 	return retVec;
-} // end loadGroupHistory()
+}  // end loadGroupHistory()

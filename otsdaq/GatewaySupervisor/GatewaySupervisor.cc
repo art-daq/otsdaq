@@ -466,9 +466,10 @@ try
 		sleep(5);  // stagger the two loops a bit
 	__COUTV__(doDisconnected);
 
-	std::chrono::_V2::system_clock::time_point lastStatus = std::chrono::high_resolution_clock::now();
+	std::chrono::_V2::system_clock::time_point lastStatus =
+	    std::chrono::high_resolution_clock::now();
 	time_t lastSlowStatusWarnTime = 0;
-	size_t statusWasSlowCount	 = 0;
+	size_t statusWasSlowCount     = 0;
 	while(1)
 	{
 		bool oneStatusReqHasFailed = false;
@@ -493,38 +494,42 @@ try
 		//if last status was more than 1.5 seconds ago, then warn
 		if(!doDisconnected)
 		{
-			auto now         = std::chrono::high_resolution_clock::now();
-			auto timeElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastStatus)
-			                       .count();  //milliseconds
-			__COUTVS__(TLVL_StatusWorkloop,timeElapsed);
-			if(timeElapsed > 1500) //then status was too slow!
+			auto now = std::chrono::high_resolution_clock::now();
+			auto timeElapsed =
+			    std::chrono::duration_cast<std::chrono::milliseconds>(now - lastStatus)
+			        .count();  //milliseconds
+			__COUTVS__(TLVL_StatusWorkloop, timeElapsed);
+			if(timeElapsed > 1500)  //then status was too slow!
 			{
 				++statusWasSlowCount;
 
-				if(statusWasSlowCount > 1) //1 might occur if target is disconnected
+				if(statusWasSlowCount > 1)  //1 might occur if target is disconnected
 				{
 					//if it has been more than 15 minutes, then do System Alert
 					time_t now_time_t = time(0);
 					__COUT_WARN__
-						<< "App status checking loop time elapsed = " << timeElapsed
-						<< " ms (expected ~500 ms). Time since last system alert for slow status = " << 
-						now_time_t - lastSlowStatusWarnTime << " seconds." << __E__;
+					    << "App status checking loop time elapsed = " << timeElapsed
+					    << " ms (expected ~500 ms). Time since last system alert for "
+					       "slow status = "
+					    << now_time_t - lastSlowStatusWarnTime << " seconds." << __E__;
 					if(now_time_t - lastSlowStatusWarnTime > 15 * 60)
 					{
 						std::stringstream errSs;
-						errSs << "GatewaySupervisor App Status checking loop is taking longer than expected - "
-						      << "there may be too many TRACE slow path messages enabled. Time elapsed = "
-						      << timeElapsed
-						      << " ms (expected ~500 ms).";
-						theSupervisor->addSystemMessage("*",errSs.str());
+						errSs << "GatewaySupervisor App Status checking loop is taking "
+						         "longer than expected - "
+						      << "there may be too many TRACE slow path messages "
+						         "enabled. Time elapsed = "
+						      << timeElapsed << " ms (expected ~500 ms).";
+						theSupervisor->addSystemMessage("*", errSs.str());
 						__COUT_ERR__ << errSs.str() << __E__;
-						lastSlowStatusWarnTime = now_time_t;					
+						lastSlowStatusWarnTime = now_time_t;
 					}
 				}
 			}
-			else statusWasSlowCount = 0;  //reset counter if back to normal speed
+			else
+				statusWasSlowCount = 0;  //reset counter if back to normal speed
 			lastStatus = now;
-		} //end slow status monitoring
+		}  //end slow status monitoring
 
 		if(TTEST(1) ||
 		   doDisconnected)  //printout the true/false handling of apps (emulating anticipated flow)
@@ -566,7 +571,8 @@ try
 
 						++handlingAppCount;
 						__COUTT__
-						    << "Status loopcount=" << loopCount << " remote apps #" << handlingAppCount
+						    << "Status loopcount=" << loopCount << " remote apps #"
+						    << handlingAppCount
 						    << ", (doDisconnected = " << doDisconnected
 						    << ") Remote subapp = '" << remoteGatewayApp.appInfo.name
 						    << "' [URL=" << remoteGatewayApp.appInfo.url
@@ -582,8 +588,8 @@ try
 					continue;
 
 				++handlingAppCount;
-				__COUTT__ << "Status loopcount=" << loopCount << " apps #" << handlingAppCount
-				          << ", (doDisconnected = " << doDisconnected
+				__COUTT__ << "Status loopcount=" << loopCount << " apps #"
+				          << handlingAppCount << ", (doDisconnected = " << doDisconnected
 				          << ") Supervisor instance = '" << appName
 				          << "' [LID=" << appInfo.getId() << "] in Context '"
 				          << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
@@ -786,8 +792,8 @@ try
 							{
 								__COUTT__ << "#" << ri++ << " - Checking remote app '"
 								          << remoteApp.appInfo.name
-								          << "' [URL=" << remoteApp.appInfo.url << 
-										  "] for command: '" << remoteApp.command
+								          << "' [URL=" << remoteApp.appInfo.url
+								          << "] for command: '" << remoteApp.command
 								          << "'." << __E__;
 
 								if(remoteApp.command != "")
@@ -853,8 +859,8 @@ try
 							   icon.windowContentURL_[3] == ':')
 							{
 								__COUTT__ << "Found '" << icon.recordUID_
-								         << "' remote gateway icons url: "
-								         << icon.windowContentURL_ << __E__;
+								          << "' remote gateway icons url: "
+								          << icon.windowContentURL_ << __E__;
 
 								GatewaySupervisor::RemoteGatewayInfo thisInfo;
 
@@ -886,9 +892,9 @@ try
 											if(parameterPairSplit.size() == 2)
 											{
 												__COUTT__ << "Found remote URL parameter "
-												         << parameterPairSplit[0] << ", "
-												         << parameterPairSplit[1]
-												         << __E__;
+												          << parameterPairSplit[0] << ", "
+												          << parameterPairSplit[1]
+												          << __E__;
 												if(parameterPairSplit[0] == "LandingPage")
 												{
 													remoteLandingPage =
@@ -900,9 +906,9 @@ try
 														    icon.folderPath_ + "/" +
 														    remoteLandingPage;
 													__COUTT__ << "Found landing page "
-													         << remoteLandingPage
-													         << " for " << icon.recordUID_
-													         << __E__;
+													          << remoteLandingPage
+													          << " for "
+													          << icon.recordUID_ << __E__;
 												}
 												if(parameterPairSplit[0] == "SetupType")
 												{
@@ -910,9 +916,10 @@ try
 													    StringMacros::decodeURIComponent(
 													        parameterPairSplit[1]);
 
-													__COUTT__ << "Found setup_ots.sh type "
-													         << remoteSetupType << " for "
-													         << icon.recordUID_ << __E__;
+													__COUTT__
+													    << "Found setup_ots.sh type "
+													    << remoteSetupType << " for "
+													    << icon.recordUID_ << __E__;
 												}
 											}
 										}
@@ -1052,10 +1059,10 @@ try
 						for(size_t i = 0; i < remoteApps.size(); ++i)
 						{
 							__COUTT__ << "#" << i << " - Checking remote app '"
-										<< remoteApps[i].appInfo.name
-										<< "' [URL=" << remoteApps[i].appInfo.url << 
-										  "] for status: '" << remoteApps[i].appInfo.status
-										<< "'." << __E__;
+							          << remoteApps[i].appInfo.name
+							          << "' [URL=" << remoteApps[i].appInfo.url
+							          << "] for status: '" << remoteApps[i].appInfo.status
+							          << "'." << __E__;
 
 							if(remoteApps[i].appInfo.status == "")
 							{
@@ -1259,8 +1266,8 @@ try
 							    portForReverseLoginOverUDP);
 
 							if(remoteGatewayApp.appInfo.status.size() &&
-								remoteGatewayApp.appInfo.status !=
-							   		SupervisorInfo::APP_STATUS_UNKNOWN)
+							   remoteGatewayApp.appInfo.status !=
+							       SupervisorInfo::APP_STATUS_UNKNOWN)
 							{
 								allApssAreUnknown = false;
 								if(!appLastStatusGood[remoteGatewayApp.appInfo.url +
@@ -1271,7 +1278,9 @@ try
 									    << doDisconnected << ") from Remote subapp = '"
 									    << remoteGatewayApp.appInfo.name
 									    << "' [URL=" << remoteGatewayApp.appInfo.url
-									    << "]. Status: '" + remoteGatewayApp.appInfo.status << "'" << __E__;
+									    << "]. Status: '" +
+									           remoteGatewayApp.appInfo.status
+									    << "'" << __E__;
 								}
 								appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                  remoteGatewayApp.appInfo.name] = true;
@@ -2801,8 +2810,9 @@ try
 		remoteGatewayApp.consoleWarnCount = atoi(value.c_str());
 	}
 	else
-		__COUT_WARN__ << "Illegal Remote Gateawy App URL for name='" << 
-			remoteGatewayApp.appInfo.name << "' (must be ots:<IP>:<PORT>): [URL="
+		__COUT_WARN__ << "Illegal Remote Gateawy App URL for name='"
+		              << remoteGatewayApp.appInfo.name
+		              << "' (must be ots:<IP>:<PORT>): [URL="
 		              << remoteGatewayApp.appInfo.url << "]" << __E__;
 }  //end CheckRemoteGatewayStatus()
 catch(const std::runtime_error& e)
@@ -5864,21 +5874,21 @@ try
 	// save last configured group names/keys
 	{
 		ConfigurationManager::saveGroupNameAndKey(
-			std::make_pair(configurationAlias, TableGroupKey()),
-			ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE,
-			false /* appendMode */,
-			stateMachineTransitionUsername_);
+		    std::make_pair(configurationAlias, TableGroupKey()),
+		    ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
-			std::make_pair(configurationAlias, TableGroupKey()),
-			ConfigurationManager::CONFIGURED_CONFIG_ALIASES_FILE,
-			true /* appendMode */,
-			stateMachineTransitionUsername_);
+		    std::make_pair(configurationAlias, TableGroupKey()),
+		    ConfigurationManager::CONFIGURED_CONFIG_ALIASES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
-			std::make_pair(configurationAlias, TableGroupKey()),
-			ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE,
-			true /* appendMode */,
-			stateMachineTransitionUsername_);
-			
+		    std::make_pair(configurationAlias, TableGroupKey()),
+		    ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+
 		ConfigurationManager::saveGroupNameAndKey(
 		    theConfigurationTableGroup_,
 		    ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE,
@@ -5903,14 +5913,16 @@ try
 		    ConfigurationManager::LAST_CONFIGURED_CONTEXT_GROUP_FILE,
 		    false /* appendMode */,
 		    stateMachineTransitionUsername_);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
 		    ConfigurationManager::CONFIGURED_CONTEXTS_FILE,
 		    true /* appendMode */,
-											stateMachineTransitionUsername_);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
 		    ConfigurationManager::CONFIGURED_OR_STARTED_CONTEXTS_FILE,
 		    true /* appendMode */,
-											stateMachineTransitionUsername_);
+		    stateMachineTransitionUsername_);
 
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
@@ -6808,20 +6820,20 @@ try
 	// save last started group names/keys
 	{
 		ConfigurationManager::saveGroupNameAndKey(
-			std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
-			ConfigurationManager::LAST_STARTED_CONFIG_ALIAS_FILE,
-			false /* appendMode */,
-			stateMachineTransitionUsername_);
+		    std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
+		    ConfigurationManager::LAST_STARTED_CONFIG_ALIAS_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
-			std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
-			ConfigurationManager::STARTED_CONFIG_ALIASES_FILE,
-			true /* appendMode */,
-			stateMachineTransitionUsername_);
+		    std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
+		    ConfigurationManager::STARTED_CONFIG_ALIASES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
-			std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
-			ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE,
-			true /* appendMode */,
-			stateMachineTransitionUsername_);
+		    std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
+		    ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
 
 		ConfigurationManager::saveGroupNameAndKey(
 		    theConfigurationTableGroup_,
@@ -6847,14 +6859,16 @@ try
 		    ConfigurationManager::LAST_STARTED_CONTEXT_GROUP_FILE,
 		    false /* appendMode */,
 		    stateMachineTransitionUsername_);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
 		    ConfigurationManager::STARTED_CONTEXTS_FILE,
 		    true /* appendMode */,
-											stateMachineTransitionUsername_);
-		ConfigurationManager::saveGroupNameAndKey(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
 		    ConfigurationManager::CONFIGURED_OR_STARTED_CONTEXTS_FILE,
 		    true /* appendMode */,
-											stateMachineTransitionUsername_);
+		    stateMachineTransitionUsername_);
 
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),

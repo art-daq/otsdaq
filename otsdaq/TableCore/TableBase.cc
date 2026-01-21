@@ -159,7 +159,7 @@ TableBase::TableBase(bool specialTable, const std::string& specialTableName)
 	}
 
 	__COUTT__ << "Special table '" << tableName_ << "' constructed. " << specialTable
-	         << __E__;
+	          << __E__;
 
 	// initialize special group metadata table
 	if(tableName_ == TableBase::GROUP_METADATA_TABLE_NAME)
