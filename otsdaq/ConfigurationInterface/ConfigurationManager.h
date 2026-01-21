@@ -59,7 +59,42 @@ class ConfigurationManager
 	static const std::string LAST_ACTIVATED_CONFIG_GROUP_FILE;
 	static const std::string LAST_ACTIVATED_CONTEXT_GROUP_FILE;
 	static const std::string LAST_ACTIVATED_BACKBONE_GROUP_FILE;
-	static const std::string LAST_ACTIVATED_ITERATOR_GROUP_FILE;
+	static const std::string LAST_ACTIVATED_ITERATE_GROUP_FILE;
+
+	static const std::string ACTIVATED_CONFIGS_FILE;
+	static const std::string ACTIVATED_CONTEXTS_FILE;
+	static const std::string ACTIVATED_BACKBONES_FILE;
+	static const std::string ACTIVATED_ITERATES_FILE;
+
+	static const std::string LAST_CONFIGURED_CONFIG_ALIAS_FILE;
+	static const std::string LAST_CONFIGURED_CONFIG_GROUP_FILE;
+	static const std::string LAST_CONFIGURED_CONTEXT_GROUP_FILE;
+	static const std::string LAST_CONFIGURED_BACKBONE_GROUP_FILE;
+	static const std::string LAST_CONFIGURED_ITERATE_GROUP_FILE;
+
+	static const std::string CONFIGURED_CONFIG_ALIASES_FILE;
+	static const std::string CONFIGURED_CONFIGS_FILE;
+	static const std::string CONFIGURED_CONTEXTS_FILE;
+	static const std::string CONFIGURED_BACKBONES_FILE;
+	static const std::string CONFIGURED_ITERATES_FILE;
+
+	static const std::string LAST_STARTED_CONFIG_ALIAS_FILE;
+	static const std::string LAST_STARTED_CONFIG_GROUP_FILE;
+	static const std::string LAST_STARTED_CONTEXT_GROUP_FILE;
+	static const std::string LAST_STARTED_BACKBONE_GROUP_FILE;
+	static const std::string LAST_STARTED_ITERATE_GROUP_FILE;
+
+	static const std::string STARTED_CONFIG_ALIASES_FILE;
+	static const std::string STARTED_CONFIGS_FILE;
+	static const std::string STARTED_CONTEXTS_FILE;
+	static const std::string STARTED_BACKBONES_FILE;
+	static const std::string STARTED_ITERATES_FILE;
+
+	static const std::string CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE;
+	static const std::string CONFIGURED_OR_STARTED_CONFIGS_FILE;
+	static const std::string CONFIGURED_OR_STARTED_CONTEXTS_FILE;
+	static const std::string CONFIGURED_OR_STARTED_BACKBONES_FILE;
+	static const std::string CONFIGURED_OR_STARTED_ITERATES_FILE;
 
 	static const uint8_t METADATA_COL_ALIASES;
 	static const uint8_t METADATA_COL_COMMENT;
@@ -223,11 +258,16 @@ class ConfigurationManager
 
 	void 								setOwnerContext				(const std::string& contextUID) { ownerContextUID_ = contextUID; }
 	void 								setOwnerApp					(const std::string& appUID) { ownerAppUID_ = appUID; }
-	static void							saveGroupNameAndKey			(const std::pair<std::string /*group name*/, TableGroupKey>& theGroup,const std::string& fileName, bool appendMode = false);
+	static void							saveGroupNameAndKey			(const std::pair<std::string /*group name*/, TableGroupKey>& theGroup,const std::string& fileName, bool appendMode = false, const std::string& associatedUser = "");
 	static std::pair<
 			std::string /*group name*/,
 			TableGroupKey> 				loadGroupNameAndKey			(const std::string& fileName, std::string& returnedTimeString);
-
+	static std::vector<std::map<std::string /* group field key */, 
+			std::string /* group field value */>>
+										loadGroupHistory			(const std::string& groupAction, const std::string& groupType);
+	static std::vector<std::map<std::string /* group field key */, 
+			std::string /* group field value */>>
+										loadGroupHistory			(const std::string& fileName);
 
 	bool 												forceNotFirstInContext_ = false;
 

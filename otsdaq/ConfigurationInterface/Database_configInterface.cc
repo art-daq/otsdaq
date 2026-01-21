@@ -490,7 +490,7 @@ try
 	try
 	{
 		table_version_map_t retMap = getCachedTableGroupMembers(tableGroup);
-		__COUTV__(tableGroup);
+		__COUTTV__(tableGroup);
 		__COUTS__(20) << (StringMacros::mapToString(retMap));
 
 		if(!includeMetaDataTable)
@@ -511,7 +511,7 @@ try
 	}
 	catch(...)  //ignore error and proceed with standard db access
 	{
-		__COUTT__ << "Ignoring error "
+		__COUTT__ << "Ignoring getCachedTableGroupMembers() error in "
 		             "DatabaseConfigurationInterface::getTableGroupMembers(tableGroup="
 		          << tableGroup << ") " << __E__;
 	}
@@ -570,7 +570,7 @@ catch(std::exception const& e)
 		ss << "\n\nConnection to database refused. Perhaps your ssh tunnel has "
 		      "closed?\n\n";
 	}
-	__SS_THROW__;
+	__SS_ONLY_THROW__;
 }
 catch(...)
 {
@@ -659,7 +659,7 @@ catch(std::exception const& e)
 	__SS__ << "Database Interface Exception getCachedTableGroupMembers for '"
 	       << tableGroup << "':\n\n"
 	       << e.what() << "\n";
-	__SS_THROW__;
+	__SS_ONLY_THROW__;
 }
 catch(...)
 {

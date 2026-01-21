@@ -1429,7 +1429,7 @@ bool StringMacros::IgnoreCaseCompareStruct::operator()(const std::string& lhs,
 ///	run linux command and get result back in string
 std::string StringMacros::exec(const char* cmd)
 {
-	__COUTV__(cmd);
+	__COUTTV__(cmd);
 
 	std::array<char, 128> buffer;
 	std::string           result;
@@ -1441,7 +1441,7 @@ std::string StringMacros::exec(const char* cmd)
 		if(fgets(buffer.data(), 128, pipe.get()) != nullptr)
 			result += buffer.data();
 	}
-	//__COUTV__(result);
+	__COUTTV__(result);
 	return result;
 }  // end exec()
 

@@ -33,24 +33,25 @@
 // clang-format off
 
 /// defines used also by OtsConfigurationWizardSupervisor
-#define FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE 			std::string("FSMLastConfiguredGroupAlias.hist")
-#define FSM_LAST_STARTED_GROUP_ALIAS_FILE 				std::string("FSMLastStartedGroupAlias.hist")
+// #define FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE 			std::string("FSMLastConfiguredGroupAlias.hist")
+// #define FSM_LAST_STARTED_GROUP_ALIAS_FILE 				std::string("FSMLastStartedGroupAlias.hist")
 
-#define FSM_CONFIGURED_GROUP_ALIASES_FILE 				std::string("FSMConfiguredGroupAliases.hist")
-#define FSM_STARTED_GROUP_ALIASES_FILE 					std::string("FSMStartedGroupAlias.hist")
-#define FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE 	std::string("FSMConfiguredOrStartedGroupAlias.hist")
+// #define FSM_CONFIGURED_GROUP_ALIASES_FILE 				std::string("FSMConfiguredGroupAliases.hist")
+// #define FSM_STARTED_GROUP_ALIASES_FILE 					std::string("FSMStartedGroupAlias.hist")
 
-#define FSM_CONFIGURED_CONTEXTS_FILE 					std::string("FSMConfiguredContexts.hist")
-#define FSM_STARTED_CONTEXTS_FILE 						std::string("FSMStartedContexts.hist")
-#define FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE 		std::string("FSMConfiguredOrStartedContexts.hist")
+// #define FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE 	std::string("FSMConfiguredOrStartedGroupAlias.hist")
 
-#define FSM_CONFIGURED_BACKBONES_FILE 					std::string("FSMConfiguredBackbones.hist")
-#define FSM_STARTED_BACKBONES_FILE 						std::string("FSMStartedBackbones.hist")
-#define FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE 		std::string("FSMConfiguredOrStartedBackbones.hist")
+// #define FSM_CONFIGURED_CONTEXTS_FILE 					std::string("FSMConfiguredContexts.hist")
+// #define FSM_STARTED_CONTEXTS_FILE 						std::string("FSMStartedContexts.hist")
+// #define FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE 		std::string("FSMConfiguredOrStartedContexts.hist")
 
-#define FSM_CONFIGURED_ITERATORS_FILE 					std::string("FSMConfiguredIterators.hist")
-#define FSM_STARTED_ITERATORS_FILE 						std::string("FSMStartedIterators.hist")
-#define FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE 		std::string("FSMConfiguredOrStartedIterators.hist")
+// #define FSM_CONFIGURED_BACKBONES_FILE 					std::string("FSMConfiguredBackbones.hist")
+// #define FSM_STARTED_BACKBONES_FILE 						std::string("FSMStartedBackbones.hist")
+// #define FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE 		std::string("FSMConfiguredOrStartedBackbones.hist")
+
+// #define FSM_CONFIGURED_ITERATORS_FILE 					std::string("FSMConfiguredIterators.hist")
+// #define FSM_STARTED_ITERATORS_FILE 						std::string("FSMStartedIterators.hist")
+// #define FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE 		std::string("FSMConfiguredOrStartedIterators.hist")
 
 
 namespace ots
@@ -337,12 +338,12 @@ class WorkLoopManager;
 
 		std::pair<std::string /*group name*/, TableGroupKey>
 							theConfigurationTableGroup_;  ///< used to track the active configuration group at states after the configure state
+		std::string			stateMachineTransitionUsername_;  ///< used to track the user who made the last state machine transition (for logging purposes)
 
 		Iterator   			theIterator_;
 		std::mutex 			stateMachineAccessMutex_;  ///< for sharing state machine access with
 											  ///< iterator thread
 		std::string 		stateMachineLastCommandInput_;
-		std::string			lastConfigurationAlias_;
 		enum
 		{
 			VERBOSE_MUTEX = 0
