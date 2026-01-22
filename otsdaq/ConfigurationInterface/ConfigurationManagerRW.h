@@ -48,8 +48,8 @@ struct GroupInfo
 	std::set<TableGroupKey> 			keys_;
 	TableGroupKey           			latestKey_;
 	std::string             			latestKeyGroupAuthor_, latestKeyGroupComment_,
-	   										latestKeyGroupCreationTime_, latestKeyGroupTypeString_;
-	std::map<std::string /*name*/, 
+										latestKeyGroupCreationTime_, latestKeyGroupTypeString_;
+	std::map<std::string /*name*/,
 		TableVersion /*version*/> 		latestKeyMemberMap_;
 };  //end GroupInfo struct
 
@@ -85,7 +85,7 @@ class ConfigurationManagerRW : public ConfigurationManager
 	T* 											getTablePtr						(const std::string& tableName) { return (T*)getTableByName(tableName); }
 	TableBase*    								getVersionedTableByName			(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false);
 	TableBase*    								getTableByName					(const std::string& tableName);
-	TableGroupKey 								findTableGroup					(const std::string& groupName, 	
+	TableGroupKey 								findTableGroup					(const std::string& groupName,
 																				 const std::map<std::string, TableVersion>& 					groupMembers,
 																				 const std::map<std::string /*name*/, std::string /*alias*/>& 	groupAliases =	std::map<std::string /*name*/, std::string /*alias*/>());
 	TableBase* 									getMetadataTable				(TableVersion fillVersion = TableVersion()); ///< created for use in otsdaq_flatten_system_aliases and otsdaq_export_system_aliases, e.g.
