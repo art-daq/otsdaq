@@ -4873,8 +4873,8 @@ ConfigurationManager::loadGroupHistory(const std::string& fullPath)
 		user[0] = '\0';                              //clear in case not present in line
 		sscanf(line, "%ld , %s", &timestamp, user);  // type long int
 		                                             //	struct tm tmstruct;
-		    //	::localtime_r(&timestamp, &tmstruct);
-		    //	::strftime(line, 30, "%c %Z", &tmstruct);
+		//	::localtime_r(&timestamp, &tmstruct);
+		//	::strftime(line, 30, "%c %Z", &tmstruct);
 
 		__COUTS__(20) << "Read group from history file: " << theGroup.first << "("
 		              << theGroup.second << "), timestamp=" << timestamp
