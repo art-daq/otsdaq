@@ -33,24 +33,25 @@
 // clang-format off
 
 /// defines used also by OtsConfigurationWizardSupervisor
-#define FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE 			std::string("FSMLastConfiguredGroupAlias.hist")
-#define FSM_LAST_STARTED_GROUP_ALIAS_FILE 				std::string("FSMLastStartedGroupAlias.hist")
+// #define FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE 			std::string("FSMLastConfiguredGroupAlias.hist")
+// #define FSM_LAST_STARTED_GROUP_ALIAS_FILE 				std::string("FSMLastStartedGroupAlias.hist")
 
-#define FSM_CONFIGURED_GROUP_ALIASES_FILE 				std::string("FSMConfiguredGroupAliases.hist")
-#define FSM_STARTED_GROUP_ALIASES_FILE 					std::string("FSMStartedGroupAlias.hist")
-#define FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE 	std::string("FSMConfiguredOrStartedGroupAlias.hist")
+// #define FSM_CONFIGURED_GROUP_ALIASES_FILE 				std::string("FSMConfiguredGroupAliases.hist")
+// #define FSM_STARTED_GROUP_ALIASES_FILE 					std::string("FSMStartedGroupAlias.hist")
 
-#define FSM_CONFIGURED_CONTEXTS_FILE 					std::string("FSMConfiguredContexts.hist")
-#define FSM_STARTED_CONTEXTS_FILE 						std::string("FSMStartedContexts.hist")
-#define FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE 		std::string("FSMConfiguredOrStartedContexts.hist")
+// #define FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE 	std::string("FSMConfiguredOrStartedGroupAlias.hist")
 
-#define FSM_CONFIGURED_BACKBONES_FILE 					std::string("FSMConfiguredBackbones.hist")
-#define FSM_STARTED_BACKBONES_FILE 						std::string("FSMStartedBackbones.hist")
-#define FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE 		std::string("FSMConfiguredOrStartedBackbones.hist")
+// #define FSM_CONFIGURED_CONTEXTS_FILE 					std::string("FSMConfiguredContexts.hist")
+// #define FSM_STARTED_CONTEXTS_FILE 						std::string("FSMStartedContexts.hist")
+// #define FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE 		std::string("FSMConfiguredOrStartedContexts.hist")
 
-#define FSM_CONFIGURED_ITERATORS_FILE 					std::string("FSMConfiguredIterators.hist")
-#define FSM_STARTED_ITERATORS_FILE 						std::string("FSMStartedIterators.hist")
-#define FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE 		std::string("FSMConfiguredOrStartedIterators.hist")
+// #define FSM_CONFIGURED_BACKBONES_FILE 					std::string("FSMConfiguredBackbones.hist")
+// #define FSM_STARTED_BACKBONES_FILE 						std::string("FSMStartedBackbones.hist")
+// #define FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE 		std::string("FSMConfiguredOrStartedBackbones.hist")
+
+// #define FSM_CONFIGURED_ITERATORS_FILE 					std::string("FSMConfiguredIterators.hist")
+// #define FSM_STARTED_ITERATORS_FILE 						std::string("FSMStartedIterators.hist")
+// #define FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE 		std::string("FSMConfiguredOrStartedIterators.hist")
 
 
 namespace ots
@@ -337,12 +338,12 @@ class WorkLoopManager;
 
 		std::pair<std::string /*group name*/, TableGroupKey>
 							theConfigurationTableGroup_;  ///< used to track the active configuration group at states after the configure state
+		std::string			stateMachineTransitionUsername_;  ///< used to track the user who made the last state machine transition (for logging purposes)
 
 		Iterator   			theIterator_;
 		std::mutex 			stateMachineAccessMutex_;  ///< for sharing state machine access with
 											  ///< iterator thread
 		std::string 		stateMachineLastCommandInput_;
-		std::string			lastConfigurationAlias_;
 		enum
 		{
 			VERBOSE_MUTEX = 0
@@ -393,7 +394,7 @@ public:	//used by remote subsystem control and status
 				DoNotHalt, ///<(e.g. for artdaq)
 				OnlyConfigure, ///<(e.g. for DCS/DQM)
 			};
-			FSM_ModeTypes 						fsm_mode = FSM_ModeTypes::Follow_FSM; ///<used for remote gateway subapp control
+			FSM_ModeTypes 						fsm_mode = FSM_ModeTypes::Follow_FSM; ///< used for remote gateway subapp control
 			bool								fsm_included = true;
 
 			std::string							getFsmMode() const {
@@ -406,7 +407,7 @@ public:	//used by remote subsystem control and status
 				}
 			} //end getFsmMode()
 
-			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///<remote gateways can have subapps
+			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///< remote gateways can have subapps
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
@@ -415,8 +416,11 @@ public:	//used by remote subsystem control and status
 			bool /* lastStatusGood */> 						appLastStatusGood_;
 		std::mutex											dualStatusThreadMutex_;
 
-		std::map<unsigned int /* lid */, SupervisorInfo>	localAllSupervisorInfo_; //only use in main thread, stable copy of app status
+		std::map<unsigned int /* lid */, SupervisorInfo>	localAllSupervisorInfo_; ///< only use in main thread, stable copy of app status
 
+
+		std::mutex											latestGatewayIconsMutex_;
+		std::vector<DesktopIconTable::DesktopIcon>			latestGatewayIcons_; ///< used to track the latest desktop icons (which are defined by the active context but allowed to change dynamically)
 
 
 		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);

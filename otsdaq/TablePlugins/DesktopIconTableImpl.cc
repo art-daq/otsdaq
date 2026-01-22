@@ -290,11 +290,8 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager,
                                            const std::string&    localURL) const
 {
-	std::string retURL;
 	std::string contextAddress;
-
-	if(localURL.size() && localURL[0] == '/')
-	{
+	{  //get context address of gateway to use as origin for remote icons
 		ConfigurationTree contextTableNode =
 		    configManager->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME);
 		const XDAQContextTable* contextTable = configManager->getTable<XDAQContextTable>(
@@ -327,11 +324,18 @@ std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager,
 			contextAddress =
 			    std::string("http://") + "localhost" + ":" + std::to_string(contextPort);
 		}
-		retURL = contextAddress + localURL;
-	}
-	else  //if no starting '/' assume URL is already complete
-		retURL = localURL;
+	}  //end context address retrieval block
 
+	std::string retURL;
+	{
+		__COUTTV__(localURL);
+		if(localURL.size() && localURL[0] == '/')
+			retURL = contextAddress + localURL;
+		else  //if no starting '/' assume URL is already complete
+			retURL = localURL;
+	}
+
+	__COUTTV__(retURL);
 	//now add get parameters for remoteGateway
 	// if there is no '?' found
 	//	then assume need to add "?"
@@ -343,6 +347,7 @@ std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager,
 	          "&remoteServerUrnLid=" +
 	          std::to_string(XDAQContextTable::XDAQApplication::GATEWAY_APP_ID);
 
+	__COUTTV__(retURL);
 	return retURL;
 }  // end getRemoteURL()
 

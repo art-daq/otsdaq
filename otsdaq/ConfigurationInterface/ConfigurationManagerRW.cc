@@ -1231,20 +1231,60 @@ void ConfigurationManagerRW::activateTableGroup(const std::string& tableGroupNam
 		if(theConfigurationTableGroupKey_ &&
 		   theConfigurationTableGroup_ == tableGroupName &&
 		   *theConfigurationTableGroupKey_ == tableGroupKey)
-			ConfigurationManager::saveGroupNameAndKey(activatedGroup,
-			                                          LAST_ACTIVATED_CONFIG_GROUP_FILE);
+		{
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
+			    false /* appendMode */,
+			    username_);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::ACTIVATED_CONFIGS_FILE,
+			    true /* appendMode */,
+			    username_);
+		}
 		else if(theContextTableGroupKey_ && theContextTableGroup_ == tableGroupName &&
 		        *theContextTableGroupKey_ == tableGroupKey)
-			ConfigurationManager::saveGroupNameAndKey(activatedGroup,
-			                                          LAST_ACTIVATED_CONTEXT_GROUP_FILE);
+		{
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE,
+			    false /* appendMode */,
+			    username_);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::ACTIVATED_CONTEXTS_FILE,
+			    true /* appendMode */,
+			    username_);
+		}
 		else if(theBackboneTableGroupKey_ && theBackboneTableGroup_ == tableGroupName &&
 		        *theBackboneTableGroupKey_ == tableGroupKey)
-			ConfigurationManager::saveGroupNameAndKey(activatedGroup,
-			                                          LAST_ACTIVATED_BACKBONE_GROUP_FILE);
+		{
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE,
+			    false /* appendMode */,
+			    username_);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::ACTIVATED_BACKBONES_FILE,
+			    true /* appendMode */,
+			    username_);
+		}
 		else if(theIterateTableGroupKey_ && theIterateTableGroup_ == tableGroupName &&
 		        *theIterateTableGroupKey_ == tableGroupKey)
-			ConfigurationManager::saveGroupNameAndKey(activatedGroup,
-			                                          LAST_ACTIVATED_ITERATOR_GROUP_FILE);
+		{
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::LAST_ACTIVATED_ITERATE_GROUP_FILE,
+			    false /* appendMode */,
+			    username_);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::ACTIVATED_ITERATES_FILE,
+			    true /* appendMode */,
+			    username_);
+		}
 	}  // end save last activated group
 
 }  // end activateTableGroup()

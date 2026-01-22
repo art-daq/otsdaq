@@ -369,122 +369,122 @@ class WebUsers
 	/// for the gateway supervisor to check request access
 	/// if false, gateway request handling code should just return.. out is handled on
 	/// false; on true, out is untouched
-	bool xmlRequestOnGateway(cgicc::Cgicc&              cgi,
-							 std::ostringstream*        out,
-							 HttpXmlDocument*           xmldoc,
-							 WebUsers::RequestUserInfo& userInfo);
+	bool 					xmlRequestOnGateway				(cgicc::Cgicc&              cgi,
+															 std::ostringstream*        out,
+															 HttpXmlDocument*           xmldoc,
+															 WebUsers::RequestUserInfo& userInfo);
 
   public:
 
 	/// used by gateway and other supervisors to verify requests consistently
-	static void initializeRequestUserInfo(cgicc::Cgicc&              cgi,
-										  WebUsers::RequestUserInfo& userInfo);
-	static bool checkRequestAccess(cgicc::Cgicc&              cgi,
-								   std::ostringstream*        out,
-								   HttpXmlDocument*           xmldoc,
-								   WebUsers::RequestUserInfo& userInfo,
-								   bool                       isWizardMode = false,
-								   const std::string& 		  wizardModeSequence = "");
+	static void 			initializeRequestUserInfo		(cgicc::Cgicc& cgi, WebUsers::RequestUserInfo& userInfo);
+	static bool 			checkRequestAccess				(cgicc::Cgicc&              cgi,
+															 std::ostringstream*        out,
+															 HttpXmlDocument*           xmldoc,
+															 WebUsers::RequestUserInfo& userInfo,
+															 bool                       isWizardMode = false,
+															 const std::string& 		wizardModeSequence = "");
 
-	void        createNewAccount(const std::string& username,
-								 const std::string& displayName,
-								 const std::string& email);
-	void        cleanupExpiredEntries(std::vector<std::string>* loggedOutUsernames = 0);
-	void        cleanupExpiredRemoteEntries(void);
-	std::string createNewLoginSession(const std::string& uuid, const std::string& ip);
+	void        			createNewAccount				(const std::string& username,
+															 const std::string& displayName,
+															 const std::string& email);
+	void       				cleanupExpiredEntries			(std::vector<std::string>* loggedOutUsernames = 0);
+	void       				cleanupExpiredRemoteEntries		(void);
+	std::string				createNewLoginSession			(const std::string& uuid, const std::string& ip);
 
-	uint64_t attemptActiveSession(const std::string& uuid,
-								  std::string&       jumbledUser,
-								  const std::string& jumbledPw,
-								  std::string&       newAccountCode,
-								  const std::string& ip);
-	uint64_t attemptActiveSessionWithCert(const std::string& uuid,
-										  std::string&       jumbledEmail,
-										  std::string&       cookieCode,
-										  std::string&       username,
-										  const std::string& ip);
-	uint64_t isCookieCodeActiveForLogin(const std::string& uuid,
-										std::string&       cookieCode,
-										std::string&       username);
-	bool     cookieCodeIsActiveForRequest(
-			std::string& cookieCode,
-			std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>*
-							   userPermissions        = 0,
-			uint64_t*          uid                    = 0,
-			const std::string& ip                     = "0",
-			bool               refresh                = true,
-			bool               doNotGoRemote          = false,
-			std::string*       userWithLock           = 0,
-			uint64_t*          userSessionIndex = 0);
-	uint64_t cookieCodeLogout(const std::string& cookieCode,
-							  bool               logoutOtherUserSessions,
-							  uint64_t*          uid = 0,
-							  const std::string& ip  = "0");
-	bool     checkIpAccess(const std::string& ip);
+	uint64_t				attemptActiveSession			(const std::string& uuid,
+															 std::string&       jumbledUser,
+															 const std::string& jumbledPw,
+															 std::string&       newAccountCode,
+															 const std::string& ip);
+	uint64_t				attemptActiveSessionWithCert	(const std::string& uuid,
+															 std::string&       jumbledEmail,
+															 std::string&       cookieCode,
+															 std::string&       username,
+															 const std::string& ip);
+	uint64_t				isCookieCodeActiveForLogin		(const std::string& uuid,
+															 std::string&       cookieCode,
+															 std::string&       username);
+	bool     				cookieCodeIsActiveForRequest	(
+															 std::string& cookieCode,
+															 std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>* userPermissions        = 0,
+															 uint64_t*          uid                    = 0,
+															 const std::string& ip                     = "0",
+															 bool               refresh                = true,
+															 bool               doNotGoRemote          = false,
+															 std::string*       userWithLock           = 0,
+															 uint64_t*          userSessionIndex = 0);
+	uint64_t				cookieCodeLogout				(const std::string& cookieCode,
+															 bool               logoutOtherUserSessions,
+															 uint64_t*          uid = 0,
+															 const std::string& ip  = "0");
+	bool    				checkIpAccess					(const std::string& ip);
 
-	std::string getUsersDisplayName(uint64_t uid); ///<from Gateway, use public version which considers remote users
-	std::string getUsersUsername(uint64_t uid); ///<from Gateway, use public version which considers remote users
+	std::string 			getUsersDisplayName				(uint64_t uid); ///<from Gateway, use public version which considers remote users
+	std::string 			getUsersUsername				(uint64_t uid); ///<from Gateway, use public version which considers remote users
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
-				getPermissionsForUser(uint64_t uid); ///<from Gateway, use public version which considers remote users
+							getPermissionsForUser			(uint64_t uid); ///<from Gateway, use public version which considers remote users
 
-	uint64_t    getActiveSessionCountForUser(uint64_t uid);
-	void        insertSettingsForUser(uint64_t         uid,
-									  HttpXmlDocument* xmldoc,
-									  bool             includeAccounts = false);
-	std::string getGenericPreference(uint64_t           uid,
-									 const std::string& preferenceName,
-									 HttpXmlDocument*   xmldoc = 0) const;
+	uint64_t    			getActiveSessionCountForUser	(uint64_t uid);
+	void        			insertSettingsForUser			(uint64_t         uid,
+															 HttpXmlDocument* xmldoc,
+															 bool             includeAccounts = false,
+															 std::map<std::string /*groupName*/,
+																	WebUsers::permissionLevel_t> permissionMap = {}); ///<if empty, fetches local permissions; if provided, overrides with given permissions (e.g., from top-level login verification)
+	std::string 			getGenericPreference			(uint64_t           uid,
+															 const std::string& preferenceName,
+															 HttpXmlDocument*   xmldoc = 0) const;
 
-	void        changeSettingsForUser(uint64_t           uid,
-									  const std::string& bgcolor,
-									  const std::string& dbcolor,
-									  const std::string& wincolor,
-									  const std::string& layout,
-									  const std::string& syslayout,
-									  const std::string& aliaslayout,
-									  const std::string& sysaliaslayout);
-	void        setGenericPreference(uint64_t           uid,
-									 const std::string& preferenceName,
-									 const std::string& preferenceValue);
-	static void tooltipCheckForUsername(const std::string& username,
-										HttpXmlDocument*   xmldoc,
-										const std::string& srcFile,
-										const std::string& srcFunc,
-										const std::string& srcId);
-	static void tooltipSetNeverShowForUsername(const std::string& username,
-											   HttpXmlDocument*   xmldoc,
-											   const std::string& srcFile,
-											   const std::string& srcFunc,
-											   const std::string& srcId,
-											   bool               doNeverShow,
-											   bool               temporarySilence);
+	void        			changeSettingsForUser			(uint64_t           uid,
+															 const std::string& bgcolor,
+															 const std::string& dbcolor,
+															 const std::string& wincolor,
+															 const std::string& layout,
+															 const std::string& syslayout,
+															 const std::string& aliaslayout,
+															 const std::string& sysaliaslayout);
+	void        			setGenericPreference			(uint64_t           uid,
+															 const std::string& preferenceName,
+															 const std::string& preferenceValue);
+	static void 			tooltipCheckForUsername			(const std::string& username,
+															 HttpXmlDocument*   xmldoc,
+															 const std::string& srcFile,
+															 const std::string& srcFunc,
+															 const std::string& srcId);
+	static void 			tooltipSetNeverShowForUsername	(const std::string& username,
+															 HttpXmlDocument*   xmldoc,
+															 const std::string& srcFile,
+															 const std::string& srcFunc,
+															 const std::string& srcId,
+															 bool               doNeverShow,
+															 bool               temporarySilence);
 
-	void modifyAccountSettings(uint64_t           actingUid,
-							   uint8_t            cmd_type,
-							   const std::string& username,
-							   const std::string& displayname,
-							   const std::string& email,
-							   const std::string& permissions);
-	bool setUserWithLock(uint64_t actingUid, bool lock, const std::string& username);
-	std::string getUserWithLock(void) { return usersUsernameWithLock_; }
+	void					modifyAccountSettings			(uint64_t           actingUid,
+															 uint8_t            cmd_type,
+															 const std::string& username,
+															 const std::string& displayname,
+															 const std::string& email,
+															 const std::string& permissions);
+	bool 					setUserWithLock					(uint64_t actingUid, bool lock, const std::string& username);
+	std::string 			getUserWithLock					(void) { return usersUsernameWithLock_; }
 
-	size_t 		getActiveUserCount(void);
-	std::string getActiveUsersString(void);
+	size_t 					getActiveUserCount				(void);
+	std::string 			getActiveUsersString			(void);
 
-	bool        isUsernameActive(const std::string& username) const;
-	bool        isUserIdActive(uint64_t uid) const;
-	uint64_t    getAdminUserID(void);
-	const std::string& getSecurity(void);
+	bool        			isUsernameActive				(const std::string& username) const;
+	bool        			isUserIdActive					(uint64_t uid) const;
+	uint64_t    			getAdminUserID					(void);
+	const std::string& 		getSecurity						(void);
 
-	static void deleteUserData(void);
+	static void 			deleteUserData					(void);
 
-	static void resetAllUserTooltips(const std::string& userNeedle = "*");
-	static void silenceAllUserTooltips(const std::string& username);
+	static void 			resetAllUserTooltips			(const std::string& userNeedle = "*");
+	static void 			silenceAllUserTooltips			(const std::string& username);
 
-	static void NACDisplayThread(const std::string& nac, const std::string& user);
+	static void 			NACDisplayThread				(const std::string& nac, const std::string& user);
 
-	void saveActiveSessions(void);
-	void loadActiveSessions(void);
+	void 					saveActiveSessions				(void);
+	void 					loadActiveSessions				(void);
 
   private:
 	inline WebUsers::permissionLevel_t getPermissionLevelForGroup(

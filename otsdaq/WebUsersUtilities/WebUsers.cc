@@ -2951,14 +2951,22 @@ void WebUsers::silenceAllUserTooltips(const std::string& username)
 ///		example 2 layouts set, 2 not,
 ///			[<win name>, <win subname>, <win url>, <x>, <y>, <w>, <h>]; [<win name>, <win
 /// subname>, <win url>, <x>, <y>, <w>, <h>]...];0;0
-void WebUsers::insertSettingsForUser(uint64_t         uid,
-                                     HttpXmlDocument* xmldoc,
-                                     bool             includeAccounts)
+///
+/// Pass permission map as parameter to override local permissions (for example if permissions are given from top level login verification)
+void WebUsers::insertSettingsForUser(
+    uint64_t         uid,
+    HttpXmlDocument* xmldoc,
+    bool             includeAccounts,
+    std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
+        permissionMap /* = {} */)
 {
-	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> permissionMap =
-	    getPermissionsForUser(uid);
+	if(permissionMap.size() == 0)
+	{
+		__COUTT__ << "Getting local permissions for user " << uid << __E__;
+		permissionMap = getPermissionsForUser(uid);
+	}
 
-	//__COUTV__(StringMacros::mapToString(permissionMap));
+	__COUTTV__(StringMacros::mapToString(permissionMap));
 	if(isInactiveForGroup(permissionMap))
 		return;  // not an active user
 

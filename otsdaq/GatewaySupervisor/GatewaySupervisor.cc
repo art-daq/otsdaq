@@ -47,6 +47,7 @@ using namespace ots;
 #define REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME "RemoteSubsystems.txt"
 
 #define TLVL_StateChanger		 	9	// = TLVL_DEBUG + 9
+#define TLVL_RemoteIcons		 	10	// = TLVL_DEBUG + 10
 #define TLVL_StateChangerDetail	 	11	// = TLVL_DEBUG + 11
 #define TLVL_Permissions		 	20	// = TLVL_DEBUG + 20
 #define TLVL_GetDesktopIcons	 	21	// = TLVL_DEBUG + 21
@@ -65,6 +66,9 @@ using namespace ots;
 
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "GatewaySupervisor"
+
+#define REMOTE_BACKBONE_ERR			"A valid active Backbone configuration group must be specified at the subsystem User Data Path, and it must be retrievable (i.e. same configuration database URI) from the primary Gateway."
+
 // clang-format on
 
 XDAQ_INSTANTIATOR_IMPL(GatewaySupervisor)
@@ -461,6 +465,11 @@ try
 	if(doDisconnected)
 		sleep(5);  // stagger the two loops a bit
 	__COUTV__(doDisconnected);
+
+	std::chrono::_V2::system_clock::time_point lastStatus =
+	    std::chrono::high_resolution_clock::now();
+	time_t lastSlowStatusWarnTime = 0;
+	size_t statusWasSlowCount     = 0;
 	while(1)
 	{
 		bool oneStatusReqHasFailed = false;
@@ -481,6 +490,46 @@ try
 		__COUTS__(TLVL_StatusWorkloop)
 		    << "App status checking, doDisconnected = " << doDisconnected
 		    << " loopCount=" << loopCount << __E__;
+
+		//if last status was more than 1.5 seconds ago, then warn
+		if(!doDisconnected)
+		{
+			auto now = std::chrono::high_resolution_clock::now();
+			auto timeElapsed =
+			    std::chrono::duration_cast<std::chrono::milliseconds>(now - lastStatus)
+			        .count();  //milliseconds
+			__COUTVS__(TLVL_StatusWorkloop, timeElapsed);
+			if(timeElapsed > 1500)  //then status was too slow!
+			{
+				++statusWasSlowCount;
+
+				if(statusWasSlowCount > 1)  //1 might occur if target is disconnected
+				{
+					//if it has been more than 15 minutes, then do System Alert
+					time_t now_time_t = time(0);
+					__COUT_WARN__
+					    << "App status checking loop time elapsed = " << timeElapsed
+					    << " ms (expected ~500 ms). Time since last system alert for "
+					       "slow status = "
+					    << now_time_t - lastSlowStatusWarnTime << " seconds." << __E__;
+					if(now_time_t - lastSlowStatusWarnTime > 15 * 60)
+					{
+						std::stringstream errSs;
+						errSs << "GatewaySupervisor App Status checking loop is taking "
+						         "longer than expected - "
+						      << "there may be too many TRACE slow path messages "
+						         "enabled. Time elapsed = "
+						      << timeElapsed << " ms (expected ~500 ms).";
+						theSupervisor->addSystemMessage("*", errSs.str());
+						__COUT_ERR__ << errSs.str() << __E__;
+						lastSlowStatusWarnTime = now_time_t;
+					}
+				}
+			}
+			else
+				statusWasSlowCount = 0;  //reset counter if back to normal speed
+			lastStatus = now;
+		}  //end slow status monitoring
 
 		if(TTEST(1) ||
 		   doDisconnected)  //printout the true/false handling of apps (emulating anticipated flow)
@@ -522,9 +571,10 @@ try
 
 						++handlingAppCount;
 						__COUTT__
-						    << "Status loop remote apps #" << handlingAppCount
-						    << ", doDisconnected = " << doDisconnected
-						    << " Remote subapp = '" << remoteGatewayApp.appInfo.name
+						    << "Status loopcount=" << loopCount << " remote apps #"
+						    << handlingAppCount
+						    << ", (doDisconnected = " << doDisconnected
+						    << ") Remote subapp = '" << remoteGatewayApp.appInfo.name
 						    << "' [URL=" << remoteGatewayApp.appInfo.url
 						    << "] isRemoteAppDisconnected = " << isRemoteAppDisconnected
 						    << ".\n\n";
@@ -538,9 +588,9 @@ try
 					continue;
 
 				++handlingAppCount;
-				__COUTT__ << "Status Loop apps #" << handlingAppCount
-				          << ", doDisconnected = " << doDisconnected
-				          << " Supervisor instance = '" << appName
+				__COUTT__ << "Status loopcount=" << loopCount << " apps #"
+				          << handlingAppCount << ", (doDisconnected = " << doDisconnected
+				          << ") Supervisor instance = '" << appName
 				          << "' [LID=" << appInfo.getId() << "] in Context '"
 				          << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
 				          << "] isDisconnected = " << isDisconnected << ".\n\n";
@@ -737,8 +787,15 @@ try
 						//check for commands
 						if(!commandingRemoteGatewayApps)
 						{
+							size_t ri = 0;
 							for(const auto& remoteApp : remoteApps)
 							{
+								__COUTT__ << "#" << ri++ << " - Checking remote app '"
+								          << remoteApp.appInfo.name
+								          << "' [URL=" << remoteApp.appInfo.url
+								          << "] for command: '" << remoteApp.command
+								          << "'." << __E__;
+
 								if(remoteApp.command != "")
 								{
 									//latch until all remote apps are stable
@@ -801,9 +858,9 @@ try
 							   icon.windowContentURL_[2] == 's' &&
 							   icon.windowContentURL_[3] == ':')
 							{
-								__COUT__ << "Found '" << icon.recordUID_
-								         << "' remote gateway icons url: "
-								         << icon.windowContentURL_ << __E__;
+								__COUTT__ << "Found '" << icon.recordUID_
+								          << "' remote gateway icons url: "
+								          << icon.windowContentURL_ << __E__;
 
 								GatewaySupervisor::RemoteGatewayInfo thisInfo;
 
@@ -813,7 +870,7 @@ try
 								//remote ? parameters from remoteURL
 								if(remoteURL.find('?') != std::string::npos)
 								{
-									__COUT__
+									__COUTT__
 									    << "Extracting GET ? parameters from remote url."
 									    << __E__;
 									std::vector<std::string> urlSplit =
@@ -834,10 +891,10 @@ try
 											        parameterPair, {'='});
 											if(parameterPairSplit.size() == 2)
 											{
-												__COUT__ << "Found remote URL parameter "
-												         << parameterPairSplit[0] << ", "
-												         << parameterPairSplit[1]
-												         << __E__;
+												__COUTT__ << "Found remote URL parameter "
+												          << parameterPairSplit[0] << ", "
+												          << parameterPairSplit[1]
+												          << __E__;
 												if(parameterPairSplit[0] == "LandingPage")
 												{
 													remoteLandingPage =
@@ -848,10 +905,10 @@ try
 														remoteLandingPage =
 														    icon.folderPath_ + "/" +
 														    remoteLandingPage;
-													__COUT__ << "Found landing page "
-													         << remoteLandingPage
-													         << " for " << icon.recordUID_
-													         << __E__;
+													__COUTT__ << "Found landing page "
+													          << remoteLandingPage
+													          << " for "
+													          << icon.recordUID_ << __E__;
 												}
 												if(parameterPairSplit[0] == "SetupType")
 												{
@@ -859,9 +916,10 @@ try
 													    StringMacros::decodeURIComponent(
 													        parameterPairSplit[1]);
 
-													__COUT__ << "Found setup_ots.sh type "
-													         << remoteSetupType << " for "
-													         << icon.recordUID_ << __E__;
+													__COUTT__
+													    << "Found setup_ots.sh type "
+													    << remoteSetupType << " for "
+													    << icon.recordUID_ << __E__;
 												}
 											}
 										}
@@ -942,7 +1000,7 @@ try
 									    tmpCfgMgr.getOtherSubsystemConfigAliases(
 									        remoteApps[i]
 									            .user_data_path_record);  //getOtherSubsystemFilteredConfigAliases(remoteApps[i].user_data_path_record, remoteApps[i].fsmName);
-									__COUTV__(StringMacros::setToString(
+									__COUTTV__(StringMacros::setToString(
 									    thisInfo.config_aliases));
 									if(remoteApps[i]
 									       .config_aliases
@@ -963,15 +1021,18 @@ try
 									       "targeting a UID in the "
 									       "SubsystemUserDataPathsTable."
 									    << __E__;
-									ss << "\n\nHere was the error getting remote "
-									      "aliases:\n"
+									if(std::string(e.what()).find("Backbone") !=
+									   std::string::npos)
+										ss << "\n\n" << REMOTE_BACKBONE_ERR;
+									ss << "\n\nHere was the error getting the list of "
+									      "Remote Subsystem "
+									      "Configuration Aliases:\n"
 									   << e.what() << __E__;
 									__COUT__ << ss.str();
 									remoteApps[i].error = ss.str();
 
 									//give feedback immediately to user!!
 									{
-										__COUTV__(remoteApps[i].error);
 										//lock for remainder of scope
 										std::lock_guard<std::mutex> lock(
 										    theSupervisor->remoteGatewayAppsMutex_);
@@ -991,12 +1052,18 @@ try
 
 							}  //end remote icon handling
 
-						}  //end icon loop
+						}  //end Gateway icon loop searching for remote subsystems
 
 						//clean up stale remoteGatewayApps with blank status
 						bool remoteAppsExist = false;
 						for(size_t i = 0; i < remoteApps.size(); ++i)
 						{
+							__COUTT__ << "#" << i << " - Checking remote app '"
+							          << remoteApps[i].appInfo.name
+							          << "' [URL=" << remoteApps[i].appInfo.url
+							          << "] for status: '" << remoteApps[i].appInfo.status
+							          << "'." << __E__;
+
 							if(remoteApps[i].appInfo.status == "")
 							{
 								//rewind and erase
@@ -1198,19 +1265,22 @@ try
 							    ipAddressForStateChangesOverUDP,
 							    portForReverseLoginOverUDP);
 
-							if(remoteGatewayApp.appInfo.status !=
-							   SupervisorInfo::APP_STATUS_UNKNOWN)
+							if(remoteGatewayApp.appInfo.status.size() &&
+							   remoteGatewayApp.appInfo.status !=
+							       SupervisorInfo::APP_STATUS_UNKNOWN)
 							{
 								allApssAreUnknown = false;
 								if(!appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                      remoteGatewayApp.appInfo.name])
 								{
 									__COUT_INFO__
-									    << "First good status (doDisconnected = "
+									    << "First good status received (doDisconnected = "
 									    << doDisconnected << ") from Remote subapp = '"
 									    << remoteGatewayApp.appInfo.name
 									    << "' [URL=" << remoteGatewayApp.appInfo.url
-									    << "].\n\n";
+									    << "]. Status: '" +
+									           remoteGatewayApp.appInfo.status
+									    << "'" << __E__;
 								}
 								appLastStatusGood[remoteGatewayApp.appInfo.url +
 								                  remoteGatewayApp.appInfo.name] = true;
@@ -1271,8 +1341,8 @@ try
 									std::stringstream ss;
 									ss << "New failure getting '"
 									   << remoteGatewayApp.appInfo.name
-									   << "' Remote Gateway App status at url: "
-									   << remoteGatewayApp.appInfo.url;
+									   << "' Remote Gateway App status [URL="
+									   << remoteGatewayApp.appInfo.url << "].";
 									if(contextName != "")
 										ss << " (" << contextName << ")" << __E__;
 
@@ -1345,13 +1415,17 @@ try
 							if(remoteGatewayApp.command != "")
 								continue;  //skip if command to be sent
 
-							__COUTS__(TLVL_RemoteDesktopIcons)
-							    << remoteGatewayApp.appInfo.name << ": "
-							    << remoteGatewayApp.appInfo.status << __E__;
+							bool isRemoteAppDisconnected =
+							    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
+							                           remoteGatewayApp.appInfo.name) !=
+							        appLastStatusGood.end() &&
+							    !appLastStatusGood.at(remoteGatewayApp.appInfo.url +
+							                          remoteGatewayApp.appInfo.name);
 
-							if(remoteGatewayApp.appInfo.status ==
-							   SupervisorInfo::APP_STATUS_UNKNOWN)
-								continue;  //skip if no status yet
+							__COUTVS__(TLVL_RemoteDesktopIcons, isRemoteAppDisconnected);
+
+							if(isRemoteAppDisconnected)
+								continue;  //skip if no status (probably means subsystem is down, so icons would not be available)
 
 							//clear any previous icon error
 							if(remoteGatewayApp.error.find("desktop icons") !=
@@ -2357,13 +2431,13 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 	{
 		std::vector<std::string> parsedFields =
 		    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url, {':'});
-		__COUTVS__(10, StringMacros::vectorToString(parsedFields));
-		__COUTVS__(10, command);
+		__COUTVS__(TLVL_RemoteIcons, StringMacros::vectorToString(parsedFields));
+		__COUTVS__(TLVL_RemoteIcons, command);
 
 		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
 		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
-		__COUTVS__(10, remoteIconString);
+		__COUTVS__(TLVL_RemoteIcons, remoteIconString);
 
 		bool firstIcon = true;
 
@@ -2380,7 +2454,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 			else
 				iconString += ",";
 
-			__COUTVS__(10, remoteIconsCSV[i + 0]);
+			__COUTVS__(TLVL_RemoteIcons, remoteIconsCSV[i + 0]);
 			if(remoteGatewayApp.parentIconFolderPath ==
 			   "")  //icon.folderPath_ == "") //if not in folder, distinguish remote icon somehow
 				iconString +=
@@ -2516,8 +2590,15 @@ void GatewaySupervisor::CheckRemoteGatewayStatus(
     int                portForReverseLoginOverUDP)
 try
 {
+	//initialize to unknown in case of error
+	remoteGatewayApp.appInfo.status         = SupervisorInfo::APP_STATUS_UNKNOWN;
+	remoteGatewayApp.appInfo.progress       = 0;
+	remoteGatewayApp.appInfo.detail         = "";
+	remoteGatewayApp.appInfo.lastStatusTime = time(0);
+
 	__COUTT__ << "Checking remote gateway status of '" << remoteGatewayApp.appInfo.name
 	          << "'" << __E__;
+
 	std::vector<std::string> parsedFields =
 	    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url, {':'});
 	__COUTTV__(StringMacros::vectorToString(parsedFields));
@@ -2729,8 +2810,10 @@ try
 		remoteGatewayApp.consoleWarnCount = atoi(value.c_str());
 	}
 	else
-		__COUT_WARN__ << "Illegal Remote Gateawy App URL (must be ots:<IP>:<PORT>): "
-		              << remoteGatewayApp.appInfo.url << __E__;
+		__COUT_WARN__ << "Illegal Remote Gateawy App URL for name='"
+		              << remoteGatewayApp.appInfo.name
+		              << "' (must be ots:<IP>:<PORT>): [URL="
+		              << remoteGatewayApp.appInfo.url << "]" << __E__;
 }  //end CheckRemoteGatewayStatus()
 catch(const std::runtime_error& e)
 {
@@ -2741,6 +2824,17 @@ catch(const std::runtime_error& e)
 	remoteGatewayApp.appInfo.status         = SupervisorInfo::APP_STATUS_UNKNOWN;
 	remoteGatewayApp.appInfo.progress       = 0;
 	remoteGatewayApp.appInfo.detail         = "Unknown UDP Message Error";
+	remoteGatewayApp.appInfo.lastStatusTime = time(0);
+}  //end CheckRemoteGatewayStatus() catch
+catch(...)
+{
+	__COUTT__ << "Failure getting '" << remoteGatewayApp.appInfo.name
+	          << "' Remote Gateway App status at url: " << remoteGatewayApp.appInfo.url
+	          << " due to unknown error." << __E__;
+
+	remoteGatewayApp.appInfo.status         = SupervisorInfo::APP_STATUS_UNKNOWN;
+	remoteGatewayApp.appInfo.progress       = 0;
+	remoteGatewayApp.appInfo.detail         = "Unknown Error";
 	remoteGatewayApp.appInfo.lastStatusTime = time(0);
 }  //end CheckRemoteGatewayStatus() catch
 
@@ -3356,7 +3450,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					// parameters.addParameter("CookieCode");
 					// parameters.addParameter("RefreshOption");
 					// parameters.addParameter("IPAddress");
-					//	-- Use name to lookup access level conversion for user
+					//	-- Use remote gateway self name to lookup access level conversion for user
 					//  -- if Desktop Icon has a special permission type, then modify userGroupPermissionsMap's allUsers to match
 					//		parameters.addParameter("RemoteGatewaySelfName");
 					std::vector<std::string> rxParams =
@@ -3398,14 +3492,47 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					//Modify Permission Map based on Desktop Icon permission requirement
 					const std::string& remoteName = rxParams[4];
-					__COUTVS__(TLVL_StatusParams, remoteName);
+					__COUTVS__(TLVL_Permissions, remoteName);
+
+					//lookup RequiredPermissionLevel of Icon with this remoteName as FolderPath
+					std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
+					    subsystemIconPermissionLevelMap;
+					{
+						std::string subsystemIconPermissionLevel = "";
+
+						{  //mutex scope
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->latestGatewayIconsMutex_);
+							const std::vector<DesktopIconTable::DesktopIcon>& icons =
+							    theSupervisor->latestGatewayIcons_;
+
+							for(const auto& icon : icons)
+							{
+								if(icon.recordUID_ == remoteName)
+								{
+									subsystemIconPermissionLevel =
+									    icon.permissionThresholdString_;
+									__COUTVS__(
+									    TLVL_Permissions,
+									    subsystemIconPermissionLevel);  //the permission threshold for the icon that matches the remote subsystem name
+									break;
+								}
+							}  //search for icon that matches subsystem name
+						}
+						StringMacros::getMapFromString(subsystemIconPermissionLevel,
+						                               subsystemIconPermissionLevelMap);
+					}  //end subsystemIconPermissionLevelMap construction
+					__COUTVS__(
+					    TLVL_Permissions,
+					    StringMacros::mapToString(subsystemIconPermissionLevelMap));
+
 					std::vector<GatewaySupervisor::RemoteGatewayInfo>
 					    remoteGatewayApps;  //local copy
 					{                       //lock for remainder of scope
 						std::lock_guard<std::mutex> lock(
 						    theSupervisor->remoteGatewayAppsMutex_);
 						remoteGatewayApps = theSupervisor->remoteGatewayApps_;
-						__COUTVS__(TLVL_RemoteFSMRequests, remoteGatewayApps.size());
+						__COUTVS__(TLVL_Permissions, remoteGatewayApps.size());
 					}
 
 					bool found = false;
@@ -3413,7 +3540,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						if(remoteName == remoteGatewayApp.appInfo.name)
 						{
 							found = true;
-							__COUTVS__(TLVL_RemoteStatusParams,
+							__COUTVS__(TLVL_Permissions,
 							           remoteGatewayApp.permissionThresholdString);
 
 							std::map<std::string /*groupName*/,
@@ -3430,13 +3557,22 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							//	then give to remote subsystem the user permission as 'HW: 255, allUsers: 255'
 							//
 							//	... this way the user is considered an expert at the remote subsystem
+							//
+							//	if requesting remote gateway side has not specified advanced permissions threshold, e.g. allUsers: 1, then
+							//		if user is 'HW: 255, allUsers: 1' and there is 'HW: 1' for the icon, then give user
+							//			HW: 255, allUsers: 255'
 
-							if(remoteIconPermissionsMap.size() == 1 &&
-							   remoteIconPermissionsMap.begin()->first !=
-							       WebUsers::DEFAULT_USER_GROUP)
+							if(  //if permission map is only size 1,
+							    //	then modify WebUsers::DEFAULT_USER_GROUP for user with the icon's group level of the user
+							    //	e.g. if user is 'HW: 255, allUsers: 1'
+							    //		and icon is 'HW: 1'
+							    //	then give to remote subsystem the user permission as 'HW: 255, allUsers: 255'
+							    remoteIconPermissionsMap.size() == 1 &&
+							    remoteIconPermissionsMap.begin()->first !=
+							        WebUsers::DEFAULT_USER_GROUP)
 							{
 								__COUTVS__(
-								    21,
+								    TLVL_Permissions,
 								    remoteIconPermissionsMap.begin()->first);  //the group
 
 								auto it = userGroupPermissionsMap.find(
@@ -3448,13 +3584,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								if(it != userGroupPermissionsMap.end() &&
 								   it2 != userGroupPermissionsMap.end())
 								{
-									__COUTS__(TLVL_StateChangerDetail)
+									__COUTS__(TLVL_Permissions)
 									    << "Found user group '" << it->first
 									    << "' to modify: " << (uint16_t)it2->second
 									    << " --> " << (uint16_t)it->second << __E__;
 									it2->second = it->second;
-									__COUTVS__(TLVL_StateChangerDetail,
-									           (uint16_t)it2->second);
+									__COUTVS__(TLVL_Permissions, (uint16_t)it2->second);
 								}
 								else if(
 								    it ==
@@ -3464,9 +3599,56 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 									    [remoteIconPermissionsMap.begin()->first] =
 									        WebUsers::PERMISSION_LEVEL_INACTIVE;
 							}
+							else if(  //	if requesting remote gateway side has not specified advanced permissions threshold, e.g. allUsers: 1, then
+							    //		if user is 'HW: 255, allUsers: 1' and there is 'HW: 1' for the icon, then give user
+							    //			HW: 255, allUsers: 255'
+							    remoteIconPermissionsMap.size() == 1 &&
+							    remoteIconPermissionsMap.begin()->first ==
+							        WebUsers::DEFAULT_USER_GROUP &&
+							    subsystemIconPermissionLevelMap.size() == 1 &&
+							    subsystemIconPermissionLevelMap.begin()->first !=
+							        WebUsers::DEFAULT_USER_GROUP)
+							{
+								__COUTVS__(TLVL_Permissions,
+								           subsystemIconPermissionLevelMap.begin()
+								               ->first);  //the group
+
+								auto it = userGroupPermissionsMap.find(
+								    subsystemIconPermissionLevelMap.begin()->first);
+								std::map<std::string /*groupName*/,
+								         WebUsers::permissionLevel_t>::iterator it2 =
+								    userGroupPermissionsMap.find(
+								        WebUsers::DEFAULT_USER_GROUP);
+								if(it != userGroupPermissionsMap.end() &&
+								   it2 != userGroupPermissionsMap.end())
+								{
+									__COUTS__(TLVL_Permissions)
+									    << "Found user group '" << it->first
+									    << "' to modify: " << (uint16_t)it2->second
+									    << " --> " << (uint16_t)it->second << __E__;
+									it2->second = it->second;
+									__COUTVS__(TLVL_Permissions, (uint16_t)it2->second);
+								}
+								else if(
+								    it ==
+								    userGroupPermissionsMap
+								        .end())  //if special group not found, then no access on default user group!
+								{
+									__COUTS__(TLVL_Permissions)
+									    << "Did not find user group '"
+									    << subsystemIconPermissionLevelMap.begin()->first
+									    << "' when required by subsystem icon, so deny "
+									       "access for user: "
+									    << WebUsers::DEFAULT_USER_GROUP << " --> "
+									    << WebUsers::PERMISSION_LEVEL_INACTIVE << __E__;
+									userGroupPermissionsMap
+									    [WebUsers::DEFAULT_USER_GROUP] =
+									        WebUsers::PERMISSION_LEVEL_INACTIVE;
+								}
+							}
 
 							break;
-						}
+						}  //end handling of matching remote subsystem for login verification
 
 					if(!found)
 					{
@@ -3477,11 +3659,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					// Returned user info:
 					// retParameters.addParameter("CookieCode", cookieCode);
-					// "Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
+					// MODIFIED FOR SUBSYSTEM "Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
 					// "UserWithLock", userWithLock);
 					// "Username", theWebUsers_.getUsersUsername(uid));
 					// "DisplayName", theWebUsers_.getUsersDisplayName(uid));
 					// "UserSessionIndex"
+
+					__COUTVS__(TLVL_Permissions,
+					           StringMacros::mapToString(userGroupPermissionsMap));
 
 					std::string retStr   = "";
 					std::string username = theWebUsers_.getUsersUsername(uid);
@@ -3494,7 +3679,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					retStr += "," + theWebUsers_.getUsersDisplayName(uid);
 					retStr += "," + std::to_string(userSessionIndex);
 
-					__COUTVS__(TLVL_StatusParams, retStr);
+					__COUTVS__(TLVL_Permissions, retStr);
 					__COUTT__ << "Remote login successful for " << username
 					          << ", userWithLock = " << userWithLock << __E__;
 					sock.acknowledge(retStr, false /* verbose */);
@@ -3613,7 +3798,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						else
 							iconString += ",";
 
-						__COUTVS__(10, icon.caption_);
+						__COUTVS__(TLVL_RemoteIcons, icon.caption_);
 						iconString += icon.caption_;
 						iconString += "," + icon.alternateText_;
 						iconString +=
@@ -3628,7 +3813,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						                        &tmpCfgMgr, icon.windowContentURL_);
 						iconString += "," + icon.folderPath_;
 					}
-					__COUTVS__(10, iconString);
+					__COUTVS__(TLVL_RemoteIcons, iconString);
 
 					sock.acknowledge(iconString, true /* verbose */);
 					continue;
@@ -4215,6 +4400,9 @@ try
 	}
 	//FSM name validated
 
+	stateMachineTransitionUsername_ =
+	    username;  // set the username for this transition attempt (used for logging and logbook entry)
+
 	if(logEntry != "")
 	{
 		logEntry += " (" + StringMacros::getTimestampString(time(0)) + ")";
@@ -4475,7 +4663,7 @@ try
 		std::string configurationAlias = parameters.getValue("ConfigurationAlias");
 		__COUT__ << "Configure --> Name: ConfigurationAlias Value: " << configurationAlias
 		         << __E__;
-		lastConfigurationAlias_ = configurationAlias;
+
 		// save last used config alias
 		std::string fn = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" +
 		                 FSM_LAST_GROUP_ALIAS_FILE_START + fsmName + "." +
@@ -4583,8 +4771,17 @@ try
 			std::pair<std::string /*group name*/, TableGroupKey> activatedGroup(
 			    std::string(theConfigurationTableGroup_.first),
 			    theConfigurationTableGroup_.second);
+
 			ConfigurationManager::saveGroupNameAndKey(
-			    activatedGroup, ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE);
+			    activatedGroup,
+			    ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
+			    false /* appendMode */,
+			    username);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::ACTIVATED_CONFIGS_FILE,
+			    true /* appendMode */,
+			    username);
 
 			__COUT__ << "Done activating Configuration Alias." << __E__;
 		}
@@ -4650,7 +4847,7 @@ try
 				    ->dumpActiveConfiguration(
 				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
 				        dumpFormatOnRun,
-				        lastConfigurationAlias_,
+				        configurationAlias,
 				        getLastLogEntry(
 				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
 				        theWebUsers_.getActiveUsersString(),
@@ -4679,7 +4876,7 @@ try
 				    ->dumpActiveConfiguration(
 				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
 				        dumpFormatOnConfigure,
-				        lastConfigurationAlias_,
+				        configurationAlias,
 				        getLastLogEntry(
 				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
 				        theWebUsers_.getActiveUsersString(),
@@ -5676,45 +5873,91 @@ try
 
 	// save last configured group names/keys
 	{
-		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-		                                          FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
-		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-		                                          FSM_CONFIGURED_GROUP_ALIASES_FILE,
-		                                          true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(configurationAlias, TableGroupKey()),
+		    ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(configurationAlias, TableGroupKey()),
+		    ConfigurationManager::CONFIGURED_CONFIG_ALIASES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(configurationAlias, TableGroupKey()),
+		    ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+
 		ConfigurationManager::saveGroupNameAndKey(
 		    theConfigurationTableGroup_,
-		    FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    theConfigurationTableGroup_,
+		    ConfigurationManager::CONFIGURED_CONFIGS_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    theConfigurationTableGroup_,
+		    ConfigurationManager::CONFIGURED_OR_STARTED_CONFIGS_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
 
 		auto activeGroupMap =
 		    CorePropertySupervisorBase::theConfigurationManager_->getActiveTableGroups();
+
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
-		    FSM_CONFIGURED_CONTEXTS_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::LAST_CONFIGURED_CONTEXT_GROUP_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
-		    FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::CONFIGURED_CONTEXTS_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    ConfigurationManager::CONFIGURED_OR_STARTED_CONTEXTS_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    ConfigurationManager::LAST_CONFIGURED_BACKBONE_GROUP_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
-		    FSM_CONFIGURED_BACKBONES_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::CONFIGURED_BACKBONES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
-		    FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::CONFIGURED_OR_STARTED_BACKBONES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+
 		if(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
 		       .second.isValid())
 		{
 			ConfigurationManager::saveGroupNameAndKey(
 			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
-			    FSM_CONFIGURED_ITERATORS_FILE,
-			    true /* appendMode */);
+			    ConfigurationManager::LAST_CONFIGURED_ITERATE_GROUP_FILE,
+			    false /* appendMode */,
+			    stateMachineTransitionUsername_);
 			ConfigurationManager::saveGroupNameAndKey(
 			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
-			    FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE,
-			    true /* appendMode */);
+			    ConfigurationManager::CONFIGURED_ITERATES_FILE,
+			    true /* appendMode */,
+			    stateMachineTransitionUsername_);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
+			    ConfigurationManager::CONFIGURED_OR_STARTED_ITERATES_FILE,
+			    true /* appendMode */,
+			    stateMachineTransitionUsername_);
 		}
 	}  //end save last configured group names/keys
 
@@ -6576,46 +6819,93 @@ try
 
 	// save last started group names/keys
 	{
-		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-		                                          FSM_LAST_STARTED_GROUP_ALIAS_FILE);
-		ConfigurationManager::saveGroupNameAndKey(theConfigurationTableGroup_,
-		                                          FSM_STARTED_GROUP_ALIASES_FILE,
-		                                          true /* appendMode */);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
+		    ConfigurationManager::LAST_STARTED_CONFIG_ALIAS_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
+		    ConfigurationManager::STARTED_CONFIG_ALIASES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    std::make_pair(activeStateMachineConfigurationAlias_, TableGroupKey()),
+		    ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+
 		ConfigurationManager::saveGroupNameAndKey(
 		    theConfigurationTableGroup_,
-		    FSM_CONFIGURED_OR_STARTED_GROUP_ALIASES_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::LAST_STARTED_CONFIG_GROUP_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    theConfigurationTableGroup_,
+		    ConfigurationManager::STARTED_CONFIGS_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    theConfigurationTableGroup_,
+		    ConfigurationManager::CONFIGURED_OR_STARTED_CONFIGS_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
 
 		auto activeGroupMap =
 		    CorePropertySupervisorBase::theConfigurationManager_->getActiveTableGroups();
+
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
-		    FSM_STARTED_CONTEXTS_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::LAST_STARTED_CONTEXT_GROUP_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
-		    FSM_CONFIGURED_OR_STARTED_CONTEXTS_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::STARTED_CONTEXTS_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    ConfigurationManager::CONFIGURED_OR_STARTED_CONTEXTS_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+
+		ConfigurationManager::saveGroupNameAndKey(
+		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_CONTEXT),
+		    ConfigurationManager::LAST_STARTED_BACKBONE_GROUP_FILE,
+		    false /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
-		    FSM_STARTED_BACKBONES_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::STARTED_BACKBONES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
 		ConfigurationManager::saveGroupNameAndKey(
 		    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_BACKBONE),
-		    FSM_CONFIGURED_OR_STARTED_BACKBONES_FILE,
-		    true /* appendMode */);
+		    ConfigurationManager::CONFIGURED_OR_STARTED_BACKBONES_FILE,
+		    true /* appendMode */,
+		    stateMachineTransitionUsername_);
+
 		if(activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
 		       .second.isValid())
 		{
 			ConfigurationManager::saveGroupNameAndKey(
 			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
-			    FSM_STARTED_ITERATORS_FILE,
-			    true /* appendMode */);
+			    ConfigurationManager::LAST_STARTED_ITERATE_GROUP_FILE,
+			    false /* appendMode */,
+			    stateMachineTransitionUsername_);
 			ConfigurationManager::saveGroupNameAndKey(
 			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
-			    FSM_CONFIGURED_OR_STARTED_ITERATORS_FILE,
-			    true /* appendMode */);
+			    ConfigurationManager::STARTED_ITERATES_FILE,
+			    true /* appendMode */,
+			    stateMachineTransitionUsername_);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activeGroupMap.at(ConfigurationManager::GROUP_TYPE_NAME_ITERATE),
+			    ConfigurationManager::CONFIGURED_OR_STARTED_ITERATES_FILE,
+			    true /* appendMode */,
+			    stateMachineTransitionUsername_);
 		}
+
 	}  //end save last started group names/keys
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -8342,7 +8632,7 @@ void GatewaySupervisor::forceSupervisorPropertyValues()
 	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.CheckUserLockRequestTypes,
 	    "StateMachine-*");  //for all stateMachineXgiHandler requests
 
-	if(readOnly_)
+	if(CorePropertySupervisorBase::isReadOnly())
 	{
 		CorePropertySupervisorBase::setSupervisorProperty(
 		    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
@@ -8439,7 +8729,11 @@ try
 
 			__COUT__ << "Get Settings Request" << __E__;
 			__COUT__ << "accounts = " << accounts << __E__;
-			theWebUsers_.insertSettingsForUser(userInfo.uid_, &xmlOut, accounts == "1");
+			theWebUsers_.insertSettingsForUser(
+			    userInfo.uid_,
+			    &xmlOut,
+			    accounts == "1",  //include user accounts if requested
+			    userInfo.getGroupPermissionLevels());
 		}
 		else if(requestType == "setSettings")
 		{
@@ -8469,8 +8763,10 @@ try
 			                                   syslayout,
 			                                   aliasLayout,
 			                                   sysAliaslayout);
-			theWebUsers_.insertSettingsForUser(
-			    userInfo.uid_, &xmlOut, true);  // include user accounts
+			theWebUsers_.insertSettingsForUser(userInfo.uid_,
+			                                   &xmlOut,
+			                                   true,  // include user accounts
+			                                   userInfo.getGroupPermissionLevels());
 		}
 		else if(requestType == "accountSettings")
 		{
@@ -8503,7 +8799,11 @@ try
 
 			__COUT__ << "accounts = " << accounts << __E__;
 
-			theWebUsers_.insertSettingsForUser(userInfo.uid_, &xmlOut, accounts == "1");
+			theWebUsers_.insertSettingsForUser(
+			    userInfo.uid_,
+			    &xmlOut,
+			    accounts == "1",  //include user accounts if requested
+			    userInfo.getGroupPermissionLevels());
 		}
 		else if(requestType == "stateMatchinePreferences")
 		{
@@ -9028,6 +9328,23 @@ try
 				                            remoteGatewayApp.appInfo.name);
 				xmlOut.addTextElementToData("RemoteGateway_usernameWithLock",
 				                            remoteGatewayApp.usernameWithLock);
+				//attempt to find associated icon desktop folder (for use with focus view)
+				std::string desktopFolderIcon = "";
+				{
+					std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
+					const std::vector<DesktopIconTable::DesktopIcon>& icons =
+					    latestGatewayIcons_;
+
+					for(const auto& icon : icons)
+						if(icon.recordUID_ == remoteGatewayApp.appInfo.name)
+						{
+							desktopFolderIcon = icon.folderPath_;
+							break;
+						}
+				}
+				xmlOut.addTextElementToData("RemoteGateway_desktopFolderIcon",
+				                            desktopFolderIcon);
+
 			}  //end remote subsystem loop
 		}
 		else if(requestType == "setUserWithLock")
@@ -9049,7 +9366,11 @@ try
 				                "permissions and ") +
 				        "locking user must be currently logged in.");
 
-			theWebUsers_.insertSettingsForUser(userInfo.uid_, &xmlOut, accounts == "1");
+			theWebUsers_.insertSettingsForUser(
+			    userInfo.uid_,
+			    &xmlOut,
+			    accounts == "1",  // include accounts if admin
+			    userInfo.getGroupPermissionLevels());
 
 			if(tmpUserWithLock !=
 			   theWebUsers_
@@ -9078,6 +9399,22 @@ try
 				                            remoteGatewayApp.appInfo.name);
 				xmlOut.addTextElementToData("RemoteGateway_usernameWithLock",
 				                            remoteGatewayApp.usernameWithLock);
+				//attempt to find associated icon desktop folder (for use with focus view)
+				std::string desktopFolderIcon = "";
+				{
+					std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
+					const std::vector<DesktopIconTable::DesktopIcon>& icons =
+					    latestGatewayIcons_;
+
+					for(const auto& icon : icons)
+						if(icon.recordUID_ == remoteGatewayApp.appInfo.name)
+						{
+							desktopFolderIcon = icon.folderPath_;
+							break;
+						}
+				}
+				xmlOut.addTextElementToData("RemoteGateway_desktopFolderIcon",
+				                            desktopFolderIcon);
 			}  //end remote subsystem loop
 		}
 		else if(requestType == "getStateMachineLastLogEntry")
@@ -9264,8 +9601,13 @@ try
 			    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
 			const DesktopIconTable* iconTable =
 			    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
-			const std::vector<DesktopIconTable::DesktopIcon>& icons =
-			    iconTable->getAllDesktopIcons();
+			{
+				std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
+				latestGatewayIcons_ =
+				    iconTable
+				        ->getAllDesktopIcons();  //cache latest icons (for use, e.g., in remote login verify)
+			}
+			const std::vector<DesktopIconTable::DesktopIcon>& icons = latestGatewayIcons_;
 
 			std::string iconString = "";
 			// comma-separated icon string, 7 fields:
@@ -9364,7 +9706,9 @@ try
 
 								//add error if it has to do with icons
 								if(remoteGatewayApp.error.find("desktop icons") !=
-								   std::string::npos)
+								       std::string::npos ||
+								   remoteGatewayApp.error.find(REMOTE_BACKBONE_ERR) !=
+								       std::string::npos)
 									xmlOut.addTextElementToData("Error",
 									                            remoteGatewayApp.error);
 								else if(remoteGatewayApp.appInfo.status ==
@@ -9438,16 +9782,17 @@ try
 
 						if(!found)
 						{
-							__SUP_SS__ << "Illegal missing remote icon definition for "
-							              "icon record UID '"
-							           << icon.recordUID_
-							           << ".' If the corresponding subsystem should "
-							              "exist, perhaps Gateway Application Status "
-							              "Monitoring is disabled. It must be enabled "
-							              "for subsystem management. Please notify "
-							              "admins if the problem persists."
-							           << __E__;
-							__SUP_SS_THROW__;
+							__SUP_COUT_ERR__
+							    << "Illegal missing remote icon definition for "
+							       "icon record UID '"
+							    << icon.recordUID_
+							    << ".' If the corresponding subsystem should "
+							       "exist, perhaps Gateway Application Status "
+							       "Monitoring is disabled. It must be enabled "
+							       "for subsystem management. Please notify "
+							       "admins if the problem persists."
+							    << __E__;
+							// __SUP_SS_THROW__;
 						}
 
 						continue;  //done with remote icon string retrieval
@@ -10873,21 +11218,21 @@ xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(
 		                                      "ActivatedBackbone",
 		                                      "ActivatedIterator"});
 		fileNames = std::vector<std::string>(
-		    {FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE,
-		     FSM_LAST_STARTED_GROUP_ALIAS_FILE,
+		    {ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE,
+		     ConfigurationManager::LAST_STARTED_CONFIG_GROUP_FILE,
 		     ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
 		     ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE,
 		     ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE,
-		     ConfigurationManager::LAST_ACTIVATED_ITERATOR_GROUP_FILE});
+		     ConfigurationManager::LAST_ACTIVATED_ITERATE_GROUP_FILE});
 	}
 	else
 	{
 		actions.push_back(action);
 
 		if(action == "Configured")
-			fileNames.push_back(FSM_LAST_CONFIGURED_GROUP_ALIAS_FILE);
+			fileNames.push_back(ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE);
 		else if(action == "Started")
-			fileNames.push_back(FSM_LAST_STARTED_GROUP_ALIAS_FILE);
+			fileNames.push_back(ConfigurationManager::LAST_STARTED_CONFIG_GROUP_FILE);
 		else if(action == "ActivatedConfig")
 			fileNames.push_back(ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE);
 		else if(action == "ActivatedContext")
@@ -10895,7 +11240,7 @@ xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(
 		else if(action == "ActivatedBackbone")
 			fileNames.push_back(ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE);
 		else if(action == "ActivatedIterator")
-			fileNames.push_back(ConfigurationManager::LAST_ACTIVATED_ITERATOR_GROUP_FILE);
+			fileNames.push_back(ConfigurationManager::LAST_ACTIVATED_ITERATE_GROUP_FILE);
 		else
 		{
 			__COUT_ERR__ << "Invalid last group action requested." << __E__;
