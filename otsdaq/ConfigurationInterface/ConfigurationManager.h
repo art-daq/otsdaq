@@ -262,10 +262,10 @@ class ConfigurationManager
 	static std::pair<
 			std::string /*group name*/,
 			TableGroupKey> 				loadGroupNameAndKey			(const std::string& fileName, std::string& returnedTimeString);
-	static std::vector<std::map<std::string /* group field key */, 
+	static std::vector<std::map<std::string /* group field key */,
 			std::string /* group field value */>>
 										loadGroupHistory			(const std::string& groupAction, const std::string& groupType);
-	static std::vector<std::map<std::string /* group field key */, 
+	static std::vector<std::map<std::string /* group field key */,
 			std::string /* group field value */>>
 										loadGroupHistory			(const std::string& fileName);
 

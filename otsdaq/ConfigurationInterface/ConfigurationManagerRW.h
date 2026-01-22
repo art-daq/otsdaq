@@ -27,10 +27,10 @@ struct GroupInfo
 
 	GroupInfo()
 	    :  //constructor
-	    latestKeyGroupAuthor_(ConfigurationManager::UNKNOWN_INFO)
-	    , latestKeyGroupComment_(ConfigurationManager::UNKNOWN_INFO)
-	    , latestKeyGroupCreationTime_(ConfigurationManager::UNKNOWN_TIME)
-	    , latestKeyGroupTypeString_(ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN)
+	    latestKeyGroupAuthor_			(ConfigurationManager::UNKNOWN_INFO)
+	    , latestKeyGroupComment_		(ConfigurationManager::UNKNOWN_INFO)
+	    , latestKeyGroupCreationTime_	(ConfigurationManager::UNKNOWN_TIME)
+	    , latestKeyGroupTypeString_		(ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN)
 	{
 	}
 
@@ -38,26 +38,11 @@ struct GroupInfo
 	const TableGroupKey&           	getLatestKey() 					const { return latestKey_; }
 	const std::string& 				getLatestKeyGroupAuthor() 		const { return latestKeyGroupAuthor_; }
 	const std::string& 				getLatestKeyGroupComment() 		const { return latestKeyGroupComment_; }
-	const std::string& 				getLatestKeyGroupCreationTime() const
-	{
-		return latestKeyGroupCreationTime_;
-	}
-	const std::string& 				getLatestKeyGroupTypeString() const
-	{
-		return latestKeyGroupTypeString_;
-	}
-	const std::map<std::string /*name*/, 
-		TableVersion /*version*/>&	getLatestKeyMemberMap() const
-	{
-		return latestKeyMemberMap_;
-	}
-	TableGroupKey 					getLastKey() const
-	{
-		if(keys_.size())
-			return *(keys_.rbegin());
-		else
-			return TableGroupKey();
-	}  //end getLastKey()
+	const std::string& 				getLatestKeyGroupCreationTime() const { return latestKeyGroupCreationTime_;	}
+	const std::string& 				getLatestKeyGroupTypeString() 	const {	return latestKeyGroupTypeString_; }
+	const std::map<std::string /*name*/,
+		TableVersion /*version*/>&	getLatestKeyMemberMap() 		const { return latestKeyMemberMap_;	}
+	TableGroupKey 					getLastKey() 					const {	if(keys_.size()) return *(keys_.rbegin()); else	return TableGroupKey();	}
 
   private:
 	std::set<TableGroupKey> 			keys_;
@@ -100,8 +85,9 @@ class ConfigurationManagerRW : public ConfigurationManager
 	T* 											getTablePtr						(const std::string& tableName) { return (T*)getTableByName(tableName); }
 	TableBase*    								getVersionedTableByName			(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false);
 	TableBase*    								getTableByName					(const std::string& tableName);
-	TableGroupKey 								findTableGroup					(const std::string& groupName, 	const std::map<std::string, TableVersion>& 						groupMembers,
-																												const std::map<std::string /*name*/, std::string /*alias*/>& 	groupAliases =	std::map<std::string /*name*/, std::string /*alias*/>());
+	TableGroupKey 								findTableGroup					(const std::string& groupName, 	
+																				 const std::map<std::string, TableVersion>& 					groupMembers,
+																				 const std::map<std::string /*name*/, std::string /*alias*/>& 	groupAliases =	std::map<std::string /*name*/, std::string /*alias*/>());
 	TableBase* 									getMetadataTable				(TableVersion fillVersion = TableVersion()); ///< created for use in otsdaq_flatten_system_aliases and otsdaq_export_system_aliases, e.g.
 
 	//==============================================================================

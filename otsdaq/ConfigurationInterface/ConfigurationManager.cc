@@ -100,7 +100,7 @@ const uint8_t 			ConfigurationManager::METADATA_COL_TIMESTAMP				= 4;
 const std::string 		ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE 		= "SubsystemUserDataPathsTable";
 
 
-const std::set<std::string> ConfigurationManager::fixedContextMemberNames_ 			= {	
+const std::set<std::string> ConfigurationManager::fixedContextMemberNames_ 			= {
 																						ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME,
 																						ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME,
 																						"XDAQApplicationPropertyTable",
