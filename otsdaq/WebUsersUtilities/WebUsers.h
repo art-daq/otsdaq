@@ -430,7 +430,7 @@ class WebUsers
 															 HttpXmlDocument* xmldoc,
 															 bool             includeAccounts = false,
 															 std::map<std::string /*groupName*/,
-																	WebUsers::permissionLevel_t> permissionMap = {});
+																	WebUsers::permissionLevel_t> permissionMap = {}); ///<if empty, fetches local permissions; if provided, overrides with given permissions (e.g., from top-level login verification)
 	std::string 			getGenericPreference			(uint64_t           uid,
 															 const std::string& preferenceName,
 															 HttpXmlDocument*   xmldoc = 0) const;
