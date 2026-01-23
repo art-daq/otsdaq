@@ -264,10 +264,10 @@ class ConfigurationManager
 			TableGroupKey> 				loadGroupNameAndKey			(const std::string& fileName, std::string& returnedTimeString);
 	static std::vector<std::map<std::string /* group field key */,
 			std::string /* group field value */>>
-										loadGroupHistory			(const std::string& groupAction, const std::string& groupType);
+										loadGroupHistory			(const std::string& groupAction, const std::string& groupType, bool formatTime = false);
 	static std::vector<std::map<std::string /* group field key */,
 			std::string /* group field value */>>
-										loadGroupHistory			(const std::string& fileName);
+										loadGroupHistory			(const std::string& fileName, bool formatTime = false);
 
 	bool 												forceNotFirstInContext_ = false;
 
