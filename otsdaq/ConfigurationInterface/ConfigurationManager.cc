@@ -4676,7 +4676,8 @@ void ConfigurationManager::saveGroupNameAndKey(
 {
 	std::string fullPath =
 	    ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + fileName;
-	__COUTT__ << "Saving group name and key to file: " << fullPath << __E__;
+	__COUT__ << "Saving group " << theGroup.first << "(" << theGroup.second << ") to "
+	         << (appendMode ? "history " : "") << "file: " << fullPath << __E__;
 
 	std::ofstream groupFile;
 	if(appendMode)
@@ -4769,7 +4770,8 @@ ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
 std::vector<
     std::map<std::string /* group field key */, std::string /* group field value */>>
 ConfigurationManager::loadGroupHistory(const std::string& groupAction,
-                                       const std::string& groupType)
+                                       const std::string& groupType,
+                                       bool               formatTime /* = false */)
 {
 	__COUTV__(groupAction);
 	__COUTV__(groupType);
@@ -4827,14 +4829,15 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 		       << groupType << __E__;
 		__SS_THROW__;
 	}
-	return loadGroupHistory(fullPath);
+	return loadGroupHistory(fullPath, formatTime);
 }  // end loadGroupHistory()
 
 //==============================================================================
 /// loadGroupHistory static
 std::vector<
     std::map<std::string /* group field key */, std::string /* group field value */>>
-ConfigurationManager::loadGroupHistory(const std::string& fullPath)
+ConfigurationManager::loadGroupHistory(const std::string& fullPath,
+                                       bool               formatTime /* = false */)
 {
 	std::vector<
 	    std::map<std::string /* group field key */, std::string /* group field value */>>
@@ -4882,7 +4885,9 @@ ConfigurationManager::loadGroupHistory(const std::string& fullPath)
 
 		retVec.push_back({{"groupName", theGroup.first},
 		                  {"groupKey", theGroup.second.toString()},
-		                  {"time", StringMacros::getTimestampString(timestamp)},
+		                  {"time",
+		                   formatTime ? StringMacros::getTimestampString(timestamp)
+		                              : std::to_string(timestamp)},
 		                  {"user", user}});
 	}  //end traversing group history file
 
