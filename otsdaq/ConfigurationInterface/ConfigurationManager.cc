@@ -4322,7 +4322,7 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 		}
 		retMap[groupType] = std::make_pair(subsystemActiveGroupMap[i],
 		                                   TableGroupKey(subsystemActiveGroupMap[i + 1]));
-	} //end load table group loop
+	}  //end load table group loop
 
 	__GEN_COUTTV__(StringMacros::mapToString(retMap));
 	return retMap;
@@ -4336,11 +4336,11 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 	std::set<std::string> retSet;
 
 	__GEN_COUTTV__(otherSubsystemUID);
-	
+
 	std::map<std::string /*groupType*/,
 	         std::pair<std::string /*groupName*/, TableGroupKey>>
 	    retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
-	
+
 	__GEN_COUTTV__(StringMacros::mapToString(retMap));
 
 	//load backbone

@@ -1132,7 +1132,8 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 	// search login sessions for uuid
 	if((i = searchLoginSessionDatabaseForUUID(uuid)) == NOT_FOUND_IN_DATABASE)
 	{
-		__COUT_ERR__ << "Login attempt failed. Session uuid '" << uuid << "' is not found or inactive." << __E__;
+		__COUT_ERR__ << "Login attempt failed. Session uuid '" << uuid
+		             << "' is not found or inactive." << __E__;
 		newAccountCode = "1";  // to indicate uuid was not found
 
 		incrementIpBlacklistCount(ip);  // increment ip blacklist counter
