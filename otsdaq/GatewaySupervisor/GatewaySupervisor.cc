@@ -1618,7 +1618,7 @@ try
 
 										// do not overwrite refresh info here that was updated immediately above!
 										// theSupervisor->remoteGatewayApps_[i].config_aliases 				= remoteGatewayApp.config_aliases;
-										// theSupervisor->remoteGatewayApps_[i].user_data_path_record 		= remoteGatewayApp.user_data_path_record;										
+										// theSupervisor->remoteGatewayApps_[i].user_data_path_record 		= remoteGatewayApp.user_data_path_record;
 										// theSupervisor->remoteGatewayApps_[i].parentIconFolderPath 		= remoteGatewayApp.parentIconFolderPath;
 										// theSupervisor->remoteGatewayApps_[i].permissionThresholdString 	= remoteGatewayApp.permissionThresholdString;
 										// theSupervisor->remoteGatewayApps_[i].landingPage 				= remoteGatewayApp.landingPage;
@@ -1633,7 +1633,7 @@ try
 										if(theSupervisor->remoteGatewayApps_[i].config_aliases.size() &&
 											theSupervisor->remoteGatewayApps_[i].config_aliases.find(
 											theSupervisor->remoteGatewayApps_[i].selected_config_alias) ==
-										   		theSupervisor->remoteGatewayApps_[i].config_aliases.end())
+												theSupervisor->remoteGatewayApps_[i].config_aliases.end())
 										{
 											__COUT__ << "Resetting invalid selected_config_alias '"
 											         << theSupervisor->remoteGatewayApps_[i]
@@ -1643,7 +1643,7 @@ try
 											                .appInfo.name
 											         << "' to first available config_alias."
 											         << __E__;
-											theSupervisor->remoteGatewayApps_[i].selected_config_alias 	= 
+											theSupervisor->remoteGatewayApps_[i].selected_config_alias =
 												theSupervisor->remoteGatewayApps_[i].config_aliases.size() ?
 													(*theSupervisor->remoteGatewayApps_[i].config_aliases.begin()) : "";
 										}
