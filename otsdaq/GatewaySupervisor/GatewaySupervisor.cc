@@ -1041,7 +1041,7 @@ try
 								//		- instancePath
 								//		- instanceHost
 								//		- instanceUser
-								{  //handle copy into primary gateay structure of updated info
+								{  //handle copy into primary gateway structure of updated info
 									bool found = false;
 									//lock for remainder of scope
 									std::lock_guard<std::mutex> lock(
@@ -1077,7 +1077,7 @@ try
 											__COUTTV__(StringMacros::setToString(
 											    remoteApps[r].config_aliases));
 											break;
-										}  //end copy into primary gateay structure of updated info
+										}  //end copy into primary gateway structure of updated info
 
 									if(!found)
 									{
@@ -1088,7 +1088,7 @@ try
 										theSupervisor->remoteGatewayApps_.push_back(
 										    remoteApps[r]);
 									}
-								}  //end handle copy into primary gateay structure of updated info
+								}  //end handle copy into primary gateway structure of updated info
 
 							}  //end remote icon handling
 
