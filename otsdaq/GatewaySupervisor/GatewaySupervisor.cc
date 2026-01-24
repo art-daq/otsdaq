@@ -1028,7 +1028,7 @@ try
 								}
 
 								// Since there are two threads, need to give feedback immediately to primary gateway struct
-								//	 for the updated fields in this section (i.e., the disconnecnted thread will not update these fields in the final copy for connected apps):
+								//	 for the updated fields in this section (i.e., the disconnected thread will not update these fields in the final copy for connected apps):
 								//		- error
 								//		- config_aliases,
 								//		- (not selected_config_alias because it should be updated in final copy by correct thread)
