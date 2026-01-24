@@ -4388,7 +4388,7 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 	}
 	__GEN_COUTTV__(StringMacros::setToString(retSet));
 	return retSet;
-}  //end getOtherSubsystemActiveTableGroups()
+}  //end getOtherSubsystemConfigAliases()
 
 //==============================================================================
 ///Ignore any System Aliases with "Context" or "Iterat" in the name
