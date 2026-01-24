@@ -1629,7 +1629,7 @@ try
 										// theSupervisor->remoteGatewayApps_[i].instanceUser 				= remoteGatewayApp.instanceUser;
 
 										//fix selected_config_alias
-										//	if invalid selected_config_alias, renitialize for user
+										//	if invalid selected_config_alias, reinitialize for user
 										if(theSupervisor->remoteGatewayApps_[i].config_aliases.size() &&
 											theSupervisor->remoteGatewayApps_[i].config_aliases.find(
 											theSupervisor->remoteGatewayApps_[i].selected_config_alias) ==
