@@ -49,6 +49,7 @@ using namespace ots;
 #define TLVL_StateChanger		 	9	// = TLVL_DEBUG + 9
 #define TLVL_RemoteIcons		 	10	// = TLVL_DEBUG + 10
 #define TLVL_StateChangerDetail	 	11	// = TLVL_DEBUG + 11
+#define TLVL_StateChangerStatus	 	12	// = TLVL_DEBUG + 12
 #define TLVL_Permissions		 	20	// = TLVL_DEBUG + 20
 #define TLVL_GetDesktopIcons	 	21	// = TLVL_DEBUG + 21
 #define TLVL_RemoteFSMRequests	 	22	// = TLVL_DEBUG + 22
@@ -1291,6 +1292,7 @@ try
 							        remoteGatewayApp.appInfo.url +
 							        remoteGatewayApp.appInfo.name);
 
+							auto start = std::chrono::high_resolution_clock::now();
 							__COUTS__(TLVL_StatusWorkloop)
 							    << "Calling CheckRemoteGatewayStatus, doDisconnected = "
 							    << doDisconnected << " Remote subapp = '"
@@ -1408,6 +1410,15 @@ try
 									     remoteGatewayApp.appInfo.name] = false;
 								}
 							}
+							auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+							__COUTS__(TLVL_StatusRemoteWorkloop)
+								<< "Time taken to calling CheckRemoteGatewayStatus, doDisconnected = "
+							    << doDisconnected << " Remote subapp = '"
+							    << remoteGatewayApp.appInfo.name
+							    << "' [URL=" << remoteGatewayApp.appInfo.url
+							    << "] isRemoteAppDisconnected = "
+							    << isRemoteAppDisconnected << " --> " << duration << " milliseconds." << std::endl;
+
 
 						}  //end remote app status update loop
 
@@ -2647,8 +2658,18 @@ try
 			                 remoteGatewayApp.appInfo.name;
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "requestString = " << requestString << __E__;
+		
+		auto start = std::chrono::high_resolution_clock::now();
+
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, requestString, 2 /*timeoutSeconds*/);
+		
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+		__COUTS__(TLVL_StatusRemoteWorkloop)
+			<< "Time taken for send+receive of CheckRemoteGatewayStatus to '" << 
+				remoteGatewayApp.appInfo.name << "' ==> " << 
+				duration << " milliseconds." << std::endl;
+							
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "remoteStatusString = " << remoteStatusString << __E__;
 
@@ -2975,7 +2996,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				    buffer.find("GetRemoteGatewayStatusXML") == 0;
 				if(remoteGatewayStatusXML || buffer.find("GetRemoteAppStatusXML") == 0)
 				{
-					__COUT_TYPE__(TLVL_DEBUG + 12)
+					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
 					if(remoteGatewayStatus &&
@@ -3171,7 +3192,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					if(remoteGatewayStatus)  //also return System Messages and console count and user-with-lock
 					{
-						__COUT_TYPE__(TLVL_DEBUG + 12)
+						__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 						    << "Giving extra Gateway info to remote monitor..." << __E__;
 
 						xmlOut.addTextElementToParent("systemMessages",
@@ -3202,7 +3223,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				}
 				else if(remoteGatewayStatus || buffer.find("GetRemoteAppStatus") == 0)
 				{
-					__COUT_TYPE__(TLVL_DEBUG + 12)
+					auto start = std::chrono::high_resolution_clock::now();
+		
+					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
 					if(remoteGatewayStatus &&
@@ -3360,7 +3383,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					if(remoteGatewayStatus)  //also return System Messages and console count and user-with-lock
 					{
-						__COUT_TYPE__(TLVL_DEBUG + 12)
+						__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 						    << "Giving extra Gateway info to remote monitor..." << __E__;
 
 						xmlOut.addTextElementToData("systemMessages",
@@ -3379,17 +3402,31 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					}
 
 					std::stringstream out;
-					xmlOut.outputXmlDocument((std::ostringstream*)&out,
-					                         false /*dispStdOut*/,
-					                         false /*allowWhiteSpace*/);
+					{
+						auto start = std::chrono::high_resolution_clock::now();
+						xmlOut.outputXmlDocument((std::ostringstream*)&out,
+												false /*dispStdOut*/,
+												false /*allowWhiteSpace*/);
+						
+						auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+						__COUTS__(TLVL_StateChangerStatus)
+							<< "Time taken for xml response to GetRemoteGatewayStatus ==> " << 
+								duration << " milliseconds." << std::endl;
+					}
 					__COUTS__(TLVL_StatusParams)
 					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
+					
+					auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+					__COUTS__(TLVL_StateChangerStatus)
+						<< "Time taken for receive+send response to GetRemoteGatewayStatus ==> " << 
+							duration << " milliseconds." << std::endl;
+							
 					continue;
 				}  //end GetRemoteAppStatus
 				if(buffer.find("GetStateMachineNames") == 0)
 				{
-					__COUT_TYPE__(TLVL_DEBUG + 12)
+					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving state machine names to remote monitor..." << __E__;
 					std::vector<std::string> fsmNames;
 					if(!configLinkNode.isDisconnected())
