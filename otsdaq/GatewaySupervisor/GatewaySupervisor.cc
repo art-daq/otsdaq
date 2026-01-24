@@ -967,25 +967,19 @@ try
 									{
 										found = true;
 
-										//clang-format off
+										// clang-format off
 										//overwrite with refreshed info
-										remoteApps[r].appInfo = thisInfo.appInfo;
-										remoteApps[r].user_data_path_record =
-										    thisInfo.user_data_path_record;
-										remoteApps[r].parentIconFolderPath =
-										    thisInfo.parentIconFolderPath;
-										remoteApps[r].permissionThresholdString =
-										    thisInfo.permissionThresholdString;
-										remoteApps[r].landingPage = thisInfo.landingPage;
-										remoteApps[r].setupType   = thisInfo.setupType;
-										remoteApps[r].fullName    = thisInfo.fullName;
-										remoteApps[r].instancePath =
-										    thisInfo.instancePath;
-										remoteApps[r].instanceHost =
-										    thisInfo.instanceHost;
-										remoteApps[r].instanceUser =
-										    thisInfo.instanceUser;
-										//clang-format on
+										remoteApps[r].appInfo 					= thisInfo.appInfo;
+										remoteApps[r].user_data_path_record 	= thisInfo.user_data_path_record;
+										remoteApps[r].parentIconFolderPath 		= thisInfo.parentIconFolderPath;
+										remoteApps[r].permissionThresholdString = thisInfo.permissionThresholdString;
+										remoteApps[r].landingPage 				= thisInfo.landingPage;
+										remoteApps[r].setupType   				= thisInfo.setupType;
+										remoteApps[r].fullName    				= thisInfo.fullName;
+										remoteApps[r].instancePath 				= thisInfo.instancePath;
+										remoteApps[r].instanceHost 				= thisInfo.instanceHost;
+										remoteApps[r].instanceUser 				= thisInfo.instanceUser;
+										// clang-format on
 
 										break;
 									}
@@ -1061,40 +1055,22 @@ try
 										{
 											found = true;
 
-											//clang-format off
+											// clang-format off
 											if(remoteApps[r].error != "")
-												theSupervisor->remoteGatewayApps_[i]
-												    .error = remoteApps[r].error;
+												theSupervisor->remoteGatewayApps_[i].error 					= remoteApps[r].error;
 
 											//overwrite with refreshed info
-											theSupervisor->remoteGatewayApps_[i]
-											    .config_aliases =
-											    remoteApps[r].config_aliases;
-											theSupervisor->remoteGatewayApps_[i]
-											    .user_data_path_record =
-											    remoteApps[r].user_data_path_record;
-											theSupervisor->remoteGatewayApps_[i]
-											    .parentIconFolderPath =
-											    remoteApps[r].parentIconFolderPath;
-											theSupervisor->remoteGatewayApps_[i]
-											    .permissionThresholdString =
-											    remoteApps[r].permissionThresholdString;
-											theSupervisor->remoteGatewayApps_[i]
-											    .landingPage = remoteApps[r].landingPage;
-											theSupervisor->remoteGatewayApps_[i]
-											    .setupType = remoteApps[r].setupType;
-											theSupervisor->remoteGatewayApps_[i]
-											    .fullName = remoteApps[r].fullName;
-											theSupervisor->remoteGatewayApps_[i]
-											    .instancePath =
-											    remoteApps[r].instancePath;
-											theSupervisor->remoteGatewayApps_[i]
-											    .instanceHost =
-											    remoteApps[r].instanceHost;
-											theSupervisor->remoteGatewayApps_[i]
-											    .instanceUser =
-											    remoteApps[r].instanceUser;
-											//clang-format on
+											theSupervisor->remoteGatewayApps_[i].config_aliases 			= remoteApps[r].config_aliases;
+											theSupervisor->remoteGatewayApps_[i].user_data_path_record 		= remoteApps[r].user_data_path_record;
+											theSupervisor->remoteGatewayApps_[i].parentIconFolderPath 		= remoteApps[r].parentIconFolderPath;
+											theSupervisor->remoteGatewayApps_[i].permissionThresholdString 	= remoteApps[r].permissionThresholdString;
+											theSupervisor->remoteGatewayApps_[i].landingPage 				= remoteApps[r].landingPage;
+											theSupervisor->remoteGatewayApps_[i].setupType   				= remoteApps[r].setupType;
+											theSupervisor->remoteGatewayApps_[i].fullName    				= remoteApps[r].fullName;
+											theSupervisor->remoteGatewayApps_[i].instancePath 				= remoteApps[r].instancePath;
+											theSupervisor->remoteGatewayApps_[i].instanceHost 				= remoteApps[r].instanceHost;
+											theSupervisor->remoteGatewayApps_[i].instanceUser 				= remoteApps[r].instanceUser;
+											// clang-format on
 											__COUTTV__(StringMacros::setToString(
 											    theSupervisor->remoteGatewayApps_[i]
 											        .config_aliases));
@@ -1624,35 +1600,25 @@ try
 
 										//copy over updated status (but not control info, which may be have been changed while mutex was dropped)
 
-										//clang-format off
+										// clang-format off
 										if(remoteGatewayApp.command ==
 										   "")  //if there is action on command, then error is being set (request()) or cleared (send) somewhere else
-											theSupervisor->remoteGatewayApps_[i].error =
-											    remoteGatewayApp.error;
+											theSupervisor->remoteGatewayApps_[i].error 					= remoteGatewayApp.error;
 
-										theSupervisor->remoteGatewayApps_[i]
-										    .ignoreStatusCount =
-										    remoteGatewayApp.ignoreStatusCount;
-										theSupervisor->remoteGatewayApps_[i]
-										    .consoleErrCount =
-										    remoteGatewayApp.consoleErrCount;
-										theSupervisor->remoteGatewayApps_[i]
-										    .consoleWarnCount =
-										    remoteGatewayApp.consoleWarnCount;
+										theSupervisor->remoteGatewayApps_[i].ignoreStatusCount 			= remoteGatewayApp.ignoreStatusCount;
+										theSupervisor->remoteGatewayApps_[i].consoleErrCount 			= remoteGatewayApp.consoleErrCount;
+										theSupervisor->remoteGatewayApps_[i].consoleWarnCount 			= remoteGatewayApp.consoleWarnCount;
 
-										theSupervisor->remoteGatewayApps_[i]
-										    .usernameWithLock =
-										    remoteGatewayApp.usernameWithLock;
+										theSupervisor->remoteGatewayApps_[i].usernameWithLock 			= remoteGatewayApp.usernameWithLock;
 
-										theSupervisor->remoteGatewayApps_[i].config_dump =
-										    remoteGatewayApp.config_dump;
+										theSupervisor->remoteGatewayApps_[i].config_dump 				= remoteGatewayApp.config_dump;
 
 										// do not overwrite icon string here (it's updated immediately above)!
 										// theSupervisor->remoteGatewayApps_[i].iconString 					= remoteGatewayApp.iconString;
 
 										// do not overwrite refresh info here that was updated immediately above!
 										// theSupervisor->remoteGatewayApps_[i].config_aliases 				= remoteGatewayApp.config_aliases;
-										// theSupervisor->remoteGatewayApps_[i].user_data_path_record 		= remoteGatewayApp.user_data_path_record;
+										// theSupervisor->remoteGatewayApps_[i].user_data_path_record 		= remoteGatewayApp.user_data_path_record;										
 										// theSupervisor->remoteGatewayApps_[i].parentIconFolderPath 		= remoteGatewayApp.parentIconFolderPath;
 										// theSupervisor->remoteGatewayApps_[i].permissionThresholdString 	= remoteGatewayApp.permissionThresholdString;
 										// theSupervisor->remoteGatewayApps_[i].landingPage 				= remoteGatewayApp.landingPage;
@@ -1664,37 +1630,25 @@ try
 
 										//fix selected_config_alias
 										//	if invalid selected_config_alias, renitialize for user
-										if(theSupervisor->remoteGatewayApps_[i]
-										       .config_aliases.size() &&
-										   theSupervisor->remoteGatewayApps_[i]
-										           .config_aliases.find(
-										               theSupervisor
-										                   ->remoteGatewayApps_[i]
-										                   .selected_config_alias) ==
-										       theSupervisor->remoteGatewayApps_[i]
-										           .config_aliases.end())
+										if(theSupervisor->remoteGatewayApps_[i].config_aliases.size() &&
+											theSupervisor->remoteGatewayApps_[i].config_aliases.find(
+											theSupervisor->remoteGatewayApps_[i].selected_config_alias) ==
+										   		theSupervisor->remoteGatewayApps_[i].config_aliases.end())
 										{
-											__COUT__
-											    << "Resetting invalid "
-											       "selected_config_alias '"
-											    << theSupervisor->remoteGatewayApps_[i]
-											           .selected_config_alias
-											    << "' for Remote Gateway App '"
-											    << theSupervisor->remoteGatewayApps_[i]
-											           .appInfo.name
-											    << "' to first available config_alias."
-											    << __E__;
-											theSupervisor->remoteGatewayApps_[i]
-											    .selected_config_alias =
-											    theSupervisor->remoteGatewayApps_[i]
-											            .config_aliases.size()
-											        ? (*theSupervisor
-											                ->remoteGatewayApps_[i]
-											                .config_aliases.begin())
-											        : "";
+											__COUT__ << "Resetting invalid selected_config_alias '"
+											         << theSupervisor->remoteGatewayApps_[i]
+											                .selected_config_alias
+											         << "' for Remote Gateway App '"
+											         << theSupervisor->remoteGatewayApps_[i]
+											                .appInfo.name
+											         << "' to first available config_alias."
+											         << __E__;
+											theSupervisor->remoteGatewayApps_[i].selected_config_alias 	= 
+												theSupervisor->remoteGatewayApps_[i].config_aliases.size() ?
+													(*theSupervisor->remoteGatewayApps_[i].config_aliases.begin()) : "";
 										}
 
-										//clang-format on
+										// clang-format on
 
 										__COUTTV__(theSupervisor->remoteGatewayApps_[i]
 										               .selected_config_alias);
