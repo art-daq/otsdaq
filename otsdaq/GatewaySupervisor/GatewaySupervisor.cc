@@ -1413,15 +1413,19 @@ try
 									     remoteGatewayApp.appInfo.name] = false;
 								}
 							}
-							auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+							auto duration =
+							    std::chrono::duration_cast<std::chrono::milliseconds>(
+							        std::chrono::high_resolution_clock::now() - start)
+							        .count();
 							__COUTS__(TLVL_StatusRemoteWorkloop)
-								<< "Time taken to calling CheckRemoteGatewayStatus, doDisconnected = "
+							    << "Time taken to calling CheckRemoteGatewayStatus, "
+							       "doDisconnected = "
 							    << doDisconnected << " Remote subapp = '"
 							    << remoteGatewayApp.appInfo.name
 							    << "' [URL=" << remoteGatewayApp.appInfo.url
 							    << "] isRemoteAppDisconnected = "
-							    << isRemoteAppDisconnected << " --> " << duration << " milliseconds." << std::endl;
-
+							    << isRemoteAppDisconnected << " --> " << duration
+							    << " milliseconds." << std::endl;
 
 						}  //end remote app status update loop
 
@@ -2490,29 +2494,34 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 		__COUTVS__(TLVL_RemoteIcons, command);
 
 		{
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			                    std::chrono::high_resolution_clock::now() - start)
+			                    .count();
 			__COUTS__(TLVL_RemoteIcons)
-				<< " Icons ----> Time pre sendAndReceive check ==> " << 
-					duration << " milliseconds." << std::endl;
+			    << " Icons ----> Time pre sendAndReceive check ==> " << duration
+			    << " milliseconds." << std::endl;
 		}
 
 		Socket gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
 
 		{
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			                    std::chrono::high_resolution_clock::now() - start)
+			                    .count();
 			__COUTS__(TLVL_RemoteIcons)
-				<< " Icons ----> Time pre2 sendAndReceive check ==> " << 
-					duration << " milliseconds." << std::endl;
+			    << " Icons ----> Time pre2 sendAndReceive check ==> " << duration
+			    << " milliseconds." << std::endl;
 		}
 
 		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
-			
+
 		{
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-			__COUTS__(TLVL_RemoteIcons)
-				<< " Icons ----> Time sendAndReceive check ==> " << 
-					duration << " milliseconds." << std::endl;
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			                    std::chrono::high_resolution_clock::now() - start)
+			                    .count();
+			__COUTS__(TLVL_RemoteIcons) << " Icons ----> Time sendAndReceive check ==> "
+			                            << duration << " milliseconds." << std::endl;
 		}
 
 		__COUTVS__(TLVL_RemoteIcons, remoteIconString);
@@ -2569,14 +2578,15 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 		return;
 	}  //end GetRemoteGatewayIcons() catch
 
-	__COUTVS__(TLVL_RemoteIcons,iconString);
+	__COUTVS__(TLVL_RemoteIcons, iconString);
 	remoteGatewayApp.iconString = iconString;
 
 	{
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-		__COUTS__(TLVL_RemoteIcons)
-			<< " End Icons ----> Time sendAndReceive check ==> " << 
-				duration << " milliseconds." << std::endl;
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+		                    std::chrono::high_resolution_clock::now() - start)
+		                    .count();
+		__COUTS__(TLVL_RemoteIcons) << " End Icons ----> Time sendAndReceive check ==> "
+		                            << duration << " milliseconds." << std::endl;
 	}
 }  //end GetRemoteGatewayIcons()
 
@@ -2777,19 +2787,22 @@ try
 			                 remoteGatewayApp.appInfo.name;
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "requestString = " << requestString << __E__;
-		
+
 		auto start = std::chrono::high_resolution_clock::now();
 
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(
-		    gatewayRemoteSocket, requestString, 
-			2 /*timeoutSeconds*/); //Note: When TRACE slow path is over utilized on some systems, we see 3 second slow down frequently
-		
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+		    gatewayRemoteSocket,
+		    requestString,
+		    2 /*timeoutSeconds*/);  //Note: When TRACE slow path is over utilized on some systems, we see 3 second slow down frequently
+
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+		                    std::chrono::high_resolution_clock::now() - start)
+		                    .count();
 		__COUTS__(TLVL_StatusRemoteWorkloop)
-			<< "Time taken for send+receive of CheckRemoteGatewayStatus to '" << 
-				remoteGatewayApp.appInfo.name << "' ==> " << 
-				duration << " milliseconds." << std::endl;
-							
+		    << "Time taken for send+receive of CheckRemoteGatewayStatus to '"
+		    << remoteGatewayApp.appInfo.name << "' ==> " << duration << " milliseconds."
+		    << std::endl;
+
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "remoteStatusString = " << remoteStatusString << __E__;
 
@@ -2836,8 +2849,7 @@ try
 				if(!value.size())
 					remoteGatewayApp.appInfo.availableLogSpaceKB = 0;
 				else
-					remoteGatewayApp.appInfo.availableLogSpaceKB =
-					    std::stoull(value);
+					remoteGatewayApp.appInfo.availableLogSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "availableDataSpaceKB", 0, after);
@@ -3069,7 +3081,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	std::vector<std::string> parameters;
 
 	using clock = std::chrono::steady_clock;
-	auto start = clock::now();
+	auto start  = clock::now();
 
 	while(1)
 	{
@@ -3079,14 +3091,16 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		//	else
 		//		sleep
 
-
 		{
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			                    clock::now() - start)
+			                    .count();
 			if(duration > 20 /* ms */)
 				__COUTS__(TLVL_StateChangerStatus)
-					<< " ----> Check status start receive loop ==> " << 
-						duration << " milliseconds since last. PID=" << getpid()
-					<< " TID=" << std::this_thread::get_id() << " buffer=" << buffer << std::endl;
+				    << " ----> Check status start receive loop ==> " << duration
+				    << " milliseconds since last. PID=" << getpid()
+				    << " TID=" << std::this_thread::get_id() << " buffer=" << buffer
+				    << std::endl;
 			start = clock::now();
 		}
 
@@ -3100,13 +3114,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 			    << " of size = " << buffer.size() << __E__;
 			__COUTVS__(TLVL_StateChangerDetail, buffer);
 
-
 			{
-				auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+				auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+				                    clock::now() - start)
+				                    .count();
 				__COUTS__(TLVL_StateChangerStatus)
-					<< " ----> Check status idle receive loop ==> " << 
-						duration << " milliseconds time idle. PID=" << getpid()
-					<< " TID=" << std::this_thread::get_id() << std::endl;
+				    << " ----> Check status idle receive loop ==> " << duration
+				    << " milliseconds time idle. PID=" << getpid()
+				    << " TID=" << std::this_thread::get_id() << std::endl;
 			}
 
 			try
@@ -3371,7 +3386,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				else if(remoteGatewayStatus || buffer.find("GetRemoteAppStatus") == 0)
 				{
 					auto start = clock::now();
-		
+
 					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
@@ -3550,26 +3565,34 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					std::stringstream out;
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
-											false /*dispStdOut*/,
-											false /*allowWhiteSpace*/);
-					{	
-						auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+					                         false /*dispStdOut*/,
+					                         false /*allowWhiteSpace*/);
+					{
+						auto duration =
+						    std::chrono::duration_cast<std::chrono::milliseconds>(
+						        clock::now() - start)
+						        .count();
 						__COUTS__(TLVL_StateChangerStatus)
-							<< "Time taken for xml response to GetRemoteGatewayStatus ==> " << 
-								duration << " milliseconds." << std::endl;
+						    << "Time taken for xml response to GetRemoteGatewayStatus "
+						       "==> "
+						    << duration << " milliseconds." << std::endl;
 					}
 
 					__COUTS__(TLVL_StatusParams)
 					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
-					
+
 					{
-						auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+						auto duration =
+						    std::chrono::duration_cast<std::chrono::milliseconds>(
+						        clock::now() - start)
+						        .count();
 						__COUTS__(TLVL_StateChangerStatus)
-							<< "Time taken for receive+send response to GetRemoteGatewayStatus ==> " << 
-								duration << " milliseconds." << std::endl;
+						    << "Time taken for receive+send response to "
+						       "GetRemoteGatewayStatus ==> "
+						    << duration << " milliseconds." << std::endl;
 					}
-							
+
 					continue;
 				}  //end GetRemoteAppStatus
 				if(buffer.find("GetStateMachineNames") == 0)

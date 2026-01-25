@@ -1033,7 +1033,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
                                                    const std::string& configurationAlias,
                                                    const std::string& logEntry,
                                                    const std::string& activeUsers,
-												   const std::string& activeStateMachine,
+                                                   const std::string& activeStateMachine,
                                                    std::ostream& altOut /* = std::cout */)
 {
 	time_t rawtime = time(0);
@@ -1070,7 +1070,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		{
 			(*out) << "\t\"HOSTNAME\": \"" << __ENV__("HOSTNAME") << "\"," << __E__;
 			(*out) << "\t\"HOSTNAME filepath\": \"" << filePath << "\"," << __E__;
-			(*out) << "\t\"Active State Machine\": \"" << activeStateMachine << "\"," << __E__;
+			(*out) << "\t\"Active State Machine\": \"" << activeStateMachine << "\","
+			       << __E__;
 		}
 		(*out) << "\t\"active_users\": \t[";
 		if(activeUsers.size())
@@ -1415,8 +1416,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			{
 				__COUT__ << "Trying to retreive " << it->first << " Structure Status"
 				         << __E__;
-				activeTableStructure = cfgMgr->nameToTableMap_.find(it->first)
-				                           ->second->getStructureAsJSON(cfgMgr);
+				activeTableStructure =
+				    cfgMgr->nameToTableMap_.find(it->first)->second->getStructureAsJSON(
+				        cfgMgr);
 				if(activeTableStructure != "")
 				{
 					__COUT__ << "Found Structure Status for Active Table: " << it->first

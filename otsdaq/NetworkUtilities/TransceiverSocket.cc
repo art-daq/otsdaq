@@ -77,7 +77,7 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
                                               bool         verbose /* = false */)
 {
 	using clock = std::chrono::steady_clock;
-	auto start = clock::now();
+	auto start  = clock::now();
 
 	// lockout other sender and receive attempts for the remainder of the scope
 	std::lock_guard<std::mutex> lock(
@@ -87,13 +87,13 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
 	send(toSocket, sendBuffer, verbose);
 
 	{
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
-		__COUTT__
-			<< " ----> Time sendAndReceive '" << sendBuffer << 
-				"' (socketNumber=" << 
-				socketNumber_ << ") check ==> " << 
-				duration << " milliseconds. PID=" << getpid()
-              << " TID=" << std::this_thread::get_id() << std::endl;
+		auto duration =
+		    std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start)
+		        .count();
+		__COUTT__ << " ----> Time sendAndReceive '" << sendBuffer
+		          << "' (socketNumber=" << socketNumber_ << ") check ==> " << duration
+		          << " milliseconds. PID=" << getpid()
+		          << " TID=" << std::this_thread::get_id() << std::endl;
 	}
 
 	std::string receiveBuffer;
@@ -108,14 +108,13 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
 	}
 
 	{
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
-		__COUTT__
-			<< " ----> Time sendAndReceive '" << sendBuffer << 
-				"' got " << receiveBuffer.size() << 
-				" (socketNumber=" << 
-				socketNumber_ << ") check ==> " << 
-				duration << " milliseconds. PID=" << getpid()
-              << " TID=" << std::this_thread::get_id() << std::endl;
+		auto duration =
+		    std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start)
+		        .count();
+		__COUTT__ << " ----> Time sendAndReceive '" << sendBuffer << "' got "
+		          << receiveBuffer.size() << " (socketNumber=" << socketNumber_
+		          << ") check ==> " << duration << " milliseconds. PID=" << getpid()
+		          << " TID=" << std::this_thread::get_id() << std::endl;
 	}
 
 	//assume response may be multiple packets! (and give 10 ms unless called with lower timeout)
@@ -130,18 +129,20 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
 		receiveBuffer += receiveBuffer2;  //append
 
 		{
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
-			__COUTT__
-				<< " ----> Time sendAndReceive +" << receiveBuffer2.size() << " check ==> " << 
-					duration << " milliseconds." << std::endl;
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			                    clock::now() - start)
+			                    .count();
+			__COUTT__ << " ----> Time sendAndReceive +" << receiveBuffer2.size()
+			          << " check ==> " << duration << " milliseconds." << std::endl;
 		}
 	}
 
 	{
-		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
-		__COUTT__
-			<< " ----> Time sendAndReceive " << receiveBuffer.size() << " check ==> " << 
-				duration << " milliseconds." << std::endl;
+		auto duration =
+		    std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start)
+		        .count();
+		__COUTT__ << " ----> Time sendAndReceive " << receiveBuffer.size()
+		          << " check ==> " << duration << " milliseconds." << std::endl;
 	}
 
 	return receiveBuffer;
