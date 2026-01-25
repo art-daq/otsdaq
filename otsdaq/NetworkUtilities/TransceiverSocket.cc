@@ -3,6 +3,7 @@
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
 #include <iostream>
+#include <thread>  // std::this_thread
 
 using namespace ots;
 
@@ -75,12 +76,26 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
                                               unsigned int timeoutUSeconds /* = 0 */,
                                               bool         verbose /* = false */)
 {
+	using clock = std::chrono::steady_clock;
+	auto start = clock::now();
+
 	// lockout other sender and receive attempts for the remainder of the scope
 	std::lock_guard<std::mutex> lock(
 	    sendAndReceiveMutex_);  //note that TransmitterSocket::sendMutex_ is not enough
 
 	flush();  //make sure nothing to read before sending
 	send(toSocket, sendBuffer, verbose);
+
+	{
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+		__COUTT__
+			<< " ----> Time sendAndReceive '" << sendBuffer << 
+				"' (socketNumber=" << 
+				socketNumber_ << ") check ==> " << 
+				duration << " milliseconds. PID=" << getpid()
+              << " TID=" << std::this_thread::get_id() << std::endl;
+	}
+
 	std::string receiveBuffer;
 	if(receive(receiveBuffer, timeoutSeconds, timeoutUSeconds, verbose) < 0)
 	{
@@ -92,16 +107,41 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
 		__SS_ONLY_THROW__;
 	}
 
-	//assume response may be multiple packets! (and give 200 ms unless called with low timeout)
+	{
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+		__COUTT__
+			<< " ----> Time sendAndReceive '" << sendBuffer << 
+				"' got " << receiveBuffer.size() << 
+				" (socketNumber=" << 
+				socketNumber_ << ") check ==> " << 
+				duration << " milliseconds. PID=" << getpid()
+              << " TID=" << std::this_thread::get_id() << std::endl;
+	}
+
+	//assume response may be multiple packets! (and give 10 ms unless called with lower timeout)
 	std::string receiveBuffer2;
 	while(receive(receiveBuffer2,
 	              0 /*timeoutSeconds*/,
-	              (timeoutSeconds == 0 && timeoutUSeconds < 200000)
+	              (timeoutSeconds == 0 && timeoutUSeconds < 10000)
 	                  ? timeoutUSeconds
-	                  : 200000 /*timeoutUSeconds*/,
+	                  : 10000 /*timeoutUSeconds*/,
 	              verbose) >= 0)
 	{
 		receiveBuffer += receiveBuffer2;  //append
+
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+			__COUTT__
+				<< " ----> Time sendAndReceive +" << receiveBuffer2.size() << " check ==> " << 
+					duration << " milliseconds." << std::endl;
+		}
+	}
+
+	{
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+		__COUTT__
+			<< " ----> Time sendAndReceive " << receiveBuffer.size() << " check ==> " << 
+				duration << " milliseconds." << std::endl;
 	}
 
 	return receiveBuffer;

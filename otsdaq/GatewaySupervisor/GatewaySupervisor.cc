@@ -471,6 +471,9 @@ try
 	    std::chrono::high_resolution_clock::now();
 	time_t lastSlowStatusWarnTime = 0;
 	size_t statusWasSlowCount     = 0;
+
+	std::string value;
+
 	while(1)
 	{
 		bool oneStatusReqHasFailed = false;
@@ -1981,11 +1984,17 @@ try
 					subapps = SupervisorInfo::deserializeSubappInfos(
 					    parameters.getValue("Subapps"));
 
-					availableLogSpaceKB =
-					    std::stoull(parameters.getValue("AvailableLogSpaceKB"));
+					value = parameters.getValue("AvailableLogSpaceKB");
+					if(!value.size())
+						availableLogSpaceKB = 0;
+					else
+						availableLogSpaceKB = std::stoull(value);
 					__COUTVS__(TLVL_DebugStatusDetail, availableLogSpaceKB);
-					availableDataSpaceKB =
-					    std::stoull(parameters.getValue("AvailableDataSpaceKB"));
+					value = parameters.getValue("AvailableDataSpaceKB");
+					if(!value.size())
+						availableDataSpaceKB = 0;
+					else
+						availableDataSpaceKB = std::stoull(value);
 					__COUTVS__(TLVL_DebugStatusDetail, availableDataSpaceKB);
 
 					if(!appLastStatusGood[appName])
@@ -2472,6 +2481,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 	          << remoteGatewayApp.appInfo.name
 	          << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
 
+	auto start = std::chrono::high_resolution_clock::now();
 	try
 	{
 		std::vector<std::string> parsedFields =
@@ -2479,10 +2489,32 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 		__COUTVS__(TLVL_RemoteIcons, StringMacros::vectorToString(parsedFields));
 		__COUTVS__(TLVL_RemoteIcons, command);
 
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+			__COUTS__(TLVL_RemoteIcons)
+				<< " Icons ----> Time pre sendAndReceive check ==> " << 
+					duration << " milliseconds." << std::endl;
+		}
+
 		Socket gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+			__COUTS__(TLVL_RemoteIcons)
+				<< " Icons ----> Time pre2 sendAndReceive check ==> " << 
+					duration << " milliseconds." << std::endl;
+		}
 
 		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
+			
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+			__COUTS__(TLVL_RemoteIcons)
+				<< " Icons ----> Time sendAndReceive check ==> " << 
+					duration << " milliseconds." << std::endl;
+		}
+
 		__COUTVS__(TLVL_RemoteIcons, remoteIconString);
 
 		bool firstIcon = true;
@@ -2537,8 +2569,15 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 		return;
 	}  //end GetRemoteGatewayIcons() catch
 
-	__COUTV__(iconString);
+	__COUTVS__(TLVL_RemoteIcons,iconString);
 	remoteGatewayApp.iconString = iconString;
+
+	{
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+		__COUTS__(TLVL_RemoteIcons)
+			<< " End Icons ----> Time sendAndReceive check ==> " << 
+				duration << " milliseconds." << std::endl;
+	}
 }  //end GetRemoteGatewayIcons()
 
 //==============================================================================
@@ -2795,15 +2834,18 @@ try
 				    remoteStatusString, "availableLogSpaceKB", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
-					value = "0";
-				remoteGatewayApp.appInfo.availableLogSpaceKB = std::stoull(value);
+					remoteGatewayApp.appInfo.availableLogSpaceKB = 0;
+				else
+					remoteGatewayApp.appInfo.availableLogSpaceKB =
+					    std::stoull(value);
 
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "availableDataSpaceKB", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
-					value = "0";
-				remoteGatewayApp.appInfo.availableDataSpaceKB = std::stoull(value);
+					remoteGatewayApp.appInfo.availableDataSpaceKB = 0;
+				else
+					remoteGatewayApp.appInfo.availableDataSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "logUsageRateKBps", 0, after);
@@ -3025,6 +3067,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	std::string              fsmName;
 	std::string              command;
 	std::vector<std::string> parameters;
+
+	using clock = std::chrono::steady_clock;
+	auto start = clock::now();
+
 	while(1)
 	{
 		// workloop procedure
@@ -3032,6 +3078,17 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		//		execute command
 		//	else
 		//		sleep
+
+
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+			if(duration > 20 /* ms */)
+				__COUTS__(TLVL_StateChangerStatus)
+					<< " ----> Check status start receive loop ==> " << 
+						duration << " milliseconds since last. PID=" << getpid()
+					<< " TID=" << std::this_thread::get_id() << " buffer=" << buffer << std::endl;
+			start = clock::now();
+		}
 
 		if(sock.receive(
 		       buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) !=
@@ -3042,6 +3099,15 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 			    << sock.getLastIncomingIPAddress() << ":" << sock.getLastIncomingPort()
 			    << " of size = " << buffer.size() << __E__;
 			__COUTVS__(TLVL_StateChangerDetail, buffer);
+
+
+			{
+				auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+				__COUTS__(TLVL_StateChangerStatus)
+					<< " ----> Check status idle receive loop ==> " << 
+						duration << " milliseconds time idle. PID=" << getpid()
+					<< " TID=" << std::this_thread::get_id() << std::endl;
+			}
 
 			try
 			{
@@ -3304,7 +3370,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				}
 				else if(remoteGatewayStatus || buffer.find("GetRemoteAppStatus") == 0)
 				{
-					auto start = std::chrono::high_resolution_clock::now();
+					auto start = clock::now();
 		
 					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
@@ -3483,25 +3549,26 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					}
 
 					std::stringstream out;
-					{
-						auto start = std::chrono::high_resolution_clock::now();
-						xmlOut.outputXmlDocument((std::ostringstream*)&out,
-												false /*dispStdOut*/,
-												false /*allowWhiteSpace*/);
-						
-						auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
+					xmlOut.outputXmlDocument((std::ostringstream*)&out,
+											false /*dispStdOut*/,
+											false /*allowWhiteSpace*/);
+					{	
+						auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
 						__COUTS__(TLVL_StateChangerStatus)
 							<< "Time taken for xml response to GetRemoteGatewayStatus ==> " << 
 								duration << " milliseconds." << std::endl;
 					}
+
 					__COUTS__(TLVL_StatusParams)
 					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 					
-					auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count();
-					__COUTS__(TLVL_StateChangerStatus)
-						<< "Time taken for receive+send response to GetRemoteGatewayStatus ==> " << 
-							duration << " milliseconds." << std::endl;
+					{
+						auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+						__COUTS__(TLVL_StateChangerStatus)
+							<< "Time taken for receive+send response to GetRemoteGatewayStatus ==> " << 
+								duration << " milliseconds." << std::endl;
+					}
 							
 					continue;
 				}  //end GetRemoteAppStatus
@@ -4110,7 +4177,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 			    << "Waiting for UDP State Changer packet on "
 			    << ipAddressForStateChangesOverUDP << ":" << portForStateChangesOverUDP
 			    << "..." << __E__;
-			sleep(1);
+			usleep(1000 /* 1ms */);
 		}
 	}  // end while(1) loop
 }  // end StateChangerWorkLoop()
@@ -5654,12 +5721,12 @@ try
 			    activatedGroup,
 			    ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
 			    false /* appendMode */,
-			    username);
+			    stateMachineTransitionUsername_);
 			ConfigurationManager::saveGroupNameAndKey(
 			    activatedGroup,
 			    ConfigurationManager::ACTIVATED_CONFIGS_FILE,
 			    true /* appendMode */,
-			    username);
+			    stateMachineTransitionUsername_);
 
 			__COUT__ << "Done activating Configuration Alias." << __E__;
 		}
@@ -5727,7 +5794,7 @@ try
 				    ->dumpActiveConfiguration(
 				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
 				        activeStateMachineDumpFormatOnRun_,
-				        lastConfigurationAlias_,
+				        configurationAlias,
 				        getLastLogEntry(
 				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
 				        theWebUsers_.getActiveUsersString(),
@@ -5761,7 +5828,7 @@ try
 				    ->dumpActiveConfiguration(
 				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
 				        activeStateMachineDumpFormatOnConfigure_,
-				        lastConfigurationAlias_,
+				        configurationAlias,
 				        getLastLogEntry(
 				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
 				        theWebUsers_.getActiveUsersString(),
@@ -6922,7 +6989,7 @@ try
 		//include self
 		gatewayDumpMap["Gateway"]["name"] = getSupervisorUID();
 		gatewayDumpMap["Gateway"]["url"]  = allSupervisorInfo_.getGatewayInfo().getURL();
-		gatewayDumpMap["Gateway"]["configAlias"] = lastConfigurationAlias_;
+		gatewayDumpMap["Gateway"]["configAlias"] = activeStateMachineConfigurationAlias_;
 		gatewayDumpMap["Gateway"]["consoleErrCount"] =
 		    std::to_string(systemConsoleErrCount_);
 		gatewayDumpMap["Gateway"]["consoleWarnCount"] =
