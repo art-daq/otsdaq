@@ -9,6 +9,7 @@
 namespace ots
 {
 
+// clang-format off
 class RunInfoVInterface  ///< : public Configurable
 {
   public:
@@ -24,22 +25,20 @@ class RunInfoVInterface  ///< : public Configurable
 
 	/// NOTE: Memory access violations were happening when we tried to pass  const ConfigurationTree& theXDAQContextConfigTree
 	///	If needed in future, possibly passing a copy of ConfigureTree would make everything happy.. but for now, it is not needed.
-	RunInfoVInterface(const std::string& interfaceUID)
-	    :  //, const ConfigurationTree& theXDAQContextConfigTree, const std::string& configurationPath) :
-	       // Configurable(theXDAQContextConfigTree, configurationPath)
-	       //,
+	RunInfoVInterface							(const std::string& interfaceUID)
+	    :  
 	    mfSubject_(interfaceUID)
-	/// , theXDAQContextConfigTree_(theXDAQContextConfigTree)
-	/// , configurationPath_(configurationPath)
-	{
-		;
-	}
-	virtual ~RunInfoVInterface(void) { ; }
+	{;}
+	virtual ~RunInfoVInterface						(void) { ; }
 
-	virtual unsigned int insertRunCondition(
-	    const std::string& runInfoConditions = "") = 0;
-	virtual unsigned int claimNextRunNumber(
-	    unsigned int conditionID, const std::string& runInfoConditions = "") = 0;
+	virtual unsigned int insertLocalConfigureBlob	(const std::string& /*blob*/) { __COUT__ << "Not implemented!!"; return -1;};
+											
+	virtual unsigned int insertRunCondition(const std::string& runInfoConditions = "",
+	                                        const std::string& configTypeName = "") = 0;
+
+	virtual unsigned int claimNextRunNumber(unsigned int       conditionID,
+											const std::string& runInfoConditions = "",
+											const std::string& comment = "") = 0;
 	virtual void updateRunInfo(unsigned int                   runNumber,
 	                           RunInfoVInterface::RunStopType runStopType)   = 0;
 
@@ -52,11 +51,15 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual std::vector<std::vector<std::string>> getRunConditionByID(
 	    uint64_t conditionID) = 0;
 
+	virtual std::vector<std::vector<std::string>> getRunConfigSubsystemInfo(
+		uint64_t configID) = 0;
+
   private:
 	const std::string mfSubject_;
 	// ConfigurationTree 	theXDAQContextConfigTree_;
 	// std::string 			configurationPath_;
 };
+// clang-format on
 
 }  // namespace ots
 

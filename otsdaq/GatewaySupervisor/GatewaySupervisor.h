@@ -314,6 +314,7 @@ class WorkLoopManager;
 
 		std::string 		activeStateMachineName_;  ///< when multiple state machines, this is the name of the state machine which executed the configure transition
 		std::string 		activeStateMachineWindowName_;
+		std::string 		activeStateMachineDumpFormatOnRun_, activeStateMachineDumpFormatOnConfigure_; ///<cached at Configure transition
 		std::string 		activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; ///<cached at Configure transition
 		bool				activeStateMachineConfigurationDumpOnRunEnable_, activeStateMachineConfigurationDumpOnConfigureEnable_; ///<cached at Configure transition
 		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; ///<cached at Configure transition
@@ -373,7 +374,7 @@ public:	//used by remote subsystem control and status
 			SupervisorInfo::SubappInfo 			appInfo;
 
 			std::string 						command, fsmName; ///<when not "", need to send
-			std::string							error, config_dump;
+			std::string							error, config_dump, config_dump_type = "";
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;

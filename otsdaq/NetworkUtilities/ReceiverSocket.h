@@ -19,6 +19,16 @@ class ReceiverSocket : public virtual Socket
 	ReceiverSocket(std::string IPAddress, unsigned int port = 0);
 	virtual ~ReceiverSocket(void);
 
+	int flush()
+	{
+		int n = 0;
+		while(recvfrom(socketNumber_, nullptr, 0, MSG_DONTWAIT, nullptr, nullptr) >= 0)
+		{
+			++n;
+		}
+		return n;
+	};  ///< returns count of dropped packets
+
 	int receive(std::string& buffer,
 	            unsigned int timeoutSeconds  = 1,
 	            unsigned int timeoutUSeconds = 0,

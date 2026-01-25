@@ -75,12 +75,17 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
                                               unsigned int timeoutUSeconds /* = 0 */,
                                               bool         verbose /* = false */)
 {
+	// lockout other sender and receive attempts for the remainder of the scope
+	std::lock_guard<std::mutex> lock(
+	    sendAndReceiveMutex_);  //note that TransmitterSocket::sendMutex_ is not enough
+
+	flush();  //make sure nothing to read before sending
 	send(toSocket, sendBuffer, verbose);
 	std::string receiveBuffer;
 	if(receive(receiveBuffer, timeoutSeconds, timeoutUSeconds, verbose) < 0)
 	{
 		__SS__ << "Timeout (" << timeoutSeconds + timeoutUSeconds / 1000000.
-		       << " s) or Error receiving response buffer from remote ip:port "
+		       << " s) or /Error receiving response buffer from remote ip:port "
 		       << toSocket.getIPAddress() << ":" << toSocket.getPort()
 		       << " to this ip:port " << Socket::getIPAddress() << ":"
 		       << Socket::getPort() << __E__;
