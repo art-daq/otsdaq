@@ -32,7 +32,7 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual ~RunInfoVInterface						(void) { ; }
 
 	virtual unsigned int insertLocalConfigureBlob	(const std::string& /*blob*/) { __COUT__ << "Not implemented!!"; return -1;};
-											
+
 	virtual unsigned int insertRunCondition(const std::string& runInfoConditions = "",
 	                                        const std::string& configTypeName = "") = 0;
 
