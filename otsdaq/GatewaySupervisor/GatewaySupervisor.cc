@@ -959,31 +959,27 @@ try
 
 								//replace or add to local copy of supervisor remote gateway list (control info will be protected later, after status update, with final copy to real list)
 								bool   found = false;
-								size_t i     = 0;
-								for(; i < remoteApps.size(); ++i)
+								size_t r     = 0;
+								for(; r < remoteApps.size(); ++r)
 								{
 									if(thisInfo.appInfo.name ==
-									   remoteApps[i].appInfo.name)
+									   remoteApps[r].appInfo.name)
 									{
 										found = true;
 
+										// clang-format off
 										//overwrite with refreshed info
-										remoteApps[i].appInfo = thisInfo.appInfo;
-										remoteApps[i].user_data_path_record =
-										    thisInfo.user_data_path_record;
-										remoteApps[i].parentIconFolderPath =
-										    thisInfo.parentIconFolderPath;
-										remoteApps[i].permissionThresholdString =
-										    thisInfo.permissionThresholdString;
-										remoteApps[i].landingPage = thisInfo.landingPage;
-										remoteApps[i].setupType   = thisInfo.setupType;
-										remoteApps[i].fullName    = thisInfo.fullName;
-										remoteApps[i].instancePath =
-										    thisInfo.instancePath;
-										remoteApps[i].instanceHost =
-										    thisInfo.instanceHost;
-										remoteApps[i].instanceUser =
-										    thisInfo.instanceUser;
+										remoteApps[r].appInfo 					= thisInfo.appInfo;
+										remoteApps[r].user_data_path_record 	= thisInfo.user_data_path_record;
+										remoteApps[r].parentIconFolderPath 		= thisInfo.parentIconFolderPath;
+										remoteApps[r].permissionThresholdString = thisInfo.permissionThresholdString;
+										remoteApps[r].landingPage 				= thisInfo.landingPage;
+										remoteApps[r].setupType   				= thisInfo.setupType;
+										remoteApps[r].fullName    				= thisInfo.fullName;
+										remoteApps[r].instancePath 				= thisInfo.instancePath;
+										remoteApps[r].instanceHost 				= thisInfo.instanceHost;
+										remoteApps[r].instanceUser 				= thisInfo.instanceUser;
+										// clang-format on
 
 										break;
 									}
@@ -995,25 +991,24 @@ try
 								//if possible, get CSV list of potential config_aliases (for dropdown)
 								try
 								{
-									__COUTTV__(remoteApps[i].fsmName);
-									remoteApps[i].config_aliases =
+									__COUTTV__(remoteApps[r].fsmName);
+
+									remoteApps[r].config_aliases.clear();
+									remoteApps[r].config_aliases =
 									    tmpCfgMgr.getOtherSubsystemConfigAliases(
-									        remoteApps[i]
+									        remoteApps[r]
 									            .user_data_path_record);  //getOtherSubsystemFilteredConfigAliases(remoteApps[i].user_data_path_record, remoteApps[i].fsmName);
+
 									__COUTTV__(StringMacros::setToString(
 									    thisInfo.config_aliases));
-									if(remoteApps[i]
-									       .config_aliases
-									       .size())  //initialize selected alias in case it is needed (selected alias will be verified at final copy)
-										remoteApps[i].selected_config_alias =
-										    *(remoteApps[i].config_aliases.begin());
 								}
 								catch(const std::runtime_error& e)
 								{
 									__SS__
-									    << "Failed to retrieve the list of Configuration "
+									    << "\nFailed to retrieve the list of "
+									       "Configuration "
 									       "Aliases for Remote Subsystem '"
-									    << remoteApps[i].appInfo.name
+									    << remoteApps[r].appInfo.name
 									    << ".' Remote Subsystems are specified through "
 									       "their Desktop Icon record. "
 									       "Please specify a valid User Data Path record "
@@ -1029,26 +1024,71 @@ try
 									      "Configuration Aliases:\n"
 									   << e.what() << __E__;
 									__COUT__ << ss.str();
-									remoteApps[i].error = ss.str();
-
-									//give feedback immediately to user!!
-									{
-										//lock for remainder of scope
-										std::lock_guard<std::mutex> lock(
-										    theSupervisor->remoteGatewayAppsMutex_);
-										for(size_t i = 0;
-										    i < theSupervisor->remoteGatewayApps_.size();
-										    ++i)
-											if(remoteApps[i].appInfo.name ==
-											   theSupervisor->remoteGatewayApps_[i]
-											       .appInfo.name)
-											{
-												theSupervisor->remoteGatewayApps_[i]
-												    .error = remoteApps[i].error;
-												break;
-											}
-									}
+									remoteApps[r].error = ss.str();
 								}
+
+								// Since there are two threads, need to give feedback immediately to primary gateway struct
+								//	 for the updated fields in this section (i.e., the disconnected thread will not update these fields in the final copy for connected apps):
+								//		- error
+								//		- config_aliases,
+								//		- (not selected_config_alias because it should be updated in final copy by correct thread)
+								//		- user_data_path_record
+								//		- parentIconFolderPath
+								//		- permissionThresholdString
+								//		- landingPage
+								//		- setupType
+								//		- fullName
+								//		- instancePath
+								//		- instanceHost
+								//		- instanceUser
+								{  //handle copy into primary gateway structure of updated info
+									bool found = false;
+									//lock for remainder of scope
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->remoteGatewayAppsMutex_);
+									for(size_t i = 0;
+									    i < theSupervisor->remoteGatewayApps_.size();
+									    ++i)
+										if(remoteApps[r].appInfo.name ==
+										   theSupervisor->remoteGatewayApps_[i]
+										       .appInfo.name)
+										{
+											found = true;
+
+											// clang-format off
+											if(remoteApps[r].error != "")
+												theSupervisor->remoteGatewayApps_[i].error 					= remoteApps[r].error;
+
+											//overwrite with refreshed info
+											theSupervisor->remoteGatewayApps_[i].config_aliases 			= remoteApps[r].config_aliases;
+											theSupervisor->remoteGatewayApps_[i].user_data_path_record 		= remoteApps[r].user_data_path_record;
+											theSupervisor->remoteGatewayApps_[i].parentIconFolderPath 		= remoteApps[r].parentIconFolderPath;
+											theSupervisor->remoteGatewayApps_[i].permissionThresholdString 	= remoteApps[r].permissionThresholdString;
+											theSupervisor->remoteGatewayApps_[i].landingPage 				= remoteApps[r].landingPage;
+											theSupervisor->remoteGatewayApps_[i].setupType   				= remoteApps[r].setupType;
+											theSupervisor->remoteGatewayApps_[i].fullName    				= remoteApps[r].fullName;
+											theSupervisor->remoteGatewayApps_[i].instancePath 				= remoteApps[r].instancePath;
+											theSupervisor->remoteGatewayApps_[i].instanceHost 				= remoteApps[r].instanceHost;
+											theSupervisor->remoteGatewayApps_[i].instanceUser 				= remoteApps[r].instanceUser;
+											// clang-format on
+											__COUTTV__(StringMacros::setToString(
+											    theSupervisor->remoteGatewayApps_[i]
+											        .config_aliases));
+											__COUTTV__(StringMacros::setToString(
+											    remoteApps[r].config_aliases));
+											break;
+										}  //end copy into primary gateway structure of updated info
+
+									if(!found)
+									{
+										__COUT__ << "Adding new remote gateway app '"
+										         << remoteApps[r].appInfo.name
+										         << "' to primary gateway structure."
+										         << __E__;
+										theSupervisor->remoteGatewayApps_.push_back(
+										    remoteApps[r]);
+									}
+								}  //end handle copy into primary gateway structure of updated info
 
 							}  //end remote icon handling
 
@@ -1146,7 +1186,7 @@ try
 					          << __E__;
 
 					std::set<std::string /* appName */>
-					    remoteAppsHandedByThread;  //track which apps are handled in this pass, so they can be updated at the end
+					    remoteAppsHandledByThread;  //track which apps are handled in this pass, so they can be updated at the end
 
 					//for each remote gateway, request app status with "GetRemoteAppStatus"
 					bool gettingRemoteStatus = false;
@@ -1166,7 +1206,7 @@ try
 							for(auto& remoteGatewayApp : remoteApps)
 								if(remoteGatewayApp.command != "")
 								{
-									remoteAppsHandedByThread
+									remoteAppsHandledByThread
 									    .emplace(  //mark handled by this thread
 									        remoteGatewayApp.appInfo.url +
 									        remoteGatewayApp.appInfo.name);
@@ -1236,17 +1276,17 @@ try
 							if(!doDisconnected && isRemoteAppDisconnected)
 								skipApp = true;
 
-							if(remoteAppsHandedByThread
+							if(remoteAppsHandledByThread
 							       .find(  //already handled by command send, so get status!
 							           remoteGatewayApp.appInfo.url +
 							           remoteGatewayApp.appInfo.name) !=
-							   remoteAppsHandedByThread.end())
+							   remoteAppsHandledByThread.end())
 								skipApp = false;
 
 							if(skipApp)
 								continue;
 
-							remoteAppsHandedByThread
+							remoteAppsHandledByThread
 							    .emplace(  //mark handled by this thread
 							        remoteGatewayApp.appInfo.url +
 							        remoteGatewayApp.appInfo.name);
@@ -1523,11 +1563,11 @@ try
 							    ++i)
 							{
 								//only clear status if status was handled by this thread
-								if(remoteAppsHandedByThread.find(
+								if(remoteAppsHandledByThread.find(
 								       theSupervisor->remoteGatewayApps_[i].appInfo.url +
 								       theSupervisor->remoteGatewayApps_[i]
 								           .appInfo.name) ==
-								   remoteAppsHandedByThread.end())
+								   remoteAppsHandledByThread.end())
 									continue;
 
 								__COUTVS__(TLVL_StatusFullDetail,
@@ -1542,10 +1582,10 @@ try
 							for(auto& remoteGatewayApp : remoteApps)
 							{
 								//only copy status if status was handled by this thread
-								if(remoteAppsHandedByThread.find(
+								if(remoteAppsHandledByThread.find(
 								       remoteGatewayApp.appInfo.url +
 								       remoteGatewayApp.appInfo.name) ==
-								   remoteAppsHandedByThread.end())
+								   remoteAppsHandledByThread.end())
 									continue;
 
 								bool found = false;
@@ -1560,67 +1600,61 @@ try
 
 										//copy over updated status (but not control info, which may be have been changed while mutex was dropped)
 
+										// clang-format off
 										if(remoteGatewayApp.command ==
 										   "")  //if there is action on command, then error is being set (request()) or cleared (send) somewhere else
-											theSupervisor->remoteGatewayApps_[i].error =
-											    remoteGatewayApp.error;
+											theSupervisor->remoteGatewayApps_[i].error 					= remoteGatewayApp.error;
 
-										theSupervisor->remoteGatewayApps_[i]
-										    .ignoreStatusCount =
-										    remoteGatewayApp.ignoreStatusCount;
-										theSupervisor->remoteGatewayApps_[i]
-										    .consoleErrCount =
-										    remoteGatewayApp.consoleErrCount;
-										theSupervisor->remoteGatewayApps_[i]
-										    .consoleWarnCount =
-										    remoteGatewayApp.consoleWarnCount;
+										theSupervisor->remoteGatewayApps_[i].ignoreStatusCount 			= remoteGatewayApp.ignoreStatusCount;
+										theSupervisor->remoteGatewayApps_[i].consoleErrCount 			= remoteGatewayApp.consoleErrCount;
+										theSupervisor->remoteGatewayApps_[i].consoleWarnCount 			= remoteGatewayApp.consoleWarnCount;
 
-										theSupervisor->remoteGatewayApps_[i]
-										    .usernameWithLock =
-										    remoteGatewayApp.usernameWithLock;
+										theSupervisor->remoteGatewayApps_[i].usernameWithLock 			= remoteGatewayApp.usernameWithLock;
 
-										theSupervisor->remoteGatewayApps_[i].config_dump =
-										    remoteGatewayApp.config_dump;
+										theSupervisor->remoteGatewayApps_[i].config_dump 				= remoteGatewayApp.config_dump;
 
-										theSupervisor->remoteGatewayApps_[i]
-										    .user_data_path_record =
-										    remoteGatewayApp.user_data_path_record;
-										// theSupervisor->remoteGatewayApps_[i].iconString = // do not overwrite icon string!
-										//     remoteGatewayApp.iconString;
-										theSupervisor->remoteGatewayApps_[i]
-										    .parentIconFolderPath =
-										    remoteGatewayApp.parentIconFolderPath;
-										theSupervisor->remoteGatewayApps_[i]
-										    .permissionThresholdString =
-										    remoteGatewayApp.permissionThresholdString;
-										theSupervisor->remoteGatewayApps_[i].landingPage =
-										    remoteGatewayApp.landingPage;
-										theSupervisor->remoteGatewayApps_[i].setupType =
-										    remoteGatewayApp.setupType;
-										theSupervisor->remoteGatewayApps_[i].fullName =
-										    remoteGatewayApp.fullName;
-										theSupervisor->remoteGatewayApps_[i]
-										    .instancePath = remoteGatewayApp.instancePath;
-										theSupervisor->remoteGatewayApps_[i]
-										    .instanceHost = remoteGatewayApp.instanceHost;
-										theSupervisor->remoteGatewayApps_[i]
-										    .instanceUser = remoteGatewayApp.instanceUser;
+										// do not overwrite icon string here (it's updated immediately above)!
+										// theSupervisor->remoteGatewayApps_[i].iconString 					= remoteGatewayApp.iconString;
 
-										//fix config_aliases and selected_config_alias
-										theSupervisor->remoteGatewayApps_[i]
-										    .config_aliases =
-										    remoteGatewayApp.config_aliases;
-										//if invalid selected_config_alias, renitialize for user
-										if(remoteGatewayApp.config_aliases.find(
-										       theSupervisor->remoteGatewayApps_[i]
-										           .selected_config_alias) ==
-										   remoteGatewayApp.config_aliases.end())
-											theSupervisor->remoteGatewayApps_[i]
-											    .selected_config_alias =
-											    remoteGatewayApp.selected_config_alias;
+										// do not overwrite refresh info here that was updated immediately above!
+										// theSupervisor->remoteGatewayApps_[i].config_aliases 				= remoteGatewayApp.config_aliases;
+										// theSupervisor->remoteGatewayApps_[i].user_data_path_record 		= remoteGatewayApp.user_data_path_record;
+										// theSupervisor->remoteGatewayApps_[i].parentIconFolderPath 		= remoteGatewayApp.parentIconFolderPath;
+										// theSupervisor->remoteGatewayApps_[i].permissionThresholdString 	= remoteGatewayApp.permissionThresholdString;
+										// theSupervisor->remoteGatewayApps_[i].landingPage 				= remoteGatewayApp.landingPage;
+										// theSupervisor->remoteGatewayApps_[i].setupType 					= remoteGatewayApp.setupType;
+										// theSupervisor->remoteGatewayApps_[i].fullName 					= remoteGatewayApp.fullName;
+										// theSupervisor->remoteGatewayApps_[i].instancePath 				= remoteGatewayApp.instancePath;
+										// theSupervisor->remoteGatewayApps_[i].instanceHost 				= remoteGatewayApp.instanceHost;
+										// theSupervisor->remoteGatewayApps_[i].instanceUser 				= remoteGatewayApp.instanceUser;
+
+										//fix selected_config_alias
+										//	if invalid selected_config_alias, reinitialize for user
+										if(theSupervisor->remoteGatewayApps_[i].config_aliases.size() &&
+											theSupervisor->remoteGatewayApps_[i].config_aliases.find(
+											theSupervisor->remoteGatewayApps_[i].selected_config_alias) ==
+												theSupervisor->remoteGatewayApps_[i].config_aliases.end())
+										{
+											__COUT__ << "Resetting invalid selected_config_alias '"
+											         << theSupervisor->remoteGatewayApps_[i]
+											                .selected_config_alias
+											         << "' for Remote Gateway App '"
+											         << theSupervisor->remoteGatewayApps_[i]
+											                .appInfo.name
+											         << "' to first available config_alias."
+											         << __E__;
+											theSupervisor->remoteGatewayApps_[i].selected_config_alias =
+												theSupervisor->remoteGatewayApps_[i].config_aliases.size() ?
+													(*theSupervisor->remoteGatewayApps_[i].config_aliases.begin()) : "";
+										}
+
+										// clang-format on
 
 										__COUTTV__(theSupervisor->remoteGatewayApps_[i]
 										               .selected_config_alias);
+										__COUTTV__(StringMacros::setToString(
+										    theSupervisor->remoteGatewayApps_[i]
+										        .config_aliases));
 
 										__COUTT__
 										    << remoteGatewayApp.appInfo.name
@@ -1685,11 +1719,11 @@ try
 							    ++i)
 							{
 								//only delete if status was handled by this thread
-								if(remoteAppsHandedByThread.find(
+								if(remoteAppsHandledByThread.find(
 								       theSupervisor->remoteGatewayApps_[i].appInfo.url +
 								       theSupervisor->remoteGatewayApps_[i]
 								           .appInfo.name) ==
-								   remoteAppsHandedByThread.end())
+								   remoteAppsHandledByThread.end())
 									continue;
 
 								if(theSupervisor->remoteGatewayApps_[i].appInfo.status ==
@@ -9993,7 +10027,7 @@ try
 				__SUP_COUTVS__(TLVL_RemoteFSMRequests, remoteGatewayApps_.size());
 				remoteGatewayApps = remoteGatewayApps_;
 				if(remoteGatewayApps_.size())
-					__SUP_COUT_TYPE__(TLVL_DEBUG + TLVL_RemoteFSMRequests)
+					__SUP_COUTS__(TLVL_RemoteFSMRequests)
 					    << __COUT_HDR__ << remoteGatewayApps_[0].command << " "
 					    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 			}
@@ -10025,8 +10059,9 @@ try
 
 				if(remoteSubsystem.command == "" && remoteSubsystem.error != "")
 				{
-					__COUTT__ << "Error from Subsystem '" << remoteSubsystem.appInfo.name
-					          << "' = " << remoteSubsystem.error << __E__;
+					__SUP_COUTS__(TLVL_RemoteFSMRequests)
+					    << "Error from Subsystem '" << remoteSubsystem.appInfo.name
+					    << "' = " << remoteSubsystem.error << __E__;
 
 					if(remoteSubsystem.error.find(
 					       "Failure gathering Remote Gateway desktop icons") ==

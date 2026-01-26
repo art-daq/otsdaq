@@ -4092,6 +4092,8 @@ bool ConfigurationManager::isOwnerFirstAppInContext()
 }  // end isOwnerFirstAppInContext()
 
 //==============================================================================
+/// extract subsystem hostname, username, user data path from optional subsystem table
+///  for example, in preparation for exec/scp of user data files
 void ConfigurationManager::getOtherSubsystemInstanceInfo(
     const std::string& otherSubsystemUID,
     std::string*       userDataPathPtr /* = nullptr */,
@@ -4320,7 +4322,7 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 		}
 		retMap[groupType] = std::make_pair(subsystemActiveGroupMap[i],
 		                                   TableGroupKey(subsystemActiveGroupMap[i + 1]));
-	}
+	}  //end load table group loop
 
 	__GEN_COUTTV__(StringMacros::mapToString(retMap));
 	return retMap;
@@ -4333,9 +4335,13 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 {
 	std::set<std::string> retSet;
 
+	__GEN_COUTTV__(otherSubsystemUID);
+
 	std::map<std::string /*groupType*/,
 	         std::pair<std::string /*groupName*/, TableGroupKey>>
 	    retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
+
+	__GEN_COUTTV__(StringMacros::mapToString(retMap));
 
 	//load backbone
 	auto it = retMap.find(
@@ -4380,8 +4386,9 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 		   entry.first.find("Iterat") == std::string::npos)
 			retSet.emplace(entry.first);
 	}
+	__GEN_COUTTV__(StringMacros::setToString(retSet));
 	return retSet;
-}  //end getOtherSubsystemActiveTableGroups()
+}  //end getOtherSubsystemConfigAliases()
 
 //==============================================================================
 ///Ignore any System Aliases with "Context" or "Iterat" in the name
@@ -4799,6 +4806,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 			fullPath += ConfigurationManager::CONFIGURED_CONFIGS_FILE;
 		else if(groupType == ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
 			fullPath += ConfigurationManager::CONFIGURED_ITERATES_FILE;
+		else if(groupType == "Config Alias")
+			fullPath += ConfigurationManager::CONFIGURED_CONFIG_ALIASES_FILE;
 	}
 	else if(groupAction == "Started")
 	{
@@ -4810,6 +4819,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 			fullPath += ConfigurationManager::STARTED_CONFIGS_FILE;
 		else if(groupType == ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
 			fullPath += ConfigurationManager::STARTED_ITERATES_FILE;
+		else if(groupType == "Config Alias")
+			fullPath += ConfigurationManager::STARTED_CONFIG_ALIASES_FILE;
 	}
 	else if(groupAction == "Configured or Started")
 	{
@@ -4821,6 +4832,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 			fullPath += ConfigurationManager::CONFIGURED_OR_STARTED_CONFIGS_FILE;
 		else if(groupType == ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
 			fullPath += ConfigurationManager::CONFIGURED_OR_STARTED_ITERATES_FILE;
+		else if(groupType == "Config Alias")
+			fullPath += ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE;
 	}
 
 	if(fullPath == ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/")
