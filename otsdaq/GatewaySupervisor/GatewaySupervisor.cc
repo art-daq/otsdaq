@@ -474,6 +474,9 @@ try
 
 	std::string value;
 
+	ConfigurationManager
+	    cfgMgr;  //for local use handling latest icons and remote subsystem info
+
 	while(1)
 	{
 		bool oneStatusReqHasFailed = false;
@@ -838,14 +841,76 @@ try
 						    << "].\n\n";
 
 						// use latest context always from temporary configuration manager,
-						//	to get updated icons every time...
-						//(so icon changes do no require an ots restart)
-						ConfigurationManager
-						    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
-						const DesktopIconTable* iconTable =
-						    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
-						const std::vector<DesktopIconTable::DesktopIcon>& icons =
-						    iconTable->getAllDesktopIcons();
+						//	to get updated icons (and remote subsystem info) every time...
+						bool        useLatestIcons = false;
+						std::string timeString;
+						std::pair<std::string /*group name*/, TableGroupKey> latestGroup;
+						std::vector<DesktopIconTable::DesktopIcon>           icons;
+						{  //start lock scope
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->latestGatewayIconsMutex_);
+							latestGroup = theSupervisor->latestGatewayIconsContextGroup_;
+						}  //end lock scope
+						if(latestGroup.first.size())
+						{
+							std::pair<std::string /*group name*/, TableGroupKey>
+							    theGroup = ConfigurationManager::loadGroupNameAndKey(
+							        ConfigurationManager::
+							            LAST_ACTIVATED_CONTEXT_GROUP_FILE,
+							        timeString);
+							if(theGroup == latestGroup)
+							{
+								useLatestIcons = true;
+								__COUTS__(TLVL_StatusWorkloop)
+								    << "Using cached latest icons for context group '"
+								    << theGroup.first << "(" << theGroup.second << ")"
+								    << __E__;
+								std::lock_guard<std::mutex> lock(
+								    theSupervisor->latestGatewayIconsMutex_);
+								icons = theSupervisor->latestGatewayIcons_;
+							}
+						}  //end check for active context changing
+
+						if(!useLatestIcons)  //then need to load latest icons
+						{
+							try
+							{
+								// Restoring active backbone/context group, note: not using Gateway instance's member CorePropertySupervisorBase::theConfigurationManager_
+								cfgMgr.restoreActiveTableGroups(
+								    true /*throwErrors*/,
+								    "" /*pathToActiveGroupsFile*/,
+								    ConfigurationManager::LoadGroupType::
+								        ONLY_BACKBONE_OR_CONTEXT_TYPES /*onlyLoadIfBackboneOrContext*/
+								);
+
+								const DesktopIconTable* iconTable =
+								    cfgMgr.__GET_CONFIG__(DesktopIconTable);
+								{  //start lock scope
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->latestGatewayIconsMutex_);
+									theSupervisor->latestGatewayIcons_ =
+									    iconTable
+									        ->getAllDesktopIcons();  //cache latest icons (for use, e.g., in remote login verify)
+									icons =
+									    theSupervisor
+									        ->latestGatewayIcons_;  //use for this loop
+									theSupervisor->latestGatewayIconsContextGroup_ =
+									    cfgMgr.getActiveTableGroups()
+									        [ConfigurationManager::
+									             GROUP_TYPE_NAME_CONTEXT];
+								}  //end lock scope
+							}
+							catch(...)
+							{
+								__COUT_ERR__
+								    << "Error loading latest context for remote gateway "
+								       "icon refresh. Sticking with old icons."
+								    << __E__;
+								std::lock_guard<std::mutex> lock(
+								    theSupervisor->latestGatewayIconsMutex_);
+								icons = theSupervisor->latestGatewayIcons_;
+							}
+						}
 
 						for(auto& remoteGatewayApp : remoteApps)
 							remoteGatewayApp.appInfo.status =
@@ -949,7 +1014,7 @@ try
 
 								try
 								{
-									tmpCfgMgr.getOtherSubsystemInstanceInfo(
+									cfgMgr.getOtherSubsystemInstanceInfo(
 									    thisInfo.user_data_path_record,
 									    &thisInfo.instancePath,
 									    &thisInfo.instanceHost,
@@ -999,7 +1064,7 @@ try
 
 									remoteApps[r].config_aliases.clear();
 									remoteApps[r].config_aliases =
-									    tmpCfgMgr.getOtherSubsystemConfigAliases(
+									    cfgMgr.getOtherSubsystemConfigAliases(
 									        remoteApps[r]
 									            .user_data_path_record);  //getOtherSubsystemFilteredConfigAliases(remoteApps[i].user_data_path_record, remoteApps[i].fsmName);
 
@@ -1535,7 +1600,7 @@ try
 								}
 								else  //give icon feedback immediately
 								{
-									__COUTV__(remoteGatewayApp.iconString);
+									__COUTVS__(TLVL_RemoteDesktopIcons, remoteGatewayApp.iconString);
 									//lock for remainder of scope
 									std::lock_guard<std::mutex> lock(
 									    theSupervisor->remoteGatewayAppsMutex_);
@@ -3105,7 +3170,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		}
 
 		if(sock.receive(
-		       buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) !=
+		       buffer, 2 /*timeoutSeconds*/, 0 /*timeoutUSeconds*/, false /*verbose*/) !=
 		   -1)
 		{
 			__COUTS__(TLVL_StateChanger)
@@ -3114,15 +3179,13 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 			    << " of size = " << buffer.size() << __E__;
 			__COUTVS__(TLVL_StateChangerDetail, buffer);
 
-			{
-				auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-				                    clock::now() - start)
-				                    .count();
-				__COUTS__(TLVL_StateChangerStatus)
-				    << " ----> Check status idle receive loop ==> " << duration
-				    << " milliseconds time idle. PID=" << getpid()
-				    << " TID=" << std::this_thread::get_id() << std::endl;
-			}
+			__COUTS__(TLVL_StateChangerStatus)
+			    << " ----> Check status idle receive loop ==> "
+			    << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+			                                                             start)
+			           .count()
+			    << " milliseconds time idle. PID=" << getpid()
+			    << " TID=" << std::this_thread::get_id() << std::endl;
 
 			try
 			{
@@ -3567,31 +3630,26 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/,
 					                         false /*allowWhiteSpace*/);
-					{
-						auto duration =
-						    std::chrono::duration_cast<std::chrono::milliseconds>(
-						        clock::now() - start)
-						        .count();
-						__COUTS__(TLVL_StateChangerStatus)
-						    << "Time taken for xml response to GetRemoteGatewayStatus "
-						       "==> "
-						    << duration << " milliseconds." << std::endl;
-					}
+
+					__COUTS__(TLVL_StateChangerStatus)
+					    << "Time taken for xml response to GetRemoteGatewayStatus "
+					       "==> "
+					    << std::chrono::duration_cast<std::chrono::milliseconds>(
+					           clock::now() - start)
+					           .count()
+					    << " milliseconds." << std::endl;
 
 					__COUTS__(TLVL_StatusParams)
 					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 
-					{
-						auto duration =
-						    std::chrono::duration_cast<std::chrono::milliseconds>(
-						        clock::now() - start)
-						        .count();
-						__COUTS__(TLVL_StateChangerStatus)
-						    << "Time taken for receive+send response to "
-						       "GetRemoteGatewayStatus ==> "
-						    << duration << " milliseconds." << std::endl;
-					}
+					__COUTS__(TLVL_StateChangerStatus)
+					    << "Time taken for receive+send response to "
+					       "GetRemoteGatewayStatus ==> "
+					    << std::chrono::duration_cast<std::chrono::milliseconds>(
+					           clock::now() - start)
+					           .count()
+					    << " milliseconds." << std::endl;
 
 					continue;
 				}  //end GetRemoteAppStatus
@@ -3929,7 +3987,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				}
 				else if(buffer.find("GetRemoteDesktopIcons") == 0)
 				{
-					__COUT__ << "Giving desktop icons to remote gateway..." << __E__;
+					__COUTS__(TLVL_RemoteIcons)
+					    << "Giving desktop icons to remote gateway..." << __E__;
 
 					// get icons and create comma-separated string based on user permissions
 					//	note: each icon has own permission threshold, so each user can have
@@ -3938,6 +3997,34 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					// use latest context always from temporary configuration manager,
 					//	to get updated icons every time...
 					//(so icon changes do no require an ots restart)
+					//no need for mutex, because remote icons only accessed here!
+					std::pair<std::string /*group name*/, TableGroupKey> latestGroup =
+					    theSupervisor->latestGatewayRemoteIconsContextGroup_;
+					if(latestGroup.first.size())
+					{
+						std::string                                          timeString;
+						std::pair<std::string /*group name*/, TableGroupKey> theGroup =
+						    ConfigurationManager::loadGroupNameAndKey(
+						        ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE,
+						        timeString);
+						if(theGroup == latestGroup)
+						{
+							__COUTT__
+							    << "Using cached latest remote icons for context group '"
+							    << theGroup.first << "(" << theGroup.second << ")"
+							    << __E__;
+
+							__COUTVS__(TLVL_RemoteIcons,
+							           theSupervisor->latestGatewayRemoteIconsString_);
+
+							sock.acknowledge(
+							    theSupervisor->latestGatewayRemoteIconsString_,
+							    true /* verbose */);
+							continue;
+						}
+					}  //end check for active context changing
+
+					//else then need to load latest icons
 
 					ConfigurationManager
 					    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
@@ -3946,7 +4033,18 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					const std::vector<DesktopIconTable::DesktopIcon>& icons =
 					    iconTable->getAllDesktopIcons();
 
-					std::string iconString = "";
+					//store latest context group for next time
+					theSupervisor->latestGatewayRemoteIconsContextGroup_ =
+					    tmpCfgMgr.getActiveTableGroups()
+					        [ConfigurationManager::GROUP_TYPE_NAME_CONTEXT];
+
+					//at this point icons is correctly populated
+
+					theSupervisor->latestGatewayRemoteIconsString_ =
+					    "";  //will be populated below for caching
+					std::string& iconString =
+					    theSupervisor
+					        ->latestGatewayRemoteIconsString_;  //will be populated below
 					// comma-separated icon string, 7 fields:
 					//				0 - caption 		= text below icon
 					//				1 - altText 		= text icon if no image given
@@ -9941,17 +10039,49 @@ try
 			// use latest context always from temporary configuration manager,
 			//	to get updated icons every time...
 			//(so icon changes do no require an ots restart)
-			ConfigurationManager
-			    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
-			const DesktopIconTable* iconTable =
-			    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
-			{
+
+			bool                                                 useLatestIcons = false;
+			std::string                                          timeString;
+			std::pair<std::string /*group name*/, TableGroupKey> latestGroup;
+			std::vector<DesktopIconTable::DesktopIcon>           icons;
+			{  //start lock scope
 				std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
-				latestGatewayIcons_ =
-				    iconTable
-				        ->getAllDesktopIcons();  //cache latest icons (for use, e.g., in remote login verify)
-			}
-			const std::vector<DesktopIconTable::DesktopIcon>& icons = latestGatewayIcons_;
+				latestGroup = latestGatewayIconsContextGroup_;
+			}  //end lock scope
+			if(latestGroup.first.size())
+			{
+				std::pair<std::string /*group name*/, TableGroupKey> theGroup =
+				    ConfigurationManager::loadGroupNameAndKey(
+				        ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE,
+				        timeString);
+				if(theGroup == latestGroup)
+				{
+					useLatestIcons = true;
+					__COUTT__ << "Using cached latest icons for context group '"
+					          << theGroup.first << "(" << theGroup.second << ")" << __E__;
+					std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
+					icons = latestGatewayIcons_;
+				}
+			}  //end check for active context changing
+
+			if(!useLatestIcons)  //then need to load latest icons
+			{
+				ConfigurationManager
+				    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
+				const DesktopIconTable* iconTable =
+				    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
+				{
+					std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
+					latestGatewayIcons_ =
+					    iconTable
+					        ->getAllDesktopIcons();  //cache latest icons (for use, e.g., in remote login verify)
+					icons = latestGatewayIcons_;  //use for this request
+					latestGatewayIconsContextGroup_ =
+					    tmpCfgMgr.getActiveTableGroups()
+					        [ConfigurationManager::GROUP_TYPE_NAME_CONTEXT];
+				}  //end lock scope
+			}      //end load of active context icons
+			//at this point icons is correctly populated
 
 			std::string iconString = "";
 			// comma-separated icon string, 7 fields:

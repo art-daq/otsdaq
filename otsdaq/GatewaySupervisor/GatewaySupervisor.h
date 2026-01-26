@@ -422,7 +422,12 @@ public:	//used by remote subsystem control and status
 
 		std::mutex											latestGatewayIconsMutex_;
 		std::vector<DesktopIconTable::DesktopIcon>			latestGatewayIcons_; ///< used to track the latest desktop icons (which are defined by the active context but allowed to change dynamically)
+		std::pair<std::string /* latestIconContext group */, TableGroupKey>
+															latestGatewayIconsContextGroup_; ///< used to track the table group key for the latest desktop icons
 
+		std::string											latestGatewayRemoteIconsString_; ///< cached string of remote gateway icons for quick access
+		std::pair<std::string /* latestIconContext group */, TableGroupKey>
+															latestGatewayRemoteIconsContextGroup_; ///< used to track the table group key for the latest remote desktop icons
 
 		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);
 		static void 				SendRemoteGatewayCommand					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);

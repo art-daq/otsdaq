@@ -84,14 +84,12 @@ int ReceiverSocket::receive(std::string&    buffer,
 	// lockout other receivers for the remainder of the scope
 	std::lock_guard<std::mutex> lock(receiveMutex_);
 
-	{
-		auto duration =
-		    std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start)
-		        .count();
-		__COUTT__ << " ----> Time receive check (socketNumber=" << socketNumber_
-		          << ") ==> " << duration << " milliseconds. PID=" << getpid()
-		          << " TID=" << std::this_thread::get_id() << std::endl;
-	}
+	__COUTT__ << " ----> Time receive check (socketNumber=" << socketNumber_ << ") ==> "
+	          << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+	                                                                   start)
+	                 .count()
+	          << " milliseconds. PID=" << getpid()
+	          << " TID=" << std::this_thread::get_id() << std::endl;
 
 	// set timeout period for select()
 	timeout_.tv_sec  = timeoutSeconds;
@@ -104,38 +102,32 @@ int ReceiverSocket::receive(std::string&    buffer,
 	if(rc < 0 && errno == EINTR)
 		__COUTT__ << "select interrupted by signal" << std::endl;
 
-	{
-		auto duration =
-		    std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start)
-		        .count();
-		__COUTT__ << " ----> Time receive (socketNumber=" << socketNumber_
-		          << ", rc=" << rc << ", errno=" << errno
-		          << ", timeout=" << timeoutSeconds << " " << timeoutUSeconds
-		          << ") check ==> " << duration << " milliseconds. PID=" << getpid()
-		          << " TID=" << std::this_thread::get_id() << std::endl;
-	}
+	__COUTT__ << " ----> Time receive (socketNumber=" << socketNumber_ << ", rc=" << rc
+	          << ", errno=" << errno << ", timeout=" << timeoutSeconds << " "
+	          << timeoutUSeconds << ") check ==> "
+	          << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+	                                                                   start)
+	                 .count()
+	          << " milliseconds. PID=" << getpid()
+	          << " TID=" << std::this_thread::get_id() << std::endl;
 
 	if(FD_ISSET(socketNumber_, &fileDescriptor_))
 	{
-		{
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-			                    clock::now() - start)
-			                    .count();
-			__COUTT__ << " ----> Time receive check ==> " << duration << " milliseconds."
-			          << std::endl;
-		}
+		__COUTT__ << " ----> Time receive check ==> "
+		          << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+		                                                                   start)
+		                 .count()
+		          << " milliseconds." << std::endl;
 
 		buffer.resize(maxSocketSize_);  // NOTE: this is inexpensive according to
 		                                // Lorenzo/documentation in C++11 (only increases
 		                                // size once and doesn't decrease size)
 
-		{
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-			                    clock::now() - start)
-			                    .count();
-			__COUTT__ << " ----> Time receive check ==> " << duration << " milliseconds."
-			          << std::endl;
-		}
+		__COUTT__ << " ----> Time receive check ==> "
+		          << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+		                                                                   start)
+		                 .count()
+		          << " milliseconds." << std::endl;
 
 		if((numberOfBytes_ = recvfrom(socketNumber_,
 		                              &buffer[0],
@@ -170,13 +162,11 @@ int ReceiverSocket::receive(std::string&    buffer,
 		lastIncomingIPAddress_ = fromIPAddress;
 		lastIncomingPort_      = fromPort;
 
-		{
-			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-			                    clock::now() - start)
-			                    .count();
-			__COUTT__ << " ----> Time receive " << numberOfBytes_ << " check ==> "
-			          << duration << " milliseconds." << std::endl;
-		}
+		__COUTT__ << " ----> Time receive " << numberOfBytes_ << " check ==> "
+		          << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+		                                                                   start)
+		                 .count()
+		          << " milliseconds." << std::endl;
 
 		__COUTS__(2) << "IP: " << std::hex << fromIPAddress << std::dec
 		             << " port: " << fromPort << std::endl
@@ -229,13 +219,11 @@ int ReceiverSocket::receive(std::string&    buffer,
 		return -1;
 	}
 
-	{
-		auto duration =
-		    std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start)
-		        .count();
-		__COUTT__ << " ----> Time receive check ==> " << duration << " milliseconds."
-		          << std::endl;
-	}
+	__COUTT__ << " ----> Time receive check ==> "
+	          << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+	                                                                   start)
+	                 .count()
+	          << " milliseconds." << std::endl;
 
 	return 0;
 }  //end receive()
@@ -338,13 +326,10 @@ int ReceiverSocket::receive(std::vector<uint32_t>& buffer,
 		lastIncomingIPAddress_ = fromIPAddress;
 		lastIncomingPort_      = fromPort;
 
-		//__COUT__ << __PRETTY_FUNCTION__ << "IP: " << std::hex << fromIPAddress <<
-		// std::dec << " port: " << fromPort << std::endl;
-		//__COUT__ << "Socket Number: " << socketNumber_ << " number of bytes: " <<
-		// nOfBytes << std::endl;  gettimeofday(&tvend,NULL);
-		//__COUT__ << "started at" << tvbegin.tv_sec << ":" <<tvbegin.tv_usec <<
-		// std::endl;
-		//__COUT__ << "ended at" << tvend.tv_sec << ":" <<tvend.tv_usec << std::endl;
+		__COUTS__(2) << __PRETTY_FUNCTION__ << "IP: " << std::hex << fromIPAddress
+		             << std::dec << " port: " << fromPort << std::endl
+		             << "Socket Number: " << socketNumber_
+		             << " number of bytes: " << numberOfBytes_ << std::endl;
 
 		// NOTE: this is inexpensive according to Lorenzo/documentation in C++11 (only
 		// increases size once and doesn't decrease size)
@@ -359,7 +344,7 @@ int ReceiverSocket::receive(std::vector<uint32_t>& buffer,
 		getsockname(socketNumber_, (struct sockaddr*)&sin, &len);
 
 		if(verbose)
-			__COUT__ << __COUT_HDR_FL__ << "No new messages for "
+			__COUT__ << "No new messages for "
 			         << timeoutSeconds + timeoutUSeconds / 1000000. << "s (Total "
 			         << readCounter_ * (timeoutSeconds + timeoutUSeconds / 1000000.)
 			         << "s). Read request timed out for port: " << ntohs(sin.sin_port)

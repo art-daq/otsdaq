@@ -59,9 +59,6 @@ const std::string DesktopIconTable::COL_APP_ID = "Id";
 //==============================================================================
 DesktopIconTable::DesktopIconTable(void) : TableBase(DesktopIconTable::ICON_TABLE)
 {
-	// Icon list no longer passes through file! so delete it from user's $USER_DATA
-	std::system(("rm -rf " + (std::string)DESKTOP_ICONS_FILE).c_str());
-
 	//////////////////////////////////////////////////////////////////////
 	// WARNING: the names used in C++ MUST match the Table INFO  //
 	//////////////////////////////////////////////////////////////////////

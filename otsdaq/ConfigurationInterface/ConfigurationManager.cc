@@ -4981,9 +4981,8 @@ ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
 	FILE* groupFile = fopen(fullPath.c_str(), "r");
 	if(!groupFile)
 	{
-		__COUT__ << "Can't open file: " << fullPath << __E__;
-
-		__COUT__ << "Returning empty groupName and key -1" << __E__;
+		__COUT__ << "Can't open file: " << fullPath
+		         << ". Returning empty groupName and key -1" << __E__;
 
 		return std::pair<std::string /*group name*/, TableGroupKey>("", TableGroupKey());
 	}
@@ -5011,8 +5010,8 @@ ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
 	returnedTimeString = StringMacros::getTimestampString(timestamp);  // line;
 	fclose(groupFile);
 
-	__COUT__ << "theGroup.first=" << theGroup.first
-	         << " theGroup.second=" << theGroup.second << __E__;
+	__COUTT__ << "theGroup.first=" << theGroup.first
+	          << " theGroup.second=" << theGroup.second << __E__;
 
 	return theGroup;
 }  // end loadGroupNameAndKey()
@@ -5025,8 +5024,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
                                        const std::string& groupType,
                                        bool               formatTime /* = false */)
 {
-	__COUTV__(groupAction);
-	__COUTV__(groupType);
+	__COUTTV__(groupAction);
+	__COUTTV__(groupType);
 
 	std::string fullPath = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/";
 
