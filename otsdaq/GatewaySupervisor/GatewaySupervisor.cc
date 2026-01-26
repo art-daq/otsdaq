@@ -1600,7 +1600,8 @@ try
 								}
 								else  //give icon feedback immediately
 								{
-									__COUTVS__(TLVL_RemoteDesktopIcons, remoteGatewayApp.iconString);
+									__COUTVS__(TLVL_RemoteDesktopIcons,
+									           remoteGatewayApp.iconString);
 									//lock for remainder of scope
 									std::lock_guard<std::mutex> lock(
 									    theSupervisor->remoteGatewayAppsMutex_);
