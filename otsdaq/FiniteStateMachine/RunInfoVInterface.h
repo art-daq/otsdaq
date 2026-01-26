@@ -26,7 +26,7 @@ class RunInfoVInterface  ///< : public Configurable
 	/// NOTE: Memory access violations were happening when we tried to pass  const ConfigurationTree& theXDAQContextConfigTree
 	///	If needed in future, possibly passing a copy of ConfigureTree would make everything happy.. but for now, it is not needed.
 	RunInfoVInterface							(const std::string& interfaceUID)
-	    :  
+	    :
 	    mfSubject_(interfaceUID)
 	{;}
 	virtual ~RunInfoVInterface						(void) { ; }
