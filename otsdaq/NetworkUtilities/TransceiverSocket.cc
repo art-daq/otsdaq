@@ -98,7 +98,7 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
 	if(receive(receiveBuffer, timeoutSeconds, timeoutUSeconds, verbose) < 0)
 	{
 		__SS__ << "Timeout (" << timeoutSeconds + timeoutUSeconds / 1000000.
-		       << " s) or /Error receiving response buffer from remote ip:port "
+		       << " s) or Error receiving response buffer from remote ip:port "
 		       << toSocket.getIPAddress() << ":" << toSocket.getPort()
 		       << " to this ip:port " << Socket::getIPAddress() << ":"
 		       << Socket::getPort() << __E__;

@@ -1414,7 +1414,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		{
 			try
 			{
-				__COUT__ << "Trying to retreive " << it->first << " Structure Status"
+				__COUT__ << "Trying to retrieve " << it->first << " Structure Status"
 				         << __E__;
 				activeTableStructure =
 				    cfgMgr->nameToTableMap_.find(it->first)->second->getStructureAsJSON(
