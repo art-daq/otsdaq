@@ -82,8 +82,8 @@ struct StringMacros
 	static std::string			escapeString				(std::string inString, bool allowWhiteSpace = false);
 	static const std::string&	trim						(std::string& s);
 	static std::string 			convertEnvironmentVariables	(const std::string& data);
-	static std::map<std::string /* system variable */, 
-		std::map<std::string /* property */, 
+	static std::map<std::string /* system variable */,
+		std::map<std::string /* property */,
 		std::string /* value */>>  							systemVariables_;
 	static const std::string								TBD; //for to-be-defined system variables (so there is a value in wiz mode, before configuration, etc.)
 
