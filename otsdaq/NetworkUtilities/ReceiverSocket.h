@@ -22,7 +22,8 @@ class ReceiverSocket : public virtual Socket
 	int flush()
 	{
 		int n = 0;
-		while(recvfrom(socketNumber_, nullptr, 0, MSG_DONTWAIT, nullptr, nullptr) >= 0)
+		char buffer[1];
+		while(recvfrom(socketNumber_, buffer, sizeof(buffer), MSG_DONTWAIT, nullptr, nullptr) >= 0)
 		{
 			++n;
 		}
