@@ -1014,6 +1014,7 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 
 	}        // close UID content
 	POPTAB;  // close UID decoration
+	OUT << "} //end " << node.getValueAsString() << " record" << __E__;
 
 	// handle link closing decoration
 	if(node.isLinkNode())
