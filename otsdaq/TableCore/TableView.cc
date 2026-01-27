@@ -1029,9 +1029,6 @@ std::string TableView::getEscapedValueAsString(
 {
 	std::string val = getValueAsString(row, col, doConvertEnvironmentVariables);
 
-	__COUT__ << "String before edits: " << val << __E__;
-	std::replace(val.begin(), val.end(), '"', '\'');
-
 	std::string retVal = "";
 	retVal.reserve(val.size());  // reserve roughly right size
 	for(unsigned int i = 0; i < val.size(); ++i)

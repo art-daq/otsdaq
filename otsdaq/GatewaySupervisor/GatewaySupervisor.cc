@@ -6134,7 +6134,7 @@ try
 
 		if(activeStateMachineConfigurationDumpOnConfigure_.size())
 		{
-			fwrite(&activeStateMachineConfigurationDumpOnConfigure_,
+			fwrite(activeStateMachineConfigurationDumpOnConfigure_.c_str(),
 			       1,
 			       activeStateMachineConfigurationDumpOnConfigure_.size(),
 			       fp);
