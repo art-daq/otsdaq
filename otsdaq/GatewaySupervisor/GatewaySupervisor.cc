@@ -2726,7 +2726,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 				}
 				else
 				{
-					donePos               = -1;  //clear
+					donePos               = std::string::npos;  //clear
 					commandResponseString = "";  //clear
 					if(remoteGatewaySocket->receive(commandResponseString,
 					                                10 /*timeoutSeconds*/) ==
@@ -2739,7 +2739,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 					}
 					else  //timeout occurred
 					{
-						donePos               = -1;  //clear
+						donePos               = std::string::npos;  //clear
 						commandResponseString = "TIMEOUT!";
 					}
 				}
@@ -5104,8 +5104,8 @@ try
 					__SS_THROW__;
 				}
 
-				//FIXME -- uncomment after testing!
-				// runNumber = runInfoInterface->claimNextRunNumber(); // TODO: uncomment after testing dump
+				// Claim the next run number from the Run Info plugin when configured.
+				runNumber = runInfoInterface->claimNextRunNumber();
 
 			}  // end Run Info Plugin handling
 
@@ -7110,25 +7110,13 @@ try
 			gatewayDumpMap[remoteGatewayApp.fullName]["fsmIncluded"] =
 			    std::string(remoteGatewayApp.fsm_included ? "1" : "0");
 
-			if(remoteGatewayApp.config_dump.size() > 10 &&
-			   (remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 1] !=
-			        '-' ||
-			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 2] !=
-			        '-' ||
-			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 3] !=
-			        '-' ||
-			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 4] !=
-			        'D' ||
-			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 5] !=
-			        'N' ||
-			    remoteGatewayApp.config_dump[remoteGatewayApp.config_dump.size() - 6] !=
-			        'E'))
+			const std::string& dumpStr = remoteGatewayApp.config_dump;
+			if(dumpStr.size() > 10 && dumpStr.ends_with("END---"))
 				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] =
-				    remoteGatewayApp.config_dump.substr(
-				        0, remoteGatewayApp.config_dump.size() - 6);
-			else  //non standard format??
+				    dumpStr.substr(0, dumpStr.size() - 6);
+			else  //non standard format or no END--- suffix
 				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] =
-				    remoteGatewayApp.config_dump;
+				    dumpStr;
 		}  //end remote app loop
 
 		if(TTEST(2))
