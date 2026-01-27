@@ -259,14 +259,12 @@ int ReceiverSocket::receive(std::vector<uint32_t>& buffer,
 	// lockout other receivers for the remainder of the scope
 	std::lock_guard<std::mutex> lock(receiveMutex_);
 
-	{
-		auto duration =
-		    std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start)
-		        .count();
-		__COUTT__ << " ----> Time receive (socketNumber=" << socketNumber_
-		          << ") check ==> " << duration << " milliseconds. PID=" << getpid()
-		          << " TID=" << std::this_thread::get_id() << std::endl;
-	}
+	__COUTT__ << " ----> Time receive (socketNumber=" << socketNumber_ << ") check ==> "
+	          << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+	                                                                   start)
+	                 .count()
+	          << " milliseconds. PID=" << getpid()
+	          << " TID=" << std::this_thread::get_id() << std::endl;
 
 	// set timeout period for select()
 	timeout_.tv_sec  = timeoutSeconds;
@@ -276,14 +274,12 @@ int ReceiverSocket::receive(std::vector<uint32_t>& buffer,
 	FD_SET(socketNumber_, &fileDescriptor_);
 	select(socketNumber_ + 1, &fileDescriptor_, 0, 0, &timeout_);
 
-	{
-		auto duration =
-		    std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start)
-		        .count();
-		__COUTT__ << " ----> Time receive (socketNumber=" << socketNumber_
-		          << ") check ==> " << duration << " milliseconds. PID=" << getpid()
-		          << " TID=" << std::this_thread::get_id() << std::endl;
-	}
+	__COUTT__ << " ----> Time receive (socketNumber=" << socketNumber_ << ") check ==> "
+	          << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+	                                                                   start)
+	                 .count()
+	          << " milliseconds. PID=" << getpid()
+	          << " TID=" << std::this_thread::get_id() << std::endl;
 
 	if(FD_ISSET(socketNumber_, &fileDescriptor_))
 	{
