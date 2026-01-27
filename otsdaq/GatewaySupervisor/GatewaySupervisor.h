@@ -373,8 +373,17 @@ public:	//used by remote subsystem control and status
 		struct RemoteGatewayInfo {
 			SupervisorInfo::SubappInfo 			appInfo;
 
+			enum class ConfigDumpTypes ///<FSM Modes: 'Follow FSM,' 'Do not Halt' (artdaq),  or 'Only Configure' (DCS/DQM)
+			{
+				Text,
+				JSON_all,
+				Unknown
+			};
+
 			std::string 						command, fsmName; ///<when not "", need to send
-			std::string							error, config_dump, config_dump_type = "";
+			std::string							error, config_dump;
+			ConfigDumpTypes						config_dump_type = ConfigDumpTypes::Unknown;
+
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
@@ -405,6 +414,15 @@ public:	//used by remote subsystem control and status
 					case FSM_ModeTypes::DoNotHalt: return "Do Not Halt";
 					case FSM_ModeTypes::OnlyConfigure: return "Only Configure";
 					default: return "Impossible";
+				}
+			} //end getFsmMode()
+
+			std::string							getConfigDumpType() const {
+				switch(config_dump_type)
+				{
+					case ConfigDumpTypes::Text: return "Text";
+					case ConfigDumpTypes::JSON_all: return "JSON all";
+					default: return "Unknown";
 				}
 			} //end getFsmMode()
 

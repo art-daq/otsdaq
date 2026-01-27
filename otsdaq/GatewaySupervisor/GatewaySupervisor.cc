@@ -2763,6 +2763,9 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 			if(!(configDumpType.find("JSON all") != std::string::npos))
 			{
 				__COUT__ << "Found not JSON all dump type" << __E__;
+				remoteGatewayApp.config_dump_type =
+				    RemoteGatewayInfo::ConfigDumpTypes::Text;
+
 				remoteGatewayApp.config_dump = "\n\n************************\n";
 				remoteGatewayApp.config_dump +=
 				    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
@@ -2773,7 +2776,8 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 			else
 			{
 				__COUT__ << "Found JSON all dump type" << __E__;
-				remoteGatewayApp.config_dump_type = "JSON all";
+				remoteGatewayApp.config_dump_type =
+				    RemoteGatewayInfo::ConfigDumpTypes::JSON_all;
 			}
 
 			//make sure we received everything
@@ -5302,15 +5306,14 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO PAUSE TIME UPDATE INTO DATABASE FAILED!!! " << e.what()
-			       << __E__;
+			__SS__ << "RUN INFO PAUSE TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN INFO PAUSE TIME UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__ << "RUN INFO PAUSE TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << __E__;
 			try
 			{
 				throw;
@@ -5381,15 +5384,14 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO RESUME TIME UPDATE INTO DATABASE FAILED!!! " << e.what()
-			       << __E__;
+			__SS__ << "RUN INFO RESUME TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			//
-			__SS__ << "RUN INFO RESUME TIME UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__ << "RUN INFO RESUME TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << __E__;
 			try
 			{
 				throw;
@@ -5466,14 +5468,13 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO UPDATE INTO DATABASE FAILED!!! " << e.what() << __E__;
+			__SS__ << "RUN INFO HALT TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN INFO UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__ << "RUN INFO HALT TRANSITION UPDATE INTO DATABASE FAILED!!! " << __E__;
 			try
 			{
 				throw;
@@ -5550,15 +5551,16 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what()
-			       << __E__;
+			__SS__
+			    << "RUN INFO CONFIGURED STATE INSERT OR UPDATE INTO DATABASE FAILED!!! "
+			    << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__
+			    << "RUN INFO CONFIGURED STATE INSERT OR UPDATE INTO DATABASE FAILED!!! "
+			    << __E__;
 			try
 			{
 				throw;
@@ -5639,15 +5641,16 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what()
-			       << __E__;
+			__SS__
+			    << "RUN INFO ERROR TRANSITION INSERT OR UPDATE INTO DATABASE FAILED!!! "
+			    << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__
+			    << "RUN INFO ERROR TRANSITION INSERT OR UPDATE INTO DATABASE FAILED!!! "
+			    << __E__;
 			try
 			{
 				throw;
@@ -7092,7 +7095,8 @@ try
 		    std::to_string(systemConsoleWarnCount_);
 		gatewayDumpMap["Gateway"]["fsmMode"]     = "Follow FSM";
 		gatewayDumpMap["Gateway"]["fsmIncluded"] = "1";
-		gatewayDumpMap["Gateway"]["dump"] = activeStateMachineConfigurationDumpOnRun_;
+		gatewayDumpMap["Gateway"]["dump"]     = activeStateMachineConfigurationDumpOnRun_;
+		gatewayDumpMap["Gateway"]["dumpType"] = activeStateMachineDumpFormatOnRun_;
 
 		//include printenv in dumpMap
 		gatewayDumpMap["Gateway"]["printenv"] = StringMacros::exec(
@@ -7131,6 +7135,8 @@ try
 				    dumpStr.substr(0, dumpStr.size() - 6);
 			else  //non standard format or no END--- suffix
 				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] = dumpStr;
+			gatewayDumpMap[remoteGatewayApp.fullName]["dumpType"] =
+			    remoteGatewayApp.getConfigDumpType();
 		}  //end remote app loop
 
 		if(TTEST(2))
