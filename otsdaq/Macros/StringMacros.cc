@@ -445,8 +445,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		}
 		__COUTVS__(50, data);
 		__COUTVS__(50, envVariable);
-		if(envVariable.size() > 3 && envVariable[0] == 'O' && envVariable[1] == 'T' &&
-		   envVariable[2] == 'S' && envVariable[3] == '.')
+		if(envVariable.starts_with("OTS."))
 		{
 			__COUT__ << "OTS system variable detected!" << __E__;
 			auto sysVarSplit = StringMacros::getVectorFromString(envVariable, {'.'});
