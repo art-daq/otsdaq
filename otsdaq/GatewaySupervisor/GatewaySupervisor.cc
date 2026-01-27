@@ -8466,6 +8466,8 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 
 	size_t countOfRemoteGateways = 0;
 
+	std::map<std::string /* fullName */, int /* unknownCount */> unknownResponseCounts;
+
 	bool done = command == "Error";  //dont check for done if Error'ing
 	while(!done)
 	{
@@ -8486,8 +8488,6 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 		}
 
-		std::map<std::string /* fullName */, int /* unknownCount */>
-		    unknownResponseCounts;
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			//skip remote gateways that were not commanded
@@ -8562,7 +8562,7 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			sleep(2);
 
 		checkForAsyncError();
-	}
+	}  //end primary while loop
 
 	__COUT__ << "Done with " << countOfRemoteGateways
 	         << " remote gateway(s) command = " << command << __E__;
