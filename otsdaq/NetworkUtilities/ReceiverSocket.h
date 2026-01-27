@@ -70,7 +70,7 @@ class ReceiverSocket : public virtual Socket
 	std::mutex receiveMutex_;  ///< to make receiver socket thread safe
 	    //	i.e. multiple threads can share a socket and call receive()
 
-	char flushBuffer_[1];  ///< small buffer for flush() to avoid nullptr usage
+	char flushBuffer_[64];  ///< small buffer for flush() to avoid nullptr usage
 };
 
 }  // namespace ots
