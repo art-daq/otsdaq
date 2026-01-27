@@ -5104,8 +5104,8 @@ try
 					__SS_THROW__;
 				}
 
-				//FIXME -- uncomment after testing!
-				// runNumber = runInfoInterface->claimNextRunNumber(); // TODO: uncomment after testing dump
+				// Claim the next run number from the Run Info plugin when configured.
+				runNumber = runInfoInterface->claimNextRunNumber();
 
 			}  // end Run Info Plugin handling
 
