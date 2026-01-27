@@ -70,6 +70,9 @@ int TransceiverSocket::acknowledge(const std::string& buffer, bool verbose)
 }  //end acknowledge()
 
 //==============================================================================
+/// Attempts to receive multiple packets until timeout and appends them together.
+///	returns the received buffer or throws on error/timeout
+///	Note: Leave latency short on the repeated receives, leave it to user to handle understanding if receive needs to be called more.
 std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
                                               const std::string& sendBuffer,
                                               unsigned int       timeoutSeconds /* = 1 */,
