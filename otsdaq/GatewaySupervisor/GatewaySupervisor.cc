@@ -5975,13 +5975,13 @@ try
 		}  //end handle configuration dump if enabled on configure transition
 		catch(const std::runtime_error& e)
 		{
-			__SS__ << "Error encoutered during configuration dump. Here is the error: "
+			__SS__ << "Error encountered during configuration dump. Here is the error: "
 			       << e.what();
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			__SS__ << "Unknown error encoutered during configuration dump.";
+			__SS__ << "Unknown error encountered during configuration dump.";
 			__SS_THROW__;
 		}
 	}  //end configuration dump handling
