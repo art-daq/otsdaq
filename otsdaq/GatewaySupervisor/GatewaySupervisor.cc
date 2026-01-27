@@ -2756,30 +2756,6 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 
 		if(commandResponseString.size() > strlen("Done") + 1)
 		{
-			//assume have config dump response!
-			// //extract dump type from config dump
-			std::string configDumpType = commandResponseString.substr(
-			    commandResponseString.find("Type of dump") + sizeof("Type of dump") - 1);
-			if(!(configDumpType.find("JSON all") != std::string::npos))
-			{
-				__COUT__ << "Found not JSON all dump type" << __E__;
-				remoteGatewayApp.config_dump_type =
-				    RemoteGatewayInfo::ConfigDumpTypes::Text;
-
-				remoteGatewayApp.config_dump = "\n\n************************\n";
-				remoteGatewayApp.config_dump +=
-				    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
-				    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
-				remoteGatewayApp.config_dump += "* \n";
-				remoteGatewayApp.config_dump += "\n\n";
-			}
-			else
-			{
-				__COUT__ << "Found JSON all dump type" << __E__;
-				remoteGatewayApp.config_dump_type =
-				    RemoteGatewayInfo::ConfigDumpTypes::JSON_all;
-			}
-
 			//make sure we received everything
 			int tryCnt = 0;
 			while(++tryCnt < 100 &&
@@ -2801,6 +2777,30 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 					__COUT__ << "Timeout looking for more!" << __E__;
 					break;
 				}
+			}
+
+			//assume have config dump response!
+			// //extract dump type from config dump
+			std::string configDumpType = commandResponseString.substr(
+			    commandResponseString.find("Type of dump") + strlen("Type of dump"));
+			if(configDumpType.find("JSON all") == std::string::npos)
+			{
+				__COUT__ << "Found text dump type" << __E__;
+				remoteGatewayApp.config_dump_type =
+				    RemoteGatewayInfo::ConfigDumpTypes::Text;
+
+				remoteGatewayApp.config_dump = "\n\n************************\n";
+				remoteGatewayApp.config_dump +=
+				    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
+				    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
+				remoteGatewayApp.config_dump += "************************ \n";
+				remoteGatewayApp.config_dump += "\n\n";
+			}
+			else
+			{
+				__COUT__ << "Found JSON all dump type" << __E__;
+				remoteGatewayApp.config_dump_type =
+				    RemoteGatewayInfo::ConfigDumpTypes::JSON_all;
 			}
 
 			remoteGatewayApp.config_dump +=
