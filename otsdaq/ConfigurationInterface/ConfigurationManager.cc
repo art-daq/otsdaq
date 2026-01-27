@@ -1163,9 +1163,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		{
 			if(jsonify)
 			{
-				(*out) << "\t\t\"" << it->first << "\": \"" << it->second.first
+				(*out) << "\t\t\"" << it->first << "_group_name\": \"" << it->second.first
 				       << "\",\n";
-				(*out) << "\t\t\"" << it->first << "_version\": \"" << it->second.second
+				(*out) << "\t\t\"" << it->first << "_group_key\": \"" << it->second.second
 				       << "\"";
 				if(it->first == "Configuration")
 				{
@@ -1208,8 +1208,13 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		{
 			if(jsonify)
 			{
-				(*out) << "\t\t\"" << it->first << "\": \"" << it->second << "\""
-				       << (std::next(it) == activeTables.end() ? "" : ",") << __E__;
+				(*out) << "\t\t\""
+				       << "active_table_name"
+				       << "\": \"" << it->first << "\",\n";
+				(*out) << "\t\t\""
+				       << "active_table_version"
+				       << "\": \"" << it->second << "\"";
+				(*out) << (std::next(it) == activeTables.end() ? "" : ",") << "\n";
 			}
 			else
 			{
