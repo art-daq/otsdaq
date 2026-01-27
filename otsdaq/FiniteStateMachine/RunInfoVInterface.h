@@ -49,7 +49,8 @@ class RunInfoVInterface  ///< : public Configurable
 
 	RunInfoVInterface							(const std::string& activeStateMachineName)
 	    :
-	    mfSubject_(activeStateMachineName)
+	    mfSubject_(activeStateMachineName),
+	    activeStateMachineName_(activeStateMachineName)
 	{;}
 	virtual ~RunInfoVInterface						(void) { ; }
 
