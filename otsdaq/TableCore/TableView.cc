@@ -944,15 +944,6 @@ std::string TableView::validateValueForColumn(const std::string& value,
 		    doConvertEnvironmentVariables
 		        ? StringMacros::convertEnvironmentVariables(value)
 		        : value);
-
-		//		retValue.resize(30); //known fixed size: Thu Aug 23 14:55:02 2001 CST
-		//		time_t timestamp(
-		//				strtol((doConvertEnvironmentVariables?StringMacros::convertEnvironmentVariables(value):value).c_str(),
-		//						0,10));
-		//		struct tm tmstruct;
-		//		::localtime_r(&timestamp, &tmstruct);
-		//		::strftime(&retValue[0], 30, "%c %Z", &tmstruct);
-		//		retValue.resize(strlen(retValue.c_str()));
 	}
 	else
 	{
@@ -982,7 +973,7 @@ std::string TableView::getValueAsString(unsigned int row,
 		__SS_THROW__;
 	}
 
-	//__COUT__ << columnsInfo_[col].getType() << " " << col << __E__;
+	__COUTS__(30) << columnsInfo_[col].getType() << " " << col << __E__;
 
 	if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_ON_OFF)
 	{
@@ -1009,11 +1000,10 @@ std::string TableView::getValueAsString(unsigned int row,
 			return TableViewColumnInfo::TYPE_VALUE_NO;
 	}
 
-	//__COUT__ << __E__;
 	return doConvertEnvironmentVariables
 	           ? StringMacros::convertEnvironmentVariables(theDataView_[row][col])
 	           : theDataView_[row][col];
-}
+}  //end getValueAsString()
 
 //==============================================================================
 /// getEscapedValueAsString
@@ -1027,8 +1017,7 @@ std::string TableView::getEscapedValueAsString(
     bool         doConvertEnvironmentVariables /* = true */,
     bool         quotesToDoubleQuotes /* = false */) const
 {
-	std::string val = getValueAsString(row, col, doConvertEnvironmentVariables);
-
+	std::string val    = getValueAsString(row, col, doConvertEnvironmentVariables);
 	std::string retVal = "";
 	retVal.reserve(val.size());  // reserve roughly right size
 	for(unsigned int i = 0; i < val.size(); ++i)
@@ -1052,7 +1041,7 @@ std::string TableView::getEscapedValueAsString(
 		}
 	}
 	return retVal;
-}
+}  //end getEscapedValueAsString()
 
 //==============================================================================
 /// setValue
@@ -2227,97 +2216,6 @@ void TableView::printJSON(std::ostream& out /* = std::cout */) const
 	out << "\"NAME\" : \"" << tableName_ << "\",\n";
 
 	out << "\"VERSION\": \"" << version_.toString() << "\",\n";
-
-	out << "\"COMMENT\" : ";
-
-	// output escaped comment
-	std::string val;
-	val = comment_;
-	out << "\"";
-	for(unsigned int i = 0; i < val.size(); ++i)
-	{
-		if(val[i] == '\n')
-			out << "\\n";
-		else if(val[i] == '\t')
-			out << "\\t";
-		else if(val[i] == '\r')
-			out << "\\r";
-		else
-		{
-			// escaped characters need a
-			if(val[i] == '"' || val[i] == '\\')
-				out << '\\';
-			out << val[i];
-		}
-	}
-	out << "\",\n";
-
-	out << "\"AUTHOR\" : \"" << author_ << "\",\n";
-	out << "\"CREATION_TIME\" : " << creationTime_ << ",\n";
-
-	// USELESS... out << "\"NUM_OF_COLS\" : " << getNumberOfColumns() << ",\n";
-	// USELESS... out << "\"NUM_OF_ROWS\" : " <<  getNumberOfRows() << ",\n";
-
-	out << "\"COL_TYPES\" : {\n";
-	for(int c = 0; c < (int)getNumberOfColumns(); ++c)
-	{
-		out << "\t\t\"" << columnsInfo_[c].getStorageName() << "\" : ";
-		out << "\"" << columnsInfo_[c].getDataType() << "\"";
-		if(c + 1 < (int)getNumberOfColumns())
-			out << ",";
-		out << "\n";
-	}
-	out << "},\n";  // close COL_TYPES
-
-	out << "\"DATA_SET\" : [\n";
-	// int num;
-	for(int r = 0; r < (int)getNumberOfRows(); ++r)
-	{
-		out << "\t{\n";
-		for(int c = 0; c < (int)getNumberOfColumns(); ++c)
-		{
-			out << "\t\t\"" << columnsInfo_[c].getStorageName() << "\" : ";
-
-			out << "\"" << getEscapedValueAsString(r, c, false)
-			    << "\"";  // do not convert env variables
-
-			if(c + 1 < (int)getNumberOfColumns())
-				out << ",";
-			out << "\n";
-		}
-		out << "\t}";
-		if(r + 1 < (int)getNumberOfRows())
-			out << ",";
-		out << "\n";
-	}
-	out << "]\n";  // close DATA_SET
-
-	out << "}";
-}  // end printJSON()
-
-//==============================================================================
-void TableView::toJSON(std::ostringstream& out /* = std::cout */)
-{
-	{  //handle special GROUP CACHE table
-		std::string tmpCachePrepend   = TableBase::GROUP_CACHE_PREPEND;
-		tmpCachePrepend               = TableBase::convertToCaps(tmpCachePrepend);
-		std::string tmpJsonDocPrepend = TableBase::JSON_DOC_PREPEND;
-		tmpJsonDocPrepend             = TableBase::convertToCaps(tmpJsonDocPrepend);
-		__COUTS__(32) << " '" << tableName_ << "' vs " << tmpCachePrepend << " or "
-		              << tmpJsonDocPrepend << __E__;
-		//if special GROUP CACHE table, handle construction in a special way
-		if(tableName_.substr(0, tmpCachePrepend.length()) == tmpCachePrepend ||
-		   tableName_.substr(0, tmpJsonDocPrepend.length()) == tmpJsonDocPrepend)
-		{
-			out << getCustomStorageData();
-			return;
-		}  //end special GROUP CACHE table construction
-	}      //end handle special GROUP CACHE table
-
-	out << "{\n";
-	out << "\"NAME\" : \"" << tableName_ << "\",\n";
-
-	// out << "\"VERSION\" : \"" << version_ <<  "\"\n";
 
 	out << "\"COMMENT\" : ";
 

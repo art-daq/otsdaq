@@ -214,7 +214,6 @@ public:
 	void           								reset						(void);
 	void           								print						(std::ostream& out = std::cout) const;
 	void           								printJSON					(std::ostream& out = std::cout) const;
-	void 										toJSON						(std::ostringstream& out /* = std::cout */);
 	void           								printCSV					(std::ostream& out = std::cout, const std::string& valueDelimeter = ",", const std::string& recordDelimeter = "\n", bool includeColumnNames = true) const;
 	int            								fillFromJSON				(const std::string& json);
 	void           								fillFromCSV					(const std::string& data,
