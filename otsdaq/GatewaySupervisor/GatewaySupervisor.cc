@@ -2727,7 +2727,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 				else
 				{
 					donePos               = std::string::npos;  //clear
-					commandResponseString = "";  //clear
+					commandResponseString = "";                 //clear
 					if(remoteGatewaySocket->receive(commandResponseString,
 					                                10 /*timeoutSeconds*/) ==
 					   0 /* success */)
@@ -7115,8 +7115,7 @@ try
 				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] =
 				    dumpStr.substr(0, dumpStr.size() - 6);
 			else  //non standard format or no END--- suffix
-				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] =
-				    dumpStr;
+				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] = dumpStr;
 		}  //end remote app loop
 
 		if(TTEST(2))
