@@ -1091,12 +1091,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		(*out) << "\n\t]," << __E__;
 		(*out) << "\t\"dump_type\": \t\t\"" << dumpType << "\"," << __E__;
 		(*out) << "\t\"dump_time\": \t\t\"" << rawtime << "\"," << __E__;
-		// {
-		// 	struct tm* timeinfo = localtime(&rawtime);
-		// 	char       buffer[100];
-		// 	strftime(buffer, 100, "%c %Z", timeinfo);
-		// 	(*out) << " \t" << buffer << __E__;
-		// }
+		(*out) << "\t\"dump_formatted_time\": \t\t\""
+		       << StringMacros::getTimestampString(rawtime) << "\"," << __E__;
 	}
 	else
 	{
@@ -1111,12 +1107,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		       << (activeUsers.size() ? activeUsers : "no active users") << __E__;
 		(*out) << "Type of dump: \t\t" << dumpType << __E__;
 		(*out) << "Time of dump: \t\t" << rawtime;
-		{
-			struct tm* timeinfo = localtime(&rawtime);
-			char       buffer[100];
-			strftime(buffer, 100, "%c %Z", timeinfo);
-			(*out) << " \t" << buffer << __E__;
-		}
+		(*out) << " \t" << getTimestampString(rawtime) << __E__;
 	}
 
 	//determine configurationAlias tranlation
@@ -1140,6 +1131,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	//	active group members
 	//	active table contents
 
+	//============================
 	auto localDumpActiveGroups = [](const ConfigurationManager* cfgMgr,
 	                                std::ostream*               out,
 	                                bool                        jsonify = false,
@@ -1184,8 +1176,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 		if(jsonify)
 			(*out) << "\t}";
-	};
+	};  //end localDumpActiveGroups()
 
+	//============================
 	auto localDumpActiveTables = [](const ConfigurationManager* cfgMgr,
 	                                std::ostream*               out,
 	                                bool                        jsonify = false) {
@@ -1224,8 +1217,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 		if(jsonify)
 			(*out) << "\t}";
-	};
+	};  //end localDumpActiveTables()
 
+	//============================
 	auto localDumpActiveGroupMembers = [](ConfigurationManager* cfgMgr,
 	                                      std::ostream*         out,
 	                                      bool                  jsonify = false) {
@@ -1353,8 +1347,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			(*out) << "\nActive Group Members total table count = " << tableCount
 			       << __E__;
 		}
-	};
+	};  //end localDumpActiveGroupMembers()
 
+	//============================
 	auto localDumpActiveTableContents = [](const ConfigurationManager* cfgMgr,
 	                                       std::ostream*               out,
 	                                       bool                        jsonify = false) {
@@ -1403,8 +1398,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		{
 			(*out) << "\t}" << __E__;
 		}
-	};
+	};  //end localDumpActiveTableContents()
 
+	//============================
 	auto localDumpActiveTableStructureStatus = [](ConfigurationManager* cfgMgr,
 	                                              std::ostream*         out) {
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
@@ -1451,7 +1447,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		         << __E__;
 
 		(*out) << "\t]" << __E__;
-	};
+	};  //end localDumpActiveTableStructureStatus()
 
 	if(dumpType == "GroupKeys")
 	{
@@ -1484,7 +1480,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		localDumpActiveTableContents(this, out, true);
 		(*out) << ",\n" << __E__;
 		localDumpActiveTableStructureStatus(this, out);
-		// (*out) << "}\n";
+		(*out) << "}\n";
 	}
 	else
 	{
