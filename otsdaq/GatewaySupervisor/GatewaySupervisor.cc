@@ -2726,7 +2726,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 				}
 				else
 				{
-					donePos               = -1;  //clear
+					donePos               = std::string::npos;  //clear
 					commandResponseString = "";  //clear
 					if(remoteGatewaySocket->receive(commandResponseString,
 					                                10 /*timeoutSeconds*/) ==
@@ -2739,7 +2739,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 					}
 					else  //timeout occurred
 					{
-						donePos               = -1;  //clear
+						donePos               = std::string::npos;  //clear
 						commandResponseString = "TIMEOUT!";
 					}
 				}
