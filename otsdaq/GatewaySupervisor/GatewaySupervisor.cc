@@ -2778,7 +2778,8 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 
 			//make sure we received everything
 			int tryCnt = 0;
-			while(++tryCnt < 100 && commandResponseString.size() > 10 &&
+			while(++tryCnt < 100 &&
+			      commandResponseString.size() > 10 &&  //must end with 'END---'
 			      (commandResponseString[commandResponseString.size() - 1] != '-' ||
 			       commandResponseString[commandResponseString.size() - 2] != '-' ||
 			       commandResponseString[commandResponseString.size() - 3] != '-' ||
@@ -5104,8 +5105,10 @@ try
 					__SS_THROW__;
 				}
 
-				// Claim the next run number from the Run Info plugin when configured.
-				runNumber = runInfoInterface->claimNextRunNumber();
+				// Claim the next run number from the Run Info plugin (pre-start transition).
+				runNumber = runInfoInterface->claimNextRunNumber(
+				    activeStateMachineConfigureConditionID_,
+				    getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME));
 
 			}  // end Run Info Plugin handling
 
@@ -5119,8 +5122,10 @@ try
 		}
 
 		setLastLogEntry(command, "Run #" + std::to_string(runNumber) + ": " + logEntry);
-		parameters.addParameter("RunNumber", runNumber);
-	}  //end Start transition
+		parameters.addParameter(
+		    "RunNumber",
+		    runNumber);  // will be cached in activeStateMachineRunNumber_ in transitionStarting()
+	}                    //end Start transition
 	else if(!(command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 	          command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME ||
 	          command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
@@ -5289,8 +5294,9 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::PAUSE);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::PAUSE,
+					    getLastLogEntry(RunControlStateMachine::PAUSE_TRANSITION_NAME));
 				}
 			}
 		}
@@ -5367,8 +5373,9 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::RESUME);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::RESUME,
+					    getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME));
 				}
 			}
 		}
@@ -5438,9 +5445,6 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					{
 						runInfoInterface.reset(
 						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
-						// ,
-						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
-						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
 					}
 					catch(...)
 					{
@@ -5454,8 +5458,9 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::HALT);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::HALT,
+					    getLastLogEntry(RunControlStateMachine::HALT_TRANSITION_NAME));
 				}
 			}
 		}
@@ -5524,9 +5529,6 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 					{
 						runInfoInterface.reset(
 						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
-						// ,
-						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
-						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
 					}
 					catch(...)
 					{
@@ -5540,8 +5542,9 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::STOP);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::STOP,
+					    getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME));
 				}
 			}
 		}
@@ -5615,9 +5618,6 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					{
 						runInfoInterface.reset(
 						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
-						// ,
-						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
-						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
 					}
 					catch(...)
 					{
@@ -5631,8 +5631,9 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::ERROR);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::ERROR,
+					    getLastLogEntry(RunControlStateMachine::ERROR_TRANSITION_NAME));
 				}
 			}
 		}
@@ -6141,6 +6142,7 @@ try
 
 	// Check if Run Plugin is defined and, if so, create a new condition record into database
 	// leave as repeated code in case dumpFormat is different for Run Plugin (in the future)
+	activeStateMachineConfigureConditionID_ = -1;  //clear attempted Run Info Plugin use
 	try
 	{
 		if(activeStateMachineRunInfoPluginType_ !=
@@ -6188,8 +6190,10 @@ try
 			}
 
 			//in case user wants, insert local configuration blob at each configure transition
-			runInfoInterface->insertLocalConfigureBlob(
-			    activeStateMachineConfigurationDumpOnConfigure_);
+			activeStateMachineConfigureConditionID_ =
+			    runInfoInterface->insertConfigureCondition(
+			        activeStateMachineConfigurationDumpOnConfigure_,
+			        getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME));
 
 		}  // end Run Info Plugin handling
 	}
@@ -7090,6 +7094,17 @@ try
 		gatewayDumpMap["Gateway"]["fsmIncluded"] = "1";
 		gatewayDumpMap["Gateway"]["dump"] = activeStateMachineConfigurationDumpOnRun_;
 
+		//include printenv in dumpMap
+		gatewayDumpMap["Gateway"]["printenv"] = StringMacros::exec(
+		    "printenv");  //if added to json in run info plugin, could use StringMacros::escapeString(...)
+
+		//include system variables in dumpMap
+		for(const auto& typePair : StringMacros::systemVariables_)
+			gatewayDumpMap["Gateway"]["systemVariables_" + typePair.first] =
+			    StringMacros::mapToString(
+			        typePair
+			            .second);  //if added to json in run info plugin, could use StringMacros::escapeString(...)
+
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			if(!remoteGatewayApp.fsm_included)
@@ -7120,13 +7135,13 @@ try
 
 		if(TTEST(2))
 		{
-			__COUT__ << "..." << __E__;
+			__COUTVS__(2, gatewayDumpMap.size());
 			std::string mapDumpStr = "";
 			for(const auto& mapPair : gatewayDumpMap)
 				for(const auto& [key, value] : mapPair.second)
 				{
-					mapDumpStr =
-					    mapPair.first + " ~~ \n" + key + " : " + value + "\nEND!!!";
+					mapDumpStr = mapPair.first + " ~~ \n" + key + " : " + value + "\n" +
+					             key + "-END!!!";
 					__COUT_MULTI__(2, mapDumpStr);
 				}
 		}
@@ -7155,7 +7170,12 @@ try
 				__SS_THROW__;
 			}
 
-			runInfoInterface->insertRunCondition(gatewayDumpMap);
+			activeStateMachineRunConditionID_ = runInfoInterface->insertRunCondition(
+			    static_cast<unsigned int>(std::stoul(
+			        activeStateMachineRunNumber_)),  //claimNextRunNumber() returns unsigned int
+			    gatewayDumpMap,
+			    activeStateMachineConfigureConditionID_,
+			    getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME));
 
 		}  // end Run Info Plugin handling
 

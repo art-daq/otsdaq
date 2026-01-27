@@ -327,7 +327,7 @@ class WorkLoopManager;
 		std::chrono::steady_clock::time_point
 							activeStateMachineRunStartTime;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
-
+		unsigned int		activeStateMachineConfigureConditionID_, activeStateMachineRunConditionID_;
 
 		std::mutex			systemStatusMutex_;
 		std::string 		lastLogbookEntry_;
