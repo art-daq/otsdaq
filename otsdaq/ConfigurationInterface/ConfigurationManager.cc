@@ -1107,7 +1107,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		       << (activeUsers.size() ? activeUsers : "no active users") << __E__;
 		(*out) << "Type of dump: \t\t" << dumpType << __E__;
 		(*out) << "Time of dump: \t\t" << rawtime;
-		(*out) << " \t" << getTimestampString(rawtime) << __E__;
+		(*out) << " \t" << StringMacros::getTimestampString(rawtime) << __E__;
 	}
 
 	//determine configurationAlias tranlation
