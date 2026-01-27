@@ -22,8 +22,7 @@ class ReceiverSocket : public virtual Socket
 	int flush()
 	{
 		int n = 0;
-		static char buffer[1];
-		while(recvfrom(socketNumber_, buffer, sizeof(buffer), MSG_DONTWAIT, nullptr, nullptr) >= 0)
+		while(recvfrom(socketNumber_, flushBuffer_, sizeof(flushBuffer_), MSG_DONTWAIT, nullptr, nullptr) >= 0)
 		{
 			++n;
 		}
@@ -70,6 +69,8 @@ class ReceiverSocket : public virtual Socket
 
 	std::mutex receiveMutex_;  ///< to make receiver socket thread safe
 	    //	i.e. multiple threads can share a socket and call receive()
+
+	char flushBuffer_[1];  ///< small buffer for flush() to avoid nullptr usage
 };
 
 }  // namespace ots
