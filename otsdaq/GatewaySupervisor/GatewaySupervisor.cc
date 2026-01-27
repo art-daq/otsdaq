@@ -6202,25 +6202,6 @@ try
 			runInfoInterface->insertLocalConfigureBlob(
 			    activeStateMachineConfigurationDumpOnConfigure_);
 
-			// std::string configDumpType = activeStateMachineConfigurationDumpOnConfigure_.substr(
-			//     activeStateMachineConfigurationDumpOnConfigure_.find("Type of dump") + sizeof("Type of dump") - 1);
-			// isJSONdump = (configDumpType.find("JSON all") != std::string::npos);
-			// std::string configTypeName = (isJSONdump) ? "JSON all" : "Other";
-			// if(isJSONdump)
-			// {
-			// 	activeStateMachineConfigurationDumpOnConfigure_ += ",\n\"Remote Gateways\": [";
-			// 	activeStateMachineConfigurationDumpOnConfigure_ += remoteSubsystemDump;
-			// 	if(remoteSubsystemDump.size() == 0)
-			// 		activeStateMachineConfigurationDumpOnConfigure_ += "\n]}\n";
-
-			// }
-
-			// __COUT__ << "Final Configure config dump: " << __E__;
-			// __COUT_MULTI__(2, activeStateMachineConfigurationDumpOnConfigure_);
-
-			// conditionID_ = runInfoInterface->insertRunCondition(
-			//     activeStateMachineConfigurationDumpOnConfigure_,
-			// 	configTypeName);
 		}  // end Run Info Plugin handling
 	}
 	catch(const std::runtime_error& e)
@@ -7198,8 +7179,7 @@ try
 				__SS_THROW__;
 			}
 
-			//FIXME -- uncomment after testing!
-			// runInfoInterface->insertRunCondition(gatewayDumpMap); // TODO: uncomment after testing dump
+			runInfoInterface->insertRunCondition(gatewayDumpMap);
 
 		}  // end Run Info Plugin handling
 
@@ -7232,17 +7212,6 @@ try
 		         << activeStateMachineConfigurationDumpOnRun_.size()
 		         << " to file: " << fullfilename << __E__;
 
-		if(activeStateMachineConfigurationDumpOnRun_.size())
-		{
-			fwrite(&activeStateMachineConfigurationDumpOnRun_,
-			       1,
-			       activeStateMachineConfigurationDumpOnRun_.size(),
-			       fp);
-
-			__COUT__ << "Wrote remote subsystem configuration dump of char count "
-			         << activeStateMachineConfigurationDumpOnRun_.size()
-			         << " to file: " << fullfilename << __E__;
-		}
 		fclose(fp);
 
 		__COUT_INFO__ << "Run transition Configuration Dump saved to file: "

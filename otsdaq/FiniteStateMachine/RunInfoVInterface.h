@@ -33,7 +33,9 @@ class RunInfoVInterface  ///< : public Configurable
 
 	virtual unsigned int insertLocalConfigureBlob	(const std::string& /*blob*/) { __COUT__ << "Not implemented!!"; return -1;};
 
-	virtual unsigned int insertRunCondition(const std::string& runInfoConditions = "",
+	virtual unsigned int insertRunCondition(const std::map<std::string /* subsystem */,
+												std::map<std::string /*type/name/field */, std::string /* value */>>&
+															   runConditionMap,
 	                                        const std::string& configTypeName = "") = 0;
 
 	virtual unsigned int claimNextRunNumber(unsigned int       conditionID,
