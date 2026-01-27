@@ -6132,17 +6132,6 @@ try
 		         << activeStateMachineConfigurationDumpOnConfigure_.size()
 		         << " to file: " << fullfilename << __E__;
 
-		if(activeStateMachineConfigurationDumpOnConfigure_.size())
-		{
-			fwrite(activeStateMachineConfigurationDumpOnConfigure_.c_str(),
-			       1,
-			       activeStateMachineConfigurationDumpOnConfigure_.size(),
-			       fp);
-
-			__COUT__ << "Wrote remote subsystem configuration dump of char count "
-			         << activeStateMachineConfigurationDumpOnConfigure_.size()
-			         << " to file: " << fullfilename << __E__;
-		}
 		fclose(fp);
 
 		__COUT_INFO__ << "Configure transition Configuration Dump saved to file: "
