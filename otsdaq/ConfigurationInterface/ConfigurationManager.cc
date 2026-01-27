@@ -1291,8 +1291,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 			if(jsonify)
 			{
-				(*out) << "\t\t\t\"version\": \t\"" << it->second.second << "\","
-				       << __E__;
+				(*out) << "\t\t\t\"key\": \t\"" << it->second.second << "\"," << __E__;
 				(*out) << "\t\t\t\"comment\": \t\"" << groupComment << "\"," << __E__;
 				(*out) << "\t\t\t\"author\": \t\"" << groupAuthor << "\"," << __E__;
 
@@ -1380,7 +1379,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			{
 				__COUT__ << "localDumpActiveTableContents table: " << it->first << __E__;
 				auto table = cfgMgr->nameToTableMap_.find(it->first)->second->getViewP();
-				(*out) << "\t\t\"" << it->first << "\": ";
+				(*out) << "\t\t\"" << it->first << "-v" << it->second << "\": ";
 				table->printJSON(*out);
 				(*out) << (std::next(it) == activeTables.end() ? "" : ",") << __E__;
 			}
@@ -1411,28 +1410,34 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
 		__COUT__ << "Active Table size: " << activeTables.size() << __E__;
-		(*out) << "\t\"Active Table Structure Status\": [" << __E__;
+		(*out) << "\t\"Active Table Structure\": [" << __E__;
 
 		// bool firstPrint = true;
 		std::string                                   activeTableStructure = "";
 		std::map<std::string, TableVersion>::iterator it;
+		size_t                                        tableStructureFoundCount = 0;
 		for(it = activeTables.begin(); it != activeTables.end(); ++it)
 		{
 			try
 			{
-				__COUT__ << "Trying to retrieve " << it->first << " Structure Status"
-				         << __E__;
+				__COUTT__ << "Trying to retrieve " << it->first << "-v" << it->second
+				          << " Structure" << __E__;
 				activeTableStructure =
 				    cfgMgr->nameToTableMap_.find(it->first)->second->getStructureAsJSON(
 				        cfgMgr);
 				if(activeTableStructure != "")
 				{
-					__COUT__ << "Found Structure Status for Active Table: " << it->first
-					         << __E__;
-					(*out) << (std::next(it) == activeTables.end() ? "" : ",") << __E__;
+					__COUT__ << "Found Structure for Active Table: " << it->first << "-v"
+					         << it->second << __E__;
+
+					(*out) << (tableStructureFoundCount++ ? "," : "") << __E__;
+
+					(*out) << "\t{ \"table_name\": \"" << it->first << "\", "
+					       << "\"table_version\": \"" << it->second
+					       << "\", \n\t\"table_structure\": " << __E__;
 					(*out) << activeTableStructure << __E__;
+					(*out) << "\t}";
 				}
-				// firstPrint = false;
 			}
 			catch(const std::exception& e)
 			{
@@ -1440,7 +1445,10 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				         << e.what();
 				__COUT__ << "Structure Status may not be implemented." << __E__;
 			}
-		}
+		}  //end table structure loop
+
+		__COUT__ << "Found " << tableStructureFoundCount << " Active Table Structures."
+		         << __E__;
 
 		(*out) << "\t]" << __E__;
 	};
