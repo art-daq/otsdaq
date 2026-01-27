@@ -8,12 +8,12 @@
 				<COLUMN Type="UniqueData" 	 Name="RunDisplayAlias" 	 StorageName="RUN_DISPLAY_ALIAS" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="YesNo" 	 Name="RequireUserLogInputOnConfigureTransition" 	 StorageName="REQUIRE_USER_LOG_INPUT_ON_CONFIGURE_TRANSITION" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="YesNo" 	 Name="EnableConfigurationDumpOnConfigureTransition" 	 StorageName="ENABLE_TABLE_DUMP_ON_CONFIGURE_TRANSITION" 		DataType="STRING" 		DataChoices=""/>
-				<COLUMN Type="FixedChoiceData" 	 Name="ConfigurationDumpOnConfigureFormat" 	 StorageName="TABLE_DUMP_ON_CONFIGURE_FORMAT" 		DataType="STRING" 		DataChoices="arbitraryBool=0,TableVersions,GroupKeysAndTableVersions,All"/>
+				<COLUMN Type="FixedChoiceData" 	 Name="ConfigurationDumpOnConfigureFormat" 	 StorageName="TABLE_DUMP_ON_CONFIGURE_FORMAT" 		DataType="STRING" 		DataChoices="arbitraryBool=0,TableVersions,GroupKeysAndTableVersions,All,JSON all"/>
 				<COLUMN Type="Data" 	 Name="ConfigurationDumpOnConfigureFilePath" 	 StorageName="TABLE_DUMP_ON_CONFIGURE_FILE_PATH" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Data" 	 Name="ConfigurationDumpOnConfigureFileRadix" 	 StorageName="TABLE_DUMP_ON_CONFIGURE_FILE_RADIX" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="YesNo" 	 Name="RequireUserLogInputOnRunTransition" 	 StorageName="REQUIRE_USER_LOG_INPUT_ON_RUN_TRANSITION" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="YesNo" 	 Name="EnableConfigurationDumpOnRunTransition" 	 StorageName="ENABLE_TABLE_DUMP_ON_RUN_TRANSITION" 		DataType="STRING" 		DataChoices=""/>
-				<COLUMN Type="FixedChoiceData" 	 Name="ConfigurationDumpOnRunFormat" 	 StorageName="TABLE_DUMP_ON_RUN_FORMAT" 		DataType="STRING" 		DataChoices="arbitraryBool=0,TableVersions,GroupKeysAndTableVersions,All"/>
+				<COLUMN Type="FixedChoiceData" 	 Name="ConfigurationDumpOnRunFormat" 	 StorageName="TABLE_DUMP_ON_RUN_FORMAT" 		DataType="STRING" 		DataChoices="arbitraryBool=0,TableVersions,GroupKeysAndTableVersions,All,JSON all"/>
 				<COLUMN Type="Data" 	 Name="ConfigurationDumpOnRunFilePath" 	 StorageName="TABLE_DUMP_ON_RUN_FILE_PATH" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Data" 	 Name="ConfigurationDumpOnRunFileRadix" 	 StorageName="TABLE_DUMP_ON_RUN_FILE_RADIX" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Data" 	 Name="RunInfoPluginType" 	 StorageName="RUN_INFO_PLUGIN_TYPE" 		DataType="STRING" 		DataChoices=""/>

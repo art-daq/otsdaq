@@ -64,7 +64,7 @@ class TableBase
 	TableVersion 				getNextTemporaryVersion			(void) const;
 	TableVersion 				getNextVersion					(void) const;
 
-	virtual std::string     	getStructureStatusAsJSON		(ConfigurationManager* configManager) const {__SS__ << "This function is not implemented for this table '" << getTableName() << "'" << __E__; __SS_THROW__; return configManager?"":"" /*to use param*/;};
+	virtual std::string     	getStructureAsJSON				(const ConfigurationManager* /* configManager */) {__SS__ << "This function is not implemented for this table '" << getTableName() << "'" << __E__; __SS_THROW__;};
 
 	/// Setters
 	void         				setTableName					(const std::string& tableName);

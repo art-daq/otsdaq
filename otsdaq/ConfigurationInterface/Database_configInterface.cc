@@ -1015,8 +1015,12 @@ try
 
 	auto ifc = db::ConfigurationInterface{default_dbprovider};
 
-	std::set<std::string> returnSet =
-	    ifc.findGlobalConfigurationsContaining(tableName, version.toString());
+	// TODO: Re-enable the lookup of global configurations containing this table once
+	//       the performance concerns that led to disabling it are resolved.
+	//       Previously, this method used `ifc.findGlobalConfigurationsContaining(tableName, version.toString())`
+	//       to query for groups containing `tableName` at `version`. For now, it intentionally
+	//       returns an empty set so callers must not rely on this for group discovery.
+	std::set<std::string> returnSet;
 
 	__COUTT__ << "Number of Groups containing table '" << tableName << "-v" << version
 	          << "': " << returnSet.size() << __E__;

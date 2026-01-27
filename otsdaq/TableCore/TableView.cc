@@ -944,15 +944,6 @@ std::string TableView::validateValueForColumn(const std::string& value,
 		    doConvertEnvironmentVariables
 		        ? StringMacros::convertEnvironmentVariables(value)
 		        : value);
-
-		//		retValue.resize(30); //known fixed size: Thu Aug 23 14:55:02 2001 CST
-		//		time_t timestamp(
-		//				strtol((doConvertEnvironmentVariables?StringMacros::convertEnvironmentVariables(value):value).c_str(),
-		//						0,10));
-		//		struct tm tmstruct;
-		//		::localtime_r(&timestamp, &tmstruct);
-		//		::strftime(&retValue[0], 30, "%c %Z", &tmstruct);
-		//		retValue.resize(strlen(retValue.c_str()));
 	}
 	else
 	{
@@ -982,7 +973,7 @@ std::string TableView::getValueAsString(unsigned int row,
 		__SS_THROW__;
 	}
 
-	//__COUT__ << columnsInfo_[col].getType() << " " << col << __E__;
+	__COUTS__(30) << columnsInfo_[col].getType() << " " << col << __E__;
 
 	if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_ON_OFF)
 	{
@@ -1009,11 +1000,10 @@ std::string TableView::getValueAsString(unsigned int row,
 			return TableViewColumnInfo::TYPE_VALUE_NO;
 	}
 
-	//__COUT__ << __E__;
 	return doConvertEnvironmentVariables
 	           ? StringMacros::convertEnvironmentVariables(theDataView_[row][col])
 	           : theDataView_[row][col];
-}
+}  //end getValueAsString()
 
 //==============================================================================
 /// getEscapedValueAsString
@@ -1051,7 +1041,7 @@ std::string TableView::getEscapedValueAsString(
 		}
 	}
 	return retVal;
-}
+}  //end getEscapedValueAsString()
 
 //==============================================================================
 /// setValue
@@ -2225,7 +2215,7 @@ void TableView::printJSON(std::ostream& out /* = std::cout */) const
 	out << "{\n";
 	out << "\"NAME\" : \"" << tableName_ << "\",\n";
 
-	// out << "\"VERSION\" : \"" << version_ <<  "\"\n";
+	// out << "\"VERSION\": \"" << version_ << "\",\n";
 
 	out << "\"COMMENT\" : ";
 

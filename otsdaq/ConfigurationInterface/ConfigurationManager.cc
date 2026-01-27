@@ -1034,6 +1034,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
                                                    const std::string& configurationAlias,
                                                    const std::string& logEntry,
                                                    const std::string& activeUsers,
+                                                   const std::string& activeStateMachine,
                                                    std::ostream& altOut /* = std::cout */)
 {
 	time_t rawtime = time(0);
@@ -1061,34 +1062,68 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		out = &(altOut);
 	}
 
-	(*out) << "#################################" << __E__;
-	(*out) << "This is an ots configuration dump.\n" << __E__;
-	(*out) << "Source database is $ARTDAQ_DATABASE_URI: "
-	       << __ENV__("ARTDAQ_DATABASE_URI") << __E__;
-	if(fs.is_open())
-		(*out) << "Original location of dump:               " << __ENV__("HOSTNAME")
-		       << ":" << filePath << __E__;
-	(*out) << "\nActive ots users: \t"
-	       << (activeUsers.size() ? activeUsers : "no active users") << __E__;
-	(*out) << "Type of dump: \t\t" << dumpType << __E__;
-	(*out) << "Time of dump: \t\t" << rawtime;
+	if(dumpType == "JSON all")
 	{
-		struct tm* timeinfo = localtime(&rawtime);
-		char       buffer[100];
-		strftime(buffer, 100, "%c %Z", timeinfo);
-		(*out) << " \t" << buffer << __E__;
+		(*out) << "{\n";
+		(*out) << "\t\"ARTDAQ_DATABASE_URI\": \"" << __ENV__("ARTDAQ_DATABASE_URI")
+		       << "\"," << __E__;
+		if(fs.is_open())
+		{
+			(*out) << "\t\"HOSTNAME\": \"" << __ENV__("HOSTNAME") << "\"," << __E__;
+			(*out) << "\t\"HOSTNAME filepath\": \"" << filePath << "\"," << __E__;
+			(*out) << "\t\"Active State Machine\": \"" << activeStateMachine << "\","
+			       << __E__;
+		}
+		(*out) << "\t\"active_users\": \t[";
+		if(activeUsers.size())
+		{
+			std::istringstream iss(activeUsers);
+			std::string        user;
+			bool               first = true;
+			while(std::getline(iss, user, ','))
+			{
+				if(!first)
+					(*out) << ",";
+				(*out) << "\n\t\t\"" << user << "\"";
+				first = false;
+			}
+		}
+		(*out) << "\n\t]," << __E__;
+		(*out) << "\t\"dump_type\": \t\t\"" << dumpType << "\"," << __E__;
+		(*out) << "\t\"dump_time\": \t\t\"" << rawtime << "\"," << __E__;
+		(*out) << "\t\"dump_formatted_time\": \t\t\""
+		       << StringMacros::getTimestampString(rawtime) << "\"," << __E__;
+	}
+	else
+	{
+		(*out) << "#################################" << __E__;
+		(*out) << "This is an ots configuration dump.\n" << __E__;
+		(*out) << "Source database is $ARTDAQ_DATABASE_URI: "
+		       << __ENV__("ARTDAQ_DATABASE_URI") << __E__;
+		if(fs.is_open())
+			(*out) << "Original location of dump:               " << __ENV__("HOSTNAME")
+			       << ":" << filePath << __E__;
+		(*out) << "\nActive ots users: \t"
+		       << (activeUsers.size() ? activeUsers : "no active users") << __E__;
+		(*out) << "Type of dump: \t\t" << dumpType << __E__;
+		(*out) << "Time of dump: \t\t" << rawtime;
+		(*out) << " \t" << StringMacros::getTimestampString(rawtime) << __E__;
 	}
 
 	//determine configurationAlias tranlation
 	std::pair<std::string, ots::TableGroupKey> configurationTableGroup =
 	    getTableGroupFromAlias(configurationAlias);
-	(*out) << "Configuration Alias: \t\t\t" << configurationAlias << "\n";
-	(*out) << "Configuration Alias translation: \t" << configurationTableGroup.first
-	       << "(" << configurationTableGroup.second << ")\n\n";
 
-	if(logEntry.size())
-		(*out) << "User Log Entry (" << logEntry.size() << " chars):\n"
-		       << logEntry << __E__;
+	if(dumpType != "JSON all")
+	{
+		(*out) << "Configuration Alias: \t\t\t" << configurationAlias << "\n";
+		(*out) << "Configuration Alias translation: \t" << configurationTableGroup.first
+		       << "(" << configurationTableGroup.second << ")\n\n";
+
+		if(logEntry.size())
+			(*out) << "User Log Entry (" << logEntry.size() << " chars):\n"
+			       << logEntry << __E__;
+	}
 
 	// define local "lambda" functions
 	//	active groups
@@ -1096,52 +1131,136 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	//	active group members
 	//	active table contents
 
+	//============================
 	auto localDumpActiveGroups = [](const ConfigurationManager* cfgMgr,
-	                                std::ostream*               out) {
+	                                std::ostream*               out,
+	                                bool                        jsonify = false,
+	                                std::string                 configurationAlias = "") {
 		std::map<std::string, std::pair<std::string, TableGroupKey>> activeGroups =
 		    cfgMgr->getActiveTableGroups();
 
-		(*out) << "\n\n************************" << __E__;
-		(*out) << "Active Groups:" << __E__;
-		for(auto& group : activeGroups)
+		if(jsonify)
 		{
-			(*out) << "\t" << group.first << " := " << group.second.first << " ("
-			       << group.second.second << ")" << __E__;
+			(*out) << "\n\t\"groups\": {\n";
 		}
-	};
+		else
+		{
+			(*out) << "\n\n************************" << __E__;
+			(*out) << "Active Groups: " << __E__;
+		}
 
+		std::map<std::string, std::pair<std::string, TableGroupKey>>::iterator it;
+
+		for(it = activeGroups.begin(); it != activeGroups.end(); ++it)
+		{
+			if(jsonify)
+			{
+				(*out) << "\t\t\"" << it->first << "_group_name\": \"" << it->second.first
+				       << "\",\n";
+				(*out) << "\t\t\"" << it->first << "_group_key\": \"" << it->second.second
+				       << "\"";
+				if(it->first == "Configuration")
+				{
+					(*out) << ",\n";
+					(*out) << "\t\t\""
+					       << "Configuration_alias\": \"" << configurationAlias << "\"";
+				}
+				(*out) << (std::next(it) == activeGroups.end() ? "" : ",") << "\n";
+			}
+			else
+			{
+				(*out) << "\t" << it->first << " := " << it->second.first << " ("
+				       << it->second.second << ")" << __E__;
+			}
+		}
+
+		if(jsonify)
+			(*out) << "\t}";
+	};  //end localDumpActiveGroups()
+
+	//============================
 	auto localDumpActiveTables = [](const ConfigurationManager* cfgMgr,
-	                                std::ostream*               out) {
+	                                std::ostream*               out,
+	                                bool                        jsonify = false) {
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
-		(*out) << "\n\n************************" << __E__;
-		(*out) << "Active Tables:" << __E__;
-		(*out) << "Active Tables count = " << activeTables.size() << __E__;
-
-		unsigned int i = 0;
-		for(auto& table : activeTables)
+		if(jsonify)
 		{
-			(*out) << "\t" << ++i << ". " << table.first << "-v" << table.second << __E__;
+			(*out) << "\t\"tables\": { " << __E__;
 		}
-	};
+		else
+		{
+			(*out) << "\n\n************************" << __E__;
+			(*out) << "Active Tables:" << __E__;
+			(*out) << "Active Tables count = " << activeTables.size() << __E__;
+		}
 
+		unsigned int                                  i = 0;
+		std::map<std::string, TableVersion>::iterator it;
+		for(it = activeTables.begin(); it != activeTables.end(); ++it)
+		{
+			if(jsonify)
+			{
+				(*out) << "\t\t\""
+				       << "active_table_name"
+				       << "\": \"" << it->first << "\",\n";
+				(*out) << "\t\t\""
+				       << "active_table_version"
+				       << "\": \"" << it->second << "\"";
+				(*out) << (std::next(it) == activeTables.end() ? "" : ",") << "\n";
+			}
+			else
+			{
+				(*out) << "\t" << ++i << ". " << it->first << "-v" << it->second << __E__;
+			}
+		}
+
+		if(jsonify)
+			(*out) << "\t}";
+	};  //end localDumpActiveTables()
+
+	//============================
 	auto localDumpActiveGroupMembers = [](ConfigurationManager* cfgMgr,
-	                                      std::ostream*         out) {
+	                                      std::ostream*         out,
+	                                      bool                  jsonify = false) {
 		std::map<std::string, std::pair<std::string, TableGroupKey>> activeGroups =
 		    cfgMgr->getActiveTableGroups();
-		(*out) << "\n\n************************" << __E__;
-		(*out) << "Active Group Members:" << __E__;
-		int tableCount = 0;
-		for(auto& group : activeGroups)
-		{
-			(*out) << "\t" << group.first << " := " << group.second.first << " ("
-			       << group.second.second << ")" << __E__;
 
-			if(group.second.first == "")
+		if(jsonify)
+		{
+			(*out) << "\t\"group_members\": { " << __E__;
+		}
+		else
+		{
+			(*out) << "\n\n************************" << __E__;
+			(*out) << "Active Group Members:" << __E__;
+		}
+
+		int tableCount = 0;
+		std::map<std::string, std::pair<std::string, TableGroupKey>>::iterator it;
+		for(it = activeGroups.begin(); it != activeGroups.end(); ++it)
+		{
+			if(!jsonify)
 			{
-				(*out) << "\t"
-				       << "Empty group name. Assuming no active group." << __E__;
+				(*out) << "\t" << it->first << " := " << it->second.first << " ("
+				       << it->second.second << ")" << __E__;
+			}
+
+			if(it->second.first == "")
+			{
+				if(!jsonify)
+				{
+					(*out) << "\t"
+					       << "Empty group name. Assuming no active group." << __E__;
+				}
 				continue;
+			}
+
+			if(jsonify)
+			{
+				(*out) << "\t\t\"" << it->first << "\" : {" << __E__;
+				(*out) << "\t\t\t\"Name\": \t\"" << it->second.first << "\""
+				       << (std::next(it) == activeGroups.end() ? "" : ",") << __E__;
 			}
 
 			std::map<std::string /*name*/, TableVersion /*version*/> memberMap;
@@ -1151,8 +1270,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			std::string                                              groupCreateTime;
 			time_t                                                   groupCreateTime_t;
 
-			cfgMgr->loadTableGroup(group.second.first,
-			                       group.second.second,
+			cfgMgr->loadTableGroup(it->second.first,
+			                       it->second.second,
 			                       false /*doActivate*/,
 			                       &memberMap /*memberMap*/,
 			                       0 /*progressBar*/,
@@ -1164,48 +1283,171 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			                       0 /*groupTypeString*/,
 			                       &groupAliases);
 
-			(*out) << "\t\tGroup Comment: \t" << groupComment << __E__;
-			(*out) << "\t\tGroup Author: \t" << groupAuthor << __E__;
-
-			sscanf(groupCreateTime.c_str(), "%ld", &groupCreateTime_t);
-			(*out) << "\t\tGroup Create Time: \t" << ctime(&groupCreateTime_t) << __E__;
-			(*out) << "\t\tGroup Aliases: \t" << StringMacros::mapToString(groupAliases)
-			       << __E__;
-
-			(*out) << "\t\tMember table count = " << memberMap.size() << __E__;
-			tableCount += memberMap.size();
-
-			unsigned int i = 0;
-			for(auto& member : memberMap)
+			if(jsonify)
 			{
-				(*out) << "\t\t\t" << ++i << ". " << member.first << "-v" << member.second
+				(*out) << "\t\t\t\"key\": \t\"" << it->second.second << "\"," << __E__;
+				(*out) << "\t\t\t\"comment\": \t\"" << groupComment << "\"," << __E__;
+				(*out) << "\t\t\t\"author\": \t\"" << groupAuthor << "\"," << __E__;
+
+				sscanf(groupCreateTime.c_str(), "%ld", &groupCreateTime_t);
+				std::string timeCreated = ctime(&groupCreateTime_t);
+				(*out) << "\t\t\t\"create_time\": \t\""
+				       << timeCreated.erase(timeCreated.find('\n', 0), 1) << "\","
 				       << __E__;
+				(*out) << "\t\t\t\"group_aliases\": \t\""
+				       << StringMacros::mapToString(groupAliases) << "\"," << __E__;
+
+				(*out) << "\t\t\t\"table_count\": \t\"" << memberMap.size() << "\","
+				       << __E__;
+				tableCount += memberMap.size();
+
+				(*out) << "\t\t\t\"tables\": {" << __E__;
+
+				std::map<std::string /*name*/, TableVersion /*version*/>::iterator
+				    iterMap;
+				for(iterMap = memberMap.begin(); iterMap != memberMap.end(); ++iterMap)
+				{
+					(*out) << "\t\t\t\t\"" << iterMap->first << "\": \""
+					       << iterMap->second << "\""
+					       << (std::next(iterMap) == memberMap.end() ? "" : ",") << __E__;
+				}
+				(*out) << "\t\t\t}" << __E__;
+				(*out) << "\t\t}," << __E__;
+			}
+			else
+			{
+				(*out) << "\t\tGroup Comment: \t" << groupComment << __E__;
+				(*out) << "\t\tGroup Author: \t" << groupAuthor << __E__;
+
+				sscanf(groupCreateTime.c_str(), "%ld", &groupCreateTime_t);
+				(*out) << "\t\tGroup Create Time: \t" << ctime(&groupCreateTime_t)
+				       << __E__;
+				(*out) << "\t\tGroup Aliases: \t"
+				       << StringMacros::mapToString(groupAliases) << __E__;
+
+				(*out) << "\t\tMember table count = " << memberMap.size() << __E__;
+				tableCount += memberMap.size();
+
+				unsigned int i = 0;
+				for(auto& member : memberMap)
+				{
+					(*out) << "\t\t\t" << ++i << ". " << member.first << "-v"
+					       << member.second << __E__;
+				}
 			}
 		}
-		(*out) << "\nActive Group Members total table count = " << tableCount << __E__;
-	};
 
+		if(jsonify)
+		{
+			(*out) << "\t\"total_table_count\": \"" << tableCount << "\"" << __E__;
+			(*out) << "\t}";
+		}
+		else
+		{
+			(*out) << "\nActive Group Members total table count = " << tableCount
+			       << __E__;
+		}
+	};  //end localDumpActiveGroupMembers()
+
+	//============================
 	auto localDumpActiveTableContents = [](const ConfigurationManager* cfgMgr,
-	                                       std::ostream*               out) {
+	                                       std::ostream*               out,
+	                                       bool                        jsonify = false) {
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
-		(*out) << "\n\n************************" << __E__;
-		(*out) << "Active Table Contents (table count = " << activeTables.size()
-		       << "):" << __E__;
-		unsigned int i = 0;
-		for(auto& table : activeTables)
+		if(jsonify)
 		{
-			(*out) << "\n\n=============================================================="
-			          "================"
-			       << __E__;
-			(*out) << "=================================================================="
-			          "============"
-			       << __E__;
-			(*out) << "\t" << ++i << ". " << table.first << "-v" << table.second << __E__;
-
-			cfgMgr->nameToTableMap_.find(table.first)->second->print(*out);
+			(*out) << "\t\"tables\": {" << __E__;
 		}
-	};
+		else
+		{
+			(*out) << "\n\n************************" << __E__;
+			(*out) << "Active Table Contents (table count = " << activeTables.size()
+			       << "):" << __E__;
+		}
+
+		unsigned int                                  i = 0;
+		std::map<std::string, TableVersion>::iterator it;
+		for(it = activeTables.begin(); it != activeTables.end(); ++it)
+		{
+			if(jsonify)
+			{
+				__COUT__ << "localDumpActiveTableContents table: " << it->first << __E__;
+				auto table = cfgMgr->nameToTableMap_.find(it->first)->second->getViewP();
+				(*out) << "\t\t\"" << it->first << "-v" << it->second << "\": ";
+				table->printJSON(*out);
+				(*out) << (std::next(it) == activeTables.end() ? "" : ",") << __E__;
+			}
+			else
+			{
+				(*out) << "\n\n=========================================================="
+				          "===="
+				          "================"
+				       << __E__;
+				(*out) << "=============================================================="
+				          "===="
+				          "============"
+				       << __E__;
+				(*out) << "\t" << ++i << ". " << it->first << "-v" << it->second << __E__;
+
+				cfgMgr->nameToTableMap_.find(it->first)->second->print(*out);
+			}
+		}
+
+		if(jsonify)
+		{
+			(*out) << "\t}" << __E__;
+		}
+	};  //end localDumpActiveTableContents()
+
+	//============================
+	auto localDumpActiveTableStructureStatus = [](ConfigurationManager* cfgMgr,
+	                                              std::ostream*         out) {
+		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
+
+		__COUT__ << "Active Table size: " << activeTables.size() << __E__;
+		(*out) << "\t\"Active Table Structure\": [" << __E__;
+
+		// bool firstPrint = true;
+		std::string                                   activeTableStructure = "";
+		std::map<std::string, TableVersion>::iterator it;
+		size_t                                        tableStructureFoundCount = 0;
+		for(it = activeTables.begin(); it != activeTables.end(); ++it)
+		{
+			try
+			{
+				__COUTT__ << "Trying to retrieve " << it->first << "-v" << it->second
+				          << " Structure" << __E__;
+				activeTableStructure =
+				    cfgMgr->nameToTableMap_.find(it->first)->second->getStructureAsJSON(
+				        cfgMgr);
+				if(activeTableStructure != "")
+				{
+					__COUT__ << "Found Structure for Active Table: " << it->first << "-v"
+					         << it->second << __E__;
+
+					(*out) << (tableStructureFoundCount++ ? "," : "") << __E__;
+
+					(*out) << "\t{ \"table_name\": \"" << it->first << "\", "
+					       << "\"table_version\": \"" << it->second
+					       << "\", \n\t\"table_structure\": " << __E__;
+					(*out) << activeTableStructure << __E__;
+					(*out) << "\t}";
+				}
+			}
+			catch(const std::exception& e)
+			{
+				__COUT__ << "Error caught in localDumpActiveTableStructureStatus(): "
+				         << e.what();
+				__COUT__ << "Structure Status may not be implemented." << __E__;
+			}
+		}  //end table structure loop
+
+		__COUT__ << "Found " << tableStructureFoundCount << " Active Table Structures."
+		         << __E__;
+
+		(*out) << "\t]" << __E__;
+	};  //end localDumpActiveTableStructureStatus()
 
 	if(dumpType == "GroupKeys")
 	{
@@ -1226,6 +1468,19 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		localDumpActiveGroupMembers(this, out);
 		localDumpActiveTables(this, out);
 		localDumpActiveTableContents(this, out);
+	}
+	else if(dumpType == "JSON all")
+	{
+		localDumpActiveGroups(this, out, true, configurationAlias);
+		(*out) << ",\n";
+		localDumpActiveGroupMembers(this, out, true);
+		(*out) << ",\n";
+		//localDumpActiveTables(this, out, true);
+		//(*out) << ",\n" << __E__;
+		localDumpActiveTableContents(this, out, true);
+		(*out) << ",\n" << __E__;
+		localDumpActiveTableStructureStatus(this, out);
+		(*out) << "}\n";
 	}
 	else
 	{
@@ -4736,9 +4991,8 @@ ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
 	FILE* groupFile = fopen(fullPath.c_str(), "r");
 	if(!groupFile)
 	{
-		__COUT__ << "Can't open file: " << fullPath << __E__;
-
-		__COUT__ << "Returning empty groupName and key -1" << __E__;
+		__COUT__ << "Can't open file: " << fullPath
+		         << ". Returning empty groupName and key -1" << __E__;
 
 		return std::pair<std::string /*group name*/, TableGroupKey>("", TableGroupKey());
 	}
@@ -4766,8 +5020,8 @@ ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
 	returnedTimeString = StringMacros::getTimestampString(timestamp);  // line;
 	fclose(groupFile);
 
-	__COUT__ << "theGroup.first=" << theGroup.first
-	         << " theGroup.second=" << theGroup.second << __E__;
+	__COUTT__ << "theGroup.first=" << theGroup.first
+	          << " theGroup.second=" << theGroup.second << __E__;
 
 	return theGroup;
 }  // end loadGroupNameAndKey()
@@ -4780,8 +5034,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
                                        const std::string& groupType,
                                        bool               formatTime /* = false */)
 {
-	__COUTV__(groupAction);
-	__COUTV__(groupType);
+	__COUTTV__(groupAction);
+	__COUTTV__(groupType);
 
 	std::string fullPath = ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/";
 

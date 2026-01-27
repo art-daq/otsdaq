@@ -200,7 +200,7 @@ class ConfigurationManager
 	}
 	const TableBase* 					getTableByName				(const std::string& configurationName) const;
 
-	void 								dumpActiveConfiguration		(const std::string& filePath, const std::string& dumpType, const std::string& configurationAlias, const std::string& logEntry, const std::string& activeUsers, std::ostream& altOut = std::cout);
+	void 								dumpActiveConfiguration		(const std::string& filePath, const std::string& dumpType, const std::string& configurationAlias, const std::string& logEntry, const std::string& activeUsers, const std::string& activeStateMachine, std::ostream& altOut = std::cout);
 	void								dumpMacroMakerModeFhicl		(void);
 
 	std::map<std::string /*groupAlias*/,

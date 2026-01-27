@@ -139,6 +139,14 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 	// 			__SUP_COUTV__(netVector.size());
 	// }
 
+	//---------------
+	{ // init StringMacros::systemVariables_
+		StringMacros::systemVariables_["ActiveStateMachine"]["name"] = StringMacros::TBD;
+		StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] = StringMacros::TBD;
+		StringMacros::systemVariables_["ActiveStateMachine"]["fileNameAlias"] = StringMacros::TBD;
+	} // end init StringMacros::systemVariables_
+	__SUP_COUTV__(StringMacros::mapToString(StringMacros::systemVariables_));
+	//---------------
 	CorePropertySupervisorBase::indicateOtsAlive(this);
 
 	theConfigurationManager_->setOwnerContext(CorePropertySupervisorBase::supervisorContextUID_);

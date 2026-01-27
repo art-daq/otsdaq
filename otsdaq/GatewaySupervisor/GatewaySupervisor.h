@@ -314,6 +314,7 @@ class WorkLoopManager;
 
 		std::string 		activeStateMachineName_;  ///< when multiple state machines, this is the name of the state machine which executed the configure transition
 		std::string 		activeStateMachineWindowName_;
+		std::string 		activeStateMachineDumpFormatOnRun_, activeStateMachineDumpFormatOnConfigure_; ///<cached at Configure transition
 		std::string 		activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; ///<cached at Configure transition
 		bool				activeStateMachineConfigurationDumpOnRunEnable_, activeStateMachineConfigurationDumpOnConfigureEnable_; ///<cached at Configure transition
 		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; ///<cached at Configure transition
@@ -326,7 +327,7 @@ class WorkLoopManager;
 		std::chrono::steady_clock::time_point
 							activeStateMachineRunStartTime;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
-
+		unsigned int		activeStateMachineConfigureConditionID_, activeStateMachineRunConditionID_;
 
 		std::mutex			systemStatusMutex_;
 		std::string 		lastLogbookEntry_;
@@ -372,8 +373,17 @@ public:	//used by remote subsystem control and status
 		struct RemoteGatewayInfo {
 			SupervisorInfo::SubappInfo 			appInfo;
 
+			enum class ConfigDumpTypes ///<FSM Modes: 'Follow FSM,' 'Do not Halt' (artdaq),  or 'Only Configure' (DCS/DQM)
+			{
+				Text,
+				JSON_all,
+				Unknown
+			};
+
 			std::string 						command, fsmName; ///<when not "", need to send
 			std::string							error, config_dump;
+			ConfigDumpTypes						config_dump_type = ConfigDumpTypes::Unknown;
+
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
@@ -407,6 +417,15 @@ public:	//used by remote subsystem control and status
 				}
 			} //end getFsmMode()
 
+			std::string							getConfigDumpType() const {
+				switch(config_dump_type)
+				{
+					case ConfigDumpTypes::Text: return "Text";
+					case ConfigDumpTypes::JSON_all: return "JSON all";
+					default: return "Unknown";
+				}
+			} //end getFsmMode()
+
 			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///< remote gateways can have subapps
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
@@ -421,7 +440,12 @@ public:	//used by remote subsystem control and status
 
 		std::mutex											latestGatewayIconsMutex_;
 		std::vector<DesktopIconTable::DesktopIcon>			latestGatewayIcons_; ///< used to track the latest desktop icons (which are defined by the active context but allowed to change dynamically)
+		std::pair<std::string /* latestIconContext group */, TableGroupKey>
+															latestGatewayIconsContextGroup_; ///< used to track the table group key for the latest desktop icons
 
+		std::string											latestGatewayRemoteIconsString_; ///< cached string of remote gateway icons for quick access
+		std::pair<std::string /* latestIconContext group */, TableGroupKey>
+															latestGatewayRemoteIconsContextGroup_; ///< used to track the table group key for the latest remote desktop icons
 
 		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);
 		static void 				SendRemoteGatewayCommand					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);

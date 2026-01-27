@@ -25,6 +25,9 @@ class TransceiverSocket : public TransmitterSocket, public ReceiverSocket
 
   protected:
 	TransceiverSocket(void);
+
+  private:
+	std::mutex sendAndReceiveMutex_;
 };
 
 }  // namespace ots

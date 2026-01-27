@@ -49,6 +49,7 @@ using namespace ots;
 #define TLVL_StateChanger		 	9	// = TLVL_DEBUG + 9
 #define TLVL_RemoteIcons		 	10	// = TLVL_DEBUG + 10
 #define TLVL_StateChangerDetail	 	11	// = TLVL_DEBUG + 11
+#define TLVL_StateChangerStatus	 	12	// = TLVL_DEBUG + 12
 #define TLVL_Permissions		 	20	// = TLVL_DEBUG + 20
 #define TLVL_GetDesktopIcons	 	21	// = TLVL_DEBUG + 21
 #define TLVL_RemoteFSMRequests	 	22	// = TLVL_DEBUG + 22
@@ -470,6 +471,12 @@ try
 	    std::chrono::high_resolution_clock::now();
 	time_t lastSlowStatusWarnTime = 0;
 	size_t statusWasSlowCount     = 0;
+
+	std::string value;
+
+	ConfigurationManager
+	    cfgMgr;  //for local use handling latest icons and remote subsystem info
+
 	while(1)
 	{
 		bool oneStatusReqHasFailed = false;
@@ -834,14 +841,76 @@ try
 						    << "].\n\n";
 
 						// use latest context always from temporary configuration manager,
-						//	to get updated icons every time...
-						//(so icon changes do no require an ots restart)
-						ConfigurationManager
-						    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
-						const DesktopIconTable* iconTable =
-						    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
-						const std::vector<DesktopIconTable::DesktopIcon>& icons =
-						    iconTable->getAllDesktopIcons();
+						//	to get updated icons (and remote subsystem info) every time...
+						bool        useLatestIcons = false;
+						std::string timeString;
+						std::pair<std::string /*group name*/, TableGroupKey> latestGroup;
+						std::vector<DesktopIconTable::DesktopIcon>           icons;
+						{  //start lock scope
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->latestGatewayIconsMutex_);
+							latestGroup = theSupervisor->latestGatewayIconsContextGroup_;
+						}  //end lock scope
+						if(latestGroup.first.size())
+						{
+							std::pair<std::string /*group name*/, TableGroupKey>
+							    theGroup = ConfigurationManager::loadGroupNameAndKey(
+							        ConfigurationManager::
+							            LAST_ACTIVATED_CONTEXT_GROUP_FILE,
+							        timeString);
+							if(theGroup == latestGroup)
+							{
+								useLatestIcons = true;
+								__COUTS__(TLVL_StatusWorkloop)
+								    << "Using cached latest icons for context group '"
+								    << theGroup.first << "(" << theGroup.second << ")"
+								    << __E__;
+								std::lock_guard<std::mutex> lock(
+								    theSupervisor->latestGatewayIconsMutex_);
+								icons = theSupervisor->latestGatewayIcons_;
+							}
+						}  //end check for active context changing
+
+						if(!useLatestIcons)  //then need to load latest icons
+						{
+							try
+							{
+								// Restoring active backbone/context group, note: not using Gateway instance's member CorePropertySupervisorBase::theConfigurationManager_
+								cfgMgr.restoreActiveTableGroups(
+								    true /*throwErrors*/,
+								    "" /*pathToActiveGroupsFile*/,
+								    ConfigurationManager::LoadGroupType::
+								        ONLY_BACKBONE_OR_CONTEXT_TYPES /*onlyLoadIfBackboneOrContext*/
+								);
+
+								const DesktopIconTable* iconTable =
+								    cfgMgr.__GET_CONFIG__(DesktopIconTable);
+								{  //start lock scope
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->latestGatewayIconsMutex_);
+									theSupervisor->latestGatewayIcons_ =
+									    iconTable
+									        ->getAllDesktopIcons();  //cache latest icons (for use, e.g., in remote login verify)
+									icons =
+									    theSupervisor
+									        ->latestGatewayIcons_;  //use for this loop
+									theSupervisor->latestGatewayIconsContextGroup_ =
+									    cfgMgr.getActiveTableGroups()
+									        [ConfigurationManager::
+									             GROUP_TYPE_NAME_CONTEXT];
+								}  //end lock scope
+							}
+							catch(...)
+							{
+								__COUT_ERR__
+								    << "Error loading latest context for remote gateway "
+								       "icon refresh. Sticking with old icons."
+								    << __E__;
+								std::lock_guard<std::mutex> lock(
+								    theSupervisor->latestGatewayIconsMutex_);
+								icons = theSupervisor->latestGatewayIcons_;
+							}
+						}
 
 						for(auto& remoteGatewayApp : remoteApps)
 							remoteGatewayApp.appInfo.status =
@@ -945,7 +1014,7 @@ try
 
 								try
 								{
-									tmpCfgMgr.getOtherSubsystemInstanceInfo(
+									cfgMgr.getOtherSubsystemInstanceInfo(
 									    thisInfo.user_data_path_record,
 									    &thisInfo.instancePath,
 									    &thisInfo.instanceHost,
@@ -995,7 +1064,7 @@ try
 
 									remoteApps[r].config_aliases.clear();
 									remoteApps[r].config_aliases =
-									    tmpCfgMgr.getOtherSubsystemConfigAliases(
+									    cfgMgr.getOtherSubsystemConfigAliases(
 									        remoteApps[r]
 									            .user_data_path_record);  //getOtherSubsystemFilteredConfigAliases(remoteApps[i].user_data_path_record, remoteApps[i].fsmName);
 
@@ -1291,6 +1360,7 @@ try
 							        remoteGatewayApp.appInfo.url +
 							        remoteGatewayApp.appInfo.name);
 
+							auto start = std::chrono::high_resolution_clock::now();
 							__COUTS__(TLVL_StatusWorkloop)
 							    << "Calling CheckRemoteGatewayStatus, doDisconnected = "
 							    << doDisconnected << " Remote subapp = '"
@@ -1408,6 +1478,19 @@ try
 									     remoteGatewayApp.appInfo.name] = false;
 								}
 							}
+							auto duration =
+							    std::chrono::duration_cast<std::chrono::milliseconds>(
+							        std::chrono::high_resolution_clock::now() - start)
+							        .count();
+							__COUTS__(TLVL_StatusRemoteWorkloop)
+							    << "Time taken to calling CheckRemoteGatewayStatus, "
+							       "doDisconnected = "
+							    << doDisconnected << " Remote subapp = '"
+							    << remoteGatewayApp.appInfo.name
+							    << "' [URL=" << remoteGatewayApp.appInfo.url
+							    << "] isRemoteAppDisconnected = "
+							    << isRemoteAppDisconnected << " --> " << duration
+							    << " milliseconds." << std::endl;
 
 						}  //end remote app status update loop
 
@@ -1517,7 +1600,8 @@ try
 								}
 								else  //give icon feedback immediately
 								{
-									__COUTV__(remoteGatewayApp.iconString);
+									__COUTVS__(TLVL_RemoteDesktopIcons,
+									           remoteGatewayApp.iconString);
 									//lock for remainder of scope
 									std::lock_guard<std::mutex> lock(
 									    theSupervisor->remoteGatewayAppsMutex_);
@@ -1970,11 +2054,17 @@ try
 					subapps = SupervisorInfo::deserializeSubappInfos(
 					    parameters.getValue("Subapps"));
 
-					availableLogSpaceKB =
-					    std::stoull(parameters.getValue("AvailableLogSpaceKB"));
+					value = parameters.getValue("AvailableLogSpaceKB");
+					if(!value.size())
+						availableLogSpaceKB = 0;
+					else
+						availableLogSpaceKB = std::stoull(value);
 					__COUTVS__(TLVL_DebugStatusDetail, availableLogSpaceKB);
-					availableDataSpaceKB =
-					    std::stoull(parameters.getValue("AvailableDataSpaceKB"));
+					value = parameters.getValue("AvailableDataSpaceKB");
+					if(!value.size())
+						availableDataSpaceKB = 0;
+					else
+						availableDataSpaceKB = std::stoull(value);
 					__COUTVS__(TLVL_DebugStatusDetail, availableDataSpaceKB);
 
 					if(!appLastStatusGood[appName])
@@ -2461,6 +2551,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 	          << remoteGatewayApp.appInfo.name
 	          << "' at url: " << remoteGatewayApp.appInfo.url << __E__;
 
+	auto start = std::chrono::high_resolution_clock::now();
 	try
 	{
 		std::vector<std::string> parsedFields =
@@ -2468,9 +2559,37 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 		__COUTVS__(TLVL_RemoteIcons, StringMacros::vectorToString(parsedFields));
 		__COUTVS__(TLVL_RemoteIcons, command);
 
-		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			                    std::chrono::high_resolution_clock::now() - start)
+			                    .count();
+			__COUTS__(TLVL_RemoteIcons)
+			    << " Icons ----> Time pre sendAndReceive check ==> " << duration
+			    << " milliseconds." << std::endl;
+		}
+
+		Socket gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			                    std::chrono::high_resolution_clock::now() - start)
+			                    .count();
+			__COUTS__(TLVL_RemoteIcons)
+			    << " Icons ----> Time pre2 sendAndReceive check ==> " << duration
+			    << " milliseconds." << std::endl;
+		}
+
 		std::string remoteIconString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
+
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			                    std::chrono::high_resolution_clock::now() - start)
+			                    .count();
+			__COUTS__(TLVL_RemoteIcons) << " Icons ----> Time sendAndReceive check ==> "
+			                            << duration << " milliseconds." << std::endl;
+		}
+
 		__COUTVS__(TLVL_RemoteIcons, remoteIconString);
 
 		bool firstIcon = true;
@@ -2525,8 +2644,16 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 		return;
 	}  //end GetRemoteGatewayIcons() catch
 
-	__COUTV__(iconString);
+	__COUTVS__(TLVL_RemoteIcons, iconString);
 	remoteGatewayApp.iconString = iconString;
+
+	{
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+		                    std::chrono::high_resolution_clock::now() - start)
+		                    .count();
+		__COUTS__(TLVL_RemoteIcons) << " End Icons ----> Time sendAndReceive check ==> "
+		                            << duration << " milliseconds." << std::endl;
+	}
 }  //end GetRemoteGatewayIcons()
 
 //==============================================================================
@@ -2569,29 +2696,113 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		__COUT__ << "Sending to subsystem '" << remoteGatewayApp.appInfo.name
 		         << "' the command: " << command << __E__;
 
-		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+		Socket gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
+
 		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(
 		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
 		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name
 		         << "' received: " << commandResponseString << __E__;
 
-		if(commandResponseString.find("Done") != 0)  //then error
+		size_t donePos = commandResponseString.find("Done");
+		if(donePos != 0)  //then error
 		{
-			__SS__ << "Unsuccessful response received from Remote Gateway '"
-			       << remoteGatewayApp.appInfo.name + "' - here was the response: "
-			       << commandResponseString << __E__;
-			__SS_THROW__;
+			size_t rootPos = commandResponseString.find("<ROOT>");
+			if(rootPos == 0)
+			{
+				//assume accidental collision with Status response
+				// check if DONE response appended, or try receiving again
+				rootPos = commandResponseString.find("</ROOT>");
+				if(rootPos > 0)
+				{
+					rootPos += 7;
+					donePos = commandResponseString.find("Done", rootPos);
+				}
+				if(donePos > 0 && (donePos == rootPos || donePos == rootPos + 1))
+				{
+					__COUT__ << "Found DONE appended after status xml!" << __E__;
+					commandResponseString = commandResponseString.substr(donePos);
+					__COUTV__(commandResponseString);
+					donePos = 0;  //mark good
+				}
+				else
+				{
+					donePos               = std::string::npos;  //clear
+					commandResponseString = "";                 //clear
+					if(remoteGatewaySocket->receive(commandResponseString,
+					                                10 /*timeoutSeconds*/) ==
+					   0 /* success */)
+					{
+						__COUT__ << "Response 2 from subsystem '"
+						         << remoteGatewayApp.appInfo.name
+						         << "' received: " << commandResponseString << __E__;
+						donePos = commandResponseString.find("Done");
+					}
+					else  //timeout occurred
+					{
+						donePos               = std::string::npos;  //clear
+						commandResponseString = "TIMEOUT!";
+					}
+				}
+			}
+
+			if(donePos != 0)  //then error
+			{
+				__SS__ << "Unsuccessful response received from Remote Gateway '"
+				       << remoteGatewayApp.appInfo.name + "' - here was the response: "
+				       << commandResponseString << __E__;
+				__SS_THROW__;
+			}
 		}
 
 		if(commandResponseString.size() > strlen("Done") + 1)
 		{
+			//make sure we received everything
+			int tryCnt = 0;
+			while(++tryCnt < 100 &&
+			      commandResponseString.size() > 10 &&  //must end with 'END---'
+			      (commandResponseString[commandResponseString.size() - 1] != '-' ||
+			       commandResponseString[commandResponseString.size() - 2] != '-' ||
+			       commandResponseString[commandResponseString.size() - 3] != '-' ||
+			       commandResponseString[commandResponseString.size() - 4] != 'D' ||
+			       commandResponseString[commandResponseString.size() - 5] != 'N' ||
+			       commandResponseString[commandResponseString.size() - 6] != 'E'))
+			{
+				__COUT__ << "There must be more, try = " << tryCnt << __E__;
+				std::string more;
+				if(remoteGatewaySocket->receive(more, 1 /*timeoutSeconds*/) ==
+				   0 /* success */)
+					commandResponseString += more;
+				else
+				{
+					__COUT__ << "Timeout looking for more!" << __E__;
+					break;
+				}
+			}
+
 			//assume have config dump response!
-			remoteGatewayApp.config_dump = "\n\n************************\n";
-			remoteGatewayApp.config_dump +=
-			    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
-			    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
-			remoteGatewayApp.config_dump += "* \n";
-			remoteGatewayApp.config_dump += "\n\n";
+			// //extract dump type from config dump
+			std::string configDumpType = commandResponseString.substr(
+			    commandResponseString.find("Type of dump") + strlen("Type of dump"));
+			if(configDumpType.find("JSON all") == std::string::npos)
+			{
+				__COUT__ << "Found text dump type" << __E__;
+				remoteGatewayApp.config_dump_type =
+				    RemoteGatewayInfo::ConfigDumpTypes::Text;
+
+				remoteGatewayApp.config_dump = "\n\n************************\n";
+				remoteGatewayApp.config_dump +=
+				    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
+				    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
+				remoteGatewayApp.config_dump += "************************ \n";
+				remoteGatewayApp.config_dump += "\n\n";
+			}
+			else
+			{
+				__COUT__ << "Found JSON all dump type" << __E__;
+				remoteGatewayApp.config_dump_type =
+				    RemoteGatewayInfo::ConfigDumpTypes::JSON_all;
+			}
+
 			remoteGatewayApp.config_dump +=
 			    commandResponseString.substr(strlen("Done") + 1);
 
@@ -2647,8 +2858,22 @@ try
 			                 remoteGatewayApp.appInfo.name;
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "requestString = " << requestString << __E__;
+
+		auto start = std::chrono::high_resolution_clock::now();
+
 		std::string remoteStatusString = remoteGatewaySocket->sendAndReceive(
-		    gatewayRemoteSocket, requestString, 2 /*timeoutSeconds*/);
+		    gatewayRemoteSocket,
+		    requestString,
+		    2 /*timeoutSeconds*/);  //Note: When TRACE slow path is over utilized on some systems, we see 3 second slow down frequently
+
+		auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+		                    std::chrono::high_resolution_clock::now() - start)
+		                    .count();
+		__COUTS__(TLVL_StatusRemoteWorkloop)
+		    << "Time taken for send+receive of CheckRemoteGatewayStatus to '"
+		    << remoteGatewayApp.appInfo.name << "' ==> " << duration << " milliseconds."
+		    << std::endl;
+
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "remoteStatusString = " << remoteStatusString << __E__;
 
@@ -2693,15 +2918,17 @@ try
 				    remoteStatusString, "availableLogSpaceKB", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
-					value = "0";
-				remoteGatewayApp.appInfo.availableLogSpaceKB = std::stoull(value);
+					remoteGatewayApp.appInfo.availableLogSpaceKB = 0;
+				else
+					remoteGatewayApp.appInfo.availableLogSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "availableDataSpaceKB", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
-					value = "0";
-				remoteGatewayApp.appInfo.availableDataSpaceKB = std::stoull(value);
+					remoteGatewayApp.appInfo.availableDataSpaceKB = 0;
+				else
+					remoteGatewayApp.appInfo.availableDataSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
 				    remoteStatusString, "logUsageRateKBps", 0, after);
@@ -2923,6 +3150,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	std::string              fsmName;
 	std::string              command;
 	std::vector<std::string> parameters;
+
+	using clock = std::chrono::steady_clock;
+	auto start  = clock::now();
+
 	while(1)
 	{
 		// workloop procedure
@@ -2931,8 +3162,21 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 		//	else
 		//		sleep
 
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+			                    clock::now() - start)
+			                    .count();
+			if(duration > 20 /* ms */)
+				__COUTS__(TLVL_StateChangerStatus)
+				    << " ----> Check status start receive loop ==> " << duration
+				    << " milliseconds since last. PID=" << getpid()
+				    << " TID=" << std::this_thread::get_id() << " buffer=" << buffer
+				    << std::endl;
+			start = clock::now();
+		}
+
 		if(sock.receive(
-		       buffer, 0 /*timeoutSeconds*/, 1 /*timeoutUSeconds*/, false /*verbose*/) !=
+		       buffer, 2 /*timeoutSeconds*/, 0 /*timeoutUSeconds*/, false /*verbose*/) !=
 		   -1)
 		{
 			__COUTS__(TLVL_StateChanger)
@@ -2940,6 +3184,14 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 			    << sock.getLastIncomingIPAddress() << ":" << sock.getLastIncomingPort()
 			    << " of size = " << buffer.size() << __E__;
 			__COUTVS__(TLVL_StateChangerDetail, buffer);
+
+			__COUTS__(TLVL_StateChangerStatus)
+			    << " ----> Check status idle receive loop ==> "
+			    << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+			                                                             start)
+			           .count()
+			    << " milliseconds time idle. PID=" << getpid()
+			    << " TID=" << std::this_thread::get_id() << std::endl;
 
 			try
 			{
@@ -2975,7 +3227,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				    buffer.find("GetRemoteGatewayStatusXML") == 0;
 				if(remoteGatewayStatusXML || buffer.find("GetRemoteAppStatusXML") == 0)
 				{
-					__COUT_TYPE__(TLVL_DEBUG + 12)
+					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
 					if(remoteGatewayStatus &&
@@ -3171,7 +3423,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					if(remoteGatewayStatus)  //also return System Messages and console count and user-with-lock
 					{
-						__COUT_TYPE__(TLVL_DEBUG + 12)
+						__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 						    << "Giving extra Gateway info to remote monitor..." << __E__;
 
 						xmlOut.addTextElementToParent("systemMessages",
@@ -3202,7 +3454,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				}
 				else if(remoteGatewayStatus || buffer.find("GetRemoteAppStatus") == 0)
 				{
-					__COUT_TYPE__(TLVL_DEBUG + 12)
+					auto start = clock::now();
+
+					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
 					if(remoteGatewayStatus &&
@@ -3360,7 +3614,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					if(remoteGatewayStatus)  //also return System Messages and console count and user-with-lock
 					{
-						__COUT_TYPE__(TLVL_DEBUG + 12)
+						__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 						    << "Giving extra Gateway info to remote monitor..." << __E__;
 
 						xmlOut.addTextElementToData("systemMessages",
@@ -3382,14 +3636,32 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/,
 					                         false /*allowWhiteSpace*/);
+
+					__COUTS__(TLVL_StateChangerStatus)
+					    << "Time taken for xml response to GetRemoteGatewayStatus "
+					       "==> "
+					    << std::chrono::duration_cast<std::chrono::milliseconds>(
+					           clock::now() - start)
+					           .count()
+					    << " milliseconds." << std::endl;
+
 					__COUTS__(TLVL_StatusParams)
 					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
+
+					__COUTS__(TLVL_StateChangerStatus)
+					    << "Time taken for receive+send response to "
+					       "GetRemoteGatewayStatus ==> "
+					    << std::chrono::duration_cast<std::chrono::milliseconds>(
+					           clock::now() - start)
+					           .count()
+					    << " milliseconds." << std::endl;
+
 					continue;
 				}  //end GetRemoteAppStatus
 				if(buffer.find("GetStateMachineNames") == 0)
 				{
-					__COUT_TYPE__(TLVL_DEBUG + 12)
+					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving state machine names to remote monitor..." << __E__;
 					std::vector<std::string> fsmNames;
 					if(!configLinkNode.isDisconnected())
@@ -3721,7 +3993,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				}
 				else if(buffer.find("GetRemoteDesktopIcons") == 0)
 				{
-					__COUT__ << "Giving desktop icons to remote gateway..." << __E__;
+					__COUTS__(TLVL_RemoteIcons)
+					    << "Giving desktop icons to remote gateway..." << __E__;
 
 					// get icons and create comma-separated string based on user permissions
 					//	note: each icon has own permission threshold, so each user can have
@@ -3730,6 +4003,34 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					// use latest context always from temporary configuration manager,
 					//	to get updated icons every time...
 					//(so icon changes do no require an ots restart)
+					//no need for mutex, because remote icons only accessed here!
+					std::pair<std::string /*group name*/, TableGroupKey> latestGroup =
+					    theSupervisor->latestGatewayRemoteIconsContextGroup_;
+					if(latestGroup.first.size())
+					{
+						std::string                                          timeString;
+						std::pair<std::string /*group name*/, TableGroupKey> theGroup =
+						    ConfigurationManager::loadGroupNameAndKey(
+						        ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE,
+						        timeString);
+						if(theGroup == latestGroup)
+						{
+							__COUTT__
+							    << "Using cached latest remote icons for context group '"
+							    << theGroup.first << "(" << theGroup.second << ")"
+							    << __E__;
+
+							__COUTVS__(TLVL_RemoteIcons,
+							           theSupervisor->latestGatewayRemoteIconsString_);
+
+							sock.acknowledge(
+							    theSupervisor->latestGatewayRemoteIconsString_,
+							    true /* verbose */);
+							continue;
+						}
+					}  //end check for active context changing
+
+					//else then need to load latest icons
 
 					ConfigurationManager
 					    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
@@ -3738,7 +4039,18 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					const std::vector<DesktopIconTable::DesktopIcon>& icons =
 					    iconTable->getAllDesktopIcons();
 
-					std::string iconString = "";
+					//store latest context group for next time
+					theSupervisor->latestGatewayRemoteIconsContextGroup_ =
+					    tmpCfgMgr.getActiveTableGroups()
+					        [ConfigurationManager::GROUP_TYPE_NAME_CONTEXT];
+
+					//at this point icons is correctly populated
+
+					theSupervisor->latestGatewayRemoteIconsString_ =
+					    "";  //will be populated below for caching
+					std::string& iconString =
+					    theSupervisor
+					        ->latestGatewayRemoteIconsString_;  //will be populated below
 					// comma-separated icon string, 7 fields:
 					//				0 - caption 		= text below icon
 					//				1 - altText 		= text icon if no image given
@@ -3925,17 +4237,21 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					    WebUsers::DEFAULT_STATECHANGER_USERNAME,
 					    parameters);
 
-					if(errorStr == "" &&
+					if(0 &&  //no longer returning dump on configure (it takes too long, and is incorrect if subsystems configure multiple times)
+					   errorStr == "" &&
 					   command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 						extraDoneContent =
 						    theSupervisor
 						        ->activeStateMachineConfigurationDumpOnConfigure_;
 
-					if(errorStr == "" &&
+					if(errorStr ==
+					       "" &&  //start transition is where subusystem configure dump is aggregated!
 					   command == RunControlStateMachine::START_TRANSITION_NAME)
 						extraDoneContent =
 						    theSupervisor->activeStateMachineConfigurationDumpOnRun_;
 				}
+				if(extraDoneContent.size())
+					extraDoneContent += "END---";
 
 				if(errorStr != "")
 				{
@@ -3988,7 +4304,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 			    << "Waiting for UDP State Changer packet on "
 			    << ipAddressForStateChangesOverUDP << ":" << portForStateChangesOverUDP
 			    << "..." << __E__;
-			sleep(1);
+			usleep(1000 /* 1ms */);
 		}
 	}  // end while(1) loop
 }  // end StateChangerWorkLoop()
@@ -4512,7 +4828,8 @@ try
 		}
 
 		// check if configuration dump is enabled on configure transition
-		std::string dumpFormatOnConfigure, dumpFormatOnRun;
+		activeStateMachineDumpFormatOnRun_       = "";  //clear
+		activeStateMachineDumpFormatOnConfigure_ = "";  //clear
 		{
 			ConfigurationTree configLinkNode =
 			    CorePropertySupervisorBase::theConfigurationManager_
@@ -4606,11 +4923,12 @@ try
 
 					doThrow = true;  // at this point throw the exception!
 
-					dumpFormatOnConfigure =
+					activeStateMachineDumpFormatOnConfigure_ =
 					    fsmLinkNode.getNode("ConfigurationDumpOnConfigureFormat")
 					        .getValue<std::string>();
-					dumpFormatOnRun = fsmLinkNode.getNode("ConfigurationDumpOnRunFormat")
-					                      .getValue<std::string>();
+					activeStateMachineDumpFormatOnRun_ =
+					    fsmLinkNode.getNode("ConfigurationDumpOnRunFormat")
+					        .getValue<std::string>();
 
 					std::string dumpFilePath, dumpFileRadix;
 					dumpFilePath =
@@ -4635,6 +4953,8 @@ try
 				    std::runtime_error&
 				        e)  // throw exception on missing fields if dumpConfiguration set
 				{
+					__COUTTV__(e.what());
+
 					if(doThrow &&
 					   (activeStateMachineConfigurationDumpOnConfigureEnable_ ||
 					    activeStateMachineConfigurationDumpOnRunEnable_))
@@ -4673,8 +4993,8 @@ try
 		__COUTTV__(activeStateMachineRunInfoPluginType_);
 		__COUTTV__(activeStateMachineConfigurationDumpOnConfigureEnable_);
 		__COUTTV__(activeStateMachineConfigurationDumpOnRunEnable_);
-		__COUTTV__(dumpFormatOnConfigure);
-		__COUTTV__(dumpFormatOnRun);
+		__COUTTV__(activeStateMachineDumpFormatOnConfigure_);
+		__COUTTV__(activeStateMachineDumpFormatOnRun_);
 		__COUTTV__(activeStateMachineConfigurationDumpOnConfigureFilename_);
 		__COUTTV__(activeStateMachineConfigurationDumpOnRunFilename_);
 		__COUTTV__(activeStateMachineRollOverLogOnConfigure_);
@@ -4724,217 +5044,14 @@ try
 			       "name is blank."
 			    << __E__;
 
-		//Note: Must create configuration dump at this point!! In case this is a remote subsystem and must respond with string
-		//Must define activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; //cached at Configure transition
+		//Note: Remote Subsystems must respond with Configuration Dump immediately in the udp reply.
+		//	Since Configuration Dump can take a long time and since a subsystem might configure multiple times
+		//		asynchronously, only collect the pre-assemble configuration dump on the Start transition.
+		//	Configure transition Configuration Dumps can be saved independently by subsystem
+		//		(including to their own Run Info Plugin) if desired.
 
-		try
-		{
-			CorePropertySupervisorBase::theConfigurationManager_
-			    ->init();  // completely reset to re-align with any changes
-		}
-		catch(...)
-		{
-			__SS__ << "\nTransition to Configuring interrupted! "
-			       << "The Configuration Manager could not be initialized." << __E__;
-			__SS_THROW__;
-		}
-
-		// Translate the system alias to a group name/key
-		try
-		{
-			theConfigurationTableGroup_ =
-			    CorePropertySupervisorBase::theConfigurationManager_
-			        ->getTableGroupFromAlias(configurationAlias);
-		}
-		catch(...)
-		{
-			__COUT_INFO__
-			    << "Exception occurred translating the Configuration System Alias."
-			    << __E__;
-		}
-
-		if(theConfigurationTableGroup_.second.isInvalid())
-		{
-			__SS__
-			    << "\nTransition to Configuring interrupted! System Configuration Alias '"
-			    << configurationAlias
-			    << "' could not be translated to a group name and key." << __E__;
-			__SS_THROW__;
-		}
-
-		__COUT_INFO__ << "Configuration table group name: "
-		              << theConfigurationTableGroup_.first
-		              << " key: " << theConfigurationTableGroup_.second << __E__;
-
-		// load and activate Configuration Alias
-		try
-		{
-			//first get group type - it must be Configuration type!
-			std::string groupTypeString;
-			CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
-			    theConfigurationTableGroup_.first,
-			    theConfigurationTableGroup_.second,
-			    false /*doActivate*/,
-			    0 /*groupMembers      */,
-			    0 /*progressBar       */,
-			    0 /*accumulateWarnings*/,
-			    0 /*groupComment      */,
-			    0 /*groupAuthor       */,
-			    0 /*groupCreateTime   */,
-			    true /*doNotLoadMember */,
-			    &groupTypeString);
-			if(groupTypeString != ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
-			{
-				__SS__ << "Illegal attempted configuration group type. The table group '"
-				       << theConfigurationTableGroup_.first << "("
-				       << theConfigurationTableGroup_.second << ")' is of type "
-				       << groupTypeString << ". It must be "
-				       << ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION << "."
-				       << __E__;
-				__SS_THROW__;
-			}
-
-			CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
-			    theConfigurationTableGroup_.first,
-			    theConfigurationTableGroup_.second,
-			    true /*doActivate*/);
-
-			__COUT__ << "Done loading Configuration Alias." << __E__;
-
-			// mark the translated group as the last activated group
-			std::pair<std::string /*group name*/, TableGroupKey> activatedGroup(
-			    std::string(theConfigurationTableGroup_.first),
-			    theConfigurationTableGroup_.second);
-
-			ConfigurationManager::saveGroupNameAndKey(
-			    activatedGroup,
-			    ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
-			    false /* appendMode */,
-			    username);
-			ConfigurationManager::saveGroupNameAndKey(
-			    activatedGroup,
-			    ConfigurationManager::ACTIVATED_CONFIGS_FILE,
-			    true /* appendMode */,
-			    username);
-
-			__COUT__ << "Done activating Configuration Alias." << __E__;
-		}
-		catch(const std::runtime_error& e)
-		{
-			__SS__
-			    << "\nTransition to Configuring interrupted! System Configuration Alias "
-			    << configurationAlias << " was translated to "
-			    << theConfigurationTableGroup_.first << " ("
-			    << theConfigurationTableGroup_.second
-			    << ") but could not be loaded and initialized." << __E__;
-			ss << "\n\nHere was the error: " << e.what()
-			   << "\n\nTo help debug this problem, try activating this group in the "
-			      "Configuration "
-			      "GUI "
-			   << " and detailed errors will be shown." << __E__;
-			__SS_THROW__;
-		}
-		catch(...)
-		{
-			__SS__
-			    << "\nTransition to Configuring interrupted! System Configuration Alias "
-			    << configurationAlias << " was translated to "
-			    << theConfigurationTableGroup_.first << " ("
-			    << theConfigurationTableGroup_.second
-			    << ") but could not be loaded and initialized." << __E__;
-			try
-			{
-				throw;
-			}  //one more try to printout extra info
-			catch(const std::exception& e)
-			{
-				ss << "Exception message: " << e.what();
-			}
-			catch(...)
-			{
-			}
-			ss << "\n\nTo help debug this problem, try activating this group in the "
-			      "Configuration "
-			      "GUI "
-			   << " and detailed errors will be shown." << __E__;
-			__SS_THROW__;
-		}
-
-		//at this point Configuration Tree is fully loaded
-
-		//handle configuration dump if enabled on configure transition
-		try  // errors in dump are not tolerated
-		{
-			//get/cache Run transition dump
-			if(activeStateMachineConfigurationDumpOnRunEnable_ ||
-			   ((activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
-			{
-				__COUT_INFO__
-				    << "Caching the Configuration Dump for the Run transition..."
-				    << __E__;
-
-				// dump configuration
-				std::stringstream dumpSs;
-				CorePropertySupervisorBase::theConfigurationManager_
-				    ->dumpActiveConfiguration(
-				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
-				        dumpFormatOnRun,
-				        configurationAlias,
-				        getLastLogEntry(
-				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-				        theWebUsers_.getActiveUsersString(),
-				        dumpSs);
-
-				activeStateMachineConfigurationDumpOnRun_ = dumpSs.str();
-			}
-			else
-				__COUT_INFO__
-				    << "Not caching the Configuration Dump on the Run transition."
-				    << __E__;
-
-			//get/cache Configuration transition dump
-			if(activeStateMachineConfigurationDumpOnConfigureEnable_ ||
-			   ((activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
-			{
-				__COUT_INFO__
-				    << "Caching the Configuration Dump for the Configure transition..."
-				    << __E__;
-
-				// dump configuration
-				std::stringstream dumpSs;
-				CorePropertySupervisorBase::theConfigurationManager_
-				    ->dumpActiveConfiguration(
-				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
-				        dumpFormatOnConfigure,
-				        configurationAlias,
-				        getLastLogEntry(
-				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-				        theWebUsers_.getActiveUsersString(),
-				        dumpSs);
-
-				activeStateMachineConfigurationDumpOnConfigure_ = dumpSs.str();
-			}
-			else
-				__COUT_INFO__
-				    << "Not caching the Configuration Dump on the Configure transition."
-				    << __E__;
-
-		}  //end handle configuration dump if enabled on configure transition
-		catch(const std::runtime_error& e)
-		{
-			__SS__ << "Error encoutered during configuration dump. Here is the error: "
-			       << e.what();
-			__SS_THROW__;
-		}
-		catch(...)
-		{
-			__SS__ << "Unknown error encoutered during configuration dump.";
-			__SS_THROW__;
-		}
+		//Based on Config Tree settings, the configuration dump is cached into in transitionConfiguring()
+		//	activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_
 
 	}  //end Configure transition
 	else if(command == RunControlStateMachine::START_TRANSITION_NAME)
@@ -4992,9 +5109,11 @@ try
 					__SS_THROW__;
 				}
 
-				//FIXME -- October 2024, by rrivera (need future simplification from agioiosa) -  Should this 2nd param be activeStateMachineConfigurationDumpOnConfigure_?! What is the 2nd param for? Is conditionID_ enough?
+				// Claim the next run number from the Run Info plugin (pre-start transition).
 				runNumber = runInfoInterface->claimNextRunNumber(
-				    conditionID_, activeStateMachineConfigurationDumpOnRun_);
+				    activeStateMachineConfigureConditionID_,
+				    getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME));
+
 			}  // end Run Info Plugin handling
 
 			setNextRunNumber(runNumber + 1);
@@ -5002,13 +5121,15 @@ try
 		else
 		{
 			sscanf(commandParameters[0].c_str(), "%lu", &runNumber);
-			__COUTV__(runNumber);
+			// __COUT__(runNumber);
 			setNextRunNumber(runNumber + 1);
 		}
 
 		setLastLogEntry(command, "Run #" + std::to_string(runNumber) + ": " + logEntry);
-		parameters.addParameter("RunNumber", runNumber);
-	}  //end Start transition
+		parameters.addParameter(
+		    "RunNumber",
+		    runNumber);  // will be cached in activeStateMachineRunNumber_ in transitionStarting()
+	}                    //end Start transition
 	else if(!(command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 	          command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME ||
 	          command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
@@ -5177,22 +5298,22 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::PAUSE);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::PAUSE,
+					    getLastLogEntry(RunControlStateMachine::PAUSE_TRANSITION_NAME));
 				}
 			}
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO PAUSE TIME UPDATE INTO DATABASE FAILED!!! " << e.what()
-			       << __E__;
+			__SS__ << "RUN INFO PAUSE TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN INFO PAUSE TIME UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__ << "RUN INFO PAUSE TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << __E__;
 			try
 			{
 				throw;
@@ -5255,22 +5376,22 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::RESUME);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::RESUME,
+					    getLastLogEntry(RunControlStateMachine::RESUME_TRANSITION_NAME));
 				}
 			}
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO RESUME TIME UPDATE INTO DATABASE FAILED!!! " << e.what()
-			       << __E__;
+			__SS__ << "RUN INFO RESUME TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN INFO RESUME TIME UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__ << "RUN INFO RESUME TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << __E__;
 			try
 			{
 				throw;
@@ -5326,9 +5447,6 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					{
 						runInfoInterface.reset(
 						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
-						// ,
-						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
-						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
 					}
 					catch(...)
 					{
@@ -5342,21 +5460,21 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::HALT);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::HALT,
+					    getLastLogEntry(RunControlStateMachine::HALT_TRANSITION_NAME));
 				}
 			}
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO UPDATE INTO DATABASE FAILED!!! " << e.what() << __E__;
+			__SS__ << "RUN INFO HALT TRANSITION UPDATE INTO DATABASE FAILED!!! "
+			       << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN INFO UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__ << "RUN INFO HALT TRANSITION UPDATE INTO DATABASE FAILED!!! " << __E__;
 			try
 			{
 				throw;
@@ -5412,9 +5530,6 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 					{
 						runInfoInterface.reset(
 						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
-						// ,
-						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
-						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
 					}
 					catch(...)
 					{
@@ -5428,22 +5543,24 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::STOP);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::STOP,
+					    getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME));
 				}
 			}
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what()
-			       << __E__;
+			__SS__
+			    << "RUN INFO CONFIGURED STATE INSERT OR UPDATE INTO DATABASE FAILED!!! "
+			    << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__
+			    << "RUN INFO CONFIGURED STATE INSERT OR UPDATE INTO DATABASE FAILED!!! "
+			    << __E__;
 			try
 			{
 				throw;
@@ -5503,9 +5620,6 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					{
 						runInfoInterface.reset(
 						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
-						// ,
-						// CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_),
-						// CorePropertySupervisorBase::getSupervisorConfigurationPath());
 					}
 					catch(...)
 					{
@@ -5519,22 +5633,24 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 					}
 
 					runInfoInterface->updateRunInfo(
-					    getNextRunNumber(activeStateMachineName_) - 1,
-					    RunInfoVInterface::RunStopType::ERROR);
+					    activeStateMachineRunConditionID_,
+					    RunInfoVInterface::RunTransitionType::ERROR,
+					    getLastLogEntry(RunControlStateMachine::ERROR_TRANSITION_NAME));
 				}
 			}
 		}
 		catch(const std::runtime_error& e)
 		{
-			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << e.what()
-			       << __E__;
+			__SS__
+			    << "RUN INFO ERROR TRANSITION INSERT OR UPDATE INTO DATABASE FAILED!!! "
+			    << e.what() << __E__;
 			__SS_THROW__;
 		}
 		catch(...)
 		{
-			// ERROR
-			__SS__ << "RUN INFO INSERT OR UPDATE INTO DATABASE FAILED!!! " << __E__;
+			__SS__
+			    << "RUN INFO ERROR TRANSITION INSERT OR UPDATE INTO DATABASE FAILED!!! "
+			    << __E__;
 			try
 			{
 				throw;
@@ -5639,6 +5755,236 @@ try
 
 	__COUT__ << "Transition parameter ConfigurationAlias: " << configurationAlias
 	         << __E__;
+
+	{  //do configuration dump handling
+		try
+		{
+			CorePropertySupervisorBase::theConfigurationManager_
+			    ->init();  // completely reset to re-align with any changes
+		}
+		catch(...)
+		{
+			__SS__ << "\nTransition to Configuring interrupted! "
+			       << "The Configuration Manager could not be initialized." << __E__;
+			__SS_THROW__;
+		}
+
+		RunControlStateMachine::theProgressBar_.step();
+
+		// Translate the system alias to a group name/key
+		try
+		{
+			theConfigurationTableGroup_ =
+			    CorePropertySupervisorBase::theConfigurationManager_
+			        ->getTableGroupFromAlias(configurationAlias);
+		}
+		catch(...)
+		{
+			__COUT_INFO__
+			    << "Exception occurred translating the Configuration System Alias."
+			    << __E__;
+		}
+
+		if(theConfigurationTableGroup_.second.isInvalid())
+		{
+			__SS__
+			    << "\nTransition to Configuring interrupted! System Configuration Alias '"
+			    << configurationAlias
+			    << "' could not be translated to a group name and key." << __E__;
+			__SS_THROW__;
+		}
+
+		__COUT_INFO__ << "Configuration table group name: "
+		              << theConfigurationTableGroup_.first
+		              << " key: " << theConfigurationTableGroup_.second << __E__;
+
+		// load and activate Configuration Alias
+		try
+		{
+			//first get group type - it must be Configuration type!
+			std::string groupTypeString;
+			CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
+			    theConfigurationTableGroup_.first,
+			    theConfigurationTableGroup_.second,
+			    false /*doActivate*/,
+			    0 /*groupMembers      */,
+			    0 /*progressBar       */,
+			    0 /*accumulateWarnings*/,
+			    0 /*groupComment      */,
+			    0 /*groupAuthor       */,
+			    0 /*groupCreateTime   */,
+			    true /*doNotLoadMember */,
+			    &groupTypeString);
+
+			RunControlStateMachine::theProgressBar_.step();
+
+			if(groupTypeString != ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
+			{
+				__SS__ << "Illegal attempted configuration group type. The table group '"
+				       << theConfigurationTableGroup_.first << "("
+				       << theConfigurationTableGroup_.second << ")' is of type "
+				       << groupTypeString << ". It must be "
+				       << ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION << "."
+				       << __E__;
+				__SS_THROW__;
+			}
+
+			CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
+			    theConfigurationTableGroup_.first,
+			    theConfigurationTableGroup_.second,
+			    true /*doActivate*/);
+
+			__COUT__ << "Done loading Configuration Alias." << __E__;
+
+			RunControlStateMachine::theProgressBar_.step();
+
+			// mark the translated group as the last activated group
+			std::pair<std::string /*group name*/, TableGroupKey> activatedGroup(
+			    std::string(theConfigurationTableGroup_.first),
+			    theConfigurationTableGroup_.second);
+
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
+			    false /* appendMode */,
+			    stateMachineTransitionUsername_);
+			ConfigurationManager::saveGroupNameAndKey(
+			    activatedGroup,
+			    ConfigurationManager::ACTIVATED_CONFIGS_FILE,
+			    true /* appendMode */,
+			    stateMachineTransitionUsername_);
+
+			__COUT__ << "Done activating Configuration Alias." << __E__;
+		}
+		catch(const std::runtime_error& e)
+		{
+			__SS__
+			    << "\nTransition to Configuring interrupted! System Configuration Alias "
+			    << configurationAlias << " was translated to "
+			    << theConfigurationTableGroup_.first << " ("
+			    << theConfigurationTableGroup_.second
+			    << ") but could not be loaded and initialized." << __E__;
+			ss << "\n\nHere was the error: " << e.what()
+			   << "\n\nTo help debug this problem, try activating this group in the "
+			      "Configuration "
+			      "GUI "
+			   << " and detailed errors will be shown." << __E__;
+			__SS_THROW__;
+		}
+		catch(...)
+		{
+			__SS__
+			    << "\nTransition to Configuring interrupted! System Configuration Alias "
+			    << configurationAlias << " was translated to "
+			    << theConfigurationTableGroup_.first << " ("
+			    << theConfigurationTableGroup_.second
+			    << ") but could not be loaded and initialized." << __E__;
+			try
+			{
+				throw;
+			}  //one more try to printout extra info
+			catch(const std::exception& e)
+			{
+				ss << "Exception message: " << e.what();
+			}
+			catch(...)
+			{
+			}
+			ss << "\n\nTo help debug this problem, try activating this group in the "
+			      "Configuration "
+			      "GUI "
+			   << " and detailed errors will be shown." << __E__;
+			__SS_THROW__;
+		}
+
+		RunControlStateMachine::theProgressBar_.step();
+
+		//at this point Configuration Tree is fully loaded
+
+		//handle configuration dump if enabled on configure transition
+		try  // errors in dump are not tolerated
+		{
+			//get/cache Run transition dump
+			if(activeStateMachineConfigurationDumpOnRunEnable_ ||
+			   ((activeStateMachineRunInfoPluginType_ !=
+			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+			{
+				__COUT_INFO__
+				    << "Caching the Configuration Dump for the Run transition..."
+				    << __E__;
+
+				// dump configuration
+				std::stringstream dumpSs;
+				CorePropertySupervisorBase::theConfigurationManager_
+				    ->dumpActiveConfiguration(
+				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
+				        activeStateMachineDumpFormatOnRun_,
+				        configurationAlias,
+				        getLastLogEntry(
+				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+				        theWebUsers_.getActiveUsersString(),
+				        theStateMachine_.getCurrentStateName(),
+				        dumpSs);
+
+				activeStateMachineConfigurationDumpOnRun_ = dumpSs.str();
+
+				__COUT__ << "Active State Machine Config Dump on Run " << __E__;
+				__COUT__ << activeStateMachineConfigurationDumpOnRun_ << __E__;
+				__COUT_MULTI__(2, activeStateMachineConfigurationDumpOnRun_);
+			}
+			else
+				__COUT_INFO__
+				    << "Not caching the Configuration Dump on the Run transition."
+				    << __E__;
+
+			//get/cache Configuration transition dump
+			if(activeStateMachineConfigurationDumpOnConfigureEnable_ ||
+			   ((activeStateMachineRunInfoPluginType_ !=
+			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+			{
+				__COUT_INFO__
+				    << "Caching the Configuration Dump for the Configure transition..."
+				    << __E__;
+
+				// dump configuration
+				std::stringstream dumpSs;
+				CorePropertySupervisorBase::theConfigurationManager_
+				    ->dumpActiveConfiguration(
+				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
+				        activeStateMachineDumpFormatOnConfigure_,
+				        configurationAlias,
+				        getLastLogEntry(
+				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+				        theWebUsers_.getActiveUsersString(),
+				        theStateMachine_.getCurrentStateName(),
+				        dumpSs);
+
+				activeStateMachineConfigurationDumpOnConfigure_ = dumpSs.str();
+
+				__COUT__ << "Active State Machine Config Dump on Configure " << __E__;
+				__COUT__ << activeStateMachineConfigurationDumpOnConfigure_ << __E__;
+				__COUT_MULTI__(2, activeStateMachineConfigurationDumpOnConfigure_);
+			}
+			else
+				__COUT_INFO__
+				    << "Not caching the Configuration Dump on the Configure transition."
+				    << __E__;
+
+		}  //end handle configuration dump if enabled on configure transition
+		catch(const std::runtime_error& e)
+		{
+			__SS__ << "Error encountered during configuration dump. Here is the error: "
+			       << e.what();
+			__SS_THROW__;
+		}
+		catch(...)
+		{
+			__SS__ << "Unknown error encountered during configuration dump.";
+			__SS_THROW__;
+		}
+	}  //end configuration dump handling
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -5763,31 +6109,6 @@ try
 	broadcastMessage(message);  // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
 
-	//check for remote subsystem dumps (after broadcast!)
-	std::string remoteSubsystemDump = "";
-	{
-		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
-		{  //lock for remainder of scope
-			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-			__SUP_COUTVS__(TLVL_RemoteFSMRequests, remoteGatewayApps_.size());
-			remoteGatewayApps = remoteGatewayApps_;
-			if(remoteGatewayApps_.size())
-				__SUP_COUT_TYPE__(TLVL_DEBUG + TLVL_RemoteFSMRequests)
-				    << __COUT_HDR__ << remoteGatewayApps_[0].command << " "
-				    << (remoteGatewayApps_[0].appInfo.status) << __E__;
-		}
-		for(auto& remoteGatewayApp : remoteGatewayApps)
-		{
-			if(!remoteGatewayApp.fsm_included)
-				continue;  //skip if not included
-			remoteSubsystemDump += remoteGatewayApp.config_dump;
-		}
-
-		if(remoteSubsystemDump.size())
-			__COUTV__(remoteSubsystemDump);
-	}  //end check for remote subsystem dumps
-	RunControlStateMachine::theProgressBar_.step();
-
 	if(activeStateMachineConfigurationDumpOnConfigureEnable_)
 	{
 		//write local configuration dump file
@@ -5815,14 +6136,6 @@ try
 		         << activeStateMachineConfigurationDumpOnConfigure_.size()
 		         << " to file: " << fullfilename << __E__;
 
-		if(remoteSubsystemDump.size())
-		{
-			fwrite(&remoteSubsystemDump[0], 1, remoteSubsystemDump.size(), fp);
-
-			__COUT__ << "Wrote remote subsystem configuration dump of char count "
-			         << remoteSubsystemDump.size() << " to file: " << fullfilename
-			         << __E__;
-		}
 		fclose(fp);
 
 		__COUT_INFO__ << "Configure transition Configuration Dump saved to file: "
@@ -5832,6 +6145,7 @@ try
 
 	// Check if Run Plugin is defined and, if so, create a new condition record into database
 	// leave as repeated code in case dumpFormat is different for Run Plugin (in the future)
+	activeStateMachineConfigureConditionID_ = -1;  //clear attempted Run Info Plugin use
 	try
 	{
 		if(activeStateMachineRunInfoPluginType_ !=
@@ -5878,8 +6192,12 @@ try
 				__SS_THROW__;
 			}
 
-			conditionID_ = runInfoInterface->insertRunCondition(
-			    activeStateMachineConfigurationDumpOnConfigure_ + remoteSubsystemDump);
+			//in case user wants, insert local configuration blob at each configure transition
+			activeStateMachineConfigureConditionID_ =
+			    runInfoInterface->insertConfigureCondition(
+			        activeStateMachineConfigurationDumpOnConfigure_,
+			        getLastLogEntry(RunControlStateMachine::CONFIGURE_TRANSITION_NAME));
+
 		}  // end Run Info Plugin handling
 	}
 	catch(const std::runtime_error& e)
@@ -6748,8 +7066,13 @@ try
 	        .getCurrentMessage());  // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
 
-	//check for remote subsystem dumps (after broadcast!)
-	std::string remoteSubsystemDump = "";
+	//now that broadcast message done (all subsystems are done with transition!),
+	//	check for remote subsystem dumps (after broadcast!)
+	__COUT__ << "Broadcast done. Check for remote subsystem dumps." << __E__;
+
+	std::map<std::string /* subsystem */,
+	         std::map<std::string /*type/name/field */, std::string /* value */>>
+	    gatewayDumpMap;
 	{
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
 		{  //lock for remainder of scope
@@ -6762,51 +7085,106 @@ try
 				    << (remoteGatewayApps_[0].appInfo.status) << __E__;
 		}
 
-		remoteSubsystemDump +=
-		    "--------------- Remote Subsystem Status ---------------\n";
-		remoteSubsystemDump +=
-		    "Remote Subsystem Count: " + std::to_string(remoteGatewayApps.size()) + "\n";
-		size_t ssi = 1;
-		for(auto& remoteGatewayApp : remoteGatewayApps)
-		{
-			remoteSubsystemDump += std::to_string(ssi) + ". ~~ subsystem_name: " +
-			                       remoteGatewayApp.appInfo.name + "\n.     ";
-			remoteSubsystemDump +=
-			    "subsystem_url: " + remoteGatewayApp.appInfo.url + "\n.     ";
-			// remoteSubsystemDump += "subsystem_landingPage: " + remoteGatewayApp.landingPage + "\n.     ";
-			remoteSubsystemDump +=
-			    "subsystem_status: " + remoteGatewayApp.appInfo.status + "\n.     ";
-			remoteSubsystemDump += "subsystem_progress: " +
-			                       std::to_string(remoteGatewayApp.appInfo.progress) +
-			                       "\n.     ";
-			remoteSubsystemDump +=
-			    "subsystem_detail: " + remoteGatewayApp.appInfo.detail + "\n.     ";
-			// remoteSubsystemDump += "subsystem_lastStatusTime: " + StringMacros::getTimestampString(remoteGatewayApp.appInfo.lastStatusTime) + "\n.     ";
-			// remoteSubsystemDump += "subsystem_consoleErrCount: " + std::to_string(remoteGatewayApp.consoleErrCount) + "\n.     ";
-			// remoteSubsystemDump += "subsystem_consoleWarnCount: " + std::to_string(remoteGatewayApp.consoleWarnCount) + "\n.     ";
-			remoteSubsystemDump +=
-			    "subsystem_configAlias: " + remoteGatewayApp.selected_config_alias +
-			    "\n.     ";
-			remoteSubsystemDump +=
-			    "subsystem_fsmMode: " + remoteGatewayApp.getFsmMode() + "\n.     ";
-			remoteSubsystemDump +=
-			    "subsystem_fsmIncluded: " +
-			    std::string(remoteGatewayApp.fsm_included ? "1" : "0") + "\n.     ";
-		}
-		remoteSubsystemDump +=
-		    "--------------- end Remote Subsystem Status ---------------\n";
+		//include self
+		gatewayDumpMap["Gateway"]["name"] = getSupervisorUID();
+		gatewayDumpMap["Gateway"]["url"]  = allSupervisorInfo_.getGatewayInfo().getURL();
+		gatewayDumpMap["Gateway"]["configAlias"] = activeStateMachineConfigurationAlias_;
+		gatewayDumpMap["Gateway"]["consoleErrCount"] =
+		    std::to_string(systemConsoleErrCount_);
+		gatewayDumpMap["Gateway"]["consoleWarnCount"] =
+		    std::to_string(systemConsoleWarnCount_);
+		gatewayDumpMap["Gateway"]["fsmMode"]     = "Follow FSM";
+		gatewayDumpMap["Gateway"]["fsmIncluded"] = "1";
+		gatewayDumpMap["Gateway"]["dump"]     = activeStateMachineConfigurationDumpOnRun_;
+		gatewayDumpMap["Gateway"]["dumpType"] = activeStateMachineDumpFormatOnRun_;
 
-		remoteSubsystemDump += "\n\n-----------------\nRemote Configuration dump:\n";
+		//include printenv in dumpMap
+		gatewayDumpMap["Gateway"]["printenv"] = StringMacros::exec(
+		    "printenv");  //if added to json in run info plugin, could use StringMacros::escapeString(...)
+
+		//include system variables in dumpMap
+		for(const auto& typePair : StringMacros::systemVariables_)
+			gatewayDumpMap["Gateway"]["systemVariables_" + typePair.first] =
+			    StringMacros::mapToString(
+			        typePair
+			            .second);  //if added to json in run info plugin, could use StringMacros::escapeString(...)
+
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			if(!remoteGatewayApp.fsm_included)
 				continue;  //skip if not included
-			remoteSubsystemDump += remoteGatewayApp.config_dump;
-		}
-		remoteSubsystemDump += "\nEND Remote Configuration dump:\n-----------------\n";
 
-		if(remoteSubsystemDump.size())
-			__COUTV__(remoteSubsystemDump);
+			gatewayDumpMap[remoteGatewayApp.fullName]["name"] =
+			    remoteGatewayApp.appInfo.name;
+			gatewayDumpMap[remoteGatewayApp.fullName]["url"] =
+			    remoteGatewayApp.appInfo.url;
+			gatewayDumpMap[remoteGatewayApp.fullName]["configAlias"] =
+			    remoteGatewayApp.selected_config_alias;
+			gatewayDumpMap[remoteGatewayApp.fullName]["consoleErrCount"] =
+			    std::to_string(remoteGatewayApp.consoleErrCount);
+			gatewayDumpMap[remoteGatewayApp.fullName]["consoleWarnCount"] =
+			    std::to_string(remoteGatewayApp.consoleWarnCount);
+			gatewayDumpMap[remoteGatewayApp.fullName]["fsmMode"] =
+			    remoteGatewayApp.getFsmMode();
+			gatewayDumpMap[remoteGatewayApp.fullName]["fsmIncluded"] =
+			    std::string(remoteGatewayApp.fsm_included ? "1" : "0");
+
+			const std::string& dumpStr = remoteGatewayApp.config_dump;
+			if(dumpStr.size() > 10 && dumpStr.ends_with("END---"))
+				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] =
+				    dumpStr.substr(0, dumpStr.size() - 6);
+			else  //non standard format or no END--- suffix
+				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] = dumpStr;
+			gatewayDumpMap[remoteGatewayApp.fullName]["dumpType"] =
+			    remoteGatewayApp.getConfigDumpType();
+		}  //end remote app loop
+
+		if(TTEST(2))
+		{
+			__COUTVS__(2, gatewayDumpMap.size());
+			std::string mapDumpStr = "";
+			for(const auto& mapPair : gatewayDumpMap)
+				for(const auto& [key, value] : mapPair.second)
+				{
+					mapDumpStr = mapPair.first + " ~~ \n" + key + " : " + value + "\n" +
+					             key + "-END!!!";
+					__COUT_MULTI__(2, mapDumpStr);
+				}
+		}
+
+		__COUTV__(activeStateMachineRunInfoPluginType_);
+
+		if(activeStateMachineRunInfoPluginType_ !=
+		       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+		   activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
+		{
+			std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+			try
+			{
+				runInfoInterface.reset(makeRunInfo(activeStateMachineRunInfoPluginType_,
+				                                   activeStateMachineName_));
+			}
+			catch(...)
+			{
+				;
+			}
+			if(runInfoInterface == nullptr)
+			{
+				__SS__ << "Run Info interface plugin construction failed of type "
+				       << activeStateMachineRunInfoPluginType_
+				       << " for claiming next run number!" << __E__;
+				__SS_THROW__;
+			}
+
+			activeStateMachineRunConditionID_ = runInfoInterface->insertRunCondition(
+			    static_cast<unsigned int>(std::stoul(
+			        activeStateMachineRunNumber_)),  //claimNextRunNumber() returns unsigned int
+			    gatewayDumpMap,
+			    activeStateMachineConfigureConditionID_,
+			    getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME));
+
+		}  // end Run Info Plugin handling
+
 	}  //end check for remote subsystem dumps
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -6836,14 +7214,6 @@ try
 		         << activeStateMachineConfigurationDumpOnRun_.size()
 		         << " to file: " << fullfilename << __E__;
 
-		if(remoteSubsystemDump.size())
-		{
-			fwrite(&remoteSubsystemDump[0], 1, remoteSubsystemDump.size(), fp);
-
-			__COUT__ << "Wrote remote subsystem configuration dump of char count "
-			         << remoteSubsystemDump.size() << " to file: " << fullfilename
-			         << __E__;
-		}
 		fclose(fp);
 
 		__COUT_INFO__ << "Run transition Configuration Dump saved to file: "
@@ -6942,6 +7312,8 @@ try
 
 	}  //end save last started group names/keys
 
+	__COUT__ << "Updating Run Controls State Machine progress bar" << __E__;
+
 	RunControlStateMachine::theProgressBar_.step();
 
 	// make logbook entry
@@ -6976,6 +7348,8 @@ try
 				remoteApps = remoteGatewayApps_;
 			}
 
+			__COUT__ << "Remote apps size " << remoteApps.size() << __E__;
+
 			if(remoteApps.size())
 			{
 				ss << "\n\n~~~ Subsystem Status and Detail ~~~\n";
@@ -7009,9 +7383,6 @@ try
 				   << activeStateMachineConfigurationDumpOnRun_;
 				ss << "\nEND Remote Configuration dump:\n-----------------\n";
 			}
-
-			if(remoteSubsystemDump.size())
-				ss << remoteSubsystemDump;
 		}
 
 		makeSystemLogEntry(ss.str(),
@@ -8095,6 +8466,8 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 
 	size_t countOfRemoteGateways = 0;
 
+	std::map<std::string /* fullName */, int /* unknownCount */> unknownResponseCounts;
+
 	bool done = command == "Error";  //dont check for done if Error'ing
 	while(!done)
 	{
@@ -8152,19 +8525,26 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				//not done
 				if(remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
 				{
-					__SS__ << "Can not complete FSM command '" << command
-					       << "' with unknown status from Remote gateway '"
-					       << remoteGatewayApp.appInfo.name
-					       << "' - it seems communication was lost. Please check the "
-					          "connection or notify admins."
-					       << __E__;
-					__SS_THROW__;
+					unknownResponseCounts[remoteGatewayApp.fullName]++;
+					if(unknownResponseCounts[remoteGatewayApp.fullName] > 2)
+					{
+						__SS__ << "Can not complete FSM command '" << command
+						       << "' with unknown status from Remote gateway '"
+						       << remoteGatewayApp.appInfo.name
+						       << "' - it seems communication was lost. Please check the "
+						          "connection or notify admins."
+						       << __E__;
+						__SS_THROW__;
+					}
 				}
+				else
+					unknownResponseCounts[remoteGatewayApp.fullName] = 0;
 				__COUT__ << "Remote gateway '" << remoteGatewayApp.appInfo.name
 				         << "' not done w/command '" << command
 				         << "' status = " << remoteGatewayApp.appInfo.status
 				         << ",... progress = " << remoteGatewayApp.appInfo.progress
-				         << __E__;
+				         << ",... unkCnt = "
+				         << unknownResponseCounts.at(remoteGatewayApp.fullName) << __E__;
 
 				done = false;
 			}
@@ -8182,7 +8562,7 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			sleep(2);
 
 		checkForAsyncError();
-	}
+	}  //end primary while loop
 
 	__COUT__ << "Done with " << countOfRemoteGateways
 	         << " remote gateway(s) command = " << command << __E__;
@@ -9631,17 +10011,49 @@ try
 			// use latest context always from temporary configuration manager,
 			//	to get updated icons every time...
 			//(so icon changes do no require an ots restart)
-			ConfigurationManager
-			    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
-			const DesktopIconTable* iconTable =
-			    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
-			{
+
+			bool                                                 useLatestIcons = false;
+			std::string                                          timeString;
+			std::pair<std::string /*group name*/, TableGroupKey> latestGroup;
+			std::vector<DesktopIconTable::DesktopIcon>           icons;
+			{  //start lock scope
 				std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
-				latestGatewayIcons_ =
-				    iconTable
-				        ->getAllDesktopIcons();  //cache latest icons (for use, e.g., in remote login verify)
-			}
-			const std::vector<DesktopIconTable::DesktopIcon>& icons = latestGatewayIcons_;
+				latestGroup = latestGatewayIconsContextGroup_;
+			}  //end lock scope
+			if(latestGroup.first.size())
+			{
+				std::pair<std::string /*group name*/, TableGroupKey> theGroup =
+				    ConfigurationManager::loadGroupNameAndKey(
+				        ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE,
+				        timeString);
+				if(theGroup == latestGroup)
+				{
+					useLatestIcons = true;
+					__COUTT__ << "Using cached latest icons for context group '"
+					          << theGroup.first << "(" << theGroup.second << ")" << __E__;
+					std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
+					icons = latestGatewayIcons_;
+				}
+			}  //end check for active context changing
+
+			if(!useLatestIcons)  //then need to load latest icons
+			{
+				ConfigurationManager
+				    tmpCfgMgr;  // Creating new temporary instance so that constructor will activate latest context, note: not using member CorePropertySupervisorBase::theConfigurationManager_
+				const DesktopIconTable* iconTable =
+				    tmpCfgMgr.__GET_CONFIG__(DesktopIconTable);
+				{
+					std::lock_guard<std::mutex> lock(latestGatewayIconsMutex_);
+					latestGatewayIcons_ =
+					    iconTable
+					        ->getAllDesktopIcons();  //cache latest icons (for use, e.g., in remote login verify)
+					icons = latestGatewayIcons_;  //use for this request
+					latestGatewayIconsContextGroup_ =
+					    tmpCfgMgr.getActiveTableGroups()
+					        [ConfigurationManager::GROUP_TYPE_NAME_CONTEXT];
+				}  //end lock scope
+			}      //end load of active context icons
+			//at this point icons is correctly populated
 
 			std::string iconString = "";
 			// comma-separated icon string, 7 fields:
