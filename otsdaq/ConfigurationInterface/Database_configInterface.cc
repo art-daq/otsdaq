@@ -392,15 +392,12 @@ try
 	auto result = std::set<std::string>();
 
 	if(filterString == "")
-		result = ifc.findGlobalConfigurations("*");  // GConfig will return all GConfig*
-		                                             // with filesystem db.. for mongodb
-		                                             // would require reg expr
+		result = ifc.findGlobalConfigurations(
+		    "*");  // GConfig will return all GConfig* with filesystem db.. for mongodb would require reg expr
 	else
-		result = ifc.findGlobalConfigurations(filterString + "*");  // GConfig will return
-		                                                            // all GConfig* with
-		                                                            // filesystem db.. for
-	// mongodb would require
-	// reg expr
+		result = ifc.findGlobalConfigurations(
+		    filterString +
+		    "*");  // GConfig will return all GConfig* with filesystem db.. for mongodb would// mongodb would require reg expr
 	auto end = std::chrono::high_resolution_clock::now();
 	auto duration =
 	    std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
@@ -1020,7 +1017,8 @@ try
 	//       Previously, this method used `ifc.findGlobalConfigurationsContaining(tableName, version.toString())`
 	//       to query for groups containing `tableName` at `version`. For now, it intentionally
 	//       returns an empty set so callers must not rely on this for group discovery.
-	std::set<std::string> returnSet;
+	std::set<std::string> returnSet =
+	    ifc.findGlobalConfigurationsContaining(tableName, version.toString());
 
 	__COUTT__ << "Number of Groups containing table '" << tableName << "-v" << version
 	          << "': " << returnSet.size() << __E__;
