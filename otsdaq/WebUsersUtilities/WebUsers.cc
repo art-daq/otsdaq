@@ -3478,6 +3478,10 @@ std::string WebUsers::getActiveUsersString()
 	for(uint64_t i = 0; i < ActiveSessions_.size(); ++i)
 		activeUserIndices.emplace(
 		    searchUsersDatabaseForUserId(ActiveSessions_[i].userId_));
+	//also add remote session users
+	for(const auto& sessionPair : RemoteSessions_)
+		activeUserIndices.emplace(
+		    searchUsersDatabaseForUserId(sessionPair.second.userId_));
 
 	std::string activeUsersString = "";
 	bool        addComma          = false;

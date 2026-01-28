@@ -9499,12 +9499,12 @@ try
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.getProgress());  // get progress
 				xmlOut.addTextElementToData("detail", appInfo.getDetail());  // get detail
+				xmlOut.addNumberElementToData( //in TB systems, number of KBs is too big for javascript
+				    "availableLogSpaceGB",
+				    appInfo.getAvailableLogSpaceKB()/1000.0f/1000.0f);  // get log space
 				xmlOut.addNumberElementToData(
-				    "availableLogSpaceKB",
-				    appInfo.getAvailableLogSpaceKB());  // get log space
-				xmlOut.addNumberElementToData(
-				    "availableDataSpaceKB",
-				    appInfo.getAvailableDataSpaceKB());  // get data space
+				    "availableDataSpaceGB",
+				    appInfo.getAvailableDataSpaceKB()/1000.0f/1000.0f);  // get data space
 				float rate = appInfo.getLogUsageRateLastHourKBps();
 				if(rate == 0)
 					rate = appInfo.getLogUsageRateLastHalfHourKBps();
@@ -9555,13 +9555,13 @@ try
 					xmlOut.addTextElementToParent("subapp_detail",
 					                              subappInfoPair.second.detail,
 					                              subappElement);  // get detail
-					xmlOut.addNumberElementToParent(
-					    "subapp_availableLogSpaceKB",
-					    subappInfoPair.second.availableLogSpaceKB,
+					xmlOut.addNumberElementToParent( //in TB systems, number of KBs is too big for javascript
+					    "subapp_availableLogSpaceGB",
+					    subappInfoPair.second.availableLogSpaceKB/1000.0f/1000.0f,
 					    subappElement);  // get log space
 					xmlOut.addNumberElementToParent(
-					    "subapp_availableDataSpaceKB",
-					    subappInfoPair.second.availableDataSpaceKB,
+					    "subapp_availableDataSpaceGB",
+					    subappInfoPair.second.availableDataSpaceKB/1000.0f/1000.0f,
 					    subappElement);  // get data space
 					xmlOut.addNumberElementToParent(
 					    "subapp_logUsageRateKBps",
@@ -9612,11 +9612,11 @@ try
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.progress);        // get progress
 				xmlOut.addTextElementToData("detail", appInfo.detail);  // get detail
+				xmlOut.addNumberElementToData( //in TB systems, number of KBs is too big for javascript
+				    "availableLogSpaceGB", appInfo.availableLogSpaceKB/1000.0f/1000.0f);  // get log space
 				xmlOut.addNumberElementToData(
-				    "availableLogSpaceKB", appInfo.availableLogSpaceKB);  // get log space
-				xmlOut.addNumberElementToData(
-				    "availableDataSpaceKB",
-				    appInfo.availableDataSpaceKB);  // get data space
+				    "availableDataSpaceGB",
+				    appInfo.availableDataSpaceKB/1000.0f/1000.0f);  // get data space
 				xmlOut.addNumberElementToData(
 				    "logUsageRateKBps", appInfo.logUsageRateKBps);  // get log usage rate
 				xmlOut.addNumberElementToData(
@@ -9653,13 +9653,13 @@ try
 					xmlOut.addTextElementToParent("subapp_detail",
 					                              subappInfoPair.second.detail,
 					                              subappElement);  // get detail
-					xmlOut.addNumberElementToParent(
-					    "subapp_availableLogSpaceKB",
-					    subappInfoPair.second.availableLogSpaceKB,
+					xmlOut.addNumberElementToParent( //in TB systems, number of KBs is too big for javascript
+					    "subapp_availableLogSpaceGB",
+					    subappInfoPair.second.availableLogSpaceKB/1000.0f/1000.0f,
 					    subappElement);  // get log space
 					xmlOut.addNumberElementToParent(
-					    "subapp_availableDataSpaceKB",
-					    subappInfoPair.second.availableDataSpaceKB,
+					    "subapp_availableDataSpaceGB",
+					    subappInfoPair.second.availableDataSpaceKB/1000.0f/1000.0f,
 					    subappElement);  // get data space
 					xmlOut.addNumberElementToParent(
 					    "subapp_logUsageRateKBps",
