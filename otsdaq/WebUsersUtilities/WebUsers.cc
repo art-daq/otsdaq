@@ -3466,6 +3466,10 @@ size_t WebUsers::getActiveUserCount()
 	for(uint64_t i = 0; i < ActiveSessions_.size(); ++i)
 		activeUserIndices.emplace(
 		    searchUsersDatabaseForUserId(ActiveSessions_[i].userId_));
+	//also add remote session users
+	for(const auto& sessionPair : RemoteSessions_)
+		activeUserIndices.emplace(
+		    searchUsersDatabaseForUserId(sessionPair.second.userId_));
 	return activeUserIndices.size();
 }  // end getActiveUserCount()
 
