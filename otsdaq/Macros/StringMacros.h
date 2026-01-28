@@ -33,6 +33,8 @@ struct StringMacros
 	///		encodeURIComponent
 	///		sanitizeForSQL
 	///		escapeString
+	///		escapeJSONStringEntities
+	///		restoreJSONStringEntities
 	///		trim
 	///		convertEnvironmentVariables
 	///		isNumber
@@ -80,6 +82,8 @@ struct StringMacros
 	static std::string        	encodeURIComponent			(const std::string& data);
 	static void		        	sanitizeForSQL				(std::string& data);
 	static std::string			escapeString				(std::string inString, bool allowWhiteSpace = false);
+	static std::string			escapeJSONStringEntities	(const std::string& str);
+	static std::string			restoreJSONStringEntities	(const std::string& str);
 	static const std::string&	trim						(std::string& s);
 	static std::string 			convertEnvironmentVariables	(const std::string& data);
 	static std::map<std::string /* system variable */,

@@ -7100,14 +7100,14 @@ try
 
 		//include printenv in dumpMap
 		gatewayDumpMap["Gateway"]["printenv"] = StringMacros::exec(
-		    "printenv");  //if added to json in run info plugin, could use StringMacros::escapeString(...)
+		    "printenv");  //if added to json in run info plugin, could use StringMacros::StringMacros::escapeJSONStringEntities(...)
 
 		//include system variables in dumpMap
 		for(const auto& typePair : StringMacros::systemVariables_)
 			gatewayDumpMap["Gateway"]["systemVariables_" + typePair.first] =
 			    StringMacros::mapToString(
 			        typePair
-			            .second);  //if added to json in run info plugin, could use StringMacros::escapeString(...)
+			            .second);  //if added to json in run info plugin, could use StringMacros::StringMacros::escapeJSONStringEntities(...)
 
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{

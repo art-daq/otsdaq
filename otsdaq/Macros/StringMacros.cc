@@ -375,6 +375,95 @@ std::string StringMacros::escapeString(std::string inString,
 }  // end escapeString()
 
 //==============================================================================
+/// getEscapedValueAsString
+///	  Returns string with special characters escaped for JSON
+///	Note: this should be useful for any values placed in double quotes, i.e. JSON.
+///  Reverse of restoreJSONStringEntities()
+std::string StringMacros::escapeJSONStringEntities(const std::string& str)
+{
+	unsigned int sz = str.size();
+	if(!sz)
+		return "";  // empty string, returns empty string
+
+	std::string retStr = "";
+	retStr.reserve(str.size() * 2);  // reserve roughly right size
+	for(unsigned int i = 0; i < sz; ++i)
+	{
+		switch(str[i])
+		{
+		case '\n':
+			retStr += "\\n";
+			break;
+		case '"':
+			retStr += "\\\"";
+			break;
+		case '\t':
+			retStr += "\\t";
+			break;
+		case '\r':
+			retStr += "\\r";
+			break;
+		case '\\':
+			retStr += "\\\\";
+			break;
+		default:
+			retStr += str[i];
+		}
+	}
+	return retStr;
+} //end escapeJSONStringEntities
+
+//==============================================================================
+/// restoreJSONStringEntities
+///	 Returns string with literals \n \t \" \r \\ replaced with char
+///  Reverse of escapeJSONStringEntities()
+std::string StringMacros::restoreJSONStringEntities(const std::string& str)
+{
+	unsigned int sz = str.size();
+	if(!sz)
+		return "";  // empty string, returns empty string
+
+	std::string retStr = "";
+	retStr.reserve(str.size());  // reserve roughly right size
+	unsigned int      i = 0;
+	for(; i < sz - 1; ++i)
+	{
+		if(str[i] == '\\')  // if 2 char escape sequence, replace with char
+			switch(str[i + 1])
+			{
+			case 'n':
+				retStr += '\n';
+				++i;
+				break;
+			case '"':
+				retStr += '"';
+				++i;
+				break;
+			case 't':
+				retStr += '\t';
+				++i;
+				break;
+			case 'r':
+				retStr += '\r';
+				++i;
+				break;
+			case '\\':
+				retStr += '\\';
+				++i;
+				break;
+			default:
+				retStr += str[i];
+			}
+		else
+			retStr += str[i];
+	}
+	if(i == sz - 1)
+		retStr += str[sz - 1];  // output last character (which can't escape anything)
+
+	return retStr;
+}  // end restoreJSONStringEntities()
+
+//==============================================================================
 /// StringMacros::trim
 ///		Remove whitespace like JavaScript trim()
 const std::string& StringMacros::trim(std::string& s)

@@ -1007,10 +1007,11 @@ std::string TableView::getValueAsString(unsigned int row,
 
 //==============================================================================
 /// getEscapedValueAsString
-///	gets the value with the proper data type and converts to string
-///	as though getValue was called.
-///	then escapes all special characters with slash.
+///	 Gets the value with the proper data type and converts to string as though getValue was called.
+///		Then escapes all special characters with slash.
 ///	Note: this should be useful for values placed in double quotes, i.e. JSON.
+///	  or CSV if quotesToDoubleQuotes is true.
+/// If not for CSV, reversed by StringMacros::restoreJSONStringEntities
 std::string TableView::getEscapedValueAsString(
     unsigned int row,
     unsigned int col,
@@ -2333,54 +2334,6 @@ void TableView::printCSV(std::ostream&      out /* = std::cout */,
 }  // end printCSV()
 
 //==============================================================================
-/// restoreJSONStringEntities
-///	returns string with literals \n \t \" \r \\ replaced with char
-std::string restoreJSONStringEntities(const std::string& str)
-{
-	unsigned int sz = str.size();
-	if(!sz)
-		return "";  // empty string, returns empty string
-
-	std::stringstream retStr;
-	unsigned int      i = 0;
-	for(; i < sz - 1; ++i)
-	{
-		if(str[i] == '\\')  // if 2 char escape sequence, replace with char
-			switch(str[i + 1])
-			{
-			case 'n':
-				retStr << '\n';
-				++i;
-				break;
-			case '"':
-				retStr << '"';
-				++i;
-				break;
-			case 't':
-				retStr << '\t';
-				++i;
-				break;
-			case 'r':
-				retStr << '\r';
-				++i;
-				break;
-			case '\\':
-				retStr << '\\';
-				++i;
-				break;
-			default:
-				retStr << str[i];
-			}
-		else
-			retStr << str[i];
-	}
-	if(i == sz - 1)
-		retStr << str[sz - 1];  // output last character (which can't escape anything)
-
-	return retStr.str();
-}  // end restoreJSONStringEntities()
-
-//==============================================================================
 /// fillFromJSON
 ///	Fills (does not clear) the view from the JSON string.
 ///	Returns -1 on failure
@@ -2483,7 +2436,7 @@ int TableView::fillFromJSON(const std::string& json)
 				startString = i;
 			else
 			{
-				extractedString = restoreJSONStringEntities(
+				extractedString = StringMacros::restoreJSONStringEntities(
 				    json.substr(startString + 1, i - startString - 1));
 				newString = 1;  // have new string!
 			}

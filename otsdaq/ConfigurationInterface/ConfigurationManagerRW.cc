@@ -2846,7 +2846,7 @@ void ConfigurationManagerRW::testXDAQContext()
 		//test lookup of which groups a table is in
 		{
 			std::string  documentNameToLoad = "XDAQApplicationTable";
-			TableVersion documentVersionToLoad((int)1);  //134
+			TableVersion documentVersionToLoad((int)134);  //1 is easy, 134 is hard on daq13 mongodb
 
 			std::set<std::string> groupsContainingTable =
 			    theInterface_->findGroupsWithTable(documentNameToLoad,
