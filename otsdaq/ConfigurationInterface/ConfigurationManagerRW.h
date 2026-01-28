@@ -91,6 +91,14 @@ class ConfigurationManagerRW : public ConfigurationManager
 	TableBase* 									getMetadataTable				(TableVersion fillVersion = TableVersion()); ///< created for use in otsdaq_flatten_system_aliases and otsdaq_export_system_aliases, e.g.
 
 	//==============================================================================
+	/// Table version metadata and filtering
+	std::vector<TableVersionMetadata> 			getTableVersionsWithMetadata	(const std::string& tableName);
+	std::vector<TableVersionMetadata> 			filterTableVersionsByDateRange	(const std::string& tableName, time_t startTime, time_t endTime);
+	std::vector<TableVersionMetadata> 			filterTableVersionsLastNDays	(const std::string& tableName, unsigned int numDays);
+	std::map<std::string /*tableName*/, 
+			 std::vector<TableVersionMetadata>>		getAllTableVersionsWithMetadata	(bool onlyActiveTables = false);
+
+	//==============================================================================
 	/// Setters
 	const std::string&      					setUsername						(const std::string& username) { username_ = username; return username_; }
 

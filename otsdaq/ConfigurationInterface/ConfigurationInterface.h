@@ -19,6 +19,19 @@ namespace ots
 
 class ConfigurationHandlerBase;
 
+// Structure to hold version metadata
+struct TableVersionMetadata
+{
+	TableVersion version;
+	time_t       creationTime;
+	std::string  author;
+	std::string  comment;
+	
+	TableVersionMetadata() : version(TableVersion()), creationTime(0), author(""), comment("") {}
+	TableVersionMetadata(TableVersion v, time_t t, const std::string& a, const std::string& c)
+	    : version(v), creationTime(t), author(a), comment(c) {}
+};
+
 class ConfigurationInterface
 {
 	friend class ConfigurationManagerRW;  ///< because need access to latestVersion() call for group metadata
@@ -44,6 +57,9 @@ public:
 	#include "otsdaq/ConfigurationInterface/ConfigurationInterface.icc"  	///<define ConfigurationInterface::get() source code
 	virtual std::set<std::string /*name*/> 	getAllTableNames				(void) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getAllTableNames in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
 	virtual std::set<TableVersion> 			getVersions						(const TableBase* table) const = 0;
+	virtual std::vector<TableVersionMetadata> getVersionsWithMetadata		(const TableBase* table) const;
+	std::vector<TableVersionMetadata> 		filterVersionsByDateRange		(const std::vector<TableVersionMetadata>& versions, time_t startTime, time_t endTime) const;
+	std::vector<TableVersionMetadata> 		filterVersionsLastNDays			(const std::vector<TableVersionMetadata>& versions, unsigned int numDays) const;
 	static const CONFIGURATION_MODE&		getMode							(void);
 	TableVersion                   			saveNewVersion					(TableBase* table, TableVersion temporaryVersion, TableVersion newVersion = TableVersion());
 

@@ -3181,3 +3181,86 @@ void ConfigurationManagerRW::testXDAQContext()
 		__GEN_COUT__ << "Failed to load table..." << __E__;
 	}
 }  //end testXDAQContext()
+
+//==============================================================================
+/// getTableVersionsWithMetadata
+///		Returns metadata for all versions of the specified table.
+std::vector<TableVersionMetadata> ConfigurationManagerRW::getTableVersionsWithMetadata(
+    const std::string& tableName)
+{
+	TableBase* table = getTableByName(tableName);
+	if(!table)
+	{
+		__SS__ << "Table '" << tableName << "' not found!" << __E__;
+		__SS_THROW__;
+	}
+	
+	return theInterface_->getVersionsWithMetadata(table);
+}  //end getTableVersionsWithMetadata()
+
+//==============================================================================
+/// filterTableVersionsByDateRange
+///		Returns metadata for versions of the specified table within a date range.
+std::vector<TableVersionMetadata> ConfigurationManagerRW::filterTableVersionsByDateRange(
+    const std::string& tableName,
+    time_t             startTime,
+    time_t             endTime)
+{
+	std::vector<TableVersionMetadata> allVersions = getTableVersionsWithMetadata(tableName);
+	return theInterface_->filterVersionsByDateRange(allVersions, startTime, endTime);
+}  //end filterTableVersionsByDateRange()
+
+//==============================================================================
+/// filterTableVersionsLastNDays
+///		Returns metadata for versions of the specified table created in the last N days.
+std::vector<TableVersionMetadata> ConfigurationManagerRW::filterTableVersionsLastNDays(
+    const std::string& tableName,
+    unsigned int       numDays)
+{
+	std::vector<TableVersionMetadata> allVersions = getTableVersionsWithMetadata(tableName);
+	return theInterface_->filterVersionsLastNDays(allVersions, numDays);
+}  //end filterTableVersionsLastNDays()
+
+//==============================================================================
+/// getAllTableVersionsWithMetadata
+///		Returns metadata for all versions of all tables (or only active tables if specified).
+std::map<std::string /*tableName*/, std::vector<TableVersionMetadata>>
+ConfigurationManagerRW::getAllTableVersionsWithMetadata(bool onlyActiveTables)
+{
+	std::map<std::string, std::vector<TableVersionMetadata>> result;
+	
+	// Get all table info
+	const std::map<std::string, TableInfo>& tableInfo = 
+	    getAllTableInfo(false /*refresh*/, nullptr /*warnings*/, 
+	                    "" /*errorFilterName*/, false /*getGroupKeys*/, 
+	                    false /*getGroupInfo*/, false /*initializeActiveGroups*/);
+	
+	for(const auto& tablePair : tableInfo)
+	{
+		const std::string& tableName = tablePair.first;
+		TableBase*         table     = tablePair.second.tablePtr_;
+		
+		if(!table)
+			continue;
+		
+		if(onlyActiveTables)
+		{
+			// Check if table has any active versions
+			std::map<std::string, TableVersion> activeVersions = getActiveVersions();
+			if(activeVersions.find(tableName) == activeVersions.end())
+				continue;
+		}
+		
+		try
+		{
+			result[tableName] = theInterface_->getVersionsWithMetadata(table);
+		}
+		catch(const std::exception& e)
+		{
+			__COUT_WARN__ << "Failed to get version metadata for table '" << tableName 
+			              << "': " << e.what() << __E__;
+		}
+	}
+	
+	return result;
+}  //end getAllTableVersionsWithMetadata()
