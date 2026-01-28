@@ -26,10 +26,12 @@ struct TableVersionMetadata
 	time_t       creationTime;
 	std::string  author;
 	std::string  comment;
+	bool         metadataValid;  // true if metadata was successfully loaded
 	
-	TableVersionMetadata() : version(TableVersion()), creationTime(0), author(""), comment("") {}
+	TableVersionMetadata() 
+	    : version(TableVersion()), creationTime(0), author(""), comment(""), metadataValid(false) {}
 	TableVersionMetadata(TableVersion v, time_t t, const std::string& a, const std::string& c)
-	    : version(v), creationTime(t), author(a), comment(c) {}
+	    : version(v), creationTime(t), author(a), comment(c), metadataValid(true) {}
 };
 
 class ConfigurationInterface

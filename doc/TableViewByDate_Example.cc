@@ -9,15 +9,28 @@
 
 using namespace ots;
 
-// Helper function to format time_t as readable string
+// Helper function to format time_t as readable string (thread-safe)
 std::string formatTime(time_t t)
 {
 	if(t == 0)
 		return "Unknown";
 	
-	std::tm* tm = std::localtime(&t);
 	char buffer[100];
-	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", tm);
+	
+#if defined(_WIN32) || defined(_WIN64)
+	// Windows: use localtime_s
+	std::tm tm_buf;
+	if(localtime_s(&tm_buf, &t) != 0)
+		return "Invalid time";
+	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm_buf);
+#else
+	// POSIX: use localtime_r
+	std::tm tm_buf;
+	if(localtime_r(&t, &tm_buf) == nullptr)
+		return "Invalid time";
+	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &tm_buf);
+#endif
+	
 	return std::string(buffer);
 }
 

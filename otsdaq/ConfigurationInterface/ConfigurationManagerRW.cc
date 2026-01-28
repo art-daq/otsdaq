@@ -3213,11 +3213,23 @@ std::vector<TableVersionMetadata> ConfigurationManagerRW::filterTableVersionsByD
 //==============================================================================
 /// filterTableVersionsLastNDays
 ///		Returns metadata for versions of the specified table created in the last N days.
+///		NOTE: This method calls getTableVersionsWithMetadata() which can be expensive.
+///		Consider caching the result if you need to perform multiple filtering operations.
 std::vector<TableVersionMetadata> ConfigurationManagerRW::filterTableVersionsLastNDays(
     const std::string& tableName,
     unsigned int       numDays)
 {
-	std::vector<TableVersionMetadata> allVersions = getTableVersionsWithMetadata(tableName);
+	TableBase* table = getTableByName(tableName);
+	if(!table)
+	{
+		__SS__ << "Table '" << tableName << "' not found!" << __E__;
+		__SS_THROW__;
+	}
+	
+	// Get all versions with metadata
+	std::vector<TableVersionMetadata> allVersions = theInterface_->getVersionsWithMetadata(table);
+	
+	// Filter by last N days
 	return theInterface_->filterVersionsLastNDays(allVersions, numDays);
 }  //end filterTableVersionsLastNDays()
 
@@ -3228,6 +3240,13 @@ std::map<std::string /*tableName*/, std::vector<TableVersionMetadata>>
 ConfigurationManagerRW::getAllTableVersionsWithMetadata(bool onlyActiveTables)
 {
 	std::map<std::string, std::vector<TableVersionMetadata>> result;
+	
+	// Get active versions once if filtering by active tables
+	std::map<std::string, TableVersion> activeVersions;
+	if(onlyActiveTables)
+	{
+		activeVersions = getActiveVersions();
+	}
 	
 	// Get all table info
 	const std::map<std::string, TableInfo>& tableInfo = 
@@ -3246,7 +3265,6 @@ ConfigurationManagerRW::getAllTableVersionsWithMetadata(bool onlyActiveTables)
 		if(onlyActiveTables)
 		{
 			// Check if table has any active versions
-			std::map<std::string, TableVersion> activeVersions = getActiveVersions();
 			if(activeVersions.find(tableName) == activeVersions.end())
 				continue;
 		}

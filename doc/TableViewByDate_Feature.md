@@ -22,8 +22,11 @@ struct TableVersionMetadata
     time_t       creationTime;  // Unix timestamp when created
     std::string  author;        // Who created the version
     std::string  comment;       // Version comment
+    bool         metadataValid; // true if metadata was successfully loaded
 };
 ```
+
+**Note**: The `metadataValid` field indicates whether the metadata was successfully loaded. Versions with `metadataValid=false` are excluded from date-based filtering operations.
 
 ### ConfigurationInterface Methods
 
@@ -154,15 +157,18 @@ This approach reuses the existing metadata storage mechanism where:
 
 ### Performance Considerations
 
-- **Initial load**: The first call to `getVersionsWithMetadata()` will load all versions to extract metadata. This may take time for tables with many versions.
-- **Caching**: Consider caching the results if you need to perform multiple filtering operations on the same table.
-- **Partial loading**: The implementation loads full table data to get metadata. Future optimizations could add database-level queries to get metadata without loading full tables.
+- **Initial load**: The first call to `getVersionsWithMetadata()` will load all versions to extract metadata. This may take time for tables with many versions as it currently performs full table loads.
+- **Caching recommended**: Consider caching the results if you need to perform multiple filtering operations on the same table. Call `getTableVersionsWithMetadata()` once and then apply filters to the cached result.
+- **Partial loading**: The current implementation loads full table data to get metadata. Future optimizations could add database-level queries to get metadata without loading full tables, which would significantly improve performance.
+- **Parameter validation**: Input parameters are validated to prevent overflow and invalid ranges, throwing exceptions for invalid values.
 
 ### Error Handling
 
-- If a version fails to load, the method logs a warning and includes an entry with unknown metadata
+- If a version fails to load, the method logs a warning and includes an entry with `metadataValid=false`
+- Versions with invalid metadata are excluded from date-based filtering operations
 - If a table doesn't exist, an exception is thrown
 - Empty results are returned if no versions match the filter criteria
+- Invalid parameters (negative times, endTime < startTime, excessive day counts) throw exceptions
 
 ## Integration with Configuration GUI
 

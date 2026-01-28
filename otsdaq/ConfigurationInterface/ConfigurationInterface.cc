@@ -186,7 +186,8 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase*   table,
 /// getVersionsWithMetadata
 ///		Returns a vector of TableVersionMetadata containing version numbers
 ///		along with their creation time, author, and comment.
-///		This allows for filtering versions by date without loading full table data.
+///		NOTE: Currently loads full table data to extract metadata. Future optimization
+///		could add database-level queries to retrieve only metadata fields.
 std::vector<TableVersionMetadata> ConfigurationInterface::getVersionsWithMetadata(
     const TableBase* table) const
 {
@@ -219,8 +220,11 @@ std::vector<TableVersionMetadata> ConfigurationInterface::getVersionsWithMetadat
 		{
 			__COUT_WARN__ << "Failed to load metadata for table '" << table->getTableName() 
 			              << "' version " << version << ": " << e.what() << __E__;
-			// Add entry with unknown metadata
-			result.push_back(TableVersionMetadata(version, 0, "Unknown", ""));
+			// Add entry with invalid metadata flag
+			TableVersionMetadata metadata;
+			metadata.version = version;
+			metadata.metadataValid = false;
+			result.push_back(metadata);
 		}
 	}
 	
@@ -232,19 +236,36 @@ std::vector<TableVersionMetadata> ConfigurationInterface::getVersionsWithMetadat
 ///		Filters versions to only include those created within the specified time range.
 ///		startTime and endTime are Unix timestamps (seconds since epoch).
 ///		Use startTime=0 for no lower bound, endTime=0 or very large value for no upper bound.
+///		Versions with invalid metadata are excluded from results.
 std::vector<TableVersionMetadata> ConfigurationInterface::filterVersionsByDateRange(
     const std::vector<TableVersionMetadata>& versions,
     time_t                                   startTime,
     time_t                                   endTime) const
 {
+	// Validate input parameters
+	if(startTime < 0 || endTime < 0)
+	{
+		__SS__ << "Invalid time parameters: startTime=" << startTime 
+		       << ", endTime=" << endTime << ". Both must be non-negative." << __E__;
+		__SS_THROW__;
+	}
+	
+	if(startTime > 0 && endTime > 0 && endTime < startTime)
+	{
+		__SS__ << "Invalid time range: endTime (" << endTime 
+		       << ") is before startTime (" << startTime << ")" << __E__;
+		__SS_THROW__;
+	}
+	
 	std::vector<TableVersionMetadata> filtered;
 	
 	for(const auto& versionMeta : versions)
 	{
-		// If creation time is 0, it's unknown, so include it to be safe
-		if(versionMeta.creationTime == 0)
+		// Skip versions with invalid metadata
+		if(!versionMeta.metadataValid)
 		{
-			filtered.push_back(versionMeta);
+			__COUT_INFO__ << "Skipping version " << versionMeta.version 
+			              << " with invalid metadata" << __E__;
 			continue;
 		}
 		
@@ -263,14 +284,22 @@ std::vector<TableVersionMetadata> ConfigurationInterface::filterVersionsByDateRa
 
 //==============================================================================
 /// filterVersionsLastNDays
-///		Convenience method to filter versions created in the last N days.
-///		For example, numDays=7 returns versions from the last week.
+///		Convenience method to filter versions created in the last N days from now.
+///		For example, numDays=7 returns versions from 7 days ago until now.
 std::vector<TableVersionMetadata> ConfigurationInterface::filterVersionsLastNDays(
     const std::vector<TableVersionMetadata>& versions,
     unsigned int                             numDays) const
 {
+	// Validate input - prevent overflow
+	if(numDays > 36500)  // More than 100 years
+	{
+		__SS__ << "Invalid numDays value: " << numDays 
+		       << ". Must be less than 36500 (100 years)" << __E__;
+		__SS_THROW__;
+	}
+	
 	time_t now       = time(0);
-	time_t startTime = now - (numDays * 24 * 60 * 60);  // N days ago
+	time_t startTime = now - (static_cast<time_t>(numDays) * 24 * 60 * 60);  // N days ago
 	
 	return filterVersionsByDateRange(versions, startTime, now);
 }  //end filterVersionsLastNDays()
