@@ -411,7 +411,7 @@ std::string StringMacros::escapeJSONStringEntities(const std::string& str)
 		}
 	}
 	return retStr;
-} //end escapeJSONStringEntities
+}  //end escapeJSONStringEntities
 
 //==============================================================================
 /// restoreJSONStringEntities
@@ -425,7 +425,7 @@ std::string StringMacros::restoreJSONStringEntities(const std::string& str)
 
 	std::string retStr = "";
 	retStr.reserve(str.size());  // reserve roughly right size
-	unsigned int      i = 0;
+	unsigned int i = 0;
 	for(; i < sz - 1; ++i)
 	{
 		if(str[i] == '\\')  // if 2 char escape sequence, replace with char
