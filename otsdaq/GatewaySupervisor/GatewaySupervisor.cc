@@ -1176,8 +1176,8 @@ try
 							if(remoteApps[r].appInfo.status == "")
 							{
 								__COUT__ << "Removing stale remote gateway app '"
-											<< remoteApps[r].appInfo.name
-											<< "' from Gateway app list." << __E__;
+								         << remoteApps[r].appInfo.name
+								         << "' from Gateway app list." << __E__;
 
 								{  //handle remove from primary gateway structure
 									bool found = false;
@@ -1192,26 +1192,30 @@ try
 										       .appInfo.name)
 										{
 											found = true;
-											
+
 											theSupervisor->remoteGatewayApps_.erase(
-												theSupervisor->remoteGatewayApps_.begin() + i);
+											    theSupervisor->remoteGatewayApps_
+											        .begin() +
+											    i);
 											break;
 										}  //end copy into primary gateway structure of updated info
 
 									if(!found)
 									{
-										__COUT_WARN__ << "Could not find stale remote gateway app '"
-										         << remoteApps[r].appInfo.name
-										         << "' to remove from primary gateway structure!"
-										         << __E__;
+										__COUT_WARN__
+										    << "Could not find stale remote gateway app '"
+										    << remoteApps[r].appInfo.name
+										    << "' to remove from primary gateway "
+										       "structure!"
+										    << __E__;
 									}
 								}  //end handle remove from primary gateway structure
 
 								//rewind and erase also locally
 								remoteApps.erase(remoteApps.begin() + r);
 								--r;
-							} //end search for removal loop
-						} //end clean up stale remoteGatewayApps with blank status
+							}  //end search for removal loop
+						}      //end clean up stale remoteGatewayApps with blank status
 						remoteAppsExist = remoteApps.size();
 
 						if(remoteAppsExist &&
