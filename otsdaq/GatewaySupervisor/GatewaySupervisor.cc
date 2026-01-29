@@ -9264,25 +9264,24 @@ try
 			{
 				if(CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_VIEW) != "")
 					theWebUsers_.setGenericPreference(
-						userInfo.uid_,
-						DEFAULT_FSM_VIEW,
-						CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_VIEW));
+					    userInfo.uid_,
+					    DEFAULT_FSM_VIEW,
+					    CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_VIEW));
 
 				if(CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_NAME) != "")
 					theWebUsers_.setGenericPreference(
-						userInfo.uid_,
-						DEFAULT_FSM_NAME,
-						CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_NAME));
+					    userInfo.uid_,
+					    DEFAULT_FSM_NAME,
+					    CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_NAME));
 			}
 			else
 			{
 				theWebUsers_.getGenericPreference(
 				    userInfo.uid_, DEFAULT_FSM_VIEW, &xmlOut);
-			
+
 				theWebUsers_.getGenericPreference(
 				    userInfo.uid_, DEFAULT_FSM_NAME, &xmlOut);
 			}
-
 		}
 		else if(requestType == "getAliasList")
 		{
