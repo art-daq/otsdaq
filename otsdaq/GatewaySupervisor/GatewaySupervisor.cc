@@ -9259,14 +9259,30 @@ try
 		{
 			std::string       set              = CgiDataUtilities::getData(cgiIn, "set");
 			const std::string DEFAULT_FSM_VIEW = "Default_FSM_View";
+			const std::string DEFAULT_FSM_NAME = "Default_FSM_Name";
 			if(set == "1")
-				theWebUsers_.setGenericPreference(
-				    userInfo.uid_,
-				    DEFAULT_FSM_VIEW,
-				    CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_VIEW));
+			{
+				if(CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_VIEW) != "")
+					theWebUsers_.setGenericPreference(
+						userInfo.uid_,
+						DEFAULT_FSM_VIEW,
+						CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_VIEW));
+
+				if(CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_NAME) != "")
+					theWebUsers_.setGenericPreference(
+						userInfo.uid_,
+						DEFAULT_FSM_NAME,
+						CgiDataUtilities::getData(cgiIn, DEFAULT_FSM_NAME));
+			}
 			else
+			{
 				theWebUsers_.getGenericPreference(
 				    userInfo.uid_, DEFAULT_FSM_VIEW, &xmlOut);
+			
+				theWebUsers_.getGenericPreference(
+				    userInfo.uid_, DEFAULT_FSM_NAME, &xmlOut);
+			}
+
 		}
 		else if(requestType == "getAliasList")
 		{
