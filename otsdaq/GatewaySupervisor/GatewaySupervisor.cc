@@ -1198,7 +1198,7 @@ try
 											        .begin() +
 											    i);
 											break;
-										}  //end copy into primary gateway structure of updated info
+										}  //end removal from primary gateway structure
 
 									if(!found)
 									{
@@ -1214,7 +1214,7 @@ try
 								//rewind and erase also locally
 								remoteApps.erase(remoteApps.begin() + r);
 								--r;
-							}  //end search for removal loop
+							}  //end removal of stale remote app with blank status
 						}      //end clean up stale remoteGatewayApps with blank status
 						remoteAppsExist = remoteApps.size();
 
