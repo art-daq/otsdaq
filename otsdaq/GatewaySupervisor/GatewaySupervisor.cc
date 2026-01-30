@@ -1165,21 +1165,57 @@ try
 
 						//clean up stale remoteGatewayApps with blank status
 						bool remoteAppsExist = false;
-						for(size_t i = 0; i < remoteApps.size(); ++i)
+						for(size_t r = 0; r < remoteApps.size(); ++r)
 						{
-							__COUTT__ << "#" << i << " - Checking remote app '"
-							          << remoteApps[i].appInfo.name
-							          << "' [URL=" << remoteApps[i].appInfo.url
-							          << "] for status: '" << remoteApps[i].appInfo.status
+							__COUTT__ << "#" << r << " - Checking remote app '"
+							          << remoteApps[r].appInfo.name
+							          << "' [URL=" << remoteApps[r].appInfo.url
+							          << "] for status: '" << remoteApps[r].appInfo.status
 							          << "'." << __E__;
 
-							if(remoteApps[i].appInfo.status == "")
+							if(remoteApps[r].appInfo.status == "")
 							{
-								//rewind and erase
-								remoteApps.erase(remoteApps.begin() + i);
-								--i;
-							}
-						}
+								__COUT__ << "Removing stale remote gateway app '"
+								         << remoteApps[r].appInfo.name
+								         << "' from Gateway app list." << __E__;
+
+								{  //handle remove from primary gateway structure
+									bool found = false;
+									//lock for remainder of scope
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->remoteGatewayAppsMutex_);
+									for(size_t i = 0;
+									    i < theSupervisor->remoteGatewayApps_.size();
+									    ++i)
+										if(remoteApps[r].appInfo.name ==
+										   theSupervisor->remoteGatewayApps_[i]
+										       .appInfo.name)
+										{
+											found = true;
+
+											theSupervisor->remoteGatewayApps_.erase(
+											    theSupervisor->remoteGatewayApps_
+											        .begin() +
+											    i);
+											break;
+										}  //end removal from primary gateway structure
+
+									if(!found)
+									{
+										__COUT_WARN__
+										    << "Could not find stale remote gateway app '"
+										    << remoteApps[r].appInfo.name
+										    << "' to remove from primary gateway "
+										       "structure!"
+										    << __E__;
+									}
+								}  //end handle remove from primary gateway structure
+
+								//rewind and erase also locally
+								remoteApps.erase(remoteApps.begin() + r);
+								--r;
+							}  //end removal of stale remote app with blank status
+						}      //end clean up stale remoteGatewayApps with blank status
 						remoteAppsExist = remoteApps.size();
 
 						if(remoteAppsExist &&
