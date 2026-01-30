@@ -9134,7 +9134,7 @@ try
 	// setUserWithLock
 	// getStateMachine
 	// getStateMachineLastLogEntry
-	// stateMatchinePreferences
+	// stateMachinePreferences
 	// getStateMachineNames
 	// getCurrentState
 	// cancelStateMachineTransition
@@ -9255,7 +9255,7 @@ try
 			    accounts == "1",  //include user accounts if requested
 			    userInfo.getGroupPermissionLevels());
 		}
-		else if(requestType == "stateMatchinePreferences")
+		else if(requestType == "stateMachinePreferences")
 		{
 			std::string       set              = CgiDataUtilities::getData(cgiIn, "set");
 			const std::string DEFAULT_FSM_VIEW = "Default_FSM_View";
