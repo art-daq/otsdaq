@@ -121,7 +121,7 @@ class TableBase
 	/// It will be very likely just 1 version
 	/// NOTE: must be very careful to setVersion of view after manipulating (e.g. copy from different version view)
 	std::map<TableVersion, TableView> 	tableViews_;
-
+	bool								isFirstAppInContext_ = false; ///<for managing things that should only happen once per node (e.g., write files). If used, should be set in init() to configManager->isOwnerFirstAppInContext();
 };
 // clang-format on
 }  // namespace ots

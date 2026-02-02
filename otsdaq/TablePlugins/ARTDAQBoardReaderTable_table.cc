@@ -51,7 +51,7 @@ void ARTDAQBoardReaderTable::init(ConfigurationManager* configManager)
 	//	generating files on local disk multiple times.
 	isFirstAppInContext_ = configManager->isOwnerFirstAppInContext();
 
-	//__COUTV__(isFirstAppInContext_);
+	__COUTVS__(4, isFirstAppInContext_);
 	if(!isFirstAppInContext_)
 		return;
 
@@ -69,6 +69,12 @@ void ARTDAQBoardReaderTable::init(ConfigurationManager* configManager)
 	__COUTS__(3) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
 	__COUTS__(3) << configManager->__SELF_NODE__ << __E__;
 
+	genFlatFHiCL();
+}  // end init()
+
+//==============================================================================
+void ARTDAQBoardReaderTable::genFlatFHiCL(void)
+{
 	// handle fcl file generation, wherever the level of this table
 
 	// auto readers = lastConfigManager_->getNode(ARTDAQTableBase::getTableName()).getChildren(
@@ -81,11 +87,13 @@ void ARTDAQBoardReaderTable::init(ConfigurationManager* configManager)
 	for(auto& reader : readers)
 	{
 		ARTDAQTableBase::outputBoardReaderFHICL(reader.second);
-		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::BoardReader,
-		                              reader.second.getValue());
+		ARTDAQTableBase::flattenFHICL(
+		    ARTDAQAppType::BoardReader,
+		    reader.second.getValue(),
+		    &(fclMap_[ARTDAQAppType::BoardReader][reader.first]));
 	}
 	__COUTS__(3) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
-}  // end init()
+}  // end genFlatFHiCL()
 
 //==============================================================================
 unsigned int ARTDAQBoardReaderTable::slowControlsHandlerConfig(

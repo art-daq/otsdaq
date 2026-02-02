@@ -39,7 +39,7 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 	//	generating files on local disk multiple times.
 	isFirstAppInContext_ = configManager->isOwnerFirstAppInContext();
 
-	//__COUTV__(isFirstAppInContext);
+	__COUTVS__(4, isFirstAppInContext_);
 	if(!isFirstAppInContext_)
 		return;
 
@@ -57,6 +57,12 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 	__COUTS__(3) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
 	__COUTS__(3) << configManager->__SELF_NODE__ << __E__;
 
+	genFlatFHiCL();
+}  // end init()
+
+//==============================================================================
+void ARTDAQEventBuilderTable::genFlatFHiCL(void)
+{
 	// handle fcl file generation, wherever the level of this table
 
 	auto builders = lastConfigManager_->getNode(ARTDAQTableBase::getTableName())
@@ -164,8 +170,13 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 							       << "!'" << __E__;
 							__SS_THROW__;
 						}
-						ofs << flattenedLastFclParts[0] << "process_name: \""
+						std::ostringstream out;
+						out << flattenedLastFclParts[0] << "process_name: \""
 						    << processName << "\"" << flattenedLastFclParts[1];
+
+						ofs << out.str();
+						fclMap_[ARTDAQAppType::EventBuilder][builder.first] = out.str();
+
 						__COUTT__ << builderUID << " Flatten Clock time = "
 						          << artdaq::TimeUtils::GetElapsedTime(startClock)
 						          << __E__;
@@ -177,10 +188,18 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 			}
 		}
 
+		std::string& returnFclRef = returnFcl;
 		if(needToFlatten)
-			ARTDAQTableBase::flattenFHICL(ARTDAQAppType::EventBuilder,
-			                              builderUID,
-			                              captureAsLastFcl ? &returnFcl : nullptr);
+		{
+			ARTDAQTableBase::flattenFHICL(
+			    ARTDAQAppType::EventBuilder,
+			    builderUID,
+			    &(fclMap_[ARTDAQAppType::EventBuilder]
+			             [builder.first]));  //captureAsLastFcl ? &returnFcl : nullptr);
+
+			if(captureAsLastFcl)
+				returnFclRef = fclMap_[ARTDAQAppType::EventBuilder][builder.first];
+		}
 		else
 			__COUT__ << "Skipping full flatten for " << builderUID << __E__;
 
@@ -189,22 +208,23 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 		if(captureAsLastFcl)
 		{
 			size_t pnj = std::string::npos;
-			auto   pni = returnFcl.find("process_name:");  //find process name
+			auto   pni = returnFclRef.find("process_name:");  //find process name
 			if(pni != std::string::npos)
 			{
 				//enforce white space before process name
-				if(pni && (returnFcl[pni - 1] == ' ' || returnFcl[pni - 1] == '\n' ||
-				           returnFcl[pni - 1] == '\t'))
-					pnj = returnFcl.find('\n', pni);
+				if(pni &&
+				   (returnFclRef[pni - 1] == ' ' || returnFclRef[pni - 1] == '\n' ||
+				    returnFclRef[pni - 1] == '\t'))
+					pnj = returnFclRef.find('\n', pni);
 			}
 			if(pnj != std::string::npos)
 			{
 				__COUT__
-				    << "Found flattened '"  //Note: returnFcl.substr(pni, pnj - pni) includes "process_name:"
-				    << returnFcl.substr(pni, pnj - pni) << "' at pos " << pni << " of "
-				    << returnFcl.size() << __E__;
-				flattenedLastFclParts[0] = returnFcl.substr(0, pni);
-				flattenedLastFclParts[1] = returnFcl.substr(pnj);
+				    << "Found flattened '"  //Note: returnFclRef.substr(pni, pnj - pni) includes "process_name:"
+				    << returnFclRef.substr(pni, pnj - pni) << "' at pos " << pni << " of "
+				    << returnFclRef.size() << __E__;
+				flattenedLastFclParts[0] = returnFclRef.substr(0, pni);
+				flattenedLastFclParts[1] = returnFclRef.substr(pnj);
 			}
 			else
 			{

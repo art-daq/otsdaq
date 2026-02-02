@@ -23,6 +23,10 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 
 	virtual ~ARTDAQTableBase(void);
 
+	virtual std::string     	getStructureAsJSON				(const ConfigurationManager* /* configManager */) override;
+	virtual void		     	genFlatFHiCL					(void) { __SS__ << "genFlatFHiCL() Not defined!"; __SS_THROW__; };
+
+
 	static const std::string ARTDAQ_FCL_PATH;
 	static const std::string ARTDAQ_CONFIG_LAYOUTS_PATH;
 	static const bool 		 ARTDAQ_DONOTWRITE_FCL;
@@ -157,6 +161,9 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	static void       						addCommentWhitespace		(std::ostream& os, size_t lineLength);
 
 	static ARTDAQInfo 						info_;
+
+  protected:
+	std::map<ARTDAQAppType, std::map<std::string /*name*/, std::string /*fcl*/>> fclMap_; //cache for configure blob
 
   public:
 	static struct ProcessTypes

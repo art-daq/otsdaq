@@ -51,7 +51,7 @@ void ARTDAQDataLoggerTable::init(ConfigurationManager* configManager)
 	//	generating files on local disk multiple times.
 	isFirstAppInContext_ = configManager->isOwnerFirstAppInContext();
 
-	//__COUTV__(isFirstAppInContext);
+	__COUTVS__(4, isFirstAppInContext_);
 	if(!isFirstAppInContext_)
 		return;
 
@@ -66,9 +66,15 @@ void ARTDAQDataLoggerTable::init(ConfigurationManager* configManager)
 	// make directory just in case
 	mkdir((ARTDAQTableBase::ARTDAQ_FCL_PATH).c_str(), 0755);
 
-	//	__COUT__ << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
-	//	__COUT__ << lastConfigManager_->__SELF_NODE__ << __E__;
+	__COUTS__(3) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
+	__COUTS__(3) << lastConfigManager_->__SELF_NODE__ << __E__;
 
+	genFlatFHiCL();
+}  // end init()
+
+//==============================================================================
+void ARTDAQDataLoggerTable::genFlatFHiCL(void)
+{
 	// handle fcl file generation, wherever the level of this table
 
 	auto dataloggers = lastConfigManager_->__SELF_NODE__.getChildren(
@@ -82,10 +88,13 @@ void ARTDAQDataLoggerTable::init(ConfigurationManager* configManager)
 		ARTDAQTableBase::outputDataReceiverFHICL(
 		    datalogger.second, ARTDAQTableBase::ARTDAQAppType::DataLogger);
 
-		ARTDAQTableBase::flattenFHICL(ARTDAQAppType::DataLogger,
-		                              datalogger.second.getValue());
+		ARTDAQTableBase::flattenFHICL(
+		    ARTDAQAppType::DataLogger,
+		    datalogger.second.getValue(),
+		    &(fclMap_[ARTDAQAppType::DataLogger][datalogger.first]));
 	}
-}  // end init()
+	__COUTS__(3) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
+}  // end genFlatFHiCL()
 
 //==============================================================================
 unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(
