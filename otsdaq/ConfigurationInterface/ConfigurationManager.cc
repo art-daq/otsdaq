@@ -4,7 +4,8 @@
 #include "otsdaq/ProgressBar/ProgressBar.h"
 #include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
 
-#include <fstream>  // std::ofstream
+#include <dirent.h>  // DIR and dirent
+#include <fstream>   // std::ofstream
 
 #include "otsdaq/TableCore/TableGroupKey.h"
 #include "otsdaq/TablePlugins/DesktopIconTable.h"  //for dynamic desktop icon change
@@ -1449,18 +1450,97 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		(*out) << "\t]" << __E__;
 	};  //end localDumpActiveTableStructureStatus()
 
+	//============================
+	auto localDumpSoftwareVersions = [](std::ostream* out, bool jsonFormat = false) {
+		__COUT__ << "localDumpSoftwareVersions()" << __E__;
+		if(jsonFormat)
+		{
+			(*out) << "\t\"Software Versions\": \"" << __E__;
+		}
+		else
+		{
+			(*out) << "\n\n\"Software Versions\": \"" << __E__;
+		}
+
+		(*out) << StringMacros::exec("spack find") << __E__;
+
+		DIR*           pDIR;
+		struct dirent* entry;
+		bool           isDir;
+		std::string    name;
+		int            type;
+		std::string    src = __ENV__("OTS_SOURCE");
+		if(!(pDIR = opendir((src).c_str())))
+		{
+			__SS__ << "Path '" << src << "' could not be opened!" << __E__;
+			__SS_THROW__;
+		}
+		while((entry = readdir(pDIR)))
+		{
+			name = std::string(entry->d_name);
+			type = int(entry->d_type);
+
+			__COUTS__(2) << type << " " << name << "\n" << std::endl;
+			if(name[0] != '.' &&
+			   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
+			    type == 4 ||  // directory type
+			    type == 8 ||  // file type
+			    type == 10    // 10 == link (could be directory or file, treat as unknown)
+			    ))
+			{
+				isDir = false;
+
+				if(type == 0 || type == 10)
+				{
+					// unknown type .. determine if directory
+					DIR* pTmpDIR = opendir((src + "/" + name).c_str());
+					if(pTmpDIR)
+					{
+						isDir = true;
+						closedir(pTmpDIR);
+					}
+					else  //assume file
+						__COUTS__(2)
+						    << "Unable to open path as directory: " << (src + "/" + name)
+						    << __E__;
+				}
+
+				if(type == 4)
+					isDir = true;  // flag directory types
+
+				// handle directories
+
+				if(isDir)
+				{
+					__COUTS__(2) << "Directory: " << type << " " << name << __E__;
+
+					(*out) << "\n\tchecked out - " << name << ": "
+					       << StringMacros::exec(
+					              ("cd " + src + "/" + name + "; git describe --tags")
+					                  .c_str())
+					       << __E__;
+				}
+			}
+		}  //end repo scan loop
+
+		(*out) << "\"" << __E__;
+	};  //end localDumpSoftwareVersions
+
 	if(dumpType == "GroupKeys")
 	{
 		localDumpActiveGroups(this, out);
+		localDumpSoftwareVersions(out);
 	}
 	else if(dumpType == "TableVersions")
 	{
 		localDumpActiveTables(this, out);
+		localDumpSoftwareVersions(out);
 	}
 	else if(dumpType == "GroupKeysAndTableVersions")
 	{
 		localDumpActiveGroups(this, out);
 		localDumpActiveTables(this, out);
+		localDumpSoftwareVersions(out);
 	}
 	else if(dumpType == "All")
 	{
@@ -1468,6 +1548,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		localDumpActiveGroupMembers(this, out);
 		localDumpActiveTables(this, out);
 		localDumpActiveTableContents(this, out);
+		localDumpSoftwareVersions(out);
 	}
 	else if(dumpType == "JSON all")
 	{
@@ -1480,6 +1561,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		localDumpActiveTableContents(this, out, true);
 		(*out) << ",\n" << __E__;
 		localDumpActiveTableStructureStatus(this, out);
+		(*out) << ",\n" << __E__;
+		localDumpSoftwareVersions(out, true);
 		(*out) << "}\n";
 	}
 	else

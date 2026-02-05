@@ -23,7 +23,8 @@ class ARTDAQEventBuilderTable : public ARTDAQTableBase, public SlowControlsTable
 															, std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/
 														) const override;
 
-	virtual std::string		setFilePath					() const override;
+	virtual std::string		setFilePath					(void) const override;
+	virtual void			genFlatFHiCL				(void) override;
 };
 // clang-format on
 }  // namespace ots

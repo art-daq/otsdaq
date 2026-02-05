@@ -7080,3 +7080,24 @@ void ARTDAQTableBase::addCommentWhitespace(std::ostream& os, size_t lineLength)
 	}
 	os << " // ";
 }  //end addCommentWhitespace()
+
+//==============================================================================
+std::string ARTDAQTableBase::getStructureAsJSON(
+    const ConfigurationManager* /* configManager */)
+{
+	if(fclMap_.size() == 0)  //assume was not generated (not first )
+		genFlatFHiCL();
+	std::stringstream oss;
+
+	for(const auto& typePairMap : fclMap_)
+	{
+		oss << "\"fcl-artdaq-" << getTypeString(typePairMap.first) << "\": {";
+
+		for(const auto& fclPair : typePairMap.second)
+			oss << "\t\"" << fclPair.first << "\": \"" << fclPair.second << "\"" << __E__;
+
+		oss << "}\n";  //close type
+	}
+
+	return oss.str();
+}  //end getStructureAsJSON()
