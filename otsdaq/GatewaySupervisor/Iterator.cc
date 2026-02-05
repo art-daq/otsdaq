@@ -2240,26 +2240,27 @@ bool Iterator::handleCommandRequest(HttpXmlDocument&   xmldoc,
                                     const std::string& parameter)
 try
 {
-	//__COUTV__(command);
+	bool handledCommand = false;
+	__COUTTV__(command);
 	if(command == "iteratePlay")
 	{
 		playIterationPlan(xmldoc, parameter);
-		return true;
+		handledCommand = true;
 	}
 	else if(command == "iteratePlayGenerated")
 	{
 		playGeneratedIterationPlan(xmldoc, parameter);
-		return true;
+		handledCommand = true;
 	}
 	else if(command == "iteratePause")
 	{
 		pauseIterationPlan(xmldoc);
-		return true;
+		handledCommand = true;
 	}
 	else if(command == "iterateHalt")
 	{
 		haltIterationPlan(xmldoc);
-		return true;
+		handledCommand = true;
 	}
 	else if(command == "getIterationPlanStatus")
 	{
@@ -2271,7 +2272,7 @@ try
 			__COUTV__(activePlanName_);
 		}
 		getIterationPlanStatus(xmldoc);
-		return true;
+		handledCommand = true;
 	}
 	else  // return true if iterator has control of state machine
 	{
@@ -2300,6 +2301,15 @@ try
 			return true;  // to block other commands
 		}
 	}
+
+	if(handledCommand)
+	{
+		xmldoc.addTextElementToData("state_tranisition_attempted",
+		                             "1");  // indicate to GUI iterator attempted
+		return true;
+	}
+	//else not an iterator command	
+
 	return false;
 }  //end handleCommandRequest()
 catch(...)

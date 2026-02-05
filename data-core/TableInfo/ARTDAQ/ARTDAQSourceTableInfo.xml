@@ -3,7 +3,9 @@
 		<TABLE Name="ARTDAQSourceTable">
 			<VIEW Name="ARTDAQ_SOURCE_TABLE" Type="File,Database,DatabaseTest" Description="No%20description.">
 				<COLUMN Type="UID" 	 Name="sourceUID" 	 StorageName="SOURCE_UID" 		DataType="STRING" 		DataChoices=""/>
-				<COLUMN Type="FixedChoiceData" 	 Name="sourceModuleType" 	 StorageName="SOURCE_MODULE_TYPE" 		DataType="STRING" 		DataChoices="arbitraryBool=1,ArtdaqInput,TransferInput"/>
+				<COLUMN Type="FixedChoiceData" 	 Name="sourceModuleType" 	 StorageName="SOURCE_MODULE_TYPE" 		DataType="STRING" 		DataChoices="arbitraryBool=1,NetMonInput,DemoInput,OtsInput,ArtdaqInput,TransferInput"/>
+				<COLUMN Type="Data" 	 Name="sourceWaitingTime" 	 StorageName="SOURCE_WAITING_TIME" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="TrueFalse" 	 Name="sourceResumeAfterTimeout" 	 StorageName="SOURCE_RESUME_AFTER_TIMEOUT" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE" 		DataChoices=""/>

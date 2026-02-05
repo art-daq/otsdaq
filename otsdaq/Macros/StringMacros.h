@@ -153,6 +153,11 @@ struct StringMacros
 		const std::map<std::string, T>& 						mapToReturn,
 		const std::string& 										primaryDelimeter   	= ", ",
 		const std::string& 										secondaryDelimeter 	= ": ");
+	template<class S, class T>
+	static std::string 			mapToString					( ///< defined in included .icc source
+		const std::map<S, T>& 									mapToReturn,
+		const std::string& 										primaryDelimeter   	= ", ",
+		const std::string& 										secondaryDelimeter 	= ": ");
 	template<class T>
 	static std::string 			mapToString					(
 		const std::map<std::pair<std::string, std::string>, T>& mapToReturn,

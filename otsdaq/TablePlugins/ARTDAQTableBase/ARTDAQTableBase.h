@@ -23,6 +23,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 
 	virtual ~ARTDAQTableBase(void);
 
+	bool 						doGenFiles						(ConfigurationManager* configManager);
 	virtual std::string     	getStructureAsJSON				(const ConfigurationManager* /* configManager */) override;
 	virtual void		     	genFlatFHiCL					(void) { __SS__ << "genFlatFHiCL() Not defined!"; __SS_THROW__; };
 

@@ -130,6 +130,34 @@ ARTDAQTableBase::ARTDAQTableBase(void) : TableBase("ARTDAQTableBase")
 ARTDAQTableBase::~ARTDAQTableBase(void) {}  // end destructor()
 
 //==============================================================================
+bool ARTDAQTableBase::doGenFiles(ConfigurationManager* configManager)
+{
+	// use isFirstAppInContext to only run once per context, for example to avoid
+	//	generating files on local disk multiple times.
+	isFirstAppInContext_ = configManager->isOwnerFirstAppInContext();
+
+	__COUTVS__(4, isFirstAppInContext_);
+	if(!isFirstAppInContext_)
+		return false;
+
+	//if artdaq supervisor is disabled, skip fcl handling
+	if(!ARTDAQTableBase::isARTDAQEnabled(configManager))
+	{
+		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling."
+		              << __E__;
+		return false;
+	}
+
+	//allow any table with artdaq prerequisites to init!
+	configManager->initPrereqsForARTDAQ();
+
+	// make directory just in case
+	mkdir((ARTDAQTableBase::ARTDAQ_FCL_PATH).c_str(), 0755);
+
+	return true;
+}  // end doGenFiles()
+
+//==============================================================================
 const std::string& ARTDAQTableBase::getTypeString(ARTDAQAppType type)
 {
 	switch(type)
@@ -200,6 +228,7 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
 	__COUTS__(3) << "flattenFHICL()" << __ENV__("FHICL_FILE_PATH") << __E__;
 	__COUTVS__(4, StringMacros::stackTrace());
+	return;
 
 	std::string inFile  = getFHICLFilename(type, name);
 	std::string outFile = getFlatFHICLFilename(type, name);

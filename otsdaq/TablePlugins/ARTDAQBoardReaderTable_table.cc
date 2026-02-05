@@ -45,26 +45,15 @@ ARTDAQBoardReaderTable::~ARTDAQBoardReaderTable(void) {}
 //==============================================================================
 void ARTDAQBoardReaderTable::init(ConfigurationManager* configManager)
 {
-	lastConfigManager_ = configManager;
+	__COUTS__(10) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
+	__COUTS__(10) << configManager->__SELF_NODE__ << __E__;
 
-	// use isFirstAppInContext to only run once per context, for example to avoid
-	//	generating files on local disk multiple times.
-	isFirstAppInContext_ = configManager->isOwnerFirstAppInContext();
-
-	__COUTVS__(4, isFirstAppInContext_);
-	if(!isFirstAppInContext_)
-		return;
-
-	//if artdaq supervisor is disabled, skip fcl handling
-	if(!ARTDAQTableBase::isARTDAQEnabled(configManager))
+	lastConfigManager_ = configManager; //for Slow Controls member
+	if(!ARTDAQTableBase::doGenFiles(configManager))
 	{
-		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling."
-		              << __E__;
+		__COUTS__(3) << "ARTDAQTableBase indicates file generation can be skipped." << __E__;
 		return;
 	}
-
-	// make directory just in case
-	mkdir((ARTDAQTableBase::ARTDAQ_FCL_PATH).c_str(), 0755);
 
 	__COUTS__(3) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
 	__COUTS__(3) << configManager->__SELF_NODE__ << __E__;

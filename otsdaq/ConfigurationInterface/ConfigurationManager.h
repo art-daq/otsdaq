@@ -66,6 +66,12 @@ class ConfigurationManager
 	static const std::string ACTIVATED_BACKBONES_FILE;
 	static const std::string ACTIVATED_ITERATES_FILE;
 
+	static const std::string LAST_ATTEMPTED_CONFIGURE_CONFIG_ALIAS_FILE;
+	static const std::string LAST_ATTEMPTED_CONFIGURE_CONFIG_GROUP_FILE;
+
+	static const std::string ATTEMPTED_CONFIGURE_CONFIG_ALIASES_FILE;
+	static const std::string ATTEMPTED_CONFIGURE_CONFIGS_FILE;
+
 	static const std::string LAST_CONFIGURED_CONFIG_ALIAS_FILE;
 	static const std::string LAST_CONFIGURED_CONFIG_GROUP_FILE;
 	static const std::string LAST_CONFIGURED_CONTEXT_GROUP_FILE;
@@ -268,6 +274,8 @@ class ConfigurationManager
 	static std::vector<std::map<std::string /* group field key */,
 			std::string /* group field value */>>
 										loadGroupHistory			(const std::string& fileName, bool formatTime = false);
+
+	void								initPrereqsForARTDAQ		(void);
 
 	bool 												forceNotFirstInContext_ = false;
 

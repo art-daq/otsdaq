@@ -35,6 +35,12 @@ const std::string 		ConfigurationManager::ACTIVATED_CONTEXTS_FILE 				= "CFGActi
 const std::string 		ConfigurationManager::ACTIVATED_BACKBONES_FILE 				= "CFGActivatedBackboneGroups.hist";
 const std::string 		ConfigurationManager::ACTIVATED_ITERATES_FILE 				= "CFGActivatedIterateGroups.hist";
 
+const std::string 		ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_ALIAS_FILE	= "CFGAttemptedConfigureConfigAlias.hist";
+const std::string 		ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_GROUP_FILE 	= "CFGAttemptedConfigureConfigGroup.hist";
+
+const std::string 		ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIG_ALIASES_FILE		= "CFGAttemptedConfigureConfigAliases.hist";
+const std::string 		ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIGS_FILE 				= "CFGAttemptedConfigureConfigGroups.hist";
+
 const std::string 		ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE 	= "CFGLastConfiguredConfigAlias.hist";
 const std::string 		ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE 	= "CFGLastConfiguredConfigGroup.hist";
 const std::string 		ConfigurationManager::LAST_CONFIGURED_CONTEXT_GROUP_FILE 	= "CFGLastConfiguredContextGroup.hist";
@@ -851,6 +857,12 @@ const std::string& ConfigurationManager::getTypeNameOfGroup(
 
 void ConfigurationManager::dumpMacroMakerModeFhicl()
 {
+	if(nameToTableMap_.find("FEInterfaceTable") == nameToTableMap_.end())
+	{
+		__COUT__ << "Skipping dumpMacroMakerModeFhicl() since FEInterface table is not activated." << __E__;
+		return;
+	}
+	
 	std::string filepath =
 	    __ENV__("USER_DATA") + std::string("/") + "MacroMakerModeConfigurations";
 	mkdir(filepath.c_str(), 0755);
@@ -1063,7 +1075,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		out = &(altOut);
 	}
 
-	if(dumpType == "JSON all")
+	if(dumpType == "JSON All")
 	{
 		(*out) << "{\n";
 		(*out) << "\t\"ARTDAQ_DATABASE_URI\": \"" << __ENV__("ARTDAQ_DATABASE_URI")
@@ -1098,7 +1110,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	else
 	{
 		(*out) << "#################################" << __E__;
-		(*out) << "This is an ots configuration dump.\n" << __E__;
+		(*out) << "This is an ots system configuration dump.\n" << __E__;
 		(*out) << "Source database is $ARTDAQ_DATABASE_URI: "
 		       << __ENV__("ARTDAQ_DATABASE_URI") << __E__;
 		if(fs.is_open())
@@ -1115,7 +1127,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	std::pair<std::string, ots::TableGroupKey> configurationTableGroup =
 	    getTableGroupFromAlias(configurationAlias);
 
-	if(dumpType != "JSON all")
+	if(dumpType != "JSON All")
 	{
 		(*out) << "Configuration Alias: \t\t\t" << configurationAlias << "\n";
 		(*out) << "Configuration Alias translation: \t" << configurationTableGroup.first
@@ -1526,21 +1538,18 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		(*out) << "\"" << __E__;
 	};  //end localDumpSoftwareVersions
 
-	if(dumpType == "GroupKeys")
+	if(dumpType == "Group Keys")
 	{
 		localDumpActiveGroups(this, out);
-		localDumpSoftwareVersions(out);
 	}
-	else if(dumpType == "TableVersions")
+	else if(dumpType == "Table Versions")
 	{
 		localDumpActiveTables(this, out);
-		localDumpSoftwareVersions(out);
 	}
-	else if(dumpType == "GroupKeysAndTableVersions")
+	else if(dumpType == "Group Keys and Table Versions")
 	{
 		localDumpActiveGroups(this, out);
 		localDumpActiveTables(this, out);
-		localDumpSoftwareVersions(out);
 	}
 	else if(dumpType == "All")
 	{
@@ -1550,7 +1559,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		localDumpActiveTableContents(this, out);
 		localDumpSoftwareVersions(out);
 	}
-	else if(dumpType == "JSON all")
+	else if(dumpType == "JSON All")
 	{
 		localDumpActiveGroups(this, out, true, configurationAlias);
 		(*out) << ",\n";
@@ -5133,6 +5142,13 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 		else if(groupType == ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
 			fullPath += ConfigurationManager::ACTIVATED_ITERATES_FILE;
 	}
+	else if(groupAction == "Attempted Configure")
+	{
+		if(groupType == ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
+			fullPath += ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIGS_FILE;
+		else if(groupType == "Config Alias")
+			fullPath += ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIG_ALIASES_FILE;
+	}
 	else if(groupAction == "Configured")
 	{
 		if(groupType == ConfigurationManager::GROUP_TYPE_NAME_BACKBONE)
@@ -5175,7 +5191,7 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 
 	if(fullPath == ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/")
 	{
-		__SS__ << "Illegal groupAction and groupType combination: " << groupAction << ", "
+		__SS__ << "Illegal attempted group history request combination of groupAction: " << groupAction << ", and groupType: "
 		       << groupType << __E__;
 		__SS_THROW__;
 	}
@@ -5247,3 +5263,42 @@ ConfigurationManager::loadGroupHistory(const std::string& fullPath,
 
 	return retVec;
 }  // end loadGroupHistory()
+
+//==============================================================================
+/// loadGroupHistory
+void ConfigurationManager::initPrereqsForARTDAQ()
+try
+{
+	__COUTT__ << "Initializing prerequisites for artdaq!" << __E__;
+	
+	for(auto& tablePair : nameToTableMap_)
+	{
+		__COUTVS__(2,tablePair.first);
+		try 
+		{
+			tablePair.second->initPrereqsForARTDAQ(this);
+		}
+		catch(const std::runtime_error& e) 
+		{
+			__COUTVS__(2,e.what());
+			if(std::string(e.what()).find("initPrereqsForARTDAQ() is not implemented for this table") == std::string::npos)
+				throw;
+			//else ignore undefined virtual function error
+		}
+	} //end table loop
+
+	__COUTT__ << "Done initializing prerequisites for artdaq!" << __E__;
+}  // end initPrereqsForARTDAQ()
+catch(...)
+{
+	__SS__ << "Error caught while initializing prerequisites for artdaq!";
+	try
+	{
+		throw;
+	}
+	catch(const std::runtime_error& e)
+	{
+		ss << " Here was the error: " << e.what() << __E__;
+	}
+	__SS_THROW__;
+} // end initPrereqsForARTDAQ()

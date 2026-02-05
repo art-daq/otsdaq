@@ -35,6 +35,7 @@ class Iterator
 
 	bool 								handleCommandRequest		(HttpXmlDocument& xmldoc, const std::string& command, const std::string& parameter);
 
+	bool								isIteratorBusy				(void) { return iteratorBusy_; }
   private:
 
 	void 								playIterationPlanPrivate	(HttpXmlDocument& xmldoc, const std::string& planName);

@@ -315,9 +315,9 @@ class WorkLoopManager;
 		std::string 		activeStateMachineName_;  ///< when multiple state machines, this is the name of the state machine which executed the configure transition
 		std::string 		activeStateMachineWindowName_;
 		std::string 		activeStateMachineDumpFormatOnRun_, activeStateMachineDumpFormatOnConfigure_; ///<cached at Configure transition
-		std::string 		activeStateMachineConfigurationDumpOnRun_, activeStateMachineConfigurationDumpOnConfigure_; ///<cached at Configure transition
-		bool				activeStateMachineConfigurationDumpOnRunEnable_, activeStateMachineConfigurationDumpOnConfigureEnable_; ///<cached at Configure transition
-		std::string 		activeStateMachineConfigurationDumpOnRunFilename_, activeStateMachineConfigurationDumpOnConfigureFilename_; ///<cached at Configure transition
+		std::string 		activeStateMachineSystemDumpOnRun_, activeStateMachineSystemDumpOnConfigure_; ///<cached at Configure transition
+		bool				activeStateMachineSystemDumpOnRunEnable_, activeStateMachineSystemDumpOnConfigureEnable_; ///<cached at Configure transition
+		std::string 		activeStateMachineSystemDumpOnRunFilename_, activeStateMachineSystemDumpOnConfigureFilename_; ///<cached at Configure transition
 		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; ///<cached at Configure transition
 		std::string 		activeStateMachineRunInfoPluginType_; ///<cached at Configure transition
 		std::map<std::string /* fsmName */, std::string /* logEntry */>
@@ -381,7 +381,17 @@ public:	//used by remote subsystem control and status
 			};
 
 			std::string 						command, fsmName; ///<when not "", need to send
-			std::string							error, config_dump;
+		  private: //make error private to connect to set timestamp 
+			std::string						error;
+			time_t							errorTimestamp = 0;
+		  public:
+			void								setError(const std::string& err) { error = err; errorTimestamp = time(0); }
+			void								clearError() { error = ""; errorTimestamp = 0; }
+			void								copyError(const RemoteGatewayInfo& r) { error = r.error; errorTimestamp = r.errorTimestamp; }
+			const std::string&					getError() const { return error; }			
+			const std::string					getErrorTimestamp() const { return StringMacros::getTimestampString(errorTimestamp); }
+
+			std::string							config_dump;
 			ConfigDumpTypes						config_dump_type = ConfigDumpTypes::Unknown;
 
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
