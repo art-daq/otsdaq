@@ -2,6 +2,7 @@
 
 #include <algorithm>  // for find_if
 #include <array>
+#include <cstdint>    // for uintptr_t
 
 using namespace ots;
 
