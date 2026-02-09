@@ -545,11 +545,14 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			   systemVariables_.at(sysVarSplit[1]).find(sysVarSplit[2]) ==
 			       systemVariables_.at(sysVarSplit[1]).end())
 			{
-				__SS__ << "System variable ${" << envVariable
-				       << "} is not valid or was not found!" <<
-					   "\n\n" <<
-						"If you were trying to access an ots System Variable, the correct syntax is " << 
-						"${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}" << __E__;
+				__SS__
+				    << "System variable ${" << envVariable
+				    << "} is not valid or was not found!"
+				    << "\n\n"
+				    << "If you were trying to access an ots System Variable, the correct "
+				       "syntax is "
+				    << "${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}"
+				    << __E__;
 				__SS_THROW__;
 			}
 			//else successful
@@ -568,15 +571,18 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			}
 			catch(const std::runtime_error& e)
 			{
-				__SS__ << ("The environmental variable '" + envVariable +
-				           "' is not set! Please make sure you set it before continuing!" + 
-						   "\n\n" + 
-						   "If you were trying to access an ots System Variable, the correct syntax is " + 
-						   "${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}") << __E__;
+				__SS__
+				    << ("The environmental variable '" + envVariable +
+				        "' is not set! Please make sure you set it before continuing!" +
+				        "\n\n" +
+				        "If you were trying to access an ots System Variable, the "
+				        "correct syntax is " +
+				        "${OTS.<variable>.<property>}, e.g. "
+				        "${OTS.ActiveStateMachine.name}")
+				    << __E__;
 				ss << "\n" << e.what() << __E__;
 				__SS_ONLY_THROW__;
 			}
-			
 
 			if(envResult)
 			{
@@ -1595,61 +1601,58 @@ std::string StringMacros::exec(const char* cmd)
 //==============================================================================
 uintptr_t find_library_base(const std::string& libname)
 {
-    std::ifstream maps("/proc/self/maps");
-    std::string line;
+	std::ifstream maps("/proc/self/maps");
+	std::string   line;
 
-    while (std::getline(maps, line)) {
-        if (line.find(libname) != std::string::npos &&
-            line.find("r-xp") != std::string::npos) {
-            uintptr_t base;
-            std::stringstream ss(line);
-            ss >> std::hex >> base;
-            return base;
-        }
-    }
-    return 0;
-} //end find_library_base()
+	while(std::getline(maps, line))
+	{
+		if(line.find(libname) != std::string::npos &&
+		   line.find("r-xp") != std::string::npos)
+		{
+			uintptr_t         base;
+			std::stringstream ss(line);
+			ss >> std::hex >> base;
+			return base;
+		}
+	}
+	return 0;
+}  //end find_library_base()
 
 //==============================================================================
-void resolve_stack_entry(
-    const std::string& so_path,
-    const std::string& real_name,
-    const std::string& offset_begin,   // e.g. "+0x249d"
-    const std::string& offset_end       // e.g. "[0x7f5518fa28fd]"
+void resolve_stack_entry(const std::string& so_path,
+                         const std::string& real_name,
+                         const std::string& offset_begin,  // e.g. "+0x249d"
+                         const std::string& offset_end     // e.g. "[0x7f5518fa28fd]"
 )
 {
-    // Extract runtime address from "[0x....]"
-    std::string addr_str = offset_end;
-    addr_str.erase(0, addr_str.find("0x"));
-    addr_str.erase(addr_str.find(']'));
+	// Extract runtime address from "[0x....]"
+	std::string addr_str = offset_end;
+	addr_str.erase(0, addr_str.find("0x"));
+	addr_str.erase(addr_str.find(']'));
 
-    uintptr_t runtime_addr =
-        std::stoull(addr_str, nullptr, 16);
+	uintptr_t runtime_addr = std::stoull(addr_str, nullptr, 16);
 
-    std::string so_name =
-        so_path.substr(so_path.find_last_of('/') + 1);
+	std::string so_name = so_path.substr(so_path.find_last_of('/') + 1);
 
-    uintptr_t base = find_library_base(so_name);
-    if (!base) {
-        std::cerr << "Could not find base for " << so_name << "\n";
-        return;
-    }
+	uintptr_t base = find_library_base(so_name);
+	if(!base)
+	{
+		std::cerr << "Could not find base for " << so_name << "\n";
+		return;
+	}
 
-    uintptr_t file_addr = runtime_addr - base;
+	uintptr_t file_addr = runtime_addr - base;
 
-    std::ostringstream cmd;
-    cmd << "addr2line -f -C -e "
-        << so_path << " 0x"
-        << std::hex << file_addr;
+	std::ostringstream cmd;
+	cmd << "addr2line -f -C -e " << so_path << " 0x" << std::hex << file_addr;
 
-    __COUT__ << "\nResolving:\n"
-              << so_path << " : "
-              << real_name << offset_begin
-              << " [" << std::hex << runtime_addr << "]\n\n";
+	__COUT__ << "\nResolving:\n"
+	         << so_path << " : " << real_name << offset_begin << " [" << std::hex
+	         << runtime_addr << "]\n\n";
 
-    std::string result = StringMacros::exec(cmd.str().c_str());
+	std::string result = StringMacros::exec(cmd.str().c_str());
 	__COUTV__(result);
-} //end resolve_stack_entry()
+}  //end resolve_stack_entry()
 
 //==============================================================================
 /// stackTrace

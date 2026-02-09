@@ -759,78 +759,78 @@ void CoreSupervisorBase::configureInit(void)
 	// activate the configuration tree (only the first iteration)
 
 	if(!(RunControlStateMachine::getIterationIndex() == 0 &&
-	   RunControlStateMachine::getSubIterationIndex() == 0))
-	   return;
+	     RunControlStateMachine::getSubIterationIndex() == 0))
+		return;
 
 	__SUP_COUT__ << "configureInit()" << __E__;
 
 	std::pair<std::string /*group name*/, TableGroupKey> theGroup(
-		SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-			.getParameters()
-			.getValue("ConfigurationTableGroupName"),
-		TableGroupKey(SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-							.getParameters()
-							.getValue("ConfigurationTableGroupKey")));
+	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+	        .getParameters()
+	        .getValue("ConfigurationTableGroupName"),
+	    TableGroupKey(SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+	                      .getParameters()
+	                      .getValue("ConfigurationTableGroupKey")));
 
 	__SUP_COUT__ << "Configuration table group name: " << theGroup.first
-					<< " key: " << theGroup.second << __E__;
-	
+	             << " key: " << theGroup.second << __E__;
+
 	//fill System Variables
-	StringMacros::systemVariables_["ActiveStateMachine"]["name"] =  
-		SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-			.getParameters()
-			.getValue("ActiveStateMachineName");
-	StringMacros::systemVariables_["ActiveStateMachine"]["windowName"] =  
-		SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-			.getParameters()
-			.getValue("ActiveStateMachineWindowName");
-	StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] =  
-		SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-			.getParameters()
-			.getValue("ActiveStateMachineRunAlias");
+	StringMacros::systemVariables_["ActiveStateMachine"]["name"] =
+	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+	        .getParameters()
+	        .getValue("ActiveStateMachineName");
+	StringMacros::systemVariables_["ActiveStateMachine"]["windowName"] =
+	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+	        .getParameters()
+	        .getValue("ActiveStateMachineWindowName");
+	StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] =
+	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+	        .getParameters()
+	        .getValue("ActiveStateMachineRunAlias");
 	__SUP_COUTV__(StringMacros::mapToString(StringMacros::systemVariables_));
 
 	try
 	{
 		//disable version tracking to accept untracked versions to be selected by the FSM transition source
 		theConfigurationManager_->loadTableGroup(
-			theGroup.first,
-			theGroup.second,
-			true /*doActivate*/,
-			0,
-			0,
-			0,
-			0,
-			0,
-			0,
-			false,
-			0,
-			0,
-			ConfigurationManager::LoadGroupType::ALL_TYPES,
-			true /*ignoreVersionTracking*/);
+		    theGroup.first,
+		    theGroup.second,
+		    true /*doActivate*/,
+		    0,
+		    0,
+		    0,
+		    0,
+		    0,
+		    0,
+		    false,
+		    0,
+		    0,
+		    ConfigurationManager::LoadGroupType::ALL_TYPES,
+		    true /*ignoreVersionTracking*/);
 	}
 	catch(const std::runtime_error& e)
 	{
 		__SS__ << "Error loading table group '" << theGroup.first << "("
-				<< theGroup.second << ")! \n"
-				<< e.what() << __E__;
+		       << theGroup.second << ")! \n"
+		       << e.what() << __E__;
 		__SUP_COUT_ERR__ << ss.str();
 		// ExceptionHandler(ExceptionHandlerRethrow::no, ss.str());
 
 		//__SS_THROW_ONLY__;
 		theStateMachine_.setErrorMessage(ss.str());
 		throw toolbox::fsm::exception::Exception(
-			"Transition Error" /*name*/,
-			ss.str() /* message*/,
-			"CoreSupervisorBase::transitionConfiguring" /*module*/,
-			__LINE__ /*line*/,
-			__FUNCTION__ /*function*/
+		    "Transition Error" /*name*/,
+		    ss.str() /* message*/,
+		    "CoreSupervisorBase::transitionConfiguring" /*module*/,
+		    __LINE__ /*line*/,
+		    __FUNCTION__ /*function*/
 		);
 	}
 	catch(...)
 	{
 		__SS__ << "Unknown error loading table group '" << theGroup.first << "("
-				<< theGroup.second << ")!" << __E__;
+		       << theGroup.second << ")!" << __E__;
 		try
 		{
 			throw;
@@ -848,14 +848,14 @@ void CoreSupervisorBase::configureInit(void)
 		//__SS_THROW_ONLY__;
 		theStateMachine_.setErrorMessage(ss.str());
 		throw toolbox::fsm::exception::Exception(
-			"Transition Error" /*name*/,
-			ss.str() /* message*/,
-			"CoreSupervisorBase::transitionConfiguring" /*module*/,
-			__LINE__ /*line*/,
-			__FUNCTION__ /*function*/
+		    "Transition Error" /*name*/,
+		    ss.str() /* message*/,
+		    "CoreSupervisorBase::transitionConfiguring" /*module*/,
+		    __LINE__ /*line*/,
+		    __FUNCTION__ /*function*/
 		);
-	}	
-} //end configureInit()
+	}
+}  //end configureInit()
 
 //==============================================================================
 void CoreSupervisorBase::transitionConfiguring(toolbox::Event::Reference /*event*/)
