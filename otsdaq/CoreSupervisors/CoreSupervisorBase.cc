@@ -822,7 +822,7 @@ void CoreSupervisorBase::configureInit(void)
 		throw toolbox::fsm::exception::Exception(
 		    "Transition Error" /*name*/,
 		    ss.str() /* message*/,
-		    "CoreSupervisorBase::transitionConfiguring" /*module*/,
+		    "CoreSupervisorBase::configureInit" /*module*/,
 		    __LINE__ /*line*/,
 		    __FUNCTION__ /*function*/
 		);
@@ -850,7 +850,7 @@ void CoreSupervisorBase::configureInit(void)
 		throw toolbox::fsm::exception::Exception(
 		    "Transition Error" /*name*/,
 		    ss.str() /* message*/,
-		    "CoreSupervisorBase::transitionConfiguring" /*module*/,
+		    "CoreSupervisorBase::configureInit" /*module*/,
 		    __LINE__ /*line*/,
 		    __FUNCTION__ /*function*/
 		);
@@ -907,7 +907,7 @@ void CoreSupervisorBase::transitionConfiguringFSMs()
 		throw toolbox::fsm::exception::Exception(
 		    "Transition Error" /*name*/,
 		    ss.str() /* message*/,
-		    "CoreSupervisorBase::transitionConfiguring" /*module*/,
+		    "CoreSupervisorBase::transitionConfiguringFSMs" /*module*/,
 		    __LINE__ /*line*/,
 		    __FUNCTION__ /*function*/
 		);
@@ -933,7 +933,7 @@ void CoreSupervisorBase::transitionConfiguringFSMs()
 		throw toolbox::fsm::exception::Exception(
 		    "Transition Error" /*name*/,
 		    ss.str() /* message*/,
-		    "CoreSupervisorBase::transitionConfiguring" /*module*/,
+		    "CoreSupervisorBase::transitionConfiguringFSMs" /*module*/,
 		    __LINE__ /*line*/,
 		    __FUNCTION__ /*function*/
 		);
