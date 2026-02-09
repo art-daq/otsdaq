@@ -2,7 +2,7 @@
 
 #include <algorithm>  // for find_if
 #include <array>
-#include <cstdint>    // for uintptr_t
+#include <cstdint>  // for uintptr_t
 
 using namespace ots;
 
@@ -519,7 +519,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 	{
 		size_t      end;
 		std::string envVariable;
-		std::string converted = data;  // make copy to modify
+		std::string converted  = data;   // make copy to modify
 		bool        usedBraces = false;  // track if braces were used
 
 		while(begin && begin != std::string::npos &&
@@ -553,7 +553,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 				     data[end] == '_' || data[end] == '.' || data[end] == ':'))
 					break;  // found end
 			envVariable = data.substr(begin + 1, end - begin - 1);
-			usedBraces = false;
+			usedBraces  = false;
 		}
 		__COUTVS__(50, data);
 		__COUTVS__(50, envVariable);
@@ -570,7 +570,8 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			{
 				__SS__
 				    << "System variable ${" << envVariable
-				    << "} is not valid or was not found!" << "\n\n"
+				    << "} is not valid or was not found!"
+				    << "\n\n"
 				    << "If you were trying to access an ots System Variable, the correct "
 				       "syntax is "
 				    << "${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}"
@@ -1399,7 +1400,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 					__COUTT__ << "Found built '" << builtString << "' in " << haystack[n]
 					          << __E__;
 			}  //end haystack loop
-		}  //end common chunk loop
+		}      //end common chunk loop
 
 		__COUTTV__(StringMacros::vectorToString(commonChunksToReturn));
 		__COUTTV__(commonChunksToReturn[0].size());
@@ -1650,7 +1651,8 @@ void resolve_stack_entry(const std::string& so_path,
 	const std::size_t posBracket = offset_end.find(']', pos0x);
 	if(posBracket == std::string::npos || posBracket < pos0x + 3)
 	{
-		__COUTS__(52) << "resolve_stack_entry: could not find closing ']' with at least one hex digit after \"0x\" "
+		__COUTS__(52) << "resolve_stack_entry: could not find closing ']' with at least "
+		                 "one hex digit after \"0x\" "
 		                 "in offset_end: '"
 		              << offset_end << "'" << __E__;
 		return;
