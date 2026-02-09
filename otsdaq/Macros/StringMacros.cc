@@ -537,26 +537,9 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		}
 		__COUTVS__(50, data);
 		__COUTVS__(50, envVariable);
-		if(envVariable.starts_with("OTS."))
+		if(usedBraces && envVariable.starts_with("OTS."))
 		{
 			__COUTS__(50) << "OTS system variable detected!" << __E__;
-			
-			// Reject non-braced form for OTS system variables
-			if(!usedBraces)
-			{
-				__SS__
-				    << "OTS system variables must use braced syntax!"
-				    << "\n\n"
-				    << "You used: $" << envVariable
-				    << "\n"
-				    << "Correct syntax: ${" << envVariable << "}"
-				    << "\n\n"
-				    << "OTS system variables require the ${...} form, e.g. "
-				    << "${OTS.ActiveStateMachine.name}"
-				    << __E__;
-				__SS_THROW__;
-			}
-			
 			auto sysVarSplit = StringMacros::getVectorFromString(envVariable, {'.'});
 			__COUTVS__(50, StringMacros::vectorToString(sysVarSplit));
 
