@@ -520,6 +520,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		size_t      end;
 		std::string envVariable;
 		std::string converted = data;  // make copy to modify
+		bool        usedBraces = false;  // track if braces were used
 
 		while(begin && begin != std::string::npos &&
 		      converted[begin - 1] ==
@@ -540,6 +541,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			end         = data.find("}", begin + 2);
 			envVariable = data.substr(begin + 2, end - begin - 2);
 			++end;  // replace the closing } too!
+			usedBraces = true;
 		}
 		else  // else using $NAME syntax
 		{
@@ -551,10 +553,11 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 				     data[end] == '_' || data[end] == '.' || data[end] == ':'))
 					break;  // found end
 			envVariable = data.substr(begin + 1, end - begin - 1);
+			usedBraces = false;
 		}
 		__COUTVS__(50, data);
 		__COUTVS__(50, envVariable);
-		if(envVariable.starts_with("OTS."))
+		if(usedBraces && envVariable.starts_with("OTS."))
 		{
 			__COUTS__(50) << "OTS system variable detected!" << __E__;
 			auto sysVarSplit = StringMacros::getVectorFromString(envVariable, {'.'});
