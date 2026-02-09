@@ -77,71 +77,7 @@ catch(...)
 void ots::ARTDAQOnlineMonitorSupervisor::transitionConfiguring(
     toolbox::Event::Reference /*e*/)
 {
-	std::pair<std::string /*group name*/, TableGroupKey> theGroup(
-	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-	        .getParameters()
-	        .getValue("ConfigurationTableGroupName"),
-	    TableGroupKey(SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-	                      .getParameters()
-	                      .getValue("ConfigurationTableGroupKey")));
-
-	__SUP_COUT__ << "Configuration table group name: " << theGroup.first
-	             << " key: " << theGroup.second << std::endl;
-
-	try
-	{
-		//disable version tracking to accept untracked versions to be selected by the FSM transition source
-		theConfigurationManager_->loadTableGroup(
-		    theGroup.first,
-		    theGroup.second,
-		    true /*doActivate*/,
-		    0,
-		    0,
-		    0,
-		    0,
-		    0,
-		    0,
-		    false,
-		    0,
-		    0,
-		    ConfigurationManager::LoadGroupType::ALL_TYPES,
-		    true /*ignoreVersionTracking*/);
-	}
-	catch(const std::runtime_error& e)
-	{
-		__SS__ << "Error loading table group '" << theGroup.first << "("
-		       << theGroup.second << ")! \n"
-		       << e.what() << __E__;
-		__SUP_COUT_ERR__ << ss.str();
-		// ExceptionHandler(ExceptionHandlerRethrow::no, ss.str());
-
-		//__SS_THROW_ONLY__;
-		theStateMachine_.setErrorMessage(ss.str());
-		throw toolbox::fsm::exception::Exception(
-		    "Transition Error" /*name*/,
-		    ss.str() /* message*/,
-		    "ARTDAQOnlineMonitorSupervisor::transitionConfiguring" /*module*/,
-		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
-		);
-	}
-	catch(...)
-	{
-		__SS__ << "Unknown error loading table group '" << theGroup.first << "("
-		       << theGroup.second << ")!" << __E__;
-		__SUP_COUT_ERR__ << ss.str();
-		// ExceptionHandler(ExceptionHandlerRethrow::no, ss.str());
-
-		//__SS_THROW_ONLY__;
-		theStateMachine_.setErrorMessage(ss.str());
-		throw toolbox::fsm::exception::Exception(
-		    "Transition Error" /*name*/,
-		    ss.str() /* message*/,
-		    "ARTDAQOnlineMonitorSupervisor::transitionConfiguring" /*module*/,
-		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
-		);
-	}
+	CoreSupervisorBase::configureInit();
 
 	try
 	{
