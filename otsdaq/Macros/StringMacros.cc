@@ -1635,9 +1635,9 @@ void resolve_stack_entry(const std::string& so_path,
 	}
 
 	const std::size_t posBracket = offset_end.find(']', pos0x);
-	if(posBracket == std::string::npos || posBracket <= pos0x + 2)
+	if(posBracket == std::string::npos || posBracket < pos0x + 3)
 	{
-		__COUTS__(52) << "resolve_stack_entry: could not find closing ']' after \"0x\" "
+		__COUTS__(52) << "resolve_stack_entry: could not find closing ']' with at least one hex digit after \"0x\" "
 		                 "in offset_end: '"
 		              << offset_end << "'" << __E__;
 		return;
