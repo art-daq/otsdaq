@@ -603,19 +603,9 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 				__SS_ONLY_THROW__;
 			}
 
-			if(envResult)
-			{
-				// proceed recursively
-				return convertEnvironmentVariables(
-				    converted.replace(begin, end - begin, envResult));
-			}
-			else
-			{
-				__SS__ << ("The environmental variable '" + envVariable +
-				           "' is not set! Please make sure you set it before continuing!")
-				       << std::endl;
-				__SS_ONLY_THROW__;
-			}
+			// proceed recursively
+			return convertEnvironmentVariables(
+			    converted.replace(begin, end - begin, envResult));
 		}
 	}
 	// else no environment variables found in string
