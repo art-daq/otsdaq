@@ -199,13 +199,17 @@ void StringMacros::sanitizeForSQL(std::string& str)
 ///
 ///	convert &amp; = &
 ///	if(allowWhiteSpace) convert \t to 8 &#160; spaces and \n to <br>
+///
+/// if(forHtml) then double escape < > to &lt; and &gt; for better display in web browser
 std::string StringMacros::escapeString(std::string inString,
-                                       bool        allowWhiteSpace /* = false */)
+                                       bool        allowWhiteSpace /* = false */,
+                                       bool        forHtml /* = false */)
 {
 	unsigned int ws = -1;
 	char         htmlTmp[10];
 
 	__COUTVS__(30, allowWhiteSpace);
+	__COUTVS__(30, forHtml);
 
 	for(unsigned int i = 0; i < inString.length(); i++)
 		if(inString[i] != ' ')
@@ -321,13 +325,28 @@ std::string StringMacros::escapeString(std::string inString,
 			}
 			else if(inString[i] == '<' || inString[i] == '>')
 			{
-				inString.insert(
-				    i,
-				    (inString[i] == '<')
-				        ? "&lt"
-				        : "&gt");  // insert HTML name before special character
-				inString.replace(i + 3, 1, 1, ';');  // replace special character with ;
-				i += 3;                              // skip to next char to check
+				if(!forHtml)
+				{
+					inString.insert(
+					    i,
+					    (inString[i] == '<')
+					        ? "&lt"
+					        : "&gt");  // insert HTML name before special character
+					inString.replace(
+					    i + 3, 1, 1, ';');  // replace special character with ;
+					i += 3;                 // skip to next char to check
+				}
+				else  //double escape
+				{
+					inString.insert(
+					    i,
+					    (inString[i] == '<')
+					        ? "&amp;lt"
+					        : "&amp;gt");  // insert HTML name before special character
+					inString.replace(
+					    i + 7, 1, 1, ';');  // replace special character with ;
+					i += 7;                 // skip to next char to check
+				}
 			}
 			else if(inString[i] >= char(161) &&
 			        inString[i] <= char(255))  // printable special characters
