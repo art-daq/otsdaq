@@ -2,6 +2,7 @@
 
 #include <algorithm>  // for find_if
 #include <array>
+#include <cstdint>  // for uintptr_t
 
 using namespace ots;
 
@@ -199,13 +200,17 @@ void StringMacros::sanitizeForSQL(std::string& str)
 ///
 ///	convert &amp; = &
 ///	if(allowWhiteSpace) convert \t to 8 &#160; spaces and \n to <br>
+///
+/// if(forHtml) then double escape < > to &lt; and &gt; for better display in web browser
 std::string StringMacros::escapeString(std::string inString,
-                                       bool        allowWhiteSpace /* = false */)
+                                       bool        allowWhiteSpace /* = false */,
+                                       bool        forHtml /* = false */)
 {
 	unsigned int ws = -1;
 	char         htmlTmp[10];
 
 	__COUTVS__(30, allowWhiteSpace);
+	__COUTVS__(30, forHtml);
 
 	for(unsigned int i = 0; i < inString.length(); i++)
 		if(inString[i] != ' ')
@@ -321,13 +326,28 @@ std::string StringMacros::escapeString(std::string inString,
 			}
 			else if(inString[i] == '<' || inString[i] == '>')
 			{
-				inString.insert(
-				    i,
-				    (inString[i] == '<')
-				        ? "&lt"
-				        : "&gt");  // insert HTML name before special character
-				inString.replace(i + 3, 1, 1, ';');  // replace special character with ;
-				i += 3;                              // skip to next char to check
+				if(!forHtml)
+				{
+					inString.insert(
+					    i,
+					    (inString[i] == '<')
+					        ? "&lt"
+					        : "&gt");  // insert HTML name before special character
+					inString.replace(
+					    i + 3, 1, 1, ';');  // replace special character with ;
+					i += 3;                 // skip to next char to check
+				}
+				else  //double escape
+				{
+					inString.insert(
+					    i,
+					    (inString[i] == '<')
+					        ? "&amp;lt"
+					        : "&amp;gt");  // insert HTML name before special character
+					inString.replace(
+					    i + 7, 1, 1, ';');  // replace special character with ;
+					i += 7;                 // skip to next char to check
+				}
 			}
 			else if(inString[i] >= char(161) &&
 			        inString[i] <= char(255))  // printable special characters
@@ -499,7 +519,8 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 	{
 		size_t      end;
 		std::string envVariable;
-		std::string converted = data;  // make copy to modify
+		std::string converted  = data;   // make copy to modify
+		bool        usedBraces = false;  // track if braces were used
 
 		while(begin && begin != std::string::npos &&
 		      converted[begin - 1] ==
@@ -520,6 +541,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			end         = data.find("}", begin + 2);
 			envVariable = data.substr(begin + 2, end - begin - 2);
 			++end;  // replace the closing } too!
+			usedBraces = true;
 		}
 		else  // else using $NAME syntax
 		{
@@ -531,22 +553,29 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 				     data[end] == '_' || data[end] == '.' || data[end] == ':'))
 					break;  // found end
 			envVariable = data.substr(begin + 1, end - begin - 1);
+			usedBraces  = false;
 		}
 		__COUTVS__(50, data);
 		__COUTVS__(50, envVariable);
-		if(envVariable.starts_with("OTS."))
+		if(usedBraces && envVariable.starts_with("OTS."))
 		{
-			__COUT__ << "OTS system variable detected!" << __E__;
+			__COUTS__(50) << "OTS system variable detected!" << __E__;
 			auto sysVarSplit = StringMacros::getVectorFromString(envVariable, {'.'});
-			__COUTV__(StringMacros::vectorToString(sysVarSplit));
+			__COUTVS__(50, StringMacros::vectorToString(sysVarSplit));
 
 			if(sysVarSplit.size() != 3 ||
 			   systemVariables_.find(sysVarSplit[1]) == systemVariables_.end() ||
 			   systemVariables_.at(sysVarSplit[1]).find(sysVarSplit[2]) ==
 			       systemVariables_.at(sysVarSplit[1]).end())
 			{
-				__SS__ << "System variable ${" << envVariable
-				       << "} is not valid or was not found!" << __E__;
+				__SS__
+				    << "System variable ${" << envVariable
+				    << "} is not valid or was not found!"
+				    << "\n\n"
+				    << "If you were trying to access an ots System Variable, the correct "
+				       "syntax is "
+				    << "${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}"
+				    << __E__;
 				__SS_THROW__;
 			}
 			//else successful
@@ -558,21 +587,29 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		}
 		else
 		{
-			char* envResult = __ENV__(envVariable.c_str());
+			char* envResult = nullptr;
+			try
+			{
+				envResult = __ENV__(envVariable.c_str());
+			}
+			catch(const std::runtime_error& e)
+			{
+				__SS__
+				    << ("The environmental variable '" + envVariable +
+				        "' is not set! Please make sure you set it before continuing!" +
+				        "\n\n" +
+				        "If you were trying to access an ots System Variable, the "
+				        "correct syntax is " +
+				        "${OTS.<variable>.<property>}, e.g. "
+				        "${OTS.ActiveStateMachine.name}")
+				    << __E__;
+				ss << "\n" << e.what() << __E__;
+				__SS_ONLY_THROW__;
+			}
 
-			if(envResult)
-			{
-				// proceed recursively
-				return convertEnvironmentVariables(
-				    converted.replace(begin, end - begin, envResult));
-			}
-			else
-			{
-				__SS__ << ("The environmental variable '" + envVariable +
-				           "' is not set! Please make sure you set it before continuing!")
-				       << std::endl;
-				__SS_THROW__;
-			}
+			// proceed recursively
+			return convertEnvironmentVariables(
+			    converted.replace(begin, end - begin, envResult));
 		}
 	}
 	// else no environment variables found in string
@@ -1569,6 +1606,94 @@ std::string StringMacros::exec(const char* cmd)
 	return result;
 }  // end exec()
 
+// #include <iostream>
+#include <fstream> /* for ifstream */
+// #include <sstream>
+// #include <string>
+// #include <cstdlib>
+//==============================================================================
+uintptr_t find_library_base(const std::string& libname)
+{
+	std::ifstream maps("/proc/self/maps");
+	std::string   line;
+
+	while(std::getline(maps, line))
+	{
+		if(line.find(libname) != std::string::npos &&
+		   line.find("r-xp") != std::string::npos)
+		{
+			uintptr_t         base;
+			std::stringstream ss(line);
+			ss >> std::hex >> base;
+			return base;
+		}
+	}
+	return 0;
+}  //end find_library_base()
+
+//==============================================================================
+void resolve_stack_entry(const std::string& so_path,
+                         const std::string& real_name,
+                         const std::string& offset_begin,  // e.g. "+0x249d"
+                         const std::string& offset_end     // e.g. "[0x7f5518fa28fd]"
+)
+{
+	// Extract runtime address from a string like "[0x....]".
+	// Be defensive: validate delimiters before parsing to avoid exceptions.
+	const std::size_t pos0x = offset_end.find("0x");
+	if(pos0x == std::string::npos)
+	{
+		__COUTS__(52) << "resolve_stack_entry: could not find \"0x\" in offset_end: '"
+		              << offset_end << "'" << __E__;
+		return;
+	}
+
+	const std::size_t posBracket = offset_end.find(']', pos0x);
+	if(posBracket == std::string::npos || posBracket < pos0x + 3)
+	{
+		__COUTS__(52) << "resolve_stack_entry: could not find closing ']' with at least "
+		                 "one hex digit after \"0x\" "
+		                 "in offset_end: '"
+		              << offset_end << "'" << __E__;
+		return;
+	}
+
+	const std::string addr_str = offset_end.substr(pos0x, posBracket - pos0x);
+
+	uintptr_t runtime_addr = 0;
+	try
+	{
+		runtime_addr = std::stoull(addr_str, nullptr, 16);
+	}
+	catch(const std::exception& e)
+	{
+		__COUTS__(52) << "resolve_stack_entry: failed to parse runtime address from '"
+		              << addr_str << "': " << e.what() << __E__;
+		return;
+	}
+
+	std::string so_name = so_path.substr(so_path.find_last_of('/') + 1);
+
+	uintptr_t base = find_library_base(so_name);
+	if(!base)
+	{
+		std::cerr << "Could not find base for " << so_name << "\n";
+		return;
+	}
+
+	uintptr_t file_addr = runtime_addr - base;
+
+	std::ostringstream cmd;
+	cmd << "addr2line -f -C -e " << so_path << " 0x" << std::hex << file_addr;
+
+	__COUT__ << "\nResolving:\n"
+	         << so_path << " : " << real_name << offset_begin << " [" << std::hex
+	         << runtime_addr << "]\n\n";
+
+	std::string result = StringMacros::exec(cmd.str().c_str());
+	__COUTV__(result);
+}  //end resolve_stack_entry()
+
 //==============================================================================
 /// stackTrace
 ///	static function
@@ -1640,6 +1765,8 @@ std::string StringMacros::stackTrace()
 			{
 				ss << "[" << i << "] " << messages[i] << " : " << real_name << "+"
 				   << offset_begin << offset_end << std::endl;
+				// Too slow to resolve lines (stackTrace getting called too much)!
+				// resolve_stack_entry(messages[i],real_name,offset_begin,offset_end);
 			}
 			// otherwise, output the mangled function name
 			else
@@ -1655,6 +1782,7 @@ std::string StringMacros::stackTrace()
 			ss << "[" << i << "] " << messages[i] << std::endl;
 		}
 	}
+	ss << std::endl;
 	ss << std::endl;
 
 	free(messages);

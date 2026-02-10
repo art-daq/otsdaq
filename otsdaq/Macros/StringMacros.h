@@ -81,7 +81,7 @@ struct StringMacros
 	static std::string 			decodeURIComponent			(const std::string& data);
 	static std::string        	encodeURIComponent			(const std::string& data);
 	static void		        	sanitizeForSQL				(std::string& data);
-	static std::string			escapeString				(std::string inString, bool allowWhiteSpace = false);
+	static std::string			escapeString				(std::string inString, bool allowWhiteSpace = false, bool forHtml = false);
 	static std::string			escapeJSONStringEntities	(const std::string& str);
 	static std::string			restoreJSONStringEntities	(const std::string& str);
 	static const std::string&	trim						(std::string& s);

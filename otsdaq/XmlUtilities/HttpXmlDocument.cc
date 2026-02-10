@@ -275,21 +275,38 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 	       xercesc::DOMNode::TEXT_NODE)  // if has a text node first, insert as value
 	                                     // attribute
 	{
+		//if is error, then double escape < > to &lt; and &gt; for better display in web browser
+		std::string nodeName = std::string(XML_TO_CHAR(currEl->getNodeName()));
+		//consider any field ending in case-insensitive "Error" an error field for this purpose
+		bool isError = nodeName.length() >= 5 &&
+		               (nodeName[nodeName.length() - 5] == 'E' ||
+		                nodeName[nodeName.length() - 5] == 'e') &&
+		               (nodeName[nodeName.length() - 4] == 'R' ||
+		                nodeName[nodeName.length() - 4] == 'r') &&
+		               (nodeName[nodeName.length() - 3] == 'R' ||
+		                nodeName[nodeName.length() - 3] == 'r') &&
+		               (nodeName[nodeName.length() - 2] == 'O' ||
+		                nodeName[nodeName.length() - 2] == 'o') &&
+		               (nodeName[nodeName.length() - 1] == 'R' ||
+		                nodeName[nodeName.length() - 1] == 'r');
+
 		if(dispStdOut)
 			std::cout << " value='"
 			          << StringMacros::escapeString(
 			                 XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()),
-			                 allowWhiteSpace)
+			                 allowWhiteSpace,
+			                 isError /* forHtml */)
 			          << "'";
 		if(out)
 			*out << " value='"
 			     << StringMacros::escapeString(
 			            XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()),
-			            allowWhiteSpace)
+			            allowWhiteSpace,
+			            isError /* forHtml */)
 			     << "'";
 
-		if(printErrors && strcmp(XML_TO_CHAR(currEl->getNodeName()), "Error") == 0)
-			__COUT_ERR__ << "xml field 'Error' encountered:\n"
+		if(printErrors && isError)
+			__COUT_ERR__ << "xml Error-type field '" << nodeName << "' encountered:\n"
 			             << XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()) << __E__;
 	}
 
