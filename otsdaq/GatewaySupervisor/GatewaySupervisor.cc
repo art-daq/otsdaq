@@ -2816,33 +2816,39 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 			}
 
 			//assume have config dump response!
-			// //extract dump type from config dump
-			std::string configDumpType = commandResponseString.substr(
-			    commandResponseString.find("Type of dump") + strlen("Type of dump"));
-			if(configDumpType.find("JSON all") == std::string::npos)
-			{
-				__COUT__ << "Found text dump type" << __E__;
-				remoteGatewayApp.config_dump_type =
-				    RemoteGatewayInfo::ConfigDumpTypes::Text;
+		// Extract dump content (everything after "Done,")
+		std::string dumpContent = commandResponseString.substr(strlen("Done") + 1);
+		
+		// Remove 'END---' suffix if present
+		if(dumpContent.size() > 6 && dumpContent.ends_with("END---"))
+			dumpContent = dumpContent.substr(0, dumpContent.size() - 6);
+		
+		// Check if it's JSON by looking for opening brace
+		if(!dumpContent.empty() && dumpContent[0] == '{')
+		{
+			__COUT__ << "Found JSON all dump type" << __E__;
+			remoteGatewayApp.config_dump_type =
+			    RemoteGatewayInfo::ConfigDumpTypes::JSON_all;
+			remoteGatewayApp.config_dump = dumpContent;
+		}
+		else
+		{
+			__COUT__ << "Found text dump type" << __E__;
+			remoteGatewayApp.config_dump_type =
+			    RemoteGatewayInfo::ConfigDumpTypes::Text;
 
-				remoteGatewayApp.config_dump = "\n\n************************\n";
-				remoteGatewayApp.config_dump +=
-				    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
-				    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
-				remoteGatewayApp.config_dump += "************************ \n";
-				remoteGatewayApp.config_dump += "\n\n";
-			}
-			else
-			{
-				__COUT__ << "Found JSON all dump type" << __E__;
-				remoteGatewayApp.config_dump_type =
-				    RemoteGatewayInfo::ConfigDumpTypes::JSON_all;
-			}
-
+			remoteGatewayApp.config_dump = "\n\n************************\n";
 			remoteGatewayApp.config_dump +=
-			    commandResponseString.substr(strlen("Done") + 1);
-
+			    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
+			    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
+			remoteGatewayApp.config_dump += "************************ \n";
+			remoteGatewayApp.config_dump += "\n\n";
+			remoteGatewayApp.config_dump += dumpContent;
+		}
 			__COUTTV__(remoteGatewayApp.config_dump);
+			__COUT__ << "Successfully received config dump from remote gateway '" 
+			         << remoteGatewayApp.appInfo.name << "' dump size: " 
+			         << remoteGatewayApp.config_dump.size() << " bytes" << __E__;
 		}
 
 	}  //end SendRemoteGatewayCommand()
@@ -7150,26 +7156,76 @@ try
 		//include self
 		gatewayDumpMap["Gateway"]["name"] = getSupervisorUID();
 		gatewayDumpMap["Gateway"]["url"]  = allSupervisorInfo_.getGatewayInfo().getURL();
-		gatewayDumpMap["Gateway"]["configAlias"] = activeStateMachineConfigurationAlias_;
-		gatewayDumpMap["Gateway"]["consoleErrCount"] =
-		    std::to_string(systemConsoleErrCount_);
-		gatewayDumpMap["Gateway"]["consoleWarnCount"] =
-		    std::to_string(systemConsoleWarnCount_);
-		gatewayDumpMap["Gateway"]["fsmMode"]     = "Follow FSM";
-		gatewayDumpMap["Gateway"]["fsmIncluded"] = "1";
+		gatewayDumpMap["Gateway"]["config_alias"] = activeStateMachineConfigurationAlias_;
+        gatewayDumpMap["Gateway"]["console"] = std::string("{") +
+        "\"error_count\": \"" + std::to_string(systemConsoleErrCount_) + "\", " +
+        "\"warning_count\": \"" + std::to_string(systemConsoleWarnCount_) + "\" }";
+		//gatewayDumpMap["Gateway"]["consoleErrCount"] =
+		//    std::to_string(systemConsoleErrCount_);
+		//gatewayDumpMap["Gateway"]["consoleWarnCount"] =
+		//    std::to_string(systemConsoleWarnCount_);
+        gatewayDumpMap["Gateway"]["fsm"] = std::string("{") +
+            "\"mode\": " + "\"Follow FSM\", " + 
+            "\"follow\": " + "\"1\"}" ;
+		//gatewayDumpMap["Gateway"]["fsmMode"]     = "Follow FSM"; // needed?
+		//gatewayDumpMap["Gateway"]["fsmIncluded"] = "1";
 		gatewayDumpMap["Gateway"]["dump"]     = activeStateMachineSystemDumpOnRun_;
-		gatewayDumpMap["Gateway"]["dumpType"] = activeStateMachineDumpFormatOnRun_;
+		//gatewayDumpMap["Gateway"]["dumpType"] = activeStateMachineDumpFormatOnRun_; // not needed, part of dump.dump_type
 
-		//include printenv in dumpMap
-		gatewayDumpMap["Gateway"]["printenv"] = StringMacros::exec(
-		    "printenv");  //if added to json in run info plugin, could use StringMacros::StringMacros::escapeJSONStringEntities(...)
+		//include environment variables in dumpMap (as escaped key:value pairs, skip functions)
+		{
+			std::string envOutput = StringMacros::exec("env");
+			std::istringstream envStream(envOutput);
+			std::string envLine;
+			std::string envJson = "{";
+			bool first = true;
+			while(std::getline(envStream, envLine))
+			{
+				// Skip lines without '=' (continuation lines from multi-line values) or empty names
+				size_t eqPos = envLine.find('=');
+				if(eqPos == std::string::npos || eqPos == 0)
+					continue;
+				
+				std::string varName = envLine.substr(0, eqPos);
+				std::string varValue = envLine.substr(eqPos + 1);
+				
+				// Skip bash functions, internal variables, and other non-standard entries
+				if(varName[0] == '_' || std::isspace(varName[0]) || varName.find("BASH_FUNC_") == 0 || (varValue.size() > 0 && varValue[0] == '('))
+					continue;
+				
+				if(!first) envJson += ", ";
+				envJson += "\"" + StringMacros::escapeJSONStringEntities(varName) + 
+				           "\": \"" + StringMacros::escapeJSONStringEntities(varValue) + "\"";
+				first = false;
+			}
+			envJson += "}";
+			gatewayDumpMap["Gateway"]["env"] = envJson;
+		}
 
 		//include system variables in dumpMap
-		for(const auto& typePair : StringMacros::systemVariables_)
-			gatewayDumpMap["Gateway"]["systemVariables_" + typePair.first] =
-			    StringMacros::mapToString(
-			        typePair
-			            .second);  //if added to json in run info plugin, could use StringMacros::StringMacros::escapeJSONStringEntities(...)
+		{
+			std::string variablesJson = "{";
+			bool firstType = true;
+			for(const auto& typePair : StringMacros::systemVariables_)
+			{
+				std::string varJson = "{";
+				bool first = true;
+				for(const auto& [key, value] : typePair.second)
+				{
+					if(!first) varJson += ", ";
+					varJson += "\"" + StringMacros::escapeJSONStringEntities(key) + 
+					           "\": \"" + StringMacros::escapeJSONStringEntities(value) + "\"";
+					first = false;
+				}
+				varJson += "}";
+				
+				if(!firstType) variablesJson += ", ";
+				variablesJson += "\"" + typePair.first + "\": " + varJson;
+				firstType = false;
+			}
+			variablesJson += "}";
+			gatewayDumpMap["Gateway"]["system_variables"] = variablesJson;
+		}
 
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
@@ -7180,25 +7236,30 @@ try
 			    remoteGatewayApp.appInfo.name;
 			gatewayDumpMap[remoteGatewayApp.fullName]["url"] =
 			    remoteGatewayApp.appInfo.url;
-			gatewayDumpMap[remoteGatewayApp.fullName]["configAlias"] =
+			gatewayDumpMap[remoteGatewayApp.fullName]["config_alias"] =
 			    remoteGatewayApp.selected_config_alias;
-			gatewayDumpMap[remoteGatewayApp.fullName]["consoleErrCount"] =
-			    std::to_string(remoteGatewayApp.consoleErrCount);
-			gatewayDumpMap[remoteGatewayApp.fullName]["consoleWarnCount"] =
-			    std::to_string(remoteGatewayApp.consoleWarnCount);
-			gatewayDumpMap[remoteGatewayApp.fullName]["fsmMode"] =
-			    remoteGatewayApp.getFsmMode();
-			gatewayDumpMap[remoteGatewayApp.fullName]["fsmIncluded"] =
-			    std::string(remoteGatewayApp.fsm_included ? "1" : "0");
+            gatewayDumpMap[remoteGatewayApp.fullName]["console"] = std::string("{") +
+            "\"error_count\": \""  + std::to_string(remoteGatewayApp.consoleErrCount)  + "\", " +
+            "\"warning_count\": \"" + std::to_string(remoteGatewayApp.consoleWarnCount) + "\" }";
+			//gatewayDumpMap[remoteGatewayApp.fullName]["consoleErrCount"] =
+			//    std::to_string(remoteGatewayApp.consoleErrCount);
+			//gatewayDumpMap[remoteGatewayApp.fullName]["consoleWarnCount"] =
+			//    std::to_string(remoteGatewayApp.consoleWarnCount);
+            gatewayDumpMap[remoteGatewayApp.fullName]["fsm"] = std::string("{") +
+            "\"mode\": \""+ remoteGatewayApp.getFsmMode() + "\", " +
+            "\"follow\": \"" + (remoteGatewayApp.fsm_included ? "1" : "0") + "\" }";
+			//gatewayDumpMap[remoteGatewayApp.fullName]["fsmMode"] =
+			//    remoteGatewayApp.getFsmMode();
+			//gatewayDumpMap[remoteGatewayApp.fullName]["fsmIncluded"] =
+			//    std::string(remoteGatewayApp.fsm_included ? "1" : "0");
 
 			const std::string& dumpStr = remoteGatewayApp.config_dump;
-			if(dumpStr.size() > 10 && dumpStr.ends_with("END---"))
-				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] =
-				    dumpStr.substr(0, dumpStr.size() - 6);
-			else  //non standard format or no END--- suffix
-				gatewayDumpMap[remoteGatewayApp.fullName]["dump"] = dumpStr;
-			gatewayDumpMap[remoteGatewayApp.fullName]["dumpType"] =
-			    remoteGatewayApp.getConfigDumpType();
+			__COUT__ << "Config dump for remote app " << remoteGatewayApp.fullName << " is:"
+			         << dumpStr << __E__;
+			
+			gatewayDumpMap[remoteGatewayApp.fullName]["dump"] = dumpStr;
+			//gatewayDumpMap[remoteGatewayApp.fullName]["dumpType"] =
+			//    remoteGatewayApp.getConfigDumpType(); // not needed since inside dump
 		}  //end remote app loop
 
 		if(TTEST(2))

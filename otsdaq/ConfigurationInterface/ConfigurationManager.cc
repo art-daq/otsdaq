@@ -6,6 +6,7 @@
 
 #include <dirent.h>  // DIR and dirent
 #include <fstream>   // std::ofstream
+#include <sstream>   // std::istringstream
 
 #include "otsdaq/TableCore/TableGroupKey.h"
 #include "otsdaq/TablePlugins/DesktopIconTable.h"  //for dynamic desktop icon change
@@ -1104,7 +1105,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		(*out) << "\n\t]," << __E__;
 		(*out) << "\t\"dump_type\": \t\t\"" << dumpType << "\"," << __E__;
 		(*out) << "\t\"dump_time\": \t\t\"" << rawtime << "\"," << __E__;
-		(*out) << "\t\"dump_formatted_time\": \t\t\""
+		(*out) << "\t\"dump_time_formatted\": \t\t\""
 		       << StringMacros::getTimestampString(rawtime) << "\"," << __E__;
 	}
 	else
@@ -1419,9 +1420,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
 		__COUT__ << "Active Table size: " << activeTables.size() << __E__;
-		(*out) << "\t\"Active Table Structure\": [" << __E__;
+		(*out) << "\t\"custom\": {" << __E__;
 
-		// bool firstPrint = true;
 		std::string                                   activeTableStructure = "";
 		std::map<std::string, TableVersion>::iterator it;
 		size_t                                        tableStructureFoundCount = 0;
@@ -1441,11 +1441,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 					(*out) << (tableStructureFoundCount++ ? "," : "") << __E__;
 
-					(*out) << "\t{ \"table_name\": \"" << it->first << "\", "
-					       << "\"table_version\": \"" << it->second
-					       << "\", \n\t\"table_structure\": " << __E__;
+					(*out) << "\t\"" << it->first << "\": " << __E__;
 					(*out) << activeTableStructure << __E__;
-					(*out) << "\t}";
 				}
 			}
 			catch(const std::exception& e)
@@ -1459,83 +1456,166 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		__COUT__ << "Found " << tableStructureFoundCount << " Active Table Structures."
 		         << __E__;
 
-		(*out) << "\t]" << __E__;
+		(*out) << "\t}" << __E__;
 	};  //end localDumpActiveTableStructureStatus()
 
 	//============================
 	auto localDumpSoftwareVersions = [](std::ostream* out, bool jsonFormat = false) {
 		__COUT__ << "localDumpSoftwareVersions()" << __E__;
+		std::vector<std::string> entries;
+
+		// collect spack output (split by newlines)
+		std::map<std::string, std::string> spackPackages;
+		std::map<std::string, std::string> checkedOutRepos;
+		std::string environment;
+
+		{
+			std::string spackOut = StringMacros::exec("spack find");
+			std::istringstream iss(spackOut);
+			std::string line;
+			while(std::getline(iss, line))
+			{
+				if(line.empty())
+					continue;
+					
+				// Extract environment name
+				if(line.find("==> In environment") != std::string::npos)
+				{
+					size_t start = line.find("environment ") + 12;
+					environment = line.substr(start);
+				}
+				else if(line[0] != '[' && line[0] != '-' && line.find("root specs") == std::string::npos)
+				{
+					// Parse spack packages
+					size_t atPos = line.find('@');
+					if(atPos != std::string::npos)
+					{
+						std::string pkgName = line.substr(0, atPos);
+						// Remove leading [+] or [^] markers
+						if(pkgName.find('[') != std::string::npos)
+							pkgName = pkgName.substr(pkgName.find(']') + 2);
+						std::string version = line.substr(atPos + 1);
+						spackPackages[pkgName] = version;
+					}
+					else if(line.find('[') == std::string::npos && !line.empty() && line[0] != 'c')
+					{
+						// Plain package name without version
+						std::string pkgName = line;
+						if(pkgName.find('[') != std::string::npos)
+							pkgName = pkgName.substr(pkgName.find(']') + 2);
+						spackPackages[pkgName] = "";
+					}
+				}
+			}
+		}
+
+		// Collect checked out repositories
+		{
+			DIR*           pDIR;
+			struct dirent* entry;
+			bool           isDir;
+			std::string    name;
+			int            type;
+			std::string    src = __ENV__("OTS_SOURCE");
+			if(!(pDIR = opendir((src).c_str())))
+			{
+				__SS__ << "Path '" << src << "' could not be opened!" << __E__;
+				__SS_THROW__;
+			}
+			while((entry = readdir(pDIR)))
+			{
+				name = std::string(entry->d_name);
+				type = int(entry->d_type);
+
+				__COUTS__(2) << type << " " << name << "\n" << std::endl;
+				if(name[0] != '.' &&
+				   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
+				    type == 4 ||  // directory type
+				    type == 8 ||  // file type
+				    type == 10    // 10 == link (could be directory or file, treat as unknown)
+				    ))
+				{
+					isDir = false;
+
+					if(type == 0 || type == 10)
+					{
+						// unknown type .. determine if directory
+						DIR* pTmpDIR = opendir((src + "/" + name).c_str());
+						if(pTmpDIR)
+						{
+							isDir = true;
+							closedir(pTmpDIR);
+						}
+						else  //assume file
+							__COUTS__(2)
+							    << "Unable to open path as directory: " << (src + "/" + name)
+							    << __E__;
+					}
+
+					if(type == 4)
+						isDir = true;  // flag directory types
+
+					// handle directories
+
+					if(isDir)
+					{
+						__COUTS__(2) << "Directory: " << type << " " << name << __E__;
+						std::string describe = StringMacros::exec(
+						    ("cd " + src + "/" + name + "; git describe --tags").c_str());
+						if(describe.size())
+						{
+							// strip trailing newline if any
+							if(describe.back() == '\n')
+								describe.pop_back();
+							checkedOutRepos[name] = describe;
+						}
+					}
+				}
+			}
+			closedir(pDIR);
+		}
+
 		if(jsonFormat)
 		{
-			(*out) << "\t\"Software Versions\": \"" << __E__;
+			(*out) << "\t\"software_versions\": {" << __E__;
+			
+			// Output spack packages
+			(*out) << "\t\t\"spack\": {" << __E__;
+			bool first = true;
+			for(const auto& pkg : spackPackages)
+			{
+				if(!first) (*out) << "," << __E__;
+				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(pkg.first) << "\": \"" 
+				       << StringMacros::escapeJSONStringEntities(pkg.second) << "\"";
+				first = false;
+			}
+			(*out) << __E__ << "\t\t}," << __E__;
+			
+			// Output checked out repositories
+			(*out) << "\t\t\"checked_out\": {" << __E__;
+			first = true;
+			for(const auto& repo : checkedOutRepos)
+			{
+				if(!first) (*out) << "," << __E__;
+				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(repo.first) << "\": \"" 
+				       << StringMacros::escapeJSONStringEntities(repo.second) << "\"";
+				first = false;
+			}
+			(*out) << __E__ << "\t\t}," << __E__;
+			
+			// Output environment
+			(*out) << "\t\t\"environment\": \"" << StringMacros::escapeJSONStringEntities(environment) << "\"" << __E__;
+			
+			(*out) << "\t}" << __E__;
 		}
 		else
 		{
-			(*out) << "\n\n\"Software Versions\": \"" << __E__;
+			(*out) << "\n\n\"Software Versions\": {" << __E__;
+			(*out) << "  \"spack\": " << spackPackages.size() << " packages," << __E__;
+			(*out) << "  \"checked_out\": " << checkedOutRepos.size() << " repositories," << __E__;
+			(*out) << "  \"environment\": \"" << environment << "\"" << __E__;
+			(*out) << "}" << __E__;
 		}
-
-		(*out) << StringMacros::exec("spack find") << __E__;
-
-		DIR*           pDIR;
-		struct dirent* entry;
-		bool           isDir;
-		std::string    name;
-		int            type;
-		std::string    src = __ENV__("OTS_SOURCE");
-		if(!(pDIR = opendir((src).c_str())))
-		{
-			__SS__ << "Path '" << src << "' could not be opened!" << __E__;
-			__SS_THROW__;
-		}
-		while((entry = readdir(pDIR)))
-		{
-			name = std::string(entry->d_name);
-			type = int(entry->d_type);
-
-			__COUTS__(2) << type << " " << name << "\n" << std::endl;
-			if(name[0] != '.' &&
-			   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
-			    type == 4 ||  // directory type
-			    type == 8 ||  // file type
-			    type == 10    // 10 == link (could be directory or file, treat as unknown)
-			    ))
-			{
-				isDir = false;
-
-				if(type == 0 || type == 10)
-				{
-					// unknown type .. determine if directory
-					DIR* pTmpDIR = opendir((src + "/" + name).c_str());
-					if(pTmpDIR)
-					{
-						isDir = true;
-						closedir(pTmpDIR);
-					}
-					else  //assume file
-						__COUTS__(2)
-						    << "Unable to open path as directory: " << (src + "/" + name)
-						    << __E__;
-				}
-
-				if(type == 4)
-					isDir = true;  // flag directory types
-
-				// handle directories
-
-				if(isDir)
-				{
-					__COUTS__(2) << "Directory: " << type << " " << name << __E__;
-
-					(*out) << "\n\tchecked out - " << name << ": "
-					       << StringMacros::exec(
-					              ("cd " + src + "/" + name + "; git describe --tags")
-					                  .c_str())
-					       << __E__;
-				}
-			}
-		}  //end repo scan loop
-
-		(*out) << "\"" << __E__;
 	};  //end localDumpSoftwareVersions
 
 	if(dumpType == "Group Keys")

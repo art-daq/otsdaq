@@ -228,7 +228,7 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
 	__COUTS__(3) << "flattenFHICL()" << __ENV__("FHICL_FILE_PATH") << __E__;
 	__COUTVS__(4, StringMacros::stackTrace());
-	return;
+	//return;
 
 	std::string inFile  = getFHICLFilename(type, name);
 	std::string outFile = getFlatFHICLFilename(type, name);
@@ -7117,16 +7117,49 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 	if(fclMap_.size() == 0)  //assume was not generated (not first )
 		genFlatFHiCL();
 	std::stringstream oss;
+    
+    oss << "{" << __E__;
 
-	for(const auto& typePairMap : fclMap_)
+	if(fclMap_.size() > 1)
 	{
-		oss << "\"fcl-artdaq-" << getTypeString(typePairMap.first) << "\": {";
+		// Multiple types - keep grouped structure
+		bool firstType = true;
+		for(const auto& typePairMap : fclMap_)
+		{
+			if(!firstType)
+				oss << ",";
+			oss << "\t\"" << getTypeString(typePairMap.first) << "\": {" << __E__;
 
-		for(const auto& fclPair : typePairMap.second)
-			oss << "\t\"" << fclPair.first << "\": \"" << fclPair.second << "\"" << __E__;
+			bool firstEntry = true;
+			for(const auto& fclPair : typePairMap.second)
+			{
+				if(!firstEntry)
+					oss << ",";
+				oss << "\t\t\"" << fclPair.first << "\": \"" << StringMacros::StringMacros::escapeJSONStringEntities(fclPair.second) << "\"" << __E__;
+				firstEntry = false;
+			}
 
-		oss << "}\n";  //close type
+			oss << "\t}" << __E__;
+			firstType = false;
+		}
 	}
+	else
+	{
+		// Single type (normal case) - flat structure
+		bool firstEntry = true;
+		for(const auto& typePairMap : fclMap_)
+		{
+			for(const auto& fclPair : typePairMap.second)
+			{
+				if(!firstEntry)
+					oss << ",";
+				oss << "\t\"" << fclPair.first << "\": \"" << StringMacros::StringMacros::escapeJSONStringEntities(fclPair.second) << "\"" << __E__;
+				firstEntry = false;
+			}
+		}
+	}
+
+    oss << "}" << __E__;
 
 	return oss.str();
 }  //end getStructureAsJSON()
