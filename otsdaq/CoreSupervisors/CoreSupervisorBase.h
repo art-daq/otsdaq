@@ -75,7 +75,8 @@ class CoreSupervisorBase : public xdaq::Application,
 																	std::ostream&                    out,
 																	const WebUsers::RequestUserInfo& userInfo);
 	virtual std::string 			getStatusProgressDetail			(void);
-	virtual std::vector<SupervisorInfo::SubappInfo>             getSubappInfo					(void) { return std::vector<SupervisorInfo::SubappInfo>(); }
+	virtual std::vector<
+		SupervisorInfo::SubappInfo> getSubappInfo					(void) { return std::vector<SupervisorInfo::SubappInfo>(); }
 
   private:
 	xoap::MessageReference 			workLoopStatusRequestWrapper	(xoap::MessageReference message);
@@ -98,24 +99,25 @@ class CoreSupervisorBase : public xdaq::Application,
 
 	bool 							stateMachineThread				(toolbox::task::WorkLoop* workLoop);
 
-	virtual void stateInitial			(toolbox::fsm::FiniteStateMachine& fsm);
-	virtual void statePaused			(toolbox::fsm::FiniteStateMachine& fsm);
-	virtual void stateRunning			(toolbox::fsm::FiniteStateMachine& fsm);
-	virtual void stateHalted			(toolbox::fsm::FiniteStateMachine& fsm);
-	virtual void stateConfigured		(toolbox::fsm::FiniteStateMachine& fsm);
-	virtual void inError				(toolbox::fsm::FiniteStateMachine& fsm);
+	virtual void 					stateInitial					(toolbox::fsm::FiniteStateMachine& fsm);
+	virtual void 					statePaused						(toolbox::fsm::FiniteStateMachine& fsm);
+	virtual void 					stateRunning					(toolbox::fsm::FiniteStateMachine& fsm);
+	virtual void 					stateHalted						(toolbox::fsm::FiniteStateMachine& fsm);
+	virtual void 					stateConfigured					(toolbox::fsm::FiniteStateMachine& fsm);
+	virtual void 					inError							(toolbox::fsm::FiniteStateMachine& fsm);
 
-	virtual void transitionConfiguring	(toolbox::Event::Reference event);
+	virtual void 					transitionConfiguring			(toolbox::Event::Reference event);
   protected:
-	void 		 transitionConfiguringFSMs(void);
+	void							configureInit					(void);
+	void 		 					transitionConfiguringFSMs		(void);
   public:
-	virtual void transitionHalting		(toolbox::Event::Reference event);
-	virtual void transitionInitializing	(toolbox::Event::Reference event);
-	virtual void transitionPausing		(toolbox::Event::Reference event);
-	virtual void transitionResuming		(toolbox::Event::Reference event);
-	virtual void transitionStarting		(toolbox::Event::Reference event);
-	virtual void transitionStopping		(toolbox::Event::Reference event);
-	virtual void enteringError			(toolbox::Event::Reference event);
+	virtual void 					transitionHalting				(toolbox::Event::Reference event);
+	virtual void 					transitionInitializing			(toolbox::Event::Reference event);
+	virtual void 					transitionPausing				(toolbox::Event::Reference event);
+	virtual void 					transitionResuming				(toolbox::Event::Reference event);
+	virtual void 					transitionStarting				(toolbox::Event::Reference event);
+	virtual void 					transitionStopping				(toolbox::Event::Reference event);
+	virtual void 					enteringError					(toolbox::Event::Reference event);
 
 	static const std::string WORK_LOOP_DONE, WORK_LOOP_WORKING;
 

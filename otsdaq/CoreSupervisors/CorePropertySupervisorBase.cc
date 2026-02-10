@@ -141,9 +141,9 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 
 	//---------------
 	{ // init StringMacros::systemVariables_
-		StringMacros::systemVariables_["ActiveStateMachine"]["name"] = StringMacros::TBD;
-		StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] = StringMacros::TBD;
-		StringMacros::systemVariables_["ActiveStateMachine"]["fileNameAlias"] = StringMacros::TBD;
+		StringMacros::systemVariables_["ActiveStateMachine"]["name"] 		= StringMacros::TBD;
+		StringMacros::systemVariables_["ActiveStateMachine"]["windowName"] 	= StringMacros::TBD;
+		StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] 	= StringMacros::TBD;
 	} // end init StringMacros::systemVariables_
 	__SUP_COUTV__(StringMacros::mapToString(StringMacros::systemVariables_));
 	//---------------

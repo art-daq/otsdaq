@@ -6120,11 +6120,6 @@ try
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
-	SOAPParameters parameters;
-	parameters.addParameter("ConfigurationTableGroupName",
-	                        theConfigurationTableGroup_.first);
-	parameters.addParameter("ConfigurationTableGroupKey",
-	                        theConfigurationTableGroup_.second.toString());
 
 	// update Macro Maker front end list
 	if(CorePropertySupervisorBase::allSupervisorInfo_.getAllMacroMakerTypeSupervisorInfo()
@@ -6169,6 +6164,25 @@ try
 			return;
 		}
 	}  // end update Macro Maker front end list
+
+	StringMacros::systemVariables_["ActiveStateMachine"]["name"] =
+	    activeStateMachineName_;
+	StringMacros::systemVariables_["ActiveStateMachine"]["windowName"] =
+	    activeStateMachineWindowName_;
+	StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] =
+	    activeStateMachineRunAlias_;
+	__SUP_COUTV__(StringMacros::mapToString(StringMacros::systemVariables_));
+
+	SOAPParameters parameters;
+	parameters.addParameter("ConfigurationTableGroupName",
+	                        theConfigurationTableGroup_.first);
+	parameters.addParameter("ConfigurationTableGroupKey",
+	                        theConfigurationTableGroup_.second.toString());
+	parameters.addParameter("ActiveStateMachineName", activeStateMachineName_);
+	parameters.addParameter("ActiveStateMachineWindowName",
+	                        activeStateMachineWindowName_);
+	parameters.addParameter("ActiveStateMachineRunAlias", activeStateMachineRunAlias_);
+
 	RunControlStateMachine::theProgressBar_.step();
 
 	xoap::MessageReference message = theStateMachine_.getCurrentMessage();
