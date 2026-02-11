@@ -1000,7 +1000,6 @@ try
 			~PyObjectGuard() { if(obj) Py_DECREF(obj); }
 			PyObjectGuard(const PyObjectGuard&) = delete;
 			PyObjectGuard& operator=(const PyObjectGuard&) = delete;
-			operator PyObject*() const { return obj; }
 			PyObject* get() const { return obj; }
 		};
 
