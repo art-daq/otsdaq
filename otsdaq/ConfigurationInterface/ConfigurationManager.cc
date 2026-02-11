@@ -1672,14 +1672,16 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			<< "' given during dumpActiveConfiguration(). Valid types are as follows:\n"
 			<<
 
-			// List all choices
-			"GroupKeys"
+			// List all choices (must match accepted dumpType strings)
+			"Group Keys"
 			<< ", "
-			<< "TableVersions"
+			<< "Table Versions"
 			<< ", "
-			<< "GroupsKeysAndTableVersions"
+			<< "Group Keys and Table Versions"
 			<< ", "
 			<< "All"
+			<< ", "
+			<< "JSON All"
 			<<
 
 			"\n\nPlease change the State Machine configuration to a valid dump type."
