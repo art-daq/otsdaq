@@ -3,6 +3,8 @@
 
 // clang-format off
 
+#include <ctime>     //for time_t, time(), localtime_r(), strftime()
+#include <cstring>   //for strlen()
 #include <string.h>  //for strstr (not the same as <string>)
 #include <iostream>  //for cout
 #include <sstream>   //for stringstream, std::stringbuf
