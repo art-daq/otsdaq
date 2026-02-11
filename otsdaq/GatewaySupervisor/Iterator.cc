@@ -2292,10 +2292,10 @@ try
 			__COUT_ERR__ << "\n" << ss.str();
 			__COUT_ERR__ << "\n" << ss.str();
 
-			xmldoc.addTextElementToData("state_tranisition_attempted",
+			xmldoc.addTextElementToData("state_transition_attempted",
 			                            "0");  // indicate to GUI transition NOT attempted
 			xmldoc.addTextElementToData(
-			    "state_tranisition_attempted_err",
+			    "state_transition_attempted_err",
 			    ss.str());  // indicate to GUI transition NOT attempted
 			theSupervisor_->theStateMachine_.setErrorMessage(ss.str());
 			return true;  // to block other commands
@@ -2304,7 +2304,7 @@ try
 
 	if(handledCommand)
 	{
-		xmldoc.addTextElementToData("state_tranisition_attempted",
+		xmldoc.addTextElementToData("state_transition_attempted",
 		                            "1");  // indicate to GUI iterator attempted
 		return true;
 	}
@@ -2330,9 +2330,9 @@ catch(...)
 
 	__COUT_ERR__ << "\n" << ss.str();
 
-	xmldoc.addTextElementToData("state_tranisition_attempted",
+	xmldoc.addTextElementToData("state_transition_attempted",
 	                            "0");  // indicate to GUI transition NOT attempted
-	xmldoc.addTextElementToData("state_tranisition_attempted_err",
+	xmldoc.addTextElementToData("state_transition_attempted_err",
 	                            ss.str());  // indicate to GUI transition NOT attempted
 	theSupervisor_->theStateMachine_.setErrorMessage(ss.str());
 	return true;
