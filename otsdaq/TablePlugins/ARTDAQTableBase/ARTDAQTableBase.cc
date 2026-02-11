@@ -7157,7 +7157,7 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 				if(!firstEntry)
 					oss << ",";
 				oss << "\t\"" << fclPair.first << "\": \""
-				    << StringMacros::StringMacros::escapeJSONStringEntities(
+				    << StringMacros::escapeJSONStringEntities(
 				           fclPair.second)
 				    << "\"" << __E__;
 				firstEntry = false;
