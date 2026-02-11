@@ -2156,8 +2156,10 @@ try
 						    theSupervisor->theStateMachine_.getCurrentStateName();
 						if(currentState != RunControlStateMachine::FAILED_STATE_NAME &&
 						   currentState != RunControlStateMachine::HALTED_STATE_NAME &&
+						   currentState != RunControlStateMachine::SHUTDOWN_STATE_NAME &&
 						   currentState != RunControlStateMachine::INITIAL_STATE_NAME)
 						{
+							__COUTV__(currentState);
 							__SS__
 							    << "\nDid a supervisor crash? Failed getting status from "
 							    << " Supervisor instance = '" << appName
@@ -2170,6 +2172,11 @@ try
 							//	Seeing Console Crash and bring down state machine at the moment
 							if(!appInfo.isTypeConsoleSupervisor())
 							{
+								__COUT_WARN__ << "Unexpected failure getting status from "
+							    << " Supervisor instance = '" << appName
+							    << "' [LID=" << appInfo.getId() << "] in Context '"
+							    << appInfo.getContextName()
+							    << "' [URL=" << appInfo.getURL() << "]. Attempting to send 'Error' transition to target now!" << __E__;
 								theSupervisor->theStateMachine_.setErrorMessage(ss.str());
 								try
 								{
