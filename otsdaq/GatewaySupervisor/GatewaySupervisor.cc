@@ -4704,10 +4704,10 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 		       << __E__;
 		__COUT_ERR__ << "\n" << ss.str();
 
-		xmlOut.addTextElementToData("state_tranisition_attempted",
+		xmlOut.addTextElementToData("state_transition_attempted",
 		                            "0");  // indicate to GUI transition NOT attempted
 		xmlOut.addTextElementToData(
-		    "state_tranisition_attempted_err",
+		    "state_transition_attempted_err",
 		    ss.str());  // indicate to GUI transition NOT attempted
 		xmlOut.outputXmlDocument((std::ostringstream*)out, false, true);
 		return;
@@ -5211,7 +5211,7 @@ try
 	// stateMachineWorkLoopManager_.processRequest(message);
 
 	if(xmldoc)
-		xmldoc->addTextElementToData("state_tranisition_attempted",
+		xmldoc->addTextElementToData("state_transition_attempted",
 		                             "1");  // indicate to GUI transition attempted
 	if(out)
 		xmldoc->outputXmlDocument((std::ostringstream*)out, false);
@@ -5239,11 +5239,11 @@ catch(...)
 	__COUT_ERR__ << "\n" << ss.str();
 
 	if(xmldoc)
-		xmldoc->addTextElementToData("state_tranisition_attempted",
+		xmldoc->addTextElementToData("state_transition_attempted",
 		                             "0");  // indicate to GUI transition NOT attempted
 	if(xmldoc)
 		xmldoc->addTextElementToData(
-		    "state_tranisition_attempted_err",
+		    "state_transition_attempted_err",
 		    ss.str());  // indicate to GUI transition NOT attempted
 	if(out)
 		xmldoc->outputXmlDocument(
