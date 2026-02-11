@@ -47,11 +47,11 @@ class RunInfoVInterface  ///< : public Configurable
 		START
 	};
 
-	RunInfoVInterface							(const std::string& runInfoPluginClassName, 
+	RunInfoVInterface							(const std::string& runInfoPluginClassName,
 												const std::string& activeStateMachineName)
-	    :
-	    mfSubject_(runInfoPluginClassName),
-	    activeStateMachineName_(activeStateMachineName)
+		:
+		mfSubject_(runInfoPluginClassName),
+		activeStateMachineName_(activeStateMachineName)
 	{;}
 	virtual ~RunInfoVInterface						(void) { ; }
 

@@ -381,14 +381,14 @@ public:	//used by remote subsystem control and status
 			};
 
 			std::string 						command, fsmName; ///<when not "", need to send
-		  private: //make error private to connect to set timestamp 
+		  private: //make error private to connect to set timestamp
 			std::string						error;
 			time_t							errorTimestamp = 0;
 		  public:
 			void								setError(const std::string& err) { error = err; errorTimestamp = time(0); }
 			void								clearError() { error = ""; errorTimestamp = 0; }
 			void								copyError(const RemoteGatewayInfo& r) { error = r.error; errorTimestamp = r.errorTimestamp; }
-			const std::string&					getError() const { return error; }			
+			const std::string&					getError() const { return error; }
 			const std::string					getErrorTimestamp() const { return StringMacros::getTimestampString(errorTimestamp); }
 
 			std::string							config_dump;

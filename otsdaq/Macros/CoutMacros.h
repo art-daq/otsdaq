@@ -218,7 +218,7 @@ struct __OTS_STOP_EXCEPTION__ : public std::exception
 namespace ots
 {
 struct TimestampString
-{	
+{
 	std::string get(const time_t linuxTimeInSeconds = time(0))
 	{
 		std::string retValue(30, '\0');  // known fixed size: Thu Aug 23 14:55:02 2001 CST
