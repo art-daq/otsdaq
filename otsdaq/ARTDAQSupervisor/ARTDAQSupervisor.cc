@@ -993,14 +993,24 @@ try
 	__GEN_COUT__ << "Status before config: " << daqinterface_state_ << __E__;
 	std::string doConfigOutput = "";
 	{  //do_config call
-		PyObject* pName3 = PyUnicode_FromString("do_config");
+		// RAII wrapper for Python objects to ensure cleanup even on exception
+		struct PyObjectGuard {
+			PyObject* obj;
+			explicit PyObjectGuard(PyObject* o) : obj(o) {}
+			~PyObjectGuard() { if(obj) Py_DECREF(obj); }
+			PyObjectGuard(const PyObjectGuard&) = delete;
+			PyObjectGuard& operator=(const PyObjectGuard&) = delete;
+			operator PyObject*() const { return obj; }
+			PyObject* get() const { return obj; }
+		};
 
+		PyObjectGuard pName3(PyUnicode_FromString("do_config"));
 		// 2. Create the argument - list containing config name: ["my_config"]
-		PyObject* pArg = Py_BuildValue("[s]", FAKE_CONFIG_NAME);
+		PyObjectGuard pArg(Py_BuildValue("[s]", FAKE_CONFIG_NAME));
 
 		// 3. Call the method
 		PyObject* res3 =
-		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName3, pArg, NULL);
+		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName3.get(), pArg.get(), NULL);
 
 		// 4. Check for errors FIRST before capturing output (which might clear error state)
 		if(checkPythonError(res3))
@@ -1011,9 +1021,7 @@ try
 			// Now capture output for diagnostics
 			doConfigOutput = captureStderrAndStdout_("do_config");
 
-			// Cleanup before throwing
-			Py_DECREF(pName3);
-			Py_DECREF(pArg);
+			// pName3 and pArg will be automatically cleaned up by their destructors
 
 			__GEN_SS__ << "Error calling config transition: " << err << __E__;
 			__GEN_SS_THROW__;
@@ -1037,8 +1045,7 @@ try
 		// 7. Final Cleanup (Crucial!)
 		Py_XDECREF(strRes);  // Clean up the temporary string conversion
 		Py_DECREF(res3);     // Clean up the result object
-		Py_DECREF(pName3);   // Clean up method name
-		Py_DECREF(pArg);     // Clean up argument
+		// pName3 and pArg will be automatically cleaned up by their destructors
 	}                        //end do_config call
 
 	getDAQState_();
