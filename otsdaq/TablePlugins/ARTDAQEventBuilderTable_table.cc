@@ -36,7 +36,8 @@ void ARTDAQEventBuilderTable::init(ConfigurationManager* configManager)
 	lastConfigManager_ = configManager;
 	if(!ARTDAQTableBase::doGenFiles(configManager))
 	{
-		__COUTS__(3) << "ARTDAQTableBase indicates file generation can be skipped." << __E__;
+		__COUTS__(3) << "ARTDAQTableBase indicates file generation can be skipped."
+		             << __E__;
 		return;
 	}
 

@@ -2305,10 +2305,10 @@ try
 	if(handledCommand)
 	{
 		xmldoc.addTextElementToData("state_tranisition_attempted",
-		                             "1");  // indicate to GUI iterator attempted
+		                            "1");  // indicate to GUI iterator attempted
 		return true;
 	}
-	//else not an iterator command	
+	//else not an iterator command
 
 	return false;
 }  //end handleCommandRequest()

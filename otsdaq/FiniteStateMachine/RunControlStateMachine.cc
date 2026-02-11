@@ -538,8 +538,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		message = SOAPUtilities::makeSOAPMessageReference(command);
 	}
 
-	if((command == RunControlStateMachine::HALT_TRANSITION_NAME || 
-		command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME) &&
+	if((command == RunControlStateMachine::HALT_TRANSITION_NAME ||
+	    command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME) &&
 	   currentState == RunControlStateMachine::FAILED_STATE_NAME)
 	{
 		__GEN_COUT__ << "Clearing Errors after failure..." << std::endl;

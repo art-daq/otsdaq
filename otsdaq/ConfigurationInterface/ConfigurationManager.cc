@@ -860,10 +860,12 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 {
 	if(nameToTableMap_.find("FEInterfaceTable") == nameToTableMap_.end())
 	{
-		__COUT__ << "Skipping dumpMacroMakerModeFhicl() since FEInterface table is not activated." << __E__;
+		__COUT__ << "Skipping dumpMacroMakerModeFhicl() since FEInterface table is not "
+		            "activated."
+		         << __E__;
 		return;
 	}
-	
+
 	std::string filepath =
 	    __ENV__("USER_DATA") + std::string("/") + "MacroMakerModeConfigurations";
 	mkdir(filepath.c_str(), 0755);
@@ -1467,24 +1469,25 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		// collect spack output (split by newlines)
 		std::map<std::string, std::string> spackPackages;
 		std::map<std::string, std::string> checkedOutRepos;
-		std::string environment;
+		std::string                        environment;
 
 		{
-			std::string spackOut = StringMacros::exec("spack find");
+			std::string        spackOut = StringMacros::exec("spack find");
 			std::istringstream iss(spackOut);
-			std::string line;
+			std::string        line;
 			while(std::getline(iss, line))
 			{
 				if(line.empty())
 					continue;
-					
+
 				// Extract environment name
 				if(line.find("==> In environment") != std::string::npos)
 				{
 					size_t start = line.find("environment ") + 12;
-					environment = line.substr(start);
+					environment  = line.substr(start);
 				}
-				else if(line[0] != '[' && line[0] != '-' && line.find("root specs") == std::string::npos)
+				else if(line[0] != '[' && line[0] != '-' &&
+				        line.find("root specs") == std::string::npos)
 				{
 					// Parse spack packages
 					size_t atPos = line.find('@');
@@ -1494,10 +1497,11 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 						// Remove leading [+] or [^] markers
 						if(pkgName.find('[') != std::string::npos)
 							pkgName = pkgName.substr(pkgName.find(']') + 2);
-						std::string version = line.substr(atPos + 1);
+						std::string version    = line.substr(atPos + 1);
 						spackPackages[pkgName] = version;
 					}
-					else if(line.find('[') == std::string::npos && !line.empty() && line[0] != 'c')
+					else if(line.find('[') == std::string::npos && !line.empty() &&
+					        line[0] != 'c')
 					{
 						// Plain package name without version
 						std::string pkgName = line;
@@ -1532,7 +1536,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
 				    type == 4 ||  // directory type
 				    type == 8 ||  // file type
-				    type == 10    // 10 == link (could be directory or file, treat as unknown)
+				    type ==
+				        10  // 10 == link (could be directory or file, treat as unknown)
 				    ))
 				{
 					isDir = false;
@@ -1547,9 +1552,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 							closedir(pTmpDIR);
 						}
 						else  //assume file
-							__COUTS__(2)
-							    << "Unable to open path as directory: " << (src + "/" + name)
-							    << __E__;
+							__COUTS__(2) << "Unable to open path as directory: "
+							             << (src + "/" + name) << __E__;
 					}
 
 					if(type == 4)
@@ -1578,41 +1582,48 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		if(jsonFormat)
 		{
 			(*out) << "\t\"software_versions\": {" << __E__;
-			
+
 			// Output spack packages
 			(*out) << "\t\t\"spack\": {" << __E__;
 			bool first = true;
 			for(const auto& pkg : spackPackages)
 			{
-				if(!first) (*out) << "," << __E__;
-				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(pkg.first) << "\": \"" 
-				       << StringMacros::escapeJSONStringEntities(pkg.second) << "\"";
+				if(!first)
+					(*out) << "," << __E__;
+				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(pkg.first)
+				       << "\": \"" << StringMacros::escapeJSONStringEntities(pkg.second)
+				       << "\"";
 				first = false;
 			}
 			(*out) << __E__ << "\t\t}," << __E__;
-			
+
 			// Output checked out repositories
 			(*out) << "\t\t\"checked_out\": {" << __E__;
 			first = true;
 			for(const auto& repo : checkedOutRepos)
 			{
-				if(!first) (*out) << "," << __E__;
-				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(repo.first) << "\": \"" 
-				       << StringMacros::escapeJSONStringEntities(repo.second) << "\"";
+				if(!first)
+					(*out) << "," << __E__;
+				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(repo.first)
+				       << "\": \"" << StringMacros::escapeJSONStringEntities(repo.second)
+				       << "\"";
 				first = false;
 			}
 			(*out) << __E__ << "\t\t}," << __E__;
-			
+
 			// Output environment
-			(*out) << "\t\t\"environment\": \"" << StringMacros::escapeJSONStringEntities(environment) << "\"" << __E__;
-			
+			(*out) << "\t\t\"environment\": \""
+			       << StringMacros::escapeJSONStringEntities(environment) << "\""
+			       << __E__;
+
 			(*out) << "\t}" << __E__;
 		}
 		else
 		{
 			(*out) << "\n\n\"Software Versions\": {" << __E__;
 			(*out) << "  \"spack\": " << spackPackages.size() << " packages," << __E__;
-			(*out) << "  \"checked_out\": " << checkedOutRepos.size() << " repositories," << __E__;
+			(*out) << "  \"checked_out\": " << checkedOutRepos.size() << " repositories,"
+			       << __E__;
 			(*out) << "  \"environment\": \"" << environment << "\"" << __E__;
 			(*out) << "}" << __E__;
 		}
@@ -5271,8 +5282,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 
 	if(fullPath == ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/")
 	{
-		__SS__ << "Illegal attempted group history request combination of groupAction: " << groupAction << ", and groupType: "
-		       << groupType << __E__;
+		__SS__ << "Illegal attempted group history request combination of groupAction: "
+		       << groupAction << ", and groupType: " << groupType << __E__;
 		__SS_THROW__;
 	}
 	return loadGroupHistory(fullPath, formatTime);
@@ -5350,22 +5361,24 @@ void ConfigurationManager::initPrereqsForARTDAQ()
 try
 {
 	__COUTT__ << "Initializing prerequisites for artdaq!" << __E__;
-	
+
 	for(auto& tablePair : nameToTableMap_)
 	{
-		__COUTVS__(2,tablePair.first);
-		try 
+		__COUTVS__(2, tablePair.first);
+		try
 		{
 			tablePair.second->initPrereqsForARTDAQ(this);
 		}
-		catch(const std::runtime_error& e) 
+		catch(const std::runtime_error& e)
 		{
-			__COUTVS__(2,e.what());
-			if(std::string(e.what()).find("initPrereqsForARTDAQ() is not implemented for this table") == std::string::npos)
+			__COUTVS__(2, e.what());
+			if(std::string(e.what()).find(
+			       "initPrereqsForARTDAQ() is not implemented for this table") ==
+			   std::string::npos)
 				throw;
 			//else ignore undefined virtual function error
 		}
-	} //end table loop
+	}  //end table loop
 
 	__COUTT__ << "Done initializing prerequisites for artdaq!" << __E__;
 }  // end initPrereqsForARTDAQ()
@@ -5381,4 +5394,4 @@ catch(...)
 		ss << " Here was the error: " << e.what() << __E__;
 	}
 	__SS_THROW__;
-} // end initPrereqsForARTDAQ()
+}  // end initPrereqsForARTDAQ()

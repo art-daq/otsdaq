@@ -1587,21 +1587,21 @@ std::string StringMacros::exec(const char* cmd)
 
 	std::array<char, 128> buffer;
 	std::string           result;
-	
+
 	// For capturing both stdout and stderr, we need to redirect stderr to stdout
 	// This is done by appending " 2>&1" to the command
-	std::string cmdWithRedirect = std::string(cmd) + " 2>&1";
+	std::string           cmdWithRedirect = std::string(cmd) + " 2>&1";
 	std::shared_ptr<FILE> pipe(popen(cmdWithRedirect.c_str(), "r"), pclose);
 	if(!pipe)
 		__THROW__("popen() failed!");
-		
+
 	// Read all output (both stdout and stderr)
 	while(!feof(pipe.get()))
 	{
 		if(fgets(buffer.data(), 128, pipe.get()) != nullptr)
 			result += buffer.data();
 	}
-	
+
 	__COUTTV__(result);
 	return result;
 }  // end exec()
@@ -1978,7 +1978,7 @@ void StringMacros::coutSplit(const std::string&    str,
 	auto splitArr =
 	    StringMacros::getVectorFromString(str, delimiter, {} /* whitespace */);
 	__COUTV__(splitArr.size());
-	__COUTVS__(lvl,splitArr.size());
+	__COUTVS__(lvl, splitArr.size());
 	for(const auto& split : splitArr)
 		__COUTS__(lvl) << split;
 }  //end coutSplit()

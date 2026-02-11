@@ -7117,8 +7117,8 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 	if(fclMap_.size() == 0)  //assume was not generated (not first )
 		genFlatFHiCL();
 	std::stringstream oss;
-    
-    oss << "{" << __E__;
+
+	oss << "{" << __E__;
 
 	if(fclMap_.size() > 1)
 	{
@@ -7135,7 +7135,10 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 			{
 				if(!firstEntry)
 					oss << ",";
-				oss << "\t\t\"" << fclPair.first << "\": \"" << StringMacros::StringMacros::escapeJSONStringEntities(fclPair.second) << "\"" << __E__;
+				oss << "\t\t\"" << fclPair.first << "\": \""
+				    << StringMacros::StringMacros::escapeJSONStringEntities(
+				           fclPair.second)
+				    << "\"" << __E__;
 				firstEntry = false;
 			}
 
@@ -7153,13 +7156,16 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 			{
 				if(!firstEntry)
 					oss << ",";
-				oss << "\t\"" << fclPair.first << "\": \"" << StringMacros::StringMacros::escapeJSONStringEntities(fclPair.second) << "\"" << __E__;
+				oss << "\t\"" << fclPair.first << "\": \""
+				    << StringMacros::StringMacros::escapeJSONStringEntities(
+				           fclPair.second)
+				    << "\"" << __E__;
 				firstEntry = false;
 			}
 		}
 	}
 
-    oss << "}" << __E__;
+	oss << "}" << __E__;
 
 	return oss.str();
 }  //end getStructureAsJSON()

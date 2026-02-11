@@ -553,8 +553,8 @@ std::string StringMacros::mapToString(
 // static template function
 template<class S, class T>
 std::string StringMacros::mapToString(const std::map<S, T>& mapToReturn,
-	                                     const std::string& primaryDelimeter /*= ", "*/,
-	                                     const std::string& secondaryDelimeter /*= ": "*/)
+                                      const std::string&    primaryDelimeter /*= ", "*/,
+                                      const std::string&    secondaryDelimeter /*= ": "*/)
 {
 	std::stringstream ss;
 	bool              first = true;
@@ -573,7 +573,7 @@ std::string StringMacros::mapToString(const std::map<S, T>& mapToReturn,
 // static template function
 template<class T>
 std::string StringMacros::setToString(const std::set<T>& setToReturn,
-	                                     const std::string& delimeter /*= ", "*/)
+                                      const std::string& delimeter /*= ", "*/)
 {
 	std::stringstream ss;
 	bool              first = true;

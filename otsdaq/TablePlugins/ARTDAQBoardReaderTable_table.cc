@@ -48,10 +48,11 @@ void ARTDAQBoardReaderTable::init(ConfigurationManager* configManager)
 	__COUTS__(10) << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << __E__;
 	__COUTS__(10) << configManager->__SELF_NODE__ << __E__;
 
-	lastConfigManager_ = configManager; //for Slow Controls member
+	lastConfigManager_ = configManager;  //for Slow Controls member
 	if(!ARTDAQTableBase::doGenFiles(configManager))
 	{
-		__COUTS__(3) << "ARTDAQTableBase indicates file generation can be skipped." << __E__;
+		__COUTS__(3) << "ARTDAQTableBase indicates file generation can be skipped."
+		             << __E__;
 		return;
 	}
 

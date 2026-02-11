@@ -1328,11 +1328,12 @@ try
 
 									//give feedback immediately to user!!
 									{
-										__COUT__ << "remoteGatewayApp (doDisconnected="
-										         << doDisconnected << ") "
-										         << remoteGatewayApp.appInfo.name
-										         << " error: " << remoteGatewayApp.getError()
-										         << __E__;
+										__COUT__
+										    << "remoteGatewayApp (doDisconnected="
+										    << doDisconnected << ") "
+										    << remoteGatewayApp.appInfo.name
+										    << " error: " << remoteGatewayApp.getError()
+										    << __E__;
 										//lock for remainder of scope
 										std::lock_guard<std::mutex> lock(
 										    theSupervisor->remoteGatewayAppsMutex_);
@@ -1602,8 +1603,8 @@ try
 									   theSupervisor->remoteGatewayApps_[i].appInfo.name)
 									{
 										theSupervisor->remoteGatewayApps_[i].clearError();
-										__COUTV__(
-										    theSupervisor->remoteGatewayApps_[i].getError());
+										__COUTV__(theSupervisor->remoteGatewayApps_[i]
+										              .getError());
 										break;
 									}
 								remoteGatewayApp.clearError();
@@ -1630,7 +1631,8 @@ try
 										   theSupervisor->remoteGatewayApps_[i]
 										       .appInfo.name)
 										{
-											theSupervisor->remoteGatewayApps_[i].copyError(remoteGatewayApp);
+											theSupervisor->remoteGatewayApps_[i]
+											    .copyError(remoteGatewayApp);
 											break;
 										}
 								}
@@ -2173,10 +2175,14 @@ try
 							if(!appInfo.isTypeConsoleSupervisor())
 							{
 								__COUT_WARN__ << "Unexpected failure getting status from "
-							    << " Supervisor instance = '" << appName
-							    << "' [LID=" << appInfo.getId() << "] in Context '"
-							    << appInfo.getContextName()
-							    << "' [URL=" << appInfo.getURL() << "]. Attempting to send 'Error' transition to target now!" << __E__;
+								              << " Supervisor instance = '" << appName
+								              << "' [LID=" << appInfo.getId()
+								              << "] in Context '"
+								              << appInfo.getContextName()
+								              << "' [URL=" << appInfo.getURL()
+								              << "]. Attempting to send 'Error' "
+								                 "transition to target now!"
+								              << __E__;
 								theSupervisor->theStateMachine_.setErrorMessage(ss.str());
 								try
 								{
@@ -2823,39 +2829,40 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 			}
 
 			//assume have config dump response!
-		// Extract dump content (everything after "Done,")
-		std::string dumpContent = commandResponseString.substr(strlen("Done") + 1);
-		
-		// Remove 'END---' suffix if present
-		if(dumpContent.size() > 6 && dumpContent.ends_with("END---"))
-			dumpContent = dumpContent.substr(0, dumpContent.size() - 6);
-		
-		// Check if it's JSON by looking for opening brace
-		if(!dumpContent.empty() && dumpContent[0] == '{')
-		{
-			__COUT__ << "Found JSON all dump type" << __E__;
-			remoteGatewayApp.config_dump_type =
-			    RemoteGatewayInfo::ConfigDumpTypes::JSON_all;
-			remoteGatewayApp.config_dump = dumpContent;
-		}
-		else
-		{
-			__COUT__ << "Found text dump type" << __E__;
-			remoteGatewayApp.config_dump_type =
-			    RemoteGatewayInfo::ConfigDumpTypes::Text;
+			// Extract dump content (everything after "Done,")
+			std::string dumpContent = commandResponseString.substr(strlen("Done") + 1);
 
-			remoteGatewayApp.config_dump = "\n\n************************\n";
-			remoteGatewayApp.config_dump +=
-			    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
-			    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
-			remoteGatewayApp.config_dump += "************************ \n";
-			remoteGatewayApp.config_dump += "\n\n";
-			remoteGatewayApp.config_dump += dumpContent;
-		}
+			// Remove 'END---' suffix if present
+			if(dumpContent.size() > 6 && dumpContent.ends_with("END---"))
+				dumpContent = dumpContent.substr(0, dumpContent.size() - 6);
+
+			// Check if it's JSON by looking for opening brace
+			if(!dumpContent.empty() && dumpContent[0] == '{')
+			{
+				__COUT__ << "Found JSON all dump type" << __E__;
+				remoteGatewayApp.config_dump_type =
+				    RemoteGatewayInfo::ConfigDumpTypes::JSON_all;
+				remoteGatewayApp.config_dump = dumpContent;
+			}
+			else
+			{
+				__COUT__ << "Found text dump type" << __E__;
+				remoteGatewayApp.config_dump_type =
+				    RemoteGatewayInfo::ConfigDumpTypes::Text;
+
+				remoteGatewayApp.config_dump = "\n\n************************\n";
+				remoteGatewayApp.config_dump +=
+				    "* Remote Subsystem Dump from '" + remoteGatewayApp.appInfo.name +
+				    "' at url: " + remoteGatewayApp.appInfo.url + "\n";
+				remoteGatewayApp.config_dump += "************************ \n";
+				remoteGatewayApp.config_dump += "\n\n";
+				remoteGatewayApp.config_dump += dumpContent;
+			}
 			__COUTTV__(remoteGatewayApp.config_dump);
-			__COUT__ << "Successfully received config dump from remote gateway '" 
-			         << remoteGatewayApp.appInfo.name << "' dump size: " 
-			         << remoteGatewayApp.config_dump.size() << " bytes" << __E__;
+			__COUT__ << "Successfully received config dump from remote gateway '"
+			         << remoteGatewayApp.appInfo.name
+			         << "' dump size: " << remoteGatewayApp.config_dump.size() << " bytes"
+			         << __E__;
 		}
 
 	}  //end SendRemoteGatewayCommand()
@@ -4290,8 +4297,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					   errorStr == "" &&
 					   command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 						extraDoneContent =
-						    theSupervisor
-						        ->activeStateMachineSystemDumpOnConfigure_;
+						    theSupervisor->activeStateMachineSystemDumpOnConfigure_;
 
 					if(errorStr ==
 					       "" &&  //start transition is where subusystem configure dump is aggregated!
@@ -4674,7 +4680,8 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	fsmWindowName             = StringMacros::decodeURIComponent(fsmWindowName);
 	std::string currentState  = theStateMachine_.getCurrentStateName();
 
-	__COUT__ << "Check for Handled by theIterator_, activeStateMachineWindowName_ = " << activeStateMachineWindowName_ << __E__;
+	__COUT__ << "Check for Handled by theIterator_, activeStateMachineWindowName_ = "
+	         << activeStateMachineWindowName_ << __E__;
 
 	// check if Iterator should handle
 	if((activeStateMachineWindowName_ == "" ||
@@ -4773,8 +4780,8 @@ try
 		         << ", currentState = " << currentState << ", newFSM = " << fsmName
 		         << ", command = " << command << __E__;
 		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
-		   currentState != RunControlStateMachine::INITIAL_STATE_NAME && 
-		   currentState != RunControlStateMachine::FAILED_STATE_NAME && 
+		   currentState != RunControlStateMachine::INITIAL_STATE_NAME &&
+		   currentState != RunControlStateMachine::FAILED_STATE_NAME &&
 		   currentState != RunControlStateMachine::SHUTDOWN_STATE_NAME)
 		{
 			// illegal for this FSM name to attempt transition
@@ -4965,8 +4972,7 @@ try
 					}
 
 					activeStateMachineSystemDumpOnConfigureEnable_ =
-					    fsmLinkNode
-					        .getNode("EnableSystemDumpOnConfigureTransition")
+					    fsmLinkNode.getNode("EnableSystemDumpOnConfigureTransition")
 					        .getValue<bool>();
 					activeStateMachineSystemDumpOnRunEnable_ =
 					    fsmLinkNode.getNode("EnableSystemDumpOnRunTransition")
@@ -4985,10 +4991,9 @@ try
 					dumpFilePath =
 					    fsmLinkNode.getNode("SystemDumpOnConfigureFilePath")
 					        .getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
-					dumpFileRadix =
-					    fsmLinkNode.getNode("SystemDumpOnConfigureFileRadix")
-					        .getValueWithDefault<std::string>(
-					            "ConfigTransitionSystemDump");
+					dumpFileRadix = fsmLinkNode.getNode("SystemDumpOnConfigureFileRadix")
+					                    .getValueWithDefault<std::string>(
+					                        "ConfigTransitionSystemDump");
 					activeStateMachineSystemDumpOnConfigureFilename_ =
 					    dumpFilePath + "/" + dumpFileRadix;
 					dumpFilePath =
@@ -5006,9 +5011,8 @@ try
 				{
 					__COUTTV__(e.what());
 
-					if(doThrow &&
-					   (activeStateMachineSystemDumpOnConfigureEnable_ ||
-					    activeStateMachineSystemDumpOnRunEnable_))
+					if(doThrow && (activeStateMachineSystemDumpOnConfigureEnable_ ||
+					               activeStateMachineSystemDumpOnRunEnable_))
 					{
 						__SS__ << "Configuration Dump was enabled, but there are missing "
 						          "fields! "
@@ -5273,8 +5277,8 @@ bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 	    SOAPUtilities::translate(stateMachineWorkLoopManager_.getMessage(workLoop))
 	        .getCommand();
 
-	__COUT__ << "Propagating FSM command '" << command << 
-		"'... activeStateMachineName_ = " << activeStateMachineName_ << __E__;
+	__COUT__ << "Propagating FSM command '" << command
+	         << "'... activeStateMachineName_ = " << activeStateMachineName_ << __E__;
 
 	std::string reply = send(allSupervisorInfo_.getGatewayDescriptor(),
 	                         stateMachineWorkLoopManager_.getMessage(workLoop));
@@ -5846,9 +5850,10 @@ try
 			__SS_THROW__;
 		}
 
-		__COUT_INFO__ << "Attempting Configure transition with Configuration table group name: "
-		              << theConfigurationTableGroup_.first
-		              << ", key: " << theConfigurationTableGroup_.second << __E__;
+		__COUT_INFO__
+		    << "Attempting Configure transition with Configuration table group name: "
+		    << theConfigurationTableGroup_.first
+		    << ", key: " << theConfigurationTableGroup_.second << __E__;
 
 		//record attempted configure in group history (might fail to configure after this)
 		ConfigurationManager::saveGroupNameAndKey(
@@ -6019,9 +6024,9 @@ try
 			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
 			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
 			{
-				__COUT_INFO__
-				    << "Caching the System Configuration Dump for the Configure transition..."
-				    << __E__;
+				__COUT_INFO__ << "Caching the System Configuration Dump for the "
+				                 "Configure transition..."
+				              << __E__;
 
 				// dump configuration
 				std::stringstream dumpSs;
@@ -6043,14 +6048,15 @@ try
 				__COUT_MULTI__(TLVL_SystemDump, activeStateMachineSystemDumpOnConfigure_);
 			}
 			else
-				__COUT_INFO__
-				    << "Not caching the System Configuration Dump on the Configure transition."
-				    << __E__;
+				__COUT_INFO__ << "Not caching the System Configuration Dump on the "
+				                 "Configure transition."
+				              << __E__;
 
 		}  //end handle configuration dump if enabled on configure transition
 		catch(const std::runtime_error& e)
 		{
-			__SS__ << "Error encountered during system configuration dump. Here is the error: "
+			__SS__ << "Error encountered during system configuration dump. Here is the "
+			          "error: "
 			       << e.what();
 			__SS_THROW__;
 		}
@@ -6201,9 +6207,8 @@ try
 	if(activeStateMachineSystemDumpOnConfigureEnable_)
 	{
 		//write local configuration dump file
-		std::string fullfilename =
-		    activeStateMachineSystemDumpOnConfigureFilename_ + "_" +
-		    std::to_string(time(0)) + ".dump";
+		std::string fullfilename = activeStateMachineSystemDumpOnConfigureFilename_ +
+		                           "_" + std::to_string(time(0)) + ".dump";
 		FILE* fp = fopen(fullfilename.c_str(), "w");
 		if(!fp)
 		{
@@ -7178,45 +7183,50 @@ try
 		gatewayDumpMap["Gateway"]["name"] = getSupervisorUID();
 		gatewayDumpMap["Gateway"]["url"]  = allSupervisorInfo_.getGatewayInfo().getURL();
 		gatewayDumpMap["Gateway"]["config_alias"] = activeStateMachineConfigurationAlias_;
-        gatewayDumpMap["Gateway"]["console"] = std::string("{") +
-        "\"error_count\": \"" + std::to_string(systemConsoleErrCount_) + "\", " +
-        "\"warning_count\": \"" + std::to_string(systemConsoleWarnCount_) + "\" }";
+		gatewayDumpMap["Gateway"]["console"] =
+		    std::string("{") + "\"error_count\": \"" +
+		    std::to_string(systemConsoleErrCount_) + "\", " + "\"warning_count\": \"" +
+		    std::to_string(systemConsoleWarnCount_) + "\" }";
 		//gatewayDumpMap["Gateway"]["consoleErrCount"] =
 		//    std::to_string(systemConsoleErrCount_);
 		//gatewayDumpMap["Gateway"]["consoleWarnCount"] =
 		//    std::to_string(systemConsoleWarnCount_);
-        gatewayDumpMap["Gateway"]["fsm"] = std::string("{") +
-            "\"mode\": " + "\"Follow FSM\", " + 
-            "\"follow\": " + "\"1\"}" ;
+		gatewayDumpMap["Gateway"]["fsm"] = std::string("{") +
+		                                   "\"mode\": " + "\"Follow FSM\", " +
+		                                   "\"follow\": " + "\"1\"}";
 		//gatewayDumpMap["Gateway"]["fsmMode"]     = "Follow FSM"; // needed?
 		//gatewayDumpMap["Gateway"]["fsmIncluded"] = "1";
-		gatewayDumpMap["Gateway"]["dump"]     = activeStateMachineSystemDumpOnRun_;
+		gatewayDumpMap["Gateway"]["dump"] = activeStateMachineSystemDumpOnRun_;
 		//gatewayDumpMap["Gateway"]["dumpType"] = activeStateMachineDumpFormatOnRun_; // not needed, part of dump.dump_type
 
 		//include environment variables in dumpMap (as escaped key:value pairs, skip functions)
 		{
-			std::string envOutput = StringMacros::exec("env");
+			std::string        envOutput = StringMacros::exec("env");
 			std::istringstream envStream(envOutput);
-			std::string envLine;
-			std::string envJson = "{";
-			bool first = true;
+			std::string        envLine;
+			std::string        envJson = "{";
+			bool               first   = true;
 			while(std::getline(envStream, envLine))
 			{
 				// Skip lines without '=' (continuation lines from multi-line values) or empty names
 				size_t eqPos = envLine.find('=');
 				if(eqPos == std::string::npos || eqPos == 0)
 					continue;
-				
-				std::string varName = envLine.substr(0, eqPos);
+
+				std::string varName  = envLine.substr(0, eqPos);
 				std::string varValue = envLine.substr(eqPos + 1);
-				
+
 				// Skip bash functions, internal variables, and other non-standard entries
-				if(varName[0] == '_' || std::isspace(varName[0]) || varName.find("BASH_FUNC_") == 0 || (varValue.size() > 0 && varValue[0] == '('))
+				if(varName[0] == '_' || std::isspace(varName[0]) ||
+				   varName.find("BASH_FUNC_") == 0 ||
+				   (varValue.size() > 0 && varValue[0] == '('))
 					continue;
-				
-				if(!first) envJson += ", ";
-				envJson += "\"" + StringMacros::escapeJSONStringEntities(varName) + 
-				           "\": \"" + StringMacros::escapeJSONStringEntities(varValue) + "\"";
+
+				if(!first)
+					envJson += ", ";
+				envJson += "\"" + StringMacros::escapeJSONStringEntities(varName) +
+				           "\": \"" + StringMacros::escapeJSONStringEntities(varValue) +
+				           "\"";
 				first = false;
 			}
 			envJson += "}";
@@ -7226,21 +7236,24 @@ try
 		//include system variables in dumpMap
 		{
 			std::string variablesJson = "{";
-			bool firstType = true;
+			bool        firstType     = true;
 			for(const auto& typePair : StringMacros::systemVariables_)
 			{
 				std::string varJson = "{";
-				bool first = true;
+				bool        first   = true;
 				for(const auto& [key, value] : typePair.second)
 				{
-					if(!first) varJson += ", ";
-					varJson += "\"" + StringMacros::escapeJSONStringEntities(key) + 
-					           "\": \"" + StringMacros::escapeJSONStringEntities(value) + "\"";
+					if(!first)
+						varJson += ", ";
+					varJson += "\"" + StringMacros::escapeJSONStringEntities(key) +
+					           "\": \"" + StringMacros::escapeJSONStringEntities(value) +
+					           "\"";
 					first = false;
 				}
 				varJson += "}";
-				
-				if(!firstType) variablesJson += ", ";
+
+				if(!firstType)
+					variablesJson += ", ";
 				variablesJson += "\"" + typePair.first + "\": " + varJson;
 				firstType = false;
 			}
@@ -7259,25 +7272,28 @@ try
 			    remoteGatewayApp.appInfo.url;
 			gatewayDumpMap[remoteGatewayApp.fullName]["config_alias"] =
 			    remoteGatewayApp.selected_config_alias;
-            gatewayDumpMap[remoteGatewayApp.fullName]["console"] = std::string("{") +
-            "\"error_count\": \""  + std::to_string(remoteGatewayApp.consoleErrCount)  + "\", " +
-            "\"warning_count\": \"" + std::to_string(remoteGatewayApp.consoleWarnCount) + "\" }";
+			gatewayDumpMap[remoteGatewayApp.fullName]["console"] =
+			    std::string("{") + "\"error_count\": \"" +
+			    std::to_string(remoteGatewayApp.consoleErrCount) + "\", " +
+			    "\"warning_count\": \"" +
+			    std::to_string(remoteGatewayApp.consoleWarnCount) + "\" }";
 			//gatewayDumpMap[remoteGatewayApp.fullName]["consoleErrCount"] =
 			//    std::to_string(remoteGatewayApp.consoleErrCount);
 			//gatewayDumpMap[remoteGatewayApp.fullName]["consoleWarnCount"] =
 			//    std::to_string(remoteGatewayApp.consoleWarnCount);
-            gatewayDumpMap[remoteGatewayApp.fullName]["fsm"] = std::string("{") +
-            "\"mode\": \""+ remoteGatewayApp.getFsmMode() + "\", " +
-            "\"follow\": \"" + (remoteGatewayApp.fsm_included ? "1" : "0") + "\" }";
+			gatewayDumpMap[remoteGatewayApp.fullName]["fsm"] =
+			    std::string("{") + "\"mode\": \"" + remoteGatewayApp.getFsmMode() +
+			    "\", " + "\"follow\": \"" + (remoteGatewayApp.fsm_included ? "1" : "0") +
+			    "\" }";
 			//gatewayDumpMap[remoteGatewayApp.fullName]["fsmMode"] =
 			//    remoteGatewayApp.getFsmMode();
 			//gatewayDumpMap[remoteGatewayApp.fullName]["fsmIncluded"] =
 			//    std::string(remoteGatewayApp.fsm_included ? "1" : "0");
 
 			const std::string& dumpStr = remoteGatewayApp.config_dump;
-			__COUT__ << "Config dump for remote app " << remoteGatewayApp.fullName << " is:"
-			         << dumpStr << __E__;
-			
+			__COUT__ << "Config dump for remote app " << remoteGatewayApp.fullName
+			         << " is:" << dumpStr << __E__;
+
 			gatewayDumpMap[remoteGatewayApp.fullName]["dump"] = dumpStr;
 			//gatewayDumpMap[remoteGatewayApp.fullName]["dumpType"] =
 			//    remoteGatewayApp.getConfigDumpType(); // not needed since inside dump
@@ -7335,8 +7351,8 @@ try
 	if(activeStateMachineSystemDumpOnRunEnable_)
 	{
 		//write local configuration dump file
-		std::string fullfilename = activeStateMachineSystemDumpOnRunFilename_ +
-		                           "_" + std::to_string(time(0)) + ".dump";
+		std::string fullfilename = activeStateMachineSystemDumpOnRunFilename_ + "_" +
+		                           std::to_string(time(0)) + ".dump";
 		FILE* fp = fopen(fullfilename.c_str(), "w");
 		if(!fp)
 		{
@@ -8612,15 +8628,16 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 
 	std::map<std::string /* fullName */, int /* unknownCount */> unknownResponseCounts;
 
-	bool done = command == "Error";  //dont check for done if Error'ing
+	bool   done      = command == "Error";  //dont check for done if Error'ing
 	size_t iteration = 0;
-	std::map<std::string /* name */, size_t /* progress100cnt */> progress100cnt; // make sure remote subsystem is not in unanticipated state
+	std::map<std::string /* name */, size_t /* progress100cnt */>
+	    progress100cnt;  // make sure remote subsystem is not in unanticipated state
 	while(!done)
 	{
 		++iteration;
 		__COUTT__ << "Checking " << remoteGatewayApps_.size()
-		         << " remote gateway(s) completion for command = " << command 
-				 << " .. check #" << iteration << __E__;
+		          << " remote gateway(s) completion for command = " << command
+		          << " .. check #" << iteration << __E__;
 
 		done = true;
 
@@ -8669,7 +8686,7 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			      remoteGatewayApp.appInfo.progress == 100) ||
 			     remoteGatewayApp.appInfo.status.find("Error") != std::string::npos ||
 			     remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
-			{	
+			{
 				if(progress100cnt.find(remoteGatewayApp.fullName) == progress100cnt.end())
 					progress100cnt[remoteGatewayApp.fullName] = 0;
 
@@ -8678,13 +8695,14 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				else
 					progress100cnt[remoteGatewayApp.fullName] = 0;
 
-				if(progress100cnt[remoteGatewayApp.fullName] > 7) //roughly 15 seconds not moving
+				if(progress100cnt[remoteGatewayApp.fullName] >
+				   7)  //roughly 15 seconds not moving
 				{
 					__SS__ << "Something is wrong with FSM command '" << command
-							<< "' at Remote gateway '"
-							<< remoteGatewayApp.appInfo.name
-							<< "' - it seems command was ignored or an unanticipated state was reached."
-							<< __E__;
+					       << "' at Remote gateway '" << remoteGatewayApp.appInfo.name
+					       << "' - it seems command was ignored or an unanticipated "
+					          "state was reached."
+					       << __E__;
 					__SS_THROW__;
 				}
 
@@ -8714,15 +8732,13 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 
 				done = false;
 
-
-				if(iteration > 10 * 60 / 2) //roughly 10 minutes
-				{					
+				if(iteration > 10 * 60 / 2)  //roughly 10 minutes
+				{
 					__SS__ << "Can not complete FSM command '" << command
-							<< "' with Remote gateway '"
-							<< remoteGatewayApp.appInfo.name
-							<< "' - the command has taken too long. Please check the "
-								"Remote gateway or notify admins."
-							<< __E__;
+					       << "' with Remote gateway '" << remoteGatewayApp.appInfo.name
+					       << "' - the command has taken too long. Please check the "
+					          "Remote gateway or notify admins."
+					       << __E__;
 					__SS_THROW__;
 				}
 			}
@@ -8730,22 +8746,20 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			{
 				//done or error?
 				if(remoteGatewayApp.appInfo.status.find("Error") != std::string::npos ||
-					remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos)
-				{					
-					__SS__ << "Command '" << command
-							<< "' failed at Remote gateway '"
-							<< remoteGatewayApp.appInfo.name
-							<< "' - here was the error:\n\n"
-							<< remoteGatewayApp.appInfo.status
-							<< __E__;
+				   remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos)
+				{
+					__SS__ << "Command '" << command << "' failed at Remote gateway '"
+					       << remoteGatewayApp.appInfo.name
+					       << "' - here was the error:\n\n"
+					       << remoteGatewayApp.appInfo.status << __E__;
 					__SS_THROW__;
 				}
 
 				__COUT__ << "Done Remote gateway '" << remoteGatewayApp.appInfo.name
-				          << "' w/command '" << command
-				          << "' status = " << remoteGatewayApp.appInfo.status
-				          << ",... progress = " << remoteGatewayApp.appInfo.progress
-				          << __E__;
+				         << "' w/command '" << command
+				         << "' status = " << remoteGatewayApp.appInfo.status
+				         << ",... progress = " << remoteGatewayApp.appInfo.progress
+				         << __E__;
 			}
 		}
 		if(!done)
@@ -10365,10 +10379,10 @@ try
 								//add error if it has to do with icons
 								if(remoteGatewayApp.getError().find("desktop icons") !=
 								       std::string::npos ||
-								   remoteGatewayApp.getError().find(REMOTE_BACKBONE_ERR) !=
-								       std::string::npos)
-									xmlOut.addTextElementToData("Error",
-									                            remoteGatewayApp.getError());
+								   remoteGatewayApp.getError().find(
+								       REMOTE_BACKBONE_ERR) != std::string::npos)
+									xmlOut.addTextElementToData(
+									    "Error", remoteGatewayApp.getError());
 								else if(remoteGatewayApp.appInfo.status ==
 								        SupervisorInfo::APP_STATUS_UNKNOWN)
 								{
@@ -10615,8 +10629,8 @@ try
 				                   : "0");
 				xmlOut.addNumberElementToData("active_user_count",
 				                              theWebUsers_.getActiveUserCount());
-				xmlOut.addTextElementToData("active_user_list",
-				                            theWebUsers_.getActiveUserDisplayNamesString());
+				xmlOut.addTextElementToData(
+				    "active_user_list", theWebUsers_.getActiveUserDisplayNamesString());
 				xmlOut.addNumberElementToData("console_err_count",
 				                              systemConsoleErrCount_);
 				xmlOut.addNumberElementToData("console_warn_count",
@@ -10693,9 +10707,9 @@ try
 					{
 						if(accumulateErrors.size())
 							accumulateErrors += "\n";
-						accumulateErrors += 
-							"Error at " + remoteSubsystem.getErrorTimestamp() + 
-							":\n" + remoteSubsystem.getError();
+						accumulateErrors += "Error at " +
+						                    remoteSubsystem.getErrorTimestamp() + ":\n" +
+						                    remoteSubsystem.getError();
 					}
 				}
 
@@ -11911,9 +11925,11 @@ xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(
 		else if(action == "ConfiguredAlias")
 			fileNames.push_back(ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE);
 		else if(action == "AttemptedAlias")
-			fileNames.push_back(ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_ALIAS_FILE);
+			fileNames.push_back(
+			    ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_ALIAS_FILE);
 		else if(action == "AttemptedConfig")
-			fileNames.push_back(ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_GROUP_FILE);
+			fileNames.push_back(
+			    ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_GROUP_FILE);
 		else
 		{
 			__COUT_ERR__ << "Invalid last group action requested." << __E__;
