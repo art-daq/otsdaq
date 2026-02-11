@@ -1816,14 +1816,21 @@ std::string ots::ARTDAQSupervisor::getProcessInfo_(void)
 	if(checkPythonError(res))
 	{
 		std::string err = capturePyErr("artdaq_process_info");
+		Py_DECREF(pName);
+		Py_DECREF(pArg);
+		Py_DECREF(pArg2);
+		Py_XDECREF(res);
 		__SS__ << "Error calling artdaq_process_info function: " << err << __E__;
 		__SUP_SS_THROW__;
 		return "";
 	}
+	Py_DECREF(pName);
+	Py_DECREF(pArg);
 	Py_DECREF(pArg2);
 	//cache status as latest
 	std::lock_guard<std::mutex> lock(daqinterface_statusMutex_);
 	daqinterface_status_ = std::string(PyUnicode_AsUTF8(res));
+	Py_DECREF(res);
 	return daqinterface_status_;
 }  // end getProcessInfo_()
 
