@@ -738,28 +738,27 @@ try
 	PyObjectGuard readerDict(PyDict_New());
 	for(auto& reader : info.processes[ARTDAQTableBase::ARTDAQAppType::BoardReader])
 	{
-		//Note: transfer reference to readerDict, so no PyObjectGuard on fill objects
-
+		// PyDict_SetItem INCREFs key/value, so use PyObjectGuard to manage references
 		label_to_proc_type_map_[reader.label] = "BoardReader";
-		PyObject* readerName = PyUnicode_FromString(reader.label.c_str());
+		PyObjectGuard readerName(PyUnicode_FromString(reader.label.c_str()));
 
 		int list_size = reader.allowed_processors != "" ? 4 : 3;
 
-		PyObject* readerData = PyList_New(list_size);
-		PyObject* readerHost = PyUnicode_FromString(reader.hostname.c_str());
-		PyObject* readerPort = PyUnicode_FromString("-1");
-		PyObject* readerSubsystem =
+		PyObjectGuard readerData(PyList_New(list_size));
+		PyObject*     readerHost = PyUnicode_FromString(reader.hostname.c_str());
+		PyObject*     readerPort = PyUnicode_FromString("-1");
+		PyObject*     readerSubsystem =
 		    PyUnicode_FromString(std::to_string(reader.subsystem).c_str());
-		PyList_SetItem(readerData, 0, readerHost);
-		PyList_SetItem(readerData, 1, readerPort);
-		PyList_SetItem(readerData, 2, readerSubsystem);
+		PyList_SetItem(readerData.get(), 0, readerHost);
+		PyList_SetItem(readerData.get(), 1, readerPort);
+		PyList_SetItem(readerData.get(), 2, readerSubsystem);
 		if(reader.allowed_processors != "")
 		{
 			PyObject* readerAllowedProcessors =
 			    PyUnicode_FromString(reader.allowed_processors.c_str());
-			PyList_SetItem(readerData, 3, readerAllowedProcessors);
+			PyList_SetItem(readerData.get(), 3, readerAllowedProcessors);
 		}
-		PyDict_SetItem(readerDict.get(), readerName, readerData);
+		PyDict_SetItem(readerDict.get(), readerName.get(), readerData.get());
 	}
 	PyObjectGuard res1(PyObject_CallMethodObjArgs(
 	    daqinterface_ptr_, pName1.get(), readerDict.get(), NULL));
