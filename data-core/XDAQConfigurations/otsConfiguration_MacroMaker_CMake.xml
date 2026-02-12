@@ -8,7 +8,7 @@
     <xc:Application class="ots::FESupervisor" id="${FE_SUPERVISOR_ID}" instance="1" network="local" group="daq"/>
     <xc:Module>${OTSDAQ_LIB}/libCoreSupervisors.so</xc:Module>
 
-    <xc:Application class="ots::MacroMakerSupervisor" id="${MACROMAKER_SUPERVISOR_ID}" instance="1" network="local" group="daq"/>
+    <xc:Application class="ots::MacroMakerSupervisor" id="${MACROMAKER_SUPERVISOR_ID}" icon="/WebPath/images/otsdaqIcons/logo_square.png" icon16x16="/WebPath/images/otsdaqIcons/favicon-16x16.png" instance="1" network="local" group="daq"/>
     <xc:Module>${OTSDAQ_UTILITIES_LIB}/libMacroMaker.so</xc:Module>
 
     <xc:Application class="ots::CodeEditorSupervisor" id="${CODE_EDITOR_SUPERVISOR_ID}" instance="1" network="local" group="daq"/>
