@@ -7169,3 +7169,140 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 
 	return oss.str();
 }  //end getStructureAsJSON()
+
+//==============================================================================
+/// getBootFileContent
+///		Generate boot.txt content as a string for a specific supervisor row
+std::string ARTDAQTableBase::getBootFileContent(
+	ConfigurationTree artdaqSupervisorNode,
+	size_t            maxFragmentSizeBytes,
+	size_t            routingTimeoutMs,
+	size_t            routingRetryCount,
+	ProgressBar*      progressBar)
+{
+	if(artdaqSupervisorNode.isDisconnected())
+	{
+		__SS__ << "ARTDAQ Supervisor node is disconnected while generating boot.txt "
+		       << "content." << __E__;
+		__SS_THROW__;
+	}
+
+	const ARTDAQInfo& info = extractARTDAQInfo(artdaqSupervisorNode,
+	                                         false /*getStatusFalseNodes*/,
+	                                         false /*doWriteFHiCL*/,
+	                                         maxFragmentSizeBytes,
+	                                         routingTimeoutMs,
+	                                         routingRetryCount,
+	                                         progressBar);
+
+	int debugLevel = artdaqSupervisorNode.getNode(colARTDAQSupervisor_.colDAQInterfaceDebugLevel_)
+	                    .getValue<int>();
+	std::string setupScript = artdaqSupervisorNode.getNode(colARTDAQSupervisor_.colDAQSetupScript_)
+	                             .getValue();
+
+	return getBootFileContentFromInfo(info, setupScript, debugLevel);
+}  //end getBootFileContent()
+
+//==============================================================================
+/// getBootFileContentFromInfo
+///		Generate boot.txt content as a string
+std::string ARTDAQTableBase::getBootFileContentFromInfo(
+	const ARTDAQInfo& info,
+	const std::string& setupScript,
+	int debugLevel)
+{
+	std::stringstream o;
+
+	o << "DAQ setup script: " << setupScript << std::endl;
+	o << "debug level: " << debugLevel << std::endl;
+	o << std::endl;
+
+	if(info.subsystems.size() > 1)
+	{
+		for(auto& ss : info.subsystems)
+		{
+			if(ss.first == 0)
+				continue;
+			o << "Subsystem id: " << ss.first << std::endl;
+			if(ss.second.destination != 0)
+			{
+				o << "Subsystem destination: " << ss.second.destination << std::endl;
+			}
+			for(auto& sss : ss.second.sources)
+			{
+				o << "Subsystem source: " << sss << std::endl;
+			}
+			if(ss.second.eventMode)
+			{
+				o << "Subsystem fragmentMode: False" << std::endl;
+			}
+			o << std::endl;
+		}
+	}
+
+	for(auto& builder : info.processes.at(ARTDAQAppType::EventBuilder))
+	{
+		o << "EventBuilder host: " << builder.hostname << std::endl;
+		o << "EventBuilder label: " << builder.label << std::endl;
+		if(builder.subsystem != 1)
+		{
+			o << "EventBuilder subsystem: " << builder.subsystem << std::endl;
+		}
+		if(builder.allowed_processors != "")
+		{
+			o << "EventBuilder allowed_processors: " << builder.allowed_processors
+			  << std::endl;
+		}
+		o << std::endl;
+	}
+
+	for(auto& logger : info.processes.at(ARTDAQAppType::DataLogger))
+	{
+		o << "DataLogger host: " << logger.hostname << std::endl;
+		o << "DataLogger label: " << logger.label << std::endl;
+		if(logger.subsystem != 1)
+		{
+			o << "DataLogger subsystem: " << logger.subsystem << std::endl;
+		}
+		if(logger.allowed_processors != "")
+		{
+			o << "DataLogger allowed_processors: " << logger.allowed_processors
+			  << std::endl;
+		}
+		o << std::endl;
+	}
+
+	for(auto& dispatcher : info.processes.at(ARTDAQAppType::Dispatcher))
+	{
+		o << "Dispatcher host: " << dispatcher.hostname << std::endl;
+		o << "Dispatcher label: " << dispatcher.label << std::endl;
+		if(dispatcher.subsystem != 1)
+		{
+			o << "Dispatcher subsystem: " << dispatcher.subsystem << std::endl;
+		}
+		if(dispatcher.allowed_processors != "")
+		{
+			o << "Dispatcher allowed_processors: " << dispatcher.allowed_processors
+			  << std::endl;
+		}
+		o << std::endl;
+	}
+
+	for(auto& rm : info.processes.at(ARTDAQAppType::RoutingManager))
+	{
+		o << "RoutingManager host: " << rm.hostname << std::endl;
+		o << "RoutingManager label: " << rm.label << std::endl;
+		if(rm.subsystem != 1)
+		{
+			o << "RoutingManager subsystem: " << rm.subsystem << std::endl;
+		}
+		if(rm.allowed_processors != "")
+		{
+			o << "RoutingManager allowed_processors: " << rm.allowed_processors
+			  << std::endl;
+		}
+		o << std::endl;
+	}
+
+	return o.str();
+}  //end getBootFileContentFromInfo()

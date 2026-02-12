@@ -648,100 +648,28 @@ try
 	int debugLevel = theSupervisorNode.getNode("DAQInterfaceDebugLevel").getValue<int>();
 	std::string setupScript = theSupervisorNode.getNode("DAQSetupScript").getValue();
 
-	std::ofstream o(ARTDAQTableBase::ARTDAQ_FCL_PATH + "/boot.txt", std::ios::trunc);
-	o << "DAQ setup script: " << setupScript << std::endl;
-	o << "debug level: " << debugLevel << std::endl;
-	o << std::endl;
-
-	if(info.subsystems.size() > 1)
-	{
-		for(auto& ss : info.subsystems)
-		{
-			if(ss.first == 0)
-				continue;
-			o << "Subsystem id: " << ss.first << std::endl;
-			if(ss.second.destination != 0)
-			{
-				o << "Subsystem destination: " << ss.second.destination << std::endl;
-			}
-			for(auto& sss : ss.second.sources)
-			{
-				o << "Subsystem source: " << sss << std::endl;
-			}
-			if(ss.second.eventMode)
-			{
-				o << "Subsystem fragmentMode: False" << std::endl;
-			}
-			o << std::endl;
-		}
-	}
-
+	// Generate boot file content using helper function
+	std::string bootContent =
+	    ARTDAQTableBase::getBootFileContentFromInfo(info, setupScript, debugLevel);
+	
+	// Populate label_to_proc_type_map_ (still needed for later)
 	for(auto& builder : info.processes[ARTDAQTableBase::ARTDAQAppType::EventBuilder])
-	{
-		o << "EventBuilder host: " << builder.hostname << std::endl;
-		o << "EventBuilder label: " << builder.label << std::endl;
 		label_to_proc_type_map_[builder.label] = "EventBuilder";
-		if(builder.subsystem != 1)
-		{
-			o << "EventBuilder subsystem: " << builder.subsystem << std::endl;
-		}
-		if(builder.allowed_processors != "")
-		{
-			o << "EventBuilder allowed_processors: " << builder.allowed_processors
-			  << std::endl;
-		}
-		o << std::endl;
-	}
 	for(auto& logger : info.processes[ARTDAQTableBase::ARTDAQAppType::DataLogger])
-	{
-		o << "DataLogger host: " << logger.hostname << std::endl;
-		o << "DataLogger label: " << logger.label << std::endl;
 		label_to_proc_type_map_[logger.label] = "DataLogger";
-		if(logger.subsystem != 1)
-		{
-			o << "DataLogger subsystem: " << logger.subsystem << std::endl;
-		}
-		if(logger.allowed_processors != "")
-		{
-			o << "DataLogger allowed_processors: " << logger.allowed_processors
-			  << std::endl;
-		}
-		o << std::endl;
-	}
 	for(auto& dispatcher : info.processes[ARTDAQTableBase::ARTDAQAppType::Dispatcher])
-	{
-		o << "Dispatcher host: " << dispatcher.hostname << std::endl;
-		o << "Dispatcher label: " << dispatcher.label << std::endl;
-		o << "Dispatcher port: " << dispatcher.port << std::endl;
 		label_to_proc_type_map_[dispatcher.label] = "Dispatcher";
-		if(dispatcher.subsystem != 1)
-		{
-			o << "Dispatcher subsystem: " << dispatcher.subsystem << std::endl;
-		}
-		if(dispatcher.allowed_processors != "")
-		{
-			o << "Dispatcher allowed_processors: " << dispatcher.allowed_processors
-			  << std::endl;
-		}
-		o << std::endl;
-	}
 	for(auto& rmanager : info.processes[ARTDAQTableBase::ARTDAQAppType::RoutingManager])
-	{
-		o << "RoutingManager host: " << rmanager.hostname << std::endl;
-		o << "RoutingManager label: " << rmanager.label << std::endl;
 		label_to_proc_type_map_[rmanager.label] = "RoutingManager";
-		if(rmanager.subsystem != 1)
-		{
-			o << "RoutingManager subsystem: " << rmanager.subsystem << std::endl;
-		}
-		if(rmanager.allowed_processors != "")
-		{
-			o << "RoutingManager allowed_processors: " << rmanager.allowed_processors
-			  << std::endl;
-		}
-		o << std::endl;
-	}
+
+	// Write boot.txt file
+	std::ofstream o(ARTDAQTableBase::ARTDAQ_FCL_PATH + "/boot.txt", std::ios::trunc);
+	o << bootContent;
 	o.close();
+
+	// TODO: To save to runlog, store bootContent in metadata/configuration archive
+	// Example (add when implementing runlog integration):
+	// saveToRunlog("boot.txt", bootContent, run_number);
 
 	thread_progress_bar_.step();
 	set_thread_message_("Writing Fhicl Files");
@@ -1799,7 +1727,7 @@ void ots::ARTDAQSupervisor::getDAQState_()
 	// Cleanup the string objects we created
 	Py_DECREF(pName);
 	Py_DECREF(pArg);
-}
+} //end getDAQState_()
 
 //==============================================================================
 std::string ots::ARTDAQSupervisor::getProcessInfo_(void)

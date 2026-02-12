@@ -2823,8 +2823,8 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 					commandResponseString += more;
 				else
 				{
-					__COUT__ << "Timeout looking for more!" << __E__;
-					break;
+					__SS__ << "Timeout looking for more!" << __E__;
+					__SS_THROW__;
 				}
 			}
 
