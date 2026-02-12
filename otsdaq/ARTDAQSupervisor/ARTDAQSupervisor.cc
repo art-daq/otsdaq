@@ -745,23 +745,18 @@ try
 		int list_size = reader.allowed_processors != "" ? 4 : 3;
 
 		PyObjectGuard readerData(PyList_New(list_size));
-		PyObjectGuard readerHost(PyUnicode_FromString(reader.hostname.c_str()));
-		PyObjectGuard readerPort(PyUnicode_FromString("-1"));
-		PyObjectGuard readerSubsystem(
-		    PyUnicode_FromString(std::to_string(reader.subsystem).c_str()));
-		// PyList_SetItem steals a reference; INCREF to give it one (guard keeps original)
-		Py_INCREF(readerHost.get());
-		Py_INCREF(readerPort.get());
-		Py_INCREF(readerSubsystem.get());
-		PyList_SetItem(readerData.get(), 0, readerHost.get());
-		PyList_SetItem(readerData.get(), 1, readerPort.get());
-		PyList_SetItem(readerData.get(), 2, readerSubsystem.get());
+		PyObject*     readerHost = PyUnicode_FromString(reader.hostname.c_str());
+		PyObject*     readerPort = PyUnicode_FromString("-1");
+		PyObject*     readerSubsystem =
+		    PyUnicode_FromString(std::to_string(reader.subsystem).c_str());
+		PyList_SetItem(readerData.get(), 0, readerHost);
+		PyList_SetItem(readerData.get(), 1, readerPort);
+		PyList_SetItem(readerData.get(), 2, readerSubsystem);
 		if(reader.allowed_processors != "")
 		{
-			PyObjectGuard readerAllowedProcessors(
-			    PyUnicode_FromString(reader.allowed_processors.c_str()));
-			Py_INCREF(readerAllowedProcessors.get());
-			PyList_SetItem(readerData.get(), 3, readerAllowedProcessors.get());
+			PyObject* readerAllowedProcessors =
+			    PyUnicode_FromString(reader.allowed_processors.c_str());
+			PyList_SetItem(readerData.get(), 3, readerAllowedProcessors);
 		}
 		PyDict_SetItem(readerDict.get(), readerName.get(), readerData.get());
 	}
