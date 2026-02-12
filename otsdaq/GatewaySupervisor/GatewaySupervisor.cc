@@ -30,6 +30,7 @@
 #include <xoap/Method.h>
 
 #include <sys/stat.h>  // for mkdir
+#include <cctype>      // for std::isspace
 #include <chrono>      // std::chrono::seconds
 #include <fstream>
 #include <thread>  // std::this_thread::sleep_for
