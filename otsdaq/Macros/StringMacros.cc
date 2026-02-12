@@ -822,14 +822,7 @@ std::string StringMacros::getTimestampString(const std::string& linuxTimeInSecon
 ///	of known fixed size: Thu Aug 23 14:55:02 2001 CST
 std::string StringMacros::getTimestampString(const time_t linuxTimeInSeconds)
 {
-	std::string retValue(30, '\0');  // known fixed size: Thu Aug 23 14:55:02 2001 CST
-
-	struct tm tmstruct;
-	::localtime_r(&linuxTimeInSeconds, &tmstruct);
-	::strftime(&retValue[0], 30, "%c %Z", &tmstruct);
-	retValue.resize(strlen(retValue.c_str()));
-
-	return retValue;
+	return ots::TimestampString().get(linuxTimeInSeconds);
 }  // end getTimestampString()
 
 //==============================================================================
@@ -1594,14 +1587,21 @@ std::string StringMacros::exec(const char* cmd)
 
 	std::array<char, 128> buffer;
 	std::string           result;
-	std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+
+	// For capturing both stdout and stderr, we need to redirect stderr to stdout
+	// This is done by appending " 2>&1" to the command
+	std::string           cmdWithRedirect = std::string(cmd) + " 2>&1";
+	std::shared_ptr<FILE> pipe(popen(cmdWithRedirect.c_str(), "r"), pclose);
 	if(!pipe)
 		__THROW__("popen() failed!");
+
+	// Read all output (both stdout and stderr)
 	while(!feof(pipe.get()))
 	{
 		if(fgets(buffer.data(), 128, pipe.get()) != nullptr)
 			result += buffer.data();
 	}
+
 	__COUTTV__(result);
 	return result;
 }  // end exec()
@@ -1977,6 +1977,8 @@ void StringMacros::coutSplit(const std::string&    str,
 {
 	auto splitArr =
 	    StringMacros::getVectorFromString(str, delimiter, {} /* whitespace */);
+	__COUTV__(splitArr.size());
+	__COUTVS__(lvl, splitArr.size());
 	for(const auto& split : splitArr)
 		__COUTS__(lvl) << split;
 }  //end coutSplit()

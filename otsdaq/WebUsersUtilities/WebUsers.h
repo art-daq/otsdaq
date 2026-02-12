@@ -469,7 +469,8 @@ class WebUsers
 	std::string 			getUserWithLock					(void) { return usersUsernameWithLock_; }
 
 	size_t 					getActiveUserCount				(void);
-	std::string 			getActiveUsersString			(void);
+	std::string 			getActiveUserDisplayNamesString	(void); ///< All active display names
+	std::string 			getActiveUsernamesString		(void); ///< All active usernames
 
 	bool        			isUsernameActive				(const std::string& username) const;
 	bool        			isUserIdActive					(uint64_t uid) const;

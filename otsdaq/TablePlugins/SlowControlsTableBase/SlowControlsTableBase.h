@@ -70,7 +70,6 @@ class SlowControlsTableBase : virtual public TableBase ///<virtual so future plu
 		std::string const colHighHighThreshold_ 	= "HighHighThreshold";
 	} channelColNames_;
 
-	bool					channelListHasChanged_ 	= false; ///<for managing if PV list has changed
 	ConfigurationManager* 	lastConfigManager_		= nullptr;
 
 private:

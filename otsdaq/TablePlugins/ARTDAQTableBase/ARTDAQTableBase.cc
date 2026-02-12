@@ -130,6 +130,34 @@ ARTDAQTableBase::ARTDAQTableBase(void) : TableBase("ARTDAQTableBase")
 ARTDAQTableBase::~ARTDAQTableBase(void) {}  // end destructor()
 
 //==============================================================================
+bool ARTDAQTableBase::doGenFiles(ConfigurationManager* configManager)
+{
+	// use isFirstAppInContext to only run once per context, for example to avoid
+	//	generating files on local disk multiple times.
+	isFirstAppInContext_ = configManager->isOwnerFirstAppInContext();
+
+	__COUTVS__(4, isFirstAppInContext_);
+	if(!isFirstAppInContext_)
+		return false;
+
+	//if artdaq supervisor is disabled, skip fcl handling
+	if(!ARTDAQTableBase::isARTDAQEnabled(configManager))
+	{
+		__COUT_INFO__ << "ARTDAQ Supervisor is disabled, so skipping fcl handling."
+		              << __E__;
+		return false;
+	}
+
+	//allow any table with artdaq prerequisites to init!
+	configManager->initPrereqsForARTDAQ();
+
+	// make directory just in case
+	mkdir((ARTDAQTableBase::ARTDAQ_FCL_PATH).c_str(), 0755);
+
+	return true;
+}  // end doGenFiles()
+
+//==============================================================================
 const std::string& ARTDAQTableBase::getTypeString(ARTDAQAppType type)
 {
 	switch(type)
@@ -200,6 +228,7 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
 	__COUTS__(3) << "flattenFHICL()" << __ENV__("FHICL_FILE_PATH") << __E__;
 	__COUTVS__(4, StringMacros::stackTrace());
+	//return;
 
 	std::string inFile  = getFHICLFilename(type, name);
 	std::string outFile = getFlatFHICLFilename(type, name);
@@ -7089,15 +7118,188 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 		genFlatFHiCL();
 	std::stringstream oss;
 
-	for(const auto& typePairMap : fclMap_)
+	oss << "{" << __E__;
+
+	if(fclMap_.size() > 1)
 	{
-		oss << "\"fcl-artdaq-" << getTypeString(typePairMap.first) << "\": {";
+		// Multiple types - keep grouped structure
+		bool firstType = true;
+		for(const auto& typePairMap : fclMap_)
+		{
+			if(!firstType)
+				oss << ",";
+			oss << "\t\"" << getTypeString(typePairMap.first) << "\": {" << __E__;
 
-		for(const auto& fclPair : typePairMap.second)
-			oss << "\t\"" << fclPair.first << "\": \"" << fclPair.second << "\"" << __E__;
+			bool firstEntry = true;
+			for(const auto& fclPair : typePairMap.second)
+			{
+				if(!firstEntry)
+					oss << ",";
+				oss << "\t\t\"" << fclPair.first << "\": \""
+				    << StringMacros::escapeJSONStringEntities(fclPair.second) << "\""
+				    << __E__;
+				firstEntry = false;
+			}
 
-		oss << "}\n";  //close type
+			oss << "\t}" << __E__;
+			firstType = false;
+		}
 	}
+	else
+	{
+		// Single type (normal case) - flat structure
+		bool firstEntry = true;
+		for(const auto& typePairMap : fclMap_)
+		{
+			for(const auto& fclPair : typePairMap.second)
+			{
+				if(!firstEntry)
+					oss << ",";
+				oss << "\t\"" << fclPair.first << "\": \""
+				    << StringMacros::escapeJSONStringEntities(fclPair.second) << "\""
+				    << __E__;
+				firstEntry = false;
+			}
+		}
+	}
+
+	oss << "}" << __E__;
 
 	return oss.str();
 }  //end getStructureAsJSON()
+
+//==============================================================================
+/// getBootFileContent
+///		Generate boot.txt content as a string for a specific supervisor row
+std::string ARTDAQTableBase::getBootFileContent(ConfigurationTree artdaqSupervisorNode,
+                                                size_t            maxFragmentSizeBytes,
+                                                size_t            routingTimeoutMs,
+                                                size_t            routingRetryCount,
+                                                ProgressBar*      progressBar)
+{
+	if(artdaqSupervisorNode.isDisconnected())
+	{
+		__SS__ << "ARTDAQ Supervisor node is disconnected while generating boot.txt "
+		       << "content." << __E__;
+		__SS_THROW__;
+	}
+
+	const ARTDAQInfo& info = extractARTDAQInfo(artdaqSupervisorNode,
+	                                           false /*getStatusFalseNodes*/,
+	                                           false /*doWriteFHiCL*/,
+	                                           maxFragmentSizeBytes,
+	                                           routingTimeoutMs,
+	                                           routingRetryCount,
+	                                           progressBar);
+
+	int debugLevel =
+	    artdaqSupervisorNode.getNode(colARTDAQSupervisor_.colDAQInterfaceDebugLevel_)
+	        .getValue<int>();
+	std::string setupScript =
+	    artdaqSupervisorNode.getNode(colARTDAQSupervisor_.colDAQSetupScript_).getValue();
+
+	return getBootFileContentFromInfo(info, setupScript, debugLevel);
+}  //end getBootFileContent()
+
+//==============================================================================
+/// getBootFileContentFromInfo
+///		Generate boot.txt content as a string
+std::string ARTDAQTableBase::getBootFileContentFromInfo(const ARTDAQInfo&  info,
+                                                        const std::string& setupScript,
+                                                        int                debugLevel)
+{
+	std::stringstream o;
+
+	o << "DAQ setup script: " << setupScript << std::endl;
+	o << "debug level: " << debugLevel << std::endl;
+	o << std::endl;
+
+	if(info.subsystems.size() > 1)
+	{
+		for(auto& ss : info.subsystems)
+		{
+			if(ss.first == 0)
+				continue;
+			o << "Subsystem id: " << ss.first << std::endl;
+			if(ss.second.destination != 0)
+			{
+				o << "Subsystem destination: " << ss.second.destination << std::endl;
+			}
+			for(auto& sss : ss.second.sources)
+			{
+				o << "Subsystem source: " << sss << std::endl;
+			}
+			if(ss.second.eventMode)
+			{
+				o << "Subsystem fragmentMode: False" << std::endl;
+			}
+			o << std::endl;
+		}
+	}
+
+	for(auto& builder : info.processes.at(ARTDAQAppType::EventBuilder))
+	{
+		o << "EventBuilder host: " << builder.hostname << std::endl;
+		o << "EventBuilder label: " << builder.label << std::endl;
+		if(builder.subsystem != 1)
+		{
+			o << "EventBuilder subsystem: " << builder.subsystem << std::endl;
+		}
+		if(builder.allowed_processors != "")
+		{
+			o << "EventBuilder allowed_processors: " << builder.allowed_processors
+			  << std::endl;
+		}
+		o << std::endl;
+	}
+
+	for(auto& logger : info.processes.at(ARTDAQAppType::DataLogger))
+	{
+		o << "DataLogger host: " << logger.hostname << std::endl;
+		o << "DataLogger label: " << logger.label << std::endl;
+		if(logger.subsystem != 1)
+		{
+			o << "DataLogger subsystem: " << logger.subsystem << std::endl;
+		}
+		if(logger.allowed_processors != "")
+		{
+			o << "DataLogger allowed_processors: " << logger.allowed_processors
+			  << std::endl;
+		}
+		o << std::endl;
+	}
+
+	for(auto& dispatcher : info.processes.at(ARTDAQAppType::Dispatcher))
+	{
+		o << "Dispatcher host: " << dispatcher.hostname << std::endl;
+		o << "Dispatcher label: " << dispatcher.label << std::endl;
+		if(dispatcher.subsystem != 1)
+		{
+			o << "Dispatcher subsystem: " << dispatcher.subsystem << std::endl;
+		}
+		if(dispatcher.allowed_processors != "")
+		{
+			o << "Dispatcher allowed_processors: " << dispatcher.allowed_processors
+			  << std::endl;
+		}
+		o << std::endl;
+	}
+
+	for(auto& rm : info.processes.at(ARTDAQAppType::RoutingManager))
+	{
+		o << "RoutingManager host: " << rm.hostname << std::endl;
+		o << "RoutingManager label: " << rm.label << std::endl;
+		if(rm.subsystem != 1)
+		{
+			o << "RoutingManager subsystem: " << rm.subsystem << std::endl;
+		}
+		if(rm.allowed_processors != "")
+		{
+			o << "RoutingManager allowed_processors: " << rm.allowed_processors
+			  << std::endl;
+		}
+		o << std::endl;
+	}
+
+	return o.str();
+}  //end getBootFileContentFromInfo()

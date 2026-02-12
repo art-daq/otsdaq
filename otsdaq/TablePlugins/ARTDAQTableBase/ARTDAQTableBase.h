@@ -23,6 +23,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 
 	virtual ~ARTDAQTableBase(void);
 
+	bool 						doGenFiles						(ConfigurationManager* configManager);
 	virtual std::string     	getStructureAsJSON				(const ConfigurationManager* /* configManager */) override;
 	virtual void		     	genFlatFHiCL					(void) { __SS__ << "genFlatFHiCL() Not defined!"; __SS_THROW__; };
 
@@ -89,6 +90,12 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 		std::map<ARTDAQAppType, std::list<ProcessInfo>>                processes;
 	};
 
+	std::string 							getBootFileContent			(ConfigurationTree artdaqSupervisorNode,
+																																				 size_t maxFragmentSizeBytes = DEFAULT_MAX_FRAGMENT_SIZE,
+																																				 size_t routingTimeoutMs     = DEFAULT_ROUTING_TIMEOUT_MS,
+																																				 size_t routingRetryCount    = DEFAULT_ROUTING_RETRY_COUNT,
+																																				 ProgressBar* progressBar    = 0);
+	static std::string 						getBootFileContentFromInfo	(const ARTDAQInfo& info, const std::string& setupScript, int debugLevel);
 	static const std::string& 				getTypeString				(ARTDAQAppType type);
 	static std::string        				getFHICLFilename			(ARTDAQAppType type, const std::string& name);
 	static std::string        				getFlatFHICLFilename		(ARTDAQAppType type, const std::string& name);

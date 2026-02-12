@@ -6,6 +6,7 @@
 
 #include <dirent.h>  // DIR and dirent
 #include <fstream>   // std::ofstream
+#include <sstream>   // std::istringstream
 
 #include "otsdaq/TableCore/TableGroupKey.h"
 #include "otsdaq/TablePlugins/DesktopIconTable.h"  //for dynamic desktop icon change
@@ -34,6 +35,12 @@ const std::string 		ConfigurationManager::ACTIVATED_CONFIGS_FILE 				= "CFGActiv
 const std::string 		ConfigurationManager::ACTIVATED_CONTEXTS_FILE 				= "CFGActivatedContextGroups.hist";
 const std::string 		ConfigurationManager::ACTIVATED_BACKBONES_FILE 				= "CFGActivatedBackboneGroups.hist";
 const std::string 		ConfigurationManager::ACTIVATED_ITERATES_FILE 				= "CFGActivatedIterateGroups.hist";
+
+const std::string 		ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_ALIAS_FILE	= "CFGAttemptedConfigureConfigAlias.hist";
+const std::string 		ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_GROUP_FILE 	= "CFGAttemptedConfigureConfigGroup.hist";
+
+const std::string 		ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIG_ALIASES_FILE		= "CFGAttemptedConfigureConfigAliases.hist";
+const std::string 		ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIGS_FILE 				= "CFGAttemptedConfigureConfigGroups.hist";
 
 const std::string 		ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE 	= "CFGLastConfiguredConfigAlias.hist";
 const std::string 		ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE 	= "CFGLastConfiguredConfigGroup.hist";
@@ -291,9 +298,9 @@ void ConfigurationManager::init(std::string* accumulatedErrors /*=0*/,
 
 			// clang-format off
 			restoreActiveTableGroups(accumulatedErrors ? true : false /*throwErrors*/,
-			                         "" /*pathToActiveGroupsFile*/,
-			                         onlyLoadIfBackboneOrContext,
-			                         accumulatedWarnings);
+									 "" /*pathToActiveGroupsFile*/,
+									 onlyLoadIfBackboneOrContext,
+									 accumulatedWarnings);
 			// clang-format on
 		}
 		catch(std::runtime_error& e)
@@ -851,6 +858,14 @@ const std::string& ConfigurationManager::getTypeNameOfGroup(
 
 void ConfigurationManager::dumpMacroMakerModeFhicl()
 {
+	if(nameToTableMap_.find("FEInterfaceTable") == nameToTableMap_.end())
+	{
+		__COUT__ << "Skipping dumpMacroMakerModeFhicl() since FEInterface table is not "
+		            "activated."
+		         << __E__;
+		return;
+	}
+
 	std::string filepath =
 	    __ENV__("USER_DATA") + std::string("/") + "MacroMakerModeConfigurations";
 	mkdir(filepath.c_str(), 0755);
@@ -1063,7 +1078,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		out = &(altOut);
 	}
 
-	if(dumpType == "JSON all")
+	if(dumpType == "JSON All")
 	{
 		(*out) << "{\n";
 		(*out) << "\t\"ARTDAQ_DATABASE_URI\": \"" << __ENV__("ARTDAQ_DATABASE_URI")
@@ -1092,13 +1107,13 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		(*out) << "\n\t]," << __E__;
 		(*out) << "\t\"dump_type\": \t\t\"" << dumpType << "\"," << __E__;
 		(*out) << "\t\"dump_time\": \t\t\"" << rawtime << "\"," << __E__;
-		(*out) << "\t\"dump_formatted_time\": \t\t\""
+		(*out) << "\t\"dump_time_formatted\": \t\t\""
 		       << StringMacros::getTimestampString(rawtime) << "\"," << __E__;
 	}
 	else
 	{
 		(*out) << "#################################" << __E__;
-		(*out) << "This is an ots configuration dump.\n" << __E__;
+		(*out) << "This is an ots system configuration dump.\n" << __E__;
 		(*out) << "Source database is $ARTDAQ_DATABASE_URI: "
 		       << __ENV__("ARTDAQ_DATABASE_URI") << __E__;
 		if(fs.is_open())
@@ -1115,7 +1130,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	std::pair<std::string, ots::TableGroupKey> configurationTableGroup =
 	    getTableGroupFromAlias(configurationAlias);
 
-	if(dumpType != "JSON all")
+	if(dumpType != "JSON All")
 	{
 		(*out) << "Configuration Alias: \t\t\t" << configurationAlias << "\n";
 		(*out) << "Configuration Alias translation: \t" << configurationTableGroup.first
@@ -1407,9 +1422,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
 		__COUT__ << "Active Table size: " << activeTables.size() << __E__;
-		(*out) << "\t\"Active Table Structure\": [" << __E__;
+		(*out) << "\t\"custom\": {" << __E__;
 
-		// bool firstPrint = true;
 		std::string                                   activeTableStructure = "";
 		std::map<std::string, TableVersion>::iterator it;
 		size_t                                        tableStructureFoundCount = 0;
@@ -1429,11 +1443,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 					(*out) << (tableStructureFoundCount++ ? "," : "") << __E__;
 
-					(*out) << "\t{ \"table_name\": \"" << it->first << "\", "
-					       << "\"table_version\": \"" << it->second
-					       << "\", \n\t\"table_structure\": " << __E__;
+					(*out) << "\t\"" << it->first << "\": " << __E__;
 					(*out) << activeTableStructure << __E__;
-					(*out) << "\t}";
 				}
 			}
 			catch(const std::exception& e)
@@ -1447,100 +1458,189 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		__COUT__ << "Found " << tableStructureFoundCount << " Active Table Structures."
 		         << __E__;
 
-		(*out) << "\t]" << __E__;
+		(*out) << "\t}" << __E__;
 	};  //end localDumpActiveTableStructureStatus()
 
 	//============================
 	auto localDumpSoftwareVersions = [](std::ostream* out, bool jsonFormat = false) {
 		__COUT__ << "localDumpSoftwareVersions()" << __E__;
+		std::vector<std::string> entries;
+
+		// collect spack output (split by newlines)
+		std::map<std::string, std::string> spackPackages;
+		std::map<std::string, std::string> checkedOutRepos;
+		std::string                        environment;
+
+		{
+			std::string        spackOut = StringMacros::exec("spack find");
+			std::istringstream iss(spackOut);
+			std::string        line;
+			while(std::getline(iss, line))
+			{
+				if(line.empty())
+					continue;
+
+				// Extract environment name
+				if(line.find("==> In environment") != std::string::npos)
+				{
+					size_t start = line.find("environment ") + 12;
+					environment  = line.substr(start);
+				}
+				else if(line[0] != '[' && line[0] != '-' &&
+				        line.find("root specs") == std::string::npos)
+				{
+					// Parse spack packages
+					size_t atPos = line.find('@');
+					if(atPos != std::string::npos)
+					{
+						std::string pkgName = line.substr(0, atPos);
+						// Remove leading [+] or [^] markers
+						if(pkgName.find('[') != std::string::npos)
+							pkgName = pkgName.substr(pkgName.find(']') + 2);
+						std::string version    = line.substr(atPos + 1);
+						spackPackages[pkgName] = version;
+					}
+					else if(line.find('[') == std::string::npos && !line.empty() &&
+					        line[0] != 'c')
+					{
+						// Plain package name without version
+						std::string pkgName = line;
+						if(pkgName.find('[') != std::string::npos)
+							pkgName = pkgName.substr(pkgName.find(']') + 2);
+						spackPackages[pkgName] = "";
+					}
+				}
+			}
+		}
+
+		// Collect checked out repositories
+		{
+			DIR*           pDIR;
+			struct dirent* entry;
+			bool           isDir;
+			std::string    name;
+			int            type;
+			std::string    src = __ENV__("OTS_SOURCE");
+			if(!(pDIR = opendir((src).c_str())))
+			{
+				__SS__ << "Path '" << src << "' could not be opened!" << __E__;
+				__SS_THROW__;
+			}
+			while((entry = readdir(pDIR)))
+			{
+				name = std::string(entry->d_name);
+				type = int(entry->d_type);
+
+				__COUTS__(2) << type << " " << name << "\n" << std::endl;
+				if(name[0] != '.' &&
+				   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
+				    type == 4 ||  // directory type
+				    type == 8 ||  // file type
+				    type ==
+				        10  // 10 == link (could be directory or file, treat as unknown)
+				    ))
+				{
+					isDir = false;
+
+					if(type == 0 || type == 10)
+					{
+						// unknown type .. determine if directory
+						DIR* pTmpDIR = opendir((src + "/" + name).c_str());
+						if(pTmpDIR)
+						{
+							isDir = true;
+							closedir(pTmpDIR);
+						}
+						else  //assume file
+							__COUTS__(2) << "Unable to open path as directory: "
+							             << (src + "/" + name) << __E__;
+					}
+
+					if(type == 4)
+						isDir = true;  // flag directory types
+
+					// handle directories
+
+					if(isDir)
+					{
+						__COUTS__(2) << "Directory: " << type << " " << name << __E__;
+						std::string describe = StringMacros::exec(
+						    ("cd " + src + "/" + name + "; git describe --tags").c_str());
+						if(describe.size())
+						{
+							// strip trailing newline if any
+							if(describe.back() == '\n')
+								describe.pop_back();
+							checkedOutRepos[name] = describe;
+						}
+					}
+				}
+			}
+			closedir(pDIR);
+		}
+
 		if(jsonFormat)
 		{
-			(*out) << "\t\"Software Versions\": \"" << __E__;
+			(*out) << "\t\"software_versions\": {" << __E__;
+
+			// Output spack packages
+			(*out) << "\t\t\"spack\": {" << __E__;
+			bool first = true;
+			for(const auto& pkg : spackPackages)
+			{
+				if(!first)
+					(*out) << "," << __E__;
+				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(pkg.first)
+				       << "\": \"" << StringMacros::escapeJSONStringEntities(pkg.second)
+				       << "\"";
+				first = false;
+			}
+			(*out) << __E__ << "\t\t}," << __E__;
+
+			// Output checked out repositories
+			(*out) << "\t\t\"checked_out\": {" << __E__;
+			first = true;
+			for(const auto& repo : checkedOutRepos)
+			{
+				if(!first)
+					(*out) << "," << __E__;
+				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(repo.first)
+				       << "\": \"" << StringMacros::escapeJSONStringEntities(repo.second)
+				       << "\"";
+				first = false;
+			}
+			(*out) << __E__ << "\t\t}," << __E__;
+
+			// Output environment
+			(*out) << "\t\t\"environment\": \""
+			       << StringMacros::escapeJSONStringEntities(environment) << "\""
+			       << __E__;
+
+			(*out) << "\t}" << __E__;
 		}
 		else
 		{
-			(*out) << "\n\n\"Software Versions\": \"" << __E__;
+			(*out) << "\n\n\"Software Versions\": {" << __E__;
+			(*out) << "  \"spack\": " << spackPackages.size() << " packages," << __E__;
+			(*out) << "  \"checked_out\": " << checkedOutRepos.size() << " repositories,"
+			       << __E__;
+			(*out) << "  \"environment\": \"" << environment << "\"" << __E__;
+			(*out) << "}" << __E__;
 		}
-
-		(*out) << StringMacros::exec("spack find") << __E__;
-
-		DIR*           pDIR;
-		struct dirent* entry;
-		bool           isDir;
-		std::string    name;
-		int            type;
-		std::string    src = __ENV__("OTS_SOURCE");
-		if(!(pDIR = opendir((src).c_str())))
-		{
-			__SS__ << "Path '" << src << "' could not be opened!" << __E__;
-			__SS_THROW__;
-		}
-		while((entry = readdir(pDIR)))
-		{
-			name = std::string(entry->d_name);
-			type = int(entry->d_type);
-
-			__COUTS__(2) << type << " " << name << "\n" << std::endl;
-			if(name[0] != '.' &&
-			   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
-			    type == 4 ||  // directory type
-			    type == 8 ||  // file type
-			    type == 10    // 10 == link (could be directory or file, treat as unknown)
-			    ))
-			{
-				isDir = false;
-
-				if(type == 0 || type == 10)
-				{
-					// unknown type .. determine if directory
-					DIR* pTmpDIR = opendir((src + "/" + name).c_str());
-					if(pTmpDIR)
-					{
-						isDir = true;
-						closedir(pTmpDIR);
-					}
-					else  //assume file
-						__COUTS__(2)
-						    << "Unable to open path as directory: " << (src + "/" + name)
-						    << __E__;
-				}
-
-				if(type == 4)
-					isDir = true;  // flag directory types
-
-				// handle directories
-
-				if(isDir)
-				{
-					__COUTS__(2) << "Directory: " << type << " " << name << __E__;
-
-					(*out) << "\n\tchecked out - " << name << ": "
-					       << StringMacros::exec(
-					              ("cd " + src + "/" + name + "; git describe --tags")
-					                  .c_str())
-					       << __E__;
-				}
-			}
-		}  //end repo scan loop
-
-		(*out) << "\"" << __E__;
 	};  //end localDumpSoftwareVersions
 
-	if(dumpType == "GroupKeys")
+	if(dumpType == "Group Keys")
 	{
 		localDumpActiveGroups(this, out);
-		localDumpSoftwareVersions(out);
 	}
-	else if(dumpType == "TableVersions")
+	else if(dumpType == "Table Versions")
 	{
 		localDumpActiveTables(this, out);
-		localDumpSoftwareVersions(out);
 	}
-	else if(dumpType == "GroupKeysAndTableVersions")
+	else if(dumpType == "Group Keys and Table Versions")
 	{
 		localDumpActiveGroups(this, out);
 		localDumpActiveTables(this, out);
-		localDumpSoftwareVersions(out);
 	}
 	else if(dumpType == "All")
 	{
@@ -1550,7 +1650,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		localDumpActiveTableContents(this, out);
 		localDumpSoftwareVersions(out);
 	}
-	else if(dumpType == "JSON all")
+	else if(dumpType == "JSON All")
 	{
 		localDumpActiveGroups(this, out, true, configurationAlias);
 		(*out) << ",\n";
@@ -1572,14 +1672,16 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		    << "' given during dumpActiveConfiguration(). Valid types are as follows:\n"
 		    <<
 
-		    // List all choices
-		    "GroupKeys"
+		    // List all choices (must match accepted dumpType strings)
+		    "Group Keys"
 		    << ", "
-		    << "TableVersions"
+		    << "Table Versions"
 		    << ", "
-		    << "GroupsKeysAndTableVersions"
+		    << "Group Keys and Table Versions"
 		    << ", "
 		    << "All"
+		    << ", "
+		    << "JSON All"
 		    <<
 
 		    "\n\nPlease change the State Machine configuration to a valid dump type."
@@ -5133,6 +5235,13 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 		else if(groupType == ConfigurationManager::GROUP_TYPE_NAME_ITERATE)
 			fullPath += ConfigurationManager::ACTIVATED_ITERATES_FILE;
 	}
+	else if(groupAction == "Attempted Configure")
+	{
+		if(groupType == ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION)
+			fullPath += ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIGS_FILE;
+		else if(groupType == "Config Alias")
+			fullPath += ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIG_ALIASES_FILE;
+	}
 	else if(groupAction == "Configured")
 	{
 		if(groupType == ConfigurationManager::GROUP_TYPE_NAME_BACKBONE)
@@ -5175,8 +5284,8 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 
 	if(fullPath == ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/")
 	{
-		__SS__ << "Illegal groupAction and groupType combination: " << groupAction << ", "
-		       << groupType << __E__;
+		__SS__ << "Illegal attempted group history request combination of groupAction: "
+		       << groupAction << ", and groupType: " << groupType << __E__;
 		__SS_THROW__;
 	}
 	return loadGroupHistory(fullPath, formatTime);
@@ -5247,3 +5356,44 @@ ConfigurationManager::loadGroupHistory(const std::string& fullPath,
 
 	return retVec;
 }  // end loadGroupHistory()
+
+//==============================================================================
+/// loadGroupHistory
+void ConfigurationManager::initPrereqsForARTDAQ()
+try
+{
+	__COUTT__ << "Initializing prerequisites for artdaq!" << __E__;
+
+	for(auto& tablePair : nameToTableMap_)
+	{
+		__COUTVS__(2, tablePair.first);
+		try
+		{
+			tablePair.second->initPrereqsForARTDAQ(this);
+		}
+		catch(const std::runtime_error& e)
+		{
+			__COUTVS__(2, e.what());
+			if(std::string(e.what()).find(
+			       "initPrereqsForARTDAQ() is not implemented for this table") ==
+			   std::string::npos)
+				throw;
+			//else ignore undefined virtual function error
+		}
+	}  //end table loop
+
+	__COUTT__ << "Done initializing prerequisites for artdaq!" << __E__;
+}  // end initPrereqsForARTDAQ()
+catch(...)
+{
+	__SS__ << "Error caught while initializing prerequisites for artdaq!";
+	try
+	{
+		throw;
+	}
+	catch(const std::runtime_error& e)
+	{
+		ss << " Here was the error: " << e.what() << __E__;
+	}
+	__SS_THROW__;
+}  // end initPrereqsForARTDAQ()

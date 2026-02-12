@@ -3474,9 +3474,9 @@ size_t WebUsers::getActiveUserCount()
 }  // end getActiveUserCount()
 
 //==============================================================================
-/// WebUsers::getActiveUsersString
+/// WebUsers::getActiveUserDisplayNamesString
 ///	return comma separated list of active Display Names
-std::string WebUsers::getActiveUsersString()
+std::string WebUsers::getActiveUserDisplayNamesString()
 {
 	std::set<unsigned int> activeUserIndices;
 	for(uint64_t i = 0; i < ActiveSessions_.size(); ++i)
@@ -3508,7 +3508,44 @@ std::string WebUsers::getActiveUsersString()
 
 	__COUTVS__(20, activeUsersString);
 	return activeUsersString;
-}  // end getActiveUsersString()
+}  // end getActiveUserDisplayNamesString()
+
+//==============================================================================
+/// WebUsers::getActiveUsernamesString
+///	return comma separated list of active Usernames
+std::string WebUsers::getActiveUsernamesString()
+{
+	std::set<unsigned int> activeUserIndices;
+	for(uint64_t i = 0; i < ActiveSessions_.size(); ++i)
+		activeUserIndices.emplace(
+		    searchUsersDatabaseForUserId(ActiveSessions_[i].userId_));
+	//also add remote session users
+	for(const auto& sessionPair : RemoteSessions_)
+		activeUserIndices.emplace(
+		    searchUsersDatabaseForUserId(sessionPair.second.userId_));
+
+	std::string activeUsersString = "";
+	bool        addComma          = false;
+	for(const auto& i : activeUserIndices)
+	{
+		if(i >= Users_.size())
+			continue;  // skip not found
+
+		if(addComma)
+			activeUsersString += ",";
+		else
+			addComma = true;
+
+		activeUsersString += Users_[i].username_;
+	}
+	if(activeUserIndices.size() == 0 &&
+	   WebUsers::getSecurity() ==
+	       WebUsers::SECURITY_TYPE_NONE)  // assume only admin is active
+		activeUsersString += WebUsers::DEFAULT_ADMIN_USERNAME;
+
+	__COUTVS__(20, activeUsersString);
+	return activeUsersString;
+}  // end getActiveUsernamesString()
 
 //==============================================================================
 /// WebUsers::getAdminUserID

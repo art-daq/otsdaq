@@ -9,18 +9,12 @@ namespace ots
 {
 typedef RunInfoVInterface*(dpvimakeFunc_t)();
 }
-/*
-,                                                \
-                                        const ConfigurationTree& configurationTree,                                           \
-                                        const std::string&       pathToInterfaceConfiguration)                                \
 
-                                        , configurationTree, pathToInterfaceConfiguration); \
-*/
-
-#define DEFINE_OTS_PROCESSOR(klass)                                          \
-	extern "C" ots::RunInfoVInterface* make(std::string const& interfaceUID) \
-	{                                                                        \
-		return new klass(interfaceUID);                                      \
+#define DEFINE_OTS_PROCESSOR(klass)                                                    \
+	extern "C" ots::RunInfoVInterface* make(const std::string& runInfoPluginClassName, \
+	                                        const std::string& activeStateMachineName) \
+	{                                                                                  \
+		return new klass(runInfoPluginClassName, activeStateMachineName);              \
 	}
 
 #endif /* _ots_RunInfoPluginMacro_h_ */

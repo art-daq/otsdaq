@@ -57,8 +57,6 @@ void SlowControlsTableBase::getSlowControlsChannelList(
 bool SlowControlsTableBase::slowControlsChannelListHasChanged(void) const
 {
 	__COUT__ << "channelListHasChanged()" << __E__;
-	if(isFirstAppInContext_)
-		return channelListHasChanged_;
 
 	if(lastConfigManager_ == nullptr)
 	{

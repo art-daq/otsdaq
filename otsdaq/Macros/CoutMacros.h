@@ -3,6 +3,8 @@
 
 // clang-format off
 
+#include <ctime>     //for time_t, time(), localtime_r(), strftime()
+#include <cstring>   //for strlen()
 #include <string.h>  //for strstr (not the same as <string>)
 #include <iostream>  //for cout
 #include <sstream>   //for stringstream, std::stringbuf
@@ -60,13 +62,13 @@
 #define __COUTTV__(X) 		__COUTT__ << QUOTE(X) << " = " << (X) << __E__
 #define __COUTVS__(LVL,X)	__COUT_TYPE__(TLVL_DEBUG + LVL) << __COUT_HDR__ << QUOTE(X) << " = " << (X) << __E__
 
-#define __COUT_MULTI__(LVL,X) if(TTEST(LVL)) { __COUTS__(LVL) << "Multi-line printout:" << __E__; StringMacros::coutSplit(X,LVL,{'\n'}); }
-#define __COUT_MULTI_LBL__(LVL,X,LABEL) if(TTEST(LVL)) { __COUTS__(LVL) << "Multi-line " << LABEL << " printout:" << __E__; StringMacros::coutSplit(X,LVL,{'\n'}); }
+#define __COUT_MULTI__(LVL,X) {if(TTEST(LVL)) { __COUTS__(LVL) << "Multi-line printout:" << __E__; auto splitArr = StringMacros::getVectorFromString(X, {'\n'}, {} /* whitespace */); for(const auto& split : splitArr) __COUTS__(LVL) << split; }}// StringMacros::coutSplit(X,LVL,{'\n'}); }}
+#define __COUT_MULTI_LBL__(LVL,X,LABEL) {if(TTEST(LVL)) { __COUTS__(LVL) << "Multi-line " << LABEL << " printout:" << __E__; auto splitArr = StringMacros::getVectorFromString(X, {'\n'}, {} /* whitespace */); for(const auto& split : splitArr) __COUTS__(LVL) << split; }} //StringMacros::coutSplit(X,LVL,{'\n'}); }}
 
 //////// ==============================================================
 
 #define __SS__            	std::stringstream ss; ss << "|" << __MF_DECOR__ << ": " << __COUT_HDR_FL__ << __COUT_HDR__
-#define __SS_THROW__        { __COUT_ERR__ << "\n" << ss.str(); throw std::runtime_error(ss.str()); } //put in {}'s to prevent surprises, e.g. if ... else __SS_THROW__;
+#define __SS_THROW__        { __COUT_ERR__ << "\n" << ss.str(); throw std::runtime_error("At time " + ots::TimestampString().get() + ": \n\n" + ss.str()); } //__SS_THROW__ is in {}'s to prevent surprises to user, e.g. if ... else __SS_THROW__;
 #define __SS_ONLY_THROW__ 	throw std::runtime_error(ss.str())
 #define __SSV__(X) 			__SS__ << QUOTE(X) << " = " << X
 
@@ -195,7 +197,7 @@ struct __OTS_PAUSE_EXCEPTION__ : public std::exception
 	__OTS_PAUSE_EXCEPTION__(const std::string& what) : what_(what) {}
 	virtual char const* what() const throw() { return what_.c_str(); }
 	std::string         what_;
-};
+}; //end __OTS_PAUSE_EXCEPTION__ struct
 }  // end namespace ots
 //========================================================================================================================
 /// declare special ots harder STOP exception
@@ -208,9 +210,31 @@ struct __OTS_STOP_EXCEPTION__ : public std::exception
 	__OTS_STOP_EXCEPTION__(const std::string& what) : what_(what) {}
 	virtual char const* what() const throw() { return what_.c_str(); }
 	std::string         what_;
-};
+}; // end __OTS_STOP_EXCEPTION__ struct
 }  // end namespace ots
 
-#endif
+//========================================================================================================================
+/// getTimestampString ~~ moved from otsdaq/otsdaq/Macros/StringMacros.cc:773
+///	returns ots style timestamp string
+///	of known fixed size: Thu Aug 23 14:55:02 2001 CST
+namespace ots
+{
+struct TimestampString
+{
+	std::string get(const time_t linuxTimeInSeconds = time(0))
+	{
+		std::string retValue(30, '\0');  // known fixed size: Thu Aug 23 14:55:02 2001 CST
+
+		struct tm tmstruct;
+		::localtime_r(&linuxTimeInSeconds, &tmstruct);
+		::strftime(&retValue[0], 30, "%c %Z", &tmstruct);
+		retValue.resize(strlen(retValue.c_str()));
+
+		return retValue;
+	} //end get()
+}; //end TimestampString struct
+}  // end namespace ots
 
 // clang-format on
+
+#endif

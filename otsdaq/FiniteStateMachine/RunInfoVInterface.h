@@ -47,10 +47,11 @@ class RunInfoVInterface  ///< : public Configurable
 		START
 	};
 
-	RunInfoVInterface							(const std::string& activeStateMachineName)
-	    :
-	    mfSubject_(activeStateMachineName),
-	    activeStateMachineName_(activeStateMachineName)
+	RunInfoVInterface							(const std::string& runInfoPluginClassName,
+												const std::string& activeStateMachineName)
+		:
+		mfSubject_(runInfoPluginClassName),
+		activeStateMachineName_(activeStateMachineName)
 	{;}
 	virtual ~RunInfoVInterface						(void) { ; }
 
@@ -92,7 +93,7 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual std::vector<std::vector<std::string>>
 							getRunConfigSubsystemInfo	(uint64_t 			 /* configID */) 				{ __SS__ << "getRunConfigSubsystemInfo() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
 
-  private:
+  protected:
 	const std::string 		mfSubject_; ///< Unique identifier for decorating trace printouts
 	const std::string 		activeStateMachineName_;
 };
