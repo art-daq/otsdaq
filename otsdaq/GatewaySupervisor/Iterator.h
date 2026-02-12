@@ -1,6 +1,7 @@
 #ifndef _ots_Iterator_h
 #define _ots_Iterator_h
 
+#include <atomic>  //for std::atomic
 #include <mutex>  //for std::mutex
 #include <string>
 #include "otsdaq/TablePlugins/IterateTable.h"
@@ -35,7 +36,7 @@ class Iterator
 
 	bool 								handleCommandRequest		(HttpXmlDocument& xmldoc, const std::string& command, const std::string& parameter);
 
-	bool								isIteratorBusy				(void) { return iteratorBusy_; }
+	bool								isIteratorBusy				(void) const { return iteratorBusy_; }
   private:
 
 	void 								playIterationPlanPrivate	(HttpXmlDocument& xmldoc, const std::string& planName);
@@ -122,7 +123,7 @@ class Iterator
 	std::mutex    accessMutex_;
 	volatile bool workloopRunning_;
 	volatile bool activePlanIsRunning_;
-	volatile bool iteratorBusy_;
+	std::atomic<bool> iteratorBusy_;
 	volatile bool commandPlay_, commandPause_,
 	    commandHalt_;  ///< commands are set by
 	                   ///< supervisor thread, and
