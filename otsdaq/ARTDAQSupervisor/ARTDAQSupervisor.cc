@@ -288,8 +288,12 @@ import sys
 sys.stdout = sys.__stdout__
 sys.stderr = sys.__stderr__
 )");
-	Py_XDECREF(stringIO_out_);
-	Py_XDECREF(stringIO_err_);
+	// stringIO_out_ and stringIO_err_ may refer to borrowed Python objects
+	// (e.g., via PyDict_GetItemString in the tee-buffer path). Do not DECREF
+	// them here to avoid corrupting their reference counts; treat them as
+	// non-owning pointers and clear them instead.
+	stringIO_out_ = nullptr;
+	stringIO_err_ = nullptr;
 
 	__SUP_COUT__ << "Thread and garbage cleanup" << __E__;
 	//force python thread cleanup:
