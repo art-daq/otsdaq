@@ -7136,9 +7136,8 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 				if(!firstEntry)
 					oss << ",";
 				oss << "\t\t\"" << fclPair.first << "\": \""
-				    << StringMacros::escapeJSONStringEntities(
-				           fclPair.second)
-				    << "\"" << __E__;
+				    << StringMacros::escapeJSONStringEntities(fclPair.second) << "\""
+				    << __E__;
 				firstEntry = false;
 			}
 
@@ -7157,9 +7156,8 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 				if(!firstEntry)
 					oss << ",";
 				oss << "\t\"" << fclPair.first << "\": \""
-				    << StringMacros::escapeJSONStringEntities(
-				           fclPair.second)
-				    << "\"" << __E__;
+				    << StringMacros::escapeJSONStringEntities(fclPair.second) << "\""
+				    << __E__;
 				firstEntry = false;
 			}
 		}
@@ -7173,12 +7171,11 @@ std::string ARTDAQTableBase::getStructureAsJSON(
 //==============================================================================
 /// getBootFileContent
 ///		Generate boot.txt content as a string for a specific supervisor row
-std::string ARTDAQTableBase::getBootFileContent(
-	ConfigurationTree artdaqSupervisorNode,
-	size_t            maxFragmentSizeBytes,
-	size_t            routingTimeoutMs,
-	size_t            routingRetryCount,
-	ProgressBar*      progressBar)
+std::string ARTDAQTableBase::getBootFileContent(ConfigurationTree artdaqSupervisorNode,
+                                                size_t            maxFragmentSizeBytes,
+                                                size_t            routingTimeoutMs,
+                                                size_t            routingRetryCount,
+                                                ProgressBar*      progressBar)
 {
 	if(artdaqSupervisorNode.isDisconnected())
 	{
@@ -7188,17 +7185,18 @@ std::string ARTDAQTableBase::getBootFileContent(
 	}
 
 	const ARTDAQInfo& info = extractARTDAQInfo(artdaqSupervisorNode,
-	                                         false /*getStatusFalseNodes*/,
-	                                         false /*doWriteFHiCL*/,
-	                                         maxFragmentSizeBytes,
-	                                         routingTimeoutMs,
-	                                         routingRetryCount,
-	                                         progressBar);
+	                                           false /*getStatusFalseNodes*/,
+	                                           false /*doWriteFHiCL*/,
+	                                           maxFragmentSizeBytes,
+	                                           routingTimeoutMs,
+	                                           routingRetryCount,
+	                                           progressBar);
 
-	int debugLevel = artdaqSupervisorNode.getNode(colARTDAQSupervisor_.colDAQInterfaceDebugLevel_)
-	                    .getValue<int>();
-	std::string setupScript = artdaqSupervisorNode.getNode(colARTDAQSupervisor_.colDAQSetupScript_)
-	                             .getValue();
+	int debugLevel =
+	    artdaqSupervisorNode.getNode(colARTDAQSupervisor_.colDAQInterfaceDebugLevel_)
+	        .getValue<int>();
+	std::string setupScript =
+	    artdaqSupervisorNode.getNode(colARTDAQSupervisor_.colDAQSetupScript_).getValue();
 
 	return getBootFileContentFromInfo(info, setupScript, debugLevel);
 }  //end getBootFileContent()
@@ -7206,10 +7204,9 @@ std::string ARTDAQTableBase::getBootFileContent(
 //==============================================================================
 /// getBootFileContentFromInfo
 ///		Generate boot.txt content as a string
-std::string ARTDAQTableBase::getBootFileContentFromInfo(
-	const ARTDAQInfo& info,
-	const std::string& setupScript,
-	int debugLevel)
+std::string ARTDAQTableBase::getBootFileContentFromInfo(const ARTDAQInfo&  info,
+                                                        const std::string& setupScript,
+                                                        int                debugLevel)
 {
 	std::stringstream o;
 

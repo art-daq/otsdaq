@@ -651,7 +651,7 @@ try
 	// Generate boot file content using helper function
 	std::string bootContent =
 	    ARTDAQTableBase::getBootFileContentFromInfo(info, setupScript, debugLevel);
-	
+
 	// Populate label_to_proc_type_map_ (still needed for later)
 	for(auto& builder : info.processes[ARTDAQTableBase::ARTDAQAppType::EventBuilder])
 		label_to_proc_type_map_[builder.label] = "EventBuilder";
@@ -922,13 +922,18 @@ try
 	std::string doConfigOutput = "";
 	{  //do_config call
 		// RAII wrapper for Python objects to ensure cleanup even on exception
-		struct PyObjectGuard {
+		struct PyObjectGuard
+		{
 			PyObject* obj;
 			explicit PyObjectGuard(PyObject* o) : obj(o) {}
-			~PyObjectGuard() { if(obj) Py_DECREF(obj); }
-			PyObjectGuard(const PyObjectGuard&) = delete;
+			~PyObjectGuard()
+			{
+				if(obj)
+					Py_DECREF(obj);
+			}
+			PyObjectGuard(const PyObjectGuard&)            = delete;
 			PyObjectGuard& operator=(const PyObjectGuard&) = delete;
-			PyObject* get() const { return obj; }
+			PyObject*      get() const { return obj; }
 		};
 
 		PyObjectGuard pName3(PyUnicode_FromString("do_config"));
@@ -973,7 +978,7 @@ try
 		Py_XDECREF(strRes);  // Clean up the temporary string conversion
 		Py_DECREF(res3);     // Clean up the result object
 		// pName3 and pArg will be automatically cleaned up by their destructors
-	}                        //end do_config call
+	}  //end do_config call
 
 	getDAQState_();
 	if(daqinterface_state_ != "ready")
@@ -1727,7 +1732,7 @@ void ots::ARTDAQSupervisor::getDAQState_()
 	// Cleanup the string objects we created
 	Py_DECREF(pName);
 	Py_DECREF(pArg);
-} //end getDAQState_()
+}  //end getDAQState_()
 
 //==============================================================================
 std::string ots::ARTDAQSupervisor::getProcessInfo_(void)

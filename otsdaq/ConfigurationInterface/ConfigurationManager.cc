@@ -144,26 +144,26 @@ const std::set<std::string> ConfigurationManager::iterateMemberNames_ 				= {
 
 //==============================================================================
 ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/,
-										   bool doInitializeFromFhicl /*=false*/,
-										   bool forceNotFirstInContext /*=false*/)
-	: startClockTime_(std::chrono::steady_clock::now())
-	, deltaClockTime_(std::chrono::steady_clock::now())
-	, forceNotFirstInContext_(forceNotFirstInContext)
-	, mfSubject_(ConfigurationManager::READONLY_USER)
-	, username_(ConfigurationManager::READONLY_USER)
-	, theInterface_(0)
-	, theConfigurationTableGroupKey_(0)
-	, theContextTableGroupKey_(0)
-	, theBackboneTableGroupKey_(0)
-	, theConfigurationTableGroup_("")
-	, theContextTableGroup_("")
-	, theBackboneTableGroup_("")
-	, groupMetadataTable_(true /*special table*/, TableBase::GROUP_METADATA_TABLE_NAME)
+                                           bool doInitializeFromFhicl /*=false*/,
+                                           bool forceNotFirstInContext /*=false*/)
+    : startClockTime_(std::chrono::steady_clock::now())
+    , deltaClockTime_(std::chrono::steady_clock::now())
+    , forceNotFirstInContext_(forceNotFirstInContext)
+    , mfSubject_(ConfigurationManager::READONLY_USER)
+    , username_(ConfigurationManager::READONLY_USER)
+    , theInterface_(0)
+    , theConfigurationTableGroupKey_(0)
+    , theContextTableGroupKey_(0)
+    , theBackboneTableGroupKey_(0)
+    , theConfigurationTableGroup_("")
+    , theContextTableGroup_("")
+    , theBackboneTableGroup_("")
+    , groupMetadataTable_(true /*special table*/, TableBase::GROUP_METADATA_TABLE_NAME)
 {
 	__GEN_COUTTV__(runTimeSeconds());
 	theInterface_ = ConfigurationInterface::getInstance(
-		ConfigurationInterface::CONFIGURATION_MODE::
-			ARTDAQ_DATABASE);  // false to use artdaq DB
+	    ConfigurationInterface::CONFIGURATION_MODE::
+	        ARTDAQ_DATABASE);  // false to use artdaq DB
 
 	__GEN_COUTTV__(runTimeSeconds());
 
@@ -254,7 +254,7 @@ ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/,
 
 //==============================================================================
 ConfigurationManager::ConfigurationManager(const std::string& username)
-	: ConfigurationManager(true /*initForWriteAccess*/)
+    : ConfigurationManager(true /*initForWriteAccess*/)
 {
 	__GEN_COUT__ << "Private constructor for write access called." << __E__;
 	// overwrite read-only username initialization with write-access username:
@@ -272,8 +272,8 @@ ConfigurationManager::~ConfigurationManager() { destroy(); }
 ///	Notes: Errors are handled separately from Warnings. Errors are used to monitor
 ///		errors but do not allow, and warnings are used to allow warnings and monitor.
 void ConfigurationManager::init(std::string* accumulatedErrors /*=0*/,
-								bool         initForWriteAccess /*= false*/,
-								std::string* accumulatedWarnings /*=0*/)
+                                bool         initForWriteAccess /*= false*/,
+                                std::string* accumulatedWarnings /*=0*/)
 {
 	// if(accumulatedErrors)
 	//	*accumulatedErrors = "";
@@ -291,10 +291,10 @@ void ConfigurationManager::init(std::string* accumulatedErrors /*=0*/,
 			//	otherwise skip configuration group. Important to consider initForWriteAccess
 			// 	because this may be called before username_ is properly initialized
 			ConfigurationManager::LoadGroupType onlyLoadIfBackboneOrContext =
-				ConfigurationManager::LoadGroupType::ALL_TYPES;
+			    ConfigurationManager::LoadGroupType::ALL_TYPES;
 			if(username_ == ConfigurationManager::READONLY_USER && !initForWriteAccess)
 				onlyLoadIfBackboneOrContext =
-					ConfigurationManager::LoadGroupType::ONLY_BACKBONE_OR_CONTEXT_TYPES;
+				    ConfigurationManager::LoadGroupType::ONLY_BACKBONE_OR_CONTEXT_TYPES;
 
 			// clang-format off
 			restoreActiveTableGroups(accumulatedErrors ? true : false /*throwErrors*/,
@@ -323,21 +323,21 @@ void ConfigurationManager::init(std::string* accumulatedErrors /*=0*/,
 ///	Note: this should be used by the Supervisor to maintain
 ///		the same configurationGroups surviving software system restarts
 void ConfigurationManager::restoreActiveTableGroups(
-	bool               throwErrors /*=false*/,
-	const std::string& pathToActiveGroupsFile /*=""*/,
-	ConfigurationManager::LoadGroupType
-		onlyLoadIfBackboneOrContext /*= ConfigurationManager::LoadGroupType::ALL_TYPES */,
-	std::string* accumulatedWarnings /*=0*/)
+    bool               throwErrors /*=false*/,
+    const std::string& pathToActiveGroupsFile /*=""*/,
+    ConfigurationManager::LoadGroupType
+        onlyLoadIfBackboneOrContext /*= ConfigurationManager::LoadGroupType::ALL_TYPES */,
+    std::string* accumulatedWarnings /*=0*/)
 {
 	destroyTableGroup("", true);  // deactivate all
 
 	std::string fn =
-		pathToActiveGroupsFile == "" ? ACTIVE_GROUPS_FILENAME : pathToActiveGroupsFile;
+	    pathToActiveGroupsFile == "" ? ACTIVE_GROUPS_FILENAME : pathToActiveGroupsFile;
 	FILE* fp = fopen(fn.c_str(), "r");
 
 	__GEN_COUTT__ << "ACTIVE_GROUPS_FILENAME = " << fn << __E__;
 	__GEN_COUTS__(10) << "ARTDAQ_DATABASE_URI = "
-					  << std::string(__ENV__("ARTDAQ_DATABASE_URI")) << __E__;
+	                  << std::string(__ENV__("ARTDAQ_DATABASE_URI")) << __E__;
 
 	if(!fp)
 	{
@@ -365,8 +365,8 @@ void ConfigurationManager::restoreActiveTableGroups(
 			if(numberCheck)
 			{
 				__GEN_COUT__
-					<< "Out of sync with active groups file lines, attempting to resync."
-					<< __E__;
+				    << "Out of sync with active groups file lines, attempting to resync."
+				    << __E__;
 				continue;
 			}
 		}
@@ -375,13 +375,13 @@ void ConfigurationManager::restoreActiveTableGroups(
 		sscanf(tmp, "%s", strVal);  // sscanf to remove '\n'
 		for(unsigned int j = 0; j < strlen(strVal); ++j)
 			if(!((strVal[j] >= 'a' && strVal[j] <= 'z') ||
-				 (strVal[j] >= 'A' && strVal[j] <= 'Z') ||
-				 (strVal[j] >= '0' && strVal[j] <= '9')))
+			     (strVal[j] >= 'A' && strVal[j] <= 'Z') ||
+			     (strVal[j] >= '0' && strVal[j] <= '9')))
 			{
 				strVal[j] = '\0';
 				__GEN_COUT_WARN__ << "Illegal character found in group name '" << strVal
-								  << "', so skipping! Check active groups file: " << fn
-								  << __E__;
+				                  << "', so skipping! Check active groups file: " << fn
+				                  << __E__;
 
 				skip = true;
 				break;
@@ -401,8 +401,8 @@ void ConfigurationManager::restoreActiveTableGroups(
 
 				if(groupName.size() > 3)  // notify if seems like a real group name
 					__GEN_COUT_WARN__
-						<< "Skipping active group with illegal character in group key '"
-						<< strVal << ".' Check active groups file: " << fn << __E__;
+					    << "Skipping active group with illegal character in group key '"
+					    << strVal << ".' Check active groups file: " << fn << __E__;
 
 				skip = true;
 				break;
@@ -421,9 +421,9 @@ void ConfigurationManager::restoreActiveTableGroups(
 		catch(...)
 		{
 			__GEN_COUT__
-				<< "illegal group according to TableGroupKey::getFullGroupString... "
-				   "Check active groups file: "
-				<< fn << __E__;
+			    << "illegal group according to TableGroupKey::getFullGroupString... "
+			       "Check active groups file: "
+			    << fn << __E__;
 			skip = true;
 		}
 
@@ -437,23 +437,23 @@ void ConfigurationManager::restoreActiveTableGroups(
 
 			if(accumulatedWarnings)
 				__GEN_COUT__ << "Ignoring warnings while loading and activating group '"
-							 << groupName << "(" << strVal << ")'" << __E__;
+				             << groupName << "(" << strVal << ")'" << __E__;
 
 			loadTableGroup(
-				groupName,
-				TableGroupKey(strVal),
-				true /*doActivate*/,
-				0 /*groupMembers*/,
-				0 /*progressBar*/,
-				(accumulatedWarnings ? &groupAccumulatedErrors
-									 : 0) /*accumulateWarnings = 0*/,
-				0 /*groupComment       = 0*/,
-				0 /*groupAuthor        = 0*/,
-				0 /*groupCreateTime    = 0*/,
-				0 /*doNotLoadMembers   = false*/,
-				0 /*groupTypeString    = 0*/,
-				0 /*groupAliases       = 0*/,
-				onlyLoadIfBackboneOrContext /*onlyLoadIfBackboneOrContext = false*/
+			    groupName,
+			    TableGroupKey(strVal),
+			    true /*doActivate*/,
+			    0 /*groupMembers*/,
+			    0 /*progressBar*/,
+			    (accumulatedWarnings ? &groupAccumulatedErrors
+			                         : 0) /*accumulateWarnings = 0*/,
+			    0 /*groupComment       = 0*/,
+			    0 /*groupAuthor        = 0*/,
+			    0 /*groupCreateTime    = 0*/,
+			    0 /*doNotLoadMembers   = false*/,
+			    0 /*groupTypeString    = 0*/,
+			    0 /*groupAliases       = 0*/,
+			    onlyLoadIfBackboneOrContext /*onlyLoadIfBackboneOrContext = false*/
 			);
 
 			if(accumulatedWarnings)
@@ -506,7 +506,7 @@ void ConfigurationManager::restoreActiveTableGroups(
 ///	else destroy that group
 /// 	if onlyDeactivate, then don't delete, just deactivate view
 void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
-											 bool               onlyDeactivate)
+                                             bool               onlyDeactivate)
 {
 	// delete
 	bool isContext       = theGroup == "" || theGroup == theContextTableGroup_;
@@ -538,41 +538,41 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 
 	std::set<std::string>::const_iterator contextFindIt, backboneFindIt, iterateFindIt;
 	for(auto it = nameToTableMap_.begin(); it != nameToTableMap_.end();
-		/*no increment*/)
+	    /*no increment*/)
 	{
 		contextFindIt  = contextMemberNames_.find(it->first);
 		backboneFindIt = backboneMemberNames_.find(it->first);
 		iterateFindIt  = iterateMemberNames_.find(it->first);
 
 		__GEN_COUTT__ << "Considering table: " << it->first << " contextFindIt:"
-					  << (contextFindIt != contextMemberNames_.end() ? "Y" : "N")
-					  << " backboneFindIt:"
-					  << (backboneFindIt != backboneMemberNames_.end() ? "Y" : "N")
-					  << " iterateFindIt:"
-					  << (iterateFindIt != iterateMemberNames_.end() ? "Y" : "N")
-					  << __E__;
+		              << (contextFindIt != contextMemberNames_.end() ? "Y" : "N")
+		              << " backboneFindIt:"
+		              << (backboneFindIt != backboneMemberNames_.end() ? "Y" : "N")
+		              << " iterateFindIt:"
+		              << (iterateFindIt != iterateMemberNames_.end() ? "Y" : "N")
+		              << __E__;
 		if(theGroup == "" ||
 		   ((isContext &&
-			 contextFindIt !=
-				 contextMemberNames_
-					 .end()) ||  //for context group, deactivate context members AND optional member
-			(isContext &&
-			 it->first ==
-				 ConfigurationManager::
-					 CONTEXT_SUBSYSTEM_OPTIONAL_TABLE) ||  //optional context member
-			(isBackbone && backboneFindIt != backboneMemberNames_.end()) ||
-			(isIterate && iterateFindIt != iterateMemberNames_.end()) ||
-			(isConfiguration &&  //for configuration group, deactivate all tables not specified in other group types
-			 contextFindIt == contextMemberNames_.end() &&
-			 it->first != ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE &&
-			 backboneFindIt == backboneMemberNames_.end() &&
-			 iterateFindIt == iterateMemberNames_.end())))
+		     contextFindIt !=
+		         contextMemberNames_
+		             .end()) ||  //for context group, deactivate context members AND optional member
+		    (isContext &&
+		     it->first ==
+		         ConfigurationManager::
+		             CONTEXT_SUBSYSTEM_OPTIONAL_TABLE) ||  //optional context member
+		    (isBackbone && backboneFindIt != backboneMemberNames_.end()) ||
+		    (isIterate && iterateFindIt != iterateMemberNames_.end()) ||
+		    (isConfiguration &&  //for configuration group, deactivate all tables not specified in other group types
+		     contextFindIt == contextMemberNames_.end() &&
+		     it->first != ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE &&
+		     backboneFindIt == backboneMemberNames_.end() &&
+		     iterateFindIt == iterateMemberNames_.end())))
 		{
 			__GEN_COUTT__ << "\t" << dbgHeader << ".. " << it->first
-						  << (it->second->isActive()
-								  ? "_v" + it->second->getViewVersion().str()
-								  : "")
-						  << __E__;
+			              << (it->second->isActive()
+			                      ? "_v" + it->second->getViewVersion().str()
+			                      : "")
+			              << __E__;
 
 			if(onlyDeactivate)  // only deactivate
 			{
@@ -595,7 +595,7 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		if(theConfigurationTableGroupKey_ != 0)
 		{
 			__GEN_COUTT__ << "Destroying Configuration Key: "
-						  << *theConfigurationTableGroupKey_ << __E__;
+			              << *theConfigurationTableGroupKey_ << __E__;
 			theConfigurationTableGroupKey_.reset();
 		}
 	}
@@ -605,7 +605,7 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		if(theBackboneTableGroupKey_ != 0)
 		{
 			__GEN_COUTT__ << "Destroying Backbone Key: " << *theBackboneTableGroupKey_
-						  << __E__;
+			              << __E__;
 			theBackboneTableGroupKey_.reset();
 		}
 	}
@@ -615,7 +615,7 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		if(theIterateTableGroupKey_ != 0)
 		{
 			__GEN_COUTT__ << "Destroying Iterate Key: " << *theIterateTableGroupKey_
-						  << __E__;
+			              << __E__;
 			theIterateTableGroupKey_.reset();
 		}
 	}
@@ -625,7 +625,7 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 		if(theContextTableGroupKey_ != 0)
 		{
 			__GEN_COUTT__ << "Destroying Context Key: " << *theContextTableGroupKey_
-						  << __E__;
+			              << __E__;
 			theContextTableGroupKey_.reset();
 		}
 	}
@@ -641,18 +641,18 @@ void ConfigurationManager::destroy(void) { destroyTableGroup(); }  //end destroy
 ///		1 for backbone
 ///		2 for configuration (others)
 const std::string& ConfigurationManager::convertGroupTypeToName(
-	const ConfigurationManager::GroupType& groupTypeId)
+    const ConfigurationManager::GroupType& groupTypeId)
 {
 	return groupTypeId == ConfigurationManager::GroupType::CONTEXT_TYPE
-			   ? ConfigurationManager::GROUP_TYPE_NAME_CONTEXT
-			   : (groupTypeId == ConfigurationManager::GroupType::BACKBONE_TYPE
-					  ? ConfigurationManager::GROUP_TYPE_NAME_BACKBONE
-					  : (groupTypeId == ConfigurationManager::GroupType::ITERATE_TYPE
-							 ? ConfigurationManager::GROUP_TYPE_NAME_ITERATE
-							 : (groupTypeId == ConfigurationManager::GroupType::
-												   CONFIGURATION_TYPE
-									? ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION
-									: ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN)));
+	           ? ConfigurationManager::GROUP_TYPE_NAME_CONTEXT
+	           : (groupTypeId == ConfigurationManager::GroupType::BACKBONE_TYPE
+	                  ? ConfigurationManager::GROUP_TYPE_NAME_BACKBONE
+	                  : (groupTypeId == ConfigurationManager::GroupType::ITERATE_TYPE
+	                         ? ConfigurationManager::GROUP_TYPE_NAME_ITERATE
+	                         : (groupTypeId == ConfigurationManager::GroupType::
+	                                               CONFIGURATION_TYPE
+	                                ? ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION
+	                                : ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN)));
 }  // end convertGroupTypeToName()
 
 //==============================================================================
@@ -663,7 +663,7 @@ const std::string& ConfigurationManager::convertGroupTypeToName(
 ///		ITERATE_TYPE for iterate
 ///		CONFIGURATION_TYPE for configuration (others)
 ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
-	const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap)
+    const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap)
 {
 	bool         isContext  = true;
 	bool         isBackbone = true;
@@ -777,8 +777,8 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 	if((isContext || inContext) && matchCount != fixedContextMemberNames_.size())
 	{
 		__SS__ << "This group is an incomplete match to a Context group: "
-			   << " Size=" << matchCount << " but should be "
-			   << fixedContextMemberNames_.size() << __E__;
+		       << " Size=" << matchCount << " but should be "
+		       << fixedContextMemberNames_.size() << __E__;
 		ss << "\nThe members currently are...\n";
 		int i = 0;
 		for(auto& memberPair : memberMap)
@@ -795,8 +795,8 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 	if((isBackbone || inBackbone) && matchCount != backboneMemberNames_.size())
 	{
 		__SS__ << "This group is an incomplete match to a Backbone group: "
-			   << " Size=" << matchCount << " but should be "
-			   << backboneMemberNames_.size() << __E__;
+		       << " Size=" << matchCount << " but should be "
+		       << backboneMemberNames_.size() << __E__;
 		ss << "\nThe members currently are...\n";
 		int i = 0;
 		for(auto& memberPair : memberMap)
@@ -812,8 +812,8 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 	if((isIterate || inIterate) && matchCount != iterateMemberNames_.size())
 	{
 		__SS__ << "This group is an incomplete match to a Iterate group: "
-			   << " Size=" << matchCount << " but should be "
-			   << iterateMemberNames_.size() << __E__;
+		       << " Size=" << matchCount << " but should be "
+		       << iterateMemberNames_.size() << __E__;
 		ss << "\nThe members currently are...\n";
 		int i = 0;
 		for(auto& memberPair : memberMap)
@@ -827,19 +827,19 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 	}
 
 	return isContext
-			   ? ConfigurationManager::GroupType::CONTEXT_TYPE
-			   : (isBackbone
-					  ? ConfigurationManager::GroupType::BACKBONE_TYPE
-					  : (isIterate
-							 ? ConfigurationManager::GroupType::ITERATE_TYPE
-							 : ConfigurationManager::GroupType::CONFIGURATION_TYPE));
+	           ? ConfigurationManager::GroupType::CONTEXT_TYPE
+	           : (isBackbone
+	                  ? ConfigurationManager::GroupType::BACKBONE_TYPE
+	                  : (isIterate
+	                         ? ConfigurationManager::GroupType::ITERATE_TYPE
+	                         : ConfigurationManager::GroupType::CONFIGURATION_TYPE));
 }  // end getTypeOfGroup()
 
 //==============================================================================
 /// getTypeNameOfGroup
 ///	return string for group type
 const std::string& ConfigurationManager::getTypeNameOfGroup(
-	const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap)
+    const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap)
 {
 	return convertGroupTypeToName(getTypeOfGroup(memberMap));
 }  // end getTypeNameOfGroup()
@@ -861,13 +861,13 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 	if(nameToTableMap_.find("FEInterfaceTable") == nameToTableMap_.end())
 	{
 		__COUT__ << "Skipping dumpMacroMakerModeFhicl() since FEInterface table is not "
-					"activated."
-				 << __E__;
+		            "activated."
+		         << __E__;
 		return;
 	}
 
 	std::string filepath =
-		__ENV__("USER_DATA") + std::string("/") + "MacroMakerModeConfigurations";
+	    __ENV__("USER_DATA") + std::string("/") + "MacroMakerModeConfigurations";
 	mkdir(filepath.c_str(), 0755);
 	filepath += "/MacroMakerModeFhiclDump.fcl";
 	__GEN_COUT__ << "dumpMacroMakerModeFhicl: " << filepath << __E__;
@@ -883,14 +883,14 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 	if(out.fail())
 	{
 		__SS__ << "Failed to open MacroMaker mode fcl file for configuration dump: "
-			   << filepath << __E__;
+		       << filepath << __E__;
 		__SS_THROW__;
 	}
 
 	try
 	{
 		std::vector<std::pair<std::string, ConfigurationTree>> fes =
-			getNode("FEInterfaceTable").getChildren();
+		    getNode("FEInterfaceTable").getChildren();
 
 		for(auto& fe : fes)
 		{
@@ -906,12 +906,12 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 			// only do FEInterfacePluginName and LinkToFETypeTable at top level
 
 			OUT << "FEInterfacePluginName"
-				<< ": \t"
-				<< "\"" << fe.second.getNode("FEInterfacePluginName").getValueAsString()
-				<< "\"" << __E__;
+			    << ": \t"
+			    << "\"" << fe.second.getNode("FEInterfacePluginName").getValueAsString()
+			    << "\"" << __E__;
 
 			recursiveTreeToFhicl(
-				fe.second.getNode("LinkToFETypeTable"), out, tabStr, commentStr);
+			    fe.second.getNode("LinkToFETypeTable"), out, tabStr, commentStr);
 
 			POPTAB;
 			OUT << "} //end " << fe.first << __E__ << __E__;
@@ -921,8 +921,8 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 	catch(...)
 	{
 		__SS__ << "Failed to complete MacroMaker mode fcl "
-				  "file configuration dump due to error."
-			   << __E__;
+		          "file configuration dump due to error."
+		       << __E__;
 		try
 		{
 			throw;
@@ -952,10 +952,10 @@ void ConfigurationManager::dumpMacroMakerModeFhicl()
 ///
 ///	e.g., out = std::cout, tabStr = "", commentStr = ""
 void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
-												std::ostream&     out /* = std::cout */,
-												std::string&      tabStr /* = "" */,
-												std::string&      commentStr /* = "" */,
-												unsigned int      depth /* = -1 */)
+                                                std::ostream&     out /* = std::cout */,
+                                                std::string&      tabStr /* = "" */,
+                                                std::string&      commentStr /* = "" */,
+                                                unsigned int      depth /* = -1 */)
 {
 	if(depth == 0)
 	{
@@ -978,7 +978,7 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 		}
 
 		OUT << node.getFieldName() << "_"
-			<< node.getValueAsString(true /* returnLinkTableValue */) << ": \t{" << __E__;
+		    << node.getValueAsString(true /* returnLinkTableValue */) << ": \t{" << __E__;
 		PUSHTAB;
 	}  // end link preamble decoration
 
@@ -986,13 +986,13 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 	{
 		// for group link, handle each as a UID record
 		std::vector<std::pair<std::string, ConfigurationTree>> children =
-			node.getChildren();
+		    node.getChildren();
 		for(auto& child : children)
 			recursiveTreeToFhicl(child.second, out, tabStr, commentStr, depth - 1);
 
 		POPTAB;
 		OUT << "} //end " << node.getValueAsString(true /* returnLinkTableValue */)
-			<< " group link record" << __E__;
+		    << " group link record" << __E__;
 		return;
 	}  // end group link handling
 
@@ -1005,7 +1005,7 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 	{  // open UID content
 
 		std::vector<std::pair<std::string, ConfigurationTree>> fields =
-			node.getChildren();
+		    node.getChildren();
 
 		// skip last 3 fields that are always common
 		for(unsigned int i = 0; i < fields.size() - 3; ++i)
@@ -1015,7 +1015,7 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 			if(fields[i].second.isLinkNode())
 			{
 				recursiveTreeToFhicl(
-					fields[i].second, out, tabStr, commentStr, depth - 1);
+				    fields[i].second, out, tabStr, commentStr, depth - 1);
 				continue;
 			}
 			// else a normal field
@@ -1037,7 +1037,7 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 	{
 		POPTAB;
 		OUT << "} //end " << node.getValueAsString(true /* returnLinkTableValue */)
-			<< " link record" << __E__;
+		    << " link record" << __E__;
 	}  // end link closing decoration
 
 }  // end recursiveTreeToFhicl
@@ -1046,12 +1046,12 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 /// dumpActiveConfiguration
 ///	if filePath == "", then output to cout
 void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
-												   const std::string& dumpType,
-												   const std::string& configurationAlias,
-												   const std::string& logEntry,
-												   const std::string& activeUsers,
-												   const std::string& activeStateMachine,
-												   std::ostream& altOut /* = std::cout */)
+                                                   const std::string& dumpType,
+                                                   const std::string& configurationAlias,
+                                                   const std::string& logEntry,
+                                                   const std::string& activeUsers,
+                                                   const std::string& activeStateMachine,
+                                                   std::ostream& altOut /* = std::cout */)
 {
 	time_t rawtime = time(0);
 	__GEN_COUT__ << "filePath = " << filePath << __E__;
@@ -1071,7 +1071,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		if(filePath != "")
 		{
 			__SS__ << "Invalid file path to dump active configuration. File " << filePath
-				   << " could not be opened!" << __E__;
+			       << " could not be opened!" << __E__;
 			__GEN_COUT_ERR__ << ss.str();
 			__SS_THROW__;
 		}
@@ -1082,13 +1082,13 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	{
 		(*out) << "{\n";
 		(*out) << "\t\"ARTDAQ_DATABASE_URI\": \"" << __ENV__("ARTDAQ_DATABASE_URI")
-			   << "\"," << __E__;
+		       << "\"," << __E__;
 		if(fs.is_open())
 		{
 			(*out) << "\t\"HOSTNAME\": \"" << __ENV__("HOSTNAME") << "\"," << __E__;
 			(*out) << "\t\"HOSTNAME filepath\": \"" << filePath << "\"," << __E__;
 			(*out) << "\t\"Active State Machine\": \"" << activeStateMachine << "\","
-				   << __E__;
+			       << __E__;
 		}
 		(*out) << "\t\"active_users\": \t[";
 		if(activeUsers.size())
@@ -1108,19 +1108,19 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		(*out) << "\t\"dump_type\": \t\t\"" << dumpType << "\"," << __E__;
 		(*out) << "\t\"dump_time\": \t\t\"" << rawtime << "\"," << __E__;
 		(*out) << "\t\"dump_time_formatted\": \t\t\""
-			   << StringMacros::getTimestampString(rawtime) << "\"," << __E__;
+		       << StringMacros::getTimestampString(rawtime) << "\"," << __E__;
 	}
 	else
 	{
 		(*out) << "#################################" << __E__;
 		(*out) << "This is an ots system configuration dump.\n" << __E__;
 		(*out) << "Source database is $ARTDAQ_DATABASE_URI: "
-			   << __ENV__("ARTDAQ_DATABASE_URI") << __E__;
+		       << __ENV__("ARTDAQ_DATABASE_URI") << __E__;
 		if(fs.is_open())
 			(*out) << "Original location of dump:               " << __ENV__("HOSTNAME")
-				   << ":" << filePath << __E__;
+			       << ":" << filePath << __E__;
 		(*out) << "\nActive ots users: \t"
-			   << (activeUsers.size() ? activeUsers : "no active users") << __E__;
+		       << (activeUsers.size() ? activeUsers : "no active users") << __E__;
 		(*out) << "Type of dump: \t\t" << dumpType << __E__;
 		(*out) << "Time of dump: \t\t" << rawtime;
 		(*out) << " \t" << StringMacros::getTimestampString(rawtime) << __E__;
@@ -1128,17 +1128,17 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 	//determine configurationAlias tranlation
 	std::pair<std::string, ots::TableGroupKey> configurationTableGroup =
-		getTableGroupFromAlias(configurationAlias);
+	    getTableGroupFromAlias(configurationAlias);
 
 	if(dumpType != "JSON All")
 	{
 		(*out) << "Configuration Alias: \t\t\t" << configurationAlias << "\n";
 		(*out) << "Configuration Alias translation: \t" << configurationTableGroup.first
-			   << "(" << configurationTableGroup.second << ")\n\n";
+		       << "(" << configurationTableGroup.second << ")\n\n";
 
 		if(logEntry.size())
 			(*out) << "User Log Entry (" << logEntry.size() << " chars):\n"
-				   << logEntry << __E__;
+			       << logEntry << __E__;
 	}
 
 	// define local "lambda" functions
@@ -1149,11 +1149,11 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 	//============================
 	auto localDumpActiveGroups = [](const ConfigurationManager* cfgMgr,
-									std::ostream*               out,
-									bool                        jsonify = false,
-									std::string                 configurationAlias = "") {
+	                                std::ostream*               out,
+	                                bool                        jsonify = false,
+	                                std::string                 configurationAlias = "") {
 		std::map<std::string, std::pair<std::string, TableGroupKey>> activeGroups =
-			cfgMgr->getActiveTableGroups();
+		    cfgMgr->getActiveTableGroups();
 
 		if(jsonify)
 		{
@@ -1172,21 +1172,21 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			if(jsonify)
 			{
 				(*out) << "\t\t\"" << it->first << "_group_name\": \"" << it->second.first
-					   << "\",\n";
+				       << "\",\n";
 				(*out) << "\t\t\"" << it->first << "_group_key\": \"" << it->second.second
-					   << "\"";
+				       << "\"";
 				if(it->first == "Configuration")
 				{
 					(*out) << ",\n";
 					(*out) << "\t\t\""
-						   << "Configuration_alias\": \"" << configurationAlias << "\"";
+					       << "Configuration_alias\": \"" << configurationAlias << "\"";
 				}
 				(*out) << (std::next(it) == activeGroups.end() ? "" : ",") << "\n";
 			}
 			else
 			{
 				(*out) << "\t" << it->first << " := " << it->second.first << " ("
-					   << it->second.second << ")" << __E__;
+				       << it->second.second << ")" << __E__;
 			}
 		}
 
@@ -1196,8 +1196,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 	//============================
 	auto localDumpActiveTables = [](const ConfigurationManager* cfgMgr,
-									std::ostream*               out,
-									bool                        jsonify = false) {
+	                                std::ostream*               out,
+	                                bool                        jsonify = false) {
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
 		if(jsonify)
@@ -1218,11 +1218,11 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			if(jsonify)
 			{
 				(*out) << "\t\t\""
-					   << "active_table_name"
-					   << "\": \"" << it->first << "\",\n";
+				       << "active_table_name"
+				       << "\": \"" << it->first << "\",\n";
 				(*out) << "\t\t\""
-					   << "active_table_version"
-					   << "\": \"" << it->second << "\"";
+				       << "active_table_version"
+				       << "\": \"" << it->second << "\"";
 				(*out) << (std::next(it) == activeTables.end() ? "" : ",") << "\n";
 			}
 			else
@@ -1237,10 +1237,10 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 	//============================
 	auto localDumpActiveGroupMembers = [](ConfigurationManager* cfgMgr,
-										  std::ostream*         out,
-										  bool                  jsonify = false) {
+	                                      std::ostream*         out,
+	                                      bool                  jsonify = false) {
 		std::map<std::string, std::pair<std::string, TableGroupKey>> activeGroups =
-			cfgMgr->getActiveTableGroups();
+		    cfgMgr->getActiveTableGroups();
 
 		if(jsonify)
 		{
@@ -1259,7 +1259,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			if(!jsonify)
 			{
 				(*out) << "\t" << it->first << " := " << it->second.first << " ("
-					   << it->second.second << ")" << __E__;
+				       << it->second.second << ")" << __E__;
 			}
 
 			if(it->second.first == "")
@@ -1267,7 +1267,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				if(!jsonify)
 				{
 					(*out) << "\t"
-						   << "Empty group name. Assuming no active group." << __E__;
+					       << "Empty group name. Assuming no active group." << __E__;
 				}
 				continue;
 			}
@@ -1276,7 +1276,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			{
 				(*out) << "\t\t\"" << it->first << "\" : {" << __E__;
 				(*out) << "\t\t\t\"Name\": \t\"" << it->second.first << "\""
-					   << (std::next(it) == activeGroups.end() ? "" : ",") << __E__;
+				       << (std::next(it) == activeGroups.end() ? "" : ",") << __E__;
 			}
 
 			std::map<std::string /*name*/, TableVersion /*version*/> memberMap;
@@ -1287,17 +1287,17 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			time_t                                                   groupCreateTime_t;
 
 			cfgMgr->loadTableGroup(it->second.first,
-								   it->second.second,
-								   false /*doActivate*/,
-								   &memberMap /*memberMap*/,
-								   0 /*progressBar*/,
-								   0 /*accumulateErrors*/,
-								   &groupComment,
-								   &groupAuthor,
-								   &groupCreateTime,
-								   true /*doNotLoadMembers*/,
-								   0 /*groupTypeString*/,
-								   &groupAliases);
+			                       it->second.second,
+			                       false /*doActivate*/,
+			                       &memberMap /*memberMap*/,
+			                       0 /*progressBar*/,
+			                       0 /*accumulateErrors*/,
+			                       &groupComment,
+			                       &groupAuthor,
+			                       &groupCreateTime,
+			                       true /*doNotLoadMembers*/,
+			                       0 /*groupTypeString*/,
+			                       &groupAliases);
 
 			if(jsonify)
 			{
@@ -1308,24 +1308,24 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				sscanf(groupCreateTime.c_str(), "%ld", &groupCreateTime_t);
 				std::string timeCreated = ctime(&groupCreateTime_t);
 				(*out) << "\t\t\t\"create_time\": \t\""
-					   << timeCreated.erase(timeCreated.find('\n', 0), 1) << "\","
-					   << __E__;
+				       << timeCreated.erase(timeCreated.find('\n', 0), 1) << "\","
+				       << __E__;
 				(*out) << "\t\t\t\"group_aliases\": \t\""
-					   << StringMacros::mapToString(groupAliases) << "\"," << __E__;
+				       << StringMacros::mapToString(groupAliases) << "\"," << __E__;
 
 				(*out) << "\t\t\t\"table_count\": \t\"" << memberMap.size() << "\","
-					   << __E__;
+				       << __E__;
 				tableCount += memberMap.size();
 
 				(*out) << "\t\t\t\"tables\": {" << __E__;
 
 				std::map<std::string /*name*/, TableVersion /*version*/>::iterator
-					iterMap;
+				    iterMap;
 				for(iterMap = memberMap.begin(); iterMap != memberMap.end(); ++iterMap)
 				{
 					(*out) << "\t\t\t\t\"" << iterMap->first << "\": \""
-						   << iterMap->second << "\""
-						   << (std::next(iterMap) == memberMap.end() ? "" : ",") << __E__;
+					       << iterMap->second << "\""
+					       << (std::next(iterMap) == memberMap.end() ? "" : ",") << __E__;
 				}
 				(*out) << "\t\t\t}" << __E__;
 				(*out) << "\t\t}," << __E__;
@@ -1337,9 +1337,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 				sscanf(groupCreateTime.c_str(), "%ld", &groupCreateTime_t);
 				(*out) << "\t\tGroup Create Time: \t" << ctime(&groupCreateTime_t)
-					   << __E__;
+				       << __E__;
 				(*out) << "\t\tGroup Aliases: \t"
-					   << StringMacros::mapToString(groupAliases) << __E__;
+				       << StringMacros::mapToString(groupAliases) << __E__;
 
 				(*out) << "\t\tMember table count = " << memberMap.size() << __E__;
 				tableCount += memberMap.size();
@@ -1348,7 +1348,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				for(auto& member : memberMap)
 				{
 					(*out) << "\t\t\t" << ++i << ". " << member.first << "-v"
-						   << member.second << __E__;
+					       << member.second << __E__;
 				}
 			}
 		}
@@ -1361,14 +1361,14 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		else
 		{
 			(*out) << "\nActive Group Members total table count = " << tableCount
-				   << __E__;
+			       << __E__;
 		}
 	};  //end localDumpActiveGroupMembers()
 
 	//============================
 	auto localDumpActiveTableContents = [](const ConfigurationManager* cfgMgr,
-										   std::ostream*               out,
-										   bool                        jsonify = false) {
+	                                       std::ostream*               out,
+	                                       bool                        jsonify = false) {
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
 		if(jsonify)
@@ -1379,7 +1379,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		{
 			(*out) << "\n\n************************" << __E__;
 			(*out) << "Active Table Contents (table count = " << activeTables.size()
-				   << "):" << __E__;
+			       << "):" << __E__;
 		}
 
 		unsigned int                                  i = 0;
@@ -1397,13 +1397,13 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			else
 			{
 				(*out) << "\n\n=========================================================="
-						  "===="
-						  "================"
-					   << __E__;
+				          "===="
+				          "================"
+				       << __E__;
 				(*out) << "=============================================================="
-						  "===="
-						  "============"
-					   << __E__;
+				          "===="
+				          "============"
+				       << __E__;
 				(*out) << "\t" << ++i << ". " << it->first << "-v" << it->second << __E__;
 
 				cfgMgr->nameToTableMap_.find(it->first)->second->print(*out);
@@ -1418,7 +1418,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 	//============================
 	auto localDumpActiveTableStructureStatus = [](ConfigurationManager* cfgMgr,
-												  std::ostream*         out) {
+	                                              std::ostream*         out) {
 		std::map<std::string, TableVersion> activeTables = cfgMgr->getActiveVersions();
 
 		__COUT__ << "Active Table size: " << activeTables.size() << __E__;
@@ -1432,14 +1432,14 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			try
 			{
 				__COUTT__ << "Trying to retrieve " << it->first << "-v" << it->second
-						  << " Structure" << __E__;
+				          << " Structure" << __E__;
 				activeTableStructure =
-					cfgMgr->nameToTableMap_.find(it->first)->second->getStructureAsJSON(
-						cfgMgr);
+				    cfgMgr->nameToTableMap_.find(it->first)->second->getStructureAsJSON(
+				        cfgMgr);
 				if(activeTableStructure != "")
 				{
 					__COUT__ << "Found Structure for Active Table: " << it->first << "-v"
-							 << it->second << __E__;
+					         << it->second << __E__;
 
 					(*out) << (tableStructureFoundCount++ ? "," : "") << __E__;
 
@@ -1450,13 +1450,13 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			catch(const std::exception& e)
 			{
 				__COUT__ << "Error caught in localDumpActiveTableStructureStatus(): "
-						 << e.what();
+				         << e.what();
 				__COUT__ << "Structure Status may not be implemented." << __E__;
 			}
 		}  //end table structure loop
 
 		__COUT__ << "Found " << tableStructureFoundCount << " Active Table Structures."
-				 << __E__;
+		         << __E__;
 
 		(*out) << "\t}" << __E__;
 	};  //end localDumpActiveTableStructureStatus()
@@ -1487,7 +1487,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 					environment  = line.substr(start);
 				}
 				else if(line[0] != '[' && line[0] != '-' &&
-						line.find("root specs") == std::string::npos)
+				        line.find("root specs") == std::string::npos)
 				{
 					// Parse spack packages
 					size_t atPos = line.find('@');
@@ -1501,7 +1501,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 						spackPackages[pkgName] = version;
 					}
 					else if(line.find('[') == std::string::npos && !line.empty() &&
-							line[0] != 'c')
+					        line[0] != 'c')
 					{
 						// Plain package name without version
 						std::string pkgName = line;
@@ -1534,11 +1534,11 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				__COUTS__(2) << type << " " << name << "\n" << std::endl;
 				if(name[0] != '.' &&
 				   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
-					type == 4 ||  // directory type
-					type == 8 ||  // file type
-					type ==
-						10  // 10 == link (could be directory or file, treat as unknown)
-					))
+				    type == 4 ||  // directory type
+				    type == 8 ||  // file type
+				    type ==
+				        10  // 10 == link (could be directory or file, treat as unknown)
+				    ))
 				{
 					isDir = false;
 
@@ -1553,7 +1553,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 						}
 						else  //assume file
 							__COUTS__(2) << "Unable to open path as directory: "
-										 << (src + "/" + name) << __E__;
+							             << (src + "/" + name) << __E__;
 					}
 
 					if(type == 4)
@@ -1565,7 +1565,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 					{
 						__COUTS__(2) << "Directory: " << type << " " << name << __E__;
 						std::string describe = StringMacros::exec(
-							("cd " + src + "/" + name + "; git describe --tags").c_str());
+						    ("cd " + src + "/" + name + "; git describe --tags").c_str());
 						if(describe.size())
 						{
 							// strip trailing newline if any
@@ -1591,8 +1591,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				if(!first)
 					(*out) << "," << __E__;
 				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(pkg.first)
-					   << "\": \"" << StringMacros::escapeJSONStringEntities(pkg.second)
-					   << "\"";
+				       << "\": \"" << StringMacros::escapeJSONStringEntities(pkg.second)
+				       << "\"";
 				first = false;
 			}
 			(*out) << __E__ << "\t\t}," << __E__;
@@ -1605,16 +1605,16 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				if(!first)
 					(*out) << "," << __E__;
 				(*out) << "\t\t\t\"" << StringMacros::escapeJSONStringEntities(repo.first)
-					   << "\": \"" << StringMacros::escapeJSONStringEntities(repo.second)
-					   << "\"";
+				       << "\": \"" << StringMacros::escapeJSONStringEntities(repo.second)
+				       << "\"";
 				first = false;
 			}
 			(*out) << __E__ << "\t\t}," << __E__;
 
 			// Output environment
 			(*out) << "\t\t\"environment\": \""
-				   << StringMacros::escapeJSONStringEntities(environment) << "\""
-				   << __E__;
+			       << StringMacros::escapeJSONStringEntities(environment) << "\""
+			       << __E__;
 
 			(*out) << "\t}" << __E__;
 		}
@@ -1623,7 +1623,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			(*out) << "\n\n\"Software Versions\": {" << __E__;
 			(*out) << "  \"spack\": " << spackPackages.size() << " packages," << __E__;
 			(*out) << "  \"checked_out\": " << checkedOutRepos.size() << " repositories,"
-				   << __E__;
+			       << __E__;
 			(*out) << "  \"environment\": \"" << environment << "\"" << __E__;
 			(*out) << "}" << __E__;
 		}
@@ -1668,24 +1668,24 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	else
 	{
 		__SS__
-			<< "Invalid dump type '" << dumpType
-			<< "' given during dumpActiveConfiguration(). Valid types are as follows:\n"
-			<<
+		    << "Invalid dump type '" << dumpType
+		    << "' given during dumpActiveConfiguration(). Valid types are as follows:\n"
+		    <<
 
-			// List all choices (must match accepted dumpType strings)
-			"Group Keys"
-			<< ", "
-			<< "Table Versions"
-			<< ", "
-			<< "Group Keys and Table Versions"
-			<< ", "
-			<< "All"
-			<< ", "
-			<< "JSON All"
-			<<
+		    // List all choices (must match accepted dumpType strings)
+		    "Group Keys"
+		    << ", "
+		    << "Table Versions"
+		    << ", "
+		    << "Group Keys and Table Versions"
+		    << ", "
+		    << "All"
+		    << ", "
+		    << "JSON All"
+		    <<
 
-			"\n\nPlease change the State Machine configuration to a valid dump type."
-			<< __E__;
+		    "\n\nPlease change the State Machine configuration to a valid dump type."
+		    << __E__;
 		__SS_THROW__;
 	}
 
@@ -1701,8 +1701,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 ///
 /// if accumulateWarnings, then put in string, do not throw
 void ConfigurationManager::loadMemberMap(
-	const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap,
-	std::string* accumulatedWarnings /* =0 */)
+    const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap,
+    std::string* accumulatedWarnings /* =0 */)
 {
 	__GEN_COUTTV__(runTimeSeconds());
 
@@ -1722,7 +1722,7 @@ void ConfigurationManager::loadMemberMap(
 	//Note: mongodb crashing from too many connections was resolved by increasing ulimit at mongodb launch
 	//	 i.e. ulimit -n 64000 && ./start_mongod.sh
 	const int numOfThreads =
-		PROCESSOR_COUNT / 2 > memberMap.size() ? (PROCESSOR_COUNT / 2) : memberMap.size();
+	    PROCESSOR_COUNT / 2 > memberMap.size() ? (PROCESSOR_COUNT / 2) : memberMap.size();
 	if(memberMap.size() <= 2 /* i.e. is Context group */ || usingCache ||
 	   numOfThreads < 2)  // no multi-threading
 	{
@@ -1748,26 +1748,26 @@ void ConfigurationManager::loadMemberMap(
 			try
 			{
 				theInterface_->get(tmpTableBasePtr,    // tablePtr
-								   memberPair.first,   // tableName
-								   0,                  // groupKey
-								   0,                  // groupName
-								   false,              // dontFill=false to fill
-								   memberPair.second,  // version
-								   false               // resetTable
+				                   memberPair.first,   // tableName
+				                   0,                  // groupKey
+				                   0,                  // groupName
+				                   false,              // dontFill=false to fill
+				                   memberPair.second,  // version
+				                   false               // resetTable
 				);
 			}
 			catch(const std::runtime_error& e)
 			{
 				__SS__ << "Failed to load member table '" << memberPair.first << "-v"
-					   << memberPair.second << "' - here is the error: \n\n"
-					   << e.what() << __E__;
+				       << memberPair.second << "' - here is the error: \n\n"
+				       << e.what() << __E__;
 
 				ss << "\nIf the table '" << memberPair.first
 				   << "' should not exist, then please remove it from the group. If it "
-					  "should exist, then it "
+				      "should exist, then it "
 				   << "seems to have a problem; use the Table Editor to fix the table "
-					  "definition, or "
-					  "edit the table content to match the table definition."
+				      "definition, or "
+				      "edit the table content to match the table definition."
 				   << __E__;
 
 				// if accumulating warnings and table view was created, then continue
@@ -1779,7 +1779,7 @@ void ConfigurationManager::loadMemberMap(
 			catch(...)
 			{
 				__SS__ << "Failed to load member table '" << memberPair.first << " -v"
-					   << memberPair.second << "' due to unknown error!" << __E__;
+				       << memberPair.second << "' due to unknown error!" << __E__;
 				try
 				{
 					throw;
@@ -1794,10 +1794,10 @@ void ConfigurationManager::loadMemberMap(
 
 				ss << "\nIf the table '" << memberPair.first
 				   << "' should not exist, then please remove it from the group. If it "
-					  "should exist, then it "
+				      "should exist, then it "
 				   << "seems to have a problem; use the Table Editor to fix the table "
-					  "definition, or "
-					  "edit the table content to match the table definition."
+				      "definition, or "
+				      "edit the table content to match the table definition."
 				   << __E__;
 
 				// if accumulating warnings and table view was created, then continue
@@ -1811,7 +1811,7 @@ void ConfigurationManager::loadMemberMap(
 			if(!tmpTableBasePtr)
 			{
 				__SS__ << "Null pointer returned for table '" << memberPair.first << " -v"
-					   << memberPair.second << ".' Was the table info deleted?" << __E__;
+				       << memberPair.second << ".' Was the table info deleted?" << __E__;
 				__GEN_COUT_ERR__ << ss.str();
 
 				nameToTableMap_.erase(memberPair.first);
@@ -1833,8 +1833,8 @@ void ConfigurationManager::loadMemberMap(
 				if(accumulatedWarnings && getError != "")
 				{
 					__SS__ << "Error caught during '" << memberPair.first << " -v"
-						   << memberPair.second << "' table retrieval: \n"
-						   << getError << __E__;
+					       << memberPair.second << "' table retrieval: \n"
+					       << getError << __E__;
 					__GEN_COUT_ERR__ << ss.str();
 					*accumulatedWarnings += ss.str();
 				}
@@ -1842,7 +1842,7 @@ void ConfigurationManager::loadMemberMap(
 			else
 			{
 				__SS__ << nameToTableMap_[memberPair.first]->getTableName() << " -v"
-					   << memberPair.second << ": View version not activated properly!";
+				       << memberPair.second << ": View version not activated properly!";
 				__SS_THROW__;
 			}
 		}  // end member map loop
@@ -1850,8 +1850,8 @@ void ConfigurationManager::loadMemberMap(
 	else  //multi-threading
 	{
 		__GEN_COUTT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads
-					  << " threads for loading member map of size " << memberMap.size()
-					  << __E__;
+		              << " threads for loading member map of size " << memberMap.size()
+		              << __E__;
 
 		int         threadsLaunched  = 0;
 		int         foundThreadIndex = 0;
@@ -1887,7 +1887,7 @@ void ConfigurationManager::loadMemberMap(
 				threadsLaunched = numOfThreads - 1;
 			}
 			__GEN_COUTT__ << "Starting filling thread... " << foundThreadIndex << " for "
-						  << memberPair.first << " -v" << memberPair.second << __E__;
+			              << memberPair.first << " -v" << memberPair.second << __E__;
 			*(threadDone[foundThreadIndex]) = false;
 
 			// get the proper temporary pointer
@@ -1901,32 +1901,32 @@ void ConfigurationManager::loadMemberMap(
 				tmpTableBasePtrs[foundThreadIndex] = nameToTableMap_.at(memberPair.first);
 
 			std::thread(
-				[](ConfigurationInterface*                 theInterface,
-				   std::map<std::string, ots::TableBase*>* theNameToTableMap,
-				   ots::TableBase*                         theTable,
-				   std::string                             theTableName,
-				   ots::TableVersion                       version,
-				   std::string*                            theThreadErrors,
-				   std::mutex*                             theThreadMutex,
-				   std::shared_ptr<std::atomic<bool>>      theThreadDone) {
-					ConfigurationManager::fillTableThread(theInterface,
-														  theNameToTableMap,
-														  theTable,
-														  theTableName,
-														  version,
-														  theThreadErrors,
-														  theThreadMutex,
-														  theThreadDone);
-				},
-				theInterface_,
-				&nameToTableMap_,
-				tmpTableBasePtrs[foundThreadIndex],
-				memberPair.first,
-				memberPair.second,
-				&threadErrors,
-				&threadMutex,
-				threadDone[foundThreadIndex])
-				.detach();
+			    [](ConfigurationInterface*                 theInterface,
+			       std::map<std::string, ots::TableBase*>* theNameToTableMap,
+			       ots::TableBase*                         theTable,
+			       std::string                             theTableName,
+			       ots::TableVersion                       version,
+			       std::string*                            theThreadErrors,
+			       std::mutex*                             theThreadMutex,
+			       std::shared_ptr<std::atomic<bool>>      theThreadDone) {
+				    ConfigurationManager::fillTableThread(theInterface,
+				                                          theNameToTableMap,
+				                                          theTable,
+				                                          theTableName,
+				                                          version,
+				                                          theThreadErrors,
+				                                          theThreadMutex,
+				                                          theThreadDone);
+			    },
+			    theInterface_,
+			    &nameToTableMap_,
+			    tmpTableBasePtrs[foundThreadIndex],
+			    memberPair.first,
+			    memberPair.second,
+			    &threadErrors,
+			    &threadMutex,
+			    threadDone[foundThreadIndex])
+			    .detach();
 
 			++threadsLaunched;
 			++foundThreadIndex;
@@ -1945,8 +1945,8 @@ void ConfigurationManager::loadMemberMap(
 			if(foundThreadIndex != -1)
 			{
 				__GEN_COUT_TYPE__(TLVL_DEBUG + 2)
-					<< __COUT_HDR__ << "Waiting for thread to finish... "
-					<< foundThreadIndex << __E__;
+				    << __COUT_HDR__ << "Waiting for thread to finish... "
+				    << foundThreadIndex << __E__;
 				usleep(10000);
 			}
 		} while(foundThreadIndex != -1);  //end thread done search loop
@@ -1955,7 +1955,7 @@ void ConfigurationManager::loadMemberMap(
 		if(threadErrors != "")
 		{
 			__SS__ << "Error identified in threads during loading of member map: \n"
-				   << threadErrors << __E__;
+			       << threadErrors << __E__;
 			__GEN_COUTT__ << "\n" << ss.str() << __E__;
 			if(accumulatedWarnings)
 				*accumulatedWarnings += ss.str();
@@ -1990,23 +1990,23 @@ void ConfigurationManager::loadMemberMap(
 ///	throws exception on failure.
 /// 	if accumulatedWarnings, then "ignore warnings" and return them in the string
 void ConfigurationManager::loadTableGroup(
-	const std::string&   groupName,
-	const TableGroupKey& groupKey,
-	bool                 doActivate /*=false*/,
-	std::map<std::string /*table name*/, TableVersion>*
-				 groupMembers /*=0 , note: db time intensive! */,
-	ProgressBar* progressBar /*=0*/,
-	std::string* accumulatedWarnings /*=0*/,
-	std::string* groupComment /*=0 , note: in metadata */,
-	std::string* groupAuthor /*=0 , note: in metadata */,
-	std::string* groupCreateTime /*=0 , note: in metadata */,
-	bool         doNotLoadMembers /*=false*/,
-	std::string* groupTypeString /*=0 , note: db time intensive! */,
-	std::map<std::string /*name*/, std::string /*alias*/>*
-		groupAliases /*=0 , note: in metadata */,
-	ConfigurationManager::LoadGroupType
-		 groupTypeToLoad /*=ConfigurationManager::LoadGroupType::ALL_TYPES*/,
-	bool ignoreVersionTracking /*=false*/)
+    const std::string&   groupName,
+    const TableGroupKey& groupKey,
+    bool                 doActivate /*=false*/,
+    std::map<std::string /*table name*/, TableVersion>*
+                 groupMembers /*=0 , note: db time intensive! */,
+    ProgressBar* progressBar /*=0*/,
+    std::string* accumulatedWarnings /*=0*/,
+    std::string* groupComment /*=0 , note: in metadata */,
+    std::string* groupAuthor /*=0 , note: in metadata */,
+    std::string* groupCreateTime /*=0 , note: in metadata */,
+    bool         doNotLoadMembers /*=false*/,
+    std::string* groupTypeString /*=0 , note: db time intensive! */,
+    std::map<std::string /*name*/, std::string /*alias*/>*
+        groupAliases /*=0 , note: in metadata */,
+    ConfigurationManager::LoadGroupType
+         groupTypeToLoad /*=ConfigurationManager::LoadGroupType::ALL_TYPES*/,
+    bool ignoreVersionTracking /*=false*/)
 {
 	// clear to defaults
 	if(groupComment)
@@ -2046,14 +2046,14 @@ void ConfigurationManager::loadTableGroup(
 	// theBackboneTableGroup_ on success
 
 	__GEN_COUTT__ << "Loading Table Group: " << groupName << "(" << groupKey << ")"
-				  << " accumulatedWarnings=" << (accumulatedWarnings ? 1 : 0) << __E__;
+	              << " accumulatedWarnings=" << (accumulatedWarnings ? 1 : 0) << __E__;
 
 	//failing member map load should be an exception!
 
 	std::map<std::string /*name*/, TableVersion /*version*/> memberMap =
-		theInterface_->getTableGroupMembers(
-			TableGroupKey::getFullGroupString(groupName, groupKey),
-			true /*include meta data table*/);
+	    theInterface_->getTableGroupMembers(
+	        TableGroupKey::getFullGroupString(groupName, groupKey),
+	        true /*include meta data table*/);
 
 	try
 	{
@@ -2081,16 +2081,16 @@ void ConfigurationManager::loadTableGroup(
 				catch(const std::runtime_error& e)
 				{
 					__GEN_COUT_WARN__
-						<< "Failed to load " << groupMetadataTable_.getTableName() << "-v"
-						<< metaTablePair->second << ". Metadata error: " << e.what()
-						<< __E__;
+					    << "Failed to load " << groupMetadataTable_.getTableName() << "-v"
+					    << metaTablePair->second << ". Metadata error: " << e.what()
+					    << __E__;
 				}
 				catch(...)
 				{
 					__GEN_COUT_WARN__
-						<< "Failed to load " << groupMetadataTable_.getTableName() << "-v"
-						<< metaTablePair->second << ". Ignoring unknown metadata error. "
-						<< __E__;
+					    << "Failed to load " << groupMetadataTable_.getTableName() << "-v"
+					    << metaTablePair->second << ". Ignoring unknown metadata error. "
+					    << __E__;
 				}
 
 				// check that there is only 1 row
@@ -2098,11 +2098,11 @@ void ConfigurationManager::loadTableGroup(
 				{
 					groupMetadataTable_.print();
 					__GEN_COUT_ERR__ << "Ignoring that groupMetadataTable_ has wrong "
-										"number of rows for '"
-									 << groupName << "(" << groupKey
-									 << ")!' Must "
-										"be 1. Going with anonymous defaults."
-									 << __E__;
+					                    "number of rows for '"
+					                 << groupName << "(" << groupKey
+					                 << ")!' Must "
+					                    "be 1. Going with anonymous defaults."
+					                 << __E__;
 
 					// fix metadata table
 					while(groupMetadataTable_.getViewP()->getNumberOfRows() > 1)
@@ -2116,18 +2116,18 @@ void ConfigurationManager::loadTableGroup(
 
 					if(groupAliases)
 						StringMacros::getMapFromString(
-							groupMetadataTable_.getView().getValueAsString(
-								0, ConfigurationManager::METADATA_COL_ALIASES),
-							*groupAliases);
+						    groupMetadataTable_.getView().getValueAsString(
+						        0, ConfigurationManager::METADATA_COL_ALIASES),
+						    *groupAliases);
 					if(groupComment)
 						*groupComment = groupMetadataTable_.getView().getValueAsString(
-							0, ConfigurationManager::METADATA_COL_COMMENT);
+						    0, ConfigurationManager::METADATA_COL_COMMENT);
 					if(groupAuthor)
 						*groupAuthor = groupMetadataTable_.getView().getValueAsString(
-							0, ConfigurationManager::METADATA_COL_AUTHOR);
+						    0, ConfigurationManager::METADATA_COL_AUTHOR);
 					if(groupCreateTime)
 						*groupCreateTime = groupMetadataTable_.getView().getValueAsString(
-							0, ConfigurationManager::METADATA_COL_TIMESTAMP);
+						    0, ConfigurationManager::METADATA_COL_TIMESTAMP);
 				}
 			}
 
@@ -2137,8 +2137,8 @@ void ConfigurationManager::loadTableGroup(
 		else
 		{
 			__GEN_COUT__ << "Ignoring that groupMetadataTable_ is missing for group '"
-						 << groupName << "(" << groupKey
-						 << "). Going with anonymous defaults." << __E__;
+			             << groupName << "(" << groupKey
+			             << "). Going with anonymous defaults." << __E__;
 		}
 
 		//NEVER modify members based on aliases
@@ -2151,7 +2151,7 @@ void ConfigurationManager::loadTableGroup(
 		{
 			std::map<std::string, std::string>& aliasMap = *groupAliases;
 			std::map<std::string /*table*/, std::map<std::string /*alias*/, TableVersion>>
-				versionAliases;
+			    versionAliases;
 			if(aliasMap.size())  // load version aliases
 			{
 				__GEN_COUTV__(StringMacros::mapToString(aliasMap));
@@ -2166,26 +2166,26 @@ void ConfigurationManager::loadTableGroup(
 				if(memberMap.find(aliasPair.first) != memberMap.end())
 				{
 					__GEN_COUT__ << "Group member '" << aliasPair.first
-								 << "' was found in group member map!" << __E__;
+					             << "' was found in group member map!" << __E__;
 					__GEN_COUT__ << "Looking for alias '" << aliasPair.second
-								 << "' in active version aliases..." << __E__;
+					             << "' in active version aliases..." << __E__;
 
 					if(versionAliases.find(aliasPair.first) == versionAliases.end() ||
 					   versionAliases[aliasPair.first].find(aliasPair.second) ==
-						   versionAliases[aliasPair.first].end())
+					       versionAliases[aliasPair.first].end())
 					{
 						__SS__ << "Group '" << groupName << "(" << groupKey
-							   << ")' requires table version alias '" << aliasPair.first
-							   << ":" << aliasPair.second
-							   << ",' which was not found in the active Backbone!"
-							   << __E__;
+						       << ")' requires table version alias '" << aliasPair.first
+						       << ":" << aliasPair.second
+						       << ",' which was not found in the active Backbone!"
+						       << __E__;
 						__SS_ONLY_THROW__;
 					}
 
 					memberMap[aliasPair.first] =
-						versionAliases[aliasPair.first][aliasPair.second];
+					    versionAliases[aliasPair.first][aliasPair.second];
 					__GEN_COUT__ << "Version alias translated to " << aliasPair.first
-								 << __E__;
+					             << __E__;
 				}
 			}
 		}  // end modify members based on aliases
@@ -2197,7 +2197,7 @@ void ConfigurationManager::loadTableGroup(
 			progressBar->step();
 
 		ConfigurationManager::GroupType groupType =
-			ConfigurationManager::GroupType::CONFIGURATION_TYPE;
+		    ConfigurationManager::GroupType::CONFIGURATION_TYPE;
 		try
 		{
 			if(groupTypeString)  // do before exit case
@@ -2216,52 +2216,52 @@ void ConfigurationManager::loadTableGroup(
 				groupType = getTypeOfGroup(memberMap);
 
 			if(groupTypeToLoad ==
-				   ConfigurationManager::LoadGroupType::ONLY_BACKBONE_OR_CONTEXT_TYPES &&
+			       ConfigurationManager::LoadGroupType::ONLY_BACKBONE_OR_CONTEXT_TYPES &&
 			   groupType != ConfigurationManager::GroupType::CONTEXT_TYPE &&
 			   groupType != ConfigurationManager::GroupType::BACKBONE_TYPE)
 			{
 				__GEN_COUT__ << "Not loading group because it is not of type Context or "
-								"Backbone (it is type '"
-							 << convertGroupTypeToName(groupType) << "')." << __E__;
+				                "Backbone (it is type '"
+				             << convertGroupTypeToName(groupType) << "')." << __E__;
 				return;
 			}
 			else if(groupTypeToLoad ==
-						ConfigurationManager::LoadGroupType::ONLY_BACKBONE_TYPE &&
-					groupType != ConfigurationManager::GroupType::BACKBONE_TYPE)
+			            ConfigurationManager::LoadGroupType::ONLY_BACKBONE_TYPE &&
+			        groupType != ConfigurationManager::GroupType::BACKBONE_TYPE)
 			{
 				__GEN_COUT__ << "Not loading group because it is not of type "
-								"Backbone (it is type '"
-							 << convertGroupTypeToName(groupType) << "')." << __E__;
+				                "Backbone (it is type '"
+				             << convertGroupTypeToName(groupType) << "')." << __E__;
 				return;
 			}
 
 			__GEN_COUTTV__(StringMacros::mapToString(getActiveVersions()));
 			if(doActivate)
 				__GEN_COUT__
-					<< "------------------------------------- init start    \t [for all "
-					   "plug-ins in "
-					<< convertGroupTypeToName(groupType) << " group '" << groupName << "("
-					<< groupKey << ")"
-					<< "']" << __E__;
+				    << "------------------------------------- init start    \t [for all "
+				       "plug-ins in "
+				    << convertGroupTypeToName(groupType) << " group '" << groupName << "("
+				    << groupKey << ")"
+				    << "']" << __E__;
 
 			if(doActivate)
 			{
 				std::string groupToDeactivate =
-					groupType == ConfigurationManager::GroupType::CONTEXT_TYPE
-						? theContextTableGroup_
-						: (groupType == ConfigurationManager::GroupType::BACKBONE_TYPE
-							   ? theBackboneTableGroup_
-							   : (groupType ==
-										  ConfigurationManager::GroupType::ITERATE_TYPE
-									  ? theIterateTableGroup_
-									  : theConfigurationTableGroup_));
+				    groupType == ConfigurationManager::GroupType::CONTEXT_TYPE
+				        ? theContextTableGroup_
+				        : (groupType == ConfigurationManager::GroupType::BACKBONE_TYPE
+				               ? theBackboneTableGroup_
+				               : (groupType ==
+				                          ConfigurationManager::GroupType::ITERATE_TYPE
+				                      ? theIterateTableGroup_
+				                      : theConfigurationTableGroup_));
 
 				//		deactivate all of that type (invalidate active view)
 				if(groupToDeactivate != "")  // deactivate only if pre-existing group
 				{
 					__GEN_COUTT__ << "groupToDeactivate '" << groupToDeactivate
-								  << "' of type " << convertGroupTypeToName(groupType)
-								  << __E__;
+					              << "' of type " << convertGroupTypeToName(groupType)
+					              << __E__;
 					destroyTableGroup(groupToDeactivate, true);
 				}
 				else
@@ -2269,7 +2269,7 @@ void ConfigurationManager::loadTableGroup(
 					//Getting here, is kind of strange:
 					//	- this group may have only been partially loaded before?
 					__GEN_COUTT__ << "no group to deactivate of type "
-								  << convertGroupTypeToName(groupType) << __E__;
+					              << convertGroupTypeToName(groupType) << __E__;
 				}
 				__GEN_COUTTV__(StringMacros::mapToString(getActiveVersions()));
 			}
@@ -2287,20 +2287,20 @@ void ConfigurationManager::loadTableGroup(
 			if(accumulatedWarnings)
 			{
 				__GEN_COUTT__ << "Checking chosen group for tree errors... here are the "
-								 "current warnings: "
-							  << *accumulatedWarnings << __E__;
+				                 "current warnings: "
+				              << *accumulatedWarnings << __E__;
 
 				getChildren(&memberMap, accumulatedWarnings);
 				if(*accumulatedWarnings != "")
 				{
 					__GEN_COUT_WARN__
-						<< "Errors detected while loading Table Group: " << groupName
-						<< "(" << groupKey << "). Ignoring the following errors: "
-						<< "\n"
-						<< *accumulatedWarnings << __E__;
+					    << "Errors detected while loading Table Group: " << groupName
+					    << "(" << groupKey << "). Ignoring the following errors: "
+					    << "\n"
+					    << *accumulatedWarnings << __E__;
 				}
 				__GEN_COUTT__ << "After checking children warnings: "
-							  << *accumulatedWarnings << __E__;
+				              << *accumulatedWarnings << __E__;
 			}
 
 			if(progressBar)
@@ -2316,9 +2316,9 @@ void ConfigurationManager::loadTableGroup(
 
 				const int numOfThreads = PROCESSOR_COUNT / 2;
 				__GEN_COUTT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
-							  << numOfThreads
-							  << " threads for initializing tables for Table Group '"
-							  << groupName << "(" << groupKey << ")'." << __E__;
+				              << numOfThreads
+				              << " threads for initializing tables for Table Group '"
+				              << groupName << "(" << groupKey << ")'." << __E__;
 				if(groupType != ConfigurationManager::GroupType::CONFIGURATION_TYPE ||
 				   numOfThreads < 2)  // no multi-threading
 				{
@@ -2330,14 +2330,14 @@ void ConfigurationManager::loadTableGroup(
 						   memberPair.second.isScratchVersion())
 						{
 							__SS__
-								<< "Error while activating member Table '"
-								<< nameToTableMap_[memberPair.first]->getTableName()
-								<< "-v" << memberPair.second << " for Table Group '"
-								<< groupName << "(" << groupKey
-								<< ")'. When version tracking is enabled, Scratch views"
-								<< " are not allowed! Please only use unique, persistent "
-								   "versions when version tracking is enabled."
-								<< __E__;
+							    << "Error while activating member Table '"
+							    << nameToTableMap_[memberPair.first]->getTableName()
+							    << "-v" << memberPair.second << " for Table Group '"
+							    << groupName << "(" << groupKey
+							    << ")'. When version tracking is enabled, Scratch views"
+							    << " are not allowed! Please only use unique, persistent "
+							       "versions when version tracking is enabled."
+							    << __E__;
 							__SS_ONLY_THROW__;
 						}
 
@@ -2350,7 +2350,7 @@ void ConfigurationManager::loadTableGroup(
 						catch(std::runtime_error& e)
 						{
 							__SS__ << "Error detected calling " << memberPair.first
-								   << ".init()!\n\n " << e.what() << __E__;
+							       << ".init()!\n\n " << e.what() << __E__;
 
 							if(accumulatedWarnings)
 							{
@@ -2365,7 +2365,7 @@ void ConfigurationManager::loadTableGroup(
 						catch(...)
 						{
 							__SS__ << "Unknown Error detected calling "
-								   << memberPair.first << ".init()!\n\n " << __E__;
+							       << memberPair.first << ".init()!\n\n " << __E__;
 							try
 							{
 								throw;
@@ -2406,16 +2406,16 @@ void ConfigurationManager::loadTableGroup(
 							if(memberPair.second.isScratchVersion())
 							{
 								__SS__
-									<< "Error while activating member Table '"
-									<< nameToTableMap_[memberPair.first]->getTableName()
-									<< "-v" << memberPair.second << " for Table Group '"
-									<< groupName << "(" << groupKey
-									<< ")'. When version tracking is enabled, Scratch "
-									   "views"
-									<< " are not allowed! Please only use unique, "
-									   "persistent "
-									   "versions when version tracking is enabled."
-									<< __E__;
+								    << "Error while activating member Table '"
+								    << nameToTableMap_[memberPair.first]->getTableName()
+								    << "-v" << memberPair.second << " for Table Group '"
+								    << groupName << "(" << groupKey
+								    << ")'. When version tracking is enabled, Scratch "
+								       "views"
+								    << " are not allowed! Please only use unique, "
+								       "persistent "
+								       "versions when version tracking is enabled."
+								    << __E__;
 								__SS_ONLY_THROW__;
 							}
 						}
@@ -2437,35 +2437,35 @@ void ConfigurationManager::loadTableGroup(
 								if(foundThreadIndex == -1)
 								{
 									__GEN_COUTT__ << "Waiting for available thread..."
-												  << __E__;
+									              << __E__;
 									usleep(10000);
 								}
 							}  //end thread search loop
 							threadsLaunched = numOfThreads - 1;
 						}
 						__GEN_COUTT__ << "Starting init table thread... "
-									  << foundThreadIndex << " for " << memberPair.first
-									  << __E__;
+						              << foundThreadIndex << " for " << memberPair.first
+						              << __E__;
 						*(threadDone[foundThreadIndex]) = false;
 
 						std::thread(
-							[](ConfigurationManager*              cfgMgr,
-							   ots::TableBase*                    theTable,
-							   std::string*                       theThreadErrors,
-							   std::mutex*                        theThreadMutex,
-							   std::shared_ptr<std::atomic<bool>> theThreadDone) {
-								ConfigurationManager::initTableThread(cfgMgr,
-																	  theTable,
-																	  theThreadErrors,
-																	  theThreadMutex,
-																	  theThreadDone);
-							},
-							this,
-							nameToTableMap_.at(memberPair.first),
-							&threadErrors,
-							&threadMutex,
-							threadDone[foundThreadIndex])
-							.detach();
+						    [](ConfigurationManager*              cfgMgr,
+						       ots::TableBase*                    theTable,
+						       std::string*                       theThreadErrors,
+						       std::mutex*                        theThreadMutex,
+						       std::shared_ptr<std::atomic<bool>> theThreadDone) {
+							    ConfigurationManager::initTableThread(cfgMgr,
+							                                          theTable,
+							                                          theThreadErrors,
+							                                          theThreadMutex,
+							                                          theThreadDone);
+						    },
+						    this,
+						    nameToTableMap_.at(memberPair.first),
+						    &threadErrors,
+						    &threadMutex,
+						    threadDone[foundThreadIndex])
+						    .detach();
 
 						++threadsLaunched;
 						++foundThreadIndex;
@@ -2484,7 +2484,7 @@ void ConfigurationManager::loadTableGroup(
 						if(foundThreadIndex != -1)
 						{
 							__GEN_COUTT__ << "Waiting for thread to finish... "
-										  << foundThreadIndex << __E__;
+							              << foundThreadIndex << __E__;
 							usleep(10000);
 						}
 					} while(foundThreadIndex != -1);  //end thread done search loop
@@ -2493,8 +2493,8 @@ void ConfigurationManager::loadTableGroup(
 					if(threadErrors != "")
 					{
 						__SS__ << "Error identified in threads during init of table "
-								  "group: \n"
-							   << threadErrors << __E__;
+						          "group: \n"
+						       << threadErrors << __E__;
 						__GEN_COUTT__ << "\n" << ss.str() << __E__;
 						if(accumulatedWarnings)
 							*accumulatedWarnings += ss.str();
@@ -2524,7 +2524,7 @@ void ConfigurationManager::loadTableGroup(
 					//					"(" << groupKey << ")" << __E__;
 					theContextTableGroup_ = groupName;
 					theContextTableGroupKey_ =
-						std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
+					    std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
 				}
 				else if(groupType == ConfigurationManager::GroupType::BACKBONE_TYPE)
 				{
@@ -2533,7 +2533,7 @@ void ConfigurationManager::loadTableGroup(
 					//					"(" << groupKey << ")" << __E__;
 					theBackboneTableGroup_ = groupName;
 					theBackboneTableGroupKey_ =
-						std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
+					    std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
 				}
 				else if(groupType == ConfigurationManager::GroupType::ITERATE_TYPE)
 				{
@@ -2543,7 +2543,7 @@ void ConfigurationManager::loadTableGroup(
 					//					"(" << groupKey << ")" << __E__;
 					theIterateTableGroup_ = groupName;
 					theIterateTableGroupKey_ =
-						std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
+					    std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
 				}
 				else  // is theConfigurationTableGroup_
 				{
@@ -2552,7 +2552,7 @@ void ConfigurationManager::loadTableGroup(
 					//					"(" << groupKey << ")" << __E__;
 					theConfigurationTableGroup_ = groupName;
 					theConfigurationTableGroupKey_ =
-						std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
+					    std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
 				}
 			}
 
@@ -2561,17 +2561,17 @@ void ConfigurationManager::loadTableGroup(
 
 			if(doActivate)
 				__GEN_COUT__
-					<< "------------------------------------- init complete \t [for all "
-					   "plug-ins in "
-					<< convertGroupTypeToName(groupType) << " group '" << groupName << "("
-					<< groupKey << ")"
-					<< "']" << __E__;
+				    << "------------------------------------- init complete \t [for all "
+				       "plug-ins in "
+				    << convertGroupTypeToName(groupType) << " group '" << groupName << "("
+				    << groupKey << ")"
+				    << "']" << __E__;
 		}  // end failed group load try
 		catch(...)
 		{
 			// save group name and key of failed load attempt
 			lastFailedGroupLoad_[convertGroupTypeToName(groupType)] =
-				std::pair<std::string, TableGroupKey>(groupName, TableGroupKey(groupKey));
+			    std::pair<std::string, TableGroupKey>(groupName, TableGroupKey(groupKey));
 
 			try
 			{
@@ -2580,8 +2580,8 @@ void ConfigurationManager::loadTableGroup(
 			catch(const std::runtime_error& e)
 			{
 				__SS__ << "Error occurred while loading table group '" << groupName << "("
-					   << groupKey << ")': \n"
-					   << e.what() << __E__;
+				       << groupKey << ")': \n"
+				       << e.what() << __E__;
 
 				if(accumulatedWarnings)
 					*accumulatedWarnings += ss.str();
@@ -2591,7 +2591,7 @@ void ConfigurationManager::loadTableGroup(
 			catch(...)
 			{
 				__SS__ << "An unknown error occurred while loading table group '"
-					   << groupName << "(" << groupKey << ")." << __E__;
+				       << groupName << "(" << groupKey << ")." << __E__;
 				try
 				{
 					throw;
@@ -2611,9 +2611,9 @@ void ConfigurationManager::loadTableGroup(
 		}
 
 		__GEN_COUTT__ << "loadTableGroup() complete for Table Group '" << groupName << "("
-					  << groupKey << ")'." << __E__;
+		              << groupKey << ")'." << __E__;
 		lastGroupLoad_[convertGroupTypeToName(groupType)] =
-			std::make_pair(std::make_pair(groupName, TableGroupKey(groupKey)), memberMap);
+		    std::make_pair(std::make_pair(groupName, TableGroupKey(groupKey)), memberMap);
 		return;
 	}
 	catch(...)
@@ -2622,7 +2622,7 @@ void ConfigurationManager::loadTableGroup(
 
 		// save group name and key of failed load attempt
 		lastFailedGroupLoad_[ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN] =
-			std::pair<std::string, TableGroupKey>(groupName, TableGroupKey(groupKey));
+		    std::pair<std::string, TableGroupKey>(groupName, TableGroupKey(groupKey));
 
 		try
 		{
@@ -2631,8 +2631,8 @@ void ConfigurationManager::loadTableGroup(
 		catch(const std::runtime_error& e)
 		{
 			__SS__ << "Error occurred while loading table group '" << groupName << "("
-				   << groupKey << ")': \n"
-				   << e.what() << __E__;
+			       << groupKey << ")': \n"
+			       << e.what() << __E__;
 
 			if(accumulatedWarnings)
 				*accumulatedWarnings += ss.str();
@@ -2642,7 +2642,7 @@ void ConfigurationManager::loadTableGroup(
 		catch(...)
 		{
 			__SS__ << "An unknown error occurred while loading table group '" << groupName
-				   << "(" << groupKey << ")." << __E__;
+			       << "(" << groupKey << ")." << __E__;
 			try
 			{
 				throw;
@@ -2668,12 +2668,12 @@ void ConfigurationManager::loadTableGroup(
 /// copyTableGroupFromCache()
 ///	Used, for example, to copy tables from ConfigurationManager to another ConfigurationManager without making db requests
 void ConfigurationManager::copyTableGroupFromCache(
-	const ConfigurationManager&                cacheConfigMgr,
-	const std::map<std::string, TableVersion>& memberMap,
-	const std::string&                         groupName /* = "" */,
-	const TableGroupKey&                       groupKey /* = TableGroupKey::Invalid */,
-	bool                                       doActivate /* = false */,
-	bool                                       ignoreVersionTracking /* = false */)
+    const ConfigurationManager&                cacheConfigMgr,
+    const std::map<std::string, TableVersion>& memberMap,
+    const std::string&                         groupName /* = "" */,
+    const TableGroupKey&                       groupKey /* = TableGroupKey::Invalid */,
+    bool                                       doActivate /* = false */,
+    bool                                       ignoreVersionTracking /* = false */)
 {
 	//Note: mostly copied from onfigurationManager::loadTableGroup()
 
@@ -2683,20 +2683,20 @@ void ConfigurationManager::copyTableGroupFromCache(
 	{
 		if(doActivate)
 			__GEN_COUT__ << "------------------------------------- cacheCopy init start  "
-							"  \t [for all "
-							"plug-ins in member map"
-						 << "']" << __E__;
+			                "  \t [for all "
+			                "plug-ins in member map"
+			             << "']" << __E__;
 
 		if(doActivate)
 		{
 			std::string groupToDeactivate =
-				groupType == ConfigurationManager::GroupType::CONTEXT_TYPE
-					? theContextTableGroup_
-					: (groupType == ConfigurationManager::GroupType::BACKBONE_TYPE
-						   ? theBackboneTableGroup_
-						   : (groupType == ConfigurationManager::GroupType::ITERATE_TYPE
-								  ? theIterateTableGroup_
-								  : theConfigurationTableGroup_));
+			    groupType == ConfigurationManager::GroupType::CONTEXT_TYPE
+			        ? theContextTableGroup_
+			        : (groupType == ConfigurationManager::GroupType::BACKBONE_TYPE
+			               ? theBackboneTableGroup_
+			               : (groupType == ConfigurationManager::GroupType::ITERATE_TYPE
+			                      ? theIterateTableGroup_
+			                      : theConfigurationTableGroup_));
 
 			// deactivate all of that type (invalidate active view)
 			if(groupToDeactivate != "")  // deactivate only if pre-existing group
@@ -2719,29 +2719,29 @@ void ConfigurationManager::copyTableGroupFromCache(
 		for(auto& memberPair : memberMap)
 		{
 			__GEN_COUTT__ << "Copying " << memberPair.first << "-v" << memberPair.second
-						  << __E__;
+			              << __E__;
 
 			//if table does not exist, create it
 			if(nameToTableMap_.find(memberPair.first) == nameToTableMap_.end())
 			{
 				TableBase* table = 0;
 				theInterface_->get(table,             // configurationPtr
-								   memberPair.first,  // tableName
-								   0,                 // groupKey
-								   0,                 // groupName
-								   true               // dontFill=false to fill
+				                   memberPair.first,  // tableName
+				                   0,                 // groupKey
+				                   0,                 // groupName
+				                   true               // dontFill=false to fill
 				);
 
 				nameToTableMap_[memberPair.first] = table;
 			}
 			nameToTableMap_.at(memberPair.first)
-				->copyView(cacheConfigMgr.getTableByName(memberPair.first)
-							   ->getView(memberPair.second),
-						   memberPair.second,
-						   cacheConfigMgr.getTableByName(memberPair.first)
-							   ->getView(memberPair.second)
-							   .getAuthor(),
-						   true /* looseColumnMatching */);
+			    ->copyView(cacheConfigMgr.getTableByName(memberPair.first)
+			                   ->getView(memberPair.second),
+			               memberPair.second,
+			               cacheConfigMgr.getTableByName(memberPair.first)
+			                   ->getView(memberPair.second)
+			                   .getAuthor(),
+			               true /* looseColumnMatching */);
 
 			//Note: copyView does not make the new view the active view,
 			//	to make the new view the active view do this:
@@ -2756,7 +2756,7 @@ void ConfigurationManager::copyTableGroupFromCache(
 			std::string accumulatedWarnings;
 			const int   numOfThreads = PROCESSOR_COUNT / 2;
 			__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
-						 << numOfThreads << " threads for initializing tables." << __E__;
+			             << numOfThreads << " threads for initializing tables." << __E__;
 			if(groupType != ConfigurationManager::GroupType::CONFIGURATION_TYPE ||
 			   numOfThreads < 2)  // no multi-threading
 			{
@@ -2768,13 +2768,13 @@ void ConfigurationManager::copyTableGroupFromCache(
 					   memberPair.second.isScratchVersion())
 					{
 						__SS__ << "Error while activating member Table '"
-							   << nameToTableMap_[memberPair.first]->getTableName()
-							   << "-v" << memberPair.second
-							   << " for member map. When version tracking is enabled, "
-								  "Scratch views"
-							   << " are not allowed! Please only use unique, persistent "
-								  "versions when version tracking is enabled."
-							   << __E__;
+						       << nameToTableMap_[memberPair.first]->getTableName()
+						       << "-v" << memberPair.second
+						       << " for member map. When version tracking is enabled, "
+						          "Scratch views"
+						       << " are not allowed! Please only use unique, persistent "
+						          "versions when version tracking is enabled."
+						       << __E__;
 						__SS_ONLY_THROW__;
 					}
 
@@ -2787,13 +2787,13 @@ void ConfigurationManager::copyTableGroupFromCache(
 					catch(std::runtime_error& e)
 					{
 						__SS__ << "Error detected calling " << memberPair.first
-							   << ".init()!\n\n " << e.what() << __E__;
+						       << ".init()!\n\n " << e.what() << __E__;
 						accumulatedWarnings += ss.str();
 					}
 					catch(...)
 					{
 						__SS__ << "Unknown Error detected calling " << memberPair.first
-							   << ".init()!\n\n " << __E__;
+						       << ".init()!\n\n " << __E__;
 						try
 						{
 							throw;
@@ -2826,14 +2826,14 @@ void ConfigurationManager::copyTableGroupFromCache(
 						if(memberPair.second.isScratchVersion())
 						{
 							__SS__
-								<< "Error while activating member Table '"
-								<< nameToTableMap_[memberPair.first]->getTableName()
-								<< "-v" << memberPair.second
-								<< " for member map. When version tracking is enabled, "
-								   "Scratch views"
-								<< " are not allowed! Please only use unique, persistent "
-								   "versions when version tracking is enabled."
-								<< __E__;
+							    << "Error while activating member Table '"
+							    << nameToTableMap_[memberPair.first]->getTableName()
+							    << "-v" << memberPair.second
+							    << " for member map. When version tracking is enabled, "
+							       "Scratch views"
+							    << " are not allowed! Please only use unique, persistent "
+							       "versions when version tracking is enabled."
+							    << __E__;
 							__SS_ONLY_THROW__;
 						}
 					}
@@ -2855,34 +2855,34 @@ void ConfigurationManager::copyTableGroupFromCache(
 							if(foundThreadIndex == -1)
 							{
 								__GEN_COUTT__ << "Waiting for available thread..."
-											  << __E__;
+								              << __E__;
 								usleep(10000);
 							}
 						}  //end thread search loop
 						threadsLaunched = numOfThreads - 1;
 					}
 					__GEN_COUTT__ << "Starting init table thread... " << foundThreadIndex
-								  << " for " << memberPair.first << __E__;
+					              << " for " << memberPair.first << __E__;
 					*(threadDone[foundThreadIndex]) = false;
 
 					std::thread(
-						[](ConfigurationManager*              cfgMgr,
-						   ots::TableBase*                    theTable,
-						   std::string*                       theAccumulatedWarnings,
-						   std::mutex*                        theThreadMutex,
-						   std::shared_ptr<std::atomic<bool>> theThreadDone) {
-							ConfigurationManager::initTableThread(cfgMgr,
-																  theTable,
-																  theAccumulatedWarnings,
-																  theThreadMutex,
-																  theThreadDone);
-						},
-						this,
-						nameToTableMap_.at(memberPair.first),
-						&accumulatedWarnings,
-						&threadMutex,
-						threadDone[foundThreadIndex])
-						.detach();
+					    [](ConfigurationManager*              cfgMgr,
+					       ots::TableBase*                    theTable,
+					       std::string*                       theAccumulatedWarnings,
+					       std::mutex*                        theThreadMutex,
+					       std::shared_ptr<std::atomic<bool>> theThreadDone) {
+						    ConfigurationManager::initTableThread(cfgMgr,
+						                                          theTable,
+						                                          theAccumulatedWarnings,
+						                                          theThreadMutex,
+						                                          theThreadDone);
+					    },
+					    this,
+					    nameToTableMap_.at(memberPair.first),
+					    &accumulatedWarnings,
+					    &threadMutex,
+					    threadDone[foundThreadIndex])
+					    .detach();
 
 					++threadsLaunched;
 					++foundThreadIndex;
@@ -2901,7 +2901,7 @@ void ConfigurationManager::copyTableGroupFromCache(
 					if(foundThreadIndex != -1)
 					{
 						__GEN_COUTT__ << "Waiting for thread to finish... "
-									  << foundThreadIndex << __E__;
+						              << foundThreadIndex << __E__;
 						usleep(10000);
 					}
 				} while(foundThreadIndex != -1);  //end thread done search loop
@@ -2911,8 +2911,8 @@ void ConfigurationManager::copyTableGroupFromCache(
 			if(accumulatedWarnings != "")
 			{
 				__GEN_COUT__ << "Activating the member map after copying cache had the "
-								"following warnings: "
-							 << accumulatedWarnings << __E__;
+				                "following warnings: "
+				             << accumulatedWarnings << __E__;
 			}
 		}  //end activate/init of member tables
 
@@ -2931,7 +2931,7 @@ void ConfigurationManager::copyTableGroupFromCache(
 				//					"(" << groupKey << ")" << __E__;
 				theContextTableGroup_ = groupName;
 				theContextTableGroupKey_ =
-					std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
+				    std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
 			}
 			else if(groupType == ConfigurationManager::GroupType::BACKBONE_TYPE)
 			{
@@ -2940,7 +2940,7 @@ void ConfigurationManager::copyTableGroupFromCache(
 				//					"(" << groupKey << ")" << __E__;
 				theBackboneTableGroup_ = groupName;
 				theBackboneTableGroupKey_ =
-					std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
+				    std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
 			}
 			else if(groupType == ConfigurationManager::GroupType::ITERATE_TYPE)
 			{
@@ -2950,7 +2950,7 @@ void ConfigurationManager::copyTableGroupFromCache(
 				//					"(" << groupKey << ")" << __E__;
 				theIterateTableGroup_ = groupName;
 				theIterateTableGroupKey_ =
-					std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
+				    std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
 			}
 			else  // is theConfigurationTableGroup_
 			{
@@ -2959,27 +2959,27 @@ void ConfigurationManager::copyTableGroupFromCache(
 				//					"(" << groupKey << ")" << __E__;
 				theConfigurationTableGroup_ = groupName;
 				theConfigurationTableGroupKey_ =
-					std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
+				    std::shared_ptr<TableGroupKey>(new TableGroupKey(groupKey));
 			}
 		}
 
 		if(doActivate)
 			__GEN_COUT__ << "------------------------------------- cacheCopy init "
-							"complete \t [for all "
-							"plug-ins in member map"
-						 << "']" << __E__;
+			                "complete \t [for all "
+			                "plug-ins in member map"
+			             << "']" << __E__;
 
 		__GEN_COUTT__ << "Completed cache copy." << __E__;
 		if(groupName != "" && !TableGroupKey(groupKey).isInvalid())
 			lastGroupLoad_[convertGroupTypeToName(groupType)] =
-				make_pair(make_pair(groupName, TableGroupKey(groupKey)), memberMap);
+			    make_pair(make_pair(groupName, TableGroupKey(groupKey)), memberMap);
 	}  // end failed group load try
 	catch(...)
 	{
 		__GEN_COUT__ << "Unknown failure in cache copy." << __E__;
 		// save group name and key of failed load attempt
 		lastFailedGroupLoad_[convertGroupTypeToName(groupType)] =
-			std::pair<std::string, TableGroupKey>(groupName, TableGroupKey(groupKey));
+		    std::pair<std::string, TableGroupKey>(groupName, TableGroupKey(groupKey));
 		throw;
 	}  //end unknown failure handling
 }  // end copyTableGroupFromCache()
@@ -2997,15 +2997,15 @@ ConfigurationManager::getGroupOfLoadedTable(const std::string& tableName) const
 //==============================================================================
 /// initTableThread()
 void ConfigurationManager::initTableThread(ConfigurationManager* cfgMgr,
-										   ots::TableBase*       table,
-										   std::string*          threadErrors,
-										   std::mutex*           threadMutex,
-										   std::shared_ptr<std::atomic<bool>> threadDone)
+                                           ots::TableBase*       table,
+                                           std::string*          threadErrors,
+                                           std::mutex*           threadMutex,
+                                           std::shared_ptr<std::atomic<bool>> threadDone)
 try
 {
 	__COUTT__ << "Thread init of " << table->getTableName() << "-v"
-			  << table->getViewVersion() << " threadErrors=" << (threadErrors ? 1 : 0)
-			  << __E__;
+	          << table->getViewVersion() << " threadErrors=" << (threadErrors ? 1 : 0)
+	          << __E__;
 
 	// attempt to init using the configuration's specific init
 	//	this could be risky user code, try and catch
@@ -3017,7 +3017,7 @@ try
 	catch(std::runtime_error& e)
 	{
 		__SS__ << "Error detected calling " << table->getTableName() << ".init()!\n\n "
-			   << e.what() << __E__;
+		       << e.what() << __E__;
 
 		if(threadErrors)
 		{
@@ -3033,7 +3033,7 @@ try
 	catch(...)
 	{
 		__SS__ << "Unknown Error detected calling " << table->getTableName()
-			   << ".init()!\n\n " << __E__;
+		       << ".init()!\n\n " << __E__;
 		try
 		{
 			throw;
@@ -3063,7 +3063,7 @@ try
 catch(...)
 {
 	__SS__ << "Error occurred initializing table '" << table->getTableName() << "-v"
-		   << table->getViewVersion() << "'..." << __E__;
+	       << table->getViewVersion() << "'..." << __E__;
 	try
 	{
 		throw;
@@ -3090,14 +3090,14 @@ catch(...)
 //==============================================================================
 /// fillTableThread()
 void ConfigurationManager::fillTableThread(
-	ConfigurationInterface*                 theInterface,
-	std::map<std::string, ots::TableBase*>* nameToTableMap,
-	ots::TableBase*                         table,
-	std::string                             tableName,
-	ots::TableVersion                       version,
-	std::string*                            threadErrors,
-	std::mutex*                             threadMutex,
-	std::shared_ptr<std::atomic<bool>>      threadDone)
+    ConfigurationInterface*                 theInterface,
+    std::map<std::string, ots::TableBase*>* nameToTableMap,
+    ots::TableBase*                         table,
+    std::string                             tableName,
+    ots::TableVersion                       version,
+    std::string*                            threadErrors,
+    std::mutex*                             threadMutex,
+    std::shared_ptr<std::atomic<bool>>      threadDone)
 try
 {
 	__COUTT__ << "Thread fill of " << tableName << "-v" << version << __E__;
@@ -3116,26 +3116,26 @@ try
 	try
 	{
 		theInterface->get(table,      // tablePtr
-						  tableName,  // tableName
-						  0,          // groupKey
-						  0,          // groupName
-						  false,      // dontFill=false to fill
-						  version,    // version
-						  false       // resetTable
+		                  tableName,  // tableName
+		                  0,          // groupKey
+		                  0,          // groupName
+		                  false,      // dontFill=false to fill
+		                  version,    // version
+		                  false       // resetTable
 		);
 	}
 	catch(const std::runtime_error& e)
 	{
 		__SS__ << "Failed to load member table '" << tableName << "-v" << version
-			   << "' - here is the error: \n\n"
-			   << e.what() << __E__;
+		       << "' - here is the error: \n\n"
+		       << e.what() << __E__;
 
 		ss << "\nIf the table '" << tableName
 		   << "' should not exist, then please remove it from the group. If it "
-			  "should exist, then it "
+		      "should exist, then it "
 		   << "seems to have a problem; use the Table Editor to fix the table "
-			  "definition, or "
-			  "edit the table content to match the table definition."
+		      "definition, or "
+		      "edit the table content to match the table definition."
 		   << __E__;
 
 		// if accumulating warnings and table view was created, then continue
@@ -3147,7 +3147,7 @@ try
 	catch(...)
 	{
 		__SS__ << "Failed to load member table '" << tableName << "-v" << version
-			   << "' due to unknown error!" << __E__;
+		       << "' due to unknown error!" << __E__;
 		try
 		{
 			throw;
@@ -3161,10 +3161,10 @@ try
 		}
 		ss << "\nIf the table '" << tableName
 		   << "' should not exist, then please remove it from the group. If it "
-			  "should exist, then it "
+		      "should exist, then it "
 		   << "seems to have a problem; use the Table Editor to fix the table "
-			  "definition, or "
-			  "edit the table content to match the table definition."
+		      "definition, or "
+		      "edit the table content to match the table definition."
 		   << __E__;
 
 		// if accumulating warnings and table view was created, then continue
@@ -3178,11 +3178,11 @@ try
 		__COUTV__(getError);
 
 	__COUT_TYPE__(TLVL_TRACE + 1)
-		<< __COUT_HDR__ << "Checking ptr.. " << (table ? "GOOD" : "BAD") << __E__;
+	    << __COUT_HDR__ << "Checking ptr.. " << (table ? "GOOD" : "BAD") << __E__;
 	if(!table)
 	{
 		__SS__ << "Null pointer returned for table '" << tableName
-			   << ".' Was the table info deleted?" << __E__;
+		       << ".' Was the table info deleted?" << __E__;
 		__COUT_ERR__ << ss.str();
 
 		std::lock_guard<std::mutex> lock(*threadMutex);
@@ -3206,14 +3206,14 @@ try
 	if(nameToTableMap->at(tableName)->getViewP())
 	{
 		__COUT_TYPE__(TLVL_TRACE + 1)
-			<< __COUT_HDR__
-			<< "Activated version: " << nameToTableMap->at(tableName)->getViewVersion()
-			<< __E__;
+		    << __COUT_HDR__
+		    << "Activated version: " << nameToTableMap->at(tableName)->getViewVersion()
+		    << __E__;
 
 		if(threadErrors && getError != "")
 		{
 			__SS__ << "Error caught during '" << tableName << "' table retrieval: \n"
-				   << getError << __E__;
+			       << getError << __E__;
 			__COUT_ERR__ << ss.str();
 			std::lock_guard<std::mutex> lock(*threadMutex);
 			*threadErrors += ss.str();
@@ -3231,7 +3231,7 @@ try
 catch(const std::runtime_error& e)
 {
 	__SS__ << "Error occurred filling table '" << tableName << "-v" << version
-		   << "': " << e.what() << __E__;
+	       << "': " << e.what() << __E__;
 	__COUT_ERR__ << ss.str();
 
 	if(threadErrors)
@@ -3245,7 +3245,7 @@ catch(const std::runtime_error& e)
 catch(...)
 {
 	__SS__ << "Unknwon error occurred filling table '" << tableName << "-v" << version
-		   << "'..." << __E__;
+	       << "'..." << __E__;
 	try
 	{
 		throw;
@@ -3281,28 +3281,28 @@ ConfigurationManager::getActiveTableGroups(void) const
 	std::map<std::string, std::pair<std::string, TableGroupKey>> retMap;
 
 	retMap[ConfigurationManager::GROUP_TYPE_NAME_CONTEXT] =
-		std::pair<std::string, TableGroupKey>(
-			theContextTableGroup_,
-			theContextTableGroupKey_ ? *theContextTableGroupKey_ : TableGroupKey());
+	    std::pair<std::string, TableGroupKey>(
+	        theContextTableGroup_,
+	        theContextTableGroupKey_ ? *theContextTableGroupKey_ : TableGroupKey());
 	retMap[ConfigurationManager::GROUP_TYPE_NAME_BACKBONE] =
-		std::pair<std::string, TableGroupKey>(
-			theBackboneTableGroup_,
-			theBackboneTableGroupKey_ ? *theBackboneTableGroupKey_ : TableGroupKey());
+	    std::pair<std::string, TableGroupKey>(
+	        theBackboneTableGroup_,
+	        theBackboneTableGroupKey_ ? *theBackboneTableGroupKey_ : TableGroupKey());
 	retMap[ConfigurationManager::GROUP_TYPE_NAME_ITERATE] =
-		std::pair<std::string, TableGroupKey>(
-			theIterateTableGroup_,
-			theIterateTableGroupKey_ ? *theIterateTableGroupKey_ : TableGroupKey());
+	    std::pair<std::string, TableGroupKey>(
+	        theIterateTableGroup_,
+	        theIterateTableGroupKey_ ? *theIterateTableGroupKey_ : TableGroupKey());
 	retMap[ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION] =
-		std::pair<std::string, TableGroupKey>(theConfigurationTableGroup_,
-											  theConfigurationTableGroupKey_
-												  ? *theConfigurationTableGroupKey_
-												  : TableGroupKey());
+	    std::pair<std::string, TableGroupKey>(theConfigurationTableGroup_,
+	                                          theConfigurationTableGroupKey_
+	                                              ? *theConfigurationTableGroupKey_
+	                                              : TableGroupKey());
 	return retMap;
 }  // end getActiveTableGroups()
 
 //==============================================================================
 const std::string& ConfigurationManager::getActiveGroupName(
-	const ConfigurationManager::GroupType& type) const
+    const ConfigurationManager::GroupType& type) const
 {
 	if(type == ConfigurationManager::GroupType::CONFIGURATION_TYPE)
 		return theConfigurationTableGroup_;
@@ -3319,11 +3319,11 @@ const std::string& ConfigurationManager::getActiveGroupName(
 
 //==============================================================================
 TableGroupKey ConfigurationManager::getActiveGroupKey(
-	const ConfigurationManager::GroupType& type) const
+    const ConfigurationManager::GroupType& type) const
 {
 	if(type == ConfigurationManager::GroupType::CONFIGURATION_TYPE)
 		return theConfigurationTableGroupKey_ ? *theConfigurationTableGroupKey_
-											  : TableGroupKey();
+		                                      : TableGroupKey();
 	else if(type == ConfigurationManager::GroupType::CONTEXT_TYPE)
 		return theContextTableGroupKey_ ? *theContextTableGroupKey_ : TableGroupKey();
 	else if(type == ConfigurationManager::GroupType::BACKBONE_TYPE)
@@ -3337,27 +3337,27 @@ TableGroupKey ConfigurationManager::getActiveGroupKey(
 
 //==============================================================================
 ConfigurationTree ConfigurationManager::getContextNode(
-	const std::string& contextUID, const std::string& /*applicationUID*/) const
+    const std::string& contextUID, const std::string& /*applicationUID*/) const
 {
 	return getNode("/" + getTableByName(XDAQ_CONTEXT_TABLE_NAME)->getTableName() + "/" +
-				   contextUID);
+	               contextUID);
 }  // end getContextNode()
 
 //==============================================================================
 ConfigurationTree ConfigurationManager::getSupervisorNode(
-	const std::string& contextUID, const std::string& applicationUID) const
+    const std::string& contextUID, const std::string& applicationUID) const
 {
 	return getNode("/" + getTableByName(XDAQ_CONTEXT_TABLE_NAME)->getTableName() + "/" +
-				   contextUID + "/LinkToApplicationTable/" + applicationUID);
+	               contextUID + "/LinkToApplicationTable/" + applicationUID);
 }  // end getSupervisorNode()
 
 //==============================================================================
 ConfigurationTree ConfigurationManager::getSupervisorTableNode(
-	const std::string& contextUID, const std::string& applicationUID) const
+    const std::string& contextUID, const std::string& applicationUID) const
 {
 	return getNode("/" + getTableByName(XDAQ_CONTEXT_TABLE_NAME)->getTableName() + "/" +
-				   contextUID + "/LinkToApplicationTable/" + applicationUID +
-				   "/LinkToSupervisorTable");
+	               contextUID + "/LinkToApplicationTable/" + applicationUID +
+	               "/LinkToSupervisorTable");
 }  // end getSupervisorTableNode()
 
 //==============================================================================
@@ -3365,12 +3365,12 @@ ConfigurationTree ConfigurationManager::getSupervisorTableNode(
 ConfigurationTree ConfigurationManager::getGatewaySupervisorNode() const
 {
 	auto contextChildren =
-		getNode("/" + getTableByName(XDAQ_CONTEXT_TABLE_NAME)->getTableName())
-			.getChildren();
+	    getNode("/" + getTableByName(XDAQ_CONTEXT_TABLE_NAME)->getTableName())
+	        .getChildren();
 	for(const auto& contextChild : contextChildren)
 	{
 		auto appChildren = contextChild.second.getNode("LinkToApplicationTable")
-							   .getChildren();  //colContext_.colLinkToApplicationTable_
+		                       .getChildren();  //colContext_.colLinkToApplicationTable_
 		for(const auto& appChild : appChildren)
 		{
 			if(appChild.second.getNode("Class").getValue() ==
@@ -3384,7 +3384,7 @@ ConfigurationTree ConfigurationManager::getGatewaySupervisorNode() const
 
 //==============================================================================
 ConfigurationTree ConfigurationManager::getNode(const std::string& nodeString,
-												bool doNotThrowOnBrokenUIDLinks) const
+                                                bool doNotThrowOnBrokenUIDLinks) const
 {
 	// __GEN_COUT__ << "nodeString=" << nodeString << " len=" << nodeString.length() << __E__;
 
@@ -3416,7 +3416,7 @@ ConfigurationTree ConfigurationManager::getNode(const std::string& nodeString,
 	}
 	++endingIndex;
 	std::string childPath =
-		(endingIndex >= nodeString.length() ? "" : nodeString.substr(endingIndex));
+	    (endingIndex >= nodeString.length() ? "" : nodeString.substr(endingIndex));
 
 	// __GEN_COUT__ << "childPath=" << childPath << " len=" << childPath.length() << " endingIndex=" << endingIndex << " nodeString.length()=" << nodeString.length() << __E__;
 
@@ -3430,7 +3430,7 @@ ConfigurationTree ConfigurationManager::getNode(const std::string& nodeString,
 
 //==============================================================================
 std::map<std::string, ConfigurationTree> ConfigurationManager::getNodes(
-	const std::string& nodeString) const
+    const std::string& nodeString) const
 {
 	return getNode(nodeString).getChildrenMap();
 }
@@ -3438,7 +3438,7 @@ std::map<std::string, ConfigurationTree> ConfigurationManager::getNodes(
 //==============================================================================
 /// getFirstPathToNode
 std::string ConfigurationManager::getFirstPathToNode(
-	const ConfigurationTree& /*node*/, const std::string& /*startPath*/) const
+    const ConfigurationTree& /*node*/, const std::string& /*startPath*/) const
 /// void ConfigurationManager::getFirstPathToNode(const ConfigurationTree &node, const
 /// ConfigurationTree &startNode) const
 {
@@ -3453,8 +3453,8 @@ std::string ConfigurationManager::getFirstPathToNode(
 ///	if accumulatedTreeErrors is non null, check for disconnects occurs.
 ///		check is 2 levels deep which should get to the links starting at tables.
 std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::getChildren(
-	std::map<std::string, TableVersion>* memberMap,
-	std::string*                         accumulatedTreeErrors) const
+    std::map<std::string, TableVersion>* memberMap,
+    std::string*                         accumulatedTreeErrors) const
 {
 	std::vector<std::pair<std::string, ConfigurationTree>> retVector;
 
@@ -3478,7 +3478,7 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::get
 				if(!tablePair.second->isActive())
 				{
 					__SS__ << "Get Children with member map requires a child '"
-						   << tablePair.first << "' that is not active!" << __E__;
+					       << tablePair.first << "' that is not active!" << __E__;
 					__SS_THROW__;
 				}
 			}
@@ -3488,9 +3488,9 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::get
 				{
 					*accumulatedTreeErrors += e.what();
 					__GEN_COUT_ERR__ << "Skipping " << tablePair.first
-									 << " since the table "
-										"is not active."
-									 << __E__;
+					                 << " since the table "
+					                    "is not active."
+					                 << __E__;
 					continue;
 				}
 				throw;
@@ -3506,16 +3506,16 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::get
 			try
 			{
 				std::vector<std::pair<std::string, ConfigurationTree>> newNodeChildren =
-					newNode.getChildren();
+				    newNode.getChildren();
 				for(auto& newNodeChild : newNodeChildren)
 				{
 					if(newNodeChild.second.getTableName() ==
-						   ConfigurationManager::DESKTOP_ICON_TABLE_NAME &&
+					       ConfigurationManager::DESKTOP_ICON_TABLE_NAME &&
 					   !newNodeChild.second.isEnabled())
 						continue;  //skip check for Desktop Icons that are disabled.
 
 					std::vector<std::pair<std::string, ConfigurationTree>>
-						twoDeepChildren = newNodeChild.second.getChildren();
+					    twoDeepChildren = newNodeChild.second.getChildren();
 
 					for(auto& twoDeepChild : twoDeepChildren)
 					{
@@ -3525,16 +3525,16 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::get
 						if(twoDeepChild.second.isLinkNode() &&
 						   twoDeepChild.second.isDisconnected() &&
 						   twoDeepChild.second.getDisconnectedTableName() !=
-							   TableViewColumnInfo::DATATYPE_LINK_DEFAULT)
+						       TableViewColumnInfo::DATATYPE_LINK_DEFAULT)
 						{
 							__SS__ << "At node '" + tablePair.first +
-										  "' with entry UID '" + newNodeChild.first +
-										  "' there is a disconnected child node at link "
-										  "column '" +
-										  twoDeepChild.first + "'" +
-										  " that points to table named '" +
-										  twoDeepChild.second.getDisconnectedTableName() +
-										  "' ...";
+							              "' with entry UID '" + newNodeChild.first +
+							              "' there is a disconnected child node at link "
+							              "column '" +
+							              twoDeepChild.first + "'" +
+							              " that points to table named '" +
+							              twoDeepChild.second.getDisconnectedTableName() +
+							              "' ...";
 							*accumulatedTreeErrors += ss.str();
 						}
 					}
@@ -3543,14 +3543,14 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::get
 			catch(std::runtime_error& e)
 			{
 				__SS__ << "At node '" + tablePair.first +
-							  "' error detected descending through children:\n" +
-							  e.what();
+				              "' error detected descending through children:\n" +
+				              e.what();
 				*accumulatedTreeErrors += ss.str();
 			}
 		}  // done checking for disconnects
 
 		retVector.push_back(
-			std::pair<std::string, ConfigurationTree>(tablePair.first, newNode));
+		    std::pair<std::string, ConfigurationTree>(tablePair.first, newNode));
 	}  //end active table loop
 
 	return retVector;
@@ -3564,7 +3564,7 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationManager::get
 ///		check is 2 levels deep which should get to the links starting at tables.
 std::map<std::string /* childName */, ConfigurationTree>
 ConfigurationManager::getChildrenMap(std::map<std::string, TableVersion>* memberMap,
-									 std::string* accumulatedTreeErrors) const
+                                     std::string* accumulatedTreeErrors) const
 {
 	std::map<std::string /* childName */, ConfigurationTree> retMap;
 
@@ -3588,7 +3588,7 @@ ConfigurationManager::getChildrenMap(std::map<std::string, TableVersion>* member
 				if(!tablePair.second->isActive())
 				{
 					__SS__ << "Get Children with member map requires a child '"
-						   << tablePair.first << "' that is not active!" << __E__;
+					       << tablePair.first << "' that is not active!" << __E__;
 					__SS_THROW__;
 				}
 			}
@@ -3598,9 +3598,9 @@ ConfigurationManager::getChildrenMap(std::map<std::string, TableVersion>* member
 				{
 					*accumulatedTreeErrors += e.what();
 					__GEN_COUT_ERR__ << "Skipping " << tablePair.first
-									 << " since the table "
-										"is not active."
-									 << __E__;
+					                 << " since the table "
+					                    "is not active."
+					                 << __E__;
 					continue;
 				}
 				throw;
@@ -3616,16 +3616,16 @@ ConfigurationManager::getChildrenMap(std::map<std::string, TableVersion>* member
 			try
 			{
 				std::vector<std::pair<std::string, ConfigurationTree>> newNodeChildren =
-					newNode.getChildren();
+				    newNode.getChildren();
 				for(auto& newNodeChild : newNodeChildren)
 				{
 					if(newNodeChild.second.getTableName() ==
-						   ConfigurationManager::DESKTOP_ICON_TABLE_NAME &&
+					       ConfigurationManager::DESKTOP_ICON_TABLE_NAME &&
 					   !newNodeChild.second.isEnabled())
 						continue;  //skip check for Desktop Icons that are disabled.
 
 					std::vector<std::pair<std::string, ConfigurationTree>>
-						twoDeepChildren = newNodeChild.second.getChildren();
+					    twoDeepChildren = newNodeChild.second.getChildren();
 
 					for(auto& twoDeepChild : twoDeepChildren)
 					{
@@ -3635,16 +3635,16 @@ ConfigurationManager::getChildrenMap(std::map<std::string, TableVersion>* member
 						if(twoDeepChild.second.isLinkNode() &&
 						   twoDeepChild.second.isDisconnected() &&
 						   twoDeepChild.second.getDisconnectedTableName() !=
-							   TableViewColumnInfo::DATATYPE_LINK_DEFAULT)
+						       TableViewColumnInfo::DATATYPE_LINK_DEFAULT)
 						{
 							__SS__ << "At node '" + tablePair.first +
-										  "' with entry UID '" + newNodeChild.first +
-										  "' there is a disconnected child node at link "
-										  "column '" +
-										  twoDeepChild.first + "'" +
-										  " that points to table named '" +
-										  twoDeepChild.second.getDisconnectedTableName() +
-										  "' ...";
+							              "' with entry UID '" + newNodeChild.first +
+							              "' there is a disconnected child node at link "
+							              "column '" +
+							              twoDeepChild.first + "'" +
+							              " that points to table named '" +
+							              twoDeepChild.second.getDisconnectedTableName() +
+							              "' ...";
 							*accumulatedTreeErrors += ss.str();
 						}
 					}
@@ -3653,14 +3653,14 @@ ConfigurationManager::getChildrenMap(std::map<std::string, TableVersion>* member
 			catch(std::runtime_error& e)
 			{
 				__SS__ << "At node '" + tablePair.first +
-							  "' error detected descending through children:\n" +
-							  e.what();
+				              "' error detected descending through children:\n" +
+				              e.what();
 				*accumulatedTreeErrors += ss.str();
 			}
 		}  // done checking for disconnects
 
 		retMap.emplace(
-			std::pair<std::string, ConfigurationTree>(tablePair.first, newNode));
+		    std::pair<std::string, ConfigurationTree>(tablePair.first, newNode));
 	}  //end active table loop
 
 	return retMap;
@@ -3677,30 +3677,30 @@ const TableBase* ConfigurationManager::getTableByName(const std::string& tableNa
 	if((it = nameToTableMap_.find(tableName)) == nameToTableMap_.end())
 	{
 		__SS__ << "Cannot find table named '" << tableName
-			   << "' - you need to load the table before it can be used.";
+		       << "' - you need to load the table before it can be used.";
 
 		if(nameToTableMap_.size() == 0)
 			ss << "\n\nAll tables are missing. Your configuration database connection "
-				  "may have been interrupted. Did an ssh tunnel disconnect?"
+			      "may have been interrupted. Did an ssh tunnel disconnect?"
 			   << __E__;
 		else
 		{
 			if(tableName == XDAQ_CONTEXT_TABLE_NAME)
 				ss << "\n\nThe XDAQ Context Table is essential to the operation of ots. "
-					  "Without it, ots can not determine which applications are running "
-					  "on which hosts. Make sure that you have loaded a valid "
-					  "Configuration Context group that contains the XDAQ Context "
-					  "Table."
+				      "Without it, ots can not determine which applications are running "
+				      "on which hosts. Make sure that you have loaded a valid "
+				      "Configuration Context group that contains the XDAQ Context "
+				      "Table."
 				   << __E__;
 			else
 				ss << " It is likely missing from the member list of the Table "
-					  "Group that was loaded."
+				      "Group that was loaded."
 				   << __E__;
 
 			ss << "\nYou may need to enter wiz mode to remedy the situation, use the "
-				  "following:\n"
-				  "\n\t ots --wiz"
-				  "\n\n\n"
+			      "following:\n"
+			      "\n\t ots --wiz"
+			      "\n\n\n"
 			   << __E__;
 
 			ss << __E__ << StringMacros::stackTrace() << __E__;
@@ -3709,7 +3709,7 @@ const TableBase* ConfigurationManager::getTableByName(const std::string& tableNa
 		__SS_ONLY_THROW__;
 	}
 	TLOG_DEBUG(55) << "Table " << tableName << " is at "
-				   << static_cast<void*>(it->second);
+	               << static_cast<void*>(it->second);
 	return it->second;
 }  // end getTableByName()
 
@@ -3722,7 +3722,7 @@ TableGroupKey ConfigurationManager::loadConfigurationBackbone()
 	if(!theBackboneTableGroupKey_)  // no active backbone
 	{
 		__GEN_COUT_WARN__ << "getTableGroupKey() Failed! No active backbone currently."
-						  << __E__;
+		                  << __E__;
 		return TableGroupKey();
 	}
 
@@ -3746,7 +3746,7 @@ TableGroupKey ConfigurationManager::loadConfigurationBackbone()
 ///	return INVALID on failure
 ///   else, pair<group name , TableGroupKey>
 std::pair<std::string, TableGroupKey> ConfigurationManager::getTableGroupFromAlias(
-	std::string systemAlias, ProgressBar* progressBar)
+    std::string systemAlias, ProgressBar* progressBar)
 {
 	// steps
 	//	check if special alias
@@ -3770,7 +3770,7 @@ std::pair<std::string, TableGroupKey> ConfigurationManager::getTableGroupFromAli
 			progressBar->step();
 		if(j > i)  // success
 			return std::pair<std::string, TableGroupKey>(
-				systemAlias.substr(i, j - i), TableGroupKey(systemAlias.substr(j + 1)));
+			    systemAlias.substr(i, j - i), TableGroupKey(systemAlias.substr(j + 1)));
 		else  // failure
 			return std::pair<std::string, TableGroupKey>("", TableGroupKey());
 	}
@@ -3784,14 +3784,14 @@ std::pair<std::string, TableGroupKey> ConfigurationManager::getTableGroupFromAli
 	{
 		//	find runType in Group Aliases table
 		ConfigurationTree entry =
-			getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(systemAlias);
+		    getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(systemAlias);
 
 		if(progressBar)
 			progressBar->step();
 
 		return std::pair<std::string, TableGroupKey>(
-			entry.getNode("GroupName").getValueAsString(),
-			TableGroupKey(entry.getNode("GroupKey").getValueAsString()));
+		    entry.getNode("GroupName").getValueAsString(),
+		    TableGroupKey(entry.getNode("GroupKey").getValueAsString()));
 	}
 	catch(...)
 	{
@@ -3812,23 +3812,23 @@ std::map<std::string /*groupAlias*/, std::pair<std::string /*groupName*/, TableG
 ConfigurationManager::getActiveGroupAliases(void)
 {
 	restoreActiveTableGroups(
-		false /* throwErrors */,
-		"" /* pathToActiveGroupsFile */,
-		ConfigurationManager::LoadGroupType::
-			ONLY_BACKBONE_TYPE);  // make sure the active configuration backbone is
+	    false /* throwErrors */,
+	    "" /* pathToActiveGroupsFile */,
+	    ConfigurationManager::LoadGroupType::
+	        ONLY_BACKBONE_TYPE);  // make sure the active configuration backbone is
 	// loaded from disk (i.e. the latest activated at the ConfigurationGUISupervisor)!
 
 	std::map<std::string /*groupAlias*/,
-			 std::pair<std::string /*groupName*/, TableGroupKey>>
-		retMap;
+	         std::pair<std::string /*groupName*/, TableGroupKey>>
+	    retMap;
 
 	std::vector<std::pair<std::string, ConfigurationTree>> entries =
-		getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
+	    getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
 	for(auto& entryPair : entries)
 	{
 		retMap[entryPair.first] = std::pair<std::string, TableGroupKey>(
-			entryPair.second.getNode("GroupName").getValueAsString(),
-			TableGroupKey(entryPair.second.getNode("GroupKey").getValueAsString()));
+		    entryPair.second.getNode("GroupName").getValueAsString(),
+		    TableGroupKey(entryPair.second.getNode("GroupKey").getValueAsString()));
 	}
 	return retMap;
 }  // end getActiveGroupAliases()
@@ -3837,22 +3837,22 @@ ConfigurationManager::getActiveGroupAliases(void)
 /// getVersionAliases()
 ///	get version aliases organized by table, for currently active backbone tables
 std::map<std::string /*table name*/,
-		 std::map<std::string /*version alias*/, TableVersion /*aliased version*/>>
+         std::map<std::string /*version alias*/, TableVersion /*aliased version*/>>
 ConfigurationManager::getVersionAliases(void) const
 {
 	//__GEN_COUT__ << "getVersionAliases()" << __E__;
 
 	std::map<std::string /*table name*/,
-			 std::map<std::string /*version alias*/, TableVersion /*aliased version*/>>
-		retMap;
+	         std::map<std::string /*version alias*/, TableVersion /*aliased version*/>>
+	    retMap;
 
 	std::map<std::string, TableVersion> activeVersions = getActiveVersions();
 	std::string                         versionAliasesTableName =
-		ConfigurationManager::VERSION_ALIASES_TABLE_NAME;
+	    ConfigurationManager::VERSION_ALIASES_TABLE_NAME;
 	if(activeVersions.find(versionAliasesTableName) == activeVersions.end())
 	{
 		__SS__ << "Active version of VersionAliases  missing!"
-			   << " Make sure you have a valid active Backbone Group." << __E__;
+		       << " Make sure you have a valid active Backbone Group." << __E__;
 		__GEN_COUT_WARN__ << "\n" << ss.str();
 		return retMap;
 	}
@@ -3860,7 +3860,7 @@ ConfigurationManager::getVersionAliases(void) const
 	//__GEN_COUT__ << "activeVersions[\"" << versionAliasesTableName << "\"]=" << activeVersions[versionAliasesTableName] << __E__;
 
 	std::vector<std::pair<std::string, ConfigurationTree>> aliasNodePairs =
-		getNode(versionAliasesTableName).getChildren();
+	    getNode(versionAliasesTableName).getChildren();
 
 	// create map
 	//	add the first of each tableName, versionAlias pair encountered
@@ -3874,11 +3874,11 @@ ConfigurationManager::getVersionAliases(void) const
 		if(retMap.find(tableName) != retMap.end() &&
 		   retMap[tableName].find(versionAlias) != retMap[tableName].end())
 			continue;  // skip repeats (Note: this also prevents overwriting of Scratch
-					   // alias)
+			           // alias)
 
 		// else add version to map
 		retMap[tableName][versionAlias] =
-			TableVersion(aliasNodePair.second.getNode("Version").getValueAsString());
+		    TableVersion(aliasNodePair.second.getNode("Version").getValueAsString());
 	}
 
 	return retMap;
@@ -3897,9 +3897,9 @@ std::map<std::string, TableVersion> ConfigurationManager::getActiveVersions(void
 		if(table.second && table.second->isActive())
 		{
 			__GEN_COUTS__(2) << table.first << "_v" << table.second->getViewVersion()
-							 << __E__;
+			                 << __E__;
 			retMap.insert(std::pair<std::string, TableVersion>(
-				table.first, table.second->getViewVersion()));
+			    table.first, table.second->getViewVersion()));
 		}
 	}
 
@@ -3930,7 +3930,7 @@ std::map<std::string, TableVersion> ConfigurationManager::getActiveVersions(void
 
 //==============================================================================
 std::shared_ptr<TableGroupKey> ConfigurationManager::makeTheTableGroupKey(
-	TableGroupKey key)
+    TableGroupKey key)
 {
 	if(theConfigurationTableGroupKey_)
 	{
@@ -3949,14 +3949,14 @@ const std::set<std::string>& ConfigurationManager::getActiveContextMemberNames()
 	contextMemberNames_ = ConfigurationManager::fixedContextMemberNames_;
 
 	auto it =
-		nameToTableMap_.find(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE);
+	    nameToTableMap_.find(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE);
 	if(it == nameToTableMap_.end())
 		return contextMemberNames_;
 
 	if(!it->second->isActive())  //if optional table is active, add it
 	{
 		contextMemberNames_.emplace(
-			ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE);
+		    ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE);
 	}
 	return contextMemberNames_;
 }  // end getContextMemberNames()
@@ -3988,18 +3988,18 @@ const std::set<std::string>& ConfigurationManager::getConfigurationMemberNames(v
 
 	for(auto& tablePair : activeTables)
 		if(
-			//check if not context table
-			ConfigurationManager::fixedContextMemberNames_.find(tablePair.first) ==
-				ConfigurationManager::fixedContextMemberNames_.end() &&
-			tablePair.first != ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE &&
+		    //check if not context table
+		    ConfigurationManager::fixedContextMemberNames_.find(tablePair.first) ==
+		        ConfigurationManager::fixedContextMemberNames_.end() &&
+		    tablePair.first != ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE &&
 
-			//check if not backbone table
-			ConfigurationManager::backboneMemberNames_.find(tablePair.first) ==
-				ConfigurationManager::backboneMemberNames_.end() &&
+		    //check if not backbone table
+		    ConfigurationManager::backboneMemberNames_.find(tablePair.first) ==
+		        ConfigurationManager::backboneMemberNames_.end() &&
 
-			//check if not iterate table
-			ConfigurationManager::iterateMemberNames_.find(tablePair.first) ==
-				ConfigurationManager::iterateMemberNames_.end())
+		    //check if not iterate table
+		    ConfigurationManager::iterateMemberNames_.find(tablePair.first) ==
+		        ConfigurationManager::iterateMemberNames_.end())
 		{
 			// else, it is a configuration table
 			configurationMemberNames_.emplace(tablePair.first);
@@ -4021,7 +4021,7 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 	if(pset.get_names().size() == 0)
 	{
 		__GEN_SS__ << "Empty fcl configuration parameter set found! File: " << fhiclPath
-				   << __E__;
+		           << __E__;
 		__SS_THROW__;
 	}
 
@@ -4053,10 +4053,10 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 	{
 		table = 0;
 		theInterface_->get(table,  // configurationPtr
-						   ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME,  // tableName
-						   0,                                              // groupKey
-						   0,                                              // groupName
-						   true  // dontFill=false to fill
+		                   ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME,  // tableName
+		                   0,                                              // groupKey
+		                   0,                                              // groupName
+		                   true  // dontFill=false to fill
 		);
 
 		nameToTableMap_[ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME] = table;
@@ -4086,11 +4086,11 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 	{
 		table = 0;
 		theInterface_->get(
-			table,                                              // configurationPtr
-			ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME,  // tableName
-			0,                                                  // groupKey
-			0,                                                  // groupName
-			true                                                // dontFill=false to fill
+		    table,                                              // configurationPtr
+		    ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME,  // tableName
+		    0,                                                  // groupKey
+		    0,                                                  // groupName
+		    true                                                // dontFill=false to fill
 		);
 
 		nameToTableMap_[ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME] = table;
@@ -4121,10 +4121,10 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 	{
 		table = 0;
 		theInterface_->get(table,                // configurationPtr
-						   "FESupervisorTable",  // tableName
-						   0,                    // groupKey
-						   0,                    // groupName
-						   true                  // dontFill=false to fill
+		                   "FESupervisorTable",  // tableName
+		                   0,                    // groupKey
+		                   0,                    // groupName
+		                   true                  // dontFill=false to fill
 		);
 
 		nameToTableMap_["FESupervisorTable"] = table;
@@ -4143,7 +4143,7 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		view->setValue("MacroMakerFESupervisor", 0, colMap["SupervisorUID"]);
 		view->setValue("FEInterfaceTable", 0, colMap["LinkToFEInterfaceTable"]);
 		view->setValue(
-			"MacroMakerFESupervisorInterfaces", 0, colMap["LinkToFEInterfaceGroupID"]);
+		    "MacroMakerFESupervisorInterfaces", 0, colMap["LinkToFEInterfaceGroupID"]);
 
 		__GEN_COUT__ << "Done adding supervisor record..." << __E__;
 		view->print();
@@ -4151,10 +4151,10 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 
 	// create FE Interface table and interface record(s)
 	recursiveInitFromFhiclPSet("FEInterfaceTable" /*tableName*/,
-							   pset /*fhicl parameter set*/,
-							   "" /*uid*/,
-							   "MacroMakerFESupervisorInterfaces" /*groupID*/,
-							   "FE" /*childLinkIndex*/);
+	                           pset /*fhicl parameter set*/,
+	                           "" /*uid*/,
+	                           "MacroMakerFESupervisorInterfaces" /*groupID*/,
+	                           "FE" /*childLinkIndex*/);
 
 	// init every table after modifications
 	for(auto& table : nameToTableMap_)
@@ -4208,12 +4208,12 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 			__GEN_COUTV__(h.getValueAsString());
 
 			auto fes =
-				getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
-					.getNode(
-						"MacroMakerFEContext/LinkToApplicationTable/"
-						"MacroMakerFESupervisor/LinkToSupervisorTable")
-					.getNode("LinkToFEInterfaceTable")
-					.getChildrenNames(true /*byPriority*/, true /*onlyStatusTrue*/);
+			    getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
+			        .getNode(
+			            "MacroMakerFEContext/LinkToApplicationTable/"
+			            "MacroMakerFESupervisor/LinkToSupervisorTable")
+			        .getNode("LinkToFEInterfaceTable")
+			        .getChildrenNames(true /*byPriority*/, true /*onlyStatusTrue*/);
 			__GEN_COUTV__(fes.size());
 			__GEN_COUTV__(StringMacros::vectorToString(fes));
 		}
@@ -4227,13 +4227,13 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 ///			recursively. If groupName given then loop through
 ///			records and add to table.
 void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableName,
-													  const fhicl::ParameterSet& pset,
-													  const std::string& recordName,
-													  const std::string& groupName,
-													  const std::string& groupLinkIndex)
+                                                      const fhicl::ParameterSet& pset,
+                                                      const std::string& recordName,
+                                                      const std::string& groupName,
+                                                      const std::string& groupLinkIndex)
 {
 	__GEN_COUT__ << __COUT_HDR_P__ << "Adding table '" << tableName << "' record(s)..."
-				 << __E__;
+	             << __E__;
 
 	TableBase* table;
 	// create context and add context record
@@ -4242,12 +4242,12 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 		if(nameToTableMap_.find(tableName) == nameToTableMap_.end())
 		{
 			__GEN_COUT__ << "Table not found, so making '" << tableName << "' instance..."
-						 << __E__;
+			             << __E__;
 			theInterface_->get(table,      // configurationPtr
-							   tableName,  // tableName
-							   0,          // groupKey
-							   0,          // groupName
-							   true        // dontFill=false to fill
+			                   tableName,  // tableName
+			                   0,          // groupKey
+			                   0,          // groupName
+			                   true        // dontFill=false to fill
 			);
 
 			nameToTableMap_[tableName] = table;
@@ -4256,7 +4256,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 		else
 		{
 			__GEN_COUT__ << "Existing table found, so using '" << tableName
-						 << "'instance..." << __E__;
+			             << "'instance..." << __E__;
 			table = nameToTableMap_[tableName];
 		}
 
@@ -4289,18 +4289,18 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 			catch(...)
 			{
 				__GEN_COUT__ << "No status column to set for '" << recordName << "'"
-							 << __E__;
+				             << __E__;
 			}
 
 			if(groupName != "")  // then set groupID for this record
 			{
 				__GEN_COUT__ << "Setting group ID for group link index '"
-							 << groupLinkIndex << "'" << __E__;
+				             << groupLinkIndex << "'" << __E__;
 
 				int groupIDCol = view->getLinkGroupIDColumn(groupLinkIndex);
 				__GEN_COUT__ << "Setting group ID for group link index '"
-							 << groupLinkIndex << "' at column " << groupIDCol << " to '"
-							 << groupName << ".'" << __E__;
+				             << groupLinkIndex << "' at column " << groupIDCol << " to '"
+				             << groupName << ".'" << __E__;
 
 				view->setValue(groupName, r, groupIDCol);
 			}
@@ -4316,8 +4316,8 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 				if(colIt == colMap.end())
 				{
 					__SS__ << "Field '" << colName << "' of record '" << recordName
-						   << "' in table '" << tableName << "' was not found in columns."
-						   << "\n\nHere are the existing column names:\n";
+					       << "' in table '" << tableName << "' was not found in columns."
+					       << "\n\nHere are the existing column names:\n";
 					unsigned int i = 0;
 					for(const auto& col : colMap)
 						ss << "\n" << ++i << ".\t" << col.first;
@@ -4330,8 +4330,8 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 
 				const std::string value = pset.get<std::string>(colName);
 				__GEN_COUT__ << "Setting '" << recordName << "' parameter at column "
-							 << colIt->second << ", '" << colName << "'\t = " << value
-							 << __E__;
+				             << colIt->second << ", '" << colName << "'\t = " << value
+				             << __E__;
 				view->setValueAsString(value, r, colIt->second);
 			}  // end set parameters
 
@@ -4352,10 +4352,10 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 				if(c == 0)
 				{
 					__SS__ << "Illegal link name '" << linkName
-						   << "' found. The format must be <Column name>_<Target table "
-							  "name>,.. for example '"
-						   << "LinkToFETypeTable_FEOtsUDPTemplateInterfaceTable'"
-						   << __E__;
+					       << "' found. The format must be <Column name>_<Target table "
+					          "name>,.. for example '"
+					       << "LinkToFETypeTable_FEOtsUDPTemplateInterfaceTable'"
+					       << __E__;
 					__SS_THROW__;
 				}
 				std::string colName = linkName.substr(0, c);
@@ -4365,8 +4365,8 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 				if(colIt == colMap.end())
 				{
 					__SS__ << "Link '" << colName << "' of record '" << recordName
-						   << "' in table '" << tableName << "' was not found in columns."
-						   << "\n\nHere are the existing column names:\n";
+					       << "' in table '" << tableName << "' was not found in columns."
+					       << "\n\nHere are the existing column names:\n";
 					unsigned int i = 0;
 					for(const auto& col : colMap)
 						ss << "\n" << i << ".\t" << col.first << __E__;
@@ -4375,7 +4375,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 				//__GEN_COUT__ << "Setting link at column " << colIt->second << __E__;
 
 				std::pair<unsigned int /*link col*/, unsigned int /*link id col*/>
-					 linkPair;
+				     linkPair;
 				bool isGroupLink;
 				view->getChildLink(colIt->second, isGroupLink, linkPair);
 
@@ -4391,42 +4391,42 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 				if(!isGroupLink && linkRecords.size() > 1)
 				{
 					__SS__ << "A Unique Link can only point to one record. "
-						   << "The specified link '" << colName << "' of record '"
-						   << recordName << "' in table '" << tableName << "' has "
-						   << linkRecords.size() << " children records specified. "
-						   << __E__;
+					       << "The specified link '" << colName << "' of record '"
+					       << recordName << "' in table '" << tableName << "' has "
+					       << linkRecords.size() << " children records specified. "
+					       << __E__;
 					__SS_THROW__;
 				}
 
 				if(linkRecords.size() == 0)
 				{
 					__GEN_COUT__ << "No child records, so leaving link disconnected."
-								 << __E__;
+					             << __E__;
 					continue;
 				}
 
 				__GEN_COUT__ << "Setting Link at columns [" << linkPair.first << ","
-							 << linkPair.second << "]" << __E__;
+				             << linkPair.second << "]" << __E__;
 				view->setValue(linkTableName, r, linkPair.first);
 
 				if(!isGroupLink)
 				{
 					__GEN_COUT__ << "Setting up Unique link to " << linkRecords[0]
-								 << __E__;
+					             << __E__;
 
 					view->setValue(linkRecords[0], r, linkPair.second);
 
 					recursiveInitFromFhiclPSet(
-						linkTableName /*tableName*/,
-						linkPset.get<fhicl::ParameterSet>(
-							linkRecords[0]) /*fhicl parameter set*/,
-						linkRecords[0] /*uid*/,
-						"" /*groupID*/);
+					    linkTableName /*tableName*/,
+					    linkPset.get<fhicl::ParameterSet>(
+					        linkRecords[0]) /*fhicl parameter set*/,
+					    linkRecords[0] /*uid*/,
+					    "" /*groupID*/);
 				}
 				else
 				{
 					std::string childLinkIndex =
-						view->getColumnInfo(linkPair.first).getChildLinkIndex();
+					    view->getColumnInfo(linkPair.first).getChildLinkIndex();
 					std::string groupName = recordName + "Group";
 
 					view->setValue(groupName, r, linkPair.second);
@@ -4434,16 +4434,16 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 					for(const auto& groupRecord : linkRecords)
 					{
 						__GEN_COUT__ << "Setting '" << childLinkIndex
-									 << "' Group link to '" << groupName << "' record '"
-									 << groupRecord << "'" << __E__;
+						             << "' Group link to '" << groupName << "' record '"
+						             << groupRecord << "'" << __E__;
 
 						recursiveInitFromFhiclPSet(
-							linkTableName /*tableName*/,
-							linkPset.get<fhicl::ParameterSet>(
-								groupRecord) /*fhicl parameter set*/,
-							groupRecord /*uid*/,
-							groupName /*groupID*/,
-							childLinkIndex /*groupLinkIndex*/);
+						    linkTableName /*tableName*/,
+						    linkPset.get<fhicl::ParameterSet>(
+						        groupRecord) /*fhicl parameter set*/,
+						    groupRecord /*uid*/,
+						    groupName /*groupID*/,
+						    childLinkIndex /*groupLinkIndex*/);
 					}
 				}
 
@@ -4459,11 +4459,11 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 			{
 				__GEN_COUTV__(ps);
 				recursiveInitFromFhiclPSet(
-					tableName /*tableName*/,
-					pset.get<fhicl::ParameterSet>(ps) /*fhicl parameter set*/,
-					ps /*uid*/,
-					groupName /*groupID*/,
-					groupLinkIndex /*groupLinkIndex*/);
+				    tableName /*tableName*/,
+				    pset.get<fhicl::ParameterSet>(ps) /*fhicl parameter set*/,
+				    ps /*uid*/,
+				    groupName /*groupID*/,
+				    groupLinkIndex /*groupLinkIndex*/);
 			}
 		}
 		else
@@ -4472,7 +4472,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 			__SS_THROW__;
 		}
 		__GEN_COUT__ << __COUT_HDR_P__ << "Done adding table '" << tableName
-					 << "' record(s)..." << __E__;
+		             << "' record(s)..." << __E__;
 		view->print();
 	}
 
@@ -4485,8 +4485,8 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 bool ConfigurationManager::isOwnerFirstAppInContext()
 {
 	__GEN_COUTS__(11) << "Checking if owner '" << ownerContextUID_ << "/" << ownerAppUID_
-					  << "' is first App in Context:\n"
-					  << StringMacros::stackTrace() << __E__;
+	                  << "' is first App in Context:\n"
+	                  << StringMacros::stackTrace() << __E__;
 
 	if(ownerContextUID_ == "" || ownerAppUID_ == "")
 	{
@@ -4500,23 +4500,23 @@ bool ConfigurationManager::isOwnerFirstAppInContext()
 	try
 	{
 		auto contextChildren =
-			getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
-					ownerContextUID_ + "/LinkToApplicationTable")
-				.getChildrenNames(false /* byPriority */, true /* onlyStatusTrue */);
+		    getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
+		            ownerContextUID_ + "/LinkToApplicationTable")
+		        .getChildrenNames(false /* byPriority */, true /* onlyStatusTrue */);
 
 		if(contextChildren.size() == 0)  // no enabled apps, check if owner is app[0]
 		{
 			contextChildren =
-				getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
-						ownerContextUID_ + "/LinkToApplicationTable")
-					.getChildrenNames(false /* byPriority */, false /* onlyStatusTrue */);
+			    getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
+			            ownerContextUID_ + "/LinkToApplicationTable")
+			        .getChildrenNames(false /* byPriority */, false /* onlyStatusTrue */);
 			__GEN_COUTVS__(10, StringMacros::vectorToString(contextChildren));
 		}
 		else
 			__GEN_COUTVS__(10, StringMacros::vectorToString(contextChildren));
 
 		bool isFirstAppInContext =
-			contextChildren.size() == 0 || contextChildren[0] == ownerAppUID_;
+		    contextChildren.size() == 0 || contextChildren[0] == ownerAppUID_;
 
 		__GEN_COUTVS__(10, isFirstAppInContext);
 
@@ -4525,8 +4525,8 @@ bool ConfigurationManager::isOwnerFirstAppInContext()
 	catch(...)
 	{
 		__GEN_COUTS__(10) << "Exception caught looking for XDAQ Context '"
-						  << ownerContextUID_ << "' in tree, so defaulting to 'yes'."
-						  << __E__;
+		                  << ownerContextUID_ << "' in tree, so defaulting to 'yes'."
+		                  << __E__;
 		return true;  // default to 'yes' if XDAQ Context doesn't exist
 	}
 }  // end isOwnerFirstAppInContext()
@@ -4535,17 +4535,17 @@ bool ConfigurationManager::isOwnerFirstAppInContext()
 /// extract subsystem hostname, username, user data path from optional subsystem table
 ///  for example, in preparation for exec/scp of user data files
 void ConfigurationManager::getOtherSubsystemInstanceInfo(
-	const std::string& otherSubsystemUID,
-	std::string*       userDataPathPtr /* = nullptr */,
-	std::string*       hostnamePtr /* = nullptr */,
-	std::string*       usernamePtr /* = nullptr */,
-	std::string*       fullNamePtr /* = nullptr */)
+    const std::string& otherSubsystemUID,
+    std::string*       userDataPathPtr /* = nullptr */,
+    std::string*       hostnamePtr /* = nullptr */,
+    std::string*       usernamePtr /* = nullptr */,
+    std::string*       fullNamePtr /* = nullptr */)
 {
 	__GEN_COUTTV__(otherSubsystemUID);
 
 	ConfigurationTree node =
-		getNode(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE)
-			.getNode(otherSubsystemUID);
+	    getNode(ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE)
+	        .getNode(otherSubsystemUID);
 	std::string userPath = node.getNode("SubsystemUserDataPath").getValue();
 	if(fullNamePtr)
 		*fullNamePtr = node.getNode("SubsystemFullName").getValue();
@@ -4556,7 +4556,7 @@ void ConfigurationManager::getOtherSubsystemInstanceInfo(
 	if(!splitPath.size() || splitPath.size() > 2)
 	{
 		__GEN_SS__ << "Illegal user data path specified for subsystem '"
-				   << otherSubsystemUID << "': " << userPath << __E__;
+		           << otherSubsystemUID << "': " << userPath << __E__;
 		__SS_ONLY_THROW__;
 	}
 	std::string userDataPath = splitPath[splitPath.size() - 1];
@@ -4564,13 +4564,13 @@ void ConfigurationManager::getOtherSubsystemInstanceInfo(
 	//since we are running exec, cleanse the filename path for alphanumeric,_,-,/ only
 	for(unsigned int i = 0; i < userDataPath.length(); ++i)
 		if(!((userDataPath[i] >= 'a' && userDataPath[i] <= 'z') ||
-			 (userDataPath[i] >= 'A' && userDataPath[i] <= 'Z') ||
-			 (userDataPath[i] >= '0' && userDataPath[i] <= '9') ||
-			 userDataPath[i] == '-' || userDataPath[i] == '_' || userDataPath[i] == '/'))
+		     (userDataPath[i] >= 'A' && userDataPath[i] <= 'Z') ||
+		     (userDataPath[i] >= '0' && userDataPath[i] <= '9') ||
+		     userDataPath[i] == '-' || userDataPath[i] == '_' || userDataPath[i] == '/'))
 		{
 			__GEN_SS__ << "Illegal user data path specified (no special characters "
-						  "allowed) for subsystem '"
-					   << otherSubsystemUID << "': " << userPath << __E__;
+			              "allowed) for subsystem '"
+			           << otherSubsystemUID << "': " << userPath << __E__;
 			__SS_ONLY_THROW__;
 		}  // end filename cleanse
 
@@ -4582,7 +4582,7 @@ void ConfigurationManager::getOtherSubsystemInstanceInfo(
 	{
 		//since we are running exec, cleanse the username@host path for alphanumeric,_,-,/ only
 		std::vector<std::string> userHostSplit =
-			StringMacros::getVectorFromString(splitPath[0], {'@'});
+		    StringMacros::getVectorFromString(splitPath[0], {'@'});
 		__GEN_COUTTV__(userHostSplit.size());
 		if(userHostSplit.size() == 1)
 			hostname = userHostSplit[0];
@@ -4594,26 +4594,26 @@ void ConfigurationManager::getOtherSubsystemInstanceInfo(
 		else
 		{
 			__GEN_SS__ << "Illegal remote username/host specified for subsystem '"
-					   << otherSubsystemUID << "': " << userPath << __E__;
+			           << otherSubsystemUID << "': " << userPath << __E__;
 			__SS_ONLY_THROW__;
 		}
 
 		for(unsigned int i = 0; userHostSplit.size() == 2 && i < username.length(); ++i)
 			if(!((username[i] >= 'a' && username[i] <= 'z') ||
-				 (username[i] >= 'A' && username[i] <= 'Z') ||
-				 (username[i] >= '0' && username[i] <= '9') || username[i] == '-' ||
-				 username[i] == '_'))
+			     (username[i] >= 'A' && username[i] <= 'Z') ||
+			     (username[i] >= '0' && username[i] <= '9') || username[i] == '-' ||
+			     username[i] == '_'))
 			{
 				__GEN_SS__ << "Illegal remote username specified for subsystem '"
-						   << otherSubsystemUID << "': " << userPath << __E__;
+				           << otherSubsystemUID << "': " << userPath << __E__;
 				__SS_ONLY_THROW__;
 			}
 		unsigned int ii = 0;  //track last . to prevent weird . usage
 		for(unsigned int i = 0; i < hostname.length(); ++i)
 			if(!((hostname[i] >= 'a' && hostname[i] <= 'z') ||
-				 (hostname[i] >= 'A' && hostname[i] <= 'Z') ||
-				 (hostname[i] >= '0' && hostname[i] <= '9') || hostname[i] == '-' ||
-				 hostname[i] == '_'))
+			     (hostname[i] >= 'A' && hostname[i] <= 'Z') ||
+			     (hostname[i] >= '0' && hostname[i] <= '9') || hostname[i] == '-' ||
+			     hostname[i] == '_'))
 			{
 				if(hostname[i] == '.' && i > ii + 1)
 				{
@@ -4623,8 +4623,8 @@ void ConfigurationManager::getOtherSubsystemInstanceInfo(
 				else  //else not ok to have .. or other characters
 				{
 					__GEN_SS__ << "Illegal remote hostname '" << hostname
-							   << "' specified for subsystem '" << otherSubsystemUID
-							   << "': " << userPath << __E__;
+					           << "' specified for subsystem '" << otherSubsystemUID
+					           << "': " << userPath << __E__;
 					__SS_ONLY_THROW__;
 				}
 			}
@@ -4636,7 +4636,7 @@ void ConfigurationManager::getOtherSubsystemInstanceInfo(
 	else
 	{
 		__GEN_SS__ << "Illegal user data path specified for subsystem '"
-				   << otherSubsystemUID << "': " << userPath << __E__;
+		           << otherSubsystemUID << "': " << userPath << __E__;
 		__SS_ONLY_THROW__;
 	}
 
@@ -4650,14 +4650,14 @@ void ConfigurationManager::getOtherSubsystemInstanceInfo(
 //==============================================================================
 std::map<std::string /*groupType*/, std::pair<std::string /*groupName*/, TableGroupKey>>
 ConfigurationManager::getOtherSubsystemActiveTableGroups(
-	const std::string& otherSubsystemUID,
-	std::string*       userDataPathPtr /* = nullptr */,
-	std::string*       hostnamePtr /* = nullptr */,
-	std::string*       usernamePtr /* = nullptr */)
+    const std::string& otherSubsystemUID,
+    std::string*       userDataPathPtr /* = nullptr */,
+    std::string*       hostnamePtr /* = nullptr */,
+    std::string*       usernamePtr /* = nullptr */)
 {
 	std::map<std::string /*groupType*/,
-			 std::pair<std::string /*groupName*/, TableGroupKey>>
-		retMap;
+	         std::pair<std::string /*groupName*/, TableGroupKey>>
+	    retMap;
 
 	__GEN_COUTTV__(otherSubsystemUID);
 
@@ -4685,22 +4685,22 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 	if(hostname != "")
 	{
 		std::string tmpSubsystemFilename =
-			ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + otherSubsystemUID;
+		    ConfigurationManager::ACTIVE_GROUPS_FILENAME + "." + otherSubsystemUID;
 		__GEN_COUTTV__(tmpSubsystemFilename);
 		if(username != "")  //has username
 		{
 			cmdResult = StringMacros::exec(
-				("rm " + tmpSubsystemFilename + " 2>/dev/null; scp " + username + "@" +
-				 hostname + ":" + filename + " " + tmpSubsystemFilename + " 2>&1; cat " +
-				 tmpSubsystemFilename + " 2>&1")
-					.c_str());
+			    ("rm " + tmpSubsystemFilename + " 2>/dev/null; scp " + username + "@" +
+			     hostname + ":" + filename + " " + tmpSubsystemFilename + " 2>&1; cat " +
+			     tmpSubsystemFilename + " 2>&1")
+			        .c_str());
 		}
 		else
 			cmdResult = StringMacros::exec(
-				("rm " + tmpSubsystemFilename + " 2>/dev/null; scp " + hostname + ":" +
-				 filename + " " + tmpSubsystemFilename + " 2>&1; cat " +
-				 tmpSubsystemFilename + " 2>&1")
-					.c_str());
+			    ("rm " + tmpSubsystemFilename + " 2>/dev/null; scp " + hostname + ":" +
+			     filename + " " + tmpSubsystemFilename + " 2>&1; cat " +
+			     tmpSubsystemFilename + " 2>&1")
+			        .c_str());
 	}
 	else  //then can just directly access the file
 	{
@@ -4712,8 +4712,8 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 	if(cmdResult.find("Permission denied") != std::string::npos)
 	{
 		__GEN_SS__
-			<< "\n\nPermission denied accessing user data path specified for subsystem '"
-			<< otherSubsystemUID << "': ";
+		    << "\n\nPermission denied accessing user data path specified for subsystem '"
+		    << otherSubsystemUID << "': ";
 		if(username != "")
 			ss << username << "@";
 		if(hostname != "")
@@ -4723,45 +4723,45 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 	}
 
 	auto subsystemActiveGroupMap = StringMacros::getVectorFromString(
-		cmdResult, {'\n'} /* delimieter*/, {' ', '\t'} /* whitespace*/);
+	    cmdResult, {'\n'} /* delimieter*/, {' ', '\t'} /* whitespace*/);
 	__GEN_COUTTV__(StringMacros::vectorToString(subsystemActiveGroupMap));
 	__GEN_COUTTV__(subsystemActiveGroupMap.size());
 
 	std::string  //groupComment, groupAuthor, groupCreationTime,
-		groupType;
+	    groupType;
 	for(unsigned int i = 0; i + 1 < subsystemActiveGroupMap.size(); i += 2)
 	{
 		if(subsystemActiveGroupMap[i] == "" || subsystemActiveGroupMap[i + 1] == "-1")
 			continue;
 
 		__GEN_COUTT__ << "Loading type of subsystem '" << otherSubsystemUID << "' group "
-					  << subsystemActiveGroupMap[i] << "("
-					  << subsystemActiveGroupMap[i + 1] << ")" << __E__;
+		              << subsystemActiveGroupMap[i] << "("
+		              << subsystemActiveGroupMap[i + 1] << ")" << __E__;
 
 		try
 		{
 			loadTableGroup(subsystemActiveGroupMap[i] /*groupName*/,
-						   TableGroupKey(subsystemActiveGroupMap[i + 1]),
-						   false /*doActivate*/,
-						   0 /*groupMembers*/,
-						   0 /*progressBar*/,
-						   0 /*accumulateErrors*/,
-						   0,  // &groupComment,
-						   0,  //&groupAuthor,
-						   0,  //&groupCreationTime,
-						   true /*doNotLoadMember*/,
-						   &groupType);
+			               TableGroupKey(subsystemActiveGroupMap[i + 1]),
+			               false /*doActivate*/,
+			               0 /*groupMembers*/,
+			               0 /*progressBar*/,
+			               0 /*accumulateErrors*/,
+			               0,  // &groupComment,
+			               0,  //&groupAuthor,
+			               0,  //&groupCreationTime,
+			               true /*doNotLoadMember*/,
+			               &groupType);
 		}
 		catch(const std::runtime_error& e)
 		{
 			__GEN_COUTT__ << "Ignoring error loading subsystem '" << otherSubsystemUID
-						  << "' group " << subsystemActiveGroupMap[i] << "("
-						  << subsystemActiveGroupMap[i + 1] << "): " << __E__ << e.what()
-						  << __E__;
+			              << "' group " << subsystemActiveGroupMap[i] << "("
+			              << subsystemActiveGroupMap[i + 1] << "): " << __E__ << e.what()
+			              << __E__;
 			groupType = ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN;
 		}
 		retMap[groupType] = std::make_pair(subsystemActiveGroupMap[i],
-										   TableGroupKey(subsystemActiveGroupMap[i + 1]));
+		                                   TableGroupKey(subsystemActiveGroupMap[i + 1]));
 	}  //end load table group loop
 
 	__GEN_COUTTV__(StringMacros::mapToString(retMap));
@@ -4778,28 +4778,28 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 	__GEN_COUTTV__(otherSubsystemUID);
 
 	std::map<std::string /*groupType*/,
-			 std::pair<std::string /*groupName*/, TableGroupKey>>
-		retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
+	         std::pair<std::string /*groupName*/, TableGroupKey>>
+	    retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
 
 	__GEN_COUTTV__(StringMacros::mapToString(retMap));
 
 	//load backbone
 	auto it = retMap.find(
-		ConfigurationManager::convertGroupTypeToName(GroupType::BACKBONE_TYPE));
+	    ConfigurationManager::convertGroupTypeToName(GroupType::BACKBONE_TYPE));
 	if(it == retMap.end())
 	{
 		__GEN_SS__
-			<< "No active Backbone group found in the active groups of remote subsystem '"
-			<< otherSubsystemUID << "!'" << __E__;
+		    << "No active Backbone group found in the active groups of remote subsystem '"
+		    << otherSubsystemUID << "!'" << __E__;
 		__GEN_SS_THROW__;
 	}
 	auto it2 = retMap.find(
-		ConfigurationManager::convertGroupTypeToName(GroupType::CONTEXT_TYPE));
+	    ConfigurationManager::convertGroupTypeToName(GroupType::CONTEXT_TYPE));
 	if(it2 == retMap.end())
 	{
 		__GEN_SS__
-			<< "No active Context group found in the active groups of remote subsystem '"
-			<< otherSubsystemUID << "!'" << __E__;
+		    << "No active Context group found in the active groups of remote subsystem '"
+		    << otherSubsystemUID << "!'" << __E__;
 		__GEN_SS_THROW__;
 	}
 
@@ -4808,17 +4808,17 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 	// be careful to not activate! which calls init() and then generates output files to disk
 	//	and changes the system active group; instead only setActiveView
 	loadTableGroup(it->second.first,
-				   it->second.second,
-				   false /*doActivate*/,
-				   0 /*groupMembers*/,
-				   0 /*progressBar*/,
-				   &accumulatedWarnings /*accumulateWarnings = 0*/
+	               it->second.second,
+	               false /*doActivate*/,
+	               0 /*groupMembers*/,
+	               0 /*progressBar*/,
+	               &accumulatedWarnings /*accumulateWarnings = 0*/
 	);
 	__GEN_COUTTV__(accumulatedWarnings);
 
 	//get aliases (a la ConfigurationManager::getActiveGroupAliases:2888)
 	std::vector<std::pair<std::string, ConfigurationTree>> entries =
-		getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
+	    getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
 
 	for(auto& entry : entries)
 	{
@@ -4834,31 +4834,31 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 ///Ignore any System Aliases with "Context" or "Iterat" in the name
 std::set<std::string /* configAlias */>
 ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
-	const std::string& otherSubsystemUID, const std::string& otherSubsystemFsmName)
+    const std::string& otherSubsystemUID, const std::string& otherSubsystemFsmName)
 {
 	std::set<std::string> retSet;
 
 	std::map<std::string /*groupType*/,
-			 std::pair<std::string /*groupName*/, TableGroupKey>>
-		retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
+	         std::pair<std::string /*groupName*/, TableGroupKey>>
+	    retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
 
 	//load backbone
 	auto it = retMap.find(
-		ConfigurationManager::convertGroupTypeToName(GroupType::BACKBONE_TYPE));
+	    ConfigurationManager::convertGroupTypeToName(GroupType::BACKBONE_TYPE));
 	if(it == retMap.end())
 	{
 		__GEN_SS__
-			<< "No active Backbone group found in the active groups of remote subsystem '"
-			<< otherSubsystemUID << "!'" << __E__;
+		    << "No active Backbone group found in the active groups of remote subsystem '"
+		    << otherSubsystemUID << "!'" << __E__;
 		__GEN_SS_THROW__;
 	}
 	auto it2 = retMap.find(
-		ConfigurationManager::convertGroupTypeToName(GroupType::CONTEXT_TYPE));
+	    ConfigurationManager::convertGroupTypeToName(GroupType::CONTEXT_TYPE));
 	if(it2 == retMap.end())
 	{
 		__GEN_SS__
-			<< "No active Context group found in the active groups of remote subsystem '"
-			<< otherSubsystemUID << "!'" << __E__;
+		    << "No active Context group found in the active groups of remote subsystem '"
+		    << otherSubsystemUID << "!'" << __E__;
 		__GEN_SS_THROW__;
 	}
 
@@ -4867,24 +4867,24 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 	// be careful to not activate! which calls init() and then generates output files to disk
 	//	and changes the system active group; instead only setActiveView
 	loadTableGroup(it->second.first,
-				   it->second.second,
-				   false /*doActivate*/,
-				   0 /*groupMembers*/,
-				   0 /*progressBar*/,
-				   &accumulatedWarnings /*accumulateWarnings = 0*/
+	               it->second.second,
+	               false /*doActivate*/,
+	               0 /*groupMembers*/,
+	               0 /*progressBar*/,
+	               &accumulatedWarnings /*accumulateWarnings = 0*/
 	);
 	loadTableGroup(it2->second.first,
-				   it2->second.second,
-				   false /*doActivate*/,
-				   0 /*groupMembers*/,
-				   0 /*progressBar*/,
-				   &accumulatedWarnings /*accumulateWarnings = 0*/
+	               it2->second.second,
+	               false /*doActivate*/,
+	               0 /*groupMembers*/,
+	               0 /*progressBar*/,
+	               &accumulatedWarnings /*accumulateWarnings = 0*/
 	);
 	__GEN_COUTTV__(accumulatedWarnings);
 
 	//get aliases (a la ConfigurationManager::getActiveGroupAliases:2888)
 	std::vector<std::pair<std::string, ConfigurationTree>> entries =
-		getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
+	    getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getChildren();
 
 	//apply filter (a la GatewaySupervisor::addFilteredConfigAliasesToXML:5357)
 
@@ -4893,8 +4893,8 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 	{
 		ConfigurationTree otherGatewayNode = getGatewaySupervisorNode();
 		ConfigurationTree fsmFilterNode =
-			otherGatewayNode.getNode("LinkToStateMachineTable")
-				.getNode(otherSubsystemFsmName + "/SystemAliasFilter");
+		    otherGatewayNode.getNode("LinkToStateMachineTable")
+		        .getNode(otherSubsystemFsmName + "/SystemAliasFilter");
 		if(!fsmFilterNode.isDefaultValue())
 			stateMachineAliasFilter = fsmFilterNode.getValue<std::string>();
 		else
@@ -4910,15 +4910,15 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 	}
 
 	__COUT__ << "Applying alias filter for other user_data path FSM '"
-			 << otherSubsystemFsmName
-			 << "' and stateMachineAliasFilter  = " << stateMachineAliasFilter << __E__;
+	         << otherSubsystemFsmName
+	         << "' and stateMachineAliasFilter  = " << stateMachineAliasFilter << __E__;
 
 	// filter list of aliases based on stateMachineAliasFilter
 	//  ! as first character means choose those that do NOT match filter
 	//	* can be used as wild card.
 	{
 		bool invertFilter =
-			stateMachineAliasFilter.size() && stateMachineAliasFilter[0] == '!';
+		    stateMachineAliasFilter.size() && stateMachineAliasFilter[0] == '!';
 		std::vector<std::string> filterArr;
 
 		size_t i = 0;
@@ -4932,7 +4932,7 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 			i   = f + 1;
 			filterArr.push_back(tmp);
 			__COUTS__(20) << filterArr[filterArr.size() - 1] << " " << i << " of "
-						  << stateMachineAliasFilter.size() << __E__;
+			              << stateMachineAliasFilter.size() << __E__;
 		}
 		if(i <= stateMachineAliasFilter.size())
 		{
@@ -4981,7 +4981,7 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 						}
 					}
 					else if((i = aliasMapPair.first.find(filterArr[f])) ==
-							std::string::npos)
+					        std::string::npos)
 					{
 						filterMatch = false;
 						break;
@@ -5009,36 +5009,36 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 //==============================================================================
 /// returns configAlias translation group info by reference
 void ConfigurationManager::getOtherSubsystemConfigAliasInfo(
-	const std::string&                     otherSubsystemUID,
-	const std::string&                     configAlias,
-	std::pair<std::string, TableGroupKey>& groupTranslation,
-	std::string&                           groupComment,
-	std::string&                           groupAuthor,
-	std::string&                           groupCreationTime)
+    const std::string&                     otherSubsystemUID,
+    const std::string&                     configAlias,
+    std::pair<std::string, TableGroupKey>& groupTranslation,
+    std::string&                           groupComment,
+    std::string&                           groupAuthor,
+    std::string&                           groupCreationTime)
 {
 	__GEN_COUTV__(otherSubsystemUID);
 
 	std::map<std::string /*groupType*/,
-			 std::pair<std::string /*groupName*/, TableGroupKey>>
-		retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
+	         std::pair<std::string /*groupName*/, TableGroupKey>>
+	    retMap = getOtherSubsystemActiveTableGroups(otherSubsystemUID);
 
 	//load backbone
 	auto it = retMap.find(
-		ConfigurationManager::convertGroupTypeToName(GroupType::BACKBONE_TYPE));
+	    ConfigurationManager::convertGroupTypeToName(GroupType::BACKBONE_TYPE));
 	if(it == retMap.end())
 	{
 		__GEN_SS__
-			<< "No active Backbone group found in the active groups of remote subsystem '"
-			<< otherSubsystemUID << "!'" << __E__;
+		    << "No active Backbone group found in the active groups of remote subsystem '"
+		    << otherSubsystemUID << "!'" << __E__;
 		__GEN_SS_THROW__;
 	}
 	auto it2 = retMap.find(
-		ConfigurationManager::convertGroupTypeToName(GroupType::CONTEXT_TYPE));
+	    ConfigurationManager::convertGroupTypeToName(GroupType::CONTEXT_TYPE));
 	if(it2 == retMap.end())
 	{
 		__GEN_SS__
-			<< "No active Context group found in the active groups of remote subsystem '"
-			<< otherSubsystemUID << "!'" << __E__;
+		    << "No active Context group found in the active groups of remote subsystem '"
+		    << otherSubsystemUID << "!'" << __E__;
 		__GEN_SS_THROW__;
 	}
 
@@ -5047,11 +5047,11 @@ void ConfigurationManager::getOtherSubsystemConfigAliasInfo(
 	// be careful to not activate! which calls init() and then generates output files to disk
 	//	and changes the system active group; instead only setActiveView
 	loadTableGroup(it->second.first,
-				   it->second.second,
-				   false /*doActivate*/,
-				   0 /*groupMembers*/,
-				   0 /*progressBar*/,
-				   &accumulatedWarnings /*accumulateWarnings = 0*/
+	               it->second.second,
+	               false /*doActivate*/,
+	               0 /*groupMembers*/,
+	               0 /*progressBar*/,
+	               &accumulatedWarnings /*accumulateWarnings = 0*/
 	);
 	__GEN_COUTTV__(accumulatedWarnings);
 
@@ -5060,41 +5060,41 @@ void ConfigurationManager::getOtherSubsystemConfigAliasInfo(
 	{
 		//	find runType in Group Aliases table
 		ConfigurationTree entry =
-			getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(configAlias);
+		    getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(configAlias);
 
 		groupTranslation = std::pair<std::string, TableGroupKey>(
-			entry.getNode("GroupName").getValueAsString(),
-			TableGroupKey(entry.getNode("GroupKey").getValueAsString()));
+		    entry.getNode("GroupName").getValueAsString(),
+		    TableGroupKey(entry.getNode("GroupKey").getValueAsString()));
 		__COUT__ << "Found " << configAlias << " translates to " << groupTranslation.first
-				 << "(" << groupTranslation.second << ")" << __E__;
+		         << "(" << groupTranslation.second << ")" << __E__;
 
 		//get comment, author, creationTime
 		try
 		{
 			loadTableGroup(groupTranslation.first,
-						   groupTranslation.second,
-						   false /*doActivate*/,
-						   0 /*groupMembers*/,
-						   0 /*progressBar*/,
-						   &accumulatedWarnings,
-						   &groupComment,
-						   &groupAuthor,
-						   &groupCreationTime,
-						   true /*doNotLoadMembers*/);
+			               groupTranslation.second,
+			               false /*doActivate*/,
+			               0 /*groupMembers*/,
+			               0 /*progressBar*/,
+			               &accumulatedWarnings,
+			               &groupComment,
+			               &groupAuthor,
+			               &groupCreationTime,
+			               true /*doNotLoadMembers*/);
 		}
 		catch(...)
 		{
 			__COUT_WARN__ << "Failed to load group metadata." << __E__;
 		}
 		__COUT__ << "Found " << configAlias << " author: " << groupAuthor
-				 << ", createTime: " << groupCreationTime << ", comment: " << groupComment
-				 << __E__;
+		         << ", createTime: " << groupCreationTime << ", comment: " << groupComment
+		         << __E__;
 	}
 	catch(...)
 	{
 		__GEN_SS__ << "Did not find the Configuration Alias '" << configAlias
-				   << "' in the active Backbone group of remote subsystem '"
-				   << otherSubsystemUID << "!'" << __E__;
+		           << "' in the active Backbone group of remote subsystem '"
+		           << otherSubsystemUID << "!'" << __E__;
 		__GEN_SS_THROW__;
 	}
 
@@ -5116,15 +5116,15 @@ TableBase* ConfigurationManager::getDesktopIconTable(void)
 
 //==============================================================================
 void ConfigurationManager::saveGroupNameAndKey(
-	const std::pair<std::string /*group name*/, TableGroupKey>& theGroup,
-	const std::string&                                          fileName,
-	bool                                                        appendMode /* = false */,
-	const std::string&                                          associatedUser /* = "" */)
+    const std::pair<std::string /*group name*/, TableGroupKey>& theGroup,
+    const std::string&                                          fileName,
+    bool                                                        appendMode /* = false */,
+    const std::string&                                          associatedUser /* = "" */)
 {
 	std::string fullPath =
-		ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + fileName;
+	    ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + fileName;
 	__COUT__ << "Saving group " << theGroup.first << "(" << theGroup.second << ") to "
-			 << (appendMode ? "history " : "") << "file: " << fullPath << __E__;
+	         << (appendMode ? "history " : "") << "file: " << fullPath << __E__;
 
 	std::ofstream groupFile;
 	if(appendMode)
@@ -5139,8 +5139,8 @@ void ConfigurationManager::saveGroupNameAndKey(
 		for(const auto& record : records)
 		{
 			groupFile << record.at("groupName") << "\n"
-					  << record.at("groupKey") << "\n"
-					  << record.at("time") << " , " << record.at("user") << "\n";
+			          << record.at("groupKey") << "\n"
+			          << record.at("time") << " , " << record.at("user") << "\n";
 		}  //end rewrite records loop
 	}
 	else  //if not append mode, just overwrite
@@ -5168,16 +5168,16 @@ void ConfigurationManager::saveGroupNameAndKey(
 ///	Note: this is static so the GatewaySupervisor and WizardSupervisor can call it
 std::pair<std::string /*group name*/, TableGroupKey>
 ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
-										  std::string&       returnedTimeString)
+                                          std::string&       returnedTimeString)
 {
 	std::string fullPath =
-		ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + fileName;
+	    ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + fileName;
 
 	FILE* groupFile = fopen(fullPath.c_str(), "r");
 	if(!groupFile)
 	{
 		__COUT__ << "Can't open file: " << fullPath
-				 << ". Returning empty groupName and key -1" << __E__;
+		         << ". Returning empty groupName and key -1" << __E__;
 
 		return std::pair<std::string /*group name*/, TableGroupKey>("", TableGroupKey());
 	}
@@ -5199,14 +5199,14 @@ ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
 	fgets(line, 500, groupFile);  // time
 	time_t timestamp;
 	sscanf(line, "%ld", &timestamp);  // type long int
-									  //	struct tm tmstruct;
-									  //	::localtime_r(&timestamp, &tmstruct);
-									  //	::strftime(line, 30, "%c %Z", &tmstruct);
+	                                  //	struct tm tmstruct;
+	                                  //	::localtime_r(&timestamp, &tmstruct);
+	                                  //	::strftime(line, 30, "%c %Z", &tmstruct);
 	returnedTimeString = StringMacros::getTimestampString(timestamp);  // line;
 	fclose(groupFile);
 
 	__COUTT__ << "theGroup.first=" << theGroup.first
-			  << " theGroup.second=" << theGroup.second << __E__;
+	          << " theGroup.second=" << theGroup.second << __E__;
 
 	return theGroup;
 }  // end loadGroupNameAndKey()
@@ -5214,10 +5214,10 @@ ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
 //==============================================================================
 /// loadGroupHistory static
 std::vector<
-	std::map<std::string /* group field key */, std::string /* group field value */>>
+    std::map<std::string /* group field key */, std::string /* group field value */>>
 ConfigurationManager::loadGroupHistory(const std::string& groupAction,
-									   const std::string& groupType,
-									   bool               formatTime /* = false */)
+                                       const std::string& groupType,
+                                       bool               formatTime /* = false */)
 {
 	__COUTTV__(groupAction);
 	__COUTTV__(groupType);
@@ -5285,7 +5285,7 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 	if(fullPath == ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/")
 	{
 		__SS__ << "Illegal attempted group history request combination of groupAction: "
-			   << groupAction << ", and groupType: " << groupType << __E__;
+		       << groupAction << ", and groupType: " << groupType << __E__;
 		__SS_THROW__;
 	}
 	return loadGroupHistory(fullPath, formatTime);
@@ -5294,20 +5294,20 @@ ConfigurationManager::loadGroupHistory(const std::string& groupAction,
 //==============================================================================
 /// loadGroupHistory static
 std::vector<
-	std::map<std::string /* group field key */, std::string /* group field value */>>
+    std::map<std::string /* group field key */, std::string /* group field value */>>
 ConfigurationManager::loadGroupHistory(const std::string& fullPath,
-									   bool               formatTime /* = false */)
+                                       bool               formatTime /* = false */)
 {
 	std::vector<
-		std::map<std::string /* group field key */, std::string /* group field value */>>
-		retVec;
+	    std::map<std::string /* group field key */, std::string /* group field value */>>
+	    retVec;
 
 	__COUTV__(fullPath);
 	FILE* groupFile = fopen(fullPath.c_str(), "r");
 	if(!groupFile)
 	{
 		__COUT_WARN__ << "Can't open group history file (assuming no history yet): "
-					  << fullPath << __E__;
+		              << fullPath << __E__;
 
 		__COUTV__(retVec.size());
 		return retVec;
@@ -5334,20 +5334,20 @@ ConfigurationManager::loadGroupHistory(const std::string& fullPath,
 		time_t timestamp;
 		user[0] = '\0';                              //clear in case not present in line
 		sscanf(line, "%ld , %s", &timestamp, user);  // type long int
-													 //	struct tm tmstruct;
+		                                             //	struct tm tmstruct;
 		//	::localtime_r(&timestamp, &tmstruct);
 		//	::strftime(line, 30, "%c %Z", &tmstruct);
 
 		__COUTS__(20) << "Read group from history file: " << theGroup.first << "("
-					  << theGroup.second << "), timestamp=" << timestamp
-					  << ", user=" << user << __E__;
+		              << theGroup.second << "), timestamp=" << timestamp
+		              << ", user=" << user << __E__;
 
 		retVec.push_back({{"groupName", theGroup.first},
-						  {"groupKey", theGroup.second.toString()},
-						  {"time",
-						   formatTime ? StringMacros::getTimestampString(timestamp)
-									  : std::to_string(timestamp)},
-						  {"user", user}});
+		                  {"groupKey", theGroup.second.toString()},
+		                  {"time",
+		                   formatTime ? StringMacros::getTimestampString(timestamp)
+		                              : std::to_string(timestamp)},
+		                  {"user", user}});
 	}  //end traversing group history file
 
 	fclose(groupFile);
@@ -5375,7 +5375,7 @@ try
 		{
 			__COUTVS__(2, e.what());
 			if(std::string(e.what()).find(
-				   "initPrereqsForARTDAQ() is not implemented for this table") ==
+			       "initPrereqsForARTDAQ() is not implemented for this table") ==
 			   std::string::npos)
 				throw;
 			//else ignore undefined virtual function error
