@@ -2807,7 +2807,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		{
 			//make sure we received everything
 			int tryCnt = 0;
-			while(++tryCnt < 100 &&
+			while(++tryCnt < 20 &&
 			      commandResponseString.size() > 10 &&  //must end with 'END---'
 			      (commandResponseString[commandResponseString.size() - 1] != '-' ||
 			       commandResponseString[commandResponseString.size() - 2] != '-' ||
@@ -2820,10 +2820,14 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 				std::string more;
 				if(remoteGatewaySocket->receive(more, 1 /*timeoutSeconds*/) ==
 				   0 /* success */)
-					commandResponseString += more;
-				else
 				{
-					__SS__ << "Timeout looking for more!" << __E__;
+					commandResponseString += more;
+					tryCnt = 0; //reset since we received data
+				}
+				else if (tryCnt > 10)
+				{
+					__SS__ << "Timeout looking for more! Expecting more data from Remote Gateway '"
+				       	<< remoteGatewayApp.appInfo.name + "'..." << __E__;
 					__SS_THROW__;
 				}
 			}
