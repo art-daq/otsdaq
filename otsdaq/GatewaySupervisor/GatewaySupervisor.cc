@@ -2822,12 +2822,13 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 				   0 /* success */)
 				{
 					commandResponseString += more;
-					tryCnt = 0; //reset since we received data
+					tryCnt = 0;  //reset since we received data
 				}
-				else if (tryCnt > 10)
+				else if(tryCnt > 10)
 				{
-					__SS__ << "Timeout looking for more! Expecting more data from Remote Gateway '"
-				       	<< remoteGatewayApp.appInfo.name + "'..." << __E__;
+					__SS__ << "Timeout looking for more! Expecting more data from Remote "
+					          "Gateway '"
+					       << remoteGatewayApp.appInfo.name + "'..." << __E__;
 					__SS_THROW__;
 				}
 			}
