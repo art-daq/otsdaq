@@ -394,11 +394,13 @@ void ARTDAQSupervisor::init(void)
 				else
 				{
 					__SUP_COUT__ << "Getting DAQInterface object pointer" << __E__;
-					PyObject* di_obj_raw = PyDict_GetItemString(pDict, "DAQInterface");  // borrowed reference
+					PyObject* di_obj_raw = PyDict_GetItemString(
+					    pDict, "DAQInterface");  // borrowed reference
 					if(di_obj_raw == NULL)
 					{
 						PyErr_Print();
-						__SS__ << "Unable to find 'DAQInterface' in module dictionary" << __E__;
+						__SS__ << "Unable to find 'DAQInterface' in module dictionary"
+						       << __E__;
 						__SUP_SS_THROW__;
 					}
 					Py_INCREF(di_obj_raw);  // convert borrowed reference to owned

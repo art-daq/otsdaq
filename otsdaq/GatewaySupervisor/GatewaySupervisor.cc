@@ -7223,7 +7223,8 @@ try
 				std::string varValue = envLine.substr(eqPos + 1);
 
 				// Skip bash functions, internal variables, and other non-standard entries
-				if(varName[0] == '_' || std::isspace(static_cast<unsigned char>(varName[0])) ||
+				if(varName[0] == '_' ||
+				   std::isspace(static_cast<unsigned char>(varName[0])) ||
 				   varName.find("BASH_FUNC_") == 0 ||
 				   (varValue.size() > 0 && varValue[0] == '('))
 					continue;

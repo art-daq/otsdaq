@@ -2,7 +2,7 @@
 #define _ots_Iterator_h
 
 #include <atomic>  //for std::atomic
-#include <mutex>  //for std::mutex
+#include <mutex>   //for std::mutex
 #include <string>
 #include "otsdaq/TablePlugins/IterateTable.h"
 #include "otsdaq/XmlUtilities/HttpXmlDocument.h"
