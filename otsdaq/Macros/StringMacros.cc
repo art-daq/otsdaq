@@ -11,10 +11,9 @@ std::map<std::string /* system variable */,
                   StringMacros::systemVariables_;
 const std::string StringMacros::TBD = "To-be-defined";
 
-
-#define TLVL_EscapeString		 	30	// = TLVL_DEBUG + 30
-#define TLVL_EnvMath			 	49	// = TLVL_DEBUG + 49
-#define TLVL_EnvSub				 	50	// = TLVL_DEBUG + 50
+#define TLVL_EscapeString 30  // = TLVL_DEBUG + 30
+#define TLVL_EnvMath 49       // = TLVL_DEBUG + 49
+#define TLVL_EnvSub 50        // = TLVL_DEBUG + 50
 
 //==============================================================================
 /// wildCardMatch
@@ -220,8 +219,8 @@ std::string StringMacros::escapeString(std::string inString,
 	for(unsigned int i = 0; i < inString.length(); i++)
 		if(inString[i] != ' ')
 		{
-			__COUTS__(TLVL_EscapeString) << i << ". " << inString[i] << ":" << (int)inString[i]
-			              << std::endl;
+			__COUTS__(TLVL_EscapeString)
+			    << i << ". " << inString[i] << ":" << (int)inString[i] << std::endl;
 
 			// remove new lines and unprintable characters
 			if(inString[i] == '\r' || inString[i] == '\n' ||  // remove new line chars
@@ -535,8 +534,9 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			begin = data.find("$", begin + 1);  //find next
 			if(begin == std::string::npos)
 			{
-				__COUTS__(TLVL_EnvSub) << "Only found escaped $'s that will not be converted: "
-				              << converted << __E__;
+				__COUTS__(TLVL_EnvSub)
+				    << "Only found escaped $'s that will not be converted: " << converted
+				    << __E__;
 				return converted;
 			}
 		}
@@ -549,35 +549,35 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			end = data.find("))", begin + 3);
 			if(end == std::string::npos)
 			{
-				__SS__ << "Arithmetic expansion '$((...)),' at pos " << begin <<
-					" in value, is missing closing '))'! Here was the value: " << 
-					data << __E__;
+				__SS__ << "Arithmetic expansion '$((...)),' at pos " << begin
+				       << " in value, is missing closing '))'! Here was the value: "
+				       << data << __E__;
 				__SS_THROW__;
 			}
-			
+
 			std::string expression = data.substr(begin + 3, end - begin - 3);
 			__COUTVS__(TLVL_EnvMath, expression);
-			
+
 			// Expand $VAR and ${OTS.*.*} inside the expression (bare A/B remain for bash)
 			expression = convertEnvironmentVariables(expression);
 			__COUTVS__(TLVL_EnvMath, expression);
 
-			int64_t result; 
+			int64_t result;
 
 			bool isNumber = getNumber(expression, result);
 			if(!isNumber)
 			{
-				__SS__ << "Arithmetic expansion '$((...)),' at pos " << begin <<
-					" in value, does not evaluate to a number! Here was the value: " << 
-					data << __E__;
+				__SS__ << "Arithmetic expansion '$((...)),' at pos " << begin
+				       << " in value, does not evaluate to a number! Here was the value: "
+				       << data << __E__;
 				__SS_THROW__;
 			}
-						
+
 			__COUTS__(TLVL_EnvMath) << "Arithmetic result: " << result << __E__;
-			
+
 			// proceed recursively, replacing $((...)) with the result
 			return convertEnvironmentVariables(
-				converted.replace(begin, end - begin + 2, std::to_string(result)));
+			    converted.replace(begin, end - begin + 2, std::to_string(result)));
 		}
 		else if(data[begin + 1] == '{')  // check if using ${NAME} syntax
 		{
@@ -618,9 +618,10 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 				    << "If you were trying to access an ots System Variable, the correct "
 				       "syntax is "
 				    << "${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}"
-					<< "\n\n"
-					<< "If you were trying to insert an arithmetic operation, the correct "
-					   "syntax is $((4 - 3)) or $(($ENVVAR1 - $ENVVAR2))"
+				    << "\n\n"
+				    << "If you were trying to insert an arithmetic operation, the "
+				       "correct "
+				       "syntax is $((4 - 3)) or $(($ENVVAR1 - $ENVVAR2))"
 				    << __E__;
 				__SS_THROW__;
 			}

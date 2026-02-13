@@ -1,6 +1,6 @@
 
-#define TLVL_GetNumber				 	48	// = TLVL_DEBUG + 48
-#define TLVL_WildCardMatch			 	54	// = TLVL_DEBUG + 54
+#define TLVL_GetNumber 48      // = TLVL_DEBUG + 48
+#define TLVL_WildCardMatch 54  // = TLVL_DEBUG + 54
 
 //========================================================================================================================
 /// getWildCardMatchFromMap ~
@@ -102,11 +102,11 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 	{
 		if(number.size() == 0)
 		{
-			++blankNumberCount;			
+			++blankNumberCount;
 			//if not first op, and not last, then also advance op index
-			if(i && opsi+1 < ops.size())
-				++opsi; //also advance op (for example, + -1)
-			continue;  // skip empty numbers
+			if(i && opsi + 1 < ops.size())
+				++opsi;  //also advance op (for example, + -1)
+			continue;    // skip empty numbers
 		}
 
 		// verify that this number looks like a number
@@ -167,8 +167,11 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 		}
 		else  //just try!
 		{
-			__COUTS__(TLVL_GetNumber) << "Trying with invalid type '" << StringMacros::demangleTypeName(typeid(retValue).name()) << 
-				"' requested for a numeric string. Data was '" << number << "'" << __E__;
+			__COUTS__(TLVL_GetNumber)
+			    << "Trying with invalid type '"
+			    << StringMacros::demangleTypeName(typeid(retValue).name())
+			    << "' requested for a numeric string. Data was '" << number << "'"
+			    << __E__;
 
 			if(number.size() > 2 && number[1] == 'x')  // assume hex value
 				tmpValue = (T)strtol(number.c_str(), 0, 16);
@@ -225,8 +228,8 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 				       << "Operations: " << StringMacros::vectorToString(ops) << __E__;
 				__SS_THROW__;
 			}
-			__COUTS__(TLVL_GetNumber) << "Op " << ops[opsi] << " intermediate value = " << retValue <<
-				__E__;
+			__COUTS__(TLVL_GetNumber)
+			    << "Op " << ops[opsi] << " intermediate value = " << retValue << __E__;
 			++opsi;
 		}
 

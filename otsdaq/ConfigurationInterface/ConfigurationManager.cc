@@ -380,12 +380,13 @@ void ConfigurationManager::restoreActiveTableGroups(
 			{
 				strVal[j] = '\0';
 				if(strlen(strVal) == 0)
-					__GEN_COUT__ <<  "Empty group name found, so skipping! Check active groups file: " << fn
-				                  << __E__;
+					__GEN_COUT__ << "Empty group name found, so skipping! Check active "
+					                "groups file: "
+					             << fn << __E__;
 				else
-					__GEN_COUT_WARN__ << "Illegal character found in group name '" << strVal
-				                  << "', so skipping! Check active groups file: " << fn
-				                  << __E__;
+					__GEN_COUT_WARN__
+					    << "Illegal character found in group name '" << strVal
+					    << "', so skipping! Check active groups file: " << fn << __E__;
 
 				skip = true;
 				break;
