@@ -361,7 +361,9 @@ try
 		                        false /* getGroupInfo */,
 		                        true /* initializeActiveGroups */);
 
-	__COUT_WARN__ << "Ignoring these errors: " << accumulatedWarnings << __E__;
+	if(accumulatedWarnings.size())
+		__COUT_WARN__ << "Ignoring these errors: " << accumulatedWarnings << __E__;
+		
 	// cfgMgr->loadConfigurationBackbone(); //already loaded by initializeActiveGroups of getAllTableInfo
 
 	__COUTT__ << "handleCreateTableGroupXML loaded runtime=" << cfgMgr->runTimeSeconds()

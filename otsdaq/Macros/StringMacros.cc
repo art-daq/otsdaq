@@ -11,6 +11,11 @@ std::map<std::string /* system variable */,
                   StringMacros::systemVariables_;
 const std::string StringMacros::TBD = "To-be-defined";
 
+
+#define TLVL_EscapeString		 	30	// = TLVL_DEBUG + 30
+#define TLVL_EnvMath			 	49	// = TLVL_DEBUG + 49
+#define TLVL_EnvSub				 	50	// = TLVL_DEBUG + 50
+
 //==============================================================================
 /// wildCardMatch
 ///	find needle in haystack
@@ -209,13 +214,13 @@ std::string StringMacros::escapeString(std::string inString,
 	unsigned int ws = -1;
 	char         htmlTmp[10];
 
-	__COUTVS__(30, allowWhiteSpace);
-	__COUTVS__(30, forHtml);
+	__COUTVS__(TLVL_EscapeString, allowWhiteSpace);
+	__COUTVS__(TLVL_EscapeString, forHtml);
 
 	for(unsigned int i = 0; i < inString.length(); i++)
 		if(inString[i] != ' ')
 		{
-			__COUTS__(30) << i << ". " << inString[i] << ":" << (int)inString[i]
+			__COUTS__(TLVL_EscapeString) << i << ". " << inString[i] << ":" << (int)inString[i]
 			              << std::endl;
 
 			// remove new lines and unprintable characters
@@ -358,7 +363,7 @@ std::string StringMacros::escapeString(std::string inString,
 				i += 5;                              // skip to next char to check
 			}
 
-			__COUTS__(30) << inString << std::endl;
+			__COUTS__(TLVL_EscapeString) << inString << std::endl;
 
 			ws = i;  // last non white space char
 		}
@@ -379,11 +384,11 @@ std::string StringMacros::escapeString(std::string inString,
 			                                     // ws = i;
 		}
 
-	__COUTS__(30) << inString.size() << " " << ws << std::endl;
+	__COUTS__(TLVL_EscapeString) << inString.size() << " " << ws << std::endl;
 
 	// inString.substr(0,ws+1);
 
-	__COUTS__(30) << inString.size() << " " << inString << std::endl;
+	__COUTS__(TLVL_EscapeString) << inString.size() << " " << inString << std::endl;
 
 	if(allowWhiteSpace)  // keep all white space
 		return inString;
@@ -530,13 +535,68 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			begin = data.find("$", begin + 1);  //find next
 			if(begin == std::string::npos)
 			{
-				__COUTS__(50) << "Only found escaped $'s that will not be converted: "
+				__COUTS__(TLVL_EnvSub) << "Only found escaped $'s that will not be converted: "
 				              << converted << __E__;
 				return converted;
 			}
 		}
 
-		if(data[begin + 1] == '{')  // check if using ${NAME} syntax
+		// check if using $(( )) arithmetic expansion syntax
+		// First expand any $-based variables (including OTS system variables),
+		// then let bash evaluate the arithmetic (handles bare env vars like A-B)
+		if(begin + 2 < data.size() && data[begin + 1] == '(' && data[begin + 2] == '(')
+		{
+			end = data.find("))", begin + 3);
+			if(end == std::string::npos)
+			{
+				__SS__ << "Arithmetic expansion '$((...)),' at pos " << begin <<
+					" in value, is missing closing '))'! Here was the value: " << 
+					data << __E__;
+				__SS_THROW__;
+			}
+			
+			std::string expression = data.substr(begin + 3, end - begin - 3);
+			__COUTVS__(TLVL_EnvMath, expression);
+			
+			// Expand $VAR and ${OTS.*.*} inside the expression (bare A/B remain for bash)
+			expression = convertEnvironmentVariables(expression);
+			__COUTVS__(TLVL_EnvMath, expression);
+
+			int64_t result; 
+
+			bool isNumber = getNumber(expression, result);
+			if(!isNumber)
+			{
+				__SS__ << "Arithmetic expansion '$((...)),' at pos " << begin <<
+					" in value, does not evaluate to a number! Here was the value: " << 
+					data << __E__;
+				__SS_THROW__;
+			}
+			
+			// // Let bash evaluate the arithmetic expression
+			// std::string bashCmd = "echo \"$((" + expression + "))\"";
+			// std::string result;
+			// try
+			// {
+			// 	result = StringMacros::exec(bashCmd.c_str());
+			// 	// trim trailing newline
+			// 	if(!result.empty() && result[result.size() - 1] == '\n')
+			// 		result.resize(result.size() - 1);
+			// }
+			// catch(const std::exception& e)
+			// {
+			// 	__SS__ << "Failed to evaluate arithmetic expression '$((" << expression << "))'!" << __E__
+			// 	       << e.what() << __E__;
+			// 	__SS_THROW__;
+			// }
+			
+			__COUTS__(TLVL_EnvMath) << "Arithmetic result: " << result << __E__;
+			
+			// proceed recursively, replacing $((...)) with the result
+			return convertEnvironmentVariables(
+				converted.replace(begin, end - begin + 2, std::to_string(result)));
+		}
+		else if(data[begin + 1] == '{')  // check if using ${NAME} syntax
 		{
 			end         = data.find("}", begin + 2);
 			envVariable = data.substr(begin + 2, end - begin - 2);
@@ -555,13 +615,13 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			envVariable = data.substr(begin + 1, end - begin - 1);
 			usedBraces  = false;
 		}
-		__COUTVS__(50, data);
-		__COUTVS__(50, envVariable);
+		__COUTVS__(TLVL_EnvSub, data);
+		__COUTVS__(TLVL_EnvSub, envVariable);
 		if(usedBraces && envVariable.starts_with("OTS."))
 		{
-			__COUTS__(50) << "OTS system variable detected!" << __E__;
+			__COUTS__(TLVL_EnvSub) << "OTS system variable detected!" << __E__;
 			auto sysVarSplit = StringMacros::getVectorFromString(envVariable, {'.'});
-			__COUTVS__(50, StringMacros::vectorToString(sysVarSplit));
+			__COUTVS__(TLVL_EnvSub, StringMacros::vectorToString(sysVarSplit));
 
 			if(sysVarSplit.size() != 3 ||
 			   systemVariables_.find(sysVarSplit[1]) == systemVariables_.end() ||
@@ -575,6 +635,9 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 				    << "If you were trying to access an ots System Variable, the correct "
 				       "syntax is "
 				    << "${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}"
+					<< "\n\n"
+					<< "If you were trying to insert an arithmetic operation, the correct "
+					   "syntax is $((4 - 3)) or $(($ENVVAR1 - $ENVVAR2))"
 				    << __E__;
 				__SS_THROW__;
 			}
@@ -613,7 +676,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		}
 	}
 	// else no environment variables found in string
-	__COUTS__(50) << "Result: " << data << __E__;
+	__COUTS__(TLVL_EnvSub) << "Result: " << data << __E__;
 	return data;
 }  //end convertEnvironmentVariables()
 
