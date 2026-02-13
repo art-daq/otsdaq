@@ -572,24 +572,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 					data << __E__;
 				__SS_THROW__;
 			}
-			
-			// // Let bash evaluate the arithmetic expression
-			// std::string bashCmd = "echo \"$((" + expression + "))\"";
-			// std::string result;
-			// try
-			// {
-			// 	result = StringMacros::exec(bashCmd.c_str());
-			// 	// trim trailing newline
-			// 	if(!result.empty() && result[result.size() - 1] == '\n')
-			// 		result.resize(result.size() - 1);
-			// }
-			// catch(const std::exception& e)
-			// {
-			// 	__SS__ << "Failed to evaluate arithmetic expression '$((" << expression << "))'!" << __E__
-			// 	       << e.what() << __E__;
-			// 	__SS_THROW__;
-			// }
-			
+						
 			__COUTS__(TLVL_EnvMath) << "Arithmetic result: " << result << __E__;
 			
 			// proceed recursively, replacing $((...)) with the result
