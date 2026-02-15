@@ -25,8 +25,8 @@ string( STRIP ${rawUTCDate} utcDateTime )
 
 execute_process(COMMAND git describe --tags
 				WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-				RESULT_VARIABLE GIT_DESCRIBE_RESULT 
-                OUTPUT_VARIABLE GIT_DESCRIBE_VERSION 
+				RESULT_VARIABLE GIT_DESCRIBE_RESULT
+                OUTPUT_VARIABLE GIT_DESCRIBE_VERSION
                 ERROR_QUIET
 				OUTPUT_STRIP_TRAILING_WHITESPACE)
 
@@ -41,7 +41,7 @@ endif()
 configure_file ( ${CMAKE_CURRENT_SOURCE_DIR}/GetPackageBuildInfo.cc.in
   ${CMAKE_CURRENT_BINARY_DIR}/GetPackageBuildInfo.cc @ONLY )
 
-cet_make_library( 
+cet_make_library(
                   SOURCE
 		  ${CMAKE_CURRENT_BINARY_DIR}/GetPackageBuildInfo.cc
 			LIBRARIES artdaq-core::Data

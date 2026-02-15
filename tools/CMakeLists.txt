@@ -3,8 +3,8 @@ cet_make_exec(NAME otsdaq_fix_new_table_fields_tool LIBRARIES otsdaq::Configurat
 cet_make_exec(NAME otsdaq_flatten_system_aliases LIBRARIES otsdaq::ConfigurationInterface)
 # cet_make_exec(NAME otsdaq_import_system_aliases LIBRARIES otsdaq::ConfigurationInterface) #DEPRECATED in favor of more generic otsdaq/tools/otsdaq_import_system_aliases.sh which uses otsdaq_export_system_aliases/otsdaq_import_groups_from_export_path
 
-cet_make_exec(NAME otsdaq_export_system_aliases LIBRARIES otsdaq::ConfigurationInterface) 
-cet_make_exec(NAME otsdaq_import_groups_from_export_path LIBRARIES otsdaq::ConfigurationInterface) 
+cet_make_exec(NAME otsdaq_export_system_aliases LIBRARIES otsdaq::ConfigurationInterface)
+cet_make_exec(NAME otsdaq_import_groups_from_export_path LIBRARIES otsdaq::ConfigurationInterface)
 
 
 cet_make_exec(NAME otsdaq_save_json_document LIBRARIES otsdaq::ConfigurationInterface)
