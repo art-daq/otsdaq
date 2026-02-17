@@ -1056,7 +1056,7 @@ try
 				}
 				else
 				{
-					ss << " which translates to <b>v" << memberPair.first << "-v"
+					ss << " which translates to <b>" << memberPair.first << "-v"
 					   << vit->second[groupMemberAliases[memberPair.first]]
 					   << "</b> with current active Backbone group."
 					   << " There is a mismatch with the original provenance version of "
