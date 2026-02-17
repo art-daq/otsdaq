@@ -168,9 +168,9 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 		else  //just try!
 		{
 			__COUTS__(TLVL_GetNumber)
-			    << "Trying with invalid type '"
+			    << "Trying numeric conversion for type '"
 			    << StringMacros::demangleTypeName(typeid(retValue).name())
-			    << "' requested for a numeric string. Data was '" << number << "'"
+			    << "' using non-decimal literal format. Data was '" << number << "'"
 			    << __E__;
 
 			if(number.size() > 2 && number[1] == 'x')  // assume hex value
