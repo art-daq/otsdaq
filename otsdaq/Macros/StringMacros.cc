@@ -531,7 +531,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 		          '\\')  //do not convert environment variables with escaped \$
 		{
 			converted.replace(begin - 1, 1, "");
-			begin = data.find("$", begin + 1);  //find next
+			begin = converted.find("$", begin + 1);  //find next
 			if(begin == std::string::npos)
 			{
 				__COUTS__(TLVL_EnvSub)
