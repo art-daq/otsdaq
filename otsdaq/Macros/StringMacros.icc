@@ -90,23 +90,100 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 	__COUTVS__(TLVL_GetNumber, StringMacros::vectorToString(numbers));
 	__COUTVS__(TLVL_GetNumber, StringMacros::vectorToString(ops));
 
+	// Handle unary operators by folding them into the following numeric token
+	// When we have consecutive delimiters (e.g., "1--1"), they create empty tokens
+	// The operator after an empty token is actually a unary operator for the next token
+	std::vector<std::string> processedNumbers;
+	std::vector<char>        processedOps;
+	
+	size_t numIdx = 0;
+	size_t opsIdx = 0;
+	
+	while(numIdx < numbers.size())
+	{
+		if(numbers[numIdx].empty())
+		{
+			// Empty token indicates a unary operator follows
+			// Skip the empty token and apply the next operator as a unary sign
+			++numIdx;
+			continue;
+		}
+		
+		// Check if there's a pending unary operator from a previous empty token
+		std::string currentNumber = numbers[numIdx];
+		
+		// If the previous token was empty and we have an operator, it's a unary operator
+		if(numIdx > 0 && numbers[numIdx - 1].empty() && opsIdx < ops.size())
+		{
+			// The operator at opsIdx-1 was the binary op before the empty token
+			// The operator at opsIdx is the unary op for this number
+			char unaryOp = ops[opsIdx];
+			if(unaryOp == '-')
+			{
+				currentNumber = std::string("-") + currentNumber;
+			}
+			// '+' doesn't change the value, so we don't need to prepend it
+			++opsIdx;  // Consume the unary operator
+		}
+		
+		processedNumbers.push_back(currentNumber);
+		
+		// Add the binary operator if this isn't the last number
+		if(numIdx + 1 < numbers.size() && opsIdx < ops.size())
+		{
+			// Check if the next token is empty (indicates unary op coming)
+			if(numIdx + 1 < numbers.size() && !numbers[numIdx + 1].empty())
+			{
+				// Next token is non-empty, so this operator is binary
+				processedOps.push_back(ops[opsIdx]);
+				++opsIdx;
+			}
+			else if(numIdx + 1 < numbers.size() && numbers[numIdx + 1].empty())
+			{
+				// Next token is empty, so this operator is binary
+				// and the one after that will be unary
+				processedOps.push_back(ops[opsIdx]);
+				++opsIdx;
+			}
+		}
+		
+		++numIdx;
+	}
+	
+	// Handle leading unary operator (when first token is empty)
+	if(!numbers.empty() && numbers[0].empty() && !ops.empty() && !processedNumbers.empty())
+	{
+		if(ops[0] == '-' && processedNumbers[0][0] != '-')
+		{
+			processedNumbers[0] = std::string("-") + processedNumbers[0];
+		}
+		// Adjust processedOps if needed since we consumed the leading operator
+		if(!processedOps.empty() && ops.size() > processedOps.size() + 1)
+		{
+			// We may have an off-by-one in ops, remove first if it was the unary
+			processedOps.erase(processedOps.begin());
+		}
+	}
+	
+	numbers = processedNumbers;
+	ops = processedOps;
+
+	__COUTVS__(TLVL_GetNumber, "After unary processing:");
+	__COUTVS__(TLVL_GetNumber, StringMacros::vectorToString(numbers));
+	__COUTVS__(TLVL_GetNumber, StringMacros::vectorToString(ops));
+
 	retValue = 0;  // initialize
 
 	T tmpValue;
 
-	unsigned int i                = 0;
-	unsigned int opsi             = 0;
-	unsigned int blankNumberCount = 0;
+	unsigned int i    = 0;
+	unsigned int opsi = 0;
 	bool         verified;
 	for(const auto& number : numbers)
 	{
 		if(number.size() == 0)
 		{
-			++blankNumberCount;
-			//if not first op, and not last, then also advance op index
-			if(i && opsi + 1 < ops.size())
-				++opsi;  //also advance op (for example, + -1)
-			continue;    // skip empty numbers
+			continue;  // skip empty numbers (should not happen after processing)
 		}
 
 		// verify that this number looks like a number
@@ -187,14 +264,8 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 		{
 			retValue = tmpValue;
 
-			if(ops.size() ==
-			   numbers.size() -
-			       blankNumberCount)  // then there is a leading operation, so apply
-			{
-				if(ops[opsi] == '-')  // only meaningful op is negative sign
-					retValue *= -1;
-				opsi++;  // jump to first internal op
-			}
+			// No need to check for leading operation since we've already folded unary ops
+			// into the numbers during preprocessing
 		}
 		else  // there is some sort of op
 		{
