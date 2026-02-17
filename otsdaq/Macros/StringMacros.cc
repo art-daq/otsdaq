@@ -519,7 +519,7 @@ const std::string& StringMacros::trim(std::string& s)
 std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 {
 	size_t begin = data.find("$");
-	if(begin != std::string::npos)
+	if(begin != std::string::npos && begin + 1 < data.size())
 	{
 		size_t      end;
 		std::string envVariable;
