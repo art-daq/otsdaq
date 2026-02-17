@@ -543,7 +543,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 
 		// check if using $(( )) arithmetic expansion syntax
 		// First expand any $-based variables (including OTS system variables),
-		// then let bash evaluate the arithmetic (handles bare env vars like A-B)
+		// then evaluate the arithmetic expression using getNumber() (requires explicit $ for variables, e.g., $A-$B)
 		if(begin + 2 < data.size() && data[begin + 1] == '(' && data[begin + 2] == '(')
 		{
 			end = data.find("))", begin + 3);
@@ -558,7 +558,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			std::string expression = data.substr(begin + 3, end - begin - 3);
 			__COUTVS__(TLVL_EnvMath, expression);
 
-			// Expand $VAR and ${OTS.*.*} inside the expression (bare A/B remain for bash)
+			// Expand $VAR and ${OTS.*.*} inside the expression
 			expression = convertEnvironmentVariables(expression);
 			__COUTVS__(TLVL_EnvMath, expression);
 
@@ -613,8 +613,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			{
 				__SS__
 				    << "System variable ${" << envVariable
-				    << "} is not valid or was not found!"
-				    << "\n\n"
+				    << "} is not valid or was not found!" << "\n\n"
 				    << "If you were trying to access an ots System Variable, the correct "
 				       "syntax is "
 				    << "${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}"
@@ -1440,7 +1439,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 					__COUTT__ << "Found built '" << builtString << "' in " << haystack[n]
 					          << __E__;
 			}  //end haystack loop
-		}      //end common chunk loop
+		}  //end common chunk loop
 
 		__COUTTV__(StringMacros::vectorToString(commonChunksToReturn));
 		__COUTTV__(commonChunksToReturn[0].size());
