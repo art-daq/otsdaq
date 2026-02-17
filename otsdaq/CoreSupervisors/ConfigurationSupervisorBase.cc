@@ -1049,7 +1049,7 @@ try
 					      "should first recreate this group with updated Backbone table "
 					      "alias translations before activating.";
 
-					//also flat that active backone translation is invalid
+					//also flat that active backbone translation is invalid
 					xmlOut.addTextElementToParent("ActiveBackboneAliasVersion",
 					                              TableVersion().toString() /* invalid*/,
 					                              configEl);
