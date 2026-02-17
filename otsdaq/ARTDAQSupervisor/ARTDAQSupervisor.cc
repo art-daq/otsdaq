@@ -1697,7 +1697,7 @@ std::string ots::ARTDAQSupervisor::getProcessInfo_(void)
 
 std::string ots::ARTDAQSupervisor::artdaqStateToOtsState(std::string state)
 {
-	if(state == "nonexistant")
+	if(state == "nonexistent")
 		return RunControlStateMachine::INITIAL_STATE_NAME;
 	if(state == "Ready")
 		return "Configured";

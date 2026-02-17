@@ -29,9 +29,9 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 
 
 
-	__SUP_COUTV__(application->getApplicationContext()->getContextDescriptor()->getURL());
-	__SUP_COUTV__(application->getApplicationDescriptor()->getLocalId());
-	__SUP_COUTV__(supervisorClass_);
+	__SUP_COUT_INFO__ << "Supervisor URL = " << application->getApplicationContext()->getContextDescriptor()->getURL() << __E__;
+	__SUP_COUT_INFO__ << "Supervisor LID = " << application->getApplicationDescriptor()->getLocalId() << __E__;
+	__SUP_COUT_INFO__ << "Supervisor Class = " << supervisorClass_ << __E__;	
 	__SUP_COUTV__(supervisorClassNoNamespace_);
 
 	// get all supervisor info, and wiz mode, macroMaker mode, or not
@@ -87,7 +87,8 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		    theConfigurationManager_->__GET_CONFIG__(XDAQContextTable)->getContextUID(application->getApplicationContext()->getContextDescriptor()->getURL());
 		if(CorePropertySupervisorBase::supervisorContextUID_ == "")
 		{
-			__SUP_SS__ << "Illegal empty Supervisor Context UID identified. Please try again or contact admins." << __E__;
+			__SUP_SS__ << "Illegal empty Supervisor Context UID identified - could not find a valid UID based on Supervisor's provided URL (" << 
+				application->getApplicationContext()->getContextDescriptor()->getURL() << "). Please try again or contact admins." << __E__;
 			__SUP_SS_THROW__;
 		}
 	}

@@ -1443,7 +1443,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				        cfgMgr);
 				if(activeTableStructure != "")
 				{
-					__COUT__ << "Found Structure for Active Table: " << it->first << "-v"
+					__COUTT__ << "Found Structure for Active Table: " << it->first << "-v"
 					         << it->second << __E__;
 
 					(*out) << (tableStructureFoundCount++ ? "," : "") << __E__;
@@ -1454,9 +1454,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			}
 			catch(const std::exception& e)
 			{
-				__COUT__ << "Error caught in localDumpActiveTableStructureStatus(): "
+				__COUTT__ << "Error caught in localDumpActiveTableStructureStatus(): "
 				         << e.what();
-				__COUT__ << "Structure Status may not be implemented." << __E__;
+				__COUTT__ << "Structure Status may not be implemented." << __E__;
 			}
 		}  //end table structure loop
 
