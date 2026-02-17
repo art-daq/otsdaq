@@ -128,23 +128,12 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 		
 		processedNumbers.push_back(currentNumber);
 		
-		// Add the binary operator if this isn't the last number
+		// Add the binary operator if this isn't the last number and we have an operator
 		if(numIdx + 1 < numbers.size() && opsIdx < ops.size())
 		{
-			// Check if the next token is empty (indicates unary op coming)
-			if(numIdx + 1 < numbers.size() && !numbers[numIdx + 1].empty())
-			{
-				// Next token is non-empty, so this operator is binary
-				processedOps.push_back(ops[opsIdx]);
-				++opsIdx;
-			}
-			else if(numIdx + 1 < numbers.size() && numbers[numIdx + 1].empty())
-			{
-				// Next token is empty, so this operator is binary
-				// and the one after that will be unary
-				processedOps.push_back(ops[opsIdx]);
-				++opsIdx;
-			}
+			// This operator is binary (connects this number to what follows)
+			processedOps.push_back(ops[opsIdx]);
+			++opsIdx;
 		}
 		
 		++numIdx;
@@ -153,15 +142,9 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 	// Handle leading unary operator (when first token is empty)
 	if(!numbers.empty() && numbers[0].empty() && !ops.empty() && !processedNumbers.empty())
 	{
-		if(ops[0] == '-' && processedNumbers[0][0] != '-')
+		if(ops[0] == '-' && !processedNumbers[0].empty() && processedNumbers[0][0] != '-')
 		{
 			processedNumbers[0] = std::string("-") + processedNumbers[0];
-		}
-		// Adjust processedOps if needed since we consumed the leading operator
-		if(!processedOps.empty() && ops.size() > processedOps.size() + 1)
-		{
-			// We may have an off-by-one in ops, remove first if it was the unary
-			processedOps.erase(processedOps.begin());
 		}
 	}
 	
