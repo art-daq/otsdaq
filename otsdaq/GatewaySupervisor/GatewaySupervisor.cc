@@ -2809,7 +2809,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		{
 			//make sure we received everything
 			const size_t MAX_RETRIES = 10;
-			size_t tryCnt = 0;
+			size_t       tryCnt      = 0;
 			while(++tryCnt < 20 &&
 			      commandResponseString.size() > 10 &&  //must end with 'END---'
 			      (commandResponseString[commandResponseString.size() - 1] != '-' ||
@@ -2829,11 +2829,13 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 				}
 				else if(tryCnt >= MAX_RETRIES)
 				{
-				    std::ostringstream oss;
-				    oss << "Timeout after " << MAX_RETRIES << " attempts waiting for more data from Remote Gateway '"
-				        << remoteGatewayApp.appInfo.name << "' (URL=" << remoteGatewayApp.appInfo.url << ")...";
-				    __SS__ << oss.str() << __E__;
-				    __SS_THROW__;
+					std::ostringstream oss;
+					oss << "Timeout after " << MAX_RETRIES
+					    << " attempts waiting for more data from Remote Gateway '"
+					    << remoteGatewayApp.appInfo.name
+					    << "' (URL=" << remoteGatewayApp.appInfo.url << ")...";
+					__SS__ << oss.str() << __E__;
+					__SS_THROW__;
 				}
 			}
 

@@ -672,7 +672,7 @@ void XDAQContextTable::outputXDAQXML(std::ostream& out)
 
 	//__COUT__ << "DONE" << __E__;
 	out << "</xc:Partition>\n\n\n";
-} //end outputXDAQXML()
+}  //end outputXDAQXML()
 
 //==============================================================================
 std::string XDAQContextTable::getContextUID(const std::string& url) const
@@ -686,7 +686,7 @@ std::string XDAQContextTable::getContextUID(const std::string& url) const
 			return context.contextUID_;
 	}
 	return "";
-} //end getContextUID()
+}  //end getContextUID()
 
 //==============================================================================
 std::string XDAQContextTable::getApplicationUID(const std::string& url,
