@@ -1762,8 +1762,6 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 						isDifferent = true;
 						break;
 					}
-					// else //FIXED alias matches, but still need to check version
-					// continue;
 				}  // else check if compareTo group is using an alias for table
 				else if(compareToMemberTableAliases.find(memberPair.first) !=
 				        compareToMemberTableAliases.end())
