@@ -1063,9 +1063,9 @@ try
 
 		//normal table version check
 		if(compareToMemberMap.find(memberPair.first) ==
-		            compareToMemberMap.end() ||  // name is missing
-		        memberPair.second !=
-		            compareToMemberMap.at(memberPair.first))  // or version mismatch
+		       compareToMemberMap.end() ||  // name is missing
+		   memberPair.second !=
+		       compareToMemberMap.at(memberPair.first))  // or version mismatch
 		{
 			// then different
 			isDifferent = true;
@@ -1074,7 +1074,7 @@ try
 				          << ") on mismatch " << memberPair.first << __E__;
 			break;
 		}
-	} //end table version mismatch checking loop
+	}  //end table version mismatch checking loop
 
 	// check member size for exact match
 	if(!isDifferent &&
@@ -1763,7 +1763,7 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 						break;
 					}
 					// else //FIXED alias matches, but still need to check version
-						// continue;
+					// continue;
 				}  // else check if compareTo group is using an alias for table
 				else if(compareToMemberTableAliases.find(memberPair.first) !=
 				        compareToMemberTableAliases.end())
@@ -1771,17 +1771,15 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 					// then different
 					isDifferent = true;
 					break;
+				}
 
-				} 
-				
 				// alias check complete
 				// handle table version comparison
-				
+
 				if(compareToMemberMap.find(memberPair.first) ==
-				            compareToMemberMap.end() ||  // name is missing
-				        memberPair.second !=
-				            compareToMemberMap.at(
-				                memberPair.first))  // or version mismatch
+				       compareToMemberMap.end() ||  // name is missing
+				   memberPair.second !=
+				       compareToMemberMap.at(memberPair.first))  // or version mismatch
 				{
 					// then different
 					isDifferent = true;

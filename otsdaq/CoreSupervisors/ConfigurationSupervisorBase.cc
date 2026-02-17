@@ -1001,8 +1001,8 @@ try
 	__COUTV__(StringMacros::mapToString(groupMemberAliases));
 
 	std::map<std::string /*table name*/,
-			std::map<std::string /*version alias*/, TableVersion /*aliased version*/>> versionAliases =
-	    cfgMgr->getVersionAliases();
+	         std::map<std::string /*version alias*/, TableVersion /*aliased version*/>>
+	    versionAliases = cfgMgr->getVersionAliases();
 
 	__COUT__ << "# of table version aliases: " << versionAliases.size() << __E__;
 
@@ -1021,62 +1021,72 @@ try
 			    parentEl);
 			//also include actual version for reference
 			xmlOut.addTextElementToParent(
-				"ProvenanceMemberVersion",
-				memberPair.second.toString(),
-				configEl);
+			    "ProvenanceMemberVersion", memberPair.second.toString(), configEl);
 			// AND warn if actual version mismatches current alias!!
 			// if no current backbone alias for this member, or alias version does not match member version
 			auto vit = versionAliases.find(memberPair.first);
-			if(vit == versionAliases.end() || //tableName is not in backbone aliases
-			   vit->second.find(groupMemberAliases[memberPair.first]) == vit->second.end() || //alias is not in backbone aliases for this table
-			   vit->second[groupMemberAliases[memberPair.first]] != memberPair.second)  //backbone's alias version does not match provenance member version
+			if(vit == versionAliases.end() ||  //tableName is not in backbone aliases
+			   vit->second.find(groupMemberAliases[memberPair.first]) ==
+			       vit->second.end() ||  //alias is not in backbone aliases for this table
+			   vit->second[groupMemberAliases[memberPair.first]] !=
+			       memberPair
+			           .second)  //backbone's alias version does not match provenance member version
 			{
-			
-				__SS__ << "Warning: Version alias mismatch with active Backbone! <b>\"" + groupName + "(" + groupKey.toString() + ")" +
-		              		"\"</b> group member table <b>'" << memberPair.first
-						<< "'</b> is using version alias <b>'"
-						<< groupMemberAliases[memberPair.first] << "'</b>";
-				if(vit == versionAliases.end() || //tableName is not in backbone aliases
-			   			vit->second.find(groupMemberAliases[memberPair.first]) == vit->second.end())
+				__SS__ << "Warning: Version alias mismatch with active Backbone! <b>\"" +
+				              groupName + "(" + groupKey.toString() + ")" +
+				              "\"</b> group member table <b>'"
+				       << memberPair.first << "'</b> is using version alias <b>'"
+				       << groupMemberAliases[memberPair.first] << "'</b>";
+				if(vit == versionAliases.end() ||  //tableName is not in backbone aliases
+				   vit->second.find(groupMemberAliases[memberPair.first]) ==
+				       vit->second.end())
 				{
-					ss << " which no longer has a valid translation in the active Backbone! "						
-						<< " The original provenance version is <b>" << memberPair.first << "-v" << memberPair.second << 
-						"</b>.\n\nPlease consider whether this is an issue, or if you should first recreate this group with updated Backbone table alias translations before activating.";
+					ss << " which no longer has a valid translation in the active "
+					      "Backbone! "
+					   << " The original provenance version is <b>" << memberPair.first
+					   << "-v" << memberPair.second
+					   << "</b>.\n\nPlease consider whether this is an issue, or if you "
+					      "should first recreate this group with updated Backbone table "
+					      "alias translations before activating.";
 
 					//also flat that active backone translation is invalid
-					xmlOut.addTextElementToParent(
-						"ActiveBackboneAliasVersion",
-						TableVersion().toString() /* invalid*/,
-						configEl);
+					xmlOut.addTextElementToParent("ActiveBackboneAliasVersion",
+					                              TableVersion().toString() /* invalid*/,
+					                              configEl);
 				}
 				else
 				{
-					ss <<
-						" which translates to <b>v" << memberPair.first << "-v" << vit->second[groupMemberAliases[memberPair.first]] << "</b> with currect active Backbone group."
-						<< " There is a mismatch with the original provenance version of <b>" << memberPair.first << "-v" << memberPair.second
-						<< "</b>.\n\nPlease consider whether this is an issue, or if you should first recreate this group with updated Backbone table alias translations before activating."							
-						<< __E__;
+					ss << " which translates to <b>v" << memberPair.first << "-v"
+					   << vit->second[groupMemberAliases[memberPair.first]]
+					   << "</b> with currect active Backbone group."
+					   << " There is a mismatch with the original provenance version of "
+					      "<b>"
+					   << memberPair.first << "-v" << memberPair.second
+					   << "</b>.\n\nPlease consider whether this is an issue, or if you "
+					      "should first recreate this group with updated Backbone table "
+					      "alias translations before activating."
+					   << __E__;
 
 					//also include mismatching active backone translation
 					xmlOut.addTextElementToParent(
-						"ActiveBackboneAliasVersion",
-						vit->second[groupMemberAliases[memberPair.first]].toString(),
-						configEl);
-
+					    "ActiveBackboneAliasVersion",
+					    vit->second[groupMemberAliases[memberPair.first]].toString(),
+					    configEl);
 				}
 				__COUT_WARN__ << "\n" << ss.str() << __E__;
-				xmlOut.addTextElementToData("Warning", ss.str());			
-			} //end alias warning handling
+				xmlOut.addTextElementToData("Warning", ss.str());
+			}  //end alias warning handling
 			else
 			{
 				__COUT__ << "\"" + groupName + "(" + groupKey.toString() + ")" +
-		              		"\" group member table '" << memberPair.first
-							<< "' is using version alias '"
-							<< groupMemberAliases[memberPair.first]
-							<< "' which currently matches the active Backbone translation version v" << memberPair.second 
-							<< " = v" << vit->second[groupMemberAliases[memberPair.first]] << __E__;
+				                "\" group member table '"
+				         << memberPair.first << "' is using version alias '"
+				         << groupMemberAliases[memberPair.first]
+				         << "' which currently matches the active Backbone translation "
+				            "version v"
+				         << memberPair.second << " = v"
+				         << vit->second[groupMemberAliases[memberPair.first]] << __E__;
 			}
-
 		}
 		else
 			configEl = xmlOut.addTextElementToParent(
