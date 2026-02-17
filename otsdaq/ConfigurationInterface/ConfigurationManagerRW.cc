@@ -1030,6 +1030,8 @@ try
 	bool isDifferent = false;
 	for(auto& memberPair : groupMemberMap)
 	{
+		//groups can be different if Alias names are different
+		// or if resolved Alias versions are different (for the current active backbone)
 		if(memberTableAliases.find(memberPair.first) != memberTableAliases.end())
 		{
 			// handle this table as alias, not version
@@ -1044,8 +1046,8 @@ try
 					          << ") on alias " << memberPair.first << __E__;
 				break;
 			}
-			else
-				continue;
+			// else
+			// 	continue;
 		}  // else check if compareTo group is using an alias for table
 		else if(compareToMemberTableAliases.find(memberPair.first) !=
 		        compareToMemberTableAliases.end())
@@ -1058,7 +1060,9 @@ try
 			break;
 
 		}  // else handle as table version comparison
-		else if(compareToMemberMap.find(memberPair.first) ==
+
+		//normal table version check
+		if(compareToMemberMap.find(memberPair.first) ==
 		            compareToMemberMap.end() ||  // name is missing
 		        memberPair.second !=
 		            compareToMemberMap.at(memberPair.first))  // or version mismatch
@@ -1070,7 +1074,7 @@ try
 				          << ") on mismatch " << memberPair.first << __E__;
 			break;
 		}
-	}
+	} //end table version mismatch checking loop
 
 	// check member size for exact match
 	if(!isDifferent &&
@@ -1758,8 +1762,8 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 						isDifferent = true;
 						break;
 					}
-					else
-						continue;
+					// else //FIXED alias matches, but still need to check version
+						// continue;
 				}  // else check if compareTo group is using an alias for table
 				else if(compareToMemberTableAliases.find(memberPair.first) !=
 				        compareToMemberTableAliases.end())
@@ -1768,8 +1772,12 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 					isDifferent = true;
 					break;
 
-				}  // else handle as table version comparison
-				else if(compareToMemberMap.find(memberPair.first) ==
+				} 
+				
+				// alias check complete
+				// handle table version comparison
+				
+				if(compareToMemberMap.find(memberPair.first) ==
 				            compareToMemberMap.end() ||  // name is missing
 				        memberPair.second !=
 				            compareToMemberMap.at(
