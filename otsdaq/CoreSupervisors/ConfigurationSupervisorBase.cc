@@ -1058,7 +1058,7 @@ try
 				{
 					ss << " which translates to <b>v" << memberPair.first << "-v"
 					   << vit->second[groupMemberAliases[memberPair.first]]
-					   << "</b> with currect active Backbone group."
+					   << "</b> with current active Backbone group."
 					   << " There is a mismatch with the original provenance version of "
 					      "<b>"
 					   << memberPair.first << "-v" << memberPair.second
