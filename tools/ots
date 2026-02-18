@@ -200,7 +200,7 @@ while :; do
 	--killall | --kill | --kx | -k)
 		info "KILL OTS!"
 		read -p "Are you sure (you want to kill the ots processes associated with this subsystem)? [Y/N] " answer
-		if [[ "$answer" != "Y" && "$answer" != "y" ]]; then
+		if [[ "$answer" != "Y" && "$answer" != "y" ]]; then 
 			warning "Aborting kill."
 			exit 1
 		fi
@@ -714,6 +714,14 @@ if [ $ISREMOTE == 0 ]; then
 	info "\$OTS_SOURCE              = ${YELLOW}${OTS_SOURCE}${RstClr}        "
 fi
 #end print out important environment variables
+
+# Check for existence and readability of certificate files for MongoDB
+if [ -n "$ARTDAQ_DATABASE_CA_CERT" ] && [ ! -r "$ARTDAQ_DATABASE_CA_CERT" ]; then
+	warning "WARNING!! CA certificate file not found or not readable at \$ARTDAQ_DATABASE_CA_CERT"
+fi
+if [ -n "$ARTDAQ_DATABASE_CLIENT_CERT" ] && [ ! -r "$ARTDAQ_DATABASE_CLIENT_CERT" ]; then
+	warning "WARNING!! Client certificate file not found or not readable at \$ARTDAQ_DATABASE_CLIENT_CERT"
+fi
 
 #check for antiquated artdaq database
 ARTDAQ_DATABASE_TYPE=$(echo ${ARTDAQ_DATABASE_URI}|sed 's|:.*||')
