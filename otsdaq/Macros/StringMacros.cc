@@ -613,7 +613,8 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			{
 				__SS__
 				    << "System variable ${" << envVariable
-				    << "} is not valid or was not found!" << "\n\n"
+				    << "} is not valid or was not found!"
+				    << "\n\n"
 				    << "If you were trying to access an ots System Variable, the correct "
 				       "syntax is "
 				    << "${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}"
@@ -1439,7 +1440,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 					__COUTT__ << "Found built '" << builtString << "' in " << haystack[n]
 					          << __E__;
 			}  //end haystack loop
-		}  //end common chunk loop
+		}      //end common chunk loop
 
 		__COUTTV__(StringMacros::vectorToString(commonChunksToReturn));
 		__COUTTV__(commonChunksToReturn[0].size());

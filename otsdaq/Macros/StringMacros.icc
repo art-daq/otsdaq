@@ -95,10 +95,10 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 	// The operator after an empty token is actually a unary operator for the next token
 	std::vector<std::string> processedNumbers;
 	std::vector<char>        processedOps;
-	
+
 	size_t numIdx = 0;
 	size_t opsIdx = 0;
-	
+
 	while(numIdx < numbers.size())
 	{
 		if(numbers[numIdx].empty())
@@ -108,10 +108,10 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 			++numIdx;
 			continue;
 		}
-		
+
 		// Check if there's a pending unary operator from a previous empty token
 		std::string currentNumber = numbers[numIdx];
-		
+
 		// If the previous token was empty and we have an operator, it's a unary operator
 		if(numIdx > 0 && numbers[numIdx - 1].empty() && opsIdx < ops.size())
 		{
@@ -125,9 +125,9 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 			// '+' doesn't change the value, so we don't need to prepend it
 			++opsIdx;  // Consume the unary operator
 		}
-		
+
 		processedNumbers.push_back(currentNumber);
-		
+
 		// Add the binary operator if this isn't the last number and we have an operator
 		if(numIdx + 1 < numbers.size() && opsIdx < ops.size())
 		{
@@ -135,21 +135,22 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 			processedOps.push_back(ops[opsIdx]);
 			++opsIdx;
 		}
-		
+
 		++numIdx;
 	}
-	
+
 	// Handle leading unary operator (when first token is empty)
-	if(!numbers.empty() && numbers[0].empty() && !ops.empty() && !processedNumbers.empty())
+	if(!numbers.empty() && numbers[0].empty() && !ops.empty() &&
+	   !processedNumbers.empty())
 	{
 		if(ops[0] == '-' && !processedNumbers[0].empty() && processedNumbers[0][0] != '-')
 		{
 			processedNumbers[0] = std::string("-") + processedNumbers[0];
 		}
 	}
-	
+
 	numbers = processedNumbers;
-	ops = processedOps;
+	ops     = processedOps;
 
 	__COUTVS__(TLVL_GetNumber, "After unary processing:");
 	__COUTVS__(TLVL_GetNumber, StringMacros::vectorToString(numbers));
