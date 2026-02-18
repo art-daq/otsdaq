@@ -10,7 +10,10 @@
 #include <sstream>   //for stringstream, std::stringbuf
 
 #define TRACEMF_USE_VERBATIM 1 //for trace longer path filenames
+
+// #define TSTREAMER_SL_FRC(lvl)	(lvl<TLVL_DEBUG) //FIXME uncomment once trace supports #ifdef TSTREAMER_SL_FRC (as of 17-Feb-2026 not defined)
 #include "TRACE/tracemf.h"
+
 
 /// take filename only after srcs/ (this gives by repo name)
 /// use 'builtin' to try to define at compile time

@@ -13,14 +13,14 @@ const CorePropertySupervisorBase::SupervisorProperties
 // clang-format off
 //==============================================================================
 CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* application)
-    : theConfigurationManager_(0)  // new ConfigurationManager)
-    , supervisorClass_(application->getApplicationDescriptor()->getClassName())
-    , supervisorClassNoNamespace_(
-          supervisorClass_.substr(supervisorClass_.find_last_of(":") + 1, supervisorClass_.length() - supervisorClass_.find_last_of(":")))
-    , supervisorContextUID_("UNINITIALIZED_supervisorContextUID")                // MUST BE INITIALIZED INSIDE THE CONTRUCTOR TO THROW EXCEPTIONS on bad conditions
-    , supervisorApplicationUID_("UNINITIALIZED_supervisorApplicationUID")        // MUST BE INITIALIZED INSIDE THE CONTRUCTOR TO THROW EXCEPTIONS on bad conditions
-    , supervisorConfigurationPath_("UNINITIALIZED_supervisorConfigurationPath")  // MUST BE INITIALIZED INSIDE THE CONTRUCTOR TO THROW EXCEPTIONS on bad conditions
-    , propertiesAreSetup_(false)
+	: theConfigurationManager_(0)  // new ConfigurationManager)
+	, supervisorClass_(application->getApplicationDescriptor()->getClassName())
+	, supervisorClassNoNamespace_(
+		  supervisorClass_.substr(supervisorClass_.find_last_of(":") + 1, supervisorClass_.length() - supervisorClass_.find_last_of(":")))
+	, supervisorContextUID_("UNINITIALIZED_supervisorContextUID")                // MUST BE INITIALIZED INSIDE THE CONTRUCTOR TO THROW EXCEPTIONS on bad conditions
+	, supervisorApplicationUID_("UNINITIALIZED_supervisorApplicationUID")        // MUST BE INITIALIZED INSIDE THE CONTRUCTOR TO THROW EXCEPTIONS on bad conditions
+	, supervisorConfigurationPath_("UNINITIALIZED_supervisorConfigurationPath")  // MUST BE INITIALIZED INSIDE THE CONTRUCTOR TO THROW EXCEPTIONS on bad conditions
+	, propertiesAreSetup_(false)
 	, theTRACEController_(nullptr)
 	, OTSDAQ_LOG_DIR(__ENV__("OTSDAQ_LOG_DIR"))
 	, OTSDAQ_DATA_DIR(__ENV__("OTSDAQ_DATA"))
@@ -29,9 +29,9 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 
 
 
-	__SUP_COUTV__(application->getApplicationContext()->getContextDescriptor()->getURL());
-	__SUP_COUTV__(application->getApplicationDescriptor()->getLocalId());
-	__SUP_COUTV__(supervisorClass_);
+	__SUP_COUT_INFO__ << "Supervisor URL = " << application->getApplicationContext()->getContextDescriptor()->getURL() << __E__;
+	__SUP_COUT_INFO__ << "Supervisor LID = " << application->getApplicationDescriptor()->getLocalId() << __E__;
+	__SUP_COUT_INFO__ << "Supervisor Class = " << supervisorClass_ << __E__;
 	__SUP_COUTV__(supervisorClassNoNamespace_);
 
 	// get all supervisor info, and wiz mode, macroMaker mode, or not
@@ -41,13 +41,13 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 	{
 		theConfigurationManager_ = new ConfigurationManager(false /*initForWriteAccess*/, true /*initializeFromFhicl*/);
 		__SUP_COUT__ << "Macro Maker mode detected. So skipping configuration location work for "
-		                "supervisor of class '"
-		             << supervisorClass_ << "'" << __E__;
+						"supervisor of class '"
+					 << supervisorClass_ << "'" << __E__;
 
 		supervisorContextUID_        = "MacroMakerFEContext";
 		supervisorApplicationUID_    = "MacroMakerFESupervisor";
 		supervisorConfigurationPath_ = CorePropertySupervisorBase::supervisorContextUID_ + "/LinkToApplicationTable/" +
-		                               CorePropertySupervisorBase::supervisorApplicationUID_ + "/LinkToSupervisorTable";
+									   CorePropertySupervisorBase::supervisorApplicationUID_ + "/LinkToSupervisorTable";
 
 		__SUP_COUTV__(CorePropertySupervisorBase::supervisorContextUID_);
 		__SUP_COUTV__(CorePropertySupervisorBase::supervisorApplicationUID_);
@@ -61,8 +61,8 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 	else if(allSupervisorInfo_.isWizardMode())
 	{
 		__SUP_COUT__ << "Wiz mode detected. So skipping configuration location work for "
-		                "supervisor of class '"
-		             << supervisorClass_ << "'" << __E__;
+						"supervisor of class '"
+					 << supervisorClass_ << "'" << __E__;
 		supervisorContextUID_        = "NO CONTEXT ID IN WIZ MODE";
 		supervisorApplicationUID_    = std::to_string(application->getApplicationDescriptor()->getLocalId());
 		supervisorConfigurationPath_ = "NO APP PATH IN WIZ MODE";
@@ -75,7 +75,7 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 	}
 
 	__SUP_COUT__ << "Getting configuration specific info for supervisor '" << (allSupervisorInfo_.getSupervisorInfo(application).getName()) << "' of class "
-	             << supervisorClass_ << "." << __E__;
+				 << supervisorClass_ << "." << __E__;
 
 	// get configuration specific info for the application supervisor
 
@@ -84,19 +84,20 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		__SUP_COUTV__(application->getApplicationContext()->getContextDescriptor()->getURL());
 		theConfigurationManager_ = new ConfigurationManager();
 		CorePropertySupervisorBase::supervisorContextUID_ =
-		    theConfigurationManager_->__GET_CONFIG__(XDAQContextTable)->getContextUID(application->getApplicationContext()->getContextDescriptor()->getURL());
+			theConfigurationManager_->__GET_CONFIG__(XDAQContextTable)->getContextUID(application->getApplicationContext()->getContextDescriptor()->getURL());
 		if(CorePropertySupervisorBase::supervisorContextUID_ == "")
 		{
-			__SUP_SS__ << "Illegal empty Supervisor Context UID identified. Please try again or contact admins." << __E__;
+			__SUP_SS__ << "Illegal empty Supervisor Context UID identified - could not find a valid UID based on Supervisor's provided URL (" <<
+				application->getApplicationContext()->getContextDescriptor()->getURL() << "). Please try again or contact admins." << __E__;
 			__SUP_SS_THROW__;
 		}
 	}
 	catch(...)
 	{
 		__SUP_COUT_ERR__ << "XDAQ Supervisor could not access it's configuration through "
-		                    "the Configuration Manager."
-		                 << ". The getApplicationContext()->getContextDescriptor()->getURL() = "
-		                 << application->getApplicationContext()->getContextDescriptor()->getURL() << __E__;
+							"the Configuration Manager."
+						 << ". The getApplicationContext()->getContextDescriptor()->getURL() = "
+						 << application->getApplicationContext()->getContextDescriptor()->getURL() << __E__;
 		throw;
 	}
 
@@ -104,8 +105,8 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 	{
 		__SUP_COUTV__(application->getApplicationDescriptor()->getLocalId());
 		CorePropertySupervisorBase::supervisorApplicationUID_ = theConfigurationManager_->__GET_CONFIG__(XDAQContextTable)
-		                                                            ->getApplicationUID(application->getApplicationContext()->getContextDescriptor()->getURL(),
-		                                                                                application->getApplicationDescriptor()->getLocalId());
+																	->getApplicationUID(application->getApplicationContext()->getContextDescriptor()->getURL(),
+																						application->getApplicationDescriptor()->getLocalId());
 		if(CorePropertySupervisorBase::supervisorApplicationUID_ == "")
 		{
 			__SUP_SS__ << "Illegal empty Supervisor Application UID identified. Please try again or contact admins." << __E__;
@@ -115,14 +116,14 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 	catch(...)
 	{
 		__SUP_COUT_ERR__ << "XDAQ Supervisor could not access it's configuration through "
-		                    "the Configuration Manager."
-		                 << " The supervisorContextUID_ = " << supervisorContextUID_ << ". The supervisorApplicationUID = " << supervisorApplicationUID_
-		                 << __E__;
+							"the Configuration Manager."
+						 << " The supervisorContextUID_ = " << supervisorContextUID_ << ". The supervisorApplicationUID = " << supervisorApplicationUID_
+						 << __E__;
 		throw;
 	}
 
 	CorePropertySupervisorBase::supervisorConfigurationPath_ = "/" + CorePropertySupervisorBase::supervisorContextUID_ + "/LinkToApplicationTable/" +
-	                                                           CorePropertySupervisorBase::supervisorApplicationUID_ + "/LinkToSupervisorTable";
+															   CorePropertySupervisorBase::supervisorApplicationUID_ + "/LinkToSupervisorTable";
 
 	__SUP_COUTV__(CorePropertySupervisorBase::supervisorContextUID_);
 	__SUP_COUTV__(CorePropertySupervisorBase::supervisorApplicationUID_);
