@@ -5381,6 +5381,9 @@ try
 			__COUTVS__(2, e.what());
 			if(std::string(e.what()).find(
 			       "initPrereqsForARTDAQ() is not implemented for this table") ==
+			   std::string::npos && 
+			   std::string(e.what()).find(
+			       "no active table view setup") ==
 			   std::string::npos)
 				throw;
 			//else ignore undefined virtual function error
