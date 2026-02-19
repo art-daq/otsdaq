@@ -715,6 +715,14 @@ if [ $ISREMOTE == 0 ]; then
 fi
 #end print out important environment variables
 
+# Check for existence and readability of certificate files for MongoDB
+if [ -n "$ARTDAQ_DATABASE_CA_CERT" ] && [ ! -r "$ARTDAQ_DATABASE_CA_CERT" ]; then
+	warning "WARNING!! CA certificate file not found or not readable at \$ARTDAQ_DATABASE_CA_CERT"
+fi
+if [ -n "$ARTDAQ_DATABASE_CLIENT_CERT" ] && [ ! -r "$ARTDAQ_DATABASE_CLIENT_CERT" ]; then
+	warning "WARNING!! Client certificate file not found or not readable at \$ARTDAQ_DATABASE_CLIENT_CERT"
+fi
+
 #check for antiquated artdaq database
 ARTDAQ_DATABASE_TYPE=$(echo ${ARTDAQ_DATABASE_URI}|sed 's|:.*||')
 
@@ -1655,21 +1663,21 @@ launchOTS() {
 
 	#     kinit -R #refresh kerberos
 
-	#     echo -e "setup_ots.sh:${LINENO} |  \t "
-	#     echo -e "setup_ots.sh:${LINENO} |  \t Tunnel in background to IERC mongodb:"
+	#     echo -e "$(date +%d%b%y.%T) setup_ots.sh:${LINENO} |  \t "
+	#     echo -e "$(date +%d%b%y.%T) setup_ots.sh:${LINENO} |  \t Tunnel in background to IERC mongodb:"
 	#     echo "ssh -f -K -N -L $ARTDAQ_DATABASE_SSH_LOCAL_PORT:localhost:$ARTDAQ_DATABASE_SSH_TUNNEL"
 	#     # echo "ssh -M -S mongodb-ssh-socket -fnNT -L $ARTDAQ_DATABASE_SSH_LOCAL_PORT:localhost:$ARTDAQ_DATABASE_SSH_TUNNEL"
 
 	#     # Check if the SSH tunnel is already running on port $ARTDAQ_DATABASE_SSH_LOCAL_PORT
 	#     # if [ -e mongodb-ssh-socket ]; then
 	#     if lsof -i :$ARTDAQ_DATABASE_SSH_LOCAL_PORT | grep -q ssh; then
-	#         echo -e "setup_ots.sh:${LINENO} |  \t Tunnel already exists"
+	#         echo -e "$(date +%d%b%y.%T) setup_ots.sh:${LINENO} |  \t Tunnel already exists"
 	#     else
 	#         ssh -f -K -N -L $ARTDAQ_DATABASE_SSH_LOCAL_PORT:localhost:$ARTDAQ_DATABASE_SSH_TUNNEL >/dev/null
 	#         # ssh -M -S mongodb-ssh-socket -fnNT -L $ARTDAQ_DATABASE_SSH_LOCAL_PORT:localhost:$ARTDAQ_DATABASE_SSH_TUNNEL
 	#     fi
 
-	#     echo -e "setup_ots.sh:${LINENO} |  \t "
+	#     echo -e "$(date +%d%b%y.%T) setup_ots.sh:${LINENO} |  \t "
 	# }
 	# export -f otsUserSshTunnels
 
