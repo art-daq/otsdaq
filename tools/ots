@@ -818,23 +818,11 @@ if [ "x$OTSDAQ_LOG_DIR" == "x" ];then
 	export OTSDAQ_LOG_DIR="${USER_DATA}/Logs"
 fi
 
-if [ "x${ARTDAQ_OUTPUT_DIR}" == "x" ]; then
-	export ARTDAQ_OUTPUT_DIR="${USER_DATA}/ArtdaqData"
-fi
-
 if [ ! -d $OTSDAQ_DATA ]; then
 	if [ ! -L $OTSDAQ_DATA ]; then
 		mkdir -p $OTSDAQ_DATA || die "Error: OTSDAQ_DATA path (${OTSDAQ_DATA}) does not exist and mkdir failed!"
 	else
 		mkdir -p `readlink -f $OTSDAQ_DATA`  || die "Error: OTSDAQ_DATA path (${OTSDAQ_DATA}) does not exist and mkdir failed!"
-	fi
-fi
-
-if [ ! -d $ARTDAQ_OUTPUT_DIR ]; then
-	if [ ! -L $ARTDAQ_OUTPUT_DIR ]; then
-		mkdir -p $ARTDAQ_OUTPUT_DIR || die "Error: ARTDAQ_OUTPUT_DIR path (${ARTDAQ_OUTPUT_DIR}) does not exist and mkdir failed!"
-	else
-		mkdir -p `readlink -f $ARTDAQ_OUTPUT_DIR`  || die "Error: ARTDAQ_OUTPUT_DIR path (${ARTDAQ_OUTPUT_DIR}) does not exist and mkdir failed!"
 	fi
 fi
 
@@ -1597,9 +1585,6 @@ launchOTS() {
 	####################################################################
 	###################### end DAQInterface setup ######################
 	####################################################################
-
-	envString="-genv OTSDAQ_LOG_ROOT ${OTSDAQ_LOG_DIR} -genv ARTDAQ_OUTPUT_DIR ${ARTDAQ_OUTPUT_DIR}"
-
 
 
 	#create argument to pass to ${xdaqPrefix} xdaq.executable
