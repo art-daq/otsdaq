@@ -18,16 +18,16 @@ else
 fi
 
 
-# echo -e "tele_lookup.sh [${LINENO}]  \t      Found name as ${AUTHOR_NAME}"
+# echo -e "$(date +%d%b%y.%T) tele_lookup.sh [${LINENO}]  \t      Found name as ${AUTHOR_NAME}"
 if [[ "x${AUTHOR_NAME:0:16}" == "xNo Results Found" ]]; then
 		AUTHOR_NAME=`echo $EMAIL_ADDR | cut -d '@' -f1`
 		AUTHOR_NAME=`wget -O- http://www-giduid.fnal.gov/cd/FUE/uidgid/uid_id.lis 2>/dev/null | grep -i $AUTHOR_NAME | xargs`   #use xargs to trim whitespace
 		FIRST_NAME=`echo ${AUTHOR_NAME} | cut -d ' ' -f4`
 		LAST_NAME=`echo ${AUTHOR_NAME} | cut -d ' ' -f3`
 		AUTHOR_NAME="$FIRST_NAME $LAST_NAME"
-		# echo -e "tele_lookup.sh [${LINENO}]  \t      Found FIRST_NAME as ${FIRST_NAME}"
-		# echo -e "tele_lookup.sh [${LINENO}]  \t      Found LAST_NAME as ${LAST_NAME}"
-		# echo -e "tele_lookup.sh [${LINENO}]  \t      Found name as ${AUTHOR_NAME}"
+		# echo -e "$(date +%d%b%y.%T) tele_lookup.sh [${LINENO}]  \t      Found FIRST_NAME as ${FIRST_NAME}"
+		# echo -e "$(date +%d%b%y.%T) tele_lookup.sh [${LINENO}]  \t      Found LAST_NAME as ${LAST_NAME}"
+		# echo -e "$(date +%d%b%y.%T) tele_lookup.sh [${LINENO}]  \t      Found name as ${AUTHOR_NAME}"
 fi
 
 echo ${AUTHOR_NAME}
