@@ -36,7 +36,7 @@ static std::unordered_map<int, struct sigaction> old_actions =
 static bool sighandler_init = false;
 static void signal_handler(int signum)
 {
-	// Messagefacility may already be gone at this point, TRACE ONLY!
+// Messagefacility may already be gone at this point, TRACE ONLY!
 #if TRACE_REVNUM < 1459
 	TRACE_STREAMER(TLVL_ERROR, &("ARTDAQsupervisor")[0], 0, 0, 0)
 #else
@@ -757,7 +757,8 @@ try
 	{
 		__GEN_SS__ << "DAQInterface is not initialized. "
 		              "Check earlier Python import/constructor errors (e.g. syntax) "
-		              "in DAQInterface." << __E__;
+		              "in DAQInterface."
+		           << __E__;
 		__GEN_SS_THROW__;
 	}
 	PyObjectGuard pName1(PyUnicode_FromString("setdaqcomps"));
