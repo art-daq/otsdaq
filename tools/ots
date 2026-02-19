@@ -285,7 +285,7 @@ otsConsoleFwdPrefix="setsid" #setsid to disassociate from terminal, in case term
 if [ $VALGRIND ==  1 ]; then
 	valgrindTimestamp=$(date +%Y%m%d_%H%M%S)
 	xdaqPrefix="setsid valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --log-file=valgrind_xdaq_${valgrindTimestamp}.log"
-	info "Using xdaq launch prefix: ${xdaqPrefix}"	
+	info "Using xdaq launch prefix: ${xdaqPrefix}"
 fi
 
 # Setup trace default config if not specifically disabled
@@ -452,7 +452,7 @@ function killprocs
 	fi
 
 	if [[ "x$1" == "x" ]]; then #kill all ots processes that share "$USER_DATA/" (Note: without the trailing /, shift will kill shift1)
-		
+
 		pids=`ps aux|grep -v grep|grep [x]daq.exe|grep "${USER_DATA}/"|awk '{print $2}'`
 		for pid in $pids;do
 			killproc $pid xdaq.exe &
@@ -776,7 +776,7 @@ if [ "x$ARTDAQ_DATABASE_TYPE" == "xfilesystemdb" ]; then
 			fi
 		fi
 	fi
-	
+
 elif [ "x$ARTDAQ_DATABASE_TYPE" == "xmongodb" ]; then
 
 	if [ $ISREMOTE == 0 ]; then #dont printout if remote
@@ -1271,7 +1271,7 @@ launchOTSWiz() {
 	out "Wiz mode ots context is defined by ${XDAQ_CONFIGURATION_DATA_PATH}/otsConfiguration_Wizard_CMake_Run.xml"
 
 	#attempt to avoid false starts by xdaq by detecting constructor, and relaunching
-	rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat >/dev/null 2>&1 #hide output #remove alive file	
+	rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat >/dev/null 2>&1 #hide output #remove alive file
 	OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if previous http server has gone down
 	# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 	if [ "$OTS_CONTEXT_UP" != "bad" ]; then
@@ -1469,7 +1469,7 @@ launchOTS() {
 
 	fi
 
-	
+
 	echo "0" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE #clear action file initially (local or remote)
 	echo "0" > $OTSDAQ_STARTOTS_ACTION_FILE #clear action file initially (local or remote)
 
@@ -1832,8 +1832,8 @@ launchOTS() {
 								while [ "x$OTS_IS_ALIVE" == "x" ]; do
 									warning "Could not verify successful ots gateway context launch (check log for details)..."
 									killproc ${LAST_OTS_PID} xdaq.exe
-									if [ $QUIET == 1 ]; then #display log tail for user to 
-									
+									if [ $QUIET == 1 ]; then #display log tail for user to
+
 										# tail -n 20 ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt
 										awk '
 										BEGIN { IGNORECASE=1 }
@@ -2522,8 +2522,8 @@ printMainURL() {
 			out "Port translation map file found.\n \
 If you are accessing otsdaq from outside the local network, you may need port translation.\n\
 You can modify the URL host:port translation using this file: at ${Yellow}${OTS_PORT_TRANSLATION_MAP_FILE}${RstClr}"
-			
-			
+
+
 			# -------------------------------------------------
 			#  parse_and_print  –  split each line on "|"
 			# -------------------------------------------------
@@ -2578,17 +2578,17 @@ You can modify the URL host:port translation using this file: at ${Yellow}${OTS_
 				fi
 
 				if [[ $showThisTranslation == 1 ]]; then
-					
+
 					isThisPortMarker='*'
-					echo -e "$url1 | $url2\t==> $url3 ${isThisPortMarker}"					
+					echo -e "$url1 | $url2\t==> $url3 ${isThisPortMarker}"
 				fi
 
 				# -------------------------------------------------
 				# Print everything on ONE line with labels
-				# -------------------------------------------------				
+				# -------------------------------------------------
 				# echo -e "$url1 | $url2\t==> $url3 ${isThisPortMarker}"
-				
-				
+
+
 			done < "$OTS_PORT_TRANSLATION_MAP_FILE"
 
 			if [[ $showTranslation == 1 ]]; then
@@ -2655,7 +2655,7 @@ otsLogDiskCheck() {
 	# Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
 	AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_LOG_DIR/" | awk 'NR==2 {print $4}')
 	# out "Available disk space in log directory ${OTSDAQ_LOG_DIR}/: ${AVAILABLE_DISK_SPACE} KB..."
-	if [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_LOG_DISK_MINIMUM" ]; then	
+	if [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_LOG_DISK_MINIMUM" ]; then
 
 		#find and delete oldest log files until we are above threshold
 		# but only if older than 24 hours
@@ -2716,7 +2716,7 @@ fi
 otsDataDiskCheck() {
 	# Note!! User can prevent data check by export OTSDAQ_DATA_DISK_MINIMUM=0
 	AVAILABLE_DISK_SPACE=$(df -P "$OTSDAQ_DATA/" | awk 'NR==2 {print $4}')
-	if [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_DATA_DISK_MINIMUM" ]; then	
+	if [ "$AVAILABLE_DISK_SPACE" -lt "$OTSDAQ_DATA_DISK_MINIMUM" ]; then
 		#find and delete oldest data files until we are above threshold
 		# but only if older than stale threshold
 
@@ -2777,7 +2777,7 @@ otsActionHandler() {
 
 	lsof "${ACTION_HANDLER_LOG}" 2>/dev/null
 	pid=$(lsof "$ACTION_HANDLER_LOG" 2>/dev/null \
-        | awk 'NR>1 && $1=="ots" {print $2; exit}')
+		| awk 'NR>1 && $1=="ots" {print $2; exit}')
 
 	info "Starting action handler on ${THIS_HOST}... pid=${pid}"
 
