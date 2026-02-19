@@ -36,7 +36,7 @@ static std::unordered_map<int, struct sigaction> old_actions =
 static bool sighandler_init = false;
 static void signal_handler(int signum)
 {
-	// Messagefacility may already be gone at this point, TRACE ONLY!
+// Messagefacility may already be gone at this point, TRACE ONLY!
 #if TRACE_REVNUM < 1459
 	TRACE_STREAMER(TLVL_ERROR, &("ARTDAQsupervisor")[0], 0, 0, 0)
 #else
