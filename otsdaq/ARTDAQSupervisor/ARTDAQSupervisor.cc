@@ -376,8 +376,9 @@ void ARTDAQSupervisor::init(void)
 
 			if(pModule.get() == NULL)
 			{
-				PyErr_Print();
-				__SS__ << "Failed to load rc.control.daqinterface" << __E__;
+				std::string err = capturePyErr("import rc.control.daqinterface");
+				__SS__ << "Failed to load rc.control.daqinterface. Python Exception: "
+				       << err << __E__;
 				__SUP_SS_THROW__;
 			}
 			else
@@ -387,8 +388,9 @@ void ARTDAQSupervisor::init(void)
 				    pModule.get());  //do NOT DECREF borrowed objects through GetDict!
 				if(pDict == NULL)
 				{
-					PyErr_Print();
-					__SS__ << "Unable to load module dictionary" << __E__;
+					std::string err = capturePyErr("module dict");
+					__SS__ << "Unable to load module dictionary. Python Exception: "
+					       << err << __E__;
 					__SUP_SS_THROW__;
 				}
 				else
@@ -398,9 +400,10 @@ void ARTDAQSupervisor::init(void)
 					    pDict, "DAQInterface");  // borrowed reference
 					if(di_obj_raw == NULL)
 					{
-						PyErr_Print();
-						__SS__ << "Unable to find 'DAQInterface' in module dictionary"
-						       << __E__;
+						std::string err = capturePyErr("DAQInterface lookup");
+						__SS__ << "Unable to find 'DAQInterface' in module dictionary. "
+						          "Python Exception: "
+						       << err << __E__;
 						__SUP_SS_THROW__;
 					}
 					Py_INCREF(di_obj_raw);  // convert borrowed reference to owned
@@ -460,6 +463,13 @@ void ARTDAQSupervisor::init(void)
 
 					daqinterface_ptr_ =
 					    PyObject_Call(di_obj_ptr.get(), pArgs.get(), kwargs.get());
+					if(checkPythonError(daqinterface_ptr_))
+					{
+						std::string err = capturePyErr("DAQInterface constructor");
+						__SS__ << "DAQInterface constructor failed. Python Exception: "
+						       << err << __E__;
+						__SUP_SS_THROW__;
+					}
 
 					if(0)  //example printout handling
 					{
@@ -743,6 +753,14 @@ try
 	set_thread_message_("Calling setdaqcomps");
 	__GEN_COUT__ << "Calling setdaqcomps" << __E__;
 	__GEN_COUT__ << "Status before setdaqcomps: " << daqinterface_state_ << __E__;
+	if(daqinterface_ptr_ == nullptr)
+	{
+		__GEN_SS__ << "DAQInterface is not initialized. "
+		              "Check earlier Python import/constructor errors (e.g. syntax) "
+		              "in DAQInterface."
+		           << __E__;
+		__GEN_SS_THROW__;
+	}
 	PyObjectGuard pName1(PyUnicode_FromString("setdaqcomps"));
 
 	PyObjectGuard readerDict(PyDict_New());
@@ -1573,6 +1591,9 @@ std::string ots::ARTDAQSupervisor::captureStderrAndStdout_(std::string label /* 
 {
 	if(!stringIO_out_)
 		return "";  // Not defined
+	// If a Python error is already pending, do not consume it here
+	if(PyErr_Occurred())
+		return "";
 	if(label.size())
 		label += ' ';  //for nice printing
 
