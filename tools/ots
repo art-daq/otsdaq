@@ -200,7 +200,7 @@ while :; do
 	--killall | --kill | --kx | -k)
 		info "KILL OTS!"
 		read -p "Are you sure (you want to kill the ots processes associated with this subsystem)? [Y/N] " answer
-		if [[ "$answer" != "Y" && "$answer" != "y" ]]; then 
+		if [[ "$answer" != "Y" && "$answer" != "y" ]]; then
 			warning "Aborting kill."
 			exit 1
 		fi
