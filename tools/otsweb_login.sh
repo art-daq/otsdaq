@@ -2,10 +2,10 @@
 echo "This is broken - never worked.. too complictated to navigate login procedure"
 return
 exit
-####################################### start otsqeb login code
-####################################### start otsqeb login code
-####################################### start otsqeb login code
-####################################### start otsqeb login code
+####################################### start otsweb login code
+####################################### start otsweb login code
+####################################### start otsweb login code
+####################################### start otsweb login code
 #
 # urlencode -- encode special characters for post/get arguments
 #
@@ -14,7 +14,7 @@ urlencode() {
 }
 
 if [ "x$SKIP_OTSWEB_LOGIN" != "x1" ]; then
-	echo -e "otsqeb_login.sh [${LINENO}]  \t Setting up login."
+	echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t Setting up login."
 	export OTSWEB_LOGIN_WORKED=0
 	export OTSWEB_LOGIN_SITE="https://otsdaq.fnal.gov/mellon/login?ReturnTo=https%3A%2F%2Fotsdaq.fnal.gov%2F&IdP=https%3A%2F%2Fidp.fnal.gov%2Fidp%2Fshibboleth"
 	export OTSWEB_LOGIN_LISTF=/tmp/otsweb_list_p$$
@@ -22,7 +22,7 @@ if [ "x$SKIP_OTSWEB_LOGIN" != "x1" ]; then
 	export OTSWEB_LOGIN_RLVERBOSEF=${OTSWEB_LOGIN_RLVERBOSEF:=true}
 	# trap 'rm -f /tmp/postdata$$ /tmp/at_p$$ $OTSWEB_LOGIN_COOKIEF $OTSWEB_LOGIN_LISTF*' EXIT
 
-	echo -e "otsqeb_login.sh [${LINENO}]  \t OTSWEB_LOGIN_SITE=$OTSWEB_LOGIN_SITE"
+	echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t OTSWEB_LOGIN_SITE=$OTSWEB_LOGIN_SITE"
 fi
 
 #
@@ -30,9 +30,9 @@ fi
 #
 do_login() {
 	get_passwords
-	echo -e "otsqeb_login.sh [${LINENO}]  \t OTSWEB_LOGIN_SITE=$OTSWEB_LOGIN_SITE"
+	echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t OTSWEB_LOGIN_SITE=$OTSWEB_LOGIN_SITE"
 	get_auth_token "${OTSWEB_LOGIN_SITE}"
-	echo -e "otsqeb_login.sh [${LINENO}]  \t OTSWEB_LOGIN_SITE=$OTSWEB_LOGIN_SITE"
+	echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t OTSWEB_LOGIN_SITE=$OTSWEB_LOGIN_SITE"
 	post_url  \
 	   "${OTSWEB_LOGIN_SITE}" \
 	   "back_url=$OTSWEB_LOGIN_SITE" \
@@ -43,19 +43,19 @@ do_login() {
 
 	if [ $OTSWEB_LOGIN_WORKED == 2 ]; then
 		echo
-		echo -e "otsqeb_login.sh [${LINENO}]  \t Login failed."
+		echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t Login failed."
 		unset user #force new login attempt
 		unset pass
 		export OTSWEB_LOGIN_WORKED=0
 
-		echo -e "otsqeb_login.sh [${LINENO}]  \t Check your Fermilab Services name and password!"
+		echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t Check your Fermilab Services name and password!"
 		exit 1
 		false
 	fi
 
 	if grep '>Sign in' $OTSWEB_LOGIN_LISTF > /dev/null;then
 		echo
-		echo -e "otsqeb_login.sh [${LINENO}]  \t Login failed."
+		echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t Login failed."
 		unset user #force new login attempt
 		unset pass
 		export OTSWEB_LOGIN_WORKED=0
@@ -69,8 +69,8 @@ get_passwords() {
 
 	case "x${user-}y${pass-}" in
 	xy)
-		if [ -r   ${OTSWEB_AUTHDIR:-.}/.otsqeb_lib_passfile ];then
-			read -r user pass < ${OTSWEB_AUTHDIR:-.}/.otsqeb_lib_passfile
+		if [ -r   ${OTSWEB_AUTHDIR:-.}/.otsweb_lib_passfile ];then
+			read -r user pass < ${OTSWEB_AUTHDIR:-.}/.otsweb_lib_passfile
 		else
 
 			printf "Enter your Services username: "
@@ -157,14 +157,14 @@ post_url() {
 	 $OTSWEB_LOGIN_RLVERBOSEF && echo "-----"
 	 # if this post was a login attempt, then mark login worked as failure = 2
 	 if [ $OTSWEB_LOGIN_WORKED == 0 ]; then
-		echo -e "otsqeb_login.sh [${LINENO}]  \t Login attempt web site was invalid"
+		echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t Login attempt web site was invalid"
 		export OTSWEB_LOGIN_WORKED=2
 	 fi
 	 return 1
 } # post_url
 
 echo
-echo -e "otsqeb_login.sh [${LINENO}]  \t Attempting login... $SKIP_OTSWEB_LOGIN"
+echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t Attempting login... $SKIP_OTSWEB_LOGIN"
 
 if [ "x$SKIP_OTSWEB_LOGIN" != "x1" ]; then
 	do_login $OTSWEB_LOGIN_SITE
@@ -175,14 +175,14 @@ echo "OTSWEB_LOGIN_COOKIEF=${OTSWEB_LOGIN_COOKIEF}"
 echo "OTSWEB_LOGIN_WORKED=${OTSWEB_LOGIN_WORKED}"
 
 if [ $OTSWEB_LOGIN_WORKED == 0 ]; then
-	echo -e "otsqeb_login.sh [${LINENO}]  \t Check your Fermilab Services name and password!"
+	echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t Check your Fermilab Services name and password!"
 	exit 1
 fi
 
-echo -e "otsqeb_login.sh [${LINENO}]  \t Login successful."
+echo -e "$(date +%d%b%y.%T) otsweb_login.sh [${LINENO}]  \t Login successful."
 
 
-####################################### end otsqeb login code
-####################################### end otsqeb login code
-####################################### end otsqeb login code
-####################################### end otsqeb login code
+####################################### end otsweb login code
+####################################### end otsweb login code
+####################################### end otsweb login code
+####################################### end otsweb login code
