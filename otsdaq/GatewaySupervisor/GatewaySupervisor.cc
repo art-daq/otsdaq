@@ -28,6 +28,7 @@
 #include <toolbox/task/WorkLoopFactory.h>
 #include <xdaq/NamespaceURI.h>
 #include <xoap/Method.h>
+#include <sstream>
 
 #include <sys/stat.h>  // for mkdir
 #include <cctype>      // for std::isspace
@@ -2807,7 +2808,8 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		if(commandResponseString.size() > strlen("Done") + 1)
 		{
 			//make sure we received everything
-			int tryCnt = 0;
+			const size_t MAX_RETRIES = 10;
+			size_t       tryCnt      = 0;
 			while(++tryCnt < 20 &&
 			      commandResponseString.size() > 10 &&  //must end with 'END---'
 			      (commandResponseString[commandResponseString.size() - 1] != '-' ||
@@ -2825,11 +2827,14 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 					commandResponseString += more;
 					tryCnt = 0;  //reset since we received data
 				}
-				else if(tryCnt > 10)
+				else if(tryCnt >= MAX_RETRIES)
 				{
-					__SS__ << "Timeout looking for more! Expecting more data from Remote "
-					          "Gateway '"
-					       << remoteGatewayApp.appInfo.name + "'..." << __E__;
+					std::ostringstream oss;
+					oss << "Timeout after " << MAX_RETRIES
+					    << " attempts waiting for more data from Remote Gateway '"
+					    << remoteGatewayApp.appInfo.name
+					    << "' (URL=" << remoteGatewayApp.appInfo.url << ")...";
+					__SS__ << oss.str() << __E__;
 					__SS_THROW__;
 				}
 			}
@@ -8440,7 +8445,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								              .getId();
 							}
 							waitSs << __E__;
-							__COUT__ << waitSs.str();
+							__COUTT__ << waitSs.str();
 
 							{  // create lock scope that does not include sleep
 								std::lock_guard<std::mutex> lock(

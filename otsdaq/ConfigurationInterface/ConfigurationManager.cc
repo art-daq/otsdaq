@@ -379,9 +379,14 @@ void ConfigurationManager::restoreActiveTableGroups(
 			     (strVal[j] >= '0' && strVal[j] <= '9')))
 			{
 				strVal[j] = '\0';
-				__GEN_COUT_WARN__ << "Illegal character found in group name '" << strVal
-				                  << "', so skipping! Check active groups file: " << fn
-				                  << __E__;
+				if(strlen(strVal) == 0)
+					__GEN_COUT__ << "Empty group name found, so skipping! Check active "
+					                "groups file: "
+					             << fn << __E__;
+				else
+					__GEN_COUT_WARN__
+					    << "Illegal character found in group name '" << strVal
+					    << "', so skipping! Check active groups file: " << fn << __E__;
 
 				skip = true;
 				break;
@@ -1438,8 +1443,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 				        cfgMgr);
 				if(activeTableStructure != "")
 				{
-					__COUT__ << "Found Structure for Active Table: " << it->first << "-v"
-					         << it->second << __E__;
+					__COUTT__ << "Found Structure for Active Table: " << it->first << "-v"
+					          << it->second << __E__;
 
 					(*out) << (tableStructureFoundCount++ ? "," : "") << __E__;
 
@@ -1449,9 +1454,9 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 			}
 			catch(const std::exception& e)
 			{
-				__COUT__ << "Error caught in localDumpActiveTableStructureStatus(): "
-				         << e.what();
-				__COUT__ << "Structure Status may not be implemented." << __E__;
+				__COUTT__ << "Error caught in localDumpActiveTableStructureStatus(): "
+				          << e.what();
+				__COUTT__ << "Structure Status may not be implemented." << __E__;
 			}
 		}  //end table structure loop
 

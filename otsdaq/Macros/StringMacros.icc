@@ -1,4 +1,7 @@
 
+#define TLVL_GetNumber 48      // = TLVL_DEBUG + 48
+#define TLVL_WildCardMatch 54  // = TLVL_DEBUG + 54
+
 //========================================================================================================================
 /// getWildCardMatchFromMap ~
 ///	static template function
@@ -19,8 +22,6 @@ T& StringMacros::getWildCardMatchFromMap(const std::string&        needle,
 		       << "' not found in EMPTY wildcard haystack:" << __E__;
 		__SS_ONLY_THROW__;
 	}
-
-	//__COUT__ << StringMacros::mapToString(haystack) << __E__;
 
 	std::string bestMatchKey;
 	for(auto& haystackPair : haystack)
@@ -46,9 +47,8 @@ T& StringMacros::getWildCardMatchFromMap(const std::string&        needle,
 
 	if(bestMatchPriority)  // found a match, although not exact, i.e. wildcard was used
 	{
-		//__COUTV__(bestMatchPriority);
-		//__COUTV__(bestMatchKey);
-		//__COUT__ << "value found: " << haystack.at(bestMatchKey) << __E__;
+		__COUTVS__(TLVL_WildCardMatch, bestMatchPriority);
+		__COUTVS__(TLVL_WildCardMatch, bestMatchKey);
 		if(foundKey)
 			*foundKey = bestMatchKey;
 		return haystack.at(bestMatchKey);
@@ -74,7 +74,7 @@ T& StringMacros::getWildCardMatchFromMap(const std::string&        needle,
 template<class T>
 bool StringMacros::getNumber(const std::string& s, T& retValue)
 {
-	//__COUTV__(s);
+	__COUTVS__(TLVL_GetNumber, s);
 
 	// extract set of potential numbers and operators
 	std::vector<std::string> numbers;
@@ -87,23 +87,87 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 	    /*whitespace*/ std::set<char>({' ', '\t', '\n', '\r'}),
 	    &ops);
 
-	//__COUTV__(StringMacros::vectorToString(numbers));
-	//__COUTV__(StringMacros::vectorToString(ops));
+	__COUTVS__(TLVL_GetNumber, StringMacros::vectorToString(numbers));
+	__COUTVS__(TLVL_GetNumber, StringMacros::vectorToString(ops));
+
+	// Handle unary operators by folding them into the following numeric token
+	// When we have consecutive delimiters (e.g., "1--1"), they create empty tokens
+	// The operator after an empty token is actually a unary operator for the next token
+	std::vector<std::string> processedNumbers;
+	std::vector<char>        processedOps;
+
+	size_t numIdx = 0;
+	size_t opsIdx = 0;
+
+	while(numIdx < numbers.size())
+	{
+		if(numbers[numIdx].empty())
+		{
+			// Empty token indicates a unary operator follows
+			// Skip the empty token and apply the next operator as a unary sign
+			++numIdx;
+			continue;
+		}
+
+		// Check if there's a pending unary operator from a previous empty token
+		std::string currentNumber = numbers[numIdx];
+
+		// If the previous token was empty and we have an operator, it's a unary operator
+		if(numIdx > 0 && numbers[numIdx - 1].empty() && opsIdx < ops.size())
+		{
+			// The operator at opsIdx-1 was the binary op before the empty token
+			// The operator at opsIdx is the unary op for this number
+			char unaryOp = ops[opsIdx];
+			if(unaryOp == '-')
+			{
+				currentNumber = std::string("-") + currentNumber;
+			}
+			// '+' doesn't change the value, so we don't need to prepend it
+			++opsIdx;  // Consume the unary operator
+		}
+
+		processedNumbers.push_back(currentNumber);
+
+		// Add the binary operator if this isn't the last number and we have an operator
+		if(numIdx + 1 < numbers.size() && opsIdx < ops.size())
+		{
+			// This operator is binary (connects this number to what follows)
+			processedOps.push_back(ops[opsIdx]);
+			++opsIdx;
+		}
+
+		++numIdx;
+	}
+
+	// Handle leading unary operator (when first token is empty)
+	if(!numbers.empty() && numbers[0].empty() && !ops.empty() &&
+	   !processedNumbers.empty())
+	{
+		if(ops[0] == '-' && !processedNumbers[0].empty() && processedNumbers[0][0] != '-')
+		{
+			processedNumbers[0] = std::string("-") + processedNumbers[0];
+		}
+	}
+
+	numbers = processedNumbers;
+	ops     = processedOps;
+
+	__COUTVS__(TLVL_GetNumber, "After unary processing:");
+	__COUTVS__(TLVL_GetNumber, StringMacros::vectorToString(numbers));
+	__COUTVS__(TLVL_GetNumber, StringMacros::vectorToString(ops));
 
 	retValue = 0;  // initialize
 
 	T tmpValue;
 
-	unsigned int i                = 0;
-	unsigned int opsi             = 0;
-	unsigned int blankNumberCount = 0;
+	unsigned int i    = 0;
+	unsigned int opsi = 0;
 	bool         verified;
 	for(const auto& number : numbers)
 	{
 		if(number.size() == 0)
 		{
-			++blankNumberCount;
-			continue;  // skip empty numbers
+			continue;  // skip empty numbers (should not happen after processing)
 		}
 
 		// verify that this number looks like a number
@@ -112,19 +176,19 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 
 		verified = false;
 
-		//__COUTV__(number);
+		__COUTVS__(TLVL_GetNumber, number);
 
 		// check for base16 and base2
 		if(number.find("0x") == 0)  // indicates hex
 		{
-			//__COUT__ << "0x found" << __E__;
+			__COUTS__(TLVL_GetNumber) << "0x found" << __E__;
 			for(unsigned int i = 2; i < number.size(); ++i)
 			{
 				if(!((number[i] >= '0' && number[i] <= '9') ||
 				     (number[i] >= 'A' && number[i] <= 'F') ||
 				     (number[i] >= 'a' && number[i] <= 'f')))
 				{
-					//__COUT__ << "prob " << number[i] << __E__;
+					__COUTS__(TLVL_GetNumber) << "prob " << number[i] << __E__;
 					return false;
 				}
 			}
@@ -132,13 +196,13 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 		}
 		else if(number[0] == 'b')  // indicates binary
 		{
-			//__COUT__ << "b found" << __E__;
+			__COUTS__(TLVL_GetNumber) << "b found" << __E__;
 
 			for(unsigned int i = 1; i < number.size(); ++i)
 			{
 				if(!((number[i] >= '0' && number[i] <= '1')))
 				{
-					//__COUT__ << "prob " << number[i] << __E__;
+					__COUTS__(TLVL_GetNumber) << "prob " << number[i] << __E__;
 					return false;
 				}
 			}
@@ -164,6 +228,12 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 		}
 		else  //just try!
 		{
+			__COUTS__(TLVL_GetNumber)
+			    << "Trying numeric conversion for type '"
+			    << StringMacros::demangleTypeName(typeid(retValue).name())
+			    << "' using non-decimal literal format. Data was '" << number << "'"
+			    << __E__;
+
 			if(number.size() > 2 && number[1] == 'x')  // assume hex value
 				tmpValue = (T)strtol(number.c_str(), 0, 16);
 			else if(number.size() > 1 && number[0] == 'b')  // assume binary value
@@ -171,9 +241,6 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 				    number.substr(1).c_str(), 0, 2);  // skip first 'b' character
 			else
 				tmpValue = (T)strtol(number.c_str(), 0, 10);
-			// __SS__ << "Invalid type '" << StringMacros::demangleTypeName(typeid(retValue).name()) << "' requested for a numeric string. Data was '" << number
-			//        << "'" << __E__;
-			// __SS_THROW__;
 		}
 
 		// apply operation
@@ -181,14 +248,8 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 		{
 			retValue = tmpValue;
 
-			if(ops.size() ==
-			   numbers.size() -
-			       blankNumberCount)  // then there is a leading operation, so apply
-			{
-				if(ops[opsi] == '-')  // only meaningful op is negative sign
-					retValue *= -1;
-				opsi++;  // jump to first internal op
-			}
+			// No need to check for leading operation since we've already folded unary ops
+			// into the numbers during preprocessing
 		}
 		else  // there is some sort of op
 		{
@@ -197,10 +258,10 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 				__COUTV__(StringMacros::vectorToString(numbers));
 				__COUTV__(StringMacros::vectorToString(ops));
 			}
-			// __COUTV__(opsi);
-			// __COUTV__(ops[opsi]);
-			// __COUTV__(tmpValue);
-			// __COUT__ << "Intermediate value = " << retValue << __E__;
+			__COUTVS__(TLVL_GetNumber, opsi);
+			__COUTVS__(TLVL_GetNumber, ops[opsi]);
+			__COUTVS__(TLVL_GetNumber, tmpValue);
+			__COUTS__(TLVL_GetNumber) << "Intermediate value = " << retValue << __E__;
 
 			switch(ops[opsi])
 			{
@@ -222,8 +283,8 @@ bool StringMacros::getNumber(const std::string& s, T& retValue)
 				       << "Operations: " << StringMacros::vectorToString(ops) << __E__;
 				__SS_THROW__;
 			}
-			//__COUT__ << "Op " << ops[opsi] << " intermediate value = " << retValue <<
-			//__E__;
+			__COUTS__(TLVL_GetNumber)
+			    << "Op " << ops[opsi] << " intermediate value = " << retValue << __E__;
 			++opsi;
 		}
 
