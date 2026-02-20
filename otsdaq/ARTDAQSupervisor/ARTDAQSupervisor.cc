@@ -221,13 +221,10 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 	  << getSupervisorProperty("strict_fragment_id_mode", false) << std::endl;
 	o << "disable_private_network_bookkeeping: " << std::boolalpha
 	  << getSupervisorProperty("disable_private_network_bookkeeping", false) << std::endl;
-	o << "allowed_processors: " << getSupervisorProperty("allowed_processors", "0-255")
-	  << std::
-	         endl;  // Note this sets a taskset for ALL processes, on all nodes (ex. "1,2,5-7")
-	if(getSupervisorProperty("partition_label_format", "") != "")
-	{
+	o << "allowed_processors: " << getSupervisorProperty("allowed_processors", "0-255")  // Note this sets a taskset for ALL processes, on all nodes (ex. "1,2,5-7")
+	  << std::endl; 
+	if(getSupervisorProperty("partition_label_format", "") != "")  //Add to ARTDAQSupervisor properties partition_label_format: "-P%d"
 		o << "partition_label_format: " << getSupervisorProperty("partition_label_format", "") << std::endl;
-	}
 
 	o.close();
 
