@@ -26,39 +26,41 @@
 namespace filesystem = boost::filesystem;
 using namespace ots;
 
-// clang-format off
+const std::string WizardSupervisor::WIZ_SUPERVISOR =
+    __ENV__("OTS_CONFIGURATION_WIZARD_SUPERVISOR_SERVER");
+const std::string WizardSupervisor::WIZ_PORT          = __ENV__("PORT");
+const std::string WizardSupervisor::SERVICE_DATA_PATH = __ENV__("SERVICE_DATA_PATH");
 
-const std::string WizardSupervisor::WIZ_SUPERVISOR		= __ENV__("OTS_CONFIGURATION_WIZARD_SUPERVISOR_SERVER");
-const std::string WizardSupervisor::WIZ_PORT			= __ENV__("PORT");
-const std::string WizardSupervisor::SERVICE_DATA_PATH 	= __ENV__("SERVICE_DATA_PATH");
+#define SECURITY_FILE_NAME \
+	WizardSupervisor::SERVICE_DATA_PATH + "/OtsWizardData/security.dat"
+#define SEQUENCE_FILE_NAME \
+	WizardSupervisor::SERVICE_DATA_PATH + "/OtsWizardData/sequence.dat"
+#define SEQUENCE_OUT_FILE_NAME \
+	WizardSupervisor::SERVICE_DATA_PATH + "/OtsWizardData/sequence.out"
+#define USER_IMPORT_EXPORT_PATH WizardSupervisor::SERVICE_DATA_PATH + "/"
 
-#define SECURITY_FILE_NAME 				WizardSupervisor::SERVICE_DATA_PATH + "/OtsWizardData/security.dat"
-#define SEQUENCE_FILE_NAME 				WizardSupervisor::SERVICE_DATA_PATH + "/OtsWizardData/sequence.dat"
-#define SEQUENCE_OUT_FILE_NAME 			WizardSupervisor::SERVICE_DATA_PATH + "/OtsWizardData/sequence.out"
-#define USER_IMPORT_EXPORT_PATH 		WizardSupervisor::SERVICE_DATA_PATH + "/"
+#define XML_STATUS "editUserData_status"
 
-#define XML_STATUS 						"editUserData_status"
+#define XML_ADMIN_STATUS "logbook_admin_status"
+#define XML_MOST_RECENT_DAY "most_recent_day"
+#define XML_EXPERIMENTS_ROOT "experiments"
+#define XML_EXPERIMENT "experiment"
+#define XML_ACTIVE_EXPERIMENT "active_experiment"
+#define XML_EXPERIMENT_CREATE "create_time"
+#define XML_EXPERIMENT_CREATOR "creator"
 
-#define XML_ADMIN_STATUS 				"logbook_admin_status"
-#define XML_MOST_RECENT_DAY 			"most_recent_day"
-#define XML_EXPERIMENTS_ROOT 			"experiments"
-#define XML_EXPERIMENT 					"experiment"
-#define XML_ACTIVE_EXPERIMENT 			"active_experiment"
-#define XML_EXPERIMENT_CREATE 			"create_time"
-#define XML_EXPERIMENT_CREATOR 			"creator"
+#define XML_LOGBOOK_ENTRY "logbook_entry"
+#define XML_LOGBOOK_ENTRY_SUBJECT "logbook_entry_subject"
+#define XML_LOGBOOK_ENTRY_TEXT "logbook_entry_text"
+#define XML_LOGBOOK_ENTRY_FILE "logbook_entry_file"
+#define XML_LOGBOOK_ENTRY_TIME "logbook_entry_time"
+#define XML_LOGBOOK_ENTRY_CREATOR "logbook_entry_creator"
+#define XML_LOGBOOK_ENTRY_HIDDEN "logbook_entry_hidden"
+#define XML_LOGBOOK_ENTRY_HIDER "logbook_entry_hider"
+#define XML_LOGBOOK_ENTRY_HIDDEN_TIME "logbook_entry_hidden_time"
 
-#define XML_LOGBOOK_ENTRY 				"logbook_entry"
-#define XML_LOGBOOK_ENTRY_SUBJECT 		"logbook_entry_subject"
-#define XML_LOGBOOK_ENTRY_TEXT 			"logbook_entry_text"
-#define XML_LOGBOOK_ENTRY_FILE 			"logbook_entry_file"
-#define XML_LOGBOOK_ENTRY_TIME 			"logbook_entry_time"
-#define XML_LOGBOOK_ENTRY_CREATOR 		"logbook_entry_creator"
-#define XML_LOGBOOK_ENTRY_HIDDEN 		"logbook_entry_hidden"
-#define XML_LOGBOOK_ENTRY_HIDER 		"logbook_entry_hider"
-#define XML_LOGBOOK_ENTRY_HIDDEN_TIME 	"logbook_entry_hidden_time"
-
-#define XML_PREVIEW_INDEX 				"preview_index"
-#define LOGBOOK_PREVIEW_FILE 			"preview.xml"
+#define XML_PREVIEW_INDEX "preview_index"
+#define LOGBOOK_PREVIEW_FILE "preview.xml"
 
 XDAQ_INSTANTIATOR_IMPL(WizardSupervisor)
 
@@ -66,26 +68,16 @@ XDAQ_INSTANTIATOR_IMPL(WizardSupervisor)
 #define __MF_SUBJECT__ "Wizard"
 
 /// init allowed file upload types
-const std::vector<std::string>	WizardSupervisor::allowedFileUploadTypes_ = {
-		"image/png",
-		"image/jpeg",
-		"image/gif",
-		"image/bmp",
-		"application/pdf",
-		"application/zip",
-		"text/plain"
-};
-const std::vector<std::string>	WizardSupervisor::matchingFileUploadTypes_ = {
-		"png",
-		"jpeg",
-		"gif",
-		"ima/bmp",
-		"pdf",
-		"zip",
-		"txt"
-};
-
-// clang-format on
+const std::vector<std::string> WizardSupervisor::allowedFileUploadTypes_ = {
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/bmp",
+    "application/pdf",
+    "application/zip",
+    "text/plain"};
+const std::vector<std::string> WizardSupervisor::matchingFileUploadTypes_ = {
+    "png", "jpeg", "gif", "ima/bmp", "pdf", "zip", "txt"};
 
 //==============================================================================
 WizardSupervisor::WizardSupervisor(xdaq::ApplicationStub* s)
@@ -207,76 +199,83 @@ void WizardSupervisor::requestIcons(xgi::Input* in, xgi::Output* out)
 	// filename, 0 for no image  5 - linkurl = url of the window to open  6 - folderPath =
 	// folder and subfolder location
 
-	// clang-format off
-	*out << "Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,/"
+	*out
+	    << "Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,/"
 
-		 << ",Table Editor,TBL,0,1,icon-ControlsDashboard.png,"
-			"/urn:xdaq-application:lid=280/?configWindowName=tableEditor,/"
+	    << ",Table Editor,TBL,0,1,icon-ControlsDashboard.png,"
+	       "/urn:xdaq-application:lid=280/?configWindowName=tableEditor,/"
 
-		 << ",Desktop Icon Editor,ICON,0,1,icon-IconEditor.png,"
-			"/WebPath/html/ConfigurationGUI_subset.html?urn=280&subsetBasePath=DesktopIconTable&"
-			"recordAlias=Icons&groupingFieldList=Status%2CFolderPath%2CRequiredPermissionLevel,/"
+	    << ",Desktop Icon Editor,ICON,0,1,icon-IconEditor.png,"
+	       "/WebPath/html/"
+	       "ConfigurationGUI_subset.html?urn=280&subsetBasePath=DesktopIconTable&"
+	       "recordAlias=Icons&groupingFieldList=Status%2CFolderPath%"
+	       "2CRequiredPermissionLevel,/"
 
-		 //User Settings ------------------
-		 << ",Edit User Accounts,USER,1,1,"
-						 "/WebPath/images/dashboardImages/icon-Settings.png,/WebPath/html/UserSettings.html,/User Settings"
+	    //User Settings ------------------
+	    << ",Edit User Accounts,USER,1,1,"
+	       "/WebPath/images/dashboardImages/icon-Settings.png,/WebPath/html/"
+	       "UserSettings.html,/User Settings"
 
-		 << ",Security Settings,SEC,1,1,icon-SecuritySettings.png,"
-			"/WebPath/html/SecuritySettings.html,/User Settings"
+	    << ",Security Settings,SEC,1,1,icon-SecuritySettings.png,"
+	       "/WebPath/html/SecuritySettings.html,/User Settings"
 
-		 << ",Edit User Data,USER,1,1,icon-EditUserData.png,/WebPath/html/EditUserData.html,/User Settings"
+	    << ",Edit User "
+	       "Data,USER,1,1,icon-EditUserData.png,/WebPath/html/EditUserData.html,/User "
+	       "Settings"
 
-		 //end User Settings ------------------
+	    //end User Settings ------------------
 
-		 << ",Console,C,1,1,icon-Console.png,/urn:xdaq-application:lid=260/,/"
+	    << ",Console,C,1,1,icon-Console.png,/urn:xdaq-application:lid=260/,/"
 
-		 //Configuration Wizards ------------------
-		 << ",Front-end Wizard,CFG,0,1,icon-Configure.png,"
-			"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Front%2Dend,Config Wizards"
+	    //Configuration Wizards ------------------
+	    << ",Front-end Wizard,CFG,0,1,icon-Configure.png,"
+	       "/WebPath/html/"
+	       "RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Front%2Dend,Config "
+	       "Wizards"
 
-		 << ",Processor Wizard,CFG,0,1,icon-Configure.png,"
-			"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Processor,Config Wizards"
+	    << ",Processor Wizard,CFG,0,1,icon-Configure.png,"
+	       "/WebPath/html/"
+	       "RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Processor,Config Wizards"
 
-		 << ",artdaq Config Editor,CFG,0,1,icon-Configure.png,"
-			"/WebPath/html/ConfigurationGUI_artdaq.html?urn=280,Config Wizards"
+	    << ",artdaq Config Editor,CFG,0,1,icon-Configure.png,"
+	       "/WebPath/html/ConfigurationGUI_artdaq.html?urn=280,Config Wizards"
 
-		 << ",Block Diagram,CFG,0,1,icon-Configure.png,"
-			"/WebPath/html/ConfigurationSubsetBlockDiagram.html?urn=280,Config Wizards"
-		 //end Configuration Wizards ------------------
+	    << ",Block Diagram,CFG,0,1,icon-Configure.png,"
+	       "/WebPath/html/ConfigurationSubsetBlockDiagram.html?urn=280,Config Wizards"
+	    //end Configuration Wizards ------------------
 
-		 << ",Code Editor,CODE,0,1,icon-CodeEditor.png,/urn:xdaq-application:lid=240/,/"
+	    << ",Code Editor,CODE,0,1,icon-CodeEditor.png,/urn:xdaq-application:lid=240/,/"
 
-		 //Documentation ------------------
-		 << ",State Machine Screenshot,FSM-SS,1,1,icon-Physics.gif,"
-			"/WebPath/images/windowContentImages/state_machine_screenshot.png,/Documentation"
+	    //Documentation ------------------
+	    << ",State Machine Screenshot,FSM-SS,1,1,icon-Physics.gif,"
+	       "/WebPath/images/windowContentImages/state_machine_screenshot.png,/"
+	       "Documentation"
 
-			 //uniqueWin mode == 2 for new tab
-		 << ",GitHub Project for otsdaq,GIT,2,1,../otsdaqIcons/android-icon-36x36.png,"
-			"https://github.com/art-daq/otsdaq,/Documentation"
-			 //uniqueWin mode == 2 for new tab
-		 << ",Homepage for otsdaq,OTS,2,1,../otsdaqIcons/android-icon-36x36.png,"
-					"https://otsdaq.fnal.gov,/Documentation"
-		 //end Documentation ------------------
+	    //uniqueWin mode == 2 for new tab
+	    << ",GitHub Project for otsdaq,GIT,2,1,../otsdaqIcons/android-icon-36x36.png,"
+	       "https://github.com/art-daq/otsdaq,/Documentation"
+	    //uniqueWin mode == 2 for new tab
+	    << ",Homepage for otsdaq,OTS,2,1,../otsdaqIcons/android-icon-36x36.png,"
+	       "https://otsdaq.fnal.gov,/Documentation"
+	    //end Documentation ------------------
 
-		//",Iterate,IT,0,1,icon-Iterate.png,/urn:xdaq-application:lid=280/?configWindowName=iterate,/"
-		//<<
-		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder"
-		//<<
-		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,/myFolder/mySub.folder"
-		//<<
-		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder/"
-		//<<
+	    //",Iterate,IT,0,1,icon-Iterate.png,/urn:xdaq-application:lid=280/?configWindowName=iterate,/"
+	    //<<
+	    //",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder"
+	    //<<
+	    //",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,/myFolder/mySub.folder"
+	    //<<
+	    //",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder/"
+	    //<<
 
+	    //",Consumer
+	    // Wizard,CFG,0,1,icon-Configure.png,/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&subsetBasePath=FEInterfaceConfiguration&recordAlias=Consumer,Config
+	    // Wizards" <<
 
-		//",Consumer
-		// Wizard,CFG,0,1,icon-Configure.png,/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&subsetBasePath=FEInterfaceConfiguration&recordAlias=Consumer,Config
-		// Wizards" <<
+	    //",DB Utilities,DB,1,1,0,http://127.0.0.1:8080/db/client.html" <<
 
-		//",DB Utilities,DB,1,1,0,http://127.0.0.1:8080/db/client.html" <<
+	    << "";
 
-
-		 << "";
-	// clang-format on
 	return;
 }  // end requestIcons()
 

@@ -25,8 +25,6 @@
 #define USERS_PREFERENCES_PATH USERS_DB_PATH + "UserPreferencesData/"
 #define TOOLTIP_DB_PATH USERS_DB_PATH + "/TooltipData/"
 
-// clang-format off
-
 namespace ots
 {
 class HttpXmlDocument;
@@ -41,14 +39,14 @@ class WebUsers
 
 	enum
 	{
-		SESSION_ID_LENGTH     		= 512,
-		COOKIE_CODE_LENGTH    		= 512,
-		NOT_FOUND_IN_DATABASE 		= uint64_t(-1),
-		ACCOUNT_INACTIVE 			= uint64_t(-2),
-		ACCOUNT_BLACKLISTED 		= uint64_t(-3),
-		ACCOUNT_ERROR_THRESHOLD 	= uint64_t(-5),
-		USERNAME_LENGTH       		= 3,
-		DISPLAY_NAME_LENGTH   		= 4,
+		SESSION_ID_LENGTH       = 512,
+		COOKIE_CODE_LENGTH      = 512,
+		NOT_FOUND_IN_DATABASE   = uint64_t(-1),
+		ACCOUNT_INACTIVE        = uint64_t(-2),
+		ACCOUNT_BLACKLISTED     = uint64_t(-3),
+		ACCOUNT_ERROR_THRESHOLD = uint64_t(-5),
+		USERNAME_LENGTH         = 3,
+		DISPLAY_NAME_LENGTH     = 4,
 	};
 
 	enum
@@ -61,14 +59,16 @@ class WebUsers
 	using permissionLevel_t = uint8_t;
 	enum
 	{
-		PERMISSION_LEVEL_ADMIN 		= WebUsers::permissionLevel_t(-1),  ///< max permission level!
-		PERMISSION_LEVEL_EXPERT   	= 100,
-		PERMISSION_LEVEL_USER     	= 10,
-		PERMISSION_LEVEL_NOVICE   	= 1,
-		PERMISSION_LEVEL_INACTIVE 	= 0,
+		PERMISSION_LEVEL_ADMIN =
+		    WebUsers::permissionLevel_t(-1),  ///< max permission level!
+		PERMISSION_LEVEL_EXPERT   = 100,
+		PERMISSION_LEVEL_USER     = 10,
+		PERMISSION_LEVEL_NOVICE   = 1,
+		PERMISSION_LEVEL_INACTIVE = 0,
 	};
 
-	static const std::string OTS_OWNER; ///<defined by environment variable, e.g. experiment name
+	static const std::string
+	    OTS_OWNER;  ///<defined by environment variable, e.g. experiment name
 
 	static const std::string DEFAULT_ADMIN_USERNAME;
 	static const std::string DEFAULT_ADMIN_DISPLAY_NAME;
@@ -107,13 +107,19 @@ class WebUsers
 		//		- Preferences (e.g. color scheme, etc)  Username appends to preferences file, and login history file
 		//		- UsersLastModifierUsernameVector - is username of last admin user to modify something about account
 		//		- UsersLastModifierTimeVector - is time of last modify by an admin user
-		User():lastLoginAttempt_(0),accountCreationTime_(0),loginFailureCount_(0),
-				lastModifierTime_(time(0)*100000 + (clock()%100000)) {}
+		User()
+		    : lastLoginAttempt_(0)
+		    , accountCreationTime_(0)
+		    , loginFailureCount_(0)
+		    , lastModifierTime_(time(0) * 100000 + (clock() % 100000))
+		{
+		}
 
 		void setModifier(const std::string& modifierUsername)
 		{
 			lastModifierUsername_ = modifierUsername;
-			lastModifierTime_ = time(0)*100000 + (clock()%100000); ///<clock used for NAC randomness
+			lastModifierTime_ =
+			    time(0) * 100000 + (clock() % 100000);  ///<clock used for NAC randomness
 		}
 
 		void loadModifierUsername(const std::string& modifierUsername)
@@ -123,28 +129,32 @@ class WebUsers
 
 		time_t& accessModifierTime() { return lastModifierTime_; }
 
-		time_t getModifierTime(bool convertToRealTime = false) const { return (convertToRealTime?lastModifierTime_/100000:lastModifierTime_); }
+		time_t getModifierTime(bool convertToRealTime = false) const
+		{
+			return (convertToRealTime ? lastModifierTime_ / 100000 : lastModifierTime_);
+		}
 		const std::string& getModifierUsername() const { return lastModifierUsername_; }
-		std::string getNewAccountCode() const {
-
-			if(salt_ != "")  ///< only give nac if account has not been activated yet with password
+		std::string        getNewAccountCode() const
+		{
+			if(salt_ !=
+			   "")  ///< only give nac if account has not been activated yet with password
 				return "";
 
 			char charTimeStr[10];
 			sprintf(charTimeStr, "%5.5d", int(lastModifierTime_ & 0xffff));
 			return charTimeStr;
-		} //end getNewAccountCode()
+		}  //end getNewAccountCode()
 
-		std::string 			username_, email_, displayName_, salt_;
+		std::string username_, email_, displayName_, salt_;
 		std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> permissions_;
-		uint64_t 				userId_;
-		time_t					lastLoginAttempt_, accountCreationTime_;
-		uint8_t					loginFailureCount_;
+		uint64_t                                                         userId_;
+		time_t  lastLoginAttempt_, accountCreationTime_;
+		uint8_t loginFailureCount_;
 
-	private:
-		std::string				lastModifierUsername_;
-		time_t					lastModifierTime_;
-	}; //end User struct
+	  private:
+		std::string lastModifierUsername_;
+		time_t      lastModifierTime_;
+	};  //end User struct
 
 	struct LoginSession
 	{
@@ -156,10 +166,10 @@ class WebUsers
 		// 		3 login attempts)  maybe track IP address, to block multiple failed login attempts
 		// 		from same IP.  Use sessionId to un-jumble login attempts, lookup using UUID
 
-		std::string 			id_, uuid_, ip_;
-		time_t					startTime_;
-		uint8_t					loginAttempts_;
-	}; //end LoginSession struct
+		std::string id_, uuid_, ip_;
+		time_t      startTime_;
+		uint8_t     loginAttempts_;
+	};  //end LoginSession struct
 
 	struct ActiveSession
 	{
@@ -173,19 +183,19 @@ class WebUsers
 		//		 where each independent login starts a new thread of cookieCodes tagged with
 		// 		ActiveSessionIndex if cookieCode not refreshed, then return most recent cookie code
 
-		std::string 			cookieCode_, ip_;
-		uint64_t				userId_, sessionIndex_;
-		time_t					startTime_;
-	}; //end ActiveSession struct
+		std::string cookieCode_, ip_;
+		uint64_t    userId_, sessionIndex_;
+		time_t      startTime_;
+	};  //end ActiveSession struct
 
 	struct Hash
 	{
 		//"Hashes" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		// Maintain list of acceptable encoded (SHA-512) salt+user+pw's
 
-		std::string 			hash_;
-		time_t					accessTime_; ///< last login month resolution, blurred by 1/2 month
-	}; //end Hash struct
+		std::string hash_;
+		time_t      accessTime_;  ///< last login month resolution, blurred by 1/2 month
+	};                            //end Hash struct
 
 	enum
 	{
@@ -207,35 +217,42 @@ class WebUsers
 		//	time, message, deliveredFlag
 
 		SystemMessage(const std::string& message)
-		: message_			(message)
-		, creationTime_		(time(0))
-		, delivered_		(false)
-		, deliveredRemote_	(false)
-		{} //end constructor
+		    : message_(message)
+		    , creationTime_(time(0))
+		    , delivered_(false)
+		    , deliveredRemote_(false)
+		{
+		}  //end constructor
 
-		std::string 			message_;
-		time_t					creationTime_;
-		bool					delivered_; ///<flag
-		bool					deliveredRemote_; ///<flag
-	}; //end SystemMessage struct
+		std::string message_;
+		time_t      creationTime_;
+		bool        delivered_;        ///<flag
+		bool        deliveredRemote_;  ///<flag
+	};                                 //end SystemMessage struct
 
-	void        			addSystemMessage			(const std::string& targetUsersCSV, const std::string& message);
-	void        			addSystemMessage			(const std::string& targetUsersCSV, const std::string& subject, const std::string& message, bool doEmail);
-	void        			addSystemMessage			(const std::vector<std::string>& targetUsers, const std::string& subject, const std::string& message, bool doEmail);
-	std::string 			getSystemMessage			(const std::string& targetUser);
-	std::pair<std::string, time_t>	getLastSystemMessage(void);
-	std::string 			getAllSystemMessages		(void);
+	void addSystemMessage(const std::string& targetUsersCSV, const std::string& message);
+	void addSystemMessage(const std::string& targetUsersCSV,
+	                      const std::string& subject,
+	                      const std::string& message,
+	                      bool               doEmail);
+	void addSystemMessage(const std::vector<std::string>& targetUsers,
+	                      const std::string&              subject,
+	                      const std::string&              message,
+	                      bool                            doEmail);
+	std::string                    getSystemMessage(const std::string& targetUser);
+	std::pair<std::string, time_t> getLastSystemMessage(void);
+	std::string                    getAllSystemMessages(void);
 
   private:
-	void					addSystemMessageToMap		(const std::string& targetUser, const std::string& fullMessage); ///<private because target already vetted
-	void                   	systemMessageCleanup		(void);
-	std::mutex				systemMessageLock_;
-	std::map<std::string /*toUserDisplayName*/,std::vector<SystemMessage>> systemMessages_;
-
+	void addSystemMessageToMap(
+	    const std::string& targetUser,
+	    const std::string& fullMessage);  ///<private because target already vetted
+	void       systemMessageCleanup(void);
+	std::mutex systemMessageLock_;
+	std::map<std::string /*toUserDisplayName*/, std::vector<SystemMessage>>
+	    systemMessages_;
 
   public:
-
-
 	struct RequestUserInfo
 	{
 		// WebUsers is a "Friend" class of RequestUserInfo so has access to private
@@ -243,10 +260,11 @@ class WebUsers
 		friend class WebUsers;
 
 		RequestUserInfo(const std::string& requestType, const std::string& cookieCode)
-			: requestType_(requestType)
-			, cookieCode_(cookieCode)
-			, uid_(-1)  ///< init to invalid user, since only WebUser owner will have access
-						///< to uid. RemoteWebUsers will see invalid uid.
+		    : requestType_(requestType)
+		    , cookieCode_(cookieCode)
+		    , uid_(
+		          -1)  ///< init to invalid user, since only WebUser owner will have access
+		    ///< to uid. RemoteWebUsers will see invalid uid.
 		{
 		}
 
@@ -259,8 +277,8 @@ class WebUsers
 			permissionLevel_ = 0;  ///< default to inactive, i.e. no access
 
 			StringMacros::getMapFromString(  ///< re-factor membership string to set
-				groupPermissionLevelsString,
-				groupPermissionLevelMap_);
+			    groupPermissionLevelsString,
+			    groupPermissionLevelMap_);
 			getGroupPermissionLevel();  ///< setup permissionLevel_
 
 			//__COUTV__((unsigned int)permissionLevel_);
@@ -286,13 +304,13 @@ class WebUsers
 			bool matchedAcceptGroup = false;
 			for(const auto& userGroupPair : groupPermissionLevelMap_)
 				if(StringMacros::inWildCardSet(  ///< if group is in allowed groups
-					   userGroupPair.first,
-					   groupsAllowed_) &&  ///< AND...
+				       userGroupPair.first,
+				       groupsAllowed_) &&  ///< AND...
 				   userGroupPair.second >
-					   permissionLevel_)  ///< if is a new high level, then...
+				       permissionLevel_)  ///< if is a new high level, then...
 				{
 					permissionLevel_ =
-						userGroupPair.second;  ///< take as new permission level
+					    userGroupPair.second;  ///< take as new permission level
 					matchedAcceptGroup = true;
 				}
 
@@ -300,11 +318,11 @@ class WebUsers
 			if(!matchedAcceptGroup && groupsAllowed_.size())
 			{
 				__COUT_INFO__
-					<< "User (@" << ip_
-					<< ") has insufficient group permissions: user is in these groups... "
-					<< StringMacros::mapToString(groupPermissionLevelMap_)
-					<< " and the allowed groups are... "
-					<< StringMacros::setToString(groupsAllowed_) << std::endl;
+				    << "User (@" << ip_
+				    << ") has insufficient group permissions: user is in these groups... "
+				    << StringMacros::mapToString(groupPermissionLevelMap_)
+				    << " and the allowed groups are... "
+				    << StringMacros::setToString(groupsAllowed_) << std::endl;
 				return permissionLevel_;
 			}
 
@@ -313,14 +331,14 @@ class WebUsers
 			{
 				for(const auto& userGroupPair : groupPermissionLevelMap_)
 					if(StringMacros::inWildCardSet(userGroupPair.first,
-												   groupsDisallowed_))
+					                               groupsDisallowed_))
 					{
 						__COUT_INFO__
-							<< "User (@" << ip_
-							<< ") is in a disallowed group: user is in these groups... "
-							<< StringMacros::mapToString(groupPermissionLevelMap_)
-							<< " and the disallowed groups are... "
-							<< StringMacros::setToString(groupsDisallowed_) << std::endl;
+						    << "User (@" << ip_
+						    << ") is in a disallowed group: user is in these groups... "
+						    << StringMacros::mapToString(groupPermissionLevelMap_)
+						    << " and the disallowed groups are... "
+						    << StringMacros::setToString(groupsDisallowed_) << std::endl;
 						return permissionLevel_;
 					}
 			}
@@ -359,144 +377,153 @@ class WebUsers
 		std::string                 ip_;
 		uint64_t    uid_ /*only WebUser owner has access to uid, RemoteWebUsers do not*/;
 		std::string username_, displayName_, usernameWithLock_;
-		uint64_t    userSessionIndex_; ///<can use session index to track a user's session on multiple devices/browsers
+		uint64_t
+		    userSessionIndex_;  ///<can use session index to track a user's session on multiple devices/browsers
 
 	  private:
 		std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
-			groupPermissionLevelMap_;
-	}; //end RequestUserInfo struct
+		    groupPermissionLevelMap_;
+	};  //end RequestUserInfo struct
 
 	/// for the gateway supervisor to check request access
 	/// if false, gateway request handling code should just return.. out is handled on
 	/// false; on true, out is untouched
-	bool 					xmlRequestOnGateway				(cgicc::Cgicc&              cgi,
-															 std::ostringstream*        out,
-															 HttpXmlDocument*           xmldoc,
-															 WebUsers::RequestUserInfo& userInfo);
+	bool xmlRequestOnGateway(cgicc::Cgicc&              cgi,
+	                         std::ostringstream*        out,
+	                         HttpXmlDocument*           xmldoc,
+	                         WebUsers::RequestUserInfo& userInfo);
 
   public:
-
 	/// used by gateway and other supervisors to verify requests consistently
-	static void 			initializeRequestUserInfo		(cgicc::Cgicc& cgi, WebUsers::RequestUserInfo& userInfo);
-	static bool 			checkRequestAccess				(cgicc::Cgicc&              cgi,
-															 std::ostringstream*        out,
-															 HttpXmlDocument*           xmldoc,
-															 WebUsers::RequestUserInfo& userInfo,
-															 bool                       isWizardMode = false,
-															 const std::string& 		wizardModeSequence = "");
+	static void initializeRequestUserInfo(cgicc::Cgicc&              cgi,
+	                                      WebUsers::RequestUserInfo& userInfo);
+	static bool checkRequestAccess(cgicc::Cgicc&              cgi,
+	                               std::ostringstream*        out,
+	                               HttpXmlDocument*           xmldoc,
+	                               WebUsers::RequestUserInfo& userInfo,
+	                               bool                       isWizardMode       = false,
+	                               const std::string&         wizardModeSequence = "");
 
-	void        			createNewAccount				(const std::string& username,
-															 const std::string& displayName,
-															 const std::string& email);
-	void       				cleanupExpiredEntries			(std::vector<std::string>* loggedOutUsernames = 0);
-	void       				cleanupExpiredRemoteEntries		(void);
-	std::string				createNewLoginSession			(const std::string& uuid, const std::string& ip);
+	void        createNewAccount(const std::string& username,
+	                             const std::string& displayName,
+	                             const std::string& email);
+	void        cleanupExpiredEntries(std::vector<std::string>* loggedOutUsernames = 0);
+	void        cleanupExpiredRemoteEntries(void);
+	std::string createNewLoginSession(const std::string& uuid, const std::string& ip);
 
-	uint64_t				attemptActiveSession			(const std::string& uuid,
-															 std::string&       jumbledUser,
-															 const std::string& jumbledPw,
-															 std::string&       newAccountCode,
-															 const std::string& ip);
-	uint64_t				attemptActiveSessionWithCert	(const std::string& uuid,
-															 std::string&       jumbledEmail,
-															 std::string&       cookieCode,
-															 std::string&       username,
-															 const std::string& ip);
-	uint64_t				isCookieCodeActiveForLogin		(const std::string& uuid,
-															 std::string&       cookieCode,
-															 std::string&       username);
-	bool     				cookieCodeIsActiveForRequest	(
-															 std::string& cookieCode,
-															 std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>* userPermissions        = 0,
-															 uint64_t*          uid                    = 0,
-															 const std::string& ip                     = "0",
-															 bool               refresh                = true,
-															 bool               doNotGoRemote          = false,
-															 std::string*       userWithLock           = 0,
-															 uint64_t*          userSessionIndex = 0);
-	uint64_t				cookieCodeLogout				(const std::string& cookieCode,
-															 bool               logoutOtherUserSessions,
-															 uint64_t*          uid = 0,
-															 const std::string& ip  = "0");
-	bool    				checkIpAccess					(const std::string& ip);
+	uint64_t attemptActiveSession(const std::string& uuid,
+	                              std::string&       jumbledUser,
+	                              const std::string& jumbledPw,
+	                              std::string&       newAccountCode,
+	                              const std::string& ip);
+	uint64_t attemptActiveSessionWithCert(const std::string& uuid,
+	                                      std::string&       jumbledEmail,
+	                                      std::string&       cookieCode,
+	                                      std::string&       username,
+	                                      const std::string& ip);
+	uint64_t isCookieCodeActiveForLogin(const std::string& uuid,
+	                                    std::string&       cookieCode,
+	                                    std::string&       username);
+	bool     cookieCodeIsActiveForRequest(
+	        std::string& cookieCode,
+	        std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>*
+	                           userPermissions  = 0,
+	        uint64_t*          uid              = 0,
+	        const std::string& ip               = "0",
+	        bool               refresh          = true,
+	        bool               doNotGoRemote    = false,
+	        std::string*       userWithLock     = 0,
+	        uint64_t*          userSessionIndex = 0);
+	uint64_t cookieCodeLogout(const std::string& cookieCode,
+	                          bool               logoutOtherUserSessions,
+	                          uint64_t*          uid = 0,
+	                          const std::string& ip  = "0");
+	bool     checkIpAccess(const std::string& ip);
 
-	std::string 			getUsersDisplayName				(uint64_t uid); ///<from Gateway, use public version which considers remote users
-	std::string 			getUsersUsername				(uint64_t uid); ///<from Gateway, use public version which considers remote users
+	std::string getUsersDisplayName(
+	    uint64_t uid);  ///<from Gateway, use public version which considers remote users
+	std::string getUsersUsername(
+	    uint64_t uid);  ///<from Gateway, use public version which considers remote users
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
-							getPermissionsForUser			(uint64_t uid); ///<from Gateway, use public version which considers remote users
+	getPermissionsForUser(
+	    uint64_t uid);  ///<from Gateway, use public version which considers remote users
 
-	uint64_t    			getActiveSessionCountForUser	(uint64_t uid);
-	void        			insertSettingsForUser			(uint64_t         uid,
-															 HttpXmlDocument* xmldoc,
-															 bool             includeAccounts = false,
-															 std::map<std::string /*groupName*/,
-																	WebUsers::permissionLevel_t> permissionMap = {}); ///<if empty, fetches local permissions; if provided, overrides with given permissions (e.g., from top-level login verification)
-	std::string 			getGenericPreference			(uint64_t           uid,
-															 const std::string& preferenceName,
-															 HttpXmlDocument*   xmldoc = 0) const;
+	uint64_t getActiveSessionCountForUser(uint64_t uid);
+	void     insertSettingsForUser(
+	        uint64_t         uid,
+	        HttpXmlDocument* xmldoc,
+	        bool             includeAccounts = false,
+	        std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> permissionMap =
+	            {});  ///<if empty, fetches local permissions; if provided, overrides with given permissions (e.g., from top-level login verification)
+	std::string getGenericPreference(uint64_t           uid,
+	                                 const std::string& preferenceName,
+	                                 HttpXmlDocument*   xmldoc = 0) const;
 
-	void        			changeSettingsForUser			(uint64_t           uid,
-															 const std::string& bgcolor,
-															 const std::string& dbcolor,
-															 const std::string& wincolor,
-															 const std::string& layout,
-															 const std::string& syslayout,
-															 const std::string& aliaslayout,
-															 const std::string& sysaliaslayout);
-	void        			setGenericPreference			(uint64_t           uid,
-															 const std::string& preferenceName,
-															 const std::string& preferenceValue);
-	static void 			tooltipCheckForUsername			(const std::string& username,
-															 HttpXmlDocument*   xmldoc,
-															 const std::string& srcFile,
-															 const std::string& srcFunc,
-															 const std::string& srcId);
-	static void 			tooltipSetNeverShowForUsername	(const std::string& username,
-															 HttpXmlDocument*   xmldoc,
-															 const std::string& srcFile,
-															 const std::string& srcFunc,
-															 const std::string& srcId,
-															 bool               doNeverShow,
-															 bool               temporarySilence);
+	void        changeSettingsForUser(uint64_t           uid,
+	                                  const std::string& bgcolor,
+	                                  const std::string& dbcolor,
+	                                  const std::string& wincolor,
+	                                  const std::string& layout,
+	                                  const std::string& syslayout,
+	                                  const std::string& aliaslayout,
+	                                  const std::string& sysaliaslayout);
+	void        setGenericPreference(uint64_t           uid,
+	                                 const std::string& preferenceName,
+	                                 const std::string& preferenceValue);
+	static void tooltipCheckForUsername(const std::string& username,
+	                                    HttpXmlDocument*   xmldoc,
+	                                    const std::string& srcFile,
+	                                    const std::string& srcFunc,
+	                                    const std::string& srcId);
+	static void tooltipSetNeverShowForUsername(const std::string& username,
+	                                           HttpXmlDocument*   xmldoc,
+	                                           const std::string& srcFile,
+	                                           const std::string& srcFunc,
+	                                           const std::string& srcId,
+	                                           bool               doNeverShow,
+	                                           bool               temporarySilence);
 
-	void					modifyAccountSettings			(uint64_t           actingUid,
-															 uint8_t            cmd_type,
-															 const std::string& username,
-															 const std::string& displayname,
-															 const std::string& email,
-															 const std::string& permissions);
-	bool 					setUserWithLock					(uint64_t actingUid, bool lock, const std::string& username);
-	std::string 			getUserWithLock					(void) { return usersUsernameWithLock_; }
+	void modifyAccountSettings(uint64_t           actingUid,
+	                           uint8_t            cmd_type,
+	                           const std::string& username,
+	                           const std::string& displayname,
+	                           const std::string& email,
+	                           const std::string& permissions);
+	bool setUserWithLock(uint64_t actingUid, bool lock, const std::string& username);
+	std::string getUserWithLock(void) { return usersUsernameWithLock_; }
 
-	size_t 					getActiveUserCount				(void);
-	std::string 			getActiveUserDisplayNamesString	(void); ///< All active display names
-	std::string 			getActiveUsernamesString		(void); ///< All active usernames
+	size_t      getActiveUserCount(void);
+	std::string getActiveUserDisplayNamesString(void);  ///< All active display names
+	std::string getActiveUsernamesString(void);         ///< All active usernames
 
-	bool        			isUsernameActive				(const std::string& username) const;
-	bool        			isUserIdActive					(uint64_t uid) const;
-	uint64_t    			getAdminUserID					(void);
-	const std::string& 		getSecurity						(void);
+	bool               isUsernameActive(const std::string& username) const;
+	bool               isUserIdActive(uint64_t uid) const;
+	uint64_t           getAdminUserID(void);
+	const std::string& getSecurity(void);
 
-	static void 			deleteUserData					(void);
+	static void deleteUserData(void);
 
-	static void 			resetAllUserTooltips			(const std::string& userNeedle = "*");
-	static void 			silenceAllUserTooltips			(const std::string& username);
+	static void resetAllUserTooltips(const std::string& userNeedle = "*");
+	static void silenceAllUserTooltips(const std::string& username);
 
-	static void 			NACDisplayThread				(const std::string& nac, const std::string& user);
+	static void NACDisplayThread(const std::string& nac, const std::string& user);
 
-	void 					saveActiveSessions				(void);
-	void 					loadActiveSessions				(void);
+	void saveActiveSessions(void);
+	void loadActiveSessions(void);
 
   private:
 	inline WebUsers::permissionLevel_t getPermissionLevelForGroup(
-		const std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>& permissionMap,
-		const std::string& groupName = WebUsers::DEFAULT_USER_GROUP);
+	    const std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>&
+	                       permissionMap,
+	    const std::string& groupName = WebUsers::DEFAULT_USER_GROUP);
 	inline bool isInactiveForGroup(
-			const std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>& permissionMap,
-		const std::string& groupName = WebUsers::DEFAULT_USER_GROUP);
+	    const std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>&
+	                       permissionMap,
+	    const std::string& groupName = WebUsers::DEFAULT_USER_GROUP);
 	inline bool isAdminForGroup(
-			const std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>& permissionMap,
-		const std::string& groupName = WebUsers::DEFAULT_USER_GROUP);
+	    const std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>&
+	                       permissionMap,
+	    const std::string& groupName = WebUsers::DEFAULT_USER_GROUP);
 
 	void         loadSecuritySelection(void);
 	void         loadIPAddressSecurity(void);
@@ -504,12 +531,12 @@ class WebUsers
 	unsigned int hexByteStrToInt(const char* h);
 	void         intToHexStr(uint8_t i, char* h);
 	std::string  sha512(const std::string& user,
-						const std::string& password,
-						std::string&       salt);
+	                    const std::string& password,
+	                    std::string&       salt);
 	std::string  dejumble(const std::string& jumbledUser, const std::string& sessionId);
 	std::string  createNewActiveSession(uint64_t           uid,
-										const std::string& ip      = "0",
-										uint64_t           asIndex = 0);
+	                                    const std::string& ip      = "0",
+	                                    uint64_t           asIndex = 0);
 	bool         addToHashesDatabase(const std::string& hash);
 	std::string  genCookieCode(void);
 	std::string  refreshCookieCode(unsigned int i, bool enableRefresh = true);
@@ -517,27 +544,30 @@ class WebUsers
 	void incrementIpBlacklistCount(const std::string& ip);
 
 	void saveToDatabase(FILE*              fp,
-						const std::string& field,
-						const std::string& value,
-						uint8_t            type       = DB_SAVE_OPEN_AND_CLOSE,
-						bool               addNewLine = true);
+	                    const std::string& field,
+	                    const std::string& value,
+	                    uint8_t            type       = DB_SAVE_OPEN_AND_CLOSE,
+	                    bool               addNewLine = true);
 	bool saveDatabaseToFile(uint8_t db);
 	bool loadDatabases(void);
 
-	uint64_t searchUsersDatabaseForUsername			(const std::string& username) const;
-	uint64_t searchUsersDatabaseForDisplayName		(const std::string& displayName) const;
-	uint64_t searchUsersDatabaseForUserEmail		(const std::string& useremail) const;
-	uint64_t searchUsersDatabaseForUserId			(uint64_t uid) const;
-	uint64_t searchLoginSessionDatabaseForUUID		(const std::string& uuid) const;
-	uint64_t searchHashesDatabaseForHash			(const std::string& hash);
-	uint64_t searchActiveSessionDatabaseForCookie	(const std::string& cookieCode) const;
-	uint64_t searchRemoteSessionDatabaseForCookie	(const std::string& cookieCode) const;
-	uint64_t checkRemoteLoginVerification			(std::string& cookieCode, bool refresh, bool doNotGoRemote, const std::string& ip);
+	uint64_t searchUsersDatabaseForUsername(const std::string& username) const;
+	uint64_t searchUsersDatabaseForDisplayName(const std::string& displayName) const;
+	uint64_t searchUsersDatabaseForUserEmail(const std::string& useremail) const;
+	uint64_t searchUsersDatabaseForUserId(uint64_t uid) const;
+	uint64_t searchLoginSessionDatabaseForUUID(const std::string& uuid) const;
+	uint64_t searchHashesDatabaseForHash(const std::string& hash);
+	uint64_t searchActiveSessionDatabaseForCookie(const std::string& cookieCode) const;
+	uint64_t searchRemoteSessionDatabaseForCookie(const std::string& cookieCode) const;
+	uint64_t checkRemoteLoginVerification(std::string&       cookieCode,
+	                                      bool               refresh,
+	                                      bool               doNotGoRemote,
+	                                      const std::string& ip);
 
 	static std::string getTooltipFilename(const std::string& username,
-										  const std::string& srcFile,
-										  const std::string& srcFunc,
-										  const std::string& srcId);
+	                                      const std::string& srcFile,
+	                                      const std::string& srcFunc,
+	                                      const std::string& srcId);
 	std::string        getUserEmailFromFingerprint(const std::string& fingerprint);
 
 	enum
@@ -555,9 +585,10 @@ class WebUsers
 
 	std::unordered_map<std::string, std::string> certFingerprints_;
 
-	static const std::vector<std::string> UsersDatabaseEntryFields_, HashesDatabaseEntryFields_;
-	static volatile bool     CareAboutCookieCodes_;
-	std::string              securityType_;
+	static const std::vector<std::string> UsersDatabaseEntryFields_,
+	    HashesDatabaseEntryFields_;
+	static volatile bool           CareAboutCookieCodes_;
+	std::string                    securityType_;
 	std::set<std::string /* ip */> ipAccessAccept_;
 	std::set<std::string /* ip */> ipAccessReject_;
 	std::set<std::string /* ip */> ipAccessBlacklist_;
@@ -573,12 +604,13 @@ class WebUsers
 	enum
 	{
 		LOGIN_SESSION_EXPIRATION_TIME = 5 * 60,  ///< 5 minutes
-		LOGIN_SESSION_ATTEMPTS_MAX = 5,  ///< 5 attempts on same session, forces new session
+		LOGIN_SESSION_ATTEMPTS_MAX =
+		    5,  ///< 5 attempts on same session, forces new session
 	};
 
 	///"Active Session" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	std::vector<ActiveSession> ActiveSessions_;
-	std::map<std::string /* cookieCode */, ActiveSession > RemoteSessions_;
+	std::vector<ActiveSession>                            ActiveSessions_;
+	std::map<std::string /* cookieCode */, ActiveSession> RemoteSessions_;
 	/// Maintain list of valid cookieCodes and associated user
 	/// all request must come with a valid cookieCode, else server fails request
 	/// On logout request, invalidate cookieCode
@@ -591,16 +623,16 @@ class WebUsers
 	enum
 	{
 		ACTIVE_SESSION_EXPIRATION_TIME = 120 * 60,  ///< 120 minutes, cookie is changed
-													///< every half period of
-													///< ACTIVE_SESSION_EXPIRATION_TIME
+		                                            ///< every half period of
+		                                            ///< ACTIVE_SESSION_EXPIRATION_TIME
 		ACTIVE_SESSION_COOKIE_OVERLAP_TIME =
-			10 * 60,  ///< 10 minutes of overlap when new cookie is generated
+		    10 * 60,  ///< 10 minutes of overlap when new cookie is generated
 		ACTIVE_SESSION_STALE_COOKIE_LIMIT =
-			10,  ///< 10 stale cookies allowed for each active user
+		    10,  ///< 10 stale cookies allowed for each active user
 	};
 
 	///"Users" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	std::vector<User>	Users_;
+	std::vector<User> Users_;
 	/// Maintain list of acceptable Usernames and associate:
 	/// permissions
 	/// map of group name to permission level (e.g. users, experts, masters) 0 to 255
@@ -619,7 +651,7 @@ class WebUsers
 	/// and login history file  UsersLastModifierUsernameVector - is username of last
 	/// master user to modify something about account  UsersLastModifierTimeVector - is
 	/// time of last modify by a master user
-	uint64_t             usersNextUserId_;
+	uint64_t usersNextUserId_;
 	enum
 	{
 		USERS_LOGIN_HISTORY_SIZE  = 20,
@@ -631,7 +663,7 @@ class WebUsers
 	std::vector<std::string> UsersLoggedOutUsernames_;
 
 	///"Hashes" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	std::vector<Hash> 		Hashes_;
+	std::vector<Hash> Hashes_;
 	/// Maintain list of acceptable encoded (SHA-512) salt+user+pw's
 	///
 	enum
@@ -640,21 +672,22 @@ class WebUsers
 	};
 	std::map<std::string /*ip*/, uint32_t /*errorCount*/> ipBlacklistCounts_;
 
-	std::mutex				webUserMutex_;
+	std::mutex webUserMutex_;
 
-	std::unique_ptr<TransceiverSocket> 	remoteLoginVerificationSocket_; ///<use to ask remote gateway for login verification
-	std::unique_ptr<Socket> 			remoteLoginVerificationSocketTarget_;
+	std::unique_ptr<TransceiverSocket>
+	    remoteLoginVerificationSocket_;  ///<use to ask remote gateway for login verification
+	std::unique_ptr<Socket> remoteLoginVerificationSocketTarget_;
 
-	time_t						ipSecurityLastLoadTime_ = time(0);
+	time_t ipSecurityLastLoadTime_ = time(0);
 
   public:
-	std::atomic<time_t>			remoteLoginVerificationEnabledBlackoutTime_ = 0;
-	static std::atomic<bool>	remoteLoginVerificationEnabled_; ///<true if this supervisor is under control of a remote supervisor
-	std::string					remoteLoginVerificationIP_, remoteGatewaySelfName_;   ///<IP of remote Gateway to be used for login verification
-	int							remoteLoginVerificationPort_; ///<Port of remote Gateway to be used for login verification
+	std::atomic<time_t> remoteLoginVerificationEnabledBlackoutTime_ = 0;
+	static std::atomic<bool>
+	    remoteLoginVerificationEnabled_;  ///<true if this supervisor is under control of a remote supervisor
+	std::string remoteLoginVerificationIP_,
+	    remoteGatewaySelfName_;  ///<IP of remote Gateway to be used for login verification
+	int remoteLoginVerificationPort_;  ///<Port of remote Gateway to be used for login verification
 };
 }  // namespace ots
-
-// clang-format on
 
 #endif

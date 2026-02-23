@@ -21,72 +21,107 @@ using namespace ots;
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "ARTDAQTableBase"
 
-// clang-format off
-
-#define				FCL_COMMENT_POSITION	65
-#define				TABSZ					4
+#define FCL_COMMENT_POSITION 65
+#define TABSZ 4
 
 /// OUTCF:   (X)string + (C)comment, with tree-path + (F)field
-#define				OUTCF(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << parentPath << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
+#define OUTCF(X, C, F)                                                              \
+	{                                                                               \
+		std::stringstream outSs;                                                    \
+		outSs << X;                                                                 \
+		addCommentWhitespace(                                                       \
+		    outSs, tabStr.size() * TABSZ + commentStr.size() + outSs.str().size()); \
+		outSs << (C) << (std::string(C).size() ? " - " : "")                        \
+		      << "from config-tree: " << parentPath                                 \
+		      << (std::string(F).size() ? (std::string("/") + std::string(F))       \
+		                                : std::string(""))                          \
+		      << "\n";                                                              \
+		OUT << outSs.str();                                                         \
+	}
 /// OUTC:    (X)string + (C)comment, with tree-path
-#define				OUTC(X,C)				OUTCF(X,C,"")
+#define OUTC(X, C) OUTCF(X, C, "")
 /// OUTCLF:  (X)string + (C)comment, with local tree-path + (F)field
-#define				OUTCLF(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath << std::string(std::string(F).size()?("/" + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
+#define OUTCLF(X, C, F)                                                             \
+	{                                                                               \
+		std::stringstream outSs;                                                    \
+		outSs << X;                                                                 \
+		addCommentWhitespace(                                                       \
+		    outSs, tabStr.size() * TABSZ + commentStr.size() + outSs.str().size()); \
+		outSs << (C) << (std::string(C).size() ? " - " : "")                        \
+		      << "from config-tree: " << localParentPath                            \
+		      << std::string(std::string(F).size() ? ("/" + std::string(F))         \
+		                                           : std::string(""))               \
+		      << "\n";                                                              \
+		OUT << outSs.str();                                                         \
+	}
 /// OUTCL:   (X)string + (C)comment, with local tree-path
-#define				OUTCL(X,C)				OUTCLF(X,C,"")
+#define OUTCL(X, C) OUTCLF(X, C, "")
 /// OUTCL2F: (X)string + (C)comment, with local2 tree-path + (F)field
-#define				OUTCL2F(X,C,F)			{ std::stringstream outSs; outSs << X; addCommentWhitespace(outSs, tabStr.size()*TABSZ + commentStr.size() + outSs.str().size()); outSs << (C) << (std::string(C).size()?" - ":"") << "from config-tree: " << localParentPath2 << (std::string(F).size()?(std::string("/") + std::string(F)):std::string("")) << "\n"; OUT << outSs.str();}
+#define OUTCL2F(X, C, F)                                                            \
+	{                                                                               \
+		std::stringstream outSs;                                                    \
+		outSs << X;                                                                 \
+		addCommentWhitespace(                                                       \
+		    outSs, tabStr.size() * TABSZ + commentStr.size() + outSs.str().size()); \
+		outSs << (C) << (std::string(C).size() ? " - " : "")                        \
+		      << "from config-tree: " << localParentPath2                           \
+		      << (std::string(F).size() ? (std::string("/") + std::string(F))       \
+		                                : std::string(""))                          \
+		      << "\n";                                                              \
+		OUT << outSs.str();                                                         \
+	}
 /// OUTCL2:  (X)string + (C)comment, with local2 tree-path
-#define				OUTCL2(X,C)				OUTCL2F(X,C,"")
+#define OUTCL2(X, C) OUTCL2F(X, C, "")
 /// Tree-path rule is, if the last link in the path is a group link with a specified group ID, then include in the last link
 
-
-const std::string 	ARTDAQTableBase::ARTDAQ_FCL_PATH = std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/";
-const std::string 	ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH =
+const std::string ARTDAQTableBase::ARTDAQ_FCL_PATH =
+    std::string(__ENV__("USER_DATA")) + "/" + "ARTDAQConfigurations/";
+const std::string ARTDAQTableBase::ARTDAQ_CONFIG_LAYOUTS_PATH =
     (((getenv("SERVICE_DATA_PATH") == NULL)
           ? (std::string(getenv("USER_DATA")) + "/ServiceData")
           : std::string(getenv("SERVICE_DATA_PATH")))) +
     "/ConfigurationGUI_artdaqLayouts/";
-const bool			ARTDAQTableBase::ARTDAQ_DONOTWRITE_FCL = ((getenv("OTS_FCL_DONOTWRITE") == NULL) ? false : true);
+const bool ARTDAQTableBase::ARTDAQ_DONOTWRITE_FCL =
+    ((getenv("OTS_FCL_DONOTWRITE") == NULL) ? false : true);
 
-const std::string 	ARTDAQTableBase::ARTDAQ_SUPERVISOR_CLASS = "ots::ARTDAQSupervisor";
-const std::string 	ARTDAQTableBase::ARTDAQ_SUPERVISOR_TABLE = "ARTDAQSupervisorTable";
+const std::string ARTDAQTableBase::ARTDAQ_SUPERVISOR_CLASS = "ots::ARTDAQSupervisor";
+const std::string ARTDAQTableBase::ARTDAQ_SUPERVISOR_TABLE = "ARTDAQSupervisorTable";
 
-const std::string 	ARTDAQTableBase::ARTDAQ_READER_TABLE = "ARTDAQBoardReaderTable";
-const std::string 	ARTDAQTableBase::ARTDAQ_BUILDER_TABLE = "ARTDAQEventBuilderTable";
-const std::string 	ARTDAQTableBase::ARTDAQ_LOGGER_TABLE = "ARTDAQDataLoggerTable";
-const std::string 	ARTDAQTableBase::ARTDAQ_DISPATCHER_TABLE = "ARTDAQDispatcherTable";
-const std::string 	ARTDAQTableBase::ARTDAQ_MONITOR_TABLE = "ARTDAQMonitorTable";
-const std::string 	ARTDAQTableBase::ARTDAQ_ROUTER_TABLE = "ARTDAQRoutingManagerTable";
+const std::string ARTDAQTableBase::ARTDAQ_READER_TABLE     = "ARTDAQBoardReaderTable";
+const std::string ARTDAQTableBase::ARTDAQ_BUILDER_TABLE    = "ARTDAQEventBuilderTable";
+const std::string ARTDAQTableBase::ARTDAQ_LOGGER_TABLE     = "ARTDAQDataLoggerTable";
+const std::string ARTDAQTableBase::ARTDAQ_DISPATCHER_TABLE = "ARTDAQDispatcherTable";
+const std::string ARTDAQTableBase::ARTDAQ_MONITOR_TABLE    = "ARTDAQMonitorTable";
+const std::string ARTDAQTableBase::ARTDAQ_ROUTER_TABLE     = "ARTDAQRoutingManagerTable";
 
-const std::string 	ARTDAQTableBase::ARTDAQ_SUBSYSTEM_TABLE = "ARTDAQSubsystemTable";
-const std::string 	ARTDAQTableBase::ARTDAQ_DAQ_TABLE = "ARTDAQDaqTable";
-const std::string 	ARTDAQTableBase::ARTDAQ_DAQ_PARAMETER_TABLE = "ARTDAQDaqParameterTable";
-const std::string 	ARTDAQTableBase::ARTDAQ_ART_TABLE = "ARTDAQArtTable";
+const std::string ARTDAQTableBase::ARTDAQ_SUBSYSTEM_TABLE     = "ARTDAQSubsystemTable";
+const std::string ARTDAQTableBase::ARTDAQ_DAQ_TABLE           = "ARTDAQDaqTable";
+const std::string ARTDAQTableBase::ARTDAQ_DAQ_PARAMETER_TABLE = "ARTDAQDaqParameterTable";
+const std::string ARTDAQTableBase::ARTDAQ_ART_TABLE           = "ARTDAQArtTable";
 
-const std::string 	ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME = "ExecutionHostname";
-const std::string   ARTDAQTableBase::ARTDAQ_TYPE_TABLE_ALLOWED_PROCESSORS = "AllowedProcessors";
-const std::string 	ARTDAQTableBase::ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK = "SubsystemLink";
-const std::string 	ARTDAQTableBase::ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID = "SubsystemLinkUID";
+const std::string ARTDAQTableBase::ARTDAQ_TYPE_TABLE_HOSTNAME = "ExecutionHostname";
+const std::string ARTDAQTableBase::ARTDAQ_TYPE_TABLE_ALLOWED_PROCESSORS =
+    "AllowedProcessors";
+const std::string ARTDAQTableBase::ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK = "SubsystemLink";
+const std::string ARTDAQTableBase::ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID =
+    "SubsystemLinkUID";
 
+const int         ARTDAQTableBase::NULL_SUBSYSTEM_DESTINATION = 0;
+const std::string ARTDAQTableBase::NULL_SUBSYSTEM_DESTINATION_LABEL =
+    "nullDestinationSubsystem";
 
-const int 			ARTDAQTableBase::NULL_SUBSYSTEM_DESTINATION = 0;
-const std::string 	ARTDAQTableBase::NULL_SUBSYSTEM_DESTINATION_LABEL = "nullDestinationSubsystem";
+ARTDAQTableBase::ARTDAQInfo ARTDAQTableBase::info_;
 
-ARTDAQTableBase::ARTDAQInfo 			ARTDAQTableBase::info_;
-
-ARTDAQTableBase::ColARTDAQSupervisor 	ARTDAQTableBase::colARTDAQSupervisor_;
-ARTDAQTableBase::ColARTDAQSubsystem 	ARTDAQTableBase::colARTDAQSubsystem_;
-ARTDAQTableBase::ColARTDAQReader 		ARTDAQTableBase::colARTDAQReader_;
-ARTDAQTableBase::ColARTDAQNotReader 	ARTDAQTableBase::colARTDAQNotReader_;
-ARTDAQTableBase::ColARTDAQDaq 			ARTDAQTableBase::colARTDAQDaq_;
-ARTDAQTableBase::ColARTDAQDaqParameter 	ARTDAQTableBase::colARTDAQDaqParameter_;
-ARTDAQTableBase::ColARTDAQArt			ARTDAQTableBase::colARTDAQArt_;
+ARTDAQTableBase::ColARTDAQSupervisor   ARTDAQTableBase::colARTDAQSupervisor_;
+ARTDAQTableBase::ColARTDAQSubsystem    ARTDAQTableBase::colARTDAQSubsystem_;
+ARTDAQTableBase::ColARTDAQReader       ARTDAQTableBase::colARTDAQReader_;
+ARTDAQTableBase::ColARTDAQNotReader    ARTDAQTableBase::colARTDAQNotReader_;
+ARTDAQTableBase::ColARTDAQDaq          ARTDAQTableBase::colARTDAQDaq_;
+ARTDAQTableBase::ColARTDAQDaqParameter ARTDAQTableBase::colARTDAQDaqParameter_;
+ARTDAQTableBase::ColARTDAQArt          ARTDAQTableBase::colARTDAQArt_;
 
 ///Note!!!! processTypes_ must be instantiate after the static artdaq table names (to construct map in constructor in .h)
-ARTDAQTableBase::ProcessTypes 			ARTDAQTableBase::processTypes_;
-
-// clang-format on
+ARTDAQTableBase::ProcessTypes ARTDAQTableBase::processTypes_;
 
 //==============================================================================
 /// TableBase

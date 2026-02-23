@@ -19,30 +19,28 @@
 
 using namespace ots;
 
-// clang-format off
+const std::string RunControlStateMachine::FAILED_STATE_NAME =
+    FiniteStateMachine::FAILED_STATE_NAME;
+const std::string RunControlStateMachine::INITIAL_STATE_NAME    = "Initial";
+const std::string RunControlStateMachine::HALTED_STATE_NAME     = "Halted";
+const std::string RunControlStateMachine::PAUSED_STATE_NAME     = "Paused";
+const std::string RunControlStateMachine::RUNNING_STATE_NAME    = "Running";
+const std::string RunControlStateMachine::SHUTDOWN_STATE_NAME   = "Shutdown";
+const std::string RunControlStateMachine::CONFIGURED_STATE_NAME = "Configured";
 
-const std::string RunControlStateMachine::FAILED_STATE_NAME  			= FiniteStateMachine::FAILED_STATE_NAME;
-const std::string RunControlStateMachine::INITIAL_STATE_NAME 			= "Initial";
-const std::string RunControlStateMachine::HALTED_STATE_NAME  			= "Halted";
-const std::string RunControlStateMachine::PAUSED_STATE_NAME  			= "Paused";
-const std::string RunControlStateMachine::RUNNING_STATE_NAME 			= "Running";
-const std::string RunControlStateMachine::SHUTDOWN_STATE_NAME 			= "Shutdown";
-const std::string RunControlStateMachine::CONFIGURED_STATE_NAME 		= "Configured";
-
-const std::string RunControlStateMachine::SHUTDOWN_TRANSITION_NAME 		= "Shutdown";
-const std::string RunControlStateMachine::STARTUP_TRANSITION_NAME  		= "Startup";
-const std::string RunControlStateMachine::INIT_TRANSITION_NAME  		= "Initialize";
-const std::string RunControlStateMachine::ERROR_TRANSITION_NAME  		= FiniteStateMachine::ERROR_TRANSITION_NAME;
-const std::string RunControlStateMachine::FAIL_TRANSITION_NAME  		= "Fail";
-const std::string RunControlStateMachine::CONFIGURE_TRANSITION_NAME  	= "Configure";
-const std::string RunControlStateMachine::HALT_TRANSITION_NAME  		= "Halt";
-const std::string RunControlStateMachine::ABORT_TRANSITION_NAME  		= "Abort";
-const std::string RunControlStateMachine::PAUSE_TRANSITION_NAME  		= "Pause";
-const std::string RunControlStateMachine::RESUME_TRANSITION_NAME  		= "Resume";
-const std::string RunControlStateMachine::START_TRANSITION_NAME  		= "Start";
-const std::string RunControlStateMachine::STOP_TRANSITION_NAME  		= "Stop";
-
-// clang-format on
+const std::string RunControlStateMachine::SHUTDOWN_TRANSITION_NAME = "Shutdown";
+const std::string RunControlStateMachine::STARTUP_TRANSITION_NAME  = "Startup";
+const std::string RunControlStateMachine::INIT_TRANSITION_NAME     = "Initialize";
+const std::string RunControlStateMachine::ERROR_TRANSITION_NAME =
+    FiniteStateMachine::ERROR_TRANSITION_NAME;
+const std::string RunControlStateMachine::FAIL_TRANSITION_NAME      = "Fail";
+const std::string RunControlStateMachine::CONFIGURE_TRANSITION_NAME = "Configure";
+const std::string RunControlStateMachine::HALT_TRANSITION_NAME      = "Halt";
+const std::string RunControlStateMachine::ABORT_TRANSITION_NAME     = "Abort";
+const std::string RunControlStateMachine::PAUSE_TRANSITION_NAME     = "Pause";
+const std::string RunControlStateMachine::RESUME_TRANSITION_NAME    = "Resume";
+const std::string RunControlStateMachine::START_TRANSITION_NAME     = "Start";
+const std::string RunControlStateMachine::STOP_TRANSITION_NAME      = "Stop";
 
 //==============================================================================
 RunControlStateMachine::RunControlStateMachine(const std::string& name)

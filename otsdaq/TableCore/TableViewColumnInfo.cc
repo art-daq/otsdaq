@@ -11,62 +11,59 @@
 
 using namespace ots;
 
-// clang-format off
-
 /// NOTE: Do NOT put '-' in static const TYPEs because it will mess up javascript handling in the web gui
-const std::string TableViewColumnInfo::TYPE_UID 						= "UID";
+const std::string TableViewColumnInfo::TYPE_UID = "UID";
 
-const std::string TableViewColumnInfo::TYPE_DATA 						= "Data";
-const std::string TableViewColumnInfo::TYPE_UNIQUE_DATA 				= "UniqueData";
-const std::string TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA 			= "UniqueGroupData";
-const std::string TableViewColumnInfo::TYPE_MULTILINE_DATA 				= "MultilineData";
-const std::string TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA 			= "FixedChoiceData";
-const std::string TableViewColumnInfo::TYPE_BITMAP_DATA 				= "BitMap";
+const std::string TableViewColumnInfo::TYPE_DATA              = "Data";
+const std::string TableViewColumnInfo::TYPE_UNIQUE_DATA       = "UniqueData";
+const std::string TableViewColumnInfo::TYPE_UNIQUE_GROUP_DATA = "UniqueGroupData";
+const std::string TableViewColumnInfo::TYPE_MULTILINE_DATA    = "MultilineData";
+const std::string TableViewColumnInfo::TYPE_FIXED_CHOICE_DATA = "FixedChoiceData";
+const std::string TableViewColumnInfo::TYPE_BITMAP_DATA       = "BitMap";
 
-const std::string TableViewColumnInfo::TYPE_ON_OFF 						= "OnOff";
-const std::string TableViewColumnInfo::TYPE_TRUE_FALSE 					= "TrueFalse";
-const std::string TableViewColumnInfo::TYPE_YES_NO 						= "YesNo";
+const std::string TableViewColumnInfo::TYPE_ON_OFF     = "OnOff";
+const std::string TableViewColumnInfo::TYPE_TRUE_FALSE = "TrueFalse";
+const std::string TableViewColumnInfo::TYPE_YES_NO     = "YesNo";
 
-const std::string TableViewColumnInfo::TYPE_START_CHILD_LINK 			= "ChildLink";
-const std::string TableViewColumnInfo::TYPE_START_CHILD_LINK_UID 		= "ChildLinkUID";
-const std::string TableViewColumnInfo::TYPE_START_CHILD_LINK_GROUP_ID 	= "ChildLinkGroupID";
-const std::string TableViewColumnInfo::TYPE_START_GROUP_ID 				= "GroupID";
-const std::string TableViewColumnInfo::TYPE_COMMENT 					= "Comment";
-const std::string TableViewColumnInfo::TYPE_AUTHOR 						= "Author";
-const std::string TableViewColumnInfo::TYPE_TIMESTAMP 					= "Timestamp";
+const std::string TableViewColumnInfo::TYPE_START_CHILD_LINK     = "ChildLink";
+const std::string TableViewColumnInfo::TYPE_START_CHILD_LINK_UID = "ChildLinkUID";
+const std::string TableViewColumnInfo::TYPE_START_CHILD_LINK_GROUP_ID =
+    "ChildLinkGroupID";
+const std::string TableViewColumnInfo::TYPE_START_GROUP_ID = "GroupID";
+const std::string TableViewColumnInfo::TYPE_COMMENT        = "Comment";
+const std::string TableViewColumnInfo::TYPE_AUTHOR         = "Author";
+const std::string TableViewColumnInfo::TYPE_TIMESTAMP      = "Timestamp";
 /// NOTE: Do NOT put '-' in static const TYPEs because it will mess up javascript handling in the web gui
 ///
-const std::string TableViewColumnInfo::DATATYPE_NUMBER 					= "NUMBER";
-const std::string TableViewColumnInfo::DATATYPE_STRING 					= "STRING";
-const std::string TableViewColumnInfo::DATATYPE_TIME 					= "TIMESTAMP WITH TIMEZONE";
+const std::string TableViewColumnInfo::DATATYPE_NUMBER = "NUMBER";
+const std::string TableViewColumnInfo::DATATYPE_STRING = "STRING";
+const std::string TableViewColumnInfo::DATATYPE_TIME   = "TIMESTAMP WITH TIMEZONE";
 
-const std::string TableViewColumnInfo::TYPE_VALUE_YES 					= "Yes";
-const std::string TableViewColumnInfo::TYPE_VALUE_NO 					= "No";
-const std::string TableViewColumnInfo::TYPE_VALUE_TRUE 					= "True";
-const std::string TableViewColumnInfo::TYPE_VALUE_FALSE 				= "False";
-const std::string TableViewColumnInfo::TYPE_VALUE_ON 					= "On";
-const std::string TableViewColumnInfo::TYPE_VALUE_OFF 					= "Off";
+const std::string TableViewColumnInfo::TYPE_VALUE_YES   = "Yes";
+const std::string TableViewColumnInfo::TYPE_VALUE_NO    = "No";
+const std::string TableViewColumnInfo::TYPE_VALUE_TRUE  = "True";
+const std::string TableViewColumnInfo::TYPE_VALUE_FALSE = "False";
+const std::string TableViewColumnInfo::TYPE_VALUE_ON    = "On";
+const std::string TableViewColumnInfo::TYPE_VALUE_OFF   = "Off";
 
-const std::string TableViewColumnInfo::DATATYPE_STRING_DEFAULT 			= "DEFAULT";
-const std::string TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT 		= "No comment.";
-const std::string TableViewColumnInfo::DATATYPE_COMMENT_OLD_DEFAULT 	= "No Comment";
-const std::string TableViewColumnInfo::DATATYPE_BOOL_DEFAULT 			= "0";
-const std::string TableViewColumnInfo::DATATYPE_NUMBER_DEFAULT 			= "0";
+const std::string TableViewColumnInfo::DATATYPE_STRING_DEFAULT      = "DEFAULT";
+const std::string TableViewColumnInfo::DATATYPE_COMMENT_DEFAULT     = "No comment.";
+const std::string TableViewColumnInfo::DATATYPE_COMMENT_OLD_DEFAULT = "No Comment";
+const std::string TableViewColumnInfo::DATATYPE_BOOL_DEFAULT        = "0";
+const std::string TableViewColumnInfo::DATATYPE_NUMBER_DEFAULT      = "0";
 
-const std::string TableViewColumnInfo::DATATYPE_NUMBER_MIN_DEFAULT 		= "";
-const std::string TableViewColumnInfo::DATATYPE_NUMBER_MAX_DEFAULT 		= "";
+const std::string TableViewColumnInfo::DATATYPE_NUMBER_MIN_DEFAULT = "";
+const std::string TableViewColumnInfo::DATATYPE_NUMBER_MAX_DEFAULT = "";
 
-const std::string TableViewColumnInfo::DATATYPE_TIME_DEFAULT 			= "0";
-const std::string TableViewColumnInfo::DATATYPE_LINK_DEFAULT 			= "NO_LINK";
+const std::string TableViewColumnInfo::DATATYPE_TIME_DEFAULT = "0";
+const std::string TableViewColumnInfo::DATATYPE_LINK_DEFAULT = "NO_LINK";
 
-const std::string TableViewColumnInfo::COL_NAME_STATUS 					= "Status";
-const std::string TableViewColumnInfo::COL_NAME_ENABLED 				= "Enabled";
-const std::string TableViewColumnInfo::COL_NAME_PRIORITY 				= "Priority";
-const std::string TableViewColumnInfo::COL_NAME_COMMENT 				= "CommentDescription";
-const std::string TableViewColumnInfo::COL_NAME_AUTHOR 					= "Author";
-const std::string TableViewColumnInfo::COL_NAME_CREATION 				= "RecordInsertionTime";
-
-// clang-format on
+const std::string TableViewColumnInfo::COL_NAME_STATUS   = "Status";
+const std::string TableViewColumnInfo::COL_NAME_ENABLED  = "Enabled";
+const std::string TableViewColumnInfo::COL_NAME_PRIORITY = "Priority";
+const std::string TableViewColumnInfo::COL_NAME_COMMENT  = "CommentDescription";
+const std::string TableViewColumnInfo::COL_NAME_AUTHOR   = "Author";
+const std::string TableViewColumnInfo::COL_NAME_CREATION = "RecordInsertionTime";
 
 //==============================================================================
 /// TableViewColumnInfo

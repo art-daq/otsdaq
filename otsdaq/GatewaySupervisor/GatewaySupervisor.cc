@@ -38,7 +38,6 @@
 
 using namespace ots;
 
-// clang-format off
 #define RUN_NUMBER_PATH std::string(__ENV__("SERVICE_DATA_PATH")) + "/RunNumber/"
 #define RUN_NUMBER_FILE_NAME "NextRunNumber.txt"
 #define LOG_ENTRY_PATH std::string(__ENV__("SERVICE_DATA_PATH")) + "/FSM_LastLogEntry/"
@@ -48,32 +47,33 @@ using namespace ots;
 
 #define REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME "RemoteSubsystems.txt"
 
-#define TLVL_StateChanger		 	9	// = TLVL_DEBUG + 9
-#define TLVL_RemoteIcons		 	10	// = TLVL_DEBUG + 10
-#define TLVL_StateChangerDetail	 	11	// = TLVL_DEBUG + 11
-#define TLVL_StateChangerStatus	 	12	// = TLVL_DEBUG + 12
-#define TLVL_SystemDump	 	15	// = TLVL_DEBUG + 15
-#define TLVL_Permissions		 	20	// = TLVL_DEBUG + 20
-#define TLVL_GetDesktopIcons	 	21	// = TLVL_DEBUG + 21
-#define TLVL_RemoteFSMRequests	 	22	// = TLVL_DEBUG + 22
-#define TLVL_StatusParams		 	23	// = TLVL_DEBUG + 23
-#define TLVL_RemoteStatusVerbose 	24	// = TLVL_DEBUG + 24
-#define TLVL_RemoteStatusParams	 	25	// = TLVL_DEBUG + 25
-#define TLVL_RemoteDesktopIcons	 	35	// = TLVL_DEBUG + 35
-#define TLVL_DebugStatusDetail 		36	// = TLVL_DEBUG + 36
-#define TLVL_StatusRemoteWorkloop 	38	// = TLVL_DEBUG + 38
-#define TLVL_StatusWorkloop 		39	// = TLVL_DEBUG + 39
-#define TLVL_DebugStatusWorkloop 	40	// = TLVL_DEBUG + 40
-#define TLVL_DebugArtdaqStatus 		41	// = TLVL_DEBUG + 41
-#define TLVL_DebugRequests 			42	// = TLVL_DEBUG + 42
-#define TLVL_StatusFullDetail	 	50	// = TLVL_DEBUG + 50
+#define TLVL_StateChanger 9           // = TLVL_DEBUG + 9
+#define TLVL_RemoteIcons 10           // = TLVL_DEBUG + 10
+#define TLVL_StateChangerDetail 11    // = TLVL_DEBUG + 11
+#define TLVL_StateChangerStatus 12    // = TLVL_DEBUG + 12
+#define TLVL_SystemDump 15            // = TLVL_DEBUG + 15
+#define TLVL_Permissions 20           // = TLVL_DEBUG + 20
+#define TLVL_GetDesktopIcons 21       // = TLVL_DEBUG + 21
+#define TLVL_RemoteFSMRequests 22     // = TLVL_DEBUG + 22
+#define TLVL_StatusParams 23          // = TLVL_DEBUG + 23
+#define TLVL_RemoteStatusVerbose 24   // = TLVL_DEBUG + 24
+#define TLVL_RemoteStatusParams 25    // = TLVL_DEBUG + 25
+#define TLVL_RemoteDesktopIcons 35    // = TLVL_DEBUG + 35
+#define TLVL_DebugStatusDetail 36     // = TLVL_DEBUG + 36
+#define TLVL_StatusRemoteWorkloop 38  // = TLVL_DEBUG + 38
+#define TLVL_StatusWorkloop 39        // = TLVL_DEBUG + 39
+#define TLVL_DebugStatusWorkloop 40   // = TLVL_DEBUG + 40
+#define TLVL_DebugArtdaqStatus 41     // = TLVL_DEBUG + 41
+#define TLVL_DebugRequests 42         // = TLVL_DEBUG + 42
+#define TLVL_StatusFullDetail 50      // = TLVL_DEBUG + 50
 
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "GatewaySupervisor"
 
-#define REMOTE_BACKBONE_ERR			"A valid active Backbone configuration group must be specified at the subsystem User Data Path, and it must be retrievable (i.e. same configuration database URI) from the primary Gateway."
-
-// clang-format on
+#define REMOTE_BACKBONE_ERR                                                              \
+	"A valid active Backbone configuration group must be specified at the subsystem "    \
+	"User Data Path, and it must be retrievable (i.e. same configuration database URI) " \
+	"from the primary Gateway."
 
 XDAQ_INSTANTIATOR_IMPL(GatewaySupervisor)
 
@@ -1039,19 +1039,23 @@ try
 									{
 										found = true;
 
-										// clang-format off
 										//overwrite with refreshed info
-										remoteApps[r].appInfo 					= thisInfo.appInfo;
-										remoteApps[r].user_data_path_record 	= thisInfo.user_data_path_record;
-										remoteApps[r].parentIconFolderPath 		= thisInfo.parentIconFolderPath;
-										remoteApps[r].permissionThresholdString = thisInfo.permissionThresholdString;
-										remoteApps[r].landingPage 				= thisInfo.landingPage;
-										remoteApps[r].setupType   				= thisInfo.setupType;
-										remoteApps[r].fullName    				= thisInfo.fullName;
-										remoteApps[r].instancePath 				= thisInfo.instancePath;
-										remoteApps[r].instanceHost 				= thisInfo.instanceHost;
-										remoteApps[r].instanceUser 				= thisInfo.instanceUser;
-										// clang-format on
+										remoteApps[r].appInfo = thisInfo.appInfo;
+										remoteApps[r].user_data_path_record =
+										    thisInfo.user_data_path_record;
+										remoteApps[r].parentIconFolderPath =
+										    thisInfo.parentIconFolderPath;
+										remoteApps[r].permissionThresholdString =
+										    thisInfo.permissionThresholdString;
+										remoteApps[r].landingPage = thisInfo.landingPage;
+										remoteApps[r].setupType   = thisInfo.setupType;
+										remoteApps[r].fullName    = thisInfo.fullName;
+										remoteApps[r].instancePath =
+										    thisInfo.instancePath;
+										remoteApps[r].instanceHost =
+										    thisInfo.instanceHost;
+										remoteApps[r].instanceUser =
+										    thisInfo.instanceUser;
 
 										break;
 									}
@@ -1127,22 +1131,39 @@ try
 										{
 											found = true;
 
-											// clang-format off
 											if(remoteApps[r].getError() != "")
-												theSupervisor->remoteGatewayApps_[i].copyError(remoteApps[r]);
+												theSupervisor->remoteGatewayApps_[i]
+												    .copyError(remoteApps[r]);
 
 											//overwrite with refreshed info
-											theSupervisor->remoteGatewayApps_[i].config_aliases 			= remoteApps[r].config_aliases;
-											theSupervisor->remoteGatewayApps_[i].user_data_path_record 		= remoteApps[r].user_data_path_record;
-											theSupervisor->remoteGatewayApps_[i].parentIconFolderPath 		= remoteApps[r].parentIconFolderPath;
-											theSupervisor->remoteGatewayApps_[i].permissionThresholdString 	= remoteApps[r].permissionThresholdString;
-											theSupervisor->remoteGatewayApps_[i].landingPage 				= remoteApps[r].landingPage;
-											theSupervisor->remoteGatewayApps_[i].setupType   				= remoteApps[r].setupType;
-											theSupervisor->remoteGatewayApps_[i].fullName    				= remoteApps[r].fullName;
-											theSupervisor->remoteGatewayApps_[i].instancePath 				= remoteApps[r].instancePath;
-											theSupervisor->remoteGatewayApps_[i].instanceHost 				= remoteApps[r].instanceHost;
-											theSupervisor->remoteGatewayApps_[i].instanceUser 				= remoteApps[r].instanceUser;
-											// clang-format on
+											theSupervisor->remoteGatewayApps_[i]
+											    .config_aliases =
+											    remoteApps[r].config_aliases;
+											theSupervisor->remoteGatewayApps_[i]
+											    .user_data_path_record =
+											    remoteApps[r].user_data_path_record;
+											theSupervisor->remoteGatewayApps_[i]
+											    .parentIconFolderPath =
+											    remoteApps[r].parentIconFolderPath;
+											theSupervisor->remoteGatewayApps_[i]
+											    .permissionThresholdString =
+											    remoteApps[r].permissionThresholdString;
+											theSupervisor->remoteGatewayApps_[i]
+											    .landingPage = remoteApps[r].landingPage;
+											theSupervisor->remoteGatewayApps_[i]
+											    .setupType = remoteApps[r].setupType;
+											theSupervisor->remoteGatewayApps_[i]
+											    .fullName = remoteApps[r].fullName;
+											theSupervisor->remoteGatewayApps_[i]
+											    .instancePath =
+											    remoteApps[r].instancePath;
+											theSupervisor->remoteGatewayApps_[i]
+											    .instanceHost =
+											    remoteApps[r].instanceHost;
+											theSupervisor->remoteGatewayApps_[i]
+											    .instanceUser =
+											    remoteApps[r].instanceUser;
+
 											__COUTTV__(StringMacros::setToString(
 											    theSupervisor->remoteGatewayApps_[i]
 											        .config_aliases));
@@ -1724,18 +1745,27 @@ try
 
 										//copy over updated status (but not control info, which may be have been changed while mutex was dropped)
 
-										// clang-format off
 										if(remoteGatewayApp.command ==
 										   "")  //if there is action on command, then error is being set (request()) or cleared (send) somewhere else
-											theSupervisor->remoteGatewayApps_[i].copyError(remoteGatewayApp);
+											theSupervisor->remoteGatewayApps_[i]
+											    .copyError(remoteGatewayApp);
 
-										theSupervisor->remoteGatewayApps_[i].ignoreStatusCount 			= remoteGatewayApp.ignoreStatusCount;
-										theSupervisor->remoteGatewayApps_[i].consoleErrCount 			= remoteGatewayApp.consoleErrCount;
-										theSupervisor->remoteGatewayApps_[i].consoleWarnCount 			= remoteGatewayApp.consoleWarnCount;
+										theSupervisor->remoteGatewayApps_[i]
+										    .ignoreStatusCount =
+										    remoteGatewayApp.ignoreStatusCount;
+										theSupervisor->remoteGatewayApps_[i]
+										    .consoleErrCount =
+										    remoteGatewayApp.consoleErrCount;
+										theSupervisor->remoteGatewayApps_[i]
+										    .consoleWarnCount =
+										    remoteGatewayApp.consoleWarnCount;
 
-										theSupervisor->remoteGatewayApps_[i].usernameWithLock 			= remoteGatewayApp.usernameWithLock;
+										theSupervisor->remoteGatewayApps_[i]
+										    .usernameWithLock =
+										    remoteGatewayApp.usernameWithLock;
 
-										theSupervisor->remoteGatewayApps_[i].config_dump 				= remoteGatewayApp.config_dump;
+										theSupervisor->remoteGatewayApps_[i].config_dump =
+										    remoteGatewayApp.config_dump;
 
 										// do not overwrite icon string here (it's updated immediately above)!
 										// theSupervisor->remoteGatewayApps_[i].iconString 					= remoteGatewayApp.iconString;
@@ -1754,25 +1784,35 @@ try
 
 										//fix selected_config_alias
 										//	if invalid selected_config_alias, reinitialize for user
-										if(theSupervisor->remoteGatewayApps_[i].config_aliases.size() &&
-											theSupervisor->remoteGatewayApps_[i].config_aliases.find(
-											theSupervisor->remoteGatewayApps_[i].selected_config_alias) ==
-												theSupervisor->remoteGatewayApps_[i].config_aliases.end())
+										if(theSupervisor->remoteGatewayApps_[i]
+										       .config_aliases.size() &&
+										   theSupervisor->remoteGatewayApps_[i]
+										           .config_aliases.find(
+										               theSupervisor
+										                   ->remoteGatewayApps_[i]
+										                   .selected_config_alias) ==
+										       theSupervisor->remoteGatewayApps_[i]
+										           .config_aliases.end())
 										{
-											__COUT__ << "Resetting invalid selected_config_alias '"
-											         << theSupervisor->remoteGatewayApps_[i]
-											                .selected_config_alias
-											         << "' for Remote Gateway App '"
-											         << theSupervisor->remoteGatewayApps_[i]
-											                .appInfo.name
-											         << "' to first available config_alias."
-											         << __E__;
-											theSupervisor->remoteGatewayApps_[i].selected_config_alias =
-												theSupervisor->remoteGatewayApps_[i].config_aliases.size() ?
-													(*theSupervisor->remoteGatewayApps_[i].config_aliases.begin()) : "";
+											__COUT__
+											    << "Resetting invalid "
+											       "selected_config_alias '"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .selected_config_alias
+											    << "' for Remote Gateway App '"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .appInfo.name
+											    << "' to first available config_alias."
+											    << __E__;
+											theSupervisor->remoteGatewayApps_[i]
+											    .selected_config_alias =
+											    theSupervisor->remoteGatewayApps_[i]
+											            .config_aliases.size()
+											        ? (*theSupervisor
+											                ->remoteGatewayApps_[i]
+											                .config_aliases.begin())
+											        : "";
 										}
-
-										// clang-format on
 
 										__COUTTV__(theSupervisor->remoteGatewayApps_[i]
 										               .selected_config_alias);
@@ -11343,16 +11383,35 @@ void GatewaySupervisor::addRequiredFsmLogInputToXML(HttpXmlDocument&   xmlOut,
 		        supervisorContextUID_, supervisorApplicationUID_);
 		if(!configLinkNode.isDisconnected())
 		{
-			// clang-format off
-			try //ignore errors
+			try  //ignore errors
 			{
-				ConfigurationTree fsmLinkNode = configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
-				try { requireUserLogInputOnConfigure = fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnConfigureTransition not set."; }
-				try { requireUserLogInputOnRun = fsmLinkNode.getNode("RequireUserLogInputOnRunTransition").getValue<bool>(); } catch(...) { __SUP_COUTT__ << "RequireUserLogInputOnRunTransition not set."; }
+				ConfigurationTree fsmLinkNode =
+				    configLinkNode.getNode("LinkToStateMachineTable").getNode(fsmName);
+				try
+				{
+					requireUserLogInputOnConfigure =
+					    fsmLinkNode.getNode("RequireUserLogInputOnConfigureTransition")
+					        .getValue<bool>();
+				}
+				catch(...)
+				{
+					__SUP_COUTT__ << "RequireUserLogInputOnConfigureTransition not set.";
+				}
+				try
+				{
+					requireUserLogInputOnRun =
+					    fsmLinkNode.getNode("RequireUserLogInputOnRunTransition")
+					        .getValue<bool>();
+				}
+				catch(...)
+				{
+					__SUP_COUTT__ << "RequireUserLogInputOnRunTransition not set.";
+				}
 			}
 			catch(...)
-			{ __SUP_COUTT__ << "Settings not set for fsm name = " << fsmName << __E__; }
-			// clang-format on
+			{
+				__SUP_COUTT__ << "Settings not set for fsm name = " << fsmName << __E__;
+			}
 		}
 	}  //end log entry requirements gathering
 

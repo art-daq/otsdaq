@@ -1000,14 +1000,12 @@ TableVersion TableBase::mergeViews(
 {
 	__COUT__ << "mergeViews starting..." << __E__;
 
-	// clang-format off
 	// There 3 modes:
 	//	rename		-- All records from both groups are maintained, but conflicts from B are renamed.
 	//					Must maintain a map of UIDs that are remapped to new name for
 	//					because linkUID fields must be preserved.
 	//	replace		-- Any UID conflicts for a record are replaced by the record from group B.
 	//	skip		-- Any UID conflicts for a record are skipped so that group A record remains
-	// clang-format on
 
 	// check valid mode
 	if(!(mergeApproach == "Rename" || mergeApproach == "Replace" ||

@@ -44,7 +44,6 @@
 
 namespace ots
 {
-// clang-format off
 
 class ITRACEController;
 
@@ -62,31 +61,40 @@ class CorePropertySupervisorBase
 	AllSupervisorInfo     allSupervisorInfo_;
 	ConfigurationManager* theConfigurationManager_;
 
-	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getGatewaySupervisorDescriptor		(void); ///<will be wizard supervisor in wiz mode
+	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* getGatewaySupervisorDescriptor(
+	    void);  ///<will be wizard supervisor in wiz mode
 
-	virtual void 					setSupervisorPropertyDefaults					(void);  ///< override to control supervisor specific defaults
-	virtual void 					forceSupervisorPropertyValues					(void){;}  ///< override to force supervisor property values (and ignore user settings)
+	virtual void setSupervisorPropertyDefaults(
+	    void);  ///< override to control supervisor specific defaults
+	virtual void forceSupervisorPropertyValues(void)
+	{
+		;
+	}  ///< override to force supervisor property values (and ignore user settings)
 
-	void 							getRequestUserInfo								(WebUsers::RequestUserInfo& requestUserInfo);
+	void getRequestUserInfo(WebUsers::RequestUserInfo& requestUserInfo);
 
 	/// supervisors should use these two static functions to standardize permissions
 	/// access:
-	static void 					extractPermissionsMapFromString					(const std::string& permissionsString, std::map<std::string, WebUsers::permissionLevel_t>& permissionsMap);
-	static bool 					doPermissionsGrantAccess						(std::map<std::string, WebUsers::permissionLevel_t>& permissionLevelsMap, std::map<std::string, WebUsers::permissionLevel_t>& permissionThresholdsMap);
+	static void extractPermissionsMapFromString(
+	    const std::string&                                  permissionsString,
+	    std::map<std::string, WebUsers::permissionLevel_t>& permissionsMap);
+	static bool doPermissionsGrantAccess(
+	    std::map<std::string, WebUsers::permissionLevel_t>& permissionLevelsMap,
+	    std::map<std::string, WebUsers::permissionLevel_t>& permissionThresholdsMap);
 
-	ConfigurationTree 				getContextTreeNode								(void) const
+	ConfigurationTree getContextTreeNode(void) const
 	{
 		return theConfigurationManager_->getNode(
 		    theConfigurationManager_->__GET_CONFIG__(XDAQContextTable)->getTableName());
 	}
-	ConfigurationTree 				getSupervisorTableNode							(void) const
+	ConfigurationTree getSupervisorTableNode(void) const
 	{
 		return getContextTreeNode().getNode(supervisorConfigurationPath_);
 	}
 
-	const std::string& 				getContextUID									(void) const { return supervisorContextUID_; }
-	const std::string& 				getSupervisorUID								(void) const { return supervisorApplicationUID_; }
-	const std::string& 				getSupervisorConfigurationPath					(void) const
+	const std::string& getContextUID(void) const { return supervisorContextUID_; }
+	const std::string& getSupervisorUID(void) const { return supervisorApplicationUID_; }
+	const std::string& getSupervisorConfigurationPath(void) const
 	{
 		return supervisorConfigurationPath_;
 	}
@@ -95,26 +103,33 @@ class CorePropertySupervisorBase
 	const std::string supervisorClass_;
 	const std::string supervisorClassNoNamespace_;
 
-	static void 					indicateOtsAlive								(const CorePropertySupervisorBase* properties = 0);
-	static void 					indicateOtsDead									(const CorePropertySupervisorBase* properties = 0);
+	static void indicateOtsAlive(const CorePropertySupervisorBase* properties = 0);
+	static void indicateOtsDead(const CorePropertySupervisorBase* properties = 0);
 
   private:
-
 	std::string supervisorContextUID_;
 	std::string supervisorApplicationUID_;
 	std::string supervisorConfigurationPath_;
 
-
   protected:
-	xoap::MessageReference 			TRACESupervisorRequest							(xoap::MessageReference message);
-	const std::string&				getTraceLevels									(void);
-	const std::string&				setTraceLevels									(std::string const& host, std::string const& mode, std::string const& labelsStr, uint32_t setValueMSB, uint32_t setValueLSB);
-	const std::string&				setIndividualTraceLevels						(std::string const& host, std::string const& mode, std::string const& labelValuesStr);
-	const std::string&				getTraceTriggerStatus							(void);
-	const std::string&				setTraceTriggerEnable							(std::string const& host, size_t entriesAfterTrigger);
-	const std::string&				resetTRACE										(std::string const& host);
-	const std::string&				enableTRACE										(std::string const& host, bool enable);
-	const std::string&				getTraceSnapshot								(std::string const& host, std::string const& filterFor, std::string const& filterOut);
+	xoap::MessageReference TRACESupervisorRequest(xoap::MessageReference message);
+	const std::string&     getTraceLevels(void);
+	const std::string&     setTraceLevels(std::string const& host,
+	                                      std::string const& mode,
+	                                      std::string const& labelsStr,
+	                                      uint32_t           setValueMSB,
+	                                      uint32_t           setValueLSB);
+	const std::string&     setIndividualTraceLevels(std::string const& host,
+	                                                std::string const& mode,
+	                                                std::string const& labelValuesStr);
+	const std::string&     getTraceTriggerStatus(void);
+	const std::string&     setTraceTriggerEnable(std::string const& host,
+	                                             size_t             entriesAfterTrigger);
+	const std::string&     resetTRACE(std::string const& host);
+	const std::string&     enableTRACE(std::string const& host, bool enable);
+	const std::string&     getTraceSnapshot(std::string const& host,
+	                                        std::string const& filterFor,
+	                                        std::string const& filterOut);
 
 	/// Supervisor Property names
 	///	to access, use CorePropertySupervisorBase::getSupervisorProperty and
@@ -126,7 +141,7 @@ class CorePropertySupervisorBase
 		                    &RequireUserLockRequestTypes,
 		                    &AutomatedRequestTypes,
 		                    &AllowNoLoginRequestTypes,
-							&RequireSecurityRequestTypes,
+		                    &RequireSecurityRequestTypes,
 		                    &NoXmlWhiteSpaceRequestTypes,
 		                    &NonXMLRequestTypes})
 		{
@@ -150,7 +165,7 @@ class CorePropertySupervisorBase
 
   private:
 	/// property private members
-	void          					checkSupervisorPropertySetup						(void);
+	void          checkSupervisorPropertySetup(void);
 	volatile bool propertiesAreSetup_;
 
 	/// for public access to property map,..
@@ -164,7 +179,7 @@ class CorePropertySupervisorBase
 		                &RequireUserLockRequestTypes,
 		                &AutomatedRequestTypes,
 		                &AllowNoLoginRequestTypes,
-						&RequireSecurityRequestTypes,
+		                &RequireSecurityRequestTypes,
 		                &NoXmlWhiteSpaceRequestTypes,
 		                &NonXMLRequestTypes})
 		{
@@ -187,36 +202,34 @@ class CorePropertySupervisorBase
 	} propertyStruct_;
 
   public:
-	void 							resetPropertiesAreSetup								(void)
+	void resetPropertiesAreSetup(void)
 	{
 		propertiesAreSetup_ = false;
 	}  // forces reload of properties from configuration
 	ConfigurationTree getSupervisorTreeNode(void);
 
-	void 							loadUserSupervisorProperties						(void);
+	void loadUserSupervisorProperties(void);
 	template<class T>
-	void 							setSupervisorProperty								(
-			const std::string& propertyName, const T& propertyValue)
+	void setSupervisorProperty(const std::string& propertyName, const T& propertyValue)
 	{
 		std::stringstream ss;
 		ss << propertyValue;
 		setSupervisorProperty(propertyName, ss.str());
-	} //end setSupervisorProperty()
-	void 							setSupervisorProperty								(const std::string& propertyName,
+	}  //end setSupervisorProperty()
+	void setSupervisorProperty(const std::string& propertyName,
 	                           const std::string& propertyValue);
 	template<class T>
-	void 							addSupervisorProperty								(
-			const std::string& propertyName, const T& propertyValue)
+	void addSupervisorProperty(const std::string& propertyName, const T& propertyValue)
 	{
 		// prepend new values.. since map/set extraction takes the first value encountered
 		std::stringstream ss;
 		ss << propertyValue << " | " << getSupervisorProperty(propertyName);
 		setSupervisorProperty(propertyName, ss.str());
-	} //end addSupervisorProperty()
-	void 							addSupervisorProperty								(const std::string& propertyName, const std::string& propertyValue);
+	}  //end addSupervisorProperty()
+	void addSupervisorProperty(const std::string& propertyName,
+	                           const std::string& propertyValue);
 	template<class T>
-	T 								getSupervisorProperty								(
-			const std::string& propertyName)
+	T getSupervisorProperty(const std::string& propertyName)
 	{
 		// check if need to setup properties
 		checkSupervisorPropertySetup();
@@ -228,10 +241,9 @@ class CorePropertySupervisorBase
 			__SS_THROW__;
 		}
 		return StringMacros::validateValueForDefaultStringDataType<T>(it->second);
-	} //end getSupervisorProperty()
+	}  //end getSupervisorProperty()
 	template<class T>
-	T 									getSupervisorProperty							(
-			const std::string& propertyName, const T& defaultValue)
+	T getSupervisorProperty(const std::string& propertyName, const T& defaultValue)
 	{
 		// check if need to setup properties
 		checkSupervisorPropertySetup();
@@ -243,36 +255,44 @@ class CorePropertySupervisorBase
 			return defaultValue;
 		}
 		return StringMacros::validateValueForDefaultStringDataType<T>(it->second);
-	} //end getSupervisorProperty()
-	std::string                 		getSupervisorProperty							(const std::string& propertyName);
-	std::string                 		getSupervisorProperty							(const std::string& propertyName, const std::string& defaultValue);
-	WebUsers::permissionLevel_t 		getSupervisorPropertyUserPermissionsThreshold	(const std::string& requestType);
+	}  //end getSupervisorProperty()
+	std::string                 getSupervisorProperty(const std::string& propertyName);
+	std::string                 getSupervisorProperty(const std::string& propertyName,
+	                                                  const std::string& defaultValue);
+	WebUsers::permissionLevel_t getSupervisorPropertyUserPermissionsThreshold(
+	    const std::string& requestType);
 
-	time_t		 						getSupervisorUptime								(void) const { return time(0) - constructedTime_;}
+	time_t getSupervisorUptime(void) const { return time(0) - constructedTime_; }
 
-	bool 								isFirstAppInContext								(void) const { return isFirstAppInContext_;}
-	uint64_t 							getAvailableLogSpaceKB							(void) { getAvailableDiskSpace(); return availableLogSpaceKB_.load(); }
-	uint64_t 							getAvailableDataSpaceKB							(void) { getAvailableDiskSpace(); return availableDataSpaceKB_.load(); }
+	bool     isFirstAppInContext(void) const { return isFirstAppInContext_; }
+	uint64_t getAvailableLogSpaceKB(void)
+	{
+		getAvailableDiskSpace();
+		return availableLogSpaceKB_.load();
+	}
+	uint64_t getAvailableDataSpaceKB(void)
+	{
+		getAvailableDiskSpace();
+		return availableDataSpaceKB_.load();
+	}
 
-	bool 								isReadOnly										(void) const { return readOnly_; }
+	bool isReadOnly(void) const { return readOnly_; }
 
   protected:
-	ITRACEController* 					theTRACEController_; ///<only define for an app that receives a command
+	ITRACEController*
+	    theTRACEController_;  ///<only define for an app that receives a command
   private:
-	std::string 						traceReturnString_, traceReturnHostString_;
-	bool								readOnly_ = false;
-	const time_t						constructedTime_ = time(0);
-	bool								isFirstAppInContext_ = false;
+	std::string  traceReturnString_, traceReturnHostString_;
+	bool         readOnly_            = false;
+	const time_t constructedTime_     = time(0);
+	bool         isFirstAppInContext_ = false;
 
+	void getAvailableDiskSpace(void);
 
-	void								getAvailableDiskSpace							(void);
-
-	std::atomic<uint64_t>				availableLogSpaceKB_{0}, availableDataSpaceKB_{0};
-	time_t								lastDiskSpaceCheckTime_ = 0;
-	const std::string 					OTSDAQ_LOG_DIR, OTSDAQ_DATA_DIR;
+	std::atomic<uint64_t> availableLogSpaceKB_{0}, availableDataSpaceKB_{0};
+	time_t                lastDiskSpaceCheckTime_ = 0;
+	const std::string     OTSDAQ_LOG_DIR, OTSDAQ_DATA_DIR;
 };
-
-// clang-format on
 
 }  // namespace ots
 

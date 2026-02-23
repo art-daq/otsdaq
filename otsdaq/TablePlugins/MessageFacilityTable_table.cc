@@ -7,29 +7,38 @@
 #include <iostream>
 using namespace ots;
 
-// clang-format off
-#define MF_CFG_FILE 						std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/MessageFacilityGen.fcl"
-#define MF_ARTDAQ_INTERFACE_CFG_FILE 		std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/ARTDAQInterfaceMessageFacilityGen.fcl"
-#define QT_CFG_FILE 						std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/QTMessageViewerGen.fcl"
-#define QUIET_CFG_FILE 						std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/QuietForwarderGen.cfg"
-#define USE_WEB_BOOL_FILE                 	std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/UseWebConsole.bool"
-#define USE_QT_BOOL_FILE                  	std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/UseQTViewer.bool"
+#define MF_CFG_FILE                     \
+	std::string(__ENV__("USER_DATA")) + \
+	    "/MessageFacilityConfigurations/MessageFacilityGen.fcl"
+#define MF_ARTDAQ_INTERFACE_CFG_FILE    \
+	std::string(__ENV__("USER_DATA")) + \
+	    "/MessageFacilityConfigurations/ARTDAQInterfaceMessageFacilityGen.fcl"
+#define QT_CFG_FILE                     \
+	std::string(__ENV__("USER_DATA")) + \
+	    "/MessageFacilityConfigurations/QTMessageViewerGen.fcl"
+#define QUIET_CFG_FILE                  \
+	std::string(__ENV__("USER_DATA")) + \
+	    "/MessageFacilityConfigurations/QuietForwarderGen.cfg"
+#define USE_WEB_BOOL_FILE               \
+	std::string(__ENV__("USER_DATA")) + \
+	    "/MessageFacilityConfigurations/UseWebConsole.bool"
+#define USE_QT_BOOL_FILE                                                  \
+	std::string(__ENV__("USER_DATA")) + "/MessageFacilityConfigurations/" \
+	                                    "UseQTViewer.bool"
 
 /// MessageFacilityTable Column names
-#define COL_NAME 							"UID"
-#define COL_STATUS 							TableViewColumnInfo::COL_NAME_STATUS
-#define COL_ENABLE_FWD 						"EnableUDPForwarding"
+#define COL_NAME "UID"
+#define COL_STATUS TableViewColumnInfo::COL_NAME_STATUS
+#define COL_ENABLE_FWD "EnableUDPForwarding"
 
-#define COL_USE_WEB 						"ForwardToWebConsoleGUI"
-#define COL_WEB_IP 							"WebConsoleForwardingIPAddress"
-#define COL_WEB_PORT0 						"WebConsoleForwardingPort0"
-#define COL_WEB_PORT1 						"WebConsoleForwardingPort1"
+#define COL_USE_WEB "ForwardToWebConsoleGUI"
+#define COL_WEB_IP "WebConsoleForwardingIPAddress"
+#define COL_WEB_PORT0 "WebConsoleForwardingPort0"
+#define COL_WEB_PORT1 "WebConsoleForwardingPort1"
 
-#define COL_USE_QT 							"ForwardToQTViewerGUI"
-#define COL_QT_IP 							"QTViewerForwardingIPAddress"
-#define COL_QT_PORT 						"QTViewerForwardingPort"
-
-// clang-format on
+#define COL_USE_QT "ForwardToQTViewerGUI"
+#define COL_QT_IP "QTViewerForwardingIPAddress"
+#define COL_QT_PORT "QTViewerForwardingPort"
 
 MessageFacilityTable::MessageFacilityTable(void) : TableBase("MessageFacilityTable")
 {

@@ -9,7 +9,6 @@
 
 #include "otsdaq/TableCore/TableGroupKey.h"  //for TableGroupKey
 
-// clang-format off
 namespace ots
 {
 class AllSupervisorInfo;
@@ -22,9 +21,9 @@ class HttpXmlDocument;
 class RemoteWebUsers : public SOAPMessenger
 {
   public:
-	RemoteWebUsers(xdaq::Application* application, XDAQ_CONST_CALL xdaq::ApplicationDescriptor* gatewaySupervisorDescriptor);
-
-
+	RemoteWebUsers(
+	    xdaq::Application* application,
+	    XDAQ_CONST_CALL xdaq::ApplicationDescriptor* gatewaySupervisorDescriptor);
 
 	/// const_cast away the const
 	///	so that this line is compatible with slf6 and slf7 versions of xdaq
@@ -36,30 +35,42 @@ class RemoteWebUsers : public SOAPMessenger
 	/// for external supervisors to check with Supervisor for login
 	/// if false, user request handling code should just return.. out is handled on false;
 	/// on true, out is untouched
-	bool 		xmlRequestToGateway(cgicc::Cgicc& cgi, std::ostringstream* out, HttpXmlDocument* xmldoc, const AllSupervisorInfo& allSupervisorInfo, WebUsers::RequestUserInfo& userInfo);
+	bool xmlRequestToGateway(cgicc::Cgicc&              cgi,
+	                         std::ostringstream*        out,
+	                         HttpXmlDocument*           xmldoc,
+	                         const AllSupervisorInfo&   allSupervisorInfo,
+	                         WebUsers::RequestUserInfo& userInfo);
 
-	std::string getActiveUserList		(void);
-	void        sendSystemMessage		(const std::string& toUser, const std::string& message, bool doEmail = false);
-	void        sendSystemMessage		(const std::string& toUser, const std::string& subject, const std::string& message, bool doEmail = false);
-	void        makeSystemLogEntry	(const std::string& entryText);
-	std::pair<std::string /*group name*/, TableGroupKey>
-				getLastTableGroup		(const std::string& actionOfLastGroup, std::string& returnedActionTimeString);  ///< actionOfLastGroup = "Configured" or "Started", for example
-	void		getLastTableGroups		(std::map< std::string /* group type */,
-										std::tuple<std::string /*group name*/, TableGroupKey,
-											std::string /* time string*/>>& theGroups);
+	std::string getActiveUserList(void);
+	void        sendSystemMessage(const std::string& toUser,
+	                              const std::string& message,
+	                              bool               doEmail = false);
+	void        sendSystemMessage(const std::string& toUser,
+	                              const std::string& subject,
+	                              const std::string& message,
+	                              bool               doEmail = false);
+	void        makeSystemLogEntry(const std::string& entryText);
+	std::pair<std::string /*group name*/, TableGroupKey> getLastTableGroup(
+	    const std::string& actionOfLastGroup,
+	    std::string&
+	        returnedActionTimeString);  ///< actionOfLastGroup = "Configured" or "Started", for example
+	void getLastTableGroups(
+	    std::map<std::string /* group type */,
+	             std::tuple<std::string /*group name*/,
+	                        TableGroupKey,
+	                        std::string /* time string*/>>& theGroups);
 
   private:
-
 	///"Active User List" associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::string ActiveUserList_;
 	time_t      ActiveUserLastUpdateTime_;
 	enum
 	{
-		ACTIVE_USERS_UPDATE_THRESHOLD = 2,  ///< seconds, min amount of time between Supervisor requests
+		ACTIVE_USERS_UPDATE_THRESHOLD =
+		    2,  ///< seconds, min amount of time between Supervisor requests
 	};
-
 };
-// clang-format on
+
 }  // namespace ots
 
 #endif

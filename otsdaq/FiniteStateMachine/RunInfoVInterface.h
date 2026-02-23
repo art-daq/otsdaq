@@ -9,8 +9,6 @@
 namespace ots
 {
 
-// clang-format off
-
 /// ~~ RunInfoVInterface expected flow (managed by GatewaySupervisor) ~~:
 ///
 ///		Configure transtion:
@@ -47,57 +45,92 @@ class RunInfoVInterface  ///< : public Configurable
 		START
 	};
 
-	RunInfoVInterface							(const std::string& runInfoPluginClassName,
-												const std::string& activeStateMachineName)
-		:
-		mfSubject_(runInfoPluginClassName),
-		activeStateMachineName_(activeStateMachineName)
-	{;}
-	virtual ~RunInfoVInterface						(void) { ; }
-
-
+	RunInfoVInterface(const std::string& runInfoPluginClassName,
+	                  const std::string& activeStateMachineName)
+	    : mfSubject_(runInfoPluginClassName)
+	    , activeStateMachineName_(activeStateMachineName)
+	{
+		;
+	}
+	virtual ~RunInfoVInterface(void) { ; }
 
 	/// Set functions ----
 
-	virtual unsigned int 	insertConfigureCondition	(const std::string&  /*blob*/,
-														 const std::string&  /*comment*/) 					{ __SS__ << "insertConfigureCondition() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
-	virtual unsigned int 	claimNextRunNumber			(unsigned int        /* configureConditionID */,
-														 const std::string&  /* comment */) 				{ __SS__ << "claimNextRunNumber() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
-	virtual unsigned int 	insertRunCondition			(unsigned int        /* runNumber */,
-														 const std::map<std::string /* subsystem */,
-															std::map<std::string /*type/name/field */,
-																std::string  /* value */>>&
-																			 /* runConditionMap */,
-														 unsigned int        /* configureConditionID */,
-														 const std::string&  /* comment */) 				{ __SS__ << "insertRunCondition() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
+	virtual unsigned int insertConfigureCondition(const std::string& /*blob*/,
+	                                              const std::string& /*comment*/)
+	{
+		__SS__ << "insertConfigureCondition() Not implemented by the Run Info Plugin ("
+		       << mfSubject_ << ")!!";
+		__SS_THROW__;
+	};
+	virtual unsigned int claimNextRunNumber(unsigned int /* configureConditionID */,
+	                                        const std::string& /* comment */)
+	{
+		__SS__ << "claimNextRunNumber() Not implemented by the Run Info Plugin ("
+		       << mfSubject_ << ")!!";
+		__SS_THROW__;
+	};
+	virtual unsigned int insertRunCondition(
+	    unsigned int /* runNumber */,
+	    const std::map<
+	        std::string /* subsystem */,
+	        std::map<std::string /*type/name/field */, std::string /* value */>>&
+	    /* runConditionMap */,
+	    unsigned int /* configureConditionID */,
+	    const std::string& /* comment */)
+	{
+		__SS__ << "insertRunCondition() Not implemented by the Run Info Plugin ("
+		       << mfSubject_ << ")!!";
+		__SS_THROW__;
+	};
 
-	virtual void 			updateRunInfo				(unsigned int        /* runConditionID */,
-														 RunTransitionType   /* runTransitionType */,
-														 const std::string&  /* comment */) 				{ __SS__ << "updateRunInfo() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
-
-
+	virtual void updateRunInfo(unsigned int /* runConditionID */,
+	                           RunTransitionType /* runTransitionType */,
+	                           const std::string& /* comment */)
+	{
+		__SS__ << "updateRunInfo() Not implemented by the Run Info Plugin (" << mfSubject_
+		       << ")!!";
+		__SS_THROW__;
+	};
 
 	/// Get functions ----
 
-	const std::string& 		getActiveStateMachineName	(void) const { return activeStateMachineName_; }
+	const std::string& getActiveStateMachineName(void) const
+	{
+		return activeStateMachineName_;
+	}
 
 	//start queryFilter with 'AND' to fiter more the selection
-	virtual std::vector<std::vector<std::string>>
-							getRunRecords				(unsigned int        /* startTime */,
-														 unsigned int        /* endTime */,
-														 const std::string&  queryFilter = "") 				{ __SS__ << "getRunRecords() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!" << (queryFilter == ""/* use variable */?"":""); __SS_THROW__;};
+	virtual std::vector<std::vector<std::string>> getRunRecords(
+	    unsigned int /* startTime */,
+	    unsigned int /* endTime */,
+	    const std::string& queryFilter = "")
+	{
+		__SS__ << "getRunRecords() Not implemented by the Run Info Plugin (" << mfSubject_
+		       << ")!!" << (queryFilter == "" /* use variable */ ? "" : "");
+		__SS_THROW__;
+	};
 
-	virtual std::vector<std::vector<std::string>>
-							getRunConditionByID			(uint64_t 			 /* conditionID*/) 				{ __SS__ << "getRunConditionByID() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
+	virtual std::vector<std::vector<std::string>> getRunConditionByID(
+	    uint64_t /* conditionID*/)
+	{
+		__SS__ << "getRunConditionByID() Not implemented by the Run Info Plugin ("
+		       << mfSubject_ << ")!!";
+		__SS_THROW__;
+	};
 
-	virtual std::vector<std::vector<std::string>>
-							getRunConfigSubsystemInfo	(uint64_t 			 /* configID */) 				{ __SS__ << "getRunConfigSubsystemInfo() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
+	virtual std::vector<std::vector<std::string>> getRunConfigSubsystemInfo(
+	    uint64_t /* configID */)
+	{
+		__SS__ << "getRunConfigSubsystemInfo() Not implemented by the Run Info Plugin ("
+		       << mfSubject_ << ")!!";
+		__SS_THROW__;
+	};
 
   protected:
-	const std::string 		mfSubject_; ///< Unique identifier for decorating trace printouts
-	const std::string 		activeStateMachineName_;
+	const std::string mfSubject_;  ///< Unique identifier for decorating trace printouts
+	const std::string activeStateMachineName_;
 };
-// clang-format on
 
 }  // namespace ots
 

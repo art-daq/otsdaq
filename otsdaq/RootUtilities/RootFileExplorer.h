@@ -73,72 +73,70 @@ using namespace std;
 
 XERCES_CPP_NAMESPACE_USE
 
-// clang-format off
 class RootFileExplorer
 {
- public:
+  public:
+	RootFileExplorer(string fSystemPath,
+	                 string fRootPath,
+	                 string fFoldersPath,
+	                 string fHistName,
+	                 string fRFoldersPath,
+	                 string fFileName,
+	                 TFile* rootFile = NULL);
+	~RootFileExplorer(void) { ; }
+	xercesc::DOMDocument* initialize(bool liveDQMFlag);
+	void                  makeDirectoryBinaryTree(TDirectory*          currentDirectory,
+	                                              int                  indent,
+	                                              xercesc::DOMElement* anchorNode);
+	void                  makeLiveDQMBinaryTree(TDirectory*          currentDirectory,
+	                                            int                  indent,
+	                                            std::string          subDirName,
+	                                            xercesc::DOMElement* anchorNode);
+	xercesc::DOMElement*  populateBinaryTreeNode(
+	     xercesc::DOMElement* anchorNode,
+	     std::string          name,
+	     ///<int                   level           ,
+	     bool isLeaf);
+	void initializeXMLWriter(void);
 
-                         RootFileExplorer        (string                fSystemPath     ,
-                                                  string                fRootPath       ,
-                                                  string                fFoldersPath    ,
-                                                  string                fHistName       ,
-                                                  string                fRFoldersPath   ,
-                                                  string                fFileName       ,
-                                                  TFile               * rootFile = NULL  )  ;
-                        ~RootFileExplorer        (void                                   ) {;}
-  xercesc::DOMDocument * initialize              (bool                  liveDQMFlag      )  ;
-  void                   makeDirectoryBinaryTree (TDirectory          * currentDirectory,
-                                                  int                   indent          ,
-                                                  xercesc::DOMElement * anchorNode       )  ;
-  void                   makeLiveDQMBinaryTree   (TDirectory          * currentDirectory,
-                                                  int                   indent          ,
-                                                  std::string           subDirName      ,
-                                                  xercesc::DOMElement * anchorNode       )  ;
-  xercesc::DOMElement  * populateBinaryTreeNode  (xercesc::DOMElement * anchorNode      ,
-                                                  std::string           name            ,
-                                                  ///<int                   level           ,
-                                                  bool                  isLeaf           )  ;
-  void                   initializeXMLWriter     (void                                   )  ;
+  private:
+	std::string blanks(int level);
+	void        computeRFoldersPath(void);
+	std::string computeHierarchyPaths(void);
+	void        dumpHierarchyPaths(std::string what);
+	void        shrinkHierarchyPaths(int number);
 
- private:
+	bool   debug_;
+	bool   liveDQMFlag_;
+	string fSystemPath_;
+	string fRootPath_;
+	string fFoldersPath_;
+	string fFileName_;
+	string fRFoldersPath_;
+	string fHistName_;
+	string fHistTitle_;
+	string rootDirectoryName_;
+	//std::string::size_type                         LDQM_pos_         ;
+	xercesc::DOMImplementation*                 theImplementation_;
+	xercesc::DOMDocument*                       theDocument_;
+	xercesc::DOMElement*                        rootElement_;
+	xercesc::DOMElement*                        anchorNodeLast_;
+	std::map<std::string, xercesc::DOMElement*> theNodes_;
+	std::map<std::string, xercesc::DOMElement*> theNodesB_;
+	std::map<std::string, std::string>          theNodeName_;
+	std::map<std::string, std::string>          theNodeNameB_;
+	std::vector<std::string>                    hierarchyPaths_;
+	std::string                                 previousAncestor_;
+	std::map<bool, std::string>                 isALeaf_;
+	const std::string                           rootTagName_;
+	TFile*                                      rootFile_;
+	int                                         level_;
+	int                                         counter_;
+	stringstream                                ss_;
+	xercesc::DOMLSSerializer*                   theSerializer_;
+	xercesc::XMLFormatTarget*                   myFormTarget_;
+	xercesc::DOMLSOutput*                       theOutput_;
+	//  HttpXmlDocument                                xmlOut_           ;
+};
 
-  std::string            blanks                  (int                    level           )  ;
-  void                   computeRFoldersPath     (void                                   )  ;
-  std::string            computeHierarchyPaths   (void                                   )  ;
-  void                   dumpHierarchyPaths      (std::string            what            )  ;
-  void                   shrinkHierarchyPaths    (int                    number          )  ;
-
-  bool                                           debug_            ;
-  bool                                           liveDQMFlag_      ;
-  string                                         fSystemPath_      ;
-  string                                         fRootPath_        ;
-  string                                         fFoldersPath_     ;
-  string                                         fFileName_        ;
-  string                                         fRFoldersPath_    ;
-  string                                         fHistName_        ;
-  string                                         fHistTitle_       ;
-  string                                         rootDirectoryName_;
-  //std::string::size_type                         LDQM_pos_         ;
-  xercesc::DOMImplementation                   * theImplementation_;
-  xercesc::DOMDocument                         * theDocument_      ;
-  xercesc::DOMElement                          * rootElement_      ;
-  xercesc::DOMElement                          * anchorNodeLast_   ;
-  std::map<std::string, xercesc::DOMElement *>   theNodes_         ;
-  std::map<std::string, xercesc::DOMElement *>   theNodesB_        ;
-  std::map<std::string, std::string>             theNodeName_      ;
-  std::map<std::string, std::string>             theNodeNameB_     ;
-  std::vector<std::string>                       hierarchyPaths_   ;
-  std::string                                    previousAncestor_ ;
-  std::map<bool,std::string>                     isALeaf_          ;
-  const std::string                              rootTagName_      ;
-  TFile                                        * rootFile_         ;
-  int                                            level_            ;
-  int                                            counter_          ;
-  stringstream                                   ss_               ;
-  xercesc::DOMLSSerializer                     * theSerializer_    ;
-  xercesc::XMLFormatTarget                     * myFormTarget_     ;
-  xercesc::DOMLSOutput                         * theOutput_        ;
-//  HttpXmlDocument                                xmlOut_           ;
-} ;
-// clang-format on
 #endif

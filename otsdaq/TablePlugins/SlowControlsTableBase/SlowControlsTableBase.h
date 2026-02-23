@@ -13,8 +13,9 @@
 
 namespace ots
 {
-// clang-format off
-class SlowControlsTableBase : virtual public TableBase ///<virtual so future plugins can inherit from multiple table base classes
+
+class SlowControlsTableBase
+    : virtual public TableBase  ///<virtual so future plugins can inherit from multiple table base classes
 {
   public:
 	SlowControlsTableBase(void);
@@ -23,8 +24,10 @@ class SlowControlsTableBase : virtual public TableBase ///<virtual so future plu
 	virtual ~SlowControlsTableBase(void);
 
 	/// Getters
-	virtual bool	slowControlsChannelListHasChanged 	(void) const;
-	virtual void	getSlowControlsChannelList			(std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>& channelList) const;
+	virtual bool slowControlsChannelListHasChanged(void) const;
+	virtual void getSlowControlsChannelList(
+	    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>&
+	        channelList) const;
 
 	///boardReader{
 	///	build vector .. based on table 1,2,3,4,5..
@@ -38,48 +41,52 @@ class SlowControlsTableBase : virtual public TableBase ///<virtual so future plu
 	///use table name to have different file names! (instead of DEFINES like in DTC)
 
 	///is channel binary or not?.. then can handle all the same
-	virtual bool 			outputEpicsPVFile			(ConfigurationManager* configManager, std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList = 0) const;
+	virtual bool outputEpicsPVFile(
+	    ConfigurationManager* configManager,
+	    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+	        channelList = 0) const;
 
-	virtual unsigned int	slowControlsHandlerConfig	(
-															  std::stringstream& out
-															, ConfigurationManager* configManager
-															, std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/
-														) const = 0;
+	virtual unsigned int slowControlsHandlerConfig(
+	    std::stringstream&    out,
+	    ConfigurationManager* configManager,
+	    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+	        channelList /*= 0*/
+	) const = 0;
 
-	virtual unsigned int	slowControlsHandler			(
-															  std::stringstream& out
-															, std::string& tabStr
-															, std::string& commentStr
-															, std::string& subsystem
-															, std::string& location
-															, ConfigurationTree slowControlsLink
-															, std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>* channelList /*= 0*/
-														) const;
-	virtual std::string		setFilePath					()  const = 0;
+	virtual unsigned int slowControlsHandler(
+	    std::stringstream& out,
+	    std::string&       tabStr,
+	    std::string&       commentStr,
+	    std::string&       subsystem,
+	    std::string&       location,
+	    ConfigurationTree  slowControlsLink,
+	    std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
+	        channelList /*= 0*/
+	) const;
+	virtual std::string setFilePath() const = 0;
 
 	/// Column names
 	struct ColChannel
 	{
-		std::string const colMetricName_ 			= "MetricName";
-		std::string const colStatus_ 				= TableViewColumnInfo::COL_NAME_STATUS;
-		std::string const colUnits_ 				= "Units";
-		std::string const colChannelDataType_		= "ChannelDataType";
-		std::string const colLowLowThreshold_		= "LowLowThreshold";
-		std::string const colLowThreshold_ 			= "LowThreshold";
-		std::string const colHighThreshold_			= "HighThreshold";
-		std::string const colHighHighThreshold_ 	= "HighHighThreshold";
+		std::string const colMetricName_        = "MetricName";
+		std::string const colStatus_            = TableViewColumnInfo::COL_NAME_STATUS;
+		std::string const colUnits_             = "Units";
+		std::string const colChannelDataType_   = "ChannelDataType";
+		std::string const colLowLowThreshold_   = "LowLowThreshold";
+		std::string const colLowThreshold_      = "LowThreshold";
+		std::string const colHighThreshold_     = "HighThreshold";
+		std::string const colHighHighThreshold_ = "HighHighThreshold";
 	} channelColNames_;
 
-	ConfigurationManager* 	lastConfigManager_		= nullptr;
+	ConfigurationManager* lastConfigManager_ = nullptr;
 
-private:
-
-	#define EPICS_CONFIG_PATH (std::string(__ENV__("USER_DATA")) + "/" + "EPICSConfigurations/")
-	#define EPICS_DIRTY_FILE_PATH \
-		std::string( \
-			getenv("OTSDAQ_EPICS_DATA")? \
-				(std::string(getenv("OTSDAQ_EPICS_DATA")) + "/" + "dirtyFlag.txt"): \
-				(EPICS_CONFIG_PATH + "/dirtyFlag.txt")  )
+  private:
+#define EPICS_CONFIG_PATH \
+	(std::string(__ENV__("USER_DATA")) + "/" + "EPICSConfigurations/")
+#define EPICS_DIRTY_FILE_PATH                                                            \
+	std::string(getenv("OTSDAQ_EPICS_DATA")                                              \
+	                ? (std::string(getenv("OTSDAQ_EPICS_DATA")) + "/" + "dirtyFlag.txt") \
+	                : (EPICS_CONFIG_PATH + "/dirtyFlag.txt"))
 };
 }  // namespace ots
 

@@ -14,84 +14,96 @@
 
 using namespace ots;
 
-// clang-format off
-#define WEB_LOGIN_BKUP_DB_PATH 				"bkup/"
+#define WEB_LOGIN_BKUP_DB_PATH "bkup/"
 
-#define SECURITY_FILE_NAME 					std::string(__ENV__("SERVICE_DATA_PATH")) + "/OtsWizardData/security.dat"
+#define SECURITY_FILE_NAME \
+	std::string(__ENV__("SERVICE_DATA_PATH")) + "/OtsWizardData/security.dat"
 
-#define USERS_ACTIVE_SESSIONS_FILE 			USERS_DB_PATH + "/activeSessions.sv"
+#define USERS_ACTIVE_SESSIONS_FILE USERS_DB_PATH + "/activeSessions.sv"
 
-#define HASHES_DB_FILE 						HASHES_DB_PATH + "/hashes.xml"
-#define USERS_DB_FILE 						USERS_DB_PATH + "/users.xml"
-#define USERS_GLOBAL_HISTORY_FILE 			"__global"
-#define USERS_LOGIN_HISTORY_FILETYPE 		"hist"
-#define USERS_PREFERENCES_FILETYPE 			"pref"
-#define SYSTEM_PREFERENCES_PREFIX 			"system.preset"
-#define USER_WITH_LOCK_FILE 				WEB_LOGIN_DB_PATH + "/user_with_lock.dat"
-#define IP_BLACKLIST_FILE 					WEB_LOGIN_DB_PATH + "/ip_generated_blacklist.dat"
-#define IP_REJECT_FILE 						WEB_LOGIN_DB_PATH + "/ip_reject.dat"
-#define IP_ACCEPT_FILE 						WEB_LOGIN_DB_PATH + "/ip_accept.dat"
+#define HASHES_DB_FILE HASHES_DB_PATH + "/hashes.xml"
+#define USERS_DB_FILE USERS_DB_PATH + "/users.xml"
+#define USERS_GLOBAL_HISTORY_FILE "__global"
+#define USERS_LOGIN_HISTORY_FILETYPE "hist"
+#define USERS_PREFERENCES_FILETYPE "pref"
+#define SYSTEM_PREFERENCES_PREFIX "system.preset"
+#define USER_WITH_LOCK_FILE WEB_LOGIN_DB_PATH + "/user_with_lock.dat"
+#define IP_BLACKLIST_FILE WEB_LOGIN_DB_PATH + "/ip_generated_blacklist.dat"
+#define IP_REJECT_FILE WEB_LOGIN_DB_PATH + "/ip_reject.dat"
+#define IP_ACCEPT_FILE WEB_LOGIN_DB_PATH + "/ip_accept.dat"
 
-#define SILENCE_ALL_TOOLTIPS_FILENAME       "silenceTooltips"
+#define SILENCE_ALL_TOOLTIPS_FILENAME "silenceTooltips"
 
-#define HASHES_DB_GLOBAL_STRING 			"hashData"
-#define HASHES_DB_ENTRY_STRING 				"hashEntry"
-#define USERS_DB_GLOBAL_STRING 				"userData"
-#define USERS_DB_ENTRY_STRING 				"userEntry"
-#define USERS_DB_NEXT_UID_STRING 			"nextUserId"
+#define HASHES_DB_GLOBAL_STRING "hashData"
+#define HASHES_DB_ENTRY_STRING "hashEntry"
+#define USERS_DB_GLOBAL_STRING "userData"
+#define USERS_DB_ENTRY_STRING "userEntry"
+#define USERS_DB_NEXT_UID_STRING "nextUserId"
 
 /// defines for user preferences
-#define PREF_XML_BGCOLOR_FIELD 				"pref_bgcolor"    	// -background color
-#define PREF_XML_DBCOLOR_FIELD 				"pref_dbcolor"    	// -dashboard color
-#define PREF_XML_WINCOLOR_FIELD 			"pref_wincolor"  	// -window color
-#define PREF_XML_LAYOUT_FIELD 				"pref_layout"  		// -3 defaults window layouts(and current)
-#define PREF_XML_SYSLAYOUT_FIELD 			"pref_syslayout"  	// -2 defaults window layouts
-#define PREF_XML_ALIAS_LAYOUT_FIELD			"pref_aliaslayout"
-#define PREF_XML_SYSALIAS_LAYOUT_FIELD		"pref_sysalias_layout"
-#define PREF_XML_PERMISSIONS_FIELD 			"desktop_user_permissions"  // 0-255 permissions value (255 is admin super user)
-#define PREF_XML_USERLOCK_FIELD 			"username_with_lock"        // user with lock (to lockout others)
-#define PREF_XML_USERNAME_FIELD 			"pref_username"  	// user with lock (to lockout others)
-#define PREF_XML_OTS_OWNER_FIELD 			"ots_owner"  		// e.g. the experiment name
+#define PREF_XML_BGCOLOR_FIELD "pref_bgcolor"    // -background color
+#define PREF_XML_DBCOLOR_FIELD "pref_dbcolor"    // -dashboard color
+#define PREF_XML_WINCOLOR_FIELD "pref_wincolor"  // -window color
+#define PREF_XML_LAYOUT_FIELD "pref_layout"  // -3 defaults window layouts(and current)
+#define PREF_XML_SYSLAYOUT_FIELD "pref_syslayout"  // -2 defaults window layouts
+#define PREF_XML_ALIAS_LAYOUT_FIELD "pref_aliaslayout"
+#define PREF_XML_SYSALIAS_LAYOUT_FIELD "pref_sysalias_layout"
+#define PREF_XML_PERMISSIONS_FIELD \
+	"desktop_user_permissions"  // 0-255 permissions value (255 is admin super user)
+#define PREF_XML_USERLOCK_FIELD \
+	"username_with_lock"                         // user with lock (to lockout others)
+#define PREF_XML_USERNAME_FIELD "pref_username"  // user with lock (to lockout others)
+#define PREF_XML_OTS_OWNER_FIELD "ots_owner"     // e.g. the experiment name
 
-#define PREF_XML_BGCOLOR_DEFAULT 			"rgb(0,76,151)"     // -background color
-#define PREF_XML_DBCOLOR_DEFAULT 			"rgb(0,40,85)"      // -dashboard color
-#define PREF_XML_WINCOLOR_DEFAULT 			"rgba(196,229,255,0.9)"  	// -window color
-#define PREF_XML_LAYOUT_DEFAULT 			"0;0;0;0"  			// 3 default window layouts(and current)
-#define PREF_XML_SYSLAYOUT_DEFAULT 			"0;0"   			// 2 system default window layouts
+#define PREF_XML_BGCOLOR_DEFAULT "rgb(0,76,151)"           // -background color
+#define PREF_XML_DBCOLOR_DEFAULT "rgb(0,40,85)"            // -dashboard color
+#define PREF_XML_WINCOLOR_DEFAULT "rgba(196,229,255,0.9)"  // -window color
+#define PREF_XML_LAYOUT_DEFAULT "0;0;0;0"  // 3 default window layouts(and current)
+#define PREF_XML_SYSLAYOUT_DEFAULT "0;0"   // 2 system default window layouts
 
-#define PREF_XML_ACCOUNTS_FIELD 			"users_accounts"  	// user accounts field for super users
-#define PREF_XML_LOGIN_HISTORY_FIELD 		"login_entry"  		// login history field for user login history data
+#define PREF_XML_ACCOUNTS_FIELD "users_accounts"  // user accounts field for super users
+#define PREF_XML_LOGIN_HISTORY_FIELD \
+	"login_entry"  // login history field for user login history data
 
-const std::string WebUsers::OTS_OWNER					  	=	getenv("OTS_OWNER")?getenv("OTS_OWNER"):"";
-const std::string WebUsers::DEFAULT_ADMIN_USERNAME        	= "admin";
-const std::string WebUsers::DEFAULT_ADMIN_DISPLAY_NAME    	= "Administrator";
-const std::string WebUsers::DEFAULT_ADMIN_EMAIL           	= "root@otsdaq.fnal.gov";
-const std::string WebUsers::DEFAULT_ITERATOR_USERNAME     	= "iterator";
-const std::string WebUsers::DEFAULT_STATECHANGER_USERNAME 	= "statechanger";
-const std::string WebUsers::DEFAULT_USER_GROUP            	= "allUsers";
+const std::string WebUsers::OTS_OWNER = getenv("OTS_OWNER") ? getenv("OTS_OWNER") : "";
+const std::string WebUsers::DEFAULT_ADMIN_USERNAME        = "admin";
+const std::string WebUsers::DEFAULT_ADMIN_DISPLAY_NAME    = "Administrator";
+const std::string WebUsers::DEFAULT_ADMIN_EMAIL           = "root@otsdaq.fnal.gov";
+const std::string WebUsers::DEFAULT_ITERATOR_USERNAME     = "iterator";
+const std::string WebUsers::DEFAULT_STATECHANGER_USERNAME = "statechanger";
+const std::string WebUsers::DEFAULT_USER_GROUP            = "allUsers";
 
-const std::string WebUsers::REQ_NO_LOGIN_RESPONSE      		= "NoLogin";
-const std::string WebUsers::REQ_NO_PERMISSION_RESPONSE 		= "NoPermission";
-const std::string WebUsers::REQ_USER_LOCKOUT_RESPONSE  		= "UserLockout";
-const std::string WebUsers::REQ_LOCK_REQUIRED_RESPONSE 		= "LockRequired";
-const std::string WebUsers::REQ_ALLOW_NO_USER          		= "AllowNoUser";
+const std::string WebUsers::REQ_NO_LOGIN_RESPONSE      = "NoLogin";
+const std::string WebUsers::REQ_NO_PERMISSION_RESPONSE = "NoPermission";
+const std::string WebUsers::REQ_USER_LOCKOUT_RESPONSE  = "UserLockout";
+const std::string WebUsers::REQ_LOCK_REQUIRED_RESPONSE = "LockRequired";
+const std::string WebUsers::REQ_ALLOW_NO_USER          = "AllowNoUser";
 
-const std::string WebUsers::SECURITY_TYPE_NONE          	= "NoSecurity";
-const std::string WebUsers::SECURITY_TYPE_DIGEST_ACCESS 	= "DigestAccessAuthentication";
-const std::string WebUsers::SECURITY_TYPE_DEFAULT 			= WebUsers::SECURITY_TYPE_NONE; // default to NO SECURITY
+const std::string WebUsers::SECURITY_TYPE_NONE          = "NoSecurity";
+const std::string WebUsers::SECURITY_TYPE_DIGEST_ACCESS = "DigestAccessAuthentication";
+const std::string WebUsers::SECURITY_TYPE_DEFAULT =
+    WebUsers::SECURITY_TYPE_NONE;  // default to NO SECURITY
 
-const std::vector<std::string> WebUsers::HashesDatabaseEntryFields_ = {"hash","lastAccessTime"};
-const std::vector<std::string> WebUsers::UsersDatabaseEntryFields_ = {"username","displayName","salt",
-		"uid","permissions","lastLoginAttemptTime","accountCreatedTime",
-		"loginFailureCount","lastModifiedTime","lastModifierUsername","useremail"};
+const std::vector<std::string> WebUsers::HashesDatabaseEntryFields_ = {"hash",
+                                                                       "lastAccessTime"};
+const std::vector<std::string> WebUsers::UsersDatabaseEntryFields_  = {
+    "username",
+    "displayName",
+    "salt",
+    "uid",
+    "permissions",
+    "lastLoginAttemptTime",
+    "accountCreatedTime",
+    "loginFailureCount",
+    "lastModifiedTime",
+    "lastModifierUsername",
+    "useremail"};
 
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "WebUsers"
 
-std::atomic<bool>	WebUsers::remoteLoginVerificationEnabled_ 	= false;
-volatile bool		WebUsers::CareAboutCookieCodes_ 			= true;
-
-// clang-format on
+std::atomic<bool> WebUsers::remoteLoginVerificationEnabled_ = false;
+volatile bool     WebUsers::CareAboutCookieCodes_           = true;
 
 WebUsers::WebUsers()
 {

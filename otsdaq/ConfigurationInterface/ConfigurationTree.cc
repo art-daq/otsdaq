@@ -2146,7 +2146,6 @@ void ConfigurationTree::recursiveGetCommonFields(
 	//	" + " << inFirstRecord <<__E__;
 	--depth;
 
-	// clang-format off
 	//	=====================
 	//	Start recursiveGetCommonFields()
 	//		--depth;
@@ -2165,7 +2164,6 @@ void ConfigurationTree::recursiveGetCommonFields(
 	//			(avoid endless loops through tree)
 	//			recursiveGetCommonFields()
 	//	=====================
-	// clang-format on
 
 	bool         found;                         // used in loops
 	auto         tableName = getTableName();    // all fields will share this table name

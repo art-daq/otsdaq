@@ -9,8 +9,6 @@
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 
-// clang-format off
-
 namespace ots
 {
 class GatewaySupervisor;
@@ -26,22 +24,33 @@ class Iterator
 
 	static const std::string RESERVED_GEN_PLAN_NAME;
 
-	void 								playIterationPlan			(HttpXmlDocument& xmldoc, const std::string& planName);
-	void 								playGeneratedIterationPlan	(HttpXmlDocument& xmldoc, const std::string& parametersCSV);
-	void 								playGeneratedIterationPlan	(HttpXmlDocument& xmldoc, const std::string& fsmName, const std::string& configAlias, uint64_t durationSeconds = -1, unsigned int numberOfRuns = 1, bool keepConfiguration = false, const std::string& logEntry = "");
-	void 								pauseIterationPlan			(HttpXmlDocument& xmldoc);
-	void 								haltIterationPlan			(HttpXmlDocument& xmldoc);
-	void 								getIterationPlanStatus		(HttpXmlDocument& xmldoc);
+	void playIterationPlan(HttpXmlDocument& xmldoc, const std::string& planName);
+	void playGeneratedIterationPlan(HttpXmlDocument&   xmldoc,
+	                                const std::string& parametersCSV);
+	void playGeneratedIterationPlan(HttpXmlDocument&   xmldoc,
+	                                const std::string& fsmName,
+	                                const std::string& configAlias,
+	                                uint64_t           durationSeconds   = -1,
+	                                unsigned int       numberOfRuns      = 1,
+	                                bool               keepConfiguration = false,
+	                                const std::string& logEntry          = "");
+	void pauseIterationPlan(HttpXmlDocument& xmldoc);
+	void haltIterationPlan(HttpXmlDocument& xmldoc);
+	void getIterationPlanStatus(HttpXmlDocument& xmldoc);
 
+	bool handleCommandRequest(HttpXmlDocument&   xmldoc,
+	                          const std::string& command,
+	                          const std::string& parameter);
 
-	bool 								handleCommandRequest		(HttpXmlDocument& xmldoc, const std::string& command, const std::string& parameter);
+	bool isIteratorBusy(void) const { return iteratorBusy_; }
 
-	bool								isIteratorBusy				(void) const { return iteratorBusy_; }
   private:
-
-	void 								playIterationPlanPrivate	(HttpXmlDocument& xmldoc, const std::string& planName);
-	static std::vector<
-				IterateTable::Command> 	generateIterationPlan		(const std::string& fsmName, const std::string& configAlias, uint64_t durationSeconds = -1, unsigned int numberOfRuns = 1);
+	void playIterationPlanPrivate(HttpXmlDocument& xmldoc, const std::string& planName);
+	static std::vector<IterateTable::Command> generateIterationPlan(
+	    const std::string& fsmName,
+	    const std::string& configAlias,
+	    uint64_t           durationSeconds = -1,
+	    unsigned int       numberOfRuns    = 1);
 
 	/// begin declaration of iterator workloop members
 	struct IteratorWorkLoopStruct
@@ -80,11 +89,10 @@ class Iterator
 		std::string  fsmName_, fsmRunAlias_;
 		unsigned int fsmNextRunNumber_;
 		bool         runIsDone_;
-		bool 		 waitIsDone_;
+		bool         waitIsDone_;
 
 		std::vector<std::string> fsmCommandParameters_;
 		std::vector<bool>        targetsDone_;
-
 
 	};  // end declaration of iterator workloop members
 
@@ -92,10 +100,12 @@ class Iterator
 	static void startCommand(IteratorWorkLoopStruct* iteratorStruct);
 	static bool checkCommand(IteratorWorkLoopStruct* iteratorStruct);
 
-	static void startCommandChooseFSM(IteratorWorkLoopStruct* iteratorStruct, const std::string& fsmName);
+	static void startCommandChooseFSM(IteratorWorkLoopStruct* iteratorStruct,
+	                                  const std::string&      fsmName);
 
 	static void startCommandConfigureActive(IteratorWorkLoopStruct* iteratorStruct);
-	static void startCommandConfigureAlias(IteratorWorkLoopStruct* iteratorStruct, const std::string& systemAlias);
+	static void startCommandConfigureAlias(IteratorWorkLoopStruct* iteratorStruct,
+	                                       const std::string&      systemAlias);
 	static void startCommandConfigureGroup(IteratorWorkLoopStruct* iteratorStruct);
 	static bool checkCommandConfigure(IteratorWorkLoopStruct* iteratorStruct);
 
@@ -113,29 +123,32 @@ class Iterator
 	static void startCommandWait(IteratorWorkLoopStruct* iteratorStruct);
 	static bool checkCommandWait(IteratorWorkLoopStruct* iteratorStruct);
 
-	static void startCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct, const std::string& transitionCommand);
-	static bool checkCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct, const std::string& finalState);
+	static void startCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
+	                                      const std::string&      transitionCommand);
+	static bool checkCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
+	                                      const std::string&      finalState);
 
 	static bool haltIterator(Iterator*               iterator,
 	                         IteratorWorkLoopStruct* iteratorStruct = 0,
-							 bool 					  doNotHaltFSM = false);
+	                         bool                    doNotHaltFSM   = false);
 
-	std::mutex    accessMutex_;
-	volatile bool workloopRunning_;
-	volatile bool activePlanIsRunning_;
+	std::mutex        accessMutex_;
+	volatile bool     workloopRunning_;
+	volatile bool     activePlanIsRunning_;
 	std::atomic<bool> iteratorBusy_;
-	volatile bool commandPlay_, commandPause_,
+	volatile bool     commandPlay_, commandPause_,
 	    commandHalt_;  ///< commands are set by
 	                   ///< supervisor thread, and
 	                   ///< cleared by iterator thread
-	std::string               activePlanName_, lastStartedPlanName_, lastFinishedPlanName_;
-	volatile unsigned int     activeCommandIndex_, activeCommandIteration_, activeNumberOfCommands_;
-	std::string				  activeCommandType_;
+	std::string           activePlanName_, lastStartedPlanName_, lastFinishedPlanName_;
+	volatile unsigned int activeCommandIndex_, activeCommandIteration_,
+	    activeNumberOfCommands_;
+	std::string activeCommandType_;
 
-	volatile uint64_t 		  genPlanDurationSeconds_ = -1;
-	volatile unsigned int 	  genPlanNumberOfRuns_ = 1;
-	std::string 	  		  genFsmName_, genConfigAlias_, genLogEntry_;
-	bool					  genKeepConfiguration_ = false;
+	volatile uint64_t     genPlanDurationSeconds_ = -1;
+	volatile unsigned int genPlanNumberOfRuns_    = 1;
+	std::string           genFsmName_, genConfigAlias_, genLogEntry_;
+	bool                  genKeepConfiguration_ = false;
 
 	std::vector<unsigned int> depthIterationStack_;
 	volatile time_t           activeCommandStartTime_;
@@ -145,13 +158,13 @@ class Iterator
 	GatewaySupervisor* theSupervisor_;
 
 	template<class T>  ///< defined in included .icc source
-	static void helpCommandModifyActive(IteratorWorkLoopStruct* iteratorStruct, const T& setValue, bool doTrackGroupChanges);
+	static void helpCommandModifyActive(IteratorWorkLoopStruct* iteratorStruct,
+	                                    const T&                setValue,
+	                                    bool                    doTrackGroupChanges);
 };
 
 #include "otsdaq/GatewaySupervisor/Iterator.icc"  //for template definitions
 
 }  // namespace ots
-
-// clang-format on
 
 #endif

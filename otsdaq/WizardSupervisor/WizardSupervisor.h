@@ -30,7 +30,7 @@
 
 namespace ots
 {
-// clang-format off
+
 class HttpXmlDocument;
 class ITRACEController;
 
@@ -51,43 +51,44 @@ class WizardSupervisor : public xdaq::Application, public SOAPMessenger
 	WizardSupervisor(xdaq::ApplicationStub*);
 	virtual ~WizardSupervisor(void);
 
-	void 				init(void);
-	void 				destroy(void);
+	void init(void);
+	void destroy(void);
 
-	void        		generateURL(void);
-	static void 		printURL(WizardSupervisor* ptr, std::string securityCode);
+	void        generateURL(void);
+	static void printURL(WizardSupervisor* ptr, std::string securityCode);
 
-	void 				Default(xgi::Input* in, xgi::Output* out);
-	void 				verification(xgi::Input* in, xgi::Output* out);
-	void 				request(xgi::Input* in, xgi::Output* out);
-	void 				requestIcons(xgi::Input* in, xgi::Output* out);
+	void Default(xgi::Input* in, xgi::Output* out);
+	void verification(xgi::Input* in, xgi::Output* out);
+	void request(xgi::Input* in, xgi::Output* out);
+	void requestIcons(xgi::Input* in, xgi::Output* out);
 
-	void        		editSecurity(xgi::Input* in, xgi::Output* out);
-	void        		UserSettings(xgi::Input* in, xgi::Output* out);
-	void        		tooltipRequest(xgi::Input* in, xgi::Output* out);
-	void        		toggleSecurityCodeGeneration(xgi::Input* in, xgi::Output* out);
-	std::string 		validateUploadFileType(const std::string fileType);
-	void        		cleanUpPreviews();
-	void        		savePostPreview(std::string&                        subject,
+	void        editSecurity(xgi::Input* in, xgi::Output* out);
+	void        UserSettings(xgi::Input* in, xgi::Output* out);
+	void        tooltipRequest(xgi::Input* in, xgi::Output* out);
+	void        toggleSecurityCodeGeneration(xgi::Input* in, xgi::Output* out);
+	std::string validateUploadFileType(const std::string fileType);
+	void        cleanUpPreviews();
+	void        savePostPreview(std::string&                        subject,
 	                            std::string&                        text,
 	                            const std::vector<cgicc::FormFile>& files,
 	                            std::string                         creator,
 	                            HttpXmlDocument*                    xmldoc = nullptr);
 
 	/// External Supervisor XOAP handlers
-	xoap::MessageReference 		supervisorSequenceCheck			(xoap::MessageReference message);
-	xoap::MessageReference 		supervisorLastTableGroupRequest	(xoap::MessageReference message);
-
+	xoap::MessageReference supervisorSequenceCheck(xoap::MessageReference message);
+	xoap::MessageReference supervisorLastTableGroupRequest(
+	    xoap::MessageReference message);
 
   private:
-	std::string              				securityCode_;
-	bool                    				defaultSequence_;
-	static const std::vector<std::string> 	allowedFileUploadTypes_, matchingFileUploadTypes_;
-	static const std::string				WIZ_SUPERVISOR, WIZ_PORT, SERVICE_DATA_PATH;
+	std::string                           securityCode_;
+	bool                                  defaultSequence_;
+	static const std::vector<std::string> allowedFileUploadTypes_,
+	    matchingFileUploadTypes_;
+	static const std::string WIZ_SUPERVISOR, WIZ_PORT, SERVICE_DATA_PATH;
 
-	std::string 							supervisorClass_;
-	std::string 							supervisorClassNoNamespace_;
-	AllSupervisorInfo						allSupervisorInfo_;
+	std::string       supervisorClass_;
+	std::string       supervisorClassNoNamespace_;
+	AllSupervisorInfo allSupervisorInfo_;
 
 	enum
 	{
@@ -97,7 +98,7 @@ class WizardSupervisor : public xdaq::Application, public SOAPMessenger
 		USER_DATA_EXPIRATION_TIME   = 60 * 20,  ///< 20 minutes
 	};
 };
-// clang-format on
+
 }  // namespace ots
 
 #endif

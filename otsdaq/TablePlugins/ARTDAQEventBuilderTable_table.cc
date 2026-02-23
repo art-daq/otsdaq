@@ -5,15 +5,11 @@
 
 using namespace ots;
 
-// clang-format off
-
-#define SLOWCONTROL_PV_FILE_PATH \
-		std::string( \
-			getenv("OTSDAQ_EPICS_DATA")? \
-				(std::string(getenv("OTSDAQ_EPICS_DATA")) + "/" + __ENV__("MU2E_OWNER") + "_otsdaq_artdaqEventBuilder-ai.dbg"): \
-				(EPICS_CONFIG_PATH + "/_otsdaq_artdaqEventBuilder-ai.dbg")  )
-
-// clang-format on
+#define SLOWCONTROL_PV_FILE_PATH                                                    \
+	std::string(getenv("OTSDAQ_EPICS_DATA")                                         \
+	                ? (std::string(getenv("OTSDAQ_EPICS_DATA")) + "/" +             \
+	                   __ENV__("MU2E_OWNER") + "_otsdaq_artdaqEventBuilder-ai.dbg") \
+	                : (EPICS_CONFIG_PATH + "/_otsdaq_artdaqEventBuilder-ai.dbg"))
 
 //==============================================================================
 ARTDAQEventBuilderTable::ARTDAQEventBuilderTable(void)

@@ -7,46 +7,80 @@
 
 using namespace ots;
 
-// clang-format off
+#define XDAQ_RUN_FILE                                            \
+	std::string(__ENV__("XDAQ_CONFIGURATION_DATA_PATH")) + "/" + \
+	    std::string(__ENV__("XDAQ_CONFIGURATION_XML")) + ".xml"
+#define APP_PRIORITY_FILE                                        \
+	std::string(__ENV__("XDAQ_CONFIGURATION_DATA_PATH")) + "/" + \
+	    "xdaqAppStateMachinePriority"
 
-#define XDAQ_RUN_FILE         std::string(__ENV__("XDAQ_CONFIGURATION_DATA_PATH")) + "/" + std::string(__ENV__("XDAQ_CONFIGURATION_XML")) + ".xml"
-#define APP_PRIORITY_FILE     std::string(__ENV__("XDAQ_CONFIGURATION_DATA_PATH")) + "/" + "xdaqAppStateMachinePriority"
-
-const std::string XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS 				= "ots::Supervisor";  // still allowed for now, in ots script
-const std::string XDAQContextTable::GATEWAY_SUPERVISOR_CLASS 					= "ots::GatewaySupervisor";
-const std::string XDAQContextTable::WIZARD_SUPERVISOR_CLASS  					= "ots::WizardSupervisor";
-const std::string XDAQContextTable::ARTDAQ_SUPERVISOR_CLASS  					= "ots::ARTDAQSupervisor";
-const std::set<std::string> XDAQContextTable::FETypeClassNames_ 				= { "ots::FESupervisor", "ots::FEDataManagerSupervisor", "ots::ARTDAQFEDataManagerSupervisor"};
-const std::set<std::string> XDAQContextTable::DMTypeClassNames_ 				= { "ots::DataManagerSupervisor", "ots::FEDataManagerSupervisor", "ots::ARTDAQFEDataManagerSupervisor"};
-const std::set<std::string> XDAQContextTable::LogbookTypeClassNames_ 			= { "ots::LogbookSupervisor", "ots::ECLSupervisor"};
-const std::set<std::string> XDAQContextTable::MacroMakerTypeClassNames_ 		= { "ots::MacroMakerSupervisor"};
-const std::set<std::string> XDAQContextTable::ChatTypeClassNames_ 				= { "ots::ChatSupervisor"};
-const std::set<std::string> XDAQContextTable::ConsoleTypeClassNames_ 			= { "ots::ConsoleSupervisor"};
-const std::set<std::string> XDAQContextTable::ConfigurationGUITypeClassNames_ 	= { "ots::ConfigurationGUISupervisor"};
-const std::set<std::string> XDAQContextTable::CodeEditorTypeClassNames_ 		= { "ots::CodeEditorSupervisor"};
-const std::set<std::string> XDAQContextTable::VisualizerTypeClassNames_ 		= { "ots::VisualSupervisor"};
-const std::set<std::string> XDAQContextTable::SlowControlsTypeClassNames_ 		= { "ots::SlowControlsDashboardSupervisor"};
+const std::string XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS =
+    "ots::Supervisor";  // still allowed for now, in ots script
+const std::string XDAQContextTable::GATEWAY_SUPERVISOR_CLASS = "ots::GatewaySupervisor";
+const std::string XDAQContextTable::WIZARD_SUPERVISOR_CLASS  = "ots::WizardSupervisor";
+const std::string XDAQContextTable::ARTDAQ_SUPERVISOR_CLASS  = "ots::ARTDAQSupervisor";
+const std::set<std::string> XDAQContextTable::FETypeClassNames_ = {
+    "ots::FESupervisor",
+    "ots::FEDataManagerSupervisor",
+    "ots::ARTDAQFEDataManagerSupervisor"};
+const std::set<std::string> XDAQContextTable::DMTypeClassNames_ = {
+    "ots::DataManagerSupervisor",
+    "ots::FEDataManagerSupervisor",
+    "ots::ARTDAQFEDataManagerSupervisor"};
+const std::set<std::string> XDAQContextTable::LogbookTypeClassNames_ = {
+    "ots::LogbookSupervisor", "ots::ECLSupervisor"};
+const std::set<std::string> XDAQContextTable::MacroMakerTypeClassNames_ = {
+    "ots::MacroMakerSupervisor"};
+const std::set<std::string> XDAQContextTable::ChatTypeClassNames_ = {
+    "ots::ChatSupervisor"};
+const std::set<std::string> XDAQContextTable::ConsoleTypeClassNames_ = {
+    "ots::ConsoleSupervisor"};
+const std::set<std::string> XDAQContextTable::ConfigurationGUITypeClassNames_ = {
+    "ots::ConfigurationGUISupervisor"};
+const std::set<std::string> XDAQContextTable::CodeEditorTypeClassNames_ = {
+    "ots::CodeEditorSupervisor"};
+const std::set<std::string> XDAQContextTable::VisualizerTypeClassNames_ = {
+    "ots::VisualSupervisor"};
+const std::set<std::string> XDAQContextTable::SlowControlsTypeClassNames_ = {
+    "ots::SlowControlsDashboardSupervisor"};
 
 ///NOTE!!! std::next + offset reads std::set from right-to-left above (end to beginning)
-const std::map<std::string /*class*/, std::string /*module*/> XDAQContextTable::AppClassModuleLookup_ = {
-	std::make_pair(XDAQContextTable::GATEWAY_SUPERVISOR_CLASS,							"${OTSDAQ_LIB}/libGatewaySupervisor.so"),
-	std::make_pair(XDAQContextTable::ARTDAQ_SUPERVISOR_CLASS,							"${OTSDAQ_LIB}/libARTDAQSupervisor.so"),
-	std::make_pair(*(std::next(XDAQContextTable::FETypeClassNames_.begin(),2)),			"${OTSDAQ_LIB}/libCoreSupervisors.so"),
-	std::make_pair(*(std::next(XDAQContextTable::FETypeClassNames_.begin(),1)),			"${OTSDAQ_LIB}/libCoreSupervisors.so"),
-	std::make_pair(*(XDAQContextTable::FETypeClassNames_.begin()),						"${OTSDAQ_LIB}/libCoreSupervisors.so"),
-	std::make_pair(*(std::next(XDAQContextTable::DMTypeClassNames_.begin(),2)),			"${OTSDAQ_LIB}/libCoreSupervisors.so"),
-	std::make_pair(*(std::next(XDAQContextTable::DMTypeClassNames_.begin(),1)),			"${OTSDAQ_LIB}/libCoreSupervisors.so"),
-	std::make_pair(*(XDAQContextTable::DMTypeClassNames_.begin()),						"${OTSDAQ_LIB}/libCoreSupervisors.so"),
-	std::make_pair(*(std::next(XDAQContextTable::LogbookTypeClassNames_.begin(),1)),	"${OTSDAQ_UTILITIES_LIB}/libLogbook.so"),
-	std::make_pair(*(XDAQContextTable::LogbookTypeClassNames_.begin()),					"${OTSDAQ_UTILITIES_LIB}/libECLWriter.so"),
-	std::make_pair(*(XDAQContextTable::MacroMakerTypeClassNames_.begin()),				"${OTSDAQ_UTILITIES_LIB}/libMacroMaker.so"),
-	std::make_pair(*(XDAQContextTable::ChatTypeClassNames_.begin()),					"${OTSDAQ_UTILITIES_LIB}/libChat.so"),
-	std::make_pair(*(XDAQContextTable::ConsoleTypeClassNames_.begin()),					"${OTSDAQ_UTILITIES_LIB}/libConsole.so"),
-	std::make_pair(*(XDAQContextTable::ConfigurationGUITypeClassNames_.begin()),		"${OTSDAQ_UTILITIES_LIB}/libConfigurationGUI.so"),
-	std::make_pair(*(XDAQContextTable::CodeEditorTypeClassNames_.begin()),				"${OTSDAQ_LIB}/libCodeEditor.so"),
-	std::make_pair(*(XDAQContextTable::VisualizerTypeClassNames_.begin()),				"${OTSDAQ_UTILITIES_LIB}/libVisualization.so"),
-	std::make_pair(*(XDAQContextTable::SlowControlsTypeClassNames_.begin()),			"${OTSDAQ_UTILITIES_LIB}/libSlowControlsDashboard.so")
-};
+const std::map<std::string /*class*/, std::string /*module*/>
+    XDAQContextTable::AppClassModuleLookup_ = {
+        std::make_pair(XDAQContextTable::GATEWAY_SUPERVISOR_CLASS,
+                       "${OTSDAQ_LIB}/libGatewaySupervisor.so"),
+        std::make_pair(XDAQContextTable::ARTDAQ_SUPERVISOR_CLASS,
+                       "${OTSDAQ_LIB}/libARTDAQSupervisor.so"),
+        std::make_pair(*(std::next(XDAQContextTable::FETypeClassNames_.begin(), 2)),
+                       "${OTSDAQ_LIB}/libCoreSupervisors.so"),
+        std::make_pair(*(std::next(XDAQContextTable::FETypeClassNames_.begin(), 1)),
+                       "${OTSDAQ_LIB}/libCoreSupervisors.so"),
+        std::make_pair(*(XDAQContextTable::FETypeClassNames_.begin()),
+                       "${OTSDAQ_LIB}/libCoreSupervisors.so"),
+        std::make_pair(*(std::next(XDAQContextTable::DMTypeClassNames_.begin(), 2)),
+                       "${OTSDAQ_LIB}/libCoreSupervisors.so"),
+        std::make_pair(*(std::next(XDAQContextTable::DMTypeClassNames_.begin(), 1)),
+                       "${OTSDAQ_LIB}/libCoreSupervisors.so"),
+        std::make_pair(*(XDAQContextTable::DMTypeClassNames_.begin()),
+                       "${OTSDAQ_LIB}/libCoreSupervisors.so"),
+        std::make_pair(*(std::next(XDAQContextTable::LogbookTypeClassNames_.begin(), 1)),
+                       "${OTSDAQ_UTILITIES_LIB}/libLogbook.so"),
+        std::make_pair(*(XDAQContextTable::LogbookTypeClassNames_.begin()),
+                       "${OTSDAQ_UTILITIES_LIB}/libECLWriter.so"),
+        std::make_pair(*(XDAQContextTable::MacroMakerTypeClassNames_.begin()),
+                       "${OTSDAQ_UTILITIES_LIB}/libMacroMaker.so"),
+        std::make_pair(*(XDAQContextTable::ChatTypeClassNames_.begin()),
+                       "${OTSDAQ_UTILITIES_LIB}/libChat.so"),
+        std::make_pair(*(XDAQContextTable::ConsoleTypeClassNames_.begin()),
+                       "${OTSDAQ_UTILITIES_LIB}/libConsole.so"),
+        std::make_pair(*(XDAQContextTable::ConfigurationGUITypeClassNames_.begin()),
+                       "${OTSDAQ_UTILITIES_LIB}/libConfigurationGUI.so"),
+        std::make_pair(*(XDAQContextTable::CodeEditorTypeClassNames_.begin()),
+                       "${OTSDAQ_LIB}/libCodeEditor.so"),
+        std::make_pair(*(XDAQContextTable::VisualizerTypeClassNames_.begin()),
+                       "${OTSDAQ_UTILITIES_LIB}/libVisualization.so"),
+        std::make_pair(*(XDAQContextTable::SlowControlsTypeClassNames_.begin()),
+                       "${OTSDAQ_UTILITIES_LIB}/libSlowControlsDashboard.so")};
 /// Module Choices from fixed choice XDAQApp table:
 ///		${OTSDAQ_LIB}/libGatewaySupervisor.so
 ///		${OTSDAQ_LIB}/libCoreSupervisors.so
@@ -86,14 +120,15 @@ const std::map<std::string /*class*/, std::string /*module*/> XDAQContextTable::
 ///		ots::CodeEditorSupervisor
 ///
 ///
-const uint8_t		 	XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY 	= 100;
-const unsigned int 		XDAQContextTable::XDAQApplication::GATEWAY_APP_ID 		= 200;
+const uint8_t      XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY = 100;
+const unsigned int XDAQContextTable::XDAQApplication::GATEWAY_APP_ID   = 200;
 
-XDAQContextTable::ColContext 				XDAQContextTable::colContext_ 		= XDAQContextTable::ColContext();  // initialize static member
-XDAQContextTable::ColApplication 			XDAQContextTable::colApplication_ 	= XDAQContextTable::ColApplication();  // initialize static member
-XDAQContextTable::ColApplicationProperty 	XDAQContextTable::colAppProperty_ 	= XDAQContextTable::ColApplicationProperty();  // initialize static member
-
-// clang-format on
+XDAQContextTable::ColContext XDAQContextTable::colContext_ =
+    XDAQContextTable::ColContext();  // initialize static member
+XDAQContextTable::ColApplication XDAQContextTable::colApplication_ =
+    XDAQContextTable::ColApplication();  // initialize static member
+XDAQContextTable::ColApplicationProperty XDAQContextTable::colAppProperty_ =
+    XDAQContextTable::ColApplicationProperty();  // initialize static member
 
 //==============================================================================
 XDAQContextTable::XDAQContextTable(void)

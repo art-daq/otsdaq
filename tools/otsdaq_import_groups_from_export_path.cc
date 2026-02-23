@@ -85,17 +85,20 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 	//
 	//==============================================================================
 
-	// clang-format off
 	std::map<std::string /*importGroupAlias*/,
-		/*original*/ std::pair<std::string /*groupName*/, TableGroupKey /*origKey*/>>	importGroupAliasMap;
+	         /*original*/ std::pair<std::string /*groupName*/, TableGroupKey /*origKey*/>>
+	    importGroupAliasMap;
 	std::map<std::pair<std::string /*groupName*/, TableGroupKey /*origKey*/>,
-		TableGroupKey /*newKey*/> 														importGroupMap;
-	std::map<std::string /*importTableAlias*/,
-	         /*original*/ std::pair<std::string /*tableName*/,
-			 TableVersion /*origVersion*/>>												importTableAliasMap;
-	std::map</*original*/ std::pair<std::string /*tableName*/, TableVersion /*origVersion*/>,
-	         /*newVersion*/ TableVersion>												importTableMap;
-	// clang-format on
+	         TableGroupKey /*newKey*/>
+	    importGroupMap;
+	std::map<
+	    std::string /*importTableAlias*/,
+	    /*original*/ std::pair<std::string /*tableName*/, TableVersion /*origVersion*/>>
+	    importTableAliasMap;
+	std::map<
+	    /*original*/ std::pair<std::string /*tableName*/, TableVersion /*origVersion*/>,
+	    /*newVersion*/ TableVersion>
+	    importTableMap;
 
 	std::string   importedBackboneGroupName = "";
 	TableGroupKey importedBackboneGroupKey;

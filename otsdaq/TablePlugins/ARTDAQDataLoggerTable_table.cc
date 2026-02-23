@@ -3,15 +3,11 @@
 
 using namespace ots;
 
-// clang-format off
-
-#define SLOWCONTROL_PV_FILE_PATH \
-		std::string( \
-			getenv("OTSDAQ_EPICS_DATA")? \
-				(std::string(getenv("OTSDAQ_EPICS_DATA")) + "/" + __ENV__("MU2E_OWNER") + "_otsdaq_artdaqDataLogger-ai.dbg"): \
-				(EPICS_CONFIG_PATH + "/_otsdaq_artdaqDataLogger-ai.dbg")  )
-
-// clang-format on
+#define SLOWCONTROL_PV_FILE_PATH                                                  \
+	std::string(getenv("OTSDAQ_EPICS_DATA")                                       \
+	                ? (std::string(getenv("OTSDAQ_EPICS_DATA")) + "/" +           \
+	                   __ENV__("MU2E_OWNER") + "_otsdaq_artdaqDataLogger-ai.dbg") \
+	                : (EPICS_CONFIG_PATH + "/_otsdaq_artdaqDataLogger-ai.dbg"))
 
 //==============================================================================
 ARTDAQDataLoggerTable::ARTDAQDataLoggerTable(void)

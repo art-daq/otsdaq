@@ -16,131 +16,166 @@ using namespace ots;
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "ConfigurationManager"
 
-// clang-format off
-
 ///may return 0 when not able to detect number of processors
-const unsigned int 		ConfigurationManager::PROCESSOR_COUNT 						= std::thread::hardware_concurrency();
+const unsigned int ConfigurationManager::PROCESSOR_COUNT =
+    std::thread::hardware_concurrency();
 
-const std::string 		ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH 			= ((getenv("SERVICE_DATA_PATH") == NULL)
-																						? (std::string(__ENV__("USER_DATA")) + "/ServiceData")
-																						: (std::string(__ENV__("SERVICE_DATA_PATH")))) +
-																						"/RunControlData/";
+const std::string ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH =
+    ((getenv("SERVICE_DATA_PATH") == NULL)
+         ? (std::string(__ENV__("USER_DATA")) + "/ServiceData")
+         : (std::string(__ENV__("SERVICE_DATA_PATH")))) +
+    "/RunControlData/";
 
-const std::string 		ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE 		= "CFGLastActivatedConfigGroup.hist";
-const std::string 		ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE 	= "CFGLastActivatedContextGroup.hist";
-const std::string 		ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE 	= "CFGLastActivatedBackboneGroup.hist";
-const std::string 		ConfigurationManager::LAST_ACTIVATED_ITERATE_GROUP_FILE 	= "CFGLastActivatedIterateGroup.hist";
+const std::string ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE =
+    "CFGLastActivatedConfigGroup.hist";
+const std::string ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE =
+    "CFGLastActivatedContextGroup.hist";
+const std::string ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE =
+    "CFGLastActivatedBackboneGroup.hist";
+const std::string ConfigurationManager::LAST_ACTIVATED_ITERATE_GROUP_FILE =
+    "CFGLastActivatedIterateGroup.hist";
 
-const std::string 		ConfigurationManager::ACTIVATED_CONFIGS_FILE 				= "CFGActivatedConfigGroups.hist";
-const std::string 		ConfigurationManager::ACTIVATED_CONTEXTS_FILE 				= "CFGActivatedContextGroups.hist";
-const std::string 		ConfigurationManager::ACTIVATED_BACKBONES_FILE 				= "CFGActivatedBackboneGroups.hist";
-const std::string 		ConfigurationManager::ACTIVATED_ITERATES_FILE 				= "CFGActivatedIterateGroups.hist";
+const std::string ConfigurationManager::ACTIVATED_CONFIGS_FILE =
+    "CFGActivatedConfigGroups.hist";
+const std::string ConfigurationManager::ACTIVATED_CONTEXTS_FILE =
+    "CFGActivatedContextGroups.hist";
+const std::string ConfigurationManager::ACTIVATED_BACKBONES_FILE =
+    "CFGActivatedBackboneGroups.hist";
+const std::string ConfigurationManager::ACTIVATED_ITERATES_FILE =
+    "CFGActivatedIterateGroups.hist";
 
-const std::string 		ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_ALIAS_FILE	= "CFGAttemptedConfigureConfigAlias.hist";
-const std::string 		ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_GROUP_FILE 	= "CFGAttemptedConfigureConfigGroup.hist";
+const std::string ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_ALIAS_FILE =
+    "CFGAttemptedConfigureConfigAlias.hist";
+const std::string ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_GROUP_FILE =
+    "CFGAttemptedConfigureConfigGroup.hist";
 
-const std::string 		ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIG_ALIASES_FILE		= "CFGAttemptedConfigureConfigAliases.hist";
-const std::string 		ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIGS_FILE 				= "CFGAttemptedConfigureConfigGroups.hist";
+const std::string ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIG_ALIASES_FILE =
+    "CFGAttemptedConfigureConfigAliases.hist";
+const std::string ConfigurationManager::ATTEMPTED_CONFIGURE_CONFIGS_FILE =
+    "CFGAttemptedConfigureConfigGroups.hist";
 
-const std::string 		ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE 	= "CFGLastConfiguredConfigAlias.hist";
-const std::string 		ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE 	= "CFGLastConfiguredConfigGroup.hist";
-const std::string 		ConfigurationManager::LAST_CONFIGURED_CONTEXT_GROUP_FILE 	= "CFGLastConfiguredContextGroup.hist";
-const std::string 		ConfigurationManager::LAST_CONFIGURED_BACKBONE_GROUP_FILE 	= "CFGLastConfiguredBackboneGroup.hist";
-const std::string 		ConfigurationManager::LAST_CONFIGURED_ITERATE_GROUP_FILE 	= "CFGLastConfiguredIterateGroup.hist";
+const std::string ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE =
+    "CFGLastConfiguredConfigAlias.hist";
+const std::string ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE =
+    "CFGLastConfiguredConfigGroup.hist";
+const std::string ConfigurationManager::LAST_CONFIGURED_CONTEXT_GROUP_FILE =
+    "CFGLastConfiguredContextGroup.hist";
+const std::string ConfigurationManager::LAST_CONFIGURED_BACKBONE_GROUP_FILE =
+    "CFGLastConfiguredBackboneGroup.hist";
+const std::string ConfigurationManager::LAST_CONFIGURED_ITERATE_GROUP_FILE =
+    "CFGLastConfiguredIterateGroup.hist";
 
-const std::string 		ConfigurationManager::CONFIGURED_CONFIG_ALIASES_FILE		= "CFGConfiguredConfigAliases.hist";
-const std::string 		ConfigurationManager::CONFIGURED_CONFIGS_FILE 				= "CFGConfiguredConfigGroups.hist";
-const std::string 		ConfigurationManager::CONFIGURED_CONTEXTS_FILE 				= "CFGConfiguredContextGroups.hist";
-const std::string 		ConfigurationManager::CONFIGURED_BACKBONES_FILE 			= "CFGConfiguredBackboneGroups.hist";
-const std::string 		ConfigurationManager::CONFIGURED_ITERATES_FILE 				= "CFGConfiguredIterateGroups.hist";
+const std::string ConfigurationManager::CONFIGURED_CONFIG_ALIASES_FILE =
+    "CFGConfiguredConfigAliases.hist";
+const std::string ConfigurationManager::CONFIGURED_CONFIGS_FILE =
+    "CFGConfiguredConfigGroups.hist";
+const std::string ConfigurationManager::CONFIGURED_CONTEXTS_FILE =
+    "CFGConfiguredContextGroups.hist";
+const std::string ConfigurationManager::CONFIGURED_BACKBONES_FILE =
+    "CFGConfiguredBackboneGroups.hist";
+const std::string ConfigurationManager::CONFIGURED_ITERATES_FILE =
+    "CFGConfiguredIterateGroups.hist";
 
-const std::string 		ConfigurationManager::LAST_STARTED_CONFIG_ALIAS_FILE 		= "CFGLastStartedConfigAlias.hist";
-const std::string 		ConfigurationManager::LAST_STARTED_CONFIG_GROUP_FILE 		= "CFGLastStartedConfigGroup.hist";
-const std::string 		ConfigurationManager::LAST_STARTED_CONTEXT_GROUP_FILE 		= "CFGLastStartedContextGroup.hist";
-const std::string 		ConfigurationManager::LAST_STARTED_BACKBONE_GROUP_FILE 		= "CFGLastStartedBackboneGroup.hist";
-const std::string 		ConfigurationManager::LAST_STARTED_ITERATE_GROUP_FILE 		= "CFGLastStartedIterateGroup.hist";
+const std::string ConfigurationManager::LAST_STARTED_CONFIG_ALIAS_FILE =
+    "CFGLastStartedConfigAlias.hist";
+const std::string ConfigurationManager::LAST_STARTED_CONFIG_GROUP_FILE =
+    "CFGLastStartedConfigGroup.hist";
+const std::string ConfigurationManager::LAST_STARTED_CONTEXT_GROUP_FILE =
+    "CFGLastStartedContextGroup.hist";
+const std::string ConfigurationManager::LAST_STARTED_BACKBONE_GROUP_FILE =
+    "CFGLastStartedBackboneGroup.hist";
+const std::string ConfigurationManager::LAST_STARTED_ITERATE_GROUP_FILE =
+    "CFGLastStartedIterateGroup.hist";
 
-const std::string 		ConfigurationManager::STARTED_CONFIG_ALIASES_FILE			= "CFGStartedConfigAliases.hist";
-const std::string 		ConfigurationManager::STARTED_CONFIGS_FILE 					= "CFGStartedConfigGroups.hist";
-const std::string 		ConfigurationManager::STARTED_CONTEXTS_FILE 				= "CFGStartedContextGroups.hist";
-const std::string 		ConfigurationManager::STARTED_BACKBONES_FILE 				= "CFGStartedBackboneGroups.hist";
-const std::string 		ConfigurationManager::STARTED_ITERATES_FILE 				= "CFGStartedIterateGroups.hist";
+const std::string ConfigurationManager::STARTED_CONFIG_ALIASES_FILE =
+    "CFGStartedConfigAliases.hist";
+const std::string ConfigurationManager::STARTED_CONFIGS_FILE =
+    "CFGStartedConfigGroups.hist";
+const std::string ConfigurationManager::STARTED_CONTEXTS_FILE =
+    "CFGStartedContextGroups.hist";
+const std::string ConfigurationManager::STARTED_BACKBONES_FILE =
+    "CFGStartedBackboneGroups.hist";
+const std::string ConfigurationManager::STARTED_ITERATES_FILE =
+    "CFGStartedIterateGroups.hist";
 
-const std::string 		ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE		= "CFGConfiguredOrStartedConfigAliases.hist";
-const std::string 		ConfigurationManager::CONFIGURED_OR_STARTED_CONFIGS_FILE 			= "CFGConfiguredOrStartedConfigGroups.hist";
-const std::string 		ConfigurationManager::CONFIGURED_OR_STARTED_CONTEXTS_FILE 			= "CFGConfiguredOrStartedContextGroups.hist";
-const std::string 		ConfigurationManager::CONFIGURED_OR_STARTED_BACKBONES_FILE 			= "CFGConfiguredOrStartedBackboneGroups.hist";
-const std::string 		ConfigurationManager::CONFIGURED_OR_STARTED_ITERATES_FILE 			= "CFGConfiguredOrStartedIterateGroups.hist";
+const std::string ConfigurationManager::CONFIGURED_OR_STARTED_CONFIG_ALIASES_FILE =
+    "CFGConfiguredOrStartedConfigAliases.hist";
+const std::string ConfigurationManager::CONFIGURED_OR_STARTED_CONFIGS_FILE =
+    "CFGConfiguredOrStartedConfigGroups.hist";
+const std::string ConfigurationManager::CONFIGURED_OR_STARTED_CONTEXTS_FILE =
+    "CFGConfiguredOrStartedContextGroups.hist";
+const std::string ConfigurationManager::CONFIGURED_OR_STARTED_BACKBONES_FILE =
+    "CFGConfiguredOrStartedBackboneGroups.hist";
+const std::string ConfigurationManager::CONFIGURED_OR_STARTED_ITERATES_FILE =
+    "CFGConfiguredOrStartedIterateGroups.hist";
 
+const std::string ConfigurationManager::READONLY_USER = "READONLY_USER";
 
-const std::string 		ConfigurationManager::READONLY_USER 						= "READONLY_USER";
-
-const std::string 		ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME				= "XDAQContextTable";
-const std::string 		ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME 			= "XDAQApplicationTable";
-const std::string 		ConfigurationManager::XDAQ_APP_PROPERTY_TABLE_NAME 			= "XDAQApplicationPropertyTable";
-const std::string 		ConfigurationManager::GROUP_ALIASES_TABLE_NAME 				= "GroupAliasesTable";
-const std::string 		ConfigurationManager::VERSION_ALIASES_TABLE_NAME 			= "VersionAliasesTable";
-const std::string 		ConfigurationManager::ARTDAQ_TOP_TABLE_NAME   				= "ARTDAQSupervisorTable";
-const std::string 		ConfigurationManager::DESKTOP_ICON_TABLE_NAME 				= "DesktopIconTable";
+const std::string ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME = "XDAQContextTable";
+const std::string ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME =
+    "XDAQApplicationTable";
+const std::string ConfigurationManager::XDAQ_APP_PROPERTY_TABLE_NAME =
+    "XDAQApplicationPropertyTable";
+const std::string ConfigurationManager::GROUP_ALIASES_TABLE_NAME = "GroupAliasesTable";
+const std::string ConfigurationManager::VERSION_ALIASES_TABLE_NAME =
+    "VersionAliasesTable";
+const std::string ConfigurationManager::ARTDAQ_TOP_TABLE_NAME   = "ARTDAQSupervisorTable";
+const std::string ConfigurationManager::DESKTOP_ICON_TABLE_NAME = "DesktopIconTable";
 
 /// added env check for otsdaq_flatten_active_to_version to function
-const std::string 		ConfigurationManager::ACTIVE_GROUPS_FILENAME 				= ((getenv("SERVICE_DATA_PATH") == NULL)
-																						? (std::string(__ENV__("USER_DATA")) + "/ServiceData")
-																						: (std::string(__ENV__("SERVICE_DATA_PATH")))) +
-																						"/ActiveTableGroups.cfg";
-const std::string 		ConfigurationManager::ALIAS_VERSION_PREAMBLE 				= "ALIAS:";
-const std::string 		ConfigurationManager::SCRATCH_VERSION_ALIAS  				= "Scratch";
+const std::string ConfigurationManager::ACTIVE_GROUPS_FILENAME =
+    ((getenv("SERVICE_DATA_PATH") == NULL)
+         ? (std::string(__ENV__("USER_DATA")) + "/ServiceData")
+         : (std::string(__ENV__("SERVICE_DATA_PATH")))) +
+    "/ActiveTableGroups.cfg";
+const std::string ConfigurationManager::ALIAS_VERSION_PREAMBLE = "ALIAS:";
+const std::string ConfigurationManager::SCRATCH_VERSION_ALIAS  = "Scratch";
 
-const std::string 		ConfigurationManager::GROUP_TYPE_NAME_CONTEXT       		= "Context";
-const std::string 		ConfigurationManager::GROUP_TYPE_NAME_BACKBONE      		= "Backbone";
-const std::string 		ConfigurationManager::GROUP_TYPE_NAME_ITERATE       		= "Iterate";
-const std::string 		ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION 		= "Configuration";
-const std::string 		ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN       		= "UNKNOWN";
+const std::string ConfigurationManager::GROUP_TYPE_NAME_CONTEXT       = "Context";
+const std::string ConfigurationManager::GROUP_TYPE_NAME_BACKBONE      = "Backbone";
+const std::string ConfigurationManager::GROUP_TYPE_NAME_ITERATE       = "Iterate";
+const std::string ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION = "Configuration";
+const std::string ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN       = "UNKNOWN";
 
-const std::string		ConfigurationManager::UNKNOWN_INFO							= "UNKNOWN";
-const std::string		ConfigurationManager::UNKNOWN_TIME							= "0";
+const std::string ConfigurationManager::UNKNOWN_INFO = "UNKNOWN";
+const std::string ConfigurationManager::UNKNOWN_TIME = "0";
 
-const uint8_t 			ConfigurationManager::METADATA_COL_ALIASES  				= 1;
-const uint8_t 			ConfigurationManager::METADATA_COL_COMMENT  				= 2;
-const uint8_t 			ConfigurationManager::METADATA_COL_AUTHOR   				= 3;
-const uint8_t 			ConfigurationManager::METADATA_COL_TIMESTAMP				= 4;
+const uint8_t ConfigurationManager::METADATA_COL_ALIASES   = 1;
+const uint8_t ConfigurationManager::METADATA_COL_COMMENT   = 2;
+const uint8_t ConfigurationManager::METADATA_COL_AUTHOR    = 3;
+const uint8_t ConfigurationManager::METADATA_COL_TIMESTAMP = 4;
 
-const std::string 		ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE 		= "SubsystemUserDataPathsTable";
+const std::string ConfigurationManager::CONTEXT_SUBSYSTEM_OPTIONAL_TABLE =
+    "SubsystemUserDataPathsTable";
 
-
-const std::set<std::string> ConfigurationManager::fixedContextMemberNames_ 			= {
-																						ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME,
-																						ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME,
-																						"XDAQApplicationPropertyTable",
-																						ConfigurationManager::DESKTOP_ICON_TABLE_NAME,
-																						"MessageFacilityTable",
-																						"GatewaySupervisorTable",
-																						"StateMachineTable",
-																						"DesktopWindowParameterTable",
-																						"SlowControlsDashboardSupervisorTable"
-																					};
-const std::set<std::string> ConfigurationManager::backboneMemberNames_ 				= {
-																						ConfigurationManager::GROUP_ALIASES_TABLE_NAME,
-																						ConfigurationManager::VERSION_ALIASES_TABLE_NAME
-																					};
-const std::set<std::string> ConfigurationManager::iterateMemberNames_ 				= {
-																						"IterateTable",
-																						"IterationPlanTable",
-																						"IterationTargetTable",
-																						/*command specific tables*/ "IterationCommandBeginLabelTable",
-																						"IterationCommandChooseFSMTable",
-																						"IterationCommandConfigureAliasTable",
-																						"IterationCommandConfigureGroupTable",
-																						"IterationCommandExecuteFEMacroTable",
-																						"IterationCommandExecuteMacroTable",
-																						"IterationCommandMacroDimensionalLoopTable",
-																						"IterationCommandMacroDimensionalLoopParameterTable",
-																						"IterationCommandModifyGroupTable",
-																						"IterationCommandRepeatLabelTable",
-																						"IterationCommandRunTable"
-																					};
-
-// clang-format on
+const std::set<std::string> ConfigurationManager::fixedContextMemberNames_ = {
+    ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME,
+    ConfigurationManager::XDAQ_APPLICATION_TABLE_NAME,
+    "XDAQApplicationPropertyTable",
+    ConfigurationManager::DESKTOP_ICON_TABLE_NAME,
+    "MessageFacilityTable",
+    "GatewaySupervisorTable",
+    "StateMachineTable",
+    "DesktopWindowParameterTable",
+    "SlowControlsDashboardSupervisorTable"};
+const std::set<std::string> ConfigurationManager::backboneMemberNames_ = {
+    ConfigurationManager::GROUP_ALIASES_TABLE_NAME,
+    ConfigurationManager::VERSION_ALIASES_TABLE_NAME};
+const std::set<std::string> ConfigurationManager::iterateMemberNames_ = {
+    "IterateTable",
+    "IterationPlanTable",
+    "IterationTargetTable",
+    /*command specific tables*/ "IterationCommandBeginLabelTable",
+    "IterationCommandChooseFSMTable",
+    "IterationCommandConfigureAliasTable",
+    "IterationCommandConfigureGroupTable",
+    "IterationCommandExecuteFEMacroTable",
+    "IterationCommandExecuteMacroTable",
+    "IterationCommandMacroDimensionalLoopTable",
+    "IterationCommandMacroDimensionalLoopParameterTable",
+    "IterationCommandModifyGroupTable",
+    "IterationCommandRepeatLabelTable",
+    "IterationCommandRunTable"};
 
 //==============================================================================
 ConfigurationManager::ConfigurationManager(bool initForWriteAccess /*=false*/,
@@ -296,12 +331,10 @@ void ConfigurationManager::init(std::string* accumulatedErrors /*=0*/,
 				onlyLoadIfBackboneOrContext =
 				    ConfigurationManager::LoadGroupType::ONLY_BACKBONE_OR_CONTEXT_TYPES;
 
-			// clang-format off
 			restoreActiveTableGroups(accumulatedErrors ? true : false /*throwErrors*/,
-									 "" /*pathToActiveGroupsFile*/,
-									 onlyLoadIfBackboneOrContext,
-									 accumulatedWarnings);
-			// clang-format on
+			                         "" /*pathToActiveGroupsFile*/,
+			                         onlyLoadIfBackboneOrContext,
+			                         accumulatedWarnings);
 		}
 		catch(std::runtime_error& e)
 		{

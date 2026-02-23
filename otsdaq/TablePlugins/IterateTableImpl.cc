@@ -34,9 +34,8 @@ const std::string IterateTable::TARGET_TABLE  = "IterationTargetTable";
 const std::map<std::string, std::string> IterateTable::commandToTableMap_ =
     IterateTable::createCommandToTableMap();
 
-// clang-format off
-IterateTable::PlanTableColumns             IterateTable::planTableCols_;
-IterateTable::IterateTableColumns          IterateTable::iterateTableCols_;
+IterateTable::PlanTableColumns    IterateTable::planTableCols_;
+IterateTable::IterateTableColumns IterateTable::iterateTableCols_;
 
 IterateTable::CommandBeginLabelParams      IterateTable::commandBeginLabelParams_;
 IterateTable::CommandConfigureActiveParams IterateTable::commandConfigureActiveParams_;
@@ -48,18 +47,17 @@ IterateTable::CommandExecuteMacroParams    IterateTable::commandExecuteMacroPara
 IterateTable::CommandModifyActiveParams    IterateTable::commandModifyActiveParams_;
 IterateTable::CommandRepeatLabelParams     IterateTable::commandRepeatLabelParams_;
 
-IterateTable::CommandRunParams             IterateTable::commandRunParams_;
-IterateTable::CommandWaitParams            IterateTable::commandWaitParams_;
+IterateTable::CommandRunParams  IterateTable::commandRunParams_;
+IterateTable::CommandWaitParams IterateTable::commandWaitParams_;
 
-IterateTable::CommandChooseFSMParams       IterateTable::commandChooseFSMParams_;
+IterateTable::CommandChooseFSMParams IterateTable::commandChooseFSMParams_;
 
-IterateTable::TargetParams                 IterateTable::targetParams_;
-IterateTable::TargetTableColumns           IterateTable::targetCols_;
-IterateTable::CommandTargetColumns         IterateTable::commandTargetCols_;
+IterateTable::TargetParams         IterateTable::targetParams_;
+IterateTable::TargetTableColumns   IterateTable::targetCols_;
+IterateTable::CommandTargetColumns IterateTable::commandTargetCols_;
 
-IterateTable::MacroDimLoopTableColumns     IterateTable::macroDimLoopCols_;
-IterateTable::MacroParamTableColumns       IterateTable::macroParamCols_;
-// clang-format on
+IterateTable::MacroDimLoopTableColumns IterateTable::macroDimLoopCols_;
+IterateTable::MacroParamTableColumns   IterateTable::macroParamCols_;
 
 //==============================================================================
 IterateTable::IterateTable(void) : TableBase(IterateTable::ITERATE_TABLE) {}

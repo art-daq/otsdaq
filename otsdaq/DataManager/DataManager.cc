@@ -13,16 +13,15 @@
 
 using namespace ots;
 
-// clang-format off
 //==============================================================================
-DataManager::DataManager(const ConfigurationTree& theXDAQContextConfigTree, const std::string& supervisorConfigurationPath)
+DataManager::DataManager(const ConfigurationTree& theXDAQContextConfigTree,
+                         const std::string&       supervisorConfigurationPath)
     : Configurable(theXDAQContextConfigTree, supervisorConfigurationPath)
-	, VStateMachine(Configurable::theConfigurationRecordName_)
-	, parentSupervisorHasFrontends_(false)
+    , VStateMachine(Configurable::theConfigurationRecordName_)
+    , parentSupervisorHasFrontends_(false)
 {
 	__CFG_COUT__ << "Constructed." << __E__;
 }  // end constructor
-// clang-format on
 
 //==============================================================================
 DataManager::~DataManager(void)
