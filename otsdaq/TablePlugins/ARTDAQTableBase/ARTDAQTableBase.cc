@@ -367,41 +367,46 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 			{
 				//normal key / value pair ? or is it a value like @@<table> -> getFclValueForARTDAQ()
 
-				std::string value = parameter.second.getNode(parameterPreamble + "Value")
-				                 .getValue();
-				StringMacros::trim(value); //trim whitespace
+				std::string value =
+				    parameter.second.getNode(parameterPreamble + "Value").getValue();
+				StringMacros::trim(value);  //trim whitespace
 
 				if(value.size() > 2 && value[0] == '@' && value[1] == '@')
 				{
-					__COUTT__ << "Checking for getFclValueForARTDAQ @@ indicator from value = " << value << __E__;
+					__COUTT__
+					    << "Checking for getFclValueForARTDAQ @@ indicator from value = "
+					    << value << __E__;
 					std::string potentialTable = value.substr(2);
 					__COUTTV__(potentialTable);
 					try
 					{
 						auto cfgMgr = parameterGroupLink.getConfigurationManager();
-						value = cfgMgr->getTableByName(potentialTable)->getFclValueForARTDAQ(cfgMgr, key);
+						value       = cfgMgr->getTableByName(potentialTable)
+						            ->getFclValueForARTDAQ(cfgMgr, key);
 					}
 					catch(const std::runtime_error& e)
 					{
-						__SS__ << "getFclValueForARTDAQ @@ indicator from value = " << value << 
-							" corresponds to table '" << potentialTable << "'... however fcl value failed to load: " << e.what();
+						__SS__ << "getFclValueForARTDAQ @@ indicator from value = "
+						       << value << " corresponds to table '" << potentialTable
+						       << "'... however fcl value failed to load: " << e.what();
 						__SS_THROW__;
 					}
 
 					std::string localParentPath2 = "/" + potentialTable;
 					OUTCL2(key << ": "
-							<< parameter.second.getNode(parameterPreamble + "Value")
-									.getValue(),
-						parameter.second.hasComment() ? parameter.second.getComment() : "");
+					           << parameter.second.getNode(parameterPreamble + "Value")
+					                  .getValue(),
+					       parameter.second.hasComment() ? parameter.second.getComment()
+					                                     : "");
 				}
-				else //normal key / value pair
+				else  //normal key / value pair
 				{
 					OUTCL(key << ": "
-							<< parameter.second.getNode(parameterPreamble + "Value")
-									.getValue(),
-						parameter.second.hasComment() ? parameter.second.getComment() : "");
+					          << parameter.second.getNode(parameterPreamble + "Value")
+					                 .getValue(),
+					      parameter.second.hasComment() ? parameter.second.getComment()
+					                                    : "");
 				}
-
 			}
 			else if(key == "")
 			{
