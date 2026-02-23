@@ -264,7 +264,7 @@ class WebUsers
 		    , cookieCode_(cookieCode)
 		    , uid_(
 		          -1)  ///< init to invalid user, since only WebUser owner will have access
-		    ///< to uid. RemoteWebUsers will see invalid uid.
+		///< to uid. RemoteWebUsers will see invalid uid.
 		{
 		}
 
