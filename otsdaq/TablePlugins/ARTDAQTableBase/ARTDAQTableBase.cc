@@ -371,7 +371,7 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 				                 .getValue();
 				StringMacros::trim(value); //trim whitespace
 
-				if(value.size() > 2 && value[0] == '@' && value[0] == '@')
+				if(value.size() > 2 && value[0] == '@' && value[1] == '@')
 				{
 					__COUTT__ << "Checking for getFclValueForARTDAQ @@ indicator from value = " << value << __E__;
 					std::string potentialTable = value.substr(2);
