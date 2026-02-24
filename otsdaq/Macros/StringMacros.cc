@@ -622,7 +622,18 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 				    << "If you were trying to insert an arithmetic operation, the "
 				       "correct "
 				       "syntax is $((4 - 3)) or $(($ENVVAR1 - $ENVVAR2))"
+				    << "\n\n"
+				    << "Available system variables:"
 				    << __E__;
+				
+				// Print all available system variables
+				for(const auto& varPair : systemVariables_)
+				{
+					ss << "\n  OTS." << varPair.first << ".*";
+					for(const auto& propPair : varPair.second)
+						ss << "\n    - OTS." << varPair.first << "." << propPair.first;
+				}
+				ss << __E__;
 				__SS_THROW__;
 			}
 			//else successful

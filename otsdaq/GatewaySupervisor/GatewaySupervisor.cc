@@ -7207,7 +7207,7 @@ try
 		                                   "\"follow\": " + "\"1\"}";
 		//gatewayDumpMap["Gateway"]["fsmMode"]     = "Follow FSM"; // needed?
 		//gatewayDumpMap["Gateway"]["fsmIncluded"] = "1";
-		gatewayDumpMap["Gateway"]["dump"] = activeStateMachineSystemDumpOnRun_;
+		gatewayDumpMap["Gateway"]["config"] = activeStateMachineSystemDumpOnRun_;
 		//gatewayDumpMap["Gateway"]["dumpType"] = activeStateMachineDumpFormatOnRun_; // not needed, part of dump.dump_type
 
 		//include environment variables in dumpMap (as escaped key:value pairs, skip functions)
@@ -7306,7 +7306,7 @@ try
 			__COUT__ << "Config dump for remote app " << remoteGatewayApp.fullName
 			         << " is:" << dumpStr << __E__;
 
-			gatewayDumpMap[remoteGatewayApp.fullName]["dump"] = dumpStr;
+			gatewayDumpMap[remoteGatewayApp.fullName]["config"] = dumpStr;
 			//gatewayDumpMap[remoteGatewayApp.fullName]["dumpType"] =
 			//    remoteGatewayApp.getConfigDumpType(); // not needed since inside dump
 		}  //end remote app loop
