@@ -376,7 +376,9 @@ void CodeEditor::getPathContent(const std::string& basepath,
 				try
 				{
 					std::string extension = name.substr(name.rfind('.'));
-					if(name != "ots" && extension != ".bin") //allow bin for read-only binary and ots for bash scripts (no extension)
+					if(name != "ots" &&
+					   extension !=
+					       ".bin")  //allow bin for read-only binary and ots for bash scripts (no extension)
 						safeExtensionString(extension);
 					__COUTS__(2) << "EditFile: " << type << " " << name << __E__;
 
@@ -595,10 +597,10 @@ void CodeEditor::readFile(const std::string& basepath,
 	std::FILE* fp = std::fopen(fullpath.c_str(), "rb");
 	if(!fp)
 	{
-		__SS__ << "Could not open file at '" << fullpath << 
-			".' Make sure the file is located in one of the areas accessible to the Code Editor: $USER_DATA, $OTSDAQ_WEB_PATH, $OTSDAQ_DATA, or srcs/." <<
-			"\n\nError: " << errno << " - "
-		       << strerror(errno) << __E__;
+		__SS__ << "Could not open file at '" << fullpath
+		       << ".' Make sure the file is located in one of the areas accessible to "
+		          "the Code Editor: $USER_DATA, $OTSDAQ_WEB_PATH, $OTSDAQ_DATA, or srcs/."
+		       << "\n\nError: " << errno << " - " << strerror(errno) << __E__;
 		__SS_THROW__;
 	}
 

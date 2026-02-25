@@ -1077,7 +1077,8 @@ try
 								catch(const std::runtime_error& e)
 								{
 									__SS__
-										<< "Error at " << StringMacros::getTimestampString() << ":"
+									    << "Error at "
+									    << StringMacros::getTimestampString() << ":"
 									    << "\nFailed to retrieve the list of "
 									       "Configuration "
 									       "Aliases for Remote Subsystem '"
@@ -10402,16 +10403,20 @@ try
 									// if it remains an issue, the error will be created again anyway
 
 									//lock for remainder of scope
-									std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-									for(size_t i = 0; i < remoteGatewayApps_.size();++i)
+									std::lock_guard<std::mutex> lock(
+									    remoteGatewayAppsMutex_);
+									for(size_t i = 0; i < remoteGatewayApps_.size(); ++i)
 										if(remoteGatewayApp.appInfo.name ==
-										remoteGatewayApps_[i].appInfo.name)
+										   remoteGatewayApps_[i].appInfo.name)
 										{
-											__SUP_COUT_WARN__ << "Clearing remote subsystem error that was delivered to the user: " <<
-												remoteGatewayApps_[i].getError() << __E__;
-											remoteGatewayApps_[i].clearError();											
+											__SUP_COUT_WARN__
+											    << "Clearing remote subsystem error that "
+											       "was delivered to the user: "
+											    << remoteGatewayApps_[i].getError()
+											    << __E__;
+											remoteGatewayApps_[i].clearError();
 											break;
-										}								
+										}
 								}
 								else if(remoteGatewayApp.appInfo.status ==
 								        SupervisorInfo::APP_STATUS_UNKNOWN)

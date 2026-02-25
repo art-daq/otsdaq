@@ -31,8 +31,8 @@ class DQMHistosBase
 	TFile*   getFile(void) { return theFile_; }
 
   protected:
-	void setAutoSave(bool autoSave) { autoSave_ = autoSave; }  ///< Default is true
-	bool isFileOpen(void);
+	void         setAutoSave(bool autoSave) { autoSave_ = autoSave; }  ///< Default is true
+	bool         isFileOpen(void);
 	virtual void save(void);
 	virtual void openFile(std::string fileName);
 	virtual void closeFile(void);

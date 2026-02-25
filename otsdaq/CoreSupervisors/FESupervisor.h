@@ -20,8 +20,8 @@ class FESupervisor : public CoreSupervisorBase
 	FESupervisor(xdaq::ApplicationStub* s);
 	virtual ~FESupervisor(void);
 
-	xoap::MessageReference frontEndCommunicationRequest(xoap::MessageReference message);
-	xoap::MessageReference macroMakerSupervisorRequest(xoap::MessageReference message);
+	xoap::MessageReference         frontEndCommunicationRequest(xoap::MessageReference message);
+	xoap::MessageReference         macroMakerSupervisorRequest(xoap::MessageReference message);
 	virtual xoap::MessageReference workLoopStatusRequest(
 	    xoap::MessageReference message) override;
 

@@ -41,8 +41,8 @@ class VisualDataManager : public DataManager
 	bool               getLiveDQMHistos(void);
 	DQMHistosBase&     getFileDQMHistos(void);  ///< TO BE DELETED
 	const std::string& getRawData(void);        ///< TO BE DELETED
-	    // const Visual3DEvents&   getVisual3DEvents   (void);
-	    // const Visual3DGeometry& getVisual3DGeometry (void);
+	                                            // const Visual3DEvents&   getVisual3DEvents   (void);
+	                                            // const Visual3DGeometry& getVisual3DGeometry (void);
 
   private:
 	std::vector<DQMHistosBase*>   theLiveDQMs_;

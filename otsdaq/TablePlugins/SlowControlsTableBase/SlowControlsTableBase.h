@@ -5,11 +5,11 @@
 #include "otsdaq/TableCore/TableBase.h"
 
 /// helpers
-#define OUT out << tabStr << commentStr
-#define PUSHTAB tabStr += "\t"
-#define POPTAB tabStr.resize(tabStr.size() - 1)
+#define OUT         out << tabStr << commentStr
+#define PUSHTAB     tabStr += "\t"
+#define POPTAB      tabStr.resize(tabStr.size() - 1)
 #define PUSHCOMMENT commentStr += "# "
-#define POPCOMMENT commentStr.resize(commentStr.size() - 2)
+#define POPCOMMENT  commentStr.resize(commentStr.size() - 2)
 
 namespace ots
 {
