@@ -36,9 +36,9 @@ const std::string CodeEditor::OTSDAQ_WEB_PATH =
 //==============================================================================
 /// CodeEditor
 CodeEditor::CodeEditor()
-    : ALLOWED_FILE_EXTENSIONS_({"h",   "hh",  "hpp", "hxx", "c",   "cc",  "cpp",
-                                "cxx", "icc", "dat", "txt", "sh",  "css", "html",
-                                "htm", "js",  "py",  "fcl", "xml", "xsd", "cfg"})
+    : ALLOWED_FILE_EXTENSIONS_({"h",    "hh",  "hpp", "hxx", "c",   "cc",   "cpp", "cxx",
+                                "icc",  "dat", "txt", "sh",  "css", "html", "htm", "js",
+                                "json", "py",  "fcl", "xml", "xsd", "cfg"})
 {
 	std::string path = CODE_EDITOR_DATA_PATH;
 	DIR*        dir  = opendir(path.c_str());
@@ -375,8 +375,11 @@ void CodeEditor::getPathContent(const std::string& basepath,
 
 				try
 				{
-					if(name != "ots")
-						safeExtensionString(name.substr(name.rfind('.')));
+					std::string extension = name.substr(name.rfind('.'));
+					if(name != "ots" &&
+					   extension !=
+					       ".bin")  //allow bin for read-only binary and ots for bash scripts (no extension)
+						safeExtensionString(extension);
 					__COUTS__(2) << "EditFile: " << type << " " << name << __E__;
 
 					orderedFiles.emplace(name);
@@ -427,10 +430,22 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 		                         (extension.size() ? "." : "") + extension,
 		                     contents,
 		                     extension == "bin");
+	else if((i = path.find(CodeEditor::USER_DATA_PATH)) == 0)
+		CodeEditor::readFile(CodeEditor::USER_DATA_PATH,
+		                     path.substr(i + CodeEditor::USER_DATA_PATH.size()) +
+		                         (extension.size() ? "." : "") + extension,
+		                     contents,
+		                     extension == "bin");
 	else if((i = path.find("$OTSDAQ_WEB_PATH/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		CodeEditor::readFile(CodeEditor::OTSDAQ_WEB_PATH,
 		                     path.substr(i + std::string("$OTSDAQ_WEB_PATH/").size()) +
+		                         (extension.size() ? "." : "") + extension,
+		                     contents,
+		                     extension == "bin");
+	else if((i = path.find(CodeEditor::OTSDAQ_WEB_PATH)) == 0)
+		CodeEditor::readFile(CodeEditor::OTSDAQ_WEB_PATH,
+		                     path.substr(i + CodeEditor::OTSDAQ_WEB_PATH.size()) +
 		                         (extension.size() ? "." : "") + extension,
 		                     contents,
 		                     extension == "bin");
@@ -445,6 +460,12 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		CodeEditor::readFile(CodeEditor::OTSDAQ_DATA_PATH,
 		                     path.substr(std::string("/$OTSDAQ_DATA/").size()) +
+		                         (extension.size() ? "." : "") + extension,
+		                     contents,
+		                     extension == "bin");
+	else if((i = path.find(CodeEditor::OTSDAQ_DATA_PATH)) == 0)
+		CodeEditor::readFile(CodeEditor::OTSDAQ_DATA_PATH,
+		                     path.substr(i + CodeEditor::OTSDAQ_DATA_PATH.size()) +
 		                         (extension.size() ? "." : "") + extension,
 		                     contents,
 		                     extension == "bin");
@@ -576,8 +597,10 @@ void CodeEditor::readFile(const std::string& basepath,
 	std::FILE* fp = std::fopen(fullpath.c_str(), "rb");
 	if(!fp)
 	{
-		__SS__ << "Could not open file at " << fullpath << ". Error: " << errno << " - "
-		       << strerror(errno) << __E__;
+		__SS__ << "Could not open file at '" << fullpath
+		       << ".' Make sure the file is located in one of the areas accessible to "
+		          "the Code Editor: $USER_DATA, $OTSDAQ_WEB_PATH, $OTSDAQ_DATA, or srcs/."
+		       << "\n\nError: " << errno << " - " << strerror(errno) << __E__;
 		__SS_THROW__;
 	}
 

@@ -21,8 +21,8 @@ class ConvertFromXML
 };
 
 #define XML_TO_CONST_CHAR(xml) ConvertFromXML(xml).toConstChar()
-#define XML_TO_CHAR(xml) ConvertFromXML(xml).toChar()
-#define XML_TO_STRING(xml) ConvertFromXML(xml).toString()
+#define XML_TO_CHAR(xml)       ConvertFromXML(xml).toChar()
+#define XML_TO_STRING(xml)     ConvertFromXML(xml).toString()
 
 }  // namespace ots
 

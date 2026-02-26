@@ -42,14 +42,14 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	void init(void);
 	void destroy(void);
 
-	virtual void transitionConfiguring(toolbox::Event::Reference event) override;
-	virtual void transitionHalting(toolbox::Event::Reference event) override;
-	virtual void transitionInitializing(toolbox::Event::Reference event) override;
-	virtual void transitionPausing(toolbox::Event::Reference event) override;
-	virtual void transitionResuming(toolbox::Event::Reference event) override;
-	virtual void transitionStarting(toolbox::Event::Reference event) override;
-	virtual void transitionStopping(toolbox::Event::Reference event) override;
-	virtual void enteringError(toolbox::Event::Reference event) override;
+	virtual void                                    transitionConfiguring(toolbox::Event::Reference event) override;
+	virtual void                                    transitionHalting(toolbox::Event::Reference event) override;
+	virtual void                                    transitionInitializing(toolbox::Event::Reference event) override;
+	virtual void                                    transitionPausing(toolbox::Event::Reference event) override;
+	virtual void                                    transitionResuming(toolbox::Event::Reference event) override;
+	virtual void                                    transitionStarting(toolbox::Event::Reference event) override;
+	virtual void                                    transitionStopping(toolbox::Event::Reference event) override;
+	virtual void                                    enteringError(toolbox::Event::Reference event) override;
 	virtual std::vector<SupervisorInfo::SubappInfo> getSubappInfo(void) override;
 	virtual std::string                             getStatusProgressDetail(void) override
 	{
@@ -79,7 +79,8 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	struct PyObjectGuard
 	{
 		PyObject* obj;
-		explicit PyObjectGuard(PyObject* o) : obj(o) {}
+		explicit PyObjectGuard(PyObject* o) :
+		    obj(o) {}
 		~PyObjectGuard()
 		{
 			if(obj)

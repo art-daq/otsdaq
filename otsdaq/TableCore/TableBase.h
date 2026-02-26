@@ -66,6 +66,7 @@ class TableBase
 
 	virtual std::string     	getStructureAsJSON				(const ConfigurationManager* /* configManager */) {__SS__ << "getStructureAsJSON() is not implemented for this table '" << getTableName() << "'" << __E__; __SS_ONLY_THROW__;};
 	virtual void		     	initPrereqsForARTDAQ			(const ConfigurationManager* /* configManager */) {__SS__ << "initPrereqsForARTDAQ() is not implemented for this table '" << getTableName() << "'" << __E__; __SS_ONLY_THROW__;};
+	virtual std::string	     	getFclValueForARTDAQ			(const ConfigurationManager* /* configManager */, const std::string& /* field = "" */) const {__SS__ << "getFclValueForARTDAQ() is not implemented for this table '" << getTableName() << "'" << __E__; __SS_ONLY_THROW__;};
 
 	/// Setters
 	void         				setTableName					(const std::string& tableName);

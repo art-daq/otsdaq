@@ -31,12 +31,12 @@ class ConfigurationHandler
 	static std::string getXMLDir(const TableBase* configuration);
 
   private:
-	static void initPlatform(void);
-	static void terminatePlatform(void);
-	static bool validateNode(XMLCh*             tagName,
-	                         xercesc::DOMNode*  node,
-	                         const std::string& expectedValue);
-	static void outputXML(xercesc::DOMDocument* pmyDOMDocument, std::string filePath);
+	static void        initPlatform(void);
+	static void        terminatePlatform(void);
+	static bool        validateNode(XMLCh*             tagName,
+	                                xercesc::DOMNode*  node,
+	                                const std::string& expectedValue);
+	static void        outputXML(xercesc::DOMDocument* pmyDOMDocument, std::string filePath);
 	static std::string getXMLFileName(const TableBase& configuration,
 	                                  TableVersion     version);
 
