@@ -227,7 +227,7 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 	         "0-255")  // Note this sets a taskset for ALL processes, on all nodes (ex. "1,2,5-7")
 	  << std::endl;
 	if(getSupervisorProperty("partition_label_format", "") !=
-	   "")  //Add to ARTDAQSupervisor properties partition_label_format: "-P%d"
+	   "")  //Add to ARTDAQSupervisor properties partition_label_format: "-P%s"
 		o << "partition_label_format: "
 		  << getSupervisorProperty("partition_label_format", "") << std::endl;
 
@@ -1977,8 +1977,16 @@ catch(...)
 	}
 	__COUT_ERR__ << ss.str();
 
-	std::lock_guard<std::mutex> lock(thread_mutex_);  // lock out for remainder of scope
-	thread_error_message_ = ss.str();
+	{
+		std::lock_guard<std::mutex> lock(thread_mutex_);  // lock out for remainder of scope
+		thread_error_message_ = ss.str();
+	}
+	
+	theStateMachine_.setErrorMessage(ss.str());
+
+	sendAsyncExceptionToGateway( //0 for both pause/stop indicates error
+		ss.str(), 0 /* isPauseException */, 0 /* isStopException */);
+	
 }  // end daqinterfaceRunner_() catch
 
 //==============================================================================
