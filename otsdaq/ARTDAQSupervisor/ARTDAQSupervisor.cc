@@ -1978,15 +1978,18 @@ catch(...)
 	__COUT_ERR__ << ss.str();
 
 	{
-		std::lock_guard<std::mutex> lock(thread_mutex_);  // lock out for remainder of scope
+		std::lock_guard<std::mutex> lock(
+		    thread_mutex_);  // lock out for remainder of scope
 		thread_error_message_ = ss.str();
 	}
-	
+
 	theStateMachine_.setErrorMessage(ss.str());
 
-	sendAsyncExceptionToGateway( //0 for both pause/stop indicates error
-		ss.str(), 0 /* isPauseException */, 0 /* isStopException */);
-	
+	sendAsyncExceptionToGateway(  //0 for both pause/stop indicates error
+	    ss.str(),
+	    0 /* isPauseException */,
+	    0 /* isStopException */);
+
 }  // end daqinterfaceRunner_() catch
 
 //==============================================================================

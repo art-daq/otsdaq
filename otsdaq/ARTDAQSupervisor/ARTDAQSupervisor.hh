@@ -42,15 +42,15 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	void init(void);
 	void destroy(void);
 
-	virtual void                                    transitionConfiguring(toolbox::Event::Reference event) override;
-	virtual void                                    transitionHalting(toolbox::Event::Reference event) override;
-	virtual void                                    transitionInitializing(toolbox::Event::Reference event) override;
-	virtual void                                    transitionPausing(toolbox::Event::Reference event) override;
-	virtual void                                    transitionResuming(toolbox::Event::Reference event) override;
-	virtual void                                    transitionStarting(toolbox::Event::Reference event) override;
-	virtual void                                    transitionStopping(toolbox::Event::Reference event) override;
-	virtual void                                    enteringError(toolbox::Event::Reference event) override;
-	
+	virtual void transitionConfiguring(toolbox::Event::Reference event) override;
+	virtual void transitionHalting(toolbox::Event::Reference event) override;
+	virtual void transitionInitializing(toolbox::Event::Reference event) override;
+	virtual void transitionPausing(toolbox::Event::Reference event) override;
+	virtual void transitionResuming(toolbox::Event::Reference event) override;
+	virtual void transitionStarting(toolbox::Event::Reference event) override;
+	virtual void transitionStopping(toolbox::Event::Reference event) override;
+	virtual void enteringError(toolbox::Event::Reference event) override;
+
 	virtual std::vector<SupervisorInfo::SubappInfo> getSubappInfo(void) override;
 	virtual std::string                             getStatusProgressDetail(void) override
 	{
@@ -62,9 +62,9 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 			return CoreSupervisorBase::getStatusProgressDetail();
 
 		std::lock_guard<std::mutex> lk(thread_mutex_);
-		__COUTVS__(20,thread_progress_message_);
+		__COUTVS__(20, thread_progress_message_);
 		return thread_progress_message_;
-	} //end getStatusProgressDetail()
+	}  //end getStatusProgressDetail()
 
 	std::list<
 	    std::pair<DAQInterfaceProcessInfo, std::unique_ptr<artdaq::CommanderInterface>>>
