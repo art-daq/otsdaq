@@ -7,7 +7,6 @@ Language:        Cpp
 ColumnLimit: 0   # prevents wrapping that breaks alignment
 AlignConsecutiveMacros: true 
 AllowAllConstructorInitializersOnNextLine: false
-BreakConstructorInitializers: AfterColon
 PackConstructorInitializers: CurrentLine
 
 
@@ -50,7 +49,7 @@ BreakBeforeBraces: Custom
 BreakBeforeInheritanceComma: false
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: true
-# BreakConstructorInitializers: BeforeColon #removed for headers
+BreakConstructorInitializers: BeforeColon
 BreakAfterJavaFieldAnnotations: false
 BreakStringLiterals: true
 # ColumnLimit:     90 #removed for headers

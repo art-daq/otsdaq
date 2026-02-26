@@ -80,8 +80,8 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	struct PyObjectGuard
 	{
 		PyObject* obj;
-		explicit PyObjectGuard(PyObject* o) :
-		    obj(o) {}
+		explicit PyObjectGuard(PyObject* o)
+		    : obj(o) {}
 		~PyObjectGuard()
 		{
 			if(obj)

@@ -61,9 +61,9 @@ class ots::UDPFragmentWriter : public ots::UDPFragment
 /// passed to contain the artdaq::Fragment header + the
 /// UDPFragment::Metadata object, otherwise it throws
 ///
-ots::UDPFragmentWriter::UDPFragmentWriter(artdaq::Fragment& f) :
-    UDPFragment(f),
-    artdaq_Fragment_(f)
+ots::UDPFragmentWriter::UDPFragmentWriter(artdaq::Fragment& f)
+    : UDPFragment(f)
+    , artdaq_Fragment_(f)
 {
 	if(!f.hasMetadata() || f.dataSizeBytes() > 0)
 	{
