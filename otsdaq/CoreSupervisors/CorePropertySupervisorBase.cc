@@ -44,7 +44,7 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] 	= StringMacros::TBD;
 	} // end init StringMacros::systemVariables_
 	__SUP_COUTV__(StringMacros::mapToString(StringMacros::systemVariables_));
-	
+
 	if(allSupervisorInfo_.isMacroMakerMode())
 	{
 		theConfigurationManager_ = new ConfigurationManager(false /*initForWriteAccess*/, true /*initializeFromFhicl*/);

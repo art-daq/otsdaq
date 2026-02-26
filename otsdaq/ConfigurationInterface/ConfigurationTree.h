@@ -128,11 +128,25 @@ class ConfigurationTree
 		friend ConfigurationTree;  ///< so ConfigurationTree can access private
 		const T& get(unsigned int row, unsigned int col) const
 		{
+			if(row >= numberOfRows() || col >= numberOfColumns(row))
+			{
+				__SS__ << "Illegal bitmap get of [row,col] = [" << row << "," << col << 
+					"]. Row and column size is [" << 
+					numberOfRows() << " " << numberOfColumns(row) << __E__;
+				__SS_THROW__;
+			}
 			return isDefault_ ? zero_ : bitmap_[row][col];
 		}
 		unsigned int numberOfRows() const { return bitmap_.size(); }
 		unsigned int numberOfColumns(unsigned int row) const
 		{
+			if(row >= numberOfRows())
+			{
+				__SS__ << "Illegal bitmap get numberOfColumns of row = " << row << "." <<
+					"]. Row count  is " << 
+					numberOfRows() << __E__;
+				__SS_THROW__;
+			}
 			return bitmap_[row].size();
 		}
 		void print(std::ostream& out = std::cout) const;

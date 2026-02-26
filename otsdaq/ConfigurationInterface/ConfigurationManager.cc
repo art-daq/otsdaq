@@ -3050,17 +3050,16 @@ try
 		catch(...)
 		{
 		}
+		
+		ss << StringMacros::stackTrace();
 
 		if(threadErrors)
 		{
 			std::lock_guard<std::mutex> lock(*threadMutex);
 			*threadErrors += ss.str();
 		}
-		else
-		{
-			ss << StringMacros::stackTrace();
+		else	
 			__SS_ONLY_THROW__;
-		}
 	}
 
 	*(threadDone) = true;

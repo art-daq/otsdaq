@@ -625,7 +625,7 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 				    << "\n\n"
 				    << "Available system variables:"
 				    << __E__;
-				
+
 				// Print all available system variables
 				for(const auto& varPair : systemVariables_)
 				{
