@@ -130,8 +130,8 @@ class ConfigurationTree
 		{
 			if(row >= numberOfRows() || col >= numberOfColumns(row))
 			{
-				__SS__ << "Illegal bitmap get of [row,col] = [" << row << "," << col << 
-					"]. Row and column size is [" << 
+				__SS__ << "Illegal bitmap get of [row,col] = [" << row << "," << col <<
+					"]. Row and column size is [" <<
 					numberOfRows() << " " << numberOfColumns(row) << __E__;
 				__SS_THROW__;
 			}
@@ -143,7 +143,7 @@ class ConfigurationTree
 			if(row >= numberOfRows())
 			{
 				__SS__ << "Illegal bitmap get numberOfColumns of row = " << row << "." <<
-					"]. Row count  is " << 
+					"]. Row count  is " <<
 					numberOfRows() << __E__;
 				__SS_THROW__;
 			}
