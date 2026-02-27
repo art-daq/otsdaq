@@ -392,6 +392,9 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 						__SS_THROW__;
 					}
 
+					__COUTT__ << "Value from getFclValueForARTDAQ: value = " << value
+					          << __E__;
+
 					std::string localParentPath2 = "/" + potentialTable;
 					OUTCL2(key << ": " << value,
 					       parameter.second.hasComment() ? parameter.second.getComment()
