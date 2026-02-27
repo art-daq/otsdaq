@@ -14,8 +14,9 @@ class FEVInterfacesManager;
 ///	provides an interface to Macro Maker for writes and reads to the front-end interfaces.
 ///
 ///	ZeroMQ Publishing:
-///	- To enable ZeroMQ publishing, configure the ZMQPublisherEndpoint parameter
-///	- Call publish() method to send data over ZeroMQ PUB socket
+///	- To enable ZeroMQ publishing, configure the `data_publishing_endpoint`
+///	  parameter (or the `DATA_PUBLISHING_ENDPOINT` environment variable)
+///	- Call publishData() to send data over the ZeroMQ PUB socket
 class FESupervisor : public CoreSupervisorBase
 {
 	// friend FEVInterface;
@@ -37,11 +38,11 @@ class FESupervisor : public CoreSupervisorBase
 	/// Publish a raw binary payload.
 	///
 	/// multipart format:
-	///   frame‑0 : topic (as set in `init()`)
-	///   frame‑1 : payload (exactly `sz` bytes taken from `data`)
+	///   frame‑0 : topic (as set in `initDataPublishing()`)
+	///   frame‑1 : payload (exactly `dataSize` bytes taken from `dataPtr`)
 	///
-	/// @param data   Pointer to the payload buffer.
-	/// @param sz     Size of the payload in bytes.
+	/// @param dataPtr    Pointer to the payload buffer.
+	/// @param dataSize   Size of the payload in bytes.
 	/// @throws std::runtime_error if the socket is not initialised or
 	///         the send operation fails.
 	void publishData(const char* dataPtr, size_t dataSize);

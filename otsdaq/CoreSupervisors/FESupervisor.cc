@@ -1474,7 +1474,13 @@ void FESupervisor::publishData(const char* dataPtr, size_t dataSize)
 	}
 
 	// ---- Payload frame (final frame) ----
-	// `dataPtr` may be nullptr if `dataSize == 0` – ZeroMQ accepts an empty frame.
+	// `dataPtr` may be nullptr only if `dataSize == 0` – ZeroMQ accepts an empty frame.
+	if(dataPtr == nullptr && dataSize > 0)
+	{
+		__SUP_SS__ << "FESupervisor::publishData() - dataPtr is nullptr but dataSize is "
+		           << dataSize << __E__;
+		__SUP_SS_THROW__;
+	}
 	auto rc_payload =
 	    dp_socket_.send(zmq::buffer(dataPtr, dataSize), zmq::send_flags::none);
 	if(!rc_payload)
