@@ -611,20 +611,18 @@ std::string StringMacros::convertEnvironmentVariables(const std::string& data)
 			   systemVariables_.at(sysVarSplit[1]).find(sysVarSplit[2]) ==
 			       systemVariables_.at(sysVarSplit[1]).end())
 			{
-				__SS__
-				    << "System variable ${" << envVariable
-				    << "} is not valid or was not found!"
-				    << "\n\n"
-				    << "If you were trying to access an ots System Variable, the correct "
-				       "syntax is "
-				    << "${OTS.<variable>.<property>}, e.g. ${OTS.ActiveStateMachine.name}"
-				    << "\n\n"
-				    << "If you were trying to insert an arithmetic operation, the "
-				       "correct "
-				       "syntax is $((4 - 3)) or $(($ENVVAR1 - $ENVVAR2))"
-				    << "\n\n"
-				    << "Available system variables:"
-				    << __E__;
+				__SS__ << "System variable ${" << envVariable
+				       << "} is not valid or was not found!"
+				       << "\n\n"
+				       << "If you were trying to access an ots System Variable, the correct "
+				          "syntax is "
+				       << "${OTS.<variable>.<property>}, e.g. "
+				          "${OTS.ActiveStateMachine.name}"
+				       << "\n\n"
+				       << "If you were trying to insert an arithmetic operation, the correct "
+				          "syntax is $((4 - 3)) or $(($ENVVAR1 - $ENVVAR2))"
+				       << "\n\n"
+				       << "Available system variables:" << __E__;
 
 				// Print all available system variables
 				for(const auto& varPair : systemVariables_)
