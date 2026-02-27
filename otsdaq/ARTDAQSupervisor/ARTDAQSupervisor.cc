@@ -221,9 +221,15 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 	  << getSupervisorProperty("strict_fragment_id_mode", false) << std::endl;
 	o << "disable_private_network_bookkeeping: " << std::boolalpha
 	  << getSupervisorProperty("disable_private_network_bookkeeping", false) << std::endl;
-	o << "allowed_processors: " << getSupervisorProperty("allowed_processors", "0-255")
-	  << std::
-	         endl;  // Note this sets a taskset for ALL processes, on all nodes (ex. "1,2,5-7")
+	o << "allowed_processors: "
+	  << getSupervisorProperty(
+	         "allowed_processors",
+	         "0-255")  // Note this sets a taskset for ALL processes, on all nodes (ex. "1,2,5-7")
+	  << std::endl;
+	if(getSupervisorProperty("partition_label_format", "") !=
+	   "")  //Add to ARTDAQSupervisor properties partition_label_format: "-P%s"
+		o << "partition_label_format: "
+		  << getSupervisorProperty("partition_label_format", "") << std::endl;
 
 	o.close();
 
@@ -248,6 +254,18 @@ ARTDAQSupervisor::~ARTDAQSupervisor(void)
 {
 	__SUP_COUT__ << "Destructor." << __E__;
 	destroy();
+
+	__SUP_COUT__ << "Calling Py_Finalize()" << __E__;
+	Py_Finalize();
+
+	// CorePropertySupervisorBase would destroy, but since it was created here, attempt to destroy
+	if(CorePropertySupervisorBase::theTRACEController_)
+	{
+		__SUP_COUT__ << "Destroying TRACE Controller..." << __E__;
+		delete CorePropertySupervisorBase::theTRACEController_;
+		CorePropertySupervisorBase::theTRACEController_ = nullptr;
+	}
+
 	__SUP_COUT__ << "Destructed." << __E__;
 }  // end destructor()
 
@@ -296,20 +314,13 @@ sys.stderr = sys.__stderr__
 	stringIO_err_ = nullptr;
 
 	__SUP_COUT__ << "Thread and garbage cleanup" << __E__;
-	//force python thread cleanup:
+	// force python thread cleanup:
 	PyRun_SimpleString(
 	    "import threading; [t.join() for t in threading.enumerate() if t is not "
-	    "threading.main_thread()]");
+	    "threading.main_thread() and not isinstance(t, threading._DummyThread)]");
 	PyRun_SimpleString("import gc; gc.collect()");
-	Py_Finalize();
-
-	// CorePropertySupervisorBase would destroy, but since it was created here, attempt to destroy
-	if(CorePropertySupervisorBase::theTRACEController_)
-	{
-		__SUP_COUT__ << "Destroying TRACE Controller..." << __E__;
-		delete CorePropertySupervisorBase::theTRACEController_;
-		CorePropertySupervisorBase::theTRACEController_ = nullptr;
-	}
+	// __SUP_COUT__ << "Calling Py_Finalize()" << __E__;
+	// Py_Finalize();
 
 	__SUP_COUT__ << "Destroyed." << __E__;
 }  // end destroy()
@@ -643,13 +654,11 @@ try
 	{
 		__GEN_SS__ << "There must be at least one enabled BoardReader!" << __E__;
 		__GEN_SS_THROW__;
-		return;
 	}
 	if(info.processes.count(ARTDAQTableBase::ARTDAQAppType::EventBuilder) == 0)
 	{
 		__GEN_SS__ << "There must be at least one enabled EventBuilder!" << __E__;
 		__GEN_SS_THROW__;
-		return;
 	}
 
 	thread_progress_bar_.step();
@@ -1618,7 +1627,7 @@ void ots::ARTDAQSupervisor::getDAQState_()
 	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 	__SUP_COUTS__(50) << "Have DAQInterface python lock" << __E__;
 
-	if(daqinterface_ptr_ == nullptr)
+	if(daqinterface_ptr_ == NULL)
 	{
 		daqinterface_state_ = "";
 		__SUP_COUT_WARN__ << "daqinterface_ptr_ is not initialized!" << __E__;
@@ -1852,6 +1861,7 @@ std::list<std::string> ots::ARTDAQSupervisor::tokenize_(std::string const& input
 
 //==============================================================================
 void ots::ARTDAQSupervisor::daqinterfaceRunner_()
+try
 {
 	TLOG(TLVL_TRACE) << "Runner thread starting";
 	runner_running_ = true;
@@ -1948,6 +1958,39 @@ void ots::ARTDAQSupervisor::daqinterfaceRunner_()
 	runner_running_ = false;
 	TLOG(TLVL_TRACE) << "Runner thread complete";
 }  // end daqinterfaceRunner_()
+catch(...)
+{
+	__SS__ << "An error occurred in "
+	          "start_runner_/daqinterfaceRunner_ thread "
+	       << __E__;
+	try
+	{
+		throw;
+	}
+	catch(const std::runtime_error& e)
+	{
+		ss << "Here is the error: " << e.what() << __E__;
+	}
+	catch(...)
+	{
+		ss << "Unexpected error!" << __E__;
+	}
+	__COUT_ERR__ << ss.str();
+
+	{
+		std::lock_guard<std::mutex> lock(
+		    thread_mutex_);  // lock out for remainder of scope
+		thread_error_message_ = ss.str();
+	}
+
+	theStateMachine_.setErrorMessage(ss.str());
+
+	sendAsyncExceptionToGateway(  //0 for both pause/stop indicates error
+	    ss.str(),
+	    0 /* isPauseException */,
+	    0 /* isStopException */);
+
+}  // end daqinterfaceRunner_() catch
 
 //==============================================================================
 void ots::ARTDAQSupervisor::stop_runner_()

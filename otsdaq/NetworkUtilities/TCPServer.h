@@ -16,8 +16,8 @@ class TCPServer : public TCPServerBase
 	virtual ~TCPServer(void);
 
 	virtual std::string interpretMessage(const std::string& buffer) = 0;
-	void setReceiveTimeout(unsigned int timeoutSeconds, unsigned int timeoutMicroseconds);
-	void setSendTimeout(unsigned int timeoutSeconds, unsigned int timeoutMicroseconds);
+	void                setReceiveTimeout(unsigned int timeoutSeconds, unsigned int timeoutMicroseconds);
+	void                setSendTimeout(unsigned int timeoutSeconds, unsigned int timeoutMicroseconds);
 
   private:
 	void           acceptConnections(void) override;

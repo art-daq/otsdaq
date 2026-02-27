@@ -14,7 +14,8 @@ class FESlowControlsWorkLoop : public WorkLoop
 {
   public:
 	FESlowControlsWorkLoop(const std::string& name, FEVInterface* interface)
-	    : WorkLoop(name), interface_(interface)
+	    : WorkLoop(name)
+	    , interface_(interface)
 	{
 	}
 	~FESlowControlsWorkLoop() { ; }  ///< do not own interface_, so do not delete

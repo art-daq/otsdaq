@@ -76,7 +76,8 @@ class ots::UDPFragment
 	/// The constructor simply sets its const private member "artdaq_Fragment_"
 	/// to refer to the artdaq::Fragment object
 	///
-	UDPFragment(artdaq::Fragment const& f) : artdaq_Fragment_(f) {}
+	UDPFragment(artdaq::Fragment const& f)
+	    : artdaq_Fragment_(f) {}
 
 	/// const getter functions for the data in the header
 	///

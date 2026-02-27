@@ -24,8 +24,8 @@ class CircularBufferBase
 	virtual ~CircularBufferBase(void);
 
 	virtual void reset(void) = 0;
-	void registerProducer(DataProcessor* producer, unsigned int numberOfSubBuffers = 100);
-	void registerConsumer(DataProcessor* consumer);
+	void         registerProducer(DataProcessor* producer, unsigned int numberOfSubBuffers = 100);
+	void         registerConsumer(DataProcessor* consumer);
 	// void unregisterProducer(DataProcessor*  producer);
 	// void unregisterConsumer(DataProcessor*  consumer);
 

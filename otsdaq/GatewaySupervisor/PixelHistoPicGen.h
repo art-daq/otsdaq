@@ -14,36 +14,36 @@ class PixelHistoPicGen
 	void readBmpToReadImg(const std::string& filename);
 	void convertBmp(const std::string& fileBMP, const std::string& convertFile);
 
-	void initImgBuffer(int sourceKey);  ///<fpix buffer
-	void initImgBuffer(int r, int g, int b);
-	void writeImgToBmp(std::string filename);
-	void transferReadImgToImg(void);
-	void drawDiscToImg(int disc, bool isClicked = false);
-	void drawPanelToImg(int disc, int panel, int x, int y, bool isClicked = false);
-	void drawBladeToImg(int   disc,
-	                    int   panel,
-	                    int   halfDisc,
-	                    int   blade,
-	                    int   x,
-	                    int   y,
-	                    float deg,
-	                    int&  roci,
-	                    int&  clicki,
-	                    bool  isClicked = false);
-	void drawFillRectAng(int x, int y, int w, int h, int r, int g, int b, float deg);
-	void drawFillRect(int   x,
-	                  int   y,
-	                  int   w,
-	                  int   h,
-	                  int   r,
-	                  int   g,
-	                  int   b,
-	                  float m1 = 1.0f,
-	                  float m2 = 0.0f,
-	                  float m3 = 0.0f,
-	                  float m4 = 1.0f);
-	void setImgPixel(int x, int y, int r, int g, int b);
-	void fillFPixColors(void);
+	void        initImgBuffer(int sourceKey);  ///<fpix buffer
+	void        initImgBuffer(int r, int g, int b);
+	void        writeImgToBmp(std::string filename);
+	void        transferReadImgToImg(void);
+	void        drawDiscToImg(int disc, bool isClicked = false);
+	void        drawPanelToImg(int disc, int panel, int x, int y, bool isClicked = false);
+	void        drawBladeToImg(int   disc,
+	                           int   panel,
+	                           int   halfDisc,
+	                           int   blade,
+	                           int   x,
+	                           int   y,
+	                           float deg,
+	                           int&  roci,
+	                           int&  clicki,
+	                           bool  isClicked = false);
+	void        drawFillRectAng(int x, int y, int w, int h, int r, int g, int b, float deg);
+	void        drawFillRect(int   x,
+	                         int   y,
+	                         int   w,
+	                         int   h,
+	                         int   r,
+	                         int   g,
+	                         int   b,
+	                         float m1 = 1.0f,
+	                         float m2 = 0.0f,
+	                         float m3 = 0.0f,
+	                         float m4 = 1.0f);
+	void        setImgPixel(int x, int y, int r, int g, int b);
+	void        fillFPixColors(void);
 	std::string getFPixStandardName(
 	    int disc, int panel, int halfDisc, int blade, int roc);
 	void getFPixIndices(
@@ -57,7 +57,7 @@ class PixelHistoPicGen
 	void        drawLayerToBImg(int layer, bool isClicked = false);
 	void        drawBPixRoc(int x, int y, int r, int g, int b);
 	std::string getBPixStandardName(int layer, int pm, int row, int col);
-	void getBPixIndices(std::string stdName, int& layer, int& pm, int& row, int& col);
+	void        getBPixIndices(std::string stdName, int& layer, int& pm, int& row, int& col);
 
 	///common
 	void setRocColor(std::string stdName, int r, int g, int b);

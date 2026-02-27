@@ -5369,12 +5369,13 @@ try
 {
 	__COUTT__ << "Initializing prerequisites for artdaq!" << __E__;
 
-	for(auto& tablePair : nameToTableMap_)
+	auto activeTables = getActiveVersions();
+	for(auto& tablePair : activeTables)
 	{
 		__COUTVS__(2, tablePair.first);
 		try
 		{
-			tablePair.second->initPrereqsForARTDAQ(this);
+			nameToTableMap_.at(tablePair.first)->initPrereqsForARTDAQ(this);
 		}
 		catch(const std::runtime_error& e)
 		{

@@ -50,6 +50,7 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	virtual void transitionStarting(toolbox::Event::Reference event) override;
 	virtual void transitionStopping(toolbox::Event::Reference event) override;
 	virtual void enteringError(toolbox::Event::Reference event) override;
+
 	virtual std::vector<SupervisorInfo::SubappInfo> getSubappInfo(void) override;
 	virtual std::string                             getStatusProgressDetail(void) override
 	{
@@ -61,9 +62,9 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 			return CoreSupervisorBase::getStatusProgressDetail();
 
 		std::lock_guard<std::mutex> lk(thread_mutex_);
-		// __COUTV__(thread_progress_message_);
+		__COUTVS__(20, thread_progress_message_);
 		return thread_progress_message_;
-	}
+	}  //end getStatusProgressDetail()
 
 	std::list<
 	    std::pair<DAQInterfaceProcessInfo, std::unique_ptr<artdaq::CommanderInterface>>>
@@ -79,7 +80,8 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	struct PyObjectGuard
 	{
 		PyObject* obj;
-		explicit PyObjectGuard(PyObject* o) : obj(o) {}
+		explicit PyObjectGuard(PyObject* o)
+		    : obj(o) {}
 		~PyObjectGuard()
 		{
 			if(obj)

@@ -39,8 +39,8 @@ class TableVersion
 	bool          operator!=(const TableVersion& version) const;
 	bool          operator<(const TableVersion& version) const;
 	bool          operator>(const TableVersion& version) const;
-	bool operator<=(const TableVersion& version) const { return !operator>(version); }
-	bool operator>=(const TableVersion& version) const { return !operator<(version); }
+	bool          operator<=(const TableVersion& version) const { return !operator>(version); }
+	bool          operator>=(const TableVersion& version) const { return !operator<(version); }
 	TableVersion& operator*=(
 	    const unsigned int a);  ///< to support StringMacros on TableVersion types
 	TableVersion& operator*=(

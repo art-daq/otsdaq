@@ -62,7 +62,8 @@ class ots::UDPFragmentWriter : public ots::UDPFragment
 /// UDPFragment::Metadata object, otherwise it throws
 ///
 ots::UDPFragmentWriter::UDPFragmentWriter(artdaq::Fragment& f)
-    : UDPFragment(f), artdaq_Fragment_(f)
+    : UDPFragment(f)
+    , artdaq_Fragment_(f)
 {
 	if(!f.hasMetadata() || f.dataSizeBytes() > 0)
 	{

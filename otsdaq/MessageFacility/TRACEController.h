@@ -8,14 +8,15 @@ namespace ots
 class TRACEController : public ITRACEController
 {
   public:
-	TRACEController() : ITRACEController(){};
+	TRACEController()
+	    : ITRACEController(){};
 	virtual ~TRACEController() = default;
 
 	virtual const HostTraceLevelMap& getTraceLevels(void);
 	virtual void                     setTraceLevelMask(std::string const& label,
 	                                                   TraceMasks const&  lvl,
 	                                                   std::string const& hostname = "localhost",
-	                                                   std::string const& mode = "ALL");
+	                                                   std::string const& mode     = "ALL");
 
 	virtual bool getIsTriggered(void);
 	virtual void setTriggerEnable(size_t entriesAfterTrigger);

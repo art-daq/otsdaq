@@ -11,7 +11,7 @@
 #include "otsdaq/Macros/StringMacros.h"
 
 #if TRACE_REVNUM < 1394
-#define traceLvls_p traceNamLvls_p
+#define traceLvls_p         traceNamLvls_p
 #define TRACE_TID2NAME(idx) traceNamLvls_p[idx].name
 #endif
 

@@ -12,7 +12,9 @@ template<typename N, typename V>
 class Parameter
 {
   public:
-	Parameter(N name, V value) : name_(name), value_(value) { ; }
+	Parameter(N name, V value)
+	    : name_(name)
+	    , value_(value) { ; }
 	virtual ~Parameter(void) { ; }
 	/// Getters
 	const N&              getName(void) const { return name_; }

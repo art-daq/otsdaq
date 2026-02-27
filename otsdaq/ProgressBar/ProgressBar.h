@@ -99,8 +99,8 @@ class ProgressBar
 	void complete();  ///< declare complete, thread safe
 
 	/// get functions
-	bool isComplete();  ///< thread safe
-	int  read();  ///< if stepsToComplete==0, then define any progress as 50%, thread safe
+	bool        isComplete();            ///< thread safe
+	int         read();                  ///< if stepsToComplete==0, then define any progress as 50%, thread safe
 	std::string readPercentageString();  ///< if stepsToComplete==0, then define any
 	                                     ///< progress as 50%, thread safe
 

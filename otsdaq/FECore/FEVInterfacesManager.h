@@ -52,7 +52,7 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	    const std::string&                         interfaceID,
 	    const FEVInterface::frontEndMacroStruct_t& feMacro,
 	    const std::string&                         inputArgs,
-	    std::string& outputArgs);  ///< used by MacroMaker and FE calling indirectly
+	    std::string&                               outputArgs);  ///< used by MacroMaker and FE calling indirectly
 	void runFEMacro(const std::string& interfaceID,
 	                const std::string& feMacroName,
 	                const std::string& inputArgs,
@@ -126,10 +126,10 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	std::map<std::string /*name*/, bool /*isDone*/> stateMachinesIterationDone_;
 	unsigned int                                    stateMachinesIterationWorkCount_;
 	unsigned int                                    subIterationWorkStateMachineIndex_;
-	void preStateMachineExecution(unsigned int i, const std::string& transitionName);
-	bool postStateMachineExecution(unsigned int i);
-	void preStateMachineExecutionLoop(void);
-	void postStateMachineExecutionLoop(void);
+	void                                            preStateMachineExecution(unsigned int i, const std::string& transitionName);
+	bool                                            postStateMachineExecution(unsigned int i);
+	void                                            preStateMachineExecutionLoop(void);
+	void                                            postStateMachineExecutionLoop(void);
 };
 
 }  // namespace ots
