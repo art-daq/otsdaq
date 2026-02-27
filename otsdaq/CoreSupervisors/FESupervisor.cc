@@ -5,6 +5,10 @@
 
 #include "artdaq/DAQdata/Globals.hh"  // instantiates artdaq::Globals::metricMan_
 
+#include <iostream>
+#include <string>
+#include <cstring>
+
 #include "artdaq-core/Utilities/ExceptionHandler.hh" /*for artdaq::ExceptionHandler*/
 
 /// https://cdcvs.fnal.gov/redmine/projects/artdaq/repository/revisions/develop/entry/artdaq/DAQdata/Globals.hh
@@ -34,7 +38,10 @@ using namespace ots;
 XDAQ_INSTANTIATOR_IMPL(FESupervisor)
 
 //==============================================================================
-FESupervisor::FESupervisor(xdaq::ApplicationStub* stub) : CoreSupervisorBase(stub)
+FESupervisor::FESupervisor(xdaq::ApplicationStub* stub) 
+: CoreSupervisorBase(stub)
+,  dp_context_{1}                 // 1 I/O thread – sufficient for most tests
+, dp_socket_{dp_context_, zmq::socket_type::pub}
 {
 	__SUP_COUT__ << "Constructing..." << __E__;
 
@@ -50,6 +57,33 @@ FESupervisor::FESupervisor(xdaq::ApplicationStub* stub) : CoreSupervisorBase(stu
 	           &FESupervisor::frontEndCommunicationRequest,
 	           "FECommunication",
 	           XDAQ_NS_URI);
+
+	
+	std::string dataPublishingEndpoint;
+	try
+	{
+		dataPublishingEndpoint = getSupervisorProperty("data_publishing_endpoint");
+	}
+	catch(const std::runtime_error& e)
+	{
+		__SUP_COUT__ << "Data publishing property 'data_publishing_endpoint' not set. Defaulting to data publishing disabled." << __E__;
+	}
+	__SUP_COUT_INFO__ << "dataPublishingEndpoint = " << dataPublishingEndpoint << __E__;
+
+	if(dataPublishingEndpoint.size())
+	{
+		__SUP_COUT__ << "Initializing data publishing to endpoint '" << dataPublishingEndpoint << "'..." << __E__;
+		try
+		{
+			std::string topic    = getSupervisorProperty("data_publishing_topic");
+			initDataPublishing(dataPublishingEndpoint, topic);
+		}
+		catch(const std::runtime_error& e)
+		{
+			__SUP_SS__ << "Error initializing data publishing: " << e.what() << __E__;
+			__SUP_SS_THROW__;
+		}
+	}
 
 	try
 	{
@@ -164,6 +198,14 @@ FESupervisor::~FESupervisor(void)
 	__SUP_COUT__ << "Destroying..." << __E__;
 	// theStateMachineImplementation_ is reset and the object it points to deleted in
 	// ~CoreSupervisorBase()
+
+
+    // Destructor must never throw, so we swallow any zmq_error.
+    try {
+        closeDataPublishing();
+    } catch (...) {
+        // nothing – best‑effort cleanup.
+    }
 
 	artdaq::Globals::CleanUpGlobals();  // destruct metricManager (among other things)
 
@@ -1345,3 +1387,73 @@ void FESupervisor::transitionHalting(toolbox::Event::Reference event)
 
 	__SUP_COUT__ << "transitionHalting done." << __E__;
 }  // end transitionHalting()
+
+//==============================================================================
+void FESupervisor::initDataPublishing(const std::string& endpoint,
+                        const std::string& topic)
+{
+    if (dp_isInitialized_) {
+        // silently re‑initialise – close old socket first.
+        closeDataPublishing();
+    }
+
+    // Store for later use.
+    dp_endpoint_ = endpoint;
+    dp_topic_    = topic;
+
+    // Bind the PUB socket.
+    try {
+        dp_socket_.bind(dp_endpoint_);
+    } catch (const zmq::error_t& e) {
+        throw std::runtime_error(
+            "ZmqPublisher::initDataPublishing() - bind to '" + dp_endpoint_
+            + "' failed: " + e.what());
+    }
+
+    dp_isInitialized_ = true;
+} //end initDataPublishing()
+
+//==============================================================================
+void FESupervisor::closeDataPublishing()
+{
+    if (dp_isInitialized_) {
+        try {
+            dp_socket_.close();   // close the PUB socket
+        } catch (const zmq::error_t&) {
+            // ignore – we are cleaning up.
+        }
+        try {
+            dp_context_.close();  // close the ZMQ context
+        } catch (const zmq::error_t&) {
+            // ignore.
+        }
+        dp_isInitialized_ = false;
+    }
+} //end closeDataPublishing()
+
+//==============================================================================
+void FESupervisor::publishData(const char* dataPtr, size_t dataSize)
+{
+	 if (!dp_isInitialized_) {
+       	__SUP_SS__ << "ZmqPublisher::publish() called before init()" << __E__;
+		__SUP_SS_THROW__;
+    }
+
+    // ---- Topic frame (must be sent with sndmore) ----
+    // Using zmq::buffer prevents an extra copy – it just points at the data.
+    auto rc_topic = dp_socket_.send(zmq::buffer(dp_topic_),
+                                  zmq::send_flags::sndmore);
+    if (!rc_topic) {
+        __SUP_SS__ << "ZmqPublisher::publish() - failed to send topic" << __E__;
+		__SUP_SS_THROW__;
+    }
+
+    // ---- Payload frame (final frame) ----
+    // `dataPtr` may be nullptr if `dataSize == 0` – ZeroMQ accepts an empty frame.
+    auto rc_payload = dp_socket_.send(zmq::buffer(dataPtr, dataSize),
+                                    zmq::send_flags::none);
+    if (!rc_payload) {
+        __SUP_SS__ << "ZmqPublisher::publish() - failed to send payload" << __E__;
+		__SUP_SS_THROW__;
+    }
+} //end publishData()
