@@ -1406,7 +1406,7 @@ void FESupervisor::initDataPublishing(const std::string& endpoint,
 	if(dp_isInitialized_)
 	{
 		// silently re‑initialise – close old socket first.
-		closeDataPublishing();
+		closeDataPublishing(false);
 	}
 
 	// Store for later use.
@@ -1420,15 +1420,16 @@ void FESupervisor::initDataPublishing(const std::string& endpoint,
 	}
 	catch(const zmq::error_t& e)
 	{
-		throw std::runtime_error("ZmqPublisher::initDataPublishing() - bind to '" +
+		__SUP_SS__ << "initDataPublishing() - bind to zmq '" +
 		                         dp_endpoint_ + "' failed: " + e.what());
+		__SUP_SS_THROW__;
 	}
 
 	dp_isInitialized_ = true;
 }  //end initDataPublishing()
 
 //==============================================================================
-void FESupervisor::closeDataPublishing()
+void FESupervisor::closeDataPublishing(bool alsoCloseContext /* = true */)
 {
 	if(dp_isInitialized_)
 	{
@@ -1442,7 +1443,8 @@ void FESupervisor::closeDataPublishing()
 		}
 		try
 		{
-			dp_context_.close();  // close the ZMQ context
+			if(alsoCloseContext)
+				dp_context_.close();  // close the ZMQ context
 		}
 		catch(const zmq::error_t&)
 		{
@@ -1457,7 +1459,7 @@ void FESupervisor::publishData(const char* dataPtr, size_t dataSize)
 {
 	if(!dp_isInitialized_)
 	{
-		__SUP_SS__ << "ZmqPublisher::publish() called before init()" << __E__;
+		__SUP_SS__ << "publishData() called before zmq init()" << __E__;
 		__SUP_SS_THROW__;
 	}
 
@@ -1466,7 +1468,7 @@ void FESupervisor::publishData(const char* dataPtr, size_t dataSize)
 	auto rc_topic = dp_socket_.send(zmq::buffer(dp_topic_), zmq::send_flags::sndmore);
 	if(!rc_topic)
 	{
-		__SUP_SS__ << "ZmqPublisher::publish() - failed to send topic" << __E__;
+		__SUP_SS__ << "publishData() - failed to send zmq topic" << __E__;
 		__SUP_SS_THROW__;
 	}
 
@@ -1482,7 +1484,7 @@ void FESupervisor::publishData(const char* dataPtr, size_t dataSize)
 	    dp_socket_.send(zmq::buffer(dataPtr, dataSize), zmq::send_flags::none);
 	if(!rc_payload)
 	{
-		__SUP_SS__ << "ZmqPublisher::publish() - failed to send payload" << __E__;
+		__SUP_SS__ << "publishData() - failed to send zmq payload" << __E__;
 		__SUP_SS_THROW__;
 	}
 }  //end publishData()
