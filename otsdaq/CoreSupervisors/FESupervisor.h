@@ -45,6 +45,7 @@ class FESupervisor : public CoreSupervisorBase
 	/// @throws std::runtime_error if the socket is not initialised or
 	///         the send operation fails.
 	void publishData(const char* dataPtr, size_t dataSize);
+	bool isPublishingData() const { return dp_isInitialized_; }
 
   protected:
 	FEVInterfacesManager* theFEInterfacesManager_;
