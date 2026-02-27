@@ -38,11 +38,11 @@ class FESupervisor : public CoreSupervisorBase
 	/// Publish a raw binary payload.
 	///
 	/// multipart format:
-	///   frame‑0 : topic (as set in `init()`)
-	///   frame‑1 : payload (exactly `sz` bytes taken from `data`)
+	///   frame‑0 : topic (as set in `initDataPublishing()`)
+	///   frame‑1 : payload (exactly `dataSize` bytes taken from `dataPtr`)
 	///
-	/// @param data   Pointer to the payload buffer.
-	/// @param sz     Size of the payload in bytes.
+	/// @param dataPtr    Pointer to the payload buffer.
+	/// @param dataSize   Size of the payload in bytes.
 	/// @throws std::runtime_error if the socket is not initialised or
 	///         the send operation fails.
 	void publishData(const char* dataPtr, size_t dataSize);
