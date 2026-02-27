@@ -66,7 +66,7 @@ class FESupervisor : public CoreSupervisorBase
 	/// Close the socket and context explicitly.
 	/// After a call to `close()` you must call `init()` again before
 	/// publishing.
-	void closeDataPublishing();
+	void closeDataPublishing(bool alsoCloseContext = true);
 
   private:
 	FEVInterfacesManager*
