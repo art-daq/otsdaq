@@ -1406,7 +1406,7 @@ void FESupervisor::initDataPublishing(const std::string& endpoint,
 	if(dp_isInitialized_)
 	{
 		// silently re‑initialise – close old socket first.
-		closeDataPublishing();
+		closeDataPublishing(false);
 	}
 
 	// Store for later use.
@@ -1429,7 +1429,7 @@ void FESupervisor::initDataPublishing(const std::string& endpoint,
 }  //end initDataPublishing()
 
 //==============================================================================
-void FESupervisor::closeDataPublishing()
+void FESupervisor::closeDataPublishing(bool alsoCloseContext /* = true */)
 {
 	if(dp_isInitialized_)
 	{
@@ -1443,7 +1443,8 @@ void FESupervisor::closeDataPublishing()
 		}
 		try
 		{
-			dp_context_.close();  // close the ZMQ context
+			if(alsoCloseContext)
+				dp_context_.close();  // close the ZMQ context
 		}
 		catch(const zmq::error_t&)
 		{
@@ -1472,7 +1473,13 @@ void FESupervisor::publishData(const char* dataPtr, size_t dataSize)
 	}
 
 	// ---- Payload frame (final frame) ----
-	// `dataPtr` may be nullptr if `dataSize == 0` – ZeroMQ accepts an empty frame.
+	// `dataPtr` may be nullptr only if `dataSize == 0` – ZeroMQ accepts an empty frame.
+	if(dataPtr == nullptr && dataSize > 0)
+	{
+		__SUP_SS__ << "FESupervisor::publishData() - dataPtr is nullptr but dataSize is "
+		           << dataSize << __E__;
+		__SUP_SS_THROW__;
+	}
 	auto rc_payload =
 	    dp_socket_.send(zmq::buffer(dataPtr, dataSize), zmq::send_flags::none);
 	if(!rc_payload)
