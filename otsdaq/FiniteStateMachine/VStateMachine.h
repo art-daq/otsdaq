@@ -10,12 +10,12 @@ class CoreSupervisorBase;
 class VStateMachine
 {
   public:
-	VStateMachine(const std::string& name) :
-	    iterationIndex_(0),
-	    subIterationIndex_(0),
-	    iterationWorkFlag_(false),
-	    subIterationWorkFlag_(false),
-	    name_(name)
+	VStateMachine(const std::string& name)
+	    : iterationIndex_(0)
+	    , subIterationIndex_(0)
+	    , iterationWorkFlag_(false)
+	    , subIterationWorkFlag_(false)
+	    , name_(name)
 	{
 		;
 	}

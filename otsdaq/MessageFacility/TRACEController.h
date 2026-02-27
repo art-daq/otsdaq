@@ -8,8 +8,8 @@ namespace ots
 class TRACEController : public ITRACEController
 {
   public:
-	TRACEController() :
-	    ITRACEController(){};
+	TRACEController()
+	    : ITRACEController(){};
 	virtual ~TRACEController() = default;
 
 	virtual const HostTraceLevelMap& getTraceLevels(void);

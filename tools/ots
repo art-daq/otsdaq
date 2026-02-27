@@ -3269,4 +3269,3 @@ if [[ ${#remoteLaunchHosts[@]} > 0 ]]; then
 fi
 
 sleep 1 #so that the terminal comes back after the printouts are done ( in quiet mode )
-

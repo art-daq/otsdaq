@@ -19,10 +19,10 @@ class BufferImplementation
 {
 	struct ConsumerStruct
 	{
-		ConsumerStruct() :
-		    priority_(CircularBufferBase::LowConsumerPriority),
-		    readPointer_(0),
-		    subBuffersStatus_(nullptr)
+		ConsumerStruct()
+		    : priority_(CircularBufferBase::LowConsumerPriority)
+		    , readPointer_(0)
+		    , subBuffersStatus_(nullptr)
 		{
 		}
 
