@@ -1420,8 +1420,9 @@ void FESupervisor::initDataPublishing(const std::string& endpoint,
 	}
 	catch(const zmq::error_t& e)
 	{
-		__SUP_SS__ << "initDataPublishing() - bind to zmq '" +
-		                         dp_endpoint_ + "' failed: " + e.what());
+		__SUP_SS__ << "initDataPublishing() - bind to zmq '" + dp_endpoint_ +
+		                  "' failed: " + e.what()
+		           << __E__;
 		__SUP_SS_THROW__;
 	}
 
