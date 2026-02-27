@@ -1436,7 +1436,7 @@ void FESupervisor::closeDataPublishing(bool alsoCloseContext /* = true */)
 		try
 		{
 			dp_socket_.set(zmq::sockopt::linger, 0);  // discard unsent messages on close
-			dp_socket_.close();                        // close the PUB socket
+			dp_socket_.close();                       // close the PUB socket
 		}
 		catch(const zmq::error_t&)
 		{
