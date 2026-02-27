@@ -393,9 +393,7 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 					}
 
 					std::string localParentPath2 = "/" + potentialTable;
-					OUTCL2(key << ": "
-					           << parameter.second.getNode(parameterPreamble + "Value")
-					                  .getValue(),
+					OUTCL2(key << ": " << value,
 					       parameter.second.hasComment() ? parameter.second.getComment()
 					                                     : "");
 				}
