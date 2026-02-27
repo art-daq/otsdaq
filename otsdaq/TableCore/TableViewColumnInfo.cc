@@ -159,8 +159,8 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
 	if(type_ == TYPE_BITMAP_DATA && dataType_ != DATATYPE_STRING)
 	{
 		__SS__ << "The data type for column " << name_ << " is '" << dataType_
-		       << "'. Bitmap columns must have a data type of '" << DATATYPE_STRING << 
-			   "'." << std::endl;
+		       << "'. Bitmap columns must have a data type of '" << DATATYPE_STRING
+		       << "'." << std::endl;
 		if(capturedExceptionString)
 			*capturedExceptionString += ss.str();
 		else
@@ -742,4 +742,3 @@ std::string TableViewColumnInfo::getChildLinkIndex(void) const
 		__SS_THROW__;
 	}
 }
-

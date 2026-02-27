@@ -61,23 +61,26 @@ FESupervisor::FESupervisor(xdaq::ApplicationStub* stub)
 	std::string dataPublishingEndpoint;
 	try
 	{
-		dataPublishingEndpoint = getSupervisorProperty("data_publishing_endpoint"); //like "tcp://0.0.0.0:$((OTS_MAIN_PORT-2))"
+		dataPublishingEndpoint = getSupervisorProperty(
+		    "data_publishing_endpoint");  //like "tcp://0.0.0.0:$((OTS_MAIN_PORT-2))"
 	}
 	catch(const std::runtime_error& e)
 	{
 		__SUP_COUT__ << "Data publishing property 'data_publishing_endpoint' not set. "
 		                "Defaulting to data publishing disabled."
 		             << __E__;
-		
+
 		try
 		{
-			dataPublishingEndpoint = __ENV__("DATA_PUBLISHING_ENDPOINT"); //like "tcp://0.0.0.0:$((OTS_MAIN_PORT-2))" 
+			dataPublishingEndpoint = __ENV__(
+			    "DATA_PUBLISHING_ENDPOINT");  //like "tcp://0.0.0.0:$((OTS_MAIN_PORT-2))"
 		}
 		catch(const std::runtime_error& e)
 		{
-			__SUP_COUT__ << "Data publishing environment variable 'DATA_PUBLISHING_ENDPOINT' "
-			                "not set. Defaulting to data publishing disabled."
-			             << __E__;
+			__SUP_COUT__
+			    << "Data publishing environment variable 'DATA_PUBLISHING_ENDPOINT' "
+			       "not set. Defaulting to data publishing disabled."
+			    << __E__;
 		}
 	}
 	__SUP_COUT_INFO__ << "dataPublishingEndpoint = " << dataPublishingEndpoint << __E__;
@@ -86,9 +89,9 @@ FESupervisor::FESupervisor(xdaq::ApplicationStub* stub)
 	{
 		__SUP_COUT__ << "Initializing data publishing to endpoint '"
 		             << dataPublishingEndpoint << "'..." << __E__;
-		
-		initDataPublishing(dataPublishingEndpoint, 
-			getSupervisorProperty("data_publishing_topic",""));
+
+		initDataPublishing(dataPublishingEndpoint,
+		                   getSupervisorProperty("data_publishing_topic", ""));
 	}
 
 	try
