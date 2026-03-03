@@ -31,6 +31,7 @@ using namespace ots;
 #define IP_BLACKLIST_FILE 					WEB_LOGIN_DB_PATH + "/ip_generated_blacklist.dat"
 #define IP_REJECT_FILE 						WEB_LOGIN_DB_PATH + "/ip_reject.dat"
 #define IP_ACCEPT_FILE 						WEB_LOGIN_DB_PATH + "/ip_accept.dat"
+#define USERS_LOGIN_FAILURE_FILE 			USERS_DB_PATH + "/loginFailureCounts.dat"
 
 #define SILENCE_ALL_TOOLTIPS_FILENAME       "silenceTooltips"
 
@@ -159,6 +160,9 @@ WebUsers::WebUsers()
 
 	// attempt to load persistent user sessions
 	loadActiveSessions();
+
+	// load login failure counts from separate file (overrides any stale values in users.xml)
+	loadLoginFailureCounts();
 
 	// default user with lock to admin and/or try to load last user with lock
 	// Note: this must happen after getting persistent active sessions
@@ -784,6 +788,68 @@ bool WebUsers::loadDatabases()
 }  // end loadDatabases()
 
 //==============================================================================
+/// saveLoginFailureCounts
+///	Save only the per-user login failure counts to a lightweight separate file.
+///	This avoids rewriting users.xml on every login attempt.
+void WebUsers::saveLoginFailureCounts()
+{
+	std::string fn =
+	    (std::string)WEB_LOGIN_DB_PATH + (std::string)USERS_LOGIN_FAILURE_FILE;
+
+	FILE* fp = fopen(fn.c_str(), "w");
+	if(!fp)
+	{
+		__COUT_ERR__ << "Failed to open login failure counts file for writing: " << fn
+		             << __E__;
+		return;
+	}
+	for(uint64_t i = 0; i < Users_.size(); ++i)
+	{
+		if(Users_[i].loginFailureCount_ > 0)
+			fprintf(fp, "%lu %hhu\n", Users_[i].userId_, Users_[i].loginFailureCount_);
+	}
+	fclose(fp);
+}  // end saveLoginFailureCounts()
+
+//==============================================================================
+/// loadLoginFailureCounts
+///	Load per-user login failure counts from the separate file,
+///	overwriting values loaded from users.xml (which may be stale).
+void WebUsers::loadLoginFailureCounts()
+{
+	std::string fn =
+	    (std::string)WEB_LOGIN_DB_PATH + (std::string)USERS_LOGIN_FAILURE_FILE;
+
+	FILE* fp = fopen(fn.c_str(), "r");
+	if(!fp)
+	{
+		__COUT__ << "No login failure counts file found (this is normal on first run): "
+		         << fn << __E__;
+		return;
+	}
+
+	// first, zero out all failure counts (file is authoritative)
+	for(auto& user : Users_)
+		user.loginFailureCount_ = 0;
+
+	uint64_t      uid;
+	unsigned int  count;
+	while(fscanf(fp, "%lu %u", &uid, &count) == 2)
+	{
+		for(auto& user : Users_)
+		{
+			if(user.userId_ == uid)
+			{
+				user.loginFailureCount_ = (unsigned char)count;
+				break;
+			}
+		}
+	}
+	fclose(fp);
+	__COUT__ << "Loaded login failure counts from " << fn << __E__;
+}  // end loadLoginFailureCounts()
+
+//==============================================================================
 /// saveToDatabase
 void WebUsers::saveToDatabase(FILE*              fp,
                               const std::string& field,
@@ -1176,7 +1242,7 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 			__COUT__ << "New account code did not match: "
 			         << Users_[i].getNewAccountCode() << " != " << newAccountCode
 			         << __E__;
-			saveDatabaseToFile(DB_USERS);  // users db modified, so save
+			// Note: lastLoginAttempt_ changed but is not critical to persist here
 			return NOT_FOUND_IN_DATABASE;
 		}
 
@@ -1218,20 +1284,30 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 
 			__COUTV__(isInactiveForGroup(Users_[i].permissions_));
 			if(isInactiveForGroup(Users_[i].permissions_))
+			{
 				__COUT_INFO__ << "Account '" << user
 				              << "' has been marked inactive due to too many failed "
 				                 "login attempts (Failed Attempt #"
 				              << (int)Users_[i].loginFailureCount_
 				              << ")! Note only admins can reactivate accounts." << __E__;
 
-			saveDatabaseToFile(DB_USERS);  // users db modified, so save
+				// permissions changed (account locked) — must persist to users.xml
+				saveDatabaseToFile(DB_USERS);
+			}
+
+			saveLoginFailureCounts();  // persist failure count to separate file
 			return NOT_FOUND_IN_DATABASE;
 		}
 	}
 
 	__COUT_INFO__ << "Login successful for: " << user << __E__;
 
-	Users_[i].loginFailureCount_ = 0;
+	// Only persist failure count reset if it was previously non-zero
+	if(Users_[i].loginFailureCount_ != 0)
+	{
+		Users_[i].loginFailureCount_ = 0;
+		saveLoginFailureCounts();  // persist reset to separate file
+	}
 
 	// record to login history for user (h==0) and on global server level (h==1)
 	for(int h = 0; h < 2; ++h)
@@ -1275,7 +1351,7 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 	}
 
 	// SUCCESS!!
-	saveDatabaseToFile(DB_USERS);             // users db modified, so save
+	// Note: users.xml is NOT saved here — only account add/delete/modify should touch it
 	jumbledUser    = Users_[i].displayName_;  // pass by reference displayName
 	newAccountCode = createNewActiveSession(Users_[i].userId_,
 	                                        ip);  // return cookie code by reference
@@ -1383,7 +1459,12 @@ uint64_t WebUsers::attemptActiveSessionWithCert(const std::string& uuid,
 
 	__COUT__ << "Login successful for: " << user << __E__;
 
-	Users_[i].loginFailureCount_ = 0;
+	// Only persist failure count reset if it was previously non-zero
+	if(Users_[i].loginFailureCount_ != 0)
+	{
+		Users_[i].loginFailureCount_ = 0;
+		saveLoginFailureCounts();  // persist reset to separate file
+	}
 
 	// record to login history for user (h==0) and on global server level (h==1)
 	for(int h = 0; h < 2; ++h)
@@ -1427,7 +1508,7 @@ uint64_t WebUsers::attemptActiveSessionWithCert(const std::string& uuid,
 	}
 
 	// SUCCESS!!
-	saveDatabaseToFile(DB_USERS);         // users db modified, so save
+	// Note: users.xml is NOT saved here — only account add/delete/modify should touch it
 	email      = Users_[i].displayName_;  // pass by reference displayName
 	cookieCode = createNewActiveSession(Users_[i].userId_,
 	                                    ip);  // return cookie code by reference
