@@ -186,7 +186,7 @@ class ConfigurationManager
 	    ConfigurationManager::LoadGroupType					   groupTypeToLoad    = ConfigurationManager::LoadGroupType::ALL_TYPES,
 		bool												   ignoreVersionTracking = false,
 		std::map<std::string /* tableName */,
-			TableVersion> 									   mergInTables = {},
+			TableVersion> 									   mergeInTables = {},
 		std::map<std::string /* tableName */,
 			TableVersion> 									   overrideTables = {});
 	void 								copyTableGroupFromCache		(
