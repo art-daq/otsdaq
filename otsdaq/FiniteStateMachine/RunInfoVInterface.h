@@ -85,7 +85,8 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual std::vector<std::vector<std::string>>
 							getRunRecords				(unsigned int        /* startTime */,
 														 unsigned int        /* endTime */,
-														 const std::string&  queryFilter = "") 				{ __SS__ << "getRunRecords() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!" << (queryFilter == ""/* use variable */?"":""); __SS_THROW__;};
+												 const std::string&  queryFilter = "",
+												 const std::string&  runType = "") 				{ __SS__ << "getRunRecords() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!" << (queryFilter == "" && runType == ""/* use variables */?"":""); __SS_THROW__;};
 
 	virtual std::vector<std::vector<std::string>>
 							getRunConditionByID			(uint64_t 			 /* conditionID*/) 				{ __SS__ << "getRunConditionByID() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
