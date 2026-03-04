@@ -497,7 +497,9 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			{
 				if(tableInfo->tablePtr_ == nullptr)
 				{
-					__SS__ << "Fatal error occurred loading table info into cache! Perhaps there is an illegal Table schema definition? Check logs to resolve." 
+					__SS__ << "Fatal error occurred loading table info into cache! "
+					          "Perhaps there is an illegal Table schema definition? "
+					          "Check logs to resolve."
 					       << __E__;
 					__SS_THROW__;
 				}

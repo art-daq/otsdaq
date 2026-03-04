@@ -9,29 +9,29 @@ SCRIPT_DIR="$(
 # Function to display log tail for user diagnosis
 displayLogTail() {
   local log_file="$1"
-  
+
   # Display last 30 lines of log file with error highlighting
   awk '
   BEGIN { IGNORECASE=1 }
   {
-    lines[NR] = $0
-    if ($0 ~ /error/) last = NR
+	lines[NR] = $0
+	if ($0 ~ /error/) last = NR
   }
   END {
-    # If no "error" found, or not enough lines after it, do last 30 lines
-    if (!last || NR - last < 30) {
-      start = (NR - 29 > 1) ? NR - 29 : 1
-      for (i = start; i <= NR; i++)
-        print lines[i]
-      exit
-    }
+	# If no "error" found, or not enough lines after it, do last 30 lines
+	if (!last || NR - last < 30) {
+	  start = (NR - 29 > 1) ? NR - 29 : 1
+	  for (i = start; i <= NR; i++)
+		print lines[i]
+	  exit
+	}
 
-    # Normal case: 3 before, 30 after
-    start = (last - 3 > 1) ? last - 3 : 1
-    end   = last + 30
+	# Normal case: 3 before, 30 after
+	start = (last - 3 > 1) ? last - 3 : 1
+	end   = last + 30
 
-    for (i = start; i <= end && i <= NR; i++)
-      print lines[i]
+	for (i = start; i <= end && i <= NR; i++)
+	  print lines[i]
   }
   ' "$log_file"
   echo

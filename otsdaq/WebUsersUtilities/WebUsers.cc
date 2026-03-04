@@ -3281,8 +3281,9 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	else
 	{
 		if(!isUserActive)
-			__COUT_INFO__ << "User '" << username << "' is inactive so not giving lock." << __E__;
-		else 
+			__COUT_INFO__ << "User '" << username << "' is inactive so not giving lock."
+			              << __E__;
+		else
 			__COUT_ERR__ << "Failed to lock for user '" << username << ".'" << __E__;
 		return false;
 	}

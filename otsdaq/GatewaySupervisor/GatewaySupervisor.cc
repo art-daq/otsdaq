@@ -206,7 +206,7 @@ GatewaySupervisor::~GatewaySupervisor(void)
 void GatewaySupervisor::indicateOtsAlive(const CorePropertySupervisorBase* properties)
 {
 	CorePropertySupervisorBase::indicateOtsAlive(properties);
-} //end indicateOtsAlive()
+}  //end indicateOtsAlive()
 
 //==============================================================================
 void GatewaySupervisor::init(void)
@@ -517,7 +517,8 @@ try
 			{
 				++statusWasSlowCount;
 
-				if(statusWasSlowCount > 2)  //1 or 2 might occur if target is disconnected or during large system calls (e.g. configuration dumps)
+				if(statusWasSlowCount >
+				   2)  //1 or 2 might occur if target is disconnected or during large system calls (e.g. configuration dumps)
 				{
 					//if it has been more than 15 minutes, then do System Alert
 					time_t now_time_t = time(0);
@@ -4781,7 +4782,8 @@ try
 	   commandParameters.back().find(COMMAND_PARAM_LOG_ENTRY_PREAMBLE) == 0 &&
 	   commandParameters.back().size() > COMMAND_PARAM_LOG_ENTRY_PREAMBLE.size())
 	{
-		logEntry = commandParameters.back().substr(COMMAND_PARAM_LOG_ENTRY_PREAMBLE.size());
+		logEntry =
+		    commandParameters.back().substr(COMMAND_PARAM_LOG_ENTRY_PREAMBLE.size());
 		__COUTV__(logEntry);
 	}
 
@@ -5125,20 +5127,23 @@ try
 		//Based on Config Tree settings, the configuration dump is cached into these in transitionConfiguring():
 		//	activeStateMachineSystemDumpOnRun_, activeStateMachineSystemDumpOnConfigure_
 
-
 		//if ActiveStateMachineSubsystemCommonList is in parameters, then add to message
 		for(size_t i = 1; i < commandParameters.size(); ++i)
 			if(commandParameters[i].find(COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE) == 0)
 			{
-				std::string subsystemCommonList = commandParameters[i].substr(COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE.length());
+				std::string subsystemCommonList = commandParameters[i].substr(
+				    COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE.length());
 				parameters.addParameter("SubsystemCommonList", subsystemCommonList);
 				__COUTV__(subsystemCommonList);
 				break;
 			}
-			else if(commandParameters[i].find(COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE) == 0)
+			else if(commandParameters[i].find(
+			            COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE) == 0)
 			{
-				std::string subsystemCommonOverrideList = commandParameters[i].substr(COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE.length());
-				parameters.addParameter("SubsystemCommonOverrideList", subsystemCommonOverrideList);
+				std::string subsystemCommonOverrideList = commandParameters[i].substr(
+				    COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE.length());
+				parameters.addParameter("SubsystemCommonOverrideList",
+				                        subsystemCommonOverrideList);
 				__COUTV__(subsystemCommonOverrideList);
 				break;
 			}
@@ -5847,18 +5852,17 @@ try
 	__COUT__ << "Transition parameter ConfigurationAlias: " << configurationAlias
 	         << __E__;
 
-
 	// Assemble Subsystem Common Table List ----------------
-	std::map<std::string /* tableName */, TableVersion> mergeInTables, overrideTables;	
+	std::map<std::string /* tableName */, TableVersion> mergeInTables, overrideTables;
 	std::string subsystemCommonList, subsystemCommonOverrideList;
 	{
-		{ //handle common merge-in list	
+		{  //handle common merge-in list
 			try
 			{
 				subsystemCommonList =
-					SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-						.getParameters()
-						.getValue("SubsystemCommonList");
+				    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+				        .getParameters()
+				        .getValue("SubsystemCommonList");
 			}
 			catch(...)
 			{
@@ -5867,37 +5871,41 @@ try
 
 			if(!subsystemCommonList.empty())
 			{
-				subsystemCommonList = StringMacros::decodeURIComponent(subsystemCommonList);
-				__COUT__ << "Transition parameter SubsystemCommonList: " << subsystemCommonList
-						<< __E__;
+				subsystemCommonList =
+				    StringMacros::decodeURIComponent(subsystemCommonList);
+				__COUT__ << "Transition parameter SubsystemCommonList: "
+				         << subsystemCommonList << __E__;
 				StringMacros::getMapFromString(subsystemCommonList, mergeInTables);
 				__COUTV__(StringMacros::mapToString(mergeInTables));
 			}
-		} //end handle common merge-in list
-		
-		{ //handle common override list
+		}  //end handle common merge-in list
+
+		{  //handle common override list
 			try
 			{
 				subsystemCommonOverrideList =
-					SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-						.getParameters()
-						.getValue("SubsystemCommonOverrideList");
+				    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+				        .getParameters()
+				        .getValue("SubsystemCommonOverrideList");
 			}
 			catch(...)
 			{
-				__COUT__ << "Ignoring missing 'SubsystemCommonOverrideList' parameter." << __E__;
+				__COUT__ << "Ignoring missing 'SubsystemCommonOverrideList' parameter."
+				         << __E__;
 			}
 
 			if(!subsystemCommonOverrideList.empty())
 			{
-				subsystemCommonOverrideList = StringMacros::decodeURIComponent(subsystemCommonOverrideList);
-				__COUT__ << "Transition parameter SubsystemCommonOverrideList: " << subsystemCommonOverrideList
-						<< __E__;
-				StringMacros::getMapFromString(subsystemCommonOverrideList, overrideTables);
+				subsystemCommonOverrideList =
+				    StringMacros::decodeURIComponent(subsystemCommonOverrideList);
+				__COUT__ << "Transition parameter SubsystemCommonOverrideList: "
+				         << subsystemCommonOverrideList << __E__;
+				StringMacros::getMapFromString(subsystemCommonOverrideList,
+				                               overrideTables);
 				__COUTV__(StringMacros::mapToString(overrideTables));
 			}
-		} //end handle common override list
-	} // end Assemble Subsystem Common Table List ----------------
+		}  //end handle common override list
+	}      // end Assemble Subsystem Common Table List ----------------
 
 	{  //do configuration dump handling
 		try
@@ -5982,9 +5990,9 @@ try
 			    0 /*groupCreateTime   */,
 			    true /*doNotLoadMember */,
 			    &groupTypeString,
-				0 /*groupAliases */,
-				ConfigurationManager::LoadGroupType::ALL_TYPES /*groupTypeToLoad */,
-				false /* ignoreVersionTracking*/
+			    0 /*groupAliases */,
+			    ConfigurationManager::LoadGroupType::ALL_TYPES /*groupTypeToLoad */,
+			    false /* ignoreVersionTracking*/
 			);
 
 			RunControlStateMachine::theProgressBar_.step();
@@ -6005,22 +6013,24 @@ try
 			    theConfigurationTableGroup_.first,
 			    theConfigurationTableGroup_.second,
 			    true /*doActivate*/,
-				0 /*groupMembers      */,
-				0 /*progressBar       */,
-				0 /*accumulateWarnings*/,
-				0 /*groupComment      */,
-				0 /*groupAuthor       */,
-				0 /*groupCreateTime   */,
-				false /*doNotLoadMember */,
-				0 /*groupTypeString */,
-				0 /*groupAliases */,
-				ConfigurationManager::LoadGroupType::ALL_TYPES,
-				true /*ignoreVersionTracking*/,
-				mergeInTables /* mergeInTables */,
-				overrideTables /* overrideTables */
+			    0 /*groupMembers      */,
+			    0 /*progressBar       */,
+			    0 /*accumulateWarnings*/,
+			    0 /*groupComment      */,
+			    0 /*groupAuthor       */,
+			    0 /*groupCreateTime   */,
+			    false /*doNotLoadMember */,
+			    0 /*groupTypeString */,
+			    0 /*groupAliases */,
+			    ConfigurationManager::LoadGroupType::ALL_TYPES,
+			    true /*ignoreVersionTracking*/,
+			    mergeInTables /* mergeInTables */,
+			    overrideTables /* overrideTables */
 			);
 
-			__COUT__ << "Done loading and activating Configuration Alias (and merging-in tables)." << __E__;
+			__COUT__ << "Done loading and activating Configuration Alias (and merging-in "
+			            "tables)."
+			         << __E__;
 
 			RunControlStateMachine::theProgressBar_.step();
 
@@ -6107,8 +6117,8 @@ try
 				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
 				        activeStateMachineDumpFormatOnRun_,
 				        configurationAlias,
-						subsystemCommonList,
-						subsystemCommonOverrideList,
+				        subsystemCommonList,
+				        subsystemCommonOverrideList,
 				        getLastLogEntry(
 				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
 				        theWebUsers_.getActiveUsernamesString(),
@@ -6143,8 +6153,8 @@ try
 				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
 				        activeStateMachineDumpFormatOnConfigure_,
 				        configurationAlias,
-						subsystemCommonList,
-						subsystemCommonOverrideList,
+				        subsystemCommonList,
+				        subsystemCommonOverrideList,
 				        getLastLogEntry(
 				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
 				        theWebUsers_.getActiveUsernamesString(),
@@ -6258,11 +6268,10 @@ try
 		parameters.addParameter("groupKey",
 		                        theConfigurationTableGroup_.second.toString());
 		if(!subsystemCommonList.empty())
-			parameters.addParameter("SubsystemCommonList",
-		                        subsystemCommonList);
+			parameters.addParameter("SubsystemCommonList", subsystemCommonList);
 		if(!subsystemCommonOverrideList.empty())
 			parameters.addParameter("SubsystemCommonOverrideList",
-		                        subsystemCommonOverrideList);
+			                        subsystemCommonOverrideList);
 		SOAPUtilities::addParameters(message, parameters);
 
 		__COUT__ << "Sending FE communication: " << SOAPUtilities::translate(message)
@@ -8627,22 +8636,22 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 {
 	if(!remoteGatewayApps_.size())
 		return;
-		
+
 	SOAPCommand commandObj = SOAPUtilities::translate(message);
 	std::string command    = commandObj.getCommand();
 	__COUTV__(command);
 
 	//build "SubystemCommon" and "SubsystemCommonOverride" table list:
-	//	Cached at Configure transition CSV list of Table/Versions 
-	//	specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway, 
+	//	Cached at Configure transition CSV list of Table/Versions
+	//	specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway,
 	//	to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring.
-	activeStateMachineSubsystemCommonList_ = 
-		StringMacros::setToString(
-			theConfigurationManager_->getVersionAliases(ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS));
+	activeStateMachineSubsystemCommonList_ =
+	    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+	        ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS));
 	__SUP_COUTV__(activeStateMachineSubsystemCommonList_);
-	activeStateMachineSubsystemCommonOverrideList_ = 
-		StringMacros::setToString(
-			theConfigurationManager_->getVersionAliases(ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
+	activeStateMachineSubsystemCommonOverrideList_ =
+	    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+	        ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
 	__SUP_COUTV__(activeStateMachineSubsystemCommonOverrideList_);
 
 	std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
@@ -8738,21 +8747,21 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		if(activeStateMachineSubsystemCommonList_.size())
 			remoteGatewayApp.command +=
-			    "," + COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE + 
-					StringMacros::encodeURIComponent(activeStateMachineSubsystemCommonList_);
+			    "," + COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE +
+			    StringMacros::encodeURIComponent(activeStateMachineSubsystemCommonList_);
 
 		if(activeStateMachineSubsystemCommonOverrideList_.size())
 			remoteGatewayApp.command +=
-			    "," + COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE + 
-					StringMacros::encodeURIComponent(activeStateMachineSubsystemCommonOverrideList_);
+			    "," + COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE +
+			    StringMacros::encodeURIComponent(
+			        activeStateMachineSubsystemCommonOverrideList_);
 
 		//note: LogEntry must be last parameter!
 		std::string logEntry = getLastLogEntry(command);
 		if(logEntry.size())
-			remoteGatewayApp.command +=
-			    "," + COMMAND_PARAM_LOG_ENTRY_PREAMBLE + 
-				StringMacros::encodeURIComponent(logEntry);
-	
+			remoteGatewayApp.command += "," + COMMAND_PARAM_LOG_ENTRY_PREAMBLE +
+			                            StringMacros::encodeURIComponent(logEntry);
+
 		remoteGatewayApp.fsmName =
 		    activeStateMachineName_;  //fsmName will be prepended during command send
 		//force status for immediate user feedback
@@ -8760,7 +8769,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		remoteGatewayApp.appInfo.progress = 0;
 
 		__SUP_COUTV__(remoteGatewayApp.command);
-	} //end remote gateway broadcast loop
+	}  //end remote gateway broadcast loop
 }  // end broadcastMessageToRemoteGateways()
 
 //==============================================================================
