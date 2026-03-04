@@ -10,7 +10,7 @@ SCRIPT_DIR="$(
 displayLogTail() {
   local log_file="$1"
 
-  # Display last 30 lines of log file with error highlighting
+  # Display a window of log lines around the last error (or the last 30 lines if none)
   awk '
   BEGIN { IGNORECASE=1 }
   {
