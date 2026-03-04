@@ -4,7 +4,39 @@
 SCRIPT_DIR="$(
  cd "$(dirname "$(readlink "$0" || printf %s "$0")")"
  pwd -P
-)"
+ )"
+
+# Function to display log tail for user diagnosis
+displayLogTail() {
+  local log_file="$1"
+  
+  # Display last 30 lines of log file with error highlighting
+  awk '
+  BEGIN { IGNORECASE=1 }
+  {
+    lines[NR] = $0
+    if ($0 ~ /error/) last = NR
+  }
+  END {
+    # If no "error" found, or not enough lines after it, do last 30 lines
+    if (!last || NR - last < 30) {
+      start = (NR - 29 > 1) ? NR - 29 : 1
+      for (i = start; i <= NR; i++)
+        print lines[i]
+      exit
+    }
+
+    # Normal case: 3 before, 30 after
+    start = (last - 3 > 1) ? last - 3 : 1
+    end   = last + 30
+
+    for (i = start; i <= end && i <= NR; i++)
+      print lines[i]
+  }
+  ' "$log_file"
+  echo
+  echo
+}
 
 #Note: &>/dev/null is the same as >/dev/null 2>&1
 
@@ -1031,31 +1063,7 @@ launchOTSMacromaker() {
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
 				# tail -n 20
-				awk '
-				BEGIN { IGNORECASE=1 }
-				{
-					lines[NR] = $0
-					if ($0 ~ /error/) last = NR
-				}
-				END {
-					# If no "error" found, or not enough lines after it, do last 30 lines
-					if (!last || NR - last < 30) {
-						start = (NR - 29 > 1) ? NR - 29 : 1
-						for (i = start; i <= NR; i++)
-							print lines[i]
-						exit
-					}
-
-					# Normal case: 3 before, 30 after
-					start = (last - 3 > 1) ? last - 3 : 1
-					end   = last + 30
-
-					for (i = start; i <= end && i <= NR; i++)
-						print lines[i]
-				}
-				' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
-				echo
-				echo
+				displayLogTail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt
 			fi
 			warning "Relaunching ots Macro Maker mode context..."
 			sleep 2
@@ -1327,31 +1335,7 @@ launchOTSWiz() {
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
 				# tail -n 20
-				awk '
-				BEGIN { IGNORECASE=1 }
-				{
-					lines[NR] = $0
-					if ($0 ~ /error/) last = NR
-				}
-				END {
-					# If no "error" found, or not enough lines after it, do last 30 lines
-					if (!last || NR - last < 30) {
-						start = (NR - 29 > 1) ? NR - 29 : 1
-						for (i = start; i <= NR; i++)
-							print lines[i]
-						exit
-					}
-
-					# Normal case: 3 before, 30 after
-					start = (last - 3 > 1) ? last - 3 : 1
-					end   = last + 30
-
-					for (i = start; i <= end && i <= NR; i++)
-						print lines[i]
-				}
-				' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
-				echo
-				echo
+				displayLogTail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt
 			fi
 			warning "Relaunching ots wiz context..."
 			sleep 2
@@ -2086,31 +2070,7 @@ launchOTS() {
 				killproc ${LAST_OTS_PID} xdaq.exe
 				if [ $QUIET == 1 ]; then #display log tail for user to diagnose
 					# tail -n 20
-					awk '
-					BEGIN { IGNORECASE=1 }
-					{
-						lines[NR] = $0
-						if ($0 ~ /error/) last = NR
-					}
-					END {
-						# If no "error" found, or not enough lines after it, do last 30 lines
-						if (!last || NR - last < 30) {
-							start = (NR - 29 > 1) ? NR - 29 : 1
-							for (i = start; i <= NR; i++)
-								print lines[i]
-							exit
-						}
-
-						# Normal case: 3 before, 30 after
-						start = (last - 3 > 1) ? last - 3 : 1
-						end   = last + 30
-
-						for (i = start; i <= end && i <= NR; i++)
-							print lines[i]
-					}
-					' ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
-					echo
-					echo
+					displayLogTail ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt
 				fi
 				warning "Relaunching non-gateway context..."
 				sleep 2

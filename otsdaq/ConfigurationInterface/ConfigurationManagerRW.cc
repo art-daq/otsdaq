@@ -495,6 +495,12 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			//threads done now, so copy table info
 			for(auto& tableInfo : sharedTableInfoPtrs)
 			{
+				if(tableInfo->tablePtr_ == nullptr)
+				{
+					__SS__ << "Fatal error occurred loading table info into cache! Perhaps there is an illegal Table schema definition? Check logs to resolve." 
+					       << __E__;
+					__SS_THROW__;
+				}
 				__GEN_COUT_TYPE__(TLVL_DEBUG + 3)
 				    << __COUT_HDR__ << "Copying table info for "
 				    << tableInfo->tablePtr_->getTableName() << __E__;
@@ -1370,58 +1376,6 @@ TableBase* ConfigurationManagerRW::getTableByName(const std::string& tableName)
 	}
 	return nameToTableMap_[tableName];
 }  // end getTableByName()
-
-//==============================================================================
-/// getVersionedTableByName
-///	Used by table GUI to load a particular table-version pair as the active version.
-/// 	This table instance must already exist and be owned by ConfigurationManager.
-///	return null pointer on failure, on success return table pointer.
-TableBase* ConfigurationManagerRW::getVersionedTableByName(
-    const std::string& tableName,
-    TableVersion       version,
-    bool               looseColumnMatching /* = false */,
-    std::string*       accumulatedErrors /* = 0 */,
-    bool               getRawData /* = false */)
-{
-	auto it = nameToTableMap_.find(tableName);
-	if(it == nameToTableMap_.end())
-	{
-		__SS__ << "\nCan not find table named '" << tableName
-		       << "'\n\n\n\nYou need to load the table before it can be used."
-		       << "It probably is missing from the member list of the Table "
-		          "Group that was loaded?\n\n\n\n\n"
-		       << __E__;
-		__SS_THROW__;
-	}
-	TableBase* table = it->second;
-
-	if(version.isTemporaryVersion())
-	{
-		table->setActiveView(version);
-
-		if(getRawData)
-		{
-			std::stringstream jsonSs;
-			table->getViewP()->printJSON(jsonSs);
-			table->getViewP()->doGetSourceRawData(true);
-			table->getViewP()->fillFromJSON(jsonSs.str());
-		}
-	}
-	else
-	{
-		theInterface_->get(table,
-		                   tableName,
-		                   0 /* groupKey */,
-		                   0 /* groupName */,
-		                   false /* dontFill */,  // false to fill w/version
-		                   version,
-		                   false /* resetConfiguration*/,  // false to not reset
-		                   looseColumnMatching,
-		                   getRawData,
-		                   accumulatedErrors);
-	}
-	return table;
-}  // end getVersionedTableByName()
 
 //==============================================================================
 /// saveNewTable

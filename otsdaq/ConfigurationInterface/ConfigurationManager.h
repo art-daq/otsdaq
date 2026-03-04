@@ -40,6 +40,8 @@ class ConfigurationManager
 	static const std::string ACTIVE_GROUPS_FILENAME;
 	static const std::string ALIAS_VERSION_PREAMBLE;
 	static const std::string SCRATCH_VERSION_ALIAS;
+	static const std::string SUBSYSTEM_COMMON_VERSION_ALIAS;
+	static const std::string SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS;
 
 	static const std::string XDAQ_CONTEXT_TABLE_NAME;
 	static const std::string XDAQ_APPLICATION_TABLE_NAME;
@@ -182,7 +184,11 @@ class ConfigurationManager
 	    std::string*                                           groupTypeString    = 0,
 	    std::map<std::string /*name*/, std::string /*alias*/>* groupAliases       = 0,
 	    ConfigurationManager::LoadGroupType					   groupTypeToLoad    = ConfigurationManager::LoadGroupType::ALL_TYPES,
-		bool												   ignoreVersionTracking = false);
+		bool												   ignoreVersionTracking = false,
+		std::map<std::string /* tableName */,
+			TableVersion> 									   mergInTables = {},
+		std::map<std::string /* tableName */,
+			TableVersion> 									   overrideTables = {});
 	void 								copyTableGroupFromCache		(
 		const ConfigurationManager&								cacheConfigMgr,
 	    const std::map<std::string, TableVersion>&             	groupMembers,
@@ -206,7 +212,7 @@ class ConfigurationManager
 	}
 	const TableBase* 					getTableByName				(const std::string& configurationName) const;
 
-	void 								dumpActiveConfiguration		(const std::string& filePath, const std::string& dumpType, const std::string& configurationAlias, const std::string& logEntry, const std::string& activeUsers, const std::string& activeStateMachine, std::ostream& altOut = std::cout);
+	void 								dumpActiveConfiguration		(const std::string& filePath, const std::string& dumpType, const std::string& configurationAlias, const std::string& subsystemCommonList, const std::string& subsystemCommonOverrideList, const std::string& logEntry, const std::string& activeUsers, const std::string& activeStateMachine, std::ostream& altOut = std::cout);
 	void								dumpMacroMakerModeFhicl		(void);
 
 	std::map<std::string /*groupAlias*/,
@@ -217,6 +223,8 @@ class ConfigurationManager
 	std::map<std::string /*tableName*/,
 		std::map<std::string /*aliasName*/,
 		TableVersion>>					getVersionAliases			(void) const;
+	std::set<std::pair<std::string /*tableName*/,
+		TableVersion>>					getVersionAliases			(const std::string& tableAliasNeedle) const; ///< returns all tableName/version pairs with table alias that matches the tableAliasNeedle
 	std::pair<std::string /*groupName*/,
 		TableGroupKey> 					getTableGroupFromAlias		(std::string systemAlias, ProgressBar* progressBar = 0);
 	std::map<std::string /*groupType*/,
@@ -303,6 +311,8 @@ class ConfigurationManager
 
 
   protected:
+	TableBase*    						getVersionedTableByName		(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false);
+
 	std::string 										mfSubject_;
   private:
 	std::string 										username_;  ///< user of the configuration is READONLY_USER unless using ConfigurationManagerRW

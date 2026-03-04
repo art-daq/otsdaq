@@ -317,7 +317,7 @@ void ConfigurationTree::getValueAsBitMap(
 
 		auto bmp = tableView_->getColumnInfo(col_).getBitMapInfo();
 
-		__COUTV__(bitmapString);
+		__COUTVS__(2,bitmapString);
 		if(bitmapString == TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
 		{
 			bitmap.isDefault_ = true;
@@ -340,10 +340,10 @@ void ConfigurationTree::getValueAsBitMap(
 		{
 			std::vector<std::string> list =
 			    StringMacros::getVectorFromString(bmp.mapToStrings_);
-			__COUTTV__(StringMacros::vectorToString(list));
+			__COUTVS__(2,StringMacros::vectorToString(list));
 			for(size_t i = 0; i < list.size(); ++i)
 				valueMap.emplace(std::make_pair(list[i], i));
-			__COUTTV__(StringMacros::mapToString(valueMap));
+			__COUTVS__(2,StringMacros::mapToString(valueMap));
 		}
 
 		// extract bit map

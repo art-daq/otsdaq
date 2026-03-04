@@ -19,6 +19,14 @@ class ConfigurationManager;
 class TableBase
 {
   public:
+	/// Merge approach enumeration for mergeViews function
+	enum MergeApproach
+	{
+		SKIP,    ///< Skip records with UID conflicts from source view B
+		REPLACE, ///< Replace records with UID conflicts from source view B
+		RENAME   ///< Rename records with UID conflicts from source view B
+	};
+
 	const unsigned int MAX_VIEWS_IN_CACHE;  ///< Each inheriting table class could have
 	                                        ///< varying amounts of cache
 	//TableBase(void); //should not be used
@@ -78,7 +86,7 @@ class TableBase
 																const TableView&                          sourceViewB,
 																TableVersion                              destinationVersion,
 																const std::string&                        author,
-																const std::string&                        mergeApproach /*Rename,Replace,Skip*/,
+																MergeApproach                             mergeApproach,
 																std::map<std::pair<std::string /*original table*/, std::string /*original uidB*/>,
 																		 std::string /*converted uidB*/>& uidConversionMap,
 																std::map<std::pair<std::string /*original table*/,

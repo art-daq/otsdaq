@@ -1176,7 +1176,8 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 			__COUT__ << "New account code did not match: "
 			         << Users_[i].getNewAccountCode() << " != " << newAccountCode
 			         << __E__;
-			saveDatabaseToFile(DB_USERS);  // users db modified, so save
+			//modified 03-Mar-2026, do not need to save login attempts/fails, let them be tracked in memory, snapshots of the database will be saved periodically, and on shutdown
+			// saveDatabaseToFile(DB_USERS);  // users db modified, so save
 			return NOT_FOUND_IN_DATABASE;
 		}
 
@@ -1224,7 +1225,8 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 				              << (int)Users_[i].loginFailureCount_
 				              << ")! Note only admins can reactivate accounts." << __E__;
 
-			saveDatabaseToFile(DB_USERS);  // users db modified, so save
+			//modified 03-Mar-2026, do not need to save login attempts/fails, let them be tracked in memory, snapshots of the database will be saved periodically, and on shutdown
+			// saveDatabaseToFile(DB_USERS);  // users db modified, so save
 			return NOT_FOUND_IN_DATABASE;
 		}
 	}
@@ -1275,7 +1277,10 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 	}
 
 	// SUCCESS!!
-	saveDatabaseToFile(DB_USERS);             // users db modified, so save
+
+	//modified 03-Mar-2026, do not need to save login attempts/fails, let them be tracked in memory, snapshots of the database will be saved periodically, and on shutdown
+	// saveDatabaseToFile(DB_USERS);             // users db modified, so save
+
 	jumbledUser    = Users_[i].displayName_;  // pass by reference displayName
 	newAccountCode = createNewActiveSession(Users_[i].userId_,
 	                                        ip);  // return cookie code by reference
@@ -1427,7 +1432,10 @@ uint64_t WebUsers::attemptActiveSessionWithCert(const std::string& uuid,
 	}
 
 	// SUCCESS!!
-	saveDatabaseToFile(DB_USERS);         // users db modified, so save
+
+	//modified 03-Mar-2026, do not need to save login attempts/fails, let them be tracked in memory, snapshots of the database will be saved periodically, and on shutdown
+	// saveDatabaseToFile(DB_USERS);         // users db modified, so save
+
 	email      = Users_[i].displayName_;  // pass by reference displayName
 	cookieCode = createNewActiveSession(Users_[i].userId_,
 	                                    ip);  // return cookie code by reference
@@ -3273,8 +3281,9 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	else
 	{
 		if(!isUserActive)
-			__COUT_ERR__ << "User '" << username << "' is inactive." << __E__;
-		__COUT_ERR__ << "Failed to lock for user '" << username << ".'" << __E__;
+			__COUT_INFO__ << "User '" << username << "' is inactive so not giving lock." << __E__;
+		else 
+			__COUT_ERR__ << "Failed to lock for user '" << username << ".'" << __E__;
 		return false;
 	}
 
@@ -3457,6 +3466,7 @@ void WebUsers::modifyAccountSettings(uint64_t           actingUid,
 	saveDatabaseToFile(DB_USERS);
 	loadSecuritySelection();  //give opportunity to dynamically modifiy IP access settings or security settings
 }  // end modifyAccountSettings()
+
 //==============================================================================
 /// WebUsers::getActiveUserCount
 ///	return count of active Display Names

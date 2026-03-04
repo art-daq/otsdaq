@@ -74,6 +74,10 @@ class WorkLoopManager;
 		friend class WizardSupervisor;
 		friend class Iterator;
 
+		static const std::string COMMAND_PARAM_LOG_ENTRY_PREAMBLE;
+		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE;
+		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE;
+
 	public:
 		XDAQ_INSTANTIATOR();
 
@@ -328,6 +332,7 @@ class WorkLoopManager;
 							activeStateMachineRunStartTime;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
 		unsigned int		activeStateMachineConfigureConditionID_, activeStateMachineRunConditionID_;
+		std::string			activeStateMachineSubsystemCommonList_, activeStateMachineSubsystemCommonOverrideList_; ///<cached at Configure transition CSV list of Table/Versions specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway, to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring
 
 		std::mutex			systemStatusMutex_;
 		std::string 		lastLogbookEntry_;
