@@ -832,8 +832,8 @@ void WebUsers::loadLoginFailureCounts()
 	for(auto& user : Users_)
 		user.loginFailureCount_ = 0;
 
-	uint64_t      uid;
-	unsigned int  count;
+	uint64_t     uid;
+	unsigned int count;
 	while(fscanf(fp, "%lu %u", &uid, &count) == 2)
 	{
 		for(auto& user : Users_)
