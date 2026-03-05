@@ -124,7 +124,20 @@ WizardSupervisor::WizardSupervisor(xdaq::ApplicationStub* s)
 
 	init();
 	generateURL();
-	GatewaySupervisor::indicateOtsAlive();
+
+	//do not indicate alive at Wizard Supervisor, let the Configuration GUI indicate alive after it has started up and is ready to go
+	//	it is more challenging for the Configuration GUI to indicate alive than just the Wizard Supervisor
+	//  Note: constructor order seems to be handled by xdaq in order of xml:
+	//		-- Wizard Supervisor (skip mark alive)
+	//		-- Configuration GUI (mark alive for wiz mode in init())
+	//		-- Console Supervisor
+	//		-- Code Editor Supervisor
+
+	// std::thread([this]() {
+	// 	sleep(5); //give time for Configuration GUI (or anything) to crash at start up (or not) before indicating alive to GatewaySupervisor
+	// 	__COUT_INFO__ << "Indicating alive status from WizardSupervisor!" << __E__;
+	// 	GatewaySupervisor::indicateOtsAlive();
+	// }).detach();
 
 	__COUT__ << "Constructed." << __E__;
 }  // end constructor()
