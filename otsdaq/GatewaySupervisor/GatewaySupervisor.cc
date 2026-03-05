@@ -5128,14 +5128,16 @@ try
 		//	activeStateMachineSystemDumpOnRun_, activeStateMachineSystemDumpOnConfigure_
 
 		//if ActiveStateMachineSubsystemCommonList is in parameters, then add to message
+		bool foundSubsystemCommon = false, foundSubsystemCommonOverride = false;
 		for(size_t i = 1; i < commandParameters.size(); ++i)
+		{
 			if(commandParameters[i].find(COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE) == 0)
 			{
 				std::string subsystemCommonList = commandParameters[i].substr(
 				    COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE.length());
 				parameters.addParameter("SubsystemCommonList", subsystemCommonList);
 				__COUTV__(subsystemCommonList);
-				break;
+				foundSubsystemCommon = true;
 			}
 			else if(commandParameters[i].find(
 			            COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE) == 0)
@@ -5145,8 +5147,11 @@ try
 				parameters.addParameter("SubsystemCommonOverrideList",
 				                        subsystemCommonOverrideList);
 				__COUTV__(subsystemCommonOverrideList);
-				break;
+				foundSubsystemCommonOverride = true;
 			}
+			if(foundSubsystemCommon && foundSubsystemCommonOverride)
+				break;
+		}
 
 	}  //end Configure transition
 	else if(command == RunControlStateMachine::START_TRANSITION_NAME)

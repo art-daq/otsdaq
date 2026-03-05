@@ -1219,14 +1219,18 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 
 			__COUTV__(isInactiveForGroup(Users_[i].permissions_));
 			if(isInactiveForGroup(Users_[i].permissions_))
+			{
 				__COUT_INFO__ << "Account '" << user
 				              << "' has been marked inactive due to too many failed "
 				                 "login attempts (Failed Attempt #"
 				              << (int)Users_[i].loginFailureCount_
 				              << ")! Note only admins can reactivate accounts." << __E__;
-
-			//modified 03-Mar-2026, do not need to save login attempts/fails, let them be tracked in memory, snapshots of the database will be saved periodically, and on shutdown
-			// saveDatabaseToFile(DB_USERS);  // users db modified, so save
+				// Account lockout is a security-relevant state change that must
+				// persist across restarts, so save immediately
+				saveDatabaseToFile(DB_USERS);
+			}
+			// else: do not save on every failed attempt; failure counts are
+			// tracked in memory and will be included in periodic/shutdown saves
 			return NOT_FOUND_IN_DATABASE;
 		}
 	}
