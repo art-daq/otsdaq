@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 	<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TableInfo.xsd">
 		<TABLE Name="GroupAliasesTable">
-			<VIEW Name="GROUP_ALIASES_TABLE" Type="File,Database,DatabaseTest">
-				<COLUMN Type="UID" 	 Name="GroupKeyAlias" 	 StorageName="GROUP_KEY_ALIAS" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Data" 	 Name="GroupName" 	 StorageName="GROUP_NAME" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Data" 	 Name="GroupKey" 	 StorageName="GROUP_KEY" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE"/>
+			<VIEW Name="GROUP_ALIASES_TABLE" Type="File,Database,DatabaseTest" Description="This%20table%20defines%20%3Cb%3Ealiases%3C%2Fb%3E%20for%20%3Cb%3Egroups%3C%2Fb%3E.%20An%20alias%20is%20alternative%20name%20for%20a%20group%20name%2Fkey%20pair.%0A%0AIt%20is%20a%20member%20of%20the%20%3Cb%3EBackbone%20group%3C%2Fb%3E%20type.%20Backbone%20groups%20should%20be%20created%20and%20activated%20before%20Configuring%20the%20State%20Machine.">
+				<COLUMN Type="UID" 	 Name="GroupKeyAlias" 	 StorageName="GROUP_KEY_ALIAS" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="GroupName" 	 StorageName="GROUP_NAME" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="GroupKey" 	 StorageName="GROUP_KEY" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE" 		DataChoices=""/>
 			</VIEW>
 		</TABLE>
 	</ROOT>

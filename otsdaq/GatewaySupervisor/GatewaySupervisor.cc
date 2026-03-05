@@ -8657,6 +8657,59 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 	std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 	for(auto& remoteGatewayApp : remoteGatewayApps_)
 	{
+		if(!remoteGatewayApp.fsm_included)
+		{
+			__COUT__ << "Skipping excluded Remote gateway '"
+			         << remoteGatewayApp.appInfo.name
+			         << "' for FSM command = " << command << __E__;
+			continue;  //skip if not included
+		}
+
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
+		   //do not allow halt/err transitions:
+		   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
+		    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
+		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
+		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
+		{
+			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
+			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
+			         << "' for FSM command = " << command << __E__;
+			continue;  //skip if not included
+		}
+
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
+		   !  //invert of allowed situations:
+		   (remoteGatewayApp.appInfo.status ==
+		        RunControlStateMachine::INITIAL_STATE_NAME ||
+		    remoteGatewayApp.appInfo.status ==
+		        RunControlStateMachine::HALTED_STATE_NAME ||
+		    remoteGatewayApp.appInfo.status.find(
+		        RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
+		    remoteGatewayApp.appInfo.status.find("Error") !=
+		        std::string::npos ||  //	case "Error", "Soft-Error"
+		    (remoteGatewayApp.appInfo.status ==
+		         RunControlStateMachine::HALTED_STATE_NAME &&
+		     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
+		{
+			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
+			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
+			         << "' w/status = " << remoteGatewayApp.appInfo.status
+			         << "... for FSM command = " << command << __E__;
+			continue;  //skip if not included
+		}
+
+		//Likely top level does not want to reinitialize a configured subsystem (just wants self and other subsystems to catch up)
+		if(remoteGatewayApp.appInfo.status == RunControlStateMachine::CONFIGURED_STATE_NAME && 
+		 	remoteGatewayApp.appInfo.progress == 100 && 
+			(command == RunControlStateMachine::INIT_TRANSITION_NAME || 
+				command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
+		{
+			__COUT_INFO__ << "Ignoring '" << command << "' transition for Remote subsystem '"
+					<< remoteGatewayApp.appInfo.name << ".' It is alaredy configured (assuming top-level does not mean to re-initialize subsystem)." << __E__;
+			continue;
+		}
+
 		//construct command params based on remote gateway settings
 		std::string commandAndParams = command;
 		if(commandObj.hasParameters())
@@ -8684,49 +8737,6 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			}
 			__COUTV__(commandAndParams);
 		}
-
-		if(!remoteGatewayApp.fsm_included)
-		{
-			__COUT__ << "Skipping excluded Remote gateway '"
-			         << remoteGatewayApp.appInfo.name
-			         << "' for FSM command = " << commandAndParams << __E__;
-			continue;  //skip if not included
-		}
-
-		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
-		   //do not allow halt/err transitions:
-		   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
-		    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
-		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
-		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
-		{
-			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
-			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
-			         << "' for FSM command = " << commandAndParams << __E__;
-			continue;  //skip if not included
-		}
-
-		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
-		   !  //invert of allowed situations:
-		   (remoteGatewayApp.appInfo.status ==
-		        RunControlStateMachine::INITIAL_STATE_NAME ||
-		    remoteGatewayApp.appInfo.status ==
-		        RunControlStateMachine::HALTED_STATE_NAME ||
-		    remoteGatewayApp.appInfo.status.find(
-		        RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
-		    remoteGatewayApp.appInfo.status.find("Error") !=
-		        std::string::npos ||  //	case "Error", "Soft-Error"
-		    (remoteGatewayApp.appInfo.status ==
-		         RunControlStateMachine::HALTED_STATE_NAME &&
-		     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
-		{
-			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
-			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
-			         << "' w/status = " << remoteGatewayApp.appInfo.status
-			         << "... for FSM command = " << commandAndParams << __E__;
-			continue;  //skip if not included
-		}
-
 		__COUT__ << "Launching FSM command '" << commandAndParams
 		         << "' on Remote gateway '" << remoteGatewayApp.appInfo.name << "'..."
 		         << __E__;
@@ -8837,6 +8847,14 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			         RunControlStateMachine::HALTED_STATE_NAME &&
 			     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
 				continue;
+
+			if(remoteGatewayApp.appInfo.status == RunControlStateMachine::CONFIGURED_STATE_NAME && 
+				remoteGatewayApp.appInfo.progress == 100 && 
+				(command == RunControlStateMachine::INIT_TRANSITION_NAME || 
+					command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
+				continue; //Likely top level does not want to reinitialize a configured subsystem (just wants self and other subsystems to catch up)
+
+
 			//if here, was commanded, so check status
 
 			if(!((remoteGatewayApp.appInfo.status == destinationState &&
@@ -11287,6 +11305,7 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
                                                    bool getRunNumber /* = true */)
 {
 	xmlOut.addTextElementToData("active_fsmName", activeStateMachineName_);
+	xmlOut.addTextElementToData("active_fsmWindowName", activeStateMachineWindowName_);
 	xmlOut.addTextElementToData("current_state", theStateMachine_.getCurrentStateName());
 	const std::string& gatewayStatus = allSupervisorInfo_.getGatewayInfo().getStatus();
 	if(gatewayStatus.size() >
