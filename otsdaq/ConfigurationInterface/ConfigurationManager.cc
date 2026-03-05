@@ -88,8 +88,12 @@ const std::string 		ConfigurationManager::ACTIVE_GROUPS_FILENAME 				= ((getenv(
 																						? (std::string(__ENV__("USER_DATA")) + "/ServiceData")
 																						: (std::string(__ENV__("SERVICE_DATA_PATH")))) +
 																						"/ActiveTableGroups.cfg";
-const std::string 		ConfigurationManager::ALIAS_VERSION_PREAMBLE 				= "ALIAS:";
-const std::string 		ConfigurationManager::SCRATCH_VERSION_ALIAS  				= "Scratch";
+
+const std::string 		ConfigurationManager::ALIAS_VERSION_PREAMBLE 					= "ALIAS:";
+const std::string 		ConfigurationManager::SCRATCH_VERSION_ALIAS  					= "Scratch";
+const std::string 		ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS			= "SubsystemCommon";
+const std::string 		ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS	= "SubsystemCommonOverride";
+
 
 const std::string 		ConfigurationManager::GROUP_TYPE_NAME_CONTEXT       		= "Context";
 const std::string 		ConfigurationManager::GROUP_TYPE_NAME_BACKBONE      		= "Backbone";
@@ -1050,13 +1054,16 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 //==============================================================================
 /// dumpActiveConfiguration
 ///	if filePath == "", then output to cout
-void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
-                                                   const std::string& dumpType,
-                                                   const std::string& configurationAlias,
-                                                   const std::string& logEntry,
-                                                   const std::string& activeUsers,
-                                                   const std::string& activeStateMachine,
-                                                   std::ostream& altOut /* = std::cout */)
+void ConfigurationManager::dumpActiveConfiguration(
+    const std::string& filePath,
+    const std::string& dumpType,
+    const std::string& configurationAlias,
+    const std::string& subsystemCommonList,
+    const std::string& subsystemCommonOverrideList,
+    const std::string& logEntry,
+    const std::string& activeUsers,
+    const std::string& activeStateMachine,
+    std::ostream&      altOut /* = std::cout */)
 {
 	time_t rawtime = time(0);
 	__GEN_COUT__ << "filePath = " << filePath << __E__;
@@ -1155,17 +1162,29 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	//============================
 	auto localDumpActiveGroups = [](const ConfigurationManager* cfgMgr,
 	                                std::ostream*               out,
-	                                bool                        jsonify = false,
-	                                std::string                 configurationAlias = "") {
+	                                std::string                 subsystemCommonList,
+	                                std::string subsystemCommonOverrideList,
+	                                bool        jsonify            = false,
+	                                std::string configurationAlias = "") {
 		std::map<std::string, std::pair<std::string, TableGroupKey>> activeGroups =
 		    cfgMgr->getActiveTableGroups();
 
 		if(jsonify)
 		{
+			if(!subsystemCommonList.empty())
+				(*out) << "\n\t\"subsystem_common_table_list\": \"" << subsystemCommonList
+				       << "\"," << __E__;
+			if(!subsystemCommonOverrideList.empty())
+				(*out) << "\n\t\"subsystem_common_override_table_list\": \""
+				       << subsystemCommonOverrideList << "\",\n"
+				       << __E__;
 			(*out) << "\n\t\"groups\": {\n";
 		}
 		else
 		{
+			(*out) << "Subsystem Common Table List: " << subsystemCommonList << __E__;
+			(*out) << "Subsystem Common Override Table List: "
+			       << subsystemCommonOverrideList << __E__;
 			(*out) << "\n\n************************" << __E__;
 			(*out) << "Active Groups: " << __E__;
 		}
@@ -1393,7 +1412,7 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 		{
 			if(jsonify)
 			{
-				__COUT__ << "localDumpActiveTableContents table: " << it->first << __E__;
+				__COUTT__ << "localDumpActiveTableContents table: " << it->first << __E__;
 				auto table = cfgMgr->nameToTableMap_.find(it->first)->second->getViewP();
 				(*out) << "\t\t\"" << it->first << "-v" << it->second << "\": ";
 				table->printJSON(*out);
@@ -1636,7 +1655,8 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 
 	if(dumpType == "Group Keys")
 	{
-		localDumpActiveGroups(this, out);
+		localDumpActiveGroups(
+		    this, out, subsystemCommonList, subsystemCommonOverrideList);
 	}
 	else if(dumpType == "Table Versions")
 	{
@@ -1644,12 +1664,14 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	}
 	else if(dumpType == "Group Keys and Table Versions")
 	{
-		localDumpActiveGroups(this, out);
+		localDumpActiveGroups(
+		    this, out, subsystemCommonList, subsystemCommonOverrideList);
 		localDumpActiveTables(this, out);
 	}
 	else if(dumpType == "All")
 	{
-		localDumpActiveGroups(this, out);
+		localDumpActiveGroups(
+		    this, out, subsystemCommonList, subsystemCommonOverrideList);
 		localDumpActiveGroupMembers(this, out);
 		localDumpActiveTables(this, out);
 		localDumpActiveTableContents(this, out);
@@ -1657,7 +1679,12 @@ void ConfigurationManager::dumpActiveConfiguration(const std::string& filePath,
 	}
 	else if(dumpType == "JSON All")
 	{
-		localDumpActiveGroups(this, out, true, configurationAlias);
+		localDumpActiveGroups(this,
+		                      out,
+		                      subsystemCommonList,
+		                      subsystemCommonOverrideList,
+		                      true,
+		                      configurationAlias);
 		(*out) << ",\n";
 		localDumpActiveGroupMembers(this, out, true);
 		(*out) << ",\n";
@@ -2011,7 +2038,9 @@ void ConfigurationManager::loadTableGroup(
         groupAliases /*=0 , note: in metadata */,
     ConfigurationManager::LoadGroupType
          groupTypeToLoad /*=ConfigurationManager::LoadGroupType::ALL_TYPES*/,
-    bool ignoreVersionTracking /*=false*/)
+    bool ignoreVersionTracking /*=false*/,
+    std::map<std::string /* tableName */, TableVersion> mergInTables /*={}*/,
+    std::map<std::string /* tableName */, TableVersion> overrideTables /*={}*/)
 {
 	// clear to defaults
 	if(groupComment)
@@ -2141,9 +2170,9 @@ void ConfigurationManager::loadTableGroup(
 		}  // end metadata handling
 		else
 		{
-			__GEN_COUT__ << "Ignoring that groupMetadataTable_ is missing for group '"
-			             << groupName << "(" << groupKey
-			             << "). Going with anonymous defaults." << __E__;
+			__GEN_COUTT__ << "Ignoring that groupMetadataTable_ is missing for group '"
+			              << groupName << "(" << groupKey
+			              << "). Going with anonymous defaults." << __E__;
 		}
 
 		//NEVER modify members based on aliases
@@ -2318,6 +2347,146 @@ void ConfigurationManager::loadTableGroup(
 			if(doActivate)
 			{
 				__GEN_COUTTV__(StringMacros::mapToString(getActiveVersions()));
+
+				if(overrideTables.size())
+				{
+					__GEN_COUT__ << "Overriding tables: "
+					             << StringMacros::mapToString(overrideTables) << __E__;
+
+					std::map<std::pair<std::string /*original table*/,
+					                   std::string /*original uidB*/>,
+					         std::string /*converted uidB*/>
+					    uidConversionMap;
+					std::map<std::pair<std::string /*original table*/,
+					                   std::pair<std::string /*group linkid*/,
+					                             std::string /*original gidB*/>>,
+					         std::string /*converted gidB*/>
+					    groupidConversionMap;
+
+					for(const auto& mergeInPair : overrideTables)
+					{
+						if(memberMap.find(mergeInPair.first) == memberMap.end())
+						{
+							__GEN_COUT__ << "Skipping override of table '"
+							             << mergeInPair.first << "-v"
+							             << mergeInPair.second
+							             << "' which is not in group " << groupName << "("
+							             << groupKey << ")." << __E__;
+							continue;
+						}
+						__GEN_COUT__ << "Overriding group member table '"
+						             << mergeInPair.first << "' v"
+						             << memberMap.at(mergeInPair.first)
+						             << " with version v" << mergeInPair.second << __E__;
+
+						std::stringstream mergeReport;
+						TableVersion      newVersion =
+						    nameToTableMap_.at(mergeInPair.first)
+						        ->mergeViews(
+						            getVersionedTableByName(
+						                mergeInPair.first,
+						                memberMap.at(mergeInPair.first))
+						                ->getView() /* sourceViewA */,
+						            getVersionedTableByName(mergeInPair.first,
+						                                    mergeInPair.second)
+						                ->getView() /* sourceViewB*/,
+						            TableVersion() /* destinationVersion*/,
+						            "override-table",
+						            TableBase::MergeApproach::REPLACE,  //mergeApproach
+						            uidConversionMap,  //should not used for Replace mode
+						            groupidConversionMap,  //should not used for Replace mode
+						            false /* fillRecordConversionMaps */,
+						            true /* applyRecordConversionMaps */,
+						            false /* generateUniqueDataColumns */,
+						            &mergeReport);  // dont make destination version the first time
+
+						__GEN_COUTV__(newVersion);
+						nameToTableMap_.at(mergeInPair.first)->setActiveView(newVersion);
+						nameToTableMap_.at(mergeInPair.first)
+						    ->getViewP()
+						    ->setComment(nameToTableMap_.at(mergeInPair.first)
+						                     ->getView()
+						                     .getComment() +
+						                 "\n" + mergeReport.str());
+						__GEN_COUT__ << "Overriding table '" << mergeInPair.first
+						             << "' resulting version v" << newVersion << __E__;
+						__GEN_COUTV__(mergeReport.str());
+					}  //end merge-in table loop
+
+					__GEN_COUTV__(StringMacros::mapToString(getActiveVersions()));
+				}
+
+				if(mergInTables.size())
+				{
+					__GEN_COUT__ << "Merging-in tables: "
+					             << StringMacros::mapToString(mergInTables) << __E__;
+
+					std::map<std::pair<std::string /*original table*/,
+					                   std::string /*original uidB*/>,
+					         std::string /*converted uidB*/>
+					    uidConversionMap;
+					std::map<std::pair<std::string /*original table*/,
+					                   std::pair<std::string /*group linkid*/,
+					                             std::string /*original gidB*/>>,
+					         std::string /*converted gidB*/>
+					    groupidConversionMap;
+
+					for(const auto& mergeInPair : mergInTables)
+					{
+						if(memberMap.find(mergeInPair.first) == memberMap.end())
+						{
+							__GEN_COUT__ << "Skipping merging-in of table '"
+							             << mergeInPair.first << "-v"
+							             << mergeInPair.second
+							             << "' which is not in group " << groupName << "("
+							             << groupKey << ")." << __E__;
+							continue;
+						}
+
+						__GEN_COUT__ << "Merging-in group member table '"
+						             << mergeInPair.first << "' v"
+						             << memberMap.at(mergeInPair.first)
+						             << " with version v" << mergeInPair.second << __E__;
+
+						std::stringstream mergeReport;
+						TableVersion      newVersion =
+						    nameToTableMap_.at(mergeInPair.first)
+						        ->mergeViews(
+						            getVersionedTableByName(
+						                mergeInPair.first,
+						                memberMap.at(mergeInPair.first))
+						                ->getView() /* sourceViewA */,
+						            getVersionedTableByName(mergeInPair.first,
+						                                    mergeInPair.second)
+						                ->getView() /* sourceViewB*/,
+						            TableVersion() /* destinationVersion*/,
+						            "merge-in-table",
+						            TableBase::MergeApproach::SKIP,  //mergeApproach
+						            uidConversionMap,      //should not used for Skip mode
+						            groupidConversionMap,  //should not used for Skip mode
+						            false /* fillRecordConversionMaps */,
+						            true /* applyRecordConversionMaps */,
+						            false /* generateUniqueDataColumns */,
+						            &mergeReport);  // dont make destination version the first time
+
+						__GEN_COUTV__(newVersion);
+						nameToTableMap_.at(mergeInPair.first)->setActiveView(newVersion);
+						nameToTableMap_.at(mergeInPair.first)
+						    ->getViewP()
+						    ->setComment(nameToTableMap_.at(mergeInPair.first)
+						                     ->getView()
+						                     .getComment() +
+						                 "\n" + mergeReport.str());
+						__GEN_COUT__ << "Merging-in table '" << mergeInPair.first
+						             << "' resulting version v" << newVersion << __E__;
+						__GEN_COUTV__(mergeReport.str());
+					}  //end merge-in table loop
+
+					__GEN_COUTV__(StringMacros::mapToString(getActiveVersions()));
+				}  //end merge-in table handling
+
+				if(progressBar)
+					progressBar->step();
 
 				const int numOfThreads = PROCESSOR_COUNT / 2;
 				__GEN_COUTT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
@@ -3273,6 +3442,58 @@ catch(...)
 }  // end fillTableThread catch
 
 //==============================================================================
+/// getVersionedTableByName
+///	Used by table GUI to load a particular table-version pair as the active version.
+/// 	This table instance must already exist and be owned by ConfigurationManager.
+///	return null pointer on failure, on success return table pointer.
+TableBase* ConfigurationManager::getVersionedTableByName(
+    const std::string& tableName,
+    TableVersion       version,
+    bool               looseColumnMatching /* = false */,
+    std::string*       accumulatedErrors /* = 0 */,
+    bool               getRawData /* = false */)
+{
+	auto it = nameToTableMap_.find(tableName);
+	if(it == nameToTableMap_.end())
+	{
+		__SS__ << "\nCan not find table named '" << tableName
+		       << "'\n\n\n\nYou need to load the table before it can be used."
+		       << "It probably is missing from the member list of the Table "
+		          "Group that was loaded?\n\n\n\n\n"
+		       << __E__;
+		__SS_THROW__;
+	}
+	TableBase* table = it->second;
+
+	if(version.isTemporaryVersion())
+	{
+		table->setActiveView(version);
+
+		if(getRawData)
+		{
+			std::stringstream jsonSs;
+			table->getViewP()->printJSON(jsonSs);
+			table->getViewP()->doGetSourceRawData(true);
+			table->getViewP()->fillFromJSON(jsonSs.str());
+		}
+	}
+	else
+	{
+		theInterface_->get(table,
+		                   tableName,
+		                   0 /* groupKey */,
+		                   0 /* groupName */,
+		                   false /* dontFill */,  // false to fill w/version
+		                   version,
+		                   false /* resetConfiguration*/,  // false to not reset
+		                   looseColumnMatching,
+		                   getRawData,
+		                   accumulatedErrors);
+	}
+	return table;
+}  // end getVersionedTableByName()
+
+//==============================================================================
 /// getActiveTableGroups
 ///	get the active table groups map
 ///   map<type,        pair     <groupName  , TableGroupKey> >
@@ -3836,6 +4057,27 @@ ConfigurationManager::getActiveGroupAliases(void)
 	}
 	return retMap;
 }  // end getActiveGroupAliases()
+
+//==============================================================================
+/// getVersionAliases()
+///	get version aliases with table alias that matches tableAliasNeedle, for currently active backbone tables
+std::set<std::pair<std::string /*table name*/, TableVersion /*aliased version*/>>
+ConfigurationManager::getVersionAliases(const std::string& tableAliasNeedle) const
+{
+	std::set<std::pair<std::string /*table name*/, TableVersion /*aliased version*/>>
+	    retSet;
+
+	auto tableAliasMap = getVersionAliases();
+
+	for(auto& tableAliasMap : tableAliasMap)
+		for(auto& tableAliasPair : tableAliasMap.second)
+			if(tableAliasPair.first == tableAliasNeedle)  //then table alias match!
+				retSet.insert(std::pair<std::string /*table name*/,
+				                        TableVersion /*aliased version*/>(
+				    tableAliasMap.first, tableAliasPair.second));
+
+	return retSet;
+}  //end getVersionAliases()
 
 //==============================================================================
 /// getVersionAliases()
@@ -5127,8 +5369,8 @@ void ConfigurationManager::saveGroupNameAndKey(
 {
 	std::string fullPath =
 	    ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH + "/" + fileName;
-	__COUT__ << "Saving group " << theGroup.first << "(" << theGroup.second << ") to "
-	         << (appendMode ? "history " : "") << "file: " << fullPath << __E__;
+	__COUTT__ << "Saving group " << theGroup.first << "(" << theGroup.second << ") to "
+	          << (appendMode ? "history " : "") << "file: " << fullPath << __E__;
 
 	std::ofstream groupFile;
 	if(appendMode)
@@ -5306,14 +5548,14 @@ ConfigurationManager::loadGroupHistory(const std::string& fullPath,
 	    std::map<std::string /* group field key */, std::string /* group field value */>>
 	    retVec;
 
-	__COUTV__(fullPath);
+	__COUTTV__(fullPath);
 	FILE* groupFile = fopen(fullPath.c_str(), "r");
 	if(!groupFile)
 	{
 		__COUT_WARN__ << "Can't open group history file (assuming no history yet): "
 		              << fullPath << __E__;
 
-		__COUTV__(retVec.size());
+		__COUTTV__(retVec.size());
 		return retVec;
 	}
 
@@ -5356,7 +5598,7 @@ ConfigurationManager::loadGroupHistory(const std::string& fullPath,
 
 	fclose(groupFile);
 
-	__COUTV__(retVec.size());
+	__COUTTV__(retVec.size());
 
 	return retVec;
 }  // end loadGroupHistory()

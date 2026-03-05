@@ -90,8 +90,8 @@ TableBase::TableBase(const std::string& tableName,
 	catch(...)  // if accumulating exceptions, continue to and return, else throw
 	{
 		__SS__ << "Failure reading table schema info for table '" << tableName << "!' "
-		       << "Perhaps you need to run otsdaq_convert_config_to_table? Or the XML "
-		          "table definition has moved or link broken? or corrupted? Check your "
+		       << "Perhaps the XML "
+		          "table definition has moved or been corrupted? Check your "
 		          "Table Info area."
 		       << __E__;
 		try
@@ -986,7 +986,7 @@ TableVersion TableBase::mergeViews(
     const TableView&                          sourceViewB,
     TableVersion                              destinationVersion,
     const std::string&                        author,
-    const std::string&                        mergeApproach /*Rename,Replace,Skip*/,
+    const MergeApproach                       mergeApproach,
     std::map<std::pair<std::string /*original table*/, std::string /*original uidB*/>,
              std::string /*converted uidB*/>& uidConversionMap,
     std::map<
@@ -1010,10 +1010,10 @@ TableVersion TableBase::mergeViews(
 	// clang-format on
 
 	// check valid mode
-	if(!(mergeApproach == "Rename" || mergeApproach == "Replace" ||
-	     mergeApproach == "Skip"))
+	if(!(mergeApproach == MergeApproach::RENAME ||
+	     mergeApproach == MergeApproach::REPLACE || mergeApproach == MergeApproach::SKIP))
 	{
-		__SS__ << "Error! Invalid merge approach '" << mergeApproach << ".'" << __E__;
+		__SS__ << "Error! Invalid merge approach." << __E__;
 		__SS_THROW__;
 	}
 
@@ -1040,15 +1040,31 @@ TableVersion TableBase::mergeViews(
 
 	// fill conversion map based on merge approach
 
-	sourceViewA.print();
-	sourceViewB.print();
+	if(TTEST(1))
+	{
+		{
+			std::stringstream ss;
+			sourceViewA.print(ss);
+			__COUTT__ << "mergeViews() sourceViewA:\n" << ss.str() << __E__;
+		}
+		{
+			std::stringstream ss;
+			sourceViewB.print(ss);
+			__COUTT__ << "mergeViews() sourceViewB:\n" << ss.str() << __E__;
+		}
+	}
 
 	if(mergeReport)
-		(*mergeReport) << "\n'" << mergeApproach << "'-Merging table '" << getTableName()
-		               << "' A=v" << sourceViewA.getVersion() << " with B=v"
+		(*mergeReport) << "\n'"
+		               << (mergeApproach == MergeApproach::RENAME
+		                       ? "RENAME"
+		                       : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+		                                                                  : "SKIP"))
+		               << "'-Merging table '" << getTableName() << "' A=v"
+		               << sourceViewA.getVersion() << " with B=v"
 		               << sourceViewB.getVersion() << __E__;
 
-	if(fillRecordConversionMaps && mergeApproach == "Rename")
+	if(fillRecordConversionMaps && mergeApproach == MergeApproach::RENAME)
 	{
 		__COUT__ << "Filling record conversion map." << __E__;
 
@@ -1350,8 +1366,11 @@ TableVersion TableBase::mergeViews(
 	__COUT__ << "Merging from (A) " << sourceViewA.getTableName() << "_v"
 	         << sourceViewA.getVersion() << " and (B) " << sourceViewB.getTableName()
 	         << "_v" << sourceViewB.getVersion() << "  to " << getTableName() << "_v"
-	         << destinationVersion << " with approach '" << mergeApproach << ".'"
-	         << __E__;
+	         << destinationVersion << " with approach '"
+	         << (mergeApproach == MergeApproach::RENAME
+	                 ? "RENAME"
+	                 : (mergeApproach == MergeApproach::REPLACE ? "REPLACE" : "SKIP"))
+	         << "'" << __E__;
 
 	// if the merge fails then delete the destinationVersion view
 	try
@@ -1384,7 +1403,7 @@ TableVersion TableBase::mergeViews(
 		// handle merger with conflicts consideration
 		for(unsigned int rb = 0; rb < sourceViewB.getNumberOfRows(); ++rb)
 		{
-			if(mergeApproach == "Rename")
+			if(mergeApproach == MergeApproach::RENAME)
 			{
 				//	rename		-- All records from both groups are maintained, but
 				// conflicts from B are renamed. 					Must maintain a map of
@@ -1600,9 +1619,15 @@ TableVersion TableBase::mergeViews(
 				}
 			if(!found)  // no conflict
 			{
-				__COUT__ << "No " << mergeApproach << " conflict: " << __E__;
+				__COUT__ << "No "
+				         << (mergeApproach == MergeApproach::RENAME
+				                 ? "RENAME"
+				                 : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+				                                                            : "SKIP"))
+				         << " conflict: " << __E__;
 
-				if(mergeApproach == "replace" || mergeApproach == "skip")
+				if(mergeApproach == MergeApproach::REPLACE ||
+				   mergeApproach == MergeApproach::SKIP)
 				{
 					// no conflict so append the B record
 					// copy row from B to new row
@@ -1616,10 +1641,14 @@ TableVersion TableBase::mergeViews(
 
 			// if here, then there was a conflict
 
-			__COUT__ << "found " << mergeApproach
+			__COUT__ << "found "
+			         << (mergeApproach == MergeApproach::RENAME
+			                 ? "RENAME"
+			                 : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+			                                                            : "SKIP"))
 			         << " conflict: " << sourceViewB.getDataView()[rb][colUID] << __E__;
 
-			if(mergeApproach == "replace")
+			if(mergeApproach == MergeApproach::REPLACE)
 			{
 				if(mergeReport)
 					(*mergeReport)
@@ -1637,7 +1666,8 @@ TableVersion TableBase::mergeViews(
 				// copy row from B to new row
 				destinationView->copyRows(author, sourceViewB, rb, 1 /*srcRowsToCopy*/);
 			}
-			else if(mergeApproach == "skip")  // then do nothing with conflicting B record
+			else if(mergeApproach ==
+			        MergeApproach::SKIP)  // then do nothing with conflicting B record
 			{
 				if(mergeReport)
 					(*mergeReport)
@@ -1647,7 +1677,12 @@ TableVersion TableBase::mergeViews(
 			}
 		}
 
-		destinationView->print();
+		if(TTEST(1))
+		{
+			std::stringstream ss;
+			destinationView->print(ss);
+			__COUTT__ << "mergeViews() destinationView:\n" << ss.str() << __E__;
+		}
 	}
 	catch(...)  // if the copy fails then delete the destinationVersion view
 	{
