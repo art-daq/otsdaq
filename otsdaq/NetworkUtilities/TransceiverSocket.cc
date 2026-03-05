@@ -25,7 +25,9 @@ TransceiverSocket::~TransceiverSocket(void) {}
 
 //==============================================================================
 /// returns 0 on success
-int TransceiverSocket::acknowledge(const std::string& buffer, bool verbose)
+int TransceiverSocket::acknowledge(const std::string& buffer,
+                                   bool               verbose /* = false */,
+                                   size_t             maxChunkSize /* = 1500 */)
 {
 	// lockout other senders for the remainder of the scope
 	std::lock_guard<std::mutex> lock(sendMutex_);
@@ -36,7 +38,7 @@ int TransceiverSocket::acknowledge(const std::string& buffer, bool verbose)
 		          << " to-port: " << ntohs(ReceiverSocket::fromAddress_.sin_port)
 		          << std::endl;
 
-	constexpr size_t MAX_SEND_SIZE = 1500;
+	const size_t MAX_SEND_SIZE = maxChunkSize;
 	size_t           offset        = 0;
 	int              sendToSize    = 1;
 
@@ -71,13 +73,14 @@ int TransceiverSocket::acknowledge(const std::string& buffer, bool verbose)
 
 //==============================================================================
 /// Receives one packet with the specified timeout, then attempts to receive
-/// additional packets with a short (10 ms) timeout to handle multi-packet responses.
+/// additional packets with interPacketTimeoutUSeconds timeout to handle multi-packet responses.
 /// Returns the combined received buffer or throws on error/timeout.
 std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
                                               const std::string& sendBuffer,
                                               unsigned int       timeoutSeconds /* = 1 */,
                                               unsigned int timeoutUSeconds /* = 0 */,
-                                              bool         verbose /* = false */)
+                                              bool         verbose /* = false */,
+                                              unsigned int interPacketTimeoutUSeconds /* = 10000 */)
 {
 	using clock = std::chrono::steady_clock;
 	auto start  = clock::now();
@@ -117,13 +120,13 @@ std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
 	          << " milliseconds. PID=" << getpid()
 	          << " TID=" << std::this_thread::get_id() << std::endl;
 
-	//assume response may be multiple packets! (and give 10 ms unless called with lower timeout)
+	//assume response may be multiple packets! (and give interPacketTimeoutUSeconds unless called with lower timeout)
 	std::string receiveBuffer2;
 	while(receive(receiveBuffer2,
 	              0 /*timeoutSeconds*/,
-	              (timeoutSeconds == 0 && timeoutUSeconds < 10000)
+	              (timeoutSeconds == 0 && timeoutUSeconds < interPacketTimeoutUSeconds)
 	                  ? timeoutUSeconds
-	                  : 10000 /*timeoutUSeconds*/,
+	                  : interPacketTimeoutUSeconds,
 	              verbose) >= 0)
 	{
 		receiveBuffer += receiveBuffer2;  //append
