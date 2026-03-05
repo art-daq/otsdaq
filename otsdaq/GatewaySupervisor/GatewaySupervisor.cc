@@ -8665,8 +8665,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		if(!remoteGatewayApp.fsm_included)
 		{
 			__COUT__ << "Skipping excluded Remote gateway '"
-			         << remoteGatewayApp.appInfo.name
-			         << "' for FSM command = " << command << __E__;
+			         << remoteGatewayApp.appInfo.name << "' for FSM command = " << command
+			         << __E__;
 			continue;  //skip if not included
 		}
 
@@ -8705,13 +8705,18 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		}
 
 		//Likely top level does not want to reinitialize a configured subsystem (just wants self and other subsystems to catch up)
-		if(remoteGatewayApp.appInfo.status == RunControlStateMachine::CONFIGURED_STATE_NAME && 
-		 	remoteGatewayApp.appInfo.progress == 100 && 
-			(command == RunControlStateMachine::INIT_TRANSITION_NAME || 
-				command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
+		if(remoteGatewayApp.appInfo.status ==
+		       RunControlStateMachine::CONFIGURED_STATE_NAME &&
+		   remoteGatewayApp.appInfo.progress == 100 &&
+		   (command == RunControlStateMachine::INIT_TRANSITION_NAME ||
+		    command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
 		{
-			__COUT_INFO__ << "Ignoring '" << command << "' transition for Remote subsystem '"
-					<< remoteGatewayApp.appInfo.name << ".' It is alaredy configured (assuming top-level does not mean to re-initialize subsystem)." << __E__;
+			__COUT_INFO__ << "Ignoring '" << command
+			              << "' transition for Remote subsystem '"
+			              << remoteGatewayApp.appInfo.name
+			              << ".' It is alaredy configured (assuming top-level does not "
+			                 "mean to re-initialize subsystem)."
+			              << __E__;
 			continue;
 		}
 
@@ -8853,12 +8858,12 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
 				continue;
 
-			if(remoteGatewayApp.appInfo.status == RunControlStateMachine::CONFIGURED_STATE_NAME && 
-				remoteGatewayApp.appInfo.progress == 100 && 
-				(command == RunControlStateMachine::INIT_TRANSITION_NAME || 
-					command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
-				continue; //Likely top level does not want to reinitialize a configured subsystem (just wants self and other subsystems to catch up)
-
+			if(remoteGatewayApp.appInfo.status ==
+			       RunControlStateMachine::CONFIGURED_STATE_NAME &&
+			   remoteGatewayApp.appInfo.progress == 100 &&
+			   (command == RunControlStateMachine::INIT_TRANSITION_NAME ||
+			    command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
+				continue;  //Likely top level does not want to reinitialize a configured subsystem (just wants self and other subsystems to catch up)
 
 			//if here, was commanded, so check status
 
