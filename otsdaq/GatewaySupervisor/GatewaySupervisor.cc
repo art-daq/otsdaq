@@ -1276,7 +1276,8 @@ try
 							}
 							remoteGatewaySocket = std::make_unique<TransceiverSocket>(
 							    ipAddressForStateChangesOverUDP);
-							remoteGatewaySocket->initialize(4 * 1024 * 1024 /*socketReceiveBufferSize=4MB*/);
+							remoteGatewaySocket->initialize(
+							    4 * 1024 * 1024 /*socketReceiveBufferSize=4MB*/);
 
 							__COUTT__
 							    << "Remote Gateway App Status Socket initialized. Port: "
@@ -2757,7 +2758,12 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		Socket gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
 
 		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(
-		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/, 0, false, 200000 /*interPacketTimeoutUSeconds=200ms*/);
+		    gatewayRemoteSocket,
+		    command,
+		    10 /*timeoutSeconds*/,
+		    0,
+		    false,
+		    200000 /*interPacketTimeoutUSeconds=200ms*/);
 		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name
 		         << "' received: " << commandResponseString << __E__;
 
@@ -2847,7 +2853,8 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 					else
 					{
 						const size_t maxPrint = 500;
-						ss << "Received " << commandResponseString.size() << " bytes so far. ";
+						ss << "Received " << commandResponseString.size()
+						   << " bytes so far. ";
 						if(commandResponseString.size() <= maxPrint)
 						{
 							ss << "Full received text: [" << commandResponseString << "]";
@@ -2855,10 +2862,10 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 						else
 						{
 							ss << "First " << maxPrint << " chars: ["
-							   << commandResponseString.substr(0, maxPrint) << "] ... Last "
-							   << maxPrint << " chars: ["
-							   << commandResponseString.substr(commandResponseString.size() -
-							                                   maxPrint)
+							   << commandResponseString.substr(0, maxPrint)
+							   << "] ... Last " << maxPrint << " chars: ["
+							   << commandResponseString.substr(
+							          commandResponseString.size() - maxPrint)
 							   << "]";
 						}
 					}

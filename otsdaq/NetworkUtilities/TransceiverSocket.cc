@@ -40,8 +40,8 @@ int TransceiverSocket::acknowledge(const std::string& buffer,
 
 	const size_t MAX_SEND_SIZE =
 	    maxChunkSize > 65500u ? static_cast<size_t>(65500u) : maxChunkSize;
-	size_t           offset        = 0;
-	int              sendToSize    = 1;
+	size_t offset     = 0;
+	int    sendToSize = 1;
 
 	int sizeInBytes = 1;
 
@@ -76,12 +76,13 @@ int TransceiverSocket::acknowledge(const std::string& buffer,
 /// Receives one packet with the specified timeout, then attempts to receive
 /// additional packets with interPacketTimeoutUSeconds timeout to handle multi-packet responses.
 /// Returns the combined received buffer or throws on error/timeout.
-std::string TransceiverSocket::sendAndReceive(Socket&            toSocket,
-                                              const std::string& sendBuffer,
-                                              unsigned int       timeoutSeconds /* = 1 */,
-                                              unsigned int timeoutUSeconds /* = 0 */,
-                                              bool         verbose /* = false */,
-                                              unsigned int interPacketTimeoutUSeconds /* = 10000 */)
+std::string TransceiverSocket::sendAndReceive(
+    Socket&            toSocket,
+    const std::string& sendBuffer,
+    unsigned int       timeoutSeconds /* = 1 */,
+    unsigned int       timeoutUSeconds /* = 0 */,
+    bool               verbose /* = false */,
+    unsigned int       interPacketTimeoutUSeconds /* = 10000 */)
 {
 	using clock = std::chrono::steady_clock;
 	auto start  = clock::now();
