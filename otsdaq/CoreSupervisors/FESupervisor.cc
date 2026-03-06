@@ -1457,6 +1457,13 @@ void FESupervisor::closeDataPublishing(bool alsoCloseContext /* = true */)
 }  //end closeDataPublishing()
 
 //==============================================================================
+/// Publish data to the ZeroMQ PUB socket.
+///
+/// @param dataPtr Pointer to the data to publish. May be nullptr only if dataSize is 0.
+/// @param dataSize Size of the data to publish, in bytes. May be 0, in which case an empty frame will be sent.
+///
+/// Example receiving published data:
+/// 	artdaqDriver -c srcs/artdaq-mu2e/tools/fcl/cfo_driver.fcl
 void FESupervisor::publishData(const char* dataPtr, size_t dataSize)
 {
 	if(!dp_isInitialized_)

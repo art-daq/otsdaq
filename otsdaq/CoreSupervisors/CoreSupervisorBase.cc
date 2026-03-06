@@ -790,6 +790,62 @@ void CoreSupervisorBase::configureInit(void)
 	        .getValue("ActiveStateMachineRunAlias");
 	__SUP_COUTV__(StringMacros::mapToString(StringMacros::systemVariables_));
 
+	// Assemble Subsystem Common Table List ----------------
+	std::map<std::string /* tableName */, TableVersion> mergeInTables, overrideTables;
+	{
+		{  //handle common merge-in list
+			std::string subsystemCommonList;
+			try
+			{
+				subsystemCommonList =
+				    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+				        .getParameters()
+				        .getValue("SubsystemCommonList");
+			}
+			catch(...)
+			{
+				__COUT__ << "Ignoring missing 'SubsystemCommonList' parameter." << __E__;
+			}
+
+			if(!subsystemCommonList.empty())
+			{
+				subsystemCommonList =
+				    StringMacros::decodeURIComponent(subsystemCommonList);
+				__COUT__ << "Transition parameter SubsystemCommonList: "
+				         << subsystemCommonList << __E__;
+				StringMacros::getMapFromString(subsystemCommonList, mergeInTables);
+				__COUTV__(StringMacros::mapToString(mergeInTables));
+			}
+		}  //end handle common merge-in list
+
+		{  //handle common override list
+			std::string subsystemCommonOverrideList;
+			try
+			{
+				subsystemCommonOverrideList =
+				    SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
+				        .getParameters()
+				        .getValue("SubsystemCommonOverrideList");
+			}
+			catch(...)
+			{
+				__COUT__ << "Ignoring missing 'SubsystemCommonOverrideList' parameter."
+				         << __E__;
+			}
+
+			if(!subsystemCommonOverrideList.empty())
+			{
+				subsystemCommonOverrideList =
+				    StringMacros::decodeURIComponent(subsystemCommonOverrideList);
+				__COUT__ << "Transition parameter SubsystemCommonOverrideList: "
+				         << subsystemCommonOverrideList << __E__;
+				StringMacros::getMapFromString(subsystemCommonOverrideList,
+				                               overrideTables);
+				__COUTV__(StringMacros::mapToString(overrideTables));
+			}
+		}  //end handle common override list
+	}      // end Assemble Subsystem Common Table List ----------------
+
 	try
 	{
 		//disable version tracking to accept untracked versions to be selected by the FSM transition source
@@ -797,17 +853,20 @@ void CoreSupervisorBase::configureInit(void)
 		    theGroup.first,
 		    theGroup.second,
 		    true /*doActivate*/,
-		    0,
-		    0,
-		    0,
-		    0,
-		    0,
-		    0,
-		    false,
-		    0,
-		    0,
+		    0 /*groupMembers      */,
+		    0 /*progressBar       */,
+		    0 /*accumulateWarnings*/,
+		    0 /*groupComment      */,
+		    0 /*groupAuthor       */,
+		    0 /*groupCreateTime   */,
+		    false /*doNotLoadMember */,
+		    0 /*groupTypeString */,
+		    0 /*groupAliases */,
 		    ConfigurationManager::LoadGroupType::ALL_TYPES,
-		    true /*ignoreVersionTracking*/);
+		    true /*ignoreVersionTracking*/,
+		    mergeInTables /* mergeInTables */,
+		    overrideTables /* overrideTables */
+		);
 	}
 	catch(const std::runtime_error& e)
 	{
