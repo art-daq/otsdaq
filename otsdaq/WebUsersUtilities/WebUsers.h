@@ -523,6 +523,8 @@ class WebUsers
 						bool               addNewLine = true);
 	bool saveDatabaseToFile(uint8_t db);
 	bool loadDatabases(void);
+	void saveLoginFailureCounts(void);
+	void loadLoginFailureCounts(void);
 
 	uint64_t searchUsersDatabaseForUsername			(const std::string& username) const;
 	uint64_t searchUsersDatabaseForDisplayName		(const std::string& displayName) const;
