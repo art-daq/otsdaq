@@ -2888,7 +2888,9 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 	{
 		__SS__ << "Failure sending Remote Gateway App '" << remoteGatewayApp.appInfo.name
 		       << "' the command '"
-		       << (tmpCommand.size() > 100 ? (tmpCommand.substr(0, 100) + "<truncated>...") : tmpCommand)
+		       << (tmpCommand.size() > 100
+		               ? (tmpCommand.substr(0, 100) + "<truncated>...")
+		               : tmpCommand)
 		       << "' at url: " << remoteGatewayApp.appInfo.url
 		       << " due to error: " << e.what() << __E__;
 		__COUT_ERR__ << ss.str();
@@ -5513,9 +5515,9 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 {
 	__SUP_COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
-	         << " from " << theStateMachine_.getProvenanceStateName() << __E__;
+	             << " from " << theStateMachine_.getProvenanceStateName() << __E__;
 	__SUP_COUT__ << "Fsm is in transition? "
-	         << (theStateMachine_.isInTransition() ? "yes" : "no") << __E__;
+	             << (theStateMachine_.isInTransition() ? "yes" : "no") << __E__;
 
 	__SUP_COUTV__(
 	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand());
@@ -5591,9 +5593,10 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		}  // End write run info into db
 	}      // end update Run Info handling
 
-	activeStateMachineName_ = "";
+	activeStateMachineName_       = "";
 	activeStateMachineWindowName_ = "";
-	__SUP_COUT_INFO__ << "Gateway Supervisor is halted. Active state machine cleared." << __E__;	
+	__SUP_COUT_INFO__ << "Gateway Supervisor is halted. Active state machine cleared."
+	                  << __E__;
 }  // end stateHalted()
 
 //==============================================================================
@@ -8650,21 +8653,21 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 	std::string command    = commandObj.getCommand();
 	__COUTV__(command);
 
-	activeStateMachineSubsystemCommonList_ = ""; // clear
-	activeStateMachineSubsystemCommonOverrideList_ = ""; // clear
-	if(command ==  RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+	activeStateMachineSubsystemCommonList_         = "";  // clear
+	activeStateMachineSubsystemCommonOverrideList_ = "";  // clear
+	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 	{
 		//build "SubystemCommon" and "SubsystemCommonOverride" table list:
 		//	Cached at Configure transition CSV list of Table/Versions
 		//	specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway,
-		//	to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring.	
+		//	to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring.
 		activeStateMachineSubsystemCommonList_ =
-			StringMacros::setToString(theConfigurationManager_->getVersionAliases(
-				ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS));
+		    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+		        ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS));
 		__SUP_COUTV__(activeStateMachineSubsystemCommonList_);
 		activeStateMachineSubsystemCommonOverrideList_ =
-			StringMacros::setToString(theConfigurationManager_->getVersionAliases(
-				ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
+		    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+		        ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
 		__SUP_COUTV__(activeStateMachineSubsystemCommonOverrideList_);
 	}
 

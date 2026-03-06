@@ -2537,8 +2537,11 @@ void Iterator::haltIterationPlan(HttpXmlDocument& /*xmldoc*/)
 	}
 	else  // no thread, so halt (and reset Error') without command to thread
 	{
-		__COUT__ << "No thread, so conducting halt. lastFsmName_ = " << lastFsmName_ << __E__;
-		lastFsmName_ = theSupervisor_->activeStateMachineName_; //force haltIterator to be successful
+		__COUT__ << "No thread, so conducting halt. lastFsmName_ = " << lastFsmName_
+		         << __E__;
+		lastFsmName_ =
+		    theSupervisor_
+		        ->activeStateMachineName_;  //force haltIterator to be successful
 		__COUTV__(lastFsmName_);
 		Iterator::haltIterator(this);
 	}
