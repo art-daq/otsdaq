@@ -1276,7 +1276,8 @@ try
 							}
 							remoteGatewaySocket = std::make_unique<TransceiverSocket>(
 							    ipAddressForStateChangesOverUDP);
-							remoteGatewaySocket->initialize();
+							remoteGatewaySocket->initialize(
+							    4 * 1024 * 1024 /*socketReceiveBufferSize=4MB*/);
 
 							__COUTT__
 							    << "Remote Gateway App Status Socket initialized. Port: "
@@ -2757,7 +2758,12 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		Socket gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
 
 		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(
-		    gatewayRemoteSocket, command, 10 /*timeoutSeconds*/);
+		    gatewayRemoteSocket,
+		    command,
+		    10 /*timeoutSeconds*/,
+		    0,
+		    false,
+		    200000 /*interPacketTimeoutUSeconds=200ms*/);
 		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name
 		         << "' received: " << commandResponseString << __E__;
 
@@ -2836,12 +2842,34 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 				}
 				else if(tryCnt >= MAX_RETRIES)
 				{
-					std::ostringstream oss;
-					oss << "Timeout after " << MAX_RETRIES
-					    << " attempts waiting for more data from Remote Gateway '"
-					    << remoteGatewayApp.appInfo.name
-					    << "' (URL=" << remoteGatewayApp.appInfo.url << ")...";
-					__SS__ << oss.str() << __E__;
+					__SS__ << "Timeout after " << MAX_RETRIES
+					       << " attempts waiting for more data from Remote Gateway '"
+					       << remoteGatewayApp.appInfo.name
+					       << "' (URL=" << remoteGatewayApp.appInfo.url << "). ";
+					if(commandResponseString.empty())
+					{
+						ss << "No data was received at all.";
+					}
+					else
+					{
+						const size_t maxPrint = 500;
+						ss << "Received " << commandResponseString.size()
+						   << " bytes so far. ";
+						if(commandResponseString.size() <= maxPrint)
+						{
+							ss << "Full received text: [" << commandResponseString << "]";
+						}
+						else
+						{
+							ss << "First " << maxPrint << " chars: ["
+							   << commandResponseString.substr(0, maxPrint)
+							   << "] ... Last " << maxPrint << " chars: ["
+							   << commandResponseString.substr(
+							          commandResponseString.size() - maxPrint)
+							   << "]";
+						}
+					}
+					ss << __E__;
 					__SS_THROW__;
 				}
 			}
@@ -4347,7 +4375,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						                  ? ("," + extraDoneContent)
 						                  : ""  //append extra done content, if any
 						              ),
-						    true /* verbose */);
+						    true /* verbose */,
+						    extraDoneContent.size() ? 65500 : 1500 /*maxChunkSize*/);
 				}
 			}
 			catch(...)
