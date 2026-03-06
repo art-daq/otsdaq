@@ -38,7 +38,8 @@ int TransceiverSocket::acknowledge(const std::string& buffer,
 		          << " to-port: " << ntohs(ReceiverSocket::fromAddress_.sin_port)
 		          << std::endl;
 
-	const size_t MAX_SEND_SIZE = maxChunkSize;
+	const size_t MAX_SEND_SIZE =
+	    maxChunkSize > 65500u ? static_cast<size_t>(65500u) : maxChunkSize;
 	size_t           offset        = 0;
 	int              sendToSize    = 1;
 
