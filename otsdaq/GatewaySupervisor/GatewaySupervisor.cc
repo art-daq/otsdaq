@@ -2944,7 +2944,8 @@ try
 	remoteGatewayApp.appInfo.progress       = 0;
 	remoteGatewayApp.appInfo.detail         = "";
 	remoteGatewayApp.appInfo.lastStatusTime = time(0);
-	remoteGatewayApp.subapps.clear();  //clear stale subapps before repopulating so removed subapps do not persist as UNKNOWN
+	remoteGatewayApp.subapps
+	    .clear();  //clear stale subapps before repopulating so removed subapps do not persist as UNKNOWN
 
 	__COUTT__ << "Checking remote gateway status of '" << remoteGatewayApp.appInfo.name
 	          << "'" << __E__;
@@ -4264,7 +4265,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						                        &tmpCfgMgr, icon.windowContentURL_);
 						iconString += "," + icon.folderPath_;
 					}
-					
+
 					//always force insert Wiz Mode Config view so users can access from top-level
 					{
 						if(firstIcon)
@@ -4272,23 +4273,24 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						else
 							iconString += ",";
 
-						iconString += "Wiz-Mode Config";            //icon.caption_;
+						iconString += "Wiz-Mode Config";         //icon.caption_;
 						iconString += "," + std::string("WIZ");  //icon.alternateText_;
 						iconString +=
 						    "," +
 						    std::string(
 						        "0");  //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
-						iconString +=
-						    "," + std::string("255");  // set permission to 255 
+						iconString += "," + std::string("255");  // set permission to 255
 						iconString += "," + std::string(
 						                        "/WebPath/images/dashboardImages/"
 						                        "icon-Settings.png");  //icon.imageURL_;
 						iconString +=
-						    "," + iconTable->getRemoteURL(
-						              &tmpCfgMgr, 
-									  "/WebPath/html/ConfigurationGUI.html?urn=" + 
-									  std::to_string(XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID),
-									true /* forWizMode */);
+						    "," +
+						    iconTable->getRemoteURL(
+						        &tmpCfgMgr,
+						        "/WebPath/html/ConfigurationGUI.html?urn=" +
+						            std::to_string(XDAQContextTable::XDAQApplication::
+						                               WIZMODE_CONFIG_APP_ID),
+						        true /* forWizMode */);
 						iconString += "," + std::string("");  //icon.folderPath_;
 					}
 

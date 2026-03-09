@@ -286,7 +286,7 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 ///Convert to remote URL assuming port forwarding to primary Gateway Port
 std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager,
                                            const std::string&    localURL,
-											bool doForWizMode /* = false */) const
+                                           bool doForWizMode /* = false */) const
 {
 	std::string contextAddress;
 	{  //get context address of gateway to use as origin for remote icons
@@ -341,12 +341,13 @@ std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager,
 		retURL += '?';
 	else if(retURL[retURL.size() - 1] != '?')  // if not first parameter, add &
 		retURL += '&';
-	retURL += "remoteServerOrigin=" + StringMacros::encodeURIComponent(contextAddress) +
-	          "&remoteServerUrnLid=" +
-	          std::to_string(doForWizMode?XDAQContextTable::XDAQApplication::WIZMODE_APP_ID:
-				XDAQContextTable::XDAQApplication::GATEWAY_APP_ID);
-	
-	if (doForWizMode)
+	retURL +=
+	    "remoteServerOrigin=" + StringMacros::encodeURIComponent(contextAddress) +
+	    "&remoteServerUrnLid=" +
+	    std::to_string(doForWizMode ? XDAQContextTable::XDAQApplication::WIZMODE_APP_ID
+	                                : XDAQContextTable::XDAQApplication::GATEWAY_APP_ID);
+
+	if(doForWizMode)
 		retURL += "&forcedWizMode=1";
 
 	__COUTTV__(retURL);

@@ -33,7 +33,7 @@ class DesktopIconTable : public TableBase
 	                                   newIcons);  ///< overwrite dynamically the init result
 	std::string getRemoteURL(ConfigurationManager* configManager,
 	                         const std::string&    localURL,
-							bool doForWizMode = false) const;
+	                         bool                  doForWizMode = false) const;
 
 	static const std::string COL_NAME;
 	static const std::string COL_STATUS;
