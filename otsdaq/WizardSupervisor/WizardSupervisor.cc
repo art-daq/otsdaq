@@ -2,6 +2,7 @@
 
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
 #include "otsdaq/GatewaySupervisor/GatewaySupervisor.h"
+#include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
 
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/ITRACEController.h"
