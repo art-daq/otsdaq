@@ -345,7 +345,7 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 					__SS__ << "XDAQ Application IDs are not unique; this could be due to "
 							  "multiple instances of the same XDAQ application linked to "
 							  "from two "
-							  "seperate XDAQ Contexts (check all enabled XDAQ Contexts "
+							  "separate XDAQ Contexts (check all enabled XDAQ Contexts "
 							  "for replicated application IDs). Specifically, there is a "
 							  "duplicate at id="
 						   << contexts_.back().applications_.back().id_ << " appName="
