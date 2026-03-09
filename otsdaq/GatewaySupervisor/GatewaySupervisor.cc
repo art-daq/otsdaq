@@ -8717,7 +8717,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 	activeStateMachineSubsystemCommonOverrideList_ = "";  // clear
 	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
 	{
-		//build "SubystemCommon" and "SubsystemCommonOverride" table list:
+		//build "SubsystemCommon" and "SubsystemCommonOverride" table list:
 		//	Cached at Configure transition CSV list of Table/Versions
 		//	specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway,
 		//	to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring.
