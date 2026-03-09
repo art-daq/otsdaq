@@ -2,6 +2,7 @@
 
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
 #include "otsdaq/GatewaySupervisor/GatewaySupervisor.h"
+#include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
 
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/ITRACEController.h"
@@ -221,13 +222,13 @@ void WizardSupervisor::requestIcons(xgi::Input* in, xgi::Output* out)
 	// folder and subfolder location
 
 	// clang-format off
-	*out << "Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,/"
+	*out << "Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "/,/"
 
 		 << ",Table Editor,TBL,0,1,icon-ControlsDashboard.png,"
-			"/urn:xdaq-application:lid=280/?configWindowName=tableEditor,/"
+			"/urn:xdaq-application:lid=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "/?configWindowName=tableEditor,/"
 
 		 << ",Desktop Icon Editor,ICON,0,1,icon-IconEditor.png,"
-			"/WebPath/html/ConfigurationGUI_subset.html?urn=280&subsetBasePath=DesktopIconTable&"
+			"/WebPath/html/ConfigurationGUI_subset.html?urn=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "&subsetBasePath=DesktopIconTable&"
 			"recordAlias=Icons&groupingFieldList=Status%2CFolderPath%2CRequiredPermissionLevel,/"
 
 		 //User Settings ------------------
@@ -245,16 +246,16 @@ void WizardSupervisor::requestIcons(xgi::Input* in, xgi::Output* out)
 
 		 //Configuration Wizards ------------------
 		 << ",Front-end Wizard,CFG,0,1,icon-Configure.png,"
-			"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Front%2Dend,Config Wizards"
+			"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "&recordAlias=Front%2Dend,Config Wizards"
 
 		 << ",Processor Wizard,CFG,0,1,icon-Configure.png,"
-			"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&recordAlias=Processor,Config Wizards"
+			"/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "&recordAlias=Processor,Config Wizards"
 
 		 << ",artdaq Config Editor,CFG,0,1,icon-Configure.png,"
-			"/WebPath/html/ConfigurationGUI_artdaq.html?urn=280,Config Wizards"
+			"/WebPath/html/ConfigurationGUI_artdaq.html?urn=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << ",Config Wizards"
 
 		 << ",Block Diagram,CFG,0,1,icon-Configure.png,"
-			"/WebPath/html/ConfigurationSubsetBlockDiagram.html?urn=280,Config Wizards"
+			"/WebPath/html/ConfigurationSubsetBlockDiagram.html?urn=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << ",Config Wizards"
 		 //end Configuration Wizards ------------------
 
 		 << ",Code Editor,CODE,0,1,icon-CodeEditor.png,/urn:xdaq-application:lid=240/,/"
@@ -271,18 +272,18 @@ void WizardSupervisor::requestIcons(xgi::Input* in, xgi::Output* out)
 					"https://otsdaq.fnal.gov,/Documentation"
 		 //end Documentation ------------------
 
-		//",Iterate,IT,0,1,icon-Iterate.png,/urn:xdaq-application:lid=280/?configWindowName=iterate,/"
+		//",Iterate,IT,0,1,icon-Iterate.png,/urn:xdaq-application:lid=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "/?configWindowName=iterate,/"
 		//<<
-		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder"
+		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "/,myFolder"
 		//<<
-		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,/myFolder/mySub.folder"
+		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "/,/myFolder/mySub.folder"
 		//<<
-		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=280/,myFolder/"
+		//",Configure,CFG,0,1,icon-Configure.png,/urn:xdaq-application:lid=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "/,myFolder/"
 		//<<
 
 
 		//",Consumer
-		// Wizard,CFG,0,1,icon-Configure.png,/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=280&subsetBasePath=FEInterfaceConfiguration&recordAlias=Consumer,Config
+		// Wizard,CFG,0,1,icon-Configure.png,/WebPath/html/RecordWiz_ConfigurationGUI.html?urn=" << XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID << "&subsetBasePath=FEInterfaceConfiguration&recordAlias=Consumer,Config
 		// Wizards" <<
 
 		//",DB Utilities,DB,1,1,0,http://127.0.0.1:8080/db/client.html" <<

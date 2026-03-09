@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no" ?>
 	<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TableInfo.xsd">
 		<TABLE Name="VersionAliasesTable">
-			<VIEW Name="VERSION_ALIASES_TABLE" Type="File,Database,DatabaseTest">
-				<COLUMN Type="UID" 	 Name="VersionAliasUID" 	 StorageName="VERSION_ALIAS_UID" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Data" 	 Name="TableName" 	 StorageName="TABLE_NAME" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Data" 	 Name="VersionAlias" 	 StorageName="VERSION_ALIAS" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Data" 	 Name="Version" 	 StorageName="VERSION" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="VARCHAR2"/>
-				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE"/>
+			<VIEW Name="VERSION_ALIASES_TABLE" Type="File,Database,DatabaseTest" Description="This%20table%20defines%20%3Cb%3Ealiases%3C%2Fb%3E%20for%20table%20%3Cb%3Eversions%3C%2Fb%3E.%20A%20table%20version%20alias%20is%20an%20alternative%20name%20for%20a%20table%20name%2Fversion%20pair.%0A%0AThis%20table%20is%20a%20member%20of%20the%20%3Cb%3EBackbone%20group%3C%2Fb%3E%20type.%20Backbone%20groups%20should%20be%20created%20and%20activated%20before%20Configuring%20the%20State%20Machine.%0A%0AAn%20alias%20can%20be%20any%20alphanumeric%20string.%20Note%20that%20there%20are%20three%20reserved%20words%20to%20be%20used%20as%20version%20aliases%3A%20%3Cb%3EDefault%3C%2Fb%3E%2C%20%3Cb%3ESubsystemCommon%3C%2Fb%3E%2C%20and%20%3Cb%3ESubsystemCommonOverride%3C%2Fb%3E.%20SubsystemCommon(Override)%20is%20used%20in%20%3Cb%3E%3Ci%3Eots%3C%2Fi%3E%3C%2Fb%3E%20environments%20where%20%3Cb%3ERemote%20Gateway%20Subsystems%3C%2Fb%3E%20are%20enabled%20(by%20adding%20them%20in%20your%20active%20Context%20group%20as%20a%20Desktop%20Icon%20linked%20to%20a%20Subsystem%20User%20Path).%20%0A%0AWhen%20%3Cb%3ERemote%20Gateway%20Subsystems%3C%2Fb%3E%20are%20enabled%2C%20%3Cb%3ESubsystemCommon%3C%2Fb%3E%20defines%20tables%20to%20be%20merged%20into%20the%20Subsystem%20Configuration%20at%20the%20Configure%20transition%20-%20if%20there%20are%20record%20conflicts%2C%20the%20existing%20Subsystem%20Configuration%20takes%20priority.%20%3Cb%3ESubsystemCommonOverride%3C%2Fb%3E%20defines%20tables%20to%20be%20merged%20into%20the%20Subsystem%20Configuration%20at%20the%20Configure%20transition%20-%20if%20there%20are%20record%20conflicts%2C%20the%20incoming%20top-level%20specified%20alias%20records%20override%20the%20existing%20Subsystem%20Configuration%20record.">
+				<COLUMN Type="UID" 	 Name="VersionAliasUID" 	 StorageName="VERSION_ALIAS_UID" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="TableName" 	 StorageName="TABLE_NAME" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="VersionAlias" 	 StorageName="VERSION_ALIAS" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="Version" 	 StorageName="VERSION" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="STRING" 		DataChoices=""/>
+				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE" 		DataChoices=""/>
 			</VIEW>
 		</TABLE>
 	</ROOT>

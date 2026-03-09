@@ -1632,7 +1632,7 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 	if(it != RemoteSessions_.end())  //then found cached cookie code
 	{
 		__COUTT__ << "cookieCode still active locally!" << __E__;
-		__COUTV__(it->second.userId_);
+		__COUTTV__(it->second.userId_);
 		uint64_t j = searchUsersDatabaseForUserId(it->second.userId_);
 		if(j == NOT_FOUND_IN_DATABASE)
 		{
@@ -1640,7 +1640,7 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 			       << it->second.userId_ << "' - notify admins." << __E__;
 			__SS_THROW__;
 		}
-		__COUTV__(Users_[j].username_);
+		__COUTTV__(Users_[j].username_);
 
 		// now, need to check lock handling!
 		return lockHandling(Users_[j].username_, it->second.userId_);

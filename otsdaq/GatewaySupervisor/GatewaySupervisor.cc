@@ -2916,7 +2916,9 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 	{
 		__SS__ << "Failure sending Remote Gateway App '" << remoteGatewayApp.appInfo.name
 		       << "' the command '"
-		       << (tmpCommand.size() > 30 ? tmpCommand.substr(0, 30) : tmpCommand)
+		       << (tmpCommand.size() > 100
+		               ? (tmpCommand.substr(0, 100) + "<truncated>...")
+		               : tmpCommand)
 		       << "' at url: " << remoteGatewayApp.appInfo.url
 		       << " due to error: " << e.what() << __E__;
 		__COUT_ERR__ << ss.str();
@@ -2942,6 +2944,8 @@ try
 	remoteGatewayApp.appInfo.progress       = 0;
 	remoteGatewayApp.appInfo.detail         = "";
 	remoteGatewayApp.appInfo.lastStatusTime = time(0);
+	remoteGatewayApp.subapps
+	    .clear();  //clear stale subapps before repopulating so removed subapps do not persist as UNKNOWN
 
 	__COUTT__ << "Checking remote gateway status of '" << remoteGatewayApp.appInfo.name
 	          << "'" << __E__;
@@ -4261,6 +4265,35 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						                        &tmpCfgMgr, icon.windowContentURL_);
 						iconString += "," + icon.folderPath_;
 					}
+
+					//always force insert Wiz Mode Config view so users can access from top-level
+					{
+						if(firstIcon)
+							firstIcon = false;
+						else
+							iconString += ",";
+
+						iconString += "Wiz-Mode Config";         //icon.caption_;
+						iconString += "," + std::string("WIZ");  //icon.alternateText_;
+						iconString +=
+						    "," +
+						    std::string(
+						        "0");  //std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
+						iconString += "," + std::string("255");  // set permission to 255
+						iconString += "," + std::string(
+						                        "/WebPath/images/dashboardImages/"
+						                        "icon-Settings.png");  //icon.imageURL_;
+						iconString +=
+						    "," +
+						    iconTable->getRemoteURL(
+						        &tmpCfgMgr,
+						        "/WebPath/html/ConfigurationGUI.html?urn=" +
+						            std::to_string(XDAQContextTable::XDAQApplication::
+						                               WIZMODE_CONFIG_APP_ID),
+						        true /* forWizMode */);
+						iconString += "," + std::string("");  //icon.folderPath_;
+					}
+
 					__COUTVS__(TLVL_RemoteIcons, iconString);
 
 					sock.acknowledge(iconString, true /* verbose */);
@@ -5541,12 +5574,12 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 //==============================================================================
 void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 {
-	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
-	         << " from " << theStateMachine_.getProvenanceStateName() << __E__;
-	__COUT__ << "Fsm is in transition? "
-	         << (theStateMachine_.isInTransition() ? "yes" : "no") << __E__;
+	__SUP_COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
+	             << " from " << theStateMachine_.getProvenanceStateName() << __E__;
+	__SUP_COUT__ << "Fsm is in transition? "
+	             << (theStateMachine_.isInTransition() ? "yes" : "no") << __E__;
 
-	__COUTV__(
+	__SUP_COUTV__(
 	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand());
 
 	// if coming from Running or Paused, update Run Info	w/HALT
@@ -5568,7 +5601,7 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 				        .getNode(activeStateMachineName_);
 				std::string runInfoPluginType =
 				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
-				__COUTV__(runInfoPluginType);
+				__SUP_COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
 				   runInfoPluginType != "No Run Info Plugin")
 				{
@@ -5619,6 +5652,11 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			__SS_THROW__;
 		}  // End write run info into db
 	}      // end update Run Info handling
+
+	activeStateMachineName_       = "";
+	activeStateMachineWindowName_ = "";
+	__SUP_COUT_INFO__ << "Gateway Supervisor is halted. Active state machine cleared."
+	                  << __E__;
 }  // end stateHalted()
 
 //==============================================================================
@@ -8675,22 +8713,85 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 	std::string command    = commandObj.getCommand();
 	__COUTV__(command);
 
-	//build "SubystemCommon" and "SubsystemCommonOverride" table list:
-	//	Cached at Configure transition CSV list of Table/Versions
-	//	specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway,
-	//	to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring.
-	activeStateMachineSubsystemCommonList_ =
-	    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
-	        ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS));
-	__SUP_COUTV__(activeStateMachineSubsystemCommonList_);
-	activeStateMachineSubsystemCommonOverrideList_ =
-	    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
-	        ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
-	__SUP_COUTV__(activeStateMachineSubsystemCommonOverrideList_);
+	activeStateMachineSubsystemCommonList_         = "";  // clear
+	activeStateMachineSubsystemCommonOverrideList_ = "";  // clear
+	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+	{
+		//build "SubsystemCommon" and "SubsystemCommonOverride" table list:
+		//	Cached at Configure transition CSV list of Table/Versions
+		//	specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway,
+		//	to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring.
+		activeStateMachineSubsystemCommonList_ =
+		    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+		        ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS));
+		__SUP_COUTV__(activeStateMachineSubsystemCommonList_);
+		activeStateMachineSubsystemCommonOverrideList_ =
+		    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+		        ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
+		__SUP_COUTV__(activeStateMachineSubsystemCommonOverrideList_);
+	}
 
 	std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 	for(auto& remoteGatewayApp : remoteGatewayApps_)
 	{
+		if(!remoteGatewayApp.fsm_included)
+		{
+			__COUT__ << "Skipping excluded Remote gateway '"
+			         << remoteGatewayApp.appInfo.name << "' for FSM command = " << command
+			         << __E__;
+			continue;  //skip if not included
+		}
+
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
+		   //do not allow halt/err transitions:
+		   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
+		    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
+		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
+		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
+		{
+			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
+			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
+			         << "' for FSM command = " << command << __E__;
+			continue;  //skip if not included
+		}
+
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
+		   !  //invert of allowed situations:
+		   (remoteGatewayApp.appInfo.status ==
+		        RunControlStateMachine::INITIAL_STATE_NAME ||
+		    remoteGatewayApp.appInfo.status ==
+		        RunControlStateMachine::HALTED_STATE_NAME ||
+		    remoteGatewayApp.appInfo.status.find(
+		        RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
+		    remoteGatewayApp.appInfo.status.find("Error") !=
+		        std::string::npos ||  //	case "Error", "Soft-Error"
+		    (remoteGatewayApp.appInfo.status ==
+		         RunControlStateMachine::HALTED_STATE_NAME &&
+		     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
+		{
+			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
+			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
+			         << "' w/status = " << remoteGatewayApp.appInfo.status
+			         << "... for FSM command = " << command << __E__;
+			continue;  //skip if not included
+		}
+
+		//Likely top level does not want to reinitialize a configured subsystem (just wants self and other subsystems to catch up)
+		if(remoteGatewayApp.appInfo.status ==
+		       RunControlStateMachine::CONFIGURED_STATE_NAME &&
+		   remoteGatewayApp.appInfo.progress == 100 &&
+		   (command == RunControlStateMachine::INIT_TRANSITION_NAME ||
+		    command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
+		{
+			__COUT_INFO__ << "Ignoring '" << command
+			              << "' transition for Remote subsystem '"
+			              << remoteGatewayApp.appInfo.name
+			              << ".' It is already configured (assuming top-level does not "
+			                 "mean to re-initialize subsystem)."
+			              << __E__;
+			continue;
+		}
+
 		//construct command params based on remote gateway settings
 		std::string commandAndParams = command;
 		if(commandObj.hasParameters())
@@ -8718,49 +8819,6 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			}
 			__COUTV__(commandAndParams);
 		}
-
-		if(!remoteGatewayApp.fsm_included)
-		{
-			__COUT__ << "Skipping excluded Remote gateway '"
-			         << remoteGatewayApp.appInfo.name
-			         << "' for FSM command = " << commandAndParams << __E__;
-			continue;  //skip if not included
-		}
-
-		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
-		   //do not allow halt/err transitions:
-		   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
-		    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
-		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
-		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
-		{
-			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
-			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
-			         << "' for FSM command = " << commandAndParams << __E__;
-			continue;  //skip if not included
-		}
-
-		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
-		   !  //invert of allowed situations:
-		   (remoteGatewayApp.appInfo.status ==
-		        RunControlStateMachine::INITIAL_STATE_NAME ||
-		    remoteGatewayApp.appInfo.status ==
-		        RunControlStateMachine::HALTED_STATE_NAME ||
-		    remoteGatewayApp.appInfo.status.find(
-		        RunControlStateMachine::FAILED_STATE_NAME) == 0 ||
-		    remoteGatewayApp.appInfo.status.find("Error") !=
-		        std::string::npos ||  //	case "Error", "Soft-Error"
-		    (remoteGatewayApp.appInfo.status ==
-		         RunControlStateMachine::HALTED_STATE_NAME &&
-		     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
-		{
-			__COUT__ << "Skipping '" << remoteGatewayApp.getFsmMode()
-			         << "' Remote gateway '" << remoteGatewayApp.appInfo.name
-			         << "' w/status = " << remoteGatewayApp.appInfo.status
-			         << "... for FSM command = " << commandAndParams << __E__;
-			continue;  //skip if not included
-		}
-
 		__COUT__ << "Launching FSM command '" << commandAndParams
 		         << "' on Remote gateway '" << remoteGatewayApp.appInfo.name << "'..."
 		         << __E__;
@@ -8871,6 +8929,14 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			         RunControlStateMachine::HALTED_STATE_NAME &&
 			     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
 				continue;
+
+			if(remoteGatewayApp.appInfo.status ==
+			       RunControlStateMachine::CONFIGURED_STATE_NAME &&
+			   remoteGatewayApp.appInfo.progress == 100 &&
+			   (command == RunControlStateMachine::INIT_TRANSITION_NAME ||
+			    command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME))
+				continue;  //Likely top level does not want to reinitialize a configured subsystem (just wants self and other subsystems to catch up)
+
 			//if here, was commanded, so check status
 
 			if(!((remoteGatewayApp.appInfo.status == destinationState &&
@@ -11321,6 +11387,7 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
                                                    bool getRunNumber /* = true */)
 {
 	xmlOut.addTextElementToData("active_fsmName", activeStateMachineName_);
+	xmlOut.addTextElementToData("active_fsmWindowName", activeStateMachineWindowName_);
 	xmlOut.addTextElementToData("current_state", theStateMachine_.getCurrentStateName());
 	const std::string& gatewayStatus = allSupervisorInfo_.getGatewayInfo().getStatus();
 	if(gatewayStatus.size() >

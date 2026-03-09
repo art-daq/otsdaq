@@ -86,8 +86,10 @@ const std::map<std::string /*class*/, std::string /*module*/> XDAQContextTable::
 ///		ots::CodeEditorSupervisor
 ///
 ///
-const uint8_t		 	XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY 	= 100;
-const unsigned int 		XDAQContextTable::XDAQApplication::GATEWAY_APP_ID 		= 200;
+const uint8_t		 	XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY 		= 100;
+const unsigned int 		XDAQContextTable::XDAQApplication::GATEWAY_APP_ID 			= 200;
+const unsigned int 		XDAQContextTable::XDAQApplication::WIZMODE_APP_ID 			= 290;
+const unsigned int 		XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID	= 280;
 
 XDAQContextTable::ColContext 				XDAQContextTable::colContext_ 		= XDAQContextTable::ColContext();  // initialize static member
 XDAQContextTable::ColApplication 			XDAQContextTable::colApplication_ 	= XDAQContextTable::ColApplication();  // initialize static member
@@ -343,7 +345,7 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 					__SS__ << "XDAQ Application IDs are not unique; this could be due to "
 					          "multiple instances of the same XDAQ application linked to "
 					          "from two "
-					          "seperate XDAQ Contexts (check all enabled XDAQ Contexts "
+					          "separate XDAQ Contexts (check all enabled XDAQ Contexts "
 					          "for replicated application IDs). Specifically, there is a "
 					          "duplicate at id="
 					       << contexts_.back().applications_.back().id_ << " appName="

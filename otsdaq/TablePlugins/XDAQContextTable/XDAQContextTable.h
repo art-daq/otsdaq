@@ -23,6 +23,8 @@ class XDAQContextTable : public TableBase
 	{
 		static const uint8_t		DEFAULT_PRIORITY;
 		static const unsigned int	GATEWAY_APP_ID;
+		static const unsigned int	WIZMODE_APP_ID;
+		static const unsigned int	WIZMODE_CONFIG_APP_ID;
 
 		std::string  applicationGroupID_;
 		std::string  applicationUID_;
