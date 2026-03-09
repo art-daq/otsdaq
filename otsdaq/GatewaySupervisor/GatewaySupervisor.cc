@@ -8786,7 +8786,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			__COUT_INFO__ << "Ignoring '" << command
 			              << "' transition for Remote subsystem '"
 			              << remoteGatewayApp.appInfo.name
-			              << ".' It is alaredy configured (assuming top-level does not "
+			              << ".' It is already configured (assuming top-level does not "
 			                 "mean to re-initialize subsystem)."
 			              << __E__;
 			continue;
