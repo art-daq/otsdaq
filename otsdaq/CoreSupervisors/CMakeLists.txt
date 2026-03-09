@@ -4,7 +4,7 @@
 #	message(STATUS "${_variableName}=${${_variableName}}")
 #endforeach()
 
-find_package(cppzmq REQUIRED) # for publish/subscribe of data from FE to Supervisor
+find_package(cppzmq REQUIRED EXPORT) # for publish/subscribe of data from FE to Supervisor
 
 cet_make_library(LIBRARY_NAME CoreSupervisors
 		SOURCE
