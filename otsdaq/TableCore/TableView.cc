@@ -1692,7 +1692,7 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 
 			//__COUT__ << "Group found to compare: " <<
 			//		theDataView_[r][c].substr(i,j-i) << __E__;
-			if(groupNeedle == theDataView_[r][c].substr(i, j - i))
+			if(StringMacros::wildCardMatch(theDataView_[r][c].substr(i, j - i), groupNeedle))
 			{
 				if(!groupIDList)  // dont return if caller is trying to get group list
 					return true;
@@ -1709,7 +1709,7 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 
 		//__COUT__ << "Group found to compare: " <<
 		//		theDataView_[r][c].substr(i,j-i) << __E__;
-		if(groupNeedle == theDataView_[r][c].substr(i, j - i))
+		if(StringMacros::wildCardMatch(theDataView_[r][c].substr(i, j - i), groupNeedle))
 			return true;
 	}
 
