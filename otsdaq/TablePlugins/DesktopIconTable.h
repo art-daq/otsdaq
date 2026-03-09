@@ -32,7 +32,8 @@ class DesktopIconTable : public TableBase
 	void        setAllDesktopIcons(const std::vector<DesktopIconTable::DesktopIcon>&
 	                                   newIcons);  ///< overwrite dynamically the init result
 	std::string getRemoteURL(ConfigurationManager* configManager,
-	                         const std::string&    localURL) const;
+	                         const std::string&    localURL,
+							bool doForWizMode = false) const;
 
 	static const std::string COL_NAME;
 	static const std::string COL_STATUS;

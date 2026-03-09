@@ -86,8 +86,10 @@ const std::map<std::string /*class*/, std::string /*module*/> XDAQContextTable::
 ///		ots::CodeEditorSupervisor
 ///
 ///
-const uint8_t		 	XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY 	= 100;
-const unsigned int 		XDAQContextTable::XDAQApplication::GATEWAY_APP_ID 		= 200;
+const uint8_t		 	XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY 		= 100;
+const unsigned int 		XDAQContextTable::XDAQApplication::GATEWAY_APP_ID 			= 200;
+const unsigned int 		XDAQContextTable::XDAQApplication::WIZMODE_APP_ID 			= 290;
+const unsigned int 		XDAQContextTable::XDAQApplication::WIZMODE_CONFIG_APP_ID	= 280; 
 
 XDAQContextTable::ColContext 				XDAQContextTable::colContext_ 		= XDAQContextTable::ColContext();  // initialize static member
 XDAQContextTable::ColApplication 			XDAQContextTable::colApplication_ 	= XDAQContextTable::ColApplication();  // initialize static member
