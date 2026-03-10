@@ -230,7 +230,7 @@ struct TimestampString
 
 		struct tm tmstruct;
 		::localtime_r(&linuxTimeInSeconds, &tmstruct);
-		::strftime(&retValue[0], 30, "%c %Z", &tmstruct);
+		::strftime(&retValue[0], 30, "%a %b %e %H:%M:%S %Y %Z", &tmstruct);
 		retValue.resize(strlen(retValue.c_str()));
 
 		return retValue;
