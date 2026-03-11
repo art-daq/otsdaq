@@ -32,9 +32,8 @@ bool StringMacros::wildCardMatch(const std::string& needle,
                                  unsigned int*      priorityIndex)
 try
 {
-	__COUTT__ << "\t\t wildCardMatch: " << needle <<
-			" =in= " << haystack << " ??? " <<
-			std::endl;
+	__COUTT__ << "\t\t wildCardMatch: " << needle << " =in= " << haystack << " ??? "
+	          << std::endl;
 
 	// empty needle
 	if(needle.size() == 0)
@@ -88,10 +87,10 @@ try
 
 	// generic wildcard matching with '*' anywhere in needle
 	// '*' matches any sequence (including empty)
-	std::size_t patternPos       = 0;
-	std::size_t textPos          = 0;
-	std::size_t lastStarPattern  = std::string::npos;
-	std::size_t lastStarTextPos  = std::string::npos;
+	std::size_t patternPos      = 0;
+	std::size_t textPos         = 0;
+	std::size_t lastStarPattern = std::string::npos;
+	std::size_t lastStarTextPos = std::string::npos;
 	while(textPos < haystack.size())
 	{
 		if(patternPos < needle.size() && needle[patternPos] == haystack[textPos])
