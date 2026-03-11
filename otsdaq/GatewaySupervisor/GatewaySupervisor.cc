@@ -8679,38 +8679,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		// BroadcastMessageStruct holds a shared_ptr copy, so the underlying
 		// bool arrays remain valid for as long as any thread holds a reference.
 		// This prevents UAF even if the timeout below expires before threads exit.
-		for(unsigned int i = 0; i < numberOfThreads; ++i)
-			broadcastThreadStructs_[i]->exitThread_ = true;
-
-		{
-			const int timeoutSeconds = 30;
-			time_t    start;
-			time(&start);
-			bool allExited = false;
-			while(!allExited)
-			{
-				allExited = true;
-				for(unsigned int i = 0; i < numberOfThreads; ++i)
-					if(broadcastThreadStructs_[i]->working_.load())
-					{
-						allExited = false;
-						break;
-					}
-				if(!allExited)
-				{
-					if(difftime(time(0), start) > timeoutSeconds)
-					{
-						__COUT_WARN__
-						    << "Timed out waiting for broadcast threads to exit! "
-						    << "Threads may still be running; shared_ptr ownership "
-						    << "ensures their bool[] references remain valid."
-						    << __E__;
-						break;
-					}
-					usleep(1000 /*1ms*/);
-				}
-			}
-		}
+		signalAndWaitForBroadcastThreads(numberOfThreads);
 
 		throw;  // re-throw
 	}
@@ -8725,38 +8694,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		// BroadcastMessageStruct holds a shared_ptr copy, so the underlying
 		// bool arrays remain valid for as long as any thread holds a reference.
 		// This prevents UAF even if the timeout below expires before threads exit.
-		for(unsigned int i = 0; i < numberOfThreads; ++i)
-			broadcastThreadStructs_[i]->exitThread_ = true;
-
-		{
-			const int timeoutSeconds = 30;
-			time_t    start;
-			time(&start);
-			bool allExited = false;
-			while(!allExited)
-			{
-				allExited = true;
-				for(unsigned int i = 0; i < numberOfThreads; ++i)
-					if(broadcastThreadStructs_[i]->working_)
-					{
-						allExited = false;
-						break;
-					}
-				if(!allExited)
-				{
-					if(difftime(time(0), start) > timeoutSeconds)
-					{
-						__COUT_WARN__
-						    << "Timed out waiting for broadcast threads to exit! "
-						    << "Threads may still be running; shared_ptr ownership "
-						    << "ensures their bool[] references remain valid."
-						    << __E__;
-						break;
-					}
-					usleep(1000 /*1ms*/);
-				}
-			}
-		}
+		signalAndWaitForBroadcastThreads(numberOfThreads);
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -8767,6 +8705,48 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		__COUT__ << "Broadcast complete." << __E__;
 	}
 }  // end broadcastMessage()
+
+//==============================================================================
+// signalAndWaitForBroadcastThreads
+//	Signal all broadcast threads to exit, then wait (with a 30 s timeout) for
+//	every thread to set working_=false.  Called from both the normal-completion
+//	and exception paths in broadcastMessage() to avoid duplicating this logic.
+//	supervisorIterationsDone is heap-allocated (shared_ptr) and each
+//	BroadcastMessageStruct holds a copy, so the underlying bool arrays remain
+//	valid even if this returns before all threads have exited.
+void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfThreads)
+{
+	for(unsigned int i = 0; i < numberOfThreads; ++i)
+		broadcastThreadStructs_[i]->exitThread_ = true;
+
+	const int timeoutSeconds = 30;
+	time_t    start;
+	time(&start);
+	bool allExited = false;
+	while(!allExited)
+	{
+		allExited = true;
+		for(unsigned int i = 0; i < numberOfThreads; ++i)
+			if(broadcastThreadStructs_[i]->working_)
+			{
+				allExited = false;
+				break;
+			}
+		if(!allExited)
+		{
+			if(difftime(time(0), start) > timeoutSeconds)
+			{
+				__COUT_WARN__
+				    << "Timed out waiting for broadcast threads to exit! "
+				    << "Threads may still be running; shared_ptr ownership "
+				    << "ensures their bool[] references remain valid."
+				    << __E__;
+				break;
+			}
+			usleep(1000 /*1ms*/);
+		}
+	}
+}  // end signalAndWaitForBroadcastThreads()
 
 //==============================================================================
 void GatewaySupervisor::broadcastMessageToRemoteGateways(
