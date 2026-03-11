@@ -248,12 +248,14 @@ class WorkLoopManager;
 					xoap::MessageReference message,
 					const std::string& command,
 					const unsigned int& iteration,
-					bool& iterationsDone)
+					bool& iterationsDone,
+					std::shared_ptr<BroadcastMessageIterationsDoneStruct> iterationsDoneOwner)
 					: appInfo_(appInfo)
 					, message_(message)
 					, command_(command)
 					, iteration_(iteration)
 					, iterationsDone_(iterationsDone)
+					, iterationsDoneOwner_(iterationsDoneOwner)
 				{
 				}
 
@@ -262,6 +264,10 @@ class WorkLoopManager;
 				const std::string command_;
 				const unsigned int iteration_;
 				bool& iterationsDone_;
+				// Keep the BroadcastMessageIterationsDoneStruct alive while this message
+				// is in use by a thread, preventing UAF even if broadcastMessage() returns
+				// early (e.g. on timeout or exception) before the thread finishes.
+				std::shared_ptr<BroadcastMessageIterationsDoneStruct> iterationsDoneOwner_;
 
 				std::string reply_;
 			};  // end BroadcastMessageStruct definition
@@ -271,11 +277,12 @@ class WorkLoopManager;
 				xoap::MessageReference message,
 				const std::string& command,
 				const unsigned int& iteration,
-				bool& iterationsDone)
+				bool& iterationsDone,
+				std::shared_ptr<BroadcastMessageIterationsDoneStruct> iterationsDoneOwner)
 			{
 				messages_.clear();
 				messages_.push_back(BroadcastThreadStruct::BroadcastMessageStruct(
-					appInfo, message, command, iteration, iterationsDone));
+					appInfo, message, command, iteration, iterationsDone, iterationsDoneOwner));
 				workToDo_ = true;
 			}  // end setMessage()
 
