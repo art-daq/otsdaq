@@ -2607,7 +2607,7 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationTree::getChi
 	std::string fieldValue;
 
 	std::vector<std::string> childrenNames = getChildrenNames(byPriority, onlyStatusTrue);
-	__COUTVS__(2,StringMacros::vectorToString(childrenNames));
+	__COUTVS__(2, StringMacros::vectorToString(childrenNames));
 	for(auto& childName : childrenNames)
 	{
 		if(filtering &&  // if all criteria are not met, then skip

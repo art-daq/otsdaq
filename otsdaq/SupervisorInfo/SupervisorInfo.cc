@@ -127,7 +127,7 @@ void SupervisorInfo::emplaceAvailableSpace(
 {
 	if(availableSpaceKB > 0)  //only insert valid values
 	{
-		__GEN_COUTVS__(40,availableSpaceKB);
+		__GEN_COUTVS__(40, availableSpaceKB);
 		time_t now = time(0);
 		//newer values at front
 		availableSpaceDeque.emplace_front(now, availableSpaceKB);  // to position 0
@@ -179,7 +179,7 @@ void SupervisorInfo::emplaceAvailableSpace(
 				++i;
 			}
 			__COUTS__(40) << mfSubject_ << " " << &availableSpaceDeque << " " << ss.str()
-			          << __E__ << getLogUsageRateLastHourKBps() << " KB/s";
+			              << __E__ << getLogUsageRateLastHourKBps() << " KB/s";
 		}
 	}
 }  //end emplaceAvailableSpace()

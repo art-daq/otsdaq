@@ -5452,7 +5452,7 @@ ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
 	fclose(groupFile);
 
 	__COUTS__(2) << "theGroup.first=" << theGroup.first
-	          << " theGroup.second=" << theGroup.second << __E__;
+	             << " theGroup.second=" << theGroup.second << __E__;
 
 	return theGroup;
 }  // end loadGroupNameAndKey()

@@ -2399,8 +2399,9 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateLastHourKBps();
 
-				if(availableLogSpaceKB && availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
-				   availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB &&
+				   availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
+				       availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
@@ -2421,8 +2422,9 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateLastHalfHourKBps();
 
-				if(availableLogSpaceKB && availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
-				   availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB &&
+				   availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
+				       availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
@@ -2443,8 +2445,9 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateLastQuarterHourKBps();
 
-				if(availableLogSpaceKB && availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
-				   availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB &&
+				   availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
+				       availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
@@ -2465,8 +2468,9 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateNowKBps();
 
-				if(availableLogSpaceKB && availableLogSpaceKB - logUsageRateNowKBps * 450 <
-				   availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB &&
+				   availableLogSpaceKB - logUsageRateNowKBps * 450 <
+				       availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
@@ -2487,8 +2491,9 @@ try
 				        .at(appInfo.getId())
 				        .getDataUsageRateLastHourKBps();
 
-				if(availableDataSpaceKB && availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
-				   availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB &&
+				   availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
+				       availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
@@ -2508,8 +2513,9 @@ try
 				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
 				        .at(appInfo.getId())
 				        .getDataUsageRateLastHalfHourKBps();
-				if(availableDataSpaceKB && availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
-				   availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB &&
+				   availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
+				       availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
@@ -2531,8 +2537,9 @@ try
 				        .at(appInfo.getId())
 				        .getDataUsageRateLastQuarterHourKBps();
 
-				if(availableDataSpaceKB && availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
-				   availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB &&
+				   availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
+				       availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
@@ -2553,8 +2560,9 @@ try
 				        .at(appInfo.getId())
 				        .getDataUsageRateNowKBps();
 
-				if(availableDataSpaceKB && availableDataSpaceKB - dataUsageRateNowKBps * 450 <
-				   availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB &&
+				   availableDataSpaceKB - dataUsageRateNowKBps * 450 <
+				       availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
 					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
@@ -8691,8 +8699,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 				{
 					if(difftime(time(0), start) > timeoutSeconds)
 					{
-						__COUT_WARN__ << "Timed out waiting for broadcast threads to exit!"
-						             << __E__;
+						__COUT_WARN__
+						    << "Timed out waiting for broadcast threads to exit!"
+						    << __E__;
 						break;
 					}
 					usleep(1000 /*1ms*/);
@@ -8734,8 +8743,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 				{
 					if(difftime(time(0), start) > timeoutSeconds)
 					{
-						__COUT_WARN__ << "Timed out waiting for broadcast threads to exit!"
-						             << __E__;
+						__COUT_WARN__
+						    << "Timed out waiting for broadcast threads to exit!"
+						    << __E__;
 						break;
 					}
 					usleep(1000 /*1ms*/);

@@ -1032,9 +1032,9 @@ void CoreSupervisorBase::transitionHalting(toolbox::Event::Reference /*event*/)
 	{
 		// if halting from Failed state, then ignore errors
 		if(theStateMachine_.getProvenanceStateName() ==
-		   RunControlStateMachine::FAILED_STATE_NAME || 
-			theStateMachine_.getProvenanceStateName() ==
-		   RunControlStateMachine::HALTED_STATE_NAME)
+		       RunControlStateMachine::FAILED_STATE_NAME ||
+		   theStateMachine_.getProvenanceStateName() ==
+		       RunControlStateMachine::HALTED_STATE_NAME)
 		{
 			__SUP_COUT_INFO__ << "Error was caught while halting (but ignoring because "
 			                     "previous state was '"
