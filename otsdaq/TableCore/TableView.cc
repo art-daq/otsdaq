@@ -1541,13 +1541,10 @@ std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsInVe
 	     colPriority_ != INVALID))  // if no priority column, all at same priorty [0]
 		retVector.push_back(std::vector<unsigned int /*group row*/>());
 
-	__COUTS__(2) << "getGroupRowsInVectors: " << groupID << " at col " << groupIdCol  << __E__;
 	for(unsigned int r = 0; r < getNumberOfRows(); ++r)
 		if(groupID == "" || groupID == "*" || groupIdCol == INVALID ||
 		   isEntryInGroupCol(r, groupIdCol, groupID))
 		{
-			if(groupIdCol != INVALID)
-				__COUTS__(2) << "Row " << r << " '" << getDataView()[r][groupIdCol] << "' is in group " << groupID << __E__;
 			// check status if needed
 			if(onlyStatusTrue && colStatus_ != INVALID)
 			{
@@ -1566,8 +1563,6 @@ std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsInVe
 			else  // assume equal priority
 				retVector[0].push_back(r);
 		}
-		else // already true that... if(groupIdCol != INVALID)
-			__COUTS__(2) << "Row " << r << " '" << getDataView()[r][groupIdCol] << "' is NOT in group " << groupID << __E__;
 
 	if(orderedByPriority && colPriority_ != INVALID)
 	{
@@ -1679,7 +1674,7 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 	unsigned int j     = 0;
 	bool         found = false;
 
-	__COUTT__ << "groupNeedle " << groupNeedle << __E__;
+	//__COUT__ << "groupNeedle " << groupNeedle << __E__;
 
 	// go through the full groupString extracting groups and comparing to groupNeedle
 	for(; j < theDataView_[r][c].size(); ++j)
@@ -1695,11 +1690,11 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 			if(groupIDList)
 				groupIDList->emplace(theDataView_[r][c].substr(i, j - i));
 
-			__COUTT__ << "Group found to compare: " <<
-					theDataView_[r][c].substr(i,j-i) << __E__;
-			if(StringMacros::wildCardMatch(theDataView_[r][c].substr(i, j - i), groupNeedle))
+			//__COUT__ << "Group found to compare: " <<
+			//		theDataView_[r][c].substr(i,j-i) << __E__;
+			if(groupIDList ? groupNeedle == theDataView_[r][c].substr(i, j - i)
+			              : StringMacros::wildCardMatch(theDataView_[r][c].substr(i, j - i), groupNeedle))
 			{
-				__COUTT__ << "'" << theDataView_[r][c].substr(i, j - i) << "' is in group '" << groupNeedle << "!'" << __E__;
 				if(!groupIDList)  // dont return if caller is trying to get group list
 					return true;
 				found = true;
@@ -1713,13 +1708,11 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 		if(groupIDList)
 			groupIDList->emplace(theDataView_[r][c].substr(i, j - i));
 
-		__COUTT__ << "Group found to compare: " <<
-				theDataView_[r][c].substr(i,j-i) << __E__;
-		if(StringMacros::wildCardMatch(theDataView_[r][c].substr(i, j - i), groupNeedle))
-		{
-			__COUTT__ << "'" << theDataView_[r][c].substr(i, j - i) << "' is in group '" << groupNeedle << "!'" << __E__;
+		//__COUT__ << "Group found to compare: " <<
+		//		theDataView_[r][c].substr(i,j-i) << __E__;
+		if(groupIDList ? groupNeedle == theDataView_[r][c].substr(i, j - i)
+		              : StringMacros::wildCardMatch(theDataView_[r][c].substr(i, j - i), groupNeedle))
 			return true;
-		}
 	}
 
 	return found;
