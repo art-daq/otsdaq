@@ -2600,13 +2600,14 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationTree::getChi
 {
 	std::vector<std::pair<std::string, ConfigurationTree>> retVector;
 
-	//__COUT__ << "Children of node: " << getValueAsString() << __E__;
+	__COUTS__(2) << "Children of node: " << getValueAsString() << __E__;
 
 	bool filtering = filterMap.size();
 	// bool        skip;
 	std::string fieldValue;
 
 	std::vector<std::string> childrenNames = getChildrenNames(byPriority, onlyStatusTrue);
+	__COUTVS__(2,StringMacros::vectorToString(childrenNames));
 	for(auto& childName : childrenNames)
 	{
 		if(filtering &&  // if all criteria are not met, then skip
@@ -2617,7 +2618,7 @@ std::vector<std::pair<std::string, ConfigurationTree>> ConfigurationTree::getChi
 		    childName, this->getNode(childName, true)));
 	}
 
-	//__COUT__ << "Done w/Children of node: " << getValueAsString() << __E__;
+	__COUTS__(2) << "Done w/Children of node: " << getValueAsString() << __E__;
 	return retVector;
 }  // end getChildren()
 

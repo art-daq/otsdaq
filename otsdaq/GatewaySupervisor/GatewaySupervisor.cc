@@ -2399,11 +2399,11 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateLastHourKBps();
 
-				if(availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
+				if(availableLogSpaceKB && availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
 				   availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_log_dir +
 					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
 					    " MB remaining and log usage rate over last hour is " +
@@ -2421,11 +2421,11 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateLastHalfHourKBps();
 
-				if(availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
+				if(availableLogSpaceKB && availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
 				   availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_log_dir +
 					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
 					    " MB remaining and log usage rate over last half-hour is " +
@@ -2443,11 +2443,11 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateLastQuarterHourKBps();
 
-				if(availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
+				if(availableLogSpaceKB && availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
 				   availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_log_dir +
 					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
 					    " MB remaining and log usage rate over last quarter-hour is " +
@@ -2465,11 +2465,11 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateNowKBps();
 
-				if(availableLogSpaceKB - logUsageRateNowKBps * 450 <
+				if(availableLogSpaceKB && availableLogSpaceKB - logUsageRateNowKBps * 450 <
 				   availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_log_dir +
 					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
 					    " MB remaining and log usage rate over last few minutes is " +
@@ -2487,11 +2487,11 @@ try
 				        .at(appInfo.getId())
 				        .getDataUsageRateLastHourKBps();
 
-				if(availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
+				if(availableDataSpaceKB && availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
 				   availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last hour is " +
@@ -2508,11 +2508,11 @@ try
 				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
 				        .at(appInfo.getId())
 				        .getDataUsageRateLastHalfHourKBps();
-				if(availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
+				if(availableDataSpaceKB && availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
 				   availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last half-hour is " +
@@ -2531,11 +2531,11 @@ try
 				        .at(appInfo.getId())
 				        .getDataUsageRateLastQuarterHourKBps();
 
-				if(availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
+				if(availableDataSpaceKB && availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
 				   availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last quarter-hour is " +
@@ -2553,11 +2553,11 @@ try
 				        .at(appInfo.getId())
 				        .getDataUsageRateNowKBps();
 
-				if(availableDataSpaceKB - dataUsageRateNowKBps * 450 <
+				if(availableDataSpaceKB && availableDataSpaceKB - dataUsageRateNowKBps * 450 <
 				   availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last few minutes is " +
@@ -8665,14 +8665,40 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	{
 		__COUT__ << "Exception caught, exiting broadcast threads..." << __E__;
 
-		// attempt to exit threads
-		//	The threads should already be done with all work.
-		//	If broadcastMessage scope ends, then the
-		//	thread struct will be destructed, and the thread will
-		//	crash on next access attempt (though we probably do not care).
+		// Signal all threads to exit, then wait for them to actually finish.
+		// supervisorIterationsDone (on this stack frame) holds new bool[] arrays that
+		// threads reference via bool& in BroadcastMessageStruct::iterationsDone_.
+		// We MUST NOT return until every thread has set working_=false, otherwise
+		// threads will write to freed stack memory causing heap corruption / double-free.
 		for(unsigned int i = 0; i < numberOfThreads; ++i)
 			broadcastThreadStructs_[i]->exitThread_ = true;
-		usleep(100 * 1000 /*100ms*/);  // sleep for exit time
+
+		{
+			const int timeoutSeconds = 30;
+			time_t    start;
+			time(&start);
+			bool allExited = false;
+			while(!allExited)
+			{
+				allExited = true;
+				for(unsigned int i = 0; i < numberOfThreads; ++i)
+					if(broadcastThreadStructs_[i]->working_)
+					{
+						allExited = false;
+						break;
+					}
+				if(!allExited)
+				{
+					if(difftime(time(0), start) > timeoutSeconds)
+					{
+						__COUT_WARN__ << "Timed out waiting for broadcast threads to exit!"
+						             << __E__;
+						break;
+					}
+					usleep(1000 /*1ms*/);
+				}
+			}
+		}
 
 		throw;  // re-throw
 	}
@@ -8682,15 +8708,40 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		__COUT__ << "All transitions completed. Wrapping up, exiting broadcast threads..."
 		         << __E__;
 
-		// attempt to exit threads
-		//	The threads should already be done with all work.
-		//	If broadcastMessage scope ends, then the
-		//	thread struct will be destructed, and the thread will
-		//	crash on next access attempt (when the thread crashes, the whole context
-		// crashes).
+		// Signal all threads to exit, then wait for them to actually finish.
+		// supervisorIterationsDone (on this stack frame) holds new bool[] arrays that
+		// threads reference via bool& in BroadcastMessageStruct::iterationsDone_.
+		// We MUST NOT return until every thread has set working_=false, otherwise
+		// threads will write to freed stack memory causing heap corruption / double-free.
 		for(unsigned int i = 0; i < numberOfThreads; ++i)
 			broadcastThreadStructs_[i]->exitThread_ = true;
-		usleep(100 * 1000 /*100ms*/);  // sleep for exit time
+
+		{
+			const int timeoutSeconds = 30;
+			time_t    start;
+			time(&start);
+			bool allExited = false;
+			while(!allExited)
+			{
+				allExited = true;
+				for(unsigned int i = 0; i < numberOfThreads; ++i)
+					if(broadcastThreadStructs_[i]->working_)
+					{
+						allExited = false;
+						break;
+					}
+				if(!allExited)
+				{
+					if(difftime(time(0), start) > timeoutSeconds)
+					{
+						__COUT_WARN__ << "Timed out waiting for broadcast threads to exit!"
+						             << __E__;
+						break;
+					}
+					usleep(1000 /*1ms*/);
+				}
+			}
+		}
 	}
 
 	RunControlStateMachine::theProgressBar_.step();

@@ -279,7 +279,10 @@ bool WorkLoopManager::removeProcessedRequests(void)
 	std::map<RequestNumber, WorkLoopStruct>::iterator it = workLoops_.begin();
 	while(it != workLoops_.end())
 		if(it->second.done)
+		{
+			__COUT__ << "Remove processed request!" << __E__;
 			removeWorkLoop((it++)->first);
+		}
 		else
 			++it;
 	return true;

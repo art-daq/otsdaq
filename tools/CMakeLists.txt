@@ -20,7 +20,7 @@ cet_script(ALWAYS_COPY
     otsdaq_add_artdaq_tables
     otsdaq_beautify_artdaq_tables
     otsdaq_convert_artdaq_daq_tables
-    otsdaq_convert_config_to_table
+    # otsdaq_convert_config_to_table #DEPRECATED
     otsdaq_import_system_aliases.sh
     otsweb_login.sh
     redmine_login.sh

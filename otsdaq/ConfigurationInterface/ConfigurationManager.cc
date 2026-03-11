@@ -5451,7 +5451,7 @@ ConfigurationManager::loadGroupNameAndKey(const std::string& fileName,
 	returnedTimeString = StringMacros::getTimestampString(timestamp);  // line;
 	fclose(groupFile);
 
-	__COUTT__ << "theGroup.first=" << theGroup.first
+	__COUTS__(2) << "theGroup.first=" << theGroup.first
 	          << " theGroup.second=" << theGroup.second << __E__;
 
 	return theGroup;
