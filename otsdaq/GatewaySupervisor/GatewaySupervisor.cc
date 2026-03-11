@@ -8673,41 +8673,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	{
 		__COUT__ << "Exception caught, exiting broadcast threads..." << __E__;
 
-		// Signal all threads to exit, then wait for them to actually finish.
+		// Signal all threads to exit and wait for them to finish before re-throwing.
 		// supervisorIterationsDone (on this stack frame) holds new bool[] arrays that
 		// threads reference via bool& in BroadcastMessageStruct::iterationsDone_.
 		// We MUST NOT return until every thread has set working_=false, otherwise
 		// threads will write to freed stack memory causing heap corruption / double-free.
-		for(unsigned int i = 0; i < numberOfThreads; ++i)
-			broadcastThreadStructs_[i]->exitThread_ = true;
-
-		{
-			const int timeoutSeconds = 30;
-			time_t    start;
-			time(&start);
-			bool allExited = false;
-			while(!allExited)
-			{
-				allExited = true;
-				for(unsigned int i = 0; i < numberOfThreads; ++i)
-					if(broadcastThreadStructs_[i]->working_)
-					{
-						allExited = false;
-						break;
-					}
-				if(!allExited)
-				{
-					if(difftime(time(0), start) > timeoutSeconds)
-					{
-						__COUT_WARN__
-						    << "Timed out waiting for broadcast threads to exit!"
-						    << __E__;
-						break;
-					}
-					usleep(1000 /*1ms*/);
-				}
-			}
-		}
+		signalAndWaitForBroadcastThreads(numberOfThreads);
 
 		throw;  // re-throw
 	}
@@ -8717,41 +8688,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		__COUT__ << "All transitions completed. Wrapping up, exiting broadcast threads..."
 		         << __E__;
 
-		// Signal all threads to exit, then wait for them to actually finish.
+		// Signal all threads to exit and wait for them to finish.
 		// supervisorIterationsDone (on this stack frame) holds new bool[] arrays that
 		// threads reference via bool& in BroadcastMessageStruct::iterationsDone_.
 		// We MUST NOT return until every thread has set working_=false, otherwise
 		// threads will write to freed stack memory causing heap corruption / double-free.
-		for(unsigned int i = 0; i < numberOfThreads; ++i)
-			broadcastThreadStructs_[i]->exitThread_ = true;
-
-		{
-			const int timeoutSeconds = 30;
-			time_t    start;
-			time(&start);
-			bool allExited = false;
-			while(!allExited)
-			{
-				allExited = true;
-				for(unsigned int i = 0; i < numberOfThreads; ++i)
-					if(broadcastThreadStructs_[i]->working_)
-					{
-						allExited = false;
-						break;
-					}
-				if(!allExited)
-				{
-					if(difftime(time(0), start) > timeoutSeconds)
-					{
-						__COUT_WARN__
-						    << "Timed out waiting for broadcast threads to exit!"
-						    << __E__;
-						break;
-					}
-					usleep(1000 /*1ms*/);
-				}
-			}
-		}
+		signalAndWaitForBroadcastThreads(numberOfThreads);
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -8762,6 +8704,42 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		__COUT__ << "Broadcast complete." << __E__;
 	}
 }  // end broadcastMessage()
+
+//==============================================================================
+// signalAndWaitForBroadcastThreads
+//	Signal all broadcast threads to exit, then wait (with a timeout) for every
+//	thread to set working_=false.  Called from both the normal and exception paths
+//	in broadcastMessage() to avoid duplicating this logic in two places.
+void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfThreads)
+{
+	for(unsigned int i = 0; i < numberOfThreads; ++i)
+		broadcastThreadStructs_[i]->exitThread_ = true;
+
+	const int timeoutSeconds = 30;
+	time_t    start;
+	time(&start);
+	bool allExited = false;
+	while(!allExited)
+	{
+		allExited = true;
+		for(unsigned int i = 0; i < numberOfThreads; ++i)
+			if(broadcastThreadStructs_[i]->working_)
+			{
+				allExited = false;
+				break;
+			}
+		if(!allExited)
+		{
+			if(difftime(time(0), start) > timeoutSeconds)
+			{
+				__COUT_WARN__ << "Timed out waiting for broadcast threads to exit!"
+				              << __E__;
+				break;
+			}
+			usleep(1000 /*1ms*/);
+		}
+	}
+}  // end signalAndWaitForBroadcastThreads()
 
 //==============================================================================
 void GatewaySupervisor::broadcastMessageToRemoteGateways(
