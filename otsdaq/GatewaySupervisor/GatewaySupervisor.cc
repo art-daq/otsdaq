@@ -8418,11 +8418,11 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	// std::vector<std::vector<uint8_t/*bool*/>> supervisorIterationsDone; //Note: can not
 	// use bool because std::vector does not allow access by reference of type bool
-	GatewaySupervisor::BroadcastMessageIterationsDoneStruct supervisorIterationsDone;
+	auto supervisorIterationsDone = std::make_shared<GatewaySupervisor::BroadcastMessageIterationsDoneStruct>();
 
 	// initialize to false (not done)
 	for(const auto& vectorAtPriority : orderedSupervisors)
-		supervisorIterationsDone.push(vectorAtPriority.size());  // push_back(
+		supervisorIterationsDone->push(vectorAtPriority.size());  // push_back(
 		    // std::vector<uint8_t>(vectorAtPriority.size(),
 		    // false /*initial value*/));
 
@@ -8515,13 +8515,13 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			if(iteration)
 				__COUT__ << "Starting iteration: " << iteration << __E__;
 
-			for(unsigned int i = 0; i < supervisorIterationsDone.size(); ++i)
+				for(unsigned int i = 0; i < supervisorIterationsDone->size(); ++i)
 			{
-				for(unsigned int j = 0; j < supervisorIterationsDone.size(i); ++j)
+				for(unsigned int j = 0; j < supervisorIterationsDone->size(i); ++j)
 				{
 					checkForAsyncError();
 
-					if(supervisorIterationsDone[i][j])
+					if((*supervisorIterationsDone)[i][j])
 						continue;  // skip if supervisor is already done
 
 					const SupervisorInfo& appInfo = *(orderedSupervisors[i][j]);
@@ -8561,7 +8561,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 									    message,
 									    command,
 									    iteration,
-									    supervisorIterationsDone[i][j]);
+									    (*supervisorIterationsDone)[i][j],
+									    supervisorIterationsDone);
 
 									break;
 								}
@@ -8579,7 +8580,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					{
 						if(handleBroadcastMessageTarget(
 						       appInfo, message, command, iteration, reply))
-							supervisorIterationsDone[i][j] = true;
+							(*supervisorIterationsDone)[i][j] = true;
 						else
 							broadcastIterationsDone_ = false;
 					}
@@ -8673,11 +8674,11 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	{
 		__COUT__ << "Exception caught, exiting broadcast threads..." << __E__;
 
-		// Signal all threads to exit and wait for them to finish before re-throwing.
-		// supervisorIterationsDone (on this stack frame) holds new bool[] arrays that
-		// threads reference via bool& in BroadcastMessageStruct::iterationsDone_.
-		// We MUST NOT return until every thread has set working_=false, otherwise
-		// threads will write to freed stack memory causing heap corruption / double-free.
+		// Signal all threads to exit and wait for them to finish gracefully.
+		// supervisorIterationsDone is heap-allocated (shared_ptr) and each
+		// BroadcastMessageStruct holds a shared_ptr copy, so the underlying
+		// bool arrays remain valid for as long as any thread holds a reference.
+		// This prevents UAF even if the timeout below expires before threads exit.
 		signalAndWaitForBroadcastThreads(numberOfThreads);
 
 		throw;  // re-throw
@@ -8688,11 +8689,11 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		__COUT__ << "All transitions completed. Wrapping up, exiting broadcast threads..."
 		         << __E__;
 
-		// Signal all threads to exit and wait for them to finish.
-		// supervisorIterationsDone (on this stack frame) holds new bool[] arrays that
-		// threads reference via bool& in BroadcastMessageStruct::iterationsDone_.
-		// We MUST NOT return until every thread has set working_=false, otherwise
-		// threads will write to freed stack memory causing heap corruption / double-free.
+		// Signal all threads to exit and wait for them to finish gracefully.
+		// supervisorIterationsDone is heap-allocated (shared_ptr) and each
+		// BroadcastMessageStruct holds a shared_ptr copy, so the underlying
+		// bool arrays remain valid for as long as any thread holds a reference.
+		// This prevents UAF even if the timeout below expires before threads exit.
 		signalAndWaitForBroadcastThreads(numberOfThreads);
 	}
 
@@ -8707,9 +8708,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 //==============================================================================
 // signalAndWaitForBroadcastThreads
-//	Signal all broadcast threads to exit, then wait (with a timeout) for every
-//	thread to set working_=false.  Called from both the normal and exception paths
-//	in broadcastMessage() to avoid duplicating this logic in two places.
+//	Signal all broadcast threads to exit, then wait (with a 30 s timeout) for
+//	every thread to set working_=false.  Called from both the normal-completion
+//	and exception paths in broadcastMessage() to avoid duplicating this logic.
+//	supervisorIterationsDone is heap-allocated (shared_ptr) and each
+//	BroadcastMessageStruct holds a copy, so the underlying bool arrays remain
+//	valid even if this returns before all threads have exited.
 void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfThreads)
 {
 	for(unsigned int i = 0; i < numberOfThreads; ++i)
@@ -8732,8 +8736,11 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 		{
 			if(difftime(time(0), start) > timeoutSeconds)
 			{
-				__COUT_WARN__ << "Timed out waiting for broadcast threads to exit!"
-				              << __E__;
+				__COUT_WARN__
+				    << "Timed out waiting for broadcast threads to exit! "
+				    << "Threads may still be running; shared_ptr ownership "
+				    << "ensures their bool[] references remain valid."
+				    << __E__;
 				break;
 			}
 			usleep(1000 /*1ms*/);
