@@ -8418,7 +8418,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	// std::vector<std::vector<uint8_t/*bool*/>> supervisorIterationsDone; //Note: can not
 	// use bool because std::vector does not allow access by reference of type bool
-	auto supervisorIterationsDone = std::make_shared<GatewaySupervisor::BroadcastMessageIterationsDoneStruct>();
+	auto supervisorIterationsDone =
+	    std::make_shared<GatewaySupervisor::BroadcastMessageIterationsDoneStruct>();
 
 	// initialize to false (not done)
 	for(const auto& vectorAtPriority : orderedSupervisors)
@@ -8515,7 +8516,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			if(iteration)
 				__COUT__ << "Starting iteration: " << iteration << __E__;
 
-				for(unsigned int i = 0; i < supervisorIterationsDone->size(); ++i)
+			for(unsigned int i = 0; i < supervisorIterationsDone->size(); ++i)
 			{
 				for(unsigned int j = 0; j < supervisorIterationsDone->size(i); ++j)
 				{
@@ -8736,11 +8737,9 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 		{
 			if(difftime(time(0), start) > timeoutSeconds)
 			{
-				__COUT_WARN__
-				    << "Timed out waiting for broadcast threads to exit! "
-				    << "Threads may still be running; shared_ptr ownership "
-				    << "ensures their bool[] references remain valid."
-				    << __E__;
+				__COUT_WARN__ << "Timed out waiting for broadcast threads to exit! "
+				              << "Threads may still be running; shared_ptr ownership "
+				              << "ensures their bool[] references remain valid." << __E__;
 				break;
 			}
 			usleep(1000 /*1ms*/);
