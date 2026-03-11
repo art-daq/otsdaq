@@ -1597,7 +1597,7 @@ bool TableView::removeRowFromGroup(const unsigned int& row,
                                    const std::string&  groupNeedle,
                                    bool                deleteRowIfNoGroupLeft)
 {
-	__COUT__ << "groupNeedle " << groupNeedle << __E__;
+	__COUT__ << "removeRowFromGroup groupNeedle " << groupNeedle << __E__;
 	std::set<std::string> groupIDList;
 	if(!isEntryInGroupCol(row, col, groupNeedle, &groupIDList))
 	{
@@ -1615,7 +1615,7 @@ bool TableView::removeRowFromGroup(const unsigned int& row,
 	unsigned int cnt      = 0;
 	for(const auto& groupID : groupIDList)
 	{
-		//__COUT__ << groupID << " " << groupNeedle << " " << newValue << __E__;
+		__COUTT__ << groupID << " " << groupNeedle << " " << newValue << __E__;
 		if(groupID == groupNeedle)
 			continue;  // skip group to be removed
 
@@ -1627,14 +1627,16 @@ bool TableView::removeRowFromGroup(const unsigned int& row,
 	bool wasDeleted = false;
 	if(deleteRowIfNoGroupLeft && newValue == "")
 	{
-		__COUT__ << "Delete row since it no longer part of any group." << __E__;
+		__COUTT__ << "Delete row since it no longer part of any group." << __E__;
 		deleteRow(row);
 		wasDeleted = true;
 	}
 	else
+	{
 		setValue(newValue, row, col);
+		__COUTT__ << getDataView()[row][col] << __E__;
+	}
 
-	//__COUT__ << getDataView()[row][col] << __E__;
 
 	return wasDeleted;
 }  // end removeRowFromGroup()
