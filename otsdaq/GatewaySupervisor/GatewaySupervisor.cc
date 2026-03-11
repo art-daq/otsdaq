@@ -8690,7 +8690,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			{
 				allExited = true;
 				for(unsigned int i = 0; i < numberOfThreads; ++i)
-					if(broadcastThreadStructs_[i]->working_)
+					if(broadcastThreadStructs_[i]->working_.load())
 					{
 						allExited = false;
 						break;
