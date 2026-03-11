@@ -1030,13 +1030,15 @@ void CoreSupervisorBase::transitionHalting(toolbox::Event::Reference /*event*/)
 	}
 	catch(const std::runtime_error& e)
 	{
-		// if halting from Failed state, then ignore errors
+		// if halting from Failed or Halted state, then ignore errors
 		if(theStateMachine_.getProvenanceStateName() ==
-		   RunControlStateMachine::FAILED_STATE_NAME)
+		       RunControlStateMachine::FAILED_STATE_NAME ||
+		   theStateMachine_.getProvenanceStateName() ==
+		       RunControlStateMachine::HALTED_STATE_NAME)
 		{
 			__SUP_COUT_INFO__ << "Error was caught while halting (but ignoring because "
 			                     "previous state was '"
-			                  << RunControlStateMachine::FAILED_STATE_NAME
+			                  << theStateMachine_.getProvenanceStateName()
 			                  << "'): " << e.what() << __E__;
 		}
 		else  // if not previously in Failed state, then fail
@@ -1056,13 +1058,15 @@ void CoreSupervisorBase::transitionHalting(toolbox::Event::Reference /*event*/)
 	}
 	catch(...)
 	{
-		// if halting from Failed state, then ignore errors
+		// if halting from Failed or Halted state, then ignore errors
 		if(theStateMachine_.getProvenanceStateName() ==
-		   RunControlStateMachine::FAILED_STATE_NAME)
+		       RunControlStateMachine::FAILED_STATE_NAME ||
+		   theStateMachine_.getProvenanceStateName() ==
+		       RunControlStateMachine::HALTED_STATE_NAME)
 		{
 			__SUP_COUT_INFO__ << "Unknown error was caught while halting (but ignoring "
 			                     "because previous state was '"
-			                  << RunControlStateMachine::FAILED_STATE_NAME << "')."
+			                  << theStateMachine_.getProvenanceStateName() << "')."
 			                  << __E__;
 		}
 		else  // if not previously in Failed state, then fail

@@ -2399,11 +2399,12 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateLastHourKBps();
 
-				if(availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
-				   availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB &&
+				   availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
+				       availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_log_dir +
 					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
 					    " MB remaining and log usage rate over last hour is " +
@@ -2421,11 +2422,12 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateLastHalfHourKBps();
 
-				if(availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
-				   availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB &&
+				   availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
+				       availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_log_dir +
 					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
 					    " MB remaining and log usage rate over last half-hour is " +
@@ -2443,11 +2445,12 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateLastQuarterHourKBps();
 
-				if(availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
-				   availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB &&
+				   availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
+				       availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_log_dir +
 					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
 					    " MB remaining and log usage rate over last quarter-hour is " +
@@ -2465,11 +2468,12 @@ try
 				        .at(appInfo.getId())
 				        .getLogUsageRateNowKBps();
 
-				if(availableLogSpaceKB - logUsageRateNowKBps * 450 <
-				   availableLogSpaceKB_MIN)
+				if(availableLogSpaceKB &&
+				   availableLogSpaceKB - logUsageRateNowKBps * 450 <
+				       availableLogSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Log disk space low (at host='" + appInfo.getHostname() +
+					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_log_dir +
 					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
 					    " MB remaining and log usage rate over last few minutes is " +
@@ -2487,11 +2491,12 @@ try
 				        .at(appInfo.getId())
 				        .getDataUsageRateLastHourKBps();
 
-				if(availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
-				   availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB &&
+				   availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
+				       availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last hour is " +
@@ -2508,11 +2513,12 @@ try
 				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
 				        .at(appInfo.getId())
 				        .getDataUsageRateLastHalfHourKBps();
-				if(availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
-				   availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB &&
+				   availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
+				       availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last half-hour is " +
@@ -2531,11 +2537,12 @@ try
 				        .at(appInfo.getId())
 				        .getDataUsageRateLastQuarterHourKBps();
 
-				if(availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
-				   availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB &&
+				   availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
+				       availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last quarter-hour is " +
@@ -2553,11 +2560,12 @@ try
 				        .at(appInfo.getId())
 				        .getDataUsageRateNowKBps();
 
-				if(availableDataSpaceKB - dataUsageRateNowKBps * 450 <
-				   availableDataSpaceKB_MIN)
+				if(availableDataSpaceKB &&
+				   availableDataSpaceKB - dataUsageRateNowKBps * 450 <
+				       availableDataSpaceKB_MIN)
 				{
 					theSupervisor->makeSystemLogEntry(
-					    "Data disk space low (at host='" + appInfo.getHostname() +
+					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
 					    "' and path='" + otsdaq_data_dir +
 					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
 					    " MB remaining and data usage rate over last few minutes is " +
@@ -8410,11 +8418,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	// std::vector<std::vector<uint8_t/*bool*/>> supervisorIterationsDone; //Note: can not
 	// use bool because std::vector does not allow access by reference of type bool
-	GatewaySupervisor::BroadcastMessageIterationsDoneStruct supervisorIterationsDone;
+	auto supervisorIterationsDone =
+	    std::make_shared<GatewaySupervisor::BroadcastMessageIterationsDoneStruct>();
 
 	// initialize to false (not done)
 	for(const auto& vectorAtPriority : orderedSupervisors)
-		supervisorIterationsDone.push(vectorAtPriority.size());  // push_back(
+		supervisorIterationsDone->push(vectorAtPriority.size());  // push_back(
 		    // std::vector<uint8_t>(vectorAtPriority.size(),
 		    // false /*initial value*/));
 
@@ -8507,13 +8516,13 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			if(iteration)
 				__COUT__ << "Starting iteration: " << iteration << __E__;
 
-			for(unsigned int i = 0; i < supervisorIterationsDone.size(); ++i)
+			for(unsigned int i = 0; i < supervisorIterationsDone->size(); ++i)
 			{
-				for(unsigned int j = 0; j < supervisorIterationsDone.size(i); ++j)
+				for(unsigned int j = 0; j < supervisorIterationsDone->size(i); ++j)
 				{
 					checkForAsyncError();
 
-					if(supervisorIterationsDone[i][j])
+					if((*supervisorIterationsDone)[i][j])
 						continue;  // skip if supervisor is already done
 
 					const SupervisorInfo& appInfo = *(orderedSupervisors[i][j]);
@@ -8553,7 +8562,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 									    message,
 									    command,
 									    iteration,
-									    supervisorIterationsDone[i][j]);
+									    (*supervisorIterationsDone)[i][j],
+									    supervisorIterationsDone);
 
 									break;
 								}
@@ -8571,7 +8581,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					{
 						if(handleBroadcastMessageTarget(
 						       appInfo, message, command, iteration, reply))
-							supervisorIterationsDone[i][j] = true;
+							(*supervisorIterationsDone)[i][j] = true;
 						else
 							broadcastIterationsDone_ = false;
 					}
@@ -8665,14 +8675,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	{
 		__COUT__ << "Exception caught, exiting broadcast threads..." << __E__;
 
-		// attempt to exit threads
-		//	The threads should already be done with all work.
-		//	If broadcastMessage scope ends, then the
-		//	thread struct will be destructed, and the thread will
-		//	crash on next access attempt (though we probably do not care).
-		for(unsigned int i = 0; i < numberOfThreads; ++i)
-			broadcastThreadStructs_[i]->exitThread_ = true;
-		usleep(100 * 1000 /*100ms*/);  // sleep for exit time
+		// Signal all threads to exit and wait for them to finish gracefully.
+		// supervisorIterationsDone is heap-allocated (shared_ptr) and each
+		// BroadcastMessageStruct holds a shared_ptr copy, so the underlying
+		// bool arrays remain valid for as long as any thread holds a reference.
+		// This prevents UAF even if the timeout below expires before threads exit.
+		signalAndWaitForBroadcastThreads(numberOfThreads);
 
 		throw;  // re-throw
 	}
@@ -8682,15 +8690,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		__COUT__ << "All transitions completed. Wrapping up, exiting broadcast threads..."
 		         << __E__;
 
-		// attempt to exit threads
-		//	The threads should already be done with all work.
-		//	If broadcastMessage scope ends, then the
-		//	thread struct will be destructed, and the thread will
-		//	crash on next access attempt (when the thread crashes, the whole context
-		// crashes).
-		for(unsigned int i = 0; i < numberOfThreads; ++i)
-			broadcastThreadStructs_[i]->exitThread_ = true;
-		usleep(100 * 1000 /*100ms*/);  // sleep for exit time
+		// Signal all threads to exit and wait for them to finish gracefully.
+		// supervisorIterationsDone is heap-allocated (shared_ptr) and each
+		// BroadcastMessageStruct holds a shared_ptr copy, so the underlying
+		// bool arrays remain valid for as long as any thread holds a reference.
+		// This prevents UAF even if the timeout below expires before threads exit.
+		signalAndWaitForBroadcastThreads(numberOfThreads);
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -8701,6 +8706,46 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		__COUT__ << "Broadcast complete." << __E__;
 	}
 }  // end broadcastMessage()
+
+//==============================================================================
+// signalAndWaitForBroadcastThreads
+//	Signal all broadcast threads to exit, then wait (with a 30 s timeout) for
+//	every thread to set working_=false.  Called from both the normal-completion
+//	and exception paths in broadcastMessage() to avoid duplicating this logic.
+//	supervisorIterationsDone is heap-allocated (shared_ptr) and each
+//	BroadcastMessageStruct holds a copy, so the underlying bool arrays remain
+//	valid even if this returns before all threads have exited.
+void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfThreads)
+{
+	for(unsigned int i = 0; i < numberOfThreads; ++i)
+		broadcastThreadStructs_[i]->exitThread_ = true;
+
+	const int timeoutSeconds = 30;
+	time_t    start;
+	time(&start);
+	bool allExited = false;
+	while(!allExited)
+	{
+		allExited = true;
+		for(unsigned int i = 0; i < numberOfThreads; ++i)
+			if(broadcastThreadStructs_[i]->working_)
+			{
+				allExited = false;
+				break;
+			}
+		if(!allExited)
+		{
+			if(difftime(time(0), start) > timeoutSeconds)
+			{
+				__COUT_WARN__ << "Timed out waiting for broadcast threads to exit! "
+				              << "Threads may still be running; shared_ptr ownership "
+				              << "ensures their bool[] references remain valid." << __E__;
+				break;
+			}
+			usleep(1000 /*1ms*/);
+		}
+	}
+}  // end signalAndWaitForBroadcastThreads()
 
 //==============================================================================
 void GatewaySupervisor::broadcastMessageToRemoteGateways(
