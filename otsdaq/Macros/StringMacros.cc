@@ -18,22 +18,23 @@ const std::string StringMacros::TBD = "To-be-defined";
 //==============================================================================
 /// wildCardMatch
 ///	find needle in haystack
-///		allow needle to have leading and/or trailing wildcard '*'
+///		allow needle to have wildcard '*' anywhere
 ///		consider priority in matching, no matter the order in the haystack:
 ///			- 0: no match!
 ///			- 1: highest priority is exact match
 ///			- 2: next highest is partial TRAILING-wildcard match
 ///			- 3: next highest is partial LEADING-wildcard match
-///			- 4: lowest priority is partial full-wildcard match
+///			- 4: lowest priority is wildcard match (including internal '*')
+///			- 5: wildcard-only match
 ///		return priority found by reference
 bool StringMacros::wildCardMatch(const std::string& needle,
                                  const std::string& haystack,
                                  unsigned int*      priorityIndex)
 try
 {
-	//	__COUT__ << "\t\t wildCardMatch: " << needle <<
-	//			" =in= " << haystack << " ??? " <<
-	//			std::endl;
+	__COUTT__ << "\t\t wildCardMatch: " << needle <<
+			" =in= " << haystack << " ??? " <<
+			std::endl;
 
 	// empty needle
 	if(needle.size() == 0)
@@ -59,6 +60,14 @@ try
 		return true;
 	}
 
+	const bool hasWildcard = (needle.find('*') != std::string::npos);
+	if(!hasWildcard)
+	{
+		if(priorityIndex)
+			*priorityIndex = 0;  // no wildcard and not exact => no match
+		return false;
+	}
+
 	// trailing wildcard
 	if(needle[needle.size() - 1] == '*' &&
 	   needle.substr(0, needle.size() - 1) == haystack.substr(0, needle.size() - 1))
@@ -77,12 +86,44 @@ try
 		return true;
 	}
 
-	// leading wildcard and trailing wildcard
-	if(needle[0] == '*' && needle[needle.size() - 1] == '*' &&
-	   std::string::npos != haystack.find(needle.substr(1, needle.size() - 2)))
+	// generic wildcard matching with '*' anywhere in needle
+	// '*' matches any sequence (including empty)
+	std::size_t patternPos       = 0;
+	std::size_t textPos          = 0;
+	std::size_t lastStarPattern  = std::string::npos;
+	std::size_t lastStarTextPos  = std::string::npos;
+	while(textPos < haystack.size())
+	{
+		if(patternPos < needle.size() && needle[patternPos] == haystack[textPos])
+		{
+			++patternPos;
+			++textPos;
+		}
+		else if(patternPos < needle.size() && needle[patternPos] == '*')
+		{
+			lastStarPattern = patternPos++;
+			lastStarTextPos = textPos;
+		}
+		else if(lastStarPattern != std::string::npos)
+		{
+			patternPos = lastStarPattern + 1;
+			textPos    = ++lastStarTextPos;
+		}
+		else
+		{
+			if(priorityIndex)
+				*priorityIndex = 0;  // no match
+			return false;
+		}
+	}
+
+	while(patternPos < needle.size() && needle[patternPos] == '*')
+		++patternPos;
+
+	if(patternPos == needle.size())
 	{
 		if(priorityIndex)
-			*priorityIndex = 4;  // leading and trailing wildcard match
+			*priorityIndex = 4;  // wildcard match
 		return true;
 	}
 
