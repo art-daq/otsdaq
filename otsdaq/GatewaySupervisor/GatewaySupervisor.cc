@@ -4863,6 +4863,18 @@ try
 	//		only allow, if current state is halted or init
 	//		take active fsm name when configured
 	//	else, allow
+
+	// Safety check: if fsmName is empty, this is likely a corrupt or incomplete client
+	// request (e.g., a bug in the HTML/JavaScript that sends the FSM name). Log a warning
+	// here to help diagnose the client-side issue. A command-specific hard error is thrown
+	// for Start below (to prevent using the wrong run-number file).
+	if(fsmName == "")
+		__COUT_WARN__ << "The FSM name (fsmName) received in the '" << command
+		              << "' request is empty! This is likely a corrupt or incomplete "
+		                 "client-side request (e.g., an HTML/JavaScript bug). "
+		              << "The active State Machine name is '" << activeStateMachineName_
+		              << "'." << __E__;
+
 	if(activeStateMachineName_ != "" && activeStateMachineName_ != fsmName)
 	{
 		__COUT__ << "Validating... currentFSM = " << activeStateMachineName_
@@ -4881,12 +4893,18 @@ try
 			       << ") "
 			          "is currently "
 			       << "in control of State Machine progress. ";
-			ss << "\n\nIn order for this State Machine with window name '"
-			   << fsmWindowName << "' (UID: " << fsmName
-			   << ") "
-			      "to control progress, please transition to "
-			   << RunControlStateMachine::HALTED_STATE_NAME << " using the active "
-			   << "State Machine '" << activeStateMachineWindowName_ << ".'" << __E__;
+			if(fsmName == "")
+				ss << "\n\nThe incoming request had an empty fsmName, which is likely "
+				      "a client-side bug (corrupt HTML/JavaScript request). "
+				      "Please verify the client is sending the correct fsmName parameter.";
+			else
+				ss << "\n\nIn order for this State Machine with window name '"
+				   << fsmWindowName << "' (UID: " << fsmName
+				   << ") "
+				      "to control progress, please transition to "
+				   << RunControlStateMachine::HALTED_STATE_NAME << " using the active "
+				   << "State Machine '" << activeStateMachineWindowName_ << ".'";
+			ss << __E__;
 			__SS_THROW__;
 		}
 		else  // clear active state machine
@@ -5234,6 +5252,41 @@ try
 			    << "state is Halted. Perhaps your state machine is out of sync. "
 			    << "(Likely the server was restarted or another user changed the state)"
 			    << __E__;
+			__SS_THROW__;
+		}
+
+		// Safety check: detect a corrupt/empty fsmName in the Start request. This can
+		// happen if the client-side HTML/JavaScript has a bug and fails to include the
+		// fsmName in the request. Without this check, getNextRunNumber() would fall back
+		// to activeStateMachineName_ which may also be empty (e.g., if Configure was also
+		// sent with an empty fsmName), causing it to use the generic "NextRunNumber.txt"
+		// file instead of the FSM-specific run-number file.
+		if(fsmName == "")
+		{
+			__SS__ << "Error - A Start transition was requested but the State Machine "
+			          "name (fsmName) in the request is empty! This is likely a "
+			          "corrupt or incomplete client-side request (e.g., an "
+			          "HTML/JavaScript bug). The active State Machine name is '"
+			       << activeStateMachineName_
+			       << "'. Please verify the client is sending fsmName properly."
+			       << __E__;
+			__SS_THROW__;
+		}
+
+		// Safety check: if activeStateMachineName_ is somehow empty at Start time
+		// (e.g., because a prior Configure was also sent with empty fsmName), throw
+		// a clear error to surface the issue rather than silently using the wrong
+		// run-number file (NextRunNumber.txt without an FSM-name prefix).
+		if(activeStateMachineName_ == "")
+		{
+			__SS__ << "Error - The active State Machine name (activeStateMachineName_) "
+			          "is empty when attempting to Start a run! The fsmName parameter "
+			          "received was '"
+			       << fsmName
+			       << "'. This likely means Configure was also called with an empty "
+			          "fsmName (a client-side bug). Please Halt and re-Configure with "
+			          "the correct State Machine name."
+			       << __E__;
 			__SS_THROW__;
 		}
 
