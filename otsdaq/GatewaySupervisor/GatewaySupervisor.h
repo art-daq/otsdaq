@@ -29,6 +29,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <pthread.h> // for pthread_kill
 
 // clang-format off
 
@@ -228,6 +229,8 @@ class WorkLoopManager;
 				, working_(true)
 				, workToDo_(false)
 				, error_(false)
+				, hardCancelRequested_(false)
+				, hasPthreadId_(false)
 			{
 			}  // end BroadcastThreadStruct constructor()
 
@@ -238,6 +241,9 @@ class WorkLoopManager;
 				, working_(b.working_)
 				, workToDo_(b.workToDo_)
 				, error_(b.error_)
+				, hardCancelRequested_(b.hardCancelRequested_)
+				, pthreadId_(b.pthreadId_)
+				, hasPthreadId_(b.hasPthreadId_)
 			{
 			}  // end BroadcastThreadStruct move constructor()
 
@@ -298,6 +304,9 @@ class WorkLoopManager;
 			std::mutex    threadMutex_;
 			unsigned int  threadIndex_;
 			volatile bool exitThread_, working_, workToDo_, error_;
+			volatile bool hardCancelRequested_;
+			pthread_t     pthreadId_;
+			volatile bool hasPthreadId_;
 			// always just 1 message (for now)
 			std::vector<BroadcastThreadStruct::BroadcastMessageStruct> messages_;
 

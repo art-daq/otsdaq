@@ -56,13 +56,25 @@ fi
 
 # We don't care about the non-error output of this script because it gets shown on the remote's launching terminal
 if [ "x$OTS_SETUP_TYPE" != "x" ]; then
-  info "Sourcing remote setup_ots.sh, and hiding output, for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
-  source ./setup_ots.sh ${OTS_SETUP_TYPE} > /dev/null </dev/null  || die "Couldn't setup ots for ${OTS_SETUP_TYPE} on ${THIS_HOST}"
+
+  ENV_SUBSYSTEM=$OTS_SETUP_TYPE
+  ENV_CACHE_FILE="${setup_dir}/.rte_${ENV_SUBSYSTEM}_setup_ots.sh"
+
+  if [ -f $ENV_CACHE_FILE ]; then
+    info "Source remote env cache for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+    source $ENV_CACHE_FILE
+  else
+    info "Sourcing remote setup_ots.sh, and hiding output, for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+    source ./setup_ots.sh ${OTS_SETUP_TYPE} > /dev/null </dev/null  || die "Couldn't setup ots for ${OTS_SETUP_TYPE} on ${THIS_HOST}"
+  fi
   info "Launching ots ${OTS_MODE}-mode for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+
 else # no setup type
+
   info "Sourcing remote setup_ots.sh, and hiding output, on ${EBold}${THIS_HOST}${DBold}..."
   source ./setup_ots.sh > /dev/null </dev/null  || die "Couldn't setup ots on ${THIS_HOST}"
   info "Launching ots ${OTS_MODE}-mode on ${EBold}${THIS_HOST}${DBold}..."
+  
 fi
 
 

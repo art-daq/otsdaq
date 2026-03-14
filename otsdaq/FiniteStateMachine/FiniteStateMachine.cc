@@ -136,8 +136,7 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 		}
 		__GEN_SS__ << "Cannot find transition name from '" << getCurrentStateName()
 		           << "' for command: " << transition << "...";
-		__GEN_COUT_WARN__
-		    << ss.str();  //reduce to warning because transitions like 'Configure' can jump multiple states, e.g. from Initial
+		__GEN_COUT_WARN__ << ss.str();  //reduce severity because transitions like 'Configure' can jump multiple states, e.g. from Initial
 		return transition;
 	}
 }  // end getCurrentTransitionName()
