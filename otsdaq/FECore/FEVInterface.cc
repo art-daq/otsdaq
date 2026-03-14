@@ -68,12 +68,12 @@ FEVInterface::FEVInterface(const std::string&       interfaceUID,
 }  // end constructor()
 
 //==============================================================================
-void FEVInterface::setParentPointers(CoreSupervisorBase* supervisor,
-								 FEVInterfacesManager* manager)
+void FEVInterface::setParentPointers(CoreSupervisorBase*   supervisor,
+                                     FEVInterfacesManager* manager)
 {
 	VStateMachine::parentSupervisor_ = supervisor;
 	parentInterfaceManager_          = manager;
-} // end setParentPointers()
+}  // end setParentPointers()
 
 //==============================================================================
 FEVInterface::~FEVInterface(void)
@@ -1174,23 +1174,21 @@ void FEVInterface::runFrontEndMacro(
 	__FE_COUTV__(VStateMachine::parentSupervisor_);
 	__FE_COUTV__(VStateMachine::parentSupervisor_->getSupervisorUID());
 
-
 	auto MacroMakerSupervisors = VStateMachine::parentSupervisor_->allSupervisorInfo_
-	            .getAllMacroMakerTypeSupervisorInfo();
+	                                 .getAllMacroMakerTypeSupervisorInfo();
 	__FE_COUTV__(MacroMakerSupervisors.size());
 
 	if(!MacroMakerSupervisors.size())
 	{
 		__FE_SS__ << "No MacroMakerSupervisors found! Notify admins." << __E__;
 		__FE_SS_THROW__;
-	}	
+	}
 
 	std::vector<FEVInterface::frontEndMacroArg_t> encodedInputArgs = inputArgs;
 	for(auto& arg : inputArgs)
-		encodedInputArgs.push_back(std::make_pair(
-			StringMacros::encodeURIComponent(arg.first),
-			StringMacros::encodeURIComponent(arg.second)
-		));
+		encodedInputArgs.push_back(
+		    std::make_pair(StringMacros::encodeURIComponent(arg.first),
+		                   StringMacros::encodeURIComponent(arg.second)));
 
 	std::string inputArgsStr = StringMacros::vectorToString(
 	    encodedInputArgs, ";" /*primaryDelimeter*/, "," /*secondaryDelimeter*/);
@@ -1213,9 +1211,7 @@ void FEVInterface::runFrontEndMacro(
 
 	xoap::MessageReference replyMessage =
 	    VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
-	        MacroMakerSupervisors.begin()
-	            ->second.getDescriptor(),
-	        message);
+	        MacroMakerSupervisors.begin()->second.getDescriptor(), message);
 
 	__FE_COUT__ << "Response received: " << SOAPUtilities::translate(replyMessage)
 	            << __E__;

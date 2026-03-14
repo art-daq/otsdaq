@@ -26,10 +26,10 @@
 #include <xgi/Method.h>
 #include "otsdaq/GatewaySupervisor/PixelHistoPicGen.h"
 
+#include <pthread.h>  // for pthread_kill
 #include <set>
 #include <sstream>
 #include <string>
-#include <pthread.h> // for pthread_kill
 
 // clang-format off
 

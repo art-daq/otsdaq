@@ -123,9 +123,12 @@ void FEVInterfacesManager::createInterfaces(void)
 			__CFG_COUTV__(VStateMachine::parentSupervisor_);
 			__CFG_COUTV__(VStateMachine::parentSupervisor_->getContextUID());
 			__CFG_COUTV__(VStateMachine::parentSupervisor_->getSupervisorUID());
-			__CFG_COUTTV__(theFEInterfaces_[interface.first]->VStateMachine::parentSupervisor_);
-			__CFG_COUTTV__(theFEInterfaces_[interface.first]->VStateMachine::parentSupervisor_->getContextUID());
-			__CFG_COUTTV__(theFEInterfaces_[interface.first]->VStateMachine::parentSupervisor_->getSupervisorUID());
+			__CFG_COUTTV__(
+			    theFEInterfaces_[interface.first]->VStateMachine::parentSupervisor_);
+			__CFG_COUTTV__(theFEInterfaces_[interface.first]
+			                   ->VStateMachine::parentSupervisor_->getContextUID());
+			__CFG_COUTTV__(theFEInterfaces_[interface.first]
+			                   ->VStateMachine::parentSupervisor_->getSupervisorUID());
 		}
 		catch(const cet::exception& e)
 		{
@@ -2188,7 +2191,7 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
                                       std::string&       outputArgs)
 {
 	__CFG_COUTV__(inputArgs);
-	
+
 	// build input arguments
 	//	parse args, semicolon-separated pairs, and then comma-separated
 	std::vector<FEVInterface::frontEndMacroArg_t> argsIn;

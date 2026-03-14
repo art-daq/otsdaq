@@ -4891,7 +4891,9 @@ try
 		}
 		else  // clear active state machine
 		{
-			__COUT__ << "Clearing activeStateMachineName_ at safe-transition currentState = " << currentState << __E__;
+			__COUT__
+			    << "Clearing activeStateMachineName_ at safe-transition currentState = "
+			    << currentState << __E__;
 			activeStateMachineName_       = "";
 			activeStateMachineWindowName_ = "";
 		}
@@ -5089,9 +5091,9 @@ try
 					dumpFilePath =
 					    fsmLinkNode.getNode("SystemDumpOnRunFilePath")
 					        .getValueWithDefault<std::string>(__ENV__("OTSDAQ_LOG_DIR"));
-					dumpFileRadix = fsmLinkNode.getNode("SystemDumpOnRunFileRadix")
-					                    .getValueWithDefault<std::string>(
-					                        "RunTransitionSystemDump");
+					dumpFileRadix =
+					    fsmLinkNode.getNode("SystemDumpOnRunFileRadix")
+					        .getValueWithDefault<std::string>("RunTransitionSystemDump");
 					activeStateMachineSystemDumpOnRunFilename_ =
 					    dumpFilePath + "/" + dumpFileRadix;
 				}
@@ -5311,11 +5313,13 @@ try
 
 	if(activeStateMachineName_ == "")
 		__COUT_WARN__
-			<< "The active state machine is an empty string, this is allowed for "
-				"backwards compatibility, but may not be intentional! "
-			<< "Make sure you or your system admins understand why the active FSM "
-				"name is blank."
-			<< "\n\n" << "(Current state = " << currentState << ", attempted command = " << command << ")" << __E__;
+		    << "The active state machine is an empty string, this is allowed for "
+		       "backwards compatibility, but may not be intentional! "
+		    << "Make sure you or your system admins understand why the active FSM "
+		       "name is blank."
+		    << "\n\n"
+		    << "(Current state = " << currentState << ", attempted command = " << command
+		    << ")" << __E__;
 
 	theStateMachine_.setErrorMessage(
 	    "");  //clear State Machine error message in prep for transition
@@ -5662,7 +5666,8 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		}  // End write run info into db
 	}      // end update Run Info handling
 
-	activeStateMachineWindowName_ = ""; //clear window name to indicate that no window (including Iterator) is in control, which allows GUIs to change cleanup strategy
+	activeStateMachineWindowName_ =
+	    "";  //clear window name to indicate that no window (including Iterator) is in control, which allows GUIs to change cleanup strategy
 	// do not clear the activeStateMachineName_ here (in case there is some asynchronouse halting needed, i.e. multiple Halts from top-level Gateway Supervisor), let it be reassigned on next Configure.
 	__SUP_COUT_INFO__ << "Gateway Supervisor is halted." << __E__;
 }  // end stateHalted()
@@ -8307,7 +8312,7 @@ catch(...)
 void GatewaySupervisor::broadcastMessageThread(
     GatewaySupervisor*                                        supervisorPtr,
     std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct)
-{	
+{
 	// Register native thread id so timed-out workers can be force-canceled.
 	threadStruct->pthreadId_    = pthread_self();
 	threadStruct->hasPthreadId_ = true;
@@ -8319,18 +8324,19 @@ void GatewaySupervisor::broadcastMessageThread(
 
 	// Ensure working_ is cleared even when this thread exits via cancellation.
 	pthread_cleanup_push(
-		[](void* arg) {
-			auto* threadStructPtr =
-				static_cast<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>*>(arg);
-			if(threadStructPtr && *threadStructPtr)
-			{
-				__COUT__ << "Broadcast thread " << (*threadStructPtr)->threadIndex_ << "\t"
-						<< "cleaning up..." << __E__;
-				(*threadStructPtr)->working_ = false;
-			}
-		},
-		&threadStruct);
-	
+	    [](void* arg) {
+		    auto* threadStructPtr =
+		        static_cast<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>*>(
+		            arg);
+		    if(threadStructPtr && *threadStructPtr)
+		    {
+			    __COUT__ << "Broadcast thread " << (*threadStructPtr)->threadIndex_
+			             << "\t"
+			             << "cleaning up..." << __E__;
+			    (*threadStructPtr)->working_ = false;
+		    }
+	    },
+	    &threadStruct);
 
 	__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t"
 	         << "established..." << __E__;
@@ -8394,7 +8400,7 @@ void GatewaySupervisor::broadcastMessageThread(
 	         << "exited." << __E__;
 	threadStruct->working_ = false;  // indicate exiting
 
-	pthread_cleanup_pop(0); //finished, so clear cleanup handling
+	pthread_cleanup_pop(0);  //finished, so clear cleanup handling
 }  // end broadcastMessageThread()
 
 //==============================================================================
@@ -8618,12 +8624,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 				//	make sure all threads have completed
 				if(numberOfThreads)
 				{
-					__COUT__
-					    << "Iteration priority level command work has been broadcast to threads. Waiting for threads to finish..."
-					    << __E__;
-					bool done;
-					const int timeoutSeconds = 60*4; //4 minutes for each iteration
-					uint32_t lastMinutesLeft = -1;
+					__COUT__ << "Iteration priority level command work has been "
+					            "broadcast to threads. Waiting for threads to finish..."
+					         << __E__;
+					bool      done;
+					const int timeoutSeconds  = 60 * 4;  //4 minutes for each iteration
+					uint32_t  lastMinutesLeft = -1;
 					time_t    start;
 					time(&start);
 					uint32_t waitIt = 0;
@@ -8654,10 +8660,18 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 						{
 							if(difftime(time(0), start) > timeoutSeconds)
 							{
-								__SS__ << "Timeout (" << timeoutSeconds/60 <<
-									" minutes) waiting for threads to finish command = " << command << "!" << __E__;
-								ss << "\n" << "Please review the failing endpoint. Each transition iteration must finish in under " 
-									<< timeoutSeconds/60 << " minutes. If a transition must take longer, please review the endpoint code, and break up the transition into multiple steps (i.e. iterations)." << __E__;
+								__SS__ << "Timeout (" << timeoutSeconds / 60
+								       << " minutes) waiting for threads to finish "
+								          "command = "
+								       << command << "!" << __E__;
+								ss << "\n"
+								   << "Please review the failing endpoint. Each "
+								      "transition iteration must finish in under "
+								   << timeoutSeconds / 60
+								   << " minutes. If a transition must take longer, "
+								      "please review the endpoint code, and break up the "
+								      "transition into multiple steps (i.e. iterations)."
+								   << __E__;
 								__SS_THROW__;
 							}
 
@@ -8682,28 +8696,35 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							}
 							waitSs << __E__;
 
-							time_t secondsLeft = (timeoutSeconds - difftime(time(0), start));
-							uint32_t minutesLeft = secondsLeft/60;			
-							if(secondsLeft < 10)												
-								__COUT_WARN__ << waitSs.str() << "\n" << "Timeout threshold is " << timeoutSeconds/60 << 
-									" minutes... " << secondsLeft << 
-									" seconds remaining before timeout!" << __E__;				
-							else if(lastMinutesLeft != minutesLeft && minutesLeft < 6)							
-								__COUT_WARN__ << waitSs.str() << "\n" << "Timeout threshold is " << timeoutSeconds/60 << 
-									" minutes... " << minutesLeft << 
-									" minutes remaining before timeout!" << __E__;
-							else if((waitIt++)%20 == 0)
-								__COUT__ << waitSs.str() << "\n" << "Timeout threshold is " << timeoutSeconds/60 << 
-									" minutes (" << secondsLeft << 
-									" seconds remaining before timeout)." << __E__;
-							else 
-								__COUTT__ << waitSs.str();								
+							time_t secondsLeft =
+							    (timeoutSeconds - difftime(time(0), start));
+							uint32_t minutesLeft = secondsLeft / 60;
+							if(secondsLeft < 10)
+								__COUT_WARN__
+								    << waitSs.str() << "\n"
+								    << "Timeout threshold is " << timeoutSeconds / 60
+								    << " minutes... " << secondsLeft
+								    << " seconds remaining before timeout!" << __E__;
+							else if(lastMinutesLeft != minutesLeft && minutesLeft < 6)
+								__COUT_WARN__
+								    << waitSs.str() << "\n"
+								    << "Timeout threshold is " << timeoutSeconds / 60
+								    << " minutes... " << minutesLeft
+								    << " minutes remaining before timeout!" << __E__;
+							else if((waitIt++) % 20 == 0)
+								__COUT__ << waitSs.str() << "\n"
+								         << "Timeout threshold is " << timeoutSeconds / 60
+								         << " minutes (" << secondsLeft
+								         << " seconds remaining before timeout)."
+								         << __E__;
+							else
+								__COUTT__ << waitSs.str();
 							lastMinutesLeft = minutesLeft;
 
-							waitSs << "\n" << "Timeout threshold is " << timeoutSeconds/60 << 
-									" minutes (" << secondsLeft << 
-									" seconds remaining before timeout)." << __E__;
-							
+							waitSs << "\n"
+							       << "Timeout threshold is " << timeoutSeconds / 60
+							       << " minutes (" << secondsLeft
+							       << " seconds remaining before timeout)." << __E__;
 
 							{  // create lock scope that does not include sleep
 								std::lock_guard<std::mutex> lock(
@@ -8727,7 +8748,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 			if(iteration || !broadcastIterationsDone_)
 			{
-				std::stringstream ss; ss << "Completed iteration: " << iteration << __E__;
+				std::stringstream ss;
+				ss << "Completed iteration: " << iteration << __E__;
 				__COUT__ << ss.str();
 
 				// create lock scope and clear status
@@ -8756,11 +8778,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	if(numberOfThreads)
 	{
-		std::stringstream ss; ss <<  "All local transitions completed. Wrapping up, exiting broadcast threads..."
-		         << __E__;
+		std::stringstream ss;
+		ss << "All local transitions completed. Wrapping up, exiting broadcast threads..."
+		   << __E__;
 		__COUT__ << ss.str();
-		
-		{ // create lock scope and clear status
+
+		{  // create lock scope and clear status
 			std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
 			broadcastCommandStatus_ = ss.str();
 		}
@@ -8778,11 +8801,11 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	if(broadcastMessageToRemoteGatewaysComplete(originalMessage))
 	{
 		RunControlStateMachine::theProgressBar_.step();
-		std::stringstream ss; ss <<  "All transitions completed."
-		         << __E__;
+		std::stringstream ss;
+		ss << "All transitions completed." << __E__;
 		__COUT__ << ss.str();
-		
-		{ // create lock scope and clear status
+
+		{  // create lock scope and clear status
 			std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
 			broadcastCommandStatus_ = ss.str();
 		}
@@ -8802,7 +8825,7 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 	for(unsigned int i = 0; i < numberOfThreads; ++i)
 		broadcastThreadStructs_[i]->exitThread_ = true;
 
-	const int timeoutSeconds = 30; //time for destructors to finish
+	const int timeoutSeconds = 30;  //time for destructors to finish
 	time_t    start;
 	time(&start);
 	bool allExited = false;
@@ -8821,7 +8844,7 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 			{
 				__COUT_WARN__ << "Timeout waiting for broadcast threads to exit! "
 				              << "Attempting force-cancel of worker threads..." << __E__;
-				
+
 				for(unsigned int i = 0; i < numberOfThreads; ++i)
 					if(broadcastThreadStructs_[i]->working_ &&
 					   broadcastThreadStructs_[i]->hasPthreadId_)
@@ -8829,12 +8852,12 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 						broadcastThreadStructs_[i]->hardCancelRequested_ = true;
 						int rc = pthread_cancel(broadcastThreadStructs_[i]->pthreadId_);
 						if(rc)
-							__COUT_WARN__
-							    << "Failed to cancel broadcast thread " << i
-							    << " (pthread_cancel rc=" << rc << ")." << __E__;
+							__COUT_WARN__ << "Failed to cancel broadcast thread " << i
+							              << " (pthread_cancel rc=" << rc << ")."
+							              << __E__;
 						else
-							__COUT_WARN__ << "Cancel requested for broadcast thread "
-							              << i << "." << __E__;
+							__COUT_WARN__ << "Cancel requested for broadcast thread " << i
+							              << "." << __E__;
 					}
 
 				const int forceCancelWaitSeconds = 5;
@@ -8855,19 +8878,19 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 
 					if(difftime(time(0), forceCancelStart) > forceCancelWaitSeconds)
 					{
-						__COUT_WARN__
-						    << "Some broadcast threads are still running after force-cancel "
-						    << "attempt; continuing shutdown path." << __E__;
+						__COUT_WARN__ << "Some broadcast threads are still running after "
+						                 "force-cancel "
+						              << "attempt; continuing shutdown path." << __E__;
 						break;
 					}
-					usleep(100*1000 /*100ms*/);
+					usleep(100 * 1000 /*100ms*/);
 				}
 
 				break;
 			}
-			usleep(100*1000 /*100ms*/);
-		} //end handling of remaining threads
-	} //end wait while loop
+			usleep(100 * 1000 /*100ms*/);
+		}  //end handling of remaining threads
+	}      //end wait while loop
 }  // end signalAndWaitForBroadcastThreads()
 
 //==============================================================================
@@ -9045,10 +9068,11 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 
 	std::map<std::string /* fullName */, int /* unknownCount */> unknownResponseCounts;
 
-	bool   done      = command == "Error";  //dont check for done if Error'ing
-	size_t iteration = 0;
+	bool         done      = command == "Error";  //dont check for done if Error'ing
+	size_t       iteration = 0;
 	const size_t secsPerIteration = 1;
-	const size_t maxIterations = 10 * 60 / secsPerIteration; //roughly 10 minutes (1s per iteration)
+	const size_t maxIterations =
+	    10 * 60 / secsPerIteration;  //roughly 10 minutes (1s per iteration)
 	std::map<std::string /* name */, size_t /* progress100cnt */>
 	    progress100cnt;  // make sure remote subsystem is not in unanticipated state
 	while(!done)
@@ -9058,11 +9082,11 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 		          << " remote gateway(s) completion for command = " << command
 		          << " .. check #" << iteration << __E__;
 
-		done = true;
-		size_t      remainingRemoteGateways = 0;
-		size_t      totalRemoteGateways     = 0;
-		std::string lastRemainingName;
-		std::string lastRemainingStatus;
+		done                                 = true;
+		size_t       remainingRemoteGateways = 0;
+		size_t       totalRemoteGateways     = 0;
+		std::string  lastRemainingName;
+		std::string  lastRemainingStatus;
 		unsigned int lastRemainingProgress = 0;
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;  //local copy
@@ -9205,23 +9229,26 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 		{
 			std::stringstream waitSs;
 			waitSs << "Waiting on " << remainingRemoteGateways << " of "
-			       << totalRemoteGateways
-			       << " remote gateways to finish command '" << command << "'";
+			       << totalRemoteGateways << " remote gateways to finish command '"
+			       << command << "'";
 			if(remainingRemoteGateways == 1)
-				waitSs << ".. Last is '" << lastRemainingName << "' w/progress='" << lastRemainingProgress << "' and status='"
-				       << lastRemainingStatus << "'";
+				waitSs << ".. Last is '" << lastRemainingName << "' w/progress='"
+				       << lastRemainingProgress << "' and status='" << lastRemainingStatus
+				       << "'";
 			waitSs << __E__;
-			uint32_t timeUntilTimeout = (maxIterations - iteration) * secsPerIteration; // x seconds per iteration
-			if(timeUntilTimeout/60 < 1)
-				waitSs << "(wait count = " << iteration << ", " << timeUntilTimeout << 
-					" seconds until timeout)" << __E__;
-			else 
-				waitSs << "(wait count = " << iteration << ", " << timeUntilTimeout/60 << 
-					" minutes " << timeUntilTimeout%60 << " seconds until timeout)" << __E__;
+			uint32_t timeUntilTimeout = (maxIterations - iteration) *
+			                            secsPerIteration;  // x seconds per iteration
+			if(timeUntilTimeout / 60 < 1)
+				waitSs << "(wait count = " << iteration << ", " << timeUntilTimeout
+				       << " seconds until timeout)" << __E__;
+			else
+				waitSs << "(wait count = " << iteration << ", " << timeUntilTimeout / 60
+				       << " minutes " << timeUntilTimeout % 60
+				       << " seconds until timeout)" << __E__;
 
 			if(iteration % 2 == 1)
 				__COUT__ << waitSs.str();
-	
+
 			{  // create lock scope that does not include sleep
 				std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
 				broadcastCommandStatus_ = waitSs.str();
@@ -11610,7 +11637,7 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
 		std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
 		xmlOut.addTextElementToData("active_fsmStatus", broadcastCommandStatus_);
 	}
-	else 
+	else
 		xmlOut.addTextElementToData("active_fsmStatus", gatewayStatus);
 
 	xmlOut.addTextElementToData("in_transition",
