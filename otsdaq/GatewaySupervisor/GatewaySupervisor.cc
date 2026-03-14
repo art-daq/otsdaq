@@ -5196,14 +5196,6 @@ try
 		activeStateMachineName_       = fsmName;
 		activeStateMachineWindowName_ = fsmWindowName;
 
-		if(activeStateMachineName_ == "")
-			__COUT_WARN__
-			    << "The active state machine is an empty string, this is allowed for "
-			       "backwards compatibility, but may not be intentional! "
-			    << "Make sure you or your system admins understand why the active FSM "
-			       "name is blank."
-			    << __E__;
-
 		//Note: Remote Subsystems must respond with Configuration Dump immediately in the udp reply.
 		//	Since Configuration Dump can take a long time and since a subsystem might configure multiple times
 		//		asynchronously, only collect the pre-assemble configuration dump on the Start transition.
