@@ -8805,7 +8805,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		broadcastCommandStatus_ = "";
 	}
 
-	RunControlStateMachine::theProgressBar_.step();	
+	RunControlStateMachine::theProgressBar_.step();
 	__COUT__ << "Broadcast complete." << __E__;
 }  // end broadcastMessage()
 
