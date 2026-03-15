@@ -1184,11 +1184,14 @@ void FEVInterface::runFrontEndMacro(
 		__FE_SS_THROW__;
 	}
 
-	std::vector<FEVInterface::frontEndMacroArg_t> encodedInputArgs = inputArgs;
+	std::vector<FEVInterface::frontEndMacroArg_t> encodedInputArgs;
 	for(auto& arg : inputArgs)
+	{
+		__FE_COUT__ << arg.first << ": " << arg.second << __E__;
 		encodedInputArgs.push_back(
 		    std::make_pair(StringMacros::encodeURIComponent(arg.first),
 		                   StringMacros::encodeURIComponent(arg.second)));
+	}
 
 	std::string inputArgsStr = StringMacros::vectorToString(
 	    encodedInputArgs, ";" /*primaryDelimeter*/, "," /*secondaryDelimeter*/);
