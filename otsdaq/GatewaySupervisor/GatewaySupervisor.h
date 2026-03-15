@@ -179,7 +179,7 @@ class WorkLoopManager;
 																						std::string logEntry = "");
 		void        					broadcastMessage								(xoap::MessageReference msg);
 		void        					broadcastMessageToRemoteGateways				(const xoap::MessageReference msg);
-		bool        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg);
+		void        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg);
 		void        					signalAndWaitForBroadcastThreads				(unsigned int numberOfThreads);
 
 		struct BroadcastMessageIterationsDoneStruct

@@ -8798,18 +8798,15 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	RunControlStateMachine::theProgressBar_.step();
 
-	if(broadcastMessageToRemoteGatewaysComplete(originalMessage))
-	{
-		RunControlStateMachine::theProgressBar_.step();
-		std::stringstream ss;
-		ss << "All transitions completed." << __E__;
-		__COUT__ << ss.str();
+	broadcastMessageToRemoteGatewaysComplete(originalMessage);
 
-		{  // create lock scope and clear status
-			std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
-			broadcastCommandStatus_ = ss.str();
-		}
+	{  // create lock scope and clear status
+		std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
+		broadcastCommandStatus_ = "";
 	}
+
+	RunControlStateMachine::theProgressBar_.step();	
+	__COUT__ << "Broadcast complete." << __E__;
 }  // end broadcastMessage()
 
 //==============================================================================
@@ -9056,7 +9053,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 }  // end broadcastMessageToRemoteGateways()
 
 //==============================================================================
-bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
+void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
     const xoap::MessageReference message)
 {
 	std::string command = SOAPUtilities::translate(message).getCommand();
@@ -9262,8 +9259,6 @@ bool GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 
 	__COUT__ << "Done with " << countOfRemoteGateways
 	         << " remote gateway(s) command = " << command << __E__;
-
-	return true;
 }  // end broadcastMessageToRemoteGatewaysComplete()
 
 //==============================================================================
