@@ -4886,8 +4886,8 @@ try
 			   << ") "
 			      "to control progress, please transition to "
 			   << RunControlStateMachine::HALTED_STATE_NAME << " using the active "
-			   << "State Machine '" << activeStateMachineWindowName_ << "' (UID: " << activeStateMachineName_
-			       << ")." << __E__;
+			   << "State Machine '" << activeStateMachineWindowName_
+			   << "' (UID: " << activeStateMachineName_ << ")." << __E__;
 			__SS_THROW__;
 		}
 		else  // clear active state machine
@@ -5295,13 +5295,14 @@ try
 		parameters.addParameter(
 		    "RunNumber",
 		    runNumber);  // will be cached in activeStateMachineRunNumber_ in transitionStarting()
-		
+
 		if(activeStateMachineWindowName_ != fsmWindowName)
 		{
-			__SUP_COUT__ << "Running fsm window name '" << fsmWindowName << "' is now the active state machine window." << __E__;
+			__SUP_COUT__ << "Running fsm window name '" << fsmWindowName
+			             << "' is now the active state machine window." << __E__;
 			activeStateMachineWindowName_ = fsmWindowName;
 		}
-	}                    //end Start transition
+	}  //end Start transition
 	else if(!(command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 	          command == RunControlStateMachine::SHUTDOWN_TRANSITION_NAME ||
 	          command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
