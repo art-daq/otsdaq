@@ -238,13 +238,13 @@ class WorkLoopManager;
 			//===================
 			BroadcastThreadStruct(BroadcastThreadStruct &&b)
 				: threadIndex_(b.threadIndex_)
-				, exitThread_(b.exitThread_)
-				, working_(b.working_)
-				, workToDo_(b.workToDo_)
-				, error_(b.error_)
-				, hardCancelRequested_(b.hardCancelRequested_)
+				, exitThread_(b.exitThread_.load())
+				, working_(b.working_.load())
+				, workToDo_(b.workToDo_.load())
+				, error_(b.error_.load())
+				, hardCancelRequested_(b.hardCancelRequested_.load())
 				, pthreadId_(b.pthreadId_)
-				, hasPthreadId_(b.hasPthreadId_)
+				, hasPthreadId_(b.hasPthreadId_.load())
 			{
 			}  // end BroadcastThreadStruct move constructor()
 
