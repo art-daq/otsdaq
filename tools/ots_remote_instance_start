@@ -62,7 +62,11 @@ if [ "x$OTS_SETUP_TYPE" != "x" ]; then
 
   if [ -f $ENV_CACHE_FILE ]; then
 	info "Source remote env cache for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+	ORIGINAL_THIS_HOST="$THIS_HOST"
 	source $ENV_CACHE_FILE
+	THIS_HOST="$ORIGINAL_THIS_HOST"
+	export THIS_HOST
+	unset ORIGINAL_THIS_HOST
   else
 	info "Sourcing remote setup_ots.sh, and hiding output, for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
 	source ./setup_ots.sh ${OTS_SETUP_TYPE} > /dev/null </dev/null  || die "Couldn't setup ots for ${OTS_SETUP_TYPE} on ${THIS_HOST}"
