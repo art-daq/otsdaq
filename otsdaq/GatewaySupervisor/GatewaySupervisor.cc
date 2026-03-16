@@ -5668,7 +5668,7 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 
 	activeStateMachineWindowName_ =
 	    "";  //clear window name to indicate that no window (including Iterator) is in control, which allows GUIs to change cleanup strategy
-	// do not clear the activeStateMachineName_ here (in case there is some asynchronouse halting needed, i.e. multiple Halts from top-level Gateway Supervisor), let it be reassigned on next Configure.
+	// do not clear the activeStateMachineName_ here (in case there is some asynchronous halting needed, i.e. multiple Halts from top-level Gateway Supervisor), let it be reassigned on next Configure.
 	__SUP_COUT_INFO__ << "Gateway Supervisor is halted." << __E__;
 }  // end stateHalted()
 
