@@ -1,5 +1,6 @@
 #ifndef _ots_GatewaySupervisor_h
 #define _ots_GatewaySupervisor_h
+#include <atomic>
 
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
@@ -301,12 +302,12 @@ class WorkLoopManager;
 			bool& getIterationsDone() { return messages_[0].iterationsDone_; }
 
 			// each thread accesses these members
-			std::mutex    threadMutex_;
-			unsigned int  threadIndex_;
-			volatile bool exitThread_, working_, workToDo_, error_;
-			volatile bool hardCancelRequested_;
-			pthread_t     pthreadId_;
-			volatile bool hasPthreadId_;
+			std::mutex           threadMutex_;
+			unsigned int         threadIndex_;
+			std::atomic<bool>    exitThread_, working_, workToDo_, error_;
+			std::atomic<bool>    hardCancelRequested_;
+			pthread_t            pthreadId_;
+			std::atomic<bool>    hasPthreadId_;
 			// always just 1 message (for now)
 			std::vector<BroadcastThreadStruct::BroadcastMessageStruct> messages_;
 
