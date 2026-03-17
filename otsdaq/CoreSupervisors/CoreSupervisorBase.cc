@@ -28,6 +28,8 @@ CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
 {
 	__SUP_COUT__ << "Constructor." << __E__;
 
+	supervisorSentinel_ = std::shared_ptr<CoreSupervisorBase>(this, [](CoreSupervisorBase*) {});
+
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
 	xgi::bind(this, &CoreSupervisorBase::defaultPageWrapper, "Default");
@@ -950,7 +952,7 @@ void CoreSupervisorBase::transitionConfiguringFSMs()
 
 			preStateMachineExecution(i);
 			theStateMachineImplementation_[i]->parentSupervisor_ =
-			    this;  // for backwards compatibility, kept out of configure parameters
+			    supervisorSentinel_;  // for backwards compatibility, kept out of configure parameters
 			theStateMachineImplementation_[i]->configure();  // e.g. for FESupervisor,
 			                                                 // this is configure of
 			                                                 // FEVInterfacesManager

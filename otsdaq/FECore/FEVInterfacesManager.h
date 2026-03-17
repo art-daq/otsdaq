@@ -122,6 +122,10 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	std::map<std::string /*name*/, std::unique_ptr<FEVInterface> > theFEInterfaces_;
 	std::vector<std::string /*name*/>                              theFENamesByPriority_;
 
+	/// Sentinel shared_ptr (no-op deleter) used to issue std::weak_ptr references.
+	/// Expires when this FEVInterfacesManager object is destroyed.
+	std::shared_ptr<FEVInterfacesManager> selfSentinel_;
+
 	/// for managing transition iterations
 	std::map<std::string /*name*/, bool /*isDone*/> stateMachinesIterationDone_;
 	unsigned int                                    stateMachinesIterationWorkCount_;

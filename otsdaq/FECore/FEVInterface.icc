@@ -10,7 +10,13 @@ void FEVInterface::sendToFrontEnd(const std::string& targetInterfaceID,
 	ss << value;
 	__FE_COUTV__(ss.str());
 
-	__FE_COUTV__(VStateMachine::parentSupervisor_);
+	auto supervisor = VStateMachine::parentSupervisor_.lock();
+	if(!supervisor)
+	{
+		__FE_SS__ << "Parent supervisor not available to send to front-end!" << __E__;
+		__FE_SS_THROW__;
+	}
+	__FE_COUTV__(supervisor);
 
 	xoap::MessageReference message =
 	    SOAPUtilities::makeSOAPMessageReference("FECommunication");
@@ -26,8 +32,8 @@ void FEVInterface::sendToFrontEnd(const std::string& targetInterfaceID,
 	            << __E__;
 
 	xoap::MessageReference replyMessage =
-	    VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
-	        VStateMachine::parentSupervisor_->allSupervisorInfo_
+	    supervisor->SOAPMessenger::sendWithSOAPReply(
+	        supervisor->allSupervisorInfo_
 	            .getAllMacroMakerTypeSupervisorInfo()
 	            .begin()
 	            ->second.getDescriptor(),
@@ -63,7 +69,7 @@ void FEVInterface::receiveFromFrontEnd(const std::string& sourceInterfaceID,
                                        unsigned int       timeoutInSeconds) const
 {
 	__FE_COUTV__(sourceInterfaceID);
-	__FE_COUTV__(VStateMachine::parentSupervisor_);
+	__FE_COUTV__(VStateMachine::parentSupervisor_.lock());
 
 	std::string data;
 	FEVInterface::receiveFromFrontEnd(sourceInterfaceID, data, timeoutInSeconds);

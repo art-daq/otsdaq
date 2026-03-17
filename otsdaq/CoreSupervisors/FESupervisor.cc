@@ -161,7 +161,7 @@ FESupervisor::FESupervisor(xdaq::ApplicationStub* stub)
 
 				preStateMachineExecution(i);
 				theStateMachineImplementation_[i]->parentSupervisor_ =
-				    this;  // for backwards compatibility, kept out of configure
+				    supervisorSentinel_;  // for backwards compatibility, kept out of configure
 				           // parameters
 				theStateMachineImplementation_[i]->configure();  // e.g. for FESupervisor,
 				// this is configure of

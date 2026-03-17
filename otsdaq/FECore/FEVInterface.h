@@ -18,6 +18,7 @@
 
 #include <array>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -89,10 +90,10 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 
 	virtual ~FEVInterface(void);
 
-	virtual void 						setParentPointers(CoreSupervisorBase* supervisor,
-											   FEVInterfacesManager* manager);
+	virtual void 						setParentPointers(std::weak_ptr<CoreSupervisorBase>   supervisor,
+											   std::weak_ptr<FEVInterfacesManager> manager);
 
-	FEVInterfacesManager* 				parentInterfaceManager_ = nullptr;
+	std::weak_ptr<FEVInterfacesManager> parentInterfaceManager_;
 
 	const std::string&  				getInterfaceUID				(void) const { return interfaceUID_; }
 	const std::string&  				getInterfaceType			(void) const { return interfaceType_; }

@@ -31,7 +31,6 @@ FEVInterface::FEVInterface(const std::string&       interfaceUID,
 	// base class versions of function (e.g. getInterfaceType) are called because the
 	// derived class has not been instantiate yet!
 	// Instead use __GEN_COUT__ which decorates using mfSubject_
-	VStateMachine::parentSupervisor_ = nullptr;
 
 	try
 	{
@@ -68,8 +67,8 @@ FEVInterface::FEVInterface(const std::string&       interfaceUID,
 }  // end constructor()
 
 //==============================================================================
-void FEVInterface::setParentPointers(CoreSupervisorBase*   supervisor,
-                                     FEVInterfacesManager* manager)
+void FEVInterface::setParentPointers(std::weak_ptr<CoreSupervisorBase>   supervisor,
+                                     std::weak_ptr<FEVInterfacesManager> manager)
 {
 	VStateMachine::parentSupervisor_ = supervisor;
 	parentInterfaceManager_          = manager;
@@ -726,31 +725,39 @@ try
 	feHeader << ":FE:" << fe->getInterfaceType() << ":" << fe->getInterfaceUID() << ":"
 	         << fe->theConfigurationRecordName_ << "\t";
 
+	auto supervisor = fe->VStateMachine::parentSupervisor_.lock();
+	if(!supervisor)
+	{
+		__COUT_ERR__ << feHeader.str()
+		             << "Parent supervisor not available to report async exception."
+		             << __E__;
+		return;
+	}
+
 	if(isStopException)
 	{
 		__COUT_ERR__ << feHeader.str() << "Sending FE Async STOP Running Exception... \n"
 		             << errorMessage << __E__;
-		fe->VStateMachine::parentSupervisor_->setAsyncPauseExceptionMessage(errorMessage);
+		supervisor->setAsyncPauseExceptionMessage(errorMessage);
 	}
 	else if(isPauseException)
 	{
 		__COUT_ERR__ << feHeader.str() << "Sending FE Async PAUSE Running Exception... \n"
 		             << errorMessage << __E__;
-		fe->VStateMachine::parentSupervisor_->setAsyncStopExceptionMessage(errorMessage);
+		supervisor->setAsyncStopExceptionMessage(errorMessage);
 	}
 	else
 		__COUT_ERR__ << feHeader.str() << "Sending FE Async Running Error... \n"
 		             << errorMessage << __E__;
 
 	XDAQ_CONST_CALL xdaq::ApplicationDescriptor* gatewaySupervisor =
-	    fe->VStateMachine::parentSupervisor_->allSupervisorInfo_.getGatewayInfo()
-	        .getDescriptor();
+	    supervisor->allSupervisorInfo_.getGatewayInfo().getDescriptor();
 
 	SOAPParameters parameters;
 	parameters.addParameter("ErrorMessage", errorMessage);
 
 	xoap::MessageReference replyMessage =
-	    fe->VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
+	    supervisor->SOAPMessenger::sendWithSOAPReply(
 	        gatewaySupervisor,
 	        isPauseException ? "AsyncPauseException" : "AsyncError",
 	        parameters);
@@ -1171,10 +1178,16 @@ void FEVInterface::runFrontEndMacro(
     std::vector<FEVInterface::frontEndMacroArg_t>&       outputArgs) const
 {
 	__FE_COUTV__(targetInterfaceID);
-	__FE_COUTV__(VStateMachine::parentSupervisor_);
-	__FE_COUTV__(VStateMachine::parentSupervisor_->getSupervisorUID());
+	auto supervisor = VStateMachine::parentSupervisor_.lock();
+	if(!supervisor)
+	{
+		__FE_SS__ << "Parent supervisor not available to run front-end macro!" << __E__;
+		__FE_SS_THROW__;
+	}
+	__FE_COUTV__(supervisor);
+	__FE_COUTV__(supervisor->getSupervisorUID());
 
-	auto MacroMakerSupervisors = VStateMachine::parentSupervisor_->allSupervisorInfo_
+	auto MacroMakerSupervisors = supervisor->allSupervisorInfo_
 	                                 .getAllMacroMakerTypeSupervisorInfo();
 	__FE_COUTV__(MacroMakerSupervisors.size());
 
@@ -1213,7 +1226,7 @@ void FEVInterface::runFrontEndMacro(
 	            << __E__;
 
 	xoap::MessageReference replyMessage =
-	    VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
+	    supervisor->SOAPMessenger::sendWithSOAPReply(
 	        MacroMakerSupervisors.begin()->second.getDescriptor(), message);
 
 	__FE_COUT__ << "Response received: " << SOAPUtilities::translate(replyMessage)
@@ -1262,7 +1275,15 @@ void FEVInterface::receiveFromFrontEnd(const std::string& requester,
                                        unsigned int       timeoutInSeconds) const
 {
 	__FE_COUTV__(requester);
-	__FE_COUTV__(parentSupervisor_);
+	__FE_COUTV__(VStateMachine::parentSupervisor_.lock());
+
+	auto mgr = parentInterfaceManager_.lock();
+	if(!mgr)
+	{
+		__FE_SS__ << "Parent interface manager not available to receive from front-end!"
+		          << __E__;
+		__FE_SS_THROW__;
+	}
 
 	std::string data = "0";
 	// bool        found = false;
@@ -1271,13 +1292,13 @@ void FEVInterface::receiveFromFrontEnd(const std::string& requester,
 		// mutex scope
 		{
 			std::lock_guard<std::mutex> lock(
-			    parentInterfaceManager_->frontEndCommunicationReceiveMutex_);
+			    mgr->frontEndCommunicationReceiveMutex_);
 
 			auto receiveBuffersForTargetIt =
-			    parentInterfaceManager_->frontEndCommunicationReceiveBuffer_.find(
+			    mgr->frontEndCommunicationReceiveBuffer_.find(
 			        FEVInterface::interfaceUID_);
 			if(receiveBuffersForTargetIt !=
-			   parentInterfaceManager_->frontEndCommunicationReceiveBuffer_.end())
+			   mgr->frontEndCommunicationReceiveBuffer_.end())
 			{
 				__FE_COUT__ << "Number of source buffers found for front-end '"
 				            << FEVInterface::interfaceUID_

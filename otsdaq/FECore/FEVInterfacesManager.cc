@@ -22,6 +22,7 @@ FEVInterfacesManager::FEVInterfacesManager(
     : Configurable(theXDAQContextConfigTree, supervisorConfigurationPath)
     , VStateMachine(Configurable::theConfigurationRecordName_)
 {
+	selfSentinel_ = std::shared_ptr<FEVInterfacesManager>(this, [](FEVInterfacesManager*) {});
 	init();
 	__CFG_COUT__ << "Constructed." << __E__;
 }
@@ -117,18 +118,22 @@ void FEVInterfacesManager::createInterfaces(void)
 			// setup parent supervisor and interface manager
 			//	of FEVinterface (for backwards compatibility, left out of constructor)
 			theFEInterfaces_[interface.first]->setParentPointers(
-			    VStateMachine::parentSupervisor_, this);
+			    VStateMachine::parentSupervisor_, selfSentinel_);
 
 			__CFG_COUTV__(interface.first);
-			__CFG_COUTV__(VStateMachine::parentSupervisor_);
-			__CFG_COUTV__(VStateMachine::parentSupervisor_->getContextUID());
-			__CFG_COUTV__(VStateMachine::parentSupervisor_->getSupervisorUID());
-			__CFG_COUTTV__(
-			    theFEInterfaces_[interface.first]->VStateMachine::parentSupervisor_);
-			__CFG_COUTTV__(theFEInterfaces_[interface.first]
-			                   ->VStateMachine::parentSupervisor_->getContextUID());
-			__CFG_COUTTV__(theFEInterfaces_[interface.first]
-			                   ->VStateMachine::parentSupervisor_->getSupervisorUID());
+			if(auto supervisor = VStateMachine::parentSupervisor_.lock())
+			{
+				__CFG_COUTV__(supervisor);
+				__CFG_COUTV__(supervisor->getContextUID());
+				__CFG_COUTV__(supervisor->getSupervisorUID());
+			}
+			if(auto feSupervisor =
+			       theFEInterfaces_[interface.first]->VStateMachine::parentSupervisor_.lock())
+			{
+				__CFG_COUTTV__(feSupervisor);
+				__CFG_COUTV__(feSupervisor->getContextUID());
+				__CFG_COUTV__(feSupervisor->getSupervisorUID());
+			}
 		}
 		catch(const cet::exception& e)
 		{

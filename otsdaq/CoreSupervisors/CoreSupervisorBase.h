@@ -126,6 +126,10 @@ class CoreSupervisorBase : public xdaq::Application,
 	toolbox::BSem               stateMachineSemaphore_;
 	std::vector<VStateMachine*> theStateMachineImplementation_;
 
+	/// Sentinel shared_ptr (no-op deleter) used to issue std::weak_ptr references.
+	/// Expires when this CoreSupervisorBase object is destroyed.
+	std::shared_ptr<CoreSupervisorBase> supervisorSentinel_;
+
 	/// for managing transition iterations
 	std::vector<bool> stateMachinesIterationDone_;
 	unsigned int      stateMachinesIterationWorkCount_;
