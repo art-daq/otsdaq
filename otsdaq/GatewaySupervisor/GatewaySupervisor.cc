@@ -5692,6 +5692,7 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 			                                 supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
+				__COUTV__ (activeStateMachineName_);
 				ConfigurationTree fsmLinkNode =
 				    configLinkNode.getNode("LinkToStateMachineTable")
 				        .getNode(activeStateMachineName_);
@@ -5724,6 +5725,13 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 					    getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME));
 				}
 			}
+			else 
+				__COUT__ << "Gateway Supervisor configuration record not found at '"
+				         << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
+				         << supervisorContextUID_ << "/" << supervisorApplicationUID_
+				         << "' - consider adding one to control configuration dumps "
+				            "and state machine properties."
+				         << __E__;
 		}
 		catch(const std::runtime_error& e)
 		{
