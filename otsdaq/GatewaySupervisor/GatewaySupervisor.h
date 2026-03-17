@@ -1,5 +1,6 @@
 #ifndef _ots_GatewaySupervisor_h
 #define _ots_GatewaySupervisor_h
+#include <atomic>
 
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
@@ -26,6 +27,7 @@
 #include <xgi/Method.h>
 #include "otsdaq/GatewaySupervisor/PixelHistoPicGen.h"
 
+#include <pthread.h>  // for pthread_kill
 #include <set>
 #include <sstream>
 #include <string>
@@ -178,7 +180,7 @@ class WorkLoopManager;
 																						std::string logEntry = "");
 		void        					broadcastMessage								(xoap::MessageReference msg);
 		void        					broadcastMessageToRemoteGateways				(const xoap::MessageReference msg);
-		bool        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg);
+		void        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg);
 		void        					signalAndWaitForBroadcastThreads				(unsigned int numberOfThreads);
 
 		struct BroadcastMessageIterationsDoneStruct
@@ -228,16 +230,21 @@ class WorkLoopManager;
 				, working_(true)
 				, workToDo_(false)
 				, error_(false)
+				, hardCancelRequested_(false)
+				, hasPthreadId_(false)
 			{
 			}  // end BroadcastThreadStruct constructor()
 
 			//===================
 			BroadcastThreadStruct(BroadcastThreadStruct &&b)
 				: threadIndex_(b.threadIndex_)
-				, exitThread_(b.exitThread_)
-				, working_(b.working_)
-				, workToDo_(b.workToDo_)
-				, error_(b.error_)
+				, exitThread_(b.exitThread_.load())
+				, working_(b.working_.load())
+				, workToDo_(b.workToDo_.load())
+				, error_(b.error_.load())
+				, hardCancelRequested_(b.hardCancelRequested_.load())
+				, pthreadId_(b.pthreadId_)
+				, hasPthreadId_(b.hasPthreadId_.load())
 			{
 			}  // end BroadcastThreadStruct move constructor()
 
@@ -295,9 +302,12 @@ class WorkLoopManager;
 			bool& getIterationsDone() { return messages_[0].iterationsDone_; }
 
 			// each thread accesses these members
-			std::mutex    threadMutex_;
-			unsigned int  threadIndex_;
-			volatile bool exitThread_, working_, workToDo_, error_;
+			std::mutex           threadMutex_;
+			unsigned int         threadIndex_;
+			std::atomic<bool>    exitThread_, working_, workToDo_, error_;
+			std::atomic<bool>    hardCancelRequested_;
+			pthread_t            pthreadId_;
+			std::atomic<bool>    hasPthreadId_;
 			// always just 1 message (for now)
 			std::vector<BroadcastThreadStruct::BroadcastMessageStruct> messages_;
 

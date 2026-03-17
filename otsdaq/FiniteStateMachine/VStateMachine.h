@@ -117,8 +117,8 @@ class VStateMachine
 	void               clearSubIterationWork(void) { subIterationWorkFlag_ = false; }
 	bool               getSubIterationWork(void) { return subIterationWorkFlag_; }
 
-	CoreSupervisorBase* parentSupervisor_;  ///< e.g. to communicate error fault and start
-	                                        ///< transition to error for entire system
+	CoreSupervisorBase* parentSupervisor_ = nullptr;  ///< e.g. to communicate error fault and start
+	                                                  ///< transition to error for entire system
   protected:
 	std::map<std::string /*transition*/,
 	         std::map<unsigned int /*step index*/, std::string /*step alias*/>>

@@ -31,6 +31,7 @@ FEVInterface::FEVInterface(const std::string&       interfaceUID,
 	// base class versions of function (e.g. getInterfaceType) are called because the
 	// derived class has not been instantiate yet!
 	// Instead use __GEN_COUT__ which decorates using mfSubject_
+	VStateMachine::parentSupervisor_ = nullptr;
 
 	try
 	{
@@ -65,6 +66,14 @@ FEVInterface::FEVInterface(const std::string&       interfaceUID,
 
 	__GEN_COUT__ << "Constructed." << __E__;
 }  // end constructor()
+
+//==============================================================================
+void FEVInterface::setParentPointers(CoreSupervisorBase*   supervisor,
+                                     FEVInterfacesManager* manager)
+{
+	VStateMachine::parentSupervisor_ = supervisor;
+	parentInterfaceManager_          = manager;
+}  // end setParentPointers()
 
 //==============================================================================
 FEVInterface::~FEVInterface(void)
@@ -1170,9 +1179,29 @@ void FEVInterface::runFrontEndMacro(
 {
 	__FE_COUTV__(targetInterfaceID);
 	__FE_COUTV__(VStateMachine::parentSupervisor_);
+	__FE_COUTV__(VStateMachine::parentSupervisor_->getSupervisorUID());
+
+	auto MacroMakerSupervisors = VStateMachine::parentSupervisor_->allSupervisorInfo_
+	                                 .getAllMacroMakerTypeSupervisorInfo();
+	__FE_COUTV__(MacroMakerSupervisors.size());
+
+	if(!MacroMakerSupervisors.size())
+	{
+		__FE_SS__ << "No MacroMakerSupervisors found! Notify admins." << __E__;
+		__FE_SS_THROW__;
+	}
+
+	std::vector<FEVInterface::frontEndMacroArg_t> encodedInputArgs;
+	for(auto& arg : inputArgs)
+	{
+		__FE_COUT__ << arg.first << ": " << arg.second << __E__;
+		encodedInputArgs.push_back(
+		    std::make_pair(StringMacros::encodeURIComponent(arg.first),
+		                   StringMacros::encodeURIComponent(arg.second)));
+	}
 
 	std::string inputArgsStr = StringMacros::vectorToString(
-	    inputArgs, ";" /*primaryDelimeter*/, "," /*secondaryDelimeter*/);
+	    encodedInputArgs, ";" /*primaryDelimeter*/, "," /*secondaryDelimeter*/);
 
 	__FE_COUTV__(inputArgsStr);
 
@@ -1192,11 +1221,7 @@ void FEVInterface::runFrontEndMacro(
 
 	xoap::MessageReference replyMessage =
 	    VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
-	        VStateMachine::parentSupervisor_->allSupervisorInfo_
-	            .getAllMacroMakerTypeSupervisorInfo()
-	            .begin()
-	            ->second.getDescriptor(),
-	        message);
+	        MacroMakerSupervisors.begin()->second.getDescriptor(), message);
 
 	__FE_COUT__ << "Response received: " << SOAPUtilities::translate(replyMessage)
 	            << __E__;
