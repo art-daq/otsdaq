@@ -28,10 +28,10 @@ out "${Green}=========================== ots REMOTE on {${THIS_HOST}} ==========
 
 # Have to CD because setup_ots.sh isn't safe to run in other directories than the ots root, die if it didn't work
 if [ "x$1" != "x" ]; then
-    setup_dir=$1
-    shift
+	setup_dir=$1
+	shift
 else
-    setup_dir=${SCRIPT_DIR}/../../../
+	setup_dir=${SCRIPT_DIR}/../../../
 fi
 info "Expected setup path     = ${setup_dir}/setup_ots.sh"
 cd $setup_dir || die "Couldn't chdir to ots setup directory on ${THIS_HOST}"
@@ -55,18 +55,21 @@ if [ "x$OTS_SETUP_TYPE" != "x" ]; then
   ENV_CACHE_FILE="${setup_dir}/.rte_${ENV_SUBSYSTEM}_setup_ots.sh"
 
   if [ -f $ENV_CACHE_FILE ]; then
-    info "Source remote env cachce for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
-    source $ENV_CACHE_FILE
-    THIS_HOST=$SAVE_THIS_HOST
+	info "Source remote env cache for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+	source $ENV_CACHE_FILE
+	THIS_HOST=$SAVE_THIS_HOST
   else
-    info "Sourcing remote setup_ots.sh, and hiding output, for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
-    source ./setup_ots.sh ${OTS_SETUP_TYPE} > /dev/null </dev/null  || die "Couldn't setup ots for ${OTS_SETUP_TYPE} on ${THIS_HOST}"
+	info "Sourcing remote setup_ots.sh, and hiding output, for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+	source ./setup_ots.sh ${OTS_SETUP_TYPE} > /dev/null </dev/null  || die "Couldn't setup ots for ${OTS_SETUP_TYPE} on ${THIS_HOST}"
   fi
   info "Launching ots for ${EBold}${OTS_SETUP_TYPE}${DBold} on ${EBold}${THIS_HOST}${DBold}..."
+
 else # no setup type
+
   info "Sourcing remote setup_ots.sh, and hiding output, on ${EBold}${THIS_HOST}${DBold}..."
   source ./setup_ots.sh > /dev/null </dev/null  || die "Couldn't setup ots on ${THIS_HOST}"
   info "Launching ots on ${EBold}${THIS_HOST}${DBold}..."
+
 fi
 
 info "ARTDAQ_DATABASE_URI=${ARTDAQ_DATABASE_URI}"

@@ -703,6 +703,7 @@ std::string StringMacros::vectorToString(const std::vector<std::pair<S, T>>& set
 	bool              first = true;
 	if(primaryDelimeter == "\n")
 		ss << "\n";  //add initial new line if new line delimiting
+
 	for(auto& setPair : setToReturn)
 	{
 		if(first)

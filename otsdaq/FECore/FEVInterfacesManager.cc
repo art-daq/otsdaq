@@ -116,9 +116,19 @@ void FEVInterfacesManager::createInterfaces(void)
 
 			// setup parent supervisor and interface manager
 			//	of FEVinterface (for backwards compatibility, left out of constructor)
-			theFEInterfaces_[interface.first]->VStateMachine::parentSupervisor_ =
-			    VStateMachine::parentSupervisor_;
-			theFEInterfaces_[interface.first]->parentInterfaceManager_ = this;
+			theFEInterfaces_[interface.first]->setParentPointers(
+			    VStateMachine::parentSupervisor_, this);
+
+			__CFG_COUTV__(interface.first);
+			__CFG_COUTV__(VStateMachine::parentSupervisor_);
+			__CFG_COUTV__(VStateMachine::parentSupervisor_->getContextUID());
+			__CFG_COUTV__(VStateMachine::parentSupervisor_->getSupervisorUID());
+			__CFG_COUTTV__(
+			    theFEInterfaces_[interface.first]->VStateMachine::parentSupervisor_);
+			__CFG_COUTTV__(theFEInterfaces_[interface.first]
+			                   ->VStateMachine::parentSupervisor_->getContextUID());
+			__CFG_COUTTV__(theFEInterfaces_[interface.first]
+			                   ->VStateMachine::parentSupervisor_->getSupervisorUID());
 		}
 		catch(const cet::exception& e)
 		{
@@ -2180,6 +2190,8 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
                                       const std::string& inputArgs,
                                       std::string&       outputArgs)
 {
+	__CFG_COUTV__(inputArgs);
+
 	// build input arguments
 	//	parse args, semicolon-separated pairs, and then comma-separated
 	std::vector<FEVInterface::frontEndMacroArg_t> argsIn;
@@ -2214,9 +2226,9 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 		{
 			__CFG_SS__ << "FE Macro '" << feMacro.feMacroName_ << "' of interfaceID '"
 			           << interfaceID << "' was attempted with a mismatch in"
-			           << " a name of an input argument. " << argsIn[i].first
-			           << " was given. " << feMacro.namesOfInputArguments_[i]
-			           << " expected." << __E__;
+			           << " a name of an input argument. '" << argsIn[i].first
+			           << "' was given. '" << feMacro.namesOfInputArguments_[i]
+			           << "' expected." << __E__;
 			__CFG_COUT_ERR__ << "\n" << ss.str();
 			__CFG_SS_THROW__;
 		}
