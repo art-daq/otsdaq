@@ -3901,9 +3901,9 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser,
 	std::lock_guard<std::mutex> lock(systemMessageLock_);
 
 	__COUTT__ << "Before number of users with system messages: " << systemMessages_.size()
-	         << ", first user has "
-	         << (systemMessages_.size() ? systemMessages_.begin()->second.size() : 0)
-	         << " messages." << __E__;
+	          << ", first user has "
+	          << (systemMessages_.size() ? systemMessages_.begin()->second.size() : 0)
+	          << " messages." << __E__;
 
 	auto it = systemMessages_.find(targetUser);
 
@@ -3928,9 +3928,9 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser,
 	}
 
 	__COUTT__ << "After number of users with system messages: " << systemMessages_.size()
-	         << ", first user has "
-	         << (systemMessages_.size() ? systemMessages_.begin()->second.size() : 0)
-	         << " messages." << __E__;
+	          << ", first user has "
+	          << (systemMessages_.size() ? systemMessages_.begin()->second.size() : 0)
+	          << " messages." << __E__;
 }  // end addSystemMessageToMap
 
 //==============================================================================

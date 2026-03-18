@@ -2167,9 +2167,11 @@ try
 						std::string currentState =
 						    theSupervisor->theStateMachine_.getCurrentStateName();
 						if(currentState != RunControlStateMachine::FAILED_STATE_NAME &&
-						   (currentState != RunControlStateMachine::HALTED_STATE_NAME || theSupervisor->theStateMachine_.isInTransition()) &&
+						   (currentState != RunControlStateMachine::HALTED_STATE_NAME ||
+						    theSupervisor->theStateMachine_.isInTransition()) &&
 						   currentState != RunControlStateMachine::SHUTDOWN_STATE_NAME &&
-						   (currentState != RunControlStateMachine::INITIAL_STATE_NAME || theSupervisor->theStateMachine_.isInTransition()))
+						   (currentState != RunControlStateMachine::INITIAL_STATE_NAME ||
+						    theSupervisor->theStateMachine_.isInTransition()))
 						{
 							__COUTV__(currentState);
 							__SS__
@@ -2763,7 +2765,8 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		if(parsedFields.size() < 3)
 		{
 			__SS__ << "URL field of Remote Gateway app '" << remoteGatewayApp.appInfo.name
-			       << "' is not in expected format (or has not been initialized yet): 'protocol:host:port' - here is the "
+			       << "' is not in expected format (or has not been initialized yet): "
+			          "'protocol:host:port' - here is the "
 			          "URL: '"
 			       << remoteGatewayApp.appInfo.url << "'" << __E__;
 			__SS_THROW__;
@@ -5263,7 +5266,8 @@ try
 
 			if(activeStateMachineRunInfoPluginType_ !=
 			       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-				 activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+			   activeStateMachineRunInfoPluginType_ !=
+			       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 			   activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
 			{
 				std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
@@ -5471,7 +5475,8 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				   runInfoPluginType !=
+				       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
@@ -5550,7 +5555,8 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				   runInfoPluginType !=
+				       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
@@ -5635,7 +5641,8 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__SUP_COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				   runInfoPluginType !=
+				       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
@@ -5724,7 +5731,8 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				   runInfoPluginType !=
+				       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
@@ -5815,7 +5823,8 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 				__COUTV__(runInfoPluginType);
 				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				   runInfoPluginType !=
+				       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 				   runInfoPluginType != "No Run Info Plugin")
 				{
 					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
@@ -6211,7 +6220,8 @@ try
 			if(activeStateMachineSystemDumpOnRunEnable_ ||
 			   ((activeStateMachineRunInfoPluginType_ !=
 			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+			     activeStateMachineRunInfoPluginType_ !=
+			         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
 			{
 				__COUT_INFO__
@@ -6248,7 +6258,8 @@ try
 			if(activeStateMachineSystemDumpOnConfigureEnable_ ||
 			   ((activeStateMachineRunInfoPluginType_ !=
 			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+			     activeStateMachineRunInfoPluginType_ !=
+			         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
 			{
 				__COUT_INFO__ << "Caching the System Configuration Dump for the "
@@ -6478,7 +6489,8 @@ try
 	{
 		if(activeStateMachineRunInfoPluginType_ !=
 		       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+		   activeStateMachineRunInfoPluginType_ !=
+		       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 		   activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
 		{
 			__COUT_INFO__ << "Instantiating Run Info plugin '"
@@ -7552,7 +7564,8 @@ try
 
 		if(activeStateMachineRunInfoPluginType_ !=
 		       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					activeStateMachineRunInfoPluginType_ != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+		   activeStateMachineRunInfoPluginType_ !=
+		       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 		   activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")
 		{
 			std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
@@ -8728,18 +8741,21 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							if(secondsLeft < 10)
 								__COUT_WARN__
 								    << waitSs.str() << "\n"
-								    << "Timeout threshold (for iteration #" << iteration << ") is " << timeoutSeconds / 60
-								    << " minutes... " << secondsLeft
-								    << " seconds remaining before timeout!" << __E__;
+								    << "Timeout threshold (for iteration #" << iteration
+								    << ") is " << timeoutSeconds / 60 << " minutes... "
+								    << secondsLeft << " seconds remaining before timeout!"
+								    << __E__;
 							else if(lastMinutesLeft != minutesLeft && minutesLeft < 6)
 								__COUT_WARN__
 								    << waitSs.str() << "\n"
-								    << "Timeout threshold (for iteration #" << iteration << ") is " << timeoutSeconds / 60
-								    << " minutes... " << minutesLeft
-								    << " minutes remaining before timeout!" << __E__;
+								    << "Timeout threshold (for iteration #" << iteration
+								    << ") is " << timeoutSeconds / 60 << " minutes... "
+								    << minutesLeft << " minutes remaining before timeout!"
+								    << __E__;
 							else if((waitIt++) % 20 == 0)
 								__COUT__ << waitSs.str() << "\n"
-								         << "Timeout threshold (for iteration #" << iteration << ") is " << timeoutSeconds / 60
+								         << "Timeout threshold (for iteration #"
+								         << iteration << ") is " << timeoutSeconds / 60
 								         << " minutes (" << secondsLeft
 								         << " seconds remaining before timeout)."
 								         << __E__;
@@ -8748,9 +8764,10 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							lastMinutesLeft = minutesLeft;
 
 							waitSs << "\n"
-							       << "Timeout threshold (for iteration #" << iteration << ") is " << timeoutSeconds / 60
-							       << " minutes (" << secondsLeft
-							       << " seconds remaining before timeout)." << __E__;
+							       << "Timeout threshold (for iteration #" << iteration
+							       << ") is " << timeoutSeconds / 60 << " minutes ("
+							       << secondsLeft << " seconds remaining before timeout)."
+							       << __E__;
 
 							{  // create lock scope that does not include sleep
 								std::lock_guard<std::mutex> lock(
@@ -8956,7 +8973,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			continue;  //skip if not included
 		}
 
-		std::string localCommand = command; //copy local command in case of modifications specific to remoteGatewayApp
+		std::string localCommand =
+		    command;  //copy local command in case of modifications specific to remoteGatewayApp
 
 		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
 		   //do not allow halt/err transitions:
@@ -8970,14 +8988,15 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 				localCommand = RunControlStateMachine::STOP_TRANSITION_NAME;
 
 				__COUT_INFO__ << "Modifying '" << remoteGatewayApp.getFsmMode()
-						<< "' Remote gateway '" << remoteGatewayApp.appInfo.name
-						<< "' for FSM command = " << command << " --> " << localCommand << __E__;
+				              << "' Remote gateway '" << remoteGatewayApp.appInfo.name
+				              << "' for FSM command = " << command << " --> "
+				              << localCommand << __E__;
 			}
-			else 
+			else
 			{
 				__COUT_INFO__ << "Skipping '" << remoteGatewayApp.getFsmMode()
-						<< "' Remote gateway '" << remoteGatewayApp.appInfo.name
-						<< "' for FSM command = " << command << __E__;
+				              << "' Remote gateway '" << remoteGatewayApp.appInfo.name
+				              << "' for FSM command = " << command << __E__;
 				continue;  //skip if not included
 			}
 		}
@@ -8997,9 +9016,9 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		     command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)))
 		{
 			__COUT_INFO__ << "Skipping '" << remoteGatewayApp.getFsmMode()
-						<< "' Remote gateway '" << remoteGatewayApp.appInfo.name
-						<< "' w/status = " << remoteGatewayApp.appInfo.status
-						<< "... for FSM command = " << command << __E__;
+			              << "' Remote gateway '" << remoteGatewayApp.appInfo.name
+			              << "' w/status = " << remoteGatewayApp.appInfo.status
+			              << "... for FSM command = " << command << __E__;
 			continue;  //skip if not included
 		}
 
@@ -9053,8 +9072,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		if(remoteGatewayApp.command != "")
 		{
 			__SUP_SS__ << "Can not target the remote subsystem '"
-			           << remoteGatewayApp.appInfo.name << "' with command '" << localCommand
-			           << "' which already has a pending command '"
+			           << remoteGatewayApp.appInfo.name << "' with command '"
+			           << localCommand << "' which already has a pending command '"
 			           << remoteGatewayApp.command
 			           << ".' Please try again after the pending command is sent."
 			           << __E__;
@@ -11748,7 +11767,8 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
 					        .getValue<std::string>();
 					if(runInfoPluginType !=
 					       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-					runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+					   runInfoPluginType !=
+					       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 					   runInfoPluginType != "No Run Info Plugin")
 						useRunInfoDb = true;
 

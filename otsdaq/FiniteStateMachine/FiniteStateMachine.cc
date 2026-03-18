@@ -12,11 +12,11 @@ using namespace ots;
 #define __MF_SUBJECT__ "FSM"
 #define mfSubject_ std::string("FSM-") + getStateMachineName()
 
-const char        FiniteStateMachine::FAILED_STATE          		= 'F';
-const std::string FiniteStateMachine::FAILED_STATE_NAME     		= "Failed";
-const std::string FiniteStateMachine::ERROR_TRANSITION_NAME 		= "Error";
-const std::string FiniteStateMachine::INITIAL_STATE_NAME 			= "Initial";
-const std::string FiniteStateMachine::CONFIGURE_TRANSITION_NAME  	= "Configure";
+const char        FiniteStateMachine::FAILED_STATE              = 'F';
+const std::string FiniteStateMachine::FAILED_STATE_NAME         = "Failed";
+const std::string FiniteStateMachine::ERROR_TRANSITION_NAME     = "Error";
+const std::string FiniteStateMachine::INITIAL_STATE_NAME        = "Initial";
+const std::string FiniteStateMachine::CONFIGURE_TRANSITION_NAME = "Configure";
 
 //==============================================================================
 FiniteStateMachine::FiniteStateMachine(const std::string& stateMachineName)
@@ -136,15 +136,16 @@ std::string FiniteStateMachine::getCurrentTransitionName(const std::string& tran
 			             << FiniteStateMachine::FAILED_STATE_NAME << __E__;
 			return transition;
 		}
-		std::stringstream ss; ss  << "Cannot find transition name from '" << getCurrentStateName()
-		           << "' for command: " << transition << "...";
-		
+		std::stringstream ss;
+		ss << "Cannot find transition name from '" << getCurrentStateName()
+		   << "' for command: " << transition << "...";
+
 		//reduce severity because transitions like 'Configure' are now allowed to jump multiple states, e.g. from Initial
-		if(transition == FiniteStateMachine::CONFIGURE_TRANSITION_NAME && 
-				getCurrentStateName() == FiniteStateMachine::INITIAL_STATE_NAME)
+		if(transition == FiniteStateMachine::CONFIGURE_TRANSITION_NAME &&
+		   getCurrentStateName() == FiniteStateMachine::INITIAL_STATE_NAME)
 			__GEN_COUTT__ << ss.str();
 		else
-			__GEN_COUT_WARN__ << ss.str();  
+			__GEN_COUT_WARN__ << ss.str();
 		return transition;
 	}
 }  // end getCurrentTransitionName()

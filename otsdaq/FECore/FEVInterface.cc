@@ -14,7 +14,8 @@
 using namespace ots;
 
 const std::string FEVInterface::UNKNOWN_TYPE = "UNKNOWN";
- const std::string FEVInterface::DEFAULT = TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT;
+const std::string FEVInterface::DEFAULT =
+    TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT;
 
 //==============================================================================
 FEVInterface::FEVInterface(const std::string&       interfaceUID,
@@ -1445,7 +1446,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 		    localIsVariable = [/*capture variable*/](const std::string& fieldValue) {
 			    // create local message facility subject
 			    std::string mfSubject_ = "isVar";
-			    __GEN_COUTVS__(20,fieldValue);
+			    __GEN_COUTVS__(20, fieldValue);
 
 			    // return false if all hex characters found
 			    for(const auto& c : fieldValue)
@@ -1620,8 +1621,8 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 	}  // end sequence commands extraction loop
 
 	__COUTT__ << operations_.size() << " operations extracted: \n\t" << readOps_.size()
-	         << " reads \n\t" << writeOps_.size() << " writes \n\t" << delayOps_.size()
-	         << " delays" << __E__;
+	          << " reads \n\t" << writeOps_.size() << " writes \n\t" << delayOps_.size()
+	          << " delays" << __E__;
 
 	__COUTT__ << "Input arguments: " << __E__;
 	for(const auto& inputArg : namesOfInputArguments_)

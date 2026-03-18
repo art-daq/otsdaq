@@ -111,7 +111,8 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 		icon->imageURL_ = child.second.getNode(COL_IMAGE_URL).getValue<std::string>();
 		icon->windowContentURL_ =
 		    child.second.getNode(COL_WINDOW_CONTENT_URL).getValue<std::string>();
-		icon->folderPath_ = child.second.getNode(COL_FOLDER_PATH).getValueWithDefault<std::string>("");
+		icon->folderPath_ =
+		    child.second.getNode(COL_FOLDER_PATH).getValueWithDefault<std::string>("");
 
 		if(icon->windowContentURL_.size() == 0)
 		{

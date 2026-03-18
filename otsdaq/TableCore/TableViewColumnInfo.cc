@@ -373,13 +373,15 @@ void TableViewColumnInfo::extractBitMapInfo()
 
 		if(bitMapInfoP_->mapToStrings_ != "" &&
 		   bitMapInfoP_->mapToStrings_ != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-		bitMapInfoP_->mapToStrings_ != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+		   bitMapInfoP_->mapToStrings_ !=
+		       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 		{
 			if(bitMapInfoP_->floatingPoint_)
 			{
 				__SS__ << "Illegal Bit-Map data parameters for column " << name_
 				       << " - if floating point is allowed, then Value Map to Strings "
-				          "must be empty or set to '" << TableViewColumnInfo::DATATYPE_STRING_DEFAULT << ".' "
+				          "must be empty or set to '"
+				       << TableViewColumnInfo::DATATYPE_STRING_DEFAULT << ".' "
 				       << "Please disable floating point or clear the Value Map to "
 				          "Strings value."
 				       << std::endl;

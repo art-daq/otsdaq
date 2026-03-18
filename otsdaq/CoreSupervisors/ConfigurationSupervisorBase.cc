@@ -1289,7 +1289,7 @@ try
 
 		if(windowLinkedApp != "" && windowLinkedApp != "undefined" &&
 		   windowLinkedApp != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-			windowLinkedApp != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+		   windowLinkedApp != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 		{
 			// first check that UID exists
 			//	if not, interpret as app class type and

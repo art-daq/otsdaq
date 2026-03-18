@@ -24,14 +24,14 @@ FEVInterfacesManager::FEVInterfacesManager(
 {
 	init();
 	__CFG_COUT__ << "Constructed." << __E__;
-} //end constructor
+}  //end constructor
 
 //==============================================================================
 FEVInterfacesManager::~FEVInterfacesManager(void)
 {
 	destroy();
 	__CFG_COUT__ << "Destructed." << __E__;
-} //end destructor
+}  //end destructor
 
 //==============================================================================
 void FEVInterfacesManager::init(void) {}
@@ -44,7 +44,7 @@ void FEVInterfacesManager::destroy(void)
 
 	theFEInterfaces_.clear();
 	theFENamesByPriority_.clear();
-} //end destroy()
+}  //end destroy()
 
 //==============================================================================
 void FEVInterfacesManager::createInterfaces(void)
@@ -1415,8 +1415,9 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 						    // check piece 1 and 2 for double hint
 						    //	a la Iterator::startCommandModifyActive()
 						    if(argPieces[2] ==
-						       TableViewColumnInfo::DATATYPE_STRING_DEFAULT || 
-								argPieces[2] == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+						           TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+						       argPieces[2] ==
+						           TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 						    {
 							    // if step size is default, considering value an unchanging string
 
