@@ -24,14 +24,14 @@ FEVInterfacesManager::FEVInterfacesManager(
 {
 	init();
 	__CFG_COUT__ << "Constructed." << __E__;
-}
+} //end constructor
 
 //==============================================================================
 FEVInterfacesManager::~FEVInterfacesManager(void)
 {
 	destroy();
 	__CFG_COUT__ << "Destructed." << __E__;
-}
+} //end destructor
 
 //==============================================================================
 void FEVInterfacesManager::init(void) {}
@@ -44,7 +44,7 @@ void FEVInterfacesManager::destroy(void)
 
 	theFEInterfaces_.clear();
 	theFENamesByPriority_.clear();
-}
+} //end destroy()
 
 //==============================================================================
 void FEVInterfacesManager::createInterfaces(void)
@@ -240,8 +240,6 @@ void FEVInterfacesManager::configure(void)
 			continue;  // skip state machines already done
 
 		__CFG_COUT__ << transitionName << " interface " << name << __E__;
-		__CFG_COUT__ << transitionName << " interface " << name << __E__;
-		__CFG_COUT__ << transitionName << " interface " << name << __E__;
 
 		preStateMachineExecution(i, transitionName);
 		fe->configure();
@@ -256,8 +254,6 @@ void FEVInterfacesManager::configure(void)
 			fe->configureSlowControls();
 			fe->startSlowControlsWorkLoop();
 
-			__CFG_COUT__ << "Done " << transitionName << " interface " << name << __E__;
-			__CFG_COUT__ << "Done " << transitionName << " interface " << name << __E__;
 			__CFG_COUT__ << "Done " << transitionName << " interface " << name << __E__;
 		}
 	}

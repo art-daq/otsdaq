@@ -1444,7 +1444,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 		    localIsVariable = [/*capture variable*/](const std::string& fieldValue) {
 			    // create local message facility subject
 			    std::string mfSubject_ = "isVar";
-			    __GEN_COUTV__(fieldValue);
+			    __GEN_COUTVS__(20,fieldValue);
 
 			    // return false if all hex characters found
 			    for(const auto& c : fieldValue)
@@ -1618,17 +1618,17 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 
 	}  // end sequence commands extraction loop
 
-	__COUT__ << operations_.size() << " operations extracted: \n\t" << readOps_.size()
+	__COUTT__ << operations_.size() << " operations extracted: \n\t" << readOps_.size()
 	         << " reads \n\t" << writeOps_.size() << " writes \n\t" << delayOps_.size()
 	         << " delays" << __E__;
 
-	__COUT__ << "Input arguments: " << __E__;
+	__COUTT__ << "Input arguments: " << __E__;
 	for(const auto& inputArg : namesOfInputArguments_)
-		__COUT__ << "\t" << inputArg << __E__;
+		__COUTT__ << "\t" << inputArg << __E__;
 
-	__COUT__ << "Output arguments: " << __E__;
+	__COUTT__ << "Output arguments: " << __E__;
 	for(const auto& outputArg : namesOfOutputArguments_)
-		__COUT__ << "\t" << outputArg << __E__;
+		__COUTT__ << "\t" << outputArg << __E__;
 
 }  // end macroStruct_t constructor
 

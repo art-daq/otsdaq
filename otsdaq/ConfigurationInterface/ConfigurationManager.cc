@@ -4540,11 +4540,11 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 
 			if(groupName != "")  // then set groupID for this record
 			{
-				__GEN_COUT__ << "Setting group ID for group link index '"
+				__GEN_COUTT__ << "Setting group ID for group link index '"
 				             << groupLinkIndex << "'" << __E__;
 
 				int groupIDCol = view->getLinkGroupIDColumn(groupLinkIndex);
-				__GEN_COUT__ << "Setting group ID for group link index '"
+				__GEN_COUTT__ << "Setting group ID for group link index '"
 				             << groupLinkIndex << "' at column " << groupIDCol << " to '"
 				             << groupName << ".'" << __E__;
 
@@ -4575,7 +4575,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 					continue;
 
 				const std::string value = pset.get<std::string>(colName);
-				__GEN_COUT__ << "Setting '" << recordName << "' parameter at column "
+				__GEN_COUTT__ << "Setting '" << recordName << "' parameter at column "
 				             << colIt->second << ", '" << colName << "'\t = " << value
 				             << __E__;
 				view->setValueAsString(value, r, colIt->second);
@@ -4719,7 +4719,12 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 		}
 		__GEN_COUT__ << __COUT_HDR_P__ << "Done adding table '" << tableName
 		             << "' record(s)..." << __E__;
-		view->print();
+		if(TTEST(1))
+		{
+			std::stringstream ss;
+			view->print(ss);
+			__GEN_COUTT__ << "view->print()" << ss.str() << __E__;
+		}
 	}
 
 }  // end recursiveInitFromFhiclPSet()
