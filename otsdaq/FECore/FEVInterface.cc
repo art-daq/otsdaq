@@ -88,12 +88,12 @@ FEVInterface::~FEVInterface(void)
 void FEVInterface::PauseResumeSlowControls(__ARGS__)
 {
 	slowControlsWorkLoopShouldRun_ =
-	    __GET_ARG_IN__("Pause Slow Controls (Default = false)", bool, false);
+	    !__GET_ARG_IN__("Pause Slow Controls (Default = false)", bool, false);
 	__FE_COUTV__(slowControlsWorkLoopShouldRun_);
 
 	std::stringstream outss;
 	outss << "Slow Controls workloop is "
-	      << (slowControlsWorkLoopShouldRun_ ? "paused." : "active.");
+	      << (slowControlsWorkLoopShouldRun_ ? "active." : "paused.");
 
 	__SET_ARG_OUT__("Result", outss.str());
 }  // end PauseResumeSlowControls()
@@ -418,7 +418,14 @@ try
 		sleep(1);  // seconds
 		++timeCounter;
 		if(!slowControlsWorkLoopShouldRun_)
+		{
+			__COUTT__
+			    << "Skipping slow controls loop... slowControlsWorkLoopShouldRun_ = "
+			    << slowControlsWorkLoopShouldRun_ << __E__;
 			continue;
+		}
+		__COUTT__ << "Starting slow controls loop... slowControlsWorkLoopShouldRun_ = "
+		          << slowControlsWorkLoopShouldRun_ << __E__;
 
 		if(txBuffer.size())
 			__FE_COUT__ << "txBuffer sz=" << txBuffer.size() << __E__;
