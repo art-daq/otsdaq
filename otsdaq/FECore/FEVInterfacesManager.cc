@@ -1415,7 +1415,8 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 						    // check piece 1 and 2 for double hint
 						    //	a la Iterator::startCommandModifyActive()
 						    if(argPieces[2] ==
-						       TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
+						       TableViewColumnInfo::DATATYPE_STRING_DEFAULT || 
+								argPieces[2] == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 						    {
 							    // if step size is default, considering value an unchanging string
 

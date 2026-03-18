@@ -14,6 +14,7 @@
 using namespace ots;
 
 const std::string FEVInterface::UNKNOWN_TYPE = "UNKNOWN";
+ const std::string FEVInterface::DEFAULT = TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT;
 
 //==============================================================================
 FEVInterface::FEVInterface(const std::string&       interfaceUID,

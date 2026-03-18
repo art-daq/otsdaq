@@ -5038,6 +5038,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 			if(subsystemPair.second != "" &&
 			   subsystemPair.second != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+			   subsystemPair.second != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 			   subsystemPair.second != NULL_SUBSYSTEM_DESTINATION_LABEL)
 			{
 				// set subsystem link
@@ -6311,7 +6312,9 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						// set subsystemName
 						if(nodePair.second[i] != "" &&
 						   nodePair.second[i] !=
-						       TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
+						       TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+						   nodePair.second[i] !=
+						       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 						{
 							// real subsystem?
 							if(subsystemObjectMap.find(nodePair.second[i]) ==

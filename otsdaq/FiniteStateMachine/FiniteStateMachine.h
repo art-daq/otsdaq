@@ -64,7 +64,7 @@ class FiniteStateMachine : public toolbox::fsm::FiniteStateMachine
 	void 							setInitialState				(toolbox::fsm::State state);
 	void 							setErrorMessage				(const std::string& errMessage, bool append = true);
 
-	static const std::string 				FAILED_STATE_NAME, ERROR_TRANSITION_NAME;
+	static const std::string 				FAILED_STATE_NAME, ERROR_TRANSITION_NAME, INITIAL_STATE_NAME, CONFIGURE_TRANSITION_NAME;
 	static const char 						FAILED_STATE;
   protected:
 	time_t stateEntranceTime_;

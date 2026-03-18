@@ -163,6 +163,8 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	/// start FE Macros
   public:
 	/// public types and functions for map of FE macros
+	static const std::string DEFAULT; //for default arg values in FE macro definitions
+
 	using frontEndMacroArg_t 		= std::pair<const std::string /* arg name */, std::string /* arg return value */>;
 	using frontEndMacroArgs_t      	= std::vector<frontEndMacroArg_t>&;
 	using frontEndMacroConstArgs_t 	= const std::vector<frontEndMacroArg_t>&;

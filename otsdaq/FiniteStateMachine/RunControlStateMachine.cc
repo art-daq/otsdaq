@@ -22,7 +22,7 @@ using namespace ots;
 // clang-format off
 
 const std::string RunControlStateMachine::FAILED_STATE_NAME  			= FiniteStateMachine::FAILED_STATE_NAME;
-const std::string RunControlStateMachine::INITIAL_STATE_NAME 			= "Initial";
+const std::string RunControlStateMachine::INITIAL_STATE_NAME 			= FiniteStateMachine::INITIAL_STATE_NAME ;
 const std::string RunControlStateMachine::HALTED_STATE_NAME  			= "Halted";
 const std::string RunControlStateMachine::PAUSED_STATE_NAME  			= "Paused";
 const std::string RunControlStateMachine::RUNNING_STATE_NAME 			= "Running";
@@ -34,7 +34,7 @@ const std::string RunControlStateMachine::STARTUP_TRANSITION_NAME  		= "Startup"
 const std::string RunControlStateMachine::INIT_TRANSITION_NAME  		= "Initialize";
 const std::string RunControlStateMachine::ERROR_TRANSITION_NAME  		= FiniteStateMachine::ERROR_TRANSITION_NAME;
 const std::string RunControlStateMachine::FAIL_TRANSITION_NAME  		= "Fail";
-const std::string RunControlStateMachine::CONFIGURE_TRANSITION_NAME  	= "Configure";
+const std::string RunControlStateMachine::CONFIGURE_TRANSITION_NAME  	= FiniteStateMachine::CONFIGURE_TRANSITION_NAME;
 const std::string RunControlStateMachine::HALT_TRANSITION_NAME  		= "Halt";
 const std::string RunControlStateMachine::ABORT_TRANSITION_NAME  		= "Abort";
 const std::string RunControlStateMachine::PAUSE_TRANSITION_NAME  		= "Pause";
