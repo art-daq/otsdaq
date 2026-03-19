@@ -4478,7 +4478,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
                                                       const std::string& groupName,
                                                       const std::string& groupLinkIndex)
 {
-	__GEN_COUT__ << __COUT_HDR_P__ << "Adding table '" << tableName << "' record(s)..."
+	__GEN_COUTT__ << "recursiveInitFromFhiclPSet() " << "Adding table '" << tableName << "' record(s)..."
 	             << __E__;
 
 	TableBase* table;
@@ -4487,7 +4487,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 		table = 0;
 		if(nameToTableMap_.find(tableName) == nameToTableMap_.end())
 		{
-			__GEN_COUT__ << "Table not found, so making '" << tableName << "' instance..."
+			__GEN_COUTT__ << "Table not found, so making '" << tableName << "' instance..."
 			             << __E__;
 			theInterface_->get(table,      // configurationPtr
 			                   tableName,  // tableName
@@ -4501,7 +4501,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 		}
 		else
 		{
-			__GEN_COUT__ << "Existing table found, so using '" << tableName
+			__GEN_COUTT__ << "Existing table found, so using '" << tableName
 			             << "'instance..." << __E__;
 			table = nameToTableMap_[tableName];
 		}
@@ -4509,7 +4509,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 		table->setActiveView(TableVersion(TableVersion::DEFAULT));
 
 		TableView* view = table->getViewP();
-		__GEN_COUT__ << "Activated version: " << view->getVersion() << __E__;
+		__GEN_COUTT__ << "Activated version: " << view->getVersion() << __E__;
 		// view->print();
 
 		if(recordName != "")  // then add this record
@@ -4520,7 +4520,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 			//	- set values for parameter columns
 			//	- define links
 
-			__GEN_COUTV__(recordName);
+			__GEN_COUTTV__(recordName);
 
 			// add row and get column map
 			unsigned int r      = view->addRow();
@@ -4534,7 +4534,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 			}
 			catch(...)
 			{
-				__GEN_COUT__ << "No status column to set for '" << recordName << "'"
+				__GEN_COUTT__ << "No status column to set for '" << recordName << "'"
 				             << __E__;
 			}
 
@@ -4587,7 +4587,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 				if(pset.is_key_to_atom(linkName))
 					continue;
 
-				__GEN_COUTV__(linkName);
+				__GEN_COUTTV__(linkName);
 
 				// split into column name and table
 				unsigned int c = linkName.size() - 1;
@@ -4605,7 +4605,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 					__SS_THROW__;
 				}
 				std::string colName = linkName.substr(0, c);
-				__GEN_COUTV__(colName);
+				__GEN_COUTTV__(colName);
 
 				auto colIt = colMap.find(colName);
 				if(colIt == colMap.end())
@@ -4630,7 +4630,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 				//__GEN_COUTV__(linkPair.second);
 
 				std::string linkTableName = linkName.substr(c + 1);
-				__GEN_COUTV__(linkTableName);
+				__GEN_COUTTV__(linkTableName);
 
 				auto linkPset    = pset.get<fhicl::ParameterSet>(linkName);
 				auto linkRecords = linkPset.get_pset_names();
@@ -4646,18 +4646,18 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 
 				if(linkRecords.size() == 0)
 				{
-					__GEN_COUT__ << "No child records, so leaving link disconnected."
+					__GEN_COUTT__ << "No child records, so leaving link disconnected."
 					             << __E__;
 					continue;
 				}
 
-				__GEN_COUT__ << "Setting Link at columns [" << linkPair.first << ","
+				__GEN_COUTT__ << "Setting Link at columns [" << linkPair.first << ","
 				             << linkPair.second << "]" << __E__;
 				view->setValue(linkTableName, r, linkPair.first);
 
 				if(!isGroupLink)
 				{
-					__GEN_COUT__ << "Setting up Unique link to " << linkRecords[0]
+					__GEN_COUTT__ << "Setting up Unique link to " << linkRecords[0]
 					             << __E__;
 
 					view->setValue(linkRecords[0], r, linkPair.second);
@@ -4679,7 +4679,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 
 					for(const auto& groupRecord : linkRecords)
 					{
-						__GEN_COUT__ << "Setting '" << childLinkIndex
+						__GEN_COUTT__ << "Setting '" << childLinkIndex
 						             << "' Group link to '" << groupName << "' record '"
 						             << groupRecord << "'" << __E__;
 
@@ -4699,11 +4699,11 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 		{
 			// get_pset_names();
 			// get_names
-			__GEN_COUTV__(groupName);
+			__GEN_COUTTV__(groupName);
 			auto psets = pset.get_pset_names();
 			for(const auto& ps : psets)
 			{
-				__GEN_COUTV__(ps);
+				__GEN_COUTTV__(ps);
 				recursiveInitFromFhiclPSet(
 				    tableName /*tableName*/,
 				    pset.get<fhicl::ParameterSet>(ps) /*fhicl parameter set*/,
@@ -4717,7 +4717,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 			__SS__ << "Illegal recursive parameters!" << __E__;
 			__SS_THROW__;
 		}
-		__GEN_COUT__ << __COUT_HDR_P__ << "Done adding table '" << tableName
+		__GEN_COUT__ << "recursiveInitFromFhiclPSet() " << "Done adding table '" << tableName
 		             << "' record(s)..." << __E__;
 		if(TTEST(1))
 		{
