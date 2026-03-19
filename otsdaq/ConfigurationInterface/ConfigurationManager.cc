@@ -4478,8 +4478,8 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
                                                       const std::string& groupName,
                                                       const std::string& groupLinkIndex)
 {
-	__GEN_COUTT__ << "recursiveInitFromFhiclPSet() " << "Adding table '" << tableName << "' record(s)..."
-	             << __E__;
+	__GEN_COUTT__ << "recursiveInitFromFhiclPSet() "
+	              << "Adding table '" << tableName << "' record(s)..." << __E__;
 
 	TableBase* table;
 	// create context and add context record
@@ -4487,8 +4487,8 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 		table = 0;
 		if(nameToTableMap_.find(tableName) == nameToTableMap_.end())
 		{
-			__GEN_COUTT__ << "Table not found, so making '" << tableName << "' instance..."
-			             << __E__;
+			__GEN_COUTT__ << "Table not found, so making '" << tableName
+			              << "' instance..." << __E__;
 			theInterface_->get(table,      // configurationPtr
 			                   tableName,  // tableName
 			                   0,          // groupKey
@@ -4502,7 +4502,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 		else
 		{
 			__GEN_COUTT__ << "Existing table found, so using '" << tableName
-			             << "'instance..." << __E__;
+			              << "'instance..." << __E__;
 			table = nameToTableMap_[tableName];
 		}
 
@@ -4535,7 +4535,7 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 			catch(...)
 			{
 				__GEN_COUTT__ << "No status column to set for '" << recordName << "'"
-				             << __E__;
+				              << __E__;
 			}
 
 			if(groupName != "")  // then set groupID for this record
@@ -4647,18 +4647,18 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 				if(linkRecords.size() == 0)
 				{
 					__GEN_COUTT__ << "No child records, so leaving link disconnected."
-					             << __E__;
+					              << __E__;
 					continue;
 				}
 
 				__GEN_COUTT__ << "Setting Link at columns [" << linkPair.first << ","
-				             << linkPair.second << "]" << __E__;
+				              << linkPair.second << "]" << __E__;
 				view->setValue(linkTableName, r, linkPair.first);
 
 				if(!isGroupLink)
 				{
 					__GEN_COUTT__ << "Setting up Unique link to " << linkRecords[0]
-					             << __E__;
+					              << __E__;
 
 					view->setValue(linkRecords[0], r, linkPair.second);
 
@@ -4680,8 +4680,8 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 					for(const auto& groupRecord : linkRecords)
 					{
 						__GEN_COUTT__ << "Setting '" << childLinkIndex
-						             << "' Group link to '" << groupName << "' record '"
-						             << groupRecord << "'" << __E__;
+						              << "' Group link to '" << groupName << "' record '"
+						              << groupRecord << "'" << __E__;
 
 						recursiveInitFromFhiclPSet(
 						    linkTableName /*tableName*/,
@@ -4717,8 +4717,8 @@ void ConfigurationManager::recursiveInitFromFhiclPSet(const std::string& tableNa
 			__SS__ << "Illegal recursive parameters!" << __E__;
 			__SS_THROW__;
 		}
-		__GEN_COUT__ << "recursiveInitFromFhiclPSet() " << "Done adding table '" << tableName
-		             << "' record(s)..." << __E__;
+		__GEN_COUT__ << "recursiveInitFromFhiclPSet() "
+		             << "Done adding table '" << tableName << "' record(s)..." << __E__;
 		if(TTEST(1))
 		{
 			std::stringstream ss;
