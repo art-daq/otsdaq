@@ -1265,10 +1265,8 @@ void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 		}
 		std::string metricNamePreamble =
 		    feSupervisorNode.getNode("/SlowControlsMetricManagerChannelNamePreamble")
-		        .getValue<std::string>();
+		        .getValueWithDefault<std::string>("");
 		__SUP_COUTV__(metricNamePreamble);
-		if(metricNamePreamble == TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
-			metricNamePreamble = "";
 
 		// std::string         metric_string = "epics: {metricPluginType:epics level:3 channel_name_prefix:Mu2e}";
 		fhicl::ParameterSet metric_pset = fhicl::ParameterSet::make(metric_string);

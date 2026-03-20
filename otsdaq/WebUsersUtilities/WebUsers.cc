@@ -3747,7 +3747,7 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers,
 			__COUT__ << "Illegal username '" << targetUser << "'" << __E__;
 			continue;
 		}
-		__COUTV__(targetUser);
+		__COUTTV__(targetUser);
 		// target user might * or <group name>:<permission threshold> or just <username>
 
 		// do special ALL email handling
@@ -3900,10 +3900,10 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser,
 	// lock for remainder of scope
 	std::lock_guard<std::mutex> lock(systemMessageLock_);
 
-	__COUT__ << "Before number of users with system messages: " << systemMessages_.size()
-	         << ", first user has "
-	         << (systemMessages_.size() ? systemMessages_.begin()->second.size() : 0)
-	         << " messages." << __E__;
+	__COUTT__ << "Before number of users with system messages: " << systemMessages_.size()
+	          << ", first user has "
+	          << (systemMessages_.size() ? systemMessages_.begin()->second.size() : 0)
+	          << " messages." << __E__;
 
 	auto it = systemMessages_.find(targetUser);
 
@@ -3927,10 +3927,10 @@ void WebUsers::addSystemMessageToMap(const std::string& targetUser,
 		          << __E__;
 	}
 
-	__COUT__ << "After number of users with system messages: " << systemMessages_.size()
-	         << ", first user has "
-	         << (systemMessages_.size() ? systemMessages_.begin()->second.size() : 0)
-	         << " messages." << __E__;
+	__COUTT__ << "After number of users with system messages: " << systemMessages_.size()
+	          << ", first user has "
+	          << (systemMessages_.size() ? systemMessages_.begin()->second.size() : 0)
+	          << " messages." << __E__;
 }  // end addSystemMessageToMap
 
 //==============================================================================

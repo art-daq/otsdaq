@@ -134,7 +134,8 @@ void ConfigurationTree::getValueAsBitMap(ConfigurationTree::BitMap<T>& bitmap) c
 		auto bmp = tableView_->getColumnInfo(col_).getBitMapInfo();
 
 		__COUTV__(bitmapString);
-		if(bitmapString == TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
+		if(bitmapString == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+		   bitmapString == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 		{
 			bitmap.isDefault_ = true;
 			//create empty bitmap so size is known

@@ -318,7 +318,8 @@ void ConfigurationTree::getValueAsBitMap(
 		auto bmp = tableView_->getColumnInfo(col_).getBitMapInfo();
 
 		__COUTVS__(2, bitmapString);
-		if(bitmapString == TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
+		if(bitmapString == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+		   bitmapString == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 		{
 			bitmap.isDefault_ = true;
 			//create empty bitmap so size is known
@@ -986,7 +987,8 @@ bool ConfigurationTree::isDefaultValue(void) const
 			       getValueAsString() ==
 			           "";  // in case people delete default comment, allow blank also
 		else
-			return getValueAsString() == TableViewColumnInfo::DATATYPE_STRING_DEFAULT;
+			return getValueAsString() == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+			       getValueAsString() == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT;
 	}
 	else if(getValueDataType() == TableViewColumnInfo::DATATYPE_NUMBER)
 		return getValueAsString() == TableViewColumnInfo::DATATYPE_NUMBER_DEFAULT;

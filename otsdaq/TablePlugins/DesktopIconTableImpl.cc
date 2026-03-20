@@ -107,11 +107,12 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 		icon->enforceOneWindowInstance_ =
 		    child.second.getNode(COL_FORCE_ONLY_ONE_INSTANCE).getValue<bool>();
 		icon->permissionThresholdString_ =
-		    child.second.getNode(COL_PERMISSIONS).getValue<std::string>();
+		    child.second.getNode(COL_PERMISSIONS).getValueWithDefault<std::string>("1");
 		icon->imageURL_ = child.second.getNode(COL_IMAGE_URL).getValue<std::string>();
 		icon->windowContentURL_ =
 		    child.second.getNode(COL_WINDOW_CONTENT_URL).getValue<std::string>();
-		icon->folderPath_ = child.second.getNode(COL_FOLDER_PATH).getValue<std::string>();
+		icon->folderPath_ =
+		    child.second.getNode(COL_FOLDER_PATH).getValueWithDefault<std::string>("");
 
 		if(icon->windowContentURL_.size() == 0)
 		{
@@ -119,14 +120,6 @@ void DesktopIconTable::init(ConfigurationManager* configManager)
 			       << __E__;
 			__SS_THROW__;
 		}
-
-		if(icon->folderPath_ == TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
-			icon->folderPath_ = "";  // convert DEFAULT to empty string
-
-		if(icon->permissionThresholdString_ ==
-		   TableViewColumnInfo::DATATYPE_STRING_DEFAULT)
-			icon->permissionThresholdString_ =
-			    "1";  // convert DEFAULT to standard user allow
 
 		numeric = true;
 		for(i = 0; i < icon->permissionThresholdString_.size(); ++i)

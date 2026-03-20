@@ -1415,7 +1415,7 @@ unsigned int TableView::getColStatus(void) const
 
 	ss << StringMacros::stackTrace() << __E__;
 
-	__COUT_WARN__ << ss.str();
+	__COUTT__ << ss.str();
 	__SS_ONLY_THROW__;
 }  // end getColStatus()
 
@@ -1683,7 +1683,7 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 	unsigned int j     = 0;
 	bool         found = false;
 
-	__COUTT__ << "groupNeedle " << groupNeedle << __E__;
+	__COUTS__(2) << "groupNeedle " << groupNeedle << __E__;
 
 	// go through the full groupString extracting groups and comparing to groupNeedle
 	for(; j < theDataView_[r][c].size(); ++j)
@@ -1699,14 +1699,14 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 			if(groupIDList)
 				groupIDList->emplace(theDataView_[r][c].substr(i, j - i));
 
-			__COUTT__ << "Group found to compare: " << theDataView_[r][c].substr(i, j - i)
-			          << __E__;
+			__COUTS__(2) << "Group found to compare: "
+			             << theDataView_[r][c].substr(i, j - i) << __E__;
 			if(groupIDList ? groupNeedle == theDataView_[r][c].substr(i, j - i)
 			               : StringMacros::wildCardMatch(
 			                     theDataView_[r][c].substr(i, j - i), groupNeedle))
 			{
-				__COUTT__ << "'" << theDataView_[r][c].substr(i, j - i)
-				          << "' is in group '" << groupNeedle << "'!" << __E__;
+				__COUTS__(2) << "'" << theDataView_[r][c].substr(i, j - i)
+				             << "' is in group '" << groupNeedle << "'!" << __E__;
 				if(!groupIDList)  // dont return if caller is trying to get group list
 					return true;
 				found = true;
@@ -1720,14 +1720,14 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 		if(groupIDList)
 			groupIDList->emplace(theDataView_[r][c].substr(i, j - i));
 
-		__COUTT__ << "Group found to compare: " << theDataView_[r][c].substr(i, j - i)
-		          << __E__;
+		__COUTS__(2) << "Group found to compare: " << theDataView_[r][c].substr(i, j - i)
+		             << __E__;
 		if(groupIDList ? groupNeedle == theDataView_[r][c].substr(i, j - i)
 		               : StringMacros::wildCardMatch(theDataView_[r][c].substr(i, j - i),
 		                                             groupNeedle))
 		{
-			__COUTT__ << "'" << theDataView_[r][c].substr(i, j - i) << "' is in group '"
-			          << groupNeedle << "'!" << __E__;
+			__COUTS__(2) << "'" << theDataView_[r][c].substr(i, j - i)
+			             << "' is in group '" << groupNeedle << "'!" << __E__;
 			return true;
 		}
 	}
