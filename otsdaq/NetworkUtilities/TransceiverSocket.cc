@@ -28,7 +28,7 @@ TransceiverSocket::~TransceiverSocket(void) {}
 int TransceiverSocket::acknowledge(const std::string& buffer,
                                    bool               verbose /* = false */,
                                    size_t             maxChunkSize /* = 1500 */,
-    		unsigned int       interPacketGapUSeconds /* = 0 */)
+                                   unsigned int       interPacketGapUSeconds /* = 0 */)
 {
 	// lockout other senders for the remainder of the scope
 	std::lock_guard<std::mutex> lock(sendMutex_);
