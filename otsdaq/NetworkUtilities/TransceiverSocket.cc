@@ -27,7 +27,8 @@ TransceiverSocket::~TransceiverSocket(void) {}
 /// returns 0 on success
 int TransceiverSocket::acknowledge(const std::string& buffer,
                                    bool               verbose /* = false */,
-                                   size_t             maxChunkSize /* = 1500 */)
+                                   size_t             maxChunkSize /* = 1500 */,
+    		unsigned int       interPacketGapUSeconds /* = 0 */)
 {
 	// lockout other senders for the remainder of the scope
 	std::lock_guard<std::mutex> lock(sendMutex_);
@@ -59,6 +60,7 @@ int TransceiverSocket::acknowledge(const std::string& buffer,
 		                    (struct sockaddr*)&(ReceiverSocket::fromAddress_),
 		                    sizeof(sockaddr_in));
 		offset += sendToSize / sizeInBytes;
+		usleep(interPacketGapUSeconds);
 	}
 
 	if(sendToSize <= 0)
