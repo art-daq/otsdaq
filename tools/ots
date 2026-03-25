@@ -916,6 +916,12 @@ launchOTSMacromaker() {
 	out "${Blue}${REV}                                                       ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 	out #blank line
 
+	if [ "x$OTS_MACROMAKER_UDP_IP" == "x" ] || [ "x$OTS_MACROMAKER_UDP_PORT" == "x" ]; then
+		warning "If you would like to enable command-line access to your MacroMaker mode instance, then before launching please set an IP/PORT compatible with the the system's networking interfaces using environment variables OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT"
+		out #blank line
+	fi
+
+
 	unset ContextPIDArray #reset
 	unset ContextPIDNameArray #reset
 	unset ContextPIDIsAliveArray #reset

@@ -14,9 +14,11 @@ class TransceiverSocket : public TransmitterSocket, public ReceiverSocket
 	TransceiverSocket(std::string IPAddress, unsigned int port = 0);
 	virtual ~TransceiverSocket(void);
 
+	/// acknowledge() responds to last receive location
 	int acknowledge(const std::string& buffer,
-	                bool               verbose      = false,
-	                size_t             maxChunkSize = 1500);  ///< responds to last receive location
+	                bool               verbose                = false,
+	                size_t             maxChunkSize           = 1500,
+	                unsigned int       interPacketGapUSeconds = 0);
 
 	std::string sendAndReceive(Socket&            toSocket,
 	                           const std::string& sendBuffer,
