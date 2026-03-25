@@ -917,7 +917,7 @@ launchOTSMacromaker() {
 	out #blank line
 
 	if [ "x$OTS_MACROMAKER_UDP_IP" == "x" ] || [ "x$OTS_MACROMAKER_UDP_PORT" == "x" ]; then
-		warning "If you would like to enable command-line access to your MacroMaker mode instance, then before launching please set an IP/PORT compatible with the systems networking interfaces at environment variables OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT"
+		warning "If you would like to enable command-line access to your MacroMaker mode instance, then before launching please set an IP/PORT compatible with the the system's networking interfaces using environment variables OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT"
 		out #blank line
 	fi
 
