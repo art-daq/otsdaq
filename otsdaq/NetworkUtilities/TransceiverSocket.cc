@@ -3,7 +3,6 @@
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
 #include <iostream>
-#include <thread>  // std::this_thread
 
 using namespace ots;
 
@@ -60,7 +59,8 @@ int TransceiverSocket::acknowledge(const std::string& buffer,
 		                    (struct sockaddr*)&(ReceiverSocket::fromAddress_),
 		                    sizeof(sockaddr_in));
 		offset += sendToSize / sizeInBytes;
-		usleep(interPacketGapUSeconds);
+		if(interPacketGapUSeconds > 0 && offset < buffer.size() && sendToSize > 0)
+			usleep(interPacketGapUSeconds);
 	}
 
 	if(sendToSize <= 0)
