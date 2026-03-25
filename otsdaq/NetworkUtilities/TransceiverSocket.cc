@@ -2,7 +2,10 @@
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
+#include <chrono>
 #include <iostream>
+#include <mutex>
+#include <thread>
 
 using namespace ots;
 
