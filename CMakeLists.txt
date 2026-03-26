@@ -78,6 +78,8 @@ endif()
 
 find_package(artdaq-core 3.09.00 REQUIRED EXPORT)
 find_package(artdaq 3.12.00 REQUIRED EXPORT)
+find_package(XDAQ 16 REQUIRED EXPORT)
+find_package(XercesC 3.2 REQUIRED EXPORT)
 find_package(artdaq-database 1.07.00 REQUIRED)
 find_package(Python 3.6 COMPONENTS Development.Embed REQUIRED)
 find_package(CURL REQUIRED EXPORT) # Curl required by artdaq-database, unclear why EXPORT command isn't working
@@ -88,43 +90,6 @@ set(mongocxx_DIR ${artdaq-database_DIR})
 find_package(mongocxx REQUIRED)
 endif()
 find_package(Boost QUIET COMPONENTS date_time program_options regex thread REQUIRED EXPORT)
-
- # XDAQ Extra setup
- include_directories($ENV{XDAQ_ROOT}/include/linux $ENV{XDAQ_ROOT}/include)
-link_directories($ENV{XDAQ_ROOT}/lib)
- set(XDAQ_BASIC_LIB_LIST
-   xcept
-   xoap
-   xdaq
-   toolbox
-   xerces-c
-   cgicc
-   Threads::Threads
- )
- set(XDAQ_XERCES-C xerces-c)
-
-#string(REGEX MATCHALL "[0-9][0-9]?[0-9]?" ART_VERSION_LIST "$ENV{ART_VERSION}")
-#list(GET ART_VERSION_LIST 0 ART_MAJOR_VERSION)
-#list(GET ART_VERSION_LIST 1 ART_MINOR_VERSION)
-#list(GET ART_VERSION_LIST 2 ART_PATCH_VERSION)
-
-#message("-DART_HEX_VERSION=0x${ART_MAJOR_VERSION}${ART_MINOR_VERSION}${ART_PATCH_VERSION}")
-#set(ART_HEX_VERSION 0x${ART_MAJOR_VERSION}${ART_MINOR_VERSION}${ART_PATCH_VERSION})
-#add_definitions(-DART_HEX_VERSION=0x${ART_MAJOR_VERSION}${ART_MINOR_VERSION}${ART_PATCH_VERSION})
-
-#string(REGEX MATCHALL "[0-9][0-9]?[0-9]?" MESSAGEFACILITY_VERSION_LIST "$ENV{MESSAGEFACILITY_VERSION}")
-#list(GET MESSAGEFACILITY_VERSION_LIST 0 MESSAGEFACILITY_MAJOR_VERSION)
-#list(GET MESSAGEFACILITY_VERSION_LIST 1 MESSAGEFACILITY_MINOR_VERSION)
-#list(GET MESSAGEFACILITY_VERSION_LIST 2 MESSAGEFACILITY_PATCH_VERSION)
-
-# as of fhiclcpp v4_15_00 (s108), ParameterSet::make is the preferred way to make a ParameterSet
-#check_ups_version(fhiclcpp $ENV{FHICLCPP_VERSION} v4_15_00 PRODUCT_MATCHES_VAR PSET_MAKE)
-#if(PSET_MAKE)
-#  add_definitions(-DSIMPLER_PSET_MAKE)
-#endif()
-
-#message("-DMESSAGEFACILITY_HEX_VERSION=0x${MESSAGEFACILITY_MAJOR_VERSION}${MESSAGEFACILITY_MINOR_VERSION}${MESSAGEFACILITY_PATCH_VERSION}")
-#add_definitions(-DMESSAGEFACILITY_HEX_VERSION=0x${MESSAGEFACILITY_MAJOR_VERSION}${MESSAGEFACILITY_MINOR_VERSION}${MESSAGEFACILITY_PATCH_VERSION})
 
 # For version.h
 message("otsdaq PROJECT_VERSION ${PROJECT_VERSION}")

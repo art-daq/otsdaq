@@ -5,7 +5,8 @@ cet_make_library(LIBRARY_NAME SupervisorInfo
 			SupervisorInfo.cc
 		 LIBRARIES
 		 PUBLIC
-		 ${XDAQ_BASIC_LIB_LIST}
+		 XercesC::XercesC
+         XDAQ::xdaq
 		 PRIVATE
 		 otsdaq::MessageFacility
 		 otsdaq::ConfigurationInterface

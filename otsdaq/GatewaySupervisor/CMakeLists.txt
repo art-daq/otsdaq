@@ -13,7 +13,6 @@ version.cc
 		 otsdaq::SupervisorInfo
 		 otsdaq::NetworkUtilities
 		 otsdaq_plugin_support::runInfoMaker
-		 xgi # From XDAQ
 )
 
 

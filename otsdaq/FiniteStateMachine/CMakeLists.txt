@@ -27,7 +27,7 @@ cet_make_library(LIBRARY_NAME FiniteStateMachine
 	SOURCE FiniteStateMachine.cc RunControlStateMachine.cc
 		LIBRARIES PUBLIC
 		otsdaq::ProgressBar
-		${XDAQ_BASIC_LIB_LIST}
+		XDAQ::toolbox
 		PRIVATE
 		otsdaq::Macros
 		otsdaq::SOAPUtilities
