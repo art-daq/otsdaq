@@ -4044,6 +4044,9 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 			sprintf(tmp, "%lu", it->second[i].creationTime_);
 			retStr += std::string(tmp) + "|" + it->second[i].message_;
 
+			// Track first delivery time for time-based cleanup (allows multiple tabs/devices to receive)
+			if(!it->second[i].delivered_)
+				it->second[i].firstDeliveryTime_ = time(0);
 			it->second[i].delivered_ = true;
 			++cnt;
 		}
@@ -4071,10 +4074,29 @@ void WebUsers::systemMessageCleanup()
 	for(auto& userMessagesPair : systemMessages_)
 	{
 		for(uint64_t i = 0; i < userMessagesPair.second.size(); ++i)
-			if((userMessagesPair.first != "*" &&
-			    userMessagesPair.second[i].delivered_) ||  // delivered and != *
-			   userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME <
-			       time(0))  // expired
+		{
+			bool shouldRemove = false;
+			
+			if(userMessagesPair.first == "*")
+			{
+				// Wildcard messages: remove after SYS_CLEANUP_WILDCARD_TIME (300 seconds)
+				if(userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME < time(0))
+					shouldRemove = true;
+			}
+			else
+			{
+				// User-specific messages: remove after SYS_CLEANUP_USER_MESSAGE_TIME (10 seconds) 
+				// from first delivery to allow multiple browser tabs/devices to receive the same message.
+				// The client side should suppress duplicate messages with the same text and timestamp.
+				if(userMessagesPair.second[i].delivered_ &&
+				   userMessagesPair.second[i].firstDeliveryTime_ + SYS_CLEANUP_USER_MESSAGE_TIME < time(0))
+					shouldRemove = true;
+				// Also remove if message is too old (fallback cleanup using wildcard time)
+				else if(userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME < time(0))
+					shouldRemove = true;
+			}
+			
+			if(shouldRemove)
 			{
 				__COUTT__ << userMessagesPair.first
 				          << " at time: " << userMessagesPair.second[i].creationTime_
@@ -4084,7 +4106,8 @@ void WebUsers::systemMessageCleanup()
 				// remove
 				userMessagesPair.second.erase(userMessagesPair.second.begin() + i);
 				--i;  // rewind
-			}         //end cleanup loop by message
+			}
+		}  //end cleanup loop by message
 
 		__COUTT__ << "User '" << userMessagesPair.first
 		          << "' remaining system messages: " << userMessagesPair.second.size()
