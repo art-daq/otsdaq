@@ -139,7 +139,8 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 
 	// Write out settings file
 	auto          settings_file = __ENV__("DAQINTERFACE_SETTINGS");
-	std::ofstream o(settings_file, std::ios::trunc);
+	std::ofstream of(settings_file, std::ios::trunc);
+	std::stringstream o;
 
 	setenv("DAQINTERFACE_PARTITION_NUMBER", std::to_string(partition_).c_str(), 1);
 	auto logfileName = std::string(__ENV__("OTSDAQ_LOG_DIR")) +
@@ -231,7 +232,10 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 		o << "partition_label_format: "
 		  << getSupervisorProperty("partition_label_format", "") << std::endl;
 
-	o.close();
+	__COUT_MULTI__(0, o.str());
+
+	of << o.str();
+	of.close();
 
 	// destroy current TRACEController and instantiate ARTDAQSupervisorTRACEController
 	if(CorePropertySupervisorBase::theTRACEController_)
