@@ -643,7 +643,7 @@ std::string CorePropertySupervisorBase::getSupervisorProperty(
 	if(it == propertyMap_.end())
 	{
 		__SUP_SS__ << "Could not find property named " << propertyName << __E__;
-		__SS_THROW__;  //__SUP_SS_THROW__;
+		__SS_ONLY_THROW__;
 	}
 	return StringMacros::validateValueForDefaultStringDataType(it->second);
 }  // end getSupervisorProperty()
