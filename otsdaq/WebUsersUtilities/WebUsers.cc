@@ -4076,26 +4076,31 @@ void WebUsers::systemMessageCleanup()
 		for(uint64_t i = 0; i < userMessagesPair.second.size(); ++i)
 		{
 			bool shouldRemove = false;
-			
+
 			if(userMessagesPair.first == "*")
 			{
 				// Wildcard messages: remove after SYS_CLEANUP_WILDCARD_TIME (300 seconds)
-				if(userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME < time(0))
+				if(userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME <
+				   time(0))
 					shouldRemove = true;
 			}
 			else
 			{
-				// User-specific messages: remove after SYS_CLEANUP_USER_MESSAGE_TIME (10 seconds) 
+				// User-specific messages: remove after SYS_CLEANUP_USER_MESSAGE_TIME (10 seconds)
 				// from first delivery to allow multiple browser tabs/devices to receive the same message.
 				// The client side should suppress duplicate messages with the same text and timestamp.
 				if(userMessagesPair.second[i].delivered_ &&
-				   userMessagesPair.second[i].firstDeliveryTime_ + SYS_CLEANUP_USER_MESSAGE_TIME < time(0))
+				   userMessagesPair.second[i].firstDeliveryTime_ +
+				           SYS_CLEANUP_USER_MESSAGE_TIME <
+				       time(0))
 					shouldRemove = true;
 				// Also remove if message is too old (fallback cleanup using wildcard time)
-				else if(userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME < time(0))
+				else if(userMessagesPair.second[i].creationTime_ +
+				            SYS_CLEANUP_WILDCARD_TIME <
+				        time(0))
 					shouldRemove = true;
 			}
-			
+
 			if(shouldRemove)
 			{
 				__COUTT__ << userMessagesPair.first
