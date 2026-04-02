@@ -6,9 +6,10 @@ cet_make_library(LIBRARY_NAME RootUtilities
 	      LIBRARIES PUBLIC
           ROOT::Core
           ROOT::RIO
+          XercesC::XercesC
+          otsdaq::DataManager
           PRIVATE
           otsdaq::TableCore
-          otsdaq::DataManager
           otsdaq::ConfigurationInterface
 )
 

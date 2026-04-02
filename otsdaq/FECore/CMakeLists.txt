@@ -8,7 +8,7 @@ cet_make_library(LIBRARY_NAME IFEInterface INTERFACE
 		 LIBRARIES INTERFACE
 		 otsdaq::MessageFacility
 		 artdaq::DAQdata
-		 ${XDAQ_XERCES-C}
+		 XercesC::XercesC
 )
 
 

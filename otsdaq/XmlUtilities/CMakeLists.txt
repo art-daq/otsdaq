@@ -2,7 +2,7 @@
 cet_make_library(LIBRARY_NAME XmlUtilities
 	SOURCE ConvertFromXML.cc ConvertToXML.cc DOMTreeErrorReporter.cc HttpXmlDocument.cc XmlDocument.cc
 	LIBRARIES PUBLIC
-	 ${XDAQ_XERCES-C}
+      XercesC::XercesC
 	 LIBRARIES PRIVATE
 	 otsdaq::MessageFacility
 	 Boost::regex

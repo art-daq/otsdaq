@@ -26,14 +26,13 @@ cet_make_library(LIBRARY_NAME CoreSupervisors
 		otsdaq::WebUsersUtilities
 		otsdaq::FiniteStateMachine
 		otsdaq::XDAQContextTable
-		${XDAQ_BASIC_LIB_LIST}
-		config # From XDAQ
 		otsdaq::FECore
 		otsdaq::SOAPUtilities
 		otsdaq::CgiDataUtilities
 		otsdaq::ARTDAQTableBase
 		otsdaq::ARTDAQDataManager
-		xgi # From XDAQ for xgi::Output::getHTTPResponseHeader
+        XDAQ::config
+        XDAQ::xgi
 		cppzmq # for publish/subscribe of data from FE to Supervisor
 		)
 

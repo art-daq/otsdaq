@@ -6,7 +6,10 @@ SOAPParameters.cc
 SOAPUtilities.cc
 		   LIBRARIES PUBLIC
 		   otsdaq::MessageFacility
-		   ${XDAQ_BASIC_LIB_LIST}
+           XDAQ::xdaq
+           XDAQ::xoap
+           XDAQ::xcept
+           XercesC::XercesC
 )
 
 install_headers()
