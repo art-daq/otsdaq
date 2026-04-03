@@ -4067,6 +4067,8 @@ void WebUsers::systemMessageCleanup()
 	// lock for remainder of scope
 	std::lock_guard<std::mutex> lock(systemMessageLock_);
 
+	const time_t now = time(0);
+
 	__COUTT__ << "Before cleanup number of users with system messages: "
 	          << systemMessages_.size() << ", first user has "
 	          << (systemMessages_.size() ? systemMessages_.begin()->second.size() : 0)
@@ -4081,7 +4083,7 @@ void WebUsers::systemMessageCleanup()
 			{
 				// Wildcard messages: remove after SYS_CLEANUP_WILDCARD_TIME (300 seconds)
 				if(userMessagesPair.second[i].creationTime_ + SYS_CLEANUP_WILDCARD_TIME <
-				   time(0))
+				   now)
 					shouldRemove = true;
 			}
 			else
@@ -4092,12 +4094,12 @@ void WebUsers::systemMessageCleanup()
 				if(userMessagesPair.second[i].delivered_ &&
 				   userMessagesPair.second[i].firstDeliveryTime_ +
 				           SYS_CLEANUP_USER_MESSAGE_TIME <
-				       time(0))
+				       now)
 					shouldRemove = true;
 				// Also remove if message is too old (fallback cleanup using wildcard time)
 				else if(userMessagesPair.second[i].creationTime_ +
 				            SYS_CLEANUP_WILDCARD_TIME <
-				        time(0))
+				        now)
 					shouldRemove = true;
 			}
 
