@@ -1261,6 +1261,14 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 		}
 
 		__COUT__ << "\tHash added: " << Hashes_.back().hash_ << __E__;
+
+		// salt was just set for the first time — must persist it immediately so it
+		// survives a crash before the next periodic save
+		if(!saveDatabaseToFile(DB_USERS))
+		{
+			__SS__ << "Failed to save User DB after first login salt initialization!" << __E__;
+			__SS_THROW__;
+		}
 	}
 	else
 	{
