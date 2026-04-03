@@ -4086,7 +4086,7 @@ void WebUsers::systemMessageCleanup()
 			}
 			else
 			{
-				// User-specific messages: remove after SYS_CLEANUP_USER_MESSAGE_TIME (10 seconds)
+				// User-specific messages: remove after SYS_CLEANUP_USER_MESSAGE_TIME (15 seconds)
 				// from first delivery to allow multiple browser tabs/devices to receive the same message.
 				// The client side should suppress duplicate messages with the same text and timestamp.
 				if(userMessagesPair.second[i].delivered_ &&
