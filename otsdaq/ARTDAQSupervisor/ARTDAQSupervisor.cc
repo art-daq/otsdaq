@@ -140,9 +140,9 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 	// unsetenv("PYTHONHOME");
 
 	// Write out settings file
-	auto              settings_file = __ENV__("DAQINTERFACE_SETTINGS");
-	std::ofstream     of(settings_file, std::ios::trunc);
-	const int         openErrno = errno;  // capture errno immediately after open attempt
+	auto          settings_file = __ENV__("DAQINTERFACE_SETTINGS");
+	std::ofstream of(settings_file, std::ios::trunc);
+	const int     openErrno = errno;  // capture errno immediately after open attempt
 	if(!of.is_open() || of.fail())
 	{
 		__SS__ << "Failed to open DAQINTERFACE_SETTINGS file '" << settings_file
