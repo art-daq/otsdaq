@@ -17,6 +17,8 @@
 #include <boost/filesystem.hpp>
 
 #include <signal.h>
+#include <cerrno>
+#include <cstring>
 #include <regex>
 
 #define OUT_ON_ERR_SIZE 2000  //tail size of output to include on error
@@ -140,6 +142,12 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 	// Write out settings file
 	auto              settings_file = __ENV__("DAQINTERFACE_SETTINGS");
 	std::ofstream     of(settings_file, std::ios::trunc);
+	if(!of.is_open() || of.fail())
+	{
+		__SS__ << "Failed to open DAQINTERFACE_SETTINGS file '" << settings_file
+		       << "' for writing: " << strerror(errno) << __E__;
+		__SS_THROW__;
+	}
 	std::stringstream o;
 
 	setenv("DAQINTERFACE_PARTITION_NUMBER", std::to_string(partition_).c_str(), 1);
