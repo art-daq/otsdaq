@@ -3872,7 +3872,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 					__COUTV__(StringMacros::vectorToString(hostnameArray));
 					__COUTV__(StringMacros::setToString(skipSet));
 
-					std::vector<std::string> trimmedNodeNames;  // track trimmed nodes for collision check
+					std::vector<std::string>
+					    trimmedNodeNames;  // track trimmed nodes for collision check
 					{
 						// check for alpha-based similarity groupings (ignore numbers and special characters)
 						unsigned int              maxScore = 0;
@@ -4020,12 +4021,11 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									continue;
 								size_t found;
 								if(c == 0)
-									found =
-									    (name.size() >= chunks[c].size() &&
-									     name.compare(
-									         0, chunks[c].size(), chunks[c]) == 0)
-									        ? 0
-									        : std::string::npos;
+									found = (name.size() >= chunks[c].size() &&
+									         name.compare(
+									             0, chunks[c].size(), chunks[c]) == 0)
+									            ? 0
+									            : std::string::npos;
 								else
 									found = name.find(chunks[c], pos);
 								if(found == std::string::npos)
@@ -4060,11 +4060,10 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								if(matchesCommonChunksPattern(trimmedNode,
 								                              trialCommonChunks))
 								{
-									__COUT__
-									    << "Collision detected: trimmed node '"
-									    << trimmedNode
-									    << "' matches base pattern from commonChunks"
-									    << __E__;
+									__COUT__ << "Collision detected: trimmed node '"
+									         << trimmedNode
+									         << "' matches base pattern from commonChunks"
+									         << __E__;
 									collisionFound = true;
 									break;
 								}
@@ -4077,8 +4076,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								    nodeTypeToObjectMap.at(typeString))
 								{
 									std::string existingBaseName = existingEntry.first;
-									size_t      statusPos =
-									    existingBaseName.find(";status=");
+									size_t statusPos = existingBaseName.find(";status=");
 									if(statusPos != std::string::npos)
 										existingBaseName =
 										    existingBaseName.substr(0, statusPos);
@@ -4107,16 +4105,14 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 							unsigned int              fullMaxScore = 0;
 							std::vector<unsigned int> fullScoreVector;
-							fullScoreVector.push_back(
-							    -1);  // index 0 is perfect (self)
+							fullScoreVector.push_back(-1);  // index 0 is perfect (self)
 
 							for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
 							{
 								unsigned int fscore = 0;
 								// Simple forward character-by-character matching
-								for(unsigned int j = 0;
-								    j < multiNodeNames[0].size() &&
-								    j < multiNodeNames[i].size();
+								for(unsigned int j = 0; j < multiNodeNames[0].size() &&
+								                        j < multiNodeNames[i].size();
 								    ++j)
 								{
 									if(multiNodeNames[0][j] == multiNodeNames[i][j])
@@ -4141,18 +4137,17 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								if(fullScoreVector[i] >= fullMaxScore)
 									continue;
 
-								__COUT__
-								    << "Collision trim: removing " << multiNodeNames[i]
-								    << " (score " << fullScoreVector[i] << " < "
-								    << fullMaxScore << ") for node name " << nodeName
-								    << __E__;
+								__COUT__ << "Collision trim: removing "
+								         << multiNodeNames[i] << " (score "
+								         << fullScoreVector[i] << " < " << fullMaxScore
+								         << ") for node name " << nodeName << __E__;
 
 								trimmedNodeNames.push_back(multiNodeNames[i]);
 								skipSet.erase(multiNodeNames[i]);
 								multiNodeNames.erase(multiNodeNames.begin() + i);
 								hostnameArray.erase(hostnameArray.begin() + i);
-								anyTrimmed      = true;
-								collisionRetry  = true;
+								anyTrimmed     = true;
+								collisionRetry = true;
 							}
 
 							// If no trimming was possible but still colliding,
@@ -4160,14 +4155,13 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							//	will be processed individually by the main loop
 							if(!anyTrimmed)
 							{
-								__COUT__
-								    << "Cannot narrow multi-node group further to "
-								       "resolve collision. Abandoning multi-node "
-								       "grouping for '"
-								    << nodeName
-								    << "' - remaining members will be "
-								       "processed individually."
-								    << __E__;
+								__COUT__ << "Cannot narrow multi-node group further to "
+								            "resolve collision. Abandoning multi-node "
+								            "grouping for '"
+								         << nodeName
+								         << "' - remaining members will be "
+								            "processed individually."
+								         << __E__;
 
 								// Remove all members except [0] from skipSet
 								for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
@@ -4481,20 +4475,25 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 					}
 					__COUT__ << ss.str() << __E__;
 				}
-				
+
 				if(!result.second)
 				{
-					__COUT__ << "Collision detected for node '" << nodeName
-					         << "' of type '" << typeString
-					         << "' when inserting into nodeTypeToObjectMap. This likely means that two nodes have the same name and status, and if so, they would be indistinguishable in printer syntax. "
-					         << "Please notify admins or try to simplify record naming convention." << __E__;
-						
+					__COUT__
+					    << "Collision detected for node '" << nodeName << "' of type '"
+					    << typeString
+					    << "' when inserting into nodeTypeToObjectMap. This likely means "
+					       "that two nodes have the same name and status, and if so, "
+					       "they would be indistinguishable in printer syntax. "
+					    << "Please notify admins or try to simplify record naming "
+					       "convention."
+					    << __E__;
+
 					__SS__ << "Impossible printer syntax handling result! Collision of "
 					          "base names. Please notify "
 					          "admins or try to simplify record naming convention."
 					       << __E__;
 					__SS_THROW__;
-				}				
+				}
 
 				nodeTypeToObjectMap.at(typeString)
 				    .at(nodeName)
