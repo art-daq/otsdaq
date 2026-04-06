@@ -3872,6 +3872,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 					__COUTV__(StringMacros::vectorToString(hostnameArray));
 					__COUTV__(StringMacros::setToString(skipSet));
 
+					std::vector<std::string>
+					    trimmedNodeNames;  // track trimmed nodes for collision check
 					{
 						// check for alpha-based similarity groupings (ignore numbers and special characters)
 						unsigned int              maxScore = 0;
@@ -3990,6 +3992,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							__COUT__ << "Trimming low score match " << multiNodeNames[i]
 							         << " for node name " << nodeName << __E__;
 
+							trimmedNodeNames.push_back(multiNodeNames[i]);
 							skipSet.erase(multiNodeNames[i]);
 							multiNodeNames.erase(multiNodeNames.begin() + i);
 							hostnameArray.erase(hostnameArray.begin() + i);
@@ -3997,6 +4000,184 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						}  // end multi-node trim loop
 
 					}  // done with multi-node member trim
+
+					// Collision check: verify that the computed nodeName pattern
+					//	does not also match trimmed nodes or existing map entries.
+					//	If it does, re-score with full character matching and trim
+					//	again until the pattern only matches the current node set.
+					//	If trimming can't resolve the collision, abandon multi-node
+					//	grouping so remaining members get processed individually.
+					if(multiNodeNames.size() > 1)
+					{
+						// Lambda to check if a name matches the commonChunks pattern
+						//	(i.e. all non-empty chunks appear in order, first chunk at position 0)
+						auto matchesCommonChunksPattern =
+						    [](const std::string&              name,
+						       const std::vector<std::string>& chunks) -> bool {
+							size_t pos = 0;
+							for(unsigned int c = 0; c < chunks.size(); ++c)
+							{
+								if(chunks[c].empty())
+									continue;
+								size_t found;
+								if(c == 0)
+									found = (name.size() >= chunks[c].size() &&
+									         name.compare(
+									             0, chunks[c].size(), chunks[c]) == 0)
+									            ? 0
+									            : std::string::npos;
+								else
+									found = name.find(chunks[c], pos);
+								if(found == std::string::npos)
+									return false;
+								pos = found + chunks[c].size();
+							}
+							return true;
+						};
+
+						bool collisionRetry = true;
+						while(collisionRetry && multiNodeNames.size() > 1)
+						{
+							collisionRetry = false;
+
+							// Trial extraction to get the current commonChunks pattern
+							std::vector<std::string> trialCommonChunks;
+							std::vector<std::string> trialWildcards;
+							unsigned int             trialFixedLen = 0;
+							StringMacros::extractCommonChunks(multiNodeNames,
+							                                  trialCommonChunks,
+							                                  trialWildcards,
+							                                  trialFixedLen);
+
+							__COUT__ << "Collision check: trialCommonChunks = "
+							         << StringMacros::vectorToString(trialCommonChunks)
+							         << __E__;
+
+							// Check 1: trimmed nodes collision
+							bool collisionFound = false;
+							for(const auto& trimmedNode : trimmedNodeNames)
+							{
+								if(matchesCommonChunksPattern(trimmedNode,
+								                              trialCommonChunks))
+								{
+									__COUT__ << "Collision detected: trimmed node '"
+									         << trimmedNode
+									         << "' matches base pattern from commonChunks"
+									         << __E__;
+									collisionFound = true;
+									break;
+								}
+							}
+
+							// Check 2: existing map entries collision
+							if(!collisionFound)
+							{
+								for(const auto& existingEntry :
+								    nodeTypeToObjectMap.at(typeString))
+								{
+									std::string existingBaseName = existingEntry.first;
+									size_t statusPos = existingBaseName.find(";status=");
+									if(statusPos != std::string::npos)
+										existingBaseName =
+										    existingBaseName.substr(0, statusPos);
+
+									if(matchesCommonChunksPattern(existingBaseName,
+									                              trialCommonChunks))
+									{
+										__COUT__
+										    << "Collision detected: existing map entry '"
+										    << existingEntry.first
+										    << "' matches base pattern from commonChunks"
+										    << __E__;
+										collisionFound = true;
+										break;
+									}
+								}
+							}
+
+							if(!collisionFound)
+								break;  // no collision, we're done
+
+							// Collision found! Re-score with full character matching
+							__COUT__ << "Re-scoring remaining multi-node members with "
+							            "full character matching to resolve collision..."
+							         << __E__;
+
+							unsigned int              fullMaxScore = 0;
+							std::vector<unsigned int> fullScoreVector;
+							fullScoreVector.push_back(-1);  // index 0 is perfect (self)
+
+							for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
+							{
+								unsigned int fscore = 0;
+								// Simple forward character-by-character matching
+								for(unsigned int j = 0; j < multiNodeNames[0].size() &&
+								                        j < multiNodeNames[i].size();
+								    ++j)
+								{
+									if(multiNodeNames[0][j] == multiNodeNames[i][j])
+										++fscore;
+									else
+										break;
+								}
+								fullScoreVector.push_back(fscore);
+								if(fscore > fullMaxScore)
+									fullMaxScore = fscore;
+							}
+
+							__COUT__ << "Full char rescore: maxScore = " << fullMaxScore
+							         << __E__;
+
+							// Trim nodes below max score
+							bool anyTrimmed = false;
+							for(unsigned int i = multiNodeNames.size() - 1;
+							    i > 0 && i < multiNodeNames.size();
+							    --i)
+							{
+								if(fullScoreVector[i] >= fullMaxScore)
+									continue;
+
+								__COUT__ << "Collision trim: removing "
+								         << multiNodeNames[i] << " (score "
+								         << fullScoreVector[i] << " < " << fullMaxScore
+								         << ") for node name " << nodeName << __E__;
+
+								trimmedNodeNames.push_back(multiNodeNames[i]);
+								skipSet.erase(multiNodeNames[i]);
+								multiNodeNames.erase(multiNodeNames.begin() + i);
+								hostnameArray.erase(hostnameArray.begin() + i);
+								anyTrimmed     = true;
+								collisionRetry = true;
+							}
+
+							// If no trimming was possible but still colliding,
+							//	abandon multi-node grouping - remaining members
+							//	will be processed individually by the main loop
+							if(!anyTrimmed)
+							{
+								__COUT__ << "Cannot narrow multi-node group further to "
+								            "resolve collision. Abandoning multi-node "
+								            "grouping for '"
+								         << nodeName
+								         << "' - remaining members will be "
+								            "processed individually."
+								         << __E__;
+
+								// Remove all members except [0] from skipSet
+								for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
+									skipSet.erase(multiNodeNames[i]);
+								multiNodeNames.resize(1);
+								hostnameArray.resize(1);
+								break;
+							}
+						}  // end collision resolution loop
+
+						__COUT__ << "After collision resolution:" << __E__;
+						__COUTV__(nodeName);
+						__COUTV__(StringMacros::vectorToString(multiNodeNames));
+						__COUTV__(StringMacros::vectorToString(hostnameArray));
+						__COUTV__(StringMacros::setToString(skipSet));
+					}  // end collision check
 
 					__COUTV__(nodeName);
 					__COUTV__(StringMacros::vectorToString(multiNodeNames));
@@ -4278,8 +4459,35 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 				auto result = nodeTypeToObjectMap.at(typeString)
 				                  .emplace(std::make_pair(
 				                      nodeName, std::vector<std::string /*property*/>()));
+
+				if(TTEST(0))
+				{
+					__SS__ << "Here is the current nodeTypeToObjectMap:" << __E__;
+					for(const auto& typePair : nodeTypeToObjectMap)
+					{
+						ss << "\tType: " << typePair.first << __E__;
+						for(const auto& nodePair : typePair.second)
+						{
+							ss << "\t\tNode: " << nodePair.first << __E__;
+							for(const auto& property : nodePair.second)
+								ss << "\t\t\tProperty: " << property << __E__;
+						}
+					}
+					__COUT__ << ss.str() << __E__;
+				}
+
 				if(!result.second)
 				{
+					__COUT__
+					    << "Collision detected for node '" << nodeName << "' of type '"
+					    << typeString
+					    << "' when inserting into nodeTypeToObjectMap. This likely means "
+					       "that two nodes have the same name and status, and if so, "
+					       "they would be indistinguishable in printer syntax. "
+					    << "Please notify admins or try to simplify record naming "
+					       "convention."
+					    << __E__;
+
 					__SS__ << "Impossible printer syntax handling result! Collision of "
 					          "base names. Please notify "
 					          "admins or try to simplify record naming convention."
