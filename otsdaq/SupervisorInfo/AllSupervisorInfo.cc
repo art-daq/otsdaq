@@ -557,7 +557,7 @@ AllSupervisorInfo::getOrderedSupervisorDescriptors(
 				    << "Error! Was AllSupervisorInfo properly initialized? The app.id_ "
 				    << priorityApp << " priority "
 				    << (unsigned int)priorityAppVector.first
-				    << " could not be found in AllSupervisorInfo. Was the Context "
+				    << " could not be found in AllSupervisorInfo. Has the Context "
 				       "changed? Rebooting ots may fix this issue."
 				    << __E__;
 				__SS_THROW__;
