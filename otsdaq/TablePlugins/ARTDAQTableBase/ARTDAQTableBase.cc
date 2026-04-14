@@ -7524,8 +7524,8 @@ std::string ARTDAQTableBase::getBootFileContentFromInfo(const ARTDAQInfo&  info,
 		o << "Dispatcher host: " << dispatcher.hostname << std::endl;
 		o << "Dispatcher label: " << dispatcher.label << std::endl;
 		if(dispatcher.port != 0)
-        {
-            o << "Dispatcher port: " << dispatcher.port << std::endl;
+		{
+			o << "Dispatcher port: " << dispatcher.port << std::endl;
 		}
 		if(dispatcher.subsystem != 1)
 		{
