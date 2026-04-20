@@ -1784,6 +1784,26 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 		                 true /*onlyInsertAtTableParameters*/,
 		                 false /*includeAtTableParameters*/);
 
+		std::vector<std::string> enabledAnalyzers;
+		bool                     hasAnalyzePath = false;
+		bool                     hasEndPaths    = false;
+		auto                     physicsOtherParameters =
+		    physics.getNode("physicsOtherParametersLink");
+		if(!physicsOtherParameters.isDisconnected())
+		{
+			for(const auto& parameter : physicsOtherParameters.getChildren())
+			{
+				if(!parameter.second.status())
+					continue;
+
+				const auto key = parameter.second.getNode("physicsParameterKey").getValue();
+				if(key == "analyzePath")
+					hasAnalyzePath = true;
+				else if(key == "end_paths")
+					hasEndPaths = true;
+			}
+		}
+
 		auto analyzers = physics.getNode("analyzersLink");
 		if(!analyzers.isDisconnected())
 		{
@@ -1803,6 +1823,13 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			auto modules = analyzers.getChildren();
 			for(auto& module : modules)
 			{
+				if(module.second.status())
+				{
+					auto analyzerKey = module.second.getNode("analyzerKey").getValue();
+					if(analyzerKey != "")
+						enabledAnalyzers.push_back(analyzerKey);
+				}
+
 				if(!module.second.status())
 					PUSHCOMMENT;
 
@@ -2059,6 +2086,26 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			std::string localParentPath2 =
 			    localParentPath + "/" + services.getParentLinkColumnName();
 			OUTCL2("# no filters found", "" /* comment*/);
+		}
+
+		if(!enabledAnalyzers.empty())
+		{
+			if(!hasAnalyzePath)
+			{
+				out << "analyzePath: [ ";
+				for(size_t i = 0; i < enabledAnalyzers.size(); ++i)
+				{
+					if(i)
+						out << ", ";
+					out << "\"" << enabledAnalyzers[i] << "\"";
+				}
+				out << " ]\n";
+			}
+
+			if(!hasEndPaths)
+			{
+				out << "end_paths: [ \"analyzePath\" ]\n";
+			}
 		}
 
 		//--------------------------------------
