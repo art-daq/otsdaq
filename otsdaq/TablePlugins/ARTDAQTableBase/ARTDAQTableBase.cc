@@ -1823,14 +1823,15 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			auto modules = analyzers.getChildren();
 			for(auto& module : modules)
 			{
-				if(module.second.status())
+				const bool analyzerEnabled = module.second.status();
+				if(analyzerEnabled)
 				{
 					auto analyzerKey = module.second.getNode("analyzerKey").getValue();
 					if(analyzerKey != "")
 						enabledAnalyzers.push_back(analyzerKey);
 				}
 
-				if(!module.second.status())
+				if(!analyzerEnabled)
 					PUSHCOMMENT;
 
 				if(!first)
@@ -1882,7 +1883,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				POPTAB;
 				OUT << "}\n";  // end analyzer module
 
-				if(!module.second.status())
+				if(!analyzerEnabled)
 					POPCOMMENT;
 			}  //end analyzer module loop
 			POPTAB;
