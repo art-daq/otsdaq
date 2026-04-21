@@ -1809,8 +1809,9 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				StringMacros::trim(value);
 				if(value.size() >= 2 && value.front() == '[' && value.back() == ']')
 				{
-					for(auto& parameterValue :
-					    StringMacros::getVectorFromString(value, {',', '[', ']'}))
+					auto sequenceValues =
+					    StringMacros::getVectorFromString(value, {',', '[', ']'});
+					for(auto& parameterValue : sequenceValues)
 					{
 						StringMacros::trim(parameterValue);
 						if(parameterValue.size() >= 2 && parameterValue.front() == '"' &&
