@@ -1446,7 +1446,7 @@ try
 		if(daqinterface_state_ != "running")
 		{
 			__SS__ << "DAQInterface start transition failed!" << __E__
-			       << "Supervisor state: \"" << daqinterface_state_
+			       << "DAQInterface state: \"" << daqinterface_state_
 			       << "\" != \"running\" " << __E__;
 			if(doStartOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
 				ss << "... last " << OUT_ON_ERR_SIZE << " characters: "
