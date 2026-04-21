@@ -1384,7 +1384,7 @@ try
 		PyObjectGuard pStateArgs(PyLong_FromLong(run_number));
 		PyObjectGuard res(PyObject_CallMethodObjArgs(
 		    daqinterface_ptr_, pName.get(), pStateArgs.get(), NULL));
-		std::string doStartOutput = captureStderrAndStdout_("do_start_running");
+		std::string   doStartOutput = captureStderrAndStdout_("do_start_running");
 		__COUT_MULTI_LBL__(0, doStartOutput, "do_start_running");
 
 		thread_progress_bar_.step();
@@ -1394,8 +1394,7 @@ try
 			std::string err = capturePyErr("do_start_running");
 			__SS__ << "Error calling start transition: " << err << __E__;
 			if(doStartOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
-				ss << "... last " << OUT_ON_ERR_SIZE
-				   << " characters: "
+				ss << "... last " << OUT_ON_ERR_SIZE << " characters: "
 				   << doStartOutput.substr(doStartOutput.size() - OUT_ON_ERR_SIZE);
 			else
 				ss << doStartOutput;
@@ -1412,8 +1411,7 @@ try
 			       << "Supervisor state: \"" << daqinterface_state_
 			       << "\" != \"running\" " << __E__;
 			if(doStartOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
-				ss << "... last " << OUT_ON_ERR_SIZE
-				   << " characters: "
+				ss << "... last " << OUT_ON_ERR_SIZE << " characters: "
 				   << doStartOutput.substr(doStartOutput.size() - OUT_ON_ERR_SIZE);
 			else
 				ss << doStartOutput;
