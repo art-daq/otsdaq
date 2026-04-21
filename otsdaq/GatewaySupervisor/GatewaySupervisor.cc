@@ -3701,7 +3701,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    "context",
 						    appInfo.getContextName());  // get context
 						auto subappElement = xmlOut.addTextElementToData("subapps", "");
-						for(auto& subappInfoPair : appInfo.getSubappInfo())
+						auto copySubappVector = appInfo.getSubappInfo();
+						for(auto& subappInfoPair : copySubappVector)
 						{
 							xmlOut.addTextElementToParent(
 							    "subapp_name", subappInfoPair.first, subappElement);
@@ -8798,7 +8799,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								    << ") is " << timeoutSeconds / 60 << " minutes... "
 								    << secondsLeft << " seconds remaining before timeout!"
 								    << __E__;
-							else if(lastMinutesLeft != minutesLeft && minutesLeft < 6)
+							else if(lastMinutesLeft != minutesLeft && minutesLeft < 3)
 								__COUT_WARN__
 								    << waitSs.str() << "\n"
 								    << "Timeout threshold (for iteration #" << iteration
