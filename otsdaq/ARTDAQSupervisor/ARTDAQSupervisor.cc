@@ -577,6 +577,27 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 			errorMessage = ss.str();
 		}
 
+		// Check if any subapp (artdaq component) has entered a Failed state.
+		// This can happen when a component fails during do_config/do_boot while the
+		// configuringThread is blocked waiting for DAQInterface, and would otherwise
+		// cause a 600-second timeout before the error is detected.
+		if(errorMessage == "")
+		{
+			auto subapps = getSubappInfo();
+			for(auto& subapp : subapps)
+			{
+				if(subapp.status == RunControlStateMachine::FAILED_STATE_NAME)
+				{
+					__SUP_SS__ << "Component '" << subapp.name
+					           << "' entered Failed state during configuration! "
+					           << "(url: " << subapp.url << ")" << __E__;
+					errorMessage = ss.str();
+					__SUP_COUT_ERR__ << "\n" << ss.str();
+					break;
+				}
+			}
+		}
+
 		if(errorMessage != "")
 		{
 			__SUP_SS__ << "Error was caught in configuring thread: " << errorMessage
@@ -1045,18 +1066,28 @@ try
 			}
 		}
 
-		PyObjectGuard pName(PyUnicode_FromString("do_command"));
-		PyObjectGuard pArg(PyUnicode_FromString("Shutdown"));
-		PyObjectGuard res(
-		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName.get(), pArg.get(), NULL));
-		__COUT_MULTI_LBL__(
-		    0, captureStderrAndStdout_("do_command Shutdown"), "do_command Shutdown");
-
-		if(checkPythonError(res.get()))
+		// If DAQInterface is already stopped (e.g. after enteringError ran do_recover),
+		// there are no artdaq processes to send Shutdown to — skip do_command.
+		if(daqinterface_state_ == "stopped" || daqinterface_state_ == "")
 		{
-			std::string err = capturePyErr("do_command Shutdown");
-			__SS__ << "Error calling DAQ Interface halt transition: " << err << __E__;
-			__SUP_SS_THROW__;
+			__SUP_COUT__ << "DAQInterface already stopped, skipping Shutdown command."
+			             << __E__;
+		}
+		else
+		{
+			PyObjectGuard pName(PyUnicode_FromString("do_command"));
+			PyObjectGuard pArg(PyUnicode_FromString("Shutdown"));
+			PyObjectGuard res(
+			    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName.get(), pArg.get(), NULL));
+			__COUT_MULTI_LBL__(
+			    0, captureStderrAndStdout_("do_command Shutdown"), "do_command Shutdown");
+
+			if(checkPythonError(res.get()))
+			{
+				std::string err = capturePyErr("do_command Shutdown");
+				__SS__ << "Error calling DAQ Interface halt transition: " << err << __E__;
+				__SUP_SS_THROW__;
+			}
 		}
 
 		getDAQState_();
