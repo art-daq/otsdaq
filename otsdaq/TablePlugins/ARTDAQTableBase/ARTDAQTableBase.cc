@@ -1,7 +1,7 @@
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 
-#include <algorithm>
 #include <dirent.h>  //DIR and dirent
+#include <algorithm>
 #include <fstream>   // for std::ofstream
 #include <iostream>  // std::cout
 #include <typeinfo>
@@ -1792,8 +1792,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 		std::vector<std::string> physicsParameterKeys;
 		std::vector<std::string> modulesInSequenceParameters;
 		bool                     hasEndPaths = false;
-		auto                     physicsOtherParameters =
-		    physics.getNode("physicsOtherParametersLink");
+		auto physicsOtherParameters = physics.getNode("physicsOtherParametersLink");
 		if(!physicsOtherParameters.isDisconnected())
 		{
 			for(const auto& parameter : physicsOtherParameters.getChildren())
@@ -1806,8 +1805,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				if(key == "end_paths")
 					hasEndPaths = true;
 
-				auto value =
-				    parameter.second.getNode("physicsParameterValue").getValue();
+				auto value = parameter.second.getNode("physicsParameterValue").getValue();
 				StringMacros::trim(value);
 				if(value.size() >= 2 && value.front() == '[' && value.back() == ']')
 				{
@@ -1817,8 +1815,8 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 						StringMacros::trim(parameterValue);
 						if(parameterValue.size() >= 2 && parameterValue.front() == '"' &&
 						   parameterValue.back() == '"')
-							parameterValue = parameterValue.substr(
-							    1, parameterValue.size() - 2);
+							parameterValue =
+							    parameterValue.substr(1, parameterValue.size() - 2);
 
 						if(!parameterValue.empty())
 							modulesInSequenceParameters.push_back(parameterValue);
@@ -2152,10 +2150,9 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 		if(!modulesToAutoPath.empty())
 		{
 			std::string autoPathKey = "otsdaq_auto_path";
-			for(unsigned int i = 1;
-			    std::find(physicsParameterKeys.begin(),
-			              physicsParameterKeys.end(),
-			              autoPathKey) != physicsParameterKeys.end();
+			for(unsigned int i = 1; std::find(physicsParameterKeys.begin(),
+			                                  physicsParameterKeys.end(),
+			                                  autoPathKey) != physicsParameterKeys.end();
 			    ++i)
 			{
 				autoPathKey = "otsdaq_auto_path_" + std::to_string(i);
