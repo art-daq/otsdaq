@@ -5,6 +5,7 @@
 #include <fstream>   // for std::ofstream
 #include <iostream>  // std::cout
 #include <typeinfo>
+#include <unordered_set>
 
 #include "otsdaq/Macros/CoutMacros.h"
 #define TRACE_NAME "ARTDAQTableBase"
@@ -1819,7 +1820,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 							parameterValue = parameterValue.substr(
 							    1, parameterValue.size() - 2);
 
-						if(parameterValue != "")
+						if(!parameterValue.empty())
 							modulesInSequenceParameters.push_back(parameterValue);
 					}
 				}
@@ -2129,26 +2130,22 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			OUTCL2("# no filters found", "" /* comment*/);
 		}
 
+		std::unordered_set<std::string> modulesInSequenceSet(
+		    modulesInSequenceParameters.begin(), modulesInSequenceParameters.end());
 		std::vector<std::string> modulesToAutoPath;
 		for(const auto& producer : enabledProducers)
 		{
-			if(std::find(modulesInSequenceParameters.begin(),
-			             modulesInSequenceParameters.end(),
-			             producer) == modulesInSequenceParameters.end())
+			if(modulesInSequenceSet.find(producer) == modulesInSequenceSet.end())
 				modulesToAutoPath.push_back(producer);
 		}
 		for(const auto& analyzer : enabledAnalyzers)
 		{
-			if(std::find(modulesInSequenceParameters.begin(),
-			             modulesInSequenceParameters.end(),
-			             analyzer) == modulesInSequenceParameters.end())
+			if(modulesInSequenceSet.find(analyzer) == modulesInSequenceSet.end())
 				modulesToAutoPath.push_back(analyzer);
 		}
 		for(const auto& filter : enabledFilters)
 		{
-			if(std::find(modulesInSequenceParameters.begin(),
-			             modulesInSequenceParameters.end(),
-			             filter) == modulesInSequenceParameters.end())
+			if(modulesInSequenceSet.find(filter) == modulesInSequenceSet.end())
 				modulesToAutoPath.push_back(filter);
 		}
 
