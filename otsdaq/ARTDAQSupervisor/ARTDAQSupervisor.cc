@@ -763,7 +763,7 @@ try
 
 	thread_progress_bar_.step();
 
-	// Block 1: State check — acquire and release daqinterface_pythonMutex_ 
+	// Block 1: State check — acquire and release daqinterface_pythonMutex_
 	// so the runner thread and halt transition can interleave between steps
 	{
 		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
@@ -848,8 +848,8 @@ try
 
 		// 1. Create Python Strings
 		PyObjectGuard pNameBoot(PyUnicode_FromString("do_boot"));
-		PyObjectGuard pBootArgs(
-		    PyUnicode_FromString((ARTDAQTableBase::ARTDAQ_FCL_PATH + "/boot.txt").c_str()));
+		PyObjectGuard pBootArgs(PyUnicode_FromString(
+		    (ARTDAQTableBase::ARTDAQ_FCL_PATH + "/boot.txt").c_str()));
 
 		// 2. First Attempt: Call do_boot
 		PyObjectGuard resBoot1(PyObject_CallMethodObjArgs(
@@ -986,15 +986,16 @@ try
 				res_cstr = PyUnicode_AsUTF8(strRes.get());
 			}
 
-			__SUP_COUTT__ << "do_config result=" << (res_cstr ? res_cstr : "N/A") << __E__;
+			__SUP_COUTT__ << "do_config result=" << (res_cstr ? res_cstr : "N/A")
+			              << __E__;
 		}  //end do_config call
 
 		getDAQState_();
 		if(daqinterface_state_ != "ready")
 		{
 			__GEN_SS__ << "DAQInterface config transition failed!" << __E__
-			           << "Supervisor state: \"" << daqinterface_state_ << "\" != \"ready\" "
-			           << __E__;
+			           << "Supervisor state: \"" << daqinterface_state_
+			           << "\" != \"ready\" " << __E__;
 			auto doConfigOutput_recover_i =
 			    doConfigOutput.find("RECOVER transition underway");
 			if(doConfigOutput_recover_i == std::string::npos)
@@ -1106,7 +1107,8 @@ try
 	if(tries >= 5)
 	{
 		__SUP_SS__ << "Failed to acquire python lock for halting after " << tries
-		           << " tries, giving up! Is it possible the configure thread is stuck?" << __E__;
+		           << " tries, giving up! Is it possible the configure thread is stuck?"
+		           << __E__;
 		__SUP_SS_THROW__;
 	}
 
