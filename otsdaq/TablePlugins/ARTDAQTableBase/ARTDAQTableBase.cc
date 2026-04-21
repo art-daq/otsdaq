@@ -1,5 +1,6 @@
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 
+#include <algorithm>
 #include <dirent.h>  //DIR and dirent
 #include <fstream>   // for std::ofstream
 #include <iostream>  // std::cout
@@ -1784,9 +1785,12 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 		                 true /*onlyInsertAtTableParameters*/,
 		                 false /*includeAtTableParameters*/);
 
+		std::vector<std::string> enabledProducers;
 		std::vector<std::string> enabledAnalyzers;
-		bool                     hasAnalyzePath = false;
-		bool                     hasEndPaths    = false;
+		std::vector<std::string> enabledFilters;
+		std::vector<std::string> physicsParameterKeys;
+		std::vector<std::string> modulesInSequenceParameters;
+		bool                     hasEndPaths = false;
 		auto                     physicsOtherParameters =
 		    physics.getNode("physicsOtherParametersLink");
 		if(!physicsOtherParameters.isDisconnected())
@@ -1796,11 +1800,29 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				if(!parameter.second.status())
 					continue;
 
-				const auto key = parameter.second.getNode("physicsParameterKey").getValue();
-				if(key == "analyzePath")
-					hasAnalyzePath = true;
-				else if(key == "end_paths")
+				auto key = parameter.second.getNode("physicsParameterKey").getValue();
+				physicsParameterKeys.push_back(key);
+				if(key == "end_paths")
 					hasEndPaths = true;
+
+				auto value =
+				    parameter.second.getNode("physicsParameterValue").getValue();
+				StringMacros::trim(value);
+				if(value.size() >= 2 && value.front() == '[' && value.back() == ']')
+				{
+					for(auto& parameterValue :
+					    StringMacros::getVectorFromString(value, {',', '[', ']'}))
+					{
+						StringMacros::trim(parameterValue);
+						if(parameterValue.size() >= 2 && parameterValue.front() == '"' &&
+						   parameterValue.back() == '"')
+							parameterValue = parameterValue.substr(
+							    1, parameterValue.size() - 2);
+
+						if(parameterValue != "")
+							modulesInSequenceParameters.push_back(parameterValue);
+					}
+				}
 			}
 		}
 
@@ -1914,7 +1936,16 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			auto modules = producers.getChildren();
 			for(auto& module : modules)
 			{
-				if(!module.second.status())
+				const bool producerEnabled = module.second.status();
+				if(producerEnabled)
+				{
+					auto producerKey = module.second.getNode("producerKey").getValue();
+					if(producerKey != "" &&
+					   module.second.getNode("producerModuleType").getValue() != "")
+						enabledProducers.push_back(producerKey);
+				}
+
+				if(!producerEnabled)
 					PUSHCOMMENT;
 
 				if(!first)
@@ -1980,7 +2011,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				POPTAB;
 				OUT << "}\n";  // end producer module
 
-				if(!module.second.status())
+				if(!producerEnabled)
 					POPCOMMENT;
 			}  //end producer module loop
 			POPTAB;
@@ -2010,7 +2041,16 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			auto modules = filters.getChildren();
 			for(auto& module : modules)
 			{
-				if(!module.second.status())
+				const bool filterEnabled = module.second.status();
+				if(filterEnabled)
+				{
+					auto filterKey = module.second.getNode("filterKey").getValue();
+					if(filterKey != "" &&
+					   module.second.getNode("filterModuleType").getValue() != "")
+						enabledFilters.push_back(filterKey);
+				}
+
+				if(!filterEnabled)
 					PUSHCOMMENT;
 
 				if(!first)
@@ -2075,7 +2115,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				POPTAB;
 				OUT << "}\n";  // end filter module
 
-				if(!module.second.status())
+				if(!filterEnabled)
 					POPCOMMENT;
 			}  //end filter module loop
 			POPTAB;
@@ -2089,24 +2129,52 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			OUTCL2("# no filters found", "" /* comment*/);
 		}
 
-		if(!enabledAnalyzers.empty())
+		std::vector<std::string> modulesToAutoPath;
+		for(const auto& producer : enabledProducers)
 		{
-			if(!hasAnalyzePath)
+			if(std::find(modulesInSequenceParameters.begin(),
+			             modulesInSequenceParameters.end(),
+			             producer) == modulesInSequenceParameters.end())
+				modulesToAutoPath.push_back(producer);
+		}
+		for(const auto& analyzer : enabledAnalyzers)
+		{
+			if(std::find(modulesInSequenceParameters.begin(),
+			             modulesInSequenceParameters.end(),
+			             analyzer) == modulesInSequenceParameters.end())
+				modulesToAutoPath.push_back(analyzer);
+		}
+		for(const auto& filter : enabledFilters)
+		{
+			if(std::find(modulesInSequenceParameters.begin(),
+			             modulesInSequenceParameters.end(),
+			             filter) == modulesInSequenceParameters.end())
+				modulesToAutoPath.push_back(filter);
+		}
+
+		if(!modulesToAutoPath.empty())
+		{
+			std::string autoPathKey = "otsdaq_auto_path";
+			for(unsigned int i = 1;
+			    std::find(physicsParameterKeys.begin(),
+			              physicsParameterKeys.end(),
+			              autoPathKey) != physicsParameterKeys.end();
+			    ++i)
 			{
-				out << "analyzePath: [ ";
-				for(size_t i = 0; i < enabledAnalyzers.size(); ++i)
-				{
-					if(i)
-						out << ", ";
-					out << "\"" << enabledAnalyzers[i] << "\"";
-				}
-				out << " ]\n";
+				autoPathKey = "otsdaq_auto_path_" + std::to_string(i);
 			}
 
-			if(!hasEndPaths)
+			out << autoPathKey << ": [ ";
+			for(size_t i = 0; i < modulesToAutoPath.size(); ++i)
 			{
-				out << "end_paths: [ \"analyzePath\" ]\n";
+				if(i)
+					out << ", ";
+				out << "\"" << modulesToAutoPath[i] << "\"";
 			}
+			out << " ]\n";
+
+			if(!hasEndPaths)
+				out << "end_paths: [ \"" << autoPathKey << "\" ]\n";
 		}
 
 		//--------------------------------------
