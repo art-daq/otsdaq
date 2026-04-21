@@ -54,15 +54,15 @@ class SupervisorInfo
 
 
 	struct SubappInfo {
-		std::string 	name; ///< Also key in map
-		std::string 	status;
-		unsigned int 	progress, id;
-		std::string 	detail;
+		std::string 	name {""}; ///< Also key in map
+		std::string 	status {""};
+		unsigned int 	progress = 0, id = 0;
+		std::string 	detail {""};
 		int64_t 		availableLogSpaceKB = 0, availableDataSpaceKB = 0;
 		float			logUsageRateKBps = 0, dataUsageRateKBps = 0;
-		time_t 			lastStatusTime;
-		std::string 	url, parent_url;
-		std::string 	class_name;
+		time_t 			lastStatusTime = 0;
+		std::string 	url {""} , parent_url {""};
+		std::string 	class_name {""};
 		std::deque<std::pair<time_t, int64_t>>	 availableLogSpaceKB_, availableDataSpaceKB_; //keep time series of last, 3.75 minutes, 7.5, 15, 30, 60 minutes to monitor rate trends
 	}; // end SubappInfo struct
 
