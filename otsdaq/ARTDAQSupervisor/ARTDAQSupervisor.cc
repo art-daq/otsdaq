@@ -17,6 +17,8 @@
 #include <boost/filesystem.hpp>
 
 #include <signal.h>
+#include <cerrno>
+#include <cstring>
 #include <regex>
 
 #define OUT_ON_ERR_SIZE 2000  //tail size of output to include on error
@@ -139,7 +141,15 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 
 	// Write out settings file
 	auto          settings_file = __ENV__("DAQINTERFACE_SETTINGS");
-	std::ofstream o(settings_file, std::ios::trunc);
+	std::ofstream of(settings_file, std::ios::trunc);
+	const int     openErrno = errno;  // capture errno immediately after open attempt
+	if(!of.is_open() || of.fail())
+	{
+		__SS__ << "Failed to open DAQINTERFACE_SETTINGS file '" << settings_file
+		       << "' for writing: " << strerror(openErrno) << __E__;
+		__SS_THROW__;
+	}
+	std::stringstream o;
 
 	setenv("DAQINTERFACE_PARTITION_NUMBER", std::to_string(partition_).c_str(), 1);
 	auto logfileName = std::string(__ENV__("OTSDAQ_LOG_DIR")) +
@@ -231,7 +241,10 @@ ARTDAQSupervisor::ARTDAQSupervisor(xdaq::ApplicationStub* stub)
 		o << "partition_label_format: "
 		  << getSupervisorProperty("partition_label_format", "") << std::endl;
 
-	o.close();
+	__COUT_MULTI__(0, o.str());
+
+	of << o.str();
+	of.close();
 
 	// destroy current TRACEController and instantiate ARTDAQSupervisorTRACEController
 	if(CorePropertySupervisorBase::theTRACEController_)
@@ -533,7 +546,7 @@ void ARTDAQSupervisor::init(void)
 //==============================================================================
 void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 {
-	__SUP_COUT__ << "transitionConfiguring" << __E__;
+	__SUP_COUTT__ << "transitionConfiguring" << __E__;
 
 	// activate the configuration tree (the first iteration)
 	if(RunControlStateMachine::getIterationIndex() == 0 &&
@@ -616,7 +629,7 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 		if(!thread_progress_bar_.isComplete())
 		{
-			__SUP_COUT__ << "Not done yet..." << __E__;
+			__SUP_COUTT__ << "Not done yet..." << __E__;
 			//attempt to get live view of python output
 			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
 
@@ -771,233 +784,260 @@ try
 
 	thread_progress_bar_.step();
 
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
-	getDAQState_();
-	if(daqinterface_state_ != "stopped" && daqinterface_state_ != "")
+	// Block 1: State check — acquire and release daqinterface_pythonMutex_
+	// so the runner thread and halt transition can interleave between steps
 	{
-		__GEN_SS__ << "Cannot configure DAQInterface because it is in the wrong state"
-		           << " (" << daqinterface_state_ << " != stopped)!" << __E__;
-		__GEN_SS_THROW__
-	}
+		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+		getDAQState_();
+		if(daqinterface_state_ != "stopped" && daqinterface_state_ != "")
+		{
+			__GEN_SS__ << "Cannot configure DAQInterface because it is in the wrong state"
+			           << " (" << daqinterface_state_ << " != stopped)!" << __E__;
+			__GEN_SS_THROW__
+		}
 
+		if(daqinterface_ptr_ == nullptr)
+		{
+			__GEN_SS__ << "DAQInterface is not initialized. "
+			              "Check earlier Python import/constructor errors (e.g. syntax) "
+			              "in DAQInterface."
+			           << __E__;
+			__GEN_SS_THROW__;
+		}
+	}  // end Block 1 — release daqinterface_pythonMutex_
+
+	// Block 2: setdaqcomps
 	set_thread_message_("Calling setdaqcomps");
 	__GEN_COUT__ << "Calling setdaqcomps" << __E__;
-	__GEN_COUT__ << "Status before setdaqcomps: " << daqinterface_state_ << __E__;
-	if(daqinterface_ptr_ == nullptr)
 	{
-		__GEN_SS__ << "DAQInterface is not initialized. "
-		              "Check earlier Python import/constructor errors (e.g. syntax) "
-		              "in DAQInterface."
-		           << __E__;
-		__GEN_SS_THROW__;
-	}
-	PyObjectGuard pName1(PyUnicode_FromString("setdaqcomps"));
+		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 
-	PyObjectGuard readerDict(PyDict_New());
-	for(auto& reader : info.processes[ARTDAQTableBase::ARTDAQAppType::BoardReader])
-	{
-		// PyDict_SetItem INCREFs key/value, so use PyObjectGuard to manage references
-		label_to_proc_type_map_[reader.label] = "BoardReader";
-		PyObjectGuard readerName(PyUnicode_FromString(reader.label.c_str()));
+		__GEN_COUT__ << "Status before setdaqcomps: " << daqinterface_state_ << __E__;
 
-		int list_size = reader.allowed_processors != "" ? 4 : 3;
+		PyObjectGuard pName1(PyUnicode_FromString("setdaqcomps"));
 
-		PyObjectGuard readerData(PyList_New(list_size));
-		PyObject*     readerHost = PyUnicode_FromString(reader.hostname.c_str());
-		PyObject*     readerPort = PyUnicode_FromString("-1");
-		PyObject*     readerSubsystem =
-		    PyUnicode_FromString(std::to_string(reader.subsystem).c_str());
-		PyList_SetItem(readerData.get(), 0, readerHost);
-		PyList_SetItem(readerData.get(), 1, readerPort);
-		PyList_SetItem(readerData.get(), 2, readerSubsystem);
-		if(reader.allowed_processors != "")
+		PyObjectGuard readerDict(PyDict_New());
+		for(auto& reader : info.processes[ARTDAQTableBase::ARTDAQAppType::BoardReader])
 		{
-			PyObject* readerAllowedProcessors =
-			    PyUnicode_FromString(reader.allowed_processors.c_str());
-			PyList_SetItem(readerData.get(), 3, readerAllowedProcessors);
+			// PyDict_SetItem INCREFs key/value, so use PyObjectGuard to manage references
+			label_to_proc_type_map_[reader.label] = "BoardReader";
+			PyObjectGuard readerName(PyUnicode_FromString(reader.label.c_str()));
+
+			int list_size = reader.allowed_processors != "" ? 4 : 3;
+
+			PyObjectGuard readerData(PyList_New(list_size));
+			PyObject*     readerHost = PyUnicode_FromString(reader.hostname.c_str());
+			PyObject*     readerPort = PyUnicode_FromString("-1");
+			PyObject*     readerSubsystem =
+			    PyUnicode_FromString(std::to_string(reader.subsystem).c_str());
+			PyList_SetItem(readerData.get(), 0, readerHost);
+			PyList_SetItem(readerData.get(), 1, readerPort);
+			PyList_SetItem(readerData.get(), 2, readerSubsystem);
+			if(reader.allowed_processors != "")
+			{
+				PyObject* readerAllowedProcessors =
+				    PyUnicode_FromString(reader.allowed_processors.c_str());
+				PyList_SetItem(readerData.get(), 3, readerAllowedProcessors);
+			}
+			PyDict_SetItem(readerDict.get(), readerName.get(), readerData.get());
 		}
-		PyDict_SetItem(readerDict.get(), readerName.get(), readerData.get());
-	}
-	PyObjectGuard res1(PyObject_CallMethodObjArgs(
-	    daqinterface_ptr_, pName1.get(), readerDict.get(), NULL));
-	__COUT_MULTI_LBL__(0, captureStderrAndStdout_("setdaqcomps"), "setdaqcomps");
+		PyObjectGuard res1(PyObject_CallMethodObjArgs(
+		    daqinterface_ptr_, pName1.get(), readerDict.get(), NULL));
+		__COUT_MULTI_LBL__(0, captureStderrAndStdout_("setdaqcomps"), "setdaqcomps");
 
-	if(checkPythonError(res1.get()))
-	{
-		std::string err_msg = capturePyErr("setdaqcomps");
-		__GEN_SS__ << "Error calling setdaqcomps: " << err_msg << __E__;
-		__GEN_SS_THROW__;
-	}
+		if(checkPythonError(res1.get()))
+		{
+			std::string err_msg = capturePyErr("setdaqcomps");
+			__GEN_SS__ << "Error calling setdaqcomps: " << err_msg << __E__;
+			__GEN_SS_THROW__;
+		}
 
-	getDAQState_();
-	__GEN_COUT__ << "Status after setdaqcomps: " << daqinterface_state_ << __E__;
+		getDAQState_();
+		__GEN_COUT__ << "Status after setdaqcomps: " << daqinterface_state_ << __E__;
+	}  // end Block 2 — release daqinterface_pythonMutex_
 
 	thread_progress_bar_.step();
+
+	// Block 3: do_boot (with recover + retry)
 	set_thread_message_("Calling do_boot");
 	__GEN_COUT_INFO__ << "Calling do_boot" << __E__;
-	__GEN_COUT__ << "Status before boot: " << daqinterface_state_ << __E__;
-
-	// 1. Create Python Strings (Must DECREF later)
-	PyObjectGuard pNameBoot(PyUnicode_FromString("do_boot"));
-	PyObjectGuard pBootArgs(
-	    PyUnicode_FromString((ARTDAQTableBase::ARTDAQ_FCL_PATH + "/boot.txt").c_str()));
-
-	// 2. First Attempt: Call do_boot
-	PyObjectGuard resBoot1(PyObject_CallMethodObjArgs(
-	    daqinterface_ptr_, pNameBoot.get(), pBootArgs.get(), NULL));
-
-	std::string doBootOutput = captureStderrAndStdout_("do_boot");
-	__COUT_MULTI_LBL__(0, doBootOutput, "do_boot");
-
-	if(checkPythonError(resBoot1.get()))
+	std::string doBootOutput = "";
 	{
-		// --- FAILURE PATH ---
+		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 
-		std::string err1 = capturePyErr("do_boot");
+		__GEN_COUT__ << "Status before boot: " << daqinterface_state_ << __E__;
 
-		__GEN_COUT_INFO__ << "Error on first boot attempt: " << err1
-		                  << ". Recovering and retrying..." << __E__;
+		// 1. Create Python Strings
+		PyObjectGuard pNameBoot(PyUnicode_FromString("do_boot"));
+		PyObjectGuard pBootArgs(PyUnicode_FromString(
+		    (ARTDAQTableBase::ARTDAQ_FCL_PATH + "/boot.txt").c_str()));
 
-		// B. Attempt 'do_recover'
-		PyObjectGuard pNameRecover(PyUnicode_FromString("do_recover"));
-		PyObjectGuard resRecover(
-		    PyObject_CallMethodObjArgs(daqinterface_ptr_, pNameRecover.get(), NULL));
-		__COUT_MULTI_LBL__(0, captureStderrAndStdout_("do_recover"), "do_recover");
-
-		if(checkPythonError(resRecover.get()))
-		{
-			// Recover failed - Critical Error
-			std::string errRec = capturePyErr("do_recover");
-
-			std::stringstream oss;
-			oss << "Error calling recover transition!!!! " << errRec;
-			if(doBootOutput.size() > OUT_ON_ERR_SIZE)
-				oss << "... last " << OUT_ON_ERR_SIZE
-				    << " chars: " << doBootOutput.substr(doBootOutput.size() - 1000);
-			else
-				oss << doBootOutput;
-
-			// Clean up original args before throwing
-			__GEN_SS__ << oss.str() << __E__;
-			__GEN_SS_THROW__;
-		}
-
-		// C. Retry 'do_boot'
-		thread_progress_bar_.step();
-		set_thread_message_("Calling do_boot (retry)");
-		__GEN_COUT_INFO__ << "Calling do_boot again" << __E__;
-
-		// Reuse pNameBoot and pBootArgs (valid until we DECREF them at the very end)
-		PyObjectGuard resBoot2(PyObject_CallMethodObjArgs(
+		// 2. First Attempt: Call do_boot
+		PyObjectGuard resBoot1(PyObject_CallMethodObjArgs(
 		    daqinterface_ptr_, pNameBoot.get(), pBootArgs.get(), NULL));
 
-		doBootOutput = captureStderrAndStdout_("do_boot (retry)");
-		__COUT_MULTI_LBL__(0, doBootOutput, "do_boot (retry)");
+		doBootOutput = captureStderrAndStdout_("do_boot");
+		__COUT_MULTI_LBL__(0, doBootOutput, "do_boot");
 
-		if(checkPythonError(resBoot2.get()))
+		if(checkPythonError(resBoot1.get()))
 		{
-			// Second boot failed
-			std::string err2 = capturePyErr("do_boot retry");
+			// --- FAILURE PATH ---
 
-			std::stringstream oss;
-			oss << "Error calling boot transition (2nd try): " << err2;
-			if(doBootOutput.size() > OUT_ON_ERR_SIZE)
-				oss << "... last " << OUT_ON_ERR_SIZE
-				    << " chars: " << doBootOutput.substr(doBootOutput.size() - 1000);
+			std::string err1 = capturePyErr("do_boot");
+
+			__GEN_COUT_INFO__ << "Error on first boot attempt: " << err1
+			                  << ". Recovering and retrying..." << __E__;
+
+			// B. Attempt 'do_recover'
+			PyObjectGuard pNameRecover(PyUnicode_FromString("do_recover"));
+			PyObjectGuard resRecover(
+			    PyObject_CallMethodObjArgs(daqinterface_ptr_, pNameRecover.get(), NULL));
+			__COUT_MULTI_LBL__(0, captureStderrAndStdout_("do_recover"), "do_recover");
+
+			if(checkPythonError(resRecover.get()))
+			{
+				// Recover failed - Critical Error
+				std::string errRec = capturePyErr("do_recover");
+
+				std::stringstream oss;
+				oss << "Error calling recover transition!!!! " << errRec;
+				if(doBootOutput.size() > OUT_ON_ERR_SIZE)
+					oss << "... last " << OUT_ON_ERR_SIZE
+					    << " chars: " << doBootOutput.substr(doBootOutput.size() - 1000);
+				else
+					oss << doBootOutput;
+
+				// Clean up original args before throwing
+				__GEN_SS__ << oss.str() << __E__;
+				__GEN_SS_THROW__;
+			}
+
+			// C. Retry 'do_boot'
+			thread_progress_bar_.step();
+			set_thread_message_("Calling do_boot (retry)");
+			__GEN_COUT_INFO__ << "Calling do_boot again" << __E__;
+
+			// Reuse pNameBoot and pBootArgs (valid until end of scope)
+			PyObjectGuard resBoot2(PyObject_CallMethodObjArgs(
+			    daqinterface_ptr_, pNameBoot.get(), pBootArgs.get(), NULL));
+
+			doBootOutput = captureStderrAndStdout_("do_boot (retry)");
+			__COUT_MULTI_LBL__(0, doBootOutput, "do_boot (retry)");
+
+			if(checkPythonError(resBoot2.get()))
+			{
+				// Second boot failed
+				std::string err2 = capturePyErr("do_boot retry");
+
+				std::stringstream oss;
+				oss << "Error calling boot transition (2nd try): " << err2;
+				if(doBootOutput.size() > OUT_ON_ERR_SIZE)
+					oss << "... last " << OUT_ON_ERR_SIZE
+					    << " chars: " << doBootOutput.substr(doBootOutput.size() - 1000);
+				else
+					oss << doBootOutput;
+
+				__GEN_SS__ << oss.str() << __E__;
+				__GEN_SS_THROW__;
+			}
+		}
+
+		getDAQState_();
+		if(daqinterface_state_ != "booted")
+		{
+			std::cout << "Do boot output on error: \n" << doBootOutput << __E__;
+			__GEN_SS__ << "DAQInterface boot transition failed! "
+			           << "Status after boot attempt: " << daqinterface_state_ << __E__;
+
+			if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
+				ss << "... last " << OUT_ON_ERR_SIZE
+				   << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
 			else
-				oss << doBootOutput;
-
-			__GEN_SS__ << oss.str() << __E__;
+				ss << doBootOutput;
 			__GEN_SS_THROW__;
 		}
-	}
-
-	getDAQState_();
-	if(daqinterface_state_ != "booted")
-	{
-		std::cout << "Do boot output on error: \n" << doBootOutput << __E__;
-		__GEN_SS__ << "DAQInterface boot transition failed! "
-		           << "Status after boot attempt: " << daqinterface_state_ << __E__;
-
-		if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
-			ss << "... last " << OUT_ON_ERR_SIZE
-			   << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
-		else
-			ss << doBootOutput;
-		__GEN_SS_THROW__;
-	}
-	__GEN_COUT__ << "Status after boot: " << daqinterface_state_ << __E__;
+		__GEN_COUT__ << "Status after boot: " << daqinterface_state_ << __E__;
+	}  // end Block 3 — release daqinterface_pythonMutex_
 
 	thread_progress_bar_.step();
+
+	// Block 4: do_config
 	set_thread_message_("Calling do_config");
 	__GEN_COUT_INFO__ << "Calling do_config" << __E__;
-	__GEN_COUT__ << "Status before config: " << daqinterface_state_ << __E__;
 	std::string doConfigOutput = "";
-	{  //do_config call
-		// RAII wrapper for Python objects to ensure cleanup even on exception
+	{
+		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 
-		PyObjectGuard pName3(PyUnicode_FromString("do_config"));
-		// 2. Create the argument - list containing config name: ["my_config"]
-		PyObjectGuard pArg(Py_BuildValue("[s]", FAKE_CONFIG_NAME));
+		__GEN_COUT__ << "Status before config: " << daqinterface_state_ << __E__;
 
-		// 3. Call the method
-		PyObjectGuard res3(PyObject_CallMethodObjArgs(
-		    daqinterface_ptr_, pName3.get(), pArg.get(), NULL));
+		{  //do_config call
+			// RAII wrapper for Python objects to ensure cleanup even on exception
 
-		// 4. Check for errors FIRST before capturing output (which might clear error state)
-		if(checkPythonError(res3.get()))
-		{
-			// Get the error message before doing anything else
-			std::string err = capturePyErr("do_config");
+			PyObjectGuard pName3(PyUnicode_FromString("do_config"));
+			// 2. Create the argument - list containing config name: ["my_config"]
+			PyObjectGuard pArg(Py_BuildValue("[s]", FAKE_CONFIG_NAME));
 
-			// Now capture output for diagnostics
+			// 3. Call the method
+			PyObjectGuard res3(PyObject_CallMethodObjArgs(
+			    daqinterface_ptr_, pName3.get(), pArg.get(), NULL));
+
+			// 4. Check for errors FIRST before capturing output (which might clear error state)
+			if(checkPythonError(res3.get()))
+			{
+				// Get the error message before doing anything else
+				std::string err = capturePyErr("do_config");
+
+				// Now capture output for diagnostics
+				doConfigOutput = captureStderrAndStdout_("do_config");
+
+				__GEN_SS__ << "Error calling config transition: " << err << __E__;
+				__GEN_SS_THROW__;
+			}
+
+			// 5. Success path - capture output
 			doConfigOutput = captureStderrAndStdout_("do_config");
+			__COUT_MULTI_LBL__(0, doConfigOutput, "do_config");
 
-			__GEN_SS__ << "Error calling config transition: " << err << __E__;
+			// 6. Success Handling (Safe conversion to string)
+			// We use PyObject_Str to safely convert any return type (None, Int, String) to text
+			PyObjectGuard strRes(PyObject_Str(res3.get()));
+			const char*   res_cstr = "";
+			if(strRes.get())
+			{
+				res_cstr = PyUnicode_AsUTF8(strRes.get());
+			}
+
+			__SUP_COUTT__ << "do_config result=" << (res_cstr ? res_cstr : "N/A")
+			              << __E__;
+		}  //end do_config call
+
+		getDAQState_();
+		if(daqinterface_state_ != "ready")
+		{
+			__GEN_SS__ << "DAQInterface config transition failed!" << __E__
+			           << "Supervisor state: \"" << daqinterface_state_
+			           << "\" != \"ready\" " << __E__;
+			auto doConfigOutput_recover_i =
+			    doConfigOutput.find("RECOVER transition underway");
+			if(doConfigOutput_recover_i == std::string::npos)
+				ss << doConfigOutput;
+			else if(doConfigOutput_recover_i >
+			        OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
+				ss << "... tail of " << OUT_ON_ERR_SIZE << " characters before recovery: "
+				   << doConfigOutput.substr(
+				          doConfigOutput_recover_i - OUT_ON_ERR_SIZE +
+				              std::string("RECOVER transition underway").size(),
+				          OUT_ON_ERR_SIZE);
+			else
+				ss << doConfigOutput.substr(
+				    0,
+				    doConfigOutput_recover_i +
+				        std::string("RECOVER transition underway").size());
 			__GEN_SS_THROW__;
 		}
+		__GEN_COUT__ << "Status after config: " << daqinterface_state_ << __E__;
+	}  // end Block 4 — release daqinterface_pythonMutex_
 
-		// 5. Success path - capture output
-		doConfigOutput = captureStderrAndStdout_("do_config");
-		__COUT_MULTI_LBL__(0, doConfigOutput, "do_config");
-
-		// 6. Success Handling (Safe conversion to string)
-		// We use PyObject_Str to safely convert any return type (None, Int, String) to text
-		PyObjectGuard strRes(PyObject_Str(res3.get()));
-		const char*   res_cstr = "";
-		if(strRes.get())
-		{
-			res_cstr = PyUnicode_AsUTF8(strRes.get());
-		}
-
-		__SUP_COUTT__ << "do_config result=" << (res_cstr ? res_cstr : "N/A") << __E__;
-	}  //end do_config call
-
-	getDAQState_();
-	if(daqinterface_state_ != "ready")
-	{
-		__GEN_SS__ << "DAQInterface config transition failed!" << __E__
-		           << "Supervisor state: \"" << daqinterface_state_ << "\" != \"ready\" "
-		           << __E__;
-		auto doConfigOutput_recover_i =
-		    doConfigOutput.find("RECOVER transition underway");
-		if(doConfigOutput_recover_i == std::string::npos)
-			ss << doConfigOutput;
-		else if(doConfigOutput_recover_i >
-		        OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
-			ss << "... tail of " << OUT_ON_ERR_SIZE << " characters before recovery: "
-			   << doConfigOutput.substr(
-			          doConfigOutput_recover_i - OUT_ON_ERR_SIZE +
-			              std::string("RECOVER transition underway").size(),
-			          OUT_ON_ERR_SIZE);
-		else
-			ss << doConfigOutput.substr(
-			    0,
-			    doConfigOutput_recover_i +
-			        std::string("RECOVER transition underway").size());
-		__GEN_SS_THROW__;
-	}
-	__GEN_COUT__ << "Status after config: " << daqinterface_state_ << __E__;
 	thread_progress_bar_.complete();
 	set_thread_message_("Configured");
 	__GEN_COUT_INFO__ << "Configured." << __E__;
@@ -1094,6 +1134,14 @@ try
 		__SUP_COUT__ << "Status after halt: " << daqinterface_state_ << __E__;
 		break;
 	}  //end retry loop
+
+	if(tries >= 5)
+	{
+		__SUP_SS__ << "Failed to acquire python lock for halting after " << tries
+		           << " tries, giving up! Is it possible the configure thread is stuck?"
+		           << __E__;
+		__SUP_SS_THROW__;
+	}
 
 	__SUP_COUT__ << "Halted." << __E__;
 	set_thread_message_("Halted");

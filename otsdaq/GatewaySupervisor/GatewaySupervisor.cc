@@ -2349,11 +2349,12 @@ try
 				    spaceIt->second.first > availableLogSpaceKB) &&
 				   availableLogSpaceKB < availableLogSpaceKB_MIN)  //and below threshold
 				{                                                  //then alert users!
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Available log disk space low (at host='" +
-					    appInfo.getHostname() + "' and path='" + otsdaq_log_dir +
-					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					    " MB remaining.");
+					        appInfo.getHostname() + "' and path='" + otsdaq_log_dir +
+					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					        " MB remaining.");
 				}
 				availableDiskSpaceKB_map[appInfo.getContextName()].first =
 				    availableLogSpaceKB;
@@ -2368,11 +2369,12 @@ try
 				    spaceIt->second.second > availableDataSpaceKB) &&
 				   availableDataSpaceKB < availableDataSpaceKB_MIN)  //and below threshold
 				{                                                    //then alert users!
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Available data disk space low (at host='" +
-					    appInfo.getHostname() + "' and path='" + otsdaq_data_dir +
-					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					    " MB remaining.");
+					        appInfo.getHostname() + "' and path='" + otsdaq_data_dir +
+					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					        " MB remaining.");
 				}
 				availableDiskSpaceKB_map[appInfo.getContextName()].second =
 				    availableDataSpaceKB;
@@ -2409,12 +2411,13 @@ try
 				   availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
 				       availableLogSpaceKB_MIN)
 				{
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_log_dir +
-					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					    " MB remaining and log usage rate over last hour is " +
-					    std::to_string(logUsageRateLastHourKBps) + " KB/s.");
+					        "' and path='" + otsdaq_log_dir +
+					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					        " MB remaining and log usage rate over last hour is " +
+					        std::to_string(logUsageRateLastHourKBps) + " KB/s.");
 					rateToLogDiskLastHourAlert_map[appInfo.getContextName()] =
 					    now;  //record time of this alert
 				}
@@ -2432,12 +2435,13 @@ try
 				   availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
 				       availableLogSpaceKB_MIN)
 				{
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_log_dir +
-					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					    " MB remaining and log usage rate over last half-hour is " +
-					    std::to_string(logUsageRateLastHalfHourKBps) + " KB/s.");
+					        "' and path='" + otsdaq_log_dir +
+					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					        " MB remaining and log usage rate over last half-hour is " +
+					        std::to_string(logUsageRateLastHalfHourKBps) + " KB/s.");
 					rateToLogDiskLastHalfHourAlert_map[appInfo.getContextName()] =
 					    now;  //record time of this alert
 				}
@@ -2455,12 +2459,14 @@ try
 				   availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
 				       availableLogSpaceKB_MIN)
 				{
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_log_dir +
-					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					    " MB remaining and log usage rate over last quarter-hour is " +
-					    std::to_string(logUsageRateLastQuarterHourKBps) + " KB/s.");
+					        "' and path='" + otsdaq_log_dir +
+					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					        " MB remaining and log usage rate over last quarter-hour "
+					        "is " +
+					        std::to_string(logUsageRateLastQuarterHourKBps) + " KB/s.");
 					rateToLogDiskLastQuarterHourAlert_map[appInfo.getContextName()] =
 					    now;  //record time of this alert
 				}
@@ -2478,12 +2484,13 @@ try
 				   availableLogSpaceKB - logUsageRateNowKBps * 450 <
 				       availableLogSpaceKB_MIN)
 				{
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_log_dir +
-					    "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					    " MB remaining and log usage rate over last few minutes is " +
-					    std::to_string(logUsageRateNowKBps) + " KB/s.");
+					        "' and path='" + otsdaq_log_dir +
+					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+					        " MB remaining and log usage rate over last few minutes is " +
+					        std::to_string(logUsageRateNowKBps) + " KB/s.");
 					rateToLogDiskNowAlert_map[appInfo.getContextName()] =
 					    now;  //record time of this alert
 				}
@@ -2501,12 +2508,13 @@ try
 				   availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
 				       availableDataSpaceKB_MIN)
 				{
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_data_dir +
-					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					    " MB remaining and data usage rate over last hour is " +
-					    std::to_string(dataUsageRateLastHourKBps) + " KB/s.");
+					        "' and path='" + otsdaq_data_dir +
+					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					        " MB remaining and data usage rate over last hour is " +
+					        std::to_string(dataUsageRateLastHourKBps) + " KB/s.");
 					rateToDataDiskLastHourAlert_map[appInfo.getContextName()] =
 					    now;  //record time of this alert
 				}
@@ -2523,12 +2531,13 @@ try
 				   availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
 				       availableDataSpaceKB_MIN)
 				{
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_data_dir +
-					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					    " MB remaining and data usage rate over last half-hour is " +
-					    std::to_string(dataUsageRateLastHalfHourKBps) + " KB/s.");
+					        "' and path='" + otsdaq_data_dir +
+					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					        " MB remaining and data usage rate over last half-hour is " +
+					        std::to_string(dataUsageRateLastHalfHourKBps) + " KB/s.");
 					rateToDataDiskLastHalfHourAlert_map[appInfo.getContextName()] =
 					    now;  //record time of this alert
 				}
@@ -2547,12 +2556,14 @@ try
 				   availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
 				       availableDataSpaceKB_MIN)
 				{
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_data_dir +
-					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					    " MB remaining and data usage rate over last quarter-hour is " +
-					    std::to_string(dataUsageRateLastQuarterHourKBps) + " KB/s.");
+					        "' and path='" + otsdaq_data_dir +
+					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					        " MB remaining and data usage rate over last quarter-hour "
+					        "is " +
+					        std::to_string(dataUsageRateLastQuarterHourKBps) + " KB/s.");
 					rateToDataDiskLastQuarterHourAlert_map[appInfo.getContextName()] =
 					    now;  //record time of this alert
 				}
@@ -2570,12 +2581,14 @@ try
 				   availableDataSpaceKB - dataUsageRateNowKBps * 450 <
 				       availableDataSpaceKB_MIN)
 				{
-					theSupervisor->makeSystemLogEntry(
+					theSupervisor->addSystemMessage(
+					    "*",
 					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
-					    "' and path='" + otsdaq_data_dir +
-					    "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					    " MB remaining and data usage rate over last few minutes is " +
-					    std::to_string(dataUsageRateNowKBps) + " KB/s.");
+					        "' and path='" + otsdaq_data_dir +
+					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+					        " MB remaining and data usage rate over last few minutes "
+					        "is " +
+					        std::to_string(dataUsageRateNowKBps) + " KB/s.");
 					rateToDataDiskNowAlert_map[appInfo.getContextName()] =
 					    now;  //record time of this alert
 				}
@@ -3705,7 +3718,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    "context",
 						    appInfo.getContextName());  // get context
 						auto subappElement = xmlOut.addTextElementToData("subapps", "");
-						for(auto& subappInfoPair : appInfo.getSubappInfo())
+						auto copySubappVector = appInfo.getSubappInfo();
+						for(auto& subappInfoPair : copySubappVector)
 						{
 							xmlOut.addTextElementToParent(
 							    "subapp_name", subappInfoPair.first, subappElement);
@@ -7138,6 +7152,15 @@ try
 	{ /* ignore errors */
 		;
 	}
+	bool doLogRuns = true;  //default to logging runs
+	try
+	{
+		doLogRuns = __ENV__("OTS_LOG_RUNS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 
 	std::ostringstream dur_ss;
 	{
@@ -7179,9 +7202,10 @@ try
 	else
 		broadcastMessage(theStateMachine_.getCurrentMessage());
 
-	makeSystemLogEntry(
-	    "Run paused. " + dur_ss.str(),
-	    activeStateMachineRunAlias_ + " '" + activeStateMachineRunNumber_ + "' paused");
+	if(doLogRuns)
+		makeSystemLogEntry("Run paused. " + dur_ss.str(),
+		                   activeStateMachineRunAlias_ + " '" +
+		                       activeStateMachineRunNumber_ + "' paused");
 	__COUT__ << "Done pausing." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 
@@ -7257,6 +7281,15 @@ try
 	{ /* ignore errors */
 		;
 	}
+	bool doLogRuns = true;  //default to logging runs
+	try
+	{
+		doLogRuns = __ENV__("OTS_LOG_RUNS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 	if(doLog)
 	{
 		std::stringstream ss;
@@ -7278,6 +7311,7 @@ try
 	broadcastMessage(theStateMachine_.getCurrentMessage());
 
 	// make logbook entry
+	if(doLogRuns)
 	{
 		std::stringstream ss;
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_
@@ -7390,6 +7424,15 @@ try
 	try
 	{
 		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
+	bool doLogRuns = true;  //default to logging runs
+	try
+	{
+		doLogRuns = __ENV__("OTS_LOG_RUNS") == std::string("1");
 	}
 	catch(...)
 	{ /* ignore errors */
@@ -7739,6 +7782,7 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 	// make logbook entry
+	if(doLogRuns)
 	{
 		std::stringstream ss;
 		ss << activeStateMachineRunAlias_ << " '" << activeStateMachineRunNumber_
@@ -7880,6 +7924,15 @@ try
 	{ /* ignore errors */
 		;
 	}
+	bool doLogRuns = true;  //default to logging runs
+	try
+	{
+		doLogRuns = __ENV__("OTS_LOG_RUNS") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore errors */
+		;
+	}
 
 	// calculate run duration and make system log entry
 	std::ostringstream dur_ss;
@@ -7926,6 +7979,7 @@ try
 		broadcastMessage(theStateMachine_.getCurrentMessage());
 
 	// make logbook entry
+	if(doLogRuns)
 	{
 		std::stringstream ss;
 		ss << dur_ss.str();
@@ -8757,7 +8811,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								    << ") is " << timeoutSeconds / 60 << " minutes... "
 								    << secondsLeft << " seconds remaining before timeout!"
 								    << __E__;
-							else if(lastMinutesLeft != minutesLeft && minutesLeft < 6)
+							else if(lastMinutesLeft != minutesLeft && minutesLeft < 3)
 								__COUT_WARN__
 								    << waitSs.str() << "\n"
 								    << "Timeout threshold (for iteration #" << iteration

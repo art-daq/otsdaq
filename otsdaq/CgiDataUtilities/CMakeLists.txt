@@ -2,7 +2,7 @@ cet_make_library(LIBRARY_NAME CgiDataUtilities
 SOURCE
 CgiDataUtilities.cc
 		LIBRARIES PUBLIC
-		XDAQ::xgi
+        XDAQ::cgicc
 		PRIVATE
 		otsdaq::Macros
 )

@@ -1235,7 +1235,7 @@ ConfigurationTree ConfigurationTree::recursiveGetNode(
 				       << __E__;
 
 				ss << nodeDump() << __E__;
-				__SS_THROW__;
+				__SS_ONLY_THROW__;
 			}
 
 			// this node is table node, so return uid node considering groupid

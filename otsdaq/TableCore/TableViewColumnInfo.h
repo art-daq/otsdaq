@@ -43,7 +43,7 @@ class TableViewColumnInfo
 	{
 		BitMapInfo() : minColor_(""), midColor_(""), maxColor_("") {}
 		unsigned int numOfRows_, numOfColumns_, cellBitSize_;
-		uint64_t     minValue_, maxValue_, stepValue_;
+		double       minValue_, maxValue_, stepValue_;
 		std::string  aspectRatio_;
 		std::string  minColor_, midColor_, maxColor_;
 		std::string  absMinColor_, absMaxColor_, mapToStrings_ = "";
