@@ -120,6 +120,9 @@ endif()
 # test programs
 add_subdirectory(test)
 
+# CMake module files
+FILE(COPY Modules DESTINATION .)
+INSTALL(DIRECTORY Modules DESTINATION .)
 
 # data-core
 FILE(COPY data-core DESTINATION .)

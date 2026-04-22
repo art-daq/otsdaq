@@ -190,6 +190,7 @@ class WebUsers
 	enum
 	{
 		SYS_CLEANUP_WILDCARD_TIME = 300,  ///< 300 seconds
+		SYS_CLEANUP_USER_MESSAGE_TIME = 15,  ///< 15 seconds - allows multiple browser tabs/devices to receive the same message
 	};
 
 	struct SystemMessage
@@ -202,6 +203,9 @@ class WebUsers
 		//		When a message is delivered deliveredFlag = true,
 		//		During systemMessageCleanup(), systemMessageLock is set, delivered messages are removed,
 		//			and systemMessageLock is unset.
+		//	Note: User-specific messages persist for SYS_CLEANUP_USER_MESSAGE_TIME (15 seconds) after
+		//		first delivery to allow multiple browser tabs/devices to receive the same message.
+		//		The client side should suppress duplicate messages with the same text and timestamp.
 		//"SystemMessage" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		// Maintain list of user system messages:
 		//	time, message, deliveredFlag
@@ -209,12 +213,14 @@ class WebUsers
 		SystemMessage(const std::string& message)
 		: message_			(message)
 		, creationTime_		(time(0))
+		, firstDeliveryTime_(0)
 		, delivered_		(false)
 		, deliveredRemote_	(false)
 		{} //end constructor
 
 		std::string 			message_;
 		time_t					creationTime_;
+		time_t					firstDeliveryTime_; ///< time of first delivery, 0 if not yet delivered
 		bool					delivered_; ///<flag
 		bool					deliveredRemote_; ///<flag
 	}; //end SystemMessage struct

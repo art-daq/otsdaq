@@ -340,9 +340,9 @@ void TableViewColumnInfo::extractBitMapInfo()
 		sscanf(dataChoices_[1].c_str(), "%u", &(bitMapInfoP_->numOfColumns_));
 		sscanf(dataChoices_[2].c_str(), "%u", &(bitMapInfoP_->cellBitSize_));
 
-		sscanf(dataChoices_[3].c_str(), "%lu", &(bitMapInfoP_->minValue_));
-		sscanf(dataChoices_[4].c_str(), "%lu", &(bitMapInfoP_->maxValue_));
-		sscanf(dataChoices_[5].c_str(), "%lu", &(bitMapInfoP_->stepValue_));
+		sscanf(dataChoices_[3].c_str(), "%lf", &(bitMapInfoP_->minValue_));
+		sscanf(dataChoices_[4].c_str(), "%lf", &(bitMapInfoP_->maxValue_));
+		sscanf(dataChoices_[5].c_str(), "%lf", &(bitMapInfoP_->stepValue_));
 
 		bitMapInfoP_->aspectRatio_ = dataChoices_[6];
 		bitMapInfoP_->minColor_    = dataChoices_[7];
