@@ -4001,6 +4001,98 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 					}  // done with multi-node member trim
 
+					// Numeric-only wildcard refinement: when node names have multiple
+					//  separate varying digit groups (e.g. prefix 01-12 AND suffix 0-1
+					//  in names like "01DTC0", "01DTC1", "02DTC0", etc.), fix the digit
+					//  group with the fewest unique values so that the remaining wildcard
+					//  is numeric-only. This heavily favors numeric-only multinode arrays.
+					if(multiNodeNames.size() > 2)
+					{
+						bool   sameLengths = true;
+						size_t nameLen     = multiNodeNames[0].size();
+						for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
+							if(multiNodeNames[i].size() != nameLen)
+							{ sameLengths = false; break; }
+
+						if(sameLengths && nameLen > 0)
+						{
+							std::vector<bool> varies(nameLen, false);
+							for(unsigned int pos = 0; pos < nameLen; ++pos)
+								for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
+									if(multiNodeNames[i][pos] != multiNodeNames[0][pos])
+									{ varies[pos] = true; break; }
+
+							struct VaryRun { unsigned int start, end; bool allDigits; };
+							std::vector<VaryRun> runs;
+							for(unsigned int pos = 0; pos < nameLen; )
+							{
+								if(!varies[pos]) { ++pos; continue; }
+								unsigned int rStart = pos;
+								bool runAllDigit = true;
+								while(pos < nameLen && varies[pos])
+								{
+									for(unsigned int i = 0; i < multiNodeNames.size() && runAllDigit; ++i)
+										if(!(multiNodeNames[i][pos] >= '0' && multiNodeNames[i][pos] <= '9'))
+											runAllDigit = false;
+									++pos;
+								}
+								runs.push_back({rStart, pos, runAllDigit});
+							}
+
+							unsigned int numDigitRuns = 0;
+							for(const auto& run : runs)
+								if(run.allDigits) ++numDigitRuns;
+
+							if(numDigitRuns > 1 && numDigitRuns == runs.size())
+							{
+								__COUT__ << "Numeric wildcard refinement: found " << numDigitRuns
+								         << " separate digit-varying groups in '" << nodeName
+								         << "'. Splitting to favor numeric-only wildcards." << __E__;
+
+								unsigned int bestRunToFix = 0;
+								unsigned int fewestUnique = (unsigned int)-1;
+								for(unsigned int r = 0; r < runs.size(); ++r)
+								{
+									std::set<std::string> uniqueVals;
+									for(unsigned int i = 0; i < multiNodeNames.size(); ++i)
+										uniqueVals.insert(multiNodeNames[i].substr(
+										    runs[r].start, runs[r].end - runs[r].start));
+									if(uniqueVals.size() < fewestUnique)
+									{ fewestUnique = uniqueVals.size(); bestRunToFix = r; }
+								}
+
+								std::string keepVal = multiNodeNames[0].substr(
+								    runs[bestRunToFix].start,
+								    runs[bestRunToFix].end - runs[bestRunToFix].start);
+
+								__COUT__ << "Fixing digit group at positions "
+								         << runs[bestRunToFix].start << "-"
+								         << (runs[bestRunToFix].end - 1)
+								         << " to value '" << keepVal
+								         << "' (fewest unique=" << fewestUnique << ")" << __E__;
+
+								for(unsigned int i = multiNodeNames.size() - 1;
+								    i > 0 && i < multiNodeNames.size(); --i)
+								{
+									std::string val = multiNodeNames[i].substr(
+									    runs[bestRunToFix].start,
+									    runs[bestRunToFix].end - runs[bestRunToFix].start);
+									if(val != keepVal)
+									{
+										__COUT__ << "Numeric refinement trim: " << multiNodeNames[i]
+										         << " (digit group '" << val << "' != '" << keepVal << "')" << __E__;
+										trimmedNodeNames.push_back(multiNodeNames[i]);
+										skipSet.erase(multiNodeNames[i]);
+										multiNodeNames.erase(multiNodeNames.begin() + i);
+										hostnameArray.erase(hostnameArray.begin() + i);
+									}
+								}
+								__COUT__ << "After numeric refinement: " << multiNodeNames.size()
+								         << " nodes remain for '" << nodeName << "'." << __E__;
+							}
+						}
+					}  // end numeric-only wildcard refinement
+
 					// Collision check: verify that the computed nodeName pattern
 					//	does not also match trimmed nodes or existing map entries.
 					//	If it does, re-score with full character matching and trim
