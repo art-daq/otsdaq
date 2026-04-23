@@ -865,8 +865,8 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 			}
 			catch(...)
 			{
-				__COUT__
-				    << "Ignoring missing fragment_id column associated with Board Reader."
+				__COUTT__
+				    << "Ignoring missing daqFragmentIDs column associated with fragment_ids for Board Reader."
 				    << __E__;
 
 				OUTCF("# fragment_ids not specified, but could be", "", "daqFragmentIDs");
@@ -4039,6 +4039,26 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								runs.push_back({rStart, pos, runAllDigit});
 							}
 
+							// Expand each all-digit run backwards to absorb preceding
+							// non-varying digit characters that are part of the same
+							// numeric token. E.g. "BRCalo13" vs "BRCalo14" has only
+							// position 7 varying, but position 6 ('1') is a digit that
+							// should be included so the wildcard covers "13"/"14" not
+							// just "3"/"4".
+							for(auto& run : runs)
+							{
+								if(!run.allDigits) continue;
+								while(run.start > 0)
+								{
+									bool allDigitAtPrev = true;
+									for(unsigned int i = 0; i < multiNodeNames.size() && allDigitAtPrev; ++i)
+										if(!(multiNodeNames[i][run.start - 1] >= '0' && multiNodeNames[i][run.start - 1] <= '9'))
+											allDigitAtPrev = false;
+									if(!allDigitAtPrev) break;
+									run.start--;
+								}
+							}
+
 							unsigned int numDigitRuns = 0;
 							for(const auto& run : runs)
 								if(run.allDigits) ++numDigitRuns;
@@ -4049,16 +4069,71 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								         << " separate digit-varying groups in '" << nodeName
 								         << "'. Splitting to favor numeric-only wildcards." << __E__;
 
+								// For each digit-varying run, compute:
+								//  - uniqueCount: number of distinct digit values
+								//  - hostnameCorrelation: how many distinct hostnames 
+								//    correspond to distinct digit values (high = correlated
+								//    with hostname, meaning this group should be the wildcard,
+								//    NOT the one we fix)
 								unsigned int bestRunToFix = 0;
 								unsigned int fewestUnique = (unsigned int)-1;
+								unsigned int lowestHostCorr = (unsigned int)-1;
 								for(unsigned int r = 0; r < runs.size(); ++r)
 								{
 									std::set<std::string> uniqueVals;
 									for(unsigned int i = 0; i < multiNodeNames.size(); ++i)
 										uniqueVals.insert(multiNodeNames[i].substr(
 										    runs[r].start, runs[r].end - runs[r].start));
-									if(uniqueVals.size() < fewestUnique)
-									{ fewestUnique = uniqueVals.size(); bestRunToFix = r; }
+									
+									// Compute hostname correlation: count distinct hostnames
+									// across distinct digit-group values
+									std::set<std::string> correspondingHostnames;
+									for(unsigned int i = 0; i < multiNodeNames.size(); ++i)
+										correspondingHostnames.insert(hostnameArray[i]);
+									// A digit group that varies with hostname will have 
+									// correspondingHostnames.size() close to uniqueVals.size().
+									// More precisely, map each digit value to its set of hostnames.
+									std::map<std::string, std::set<std::string>> valToHosts;
+									for(unsigned int i = 0; i < multiNodeNames.size(); ++i)
+									{
+										std::string dv = multiNodeNames[i].substr(
+										    runs[r].start, runs[r].end - runs[r].start);
+										valToHosts[dv].insert(hostnameArray[i]);
+									}
+									// hostnameCorrelation = number of digit values that map to 
+									// a unique hostname (i.e. different digit value -> different host)
+									// If all digit values share the same hostname, correlation = 0.
+									unsigned int hostCorr = 0;
+									if(valToHosts.size() > 1)
+									{
+										// Check if different digit values map to different hostnames
+										std::set<std::string> allHostSets;
+										for(const auto& [dv, hosts] : valToHosts)
+										{
+											std::string hostKey;
+											for(const auto& h : hosts)
+												hostKey += h + ",";
+											allHostSets.insert(hostKey);
+										}
+										hostCorr = allHostSets.size();
+									}
+									
+									__COUT__ << "Digit run " << r << " [" 
+									         << runs[r].start << "-" << (runs[r].end - 1)
+									         << "]: uniqueVals=" << uniqueVals.size()
+									         << " hostCorr=" << hostCorr << __E__;
+									
+									// Prefer to fix the group with fewest unique values,
+									// and break ties by fixing the one with LOWEST hostname
+									// correlation (i.e. keep the hostname-correlated group 
+									// as the wildcard).
+									if(uniqueVals.size() < fewestUnique ||
+									   (uniqueVals.size() == fewestUnique && hostCorr < lowestHostCorr))
+									{
+										fewestUnique = uniqueVals.size();
+										lowestHostCorr = hostCorr;
+										bestRunToFix = r;
+									}
 								}
 
 								std::string keepVal = multiNodeNames[0].substr(
@@ -4102,10 +4177,28 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 					if(multiNodeNames.size() > 1)
 					{
 						// Lambda to check if a name matches the commonChunks pattern
-						//	(i.e. all non-empty chunks appear in order, first chunk at position 0)
+						//	(i.e. all non-empty chunks appear in order, first chunk at position 0).
+						//  When the multinode wildcards are all purely numeric, require
+						//  that the gap portions of the candidate name are also purely
+						//  numeric so that e.g. "DL0CRV" does not falsely collide with
+						//  the "DL*" pattern produced by numeric-only members DL1, DL2, DL3.
 						auto matchesCommonChunksPattern =
 						    [](const std::string&              name,
-						       const std::vector<std::string>& chunks) -> bool {
+						       const std::vector<std::string>& chunks,
+						       const std::vector<std::string>& wildcards) -> bool {
+							// Check if all multinode wildcards are purely numeric
+							bool wildcardsAllNumeric = !wildcards.empty();
+							for(const auto& w : wildcards)
+							{
+								if(w.empty() ||
+								   w.find_first_not_of("0123456789") !=
+								       std::string::npos)
+								{
+									wildcardsAllNumeric = false;
+									break;
+								}
+							}
+
 							size_t pos = 0;
 							for(unsigned int c = 0; c < chunks.size(); ++c)
 							{
@@ -4119,10 +4212,32 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									            ? 0
 									            : std::string::npos;
 								else
+								{
 									found = name.find(chunks[c], pos);
+									// If wildcards are all numeric, verify the gap
+									//  between chunks is also purely numeric
+									if(wildcardsAllNumeric &&
+									   found != std::string::npos)
+									{
+										std::string gap =
+										    name.substr(pos, found - pos);
+										if(gap.empty() ||
+										   gap.find_first_not_of("0123456789") !=
+										       std::string::npos)
+											return false;
+									}
+								}
 								if(found == std::string::npos)
 									return false;
 								pos = found + chunks[c].size();
+							}
+							// Check trailing gap after the last non-empty chunk
+							if(wildcardsAllNumeric && pos < name.size())
+							{
+								std::string trailingGap = name.substr(pos);
+								if(trailingGap.find_first_not_of("0123456789") !=
+								   std::string::npos)
+									return false;
 							}
 							return true;
 						};
@@ -4150,7 +4265,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							for(const auto& trimmedNode : trimmedNodeNames)
 							{
 								if(matchesCommonChunksPattern(trimmedNode,
-								                              trialCommonChunks))
+								                              trialCommonChunks,
+								                              trialWildcards))
 								{
 									__COUT__ << "Collision detected: trimmed node '"
 									         << trimmedNode
@@ -4162,20 +4278,77 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							}
 
 							// Check 2: existing map entries collision
+							//  Skip entries with a different status since on/off nodes
+							//  are displayed in separate sections and can never collide.
 							if(!collisionFound)
 							{
+								std::string currentStatusStr = status ? "1" : "0";
 								for(const auto& existingEntry :
 								    nodeTypeToObjectMap.at(typeString))
 								{
 									std::string existingBaseName = existingEntry.first;
 									size_t statusPos = existingBaseName.find(";status=");
 									if(statusPos != std::string::npos)
+									{
+										// Skip entries with different status
+										if(existingBaseName.substr(statusPos + 8) != currentStatusStr)
+											continue;
 										existingBaseName =
 										    existingBaseName.substr(0, statusPos);
+									}
 
-									if(matchesCommonChunksPattern(existingBaseName,
-									                              trialCommonChunks))
+								if(matchesCommonChunksPattern(existingBaseName,
+								                              trialCommonChunks,
+								                              trialWildcards))
 									{
+										// Extract the gap value from the existing entry
+										// name and check if it is actually one of the
+										// current group's wildcard values.  If it is not,
+										// the explicit wildcard list in the multiNodeString
+										// already disambiguates, so this is not a real
+										// collision.
+										std::string existingGap;
+										if(trialCommonChunks.size() == 1 &&
+										   existingBaseName.size() > trialCommonChunks[0].size())
+											existingGap = existingBaseName.substr(
+											    trialCommonChunks[0].size());
+										else if(trialCommonChunks.size() >= 2)
+										{
+											size_t suffixLen = 0;
+											for(size_t ci = 1; ci < trialCommonChunks.size(); ++ci)
+												suffixLen += trialCommonChunks[ci].size();
+											if(existingBaseName.size() >
+											   trialCommonChunks[0].size() + suffixLen)
+												existingGap = existingBaseName.substr(
+												    trialCommonChunks[0].size(),
+												    existingBaseName.size() -
+												        trialCommonChunks[0].size() -
+												        suffixLen);
+										}
+
+										if(!existingGap.empty())
+										{
+											bool gapInWildcards = false;
+											for(const auto& w : trialWildcards)
+												if(w == existingGap)
+												{
+													gapInWildcards = true;
+													break;
+												}
+											if(!gapInWildcards)
+											{
+												__COUT__
+												    << "Existing entry '"
+												    << existingEntry.first
+												    << "' matches pattern but gap '"
+												    << existingGap
+												    << "' is not in multinode wildcards"
+												       " - not a collision"
+												    << __E__;
+												continue;
+											}
+										}
+
 										__COUT__
 										    << "Collision detected: existing map entry '"
 										    << existingEntry.first
@@ -4327,6 +4500,59 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							__SS_THROW__;
 						}
 
+						// Expand numeric wildcards: when all wildcards are
+						// purely numeric and the preceding common chunk ends
+						// with digits, move those trailing digits from the
+						// chunk into the wildcard values so the pattern
+						// boundary falls on a letter/digit transition.
+						// e.g. commonChunks=["BRCalo1","DTC1"] wildcards=["3","4"]
+						//   => commonChunks=["BRCalo","DTC1"]  wildcards=["13","14"]
+						{
+							bool allDigitWC = true;
+							for(const auto& wc : wildcards)
+							{
+								if(wc.empty() ||
+								   wc.find_first_not_of("0123456789") !=
+								       std::string::npos)
+								{
+									allDigitWC = false;
+									break;
+								}
+							}
+							if(allDigitWC && !commonChunks.empty() &&
+							   !commonChunks[0].empty())
+							{
+								size_t trailingDigits = 0;
+								for(int ci = (int)commonChunks[0].size() - 1;
+								    ci >= 0;
+								    --ci)
+								{
+									if(commonChunks[0][ci] >= '0' &&
+									   commonChunks[0][ci] <= '9')
+										++trailingDigits;
+									else
+										break;
+								}
+								if(trailingDigits > 0 &&
+								   trailingDigits < commonChunks[0].size())
+								{
+									std::string prefix = commonChunks[0].substr(
+									    commonChunks[0].size() - trailingDigits);
+									commonChunks[0] = commonChunks[0].substr(
+									    0,
+									    commonChunks[0].size() - trailingDigits);
+									for(auto& wc : wildcards)
+										wc = prefix + wc;
+
+									__COUT__
+									    << "Expanded numeric wildcards: moved '"
+									    << prefix
+									    << "' from commonChunk prefix into wildcards."
+									    << __E__;
+								}
+							}
+						}
+
 						__COUTV__(StringMacros::vectorToString(commonChunks));
 						__COUTV__(StringMacros::vectorToString(wildcards));
 
@@ -4441,6 +4667,63 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						                                      hostFixedWildcardLength);
 
 						__COUTV__(wildcardsNeeded);
+						__COUTV__(StringMacros::vectorToString(commonChunks));
+						__COUTV__(StringMacros::vectorToString(wildcards));
+
+						// Expand numeric wildcards for hostname: when all
+						// wildcards are purely numeric and the preceding
+						// common chunk ends with digits, move those trailing
+						// digits from the chunk into the wildcard values so
+						// the pattern boundary falls on a letter/digit
+						// transition.
+						// e.g. commonChunks=["mu2e%2Dcalo%2D1","%2Ddata..."] wildcards=["3","4"]
+						//   => commonChunks=["mu2e%2Dcalo%2D","%2Ddata..."]   wildcards=["13","14"]
+						{
+							bool allDigitWC = true;
+							for(const auto& wc : wildcards)
+							{
+								if(wc.empty() ||
+								   wc.find_first_not_of("0123456789") !=
+								       std::string::npos)
+								{
+									allDigitWC = false;
+									break;
+								}
+							}
+							if(allDigitWC && !commonChunks.empty() &&
+							   !commonChunks[0].empty())
+							{
+								size_t trailingDigits = 0;
+								for(int ci = (int)commonChunks[0].size() - 1;
+								    ci >= 0;
+								    --ci)
+								{
+									if(commonChunks[0][ci] >= '0' &&
+									   commonChunks[0][ci] <= '9')
+										++trailingDigits;
+									else
+										break;
+								}
+								if(trailingDigits > 0 &&
+								   trailingDigits < commonChunks[0].size())
+								{
+									std::string prefix = commonChunks[0].substr(
+									    commonChunks[0].size() - trailingDigits);
+									commonChunks[0] = commonChunks[0].substr(
+									    0,
+									    commonChunks[0].size() - trailingDigits);
+									for(auto& wc : wildcards)
+										wc = prefix + wc;
+
+									__COUT__
+									    << "Expanded numeric wildcards for hostname: moved '"
+									    << prefix
+									    << "' from commonChunk prefix into wildcards."
+									    << __E__;
+								}
+							}
+						}
+
 						__COUTV__(StringMacros::vectorToString(commonChunks));
 						__COUTV__(StringMacros::vectorToString(wildcards));
 
