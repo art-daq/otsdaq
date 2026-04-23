@@ -1419,17 +1419,25 @@ try
 		PyObjectGuard pStateArgs(PyLong_FromLong(run_number));
 		PyObjectGuard res(PyObject_CallMethodObjArgs(
 		    daqinterface_ptr_, pName.get(), pStateArgs.get(), NULL));
-		__COUT_MULTI_LBL__(
-		    0, captureStderrAndStdout_("do_start_running"), "do_start_running");
+		std::string   doStartOutput;
 
 		thread_progress_bar_.step();
 
-		if(res.get() == NULL)
+		if(checkPythonError(res.get()))
 		{
-			std::string err = capturePyErr();
+			std::string err = capturePyErr("do_start_running");
+			doStartOutput   = captureStderrAndStdout_("do_start_running");
 			__SS__ << "Error calling start transition: " << err << __E__;
+			if(doStartOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
+				ss << "... last " << OUT_ON_ERR_SIZE << " characters: "
+				   << doStartOutput.substr(doStartOutput.size() - OUT_ON_ERR_SIZE);
+			else
+				ss << doStartOutput;
 			__GEN_SS_THROW__;
 		}
+
+		doStartOutput = captureStderrAndStdout_("do_start_running");
+		__COUT_MULTI_LBL__(0, doStartOutput, "do_start_running");
 		getDAQState_();
 
 		thread_progress_bar_.step();
@@ -1437,7 +1445,14 @@ try
 		__GEN_COUT__ << "Status after start: " << daqinterface_state_ << __E__;
 		if(daqinterface_state_ != "running")
 		{
-			__SS__ << "DAQInterface start transition failed!" << __E__;
+			__SS__ << "DAQInterface start transition failed!" << __E__
+			       << "DAQInterface state: \"" << daqinterface_state_
+			       << "\" != \"running\" " << __E__;
+			if(doStartOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
+				ss << "... last " << OUT_ON_ERR_SIZE << " characters: "
+				   << doStartOutput.substr(doStartOutput.size() - OUT_ON_ERR_SIZE);
+			else
+				ss << doStartOutput;
 			__GEN_SS_THROW__;
 		}
 

@@ -637,10 +637,13 @@ void TableView::init(void)
 			else if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_ON_OFF)
 				for(unsigned int row = 0; row < getNumberOfRows(); ++row)
 				{
-					if(theDataView_[row][col] == "1" || theDataView_[row][col] == "on" ||
-					   theDataView_[row][col] == "On" || theDataView_[row][col] == "ON")
+					if(theDataView_[row][col] == "1" ||
+					   theDataView_[row][col] == "TRUE" ||  //excel bool
+					   theDataView_[row][col] == "on" || theDataView_[row][col] == "On" ||
+					   theDataView_[row][col] == "ON")
 						theDataView_[row][col] = TableViewColumnInfo::TYPE_VALUE_ON;
 					else if(theDataView_[row][col] == "0" ||
+					        theDataView_[row][col] == "FALSE" ||  //excel bool
 					        theDataView_[row][col] == "off" ||
 					        theDataView_[row][col] == "Off" ||
 					        theDataView_[row][col] == "OFF")
@@ -684,10 +687,13 @@ void TableView::init(void)
 			else if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_YES_NO)
 				for(unsigned int row = 0; row < getNumberOfRows(); ++row)
 				{
-					if(theDataView_[row][col] == "1" || theDataView_[row][col] == "yes" ||
+					if(theDataView_[row][col] == "1" ||
+					   theDataView_[row][col] == "TRUE" ||  //excel bool
+					   theDataView_[row][col] == "yes" ||
 					   theDataView_[row][col] == "Yes" || theDataView_[row][col] == "YES")
 						theDataView_[row][col] = TableViewColumnInfo::TYPE_VALUE_YES;
 					else if(theDataView_[row][col] == "0" ||
+					        theDataView_[row][col] == "FALSE" ||  //excel bool
 					        theDataView_[row][col] == "no" ||
 					        theDataView_[row][col] == "No" ||
 					        theDataView_[row][col] == "NO")
@@ -1604,8 +1610,10 @@ bool TableView::removeRowFromGroup(const unsigned int& row,
 	std::set<std::string> groupIDList;
 	if(!isEntryInGroupCol(row, col, groupNeedle, &groupIDList))
 	{
-		__SS__ << "GroupID (" << groupNeedle << ") removed from row (" << row
-		       << ") was already removed!" << __E__;
+		__SS__
+		    << "GroupID (" << groupNeedle << ") removed from row (" << row
+		    << ") was already removed! Is there a strange GroupID wildcard match issue? {"
+		    << StringMacros::setToString(groupIDList) << "}" << __E__;
 		print();
 		__SS_THROW__;
 	}

@@ -27,6 +27,7 @@ cet_make_library(LIBRARY_NAME ConfigurationInterface
 		SOURCE ConfigurationInterface.cc ConfigurationHandler.cc ConfigurationManager.cc ConfigurationManagerRW.cc TimeFormatter.cc ConfigurationTree.cc
 		 LIBRARIES PUBLIC
 		 otsdaq_plugin_support::configInterfaceMaker
+         XercesC::XercesC
 		 PRIVATE
 		 otsdaq::XmlUtilities
 		 artdaq::Application
