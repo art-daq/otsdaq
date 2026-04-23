@@ -4088,7 +4088,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 							if(numDigitRuns > 1 && numDigitRuns == runs.size())
 							{
-								__COUT__
+								__COUTT__
 								    << "Numeric wildcard refinement: found "
 								    << numDigitRuns
 								    << " separate digit-varying groups in '" << nodeName
@@ -4112,15 +4112,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 										uniqueVals.insert(multiNodeNames[i].substr(
 										    runs[r].start, runs[r].end - runs[r].start));
 
-									// Compute hostname correlation: count distinct hostnames
-									// across distinct digit-group values
-									std::set<std::string> correspondingHostnames;
-									for(unsigned int i = 0; i < multiNodeNames.size();
-									    ++i)
-										correspondingHostnames.insert(hostnameArray[i]);
-									// A digit group that varies with hostname will have
-									// correspondingHostnames.size() close to uniqueVals.size().
-									// More precisely, map each digit value to its set of hostnames.
+									// Compute hostname correlation by mapping each digit-group
+									// value to its set of hostnames.
 									std::map<std::string, std::set<std::string>>
 									    valToHosts;
 									for(unsigned int i = 0; i < multiNodeNames.size();
@@ -4148,7 +4141,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 										hostCorr = allHostSets.size();
 									}
 
-									__COUT__ << "Digit run " << r << " [" << runs[r].start
+									__COUTT__ << "Digit run " << r << " [" << runs[r].start
 									         << "-" << (runs[r].end - 1)
 									         << "]: uniqueVals=" << uniqueVals.size()
 									         << " hostCorr=" << hostCorr << __E__;
@@ -4171,7 +4164,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								    runs[bestRunToFix].start,
 								    runs[bestRunToFix].end - runs[bestRunToFix].start);
 
-								__COUT__ << "Fixing digit group at positions "
+								__COUTT__ << "Fixing digit group at positions "
 								         << runs[bestRunToFix].start << "-"
 								         << (runs[bestRunToFix].end - 1) << " to value '"
 								         << keepVal << "' (fewest unique=" << fewestUnique
@@ -4187,7 +4180,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									        runs[bestRunToFix].start);
 									if(val != keepVal)
 									{
-										__COUT__ << "Numeric refinement trim: "
+										__COUTT__ << "Numeric refinement trim: "
 										         << multiNodeNames[i] << " (digit group '"
 										         << val << "' != '" << keepVal << "')"
 										         << __E__;
@@ -4514,6 +4507,44 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 					__COUTV__(StringMacros::vectorToString(hostnameArray));
 					__COUTV__(StringMacros::setToString(skipSet));
 
+					auto expandNumericWildcards = [](std::vector<std::string>& commonChunks,
+					                                 std::vector<std::string>& wildcards,
+					                                 const std::string&       logPrefix) {
+						bool allDigitWC = true;
+						for(const auto& wc : wildcards)
+						{
+							if(wc.empty() ||
+							   wc.find_first_not_of("0123456789") != std::string::npos)
+							{
+								allDigitWC = false;
+								break;
+							}
+						}
+						if(allDigitWC && !commonChunks.empty() && !commonChunks[0].empty())
+						{
+							size_t trailingDigits = 0;
+							for(int ci = (int)commonChunks[0].size() - 1; ci >= 0; --ci)
+							{
+								if(commonChunks[0][ci] >= '0' && commonChunks[0][ci] <= '9')
+									++trailingDigits;
+								else
+									break;
+							}
+							if(trailingDigits > 0 && trailingDigits < commonChunks[0].size())
+							{
+								std::string prefix = commonChunks[0].substr(
+								    commonChunks[0].size() - trailingDigits);
+								commonChunks[0] = commonChunks[0].substr(
+								    0, commonChunks[0].size() - trailingDigits);
+								for(auto& wc : wildcards)
+									wc = prefix + wc;
+
+								__COUT__ << logPrefix << "moved '" << prefix
+								         << "' from commonChunk prefix into wildcards." << __E__;
+							}
+						}
+					};
+
 					// from set of nodename wildcards, make printer syntax
 					if(multiNodeNames.size() > 1)
 					{
@@ -4544,48 +4575,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						// boundary falls on a letter/digit transition.
 						// e.g. commonChunks=["BRCalo1","DTC1"] wildcards=["3","4"]
 						//   => commonChunks=["BRCalo","DTC1"]  wildcards=["13","14"]
-						{
-							bool allDigitWC = true;
-							for(const auto& wc : wildcards)
-							{
-								if(wc.empty() || wc.find_first_not_of("0123456789") !=
-								                     std::string::npos)
-								{
-									allDigitWC = false;
-									break;
-								}
-							}
-							if(allDigitWC && !commonChunks.empty() &&
-							   !commonChunks[0].empty())
-							{
-								size_t trailingDigits = 0;
-								for(int ci = (int)commonChunks[0].size() - 1; ci >= 0;
-								    --ci)
-								{
-									if(commonChunks[0][ci] >= '0' &&
-									   commonChunks[0][ci] <= '9')
-										++trailingDigits;
-									else
-										break;
-								}
-								if(trailingDigits > 0 &&
-								   trailingDigits < commonChunks[0].size())
-								{
-									std::string prefix = commonChunks[0].substr(
-									    commonChunks[0].size() - trailingDigits);
-									commonChunks[0] = commonChunks[0].substr(
-									    0, commonChunks[0].size() - trailingDigits);
-									for(auto& wc : wildcards)
-										wc = prefix + wc;
-
-									__COUT__
-									    << "Expanded numeric wildcards: moved '" << prefix
-									    << "' from commonChunk prefix into wildcards."
-									    << __E__;
-								}
-							}
-						}
-
+						expandNumericWildcards(commonChunks,
+						                       wildcards,
+						                       "Expanded numeric wildcards: ");
 						__COUTV__(StringMacros::vectorToString(commonChunks));
 						__COUTV__(StringMacros::vectorToString(wildcards));
 
@@ -4711,50 +4703,10 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						// transition.
 						// e.g. commonChunks=["mu2e%2Dcalo%2D1","%2Ddata..."] wildcards=["3","4"]
 						//   => commonChunks=["mu2e%2Dcalo%2D","%2Ddata..."]   wildcards=["13","14"]
-						{
-							bool allDigitWC = true;
-							for(const auto& wc : wildcards)
-							{
-								if(wc.empty() || wc.find_first_not_of("0123456789") !=
-								                     std::string::npos)
-								{
-									allDigitWC = false;
-									break;
-								}
-							}
-							if(allDigitWC && !commonChunks.empty() &&
-							   !commonChunks[0].empty())
-							{
-								size_t trailingDigits = 0;
-								for(int ci = (int)commonChunks[0].size() - 1; ci >= 0;
-								    --ci)
-								{
-									if(commonChunks[0][ci] >= '0' &&
-									   commonChunks[0][ci] <= '9')
-										++trailingDigits;
-									else
-										break;
-								}
-								if(trailingDigits > 0 &&
-								   trailingDigits < commonChunks[0].size())
-								{
-									std::string prefix = commonChunks[0].substr(
-									    commonChunks[0].size() - trailingDigits);
-									commonChunks[0] = commonChunks[0].substr(
-									    0, commonChunks[0].size() - trailingDigits);
-									for(auto& wc : wildcards)
-										wc = prefix + wc;
-
-									__COUT__
-									    << "Expanded numeric wildcards for hostname: "
-									       "moved '"
-									    << prefix
-									    << "' from commonChunk prefix into wildcards."
-									    << __E__;
-								}
-							}
-						}
-
+						expandNumericWildcards(
+						    commonChunks,
+						    wildcards,
+						    "Expanded numeric wildcards for hostname: ");
 						__COUTV__(StringMacros::vectorToString(commonChunks));
 						__COUTV__(StringMacros::vectorToString(wildcards));
 
