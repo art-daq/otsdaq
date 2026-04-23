@@ -4323,7 +4323,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									if(statusPos != std::string::npos)
 									{
 										// Skip entries with different status
-										if(existingBaseName.substr(statusPos + 8) !=
+										if(existingBaseName.substr(
+										       statusPos + std::string(";status=").size()) !=
 										   currentStatusStr)
 											continue;
 										existingBaseName =
