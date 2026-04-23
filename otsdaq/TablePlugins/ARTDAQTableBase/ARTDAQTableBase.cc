@@ -865,9 +865,9 @@ void ARTDAQTableBase::outputBoardReaderFHICL(
 			}
 			catch(...)
 			{
-				__COUTT__
-				    << "Ignoring missing daqFragmentIDs column associated with fragment_ids for Board Reader."
-				    << __E__;
+				__COUTT__ << "Ignoring missing daqFragmentIDs column associated with "
+				             "fragment_ids for Board Reader."
+				          << __E__;
 
 				OUTCF("# fragment_ids not specified, but could be", "", "daqFragmentIDs");
 			}
@@ -4012,7 +4012,10 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						size_t nameLen     = multiNodeNames[0].size();
 						for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
 							if(multiNodeNames[i].size() != nameLen)
-							{ sameLengths = false; break; }
+							{
+								sameLengths = false;
+								break;
+							}
 
 						if(sameLengths && nameLen > 0)
 						{
@@ -4020,19 +4023,33 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							for(unsigned int pos = 0; pos < nameLen; ++pos)
 								for(unsigned int i = 1; i < multiNodeNames.size(); ++i)
 									if(multiNodeNames[i][pos] != multiNodeNames[0][pos])
-									{ varies[pos] = true; break; }
+									{
+										varies[pos] = true;
+										break;
+									}
 
-							struct VaryRun { unsigned int start, end; bool allDigits; };
-							std::vector<VaryRun> runs;
-							for(unsigned int pos = 0; pos < nameLen; )
+							struct VaryRun
 							{
-								if(!varies[pos]) { ++pos; continue; }
-								unsigned int rStart = pos;
-								bool runAllDigit = true;
+								unsigned int start, end;
+								bool         allDigits;
+							};
+							std::vector<VaryRun> runs;
+							for(unsigned int pos = 0; pos < nameLen;)
+							{
+								if(!varies[pos])
+								{
+									++pos;
+									continue;
+								}
+								unsigned int rStart      = pos;
+								bool         runAllDigit = true;
 								while(pos < nameLen && varies[pos])
 								{
-									for(unsigned int i = 0; i < multiNodeNames.size() && runAllDigit; ++i)
-										if(!(multiNodeNames[i][pos] >= '0' && multiNodeNames[i][pos] <= '9'))
+									for(unsigned int i = 0;
+									    i < multiNodeNames.size() && runAllDigit;
+									    ++i)
+										if(!(multiNodeNames[i][pos] >= '0' &&
+										     multiNodeNames[i][pos] <= '9'))
 											runAllDigit = false;
 									++pos;
 								}
@@ -4047,60 +4064,73 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							// just "3"/"4".
 							for(auto& run : runs)
 							{
-								if(!run.allDigits) continue;
+								if(!run.allDigits)
+									continue;
 								while(run.start > 0)
 								{
 									bool allDigitAtPrev = true;
-									for(unsigned int i = 0; i < multiNodeNames.size() && allDigitAtPrev; ++i)
-										if(!(multiNodeNames[i][run.start - 1] >= '0' && multiNodeNames[i][run.start - 1] <= '9'))
+									for(unsigned int i = 0;
+									    i < multiNodeNames.size() && allDigitAtPrev;
+									    ++i)
+										if(!(multiNodeNames[i][run.start - 1] >= '0' &&
+										     multiNodeNames[i][run.start - 1] <= '9'))
 											allDigitAtPrev = false;
-									if(!allDigitAtPrev) break;
+									if(!allDigitAtPrev)
+										break;
 									run.start--;
 								}
 							}
 
 							unsigned int numDigitRuns = 0;
 							for(const auto& run : runs)
-								if(run.allDigits) ++numDigitRuns;
+								if(run.allDigits)
+									++numDigitRuns;
 
 							if(numDigitRuns > 1 && numDigitRuns == runs.size())
 							{
-								__COUT__ << "Numeric wildcard refinement: found " << numDigitRuns
-								         << " separate digit-varying groups in '" << nodeName
-								         << "'. Splitting to favor numeric-only wildcards." << __E__;
+								__COUT__
+								    << "Numeric wildcard refinement: found "
+								    << numDigitRuns
+								    << " separate digit-varying groups in '" << nodeName
+								    << "'. Splitting to favor numeric-only wildcards."
+								    << __E__;
 
 								// For each digit-varying run, compute:
 								//  - uniqueCount: number of distinct digit values
-								//  - hostnameCorrelation: how many distinct hostnames 
+								//  - hostnameCorrelation: how many distinct hostnames
 								//    correspond to distinct digit values (high = correlated
 								//    with hostname, meaning this group should be the wildcard,
 								//    NOT the one we fix)
-								unsigned int bestRunToFix = 0;
-								unsigned int fewestUnique = (unsigned int)-1;
+								unsigned int bestRunToFix   = 0;
+								unsigned int fewestUnique   = (unsigned int)-1;
 								unsigned int lowestHostCorr = (unsigned int)-1;
 								for(unsigned int r = 0; r < runs.size(); ++r)
 								{
 									std::set<std::string> uniqueVals;
-									for(unsigned int i = 0; i < multiNodeNames.size(); ++i)
+									for(unsigned int i = 0; i < multiNodeNames.size();
+									    ++i)
 										uniqueVals.insert(multiNodeNames[i].substr(
 										    runs[r].start, runs[r].end - runs[r].start));
-									
+
 									// Compute hostname correlation: count distinct hostnames
 									// across distinct digit-group values
 									std::set<std::string> correspondingHostnames;
-									for(unsigned int i = 0; i < multiNodeNames.size(); ++i)
+									for(unsigned int i = 0; i < multiNodeNames.size();
+									    ++i)
 										correspondingHostnames.insert(hostnameArray[i]);
-									// A digit group that varies with hostname will have 
+									// A digit group that varies with hostname will have
 									// correspondingHostnames.size() close to uniqueVals.size().
 									// More precisely, map each digit value to its set of hostnames.
-									std::map<std::string, std::set<std::string>> valToHosts;
-									for(unsigned int i = 0; i < multiNodeNames.size(); ++i)
+									std::map<std::string, std::set<std::string>>
+									    valToHosts;
+									for(unsigned int i = 0; i < multiNodeNames.size();
+									    ++i)
 									{
 										std::string dv = multiNodeNames[i].substr(
 										    runs[r].start, runs[r].end - runs[r].start);
 										valToHosts[dv].insert(hostnameArray[i]);
 									}
-									// hostnameCorrelation = number of digit values that map to 
+									// hostnameCorrelation = number of digit values that map to
 									// a unique hostname (i.e. different digit value -> different host)
 									// If all digit values share the same hostname, correlation = 0.
 									unsigned int hostCorr = 0;
@@ -4117,22 +4147,23 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 										}
 										hostCorr = allHostSets.size();
 									}
-									
-									__COUT__ << "Digit run " << r << " [" 
-									         << runs[r].start << "-" << (runs[r].end - 1)
+
+									__COUT__ << "Digit run " << r << " [" << runs[r].start
+									         << "-" << (runs[r].end - 1)
 									         << "]: uniqueVals=" << uniqueVals.size()
 									         << " hostCorr=" << hostCorr << __E__;
-									
+
 									// Prefer to fix the group with fewest unique values,
 									// and break ties by fixing the one with LOWEST hostname
-									// correlation (i.e. keep the hostname-correlated group 
+									// correlation (i.e. keep the hostname-correlated group
 									// as the wildcard).
 									if(uniqueVals.size() < fewestUnique ||
-									   (uniqueVals.size() == fewestUnique && hostCorr < lowestHostCorr))
+									   (uniqueVals.size() == fewestUnique &&
+									    hostCorr < lowestHostCorr))
 									{
-										fewestUnique = uniqueVals.size();
+										fewestUnique   = uniqueVals.size();
 										lowestHostCorr = hostCorr;
-										bestRunToFix = r;
+										bestRunToFix   = r;
 									}
 								}
 
@@ -4142,28 +4173,33 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 								__COUT__ << "Fixing digit group at positions "
 								         << runs[bestRunToFix].start << "-"
-								         << (runs[bestRunToFix].end - 1)
-								         << " to value '" << keepVal
-								         << "' (fewest unique=" << fewestUnique << ")" << __E__;
+								         << (runs[bestRunToFix].end - 1) << " to value '"
+								         << keepVal << "' (fewest unique=" << fewestUnique
+								         << ")" << __E__;
 
 								for(unsigned int i = multiNodeNames.size() - 1;
-								    i > 0 && i < multiNodeNames.size(); --i)
+								    i > 0 && i < multiNodeNames.size();
+								    --i)
 								{
 									std::string val = multiNodeNames[i].substr(
 									    runs[bestRunToFix].start,
-									    runs[bestRunToFix].end - runs[bestRunToFix].start);
+									    runs[bestRunToFix].end -
+									        runs[bestRunToFix].start);
 									if(val != keepVal)
 									{
-										__COUT__ << "Numeric refinement trim: " << multiNodeNames[i]
-										         << " (digit group '" << val << "' != '" << keepVal << "')" << __E__;
+										__COUT__ << "Numeric refinement trim: "
+										         << multiNodeNames[i] << " (digit group '"
+										         << val << "' != '" << keepVal << "')"
+										         << __E__;
 										trimmedNodeNames.push_back(multiNodeNames[i]);
 										skipSet.erase(multiNodeNames[i]);
 										multiNodeNames.erase(multiNodeNames.begin() + i);
 										hostnameArray.erase(hostnameArray.begin() + i);
 									}
 								}
-								__COUT__ << "After numeric refinement: " << multiNodeNames.size()
-								         << " nodes remain for '" << nodeName << "'." << __E__;
+								__COUT__ << "After numeric refinement: "
+								         << multiNodeNames.size() << " nodes remain for '"
+								         << nodeName << "'." << __E__;
 							}
 						}
 					}  // end numeric-only wildcard refinement
@@ -4191,8 +4227,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							for(const auto& w : wildcards)
 							{
 								if(w.empty() ||
-								   w.find_first_not_of("0123456789") !=
-								       std::string::npos)
+								   w.find_first_not_of("0123456789") != std::string::npos)
 								{
 									wildcardsAllNumeric = false;
 									break;
@@ -4216,11 +4251,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									found = name.find(chunks[c], pos);
 									// If wildcards are all numeric, verify the gap
 									//  between chunks is also purely numeric
-									if(wildcardsAllNumeric &&
-									   found != std::string::npos)
+									if(wildcardsAllNumeric && found != std::string::npos)
 									{
-										std::string gap =
-										    name.substr(pos, found - pos);
+										std::string gap = name.substr(pos, found - pos);
 										if(gap.empty() ||
 										   gap.find_first_not_of("0123456789") !=
 										       std::string::npos)
@@ -4264,9 +4297,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							bool collisionFound = false;
 							for(const auto& trimmedNode : trimmedNodeNames)
 							{
-								if(matchesCommonChunksPattern(trimmedNode,
-								                              trialCommonChunks,
-								                              trialWildcards))
+								if(matchesCommonChunksPattern(
+								       trimmedNode, trialCommonChunks, trialWildcards))
 								{
 									__COUT__ << "Collision detected: trimmed node '"
 									         << trimmedNode
@@ -4291,15 +4323,16 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									if(statusPos != std::string::npos)
 									{
 										// Skip entries with different status
-										if(existingBaseName.substr(statusPos + 8) != currentStatusStr)
+										if(existingBaseName.substr(statusPos + 8) !=
+										   currentStatusStr)
 											continue;
 										existingBaseName =
 										    existingBaseName.substr(0, statusPos);
 									}
 
-								if(matchesCommonChunksPattern(existingBaseName,
-								                              trialCommonChunks,
-								                              trialWildcards))
+									if(matchesCommonChunksPattern(existingBaseName,
+									                              trialCommonChunks,
+									                              trialWildcards))
 									{
 										// Extract the gap value from the existing entry
 										// name and check if it is actually one of the
@@ -4309,13 +4342,16 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 										// collision.
 										std::string existingGap;
 										if(trialCommonChunks.size() == 1 &&
-										   existingBaseName.size() > trialCommonChunks[0].size())
+										   existingBaseName.size() >
+										       trialCommonChunks[0].size())
 											existingGap = existingBaseName.substr(
 											    trialCommonChunks[0].size());
 										else if(trialCommonChunks.size() >= 2)
 										{
 											size_t suffixLen = 0;
-											for(size_t ci = 1; ci < trialCommonChunks.size(); ++ci)
+											for(size_t ci = 1;
+											    ci < trialCommonChunks.size();
+											    ++ci)
 												suffixLen += trialCommonChunks[ci].size();
 											if(existingBaseName.size() >
 											   trialCommonChunks[0].size() + suffixLen)
@@ -4511,9 +4547,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							bool allDigitWC = true;
 							for(const auto& wc : wildcards)
 							{
-								if(wc.empty() ||
-								   wc.find_first_not_of("0123456789") !=
-								       std::string::npos)
+								if(wc.empty() || wc.find_first_not_of("0123456789") !=
+								                     std::string::npos)
 								{
 									allDigitWC = false;
 									break;
@@ -4523,8 +4558,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							   !commonChunks[0].empty())
 							{
 								size_t trailingDigits = 0;
-								for(int ci = (int)commonChunks[0].size() - 1;
-								    ci >= 0;
+								for(int ci = (int)commonChunks[0].size() - 1; ci >= 0;
 								    --ci)
 								{
 									if(commonChunks[0][ci] >= '0' &&
@@ -4539,14 +4573,12 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									std::string prefix = commonChunks[0].substr(
 									    commonChunks[0].size() - trailingDigits);
 									commonChunks[0] = commonChunks[0].substr(
-									    0,
-									    commonChunks[0].size() - trailingDigits);
+									    0, commonChunks[0].size() - trailingDigits);
 									for(auto& wc : wildcards)
 										wc = prefix + wc;
 
 									__COUT__
-									    << "Expanded numeric wildcards: moved '"
-									    << prefix
+									    << "Expanded numeric wildcards: moved '" << prefix
 									    << "' from commonChunk prefix into wildcards."
 									    << __E__;
 								}
@@ -4682,9 +4714,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							bool allDigitWC = true;
 							for(const auto& wc : wildcards)
 							{
-								if(wc.empty() ||
-								   wc.find_first_not_of("0123456789") !=
-								       std::string::npos)
+								if(wc.empty() || wc.find_first_not_of("0123456789") !=
+								                     std::string::npos)
 								{
 									allDigitWC = false;
 									break;
@@ -4694,8 +4725,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							   !commonChunks[0].empty())
 							{
 								size_t trailingDigits = 0;
-								for(int ci = (int)commonChunks[0].size() - 1;
-								    ci >= 0;
+								for(int ci = (int)commonChunks[0].size() - 1; ci >= 0;
 								    --ci)
 								{
 									if(commonChunks[0][ci] >= '0' &&
@@ -4710,13 +4740,13 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									std::string prefix = commonChunks[0].substr(
 									    commonChunks[0].size() - trailingDigits);
 									commonChunks[0] = commonChunks[0].substr(
-									    0,
-									    commonChunks[0].size() - trailingDigits);
+									    0, commonChunks[0].size() - trailingDigits);
 									for(auto& wc : wildcards)
 										wc = prefix + wc;
 
 									__COUT__
-									    << "Expanded numeric wildcards for hostname: moved '"
+									    << "Expanded numeric wildcards for hostname: "
+									       "moved '"
 									    << prefix
 									    << "' from commonChunk prefix into wildcards."
 									    << __E__;
