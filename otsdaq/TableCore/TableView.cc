@@ -1604,8 +1604,10 @@ bool TableView::removeRowFromGroup(const unsigned int& row,
 	std::set<std::string> groupIDList;
 	if(!isEntryInGroupCol(row, col, groupNeedle, &groupIDList))
 	{
-		__SS__ << "GroupID (" << groupNeedle << ") removed from row (" << row
-		       << ") was already removed!" << __E__;
+		__SS__
+		    << "GroupID (" << groupNeedle << ") removed from row (" << row
+		    << ") was already removed! Is there a strange GroupID wildcard match issue? {"
+		    << StringMacros::setToString(groupIDList) << "}" << __E__;
 		print();
 		__SS_THROW__;
 	}
