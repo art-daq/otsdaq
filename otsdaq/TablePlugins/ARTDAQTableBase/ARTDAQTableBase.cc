@@ -1,11 +1,9 @@
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 
 #include <dirent.h>  //DIR and dirent
-#include <algorithm>
 #include <fstream>   // for std::ofstream
 #include <iostream>  // std::cout
 #include <typeinfo>
-#include <unordered_set>
 
 #include "otsdaq/Macros/CoutMacros.h"
 #define TRACE_NAME "ARTDAQTableBase"
@@ -1786,46 +1784,6 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 		                 true /*onlyInsertAtTableParameters*/,
 		                 false /*includeAtTableParameters*/);
 
-		std::vector<std::string> enabledProducers;
-		std::vector<std::string> enabledAnalyzers;
-		std::vector<std::string> enabledFilters;
-		std::vector<std::string> physicsParameterKeys;
-		std::vector<std::string> modulesInSequenceParameters;
-		bool                     hasEndPaths = false;
-		auto physicsOtherParameters = physics.getNode("physicsOtherParametersLink");
-		if(!physicsOtherParameters.isDisconnected())
-		{
-			for(const auto& parameter : physicsOtherParameters.getChildren())
-			{
-				if(!parameter.second.status())
-					continue;
-
-				auto key = parameter.second.getNode("physicsParameterKey").getValue();
-				physicsParameterKeys.push_back(key);
-				if(key == "end_paths")
-					hasEndPaths = true;
-
-				auto value = parameter.second.getNode("physicsParameterValue").getValue();
-				StringMacros::trim(value);
-				if(value.size() >= 2 && value.front() == '[' && value.back() == ']')
-				{
-					auto sequenceValues =
-					    StringMacros::getVectorFromString(value, {',', '[', ']'});
-					for(auto& parameterValue : sequenceValues)
-					{
-						StringMacros::trim(parameterValue);
-						if(parameterValue.size() >= 2 && parameterValue.front() == '"' &&
-						   parameterValue.back() == '"')
-							parameterValue =
-							    parameterValue.substr(1, parameterValue.size() - 2);
-
-						if(!parameterValue.empty())
-							modulesInSequenceParameters.push_back(parameterValue);
-					}
-				}
-			}
-		}
-
 		auto analyzers = physics.getNode("analyzersLink");
 		if(!analyzers.isDisconnected())
 		{
@@ -1845,15 +1803,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			auto modules = analyzers.getChildren();
 			for(auto& module : modules)
 			{
-				const bool analyzerEnabled = module.second.status();
-				if(analyzerEnabled)
-				{
-					auto analyzerKey = module.second.getNode("analyzerKey").getValue();
-					if(analyzerKey != "")
-						enabledAnalyzers.push_back(analyzerKey);
-				}
-
-				if(!analyzerEnabled)
+				if(!module.second.status())
 					PUSHCOMMENT;
 
 				if(!first)
@@ -1905,7 +1855,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				POPTAB;
 				OUT << "}\n";  // end analyzer module
 
-				if(!analyzerEnabled)
+				if(!module.second.status())
 					POPCOMMENT;
 			}  //end analyzer module loop
 			POPTAB;
@@ -1936,16 +1886,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			auto modules = producers.getChildren();
 			for(auto& module : modules)
 			{
-				const bool producerEnabled = module.second.status();
-				if(producerEnabled)
-				{
-					auto producerKey = module.second.getNode("producerKey").getValue();
-					if(producerKey != "" &&
-					   module.second.getNode("producerModuleType").getValue() != "")
-						enabledProducers.push_back(producerKey);
-				}
-
-				if(!producerEnabled)
+				if(!module.second.status())
 					PUSHCOMMENT;
 
 				if(!first)
@@ -2011,7 +1952,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				POPTAB;
 				OUT << "}\n";  // end producer module
 
-				if(!producerEnabled)
+				if(!module.second.status())
 					POPCOMMENT;
 			}  //end producer module loop
 			POPTAB;
@@ -2041,16 +1982,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			auto modules = filters.getChildren();
 			for(auto& module : modules)
 			{
-				const bool filterEnabled = module.second.status();
-				if(filterEnabled)
-				{
-					auto filterKey = module.second.getNode("filterKey").getValue();
-					if(filterKey != "" &&
-					   module.second.getNode("filterModuleType").getValue() != "")
-						enabledFilters.push_back(filterKey);
-				}
-
-				if(!filterEnabled)
+				if(!module.second.status())
 					PUSHCOMMENT;
 
 				if(!first)
@@ -2115,7 +2047,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 				POPTAB;
 				OUT << "}\n";  // end filter module
 
-				if(!filterEnabled)
+				if(!module.second.status())
 					POPCOMMENT;
 			}  //end filter module loop
 			POPTAB;
@@ -2127,49 +2059,6 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			std::string localParentPath2 =
 			    localParentPath + "/" + services.getParentLinkColumnName();
 			OUTCL2("# no filters found", "" /* comment*/);
-		}
-
-		std::unordered_set<std::string> modulesInSequenceSet(
-		    modulesInSequenceParameters.begin(), modulesInSequenceParameters.end());
-		std::vector<std::string> modulesToAutoPath;
-		for(const auto& producer : enabledProducers)
-		{
-			if(modulesInSequenceSet.find(producer) == modulesInSequenceSet.end())
-				modulesToAutoPath.push_back(producer);
-		}
-		for(const auto& analyzer : enabledAnalyzers)
-		{
-			if(modulesInSequenceSet.find(analyzer) == modulesInSequenceSet.end())
-				modulesToAutoPath.push_back(analyzer);
-		}
-		for(const auto& filter : enabledFilters)
-		{
-			if(modulesInSequenceSet.find(filter) == modulesInSequenceSet.end())
-				modulesToAutoPath.push_back(filter);
-		}
-
-		if(!modulesToAutoPath.empty())
-		{
-			std::string autoPathKey = "otsdaq_auto_path";
-			for(unsigned int i = 1; std::find(physicsParameterKeys.begin(),
-			                                  physicsParameterKeys.end(),
-			                                  autoPathKey) != physicsParameterKeys.end();
-			    ++i)
-			{
-				autoPathKey = "otsdaq_auto_path_" + std::to_string(i);
-			}
-
-			out << autoPathKey << ": [ ";
-			for(size_t i = 0; i < modulesToAutoPath.size(); ++i)
-			{
-				if(i)
-					out << ", ";
-				out << "\"" << modulesToAutoPath[i] << "\"";
-			}
-			out << " ]\n";
-
-			if(!hasEndPaths)
-				out << "end_paths: [ \"" << autoPathKey << "\" ]\n";
 		}
 
 		//--------------------------------------
