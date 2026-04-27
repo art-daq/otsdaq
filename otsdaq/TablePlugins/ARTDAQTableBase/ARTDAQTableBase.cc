@@ -7191,11 +7191,15 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							{
 								if(nodeNameIndex.size() > nodeNameFixedWidth)
 								{
-									__SS__ << "Illegal node name index '" << nodeNameIndex
-									       << "' - length is longer than fixed width "
-									          "requirement of "
-									       << nodeNameFixedWidth << "!" << __E__;
-									__SS_THROW__;
+									// allow _clone suffix — GUI branching creates indices like "00_clone"
+									if(nodeNameIndex.find("_clone") == std::string::npos)
+									{
+										__SS__ << "Illegal node name index '" << nodeNameIndex
+										       << "' - length is longer than fixed width "
+										          "requirement of "
+										       << nodeNameFixedWidth << "!" << __E__;
+										__SS_THROW__;
+									}
 								}
 
 								// 0 prepend as needed
