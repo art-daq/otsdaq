@@ -7199,7 +7199,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 									// allow _clone suffix — GUI branching creates indices like "00_clone"
 									if(nodeNameIndex.find("_clone") == std::string::npos)
 									{
-										__SS__ << "Illegal node name index '" << nodeNameIndex
+										__SS__ << "Illegal node name index '"
+										       << nodeNameIndex
 										       << "' - length is longer than fixed width "
 										          "requirement of "
 										       << nodeNameFixedWidth << "!" << __E__;
@@ -7228,11 +7229,13 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 									if(hostnameIndex.size() > hostnameFixedWidth)
 									{
 										// allow _clone suffix — GUI branching creates indices like "00_clone"
-										if(hostnameIndex.find("_clone") == std::string::npos)
+										if(hostnameIndex.find("_clone") ==
+										   std::string::npos)
 										{
 											__SS__ << "Illegal hostname index '"
 											       << hostnameIndex
-											       << "' - length is longer than fixed width "
+											       << "' - length is longer than fixed "
+											          "width "
 											          "requirement of "
 											       << hostnameFixedWidth << "!" << __E__;
 											__SS_THROW__;
