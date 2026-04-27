@@ -3738,6 +3738,11 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 					   otherNode.second.status() != status)  // skip if status mismatch
 						continue;  // skip unless 'other' and not in skip set
 
+					// _clone nodes are always independent — never group them into a multinode
+					if(nodeName.find("_clone") != std::string::npos ||
+					   otherNode.first.find("_clone") != std::string::npos)
+						continue;
+
 					//__COUTV__(subsystemName);
 					//__COUTV__(otherNode.second.getNode(ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID).getValue());
 
@@ -7222,12 +7227,16 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								{
 									if(hostnameIndex.size() > hostnameFixedWidth)
 									{
-										__SS__ << "Illegal hostname index '"
-										       << hostnameIndex
-										       << "' - length is longer than fixed width "
-										          "requirement of "
-										       << hostnameFixedWidth << "!" << __E__;
-										__SS_THROW__;
+										// allow _clone suffix — GUI branching creates indices like "00_clone"
+										if(hostnameIndex.find("_clone") == std::string::npos)
+										{
+											__SS__ << "Illegal hostname index '"
+											       << hostnameIndex
+											       << "' - length is longer than fixed width "
+											          "requirement of "
+											       << hostnameFixedWidth << "!" << __E__;
+											__SS_THROW__;
+										}
 									}
 
 									// 0 prepend as needed
