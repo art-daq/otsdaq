@@ -9045,7 +9045,12 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
 		{
-			if(command == RunControlStateMachine::ABORT_TRANSITION_NAME)
+			if(command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
+			   (command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+			    (remoteGatewayApp.appInfo.status ==
+			         RunControlStateMachine::RUNNING_STATE_NAME ||
+			     remoteGatewayApp.appInfo.status ==
+			         RunControlStateMachine::PAUSED_STATE_NAME)))
 			{
 				localCommand = RunControlStateMachine::STOP_TRANSITION_NAME;
 
