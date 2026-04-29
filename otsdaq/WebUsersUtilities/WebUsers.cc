@@ -225,8 +225,8 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc&              cgi,
 	{
 		__COUT_INFO__ << "Auto-taking lock for user '" << userInfo.username_
 		              << "' because no user has the lock and lock is required." << __E__;
-		setUserWithLock(userInfo.uid_, true /*lock*/, userInfo.username_);
-		userInfo.usernameWithLock_ = usersUsernameWithLock_;
+		if(setUserWithLock(userInfo.uid_, true /*lock*/, userInfo.username_))
+			userInfo.usernameWithLock_ = userInfo.username_;
 	}
 
 	if(!WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo))
