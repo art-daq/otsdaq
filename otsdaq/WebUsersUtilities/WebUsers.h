@@ -508,6 +508,7 @@ class WebUsers
 	void         loadSecuritySelection(void);
 	void         loadIPAddressSecurity(void);
 	void         loadUserWithLock(void);
+	void         saveLockStateToFile(void); ///< saves usersUsernameWithLock_ to USER_WITH_LOCK_FILE
 	unsigned int hexByteStrToInt(const char* h);
 	void         intToHexStr(uint8_t i, char* h);
 	std::string  sha512(const std::string& user,

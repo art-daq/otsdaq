@@ -2279,17 +2279,7 @@ uint64_t WebUsers::cookieCodeLogout(const std::string& cookieCode,
 		std::string lockedUser   = usersUsernameWithLock_;
 		usersUsernameWithLock_   = "";
 
-		// save updated lock state to file
-		{
-			std::string securityFileName = USER_WITH_LOCK_FILE;
-			FILE*       fp               = fopen(securityFileName.c_str(), "w");
-			if(fp)
-			{
-				fprintf(fp, "%s", usersUsernameWithLock_.c_str());
-				fclose(fp);
-			}
-		}
-
+		saveLockStateToFile();
 		addSystemMessage("*",
 		                 lockedUser + " logged out and the system lock was released.");
 	}
@@ -2587,17 +2577,7 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 		std::string lockedUser = usersUsernameWithLock_;
 		usersUsernameWithLock_ = "";
 
-		// save updated lock state to file
-		{
-			std::string securityFileName = USER_WITH_LOCK_FILE;
-			FILE*       fp               = fopen(securityFileName.c_str(), "w");
-			if(fp)
-			{
-				fprintf(fp, "%s", usersUsernameWithLock_.c_str());
-				fclose(fp);
-			}
-		}
-
+		saveLockStateToFile();
 		addSystemMessage(
 		    "*",
 		    lockedUser +
@@ -2627,21 +2607,12 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 			std::string lockedUser = usersUsernameWithLock_;
 			usersUsernameWithLock_ = "";
 
-			// save updated lock state to file
-			{
-				std::string securityFileName = USER_WITH_LOCK_FILE;
-				FILE*       fp               = fopen(securityFileName.c_str(), "w");
-				if(fp)
-				{
-					fprintf(fp, "%s", usersUsernameWithLock_.c_str());
-					fclose(fp);
-				}
-			}
-
+			saveLockStateToFile();
 			addSystemMessage(
 			    "*",
-			    lockedUser +
-			        " has been idle for 30 minutes and the system lock was released.");
+			    lockedUser + " has been idle for " +
+			        std::to_string(LOCK_INACTIVITY_TIMEOUT / 60) +
+			        " minutes and the system lock was released.");
 		}
 	}
 }  // end cleanupExpiredEntries()
@@ -3433,6 +3404,23 @@ void WebUsers::changeSettingsForUser(uint64_t           uid,
 }  // end changeSettingsForUser()
 
 //==============================================================================
+/// WebUsers::saveLockStateToFile
+///	saves usersUsernameWithLock_ to USER_WITH_LOCK_FILE
+void WebUsers::saveLockStateToFile()
+{
+	std::string securityFileName = USER_WITH_LOCK_FILE;
+	FILE*       fp               = fopen(securityFileName.c_str(), "w");
+	if(fp)
+	{
+		fprintf(fp, "%s", usersUsernameWithLock_.c_str());
+		fclose(fp);
+	}
+	else
+		__COUT_INFO__ << "USER_WITH_LOCK_FILE " << USER_WITH_LOCK_FILE
+		              << " could not be written. Ignoring." << __E__;
+}  // end saveLockStateToFile()
+
+//==============================================================================
 /// WebUsers::setUserWithLock
 /// if lock is true, set lock user specified
 /// if lock is false, attempt to unlock user specified
@@ -3490,20 +3478,7 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	__COUT_INFO__ << "User '" << username << "' has locked out the system!" << __E__;
 
 	// save username with lock
-	{
-		std::string securityFileName = USER_WITH_LOCK_FILE;
-		FILE*       fp               = fopen(securityFileName.c_str(), "w");
-		if(!fp)
-		{
-			__COUT_INFO__ << "USER_WITH_LOCK_FILE " << USER_WITH_LOCK_FILE
-			              << " not found. Ignoring." << __E__;
-		}
-		else
-		{
-			fprintf(fp, "%s", usersUsernameWithLock_.c_str());
-			fclose(fp);
-		}
-	}
+	saveLockStateToFile();
 	return true;
 }  // end setUserWithLock()
 
