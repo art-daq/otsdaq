@@ -11630,46 +11630,49 @@ try
 			}
 
 			bool found = false;
+			std::string remoteGatewayUrl;
 			{
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 				for(auto& remoteGatewayApp : remoteGatewayApps_)
 				{
 					if(targetSubsystem == remoteGatewayApp.appInfo.name)
 					{
-						found = true;
-						std::vector<std::string> parsedFields =
-						    StringMacros::getVectorFromString(
-						        remoteGatewayApp.appInfo.url, {':'});
-						if(parsedFields.size() != 3)
-						{
-							__SUP_SS__ << "Malformed URL for subsystem '"
-							           << targetSubsystem
-							           << "': " << remoteGatewayApp.appInfo.url << __E__;
-							__SUP_SS_THROW__;
-						}
-
-						Socket      gatewayRemoteSocket(parsedFields[1],
-                                                   atoi(parsedFields[2].c_str()));
-						std::string requestString =
-						    "GetRemoteGatewayStatus," + ipAddressForStateChangesOverUDP_ +
-						    "," + std::to_string(portForReverseLoginOverUDP_) + "," +
-						    targetSubsystem;
-
-						__SUP_COUT_INFO__
-						    << "Propagating login verification to subsystem '"
-						    << targetSubsystem << "' via UDP: " << requestString << __E__;
-
-						TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
-						tmpSocket.initialize();
-						std::string response = tmpSocket.sendAndReceive(
-						    gatewayRemoteSocket, requestString, 5 /*timeoutSeconds*/);
-
-						__SUP_COUT_INFO__ << "Response from '" << targetSubsystem
-						                  << "': " << response.substr(0, 200) << __E__;
-						xmlOut.addTextElementToData("response", response.substr(0, 200));
+						found            = true;
+						remoteGatewayUrl = remoteGatewayApp.appInfo.url;
 						break;
 					}
 				}
+			}
+
+			if(found)
+			{
+				std::vector<std::string> parsedFields =
+				    StringMacros::getVectorFromString(remoteGatewayUrl, {':'});
+				if(parsedFields.size() != 3)
+				{
+					__SUP_SS__ << "Malformed URL for subsystem '" << targetSubsystem
+					           << "': " << remoteGatewayUrl << __E__;
+					__SUP_SS_THROW__;
+				}
+
+				Socket      gatewayRemoteSocket(parsedFields[1],
+                                               atoi(parsedFields[2].c_str()));
+				std::string requestString =
+				    "GetRemoteGatewayStatus," + ipAddressForStateChangesOverUDP_ + "," +
+				    std::to_string(portForReverseLoginOverUDP_) + "," + targetSubsystem;
+
+				__SUP_COUT_INFO__
+				    << "Propagating login verification to subsystem '" << targetSubsystem
+				    << "' via UDP: " << requestString << __E__;
+
+				TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
+				tmpSocket.initialize();
+				std::string response = tmpSocket.sendAndReceive(
+				    gatewayRemoteSocket, requestString, 5 /*timeoutSeconds*/);
+
+				__SUP_COUT_INFO__ << "Response from '" << targetSubsystem
+				                  << "': " << response.substr(0, 200) << __E__;
+				xmlOut.addTextElementToData("response", response.substr(0, 200));
 			}
 
 			if(!found)
