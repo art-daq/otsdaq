@@ -13,17 +13,25 @@ if [ "x$1" == "x" ]; then
     exit
 fi
 
-basename=$(basename "$1")
-#parse as gateway log file first, then non-gateway
-hostname=$(echo "$basename" | sed -n 's/otsdaq_quiet_run-gateway-\([a-zA-Z0-9.-]*\)-[0-9]*\.txt/\1/p')
-if [ "x$hostname" == "x" ]; then
-    hostname=$(echo "$basename" | sed -n 's/otsdaq_quiet_run-\([a-zA-Z0-9.-]*\)-[0-9]*\.txt/\1/p')
-fi
-if [ "x$hostname" == "x" ]; then #then as artdaq file
-    hostname=$(echo "$basename" | sed -n 's/.*launch_attempt_\([^_]*\)_.*/\1/p')
-fi
-echo $hostname
+remote_path="$1"
+hostname=""
 
-echo "Opening file in 'less' from node $hostname: $1"
+if [[ "$1" =~ ^([a-zA-Z0-9.-]+):(\/.*)$ ]]; then
+    hostname="${BASH_REMATCH[1]}"
+    remote_path="${BASH_REMATCH[2]}"
+else
+    basename=$(basename "$1")
+    #parse as gateway log file first, then non-gateway
+    hostname=$(echo "$basename" | sed -n 's/otsdaq_quiet_run-gateway-\([a-zA-Z0-9.-]*\)-[0-9]*\.txt/\1/p')
+    if [ "x$hostname" == "x" ]; then
+        hostname=$(echo "$basename" | sed -n 's/otsdaq_quiet_run-\([a-zA-Z0-9.-]*\)-[0-9]*\.txt/\1/p')
+    fi
+    if [ "x$hostname" == "x" ]; then #then as artdaq file
+        hostname=$(echo "$basename" | sed -n 's/.*launch_attempt_\([^_]*\)_.*/\1/p')
+    fi
+fi
+echo "$hostname"
 
-scp ${hostname}:$1 .tmpLogFile && less .tmpLogFile && rm .tmpLogFile
+echo "Opening file in 'less' from node $hostname: $remote_path"
+
+scp "${hostname}:${remote_path}" .tmpLogFile && less .tmpLogFile && rm .tmpLogFile

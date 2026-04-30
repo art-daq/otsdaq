@@ -1281,7 +1281,7 @@ try
 							remoteGatewaySocket = std::make_unique<TransceiverSocket>(
 							    ipAddressForStateChangesOverUDP);
 							remoteGatewaySocket->initialize(
-							    4 * 1024 * 1024 /*socketReceiveBufferSize=4MB*/);
+							    8 * 1024 * 1024 /*socketReceiveBufferSize=8MB*/);
 
 							__COUTT__
 							    << "Remote Gateway App Status Socket initialized. Port: "
@@ -1426,6 +1426,8 @@ try
 							    remoteGatewaySocket,
 							    ipAddressForStateChangesOverUDP,
 							    portForReverseLoginOverUDP);
+
+							usleep(50 * 1000 /*50ms inter-gateway stagger to avoid UDP buffer overflow*/);
 
 							if(remoteGatewayApp.appInfo.status.size() &&
 							   remoteGatewayApp.appInfo.status !=
@@ -3267,7 +3269,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	                       portForStateChangesOverUDP);  // Take Port from Table
 	try
 	{
-		sock.initialize();
+		sock.initialize(8 * 1024 * 1024 /*socketReceiveBufferSize=8MB*/);
 	}
 	catch(...)
 	{
