@@ -9046,13 +9046,12 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
 		{
 			//send Stop to DoNotHalt subsystems that are in Running/Paused when Halt or Abort is requested
-			bool sendStop =
-			    command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
-			    (command == RunControlStateMachine::HALT_TRANSITION_NAME &&
-			     (remoteGatewayApp.appInfo.status ==
-			          RunControlStateMachine::RUNNING_STATE_NAME ||
-			      remoteGatewayApp.appInfo.status ==
-			          RunControlStateMachine::PAUSED_STATE_NAME));
+			bool sendStop = command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
+			                (command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+			                 (remoteGatewayApp.appInfo.status ==
+			                      RunControlStateMachine::RUNNING_STATE_NAME ||
+			                  remoteGatewayApp.appInfo.status ==
+			                      RunControlStateMachine::PAUSED_STATE_NAME));
 			if(sendStop)
 			{
 				localCommand = RunControlStateMachine::STOP_TRANSITION_NAME;
