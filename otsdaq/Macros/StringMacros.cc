@@ -359,7 +359,7 @@ std::string StringMacros::escapeString(std::string inString,
 				{
 					//then this is an escaped quote, so remove the escape character and skip
 					inString.erase(i - 1, 1);  // erase escape character
-					--i;                       // step back so next char to check is correct					
+					--i;  // step back so next char to check is correct
 				}
 
 				inString.insert(i,

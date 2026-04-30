@@ -1427,7 +1427,9 @@ try
 							    ipAddressForStateChangesOverUDP,
 							    portForReverseLoginOverUDP);
 
-							usleep(50 * 1000 /*50ms inter-gateway stagger to avoid UDP buffer overflow*/);
+							usleep(
+							    50 *
+							    1000 /*50ms inter-gateway stagger to avoid UDP buffer overflow*/);
 
 							if(remoteGatewayApp.appInfo.status.size() &&
 							   remoteGatewayApp.appInfo.status !=
@@ -11604,8 +11606,9 @@ try
 
 			if(targetSubsystem == "")
 			{
-				__SUP_SS__ << "Illegal empty targetSubsystem for propagateLoginToSubsystem!"
-				           << __E__;
+				__SUP_SS__
+				    << "Illegal empty targetSubsystem for propagateLoginToSubsystem!"
+				    << __E__;
 				__SUP_SS_THROW__;
 			}
 
@@ -11628,17 +11631,18 @@ try
 					{
 						found = true;
 						std::vector<std::string> parsedFields =
-						    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,
-						                                     {':'});
+						    StringMacros::getVectorFromString(
+						        remoteGatewayApp.appInfo.url, {':'});
 						if(parsedFields.size() != 3)
 						{
-							__SUP_SS__ << "Malformed URL for subsystem '" << targetSubsystem
+							__SUP_SS__ << "Malformed URL for subsystem '"
+							           << targetSubsystem
 							           << "': " << remoteGatewayApp.appInfo.url << __E__;
 							__SUP_SS_THROW__;
 						}
 
 						Socket      gatewayRemoteSocket(parsedFields[1],
-						                                atoi(parsedFields[2].c_str()));
+                                                   atoi(parsedFields[2].c_str()));
 						std::string requestString =
 						    "GetRemoteGatewayStatus," + ipAddressForStateChangesOverUDP_ +
 						    "," + std::to_string(portForReverseLoginOverUDP_) + "," +
@@ -11650,10 +11654,8 @@ try
 
 						TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
 						tmpSocket.initialize();
-						std::string response =
-						    tmpSocket.sendAndReceive(gatewayRemoteSocket,
-						                            requestString,
-						                            5 /*timeoutSeconds*/);
+						std::string response = tmpSocket.sendAndReceive(
+						    gatewayRemoteSocket, requestString, 5 /*timeoutSeconds*/);
 
 						__SUP_COUT_INFO__ << "Response from '" << targetSubsystem
 						                  << "': " << response.substr(0, 200) << __E__;

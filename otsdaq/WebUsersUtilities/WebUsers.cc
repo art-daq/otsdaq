@@ -1267,7 +1267,8 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 		// survives a crash before the next periodic save
 		if(!saveDatabaseToFile(DB_USERS))
 		{
-			__SS__ << "Failed to save User DB after first login salt initialization!" << __E__;
+			__SS__ << "Failed to save User DB after first login salt initialization!"
+			       << __E__;
 			__SS_THROW__;
 		}
 	}

@@ -1117,8 +1117,8 @@ try
 		{
 			PyObjectGuard pName(PyUnicode_FromString("do_command"));
 			PyObjectGuard pArg(PyUnicode_FromString("Shutdown"));
-			PyObjectGuard res(
-			    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName.get(), pArg.get(), NULL));
+			PyObjectGuard res(PyObject_CallMethodObjArgs(
+			    daqinterface_ptr_, pName.get(), pArg.get(), NULL));
 			__COUT_MULTI_LBL__(
 			    0, captureStderrAndStdout_("do_command Shutdown"), "do_command Shutdown");
 
