@@ -79,7 +79,8 @@ void TCPServerBase::startAccept(void)
 	if(::bind(getSocketId(), (struct sockaddr*)&serverAddr, sizeof(serverAddr)) != 0)
 	{
 		close();
-		__SS__ << "Bind: " << strerror(errno) << " (port " << fServerPort << ")" << __E__;
+		__SS__ << "Bind to port " << std::to_string(fServerPort) << ": "
+		       << strerror(errno) << __E__;
 		__SS_THROW__;
 	}
 	// freeaddrinfo(serverAddr); // all done with this structure
@@ -87,7 +88,8 @@ void TCPServerBase::startAccept(void)
 	if(::listen(getSocketId(), fMaxConnectionBacklog) != 0)
 	{
 		close();
-		__SS__ << "Listen: " << strerror(errno) << __E__;
+		__SS__ << "Listen on port " << std::to_string(fServerPort) << ": "
+		       << strerror(errno) << __E__;
 		__SS_THROW__;
 	}
 
