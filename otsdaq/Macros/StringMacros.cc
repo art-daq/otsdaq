@@ -355,11 +355,18 @@ std::string StringMacros::escapeString(std::string inString,
 			if(inString[i] == '\"' || inString[i] == '\'')
 			{
 				//check for extra escaping of the quotes
-				if(i > 2 && inString[i - 1] == '\\')
+				// a quote is escaped only when preceded by an odd number of backslashes
 				{
-					//then this is an escaped quote, so remove the escape character and skip
-					inString.erase(i - 1, 1);  // erase escape character
-					--i;  // step back so next char to check is correct
+					unsigned int backslashCount = 0;
+					for(unsigned int j = i; j > 0 && inString[j - 1] == '\\'; --j)
+						++backslashCount;
+
+					if(backslashCount % 2 == 1)
+					{
+						//then this is an escaped quote, so remove the escape character and skip
+						inString.erase(i - 1, 1);  // erase escape character
+						--i;  // step back so next char to check is correct
+					}
 				}
 
 				inString.insert(i,
