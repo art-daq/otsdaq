@@ -428,7 +428,7 @@ void WebUsers::saveActiveSessions()
 		return;
 	}
 
-	int version = 0;
+	int version = 1;
 	fprintf(fp, "%d\n", version);
 	for(unsigned int i = 0; i < ActiveSessions_.size(); ++i)
 	{
@@ -443,6 +443,7 @@ void WebUsers::saveActiveSessions()
 		fprintf(fp, "%lu\n", ActiveSessions_[i].userId_);
 		fprintf(fp, "%lu\n", ActiveSessions_[i].sessionIndex_);
 		fprintf(fp, "%ld\n", ActiveSessions_[i].startTime_);
+		fprintf(fp, "%ld\n", ActiveSessions_[i].lastActivityTime_);
 	}
 
 	__COUT__ << "Active Sessions saved with size " << ActiveSessions_.size() << __E__;
@@ -476,7 +477,11 @@ void WebUsers::loadActiveSessions()
 	sscanf(line, "%d", &version);
 	if(version == 0)
 	{
-		__COUT__ << "Extracting active sessions..." << __E__;
+		__COUT__ << "Extracting active sessions (version 0, no lastActivityTime)..." << __E__;
+	}
+	else if(version == 1)
+	{
+		__COUT__ << "Extracting active sessions (version 1)..." << __E__;
 	}
 	while(fgets(line, LINELEN, fp))
 	{
@@ -505,6 +510,17 @@ void WebUsers::loadActiveSessions()
 
 		fgets(line, LINELEN, fp);
 		sscanf(line, "%ld", &(ActiveSessions_.back().startTime_));
+
+		if(version >= 1)
+		{
+			fgets(line, LINELEN, fp);
+			sscanf(line, "%ld", &(ActiveSessions_.back().lastActivityTime_));
+		}
+		else
+		{
+			// default last activity to start time for backward compatibility
+			ActiveSessions_.back().lastActivityTime_ = ActiveSessions_.back().startTime_;
+		}
 	}
 
 	__COUT__ << "Active Sessions loaded with size " << ActiveSessions_.size() << __E__;
@@ -1910,7 +1926,8 @@ std::string WebUsers::createNewActiveSession(uint64_t           uid,
 	ActiveSessions_.back().cookieCode_ = genCookieCode();
 	ActiveSessions_.back().ip_         = ip;
 	ActiveSessions_.back().userId_     = uid;
-	ActiveSessions_.back().startTime_  = time(0);
+	ActiveSessions_.back().startTime_        = time(0);
+	ActiveSessions_.back().lastActivityTime_ = time(0);
 
 	if(asIndex)  // this is a refresh of current active session
 		ActiveSessions_.back().sessionIndex_ = asIndex;
@@ -1963,6 +1980,9 @@ std::string WebUsers::refreshCookieCode(unsigned int i, bool enableRefresh)
 		       ActiveSessions_[i].sessionIndex_)  // if uid and asIndex match, found match
 		{
 			// found!
+
+			// update last activity time to track user inactivity for lock release
+			ActiveSessions_[j].lastActivityTime_ = time(0);
 
 			// If half of expiration time is up, a new cookie is generated as most recent
 			if(enableRefresh && (time(0) - ActiveSessions_[j].startTime_ >
@@ -2250,6 +2270,30 @@ uint64_t WebUsers::cookieCodeLogout(const std::string& cookieCode,
 
 	__COUT__ << "Found and removed active session count = " << logoutCount << __E__;
 
+	// if the logged-out user held the lock and is now completely logged out, release the lock
+	if(CareAboutCookieCodes_ && usersUsernameWithLock_ != "" && !isUserIdActive(uid) &&
+	   getUsersUsername(uid) == usersUsernameWithLock_)
+	{
+		__COUT_INFO__ << "User '" << usersUsernameWithLock_
+		              << "' logged out while holding the lock - releasing lock." << __E__;
+		std::string lockedUser   = usersUsernameWithLock_;
+		usersUsernameWithLock_   = "";
+
+		// save updated lock state to file
+		{
+			std::string securityFileName = USER_WITH_LOCK_FILE;
+			FILE*       fp               = fopen(securityFileName.c_str(), "w");
+			if(fp)
+			{
+				fprintf(fp, "%s", usersUsernameWithLock_.c_str());
+				fclose(fp);
+			}
+		}
+
+		addSystemMessage("*",
+		                 lockedUser + " logged out and the system lock was released.");
+	}
+
 	return logoutCount;
 }  // end cookieCodeLogout()
 
@@ -2535,8 +2579,71 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 	   // 		usersUsernameWithLock_.substr(strlen(REMOTE_USERLOCK_PREFIX))) == NOT_FOUND_IN_DATABASE ) ||
 	   // (posRemoteFlag != 0 &&
 	   !isUsernameActive(usersUsernameWithLock_))
+	{
 		//)))  // unlock if user no longer logged in
+		__COUT_INFO__ << "User '" << usersUsernameWithLock_
+		              << "' session expired while holding the lock - releasing lock."
+		              << __E__;
+		std::string lockedUser = usersUsernameWithLock_;
 		usersUsernameWithLock_ = "";
+
+		// save updated lock state to file
+		{
+			std::string securityFileName = USER_WITH_LOCK_FILE;
+			FILE*       fp               = fopen(securityFileName.c_str(), "w");
+			if(fp)
+			{
+				fprintf(fp, "%s", usersUsernameWithLock_.c_str());
+				fclose(fp);
+			}
+		}
+
+		addSystemMessage(
+		    "*",
+		    lockedUser +
+		        " session expired and the system lock was released.");
+	}
+	else if(CareAboutCookieCodes_ && usersUsernameWithLock_ != "")
+	{
+		// Check if the user with lock has been inactive for LOCK_INACTIVITY_TIMEOUT
+		// Find the most recent activity time across all sessions for the lock-holding user
+		time_t mostRecentActivity = 0;
+		for(const auto& session : ActiveSessions_)
+		{
+			uint64_t idx = searchUsersDatabaseForUserId(session.userId_);
+			if(idx != NOT_FOUND_IN_DATABASE &&
+			   Users_[idx].username_ == usersUsernameWithLock_ &&
+			   session.lastActivityTime_ > mostRecentActivity)
+			{
+				mostRecentActivity = session.lastActivityTime_;
+			}
+		}
+		if(mostRecentActivity > 0 &&
+		   (time(0) - mostRecentActivity) >= LOCK_INACTIVITY_TIMEOUT)
+		{
+			__COUT_INFO__ << "User '" << usersUsernameWithLock_
+			              << "' has been inactive for " << LOCK_INACTIVITY_TIMEOUT
+			              << " seconds - releasing lock." << __E__;
+			std::string lockedUser = usersUsernameWithLock_;
+			usersUsernameWithLock_ = "";
+
+			// save updated lock state to file
+			{
+				std::string securityFileName = USER_WITH_LOCK_FILE;
+				FILE*       fp               = fopen(securityFileName.c_str(), "w");
+				if(fp)
+				{
+					fprintf(fp, "%s", usersUsernameWithLock_.c_str());
+					fclose(fp);
+				}
+			}
+
+			addSystemMessage(
+			    "*",
+			    lockedUser +
+			        " has been idle for 30 minutes and the system lock was released.");
+		}
+	}
 }  // end cleanupExpiredEntries()
 
 //==============================================================================

@@ -176,6 +176,7 @@ class WebUsers
 		std::string 			cookieCode_, ip_;
 		uint64_t				userId_, sessionIndex_;
 		time_t					startTime_;
+		time_t					lastActivityTime_; ///< time of last request that updated cookie code; used for inactivity lock release
 	}; //end ActiveSession struct
 
 	struct Hash
@@ -605,6 +606,8 @@ class WebUsers
 			10 * 60,  ///< 10 minutes of overlap when new cookie is generated
 		ACTIVE_SESSION_STALE_COOKIE_LIMIT =
 			10,  ///< 10 stale cookies allowed for each active user
+		LOCK_INACTIVITY_TIMEOUT =
+			30 * 60,  ///< 30 minutes of inactivity triggers automatic lock release
 	};
 
 	///"Users" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
