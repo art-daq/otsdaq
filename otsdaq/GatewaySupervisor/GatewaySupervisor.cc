@@ -12359,7 +12359,7 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 		fgets(line, 100, fp);
 		fclose(fp);
 
-		if(strcmp(line, command.c_str()) == 0)
+		if(strncmp(line, command.c_str(), 90) == 0)
 		{
 			__SS__ << "The command looks to have been ignored by " << hostname
 			       << ". Is the ots launch script still running on that node?" << __E__;
@@ -12448,7 +12448,7 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 			fgets(line, 100, fp);
 			fclose(fp);
 
-			if(strcmp(line, command.c_str()) == 0)
+			if(strncmp(line, command.c_str(), 90) == 0)
 			{
 				__SS__ << "The command '" << command << "' looks to have been ignored by "
 				       << hostname
