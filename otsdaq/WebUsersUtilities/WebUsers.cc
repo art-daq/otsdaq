@@ -220,6 +220,15 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc&              cgi,
 	userInfo.username_    = Users_[i].username_;
 	userInfo.displayName_ = Users_[i].displayName_;
 
+	// If request requires lock and no user currently has lock, auto-take lock
+	if(userInfo.requireLock_ && userInfo.usernameWithLock_ == "")
+	{
+		__COUT_INFO__ << "Auto-taking lock for user '" << userInfo.username_
+		              << "' because no user has the lock and lock is required." << __E__;
+		if(setUserWithLock(userInfo.uid_, true /*lock*/, userInfo.username_))
+			userInfo.usernameWithLock_ = userInfo.username_;
+	}
+
 	if(!WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo))
 		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
 
