@@ -11629,7 +11629,7 @@ try
 				__SUP_SS_THROW__;
 			}
 
-			bool found = false;
+			bool        found = false;
 			std::string remoteGatewayUrl;
 			{
 				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
@@ -11656,14 +11656,14 @@ try
 				}
 
 				Socket      gatewayRemoteSocket(parsedFields[1],
-                                               atoi(parsedFields[2].c_str()));
+                                           atoi(parsedFields[2].c_str()));
 				std::string requestString =
 				    "GetRemoteGatewayStatus," + ipAddressForStateChangesOverUDP_ + "," +
 				    std::to_string(portForReverseLoginOverUDP_) + "," + targetSubsystem;
 
-				__SUP_COUT_INFO__
-				    << "Propagating login verification to subsystem '" << targetSubsystem
-				    << "' via UDP: " << requestString << __E__;
+				__SUP_COUT_INFO__ << "Propagating login verification to subsystem '"
+				                  << targetSubsystem << "' via UDP: " << requestString
+				                  << __E__;
 
 				TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
 				tmpSocket.initialize();
