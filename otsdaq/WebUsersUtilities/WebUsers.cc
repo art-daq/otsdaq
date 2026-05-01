@@ -2613,7 +2613,7 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 				mostRecentActivity = session.lastActivityTime_;
 			}
 		}
-		__COUT__ << "usersUsernameWithLock_ stale? " << time(0) - mostRecentActivity <<
+		__COUTS__(20) << "usersUsernameWithLock_ stale? " << time(0) - mostRecentActivity <<
 					             " seconds of inactivity for user " << usersUsernameWithLock_ << __E__;
 		if(mostRecentActivity > 0 &&
 		   (time(0) - mostRecentActivity) >= LOCK_INACTIVITY_TIMEOUT)
