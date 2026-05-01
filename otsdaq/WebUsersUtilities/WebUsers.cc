@@ -91,6 +91,7 @@ const std::vector<std::string> WebUsers::UsersDatabaseEntryFields_ = {"username"
 
 std::atomic<bool>	WebUsers::remoteLoginVerificationEnabled_ 	= false;
 volatile bool		WebUsers::CareAboutCookieCodes_ 			= true;
+bool				WebUsers::ipBlacklistEnabled_   			= (getenv("OTS_ENABLE_IP_BLACKLIST") && std::string(getenv("OTS_ENABLE_IP_BLACKLIST")) == "1");
 
 // clang-format on
 
@@ -1270,6 +1271,15 @@ uint64_t WebUsers::attemptActiveSession(const std::string& uuid,
 		}
 
 		__COUT__ << "\tHash added: " << Hashes_.back().hash_ << __E__;
+
+		// salt was just set for the first time — must persist it immediately so it
+		// survives a crash before the next periodic save
+		if(!saveDatabaseToFile(DB_USERS))
+		{
+			__SS__ << "Failed to save User DB after first login salt initialization!"
+			       << __E__;
+			__SS_THROW__;
+		}
 	}
 	else
 	{
@@ -2094,7 +2104,7 @@ bool WebUsers::checkIpAccess(const std::string& ip)
 	__COUTTV__(ip);
 
 	if(time(0) > ipSecurityLastLoadTime_ +
-	                 10 * 60 * 60)  //every 10 minutes (to allow manual dynamic changes)
+	                 10 * 60)  //every 10 minutes (to allow manual dynamic changes)
 	{
 		ipSecurityLastLoadTime_ = time(0);
 		loadIPAddressSecurity();
@@ -2112,12 +2122,13 @@ bool WebUsers::checkIpAccess(const std::string& ip)
 			__COUTV__(rejectIp);
 			return false;  // found in reject file, so reject
 		}
-	for(const auto& blacklistIp : ipAccessBlacklist_)
-		if(StringMacros::wildCardMatch(ip, blacklistIp))
-		{
-			__COUTV__(blacklistIp);
-			return false;  // found in blacklist file, so reject
-		}
+	if(ipBlacklistEnabled_)
+		for(const auto& blacklistIp : ipAccessBlacklist_)
+			if(StringMacros::wildCardMatch(ip, blacklistIp))
+			{
+				__COUTV__(blacklistIp);
+				return false;  // found in blacklist file, so reject
+			}
 
 	// default to accept if nothing triggered above
 	return true;
@@ -2127,8 +2138,11 @@ bool WebUsers::checkIpAccess(const std::string& ip)
 /// WebUsers::incrementIpBlacklistCount ---
 void WebUsers::incrementIpBlacklistCount(const std::string& ip)
 {
-	if(ipAccessBlacklist_.find(ip) != ipAccessBlacklist_.end())
-		return;  //already in IP blacklist
+	if(!ipBlacklistEnabled_)
+		return;  // IP blacklist disabled
+
+	if(ip == "0" || ipAccessBlacklist_.find(ip) != ipAccessBlacklist_.end())
+		return;  //dummy IP or already in IP blacklist
 
 	// increment ip blacklist counter
 	auto it = ipBlacklistCounts_.find(ip);
@@ -2152,7 +2166,7 @@ void WebUsers::incrementIpBlacklistCount(const std::string& ip)
 			FILE* fp = fopen((IP_BLACKLIST_FILE).c_str(), "a");
 			if(!fp)
 			{
-				__COUT_ERR__ << "IP black list file '" << IP_BLACKLIST_FILE
+				__COUT_ERR__ << "IP blacklist file '" << IP_BLACKLIST_FILE
 				             << "' could not be opened." << __E__;
 				return;
 			}

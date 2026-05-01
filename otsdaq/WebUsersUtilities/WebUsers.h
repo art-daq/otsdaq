@@ -565,6 +565,7 @@ class WebUsers
 
 	static const std::vector<std::string> UsersDatabaseEntryFields_, HashesDatabaseEntryFields_;
 	static volatile bool     CareAboutCookieCodes_;
+	static bool              ipBlacklistEnabled_;  ///< enabled via OTS_ENABLE_IP_BLACKLIST env var
 	std::string              securityType_;
 	std::set<std::string /* ip */> ipAccessAccept_;
 	std::set<std::string /* ip */> ipAccessReject_;
