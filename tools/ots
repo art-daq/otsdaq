@@ -2725,7 +2725,7 @@ otsDataDiskCheck() {
 # Log rollover is also handled.
 ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.$$"
 otsActionHandler() {
-	
+
 	info "Starting action handler on ${THIS_HOST}... self pid = ${BASHPID} (pid file: ${ACTION_HANDLER_PID_FILE} --> $(cat ${ACTION_HANDLER_PID_FILE} 2>/dev/null || echo "none"))"
 
 	# Trap specific signals and call the exit handler
