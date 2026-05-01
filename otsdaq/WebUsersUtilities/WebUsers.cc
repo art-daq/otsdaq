@@ -1993,7 +1993,9 @@ std::string WebUsers::refreshCookieCode(unsigned int i, bool enableRefresh)
 			// found!
 
 			// update last activity time to track user inactivity for lock release
-			ActiveSessions_[j].lastActivityTime_ = time(0);
+			// only update for non-automated (user-initiated) commands
+			if(enableRefresh)
+				ActiveSessions_[j].lastActivityTime_ = time(0);
 
 			// If half of expiration time is up, a new cookie is generated as most recent
 			if(enableRefresh && (time(0) - ActiveSessions_[j].startTime_ >
@@ -2611,6 +2613,8 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 				mostRecentActivity = session.lastActivityTime_;
 			}
 		}
+		__COUT__ << "usersUsernameWithLock_ stale? " << time(0) - mostRecentActivity <<
+					             " seconds of inactivity for user " << usersUsernameWithLock_ << __E__;
 		if(mostRecentActivity > 0 &&
 		   (time(0) - mostRecentActivity) >= LOCK_INACTIVITY_TIMEOUT)
 		{
