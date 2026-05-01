@@ -167,7 +167,7 @@ if [ "$1" != "-x" ]; then #if not remote start, show more printouts
 	else
 		out "${Green}=========================== ${OTS_OWNER} ots ============================="
 	fi
-
+	out "This ots script PID: ${BASHPID}"
 fi
 
 # Check for options
@@ -2726,11 +2726,8 @@ otsDataDiskCheck() {
 ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.$$"
 otsActionHandler() {
 
-	lsof "${ACTION_HANDLER_LOG}" 2>/dev/null
-	pid=$(lsof "$ACTION_HANDLER_LOG" 2>/dev/null \
-		| awk 'NR>1 && $1=="ots" {print $2; exit}')
-
-	info "Starting action handler on ${THIS_HOST}... pid=${pid}"
+	bpid=$BASHPID
+	info "Starting action handler on ${THIS_HOST}... (pid = ${bpid})"
 
 	# Trap specific signals and call the exit handler
 	for sig in {1..3}; do #1=SIGHUP, 2=SIGINT, 3=SIGQUIT, was ..31 (avoid ctrl+Z killing script)
@@ -2763,6 +2760,13 @@ otsActionHandler() {
 
 	FIRST_TIME=1 #to enable url printouts
 	DO_LOG_ROLLOVER=0
+
+	out
+	out "Process information for PID ${bpid}: ps -aux | grep ${bpid}"
+	while IFS= read -r psline; do
+		out "$psline"
+	done < <(ps aux | grep "${bpid}")
+	out
 
 	#listen for file commands
 	while true; do
@@ -2810,7 +2814,7 @@ otsActionHandler() {
 
 
 			out " "
-			out "Rebuilding..."
+			out "self-pid=${BASHPID}: Rebuilding..."
 			out " "
 			#echo "1" > mrbresult.num; mrb b > otsdaq_startots_mrbreport.txt && echo "0" > mrbresult.num
 			out " "
@@ -2822,7 +2826,7 @@ otsActionHandler() {
 
 
 			out " "
-			out "Shutting down non-gateway contexts..."
+			out "self-pid=${BASHPID}: Shutting down non-gateway contexts..."
 			out " "
 
 			#kill all non-Gateway context processes
@@ -2832,7 +2836,7 @@ otsActionHandler() {
 
 
 			out " "
-			out "Starting up non-gateway contexts..."
+			out "self-pid=${BASHPID}: Starting up non-gateway contexts..."
 			out " "
 
 			#prevent remote ssh launches
@@ -2844,7 +2848,7 @@ otsActionHandler() {
 		elif [ "$OTSDAQ_STARTOTS_ACTION" == "LAUNCH_WIZ" ]; then
 
 
-			out "Starting otsdaq Wiz mode for host {${THIS_HOST}}..."
+			out "self-pid=${BASHPID}: Starting otsdaq Wiz mode for host {${THIS_HOST}}..."
 
 			killprocs
 
@@ -2856,7 +2860,7 @@ otsActionHandler() {
 
 		elif [ "$OTSDAQ_STARTOTS_ACTION" == "LAUNCH_OTS" ]; then
 
-			out "Starting otsdaq in normal mode for host {${THIS_HOST}}..."
+			out "self-pid=${BASHPID}: Starting otsdaq in normal mode for host {${THIS_HOST}}..."
 
 			killprocs
 
@@ -2866,7 +2870,7 @@ otsActionHandler() {
 
 		elif [ "$OTSDAQ_STARTOTS_ACTION" == "FLATTEN_TO_SYSTEM_ALIASES" ]; then
 
-			out "Removing unused tables and groups based on active System Aliases..."
+			out "self-pid=${BASHPID}: Removing unused tables and groups based on active System Aliases..."
 			out "otsdaq_flatten_system_aliases 0"
 
 
@@ -2887,14 +2891,14 @@ otsActionHandler() {
 		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
 
 			#only exit action loop
-			out "Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+			out "self-pid=${BASHPID}: Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 
 			exit
 
 		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "KILL_ALL" || "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
 
 			#kill all and exit action loop
-			out "Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+			out "self-pid=${BASHPID}: Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 
 			killprocs
 
@@ -2906,7 +2910,7 @@ otsActionHandler() {
 
 		elif [[ $OTSDAQ_STARTOTS_ACTION == LAUNCH_INSTANCE* ]]; then
 
-			info "Launching remote ots instance $OTSDAQ_STARTOTS_ACTION"
+			info "self-pid=${BASHPID}: Launching remote ots instance $OTSDAQ_STARTOTS_ACTION"
 
 			# Set Internal Field Separator to ";"
 			IFS=';'
@@ -2957,7 +2961,7 @@ otsActionHandler() {
 
 		elif [[ "$OTSDAQ_STARTOTS_ACTION" == LOG_ROLLOVER* ]]; then
 
-			info "Rolling over log files $OTSDAQ_STARTOTS_ACTION"
+			info "self-pid=${BASHPID}: Rolling over log files $OTSDAQ_STARTOTS_ACTION"
 
 			# Set Internal Field Separator to ";"
 			IFS=';'
@@ -2986,7 +2990,7 @@ otsActionHandler() {
 
 		elif [[ "${OTSDAQ_STARTOTS_ACTION:-"0"}" != "0"  || "${OTSDAQ_STARTOTS_QUIT:-"0"}" != "0" ]]; then
 
-			error "Exiting ots script.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+			error "self-pid=${BASHPID}: Exiting ots script.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 			exit
 
 		fi
@@ -3021,7 +3025,7 @@ otsActionHandler() {
 				# if log file > 100MB, export OTS_LOG_ROLLOVER=100000000
 				if [[ $logFileSize -gt $OTS_LOG_ROLLOVER || $DO_LOG_ROLLOVER == 1 ]]; then
 					DATESTRING=`date +'%s'`
-					out "Found Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${xdaqLogFilename[$i]} size=${logFileSize}"
+					out "self-pid=${BASHPID}: Found Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${xdaqLogFilename[$i]} size=${logFileSize}"
 					tmpLogFilename=$xdaqLogFilename[$i]
 					xdaqLogFilename[$i]="otsdaq_quiet_run-${xdaqHost[$i]}-${xdaqPort[$i]}${log_label}-${DATESTRING}.txt"
 					out "${Red}${Bold}Redirecting${RstClr} ${Bold}Non-gateway${RstClr}' process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${Yellow}${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}${RstClr}"
@@ -3052,7 +3056,7 @@ otsActionHandler() {
 					else
 						echo "Redirecting Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
 						echo "Redirected to Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]} > ${OTSDAQ_LOG_DIR}/${xdaqLogFilename[$i]}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
-						info "Completed log rollover of Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]}"
+						info "self-pid=${BASHPID}: Completed log rollover of Non-gateway process ID ${contextPID} -h ${xdaqHost[$i]} -p ${xdaqPort[$i]}"
 					fi
 				fi
 				i=$(( $i + 1 ))
@@ -3070,7 +3074,7 @@ otsActionHandler() {
 				# if log file > 100MB, export OTS_LOG_ROLLOVER=100000000
 				if [[ $logFileSize -gt $OTS_LOG_ROLLOVER || $DO_LOG_ROLLOVER == 1 ]]; then
 					DATESTRING=`date +'%s'`
-					out "Found Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${gatewayLogFilename} size=${logFileSize}"
+					out "self-pid=${BASHPID}: Found Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${gatewayLogFilename} size=${logFileSize}"
 					tmpLogFilename=$gatewayLogFilename
 					gatewayLogFilename="otsdaq_quiet_run-gateway-${gatewayHostname}-${gatewayPort}${log_label}-${DATESTRING}.txt"
 					out "${Red}${Bold}Redirecting${RstClr} ${Bold}Gateway${RstClr}' process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${Yellow}${OTSDAQ_LOG_DIR}/${gatewayLogFilename}${RstClr}"
@@ -3101,7 +3105,7 @@ otsActionHandler() {
 					else
 						echo "Redirecting Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
 						echo "Redirected Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort} > ${OTSDAQ_LOG_DIR}/${gatewayLogFilename}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
-						info "Completed log rollover of Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort}"
+						info "self-pid=${BASHPID}: Completed log rollover of Gateway process ID ${GATEWAY_PID} -h ${gatewayHostname} -p ${gatewayPort}"
 					fi
 				fi
 			fi #end handle gateway logs on this host
@@ -3118,7 +3122,7 @@ otsActionHandler() {
 				# if log file > 100MB, export OTS_LOG_ROLLOVER=100000000
 				if [[ $logFileSize -gt $OTS_LOG_ROLLOVER || $DO_LOG_ROLLOVER == 1 ]]; then
 					DATESTRING=`date +'%s'`
-					out "Found otsConsoleFwd process ID ${MF_FWD_PID} > otsdaq_quiet_run-mf-${THIS_HOST}.txt size=${logFileSize}"
+					out "self-pid=${BASHPID}: Found otsConsoleFwd process ID ${MF_FWD_PID} > otsdaq_quiet_run-mf-${THIS_HOST}.txt size=${logFileSize}"
 					tmpLogFilename="otsdaq_quiet_run-mf-${THIS_HOST}.txt"
 					mfLogFilename="otsdaq_quiet_run-mf-${THIS_HOST}${log_label}-${DATESTRING}.txt"
 					out "${Red}${Bold}Redirecting${RstClr} ${Bold}otsConsoleFwd${RstClr}' process ID ${MF_FWD_PID} > ${Yellow}${OTSDAQ_LOG_DIR}/${mfLogFilename}${RstClr}"
@@ -3149,7 +3153,7 @@ otsActionHandler() {
 					else
 						echo "Redirecting otsConsoleFwd process ID ${MF_FWD_PID} > ${OTSDAQ_LOG_DIR}/${tmpLogFilename} size=${logFileSize}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
 						echo "Redirected otsConsoleFwd process ID ${MF_FWD_PID} > ${OTSDAQ_LOG_DIR}/${mfLogFilename}" >> ${OTSDAQ_LOG_DIR}/${tmpLogFilename}
-						info "Completed log rollover of otsConsoleFwd process ID ${MF_FWD_PID}"
+						info "self-pid=${BASHPID}: Completed log rollover of otsConsoleFwd process ID ${MF_FWD_PID}"
 					fi
 				fi
 			fi #end handle mf forwarder 'otsConsoleFwd' logs on this host
@@ -3204,7 +3208,9 @@ fi
 #after gateway node has been decided and xdaq has been launched, start action handler
 # exec #rrivera commented: Ron and internet say this exec does nothing
 otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
-out "Action handler log is here, e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+ACTION_HANDLER_PID=$!
+out "Action handler (pid = ${ACTION_HANDLER_PID}) log is here,"
+out " e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
 
