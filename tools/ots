@@ -2291,7 +2291,7 @@ launchOTSLogFind() {
 	out #blank line
 	out #blank line
 	out #blank line
-	LEFT_SPLIT="${ACTION_HANDLER_LOG%%_*}"
+	LEFT_SPLIT="${ACTION_HANDLER_LOG%%-*}"
 	out "${Bold}ots script action handling logs:${RstClr} less -R ${LEFT_SPLIT}*"
 	out "${Bold}ots logs:${RstClr} OTSDAQ_LOG_DIR = ${OTSDAQ_LOG_DIR}/"
 	out "${Bold}XDAQ Configuration XML${RstClr}   = ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml"

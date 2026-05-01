@@ -1241,6 +1241,8 @@ try
 							    configLinkNode.getNode("IPAddressForStateChangesOverUDP")
 							        .getValue<std::string>();
 							__COUTTV__(ipAddressForStateChangesOverUDP);
+							theSupervisor->ipAddressForStateChangesOverUDP_ =
+							    ipAddressForStateChangesOverUDP;
 
 							//check if allowing reverse login verification from remote Gateways to this Gateway
 							if(theSupervisor->theWebUsers_.getSecurity() ==
@@ -1257,6 +1259,8 @@ try
 									    configLinkNode
 									        .getNode("PortForStateChangesOverUDP")
 									        .getValue<int>();
+									theSupervisor->portForReverseLoginOverUDP_ =
+									    portForReverseLoginOverUDP;
 									if(portForReverseLoginOverUDP)
 										__COUT_INFO__
 										    << "Enabling reverse login verification for "
@@ -1277,7 +1281,7 @@ try
 							remoteGatewaySocket = std::make_unique<TransceiverSocket>(
 							    ipAddressForStateChangesOverUDP);
 							remoteGatewaySocket->initialize(
-							    4 * 1024 * 1024 /*socketReceiveBufferSize=4MB*/);
+							    8 * 1024 * 1024 /*socketReceiveBufferSize=8MB*/);
 
 							__COUTT__
 							    << "Remote Gateway App Status Socket initialized. Port: "
@@ -1422,6 +1426,10 @@ try
 							    remoteGatewaySocket,
 							    ipAddressForStateChangesOverUDP,
 							    portForReverseLoginOverUDP);
+
+							usleep(
+							    50 *
+							    1000 /*50ms inter-gateway stagger to avoid UDP buffer overflow*/);
 
 							if(remoteGatewayApp.appInfo.status.size() &&
 							   remoteGatewayApp.appInfo.status !=
@@ -3263,7 +3271,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	                       portForStateChangesOverUDP);  // Take Port from Table
 	try
 	{
-		sock.initialize();
+		sock.initialize(8 * 1024 * 1024 /*socketReceiveBufferSize=8MB*/);
 	}
 	catch(...)
 	{
@@ -9045,7 +9053,14 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
 		{
-			if(command == RunControlStateMachine::ABORT_TRANSITION_NAME)
+			//send Stop to DoNotHalt subsystems that are in Running/Paused when Halt or Abort is requested
+			bool sendStop = command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
+			                (command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+			                 (remoteGatewayApp.appInfo.status ==
+			                      RunControlStateMachine::RUNNING_STATE_NAME ||
+			                  remoteGatewayApp.appInfo.status ==
+			                      RunControlStateMachine::PAUSED_STATE_NAME));
+			if(sendStop)
 			{
 				localCommand = RunControlStateMachine::STOP_TRANSITION_NAME;
 
@@ -9825,6 +9840,7 @@ void GatewaySupervisor::setSupervisorPropertyDefaults()
 	        " | cancelStateMachineTransition=10"
 	        " | resetConsoleCounts=10"
 	        " | commandRemoteSubsystem=10 | setRemoteSubsystemFsmControl=10"  //remote subsystem control
+	        " | propagateLoginToSubsystem=10"  //force login cookie propagation to a restarted subsystem
 	);
 
 	CorePropertySupervisorBase::setSupervisorProperty(
@@ -11582,6 +11598,90 @@ try
 				__SUP_SS_THROW__;
 			}
 		}
+		else if(requestType == "propagateLoginToSubsystem")
+		{
+			// Force re-propagation of the primary gateway's login verification parameters
+			// (IP, port, name) to a named remote subsystem via UDP.
+			// This is needed when a subsystem is restarted and has lost its
+			// remoteLoginVerificationEnabled_ state — normally recovered only on the next
+			// periodic AppStatusWorkLoop poll, but this call forces it immediately.
+
+			std::string targetSubsystem =
+			    CgiDataUtilities::getData(cgiIn, "targetSubsystem");
+
+			__SUP_COUTV__(targetSubsystem);
+
+			if(targetSubsystem == "")
+			{
+				__SUP_SS__
+				    << "Illegal empty targetSubsystem for propagateLoginToSubsystem!"
+				    << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			if(!portForReverseLoginOverUDP_)
+			{
+				__SUP_SS__ << "Reverse login propagation over UDP is not enabled at this "
+				              "Gateway (portForReverseLoginOverUDP_ == 0). Check "
+				              "'EnableAckForStateChangesOverUDP' and "
+				              "'PortForStateChangesOverUDP' configuration."
+				           << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			bool        found = false;
+			std::string remoteGatewayUrl;
+			{
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				for(auto& remoteGatewayApp : remoteGatewayApps_)
+				{
+					if(targetSubsystem == remoteGatewayApp.appInfo.name)
+					{
+						found            = true;
+						remoteGatewayUrl = remoteGatewayApp.appInfo.url;
+						break;
+					}
+				}
+			}
+
+			if(found)
+			{
+				std::vector<std::string> parsedFields =
+				    StringMacros::getVectorFromString(remoteGatewayUrl, {':'});
+				if(parsedFields.size() != 3)
+				{
+					__SUP_SS__ << "Malformed URL for subsystem '" << targetSubsystem
+					           << "': " << remoteGatewayUrl << __E__;
+					__SUP_SS_THROW__;
+				}
+
+				Socket      gatewayRemoteSocket(parsedFields[1],
+                                           atoi(parsedFields[2].c_str()));
+				std::string requestString =
+				    "GetRemoteGatewayStatus," + ipAddressForStateChangesOverUDP_ + "," +
+				    std::to_string(portForReverseLoginOverUDP_) + "," + targetSubsystem;
+
+				__SUP_COUT_INFO__ << "Propagating login verification to subsystem '"
+				                  << targetSubsystem << "' via UDP: " << requestString
+				                  << __E__;
+
+				TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
+				tmpSocket.initialize();
+				std::string response = tmpSocket.sendAndReceive(
+				    gatewayRemoteSocket, requestString, 5 /*timeoutSeconds*/);
+
+				__SUP_COUT_INFO__ << "Response from '" << targetSubsystem
+				                  << "': " << response.substr(0, 200) << __E__;
+				xmlOut.addTextElementToData("response", response.substr(0, 200));
+			}
+
+			if(!found)
+			{
+				__SUP_SS__ << "Target remote subsystem '" << targetSubsystem
+				           << "' was not found for propagateLoginToSubsystem!" << __E__;
+				__SUP_SS_THROW__;
+			}
+		}
 		else if(requestType == "gatewayLaunchOTS" || requestType == "gatewayLaunchWiz")
 		{
 			// NOTE: similar to ConfigurationGUI version but DOES keep active login
@@ -12259,7 +12359,7 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 		fgets(line, 100, fp);
 		fclose(fp);
 
-		if(strcmp(line, command.c_str()) == 0)
+		if(strncmp(line, command.c_str(), 90) == 0)
 		{
 			__SS__ << "The command looks to have been ignored by " << hostname
 			       << ". Is the ots launch script still running on that node?" << __E__;
@@ -12348,7 +12448,7 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 			fgets(line, 100, fp);
 			fclose(fp);
 
-			if(strcmp(line, command.c_str()) == 0)
+			if(strncmp(line, command.c_str(), 90) == 0)
 			{
 				__SS__ << "The command '" << command << "' looks to have been ignored by "
 				       << hostname

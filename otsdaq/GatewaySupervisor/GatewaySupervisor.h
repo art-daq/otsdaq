@@ -468,6 +468,9 @@ public:	//used by remote subsystem control and status
 			bool /* lastStatusGood */> 						appLastStatusGood_;
 		std::mutex											dualStatusThreadMutex_;
 
+		std::string											ipAddressForStateChangesOverUDP_; ///< IP used for UDP reverse-login propagation to remote gateways
+		int													portForReverseLoginOverUDP_ = 0;  ///< UDP port for reverse-login; 0 = disabled
+
 		std::map<unsigned int /* lid */, SupervisorInfo>	localAllSupervisorInfo_; ///< only use in main thread, stable copy of app status
 
 

@@ -354,6 +354,21 @@ std::string StringMacros::escapeString(std::string inString,
 			// replace special characters
 			if(inString[i] == '\"' || inString[i] == '\'')
 			{
+				//check for extra escaping of the quotes
+				// a quote is escaped only when preceded by an odd number of backslashes
+				{
+					unsigned int backslashCount = 0;
+					for(unsigned int j = i; j > 0 && inString[j - 1] == '\\'; --j)
+						++backslashCount;
+
+					if(backslashCount % 2 == 1)
+					{
+						//then this is an escaped quote, so remove the escape character and skip
+						inString.erase(i - 1, 1);  // erase escape character
+						--i;  // step back so next char to check is correct
+					}
+				}
+
 				inString.insert(i,
 				                (inString[i] == '\'')
 				                    ? "&apos"
