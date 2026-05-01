@@ -3209,8 +3209,9 @@ fi
 # exec #rrivera commented: Ron and internet say this exec does nothing
 ACTION_HANDLER_PID_FILE="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.pid"
 otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
-echo $! > "${ACTION_HANDLER_PID_FILE}"
-out "Action handler log is here, e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+ACTION_HANDLER_PID=$!
+echo $ACTION_HANDLER_PID > "${ACTION_HANDLER_PID_FILE}"
+out "Action handler (pid = ${ACTION_HANDLER_PID}) log is here, e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
 
