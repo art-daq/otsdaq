@@ -478,7 +478,8 @@ void WebUsers::loadActiveSessions()
 	sscanf(line, "%d", &version);
 	if(version == 0)
 	{
-		__COUT__ << "Extracting active sessions (version 0, no lastActivityTime)..." << __E__;
+		__COUT__ << "Extracting active sessions (version 0, no lastActivityTime)..."
+		         << __E__;
 	}
 	else if(version == 1)
 	{
@@ -1933,9 +1934,9 @@ std::string WebUsers::createNewActiveSession(uint64_t           uid,
 {
 	//__COUTV__(ip);
 	ActiveSessions_.push_back(ActiveSession());
-	ActiveSessions_.back().cookieCode_ = genCookieCode();
-	ActiveSessions_.back().ip_         = ip;
-	ActiveSessions_.back().userId_     = uid;
+	ActiveSessions_.back().cookieCode_       = genCookieCode();
+	ActiveSessions_.back().ip_               = ip;
+	ActiveSessions_.back().userId_           = uid;
 	ActiveSessions_.back().startTime_        = time(0);
 	ActiveSessions_.back().lastActivityTime_ = time(0);
 
@@ -2290,8 +2291,8 @@ uint64_t WebUsers::cookieCodeLogout(const std::string& cookieCode,
 	{
 		__COUT_INFO__ << "User '" << usersUsernameWithLock_
 		              << "' logged out while holding the lock - releasing lock." << __E__;
-		std::string lockedUser   = usersUsernameWithLock_;
-		usersUsernameWithLock_   = "";
+		std::string lockedUser = usersUsernameWithLock_;
+		usersUsernameWithLock_ = "";
 
 		saveLockStateToFile();
 		addSystemMessage("*",
@@ -2593,9 +2594,7 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 
 		saveLockStateToFile();
 		addSystemMessage(
-		    "*",
-		    lockedUser +
-		        " session expired and the system lock was released.");
+		    "*", lockedUser + " session expired and the system lock was released.");
 	}
 	else if(CareAboutCookieCodes_ && usersUsernameWithLock_ != "")
 	{
@@ -2622,11 +2621,10 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 			usersUsernameWithLock_ = "";
 
 			saveLockStateToFile();
-			addSystemMessage(
-			    "*",
-			    lockedUser + " has been idle for " +
-			        std::to_string(LOCK_INACTIVITY_TIMEOUT / 60) +
-			        " minutes and the system lock was released.");
+			addSystemMessage("*",
+			                 lockedUser + " has been idle for " +
+			                     std::to_string(LOCK_INACTIVITY_TIMEOUT / 60) +
+			                     " minutes and the system lock was released.");
 		}
 	}
 }  // end cleanupExpiredEntries()

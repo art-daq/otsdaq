@@ -17,13 +17,13 @@
 #include <vector>
 #include "otsdaq/NetworkUtilities/TransceiverSocket.h"  // for UDP remote login verify
 
-#define WEB_LOGIN_DB_PATH        std::string(__ENV__("SERVICE_DATA_PATH")) + "/LoginData/"
-#define WEB_LOGIN_CERTDATA_PATH  std::string(__ENV__("CERT_DATA_PATH"))
-#define HASHES_DB_PATH           "HashesData/"
-#define USERS_DB_PATH            "UsersData/"
+#define WEB_LOGIN_DB_PATH std::string(__ENV__("SERVICE_DATA_PATH")) + "/LoginData/"
+#define WEB_LOGIN_CERTDATA_PATH std::string(__ENV__("CERT_DATA_PATH"))
+#define HASHES_DB_PATH "HashesData/"
+#define USERS_DB_PATH "UsersData/"
 #define USERS_LOGIN_HISTORY_PATH USERS_DB_PATH + "UserLoginHistoryData/"
-#define USERS_PREFERENCES_PATH   USERS_DB_PATH + "UserPreferencesData/"
-#define TOOLTIP_DB_PATH          USERS_DB_PATH + "/TooltipData/"
+#define USERS_PREFERENCES_PATH USERS_DB_PATH + "UserPreferencesData/"
+#define TOOLTIP_DB_PATH USERS_DB_PATH + "/TooltipData/"
 
 // clang-format off
 
