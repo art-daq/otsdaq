@@ -167,7 +167,7 @@ if [ "$1" != "-x" ]; then #if not remote start, show more printouts
 	else
 		out "${Green}=========================== ${OTS_OWNER} ots ============================="
 	fi
-	out "this ots script PID: ${BASHPID}"
+	out "This ots script PID: ${BASHPID}"
 fi
 
 # Check for options
@@ -2727,7 +2727,7 @@ ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.$$"
 otsActionHandler() {
 
 	bpid=$BASHPID
-	info "Starting action handler on ${THIS_HOST}... self pid = ${bpid} (pid file: ${ACTION_HANDLER_PID_FILE} --> $(cat ${ACTION_HANDLER_PID_FILE} 2>/dev/null || echo "none"))"
+	info "Starting action handler on ${THIS_HOST}... (pid = ${bpid})"
 
 	# Trap specific signals and call the exit handler
 	for sig in {1..3}; do #1=SIGHUP, 2=SIGINT, 3=SIGQUIT, was ..31 (avoid ctrl+Z killing script)
@@ -3207,10 +3207,8 @@ fi
 
 #after gateway node has been decided and xdaq has been launched, start action handler
 # exec #rrivera commented: Ron and internet say this exec does nothing
-ACTION_HANDLER_PID_FILE="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.pid"
 otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
 ACTION_HANDLER_PID=$!
-echo $ACTION_HANDLER_PID > "${ACTION_HANDLER_PID_FILE}"
 out "Action handler (pid = ${ACTION_HANDLER_PID}) log is here,"
 out " e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 
