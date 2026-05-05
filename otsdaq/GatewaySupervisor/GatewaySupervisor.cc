@@ -5366,6 +5366,8 @@ try
 
 	theStateMachine_.setErrorMessage(
 	    "");  //clear State Machine error message in prep for transition
+	RunControlStateMachine::asyncFailureReceived_ =
+	    false;  //clear any stale cancel flag from a previous transition
 	xoap::MessageReference message =
 	    SOAPUtilities::makeSOAPMessageReference(command, parameters);
 	// Maybe we return an acknowledgment that the message has been received and processed
@@ -8873,6 +8875,10 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 		} while(!broadcastIterationsDone_);
 
+		// Check for a user cancel that arrived during the final SOAP call of the loop,
+		// which would not have been caught by the per-supervisor checkForAsyncError() call.
+		checkForAsyncError();
+
 		RunControlStateMachine::theProgressBar_.step();
 	}  // end main transition broadcast try
 	catch(...)
@@ -10842,10 +10848,17 @@ try
 		}
 		else if(requestType == "cancelStateMachineTransition")
 		{
-			__SS__ << "State transition was cancelled by user!" << __E__;
-			__COUTV__(ss.str());
-			RunControlStateMachine::theStateMachine_.setErrorMessage(ss.str());
-			RunControlStateMachine::asyncFailureReceived_ = true;
+			if(!theStateMachine_.isInTransition())
+			{
+				__COUT__ << "Cancel requested but not in transition - ignoring." << __E__;
+			}
+			else
+			{
+				__SS__ << "State transition was cancelled by user!" << __E__;
+				__COUTV__(ss.str());
+				RunControlStateMachine::theStateMachine_.setErrorMessage(ss.str());
+				RunControlStateMachine::asyncFailureReceived_ = true;
+			}
 		}
 		else if(requestType == "getErrorInStateMatchine")
 		{
