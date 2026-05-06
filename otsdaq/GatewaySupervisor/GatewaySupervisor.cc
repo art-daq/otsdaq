@@ -8424,30 +8424,14 @@ void GatewaySupervisor::broadcastMessageThread(
     GatewaySupervisor*                                        supervisorPtr,
     std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct)
 {
-	// Register native thread id so timed-out workers can be force-canceled.
-	threadStruct->pthreadId_    = pthread_self();
-	threadStruct->hasPthreadId_ = true;
-
-	// Asynchronous cancellation is enabled for emergency shutdown when a worker
-	// is stuck in a long blocking call and does not observe exitThread_.
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
-
-	// Ensure working_ is cleared even when this thread exits via cancellation.
-	pthread_cleanup_push(
-	    [](void* arg) {
-		    auto* threadStructPtr =
-		        static_cast<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>*>(
-		            arg);
-		    if(threadStructPtr && *threadStructPtr)
-		    {
-			    __COUT__ << "Broadcast thread " << (*threadStructPtr)->threadIndex_
-			             << "\t"
-			             << "cleaning up..." << __E__;
-			    (*threadStructPtr)->working_ = false;
-		    }
-	    },
-	    &threadStruct);
+	// Cancellation is disabled – pthread_cancel() with PTHREAD_CANCEL_ASYNCHRONOUS
+	// is fundamentally unsafe in C++ code because the abi::__forced_unwind
+	// exception it injects can be caught (and not rethrown) by intermediate
+	// catch-all handlers in the SOAP stack or standard library, causing a
+	// "FATAL: exception not rethrown" process abort.  Instead of cancellation,
+	// stuck threads are abandoned (detached) by the main thread after a timeout;
+	// they will eventually unblock when their SOAP call times out on its own.
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
 
 	__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t"
 	         << "established..." << __E__;
@@ -8510,8 +8494,6 @@ void GatewaySupervisor::broadcastMessageThread(
 	__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t"
 	         << "exited." << __E__;
 	threadStruct->working_ = false;  // indicate exiting
-
-	pthread_cleanup_pop(0);  //finished, so clear cleanup handling
 }  // end broadcastMessageThread()
 
 //==============================================================================
@@ -8775,6 +8757,20 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								       << " minutes) waiting for threads to finish "
 								          "command = "
 								       << command << "!" << __E__;
+
+								ss << "\nFailing endpoint(s) still in progress:\n";
+								for(unsigned int ti = 0; ti < numberOfThreads; ++ti)
+									if(broadcastThreadStructs_[ti]->workToDo_)
+									{
+										const auto& failingAppInfo = 
+										    broadcastThreadStructs_[ti]->getAppInfo();
+										ss << "  - App: " << failingAppInfo.getName()
+										   << " (ID: " << failingAppInfo.getId() << ")"
+										   << ", Context: " << failingAppInfo.getContextName()
+										   << ", Hostname: " << failingAppInfo.getHostname()
+										   << __E__;
+									}
+
 								ss << "\n"
 								   << "Please review the failing endpoint. Each "
 								      "transition iteration must finish in under "
@@ -8930,18 +8926,23 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 //==============================================================================
 // signalAndWaitForBroadcastThreads
-//	Signal all broadcast threads to exit, then wait (with a 30 s timeout) for
+//	Signal all broadcast threads to exit, then wait (with a timeout) for
 //	every thread to set working_=false.  Called from both the normal-completion
 //	and exception paths in broadcastMessage() to avoid duplicating this logic.
-//	supervisorIterationsDone is heap-allocated (shared_ptr) and each
-//	BroadcastMessageStruct holds a copy, so the underlying bool arrays remain
-//	valid even if this returns before all threads have exited.
+//
+//	If threads are still stuck after the timeout, they are abandoned (not
+//	pthread_cancel'd).  pthread_cancel with PTHREAD_CANCEL_ASYNCHRONOUS is
+//	unsafe in C++ because __forced_unwind caught by intermediate catch-all
+//	handlers causes "FATAL: exception not rethrown".  The stuck detached
+//	threads hold shared_ptr copies of their BroadcastThreadStruct and of
+//	supervisorIterationsDone, so all heap data remains valid until the
+//	thread's blocking call eventually returns and the thread exits on its own.
 void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfThreads)
 {
 	for(unsigned int i = 0; i < numberOfThreads; ++i)
 		broadcastThreadStructs_[i]->exitThread_ = true;
 
-	const int timeoutSeconds = 30;  //time for destructors to finish
+	const int timeoutSeconds = 30;  //time for threads to finish
 	time_t    start;
 	time(&start);
 	bool allExited = false;
@@ -8959,48 +8960,17 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 			if(difftime(time(0), start) > timeoutSeconds)
 			{
 				__COUT_WARN__ << "Timeout waiting for broadcast threads to exit! "
-				              << "Attempting force-cancel of worker threads..." << __E__;
+				              << "Abandoning stuck threads (they are detached and will "
+				              << "exit on their own when their blocking calls return)."
+				              << __E__;
 
 				for(unsigned int i = 0; i < numberOfThreads; ++i)
-					if(broadcastThreadStructs_[i]->working_ &&
-					   broadcastThreadStructs_[i]->hasPthreadId_)
+					if(broadcastThreadStructs_[i]->working_)
 					{
-						broadcastThreadStructs_[i]->hardCancelRequested_ = true;
-						int rc = pthread_cancel(broadcastThreadStructs_[i]->pthreadId_);
-						if(rc)
-							__COUT_WARN__ << "Failed to cancel broadcast thread " << i
-							              << " (pthread_cancel rc=" << rc << ")."
-							              << __E__;
-						else
-							__COUT_WARN__ << "Cancel requested for broadcast thread " << i
-							              << "." << __E__;
+						__COUT_WARN__ << "Broadcast thread " << i
+						              << " is still running and will be abandoned."
+						              << __E__;
 					}
-
-				const int forceCancelWaitSeconds = 5;
-				time_t    forceCancelStart;
-				time(&forceCancelStart);
-				while(true)
-				{
-					bool anyStillWorking = false;
-					for(unsigned int i = 0; i < numberOfThreads; ++i)
-						if(broadcastThreadStructs_[i]->working_)
-						{
-							anyStillWorking = true;
-							break;
-						}
-
-					if(!anyStillWorking)
-						break;
-
-					if(difftime(time(0), forceCancelStart) > forceCancelWaitSeconds)
-					{
-						__COUT_WARN__ << "Some broadcast threads are still running after "
-						                 "force-cancel "
-						              << "attempt; continuing shutdown path." << __E__;
-						break;
-					}
-					usleep(100 * 1000 /*100ms*/);
-				}
 
 				break;
 			}

@@ -27,7 +27,7 @@
 #include <xgi/Method.h>
 #include "otsdaq/GatewaySupervisor/PixelHistoPicGen.h"
 
-#include <pthread.h>  // for pthread_kill
+#include <pthread.h>  // for pthread_setcancelstate in broadcastMessageThread
 #include <set>
 #include <sstream>
 #include <string>
@@ -230,8 +230,6 @@ class WorkLoopManager;
 				, working_(true)
 				, workToDo_(false)
 				, error_(false)
-				, hardCancelRequested_(false)
-				, hasPthreadId_(false)
 			{
 			}  // end BroadcastThreadStruct constructor()
 
@@ -242,9 +240,6 @@ class WorkLoopManager;
 				, working_(b.working_.load())
 				, workToDo_(b.workToDo_.load())
 				, error_(b.error_.load())
-				, hardCancelRequested_(b.hardCancelRequested_.load())
-				, pthreadId_(b.pthreadId_)
-				, hasPthreadId_(b.hasPthreadId_.load())
 			{
 			}  // end BroadcastThreadStruct move constructor()
 
@@ -305,9 +300,6 @@ class WorkLoopManager;
 			std::mutex           threadMutex_;
 			unsigned int         threadIndex_;
 			std::atomic<bool>    exitThread_, working_, workToDo_, error_;
-			std::atomic<bool>    hardCancelRequested_;
-			pthread_t            pthreadId_;
-			std::atomic<bool>    hasPthreadId_;
 			// always just 1 message (for now)
 			std::vector<BroadcastThreadStruct::BroadcastMessageStruct> messages_;
 

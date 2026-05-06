@@ -1229,7 +1229,7 @@ FEVInterfacesManager* FESupervisor::extractFEInterfacesManager()
 void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 {
 	__SUP_COUT__ << "transitionConfiguring" << __E__;
-	sleep(100); //for testing only
+	sleep(100);  // for testing only, to allow time to attach to process and see state before config
 	__SUP_COUT__ << "transitionConfiguring" << __E__;
 	CoreSupervisorBase::configureInit();
 
