@@ -12515,7 +12515,7 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 
 	// Mirror the auto-take logic from xmlRequestOnGateway: if request requires the lock
 	// and no user currently holds it, auto-take on behalf of the remote supervisor.
-	if(requireLock && userWithLock == "" && uid != uint64_t(-1))
+	if(requireLock && userWithLock == "" && uid != WebUsers::NOT_FOUND_IN_DATABASE)
 	{
 		std::string username = theWebUsers_.getUsersUsername(uid);
 		__COUT_INFO__ << "Auto-taking lock for user '" << username
