@@ -8721,9 +8721,10 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					            "broadcast to threads. Waiting for threads to finish..."
 					         << __E__;
 					bool      done;
-					const int timeoutSeconds  = 2; //60 * 4;  //4 minutes for each iteration
-					uint32_t  lastMinutesLeft = -1;
-					time_t    start;
+					const int timeoutSeconds =
+					    2;  //60 * 4;  //4 minutes for each iteration
+					uint32_t lastMinutesLeft = -1;
+					time_t   start;
 					time(&start);
 					uint32_t waitIt = 0;
 					do
@@ -8762,13 +8763,14 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								for(unsigned int ti = 0; ti < numberOfThreads; ++ti)
 									if(broadcastThreadStructs_[ti]->workToDo_)
 									{
-										const auto& failingAppInfo = 
+										const auto& failingAppInfo =
 										    broadcastThreadStructs_[ti]->getAppInfo();
 										ss << "  - App: " << failingAppInfo.getName()
 										   << " (ID: " << failingAppInfo.getId() << ")"
-										   << ", Context: " << failingAppInfo.getContextName()
-										   << ", Hostname: " << failingAppInfo.getHostname()
-										   << __E__;
+										   << ", Context: "
+										   << failingAppInfo.getContextName()
+										   << ", Hostname: "
+										   << failingAppInfo.getHostname() << __E__;
 									}
 
 								ss << "\n"
