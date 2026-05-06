@@ -8739,7 +8739,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					            "broadcast to threads. Waiting for threads to finish..."
 					         << __E__;
 					bool      done;
-					const int timeoutSeconds  = 60 * 4;  //4 minutes for each iteration
+					const int timeoutSeconds  = 2; //60 * 4;  //4 minutes for each iteration
 					uint32_t  lastMinutesLeft = -1;
 					time_t    start;
 					time(&start);

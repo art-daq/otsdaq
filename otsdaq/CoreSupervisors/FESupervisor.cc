@@ -1229,7 +1229,8 @@ FEVInterfacesManager* FESupervisor::extractFEInterfacesManager()
 void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 {
 	__SUP_COUT__ << "transitionConfiguring" << __E__;
-
+	sleep(100); //for testing only
+	__SUP_COUT__ << "transitionConfiguring" << __E__;
 	CoreSupervisorBase::configureInit();
 
 	// get pset from Board Reader metric manager table
