@@ -12482,6 +12482,7 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 	parameters.addParameter("CookieCode");
 	parameters.addParameter("RefreshOption");
 	parameters.addParameter("IPAddress");
+	parameters.addParameter("RequireLock");
 	SOAPUtilities::receive(message, parameters);
 	std::string cookieCode = parameters.getValue("CookieCode");
 	std::string refreshOption =
@@ -12490,6 +12491,8 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 	std::string ipAddress =
 	    parameters.getValue("IPAddress");  // give external supervisors option to refresh
 	                                       // cookie or not, "1" to refresh
+	bool requireLock =
+	    parameters.getValue("RequireLock") == "1";  // auto-take lock if needed
 
 	// If TRUE, cookie code is good, and refreshed code is in cookieCode, also pointers
 	// optionally for uint8_t userPermissions, uint64_t uid  Else, error message is
@@ -12509,6 +12512,18 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 	                                          &userSessionIndex);
 
 	__COUTTV__(userWithLock);
+
+	// Mirror the auto-take logic from xmlRequestOnGateway: if request requires the lock
+	// and no user currently holds it, auto-take on behalf of the remote supervisor.
+	if(requireLock && userWithLock == "" && uid != uint64_t(-1))
+	{
+		std::string username = theWebUsers_.getUsersUsername(uid);
+		__COUT_INFO__ << "Auto-taking lock for user '" << username
+		              << "' on behalf of remote supervisor (lock required, none held)."
+		              << __E__;
+		if(theWebUsers_.setUserWithLock(uid, true /*lock*/, username))
+			userWithLock = username;
+	}
 
 	// fill return parameters
 	SOAPParameters retParameters;
