@@ -8097,7 +8097,8 @@ try
 		if(exitFlag && exitFlag->load(std::memory_order_acquire))
 		{
 			__COUT__ << "Broadcast thread " << threadIndex
-			         << " exitFlag set at top of sub-iteration loop; abandoning work." << __E__;
+			         << " exitFlag set at top of sub-iteration loop; abandoning work."
+			         << __E__;
 			return true;
 		}
 
@@ -8252,7 +8253,8 @@ try
 			if(exitFlag && exitFlag->load(std::memory_order_acquire))
 			{
 				__COUT__ << "Broadcast thread " << threadIndex
-				         << " exitFlag set after send() failure; abandoning work." << __E__;
+				         << " exitFlag set after send() failure; abandoning work."
+				         << __E__;
 				return true;
 			}
 
@@ -8301,7 +8303,8 @@ try
 				if(exitFlag && exitFlag->load(std::memory_order_acquire))
 				{
 					__COUT__ << "Broadcast thread " << threadIndex
-					         << " exitFlag set after retry send(); abandoning work." << __E__;
+					         << " exitFlag set after retry send(); abandoning work."
+					         << __E__;
 					return true;
 				}
 			}
@@ -8310,8 +8313,10 @@ try
 				// Check exit flag before touching supervisor state in the throw path.
 				if(exitFlag && exitFlag->load(std::memory_order_acquire))
 				{
-					__COUT__ << "Broadcast thread " << threadIndex
-					         << " exitFlag set after retry send() failure; abandoning work." << __E__;
+					__COUT__
+					    << "Broadcast thread " << threadIndex
+					    << " exitFlag set after retry send() failure; abandoning work."
+					    << __E__;
 					return true;
 				}
 				__COUT_ERR__ << "Broadcast thread " << threadIndex << "\t"
@@ -8358,8 +8363,10 @@ try
 				// Check exit flag after the error-retrieval SOAP call.
 				if(exitFlag && exitFlag->load(std::memory_order_acquire))
 				{
-					__COUT__ << "Broadcast thread " << threadIndex
-					         << " exitFlag set after error-retrieval send(); abandoning work." << __E__;
+					__COUT__
+					    << "Broadcast thread " << threadIndex
+					    << " exitFlag set after error-retrieval send(); abandoning work."
+					    << __E__;
 					return true;
 				}
 
@@ -8399,8 +8406,10 @@ try
 				// Check exit flag before touching supervisor state in the throw path.
 				if(exitFlag && exitFlag->load(std::memory_order_acquire))
 				{
-					__COUT__ << "Broadcast thread " << threadIndex
-					         << " exitFlag set after error-retrieval failure; abandoning work." << __E__;
+					__COUT__
+					    << "Broadcast thread " << threadIndex
+					    << " exitFlag set after error-retrieval failure; abandoning work."
+					    << __E__;
 					return true;
 				}
 				// do not kill whole system if xdaq xoap failure
