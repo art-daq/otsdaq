@@ -2203,7 +2203,12 @@ try
 								              << "]. Attempting to send 'Error' "
 								                 "transition to target now!"
 								              << __E__;
-								theSupervisor->theStateMachine_.setErrorMessage(ss.str());
+								//Only set error message if it is not already present
+								//	(avoid growing the error string with duplicate messages)
+								if(theSupervisor->theStateMachine_.getErrorMessage().find(
+								       ss.str()) == std::string::npos)
+									theSupervisor->theStateMachine_.setErrorMessage(
+									    ss.str());
 								try
 								{
 									theSupervisor->runControlMessageHandler(
@@ -2292,7 +2297,11 @@ try
 							       << "' [URL=" << appInfo.getURL() << "]." << __E__;
 							__COUT_ERR__ << "\n" << ss.str();
 
-							theSupervisor->theStateMachine_.setErrorMessage(ss.str());
+							//Only set error message if it is not already present
+							//	(avoid growing the error string with duplicate messages)
+							if(theSupervisor->theStateMachine_.getErrorMessage().find(
+							       ss.str()) == std::string::npos)
+								theSupervisor->theStateMachine_.setErrorMessage(ss.str());
 							try
 							{
 								theSupervisor->runControlMessageHandler(
