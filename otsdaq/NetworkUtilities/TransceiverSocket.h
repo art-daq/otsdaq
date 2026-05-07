@@ -49,8 +49,8 @@ class TransceiverSocket : public TransmitterSocket, public ReceiverSocket
 	/// Returns 0 on success (assembled buffer placed in 'buffer'), -1 on failure.
 	int receiveAll(std::string& buffer,
 	               unsigned int timeoutSeconds       = 5,
-	               unsigned int retransmitMaxRetries  = 10,
-	               bool         verbose               = false);
+	               unsigned int retransmitMaxRetries = 10,
+	               bool         verbose              = false);
 
 	std::string sendAndReceive(Socket&            toSocket,
 	                           const std::string& sendBuffer,
@@ -69,12 +69,12 @@ class TransceiverSocket : public TransmitterSocket, public ReceiverSocket
 	/// Throws on timeout or error.
 	std::string sendAndReceiveAll(Socket&            toSocket,
 	                              const std::string& sendBuffer,
-	                              unsigned int       timeoutSeconds         = 5,
-	                              unsigned int       retransmitMaxRetries   = 10,
-	                              bool               verbose                = false);
+	                              unsigned int       timeoutSeconds       = 5,
+	                              unsigned int       retransmitMaxRetries = 10,
+	                              bool               verbose              = false);
 
 	/// Retransmission protocol constants
-	static constexpr uint16_t RETRANSMIT_MAGIC      = 0xD2C4;
+	static constexpr uint16_t RETRANSMIT_MAGIC       = 0xD2C4;
 	static constexpr size_t   RETRANSMIT_HEADER_SIZE = 8;
 
   protected:

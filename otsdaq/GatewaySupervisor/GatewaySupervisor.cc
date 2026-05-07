@@ -2810,12 +2810,12 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		// config dump transfer. This replaces the old sendAndReceive + manual
 		// receive loop, providing automatic packet ordering, dropped packet
 		// detection, and retransmit requests.
-		std::string commandResponseString = remoteGatewaySocket->sendAndReceiveAll(
-		    gatewayRemoteSocket,
-		    command,
-		    10 /*timeoutSeconds*/,
-		    10 /*retransmitMaxRetries*/,
-		    false /*verbose*/);
+		std::string commandResponseString =
+		    remoteGatewaySocket->sendAndReceiveAll(gatewayRemoteSocket,
+		                                           command,
+		                                           10 /*timeoutSeconds*/,
+		                                           10 /*retransmitMaxRetries*/,
+		                                           false /*verbose*/);
 		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name
 		         << "' received: " << commandResponseString.size() << " bytes" << __E__;
 
@@ -2880,15 +2880,15 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 				__SS__ << "Config dump response from Remote Gateway '"
 				       << remoteGatewayApp.appInfo.name
 				       << "' is missing END--- termination marker. "
-				       << "Received " << commandResponseString.size()
-				       << " bytes." << __E__;
+				       << "Received " << commandResponseString.size() << " bytes."
+				       << __E__;
 				const size_t maxPrint = 500;
 				if(commandResponseString.size() <= maxPrint)
 					ss << " Full text: [" << commandResponseString << "]";
 				else
 					ss << " Last " << maxPrint << " chars: ["
-					   << commandResponseString.substr(
-					          commandResponseString.size() - maxPrint)
+					   << commandResponseString.substr(commandResponseString.size() -
+					                                   maxPrint)
 					   << "]";
 				ss << __E__;
 				__SS_THROW__;
@@ -4432,7 +4432,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    true /* verbose */,
 						    extraDoneContent.size() ? 65500 : 1500 /*maxChunkSize*/,
 						    0 /*interPacketGapUSeconds*/,
-						    extraDoneContent.size() > 0 /*enableRetransmission - use retransmit protocol for large config dump transfers*/);
+						    extraDoneContent.size() >
+						        0 /*enableRetransmission - use retransmit protocol for large config dump transfers*/);
 				}
 			}
 			catch(...)

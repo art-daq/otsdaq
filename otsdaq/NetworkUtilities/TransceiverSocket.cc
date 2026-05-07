@@ -35,12 +35,11 @@ TransceiverSocket::~TransceiverSocket(void) {}
 /// returns 0 on success
 /// When enableRetransmission is true, uses sendAll() to send the buffer with
 /// retransmission headers, then waits for retransmit requests from the receiver.
-int TransceiverSocket::acknowledge(
-    const std::string& buffer,
-    bool               verbose /* = false */,
-    size_t             maxChunkSize /* = 1500 */,
-    unsigned int       interPacketGapUSeconds /* = 0 */,
-    bool               enableRetransmission /* = false */)
+int TransceiverSocket::acknowledge(const std::string& buffer,
+                                   bool               verbose /* = false */,
+                                   size_t             maxChunkSize /* = 1500 */,
+                                   unsigned int       interPacketGapUSeconds /* = 0 */,
+                                   bool               enableRetransmission /* = false */)
 {
 	if(verbose)
 		__COUTT__ << "Acknowledging on Socket Descriptor #: " << socketNumber_
@@ -59,8 +58,8 @@ int TransceiverSocket::acknowledge(
 
 		const size_t MAX_SEND_SIZE =
 		    maxChunkSize > 65500u ? static_cast<size_t>(65500u) : maxChunkSize;
-		size_t offset     = 0;
-		int    sendToSize = 1;
+		size_t offset      = 0;
+		int    sendToSize  = 1;
 		int    sizeInBytes = 1;
 
 		while(offset < buffer.size() && sendToSize > 0)
@@ -108,16 +107,14 @@ int TransceiverSocket::acknowledge(
 ///   5. Returns when receiver sends "done" or timeout expires
 ///
 /// Returns 0 on success.
-int TransceiverSocket::sendAll(
-    const std::string& buffer,
-    bool               verbose /* = false */,
-    size_t             maxChunkSize /* = 65500 */,
-    unsigned int       interPacketGapUSeconds /* = 0 */)
+int TransceiverSocket::sendAll(const std::string& buffer,
+                               bool               verbose /* = false */,
+                               size_t             maxChunkSize /* = 65500 */,
+                               unsigned int       interPacketGapUSeconds /* = 0 */)
 {
 	if(verbose)
 		__COUT__ << "sendAll: retransmission-mode send on Socket Descriptor #: "
-		         << socketNumber_
-		         << " from-port: " << ntohs(socketAddress_.sin_port)
+		         << socketNumber_ << " from-port: " << ntohs(socketAddress_.sin_port)
 		         << " to-port: " << ntohs(ReceiverSocket::fromAddress_.sin_port)
 		         << " buffer size: " << buffer.size() << __E__;
 
@@ -125,21 +122,19 @@ int TransceiverSocket::sendAll(
 	    maxChunkSize > 65500u ? static_cast<size_t>(65500u) : maxChunkSize;
 
 	// The payload per packet is reduced by the header size
-	const size_t payloadMax =
-	    MAX_SEND_SIZE > RETRANSMIT_HEADER_SIZE
-	        ? MAX_SEND_SIZE - RETRANSMIT_HEADER_SIZE
-	        : 1;
+	const size_t payloadMax = MAX_SEND_SIZE > RETRANSMIT_HEADER_SIZE
+	                              ? MAX_SEND_SIZE - RETRANSMIT_HEADER_SIZE
+	                              : 1;
 
 	// Calculate total number of packets
-	uint16_t totalPackets = static_cast<uint16_t>(
-	    (buffer.size() + payloadMax - 1) / payloadMax);
+	uint16_t totalPackets =
+	    static_cast<uint16_t>((buffer.size() + payloadMax - 1) / payloadMax);
 	if(totalPackets == 0)
 		totalPackets = 1;  // send at least one packet even for empty buffer
 
 	if(verbose)
-		__COUT__ << "sendAll: sending " << totalPackets
-		         << " packets for " << buffer.size() << " bytes, payloadMax="
-		         << payloadMax << __E__;
+		__COUT__ << "sendAll: sending " << totalPackets << " packets for "
+		         << buffer.size() << " bytes, payloadMax=" << payloadMax << __E__;
 
 	// Build and cache all packets (header + payload) for retransmit use
 	std::vector<std::string> packets(totalPackets);
@@ -156,9 +151,9 @@ int TransceiverSocket::sendAll(
 			uint16_t netIndex   = htons(pi);
 			uint16_t netTotal   = htons(totalPackets);
 			uint16_t netPaySize = htons(static_cast<uint16_t>(payloadSize));
-			std::memcpy(header + 0, &netMagic,   2);
-			std::memcpy(header + 2, &netIndex,   2);
-			std::memcpy(header + 4, &netTotal,   2);
+			std::memcpy(header + 0, &netMagic, 2);
+			std::memcpy(header + 2, &netIndex, 2);
+			std::memcpy(header + 4, &netTotal, 2);
 			std::memcpy(header + 6, &netPaySize, 2);
 
 			packets[pi].assign(header, RETRANSMIT_HEADER_SIZE);
@@ -204,9 +199,9 @@ int TransceiverSocket::sendAll(
 	{
 		std::string retransmitRequest;
 		int         rc = receive(retransmitRequest,
-		                         retransmitTimeoutSeconds,
-		                         0 /*timeoutUSeconds*/,
-		                         false /*verbose*/);
+                         retransmitTimeoutSeconds,
+                         0 /*timeoutUSeconds*/,
+                         false /*verbose*/);
 		if(rc < 0)
 		{
 			// Timeout - assume receiver got everything (or gave up)
@@ -253,17 +248,16 @@ int TransceiverSocket::sendAll(
 
 			if(missingIdx < totalPackets)
 			{
-				int sendToSize =
-				    sendto(socketNumber_,
-				           packets[missingIdx].data(),
-				           packets[missingIdx].size(),
-				           0,
-				           (struct sockaddr*)&(ReceiverSocket::fromAddress_),
-				           sizeof(sockaddr_in));
+				int sendToSize = sendto(socketNumber_,
+				                        packets[missingIdx].data(),
+				                        packets[missingIdx].size(),
+				                        0,
+				                        (struct sockaddr*)&(ReceiverSocket::fromAddress_),
+				                        sizeof(sockaddr_in));
 				if(sendToSize <= 0)
 				{
-					__SS__ << "sendAll: error resending packet " << missingIdx
-					       << ": " << strerror(errno) << std::endl;
+					__SS__ << "sendAll: error resending packet " << missingIdx << ": "
+					       << strerror(errno) << std::endl;
 					__SS_THROW__;
 				}
 				if(verbose)
@@ -274,9 +268,8 @@ int TransceiverSocket::sendAll(
 			}
 			else
 			{
-				__COUT_WARN__
-				    << "sendAll: retransmit request for invalid packet index "
-				    << missingIdx << " (total=" << totalPackets << ")" << __E__;
+				__COUT_WARN__ << "sendAll: retransmit request for invalid packet index "
+				              << missingIdx << " (total=" << totalPackets << ")" << __E__;
 			}
 		}
 	}
@@ -403,10 +396,10 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 	while(true)
 	{
 		std::string rawPacket;
-		int rc = receive(rawPacket,
-		                 firstPacketReceived ? 0 : timeoutSeconds,
-		                 firstPacketReceived ? interPacketTimeoutUSeconds : 0,
-		                 false /*verbose*/);
+		int         rc = receive(rawPacket,
+                         firstPacketReceived ? 0 : timeoutSeconds,
+                         firstPacketReceived ? interPacketTimeoutUSeconds : 0,
+                         false /*verbose*/);
 
 		if(rc < 0)
 		{
@@ -441,9 +434,9 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 
 		// Parse header
 		uint16_t magic, packetIndex, pktTotal, payloadSize;
-		std::memcpy(&magic,       rawPacket.data() + 0, 2);
+		std::memcpy(&magic, rawPacket.data() + 0, 2);
 		std::memcpy(&packetIndex, rawPacket.data() + 2, 2);
-		std::memcpy(&pktTotal,    rawPacket.data() + 4, 2);
+		std::memcpy(&pktTotal, rawPacket.data() + 4, 2);
 		std::memcpy(&payloadSize, rawPacket.data() + 6, 2);
 		magic       = ntohs(magic);
 		packetIndex = ntohs(packetIndex);
@@ -478,18 +471,18 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 
 		if(verbose)
 			__COUTT__ << "receiveAll: received packet " << packetIndex << "/"
-			          << totalPackets << " payload=" << actualPayload << " total_received="
-			          << receivedPackets.size() << std::endl;
+			          << totalPackets << " payload=" << actualPayload
+			          << " total_received=" << receivedPackets.size() << std::endl;
 
 		// Check if we have all packets
-		if(totalKnown &&
-		   receivedPackets.size() >= static_cast<size_t>(totalPackets))
+		if(totalKnown && receivedPackets.size() >= static_cast<size_t>(totalPackets))
 			break;
 
 		// Check overall timeout
-		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-		    clock::now() - start);
-		if(elapsed.count() >= static_cast<long>(timeoutSeconds * (retransmitMaxRetries + 1)))
+		auto elapsed =
+		    std::chrono::duration_cast<std::chrono::seconds>(clock::now() - start);
+		if(elapsed.count() >=
+		   static_cast<long>(timeoutSeconds * (retransmitMaxRetries + 1)))
 		{
 			if(verbose)
 				__COUT_WARN__ << "receiveAll: overall timeout reached" << __E__;
@@ -498,8 +491,7 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 	}
 
 	// Phase 2: Retransmit missing packets
-	if(totalKnown &&
-	   receivedPackets.size() < static_cast<size_t>(totalPackets))
+	if(totalKnown && receivedPackets.size() < static_cast<size_t>(totalPackets))
 	{
 		for(unsigned int retry = 0; retry < retransmitMaxRetries; ++retry)
 		{
@@ -552,10 +544,8 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 			while(true)
 			{
 				std::string rawPacket;
-				int rc = receive(rawPacket,
-				                 timeoutSeconds,
-				                 0 /*timeoutUSeconds*/,
-				                 false /*verbose*/);
+				int         rc = receive(
+                    rawPacket, timeoutSeconds, 0 /*timeoutUSeconds*/, false /*verbose*/);
 				if(rc < 0)
 					break;  // timeout, will retry
 
@@ -563,9 +553,9 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 					continue;
 
 				uint16_t magic2, packetIndex2, pktTotal2, payloadSize2;
-				std::memcpy(&magic2,       rawPacket.data() + 0, 2);
+				std::memcpy(&magic2, rawPacket.data() + 0, 2);
 				std::memcpy(&packetIndex2, rawPacket.data() + 2, 2);
-				std::memcpy(&pktTotal2,    rawPacket.data() + 4, 2);
+				std::memcpy(&pktTotal2, rawPacket.data() + 4, 2);
 				std::memcpy(&payloadSize2, rawPacket.data() + 6, 2);
 				magic2       = ntohs(magic2);
 				packetIndex2 = ntohs(packetIndex2);
@@ -583,8 +573,8 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 				    rawPacket.substr(RETRANSMIT_HEADER_SIZE, actualPayload2);
 
 				if(verbose)
-					__COUTT__ << "receiveAll: retransmit received packet "
-					          << packetIndex2 << "/" << totalPackets
+					__COUTT__ << "receiveAll: retransmit received packet " << packetIndex2
+					          << "/" << totalPackets
 					          << " total_received=" << receivedPackets.size()
 					          << std::endl;
 
@@ -649,8 +639,8 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 	if(verbose)
 		__COUT__ << "receiveAll: successfully assembled " << buffer.size()
 		         << " bytes from " << totalPackets << " packets in "
-		         << std::chrono::duration_cast<std::chrono::milliseconds>(
-		                clock::now() - start)
+		         << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
+		                                                                  start)
 		                .count()
 		         << " ms" << __E__;
 
