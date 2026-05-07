@@ -2203,7 +2203,12 @@ try
 								              << "]. Attempting to send 'Error' "
 								                 "transition to target now!"
 								              << __E__;
-								theSupervisor->theStateMachine_.setErrorMessage(ss.str());
+								//Only set error message if it is not already present
+								//	(avoid growing the error string with duplicate messages)
+								if(theSupervisor->theStateMachine_.getErrorMessage().find(
+								       ss.str()) == std::string::npos)
+									theSupervisor->theStateMachine_.setErrorMessage(
+									    ss.str());
 								try
 								{
 									theSupervisor->runControlMessageHandler(
@@ -2292,7 +2297,11 @@ try
 							       << "' [URL=" << appInfo.getURL() << "]." << __E__;
 							__COUT_ERR__ << "\n" << ss.str();
 
-							theSupervisor->theStateMachine_.setErrorMessage(ss.str());
+							//Only set error message if it is not already present
+							//	(avoid growing the error string with duplicate messages)
+							if(theSupervisor->theStateMachine_.getErrorMessage().find(
+							       ss.str()) == std::string::npos)
+								theSupervisor->theStateMachine_.setErrorMessage(ss.str());
 							try
 							{
 								theSupervisor->runControlMessageHandler(
@@ -12550,6 +12559,7 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 	parameters.addParameter("CookieCode");
 	parameters.addParameter("RefreshOption");
 	parameters.addParameter("IPAddress");
+	parameters.addParameter("RequireLock");
 	SOAPUtilities::receive(message, parameters);
 	std::string cookieCode = parameters.getValue("CookieCode");
 	std::string refreshOption =
@@ -12558,25 +12568,53 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 	std::string ipAddress =
 	    parameters.getValue("IPAddress");  // give external supervisors option to refresh
 	                                       // cookie or not, "1" to refresh
+	bool requireLock =
+	    parameters.getValue("RequireLock") == "1";  // auto-take lock if needed
 
 	// If TRUE, cookie code is good, and refreshed code is in cookieCode, also pointers
 	// optionally for uint8_t userPermissions, uint64_t uid  Else, error message is
 	// returned in cookieCode
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
 	            userGroupPermissionsMap;
-	std::string userWithLock = "";
-	uint64_t    uid, userSessionIndex;
+	std::string userWithLock     = "";
+	uint64_t    uid              = WebUsers::NOT_FOUND_IN_DATABASE;
+	uint64_t    userSessionIndex = WebUsers::NOT_FOUND_IN_DATABASE;
 	__COUTTV__(refreshOption);
-	theWebUsers_.cookieCodeIsActiveForRequest(cookieCode,
-	                                          &userGroupPermissionsMap,
-	                                          &uid /*uid is not given to remote users*/,
-	                                          ipAddress,
-	                                          refreshOption == "1",
-	                                          false /* doNotGoRemote */,
-	                                          &userWithLock,
-	                                          &userSessionIndex);
+	bool cookieIsActive = theWebUsers_.cookieCodeIsActiveForRequest(
+	    cookieCode,
+	    &userGroupPermissionsMap,
+	    &uid /*uid is not given to remote users*/,
+	    ipAddress,
+	    refreshOption == "1",
+	    false /* doNotGoRemote */,
+	    &userWithLock,
+	    &userSessionIndex);
 
 	__COUTTV__(userWithLock);
+
+	if(cookieIsActive)
+	{
+		// Mirror the auto-take logic from xmlRequestOnGateway: if request requires the
+		// lock and no user currently holds it, auto-take on behalf of the remote
+		// supervisor.
+		if(requireLock && userWithLock == "" && uid != WebUsers::NOT_FOUND_IN_DATABASE)
+		{
+			std::string username = theWebUsers_.getUsersUsername(uid);
+			__COUT_INFO__
+			    << "Auto-taking lock for user '" << username
+			    << "' on behalf of remote supervisor (lock required, none held)."
+			    << __E__;
+			if(theWebUsers_.setUserWithLock(uid, true /*lock*/, username))
+				userWithLock = username;
+		}
+	}
+	else
+	{
+		// Cookie validation failed; clear identity to avoid returning stale data.
+		uid              = WebUsers::NOT_FOUND_IN_DATABASE;
+		userSessionIndex = WebUsers::NOT_FOUND_IN_DATABASE;
+		userWithLock     = "";
+	}
 
 	// fill return parameters
 	SOAPParameters retParameters;
@@ -12584,9 +12622,12 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 	retParameters.addParameter(
 	    "Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
 	retParameters.addParameter("UserWithLock", userWithLock);
-	retParameters.addParameter("Username", theWebUsers_.getUsersUsername(uid));
-	retParameters.addParameter("DisplayName", theWebUsers_.getUsersDisplayName(uid));
-	retParameters.addParameter("UserSessionIndex", std::to_string(userSessionIndex));
+	retParameters.addParameter("Username",
+	                           cookieIsActive ? theWebUsers_.getUsersUsername(uid) : "");
+	retParameters.addParameter(
+	    "DisplayName", cookieIsActive ? theWebUsers_.getUsersDisplayName(uid) : "");
+	retParameters.addParameter("UserSessionIndex",
+	                           cookieIsActive ? std::to_string(userSessionIndex) : "");
 
 	__COUTT__ << "Login response: " << retParameters.getValue("Username") << __E__;
 
