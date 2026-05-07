@@ -126,6 +126,7 @@ bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
 	parameters.addParameter("CookieCode", userInfo.cookieCode_);
 	parameters.addParameter("RefreshOption", userInfo.automatedCommand_ ? "0" : "1");
 	parameters.addParameter("IPAddress", userInfo.ip_);
+	parameters.addParameter("RequireLock", userInfo.requireLock_ ? "1" : "0");
 
 	retMsg = SOAPMessenger::sendWithSOAPReply(
 	    gatewaySupervisor, "SupervisorCookieCheck", parameters);
