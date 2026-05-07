@@ -5375,6 +5375,8 @@ try
 
 	theStateMachine_.setErrorMessage(
 	    "");  //clear State Machine error message in prep for transition
+	RunControlStateMachine::asyncFailureReceived_ =
+	    false;  //clear any stale cancel flag from a previous transition
 	xoap::MessageReference message =
 	    SOAPUtilities::makeSOAPMessageReference(command, parameters);
 	// Maybe we return an acknowledgment that the message has been received and processed
@@ -8078,12 +8080,13 @@ catch(...)
 ///	Handles sub-iterations at same target
 ///		if failure, THROW state machine exception
 ///	returns true if iterations are done, else false
-bool GatewaySupervisor::handleBroadcastMessageTarget(const SupervisorInfo&  appInfo,
-                                                     xoap::MessageReference message,
-                                                     const std::string&     command,
-                                                     const unsigned int&    iteration,
-                                                     std::string&           reply,
-                                                     unsigned int           threadIndex)
+bool GatewaySupervisor::handleBroadcastMessageTarget(const SupervisorInfo&    appInfo,
+                                                     xoap::MessageReference   message,
+                                                     const std::string&       command,
+                                                     const unsigned int&      iteration,
+                                                     std::string&             reply,
+                                                     unsigned int             threadIndex,
+                                                     const std::atomic<bool>* exitFlag)
 try
 {
 	unsigned int subIteration      = 0;  // reset for next subIteration loop
@@ -8097,6 +8100,16 @@ try
 		         << "' [LID=" << appInfo.getId() << "] in Context '"
 		         << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
 		         << "] Command = " << command << __E__;
+
+		// Before accessing any supervisor state on this sub-iteration,
+		// check if the thread has been told to exit.
+		if(exitFlag && exitFlag->load(std::memory_order_acquire))
+		{
+			__COUT__ << "Broadcast thread " << threadIndex
+			         << " exitFlag set at top of sub-iteration loop; abandoning work."
+			         << __E__;
+			return true;
+		}
 
 		checkForAsyncError();
 
@@ -8231,10 +8244,29 @@ try
 			//using the intermediate temporary string seems to possibly help when there are multiple crashes of FSM entities
 			reply = tmpReply;
 
+			// After the blocking SOAP call, check if the thread has been told to
+			// exit (e.g., broadcastMessage() timed out and unwound).  If so, bail
+			// out immediately – supervisorPtr / `this` may already be invalid.
+			if(exitFlag && exitFlag->load(std::memory_order_acquire))
+			{
+				__COUT__ << "Broadcast thread " << threadIndex
+				         << " exitFlag set after send(); abandoning work." << __E__;
+				return true;  // report "done" so caller does not touch supervisor state
+			}
+
 			// then release mutex here using scope change, to allow the app to start giving its own updates
 		}
 		catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 		{
+			// Check exit flag before using any more supervisor members in the retry path.
+			if(exitFlag && exitFlag->load(std::memory_order_acquire))
+			{
+				__COUT__ << "Broadcast thread " << threadIndex
+				         << " exitFlag set after send() failure; abandoning work."
+				         << __E__;
+				return true;
+			}
+
 			// do not kill whole system if xdaq xoap failure
 			__SS__ << "Error! Gateway Supervisor can NOT " << command
 			       << " Supervisor instance = '" << appInfo.getName()
@@ -8275,9 +8307,27 @@ try
 				         << std::endl;
 
 				reply = send(appInfo.getDescriptor(), message);
+
+				// Check exit flag after blocking retry send.
+				if(exitFlag && exitFlag->load(std::memory_order_acquire))
+				{
+					__COUT__ << "Broadcast thread " << threadIndex
+					         << " exitFlag set after retry send(); abandoning work."
+					         << __E__;
+					return true;
+				}
 			}
 			catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 			{
+				// Check exit flag before touching supervisor state in the throw path.
+				if(exitFlag && exitFlag->load(std::memory_order_acquire))
+				{
+					__COUT__
+					    << "Broadcast thread " << threadIndex
+					    << " exitFlag set after retry send() failure; abandoning work."
+					    << __E__;
+					return true;
+				}
 				__COUT_ERR__ << "Broadcast thread " << threadIndex << "\t"
 				             << "Second try failed.." << __E__;
 				XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
@@ -8289,6 +8339,15 @@ try
 		__COUT__ << "Broadcast thread " << threadIndex << "\t"
 		         << "Reply received from " << appInfo.getName()
 		         << " [LID=" << appInfo.getId() << "]: " << reply << __E__;
+
+		// Before processing the reply (which accesses supervisor state),
+		// check if the thread has been told to exit.
+		if(exitFlag && exitFlag->load(std::memory_order_acquire))
+		{
+			__COUT__ << "Broadcast thread " << threadIndex
+			         << " exitFlag set after SOAP reply; abandoning work." << __E__;
+			return true;
+		}
 
 		if((reply != command + "Done") && (reply != command + "Response") &&
 		   (reply != command + "Iterate") && (reply != command + "SubIterate"))
@@ -8309,6 +8368,17 @@ try
 				    sendWithSOAPReply(appInfo.getDescriptor(),
 				                      SOAPUtilities::makeSOAPMessageReference(
 				                          "StateMachineErrorMessageRequest"));
+
+				// Check exit flag after the error-retrieval SOAP call.
+				if(exitFlag && exitFlag->load(std::memory_order_acquire))
+				{
+					__COUT__
+					    << "Broadcast thread " << threadIndex
+					    << " exitFlag set after error-retrieval send(); abandoning work."
+					    << __E__;
+					return true;
+				}
+
 				SOAPParameters parameters;
 				parameters.addParameter("ErrorMessage");
 				SOAPUtilities::receive(errorMessage, parameters);
@@ -8342,6 +8412,15 @@ try
 			}
 			catch(const xdaq::exception::Exception& e)  // due to xoap send failure
 			{
+				// Check exit flag before touching supervisor state in the throw path.
+				if(exitFlag && exitFlag->load(std::memory_order_acquire))
+				{
+					__COUT__
+					    << "Broadcast thread " << threadIndex
+					    << " exitFlag set after error-retrieval failure; abandoning work."
+					    << __E__;
+					return true;
+				}
 				// do not kill whole system if xdaq xoap failure
 				__SS__ << "Error! Gateway Supervisor failed to read error message from "
 				          "Supervisor instance = '"
@@ -8431,30 +8510,14 @@ void GatewaySupervisor::broadcastMessageThread(
     GatewaySupervisor*                                        supervisorPtr,
     std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct)
 {
-	// Register native thread id so timed-out workers can be force-canceled.
-	threadStruct->pthreadId_    = pthread_self();
-	threadStruct->hasPthreadId_ = true;
-
-	// Asynchronous cancellation is enabled for emergency shutdown when a worker
-	// is stuck in a long blocking call and does not observe exitThread_.
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
-
-	// Ensure working_ is cleared even when this thread exits via cancellation.
-	pthread_cleanup_push(
-	    [](void* arg) {
-		    auto* threadStructPtr =
-		        static_cast<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>*>(
-		            arg);
-		    if(threadStructPtr && *threadStructPtr)
-		    {
-			    __COUT__ << "Broadcast thread " << (*threadStructPtr)->threadIndex_
-			             << "\t"
-			             << "cleaning up..." << __E__;
-			    (*threadStructPtr)->working_ = false;
-		    }
-	    },
-	    &threadStruct);
+	// Cancellation is disabled – pthread_cancel() with PTHREAD_CANCEL_ASYNCHRONOUS
+	// is fundamentally unsafe in C++ code because the abi::__forced_unwind
+	// exception it injects can be caught (and not rethrown) by intermediate
+	// catch-all handlers in the SOAP stack or standard library, causing a
+	// "FATAL: exception not rethrown" process abort.  Instead of cancellation,
+	// stuck threads are abandoned (detached) by the main thread after a timeout;
+	// they will eventually unblock when their SOAP call times out on its own.
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
 
 	__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t"
 	         << "established..." << __E__;
@@ -8480,11 +8543,24 @@ void GatewaySupervisor::broadcastMessageThread(
 				       threadStruct->getCommand(),
 				       threadStruct->getIteration(),
 				       threadStruct->getReply(),
-				       threadStruct->threadIndex_))
+				       threadStruct->threadIndex_,
+				       &threadStruct->exitThread_))
 					threadStruct->getIterationsDone() = true;
 			}
 			catch(const toolbox::fsm::exception::Exception& e)
 			{
+				// If exitThread_ is set, supervisorPtr may already be
+				// invalid — do not touch any supervisor state; just exit.
+				if(threadStruct->exitThread_)
+				{
+					__COUT__ << "Broadcast thread " << threadStruct->threadIndex_
+					         << " caught exception after exitThread_ set; "
+					         << "abandoning without touching supervisor state." << __E__;
+					threadStruct->workToDo_ = false;
+					threadStruct->working_  = false;
+					return;
+				}
+
 				__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t"
 				         << "going into error: " << e.what() << __E__;
 
@@ -8493,6 +8569,20 @@ void GatewaySupervisor::broadcastMessageThread(
 				threadStruct->workToDo_  = false;
 				threadStruct->working_   = false;  // indicate exiting
 				return;
+			}
+
+			// After handleBroadcastMessageTarget() returns, re-check
+			// exitThread_ before touching supervisorPtr – the main thread
+			// may have timed out and unwound broadcastMessage(), making
+			// supervisorPtr potentially invalid.
+			if(threadStruct->exitThread_)
+			{
+				__COUT__ << "Broadcast thread " << threadStruct->threadIndex_
+				         << " exitThread_ set after work completed; "
+				         << "skipping supervisor state update." << __E__;
+				threadStruct->workToDo_ = false;
+				// Do NOT touch supervisorPtr from here on.
+				break;  // exit the primary while loop
 			}
 
 			if(!threadStruct->getIterationsDone())
@@ -8517,8 +8607,6 @@ void GatewaySupervisor::broadcastMessageThread(
 	__COUT__ << "Broadcast thread " << threadStruct->threadIndex_ << "\t"
 	         << "exited." << __E__;
 	threadStruct->working_ = false;  // indicate exiting
-
-	pthread_cleanup_pop(0);  //finished, so clear cleanup handling
 }  // end broadcastMessageThread()
 
 //==============================================================================
@@ -8738,6 +8826,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 				}  // end supervisors at same priority broadcast loop
 
+				unsigned int numberOfEndpointsAtPriority =
+				    supervisorIterationsDone->size(i);
+
 				// before proceeding to next priority,
 				//	make sure all threads have completed
 				if(numberOfThreads)
@@ -8746,7 +8837,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					            "broadcast to threads. Waiting for threads to finish..."
 					         << __E__;
 					bool      done;
-					const int timeoutSeconds  = 60 * 4;  //4 minutes for each iteration
+					const int timeoutSeconds  = 4 * 60;  //4 minutes for each iteration
 					uint32_t  lastMinutesLeft = -1;
 					time_t    start;
 					time(&start);
@@ -8782,6 +8873,24 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								       << " minutes) waiting for threads to finish "
 								          "command = "
 								       << command << "!" << __E__;
+
+								ss << "\n"
+								   << numOfThreadsWithWork << " of "
+								   << numberOfEndpointsAtPriority
+								   << " endpoint(s) timed out:\n";
+								for(unsigned int ti = 0; ti < numberOfThreads; ++ti)
+									if(broadcastThreadStructs_[ti]->workToDo_)
+									{
+										const auto& failingAppInfo =
+										    broadcastThreadStructs_[ti]->getAppInfo();
+										ss << "  - App: " << failingAppInfo.getName()
+										   << " (ID: " << failingAppInfo.getId() << ")"
+										   << ", Context: "
+										   << failingAppInfo.getContextName()
+										   << ", Hostname: "
+										   << failingAppInfo.getHostname() << __E__;
+									}
+
 								ss << "\n"
 								   << "Please review the failing endpoint. Each "
 								      "transition iteration must finish in under "
@@ -8882,6 +8991,10 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 		} while(!broadcastIterationsDone_);
 
+		// Check for a user cancel that arrived during the final SOAP call of the loop,
+		// which would not have been caught by the per-supervisor checkForAsyncError() call.
+		checkForAsyncError();
+
 		RunControlStateMachine::theProgressBar_.step();
 	}  // end main transition broadcast try
 	catch(...)
@@ -8933,19 +9046,25 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 //==============================================================================
 // signalAndWaitForBroadcastThreads
-//	Signal all broadcast threads to exit, then wait (with a 30 s timeout) for
+//	Signal all broadcast threads to exit, then wait (with a timeout) for
 //	every thread to set working_=false.  Called from both the normal-completion
 //	and exception paths in broadcastMessage() to avoid duplicating this logic.
-//	supervisorIterationsDone is heap-allocated (shared_ptr) and each
-//	BroadcastMessageStruct holds a copy, so the underlying bool arrays remain
-//	valid even if this returns before all threads have exited.
+//
+//	If threads are still stuck after the timeout, they are abandoned (not
+//	pthread_cancel'd).  pthread_cancel with PTHREAD_CANCEL_ASYNCHRONOUS is
+//	unsafe in C++ because __forced_unwind caught by intermediate catch-all
+//	handlers causes "FATAL: exception not rethrown".  The stuck detached
+//	threads hold shared_ptr copies of their BroadcastThreadStruct and of
+//	supervisorIterationsDone, so all heap data remains valid until the
+//	thread's blocking call eventually returns and the thread exits on its own.
 void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfThreads)
 {
 	for(unsigned int i = 0; i < numberOfThreads; ++i)
 		broadcastThreadStructs_[i]->exitThread_ = true;
 
-	const int timeoutSeconds = 30;  //time for destructors to finish
-	time_t    start;
+	const int timeoutSeconds =
+	    3;  //time for threads to finish (short: threads are detached and safe to abandon quickly)
+	time_t start;
 	time(&start);
 	bool allExited = false;
 	while(!allExited)
@@ -8962,48 +9081,17 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 			if(difftime(time(0), start) > timeoutSeconds)
 			{
 				__COUT_WARN__ << "Timeout waiting for broadcast threads to exit! "
-				              << "Attempting force-cancel of worker threads..." << __E__;
+				              << "Abandoning stuck threads (they are detached and will "
+				              << "exit on their own when their blocking calls return)."
+				              << __E__;
 
 				for(unsigned int i = 0; i < numberOfThreads; ++i)
-					if(broadcastThreadStructs_[i]->working_ &&
-					   broadcastThreadStructs_[i]->hasPthreadId_)
+					if(broadcastThreadStructs_[i]->working_)
 					{
-						broadcastThreadStructs_[i]->hardCancelRequested_ = true;
-						int rc = pthread_cancel(broadcastThreadStructs_[i]->pthreadId_);
-						if(rc)
-							__COUT_WARN__ << "Failed to cancel broadcast thread " << i
-							              << " (pthread_cancel rc=" << rc << ")."
-							              << __E__;
-						else
-							__COUT_WARN__ << "Cancel requested for broadcast thread " << i
-							              << "." << __E__;
+						__COUT_WARN__ << "Broadcast thread " << i
+						              << " is still running and will be abandoned."
+						              << __E__;
 					}
-
-				const int forceCancelWaitSeconds = 5;
-				time_t    forceCancelStart;
-				time(&forceCancelStart);
-				while(true)
-				{
-					bool anyStillWorking = false;
-					for(unsigned int i = 0; i < numberOfThreads; ++i)
-						if(broadcastThreadStructs_[i]->working_)
-						{
-							anyStillWorking = true;
-							break;
-						}
-
-					if(!anyStillWorking)
-						break;
-
-					if(difftime(time(0), forceCancelStart) > forceCancelWaitSeconds)
-					{
-						__COUT_WARN__ << "Some broadcast threads are still running after "
-						                 "force-cancel "
-						              << "attempt; continuing shutdown path." << __E__;
-						break;
-					}
-					usleep(100 * 1000 /*100ms*/);
-				}
 
 				break;
 			}
@@ -10851,10 +10939,17 @@ try
 		}
 		else if(requestType == "cancelStateMachineTransition")
 		{
-			__SS__ << "State transition was cancelled by user!" << __E__;
-			__COUTV__(ss.str());
-			RunControlStateMachine::theStateMachine_.setErrorMessage(ss.str());
-			RunControlStateMachine::asyncFailureReceived_ = true;
+			if(!theStateMachine_.isInTransition())
+			{
+				__COUT__ << "Cancel requested but not in transition - ignoring." << __E__;
+			}
+			else
+			{
+				__SS__ << "State transition was cancelled by user!" << __E__;
+				__COUTV__(ss.str());
+				RunControlStateMachine::theStateMachine_.setErrorMessage(ss.str());
+				RunControlStateMachine::asyncFailureReceived_ = true;
+			}
 		}
 		else if(requestType == "getErrorInStateMatchine")
 		{
