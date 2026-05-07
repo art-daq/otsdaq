@@ -33,9 +33,8 @@ TransceiverSocket::~TransceiverSocket(void) {}
 
 //==============================================================================
 /// returns 0 on success
-/// When enableRetransmission is true, each sent packet is prepended with an
-/// 8-byte retransmission header so the receiver can detect dropped packets and
-/// request retransmission.
+/// When enableRetransmission is true, uses sendAll() to send the buffer with
+/// retransmission headers, then waits for retransmit requests from the receiver.
 int TransceiverSocket::acknowledge(
     const std::string& buffer,
     bool               verbose /* = false */,
@@ -43,9 +42,6 @@ int TransceiverSocket::acknowledge(
     unsigned int       interPacketGapUSeconds /* = 0 */,
     bool               enableRetransmission /* = false */)
 {
-	// lockout other senders for the remainder of the scope
-	std::lock_guard<std::mutex> lock(sendMutex_);
-
 	if(verbose)
 		__COUTT__ << "Acknowledging on Socket Descriptor #: " << socketNumber_
 		          << " from-port: " << ntohs(socketAddress_.sin_port)
@@ -53,14 +49,16 @@ int TransceiverSocket::acknowledge(
 		          << " retransmission: " << (enableRetransmission ? "ON" : "OFF")
 		          << std::endl;
 
-	const size_t MAX_SEND_SIZE =
-	    maxChunkSize > 65500u ? static_cast<size_t>(65500u) : maxChunkSize;
-
 	if(!enableRetransmission)
 	{
 		//====================================================================
 		// Original non-retransmission mode (unchanged behavior)
 		//====================================================================
+		// lockout other senders for the remainder of this scope
+		std::lock_guard<std::mutex> lock(sendMutex_);
+
+		const size_t MAX_SEND_SIZE =
+		    maxChunkSize > 65500u ? static_cast<size_t>(65500u) : maxChunkSize;
 		size_t offset     = 0;
 		int    sendToSize = 1;
 		int    sizeInBytes = 1;
@@ -94,12 +92,37 @@ int TransceiverSocket::acknowledge(
 	}
 
 	//====================================================================
-	// Retransmission mode: prepend 8-byte header to each packet
-	//   [0-1] magic 0xD2C4  (network byte order)
-	//   [2-3] packet index   (network byte order uint16)
-	//   [4-5] total packets  (network byte order uint16)
-	//   [6-7] payload size   (network byte order uint16)
+	// Retransmission mode: delegate entirely to sendAll() which handles
+	// packet building, initial send, and retransmit request handling.
 	//====================================================================
+	return sendAll(buffer, verbose, maxChunkSize, interPacketGapUSeconds);
+}  //end acknowledge()
+
+//==============================================================================
+/// sendAll() sends a buffer to the last receive address (fromAddress_) using the
+/// retransmission protocol. Fully self-contained:
+///   1. Builds all packets with 8-byte retransmission headers
+///   2. Sends all packets
+///   3. Waits for retransmit requests from the receiver
+///   4. Resends requested packets
+///   5. Returns when receiver sends "done" or timeout expires
+///
+/// Returns 0 on success.
+int TransceiverSocket::sendAll(
+    const std::string& buffer,
+    bool               verbose /* = false */,
+    size_t             maxChunkSize /* = 65500 */,
+    unsigned int       interPacketGapUSeconds /* = 0 */)
+{
+	if(verbose)
+		__COUT__ << "sendAll: retransmission-mode send on Socket Descriptor #: "
+		         << socketNumber_
+		         << " from-port: " << ntohs(socketAddress_.sin_port)
+		         << " to-port: " << ntohs(ReceiverSocket::fromAddress_.sin_port)
+		         << " buffer size: " << buffer.size() << __E__;
+
+	const size_t MAX_SEND_SIZE =
+	    maxChunkSize > 65500u ? static_cast<size_t>(65500u) : maxChunkSize;
 
 	// The payload per packet is reduced by the header size
 	const size_t payloadMax =
@@ -114,67 +137,68 @@ int TransceiverSocket::acknowledge(
 		totalPackets = 1;  // send at least one packet even for empty buffer
 
 	if(verbose)
-		__COUT__ << "Retransmission mode: sending " << totalPackets
+		__COUT__ << "sendAll: sending " << totalPackets
 		         << " packets for " << buffer.size() << " bytes, payloadMax="
 		         << payloadMax << __E__;
 
-	// Build and cache all packets so they can be re-sent on retransmit request
+	// Build and cache all packets (header + payload) for retransmit use
 	std::vector<std::string> packets(totalPackets);
-	size_t                   offset = 0;
-	for(uint16_t pi = 0; pi < totalPackets; ++pi)
 	{
-		size_t payloadSize = (buffer.size() - offset) > payloadMax
-		                         ? payloadMax
-		                         : (buffer.size() - offset);
-
-		// Build the 8-byte header
-		char header[RETRANSMIT_HEADER_SIZE];
-		uint16_t netMagic   = htons(RETRANSMIT_MAGIC);
-		uint16_t netIndex   = htons(pi);
-		uint16_t netTotal   = htons(totalPackets);
-		uint16_t netPaySize = htons(static_cast<uint16_t>(payloadSize));
-		std::memcpy(header + 0, &netMagic,   2);
-		std::memcpy(header + 2, &netIndex,   2);
-		std::memcpy(header + 4, &netTotal,   2);
-		std::memcpy(header + 6, &netPaySize, 2);
-
-		packets[pi].assign(header, RETRANSMIT_HEADER_SIZE);
-		packets[pi].append(buffer, offset, payloadSize);
-
-		offset += payloadSize;
-	}
-
-	// Send all packets initially
-	for(uint16_t pi = 0; pi < totalPackets; ++pi)
-	{
-		int sendToSize = sendto(socketNumber_,
-		                        packets[pi].data(),
-		                        packets[pi].size(),
-		                        0,
-		                        (struct sockaddr*)&(ReceiverSocket::fromAddress_),
-		                        sizeof(sockaddr_in));
-		if(sendToSize <= 0)
+		size_t offset = 0;
+		for(uint16_t pi = 0; pi < totalPackets; ++pi)
 		{
-			__SS__ << "Error writing retransmit packet " << pi << " from port "
-			       << ntohs(TransmitterSocket::socketAddress_.sin_port) << ": "
-			       << strerror(errno) << std::endl;
-			__SS_THROW__;
-		}
-		if(verbose)
-			__COUTT__ << "Sent retransmit packet " << pi << "/" << totalPackets
-			          << " size=" << packets[pi].size() << std::endl;
+			size_t payloadSize = (buffer.size() - offset) > payloadMax
+			                         ? payloadMax
+			                         : (buffer.size() - offset);
 
-		if(interPacketGapUSeconds > 0 && pi + 1 < totalPackets)
-			usleep(interPacketGapUSeconds);
+			char     header[RETRANSMIT_HEADER_SIZE];
+			uint16_t netMagic   = htons(RETRANSMIT_MAGIC);
+			uint16_t netIndex   = htons(pi);
+			uint16_t netTotal   = htons(totalPackets);
+			uint16_t netPaySize = htons(static_cast<uint16_t>(payloadSize));
+			std::memcpy(header + 0, &netMagic,   2);
+			std::memcpy(header + 2, &netIndex,   2);
+			std::memcpy(header + 4, &netTotal,   2);
+			std::memcpy(header + 6, &netPaySize, 2);
+
+			packets[pi].assign(header, RETRANSMIT_HEADER_SIZE);
+			packets[pi].append(buffer, offset, payloadSize);
+			offset += payloadSize;
+		}
 	}
 
-	// Now wait for potential retransmit requests from receiver.
-	// A retransmit request is a packet starting with the magic marker 0xD2C4
-	// followed by a list of uint16_t packet indices that need to be resent.
-	// A "done" acknowledgment from the receiver is a packet starting with magic
-	// followed by 0xFFFF (meaning "all received, done").
-	const unsigned int retransmitTimeoutSeconds  = 5;
-	const unsigned int maxRetransmitRounds       = 20;
+	// Send all packets initially (lock sendMutex_ for the burst)
+	{
+		std::lock_guard<std::mutex> lock(sendMutex_);
+		for(uint16_t pi = 0; pi < totalPackets; ++pi)
+		{
+			int sendToSize = sendto(socketNumber_,
+			                        packets[pi].data(),
+			                        packets[pi].size(),
+			                        0,
+			                        (struct sockaddr*)&(ReceiverSocket::fromAddress_),
+			                        sizeof(sockaddr_in));
+			if(sendToSize <= 0)
+			{
+				__SS__ << "sendAll: error writing packet " << pi << "/" << totalPackets
+				       << " from port " << ntohs(socketAddress_.sin_port) << ": "
+				       << strerror(errno) << std::endl;
+				__SS_THROW__;
+			}
+			if(verbose)
+				__COUTT__ << "sendAll: sent packet " << pi << "/" << totalPackets
+				          << " size=" << packets[pi].size() << std::endl;
+
+			if(interPacketGapUSeconds > 0 && pi + 1 < totalPackets)
+				usleep(interPacketGapUSeconds);
+		}
+	}
+
+	// Wait for retransmit requests from receiver.
+	// Retransmit request format: magic(2 bytes) + list of uint16 missing indices
+	// Done signal format:        magic(2 bytes) + 0xFFFF(2 bytes)
+	const unsigned int retransmitTimeoutSeconds = 5;
+	const unsigned int maxRetransmitRounds      = 20;
 
 	for(unsigned int round = 0; round < maxRetransmitRounds; ++round)
 	{
@@ -187,85 +211,78 @@ int TransceiverSocket::acknowledge(
 		{
 			// Timeout - assume receiver got everything (or gave up)
 			if(verbose)
-				__COUT__ << "No retransmit request received after "
+				__COUT__ << "sendAll: no retransmit request after "
 				         << retransmitTimeoutSeconds
-				         << "s timeout, assuming all packets received." << __E__;
+				         << "s timeout, assuming transfer complete." << __E__;
 			break;
 		}
 
-		// Check if this is a valid retransmit request (must start with magic)
-		if(retransmitRequest.size() >= 4)
+		if(retransmitRequest.size() < 4)
+			continue;
+
+		uint16_t reqMagic;
+		std::memcpy(&reqMagic, retransmitRequest.data(), 2);
+		reqMagic = ntohs(reqMagic);
+		if(reqMagic != RETRANSMIT_MAGIC)
+			continue;
+
+		// Check for "done" signal (magic + 0xFFFF)
+		uint16_t firstVal;
+		std::memcpy(&firstVal, retransmitRequest.data() + 2, 2);
+		firstVal = ntohs(firstVal);
+		if(firstVal == 0xFFFF)
 		{
-			uint16_t reqMagic;
-			std::memcpy(&reqMagic, retransmitRequest.data(), 2);
-			reqMagic = ntohs(reqMagic);
+			if(verbose)
+				__COUT__ << "sendAll: received 'all done' from receiver." << __E__;
+			break;
+		}
 
-			if(reqMagic == RETRANSMIT_MAGIC)
+		// Parse list of missing packet indices and resend them
+		size_t numIndices = (retransmitRequest.size() - 2) / 2;
+		if(verbose)
+			__COUT__ << "sendAll: retransmit request for " << numIndices
+			         << " packets (round " << round << ")." << __E__;
+
+		// Lock sendMutex_ for the resend burst
+		std::lock_guard<std::mutex> lock(sendMutex_);
+		for(size_t i = 0; i < numIndices; ++i)
+		{
+			uint16_t missingIdx;
+			std::memcpy(&missingIdx, retransmitRequest.data() + 2 + i * 2, 2);
+			missingIdx = ntohs(missingIdx);
+
+			if(missingIdx < totalPackets)
 			{
-				// Check for "done" signal (magic + 0xFFFF)
-				if(retransmitRequest.size() >= 4)
+				int sendToSize =
+				    sendto(socketNumber_,
+				           packets[missingIdx].data(),
+				           packets[missingIdx].size(),
+				           0,
+				           (struct sockaddr*)&(ReceiverSocket::fromAddress_),
+				           sizeof(sockaddr_in));
+				if(sendToSize <= 0)
 				{
-					uint16_t firstIndex;
-					std::memcpy(&firstIndex, retransmitRequest.data() + 2, 2);
-					firstIndex = ntohs(firstIndex);
-					if(firstIndex == 0xFFFF)
-					{
-						if(verbose)
-							__COUT__ << "Received 'all done' from receiver." << __E__;
-						break;
-					}
+					__SS__ << "sendAll: error resending packet " << missingIdx
+					       << ": " << strerror(errno) << std::endl;
+					__SS_THROW__;
 				}
-
-				// Parse list of missing packet indices and resend them
-				size_t numIndices =
-				    (retransmitRequest.size() - 2) / 2;  // skip 2-byte magic
 				if(verbose)
-					__COUT__ << "Retransmit request for " << numIndices
-					         << " packets (round " << round << ")." << __E__;
+					__COUTT__ << "sendAll: resent packet " << missingIdx << std::endl;
 
-				for(size_t i = 0; i < numIndices; ++i)
-				{
-					uint16_t missingIdx;
-					std::memcpy(
-					    &missingIdx, retransmitRequest.data() + 2 + i * 2, 2);
-					missingIdx = ntohs(missingIdx);
-
-					if(missingIdx < totalPackets)
-					{
-						int sendToSize =
-						    sendto(socketNumber_,
-						           packets[missingIdx].data(),
-						           packets[missingIdx].size(),
-						           0,
-						           (struct sockaddr*)&(ReceiverSocket::fromAddress_),
-						           sizeof(sockaddr_in));
-						if(sendToSize <= 0)
-						{
-							__SS__ << "Error resending retransmit packet "
-							       << missingIdx << ": " << strerror(errno)
-							       << std::endl;
-							__SS_THROW__;
-						}
-						if(verbose)
-							__COUTT__ << "Resent packet " << missingIdx << std::endl;
-
-						if(interPacketGapUSeconds > 0)
-							usleep(interPacketGapUSeconds);
-					}
-					else
-					{
-						__COUT_WARN__
-						    << "Retransmit request for invalid packet index "
-						    << missingIdx << " (total=" << totalPackets << ")"
-						    << __E__;
-					}
-				}
+				if(interPacketGapUSeconds > 0)
+					usleep(interPacketGapUSeconds);
+			}
+			else
+			{
+				__COUT_WARN__
+				    << "sendAll: retransmit request for invalid packet index "
+				    << missingIdx << " (total=" << totalPackets << ")" << __E__;
 			}
 		}
 	}
 
 	return 0;
-}  //end acknowledge()
+}  //end sendAll()
 
 //==============================================================================
 /// Receives one packet with the specified timeout, then attempts to receive
