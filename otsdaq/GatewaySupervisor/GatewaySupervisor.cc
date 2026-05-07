@@ -12603,9 +12603,9 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 	// returned in cookieCode
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t>
 	            userGroupPermissionsMap;
-	std::string userWithLock      = "";
-	uint64_t    uid               = WebUsers::NOT_FOUND_IN_DATABASE;
-	uint64_t    userSessionIndex  = WebUsers::NOT_FOUND_IN_DATABASE;
+	std::string userWithLock     = "";
+	uint64_t    uid              = WebUsers::NOT_FOUND_IN_DATABASE;
+	uint64_t    userSessionIndex = WebUsers::NOT_FOUND_IN_DATABASE;
 	__COUTTV__(refreshOption);
 	bool cookieIsActive = theWebUsers_.cookieCodeIsActiveForRequest(
 	    cookieCode,
@@ -12627,9 +12627,10 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 		if(requireLock && userWithLock == "" && uid != WebUsers::NOT_FOUND_IN_DATABASE)
 		{
 			std::string username = theWebUsers_.getUsersUsername(uid);
-			__COUT_INFO__ << "Auto-taking lock for user '" << username
-			              << "' on behalf of remote supervisor (lock required, none held)."
-			              << __E__;
+			__COUT_INFO__
+			    << "Auto-taking lock for user '" << username
+			    << "' on behalf of remote supervisor (lock required, none held)."
+			    << __E__;
 			if(theWebUsers_.setUserWithLock(uid, true /*lock*/, username))
 				userWithLock = username;
 		}
@@ -12649,11 +12650,11 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 	    "Permissions", StringMacros::mapToString(userGroupPermissionsMap).c_str());
 	retParameters.addParameter("UserWithLock", userWithLock);
 	retParameters.addParameter("Username",
-	                            cookieIsActive ? theWebUsers_.getUsersUsername(uid) : "");
+	                           cookieIsActive ? theWebUsers_.getUsersUsername(uid) : "");
 	retParameters.addParameter(
 	    "DisplayName", cookieIsActive ? theWebUsers_.getUsersDisplayName(uid) : "");
 	retParameters.addParameter("UserSessionIndex",
-	                            cookieIsActive ? std::to_string(userSessionIndex) : "");
+	                           cookieIsActive ? std::to_string(userSessionIndex) : "");
 
 	__COUTT__ << "Login response: " << retParameters.getValue("Username") << __E__;
 
