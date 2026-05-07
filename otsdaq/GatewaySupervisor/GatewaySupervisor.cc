@@ -8713,6 +8713,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 				}  // end supervisors at same priority broadcast loop
 
+				unsigned int numberOfEndpointsAtPriority = supervisorIterationsDone->size(i);
+
 				// before proceeding to next priority,
 				//	make sure all threads have completed
 				if(numberOfThreads)
@@ -8721,8 +8723,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					            "broadcast to threads. Waiting for threads to finish..."
 					         << __E__;
 					bool      done;
-					const int timeoutSeconds =
-					    2;  //60 * 4;  //4 minutes for each iteration
+					const int timeoutSeconds = 60 * 4;  //4 minutes for each iteration
 					uint32_t lastMinutesLeft = -1;
 					time_t   start;
 					time(&start);
@@ -8759,7 +8760,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								          "command = "
 								       << command << "!" << __E__;
 
-								ss << "\nFailing endpoint(s) still in progress:\n";
+								ss << "\n" << numOfThreadsWithWork << " of "
+								   << numberOfEndpointsAtPriority
+								   << " endpoint(s) timed out:\n";
 								for(unsigned int ti = 0; ti < numberOfThreads; ++ti)
 									if(broadcastThreadStructs_[ti]->workToDo_)
 									{
@@ -8944,7 +8947,7 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 	for(unsigned int i = 0; i < numberOfThreads; ++i)
 		broadcastThreadStructs_[i]->exitThread_ = true;
 
-	const int timeoutSeconds = 30;  //time for threads to finish
+	const int timeoutSeconds = 3;  //time for threads to finish (short: threads are detached and safe to abandon quickly)
 	time_t    start;
 	time(&start);
 	bool allExited = false;
