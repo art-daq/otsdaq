@@ -304,15 +304,16 @@ class WorkLoopManager;
 			std::vector<BroadcastThreadStruct::BroadcastMessageStruct> messages_;
 
 		};  // end BroadcastThreadStruct declaration
-		static void broadcastMessageThread(
-			GatewaySupervisor* supervisorPtr,
-			std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct);
-		bool handleBroadcastMessageTarget(const SupervisorInfo& appInfo,
-			xoap::MessageReference message,
-			const std::string& command,
-			const unsigned int& iteration,
-			std::string& reply,
-			unsigned int           threadIndex = 0);
+	static void broadcastMessageThread(
+		GatewaySupervisor* supervisorPtr,
+		std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct);
+	bool handleBroadcastMessageTarget(const SupervisorInfo& appInfo,
+		xoap::MessageReference message,
+		const std::string& command,
+		const unsigned int& iteration,
+		std::string& reply,
+		unsigned int           threadIndex = 0,
+		const std::atomic<bool>* exitFlag  = nullptr);
 
 
 		// Member Variables -----------------------
