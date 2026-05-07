@@ -2797,15 +2797,18 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 
 		Socket gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
 
-		std::string commandResponseString = remoteGatewaySocket->sendAndReceive(
+		// Use retransmission-mode sendAndReceiveAll for reliable multi-packet
+		// config dump transfer. This replaces the old sendAndReceive + manual
+		// receive loop, providing automatic packet ordering, dropped packet
+		// detection, and retransmit requests.
+		std::string commandResponseString = remoteGatewaySocket->sendAndReceiveAll(
 		    gatewayRemoteSocket,
 		    command,
 		    10 /*timeoutSeconds*/,
-		    0,
-		    false,
-		    200000 /*interPacketTimeoutUSeconds=200ms*/);
+		    10 /*retransmitMaxRetries*/,
+		    false /*verbose*/);
 		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name
-		         << "' received: " << commandResponseString << __E__;
+		         << "' received: " << commandResponseString.size() << " bytes" << __E__;
 
 		size_t donePos = commandResponseString.find("Done");
 		if(donePos != 0)  //then error
@@ -2860,58 +2863,26 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 
 		if(commandResponseString.size() > strlen("Done") + 1)
 		{
-			//make sure we received everything
-			const size_t MAX_RETRIES = 10;
-			size_t       tryCnt      = 0;
-			while(++tryCnt < 20 &&
-			      commandResponseString.size() > 10 &&  //must end with 'END---'
-			      (commandResponseString[commandResponseString.size() - 1] != '-' ||
-			       commandResponseString[commandResponseString.size() - 2] != '-' ||
-			       commandResponseString[commandResponseString.size() - 3] != '-' ||
-			       commandResponseString[commandResponseString.size() - 4] != 'D' ||
-			       commandResponseString[commandResponseString.size() - 5] != 'N' ||
-			       commandResponseString[commandResponseString.size() - 6] != 'E'))
+			// With retransmission mode, the full response is already assembled
+			// by sendAndReceiveAll(). Verify the END--- marker is present.
+			if(commandResponseString.size() > 10 &&
+			   !commandResponseString.ends_with("END---"))
 			{
-				__COUT__ << "There must be more, try = " << tryCnt << __E__;
-				std::string more;
-				if(remoteGatewaySocket->receive(more, 1 /*timeoutSeconds*/) ==
-				   0 /* success */)
-				{
-					commandResponseString += more;
-					tryCnt = 0;  //reset since we received data
-				}
-				else if(tryCnt >= MAX_RETRIES)
-				{
-					__SS__ << "Timeout after " << MAX_RETRIES
-					       << " attempts waiting for more data from Remote Gateway '"
-					       << remoteGatewayApp.appInfo.name
-					       << "' (URL=" << remoteGatewayApp.appInfo.url << "). ";
-					if(commandResponseString.empty())
-					{
-						ss << "No data was received at all.";
-					}
-					else
-					{
-						const size_t maxPrint = 500;
-						ss << "Received " << commandResponseString.size()
-						   << " bytes so far. ";
-						if(commandResponseString.size() <= maxPrint)
-						{
-							ss << "Full received text: [" << commandResponseString << "]";
-						}
-						else
-						{
-							ss << "First " << maxPrint << " chars: ["
-							   << commandResponseString.substr(0, maxPrint)
-							   << "] ... Last " << maxPrint << " chars: ["
-							   << commandResponseString.substr(
-							          commandResponseString.size() - maxPrint)
-							   << "]";
-						}
-					}
-					ss << __E__;
-					__SS_THROW__;
-				}
+				__SS__ << "Config dump response from Remote Gateway '"
+				       << remoteGatewayApp.appInfo.name
+				       << "' is missing END--- termination marker. "
+				       << "Received " << commandResponseString.size()
+				       << " bytes." << __E__;
+				const size_t maxPrint = 500;
+				if(commandResponseString.size() <= maxPrint)
+					ss << " Full text: [" << commandResponseString << "]";
+				else
+					ss << " Last " << maxPrint << " chars: ["
+					   << commandResponseString.substr(
+					          commandResponseString.size() - maxPrint)
+					   << "]";
+				ss << __E__;
+				__SS_THROW__;
 			}
 
 			//assume have config dump response!
@@ -4450,7 +4421,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						                  : ""  //append extra done content, if any
 						              ),
 						    true /* verbose */,
-						    extraDoneContent.size() ? 65500 : 1500 /*maxChunkSize*/);
+						    extraDoneContent.size() ? 65500 : 1500 /*maxChunkSize*/,
+						    0 /*interPacketGapUSeconds*/,
+						    extraDoneContent.size() > 0 /*enableRetransmission - use retransmit protocol for large config dump transfers*/);
 				}
 			}
 			catch(...)
