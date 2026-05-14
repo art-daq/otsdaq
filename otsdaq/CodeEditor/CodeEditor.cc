@@ -38,7 +38,7 @@ const std::string CodeEditor::OTSDAQ_WEB_PATH =
 CodeEditor::CodeEditor()
     : ALLOWED_FILE_EXTENSIONS_({"h",    "hh",  "hpp", "hxx", "c",   "cc",   "cpp", "cxx",
                                 "icc",  "dat", "txt", "sh",  "css", "html", "htm", "js",
-                                "json", "py",  "fcl", "xml", "xsd", "cfg"})
+                                "json", "py",  "fcl", "xml", "xsd", "cfg",  "csv"})
 {
 	std::string path = CODE_EDITOR_DATA_PATH;
 	DIR*        dir  = opendir(path.c_str());

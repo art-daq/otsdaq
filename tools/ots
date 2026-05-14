@@ -126,6 +126,8 @@ SOFTKILLALL=0 #only kill user data areas
 KILLALL=0
 ISMACROMAKER=0
 ISFINDLOGFILES=0
+ISFINDLOGFILES_LOCAL=0
+ISFINDLOGFILES_ARTDAQ=0
 ISCONFIG=0
 QUIET=1
 CHROME=0
@@ -197,6 +199,18 @@ while :; do
 		# Printout the potential location of all log files based on current xdaq xml launch configuration
 		info "DISPLAYING LOG FILE LOCATIONS!"
 		ISFINDLOGFILES=1
+		;;
+	--logfind-local | -ll)
+		# Local-only log find: search $USER_DATA/Logs on THIS host only (no remote SSH).
+		# Used by fast_ots_setup.sh 'logs' action to provide results back to a primary ots -l caller.
+		info "DISPLAYING LOCAL LOG FILE LOCATIONS (no remote search)!"
+		ISFINDLOGFILES_LOCAL=1
+		;;
+	--logfind-artdaq | -lll)
+		# Local log find + ARTDAQ hosts from latest ranks.txt.
+		# Used by fast_ots_setup.sh 'artdaqlogs' action.
+		info "DISPLAYING LOCAL + ARTDAQ HOST LOG FILE LOCATIONS!"
+		ISFINDLOGFILES_ARTDAQ=1
 		;;
 	--chrome | -c)
 		# Enable launching chrome after startup
@@ -277,6 +291,12 @@ while :; do
 		out "To display potential log file locations based on current otsdaq configuration, add one of these options:"
 		out " --logfind  -l"
 		out "	e.g.: ots -l     or    ots --logfind"
+		out " --logfind-local  -ll"
+		out "	Local-only log find (no remote SSH). Used by fast_ots_setup.sh logs action."
+		out "	e.g.: ots -ll    or    ots --logfind-local"
+		out " --logfind-artdaq  -lll"
+		out "	Local log find + ARTDAQ hosts from latest ranks.txt. Used by fast_ots_setup.sh artdaqlogs action."
+		out "	e.g.: ots -lll   or    ots --logfind-artdaq"
 		out
 		out "To start otsdaq and launch google-chrome, add one of these options:"
 		out " --chrome  -c"
@@ -2408,17 +2428,478 @@ launchOTSLogFind() {
 	done < ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml
 
 
+	##############################################################################
+	# Display log files recently written to under $USER_DATA/Logs on all hosts
+	#  - Always search locally on THIS_HOST (in case context config has changed).
+	#  - Also search each remote host from the XML via:
+	#       ssh -K host "cd <ots_root> && source ./fast_ots_setup.sh <subsystem> logs"
+	#    which sources the environment and runs 'ots -ll' (local-only log find).
+	#  - ots -ll outputs machine-parseable lines:  LOGFIND_LOCAL:<time_label>:<path>
+	#  - Escalating time window is handled by ots -ll on each host independently.
+	##############################################################################
 	out #blank line
+	out #blank line
+
+	#-- helper: format file age as human-readable string --
+	#   < 1 hour:  MM:SS ago           e.g. "30:00 ago"
+	#   < 2 days:  HH:MM:SS ago        e.g. "12:32:21 ago"
+	#   >= 2 days: N days ago           e.g. "3 days ago"
+	_logfind_file_age() {
+		local file_path="$1"
+		local file_mtime now_epoch age_secs days hours mins secs
+		file_mtime=$(stat -L -c %Y "$file_path" 2>/dev/null)
+		if [ -z "$file_mtime" ]; then echo ""; return; fi
+		now_epoch=$(date +%s)
+		age_secs=$(( now_epoch - file_mtime ))
+		if [ $age_secs -lt 0 ]; then age_secs=0; fi
+		days=$(( age_secs / 86400 ))
+		if [ $days -ge 2 ]; then
+			echo "${days} days ago"
+		else
+			hours=$(( age_secs / 3600 ))
+			mins=$(( (age_secs % 3600) / 60 ))
+			secs=$(( age_secs % 60 ))
+			if [ $hours -gt 0 ]; then
+				printf "%d:%02d:%02d ago" $hours $mins $secs
+			else
+				printf "%02d:%02d ago" $mins $secs
+			fi
+		fi
+	}
+
+	#-- helper: check if a hostname refers to the local machine --
+	#  Matches THIS_HOST exactly, THIS_HOST.domain, localhost,
+	#  or THIS_HOST with -data/-ipmi suffix (private network aliases for same machine)
+	_logfind_is_local() {
+		local h="$1"
+		# direct matches
+		if [[ "$h" == "${THIS_HOST}" || "$h" == "${THIS_HOST}."* || "$h" == "localhost" ]]; then
+			return 0
+		fi
+		# strip -data or -ipmi suffix and check again
+		local h_stripped="${h/-data/}"
+		h_stripped="${h_stripped/-ipmi/}"
+		if [[ "$h_stripped" == "${THIS_HOST}" || "$h_stripped" == "${THIS_HOST}."* ]]; then
+			return 0
+		fi
+		return 1
+	}
+
+	#-- build unique host list (avoid duplicates) --
+	declare -A _logfind_seen_hosts
+	unset _logfind_remote_hosts
+	_logfind_remote_hosts=()
+
+	# always include the local host (mark as seen so it won't appear in remote list)
+	_logfind_seen_hosts["${THIS_HOST}"]=1
+
+	# add gateway host (if remote)
+	if [ -n "$gatewayHostname" ]; then
+		if [ -z "${_logfind_seen_hosts[$gatewayHostname]+x}" ]; then
+			if _logfind_is_local "$gatewayHostname"; then
+				_logfind_seen_hosts["$gatewayHostname"]=1
+			else
+				_logfind_seen_hosts["$gatewayHostname"]=1
+				_logfind_remote_hosts+=("$gatewayHostname")
+			fi
+		fi
+	fi
+	# add non-gateway hosts (if remote)
+	for _lf_host in "${xdaqHost[@]}"; do
+		if [ -z "${_logfind_seen_hosts[$_lf_host]+x}" ]; then
+			if _logfind_is_local "$_lf_host"; then
+				_logfind_seen_hosts["$_lf_host"]=1
+			else
+				_logfind_seen_hosts["$_lf_host"]=1
+				_logfind_remote_hosts+=("$_lf_host")
+			fi
+		fi
+	done
+	unset _logfind_seen_hosts
+
+	out "${Bold}${Cyan}Searching for recently written log files (under \$USER_DATA/Logs)...${RstClr}"
+	out "  ${IBlack}Hosts to search: ${THIS_HOST} (local)${_logfind_remote_hosts[@]:+ ${_logfind_remote_hosts[*]} (remote)}${RstClr}"
+
+	#-- Step 1a: Local search in $USER_DATA/Logs using escalating time windows --
+	out "  ${IBlack}[${THIS_HOST}] Searching locally in \$USER_DATA/Logs = ${USER_DATA}/Logs ...${RstClr}"
+
+	_logfind_local_label=""
+	_logfind_local_files=""
+	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "1 month:43200" "1 year:525600"; do
+		_ll_label="${_ll_window%%:*}"
+		_ll_mmin="${_ll_window##*:}"
+		_ll_files=$(find -L "${USER_DATA}/Logs" -maxdepth 5 -type f -mmin -${_ll_mmin} 2>/dev/null)
+		if [ -n "$_ll_files" ]; then
+			_logfind_local_label="$_ll_label"
+			_logfind_local_files="$_ll_files"
+			out "  ${IBlack}[${THIS_HOST}] Found log files within last ${_ll_label}.${RstClr}"
+			break
+		fi
+	done
+	if [ -z "$_logfind_local_files" ]; then
+		out "  ${IBlack}[${THIS_HOST}] No log files found in the last year.${RstClr}"
+	fi
+
+	#-- Step 1b: Search for action handler logs in ots_dir/tmp/ --
+	out "  ${IBlack}[${THIS_HOST}] Searching for action handler logs in ${PWD}/tmp/ ...${RstClr}"
+
+	_logfind_action_label=""
+	_logfind_action_files=""
+	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "1 month:43200" "1 year:525600"; do
+		_ll_label="${_ll_window%%:*}"
+		_ll_mmin="${_ll_window##*:}"
+		_ll_files=$(find -L "${PWD}/tmp" -maxdepth 1 -type f -name "otsActionsHandler*${THIS_HOST}*" -mmin -${_ll_mmin} 2>/dev/null)
+		if [ -n "$_ll_files" ]; then
+			_logfind_action_label="$_ll_label"
+			_logfind_action_files="$_ll_files"
+			out "  ${IBlack}[${THIS_HOST}] Found action handler logs within last ${_ll_label}.${RstClr}"
+			break
+		fi
+	done
+	if [ -z "$_logfind_action_files" ]; then
+		out "  ${IBlack}[${THIS_HOST}] No action handler logs found in the last year.${RstClr}"
+	fi
+
+	#-- Step 1c: Search for ARTDAQ configuration files in $USER_DATA/ARTDAQConfigurations (excluding run_records) --
+	out "  ${IBlack}[${THIS_HOST}] Searching for ARTDAQ config files in \$USER_DATA/ARTDAQConfigurations ...${RstClr}"
+
+	_logfind_artdaq_label=""
+	_logfind_artdaq_files=""
+	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "1 month:43200" "1 year:525600"; do
+		_ll_label="${_ll_window%%:*}"
+		_ll_mmin="${_ll_window##*:}"
+		_ll_files=$(find -L "${USER_DATA}/ARTDAQConfigurations" -maxdepth 5 -not -path "*/run_records/*" -not -path "*/run_records" -type f -mmin -${_ll_mmin} 2>/dev/null)
+		if [ -n "$_ll_files" ]; then
+			_logfind_artdaq_label="$_ll_label"
+			_logfind_artdaq_files="$_ll_files"
+			out "  ${IBlack}[${THIS_HOST}] Found ARTDAQ config files within last ${_ll_label}.${RstClr}"
+			break
+		fi
+	done
+	if [ -z "$_logfind_artdaq_files" ]; then
+		out "  ${IBlack}[${THIS_HOST}] No ARTDAQ config files found in the last year.${RstClr}"
+	fi
+
+	#-- Step 1d: Search for ARTDAQ run records in the LATEST run_records folder only --
+	out "  ${IBlack}[${THIS_HOST}] Searching for latest ARTDAQ run record in \$USER_DATA/ARTDAQConfigurations/run_records ...${RstClr}"
+
+	_logfind_runrecords_label=""
+	_logfind_runrecords_files=""
+	_logfind_runrecords_dir=""
+
+	# find the latest (highest numbered) run record directory
+	_logfind_latest_run_dir=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -t/ -k$(echo "${USER_DATA}/ARTDAQConfigurations/run_records/x" | tr -cd '/' | wc -c) -n | tail -1)
+
+	if [ -n "$_logfind_latest_run_dir" ]; then
+		_logfind_runrecords_dir="$_logfind_latest_run_dir"
+		_logfind_run_number=$(basename "$_logfind_latest_run_dir")
+		out "  ${IBlack}[${THIS_HOST}] Latest run record directory: ${_logfind_run_number}${RstClr}"
+
+		_logfind_runrecords_files=$(find -L "$_logfind_latest_run_dir" -maxdepth 1 -type f 2>/dev/null)
+		if [ -n "$_logfind_runrecords_files" ]; then
+			# get the age label from the directory's most recent file
+			_logfind_runrecords_label=""
+			for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "1 month:43200" "1 year:525600"; do
+				_ll_label="${_ll_window%%:*}"
+				_ll_mmin="${_ll_window##*:}"
+				_ll_check=$(find -L "$_logfind_latest_run_dir" -maxdepth 1 -type f -mmin -${_ll_mmin} 2>/dev/null | head -1)
+				if [ -n "$_ll_check" ]; then
+					_logfind_runrecords_label="$_ll_label"
+					break
+				fi
+			done
+			if [ -z "$_logfind_runrecords_label" ]; then
+				_logfind_runrecords_label="over 1 year"
+			fi
+			out "  ${IBlack}[${THIS_HOST}] Found run record ${_logfind_run_number} files (last ${_logfind_runrecords_label}).${RstClr}"
+		fi
+	fi
+	if [ -z "$_logfind_runrecords_files" ]; then
+		out "  ${IBlack}[${THIS_HOST}] No ARTDAQ run records found.${RstClr}"
+	fi
+
+	#-- Step 2: Remote search on each remote host via ssh + fast_ots_setup.sh logs --
+	#   Runs 'ots -ll' on the remote host (via fast_ots_setup.sh logs), which produces
+	#   the same display output as ots -l but local-only. We parse the standard output
+	#   for file paths (lines containing '-->  less -R ') and the time label
+	#   (lines containing '(local, last ').
+	#   Skipped when LOGFIND_LOCAL_ONLY=1 (i.e. when called from ots -ll)
+	declare -A _logfind_remote_results  # key=host, value=newline-separated file list
+	declare -A _logfind_remote_labels   # key=host, value=time label
+
+	if [ "${LOGFIND_LOCAL_ONLY:-0}" == "1" ]; then
+		out "  ${IBlack}(skipping remote host search -- local-only mode)${RstClr}"
+	else
+		for _lf_host in "${_logfind_remote_hosts[@]}"; do
+			_lf_ssh_cmd="cd '${PWD}' && source ./fast_ots_setup.sh '${OTS_SETUP_TYPE}' logs"
+
+			# Try SSH to the original hostname first
+			out "  ${IBlack}[${_lf_host}] Searching via SSH:${RstClr}"
+			out "  ${IBlack}  ssh -K ${_lf_host} \"${_lf_ssh_cmd}\"${RstClr}"
+
+			_lf_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lf_host" \
+				"$_lf_ssh_cmd" 2>/dev/null)
+			_lf_ssh_rc=$?
+			_lf_ssh_host_used="$_lf_host"
+
+			# If SSH failed, try stripping -data or -ipmi suffix from hostname
+			# (these are often private network designators that may not be SSH-reachable)
+			if [ $_lf_ssh_rc -ne 0 ]; then
+				_lf_alt_host=""
+				if [[ "$_lf_host" == *"-data"* ]]; then
+					_lf_alt_host="${_lf_host/-data/}"
+				elif [[ "$_lf_host" == *"-ipmi"* ]]; then
+					_lf_alt_host="${_lf_host/-ipmi/}"
+				fi
+
+				if [ -n "$_lf_alt_host" ]; then
+					out "  ${Yellow}[${_lf_host}] SSH failed (exit code ${_lf_ssh_rc}). Retrying with stripped hostname: ${_lf_alt_host}${RstClr}"
+					out "  ${IBlack}  ssh -K ${_lf_alt_host} \"${_lf_ssh_cmd}\"${RstClr}"
+
+					_lf_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lf_alt_host" \
+						"$_lf_ssh_cmd" 2>/dev/null)
+					_lf_ssh_rc=$?
+					_lf_ssh_host_used="$_lf_alt_host"
+
+					if [ $_lf_ssh_rc -ne 0 ]; then
+						out "  ${Red}[${_lf_host}] SSH failed to both ${_lf_host} and ${_lf_alt_host} (exit code ${_lf_ssh_rc}). Skipping.${RstClr}"
+						continue
+					fi
+				else
+					out "  ${Red}[${_lf_host}] SSH failed (exit code ${_lf_ssh_rc}). Skipping.${RstClr}"
+					continue
+				fi
+			fi
+
+			out "  ${IBlack}[${_lf_ssh_host_used}] SSH succeeded. Parsing remote ots -ll output...${RstClr}"
+
+			# Parse the standard display output from remote ots -ll:
+			#   Time label from line matching: (local, last <LABEL>):
+			#   File paths from lines starting with: less <PATH>
+			_lf_remote_files=""
+			_lf_remote_label=""
+			while IFS= read -r _lf_line; do
+				# strip ANSI color codes for reliable matching
+				_lf_clean=$(echo "$_lf_line" | sed 's/\x1b\[[0-9;]*m//g')
+
+				# extract time label from "(local, last <label>):"
+				if [[ "$_lf_clean" == *"(local, last "* ]]; then
+					_lf_remote_label="${_lf_clean#*\(local, last }"
+					_lf_remote_label="${_lf_remote_label%%\)*}"
+				fi
+
+				# extract file path from lines containing "less /"
+				if [[ "$_lf_clean" == *"less /"* ]]; then
+					_lf_path="${_lf_clean##*less }"
+					_lf_path="${_lf_path%% *}" # trim any trailing whitespace
+					if [ -n "$_lf_path" ]; then
+						if [ -n "$_lf_remote_files" ]; then
+							_lf_remote_files="${_lf_remote_files}"$'\n'"${_lf_path}"
+						else
+							_lf_remote_files="${_lf_path}"
+						fi
+					fi
+				fi
+			done <<< "$_lf_ssh_output"
+
+			if [ -n "$_lf_remote_files" ]; then
+				_logfind_remote_results["$_lf_host"]="$_lf_remote_files"
+				_logfind_remote_labels["$_lf_host"]="$_lf_remote_label"
+				out "  ${IBlack}[${_lf_host}] Found files within last ${_lf_remote_label}.${RstClr}"
+			else
+				out "  ${IBlack}[${_lf_host}] No recently written log files found.${RstClr}"
+			fi
+		done
+	fi
+
+	#-- Step 3: Display combined results --
+	out #blank line
+
+	# Determine the widest time label to use in the header
+	_logfind_header_label="$_logfind_local_label"
+	if [ -z "$_logfind_header_label" ] && [ -n "$_logfind_action_label" ]; then
+		_logfind_header_label="$_logfind_action_label"
+	fi
+	if [ -z "$_logfind_header_label" ] && [ -n "$_logfind_artdaq_label" ]; then
+		_logfind_header_label="$_logfind_artdaq_label"
+	fi
+	if [ -z "$_logfind_header_label" ] && [ -n "$_logfind_runrecords_label" ]; then
+		_logfind_header_label="$_logfind_runrecords_label"
+	fi
+	for _lf_host in "${_logfind_remote_hosts[@]}"; do
+		if [ -n "${_logfind_remote_labels[$_lf_host]+x}" ] && [ -n "${_logfind_remote_labels[$_lf_host]}" ]; then
+			_logfind_header_label="${_logfind_remote_labels[$_lf_host]}" #use last found label (not perfect, but informative)
+		fi
+	done
+
+	_logfind_any_found=0
+	if [ -n "$_logfind_local_files" ]; then _logfind_any_found=1; fi
+	if [ -n "$_logfind_action_files" ]; then _logfind_any_found=1; fi
+	if [ -n "$_logfind_artdaq_files" ]; then _logfind_any_found=1; fi
+	if [ -n "$_logfind_runrecords_files" ]; then _logfind_any_found=1; fi
+	if [ ${#_logfind_remote_results[@]} -gt 0 ]; then _logfind_any_found=1; fi
+
+	if [ "${LOGFIND_LOCAL_ONLY:-0}" == "1" ]; then
+		_logfind_scope="on this host"
+	else
+		_logfind_scope="across all hosts"
+	fi
+
+	if [ $_logfind_any_found -eq 0 ]; then
+		out "${Bold}${Cyan}Log files written to (${_logfind_scope}):${RstClr}"
+		out "  ${IBlack}(none found in the last year)${RstClr}"
+	else
+		out "${Bold}${Cyan}Log files recently written to (${_logfind_scope}):${RstClr}"
+
+		# local results -- categorize by parent directory or filename pattern
+		#   Files in subdirectories of $USER_DATA/Logs use the subdirectory name as category.
+		#   Files directly in the Logs root use filename-pattern matching.
+		if [ -n "$_logfind_local_files" ]; then
+			out "  ${Bold}[${THIS_HOST}] (local, last ${_logfind_local_label}):${RstClr}"
+			_lf_logs_root="${USER_DATA}/Logs"
+			while IFS= read -r _lf_file; do
+				_lf_basename=$(basename "$_lf_file")
+
+				# skip alive check files
+				if [[ "$_lf_basename" == "otsdaq_is_alive"* ]]; then
+					continue
+				fi
+
+				# determine category: check if file is in a subdirectory of Logs
+				_lf_dir=$(dirname "$_lf_file")
+				_lf_reldir="${_lf_dir#${_lf_logs_root}}"
+				_lf_reldir="${_lf_reldir#/}" # strip leading /
+
+				if [ -n "$_lf_reldir" ]; then
+					# file is in a subdirectory -- use first path component as category
+					_lf_category="${_lf_reldir%%/*}"
+				else
+					# file is directly in Logs root -- categorize by filename
+					if [[ "$_lf_basename" == *"-gateway-"* ]]; then
+						_lf_category="gateway"
+					elif [[ "$_lf_basename" == *"-mf-"* ]]; then
+						_lf_category="message facility"
+					elif [[ "$_lf_basename" == *"-wiz-"* ]]; then
+						_lf_category="wizard mode"
+					elif [[ "$_lf_basename" == *"-mm-"* ]]; then
+						_lf_category="macro maker"
+					elif [[ "$_lf_basename" == *"-flatten-"* ]]; then
+						_lf_category="flatten"
+					elif [[ "$_lf_basename" == "otsdaq_quiet_run-"* ]]; then
+						_lf_category="context"
+					elif [[ "$_lf_basename" == *"Dump"* ]]; then
+						_lf_category="transition dump"
+					else
+						_lf_category="log"
+					fi
+				fi
+
+				_lf_age=$(_logfind_file_age "$_lf_file")
+				out "    ${Bold}${_lf_category}${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+			done <<< "$_logfind_local_files"
+		fi
+
+		# action handler results (from ots_dir/tmp/)
+		if [ -n "$_logfind_action_files" ]; then
+			if [ -z "$_logfind_local_files" ]; then
+				out "  ${Bold}[${THIS_HOST}] (local, last ${_logfind_action_label}):${RstClr}"
+			fi
+			while IFS= read -r _lf_file; do
+				_lf_age=$(_logfind_file_age "$_lf_file")
+				out "    ${Bold}action handler${RstClr} --> less -R ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+			done <<< "$_logfind_action_files"
+		fi
+
+		# ARTDAQ configuration files (excluding run_records)
+		if [ -n "$_logfind_artdaq_files" ]; then
+			while IFS= read -r _lf_file; do
+				_lf_age=$(_logfind_file_age "$_lf_file")
+				out "    ${Bold}ARTDAQ config${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+			done <<< "$_logfind_artdaq_files"
+		fi
+
+		# ARTDAQ run records (latest run only)
+		if [ -n "$_logfind_runrecords_files" ]; then
+			_lf_run_number=""
+			if [ -n "$_logfind_runrecords_dir" ]; then
+				_lf_run_number=$(basename "$_logfind_runrecords_dir")
+			fi
+			while IFS= read -r _lf_file; do
+				_lf_age=$(_logfind_file_age "$_lf_file")
+				out "    ${Bold}run record ${_lf_run_number}${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+			done <<< "$_logfind_runrecords_files"
+		fi
+
+		# remote results -- same categorization logic (parsed from remote ots -ll output)
+		for _lf_host in "${_logfind_remote_hosts[@]}"; do
+			if [ -n "${_logfind_remote_results[$_lf_host]+x}" ]; then
+				out "  ${Bold}[${_lf_host}] (remote, last ${_logfind_remote_labels[$_lf_host]}):${RstClr}"
+				while IFS= read -r _lf_file; do
+					_lf_basename=$(basename "$_lf_file")
+
+					if [[ "$_lf_basename" == "otsdaq_is_alive"* ]]; then
+						continue
+					fi
+
+					_lf_dir=$(dirname "$_lf_file")
+					_lf_reldir="${_lf_dir#${USER_DATA}/Logs}"
+					_lf_reldir="${_lf_reldir#/}"
+
+					if [ -n "$_lf_reldir" ]; then
+						_lf_category="${_lf_reldir%%/*}"
+					else
+						if [[ "$_lf_basename" == *"-gateway-"* ]]; then
+							_lf_category="gateway"
+						elif [[ "$_lf_basename" == *"-mf-"* ]]; then
+							_lf_category="message facility"
+						elif [[ "$_lf_basename" == *"-wiz-"* ]]; then
+							_lf_category="wizard mode"
+						elif [[ "$_lf_basename" == *"-mm-"* ]]; then
+							_lf_category="macro maker"
+						elif [[ "$_lf_basename" == *"-flatten-"* ]]; then
+							_lf_category="flatten"
+						elif [[ "$_lf_basename" == "otsdaq_quiet_run-"* ]]; then
+							_lf_category="context"
+						elif [[ "$_lf_basename" == *"Dump"* ]]; then
+							_lf_category="transition dump"
+						else
+							_lf_category="log"
+						fi
+					fi
+
+					out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_lf_host}:${_lf_file}"
+				done <<< "${_logfind_remote_results[$_lf_host]}"
+			fi
+		done
+	fi
+
+	unset _logfind_remote_results _logfind_remote_labels _logfind_remote_hosts
+	unset _logfind_local_label _logfind_local_files _logfind_header_label _logfind_any_found
+	unset _logfind_action_label _logfind_action_files
+	unset _logfind_artdaq_label _logfind_artdaq_files
+	unset _logfind_runrecords_label _logfind_runrecords_files _logfind_runrecords_dir
+	unset _logfind_latest_run_dir _logfind_run_number _ll_check _lf_run_number
+	unset _lf_host _lf_files _lf_file _lf_ssh_output _lf_ssh_rc _lf_line _lf_rest _lf_path
+	unset _lf_remote_files _lf_remote_label _ll_window _ll_label _ll_mmin _ll_files
+	unset _lf_ssh_cmd _lf_alt_host _lf_ssh_host_used _lf_clean _logfind_scope
+	unset _lf_basename _lf_category _lf_age _lf_dir _lf_reldir _lf_logs_root
+
+	unset -f _logfind_file_age
+	out #blank line
+
+	##############################################################################
+
+
 	out #blank line
 	out #blank line
 	out "Here are example commands for viewing all potential log files:"
 	out #blank line
 
 	fn="otsdaq_quiet_run-gateway-${gatewayHostname[$i]}-${gatewayPort}"
-	if [[ ${gatewayHostname[$i]} != ${THIS_HOST} ]]; then
-		out " '${Bold}${gatewayUID}${RstClr}'\t vless_ots.sh ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			#hostname ${gatewayHostname[$i]}
-	else
+	if _logfind_is_local "${gatewayHostname[$i]}"; then
 		out " '${Bold}${gatewayUID}${RstClr}'\t less ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"
+	else
+		out " '${Bold}${gatewayUID}${RstClr}'\t vless_ots.sh ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"			#hostname ${gatewayHostname[$i]}
 	fi
 
 	#non-gateway contexts
@@ -2431,10 +2912,10 @@ launchOTSLogFind() {
 
 		# out "[$i] == $fn - ${xdaqHost[$i]} - ${PORT} - $gatewayHostname : $gatewayPort"
 
-		if [[ ${xdaqHost[$i]} != ${THIS_HOST} ]]; then
-			out " '${Bold}${xdaqContextUID[$i]}${RstClr}'\t vless_ots.sh ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"		#hostname ${Bold}${xdaqHost[$i]}${RstClr}
-		else
+		if _logfind_is_local "${xdaqHost[$i]}"; then
 			out " '${Bold}${xdaqContextUID[$i]}${RstClr}'\t less ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"
+		else
+			out " '${Bold}${xdaqContextUID[$i]}${RstClr}'\t vless_ots.sh ${OTSDAQ_LOG_DIR}/${fn}.txt${RstClr}"		#hostname ${Bold}${xdaqHost[$i]}${RstClr}
 		fi
 		i=$(( $i + 1 ))
 	done
@@ -2446,7 +2927,217 @@ launchOTSLogFind() {
 	# out "These are the corresponding UIDs for the Context processes:  ${gatewayUID} ${xdaqContextUID[@]}"
 	# out #blank line
 
+	unset -f _logfind_is_local
+
 }   #end launchOTSLogFind
+
+
+launchOTSLogFindLocal() {
+	##############################################################################
+	# Local-only log find (ots -ll):
+	#  Runs the full launchOTSLogFind display (banner, context log files,
+	#  recent local files, example commands) but with LOGFIND_LOCAL_ONLY=1
+	#  so remote SSH is skipped.
+	#  When called remotely via fast_ots_setup.sh logs, the caller (ots -l)
+	#  parses the standard display output to extract file paths and time labels.
+	##############################################################################
+
+	LOGFIND_LOCAL_ONLY=1
+	launchOTSLogFind
+	unset LOGFIND_LOCAL_ONLY
+
+}   #end launchOTSLogFindLocal
+export -f launchOTSLogFindLocal
+
+
+launchOTSLogFindARTDAQ() {
+	##############################################################################
+	# ARTDAQ log find (ots -lll):
+	#  1) Runs the full local log find (ots -ll) first.
+	#  2) Finds the latest ranks.txt under $USER_DATA/ARTDAQConfigurations/run_records/
+	#     and parses unique hostnames from it.
+	#  3) For each ARTDAQ host (that is not local), SSHs to it via
+	#     fast_ots_setup.sh logs to run ots -ll and display its local logs.
+	##############################################################################
+
+	# Step 1: Run the full local log find display
+	LOGFIND_LOCAL_ONLY=1
+	launchOTSLogFind
+	unset LOGFIND_LOCAL_ONLY
+
+	# Step 2: Find the latest ranks.txt
+	out #blank line
+	out "${Bold}${Cyan}Searching for ARTDAQ host logs (from latest ranks.txt)...${RstClr}"
+
+	_artdaq_ranks_file=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 2 -name 'ranks.txt' -type f 2>/dev/null \
+		| sort -t/ -k$(echo "${USER_DATA}/ARTDAQConfigurations/run_records/" | tr -cd '/' | wc -c) -n \
+		| tail -1)
+
+	if [ -z "$_artdaq_ranks_file" ]; then
+		out "  ${IBlack}No ranks.txt found under \$USER_DATA/ARTDAQConfigurations/run_records/.${RstClr}"
+		out "  ${IBlack}(ARTDAQ host search skipped)${RstClr}"
+		unset _artdaq_ranks_file
+		return
+	fi
+
+	out "  ${IBlack}Using ranks file: ${_artdaq_ranks_file}${RstClr}"
+
+	# Step 3: Parse unique hostnames from ranks.txt (first column, skip header)
+	declare -A _artdaq_seen_hosts
+	unset _artdaq_hosts
+	_artdaq_hosts=()
+
+	# Mark local host as seen so we don't SSH to ourselves
+	_artdaq_seen_hosts["${THIS_HOST}"]=1
+
+	while read -r _artdaq_line; do
+		# skip empty lines and header line
+		[[ -z "$_artdaq_line" ]] && continue
+		[[ "$_artdaq_line" == host* ]] && continue
+
+		# first column is the hostname
+		_artdaq_host=$(echo "$_artdaq_line" | awk '{print $1}')
+		[[ -z "$_artdaq_host" ]] && continue
+
+		# check if already seen or is local
+		if [ -n "${_artdaq_seen_hosts[$_artdaq_host]+x}" ]; then
+			continue
+		fi
+
+		# check if this host is actually local (with -data/-ipmi alias)
+		_artdaq_host_stripped="${_artdaq_host/-data/}"
+		_artdaq_host_stripped="${_artdaq_host_stripped/-ipmi/}"
+		if [[ "$_artdaq_host_stripped" == "${THIS_HOST}" || "$_artdaq_host_stripped" == "${THIS_HOST}."* ]]; then
+			_artdaq_seen_hosts["$_artdaq_host"]=1
+			continue
+		fi
+
+		_artdaq_seen_hosts["$_artdaq_host"]=1
+		_artdaq_hosts+=("$_artdaq_host")
+	done < "$_artdaq_ranks_file"
+
+	out "  ${IBlack}ARTDAQ hosts found: ${_artdaq_hosts[*]:-none}${RstClr}"
+
+	if [ ${#_artdaq_hosts[@]} -eq 0 ]; then
+		out "  ${IBlack}(no remote ARTDAQ hosts to search)${RstClr}"
+		unset _artdaq_ranks_file _artdaq_seen_hosts _artdaq_hosts _artdaq_host _artdaq_host_stripped _artdaq_line
+		return
+	fi
+
+	# Step 4: SSH to each ARTDAQ host and run ots -ll via fast_ots_setup.sh logs
+	_lf_ssh_cmd="cd '${PWD}' && source ./fast_ots_setup.sh '${OTS_SETUP_TYPE}' logs"
+
+	for _artdaq_host in "${_artdaq_hosts[@]}"; do
+		out #blank line
+		out "  ${IBlack}[${_artdaq_host}] Searching via SSH:${RstClr}"
+		out "  ${IBlack}  ssh -K ${_artdaq_host} \"${_lf_ssh_cmd}\"${RstClr}"
+
+		_lf_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_artdaq_host" \
+			"$_lf_ssh_cmd" 2>/dev/null)
+		_lf_ssh_rc=$?
+		_lf_ssh_host_used="$_artdaq_host"
+
+		# If SSH failed, try stripping -data or -ipmi suffix
+		if [ $_lf_ssh_rc -ne 0 ]; then
+			_lf_alt_host=""
+			if [[ "$_artdaq_host" == *"-data"* ]]; then
+				_lf_alt_host="${_artdaq_host/-data/}"
+			elif [[ "$_artdaq_host" == *"-ipmi"* ]]; then
+				_lf_alt_host="${_artdaq_host/-ipmi/}"
+			fi
+
+			if [ -n "$_lf_alt_host" ]; then
+				out "  ${Yellow}[${_artdaq_host}] SSH failed (exit code ${_lf_ssh_rc}). Retrying with: ${_lf_alt_host}${RstClr}"
+				out "  ${IBlack}  ssh -K ${_lf_alt_host} \"${_lf_ssh_cmd}\"${RstClr}"
+
+				_lf_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lf_alt_host" \
+					"$_lf_ssh_cmd" 2>/dev/null)
+				_lf_ssh_rc=$?
+				_lf_ssh_host_used="$_lf_alt_host"
+
+				if [ $_lf_ssh_rc -ne 0 ]; then
+					out "  ${Red}[${_artdaq_host}] SSH failed to both ${_artdaq_host} and ${_lf_alt_host} (exit code ${_lf_ssh_rc}). Skipping.${RstClr}"
+					continue
+				fi
+			else
+				out "  ${Red}[${_artdaq_host}] SSH failed (exit code ${_lf_ssh_rc}). Skipping.${RstClr}"
+				continue
+			fi
+		fi
+
+		out "  ${IBlack}[${_lf_ssh_host_used}] SSH succeeded. Parsing remote ots -ll output...${RstClr}"
+
+		# Parse file paths and time label from the remote ots -ll display output
+		_lf_remote_files=""
+		_lf_remote_label=""
+		while IFS= read -r _lf_line; do
+			_lf_clean=$(echo "$_lf_line" | sed 's/\x1b\[[0-9;]*m//g')
+
+			if [[ "$_lf_clean" == *"(local, last "* ]]; then
+				_lf_remote_label="${_lf_clean#*\(local, last }"
+				_lf_remote_label="${_lf_remote_label%%\)*}"
+			fi
+
+			if [[ "$_lf_clean" == *"less /"* ]]; then
+				_lf_path="${_lf_clean##*less }"
+				_lf_path="${_lf_path%% *}"
+				if [ -n "$_lf_path" ]; then
+					if [ -n "$_lf_remote_files" ]; then
+						_lf_remote_files="${_lf_remote_files}"$'\n'"${_lf_path}"
+					else
+						_lf_remote_files="${_lf_path}"
+					fi
+				fi
+			fi
+		done <<< "$_lf_ssh_output"
+
+		if [ -n "$_lf_remote_files" ]; then
+			out "  ${Bold}[${_artdaq_host}] (ARTDAQ host, last ${_lf_remote_label}):${RstClr}"
+			while IFS= read -r _lf_file; do
+				_lf_basename=$(basename "$_lf_file")
+
+				if [[ "$_lf_basename" == "otsdaq_is_alive"* ]]; then continue; fi
+
+				_lf_dir=$(dirname "$_lf_file")
+				_lf_reldir="${_lf_dir#${USER_DATA}/Logs}"
+				_lf_reldir="${_lf_reldir#/}"
+
+				if [ -n "$_lf_reldir" ]; then
+					_lf_category="${_lf_reldir%%/*}"
+				else
+					if [[ "$_lf_basename" == *"-gateway-"* ]]; then
+						_lf_category="gateway"
+					elif [[ "$_lf_basename" == *"-mf-"* ]]; then
+						_lf_category="message facility"
+					elif [[ "$_lf_basename" == *"-wiz-"* ]]; then
+						_lf_category="wizard mode"
+					elif [[ "$_lf_basename" == *"-mm-"* ]]; then
+						_lf_category="macro maker"
+					elif [[ "$_lf_basename" == *"-flatten-"* ]]; then
+						_lf_category="flatten"
+					elif [[ "$_lf_basename" == "otsdaq_quiet_run-"* ]]; then
+						_lf_category="context"
+					elif [[ "$_lf_basename" == *"Dump"* ]]; then
+						_lf_category="transition dump"
+					else
+						_lf_category="log"
+					fi
+				fi
+
+				out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_artdaq_host}:${_lf_file}"
+			done <<< "$_lf_remote_files"
+		else
+			out "  ${IBlack}[${_artdaq_host}] No recently written log files found.${RstClr}"
+		fi
+	done
+
+	unset _artdaq_ranks_file _artdaq_seen_hosts _artdaq_hosts _artdaq_host _artdaq_host_stripped _artdaq_line
+	unset _lf_ssh_cmd _lf_ssh_output _lf_ssh_rc _lf_ssh_host_used _lf_alt_host
+	unset _lf_remote_files _lf_remote_label _lf_line _lf_clean _lf_path
+	unset _lf_file _lf_basename _lf_dir _lf_reldir _lf_category
+
+}   #end launchOTSLogFindARTDAQ
+export -f launchOTSLogFindARTDAQ
 
 
 #########################################################
@@ -3171,6 +3862,16 @@ export -f otsActionHandler
 #functions have been declared
 #now launch things
 
+
+if [ $ISFINDLOGFILES_ARTDAQ == 1 ]; then
+	launchOTSLogFindARTDAQ
+	exit
+fi
+
+if [ $ISFINDLOGFILES_LOCAL == 1 ]; then
+	launchOTSLogFindLocal
+	exit
+fi
 
 if [ $ISFINDLOGFILES == 1 ]; then
 	launchOTSLogFind
