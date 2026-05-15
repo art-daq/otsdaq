@@ -200,17 +200,17 @@ while :; do
 		info "DISPLAYING LOG FILE LOCATIONS!"
 		ISFINDLOGFILES=1
 		;;
-	--logfind-local | -ll)
-		# Local-only log find: search $USER_DATA/Logs on THIS host only (no remote SSH).
-		# Used by fast_ots_setup.sh 'logs' action to provide results back to a primary ots -l caller.
-		info "DISPLAYING LOCAL LOG FILE LOCATIONS (no remote search)!"
-		ISFINDLOGFILES_LOCAL=1
-		;;
-	--logfind-artdaq | -lll)
+	--logfind-artdaq | -ll)
 		# Local log find + ARTDAQ hosts from latest ranks.txt.
 		# Used by fast_ots_setup.sh 'artdaqlogs' action.
 		info "DISPLAYING LOCAL + ARTDAQ HOST LOG FILE LOCATIONS!"
 		ISFINDLOGFILES_ARTDAQ=1
+		;;
+	--logfind-local | -lll)
+		# Local-only log find (leaf): search $USER_DATA/Logs on THIS host only (no remote SSH, no ranks.txt).
+		# Used by fast_ots_setup.sh 'logs' action to provide results back to a primary ots -l or ots -ll caller.
+		info "DISPLAYING LOCAL LOG FILE LOCATIONS (no remote search)!"
+		ISFINDLOGFILES_LOCAL=1
 		;;
 	--chrome | -c)
 		# Enable launching chrome after startup
@@ -291,12 +291,12 @@ while :; do
 		out "To display potential log file locations based on current otsdaq configuration, add one of these options:"
 		out " --logfind  -l"
 		out "	e.g.: ots -l     or    ots --logfind"
-		out " --logfind-local  -ll"
-		out "	Local-only log find (no remote SSH). Used by fast_ots_setup.sh logs action."
-		out "	e.g.: ots -ll    or    ots --logfind-local"
-		out " --logfind-artdaq  -lll"
+		out " --logfind-artdaq  -ll"
 		out "	Local log find + ARTDAQ hosts from latest ranks.txt. Used by fast_ots_setup.sh artdaqlogs action."
-		out "	e.g.: ots -lll   or    ots --logfind-artdaq"
+		out "	e.g.: ots -ll    or    ots --logfind-artdaq"
+		out " --logfind-local  -lll"
+		out "	Local-only log find leaf (no remote SSH, no ranks.txt). Used by fast_ots_setup.sh logs action."
+		out "	e.g.: ots -lll   or    ots --logfind-local"
 		out
 		out "To start otsdaq and launch google-chrome, add one of these options:"
 		out " --chrome  -c"
@@ -2295,6 +2295,62 @@ launchOTS() {
 }   #end launchOTS
 export -f launchOTS
 
+# _logfind_artdaq_symlink_name <subdir_category> <logs_root>
+#   Given an ARTDAQ process subdirectory name like "DTC0Trk03-mu2e-trk-03-16100",
+#   extracts the process name (e.g. "DTC0Trk03") and searches ARTDAQ role directories
+#   (boardreader/, eventbuilder/, dispatcher/, datalogger/, routingmanager/) under
+#   <logs_root> for the latest symlink matching "run*-<ProcessName>.log".
+#   If found, prints the symlink name without .log extension (e.g. "run120431-DTC0Trk03").
+#   Prints nothing if no match found.
+_logfind_artdaq_symlink_name() {
+	local _subdir_name="$1"
+	local _logs_root="$2"
+
+	# Extract the ARTDAQ process name from the subdirectory name.
+	# Subdirectory format: <ProcessName>-<hostname>-<port>
+	# e.g. "DTC0Trk03-mu2e-trk-03-16100" → "DTC0Trk03"
+	#       "EvB0Trk03-mu2e-trk-03-16101" → "EvB0Trk03"
+	# The process name is everything before the first "-mu2e-" or "-<hostname>-" portion.
+	# A robust approach: the process name ends where "-<host>" begins; host portions
+	# typically start with "mu2e-" or contain the hostname. Use the first match of
+	# "-mu2e-" as the split point; fall back to the full subdir name if not found.
+	local _proc_name
+	if [[ "$_subdir_name" == *"-mu2e-"* ]]; then
+		_proc_name="${_subdir_name%%-mu2e-*}"
+	else
+		# Try splitting on pattern: name-host-port where port is digits at end
+		# e.g. "SomeProc-somehost-12345"
+		_proc_name="${_subdir_name}"
+	fi
+
+	[ -z "$_proc_name" ] && return 1
+
+	local _role_dir _latest_link _latest_run _link _linkname _run_num
+	_latest_link=""
+	_latest_run=0
+
+	for _role_dir in boardreader eventbuilder dispatcher datalogger routingmanager; do
+		[ -d "${_logs_root}/${_role_dir}" ] || continue
+		for _link in "${_logs_root}/${_role_dir}/"run*"-${_proc_name}.log"; do
+			[ -L "$_link" ] || continue
+			_linkname=$(basename "$_link")
+			# Extract run number from "run<N>-<ProcessName>.log"
+			_run_num="${_linkname#run}"
+			_run_num="${_run_num%%-*}"
+			if [ "$_run_num" -gt "$_latest_run" ] 2>/dev/null; then
+				_latest_run="$_run_num"
+				_latest_link="$_linkname"
+			fi
+		done
+	done
+
+	if [ -n "$_latest_link" ]; then
+		echo "${_latest_link%.log}"
+		return 0
+	fi
+	return 1
+}
+
 launchOTSLogFind() {
 
 
@@ -2432,10 +2488,10 @@ launchOTSLogFind() {
 	# Display log files recently written to under $USER_DATA/Logs on all hosts
 	#  - Always search locally on THIS_HOST (in case context config has changed).
 	#  - Also search each remote host from the XML via:
-	#       ssh -K host "cd <ots_root> && source ./fast_ots_setup.sh <subsystem> logs"
-	#    which sources the environment and runs 'ots -ll' (local-only log find).
-	#  - ots -ll outputs machine-parseable lines:  LOGFIND_LOCAL:<time_label>:<path>
-	#  - Escalating time window is handled by ots -ll on each host independently.
+	#       ssh -K host "cd <ots_root> && source ./Fast_ots_setup.sh <subsystem> logs"
+	#    which sources the environment and runs 'ots -lll' (local-only log find leaf).
+	#  - ots -lll outputs machine-parseable lines:  LOGFIND_LOCAL:<time_label>:<path>
+	#  - Escalating time window is handled by ots -lll on each host independently.
 	##############################################################################
 	out #blank line
 	out #blank line
@@ -2525,7 +2581,7 @@ launchOTSLogFind() {
 
 	_logfind_local_label=""
 	_logfind_local_files=""
-	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "1 month:43200" "1 year:525600"; do
+	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "2 weeks:20160" "1 month:43200" "1 year:525600"; do
 		_ll_label="${_ll_window%%:*}"
 		_ll_mmin="${_ll_window##*:}"
 		_ll_files=$(find -L "${USER_DATA}/Logs" -maxdepth 5 -type f -mmin -${_ll_mmin} 2>/dev/null)
@@ -2545,7 +2601,7 @@ launchOTSLogFind() {
 
 	_logfind_action_label=""
 	_logfind_action_files=""
-	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "1 month:43200" "1 year:525600"; do
+	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "2 weeks:20160" "1 month:43200" "1 year:525600"; do
 		_ll_label="${_ll_window%%:*}"
 		_ll_mmin="${_ll_window##*:}"
 		_ll_files=$(find -L "${PWD}/tmp" -maxdepth 1 -type f -name "otsActionsHandler*${THIS_HOST}*" -mmin -${_ll_mmin} 2>/dev/null)
@@ -2565,7 +2621,7 @@ launchOTSLogFind() {
 
 	_logfind_artdaq_label=""
 	_logfind_artdaq_files=""
-	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "1 month:43200" "1 year:525600"; do
+	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "2 weeks:20160" "1 month:43200" "1 year:525600"; do
 		_ll_label="${_ll_window%%:*}"
 		_ll_mmin="${_ll_window##*:}"
 		_ll_files=$(find -L "${USER_DATA}/ARTDAQConfigurations" -maxdepth 5 -not -path "*/run_records/*" -not -path "*/run_records" -type f -mmin -${_ll_mmin} 2>/dev/null)
@@ -2599,7 +2655,7 @@ launchOTSLogFind() {
 		if [ -n "$_logfind_runrecords_files" ]; then
 			# get the age label from the directory's most recent file
 			_logfind_runrecords_label=""
-			for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "1 month:43200" "1 year:525600"; do
+			for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "2 weeks:20160" "1 month:43200" "1 year:525600"; do
 				_ll_label="${_ll_window%%:*}"
 				_ll_mmin="${_ll_window##*:}"
 				_ll_check=$(find -L "$_logfind_latest_run_dir" -maxdepth 1 -type f -mmin -${_ll_mmin} 2>/dev/null | head -1)
@@ -2619,11 +2675,11 @@ launchOTSLogFind() {
 	fi
 
 	#-- Step 2: Remote search on each remote host via ssh + fast_ots_setup.sh logs --
-	#   Runs 'ots -ll' on the remote host (via fast_ots_setup.sh logs), which produces
+	#   Runs 'ots -lll' on the remote host (via fast_ots_setup.sh logs), which produces
 	#   the same display output as ots -l but local-only. We parse the standard output
 	#   for file paths (lines containing '-->  less -R ') and the time label
 	#   (lines containing '(local, last ').
-	#   Skipped when LOGFIND_LOCAL_ONLY=1 (i.e. when called from ots -ll)
+	#   Skipped when LOGFIND_LOCAL_ONLY=1 (i.e. when called from ots -lll)
 	declare -A _logfind_remote_results  # key=host, value=newline-separated file list
 	declare -A _logfind_remote_labels   # key=host, value=time label
 
@@ -2631,7 +2687,7 @@ launchOTSLogFind() {
 		out "  ${IBlack}(skipping remote host search -- local-only mode)${RstClr}"
 	else
 		for _lf_host in "${_logfind_remote_hosts[@]}"; do
-			_lf_ssh_cmd="cd '${PWD}' && source ./fast_ots_setup.sh '${OTS_SETUP_TYPE}' logs"
+			_lf_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logs; } 2>&1"
 
 			# Try SSH to the original hostname first
 			out "  ${IBlack}[${_lf_host}] Searching via SSH:${RstClr}"
@@ -2671,9 +2727,9 @@ launchOTSLogFind() {
 				fi
 			fi
 
-			out "  ${IBlack}[${_lf_ssh_host_used}] SSH succeeded. Parsing remote ots -ll output...${RstClr}"
+			out "  ${IBlack}[${_lf_ssh_host_used}] SSH succeeded. Parsing remote ots -lll output...${RstClr}"
 
-			# Parse the standard display output from remote ots -ll:
+			# Parse the standard display output from remote ots -lll:
 			#   Time label from line matching: (local, last <LABEL>):
 			#   File paths from lines starting with: less <PATH>
 			_lf_remote_files=""
@@ -2773,6 +2829,12 @@ launchOTSLogFind() {
 				if [ -n "$_lf_reldir" ]; then
 					# file is in a subdirectory -- use first path component as category
 					_lf_category="${_lf_reldir%%/*}"
+					# Try to find a run#-based symlink name for this ARTDAQ process
+					# in role dirs (boardreader/, eventbuilder/, etc.)
+					_lf_symlink_name=$(_logfind_artdaq_symlink_name "$_lf_category" "$_lf_logs_root")
+					if [ -n "$_lf_symlink_name" ]; then
+						_lf_category="$_lf_symlink_name"
+					fi
 				else
 					# file is directly in Logs root -- categorize by filename
 					if [[ "$_lf_basename" == *"-gateway-"* ]]; then
@@ -2830,7 +2892,7 @@ launchOTSLogFind() {
 			done <<< "$_logfind_runrecords_files"
 		fi
 
-		# remote results -- same categorization logic (parsed from remote ots -ll output)
+		# remote results -- same categorization logic (parsed from remote ots -lll output)
 		for _lf_host in "${_logfind_remote_hosts[@]}"; do
 			if [ -n "${_logfind_remote_results[$_lf_host]+x}" ]; then
 				out "  ${Bold}[${_lf_host}] (remote, last ${_logfind_remote_labels[$_lf_host]}):${RstClr}"
@@ -2882,7 +2944,7 @@ launchOTSLogFind() {
 	unset _lf_host _lf_files _lf_file _lf_ssh_output _lf_ssh_rc _lf_line _lf_rest _lf_path
 	unset _lf_remote_files _lf_remote_label _ll_window _ll_label _ll_mmin _ll_files
 	unset _lf_ssh_cmd _lf_alt_host _lf_ssh_host_used _lf_clean _logfind_scope
-	unset _lf_basename _lf_category _lf_age _lf_dir _lf_reldir _lf_logs_root
+	unset _lf_basename _lf_category _lf_symlink_name _lf_age _lf_dir _lf_reldir _lf_logs_root
 
 	unset -f _logfind_file_age
 	out #blank line
@@ -2934,12 +2996,13 @@ launchOTSLogFind() {
 
 launchOTSLogFindLocal() {
 	##############################################################################
-	# Local-only log find (ots -ll):
+	# Local-only log find leaf (ots -lll):
 	#  Runs the full launchOTSLogFind display (banner, context log files,
 	#  recent local files, example commands) but with LOGFIND_LOCAL_ONLY=1
-	#  so remote SSH is skipped.
-	#  When called remotely via fast_ots_setup.sh logs, the caller (ots -l)
-	#  parses the standard display output to extract file paths and time labels.
+	#  so remote SSH is skipped and no ranks.txt inspection is performed.
+	#  This is the "leaf" command: called remotely via fast_ots_setup.sh logs
+	#  by the primary ots -l or ots -ll caller. The caller parses the standard
+	#  display output to extract file paths and time labels.
 	##############################################################################
 
 	LOGFIND_LOCAL_ONLY=1
@@ -2952,12 +3015,12 @@ export -f launchOTSLogFindLocal
 
 launchOTSLogFindARTDAQ() {
 	##############################################################################
-	# ARTDAQ log find (ots -lll):
-	#  1) Runs the full local log find (ots -ll) first.
+	# ARTDAQ log find (ots -ll):
+	#  1) Runs the full local log find (ots -lll) first.
 	#  2) Finds the latest ranks.txt under $USER_DATA/ARTDAQConfigurations/run_records/
 	#     and parses unique hostnames from it.
 	#  3) For each ARTDAQ host (that is not local), SSHs to it via
-	#     fast_ots_setup.sh logs to run ots -ll and display its local logs.
+	#     fast_ots_setup.sh logs to run ots -lll and display its local logs.
 	##############################################################################
 
 	# Step 1: Run the full local log find display
@@ -3024,16 +3087,17 @@ launchOTSLogFindARTDAQ() {
 		return
 	fi
 
-	# Step 4: SSH to each ARTDAQ host and run ots -ll via fast_ots_setup.sh logs
-	_lf_ssh_cmd="cd '${PWD}' && source ./fast_ots_setup.sh '${OTS_SETUP_TYPE}' logs"
+	# Step 4: SSH to each ARTDAQ host and run ots -lll via fast_ots_setup.sh logs
+	_lf_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logs; } 2>&1"
 
 	for _artdaq_host in "${_artdaq_hosts[@]}"; do
 		out #blank line
 		out "  ${IBlack}[${_artdaq_host}] Searching via SSH:${RstClr}"
 		out "  ${IBlack}  ssh -K ${_artdaq_host} \"${_lf_ssh_cmd}\"${RstClr}"
 
+		_lf_ssh_stderr_file=$(mktemp /tmp/ots_ssh_stderr_XXXXXX 2>/dev/null || echo "/tmp/ots_ssh_stderr_$$")
 		_lf_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_artdaq_host" \
-			"$_lf_ssh_cmd" 2>/dev/null)
+			"$_lf_ssh_cmd" 2>"$_lf_ssh_stderr_file")
 		_lf_ssh_rc=$?
 		_lf_ssh_host_used="$_artdaq_host"
 
@@ -3051,24 +3115,38 @@ launchOTSLogFindARTDAQ() {
 				out "  ${IBlack}  ssh -K ${_lf_alt_host} \"${_lf_ssh_cmd}\"${RstClr}"
 
 				_lf_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lf_alt_host" \
-					"$_lf_ssh_cmd" 2>/dev/null)
+					"$_lf_ssh_cmd" 2>"$_lf_ssh_stderr_file")
 				_lf_ssh_rc=$?
 				_lf_ssh_host_used="$_lf_alt_host"
 
 				if [ $_lf_ssh_rc -ne 0 ]; then
+					_lf_ssh_errmsg=$(cat "$_lf_ssh_stderr_file" 2>/dev/null | head -3)
 					out "  ${Red}[${_artdaq_host}] SSH failed to both ${_artdaq_host} and ${_lf_alt_host} (exit code ${_lf_ssh_rc}). Skipping.${RstClr}"
+					if [ -n "$_lf_ssh_errmsg" ]; then
+						out "  ${Red}  stderr: ${_lf_ssh_errmsg}${RstClr}"
+					fi
+					rm -f "$_lf_ssh_stderr_file" 2>/dev/null
 					continue
 				fi
 			else
+				_lf_ssh_errmsg=$(cat "$_lf_ssh_stderr_file" 2>/dev/null | head -3)
 				out "  ${Red}[${_artdaq_host}] SSH failed (exit code ${_lf_ssh_rc}). Skipping.${RstClr}"
+				if [ -n "$_lf_ssh_errmsg" ]; then
+					out "  ${Red}  stderr: ${_lf_ssh_errmsg}${RstClr}"
+				fi
+				rm -f "$_lf_ssh_stderr_file" 2>/dev/null
 				continue
 			fi
 		fi
+		rm -f "$_lf_ssh_stderr_file" 2>/dev/null
 
-		out "  ${IBlack}[${_lf_ssh_host_used}] SSH succeeded. Parsing remote ots -ll output...${RstClr}"
+		out "  ${IBlack}[${_lf_ssh_host_used}] SSH succeeded. Parsing remote ots -lll output...${RstClr}"
 
-		# Parse file paths and time label from the remote ots -ll display output
-		_lf_remote_files=""
+		# Parse category+path pairs and time label from the remote ots -lll display output.
+		# Remote output lines look like:  "    <category> --> less /path/to/file  (age)"
+		# We extract both the category (which may include run# from symlink lookup on the
+		# remote host) and the file path, separated by a tab character.
+		_lf_remote_entries=""
 		_lf_remote_label=""
 		while IFS= read -r _lf_line; do
 			_lf_clean=$(echo "$_lf_line" | sed 's/\x1b\[[0-9;]*m//g')
@@ -3078,54 +3156,38 @@ launchOTSLogFindARTDAQ() {
 				_lf_remote_label="${_lf_remote_label%%\)*}"
 			fi
 
-			if [[ "$_lf_clean" == *"less /"* ]]; then
+			if [[ "$_lf_clean" == *" --> less /"* ]]; then
+				# Extract category: everything before " --> less", then strip TRACE prefix
+				# TRACE prefix format: "14May26.15:59:57-... hostname ots:NNNN |   <category>"
+				# Strip everything up to and including "| " then trim remaining whitespace
+				_lf_remote_cat="${_lf_clean%% --> less *}"
+				if [[ "$_lf_remote_cat" == *" | "* ]]; then
+					_lf_remote_cat="${_lf_remote_cat##*| }"
+				fi
+				_lf_remote_cat="${_lf_remote_cat#"${_lf_remote_cat%%[![:space:]]*}"}" # trim leading spaces
+				# Extract path: everything after "less " up to next space
 				_lf_path="${_lf_clean##*less }"
 				_lf_path="${_lf_path%% *}"
 				if [ -n "$_lf_path" ]; then
-					if [ -n "$_lf_remote_files" ]; then
-						_lf_remote_files="${_lf_remote_files}"$'\n'"${_lf_path}"
+					# Store as "category<TAB>path"
+					if [ -n "$_lf_remote_entries" ]; then
+						_lf_remote_entries="${_lf_remote_entries}"$'\n'"${_lf_remote_cat}	${_lf_path}"
 					else
-						_lf_remote_files="${_lf_path}"
+						_lf_remote_entries="${_lf_remote_cat}	${_lf_path}"
 					fi
 				fi
 			fi
 		done <<< "$_lf_ssh_output"
 
-		if [ -n "$_lf_remote_files" ]; then
+		if [ -n "$_lf_remote_entries" ]; then
 			out "  ${Bold}[${_artdaq_host}] (ARTDAQ host, last ${_lf_remote_label}):${RstClr}"
-			while IFS= read -r _lf_file; do
+			while IFS=$'\t' read -r _lf_category _lf_file; do
 				_lf_basename=$(basename "$_lf_file")
 
 				if [[ "$_lf_basename" == "otsdaq_is_alive"* ]]; then continue; fi
 
-				_lf_dir=$(dirname "$_lf_file")
-				_lf_reldir="${_lf_dir#${USER_DATA}/Logs}"
-				_lf_reldir="${_lf_reldir#/}"
-
-				if [ -n "$_lf_reldir" ]; then
-					_lf_category="${_lf_reldir%%/*}"
-				else
-					if [[ "$_lf_basename" == *"-gateway-"* ]]; then
-						_lf_category="gateway"
-					elif [[ "$_lf_basename" == *"-mf-"* ]]; then
-						_lf_category="message facility"
-					elif [[ "$_lf_basename" == *"-wiz-"* ]]; then
-						_lf_category="wizard mode"
-					elif [[ "$_lf_basename" == *"-mm-"* ]]; then
-						_lf_category="macro maker"
-					elif [[ "$_lf_basename" == *"-flatten-"* ]]; then
-						_lf_category="flatten"
-					elif [[ "$_lf_basename" == "otsdaq_quiet_run-"* ]]; then
-						_lf_category="context"
-					elif [[ "$_lf_basename" == *"Dump"* ]]; then
-						_lf_category="transition dump"
-					else
-						_lf_category="log"
-					fi
-				fi
-
 				out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_artdaq_host}:${_lf_file}"
-			done <<< "$_lf_remote_files"
+			done <<< "$_lf_remote_entries"
 		else
 			out "  ${IBlack}[${_artdaq_host}] No recently written log files found.${RstClr}"
 		fi
@@ -3133,8 +3195,8 @@ launchOTSLogFindARTDAQ() {
 
 	unset _artdaq_ranks_file _artdaq_seen_hosts _artdaq_hosts _artdaq_host _artdaq_host_stripped _artdaq_line
 	unset _lf_ssh_cmd _lf_ssh_output _lf_ssh_rc _lf_ssh_host_used _lf_alt_host
-	unset _lf_remote_files _lf_remote_label _lf_line _lf_clean _lf_path
-	unset _lf_file _lf_basename _lf_dir _lf_reldir _lf_category
+	unset _lf_remote_entries _lf_remote_label _lf_remote_cat _lf_line _lf_clean _lf_path
+	unset _lf_file _lf_basename _lf_category
 
 }   #end launchOTSLogFindARTDAQ
 export -f launchOTSLogFindARTDAQ
