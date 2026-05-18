@@ -2476,8 +2476,13 @@ _logdelete_validate_and_prompt() {
 	# Prompt for confirmation (unless noprompt)
 	if [ "$DELETE_LOGS_NOPROMPT" -ne 1 ]; then
 		out
-		out "${Bold}${Red}WARNING: This will delete all log files older than ${_label} under \$USER_DATA/Logs.${RstClr}"
-		read -p "Are you sure you want to delete all logs older than ${_label}? [Y/N] " _answer
+		if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then
+			out "${Bold}${Red}WARNING: [this is a DRYRUN otherwise...] This will delete all log files older than ${_label} under \$USER_DATA/Logs.${RstClr}"
+			read -p "[this is a DRYRUN] Are you sure you want to delete all logs older than ${_label}? [Y/N] " _answer
+		else
+			out "${Bold}${Red}WARNING: This will delete all log files older than ${_label} under \$USER_DATA/Logs.${RstClr}"
+			read -p "Are you sure you want to delete all logs older than ${_label}? [Y/N] " _answer
+		fi
 		if [[ "$_answer" != "Y" && "$_answer" != "y" ]]; then
 			warning "Aborting log deletion."
 			return 1
@@ -2971,10 +2976,10 @@ launchOTSLogFind() {
 		out "  ${IBlack}[${THIS_HOST}] No ARTDAQ run records found.${RstClr}"
 	fi
 
-	#-- Step 2: Remote search on each remote host via ssh + fast_ots_setup.sh logs --
-	#   Runs 'ots -lll' on the remote host (via fast_ots_setup.sh logs), which produces
-	#   the same display output as ots -l but local-only. We parse the standard output
-	#   for file paths (lines containing '-->  less -R ') and the time label
+	#-- Step 2: Remote search on each remote host via ssh + fast_ots_setup.sh artdaqlogs --
+	#   Runs 'ots -ll' on the remote host (via fast_ots_setup.sh artdaqlogs), which
+	#   does local log find + ARTDAQ host search on that host. We parse the standard
+	#   output for file paths (lines containing 'less /') and the time label
 	#   (lines containing '(local, last ').
 	#   Skipped when LOGFIND_LOCAL_ONLY=1 (i.e. when called from ots -lll)
 	declare -A _logfind_remote_results  # key=host, value=newline-separated file list
@@ -2984,7 +2989,7 @@ launchOTSLogFind() {
 		out "  ${IBlack}(skipping remote host search -- local-only mode)${RstClr}"
 	else
 		for _lf_host in "${_logfind_remote_hosts[@]}"; do
-			_lf_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logs; } 2>&1"
+			_lf_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' artdaqlogs; } 2>&1"
 
 			# Try SSH to the original hostname first
 			out "  ${IBlack}[${_lf_host}] Searching via SSH:${RstClr}"
@@ -3024,11 +3029,11 @@ launchOTSLogFind() {
 				fi
 			fi
 
-			out "  ${IBlack}[${_lf_ssh_host_used}] SSH succeeded. Parsing remote ots -lll output...${RstClr}"
+			out "  ${IBlack}[${_lf_ssh_host_used}] SSH succeeded. Parsing remote ots -ll output...${RstClr}"
 
-			# Parse the standard display output from remote ots -lll:
+			# Parse the standard display output from remote ots -ll:
 			#   Time label from line matching: (local, last <LABEL>):
-			#   File paths from lines starting with: less <PATH>
+			#   File paths from lines containing: "less /path" or "vless_ots.sh host:/path"
 			_lf_remote_files=""
 			_lf_remote_label=""
 			declare -A _lf_seen_paths
@@ -3042,22 +3047,42 @@ launchOTSLogFind() {
 					_lf_remote_label="${_lf_remote_label%%\)*}"
 				fi
 
-				# extract file path and age from lines containing "less /"
-				# format: "... --> less /path/to/file  (10 days ago)"
-				if [[ "$_lf_clean" == *"less /"* ]]; then
+				# extract category, file path, and age from lines containing
+				# " --> less /" or " --> vless_ots.sh host:/"
+				_lf_path=""
+				_lf_age=""
+				_lf_parsed_cat=""
+				if [[ "$_lf_clean" == *" --> less /"* ]]; then
+					# Extract category before " --> less"
+					_lf_parsed_cat="${_lf_clean%% --> less *}"
+					if [[ "$_lf_parsed_cat" == *" |"* ]]; then
+						_lf_parsed_cat="${_lf_parsed_cat##* |}"
+					fi
+					_lf_parsed_cat="${_lf_parsed_cat#"${_lf_parsed_cat%%[![:space:]]*}"}"
 					_lf_path="${_lf_clean##*less }"
+				elif [[ "$_lf_clean" == *" --> vless_ots.sh "* ]]; then
+					# Extract category before " --> vless_ots.sh"
+					_lf_parsed_cat="${_lf_clean%% --> vless_ots.sh *}"
+					if [[ "$_lf_parsed_cat" == *" |"* ]]; then
+						_lf_parsed_cat="${_lf_parsed_cat##* |}"
+					fi
+					_lf_parsed_cat="${_lf_parsed_cat#"${_lf_parsed_cat%%[![:space:]]*}"}"
+					_lf_path="${_lf_clean##*vless_ots.sh }"
+				fi
+
+				if [ -n "$_lf_path" ]; then
 					# extract age if present (text in parentheses after the path)
-					_lf_age=""
 					if [[ "$_lf_path" == *"("*"ago)"* ]]; then
 						_lf_age="${_lf_path##*(}"
 						_lf_age="${_lf_age%%)*}"
 						_lf_age="(${_lf_age})"
 					fi
-					_lf_path="${_lf_path%% *}" # trim to just the path
+					_lf_path="${_lf_path%% *}" # trim to just the path (or host:path)
 					# deduplicate: skip paths we've already seen
 					if [ -n "$_lf_path" ] && [ -z "${_lf_seen_paths[$_lf_path]+x}" ]; then
 						_lf_seen_paths["$_lf_path"]=1
-						_lf_entry="${_lf_path}	${_lf_age}"
+						# Store as "category<TAB>path<TAB>age"
+						_lf_entry="${_lf_parsed_cat}	${_lf_path}	${_lf_age}"
 						if [ -n "$_lf_remote_files" ]; then
 							_lf_remote_files="${_lf_remote_files}"$'\n'"${_lf_entry}"
 						else
@@ -3217,7 +3242,14 @@ launchOTSLogFind() {
 			fi
 			while IFS= read -r _lf_file; do
 				_lf_age=$(_logfind_file_age "$_lf_file")
-				out "    ${Bold}run record ${_lf_run_number}${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+				_lf_basename=$(basename "$_lf_file")
+				# Format: run<N> <object> where object is basename (with fcl suffix for .fcl files)
+				if [[ "$_lf_basename" == *.fcl ]]; then
+					_lf_category="run${_lf_run_number} ${_lf_basename%.fcl} fcl"
+				else
+					_lf_category="run${_lf_run_number} ${_lf_basename}"
+				fi
+				out "    ${Bold}${_lf_category}${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
 			done <<< "$_logfind_runrecords_files"
 		fi
 
@@ -3227,66 +3259,26 @@ launchOTSLogFind() {
 		for _lf_host in "${_logfind_remote_hosts[@]}"; do
 			if [ -n "${_logfind_remote_results[$_lf_host]+x}" ]; then
 				out "  [${_lf_host}] (remote, last ${_logfind_remote_labels[$_lf_host]}):"
-				while IFS=$'\t' read -r _lf_file _lf_age; do
-					_lf_basename=$(basename "$_lf_file")
+				while IFS=$'\t' read -r _lf_category _lf_file _lf_age; do
+
+					_lf_basename=$(basename "${_lf_file#*:}")
 
 					if [[ "$_lf_basename" == "otsdaq_is_alive"* ]]; then
 						continue
 					fi
 
-					_lf_dir=$(dirname "$_lf_file")
-
-					if [[ "$_lf_dir" == */ARTDAQConfigurations* ]]; then
-						# ARTDAQ config file -- categorize by fcl pattern
-						if [[ "$_lf_basename" == *"_flattened.fcl" ]]; then
-							_lf_record="${_lf_basename%_flattened.fcl}"
-							_lf_record="${_lf_record#*-}"
-							_lf_category="${_lf_record} flat fcl"
-						elif [[ "$_lf_basename" == *.fcl ]]; then
-							_lf_record="${_lf_basename%.fcl}"
-							_lf_record="${_lf_record#*-}"
-							_lf_category="${_lf_record} fcl"
-						elif [[ "$_lf_dir" == */run_records/* ]]; then
-							_lf_category="run record"
-						else
-							_lf_category="ARTDAQ config"
-						fi
-					elif [[ "$_lf_dir" == */Logs/* ]]; then
-						# Log file in a subdirectory of Logs
-						# Extract the subdirectory name after /Logs/
-						_lf_reldir="${_lf_dir##*/Logs/}"
-						_lf_category="${_lf_reldir%%/*}"
-						# ARTDAQ process subdir (e.g. EvB0Calo01-mu2e-calo-01-16102)
-						if [[ "$_lf_category" == *"-mu2e-"* ]]; then
-							_lf_category="${_lf_category%%-mu2e-*} log"
-						fi
-					elif [[ "$_lf_dir" == */Logs ]]; then
-						# File directly in Logs root -- categorize by filename
-						if [[ "$_lf_basename" == *"-gateway-"* ]]; then
-							_lf_category="gateway"
-						elif [[ "$_lf_basename" == *"-mf-"* ]]; then
-							_lf_category="message facility"
-						elif [[ "$_lf_basename" == *"-wiz-"* ]]; then
-							_lf_category="wizard mode"
-						elif [[ "$_lf_basename" == *"-mm-"* ]]; then
-							_lf_category="macro maker"
-						elif [[ "$_lf_basename" == *"-flatten-"* ]]; then
-							_lf_category="flatten"
-						elif [[ "$_lf_basename" == "otsdaq_quiet_run-"* ]]; then
-							_lf_category="context"
-						elif [[ "$_lf_basename" == *"Dump"* ]]; then
-							_lf_category="transition dump"
-						else
-							_lf_category="log"
-						fi
+					# Category is already parsed from the remote ots -ll output.
+					# Determine display path: host:path entries already have the host,
+					# plain /path entries need the context host prepended.
+					if [[ "$_lf_file" == *":"/* ]]; then
+						_lf_display_path="vless_ots.sh ${_lf_file}"
 					else
-						_lf_category="log"
+						_lf_display_path="vless_ots.sh ${_lf_host}:${_lf_file}"
 					fi
-
 					if [ -n "$_lf_age" ]; then
-						out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_lf_host}:${_lf_file}  ${IBlack}${_lf_age}${RstClr}"
+						out "    ${Bold}${_lf_category}${RstClr} --> ${_lf_display_path}  ${IBlack}${_lf_age}${RstClr}"
 					else
-						out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_lf_host}:${_lf_file}"
+						out "    ${Bold}${_lf_category}${RstClr} --> ${_lf_display_path}"
 					fi
 				done <<< "${_logfind_remote_results[$_lf_host]}"
 			fi
@@ -3534,22 +3526,27 @@ launchOTSLogFindARTDAQ() {
 
 			if [[ "$_lf_clean" == *" --> less /"* ]]; then
 				# Extract category: everything before " --> less", then strip TRACE prefix
-				# TRACE prefix format: "14May26.15:59:57-... hostname ots:NNNN |   <category>"
-				# Strip everything up to and including "| " then trim remaining whitespace
+				# TRACE prefix format: "14May26.15:59:57-... hostname ots:NNNN |<TAB><category>"
+				# Strip everything up to and including " |" then trim remaining whitespace/tabs
 				_lf_remote_cat="${_lf_clean%% --> less *}"
-				if [[ "$_lf_remote_cat" == *" | "* ]]; then
-					_lf_remote_cat="${_lf_remote_cat##*| }"
+				if [[ "$_lf_remote_cat" == *" |"* ]]; then
+					_lf_remote_cat="${_lf_remote_cat##* |}"
 				fi
-				_lf_remote_cat="${_lf_remote_cat#"${_lf_remote_cat%%[![:space:]]*}"}" # trim leading spaces
-				# Extract path: everything after "less " up to next space
+				_lf_remote_cat="${_lf_remote_cat#"${_lf_remote_cat%%[![:space:]]*}"}" # trim leading whitespace/tabs
+				# Extract path and age: everything after "less "
 				_lf_path="${_lf_clean##*less }"
+				_lf_remote_age=""
+				if [[ "$_lf_path" == *"("*"ago)"* ]]; then
+					_lf_remote_age="${_lf_path##*(}"
+					_lf_remote_age="(${_lf_remote_age%%)*})"
+				fi
 				_lf_path="${_lf_path%% *}"
 				if [ -n "$_lf_path" ]; then
-					# Store as "category<TAB>path"
+					# Store as "category<TAB>path<TAB>age"
 					if [ -n "$_lf_remote_entries" ]; then
-						_lf_remote_entries="${_lf_remote_entries}"$'\n'"${_lf_remote_cat}	${_lf_path}"
+						_lf_remote_entries="${_lf_remote_entries}"$'\n'"${_lf_remote_cat}	${_lf_path}	${_lf_remote_age}"
 					else
-						_lf_remote_entries="${_lf_remote_cat}	${_lf_path}"
+						_lf_remote_entries="${_lf_remote_cat}	${_lf_path}	${_lf_remote_age}"
 					fi
 				fi
 			fi
@@ -3557,12 +3554,16 @@ launchOTSLogFindARTDAQ() {
 
 		if [ -n "$_lf_remote_entries" ]; then
 			out "  [${_artdaq_host}] (ARTDAQ host, last ${_lf_remote_label}):"
-			while IFS=$'\t' read -r _lf_category _lf_file; do
+			while IFS=$'\t' read -r _lf_category _lf_file _lf_age; do
 				_lf_basename=$(basename "$_lf_file")
 
 				if [[ "$_lf_basename" == "otsdaq_is_alive"* ]]; then continue; fi
 
-				out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_artdaq_host}:${_lf_file}"
+				if [ -n "$_lf_age" ]; then
+					out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_artdaq_host}:${_lf_file}  ${IBlack}${_lf_age}${RstClr}"
+				else
+					out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_artdaq_host}:${_lf_file}"
+				fi
 			done <<< "$_lf_remote_entries"
 		else
 			out "  ${IBlack}[${_artdaq_host}] No recently written log files found.${RstClr}"
@@ -3571,8 +3572,8 @@ launchOTSLogFindARTDAQ() {
 
 	unset _artdaq_ranks_file _artdaq_seen_hosts _artdaq_hosts _artdaq_host _artdaq_host_stripped _artdaq_line
 	unset _lf_ssh_cmd _lf_ssh_output _lf_ssh_rc _lf_ssh_host_used _lf_alt_host
-	unset _lf_remote_entries _lf_remote_label _lf_remote_cat _lf_line _lf_clean _lf_path
-	unset _lf_file _lf_basename _lf_category
+	unset _lf_remote_entries _lf_remote_label _lf_remote_cat _lf_remote_age _lf_line _lf_clean _lf_path
+	unset _lf_file _lf_basename _lf_category _lf_age
 
 	# Print the context log examples last (deferred from launchOTSLogFind)
 	_logfind_print_context_examples
