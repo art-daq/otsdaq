@@ -4311,8 +4311,7 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		table->setActiveView(TableVersion(TableVersion::DEFAULT));
 
 		TableView* view = table->getViewP();
-		__GEN_COUT__ << "Activated version: " << view->getVersion() << __E__;
-		// view->print();
+		__GEN_COUT__ << "Activated version: " << view->getVersion() << __E__;		
 
 		// add context record 		---------------------
 		view->addRow();
@@ -4324,7 +4323,12 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		view->setValue("1", 0, colMap[TableViewColumnInfo::COL_NAME_STATUS]);
 
 		__GEN_COUT__ << "Done adding context record..." << __E__;
-		view->print();
+		if(TTEST(1))
+		{
+			std::stringstream ss;
+			view->print(ss);
+			__GEN_COUTT__ << "view->print()" << ss.str() << __E__;
+		}
 
 	}  // done with context record
 
@@ -4346,7 +4350,6 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 
 		TableView* view = table->getViewP();
 		__GEN_COUT__ << "Activated version: " << view->getVersion() << __E__;
-		// view->print();
 
 		// add application record 		---------------------
 		view->addRow();
@@ -4360,7 +4363,12 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		view->setValue(__ENV__("FE_SUPERVISOR_ID"), 0, colMap["Id"]);  // XDAQ LID
 
 		__GEN_COUT__ << "Done adding application record..." << __E__;
-		view->print();
+		if(TTEST(1))
+		{
+			std::stringstream ss;
+			view->print(ss);
+			__GEN_COUTT__ << "view->print()" << ss.str() << __E__;
+		}
 	}  // done with app record
 
 	// create FE Supervisor table and Supervisor record
@@ -4380,7 +4388,6 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 
 		TableView* view = table->getViewP();
 		__GEN_COUT__ << "Activated version: " << view->getVersion() << __E__;
-		// view->print();
 
 		// add application record 		---------------------
 		view->addRow();
@@ -4392,7 +4399,12 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		    "MacroMakerFESupervisorInterfaces", 0, colMap["LinkToFEInterfaceGroupID"]);
 
 		__GEN_COUT__ << "Done adding supervisor record..." << __E__;
-		view->print();
+		if(TTEST(1))
+		{
+			std::stringstream ss;
+			view->print(ss);
+			__GEN_COUTT__ << "view->print()" << ss.str() << __E__;
+		}
 	}  // done with app record
 
 	// create FE Interface table and interface record(s)

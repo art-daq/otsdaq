@@ -128,6 +128,13 @@ ISMACROMAKER=0
 ISFINDLOGFILES=0
 ISFINDLOGFILES_LOCAL=0
 ISFINDLOGFILES_ARTDAQ=0
+ISDELETEOLDLOGS=0
+ISDELETEOLDLOGS_LOCAL=0
+ISDELETEOLDLOGS_ARTDAQ=0
+DELETE_LOGS_TIME_INT=""
+DELETE_LOGS_TIME_UNIT=""
+DELETE_LOGS_NOPROMPT=0
+DELETE_LOGS_DRYRUN=0
 ISCONFIG=0
 QUIET=1
 CHROME=0
@@ -212,6 +219,37 @@ while :; do
 		info "DISPLAYING LOCAL LOG FILE LOCATIONS (no remote search)!"
 		ISFINDLOGFILES_LOCAL=1
 		;;
+	--logdelete | -lx)
+		# Delete old logs older than <time_int> <time_unit> [dryrun] (local + all remote + ARTDAQ hosts)
+		info "DELETE OLD LOGS (ALL HOSTS)!"
+		ISDELETEOLDLOGS=1
+		DELETE_LOGS_TIME_INT="$2"
+		DELETE_LOGS_TIME_UNIT="$3"
+		if [[ "$4" == "dryrun" ]]; then DELETE_LOGS_DRYRUN=1; shift; fi
+		shift 2
+		;;
+	--logdelete-artdaq | -llx)
+		# Delete old logs older than <time_int> <time_unit> [dryrun] (local + ARTDAQ hosts)
+		info "DELETE OLD LOGS (LOCAL + ARTDAQ HOSTS)!"
+		ISDELETEOLDLOGS_ARTDAQ=1
+		DELETE_LOGS_TIME_INT="$2"
+		DELETE_LOGS_TIME_UNIT="$3"
+		if [[ "$4" == "dryrun" ]]; then DELETE_LOGS_DRYRUN=1; shift; fi
+		shift 2
+		;;
+	--logdelete-local | -lllx)
+		# Delete old logs older than <time_int> <time_unit> [dryrun] (local only, leaf)
+		info "DELETE OLD LOGS (LOCAL ONLY)!"
+		ISDELETEOLDLOGS_LOCAL=1
+		DELETE_LOGS_TIME_INT="$2"
+		DELETE_LOGS_TIME_UNIT="$3"
+		if [[ "$4" == "dryrun" ]]; then DELETE_LOGS_DRYRUN=1; shift; fi
+		shift 2
+		;;
+	--logdelete-noprompt)
+		# Internal flag: skip the "are you sure?" prompt (used by nested calls)
+		DELETE_LOGS_NOPROMPT=1
+		;;
 	--chrome | -c)
 		# Enable launching chrome after startup
 		info "CHROME LAUNCH ENABLED!"
@@ -276,45 +314,59 @@ while :; do
 		out "${Purple}${REV} *************        ots Usage          ************** ${RstClr}"
 		out "${Purple}${REV} ****************************************************** ${RstClr}${Reset}"
 		out
-		out "To kill all otsdaq running processes, please use any of these options:"
+		out "To ${Bold}kill${RstClr} all running processes:"
 		out " --killall  --kill  --kx  -k"
 		out "	e.g.: ots --kx"
 		out
-		out "To start otsdaq in 'wiz mode' please use any of these options:"
+		out "To ${Bold}start${RstClr} in wiz mode:"
 		out " --configure  --config  --wizard  --wiz  -w"
 		out "	e.g.: ots --wiz"
 		out
-		out "To start otsdaq with 'verbose mode' enabled, add one of these options:"
+		out "To ${Bold}start${RstClr} with verbose mode enabled:"
 		out " --verbose  -v"
 		out "	e.g.: ots --wiz -v     or    ots --verbose"
 		out
-		out "To display potential log file locations based on current otsdaq configuration, add one of these options:"
+		out "To ${Bold}display log files${RstClr} based on current configuration:"
 		out " --logfind  -l"
+		out "	Display log files across all hosts."
 		out "	e.g.: ots -l     or    ots --logfind"
 		out " --logfind-artdaq  -ll"
-		out "	Local log find + ARTDAQ hosts from latest ranks.txt. Used by fast_ots_setup.sh artdaqlogs action."
+		out "	Display log files on local + ARTDAQ hosts from latest ranks.txt."
 		out "	e.g.: ots -ll    or    ots --logfind-artdaq"
 		out " --logfind-local  -lll"
-		out "	Local-only log find leaf (no remote SSH, no ranks.txt). Used by fast_ots_setup.sh logs action."
+		out "	Display log files on local host only (leaf)."
 		out "	e.g.: ots -lll   or    ots --logfind-local"
 		out
-		out "To start otsdaq and launch google-chrome, add one of these options:"
+		out "To ${Bold}delete old log files${RstClr}, use with <time_int> <time_unit> [dryrun]:"
+		out " --logdelete  -lx <N> <unit> [dryrun]"
+		out "	Delete log files older than N units (local + all remote + ARTDAQ hosts)."
+		out "	e.g.: ots -lx 5 minutes     or    ots -lx 1 week dryrun"
+		out " --logdelete-artdaq  -llx <N> <unit> [dryrun]"
+		out "	Delete log files older than N units (local + ARTDAQ hosts)."
+		out "	e.g.: ots -llx 2 hours     or    ots -llx 2 hours dryrun"
+		out " --logdelete-local  -lllx <N> <unit> [dryrun]"
+		out "	Delete log files older than N units (local only, leaf)."
+		out "	e.g.: ots -lllx 1 day     or    ots -lllx 1 day dryrun"
+		out "	Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
+		out "	Add 'dryrun' to preview what would be deleted without actually deleting."
+		out
+		out "To ${Bold}start${RstClr} and launch google-chrome:"
 		out " --chrome  -c"
 		out "	e.g.: ots --wiz -c     or    ots --chrome"
 		out
-		out "To start otsdaq and launch firefox, add one of these options:"
+		out "To ${Bold}start${RstClr} and launch firefox:"
 		out " --firefox  -f"
 		out "	e.g.: ots --wiz -f     or    ots --firefox"
 		out
-		out "To backup and not overwrite previous quiet log files, add one of these options:"
+		out "To ${Bold}backup${RstClr} and not overwrite previous quiet log files:"
 		out " --backup  -b"
 		out "	e.g.: ots -b     or    ots --backup"
 		out
-		out "To disable otsdaq startup checking and relaunching, add one of these options:"
+		out "To ${Bold}disable startup checking${RstClr} and relaunching:"
 		out " --relaunch  -r"
 		out "	e.g.: ots -r     or    ots --relaunch"
 		out
-		out "To disable otsdaq remote process startup, add one of these options:"
+		out "To ${Bold}disable remote startup${RstClr}:"
 		out " --startremote  -s"
 		out "	e.g.: ots -s     or    ots --startremote"
 		out
@@ -2345,11 +2397,256 @@ _logfind_artdaq_symlink_name() {
 	done
 
 	if [ -n "$_latest_link" ]; then
-		echo "${_latest_link%.log}"
+		# Output "run120431 DTC0Trk03" (replace first dash with space)
+		local _result="${_latest_link%.log}"
+		echo "${_result/-/ }"
 		return 0
 	fi
 	return 1
 }
+
+# _logdelete_normalize_time_unit <unit_string>
+#   Normalizes time unit strings to a canonical singular form.
+#   Handles: second(s), minute(s), hour(s), day(s), week(s), year(s)
+#   Prints the canonical form or empty string on failure.
+_logdelete_normalize_time_unit() {
+	local _unit="$1"
+	# strip trailing 's' for plural handling
+	_unit="${_unit%s}"
+	case "$_unit" in
+		second) echo "second" ;;
+		minute) echo "minute" ;;
+		hour)   echo "hour" ;;
+		day)    echo "day" ;;
+		week)   echo "week" ;;
+		year)   echo "year" ;;
+		*)      echo "" ;;
+	esac
+}
+
+# _logdelete_time_to_minutes <time_int> <normalized_unit>
+#   Converts a time value to minutes for use with find -mmin.
+#   Prints the number of minutes, or empty string on failure.
+_logdelete_time_to_minutes() {
+	local _val="$1"
+	local _unit="$2"
+	case "$_unit" in
+		second) echo $(( _val / 60 > 0 ? _val / 60 : 1 )) ;;
+		minute) echo "$_val" ;;
+		hour)   echo $(( _val * 60 )) ;;
+		day)    echo $(( _val * 1440 )) ;;
+		week)   echo $(( _val * 10080 )) ;;
+		year)   echo $(( _val * 525600 )) ;;
+		*)      echo "" ;;
+	esac
+}
+
+# _logdelete_validate_and_prompt
+#   Validates DELETE_LOGS_TIME_INT and DELETE_LOGS_TIME_UNIT.
+#   If valid and DELETE_LOGS_NOPROMPT is not set, prompts the user for confirmation.
+#   Returns 0 on success (proceed with deletion), 1 on failure/abort.
+_logdelete_validate_and_prompt() {
+	# Validate time integer
+	if ! [[ "$DELETE_LOGS_TIME_INT" =~ ^[0-9]+$ ]] || [ "$DELETE_LOGS_TIME_INT" -le 0 ]; then
+		error "Invalid time value: '${DELETE_LOGS_TIME_INT}'. Must be a positive integer."
+		out "  Usage: ots -lx <time_int> <time_unit> [dryrun]"
+		out "  Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
+		out "  Example: ots -lx 5 minutes   or   ots -lx 5 minutes dryrun"
+		return 1
+	fi
+
+	# Normalize time unit
+	local _norm_unit
+	_norm_unit=$(_logdelete_normalize_time_unit "$DELETE_LOGS_TIME_UNIT")
+	if [ -z "$_norm_unit" ]; then
+		error "Invalid time unit: '${DELETE_LOGS_TIME_UNIT}'. Must be one of: seconds, minutes, hours, days, weeks, years."
+		out "  Usage: ots -lx <time_int> <time_unit> [dryrun]"
+		out "  Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
+		out "  Example: ots -lx 5 minutes   or   ots -lx 5 minutes dryrun"
+		return 1
+	fi
+	DELETE_LOGS_TIME_UNIT="$_norm_unit"
+
+	# Build human-readable label
+	local _label="${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT}"
+	if [ "$DELETE_LOGS_TIME_INT" -ne 1 ]; then
+		_label="${_label}s"
+	fi
+
+	# Prompt for confirmation (unless noprompt)
+	if [ "$DELETE_LOGS_NOPROMPT" -ne 1 ]; then
+		out
+		out "${Bold}${Red}WARNING: This will delete all log files older than ${_label} under \$USER_DATA/Logs.${RstClr}"
+		read -p "Are you sure you want to delete all logs older than ${_label}? [Y/N] " _answer
+		if [[ "$_answer" != "Y" && "$_answer" != "y" ]]; then
+			warning "Aborting log deletion."
+			return 1
+		fi
+		# Mark as prompted so nested calls don't re-prompt
+		DELETE_LOGS_NOPROMPT=1
+	fi
+
+	return 0
+}
+
+# _logdelete_get_context_hosts
+#   Parses the OTS XML config to extract unique context hostnames.
+#   Prints each unique hostname on a separate line (excluding THIS_HOST).
+_logdelete_get_context_hosts() {
+	local _xml_file="${XDAQ_CONFIGURATION_DATA_PATH}/ots.xml"
+	if [ ! -f "$_xml_file" ]; then
+		return 1
+	fi
+
+	local _re="http(s*)://(.+):([0-9]+)"
+	declare -A _seen_hosts
+	_seen_hosts["${THIS_HOST}"]=1
+
+	while read -r _line; do
+		if [[ "$_line" == *"xc:Context"* && "$_line" == *"url"* ]]; then
+			if [[ "$_line" =~ $_re ]]; then
+				local _host="${BASH_REMATCH[2]}"
+				# Skip if already seen
+				[ -n "${_seen_hosts[$_host]+x}" ] && continue
+				_seen_hosts["$_host"]=1
+				# Skip if it's the local host (with or without domain/data suffix)
+				local _h_stripped="${_host/-data/}"
+				_h_stripped="${_h_stripped/-ipmi/}"
+				if [[ "$_h_stripped" == "${THIS_HOST}" || "$_h_stripped" == "${THIS_HOST}."* ]]; then
+					continue
+				fi
+				echo "$_host"
+			fi
+		fi
+	done < "$_xml_file"
+}
+
+# _logdelete_delete_old_logs
+#   Deletes log files under $USER_DATA/Logs that are older than the specified time.
+#   Respects DELETE_LOGS_TIME_INT and DELETE_LOGS_TIME_UNIT (must be validated first).
+_logdelete_delete_old_logs() {
+	local _mmin
+	_mmin=$(_logdelete_time_to_minutes "$DELETE_LOGS_TIME_INT" "$DELETE_LOGS_TIME_UNIT")
+	if [ -z "$_mmin" ] || [ "$_mmin" -le 0 ]; then
+		error "Could not compute time threshold in minutes."
+		return 1
+	fi
+
+	local _label="${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT}"
+	if [ "$DELETE_LOGS_TIME_INT" -ne 1 ]; then
+		_label="${_label}s"
+	fi
+
+	out
+	out "${Bold}${Cyan}Searching for log files older than ${_label} to delete (under \$USER_DATA/Logs)...${RstClr}"
+
+	local _logs_dir="${USER_DATA}/Logs"
+	if [ ! -d "$_logs_dir" ]; then
+		warning "Logs directory not found: ${_logs_dir}"
+		return 1
+	fi
+
+	# Define local file age helper (since _logfind_file_age may have been unset)
+	_logdelete_file_age() {
+		local file_path="$1"
+		local file_mtime now_epoch age_secs days hours mins
+		file_mtime=$(stat -L -c %Y "$file_path" 2>/dev/null)
+		if [ -z "$file_mtime" ]; then echo ""; return; fi
+		now_epoch=$(date +%s)
+		age_secs=$(( now_epoch - file_mtime ))
+		days=$(( age_secs / 86400 ))
+		hours=$(( (age_secs % 86400) / 3600 ))
+		mins=$(( (age_secs % 3600) / 60 ))
+		if [ $days -gt 0 ]; then
+			echo "${days} days ago"
+		elif [ $hours -gt 0 ]; then
+			echo "${hours} hours ago"
+		elif [ $mins -gt 0 ]; then
+			echo "${mins} minutes ago"
+		else
+			echo "just now"
+		fi
+	}
+
+	# Find files older than the threshold
+	local _old_files
+	_old_files=$(find -L "$_logs_dir" -type f -mmin +${_mmin} 2>/dev/null)
+
+	if [ -z "$_old_files" ]; then
+		out "  ${IBlack}No log files older than ${_label} found.${RstClr}"
+		return 0
+	fi
+
+	local _count _shown _max_show=20
+	_count=$(echo "$_old_files" | wc -l)
+
+	# Header with truncation note if needed
+	if [ "$_count" -gt "$_max_show" ]; then
+		out "  Here is the list of ${Bold}${_count}${RstClr} files to delete (showing first ${_max_show}):"
+	else
+		out "  Here is the list of ${Bold}${_count}${RstClr} files to delete:"
+	fi
+	out
+
+	# List files that would be deleted (truncate to _max_show)
+	_shown=0
+	while IFS= read -r _file; do
+		if [ $_shown -ge $_max_show ]; then
+			out "  ${IBlack}... and $(( _count - _max_show )) more files not shown.${RstClr}"
+			break
+		fi
+		local _age
+		_age=$(_logdelete_file_age "$_file" 2>/dev/null)
+		out "  ${Red}DELETE${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		_shown=$(( _shown + 1 ))
+	done <<< "$_old_files"
+
+	# Show count again after the list if > 5 files (easier to find in output)
+	if [ "$_count" -gt 5 ]; then
+		out
+		out "  Total files to delete: ${Bold}${_count}${RstClr}"
+	fi
+
+	out
+
+	if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then
+		out "  ${Yellow}[DRY RUN] No files were deleted.${RstClr}"
+	else
+		# Delete the files
+		while IFS= read -r _file; do
+			rm -f "$_file"
+		done <<< "$_old_files"
+		out "  ${Bold}Deleted ${_count} files.${RstClr}"
+	fi
+
+	# Clean up empty subdirectories under Logs/ (Logs/ itself is preserved by -mindepth 1)
+	out
+	out "  ${IBlack}Checking for empty subdirectories to clean up...${RstClr}"
+	find -L "$_logs_dir" -mindepth 1 -type d 2>/dev/null | while IFS= read -r _dir; do
+		local _dir_count
+		_dir_count=$(find -L "$_dir" -maxdepth 1 -type f 2>/dev/null | wc -l)
+		if [ "$_dir_count" -eq 0 ]; then
+			if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then
+				out "  ${Red}RMDIR${RstClr} ${_dir}  ${IBlack}(empty, would be removed)${RstClr}"
+			else
+				out "  ${Red}RMDIR${RstClr} ${_dir}  ${IBlack}(empty, removing)${RstClr}"
+				rmdir "$_dir" 2>/dev/null
+			fi
+		else
+			out "  ${IBlack}KEEP ${_dir}  (${_dir_count} files)${RstClr}"
+		fi
+	done
+
+	if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then
+		out
+		out "  ${Bold}${Yellow}This was a DRY RUN. No files or directories were deleted.${RstClr}"
+		out "  ${Yellow}To actually delete, remove 'dryrun' from the command:${RstClr}"
+		out "  ${Yellow}  e.g.: ots -lllx ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT}${RstClr}"
+	fi
+
+	out "  ${IBlack}Done.${RstClr}"
+}
+export -f _logdelete_delete_old_logs
 
 launchOTSLogFind() {
 
@@ -2734,6 +3031,7 @@ launchOTSLogFind() {
 			#   File paths from lines starting with: less <PATH>
 			_lf_remote_files=""
 			_lf_remote_label=""
+			declare -A _lf_seen_paths
 			while IFS= read -r _lf_line; do
 				# strip ANSI color codes for reliable matching
 				_lf_clean=$(echo "$_lf_line" | sed 's/\x1b\[[0-9;]*m//g')
@@ -2744,19 +3042,31 @@ launchOTSLogFind() {
 					_lf_remote_label="${_lf_remote_label%%\)*}"
 				fi
 
-				# extract file path from lines containing "less /"
+				# extract file path and age from lines containing "less /"
+				# format: "... --> less /path/to/file  (10 days ago)"
 				if [[ "$_lf_clean" == *"less /"* ]]; then
 					_lf_path="${_lf_clean##*less }"
-					_lf_path="${_lf_path%% *}" # trim any trailing whitespace
-					if [ -n "$_lf_path" ]; then
+					# extract age if present (text in parentheses after the path)
+					_lf_age=""
+					if [[ "$_lf_path" == *"("*"ago)"* ]]; then
+						_lf_age="${_lf_path##*(}"
+						_lf_age="${_lf_age%%)*}"
+						_lf_age="(${_lf_age})"
+					fi
+					_lf_path="${_lf_path%% *}" # trim to just the path
+					# deduplicate: skip paths we've already seen
+					if [ -n "$_lf_path" ] && [ -z "${_lf_seen_paths[$_lf_path]+x}" ]; then
+						_lf_seen_paths["$_lf_path"]=1
+						_lf_entry="${_lf_path}	${_lf_age}"
 						if [ -n "$_lf_remote_files" ]; then
-							_lf_remote_files="${_lf_remote_files}"$'\n'"${_lf_path}"
+							_lf_remote_files="${_lf_remote_files}"$'\n'"${_lf_entry}"
 						else
-							_lf_remote_files="${_lf_path}"
+							_lf_remote_files="${_lf_entry}"
 						fi
 					fi
 				fi
 			done <<< "$_lf_ssh_output"
+			unset _lf_seen_paths
 
 			if [ -n "$_lf_remote_files" ]; then
 				_logfind_remote_results["$_lf_host"]="$_lf_remote_files"
@@ -2811,7 +3121,7 @@ launchOTSLogFind() {
 		#   Files in subdirectories of $USER_DATA/Logs use the subdirectory name as category.
 		#   Files directly in the Logs root use filename-pattern matching.
 		if [ -n "$_logfind_local_files" ]; then
-			out "  ${Bold}[${THIS_HOST}] (local, last ${_logfind_local_label}):${RstClr}"
+			out "  [${THIS_HOST}] (local, last ${_logfind_local_label}):"
 			_lf_logs_root="${USER_DATA}/Logs"
 			while IFS= read -r _lf_file; do
 				_lf_basename=$(basename "$_lf_file")
@@ -2834,6 +3144,8 @@ launchOTSLogFind() {
 					_lf_symlink_name=$(_logfind_artdaq_symlink_name "$_lf_category" "$_lf_logs_root")
 					if [ -n "$_lf_symlink_name" ]; then
 						_lf_category="$_lf_symlink_name"
+					elif [[ "$_lf_category" == *"-mu2e-"* ]]; then
+						_lf_category="${_lf_category%%-mu2e-*} log"
 					fi
 				else
 					# file is directly in Logs root -- categorize by filename
@@ -2864,7 +3176,7 @@ launchOTSLogFind() {
 		# action handler results (from ots_dir/tmp/)
 		if [ -n "$_logfind_action_files" ]; then
 			if [ -z "$_logfind_local_files" ]; then
-				out "  ${Bold}[${THIS_HOST}] (local, last ${_logfind_action_label}):${RstClr}"
+				out "  [${THIS_HOST}] (local, last ${_logfind_action_label}):"
 			fi
 			while IFS= read -r _lf_file; do
 				_lf_age=$(_logfind_file_age "$_lf_file")
@@ -2876,7 +3188,24 @@ launchOTSLogFind() {
 		if [ -n "$_logfind_artdaq_files" ]; then
 			while IFS= read -r _lf_file; do
 				_lf_age=$(_logfind_file_age "$_lf_file")
-				out "    ${Bold}ARTDAQ config${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+				_lf_basename=$(basename "$_lf_file")
+				# Categorize .fcl files by extracting record name from patterns like:
+				#   reader-<RecordName>.fcl         → "<RecordName> fcl"
+				#   reader-<RecordName>_flattened.fcl → "<RecordName> flat fcl"
+				#   builder-<RecordName>.fcl        → "<RecordName> fcl"
+				#   builder-<RecordName>_flattened.fcl → "<RecordName> flat fcl"
+				if [[ "$_lf_basename" == *"_flattened.fcl" ]]; then
+					_lf_record="${_lf_basename%_flattened.fcl}"
+					_lf_record="${_lf_record#*-}"
+					_lf_category="${_lf_record} flat fcl"
+				elif [[ "$_lf_basename" == *.fcl ]]; then
+					_lf_record="${_lf_basename%.fcl}"
+					_lf_record="${_lf_record#*-}"
+					_lf_category="${_lf_record} fcl"
+				else
+					_lf_category="ARTDAQ config"
+				fi
+				out "    ${Bold}${_lf_category}${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
 			done <<< "$_logfind_artdaq_files"
 		fi
 
@@ -2892,11 +3221,13 @@ launchOTSLogFind() {
 			done <<< "$_logfind_runrecords_files"
 		fi
 
-		# remote results -- same categorization logic (parsed from remote ots -lll output)
+		# remote results -- categorize by filename/path patterns
+		# Remote paths may use a different $USER_DATA than local, so we use
+		# pattern-based extraction rather than prefix-stripping.
 		for _lf_host in "${_logfind_remote_hosts[@]}"; do
 			if [ -n "${_logfind_remote_results[$_lf_host]+x}" ]; then
-				out "  ${Bold}[${_lf_host}] (remote, last ${_logfind_remote_labels[$_lf_host]}):${RstClr}"
-				while IFS= read -r _lf_file; do
+				out "  [${_lf_host}] (remote, last ${_logfind_remote_labels[$_lf_host]}):"
+				while IFS=$'\t' read -r _lf_file _lf_age; do
 					_lf_basename=$(basename "$_lf_file")
 
 					if [[ "$_lf_basename" == "otsdaq_is_alive"* ]]; then
@@ -2904,12 +3235,33 @@ launchOTSLogFind() {
 					fi
 
 					_lf_dir=$(dirname "$_lf_file")
-					_lf_reldir="${_lf_dir#${USER_DATA}/Logs}"
-					_lf_reldir="${_lf_reldir#/}"
 
-					if [ -n "$_lf_reldir" ]; then
+					if [[ "$_lf_dir" == */ARTDAQConfigurations* ]]; then
+						# ARTDAQ config file -- categorize by fcl pattern
+						if [[ "$_lf_basename" == *"_flattened.fcl" ]]; then
+							_lf_record="${_lf_basename%_flattened.fcl}"
+							_lf_record="${_lf_record#*-}"
+							_lf_category="${_lf_record} flat fcl"
+						elif [[ "$_lf_basename" == *.fcl ]]; then
+							_lf_record="${_lf_basename%.fcl}"
+							_lf_record="${_lf_record#*-}"
+							_lf_category="${_lf_record} fcl"
+						elif [[ "$_lf_dir" == */run_records/* ]]; then
+							_lf_category="run record"
+						else
+							_lf_category="ARTDAQ config"
+						fi
+					elif [[ "$_lf_dir" == */Logs/* ]]; then
+						# Log file in a subdirectory of Logs
+						# Extract the subdirectory name after /Logs/
+						_lf_reldir="${_lf_dir##*/Logs/}"
 						_lf_category="${_lf_reldir%%/*}"
-					else
+						# ARTDAQ process subdir (e.g. EvB0Calo01-mu2e-calo-01-16102)
+						if [[ "$_lf_category" == *"-mu2e-"* ]]; then
+							_lf_category="${_lf_category%%-mu2e-*} log"
+						fi
+					elif [[ "$_lf_dir" == */Logs ]]; then
+						# File directly in Logs root -- categorize by filename
 						if [[ "$_lf_basename" == *"-gateway-"* ]]; then
 							_lf_category="gateway"
 						elif [[ "$_lf_basename" == *"-mf-"* ]]; then
@@ -2927,9 +3279,15 @@ launchOTSLogFind() {
 						else
 							_lf_category="log"
 						fi
+					else
+						_lf_category="log"
 					fi
 
-					out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_lf_host}:${_lf_file}"
+					if [ -n "$_lf_age" ]; then
+						out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_lf_host}:${_lf_file}  ${IBlack}${_lf_age}${RstClr}"
+					else
+						out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_lf_host}:${_lf_file}"
+					fi
 				done <<< "${_logfind_remote_results[$_lf_host]}"
 			fi
 		done
@@ -2951,10 +3309,25 @@ launchOTSLogFind() {
 
 	##############################################################################
 
+	# Skip context log examples when called from ots -ll (launchOTSLogFindARTDAQ),
+	# which will print them at the very end after ARTDAQ host results.
+	if [ "${LOGFIND_SKIP_CONTEXT_EXAMPLES:-0}" != "1" ]; then
+		_logfind_print_context_examples
+		unset -f _logfind_is_local
+	fi
+	# Note: when LOGFIND_SKIP_CONTEXT_EXAMPLES=1, _logfind_is_local and context
+	# variables are kept alive so the caller can invoke _logfind_print_context_examples
+	# later and then unset -f _logfind_is_local itself.
+
+}   #end launchOTSLogFind
+
+# Helper: print the "example commands for viewing all ots context log files" section.
+# Must be called while _logfind_is_local, gatewayHostname, xdaqHost, etc. are still set.
+_logfind_print_context_examples() {
 
 	out #blank line
 	out #blank line
-	out "Here are example commands for viewing all potential log files:"
+	out "Here are example commands for viewing all ots context log files:"
 	out #blank line
 
 	fn="otsdaq_quiet_run-gateway-${gatewayHostname[$i]}-${gatewayPort}"
@@ -2988,10 +3361,7 @@ launchOTSLogFind() {
 	# out "These are the corresponding ports for the Context processes: ${gatewayPort} ${xdaqPort[@]}"
 	# out "These are the corresponding UIDs for the Context processes:  ${gatewayUID} ${xdaqContextUID[@]}"
 	# out #blank line
-
-	unset -f _logfind_is_local
-
-}   #end launchOTSLogFind
+}
 
 
 launchOTSLogFindLocal() {
@@ -3023,10 +3393,12 @@ launchOTSLogFindARTDAQ() {
 	#     fast_ots_setup.sh logs to run ots -lll and display its local logs.
 	##############################################################################
 
-	# Step 1: Run the full local log find display
+	# Step 1: Run the full local log find display (skip context examples -- printed at end)
 	LOGFIND_LOCAL_ONLY=1
+	LOGFIND_SKIP_CONTEXT_EXAMPLES=1
 	launchOTSLogFind
 	unset LOGFIND_LOCAL_ONLY
+	unset LOGFIND_SKIP_CONTEXT_EXAMPLES
 
 	# Step 2: Find the latest ranks.txt
 	out #blank line
@@ -3040,6 +3412,8 @@ launchOTSLogFindARTDAQ() {
 		out "  ${IBlack}No ranks.txt found under \$USER_DATA/ARTDAQConfigurations/run_records/.${RstClr}"
 		out "  ${IBlack}(ARTDAQ host search skipped)${RstClr}"
 		unset _artdaq_ranks_file
+		_logfind_print_context_examples
+		unset -f _logfind_is_local
 		return
 	fi
 
@@ -3084,6 +3458,8 @@ launchOTSLogFindARTDAQ() {
 	if [ ${#_artdaq_hosts[@]} -eq 0 ]; then
 		out "  ${IBlack}(no remote ARTDAQ hosts to search)${RstClr}"
 		unset _artdaq_ranks_file _artdaq_seen_hosts _artdaq_hosts _artdaq_host _artdaq_host_stripped _artdaq_line
+		_logfind_print_context_examples
+		unset -f _logfind_is_local
 		return
 	fi
 
@@ -3180,7 +3556,7 @@ launchOTSLogFindARTDAQ() {
 		done <<< "$_lf_ssh_output"
 
 		if [ -n "$_lf_remote_entries" ]; then
-			out "  ${Bold}[${_artdaq_host}] (ARTDAQ host, last ${_lf_remote_label}):${RstClr}"
+			out "  [${_artdaq_host}] (ARTDAQ host, last ${_lf_remote_label}):"
 			while IFS=$'\t' read -r _lf_category _lf_file; do
 				_lf_basename=$(basename "$_lf_file")
 
@@ -3197,6 +3573,10 @@ launchOTSLogFindARTDAQ() {
 	unset _lf_ssh_cmd _lf_ssh_output _lf_ssh_rc _lf_ssh_host_used _lf_alt_host
 	unset _lf_remote_entries _lf_remote_label _lf_remote_cat _lf_line _lf_clean _lf_path
 	unset _lf_file _lf_basename _lf_category
+
+	# Print the context log examples last (deferred from launchOTSLogFind)
+	_logfind_print_context_examples
+	unset -f _logfind_is_local
 
 }   #end launchOTSLogFindARTDAQ
 export -f launchOTSLogFindARTDAQ
@@ -3924,6 +4304,203 @@ export -f otsActionHandler
 #functions have been declared
 #now launch things
 
+
+# Handle log deletion options (-lx, -llx, -lllx): validate, prompt, and run deletion only
+if [ $ISDELETEOLDLOGS == 1 ] || [ $ISDELETEOLDLOGS_ARTDAQ == 1 ] || [ $ISDELETEOLDLOGS_LOCAL == 1 ]; then
+	_logdelete_validate_and_prompt || exit 1
+fi
+
+if [ $ISDELETEOLDLOGS_ARTDAQ == 1 ]; then
+	# -llx: delete locally + on ARTDAQ hosts (no log find display)
+	_logdelete_delete_old_logs
+	# Also delete on remote ARTDAQ hosts via SSH
+	out
+	out "${Bold}${Cyan}Deleting old logs on remote ARTDAQ hosts...${RstClr}"
+	_artdaq_ranks_file=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 2 -name 'ranks.txt' -type f 2>/dev/null \
+		| sort -t/ -k$(echo "${USER_DATA}/ARTDAQConfigurations/run_records/" | tr -cd '/' | wc -c) -n \
+		| tail -1)
+	if [ -n "$_artdaq_ranks_file" ]; then
+		declare -A _del_seen_hosts
+		_del_seen_hosts["${THIS_HOST}"]=1
+		while read -r _del_line; do
+			[[ -z "$_del_line" ]] && continue
+			[[ "$_del_line" == host* ]] && continue
+			_del_host=$(echo "$_del_line" | awk '{print $1}')
+			[[ -z "$_del_host" ]] && continue
+			[ -n "${_del_seen_hosts[$_del_host]+x}" ] && continue
+			_del_host_stripped="${_del_host/-data/}"
+			_del_host_stripped="${_del_host_stripped/-ipmi/}"
+			if [[ "$_del_host_stripped" == "${THIS_HOST}" || "$_del_host_stripped" == "${THIS_HOST}."* ]]; then
+				_del_seen_hosts["$_del_host"]=1
+				continue
+			fi
+			_del_seen_hosts["$_del_host"]=1
+			out "  ${IBlack}[${_del_host}] Deleting via SSH...${RstClr}"
+			_del_dryrun_arg=""
+			if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then _del_dryrun_arg="dryrun"; fi
+			_del_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logsdelete ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT} ${_del_dryrun_arg}; } 2>&1"
+			_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_host" \
+				"$_del_ssh_cmd" 2>/dev/null)
+			_del_ssh_rc=$?
+			if [ $_del_ssh_rc -ne 0 ]; then
+				_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "${_del_host/-data/}" \
+					"$_del_ssh_cmd" 2>/dev/null)
+				_del_ssh_rc=$?
+			fi
+			if [ $_del_ssh_rc -ne 0 ]; then
+				out "  ${Red}[${_del_host}] SSH delete failed. Skipping.${RstClr}"
+			else
+				# Parse remote output: show only deletion-relevant lines
+				while IFS= read -r _del_rline; do
+					_del_clean=$(echo "$_del_rline" | sed 's/\x1b\[[0-9;]*m//g')
+					# Strip TRACE prefix (everything up to and including "|" followed by whitespace)
+					if [[ "$_del_clean" == *" |"* ]]; then
+						_del_clean="${_del_clean##* |}"
+					fi
+					# Trim leading whitespace/tabs
+					_del_clean="${_del_clean#"${_del_clean%%[![:space:]]*}"}"
+					# Show lines that are deletion-related
+					if [[ "$_del_clean" == DELETE* ]] || \
+					   [[ "$_del_clean" == RMDIR* ]] || \
+					   [[ "$_del_clean" == KEEP* ]] || \
+					   [[ "$_del_clean" == *"files to delete"* ]] || \
+					   [[ "$_del_clean" == *"Total files to delete"* ]] || \
+					   [[ "$_del_clean" == *"not shown"* ]] || \
+					   [[ "$_del_clean" == *"DRY RUN"* ]] || \
+					   [[ "$_del_clean" == *"No log files older than"* ]] || \
+					   [[ "$_del_clean" == *"older than"*"to delete"* ]] || \
+					   [[ "$_del_clean" == *"empty subdirectories"* ]] || \
+					   [[ "$_del_clean" == "Done." ]]; then
+						out "    [${_del_host}] ${_del_clean}"
+					fi
+				done <<< "$_del_ssh_output"
+			fi
+		done < "$_artdaq_ranks_file"
+		unset _del_seen_hosts _del_host _del_host_stripped _del_line _del_ssh_cmd _artdaq_ranks_file
+		unset _del_ssh_output _del_ssh_rc _del_rline _del_clean
+	else
+		out "  ${IBlack}No ranks.txt found. Skipping remote ARTDAQ host deletion.${RstClr}"
+	fi
+	exit
+fi
+
+if [ $ISDELETEOLDLOGS_LOCAL == 1 ]; then
+	# -lllx: delete locally only (no log find display)
+	_logdelete_delete_old_logs
+	exit
+fi
+
+if [ $ISDELETEOLDLOGS == 1 ]; then
+	# -lx: delete locally (with ARTDAQ rank handling via -llx logic) + on each remote context host
+	# First, do local + ARTDAQ hosts (same as -llx)
+	_logdelete_delete_old_logs
+
+	# Find ARTDAQ hosts from ranks.txt and delete on them too
+	out
+	out "${Bold}${Cyan}Deleting old logs on ARTDAQ hosts (from ranks.txt)...${RstClr}"
+	_artdaq_ranks_file=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 2 -name 'ranks.txt' -type f 2>/dev/null \
+		| sort -t/ -k$(echo "${USER_DATA}/ARTDAQConfigurations/run_records/" | tr -cd '/' | wc -c) -n \
+		| tail -1)
+	if [ -n "$_artdaq_ranks_file" ]; then
+		declare -A _del_seen_hosts
+		_del_seen_hosts["${THIS_HOST}"]=1
+		while read -r _del_line; do
+			[[ -z "$_del_line" ]] && continue
+			[[ "$_del_line" == host* ]] && continue
+			_del_host=$(echo "$_del_line" | awk '{print $1}')
+			[[ -z "$_del_host" ]] && continue
+			[ -n "${_del_seen_hosts[$_del_host]+x}" ] && continue
+			_del_host_stripped="${_del_host/-data/}"
+			_del_host_stripped="${_del_host_stripped/-ipmi/}"
+			if [[ "$_del_host_stripped" == "${THIS_HOST}" || "$_del_host_stripped" == "${THIS_HOST}."* ]]; then
+				_del_seen_hosts["$_del_host"]=1
+				continue
+			fi
+			_del_seen_hosts["$_del_host"]=1
+			_del_dryrun_arg=""
+			if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then _del_dryrun_arg="dryrun"; fi
+			out "  ${IBlack}[${_del_host}] Deleting via SSH (-lllx)...${RstClr}"
+			_del_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logsdelete ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT} ${_del_dryrun_arg}; } 2>&1"
+			_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_host" \
+				"$_del_ssh_cmd" 2>/dev/null)
+			_del_ssh_rc=$?
+			if [ $_del_ssh_rc -ne 0 ]; then
+				_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "${_del_host/-data/}" \
+					"$_del_ssh_cmd" 2>/dev/null)
+				_del_ssh_rc=$?
+			fi
+			if [ $_del_ssh_rc -ne 0 ]; then
+				out "  ${Red}[${_del_host}] SSH delete failed. Skipping.${RstClr}"
+			else
+				while IFS= read -r _del_rline; do
+					_del_clean=$(echo "$_del_rline" | sed 's/\x1b\[[0-9;]*m//g')
+					if [[ "$_del_clean" == *" |"* ]]; then _del_clean="${_del_clean##* |}"; fi
+					_del_clean="${_del_clean#"${_del_clean%%[![:space:]]*}"}"
+					if [[ "$_del_clean" == DELETE* ]] || [[ "$_del_clean" == RMDIR* ]] || \
+					   [[ "$_del_clean" == KEEP* ]] || [[ "$_del_clean" == *"files to delete"* ]] || \
+					   [[ "$_del_clean" == *"Total files to delete"* ]] || [[ "$_del_clean" == *"not shown"* ]] || \
+					   [[ "$_del_clean" == *"DRY RUN"* ]] || [[ "$_del_clean" == *"No log files older than"* ]] || \
+					   [[ "$_del_clean" == *"older than"*"to delete"* ]] || \
+					   [[ "$_del_clean" == *"empty subdirectories"* ]] || [[ "$_del_clean" == "Done." ]]; then
+						out "    [${_del_host}] ${_del_clean}"
+					fi
+				done <<< "$_del_ssh_output"
+			fi
+		done < "$_artdaq_ranks_file"
+		unset _del_seen_hosts _del_host _del_host_stripped _del_line _del_ssh_cmd
+		unset _del_ssh_output _del_ssh_rc _del_rline _del_clean _del_dryrun_arg _artdaq_ranks_file
+	else
+		out "  ${IBlack}No ranks.txt found. Skipping ARTDAQ host deletion.${RstClr}"
+	fi
+
+	# Now SSH to each remote OTS context host and run -llx on each
+	out
+	out "${Bold}${Cyan}Deleting old logs on remote OTS context hosts...${RstClr}"
+	_del_context_hosts=$(_logdelete_get_context_hosts)
+	if [ -n "$_del_context_hosts" ]; then
+		_del_dryrun_arg=""
+		if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then _del_dryrun_arg="dryrun"; fi
+		while IFS= read -r _del_host; do
+			[ -z "$_del_host" ] && continue
+			out "  ${IBlack}[${_del_host}] Deleting via SSH (-llx)...${RstClr}"
+			_del_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' artdaqlogsdelete ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT} ${_del_dryrun_arg}; } 2>&1"
+			_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_host" \
+				"$_del_ssh_cmd" 2>/dev/null)
+			_del_ssh_rc=$?
+			if [ $_del_ssh_rc -ne 0 ]; then
+				_del_alt_host="${_del_host/-data/}"
+				_del_alt_host="${_del_alt_host/-ipmi/}"
+				if [ "$_del_alt_host" != "$_del_host" ]; then
+					_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_alt_host" \
+						"$_del_ssh_cmd" 2>/dev/null)
+					_del_ssh_rc=$?
+				fi
+			fi
+			if [ $_del_ssh_rc -ne 0 ]; then
+				out "  ${Red}[${_del_host}] SSH delete failed. Skipping.${RstClr}"
+			else
+				while IFS= read -r _del_rline; do
+					_del_clean=$(echo "$_del_rline" | sed 's/\x1b\[[0-9;]*m//g')
+					if [[ "$_del_clean" == *" |"* ]]; then _del_clean="${_del_clean##* |}"; fi
+					_del_clean="${_del_clean#"${_del_clean%%[![:space:]]*}"}"
+					if [[ "$_del_clean" == DELETE* ]] || [[ "$_del_clean" == RMDIR* ]] || \
+					   [[ "$_del_clean" == KEEP* ]] || [[ "$_del_clean" == *"files to delete"* ]] || \
+					   [[ "$_del_clean" == *"Total files to delete"* ]] || [[ "$_del_clean" == *"not shown"* ]] || \
+					   [[ "$_del_clean" == *"DRY RUN"* ]] || [[ "$_del_clean" == *"No log files older than"* ]] || \
+					   [[ "$_del_clean" == *"older than"*"to delete"* ]] || \
+					   [[ "$_del_clean" == *"empty subdirectories"* ]] || [[ "$_del_clean" == "Done." ]]; then
+						out "    [${_del_host}] ${_del_clean}"
+					fi
+				done <<< "$_del_ssh_output"
+			fi
+		done <<< "$_del_context_hosts"
+		unset _del_ssh_cmd _del_ssh_output _del_ssh_rc _del_rline _del_clean _del_host _del_alt_host _del_dryrun_arg
+	else
+		out "  ${IBlack}No remote OTS context hosts found in XML config.${RstClr}"
+	fi
+	unset _del_context_hosts
+	exit
+fi
 
 if [ $ISFINDLOGFILES_ARTDAQ == 1 ]; then
 	launchOTSLogFindARTDAQ
