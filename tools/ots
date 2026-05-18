@@ -2988,45 +2988,83 @@ launchOTSLogFind() {
 	if [ "${LOGFIND_LOCAL_ONLY:-0}" == "1" ]; then
 		out "  ${IBlack}(skipping remote host search -- local-only mode)${RstClr}"
 	else
+		_lf_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' artdaqlogs; } 2>&1"
+		_lf_tmpdir=$(mktemp -d /tmp/ots_logfind_XXXXXX 2>/dev/null || { mkdir -p "/tmp/ots_logfind_$$" && echo "/tmp/ots_logfind_$$"; })
+
+		declare -A _lf_orig_pids   # logical_host -> orig SSH subshell PID
+		declare -A _lf_alt_pids    # logical_host -> alt SSH subshell PID
+		declare -A _lf_alt_hostmap # logical_host -> alt hostname
+
+		# Launch all SSH jobs in parallel -- original hostname and stripped alt simultaneously
 		for _lf_host in "${_logfind_remote_hosts[@]}"; do
-			_lf_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' artdaqlogs; } 2>&1"
+			# sanitize hostname for use as a filename (replace non-alphanumeric with _)
+			_lf_safe_host="${_lf_host//[^a-zA-Z0-9._-]/_}"
 
-			# Try SSH to the original hostname first
-			out "  ${IBlack}[${_lf_host}] Searching via SSH:${RstClr}"
-			out "  ${IBlack}  ssh -K ${_lf_host} \"${_lf_ssh_cmd}\"${RstClr}"
+			_lf_alt_host=""
+			if [[ "$_lf_host" == *"-data"* ]]; then
+				_lf_alt_host="${_lf_host/-data/}"
+			elif [[ "$_lf_host" == *"-ipmi"* ]]; then
+				_lf_alt_host="${_lf_host/-ipmi/}"
+			fi
 
-			_lf_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lf_host" \
-				"$_lf_ssh_cmd" 2>/dev/null)
-			_lf_ssh_rc=$?
-			_lf_ssh_host_used="$_lf_host"
+			out "  ${IBlack}[${_lf_host}] Launching parallel SSH search...${RstClr}"
 
-			# If SSH failed, try stripping -data or -ipmi suffix from hostname
-			# (these are often private network designators that may not be SSH-reachable)
-			if [ $_lf_ssh_rc -ne 0 ]; then
-				_lf_alt_host=""
-				if [[ "$_lf_host" == *"-data"* ]]; then
-					_lf_alt_host="${_lf_host/-data/}"
-				elif [[ "$_lf_host" == *"-ipmi"* ]]; then
-					_lf_alt_host="${_lf_host/-ipmi/}"
-				fi
+			# Original hostname -- subshell writes output and rc to temp files
+			( ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lf_host" \
+				"$_lf_ssh_cmd" > "${_lf_tmpdir}/${_lf_safe_host}.orig.out" 2>/dev/null
+			  echo $? > "${_lf_tmpdir}/${_lf_safe_host}.orig.rc" ) &
+			_lf_orig_pids["$_lf_host"]=$!
 
-				if [ -n "$_lf_alt_host" ]; then
-					out "  ${Yellow}[${_lf_host}] SSH failed (exit code ${_lf_ssh_rc}). Retrying with stripped hostname: ${_lf_alt_host}${RstClr}"
-					out "  ${IBlack}  ssh -K ${_lf_alt_host} \"${_lf_ssh_cmd}\"${RstClr}"
+			# Stripped alt hostname (if applicable) -- launched simultaneously
+			if [ -n "$_lf_alt_host" ]; then
+				_lf_alt_hostmap["$_lf_host"]="$_lf_alt_host"
+				( ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lf_alt_host" \
+					"$_lf_ssh_cmd" > "${_lf_tmpdir}/${_lf_safe_host}.alt.out" 2>/dev/null
+				  echo $? > "${_lf_tmpdir}/${_lf_safe_host}.alt.rc" ) &
+				_lf_alt_pids["$_lf_host"]=$!
+			fi
+		done
 
-					_lf_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lf_alt_host" \
-						"$_lf_ssh_cmd" 2>/dev/null)
-					_lf_ssh_rc=$?
+		out "  ${IBlack}Waiting for ${#_logfind_remote_hosts[@]} parallel SSH searches to complete...${RstClr}"
+
+		# Wait for all background jobs to finish (in original host order to preserve display order)
+		for _lf_host in "${_logfind_remote_hosts[@]}"; do
+			[ -n "${_lf_orig_pids[$_lf_host]+x}" ] && wait "${_lf_orig_pids[$_lf_host]}" 2>/dev/null
+			[ -n "${_lf_alt_pids[$_lf_host]+x}" ]  && wait "${_lf_alt_pids[$_lf_host]}"  2>/dev/null
+		done
+
+		# Parse results -- for each logical host, pick the first successful response
+		# (original wins over alt if both succeed; whichever's rc=0 is used)
+		for _lf_host in "${_logfind_remote_hosts[@]}"; do
+			_lf_safe_host="${_lf_host//[^a-zA-Z0-9._-]/_}"
+			_lf_alt_host="${_lf_alt_hostmap[$_lf_host]:-}"
+
+			_lf_ssh_output=""
+			_lf_ssh_host_used=""
+
+			_lf_rc_orig=$(cat "${_lf_tmpdir}/${_lf_safe_host}.orig.rc" 2>/dev/null)
+			if [ "${_lf_rc_orig}" = "0" ]; then
+				_lf_ssh_output=$(cat "${_lf_tmpdir}/${_lf_safe_host}.orig.out" 2>/dev/null)
+				_lf_ssh_host_used="$_lf_host"
+			elif [ -n "$_lf_alt_host" ]; then
+				_lf_rc_alt=$(cat "${_lf_tmpdir}/${_lf_safe_host}.alt.rc" 2>/dev/null)
+				if [ "${_lf_rc_alt}" = "0" ]; then
+					_lf_ssh_output=$(cat "${_lf_tmpdir}/${_lf_safe_host}.alt.out" 2>/dev/null)
 					_lf_ssh_host_used="$_lf_alt_host"
-
-					if [ $_lf_ssh_rc -ne 0 ]; then
-						out "  ${Red}[${_lf_host}] SSH failed to both ${_lf_host} and ${_lf_alt_host} (exit code ${_lf_ssh_rc}). Skipping.${RstClr}"
-						continue
-					fi
-				else
-					out "  ${Red}[${_lf_host}] SSH failed (exit code ${_lf_ssh_rc}). Skipping.${RstClr}"
-					continue
 				fi
+			fi
+
+			# Clean up temp files for this host
+			rm -f "${_lf_tmpdir}/${_lf_safe_host}.orig.out" "${_lf_tmpdir}/${_lf_safe_host}.orig.rc" \
+			      "${_lf_tmpdir}/${_lf_safe_host}.alt.out"  "${_lf_tmpdir}/${_lf_safe_host}.alt.rc"  2>/dev/null
+
+			if [ -z "$_lf_ssh_host_used" ]; then
+				if [ -n "$_lf_alt_host" ]; then
+					out "  ${Red}[${_lf_host}] SSH failed to both ${_lf_host} and ${_lf_alt_host}. Skipping.${RstClr}"
+				else
+					out "  ${Red}[${_lf_host}] SSH failed. Skipping.${RstClr}"
+				fi
+				continue
 			fi
 
 			out "  ${IBlack}[${_lf_ssh_host_used}] SSH succeeded. Parsing remote ots -ll output...${RstClr}"
@@ -3101,6 +3139,9 @@ launchOTSLogFind() {
 				out "  ${IBlack}[${_lf_host}] No recently written log files found.${RstClr}"
 			fi
 		done
+
+		rm -rf "$_lf_tmpdir" 2>/dev/null
+		unset _lf_orig_pids _lf_alt_pids _lf_alt_hostmap _lf_tmpdir _lf_safe_host _lf_rc_orig _lf_rc_alt
 	fi
 
 	#-- Step 3: Display combined results --
@@ -3295,6 +3336,7 @@ launchOTSLogFind() {
 	unset _lf_remote_files _lf_remote_label _ll_window _ll_label _ll_mmin _ll_files
 	unset _lf_ssh_cmd _lf_alt_host _lf_ssh_host_used _lf_clean _logfind_scope
 	unset _lf_basename _lf_category _lf_symlink_name _lf_age _lf_dir _lf_reldir _lf_logs_root
+	unset _lf_orig_pids _lf_alt_pids _lf_alt_hostmap _lf_tmpdir _lf_safe_host _lf_rc_orig _lf_rc_alt _lf_entry _lf_parsed_cat
 
 	unset -f _logfind_file_age
 	out #blank line
