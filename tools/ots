@@ -2688,10 +2688,9 @@ launchOTSLogFind() {
 					_lf_remote_label="${_lf_remote_label%%\)*}"
 				fi
 
-				# extract file path from lines containing "less /"
-				if [[ "$_lf_clean" == *"less /"* ]]; then
-					_lf_path="${_lf_clean##*less }"
-					_lf_path="${_lf_path%% *}" # trim any trailing whitespace
+				# extract file path from lines containing "less /path" or "less -R /path"
+				if [[ "$_lf_clean" =~ less[[:space:]]+(-R[[:space:]]+)?(/[^[:space:]]+) ]]; then
+					_lf_path="${BASH_REMATCH[2]}"
 					if [ -n "$_lf_path" ]; then
 						if [ -n "$_lf_remote_files" ]; then
 							_lf_remote_files="${_lf_remote_files}"$'\n'"${_lf_path}"
