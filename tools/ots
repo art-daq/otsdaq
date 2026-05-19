@@ -2543,7 +2543,7 @@ _logdelete_delete_old_logs() {
 	fi
 
 	out
-	out "${Bold}${Cyan}Searching for log files older than ${_label} to delete (under \$USER_DATA/Logs)...${RstClr}"
+	out "${Bold}${Cyan}Searching for local log files older than ${_label} to delete (under \$USER_DATA/Logs)...${RstClr}"
 
 	local _logs_dir="${USER_DATA}/Logs"
 	if [ ! -d "$_logs_dir" ]; then
@@ -2988,7 +2988,7 @@ launchOTSLogFind() {
 	if [ "${LOGFIND_LOCAL_ONLY:-0}" == "1" ]; then
 		out "  ${IBlack}(skipping remote host search -- local-only mode)${RstClr}"
 	else
-		_lf_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' artdaqlogs; } 2>&1"
+		_lf_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' artdaqlogs; } 2>&1"
 		_lf_tmpdir=$(mktemp -d /tmp/ots_logfind_XXXXXX 2>/dev/null || { mkdir -p "/tmp/ots_logfind_$$" && echo "/tmp/ots_logfind_$$"; })
 
 		declare -A _lf_orig_pids   # logical_host -> orig SSH subshell PID
@@ -3498,7 +3498,7 @@ launchOTSLogFindARTDAQ() {
 	fi
 
 	# Step 4: SSH to each ARTDAQ host and run ots -lll via fast_ots_setup.sh logs
-	_lf_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logs; } 2>&1"
+	_lf_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logs; } 2>&1"
 
 	for _artdaq_host in "${_artdaq_hosts[@]}"; do
 		out #blank line
@@ -4381,7 +4381,7 @@ if [ $ISDELETEOLDLOGS_ARTDAQ == 1 ]; then
 			out "  ${IBlack}[${_del_host}] Deleting via SSH...${RstClr}"
 			_del_dryrun_arg=""
 			if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then _del_dryrun_arg="dryrun"; fi
-			_del_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logsdelete ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT} ${_del_dryrun_arg}; } 2>&1"
+			_del_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logsdelete ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT} ${_del_dryrun_arg}; } 2>&1"
 			_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_host" \
 				"$_del_ssh_cmd" 2>/dev/null)
 			_del_ssh_rc=$?
@@ -4463,7 +4463,7 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 			_del_dryrun_arg=""
 			if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then _del_dryrun_arg="dryrun"; fi
 			out "  ${IBlack}[${_del_host}] Deleting via SSH (-lllx)...${RstClr}"
-			_del_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logsdelete ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT} ${_del_dryrun_arg}; } 2>&1"
+			_del_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logsdelete ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT} ${_del_dryrun_arg}; } 2>&1"
 			_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_host" \
 				"$_del_ssh_cmd" 2>/dev/null)
 			_del_ssh_rc=$?
@@ -4496,48 +4496,137 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 		out "  ${IBlack}No ranks.txt found. Skipping ARTDAQ host deletion.${RstClr}"
 	fi
 
-	# Now SSH to each remote OTS context host and run -llx on each
+	# Now SSH to each remote OTS context host and run -llx on each (parallel, same pattern as ots -l)
 	out
 	out "${Bold}${Cyan}Deleting old logs on remote OTS context hosts...${RstClr}"
 	_del_context_hosts=$(_logdelete_get_context_hosts)
 	if [ -n "$_del_context_hosts" ]; then
 		_del_dryrun_arg=""
 		if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then _del_dryrun_arg="dryrun"; fi
+		_del_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' artdaqlogsdelete ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT} ${_del_dryrun_arg}; } 2>&1"
+		_del_tmpdir=$(mktemp -d /tmp/ots_delctx_XXXXXX 2>/dev/null || { mkdir -p "/tmp/ots_delctx_$$" && echo "/tmp/ots_delctx_$$"; })
+
+		declare -A _del_orig_pids
+		declare -A _del_alt_pids
+		declare -A _del_alt_hostmap
+		_del_ordered_hosts=()
+
+		# Launch all SSH jobs in parallel -- original and stripped alt simultaneously
 		while IFS= read -r _del_host; do
 			[ -z "$_del_host" ] && continue
-			out "  ${IBlack}[${_del_host}] Deleting via SSH (-llx)...${RstClr}"
-			_del_ssh_cmd="{ cd '${PWD}' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' artdaqlogsdelete ${DELETE_LOGS_TIME_INT} ${DELETE_LOGS_TIME_UNIT} ${_del_dryrun_arg}; } 2>&1"
-			_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_host" \
-				"$_del_ssh_cmd" 2>/dev/null)
-			_del_ssh_rc=$?
-			if [ $_del_ssh_rc -ne 0 ]; then
-				_del_alt_host="${_del_host/-data/}"
-				_del_alt_host="${_del_alt_host/-ipmi/}"
-				if [ "$_del_alt_host" != "$_del_host" ]; then
-					_del_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_alt_host" \
-						"$_del_ssh_cmd" 2>/dev/null)
-					_del_ssh_rc=$?
-				fi
-			fi
-			if [ $_del_ssh_rc -ne 0 ]; then
-				out "  ${Red}[${_del_host}] SSH delete failed. Skipping.${RstClr}"
-			else
-				while IFS= read -r _del_rline; do
-					_del_clean=$(echo "$_del_rline" | sed 's/\x1b\[[0-9;]*m//g')
-					if [[ "$_del_clean" == *" |"* ]]; then _del_clean="${_del_clean##* |}"; fi
-					_del_clean="${_del_clean#"${_del_clean%%[![:space:]]*}"}"
-					if [[ "$_del_clean" == DELETE* ]] || [[ "$_del_clean" == RMDIR* ]] || \
-					   [[ "$_del_clean" == KEEP* ]] || [[ "$_del_clean" == *"files to delete"* ]] || \
-					   [[ "$_del_clean" == *"Total files to delete"* ]] || [[ "$_del_clean" == *"not shown"* ]] || \
-					   [[ "$_del_clean" == *"DRY RUN"* ]] || [[ "$_del_clean" == *"No log files older than"* ]] || \
-					   [[ "$_del_clean" == *"older than"*"to delete"* ]] || \
-					   [[ "$_del_clean" == *"empty subdirectories"* ]] || [[ "$_del_clean" == "Done." ]]; then
-						out "    [${_del_host}] ${_del_clean}"
-					fi
-				done <<< "$_del_ssh_output"
+			_del_ordered_hosts+=("$_del_host")
+			_del_safe_host="${_del_host//[^a-zA-Z0-9._-]/_}"
+
+			_del_alt_host="${_del_host/-data/}"
+			_del_alt_host="${_del_alt_host/-ipmi/}"
+			[ "$_del_alt_host" == "$_del_host" ] && _del_alt_host=""
+
+			out "  ${IBlack}[${_del_host}] Launching parallel SSH delete...${RstClr}"
+
+			( ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_host" \
+				"$_del_ssh_cmd" > "${_del_tmpdir}/${_del_safe_host}.orig.out" 2>"${_del_tmpdir}/${_del_safe_host}.orig.err"
+			  echo $? > "${_del_tmpdir}/${_del_safe_host}.orig.rc" ) &
+			_del_orig_pids["$_del_host"]=$!
+
+			if [ -n "$_del_alt_host" ]; then
+				_del_alt_hostmap["$_del_host"]="$_del_alt_host"
+				( ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_alt_host" \
+					"$_del_ssh_cmd" > "${_del_tmpdir}/${_del_safe_host}.alt.out" 2>"${_del_tmpdir}/${_del_safe_host}.alt.err"
+				  echo $? > "${_del_tmpdir}/${_del_safe_host}.alt.rc" ) &
+				_del_alt_pids["$_del_host"]=$!
 			fi
 		done <<< "$_del_context_hosts"
-		unset _del_ssh_cmd _del_ssh_output _del_ssh_rc _del_rline _del_clean _del_host _del_alt_host _del_dryrun_arg
+
+		out "  ${IBlack}Waiting for ${#_del_ordered_hosts[@]} parallel SSH deletes to complete...${RstClr}"
+
+		# Wait for all background jobs
+		for _del_host in "${_del_ordered_hosts[@]}"; do
+			[ -n "${_del_orig_pids[$_del_host]+x}" ] && wait "${_del_orig_pids[$_del_host]}" 2>/dev/null
+			[ -n "${_del_alt_pids[$_del_host]+x}" ]  && wait "${_del_alt_pids[$_del_host]}"  2>/dev/null
+		done
+
+		# Parse results in order -- original wins over alt if both succeed
+		for _del_host in "${_del_ordered_hosts[@]}"; do
+			_del_safe_host="${_del_host//[^a-zA-Z0-9._-]/_}"
+			_del_alt_host="${_del_alt_hostmap[$_del_host]:-}"
+
+			_del_ssh_output=""
+			_del_ssh_host_used=""
+			_del_stderr_orig=$(cat "${_del_tmpdir}/${_del_safe_host}.orig.err" 2>/dev/null | grep -v "^Warning:" | head -3)
+			_del_stderr_alt=""
+
+			_del_rc_orig=$(cat "${_del_tmpdir}/${_del_safe_host}.orig.rc" 2>/dev/null)
+			_del_rc_alt=""
+			if [ "${_del_rc_orig}" = "0" ]; then
+				_del_ssh_output=$(cat "${_del_tmpdir}/${_del_safe_host}.orig.out" 2>/dev/null)
+				_del_ssh_host_used="$_del_host"
+			elif [ -n "$_del_alt_host" ]; then
+				_del_stderr_alt=$(cat "${_del_tmpdir}/${_del_safe_host}.alt.err" 2>/dev/null | grep -v "^Warning:" | head -3)
+				_del_rc_alt=$(cat "${_del_tmpdir}/${_del_safe_host}.alt.rc" 2>/dev/null)
+				if [ "${_del_rc_alt}" = "0" ]; then
+					_del_ssh_output=$(cat "${_del_tmpdir}/${_del_safe_host}.alt.out" 2>/dev/null)
+					_del_ssh_host_used="$_del_alt_host"
+				fi
+			fi
+
+			# For diagnostics: capture remote output even on failure (best available)
+			_del_stdout_fail=""
+			if [ -z "$_del_ssh_host_used" ]; then
+				# prefer alt stdout if it connected (rc!=255), else orig
+				if [ -n "$_del_alt_host" ] && [ "${_del_rc_alt}" != "255" ] && [ -n "${_del_rc_alt}" ]; then
+					_del_stdout_fail=$(cat "${_del_tmpdir}/${_del_safe_host}.alt.out" 2>/dev/null | tail -5)
+				elif [ "${_del_rc_orig}" != "255" ] && [ -n "${_del_rc_orig}" ]; then
+					_del_stdout_fail=$(cat "${_del_tmpdir}/${_del_safe_host}.orig.out" 2>/dev/null | tail -5)
+				fi
+			fi
+
+			rm -f "${_del_tmpdir}/${_del_safe_host}.orig.out" "${_del_tmpdir}/${_del_safe_host}.orig.rc" \
+			      "${_del_tmpdir}/${_del_safe_host}.alt.out"  "${_del_tmpdir}/${_del_safe_host}.alt.rc"  \
+			      "${_del_tmpdir}/${_del_safe_host}.orig.err" "${_del_tmpdir}/${_del_safe_host}.alt.err" 2>/dev/null
+
+			if [ -z "$_del_ssh_host_used" ]; then
+				if [ -n "$_del_alt_host" ]; then
+					out "  ${Red}[${_del_host}] SSH delete failed to both ${_del_host} (rc=${_del_rc_orig}) and ${_del_alt_host} (rc=${_del_rc_alt}). Skipping.${RstClr}"
+				else
+					out "  ${Red}[${_del_host}] SSH delete failed (rc=${_del_rc_orig}). Skipping.${RstClr}"
+				fi
+				if [ -n "$_del_stderr_orig" ]; then
+					out "  ${Red}  stderr(${_del_host}): ${_del_stderr_orig}${RstClr}"
+				fi
+				if [ -n "$_del_alt_host" ] && [ -n "$_del_stderr_alt" ]; then
+					out "  ${Red}  stderr(${_del_alt_host}): ${_del_stderr_alt}${RstClr}"
+				fi
+				if [ -n "$_del_stdout_fail" ]; then
+					out "  ${Red}  remote output (last lines):${RstClr}"
+					while IFS= read -r _del_rline; do
+						_del_clean=$(echo "$_del_rline" | sed 's/\x1b\[[0-9;]*m//g')
+						if [[ "$_del_clean" == *" |"* ]]; then _del_clean="${_del_clean##* |}"; fi
+						_del_clean="${_del_clean#"${_del_clean%%[![:space:]]*}"}"
+						[ -n "$_del_clean" ] && out "  ${Red}    ${_del_clean}${RstClr}"
+					done <<< "$_del_stdout_fail"
+				fi
+				continue
+			fi
+
+			while IFS= read -r _del_rline; do
+				_del_clean=$(echo "$_del_rline" | sed 's/\x1b\[[0-9;]*m//g')
+				if [[ "$_del_clean" == *" |"* ]]; then _del_clean="${_del_clean##* |}"; fi
+				_del_clean="${_del_clean#"${_del_clean%%[![:space:]]*}"}"
+				if [[ "$_del_clean" == DELETE* ]] || [[ "$_del_clean" == RMDIR* ]] || \
+				   [[ "$_del_clean" == KEEP* ]] || [[ "$_del_clean" == *"files to delete"* ]] || \
+				   [[ "$_del_clean" == *"Total files to delete"* ]] || [[ "$_del_clean" == *"not shown"* ]] || \
+				   [[ "$_del_clean" == *"DRY RUN"* ]] || [[ "$_del_clean" == *"No log files older than"* ]] || \
+				   [[ "$_del_clean" == *"older than"*"to delete"* ]] || \
+				   [[ "$_del_clean" == *"empty subdirectories"* ]] || [[ "$_del_clean" == "Done." ]]; then
+					out "    [${_del_host}] ${_del_clean}"
+				fi
+			done <<< "$_del_ssh_output"
+		done
+
+		rm -rf "$_del_tmpdir" 2>/dev/null
+		unset _del_ssh_cmd _del_ssh_output _del_rline _del_clean _del_host _del_alt_host _del_dryrun_arg
+		unset _del_orig_pids _del_alt_pids _del_alt_hostmap _del_tmpdir _del_safe_host _del_rc_orig _del_rc_alt
+		unset _del_ordered_hosts _del_ssh_host_used _del_stderr_orig _del_stderr_alt _del_stdout_fail
 	else
 		out "  ${IBlack}No remote OTS context hosts found in XML config.${RstClr}"
 	fi

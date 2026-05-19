@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Source this to get color code variables to use during output
 
 # setup compile aliases (for more spack debug info, use spack -d install -j$CETPKG_J 2>&1)
