@@ -2434,7 +2434,8 @@ launchOTSLogFind() {
 	#  - Also search each remote host from the XML via:
 	#       ssh -K host "cd <ots_root> && source ./fast_ots_setup.sh <subsystem> logs"
 	#    which sources the environment and runs 'ots -ll' (local-only log find).
-	#  - ots -ll outputs machine-parseable lines:  LOGFIND_LOCAL:<time_label>:<path>
+	#  - Remote output is parsed from the normal human-readable 'ots -ll' display
+	#    lines; there is no dedicated LOGFIND_LOCAL:<time_label>:<path> marker.
 	#  - Escalating time window is handled by ots -ll on each host independently.
 	##############################################################################
 	out #blank line
