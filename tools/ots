@@ -3077,8 +3077,11 @@ launchOTSLogFindARTDAQ() {
 				_lf_remote_label="${_lf_remote_label%%\)*}"
 			fi
 
-			if [[ "$_lf_clean" == *"less /"* ]]; then
+			if [[ "$_lf_clean" == *"less /"* || "$_lf_clean" == *"less -R /"* ]]; then
 				_lf_path="${_lf_clean##*less }"
+				if [[ "$_lf_path" == -R\ * ]]; then
+					_lf_path="${_lf_path#-R }"
+				fi
 				_lf_path="${_lf_path%% *}"
 				if [ -n "$_lf_path" ]; then
 					if [ -n "$_lf_remote_files" ]; then
