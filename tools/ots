@@ -135,6 +135,14 @@ DELETE_LOGS_TIME_INT=""
 DELETE_LOGS_TIME_UNIT=""
 DELETE_LOGS_NOPROMPT=0
 DELETE_LOGS_DRYRUN=0
+ISLOGSCAN_ERROR=0
+ISLOGSCAN_ERROR_ARTDAQ=0
+ISLOGSCAN_ERROR_LOCAL=0
+ISLOGSCAN_WARN=0
+ISLOGSCAN_WARN_ARTDAQ=0
+ISLOGSCAN_WARN_LOCAL=0
+LOGSCAN_TIME_INT=""
+LOGSCAN_TIME_UNIT=""
 ISCONFIG=0
 QUIET=1
 CHROME=0
@@ -246,6 +254,48 @@ while :; do
 		if [[ "$4" == "dryrun" ]]; then DELETE_LOGS_DRYRUN=1; shift; fi
 		shift 2
 		;;
+	--logscan-error | -le)
+		# Show ERROR lines from log files newer than <time_int> <time_unit> (local + all remote + ARTDAQ hosts)
+		info "SCAN RECENT LOGS FOR ERRORS (ALL HOSTS)!"
+		ISLOGSCAN_ERROR=1
+		if [[ "$2" =~ ^[0-9]+$ ]]; then LOGSCAN_TIME_INT="$2"; LOGSCAN_TIME_UNIT="$3"; shift 2
+		else LOGSCAN_TIME_INT=30; LOGSCAN_TIME_UNIT="second"; fi
+		;;
+	--logscan-error-artdaq | -lle)
+		# Show ERROR lines from log files newer than <time_int> <time_unit> (local + ARTDAQ hosts)
+		info "SCAN RECENT LOGS FOR ERRORS (LOCAL + ARTDAQ HOSTS)!"
+		ISLOGSCAN_ERROR_ARTDAQ=1
+		if [[ "$2" =~ ^[0-9]+$ ]]; then LOGSCAN_TIME_INT="$2"; LOGSCAN_TIME_UNIT="$3"; shift 2
+		else LOGSCAN_TIME_INT=30; LOGSCAN_TIME_UNIT="second"; fi
+		;;
+	--logscan-error-local | -llle)
+		# Show ERROR lines from log files newer than <time_int> <time_unit> (local only, leaf)
+		info "SCAN RECENT LOGS FOR ERRORS (LOCAL ONLY)!"
+		ISLOGSCAN_ERROR_LOCAL=1
+		if [[ "$2" =~ ^[0-9]+$ ]]; then LOGSCAN_TIME_INT="$2"; LOGSCAN_TIME_UNIT="$3"; shift 2
+		else LOGSCAN_TIME_INT=30; LOGSCAN_TIME_UNIT="second"; fi
+		;;
+	--logscan-warn | -lw)
+		# Show WARN|ERROR lines from log files newer than <time_int> <time_unit> (local + all remote + ARTDAQ hosts)
+		info "SCAN RECENT LOGS FOR WARNINGS/ERRORS (ALL HOSTS)!"
+		ISLOGSCAN_WARN=1
+		if [[ "$2" =~ ^[0-9]+$ ]]; then LOGSCAN_TIME_INT="$2"; LOGSCAN_TIME_UNIT="$3"; shift 2
+		else LOGSCAN_TIME_INT=30; LOGSCAN_TIME_UNIT="second"; fi
+		;;
+	--logscan-warn-artdaq | -llw)
+		# Show WARN|ERROR lines from log files newer than <time_int> <time_unit> (local + ARTDAQ hosts)
+		info "SCAN RECENT LOGS FOR WARNINGS/ERRORS (LOCAL + ARTDAQ HOSTS)!"
+		ISLOGSCAN_WARN_ARTDAQ=1
+		if [[ "$2" =~ ^[0-9]+$ ]]; then LOGSCAN_TIME_INT="$2"; LOGSCAN_TIME_UNIT="$3"; shift 2
+		else LOGSCAN_TIME_INT=30; LOGSCAN_TIME_UNIT="second"; fi
+		;;
+	--logscan-warn-local | -lllw)
+		# Show WARN|ERROR lines from log files newer than <time_int> <time_unit> (local only, leaf)
+		info "SCAN RECENT LOGS FOR WARNINGS/ERRORS (LOCAL ONLY)!"
+		ISLOGSCAN_WARN_LOCAL=1
+		if [[ "$2" =~ ^[0-9]+$ ]]; then LOGSCAN_TIME_INT="$2"; LOGSCAN_TIME_UNIT="$3"; shift 2
+		else LOGSCAN_TIME_INT=30; LOGSCAN_TIME_UNIT="second"; fi
+		;;
 	--logdelete-noprompt)
 		# Internal flag: skip the "are you sure?" prompt (used by nested calls)
 		DELETE_LOGS_NOPROMPT=1
@@ -349,6 +399,27 @@ while :; do
 		out "	e.g.: ots -lllx 1 day     or    ots -lllx 1 day dryrun"
 		out "	Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
 		out "	Add 'dryrun' to preview what would be deleted without actually deleting."
+		out
+		out "To ${Bold}scan recent log files for errors/warnings${RstClr}, use with optional <time_int> <time_unit> (default: 30 seconds):"
+		out " --logscan-error  -le [N unit]"
+		out "	Show last 10 ERROR lines from log files newer than N units (local + all remote + ARTDAQ hosts)."
+		out "	e.g.: ots -le     or    ots -le 5 minutes     or    ots -le 1 hour"
+		out " --logscan-error-artdaq  -lle [N unit]"
+		out "	Show last 10 ERROR lines from log files newer than N units (local + ARTDAQ hosts)."
+		out "	e.g.: ots -lle     or    ots -lle 2 hours"
+		out " --logscan-error-local  -llle [N unit]"
+		out "	Show last 10 ERROR lines from log files newer than N units (local only, leaf)."
+		out "	e.g.: ots -llle     or    ots -llle 30 minutes"
+		out " --logscan-warn  -lw [N unit]"
+		out "	Show last 10 WARN|ERROR lines from log files newer than N units (local + all remote + ARTDAQ hosts)."
+		out "	e.g.: ots -lw     or    ots -lw 5 minutes     or    ots -lw 1 hour"
+		out " --logscan-warn-artdaq  -llw [N unit]"
+		out "	Show last 10 WARN|ERROR lines from log files newer than N units (local + ARTDAQ hosts)."
+		out "	e.g.: ots -llw     or    ots -llw 2 hours"
+		out " --logscan-warn-local  -lllw [N unit]"
+		out "	Show last 10 WARN|ERROR lines from log files newer than N units (local only, leaf)."
+		out "	e.g.: ots -lllw     or    ots -lllw 30 minutes"
+		out "	Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
 		out
 		out "To ${Bold}start${RstClr} and launch google-chrome:"
 		out " --chrome  -c"
@@ -2654,8 +2725,161 @@ _logdelete_delete_old_logs() {
 }
 export -f _logdelete_delete_old_logs
 
-launchOTSLogFind() {
+# _logscan_validate
+#   Validates LOGSCAN_TIME_INT and LOGSCAN_TIME_UNIT (reuses _logdelete_ helpers).
+#   Returns 0 on success, 1 on failure.
+_logscan_validate() {
+	if ! [[ "$LOGSCAN_TIME_INT" =~ ^[0-9]+$ ]] || [ "$LOGSCAN_TIME_INT" -le 0 ]; then
+		error "Invalid time value: '${LOGSCAN_TIME_INT}'. Must be a positive integer."
+		out "  Usage: ots -le <time_int> <time_unit>   or   ots -lw <time_int> <time_unit>"
+		out "  Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
+		out "  Example: ots -le 5 minutes   or   ots -lw 1 hour"
+		return 1
+	fi
 
+	local _norm_unit
+	_norm_unit=$(_logdelete_normalize_time_unit "$LOGSCAN_TIME_UNIT")
+	if [ -z "$_norm_unit" ]; then
+		error "Invalid time unit: '${LOGSCAN_TIME_UNIT}'. Must be one of: seconds, minutes, hours, days, weeks, years."
+		out "  Usage: ots -le <time_int> <time_unit>   or   ots -lw <time_int> <time_unit>"
+		out "  Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
+		return 1
+	fi
+	LOGSCAN_TIME_UNIT="$_norm_unit"
+
+	return 0
+}
+
+# _logscan_display_local <pattern_label> <grep_pattern>
+#   Finds log files under $USER_DATA/Logs newer than LOGSCAN_TIME_INT LOGSCAN_TIME_UNIT
+#   (-mmin -N: modified within the last N minutes, i.e. newer than the threshold).
+#   For each file with matches, enumerates the last 10 lines (0-9) with type label and
+#   count summary; each line is truncated to fit terminal width.
+_logscan_display_local() {
+	local _pattern_label="$1"
+	local _grep_pattern="$2"
+	local _mmin
+	_mmin=$(_logdelete_time_to_minutes "$LOGSCAN_TIME_INT" "$LOGSCAN_TIME_UNIT")
+	if [ -z "$_mmin" ] || [ "$_mmin" -le 0 ]; then
+		error "Could not compute time threshold in minutes."
+		return 1
+	fi
+
+	local _label="${LOGSCAN_TIME_INT} ${LOGSCAN_TIME_UNIT}"
+	if [ "$LOGSCAN_TIME_INT" -ne 1 ]; then
+		_label="${_label}s"
+	fi
+
+	# Terminal width for truncation (0 = no truncation)
+	local _cols
+	_cols=$(tput cols 2>/dev/null)
+	[[ "$_cols" =~ ^[0-9]+$ ]] && [ "$_cols" -gt 0 ] || _cols=0
+
+	out
+	out "${Bold}${Cyan}Scanning local log files newer than ${_label} for ${_pattern_label} (under \$USER_DATA/Logs)...${RstClr}"
+
+	local _logs_dir="${USER_DATA}/Logs"
+	if [ ! -d "$_logs_dir" ]; then
+		warning "Logs directory not found: ${_logs_dir}"
+		return 1
+	fi
+
+	# -mmin -N finds files modified within the last N minutes (newer than threshold)
+	local _new_files
+	_new_files=$(find -L "$_logs_dir" -type f -mmin -${_mmin} 2>/dev/null)
+
+	if [ -z "$_new_files" ]; then
+		out "  ${IBlack}No log files newer than ${_label} found.${RstClr}"
+		out "  ${IBlack}Done.${RstClr}"
+		return 0
+	fi
+
+	local _file_count
+	_file_count=$(echo "$_new_files" | wc -l)
+	out "  ${IBlack}Found ${_file_count} file(s) newer than ${_label}. Scanning for ${_pattern_label}...${RstClr}"
+	while IFS= read -r _sf_f; do
+		[ -z "$_sf_f" ] && continue
+		local _sf_base _sf_age _sf_mtime _sf_now _sf_age_secs _sf_days _sf_hours _sf_mins _sf_secs
+		_sf_base=$(basename "$_sf_f")
+		_sf_mtime=$(stat -L -c %Y "$_sf_f" 2>/dev/null)
+		_sf_now=$(date +%s)
+		_sf_age_secs=$(( _sf_now - _sf_mtime ))
+		[ "$_sf_age_secs" -lt 0 ] && _sf_age_secs=0
+		_sf_days=$(( _sf_age_secs / 86400 ))
+		if [ "$_sf_days" -ge 2 ]; then
+			_sf_age="${_sf_days} days ago"
+		else
+			_sf_hours=$(( _sf_age_secs / 3600 ))
+			_sf_mins=$(( (_sf_age_secs % 3600) / 60 ))
+			_sf_secs=$(( _sf_age_secs % 60 ))
+			if [ "$_sf_hours" -gt 0 ]; then
+				_sf_age=$(printf "%d:%02d:%02d ago" "$_sf_hours" "$_sf_mins" "$_sf_secs")
+			else
+				_sf_age=$(printf "%d:%02d ago" "$_sf_mins" "$_sf_secs")
+			fi
+		fi
+		out "    ${Bold}${_sf_base}${RstClr} --> less ${_sf_f}  ${IBlack}(${_sf_age})${RstClr}"
+	done <<< "$_new_files"
+
+	local _any_match=0
+	while IFS= read -r _sf_file; do
+		[ -z "$_sf_file" ] && continue
+		local _sf_matches
+		_sf_matches=$(grep -a -i -E "$_grep_pattern" "$_sf_file" 2>/dev/null \
+			| grep -E "^.{0,42}[0-9]{2}:[0-9]{2}:[0-9]{2}" | tail -10)
+		if [ -n "$_sf_matches" ]; then
+			_any_match=1
+
+			# Count by type for the file header summary
+			local _sf_nerr _sf_nwarn
+			_sf_nerr=$(echo "$_sf_matches" | grep -ci "ERROR" 2>/dev/null)
+			_sf_nwarn=$(echo "$_sf_matches" | grep -vi "ERROR" | grep -ci "WARN" 2>/dev/null)
+
+			local _sf_summary=""
+			[ "$_sf_nerr"  -gt 0 ] && _sf_summary="${_sf_summary} ERROR:${_sf_nerr}"
+			[ "$_sf_nwarn" -gt 0 ] && _sf_summary="${_sf_summary} WARN:${_sf_nwarn}"
+
+			out
+			out "  ${Bold}${Yellow}${_sf_file}${RstClr}  ${Bold}[${_sf_summary# }]${RstClr}"
+
+			# Enumerate each matching line 0-9 with type label, truncated to terminal width
+			local _sf_idx=0
+			# Prefix "  N [TYPE] " is always 12 chars: 2 + 1(digit) + 1 + 1([) + 5(TYPE) + 1(]) + 1( )
+			# Additional 6-char offset accounts for terminal rendering overhead
+			local _sf_prefix_width=18
+			while IFS= read -r _sf_line; do
+				# Determine type label from line content (case-insensitive)
+				local _sf_type
+				if echo "$_sf_line" | grep -qi "ERROR"; then
+					_sf_type="ERROR"
+				elif echo "$_sf_line" | grep -qi "WARN"; then
+					_sf_type="WARN "
+				else
+					_sf_type="     "
+				fi
+
+				local _sf_prefix="  ${_sf_idx} [${_sf_type}] "
+				local _sf_content="$_sf_line"
+				if [ "$_cols" -gt 0 ]; then
+					local _sf_max=$(( _cols - _sf_prefix_width ))
+					[ "$_sf_max" -lt 10 ] && _sf_max=10
+					_sf_content="${_sf_line:0:${_sf_max}}"
+				fi
+				echo "${_sf_prefix}${_sf_content}"
+				_sf_idx=$(( _sf_idx + 1 ))
+			done <<< "$_sf_matches"
+		fi
+	done <<< "$_new_files"
+
+	if [ "$_any_match" -eq 0 ]; then
+		out "  ${IBlack}No ${_pattern_label} lines found in recent log files.${RstClr}"
+	fi
+
+	out "  ${IBlack}Done.${RstClr}"
+}
+export -f _logscan_display_local
+
+launchOTSLogFind() {
 
 	##############################################################################
 	XDAQ_OTS_XML="ots" 	#used for normal mode launch as copy location for stable script launching
@@ -4632,6 +4856,161 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 		out "  ${IBlack}No remote OTS context hosts found in XML config.${RstClr}"
 	fi
 	unset _del_context_hosts
+	exit
+fi
+
+# Handle log scan options (-le/-lle/-llle/-lw/-llw/-lllw): validate then scan
+if [ $ISLOGSCAN_ERROR == 1 ] || [ $ISLOGSCAN_ERROR_ARTDAQ == 1 ] || [ $ISLOGSCAN_ERROR_LOCAL == 1 ] || \
+   [ $ISLOGSCAN_WARN == 1 ]  || [ $ISLOGSCAN_WARN_ARTDAQ == 1 ]  || [ $ISLOGSCAN_WARN_LOCAL == 1 ]; then
+	_logscan_validate || exit 1
+fi
+
+if [ $ISLOGSCAN_ERROR_LOCAL == 1 ]; then
+	# -llle: scan locally only (no SSH)
+	_logscan_display_local "ERROR" "ERROR"
+	exit
+fi
+
+if [ $ISLOGSCAN_WARN_LOCAL == 1 ]; then
+	# -lllw: scan locally only (no SSH)
+	_logscan_display_local "WARN|ERROR" "WARN|ERROR"
+	exit
+fi
+
+# Helper: strip TRACE/ANSI from remote scan output and print relevant lines.
+_logscan_ssh_output_filter() {
+	local _lsf_host="$1"
+	local _lsf_output="$2"
+	while IFS= read -r _lsf_rline; do
+		local _lsf_clean
+		_lsf_clean=$(echo "$_lsf_rline" | sed 's/\x1b\[[0-9;]*m//g')
+		if [[ "$_lsf_clean" == *" |"* ]]; then _lsf_clean="${_lsf_clean##* |}"; fi
+		_lsf_clean="${_lsf_clean#"${_lsf_clean%%[![:space:]]*}"}"
+		if [[ "$_lsf_clean" == "/"* ]] || \
+		   [[ "$_lsf_clean" == *"ERROR"* ]] || \
+		   [[ "$_lsf_clean" == *"WARN"* ]] || \
+		   [[ "$_lsf_clean" == *"Scanning"*"log"* ]] || \
+		   [[ "$_lsf_clean" == *"Found"*"file"* ]] || \
+		   [[ "$_lsf_clean" == *"No log files"* ]] || \
+		   [[ "$_lsf_clean" == *"lines found"* ]] || \
+		   [[ "$_lsf_clean" == "Done." ]]; then
+			out "    [${_lsf_host}] ${_lsf_clean}"
+		fi
+	done <<< "$_lsf_output"
+}
+
+# Helper: SSH to each ARTDAQ host from ranks.txt and run a logscan action.
+# Args: <pattern_label> <fast_ots_action>
+_logscan_artdaq_hosts() {
+	local _lsa_label="$1"
+	local _lsa_action="$2"
+	out
+	out "${Bold}${Cyan}Scanning recent logs for ${_lsa_label} on remote ARTDAQ hosts...${RstClr}"
+	local _lsa_ranks_file
+	_lsa_ranks_file=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 2 -name 'ranks.txt' -type f 2>/dev/null \
+		| sort -t/ -k$(echo "${USER_DATA}/ARTDAQConfigurations/run_records/" | tr -cd '/' | wc -c) -n \
+		| tail -1)
+	if [ -n "$_lsa_ranks_file" ]; then
+		declare -A _lsa_seen_hosts
+		_lsa_seen_hosts["${THIS_HOST}"]=1
+		while read -r _lsa_line; do
+			[[ -z "$_lsa_line" ]] && continue
+			[[ "$_lsa_line" == host* ]] && continue
+			local _lsa_host
+			_lsa_host=$(echo "$_lsa_line" | awk '{print $1}')
+			[[ -z "$_lsa_host" ]] && continue
+			[ -n "${_lsa_seen_hosts[$_lsa_host]+x}" ] && continue
+			local _lsa_host_stripped="${_lsa_host/-data/}"
+			_lsa_host_stripped="${_lsa_host_stripped/-ipmi/}"
+			if [[ "$_lsa_host_stripped" == "${THIS_HOST}" || "$_lsa_host_stripped" == "${THIS_HOST}."* ]]; then
+				_lsa_seen_hosts["$_lsa_host"]=1
+				continue
+			fi
+			_lsa_seen_hosts["$_lsa_host"]=1
+			out "  ${IBlack}[${_lsa_host}] Scanning via SSH...${RstClr}"
+			local _lsa_ssh_cmd
+			_lsa_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' ${_lsa_action} ${LOGSCAN_TIME_INT} ${LOGSCAN_TIME_UNIT}; } 2>&1"
+			local _lsa_ssh_output _lsa_ssh_rc
+			_lsa_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lsa_host" "$_lsa_ssh_cmd" 2>/dev/null)
+			_lsa_ssh_rc=$?
+			if [ $_lsa_ssh_rc -ne 0 ]; then
+				_lsa_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "${_lsa_host/-data/}" "$_lsa_ssh_cmd" 2>/dev/null)
+				_lsa_ssh_rc=$?
+			fi
+			if [ $_lsa_ssh_rc -ne 0 ]; then
+				out "  ${Red}[${_lsa_host}] SSH scan failed. Skipping.${RstClr}"
+			else
+				_logscan_ssh_output_filter "$_lsa_host" "$_lsa_ssh_output"
+			fi
+		done < "$_lsa_ranks_file"
+		unset _lsa_seen_hosts _lsa_host _lsa_host_stripped _lsa_line _lsa_ssh_cmd _lsa_ssh_output _lsa_ssh_rc _lsa_ranks_file
+	else
+		out "  ${IBlack}No ranks.txt found. Skipping remote ARTDAQ host scan.${RstClr}"
+	fi
+}
+
+# Helper: SSH to each OTS context host and run a logscan action.
+# Args: <pattern_label> <fast_ots_action>
+_logscan_context_hosts() {
+	local _lsc_label="$1"
+	local _lsc_action="$2"
+	out
+	out "${Bold}${Cyan}Scanning recent logs for ${_lsc_label} on remote OTS context hosts...${RstClr}"
+	local _lsc_context_hosts
+	_lsc_context_hosts=$(_logdelete_get_context_hosts)
+	if [ -n "$_lsc_context_hosts" ]; then
+		local _lsc_ssh_cmd
+		_lsc_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' ${_lsc_action} ${LOGSCAN_TIME_INT} ${LOGSCAN_TIME_UNIT}; } 2>&1"
+		while IFS= read -r _lsc_host; do
+			[ -z "$_lsc_host" ] && continue
+			out "  ${IBlack}[${_lsc_host}] Scanning via SSH...${RstClr}"
+			local _lsc_ssh_output _lsc_ssh_rc
+			_lsc_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_lsc_host" "$_lsc_ssh_cmd" 2>/dev/null)
+			_lsc_ssh_rc=$?
+			if [ $_lsc_ssh_rc -ne 0 ]; then
+				_lsc_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "${_lsc_host/-data/}" "$_lsc_ssh_cmd" 2>/dev/null)
+				_lsc_ssh_rc=$?
+			fi
+			if [ $_lsc_ssh_rc -ne 0 ]; then
+				out "  ${Red}[${_lsc_host}] SSH scan failed. Skipping.${RstClr}"
+			else
+				_logscan_ssh_output_filter "$_lsc_host" "$_lsc_ssh_output"
+			fi
+		done <<< "$_lsc_context_hosts"
+		unset _lsc_ssh_cmd _lsc_ssh_output _lsc_ssh_rc _lsc_host
+	else
+		out "  ${IBlack}No remote OTS context hosts found in XML config.${RstClr}"
+	fi
+	unset _lsc_context_hosts
+}
+
+if [ $ISLOGSCAN_ERROR_ARTDAQ == 1 ]; then
+	# -lle: scan locally + ARTDAQ hosts
+	_logscan_display_local "ERROR" "ERROR"
+	_logscan_artdaq_hosts "ERROR" "logsscane"
+	exit
+fi
+
+if [ $ISLOGSCAN_WARN_ARTDAQ == 1 ]; then
+	# -llw: scan locally + ARTDAQ hosts
+	_logscan_display_local "WARN|ERROR" "WARN|ERROR"
+	_logscan_artdaq_hosts "WARN|ERROR" "logsscanw"
+	exit
+fi
+
+if [ $ISLOGSCAN_ERROR == 1 ]; then
+	# -le: scan locally + ARTDAQ hosts + all remote context hosts
+	_logscan_display_local "ERROR" "ERROR"
+	_logscan_artdaq_hosts "ERROR" "logsscane"
+	_logscan_context_hosts "ERROR" "artdaqlogsscane"
+	exit
+fi
+
+if [ $ISLOGSCAN_WARN == 1 ]; then
+	# -lw: scan locally + ARTDAQ hosts + all remote context hosts
+	_logscan_display_local "WARN|ERROR" "WARN|ERROR"
+	_logscan_artdaq_hosts "WARN|ERROR" "logsscanw"
+	_logscan_context_hosts "WARN|ERROR" "artdaqlogsscanw"
 	exit
 fi
 
