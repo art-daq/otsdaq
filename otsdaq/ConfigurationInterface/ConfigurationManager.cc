@@ -4984,6 +4984,18 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 		ss << userDataPath << __E__;
 		__SS_ONLY_THROW__;
 	}
+	else if(cmdResult.find("No such file or directory") != std::string::npos)
+	{
+		__GEN_SS__
+		    << "\n\nActive tables groups file not found at user data path specified for subsystem '"
+		    << otherSubsystemUID << "': ";
+		if(username != "")
+			ss << username << "@";
+		if(hostname != "")
+			ss << hostname << ":";
+		ss << userDataPath << __E__;
+		__SS_ONLY_THROW__;
+	}
 
 	auto subsystemActiveGroupMap = StringMacros::getVectorFromString(
 	    cmdResult, {'\n'} /* delimieter*/, {' ', '\t'} /* whitespace*/);

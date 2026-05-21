@@ -2481,7 +2481,8 @@ _logdelete_validate_and_prompt() {
 			read -p "[this is a DRYRUN] Are you sure you want to delete all logs older than ${_label}? [Y/N] " _answer
 		else
 			out "${Bold}${Red}WARNING: This will delete all log files older than ${_label} under \$USER_DATA/Logs.${RstClr}"
-			read -p "Are you sure you want to delete all logs older than ${_label}? [Y/N] " _answer
+			out "  Usage: ots -lx <time_int> <time_unit> [dryrun]"
+			read -p "Are you sure you want to delete (if you are not sure, add dryrun parameter) all logs older than ${_label}? [Y/N] " _answer
 		fi
 		if [[ "$_answer" != "Y" && "$_answer" != "y" ]]; then
 			warning "Aborting log deletion."
@@ -2906,7 +2907,7 @@ launchOTSLogFind() {
 	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "2 weeks:20160" "1 month:43200" "1 year:525600"; do
 		_ll_label="${_ll_window%%:*}"
 		_ll_mmin="${_ll_window##*:}"
-		_ll_files=$(find -L "${PWD}/tmp" -maxdepth 1 -type f -name "otsActionsHandler*${THIS_HOST}*" -mmin -${_ll_mmin} 2>/dev/null)
+		_ll_files=$(find -L "${PWD}/tmp" -maxdepth 1 -type f -name "otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}*" -mmin -${_ll_mmin} 2>/dev/null)
 		if [ -n "$_ll_files" ]; then
 			_logfind_action_label="$_ll_label"
 			_logfind_action_files="$_ll_files"
@@ -3181,7 +3182,7 @@ launchOTSLogFind() {
 		out "${Bold}${Cyan}Log files written to (${_logfind_scope}):${RstClr}"
 		out "  ${IBlack}(none found in the last year)${RstClr}"
 	else
-		out "${Bold}${Cyan}Log files recently written to (${_logfind_scope}):${RstClr}"
+		out "${Bold}${Cyan}Log files recently written to, newest for each type at bottom (${_logfind_scope}):${RstClr}"
 
 		# local results -- categorize by parent directory or filename pattern
 		#   Files in subdirectories of $USER_DATA/Logs use the subdirectory name as category.

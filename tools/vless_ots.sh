@@ -47,4 +47,60 @@ fi
 
 echo "Opening file in 'less' from node $hostname: $remote_path"
 
-scp "${hostname}:${remote_path}" .tmpLogFile && less .tmpLogFile && rm .tmpLogFile
+# Build list of hostnames to try: original + stripped alt (if -data/-ipmi suffix)
+_vless_hosts=("$hostname")
+if [[ "$hostname" == *"-data."* || "$hostname" == *"-data" ]]; then
+    _vless_hosts+=("${hostname/-data/}")
+elif [[ "$hostname" == *"-ipmi."* || "$hostname" == *"-ipmi" ]]; then
+    _vless_hosts+=("${hostname/-ipmi/}")
+fi
+
+# Try all hosts in parallel; use the first one that succeeds
+_vless_tmpdir=$(mktemp -d /tmp/vless_ots_XXXXXX)
+declare -A _vless_pids
+for _vless_h in "${_vless_hosts[@]}"; do
+    _vless_safe="${_vless_h//[^a-zA-Z0-9._-]/_}"
+    ( scp -o ConnectTimeout=2 "${_vless_h}:${remote_path}" "${_vless_tmpdir}/${_vless_safe}.tmp" >/dev/null 2>&1
+      echo $? > "${_vless_tmpdir}/${_vless_safe}.rc" ) &
+    _vless_pids["$_vless_h"]=$!
+done
+
+# Poll until one succeeds or all finish
+_vless_winner=""
+while [[ -z "$_vless_winner" ]]; do
+    _vless_all_done=1
+    for _vless_h in "${_vless_hosts[@]}"; do
+        _vless_safe="${_vless_h//[^a-zA-Z0-9._-]/_}"
+        if [[ -f "${_vless_tmpdir}/${_vless_safe}.rc" ]]; then
+            if [[ "$(cat "${_vless_tmpdir}/${_vless_safe}.rc")" == "0" ]]; then
+                _vless_winner="$_vless_h"
+                break
+            fi
+        else
+            _vless_all_done=0  # still running
+        fi
+    done
+    [[ -n "$_vless_winner" || "$_vless_all_done" == "1" ]] && break
+    sleep 0.1
+done
+
+# Kill any still-running background jobs
+for _vless_h in "${_vless_hosts[@]}"; do
+    kill "${_vless_pids[$_vless_h]}" 2>/dev/null
+    wait "${_vless_pids[$_vless_h]}" 2>/dev/null
+done
+
+if [[ -z "$_vless_winner" ]]; then
+    echo "  Error: Could not retrieve file from any of: ${_vless_hosts[*]}"
+    rm -rf "$_vless_tmpdir"
+    unset _vless_hosts _vless_pids _vless_tmpdir _vless_winner _vless_h _vless_safe _vless_all_done
+    exit 1
+fi
+
+_vless_safe_winner="${_vless_winner//[^a-zA-Z0-9._-]/_}"
+[[ "$_vless_winner" != "$hostname" ]] && echo "  Note: connected via ${_vless_winner}"
+cp "${_vless_tmpdir}/${_vless_safe_winner}.tmp" .tmpLogFile
+rm -rf "$_vless_tmpdir"
+unset _vless_hosts _vless_pids _vless_tmpdir _vless_winner _vless_h _vless_safe _vless_all_done _vless_safe_winner
+
+less .tmpLogFile && rm .tmpLogFile
