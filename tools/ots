@@ -4744,7 +4744,54 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 		declare -A _del_orig_pids
 		declare -A _del_alt_pids
 		declare -A _del_alt_hostmap
+		declare -A _del_pid_label   # pid -> "host:role" for live debug output
 		_del_ordered_hosts=()
+		_del_total_jobs=0
+
+		# DEBUG: wall-clock anchor for elapsed-time prints
+		_del_t0=$(date +%s.%N)
+		# DEBUG: instrument the remote command to print a one-line "remote up" marker
+		# with the remote epoch -- lets us split SSH connect/auth time from remote work time.
+		_del_ssh_cmd_dbg="echo \"__OTS_REMOTE_UP__ \$(date +%s.%N) \$(hostname)\"; ${_del_ssh_cmd}"
+
+		# PRE-WARM Kerberos service tickets serially before the parallel SSH burst.
+		# Each `ssh -K` to a new host triggers a TGS_REQ; firing 9 of them at once can
+		# saturate the KDC (or the local FILE: ccache) and trigger ~30s retry timeouts.
+		# Acquiring tickets one-at-a-time here populates the ccache so the parallel SSHs
+		# reuse cached tickets and skip the KDC round-trip entirely. Failures are
+		# non-fatal -- ssh will fall back to whatever it would have done anyway.
+		if command -v kvno >/dev/null 2>&1; then
+			out "  ${IBlack}Pre-warming Kerberos service tickets serially...${RstClr}"
+			_del_kvno_t0=$(date +%s.%N)
+			while IFS= read -r _del_host; do
+				[ -z "$_del_host" ] && continue
+				_del_alt_host="${_del_host/-data/}"
+				_del_alt_host="${_del_alt_host/-ipmi/}"
+				[ "$_del_alt_host" == "$_del_host" ] && _del_alt_host=""
+				for _del_kvno_host in "$_del_host" "$_del_alt_host"; do
+					[ -z "$_del_kvno_host" ] && continue
+					_del_kvno_t1=$(date +%s.%N)
+					kvno "host/${_del_kvno_host}" >/dev/null 2>&1
+					_del_kvno_rc=$?
+					_del_kvno_elapsed=$(awk "BEGIN{printf \"%.2f\", $(date +%s.%N) - $_del_kvno_t1}")
+					# DEBUG: per-host kvno timing -- uncomment to diagnose Kerberos issues.
+					# Expected: -data/-ipmi alt hostnames fail (no service principal); canonical names succeed.
+					# if [ "$_del_kvno_rc" -eq 0 ]; then
+					# 	out "    ${IBlack}[kvno host/${_del_kvno_host}] ok  in ${_del_kvno_elapsed}s${RstClr}"
+					# else
+					# 	out "    ${IBlack}[kvno host/${_del_kvno_host}] fail in ${_del_kvno_elapsed}s (rc=${_del_kvno_rc}) -- continuing${RstClr}"
+					# fi
+					: "${_del_kvno_rc} ${_del_kvno_elapsed} ${_del_kvno_host}"  # keep vars "used" for shellcheck
+				done
+			done <<< "$_del_context_hosts"
+			_del_kvno_total=$(awk "BEGIN{printf \"%.2f\", $(date +%s.%N) - $_del_kvno_t0}")
+			out "  ${IBlack}Pre-warm done in ${_del_kvno_total}s. Starting parallel SSH burst.${RstClr}"
+			unset _del_kvno_t0 _del_kvno_t1 _del_kvno_host _del_kvno_rc _del_kvno_elapsed _del_kvno_total
+			# Reset the t0 anchor so per-job "t+Xs" prints are relative to burst launch, not kvno start
+			_del_t0=$(date +%s.%N)
+		else
+			out "  ${IBlack}kvno not in PATH -- skipping Kerberos pre-warm.${RstClr}"
+		fi
 
 		# Launch all SSH jobs in parallel -- original and stripped alt simultaneously
 		while IFS= read -r _del_host; do
@@ -4756,29 +4803,99 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 			_del_alt_host="${_del_alt_host/-ipmi/}"
 			[ "$_del_alt_host" == "$_del_host" ] && _del_alt_host=""
 
-			out "  ${IBlack}[${_del_host}] Launching parallel SSH delete...${RstClr}"
+			# Per-host launch print: visibility into fork ordering AND structurally important.
+			# The $(awk ...) and $(date ...) subshells fork/exec ~10-30ms each, providing a
+			# natural inter-launch stagger that prevents the 9-way SSH burst from saturating
+			# the local Kerberos client / KDC. Removing this line reproduces the 30-60s
+			# slowdown (kvno pre-warm alone is not sufficient because -data alt hostnames
+			# still trigger negative TGS_REQs at burst time -- see kvno fail lines above).
+			out "  ${IBlack}[${_del_host}] Launching parallel SSH delete... (t+$(awk "BEGIN{printf \"%.2f\",$(date +%s.%N)-$_del_t0}")s)${RstClr}"
 
-			( ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_host" \
-				"$_del_ssh_cmd" > "${_del_tmpdir}/${_del_safe_host}.orig.out" 2>"${_del_tmpdir}/${_del_safe_host}.orig.err"
-			  echo $? > "${_del_tmpdir}/${_del_safe_host}.orig.rc" ) &
+			( _t_launch=$(date +%s.%N)
+			  echo "$_t_launch" > "${_del_tmpdir}/${_del_safe_host}.orig.tlaunch"
+			  ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_host" \
+				"$_del_ssh_cmd_dbg" > "${_del_tmpdir}/${_del_safe_host}.orig.out" 2>"${_del_tmpdir}/${_del_safe_host}.orig.err"
+			  _rc=$?
+			  echo "$_rc" > "${_del_tmpdir}/${_del_safe_host}.orig.rc"
+			  date +%s.%N > "${_del_tmpdir}/${_del_safe_host}.orig.tend" ) &
 			_del_orig_pids["$_del_host"]=$!
+			_del_pid_label[${_del_orig_pids[$_del_host]}]="${_del_host}:orig"
+			_del_total_jobs=$((_del_total_jobs + 1))
 
 			if [ -n "$_del_alt_host" ]; then
 				_del_alt_hostmap["$_del_host"]="$_del_alt_host"
-				( ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_alt_host" \
-					"$_del_ssh_cmd" > "${_del_tmpdir}/${_del_safe_host}.alt.out" 2>"${_del_tmpdir}/${_del_safe_host}.alt.err"
-				  echo $? > "${_del_tmpdir}/${_del_safe_host}.alt.rc" ) &
+				( _t_launch=$(date +%s.%N)
+				  echo "$_t_launch" > "${_del_tmpdir}/${_del_safe_host}.alt.tlaunch"
+				  ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_del_alt_host" \
+					"$_del_ssh_cmd_dbg" > "${_del_tmpdir}/${_del_safe_host}.alt.out" 2>"${_del_tmpdir}/${_del_safe_host}.alt.err"
+				  _rc=$?
+				  echo "$_rc" > "${_del_tmpdir}/${_del_safe_host}.alt.rc"
+				  date +%s.%N > "${_del_tmpdir}/${_del_safe_host}.alt.tend" ) &
 				_del_alt_pids["$_del_host"]=$!
+				_del_pid_label[${_del_alt_pids[$_del_host]}]="${_del_host}:alt(${_del_alt_host})"
+				_del_total_jobs=$((_del_total_jobs + 1))
 			fi
 		done <<< "$_del_context_hosts"
 
-		out "  ${IBlack}Waiting for ${#_del_ordered_hosts[@]} parallel SSH deletes to complete...${RstClr}"
+		out "  ${IBlack}Waiting for ${#_del_ordered_hosts[@]} hosts (${_del_total_jobs} SSH jobs) to complete...${RstClr}"
 
-		# Wait for all background jobs
-		for _del_host in "${_del_ordered_hosts[@]}"; do
-			[ -n "${_del_orig_pids[$_del_host]+x}" ] && wait "${_del_orig_pids[$_del_host]}" 2>/dev/null
-			[ -n "${_del_alt_pids[$_del_host]+x}" ]  && wait "${_del_alt_pids[$_del_host]}"  2>/dev/null
+		# DEBUG: wait for jobs as they complete (not in launch order) so slow hosts
+		# stand out immediately. Print per-job timing: connect-to-remote-ready vs total.
+		_del_done_count=0
+		while [ "$_del_done_count" -lt "$_del_total_jobs" ]; do
+			wait -n 2>/dev/null
+			_wn_rc=$?
+			# Scan for jobs that have produced a .tend but no .reported marker yet
+			for _f in "${_del_tmpdir}"/*.tend; do
+				[ -e "$_f" ] || continue
+				_base="${_f%.tend}"
+				[ -e "${_base}.reported" ] && continue
+				touch "${_base}.reported"
+				_del_done_count=$((_del_done_count + 1))
+				_tag=$(basename "$_base")            # e.g. mu2e-calo-01-data.fnal.gov.orig
+				_role="${_tag##*.}"                  # orig | alt
+				_hostpart="${_tag%.*}"               # mu2e-calo-01-data.fnal.gov
+				_t_launch=$(cat "${_base}.tlaunch" 2>/dev/null)
+				_t_end=$(cat "${_base}.tend" 2>/dev/null)
+				_rc=$(cat "${_base}.rc" 2>/dev/null)
+				_elapsed=$(awk "BEGIN{printf \"%.2f\", ${_t_end:-0} - ${_t_launch:-0}}")
+				# Pull the remote-up marker (first line of stdout) to compute SSH connect time
+				_remote_up_line=$(head -1 "${_base}.out" 2>/dev/null)
+				_remote_t=""
+				_connect=""
+				_work=""
+				if [[ "$_remote_up_line" == __OTS_REMOTE_UP__* ]]; then
+					_remote_t=$(echo "$_remote_up_line" | awk '{print $2}')
+					# SSH connect time is approx (remote epoch - local launch epoch);
+					# assumes clocks roughly sync'd (NTP). Negative => clock skew, ignore.
+					_connect=$(awk "BEGIN{d=${_remote_t:-0}-${_t_launch:-0}; if(d<0)d=0; printf \"%.2f\", d}")
+					_work=$(awk "BEGIN{printf \"%.2f\", ${_t_end:-0} - ${_remote_t:-0}}")
+				fi
+				if [ -n "$_remote_t" ]; then
+					# DEBUG: per-job success timing -- uncomment to see connect vs remote-work breakdown.
+					# Useful for diagnosing slow SSH (Kerberos KDC contention, sshd auth, network).
+					# out "  ${IBlack}[${_hostpart}:${_role}] done in ${_elapsed}s (connect~${_connect}s, remote-work~${_work}s, rc=${_rc}) [${_del_done_count}/${_del_total_jobs}]${RstClr}"
+					: "${_hostpart} ${_role} ${_elapsed} ${_connect} ${_work} ${_rc}"  # keep vars "used"
+				else
+					# Failure path stays visible -- SSH never ran the remote command (auth/connect failure)
+					_stderr_first=$(head -1 "${_base}.err" 2>/dev/null | grep -v "^Warning:" | head -c 120)
+					out "  ${Red}[${_hostpart}:${_role}] done in ${_elapsed}s (NO remote-up marker, rc=${_rc}) [${_del_done_count}/${_del_total_jobs}]${RstClr}"
+					[ -n "$_stderr_first" ] && out "  ${Red}    stderr: ${_stderr_first}${RstClr}"
+				fi
+			done
+			# Safety: if wait -n returned an error (no children) but we still think jobs are pending, bail
+			if [ "$_wn_rc" -eq 127 ] || [ "$_wn_rc" -gt 128 ]; then
+				# No more children to wait for -- count any tend files we may have missed
+				for _f in "${_del_tmpdir}"/*.tend; do
+					[ -e "$_f" ] || continue
+					_base="${_f%.tend}"
+					[ -e "${_base}.reported" ] || { touch "${_base}.reported"; _del_done_count=$((_del_done_count + 1)); }
+				done
+				break
+			fi
 		done
+		_del_total_elapsed=$(awk "BEGIN{printf \"%.2f\", $(date +%s.%N) - $_del_t0}")
+		out "  ${IBlack}All SSH jobs finished after ${_del_total_elapsed}s total.${RstClr}"
 
 		# Parse results in order -- original wins over alt if both succeed
 		for _del_host in "${_del_ordered_hosts[@]}"; do
@@ -4793,13 +4910,14 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 			_del_rc_orig=$(cat "${_del_tmpdir}/${_del_safe_host}.orig.rc" 2>/dev/null)
 			_del_rc_alt=""
 			if [ "${_del_rc_orig}" = "0" ]; then
-				_del_ssh_output=$(cat "${_del_tmpdir}/${_del_safe_host}.orig.out" 2>/dev/null)
+				# Strip the DEBUG __OTS_REMOTE_UP__ marker line injected by _del_ssh_cmd_dbg
+				_del_ssh_output=$(grep -v '^__OTS_REMOTE_UP__' "${_del_tmpdir}/${_del_safe_host}.orig.out" 2>/dev/null)
 				_del_ssh_host_used="$_del_host"
 			elif [ -n "$_del_alt_host" ]; then
 				_del_stderr_alt=$(cat "${_del_tmpdir}/${_del_safe_host}.alt.err" 2>/dev/null | grep -v "^Warning:" | head -3)
 				_del_rc_alt=$(cat "${_del_tmpdir}/${_del_safe_host}.alt.rc" 2>/dev/null)
 				if [ "${_del_rc_alt}" = "0" ]; then
-					_del_ssh_output=$(cat "${_del_tmpdir}/${_del_safe_host}.alt.out" 2>/dev/null)
+					_del_ssh_output=$(grep -v '^__OTS_REMOTE_UP__' "${_del_tmpdir}/${_del_safe_host}.alt.out" 2>/dev/null)
 					_del_ssh_host_used="$_del_alt_host"
 				fi
 			fi
@@ -4809,15 +4927,18 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 			if [ -z "$_del_ssh_host_used" ]; then
 				# prefer alt stdout if it connected (rc!=255), else orig
 				if [ -n "$_del_alt_host" ] && [ "${_del_rc_alt}" != "255" ] && [ -n "${_del_rc_alt}" ]; then
-					_del_stdout_fail=$(cat "${_del_tmpdir}/${_del_safe_host}.alt.out" 2>/dev/null | tail -5)
+					_del_stdout_fail=$(grep -v '^__OTS_REMOTE_UP__' "${_del_tmpdir}/${_del_safe_host}.alt.out" 2>/dev/null | tail -5)
 				elif [ "${_del_rc_orig}" != "255" ] && [ -n "${_del_rc_orig}" ]; then
-					_del_stdout_fail=$(cat "${_del_tmpdir}/${_del_safe_host}.orig.out" 2>/dev/null | tail -5)
+					_del_stdout_fail=$(grep -v '^__OTS_REMOTE_UP__' "${_del_tmpdir}/${_del_safe_host}.orig.out" 2>/dev/null | tail -5)
 				fi
 			fi
 
-			rm -f "${_del_tmpdir}/${_del_safe_host}.orig.out" "${_del_tmpdir}/${_del_safe_host}.orig.rc" \
-			      "${_del_tmpdir}/${_del_safe_host}.alt.out"  "${_del_tmpdir}/${_del_safe_host}.alt.rc"  \
-			      "${_del_tmpdir}/${_del_safe_host}.orig.err" "${_del_tmpdir}/${_del_safe_host}.alt.err" 2>/dev/null
+			rm -f "${_del_tmpdir}/${_del_safe_host}.orig.out"     "${_del_tmpdir}/${_del_safe_host}.orig.rc"  \
+			      "${_del_tmpdir}/${_del_safe_host}.alt.out"      "${_del_tmpdir}/${_del_safe_host}.alt.rc"   \
+			      "${_del_tmpdir}/${_del_safe_host}.orig.err"     "${_del_tmpdir}/${_del_safe_host}.alt.err"  \
+			      "${_del_tmpdir}/${_del_safe_host}.orig.tlaunch" "${_del_tmpdir}/${_del_safe_host}.alt.tlaunch" \
+			      "${_del_tmpdir}/${_del_safe_host}.orig.tend"    "${_del_tmpdir}/${_del_safe_host}.alt.tend"    \
+			      "${_del_tmpdir}/${_del_safe_host}.orig.reported" "${_del_tmpdir}/${_del_safe_host}.alt.reported" 2>/dev/null
 
 			if [ -z "$_del_ssh_host_used" ]; then
 				if [ -n "$_del_alt_host" ]; then
@@ -4863,9 +4984,10 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 		done
 
 		rm -rf "$_del_tmpdir" 2>/dev/null
-		unset _del_ssh_cmd _del_ssh_output _del_rline _del_clean _del_host _del_alt_host _del_dryrun_arg
-		unset _del_orig_pids _del_alt_pids _del_alt_hostmap _del_tmpdir _del_safe_host _del_rc_orig _del_rc_alt
+		unset _del_ssh_cmd _del_ssh_cmd_dbg _del_ssh_output _del_rline _del_clean _del_host _del_alt_host _del_dryrun_arg
+		unset _del_orig_pids _del_alt_pids _del_alt_hostmap _del_pid_label _del_tmpdir _del_safe_host _del_rc_orig _del_rc_alt
 		unset _del_ordered_hosts _del_ssh_host_used _del_stderr_orig _del_stderr_alt _del_stdout_fail
+		unset _del_t0 _del_total_jobs _del_done_count _del_total_elapsed
 	else
 		out "  ${IBlack}No remote OTS context hosts found in XML config.${RstClr}"
 	fi
