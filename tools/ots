@@ -135,6 +135,8 @@ DELETE_LOGS_TIME_INT=""
 DELETE_LOGS_TIME_UNIT=""
 DELETE_LOGS_NOPROMPT=0
 DELETE_LOGS_DRYRUN=0
+DELETE_LOGS_GRAND_TOTAL=0
+DELETE_LOGS_LAST_COUNT=0
 ISLOGSCAN_ERROR=0
 ISLOGSCAN_ERROR_ARTDAQ=0
 ISLOGSCAN_ERROR_LOCAL=0
@@ -2647,7 +2649,7 @@ _logdelete_delete_old_logs() {
 
 	# Find files older than the threshold
 	local _old_files
-	_old_files=$(find -L "$_logs_dir" -type f -mmin +${_mmin} 2>/dev/null)
+	_old_files=$(find -L "$_logs_dir" -type f -mmin +${_mmin} -not -name 'otsdaq_is_alive-*.dat' 2>/dev/null)
 
 	if [ -z "$_old_files" ]; then
 		out "  ${IBlack}No log files older than ${_label} found.${RstClr}"
@@ -2656,6 +2658,7 @@ _logdelete_delete_old_logs() {
 
 	local _count _shown _max_show=20
 	_count=$(echo "$_old_files" | wc -l)
+	DELETE_LOGS_LAST_COUNT=$_count
 
 	# Header with truncation note if needed
 	if [ "$_count" -gt "$_max_show" ]; then
@@ -4662,6 +4665,9 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 	# -lx: delete locally (with ARTDAQ rank handling via -llx logic) + on each remote context host
 	# First, do local + ARTDAQ hosts (same as -llx)
 	_logdelete_delete_old_logs
+	DELETE_LOGS_LOCAL_COUNT=$DELETE_LOGS_LAST_COUNT
+	DELETE_LOGS_GRAND_TOTAL=$(( DELETE_LOGS_GRAND_TOTAL + DELETE_LOGS_LAST_COUNT ))
+	DELETE_LOGS_REMOTE_COUNT=0
 
 	# Find ARTDAQ hosts from ranks.txt and delete on them too
 	out
@@ -4711,6 +4717,10 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 					   [[ "$_del_clean" == *"older than"*"to delete"* ]] || \
 					   [[ "$_del_clean" == *"empty subdirectories"* ]] || [[ "$_del_clean" == "Done." ]]; then
 						out "    [${_del_host}] ${_del_clean}"
+					fi
+					if [[ "$_del_clean" =~ list\ of\ ([0-9]+)\ file ]]; then
+						DELETE_LOGS_GRAND_TOTAL=$(( DELETE_LOGS_GRAND_TOTAL + ${BASH_REMATCH[1]} ))
+						DELETE_LOGS_REMOTE_COUNT=$(( DELETE_LOGS_REMOTE_COUNT + ${BASH_REMATCH[1]} ))
 					fi
 				done <<< "$_del_ssh_output"
 			fi
@@ -4845,6 +4855,10 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 				   [[ "$_del_clean" == *"empty subdirectories"* ]] || [[ "$_del_clean" == "Done." ]]; then
 					out "    [${_del_host}] ${_del_clean}"
 				fi
+				if [[ "$_del_clean" =~ list\ of\ ([0-9]+)\ file ]]; then
+					DELETE_LOGS_GRAND_TOTAL=$(( DELETE_LOGS_GRAND_TOTAL + ${BASH_REMATCH[1]} ))
+					DELETE_LOGS_REMOTE_COUNT=$(( DELETE_LOGS_REMOTE_COUNT + ${BASH_REMATCH[1]} ))
+				fi
 			done <<< "$_del_ssh_output"
 		done
 
@@ -4856,6 +4870,16 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 		out "  ${IBlack}No remote OTS context hosts found in XML config.${RstClr}"
 	fi
 	unset _del_context_hosts
+	out
+	if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then
+		out "  ${IBlack}Local  (${THIS_HOST}): ${DELETE_LOGS_LOCAL_COUNT} file(s) would be deleted.${RstClr}"
+		out "  ${IBlack}Remote (all hosts):  ${DELETE_LOGS_REMOTE_COUNT} file(s) would be deleted.${RstClr}"
+		out "${Bold}${Cyan}GRAND TOTAL: ${DELETE_LOGS_GRAND_TOTAL} file(s) would be deleted (if this were not a DRY RUN).${RstClr}"
+	else
+		out "  ${IBlack}Local  (${THIS_HOST}): ${DELETE_LOGS_LOCAL_COUNT} file(s) deleted.${RstClr}"
+		out "  ${IBlack}Remote (all hosts):  ${DELETE_LOGS_REMOTE_COUNT} file(s) deleted.${RstClr}"
+		out "${Bold}${Cyan}GRAND TOTAL: ${DELETE_LOGS_GRAND_TOTAL} file(s) deleted across all hosts.${RstClr}"
+	fi
 	exit
 fi
 

@@ -32,6 +32,7 @@
 
 #include <sys/stat.h>  // for mkdir
 #include <cctype>      // for std::isspace
+#include <cstdio>      // for snprintf
 #include <chrono>      // std::chrono::seconds
 #include <fstream>
 #include <thread>  // std::this_thread::sleep_for
@@ -439,12 +440,24 @@ try
 	         std::pair<int64_t /* available log space KB */,
 	                   int64_t /* available data space KB */>>
 	    availableDiskSpaceKB_map;
+	// Single shared "last alert" timestamp per disk per context — any window firing
+	// resets it, so a flood of correlated alerts is suppressed. Faster-window
+	// thresholds still get more chances because they use shorter silence periods.
 	std::map<std::string /* context uid */, time_t /* last alert */>
-	    rateToLogDiskLastHourAlert_map, rateToLogDiskLastHalfHourAlert_map,
-	    rateToLogDiskLastQuarterHourAlert_map, rateToLogDiskNowAlert_map;
+	    rateToLogDiskAlert_map, rateToDataDiskAlert_map;
+	// Per-disk "first time the trip condition was observed" — used to require the
+	// condition to be sustained for a few seconds before firing. Cleared on any
+	// pass that does not see a trip, so brief transients reset the clock.
+	std::map<std::string /* context uid */, time_t /* first trip seen */>
+	    firstTripLogObserved_map, firstTripDataObserved_map;
+	// Time-suppression for the hard-low "available disk space low" alarm so a
+	// disk hovering near MIN does not spam every status pass.
 	std::map<std::string /* context uid */, time_t /* last alert */>
-	    rateToDataDiskLastHourAlert_map, rateToDataDiskLastHalfHourAlert_map,
-	    rateToDataDiskLastQuarterHourAlert_map, rateToDataDiskNowAlert_map;
+	    hardLowLogAlert_map, hardLowDataAlert_map;
+	// Workloop start time — used to skip the rate alarms during a warmup window
+	// while the historical-sample deque is dominated by the seed value (which is
+	// usually captured during the noisy startup burst).
+	const time_t workloopStartTime = time(0);
 
 	int64_t availableLogSpaceKB_MIN = 0, availableDataSpaceKB_MIN = 0;
 
@@ -467,6 +480,30 @@ try
 		availableDataSpaceKB_MIN = 1000000;  //1 GB default in KBs;
 	}
 	__COUTV__(availableDataSpaceKB_MIN);
+
+	auto formatRateKBps = [](float rateKBps) -> std::string {
+		float absRate = rateKBps < 0 ? -rateKBps : rateKBps;
+		float        value;
+		const char*  unit;
+		if(absRate < 1024.f)
+		{
+			value = rateKBps;
+			unit  = " KB/s";
+		}
+		else if(absRate < 1024.f * 1024.f)
+		{
+			value = rateKBps / 1024.f;
+			unit  = " MB/s";
+		}
+		else
+		{
+			value = rateKBps / (1024.f * 1024.f);
+			unit  = " GB/s";
+		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "%.1f", value);
+		return std::string(buf) + unit;
+	};
 	const std::string otsdaq_log_dir  = __ENV__("OTSDAQ_LOG_DIR");
 	const std::string otsdaq_data_dir = __ENV__("OTSDAQ_DATA");
 
@@ -2355,19 +2392,28 @@ try
 			__COUTVS__(TLVL_DebugStatusWorkloop, availableDataSpaceKB);
 
 			//alert and record available disk space
-			auto spaceIt = availableDiskSpaceKB_map.find(appInfo.getContextName());
+			auto         spaceIt   = availableDiskSpaceKB_map.find(appInfo.getContextName());
+			const time_t hardLowSilenceSecs = 5 * 60;  //rate-limit hard-low alarms
+			const time_t nowForHardLow      = time(0);
 			if(availableLogSpaceKB)  //if non-zero, then assume is latest valid value
 			{
 				if((spaceIt == availableDiskSpaceKB_map.end() ||  //and new value
 				    spaceIt->second.first > availableLogSpaceKB) &&
 				   availableLogSpaceKB < availableLogSpaceKB_MIN)  //and below threshold
-				{                                                  //then alert users!
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Available log disk space low (at host='" +
-					        appInfo.getHostname() + "' and path='" + otsdaq_log_dir +
-					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					        " MB remaining.");
+				{
+					//rate-limit: do not fire if we already alerted recently for this context
+					auto lastIt = hardLowLogAlert_map.find(appInfo.getContextName());
+					if(lastIt == hardLowLogAlert_map.end() ||
+					   nowForHardLow - lastIt->second > hardLowSilenceSecs)
+					{
+						theSupervisor->addSystemMessage(
+						    "*",
+						    "LOG disk space low (at host='" + appInfo.getHostname() +
+						        "' and path='" + otsdaq_log_dir +
+						        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
+						        " MB remaining.");
+						hardLowLogAlert_map[appInfo.getContextName()] = nowForHardLow;
+					}
 				}
 				availableDiskSpaceKB_map[appInfo.getContextName()].first =
 				    availableLogSpaceKB;
@@ -2381,13 +2427,19 @@ try
 				if((spaceIt == availableDiskSpaceKB_map.end() ||  //and new value
 				    spaceIt->second.second > availableDataSpaceKB) &&
 				   availableDataSpaceKB < availableDataSpaceKB_MIN)  //and below threshold
-				{                                                    //then alert users!
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Available data disk space low (at host='" +
-					        appInfo.getHostname() + "' and path='" + otsdaq_data_dir +
-					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					        " MB remaining.");
+				{
+					auto lastIt = hardLowDataAlert_map.find(appInfo.getContextName());
+					if(lastIt == hardLowDataAlert_map.end() ||
+					   nowForHardLow - lastIt->second > hardLowSilenceSecs)
+					{
+						theSupervisor->addSystemMessage(
+						    "*",
+						    "DATA disk space low (at host='" + appInfo.getHostname() +
+						        "' and path='" + otsdaq_data_dir +
+						        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+						        " MB remaining.");
+						hardLowDataAlert_map[appInfo.getContextName()] = nowForHardLow;
+					}
 				}
 				availableDiskSpaceKB_map[appInfo.getContextName()].second =
 				    availableDataSpaceKB;
@@ -2410,203 +2462,152 @@ try
 			        availableDataSpaceKB);
 
 			//if no recent alert, check if rate to disk is too high ------------
-			auto   rateIt = rateToLogDiskLastHourAlert_map.find(appInfo.getContextName());
-			time_t now    = time(0);
-			if(rateIt == rateToLogDiskLastHourAlert_map.end() ||
-			   now - rateIt->second > 30 * 60)  //alert at most every 30 minutes
-			{
-				float logUsageRateLastHourKBps =
-				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
-				        .at(appInfo.getId())
-				        .getLogUsageRateLastHourKBps();
+			// Windows go from longest-and-quietest to shortest-and-loudest. A
+			// single shared timestamp per disk means the first window to fire
+			// silences all the others in this pass — so flooding all 4 alerts
+			// at once is impossible. Shorter windows still get more chances
+			// because their silence periods (below) are shorter.
+			//
+			// Three protections against false alarms:
+			//   (1) WARMUP: skip all rate checks for the first 5 min after the
+			//       workloop starts, so the seed sample (captured during the noisy
+			//       startup burst) has time to age out of the historical deque.
+			//   (2) MIN LOOKBACK: each window requires its historical sample to
+			//       actually be at least N seconds old before its rate is trusted
+			//       (otherwise a very young sample produces a misleading rate
+			//       that gets multiplied by a much larger projection window).
+			//   (3) SUSTAINED TRIP: a trip condition must be observed continuously
+			//       for ~30 s before we fire, so a brief transient (a one-off log
+			//       flush, file rotation) is filtered out.
+			time_t            now             = time(0);
+			const time_t      warmupSecs      = 5 * 60;     //5-minute startup grace
+			const time_t      sustainSecs     = 30;         //must trip for this long
+			const size_t      slotForWindow[4]  = {9, 7, 5, 1};
+			const time_t      minLookbackSecs[4] = {300, 300, 300, 60};  //5,5,5,1 min
+			const int         windowSecs[4]   = {3600, 1800, 900, 450};
+			const int         silenceSecs[4]  = {
+                30 * 60, 15 * 60, 15 * 30, 15 * 15};  //30, 15, 7.5, 3.75 minutes
+			const char* const windowLabels[4] = {"last hour",
+			                                     "last half-hour",
+			                                     "last quarter-hour",
+			                                     "last few minutes"};
 
-				if(availableLogSpaceKB &&
-				   availableLogSpaceKB - logUsageRateLastHourKBps * 3600 <
-				       availableLogSpaceKB_MIN)
-				{
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
-					        "' and path='" + otsdaq_log_dir +
-					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					        " MB remaining and log usage rate over last hour is " +
-					        std::to_string(logUsageRateLastHourKBps) + " KB/s.");
-					rateToLogDiskLastHourAlert_map[appInfo.getContextName()] =
-					    now;  //record time of this alert
-				}
-			}  //end last hour log rate alert
-			rateIt = rateToLogDiskLastHalfHourAlert_map.find(appInfo.getContextName());
-			if(rateIt == rateToLogDiskLastHalfHourAlert_map.end() ||
-			   now - rateIt->second > 15 * 60)  //alert at most every 15 minutes
-			{
-				float logUsageRateLastHalfHourKBps =
-				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
-				        .at(appInfo.getId())
-				        .getLogUsageRateLastHalfHourKBps();
+			const bool inWarmup = (now - workloopStartTime) < warmupSecs;
 
-				if(availableLogSpaceKB &&
-				   availableLogSpaceKB - logUsageRateLastHalfHourKBps * 1800 <
-				       availableLogSpaceKB_MIN)
-				{
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
-					        "' and path='" + otsdaq_log_dir +
-					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					        " MB remaining and log usage rate over last half-hour is " +
-					        std::to_string(logUsageRateLastHalfHourKBps) + " KB/s.");
-					rateToLogDiskLastHalfHourAlert_map[appInfo.getContextName()] =
-					    now;  //record time of this alert
-				}
-			}  //end last half-hour log rate alert
-			rateIt = rateToLogDiskLastQuarterHourAlert_map.find(appInfo.getContextName());
-			if(rateIt == rateToLogDiskLastQuarterHourAlert_map.end() ||
-			   now - rateIt->second > 15 * 30)  //alert at most every 7.5 minutes
-			{
-				float logUsageRateLastQuarterHourKBps =
-				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
-				        .at(appInfo.getId())
-				        .getLogUsageRateLastQuarterHourKBps();
+			const auto& info =
+			    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(
+			        appInfo.getId());
+			const float logRates[4]  = {info.getLogUsageRateLastHourKBps(),
+			                            info.getLogUsageRateLastHalfHourKBps(),
+			                            info.getLogUsageRateLastQuarterHourKBps(),
+			                            info.getLogUsageRateNowKBps()};
+			const float dataRates[4] = {info.getDataUsageRateLastHourKBps(),
+			                            info.getDataUsageRateLastHalfHourKBps(),
+			                            info.getDataUsageRateLastQuarterHourKBps(),
+			                            info.getDataUsageRateNowKBps()};
+			const time_t logSpans[4]  = {
+			    info.getLogSpaceSampleAgeSeconds(slotForWindow[0]),
+			    info.getLogSpaceSampleAgeSeconds(slotForWindow[1]),
+			    info.getLogSpaceSampleAgeSeconds(slotForWindow[2]),
+			    info.getLogSpaceSampleAgeSeconds(slotForWindow[3])};
+			const time_t dataSpans[4] = {
+			    info.getDataSpaceSampleAgeSeconds(slotForWindow[0]),
+			    info.getDataSpaceSampleAgeSeconds(slotForWindow[1]),
+			    info.getDataSpaceSampleAgeSeconds(slotForWindow[2]),
+			    info.getDataSpaceSampleAgeSeconds(slotForWindow[3])};
 
-				if(availableLogSpaceKB &&
-				   availableLogSpaceKB - logUsageRateLastQuarterHourKBps * 900 <
-				       availableLogSpaceKB_MIN)
+			auto checkDiskRateAlerts = [&](const std::string& diskTag,  //"LOG" or "DATA"
+			                               const std::string& diskWord,  //"log" or "data"
+			                               const std::string& diskPath,
+			                               int64_t            availableSpaceKB,
+			                               int64_t            availableSpaceKB_MIN,
+			                               const float (&rates)[4],
+			                               const time_t (&spans)[4],
+			                               std::map<std::string, time_t>& alertMap,
+			                               std::map<std::string, time_t>& firstTripMap) {
+				const std::string& ctx = appInfo.getContextName();
+				if(inWarmup || !availableSpaceKB)
 				{
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
-					        "' and path='" + otsdaq_log_dir +
-					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					        " MB remaining and log usage rate over last quarter-hour "
-					        "is " +
-					        std::to_string(logUsageRateLastQuarterHourKBps) + " KB/s.");
-					rateToLogDiskLastQuarterHourAlert_map[appInfo.getContextName()] =
-					    now;  //record time of this alert
+					firstTripMap.erase(ctx);
+					return;
 				}
-			}  //end last quarter-hour log rate alert
-			rateIt = rateToLogDiskNowAlert_map.find(appInfo.getContextName());
-			if(rateIt == rateToLogDiskNowAlert_map.end() ||
-			   now - rateIt->second > 15 * 15)  //alert at most every 3.75 minutes
-			{
-				float logUsageRateNowKBps =
-				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
-				        .at(appInfo.getId())
-				        .getLogUsageRateNowKBps();
 
-				if(availableLogSpaceKB &&
-				   availableLogSpaceKB - logUsageRateNowKBps * 450 <
-				       availableLogSpaceKB_MIN)
+				//find the first (longest) window that meets criteria and is in a trip
+				int trippedW = -1;
+				for(int w = 0; w < 4; ++w)
 				{
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Log disk space low ALARM (at host='" + appInfo.getHostname() +
-					        "' and path='" + otsdaq_log_dir +
-					        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-					        " MB remaining and log usage rate over last few minutes is " +
-					        std::to_string(logUsageRateNowKBps) + " KB/s.");
-					rateToLogDiskNowAlert_map[appInfo.getContextName()] =
-					    now;  //record time of this alert
+					auto it = alertMap.find(ctx);
+					if(it != alertMap.end() && now - it->second <= silenceSecs[w])
+						continue;  //still inside this window's silence period
+					if(spans[w] < minLookbackSecs[w])
+						continue;  //not enough real lookback to trust this rate
+					if(availableSpaceKB - rates[w] * windowSecs[w] >=
+					   availableSpaceKB_MIN)
+						continue;  //projection stays above MIN — no trip
+					trippedW = w;
+					break;
 				}
-			}  //end last few minutes log rate alert
-			rateIt = rateToDataDiskLastHourAlert_map.find(appInfo.getContextName());
-			if(rateIt == rateToDataDiskLastHourAlert_map.end() ||
-			   now - rateIt->second > 30 * 60)  //alert at most every 30 minutes
-			{
-				float dataUsageRateLastHourKBps =
-				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
-				        .at(appInfo.getId())
-				        .getDataUsageRateLastHourKBps();
 
-				if(availableDataSpaceKB &&
-				   availableDataSpaceKB - dataUsageRateLastHourKBps * 3600 <
-				       availableDataSpaceKB_MIN)
+				if(trippedW < 0)
 				{
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
-					        "' and path='" + otsdaq_data_dir +
-					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					        " MB remaining and data usage rate over last hour is " +
-					        std::to_string(dataUsageRateLastHourKBps) + " KB/s.");
-					rateToDataDiskLastHourAlert_map[appInfo.getContextName()] =
-					    now;  //record time of this alert
+					//no trip this pass — reset the sustained-trip clock
+					firstTripMap.erase(ctx);
+					return;
 				}
-			}  //end last hour data rate alert
-			rateIt = rateToDataDiskLastHalfHourAlert_map.find(appInfo.getContextName());
-			if(rateIt == rateToDataDiskLastHalfHourAlert_map.end() ||
-			   now - rateIt->second > 15 * 60)  //alert at most every 15 minutes
-			{
-				float dataUsageRateLastHalfHourKBps =
-				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
-				        .at(appInfo.getId())
-				        .getDataUsageRateLastHalfHourKBps();
-				if(availableDataSpaceKB &&
-				   availableDataSpaceKB - dataUsageRateLastHalfHourKBps * 1800 <
-				       availableDataSpaceKB_MIN)
-				{
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
-					        "' and path='" + otsdaq_data_dir +
-					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					        " MB remaining and data usage rate over last half-hour is " +
-					        std::to_string(dataUsageRateLastHalfHourKBps) + " KB/s.");
-					rateToDataDiskLastHalfHourAlert_map[appInfo.getContextName()] =
-					    now;  //record time of this alert
-				}
-			}  //end last half-hour data rate alert
-			rateIt =
-			    rateToDataDiskLastQuarterHourAlert_map.find(appInfo.getContextName());
-			if(rateIt == rateToDataDiskLastQuarterHourAlert_map.end() ||
-			   now - rateIt->second > 15 * 30)  //alert at most every 7.5 minutes
-			{
-				float dataUsageRateLastQuarterHourKBps =
-				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
-				        .at(appInfo.getId())
-				        .getDataUsageRateLastQuarterHourKBps();
 
-				if(availableDataSpaceKB &&
-				   availableDataSpaceKB - dataUsageRateLastQuarterHourKBps * 900 <
-				       availableDataSpaceKB_MIN)
+				//trip seen — require it to persist for sustainSecs before firing
+				auto firstIt = firstTripMap.find(ctx);
+				if(firstIt == firstTripMap.end())
 				{
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
-					        "' and path='" + otsdaq_data_dir +
-					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					        " MB remaining and data usage rate over last quarter-hour "
-					        "is " +
-					        std::to_string(dataUsageRateLastQuarterHourKBps) + " KB/s.");
-					rateToDataDiskLastQuarterHourAlert_map[appInfo.getContextName()] =
-					    now;  //record time of this alert
+					firstTripMap[ctx] = now;
+					return;
 				}
-			}  //end last quarter-hour data rate alert
-			rateIt = rateToDataDiskNowAlert_map.find(appInfo.getContextName());
-			if(rateIt == rateToDataDiskNowAlert_map.end() ||
-			   now - rateIt->second > 15 * 15)  //alert at most every 3.75 minutes
-			{
-				float dataUsageRateNowKBps =
-				    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo()
-				        .at(appInfo.getId())
-				        .getDataUsageRateNowKBps();
+				if(now - firstIt->second < sustainSecs)
+					return;  //not sustained long enough yet
 
-				if(availableDataSpaceKB &&
-				   availableDataSpaceKB - dataUsageRateNowKBps * 450 <
-				       availableDataSpaceKB_MIN)
-				{
-					theSupervisor->addSystemMessage(
-					    "*",
-					    "Data disk space low ALARM (at host='" + appInfo.getHostname() +
-					        "' and path='" + otsdaq_data_dir +
-					        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
-					        " MB remaining and data usage rate over last few minutes "
-					        "is " +
-					        std::to_string(dataUsageRateNowKBps) + " KB/s.");
-					rateToDataDiskNowAlert_map[appInfo.getContextName()] =
-					    now;  //record time of this alert
-				}
-			}  //end last few minutes data rate alert
-		}      // end of app loop
+				theSupervisor->addSystemMessage(
+				    "*",
+				    diskTag + " disk space low ALARM (at host='" +
+				        appInfo.getHostname() + "' and path='" + diskPath +
+				        "/'): " + std::to_string(availableSpaceKB / 1024) +
+				        " MB remaining and " + diskWord +
+				        " usage rate over " + windowLabels[trippedW] + " is " +
+				        formatRateKBps(rates[trippedW]) + ".");
+				alertMap[ctx]      = now;
+				firstTripMap.erase(ctx);  //re-arm: next trip must sustain again
+			};
+
+			checkDiskRateAlerts("LOG",
+			                    "log",
+			                    otsdaq_log_dir,
+			                    availableLogSpaceKB,
+			                    availableLogSpaceKB_MIN,
+			                    logRates,
+			                    logSpans,
+			                    rateToLogDiskAlert_map,
+			                    firstTripLogObserved_map);
+
+			//if data disk looks identical to log disk (same free space and same
+			//rates across all windows), treat them as the same physical disk and
+			//skip the data alerts to avoid a duplicate noisy alarm.
+			bool dataIsSameAsLog = (availableDataSpaceKB == availableLogSpaceKB) &&
+			                       (dataRates[0] == logRates[0]) &&
+			                       (dataRates[1] == logRates[1]) &&
+			                       (dataRates[2] == logRates[2]) &&
+			                       (dataRates[3] == logRates[3]);
+			if(!dataIsSameAsLog)
+				checkDiskRateAlerts("DATA",
+				                    "data",
+				                    otsdaq_data_dir,
+				                    availableDataSpaceKB,
+				                    availableDataSpaceKB_MIN,
+				                    dataRates,
+				                    dataSpans,
+				                    rateToDataDiskAlert_map,
+				                    firstTripDataObserved_map);
+			else
+				firstTripDataObserved_map.erase(appInfo.getContextName());
+		}  // end of app loop
 
 		if(oneStatusReqHasFailed)
 		{
