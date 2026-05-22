@@ -925,8 +925,8 @@ void FEVInterface::registerFEMacroFunction(
 	}
 
 	__FE_COUTT__ << "Registering FE Macro Function: '" << feMacroName
-	                 << "' with requiredUserPermissions=" << requiredUserPermissions
-	                 << " allowedCallingFEs=" << allowedCallingFEs << __E__;
+	             << "' with requiredUserPermissions=" << requiredUserPermissions
+	             << " allowedCallingFEs=" << allowedCallingFEs << __E__;
 
 	mapOfFEMacroFunctions_.insert(std::pair<std::string, frontEndMacroStruct_t>(
 	    feMacroName,

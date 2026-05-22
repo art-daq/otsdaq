@@ -32,8 +32,8 @@
 
 #include <sys/stat.h>  // for mkdir
 #include <cctype>      // for std::isspace
-#include <cstdio>      // for snprintf
 #include <chrono>      // std::chrono::seconds
+#include <cstdio>      // for snprintf
 #include <fstream>
 #include <thread>  // std::this_thread::sleep_for
 
@@ -452,8 +452,8 @@ try
 	    firstTripLogObserved_map, firstTripDataObserved_map;
 	// Time-suppression for the hard-low "available disk space low" alarm so a
 	// disk hovering near MIN does not spam every status pass.
-	std::map<std::string /* context uid */, time_t /* last alert */>
-	    hardLowLogAlert_map, hardLowDataAlert_map;
+	std::map<std::string /* context uid */, time_t /* last alert */> hardLowLogAlert_map,
+	    hardLowDataAlert_map;
 	// Workloop start time — used to skip the rate alarms during a warmup window
 	// while the historical-sample deque is dominated by the seed value (which is
 	// usually captured during the noisy startup burst).
@@ -482,9 +482,9 @@ try
 	__COUTV__(availableDataSpaceKB_MIN);
 
 	auto formatRateKBps = [](float rateKBps) -> std::string {
-		float absRate = rateKBps < 0 ? -rateKBps : rateKBps;
-		float        value;
-		const char*  unit;
+		float       absRate = rateKBps < 0 ? -rateKBps : rateKBps;
+		float       value;
+		const char* unit;
 		if(absRate < 1024.f)
 		{
 			value = rateKBps;
@@ -2392,7 +2392,7 @@ try
 			__COUTVS__(TLVL_DebugStatusWorkloop, availableDataSpaceKB);
 
 			//alert and record available disk space
-			auto         spaceIt   = availableDiskSpaceKB_map.find(appInfo.getContextName());
+			auto spaceIt = availableDiskSpaceKB_map.find(appInfo.getContextName());
 			const time_t hardLowSilenceSecs = 5 * 60;  //rate-limit hard-low alarms
 			const time_t nowForHardLow      = time(0);
 			if(availableLogSpaceKB)  //if non-zero, then assume is latest valid value
@@ -2479,50 +2479,48 @@ try
 			//   (3) SUSTAINED TRIP: a trip condition must be observed continuously
 			//       for ~30 s before we fire, so a brief transient (a one-off log
 			//       flush, file rotation) is filtered out.
-			time_t            now             = time(0);
-			const time_t      warmupSecs      = 5 * 60;     //5-minute startup grace
-			const time_t      sustainSecs     = 30;         //must trip for this long
-			const size_t      slotForWindow[4]  = {9, 7, 5, 1};
-			const time_t      minLookbackSecs[4] = {300, 300, 300, 60};  //5,5,5,1 min
-			const int         windowSecs[4]   = {3600, 1800, 900, 450};
-			const int         silenceSecs[4]  = {
+			time_t       now                = time(0);
+			const time_t warmupSecs         = 5 * 60;  //5-minute startup grace
+			const time_t sustainSecs        = 30;      //must trip for this long
+			const size_t slotForWindow[4]   = {9, 7, 5, 1};
+			const time_t minLookbackSecs[4] = {300, 300, 300, 60};  //5,5,5,1 min
+			const int    windowSecs[4]      = {3600, 1800, 900, 450};
+			const int    silenceSecs[4]     = {
                 30 * 60, 15 * 60, 15 * 30, 15 * 15};  //30, 15, 7.5, 3.75 minutes
-			const char* const windowLabels[4] = {"last hour",
-			                                     "last half-hour",
-			                                     "last quarter-hour",
-			                                     "last few minutes"};
+			const char* const windowLabels[4] = {
+			    "last hour", "last half-hour", "last quarter-hour", "last few minutes"};
 
 			const bool inWarmup = (now - workloopStartTime) < warmupSecs;
 
 			const auto& info =
 			    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo().at(
 			        appInfo.getId());
-			const float logRates[4]  = {info.getLogUsageRateLastHourKBps(),
-			                            info.getLogUsageRateLastHalfHourKBps(),
-			                            info.getLogUsageRateLastQuarterHourKBps(),
-			                            info.getLogUsageRateNowKBps()};
-			const float dataRates[4] = {info.getDataUsageRateLastHourKBps(),
-			                            info.getDataUsageRateLastHalfHourKBps(),
-			                            info.getDataUsageRateLastQuarterHourKBps(),
-			                            info.getDataUsageRateNowKBps()};
+			const float  logRates[4]  = {info.getLogUsageRateLastHourKBps(),
+			                             info.getLogUsageRateLastHalfHourKBps(),
+			                             info.getLogUsageRateLastQuarterHourKBps(),
+			                             info.getLogUsageRateNowKBps()};
+			const float  dataRates[4] = {info.getDataUsageRateLastHourKBps(),
+			                             info.getDataUsageRateLastHalfHourKBps(),
+			                             info.getDataUsageRateLastQuarterHourKBps(),
+			                             info.getDataUsageRateNowKBps()};
 			const time_t logSpans[4]  = {
-			    info.getLogSpaceSampleAgeSeconds(slotForWindow[0]),
-			    info.getLogSpaceSampleAgeSeconds(slotForWindow[1]),
-			    info.getLogSpaceSampleAgeSeconds(slotForWindow[2]),
-			    info.getLogSpaceSampleAgeSeconds(slotForWindow[3])};
+                info.getLogSpaceSampleAgeSeconds(slotForWindow[0]),
+                info.getLogSpaceSampleAgeSeconds(slotForWindow[1]),
+                info.getLogSpaceSampleAgeSeconds(slotForWindow[2]),
+                info.getLogSpaceSampleAgeSeconds(slotForWindow[3])};
 			const time_t dataSpans[4] = {
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[0]),
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[1]),
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[2]),
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[3])};
 
-			auto checkDiskRateAlerts = [&](const std::string& diskTag,  //"LOG" or "DATA"
+			auto checkDiskRateAlerts = [&](const std::string& diskTag,   //"LOG" or "DATA"
 			                               const std::string& diskWord,  //"log" or "data"
 			                               const std::string& diskPath,
 			                               int64_t            availableSpaceKB,
 			                               int64_t            availableSpaceKB_MIN,
-			                               const float (&rates)[4],
-			                               const time_t (&spans)[4],
+			                               const float(&rates)[4],
+			                               const time_t(&spans)[4],
 			                               std::map<std::string, time_t>& alertMap,
 			                               std::map<std::string, time_t>& firstTripMap) {
 				const std::string& ctx = appInfo.getContextName();
@@ -2567,13 +2565,12 @@ try
 
 				theSupervisor->addSystemMessage(
 				    "*",
-				    diskTag + " disk space low ALARM (at host='" +
-				        appInfo.getHostname() + "' and path='" + diskPath +
-				        "/'): " + std::to_string(availableSpaceKB / 1024) +
-				        " MB remaining and " + diskWord +
-				        " usage rate over " + windowLabels[trippedW] + " is " +
+				    diskTag + " disk space low ALARM (at host='" + appInfo.getHostname() +
+				        "' and path='" + diskPath + "/'): " +
+				        std::to_string(availableSpaceKB / 1024) + " MB remaining and " +
+				        diskWord + " usage rate over " + windowLabels[trippedW] + " is " +
 				        formatRateKBps(rates[trippedW]) + ".");
-				alertMap[ctx]      = now;
+				alertMap[ctx] = now;
 				firstTripMap.erase(ctx);  //re-arm: next trip must sustain again
 			};
 
@@ -2590,11 +2587,10 @@ try
 			//if data disk looks identical to log disk (same free space and same
 			//rates across all windows), treat them as the same physical disk and
 			//skip the data alerts to avoid a duplicate noisy alarm.
-			bool dataIsSameAsLog = (availableDataSpaceKB == availableLogSpaceKB) &&
-			                       (dataRates[0] == logRates[0]) &&
-			                       (dataRates[1] == logRates[1]) &&
-			                       (dataRates[2] == logRates[2]) &&
-			                       (dataRates[3] == logRates[3]);
+			bool dataIsSameAsLog =
+			    (availableDataSpaceKB == availableLogSpaceKB) &&
+			    (dataRates[0] == logRates[0]) && (dataRates[1] == logRates[1]) &&
+			    (dataRates[2] == logRates[2]) && (dataRates[3] == logRates[3]);
 			if(!dataIsSameAsLog)
 				checkDiskRateAlerts("DATA",
 				                    "data",

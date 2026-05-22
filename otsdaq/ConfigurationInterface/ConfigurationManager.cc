@@ -4311,7 +4311,7 @@ void ConfigurationManager::initializeFromFhicl(const std::string& fhiclPath)
 		table->setActiveView(TableVersion(TableVersion::DEFAULT));
 
 		TableView* view = table->getViewP();
-		__GEN_COUT__ << "Activated version: " << view->getVersion() << __E__;		
+		__GEN_COUT__ << "Activated version: " << view->getVersion() << __E__;
 
 		// add context record 		---------------------
 		view->addRow();
@@ -4986,9 +4986,9 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 	}
 	else if(cmdResult.find("No such file or directory") != std::string::npos)
 	{
-		__GEN_SS__
-		    << "\n\nActive tables groups file not found at user data path specified for subsystem '"
-		    << otherSubsystemUID << "': ";
+		__GEN_SS__ << "\n\nActive tables groups file not found at user data path "
+		              "specified for subsystem '"
+		           << otherSubsystemUID << "': ";
 		if(username != "")
 			ss << username << "@";
 		if(hostname != "")
