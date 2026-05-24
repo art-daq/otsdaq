@@ -6142,24 +6142,28 @@ try
 			}
 
 			//now activate (and merge-in tables)
-			CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
-			    theConfigurationTableGroup_.first,
-			    theConfigurationTableGroup_.second,
-			    true /*doActivate*/,
-			    0 /*groupMembers      */,
-			    0 /*progressBar       */,
-			    0 /*accumulateWarnings*/,
-			    0 /*groupComment      */,
-			    0 /*groupAuthor       */,
-			    0 /*groupCreateTime   */,
-			    false /*doNotLoadMember */,
-			    0 /*groupTypeString */,
-			    0 /*groupAliases */,
-			    ConfigurationManager::LoadGroupType::ALL_TYPES,
-			    true /*ignoreVersionTracking*/,
-			    mergeInTables /* mergeInTables */,
-			    overrideTables /* overrideTables */
-			);
+			{
+				ConfigurationManager::ConfigureTransitionGuard configureGuard(
+				    CorePropertySupervisorBase::theConfigurationManager_);
+				CorePropertySupervisorBase::theConfigurationManager_->loadTableGroup(
+				    theConfigurationTableGroup_.first,
+				    theConfigurationTableGroup_.second,
+				    true /*doActivate*/,
+				    0 /*groupMembers      */,
+				    0 /*progressBar       */,
+				    0 /*accumulateWarnings*/,
+				    0 /*groupComment      */,
+				    0 /*groupAuthor       */,
+				    0 /*groupCreateTime   */,
+				    false /*doNotLoadMember */,
+				    0 /*groupTypeString */,
+				    0 /*groupAliases */,
+				    ConfigurationManager::LoadGroupType::ALL_TYPES,
+				    true /*ignoreVersionTracking*/,
+				    mergeInTables /* mergeInTables */,
+				    overrideTables /* overrideTables */
+				);
+			}
 
 			__COUT__ << "Done loading and activating Configuration Alias (and merging-in "
 			            "tables)."

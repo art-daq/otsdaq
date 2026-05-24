@@ -848,6 +848,8 @@ void CoreSupervisorBase::configureInit(void)
 
 	try
 	{
+		ConfigurationManager::ConfigureTransitionGuard configureGuard(
+		    theConfigurationManager_);
 		//disable version tracking to accept untracked versions to be selected by the FSM transition source
 		theConfigurationManager_->loadTableGroup(
 		    theGroup.first,
