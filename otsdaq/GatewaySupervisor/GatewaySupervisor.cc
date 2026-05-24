@@ -1555,8 +1555,10 @@ try
 									if(appLastStatusGood.find(
 									       remoteGatewayApp.appInfo.url +
 									       remoteGatewayApp.appInfo.name) !=
-									   appLastStatusGood
-									       .end())  //only system message if status was good before
+									       appLastStatusGood.end() &&
+									   //startup lull: suppress bad-status spam in the first 30 s
+									   //while remote apps are still coming up.
+									   time(0) - workloopStartTime > 30)
 										theSupervisor->addSystemMessage("*", ss.str());
 								}
 
@@ -2197,7 +2199,10 @@ try
 						      << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
 						      << "].\n\n";
 						__COUT_WARN__ << errSs.str();
-						theSupervisor->addSystemMessage("*", errSs.str());
+						//startup lull: suppress bad-status spam in the first 30 s
+						//while supervisor apps are still coming up.
+						if(time(0) - workloopStartTime > 30)
+							theSupervisor->addSystemMessage("*", errSs.str());
 
 						__COUTTV__(SOAPUtilities::translate(tempMessage));
 						__COUT_WARN__ << "Failed to send getStatus SOAP Message - will "
