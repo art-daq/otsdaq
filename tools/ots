@@ -3455,6 +3455,8 @@ launchOTSLogFind() {
 						_lf_category="flatten"
 					elif [[ "$_lf_basename" == "otsdaq_quiet_run-"* ]]; then
 						_lf_category="context"
+					elif [[ "$_lf_basename" =~ _run([0-9]+)\.dump$ ]]; then
+						_lf_category="run ${BASH_REMATCH[1]} dump"
 					elif [[ "$_lf_basename" == *"Dump"* ]]; then
 						_lf_category="transition dump"
 					else

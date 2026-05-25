@@ -1617,7 +1617,12 @@ try
 					}  //end remote app status update
 
 					//if possible, get remote icon list for desktop from each remote app
-					if(resetRemoteGatewayApps)
+					//skip icon-gathering while a command cycle is active: GetRemoteGatewayIcons
+					//is a blocking UDP call with a 10 s timeout per unreachable subsystem,
+					//which can stall the status copy-back long enough that the SubsystemLaunch
+					//UI poll loop (10 attempts x 2 s) gives up before the cached "Launching X"
+					//flips to the real state.
+					if(resetRemoteGatewayApps && !commandingRemoteGatewayApps)
 					{
 						__COUTS__(TLVL_RemoteDesktopIcons)
 						    << "Attempting to get Remote Desktop Icons (doDisconnected = "
@@ -1850,14 +1855,27 @@ try
 										    << " progress: "
 										    << remoteGatewayApp.appInfo.progress << __E__;
 
-										if(remoteGatewayApp.command ==
-										   "Sent")  //apply command clear
+										bool justCompletedSend =
+										    (remoteGatewayApp.command == "Sent");
+										if(justCompletedSend)  //apply command clear
+										{
 											theSupervisor->remoteGatewayApps_[i].command =
 											    "";
+											//also clear the forced "Launching X" placeholder
+											//(set by broadcastMessageToRemoteGateways() or the
+											//setRemoteSubsystemCommand handler) so it can't
+											//re-arm the stale-status guard below against a
+											//fresh response whose Done we already received.
+											if(theSupervisor->remoteGatewayApps_[i]
+											       .appInfo.status.find("Launching") == 0)
+												theSupervisor->remoteGatewayApps_[i]
+												    .appInfo.status = "";
+										}
 
 										if(theSupervisor->remoteGatewayApps_[i].command !=
 										       "" ||
 										   (commandingRemoteGatewayApps &&
+										    !justCompletedSend &&  //trust fresh status for the app whose Done we just got
 										    theSupervisor->remoteGatewayApps_[i]
 										            .appInfo.status.find("Launching") ==
 										        0 &&
@@ -4905,7 +4923,7 @@ try
 			      "to control progress, please transition to "
 			   << RunControlStateMachine::HALTED_STATE_NAME << " using the active "
 			   << "State Machine '" << activeStateMachineWindowName_
-			   << "' (UID: " << activeStateMachineName_ << ")." << __E__;
+			   << "' (UID: " << activeStateMachineName_ << "). Current state = " << currentState << __E__;
 			__SS_THROW__;
 		}
 		else  // clear active state machine
@@ -7561,6 +7579,9 @@ try
 
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
+			__COUT__ << "Remote app " << remoteGatewayApp.fullName << " included: "
+			         << remoteGatewayApp.fsm_included << __E__;
+
 			if(!remoteGatewayApp.fsm_included)
 				continue;  //skip if not included
 
@@ -7652,7 +7673,8 @@ try
 	{
 		//write local configuration dump file
 		std::string fullfilename = activeStateMachineSystemDumpOnRunFilename_ + "_" +
-		                           std::to_string(time(0)) + ".dump";
+		                           std::to_string(time(0)) + "_run" +
+								   activeStateMachineRunNumber_ + ".dump";
 		FILE* fp = fopen(fullfilename.c_str(), "w");
 		if(!fp)
 		{
@@ -7665,14 +7687,25 @@ try
 		fprintf(
 		    fp, "Original location of dump:               %s\n", fullfilename.c_str());
 
-		if(activeStateMachineSystemDumpOnRun_.size())
-			fwrite(&activeStateMachineSystemDumpOnRun_[0],
-			       1,
-			       activeStateMachineSystemDumpOnRun_.size(),
-			       fp);
-		__COUT__ << "Wrote configuration dump of char count "
-		         << activeStateMachineSystemDumpOnRun_.size()
-		         << " to file: " << fullfilename << __E__;
+
+		for(auto& gatewayApp : gatewayDumpMap)
+			fprintf(fp, "Includes subsytem:               %s\n", gatewayApp.second["name"].c_str());
+
+		for(auto& gatewayApp : gatewayDumpMap)
+		{
+			fprintf(fp, "\n--- start Dump from subsytem (%zu bytes):               %s\n",
+				gatewayApp.second["config"].size(), gatewayApp.second["name"].c_str());
+			if(gatewayApp.second["config"].size())
+				fwrite(&gatewayApp.second["config"][0],
+				       1,
+				       gatewayApp.second["config"].size(),
+				       fp);
+			__COUT__ << "Wrote configuration subsystem '" << gatewayApp.second["name"] << "' dump of char count "
+					<< gatewayApp.second["config"].size()
+					<< " to file: " << fullfilename << __E__;
+			fprintf(fp, "--- end Dump from subsytem (%zu bytes):               %s\n",
+				gatewayApp.second["config"].size(), gatewayApp.second["name"].c_str());
+		} //end subsystem dump loop
 
 		fclose(fp);
 
