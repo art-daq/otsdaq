@@ -4923,7 +4923,8 @@ try
 			      "to control progress, please transition to "
 			   << RunControlStateMachine::HALTED_STATE_NAME << " using the active "
 			   << "State Machine '" << activeStateMachineWindowName_
-			   << "' (UID: " << activeStateMachineName_ << "). Current state = " << currentState << __E__;
+			   << "' (UID: " << activeStateMachineName_
+			   << "). Current state = " << currentState << __E__;
 			__SS_THROW__;
 		}
 		else  // clear active state machine
@@ -7579,8 +7580,8 @@ try
 
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
-			__COUT__ << "Remote app " << remoteGatewayApp.fullName << " included: "
-			         << remoteGatewayApp.fsm_included << __E__;
+			__COUT__ << "Remote app " << remoteGatewayApp.fullName
+			         << " included: " << remoteGatewayApp.fsm_included << __E__;
 
 			if(!remoteGatewayApp.fsm_included)
 				continue;  //skip if not included
@@ -7674,7 +7675,7 @@ try
 		//write local configuration dump file
 		std::string fullfilename = activeStateMachineSystemDumpOnRunFilename_ + "_" +
 		                           std::to_string(time(0)) + "_run" +
-								   activeStateMachineRunNumber_ + ".dump";
+		                           activeStateMachineRunNumber_ + ".dump";
 		FILE* fp = fopen(fullfilename.c_str(), "w");
 		if(!fp)
 		{
@@ -7687,25 +7688,30 @@ try
 		fprintf(
 		    fp, "Original location of dump:               %s\n", fullfilename.c_str());
 
-
 		for(auto& gatewayApp : gatewayDumpMap)
-			fprintf(fp, "Includes subsytem:               %s\n", gatewayApp.second["name"].c_str());
+			fprintf(fp,
+			        "Includes subsytem:               %s\n",
+			        gatewayApp.second["name"].c_str());
 
 		for(auto& gatewayApp : gatewayDumpMap)
 		{
-			fprintf(fp, "\n--- start Dump from subsytem (%zu bytes):               %s\n",
-				gatewayApp.second["config"].size(), gatewayApp.second["name"].c_str());
+			fprintf(fp,
+			        "\n--- start Dump from subsytem (%zu bytes):               %s\n",
+			        gatewayApp.second["config"].size(),
+			        gatewayApp.second["name"].c_str());
 			if(gatewayApp.second["config"].size())
 				fwrite(&gatewayApp.second["config"][0],
 				       1,
 				       gatewayApp.second["config"].size(),
 				       fp);
-			__COUT__ << "Wrote configuration subsystem '" << gatewayApp.second["name"] << "' dump of char count "
-					<< gatewayApp.second["config"].size()
-					<< " to file: " << fullfilename << __E__;
-			fprintf(fp, "--- end Dump from subsytem (%zu bytes):               %s\n",
-				gatewayApp.second["config"].size(), gatewayApp.second["name"].c_str());
-		} //end subsystem dump loop
+			__COUT__ << "Wrote configuration subsystem '" << gatewayApp.second["name"]
+			         << "' dump of char count " << gatewayApp.second["config"].size()
+			         << " to file: " << fullfilename << __E__;
+			fprintf(fp,
+			        "--- end Dump from subsytem (%zu bytes):               %s\n",
+			        gatewayApp.second["config"].size(),
+			        gatewayApp.second["name"].c_str());
+		}  //end subsystem dump loop
 
 		fclose(fp);
 
