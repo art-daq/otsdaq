@@ -387,7 +387,9 @@ void ConfigurationTree::getValueAsBitMap(
 					{
 						openRow = false;
 					}
-					else if((bitmapString[i] >= '0' &&
+					else if((bitmapString[i] == '-') ||
+							(bitmapString[i] == '+') ||
+							(bitmapString[i] >= '0' &&
 					         bitmapString[i] <= '9') ||  // found start of number
 					        (bmp.mapsToStrings_ && bitmapString[i] >= 'a' &&
 					         bitmapString[i] <=
