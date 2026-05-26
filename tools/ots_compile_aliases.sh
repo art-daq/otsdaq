@@ -39,8 +39,8 @@ unalias mb 2>/dev/null
 mb() {
 	date;
 	get_lock && {
-	trap 'rm -f $lockfile; echo removing lockfile' RETURN
-	trap 'rm -f $lockfile; echo SIGINT; return 0' SIGINT # may need to be 'exit 0'???
+	trap 'rm -f "$lockfile"; echo removing lockfile' RETURN
+	trap 'rm -f "$lockfile"; echo SIGINT; return 0' SIGINT # may need to be 'exit 0'???
 	start_time=$(date +%s);
 	# spack find | grep gcc;
 
