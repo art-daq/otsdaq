@@ -3111,10 +3111,29 @@ launchOTSLogFind() {
 
 	_logfind_local_label=""
 	_logfind_local_files=""
+	# Filter find results for `ots -l` display:
+	#   (1) Drop per-process directories (e.g. BRCalo14DTC0-mu2e-calo-14-16100/): they
+	#       contain raw log files where multiple runs share a single file via internal
+	#       timestamps -- confusing to display per-run. The role-dir symlinks
+	#       (boardreader/run<N>-*.log) already surface the same content with clear
+	#       per-run labels.
+	#   (2) In ARTDAQ role dirs (pmt, boardreader, eventbuilder, datalogger, dispatcher,
+	#       routingmanager), only keep files whose basename starts with `run<N>-`. This
+	#       drops noise like pmt/launch_attempt_* which lack a run number.
+	# The delete path (`ots -lx`) uses its own find call elsewhere and is NOT affected,
+	# so the filtered-out files still get cleaned up by `-lx`.
 	for _ll_window in "10 minutes:10" "1 hour:60" "1 day:1440" "1 week:10080" "2 weeks:20160" "1 month:43200" "1 year:525600"; do
 		_ll_label="${_ll_window%%:*}"
 		_ll_mmin="${_ll_window##*:}"
-		_ll_files=$(find -L "${USER_DATA}/Logs" -maxdepth 5 -type f -mmin -${_ll_mmin} 2>/dev/null)
+		_ll_files=$(find -L "${USER_DATA}/Logs" -maxdepth 5 -type f -mmin -${_ll_mmin} 2>/dev/null \
+			| awk '
+				/\/Logs\/[^\/]+-mu2e-[^\/]+-[0-9]+\// { next }
+				/\/Logs\/(pmt|boardreader|eventbuilder|datalogger|dispatcher|routingmanager)\// {
+					n = split($0, parts, "/");
+					if (parts[n] !~ /^run[0-9]+-/) next;
+				}
+				{ print }
+			')
 		if [ -n "$_ll_files" ]; then
 			_logfind_local_label="$_ll_label"
 			_logfind_local_files="$_ll_files"
@@ -3440,6 +3459,28 @@ launchOTSLogFind() {
 						_lf_category="$_lf_symlink_name"
 					elif [[ "$_lf_category" == *"-mu2e-"* ]]; then
 						_lf_category="${_lf_category%%-mu2e-*} log"
+					# ARTDAQ role directories -- extract run number (and process name where
+					# applicable) from filenames like:
+					#   pmt/run120432-pmt_<host>.log              -> "run120432 pmt"
+					#   boardreader/run120432-BRCalo14DTC0.log    -> "run120432 BR BRCalo14DTC0"
+					#   eventbuilder/run120432-EvB0Calo14.log     -> "run120432 EB EvB0Calo14"
+					#   datalogger/run120432-<name>.log           -> "run120432 DL <name>"
+					#   dispatcher/run120432-<name>.log           -> "run120432 Di <name>"
+					#   routingmanager/run120432-<name>.log       -> "run120432 RM <name>"
+					# Files without the run<N>- prefix (e.g. pmt/launch_attempt_*) keep the
+					# plain role-directory category.
+					elif [ "$_lf_category" = "pmt" ] && [[ "$_lf_basename" =~ ^run([0-9]+)- ]]; then
+						_lf_category="run${BASH_REMATCH[1]} pmt"
+					elif [ "$_lf_category" = "boardreader" ] && [[ "$_lf_basename" =~ ^run([0-9]+)-(.+)\.log$ ]]; then
+						_lf_category="run${BASH_REMATCH[1]} BR ${BASH_REMATCH[2]}"
+					elif [ "$_lf_category" = "eventbuilder" ] && [[ "$_lf_basename" =~ ^run([0-9]+)-(.+)\.log$ ]]; then
+						_lf_category="run${BASH_REMATCH[1]} EB ${BASH_REMATCH[2]}"
+					elif [ "$_lf_category" = "datalogger" ] && [[ "$_lf_basename" =~ ^run([0-9]+)-(.+)\.log$ ]]; then
+						_lf_category="run${BASH_REMATCH[1]} DL ${BASH_REMATCH[2]}"
+					elif [ "$_lf_category" = "dispatcher" ] && [[ "$_lf_basename" =~ ^run([0-9]+)-(.+)\.log$ ]]; then
+						_lf_category="run${BASH_REMATCH[1]} Di ${BASH_REMATCH[2]}"
+					elif [ "$_lf_category" = "routingmanager" ] && [[ "$_lf_basename" =~ ^run([0-9]+)-(.+)\.log$ ]]; then
+						_lf_category="run${BASH_REMATCH[1]} RM ${BASH_REMATCH[2]}"
 					fi
 				else
 					# file is directly in Logs root -- categorize by filename
@@ -3456,7 +3497,7 @@ launchOTSLogFind() {
 					elif [[ "$_lf_basename" == "otsdaq_quiet_run-"* ]]; then
 						_lf_category="context"
 					elif [[ "$_lf_basename" =~ _run([0-9]+)\.dump$ ]]; then
-						_lf_category="run ${BASH_REMATCH[1]} dump"
+						_lf_category="run${BASH_REMATCH[1]} dump"
 					elif [[ "$_lf_basename" == *"Dump"* ]]; then
 						_lf_category="transition dump"
 					else
