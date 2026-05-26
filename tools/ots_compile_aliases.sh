@@ -27,7 +27,10 @@ get_lock() {
 	return 0
 }
 
-rel_lock() { rm -f $lockfile; }
+rel_lock() {
+	[ -n "$lockfile" ] || return 0
+	rm -f -- "$lockfile"
+}
 
 Base=$SCRIPT_DIR
 escaped_srcs=$(printf '%s\n' "$OTS_SOURCE/" | sed 's/[\/&]/\\&/g')
