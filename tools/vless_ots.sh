@@ -60,7 +60,7 @@ _vless_tmpdir=$(mktemp -d /tmp/vless_ots_XXXXXX)
 declare -A _vless_pids
 for _vless_h in "${_vless_hosts[@]}"; do
     _vless_safe="${_vless_h//[^a-zA-Z0-9._-]/_}"
-    ( scp -o ConnectTimeout=2 "${_vless_h}:${remote_path}" "${_vless_tmpdir}/${_vless_safe}.tmp" >/dev/null 2>&1
+    ( scp -o BatchMode=yes -o ConnectTimeout=2 "${_vless_h}:${remote_path}" "${_vless_tmpdir}/${_vless_safe}.tmp" >/dev/null 2>&1
       echo $? > "${_vless_tmpdir}/${_vless_safe}.rc" ) &
     _vless_pids["$_vless_h"]=$!
 done
