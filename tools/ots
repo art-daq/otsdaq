@@ -165,9 +165,10 @@ log_label=""
 tonS 0-9 -N ots
 tonS 0-9 -N ots_remote_start
 
-if [ "x$OTS_SETUP_TYPE" == "x" ]; then
-	export OTS_SETUP_TYPE="$(cat .ots_setup_type.txt)"; #keep ots setup type so that it does not change from (remote) start to (remote) start (in a shared directory scenario)
-fi
+# OTS_SETUP_TYPE must come from the environment (set by `source setup_ots.sh <type>`
+# and propagated via ssh args to remote starts). Do NOT auto-recover from
+# .ots_setup_type.txt: in directories shared by multiple setup types that file
+# races and can return another tenant's type.
 
 # Output startup banner
 if [ "$1" != "-x" ]; then #if not remote start, show more printouts
@@ -567,7 +568,7 @@ fi
 
 OTSDAQ_STARTOTS_ACTION_FILE="${USER_DATA}/ServiceData/StartOTS_action_${THIS_HOST}.cmd" #the targeted hostname action script gives commands to StartOTS scripts running on that host
 OTSDAQ_STARTOTS_QUIT_FILE="${USER_DATA}/ServiceData/StartOTS_action_quit.cmd" #the global quit gives exit commonds to the non-gateway StartOTS scripts
-OTSDAQ_STARTOTS_LOCAL_QUIT_FILE=".StartOTS_${OTS_OWNER}_action_quit.cmd" #the local quit is used to remove other StartOTS calls from the same directory (it catches the case when switching USER_DATA paths)
+OTSDAQ_STARTOTS_LOCAL_QUIT_FILE=".StartOTS_${OTS_OWNER}_${OTS_SETUP_TYPE}_action_quit.cmd" #per-(owner,setup-type) local quit: removes only other StartOTS calls of the SAME setup type from the same directory (so e.g. a DQM subsystem relaunch does not kill the main system in the same dir)
 
 if [ $ISREMOTE == 0 ]; then
 	out "ots script path     = ${SCRIPT_DIR}/ots         "
