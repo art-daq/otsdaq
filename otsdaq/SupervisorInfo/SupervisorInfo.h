@@ -107,6 +107,12 @@ class SupervisorInfo
 	int64_t										 getAvailableLogSpaceKB         	(void) const { return availableLogSpaceKB_.size()  > 0 ? availableLogSpaceKB_.front().second : 0; }
 	int64_t										 getAvailableDataSpaceKB        	(void) const { return availableDataSpaceKB_.size() > 0 ? availableDataSpaceKB_.front().second : 0; }
 
+	// Actual lookback span (seconds) between the newest sample and the sample at the
+	// given slot. Used by the disk-space alarm to refuse rates whose historical
+	// sample is still too young to be meaningful (e.g. just after startup).
+	time_t										 getLogSpaceSampleAgeSeconds		(size_t slot) const { return availableLogSpaceKB_.size()  > slot ? availableLogSpaceKB_.front().first - availableLogSpaceKB_[slot].first : 0; }
+	time_t										 getDataSpaceSampleAgeSeconds		(size_t slot) const { return availableDataSpaceKB_.size() > slot ? availableDataSpaceKB_.front().first - availableDataSpaceKB_[slot].first : 0; }
+
 	float	                                     getLogUsageRateLastHourKBps   		(void) const { return availableLogSpaceKB_.size()  > 9 ? (availableLogSpaceKB_[9].second - availableLogSpaceKB_.front().second)*1.0f/
 																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[9].first) : 0; }
 	float	                                     getLogUsageRateLastHalfHourKBps	(void) const { return availableLogSpaceKB_.size()  > 7 ? (availableLogSpaceKB_[7].second - availableLogSpaceKB_.front().second)*1.0f/
