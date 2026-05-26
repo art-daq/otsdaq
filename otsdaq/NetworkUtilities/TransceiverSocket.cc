@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <mutex>
 #include <set>
@@ -126,9 +127,19 @@ int TransceiverSocket::sendAll(const std::string& buffer,
 	                              ? MAX_SEND_SIZE - RETRANSMIT_HEADER_SIZE
 	                              : 1;
 
-	// Calculate total number of packets
-	uint16_t totalPackets =
-	    static_cast<uint16_t>((buffer.size() + payloadMax - 1) / payloadMax);
+	// Calculate total number of packets. The on-wire header carries the count
+	// as uint16_t, so reject buffers that would require more than 65535 packets.
+	const size_t packetsNeeded = (buffer.size() + payloadMax - 1) / payloadMax;
+	if(packetsNeeded > std::numeric_limits<uint16_t>::max())
+	{
+		__SS__ << "sendAll: buffer size " << buffer.size() << " requires "
+		       << packetsNeeded
+		       << " packets, which exceeds the uint16_t protocol limit of "
+		       << std::numeric_limits<uint16_t>::max() << " (payloadMax=" << payloadMax
+		       << ")." << std::endl;
+		__SS_THROW__;
+	}
+	uint16_t totalPackets = static_cast<uint16_t>(packetsNeeded);
 	if(totalPackets == 0)
 		totalPackets = 1;  // send at least one packet even for empty buffer
 
