@@ -46,9 +46,10 @@ else
   shift
 fi
 
-#get setup type
+#get setup type — from explicit caller arg only. Do NOT auto-recover from
+#.ots_setup_type.txt: in shared directories that file can race across setup types.
 if [ "x$1" == "x" ]; then
-	export OTS_SETUP_TYPE="$(cat .ots_setup_type.txt)";
+	export OTS_SETUP_TYPE=""
 else
   export OTS_SETUP_TYPE="$1"
   shift
