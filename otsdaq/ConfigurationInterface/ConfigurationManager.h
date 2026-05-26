@@ -257,6 +257,30 @@ class ConfigurationManager
 	const std::string& 					getOwnerApp					(void) { return ownerAppUID_; }
 	bool               					isOwnerFirstAppInContext	(void);
 
+	bool								isConfigureTransition		(void) const { return isConfigureTransition_; }
+
+	class ConfigureTransitionGuard
+	{
+	  public:
+		ConfigureTransitionGuard(ConfigurationManager* cfgMgr)
+		    : cfgMgr_(cfgMgr), prev_(cfgMgr ? cfgMgr->isConfigureTransition_ : false)
+		{
+			if(cfgMgr_)
+				cfgMgr_->isConfigureTransition_ = true;
+		}
+		~ConfigureTransitionGuard()
+		{
+			if(cfgMgr_)
+				cfgMgr_->isConfigureTransition_ = prev_;
+		}
+		ConfigureTransitionGuard(const ConfigureTransitionGuard&)            = delete;
+		ConfigureTransitionGuard& operator=(const ConfigureTransitionGuard&) = delete;
+	  private:
+		ConfigurationManager* cfgMgr_;
+		bool                  prev_;
+	};
+	friend class ConfigureTransitionGuard;
+
 	std::map<std::string /*groupType*/,
 		 std::pair<std::string /*groupName*/,
 		 TableGroupKey>>						getOtherSubsystemActiveTableGroups		(const std::string& otherSubsystemUID, std::string* userDataPathPtr = nullptr, std::string* hostnamePtr = nullptr, std::string* usernamePtr = nullptr);
@@ -315,6 +339,7 @@ class ConfigurationManager
 
 	std::string 										mfSubject_;
   private:
+	bool												isConfigureTransition_ = false;  ///< true only during FSM configure-transition activation; read by table plugins in init()
 	std::string 										username_;  ///< user of the configuration is READONLY_USER unless using ConfigurationManagerRW
 	ConfigurationInterface*        						theInterface_;
 	std::shared_ptr<TableGroupKey> 						theConfigurationTableGroupKey_, theContextTableGroupKey_, theBackboneTableGroupKey_, theIterateTableGroupKey_;

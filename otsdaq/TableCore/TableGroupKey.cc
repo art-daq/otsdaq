@@ -206,8 +206,8 @@ std::string TableGroupKey::getFullGroupString(const std::string&   groupName,
 				           "Group Name must be alpha-numeric: \"" +
 				           groupName + "\"")
 				       << std::endl;
-				__COUT_ERR__ << ss.str();
-				__SS_THROW__;
+				__COUT__ << ss.str();
+				__SS_ONLY_THROW__;
 			}
 		}
 	}
