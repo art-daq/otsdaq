@@ -1316,7 +1316,11 @@ launchOTSWiz() {
 	#cleanup alive files
 	rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive* &>/dev/null 2>&1 #hide output #remove alive file
 
-
+	#clear stale quit sentinels from a previous session so the relaunch verification loop
+	#(see the EXIT_LOOP/KILL_ALL check inside "while [ \"x$OTS_IS_ALIVE\" == \"x\" ]" below)
+	#doesn't bail before the relaunch attempt has had a chance to run
+	echo "0" > $OTSDAQ_STARTOTS_QUIT_FILE
+	echo "0" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
 
 	out #blank line
 	out "${Red}${REV}                                                       ${RstClr}"
