@@ -101,61 +101,43 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 
 	std::stringstream port;
 
+	__COUT__ << "Attempting to bind a socket on IP: " << IPAddress_ << " to the first "
+	         << "available port in range [" << fromPort << ", " << toPort << "]..."
+	         << std::endl;
+
 	for(int p = fromPort; p <= toPort && !socketInitialized; p++)
 	{
 		port.str("");
 		port << p;
-		__COUT__ << "]\tBinding port: " << port.str() << std::endl;
+		__COUTT__ << "]\tBinding port: " << port.str() << std::endl;
 		socketAddress_.sin_port = htons(p);  // short, network byte order
 
 		if((status = getaddrinfo(NULL, port.str().c_str(), &hints, &res)) != 0)
 		{
-			__COUT__ << "]\tGetaddrinfo error status: " << status << std::endl;
+			__COUTT__ << "]\tGetaddrinfo error status: " << status << std::endl;
 			continue;
 		}
 
 		// make a socket:
 		socketNumber_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
-		__COUT__ << "]\tSocket Number: " << socketNumber_
-		         << " for port: " << ntohs(socketAddress_.sin_port) << " initialized."
-		         << std::endl;
+		__COUTT__ << "]\tSocket Number: " << socketNumber_
+		          << " for port: " << ntohs(socketAddress_.sin_port) << " initialized."
+		          << std::endl;
 		// bind it to the port we passed in to getaddrinfo():
 		if(bind(socketNumber_, res->ai_addr, res->ai_addrlen) == -1)
 		{
-			__COUT__ << "Error********Error********Error********Error********Error******"
-			            "**Error"
-			         << std::endl;
-			__COUT__ << "FAILED BIND FOR PORT: " << port.str() << " ON IP: " << IPAddress_
-			         << std::endl;
-			__COUT__ << "Error********Error********Error********Error********Error******"
-			            "**Error"
-			         << std::endl;
+			__COUTT__ << "]\tPort " << port.str() << " unavailable, trying next port..."
+			          << std::endl;
 			socketNumber_ = 0;
 		}
 		else
 		{
-			__COUT__ << ":):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):"
-			            "):):):)"
-			         << std::endl;
-			__COUT__ << ":):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):"
-			            "):):):)"
-			         << std::endl;
-			__COUT__ << "SOCKET ON PORT: " << port.str() << " ON IP: " << IPAddress_
-			         << " INITIALIZED OK!" << std::endl;
-			__COUT__ << ":):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):"
-			            "):):):)"
-			         << std::endl;
-			__COUT__ << ":):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):):"
-			            "):):):)"
-			         << std::endl;
 			char yes = '1';
 			setsockopt(socketNumber_, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 			socketInitialized = true;
-			__COUT__ << "]\tSocket Number: " << socketNumber_
-			         << " for port: " << ntohs(socketAddress_.sin_port)
-			         << " htons: " << socketAddress_.sin_port << " initialized."
-			         << std::endl;
+			__COUT__ << "Socket on port: " << port.str() << " ON IP: " << IPAddress_
+			         << " INITIALIZED OK! (socket #" << socketNumber_ << ")" << std::endl;
 		}
 
 		freeaddrinfo(res);  // free the linked-list
