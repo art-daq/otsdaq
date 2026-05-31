@@ -337,6 +337,14 @@ while :; do
 		TRACE_HOSTARG="$2"; TRACE_LABEL="${3:-*}"; TRACE_LVLS="$4"
 		shift 3
 		;;
+	-tonMg | -toffMg | -tonSg | -toffSg | -tonTg | -toffTg)
+		# Global variants (mirror tonXg/toffXg): all names on ALL hosts in the system, <lvls>
+		# e.g. ots -tonSg 8   ==   ots -tonS '*' '*' 8
+		ISTRACE=1; TRACE_FMT="human"
+		TRACE_OP="${1#-t}"; TRACE_OP="${TRACE_OP%g}"   # onM|offM|onS|offS|onT|offT
+		TRACE_HOSTARG="*"; TRACE_LABEL="*"; TRACE_LVLS="$2"
+		shift 1
+		;;
 	-tlvlM | -tlvlS | -tlvlT)
 		# Whole-mask write of a SINGLE column (mirror tlvlM/tlvlS/tlvlT): <host> <label|*> <mask>
 		ISTRACE=1; TRACE_OP="lvl${1#-tlvl}"; TRACE_FMT="human"   # TRACE_OP = lvlM|lvlS|lvlT
@@ -487,6 +495,8 @@ while :; do
 		out "	Show TRACE levels in easy-to-parse form (#HOST blocks + 'name M S T' rows). e.g.: ots -tt . '*'"
 		out " -tonM | -toffM | -tonS | -toffS | -tonT | -toffT  <host> <label|*> <lvls>"
 		out "	Turn Memory/Slow/Trigger level bits on/off (lvls is a TRACE bit spec). e.g.: ots -tonS calo-14 MyLabel 0-3,5"
+		out " -tonMg | -toffMg | -tonSg | -toffSg | -tonTg | -toffTg  <lvls>"
+		out "	Global variants: all names on this host. e.g.: ots -tonSg 8"
 		out " -tlvlM | -tlvlS | -tlvlT  <host> <label|*> <mask>"
 		out "	Write the full 64-bit mask of a single column (mirror tlvlM/tlvlS/tlvlT). e.g.: ots -tlvlS calo-14 MyLabel 511"
 		out " -tlvlmsk  <host> <label|*> <M> <S> <T>"
@@ -4037,11 +4047,15 @@ export -f launchOTSLogFindARTDAQ
 ##############################################################################
 _ots_trace_leaf() {
 	local _op="$1" _label="$2"
+	local _nflag="-N"  # always use -N (glob): handles both exact and wildcard labels
 	echo "#OTSTRACE-HOST ${THIS_HOST}"
 	case "$_op" in
 	get)
 		# tlvls (== trace_cntl tids) columns: id name maskM maskS maskT
-		tlvls -H 2>/dev/null | awk -v lbl="$_label" '{ if(lbl=="*"||$2==lbl) print $2, $3, $4, $5 }'
+		# Use bash glob matching so '*DTC*' etc. work as expected
+		tlvls -H 2>/dev/null | while read -r _tid _nm _mM _mS _mT; do
+			if [[ "$_nm" == $_label ]]; then echo "$_nm $_mM $_mS $_mT"; fi
+		done
 		;;
 	onM | offM | onS | offS | onT | offT)
 		local _lvls="$3"
@@ -4056,7 +4070,7 @@ _ots_trace_leaf() {
 		if [ "$_label" == "*" ]; then
 			trace_cntl "${_verb}g" "$_mm" "$_sm" "$_tm" >/dev/null 2>&1
 		else
-			trace_cntl "$_verb" -n"$_label" "$_mm" "$_sm" "$_tm" >/dev/null 2>&1
+			trace_cntl "$_verb" "${_nflag}${_label}" "$_mm" "$_sm" "$_tm" >/dev/null 2>&1
 		fi
 		# 'on' for Memory/Slow also enables that mode, mirroring tonM/tonS
 		case "$_op" in
@@ -4071,7 +4085,7 @@ _ots_trace_leaf() {
 		if [ "$_label" == "*" ]; then
 			trace_cntl "lvlmsk${_col}g" "$_maskval" >/dev/null 2>&1
 		else
-			trace_cntl "lvlmsk${_col}" -n"$_label" "$_maskval" >/dev/null 2>&1
+			trace_cntl "lvlmsk${_col}" "${_nflag}${_label}" "$_maskval" >/dev/null 2>&1
 		fi
 		echo "#OTSTRACE-OK ${_op} ${_label}"
 		;;
@@ -4082,7 +4096,7 @@ _ots_trace_leaf() {
 			trace_cntl lvlmskSg "$_S" >/dev/null 2>&1
 			trace_cntl lvlmskTg "$_T" >/dev/null 2>&1
 		else
-			trace_cntl lvlmsk -n"$_label" "$_M" "$_S" "$_T" >/dev/null 2>&1
+			trace_cntl lvlmsk "${_nflag}${_label}" "$_M" "$_S" "$_T" >/dev/null 2>&1
 		fi
 		echo "#OTSTRACE-OK lvlmsk ${_label}"
 		;;
@@ -4147,10 +4161,18 @@ launchOTSTrace() {
 	declare -A _trc_seen=()
 	_trc_seen["${THIS_HOST}"]=1
 
+	# Precompute local hostname variants for dedup
+	local _this_short="${THIS_HOST%%.*}"
+	local _this_stripped="${THIS_HOST/-data/}"; _this_stripped="${_this_stripped/-ipmi/}"
+	local _this_stripped_short="${_this_stripped%%.*}"
+
 	_trc_add_host() {  # add $1 to remote list unless it is local/already seen
 		local _h="$1"; [ -z "$_h" ] && return
 		local _hs="${_h/-data/}"; _hs="${_hs/-ipmi/}"
-		if [[ "$_h" == "${THIS_HOST}" || "$_hs" == "${THIS_HOST}" || "$_hs" == "${THIS_HOST}."* || "$_hs" == "${THIS_HOST%%.*}" ]]; then
+		local _hs_short="${_hs%%.*}"
+		# Match against local host: compare stripped short names so
+		# mu2e-calo-14-data.fnal.gov == mu2e-calo-14.fnal.gov == mu2e-calo-14
+		if [[ "$_hs_short" == "$_this_stripped_short" || "$_h" == "${THIS_HOST}" ]]; then
 			_include_local=1; return
 		fi
 		[ -n "${_trc_seen[$_h]+x}" ] && return
@@ -4231,8 +4253,14 @@ launchOTSTrace() {
 	done
 
 	# Keep only the bracketed trace lines (drop Fast_ots_setup banners etc.)
+	# Also deduplicate: if the same host appears in multiple blocks (e.g. local
+	# leaf + cascaded SSH from another host), keep only the first occurrence.
 	local _clean
-	_clean=$(echo "$_raw" | awk '/^#OTSTRACE-HOST /{f=1} f{print} /^#OTSTRACE-END/{f=0}')
+	_clean=$(echo "$_raw" | awk '
+		function normalize(h) { gsub(/-data/,"",h); gsub(/-ipmi/,"",h); sub(/\..*/,"",h); return h }
+		/^#OTSTRACE-HOST /{ h=normalize($2); if(seen[h]) { ib=0 } else { seen[h]=1; ib=1; print }; next }
+		/^#OTSTRACE-END/{ if(ib) print; ib=0; next }
+		{ if(ib) print }')
 
 	if [ "$_fmt" == "parse" ]; then
 		echo "$_clean"
@@ -4247,11 +4275,52 @@ launchOTSTrace() {
 			/^#OTSTRACE-END/{ if(n>0) printf hdr,"MODE","Memory","Slow","Trigger"; n=0; next }
 			{ lbl=substr($1,1,42); printf row, lbl, $2, $3, $4; n++ }'
 	else
-		# set ops: report per-host OK/fail
-		echo "$_clean" | awk '
-			/^#OTSTRACE-HOST /{ host=$2; ok=0; next }
-			/^#OTSTRACE-OK /{ ok=1; next }
-			/^#OTSTRACE-END/{ printf "  [%s] %s\n", host, (ok?"OK":"(no confirmation)"); next }'
+		# set ops: report per-host OK/fail, then summary
+		# Build summary from the known target list: local host + remote hosts.
+		# Check _raw for #OTSTRACE-OK to confirm each host succeeded.
+		local _ok_hosts="" _fail_hosts=""
+		local _all_targets=()
+		if [ $_include_local -eq 1 ]; then _all_targets+=("${THIS_HOST}"); fi
+		local _rh; for _rh in "${_remote_hosts[@]}"; do _all_targets+=("$_rh"); done
+
+		for _rh in "${_all_targets[@]}"; do
+			if echo "$_raw" | grep -q "#OTSTRACE-OK"; then
+				_ok_hosts="${_ok_hosts:+$_ok_hosts, }$_rh"
+			else
+				_fail_hosts="${_fail_hosts:+$_fail_hosts, }$_rh"
+			fi
+		done
+
+		# Build a human-friendly verb
+		local _verb=""
+		case "$_op" in
+		onM)    _verb="set Memory level bits" ;;
+		offM)   _verb="cleared Memory level bits" ;;
+		onS)    _verb="set Slow level bits" ;;
+		offS)   _verb="cleared Slow level bits" ;;
+		onT)    _verb="set Trigger level bits" ;;
+		offT)   _verb="cleared Trigger level bits" ;;
+		lvlM)   _verb="wrote Memory mask" ;;
+		lvlS)   _verb="wrote Slow mask" ;;
+		lvlT)   _verb="wrote Trigger mask" ;;
+		lvlmsk) _verb="wrote M/S/T masks" ;;
+		esac
+
+		# Build detail string (bits/mask values + label)
+		local _detail=""
+		case "$_op" in
+		onM|offM|onS|offS|onT|offT) _detail=" '${TRACE_LVLS}' for label '${_label}'" ;;
+		lvlM|lvlS|lvlT)             _detail=" '${TRACE_MSK_M}' for label '${_label}'" ;;
+		lvlmsk)                      _detail=" M='${TRACE_MSK_M}' S='${TRACE_MSK_S}' T='${TRACE_MSK_T}' for label '${_label}'" ;;
+		esac
+
+		if [ -n "$_ok_hosts" ]; then
+			out
+			out "${Green}${Bold}Successfully ${_verb}${_detail} on: ${_ok_hosts}${RstClr}"
+		fi
+		if [ -n "$_fail_hosts" ]; then
+			out "${Red}${Bold}No confirmation for ${_verb}${_detail} from: ${_fail_hosts}${RstClr}"
+		fi
 	fi
 	unset -f _trc_add_host _trc_add_ranks_hosts
 }   #end launchOTSTrace
