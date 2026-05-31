@@ -1734,3 +1734,28 @@ void FEVInterface::runMacro(
 	}  // end operations loop
 
 }  // end runMacro
+
+//==============================================================================
+void FEVInterface::setFEMacroPercentDone(unsigned int percentDone)
+{
+	std::lock_guard<std::mutex> lock(feMacroPercentDoneMutex_);
+	feMacroPercentDoneMap_[std::this_thread::get_id()] =
+	    static_cast<int>(percentDone > 100 ? 100 : percentDone);
+}  // end setFEMacroPercentDone()
+
+//==============================================================================
+int FEVInterface::getFEMacroPercentDone(std::thread::id threadID) const
+{
+	std::lock_guard<std::mutex> lock(feMacroPercentDoneMutex_);
+	auto it = feMacroPercentDoneMap_.find(threadID);
+	if(it == feMacroPercentDoneMap_.end())
+		return -1;
+	return it->second;
+}  // end getFEMacroPercentDone()
+
+//==============================================================================
+void FEVInterface::clearFEMacroPercentDone(std::thread::id threadID)
+{
+	std::lock_guard<std::mutex> lock(feMacroPercentDoneMutex_);
+	feMacroPercentDoneMap_.erase(threadID);
+}  // end clearFEMacroPercentDone()

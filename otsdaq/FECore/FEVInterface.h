@@ -18,7 +18,10 @@
 
 #include <array>
 #include <iostream>
+#include <map>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "otsdaq/Macros/CoutMacros.h"
@@ -332,6 +335,14 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	template<class T>
 	static std::string& 			emplaceFEMacroArgumentValue	(frontEndMacroArgs_t args, const std::string&  argName, const T& value);
 
+	/// FE Macro progress reporting (for async macros via FESupervisor)
+	void 							setFEMacroPercentDone		(unsigned int percentDone);
+	int  							getFEMacroPercentDone		(std::thread::id threadID) const;
+	void 							clearFEMacroPercentDone		(std::thread::id threadID);
+
+  protected:
+	mutable std::mutex                     feMacroPercentDoneMutex_;
+	std::map<std::thread::id, int>         feMacroPercentDoneMap_;
 
 };  // end FEVInterface class
 
