@@ -1085,6 +1085,39 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 				             << "' for interfaceID '" << interfaceID
 				             << "' with taskID=" << task->taskID << __E__;
 
+				// Wait briefly to see if macro finishes quickly (avoids unnecessary polling)
+				{
+					size_t sleepUs = 100;
+					for(int i = 0; i < 10; ++i)
+					{
+						usleep(sleepUs);
+						{
+							std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+							if(task->done)
+							{
+								if(!task->error.empty())
+								{
+									std::string errorCopy = task->error;
+									for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
+										if(asyncMacroTasks_[j]->taskID == task->taskID)
+										{ asyncMacroTasks_.erase(asyncMacroTasks_.begin() + j); break; }
+									__SUP_SS__ << errorCopy;
+									__SUP_SS_THROW__;
+								}
+								retParameters.addParameter("outputArgs", task->outputArgs);
+								for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
+									if(asyncMacroTasks_[j]->taskID == task->taskID)
+									{ asyncMacroTasks_.erase(asyncMacroTasks_.begin() + j); break; }
+								return SOAPUtilities::makeSOAPMessageReference(
+								    supervisorClassNoNamespace_ + "Response", retParameters);
+							}
+						}
+						sleepUs *= 5;
+						if(sleepUs > 1000 * 1000)
+							sleepUs = 1000 * 1000;
+					}
+				}
+
 				retParameters.addParameter("NotDoneTaskID",
 				                           std::to_string(task->taskID));
 				return SOAPUtilities::makeSOAPMessageReference(
@@ -1240,6 +1273,39 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 				__SUP_COUT__ << "Launched async MacroMaker Macro '" << macroName
 				             << "' for interfaceID '" << interfaceID
 				             << "' with taskID=" << task->taskID << __E__;
+
+				// Wait briefly to see if macro finishes quickly (avoids unnecessary polling)
+				{
+					size_t sleepUs = 100;
+					for(int i = 0; i < 10; ++i)
+					{
+						usleep(sleepUs);
+						{
+							std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+							if(task->done)
+							{
+								if(!task->error.empty())
+								{
+									std::string errorCopy = task->error;
+									for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
+										if(asyncMacroTasks_[j]->taskID == task->taskID)
+										{ asyncMacroTasks_.erase(asyncMacroTasks_.begin() + j); break; }
+									__SUP_SS__ << errorCopy;
+									__SUP_SS_THROW__;
+								}
+								retParameters.addParameter("outputArgs", task->outputArgs);
+								for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
+									if(asyncMacroTasks_[j]->taskID == task->taskID)
+									{ asyncMacroTasks_.erase(asyncMacroTasks_.begin() + j); break; }
+								return SOAPUtilities::makeSOAPMessageReference(
+								    supervisorClassNoNamespace_ + "Response", retParameters);
+							}
+						}
+						sleepUs *= 5;
+						if(sleepUs > 1000 * 1000)
+							sleepUs = 1000 * 1000;
+					}
+				}
 
 				retParameters.addParameter("NotDoneTaskID",
 				                           std::to_string(task->taskID));
