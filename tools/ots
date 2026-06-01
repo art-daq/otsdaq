@@ -153,6 +153,7 @@ BACKUPLOGS=0
 RELAUNCHCHECK=1
 REMOTELAUNCH=1
 ISREMOTE=0
+ISACTIONONLY=0
 MACROMAKER_MODE=0
 VALGRIND=0
 export MACROMAKER_MODE #this environment variable is used by source code
@@ -343,6 +344,13 @@ while :; do
 		fi
 		SOFTKILLALL=1
 		;;
+	--action | --action-handler | -a)
+		# Restart only the action handler loop (do not touch running xdaq processes).
+		# Will first kill any existing action handler on this host via EXIT_LOOP sentinels.
+		info "ACTION-HANDLER-ONLY MODE!"
+		ISACTIONONLY=1
+		REMOTELAUNCH=0   # force local-only: do not broadcast EXIT_LOOP globally
+		;;
 	--hardkill | -K)
 		info "KILL ALL OTS!"
 		read -p "Are you sure (you want to kill all ots processes on this node)? [Y/N] " answer
@@ -439,6 +447,10 @@ while :; do
 		out "To ${Bold}disable startup checking${RstClr} and relaunching:"
 		out " --relaunch  -r"
 		out "	e.g.: ots -r     or    ots --relaunch"
+		out
+		out "To restart ${Bold}only the action handler${RstClr} (leave xdaq running):"
+		out " --action  --action-handler  -a"
+		out "	e.g.: ots -a"
 		out
 		out "To ${Bold}disable remote startup${RstClr}:"
 		out " --startremote  -s"
@@ -1053,6 +1065,10 @@ launchOTSMacromaker() {
 	#cleanup alive files
 	rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive* &>/dev/null 2>&1 #hide output #remove alive file
 
+	#clear stale quit sentinels from a previous session so the relaunch verification loop
+	#(see "Exit of (stale) ots..." at ~line 1231) doesn't bail before displayLogTail runs
+	echo "0" > $OTSDAQ_STARTOTS_QUIT_FILE
+	echo "0" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
 
 	out #blank line
 	out "${Blue}${REV}                                                       ${RstClr}"
@@ -1211,6 +1227,19 @@ launchOTSMacromaker() {
 
 		# Alert user to the problem and keep trying
 		while [ "x$OTS_IS_ALIVE" == "x" ]; do
+
+			#check if exit requested via the two quit files (to avoid endless relaunch looping)
+			OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
+			OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
+			if [[ "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
+				out "Exit of (stale) ots... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+				killprocs
+				exit
+			elif [[ "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+				warning "Exiting ots Macro Maker launch verification loop on EXIT_LOOP sentinel... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+				exit
+			fi
+
 			warning "Could not verify successful ots Macro Maker mode context launch (check log for details)..."
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
@@ -1287,7 +1316,11 @@ launchOTSWiz() {
 	#cleanup alive files
 	rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive* &>/dev/null 2>&1 #hide output #remove alive file
 
-
+	#clear stale quit sentinels from a previous session so the relaunch verification loop
+	#(see the EXIT_LOOP/KILL_ALL check inside "while [ \"x$OTS_IS_ALIVE\" == \"x\" ]" below)
+	#doesn't bail before the relaunch attempt has had a chance to run
+	echo "0" > $OTSDAQ_STARTOTS_QUIT_FILE
+	echo "0" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
 
 	out #blank line
 	out "${Red}${REV}                                                       ${RstClr}"
@@ -1483,6 +1516,19 @@ launchOTSWiz() {
 		#out "OTS_IS_ALIVE=${OTS_IS_ALIVE}"
 
 		while [ "x$OTS_IS_ALIVE" == "x" ]; do
+
+			#check if exit requested via the two quit files (to avoid endless relaunch looping)
+			OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
+			OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
+			if [[ "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
+				out "Exit of (stale) ots... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+				killprocs
+				exit
+			elif [[ "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+				warning "Exiting ots wiz launch verification loop on EXIT_LOOP sentinel... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+				exit
+			fi
+
 			warning "Could not verify successful ots wiz context launch (check log for details)..."
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
@@ -2036,6 +2082,10 @@ launchOTS() {
 										fi
 
 										exit
+									elif [[ "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+										#exit verification loop on EXIT_LOOP sentinel (e.g. from ots -a), leave xdaq processes running
+										warning "Exiting ots gateway launch verification loop on EXIT_LOOP sentinel... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+										exit
 									fi
 
 								done
@@ -2195,6 +2245,10 @@ launchOTS() {
 					fi
 
 					exit
+				elif [[ "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+					#exit verification loop on EXIT_LOOP sentinel (e.g. from ots -a), leave xdaq processes running
+					warning "Exiting ots non-gateway launch verification loop on EXIT_LOOP sentinel... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+					exit
 				fi
 
 				# out "test of exit ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
@@ -2265,6 +2319,10 @@ launchOTS() {
 							fi
 
 							exit
+						elif [[ "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+							#exit verification loop on EXIT_LOOP sentinel (e.g. from ots -a), leave xdaq processes running
+							warning "Exiting ots non-gateway launch verification loop on EXIT_LOOP sentinel... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+							exit
 						fi
 
 
@@ -2299,6 +2357,10 @@ launchOTS() {
 						out "Done killing (stale) processes"
 					fi
 
+					exit
+				elif [[ "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+					#exit verification loop on EXIT_LOOP sentinel (e.g. from ots -a), leave xdaq processes running
+					warning "Exiting ots non-gateway launch verification loop on EXIT_LOOP sentinel... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 					exit
 				fi
 			done
@@ -4182,7 +4244,7 @@ otsActionHandler() {
 		trap "handleExitSignal $sig" $sig 2>/dev/null
 	done
 
-	if [[ ($ISCONFIG == 1) || ($ISMACROMAKER == 1) || ("${THIS_HOST}" == "${gatewayHostname}") ]]; then
+	if [[ ($ISCONFIG == 1) || ($ISMACROMAKER == 1) || ($ISACTIONONLY == 1) || ("${THIS_HOST}" == "${gatewayHostname}") ]]; then
 		out "The script, on ${THIS_HOST}, is the gateway ots script, so it will drive the exit of ots scripts running on other hosts."
 
 		if [ $REMOTELAUNCH == 1 ]; then #only kill other ots scripts if remote launch was enabled
@@ -4215,6 +4277,9 @@ otsActionHandler() {
 		out "$psline"
 	done < <(ps aux | grep "${bpid}")
 	out
+	info "action handler command file:        ${OTSDAQ_STARTOTS_ACTION_FILE}"
+	info "action handler subsystem exit file: ${OTSDAQ_STARTOTS_QUIT_FILE}"
+	info "action handler local exit file:     ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE}"
 
 	#listen for file commands
 	while true; do
@@ -4360,11 +4425,12 @@ otsActionHandler() {
 
 			info "self-pid=${BASHPID}: Launching remote ots instance $OTSDAQ_STARTOTS_ACTION"
 
-			# Set Internal Field Separator to ";"
-			IFS=';'
-
-			# Read the string into an array
-			read -ra params <<< "$OTSDAQ_STARTOTS_ACTION"
+			# Read the string into an array, scoping IFS=';' to just this read so
+			# the action handler's global IFS stays as default whitespace --
+			# otherwise later launchOTS/launchOTSWiz calls fail to word-split
+			# $XDAQ_ARGS on whitespace (xdaq then reports
+			# "Ambiguous globbing for profile name ... -c ...").
+			IFS=';' read -ra params <<< "$OTSDAQ_STARTOTS_ACTION"
 			# Print each parameter
 			cnt=0
 			for param in "${params[@]}"; do
@@ -4411,11 +4477,10 @@ otsActionHandler() {
 
 			info "self-pid=${BASHPID}: Rolling over log files $OTSDAQ_STARTOTS_ACTION"
 
-			# Set Internal Field Separator to ";"
-			IFS=';'
-
-			# Read the string into an array
-			read -ra params <<< "$OTSDAQ_STARTOTS_ACTION"
+			# Read the string into an array, scoping IFS=';' to just this read so
+			# the action handler's global IFS stays as default whitespace --
+			# see LAUNCH_INSTANCE comment above for the failure mode if we don't.
+			IFS=';' read -ra params <<< "$OTSDAQ_STARTOTS_ACTION"
 			# Print each parameter
 			cnt=0
 			log_label=""
@@ -5219,31 +5284,51 @@ if [ $ISFINDLOGFILES == 1 ]; then
 	exit
 fi
 
-#exit any old action loops (do not exit for just displaying log files, above)
-echo "EXIT_LOOP" > $OTSDAQ_STARTOTS_ACTION_FILE
+if [ $ISACTIONONLY == 1 ]; then
+	out
+	out "${Purple}${REV} ***************************************************** ${RstClr}"
+	out "${Purple}${REV} *****  Restarting action handler ONLY (-a mode)  **** ${RstClr}"
+	out "${Purple}${REV} ***************************************************** ${RstClr}${Reset}"
+	out "Sending EXIT_LOOP sentinels to terminate any existing action handler on ${THIS_HOST}..."
 
-if [ $ISREMOTE == 0 ]; then
-	out #blank line
-fi
+	# The two local Exit command files (do NOT touch the global QUIT_FILE):
+	echo "EXIT_LOOP" > $OTSDAQ_STARTOTS_ACTION_FILE
+	echo "EXIT_LOOP ${THIS_HOST}" > $OTSDAQ_STARTOTS_LOCAL_QUIT_FILE
 
-if [ $ISMACROMAKER == 1 ]; then
-	launchOTSMacromaker $1 $2 $3
-	# exit #do not exit, monitor with action handler
-elif [ $ISCONFIG == 1 ]; then
-	launchOTSWiz
+	# Give the old handler up to ~5 s to notice and exit (its loop polls once
+	# per second). otsActionHandler's gateway-path startup will clear these
+	# files again before entering the listen loop.
+	sleep 5
+
+	out "Starting new action handler..."
+	# fall through to the otsActionHandler launch below
 else
-	launchOTS  #only launch gateway once.. on shutdown and startup others can relaunch
-fi
+	#exit any old action loops (do not exit for just displaying log files, above)
+	echo "EXIT_LOOP" > $OTSDAQ_STARTOTS_ACTION_FILE
 
-if [ $ISREMOTE == 0 ]; then
-	out #blank line
-fi
+	if [ $ISREMOTE == 0 ]; then
+		out #blank line
+	fi
 
-sleep 2 #attempt to avoid false starts by xdaq
+	if [ $ISMACROMAKER == 1 ]; then
+		launchOTSMacromaker $1 $2 $3
+		# exit #do not exit, monitor with action handler
+	elif [ $ISCONFIG == 1 ]; then
+		launchOTSWiz
+	else
+		launchOTS  #only launch gateway once.. on shutdown and startup others can relaunch
+	fi
 
-if [[ ${#remoteLaunchHosts[@]} > 0 ]]; then #part 1 delay, so user has better chance of seeing UpdateOTS.sh warnings before remote hosts start
-	out "Remote launch hosts were requested, waiting for them to start.. (CTRL+C to abort)"
-	sleep 10 #give time for remote hosts to start (and for user to exit with CTRL+C if needed)
+	if [ $ISREMOTE == 0 ]; then
+		out #blank line
+	fi
+
+	sleep 2 #attempt to avoid false starts by xdaq
+
+	if [[ ${#remoteLaunchHosts[@]} > 0 ]]; then #part 1 delay, so user has better chance of seeing UpdateOTS.sh warnings before remote hosts start
+		out "Remote launch hosts were requested, waiting for them to start.. (CTRL+C to abort)"
+		sleep 10 #give time for remote hosts to start (and for user to exit with CTRL+C if needed)
+	fi
 fi
 
 
@@ -5256,30 +5341,32 @@ out " e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
 
-#launch chrome here if enabled
-if [ $CHROME == 1 ]; then
-	sleep 3 #give time for server to be alive
-	google-chrome $MAIN_URL &
-fi
+if [ $ISACTIONONLY == 0 ]; then
+	#launch chrome here if enabled
+	if [ $CHROME == 1 ]; then
+		sleep 3 #give time for server to be alive
+		google-chrome $MAIN_URL &
+	fi
 
-#launch firefox here if enabled
-if [ $FIREFOX == 1 ]; then
-	sleep 3 #give time for server to be alive
-	firefox $MAIN_URL &
-fi
+	#launch firefox here if enabled
+	if [ $FIREFOX == 1 ]; then
+		sleep 3 #give time for server to be alive
+		firefox $MAIN_URL &
+	fi
 
-#only report warning if not remote launch and enabled
-if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then
-	out "Will report a warning if any uncommitted code found..."
-	echo
-	UpdateOTS.sh --warn 2>&1 >/dev/null
-	echo
-fi
+	#only report warning if not remote launch and enabled
+	if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then
+		out "Will report a warning if any uncommitted code found..."
+		echo
+		UpdateOTS.sh --warn 2>&1 >/dev/null
+		echo
+	fi
 
-if [[ ${#remoteLaunchHosts[@]} > 0 ]]; then
-	out "Remote launch hosts were requested, waiting for them to start...\n\
+	if [[ ${#remoteLaunchHosts[@]} > 0 ]]; then
+		out "Remote launch hosts were requested, waiting for them to start...\n\
 (CTRL+C to abort now; CTRL+Z;bg to return to terminal; ots -k to kill, not -K which will kill all users on node)"
-	sleep 20 #give time for remote hosts to start (and for user to exit with CTRL+C if needed)
+		sleep 20 #give time for remote hosts to start (and for user to exit with CTRL+C if needed)
+	fi
 fi
 
 sleep 1 #so that the terminal comes back after the printouts are done ( in quiet mode )
