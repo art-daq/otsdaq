@@ -314,7 +314,7 @@ while :; do
 		# Internal flag: skip the "are you sure?" prompt (used by nested calls)
 		DELETE_LOGS_NOPROMPT=1
 		;;
-	--trace | -t)
+	--trace | -t | -tlvls)
 		# Show TRACE levels (== tlvls) for [host] [label]. Human-readable; fans out.
 		# <host> = CSV list | '*' (every ots-system node) | '.' (this host only, leaf).
 		ISTRACE=1; TRACE_OP="get"; TRACE_FMT="human"; TRACE_HOSTARG="*"; TRACE_LABEL="*"
@@ -354,6 +354,25 @@ while :; do
 	-tlvlmsk)
 		# Whole-mask write of all three columns at once: <host> <label|*> <M> <S> <T>
 		ISTRACE=1; TRACE_OP="lvlmsk"; TRACE_FMT="human"
+		TRACE_HOSTARG="$2"; TRACE_LABEL="${3:-*}"
+		TRACE_MSK_M="$4"; TRACE_MSK_S="$5"; TRACE_MSK_T="$6"
+		shift 5
+		;;
+	-ttonM | -ttoffM | -ttonS | -ttoffS | -ttonT | -ttoffT)
+		# Parse-format set (machine): same as -tonX but emits raw #OTSTRACE blocks
+		ISTRACE=1; TRACE_OP="${1#-tt}"; TRACE_FMT="parse"
+		TRACE_HOSTARG="$2"; TRACE_LABEL="${3:-*}"; TRACE_LVLS="$4"
+		shift 3
+		;;
+	-ttlvlM | -ttlvlS | -ttlvlT)
+		# Parse-format single-column mask write
+		ISTRACE=1; TRACE_OP="lvl${1#-ttlvl}"; TRACE_FMT="parse"
+		TRACE_HOSTARG="$2"; TRACE_LABEL="${3:-*}"; TRACE_MSK_M="$4"
+		shift 3
+		;;
+	-ttlvlmsk)
+		# Parse-format whole-mask write
+		ISTRACE=1; TRACE_OP="lvlmsk"; TRACE_FMT="parse"
 		TRACE_HOSTARG="$2"; TRACE_LABEL="${3:-*}"
 		TRACE_MSK_M="$4"; TRACE_MSK_S="$5"; TRACE_MSK_T="$6"
 		shift 5
@@ -4048,14 +4067,24 @@ export -f launchOTSLogFindARTDAQ
 _ots_trace_leaf() {
 	local _op="$1" _label="$2"
 	local _nflag="-N"  # always use -N (glob): handles both exact and wildcard labels
+	# Helper: dump all levels (used by get and as readback after set)
+	_ots_dump_levels() {
+		tlvls -H 2>/dev/null | while read -r _tid _nm _mM _mS _mT; do
+			echo "$_nm $_mM $_mS $_mT"
+		done
+	}
+
 	echo "#OTSTRACE-HOST ${THIS_HOST}"
 	case "$_op" in
 	get)
-		# tlvls (== trace_cntl tids) columns: id name maskM maskS maskT
 		# Use bash glob matching so '*DTC*' etc. work as expected
-		tlvls -H 2>/dev/null | while read -r _tid _nm _mM _mS _mT; do
-			if [[ "$_nm" == $_label ]]; then echo "$_nm $_mM $_mS $_mT"; fi
-		done
+		if [ "$_label" == "*" ]; then
+			_ots_dump_levels
+		else
+			_ots_dump_levels | while read -r _nm _mM _mS _mT; do
+				if [[ "$_nm" == $_label ]]; then echo "$_nm $_mM $_mS $_mT"; fi
+			done
+		fi
 		;;
 	onM | offM | onS | offS | onT | offT)
 		local _lvls="$3"
@@ -4077,6 +4106,7 @@ _ots_trace_leaf() {
 		onM) trace_cntl modeM 1 >/dev/null 2>&1 ;;
 		onS) trace_cntl modeS 1 >/dev/null 2>&1 ;;
 		esac
+		_ots_dump_levels
 		echo "#OTSTRACE-OK ${_op} ${_label}"
 		;;
 	lvlM | lvlS | lvlT)
@@ -4087,6 +4117,7 @@ _ots_trace_leaf() {
 		else
 			trace_cntl "lvlmsk${_col}" "${_nflag}${_label}" "$_maskval" >/dev/null 2>&1
 		fi
+		_ots_dump_levels
 		echo "#OTSTRACE-OK ${_op} ${_label}"
 		;;
 	lvlmsk)
@@ -4098,10 +4129,12 @@ _ots_trace_leaf() {
 		else
 			trace_cntl lvlmsk "${_nflag}${_label}" "$_M" "$_S" "$_T" >/dev/null 2>&1
 		fi
+		_ots_dump_levels
 		echo "#OTSTRACE-OK lvlmsk ${_label}"
 		;;
 	esac
 	echo "#OTSTRACE-END"
+	unset -f _ots_dump_levels
 }   #end _ots_trace_leaf
 export -f _ots_trace_leaf
 
@@ -4267,13 +4300,76 @@ launchOTSTrace() {
 		return 0
 	fi
 
-	# Human-readable rendering (single-pass; truncate labels > 42 chars)
+	# Human-readable rendering (truncate labels > 42 chars, prepend shortened hostname)
 	if [ "$_op" == "get" ]; then
-		echo "$_clean" | awk '
-			BEGIN { hdr="      %-38s       %-20s %-20s %-20s\n"; row="  %-42s %-20s %-20s %-20s\n" }
-			/^#OTSTRACE-HOST /{ if(n>0) printf hdr,"MODE","Memory","Slow","Trigger"; n=0; printf "\nTRACE levels [%s]\n", $2; printf hdr,"MODE","Memory","Slow","Trigger"; next }
-			/^#OTSTRACE-END/{ if(n>0) printf hdr,"MODE","Memory","Slow","Trigger"; n=0; next }
-			{ lbl=substr($1,1,42); printf row, lbl, $2, $3, $4; n++ }'
+		# Build shortened hostname map (same algorithm as Console.html):
+		# collect all hostnames, split by -/_/., find common non-numeric segments, strip them.
+		# Single host: strip domain only.
+		local -a _all_full_hosts=()
+		local -A _short_host_map=()
+		while IFS= read -r _hline; do
+			[[ "$_hline" == "#OTSTRACE-HOST "* ]] && _all_full_hosts+=("${_hline#\#OTSTRACE-HOST }")
+		done <<< "$_clean"
+
+		if [ ${#_all_full_hosts[@]} -eq 1 ]; then
+			local _h="${_all_full_hosts[0]}"
+			_short_host_map["$_h"]="${_h%%.*}"
+		elif [ ${#_all_full_hosts[@]} -gt 1 ]; then
+			# Find segments common to ALL hostnames (split by -/_/.)
+			# Use awk for the cross-host comparison
+			local _shortmap
+			_shortmap=$(printf '%s\n' "${_all_full_hosts[@]}" | awk '
+			BEGIN { nh=0 }
+			{
+				nh++; host[nh]=$0
+				n=split($0, segs, /[-_.]/, seps)
+				nseg[nh]=n
+				for(i=1;i<=n;i++) { seg[nh,i]=segs[i]; sep[nh,i]=seps[i] }
+				if(n>maxn) maxn=n
+			}
+			END {
+				# mark common non-numeric segments
+				for(p=1;p<=maxn;p++) {
+					val=seg[1,p]; allsame=1; isnum=(val ~ /^[0-9]+$/)
+					for(h=2;h<=nh;h++) { if(nseg[h]<p || seg[h,p]!=val) { allsame=0; break } }
+					common[p]=(allsame && !isnum) ? 1 : 0
+				}
+				for(h=1;h<=nh;h++) {
+					short=""
+					for(p=1;p<=nseg[h];p++) {
+						if(!common[p]) {
+							if(short!="") short=short sep[h,p-1]
+							short=short seg[h,p]
+						}
+					}
+					if(length(short)<=3) short=host[h]
+					printf "%s\t%s\n", host[h], short
+				}
+			}')
+			while IFS=$'\t' read -r _full _short; do
+				_short_host_map["$_full"]="$_short"
+			done <<< "$_shortmap"
+		fi
+
+		# Now render with the short hostname prefix on each row
+		# Pass the short-host map to awk via a lookup string
+		local _smap_str=""
+		for _h in "${_all_full_hosts[@]}"; do
+			_smap_str+="${_h}	${_short_host_map[$_h]}"$'\n'
+		done
+
+		local _hw=12  # fixed host column width (truncate from LEFT if longer)
+		echo "$_clean" | awk -v smap="$_smap_str" -v hw="$_hw" '
+			BEGIN {
+				hfmt = "  %"hw"s |      %-38s      %-20s %-20s %-20s\n"
+				rfmt = "  %"hw"s | %-42s %-20s %-20s %-20s\n"
+				n=split(smap, lines, "\n")
+				for(i=1;i<=n;i++) { if(split(lines[i],kv,"\t")==2) shrt[kv[1]]=kv[2] }
+			}
+			function rtrunc(s, w) { if(length(s)<=w) return s; return substr(s, length(s)-w+1) }
+			/^#OTSTRACE-HOST /{ if(cnt>0) printf hfmt,rtrunc(sh,hw),"MODE","Memory","Slow","Trigger"; cnt=0; curhost=$2; sh=shrt[curhost]; if(sh=="") sh=curhost; printf "\nTRACE levels [%s]\n", curhost; printf hfmt,rtrunc(sh,hw),"MODE","Memory","Slow","Trigger"; next }
+			/^#OTSTRACE-END/{ if(cnt>0) printf hfmt,rtrunc(sh,hw),"MODE","Memory","Slow","Trigger"; cnt=0; next }
+			{ lbl=substr($1,1,42); printf rfmt, rtrunc(sh,hw), lbl, $2, $3, $4; cnt++ }'
 	else
 		# set ops: report per-host OK/fail, then summary
 		# Build summary from the known target list: local host + remote hosts.

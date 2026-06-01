@@ -1028,7 +1028,7 @@ const std::string& CorePropertySupervisorBase::getTraceLevels()
 			    std::to_string((unsigned int)traceMask.second.T);
 		}  // end label loop
 	}      // end host loop
-	__SUP_COUTV__(traceReturnString_);
+	__SUP_COUTTV__(traceReturnString_);
 	__SUP_COUTV__(traceReturnHostString_);
 	__SUP_COUT__ << "end getTraceLevels()" << __E__;
 	return traceReturnString_;
