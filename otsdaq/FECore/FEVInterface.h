@@ -41,6 +41,7 @@
 
 #define __SET_ARG_IN__(X, Y)  FEVInterface::emplaceFEMacroArgumentValue(argsIn, X, Y)
 #define __SET_ARG_OUT__(X, Y) FEVInterface::setFEMacroArgumentValue(argsOut, X, Y)
+#define __SET_PCT_DONE__(X)   setFEMacroPercentDone(X)  ///< set FE macro percent done (0-100)
 
 // clang-format off
 #define PLOTLY_PLOT "Plotly_Plot"  ///< arg out for built-in auto plotly plotting at client, for example:
