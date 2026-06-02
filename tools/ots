@@ -4372,15 +4372,27 @@ launchOTSTrace() {
 			{ lbl=substr($1,1,42); printf rfmt, rtrunc(sh,hw), lbl, $2, $3, $4; cnt++ }'
 	else
 		# set ops: report per-host OK/fail, then summary
-		# Build summary from the known target list: local host + remote hosts.
-		# Check _raw for #OTSTRACE-OK to confirm each host succeeded.
+		# Parse _raw per-host: each #OTSTRACE-HOST..#OTSTRACE-END block is checked
+		# independently for #OTSTRACE-OK.
 		local _ok_hosts="" _fail_hosts=""
+		local -A _ok_by_host=()
+		while IFS=$'\t' read -r _nh _ok; do
+			[ -z "$_nh" ] && continue
+			_ok_by_host["$_nh"]="$_ok"
+		done < <(echo "$_raw" | awk '
+			function normalize(h) { gsub(/-data/,"",h); gsub(/-ipmi/,"",h); sub(/\..*/,"",h); return h }
+			/^#OTSTRACE-HOST /{ h=normalize($2); ok=0; inb=1; next }
+			/^#OTSTRACE-OK /{ if(inb) ok=1; next }
+			/^#OTSTRACE-END/{ if(inb && h!="") printf "%s\t%d\n", h, ok; inb=0; h=""; next }
+		')
+
 		local _all_targets=()
 		if [ $_include_local -eq 1 ]; then _all_targets+=("${THIS_HOST}"); fi
 		local _rh; for _rh in "${_remote_hosts[@]}"; do _all_targets+=("$_rh"); done
 
 		for _rh in "${_all_targets[@]}"; do
-			if echo "$_raw" | grep -q "#OTSTRACE-OK"; then
+			local _nh="${_rh/-data/}"; _nh="${_nh/-ipmi/}"; _nh="${_nh%%.*}"
+			if [ "${_ok_by_host[$_nh]:-0}" -eq 1 ]; then
 				_ok_hosts="${_ok_hosts:+$_ok_hosts, }$_rh"
 			else
 				_fail_hosts="${_fail_hosts:+$_fail_hosts, }$_rh"
