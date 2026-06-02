@@ -127,12 +127,12 @@ ots::ARTDAQSupervisorTRACEController::getTraceLevels()
 		std::vector<std::string> keysToRemove;
 		for(auto& entry : traceLevelsMap_)
 		{
-			const std::string& key = entry.first;
-			auto dotPos = key.find('.');
+			const std::string& key    = entry.first;
+			auto               dotPos = key.find('.');
 			if(dotPos == std::string::npos)
 				continue;  // no domain — can't be the long form
 			std::string shortKey = key.substr(0, dotPos);
-			auto it = traceLevelsMap_.find(shortKey);
+			auto        it       = traceLevelsMap_.find(shortKey);
 			if(it != traceLevelsMap_.end() && it->first != key)
 			{
 				// Merge: copy labels from FQDN key into short key (short key wins on collision)
