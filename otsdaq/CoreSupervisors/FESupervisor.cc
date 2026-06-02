@@ -960,12 +960,14 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 			requestParameters.addParameter("outputArgs");
 			requestParameters.addParameter("InterfaceID");
 			requestParameters.addParameter("userPermissions");
+			requestParameters.addParameter("AsyncSupported");
 			SOAPUtilities::receive(message, requestParameters);
 			std::string interfaceID     = requestParameters.getValue("InterfaceID");
 			std::string feMacroName     = requestParameters.getValue("feMacroName");
 			std::string inputArgs       = requestParameters.getValue("inputArgs");
 			std::string outputArgs      = requestParameters.getValue("outputArgs");
 			std::string userPermissions = requestParameters.getValue("userPermissions");
+			bool asyncSupported = requestParameters.getValue("AsyncSupported") == "1";
 
 			// check user permission
 			//  userPermissions = "allUsers:1";
@@ -978,91 +980,237 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 
 			// outputArgs must be filled with the proper argument names
 			//	and then the response output values will be returned in the string.
-			try
-			{
-				// check for interfaceID
-				FEVInterface* fe = theFEInterfacesManager_->getFEInterfaceP(interfaceID);
 
-				// have pointer to virtual FEInterface, find Macro structure
-				auto FEMacroIt = fe->getMapOfFEMacroFunctions().find(feMacroName);
-				if(FEMacroIt == fe->getMapOfFEMacroFunctions().end())
+			// check for interfaceID
+			FEVInterface* fe = theFEInterfacesManager_->getFEInterfaceP(interfaceID);
+
+			// have pointer to virtual FEInterface, find Macro structure
+			auto FEMacroIt = fe->getMapOfFEMacroFunctions().find(feMacroName);
+			if(FEMacroIt == fe->getMapOfFEMacroFunctions().end())
+			{
+				__SUP_SS__ << "FE Macro '" << feMacroName << "' of interfaceID '"
+				           << interfaceID << "' was not found!" << __E__;
+				__SUP_SS_THROW__;
+			}
+			const FEVInterface::frontEndMacroStruct_t& FEMacro = FEMacroIt->second;
+
+			__COUTV__(FEMacro.requiredUserPermissions_);
+			std::map<std::string, WebUsers::permissionLevel_t>
+			    FERequiredUserPermissionsMap;
+			CorePropertySupervisorBase::extractPermissionsMapFromString(
+			    FEMacro.requiredUserPermissions_, FERequiredUserPermissionsMap);
+			__COUTV__(StringMacros::mapToString(FERequiredUserPermissionsMap));
+
+			if(!CorePropertySupervisorBase::doPermissionsGrantAccess(
+			       userPermissionLevelsMap, FERequiredUserPermissionsMap))
+			{
+				__SUP_SS__ << "Invalid user permission for FE Macro '" << feMacroName
+				           << "' of interfaceID '" << interfaceID << "'!\n\n"
+				           << "Must have access level of at least '"
+				           << StringMacros::mapToString(FERequiredUserPermissionsMap)
+				           << ".' Users permissions level is only '" << userPermissions
+				           << ".'" << __E__;
+				__SUP_SS_THROW__;
+			};  // skip icon if no access
+
+			if(asyncSupported)
+			{
+				// Async path: launch macro in a thread, return NotDoneTaskID immediately
+				auto task = std::make_shared<AsyncMacroTask>();
 				{
-					__SUP_SS__ << "FE Macro '" << feMacroName << "' of interfaceID '"
-					           << interfaceID << "' was not found!" << __E__;
-					__SUP_SS_THROW__;
+					std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+					task->taskID = ++asyncMacroTaskIDCounter_;
+					if(asyncMacroTaskIDCounter_ == 0)
+						task->taskID = ++asyncMacroTaskIDCounter_;
+					task->interfaceID = interfaceID;
+					task->startTime   = time(0);
+					asyncMacroTasks_.push_back(task);
 				}
-				const FEVInterface::frontEndMacroStruct_t& FEMacro = FEMacroIt->second;
 
-				__COUTV__(FEMacro.requiredUserPermissions_);
-				std::map<std::string, WebUsers::permissionLevel_t>
-				    FERequiredUserPermissionsMap;
-				CorePropertySupervisorBase::extractPermissionsMapFromString(
-				    FEMacro.requiredUserPermissions_, FERequiredUserPermissionsMap);
-				__COUTV__(StringMacros::mapToString(FERequiredUserPermissionsMap));
+				FEVInterface::frontEndMacroStruct_t localFEMacro = FEMacro;
+				std::thread([this,
+				             task,
+				             interfaceID,
+				             localFEMacro,
+				             inputArgs,
+				             outputArgs]() mutable {
+					{
+						std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+						task->threadID = std::this_thread::get_id();
+					}
+					// Clear stale progress in case thread ID was reused
+					try
+					{
+						theFEInterfacesManager_->getFEInterfaceP(interfaceID)
+						    ->clearFEMacroPercentDone(std::this_thread::get_id());
+					}
+					catch(...)
+					{
+					}
 
-				if(!CorePropertySupervisorBase::doPermissionsGrantAccess(
-				       userPermissionLevelsMap, FERequiredUserPermissionsMap))
+					try
+					{
+						theFEInterfacesManager_->runFEMacro(
+						    interfaceID, localFEMacro, inputArgs, outputArgs);
+						try
+						{
+							theFEInterfacesManager_->getFEInterfaceP(interfaceID)
+							    ->clearFEMacroPercentDone(std::this_thread::get_id());
+						}
+						catch(...)
+						{
+						}
+						{
+							std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+							task->outputArgs = outputArgs;
+							task->doneTime   = time(0);
+							task->done       = true;
+						}
+					}
+					catch(const std::exception& e)
+					{
+						try
+						{
+							theFEInterfacesManager_->getFEInterfaceP(interfaceID)
+							    ->clearFEMacroPercentDone(std::this_thread::get_id());
+						}
+						catch(...)
+						{
+						}
+						std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+						task->error =
+						    "In Supervisor with LID=" +
+						    std::to_string(getApplicationDescriptor()->getLocalId()) +
+						    " the FE Macro named '" + interfaceID +
+						    "' failed. Here is the error:\n\n" + e.what();
+						task->doneTime = time(0);
+						task->done     = true;
+					}
+					catch(...)
+					{
+						try
+						{
+							theFEInterfacesManager_->getFEInterfaceP(interfaceID)
+							    ->clearFEMacroPercentDone(std::this_thread::get_id());
+						}
+						catch(...)
+						{
+						}
+						std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+						task->error =
+						    "In Supervisor with LID=" +
+						    std::to_string(getApplicationDescriptor()->getLocalId()) +
+						    " the FE Macro named '" + interfaceID +
+						    "' failed due to an unknown error.";
+						task->doneTime = time(0);
+						task->done     = true;
+					}
+				}).detach();
+
+				__SUP_COUT__ << "Launched async FE Macro '" << feMacroName
+				             << "' for interfaceID '" << interfaceID
+				             << "' with taskID=" << task->taskID << __E__;
+
+				// Wait briefly to see if macro finishes quickly (avoids unnecessary polling)
 				{
-					__SUP_SS__ << "Invalid user permission for FE Macro '" << feMacroName
-					           << "' of interfaceID '" << interfaceID << "'!\n\n"
-					           << "Must have access level of at least '"
-					           << StringMacros::mapToString(FERequiredUserPermissionsMap)
-					           << ".' Users permissions level is only '"
-					           << userPermissions << ".'" << __E__;
-					__SUP_SS_THROW__;
-				};  // skip icon if no access
+					size_t sleepUs = 100;
+					for(int i = 0; i < 10; ++i)
+					{
+						usleep(sleepUs);
+						{
+							std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+							if(task->done)
+							{
+								if(!task->error.empty())
+								{
+									std::string errorCopy = task->error;
+									for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
+										if(asyncMacroTasks_[j]->taskID == task->taskID)
+										{
+											asyncMacroTasks_.erase(
+											    asyncMacroTasks_.begin() + j);
+											break;
+										}
+									__SUP_SS__ << errorCopy;
+									__SUP_SS_THROW__;
+								}
+								retParameters.addParameter("outputArgs",
+								                           task->outputArgs);
+								for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
+									if(asyncMacroTasks_[j]->taskID == task->taskID)
+									{
+										asyncMacroTasks_.erase(asyncMacroTasks_.begin() +
+										                       j);
+										break;
+									}
+								return SOAPUtilities::makeSOAPMessageReference(
+								    supervisorClassNoNamespace_ + "Response",
+								    retParameters);
+							}
+						}
+						sleepUs *= 5;
+						if(sleepUs > 1000 * 1000)
+							sleepUs = 1000 * 1000;
+					}
+				}
 
-				theFEInterfacesManager_->runFEMacro(
-				    interfaceID, FEMacro, inputArgs, outputArgs);
-
-				// theFEInterfacesManager_->runFEMacro(interfaceID, feMacroName, inputArgs, outputArgs);
+				retParameters.addParameter("NotDoneTaskID", std::to_string(task->taskID));
+				return SOAPUtilities::makeSOAPMessageReference(
+				    supervisorClassNoNamespace_ + "Response", retParameters);
 			}
-			catch(std::runtime_error& e)
+			else
 			{
-				__SUP_SS__ << "In Supervisor with LID="
-				           << getApplicationDescriptor()->getLocalId()
-				           << " the FE Macro named '" << feMacroName
-				           << "' with target FE '" << interfaceID
-				           << "' failed. Here is the error:\n\n"
-				           << e.what() << __E__;
-				__SUP_SS_THROW__;
-			}
-			catch(std::exception& e)
-			{
-				__SUP_SS__ << "In Supervisor with LID="
-				           << getApplicationDescriptor()->getLocalId()
-				           << " the FE Macro named '" << feMacroName
-				           << "' with target FE '" << interfaceID
-				           << "' failed. Here is the error:\n\n"
-				           << e.what() << __E__;
-				__SUP_SS_THROW__;
-			}
-			catch(...)
-			{
-				__SUP_SS__ << "In Supervisor with LID="
-				           << getApplicationDescriptor()->getLocalId()
-				           << " the FE Macro named '" << feMacroName
-				           << "' with target FE '" << interfaceID
-				           << "' failed due to an unknown error." << __E__;
+				// Synchronous path: run macro and return result (backward compatible)
 				try
 				{
-					throw;
-				}  //one more try to printout extra info
-				catch(const std::exception& e)
+					theFEInterfacesManager_->runFEMacro(
+					    interfaceID, FEMacro, inputArgs, outputArgs);
+				}
+				catch(std::runtime_error& e)
 				{
-					ss << "Exception message: " << e.what();
+					__SUP_SS__ << "In Supervisor with LID="
+					           << getApplicationDescriptor()->getLocalId()
+					           << " the FE Macro named '" << feMacroName
+					           << "' with target FE '" << interfaceID
+					           << "' failed. Here is the error:\n\n"
+					           << e.what() << __E__;
+					__SUP_SS_THROW__;
+				}
+				catch(std::exception& e)
+				{
+					__SUP_SS__ << "In Supervisor with LID="
+					           << getApplicationDescriptor()->getLocalId()
+					           << " the FE Macro named '" << feMacroName
+					           << "' with target FE '" << interfaceID
+					           << "' failed. Here is the error:\n\n"
+					           << e.what() << __E__;
+					__SUP_SS_THROW__;
 				}
 				catch(...)
 				{
+					__SUP_SS__ << "In Supervisor with LID="
+					           << getApplicationDescriptor()->getLocalId()
+					           << " the FE Macro named '" << feMacroName
+					           << "' with target FE '" << interfaceID
+					           << "' failed due to an unknown error." << __E__;
+					try
+					{
+						throw;
+					}  //one more try to printout extra info
+					catch(const std::exception& e)
+					{
+						ss << "Exception message: " << e.what();
+					}
+					catch(...)
+					{
+					}
+					__SUP_SS_THROW__;
 				}
-				__SUP_SS_THROW__;
+
+				retParameters.addParameter("outputArgs", outputArgs);
+				return SOAPUtilities::makeSOAPMessageReference(
+				    supervisorClassNoNamespace_ + "Response", retParameters);
 			}
-
-			// retParameters.addParameter("success", success ? "1" : "0");
-			retParameters.addParameter("outputArgs", outputArgs);
-
-			return SOAPUtilities::makeSOAPMessageReference(
-			    supervisorClassNoNamespace_ + "Response", retParameters);
 		}
 		else if(request == "RunMacroMakerMacro")
 		{
@@ -1080,55 +1228,300 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 			requestParameters.addParameter("inputArgs");
 			requestParameters.addParameter("outputArgs");
 			requestParameters.addParameter("InterfaceID");
+			requestParameters.addParameter("AsyncSupported");
 			SOAPUtilities::receive(message, requestParameters);
 			std::string interfaceID = requestParameters.getValue("InterfaceID");
 			std::string macroName   = requestParameters.getValue("macroName");
 			std::string macroString = requestParameters.getValue("macroString");
 			std::string inputArgs   = requestParameters.getValue("inputArgs");
 			std::string outputArgs  = requestParameters.getValue("outputArgs");
+			bool asyncSupported     = requestParameters.getValue("AsyncSupported") == "1";
 
-			// outputArgs must be filled with the proper argument names
-			//	and then the response output values will be returned in the string.
-			try
+			if(asyncSupported)
 			{
-				theFEInterfacesManager_->runMacro(
-				    interfaceID, macroString, inputArgs, outputArgs);
+				// Async path: launch macro in a thread, return NotDoneTaskID immediately
+				auto task = std::make_shared<AsyncMacroTask>();
+				{
+					std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+					task->taskID = ++asyncMacroTaskIDCounter_;
+					if(asyncMacroTaskIDCounter_ == 0)
+						task->taskID = ++asyncMacroTaskIDCounter_;
+					task->interfaceID = interfaceID;
+					task->startTime   = time(0);
+					asyncMacroTasks_.push_back(task);
+				}
+
+				std::thread([this,
+				             task,
+				             interfaceID,
+				             macroName,
+				             macroString,
+				             inputArgs,
+				             outputArgs]() mutable {
+					{
+						std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+						task->threadID = std::this_thread::get_id();
+					}
+					try
+					{
+						theFEInterfacesManager_->getFEInterfaceP(interfaceID)
+						    ->clearFEMacroPercentDone(std::this_thread::get_id());
+					}
+					catch(...)
+					{
+					}
+
+					try
+					{
+						theFEInterfacesManager_->runMacro(
+						    interfaceID, macroString, inputArgs, outputArgs);
+						try
+						{
+							theFEInterfacesManager_->getFEInterfaceP(interfaceID)
+							    ->clearFEMacroPercentDone(std::this_thread::get_id());
+						}
+						catch(...)
+						{
+						}
+						{
+							std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+							task->outputArgs = outputArgs;
+							task->doneTime   = time(0);
+							task->done       = true;
+						}
+					}
+					catch(const std::exception& e)
+					{
+						try
+						{
+							theFEInterfacesManager_->getFEInterfaceP(interfaceID)
+							    ->clearFEMacroPercentDone(std::this_thread::get_id());
+						}
+						catch(...)
+						{
+						}
+						std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+						task->error =
+						    "In Supervisor with LID=" +
+						    std::to_string(getApplicationDescriptor()->getLocalId()) +
+						    " the MacroMaker Macro named '" + macroName +
+						    "' with target FE '" + interfaceID +
+						    "' failed. Here is the error:\n\n" + e.what();
+						task->doneTime = time(0);
+						task->done     = true;
+					}
+					catch(...)
+					{
+						try
+						{
+							theFEInterfacesManager_->getFEInterfaceP(interfaceID)
+							    ->clearFEMacroPercentDone(std::this_thread::get_id());
+						}
+						catch(...)
+						{
+						}
+						std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+						task->error =
+						    "In Supervisor with LID=" +
+						    std::to_string(getApplicationDescriptor()->getLocalId()) +
+						    " the MacroMaker Macro named '" + macroName +
+						    "' with target FE '" + interfaceID +
+						    "' failed due to an unknown error.";
+						task->doneTime = time(0);
+						task->done     = true;
+					}
+				}).detach();
+
+				__SUP_COUT__ << "Launched async MacroMaker Macro '" << macroName
+				             << "' for interfaceID '" << interfaceID
+				             << "' with taskID=" << task->taskID << __E__;
+
+				// Wait briefly to see if macro finishes quickly (avoids unnecessary polling)
+				{
+					size_t sleepUs = 100;
+					for(int i = 0; i < 10; ++i)
+					{
+						usleep(sleepUs);
+						{
+							std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+							if(task->done)
+							{
+								if(!task->error.empty())
+								{
+									std::string errorCopy = task->error;
+									for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
+										if(asyncMacroTasks_[j]->taskID == task->taskID)
+										{
+											asyncMacroTasks_.erase(
+											    asyncMacroTasks_.begin() + j);
+											break;
+										}
+									__SUP_SS__ << errorCopy;
+									__SUP_SS_THROW__;
+								}
+								retParameters.addParameter("outputArgs",
+								                           task->outputArgs);
+								for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
+									if(asyncMacroTasks_[j]->taskID == task->taskID)
+									{
+										asyncMacroTasks_.erase(asyncMacroTasks_.begin() +
+										                       j);
+										break;
+									}
+								return SOAPUtilities::makeSOAPMessageReference(
+								    supervisorClassNoNamespace_ + "Response",
+								    retParameters);
+							}
+						}
+						sleepUs *= 5;
+						if(sleepUs > 1000 * 1000)
+							sleepUs = 1000 * 1000;
+					}
+				}
+
+				retParameters.addParameter("NotDoneTaskID", std::to_string(task->taskID));
+				return SOAPUtilities::makeSOAPMessageReference(
+				    supervisorClassNoNamespace_ + "Response", retParameters);
 			}
-			catch(std::runtime_error& e)
+			else
 			{
-				__SUP_SS__ << "In Supervisor with LID="
-				           << getApplicationDescriptor()->getLocalId()
-				           << " the MacroMaker Macro named '" << macroName
-				           << "' with target FE '" << interfaceID
-				           << "' failed. Here is the error:\n\n"
-				           << e.what() << __E__;
-				__SUP_SS_THROW__;
-			}
-			catch(...)
-			{
-				__SUP_SS__ << "In Supervisor with LID="
-				           << getApplicationDescriptor()->getLocalId()
-				           << " the MacroMaker Macro named '" << macroName
-				           << "' with target FE '" << interfaceID
-				           << "' failed due to an unknown error." << __E__;
+				// Synchronous path: run macro and return result (backward compatible)
 				try
 				{
-					throw;
-				}  //one more try to printout extra info
-				catch(const std::exception& e)
+					theFEInterfacesManager_->runMacro(
+					    interfaceID, macroString, inputArgs, outputArgs);
+				}
+				catch(std::runtime_error& e)
 				{
-					ss << "Exception message: " << e.what();
+					__SUP_SS__ << "In Supervisor with LID="
+					           << getApplicationDescriptor()->getLocalId()
+					           << " the MacroMaker Macro named '" << macroName
+					           << "' with target FE '" << interfaceID
+					           << "' failed. Here is the error:\n\n"
+					           << e.what() << __E__;
+					__SUP_SS_THROW__;
 				}
 				catch(...)
 				{
+					__SUP_SS__ << "In Supervisor with LID="
+					           << getApplicationDescriptor()->getLocalId()
+					           << " the MacroMaker Macro named '" << macroName
+					           << "' with target FE '" << interfaceID
+					           << "' failed due to an unknown error." << __E__;
+					try
+					{
+						throw;
+					}  //one more try to printout extra info
+					catch(const std::exception& e)
+					{
+						ss << "Exception message: " << e.what();
+					}
+					catch(...)
+					{
+					}
+					__SUP_SS_THROW__;
 				}
+
+				retParameters.addParameter("outputArgs", outputArgs);
+				return SOAPUtilities::makeSOAPMessageReference(
+				    supervisorClassNoNamespace_ + "Response", retParameters);
+			}
+		}
+		else if(request == "CheckMacro")
+		{
+			SOAPParameters requestParameters;
+			requestParameters.addParameter("TaskID");
+			SOAPUtilities::receive(message, requestParameters);
+			uint64_t taskID = std::stoull(requestParameters.getValue("TaskID"));
+
+			std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+
+			// Cleanup old completed tasks (>5 minutes after completion)
+			time_t now = time(0);
+			for(size_t i = 0; i < asyncMacroTasks_.size();)
+			{
+				auto& t = asyncMacroTasks_[i];
+				if(t->done && t->doneTime > 0 && (now - t->doneTime) > 5 * 60)
+					asyncMacroTasks_.erase(asyncMacroTasks_.begin() + i);
+				else
+					++i;
+			}
+
+			// Find the requested task
+			std::shared_ptr<AsyncMacroTask> foundTask;
+			for(auto& t : asyncMacroTasks_)
+			{
+				if(t->taskID == taskID)
+				{
+					foundTask = t;
+					break;
+				}
+			}
+
+			if(!foundTask)
+			{
+				__SUP_SS__ << "Async macro task with ID=" << taskID
+				           << " was not found. Perhaps it completed more than 5 "
+				              "minutes ago?"
+				           << __E__;
 				__SUP_SS_THROW__;
 			}
 
-			retParameters.addParameter("outputArgs", outputArgs);
+			if(foundTask->done)
+			{
+				if(!foundTask->error.empty())
+				{
+					std::string errorCopy = foundTask->error;
+					// Remove completed task
+					for(size_t i = 0; i < asyncMacroTasks_.size(); ++i)
+					{
+						if(asyncMacroTasks_[i]->taskID == taskID)
+						{
+							asyncMacroTasks_.erase(asyncMacroTasks_.begin() + i);
+							break;
+						}
+					}
+					__SUP_SS__ << errorCopy;
+					__SUP_SS_THROW__;
+				}
 
-			return SOAPUtilities::makeSOAPMessageReference(
-			    supervisorClassNoNamespace_ + "Response", retParameters);
+				retParameters.addParameter("outputArgs", foundTask->outputArgs);
+
+				// Remove completed task
+				for(size_t i = 0; i < asyncMacroTasks_.size(); ++i)
+				{
+					if(asyncMacroTasks_[i]->taskID == taskID)
+					{
+						asyncMacroTasks_.erase(asyncMacroTasks_.begin() + i);
+						break;
+					}
+				}
+
+				return SOAPUtilities::makeSOAPMessageReference(
+				    supervisorClassNoNamespace_ + "Response", retParameters);
+			}
+			else
+			{
+				// Still running — check for real progress from the FE macro
+				if(theFEInterfacesManager_ && foundTask->threadID != std::thread::id())
+				{
+					try
+					{
+						int progress = theFEInterfacesManager_
+						                   ->getFEInterfaceP(foundTask->interfaceID)
+						                   ->getFEMacroPercentDone(foundTask->threadID);
+						if(progress >= 0)
+							retParameters.addParameter("Progress",
+							                           std::to_string(progress));
+					}
+					catch(...)
+					{
+					}
+				}
+				retParameters.addParameter("NotDoneTaskID", std::to_string(taskID));
+				return SOAPUtilities::makeSOAPMessageReference(
+				    supervisorClassNoNamespace_ + "Response", retParameters);
+			}
 		}
 		else
 		{
@@ -1344,6 +1737,41 @@ void FESupervisor::transitionHalting(toolbox::Event::Reference event)
 {
 	__SUP_COUT__ << "transitionHalting" << __E__;
 	TLOG_DEBUG(7) << "transitionHalting";
+
+	// Wait for any in-flight async macro tasks before tearing down FE interfaces
+	{
+		const int    timeoutSeconds = 30;
+		const time_t deadline       = time(0) + timeoutSeconds;
+		bool         hasOutstanding = true;
+		while(hasOutstanding && time(0) < deadline)
+		{
+			{
+				std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+				hasOutstanding = false;
+				for(const auto& t : asyncMacroTasks_)
+				{
+					if(!t->done)
+					{
+						hasOutstanding = true;
+						break;
+					}
+				}
+			}
+			if(hasOutstanding)
+			{
+				__SUP_COUT__ << "Waiting for outstanding async macro tasks to complete "
+				                "before halting..."
+				             << __E__;
+				usleep(500 * 1000);
+			}
+		}
+		if(hasOutstanding)
+			__SUP_COUT_WARN__ << "Timed out waiting for async macro tasks; "
+			                     "proceeding with halt."
+			                  << __E__;
+		std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+		asyncMacroTasks_.clear();
+	}
 
 	// shutdown workloops first, then shutdown metric manager
 	CoreSupervisorBase::transitionHalting(event);

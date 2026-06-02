@@ -5,6 +5,11 @@
 
 #include "zmq.hpp"
 
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <vector>
+
 namespace ots
 {
 class FEVInterfacesManager;
@@ -72,6 +77,22 @@ class FESupervisor : public CoreSupervisorBase
   private:
 	FEVInterfacesManager*
 	extractFEInterfacesManager();  ///< likely, just used in constructor
+
+	// Async FE Macro task tracking (for long-running macros that exceed SOAP timeout)
+	struct AsyncMacroTask
+	{
+		uint64_t        taskID;
+		std::string     interfaceID;
+		std::thread::id threadID;
+		std::string     outputArgs;
+		std::string     error;
+		bool            done      = false;
+		time_t          startTime = 0;
+		time_t          doneTime  = 0;
+	};
+	std::mutex                                   asyncMacroMutex_;
+	std::vector<std::shared_ptr<AsyncMacroTask>> asyncMacroTasks_;
+	uint64_t                                     asyncMacroTaskIDCounter_ = 0;
 
 	// ZeroMQ Publisher
 	zmq::context_t dp_context_;                ///< ZeroMQ context (1 I/O thread by default)
