@@ -1034,7 +1034,10 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 				             localFEMacro,
 				             inputArgs,
 				             outputArgs]() mutable {
-					task->threadID = std::this_thread::get_id();
+					{
+						std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+						task->threadID = std::this_thread::get_id();
+					}
 					// Clear stale progress in case thread ID was reused
 					try
 					{
@@ -1255,7 +1258,10 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 				             macroString,
 				             inputArgs,
 				             outputArgs]() mutable {
-					task->threadID = std::this_thread::get_id();
+					{
+						std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+						task->threadID = std::this_thread::get_id();
+					}
 					try
 					{
 						theFEInterfacesManager_->getFEInterfaceP(interfaceID)
