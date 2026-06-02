@@ -4227,18 +4227,9 @@ launchOTSTrace() {
 	}
 
 	if [ "$_hostarg" == "." ]; then
-		# '.' = this host + any artdaq hosts discoverable from the local ranks.txt
-		# (ranks.txt normally only exists on the ARTDAQ Supervisor host, so this is
-		# how that host fans out to its artdaq nodes like calo-14)
+		# '.' = strictly this host only, no SSH fan-out
 		_include_local=1
 		out "  ${IBlack}[DEBUG] host='.': local=${THIS_HOST}${RstClr}"
-		local _pre_cnt=${#_remote_hosts[@]}
-		_trc_add_ranks_hosts
-		if [ ${#_remote_hosts[@]} -gt $_pre_cnt ]; then
-			out "  ${IBlack}[DEBUG] ranks.txt added: ${_remote_hosts[*]:$_pre_cnt}${RstClr}"
-		else
-			out "  ${IBlack}[DEBUG] no ranks.txt artdaq hosts found on this host${RstClr}"
-		fi
 	elif [ "$_hostarg" == "*" ]; then
 		_include_local=1
 		out "  ${IBlack}[DEBUG] host='*': local=${THIS_HOST}${RstClr}"
