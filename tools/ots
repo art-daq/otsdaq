@@ -515,7 +515,7 @@ while :; do
 		out " -tonM | -toffM | -tonS | -toffS | -tonT | -toffT  <host> <label|*> <lvls>"
 		out "	Turn Memory/Slow/Trigger level bits on/off (lvls is a TRACE bit spec). e.g.: ots -tonS calo-14 MyLabel 0-3,5"
 		out " -tonMg | -toffMg | -tonSg | -toffSg | -tonTg | -toffTg  <lvls>"
-		out "	Global variants: all names on this host. e.g.: ots -tonSg 8"
+		out "\tGlobal variants: all names on all hosts in the ots system. e.g.: ots -tonSg 8"
 		out " -tlvlM | -tlvlS | -tlvlT  <host> <label|*> <mask>"
 		out "	Write the full 64-bit mask of a single column (mirror tlvlM/tlvlS/tlvlT). e.g.: ots -tlvlS calo-14 MyLabel 511"
 		out " -tlvlmsk  <host> <label|*> <M> <S> <T>"
