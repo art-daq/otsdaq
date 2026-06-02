@@ -1747,7 +1747,7 @@ void FEVInterface::setFEMacroPercentDone(unsigned int percentDone)
 int FEVInterface::getFEMacroPercentDone(std::thread::id threadID) const
 {
 	std::lock_guard<std::mutex> lock(feMacroPercentDoneMutex_);
-	auto it = feMacroPercentDoneMap_.find(threadID);
+	auto                        it = feMacroPercentDoneMap_.find(threadID);
 	if(it == feMacroPercentDoneMap_.end())
 		return -1;
 	return it->second;

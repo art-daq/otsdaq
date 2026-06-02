@@ -81,14 +81,14 @@ class FESupervisor : public CoreSupervisorBase
 	// Async FE Macro task tracking (for long-running macros that exceed SOAP timeout)
 	struct AsyncMacroTask
 	{
-		uint64_t         taskID;
-		std::string      interfaceID;
-		std::thread::id  threadID;
-		std::string      outputArgs;
-		std::string      error;
-		bool             done      = false;
-		time_t           startTime = 0;
-		time_t           doneTime  = 0;
+		uint64_t        taskID;
+		std::string     interfaceID;
+		std::thread::id threadID;
+		std::string     outputArgs;
+		std::string     error;
+		bool            done      = false;
+		time_t          startTime = 0;
+		time_t          doneTime  = 0;
 	};
 	std::mutex                                   asyncMacroMutex_;
 	std::vector<std::shared_ptr<AsyncMacroTask>> asyncMacroTasks_;
