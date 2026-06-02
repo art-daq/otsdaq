@@ -32,7 +32,7 @@ class ARTDAQSupervisorTRACEController : public ITRACEController
 	}  // FIXME
 
   private:
-	ARTDAQSupervisor* theSupervisor_;
+	ARTDAQSupervisor* theSupervisor_ = nullptr;
 
 	// Cache from the last setTraceLevelMask() call — includes the updated
 	// host's full level table (the leaf dumps levels after set). getTraceLevels()
