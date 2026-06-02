@@ -994,14 +994,23 @@ const std::string& CorePropertySupervisorBase::getTraceLevels()
 	// typedef std::unordered_map<std::string, TraceLevelMap> HostTraceLevelMap =
 	ITRACEController::HostTraceLevelMap traceHostMap =
 	    theTRACEController_->getTraceLevels();
+
+	__SUP_COUT__ << "TRACE controller returned " << traceHostMap.size() << " host key(s)."
+	             << __E__;
+
 	for(const auto& traceMap : traceHostMap)
 	{
-		//__COUTV__(traceMap.first);
+		__SUP_COUT__ << "host key '" << traceMap.first << "' with "
+		             << traceMap.second.size() << " label(s)." << __E__;
 
 		// NOTE: TRACE hostname resolution is not necessarily the same as xdaq context name resolution
 		//  so return TRACE hostname resolution so a map can be generated at the controller
 
-		traceReturnHostString_ = ";" + traceMap.first;
+		// Append (not overwrite) each host: TRACEHostnameList must list ALL hosts so the
+		// Console can build a complete traceMapToXDAQHostname_ (used for Set routing).
+		// (Previously used '=', which kept only the last host and broke Set routing for
+		// all-but-last artdaq hosts -- now multiple artdaq hosts report.)
+		traceReturnHostString_ += ";" + traceMap.first;
 		traceReturnString_ += ";" + traceMap.first;
 
 		for(const auto& traceMask : traceMap.second)
@@ -1019,6 +1028,8 @@ const std::string& CorePropertySupervisorBase::getTraceLevels()
 			    std::to_string((unsigned int)traceMask.second.T);
 		}  // end label loop
 	}      // end host loop
+	__SUP_COUTTV__(traceReturnString_);
+	__SUP_COUTV__(traceReturnHostString_);
 	__SUP_COUT__ << "end getTraceLevels()" << __E__;
 	return traceReturnString_;
 }  // end getTraceLevels()

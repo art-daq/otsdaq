@@ -18,7 +18,10 @@
 
 #include <array>
 #include <iostream>
+#include <map>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "otsdaq/Macros/CoutMacros.h"
@@ -38,6 +41,7 @@
 
 #define __SET_ARG_IN__(X, Y)  FEVInterface::emplaceFEMacroArgumentValue(argsIn, X, Y)
 #define __SET_ARG_OUT__(X, Y) FEVInterface::setFEMacroArgumentValue(argsOut, X, Y)
+#define __SET_PCT_DONE__(X)   setFEMacroPercentDone(X)  ///< set FE macro percent done (0-100)
 
 // clang-format off
 #define PLOTLY_PLOT "Plotly_Plot"  ///< arg out for built-in auto plotly plotting at client, for example:
@@ -332,6 +336,14 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	template<class T>
 	static std::string& 			emplaceFEMacroArgumentValue	(frontEndMacroArgs_t args, const std::string&  argName, const T& value);
 
+	/// FE Macro progress reporting (for async macros via FESupervisor)
+	void 							setFEMacroPercentDone		(unsigned int percentDone);
+	int  							getFEMacroPercentDone		(std::thread::id threadID) const;
+	void 							clearFEMacroPercentDone		(std::thread::id threadID);
+
+  protected:
+	mutable std::mutex                     feMacroPercentDoneMutex_;
+	std::map<std::thread::id, int>         feMacroPercentDoneMap_;
 
 };  // end FEVInterface class
 

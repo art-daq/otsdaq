@@ -1929,6 +1929,43 @@ ots::ARTDAQSupervisor::makeCommandersFromProcessInfo()
 }  // end makeCommandersFromProcessInfo()
 
 //==============================================================================
+// getConfiguredArtdaqHosts
+//	Returns the de-duplicated set of hostnames of all enabled artdaq processes,
+//	taken from the active configuration via ARTDAQTableBase::extractARTDAQInfo
+//	(the same call used by configuringThread()). Unlike makeCommandersFromProcessInfo()
+//	-- which reads the live DAQInterface status and is empty when DAQInterface is
+//	not running -- this reflects the configuration's intended deployment. The
+//	configuration does NOT carry the runtime xmlrpc commander ports, so this is
+//	used for host discovery only (e.g. to drive 'ots -tt <hosts>').
+std::set<std::string> ots::ARTDAQSupervisor::getConfiguredArtdaqHosts(void)
+{
+	std::set<std::string> hosts;
+	try
+	{
+		ConfigurationTree           supervisorNode = getSupervisorTableNode();
+		ARTDAQTableBase::ARTDAQInfo info           = ARTDAQTableBase::extractARTDAQInfo(
+            supervisorNode, false /*getStatusFalseNodes*/, false /*doWriteFHiCL*/);
+		for(const auto& typeProcs : info.processes)
+			for(const auto& proc : typeProcs.second)
+				if(proc.status && !proc.hostname.empty())
+					hosts.insert(proc.hostname);
+	}
+	catch(const std::exception& e)
+	{
+		__SUP_COUT_ERR__ << "Failed to extract configured artdaq hosts: " << e.what()
+		                 << __E__;
+	}
+	catch(...)
+	{
+		__SUP_COUT_ERR__
+		    << "Failed to extract configured artdaq hosts (unknown exception)." << __E__;
+	}
+	__SUP_COUT__ << "Configured artdaq hosts: " << StringMacros::setToString(hosts)
+	             << __E__;
+	return hosts;
+}  // end getConfiguredArtdaqHosts()
+
+//==============================================================================
 std::list<std::string> ots::ARTDAQSupervisor::tokenize_(std::string const& input)
 {
 	size_t                 pos = 0;
