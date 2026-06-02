@@ -118,6 +118,33 @@ ots::ARTDAQSupervisorTRACEController::getTraceLevels()
 		         << __E__;
 	}
 
+	// Merge duplicate host keys that differ only by domain suffix (e.g. "mu2e-calo-01"
+	// from gethostname() vs "mu2e-calo-01.fnal.gov" from ots -tt). Merge the longer
+	// key's labels into the shorter key, then remove the longer key. Only merges when
+	// the short name matches exactly up to a '.' boundary — different base names or
+	// domains are never merged.
+	{
+		std::vector<std::string> keysToRemove;
+		for(auto& entry : traceLevelsMap_)
+		{
+			const std::string& key = entry.first;
+			auto dotPos = key.find('.');
+			if(dotPos == std::string::npos)
+				continue;  // no domain — can't be the long form
+			std::string shortKey = key.substr(0, dotPos);
+			auto it = traceLevelsMap_.find(shortKey);
+			if(it != traceLevelsMap_.end() && it->first != key)
+			{
+				// Merge: copy labels from FQDN key into short key (short key wins on collision)
+				for(const auto& label : entry.second)
+					it->second.emplace(label.first, label.second);
+				keysToRemove.push_back(key);
+			}
+		}
+		for(const auto& k : keysToRemove)
+			traceLevelsMap_.erase(k);
+	}
+
 	__COUT__ << "getTraceLevels() END -- traceLevelsMap_ has " << traceLevelsMap_.size()
 	         << " host key(s):" << __E__;
 	for(const auto& host : traceLevelsMap_)
