@@ -1738,6 +1738,41 @@ void FESupervisor::transitionHalting(toolbox::Event::Reference event)
 	__SUP_COUT__ << "transitionHalting" << __E__;
 	TLOG_DEBUG(7) << "transitionHalting";
 
+	// Wait for any in-flight async macro tasks before tearing down FE interfaces
+	{
+		const int    timeoutSeconds = 30;
+		const time_t deadline       = time(0) + timeoutSeconds;
+		bool         hasOutstanding = true;
+		while(hasOutstanding && time(0) < deadline)
+		{
+			{
+				std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+				hasOutstanding = false;
+				for(const auto& t : asyncMacroTasks_)
+				{
+					if(!t->done)
+					{
+						hasOutstanding = true;
+						break;
+					}
+				}
+			}
+			if(hasOutstanding)
+			{
+				__SUP_COUT__ << "Waiting for outstanding async macro tasks to complete "
+				                "before halting..."
+				             << __E__;
+				usleep(500 * 1000);
+			}
+		}
+		if(hasOutstanding)
+			__SUP_COUT_WARN__ << "Timed out waiting for async macro tasks; "
+			                     "proceeding with halt."
+			                  << __E__;
+		std::lock_guard<std::mutex> lock(asyncMacroMutex_);
+		asyncMacroTasks_.clear();
+	}
+
 	// shutdown workloops first, then shutdown metric manager
 	CoreSupervisorBase::transitionHalting(event);
 
