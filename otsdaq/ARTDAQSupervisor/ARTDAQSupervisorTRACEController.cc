@@ -14,10 +14,10 @@ static size_t parseOtsTraceLevels(const std::string&                        otsO
                                   ots::ITRACEController::HostTraceLevelMap& outMap)
 {
 	static const std::string hostTag = "#OTSTRACE-HOST ";
-	std::set<std::string>     hostsSeen;
-	std::istringstream        stream(otsOutput);
-	std::string               line;
-	std::string               curKey;
+	std::set<std::string>    hostsSeen;
+	std::istringstream       stream(otsOutput);
+	std::string              line;
+	std::string              curKey;
 
 	while(std::getline(stream, line))
 	{
@@ -30,9 +30,11 @@ static size_t parseOtsTraceLevels(const std::string&                        otsO
 			// Normalize: strip -data/-ipmi network suffixes so hosts merge
 			// with addTraceLevelsForThisHost() which uses the plain hostname.
 			auto pos = host.find("-data");
-			if(pos != std::string::npos) host.erase(pos, 5);
+			if(pos != std::string::npos)
+				host.erase(pos, 5);
 			pos = host.find("-ipmi");
-			if(pos != std::string::npos) host.erase(pos, 5);
+			if(pos != std::string::npos)
+				host.erase(pos, 5);
 			curKey = host;
 			if(!curKey.empty())
 				hostsSeen.insert(curKey);
@@ -53,9 +55,9 @@ static size_t parseOtsTraceLevels(const std::string&                        otsO
 			continue;
 		try
 		{
-			uint64_t M = std::stoull(sM, nullptr, 0);
-			uint64_t S = std::stoull(sS, nullptr, 0);
-			uint64_t T = std::stoull(sT, nullptr, 0);
+			uint64_t M             = std::stoull(sM, nullptr, 0);
+			uint64_t S             = std::stoull(sS, nullptr, 0);
+			uint64_t T             = std::stoull(sT, nullptr, 0);
 			outMap[curKey][name].M = M;
 			outMap[curKey][name].S = S;
 			outMap[curKey][name].T = T;
@@ -135,19 +137,22 @@ void ots::ARTDAQSupervisorTRACEController::setTraceLevelMask(
 
 	// Determine if the target host is local by comparing stripped short hostnames.
 	auto stripHost = [](const std::string& h) -> std::string {
-		std::string s = h;
-		auto pos = s.find("-data");
-		if(pos != std::string::npos) s.erase(pos, 5);
+		std::string s   = h;
+		auto        pos = s.find("-data");
+		if(pos != std::string::npos)
+			s.erase(pos, 5);
 		pos = s.find("-ipmi");
-		if(pos != std::string::npos) s.erase(pos, 5);
+		if(pos != std::string::npos)
+			s.erase(pos, 5);
 		pos = s.find('.');
-		if(pos != std::string::npos) s = s.substr(0, pos);
+		if(pos != std::string::npos)
+			s = s.substr(0, pos);
 		return s;
 	};
 
-	std::string localShort = stripHost(getHostnameString());
+	std::string localShort  = stripHost(getHostnameString());
 	std::string targetShort = stripHost(host);
-	bool isLocal = (host == "localhost" || targetShort == localShort);
+	bool        isLocal     = (host == "localhost" || targetShort == localShort);
 
 	if(isLocal)
 	{
@@ -158,9 +163,8 @@ void ots::ARTDAQSupervisorTRACEController::setTraceLevelMask(
 	// Remote host: use ots -ttlvl* (parse format) via SSH
 	std::string cmd;
 	if(allMode)
-		cmd = "ots -ttlvlmsk '" + host + "' '" + label + "' " +
-		      std::to_string(lvl.M) + " " + std::to_string(lvl.S) + " " +
-		      std::to_string(lvl.T);
+		cmd = "ots -ttlvlmsk '" + host + "' '" + label + "' " + std::to_string(lvl.M) +
+		      " " + std::to_string(lvl.S) + " " + std::to_string(lvl.T);
 	else if(mode == "FAST")
 		cmd = "ots -ttlvlM '" + host + "' '" + label + "' " + std::to_string(lvl.M);
 	else if(mode == "SLOW")

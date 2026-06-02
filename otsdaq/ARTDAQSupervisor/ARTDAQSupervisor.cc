@@ -1942,9 +1942,9 @@ std::set<std::string> ots::ARTDAQSupervisor::getConfiguredArtdaqHosts(void)
 	std::set<std::string> hosts;
 	try
 	{
-		ConfigurationTree              supervisorNode = getSupervisorTableNode();
-		ARTDAQTableBase::ARTDAQInfo info = ARTDAQTableBase::extractARTDAQInfo(
-		    supervisorNode, false /*getStatusFalseNodes*/, false /*doWriteFHiCL*/);
+		ConfigurationTree           supervisorNode = getSupervisorTableNode();
+		ARTDAQTableBase::ARTDAQInfo info           = ARTDAQTableBase::extractARTDAQInfo(
+            supervisorNode, false /*getStatusFalseNodes*/, false /*doWriteFHiCL*/);
 		for(const auto& typeProcs : info.processes)
 			for(const auto& proc : typeProcs.second)
 				if(proc.status && !proc.hostname.empty())
@@ -1957,10 +1957,11 @@ std::set<std::string> ots::ARTDAQSupervisor::getConfiguredArtdaqHosts(void)
 	}
 	catch(...)
 	{
-		__SUP_COUT_ERR__ << "Failed to extract configured artdaq hosts (unknown exception)."
-		                 << __E__;
+		__SUP_COUT_ERR__
+		    << "Failed to extract configured artdaq hosts (unknown exception)." << __E__;
 	}
-	__SUP_COUT__ << "Configured artdaq hosts: " << StringMacros::setToString(hosts) << __E__;
+	__SUP_COUT__ << "Configured artdaq hosts: " << StringMacros::setToString(hosts)
+	             << __E__;
 	return hosts;
 }  // end getConfiguredArtdaqHosts()
 
