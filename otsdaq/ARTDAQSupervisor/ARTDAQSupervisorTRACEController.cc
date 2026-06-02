@@ -27,6 +27,12 @@ static size_t parseOtsTraceLevels(const std::string&                        otsO
 			while(!host.empty() &&
 			      (host.back() == '\r' || host.back() == ' ' || host.back() == '\t'))
 				host.pop_back();
+			// Normalize: strip -data/-ipmi network suffixes so hosts merge
+			// with addTraceLevelsForThisHost() which uses the plain hostname.
+			auto pos = host.find("-data");
+			if(pos != std::string::npos) host.erase(pos, 5);
+			pos = host.find("-ipmi");
+			if(pos != std::string::npos) host.erase(pos, 5);
 			curKey = host;
 			if(!curKey.empty())
 				hostsSeen.insert(curKey);
