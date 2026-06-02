@@ -11,6 +11,7 @@
 #endif
 
 #include <mutex>
+#include <set>
 #include <thread>
 
 #include "artdaq/ExternalComms/CommanderInterface.hh"
@@ -69,6 +70,12 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	std::list<
 	    std::pair<DAQInterfaceProcessInfo, std::unique_ptr<artdaq::CommanderInterface>>>
 	makeCommandersFromProcessInfo();
+
+	// Hostnames of all enabled artdaq processes from the active configuration.
+	// Reflects the configuration's intended deployment (works even when
+	// DAQInterface is not running). Note: config does NOT carry the runtime
+	// xmlrpc commander ports -- this is for host discovery only.
+	std::set<std::string> getConfiguredArtdaqHosts(void);
 
 	static std::list<std::string> tokenize_(std::string const& input);
 
