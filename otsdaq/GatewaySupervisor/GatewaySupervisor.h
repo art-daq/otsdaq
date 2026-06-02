@@ -5,6 +5,7 @@
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
 #include "otsdaq/FiniteStateMachine/RunControlStateMachine.h"
+#include "otsdaq/FiniteStateMachine/RunInfoVInterface.h"
 #include "otsdaq/GatewaySupervisor/Iterator.h"
 #include "otsdaq/SOAPUtilities/SOAPMessenger.h"
 #include "otsdaq/SupervisorInfo/AllSupervisorInfo.h"
@@ -143,7 +144,7 @@ class WorkLoopManager;
 		void 						transitionStartingUp(toolbox::Event::Reference e) override;
 		void 						enteringError(toolbox::Event::Reference e) override;
 
-		void 						makeSystemLogEntry(const std::string& entryText, const std::string& subjectText = "");
+		void 						makeSystemLogEntry(const std::string& entryText, const std::string& subjectText = "", bool skipFooter = false);
 		static void 				addSystemMessage(std::string toUserCSV, std::string message);
 
 		void 						checkForAsyncError(void);
@@ -158,6 +159,7 @@ class WorkLoopManager;
 		void 							setNextRunNumber								(unsigned int runNumber, const std::string& fsmName = "");
 		std::string 					getLastLogEntry									(const std::string& logType, const std::string& fsmName = "");
 		void 							setLastLogEntry									(const std::string& logType, const std::string& logEntry, const std::string& fsmName = "");
+		void 							writeRunInfoTransition							(RunInfoVInterface::RunTransitionType transitionType, const std::string& comment);
 
 
 		static xoap::MessageReference 	lastTableGroupRequestHandler					(const SOAPParameters& parameters);
@@ -337,11 +339,14 @@ class WorkLoopManager;
 		std::string 		activeStateMachineRunInfoPluginType_; ///<cached at Configure transition
 		std::map<std::string /* fsmName */, std::string /* logEntry */>
 							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_, stateMachineStopLogEntry_;
+		std::string			activeStateMachineRawStartComment_, activeStateMachineRawStopComment_;
 		std::string 		activeStateMachineRunNumber_, activeStateMachineRunAlias_, activeStateMachineConfigurationAlias_;
 		bool				activeStateMachineRollOverLogOnConfigure_, activeStateMachineRollOverLogOnStart_;
 		std::chrono::steady_clock::time_point
 							activeStateMachineRunStartTime;
+		time_t				activeStateMachineRunWallClockStartTime_ = 0;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
+		bool				activeStateMachineWriteToEcl_ = true;
 		unsigned int		activeStateMachineConfigureConditionID_, activeStateMachineRunConditionID_;
 		std::string			activeStateMachineSubsystemCommonList_, activeStateMachineSubsystemCommonOverrideList_; ///<cached at Configure transition CSV list of Table/Versions specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway, to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring
 

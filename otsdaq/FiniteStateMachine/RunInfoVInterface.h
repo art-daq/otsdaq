@@ -44,7 +44,9 @@ class RunInfoVInterface  ///< : public Configurable
 		ERROR,
 		PAUSE,
 		RESUME,
-		START
+		START,
+		STOP_COMPLETE,
+		HALT_COMPLETE
 	};
 
 	RunInfoVInterface							(const std::string& runInfoPluginClassName,
@@ -74,7 +76,6 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual void 			updateRunInfo				(unsigned int        /* runConditionID */,
 														 RunTransitionType   /* runTransitionType */,
 														 const std::string&  /* comment */) 				{ __SS__ << "updateRunInfo() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
-
 
 
 	/// Get functions ----
