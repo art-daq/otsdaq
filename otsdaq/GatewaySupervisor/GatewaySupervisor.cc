@@ -4496,7 +4496,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 ////      reserved: ", ', &, <, >, \n, double-space
 void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText,
                                            const std::string& subjectText /* = "" */,
-                                           bool skipFooter /* = false */)
+                                           bool               skipFooter /* = false */)
 {
 	__COUT__ << "Making System Logbook Entry: " << entryText << __E__;
 	if(subjectText.size())
@@ -5001,9 +5001,9 @@ try
 		activeStateMachineSystemDumpOnRunFilename_ =
 		    "";  //clear (and set if enabled during configure transition)
 
-		activeStateMachineRequireUserLogOnRun_ = false,
+		activeStateMachineRequireUserLogOnRun_       = false,
 		activeStateMachineRequireUserLogOnConfigure_ = false;
-		activeStateMachineRunInfoPluginType_ = TableViewColumnInfo::
+		activeStateMachineRunInfoPluginType_         = TableViewColumnInfo::
 		    DATATYPE_STRING_DEFAULT;  //clear (and set if enabled during configure transition)
 
 		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
@@ -5670,9 +5670,7 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 		writeRunInfoTransition(
 		    RunInfoVInterface::RunTransitionType::HALT,
 		    getLastLogEntry(RunControlStateMachine::HALT_TRANSITION_NAME));
-		writeRunInfoTransition(
-		    RunInfoVInterface::RunTransitionType::HALT_COMPLETE,
-		    "");
+		writeRunInfoTransition(RunInfoVInterface::RunTransitionType::HALT_COMPLETE, "");
 	}
 
 	activeStateMachineWindowName_ =
@@ -5699,9 +5697,7 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 	   theStateMachine_.getProvenanceStateName() ==
 	       RunControlStateMachine::PAUSED_STATE_NAME)
 	{
-		writeRunInfoTransition(
-		    RunInfoVInterface::RunTransitionType::STOP_COMPLETE,
-		    "");
+		writeRunInfoTransition(RunInfoVInterface::RunTransitionType::STOP_COMPLETE, "");
 
 		// Write consolidated end-of-run summary to ECL if enabled via env var and user didn't opt out
 		bool doLogConsolidated = true;  //default to logging consolidated run summary
@@ -5724,13 +5720,16 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 					eclSs << "Stop: " << activeStateMachineRawStopComment_ << "\n";
 
 				eclSs << "\nRun Number: " << activeStateMachineRunNumber_ << "\n";
-				eclSs << "Run Type: " << activeStateMachineName_ << "/" << activeStateMachineRunAlias_ << "\n";
+				eclSs << "Run Type: " << activeStateMachineName_ << "/"
+				      << activeStateMachineRunAlias_ << "\n";
 
 				eclSs << "\nStart Time: "
-				      << StringMacros::getTimestampString(activeStateMachineRunWallClockStartTime_)
+				      << StringMacros::getTimestampString(
+				             activeStateMachineRunWallClockStartTime_)
 				      << "\n";
 				time_t endTime = time(0);
-				eclSs << "End Time: " << StringMacros::getTimestampString(endTime) << "\n";
+				eclSs << "End Time: " << StringMacros::getTimestampString(endTime)
+				      << "\n";
 				{
 					int dur   = activeStateMachineRunDuration_ms;
 					int dur_s = dur / 1000;
@@ -5740,28 +5739,27 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 					int dur_h = dur_m / 60;
 					dur_m     = dur_m % 60;
 					eclSs << "Duration: " << std::setw(2) << std::setfill('0') << dur_h
-					      << ":" << std::setw(2) << std::setfill('0') << dur_m
-					      << ":" << std::setw(2) << std::setfill('0') << dur_s << "\n";
+					      << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+					      << std::setw(2) << std::setfill('0') << dur_s << "\n";
 				}
 
 				eclSs << "\nConfiguration: " << activeStateMachineConfigurationAlias_
-				      << " [" << theConfigurationTableGroup_.first
-				      << "(" << theConfigurationTableGroup_.second.str() << ")]\n";
+				      << " [" << theConfigurationTableGroup_.first << "("
+				      << theConfigurationTableGroup_.second.str() << ")]\n";
 				{
 					std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 					for(const auto& remote : remoteGatewayApps_)
 					{
 						if(!remote.fsm_included)
 							continue;
-						eclSs << "  " << remote.appInfo.name
-						      << ": " << remote.selected_config_alias << "\n";
+						eclSs << "  " << remote.appInfo.name << ": "
+						      << remote.selected_config_alias << "\n";
 					}
 				}
 
 				makeSystemLogEntry(
 				    eclSs.str(),
-				    activeStateMachineRunAlias_ + " " +
-				        activeStateMachineRunNumber_,
+				    activeStateMachineRunAlias_ + " " + activeStateMachineRunNumber_,
 				    true /* skipFooter */);
 			}
 			catch(...)
@@ -7418,9 +7416,9 @@ try
 	}  // end make logbook entry
 	RunControlStateMachine::theProgressBar_.step();
 
-	activeStateMachineRunStartTime            = std::chrono::steady_clock::now();
-	activeStateMachineRunWallClockStartTime_  = time(0);
-	activeStateMachineRunDuration_ms          = 0;
+	activeStateMachineRunStartTime           = std::chrono::steady_clock::now();
+	activeStateMachineRunWallClockStartTime_ = time(0);
+	activeStateMachineRunDuration_ms         = 0;
 	broadcastMessage(
 	    theStateMachine_
 	        .getCurrentMessage());  // ---------------------------------- broadcast!
@@ -7901,13 +7899,13 @@ try
 	// A STOP_COMPLETE record is written at the end of the transition in stateConfigured().
 	try
 	{
-		writeRunInfoTransition(
-		    RunInfoVInterface::RunTransitionType::STOP,
-		    activeStateMachineRawStopComment_);
+		writeRunInfoTransition(RunInfoVInterface::RunTransitionType::STOP,
+		                       activeStateMachineRawStopComment_);
 	}
 	catch(...)
 	{
-		__COUT_WARN__ << "STOP transition DB write failed — will not prevent transition." << __E__;
+		__COUT_WARN__ << "STOP transition DB write failed — will not prevent transition."
+		              << __E__;
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -12902,15 +12900,13 @@ void GatewaySupervisor::setNextRunNumber(unsigned int       runNumber,
 
 //==============================================================================
 void GatewaySupervisor::writeRunInfoTransition(
-    RunInfoVInterface::RunTransitionType transitionType,
-    const std::string&                   comment)
+    RunInfoVInterface::RunTransitionType transitionType, const std::string& comment)
 {
 	try
 	{
 		ConfigurationTree configLinkNode =
-		    CorePropertySupervisorBase::theConfigurationManager_
-		        ->getSupervisorTableNode(supervisorContextUID_,
-		                                 supervisorApplicationUID_);
+		    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(
+		        supervisorContextUID_, supervisorApplicationUID_);
 		if(!configLinkNode.isDisconnected())
 		{
 			ConfigurationTree fsmLinkNode =
@@ -12919,8 +12915,7 @@ void GatewaySupervisor::writeRunInfoTransition(
 			std::string runInfoPluginType =
 			    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
 			if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-			   runInfoPluginType !=
-			       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+			   runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
 			   runInfoPluginType != "No Run Info Plugin")
 			{
 				std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
@@ -12941,24 +12936,30 @@ void GatewaySupervisor::writeRunInfoTransition(
 				}
 
 				runInfoInterface->updateRunInfo(
-				    activeStateMachineRunConditionID_,
-				    transitionType,
-				    comment);
+				    activeStateMachineRunConditionID_, transitionType, comment);
 			}
 		}
 	}
 	catch(const std::runtime_error& e)
 	{
-		__SS__ << "RUN INFO TRANSITION UPDATE INTO DATABASE FAILED!!! "
-		       << e.what() << __E__;
+		__SS__ << "RUN INFO TRANSITION UPDATE INTO DATABASE FAILED!!! " << e.what()
+		       << __E__;
 		__SS_THROW__;
 	}
 	catch(...)
 	{
 		__SS__ << "RUN INFO TRANSITION UPDATE INTO DATABASE FAILED!!! " << __E__;
-		try	{ throw; }
-		catch(const std::exception& e)	{ ss << "Exception message: " << e.what(); }
-		catch(...) { }
+		try
+		{
+			throw;
+		}
+		catch(const std::exception& e)
+		{
+			ss << "Exception message: " << e.what();
+		}
+		catch(...)
+		{
+		}
 		__SS_THROW__;
 	}
 }  // end writeRunInfoTransition()
