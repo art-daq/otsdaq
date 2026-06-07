@@ -1417,7 +1417,6 @@ try
 						if(commandSent)
 						{
 							commandRemoteIdleCount = 0;  //reset
-							sleep(1);  //gives some time for command to sink in
 						}
 
 						//then get status (primary and disconnected threads)
@@ -1475,6 +1474,14 @@ try
 							    remoteGatewaySocket,
 							    ipAddressForStateChangesOverUDP,
 							    portForReverseLoginOverUDP);
+
+							{
+								auto __statusMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+								    std::chrono::high_resolution_clock::now() - start).count();
+								if(__statusMs > 200)
+									__COUT_WARN__ << "CheckRemoteGatewayStatus for '" << remoteGatewayApp.appInfo.name
+									              << "' took " << __statusMs << " ms" << __E__;
+							}
 
 							usleep(
 							    50 *
@@ -1743,8 +1750,14 @@ try
 						//replace info in supervisor remote gateway list
 						{
 							//lock for remainder of scope
+							auto __lockWaitStart = std::chrono::high_resolution_clock::now();
 							std::lock_guard<std::mutex> lock(
 							    theSupervisor->remoteGatewayAppsMutex_);
+							auto __lockWaitMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+							    std::chrono::high_resolution_clock::now() - __lockWaitStart).count();
+							if(__lockWaitMs > 50)
+								__COUT_WARN__ << "AppStatusWorkLoop remoteGatewayAppsMutex_ lock wait = "
+								              << __lockWaitMs << " ms" << __E__;
 
 							__COUTT__ << "(doDisconnected = " << doDisconnected
 							          << ") size?... "
@@ -9132,8 +9145,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 				else
 				{
 					std::stringstream ss;
-					ss << "Completed iteration: " << iteration
-					   << (broadcastIterationsDone_ ? " (all done)" : " (need more iterations)")
+					if(iteration > 0)
+						ss << "Iteration " << iteration << ": ";
+					ss << (broadcastIterationsDone_ ? "complete (all done)" : "complete (need more iterations)")
 					   << __E__;
 					__COUT__ << ss.str();
 
@@ -9291,8 +9305,15 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		__SUP_COUTV__(activeStateMachineSubsystemCommonOverrideList_);
 	}
 
-	std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-	for(auto& remoteGatewayApp : remoteGatewayApps_)
+	// Brief lock to snapshot remoteGatewayApps_ for processing without holding mutex
+	__COUT__ << "broadcastMessageToRemoteGateways v2 (copy-process-writeback) iteration=" << iteration << __E__;
+	std::vector<GatewaySupervisor::RemoteGatewayInfo> localApps;
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		localApps = remoteGatewayApps_;
+	}
+
+	for(auto& remoteGatewayApp : localApps)
 	{
 		if(!remoteGatewayApp.fsm_included)
 		{
@@ -9461,6 +9482,20 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		__SUP_COUTV__(remoteGatewayApp.command);
 	}  //end remote gateway broadcast loop
+
+	// Brief lock to write back only the fields modified above
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		for(size_t i = 0; i < localApps.size() && i < remoteGatewayApps_.size(); ++i)
+		{
+			remoteGatewayApps_[i].command          = localApps[i].command;
+			remoteGatewayApps_[i].fsmName           = localApps[i].fsmName;
+			remoteGatewayApps_[i].config_dump       = localApps[i].config_dump;
+			remoteGatewayApps_[i].appInfo.status    = localApps[i].appInfo.status;
+			remoteGatewayApps_[i].appInfo.progress  = localApps[i].appInfo.progress;
+			remoteGatewayApps_[i].iterationsDone    = localApps[i].iterationsDone;
+		}
+	}
 }  // end broadcastMessageToRemoteGateways()
 
 //==============================================================================
@@ -9716,6 +9751,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 		if(!done)
 		{
 			std::stringstream waitSs;
+			if(iterationIndex > 0)
+				waitSs << "Iteration " << iterationIndex << ": ";
 			waitSs << "Waiting on " << remainingRemoteGateways << " of "
 			       << totalRemoteGateways << " remote gateways to finish command '"
 			       << command << "'";
