@@ -12810,8 +12810,21 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(HttpXmlDocument&   xmlOut,
 		xmlOut.addTextElementToData("SubsystemCommonOverrideList",
 		                            subsystemCommonOverrideList);
 	}
+	catch(const std::runtime_error& e)
+	{
+		__COUT_WARN__ << "Failed to retrieve SubsystemCommon alias lists: " << e.what()
+		              << __E__;
+	}
+	catch(const std::exception& e)
+	{
+		__COUT_WARN__ << "Failed to retrieve SubsystemCommon alias lists: " << e.what()
+		              << __E__;
+	}
 	catch(...)
 	{
+		__COUT_WARN__
+		    << "Failed to retrieve SubsystemCommon alias lists (unknown exception)."
+		    << __E__;
 	}
 }  //end addFilteredConfigAliasesToXML()
 
