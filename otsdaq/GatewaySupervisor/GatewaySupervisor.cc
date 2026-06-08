@@ -9247,6 +9247,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	{
 		__COUT__ << "Exception caught, exiting broadcast threads..." << __E__;
 
+		{
+			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
+			isRemoteSubsystemIteration_ = false;
+			remoteIterationReceived_    = false;
+		}
+
 		// Signal all threads to exit and wait for them to finish gracefully.
 		// supervisorIterationsDone is heap-allocated (shared_ptr) and each
 		// BroadcastMessageStruct holds a shared_ptr copy, so the underlying
