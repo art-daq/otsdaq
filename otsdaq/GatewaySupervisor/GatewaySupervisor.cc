@@ -9172,7 +9172,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							if(!remoteIterationCV_.wait_for(
 							       lock, std::chrono::minutes(4), [this, nextIteration] {
 								       return remoteIterationIndex_ >= nextIteration ||
-								              RunControlStateMachine::asyncFailureReceived_;
+								              RunControlStateMachine::
+								                  asyncFailureReceived_;
 							       }))
 							{
 								__SS__ << "Timeout (4 min) waiting for top-level to send "
