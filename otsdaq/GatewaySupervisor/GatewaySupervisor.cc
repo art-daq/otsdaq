@@ -1485,14 +1485,14 @@ try
 							    portForReverseLoginOverUDP);
 
 							{
-								auto __statusMs =
+								auto statusMs =
 								    std::chrono::duration_cast<std::chrono::milliseconds>(
 								        std::chrono::high_resolution_clock::now() - start)
 								        .count();
-								if(__statusMs > 200)
+								if(statusMs > 200)
 									__COUT_WARN__ << "CheckRemoteGatewayStatus for '"
 									              << remoteGatewayApp.appInfo.name
-									              << "' took " << __statusMs << " ms"
+									              << "' took " << statusMs << " ms"
 									              << __E__;
 							}
 
@@ -1763,19 +1763,19 @@ try
 						//replace info in supervisor remote gateway list
 						{
 							//lock for remainder of scope
-							auto __lockWaitStart =
+							auto lockWaitStart =
 							    std::chrono::high_resolution_clock::now();
 							std::lock_guard<std::mutex> lock(
 							    theSupervisor->remoteGatewayAppsMutex_);
-							auto __lockWaitMs =
+							auto lockWaitMs =
 							    std::chrono::duration_cast<std::chrono::milliseconds>(
 							        std::chrono::high_resolution_clock::now() -
-							        __lockWaitStart)
+							        lockWaitStart)
 							        .count();
-							if(__lockWaitMs > 50)
+							if(lockWaitMs > 50)
 								__COUT_WARN__ << "AppStatusWorkLoop "
 								                 "remoteGatewayAppsMutex_ lock wait = "
-								              << __lockWaitMs << " ms" << __E__;
+								              << lockWaitMs << " ms" << __E__;
 
 							__COUTT__ << "(doDisconnected = " << doDisconnected
 							          << ") size?... "
