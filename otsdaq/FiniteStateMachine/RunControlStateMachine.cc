@@ -458,6 +458,7 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 			__GEN_COUT_ERR__ << "Halting failed in reaction to " << command
 			                 << "... ignoring." << __E__;
 		}
+		theProgressBar_.complete();
 		return SOAPUtilities::makeSOAPMessageReference(result);
 	}
 	else if(command == "AsyncError")
