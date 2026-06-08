@@ -9237,6 +9237,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		{
 			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
 			isRemoteSubsystemIteration_ = false;
+			remoteIterationIndex_       = 0;
 			remoteIterationReceived_    = false;
 		}
 
@@ -9253,6 +9254,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		{
 			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
 			isRemoteSubsystemIteration_ = false;
+			remoteIterationIndex_       = 0;
 			remoteIterationReceived_    = false;
 		}
 
