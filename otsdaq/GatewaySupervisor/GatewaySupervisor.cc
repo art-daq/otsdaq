@@ -9700,11 +9700,17 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 					}
 					catch(...)
 					{
-						__SS__ << "Failed to parse iteration index from detail '"
-						       << remoteGatewayApp.appInfo.detail
-						       << "' for Remote gateway '"
-						       << remoteGatewayApp.appInfo.name << "'" << __E__;
-						__SS_THROW__;
+						__COUT_WARN__ << "Failed to parse iteration index from detail '"
+						              << remoteGatewayApp.appInfo.detail
+						              << "' for Remote gateway '"
+						              << remoteGatewayApp.appInfo.name
+						              << "' -- ignoring, will keep polling." << __E__;
+						done = false;
+						++remainingRemoteGateways;
+						lastRemainingName     = remoteGatewayApp.appInfo.name;
+						lastRemainingStatus   = remoteGatewayApp.appInfo.status;
+						lastRemainingProgress = remoteGatewayApp.appInfo.progress;
+						continue;
 					}
 
 					unsigned int expectedIteration = iterationIndex + 1;
