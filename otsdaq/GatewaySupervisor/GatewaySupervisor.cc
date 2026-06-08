@@ -9166,25 +9166,35 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 					{
 						std::unique_lock<std::mutex> lock(remoteIterationMutex_);
-						remoteIterationReceived_ = false;
-						if(!remoteIterationCV_.wait_for(
-						       lock, std::chrono::minutes(4), [this] {
-							       return remoteIterationReceived_ ||
-							              RunControlStateMachine::asyncFailureReceived_;
-						       }))
+						if(remoteIterationIndex_ < nextIteration)
 						{
-							__SS__ << "Timeout (4 min) waiting for top-level to send "
-							          "IterationIndex:"
-							       << nextIteration
-							       << " -- top-level may have lost communication."
-							       << __E__;
-							__SS_THROW__;
+							remoteIterationReceived_ = false;
+							if(!remoteIterationCV_.wait_for(
+							       lock, std::chrono::minutes(4), [this, nextIteration] {
+								       return remoteIterationIndex_ >= nextIteration ||
+								              RunControlStateMachine::asyncFailureReceived_;
+							       }))
+							{
+								__SS__ << "Timeout (4 min) waiting for top-level to send "
+								          "IterationIndex:"
+								       << nextIteration
+								       << " -- top-level may have lost communication."
+								       << __E__;
+								__SS_THROW__;
+							}
 						}
 						if(RunControlStateMachine::asyncFailureReceived_)
 						{
 							__SS__ << "Async failure received while waiting for "
 							          "iteration re-send!"
 							       << __E__;
+							__SS_THROW__;
+						}
+						if(remoteIterationIndex_ != nextIteration)
+						{
+							__SS__ << "Unexpected IterationIndex re-send: got "
+							       << remoteIterationIndex_ << " but expected "
+							       << nextIteration << __E__;
 							__SS_THROW__;
 						}
 						__COUT__ << "Received iteration re-send: IterationIndex:"
