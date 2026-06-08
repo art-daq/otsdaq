@@ -9517,18 +9517,21 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		__SUP_COUTV__(remoteGatewayApp.command);
 	}  //end remote gateway broadcast loop
 
-	// Brief lock to write back only the fields modified above
+	// Brief lock to write back only the fields modified above (match by fullName, not index)
 	{
 		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-		for(size_t i = 0; i < localApps.size() && i < remoteGatewayApps_.size(); ++i)
-		{
-			remoteGatewayApps_[i].command          = localApps[i].command;
-			remoteGatewayApps_[i].fsmName          = localApps[i].fsmName;
-			remoteGatewayApps_[i].config_dump      = localApps[i].config_dump;
-			remoteGatewayApps_[i].appInfo.status   = localApps[i].appInfo.status;
-			remoteGatewayApps_[i].appInfo.progress = localApps[i].appInfo.progress;
-			remoteGatewayApps_[i].iterationsDone   = localApps[i].iterationsDone;
-		}
+		for(const auto& localApp : localApps)
+			for(auto& rga : remoteGatewayApps_)
+				if(rga.fullName == localApp.fullName)
+				{
+					rga.command          = localApp.command;
+					rga.fsmName          = localApp.fsmName;
+					rga.config_dump      = localApp.config_dump;
+					rga.appInfo.status   = localApp.appInfo.status;
+					rga.appInfo.progress = localApp.appInfo.progress;
+					rga.iterationsDone   = localApp.iterationsDone;
+					break;
+				}
 	}
 }  // end broadcastMessageToRemoteGateways()
 
