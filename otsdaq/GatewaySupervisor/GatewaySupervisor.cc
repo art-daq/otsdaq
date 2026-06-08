@@ -4443,8 +4443,20 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						{
 							if(param.find(COMMAND_PARAM_ITERATION_INDEX_PREAMBLE) == 0)
 							{
-								unsigned int iterIdx = std::stoul(param.substr(
-								    COMMAND_PARAM_ITERATION_INDEX_PREAMBLE.length()));
+								unsigned int iterIdx = 0;
+								try
+								{
+									iterIdx = std::stoul(param.substr(
+									    COMMAND_PARAM_ITERATION_INDEX_PREAMBLE.length()));
+								}
+								catch(...)
+								{
+									__COUT_WARN__
+									    << "Failed to parse IterationIndex from '"
+									    << param << "' -- ignoring malformed parameter."
+									    << __E__;
+									break;
+								}
 								__COUT__
 								    << "Received iteration re-send with IterationIndex:"
 								    << iterIdx
@@ -4983,9 +4995,19 @@ try
 		{
 			if(commandParameters[i].find(COMMAND_PARAM_ITERATION_INDEX_PREAMBLE) == 0)
 			{
-				unsigned int remoteIterationIndex =
-				    std::stoul(commandParameters[i].substr(
-				        COMMAND_PARAM_ITERATION_INDEX_PREAMBLE.length()));
+				unsigned int remoteIterationIndex = 0;
+				try
+				{
+					remoteIterationIndex = std::stoul(commandParameters[i].substr(
+					    COMMAND_PARAM_ITERATION_INDEX_PREAMBLE.length()));
+				}
+				catch(...)
+				{
+					__COUT_WARN__ << "Failed to parse IterationIndex from '"
+					              << commandParameters[i]
+					              << "' -- ignoring malformed parameter." << __E__;
+					break;
+				}
 				__COUT__ << "Received iteration index from top-level Gateway: "
 				         << remoteIterationIndex << __E__;
 
