@@ -9388,7 +9388,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		localApps = remoteGatewayApps_;
 	}
 
-	std::set<std::string> modifiedApps;
+	std::set<std::string> commandedApps;
 
 	for(auto& remoteGatewayApp : localApps)
 	{
@@ -9404,7 +9404,6 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		{
 			remoteGatewayApp.iterationsDone =
 			    false;  //reset iteration state on initial send
-			modifiedApps.emplace(remoteGatewayApp.fullName);
 		}
 		else if(remoteGatewayApp.iterationsDone)
 		{
@@ -9529,7 +9528,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			__SUP_SS_THROW__;
 		}
 
-		modifiedApps.emplace(remoteGatewayApp.fullName);
+		commandedApps.emplace(remoteGatewayApp.fullName);
 
 		remoteGatewayApp.config_dump = "";  //clear, must come from new command completion
 		remoteGatewayApp.command     = commandAndParams;
@@ -9568,17 +9567,22 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 		for(const auto& localApp : localApps)
 		{
-			if(modifiedApps.find(localApp.fullName) == modifiedApps.end())
+			bool wasCommanded = commandedApps.find(localApp.fullName) != commandedApps.end();
+			if(!wasCommanded && iteration != 0)
 				continue;
+
 			for(auto& rga : remoteGatewayApps_)
 				if(rga.fullName == localApp.fullName)
 				{
-					rga.command          = localApp.command;
-					rga.fsmName          = localApp.fsmName;
-					rga.config_dump      = localApp.config_dump;
-					rga.appInfo.status   = localApp.appInfo.status;
-					rga.appInfo.progress = localApp.appInfo.progress;
-					rga.iterationsDone   = localApp.iterationsDone;
+					rga.iterationsDone = localApp.iterationsDone;
+					if(wasCommanded)
+					{
+						rga.command          = localApp.command;
+						rga.fsmName          = localApp.fsmName;
+						rga.config_dump      = localApp.config_dump;
+						rga.appInfo.status   = localApp.appInfo.status;
+						rga.appInfo.progress = localApp.appInfo.progress;
+					}
 					break;
 				}
 		}
