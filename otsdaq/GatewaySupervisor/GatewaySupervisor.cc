@@ -9169,19 +9169,24 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 						if(remoteIterationIndex_ < nextIteration)
 						{
 							remoteIterationReceived_ = false;
-							if(!remoteIterationCV_.wait_for(
-							       lock, std::chrono::minutes(4), [this, nextIteration] {
-								       return remoteIterationIndex_ >= nextIteration ||
-								              RunControlStateMachine::
-								                  asyncFailureReceived_;
-							       }))
+							auto deadline            = std::chrono::steady_clock::now() +
+							                std::chrono::minutes(4);
+							while(remoteIterationIndex_ < nextIteration &&
+							      !RunControlStateMachine::asyncFailureReceived_)
 							{
-								__SS__ << "Timeout (4 min) waiting for top-level to send "
-								          "IterationIndex:"
-								       << nextIteration
-								       << " -- top-level may have lost communication."
-								       << __E__;
-								__SS_THROW__;
+								remoteIterationCV_.wait_for(lock,
+								                            std::chrono::seconds(1));
+								if(std::chrono::steady_clock::now() >= deadline &&
+								   remoteIterationIndex_ < nextIteration)
+								{
+									__SS__ << "Timeout (4 min) waiting for top-level to "
+									          "send "
+									          "IterationIndex:"
+									       << nextIteration
+									       << " -- top-level may have lost communication."
+									       << __E__;
+									__SS_THROW__;
+								}
 							}
 						}
 						if(RunControlStateMachine::asyncFailureReceived_)
