@@ -8746,8 +8746,6 @@ void GatewaySupervisor::broadcastMessageThread(
 				         << "flagged for another iteration." << __E__;
 
 				// set global iterationsDone
-				std::lock_guard<std::mutex> lock(
-				    supervisorPtr->broadcastIterationsDoneMutex_);
 				supervisorPtr->broadcastIterationsDone_ = false;
 			}
 
@@ -9745,10 +9743,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 					         << iterationIndex << ") for command '" << command << "'"
 					         << __E__;
 
-					{
-						std::lock_guard<std::mutex> lock(broadcastIterationsDoneMutex_);
-						broadcastIterationsDone_ = false;
-					}
+					broadcastIterationsDone_ = false;
 					// This gateway is done with this iteration pass;
 					// do not count as remaining (will be re-sent in next iteration pass)
 					continue;

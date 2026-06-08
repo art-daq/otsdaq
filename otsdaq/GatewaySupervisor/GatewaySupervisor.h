@@ -370,9 +370,9 @@ class WorkLoopManager;
 
 		CodeEditor 			codeEditor_;
 
-		std::mutex   		broadcastCommandMessageIndexMutex_, broadcastIterationsDoneMutex_;
+		std::mutex   		broadcastCommandMessageIndexMutex_;
 		unsigned int 		broadcastCommandMessageIndex_;
-		bool         		broadcastIterationsDone_;
+		std::atomic<bool>	broadcastIterationsDone_;
 		std::mutex   		broadcastIterationBreakpointMutex_;
 		unsigned int 		broadcastIterationBreakpoint_;  ///< pause transition when iteration index
 													 ///< matches breakpoint index
