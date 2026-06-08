@@ -4467,8 +4467,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								{
 									std::lock_guard<std::mutex> lock(
 									    theSupervisor->remoteIterationMutex_);
-									theSupervisor->remoteIterationIndex_    = iterIdx;
-									theSupervisor->remoteIterationReceived_ = true;
+									theSupervisor->remoteIterationIndex_ = iterIdx;
 								}
 								theSupervisor->remoteIterationCV_.notify_one();
 								isIterationResend = true;
@@ -5025,7 +5024,6 @@ try
 			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
 			isRemoteSubsystemIteration_ = false;
 			remoteIterationIndex_       = 0;
-			remoteIterationReceived_    = false;
 		}
 	}
 
@@ -9166,8 +9164,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 						std::unique_lock<std::mutex> lock(remoteIterationMutex_);
 						if(remoteIterationIndex_ < nextIteration)
 						{
-							remoteIterationReceived_ = false;
-							auto deadline            = std::chrono::steady_clock::now() +
+							auto deadline = std::chrono::steady_clock::now() +
 							                std::chrono::minutes(4);
 							while(remoteIterationIndex_ < nextIteration &&
 							      !RunControlStateMachine::asyncFailureReceived_)
@@ -9238,7 +9235,6 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
 			isRemoteSubsystemIteration_ = false;
 			remoteIterationIndex_       = 0;
-			remoteIterationReceived_    = false;
 		}
 
 		// Check for a user cancel that arrived during the final SOAP call of the loop,
@@ -9255,7 +9251,6 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
 			isRemoteSubsystemIteration_ = false;
 			remoteIterationIndex_       = 0;
-			remoteIterationReceived_    = false;
 		}
 
 		// Signal all threads to exit and wait for them to finish gracefully.
