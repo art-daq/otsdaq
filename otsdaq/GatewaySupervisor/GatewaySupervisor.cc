@@ -9402,7 +9402,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		if(iteration == 0)
 		{
-			remoteGatewayApp.iterationsDone = false;  //reset iteration state on initial send
+			remoteGatewayApp.iterationsDone =
+			    false;  //reset iteration state on initial send
 			modifiedApps.emplace(remoteGatewayApp.fullName);
 		}
 		else if(remoteGatewayApp.iterationsDone)
