@@ -383,7 +383,7 @@ class WorkLoopManager;
 		std::condition_variable remoteIterationCV_;
 		unsigned int            remoteIterationIndex_ = 0;
 		bool                    remoteIterationReceived_ = false;
-		bool                    isRemoteSubsystemIteration_ = false; ///< true when broadcastMessage() iteration loop is driven by top-level re-sends
+		std::atomic<bool>       isRemoteSubsystemIteration_{false}; ///< true when broadcastMessage() iteration loop is driven by top-level re-sends
 
 		static std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>> broadcastThreadStructs_; ///<moving to static, instead of a local instance inside broadcastMessage() seems to avoid crashing when multiple error stack up and threads get stuck waiting for app replies
 
