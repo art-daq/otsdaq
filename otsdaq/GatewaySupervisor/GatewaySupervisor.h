@@ -2,6 +2,7 @@
 #define _ots_GatewaySupervisor_h
 #include <atomic>
 #include <condition_variable>
+#include <mutex>
 
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
@@ -372,7 +373,7 @@ class WorkLoopManager;
 
 		std::mutex   		broadcastCommandMessageIndexMutex_;
 		unsigned int 		broadcastCommandMessageIndex_;
-		std::atomic<bool>	broadcastIterationsDone_;
+		std::atomic<bool>	broadcastIterationsDone_{true};
 		std::mutex   		broadcastIterationBreakpointMutex_;
 		unsigned int 		broadcastIterationBreakpoint_;  ///< pause transition when iteration index
 													 ///< matches breakpoint index
