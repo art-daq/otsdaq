@@ -9388,6 +9388,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		localApps = remoteGatewayApps_;
 	}
 
+	std::set<std::string> modifiedApps;
+
 	for(auto& remoteGatewayApp : localApps)
 	{
 		if(!remoteGatewayApp.fsm_included)
@@ -9399,8 +9401,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		}
 
 		if(iteration == 0)
-			remoteGatewayApp.iterationsDone =
-			    false;  //reset iteration state on initial send
+		{
+			remoteGatewayApp.iterationsDone = false;  //reset iteration state on initial send
+			modifiedApps.emplace(remoteGatewayApp.fullName);
+		}
 		else if(remoteGatewayApp.iterationsDone)
 		{
 			__COUT__ << "Skipping Remote gateway '" << remoteGatewayApp.appInfo.name
@@ -9524,6 +9528,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			__SUP_SS_THROW__;
 		}
 
+		modifiedApps.emplace(remoteGatewayApp.fullName);
+
 		remoteGatewayApp.config_dump = "";  //clear, must come from new command completion
 		remoteGatewayApp.command     = commandAndParams;
 
@@ -9556,10 +9562,13 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		__SUP_COUTV__(remoteGatewayApp.command);
 	}  //end remote gateway broadcast loop
 
-	// Brief lock to write back only the fields modified above (match by fullName, not index)
+	// Brief lock to write back only entries that were actually modified above
 	{
 		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 		for(const auto& localApp : localApps)
+		{
+			if(modifiedApps.find(localApp.fullName) == modifiedApps.end())
+				continue;
 			for(auto& rga : remoteGatewayApps_)
 				if(rga.fullName == localApp.fullName)
 				{
@@ -9571,6 +9580,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 					rga.iterationsDone   = localApp.iterationsDone;
 					break;
 				}
+		}
 	}
 }  // end broadcastMessageToRemoteGateways()
 
