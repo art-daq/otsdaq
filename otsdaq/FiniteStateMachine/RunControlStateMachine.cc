@@ -470,10 +470,11 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
-		asyncFailureReceived_ = true;  // mark flag, to be used to abort next transition
-		// determine any valid transition from where we are
-		theStateMachine_.execTransition("fail");
-		// XCEPT_RAISE (toolbox::fsm::exception::Exception, ss.str());
+		asyncFailureReceived_ =
+		    true;  // mark flag — AppStatusWorkLoop will trigger the fail transition
+		// Do NOT call execTransition("fail") here — it triggers
+		// enteringError() → broadcastMessage() synchronously on this XDAQ
+		// handler thread, blocking ALL HTTP requests for up to 4 minutes.
 
 		return SOAPUtilities::makeSOAPMessageReference(result);
 	}
