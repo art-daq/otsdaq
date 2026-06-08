@@ -9567,7 +9567,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 		for(const auto& localApp : localApps)
 		{
-			bool wasCommanded = commandedApps.find(localApp.fullName) != commandedApps.end();
+			bool wasCommanded =
+			    commandedApps.find(localApp.fullName) != commandedApps.end();
 			if(!wasCommanded && iteration != 0)
 				continue;
 
