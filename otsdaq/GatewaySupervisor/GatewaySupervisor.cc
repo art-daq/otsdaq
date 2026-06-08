@@ -4437,7 +4437,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				// (top-level is driving iterations and re-sending with IterationIndex:N)
 				{
 					bool isIterationResend = false;
-					if(theSupervisor->theStateMachine_.isInTransition())
+					if(theSupervisor->theStateMachine_.isInTransition() &&
+					   theSupervisor->isRemoteSubsystemIteration_.load())
 					{
 						for(const auto& param : parameters)
 						{
