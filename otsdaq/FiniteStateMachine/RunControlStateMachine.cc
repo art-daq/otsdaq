@@ -574,8 +574,15 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 	{
 		__GEN_COUT__ << "Clearing Errors after failure..." << std::endl;
 		theStateMachine_.setErrorMessage("", false /*append*/);  // clear error message
-		asyncFailureReceived_ = false;
+		asyncFailureReceived_        = false;
+		asyncPauseExceptionReceived_ = false;
+		asyncStopExceptionReceived_  = false;
 	}
+
+	if(command == RunControlStateMachine::RESUME_TRANSITION_NAME)
+		asyncPauseExceptionReceived_ = false;
+	if(command == RunControlStateMachine::START_TRANSITION_NAME)
+		asyncStopExceptionReceived_ = false;
 
 	__GEN_COUTVS__(2, command);
 	__GEN_COUTVS__(2, currentState);
