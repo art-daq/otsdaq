@@ -1700,22 +1700,22 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 	std::string request = "loginVerify," + cookieCode + "," + (refresh ? "1" : "0") +
 	                      "," + ip + "," + remoteGatewaySelfName_;
 
-	__COUTV__(request);
+	__COUTTV__(request);
 	__COUTS__(40) << StringMacros::stackTrace() << __E__;
 
 	std::string requestResponseString = remoteLoginVerificationSocket_->sendAndReceive(
 	    *remoteLoginVerificationSocketTarget_, request, 10 /*timeoutSeconds*/);
-	__COUTV__(requestResponseString);
+	__COUTTV__(requestResponseString);
 
 	//from response... extract refreshedCookieCode, permissions, userWithLock, username, and display name
 	std::vector<std::string> rxParams =
 	    StringMacros::getVectorFromString(requestResponseString);
-	__COUTV__(StringMacros::vectorToString(rxParams));
+	__COUTTV__(StringMacros::vectorToString(rxParams));
 
 	if(rxParams.size() != 6)
 	{
-		__COUT__ << "Remote login response indicates rejected: " << rxParams.size()
-		         << __E__;
+		__COUTT__ << "Remote login response indicates rejected: " << rxParams.size()
+		          << __E__;
 		return NOT_FOUND_IN_DATABASE;
 	}
 	//else valid remote login! so create active remote session object

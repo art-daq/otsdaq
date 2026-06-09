@@ -2272,62 +2272,69 @@ try
 					}     // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
-						std::lock_guard<std::mutex> lock(
-						    theSupervisor->stateMachineAccessMutex_);
-
-						std::string currentState =
-						    theSupervisor->theStateMachine_.getCurrentStateName();
-						if(currentState != RunControlStateMachine::FAILED_STATE_NAME &&
-						   (currentState != RunControlStateMachine::HALTED_STATE_NAME ||
-						    theSupervisor->theStateMachine_.isInTransition()) &&
-						   currentState != RunControlStateMachine::SHUTDOWN_STATE_NAME &&
-						   (currentState != RunControlStateMachine::INITIAL_STATE_NAME ||
-						    theSupervisor->theStateMachine_.isInTransition()))
+						bool shouldTriggerError = false;
 						{
-							__COUTV__(currentState);
-							__SS__
-							    << "\nDid a supervisor crash? Failed getting status from "
-							    << " Supervisor instance = '" << appName
-							    << "' [LID=" << appInfo.getId() << "] in Context '"
-							    << appInfo.getContextName()
-							    << "' [URL=" << appInfo.getURL() << "]." << __E__;
-							__COUT_ERR__ << "\n" << ss.str();
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->stateMachineAccessMutex_);
 
-							//Prevent stopping state machine from failed status (for now)
-							//	Seeing Console Crash and bring down state machine at the moment
-							if(!appInfo.isTypeConsoleSupervisor())
+							std::string currentState =
+							    theSupervisor->theStateMachine_.getCurrentStateName();
+							if(currentState !=
+							       RunControlStateMachine::FAILED_STATE_NAME &&
+							   (currentState !=
+							        RunControlStateMachine::HALTED_STATE_NAME ||
+							    theSupervisor->theStateMachine_.isInTransition()) &&
+							   currentState !=
+							       RunControlStateMachine::SHUTDOWN_STATE_NAME &&
+							   (currentState !=
+							        RunControlStateMachine::INITIAL_STATE_NAME ||
+							    theSupervisor->theStateMachine_.isInTransition()))
 							{
-								__COUT_WARN__ << "Unexpected failure getting status from "
-								              << " Supervisor instance = '" << appName
-								              << "' [LID=" << appInfo.getId()
-								              << "] in Context '"
-								              << appInfo.getContextName()
-								              << "' [URL=" << appInfo.getURL()
-								              << "]. Attempting to send 'Error' "
-								                 "transition to target now!"
-								              << __E__;
-								//Only set error message if it is not already present
-								//	(avoid growing the error string with duplicate messages)
-								if(theSupervisor->theStateMachine_.getErrorMessage().find(
-								       ss.str()) == std::string::npos)
-									theSupervisor->theStateMachine_.setErrorMessage(
-									    ss.str());
-								try
-								{
-									theSupervisor->runControlMessageHandler(
-									    SOAPUtilities::makeSOAPMessageReference(
-									        RunControlStateMachine::
-									            ERROR_TRANSITION_NAME));
-								}
-								catch(...)
-								{
-								}  //ignore any errors
-							}
-							else
-								__COUT__
-								    << "Ignoring that Console type supervisor crashed."
-								    << __E__;
+								__COUTV__(currentState);
+								__SS__ << "\nDid a supervisor crash? Failed getting "
+								          "status from "
+								       << " Supervisor instance = '" << appName
+								       << "' [LID=" << appInfo.getId() << "] in Context '"
+								       << appInfo.getContextName()
+								       << "' [URL=" << appInfo.getURL() << "]." << __E__;
+								__COUT_ERR__ << "\n" << ss.str();
 
+								if(!appInfo.isTypeConsoleSupervisor())
+								{
+									__COUT_WARN__
+									    << "Unexpected failure getting status from "
+									    << " Supervisor instance = '" << appName
+									    << "' [LID=" << appInfo.getId()
+									    << "] in Context '" << appInfo.getContextName()
+									    << "' [URL=" << appInfo.getURL()
+									    << "]. Attempting to send 'Error' "
+									       "transition to target now!"
+									    << __E__;
+									if(theSupervisor->theStateMachine_.getErrorMessage()
+									       .find(ss.str()) == std::string::npos)
+										theSupervisor->theStateMachine_.setErrorMessage(
+										    ss.str());
+									shouldTriggerError = true;
+								}
+								else
+									__COUT__ << "Ignoring that Console type supervisor "
+									            "crashed."
+									         << __E__;
+							}
+						}  // mutex released here — do not hold during broadcast
+						if(shouldTriggerError)
+						{
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->stateMachineAccessMutex_);
+							try
+							{
+								theSupervisor->runControlMessageHandler(
+								    SOAPUtilities::makeSOAPMessageReference(
+								        RunControlStateMachine::ERROR_TRANSITION_NAME));
+							}
+							catch(...)
+							{
+							}       //ignore any errors
 							break;  //only send one Error, then restart status loop
 						}
 					}
@@ -2384,27 +2391,38 @@ try
 					}     // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
-						std::lock_guard<std::mutex> lock(
-						    theSupervisor->stateMachineAccessMutex_);
-
-						std::string currentState =
-						    theSupervisor->theStateMachine_.getCurrentStateName();
-						if(currentState != RunControlStateMachine::FAILED_STATE_NAME &&
-						   currentState != RunControlStateMachine::HALTED_STATE_NAME &&
-						   currentState != RunControlStateMachine::INITIAL_STATE_NAME)
+						bool shouldTriggerError2 = false;
 						{
-							__SS__ << "\nDid a supervisor crash? Failed getting Status "
-							       << " Supervisor instance = '" << appName
-							       << "' [LID=" << appInfo.getId() << "] in Context '"
-							       << appInfo.getContextName()
-							       << "' [URL=" << appInfo.getURL() << "]." << __E__;
-							__COUT_ERR__ << "\n" << ss.str();
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->stateMachineAccessMutex_);
 
-							//Only set error message if it is not already present
-							//	(avoid growing the error string with duplicate messages)
-							if(theSupervisor->theStateMachine_.getErrorMessage().find(
-							       ss.str()) == std::string::npos)
-								theSupervisor->theStateMachine_.setErrorMessage(ss.str());
+							std::string currentState =
+							    theSupervisor->theStateMachine_.getCurrentStateName();
+							if(currentState !=
+							       RunControlStateMachine::FAILED_STATE_NAME &&
+							   currentState !=
+							       RunControlStateMachine::HALTED_STATE_NAME &&
+							   currentState != RunControlStateMachine::INITIAL_STATE_NAME)
+							{
+								__SS__
+								    << "\nDid a supervisor crash? Failed getting Status "
+								    << " Supervisor instance = '" << appName
+								    << "' [LID=" << appInfo.getId() << "] in Context '"
+								    << appInfo.getContextName()
+								    << "' [URL=" << appInfo.getURL() << "]." << __E__;
+								__COUT_ERR__ << "\n" << ss.str();
+
+								if(theSupervisor->theStateMachine_.getErrorMessage().find(
+								       ss.str()) == std::string::npos)
+									theSupervisor->theStateMachine_.setErrorMessage(
+									    ss.str());
+								shouldTriggerError2 = true;
+							}
+						}  // mutex released here — do not hold during broadcast
+						if(shouldTriggerError2)
+						{
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->stateMachineAccessMutex_);
 							try
 							{
 								theSupervisor->runControlMessageHandler(
@@ -2413,8 +2431,7 @@ try
 							}
 							catch(...)
 							{
-							}  //ignore any errors
-
+							}       //ignore any errors
 							break;  //only send one Error, then restart status loop
 						}
 					}
@@ -6052,17 +6069,18 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 }  // end inError()
 
 //==============================================================================
-void GatewaySupervisor::enteringError(toolbox::Event::Reference e)
+void GatewaySupervisor::enteringError(toolbox::Event::Reference event)
 {
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
-	         << ", Error event type: " << e->type() << __E__;
+	         << ", Error event type: " << event->type() << __E__;
 
 	// xdaq 15_14_0_3 broke what() by return c_str() on a temporary string
 	//  https://gitlab.cern.ch/cmsos/core/-/blob/release_15_14_0_3/xcept/src/common/Exception.cc
 
 	// extract error message and save for user interface access
-	toolbox::fsm::FailedEvent& failedEvent = dynamic_cast<toolbox::fsm::FailedEvent&>(*e);
-	xcept::Exception&          failedException = failedEvent.getException();
+	toolbox::fsm::FailedEvent& failedEvent =
+	    dynamic_cast<toolbox::fsm::FailedEvent&>(*event);
+	xcept::Exception& failedException = failedEvent.getException();
 	//__COUT__ << "History of errors: " << failedException.size() << __E__;
 	//__COUT__ << "Failed Message: " << failedException.rbegin()->at("message") << __E__;
 	//__COUT__ << "Failed Message: " << failedException.message() << __E__;
@@ -6100,8 +6118,25 @@ void GatewaySupervisor::enteringError(toolbox::Event::Reference e)
 		__COUT__ << "Already in failed state, so not broadcasting Error transition again."
 		         << __E__;
 	else  // move everything else to Error!
-		broadcastMessage(SOAPUtilities::makeSOAPMessageReference(
-		    RunControlStateMachine::ERROR_TRANSITION_NAME));
+	{
+		try
+		{
+			broadcastMessage(SOAPUtilities::makeSOAPMessageReference(
+			    RunControlStateMachine::ERROR_TRANSITION_NAME));
+		}
+		catch(const std::exception& e)
+		{
+			__COUT_ERR__ << "Error broadcast did not fully complete: " << e.what()
+			             << " — Gateway will still enter Failed state." << __E__;
+		}
+		catch(...)
+		{
+			__COUT_ERR__ << "Error broadcast did not fully complete (unknown exception)"
+			             << " — Gateway will still enter Failed state." << __E__;
+		}
+	}
+
+	RunControlStateMachine::theProgressBar_.complete();
 }  // end enteringError()
 
 //==============================================================================
@@ -6122,7 +6157,7 @@ void GatewaySupervisor::checkForAsyncError()
 /////////////////////////////////////////////////////////////////////////////////////
 
 //==============================================================================
-void GatewaySupervisor::transitionConfiguring(toolbox::Event::Reference /* e*/)
+void GatewaySupervisor::transitionConfiguring(toolbox::Event::Reference /* event*/)
 try
 {
 	checkForAsyncError();
@@ -6942,7 +6977,7 @@ catch(...)
 }  // end transitionConfiguring() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -7024,7 +7059,7 @@ catch(...)
 }  // end transitionHalting() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionShuttingDown(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionShuttingDown(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -7119,7 +7154,7 @@ catch(...)
 }  // end transitionShuttingDown() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionStartingUp(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionStartingUp(toolbox::Event::Reference /*event*/)
 try
 {
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
@@ -7282,7 +7317,7 @@ catch(...)
 }  // end transitionInitializing() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionPausing(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionPausing(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -7401,7 +7436,7 @@ catch(...)
 }  // end transitionPausing() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionResuming(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionResuming(toolbox::Event::Reference /*event*/)
 try
 {
 	if(RunControlStateMachine::asyncPauseExceptionReceived_)
@@ -7523,7 +7558,7 @@ catch(...)
 }  // end transitionResuming() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionStarting(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionStarting(toolbox::Event::Reference /*event*/)
 try
 {
 	if(RunControlStateMachine::asyncPauseExceptionReceived_)
@@ -8070,7 +8105,7 @@ catch(...)
 }  // end transitionStarting() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionStopping(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionStopping(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();

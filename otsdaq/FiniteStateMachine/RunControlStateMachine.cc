@@ -12,6 +12,7 @@
 #include <xoap/Method.h>
 
 #include <iostream>
+#include <thread>
 
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "FSM"
@@ -47,9 +48,6 @@ const std::string RunControlStateMachine::STOP_TRANSITION_NAME  		= "Stop";
 //==============================================================================
 RunControlStateMachine::RunControlStateMachine(const std::string& name)
     : theStateMachine_(name)
-    , asyncFailureReceived_(false)
-    , asyncPauseExceptionReceived_(false)
-    , asyncStopExceptionReceived_(false)
 {
 	INIT_MF("." /*directory used is USER_DATA/LOG/.*/);
 
@@ -458,6 +456,7 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 			__GEN_COUT_ERR__ << "Halting failed in reaction to " << command
 			                 << "... ignoring." << __E__;
 		}
+		theProgressBar_.complete();
 		return SOAPUtilities::makeSOAPMessageReference(result);
 	}
 	else if(command == "AsyncError")
@@ -470,10 +469,23 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
-		asyncFailureReceived_ = true;  // mark flag, to be used to abort next transition
-		// determine any valid transition from where we are
-		theStateMachine_.execTransition("fail");
-		// XCEPT_RAISE (toolbox::fsm::exception::Exception, ss.str());
+		if(!asyncFailureReceived_.exchange(true))
+		{
+			// Thread safety: execTransition("fail") spins on inTransition_ and
+			// checks for already-FAILED. No use-after-free: XDAQ supervisors
+			// live for the process lifetime. stateMachineAccessMutex_ is
+			// GatewaySupervisor-specific and not available here.
+			std::thread([this]() {
+				try
+				{
+					theStateMachine_.execTransition("fail");
+				}
+				catch(...)
+				{
+					__GEN_COUT_ERR__ << "AsyncError: execTransition(fail) threw" << __E__;
+				}
+			}).detach();
+		}
 
 		return SOAPUtilities::makeSOAPMessageReference(result);
 	}
@@ -487,12 +499,21 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
-		if(!asyncPauseExceptionReceived_)  // launch pause only first time
+		if(!asyncPauseExceptionReceived_.exchange(true))
 		{
-			asyncPauseExceptionReceived_ = true;  // mark flag, to be used to avoid double
-			                                      // pausing and identify pause was due to
-			                                      // soft error
-			theStateMachine_.execTransition("Pause");
+			// Thread safety: inTransition_ rejects concurrent transitions.
+			// No use-after-free: XDAQ supervisors live for the process lifetime.
+			std::thread([this]() {
+				try
+				{
+					theStateMachine_.execTransition("Pause");
+				}
+				catch(...)
+				{
+					__GEN_COUT_ERR__ << "AsyncPauseException: execTransition(Pause) threw"
+					                 << __E__;
+				}
+			}).detach();
 		}
 
 		return SOAPUtilities::makeSOAPMessageReference(result);
@@ -507,12 +528,21 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
-		if(!asyncStopExceptionReceived_)  // launch stop only first time
+		if(!asyncStopExceptionReceived_.exchange(true))
 		{
-			asyncStopExceptionReceived_ = true;  // mark flag, to be used to avoid double
-			                                     // pausing and identify pause was due to
-			                                     // soft error
-			theStateMachine_.execTransition("Stop");
+			// Thread safety: inTransition_ rejects concurrent transitions.
+			// No use-after-free: XDAQ supervisors live for the process lifetime.
+			std::thread([this]() {
+				try
+				{
+					theStateMachine_.execTransition("Stop");
+				}
+				catch(...)
+				{
+					__GEN_COUT_ERR__ << "AsyncStopException: execTransition(Stop) threw"
+					                 << __E__;
+				}
+			}).detach();
 		}
 
 		return SOAPUtilities::makeSOAPMessageReference(result);
@@ -544,8 +574,15 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 	{
 		__GEN_COUT__ << "Clearing Errors after failure..." << std::endl;
 		theStateMachine_.setErrorMessage("", false /*append*/);  // clear error message
-		asyncFailureReceived_ = false;
+		asyncFailureReceived_        = false;
+		asyncPauseExceptionReceived_ = false;
+		asyncStopExceptionReceived_  = false;
 	}
+
+	if(command == RunControlStateMachine::RESUME_TRANSITION_NAME)
+		asyncPauseExceptionReceived_ = false;
+	if(command == RunControlStateMachine::START_TRANSITION_NAME)
+		asyncStopExceptionReceived_ = false;
 
 	__GEN_COUTVS__(2, command);
 	__GEN_COUTVS__(2, currentState);
