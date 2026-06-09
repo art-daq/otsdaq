@@ -6069,17 +6069,18 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 }  // end inError()
 
 //==============================================================================
-void GatewaySupervisor::enteringError(toolbox::Event::Reference e)
+void GatewaySupervisor::enteringError(toolbox::Event::Reference event)
 {
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
-	         << ", Error event type: " << e->type() << __E__;
+	         << ", Error event type: " << event->type() << __E__;
 
 	// xdaq 15_14_0_3 broke what() by return c_str() on a temporary string
 	//  https://gitlab.cern.ch/cmsos/core/-/blob/release_15_14_0_3/xcept/src/common/Exception.cc
 
 	// extract error message and save for user interface access
-	toolbox::fsm::FailedEvent& failedEvent = dynamic_cast<toolbox::fsm::FailedEvent&>(*e);
-	xcept::Exception&          failedException = failedEvent.getException();
+	toolbox::fsm::FailedEvent& failedEvent =
+	    dynamic_cast<toolbox::fsm::FailedEvent&>(*event);
+	xcept::Exception& failedException = failedEvent.getException();
 	//__COUT__ << "History of errors: " << failedException.size() << __E__;
 	//__COUT__ << "Failed Message: " << failedException.rbegin()->at("message") << __E__;
 	//__COUT__ << "Failed Message: " << failedException.message() << __E__;
@@ -6156,7 +6157,7 @@ void GatewaySupervisor::checkForAsyncError()
 /////////////////////////////////////////////////////////////////////////////////////
 
 //==============================================================================
-void GatewaySupervisor::transitionConfiguring(toolbox::Event::Reference /* e*/)
+void GatewaySupervisor::transitionConfiguring(toolbox::Event::Reference /* event*/)
 try
 {
 	checkForAsyncError();
@@ -6976,7 +6977,7 @@ catch(...)
 }  // end transitionConfiguring() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -7058,7 +7059,7 @@ catch(...)
 }  // end transitionHalting() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionShuttingDown(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionShuttingDown(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -7153,7 +7154,7 @@ catch(...)
 }  // end transitionShuttingDown() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionStartingUp(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionStartingUp(toolbox::Event::Reference /*event*/)
 try
 {
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
@@ -7316,7 +7317,7 @@ catch(...)
 }  // end transitionInitializing() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionPausing(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionPausing(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -7435,7 +7436,7 @@ catch(...)
 }  // end transitionPausing() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionResuming(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionResuming(toolbox::Event::Reference /*event*/)
 try
 {
 	if(RunControlStateMachine::asyncPauseExceptionReceived_)
@@ -7557,7 +7558,7 @@ catch(...)
 }  // end transitionResuming() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionStarting(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionStarting(toolbox::Event::Reference /*event*/)
 try
 {
 	if(RunControlStateMachine::asyncPauseExceptionReceived_)
@@ -8104,7 +8105,7 @@ catch(...)
 }  // end transitionStarting() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionStopping(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionStopping(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
