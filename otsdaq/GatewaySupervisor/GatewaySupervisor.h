@@ -1,6 +1,8 @@
 #ifndef _ots_GatewaySupervisor_h
 #define _ots_GatewaySupervisor_h
 #include <atomic>
+#include <condition_variable>
+#include <mutex>
 
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
@@ -80,6 +82,7 @@ class WorkLoopManager;
 		static const std::string COMMAND_PARAM_LOG_ENTRY_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE;
+		static const std::string COMMAND_PARAM_ITERATION_INDEX_PREAMBLE;
 
 	public:
 		XDAQ_INSTANTIATOR();
@@ -181,8 +184,8 @@ class WorkLoopManager;
 																						const std::vector<std::string>& parameters,
 																						std::string logEntry = "");
 		void        					broadcastMessage								(xoap::MessageReference msg);
-		void        					broadcastMessageToRemoteGateways				(const xoap::MessageReference msg);
-		void        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg);
+		void        					broadcastMessageToRemoteGateways				(const xoap::MessageReference msg, unsigned int iteration = 0);
+		void        					broadcastMessageToRemoteGatewaysComplete		(const xoap::MessageReference msg, unsigned int iterationIndex = 0);
 		void        					signalAndWaitForBroadcastThreads				(unsigned int numberOfThreads);
 
 		struct BroadcastMessageIterationsDoneStruct
@@ -373,14 +376,20 @@ class WorkLoopManager;
 
 		CodeEditor 			codeEditor_;
 
-		std::mutex   		broadcastCommandMessageIndexMutex_, broadcastIterationsDoneMutex_;
+		std::mutex   		broadcastCommandMessageIndexMutex_;
 		unsigned int 		broadcastCommandMessageIndex_;
-		bool         		broadcastIterationsDone_;
+		std::atomic<bool>	broadcastIterationsDone_{true};
 		std::mutex   		broadcastIterationBreakpointMutex_;
 		unsigned int 		broadcastIterationBreakpoint_;  ///< pause transition when iteration index
 													 ///< matches breakpoint index
 		std::mutex			broadcastCommandStatusUpdateMutex_;
 		std::string			broadcastCommandStatus_;
+
+		std::mutex              remoteIterationMutex_;
+		std::condition_variable remoteIterationCV_;
+		unsigned int            remoteIterationIndex_ = 0;
+		std::atomic<bool>       isRemoteSubsystemIteration_{false}; ///< true when broadcastMessage() iteration loop is driven by top-level re-sends
+
 		static std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>> broadcastThreadStructs_; ///<moving to static, instead of a local instance inside broadcastMessage() seems to avoid crashing when multiple error stack up and threads get stuck waiting for app replies
 
 		std::string        	securityType_;
@@ -458,6 +467,7 @@ public:	//used by remote subsystem control and status
 			} //end getFsmMode()
 
 			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///< remote gateways can have subapps
+			bool iterationsDone = false; ///< tracks per-gateway iteration completion during FSM transitions
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
