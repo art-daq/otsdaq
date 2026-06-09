@@ -535,34 +535,6 @@ try
 			appLastStatusGood = theSupervisor->appLastStatusGood_;
 		}
 
-		// Check if an AsyncError was received (flag set by
-		// RunControlStateMachine SOAP handler). Trigger the fail
-		// transition from this thread so the XDAQ handler thread
-		// stays free for HTTP requests.
-		if(!doDisconnected)
-		{
-			std::lock_guard<std::mutex> lock(theSupervisor->stateMachineAccessMutex_);
-			if(theSupervisor->asyncFailureReceived_ &&
-			   !theSupervisor->theStateMachine_.isInTransition() &&
-			   theSupervisor->theStateMachine_.getCurrentStateName() !=
-			       RunControlStateMachine::FAILED_STATE_NAME)
-			{
-				__COUT__ << "AppStatusWorkLoop: asyncFailureReceived_ is set, "
-				            "triggering fail transition from workloop thread"
-				         << __E__;
-				try
-				{
-					theSupervisor->theStateMachine_.execTransition("fail");
-				}
-				catch(...)
-				{
-					__COUT_ERR__ << "AppStatusWorkLoop: execTransition(fail) "
-					                "threw — ignoring"
-					             << __E__;
-				}
-			}
-		}
-
 		// workloop procedure
 		//	Loop through all Apps and request status
 		//	sleep

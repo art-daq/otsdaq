@@ -4,6 +4,7 @@
 #include "otsdaq/FiniteStateMachine/FiniteStateMachine.h"
 #include "otsdaq/ProgressBar/ProgressBar.h"
 
+#include <atomic>
 #include <string>
 #include "toolbox/lang/Class.h"
 
@@ -158,8 +159,9 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	FiniteStateMachine theStateMachine_;
 	ProgressBar        theProgressBar_;
 
-	volatile bool asyncFailureReceived_, asyncPauseExceptionReceived_,
-	    asyncStopExceptionReceived_;
+	std::atomic<bool> asyncFailureReceived_{false};
+	std::atomic<bool> asyncPauseExceptionReceived_{false};
+	std::atomic<bool> asyncStopExceptionReceived_{false};
 
 	unsigned int iterationIndex_ = 0, subIterationIndex_ = 0;
 	bool         iterationWorkFlag_, subIterationWorkFlag_;
