@@ -471,6 +471,10 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 
 		asyncFailureReceived_ = true;
 
+		// Thread safety: execTransition("fail") spins on inTransition_ and
+		// checks for already-FAILED. No use-after-free: XDAQ supervisors
+		// live for the process lifetime. stateMachineAccessMutex_ is
+		// GatewaySupervisor-specific and not available here.
 		std::thread([this]() {
 			try
 			{
@@ -498,6 +502,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		{
 			asyncPauseExceptionReceived_ = true;
 
+			// Thread safety: inTransition_ rejects concurrent transitions.
+			// No use-after-free: XDAQ supervisors live for the process lifetime.
 			std::thread([this]() {
 				try
 				{
@@ -527,6 +533,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		{
 			asyncStopExceptionReceived_ = true;
 
+			// Thread safety: inTransition_ rejects concurrent transitions.
+			// No use-after-free: XDAQ supervisors live for the process lifetime.
 			std::thread([this]() {
 				try
 				{
