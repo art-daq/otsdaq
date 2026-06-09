@@ -2352,6 +2352,8 @@ try
 						}  // mutex released here — do not hold during broadcast
 						if(shouldTriggerError)
 						{
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->stateMachineAccessMutex_);
 							try
 							{
 								theSupervisor->runControlMessageHandler(
