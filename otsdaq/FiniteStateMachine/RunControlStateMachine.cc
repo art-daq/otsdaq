@@ -469,22 +469,23 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
-		asyncFailureReceived_ = true;
-
-		// Thread safety: execTransition("fail") spins on inTransition_ and
-		// checks for already-FAILED. No use-after-free: XDAQ supervisors
-		// live for the process lifetime. stateMachineAccessMutex_ is
-		// GatewaySupervisor-specific and not available here.
-		std::thread([this]() {
-			try
-			{
-				theStateMachine_.execTransition("fail");
-			}
-			catch(...)
-			{
-				__GEN_COUT_ERR__ << "AsyncError: execTransition(fail) threw" << __E__;
-			}
-		}).detach();
+		if(!asyncFailureReceived_.exchange(true))
+		{
+			// Thread safety: execTransition("fail") spins on inTransition_ and
+			// checks for already-FAILED. No use-after-free: XDAQ supervisors
+			// live for the process lifetime. stateMachineAccessMutex_ is
+			// GatewaySupervisor-specific and not available here.
+			std::thread([this]() {
+				try
+				{
+					theStateMachine_.execTransition("fail");
+				}
+				catch(...)
+				{
+					__GEN_COUT_ERR__ << "AsyncError: execTransition(fail) threw" << __E__;
+				}
+			}).detach();
+		}
 
 		return SOAPUtilities::makeSOAPMessageReference(result);
 	}
