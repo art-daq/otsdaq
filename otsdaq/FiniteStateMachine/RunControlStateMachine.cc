@@ -498,10 +498,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
-		if(!asyncPauseExceptionReceived_)
+		if(!asyncPauseExceptionReceived_.exchange(true))
 		{
-			asyncPauseExceptionReceived_ = true;
-
 			// Thread safety: inTransition_ rejects concurrent transitions.
 			// No use-after-free: XDAQ supervisors live for the process lifetime.
 			std::thread([this]() {
@@ -529,10 +527,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		__GEN_COUT_ERR__ << "\n" << ss.str();
 		theStateMachine_.setErrorMessage(ss.str());
 
-		if(!asyncStopExceptionReceived_)
+		if(!asyncStopExceptionReceived_.exchange(true))
 		{
-			asyncStopExceptionReceived_ = true;
-
 			// Thread safety: inTransition_ rejects concurrent transitions.
 			// No use-after-free: XDAQ supervisors live for the process lifetime.
 			std::thread([this]() {
