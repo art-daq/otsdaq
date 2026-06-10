@@ -1386,14 +1386,9 @@ TableBase* ConfigurationManagerRW::getTableByName(const std::string& tableName)
 
 //==============================================================================
 /// getVersionCreationTime
-///	returns the creation time of a specific persistent table version.
-///	Creation times are cached forever (persistent versions are immutable), so each
-///	version is loaded from the database at most once. The cache is process-wide
-///	(shared by all user sessions), so the load cost is paid at most once per
-///	version per process lifetime. The load is metadata-only: it does NOT stamp the
-///	view's lastAccessTime ("Last Load"), so scanning versions for creation times
-///	does not corrupt the Last Load timestamps nor unfairly refresh views in the
-///	version cache (TableBase::trimCache()).
+///	Returns the creation time of a persistent table version from the process-wide
+///	cache (shared across all user sessions). On cache miss the version is loaded
+///	from the database once without stamping lastAccessTime.
 time_t ConfigurationManagerRW::getVersionCreationTime(const std::string& tableName,
                                                       TableVersion       version)
 {
@@ -1407,8 +1402,7 @@ time_t ConfigurationManagerRW::getVersionCreationTime(const std::string& tableNa
 			if(versionIt != tableIt->second.end())
 				return versionIt->second;
 		}
-	}  // unlock during the slow database load, so parallel callers
-	   //	(on different tables) can proceed concurrently
+	}
 
 	std::string localAccumulatedErrors;
 	const auto  loadStartTime = std::chrono::steady_clock::now();
@@ -1422,7 +1416,6 @@ time_t ConfigurationManagerRW::getVersionCreationTime(const std::string& tableNa
 	        ->getView(version)
 	        .getCreationTime();
 
-	// diagnostics: identify table versions that are slow to load from the database
 	double loadSec = std::chrono::duration<double>(std::chrono::steady_clock::now() -
 	                                               loadStartTime)
 	                     .count();
@@ -1442,22 +1435,16 @@ time_t ConfigurationManagerRW::getVersionCreationTime(const std::string& tableNa
 
 //==============================================================================
 /// preloadVersionCreationTimes
-///	loads, in parallel, the creation times of all persistent versions of all tables
-///	in the table info cache into the process-wide creation time cache, so that
-///	subsequent getVersionCreationTime() calls return immediately.
-///	Versions already in the cache are skipped, so this is cheap after the first call.
-///
-///	Threading: work is parallelized at the per-VERSION level (not per-table) so that
-///	tables with many versions (e.g. GroupAliasesTable with 1600+ versions) are spread
-///	across all threads. Each thread maintains its own private set of dummy TableBase
-///	objects, so there is no contention on shared TableBase state.  The only shared
-///	mutex is tableReaderMutex_ inside ConfigurationInterface::get(), held briefly
-///	during first-time TableBase creation (existing pattern from loadTableInfoThread).
+///	Loads, in parallel, the creation times of all persistent versions of all tables
+///	into the process-wide cache so that subsequent getVersionCreationTime() calls
+///	return immediately. Versions already cached are skipped.
+///	Work is parallelized at the per-version level with round-robin interleaving
+///	so that tables with many versions are spread across all threads.
 void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 {
 	const auto preloadStartTime = std::chrono::steady_clock::now();
 
-	// Step 1: identify missing versions per table (grouped)
+	// Identify uncached versions grouped by table
 	std::vector<std::pair<std::string, std::vector<TableVersion>>> groupedWork;
 	size_t missingCount = 0;
 	{
@@ -1488,9 +1475,7 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 	if(groupedWork.empty())
 		return;
 
-	// Step 2: build flat interleaved work list — round-robin across tables so
-	//	consecutive items target different tables, distributing large tables
-	//	(like GroupAliasesTable) across all threads
+	// Round-robin interleave so large tables are spread across all threads
 	std::vector<std::pair<std::string, TableVersion>> flatWork;
 	flatWork.reserve(missingCount);
 	{
@@ -1549,6 +1534,12 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 						try
 						{
 							TableBase*& table = localTables[tableName];
+							if(!table)
+							{
+								std::string localAccumulatedErrors;
+								table = new TableBase(tableName,
+								                      &localAccumulatedErrors);
+							}
 
 							std::string localAccumulatedErrors;
 							iface->get(table,
