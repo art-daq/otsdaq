@@ -877,7 +877,7 @@ void TableView::init(void)
 	}
 	catch(...)
 	{
-		__COUTT__ << "Error occured in TableView::init() for version=" << version_
+		__COUTT__ << "Error occurred in TableView::init() for version=" << version_
 		          << __E__;
 		throw;
 	}
