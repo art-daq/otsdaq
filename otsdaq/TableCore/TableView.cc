@@ -353,7 +353,7 @@ void TableView::init(void)
 				__SS__ << ("Entries in UID are not unique. Specifically at row=" +
 				           std::to_string(row) + " value=" + theDataView_[row][colUID_])
 				       << __E__;
-				__SS_ONLY_THROW__;
+				__SS_THROW__;
 			}
 
 			if(theDataView_[row][colUID_].size() == 0)
@@ -361,7 +361,7 @@ void TableView::init(void)
 				__SS__ << "An invalid UID '" << theDataView_[row][colUID_] << "' "
 				       << " was identified. UIDs must contain at least 1 character."
 				       << __E__;
-				__SS_ONLY_THROW__;
+				__SS_THROW__;
 			}
 
 			for(unsigned int i = 0; i < theDataView_[row][colUID_].size(); ++i)
@@ -377,7 +377,7 @@ void TableView::init(void)
 					__SS__ << "An invalid UID '" << theDataView_[row][colUID_] << "' "
 					       << " was identified. UIDs must contain only letters, numbers, "
 					       << "dashes, and underscores." << __E__;
-					__SS_ONLY_THROW__;
+					__SS_THROW__;
 				}
 
 			uidSet.insert(theDataView_[row][colUID_]);
@@ -387,7 +387,7 @@ void TableView::init(void)
 			__SS__ << "Entries in UID are not unique!"
 			       << "There are " << getNumberOfRows()
 			       << " records and the unique UID count is " << uidSet.size() << __E__;
-			__SS_ONLY_THROW__;
+			__SS_THROW__;
 		}
 
 		// check that any TYPE_UNIQUE_DATA columns are really unique (no repeats)
@@ -570,7 +570,7 @@ void TableView::init(void)
 							ss << columnsInfo_[col].getDataChoices()[i];
 						}
 						ss << "." << __E__;
-						__SS_ONLY_THROW__;
+						__SS_THROW__;
 					}
 				}
 			}
@@ -630,7 +630,7 @@ void TableView::init(void)
 							ss << columnsInfo_[col].getDataChoices()[i];
 						}
 						ss << "." << __E__;
-						__SS_ONLY_THROW__;
+						__SS_THROW__;
 					}
 				}
 			}
@@ -656,7 +656,7 @@ void TableView::init(void)
 						       << " is not a valid Type (On/Off) std::string. Possible "
 						          "values are 1, on, On, ON, 0, off, Off, OFF."
 						       << __E__;
-						__SS_ONLY_THROW__;
+						__SS_THROW__;
 					}
 				}
 			else if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_TRUE_FALSE)
@@ -681,7 +681,7 @@ void TableView::init(void)
 						          "Possible values are 1, true, True, TRUE, 0, false, "
 						          "False, FALSE."
 						       << __E__;
-						__SS_ONLY_THROW__;
+						__SS_THROW__;
 					}
 				}
 			else if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_YES_NO)
@@ -706,7 +706,7 @@ void TableView::init(void)
 						       << " is not a valid Type (Yes/No) std::string. Possible "
 						          "values are 1, yes, Yes, YES, 0, no, No, NO."
 						       << __E__;
-						__SS_ONLY_THROW__;
+						__SS_THROW__;
 					}
 				}
 			else if(columnsInfo_[col].isGroupID())  // GroupID type
@@ -877,7 +877,7 @@ void TableView::init(void)
 	}
 	catch(...)
 	{
-		__COUTT__ << "Error occured in TableView::init() for version=" << version_
+		__COUT__ << "Error occured in TableView::init() for version=" << version_
 		         << __E__;
 		throw;
 	}

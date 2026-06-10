@@ -1490,7 +1490,7 @@ try
 								        std::chrono::high_resolution_clock::now() - start)
 								        .count();
 								if(statusMs > 200)
-									__COUTT__ << "CheckRemoteGatewayStatus for '"
+									__COUT_WARN__ << "CheckRemoteGatewayStatus for '"
 									              << remoteGatewayApp.appInfo.name
 									              << "' took " << statusMs << " ms"
 									              << __E__;

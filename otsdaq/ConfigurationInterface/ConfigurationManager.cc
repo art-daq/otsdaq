@@ -3451,8 +3451,7 @@ TableBase* ConfigurationManager::getVersionedTableByName(
     TableVersion       version,
     bool               looseColumnMatching /* = false */,
     std::string*       accumulatedErrors /* = 0 */,
-    bool               getRawData /* = false */,
-    bool               touchLastAccessTime /* = true */)
+    bool               getRawData /* = false */)
 {
 	auto it = nameToTableMap_.find(tableName);
 	if(it == nameToTableMap_.end())
@@ -3489,8 +3488,7 @@ TableBase* ConfigurationManager::getVersionedTableByName(
 		                   false /* resetConfiguration*/,  // false to not reset
 		                   looseColumnMatching,
 		                   getRawData,
-		                   accumulatedErrors,
-		                   touchLastAccessTime);
+		                   accumulatedErrors);
 	}
 	return table;
 }  // end getVersionedTableByName()

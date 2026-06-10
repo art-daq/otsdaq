@@ -335,7 +335,7 @@ class ConfigurationManager
 
 
   protected:
-	TableBase*    						getVersionedTableByName		(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false, bool touchLastAccessTime = true);
+	TableBase*    						getVersionedTableByName		(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false);
 
 	std::string 										mfSubject_;
   private:
