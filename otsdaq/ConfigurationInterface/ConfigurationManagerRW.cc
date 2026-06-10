@@ -1,7 +1,7 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 
-#include <chrono>
 #include <dirent.h>
+#include <chrono>
 
 using namespace ots;
 
@@ -21,7 +21,7 @@ std::atomic<bool> ConfigurationManagerRW::firstTimeConstructed_ = true;
 
 std::mutex ConfigurationManagerRW::versionCreationTimeCacheMutex_;
 std::map<std::string, std::map<TableVersion, time_t>>
-           ConfigurationManagerRW::versionCreationTimeCache_;
+    ConfigurationManagerRW::versionCreationTimeCache_;
 
 //==============================================================================
 /// ConfigurationManagerRW
@@ -1406,23 +1406,22 @@ time_t ConfigurationManagerRW::getVersionCreationTime(const std::string& tableNa
 
 	std::string localAccumulatedErrors;
 	const auto  loadStartTime = std::chrono::steady_clock::now();
-	time_t      creationTime =
-	    getVersionedTableByName(tableName,
-	                            version,
-	                            true /* looseColumnMatching */,
-	                            &localAccumulatedErrors,
-	                            false /* getRawData */,
-	                            false /* touchLastAccessTime */)
-	        ->getView(version)
-	        .getCreationTime();
+	time_t      creationTime  = getVersionedTableByName(tableName,
+                                                  version,
+                                                  true /* looseColumnMatching */,
+                                                  &localAccumulatedErrors,
+                                                  false /* getRawData */,
+                                                  false /* touchLastAccessTime */)
+	                          ->getView(version)
+	                          .getCreationTime();
 
-	double loadSec = std::chrono::duration<double>(std::chrono::steady_clock::now() -
-	                                               loadStartTime)
-	                     .count();
+	double loadSec =
+	    std::chrono::duration<double>(std::chrono::steady_clock::now() - loadStartTime)
+	        .count();
 	if(loadSec > 1.0)
 		__GEN_COUT_WARN__ << "Slow creation time lookup: table '" << tableName
-		                  << "' version v" << version << " load took " << loadSec
-		                  << " s" << __E__;
+		                  << "' version v" << version << " load took " << loadSec << " s"
+		                  << __E__;
 
 	if(!version.isTemporaryVersion() && !version.isScratchVersion())
 	{
@@ -1446,7 +1445,7 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 
 	// Identify uncached versions grouped by table
 	std::vector<std::pair<std::string, std::vector<TableVersion>>> groupedWork;
-	size_t missingCount = 0;
+	size_t                                                         missingCount = 0;
 	{
 		std::lock_guard<std::mutex> lock(versionCreationTimeCacheMutex_);
 
@@ -1467,8 +1466,7 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 			if(missingVersions.size())
 			{
 				missingCount += missingVersions.size();
-				groupedWork.emplace_back(tableInfoPair.first,
-				                         std::move(missingVersions));
+				groupedWork.emplace_back(tableInfoPair.first, std::move(missingVersions));
 			}
 		}
 	}
@@ -1490,8 +1488,8 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 	}
 
 	__GEN_COUT__ << "preloadVersionCreationTimes() loading " << missingCount
-	             << " version creation times for " << groupedWork.size()
-	             << " tables..." << __E__;
+	             << " version creation times for " << groupedWork.size() << " tables..."
+	             << __E__;
 
 	int numOfThreads = PROCESSOR_COUNT / 2;
 	if(numOfThreads > (int)flatWork.size())
@@ -1507,9 +1505,8 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 			}
 			catch(...)
 			{
-				__GEN_COUT__ << "Failed to get creation time for table '"
-				             << work.first << "' version v" << work.second
-				             << ", skipping." << __E__;
+				__GEN_COUT__ << "Failed to get creation time for table '" << work.first
+				             << "' version v" << work.second << ", skipping." << __E__;
 			}
 		}
 	}
@@ -1537,8 +1534,7 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 							if(!table)
 							{
 								std::string localAccumulatedErrors;
-								table = new TableBase(tableName,
-								                      &localAccumulatedErrors);
+								table = new TableBase(tableName, &localAccumulatedErrors);
 							}
 
 							std::string localAccumulatedErrors;
@@ -1566,17 +1562,15 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 						}
 						catch(...)
 						{
-							__GEN_COUT__
-							    << "Failed to get creation time for table '"
-							    << tableName << "' version v" << version
-							    << ", skipping." << __E__;
+							__GEN_COUT__ << "Failed to get creation time for table '"
+							             << tableName << "' version v" << version
+							             << ", skipping." << __E__;
 						}
 					}
 				}
 				catch(...)
 				{
-					__GEN_COUT_ERR__
-					    << "Unexpected error in preload thread." << __E__;
+					__GEN_COUT_ERR__ << "Unexpected error in preload thread." << __E__;
 				}
 
 				for(auto& pair : localTables)
@@ -1589,8 +1583,7 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 	}
 
 	__GEN_COUT__ << "preloadVersionCreationTimes() loaded " << missingCount
-	             << " version creation times with " << numOfThreads
-	             << " thread(s) in "
+	             << " version creation times with " << numOfThreads << " thread(s) in "
 	             << std::chrono::duration<double>(std::chrono::steady_clock::now() -
 	                                              preloadStartTime)
 	                    .count()

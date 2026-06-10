@@ -1491,9 +1491,8 @@ try
 								        .count();
 								if(statusMs > 200)
 									__COUTT__ << "CheckRemoteGatewayStatus for '"
-									              << remoteGatewayApp.appInfo.name
-									              << "' took " << statusMs << " ms"
-									              << __E__;
+									          << remoteGatewayApp.appInfo.name
+									          << "' took " << statusMs << " ms" << __E__;
 							}
 
 							usleep(

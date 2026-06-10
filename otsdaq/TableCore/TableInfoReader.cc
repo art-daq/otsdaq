@@ -364,10 +364,9 @@ std::string TableInfoReader::read(TableBase& table)
 			if(std::string(XML_TO_CHAR(viewElement->getAttribute(
 			       viewNameAttributeTag_))) != table.getMockupViewP()->getTableName())
 				__COUTT__ << "Table Info name mismatch: "
-				              << std::string(XML_TO_CHAR(
-				                     viewElement->getAttribute(viewNameAttributeTag_)))
-				              << " vs " << table.getMockupViewP()->getTableName()
-				              << __E__;
+				          << std::string(XML_TO_CHAR(
+				                 viewElement->getAttribute(viewNameAttributeTag_)))
+				          << " vs " << table.getMockupViewP()->getTableName() << __E__;
 
 			xercesc::DOMNodeList* columnNodeList =
 			    viewElement->getElementsByTagName(columnTag_);
