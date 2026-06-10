@@ -83,7 +83,10 @@ class ConfigurationManagerRW : public ConfigurationManager
 
 	template<class T>
 	T* 											getTablePtr						(const std::string& tableName) { return (T*)getTableByName(tableName); }
-	TableBase*    								getVersionedTableByName			(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false) /* make protected function accessible to RW users */	{ return ConfigurationManager::getVersionedTableByName(tableName, version, looseColumnMatching, accumulatedErrors, getRawData);	}
+	TableBase*    								getVersionedTableByName			(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false, bool touchLastAccessTime = true) /* make protected function accessible to RW users */	{ return ConfigurationManager::getVersionedTableByName(tableName, version, looseColumnMatching, accumulatedErrors, getRawData, touchLastAccessTime);	}
+	time_t    									getVersionCreationTime			(const std::string& tableName, TableVersion version);
+	time_t    									getVersionLastAccessTime		(const std::string& tableName, TableVersion version);
+	void    									preloadVersionCreationTimes		(void);  ///< parallel load of all version creation times into the process-wide cache
 	TableBase*    								getTableByName					(const std::string& tableName);
 	TableGroupKey 								findTableGroup					(const std::string& groupName,
 																				 const std::map<std::string, TableVersion>& 					groupMembers,
@@ -173,6 +176,13 @@ class ConfigurationManagerRW : public ConfigurationManager
 	/// private members
 	std::map<std::string, TableInfo> 								allTableInfo_; //local cache of table info
 	std::map<std::string, GroupInfo> 								allGroupInfo_; //local cache of group info
+
+	//process-wide version creation time cache: persistent versions are immutable, so
+	//	creation times can be cached forever; shared by all instances (i.e. all user
+	//	sessions) within this process
+	static std::mutex												versionCreationTimeCacheMutex_;
+	static std::map<std::string /*tableName*/,
+		std::map<TableVersion, time_t>>								versionCreationTimeCache_;
 
 	static std::atomic<bool>										firstTimeConstructed_;
 };

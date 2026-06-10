@@ -16,7 +16,9 @@
 ///		TableVersion                         version             /*= TableVersion()*/,
 ///		bool                                 resetConfiguration  /*= true*/,
 ///		bool                                 looseColumnMatching /*= false*/,
-///		std::string*                         accumulatedErrors   /*= 0*/)
+///		bool                                 rawDataOnly         /*= false*/,
+///		std::string*                         accumulatedErrors   /*= 0*/,
+///		bool                                 touchLastAccessTime /*= true*/)
 ///
 //==============================================================================
 /// get
@@ -35,7 +37,8 @@ void get(TableBase*&                          table,
          bool                                 resetConfiguration  = true,
          bool                                 looseColumnMatching = false,
          bool                                 rawDataOnly         = false,
-         std::string*                         accumulatedErrors   = 0)
+         std::string*                         accumulatedErrors   = 0,
+         bool                                 touchLastAccessTime = true)
 {
 	bool dbg = false;  //tableName == "ARTDAQEventBuilderTable";
 
@@ -139,7 +142,8 @@ void get(TableBase*&                          table,
 			if(!table->isActive() || version != table->getViewVersion())
 				table->setActiveView(version);
 
-			table->getViewP()->setLastAccessTime();
+			if(touchLastAccessTime)  // skip stamping for metadata-only access
+				table->getViewP()->setLastAccessTime();
 
 			try
 			{
@@ -190,7 +194,8 @@ void get(TableBase*&                          table,
 			table->getViewP()->setLooseColumnMatching(false);
 		table->getViewP()->doGetSourceRawData(
 		    false);  //make sure it is cleared, although it should have been cleared in TableView::fillFromJSON()
-		table->getViewP()->setLastAccessTime();
+		if(touchLastAccessTime)  // skip stamping for metadata-only access
+			table->getViewP()->setLastAccessTime();
 
 		//if raw data only, leave early!
 		if(rawDataOnly)
@@ -250,7 +255,7 @@ void get(TableBase*&                          table,
 			__SS__ << "Error occurred while getting and filling Table \"" << tableName
 			       << "\" version:" << version << std::endl;
 			ss << "\n" << e.what() << __E__;
-			__COUT__ << StringMacros::stackTrace() << __E__;
+			__COUTT__ << ss.str() << __E__ << StringMacros::stackTrace() << __E__;
 
 			// if accumulating errors, allow invalid data
 			if(accumulatedErrors)
