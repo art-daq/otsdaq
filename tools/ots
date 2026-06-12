@@ -2875,9 +2875,8 @@ _logdelete_delete_old_logs() {
 		return 0
 	fi
 
-	local _count _shown _max_show=20
+	local _count _shown _max_show=20 _skipped=0
 	_count=$(echo "$_old_files" | wc -l)
-	DELETE_LOGS_LAST_COUNT=$_count
 
 	# Header with truncation note if needed
 	if [ "$_count" -gt "$_max_show" ]; then
@@ -2887,16 +2886,25 @@ _logdelete_delete_old_logs() {
 	fi
 	out
 
-	# List files that would be deleted (truncate to _max_show)
+	# Check if fuser is available for open-file detection
+	local _have_fuser=0
+	command -v fuser >/dev/null 2>&1 && _have_fuser=1
+
+	# List files that would be deleted (truncate to _max_show); skip files held open
 	_shown=0
 	while IFS= read -r _file; do
 		if [ $_shown -ge $_max_show ]; then
 			out "  ${IBlack}... and $(( _count - _max_show )) more files not shown.${RstClr}"
 			break
 		fi
-		local _age
+		local _age _realfile
 		_age=$(_logdelete_file_age "$_file" 2>/dev/null)
-		out "  ${Red}DELETE${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		_realfile=$(readlink -f "$_file" 2>/dev/null) || _realfile="$_file"
+		if [ "$_have_fuser" -eq 1 ] && fuser -s "$_realfile" 2>/dev/null; then
+			out "  ${Yellow}SKIP (open)${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		else
+			out "  ${Red}DELETE${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		fi
 		_shown=$(( _shown + 1 ))
 	done <<< "$_old_files"
 
@@ -2911,12 +2919,27 @@ _logdelete_delete_old_logs() {
 	if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then
 		out "  ${Yellow}[DRY RUN] No files were deleted.${RstClr}"
 	else
-		# Delete the files
+		# Delete the files, skipping any held open by a process
+		_skipped=0
 		while IFS= read -r _file; do
+			local _realfile
+			_realfile=$(readlink -f "$_file" 2>/dev/null) || _realfile="$_file"
+			if [ "$_have_fuser" -eq 1 ] && fuser -s "$_realfile" 2>/dev/null; then
+				out "  ${Yellow}SKIP${RstClr} ${_file}  ${IBlack}(file is held open by a process)${RstClr}"
+				_skipped=$(( _skipped + 1 ))
+				continue
+			fi
 			rm -f "$_file"
 		done <<< "$_old_files"
-		out "  ${Bold}Deleted ${_count} files.${RstClr}"
+		local _acted=$(( _count - _skipped ))
+		out "  ${Bold}Deleted ${_acted} files.${RstClr}"
 	fi
+
+	if [ "$_skipped" -gt 0 ]; then
+		out "  ${Yellow}Skipped ${_skipped} file(s) held open by a process.${RstClr}"
+	fi
+
+	DELETE_LOGS_LAST_COUNT=$(( _count - _skipped ))
 
 	# Clean up empty subdirectories under Logs/ (Logs/ itself is preserved by -mindepth 1)
 	out
@@ -3062,14 +3085,12 @@ _logcompress_compress_old_logs() {
 		fi
 	fi
 
+	local _count=0 _shown _max_show=20 _skipped=0
+
 	if [ -z "$_old_files" ]; then
 		out "  ${IBlack}No uncompressed log files older than ${_label} found.${RstClr}"
-		return 0
-	fi
-
-	local _count _shown _max_show=20
+	else
 	_count=$(echo "$_old_files" | wc -l)
-	COMPRESS_LOGS_LAST_COUNT=$_count
 
 	# Header with truncation note if needed
 	if [ "$_count" -gt "$_max_show" ]; then
@@ -3079,16 +3100,25 @@ _logcompress_compress_old_logs() {
 	fi
 	out
 
-	# List files that would be compressed (truncate to _max_show)
+	# Check if fuser is available for open-file detection
+	local _have_fuser=0
+	command -v fuser >/dev/null 2>&1 && _have_fuser=1
+
+	# List files that would be compressed (truncate to _max_show); skip files held open
 	_shown=0
 	while IFS= read -r _file; do
 		if [ $_shown -ge $_max_show ]; then
 			out "  ${IBlack}... and $(( _count - _max_show )) more files not shown.${RstClr}"
 			break
 		fi
-		local _age
+		local _age _realfile
 		_age=$(_logcompress_file_age "$_file" 2>/dev/null)
-		out "  ${Yellow}COMPRESS${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		_realfile=$(readlink -f "$_file" 2>/dev/null) || _realfile="$_file"
+		if [ "$_have_fuser" -eq 1 ] && fuser -s "$_realfile" 2>/dev/null; then
+			out "  ${Yellow}SKIP (open)${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		else
+			out "  ${Yellow}COMPRESS${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		fi
 		_shown=$(( _shown + 1 ))
 	done <<< "$_old_files"
 
@@ -3103,11 +3133,76 @@ _logcompress_compress_old_logs() {
 	if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then
 		out "  ${Yellow}[DRY RUN] No files were compressed.${RstClr}"
 	else
-		# Compress the files
+		# Compress the files, skipping any held open by a process
+		_skipped=0
 		while IFS= read -r _file; do
-			xz "$_file"
+			local _realfile
+			_realfile=$(readlink -f "$_file" 2>/dev/null) || _realfile="$_file"
+			if [ "$_have_fuser" -eq 1 ] && fuser -s "$_realfile" 2>/dev/null; then
+				out "  ${Yellow}SKIP${RstClr} ${_file}  ${IBlack}(file is held open by a process)${RstClr}"
+				_skipped=$(( _skipped + 1 ))
+				continue
+			fi
+			if [ -L "$_file" ]; then
+				xz "$_realfile"
+				# Update symlink to point at the new .xz target
+				if [ -f "${_realfile}.xz" ]; then
+					local _link_target
+					_link_target=$(readlink "$_file")
+					ln -sf "${_link_target}.xz" "${_file}.xz"
+					rm -f "$_file"
+				fi
+			else
+				xz "$_file"
+			fi
 		done <<< "$_old_files"
-		out "  ${Bold}Compressed ${_count} files.${RstClr}"
+		local _acted=$(( _count - _skipped ))
+		out "  ${Bold}Compressed ${_acted} files.${RstClr}"
+	fi
+
+	if [ "$_skipped" -gt 0 ]; then
+		out "  ${Yellow}Skipped ${_skipped} file(s) held open by a process.${RstClr}"
+	fi
+
+	COMPRESS_LOGS_LAST_COUNT=$(( _count - _skipped ))
+
+	fi  # end of "files found" branch
+
+	# Repair broken symlinks: if target doesn't exist but target.xz does, relink
+	out
+	out "  ${IBlack}Checking for broken symlinks to fix (under ${_logs_dir})...${RstClr}"
+	local _broken_fixed=0 _link_total=0 _link_broken=0
+	while IFS= read -r _link; do
+		[ -z "$_link" ] && continue
+		[ ! -L "$_link" ] && continue
+		_link_total=$(( _link_total + 1 ))
+		# Skip symlinks whose target still exists (not broken)
+		if [ -e "$_link" ]; then continue; fi
+		_link_broken=$(( _link_broken + 1 ))
+		local _raw_target _link_dir _abs_target
+		_raw_target=$(readlink "$_link")
+		# Resolve relative targets against the symlink's directory
+		if [[ "$_raw_target" == /* ]]; then
+			_abs_target="$_raw_target"
+		else
+			_link_dir=$(dirname "$_link")
+			_abs_target="${_link_dir}/${_raw_target}"
+		fi
+		if [ -f "${_abs_target}.xz" ]; then
+			if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then
+				out "  ${Yellow}FIXLINK (dryrun)${RstClr} ${_link} -> ${_raw_target}.xz"
+			else
+				ln -sf "${_raw_target}.xz" "${_link}.xz"
+				rm -f "$_link"
+				out "  ${Cyan}FIXLINK${RstClr} ${_link} -> ${_raw_target}.xz"
+			fi
+			_broken_fixed=$(( _broken_fixed + 1 ))
+		fi
+	done < <(find "$_logs_dir" -maxdepth 3 -type l 2>/dev/null; find -L "$_logs_dir" -maxdepth 3 -type l 2>/dev/null; find "${PWD}/tmp" -maxdepth 1 -type l -name "otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}*" 2>/dev/null)
+	if [ "$_broken_fixed" -gt 0 ]; then
+		out "  ${Cyan}Fixed ${_broken_fixed} broken symlink(s).${RstClr}"
+	else
+		out "  ${IBlack}No broken symlinks found.${RstClr}"
 	fi
 
 	if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then
