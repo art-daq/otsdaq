@@ -2828,7 +2828,7 @@ _logdelete_delete_old_logs() {
 	fi
 
 	out
-	out "${Bold}${Cyan}Searching for local log files older than ${_label} to delete (under \$USER_DATA/Logs)...${RstClr}"
+	out "${Bold}${Cyan}Searching for local log files older than ${_label} to delete (under \$USER_DATA/Logs and action handler logs)...${RstClr}"
 
 	local _logs_dir="${USER_DATA}/Logs"
 	if [ ! -d "$_logs_dir" ]; then
@@ -2858,9 +2858,17 @@ _logdelete_delete_old_logs() {
 		fi
 	}
 
-	# Find files older than the threshold
-	local _old_files
+	# Find files older than the threshold (under $USER_DATA/Logs + action handler logs in tmp/)
+	local _old_files _action_files
 	_old_files=$(find -L "$_logs_dir" -type f -mmin +${_mmin} -not -name 'otsdaq_is_alive-*.dat' 2>/dev/null)
+	_action_files=$(find -L "${PWD}/tmp" -maxdepth 1 -type f -name "otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}*" -mmin +${_mmin} 2>/dev/null)
+	if [ -n "$_action_files" ]; then
+		if [ -n "$_old_files" ]; then
+			_old_files="${_old_files}"$'\n'"${_action_files}"
+		else
+			_old_files="$_action_files"
+		fi
+	fi
 
 	if [ -z "$_old_files" ]; then
 		out "  ${IBlack}No log files older than ${_label} found.${RstClr}"
@@ -3011,7 +3019,7 @@ _logcompress_compress_old_logs() {
 	fi
 
 	out
-	out "${Bold}${Cyan}Searching for local log files older than ${_label} to compress (under \$USER_DATA/Logs)...${RstClr}"
+	out "${Bold}${Cyan}Searching for local log files older than ${_label} to compress (under \$USER_DATA/Logs and action handler logs)...${RstClr}"
 
 	local _logs_dir="${USER_DATA}/Logs"
 	if [ ! -d "$_logs_dir" ]; then
@@ -3042,8 +3050,17 @@ _logcompress_compress_old_logs() {
 	}
 
 	# Find files older than the threshold, excluding already-compressed .xz files and alive markers
-	local _old_files
+	# Also include action handler logs from tmp/
+	local _old_files _action_files
 	_old_files=$(find -L "$_logs_dir" -type f -mmin +${_mmin} -not -name '*.xz' -not -name 'otsdaq_is_alive-*.dat' 2>/dev/null)
+	_action_files=$(find -L "${PWD}/tmp" -maxdepth 1 -type f -name "otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}*" -not -name '*.xz' -mmin +${_mmin} 2>/dev/null)
+	if [ -n "$_action_files" ]; then
+		if [ -n "$_old_files" ]; then
+			_old_files="${_old_files}"$'\n'"${_action_files}"
+		else
+			_old_files="$_action_files"
+		fi
+	fi
 
 	if [ -z "$_old_files" ]; then
 		out "  ${IBlack}No uncompressed log files older than ${_label} found.${RstClr}"
