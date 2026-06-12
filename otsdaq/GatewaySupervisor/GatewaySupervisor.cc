@@ -7017,7 +7017,8 @@ try
 	// Auto-compress stale logs if threshold is set and > 24 hours
 	try
 	{
-		int64_t compressThresholdSeconds = std::stoll(__ENV__("OTSDAQ_LOG_COMPRESS_THRESHOLD"));
+		int64_t compressThresholdSeconds =
+		    std::stoll(__ENV__("OTSDAQ_LOG_COMPRESS_THRESHOLD"));
 		if(compressThresholdSeconds > 86400)
 		{
 			std::string cmd = "ots -lxz " + std::to_string(compressThresholdSeconds) +
