@@ -7013,6 +7013,26 @@ try
 
 	if(doLogIntermediate)
 		makeSystemLogEntry("System halted.");
+
+	// Auto-compress stale logs if threshold is set and > 24 hours
+	try
+	{
+		int64_t compressThresholdSeconds = std::stoll(__ENV__("OTSDAQ_LOG_COMPRESS_THRESHOLD"));
+		if(compressThresholdSeconds > 86400)
+		{
+			std::string cmd = "ots -lxz " + std::to_string(compressThresholdSeconds) +
+			                  " seconds --logcompress-noprompt";
+			__COUT__ << "Auto-compressing stale logs: " << cmd << __E__;
+			std::thread([cmd]() {
+				std::string result = StringMacros::exec(cmd.c_str());
+				__COUT__ << "Auto-compress result:\n" << result << __E__;
+			}).detach();
+		}
+	}
+	catch(...)
+	{
+	}
+
 	__COUT__ << "Done halting." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionHalting()
