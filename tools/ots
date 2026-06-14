@@ -3149,13 +3149,12 @@ _logcompress_compress_old_logs() {
 				continue
 			fi
 			if [ -L "$_file" ]; then
+				local _link_target
+				_link_target=$(readlink "$_file")
 				xz "$_realfile"
-				# Update symlink to point at the new .xz target
+				# Update symlink to point at the new .xz target (keep symlink name unchanged)
 				if [ -f "${_realfile}.xz" ]; then
-					local _link_target
-					_link_target=$(readlink "$_file")
-					ln -sf "${_link_target}.xz" "${_file}.xz"
-					rm -f "$_file"
+					ln -sf "${_link_target}.xz" "$_file"
 				fi
 			else
 				xz "$_file"
