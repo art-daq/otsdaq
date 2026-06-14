@@ -3050,6 +3050,11 @@ _logcompress_compress_old_logs() {
 		return 1
 	fi
 
+	if ! command -v xz >/dev/null 2>&1; then
+		error "xz not found in PATH; cannot compress logs."
+		return 1
+	fi
+
 	# Define local file age helper
 	_logcompress_file_age() {
 		local file_path="$1"
