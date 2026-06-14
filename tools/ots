@@ -3196,8 +3196,7 @@ _logcompress_compress_old_logs() {
 			if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then
 				out "  ${Yellow}FIXLINK (dryrun)${RstClr} ${_link} -> ${_raw_target}.xz"
 			else
-				ln -sf "${_raw_target}.xz" "${_link}.xz"
-				rm -f "$_link"
+				ln -sf "${_raw_target}.xz" "$_link"
 				out "  ${Cyan}FIXLINK${RstClr} ${_link} -> ${_raw_target}.xz"
 			fi
 			_broken_fixed=$(( _broken_fixed + 1 ))
