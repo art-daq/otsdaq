@@ -3834,7 +3834,9 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers,
                                 const std::string&              message,
                                 bool                            doEmail)
 {
-	__COUT_INFO__ << __SYSTEM_ALERT_PREAMBLE__ << StringMacros::vectorToString(targetUsers) << "': " << (subject.empty() ? "" : subject + ": ") << message << __E__;
+	__COUT_INFO__ << __SYSTEM_ALERT_PREAMBLE__
+	              << StringMacros::vectorToString(targetUsers)
+	              << "': " << (subject.empty() ? "" : subject + ": ") << message << __E__;
 
 	systemMessageCleanup();
 

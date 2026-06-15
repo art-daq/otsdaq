@@ -337,11 +337,10 @@ void ConfigurationTree::getValueAsBitMap(
 		std::string value;
 
 		std::map<std::string, size_t> valueMap;
-		std::vector<std::string> valueList;
+		std::vector<std::string>      valueList;
 		if(bmp.mapsToStrings_)
 		{
-			valueList =
-			    StringMacros::getVectorFromString(bmp.mapToStrings_);
+			valueList = StringMacros::getVectorFromString(bmp.mapToStrings_);
 			__COUTVS__(2, StringMacros::vectorToString(valueList));
 			for(size_t i = 0; i < valueList.size(); ++i)
 				valueMap.emplace(std::make_pair(valueList[i], i));
@@ -418,8 +417,8 @@ void ConfigurationTree::getValueAsBitMap(
 						openRow = false;
 
 						//drop space or end quote
-						unsigned int ii = i;
-						bool wasEndQuote = false;
+						unsigned int ii          = i;
+						bool         wasEndQuote = false;
 						while(ii - startInt > 2 && (bitmapString[ii - 1] == ' ' ||
 						                            bitmapString[ii - 1] == '\r' ||
 						                            bitmapString[ii - 1] == '\n' ||
@@ -435,22 +434,32 @@ void ConfigurationTree::getValueAsBitMap(
 						{
 							try
 							{
-								value =
-								    valueMap.at(bitmapString.substr(startInt, ii - startInt));
+								value = valueMap.at(
+								    bitmapString.substr(startInt, ii - startInt));
 							}
 							catch(const std::out_of_range& e)
 							{
-								__SS__ << "Value '" << bitmapString.substr(startInt, ii - startInt)
-								       << "' not found in map-to-string list for bitmap column "
-								       << tableView_->getColumnInfo(col_).getName() << __E__;
+								__SS__ << "Value '"
+								       << bitmapString.substr(startInt, ii - startInt)
+								       << "' not found in map-to-string list for bitmap "
+								          "column "
+								       << tableView_->getColumnInfo(col_).getName()
+								       << __E__;
 								__COUTVS__(2, wasEndQuote);
 								if(!wasEndQuote)
 								{
-									__COUTS__(2) << "No end-quote, assuming value is integer index into map-to-string list." << __E__;
-									size_t index = std::stoul(bitmapString.substr(startInt, ii - startInt));
+									__COUTS__(2)
+									    << "No end-quote, assuming value is integer "
+									       "index into map-to-string list."
+									    << __E__;
+									size_t index = std::stoul(
+									    bitmapString.substr(startInt, ii - startInt));
 									if(index >= valueList.size())
 									{
-										ss << "Interpreting as index [" << index << "] is also out of range for map-to-string list of size " << valueList.size() << __E__;
+										ss << "Interpreting as index [" << index
+										   << "] is also out of range for map-to-string "
+										      "list of size "
+										   << valueList.size() << __E__;
 										__SS_THROW__;
 									}
 									value = valueList[index];
@@ -469,8 +478,8 @@ void ConfigurationTree::getValueAsBitMap(
 					else if(bitmapString[i] == ',')  // comma found, assume end of number
 					{
 						//drop space or end quote
-						unsigned int ii = i;
-						bool wasEndQuote = false;
+						unsigned int ii          = i;
+						bool         wasEndQuote = false;
 						while(ii - startInt > 2 && (bitmapString[ii - 1] == ' ' ||
 						                            bitmapString[ii - 1] == '\r' ||
 						                            bitmapString[ii - 1] == '\n' ||
@@ -486,22 +495,32 @@ void ConfigurationTree::getValueAsBitMap(
 						{
 							try
 							{
-								value =
-								    valueMap.at(bitmapString.substr(startInt, ii - startInt));
+								value = valueMap.at(
+								    bitmapString.substr(startInt, ii - startInt));
 							}
 							catch(const std::out_of_range& e)
 							{
-								__SS__ << "Value '" << bitmapString.substr(startInt, ii - startInt)
-								       << "' not found in map-to-string list for bitmap column "
-								       << tableView_->getColumnInfo(col_).getName() << __E__;
+								__SS__ << "Value '"
+								       << bitmapString.substr(startInt, ii - startInt)
+								       << "' not found in map-to-string list for bitmap "
+								          "column "
+								       << tableView_->getColumnInfo(col_).getName()
+								       << __E__;
 								__COUTVS__(2, wasEndQuote);
 								if(!wasEndQuote)
 								{
-									__COUTS__(2) << "No end-quote, assuming value is integer index into map-to-string list." << __E__;
-									size_t index = std::stoul(bitmapString.substr(startInt, ii - startInt));
+									__COUTS__(2)
+									    << "No end-quote, assuming value is integer "
+									       "index into map-to-string list."
+									    << __E__;
+									size_t index = std::stoul(
+									    bitmapString.substr(startInt, ii - startInt));
 									if(index >= valueList.size())
 									{
-										ss << "Interpreting as index [" << index << "] is also out of range for map-to-string list of size " << valueList.size() << __E__;
+										ss << "Interpreting as index [" << index
+										   << "] is also out of range for map-to-string "
+										      "list of size "
+										   << valueList.size() << __E__;
 										__SS_THROW__;
 									}
 									value = valueList[index];
