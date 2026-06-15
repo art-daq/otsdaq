@@ -3834,12 +3834,14 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers,
                                 const std::string&              message,
                                 bool                            doEmail)
 {
+	__COUT_INFO__ << __SYSTEM_ALERT_PREAMBLE__ << StringMacros::vectorToString(targetUsers) << "': " << (subject.empty() ? "" : subject + ": ") << message << __E__;
+
 	systemMessageCleanup();
 
 	std::string fullMessage = StringMacros::encodeURIComponent(
 	    (subject == "" ? "" : (subject + ": ")) + message);
 
-	//	Note: do not printout message, because if it was a Console trigger, it will fire repeatedly
+	//	Note: the __COUT_INFO__ above uses __SYSTEM_ALERT_PREAMBLE__ which Console trigger matching filters out (prevents recursion)
 	std::cout << __COUT_HDR_FL__ << "addSystemMessage() fullMessage: " << fullMessage
 	          << __E__;
 	__COUTV__(StringMacros::vectorToString(targetUsers));
