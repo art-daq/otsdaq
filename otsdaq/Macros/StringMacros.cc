@@ -20,12 +20,14 @@ unsigned int StringMacros::getConcurrencyCount(void)
 		unsigned int val = std::stoul(systemVariables_.at("System").at("logicalCores"));
 		return val > 0 ? val : 4;
 	}
-	catch(...) {}
-	unsigned int hw = std::thread::hardware_concurrency();
-	unsigned int retVal = hw > 0 ? hw : 4;
+	catch(...)
+	{
+	}
+	unsigned int hw                            = std::thread::hardware_concurrency();
+	unsigned int retVal                        = hw > 0 ? hw : 4;
 	systemVariables_["System"]["logicalCores"] = std::to_string(retVal);
 	return retVal;
-} //end getConcurrencyCount()
+}  //end getConcurrencyCount()
 
 #define TLVL_EscapeString 30  // = TLVL_DEBUG + 30
 #define TLVL_EnvMath 49       // = TLVL_DEBUG + 49

@@ -239,8 +239,8 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 		const unsigned char MIN_TABLE_NAME_SZ = 3;
 
 		const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
-		__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount() << " ==> " << numOfThreads
-		             << " threads." << __E__;
+		__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount()
+		             << " ==> " << numOfThreads << " threads." << __E__;
 		if(numOfThreads < 2)  // no multi-threading
 		{
 			if((pDIR = opendir(path.c_str())) != 0)
@@ -569,7 +569,8 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			if(getGroupInfo)
 			{
 				const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
-				__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount() << " ==> "
+				__GEN_COUT__ << " getConcurrencyCount "
+				             << StringMacros::getConcurrencyCount() << " ==> "
 				             << numOfThreads << " threads." << __E__;
 				if(numOfThreads < 2)  // no multi-threading
 					for(auto& groupInfo : allGroupInfo_)
@@ -1900,8 +1901,8 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 	// have min key to check, now loop through and check groups
 
 	const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
-	__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount() << " ==> " << numOfThreads
-	             << " threads." << __E__;
+	__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount()
+	             << " ==> " << numOfThreads << " threads." << __E__;
 	if(numOfThreads < 2)  // no multi-threading
 	{
 		std::map<std::string /*name*/, TableVersion /*version*/> compareToMemberMap;

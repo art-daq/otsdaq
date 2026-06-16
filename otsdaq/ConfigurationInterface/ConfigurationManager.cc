@@ -1750,8 +1750,9 @@ void ConfigurationManager::loadMemberMap(
 
 	//Note: mongodb crashing from too many connections was resolved by increasing ulimit at mongodb launch
 	//	 i.e. ulimit -n 64000 && ./start_mongod.sh
-	const int numOfThreads =
-	    StringMacros::getConcurrencyCount() / 2 > memberMap.size() ? (StringMacros::getConcurrencyCount() / 2) : memberMap.size();
+	const int numOfThreads = StringMacros::getConcurrencyCount() / 2 > memberMap.size()
+	                             ? (StringMacros::getConcurrencyCount() / 2)
+	                             : memberMap.size();
 	if(memberMap.size() <= 2 /* i.e. is Context group */ || usingCache ||
 	   numOfThreads < 2)  // no multi-threading
 	{
@@ -1878,7 +1879,8 @@ void ConfigurationManager::loadMemberMap(
 	}
 	else  //multi-threading
 	{
-		__GEN_COUTT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount() << " ==> " << numOfThreads
+		__GEN_COUTT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount()
+		              << " ==> " << numOfThreads
 		              << " threads for loading member map of size " << memberMap.size()
 		              << __E__;
 
@@ -2486,7 +2488,8 @@ void ConfigurationManager::loadTableGroup(
 					progressBar->step();
 
 				const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
-				__GEN_COUTT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount() << " ==> "
+				__GEN_COUTT__ << " getConcurrencyCount "
+				              << StringMacros::getConcurrencyCount() << " ==> "
 				              << numOfThreads
 				              << " threads for initializing tables for Table Group '"
 				              << groupName << "(" << groupKey << ")'." << __E__;
@@ -2926,8 +2929,9 @@ void ConfigurationManager::copyTableGroupFromCache(
 		{
 			std::string accumulatedWarnings;
 			const int   numOfThreads = StringMacros::getConcurrencyCount() / 2;
-			__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount() << " ==> "
-			             << numOfThreads << " threads for initializing tables." << __E__;
+			__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount()
+			             << " ==> " << numOfThreads << " threads for initializing tables."
+			             << __E__;
 			if(groupType != ConfigurationManager::GroupType::CONFIGURATION_TYPE ||
 			   numOfThreads < 2)  // no multi-threading
 			{

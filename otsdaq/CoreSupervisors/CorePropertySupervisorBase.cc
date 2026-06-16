@@ -4,9 +4,9 @@
 
 #include <sys/statvfs.h>  // for disk space checking with statvfs
 #include <sys/sysinfo.h>  // for sysinfo() to get total memory
-#include <fstream>          // for reading /proc/cpuinfo
-#include <set>              // for counting unique physical cores
-#include <thread>           // for std::thread::hardware_concurrency
+#include <fstream>        // for reading /proc/cpuinfo
+#include <set>            // for counting unique physical cores
+#include <thread>         // for std::thread::hardware_concurrency
 
 using namespace ots;
 
@@ -16,44 +16,44 @@ const CorePropertySupervisorBase::SupervisorProperties
 
 namespace
 {
-	unsigned int getPhysicalCoreCount()
+unsigned int getPhysicalCoreCount()
+{
+	std::ifstream cpuinfo("/proc/cpuinfo");
+	if(!cpuinfo.is_open())
+		return 0;
+
+	std::set<std::pair<int, int>> uniqueCores;
+	int                           physicalId = -1;
+	int                           coreId     = -1;
+	std::string                   line;
+
+	while(std::getline(cpuinfo, line))
 	{
-		std::ifstream cpuinfo("/proc/cpuinfo");
-		if(!cpuinfo.is_open())
-			return 0;
-
-		std::set<std::pair<int, int>> uniqueCores;
-		int physicalId = -1;
-		int coreId     = -1;
-		std::string line;
-
-		while(std::getline(cpuinfo, line))
+		if(line.find("physical id") == 0)
 		{
-			if(line.find("physical id") == 0)
-			{
-				auto pos = line.find(':');
-				if(pos != std::string::npos)
-					physicalId = std::stoi(line.substr(pos + 1));
-			}
-			else if(line.find("core id") == 0)
-			{
-				auto pos = line.find(':');
-				if(pos != std::string::npos)
-					coreId = std::stoi(line.substr(pos + 1));
-			}
-			else if(line.empty() && physicalId >= 0 && coreId >= 0)
-			{
-				uniqueCores.insert({physicalId, coreId});
-				physicalId = -1;
-				coreId     = -1;
-			}
+			auto pos = line.find(':');
+			if(pos != std::string::npos)
+				physicalId = std::stoi(line.substr(pos + 1));
 		}
-		if(physicalId >= 0 && coreId >= 0)
+		else if(line.find("core id") == 0)
+		{
+			auto pos = line.find(':');
+			if(pos != std::string::npos)
+				coreId = std::stoi(line.substr(pos + 1));
+		}
+		else if(line.empty() && physicalId >= 0 && coreId >= 0)
+		{
 			uniqueCores.insert({physicalId, coreId});
-
-		return static_cast<unsigned int>(uniqueCores.size());
+			physicalId = -1;
+			coreId     = -1;
+		}
 	}
-} // anonymous namespace
+	if(physicalId >= 0 && coreId >= 0)
+		uniqueCores.insert({physicalId, coreId});
+
+	return static_cast<unsigned int>(uniqueCores.size());
+}
+}  // anonymous namespace
 
 // clang-format off
 //==============================================================================
