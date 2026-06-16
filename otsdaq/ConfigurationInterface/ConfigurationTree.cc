@@ -419,7 +419,7 @@ void ConfigurationTree::getValueAsBitMap(
 						//drop space or end quote
 						unsigned int ii          = i;
 						bool         wasEndQuote = false;
-						while(ii - startInt > 2 && (bitmapString[ii - 1] == ' ' ||
+						while(ii > startInt && (bitmapString[ii - 1] == ' ' ||
 						                            bitmapString[ii - 1] == '\r' ||
 						                            bitmapString[ii - 1] == '\n' ||
 						                            bitmapString[ii - 1] == '\t' ||
