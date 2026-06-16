@@ -238,8 +238,8 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 		char                fileExt[]         = TABLE_INFO_EXT;
 		const unsigned char MIN_TABLE_NAME_SZ = 3;
 
-		const int numOfThreads = PROCESSOR_COUNT / 2;
-		__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads
+		const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
+		__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount() << " ==> " << numOfThreads
 		             << " threads." << __E__;
 		if(numOfThreads < 2)  // no multi-threading
 		{
@@ -568,8 +568,8 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			// for each group get member map & comment, author, time, and type for latest key
 			if(getGroupInfo)
 			{
-				const int numOfThreads = PROCESSOR_COUNT / 2;
-				__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
+				const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
+				__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount() << " ==> "
 				             << numOfThreads << " threads." << __E__;
 				if(numOfThreads < 2)  // no multi-threading
 					for(auto& groupInfo : allGroupInfo_)
@@ -1491,7 +1491,7 @@ void ConfigurationManagerRW::preloadVersionCreationTimes(void)
 	             << " version creation times for " << groupedWork.size() << " tables..."
 	             << __E__;
 
-	int numOfThreads = PROCESSOR_COUNT / 2;
+	int numOfThreads = StringMacros::getConcurrencyCount() / 2;
 	if(numOfThreads > (int)flatWork.size())
 		numOfThreads = flatWork.size();
 
@@ -1899,8 +1899,8 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 
 	// have min key to check, now loop through and check groups
 
-	const int numOfThreads = PROCESSOR_COUNT / 2;
-	__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads
+	const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
+	__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount() << " ==> " << numOfThreads
 	             << " threads." << __E__;
 	if(numOfThreads < 2)  // no multi-threading
 	{
