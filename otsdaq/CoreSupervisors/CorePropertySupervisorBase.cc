@@ -90,9 +90,7 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] 	= StringMacros::TBD;
 
 		{
-			unsigned int logicalCores = std::thread::hardware_concurrency();
-			StringMacros::systemVariables_["System"]["logicalCores"] =
-				logicalCores > 0 ? std::to_string(logicalCores) : "unknown";
+			StringMacros::getConcurrencyCount(); //fills systemVariables_["System"]["logicalCores"]
 
 			unsigned int physicalCores = getPhysicalCoreCount();
 			StringMacros::systemVariables_["System"]["physicalCores"] =
