@@ -3,12 +3,57 @@
 #include "otsdaq/MessageFacility/TRACEController.h"
 
 #include <sys/statvfs.h>  // for disk space checking with statvfs
+#include <sys/sysinfo.h>  // for sysinfo() to get total memory
+#include <fstream>          // for reading /proc/cpuinfo
+#include <set>              // for counting unique physical cores
+#include <thread>           // for std::thread::hardware_concurrency
 
 using namespace ots;
 
 const CorePropertySupervisorBase::SupervisorProperties
     CorePropertySupervisorBase::SUPERVISOR_PROPERTIES =
         CorePropertySupervisorBase::SupervisorProperties();
+
+namespace
+{
+	unsigned int getPhysicalCoreCount()
+	{
+		std::ifstream cpuinfo("/proc/cpuinfo");
+		if(!cpuinfo.is_open())
+			return 0;
+
+		std::set<std::pair<int, int>> uniqueCores;
+		int physicalId = -1;
+		int coreId     = -1;
+		std::string line;
+
+		while(std::getline(cpuinfo, line))
+		{
+			if(line.find("physical id") == 0)
+			{
+				auto pos = line.find(':');
+				if(pos != std::string::npos)
+					physicalId = std::stoi(line.substr(pos + 1));
+			}
+			else if(line.find("core id") == 0)
+			{
+				auto pos = line.find(':');
+				if(pos != std::string::npos)
+					coreId = std::stoi(line.substr(pos + 1));
+			}
+			else if(line.empty() && physicalId >= 0 && coreId >= 0)
+			{
+				uniqueCores.insert({physicalId, coreId});
+				physicalId = -1;
+				coreId     = -1;
+			}
+		}
+		if(physicalId >= 0 && coreId >= 0)
+			uniqueCores.insert({physicalId, coreId});
+
+		return static_cast<unsigned int>(uniqueCores.size());
+	}
+} // anonymous namespace
 
 // clang-format off
 //==============================================================================
@@ -42,6 +87,29 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		StringMacros::systemVariables_["ActiveStateMachine"]["name"] 		= StringMacros::TBD;
 		StringMacros::systemVariables_["ActiveStateMachine"]["windowName"] 	= StringMacros::TBD;
 		StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] 	= StringMacros::TBD;
+
+		{
+			unsigned int logicalCores = std::thread::hardware_concurrency();
+			StringMacros::systemVariables_["System"]["logicalCores"] =
+				logicalCores > 0 ? std::to_string(logicalCores) : "unknown";
+
+			unsigned int physicalCores = getPhysicalCoreCount();
+			StringMacros::systemVariables_["System"]["physicalCores"] =
+				physicalCores > 0 ? std::to_string(physicalCores) : "unknown";
+
+			struct sysinfo memInfo;
+			if(sysinfo(&memInfo) == 0)
+			{
+				uint64_t totalMemMB =
+					static_cast<uint64_t>(memInfo.totalram) * memInfo.mem_unit / (1024 * 1024);
+				StringMacros::systemVariables_["System"]["totalMemoryMB"] =
+					std::to_string(totalMemMB);
+			}
+			else
+			{
+				StringMacros::systemVariables_["System"]["totalMemoryMB"] = "unknown";
+			}
+		}
 	} // end init StringMacros::systemVariables_
 	__SUP_COUTV__(StringMacros::mapToString(StringMacros::systemVariables_));
 
