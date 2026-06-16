@@ -4,6 +4,7 @@
 
 #include <sys/statvfs.h>  // for disk space checking with statvfs
 #include <sys/sysinfo.h>  // for sysinfo() to get total memory
+#include <cstdint>        // for uint64_t
 #include <fstream>        // for reading /proc/cpuinfo
 #include <set>            // for counting unique physical cores
 #include <thread>         // for std::thread::hardware_concurrency
