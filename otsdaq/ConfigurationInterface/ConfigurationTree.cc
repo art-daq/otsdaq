@@ -523,18 +523,28 @@ void ConfigurationTree::getValueAsBitMap(
 									    << "No end-quote, assuming value is integer "
 									       "index into map-to-string list."
 									    << __E__;
-									size_t index = std::stoul(
-									    bitmapString.substr(startInt, ii - startInt));
-									if(index >= valueList.size())
-									{
-										ss << "Interpreting as index [" << index
-										   << "] is also out of range for map-to-string "
-										      "list of size "
-										   << valueList.size() << __E__;
-										__SS_THROW__;
-									}
-									value = valueList[index];
-								}
+									size_t index = 0;
+										try
+										{
+											index = std::stoul(
+											    bitmapString.substr(startInt, ii - startInt));
+										}
+										catch(...)
+										{
+											ss << "Interpreting value as integer index failed for '"
+											   << bitmapString.substr(startInt, ii - startInt)
+											   << "'." << __E__;
+											__SS_THROW__;
+										}
+										if(index >= valueList.size())
+										{
+											ss << "Interpreting as index [" << index
+											   << "] is also out of range for map-to-string "
+											      "list of size "
+											   << valueList.size() << __E__;
+											__SS_THROW__;
+										}
+										value = valueList[index];
 								else
 									__SS_THROW__;
 							}
