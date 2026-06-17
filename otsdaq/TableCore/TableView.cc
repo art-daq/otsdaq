@@ -3645,7 +3645,7 @@ bool TableView::getChildLink(
 		// if here then invalid table!
 		__SS__ << "\tIn view: " << tableName_
 		       << ", Can't find complete child link for column name "
-		       << columnsInfo_[c].getName() << __E__;
+		       << columnsInfo_[c].getName() << ". Child link index is '" << index << "' - is there a mismatch? Or was this intendend to be the target of a Group Link (column type 'GroupID')? " << __E__;
 		__SS_THROW__;
 	}
 
