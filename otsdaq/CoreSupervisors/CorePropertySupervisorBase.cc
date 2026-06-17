@@ -5,55 +5,12 @@
 #include <sys/statvfs.h>  // for disk space checking with statvfs
 #include <sys/sysinfo.h>  // for sysinfo() to get total memory
 #include <cstdint>        // for uint64_t
-#include <fstream>        // for reading /proc/cpuinfo
-#include <set>            // for counting unique physical cores
 
 using namespace ots;
 
 const CorePropertySupervisorBase::SupervisorProperties
     CorePropertySupervisorBase::SUPERVISOR_PROPERTIES =
         CorePropertySupervisorBase::SupervisorProperties();
-
-namespace
-{
-unsigned int getPhysicalCoreCount()
-{
-	std::ifstream cpuinfo("/proc/cpuinfo");
-	if(!cpuinfo.is_open())
-		return 0;
-
-	std::set<std::pair<int, int>> uniqueCores;
-	int                           physicalId = -1;
-	int                           coreId     = -1;
-	std::string                   line;
-
-	while(std::getline(cpuinfo, line))
-	{
-		if(line.find("physical id") == 0)
-		{
-			auto pos = line.find(':');
-			if(pos != std::string::npos)
-				physicalId = std::stoi(line.substr(pos + 1));
-		}
-		else if(line.find("core id") == 0)
-		{
-			auto pos = line.find(':');
-			if(pos != std::string::npos)
-				coreId = std::stoi(line.substr(pos + 1));
-		}
-		else if(line.empty() && physicalId >= 0 && coreId >= 0)
-		{
-			uniqueCores.insert({physicalId, coreId});
-			physicalId = -1;
-			coreId     = -1;
-		}
-	}
-	if(physicalId >= 0 && coreId >= 0)
-		uniqueCores.insert({physicalId, coreId});
-
-	return static_cast<unsigned int>(uniqueCores.size());
-}
-}  // anonymous namespace
 
 // clang-format off
 //==============================================================================
@@ -90,10 +47,6 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 
 		{
 			StringMacros::getConcurrencyCount(); //fills systemVariables_["System"]["logicalCores"]
-
-			unsigned int physicalCores = getPhysicalCoreCount();
-			StringMacros::systemVariables_["System"]["physicalCores"] =
-				physicalCores > 0 ? std::to_string(physicalCores) : "unknown";
 
 			struct sysinfo memInfo;
 			if(sysinfo(&memInfo) == 0)

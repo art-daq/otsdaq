@@ -3,7 +3,7 @@
 #include <algorithm>  // for find_if
 #include <array>
 #include <cstdint>  // for uintptr_t
-#include <thread>   // for std::thread::hardware_concurrency
+#include <sched.h>  // for sched_getaffinity
 
 using namespace ots;
 
@@ -22,7 +22,10 @@ unsigned int StringMacros::getConcurrencyCount(void)
 	catch(...)
 	{
 	}
-	unsigned int hw                            = std::thread::hardware_concurrency();
+	cpu_set_t mask;
+	unsigned int hw = 0;
+	if(sched_getaffinity(0, sizeof(mask), &mask) == 0)
+		hw = CPU_COUNT(&mask);
 	systemVariables_["System"]["logicalCores"] = std::to_string(hw);
 	return hw;
 }  //end getConcurrencyCount()
