@@ -7,7 +7,6 @@
 #include <cstdint>        // for uint64_t
 #include <fstream>        // for reading /proc/cpuinfo
 #include <set>            // for counting unique physical cores
-#include <thread>         // for std::thread::hardware_concurrency
 
 using namespace ots;
 
