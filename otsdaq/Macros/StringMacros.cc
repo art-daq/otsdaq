@@ -1,9 +1,9 @@
 #include "otsdaq/Macros/StringMacros.h"
 
+#include <sched.h>    // for sched_getaffinity
 #include <algorithm>  // for find_if
 #include <array>
 #include <cstdint>  // for uintptr_t
-#include <sched.h>  // for sched_getaffinity
 
 using namespace ots;
 
@@ -22,7 +22,7 @@ unsigned int StringMacros::getConcurrencyCount(void)
 	catch(...)
 	{
 	}
-	cpu_set_t mask;
+	cpu_set_t    mask;
 	unsigned int hw = 0;
 	if(sched_getaffinity(0, sizeof(mask), &mask) == 0)
 		hw = CPU_COUNT(&mask);
