@@ -1750,7 +1750,7 @@ void ConfigurationManager::loadMemberMap(
 
 	//Note: mongodb crashing from too many connections was resolved by increasing ulimit at mongodb launch
 	//	 i.e. ulimit -n 64000 && ./start_mongod.sh
-	const int numOfThreads = StringMacros::getConcurrencyCount() / 2 > memberMap.size()
+	const int numOfThreads = StringMacros::getConcurrencyCount() / 2 < memberMap.size()
 	                             ? (StringMacros::getConcurrencyCount() / 2)
 	                             : memberMap.size();
 	if(memberMap.size() <= 2 /* i.e. is Context group */ || usingCache ||
