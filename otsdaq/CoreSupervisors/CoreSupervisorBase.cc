@@ -460,7 +460,7 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 	    getStatusProgressDetail());  // call virtual progress detail string generation
 
 	//return available disk space if first app in context
-	__SUP_COUTTV__(CorePropertySupervisorBase::isFirstAppInContext());
+	__SUP_COUTVS__(19, CorePropertySupervisorBase::isFirstAppInContext());
 	if(CorePropertySupervisorBase::isFirstAppInContext())
 	{
 		uint64_t availableLogSpaceKB =
