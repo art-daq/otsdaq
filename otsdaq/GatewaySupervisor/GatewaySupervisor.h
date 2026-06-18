@@ -101,6 +101,7 @@ class WorkLoopManager;
 		void						addStateMachineStatusToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName, bool getRunNumber = true);
 		void						addFilteredConfigAliasesToXML	(HttpXmlDocument& xmlOut, const std::string& fsmName);
 		void						addRequiredFsmLogInputToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName);
+		static std::string			getGlobalFieldsString			(ConfigurationManager* cfgMgr, const std::map<std::string, TableVersion>& memberMap = {});
 
 		// State Machine requests handlers
 		void 						stateMachineXgiHandler(xgi::Input* in, xgi::Output* out);
@@ -485,6 +486,9 @@ public:	//used by remote subsystem control and status
 		std::string											latestGatewayRemoteIconsString_; ///< cached string of remote gateway icons for quick access
 		std::pair<std::string /* latestIconContext group */, TableGroupKey>
 															latestGatewayRemoteIconsContextGroup_; ///< used to track the table group key for the latest remote desktop icons
+
+		std::string											cachedGlobalFieldsString_;
+		std::pair<std::string, TableGroupKey>				cachedGlobalFieldsGroup_;
 
 		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);
 		static void 				SendRemoteGatewayCommand					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);

@@ -840,6 +840,18 @@ try
 								            ConfigurationManager::GroupType::CONTEXT_TYPE)
 								        .str() +
 								    ").";
+
+								if(theSupervisor->theConfigurationTableGroup_ !=
+								   theSupervisor->cachedGlobalFieldsGroup_)
+								{
+									theSupervisor->cachedGlobalFieldsGroup_ =
+									    theSupervisor->theConfigurationTableGroup_;
+									theSupervisor->cachedGlobalFieldsString_ =
+									    getGlobalFieldsString(
+									        theSupervisor->CorePropertySupervisorBase::
+									            theConfigurationManager_);
+								}
+								detail += theSupervisor->cachedGlobalFieldsString_;
 							}
 						}
 						catch(...)
@@ -3420,6 +3432,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					    << "\n"
 					    << "GetRemoteDesktopIcons"
 					    << "\n"
+					    << "GetAliasGlobalFields,<configAlias>"
+					    << "\n"
 					    << "FiniteStateMachineName,Command,Parameter(s)"
 					    << "\n";
 
@@ -4398,7 +4412,77 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					sock.acknowledge(iconString, true /* verbose */);
 					continue;
-				}                             //end GetRemoteDesktopIcons
+				}  //end GetRemoteDesktopIcons
+				else if(buffer.find("GetAliasGlobalFields,") == 0)
+				{
+					std::vector<std::string> params =
+					    StringMacros::getVectorFromString(buffer, {','});
+					if(params.size() < 2)
+					{
+						__COUT_ERR__
+						    << "GetAliasGlobalFields requires a config alias parameter."
+						    << __E__;
+						sock.acknowledge("", false /* verbose */);
+						continue;
+					}
+
+					std::string configAlias = params[1];
+					__COUT__ << "GetAliasGlobalFields for alias '" << configAlias << "'"
+					         << __E__;
+
+					std::string globalFieldsResult = "";
+					try
+					{
+						ConfigurationManager tmpCfgMgr;
+						auto groupPair = tmpCfgMgr.getTableGroupFromAlias(configAlias);
+						if(groupPair.first != "")
+						{
+							std::map<std::string, TableVersion> groupMembers;
+							tmpCfgMgr.loadTableGroup(groupPair.first,
+							                         groupPair.second,
+							                         false /*doActivate*/,
+							                         &groupMembers,
+							                         0 /*progressBar*/,
+							                         0 /*accumulateWarnings*/,
+							                         0 /*groupComment*/,
+							                         0 /*groupAuthor*/,
+							                         0 /*groupCreateTime*/,
+							                         true /*doNotLoadMembers*/);
+
+							std::map<std::string, TableVersion> globalMembers;
+							for(const auto& member : groupMembers)
+								if(member.first.find("Global") != std::string::npos)
+									globalMembers.emplace(member);
+
+							__COUT__ << "GetAliasGlobalFields - found "
+							         << globalMembers.size() << " Global table(s) out of "
+							         << groupMembers.size() << " total members." << __E__;
+
+							if(globalMembers.size())
+							{
+								tmpCfgMgr.loadMemberMap(globalMembers);
+								globalFieldsResult =
+								    getGlobalFieldsString(&tmpCfgMgr, globalMembers);
+							}
+						}
+						else
+							__COUT_WARN__ << "Could not find group for alias '"
+							              << configAlias << "'." << __E__;
+					}
+					catch(const std::runtime_error& e)
+					{
+						__COUT_WARN__ << "Error getting Global fields for alias '"
+						              << configAlias << "': " << e.what() << __E__;
+					}
+					catch(...)
+					{
+						__COUT_WARN__ << "Unknown error getting Global fields for alias '"
+						              << configAlias << "'." << __E__;
+					}
+
+					sock.acknowledge(globalFieldsResult, false /* verbose */);
+					continue;
+				}                             //end GetAliasGlobalFields
 				else if(!enableStateChanges)  //else it is an FSM Command!
 				{
 					__COUT_WARN__ << "Skipping potential FSM Command because "
@@ -10504,6 +10588,7 @@ try
 	// commandRemoteSubsystem
 	// setRemoteSubsystemFsmControl
 	// getSubsystemConfigAliasSelectInfo
+	// getAliasGlobalFields
 
 	// resetUserTooltips
 	// silenceAllUserTooltips
@@ -12087,6 +12172,62 @@ try
 					           << ")";
 					returnInfo << "</i>";
 
+					// request Global fields from remote subsystem via UDP
+					try
+					{
+						std::vector<std::string> parsedUrl =
+						    StringMacros::getVectorFromString(
+						        remoteGatewayApp.appInfo.url, {':'});
+						if(parsedUrl.size() == 3)
+						{
+							Socket            gatewayRemoteSocket(parsedUrl[1],
+                                                       atoi(parsedUrl[2].c_str()));
+							TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
+							tmpSocket.initialize();
+
+							std::string udpRequest =
+							    "GetAliasGlobalFields," +
+							    remoteGatewayApp.selected_config_alias;
+							__SUP_COUT__
+							    << "Sending GetAliasGlobalFields to '"
+							    << remoteGatewayApp.appInfo.name << "' for alias '"
+							    << remoteGatewayApp.selected_config_alias << "'" << __E__;
+
+							std::string globalFieldsResponse = tmpSocket.sendAndReceive(
+							    gatewayRemoteSocket, udpRequest, 5 /*timeoutSeconds*/);
+
+							__SUP_COUT__ << "GetAliasGlobalFields response from '"
+							             << remoteGatewayApp.appInfo.name
+							             << "': " << globalFieldsResponse << __E__;
+
+							if(globalFieldsResponse.size())
+								returnInfo << "<br><br><b>Global Fields:</b>"
+								           << StringMacros::escapeString(
+								                  globalFieldsResponse,
+								                  true /*allowWhiteSpace*/,
+								                  true /*forHtml*/);
+						}
+						else
+							__SUP_COUT_WARN__ << "Could not parse remote subsystem URL '"
+							                  << remoteGatewayApp.appInfo.url
+							                  << "' for Global fields UDP request."
+							                  << __E__;
+					}
+					catch(const std::runtime_error& e)
+					{
+						__SUP_COUT_WARN__ << "Error requesting Global fields from remote "
+						                     "subsystem '"
+						                  << remoteGatewayApp.appInfo.name
+						                  << "': " << e.what() << __E__;
+					}
+					catch(...)
+					{
+						__SUP_COUT_WARN__
+						    << "Unknown error requesting Global fields from "
+						       "remote subsystem '"
+						    << remoteGatewayApp.appInfo.name << "'." << __E__;
+					}
+
 					xmlOut.addTextElementToData("alias_info", returnInfo.str());
 					break;
 				}
@@ -12099,6 +12240,52 @@ try
 			}
 
 		}  //end getSubsystemConfigAliasSelectInfo
+		else if(requestType == "getAliasGlobalFields")
+		{
+			std::string configAlias = CgiDataUtilities::getData(cgiIn, "configAlias");
+			__SUP_COUTV__(configAlias);
+
+			ConfigurationManager tmpCfgMgr;
+			auto groupPair = tmpCfgMgr.getTableGroupFromAlias(configAlias);
+			if(groupPair.first == "")
+			{
+				__SUP_SS__ << "Could not find group for alias '" << configAlias << "'."
+				           << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			__SUP_COUT__ << "getAliasGlobalFields - loading group '" << groupPair.first
+			             << "(" << groupPair.second << ")' for alias '" << configAlias
+			             << "'" << __E__;
+
+			std::map<std::string, TableVersion> groupMembers;
+			tmpCfgMgr.loadTableGroup(groupPair.first,
+			                         groupPair.second,
+			                         false /*doActivate*/,
+			                         &groupMembers,
+			                         0 /*progressBar*/,
+			                         0 /*accumulateWarnings*/,
+			                         0 /*groupComment*/,
+			                         0 /*groupAuthor*/,
+			                         0 /*groupCreateTime*/,
+			                         true /*doNotLoadMembers*/);
+
+			std::map<std::string, TableVersion> globalMembers;
+			for(const auto& member : groupMembers)
+				if(member.first.find("Global") != std::string::npos)
+					globalMembers.emplace(member);
+
+			__SUP_COUT__ << "getAliasGlobalFields - found " << globalMembers.size()
+			             << " Global table(s) out of " << groupMembers.size()
+			             << " total members." << __E__;
+
+			if(globalMembers.size())
+				tmpCfgMgr.loadMemberMap(globalMembers);
+
+			xmlOut.addTextElementToData("global_fields_string",
+			                            getGlobalFieldsString(&tmpCfgMgr, globalMembers));
+
+		}  //end getAliasGlobalFields
 		else if(requestType == "commandRemoteSubsystem")
 		{
 			std::string targetSubsystem =
@@ -12915,6 +13102,88 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(HttpXmlDocument&   xmlOut,
 		    << __E__;
 	}
 }  //end addFilteredConfigAliasesToXML()
+
+//==============================================================================
+std::string GatewaySupervisor::getGlobalFieldsString(
+    ConfigurationManager*                      cfgMgr,
+    const std::map<std::string, TableVersion>& memberMap /* = {} */)
+{
+	std::string result = "";
+	try
+	{
+		// if memberMap provided, use it directly (tables loaded a la carte, not activated);
+		// otherwise fall back to active versions (for status workloop where tables are activated)
+		std::map<std::string, TableVersion> tablesToCheck =
+		    memberMap.size() ? memberMap : cfgMgr->getActiveVersions();
+		__COUTT__ << "getGlobalFieldsString() - tablesToCheck count = "
+		          << tablesToCheck.size() << __E__;
+
+		for(const auto& tablePair : tablesToCheck)
+		{
+			if(tablePair.first.find("Global") == std::string::npos)
+				continue;
+
+			__COUTT__ << "getGlobalFieldsString() - found Global table: '"
+			          << tablePair.first << "' v" << tablePair.second << __E__;
+
+			try
+			{
+				const TableBase* table = cfgMgr->getTableByName(tablePair.first);
+				// use specific version view (works for non-activated tables loaded a la carte)
+				const TableView& view = table->getView(tablePair.second);
+
+				__COUTT__ << "getGlobalFieldsString() - table '" << tablePair.first
+				          << "' has " << view.getNumberOfColumns() << " columns, "
+				          << view.getNumberOfRows() << " rows." << __E__;
+
+				const auto& columnsInfo = view.getColumnsInfo();
+				for(unsigned int col = 0; col < columnsInfo.size(); ++col)
+				{
+					const std::string& colName = columnsInfo[col].getName();
+					if(colName.find("Global") == std::string::npos)
+						continue;
+					if(colName == TableViewColumnInfo::COL_NAME_STATUS ||
+					   colName == TableViewColumnInfo::COL_NAME_COMMENT ||
+					   colName == TableViewColumnInfo::COL_NAME_AUTHOR ||
+					   colName == TableViewColumnInfo::COL_NAME_CREATION)
+						continue;
+
+					__COUTT__ << "getGlobalFieldsString() - matched column: '" << colName
+					          << "'" << __E__;
+
+					std::string displayName = colName;
+					if(displayName.rfind("Global", 0) == 0)
+						displayName = displayName.substr(sizeof("Global") - 1);
+					for(unsigned int row = 0; row < view.getNumberOfRows(); ++row)
+					{
+						result +=
+						    " | " + displayName + ": " + view.getValueAsString(row, col);
+					}
+				}
+			}
+			catch(const std::runtime_error& e)
+			{
+				__COUT_WARN__ << "Error reading Global fields from table '"
+				              << tablePair.first << "': " << e.what() << __E__;
+			}
+			catch(...)
+			{
+				__COUT_WARN__ << "Unknown error reading Global fields from table '"
+				              << tablePair.first << "'." << __E__;
+			}
+		}
+	}
+	catch(const std::runtime_error& e)
+	{
+		__COUT_WARN__ << "Error getting Global fields: " << e.what() << __E__;
+	}
+	catch(...)
+	{
+		__COUT_WARN__ << "Unknown error getting Global fields." << __E__;
+	}
+	__COUTT__ << "getGlobalFieldsString() result = '" << result << "'" << __E__;
+	return result;
+}  //end getGlobalFieldsString()
 
 //==============================================================================
 /// launchStartOneServerCommand
