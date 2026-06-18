@@ -101,6 +101,7 @@ class WorkLoopManager;
 		void						addStateMachineStatusToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName, bool getRunNumber = true);
 		void						addFilteredConfigAliasesToXML	(HttpXmlDocument& xmlOut, const std::string& fsmName);
 		void						addRequiredFsmLogInputToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName);
+		static std::string			getGlobalFieldsString			(ConfigurationManager* cfgMgr, const std::map<std::string, TableVersion>& memberMap = {});
 
 		// State Machine requests handlers
 		void 						stateMachineXgiHandler(xgi::Input* in, xgi::Output* out);
