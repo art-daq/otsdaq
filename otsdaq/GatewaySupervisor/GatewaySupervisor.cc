@@ -841,8 +841,17 @@ try
 								        .str() +
 								    ").";
 
-									detail += getGlobalFieldsString(
-									    theSupervisor->CorePropertySupervisorBase::theConfigurationManager_);
+									if(theSupervisor->theConfigurationTableGroup_ !=
+									   theSupervisor->cachedGlobalFieldsGroup_)
+									{
+										theSupervisor->cachedGlobalFieldsGroup_ =
+										    theSupervisor->theConfigurationTableGroup_;
+										theSupervisor->cachedGlobalFieldsString_ =
+										    getGlobalFieldsString(
+										        theSupervisor->CorePropertySupervisorBase::
+										            theConfigurationManager_);
+									}
+									detail += theSupervisor->cachedGlobalFieldsString_;
 								}
 						}
 						catch(...)
@@ -13117,16 +13126,16 @@ std::string GatewaySupervisor::getGlobalFieldsString(
 		// otherwise fall back to active versions (for status workloop where tables are activated)
 		std::map<std::string, TableVersion> tablesToCheck =
 		    memberMap.size() ? memberMap : cfgMgr->getActiveVersions();
-		__COUT__ << "getGlobalFieldsString() - tablesToCheck count = "
-		         << tablesToCheck.size() << __E__;
+		__COUTT__ << "getGlobalFieldsString() - tablesToCheck count = "
+		          << tablesToCheck.size() << __E__;
 
 		for(const auto& tablePair : tablesToCheck)
 		{
 			if(tablePair.first.find("Global") == std::string::npos)
 				continue;
 
-			__COUT__ << "getGlobalFieldsString() - found Global table: '"
-			         << tablePair.first << "' v" << tablePair.second << __E__;
+			__COUTT__ << "getGlobalFieldsString() - found Global table: '"
+			          << tablePair.first << "' v" << tablePair.second << __E__;
 
 			try
 			{
@@ -13134,9 +13143,9 @@ std::string GatewaySupervisor::getGlobalFieldsString(
 				// use specific version view (works for non-activated tables loaded a la carte)
 				const TableView& view  = table->getView(tablePair.second);
 
-				__COUT__ << "getGlobalFieldsString() - table '" << tablePair.first
-				         << "' has " << view.getNumberOfColumns() << " columns, "
-				         << view.getNumberOfRows() << " rows." << __E__;
+				__COUTT__ << "getGlobalFieldsString() - table '" << tablePair.first
+				          << "' has " << view.getNumberOfColumns() << " columns, "
+				          << view.getNumberOfRows() << " rows." << __E__;
 
 				const auto& columnsInfo = view.getColumnsInfo();
 				for(unsigned int col = 0; col < columnsInfo.size(); ++col)
@@ -13150,8 +13159,8 @@ std::string GatewaySupervisor::getGlobalFieldsString(
 					   colName == TableViewColumnInfo::COL_NAME_CREATION)
 						continue;
 
-					__COUT__ << "getGlobalFieldsString() - matched column: '"
-					         << colName << "'" << __E__;
+					__COUTT__ << "getGlobalFieldsString() - matched column: '"
+					          << colName << "'" << __E__;
 
 					std::string displayName = colName;
 					if(displayName.find("Global") == 0)
@@ -13184,7 +13193,7 @@ std::string GatewaySupervisor::getGlobalFieldsString(
 	{
 		__COUT_WARN__ << "Unknown error getting Global fields." << __E__;
 	}
-	__COUT__ << "getGlobalFieldsString() result = '" << result << "'" << __E__;
+	__COUTT__ << "getGlobalFieldsString() result = '" << result << "'" << __E__;
 	return result;
 }  //end getGlobalFieldsString()
 

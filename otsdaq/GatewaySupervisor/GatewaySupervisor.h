@@ -487,6 +487,9 @@ public:	//used by remote subsystem control and status
 		std::pair<std::string /* latestIconContext group */, TableGroupKey>
 															latestGatewayRemoteIconsContextGroup_; ///< used to track the table group key for the latest remote desktop icons
 
+		std::string											cachedGlobalFieldsString_;
+		std::pair<std::string, TableGroupKey>				cachedGlobalFieldsGroup_;
+
 		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);
 		static void 				SendRemoteGatewayCommand					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
 		static void 				GetRemoteGatewayIcons						(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
