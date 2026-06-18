@@ -13153,9 +13153,13 @@ std::string GatewaySupervisor::getGlobalFieldsString(
 					__COUT__ << "getGlobalFieldsString() - matched column: '"
 					         << colName << "'" << __E__;
 
+					std::string displayName = colName;
+					if(displayName.find("Global") == 0)
+						displayName = displayName.substr(strlen("Global"));
+
 					for(unsigned int row = 0; row < view.getNumberOfRows(); ++row)
 					{
-						result += " | " + colName + ": " +
+						result += " | " + displayName + ": " +
 						          view.getValueAsString(row, col);
 					}
 				}
