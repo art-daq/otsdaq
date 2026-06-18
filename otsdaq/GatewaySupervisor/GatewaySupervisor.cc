@@ -12202,7 +12202,7 @@ try
 
 							if(globalFieldsResponse.size())
 								returnInfo << "<br><br><b>Global Fields:</b>"
-								           << globalFieldsResponse;
+								           << StringMacros::escapeString(globalFieldsResponse, true /*allowWhiteSpace*/, true /*forHtml*/);
 						}
 						else
 							__SUP_COUT_WARN__ << "Could not parse remote subsystem URL '"
