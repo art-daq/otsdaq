@@ -13149,9 +13149,8 @@ std::string GatewaySupervisor::getGlobalFieldsString(
 					          << "'" << __E__;
 
 					std::string displayName = colName;
-					if(displayName.find("Global") == 0)
-						displayName = displayName.substr(strlen("Global"));
-
+					if(displayName.rfind("Global", 0) == 0)
+						displayName = displayName.substr(sizeof("Global") - 1);
 					for(unsigned int row = 0; row < view.getNumberOfRows(); ++row)
 					{
 						result +=
