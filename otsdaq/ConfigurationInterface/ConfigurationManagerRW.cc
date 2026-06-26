@@ -2604,6 +2604,205 @@ TableVersion ConfigurationManagerRW::saveModifiedVersion(
 }  // end saveModifiedVersion()
 
 //==============================================================================
+/// updateTableCells
+///
+///	Full workflow for updating specific cells in a table by UID and column name.
+///	Loads the table at sourceVersion, creates a temporary view, applies cell updates
+///	via TableView::updateCells(), saves a new persistent version, and optionally sets
+///	a version alias on the new version.
+///
+///	If sourceVersion is not specified (default/invalid), uses the active version of the
+///	table. Active groups must be initialized for this to work.
+///
+///	Returns the new table version.
+///
+TableVersion ConfigurationManagerRW::updateTableCells(
+    const std::string&                                                tableName,
+    const std::map<std::string, std::map<std::string, std::string>>& cellUpdates,
+    const std::string&                                                author,
+    TableVersion                                                      sourceVersion /* = TableVersion() */,
+    const std::string&                                                versionAlias /* = "" */,
+    const std::string&                                                sourceAlias /* = "" */)
+{
+	TableBase* table = getTableByName(tableName);
+
+	// resolve source alias to a version number
+	if(!sourceAlias.empty())
+	{
+		auto allAliases = getVersionAliases();
+		auto tableIt    = allAliases.find(tableName);
+		if(tableIt == allAliases.end())
+		{
+			__SS__ << "No version aliases found for table '" << tableName << "'." << __E__;
+			__SS_THROW__;
+		}
+		auto aliasIt = tableIt->second.find(sourceAlias);
+		if(aliasIt == tableIt->second.end())
+		{
+			__SS__ << "Version alias '" << sourceAlias
+			       << "' not found for table '" << tableName << "'. Available aliases: ";
+			for(const auto& a : tableIt->second)
+				ss << "'" << a.first << "' (v" << a.second << "), ";
+			ss << __E__;
+			__SS_THROW__;
+		}
+		sourceVersion = aliasIt->second;
+		__GEN_COUT__ << "Resolved source alias '" << sourceAlias << "' to version "
+		             << sourceVersion << " for table '" << tableName << "'" << __E__;
+	}
+
+	// resolve source version: if not specified, use the active version
+	if(sourceVersion.isInvalid() || sourceVersion.isMockupVersion())
+	{
+		if(!table->isActive())
+		{
+			__SS__ << "No source version specified and table '" << tableName
+			       << "' has no active version. Please specify a version or "
+			          "ensure active groups are initialized." << __E__;
+			__SS_THROW__;
+		}
+		sourceVersion = table->getView().getVersion();
+		__GEN_COUT__ << "Using active version " << sourceVersion
+		             << " for table '" << tableName << "'" << __E__;
+	}
+	else
+		getVersionedTableByName(tableName, sourceVersion);
+
+	__GEN_COUT__ << "Updating cells in table '" << tableName << "' from source version "
+	             << sourceVersion << __E__;
+
+	TableVersion temporaryVersion = table->createTemporaryView(sourceVersion);
+
+	__GEN_COUT__ << "Created temporary version " << temporaryVersion << __E__;
+
+	TableView* cfgView = table->getTemporaryView(temporaryVersion);
+
+	try
+	{
+		unsigned int uidCol      = cfgView->getColUID();
+		int          authorCol   = cfgView->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
+		int          timestampCol = cfgView->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
+		unsigned int cellsModified = 0;
+
+		for(const auto& rowUpdate : cellUpdates)
+		{
+			const std::string& uid = rowUpdate.first;
+			unsigned int        row = cfgView->findRow(uidCol, uid);
+
+			__GEN_COUT__ << "Updating UID '" << uid << "' at row " << row << __E__;
+
+			bool rowModified = false;
+			for(const auto& colVal : rowUpdate.second)
+			{
+				unsigned int col = cfgView->findCol(colVal.first);
+				__GEN_COUT__ << "Setting [" << uid << "][" << colVal.first
+				             << "] = '" << colVal.second << "'" << __E__;
+				cfgView->setValueAsString(colVal.second, row, col);
+				++cellsModified;
+				rowModified = true;
+			}
+
+			if(rowModified && !author.empty())
+			{
+				if(authorCol >= 0)
+					cfgView->setValue(author, row, authorCol);
+				if(timestampCol >= 0)
+					cfgView->setValue(time(0), row, timestampCol);
+			}
+		}
+
+		__GEN_COUT__ << cellsModified << " cell(s) modified." << __E__;
+
+		std::stringstream comment;
+		comment << cellsModified << " cell(s) updated via updateTableCells().";
+		cfgView->setComment(comment.str());
+	}
+	catch(...)
+	{
+		__GEN_COUT__ << "Caught error while editing. Erasing temporary version." << __E__;
+		table->eraseView(temporaryVersion);
+		throw;
+	}
+
+	bool         foundEquivalent;
+	TableVersion newVersion = saveModifiedVersion(tableName,
+	                                              sourceVersion,
+	                                              false /* makeTemporary */,
+	                                              table,
+	                                              temporaryVersion,
+	                                              false /* ignoreDuplicates */,
+	                                              true /* lookForEquivalent */,
+	                                              &foundEquivalent);
+
+	if(foundEquivalent)
+		__GEN_COUT_WARN__ << "Found equivalent version as " << tableName << "-v"
+		                  << newVersion << ". No new version created." << __E__;
+	else
+		__GEN_COUT_INFO__ << tableName << "-v" << newVersion
+		                  << " created with updated cells." << __E__;
+
+	// optionally set version alias
+	if(!versionAlias.empty())
+	{
+		__GEN_COUT__ << "Setting version alias '" << versionAlias << "' for "
+		             << tableName << "-v" << newVersion << __E__;
+
+		GroupEditStruct backboneGroupEdit(
+		    ConfigurationManager::GroupType::BACKBONE_TYPE, this);
+
+		TableView* aliasTableView =
+		    backboneGroupEdit
+		        .getTableEditStruct(
+		            ConfigurationManager::VERSION_ALIASES_TABLE_NAME,
+		            true /*markModified*/)
+		        .tableView_;
+
+		unsigned int colTableName    = aliasTableView->findCol("TableName");
+		unsigned int colVersionAlias = aliasTableView->findCol("VersionAlias");
+		unsigned int colVersion      = aliasTableView->findCol("Version");
+
+		// search for existing alias to update, or add new row
+		bool aliasFound = false;
+		for(unsigned int row = 0; row < aliasTableView->getNumberOfRows(); ++row)
+		{
+			if(aliasTableView->getDataView()[row][colTableName] == tableName &&
+			   aliasTableView->getDataView()[row][colVersionAlias] == versionAlias)
+			{
+				__GEN_COUT__ << "Updating existing alias at row " << row << __E__;
+				aliasTableView->setValueAsString(
+				    newVersion.toString(), row, colVersion);
+				aliasFound = true;
+				break;
+			}
+		}
+
+		if(!aliasFound)
+		{
+			__GEN_COUT__ << "Adding new alias row." << __E__;
+			unsigned int newRow = aliasTableView->addRow(
+			    author, true /*incrementUniqueData*/, "versionAlias");
+			aliasTableView->setValueAsString(tableName, newRow, colTableName);
+			aliasTableView->setValueAsString(versionAlias, newRow, colVersionAlias);
+			aliasTableView->setValueAsString(
+			    newVersion.toString(), newRow, colVersion);
+		}
+
+		TableGroupKey newBackboneKey;
+		backboneGroupEdit.saveChanges(
+		    backboneGroupEdit.originalGroupName_,
+		    newBackboneKey,
+		    nullptr /* foundEquivalentGroupKey */,
+		    true /* activateNewGroup */);
+
+		__GEN_COUT_INFO__ << "Version alias '" << versionAlias << "' set to "
+		                  << tableName << "-v" << newVersion
+		                  << " (backbone key " << newBackboneKey << ")." << __E__;
+	}
+
+	return newVersion;
+}  // end updateTableCells()
+
+//==============================================================================
 GroupEditStruct::GroupEditStruct(const ConfigurationManager::GroupType& groupType,
                                  ConfigurationManagerRW*                cfgMgr)
     : groupType_(groupType)
