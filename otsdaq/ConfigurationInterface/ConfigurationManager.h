@@ -34,8 +34,6 @@ class ConfigurationManager
 
 	//==============================================================================
 	/// Static members
-	static const unsigned int PROCESSOR_COUNT;
-
 	static const std::string READONLY_USER;
 	static const std::string ACTIVE_GROUPS_FILENAME;
 	static const std::string ALIAS_VERSION_PREAMBLE;

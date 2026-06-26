@@ -181,8 +181,7 @@ std::string TableGroupKey::getFullGroupString(const std::string&   groupName,
 		__SS__
 		    << ("TableGroupKey::getFullGroupString() Illegal Group Name! The Group Name "
 		        "was not provided.\n");
-		__COUT_ERR__ << ss.str();
-		__SS_THROW__;
+		__SS_ONLY_THROW__;
 	}
 	else if(groupName.size() == 1)
 	{
@@ -190,8 +189,7 @@ std::string TableGroupKey::getFullGroupString(const std::string&   groupName,
 		           "Name is too short: \"" +
 		           groupName + "\"")
 		       << std::endl;
-		__COUT_ERR__ << ss.str();
-		__SS_THROW__;
+		__SS_ONLY_THROW__;
 	}
 	else
 	{
