@@ -77,6 +77,7 @@ using namespace ots;
 const std::string GatewaySupervisor::COMMAND_PARAM_LOG_ENTRY_PREAMBLE = "LogEntry:";
 const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE = "SubsystemCommonTableList:";
 const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE = "SubsystemCommonOverrideTableList:";
+const std::string GatewaySupervisor::COMMAND_PARAM_ITERATION_INDEX_PREAMBLE = "IterationIndex:";
 
 // clang-format on
 
@@ -797,8 +798,28 @@ try
 							        RunControlStateMachine::PAUSED_STATE_NAME))
 							{
 								//add Configuration details
+								detail += " - Configured";
+								{
+									bool hasCommon =
+									    theSupervisor
+									        ->activeStateMachineSubsystemCommonList_
+									        .size();
+									bool hasOverride =
+									    theSupervisor
+									        ->activeStateMachineSubsystemCommonOverrideList_
+									        .size();
+									if(hasCommon && hasOverride)
+										detail +=
+										    ", with SubsystemCommon tables and "
+										    "SubsystemCommonOverride tables,";
+									else if(hasCommon)
+										detail += ", with SubsystemCommon tables,";
+									else if(hasOverride)
+										detail +=
+										    ", with SubsystemCommonOverride tables,";
+								}
 								detail +=
-								    " - Configured with System Configuration Alias '" +
+								    " with System Configuration Alias '" +
 								    theSupervisor->activeStateMachineConfigurationAlias_ +
 								    "' which translates to " +
 								    theSupervisor->theConfigurationTableGroup_.first +
@@ -819,6 +840,18 @@ try
 								            ConfigurationManager::GroupType::CONTEXT_TYPE)
 								        .str() +
 								    ").";
+
+								if(theSupervisor->theConfigurationTableGroup_ !=
+								   theSupervisor->cachedGlobalFieldsGroup_)
+								{
+									theSupervisor->cachedGlobalFieldsGroup_ =
+									    theSupervisor->theConfigurationTableGroup_;
+									theSupervisor->cachedGlobalFieldsString_ =
+									    getGlobalFieldsString(
+									        theSupervisor->CorePropertySupervisorBase::
+									            theConfigurationManager_);
+								}
+								detail += theSupervisor->cachedGlobalFieldsString_;
 							}
 						}
 						catch(...)
@@ -1405,7 +1438,6 @@ try
 						if(commandSent)
 						{
 							commandRemoteIdleCount = 0;  //reset
-							sleep(1);  //gives some time for command to sink in
 						}
 
 						//then get status (primary and disconnected threads)
@@ -1463,6 +1495,17 @@ try
 							    remoteGatewaySocket,
 							    ipAddressForStateChangesOverUDP,
 							    portForReverseLoginOverUDP);
+
+							{
+								auto statusMs =
+								    std::chrono::duration_cast<std::chrono::milliseconds>(
+								        std::chrono::high_resolution_clock::now() - start)
+								        .count();
+								if(statusMs > 200)
+									__COUTT__ << "CheckRemoteGatewayStatus for '"
+									          << remoteGatewayApp.appInfo.name
+									          << "' took " << statusMs << " ms" << __E__;
+							}
 
 							usleep(
 							    50 *
@@ -1731,8 +1774,19 @@ try
 						//replace info in supervisor remote gateway list
 						{
 							//lock for remainder of scope
+							auto lockWaitStart =
+							    std::chrono::high_resolution_clock::now();
 							std::lock_guard<std::mutex> lock(
 							    theSupervisor->remoteGatewayAppsMutex_);
+							auto lockWaitMs =
+							    std::chrono::duration_cast<std::chrono::milliseconds>(
+							        std::chrono::high_resolution_clock::now() -
+							        lockWaitStart)
+							        .count();
+							if(lockWaitMs > 50)
+								__COUT_WARN__ << "AppStatusWorkLoop "
+								                 "remoteGatewayAppsMutex_ lock wait = "
+								              << lockWaitMs << " ms" << __E__;
 
 							__COUTT__ << "(doDisconnected = " << doDisconnected
 							          << ") size?... "
@@ -2229,62 +2283,69 @@ try
 					}     // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
-						std::lock_guard<std::mutex> lock(
-						    theSupervisor->stateMachineAccessMutex_);
-
-						std::string currentState =
-						    theSupervisor->theStateMachine_.getCurrentStateName();
-						if(currentState != RunControlStateMachine::FAILED_STATE_NAME &&
-						   (currentState != RunControlStateMachine::HALTED_STATE_NAME ||
-						    theSupervisor->theStateMachine_.isInTransition()) &&
-						   currentState != RunControlStateMachine::SHUTDOWN_STATE_NAME &&
-						   (currentState != RunControlStateMachine::INITIAL_STATE_NAME ||
-						    theSupervisor->theStateMachine_.isInTransition()))
+						bool shouldTriggerError = false;
 						{
-							__COUTV__(currentState);
-							__SS__
-							    << "\nDid a supervisor crash? Failed getting status from "
-							    << " Supervisor instance = '" << appName
-							    << "' [LID=" << appInfo.getId() << "] in Context '"
-							    << appInfo.getContextName()
-							    << "' [URL=" << appInfo.getURL() << "]." << __E__;
-							__COUT_ERR__ << "\n" << ss.str();
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->stateMachineAccessMutex_);
 
-							//Prevent stopping state machine from failed status (for now)
-							//	Seeing Console Crash and bring down state machine at the moment
-							if(!appInfo.isTypeConsoleSupervisor())
+							std::string currentState =
+							    theSupervisor->theStateMachine_.getCurrentStateName();
+							if(currentState !=
+							       RunControlStateMachine::FAILED_STATE_NAME &&
+							   (currentState !=
+							        RunControlStateMachine::HALTED_STATE_NAME ||
+							    theSupervisor->theStateMachine_.isInTransition()) &&
+							   currentState !=
+							       RunControlStateMachine::SHUTDOWN_STATE_NAME &&
+							   (currentState !=
+							        RunControlStateMachine::INITIAL_STATE_NAME ||
+							    theSupervisor->theStateMachine_.isInTransition()))
 							{
-								__COUT_WARN__ << "Unexpected failure getting status from "
-								              << " Supervisor instance = '" << appName
-								              << "' [LID=" << appInfo.getId()
-								              << "] in Context '"
-								              << appInfo.getContextName()
-								              << "' [URL=" << appInfo.getURL()
-								              << "]. Attempting to send 'Error' "
-								                 "transition to target now!"
-								              << __E__;
-								//Only set error message if it is not already present
-								//	(avoid growing the error string with duplicate messages)
-								if(theSupervisor->theStateMachine_.getErrorMessage().find(
-								       ss.str()) == std::string::npos)
-									theSupervisor->theStateMachine_.setErrorMessage(
-									    ss.str());
-								try
-								{
-									theSupervisor->runControlMessageHandler(
-									    SOAPUtilities::makeSOAPMessageReference(
-									        RunControlStateMachine::
-									            ERROR_TRANSITION_NAME));
-								}
-								catch(...)
-								{
-								}  //ignore any errors
-							}
-							else
-								__COUT__
-								    << "Ignoring that Console type supervisor crashed."
-								    << __E__;
+								__COUTV__(currentState);
+								__SS__ << "\nDid a supervisor crash? Failed getting "
+								          "status from "
+								       << " Supervisor instance = '" << appName
+								       << "' [LID=" << appInfo.getId() << "] in Context '"
+								       << appInfo.getContextName()
+								       << "' [URL=" << appInfo.getURL() << "]." << __E__;
+								__COUT_ERR__ << "\n" << ss.str();
 
+								if(!appInfo.isTypeConsoleSupervisor())
+								{
+									__COUT_WARN__
+									    << "Unexpected failure getting status from "
+									    << " Supervisor instance = '" << appName
+									    << "' [LID=" << appInfo.getId()
+									    << "] in Context '" << appInfo.getContextName()
+									    << "' [URL=" << appInfo.getURL()
+									    << "]. Attempting to send 'Error' "
+									       "transition to target now!"
+									    << __E__;
+									if(theSupervisor->theStateMachine_.getErrorMessage()
+									       .find(ss.str()) == std::string::npos)
+										theSupervisor->theStateMachine_.setErrorMessage(
+										    ss.str());
+									shouldTriggerError = true;
+								}
+								else
+									__COUT__ << "Ignoring that Console type supervisor "
+									            "crashed."
+									         << __E__;
+							}
+						}  // mutex released here — do not hold during broadcast
+						if(shouldTriggerError)
+						{
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->stateMachineAccessMutex_);
+							try
+							{
+								theSupervisor->runControlMessageHandler(
+								    SOAPUtilities::makeSOAPMessageReference(
+								        RunControlStateMachine::ERROR_TRANSITION_NAME));
+							}
+							catch(...)
+							{
+							}       //ignore any errors
 							break;  //only send one Error, then restart status loop
 						}
 					}
@@ -2341,27 +2402,38 @@ try
 					}     // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
-						std::lock_guard<std::mutex> lock(
-						    theSupervisor->stateMachineAccessMutex_);
-
-						std::string currentState =
-						    theSupervisor->theStateMachine_.getCurrentStateName();
-						if(currentState != RunControlStateMachine::FAILED_STATE_NAME &&
-						   currentState != RunControlStateMachine::HALTED_STATE_NAME &&
-						   currentState != RunControlStateMachine::INITIAL_STATE_NAME)
+						bool shouldTriggerError2 = false;
 						{
-							__SS__ << "\nDid a supervisor crash? Failed getting Status "
-							       << " Supervisor instance = '" << appName
-							       << "' [LID=" << appInfo.getId() << "] in Context '"
-							       << appInfo.getContextName()
-							       << "' [URL=" << appInfo.getURL() << "]." << __E__;
-							__COUT_ERR__ << "\n" << ss.str();
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->stateMachineAccessMutex_);
 
-							//Only set error message if it is not already present
-							//	(avoid growing the error string with duplicate messages)
-							if(theSupervisor->theStateMachine_.getErrorMessage().find(
-							       ss.str()) == std::string::npos)
-								theSupervisor->theStateMachine_.setErrorMessage(ss.str());
+							std::string currentState =
+							    theSupervisor->theStateMachine_.getCurrentStateName();
+							if(currentState !=
+							       RunControlStateMachine::FAILED_STATE_NAME &&
+							   currentState !=
+							       RunControlStateMachine::HALTED_STATE_NAME &&
+							   currentState != RunControlStateMachine::INITIAL_STATE_NAME)
+							{
+								__SS__
+								    << "\nDid a supervisor crash? Failed getting Status "
+								    << " Supervisor instance = '" << appName
+								    << "' [LID=" << appInfo.getId() << "] in Context '"
+								    << appInfo.getContextName()
+								    << "' [URL=" << appInfo.getURL() << "]." << __E__;
+								__COUT_ERR__ << "\n" << ss.str();
+
+								if(theSupervisor->theStateMachine_.getErrorMessage().find(
+								       ss.str()) == std::string::npos)
+									theSupervisor->theStateMachine_.setErrorMessage(
+									    ss.str());
+								shouldTriggerError2 = true;
+							}
+						}  // mutex released here — do not hold during broadcast
+						if(shouldTriggerError2)
+						{
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->stateMachineAccessMutex_);
 							try
 							{
 								theSupervisor->runControlMessageHandler(
@@ -2370,8 +2442,7 @@ try
 							}
 							catch(...)
 							{
-							}  //ignore any errors
-
+							}       //ignore any errors
 							break;  //only send one Error, then restart status loop
 						}
 					}
@@ -3361,6 +3432,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					    << "\n"
 					    << "GetRemoteDesktopIcons"
 					    << "\n"
+					    << "GetAliasGlobalFields,<configAlias>"
+					    << "\n"
 					    << "FiniteStateMachineName,Command,Parameter(s)"
 					    << "\n";
 
@@ -4339,7 +4412,77 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					sock.acknowledge(iconString, true /* verbose */);
 					continue;
-				}                             //end GetRemoteDesktopIcons
+				}  //end GetRemoteDesktopIcons
+				else if(buffer.find("GetAliasGlobalFields,") == 0)
+				{
+					std::vector<std::string> params =
+					    StringMacros::getVectorFromString(buffer, {','});
+					if(params.size() < 2)
+					{
+						__COUT_ERR__
+						    << "GetAliasGlobalFields requires a config alias parameter."
+						    << __E__;
+						sock.acknowledge("", false /* verbose */);
+						continue;
+					}
+
+					std::string configAlias = params[1];
+					__COUT__ << "GetAliasGlobalFields for alias '" << configAlias << "'"
+					         << __E__;
+
+					std::string globalFieldsResult = "";
+					try
+					{
+						ConfigurationManager tmpCfgMgr;
+						auto groupPair = tmpCfgMgr.getTableGroupFromAlias(configAlias);
+						if(groupPair.first != "")
+						{
+							std::map<std::string, TableVersion> groupMembers;
+							tmpCfgMgr.loadTableGroup(groupPair.first,
+							                         groupPair.second,
+							                         false /*doActivate*/,
+							                         &groupMembers,
+							                         0 /*progressBar*/,
+							                         0 /*accumulateWarnings*/,
+							                         0 /*groupComment*/,
+							                         0 /*groupAuthor*/,
+							                         0 /*groupCreateTime*/,
+							                         true /*doNotLoadMembers*/);
+
+							std::map<std::string, TableVersion> globalMembers;
+							for(const auto& member : groupMembers)
+								if(member.first.find("Global") != std::string::npos)
+									globalMembers.emplace(member);
+
+							__COUT__ << "GetAliasGlobalFields - found "
+							         << globalMembers.size() << " Global table(s) out of "
+							         << groupMembers.size() << " total members." << __E__;
+
+							if(globalMembers.size())
+							{
+								tmpCfgMgr.loadMemberMap(globalMembers);
+								globalFieldsResult =
+								    getGlobalFieldsString(&tmpCfgMgr, globalMembers);
+							}
+						}
+						else
+							__COUT_WARN__ << "Could not find group for alias '"
+							              << configAlias << "'." << __E__;
+					}
+					catch(const std::runtime_error& e)
+					{
+						__COUT_WARN__ << "Error getting Global fields for alias '"
+						              << configAlias << "': " << e.what() << __E__;
+					}
+					catch(...)
+					{
+						__COUT_WARN__ << "Unknown error getting Global fields for alias '"
+						              << configAlias << "'." << __E__;
+					}
+
+					sock.acknowledge(globalFieldsResult, false /* verbose */);
+					continue;
+				}                             //end GetAliasGlobalFields
 				else if(!enableStateChanges)  //else it is an FSM Command!
 				{
 					__COUT_WARN__ << "Skipping potential FSM Command because "
@@ -4389,6 +4532,58 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 				__COUTV__(fsmName);
 				__COUTV__(command);
 				__COUTV__(StringMacros::vectorToString(parameters));
+
+				// Check if this is an iteration re-send for a subsystem already in transition
+				// (top-level is driving iterations and re-sending with IterationIndex:N)
+				{
+					bool isIterationResend = false;
+					if(theSupervisor->theStateMachine_.isInTransition() &&
+					   theSupervisor->isRemoteSubsystemIteration_.load())
+					{
+						for(const auto& param : parameters)
+						{
+							if(param.find(COMMAND_PARAM_ITERATION_INDEX_PREAMBLE) == 0)
+							{
+								unsigned int iterIdx = 0;
+								try
+								{
+									iterIdx = std::stoul(param.substr(
+									    COMMAND_PARAM_ITERATION_INDEX_PREAMBLE.length()));
+								}
+								catch(...)
+								{
+									__COUT_WARN__
+									    << "Failed to parse IterationIndex from '"
+									    << param << "' -- ignoring malformed parameter."
+									    << __E__;
+									break;
+								}
+								__COUT__
+								    << "Received iteration re-send with IterationIndex:"
+								    << iterIdx
+								    << " while mid-transition -- signaling "
+								       "broadcastMessage()"
+								    << __E__;
+
+								{
+									std::lock_guard<std::mutex> lock(
+									    theSupervisor->remoteIterationMutex_);
+									theSupervisor->remoteIterationIndex_ = iterIdx;
+								}
+								theSupervisor->remoteIterationCV_.notify_one();
+								isIterationResend = true;
+								break;
+							}
+						}
+					}
+
+					if(isIterationResend)
+					{
+						if(acknowledgementEnabled)
+							sock.acknowledge("Done", true /* verbose */);
+						continue;
+					}
+				}
 
 				// set scope of mutex
 				std::string extraDoneContent = "";
@@ -4897,6 +5092,46 @@ try
 		logEntry =
 		    commandParameters.back().substr(COMMAND_PARAM_LOG_ENTRY_PREAMBLE.size());
 		__COUTV__(logEntry);
+	}
+
+	//check if IterationIndex is in parameters (sent by top-level Gateway for subsystem iteration)
+	{
+		bool foundIterationIndex = false;
+		for(size_t i = 0; i < commandParameters.size(); ++i)
+		{
+			if(commandParameters[i].find(COMMAND_PARAM_ITERATION_INDEX_PREAMBLE) == 0)
+			{
+				unsigned int remoteIterationIndex = 0;
+				try
+				{
+					remoteIterationIndex = std::stoul(commandParameters[i].substr(
+					    COMMAND_PARAM_ITERATION_INDEX_PREAMBLE.length()));
+				}
+				catch(...)
+				{
+					__COUT_WARN__ << "Failed to parse IterationIndex from '"
+					              << commandParameters[i]
+					              << "' -- ignoring malformed parameter." << __E__;
+					break;
+				}
+				__COUT__ << "Received iteration index from top-level Gateway: "
+				         << remoteIterationIndex << __E__;
+
+				{
+					std::lock_guard<std::mutex> lock(remoteIterationMutex_);
+					isRemoteSubsystemIteration_ = true;
+					remoteIterationIndex_       = remoteIterationIndex;
+				}
+				foundIterationIndex = true;
+				break;
+			}
+		}
+		if(!foundIterationIndex)
+		{
+			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
+			isRemoteSubsystemIteration_ = false;
+			remoteIterationIndex_       = 0;
+		}
 	}
 
 	/////////////////
@@ -5864,17 +6099,18 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 }  // end inError()
 
 //==============================================================================
-void GatewaySupervisor::enteringError(toolbox::Event::Reference e)
+void GatewaySupervisor::enteringError(toolbox::Event::Reference event)
 {
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName()
-	         << ", Error event type: " << e->type() << __E__;
+	         << ", Error event type: " << event->type() << __E__;
 
 	// xdaq 15_14_0_3 broke what() by return c_str() on a temporary string
 	//  https://gitlab.cern.ch/cmsos/core/-/blob/release_15_14_0_3/xcept/src/common/Exception.cc
 
 	// extract error message and save for user interface access
-	toolbox::fsm::FailedEvent& failedEvent = dynamic_cast<toolbox::fsm::FailedEvent&>(*e);
-	xcept::Exception&          failedException = failedEvent.getException();
+	toolbox::fsm::FailedEvent& failedEvent =
+	    dynamic_cast<toolbox::fsm::FailedEvent&>(*event);
+	xcept::Exception& failedException = failedEvent.getException();
 	//__COUT__ << "History of errors: " << failedException.size() << __E__;
 	//__COUT__ << "Failed Message: " << failedException.rbegin()->at("message") << __E__;
 	//__COUT__ << "Failed Message: " << failedException.message() << __E__;
@@ -5912,8 +6148,25 @@ void GatewaySupervisor::enteringError(toolbox::Event::Reference e)
 		__COUT__ << "Already in failed state, so not broadcasting Error transition again."
 		         << __E__;
 	else  // move everything else to Error!
-		broadcastMessage(SOAPUtilities::makeSOAPMessageReference(
-		    RunControlStateMachine::ERROR_TRANSITION_NAME));
+	{
+		try
+		{
+			broadcastMessage(SOAPUtilities::makeSOAPMessageReference(
+			    RunControlStateMachine::ERROR_TRANSITION_NAME));
+		}
+		catch(const std::exception& e)
+		{
+			__COUT_ERR__ << "Error broadcast did not fully complete: " << e.what()
+			             << " — Gateway will still enter Failed state." << __E__;
+		}
+		catch(...)
+		{
+			__COUT_ERR__ << "Error broadcast did not fully complete (unknown exception)"
+			             << " — Gateway will still enter Failed state." << __E__;
+		}
+	}
+
+	RunControlStateMachine::theProgressBar_.complete();
 }  // end enteringError()
 
 //==============================================================================
@@ -5934,7 +6187,7 @@ void GatewaySupervisor::checkForAsyncError()
 /////////////////////////////////////////////////////////////////////////////////////
 
 //==============================================================================
-void GatewaySupervisor::transitionConfiguring(toolbox::Event::Reference /* e*/)
+void GatewaySupervisor::transitionConfiguring(toolbox::Event::Reference /* event*/)
 try
 {
 	checkForAsyncError();
@@ -6754,7 +7007,7 @@ catch(...)
 }  // end transitionConfiguring() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -6791,6 +7044,40 @@ try
 
 	if(doLogIntermediate)
 		makeSystemLogEntry("System halted.");
+
+	// Auto-compress stale logs if threshold is set and > 24 hours
+	try
+	{
+		const std::string envThreshold = __ENV__("OTSDAQ_LOG_COMPRESS_THRESHOLD");
+		if(!envThreshold.empty())
+		{
+			int64_t compressThresholdSeconds = std::stoll(envThreshold);
+			if(compressThresholdSeconds > 86400)
+			{
+				std::string cmd = "ots -lxz " + std::to_string(compressThresholdSeconds) +
+				                  " seconds --logcompress-noprompt";
+				__COUT__ << "Auto-compressing stale logs: " << cmd << __E__;
+				std::thread([cmd]() {
+					try
+					{
+						std::string result = StringMacros::exec(cmd.c_str());
+						__COUT__ << "Auto-compress result:\n" << result << __E__;
+					}
+					catch(const std::exception& e)
+					{
+						__COUT_ERR__ << "Auto-compress failed: " << e.what() << __E__;
+					}
+				}).detach();
+			}
+		}
+	}
+	catch(const std::exception& e)
+	{
+		__COUT_WARN__
+		    << "Log auto-compress skipped (invalid OTSDAQ_LOG_COMPRESS_THRESHOLD): "
+		    << e.what() << __E__;
+	}
+
 	__COUT__ << "Done halting." << __E__;
 	RunControlStateMachine::theProgressBar_.complete();
 }  // end transitionHalting()
@@ -6836,7 +7123,7 @@ catch(...)
 }  // end transitionHalting() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionShuttingDown(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionShuttingDown(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -6931,7 +7218,7 @@ catch(...)
 }  // end transitionShuttingDown() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionStartingUp(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionStartingUp(toolbox::Event::Reference /*event*/)
 try
 {
 	__COUT__ << "Fsm current state: " << theStateMachine_.getCurrentStateName() << __E__;
@@ -7094,7 +7381,7 @@ catch(...)
 }  // end transitionInitializing() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionPausing(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionPausing(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -7213,7 +7500,7 @@ catch(...)
 }  // end transitionPausing() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionResuming(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionResuming(toolbox::Event::Reference /*event*/)
 try
 {
 	if(RunControlStateMachine::asyncPauseExceptionReceived_)
@@ -7335,7 +7622,7 @@ catch(...)
 }  // end transitionResuming() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionStarting(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionStarting(toolbox::Event::Reference /*event*/)
 try
 {
 	if(RunControlStateMachine::asyncPauseExceptionReceived_)
@@ -7883,7 +8170,7 @@ catch(...)
 }  // end transitionStarting() catch
 
 //==============================================================================
-void GatewaySupervisor::transitionStopping(toolbox::Event::Reference /*e*/)
+void GatewaySupervisor::transitionStopping(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
@@ -8205,16 +8492,16 @@ try
 				sleep(2);
 			}
 
-			__COUT__ << "Grabbing lock " << appInfo.getId() << __E__;
+			__COUTT__ << "Grabbing lock " << appInfo.getId() << __E__;
 			// start recursive mutex scope (same thread can lock multiple times, but needs to unlock the same)
 			std::lock_guard<std::recursive_mutex> lock(
 			    allSupervisorInfo_.getSupervisorInfoMutex(appInfo.getId()));
-			__COUT__ << "Have lock " << appInfo.getId() << __E__;
+			__COUTT__ << "Have lock " << appInfo.getId() << __E__;
 			// set app status, but leave progress and detail alone
 			allSupervisorInfo_.setSupervisorStatus(
 			    appInfo, givenAppStatus, givenAppProgress, givenAppDetail);
 
-			__COUT__ << "here in lock " << appInfo.getId() << __E__;
+			__COUTT__ << "here in lock " << appInfo.getId() << __E__;
 
 			__COUT__ << "Broadcast thread in lock " << threadIndex << "\t"
 			         << "Sending... \t" << SOAPUtilities::translate(message) << std::endl;
@@ -8571,8 +8858,6 @@ void GatewaySupervisor::broadcastMessageThread(
 				         << "flagged for another iteration." << __E__;
 
 				// set global iterationsDone
-				std::lock_guard<std::mutex> lock(
-				    supervisorPtr->broadcastIterationsDoneMutex_);
 				supervisorPtr->broadcastIterationsDone_ = false;
 			}
 
@@ -8712,6 +8997,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		// Send a SOAP message to every Supervisor in order by priority
 		do  // while !iterationsDone
 		{
+			__COUT__ << "Iteration loop pass: iteration=" << iteration << " for command '"
+			         << command << "'" << __E__;
+
 			broadcastIterationsDone_ = true;
 
 			{  // start mutex scope
@@ -8732,7 +9020,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			}
 
 			if(iteration)
+			{
 				__COUT__ << "Starting iteration: " << iteration << __E__;
+
+				// Re-send command to non-done remote gateways with updated iteration index
+				broadcastMessageToRemoteGateways(originalMessage, iteration);
+			}
 
 			for(unsigned int i = 0; i < supervisorIterationsDone->size(); ++i)
 			{
@@ -8957,19 +9250,106 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			//				break;
 			//			}
 
+			// Wait for remote gateways to complete this iteration pass
+			// (may set broadcastIterationsDone_ = false if any remote requests another iteration)
+			broadcastMessageToRemoteGatewaysComplete(originalMessage, iteration);
+
+			__COUT__ << "After iteration=" << iteration << " for command '" << command
+			         << "': broadcastIterationsDone_=" << broadcastIterationsDone_
+			         << __E__;
+
 			if(iteration || !broadcastIterationsDone_)
 			{
-				std::stringstream ss;
-				ss << "Completed iteration: " << iteration << __E__;
-				__COUT__ << ss.str();
+				if(!broadcastIterationsDone_ && isRemoteSubsystemIteration_)
+				{
+					// Subsystem iteration driven by top-level: signal needNextIteration and wait
+					unsigned int nextIteration = iteration + 1;
+					{
+						std::lock_guard<std::mutex> lock(
+						    broadcastCommandStatusUpdateMutex_);
+						broadcastCommandStatus_ =
+						    "needNextIteration:" + std::to_string(nextIteration);
+					}
+					__COUT__ << "Top-level driven subsystem iteration: signaling "
+					            "needNextIteration:"
+					         << nextIteration << ", waiting for re-send..." << __E__;
 
-				// create lock scope and clear status
-				std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
-				broadcastCommandStatus_ = ss.str();
+					{
+						std::unique_lock<std::mutex> lock(remoteIterationMutex_);
+						if(remoteIterationIndex_ < nextIteration)
+						{
+							auto deadline = std::chrono::steady_clock::now() +
+							                std::chrono::minutes(4);
+							while(remoteIterationIndex_ < nextIteration &&
+							      !RunControlStateMachine::asyncFailureReceived_)
+							{
+								remoteIterationCV_.wait_for(lock,
+								                            std::chrono::seconds(1));
+								if(std::chrono::steady_clock::now() >= deadline &&
+								   remoteIterationIndex_ < nextIteration)
+								{
+									__SS__ << "Timeout (4 min) waiting for top-level to "
+									          "send "
+									          "IterationIndex:"
+									       << nextIteration
+									       << " -- top-level may have lost communication."
+									       << __E__;
+									__SS_THROW__;
+								}
+							}
+						}
+						if(RunControlStateMachine::asyncFailureReceived_)
+						{
+							__SS__ << "Async failure received while waiting for "
+							          "iteration re-send!"
+							       << __E__;
+							__SS_THROW__;
+						}
+						if(remoteIterationIndex_ != nextIteration)
+						{
+							__SS__ << "Unexpected IterationIndex re-send: got "
+							       << remoteIterationIndex_ << " but expected "
+							       << nextIteration << __E__;
+							__SS_THROW__;
+						}
+						__COUT__ << "Received iteration re-send: IterationIndex:"
+						         << remoteIterationIndex_ << __E__;
+					}
+
+					{
+						std::lock_guard<std::mutex> lock(
+						    broadcastCommandStatusUpdateMutex_);
+						broadcastCommandStatus_ =
+						    "Completed iteration: " + std::to_string(iteration) +
+						    " (top-level driven, continuing)";
+					}
+				}
+				else
+				{
+					std::stringstream ss;
+					if(iteration > 0)
+						ss << "Iteration " << iteration << ": ";
+					ss << (broadcastIterationsDone_ ? "complete (all done)"
+					                                : "complete (need more iterations)")
+					   << __E__;
+					__COUT__ << ss.str();
+
+					std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
+					broadcastCommandStatus_ = ss.str();
+				}
 			}
 			++iteration;
 
 		} while(!broadcastIterationsDone_);
+
+		__COUT__ << "Iteration loop complete after " << iteration
+		         << " iteration(s) for command '" << command << "'" << __E__;
+
+		{
+			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
+			isRemoteSubsystemIteration_ = false;
+			remoteIterationIndex_       = 0;
+		}
 
 		// Check for a user cancel that arrived during the final SOAP call of the loop,
 		// which would not have been caught by the per-supervisor checkForAsyncError() call.
@@ -8980,6 +9360,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	catch(...)
 	{
 		__COUT__ << "Exception caught, exiting broadcast threads..." << __E__;
+
+		{
+			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
+			isRemoteSubsystemIteration_ = false;
+			remoteIterationIndex_       = 0;
+		}
 
 		// Signal all threads to exit and wait for them to finish gracefully.
 		// supervisorIterationsDone is heap-allocated (shared_ptr) and each
@@ -9012,8 +9398,6 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
-
-	broadcastMessageToRemoteGatewaysComplete(originalMessage);
 
 	{  // create lock scope and clear status
 		std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
@@ -9082,7 +9466,7 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 
 //==============================================================================
 void GatewaySupervisor::broadcastMessageToRemoteGateways(
-    const xoap::MessageReference message)
+    const xoap::MessageReference message, unsigned int iteration)
 {
 	if(!remoteGatewayApps_.size())
 		return;
@@ -9109,8 +9493,18 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		__SUP_COUTV__(activeStateMachineSubsystemCommonOverrideList_);
 	}
 
-	std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-	for(auto& remoteGatewayApp : remoteGatewayApps_)
+	// Brief lock to snapshot remoteGatewayApps_ for processing without holding mutex
+	__COUT__ << "broadcastMessageToRemoteGateways v2 (copy-process-writeback) iteration="
+	         << iteration << __E__;
+	std::vector<GatewaySupervisor::RemoteGatewayInfo> localApps;
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		localApps = remoteGatewayApps_;
+	}
+
+	std::set<std::string> commandedApps;
+
+	for(auto& remoteGatewayApp : localApps)
 	{
 		if(!remoteGatewayApp.fsm_included)
 		{
@@ -9118,6 +9512,19 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			         << remoteGatewayApp.appInfo.name << "' for FSM command = " << command
 			         << __E__;
 			continue;  //skip if not included
+		}
+
+		if(iteration == 0)
+		{
+			remoteGatewayApp.iterationsDone =
+			    false;  //reset iteration state on initial send
+		}
+		else if(remoteGatewayApp.iterationsDone)
+		{
+			__COUT__ << "Skipping Remote gateway '" << remoteGatewayApp.appInfo.name
+			         << "' - already done with iterations for FSM command = " << command
+			         << __E__;
+			continue;  //skip if already done with all iterations
 		}
 
 		std::string localCommand =
@@ -9223,7 +9630,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		         << "' on Remote gateway '" << remoteGatewayApp.appInfo.name << "'..."
 		         << __E__;
 
-		if(remoteGatewayApp.command != "")
+		if(remoteGatewayApp.command != "" && remoteGatewayApp.command != "Sent" &&
+		   iteration == 0)
 		{
 			__SUP_SS__ << "Can not target the remote subsystem '"
 			           << remoteGatewayApp.appInfo.name << "' with command '"
@@ -9234,8 +9642,13 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			__SUP_SS_THROW__;
 		}
 
+		commandedApps.emplace(remoteGatewayApp.fullName);
+
 		remoteGatewayApp.config_dump = "";  //clear, must come from new command completion
 		remoteGatewayApp.command     = commandAndParams;
+
+		remoteGatewayApp.command +=
+		    "," + COMMAND_PARAM_ITERATION_INDEX_PREAMBLE + std::to_string(iteration);
 
 		if(activeStateMachineSubsystemCommonList_.size())
 			remoteGatewayApp.command +=
@@ -9262,11 +9675,38 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		__SUP_COUTV__(remoteGatewayApp.command);
 	}  //end remote gateway broadcast loop
+
+	// Brief lock to write back only entries that were actually modified above
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		for(const auto& localApp : localApps)
+		{
+			bool wasCommanded =
+			    commandedApps.find(localApp.fullName) != commandedApps.end();
+			if(!wasCommanded && iteration != 0)
+				continue;
+
+			for(auto& rga : remoteGatewayApps_)
+				if(rga.fullName == localApp.fullName)
+				{
+					rga.iterationsDone = localApp.iterationsDone;
+					if(wasCommanded)
+					{
+						rga.command          = localApp.command;
+						rga.fsmName          = localApp.fsmName;
+						rga.config_dump      = localApp.config_dump;
+						rga.appInfo.status   = localApp.appInfo.status;
+						rga.appInfo.progress = localApp.appInfo.progress;
+					}
+					break;
+				}
+		}
+	}
 }  // end broadcastMessageToRemoteGateways()
 
 //==============================================================================
 void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
-    const xoap::MessageReference message)
+    const xoap::MessageReference message, unsigned int iterationIndex)
 {
 	std::string command = SOAPUtilities::translate(message).getCommand();
 	__COUTV__(command);
@@ -9315,6 +9755,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			//skip remote gateways that were not commanded
 			if(!remoteGatewayApp.fsm_included)
 				continue;
+			if(remoteGatewayApp.iterationsDone)
+				continue;  //skip if already done with all iterations
 			if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
 			   //do not allow halt/err transitions:
 			   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
@@ -9354,6 +9796,81 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			     remoteGatewayApp.appInfo.status.find("Error") != std::string::npos ||
 			     remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
 			{
+				// Check if remote gateway is requesting another iteration
+				// Format: "needNextIteration:N" where N is the next iteration index wanted
+				// Must be lock-step: after sending iteration I, only accept needNextIteration:(I+1)
+				const std::string needNextIterationPrefix = "needNextIteration:";
+				size_t            needNextIterationPos =
+				    remoteGatewayApp.appInfo.detail.find(needNextIterationPrefix);
+				if(needNextIterationPos != std::string::npos)
+				{
+					unsigned int requestedIteration = 0;
+					try
+					{
+						requestedIteration =
+						    std::stoul(remoteGatewayApp.appInfo.detail.substr(
+						        needNextIterationPos + needNextIterationPrefix.length()));
+					}
+					catch(...)
+					{
+						__COUT_WARN__ << "Failed to parse iteration index from detail '"
+						              << remoteGatewayApp.appInfo.detail
+						              << "' for Remote gateway '"
+						              << remoteGatewayApp.appInfo.name
+						              << "' -- ignoring, will keep polling." << __E__;
+						done = false;
+						++remainingRemoteGateways;
+						lastRemainingName     = remoteGatewayApp.appInfo.name;
+						lastRemainingStatus   = remoteGatewayApp.appInfo.status;
+						lastRemainingProgress = remoteGatewayApp.appInfo.progress;
+						continue;
+					}
+
+					unsigned int expectedIteration = iterationIndex + 1;
+					if(requestedIteration != expectedIteration)
+					{
+						if(requestedIteration < expectedIteration)
+						{
+							// Stale needNextIteration from a previous iteration pass -- ignore and keep polling
+							__COUT__ << "Ignoring stale needNextIteration:"
+							         << requestedIteration << " from '"
+							         << remoteGatewayApp.appInfo.name << "' (expecting "
+							         << expectedIteration
+							         << "), waiting for fresh status..." << __E__;
+							done = false;
+							++remainingRemoteGateways;
+							lastRemainingName     = remoteGatewayApp.appInfo.name;
+							lastRemainingStatus   = remoteGatewayApp.appInfo.status;
+							lastRemainingProgress = remoteGatewayApp.appInfo.progress;
+							continue;
+						}
+						else
+						{
+							__SS__ << "Unexpected iteration index mismatch from Remote "
+							          "gateway '"
+							       << remoteGatewayApp.appInfo.name
+							       << "': requested iteration " << requestedIteration
+							       << " but expected " << expectedIteration
+							       << " (top-level sent iteration " << iterationIndex
+							       << ")" << __E__;
+							__SS_THROW__;
+						}
+					}
+
+					progress100cnt[remoteGatewayApp.fullName] = 0;
+
+					__COUT__ << "Remote gateway '" << remoteGatewayApp.appInfo.name
+					         << "' requesting next iteration " << requestedIteration
+					         << " (matches expected after sending iteration "
+					         << iterationIndex << ") for command '" << command << "'"
+					         << __E__;
+
+					broadcastIterationsDone_ = false;
+					// This gateway is done with this iteration pass;
+					// do not count as remaining (will be re-sent in next iteration pass)
+					continue;
+				}
+
 				if(progress100cnt.find(remoteGatewayApp.fullName) == progress100cnt.end())
 					progress100cnt[remoteGatewayApp.fullName] = 0;
 
@@ -9430,13 +9947,26 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				         << "' w/command '" << command
 				         << "' status = " << remoteGatewayApp.appInfo.status
 				         << ",... progress = " << remoteGatewayApp.appInfo.progress
-				         << __E__;
+				         << " - marking iterationsDone=true" << __E__;
+
+				// Mark as done on the actual member so future iteration passes skip it
+				{
+					std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+					for(auto& rga : remoteGatewayApps_)
+						if(rga.fullName == remoteGatewayApp.fullName)
+						{
+							rga.iterationsDone = true;
+							break;
+						}
+				}
 			}
 		}
 
 		if(!done)
 		{
 			std::stringstream waitSs;
+			if(iterationIndex > 0)
+				waitSs << "Iteration " << iterationIndex << ": ";
 			waitSs << "Waiting on " << remainingRemoteGateways << " of "
 			       << totalRemoteGateways << " remote gateways to finish command '"
 			       << command << "'";
@@ -10019,6 +10549,7 @@ try
 	// commandRemoteSubsystem
 	// setRemoteSubsystemFsmControl
 	// getSubsystemConfigAliasSelectInfo
+	// getAliasGlobalFields
 
 	// resetUserTooltips
 	// silenceAllUserTooltips
@@ -11602,6 +12133,62 @@ try
 					           << ")";
 					returnInfo << "</i>";
 
+					// request Global fields from remote subsystem via UDP
+					try
+					{
+						std::vector<std::string> parsedUrl =
+						    StringMacros::getVectorFromString(
+						        remoteGatewayApp.appInfo.url, {':'});
+						if(parsedUrl.size() == 3)
+						{
+							Socket            gatewayRemoteSocket(parsedUrl[1],
+                                                       atoi(parsedUrl[2].c_str()));
+							TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
+							tmpSocket.initialize();
+
+							std::string udpRequest =
+							    "GetAliasGlobalFields," +
+							    remoteGatewayApp.selected_config_alias;
+							__SUP_COUT__
+							    << "Sending GetAliasGlobalFields to '"
+							    << remoteGatewayApp.appInfo.name << "' for alias '"
+							    << remoteGatewayApp.selected_config_alias << "'" << __E__;
+
+							std::string globalFieldsResponse = tmpSocket.sendAndReceive(
+							    gatewayRemoteSocket, udpRequest, 5 /*timeoutSeconds*/);
+
+							__SUP_COUT__ << "GetAliasGlobalFields response from '"
+							             << remoteGatewayApp.appInfo.name
+							             << "': " << globalFieldsResponse << __E__;
+
+							if(globalFieldsResponse.size())
+								returnInfo << "<br><br><b>Global Fields:</b>"
+								           << StringMacros::escapeString(
+								                  globalFieldsResponse,
+								                  true /*allowWhiteSpace*/,
+								                  true /*forHtml*/);
+						}
+						else
+							__SUP_COUT_WARN__ << "Could not parse remote subsystem URL '"
+							                  << remoteGatewayApp.appInfo.url
+							                  << "' for Global fields UDP request."
+							                  << __E__;
+					}
+					catch(const std::runtime_error& e)
+					{
+						__SUP_COUT_WARN__ << "Error requesting Global fields from remote "
+						                     "subsystem '"
+						                  << remoteGatewayApp.appInfo.name
+						                  << "': " << e.what() << __E__;
+					}
+					catch(...)
+					{
+						__SUP_COUT_WARN__
+						    << "Unknown error requesting Global fields from "
+						       "remote subsystem '"
+						    << remoteGatewayApp.appInfo.name << "'." << __E__;
+					}
+
 					xmlOut.addTextElementToData("alias_info", returnInfo.str());
 					break;
 				}
@@ -11614,6 +12201,52 @@ try
 			}
 
 		}  //end getSubsystemConfigAliasSelectInfo
+		else if(requestType == "getAliasGlobalFields")
+		{
+			std::string configAlias = CgiDataUtilities::getData(cgiIn, "configAlias");
+			__SUP_COUTV__(configAlias);
+
+			ConfigurationManager tmpCfgMgr;
+			auto groupPair = tmpCfgMgr.getTableGroupFromAlias(configAlias);
+			if(groupPair.first == "")
+			{
+				__SUP_SS__ << "Could not find group for alias '" << configAlias << "'."
+				           << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			__SUP_COUT__ << "getAliasGlobalFields - loading group '" << groupPair.first
+			             << "(" << groupPair.second << ")' for alias '" << configAlias
+			             << "'" << __E__;
+
+			std::map<std::string, TableVersion> groupMembers;
+			tmpCfgMgr.loadTableGroup(groupPair.first,
+			                         groupPair.second,
+			                         false /*doActivate*/,
+			                         &groupMembers,
+			                         0 /*progressBar*/,
+			                         0 /*accumulateWarnings*/,
+			                         0 /*groupComment*/,
+			                         0 /*groupAuthor*/,
+			                         0 /*groupCreateTime*/,
+			                         true /*doNotLoadMembers*/);
+
+			std::map<std::string, TableVersion> globalMembers;
+			for(const auto& member : groupMembers)
+				if(member.first.find("Global") != std::string::npos)
+					globalMembers.emplace(member);
+
+			__SUP_COUT__ << "getAliasGlobalFields - found " << globalMembers.size()
+			             << " Global table(s) out of " << groupMembers.size()
+			             << " total members." << __E__;
+
+			if(globalMembers.size())
+				tmpCfgMgr.loadMemberMap(globalMembers);
+
+			xmlOut.addTextElementToData("global_fields_string",
+			                            getGlobalFieldsString(&tmpCfgMgr, globalMembers));
+
+		}  //end getAliasGlobalFields
 		else if(requestType == "commandRemoteSubsystem")
 		{
 			std::string targetSubsystem =
@@ -11662,6 +12295,36 @@ try
 					remoteGatewayApp.clearError();  //clear to see result of this command
 					remoteGatewayApp.command =
 					    command + (parameter != "" ? ("," + parameter) : "");
+
+					if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+					{
+						std::string subsystemCommonList = StringMacros::setToString(
+						    theConfigurationManager_->getVersionAliases(
+						        ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS));
+						if(subsystemCommonList.size())
+							remoteGatewayApp.command +=
+							    "," + COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE +
+							    StringMacros::encodeURIComponent(subsystemCommonList);
+
+						std::string subsystemCommonOverrideList =
+						    StringMacros::setToString(
+						        theConfigurationManager_->getVersionAliases(
+						            ConfigurationManager::
+						                SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
+						if(subsystemCommonOverrideList.size())
+							remoteGatewayApp.command +=
+							    "," + COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE +
+							    StringMacros::encodeURIComponent(
+							        subsystemCommonOverrideList);
+					}
+
+					{
+						std::string logEntry = getLastLogEntry(command);
+						if(logEntry.size())
+							remoteGatewayApp.command +=
+							    "," + COMMAND_PARAM_LOG_ENTRY_PREAMBLE +
+							    StringMacros::encodeURIComponent(logEntry);
+					}
 
 					//for non-FSM commands, do not modify fsmName
 					if(command != "ResetConsoleCounts")
@@ -12369,7 +13032,119 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(HttpXmlDocument&   xmlOut,
 	}
 	else if(aliasMap.size())  //if not set, return first
 		xmlOut.addTextElementToData("UserLastConfigAlias", aliasMap.begin()->first);
+
+	try
+	{
+		std::string subsystemCommonList =
+		    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+		        ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS));
+		xmlOut.addTextElementToData("SubsystemCommonList", subsystemCommonList);
+
+		std::string subsystemCommonOverrideList =
+		    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+		        ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
+		xmlOut.addTextElementToData("SubsystemCommonOverrideList",
+		                            subsystemCommonOverrideList);
+	}
+	catch(const std::runtime_error& e)
+	{
+		__COUT_WARN__ << "Failed to retrieve SubsystemCommon alias lists: " << e.what()
+		              << __E__;
+	}
+	catch(const std::exception& e)
+	{
+		__COUT_WARN__ << "Failed to retrieve SubsystemCommon alias lists: " << e.what()
+		              << __E__;
+	}
+	catch(...)
+	{
+		__COUT_WARN__
+		    << "Failed to retrieve SubsystemCommon alias lists (unknown exception)."
+		    << __E__;
+	}
 }  //end addFilteredConfigAliasesToXML()
+
+//==============================================================================
+std::string GatewaySupervisor::getGlobalFieldsString(
+    ConfigurationManager*                      cfgMgr,
+    const std::map<std::string, TableVersion>& memberMap /* = {} */)
+{
+	std::string result = "";
+	try
+	{
+		// if memberMap provided, use it directly (tables loaded a la carte, not activated);
+		// otherwise fall back to active versions (for status workloop where tables are activated)
+		std::map<std::string, TableVersion> tablesToCheck =
+		    memberMap.size() ? memberMap : cfgMgr->getActiveVersions();
+		__COUTT__ << "getGlobalFieldsString() - tablesToCheck count = "
+		          << tablesToCheck.size() << __E__;
+
+		for(const auto& tablePair : tablesToCheck)
+		{
+			if(tablePair.first.find("Global") == std::string::npos)
+				continue;
+
+			__COUTT__ << "getGlobalFieldsString() - found Global table: '"
+			          << tablePair.first << "' v" << tablePair.second << __E__;
+
+			try
+			{
+				const TableBase* table = cfgMgr->getTableByName(tablePair.first);
+				// use specific version view (works for non-activated tables loaded a la carte)
+				const TableView& view = table->getView(tablePair.second);
+
+				__COUTT__ << "getGlobalFieldsString() - table '" << tablePair.first
+				          << "' has " << view.getNumberOfColumns() << " columns, "
+				          << view.getNumberOfRows() << " rows." << __E__;
+
+				const auto& columnsInfo = view.getColumnsInfo();
+				for(unsigned int col = 0; col < columnsInfo.size(); ++col)
+				{
+					const std::string& colName = columnsInfo[col].getName();
+					if(colName.find("Global") == std::string::npos)
+						continue;
+					if(colName == TableViewColumnInfo::COL_NAME_STATUS ||
+					   colName == TableViewColumnInfo::COL_NAME_COMMENT ||
+					   colName == TableViewColumnInfo::COL_NAME_AUTHOR ||
+					   colName == TableViewColumnInfo::COL_NAME_CREATION)
+						continue;
+
+					__COUTT__ << "getGlobalFieldsString() - matched column: '" << colName
+					          << "'" << __E__;
+
+					std::string displayName = colName;
+					if(displayName.rfind("Global", 0) == 0)
+						displayName = displayName.substr(sizeof("Global") - 1);
+					for(unsigned int row = 0; row < view.getNumberOfRows(); ++row)
+					{
+						result +=
+						    " | " + displayName + ": " + view.getValueAsString(row, col);
+					}
+				}
+			}
+			catch(const std::runtime_error& e)
+			{
+				__COUT_WARN__ << "Error reading Global fields from table '"
+				              << tablePair.first << "': " << e.what() << __E__;
+			}
+			catch(...)
+			{
+				__COUT_WARN__ << "Unknown error reading Global fields from table '"
+				              << tablePair.first << "'." << __E__;
+			}
+		}
+	}
+	catch(const std::runtime_error& e)
+	{
+		__COUT_WARN__ << "Error getting Global fields: " << e.what() << __E__;
+	}
+	catch(...)
+	{
+		__COUT_WARN__ << "Unknown error getting Global fields." << __E__;
+	}
+	__COUTT__ << "getGlobalFieldsString() result = '" << result << "'" << __E__;
+	return result;
+}  //end getGlobalFieldsString()
 
 //==============================================================================
 /// launchStartOneServerCommand

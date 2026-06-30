@@ -137,6 +137,15 @@ DELETE_LOGS_NOPROMPT=0
 DELETE_LOGS_DRYRUN=0
 DELETE_LOGS_GRAND_TOTAL=0
 DELETE_LOGS_LAST_COUNT=0
+ISCOMPRESSOLDLOGS=0
+ISCOMPRESSOLDLOGS_LOCAL=0
+ISCOMPRESSOLDLOGS_ARTDAQ=0
+COMPRESS_LOGS_TIME_INT=""
+COMPRESS_LOGS_TIME_UNIT=""
+COMPRESS_LOGS_NOPROMPT=0
+COMPRESS_LOGS_DRYRUN=0
+COMPRESS_LOGS_GRAND_TOTAL=0
+COMPRESS_LOGS_LAST_COUNT=0
 ISLOGSCAN_ERROR=0
 ISLOGSCAN_ERROR_ARTDAQ=0
 ISLOGSCAN_ERROR_LOCAL=0
@@ -268,6 +277,33 @@ while :; do
 		if [[ "$4" == "dryrun" ]]; then DELETE_LOGS_DRYRUN=1; shift; fi
 		shift 2
 		;;
+	--logcompress | -lxz)
+		# xz-compress old logs older than <time_int> <time_unit> [dryrun] (local + all remote + ARTDAQ hosts)
+		info "COMPRESS OLD LOGS (ALL HOSTS)!"
+		ISCOMPRESSOLDLOGS=1
+		COMPRESS_LOGS_TIME_INT="$2"
+		COMPRESS_LOGS_TIME_UNIT="$3"
+		if [[ "$4" == "dryrun" ]]; then COMPRESS_LOGS_DRYRUN=1; shift; fi
+		shift 2
+		;;
+	--logcompress-artdaq | -llxz)
+		# xz-compress old logs older than <time_int> <time_unit> [dryrun] (local + ARTDAQ hosts)
+		info "COMPRESS OLD LOGS (LOCAL + ARTDAQ HOSTS)!"
+		ISCOMPRESSOLDLOGS_ARTDAQ=1
+		COMPRESS_LOGS_TIME_INT="$2"
+		COMPRESS_LOGS_TIME_UNIT="$3"
+		if [[ "$4" == "dryrun" ]]; then COMPRESS_LOGS_DRYRUN=1; shift; fi
+		shift 2
+		;;
+	--logcompress-local | -lllxz)
+		# xz-compress old logs older than <time_int> <time_unit> [dryrun] (local only, leaf)
+		info "COMPRESS OLD LOGS (LOCAL ONLY)!"
+		ISCOMPRESSOLDLOGS_LOCAL=1
+		COMPRESS_LOGS_TIME_INT="$2"
+		COMPRESS_LOGS_TIME_UNIT="$3"
+		if [[ "$4" == "dryrun" ]]; then COMPRESS_LOGS_DRYRUN=1; shift; fi
+		shift 2
+		;;
 	--logscan-error | -le)
 		# Show ERROR lines from log files newer than <time_int> <time_unit> (local + all remote + ARTDAQ hosts)
 		info "SCAN RECENT LOGS FOR ERRORS (ALL HOSTS)!"
@@ -313,6 +349,10 @@ while :; do
 	--logdelete-noprompt)
 		# Internal flag: skip the "are you sure?" prompt (used by nested calls)
 		DELETE_LOGS_NOPROMPT=1
+		;;
+	--logcompress-noprompt)
+		# Internal flag: skip the "are you sure?" prompt (used by nested calls)
+		COMPRESS_LOGS_NOPROMPT=1
 		;;
 	--trace | -t | -tlvls)
 		# Show TRACE levels (== tlvls) for [host] [label]. Human-readable; fans out.
@@ -460,7 +500,7 @@ while :; do
 		out " --verbose  -v"
 		out "	e.g.: ots --wiz -v     or    ots --verbose"
 		out
-		out "To ${Bold}display log files${RstClr} based on current configuration:"
+		out "To ${Bold}display recent log files${RstClr} based on current configuration:"
 		out " --logfind  -l"
 		out "	Display log files across all hosts."
 		out "	e.g.: ots -l     or    ots --logfind"
@@ -471,7 +511,7 @@ while :; do
 		out "	Display log files on local host only (leaf)."
 		out "	e.g.: ots -lll   or    ots --logfind-local"
 		out
-		out "To ${Bold}delete old log files${RstClr}, use with <time_int> <time_unit> [dryrun]:"
+		out "To ${Bold}delete stale log files${RstClr}, use with <time_int> <time_unit> [dryrun]:"
 		out " --logdelete  -lx <N> <unit> [dryrun]"
 		out "	Delete log files older than N units (local + all remote + ARTDAQ hosts)."
 		out "	e.g.: ots -lx 5 minutes     or    ots -lx 1 week dryrun"
@@ -483,6 +523,19 @@ while :; do
 		out "	e.g.: ots -lllx 1 day     or    ots -lllx 1 day dryrun"
 		out "	Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
 		out "	Add 'dryrun' to preview what would be deleted without actually deleting."
+		out
+		out "To ${Bold}xz-compress stale log files${RstClr}, use with <time_int> <time_unit> [dryrun]:"
+		out " --logcompress  -lxz <N> <unit> [dryrun]"
+		out "	Compress log files older than N units (local + all remote + ARTDAQ hosts)."
+		out "	e.g.: ots -lxz 5 minutes     or    ots -lxz 1 week dryrun"
+		out " --logcompress-artdaq  -llxz <N> <unit> [dryrun]"
+		out "	Compress log files older than N units (local + ARTDAQ hosts)."
+		out "	e.g.: ots -llxz 2 hours     or    ots -llxz 2 hours dryrun"
+		out " --logcompress-local  -lllxz <N> <unit> [dryrun]"
+		out "	Compress log files older than N units (local only, leaf)."
+		out "	e.g.: ots -lllxz 1 day     or    ots -lllxz 1 day dryrun"
+		out "	Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
+		out "	Add 'dryrun' to preview what would be compressed without actually compressing."
 		out
 		out "To ${Bold}scan recent log files for errors/warnings${RstClr}, use with optional <time_int> <time_unit> (default: 30 seconds):"
 		out " --logscan-error  -le [N unit]"
@@ -2775,7 +2828,7 @@ _logdelete_delete_old_logs() {
 	fi
 
 	out
-	out "${Bold}${Cyan}Searching for local log files older than ${_label} to delete (under \$USER_DATA/Logs)...${RstClr}"
+	out "${Bold}${Cyan}Searching for local log files older than ${_label} to delete (under \$USER_DATA/Logs and action handler logs)...${RstClr}"
 
 	local _logs_dir="${USER_DATA}/Logs"
 	if [ ! -d "$_logs_dir" ]; then
@@ -2805,18 +2858,25 @@ _logdelete_delete_old_logs() {
 		fi
 	}
 
-	# Find files older than the threshold
-	local _old_files
+	# Find files older than the threshold (under $USER_DATA/Logs + action handler logs in tmp/)
+	local _old_files _action_files
 	_old_files=$(find -L "$_logs_dir" -type f -mmin +${_mmin} -not -name 'otsdaq_is_alive-*.dat' 2>/dev/null)
+	_action_files=$(find -L "${PWD}/tmp" -maxdepth 1 -type f -name "otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}*" -mmin +${_mmin} 2>/dev/null)
+	if [ -n "$_action_files" ]; then
+		if [ -n "$_old_files" ]; then
+			_old_files="${_old_files}"$'\n'"${_action_files}"
+		else
+			_old_files="$_action_files"
+		fi
+	fi
 
 	if [ -z "$_old_files" ]; then
 		out "  ${IBlack}No log files older than ${_label} found.${RstClr}"
 		return 0
 	fi
 
-	local _count _shown _max_show=20
+	local _count _shown _max_show=20 _skipped=0
 	_count=$(echo "$_old_files" | wc -l)
-	DELETE_LOGS_LAST_COUNT=$_count
 
 	# Header with truncation note if needed
 	if [ "$_count" -gt "$_max_show" ]; then
@@ -2826,16 +2886,25 @@ _logdelete_delete_old_logs() {
 	fi
 	out
 
-	# List files that would be deleted (truncate to _max_show)
+	# Check if fuser is available for open-file detection
+	local _have_fuser=0
+	command -v fuser >/dev/null 2>&1 && _have_fuser=1
+
+	# List files that would be deleted (truncate to _max_show); skip files held open
 	_shown=0
 	while IFS= read -r _file; do
 		if [ $_shown -ge $_max_show ]; then
 			out "  ${IBlack}... and $(( _count - _max_show )) more files not shown.${RstClr}"
 			break
 		fi
-		local _age
+		local _age _realfile
 		_age=$(_logdelete_file_age "$_file" 2>/dev/null)
-		out "  ${Red}DELETE${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		_realfile=$(readlink -f "$_file" 2>/dev/null) || _realfile="$_file"
+		if [ "$_have_fuser" -eq 1 ] && fuser -s "$_realfile" 2>/dev/null; then
+			out "  ${Yellow}SKIP (open)${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		else
+			out "  ${Red}DELETE${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		fi
 		_shown=$(( _shown + 1 ))
 	done <<< "$_old_files"
 
@@ -2850,12 +2919,27 @@ _logdelete_delete_old_logs() {
 	if [ "$DELETE_LOGS_DRYRUN" -eq 1 ]; then
 		out "  ${Yellow}[DRY RUN] No files were deleted.${RstClr}"
 	else
-		# Delete the files
+		# Delete the files, skipping any held open by a process
+		_skipped=0
 		while IFS= read -r _file; do
+			local _realfile
+			_realfile=$(readlink -f "$_file" 2>/dev/null) || _realfile="$_file"
+			if [ "$_have_fuser" -eq 1 ] && fuser -s "$_realfile" 2>/dev/null; then
+				out "  ${Yellow}SKIP${RstClr} ${_file}  ${IBlack}(file is held open by a process)${RstClr}"
+				_skipped=$(( _skipped + 1 ))
+				continue
+			fi
 			rm -f "$_file"
 		done <<< "$_old_files"
-		out "  ${Bold}Deleted ${_count} files.${RstClr}"
+		local _acted=$(( _count - _skipped ))
+		out "  ${Bold}Deleted ${_acted} files.${RstClr}"
 	fi
+
+	if [ "$_skipped" -gt 0 ]; then
+		out "  ${Yellow}Skipped ${_skipped} file(s) held open by a process.${RstClr}"
+	fi
+
+	DELETE_LOGS_LAST_COUNT=$(( _count - _skipped ))
 
 	# Clean up empty subdirectories under Logs/ (Logs/ itself is preserved by -mindepth 1)
 	out
@@ -2885,6 +2969,255 @@ _logdelete_delete_old_logs() {
 	out "  ${IBlack}Done.${RstClr}"
 }
 export -f _logdelete_delete_old_logs
+
+# _logcompress_validate_and_prompt
+#   Validates COMPRESS_LOGS_TIME_INT and COMPRESS_LOGS_TIME_UNIT.
+#   If valid and COMPRESS_LOGS_NOPROMPT is not set, prompts the user for confirmation.
+#   Returns 0 on success (proceed with compression), 1 on failure/abort.
+_logcompress_validate_and_prompt() {
+	# Validate time integer
+	if ! [[ "$COMPRESS_LOGS_TIME_INT" =~ ^[0-9]+$ ]] || [ "$COMPRESS_LOGS_TIME_INT" -le 0 ]; then
+		error "Invalid time value: '${COMPRESS_LOGS_TIME_INT}'. Must be a positive integer."
+		out "  Usage: ots -lxz <time_int> <time_unit> [dryrun]"
+		out "  Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
+		out "  Example: ots -lxz 5 minutes   or   ots -lxz 5 minutes dryrun"
+		return 1
+	fi
+
+	# Normalize time unit
+	local _norm_unit
+	_norm_unit=$(_logdelete_normalize_time_unit "$COMPRESS_LOGS_TIME_UNIT")
+	if [ -z "$_norm_unit" ]; then
+		error "Invalid time unit: '${COMPRESS_LOGS_TIME_UNIT}'. Must be one of: seconds, minutes, hours, days, weeks, years."
+		out "  Usage: ots -lxz <time_int> <time_unit> [dryrun]"
+		out "  Time units: seconds, minutes, hours, days, weeks, years (singular also accepted)"
+		out "  Example: ots -lxz 5 minutes   or   ots -lxz 5 minutes dryrun"
+		return 1
+	fi
+	COMPRESS_LOGS_TIME_UNIT="$_norm_unit"
+
+	# Build human-readable label
+	local _label="${COMPRESS_LOGS_TIME_INT} ${COMPRESS_LOGS_TIME_UNIT}"
+	if [ "$COMPRESS_LOGS_TIME_INT" -ne 1 ]; then
+		_label="${_label}s"
+	fi
+
+	# Prompt for confirmation (unless noprompt)
+	if [ "$COMPRESS_LOGS_NOPROMPT" -ne 1 ]; then
+		out
+		if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then
+			out "${Bold}${Red}WARNING: [this is a DRYRUN otherwise...] This will xz-compress all log files older than ${_label} under \$USER_DATA/Logs.${RstClr}"
+			read -p "[this is a DRYRUN] Are you sure you want to compress all logs older than ${_label}? [Y/N] " _answer
+		else
+			out "${Bold}${Red}WARNING: This will xz-compress all log files older than ${_label} under \$USER_DATA/Logs.${RstClr}"
+			out "  Usage: ots -lxz <time_int> <time_unit> [dryrun]"
+			read -p "Are you sure you want to compress (if you are not sure, add dryrun parameter) all logs older than ${_label}? [Y/N] " _answer
+		fi
+		if [[ "$_answer" != "Y" && "$_answer" != "y" ]]; then
+			warning "Aborting log compression."
+			return 1
+		fi
+		# Mark as prompted so nested calls don't re-prompt
+		COMPRESS_LOGS_NOPROMPT=1
+	fi
+
+	return 0
+}
+
+# _logcompress_compress_old_logs
+#   xz-compresses log files under $USER_DATA/Logs that are older than the specified time.
+#   Respects COMPRESS_LOGS_TIME_INT and COMPRESS_LOGS_TIME_UNIT (must be validated first).
+#   Skips files already ending in .xz.
+_logcompress_compress_old_logs() {
+	local _mmin
+	_mmin=$(_logdelete_time_to_minutes "$COMPRESS_LOGS_TIME_INT" "$COMPRESS_LOGS_TIME_UNIT")
+	if [ -z "$_mmin" ] || [ "$_mmin" -le 0 ]; then
+		error "Could not compute time threshold in minutes."
+		return 1
+	fi
+
+	local _label="${COMPRESS_LOGS_TIME_INT} ${COMPRESS_LOGS_TIME_UNIT}"
+	if [ "$COMPRESS_LOGS_TIME_INT" -ne 1 ]; then
+		_label="${_label}s"
+	fi
+
+	out
+	out "${Bold}${Cyan}Searching for local log files older than ${_label} to compress (under \$USER_DATA/Logs and action handler logs)...${RstClr}"
+
+	local _logs_dir="${USER_DATA}/Logs"
+	if [ ! -d "$_logs_dir" ]; then
+		warning "Logs directory not found: ${_logs_dir}"
+		return 1
+	fi
+
+	if ! command -v xz >/dev/null 2>&1; then
+		error "xz not found in PATH; cannot compress logs."
+		return 1
+	fi
+
+	# Define local file age helper
+	_logcompress_file_age() {
+		local file_path="$1"
+		local file_mtime now_epoch age_secs days hours mins
+		file_mtime=$(stat -L -c %Y "$file_path" 2>/dev/null)
+		if [ -z "$file_mtime" ]; then echo ""; return; fi
+		now_epoch=$(date +%s)
+		age_secs=$(( now_epoch - file_mtime ))
+		days=$(( age_secs / 86400 ))
+		hours=$(( (age_secs % 86400) / 3600 ))
+		mins=$(( (age_secs % 3600) / 60 ))
+		if [ $days -gt 0 ]; then
+			echo "${days} days ago"
+		elif [ $hours -gt 0 ]; then
+			echo "${hours} hours ago"
+		elif [ $mins -gt 0 ]; then
+			echo "${mins} minutes ago"
+		else
+			echo "just now"
+		fi
+	}
+
+	# Find files older than the threshold, excluding already-compressed .xz files and alive markers
+	# Also include action handler logs from tmp/
+	local _old_files _action_files
+	_old_files=$(find -L "$_logs_dir" -type f -mmin +${_mmin} -not -name '*.xz' -not -name 'otsdaq_is_alive-*.dat' 2>/dev/null)
+	_action_files=$(find -L "${PWD}/tmp" -maxdepth 1 -type f -name "otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}*" -not -name '*.xz' -mmin +${_mmin} 2>/dev/null)
+	if [ -n "$_action_files" ]; then
+		if [ -n "$_old_files" ]; then
+			_old_files="${_old_files}"$'\n'"${_action_files}"
+		else
+			_old_files="$_action_files"
+		fi
+	fi
+
+	local _count=0 _shown _max_show=20 _skipped=0
+
+	if [ -z "$_old_files" ]; then
+		out "  ${IBlack}No uncompressed log files older than ${_label} found.${RstClr}"
+	else
+	_count=$(echo "$_old_files" | wc -l)
+
+	# Header with truncation note if needed
+	if [ "$_count" -gt "$_max_show" ]; then
+		out "  Here is the list of ${Bold}${_count}${RstClr} files to compress (showing first ${_max_show}):"
+	else
+		out "  Here is the list of ${Bold}${_count}${RstClr} files to compress:"
+	fi
+	out
+
+	# Check if fuser is available for open-file detection
+	local _have_fuser=0
+	command -v fuser >/dev/null 2>&1 && _have_fuser=1
+
+	# List files that would be compressed (truncate to _max_show); skip files held open
+	_shown=0
+	while IFS= read -r _file; do
+		if [ $_shown -ge $_max_show ]; then
+			out "  ${IBlack}... and $(( _count - _max_show )) more files not shown.${RstClr}"
+			break
+		fi
+		local _age _realfile
+		_age=$(_logcompress_file_age "$_file" 2>/dev/null)
+		_realfile=$(readlink -f "$_file" 2>/dev/null) || _realfile="$_file"
+		if [ "$_have_fuser" -eq 1 ] && fuser -s "$_realfile" 2>/dev/null; then
+			out "  ${Yellow}SKIP (open)${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		else
+			out "  ${Yellow}COMPRESS${RstClr} ${_file}  ${IBlack}(${_age})${RstClr}"
+		fi
+		_shown=$(( _shown + 1 ))
+	done <<< "$_old_files"
+
+	# Show count again after the list if > 5 files
+	if [ "$_count" -gt 5 ]; then
+		out
+		out "  Total files to compress: ${Bold}${_count}${RstClr}"
+	fi
+
+	out
+
+	if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then
+		out "  ${Yellow}[DRY RUN] No files were compressed.${RstClr}"
+	else
+		# Compress the files, skipping any held open by a process
+		_skipped=0
+		while IFS= read -r _file; do
+			local _realfile
+			_realfile=$(readlink -f "$_file" 2>/dev/null) || _realfile="$_file"
+			if [ "$_have_fuser" -eq 1 ] && fuser -s "$_realfile" 2>/dev/null; then
+				out "  ${Yellow}SKIP${RstClr} ${_file}  ${IBlack}(file is held open by a process)${RstClr}"
+				_skipped=$(( _skipped + 1 ))
+				continue
+			fi
+			if [ -L "$_file" ]; then
+				local _link_target
+				_link_target=$(readlink "$_file")
+				xz "$_realfile"
+				# Update symlink to point at the new .xz target (keep symlink name unchanged)
+				if [ -f "${_realfile}.xz" ]; then
+					ln -sf "${_link_target}.xz" "$_file"
+				fi
+			else
+				xz "$_file"
+			fi
+		done <<< "$_old_files"
+		local _acted=$(( _count - _skipped ))
+		out "  ${Bold}Compressed ${_acted} files.${RstClr}"
+	fi
+
+	if [ "$_skipped" -gt 0 ]; then
+		out "  ${Yellow}Skipped ${_skipped} file(s) held open by a process.${RstClr}"
+	fi
+
+	COMPRESS_LOGS_LAST_COUNT=$(( _count - _skipped ))
+
+	fi  # end of "files found" branch
+
+	# Repair broken symlinks: if target doesn't exist but target.xz does, relink
+	out
+	out "  ${IBlack}Checking for broken symlinks to fix (under ${_logs_dir})...${RstClr}"
+	local _broken_fixed=0 _link_total=0 _link_broken=0
+	while IFS= read -r _link; do
+		[ -z "$_link" ] && continue
+		[ ! -L "$_link" ] && continue
+		_link_total=$(( _link_total + 1 ))
+		# Skip symlinks whose target still exists (not broken)
+		if [ -e "$_link" ]; then continue; fi
+		_link_broken=$(( _link_broken + 1 ))
+		local _raw_target _link_dir _abs_target
+		_raw_target=$(readlink "$_link")
+		# Resolve relative targets against the symlink's directory
+		if [[ "$_raw_target" == /* ]]; then
+			_abs_target="$_raw_target"
+		else
+			_link_dir=$(dirname "$_link")
+			_abs_target="${_link_dir}/${_raw_target}"
+		fi
+		if [ -f "${_abs_target}.xz" ]; then
+			if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then
+				out "  ${Yellow}FIXLINK (dryrun)${RstClr} ${_link} -> ${_raw_target}.xz"
+			else
+				ln -sf "${_raw_target}.xz" "$_link"
+				out "  ${Cyan}FIXLINK${RstClr} ${_link} -> ${_raw_target}.xz"
+			fi
+			_broken_fixed=$(( _broken_fixed + 1 ))
+		fi
+	done < <(find "$_logs_dir" -maxdepth 3 -type l 2>/dev/null; find -L "$_logs_dir" -maxdepth 3 -type l 2>/dev/null; find "${PWD}/tmp" -maxdepth 1 -type l -name "otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}*" 2>/dev/null)
+	if [ "$_broken_fixed" -gt 0 ]; then
+		out "  ${Cyan}Fixed ${_broken_fixed} broken symlink(s).${RstClr}"
+	else
+		out "  ${IBlack}No broken symlinks found.${RstClr}"
+	fi
+
+	if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then
+		out
+		out "  ${Bold}${Yellow}This was a DRY RUN. No files were compressed.${RstClr}"
+		out "  ${Yellow}To actually compress, remove 'dryrun' from the command:${RstClr}"
+		out "  ${Yellow}  e.g.: ots -lllxz ${COMPRESS_LOGS_TIME_INT} ${COMPRESS_LOGS_TIME_UNIT}${RstClr}"
+	fi
+
+	out "  ${IBlack}Done.${RstClr}"
+}
+export -f _logcompress_compress_old_logs
 
 # _logscan_validate
 #   Validates LOGSCAN_TIME_INT and LOGSCAN_TIME_UNIT (reuses _logdelete_ helpers).
@@ -5577,6 +5910,327 @@ if [ $ISDELETEOLDLOGS == 1 ]; then
 		out "  ${IBlack}Local  (${THIS_HOST}): ${DELETE_LOGS_LOCAL_COUNT} file(s) deleted.${RstClr}"
 		out "  ${IBlack}Remote (all hosts):  ${DELETE_LOGS_REMOTE_COUNT} file(s) deleted.${RstClr}"
 		out "${Bold}${Cyan}GRAND TOTAL: ${DELETE_LOGS_GRAND_TOTAL} file(s) deleted across all hosts.${RstClr}"
+	fi
+	exit
+fi
+
+# Handle log compression options (-lxz, -llxz, -lllxz): validate, prompt, and run compression only
+if [ $ISCOMPRESSOLDLOGS == 1 ] || [ $ISCOMPRESSOLDLOGS_ARTDAQ == 1 ] || [ $ISCOMPRESSOLDLOGS_LOCAL == 1 ]; then
+	_logcompress_validate_and_prompt || exit 1
+fi
+
+if [ $ISCOMPRESSOLDLOGS_LOCAL == 1 ]; then
+	# -lllxz: compress locally only
+	_logcompress_compress_old_logs
+	exit
+fi
+
+if [ $ISCOMPRESSOLDLOGS_ARTDAQ == 1 ]; then
+	# -llxz: compress locally + on ARTDAQ hosts
+	_logcompress_compress_old_logs
+	# Also compress on remote ARTDAQ hosts via SSH
+	out
+	out "${Bold}${Cyan}Compressing old logs on remote ARTDAQ hosts...${RstClr}"
+	_artdaq_ranks_file=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 2 -name 'ranks.txt' -type f 2>/dev/null \
+		| sort -t/ -k$(echo "${USER_DATA}/ARTDAQConfigurations/run_records/" | tr -cd '/' | wc -c) -n \
+		| tail -1)
+	if [ -n "$_artdaq_ranks_file" ]; then
+		declare -A _cmp_seen_hosts
+		_cmp_seen_hosts["${THIS_HOST}"]=1
+		while read -r _cmp_line; do
+			[[ -z "$_cmp_line" ]] && continue
+			[[ "$_cmp_line" == host* ]] && continue
+			_cmp_host=$(echo "$_cmp_line" | awk '{print $1}')
+			[[ -z "$_cmp_host" ]] && continue
+			[ -n "${_cmp_seen_hosts[$_cmp_host]+x}" ] && continue
+			_cmp_host_stripped="${_cmp_host/-data/}"
+			_cmp_host_stripped="${_cmp_host_stripped/-ipmi/}"
+			if [[ "$_cmp_host_stripped" == "${THIS_HOST}" || "$_cmp_host_stripped" == "${THIS_HOST}."* ]]; then
+				_cmp_seen_hosts["$_cmp_host"]=1
+				continue
+			fi
+			_cmp_seen_hosts["$_cmp_host"]=1
+			out "  ${IBlack}[${_cmp_host}] Compressing via SSH...${RstClr}"
+			_cmp_dryrun_arg=""
+			if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then _cmp_dryrun_arg="dryrun"; fi
+			_cmp_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logscompress ${COMPRESS_LOGS_TIME_INT} ${COMPRESS_LOGS_TIME_UNIT} ${_cmp_dryrun_arg}; } 2>&1"
+			_cmp_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_cmp_host" \
+				"$_cmp_ssh_cmd" 2>/dev/null)
+			_cmp_ssh_rc=$?
+			if [ $_cmp_ssh_rc -ne 0 ]; then
+				_cmp_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "${_cmp_host/-data/}" \
+					"$_cmp_ssh_cmd" 2>/dev/null)
+				_cmp_ssh_rc=$?
+			fi
+			if [ $_cmp_ssh_rc -ne 0 ]; then
+				out "  ${Red}[${_cmp_host}] SSH compress failed. Skipping.${RstClr}"
+			else
+				# Parse remote output: show only compression-relevant lines
+				while IFS= read -r _cmp_rline; do
+					_cmp_clean=$(echo "$_cmp_rline" | sed 's/\x1b\[[0-9;]*m//g')
+					if [[ "$_cmp_clean" == *" |"* ]]; then
+						_cmp_clean="${_cmp_clean##* |}"
+					fi
+					_cmp_clean="${_cmp_clean#"${_cmp_clean%%[![:space:]]*}"}"
+					if [[ "$_cmp_clean" == COMPRESS* ]] || \
+					   [[ "$_cmp_clean" == *"files to compress"* ]] || \
+					   [[ "$_cmp_clean" == *"Total files to compress"* ]] || \
+					   [[ "$_cmp_clean" == *"not shown"* ]] || \
+					   [[ "$_cmp_clean" == *"DRY RUN"* ]] || \
+					   [[ "$_cmp_clean" == *"No uncompressed log files older than"* ]] || \
+					   [[ "$_cmp_clean" == *"older than"*"to compress"* ]] || \
+					   [[ "$_cmp_clean" == "Done." ]]; then
+						out "    [${_cmp_host}] ${_cmp_clean}"
+					fi
+				done <<< "$_cmp_ssh_output"
+			fi
+		done < "$_artdaq_ranks_file"
+		unset _cmp_seen_hosts _cmp_host _cmp_host_stripped _cmp_line _cmp_ssh_cmd _artdaq_ranks_file
+		unset _cmp_ssh_output _cmp_ssh_rc _cmp_rline _cmp_clean
+	else
+		out "  ${IBlack}No ranks.txt found. Skipping remote ARTDAQ host compression.${RstClr}"
+	fi
+	exit
+fi
+
+if [ $ISCOMPRESSOLDLOGS == 1 ]; then
+	# -lxz: compress locally (with ARTDAQ rank handling via -llxz logic) + on each remote context host
+	# First, do local
+	_logcompress_compress_old_logs
+	COMPRESS_LOGS_LOCAL_COUNT=$COMPRESS_LOGS_LAST_COUNT
+	COMPRESS_LOGS_GRAND_TOTAL=$(( COMPRESS_LOGS_GRAND_TOTAL + COMPRESS_LOGS_LAST_COUNT ))
+	COMPRESS_LOGS_REMOTE_COUNT=0
+
+	# Find ARTDAQ hosts from ranks.txt and compress on them too
+	out
+	out "${Bold}${Cyan}Compressing old logs on ARTDAQ hosts (from ranks.txt)...${RstClr}"
+	_artdaq_ranks_file=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 2 -name 'ranks.txt' -type f 2>/dev/null \
+		| sort -t/ -k$(echo "${USER_DATA}/ARTDAQConfigurations/run_records/" | tr -cd '/' | wc -c) -n \
+		| tail -1)
+	if [ -n "$_artdaq_ranks_file" ]; then
+		declare -A _cmp_seen_hosts
+		_cmp_seen_hosts["${THIS_HOST}"]=1
+		while read -r _cmp_line; do
+			[[ -z "$_cmp_line" ]] && continue
+			[[ "$_cmp_line" == host* ]] && continue
+			_cmp_host=$(echo "$_cmp_line" | awk '{print $1}')
+			[[ -z "$_cmp_host" ]] && continue
+			[ -n "${_cmp_seen_hosts[$_cmp_host]+x}" ] && continue
+			_cmp_host_stripped="${_cmp_host/-data/}"
+			_cmp_host_stripped="${_cmp_host_stripped/-ipmi/}"
+			if [[ "$_cmp_host_stripped" == "${THIS_HOST}" || "$_cmp_host_stripped" == "${THIS_HOST}."* ]]; then
+				_cmp_seen_hosts["$_cmp_host"]=1
+				continue
+			fi
+			_cmp_seen_hosts["$_cmp_host"]=1
+			_cmp_dryrun_arg=""
+			if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then _cmp_dryrun_arg="dryrun"; fi
+			out "  ${IBlack}[${_cmp_host}] Compressing via SSH (-lllxz)...${RstClr}"
+			_cmp_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' logscompress ${COMPRESS_LOGS_TIME_INT} ${COMPRESS_LOGS_TIME_UNIT} ${_cmp_dryrun_arg}; } 2>&1"
+			_cmp_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_cmp_host" \
+				"$_cmp_ssh_cmd" 2>/dev/null)
+			_cmp_ssh_rc=$?
+			if [ $_cmp_ssh_rc -ne 0 ]; then
+				_cmp_ssh_output=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "${_cmp_host/-data/}" \
+					"$_cmp_ssh_cmd" 2>/dev/null)
+				_cmp_ssh_rc=$?
+			fi
+			if [ $_cmp_ssh_rc -ne 0 ]; then
+				out "  ${Red}[${_cmp_host}] SSH compress failed. Skipping.${RstClr}"
+			else
+				while IFS= read -r _cmp_rline; do
+					_cmp_clean=$(echo "$_cmp_rline" | sed 's/\x1b\[[0-9;]*m//g')
+					if [[ "$_cmp_clean" == *" |"* ]]; then _cmp_clean="${_cmp_clean##* |}"; fi
+					_cmp_clean="${_cmp_clean#"${_cmp_clean%%[![:space:]]*}"}"
+					if [[ "$_cmp_clean" == COMPRESS* ]] || [[ "$_cmp_clean" == *"files to compress"* ]] || \
+					   [[ "$_cmp_clean" == *"Total files to compress"* ]] || [[ "$_cmp_clean" == *"not shown"* ]] || \
+					   [[ "$_cmp_clean" == *"DRY RUN"* ]] || [[ "$_cmp_clean" == *"No uncompressed log files older than"* ]] || \
+					   [[ "$_cmp_clean" == *"older than"*"to compress"* ]] || \
+					   [[ "$_cmp_clean" == "Done." ]]; then
+						out "    [${_cmp_host}] ${_cmp_clean}"
+					fi
+					if [[ "$_cmp_clean" =~ list\ of\ ([0-9]+)\ file ]]; then
+						COMPRESS_LOGS_GRAND_TOTAL=$(( COMPRESS_LOGS_GRAND_TOTAL + ${BASH_REMATCH[1]} ))
+						COMPRESS_LOGS_REMOTE_COUNT=$(( COMPRESS_LOGS_REMOTE_COUNT + ${BASH_REMATCH[1]} ))
+					fi
+				done <<< "$_cmp_ssh_output"
+			fi
+		done < "$_artdaq_ranks_file"
+		unset _cmp_seen_hosts _cmp_host _cmp_host_stripped _cmp_line _cmp_ssh_cmd
+		unset _cmp_ssh_output _cmp_ssh_rc _cmp_rline _cmp_clean _cmp_dryrun_arg _artdaq_ranks_file
+	else
+		out "  ${IBlack}No ranks.txt found. Skipping ARTDAQ host compression.${RstClr}"
+	fi
+
+	# Now SSH to each remote OTS context host and run -llxz on each (parallel SSH, same pattern as -lx)
+	out
+	out "${Bold}${Cyan}Compressing old logs on remote OTS context hosts...${RstClr}"
+	_cmp_context_hosts=$(_logdelete_get_context_hosts)
+	if [ -n "$_cmp_context_hosts" ]; then
+		_cmp_dryrun_arg=""
+		if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then _cmp_dryrun_arg="dryrun"; fi
+		_cmp_ssh_cmd="{ cd '${OTS_SETUP_DIR}/otsdaq-mu2e-config' && source ./Fast_ots_setup.sh '${OTS_SETUP_TYPE}' artdaqlogscompress ${COMPRESS_LOGS_TIME_INT} ${COMPRESS_LOGS_TIME_UNIT} ${_cmp_dryrun_arg}; } 2>&1"
+		_cmp_tmpdir=$(mktemp -d /tmp/ots_cmpctx_XXXXXX 2>/dev/null || { mkdir -p "/tmp/ots_cmpctx_$$" && echo "/tmp/ots_cmpctx_$$"; })
+
+		declare -A _cmp_orig_pids
+		declare -A _cmp_alt_pids
+		declare -A _cmp_alt_hostmap
+		_cmp_ordered_hosts=()
+		_cmp_total_jobs=0
+
+		_cmp_t0=$(date +%s.%N)
+		_cmp_ssh_cmd_dbg="echo \"__OTS_REMOTE_UP__ \$(date +%s.%N) \$(hostname)\"; ${_cmp_ssh_cmd}"
+
+		# Pre-warm Kerberos service tickets serially before the parallel SSH burst
+		if command -v kvno >/dev/null 2>&1; then
+			out "  ${IBlack}Pre-warming Kerberos service tickets serially...${RstClr}"
+			_cmp_kvno_t0=$(date +%s.%N)
+			while IFS= read -r _cmp_host; do
+				[ -z "$_cmp_host" ] && continue
+				_cmp_alt_host="${_cmp_host/-data/}"
+				_cmp_alt_host="${_cmp_alt_host/-ipmi/}"
+				[ "$_cmp_alt_host" == "$_cmp_host" ] && _cmp_alt_host=""
+				for _cmp_kvno_host in "$_cmp_host" "$_cmp_alt_host"; do
+					[ -z "$_cmp_kvno_host" ] && continue
+					kvno "host/${_cmp_kvno_host}" >/dev/null 2>&1
+				done
+			done <<< "$_cmp_context_hosts"
+			_cmp_kvno_total=$(awk "BEGIN{printf \"%.2f\", $(date +%s.%N) - $_cmp_kvno_t0}")
+			out "  ${IBlack}Pre-warm done in ${_cmp_kvno_total}s. Starting parallel SSH burst.${RstClr}"
+			unset _cmp_kvno_t0 _cmp_kvno_host _cmp_kvno_total
+			_cmp_t0=$(date +%s.%N)
+		else
+			out "  ${IBlack}kvno not in PATH -- skipping Kerberos pre-warm.${RstClr}"
+		fi
+
+		# Launch all SSH jobs in parallel
+		while IFS= read -r _cmp_host; do
+			[ -z "$_cmp_host" ] && continue
+			_cmp_ordered_hosts+=("$_cmp_host")
+			_cmp_safe_host="${_cmp_host//[^a-zA-Z0-9._-]/_}"
+
+			_cmp_alt_host="${_cmp_host/-data/}"
+			_cmp_alt_host="${_cmp_alt_host/-ipmi/}"
+			[ "$_cmp_alt_host" == "$_cmp_host" ] && _cmp_alt_host=""
+
+			out "  ${IBlack}[${_cmp_host}] Launching parallel SSH compress... (t+$(awk "BEGIN{printf \"%.2f\",$(date +%s.%N)-$_cmp_t0}")s)${RstClr}"
+
+			( ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_cmp_host" \
+				"$_cmp_ssh_cmd_dbg" > "${_cmp_tmpdir}/${_cmp_safe_host}.orig.out" 2>"${_cmp_tmpdir}/${_cmp_safe_host}.orig.err"
+			  echo "$?" > "${_cmp_tmpdir}/${_cmp_safe_host}.orig.rc"
+			  date +%s.%N > "${_cmp_tmpdir}/${_cmp_safe_host}.orig.tend" ) &
+			_cmp_orig_pids["$_cmp_host"]=$!
+			_cmp_total_jobs=$((_cmp_total_jobs + 1))
+
+			if [ -n "$_cmp_alt_host" ]; then
+				_cmp_alt_hostmap["$_cmp_host"]="$_cmp_alt_host"
+				( ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_cmp_alt_host" \
+					"$_cmp_ssh_cmd_dbg" > "${_cmp_tmpdir}/${_cmp_safe_host}.alt.out" 2>"${_cmp_tmpdir}/${_cmp_safe_host}.alt.err"
+				  echo "$?" > "${_cmp_tmpdir}/${_cmp_safe_host}.alt.rc"
+				  date +%s.%N > "${_cmp_tmpdir}/${_cmp_safe_host}.alt.tend" ) &
+				_cmp_alt_pids["$_cmp_host"]=$!
+				_cmp_total_jobs=$((_cmp_total_jobs + 1))
+			fi
+		done <<< "$_cmp_context_hosts"
+
+		out "  ${IBlack}Waiting for ${#_cmp_ordered_hosts[@]} hosts (${_cmp_total_jobs} SSH jobs) to complete...${RstClr}"
+
+		# Wait for jobs as they complete
+		_cmp_done_count=0
+		while [ "$_cmp_done_count" -lt "$_cmp_total_jobs" ]; do
+			wait -n 2>/dev/null
+			_wn_rc=$?
+			for _f in "${_cmp_tmpdir}"/*.tend; do
+				[ -e "$_f" ] || continue
+				_base="${_f%.tend}"
+				[ -e "${_base}.reported" ] && continue
+				touch "${_base}.reported"
+				_cmp_done_count=$((_cmp_done_count + 1))
+			done
+			if [ "$_wn_rc" -eq 127 ] || [ "$_wn_rc" -gt 128 ]; then
+				for _f in "${_cmp_tmpdir}"/*.tend; do
+					[ -e "$_f" ] || continue
+					_base="${_f%.tend}"
+					[ -e "${_base}.reported" ] || { touch "${_base}.reported"; _cmp_done_count=$((_cmp_done_count + 1)); }
+				done
+				break
+			fi
+		done
+		_cmp_total_elapsed=$(awk "BEGIN{printf \"%.2f\", $(date +%s.%N) - $_cmp_t0}")
+		out "  ${IBlack}All SSH jobs finished after ${_cmp_total_elapsed}s total.${RstClr}"
+
+		# Parse results in order -- original wins over alt if both succeed
+		for _cmp_host in "${_cmp_ordered_hosts[@]}"; do
+			_cmp_safe_host="${_cmp_host//[^a-zA-Z0-9._-]/_}"
+			_cmp_alt_host="${_cmp_alt_hostmap[$_cmp_host]:-}"
+
+			_cmp_ssh_output=""
+			_cmp_ssh_host_used=""
+
+			_cmp_rc_orig=$(cat "${_cmp_tmpdir}/${_cmp_safe_host}.orig.rc" 2>/dev/null)
+			_cmp_rc_alt=""
+			if [ "${_cmp_rc_orig}" = "0" ]; then
+				_cmp_ssh_output=$(grep -v '^__OTS_REMOTE_UP__' "${_cmp_tmpdir}/${_cmp_safe_host}.orig.out" 2>/dev/null)
+				_cmp_ssh_host_used="$_cmp_host"
+			elif [ -n "$_cmp_alt_host" ]; then
+				_cmp_rc_alt=$(cat "${_cmp_tmpdir}/${_cmp_safe_host}.alt.rc" 2>/dev/null)
+				if [ "${_cmp_rc_alt}" = "0" ]; then
+					_cmp_ssh_output=$(grep -v '^__OTS_REMOTE_UP__' "${_cmp_tmpdir}/${_cmp_safe_host}.alt.out" 2>/dev/null)
+					_cmp_ssh_host_used="$_cmp_alt_host"
+				fi
+			fi
+
+			rm -f "${_cmp_tmpdir}/${_cmp_safe_host}.orig.out"      "${_cmp_tmpdir}/${_cmp_safe_host}.orig.rc"  \
+			      "${_cmp_tmpdir}/${_cmp_safe_host}.alt.out"       "${_cmp_tmpdir}/${_cmp_safe_host}.alt.rc"   \
+			      "${_cmp_tmpdir}/${_cmp_safe_host}.orig.err"      "${_cmp_tmpdir}/${_cmp_safe_host}.alt.err"  \
+			      "${_cmp_tmpdir}/${_cmp_safe_host}.orig.tend"     "${_cmp_tmpdir}/${_cmp_safe_host}.alt.tend" \
+			      "${_cmp_tmpdir}/${_cmp_safe_host}.orig.reported" "${_cmp_tmpdir}/${_cmp_safe_host}.alt.reported" 2>/dev/null
+
+			if [ -z "$_cmp_ssh_host_used" ]; then
+				if [ -n "$_cmp_alt_host" ]; then
+					out "  ${Red}[${_cmp_host}] SSH compress failed to both ${_cmp_host} (rc=${_cmp_rc_orig}) and ${_cmp_alt_host} (rc=${_cmp_rc_alt}). Skipping.${RstClr}"
+				else
+					out "  ${Red}[${_cmp_host}] SSH compress failed (rc=${_cmp_rc_orig}). Skipping.${RstClr}"
+				fi
+				continue
+			fi
+
+			while IFS= read -r _cmp_rline; do
+				_cmp_clean=$(echo "$_cmp_rline" | sed 's/\x1b\[[0-9;]*m//g')
+				if [[ "$_cmp_clean" == *" |"* ]]; then _cmp_clean="${_cmp_clean##* |}"; fi
+				_cmp_clean="${_cmp_clean#"${_cmp_clean%%[![:space:]]*}"}"
+				if [[ "$_cmp_clean" == COMPRESS* ]] || [[ "$_cmp_clean" == *"files to compress"* ]] || \
+				   [[ "$_cmp_clean" == *"Total files to compress"* ]] || [[ "$_cmp_clean" == *"not shown"* ]] || \
+				   [[ "$_cmp_clean" == *"DRY RUN"* ]] || [[ "$_cmp_clean" == *"No uncompressed log files older than"* ]] || \
+				   [[ "$_cmp_clean" == *"older than"*"to compress"* ]] || \
+				   [[ "$_cmp_clean" == "Done." ]]; then
+					out "    [${_cmp_host}] ${_cmp_clean}"
+				fi
+				if [[ "$_cmp_clean" =~ list\ of\ ([0-9]+)\ file ]]; then
+					COMPRESS_LOGS_GRAND_TOTAL=$(( COMPRESS_LOGS_GRAND_TOTAL + ${BASH_REMATCH[1]} ))
+					COMPRESS_LOGS_REMOTE_COUNT=$(( COMPRESS_LOGS_REMOTE_COUNT + ${BASH_REMATCH[1]} ))
+				fi
+			done <<< "$_cmp_ssh_output"
+		done
+
+		rm -rf "$_cmp_tmpdir" 2>/dev/null
+		unset _cmp_ssh_cmd _cmp_ssh_cmd_dbg _cmp_ssh_output _cmp_rline _cmp_clean _cmp_host _cmp_alt_host _cmp_dryrun_arg
+		unset _cmp_orig_pids _cmp_alt_pids _cmp_alt_hostmap _cmp_tmpdir _cmp_safe_host _cmp_rc_orig _cmp_rc_alt
+		unset _cmp_ordered_hosts _cmp_ssh_host_used
+		unset _cmp_t0 _cmp_total_jobs _cmp_done_count _cmp_total_elapsed
+	else
+		out "  ${IBlack}No remote OTS context hosts found in XML config.${RstClr}"
+	fi
+	unset _cmp_context_hosts
+	out
+	if [ "$COMPRESS_LOGS_DRYRUN" -eq 1 ]; then
+		out "  ${IBlack}Local  (${THIS_HOST}): ${COMPRESS_LOGS_LOCAL_COUNT} file(s) would be compressed.${RstClr}"
+		out "  ${IBlack}Remote (all hosts):  ${COMPRESS_LOGS_REMOTE_COUNT} file(s) would be compressed.${RstClr}"
+		out "${Bold}${Cyan}GRAND TOTAL: ${COMPRESS_LOGS_GRAND_TOTAL} file(s) would be compressed (if this were not a DRY RUN).${RstClr}"
+	else
+		out "  ${IBlack}Local  (${THIS_HOST}): ${COMPRESS_LOGS_LOCAL_COUNT} file(s) compressed.${RstClr}"
+		out "  ${IBlack}Remote (all hosts):  ${COMPRESS_LOGS_REMOTE_COUNT} file(s) compressed.${RstClr}"
+		out "${Bold}${Cyan}GRAND TOTAL: ${COMPRESS_LOGS_GRAND_TOTAL} file(s) compressed across all hosts.${RstClr}"
 	fi
 	exit
 fi

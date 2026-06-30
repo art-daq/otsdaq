@@ -1,5 +1,6 @@
 #include "otsdaq/Macros/StringMacros.h"
 
+#include <sched.h>    // for sched_getaffinity
 #include <algorithm>  // for find_if
 #include <array>
 #include <cstdint>  // for uintptr_t
@@ -10,6 +11,24 @@ std::map<std::string /* system variable */,
          std::map<std::string /* property */, std::string /* value */>>
                   StringMacros::systemVariables_;
 const std::string StringMacros::TBD = "To-be-defined";
+
+//==============================================================================
+unsigned int StringMacros::getConcurrencyCount(void)
+{
+	try
+	{
+		return std::stoul(systemVariables_.at("System").at("logicalCores"));
+	}
+	catch(...)
+	{
+	}
+	cpu_set_t    mask;
+	unsigned int hw = 0;
+	if(sched_getaffinity(0, sizeof(mask), &mask) == 0)
+		hw = CPU_COUNT(&mask);
+	systemVariables_["System"]["logicalCores"] = std::to_string(hw);
+	return hw;
+}  //end getConcurrencyCount()
 
 #define TLVL_EscapeString 30  // = TLVL_DEBUG + 30
 #define TLVL_EnvMath 49       // = TLVL_DEBUG + 49

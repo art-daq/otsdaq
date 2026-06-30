@@ -363,11 +363,10 @@ std::string TableInfoReader::read(TableBase& table)
 			// check for consistency, and show warning
 			if(std::string(XML_TO_CHAR(viewElement->getAttribute(
 			       viewNameAttributeTag_))) != table.getMockupViewP()->getTableName())
-				__COUT_WARN__ << "Table Info name mismatch: "
-				              << std::string(XML_TO_CHAR(
-				                     viewElement->getAttribute(viewNameAttributeTag_)))
-				              << " vs " << table.getMockupViewP()->getTableName()
-				              << __E__;
+				__COUTT__ << "Table Info name mismatch: "
+				          << std::string(XML_TO_CHAR(
+				                 viewElement->getAttribute(viewNameAttributeTag_)))
+				          << " vs " << table.getMockupViewP()->getTableName() << __E__;
 
 			xercesc::DOMNodeList* columnNodeList =
 			    viewElement->getElementsByTagName(columnTag_);

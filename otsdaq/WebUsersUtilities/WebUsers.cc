@@ -1700,22 +1700,22 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 	std::string request = "loginVerify," + cookieCode + "," + (refresh ? "1" : "0") +
 	                      "," + ip + "," + remoteGatewaySelfName_;
 
-	__COUTV__(request);
+	__COUTTV__(request);
 	__COUTS__(40) << StringMacros::stackTrace() << __E__;
 
 	std::string requestResponseString = remoteLoginVerificationSocket_->sendAndReceive(
 	    *remoteLoginVerificationSocketTarget_, request, 10 /*timeoutSeconds*/);
-	__COUTV__(requestResponseString);
+	__COUTTV__(requestResponseString);
 
 	//from response... extract refreshedCookieCode, permissions, userWithLock, username, and display name
 	std::vector<std::string> rxParams =
 	    StringMacros::getVectorFromString(requestResponseString);
-	__COUTV__(StringMacros::vectorToString(rxParams));
+	__COUTTV__(StringMacros::vectorToString(rxParams));
 
 	if(rxParams.size() != 6)
 	{
-		__COUT__ << "Remote login response indicates rejected: " << rxParams.size()
-		         << __E__;
+		__COUTT__ << "Remote login response indicates rejected: " << rxParams.size()
+		          << __E__;
 		return NOT_FOUND_IN_DATABASE;
 	}
 	//else valid remote login! so create active remote session object
@@ -3834,12 +3834,16 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers,
                                 const std::string&              message,
                                 bool                            doEmail)
 {
+	__COUT_INFO__ << __SYSTEM_ALERT_PREAMBLE__
+	              << StringMacros::vectorToString(targetUsers)
+	              << "': " << (subject.empty() ? "" : subject + ": ") << message << __E__;
+
 	systemMessageCleanup();
 
 	std::string fullMessage = StringMacros::encodeURIComponent(
 	    (subject == "" ? "" : (subject + ": ")) + message);
 
-	//	Note: do not printout message, because if it was a Console trigger, it will fire repeatedly
+	//	Note: the __COUT_INFO__ above uses __SYSTEM_ALERT_PREAMBLE__ which Console trigger matching filters out (prevents recursion)
 	std::cout << __COUT_HDR_FL__ << "addSystemMessage() fullMessage: " << fullMessage
 	          << __E__;
 	__COUTV__(StringMacros::vectorToString(targetUsers));

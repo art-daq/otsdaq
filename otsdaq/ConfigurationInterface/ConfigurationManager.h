@@ -34,8 +34,6 @@ class ConfigurationManager
 
 	//==============================================================================
 	/// Static members
-	static const unsigned int PROCESSOR_COUNT;
-
 	static const std::string READONLY_USER;
 	static const std::string ACTIVE_GROUPS_FILENAME;
 	static const std::string ALIAS_VERSION_PREAMBLE;
@@ -335,7 +333,7 @@ class ConfigurationManager
 
 
   protected:
-	TableBase*    						getVersionedTableByName		(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false);
+	TableBase*    						getVersionedTableByName		(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false, bool touchLastAccessTime = true);
 
 	std::string 										mfSubject_;
   private:

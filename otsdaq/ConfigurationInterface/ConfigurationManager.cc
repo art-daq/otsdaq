@@ -18,9 +18,6 @@ using namespace ots;
 
 // clang-format off
 
-///may return 0 when not able to detect number of processors
-const unsigned int 		ConfigurationManager::PROCESSOR_COUNT 						= std::thread::hardware_concurrency();
-
 const std::string 		ConfigurationManager::LAST_TABLE_GROUP_SAVE_PATH 			= ((getenv("SERVICE_DATA_PATH") == NULL)
 																						? (std::string(__ENV__("USER_DATA")) + "/ServiceData")
 																						: (std::string(__ENV__("SERVICE_DATA_PATH")))) +
@@ -1753,8 +1750,9 @@ void ConfigurationManager::loadMemberMap(
 
 	//Note: mongodb crashing from too many connections was resolved by increasing ulimit at mongodb launch
 	//	 i.e. ulimit -n 64000 && ./start_mongod.sh
-	const int numOfThreads =
-	    PROCESSOR_COUNT / 2 > memberMap.size() ? (PROCESSOR_COUNT / 2) : memberMap.size();
+	const int numOfThreads = StringMacros::getConcurrencyCount() / 2 < memberMap.size()
+	                             ? (StringMacros::getConcurrencyCount() / 2)
+	                             : memberMap.size();
 	if(memberMap.size() <= 2 /* i.e. is Context group */ || usingCache ||
 	   numOfThreads < 2)  // no multi-threading
 	{
@@ -1881,7 +1879,8 @@ void ConfigurationManager::loadMemberMap(
 	}
 	else  //multi-threading
 	{
-		__GEN_COUTT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads
+		__GEN_COUTT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount()
+		              << " ==> " << numOfThreads
 		              << " threads for loading member map of size " << memberMap.size()
 		              << __E__;
 
@@ -2488,8 +2487,9 @@ void ConfigurationManager::loadTableGroup(
 				if(progressBar)
 					progressBar->step();
 
-				const int numOfThreads = PROCESSOR_COUNT / 2;
-				__GEN_COUTT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
+				const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
+				__GEN_COUTT__ << " getConcurrencyCount "
+				              << StringMacros::getConcurrencyCount() << " ==> "
 				              << numOfThreads
 				              << " threads for initializing tables for Table Group '"
 				              << groupName << "(" << groupKey << ")'." << __E__;
@@ -2928,9 +2928,10 @@ void ConfigurationManager::copyTableGroupFromCache(
 		if(doActivate)
 		{
 			std::string accumulatedWarnings;
-			const int   numOfThreads = PROCESSOR_COUNT / 2;
-			__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
-			             << numOfThreads << " threads for initializing tables." << __E__;
+			const int   numOfThreads = StringMacros::getConcurrencyCount() / 2;
+			__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount()
+			             << " ==> " << numOfThreads << " threads for initializing tables."
+			             << __E__;
 			if(groupType != ConfigurationManager::GroupType::CONFIGURATION_TYPE ||
 			   numOfThreads < 2)  // no multi-threading
 			{
@@ -3451,7 +3452,8 @@ TableBase* ConfigurationManager::getVersionedTableByName(
     TableVersion       version,
     bool               looseColumnMatching /* = false */,
     std::string*       accumulatedErrors /* = 0 */,
-    bool               getRawData /* = false */)
+    bool               getRawData /* = false */,
+    bool               touchLastAccessTime /* = true */)
 {
 	auto it = nameToTableMap_.find(tableName);
 	if(it == nameToTableMap_.end())
@@ -3488,7 +3490,8 @@ TableBase* ConfigurationManager::getVersionedTableByName(
 		                   false /* resetConfiguration*/,  // false to not reset
 		                   looseColumnMatching,
 		                   getRawData,
-		                   accumulatedErrors);
+		                   accumulatedErrors,
+		                   touchLastAccessTime);
 	}
 	return table;
 }  // end getVersionedTableByName()

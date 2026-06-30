@@ -1,6 +1,7 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 
 #include <dirent.h>
+#include <chrono>
 
 using namespace ots;
 
@@ -17,6 +18,10 @@ using namespace ots;
 	    "/CoreTableInfoNames.dat"
 
 std::atomic<bool> ConfigurationManagerRW::firstTimeConstructed_ = true;
+
+std::mutex ConfigurationManagerRW::versionCreationTimeCacheMutex_;
+std::map<std::string, std::map<TableVersion, time_t>>
+    ConfigurationManagerRW::versionCreationTimeCache_;
 
 //==============================================================================
 /// ConfigurationManagerRW
@@ -233,9 +238,9 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 		char                fileExt[]         = TABLE_INFO_EXT;
 		const unsigned char MIN_TABLE_NAME_SZ = 3;
 
-		const int numOfThreads = PROCESSOR_COUNT / 2;
-		__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads
-		             << " threads." << __E__;
+		const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
+		__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount()
+		             << " ==> " << numOfThreads << " threads." << __E__;
 		if(numOfThreads < 2)  // no multi-threading
 		{
 			if((pDIR = opendir(path.c_str())) != 0)
@@ -563,8 +568,9 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 			// for each group get member map & comment, author, time, and type for latest key
 			if(getGroupInfo)
 			{
-				const int numOfThreads = PROCESSOR_COUNT / 2;
-				__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> "
+				const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
+				__GEN_COUT__ << " getConcurrencyCount "
+				             << StringMacros::getConcurrencyCount() << " ==> "
 				             << numOfThreads << " threads." << __E__;
 				if(numOfThreads < 2)  // no multi-threading
 					for(auto& groupInfo : allGroupInfo_)
@@ -1380,6 +1386,229 @@ TableBase* ConfigurationManagerRW::getTableByName(const std::string& tableName)
 }  // end getTableByName()
 
 //==============================================================================
+/// getVersionCreationTime
+///	Returns the creation time of a persistent table version from the process-wide
+///	cache (shared across all user sessions). On cache miss the version is loaded
+///	from the database once without stamping lastAccessTime.
+time_t ConfigurationManagerRW::getVersionCreationTime(const std::string& tableName,
+                                                      TableVersion       version)
+{
+	{  // check process-wide cache first (only immutable persistent versions are cached)
+		std::lock_guard<std::mutex> lock(versionCreationTimeCacheMutex_);
+
+		auto tableIt = versionCreationTimeCache_.find(tableName);
+		if(tableIt != versionCreationTimeCache_.end())
+		{
+			auto versionIt = tableIt->second.find(version);
+			if(versionIt != tableIt->second.end())
+				return versionIt->second;
+		}
+	}
+
+	std::string localAccumulatedErrors;
+	const auto  loadStartTime = std::chrono::steady_clock::now();
+	time_t      creationTime  = getVersionedTableByName(tableName,
+                                                  version,
+                                                  true /* looseColumnMatching */,
+                                                  &localAccumulatedErrors,
+                                                  false /* getRawData */,
+                                                  false /* touchLastAccessTime */)
+	                          ->getView(version)
+	                          .getCreationTime();
+
+	double loadSec =
+	    std::chrono::duration<double>(std::chrono::steady_clock::now() - loadStartTime)
+	        .count();
+	if(loadSec > 1.0)
+		__GEN_COUT_WARN__ << "Slow creation time lookup: table '" << tableName
+		                  << "' version v" << version << " load took " << loadSec << " s"
+		                  << __E__;
+
+	if(!version.isTemporaryVersion() && !version.isScratchVersion())
+	{
+		std::lock_guard<std::mutex> lock(versionCreationTimeCacheMutex_);
+		versionCreationTimeCache_[tableName][version] = creationTime;
+	}
+
+	return creationTime;
+}  // end getVersionCreationTime()
+
+//==============================================================================
+/// preloadVersionCreationTimes
+///	Loads, in parallel, the creation times of all persistent versions of all tables
+///	into the process-wide cache so that subsequent getVersionCreationTime() calls
+///	return immediately. Versions already cached are skipped.
+///	Work is parallelized at the per-version level with round-robin interleaving
+///	so that tables with many versions are spread across all threads.
+void ConfigurationManagerRW::preloadVersionCreationTimes(void)
+{
+	const auto preloadStartTime = std::chrono::steady_clock::now();
+
+	// Identify uncached versions grouped by table
+	std::vector<std::pair<std::string, std::vector<TableVersion>>> groupedWork;
+	size_t                                                         missingCount = 0;
+	{
+		std::lock_guard<std::mutex> lock(versionCreationTimeCacheMutex_);
+
+		for(const auto& tableInfoPair : allTableInfo_)
+		{
+			auto tableIt = versionCreationTimeCache_.find(tableInfoPair.first);
+
+			std::vector<TableVersion> missingVersions;
+			for(const auto& version : tableInfoPair.second.versions_)
+			{
+				if(version.isTemporaryVersion() || version.isScratchVersion())
+					continue;
+				if(tableIt != versionCreationTimeCache_.end() &&
+				   tableIt->second.find(version) != tableIt->second.end())
+					continue;
+				missingVersions.push_back(version);
+			}
+			if(missingVersions.size())
+			{
+				missingCount += missingVersions.size();
+				groupedWork.emplace_back(tableInfoPair.first, std::move(missingVersions));
+			}
+		}
+	}
+	if(groupedWork.empty())
+		return;
+
+	// Round-robin interleave so large tables are spread across all threads
+	std::vector<std::pair<std::string, TableVersion>> flatWork;
+	flatWork.reserve(missingCount);
+	{
+		size_t maxVersions = 0;
+		for(const auto& gw : groupedWork)
+			if(gw.second.size() > maxVersions)
+				maxVersions = gw.second.size();
+		for(size_t vi = 0; vi < maxVersions; ++vi)
+			for(const auto& gw : groupedWork)
+				if(vi < gw.second.size())
+					flatWork.emplace_back(gw.first, gw.second[vi]);
+	}
+
+	__GEN_COUT__ << "preloadVersionCreationTimes() loading " << missingCount
+	             << " version creation times for " << groupedWork.size() << " tables..."
+	             << __E__;
+
+	int numOfThreads = StringMacros::getConcurrencyCount() / 2;
+	if(numOfThreads > (int)flatWork.size())
+		numOfThreads = flatWork.size();
+
+	if(numOfThreads < 2)
+	{
+		for(const auto& work : flatWork)
+		{
+			try
+			{
+				getVersionCreationTime(work.first, work.second);
+			}
+			catch(...)
+			{
+				__GEN_COUT__ << "Failed to get creation time for table '" << work.first
+				             << "' version v" << work.second << ", skipping." << __E__;
+			}
+		}
+	}
+	else
+	{
+		std::atomic<size_t>      workIndex(0);
+		std::vector<std::thread> threads;
+		auto*                    iface = theInterface_;
+
+		for(int i = 0; i < numOfThreads; ++i)
+			threads.emplace_back([iface, &workIndex, &flatWork, this]() {
+				std::map<std::string, TableBase*> localTables;
+
+				try
+				{
+					size_t w;
+					while((w = workIndex++) < flatWork.size())
+					{
+						const auto& tableName = flatWork[w].first;
+						const auto& version   = flatWork[w].second;
+
+						try
+						{
+							TableBase*& table = localTables[tableName];
+							if(!table)
+							{
+								std::string localAccumulatedErrors;
+								table = new TableBase(tableName, &localAccumulatedErrors);
+							}
+
+							std::string localAccumulatedErrors;
+							iface->get(table,
+							           tableName,
+							           0 /* groupKey */,
+							           0 /* groupName */,
+							           false /* dontFill */,
+							           version,
+							           true /* resetConfiguration */,
+							           true /* looseColumnMatching */,
+							           false /* rawDataOnly */,
+							           &localAccumulatedErrors,
+							           false /* touchLastAccessTime */);
+
+							time_t creationTime =
+							    table->getView(version).getCreationTime();
+
+							{
+								std::lock_guard<std::mutex> lock(
+								    versionCreationTimeCacheMutex_);
+								versionCreationTimeCache_[tableName][version] =
+								    creationTime;
+							}
+						}
+						catch(...)
+						{
+							__GEN_COUT__ << "Failed to get creation time for table '"
+							             << tableName << "' version v" << version
+							             << ", skipping." << __E__;
+						}
+					}
+				}
+				catch(...)
+				{
+					__GEN_COUT_ERR__ << "Unexpected error in preload thread." << __E__;
+				}
+
+				for(auto& pair : localTables)
+					if(pair.second)
+						delete pair.second;
+			});
+
+		for(auto& thread : threads)
+			thread.join();
+	}
+
+	__GEN_COUT__ << "preloadVersionCreationTimes() loaded " << missingCount
+	             << " version creation times with " << numOfThreads << " thread(s) in "
+	             << std::chrono::duration<double>(std::chrono::steady_clock::now() -
+	                                              preloadStartTime)
+	                    .count()
+	             << " s" << __E__;
+}  // end preloadVersionCreationTimes()
+
+//==============================================================================
+/// getVersionLastAccessTime
+///	returns the last time a specific table version was loaded ("Last Load") by this
+///	process, or 0 if the version is not currently in the table's version cache
+///	(i.e. never loaded, or evicted by TableBase::trimCache()).
+///	Note: lastAccessTime is in-memory only (not persisted to the database), so this
+///	never triggers a database load.
+time_t ConfigurationManagerRW::getVersionLastAccessTime(const std::string& tableName,
+                                                        TableVersion       version)
+{
+	auto it = nameToTableMap_.find(tableName);
+	if(it == nameToTableMap_.end() || !it->second->isStored(version))
+		return 0;  // never loaded (or evicted from cache) by this process
+
+	return it->second->getView(version).getLastAccessTime();
+}  // end getVersionLastAccessTime()
+
+//==============================================================================
 /// saveNewTable
 ///	saves version, makes the new version the active version, and returns new version
 TableVersion ConfigurationManagerRW::saveNewTable(const std::string& tableName,
@@ -1671,9 +1900,9 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 
 	// have min key to check, now loop through and check groups
 
-	const int numOfThreads = PROCESSOR_COUNT / 2;
-	__GEN_COUT__ << " PROCESSOR_COUNT " << PROCESSOR_COUNT << " ==> " << numOfThreads
-	             << " threads." << __E__;
+	const int numOfThreads = StringMacros::getConcurrencyCount() / 2;
+	__GEN_COUT__ << " getConcurrencyCount " << StringMacros::getConcurrencyCount()
+	             << " ==> " << numOfThreads << " threads." << __E__;
 	if(numOfThreads < 2)  // no multi-threading
 	{
 		std::map<std::string /*name*/, TableVersion /*version*/> compareToMemberMap;
