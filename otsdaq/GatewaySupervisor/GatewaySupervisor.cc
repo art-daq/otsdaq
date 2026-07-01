@@ -3722,9 +3722,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							}
 							catch(...)
 							{
-								__COUT_ERR__
-								    << "Failed to apply context common tables."
-								    << __E__;
+								__COUT_ERR__ << "Failed to apply context common tables."
+								             << __E__;
 							}
 						}
 					}
