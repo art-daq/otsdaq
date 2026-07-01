@@ -90,6 +90,8 @@ const std::string 		ConfigurationManager::ALIAS_VERSION_PREAMBLE 					= "ALIAS:"
 const std::string 		ConfigurationManager::SCRATCH_VERSION_ALIAS  					= "Scratch";
 const std::string 		ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS			= "SubsystemCommon";
 const std::string 		ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS	= "SubsystemCommonOverride";
+const std::string 		ConfigurationManager::SUBSYSTEM_COMMON_CONTEXT_VERSION_ALIAS			= "SubsystemCommonContext";
+const std::string 		ConfigurationManager::SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_VERSION_ALIAS	= "SubsystemCommonContextOverride";
 
 
 const std::string 		ConfigurationManager::GROUP_TYPE_NAME_CONTEXT       		= "Context";
@@ -4125,6 +4127,23 @@ ConfigurationManager::getVersionAliases(void) const
 			continue;  // skip repeats (Note: this also prevents overwriting of Scratch
 			           // alias)
 
+		// validate that SubsystemCommonContext aliases only reference Context group tables
+		if(versionAlias == SUBSYSTEM_COMMON_CONTEXT_VERSION_ALIAS ||
+		   versionAlias == SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_VERSION_ALIAS)
+		{
+			if(fixedContextMemberNames_.find(tableName) == fixedContextMemberNames_.end())
+			{
+				__SS__ << "Version alias '" << versionAlias
+				       << "' for table '" << tableName
+				       << "' is invalid! '" << versionAlias
+				       << "' aliases may only reference Context group tables. "
+				       << "Valid Context group tables are: "
+				       << StringMacros::setToString(fixedContextMemberNames_)
+				       << __E__;
+				__SS_THROW__;
+			}
+		}
+
 		// else add version to map
 		retMap[tableName][versionAlias] =
 		    TableVersion(aliasNodePair.second.getNode("Version").getValueAsString());
@@ -4132,6 +4151,114 @@ ConfigurationManager::getVersionAliases(void) const
 
 	return retMap;
 }  // end getVersionAliases()
+
+//==============================================================================
+/// applyContextCommonTables
+///	Apply Context Common Table overrides and merge-ins to already-active tables.
+///	Used by remote subsystems to dynamically update Context group tables
+///	(e.g. StateMachineTable) from the top-level Gateway via periodic status requests.
+///	Override tables use REPLACE approach; merge-in tables use SKIP approach.
+void ConfigurationManager::applyContextCommonTables(
+    const std::map<std::string /*tableName*/, TableVersion>& mergeInTables,
+    const std::map<std::string /*tableName*/, TableVersion>& overrideTables)
+{
+	__GEN_COUT__ << "Applying Context Common Tables..." << __E__;
+
+	if(overrideTables.size())
+	{
+		__GEN_COUT__ << "Context overriding tables: "
+		             << StringMacros::mapToString(overrideTables) << __E__;
+
+		std::map<std::pair<std::string, std::string>, std::string> uidConversionMap;
+		std::map<std::pair<std::string, std::pair<std::string, std::string>>, std::string> groupidConversionMap;
+
+		for(const auto& overridePair : overrideTables)
+		{
+			if(nameToTableMap_.find(overridePair.first) == nameToTableMap_.end())
+			{
+				__GEN_COUT__ << "Skipping context override of table '" << overridePair.first
+				             << "-v" << overridePair.second
+				             << "' which is not loaded." << __E__;
+				continue;
+			}
+
+			TableVersion activeVersion = nameToTableMap_.at(overridePair.first)->getView().getVersion();
+			__GEN_COUT__ << "Context overriding table '" << overridePair.first
+			             << "' v" << activeVersion
+			             << " with version v" << overridePair.second << __E__;
+
+			std::stringstream mergeReport;
+			TableVersion newVersion =
+			    nameToTableMap_.at(overridePair.first)
+			        ->mergeViews(
+			            getVersionedTableByName(overridePair.first, activeVersion)->getView(),
+			            getVersionedTableByName(overridePair.first, overridePair.second)->getView(),
+			            TableVersion(),
+			            "context-override-table",
+			            TableBase::MergeApproach::REPLACE,
+			            uidConversionMap,
+			            groupidConversionMap,
+			            false /* fillRecordConversionMaps */,
+			            true /* applyRecordConversionMaps */,
+			            false /* generateUniqueDataColumns */,
+			            &mergeReport);
+
+			nameToTableMap_.at(overridePair.first)->setActiveView(newVersion);
+			__GEN_COUT__ << "Context override applied: '" << overridePair.first
+			             << "' resulting version v" << newVersion << __E__;
+		}
+	}
+
+	if(mergeInTables.size())
+	{
+		__GEN_COUT__ << "Context merging-in tables: "
+		             << StringMacros::mapToString(mergeInTables) << __E__;
+
+		std::map<std::pair<std::string, std::string>, std::string> uidConversionMap;
+		std::map<std::pair<std::string, std::pair<std::string, std::string>>, std::string> groupidConversionMap;
+
+		for(const auto& mergeInPair : mergeInTables)
+		{
+			if(overrideTables.find(mergeInPair.first) != overrideTables.end())
+				continue;
+
+			if(nameToTableMap_.find(mergeInPair.first) == nameToTableMap_.end())
+			{
+				__GEN_COUT__ << "Skipping context merge-in of table '" << mergeInPair.first
+				             << "-v" << mergeInPair.second
+				             << "' which is not loaded." << __E__;
+				continue;
+			}
+
+			TableVersion activeVersion = nameToTableMap_.at(mergeInPair.first)->getView().getVersion();
+			__GEN_COUT__ << "Context merging-in table '" << mergeInPair.first
+			             << "' v" << activeVersion
+			             << " with version v" << mergeInPair.second << __E__;
+
+			std::stringstream mergeReport;
+			TableVersion newVersion =
+			    nameToTableMap_.at(mergeInPair.first)
+			        ->mergeViews(
+			            getVersionedTableByName(mergeInPair.first, activeVersion)->getView(),
+			            getVersionedTableByName(mergeInPair.first, mergeInPair.second)->getView(),
+			            TableVersion(),
+			            "context-merge-in-table",
+			            TableBase::MergeApproach::SKIP,
+			            uidConversionMap,
+			            groupidConversionMap,
+			            false /* fillRecordConversionMaps */,
+			            true /* applyRecordConversionMaps */,
+			            false /* generateUniqueDataColumns */,
+			            &mergeReport);
+
+			nameToTableMap_.at(mergeInPair.first)->setActiveView(newVersion);
+			__GEN_COUT__ << "Context merge-in applied: '" << mergeInPair.first
+			             << "' resulting version v" << newVersion << __E__;
+		}
+	}
+
+	__GEN_COUT__ << "Done applying Context Common Tables." << __E__;
+}  // end applyContextCommonTables()
 
 //==============================================================================
 /// getActiveVersions

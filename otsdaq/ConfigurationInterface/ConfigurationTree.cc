@@ -563,16 +563,16 @@ void ConfigurationTree::getValueAsBitMap(
 				}
 			}  //ene main string parsing loop
 
-			if(TTEST(1))
+			if(TTEST(2))
 			{
 				for(unsigned int r = 0; r < bitmap.bitmap_.size(); ++r)
 				{
 					for(unsigned int c = 0; c < bitmap.bitmap_[r].size(); ++c)
 					{
-						__COUTT__ << r << "," << c << " = " << bitmap.bitmap_[r][c]
+						__COUTS__(2) << r << "," << c << " = " << bitmap.bitmap_[r][c]
 						          << __E__;
 					}
-					__COUTT__ << "================" << __E__;
+					__COUTS__(2) << "================" << __E__;
 				}
 			}
 		}

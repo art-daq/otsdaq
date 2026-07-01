@@ -1611,12 +1611,14 @@ TableVersion TableBase::mergeViews(
 			found = false;
 
 			for(destRow = 0; destRow < destSize; ++destRow)
+			{
 				if(destinationView->getValueAsString(destRow, colUID) ==
 				   sourceViewB.getValueAsString(rb, colUID))
 				{
 					found = true;
 					break;
 				}
+			}
 			if(!found)  // no conflict
 			{
 				__COUT__ << "No "
@@ -1633,10 +1635,11 @@ TableVersion TableBase::mergeViews(
 					// copy row from B to new row
 					destinationView->copyRows(
 					    author, sourceViewB, rb, 1 /*srcRowsToCopy*/);
+					++destSize;
 				}
-				else
 
-					continue;
+				continue;
+
 			}  // end no-conflict handling
 
 			// if here, then there was a conflict
@@ -1665,6 +1668,7 @@ TableVersion TableBase::mergeViews(
 				// append the B record now
 				// copy row from B to new row
 				destinationView->copyRows(author, sourceViewB, rb, 1 /*srcRowsToCopy*/);
+				++destSize;
 			}
 			else if(mergeApproach ==
 			        MergeApproach::SKIP)  // then do nothing with conflicting B record
