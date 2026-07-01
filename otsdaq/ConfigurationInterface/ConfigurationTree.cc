@@ -569,8 +569,8 @@ void ConfigurationTree::getValueAsBitMap(
 				{
 					for(unsigned int c = 0; c < bitmap.bitmap_[r].size(); ++c)
 					{
-						__COUTS__(2) << r << "," << c << " = " << bitmap.bitmap_[r][c]
-						          << __E__;
+						__COUTS__(2)
+						    << r << "," << c << " = " << bitmap.bitmap_[r][c] << __E__;
 					}
 					__COUTS__(2) << "================" << __E__;
 				}
