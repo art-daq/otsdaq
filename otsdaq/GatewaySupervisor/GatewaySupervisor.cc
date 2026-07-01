@@ -3187,10 +3187,6 @@ try
 		                 StringMacros::encodeURIComponent(contextCommonList);
 		requestString += "|" + COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE +
 		                 StringMacros::encodeURIComponent(contextCommonOverrideList);
-		__COUT__ << "DEBUG-CTX-COMMON CheckRemoteGateway sending to '"
-		         << remoteGatewayApp.appInfo.name << "' contextCommonList='"
-		         << contextCommonList << "' contextCommonOverrideList='"
-		         << contextCommonOverrideList << "'" << __E__;
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "requestString = " << requestString << __E__;
 
@@ -3455,36 +3451,16 @@ void GatewaySupervisor::applyContextCommonTables(
 	if(!contextCommonOverrideList.empty())
 		StringMacros::getMapFromString(contextCommonOverrideList, overrideTables);
 
-	__COUT__ << "DEBUG-CTX-COMMON applyContextCommonTables mergeInTables.size()="
-	         << mergeInTables.size() << " overrideTables.size()=" << overrideTables.size()
-	         << __E__;
-	for(const auto& t : mergeInTables)
-		__COUT__ << "DEBUG-CTX-COMMON   mergeIn: " << t.first << " v" << t.second
-		         << __E__;
-	for(const auto& t : overrideTables)
-		__COUT__ << "DEBUG-CTX-COMMON   override: " << t.first << " v" << t.second
-		         << __E__;
-
-	__COUT__ << "DEBUG-CTX-COMMON Restoring original Context group tables before "
-	            "applying overrides..."
-	         << __E__;
 	supervisor->CorePropertySupervisorBase::theConfigurationManager_
 	    ->restoreActiveTableGroups(
 	        false /*throwErrors*/,
 	        "" /*pathToActiveGroupsFile*/,
 	        ConfigurationManager::LoadGroupType::ONLY_BACKBONE_OR_CONTEXT_TYPES);
-	__COUT__ << "DEBUG-CTX-COMMON Original Context group tables restored." << __E__;
-
 	if(mergeInTables.empty() && overrideTables.empty())
-	{
-		__COUT__ << "DEBUG-CTX-COMMON No Context Common Tables to apply." << __E__;
 		return;
-	}
 
 	supervisor->CorePropertySupervisorBase::theConfigurationManager_
 	    ->applyContextCommonTables(mergeInTables, overrideTables);
-	__COUT__ << "DEBUG-CTX-COMMON applyContextCommonTables completed successfully."
-	         << __E__;
 }  //end applyContextCommonTables()
 
 //==============================================================================
@@ -3691,15 +3667,6 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					}
 
 					//handle Context Common Table data from pipe-delimited sections
-					__COUT__
-					    << "DEBUG-CTX-COMMON remote pipeSectionsXML.size()="
-					    << pipeSectionsXML.size() << " remoteLoginVerificationEnabled="
-					    << theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_
-					    << __E__;
-					for(size_t pi = 0; pi < pipeSectionsXML.size(); ++pi)
-						__COUT__ << "DEBUG-CTX-COMMON remote pipeSectionsXML[" << pi
-						         << "]='" << pipeSectionsXML[pi] << "'" << __E__;
-
 					if(pipeSectionsXML.size() &&
 					   theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_)
 					{
@@ -3722,20 +3689,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								            .length()));
 						}
 
-						__COUT__ << "DEBUG-CTX-COMMON remote parsed contextCommonList='"
-						         << contextCommonList << "' contextCommonOverrideList='"
-						         << contextCommonOverrideList << "'" << __E__;
-
 						bool changed = false;
 						{
 							std::lock_guard<std::mutex> lock(
 							    theSupervisor->contextCommonMutex_);
-							__COUT__
-							    << "DEBUG-CTX-COMMON remote appliedContextCommonList='"
-							    << theSupervisor->appliedContextCommonList_
-							    << "' appliedContextCommonOverrideList='"
-							    << theSupervisor->appliedContextCommonOverrideList_ << "'"
-							    << __E__;
 							if(contextCommonList !=
 							       theSupervisor->appliedContextCommonList_ ||
 							   contextCommonOverrideList !=
@@ -3743,18 +3700,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								changed = true;
 						}
 
-						__COUT__ << "DEBUG-CTX-COMMON remote changed=" << changed
-						         << " isInTransition="
-						         << theSupervisor->theStateMachine_.isInTransition()
-						         << __E__;
-
 						if(changed && !theSupervisor->theStateMachine_.isInTransition())
 						{
 							try
 							{
-								__COUT__ << "DEBUG-CTX-COMMON remote APPLYING context "
-								            "common tables..."
-								         << __E__;
 								GatewaySupervisor::applyContextCommonTables(
 								    theSupervisor,
 								    contextCommonList,
@@ -3765,29 +3714,20 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								    contextCommonList;
 								theSupervisor->appliedContextCommonOverrideList_ =
 								    contextCommonOverrideList;
-								__COUT__
-								    << "DEBUG-CTX-COMMON remote APPLIED successfully."
-								    << __E__;
 							}
 							catch(const std::exception& e)
 							{
-								__COUT_ERR__ << "DEBUG-CTX-COMMON remote APPLY FAILED: "
+								__COUT_ERR__ << "Failed to apply context common tables: "
 								             << e.what() << __E__;
 							}
 							catch(...)
 							{
 								__COUT_ERR__
-								    << "DEBUG-CTX-COMMON remote APPLY FAILED (unknown)."
+								    << "Failed to apply context common tables."
 								    << __E__;
 							}
 						}
 					}
-					else
-						__COUT__
-						    << "DEBUG-CTX-COMMON remote SKIPPED (pipeSections="
-						    << pipeSectionsXML.size() << ", remoteLoginEnabled="
-						    << theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_
-						    << ")" << __E__;
 
 					XmlDocument xmlOut;
 					auto        rootNode = xmlOut.getRootElement();
@@ -13295,38 +13235,17 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
 
 	try
 	{
-		auto smTable =
-		    CorePropertySupervisorBase::theConfigurationManager_->getTableByName(
-		        "StateMachineTable");
-		__COUT__ << "DEBUG-FSM-NAMES StateMachineTable active version="
-		         << smTable->getViewVersion()
-		         << " rows=" << smTable->getView().getNumberOfRows() << __E__;
-
 		auto fsmNodes =
 		    CorePropertySupervisorBase::theConfigurationManager_
 		        ->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_)
 		        .getNode("LinkToStateMachineTable")
 		        .getChildren();
-		std::string fsmNameList;
 		for(const auto& fsmNode : fsmNodes)
-		{
 			xmlOut.addTextElementToData("stateMachineName", fsmNode.first);
-			if(fsmNameList.size())
-				fsmNameList += ",";
-			fsmNameList += fsmNode.first;
-		}
-		__COUT__ << "DEBUG-FSM-NAMES addStateMachineStatusToXML emitting: " << fsmNameList
-		         << __E__;
-	}
-	catch(const std::exception& e)
-	{
-		__COUT__ << "DEBUG-FSM-NAMES addStateMachineStatusToXML exception: " << e.what()
-		         << __E__;
 	}
 	catch(...)
 	{
-		__COUT__ << "DEBUG-FSM-NAMES addStateMachineStatusToXML unknown exception"
-		         << __E__;
+		__COUTS__(2) << "Failed to add state machine names to XML status." << __E__;
 	}
 }  // end addStateMachineStatusToXML()
 
