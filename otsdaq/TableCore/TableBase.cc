@@ -1091,7 +1091,7 @@ TableVersion TableBase::mergeViews(
 				continue;
 
 			__COUTT__ << "Have an ID column: " << cb << " "
-			         << sourceViewA.getColumnInfo(cb).getType() << __E__;
+			          << sourceViewA.getColumnInfo(cb).getType() << __E__;
 
 			// at this point we have an ID column, verify B and mockup are the same
 			if(sourceViewA.getColumnInfo(cb).getType() !=
@@ -1127,7 +1127,7 @@ TableVersion TableBase::mergeViews(
 
 					// if here, found conflict
 					__COUTT__ << "found conflict: " << getTableName() << "/" << bGroupid
-					         << __E__;
+					          << __E__;
 
 					// extract starting uniqueId number
 					{
@@ -1245,7 +1245,7 @@ TableVersion TableBase::mergeViews(
 
 					// found conflict
 					__COUTT__ << "found conflict: " << getTableName() << "/"
-					         << sourceViewB.getDataView()[rb][cb] << __E__;
+					          << sourceViewB.getDataView()[rb][cb] << __E__;
 
 					// extract starting uniqueId number
 					{
@@ -1364,13 +1364,13 @@ TableVersion TableBase::mergeViews(
 	destinationVersion = createTemporaryView(TableVersion(), destinationVersion);
 
 	__COUTT__ << "Merging from (A) " << sourceViewA.getTableName() << "_v"
-	         << sourceViewA.getVersion() << " and (B) " << sourceViewB.getTableName()
-	         << "_v" << sourceViewB.getVersion() << "  to " << getTableName() << "_v"
-	         << destinationVersion << " with approach '"
-	         << (mergeApproach == MergeApproach::RENAME
-	                 ? "RENAME"
-	                 : (mergeApproach == MergeApproach::REPLACE ? "REPLACE" : "SKIP"))
-	         << "'" << __E__;
+	          << sourceViewA.getVersion() << " and (B) " << sourceViewB.getTableName()
+	          << "_v" << sourceViewB.getVersion() << "  to " << getTableName() << "_v"
+	          << destinationVersion << " with approach '"
+	          << (mergeApproach == MergeApproach::RENAME
+	                  ? "RENAME"
+	                  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE" : "SKIP"))
+	          << "'" << __E__;
 
 	// if the merge fails then delete the destinationVersion view
 	try
@@ -1441,8 +1441,8 @@ TableVersion TableBase::mergeViews(
 						                rb, linkPair.second)))) != uidConversionMap.end())
 						{
 							__COUTT__ << "Found entry to remap: "
-							         << sourceViewB.getDataView()[rb][linkPair.second]
-							         << " ==> " << uidConversionIt->second << __E__;
+							          << sourceViewB.getDataView()[rb][linkPair.second]
+							          << " ==> " << uidConversionIt->second << __E__;
 
 							if(mergeReport)
 								(*mergeReport)
@@ -1476,8 +1476,8 @@ TableVersion TableBase::mergeViews(
 						   groupidConversionMap.end())
 						{
 							__COUTT__ << "Found entry to remap: "
-							         << sourceViewB.getDataView()[rb][linkPair.second]
-							         << " ==> " << groupidConversionIt->second << __E__;
+							          << sourceViewB.getDataView()[rb][linkPair.second]
+							          << " ==> " << groupidConversionIt->second << __E__;
 
 							if(mergeReport)
 								(*mergeReport)
@@ -1503,8 +1503,8 @@ TableVersion TableBase::mergeViews(
 						   uidConversionMap.end())
 						{
 							__COUTT__ << "Found entry to remap: "
-							         << sourceViewB.getDataView()[rb][cb] << " ==> "
-							         << uidConversionIt->second << __E__;
+							          << sourceViewB.getDataView()[rb][cb] << " ==> "
+							          << uidConversionIt->second << __E__;
 
 							if(mergeReport)
 								(*mergeReport)
@@ -1533,8 +1533,8 @@ TableVersion TableBase::mergeViews(
 						   groupidConversionMap.end())
 						{
 							__COUTT__ << "Found entry to remap: "
-							         << sourceViewB.getDataView()[rb][cb] << " ==> "
-							         << groupidConversionIt->second << __E__;
+							          << sourceViewB.getDataView()[rb][cb] << " ==> "
+							          << groupidConversionIt->second << __E__;
 
 							if(mergeReport)
 								(*mergeReport)
@@ -1564,10 +1564,10 @@ TableVersion TableBase::mergeViews(
 								   std::string::npos)
 								{
 									__COUTT__ << "Found a text link match (stri=" << stri
-									         << ")! "
-									         << (mapPairToPair.first.first + "/" +
-									             mapPairToPair.first.second)
-									         << " ==> " << mapPairToPair.second << __E__;
+									          << ")! "
+									          << (mapPairToPair.first.first + "/" +
+									              mapPairToPair.first.second)
+									          << " ==> " << mapPairToPair.second << __E__;
 
 									// insert mapped substitution into string
 									destinationView->setValueAsString(
@@ -1622,11 +1622,11 @@ TableVersion TableBase::mergeViews(
 			if(!found)  // no conflict
 			{
 				__COUTT__ << "No "
-				         << (mergeApproach == MergeApproach::RENAME
-				                 ? "RENAME"
-				                 : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
-				                                                            : "SKIP"))
-				         << " conflict: " << __E__;
+				          << (mergeApproach == MergeApproach::RENAME
+				                  ? "RENAME"
+				                  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+				                                                             : "SKIP"))
+				          << " conflict: " << __E__;
 
 				if(mergeApproach == MergeApproach::REPLACE ||
 				   mergeApproach == MergeApproach::SKIP)
@@ -1645,11 +1645,11 @@ TableVersion TableBase::mergeViews(
 			// if here, then there was a conflict
 
 			__COUTT__ << "found "
-			         << (mergeApproach == MergeApproach::RENAME
-			                 ? "RENAME"
-			                 : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
-			                                                            : "SKIP"))
-			         << " conflict: " << sourceViewB.getDataView()[rb][colUID] << __E__;
+			          << (mergeApproach == MergeApproach::RENAME
+			                  ? "RENAME"
+			                  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+			                                                             : "SKIP"))
+			          << " conflict: " << sourceViewB.getDataView()[rb][colUID] << __E__;
 
 			if(mergeApproach == MergeApproach::REPLACE)
 			{
