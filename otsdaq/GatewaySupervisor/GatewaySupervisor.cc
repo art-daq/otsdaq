@@ -1476,9 +1476,9 @@ try
 						{
 						}
 						theSupervisor->activeSubsystemCommonContextList_ =
-						    contextCommonList;
+						    theSupervisor->cachedSubsystemCommonContextList_;
 						theSupervisor->activeSubsystemCommonContextOverrideList_ =
-						    contextCommonOverrideList;
+						    theSupervisor->cachedSubsystemCommonContextOverrideList_;
 					}
 					contextCommonList = theSupervisor->cachedSubsystemCommonContextList_;
 					contextCommonOverrideList =
