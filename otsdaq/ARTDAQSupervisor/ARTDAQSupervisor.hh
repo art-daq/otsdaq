@@ -52,6 +52,11 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	virtual void transitionStopping(toolbox::Event::Reference event) override;
 	virtual void enteringError(toolbox::Event::Reference event) override;
 
+	void request(const std::string&               requestType,
+	             cgicc::Cgicc&                    cgiIn,
+	             HttpXmlDocument&                 xmlOut,
+	             const WebUsers::RequestUserInfo& userInfo) override;
+
 	virtual std::vector<SupervisorInfo::SubappInfo> getSubappInfo(void) override;
 	virtual std::string                             getStatusProgressDetail(void) override
 	{
@@ -80,6 +85,15 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	static std::list<std::string> tokenize_(std::string const& input);
 
   private:
+	void forceSupervisorPropertyValues(void) override;
+	void        initArtdaqSystemVariables();
+	void        saveArtdaqSystemVariables();
+	void        loadArtdaqSystemVariables();
+	std::string getServiceDataFilePath() const;
+
+	static const std::string ARTDAQ_SYSVAR_NAMESPACE;
+	static const std::string ARTDAQ_SYSVAR_PERSISTENCE_FILE;
+
 	void configuringThread(void);
 	void startingThread(void);
 

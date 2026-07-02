@@ -19,13 +19,21 @@
 #include <signal.h>
 #include <cerrno>
 #include <cstring>
+#include <fstream>
 #include <regex>
+
+#include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
+#include "otsdaq/Macros/StringMacros.h"
+#include "otsdaq/TableCore/TableBase.h"
 
 #define OUT_ON_ERR_SIZE 2000  //tail size of output to include on error
 
 using namespace ots;
 
 XDAQ_INSTANTIATOR_IMPL(ARTDAQSupervisor)
+
+const std::string ARTDAQSupervisor::ARTDAQ_SYSVAR_NAMESPACE        = "artdaq";
+const std::string ARTDAQSupervisor::ARTDAQ_SYSVAR_PERSISTENCE_FILE = "ArtdaqSystemVariables.dat";
 
 #define FAKE_CONFIG_NAME "ots_config"
 #define DAQINTERFACE_PORT                    \
@@ -540,6 +548,9 @@ void ARTDAQSupervisor::init(void)
 		// }
 	}
 	start_runner_();
+
+	initArtdaqSystemVariables();
+
 	__SUP_COUT__ << "Initialized." << __E__;
 }  // end init()
 
@@ -547,6 +558,8 @@ void ARTDAQSupervisor::init(void)
 void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 {
 	__SUP_COUTT__ << "transitionConfiguring" << __E__;
+
+	loadArtdaqSystemVariables();
 
 	// activate the configuration tree (the first iteration)
 	if(RunControlStateMachine::getIterationIndex() == 0 &&
@@ -2141,3 +2154,166 @@ void ots::ARTDAQSupervisor::start_runner_()
 	runner_thread_ =
 	    std::make_unique<std::thread>(&ots::ARTDAQSupervisor::daqinterfaceRunner_, this);
 }  // end start_runner_()
+
+//==============================================================================
+std::string ARTDAQSupervisor::getServiceDataFilePath() const
+{
+	return std::string(__ENV__("USER_DATA")) + "/ServiceData/" +
+	       ARTDAQ_SYSVAR_PERSISTENCE_FILE;
+}  // end getServiceDataFilePath()
+
+//==============================================================================
+void ARTDAQSupervisor::initArtdaqSystemVariables()
+{
+	loadArtdaqSystemVariables();
+
+	auto& ns = StringMacros::systemVariables_[ARTDAQ_SYSVAR_NAMESPACE];
+	__SUP_COUT__ << "Artdaq system variables initialized: "
+	             << StringMacros::mapToString(ns) << __E__;
+}  // end initArtdaqSystemVariables()
+
+//==============================================================================
+void ARTDAQSupervisor::loadArtdaqSystemVariables()
+{
+	std::string filePath = getServiceDataFilePath();
+	std::ifstream file(filePath);
+	if(!file.is_open())
+	{
+		__SUP_COUT__ << "No persisted artdaq system variables file found at "
+		             << filePath << __E__;
+		return;
+	}
+
+	auto& ns = StringMacros::systemVariables_[ARTDAQ_SYSVAR_NAMESPACE];
+	std::string line;
+	while(std::getline(file, line))
+	{
+		size_t eqPos = line.find('=');
+		if(eqPos == std::string::npos)
+			continue;
+		std::string key   = line.substr(0, eqPos);
+		std::string value = line.substr(eqPos + 1);
+		ns[key] = value;
+	}
+	__SUP_COUT__ << "Loaded artdaq system variables from " << filePath << __E__;
+}  // end loadArtdaqSystemVariables()
+
+//==============================================================================
+void ARTDAQSupervisor::saveArtdaqSystemVariables()
+{
+	std::string filePath = getServiceDataFilePath();
+	std::ofstream file(filePath);
+	if(!file.is_open())
+	{
+		__SUP_SS__ << "Failed to open file for writing artdaq system variables: "
+		           << filePath << __E__;
+		__SUP_SS_THROW__;
+	}
+
+	for(auto& [key, value] :
+	    StringMacros::systemVariables_[ARTDAQ_SYSVAR_NAMESPACE])
+		file << key << "=" << value << "\n";
+
+	__SUP_COUT__ << "Saved artdaq system variables to " << filePath << __E__;
+}  // end saveArtdaqSystemVariables()
+
+//==============================================================================
+void ARTDAQSupervisor::forceSupervisorPropertyValues(void)
+{
+	CorePropertySupervisorBase::addSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.AutomatedRequestTypes,
+	    "getSystemVariables | getJsonDocuments");
+}  // end forceSupervisorPropertyValues()
+
+//==============================================================================
+void ARTDAQSupervisor::request(const std::string&               requestType,
+                               cgicc::Cgicc&                    cgiIn,
+                               HttpXmlDocument&                 xmlOut,
+                               const WebUsers::RequestUserInfo& /*userInfo*/)
+try
+{
+	__SUP_COUT__ << "ARTDAQSupervisor request: " << requestType << __E__;
+
+	if(requestType == "getSystemVariables")
+	{
+		for(auto& [key, value] :
+		    StringMacros::systemVariables_[ARTDAQ_SYSVAR_NAMESPACE])
+			xmlOut.addTextElementToData("artdaq_" + key, value);
+	}
+	else if(requestType == "setSystemVariable")
+	{
+		std::string key   = CgiDataUtilities::postData(cgiIn, "key");
+		std::string value = CgiDataUtilities::postData(cgiIn, "value");
+
+		if(key.empty())
+		{
+			xmlOut.addTextElementToData("Error", "Variable key must not be empty.");
+			return;
+		}
+		for(char c : key)
+			if(!std::isalnum(c) && c != '_')
+			{
+				xmlOut.addTextElementToData(
+				    "Error",
+				    "Variable key must contain only alphanumeric characters and "
+				    "underscores.");
+				return;
+			}
+
+		StringMacros::systemVariables_[ARTDAQ_SYSVAR_NAMESPACE][key] = value;
+		saveArtdaqSystemVariables();
+
+		__SUP_COUT__ << "Set artdaq system variable " << key << " = " << value
+		             << __E__;
+		xmlOut.addTextElementToData("Success", "Variable '" + key + "' set.");
+	}
+	else if(requestType == "getJsonDocuments")
+	{
+		auto* ifc = ConfigurationInterface::getInstance();
+
+		std::set<std::string> allTableNames = ifc->getAllTableNames();
+
+		for(const auto& tableName : allTableNames)
+		{
+			if(tableName.find(TableBase::JSON_DOC_PREPEND) != 0)
+				continue;
+
+			std::string docName =
+			    tableName.substr(TableBase::JSON_DOC_PREPEND.size());
+
+			TableBase tmpTable(true, tableName);
+			std::set<TableVersion> versions = ifc->getVersions(&tmpTable);
+
+			std::string versionList;
+			for(const auto& v : versions)
+			{
+				if(!versionList.empty())
+					versionList += ",";
+				versionList += v.toString();
+			}
+
+			xmlOut.addTextElementToData("jsonDoc_name", docName);
+			xmlOut.addTextElementToData("jsonDoc_versions", versionList);
+		}
+	}
+	else
+	{
+		__SUP_SS__ << "Unknown request type '" << requestType
+		           << "' for ARTDAQSupervisor." << __E__;
+		__SUP_COUT__ << ss.str();
+		xmlOut.addTextElementToData("Error", ss.str());
+	}
+}
+catch(const std::runtime_error& e)
+{
+	__SUP_SS__ << "Error handling request '" << requestType << "': " << e.what()
+	           << __E__;
+	__SUP_COUT_ERR__ << ss.str();
+	xmlOut.addTextElementToData("Error", ss.str());
+}
+catch(...)
+{
+	__SUP_SS__ << "Unknown error handling request '" << requestType << "'." << __E__;
+	__SUP_COUT_ERR__ << ss.str();
+	xmlOut.addTextElementToData("Error", ss.str());
+}  // end request()
