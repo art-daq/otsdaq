@@ -7,6 +7,7 @@
 #include <cctype>      //for std::toupper
 #include <map>         //for std::map
 #include <regex>       //for std::regex
+#include <sstream>     //for std::stringstream
 #include <thread>      //for std::thread
 
 using namespace ots;
@@ -69,6 +70,7 @@ try
 	//
 	//	getDirectoryContent
 	//	getFileContent
+	//	getFhiclFileContent
 	//	saveFileContent
 	//	cleanBuild
 	//	incrementalBuild
@@ -83,6 +85,10 @@ try
 	else if(option == "getFileContent")
 	{
 		getFileContent(cgiIn, xmlOut);
+	}
+	else if(option == "getFhiclFileContent")
+	{
+		getFhiclFileContent(cgiIn, xmlOut);
 	}
 	else if(!readOnlyMode && option == "saveFileContent")
 	{
@@ -478,6 +484,74 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	xmlOut->addTextElementToData("content", contents);
 
 }  // end getFileContent()
+
+//==============================================================================
+/// getFhiclFileContent
+///	Locates a fcl file by its path relative to a $FHICL_FILE_PATH entry
+///	(e.g. "mu2e-trig-config/core/trigSequences.fcl"), searching each
+///	colon-separated directory in $FHICL_FILE_PATH in order, the same
+///	convention any fcl-consuming tool uses to resolve #include and
+///	@sequence:: search paths. This lets read-only viewers reach fcl files
+///	that live outside the areas normally accessible to the Code Editor
+///	($USER_DATA, $OTSDAQ_WEB_PATH, $OTSDAQ_DATA, srcs/), such as files
+///	installed by a UPS/spack product.
+void CodeEditor::getFhiclFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
+{
+	std::string relativePath = CgiDataUtilities::getData(cgiIn, "path");
+	relativePath             = safePathString(StringMacros::decodeURIComponent(relativePath));
+	// leading slashes are not meaningful for a $FHICL_FILE_PATH-relative lookup
+	while(relativePath.size() && relativePath[0] == '/')
+		relativePath = relativePath.substr(1);
+	xmlOut->addTextElementToData("path", relativePath);
+
+	if(relativePath.find("..") != std::string::npos)
+	{
+		__SS__ << "Illegal '..' found in requested fcl path '" << relativePath << ".'"
+		       << __E__;
+		__SS_THROW__;
+	}
+
+	std::string fhiclFilePath;
+	{
+		const char* envVal = getenv("FHICL_FILE_PATH");
+		if(envVal)
+			fhiclFilePath = envVal;
+	}
+
+	std::string  contents;
+	bool         found = false;
+	std::string  lastError;
+	std::stringstream searchPaths(fhiclFilePath);
+	std::string       dir;
+	while(std::getline(searchPaths, dir, ':'))
+	{
+		if(dir.empty())
+			continue;
+		try
+		{
+			CodeEditor::readFile(dir, relativePath, contents);
+			found = true;
+			break;
+		}
+		catch(const std::runtime_error& e)
+		{
+			lastError = e.what();
+		}
+	}
+
+	if(!found)
+	{
+		__SS__ << "Could not find '" << relativePath
+		       << "' in any directory of $FHICL_FILE_PATH.";
+		if(lastError.size())
+			ss << " Last error: " << lastError;
+		ss << __E__;
+		__SS_THROW__;
+	}
+
+	xmlOut->addTextElementToData("content", contents);
+
+}  // end getFhiclFileContent()
 
 //==============================================================================
 /// getFileGitURL
