@@ -140,9 +140,10 @@ unsigned int TableView::copyRows(const std::string& author,
 	// check that column sizes match
 	if(src.getNumberOfColumns() != getNumberOfColumns())
 	{
-		__SS__ << "Error! Number of Columns of source view must match destination view."
-		       << "Dimension of source is [" << src.getNumberOfColumns()
-		       << "] and of destination is [" << getNumberOfColumns() << "]." << __E__;
+		__SS__ << "Error! Number of Columns of source view must match destination view. "
+		       << "Source table=" << src.getTableName() << "_v" << src.getVersion()
+		       << " cols=" << src.getNumberOfColumns() << " dest table=" << getTableName()
+		       << "_v" << getVersion() << " cols=" << getNumberOfColumns() << __E__;
 		__SS_THROW__;
 	}
 
@@ -975,7 +976,9 @@ std::string TableView::getValueAsString(unsigned int row,
 {
 	if(!(col < columnsInfo_.size() && row < getNumberOfRows()))
 	{
-		__SS__ << ("Invalid row col requested") << __E__;
+		__SS__ << "Invalid row col requested: row=" << row
+		       << " numRows=" << getNumberOfRows() << " col=" << col
+		       << " numCols=" << columnsInfo_.size() << " table=" << tableName_ << __E__;
 		__SS_THROW__;
 	}
 
