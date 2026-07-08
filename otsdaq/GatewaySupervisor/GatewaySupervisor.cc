@@ -6753,6 +6753,12 @@ try
 			            "tables)."
 			         << __E__;
 
+			{
+				std::lock_guard<std::mutex> lock(contextCommonMutex_);
+				appliedContextCommonList_ = "";
+				appliedContextCommonOverrideList_ = "";
+			}
+
 			RunControlStateMachine::theProgressBar_.step();
 
 			// mark the translated group as the last activated group
@@ -13245,6 +13251,11 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
 	catch(...)
 	{
 		__COUTS__(2) << "Failed to add state machine names to XML status." << __E__;
+	}
+	{
+		std::lock_guard<std::mutex> lock(contextCommonMutex_);
+		xmlOut.addTextElementToData("AppliedContextCommonList", appliedContextCommonList_);
+		xmlOut.addTextElementToData("AppliedContextCommonOverrideList", appliedContextCommonOverrideList_);
 	}
 }  // end addStateMachineStatusToXML()
 
