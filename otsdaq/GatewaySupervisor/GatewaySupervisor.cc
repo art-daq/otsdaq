@@ -6755,7 +6755,7 @@ try
 
 			{
 				std::lock_guard<std::mutex> lock(contextCommonMutex_);
-				appliedContextCommonList_ = "";
+				appliedContextCommonList_         = "";
 				appliedContextCommonOverrideList_ = "";
 			}
 
@@ -13254,8 +13254,10 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
 	}
 	{
 		std::lock_guard<std::mutex> lock(contextCommonMutex_);
-		xmlOut.addTextElementToData("AppliedContextCommonList", appliedContextCommonList_);
-		xmlOut.addTextElementToData("AppliedContextCommonOverrideList", appliedContextCommonOverrideList_);
+		xmlOut.addTextElementToData("AppliedContextCommonList",
+		                            appliedContextCommonList_);
+		xmlOut.addTextElementToData("AppliedContextCommonOverrideList",
+		                            appliedContextCommonOverrideList_);
 	}
 }  // end addStateMachineStatusToXML()
 
