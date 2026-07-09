@@ -9644,7 +9644,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		commandedApps.emplace(remoteGatewayApp.fullName);
 
-		remoteGatewayApp.config_dump = "";  //clear, must come from new command completion
+		if(iteration == 0)
+			remoteGatewayApp.config_dump = "";  //clear on first iteration only; subsequent iterations preserve the dump already received
 		remoteGatewayApp.command     = commandAndParams;
 
 		remoteGatewayApp.command +=
@@ -9694,7 +9695,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 					{
 						rga.command          = localApp.command;
 						rga.fsmName          = localApp.fsmName;
-						rga.config_dump      = localApp.config_dump;
+						if(localApp.config_dump.size())
+							rga.config_dump      = localApp.config_dump;
 						rga.appInfo.status   = localApp.appInfo.status;
 						rga.appInfo.progress = localApp.appInfo.progress;
 					}
