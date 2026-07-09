@@ -6762,7 +6762,8 @@ try
 				}
 				if(!reapplyList.empty() || !reapplyOverrideList.empty())
 				{
-					__COUT__ << "Re-applying ContextCommon tables after loadTableGroup." << __E__;
+					__COUT__ << "Re-applying ContextCommon tables after loadTableGroup."
+					         << __E__;
 					applyContextCommonTables(this, reapplyList, reapplyOverrideList);
 				}
 			}
