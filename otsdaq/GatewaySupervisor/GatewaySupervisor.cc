@@ -6754,9 +6754,17 @@ try
 			         << __E__;
 
 			{
-				std::lock_guard<std::mutex> lock(contextCommonMutex_);
-				appliedContextCommonList_         = "";
-				appliedContextCommonOverrideList_ = "";
+				std::string reapplyList, reapplyOverrideList;
+				{
+					std::lock_guard<std::mutex> lock(contextCommonMutex_);
+					reapplyList         = appliedContextCommonList_;
+					reapplyOverrideList = appliedContextCommonOverrideList_;
+				}
+				if(!reapplyList.empty() || !reapplyOverrideList.empty())
+				{
+					__COUT__ << "Re-applying ContextCommon tables after loadTableGroup." << __E__;
+					applyContextCommonTables(this, reapplyList, reapplyOverrideList);
+				}
 			}
 
 			RunControlStateMachine::theProgressBar_.step();
