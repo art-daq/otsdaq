@@ -10010,8 +10010,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		commandedApps.emplace(remoteGatewayApp.fullName);
 
-		remoteGatewayApp.config_dump = "";  //clear, must come from new command completion
-		remoteGatewayApp.command     = commandAndParams;
+		if(iteration == 0)
+			remoteGatewayApp.config_dump =
+			    "";  //clear on first iteration only; subsequent iterations preserve the dump already received
+		remoteGatewayApp.command = commandAndParams;
 
 		remoteGatewayApp.command +=
 		    "," + COMMAND_PARAM_ITERATION_INDEX_PREAMBLE + std::to_string(iteration);
@@ -10058,9 +10060,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 					rga.iterationsDone = localApp.iterationsDone;
 					if(wasCommanded)
 					{
-						rga.command          = localApp.command;
-						rga.fsmName          = localApp.fsmName;
-						rga.config_dump      = localApp.config_dump;
+						rga.command = localApp.command;
+						rga.fsmName = localApp.fsmName;
+						if(localApp.config_dump.size())
+							rga.config_dump = localApp.config_dump;
 						rga.appInfo.status   = localApp.appInfo.status;
 						rga.appInfo.progress = localApp.appInfo.progress;
 					}
