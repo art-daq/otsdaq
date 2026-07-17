@@ -77,6 +77,8 @@ using namespace ots;
 const std::string GatewaySupervisor::COMMAND_PARAM_LOG_ENTRY_PREAMBLE = "LogEntry:";
 const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE = "SubsystemCommonTableList:";
 const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE = "SubsystemCommonOverrideTableList:";
+const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE = "SubsystemCommonContextTableList:";
+const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE = "SubsystemCommonContextOverrideTableList:";
 const std::string GatewaySupervisor::COMMAND_PARAM_ITERATION_INDEX_PREAMBLE = "IterationIndex:";
 
 // clang-format on
@@ -853,6 +855,24 @@ try
 								}
 								detail += theSupervisor->cachedGlobalFieldsString_;
 							}
+
+							if(!theSupervisor->theStateMachine_.isInTransition() &&
+							   (theSupervisor->theStateMachine_.getCurrentStateName() ==
+							        RunControlStateMachine::INITIAL_STATE_NAME ||
+							    theSupervisor->theStateMachine_.getCurrentStateName() ==
+							        RunControlStateMachine::HALTED_STATE_NAME))
+							{
+								std::lock_guard<std::mutex> ctxLock(
+								    theSupervisor->contextCommonMutex_);
+								if(theSupervisor->appliedContextCommonList_.size())
+									detail += " | ContextCommon: " +
+									          theSupervisor->appliedContextCommonList_;
+								if(theSupervisor->appliedContextCommonOverrideList_
+								       .size())
+									detail +=
+									    " | ContextCommonOverride: " +
+									    theSupervisor->appliedContextCommonOverrideList_;
+							}
 						}
 						catch(...)
 						{
@@ -1378,6 +1398,92 @@ try
 					std::set<std::string /* appName */>
 					    remoteAppsHandledByThread;  //track which apps are handled in this pass, so they can be updated at the end
 
+					//refresh Context Common Table lists from active Backbone for status requests to remote gateways
+					//  Only the connected thread refreshes the cache; both threads read from cached values.
+					std::string contextCommonList, contextCommonOverrideList;
+					if(!doDisconnected)
+					{
+						try
+						{
+							std::string timeString;
+							auto        activeBackbone =
+							    ConfigurationManager::loadGroupNameAndKey(
+							        ConfigurationManager::
+							            LAST_ACTIVATED_BACKBONE_GROUP_FILE,
+							        timeString);
+							std::string backboneKey = activeBackbone.first + ":" +
+							                          activeBackbone.second.toString();
+
+							if(backboneKey !=
+							   theSupervisor->cachedSubsystemCommonBackboneKey_)
+							{
+								ConfigurationManager temporaryConfigMgr;
+								theSupervisor->cachedSubsystemCommonList_         = "";
+								theSupervisor->cachedSubsystemCommonOverrideList_ = "";
+								theSupervisor->cachedSubsystemCommonContextList_  = "";
+								theSupervisor->cachedSubsystemCommonContextOverrideList_ =
+								    "";
+								try
+								{
+									theSupervisor->cachedSubsystemCommonList_ =
+									    StringMacros::setToString(
+									        temporaryConfigMgr.getVersionAliases(
+									            ConfigurationManager::
+									                SUBSYSTEM_COMMON_VERSION_ALIAS));
+								}
+								catch(...)
+								{
+								}
+								try
+								{
+									theSupervisor
+									    ->cachedSubsystemCommonOverrideList_ = StringMacros::
+									    setToString(temporaryConfigMgr.getVersionAliases(
+									        ConfigurationManager::
+									            SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
+								}
+								catch(...)
+								{
+								}
+								try
+								{
+									theSupervisor
+									    ->cachedSubsystemCommonContextList_ = StringMacros::
+									    setToString(temporaryConfigMgr.getVersionAliases(
+									        ConfigurationManager::
+									            SUBSYSTEM_COMMON_CONTEXT_VERSION_ALIAS));
+								}
+								catch(...)
+								{
+								}
+								try
+								{
+									theSupervisor
+									    ->cachedSubsystemCommonContextOverrideList_ =
+									    StringMacros::setToString(
+									        temporaryConfigMgr.getVersionAliases(
+									            ConfigurationManager::
+									                SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_VERSION_ALIAS));
+								}
+								catch(...)
+								{
+								}
+								theSupervisor->cachedSubsystemCommonBackboneKey_ =
+								    backboneKey;
+							}
+						}
+						catch(...)
+						{
+						}
+						theSupervisor->activeSubsystemCommonContextList_ =
+						    theSupervisor->cachedSubsystemCommonContextList_;
+						theSupervisor->activeSubsystemCommonContextOverrideList_ =
+						    theSupervisor->cachedSubsystemCommonContextOverrideList_;
+					}
+					contextCommonList = theSupervisor->cachedSubsystemCommonContextList_;
+					contextCommonOverrideList =
+					    theSupervisor->cachedSubsystemCommonContextOverrideList_;
+
 					//for each remote gateway, request app status with "GetRemoteAppStatus"
 					bool gettingRemoteStatus = false;
 					if(1 || loopCount % 3 == 0 ||    //most frequent
@@ -1494,7 +1600,9 @@ try
 							    remoteGatewayApp,
 							    remoteGatewaySocket,
 							    ipAddressForStateChangesOverUDP,
-							    portForReverseLoginOverUDP);
+							    portForReverseLoginOverUDP,
+							    contextCommonList,
+							    contextCommonOverrideList);
 
 							{
 								auto statusMs =
@@ -3047,7 +3155,9 @@ void GatewaySupervisor::CheckRemoteGatewayStatus(
     const std::unique_ptr<TransceiverSocket>& /* not transferring ownership */
                        remoteGatewaySocket,
     const std::string& ipForReverseLoginOverUDP,
-    int                portForReverseLoginOverUDP)
+    int                portForReverseLoginOverUDP,
+    const std::string& contextCommonList,
+    const std::string& contextCommonOverrideList)
 try
 {
 	//initialize to unknown in case of error
@@ -3073,6 +3183,10 @@ try
 			requestString += "," + ipForReverseLoginOverUDP + "," +
 			                 std::to_string(portForReverseLoginOverUDP) + "," +
 			                 remoteGatewayApp.appInfo.name;
+		requestString += "|" + COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE +
+		                 StringMacros::encodeURIComponent(contextCommonList);
+		requestString += "|" + COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE +
+		                 StringMacros::encodeURIComponent(contextCommonOverrideList);
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "requestString = " << requestString << __E__;
 
@@ -3317,6 +3431,39 @@ catch(...)
 }  //end CheckRemoteGatewayStatus() catch
 
 //==============================================================================
+/// applyContextCommonTables
+///	static function
+///		Parses CSV table-name/version strings and calls ConfigurationManager::applyContextCommonTables
+///		to override/merge Context group tables (e.g. StateMachineTable) at remote subsystems.
+void GatewaySupervisor::applyContextCommonTables(
+    GatewaySupervisor* supervisor,
+    const std::string& contextCommonList,
+    const std::string& contextCommonOverrideList)
+{
+	__COUT__ << "Applying Context Common Tables from top-level..." << __E__;
+	__COUTV__(contextCommonList);
+	__COUTV__(contextCommonOverrideList);
+
+	std::map<std::string, TableVersion> mergeInTables, overrideTables;
+
+	if(!contextCommonList.empty())
+		StringMacros::getMapFromString(contextCommonList, mergeInTables);
+	if(!contextCommonOverrideList.empty())
+		StringMacros::getMapFromString(contextCommonOverrideList, overrideTables);
+
+	supervisor->CorePropertySupervisorBase::theConfigurationManager_
+	    ->restoreActiveTableGroups(
+	        false /*throwErrors*/,
+	        "" /*pathToActiveGroupsFile*/,
+	        ConfigurationManager::LoadGroupType::ONLY_BACKBONE_OR_CONTEXT_TYPES);
+	if(mergeInTables.empty() && overrideTables.empty())
+		return;
+
+	supervisor->CorePropertySupervisorBase::theConfigurationManager_
+	    ->applyContextCommonTables(mergeInTables, overrideTables);
+}  //end applyContextCommonTables()
+
+//==============================================================================
 /// StateChangerWorkLoop
 ///	child thread
 void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
@@ -3449,11 +3596,31 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
+					//split buffer on pipe to separate comma-separated params from Context Common Table data
+					std::string              commaSectionXML = buffer;
+					std::vector<std::string> pipeSectionsXML;
+					{
+						size_t pipePos = buffer.find('|');
+						if(pipePos != std::string::npos)
+						{
+							commaSectionXML = buffer.substr(0, pipePos);
+							while(pipePos != std::string::npos)
+							{
+								size_t nextPipe = buffer.find('|', pipePos + 1);
+								pipeSectionsXML.push_back(buffer.substr(
+								    pipePos + 1,
+								    nextPipe != std::string::npos ? nextPipe - pipePos - 1
+								                                  : std::string::npos));
+								pipePos = nextPipe;
+							}
+						}
+					}
+
 					if(remoteGatewayStatus &&
-					   buffer.size() > strlen("GetRemoteGatewayStatusXML") + 1)
+					   commaSectionXML.size() > strlen("GetRemoteGatewayStatusXML") + 1)
 					{
 						std::vector<std::string> params =
-						    StringMacros::getVectorFromString(buffer, {','});
+						    StringMacros::getVectorFromString(commaSectionXML, {','});
 						if(params.size() == 4)
 						{
 							//Parameters are 	"," + ipForReverseLoginOverUDP +
@@ -3497,6 +3664,68 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						else
 							__COUT_ERR__ << "Parameter count is not 4, it is "
 							             << params.size() << __E__;
+					}
+
+					//handle Context Common Table data from pipe-delimited sections
+					if(pipeSectionsXML.size() &&
+					   theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_)
+					{
+						std::string contextCommonList, contextCommonOverrideList;
+						for(const auto& section : pipeSectionsXML)
+						{
+							if(section.find(
+							       COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE) == 0)
+								contextCommonList =
+								    StringMacros::decodeURIComponent(section.substr(
+								        COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE
+								            .length()));
+							else if(
+							    section.find(
+							        COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE) ==
+							    0)
+								contextCommonOverrideList =
+								    StringMacros::decodeURIComponent(section.substr(
+								        COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE
+								            .length()));
+						}
+
+						bool changed = false;
+						{
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->contextCommonMutex_);
+							if(contextCommonList !=
+							       theSupervisor->appliedContextCommonList_ ||
+							   contextCommonOverrideList !=
+							       theSupervisor->appliedContextCommonOverrideList_)
+								changed = true;
+						}
+
+						if(changed && !theSupervisor->theStateMachine_.isInTransition())
+						{
+							try
+							{
+								GatewaySupervisor::applyContextCommonTables(
+								    theSupervisor,
+								    contextCommonList,
+								    contextCommonOverrideList);
+								std::lock_guard<std::mutex> lock(
+								    theSupervisor->contextCommonMutex_);
+								theSupervisor->appliedContextCommonList_ =
+								    contextCommonList;
+								theSupervisor->appliedContextCommonOverrideList_ =
+								    contextCommonOverrideList;
+							}
+							catch(const std::exception& e)
+							{
+								__COUT_ERR__ << "Failed to apply context common tables: "
+								             << e.what() << __E__;
+							}
+							catch(...)
+							{
+								__COUT_ERR__ << "Failed to apply context common tables."
+								             << __E__;
+							}
+						}
 					}
 
 					XmlDocument xmlOut;
@@ -3678,11 +3907,31 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
+					//split buffer on pipe to separate comma-separated params from Context Common Table data
+					std::string              commaSection = buffer;
+					std::vector<std::string> pipeSections;
+					{
+						size_t pipePos = buffer.find('|');
+						if(pipePos != std::string::npos)
+						{
+							commaSection = buffer.substr(0, pipePos);
+							while(pipePos != std::string::npos)
+							{
+								size_t nextPipe = buffer.find('|', pipePos + 1);
+								pipeSections.push_back(buffer.substr(
+								    pipePos + 1,
+								    nextPipe != std::string::npos ? nextPipe - pipePos - 1
+								                                  : std::string::npos));
+								pipePos = nextPipe;
+							}
+						}
+					}
+
 					if(remoteGatewayStatus &&
-					   buffer.size() > strlen("GetRemoteGatewayStatus") + 1)
+					   commaSection.size() > strlen("GetRemoteGatewayStatus") + 1)
 					{
 						std::vector<std::string> params =
-						    StringMacros::getVectorFromString(buffer, {','});
+						    StringMacros::getVectorFromString(commaSection, {','});
 						if(params.size() == 4)
 						{
 							//Parameters are 	"," + ipForReverseLoginOverUDP +
@@ -3726,6 +3975,69 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						else
 							__COUT_ERR__ << "Parameter count is not 4, it is "
 							             << params.size() << __E__;
+					}
+
+					//handle Context Common Table data from pipe-delimited sections
+					if(pipeSections.size() &&
+					   theSupervisor->theWebUsers_.remoteLoginVerificationEnabled_)
+					{
+						std::string contextCommonList, contextCommonOverrideList;
+						for(const auto& section : pipeSections)
+						{
+							if(section.find(
+							       COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE) == 0)
+								contextCommonList =
+								    StringMacros::decodeURIComponent(section.substr(
+								        COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE
+								            .length()));
+							else if(
+							    section.find(
+							        COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE) ==
+							    0)
+								contextCommonOverrideList =
+								    StringMacros::decodeURIComponent(section.substr(
+								        COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE
+								            .length()));
+						}
+
+						bool changed = false;
+						{
+							std::lock_guard<std::mutex> lock(
+							    theSupervisor->contextCommonMutex_);
+							if(contextCommonList !=
+							       theSupervisor->appliedContextCommonList_ ||
+							   contextCommonOverrideList !=
+							       theSupervisor->appliedContextCommonOverrideList_)
+								changed = true;
+						}
+
+						if(changed && !theSupervisor->theStateMachine_.isInTransition())
+						{
+							try
+							{
+								GatewaySupervisor::applyContextCommonTables(
+								    theSupervisor,
+								    contextCommonList,
+								    contextCommonOverrideList);
+								std::lock_guard<std::mutex> lock(
+								    theSupervisor->contextCommonMutex_);
+								theSupervisor->appliedContextCommonList_ =
+								    contextCommonList;
+								theSupervisor->appliedContextCommonOverrideList_ =
+								    contextCommonOverrideList;
+							}
+							catch(const std::exception& e)
+							{
+								__COUT_ERR__ << "Error applying Context Common Tables: "
+								             << e.what() << __E__;
+							}
+							catch(...)
+							{
+								__COUT_ERR__
+								    << "Unknown error applying Context Common Tables."
+								    << __E__;
+							}
+						}
 					}
 
 					HttpXmlDocument xmlOut;
@@ -9645,8 +9957,9 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		commandedApps.emplace(remoteGatewayApp.fullName);
 
 		if(iteration == 0)
-			remoteGatewayApp.config_dump = "";  //clear on first iteration only; subsequent iterations preserve the dump already received
-		remoteGatewayApp.command     = commandAndParams;
+			remoteGatewayApp.config_dump =
+			    "";  //clear on first iteration only; subsequent iterations preserve the dump already received
+		remoteGatewayApp.command = commandAndParams;
 
 		remoteGatewayApp.command +=
 		    "," + COMMAND_PARAM_ITERATION_INDEX_PREAMBLE + std::to_string(iteration);
@@ -9693,10 +10006,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 					rga.iterationsDone = localApp.iterationsDone;
 					if(wasCommanded)
 					{
-						rga.command          = localApp.command;
-						rga.fsmName          = localApp.fsmName;
+						rga.command = localApp.command;
+						rga.fsmName = localApp.fsmName;
 						if(localApp.config_dump.size())
-							rga.config_dump      = localApp.config_dump;
+							rga.config_dump = localApp.config_dump;
 						rga.appInfo.status   = localApp.appInfo.status;
 						rga.appInfo.progress = localApp.appInfo.progress;
 					}
@@ -11859,6 +12172,85 @@ try
 
 			}  //end getFullInfo prepend
 
+			{  //emit SubsystemCommon lists, cached by backbone key
+				try
+				{
+					std::string timeString;
+					auto activeBackbone = ConfigurationManager::loadGroupNameAndKey(
+					    ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE,
+					    timeString);
+					std::string backboneKey =
+					    activeBackbone.first + ":" + activeBackbone.second.toString();
+
+					if(backboneKey != cachedSubsystemCommonBackboneKey_)
+					{
+						ConfigurationManager temporaryConfigMgr;
+						cachedSubsystemCommonList_                = "";
+						cachedSubsystemCommonOverrideList_        = "";
+						cachedSubsystemCommonContextList_         = "";
+						cachedSubsystemCommonContextOverrideList_ = "";
+						try
+						{
+							cachedSubsystemCommonList_ = StringMacros::setToString(
+							    temporaryConfigMgr.getVersionAliases(
+							        ConfigurationManager::
+							            SUBSYSTEM_COMMON_VERSION_ALIAS));
+						}
+						catch(...)
+						{
+						}
+						try
+						{
+							cachedSubsystemCommonOverrideList_ =
+							    StringMacros::setToString(
+							        temporaryConfigMgr.getVersionAliases(
+							            ConfigurationManager::
+							                SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
+						}
+						catch(...)
+						{
+						}
+						try
+						{
+							cachedSubsystemCommonContextList_ = StringMacros::setToString(
+							    temporaryConfigMgr.getVersionAliases(
+							        ConfigurationManager::
+							            SUBSYSTEM_COMMON_CONTEXT_VERSION_ALIAS));
+						}
+						catch(...)
+						{
+						}
+						try
+						{
+							cachedSubsystemCommonContextOverrideList_ = StringMacros::
+							    setToString(temporaryConfigMgr.getVersionAliases(
+							        ConfigurationManager::
+							            SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_VERSION_ALIAS));
+						}
+						catch(...)
+						{
+						}
+						cachedSubsystemCommonBackboneKey_ = backboneKey;
+					}
+
+					xmlOut.addTextElementToData("SubsystemCommonList",
+					                            cachedSubsystemCommonList_);
+					xmlOut.addTextElementToData("SubsystemCommonOverrideList",
+					                            cachedSubsystemCommonOverrideList_);
+					xmlOut.addTextElementToData("SubsystemCommonContextList",
+					                            cachedSubsystemCommonContextList_);
+					xmlOut.addTextElementToData(
+					    "SubsystemCommonContextOverrideList",
+					    cachedSubsystemCommonContextOverrideList_);
+				}
+				catch(...)
+				{
+					__SUP_COUT_WARN__
+					    << "Failed to retrieve SubsystemCommon lists for status poll."
+					    << __E__;
+				}
+			}  //end SubsystemCommon lists
+
 			{  //get system status
 
 				xmlOut.addTextElementToData(
@@ -12803,6 +13195,21 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
 		}
 
 	}  //end not-in-transition handling
+
+	try
+	{
+		auto fsmNodes =
+		    CorePropertySupervisorBase::theConfigurationManager_
+		        ->getSupervisorTableNode(supervisorContextUID_, supervisorApplicationUID_)
+		        .getNode("LinkToStateMachineTable")
+		        .getChildren();
+		for(const auto& fsmNode : fsmNodes)
+			xmlOut.addTextElementToData("stateMachineName", fsmNode.first);
+	}
+	catch(...)
+	{
+		__COUTS__(2) << "Failed to add state machine names to XML status." << __E__;
+	}
 }  // end addStateMachineStatusToXML()
 
 //==============================================================================
@@ -13038,15 +13445,27 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(HttpXmlDocument&   xmlOut,
 	try
 	{
 		std::string subsystemCommonList =
-		    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+		    StringMacros::setToString(temporaryConfigMgr.getVersionAliases(
 		        ConfigurationManager::SUBSYSTEM_COMMON_VERSION_ALIAS));
 		xmlOut.addTextElementToData("SubsystemCommonList", subsystemCommonList);
 
 		std::string subsystemCommonOverrideList =
-		    StringMacros::setToString(theConfigurationManager_->getVersionAliases(
+		    StringMacros::setToString(temporaryConfigMgr.getVersionAliases(
 		        ConfigurationManager::SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS));
 		xmlOut.addTextElementToData("SubsystemCommonOverrideList",
 		                            subsystemCommonOverrideList);
+
+		std::string subsystemCommonContextList =
+		    StringMacros::setToString(temporaryConfigMgr.getVersionAliases(
+		        ConfigurationManager::SUBSYSTEM_COMMON_CONTEXT_VERSION_ALIAS));
+		xmlOut.addTextElementToData("SubsystemCommonContextList",
+		                            subsystemCommonContextList);
+
+		std::string subsystemCommonContextOverrideList =
+		    StringMacros::setToString(temporaryConfigMgr.getVersionAliases(
+		        ConfigurationManager::SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_VERSION_ALIAS));
+		xmlOut.addTextElementToData("SubsystemCommonContextOverrideList",
+		                            subsystemCommonContextOverrideList);
 	}
 	catch(const std::runtime_error& e)
 	{
