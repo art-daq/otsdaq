@@ -91,6 +91,8 @@ struct StringMacros
 		std::string /* value */>>  							systemVariables_;
 	static const std::string								TBD; //for to-be-defined system variables (so there is a value in wiz mode, before configuration, etc.)
 	static unsigned int				getConcurrencyCount		(void);
+	static std::string			getPersistentSystemVariablesFilePath(void);
+	static bool					loadPersistentSystemVariables(void); ///< loads persisted 'artdaq' namespace systemVariables_; returns false if no file found
 
 	static bool        			isNumber					(const std::string& stringToCheck); ///< Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
 	static std::string  		getNumberType				(const std::string& stringToCheck); ///< Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)

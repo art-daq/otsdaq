@@ -32,8 +32,7 @@ using namespace ots;
 
 XDAQ_INSTANTIATOR_IMPL(ARTDAQSupervisor)
 
-const std::string ARTDAQSupervisor::ARTDAQ_SYSVAR_NAMESPACE        = "artdaq";
-const std::string ARTDAQSupervisor::ARTDAQ_SYSVAR_PERSISTENCE_FILE = "ArtdaqSystemVariables.dat";
+const std::string ARTDAQSupervisor::ARTDAQ_SYSVAR_NAMESPACE = "artdaq";
 
 #define FAKE_CONFIG_NAME "ots_config"
 #define DAQINTERFACE_PORT                    \
@@ -2158,8 +2157,7 @@ void ots::ARTDAQSupervisor::start_runner_()
 //==============================================================================
 std::string ARTDAQSupervisor::getServiceDataFilePath() const
 {
-	return std::string(__ENV__("USER_DATA")) + "/ServiceData/" +
-	       ARTDAQ_SYSVAR_PERSISTENCE_FILE;
+	return StringMacros::getPersistentSystemVariablesFilePath();
 }  // end getServiceDataFilePath()
 
 //==============================================================================
@@ -2175,27 +2173,12 @@ void ARTDAQSupervisor::initArtdaqSystemVariables()
 //==============================================================================
 void ARTDAQSupervisor::loadArtdaqSystemVariables()
 {
-	std::string filePath = getServiceDataFilePath();
-	std::ifstream file(filePath);
-	if(!file.is_open())
-	{
+	if(StringMacros::loadPersistentSystemVariables())
+		__SUP_COUT__ << "Loaded artdaq system variables from "
+		             << getServiceDataFilePath() << __E__;
+	else
 		__SUP_COUT__ << "No persisted artdaq system variables file found at "
-		             << filePath << __E__;
-		return;
-	}
-
-	auto& ns = StringMacros::systemVariables_[ARTDAQ_SYSVAR_NAMESPACE];
-	std::string line;
-	while(std::getline(file, line))
-	{
-		size_t eqPos = line.find('=');
-		if(eqPos == std::string::npos)
-			continue;
-		std::string key   = line.substr(0, eqPos);
-		std::string value = line.substr(eqPos + 1);
-		ns[key] = value;
-	}
-	__SUP_COUT__ << "Loaded artdaq system variables from " << filePath << __E__;
+		             << getServiceDataFilePath() << __E__;
 }  // end loadArtdaqSystemVariables()
 
 //==============================================================================

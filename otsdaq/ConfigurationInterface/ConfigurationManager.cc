@@ -5642,6 +5642,11 @@ try
 {
 	__COUTT__ << "Initializing prerequisites for artdaq!" << __E__;
 
+	// refresh persisted 'artdaq' system variables (set via web GUIs, e.g. the
+	// Trigger Menu Editor) so table plugins resolve current ${OTS.artdaq.*}
+	// values in this process at configure time
+	StringMacros::loadPersistentSystemVariables();
+
 	auto activeTables = getActiveVersions();
 	for(auto& tablePair : activeTables)
 	{

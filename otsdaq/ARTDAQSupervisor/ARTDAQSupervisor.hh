@@ -92,7 +92,6 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	std::string getServiceDataFilePath() const;
 
 	static const std::string ARTDAQ_SYSVAR_NAMESPACE;
-	static const std::string ARTDAQ_SYSVAR_PERSISTENCE_FILE;
 
 	void configuringThread(void);
 	void startingThread(void);
