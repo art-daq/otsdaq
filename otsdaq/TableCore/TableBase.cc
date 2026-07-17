@@ -998,7 +998,7 @@ TableVersion TableBase::mergeViews(
     bool                                 generateUniqueDataColumns /*=false*/,
     std::stringstream*                   mergeReport /*=nullptr*/)
 {
-	__COUT__ << "mergeViews starting..." << __E__;
+	__COUTT__ << "mergeViews starting..." << __E__;
 
 	// clang-format off
 	// There 3 modes:
@@ -1066,7 +1066,7 @@ TableVersion TableBase::mergeViews(
 
 	if(fillRecordConversionMaps && mergeApproach == MergeApproach::RENAME)
 	{
-		__COUT__ << "Filling record conversion map." << __E__;
+		__COUTT__ << "Filling record conversion map." << __E__;
 
 		//	rename		-- All records from both groups are maintained, but conflicts from
 		// B  are renamed.
@@ -1090,8 +1090,8 @@ TableVersion TableBase::mergeViews(
 			     sourceViewA.getColumnInfo(cb).isGroupID()))
 				continue;
 
-			__COUT__ << "Have an ID column: " << cb << " "
-			         << sourceViewA.getColumnInfo(cb).getType() << __E__;
+			__COUTT__ << "Have an ID column: " << cb << " "
+			          << sourceViewA.getColumnInfo(cb).getType() << __E__;
 
 			// at this point we have an ID column, verify B and mockup are the same
 			if(sourceViewA.getColumnInfo(cb).getType() !=
@@ -1126,8 +1126,8 @@ TableVersion TableBase::mergeViews(
 						continue;
 
 					// if here, found conflict
-					__COUT__ << "found conflict: " << getTableName() << "/" << bGroupid
-					         << __E__;
+					__COUTT__ << "found conflict: " << getTableName() << "/" << bGroupid
+					          << __E__;
 
 					// extract starting uniqueId number
 					{
@@ -1151,15 +1151,15 @@ TableVersion TableBase::mergeViews(
 							uniqueIdBase = str;
 						}
 
-						__COUTV__(uniqueIdBase);
-						__COUTV__(uniqueId);
+						__COUTTV__(uniqueIdBase);
+						__COUTTV__(uniqueId);
 					}  // end //extract starting uniqueId number
 
 					// find unique id string
 					{
 						sprintf(indexString, "%u", uniqueId);
 						uniqueIdString = uniqueIdBase + indexString;
-						__COUTV__(uniqueIdString);
+						__COUTTV__(uniqueIdString);
 
 						found = false;
 						// check converted records and source A and B for conflicts
@@ -1178,7 +1178,7 @@ TableVersion TableBase::mergeViews(
 							++uniqueId;
 							sprintf(indexString, "%u", uniqueId);
 							uniqueIdString = uniqueIdBase + indexString;
-							__COUTV__(uniqueIdString);
+							__COUTTV__(uniqueIdString);
 
 							found = false;
 							// check converted records and source A and B for conflicts
@@ -1197,7 +1197,7 @@ TableVersion TableBase::mergeViews(
 					}  // end find unique id string
 
 					// have unique id string now
-					__COUTV__(uniqueIdString);
+					__COUTTV__(uniqueIdString);
 
 					groupidConversionMap
 					    [std::pair<std::string /*original table*/,
@@ -1223,7 +1223,7 @@ TableVersion TableBase::mergeViews(
 				}  // end row find unique id string loop for groupid
 
 				// done creating conversion map
-				__COUTV__(StringMacros::mapToString(groupidConversionMap));
+				__COUTTV__(StringMacros::mapToString(groupidConversionMap));
 
 			}     // end group id conversion map fill
 			else  // start uid conversion map fill
@@ -1244,8 +1244,8 @@ TableVersion TableBase::mergeViews(
 						continue;
 
 					// found conflict
-					__COUT__ << "found conflict: " << getTableName() << "/"
-					         << sourceViewB.getDataView()[rb][cb] << __E__;
+					__COUTT__ << "found conflict: " << getTableName() << "/"
+					          << sourceViewB.getDataView()[rb][cb] << __E__;
 
 					// extract starting uniqueId number
 					{
@@ -1269,15 +1269,15 @@ TableVersion TableBase::mergeViews(
 							uniqueIdBase = str;
 						}
 
-						__COUTV__(uniqueIdBase);
-						__COUTV__(uniqueId);
+						__COUTTV__(uniqueIdBase);
+						__COUTTV__(uniqueId);
 					}  // end //extract starting uniqueId number
 
 					// find unique id string
 					{
 						sprintf(indexString, "%u", uniqueId);
 						uniqueIdString = uniqueIdBase + indexString;
-						__COUTV__(uniqueIdString);
+						__COUTTV__(uniqueIdString);
 
 						found = false;
 						// check converted records and source A and B for conflicts
@@ -1299,7 +1299,7 @@ TableVersion TableBase::mergeViews(
 							++uniqueId;
 							sprintf(indexString, "%u", uniqueId);
 							uniqueIdString = uniqueIdBase + indexString;
-							__COUTV__(uniqueIdString);
+							__COUTTV__(uniqueIdString);
 
 							found = false;
 							// check converted records and source A and B for conflicts
@@ -1321,7 +1321,7 @@ TableVersion TableBase::mergeViews(
 					}  // end find unique id string
 
 					// have unique id string now
-					__COUTV__(uniqueIdString);
+					__COUTTV__(uniqueIdString);
 
 					uidConversionMap[std::pair<std::string /*original table*/,
 					                           std::string /*original uidB*/>(
@@ -1339,38 +1339,38 @@ TableVersion TableBase::mergeViews(
 				}  // end row find unique id string loop
 
 				// done creating conversion map
-				__COUTV__(StringMacros::mapToString(uidConversionMap));
+				__COUTTV__(StringMacros::mapToString(uidConversionMap));
 			}  /// end uid conversion map
 
 		}  // end column find unique id string loop
 
 	}  // end rename conversion map create
 	else
-		__COUT__ << "Not filling record conversion map." << __E__;
+		__COUTT__ << "Not filling record conversion map." << __E__;
 
 	if(!applyRecordConversionMaps)
 	{
-		__COUT__ << "Not applying record conversion map." << __E__;
+		__COUTT__ << "Not applying record conversion map." << __E__;
 		return TableVersion();  // return invalid
 	}
 	else
 	{
-		__COUT__ << "Applying record conversion map." << __E__;
-		__COUTV__(StringMacros::mapToString(uidConversionMap));
-		__COUTV__(StringMacros::mapToString(groupidConversionMap));
+		__COUTT__ << "Applying record conversion map." << __E__;
+		__COUTTV__(StringMacros::mapToString(uidConversionMap));
+		__COUTTV__(StringMacros::mapToString(groupidConversionMap));
 	}
 
 	// if destinationVersion is INVALID, creates next available temporary version
 	destinationVersion = createTemporaryView(TableVersion(), destinationVersion);
 
-	__COUT__ << "Merging from (A) " << sourceViewA.getTableName() << "_v"
-	         << sourceViewA.getVersion() << " and (B) " << sourceViewB.getTableName()
-	         << "_v" << sourceViewB.getVersion() << "  to " << getTableName() << "_v"
-	         << destinationVersion << " with approach '"
-	         << (mergeApproach == MergeApproach::RENAME
-	                 ? "RENAME"
-	                 : (mergeApproach == MergeApproach::REPLACE ? "REPLACE" : "SKIP"))
-	         << "'" << __E__;
+	__COUTT__ << "Merging from (A) " << sourceViewA.getTableName() << "_v"
+	          << sourceViewA.getVersion() << " and (B) " << sourceViewB.getTableName()
+	          << "_v" << sourceViewB.getVersion() << "  to " << getTableName() << "_v"
+	          << destinationVersion << " with approach '"
+	          << (mergeApproach == MergeApproach::RENAME
+	                  ? "RENAME"
+	                  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE" : "SKIP"))
+	          << "'" << __E__;
 
 	// if the merge fails then delete the destinationVersion view
 	try
@@ -1429,7 +1429,7 @@ TableVersion TableBase::mergeViews(
 						continue;  // skip link columns that have table name
 					else if(sourceViewB.getColumnInfo(cb).isChildLinkUID())
 					{
-						__COUT__ << "Checking UID link... col=" << cb << __E__;
+						__COUTT__ << "Checking UID link... col=" << cb << __E__;
 						sourceViewB.getChildLink(cb, linkIsGroup, linkPair);
 
 						// if table and uid are in conversion map, convert
@@ -1440,9 +1440,9 @@ TableVersion TableBase::mergeViews(
 						            sourceViewB.getValueAsString(
 						                rb, linkPair.second)))) != uidConversionMap.end())
 						{
-							__COUT__ << "Found entry to remap: "
-							         << sourceViewB.getDataView()[rb][linkPair.second]
-							         << " ==> " << uidConversionIt->second << __E__;
+							__COUTT__ << "Found entry to remap: "
+							          << sourceViewB.getDataView()[rb][linkPair.second]
+							          << " ==> " << uidConversionIt->second << __E__;
 
 							if(mergeReport)
 								(*mergeReport)
@@ -1459,7 +1459,7 @@ TableVersion TableBase::mergeViews(
 					}
 					else if(sourceViewB.getColumnInfo(cb).isChildLinkGroupID())
 					{
-						__COUT__ << "Checking GroupID link... col=" << cb << __E__;
+						__COUTT__ << "Checking GroupID link... col=" << cb << __E__;
 						sourceViewB.getChildLink(cb, linkIsGroup, linkPair);
 
 						// if table and uid are in conversion map, convert
@@ -1475,9 +1475,9 @@ TableVersion TableBase::mergeViews(
 						                    rb, linkPair.second))))) !=
 						   groupidConversionMap.end())
 						{
-							__COUT__ << "Found entry to remap: "
-							         << sourceViewB.getDataView()[rb][linkPair.second]
-							         << " ==> " << groupidConversionIt->second << __E__;
+							__COUTT__ << "Found entry to remap: "
+							          << sourceViewB.getDataView()[rb][linkPair.second]
+							          << " ==> " << groupidConversionIt->second << __E__;
 
 							if(mergeReport)
 								(*mergeReport)
@@ -1494,7 +1494,7 @@ TableVersion TableBase::mergeViews(
 					}
 					else if(sourceViewB.getColumnInfo(cb).isUID())
 					{
-						__COUT__ << "Checking UID... col=" << cb << __E__;
+						__COUTT__ << "Checking UID... col=" << cb << __E__;
 						if((uidConversionIt = uidConversionMap.find(
 						        std::pair<std::string /*original table*/,
 						                  std::string /*original uidB*/>(
@@ -1502,9 +1502,9 @@ TableVersion TableBase::mergeViews(
 						            sourceViewB.getValueAsString(rb, cb)))) !=
 						   uidConversionMap.end())
 						{
-							__COUT__ << "Found entry to remap: "
-							         << sourceViewB.getDataView()[rb][cb] << " ==> "
-							         << uidConversionIt->second << __E__;
+							__COUTT__ << "Found entry to remap: "
+							          << sourceViewB.getDataView()[rb][cb] << " ==> "
+							          << uidConversionIt->second << __E__;
 
 							if(mergeReport)
 								(*mergeReport)
@@ -1520,7 +1520,7 @@ TableVersion TableBase::mergeViews(
 					}
 					else if(sourceViewB.getColumnInfo(cb).isGroupID())
 					{
-						__COUT__ << "Checking GroupID... col=" << cb << __E__;
+						__COUTT__ << "Checking GroupID... col=" << cb << __E__;
 						if((groupidConversionIt = groupidConversionMap.find(
 						        std::pair<std::string /*original table*/,
 						                  std::pair<std::string /*group linkid*/,
@@ -1532,9 +1532,9 @@ TableVersion TableBase::mergeViews(
 						                sourceViewB.getValueAsString(rb, cb))))) !=
 						   groupidConversionMap.end())
 						{
-							__COUT__ << "Found entry to remap: "
-							         << sourceViewB.getDataView()[rb][cb] << " ==> "
-							         << groupidConversionIt->second << __E__;
+							__COUTT__ << "Found entry to remap: "
+							          << sourceViewB.getDataView()[rb][cb] << " ==> "
+							          << groupidConversionIt->second << __E__;
 
 							if(mergeReport)
 								(*mergeReport)
@@ -1554,7 +1554,7 @@ TableVersion TableBase::mergeViews(
 						if(strb.size() > getTableName().size() + 2 && strb[0] == '/')
 						{
 							// check for linked name
-							__COUT__ << "Checking col" << cb << " " << strb << __E__;
+							__COUTT__ << "Checking col" << cb << " " << strb << __E__;
 
 							// see if there is an entry in p
 							for(const auto& mapPairToPair : uidConversionMap)
@@ -1563,11 +1563,11 @@ TableVersion TableBase::mergeViews(
 								                     mapPairToPair.first.second)) !=
 								   std::string::npos)
 								{
-									__COUT__ << "Found a text link match (stri=" << stri
-									         << ")! "
-									         << (mapPairToPair.first.first + "/" +
-									             mapPairToPair.first.second)
-									         << " ==> " << mapPairToPair.second << __E__;
+									__COUTT__ << "Found a text link match (stri=" << stri
+									          << ")! "
+									          << (mapPairToPair.first.first + "/" +
+									              mapPairToPair.first.second)
+									          << " ==> " << mapPairToPair.second << __E__;
 
 									// insert mapped substitution into string
 									destinationView->setValueAsString(
@@ -1581,7 +1581,7 @@ TableVersion TableBase::mergeViews(
 									    destRow,
 									    cb);
 
-									__COUT__
+									__COUTT__
 									    << "Found entry to remap: "
 									    << sourceViewB.getDataView()[rb][cb] << " ==> "
 									    << destinationView->getDataView()[destRow][cb]
@@ -1611,20 +1611,22 @@ TableVersion TableBase::mergeViews(
 			found = false;
 
 			for(destRow = 0; destRow < destSize; ++destRow)
+			{
 				if(destinationView->getValueAsString(destRow, colUID) ==
 				   sourceViewB.getValueAsString(rb, colUID))
 				{
 					found = true;
 					break;
 				}
+			}
 			if(!found)  // no conflict
 			{
-				__COUT__ << "No "
-				         << (mergeApproach == MergeApproach::RENAME
-				                 ? "RENAME"
-				                 : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
-				                                                            : "SKIP"))
-				         << " conflict: " << __E__;
+				__COUTT__ << "No "
+				          << (mergeApproach == MergeApproach::RENAME
+				                  ? "RENAME"
+				                  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+				                                                             : "SKIP"))
+				          << " conflict: " << __E__;
 
 				if(mergeApproach == MergeApproach::REPLACE ||
 				   mergeApproach == MergeApproach::SKIP)
@@ -1633,20 +1635,21 @@ TableVersion TableBase::mergeViews(
 					// copy row from B to new row
 					destinationView->copyRows(
 					    author, sourceViewB, rb, 1 /*srcRowsToCopy*/);
+					++destSize;
 				}
-				else
 
-					continue;
+				continue;
+
 			}  // end no-conflict handling
 
 			// if here, then there was a conflict
 
-			__COUT__ << "found "
-			         << (mergeApproach == MergeApproach::RENAME
-			                 ? "RENAME"
-			                 : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
-			                                                            : "SKIP"))
-			         << " conflict: " << sourceViewB.getDataView()[rb][colUID] << __E__;
+			__COUTT__ << "found "
+			          << (mergeApproach == MergeApproach::RENAME
+			                  ? "RENAME"
+			                  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+			                                                             : "SKIP"))
+			          << " conflict: " << sourceViewB.getDataView()[rb][colUID] << __E__;
 
 			if(mergeApproach == MergeApproach::REPLACE)
 			{
@@ -1665,6 +1668,7 @@ TableVersion TableBase::mergeViews(
 				// append the B record now
 				// copy row from B to new row
 				destinationView->copyRows(author, sourceViewB, rb, 1 /*srcRowsToCopy*/);
+				++destSize;
 			}
 			else if(mergeApproach ==
 			        MergeApproach::SKIP)  // then do nothing with conflicting B record
