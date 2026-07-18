@@ -10,6 +10,7 @@
 #include "cetlib_except/exception.h"
 #include "fhiclcpp/make_ParameterSet.h"
 #include "otsdaq/ARTDAQSupervisor/ARTDAQSupervisorTRACEController.h"
+#include "otsdaq/FiniteStateMachine/RunControlIterationConstants.h"
 
 #include "artdaq-core/Utilities/ExceptionHandler.hh" /*for artdaq::ExceptionHandler*/
 
@@ -1346,8 +1347,12 @@ try
 
 		__SUP_COUT_INFO__ << "Starting thread started." << __E__;
 
-		RunControlStateMachine::
-		    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
+		if(RunControlStateMachine::getIterationIndex() + 1 <
+		   RunControlIterationConstants::RUN_START_READY_FOR_TRIGGERS_ITERATION)
+			RunControlStateMachine::
+			    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
+		else
+			RunControlStateMachine::indicateSubIterationWork();
 	}
 	else  // not first time
 	{
@@ -1395,8 +1400,12 @@ try
 			//attempt to get live view of python output (not working and not needed with new Tee Buffer solution)
 			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
 
-			RunControlStateMachine::
-			    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
+			if(RunControlStateMachine::getIterationIndex() + 1 <
+			   RunControlIterationConstants::RUN_START_READY_FOR_TRIGGERS_ITERATION)
+				RunControlStateMachine::
+				    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
+			else
+				RunControlStateMachine::indicateSubIterationWork();
 
 			if(last_thread_progress_read_ != progress)
 			{
