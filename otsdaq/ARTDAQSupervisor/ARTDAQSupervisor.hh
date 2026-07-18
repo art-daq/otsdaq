@@ -85,7 +85,7 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	static std::list<std::string> tokenize_(std::string const& input);
 
   private:
-	void forceSupervisorPropertyValues(void) override;
+	void        forceSupervisorPropertyValues(void) override;
 	void        initArtdaqSystemVariables();
 	void        saveArtdaqSystemVariables();
 	void        loadArtdaqSystemVariables();
@@ -100,8 +100,7 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	struct PyObjectGuard
 	{
 		PyObject* obj;
-		explicit PyObjectGuard(PyObject* o)
-		    : obj(o) {}
+		explicit PyObjectGuard(PyObject* o) : obj(o) {}
 		~PyObjectGuard()
 		{
 			if(obj)

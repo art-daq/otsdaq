@@ -52,7 +52,7 @@ try
 	// serialize concurrent callers (e.g. the parallel table-init threads calling
 	// ConfigurationManager::initPrereqsForARTDAQ() at configure time) - unguarded
 	// concurrent insertion into the static systemVariables_ map corrupts the heap
-	static std::mutex loadMutex;
+	static std::mutex           loadMutex;
 	std::lock_guard<std::mutex> lock(loadMutex);
 
 	std::ifstream file(getPersistentSystemVariablesFilePath());

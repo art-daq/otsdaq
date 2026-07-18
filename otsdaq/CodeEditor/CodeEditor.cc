@@ -498,7 +498,7 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 void CodeEditor::getFhiclFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 {
 	std::string relativePath = CgiDataUtilities::getData(cgiIn, "path");
-	relativePath             = safePathString(StringMacros::decodeURIComponent(relativePath));
+	relativePath = safePathString(StringMacros::decodeURIComponent(relativePath));
 	// leading slashes are not meaningful for a $FHICL_FILE_PATH-relative lookup
 	while(relativePath.size() && relativePath[0] == '/')
 		relativePath = relativePath.substr(1);
@@ -518,9 +518,9 @@ void CodeEditor::getFhiclFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOu
 			fhiclFilePath = envVal;
 	}
 
-	std::string  contents;
-	bool         found = false;
-	std::string  lastError;
+	std::string       contents;
+	bool              found = false;
+	std::string       lastError;
 	std::stringstream searchPaths(fhiclFilePath);
 	std::string       dir;
 	while(std::getline(searchPaths, dir, ':'))
