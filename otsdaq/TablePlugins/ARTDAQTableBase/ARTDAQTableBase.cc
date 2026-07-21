@@ -3169,9 +3169,10 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
         nodeTypeToObjectMap,
     std::map<std::string /*subsystemName*/, std::string /*destinationSubsystemName*/>&
                                            subsystemObjectMap,
-    std::vector<std::string /*property*/>& artdaqSupervisoInfo)
+    std::vector<std::string /*property*/>& artdaqSupervisoInfo,
+    bool                                    suppressMultiNode /* = false */)
 {
-	__COUT__ << "getARTDAQSystem()" << __E__;
+	__COUT__ << "getARTDAQSystem() suppressMultiNode=" << suppressMultiNode << __E__;
 
 	artdaqSupervisoInfo.clear();  // init
 
@@ -3620,87 +3621,89 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 				        StringMacros::encodeURIComponent(nodeName));
 
 				__COUTV__(allNodes.size());
-				for(auto& otherNode : allNodes)  // start multi-node search loop
-				{
-					if(skipSet.find(StringMacros::encodeURIComponent(otherNode.first)) !=
-					       skipSet.end() ||
-					   otherNode.second.status() != status)  // skip if status mismatch
-						continue;  // skip unless 'other' and not in skip set
-
-					// _clone nodes are always independent — never group them into a multinode
-					if(nodeName.find("_clone") != std::string::npos ||
-					   otherNode.first.find("_clone") != std::string::npos)
-						continue;
-
-					//__COUTV__(subsystemName);
-					//__COUTV__(otherNode.second.getNode(ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID).getValue());
-
-					if(subsystemName ==
-					   otherNode.second.getNode(ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID)
-					       .getValue())
+				if(!suppressMultiNode)
+					for(auto& otherNode : allNodes)  // start multi-node search loop
 					{
-						// possible multi-node situation
-						//__COUT__ << "Checking for multi-node..." << __E__;
+						if(skipSet.find(StringMacros::encodeURIComponent(
+						       otherNode.first)) != skipSet.end() ||
+						   otherNode.second.status() != status)  // skip if status mismatch
+							continue;  // skip unless 'other' and not in skip set
 
-						//__COUTV__(thisNode.getNodeRow());
-						//__COUTV__(otherNode.second.getNodeRow());
+						// _clone nodes are always independent — never group them into a multinode
+						if(nodeName.find("_clone") != std::string::npos ||
+						   otherNode.first.find("_clone") != std::string::npos)
+							continue;
 
-						auto otherNodeColumns = otherNode.second.getChildren();
+						//__COUTV__(subsystemName);
+						//__COUTV__(otherNode.second.getNode(ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID).getValue());
 
-						bool isMultiNode = true;
-						for(unsigned int i = 0;
-						    i < thisNodeColumns.size() && i < otherNodeColumns.size();
-						    ++i)
+						if(subsystemName ==
+						   otherNode.second.getNode(ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK_UID)
+						       .getValue())
 						{
-							// skip columns that do not need to be checked for multi-node consideration
-							if(skipColumns.find(thisNodeColumns[i].first) !=
-							       skipColumns.end() ||
-							   thisNodeColumns[i].second.isLinkNode())
-								continue;
+							// possible multi-node situation
+							//__COUT__ << "Checking for multi-node..." << __E__;
 
-							// at this point must match for multinode
+							//__COUTV__(thisNode.getNodeRow());
+							//__COUTV__(otherNode.second.getNodeRow());
 
-							//__COUTV__(thisNodeColumns[i].first);
-							//__COUTV__(otherNodeColumns[i].first);
+							auto otherNodeColumns = otherNode.second.getChildren();
 
-							//__COUTV__(thisNodeColumns[i].second.getValue());
-							//__COUTV__(otherNodeColumns[i].second.getValue());
-
-							if(thisNodeColumns[i].second.getValue() !=
-							   otherNodeColumns[i].second.getValue())
+							bool isMultiNode = true;
+							for(unsigned int i = 0;
+							    i < thisNodeColumns.size() && i < otherNodeColumns.size();
+							    ++i)
 							{
-								__COUT__ << "Mismatch, not multi-node member." << __E__;
-								isMultiNode = false;
-								break;
+								// skip columns that do not need to be checked for multi-node consideration
+								if(skipColumns.find(thisNodeColumns[i].first) !=
+								       skipColumns.end() ||
+								   thisNodeColumns[i].second.isLinkNode())
+									continue;
+
+								// at this point must match for multinode
+
+								//__COUTV__(thisNodeColumns[i].first);
+								//__COUTV__(otherNodeColumns[i].first);
+
+								//__COUTV__(thisNodeColumns[i].second.getValue());
+								//__COUTV__(otherNodeColumns[i].second.getValue());
+
+								if(thisNodeColumns[i].second.getValue() !=
+								   otherNodeColumns[i].second.getValue())
+								{
+									__COUT__ << "Mismatch, not multi-node member."
+									         << __E__;
+									isMultiNode = false;
+									break;
+								}
 							}
-						}
 
-						if(isMultiNode)
-						{
-							__COUT__ << "Found '" << nodeName
-							         << "' multi-node member candidate '"
-							         << otherNode.first << "'" << __E__;
-
-							//use StringMacros::encodeURIComponent because dashes will confuse printer syntax later!
-							if(!multiNodeNames.size())  // add this node first!
+							if(isMultiNode)
 							{
+								__COUT__ << "Found '" << nodeName
+								         << "' multi-node member candidate '"
+								         << otherNode.first << "'" << __E__;
+
+								//use StringMacros::encodeURIComponent because dashes will confuse printer syntax later!
+								if(!multiNodeNames.size())  // add this node first!
+								{
+									multiNodeNames.push_back(
+									    StringMacros::encodeURIComponent(nodeName));
+									hostnameArray.push_back(
+									    StringMacros::encodeURIComponent(hostname));
+								}
 								multiNodeNames.push_back(
-								    StringMacros::encodeURIComponent(nodeName));
-								hostnameArray.push_back(
-								    StringMacros::encodeURIComponent(hostname));
-							}
-							multiNodeNames.push_back(
-							    StringMacros::encodeURIComponent(otherNode.first));
-							hostnameArray.push_back(StringMacros::encodeURIComponent(
-							    otherNode.second.getNode(ARTDAQ_TYPE_TABLE_HOSTNAME)
-							        .getValue()));
+								    StringMacros::encodeURIComponent(otherNode.first));
+								hostnameArray.push_back(StringMacros::encodeURIComponent(
+								    otherNode.second.getNode(ARTDAQ_TYPE_TABLE_HOSTNAME)
+								        .getValue()));
 
-							__COUTV__(hostnameArray.back());
-							skipSet.emplace(
-							    StringMacros::encodeURIComponent(otherNode.first));
+								__COUTV__(hostnameArray.back());
+								skipSet.emplace(
+								    StringMacros::encodeURIComponent(otherNode.first));
+							}
 						}
-					}
-				}  // end loop to search for multi-node members
+					}  // end loop to search for multi-node members
 
 				unsigned int nodeFixedWildcardLength = 0, hostFixedWildcardLength = 0;
 				std::string  multiNodeString = "", hostArrayString = "";

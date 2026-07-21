@@ -1847,6 +1847,13 @@ try
 										theSupervisor->remoteGatewayApps_[i].consoleErrCount 			= remoteGatewayApp.consoleErrCount;
 										theSupervisor->remoteGatewayApps_[i].consoleWarnCount 			= remoteGatewayApp.consoleWarnCount;
 
+										theSupervisor->remoteGatewayApps_[i].activeContextGroupName 	= remoteGatewayApp.activeContextGroupName;
+										theSupervisor->remoteGatewayApps_[i].activeContextGroupKey 	= remoteGatewayApp.activeContextGroupKey;
+										theSupervisor->remoteGatewayApps_[i].activeConfigGroupName 	= remoteGatewayApp.activeConfigGroupName;
+										theSupervisor->remoteGatewayApps_[i].activeConfigGroupKey 	= remoteGatewayApp.activeConfigGroupKey;
+										theSupervisor->remoteGatewayApps_[i].selectedConfigGroupName 	= remoteGatewayApp.selectedConfigGroupName;
+										theSupervisor->remoteGatewayApps_[i].selectedConfigGroupKey 	= remoteGatewayApp.selectedConfigGroupKey;
+
 										theSupervisor->remoteGatewayApps_[i].usernameWithLock 			= remoteGatewayApp.usernameWithLock;
 
 										theSupervisor->remoteGatewayApps_[i].config_dump 				= remoteGatewayApp.config_dump;
@@ -3069,10 +3076,18 @@ try
 	{
 		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
 		std::string requestString = "GetRemoteGatewayStatus";
-		if(portForReverseLoginOverUDP)
+		//Note: params 1-3 (reverse-login IP/port/self-name) and param 4 (selected
+		//	config alias, so the remote subsystem can resolve it against its own
+		//	already-active Backbone with no extra round-trip) are always sent
+		//	together (empty where not applicable) so the receiver can rely on a
+		//	fixed param count instead of a conditional one.
+		if(portForReverseLoginOverUDP || remoteGatewayApp.selected_config_alias != "")
 			requestString += "," + ipForReverseLoginOverUDP + "," +
-			                 std::to_string(portForReverseLoginOverUDP) + "," +
-			                 remoteGatewayApp.appInfo.name;
+			                 (portForReverseLoginOverUDP
+			                      ? std::to_string(portForReverseLoginOverUDP)
+			                      : "") +
+			                 "," + remoteGatewayApp.appInfo.name + "," +
+			                 remoteGatewayApp.selected_config_alias;
 		__COUTS__(TLVL_RemoteStatusVerbose)
 		    << "requestString = " << requestString << __E__;
 
@@ -3283,9 +3298,43 @@ try
 		remoteGatewayApp.consoleErrCount = atoi(value.c_str());
 
 		value = StringMacros::extractXmlField(
-		    remoteStatusString, "console_warn_count", 0, after);
+		    remoteStatusString, "console_warn_count", 0, after, &after);
 		__COUTVS__(TLVL_RemoteStatusParams, value);
 		remoteGatewayApp.consoleWarnCount = atoi(value.c_str());
+
+		//get active context/config table groups (name+key) as reported by the remote subsystem's own ConfigurationManager
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "activeContextGroupName", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.activeContextGroupName = value;
+
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "activeContextGroupKey", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.activeContextGroupKey = TableGroupKey(value);
+
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "activeConfigGroupName", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.activeConfigGroupName = value;
+
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "activeConfigGroupKey", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.activeConfigGroupKey = TableGroupKey(value);
+
+		//get the resolved group for our selected config alias (only present if we sent
+		//	a non-empty selected_config_alias in the request, and the remote subsystem
+		//	could resolve it against its own active Backbone)
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "selectedConfigGroupName", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.selectedConfigGroupName = value;
+
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "selectedConfigGroupKey", 0, after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.selectedConfigGroupKey = TableGroupKey(value);
 	}
 	else
 		__COUT_WARN__ << "Illegal Remote Gateawy App URL for name='"
@@ -3678,28 +3727,32 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
+					std::string requesterSelectedConfigAlias;  //param 4, if given: the operator's selected config alias, so it can be resolved against this subsystem's own active Backbone below
+
 					if(remoteGatewayStatus &&
 					   buffer.size() > strlen("GetRemoteGatewayStatus") + 1)
 					{
 						std::vector<std::string> params =
 						    StringMacros::getVectorFromString(buffer, {','});
-						if(params.size() == 4)
+						if(params.size() >= 4)
 						{
 							//Parameters are 	"," + ipForReverseLoginOverUDP +
 							// 					"," + std::to_string(portForReverseLoginOverUDP) +
-							// 					"," + remoteGatewayApp.appInfo.name;
+							// 					"," + remoteGatewayApp.appInfo.name +
+							// 					"," + selected_config_alias;
 
 							__COUTVS__(TLVL_StatusParams,
 							           StringMacros::vectorToString(params));
 							std::string tmpIP   = params[1];
 							int         tmpPort = atoi(params[2].c_str());
 
-							if(!theSupervisor->theWebUsers_
-							        .remoteLoginVerificationEnabled_ ||
-							   theSupervisor->theWebUsers_.remoteLoginVerificationIP_ !=
-							       tmpIP ||
-							   theSupervisor->theWebUsers_.remoteLoginVerificationPort_ !=
-							       tmpPort)
+							if(tmpIP != "" && tmpPort != 0 &&
+							   (!theSupervisor->theWebUsers_
+							         .remoteLoginVerificationEnabled_ ||
+							    theSupervisor->theWebUsers_.remoteLoginVerificationIP_ !=
+							        tmpIP ||
+							    theSupervisor->theWebUsers_.remoteLoginVerificationPort_ !=
+							        tmpPort))
 							{
 								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ =
 								    tmpIP;
@@ -3722,9 +3775,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								           .remoteLoginVerificationPort_
 								    << __E__;
 							}
+
+							if(params.size() >= 5)
+								requesterSelectedConfigAlias = params[4];
 						}
 						else
-							__COUT_ERR__ << "Parameter count is not 4, it is "
+							__COUT_ERR__ << "Parameter count is not >= 4, it is "
 							             << params.size() << __E__;
 					}
 
@@ -3850,6 +3906,67 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						xmlOut.addTextElementToData(
 						    "console_warn_count",
 						    std::to_string(theSupervisor->systemConsoleWarnCount_));
+
+						auto activeGroupMap = theSupervisor->theConfigurationManager_
+						                          ->getActiveTableGroups();
+						xmlOut.addTextElementToData(
+						    "activeContextGroupName",
+						    activeGroupMap[ConfigurationManager::GROUP_TYPE_NAME_CONTEXT]
+						        .first);
+						xmlOut.addTextElementToData(
+						    "activeContextGroupKey",
+						    activeGroupMap[ConfigurationManager::GROUP_TYPE_NAME_CONTEXT]
+						        .second.toString());
+						xmlOut.addTextElementToData(
+						    "activeConfigGroupName",
+						    activeGroupMap
+						        [ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION]
+						            .first);
+						xmlOut.addTextElementToData(
+						    "activeConfigGroupKey",
+						    activeGroupMap
+						        [ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION]
+						            .second.toString());
+
+						//resolve the requester's selected config alias (if any) against
+						//	this subsystem's own already-active Backbone group -- local
+						//	file read only, no scp/network hop, since it is this
+						//	subsystem's own active group being consulted
+						__COUTS__(TLVL_RemoteStatusVerbose)
+						    << "requesterSelectedConfigAlias='"
+						    << requesterSelectedConfigAlias << "'" << __E__;
+						if(requesterSelectedConfigAlias != "")
+						{
+							try
+							{
+								ConfigurationManager tmpCfgMgr;
+								auto                 groupPair = tmpCfgMgr.getTableGroupFromAlias(
+								    requesterSelectedConfigAlias);
+								__COUTS__(TLVL_RemoteStatusVerbose)
+								    << "resolved alias '" << requesterSelectedConfigAlias
+								    << "' to group '" << groupPair.first << "("
+								    << groupPair.second << ")'" << __E__;
+								xmlOut.addTextElementToData("selectedConfigGroupName",
+								                            groupPair.first);
+								xmlOut.addTextElementToData(
+								    "selectedConfigGroupKey",
+								    groupPair.second.toString());
+							}
+							catch(const std::exception& e)
+							{
+								__COUT_WARN__
+								    << "Failed to resolve selected config alias '"
+								    << requesterSelectedConfigAlias
+								    << "' to a group: " << e.what() << __E__;
+							}
+							catch(...)
+							{
+								__COUT_WARN__
+								    << "Failed to resolve selected config alias '"
+								    << requesterSelectedConfigAlias
+								    << "' to a group (unknown error)." << __E__;
+							}
+						}
 					}
 
 					std::stringstream out;
@@ -11974,6 +12091,9 @@ try
 				xmlOut.addTextElementToData("subsystem_name",
 				                            remoteSubsystem.appInfo.name);
 				xmlOut.addTextElementToData("subsystem_url", remoteSubsystem.appInfo.url);
+				xmlOut.addTextElementToData(
+				    "subsystem_id",
+				    std::to_string(remoteSubsystem.appInfo.id));  //remote gateway LID
 				xmlOut.addTextElementToData("subsystem_landingPage",
 				                            remoteSubsystem.landingPage);
 				xmlOut.addTextElementToData("subsystem_status",
@@ -12042,6 +12162,23 @@ try
 				                            remoteSubsystem.getFsmMode());
 				xmlOut.addTextElementToData("subsystem_fsmIncluded",
 				                            remoteSubsystem.fsm_included ? "1" : "0");
+				xmlOut.addTextElementToData("subsystem_fsmName",
+				                            remoteSubsystem.fsmName);
+				xmlOut.addTextElementToData("subsystem_activeContextGroupName",
+				                            remoteSubsystem.activeContextGroupName);
+				xmlOut.addTextElementToData(
+				    "subsystem_activeContextGroupKey",
+				    remoteSubsystem.activeContextGroupKey.toString());
+				xmlOut.addTextElementToData("subsystem_activeConfigGroupName",
+				                            remoteSubsystem.activeConfigGroupName);
+				xmlOut.addTextElementToData(
+				    "subsystem_activeConfigGroupKey",
+				    remoteSubsystem.activeConfigGroupKey.toString());
+				xmlOut.addTextElementToData("subsystem_selectedConfigGroupName",
+				                            remoteSubsystem.selectedConfigGroupName);
+				xmlOut.addTextElementToData(
+				    "subsystem_selectedConfigGroupKey",
+				    remoteSubsystem.selectedConfigGroupKey.toString());
 			}  //end remote app loop
 
 			if(accumulateErrors != "")
