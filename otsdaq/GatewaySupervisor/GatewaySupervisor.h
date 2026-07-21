@@ -81,6 +81,8 @@ class WorkLoopManager;
 		static const std::string COMMAND_PARAM_LOG_ENTRY_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE;
+		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE;
+		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE;
 		static const std::string COMMAND_PARAM_ITERATION_INDEX_PREAMBLE;
 
 	public:
@@ -348,6 +350,13 @@ class WorkLoopManager;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
 		unsigned int		activeStateMachineConfigureConditionID_, activeStateMachineRunConditionID_;
 		std::string			activeStateMachineSubsystemCommonList_, activeStateMachineSubsystemCommonOverrideList_; ///<cached at Configure transition CSV list of Table/Versions specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway, to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring
+		std::string			activeSubsystemCommonContextList_, activeSubsystemCommonContextOverrideList_; ///<refreshed in AppStatusWorkLoop CSV list of Table/Versions specified as table alias "SubsystemCommonContext" and "SubsystemCommonContextOverride" by user at top-level Primary Gateway, to be pushed to remote subsystems via periodic status requests for Context group tables (e.g. StateMachineTable)
+		std::string			appliedContextCommonList_, appliedContextCommonOverrideList_; ///<remote-side: last applied Context Common Table lists received from top-level
+		std::mutex			contextCommonMutex_; ///<protects appliedContextCommonList_ and appliedContextCommonOverrideList_
+
+		std::string			cachedSubsystemCommonBackboneKey_;
+		std::string			cachedSubsystemCommonList_, cachedSubsystemCommonOverrideList_;
+		std::string			cachedSubsystemCommonContextList_, cachedSubsystemCommonContextOverrideList_;
 
 		std::mutex			systemStatusMutex_;
 		std::string 		lastLogbookEntry_;
@@ -498,8 +507,9 @@ public:	//used by remote subsystem control and status
 		std::string											cachedGlobalFieldsString_;
 		std::pair<std::string, TableGroupKey>				cachedGlobalFieldsGroup_;
 
-		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);
+		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP, const std::string& contextCommonList = "", const std::string& contextCommonOverrideList = "");
 		static void 				SendRemoteGatewayCommand					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
+		static void					applyContextCommonTables					(GatewaySupervisor* supervisor, const std::string& contextCommonList, const std::string& contextCommonOverrideList);
 		static void 				GetRemoteGatewayIcons						(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
 		void						loadRemoteGatewaySettings					(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways, bool onlyNotFound = false) const;
 		void						saveRemoteGatewaySettings					(void) const;
