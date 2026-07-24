@@ -21,6 +21,47 @@ using namespace ots;
 #undef __MF_SUBJECT__
 #define __MF_SUBJECT__ "ARTDAQTableBase"
 
+// Per-file flatten times are only emitted at trace verbosity, which is too noisy
+// to leave on; these accumulate the same measurements so extractARTDAQInfo() can
+// report one summary at INFO level. Written only from flattenFHICL(), which the
+// extract*Info() calls below drive serially. fhiclFlatten{Count,Seconds}_ are reset
+// per extractARTDAQInfo() call; the *Cumulative* variants persist across calls so a
+// single config -- which invokes extractARTDAQInfo() more than once (e.g. a
+// doWriteFHiCL=false host-discovery pass plus the doWriteFHiCL=true generation pass)
+// -- can be understood from any one summary. extractInvocation_ counts those calls.
+static size_t fhiclFlattenCount_             = 0;
+static double fhiclFlattenSeconds_           = 0;
+static size_t fhiclFlattenCountCumulative_   = 0;
+static double fhiclFlattenSecondsCumulative_ = 0;
+static size_t extractInvocation_             = 0;
+
+// The cumulative counters span one "config step" -- but a config generates FHiCL
+// from more than one place (e.g. extractARTDAQInfo plus a separate write pass), so
+// there is no single call to anchor a reset on. Instead we reset on a time gap:
+// flattens within one config are sub-second apart, whereas successive configs are
+// minutes apart, so any gap beyond this threshold marks the start of a new config.
+static std::chrono::steady_clock::time_point fhiclTraceLastActivity_{};
+static const double FHICL_TRACE_RESET_GAP_S = 30.0;
+
+// Resets the per-config cumulative counters when a new config step is detected (see
+// above). Called at the start of every flatten and of extractARTDAQInfo so whichever
+// runs first in a config triggers the reset.
+static void maybeResetFHiCLTimingTrace()
+{
+	std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+	if(fhiclFlattenCountCumulative_ > 0 || extractInvocation_ > 0)
+	{
+		double gap = std::chrono::duration<double>(now - fhiclTraceLastActivity_).count();
+		if(gap > FHICL_TRACE_RESET_GAP_S)
+		{
+			fhiclFlattenCountCumulative_   = 0;
+			fhiclFlattenSecondsCumulative_ = 0;
+			extractInvocation_             = 0;
+		}
+	}
+	fhiclTraceLastActivity_ = now;
+}
+
 // clang-format off
 
 #define				FCL_COMMENT_POSITION	65
@@ -225,6 +266,7 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
                                    const std::string& name,
                                    std::string*       returnFcl /* = nullptr */)
 {
+	maybeResetFHiCLTimingTrace();
 	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
 	__COUTS__(3) << "flattenFHICL()" << __ENV__("FHICL_FILE_PATH") << __E__;
 	__COUTVS__(4, StringMacros::stackTrace());
@@ -279,6 +321,12 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 			   << __E__;
 		__SS_THROW__;
 	}
+
+	double flattenElapsed = artdaq::TimeUtils::GetElapsedTime(startClock);
+	++fhiclFlattenCount_;
+	fhiclFlattenSeconds_ += flattenElapsed;
+	++fhiclFlattenCountCumulative_;
+	fhiclFlattenSecondsCumulative_ += flattenElapsed;
 
 	__COUTT__ << name
 	          << " Flatten Clock time = " << artdaq::TimeUtils::GetElapsedTime(startClock)
@@ -2359,12 +2407,31 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::extractARTDAQInfo(
 		return info_;
 	}
 
+	// Timing of the extract*Info() calls, each of which flattens the FHiCL for the
+	// processes it handles. Reported as a summary at the end of this function.
+	std::chrono::steady_clock::time_point extractStartClock =
+	    std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point stageClock = extractStartClock;
+	std::vector<std::pair<std::string, double>> stageTimes;
+
+	maybeResetFHiCLTimingTrace();
+	fhiclFlattenCount_   = 0;
+	fhiclFlattenSeconds_ = 0;
+	size_t thisInvocation = ++extractInvocation_;
+
+	auto recordStageTime = [&](const std::string& stageName) {
+		stageTimes.emplace_back(stageName,
+		                        artdaq::TimeUtils::GetElapsedTime(stageClock));
+		stageClock = std::chrono::steady_clock::now();
+	};
+
 	// We do RoutingManagers first so we can properly fill in routing tables later
 	extractRoutingManagersInfo(artdaqSupervisorNode,
 	                           getStatusFalseNodes,
 	                           doWriteFHiCL,
 	                           routingTimeoutMs,
 	                           routingRetryCount);
+	recordStageTime("RoutingManagers");
 	__COUT__ << "artdaqSupervisorNode RoutingManager size: "
 	         << info_.processes.at(ARTDAQAppType::RoutingManager).size() << __E__;
 
@@ -2379,6 +2446,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::extractARTDAQInfo(
 	                        routingRetryCount);
 	__COUT__ << "artdaqSupervisorNode BoardReader size: "
 	         << info_.processes.at(ARTDAQAppType::BoardReader).size() << __E__;
+	recordStageTime("BoardReaders");
 
 	if(progressBar)
 		progressBar->step();
@@ -2387,6 +2455,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::extractARTDAQInfo(
 	    artdaqSupervisorNode, getStatusFalseNodes, doWriteFHiCL, maxFragmentSizeBytes);
 	__COUT__ << "artdaqSupervisorNode EventBuilder size: "
 	         << info_.processes.at(ARTDAQAppType::EventBuilder).size() << __E__;
+	recordStageTime("EventBuilders");
 
 	if(progressBar)
 		progressBar->step();
@@ -2395,6 +2464,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::extractARTDAQInfo(
 	    artdaqSupervisorNode, getStatusFalseNodes, doWriteFHiCL, maxFragmentSizeBytes);
 	__COUT__ << "artdaqSupervisorNode DataLogger size: "
 	         << info_.processes.at(ARTDAQAppType::DataLogger).size() << __E__;
+	recordStageTime("DataLoggers");
 
 	if(progressBar)
 		progressBar->step();
@@ -2403,9 +2473,30 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::extractARTDAQInfo(
 	    artdaqSupervisorNode, getStatusFalseNodes, doWriteFHiCL, maxFragmentSizeBytes);
 	__COUT__ << "artdaqSupervisorNode Dispatcher size: "
 	         << info_.processes.at(ARTDAQAppType::Dispatcher).size() << __E__;
+	recordStageTime("Dispatchers");
 
 	if(progressBar)
 		progressBar->step();
+
+	{
+		// extractARTDAQInfo() is called more than once per config (see the note on
+		// the cumulative counters above), so this summary reports both THIS call
+		// (invocation #, doWriteFHiCL context) and the running cumulative flatten
+		// cost -- otherwise a single summary looks like the whole FHiCL cost when
+		// it is only one pass of several.
+		std::stringstream summary;
+		summary << "FHiCL TIMING TRACE: extractARTDAQInfo call #" << thisInvocation
+		        << " (doWriteFHiCL=" << (doWriteFHiCL ? "true" : "false") << ") total "
+		        << artdaq::TimeUtils::GetElapsedTime(extractStartClock) << "s"
+		        << ", of which flattenFHICL was " << fhiclFlattenCount_ << " file(s) in "
+		        << fhiclFlattenSeconds_ << "s"
+		        << "; this-config cumulative flattenFHICL (all passes): "
+		        << fhiclFlattenCountCumulative_ << " file(s) in "
+		        << fhiclFlattenSecondsCumulative_ << "s";
+		for(const auto& stageTime : stageTimes)
+			summary << "\n    " << stageTime.first << ": " << stageTime.second << "s";
+		__COUT_INFO__ << summary.str() << __E__;
+	}
 
 	return info_;
 }  // end extractARTDAQInfo()
