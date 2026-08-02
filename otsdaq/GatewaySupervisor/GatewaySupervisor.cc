@@ -6753,6 +6753,21 @@ try
 			            "tables)."
 			         << __E__;
 
+			{
+				std::string reapplyList, reapplyOverrideList;
+				{
+					std::lock_guard<std::mutex> lock(contextCommonMutex_);
+					reapplyList         = appliedContextCommonList_;
+					reapplyOverrideList = appliedContextCommonOverrideList_;
+				}
+				if(!reapplyList.empty() || !reapplyOverrideList.empty())
+				{
+					__COUT__ << "Re-applying ContextCommon tables after loadTableGroup."
+					         << __E__;
+					applyContextCommonTables(this, reapplyList, reapplyOverrideList);
+				}
+			}
+
 			RunControlStateMachine::theProgressBar_.step();
 
 			// mark the translated group as the last activated group
@@ -9995,8 +10010,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		commandedApps.emplace(remoteGatewayApp.fullName);
 
-		remoteGatewayApp.config_dump = "";  //clear, must come from new command completion
-		remoteGatewayApp.command     = commandAndParams;
+		if(iteration == 0)
+			remoteGatewayApp.config_dump =
+			    "";  //clear on first iteration only; subsequent iterations preserve the dump already received
+		remoteGatewayApp.command = commandAndParams;
 
 		remoteGatewayApp.command +=
 		    "," + COMMAND_PARAM_ITERATION_INDEX_PREAMBLE + std::to_string(iteration);
@@ -10043,9 +10060,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 					rga.iterationsDone = localApp.iterationsDone;
 					if(wasCommanded)
 					{
-						rga.command          = localApp.command;
-						rga.fsmName          = localApp.fsmName;
-						rga.config_dump      = localApp.config_dump;
+						rga.command = localApp.command;
+						rga.fsmName = localApp.fsmName;
+						if(localApp.config_dump.size())
+							rga.config_dump = localApp.config_dump;
 						rga.appInfo.status   = localApp.appInfo.status;
 						rga.appInfo.progress = localApp.appInfo.progress;
 					}
@@ -13245,6 +13263,13 @@ void GatewaySupervisor::addStateMachineStatusToXML(HttpXmlDocument&   xmlOut,
 	catch(...)
 	{
 		__COUTS__(2) << "Failed to add state machine names to XML status." << __E__;
+	}
+	{
+		std::lock_guard<std::mutex> lock(contextCommonMutex_);
+		xmlOut.addTextElementToData("AppliedContextCommonList",
+		                            appliedContextCommonList_);
+		xmlOut.addTextElementToData("AppliedContextCommonOverrideList",
+		                            appliedContextCommonOverrideList_);
 	}
 }  // end addStateMachineStatusToXML()
 
