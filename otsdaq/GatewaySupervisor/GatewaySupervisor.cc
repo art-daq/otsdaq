@@ -10653,8 +10653,26 @@ std::string oidcGenRandomHex(unsigned int length)
 {
 	static const char hex[] = "0123456789abcdef";
 	std::string       out;
-	for(unsigned int i = 0; i < length; ++i)
+	out.reserve(length);
+
+	// Prefer a cryptographically strong RNG from the OS.
+	std::ifstream urandom("/dev/urandom", std::ios::in | std::ios::binary);
+	if(urandom)
+	{
+		for(unsigned int i = 0; i < length; ++i)
+		{
+			unsigned char byte = 0;
+			urandom.read(reinterpret_cast<char*>(&byte), 1);
+			if(!urandom)
+				break;
+			out += hex[byte & 0x0F];
+		}
+	}
+
+	// If /dev/urandom is unavailable or short-read, fall back to existing behavior.
+	while(out.size() < length)
 		out += hex[rand() % 16];
+
 	return out;
 }  // end oidcGenRandomHex()
 
