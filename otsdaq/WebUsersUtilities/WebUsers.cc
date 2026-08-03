@@ -1623,7 +1623,7 @@ uint64_t WebUsers::attemptActiveSessionWithEmail(const std::string& email,
 		// derive a base username from the email local-part (sanitized)
 		std::string baseUsername;
 		for(const char& c : email.substr(0, email.find('@')))
-			if(isalnum(c) || c == '_' || c == '-' || c == '.')
+			if(std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-' || c == '.')
 				baseUsername += c;
 		if(baseUsername == "")
 			baseUsername = "ssouser";
