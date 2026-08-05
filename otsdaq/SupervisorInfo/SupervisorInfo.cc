@@ -13,15 +13,15 @@ void SupervisorInfo::setStatus(const std::string& status,
                                const int64_t      availableDataSpaceKB)
 {
 	/// Note: be careful accessing status_ in multithreaded code (need higher level lock, a la getSupervisorInfoMutex)
+	if(status !=
+	   SupervisorInfo::
+	       APP_STATUS_UNKNOWN && status_ != status)
+		lastStatusTime_ = time(0);
 	status_   = status;
 	progress_ = progress;
 	detail_   = detail;
 	SupervisorInfo::emplaceAvailableSpace(availableLogSpaceKB, availableLogSpaceKB_);
 	SupervisorInfo::emplaceAvailableSpace(availableDataSpaceKB, availableDataSpaceKB_);
-	if(status !=
-	   SupervisorInfo::
-	       APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
-		lastStatusTime_ = time(0);
 }  // end setStatus()
 
 //=====================================================================================

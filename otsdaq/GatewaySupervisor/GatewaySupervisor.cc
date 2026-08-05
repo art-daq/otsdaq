@@ -529,6 +529,7 @@ try
 		bool oneStatusReqHasFailed = false;
 
 		++loopCount;
+		auto loopStartTime = std::chrono::high_resolution_clock::now();
 		usleep(500000 /* 0.5 seconds */);
 
 		//lock to access appLastStatusGood_ map (between disconnected and connected handling threads)
@@ -678,6 +679,8 @@ try
 			    << "] in Context '" << appInfo.getContextName()
 			    << "' [URL=" << appInfo.getURL()
 			    << "] isDisconnected = " << isDisconnected << ".\n\n";
+
+			auto appStatusStartTime = std::chrono::high_resolution_clock::now();
 
 			//if doDisconnected is true, only check disconnected apps
 			//	AND disconnected subapps within gateway!
@@ -2176,9 +2179,14 @@ try
 
 				try
 				{
+					auto soapStartTime = std::chrono::high_resolution_clock::now();
 					xoap::MessageReference statusMessage =
 					    theSupervisor->sendWithSOAPReply(appInfo.getDescriptor(),
 					                                     tempMessage);
+					auto soapMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+					    std::chrono::high_resolution_clock::now() - soapStartTime).count();
+					__COUTS__(TLVL_RemoteStatusVerbose) << "SOAP status request to '" << appName << "' took " << soapMs
+					          << " ms" << __E__;
 
 					if("ContextARTDAQ" == appInfo.getContextName())
 						__COUTS__(TLVL_DebugArtdaqStatus)
@@ -2193,6 +2201,7 @@ try
 						    << appInfo.getContextName() << " statusMessage... "
 						    << SOAPUtilities::translate(statusMessage) << std::endl;
 
+					auto parseStartTime = std::chrono::high_resolution_clock::now();
 					SOAPParameters parameters;
 					parameters.addParameter("Status");
 					parameters.addParameter("Progress");
@@ -2201,6 +2210,11 @@ try
 					parameters.addParameter("AvailableLogSpaceKB");
 					parameters.addParameter("AvailableDataSpaceKB");
 					SOAPUtilities::receive(statusMessage, parameters);
+					auto parseMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+					    std::chrono::high_resolution_clock::now() - parseStartTime).count();
+					if(parseMs > 100)
+						__COUTS__(TLVL_RemoteStatusVerbose) << "SOAP parameter parsing for '" << appName << "' took "
+						          << parseMs << " ms" << __E__;
 
 					status = parameters.getValue("Status");
 					if(status.empty())
@@ -2805,6 +2819,13 @@ try
 				                    firstTripDataObserved_map);
 			else
 				firstTripDataObserved_map.erase(appInfo.getContextName());
+
+			// Measure time spent on this app's status
+			auto appStatusMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+			    std::chrono::high_resolution_clock::now() - appStatusStartTime).count();
+			if(appStatusMs > 250)
+				__COUTS__(TLVL_RemoteStatusVerbose) << "App '" << appName << "' status processing took " << appStatusMs
+				          << " ms" << __E__;
 		}  // end of app loop
 
 		if(oneStatusReqHasFailed)
@@ -2812,6 +2833,14 @@ try
 			__COUTT__ << "oneStatusReqHasFailed" << __E__;
 			// sleep(5);  // sleep to not overwhelm server with errors
 		}
+
+		auto loopTotalMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+		    std::chrono::high_resolution_clock::now() - loopStartTime).count();
+		if(loopTotalMs > 750)  // warn if more than 750ms (accounting for the 500ms sleep)
+			__COUTS__(TLVL_RemoteStatusVerbose) << "(doDisconnected=" << doDisconnected << ") Total loop iteration "
+			          << loopCount << " took " << loopTotalMs << " ms (expected ~500ms for "
+			             "sleep)"
+			          << __E__;
 
 	}  // end of infinite status checking loop
 }  // end AppStatusWorkLoop()
@@ -3278,7 +3307,23 @@ try
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
-				remoteGatewayApp.appInfo.lastStatusTime = atoi(value.c_str());
+				if(!value.size())
+					value = "0";
+				{
+					time_t parsedTime = atoi(value.c_str());
+					if(parsedTime > 0)
+						remoteGatewayApp.appInfo.lastStatusTime = parsedTime;
+				}
+
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "stale", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t staleSeconds = atoi(value.c_str());
+					if(staleSeconds > 0)
+						remoteGatewayApp.appInfo.lastStatusTime = time(0) - staleSeconds;
+				}
 
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
@@ -3517,6 +3562,11 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 	using clock = std::chrono::steady_clock;
 	auto start  = clock::now();
+
+	std::string cachedAliasBackboneGroupNameAndKey;
+	std::string cachedAliasInput;
+	std::pair<std::string, TableGroupKey> cachedAliasResult;
+	bool cachedAliasValid = false;
 
 	while(1)
 	{
@@ -4040,6 +4090,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 					}
 
+					auto paramParseMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+
 					HttpXmlDocument xmlOut;
 					for(const auto& it :
 					    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
@@ -4144,6 +4196,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 					}
 
+					auto postXmlBuildMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+
 					if(remoteGatewayStatus)  //also return System Messages and console count and user-with-lock
 					{
 						__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
@@ -4162,32 +4216,104 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						xmlOut.addTextElementToData(
 						    "console_warn_count",
 						    std::to_string(theSupervisor->systemConsoleWarnCount_));
+
+						auto activeGroupMap = theSupervisor->theConfigurationManager_
+						                          ->getActiveTableGroups();
+						xmlOut.addTextElementToData(
+						    "activeContextGroupName",
+						    activeGroupMap[ConfigurationManager::GROUP_TYPE_NAME_CONTEXT]
+						        .first);
+						xmlOut.addTextElementToData(
+						    "activeContextGroupKey",
+						    activeGroupMap[ConfigurationManager::GROUP_TYPE_NAME_CONTEXT]
+						        .second.toString());
+						xmlOut.addTextElementToData(
+						    "activeConfigGroupName",
+						    activeGroupMap
+						        [ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION]
+						            .first);
+						xmlOut.addTextElementToData(
+						    "activeConfigGroupKey",
+						    activeGroupMap
+						        [ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION]
+						            .second.toString());
+
+						//resolve the requester's selected config alias (if any) against
+						//	this subsystem's own already-active Backbone group -- local
+						//	file read only, no scp/network hop, since it is this
+						//	subsystem's own active group being consulted
+						__COUTS__(TLVL_RemoteStatusVerbose)
+						    << "requesterSelectedConfigAlias='"
+						    << requesterSelectedConfigAlias << "'" << __E__;
+						if(requesterSelectedConfigAlias != "")
+						{
+							try
+							{
+								std::string backboneGroupNameAndKey =
+								    theSupervisor->cachedSubsystemCommonBackboneKey_;
+
+								if(!cachedAliasValid ||
+								   backboneGroupNameAndKey != cachedAliasBackboneGroupNameAndKey ||
+								   requesterSelectedConfigAlias != cachedAliasInput)
+								{
+									ConfigurationManager tmpCfgMgr;
+									cachedAliasResult = tmpCfgMgr.getTableGroupFromAlias(
+									    requesterSelectedConfigAlias);
+									cachedAliasBackboneGroupNameAndKey = backboneGroupNameAndKey;
+									cachedAliasInput = requesterSelectedConfigAlias;
+									cachedAliasValid = true;
+								}
+
+								__COUTS__(TLVL_RemoteStatusVerbose)
+								    << "resolved alias '" << requesterSelectedConfigAlias
+								    << "' to group '" << cachedAliasResult.first << "("
+								    << cachedAliasResult.second << ")'" << __E__;
+								xmlOut.addTextElementToData("selectedConfigGroupName",
+								                            cachedAliasResult.first);
+								xmlOut.addTextElementToData(
+								    "selectedConfigGroupKey",
+								    cachedAliasResult.second.toString());
+							}
+							catch(const std::exception& e)
+							{
+								__COUT_WARN__
+								    << "Failed to resolve selected config alias '"
+								    << requesterSelectedConfigAlias
+								    << "' to a group: " << e.what() << __E__;
+							}
+							catch(...)
+							{
+								__COUT_WARN__
+								    << "Failed to resolve selected config alias '"
+								    << requesterSelectedConfigAlias
+								    << "' to a group (unknown error)." << __E__;
+							}
+						}
 					}
+
+					auto preAliasMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
 
 					std::stringstream out;
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/,
 					                         false /*allowWhiteSpace*/);
 
-					__COUTS__(TLVL_StateChangerStatus)
-					    << "Time taken for xml response to GetRemoteGatewayStatus "
-					       "==> "
-					    << std::chrono::duration_cast<std::chrono::milliseconds>(
-					           clock::now() - start)
-					           .count()
-					    << " milliseconds." << std::endl;
+					auto preAckMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
 
 					__COUTS__(TLVL_StatusParams)
 					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 
-					__COUTS__(TLVL_StateChangerStatus)
-					    << "Time taken for receive+send response to "
-					       "GetRemoteGatewayStatus ==> "
-					    << std::chrono::duration_cast<std::chrono::milliseconds>(
-					           clock::now() - start)
-					           .count()
-					    << " milliseconds." << std::endl;
+					auto totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+					if(totalMs > 50)
+						__COUTS__(TLVL_RemoteStatusVerbose) << "GetRemoteGatewayStatus handler breakdown: total=" << totalMs
+						         << "ms paramParse=" << paramParseMs
+						         << "ms xmlBuild=" << (postXmlBuildMs - paramParseMs)
+						         << "ms aliasResolve=" << (preAliasMs - postXmlBuildMs)
+						         << "ms xmlSerialize=" << (preAckMs - preAliasMs)
+						         << "ms acknowledge=" << (totalMs - preAckMs)
+						         << "ms responseSize=" << out.str().size()
+						         << __E__;
 
 					continue;
 				}  //end GetRemoteAppStatus
