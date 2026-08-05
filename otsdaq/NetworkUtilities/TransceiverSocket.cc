@@ -339,7 +339,7 @@ std::string TransceiverSocket::sendAndReceive(
 	          << " TID=" << std::this_thread::get_id() << std::endl;
 
 	//assume response may be multiple packets! (and give interPacketTimeoutUSeconds unless called with lower timeout)
-	size_t extraPackets = 0;
+	size_t      extraPackets = 0;
 	std::string receiveBuffer2;
 	while(receive(receiveBuffer2,
 	              0 /*timeoutSeconds*/,

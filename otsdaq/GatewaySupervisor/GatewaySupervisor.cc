@@ -2183,10 +2183,13 @@ try
 					xoap::MessageReference statusMessage =
 					    theSupervisor->sendWithSOAPReply(appInfo.getDescriptor(),
 					                                     tempMessage);
-					auto soapMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-					    std::chrono::high_resolution_clock::now() - soapStartTime).count();
-					__COUTS__(TLVL_RemoteStatusVerbose) << "SOAP status request to '" << appName << "' took " << soapMs
-					          << " ms" << __E__;
+					auto soapMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        std::chrono::high_resolution_clock::now() - soapStartTime)
+					        .count();
+					__COUTS__(TLVL_RemoteStatusVerbose)
+					    << "SOAP status request to '" << appName << "' took " << soapMs
+					    << " ms" << __E__;
 
 					if("ContextARTDAQ" == appInfo.getContextName())
 						__COUTS__(TLVL_DebugArtdaqStatus)
@@ -2210,11 +2213,14 @@ try
 					parameters.addParameter("AvailableLogSpaceKB");
 					parameters.addParameter("AvailableDataSpaceKB");
 					SOAPUtilities::receive(statusMessage, parameters);
-					auto parseMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-					    std::chrono::high_resolution_clock::now() - parseStartTime).count();
+					auto parseMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        std::chrono::high_resolution_clock::now() - parseStartTime)
+					        .count();
 					if(parseMs > 100)
-						__COUTS__(TLVL_RemoteStatusVerbose) << "SOAP parameter parsing for '" << appName << "' took "
-						          << parseMs << " ms" << __E__;
+						__COUTS__(TLVL_RemoteStatusVerbose)
+						    << "SOAP parameter parsing for '" << appName << "' took "
+						    << parseMs << " ms" << __E__;
 
 					status = parameters.getValue("Status");
 					if(status.empty())
@@ -2821,11 +2827,14 @@ try
 				firstTripDataObserved_map.erase(appInfo.getContextName());
 
 			// Measure time spent on this app's status
-			auto appStatusMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-			    std::chrono::high_resolution_clock::now() - appStatusStartTime).count();
+			auto appStatusMs =
+			    std::chrono::duration_cast<std::chrono::milliseconds>(
+			        std::chrono::high_resolution_clock::now() - appStatusStartTime)
+			        .count();
 			if(appStatusMs > 250)
-				__COUTS__(TLVL_RemoteStatusVerbose) << "App '" << appName << "' status processing took " << appStatusMs
-				          << " ms" << __E__;
+				__COUTS__(TLVL_RemoteStatusVerbose)
+				    << "App '" << appName << "' status processing took " << appStatusMs
+				    << " ms" << __E__;
 		}  // end of app loop
 
 		if(oneStatusReqHasFailed)
@@ -2835,12 +2844,15 @@ try
 		}
 
 		auto loopTotalMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-		    std::chrono::high_resolution_clock::now() - loopStartTime).count();
+		                       std::chrono::high_resolution_clock::now() - loopStartTime)
+		                       .count();
 		if(loopTotalMs > 750)  // warn if more than 750ms (accounting for the 500ms sleep)
-			__COUTS__(TLVL_RemoteStatusVerbose) << "(doDisconnected=" << doDisconnected << ") Total loop iteration "
-			          << loopCount << " took " << loopTotalMs << " ms (expected ~500ms for "
-			             "sleep)"
-			          << __E__;
+			__COUTS__(TLVL_RemoteStatusVerbose)
+			    << "(doDisconnected=" << doDisconnected << ") Total loop iteration "
+			    << loopCount << " took " << loopTotalMs
+			    << " ms (expected ~500ms for "
+			       "sleep)"
+			    << __E__;
 
 	}  // end of infinite status checking loop
 }  // end AppStatusWorkLoop()
@@ -3563,10 +3575,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	using clock = std::chrono::steady_clock;
 	auto start  = clock::now();
 
-	std::string cachedAliasBackboneGroupNameAndKey;
-	std::string cachedAliasInput;
+	std::string                           cachedAliasBackboneGroupNameAndKey;
+	std::string                           cachedAliasInput;
 	std::pair<std::string, TableGroupKey> cachedAliasResult;
-	bool cachedAliasValid = false;
+	bool                                  cachedAliasValid = false;
 
 	while(1)
 	{
@@ -4090,7 +4102,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 					}
 
-					auto paramParseMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+					auto paramParseMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        clock::now() - start)
+					        .count();
 
 					HttpXmlDocument xmlOut;
 					for(const auto& it :
@@ -4196,7 +4211,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 					}
 
-					auto postXmlBuildMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+					auto postXmlBuildMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        clock::now() - start)
+					        .count();
 
 					if(remoteGatewayStatus)  //also return System Messages and console count and user-with-lock
 					{
@@ -4253,13 +4271,15 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								    theSupervisor->cachedSubsystemCommonBackboneKey_;
 
 								if(!cachedAliasValid ||
-								   backboneGroupNameAndKey != cachedAliasBackboneGroupNameAndKey ||
+								   backboneGroupNameAndKey !=
+								       cachedAliasBackboneGroupNameAndKey ||
 								   requesterSelectedConfigAlias != cachedAliasInput)
 								{
 									ConfigurationManager tmpCfgMgr;
 									cachedAliasResult = tmpCfgMgr.getTableGroupFromAlias(
 									    requesterSelectedConfigAlias);
-									cachedAliasBackboneGroupNameAndKey = backboneGroupNameAndKey;
+									cachedAliasBackboneGroupNameAndKey =
+									    backboneGroupNameAndKey;
 									cachedAliasInput = requesterSelectedConfigAlias;
 									cachedAliasValid = true;
 								}
@@ -4291,29 +4311,36 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 					}
 
-					auto preAliasMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+					auto preAliasMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        clock::now() - start)
+					        .count();
 
 					std::stringstream out;
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/,
 					                         false /*allowWhiteSpace*/);
 
-					auto preAckMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+					auto preAckMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+					                    clock::now() - start)
+					                    .count();
 
 					__COUTS__(TLVL_StatusParams)
 					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 
-					auto totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - start).count();
+					auto totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+					                   clock::now() - start)
+					                   .count();
 					if(totalMs > 50)
-						__COUTS__(TLVL_RemoteStatusVerbose) << "GetRemoteGatewayStatus handler breakdown: total=" << totalMs
-						         << "ms paramParse=" << paramParseMs
-						         << "ms xmlBuild=" << (postXmlBuildMs - paramParseMs)
-						         << "ms aliasResolve=" << (preAliasMs - postXmlBuildMs)
-						         << "ms xmlSerialize=" << (preAckMs - preAliasMs)
-						         << "ms acknowledge=" << (totalMs - preAckMs)
-						         << "ms responseSize=" << out.str().size()
-						         << __E__;
+						__COUTS__(TLVL_RemoteStatusVerbose)
+						    << "GetRemoteGatewayStatus handler breakdown: total="
+						    << totalMs << "ms paramParse=" << paramParseMs
+						    << "ms xmlBuild=" << (postXmlBuildMs - paramParseMs)
+						    << "ms aliasResolve=" << (preAliasMs - postXmlBuildMs)
+						    << "ms xmlSerialize=" << (preAckMs - preAliasMs)
+						    << "ms acknowledge=" << (totalMs - preAckMs)
+						    << "ms responseSize=" << out.str().size() << __E__;
 
 					continue;
 				}  //end GetRemoteAppStatus
