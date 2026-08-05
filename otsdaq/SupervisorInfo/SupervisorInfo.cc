@@ -13,9 +13,7 @@ void SupervisorInfo::setStatus(const std::string& status,
                                const int64_t      availableDataSpaceKB)
 {
 	/// Note: be careful accessing status_ in multithreaded code (need higher level lock, a la getSupervisorInfoMutex)
-	if(status !=
-	   SupervisorInfo::
-	       APP_STATUS_UNKNOWN && status_ != status)
+	if(status != SupervisorInfo::APP_STATUS_UNKNOWN && status_ != status)
 		lastStatusTime_ = time(0);
 	status_   = status;
 	progress_ = progress;
