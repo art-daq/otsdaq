@@ -5070,6 +5070,7 @@ otsActionHandler() {
 
 	FIRST_TIME=1 #to enable url printouts
 	DO_LOG_ROLLOVER=0
+	_actionLoopCount=0
 
 	out
 	out "Process information for PID ${bpid}: ps -aux | grep ${bpid}"
@@ -5114,6 +5115,10 @@ otsActionHandler() {
 		OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
 
 		echo "0" > $OTSDAQ_STARTOTS_ACTION_FILE #clear the command in the file; it has been responded to
+
+		if [[ "${OTSDAQ_STARTOTS_ACTION:-"0"}" != "0" ]]; then
+			out "ACTION-DIAG: read action='${OTSDAQ_STARTOTS_ACTION}' from ${OTSDAQ_STARTOTS_ACTION_FILE} (cleared to 0)"
+		fi
 
 		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
 			if declare -F otsUserSshTunnels > /dev/null; then
@@ -5224,6 +5229,7 @@ otsActionHandler() {
 		elif [[ $OTSDAQ_STARTOTS_ACTION == LAUNCH_INSTANCE* ]]; then
 
 			info "self-pid=${BASHPID}: Launching remote ots instance $OTSDAQ_STARTOTS_ACTION"
+			out "ACTION-DIAG: LAUNCH_INSTANCE handler START for '${OTSDAQ_STARTOTS_ACTION}'"
 
 			# Read the string into an array, scoping IFS=';' to just this read so
 			# the action handler's global IFS stays as default whitespace --
@@ -5266,11 +5272,14 @@ otsActionHandler() {
 				out "\tRemote launch of ots instance processes on host {${inst_host}}."
 				out "\t\tssh ${inst_user}@${inst_host} SCRIPT_DIR/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type}"
 
+				out "ACTION-DIAG: about to ssh KILL_ALL to ${inst_user}@${inst_host}"
 				# first kill existing for immediate gratification to user (so not confused by existing instance status)
 				ssh -K ${inst_user}@${inst_host} "echo \"KILL_ALL\" > ${inst_data}/ServiceData/StartOTS_action_quit.cmd"
+				out "ACTION-DIAG: ssh KILL_ALL returned, launching remote start in background..."
 
 				# launch ssh remote start (attempt twice)
 				ssh -K ${inst_user}@${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || ssh -K ${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || out "${Red}${REV} ***************** {${inst_host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
+				out "ACTION-DIAG: LAUNCH_INSTANCE handler DONE for ${inst_host}"
 			fi
 
 		elif [[ "$OTSDAQ_STARTOTS_ACTION" == LOG_ROLLOVER* ]]; then
@@ -5303,12 +5312,16 @@ otsActionHandler() {
 
 		elif [[ "${OTSDAQ_STARTOTS_ACTION:-"0"}" != "0"  || "${OTSDAQ_STARTOTS_QUIT:-"0"}" != "0" ]]; then
 
-			error "self-pid=${BASHPID}: Exiting ots script.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+			error "self-pid=${BASHPID}: Exiting ots script.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT} (length=${#OTSDAQ_STARTOTS_ACTION})"
 			exit
 
 		fi
 
 		sleep 1
+		_actionLoopCount=$(( $_actionLoopCount + 1 ))
+		if (( _actionLoopCount % 100 == 0 )); then
+			out "ACTION-DIAG: still alive pid=${BASHPID} loop=${_actionLoopCount}"
+		fi
 		# Note!! User can prevent data check with export OTSDAQ_DATA_DISK_MINIMUM=0
 		otsDataDiskCheck
 
