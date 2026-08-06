@@ -13060,7 +13060,8 @@ try
 			__SUP_COUTV__(targetSubsystem);
 			//launch Target Subsystem's remote ots instance
 
-			__COUT__ << "gatewayLaunchOTSInstance: acquiring remoteGatewayAppsMutex_ for subsystem '"
+			__COUT__ << "gatewayLaunchOTSInstance: acquiring remoteGatewayAppsMutex_ for "
+			            "subsystem '"
 			         << targetSubsystem << "'..." << __E__;
 
 			bool                        found = false;
@@ -13091,9 +13092,11 @@ try
 					          << remoteGatewayApp.instancePath;  //full USER_DATA path
 					__SUP_COUTV__(commandSs.str());
 
-					__COUT__ << "gatewayLaunchOTSInstance: about to call launchStartOneServerCommand"
+					__COUT__ << "gatewayLaunchOTSInstance: about to call "
+					            "launchStartOneServerCommand"
 					         << " for subsystem '" << targetSubsystem
-					         << "' targeting context '" << getContextUID() << "'" << __E__;
+					         << "' targeting context '" << getContextUID() << "'"
+					         << __E__;
 
 					GatewaySupervisor::launchStartOneServerCommand(
 					    commandSs.str(),
@@ -13101,7 +13104,8 @@ try
 					    CorePropertySupervisorBase::theConfigurationManager_,
 					    getContextUID());
 
-					__COUT__ << "gatewayLaunchOTSInstance: launchStartOneServerCommand returned"
+					__COUT__ << "gatewayLaunchOTSInstance: launchStartOneServerCommand "
+					            "returned"
 					         << " for subsystem '" << targetSubsystem << "'" << __E__;
 
 					//force status for immediate user feedback
@@ -13850,7 +13854,7 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 	__COUT__ << "launchStartOneServerCommand: writing command '" << command
 	         << "' to file " << fn << __E__;
 
-	FILE*       fp = fopen(fn.c_str(), "w");
+	FILE* fp = fopen(fn.c_str(), "w");
 	if(fp)
 	{
 		fprintf(fp, "%s", command.c_str());
@@ -13862,7 +13866,8 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 		__SS_THROW__;
 	}
 
-	__COUT__ << "launchStartOneServerCommand: command written, sleeping 2s for action handler to read..."
+	__COUT__ << "launchStartOneServerCommand: command written, sleeping 2s for action "
+	            "handler to read..."
 	         << __E__;
 
 	sleep(2 /*seconds*/);  // then verify that the commands were read
@@ -13877,8 +13882,8 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 		fgets(line, 100, fp);
 		fclose(fp);
 
-		__COUT__ << "launchStartOneServerCommand: verification read back '"
-		         << line << "' for command '" << command << "'" << __E__;
+		__COUT__ << "launchStartOneServerCommand: verification read back '" << line
+		         << "' for command '" << command << "'" << __E__;
 
 		if(strncmp(line, command.c_str(), 90) == 0)
 		{
