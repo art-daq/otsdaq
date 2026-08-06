@@ -3684,7 +3684,10 @@ launchOTSLogFind() {
 	_logfind_runrecords_dir=""
 
 	# find the latest (highest numbered) run record directory
-	_logfind_latest_run_dir=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -t/ -k$(echo "${USER_DATA}/ARTDAQConfigurations/run_records/x" | tr -cd '/' | wc -c) -n | tail -1)
+	# sort -t/ field index: leading '/' creates an empty field 1, so the
+	# directory basename sits at (number_of_slashes + 1).
+	_logfind_sort_key=$(( $(echo "${USER_DATA}/ARTDAQConfigurations/run_records/x" | tr -cd '/' | wc -c) + 1 ))
+	_logfind_latest_run_dir=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -t/ -k${_logfind_sort_key} -n | tail -1)
 
 	if [ -n "$_logfind_latest_run_dir" ]; then
 		_logfind_runrecords_dir="$_logfind_latest_run_dir"

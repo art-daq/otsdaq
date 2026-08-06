@@ -435,6 +435,7 @@ public:	//used by remote subsystem control and status
 			ConfigDumpTypes						config_dump_type = ConfigDumpTypes::Unknown;
 
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
+			time_t								relaunchTime = 0; ///<timestamp of last relaunch via gatewayLaunchOTSInstance
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
 

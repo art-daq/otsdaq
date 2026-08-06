@@ -1712,7 +1712,10 @@ try
 									       appLastStatusGood.end() &&
 									   //startup lull: suppress bad-status spam in the first 30 s
 									   //while remote apps are still coming up.
-									   time(0) - workloopStartTime > 30)
+									   time(0) - workloopStartTime > 30 &&
+									   //relaunch lull: suppress for 60 s after a user-initiated relaunch
+									   (remoteGatewayApp.relaunchTime == 0 ||
+									    time(0) - remoteGatewayApp.relaunchTime > 60))
 										theSupervisor->addSystemMessage("*", ss.str());
 								}
 
@@ -13150,6 +13153,12 @@ try
 					    "Reboot";  //use command process for getting updated status
 					remoteGatewayApp.appInfo.status   = "Rebooting... ";
 					remoteGatewayApp.appInfo.progress = 1;
+					remoteGatewayApp.relaunchTime     = time(0);
+
+					addSystemMessage("*",
+					    "Subsystem '" + remoteGatewayApp.appInfo.name +
+					    "' was relaunched at " +
+					    StringMacros::getTimestampString() + ".");
 				}
 
 			__COUT__ << "gatewayLaunchOTSInstance: releasing mutex for subsystem '"
