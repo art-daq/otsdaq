@@ -13060,8 +13060,15 @@ try
 			__SUP_COUTV__(targetSubsystem);
 			//launch Target Subsystem's remote ots instance
 
+			__COUT__ << "gatewayLaunchOTSInstance: acquiring remoteGatewayAppsMutex_ for subsystem '"
+			         << targetSubsystem << "'..." << __E__;
+
 			bool                        found = false;
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+
+			__COUT__ << "gatewayLaunchOTSInstance: mutex acquired for subsystem '"
+			         << targetSubsystem << "'" << __E__;
+
 			for(auto& remoteGatewayApp : remoteGatewayApps_)
 				if(targetSubsystem == remoteGatewayApp.appInfo.name)
 				{
@@ -13084,11 +13091,18 @@ try
 					          << remoteGatewayApp.instancePath;  //full USER_DATA path
 					__SUP_COUTV__(commandSs.str());
 
+					__COUT__ << "gatewayLaunchOTSInstance: about to call launchStartOneServerCommand"
+					         << " for subsystem '" << targetSubsystem
+					         << "' targeting context '" << getContextUID() << "'" << __E__;
+
 					GatewaySupervisor::launchStartOneServerCommand(
 					    commandSs.str(),
 					    //"LAUNCH_INSTANCE;user;hostname;/home/user/ots_spack_fast;Normal;shift1",
 					    CorePropertySupervisorBase::theConfigurationManager_,
 					    getContextUID());
+
+					__COUT__ << "gatewayLaunchOTSInstance: launchStartOneServerCommand returned"
+					         << " for subsystem '" << targetSubsystem << "'" << __E__;
 
 					//force status for immediate user feedback
 					remoteGatewayApp.command =
@@ -13096,6 +13110,9 @@ try
 					remoteGatewayApp.appInfo.status   = "Rebooting... ";
 					remoteGatewayApp.appInfo.progress = 1;
 				}
+
+			__COUT__ << "gatewayLaunchOTSInstance: releasing mutex for subsystem '"
+			         << targetSubsystem << "' found=" << found << __E__;
 
 			if(!found)
 			{
@@ -13829,6 +13846,10 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 
 	std::string fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" +
 	                  hostname + ".cmd");
+
+	__COUT__ << "launchStartOneServerCommand: writing command '" << command
+	         << "' to file " << fn << __E__;
+
 	FILE*       fp = fopen(fn.c_str(), "w");
 	if(fp)
 	{
@@ -13841,6 +13862,9 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 		__SS_THROW__;
 	}
 
+	__COUT__ << "launchStartOneServerCommand: command written, sleeping 2s for action handler to read..."
+	         << __E__;
+
 	sleep(2 /*seconds*/);  // then verify that the commands were read
 	// note: StartOTS.sh has a sleep of 1 second
 
@@ -13852,6 +13876,9 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 		char line[100];
 		fgets(line, 100, fp);
 		fclose(fp);
+
+		__COUT__ << "launchStartOneServerCommand: verification read back '"
+		         << line << "' for command '" << command << "'" << __E__;
 
 		if(strncmp(line, command.c_str(), 90) == 0)
 		{
