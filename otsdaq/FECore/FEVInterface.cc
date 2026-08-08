@@ -7,11 +7,23 @@
 #include <TFormula.h>
 
 #define TRACE_NAME "FEVInterface"
+#include <chrono>  //DIAG: for ms timestamps in FE macro latency investigation
 #include <iostream>
 #include <sstream>
 #include <thread>  //for std::thread
 
 using namespace ots;
+
+namespace
+{
+// DIAG: temporary ms-resolution timestamp helper for FE macro latency investigation
+inline uint64_t diagNowMs()
+{
+	return std::chrono::duration_cast<std::chrono::milliseconds>(
+	           std::chrono::system_clock::now().time_since_epoch())
+	    .count();
+}
+}  // namespace
 
 const std::string FEVInterface::UNKNOWN_TYPE = "UNKNOWN";
 const std::string FEVInterface::DEFAULT =
@@ -1223,15 +1235,27 @@ void FEVInterface::runFrontEndMacro(
 	parameters.addParameter("inputArgs", inputArgsStr);
 	SOAPUtilities::addParameters(message, parameters);
 
-	__FE_COUT__ << "Sending FE communication: " << SOAPUtilities::translate(message)
+	__FE_COUT__ << "DIAG ms=" << diagNowMs()
+	            << " Sending FE communication: " << SOAPUtilities::translate(message)
 	            << __E__;
 
 	xoap::MessageReference replyMessage =
 	    VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
 	        MacroMakerSupervisors.begin()->second.getDescriptor(), message);
 
-	__FE_COUT__ << "Response received: " << SOAPUtilities::translate(replyMessage)
+	std::string replyCommand = SOAPUtilities::translate(replyMessage).getCommand();
+	__FE_COUT__ << "DIAG ms=" << diagNowMs() << " Response received: " << replyCommand
 	            << __E__;
+
+	if(replyCommand == "Fault")
+	{
+		std::string faultDetail;
+		try { replyMessage->writeTo(faultDetail); } catch(...) {}
+		__FE_SS__ << "SOAP Fault received from target interface '"
+		          << targetInterfaceID << "' requested by '"
+		          << FEVInterface::interfaceUID_ << "': " << faultDetail << __E__;
+		__FE_SS_THROW__;
+	}
 
 	SOAPParameters rxParameters;
 	rxParameters.addParameter("Error");
@@ -1258,11 +1282,14 @@ void FEVInterface::runFrontEndMacro(
 
 	std::map<std::string, std::string> mapToReturn;
 	StringMacros::getMapFromString(
-	    outputArgsStr, mapToReturn, pairDelimiter, nameValueDelimiter);
+	    outputArgsStr, mapToReturn, pairDelimiter, nameValueDelimiter,
+	    {} /*whitespace - empty to preserve spaces in URI-encoded names*/);
 
 	outputArgs.clear();
 	for(auto& mapPair : mapToReturn)
-		outputArgs.push_back(mapPair);
+		outputArgs.push_back(std::make_pair(
+		    StringMacros::decodeURIComponent(mapPair.first),
+		    StringMacros::decodeURIComponent(mapPair.second)));
 
 }  // end runFrontEndMacro()
 

@@ -2413,8 +2413,15 @@ launchOTS() {
 			done
 
 
+			_relaunchAttempts=0
+			_maxRelaunchAttempts=3
 			while [ "x$OTS_IS_ALIVE" == "x" ]; do
-				warning "Could not verify successful ots non-gateway context launch (check log for details)..."
+				_relaunchAttempts=$(( $_relaunchAttempts + 1 ))
+				if (( _relaunchAttempts > _maxRelaunchAttempts )); then
+					error "Non-gateway context ${THIS_HOST}:${PORT} failed to launch after ${_maxRelaunchAttempts} attempts, giving up."
+					break
+				fi
+				warning "Could not verify successful ots non-gateway context launch (attempt ${_relaunchAttempts}/${_maxRelaunchAttempts}, check log for details)..."
 				killproc ${LAST_OTS_PID} xdaq.exe
 				if [ $QUIET == 1 ]; then #display log tail for user to diagnose
 					# tail -n 20
@@ -2507,8 +2514,12 @@ launchOTS() {
 				fi
 			done
 
-			info "Verified successful ots non-gateway context ${THIS_HOST}-${PORT} launch."
-			#add successful launch to Context PID array
+			if [ "x$OTS_IS_ALIVE" != "x" ]; then
+				info "Verified successful ots non-gateway context ${THIS_HOST}-${PORT} launch."
+			else
+				error "Giving up on non-gateway context ${THIS_HOST}:${PORT} after ${_maxRelaunchAttempts} failed attempts."
+			fi
+			#add launch to Context PID array (even if not verified, so it can be cleaned up later)
 			ContextPIDArray+=($LAST_OTS_PID)
 			ContextPIDNameArray+=(${xdaqContextUID[$i]})
 			ContextPIDIsAliveArray+=(1)
@@ -2603,7 +2614,7 @@ launchOTS() {
 		out "${Yellow}${Bold}************************************************************************************${RstClr}"
 		out "${Yellow}${Bold}************************************************************************************${RstClr}"
 
-		out "${Red}${Bold}${Blink}WARNING${RstClr}: There are no configured processes for hostname ${THIS_HOST}."
+		out "${Red}${Bold}${Blink}WARNING${RstClr}: There are no configured processes for hostname THIS_HOST=${THIS_HOST}."
 		out "Are you sure your configuration is written for ${Red}${Bold}${Blink}${THIS_HOST}${RstClr}?"
 		out
 		out "These are the hosts configured to run ots Context processes: ${contextHostname[@]}"
@@ -4490,7 +4501,8 @@ _ots_trace_ssh() {
 	if [ $_rc -ne 0 ]; then
 		local _alt=""
 		if [[ "$_host" == *"-data"* ]]; then _alt="${_host/-data/}"
-		elif [[ "$_host" == *"-ipmi"* ]]; then _alt="${_host/-ipmi/}"; fi
+		elif [[ "$_host" == *"-ipmi"* ]]; then _alt="${_host/-ipmi/}"
+		else _alt="${_host%%.*}-data${_host#${_host%%.*}}"; fi
 		if [ -n "$_alt" ]; then
 			_out=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_alt" "$_cmd" 2>/dev/null)
 			_rc=$?
@@ -4586,11 +4598,44 @@ launchOTSTrace() {
 			out "  ${IBlack}[DEBUG] no ranks.txt artdaq hosts found on this host${RstClr}"
 		fi
 	else
-		# CSV list
+		# CSV list -- resolve short names against known hosts
 		out "  ${IBlack}[DEBUG] host=CSV: ${_hostarg}${RstClr}"
+
+		# Build known-hosts list from ots.xml + ranks.txt + local
+		local -a _known_hosts=("${THIS_HOST}")
+		while read -r _kh; do [ -n "$_kh" ] && _known_hosts+=("$_kh"); done < <(_logdelete_get_context_hosts 2>/dev/null)
+		local _ranks
+		_ranks=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 2 -name 'ranks.txt' -type f 2>/dev/null \
+			| sort -t/ -k$(( $(echo "${USER_DATA}/ARTDAQConfigurations/run_records/" | tr -cd '/' | wc -c) + 1 )) -n | tail -1)
+		if [ -n "$_ranks" ]; then
+			while read -r _line; do
+				[[ -z "$_line" || "$_line" == host* ]] && continue
+				local _rh; _rh=$(echo "$_line" | awk '{print $1}')
+				[ -n "$_rh" ] && _known_hosts+=("$_rh")
+			done < "$_ranks"
+		fi
+
 		local _csv; IFS=',' read -ra _csv <<< "$_hostarg"
 		local _h
-		for _h in "${_csv[@]}"; do _trc_add_host "${_h// /}"; done
+		for _h in "${_csv[@]}"; do
+			_h="${_h// /}"
+			[ -z "$_h" ] && continue
+			# Try to match against known hosts: check if any known host contains this string
+			local _matched=""
+			for _kh in "${_known_hosts[@]}"; do
+				if [[ "$_kh" == *"$_h"* ]]; then
+					_matched="$_kh"
+					break
+				fi
+			done
+			if [ -n "$_matched" ]; then
+				out "  ${IBlack}[DEBUG] resolved '${_h}' -> '${_matched}'${RstClr}"
+				_trc_add_host "$_matched"
+			else
+				out "  ${IBlack}[DEBUG] no known host match for '${_h}', using as-is${RstClr}"
+				_trc_add_host "$_h"
+			fi
+		done
 	fi
 	out "  ${IBlack}[DEBUG] resolved: local=${_include_local} remote=(${_remote_hosts[*]})${RstClr}"
 
@@ -4607,10 +4652,21 @@ launchOTSTrace() {
 		esac
 	fi
 	local _h
+	local _trc_tmpdir
+	_trc_tmpdir=$(mktemp -d)
+	local -a _trc_pids=()
 	for _h in "${_remote_hosts[@]}"; do
 		if [ "$_fmt" == "human" ]; then out "  ${IBlack}[${_h}] querying via ssh...${RstClr}"; fi
-		_raw+=$(_ots_trace_ssh "$_h" "$_action" "$_a3" "$_a4" "$_a5" "$_a6")$'\n'
+		_ots_trace_ssh "$_h" "$_action" "$_a3" "$_a4" "$_a5" "$_a6" > "${_trc_tmpdir}/${_h}" &
+		_trc_pids+=($!)
 	done
+	local _i=0
+	for _h in "${_remote_hosts[@]}"; do
+		wait "${_trc_pids[$_i]}" 2>/dev/null
+		_raw+=$(cat "${_trc_tmpdir}/${_h}")$'\n'
+		_i=$((_i + 1))
+	done
+	rm -rf "$_trc_tmpdir"
 
 	# Keep only the bracketed trace lines (drop Fast_ots_setup banners etc.)
 	# Also deduplicate: if the same host appears in multiple blocks (e.g. local

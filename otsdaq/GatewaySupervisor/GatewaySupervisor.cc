@@ -1706,6 +1706,21 @@ try
 									__COUT_WARN__
 									    << "(doDisconnected = " << doDisconnected << ") "
 									    << ss.str();
+									//re-read relaunchTime from the live vector (copy may be stale
+									//if a relaunch request arrived after the snapshot was taken)
+									time_t liveRelaunchTime = 0;
+									{
+										std::lock_guard<std::mutex> lock(
+										    theSupervisor->remoteGatewayAppsMutex_);
+										for(const auto& rga : theSupervisor->remoteGatewayApps_)
+											if(rga.appInfo.name == remoteGatewayApp.appInfo.name &&
+											   rga.appInfo.url == remoteGatewayApp.appInfo.url)
+											{
+												liveRelaunchTime = rga.relaunchTime;
+												break;
+											}
+									}
+
 									if(appLastStatusGood.find(
 									       remoteGatewayApp.appInfo.url +
 									       remoteGatewayApp.appInfo.name) !=
@@ -1714,8 +1729,8 @@ try
 									   //while remote apps are still coming up.
 									   time(0) - workloopStartTime > 30 &&
 									   //relaunch lull: suppress for 60 s after a user-initiated relaunch
-									   (remoteGatewayApp.relaunchTime == 0 ||
-									    time(0) - remoteGatewayApp.relaunchTime > 60))
+									   (liveRelaunchTime == 0 ||
+									    time(0) - liveRelaunchTime > 60))
 										theSupervisor->addSystemMessage("*", ss.str());
 								}
 
@@ -1925,9 +1940,21 @@ try
 								__COUTVS__(TLVL_StatusFullDetail,
 								           theSupervisor->remoteGatewayApps_[i].command);
 								if(theSupervisor->remoteGatewayApps_[i].command ==
-								   "")  //make sure not mid-command
+								   "" &&  //make sure not mid-command
+								   !(theSupervisor->remoteGatewayApps_[i].commandSentTime != 0 &&
+								     difftime(time(0), theSupervisor->remoteGatewayApps_[i].commandSentTime) < 2))  //respect grace period after send
+								{
+									if(theSupervisor->remoteGatewayApps_[i].appInfo.status != "")
+										__COUT_INFO__ << "DIAG: clear-stale wiping '"
+										              << theSupervisor->remoteGatewayApps_[i].appInfo.name
+										              << "' status='"
+										              << theSupervisor->remoteGatewayApps_[i].appInfo.status.substr(0, 40)
+										              << "' commandSentTime="
+										              << theSupervisor->remoteGatewayApps_[i].commandSentTime
+										              << __E__;
 									theSupervisor->remoteGatewayApps_[i].appInfo.status =
 									    "";  //clear status as indicator to be erased
+								}
 							}                //end clear stale status loop
 
 							//now copy over updated status info, if in correct thread role
@@ -2025,38 +2052,66 @@ try
 
 										bool justCompletedSend =
 										    (remoteGatewayApp.command == "Sent");
-										if(justCompletedSend)  //apply command clear
+										if(justCompletedSend)  //apply command clear, skip write-back this iteration
 										{
+											__COUT_INFO__ << "DIAG: justCompletedSend for '"
+											              << remoteGatewayApp.appInfo.name
+											              << "' sharedStatus='"
+											              << theSupervisor->remoteGatewayApps_[i].appInfo.status.substr(0, 40)
+											              << "' polledStatus='"
+											              << remoteGatewayApp.appInfo.status.substr(0, 40)
+											              << "' command='"
+											              << theSupervisor->remoteGatewayApps_[i].command
+											              << "'" << __E__;
 											theSupervisor->remoteGatewayApps_[i].command =
 											    "";
-											//also clear the forced "Launching X" placeholder
-											//(set by broadcastMessageToRemoteGateways() or the
-											//setRemoteSubsystemCommand handler) so it can't
-											//re-arm the stale-status guard below against a
-											//fresh response whose Done we already received.
-											if(theSupervisor->remoteGatewayApps_[i]
-											       .appInfo.status.find("Launching") == 0)
-												theSupervisor->remoteGatewayApps_[i]
-												    .appInfo.status = "";
+											theSupervisor->remoteGatewayApps_[i].commandSentTime =
+											    time(0);
 										}
-
-										if(theSupervisor->remoteGatewayApps_[i].command !=
+										else if(theSupervisor->remoteGatewayApps_[i].command !=
 										       "" ||
+										   (theSupervisor->remoteGatewayApps_[i].commandSentTime != 0 &&
+										    difftime(time(0), theSupervisor->remoteGatewayApps_[i].commandSentTime) < 2) ||
 										   (commandingRemoteGatewayApps &&
-										    !justCompletedSend &&  //trust fresh status for the app whose Done we just got
 										    theSupervisor->remoteGatewayApps_[i]
 										            .appInfo.status.find("Launching") ==
 										        0 &&
 										    remoteGatewayApp.appInfo.progress ==
 										        100))  //dont trust done progress while still 'commanding'
-											__COUT__ << "Ignoring '"
-											         << remoteGatewayApp.appInfo.name
-											         << "' assumed stale status: "
-											         << remoteGatewayApp.appInfo.status
-											         << __E__;
+										{
+											__COUT_INFO__ << "DIAG: suppressing stale write-back for '"
+											              << remoteGatewayApp.appInfo.name
+											              << "' polledStatus='"
+											              << remoteGatewayApp.appInfo.status.substr(0, 40)
+											              << "' sharedStatus='"
+											              << theSupervisor->remoteGatewayApps_[i].appInfo.status.substr(0, 40)
+											              << "' sharedCmd='"
+											              << theSupervisor->remoteGatewayApps_[i].command
+											              << "' commandingRemote="
+											              << commandingRemoteGatewayApps
+											              << " commandSentTime="
+											              << theSupervisor->remoteGatewayApps_[i].commandSentTime
+											              << __E__;
+										}
 										else
+										{
+											if(theSupervisor->remoteGatewayApps_[i].appInfo.status !=
+											   remoteGatewayApp.appInfo.status)
+												__COUT_INFO__ << "DIAG: write-back changing '"
+												              << remoteGatewayApp.appInfo.name
+												              << "' from='"
+												              << theSupervisor->remoteGatewayApps_[i].appInfo.status.substr(0, 40)
+												              << "' to='"
+												              << remoteGatewayApp.appInfo.status.substr(0, 40)
+												              << "' commandSentTime="
+												              << theSupervisor->remoteGatewayApps_[i].commandSentTime
+												              << " commandingRemote="
+												              << commandingRemoteGatewayApps
+												              << __E__;
+											theSupervisor->remoteGatewayApps_[i].commandSentTime = 0;
 											theSupervisor->remoteGatewayApps_[i].appInfo =
 											    remoteGatewayApp.appInfo;
+										}
 
 										theSupervisor->remoteGatewayApps_[i].subapps =
 										    remoteGatewayApp.subapps;
@@ -9543,7 +9598,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 			if(iteration)
 			{
-				__COUT__ << "Starting iteration: " << iteration << __E__;
+				__COUT_INFO__ << "DIAG: re-broadcasting iteration=" << iteration
+				              << " for command '" << command << "'" << __E__;
 
 				// Re-send command to non-done remote gateways with updated iteration index
 				broadcastMessageToRemoteGateways(originalMessage, iteration);
@@ -10057,7 +10113,11 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
 		    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
 		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
-		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
+		    command == RunControlStateMachine::ABORT_TRANSITION_NAME) &&
+		   //exception: Failed subsystems must be Halted to recover
+		   //  (status may contain error details after "Failed", so use .find())
+		   !(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+		     remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
 		{
 			//send Stop to DoNotHalt subsystems that are in Running/Paused when Halt or Abort is requested
 			bool sendStop = command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
@@ -10193,9 +10253,17 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		remoteGatewayApp.fsmName =
 		    activeStateMachineName_;  //fsmName will be prepended during command send
-		//force status for immediate user feedback
-		remoteGatewayApp.appInfo.status   = "Launching " + commandAndParams;
-		remoteGatewayApp.appInfo.progress = 0;
+		//force status for immediate user feedback (only on first send;
+		//re-broadcasts should not overwrite real transitioning status)
+		if(iteration == 0)
+		{
+			__COUT_INFO__ << "DIAG: setting Launching for '"
+			              << remoteGatewayApp.appInfo.name
+			              << "' iteration=" << iteration
+			              << " to='Launching " << commandAndParams << "'" << __E__;
+			remoteGatewayApp.appInfo.status   = "Launching " + commandAndParams;
+			remoteGatewayApp.appInfo.progress = 0;
+		}
 
 		__SUP_COUTV__(remoteGatewayApp.command);
 	}  //end remote gateway broadcast loop
@@ -10216,6 +10284,15 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 					rga.iterationsDone = localApp.iterationsDone;
 					if(wasCommanded)
 					{
+						__COUT_INFO__ << "DIAG: broadcast write-back for '"
+						              << rga.appInfo.name
+						              << "' oldStatus='"
+						              << rga.appInfo.status.substr(0, 40)
+						              << "' newStatus='"
+						              << localApp.appInfo.status.substr(0, 40)
+						              << "' command='"
+						              << localApp.command
+						              << "'" << __E__;
 						rga.command = localApp.command;
 						rga.fsmName = localApp.fsmName;
 						if(localApp.config_dump.size())
@@ -10287,7 +10364,11 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
 			    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
 			    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
-			    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
+			    command == RunControlStateMachine::ABORT_TRANSITION_NAME) &&
+			   //exception: Failed subsystems were sent Halt and must reach Halted
+			   //  (status may contain error details after "Failed", so use .find())
+			   !(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+			     remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
 				continue;
 			if(remoteGatewayApp.fsm_mode ==
 			       RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
@@ -12541,6 +12622,11 @@ try
 				xmlOut.addTextElementToData("subsystem_url", remoteSubsystem.appInfo.url);
 				xmlOut.addTextElementToData("subsystem_landingPage",
 				                            remoteSubsystem.landingPage);
+				__COUTT__ << "DIAG: getRemoteSubsystemStatus sending '"
+				         << remoteSubsystem.appInfo.name
+				         << "' status='"
+				         << remoteSubsystem.appInfo.status.substr(0, 40)
+				         << "'" << __E__;
 				xmlOut.addTextElementToData("subsystem_status",
 				                            remoteSubsystem.appInfo.status);
 				xmlOut.addTextElementToData(

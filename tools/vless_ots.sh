@@ -5,15 +5,20 @@
 if [ "x$1" == "x" ]; then
     echo
     echo
-    echo "    Usage: vless_ots.sh <ots log file name>"
+    echo "    Usage: vless_ots.sh <ots log file name> [-g \"grep pattern\"]"
     echo
     echo "    e.g.: vless_ots.sh /home/user/ots/Data_user/Logs/otsdaq_quiet_run-gateway-server01.fnal.gov-3055.txt"
+    echo "    e.g.: vless_ots.sh /home/user/ots/Data_user/Logs/otsdaq_quiet_run-gateway-server01.fnal.gov-3055.txt -g \"CDR lock\|Phase 2b\""
     echo
     echo
     exit
 fi
 
 remote_path="$1"
+grep_pattern=""
+if [ "x$2" == "x-g" ] && [ "x$3" != "x" ]; then
+    grep_pattern="$3"
+fi
 hostname=""
 
 if [[ "$1" =~ ^([a-zA-Z0-9.-]+):(.+)$ ]]; then
@@ -103,4 +108,9 @@ cp "${_vless_tmpdir}/${_vless_safe_winner}.tmp" .tmpLogFile
 rm -rf "$_vless_tmpdir"
 unset _vless_hosts _vless_pids _vless_tmpdir _vless_winner _vless_h _vless_safe _vless_all_done _vless_safe_winner
 
-less .tmpLogFile && rm .tmpLogFile
+if [ "x$grep_pattern" != "x" ]; then
+    grep -E -- "$grep_pattern" .tmpLogFile > .tmpLogFile.grep
+    less .tmpLogFile.grep && rm .tmpLogFile .tmpLogFile.grep
+else
+    less .tmpLogFile && rm .tmpLogFile
+fi

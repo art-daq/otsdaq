@@ -2338,7 +2338,7 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 				std::stringstream outNumberSs;
 				outNumberSs << std::dec << tmpNumber << " (0x" << std::hex << tmpNumber
 				            << ")" << std::dec;
-				outputArgs += argsOut[i].first + "," + outNumberSs.str();
+				outputArgs += StringMacros::encodeURIComponent(argsOut[i].first) + "," + outNumberSs.str();
 				continue;
 			}
 		}
@@ -2347,7 +2347,7 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 		}
 
 		outputArgs +=
-		    argsOut[i].first + "," + StringMacros::encodeURIComponent(argsOut[i].second);
+		    StringMacros::encodeURIComponent(argsOut[i].first) + "," + StringMacros::encodeURIComponent(argsOut[i].second);
 	}
 
 	__CFG_COUTT__ << "outputArgs = " << outputArgs << __E__;
