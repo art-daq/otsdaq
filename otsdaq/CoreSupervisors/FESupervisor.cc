@@ -331,8 +331,9 @@ try
 		std::string outputArgs;
 		try
 		{
-			__SUP_COUT__ << "DIAG ms=" << diagNowMs() << " runFEMacroByFE starting, macro='"
-			             << feMacroName << "' target='" << targetInterfaceID << "'" << __E__;
+			__SUP_COUT__ << "DIAG ms=" << diagNowMs()
+			             << " runFEMacroByFE starting, macro='" << feMacroName
+			             << "' target='" << targetInterfaceID << "'" << __E__;
 			theFEInterfacesManager_->runFEMacroByFE(
 			    requester, targetInterfaceID, feMacroName, inputArgs, outputArgs);
 			__SUP_COUT__ << "DIAG ms=" << diagNowMs() << " runFEMacroByFE done, macro='"
@@ -659,8 +660,8 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 	parameters.addParameter("Request");
 
 	__SUP_COUT__ << "DIAG ms=" << diagNowMs() << " tid=" << gettid()
-	             << " Received Macro Maker message: "
-	             << SOAPUtilities::translate(message) << __E__;
+	             << " Received Macro Maker message: " << SOAPUtilities::translate(message)
+	             << __E__;
 
 	SOAPUtilities::receive(message, parameters);
 	std::string request = parameters.getValue("Request");
@@ -1160,10 +1161,11 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 									__SUP_SS__ << errorCopy;
 									__SUP_SS_THROW__;
 								}
-								__SUP_COUT__ << "DIAG ms=" << diagNowMs()
-								             << " async macro finished within quick-wait,"
-								             << " returning synchronously, taskID="
-								             << task->taskID << __E__;
+								__SUP_COUT__
+								    << "DIAG ms=" << diagNowMs()
+								    << " async macro finished within quick-wait,"
+								    << " returning synchronously, taskID=" << task->taskID
+								    << __E__;
 								retParameters.addParameter("outputArgs",
 								                           task->outputArgs);
 								for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
@@ -1392,10 +1394,11 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 									__SUP_SS__ << errorCopy;
 									__SUP_SS_THROW__;
 								}
-								__SUP_COUT__ << "DIAG ms=" << diagNowMs()
-								             << " async macro finished within quick-wait,"
-								             << " returning synchronously, taskID="
-								             << task->taskID << __E__;
+								__SUP_COUT__
+								    << "DIAG ms=" << diagNowMs()
+								    << " async macro finished within quick-wait,"
+								    << " returning synchronously, taskID=" << task->taskID
+								    << __E__;
 								retParameters.addParameter("outputArgs",
 								                           task->outputArgs);
 								for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
@@ -1526,8 +1529,8 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 				}
 
 				__SUP_COUT__ << "DIAG ms=" << diagNowMs()
-				             << " CheckMacro found task DONE (doneTime=" << foundTask->doneTime
-				             << "), taskID=" << taskID << __E__;
+				             << " CheckMacro found task DONE (doneTime="
+				             << foundTask->doneTime << "), taskID=" << taskID << __E__;
 				retParameters.addParameter("outputArgs", foundTask->outputArgs);
 
 				// Remove completed task

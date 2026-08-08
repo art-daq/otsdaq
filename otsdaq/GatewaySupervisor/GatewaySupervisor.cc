@@ -1712,9 +1712,12 @@ try
 									{
 										std::lock_guard<std::mutex> lock(
 										    theSupervisor->remoteGatewayAppsMutex_);
-										for(const auto& rga : theSupervisor->remoteGatewayApps_)
-											if(rga.appInfo.name == remoteGatewayApp.appInfo.name &&
-											   rga.appInfo.url == remoteGatewayApp.appInfo.url)
+										for(const auto& rga :
+										    theSupervisor->remoteGatewayApps_)
+											if(rga.appInfo.name ==
+											       remoteGatewayApp.appInfo.name &&
+											   rga.appInfo.url ==
+											       remoteGatewayApp.appInfo.url)
 											{
 												liveRelaunchTime = rga.relaunchTime;
 												break;
@@ -1940,22 +1943,31 @@ try
 								__COUTVS__(TLVL_StatusFullDetail,
 								           theSupervisor->remoteGatewayApps_[i].command);
 								if(theSupervisor->remoteGatewayApps_[i].command ==
-								   "" &&  //make sure not mid-command
-								   !(theSupervisor->remoteGatewayApps_[i].commandSentTime != 0 &&
-								     difftime(time(0), theSupervisor->remoteGatewayApps_[i].commandSentTime) < 2))  //respect grace period after send
+								       "" &&  //make sure not mid-command
+								   !(theSupervisor->remoteGatewayApps_[i]
+								             .commandSentTime != 0 &&
+								     difftime(time(0),
+								              theSupervisor->remoteGatewayApps_[i]
+								                  .commandSentTime) <
+								         2))  //respect grace period after send
 								{
-									if(theSupervisor->remoteGatewayApps_[i].appInfo.status != "")
-										__COUT_INFO__ << "DIAG: clear-stale wiping '"
-										              << theSupervisor->remoteGatewayApps_[i].appInfo.name
-										              << "' status='"
-										              << theSupervisor->remoteGatewayApps_[i].appInfo.status.substr(0, 40)
-										              << "' commandSentTime="
-										              << theSupervisor->remoteGatewayApps_[i].commandSentTime
-										              << __E__;
+									if(theSupervisor->remoteGatewayApps_[i]
+									       .appInfo.status != "")
+										__COUT_INFO__
+										    << "DIAG: clear-stale wiping '"
+										    << theSupervisor->remoteGatewayApps_[i]
+										           .appInfo.name
+										    << "' status='"
+										    << theSupervisor->remoteGatewayApps_[i]
+										           .appInfo.status.substr(0, 40)
+										    << "' commandSentTime="
+										    << theSupervisor->remoteGatewayApps_[i]
+										           .commandSentTime
+										    << __E__;
 									theSupervisor->remoteGatewayApps_[i].appInfo.status =
 									    "";  //clear status as indicator to be erased
 								}
-							}                //end clear stale status loop
+							}  //end clear stale status loop
 
 							//now copy over updated status info, if in correct thread role
 							for(auto& remoteGatewayApp : remoteApps)
@@ -2054,61 +2066,83 @@ try
 										    (remoteGatewayApp.command == "Sent");
 										if(justCompletedSend)  //apply command clear, skip write-back this iteration
 										{
-											__COUT_INFO__ << "DIAG: justCompletedSend for '"
-											              << remoteGatewayApp.appInfo.name
-											              << "' sharedStatus='"
-											              << theSupervisor->remoteGatewayApps_[i].appInfo.status.substr(0, 40)
-											              << "' polledStatus='"
-											              << remoteGatewayApp.appInfo.status.substr(0, 40)
-											              << "' command='"
-											              << theSupervisor->remoteGatewayApps_[i].command
-											              << "'" << __E__;
+											__COUT_INFO__
+											    << "DIAG: justCompletedSend for '"
+											    << remoteGatewayApp.appInfo.name
+											    << "' sharedStatus='"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .appInfo.status.substr(0, 40)
+											    << "' polledStatus='"
+											    << remoteGatewayApp.appInfo.status.substr(
+											           0, 40)
+											    << "' command='"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .command
+											    << "'" << __E__;
 											theSupervisor->remoteGatewayApps_[i].command =
 											    "";
-											theSupervisor->remoteGatewayApps_[i].commandSentTime =
-											    time(0);
+											theSupervisor->remoteGatewayApps_[i]
+											    .commandSentTime = time(0);
 										}
-										else if(theSupervisor->remoteGatewayApps_[i].command !=
-										       "" ||
-										   (theSupervisor->remoteGatewayApps_[i].commandSentTime != 0 &&
-										    difftime(time(0), theSupervisor->remoteGatewayApps_[i].commandSentTime) < 2) ||
-										   (commandingRemoteGatewayApps &&
+										else if(
 										    theSupervisor->remoteGatewayApps_[i]
-										            .appInfo.status.find("Launching") ==
-										        0 &&
-										    remoteGatewayApp.appInfo.progress ==
-										        100))  //dont trust done progress while still 'commanding'
+										            .command != "" ||
+										    (theSupervisor->remoteGatewayApps_[i]
+										             .commandSentTime != 0 &&
+										     difftime(time(0),
+										              theSupervisor->remoteGatewayApps_[i]
+										                  .commandSentTime) < 2) ||
+										    (commandingRemoteGatewayApps &&
+										     theSupervisor->remoteGatewayApps_[i]
+										             .appInfo.status.find("Launching") ==
+										         0 &&
+										     remoteGatewayApp.appInfo.progress ==
+										         100))  //dont trust done progress while still 'commanding'
 										{
-											__COUT_INFO__ << "DIAG: suppressing stale write-back for '"
-											              << remoteGatewayApp.appInfo.name
-											              << "' polledStatus='"
-											              << remoteGatewayApp.appInfo.status.substr(0, 40)
-											              << "' sharedStatus='"
-											              << theSupervisor->remoteGatewayApps_[i].appInfo.status.substr(0, 40)
-											              << "' sharedCmd='"
-											              << theSupervisor->remoteGatewayApps_[i].command
-											              << "' commandingRemote="
-											              << commandingRemoteGatewayApps
-											              << " commandSentTime="
-											              << theSupervisor->remoteGatewayApps_[i].commandSentTime
-											              << __E__;
+											__COUT_INFO__
+											    << "DIAG: suppressing stale write-back "
+											       "for '"
+											    << remoteGatewayApp.appInfo.name
+											    << "' polledStatus='"
+											    << remoteGatewayApp.appInfo.status.substr(
+											           0, 40)
+											    << "' sharedStatus='"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .appInfo.status.substr(0, 40)
+											    << "' sharedCmd='"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .command
+											    << "' commandingRemote="
+											    << commandingRemoteGatewayApps
+											    << " commandSentTime="
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .commandSentTime
+											    << __E__;
 										}
 										else
 										{
-											if(theSupervisor->remoteGatewayApps_[i].appInfo.status !=
+											if(theSupervisor->remoteGatewayApps_[i]
+											       .appInfo.status !=
 											   remoteGatewayApp.appInfo.status)
-												__COUT_INFO__ << "DIAG: write-back changing '"
-												              << remoteGatewayApp.appInfo.name
-												              << "' from='"
-												              << theSupervisor->remoteGatewayApps_[i].appInfo.status.substr(0, 40)
-												              << "' to='"
-												              << remoteGatewayApp.appInfo.status.substr(0, 40)
-												              << "' commandSentTime="
-												              << theSupervisor->remoteGatewayApps_[i].commandSentTime
-												              << " commandingRemote="
-												              << commandingRemoteGatewayApps
-												              << __E__;
-											theSupervisor->remoteGatewayApps_[i].commandSentTime = 0;
+												__COUT_INFO__
+												    << "DIAG: write-back changing '"
+												    << remoteGatewayApp.appInfo.name
+												    << "' from='"
+												    << theSupervisor
+												           ->remoteGatewayApps_[i]
+												           .appInfo.status.substr(0, 40)
+												    << "' to='"
+												    << remoteGatewayApp.appInfo.status
+												           .substr(0, 40)
+												    << "' commandSentTime="
+												    << theSupervisor
+												           ->remoteGatewayApps_[i]
+												           .commandSentTime
+												    << " commandingRemote="
+												    << commandingRemoteGatewayApps
+												    << __E__;
+											theSupervisor->remoteGatewayApps_[i]
+											    .commandSentTime = 0;
 											theSupervisor->remoteGatewayApps_[i].appInfo =
 											    remoteGatewayApp.appInfo;
 										}
@@ -10258,8 +10292,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		if(iteration == 0)
 		{
 			__COUT_INFO__ << "DIAG: setting Launching for '"
-			              << remoteGatewayApp.appInfo.name
-			              << "' iteration=" << iteration
+			              << remoteGatewayApp.appInfo.name << "' iteration=" << iteration
 			              << " to='Launching " << commandAndParams << "'" << __E__;
 			remoteGatewayApp.appInfo.status   = "Launching " + commandAndParams;
 			remoteGatewayApp.appInfo.progress = 0;
@@ -10284,15 +10317,11 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 					rga.iterationsDone = localApp.iterationsDone;
 					if(wasCommanded)
 					{
-						__COUT_INFO__ << "DIAG: broadcast write-back for '"
-						              << rga.appInfo.name
-						              << "' oldStatus='"
-						              << rga.appInfo.status.substr(0, 40)
-						              << "' newStatus='"
-						              << localApp.appInfo.status.substr(0, 40)
-						              << "' command='"
-						              << localApp.command
-						              << "'" << __E__;
+						__COUT_INFO__
+						    << "DIAG: broadcast write-back for '" << rga.appInfo.name
+						    << "' oldStatus='" << rga.appInfo.status.substr(0, 40)
+						    << "' newStatus='" << localApp.appInfo.status.substr(0, 40)
+						    << "' command='" << localApp.command << "'" << __E__;
 						rga.command = localApp.command;
 						rga.fsmName = localApp.fsmName;
 						if(localApp.config_dump.size())
@@ -12623,10 +12652,8 @@ try
 				xmlOut.addTextElementToData("subsystem_landingPage",
 				                            remoteSubsystem.landingPage);
 				__COUTT__ << "DIAG: getRemoteSubsystemStatus sending '"
-				         << remoteSubsystem.appInfo.name
-				         << "' status='"
-				         << remoteSubsystem.appInfo.status.substr(0, 40)
-				         << "'" << __E__;
+				          << remoteSubsystem.appInfo.name << "' status='"
+				          << remoteSubsystem.appInfo.status.substr(0, 40) << "'" << __E__;
 				xmlOut.addTextElementToData("subsystem_status",
 				                            remoteSubsystem.appInfo.status);
 				xmlOut.addTextElementToData(
@@ -13205,9 +13232,9 @@ try
 					remoteGatewayApp.relaunchTime     = time(0);
 
 					addSystemMessage("*",
-					    "Subsystem '" + remoteGatewayApp.appInfo.name +
-					    "' was relaunched at " +
-					    StringMacros::getTimestampString() + ".");
+					                 "Subsystem '" + remoteGatewayApp.appInfo.name +
+					                     "' was relaunched at " +
+					                     StringMacros::getTimestampString() + ".");
 				}
 
 			__COUT__ << "gatewayLaunchOTSInstance: releasing mutex for subsystem '"

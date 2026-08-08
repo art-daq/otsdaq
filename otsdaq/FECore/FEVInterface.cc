@@ -1250,10 +1250,16 @@ void FEVInterface::runFrontEndMacro(
 	if(replyCommand == "Fault")
 	{
 		std::string faultDetail;
-		try { replyMessage->writeTo(faultDetail); } catch(...) {}
-		__FE_SS__ << "SOAP Fault received from target interface '"
-		          << targetInterfaceID << "' requested by '"
-		          << FEVInterface::interfaceUID_ << "': " << faultDetail << __E__;
+		try
+		{
+			replyMessage->writeTo(faultDetail);
+		}
+		catch(...)
+		{
+		}
+		__FE_SS__ << "SOAP Fault received from target interface '" << targetInterfaceID
+		          << "' requested by '" << FEVInterface::interfaceUID_
+		          << "': " << faultDetail << __E__;
 		__FE_SS_THROW__;
 	}
 
@@ -1282,14 +1288,17 @@ void FEVInterface::runFrontEndMacro(
 
 	std::map<std::string, std::string> mapToReturn;
 	StringMacros::getMapFromString(
-	    outputArgsStr, mapToReturn, pairDelimiter, nameValueDelimiter,
+	    outputArgsStr,
+	    mapToReturn,
+	    pairDelimiter,
+	    nameValueDelimiter,
 	    {} /*whitespace - empty to preserve spaces in URI-encoded names*/);
 
 	outputArgs.clear();
 	for(auto& mapPair : mapToReturn)
-		outputArgs.push_back(std::make_pair(
-		    StringMacros::decodeURIComponent(mapPair.first),
-		    StringMacros::decodeURIComponent(mapPair.second)));
+		outputArgs.push_back(
+		    std::make_pair(StringMacros::decodeURIComponent(mapPair.first),
+		                   StringMacros::decodeURIComponent(mapPair.second)));
 
 }  // end runFrontEndMacro()
 
