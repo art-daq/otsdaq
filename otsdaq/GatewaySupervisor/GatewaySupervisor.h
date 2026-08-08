@@ -436,6 +436,7 @@ public:	//used by remote subsystem control and status
 
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
 			time_t								relaunchTime = 0; ///<timestamp of last relaunch via gatewayLaunchOTSInstance
+			time_t								commandSentTime = 0; ///<timestamp of last command send; suppresses stale status write-backs briefly
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
 
