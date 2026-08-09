@@ -9839,9 +9839,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							lastMinutesLeft = minutesLeft;
 
 							waitSs << "\n"
-							       << "Timeout threshold is " << timeoutSeconds / 60 << " minutes ("
-							       << secondsLeft << " seconds remaining before timeout)."
-							       << __E__;
+							       << "Timeout threshold is " << timeoutSeconds / 60
+							       << " minutes (" << secondsLeft
+							       << " seconds remaining before timeout)." << __E__;
 
 							{  // create lock scope that does not include sleep
 								std::lock_guard<std::mutex> lock(
