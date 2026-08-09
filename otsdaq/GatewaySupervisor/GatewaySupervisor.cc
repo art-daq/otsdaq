@@ -9788,6 +9788,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							}
 
 							std::stringstream waitSs;
+							if(iteration > 0)
+								waitSs << "(Iteration #" << iteration << ") ";
 							waitSs << "Waiting on " << numOfThreadsWithWork << " of "
 							       << numberOfThreads
 							       << " threads to finish. Command = " << command;
@@ -9837,8 +9839,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							lastMinutesLeft = minutesLeft;
 
 							waitSs << "\n"
-							       << "Timeout threshold (for iteration #" << iteration
-							       << ") is " << timeoutSeconds / 60 << " minutes ("
+							       << "Timeout threshold is " << timeoutSeconds / 60 << " minutes ("
 							       << secondsLeft << " seconds remaining before timeout)."
 							       << __E__;
 
