@@ -430,6 +430,8 @@ public:	//used by remote subsystem control and status
 			ConfigDumpTypes						config_dump_type = ConfigDumpTypes::Unknown;
 
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
+			time_t								relaunchTime = 0; ///<timestamp of last relaunch via gatewayLaunchOTSInstance
+			time_t								commandSentTime = 0; ///<timestamp of last command send; suppresses stale status write-backs briefly
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
 
@@ -473,6 +475,7 @@ public:	//used by remote subsystem control and status
 
 			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///< remote gateways can have subapps
 			bool iterationsDone = false; ///< tracks per-gateway iteration completion during FSM transitions
+			bool doNotHaltWasCommandedHalt = false;
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;

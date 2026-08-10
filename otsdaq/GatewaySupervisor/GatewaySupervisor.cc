@@ -529,6 +529,7 @@ try
 		bool oneStatusReqHasFailed = false;
 
 		++loopCount;
+		auto loopStartTime = std::chrono::high_resolution_clock::now();
 		usleep(500000 /* 0.5 seconds */);
 
 		//lock to access appLastStatusGood_ map (between disconnected and connected handling threads)
@@ -678,6 +679,8 @@ try
 			    << "] in Context '" << appInfo.getContextName()
 			    << "' [URL=" << appInfo.getURL()
 			    << "] isDisconnected = " << isDisconnected << ".\n\n";
+
+			auto appStatusStartTime = std::chrono::high_resolution_clock::now();
 
 			//if doDisconnected is true, only check disconnected apps
 			//	AND disconnected subapps within gateway!
@@ -1703,13 +1706,34 @@ try
 									__COUT_WARN__
 									    << "(doDisconnected = " << doDisconnected << ") "
 									    << ss.str();
+									//re-read relaunchTime from the live vector (copy may be stale
+									//if a relaunch request arrived after the snapshot was taken)
+									time_t liveRelaunchTime = 0;
+									{
+										std::lock_guard<std::mutex> lock(
+										    theSupervisor->remoteGatewayAppsMutex_);
+										for(const auto& rga :
+										    theSupervisor->remoteGatewayApps_)
+											if(rga.appInfo.name ==
+											       remoteGatewayApp.appInfo.name &&
+											   rga.appInfo.url ==
+											       remoteGatewayApp.appInfo.url)
+											{
+												liveRelaunchTime = rga.relaunchTime;
+												break;
+											}
+									}
+
 									if(appLastStatusGood.find(
 									       remoteGatewayApp.appInfo.url +
 									       remoteGatewayApp.appInfo.name) !=
 									       appLastStatusGood.end() &&
 									   //startup lull: suppress bad-status spam in the first 30 s
 									   //while remote apps are still coming up.
-									   time(0) - workloopStartTime > 30)
+									   time(0) - workloopStartTime > 30 &&
+									   //relaunch lull: suppress for 60 s after a user-initiated relaunch
+									   (liveRelaunchTime == 0 ||
+									    time(0) - liveRelaunchTime > 60))
 										theSupervisor->addSystemMessage("*", ss.str());
 								}
 
@@ -1919,10 +1943,31 @@ try
 								__COUTVS__(TLVL_StatusFullDetail,
 								           theSupervisor->remoteGatewayApps_[i].command);
 								if(theSupervisor->remoteGatewayApps_[i].command ==
-								   "")  //make sure not mid-command
+								       "" &&  //make sure not mid-command
+								   !(theSupervisor->remoteGatewayApps_[i]
+								             .commandSentTime != 0 &&
+								     difftime(time(0),
+								              theSupervisor->remoteGatewayApps_[i]
+								                  .commandSentTime) <
+								         2))  //respect grace period after send
+								{
+									if(theSupervisor->remoteGatewayApps_[i]
+									       .appInfo.status != "")
+										__COUT_INFO__
+										    << "DIAG: clear-stale wiping '"
+										    << theSupervisor->remoteGatewayApps_[i]
+										           .appInfo.name
+										    << "' status='"
+										    << theSupervisor->remoteGatewayApps_[i]
+										           .appInfo.status.substr(0, 40)
+										    << "' commandSentTime="
+										    << theSupervisor->remoteGatewayApps_[i]
+										           .commandSentTime
+										    << __E__;
 									theSupervisor->remoteGatewayApps_[i].appInfo.status =
 									    "";  //clear status as indicator to be erased
-							}                //end clear stale status loop
+								}
+							}  //end clear stale status loop
 
 							//now copy over updated status info, if in correct thread role
 							for(auto& remoteGatewayApp : remoteApps)
@@ -2019,38 +2064,88 @@ try
 
 										bool justCompletedSend =
 										    (remoteGatewayApp.command == "Sent");
-										if(justCompletedSend)  //apply command clear
+										if(justCompletedSend)  //apply command clear, skip write-back this iteration
 										{
+											__COUT_INFO__
+											    << "DIAG: justCompletedSend for '"
+											    << remoteGatewayApp.appInfo.name
+											    << "' sharedStatus='"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .appInfo.status.substr(0, 40)
+											    << "' polledStatus='"
+											    << remoteGatewayApp.appInfo.status.substr(
+											           0, 40)
+											    << "' command='"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .command
+											    << "'" << __E__;
 											theSupervisor->remoteGatewayApps_[i].command =
 											    "";
-											//also clear the forced "Launching X" placeholder
-											//(set by broadcastMessageToRemoteGateways() or the
-											//setRemoteSubsystemCommand handler) so it can't
-											//re-arm the stale-status guard below against a
-											//fresh response whose Done we already received.
-											if(theSupervisor->remoteGatewayApps_[i]
-											       .appInfo.status.find("Launching") == 0)
-												theSupervisor->remoteGatewayApps_[i]
-												    .appInfo.status = "";
+											theSupervisor->remoteGatewayApps_[i]
+											    .commandSentTime = time(0);
 										}
-
-										if(theSupervisor->remoteGatewayApps_[i].command !=
-										       "" ||
-										   (commandingRemoteGatewayApps &&
-										    !justCompletedSend &&  //trust fresh status for the app whose Done we just got
+										else if(
 										    theSupervisor->remoteGatewayApps_[i]
-										            .appInfo.status.find("Launching") ==
-										        0 &&
-										    remoteGatewayApp.appInfo.progress ==
-										        100))  //dont trust done progress while still 'commanding'
-											__COUT__ << "Ignoring '"
-											         << remoteGatewayApp.appInfo.name
-											         << "' assumed stale status: "
-											         << remoteGatewayApp.appInfo.status
-											         << __E__;
+										            .command != "" ||
+										    (theSupervisor->remoteGatewayApps_[i]
+										             .commandSentTime != 0 &&
+										     difftime(time(0),
+										              theSupervisor->remoteGatewayApps_[i]
+										                  .commandSentTime) < 2) ||
+										    (commandingRemoteGatewayApps &&
+										     theSupervisor->remoteGatewayApps_[i]
+										             .appInfo.status.find("Launching") ==
+										         0 &&
+										     remoteGatewayApp.appInfo.progress ==
+										         100))  //dont trust done progress while still 'commanding'
+										{
+											__COUT_INFO__
+											    << "DIAG: suppressing stale write-back "
+											       "for '"
+											    << remoteGatewayApp.appInfo.name
+											    << "' polledStatus='"
+											    << remoteGatewayApp.appInfo.status.substr(
+											           0, 40)
+											    << "' sharedStatus='"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .appInfo.status.substr(0, 40)
+											    << "' sharedCmd='"
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .command
+											    << "' commandingRemote="
+											    << commandingRemoteGatewayApps
+											    << " commandSentTime="
+											    << theSupervisor->remoteGatewayApps_[i]
+											           .commandSentTime
+											    << __E__;
+										}
 										else
+										{
+											if(theSupervisor->remoteGatewayApps_[i]
+											       .appInfo.status !=
+											   remoteGatewayApp.appInfo.status)
+												__COUT_INFO__
+												    << "DIAG: write-back changing '"
+												    << remoteGatewayApp.appInfo.name
+												    << "' from='"
+												    << theSupervisor
+												           ->remoteGatewayApps_[i]
+												           .appInfo.status.substr(0, 40)
+												    << "' to='"
+												    << remoteGatewayApp.appInfo.status
+												           .substr(0, 40)
+												    << "' commandSentTime="
+												    << theSupervisor
+												           ->remoteGatewayApps_[i]
+												           .commandSentTime
+												    << " commandingRemote="
+												    << commandingRemoteGatewayApps
+												    << __E__;
+											theSupervisor->remoteGatewayApps_[i]
+											    .commandSentTime = 0;
 											theSupervisor->remoteGatewayApps_[i].appInfo =
 											    remoteGatewayApp.appInfo;
+										}
 
 										theSupervisor->remoteGatewayApps_[i].subapps =
 										    remoteGatewayApp.subapps;
@@ -2176,9 +2271,17 @@ try
 
 				try
 				{
+					auto soapStartTime = std::chrono::high_resolution_clock::now();
 					xoap::MessageReference statusMessage =
 					    theSupervisor->sendWithSOAPReply(appInfo.getDescriptor(),
 					                                     tempMessage);
+					auto soapMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        std::chrono::high_resolution_clock::now() - soapStartTime)
+					        .count();
+					__COUTS__(TLVL_RemoteStatusVerbose)
+					    << "SOAP status request to '" << appName << "' took " << soapMs
+					    << " ms" << __E__;
 
 					if("ContextARTDAQ" == appInfo.getContextName())
 						__COUTS__(TLVL_DebugArtdaqStatus)
@@ -2193,6 +2296,7 @@ try
 						    << appInfo.getContextName() << " statusMessage... "
 						    << SOAPUtilities::translate(statusMessage) << std::endl;
 
+					auto parseStartTime = std::chrono::high_resolution_clock::now();
 					SOAPParameters parameters;
 					parameters.addParameter("Status");
 					parameters.addParameter("Progress");
@@ -2201,6 +2305,14 @@ try
 					parameters.addParameter("AvailableLogSpaceKB");
 					parameters.addParameter("AvailableDataSpaceKB");
 					SOAPUtilities::receive(statusMessage, parameters);
+					auto parseMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        std::chrono::high_resolution_clock::now() - parseStartTime)
+					        .count();
+					if(parseMs > 100)
+						__COUTS__(TLVL_RemoteStatusVerbose)
+						    << "SOAP parameter parsing for '" << appName << "' took "
+						    << parseMs << " ms" << __E__;
 
 					status = parameters.getValue("Status");
 					if(status.empty())
@@ -2805,6 +2917,16 @@ try
 				                    firstTripDataObserved_map);
 			else
 				firstTripDataObserved_map.erase(appInfo.getContextName());
+
+			// Measure time spent on this app's status
+			auto appStatusMs =
+			    std::chrono::duration_cast<std::chrono::milliseconds>(
+			        std::chrono::high_resolution_clock::now() - appStatusStartTime)
+			        .count();
+			if(appStatusMs > 250)
+				__COUTS__(TLVL_RemoteStatusVerbose)
+				    << "App '" << appName << "' status processing took " << appStatusMs
+				    << " ms" << __E__;
 		}  // end of app loop
 
 		if(oneStatusReqHasFailed)
@@ -2812,6 +2934,17 @@ try
 			__COUTT__ << "oneStatusReqHasFailed" << __E__;
 			// sleep(5);  // sleep to not overwhelm server with errors
 		}
+
+		auto loopTotalMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+		                       std::chrono::high_resolution_clock::now() - loopStartTime)
+		                       .count();
+		if(loopTotalMs > 750)  // warn if more than 750ms (accounting for the 500ms sleep)
+			__COUTS__(TLVL_RemoteStatusVerbose)
+			    << "(doDisconnected=" << doDisconnected << ") Total loop iteration "
+			    << loopCount << " took " << loopTotalMs
+			    << " ms (expected ~500ms for "
+			       "sleep)"
+			    << __E__;
 
 	}  // end of infinite status checking loop
 }  // end AppStatusWorkLoop()
@@ -3278,7 +3411,44 @@ try
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
-				remoteGatewayApp.appInfo.lastStatusTime = atoi(value.c_str());
+				if(!value.size())
+					value = "0";
+				{
+					time_t parsedTime = atoi(value.c_str());
+					if(parsedTime > 0)
+						remoteGatewayApp.appInfo.lastStatusTime = parsedTime;
+				}
+
+				value =
+				    StringMacros::extractXmlField(remoteStatusString, "stale", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t staleSeconds = atoi(value.c_str());
+					if(staleSeconds > 0)
+						remoteGatewayApp.appInfo.lastStatusTime = time(0) - staleSeconds;
+				}
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "statusChangeTime", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t parsedTime = atoi(value.c_str());
+					if(parsedTime > 0)
+						remoteGatewayApp.appInfo.lastStatusChangeTime = parsedTime;
+				}
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "statusChangeStale", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t staleSeconds = atoi(value.c_str());
+					if(staleSeconds > 0)
+						remoteGatewayApp.appInfo.lastStatusChangeTime =
+						    time(0) - staleSeconds;
+				}
 
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
@@ -3345,6 +3515,27 @@ try
 				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				remoteGatewayApp.subapps[name].lastStatusTime = atoi(value.c_str());
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "statusChangeTime", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t parsedTime = atoi(value.c_str());
+					if(parsedTime > 0)
+						remoteGatewayApp.subapps[name].lastStatusChangeTime = parsedTime;
+				}
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "statusChangeStale", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t staleSeconds = atoi(value.c_str());
+					if(staleSeconds > 0)
+						remoteGatewayApp.subapps[name].lastStatusChangeTime =
+						    time(0) - staleSeconds;
+				}
 
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
@@ -3517,6 +3708,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 	using clock = std::chrono::steady_clock;
 	auto start  = clock::now();
+
+	std::string                           cachedAliasBackboneGroupNameAndKey;
+	std::string                           cachedAliasInput;
+	std::pair<std::string, TableGroupKey> cachedAliasResult;
 
 	while(1)
 	{
@@ -3788,6 +3983,17 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    "stale",
 						    std::to_string(time(0) - appInfo.getLastStatusTime()),
 						    supervisorNode);  // time since update
+						xmlOut.addAttributeToNode(
+						    "statusChangeTime",
+						    std::to_string(appInfo.getLastStatusChangeTime()),
+						    supervisorNode);
+						xmlOut.addAttributeToNode(
+						    "statusChangeStale",
+						    std::to_string(appInfo.getLastStatusChangeTime() > 0
+						                       ? time(0) -
+						                             appInfo.getLastStatusChangeTime()
+						                       : 0),
+						    supervisorNode);
 						xmlOut.addAttributeToNode("progress",
 						                          std::to_string(appInfo.getProgress()),
 						                          supervisorNode);  // get progress
@@ -3853,6 +4059,19 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							    std::to_string(time(0) -
 							                   subappInfoPair.second.lastStatusTime),
 							    subappElement);  // time since update
+							xmlOut.addAttributeToNode(
+							    "statusChangeTime",
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime),
+							    subappElement);
+							xmlOut.addAttributeToNode(
+							    "statusChangeStale",
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime > 0
+							            ? time(0) -
+							                  subappInfoPair.second.lastStatusChangeTime
+							            : 0),
+							    subappElement);
 							xmlOut.addAttributeToNode(
 							    "progress",
 							    std::to_string(subappInfoPair.second.progress),
@@ -4040,6 +4259,11 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						}
 					}
 
+					auto paramParseMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        clock::now() - start)
+					        .count();
+
 					HttpXmlDocument xmlOut;
 					for(const auto& it :
 					    theSupervisor->allSupervisorInfo_.getAllSupervisorInfo())
@@ -4068,6 +4292,15 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    std::to_string(
 						        time(0) -
 						        appInfo.getLastStatusTime()));  // time since update
+						xmlOut.addTextElementToData(
+						    "statusChangeTime",
+						    std::to_string(appInfo.getLastStatusChangeTime()));
+						xmlOut.addTextElementToData(
+						    "statusChangeStale",
+						    std::to_string(appInfo.getLastStatusChangeTime() > 0
+						                       ? time(0) -
+						                             appInfo.getLastStatusChangeTime()
+						                       : 0));
 						xmlOut.addTextElementToData(
 						    "progress",
 						    std::to_string(appInfo.getProgress()));  // get progress
@@ -4128,6 +4361,19 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							                   subappInfoPair.second.lastStatusTime),
 							    subappElement);  // time since update
 							xmlOut.addTextElementToParent(
+							    "subapp_statusChangeTime",
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime),
+							    subappElement);
+							xmlOut.addTextElementToParent(
+							    "subapp_statusChangeStale",
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime > 0
+							            ? time(0) -
+							                  subappInfoPair.second.lastStatusChangeTime
+							            : 0),
+							    subappElement);
+							xmlOut.addTextElementToParent(
 							    "subapp_progress",
 							    std::to_string(subappInfoPair.second.progress),
 							    subappElement);  // get progress
@@ -4143,6 +4389,11 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							    subappElement);  // get class
 						}
 					}
+
+					auto postXmlBuildMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        clock::now() - start)
+					        .count();
 
 					if(remoteGatewayStatus)  //also return System Messages and console count and user-with-lock
 					{
@@ -4162,32 +4413,59 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						xmlOut.addTextElementToData(
 						    "console_warn_count",
 						    std::to_string(theSupervisor->systemConsoleWarnCount_));
+
+						auto activeGroupMap = theSupervisor->theConfigurationManager_
+						                          ->getActiveTableGroups();
+						xmlOut.addTextElementToData(
+						    "activeContextGroupName",
+						    activeGroupMap[ConfigurationManager::GROUP_TYPE_NAME_CONTEXT]
+						        .first);
+						xmlOut.addTextElementToData(
+						    "activeContextGroupKey",
+						    activeGroupMap[ConfigurationManager::GROUP_TYPE_NAME_CONTEXT]
+						        .second.toString());
+						xmlOut.addTextElementToData(
+						    "activeConfigGroupName",
+						    activeGroupMap
+						        [ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION]
+						            .first);
+						xmlOut.addTextElementToData(
+						    "activeConfigGroupKey",
+						    activeGroupMap
+						        [ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION]
+						            .second.toString());
 					}
+
+					auto preAliasMs =
+					    std::chrono::duration_cast<std::chrono::milliseconds>(
+					        clock::now() - start)
+					        .count();
 
 					std::stringstream out;
 					xmlOut.outputXmlDocument((std::ostringstream*)&out,
 					                         false /*dispStdOut*/,
 					                         false /*allowWhiteSpace*/);
 
-					__COUTS__(TLVL_StateChangerStatus)
-					    << "Time taken for xml response to GetRemoteGatewayStatus "
-					       "==> "
-					    << std::chrono::duration_cast<std::chrono::milliseconds>(
-					           clock::now() - start)
-					           .count()
-					    << " milliseconds." << std::endl;
+					auto preAckMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+					                    clock::now() - start)
+					                    .count();
 
 					__COUTS__(TLVL_StatusParams)
 					    << "App status to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
 
-					__COUTS__(TLVL_StateChangerStatus)
-					    << "Time taken for receive+send response to "
-					       "GetRemoteGatewayStatus ==> "
-					    << std::chrono::duration_cast<std::chrono::milliseconds>(
-					           clock::now() - start)
-					           .count()
-					    << " milliseconds." << std::endl;
+					auto totalMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+					                   clock::now() - start)
+					                   .count();
+					if(totalMs > 50)
+						__COUTS__(TLVL_RemoteStatusVerbose)
+						    << "GetRemoteGatewayStatus handler breakdown: total="
+						    << totalMs << "ms paramParse=" << paramParseMs
+						    << "ms xmlBuild=" << (postXmlBuildMs - paramParseMs)
+						    << "ms aliasResolve=" << (preAliasMs - postXmlBuildMs)
+						    << "ms xmlSerialize=" << (preAckMs - preAliasMs)
+						    << "ms acknowledge=" << (totalMs - preAckMs)
+						    << "ms responseSize=" << out.str().size() << __E__;
 
 					continue;
 				}  //end GetRemoteAppStatus
@@ -9387,7 +9665,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 			if(iteration)
 			{
-				__COUT__ << "Starting iteration: " << iteration << __E__;
+				__COUT_INFO__ << "DIAG: re-broadcasting iteration=" << iteration
+				              << " for command '" << command << "'" << __E__;
 
 				// Re-send command to non-done remote gateways with updated iteration index
 				broadcastMessageToRemoteGateways(originalMessage, iteration);
@@ -9542,6 +9821,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							}
 
 							std::stringstream waitSs;
+							if(iteration > 0)
+								waitSs << "(Iteration #" << iteration << ") ";
 							waitSs << "Waiting on " << numOfThreadsWithWork << " of "
 							       << numberOfThreads
 							       << " threads to finish. Command = " << command;
@@ -9591,10 +9872,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							lastMinutesLeft = minutesLeft;
 
 							waitSs << "\n"
-							       << "Timeout threshold (for iteration #" << iteration
-							       << ") is " << timeoutSeconds / 60 << " minutes ("
-							       << secondsLeft << " seconds remaining before timeout)."
-							       << __E__;
+							       << "Timeout threshold is " << timeoutSeconds / 60
+							       << " minutes (" << secondsLeft
+							       << " seconds remaining before timeout)." << __E__;
 
 							{  // create lock scope that does not include sleep
 								std::lock_guard<std::mutex> lock(
@@ -9884,6 +10164,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		{
 			remoteGatewayApp.iterationsDone =
 			    false;  //reset iteration state on initial send
+			remoteGatewayApp.doNotHaltWasCommandedHalt = false;
 		}
 		else if(remoteGatewayApp.iterationsDone)
 		{
@@ -9901,7 +10182,11 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
 		    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
 		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
-		    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
+		    command == RunControlStateMachine::ABORT_TRANSITION_NAME) &&
+		   //exception: Failed subsystems must be Halted to recover
+		   !(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+		     remoteGatewayApp.appInfo.status.starts_with(
+		         RunControlStateMachine::FAILED_STATE_NAME)))
 		{
 			//send Stop to DoNotHalt subsystems that are in Running/Paused when Halt or Abort is requested
 			bool sendStop = command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
@@ -9926,6 +10211,14 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 				              << "' for FSM command = " << command << __E__;
 				continue;  //skip if not included
 			}
+		}
+
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
+		   command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+		   remoteGatewayApp.appInfo.status.starts_with(
+		       RunControlStateMachine::FAILED_STATE_NAME))
+		{
+			remoteGatewayApp.doNotHaltWasCommandedHalt = true;
 		}
 
 		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
@@ -10037,9 +10330,16 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		remoteGatewayApp.fsmName =
 		    activeStateMachineName_;  //fsmName will be prepended during command send
-		//force status for immediate user feedback
-		remoteGatewayApp.appInfo.status   = "Launching " + commandAndParams;
-		remoteGatewayApp.appInfo.progress = 0;
+		//force status for immediate user feedback (only on first send;
+		//re-broadcasts should not overwrite real transitioning status)
+		if(iteration == 0)
+		{
+			__COUT_INFO__ << "DIAG: setting Launching for '"
+			              << remoteGatewayApp.appInfo.name << "' iteration=" << iteration
+			              << " to='Launching " << commandAndParams << "'" << __E__;
+			remoteGatewayApp.appInfo.status   = "Launching " + commandAndParams;
+			remoteGatewayApp.appInfo.progress = 0;
+		}
 
 		__SUP_COUTV__(remoteGatewayApp.command);
 	}  //end remote gateway broadcast loop
@@ -10057,9 +10357,15 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			for(auto& rga : remoteGatewayApps_)
 				if(rga.fullName == localApp.fullName)
 				{
-					rga.iterationsDone = localApp.iterationsDone;
+					rga.iterationsDone            = localApp.iterationsDone;
+					rga.doNotHaltWasCommandedHalt = localApp.doNotHaltWasCommandedHalt;
 					if(wasCommanded)
 					{
+						__COUT_INFO__
+						    << "DIAG: broadcast write-back for '" << rga.appInfo.name
+						    << "' oldStatus='" << rga.appInfo.status.substr(0, 40)
+						    << "' newStatus='" << localApp.appInfo.status.substr(0, 40)
+						    << "' command='" << localApp.command << "'" << __E__;
 						rga.command = localApp.command;
 						rga.fsmName = localApp.fsmName;
 						if(localApp.config_dump.size())
@@ -10131,7 +10437,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			   (command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
 			    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
 			    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
-			    command == RunControlStateMachine::ABORT_TRANSITION_NAME))
+			    command == RunControlStateMachine::ABORT_TRANSITION_NAME) &&
+			   //exception: DoNotHalt subsystems that were sent Halt (from Failed state for recovery)
+			   //  must be waited on -- use persistent flag instead of re-checking mutable status
+			   !remoteGatewayApp.doNotHaltWasCommandedHalt)
 				continue;
 			if(remoteGatewayApp.fsm_mode ==
 			       RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
@@ -11315,6 +11624,16 @@ try
 				        : "0");  // get time stamp
 				xmlOut.addNumberElementToData(
 				    "stale", time(0) - appInfo.getLastStatusTime());  // time since update
+				xmlOut.addTextElementToData("statusChangeTime",
+				                            appInfo.getLastStatusChangeTime()
+				                                ? StringMacros::getTimestampString(
+				                                      appInfo.getLastStatusChangeTime())
+				                                : "0");
+				xmlOut.addNumberElementToData(
+				    "statusChangeStale",
+				    appInfo.getLastStatusChangeTime() > 0
+				        ? time(0) - appInfo.getLastStatusChangeTime()
+				        : 0);
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.getProgress());  // get progress
 				xmlOut.addTextElementToData("detail", appInfo.getDetail());  // get detail
@@ -11370,6 +11689,19 @@ try
 					    "subapp_stale",
 					    time(0) - subappInfoPair.second.lastStatusTime,
 					    subappElement);  // time since update
+					xmlOut.addTextElementToParent(
+					    "subapp_statusChangeTime",
+					    subappInfoPair.second.lastStatusChangeTime
+					        ? StringMacros::getTimestampString(
+					              subappInfoPair.second.lastStatusChangeTime)
+					        : "0",
+					    subappElement);
+					xmlOut.addNumberElementToParent(
+					    "subapp_statusChangeStale",
+					    subappInfoPair.second.lastStatusChangeTime > 0
+					        ? time(0) - subappInfoPair.second.lastStatusChangeTime
+					        : 0,
+					    subappElement);
 					xmlOut.addNumberElementToParent("subapp_progress",
 					                                subappInfoPair.second.progress,
 					                                subappElement);  // get progress
@@ -11472,6 +11804,19 @@ try
 					    "subapp_stale",
 					    time(0) - subappInfoPair.second.lastStatusTime,
 					    subappElement);  // time since update
+					xmlOut.addTextElementToParent(
+					    "subapp_statusChangeTime",
+					    subappInfoPair.second.lastStatusChangeTime
+					        ? StringMacros::getTimestampString(
+					              subappInfoPair.second.lastStatusChangeTime)
+					        : "0",
+					    subappElement);
+					xmlOut.addNumberElementToParent(
+					    "subapp_statusChangeStale",
+					    subappInfoPair.second.lastStatusChangeTime > 0
+					        ? time(0) - subappInfoPair.second.lastStatusChangeTime
+					        : 0,
+					    subappElement);
 					xmlOut.addNumberElementToParent("subapp_progress",
 					                                subappInfoPair.second.progress,
 					                                subappElement);  // get progress
@@ -12385,6 +12730,9 @@ try
 				xmlOut.addTextElementToData("subsystem_url", remoteSubsystem.appInfo.url);
 				xmlOut.addTextElementToData("subsystem_landingPage",
 				                            remoteSubsystem.landingPage);
+				__COUTT__ << "DIAG: getRemoteSubsystemStatus sending '"
+				          << remoteSubsystem.appInfo.name << "' status='"
+				          << remoteSubsystem.appInfo.status.substr(0, 40) << "'" << __E__;
 				xmlOut.addTextElementToData("subsystem_status",
 				                            remoteSubsystem.appInfo.status);
 				xmlOut.addTextElementToData(
@@ -12395,6 +12743,12 @@ try
 				xmlOut.addTextElementToData("subsystem_lastStatusTime",
 				                            StringMacros::getTimestampString(
 				                                remoteSubsystem.appInfo.lastStatusTime));
+				xmlOut.addTextElementToData(
+				    "subsystem_lastStatusChangeTime",
+				    remoteSubsystem.appInfo.lastStatusChangeTime
+				        ? StringMacros::getTimestampString(
+				              remoteSubsystem.appInfo.lastStatusChangeTime)
+				        : "0");
 				xmlOut.addTextElementToData(
 				    "subsystem_consoleErrCount",
 				    std::to_string(remoteSubsystem.consoleErrCount));
@@ -12907,8 +13261,16 @@ try
 			__SUP_COUTV__(targetSubsystem);
 			//launch Target Subsystem's remote ots instance
 
+			__COUT__ << "gatewayLaunchOTSInstance: acquiring remoteGatewayAppsMutex_ for "
+			            "subsystem '"
+			         << targetSubsystem << "'..." << __E__;
+
 			bool                        found = false;
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+
+			__COUT__ << "gatewayLaunchOTSInstance: mutex acquired for subsystem '"
+			         << targetSubsystem << "'" << __E__;
+
 			for(auto& remoteGatewayApp : remoteGatewayApps_)
 				if(targetSubsystem == remoteGatewayApp.appInfo.name)
 				{
@@ -12931,18 +13293,37 @@ try
 					          << remoteGatewayApp.instancePath;  //full USER_DATA path
 					__SUP_COUTV__(commandSs.str());
 
+					__COUT__ << "gatewayLaunchOTSInstance: about to call "
+					            "launchStartOneServerCommand"
+					         << " for subsystem '" << targetSubsystem
+					         << "' targeting context '" << getContextUID() << "'"
+					         << __E__;
+
 					GatewaySupervisor::launchStartOneServerCommand(
 					    commandSs.str(),
 					    //"LAUNCH_INSTANCE;user;hostname;/home/user/ots_spack_fast;Normal;shift1",
 					    CorePropertySupervisorBase::theConfigurationManager_,
 					    getContextUID());
 
+					__COUT__ << "gatewayLaunchOTSInstance: launchStartOneServerCommand "
+					            "returned"
+					         << " for subsystem '" << targetSubsystem << "'" << __E__;
+
 					//force status for immediate user feedback
 					remoteGatewayApp.command =
 					    "Reboot";  //use command process for getting updated status
 					remoteGatewayApp.appInfo.status   = "Rebooting... ";
 					remoteGatewayApp.appInfo.progress = 1;
+					remoteGatewayApp.relaunchTime     = time(0);
+
+					addSystemMessage("*",
+					                 "Subsystem '" + remoteGatewayApp.appInfo.name +
+					                     "' was relaunched at " +
+					                     StringMacros::getTimestampString() + ".");
 				}
+
+			__COUT__ << "gatewayLaunchOTSInstance: releasing mutex for subsystem '"
+			         << targetSubsystem << "' found=" << found << __E__;
 
 			if(!found)
 			{
@@ -13676,7 +14057,11 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 
 	std::string fn = (std::string(__ENV__("SERVICE_DATA_PATH")) + "/StartOTS_action_" +
 	                  hostname + ".cmd");
-	FILE*       fp = fopen(fn.c_str(), "w");
+
+	__COUT__ << "launchStartOneServerCommand: writing command '" << command
+	         << "' to file " << fn << __E__;
+
+	FILE* fp = fopen(fn.c_str(), "w");
 	if(fp)
 	{
 		fprintf(fp, "%s", command.c_str());
@@ -13687,6 +14072,10 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 		__SS__ << "Unable to open command file: " << fn << __E__;
 		__SS_THROW__;
 	}
+
+	__COUT__ << "launchStartOneServerCommand: command written, sleeping 2s for action "
+	            "handler to read..."
+	         << __E__;
 
 	sleep(2 /*seconds*/);  // then verify that the commands were read
 	// note: StartOTS.sh has a sleep of 1 second
@@ -13699,6 +14088,9 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 		char line[100];
 		fgets(line, 100, fp);
 		fclose(fp);
+
+		__COUT__ << "launchStartOneServerCommand: verification read back '" << line
+		         << "' for command '" << command << "'" << __E__;
 
 		if(strncmp(line, command.c_str(), 90) == 0)
 		{
