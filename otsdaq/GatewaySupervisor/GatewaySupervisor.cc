@@ -10152,6 +10152,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		{
 			remoteGatewayApp.iterationsDone =
 			    false;  //reset iteration state on initial send
+			remoteGatewayApp.doNotHaltWasCommandedHalt = false;
 		}
 		else if(remoteGatewayApp.iterationsDone)
 		{
@@ -10171,9 +10172,9 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 		    command == RunControlStateMachine::ABORT_TRANSITION_NAME) &&
 		   //exception: Failed subsystems must be Halted to recover
-		   //  (status may contain error details after "Failed", so use .find())
 		   !(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
-		     remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
+		     remoteGatewayApp.appInfo.status.starts_with(
+		         RunControlStateMachine::FAILED_STATE_NAME)))
 		{
 			//send Stop to DoNotHalt subsystems that are in Running/Paused when Halt or Abort is requested
 			bool sendStop = command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
@@ -10198,6 +10199,14 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 				              << "' for FSM command = " << command << __E__;
 				continue;  //skip if not included
 			}
+		}
+
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
+		   command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+		   remoteGatewayApp.appInfo.status.starts_with(
+		       RunControlStateMachine::FAILED_STATE_NAME))
+		{
+			remoteGatewayApp.doNotHaltWasCommandedHalt = true;
 		}
 
 		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
@@ -10337,6 +10346,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 				if(rga.fullName == localApp.fullName)
 				{
 					rga.iterationsDone = localApp.iterationsDone;
+					rga.doNotHaltWasCommandedHalt = localApp.doNotHaltWasCommandedHalt;
 					if(wasCommanded)
 					{
 						__COUT_INFO__
@@ -10416,10 +10426,9 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
 			    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 			    command == RunControlStateMachine::ABORT_TRANSITION_NAME) &&
-			   //exception: Failed subsystems were sent Halt and must reach Halted
-			   //  (status may contain error details after "Failed", so use .find())
-			   !(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
-			     remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
+			   //exception: DoNotHalt subsystems that were sent Halt (from Failed state for recovery)
+			   //  must be waited on -- use persistent flag instead of re-checking mutable status
+			   !remoteGatewayApp.doNotHaltWasCommandedHalt)
 				continue;
 			if(remoteGatewayApp.fsm_mode ==
 			       RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&

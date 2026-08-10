@@ -475,6 +475,7 @@ public:	//used by remote subsystem control and status
 
 			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///< remote gateways can have subapps
 			bool iterationsDone = false; ///< tracks per-gateway iteration completion during FSM transitions
+			bool doNotHaltWasCommandedHalt = false;
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
