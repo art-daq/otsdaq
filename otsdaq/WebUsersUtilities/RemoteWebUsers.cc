@@ -122,33 +122,100 @@ bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
 		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
 	}
 
-	parameters.clear();
-	parameters.addParameter("CookieCode", userInfo.cookieCode_);
-	parameters.addParameter("RefreshOption", userInfo.automatedCommand_ ? "0" : "1");
-	parameters.addParameter("IPAddress", userInfo.ip_);
-	parameters.addParameter("RequireLock", userInfo.requireLock_ ? "1" : "0");
+	// ---- Cookie Check Cache: attempt lookup ----
+	// Bypass cache when requireLock_ and no one holds lock --
+	// Gateway must auto-take lock (see GatewaySupervisor::supervisorCookieCheck).
+	// Safe: requireLock_ is forced false for automatedCommand_ requests
+	// (see CorePropertySupervisorBase::getRequestUserInfo), so high-freq polling always caches.
+	{
+		bool cacheHit = false;
+		{
+			std::lock_guard<std::mutex> cacheLock(cookieCheckCacheMutex_);
+			auto cacheIt = cookieCheckCache_.find(userInfo.cookieCode_);
+			if(cacheIt != cookieCheckCache_.end() &&
+			   (time(0) - cacheIt->second.cacheTime) < COOKIE_CHECK_CACHE_TTL)
+			{
+				if(!(userInfo.requireLock_ && cacheIt->second.userWithLock.empty()))
+				{
+					userInfo.setGroupPermissionLevels(cacheIt->second.permissions);
+					userInfo.cookieCode_       = cacheIt->second.cookieCode;
+					userInfo.username_         = cacheIt->second.username;
+					userInfo.displayName_      = cacheIt->second.displayName;
+					userInfo.usernameWithLock_ = cacheIt->second.userWithLock;
+					cacheHit = true;
+				}
+			}
+		}  // mutex released
 
-	retMsg = SOAPMessenger::sendWithSOAPReply(
-	    gatewaySupervisor, "SupervisorCookieCheck", parameters);
+		if(cacheHit)
+		{
+			if(!WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo))
+				goto HANDLE_ACCESS_FAILURE;
+			return true;
+		}
+	}
+	// ---- end Cookie Check Cache lookup ----
 
-	parameters.clear();
-	parameters.addParameter("CookieCode");
-	parameters.addParameter("Permissions");
-	parameters.addParameter("UserGroups");
-	parameters.addParameter("UserWithLock");
-	parameters.addParameter("Username");
-	parameters.addParameter("DisplayName");
-	// parameters.addParameter("ActiveSessionIndex");
-	SOAPUtilities::receive(retMsg, parameters);
+	// Save original cookie code before SOAP (Gateway may refresh it in the response)
+	{
+		const std::string originalCookieCode = userInfo.cookieCode_;
 
-	// first extract a few things always from parameters
-	//	like permissionLevel for this request... must consider allowed groups!!
-	userInfo.setGroupPermissionLevels(parameters.getValue("Permissions"));
-	userInfo.cookieCode_       = parameters.getValue("CookieCode");
-	userInfo.username_         = parameters.getValue("Username");
-	userInfo.displayName_      = parameters.getValue("DisplayName");
-	userInfo.usernameWithLock_ = parameters.getValue("UserWithLock");
-	// userInfo.activeUserSessionIndex_ = strtoul(parameters.getValue("ActiveSessionIndex").c_str(), 0, 0);
+		parameters.clear();
+		parameters.addParameter("CookieCode", userInfo.cookieCode_);
+		parameters.addParameter("RefreshOption", userInfo.automatedCommand_ ? "0" : "1");
+		parameters.addParameter("IPAddress", userInfo.ip_);
+		parameters.addParameter("RequireLock", userInfo.requireLock_ ? "1" : "0");
+
+		retMsg = SOAPMessenger::sendWithSOAPReply(
+		    gatewaySupervisor, "SupervisorCookieCheck", parameters);
+
+		parameters.clear();
+		parameters.addParameter("CookieCode");
+		parameters.addParameter("Permissions");
+		parameters.addParameter("UserGroups");
+		parameters.addParameter("UserWithLock");
+		parameters.addParameter("Username");
+		parameters.addParameter("DisplayName");
+		// parameters.addParameter("ActiveSessionIndex");
+		SOAPUtilities::receive(retMsg, parameters);
+
+		// first extract a few things always from parameters
+		//	like permissionLevel for this request... must consider allowed groups!!
+		userInfo.setGroupPermissionLevels(parameters.getValue("Permissions"));
+		userInfo.cookieCode_       = parameters.getValue("CookieCode");
+		userInfo.username_         = parameters.getValue("Username");
+		userInfo.displayName_      = parameters.getValue("DisplayName");
+		userInfo.usernameWithLock_ = parameters.getValue("UserWithLock");
+		// userInfo.activeUserSessionIndex_ = strtoul(parameters.getValue("ActiveSessionIndex").c_str(), 0, 0);
+
+		// ---- Cookie Check Cache: store successful response ----
+		if(userInfo.cookieCode_.length() == WebUsers::COOKIE_CODE_LENGTH)
+		{
+			std::lock_guard<std::mutex> cacheLock(cookieCheckCacheMutex_);
+			cookieCheckCache_[originalCookieCode] = {
+			    time(0),
+			    userInfo.cookieCode_,
+			    parameters.getValue("Permissions"),
+			    userInfo.username_,
+			    userInfo.displayName_,
+			    userInfo.usernameWithLock_
+			};
+
+			// Prune stale entries (bounded by active users, typically < 20)
+			if(cookieCheckCache_.size() > 10)
+			{
+				time_t now = time(0);
+				for(auto it = cookieCheckCache_.begin(); it != cookieCheckCache_.end(); )
+				{
+					if(now - it->second.cacheTime > 2 * COOKIE_CHECK_CACHE_TTL)
+						it = cookieCheckCache_.erase(it);
+					else
+						++it;
+				}
+			}
+		}
+		// ---- end Cookie Check Cache store ----
+	}  // end originalCookieCode scope
 
 	if(!WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo))
 		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
