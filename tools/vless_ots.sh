@@ -8,7 +8,7 @@ if [ "x$1" == "x" ]; then
     echo "    Usage: vless_ots.sh <ots log file name> [-g \"grep pattern\"] [-A <lines>] [-B <lines>]"
     echo
     echo "    e.g.: vless_ots.sh /home/user/ots/Data_user/Logs/otsdaq_quiet_run-gateway-server01.fnal.gov-3055.txt"
-    echo "    e.g.: vless_ots.sh /home/user/ots/Data_user/Logs/otsdaq_quiet_run-gateway-server01.fnal.gov-3055.txt -g \"CDR lock\|Phase 2b\""
+    echo "    e.g.: vless_ots.sh /home/user/ots/Data_user/Logs/otsdaq_quiet_run-gateway-server01.fnal.gov-3055.txt -g \"CDR lock|Phase 2b\""
     echo "    e.g.: vless_ots.sh /home/user/ots/Data_user/Logs/otsdaq_quiet_run-gateway-server01.fnal.gov-3055.txt -g \"pre-flip\" -A 15"
     echo
     echo
