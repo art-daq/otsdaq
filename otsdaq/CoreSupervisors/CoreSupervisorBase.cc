@@ -1,20 +1,8 @@
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
 
-#include <chrono>  //DIAG: for ms timestamps in FE macro latency investigation
 #include <iostream>
 
 using namespace ots;
-
-namespace
-{
-// DIAG: temporary ms-resolution timestamp helper for FE macro latency investigation
-inline uint64_t diagNowMs()
-{
-	return std::chrono::duration_cast<std::chrono::milliseconds>(
-	           std::chrono::system_clock::now().time_since_epoch())
-	    .count();
-}
-}  // namespace
 
 // XDAQ_INSTANTIATOR_IMPL(CoreSupervisorBase)
 
@@ -155,7 +143,7 @@ try
 	//**** end LOGIN GATEWAY CODE ***//
 
 	if(!userInfo.automatedCommand_)
-		__SUP_COUT__ << "DIAG ms=" << diagNowMs() << " requestType: " << requestType
+		__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs() << " requestType: " << requestType
 		             << __E__;
 
 	if(userInfo.NonXMLRequestType_)
@@ -260,7 +248,7 @@ try
 	                         true /* printErrors */);  // report any errors encountered
 
 	if(!userInfo.automatedCommand_)
-		__SUP_COUT__ << "DIAG ms=" << diagNowMs() << " requestType: " << requestType
+		__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs() << " requestType: " << requestType
 		             << " response written, elapsed="
 		             << artdaq::TimeUtils::GetElapsedTime(requestStart) << "s" << __E__;
 
