@@ -2608,9 +2608,9 @@ TableVersion ConfigurationManagerRW::saveModifiedVersion(
 /// updateTableCells
 ///
 ///	Full workflow for updating specific cells in a table by UID and column name.
-///	Loads the table at sourceVersion, creates a temporary view, applies cell updates
-///	via TableView::updateCells(), saves a new persistent version, and optionally sets
-///	a version alias on the new version.
+///	Loads the table at sourceVersion, creates a temporary view, applies the requested
+///	cell updates by setting values in the temporary view, saves a new persistent
+///	version, and optionally sets a version alias on the resulting version.
 ///
 ///	If sourceVersion is not specified (default/invalid), uses the active version of the
 ///	table. Active groups must be initialized for this to work.
