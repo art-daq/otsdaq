@@ -13,8 +13,12 @@ void SupervisorInfo::setStatus(const std::string& status,
                                const int64_t      availableDataSpaceKB)
 {
 	/// Note: be careful accessing status_ in multithreaded code (need higher level lock, a la getSupervisorInfoMutex)
-	if(status != SupervisorInfo::APP_STATUS_UNKNOWN && status_ != status)
+	if(status != SupervisorInfo::APP_STATUS_UNKNOWN)
+	{
 		lastStatusTime_ = time(0);
+		if(status_ != status)
+			lastStatusChangeTime_ = time(0);
+	}
 	status_   = status;
 	progress_ = progress;
 	detail_   = detail;
@@ -31,6 +35,14 @@ void SupervisorInfo::setSubappStatus(const std::string& name,
                                      const int64_t      availableDataSpaceKB)
 {
 	subapps_[name].name        = name;
+	if(status !=
+	   SupervisorInfo::
+	       APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
+	{
+		subapps_.at(name).lastStatusTime = time(0);
+		if(subapps_.at(name).status != status)
+			subapps_.at(name).lastStatusChangeTime = time(0);
+	}
 	subapps_.at(name).status   = status;
 	subapps_.at(name).progress = progress;
 	subapps_.at(name).detail   = detail;
@@ -38,10 +50,6 @@ void SupervisorInfo::setSubappStatus(const std::string& name,
 	                                      subapps_.at(name).availableLogSpaceKB_);
 	SupervisorInfo::emplaceAvailableSpace(availableDataSpaceKB,
 	                                      subapps_.at(name).availableDataSpaceKB_);
-	if(status !=
-	   SupervisorInfo::
-	       APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update
-		subapps_.at(name).lastStatusTime = time(0);
 }  // end setSubappStatus()
 
 //=====================================================================================
@@ -79,6 +87,7 @@ std::string SupervisorInfo::serializeSubappInfos(std::vector<SubappInfo> infos)
 		ostr << info.progress << "\n";
 		ostr << info.status << "\n";
 		ostr << info.lastStatusTime << "\n";
+		ostr << info.lastStatusChangeTime << "\n";
 		ostr << info.url << "\n";
 		ostr << info.class_name << "\n";
 	}
@@ -106,6 +115,9 @@ std::vector<SupervisorInfo::SubappInfo> SupervisorInfo::deserializeSubappInfos(
 		std::getline(istr, line);
 		converter = std::istringstream(line);
 		converter >> thisInfo.lastStatusTime;
+		std::getline(istr, line);
+		converter = std::istringstream(line);
+		converter >> thisInfo.lastStatusChangeTime;
 		std::getline(istr, line);
 		thisInfo.url = line;
 		std::getline(istr, line);
