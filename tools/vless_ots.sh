@@ -21,10 +21,10 @@ grep_pattern=""
 grep_context=""
 while [ $# -gt 0 ]; do
     case "$1" in
-        -g)  grep_pattern="$2"; shift 2 ;;
-        -A)  grep_context="$grep_context -A $2"; shift 2 ;;
-        -B)  grep_context="$grep_context -B $2"; shift 2 ;;
-        -C)  grep_context="$grep_context -C $2"; shift 2 ;;
+        -g)  [ $# -ge 2 ] || { echo "Error: -g requires an argument." >&2; exit 1; }; grep_pattern="$2"; shift 2 ;;
+        -A)  [ $# -ge 2 ] || { echo "Error: -A requires an argument." >&2; exit 1; }; grep_context="$grep_context -A $2"; shift 2 ;;
+        -B)  [ $# -ge 2 ] || { echo "Error: -B requires an argument." >&2; exit 1; }; grep_context="$grep_context -B $2"; shift 2 ;;
+        -C)  [ $# -ge 2 ] || { echo "Error: -C requires an argument." >&2; exit 1; }; grep_context="$grep_context -C $2"; shift 2 ;;
         *)   shift ;;
     esac
 done
