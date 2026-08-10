@@ -142,7 +142,7 @@ bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
 					userInfo.username_         = cacheIt->second.username;
 					userInfo.displayName_      = cacheIt->second.displayName;
 					userInfo.usernameWithLock_ = cacheIt->second.userWithLock;
-					cacheHit = true;
+					cacheHit                   = true;
 				}
 			}
 		}  // mutex released
@@ -192,20 +192,18 @@ bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
 		if(userInfo.cookieCode_.length() == WebUsers::COOKIE_CODE_LENGTH)
 		{
 			std::lock_guard<std::mutex> cacheLock(cookieCheckCacheMutex_);
-			cookieCheckCache_[originalCookieCode] = {
-			    time(0),
-			    userInfo.cookieCode_,
-			    parameters.getValue("Permissions"),
-			    userInfo.username_,
-			    userInfo.displayName_,
-			    userInfo.usernameWithLock_
-			};
+			cookieCheckCache_[originalCookieCode] = {time(0),
+			                                         userInfo.cookieCode_,
+			                                         parameters.getValue("Permissions"),
+			                                         userInfo.username_,
+			                                         userInfo.displayName_,
+			                                         userInfo.usernameWithLock_};
 
 			// Prune stale entries (bounded by active users, typically < 20)
 			if(cookieCheckCache_.size() > 10)
 			{
 				time_t now = time(0);
-				for(auto it = cookieCheckCache_.begin(); it != cookieCheckCache_.end(); )
+				for(auto it = cookieCheckCache_.begin(); it != cookieCheckCache_.end();)
 				{
 					if(now - it->second.cacheTime > 2 * COOKIE_CHECK_CACHE_TTL)
 						it = cookieCheckCache_.erase(it);
