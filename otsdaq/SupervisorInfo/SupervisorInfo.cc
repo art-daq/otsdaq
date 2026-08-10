@@ -34,7 +34,7 @@ void SupervisorInfo::setSubappStatus(const std::string& name,
                                      const int64_t      availableLogSpaceKB,
                                      const int64_t      availableDataSpaceKB)
 {
-	subapps_[name].name        = name;
+	subapps_[name].name = name;
 	if(status !=
 	   SupervisorInfo::
 	       APP_STATUS_UNKNOWN)  // if unknown, then do not consider it a status update

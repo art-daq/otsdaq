@@ -3990,7 +3990,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						xmlOut.addAttributeToNode(
 						    "statusChangeStale",
 						    std::to_string(appInfo.getLastStatusChangeTime() > 0
-						        ? time(0) - appInfo.getLastStatusChangeTime() : 0),
+						                       ? time(0) -
+						                             appInfo.getLastStatusChangeTime()
+						                       : 0),
 						    supervisorNode);
 						xmlOut.addAttributeToNode("progress",
 						                          std::to_string(appInfo.getProgress()),
@@ -4059,12 +4061,16 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							    subappElement);  // time since update
 							xmlOut.addAttributeToNode(
 							    "statusChangeTime",
-							    std::to_string(subappInfoPair.second.lastStatusChangeTime),
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime),
 							    subappElement);
 							xmlOut.addAttributeToNode(
 							    "statusChangeStale",
-							    std::to_string(subappInfoPair.second.lastStatusChangeTime > 0
-							        ? time(0) - subappInfoPair.second.lastStatusChangeTime : 0),
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime > 0
+							            ? time(0) -
+							                  subappInfoPair.second.lastStatusChangeTime
+							            : 0),
 							    subappElement);
 							xmlOut.addAttributeToNode(
 							    "progress",
@@ -4292,7 +4298,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						xmlOut.addTextElementToData(
 						    "statusChangeStale",
 						    std::to_string(appInfo.getLastStatusChangeTime() > 0
-						        ? time(0) - appInfo.getLastStatusChangeTime() : 0));
+						                       ? time(0) -
+						                             appInfo.getLastStatusChangeTime()
+						                       : 0));
 						xmlOut.addTextElementToData(
 						    "progress",
 						    std::to_string(appInfo.getProgress()));  // get progress
@@ -4354,12 +4362,16 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							    subappElement);  // time since update
 							xmlOut.addTextElementToParent(
 							    "subapp_statusChangeTime",
-							    std::to_string(subappInfoPair.second.lastStatusChangeTime),
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime),
 							    subappElement);
 							xmlOut.addTextElementToParent(
 							    "subapp_statusChangeStale",
-							    std::to_string(subappInfoPair.second.lastStatusChangeTime > 0
-							        ? time(0) - subappInfoPair.second.lastStatusChangeTime : 0),
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime > 0
+							            ? time(0) -
+							                  subappInfoPair.second.lastStatusChangeTime
+							            : 0),
 							    subappElement);
 							xmlOut.addTextElementToParent(
 							    "subapp_progress",
@@ -10345,7 +10357,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			for(auto& rga : remoteGatewayApps_)
 				if(rga.fullName == localApp.fullName)
 				{
-					rga.iterationsDone = localApp.iterationsDone;
+					rga.iterationsDone            = localApp.iterationsDone;
 					rga.doNotHaltWasCommandedHalt = localApp.doNotHaltWasCommandedHalt;
 					if(wasCommanded)
 					{
@@ -11612,15 +11624,16 @@ try
 				        : "0");  // get time stamp
 				xmlOut.addNumberElementToData(
 				    "stale", time(0) - appInfo.getLastStatusTime());  // time since update
-				xmlOut.addTextElementToData(
-				    "statusChangeTime",
-				    appInfo.getLastStatusChangeTime()
-				        ? StringMacros::getTimestampString(appInfo.getLastStatusChangeTime())
-				        : "0");
+				xmlOut.addTextElementToData("statusChangeTime",
+				                            appInfo.getLastStatusChangeTime()
+				                                ? StringMacros::getTimestampString(
+				                                      appInfo.getLastStatusChangeTime())
+				                                : "0");
 				xmlOut.addNumberElementToData(
 				    "statusChangeStale",
 				    appInfo.getLastStatusChangeTime() > 0
-				        ? time(0) - appInfo.getLastStatusChangeTime() : 0);
+				        ? time(0) - appInfo.getLastStatusChangeTime()
+				        : 0);
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.getProgress());  // get progress
 				xmlOut.addTextElementToData("detail", appInfo.getDetail());  // get detail
@@ -11686,7 +11699,8 @@ try
 					xmlOut.addNumberElementToParent(
 					    "subapp_statusChangeStale",
 					    subappInfoPair.second.lastStatusChangeTime > 0
-					        ? time(0) - subappInfoPair.second.lastStatusChangeTime : 0,
+					        ? time(0) - subappInfoPair.second.lastStatusChangeTime
+					        : 0,
 					    subappElement);
 					xmlOut.addNumberElementToParent("subapp_progress",
 					                                subappInfoPair.second.progress,
@@ -11800,7 +11814,8 @@ try
 					xmlOut.addNumberElementToParent(
 					    "subapp_statusChangeStale",
 					    subappInfoPair.second.lastStatusChangeTime > 0
-					        ? time(0) - subappInfoPair.second.lastStatusChangeTime : 0,
+					        ? time(0) - subappInfoPair.second.lastStatusChangeTime
+					        : 0,
 					    subappElement);
 					xmlOut.addNumberElementToParent("subapp_progress",
 					                                subappInfoPair.second.progress,

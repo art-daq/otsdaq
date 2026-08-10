@@ -1232,8 +1232,8 @@ void FEVInterface::runFrontEndMacro(
 	        MacroMakerSupervisors.begin()->second.getDescriptor(), message);
 
 	std::string replyCommand = SOAPUtilities::translate(replyMessage).getCommand();
-	__FE_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs() << " Response received: " << replyCommand
-	            << __E__;
+	__FE_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
+	            << " Response received: " << replyCommand << __E__;
 
 	if(replyCommand == "Fault")
 	{

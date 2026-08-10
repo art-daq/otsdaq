@@ -324,8 +324,9 @@ try
 			             << "' target='" << targetInterfaceID << "'" << __E__;
 			theFEInterfacesManager_->runFEMacroByFE(
 			    requester, targetInterfaceID, feMacroName, inputArgs, outputArgs);
-			__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs() << " runFEMacroByFE done, macro='"
-			             << feMacroName << "'" << __E__;
+			__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
+			             << " runFEMacroByFE done, macro='" << feMacroName << "'"
+			             << __E__;
 		}
 		catch(std::runtime_error& e)
 		{
@@ -368,7 +369,8 @@ try
 		txParameters.addParameter("outputArgs", outputArgs);
 		SOAPUtilities::addParameters(replyMessage, txParameters);
 
-		__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs() << " Sending FE macro result: "
+		__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
+		             << " Sending FE macro result: "
 		             << SOAPUtilities::translate(replyMessage) << __E__;
 
 		return replyMessage;
@@ -1122,8 +1124,9 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 					}
 				}).detach();
 
-				__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs() << " Launched async FE Macro '"
-				             << feMacroName << "' for interfaceID '" << interfaceID
+				__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
+				             << " Launched async FE Macro '" << feMacroName
+				             << "' for interfaceID '" << interfaceID
 				             << "' with taskID=" << task->taskID << __E__;
 
 				// Wait briefly to see if macro finishes quickly (avoids unnecessary polling)
