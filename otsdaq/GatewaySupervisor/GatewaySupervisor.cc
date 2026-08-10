@@ -3670,7 +3670,6 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	std::string                           cachedAliasBackboneGroupNameAndKey;
 	std::string                           cachedAliasInput;
 	std::pair<std::string, TableGroupKey> cachedAliasResult;
-	bool                                  cachedAliasValid = false;
 
 	while(1)
 	{
@@ -4347,60 +4346,6 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    activeGroupMap
 						        [ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION]
 						            .second.toString());
-
-						//resolve the requester's selected config alias (if any) against
-						//	this subsystem's own already-active Backbone group -- local
-						//	file read only, no scp/network hop, since it is this
-						//	subsystem's own active group being consulted
-						__COUTS__(TLVL_RemoteStatusVerbose)
-						    << "requesterSelectedConfigAlias='"
-						    << requesterSelectedConfigAlias << "'" << __E__;
-						if(requesterSelectedConfigAlias != "")
-						{
-							try
-							{
-								std::string backboneGroupNameAndKey =
-								    theSupervisor->cachedSubsystemCommonBackboneKey_;
-
-								if(!cachedAliasValid ||
-								   backboneGroupNameAndKey !=
-								       cachedAliasBackboneGroupNameAndKey ||
-								   requesterSelectedConfigAlias != cachedAliasInput)
-								{
-									ConfigurationManager tmpCfgMgr;
-									cachedAliasResult = tmpCfgMgr.getTableGroupFromAlias(
-									    requesterSelectedConfigAlias);
-									cachedAliasBackboneGroupNameAndKey =
-									    backboneGroupNameAndKey;
-									cachedAliasInput = requesterSelectedConfigAlias;
-									cachedAliasValid = true;
-								}
-
-								__COUTS__(TLVL_RemoteStatusVerbose)
-								    << "resolved alias '" << requesterSelectedConfigAlias
-								    << "' to group '" << cachedAliasResult.first << "("
-								    << cachedAliasResult.second << ")'" << __E__;
-								xmlOut.addTextElementToData("selectedConfigGroupName",
-								                            cachedAliasResult.first);
-								xmlOut.addTextElementToData(
-								    "selectedConfigGroupKey",
-								    cachedAliasResult.second.toString());
-							}
-							catch(const std::exception& e)
-							{
-								__COUT_WARN__
-								    << "Failed to resolve selected config alias '"
-								    << requesterSelectedConfigAlias
-								    << "' to a group: " << e.what() << __E__;
-							}
-							catch(...)
-							{
-								__COUT_WARN__
-								    << "Failed to resolve selected config alias '"
-								    << requesterSelectedConfigAlias
-								    << "' to a group (unknown error)." << __E__;
-							}
-						}
 					}
 
 					auto preAliasMs =
