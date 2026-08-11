@@ -328,9 +328,7 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 	++fhiclFlattenCountCumulative_;
 	fhiclFlattenSecondsCumulative_ += flattenElapsed;
 
-	__COUTT__ << name
-	          << " Flatten Clock time = " << artdaq::TimeUtils::GetElapsedTime(startClock)
-	          << __E__;
+	__COUTT__ << name << " Flatten Clock time = " << flattenElapsed << __E__;
 }  // end flattenFHICL()
 
 //==============================================================================
