@@ -3420,7 +3420,7 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknwon error occurred filling table '" << tableName << "-v" << version
+	__SS__ << "Unknown error occurred filling table '" << tableName << "-v" << version
 	       << "'..." << __E__;
 	try
 	{
@@ -5774,6 +5774,11 @@ void ConfigurationManager::initPrereqsForARTDAQ()
 try
 {
 	__COUTT__ << "Initializing prerequisites for artdaq!" << __E__;
+
+	// refresh persisted 'artdaq' system variables (set via web GUIs, e.g. the
+	// Trigger Menu Editor) so table plugins resolve current ${OTS.artdaq.*}
+	// values in this process at configure time
+	StringMacros::loadPersistentSystemVariables();
 
 	auto activeTables = getActiveVersions();
 	for(auto& tablePair : activeTables)

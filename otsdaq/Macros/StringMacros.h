@@ -3,6 +3,7 @@
 
 #include "otsdaq/Macros/CoutMacros.h"
 
+#include <chrono>
 #include <map>
 #include <memory>  //shared_ptr
 #include <set>
@@ -91,6 +92,8 @@ struct StringMacros
 		std::string /* value */>>  							systemVariables_;
 	static const std::string								TBD; //for to-be-defined system variables (so there is a value in wiz mode, before configuration, etc.)
 	static unsigned int				getConcurrencyCount		(void);
+	static std::string			getPersistentSystemVariablesFilePath(void);
+	static bool					loadPersistentSystemVariables(void); ///< loads persisted 'artdaq' namespace systemVariables_; returns false if no file found
 
 	static bool        			isNumber					(const std::string& stringToCheck); ///< Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
 	static std::string  		getNumberType				(const std::string& stringToCheck); ///< Note: before call consider use of stringToCheck = StringMacros::convertEnvironmentVariables(stringToCheck)
@@ -102,6 +105,7 @@ struct StringMacros
 	static std::string 			getTimestampString			(const std::string& linuxTimeInSeconds);
 	static std::string 			getTimestampString			(const time_t linuxTimeInSeconds = time(0));
 	static std::string 			getTimeDurationString		(const time_t durationInSeconds = time(0));
+	static uint64_t				nowEpochMs					(void);
 
 	//========================================================================================================================
 	/// validateValueForDefaultStringDataType ~
