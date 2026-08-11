@@ -308,6 +308,7 @@ std::string TransceiverSocket::sendAndReceive(
 	    sendAndReceiveMutex_);  //note that TransmitterSocket::sendMutex_ is not enough
 
 	flush();  //make sure nothing to read before sending
+
 	send(toSocket, sendBuffer, verbose);
 
 	__COUTT__ << " ----> Time sendAndReceive '" << sendBuffer
@@ -328,7 +329,6 @@ std::string TransceiverSocket::sendAndReceive(
 		       << Socket::getPort() << __E__;
 		__SS_ONLY_THROW__;
 	}
-
 	__COUTT__ << " ----> Time sendAndReceive '" << sendBuffer << "' got "
 	          << receiveBuffer.size() << " (socketNumber=" << socketNumber_
 	          << ") check ==> "
@@ -339,6 +339,7 @@ std::string TransceiverSocket::sendAndReceive(
 	          << " TID=" << std::this_thread::get_id() << std::endl;
 
 	//assume response may be multiple packets! (and give interPacketTimeoutUSeconds unless called with lower timeout)
+	size_t      extraPackets = 0;
 	std::string receiveBuffer2;
 	while(receive(receiveBuffer2,
 	              0 /*timeoutSeconds*/,
@@ -347,6 +348,7 @@ std::string TransceiverSocket::sendAndReceive(
 	                  : interPacketTimeoutUSeconds,
 	              verbose) >= 0)
 	{
+		++extraPackets;
 		receiveBuffer += receiveBuffer2;  //append
 
 		__COUTT__ << " ----> Time sendAndReceive +" << receiveBuffer2.size()
@@ -356,7 +358,6 @@ std::string TransceiverSocket::sendAndReceive(
 		                 .count()
 		          << " milliseconds." << std::endl;
 	}
-
 	__COUTT__ << " ----> Time sendAndReceive " << receiveBuffer.size() << " check ==> "
 	          << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() -
 	                                                                   start)

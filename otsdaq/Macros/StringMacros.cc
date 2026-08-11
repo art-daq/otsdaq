@@ -980,6 +980,14 @@ std::string StringMacros::getTimeDurationString(time_t t)
 }  //end getTimeDurationString()
 
 //==============================================================================
+uint64_t StringMacros::nowEpochMs()
+{
+	return std::chrono::duration_cast<std::chrono::milliseconds>(
+	           std::chrono::system_clock::now().time_since_epoch())
+	    .count();
+}  //end nowEpochMs()
+
+//==============================================================================
 /// validateValueForDefaultStringDataType
 ///
 std::string StringMacros::validateValueForDefaultStringDataType(
