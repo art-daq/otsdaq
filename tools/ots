@@ -4620,18 +4620,44 @@ launchOTSTrace() {
 		for _h in "${_csv[@]}"; do
 			_h="${_h// /}"
 			[ -z "$_h" ] && continue
-			# Try to match against known hosts: check if any known host contains this string
+			# Try to match against known hosts (exact > short-name > unique substring)
 			local _matched=""
+			local _ambiguous=0
+			# 1) Exact full-string match
 			for _kh in "${_known_hosts[@]}"; do
-				if [[ "$_kh" == *"$_h"* ]]; then
+				if [[ "$_kh" == "$_h" ]]; then
 					_matched="$_kh"
 					break
 				fi
 			done
+			# 2) Exact short-name match (strip domain)
+			if [ -z "$_matched" ]; then
+				for _kh in "${_known_hosts[@]}"; do
+					if [[ "${_kh%%.*}" == "$_h" ]]; then
+						_matched="$_kh"
+						break
+					fi
+				done
+			fi
+			# 3) Substring match -- only if exactly one host matches
+			if [ -z "$_matched" ]; then
+				local -a _sub_matches=()
+				for _kh in "${_known_hosts[@]}"; do
+					if [[ "$_kh" == *"$_h"* ]]; then
+						_sub_matches+=("$_kh")
+					fi
+				done
+				if [ ${#_sub_matches[@]} -eq 1 ]; then
+					_matched="${_sub_matches[0]}"
+				elif [ ${#_sub_matches[@]} -gt 1 ]; then
+					_ambiguous=1
+					out "  ${IYellow}[WARNING] '${_h}' is ambiguous -- matches: ${_sub_matches[*]}; skipping (use a more specific name)${RstClr}"
+				fi
+			fi
 			if [ -n "$_matched" ]; then
 				out "  ${IBlack}[DEBUG] resolved '${_h}' -> '${_matched}'${RstClr}"
 				_trc_add_host "$_matched"
-			else
+			elif [ $_ambiguous -eq 0 ]; then
 				out "  ${IBlack}[DEBUG] no known host match for '${_h}', using as-is${RstClr}"
 				_trc_add_host "$_h"
 			fi

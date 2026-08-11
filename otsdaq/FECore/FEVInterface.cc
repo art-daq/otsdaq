@@ -7,23 +7,11 @@
 #include <TFormula.h>
 
 #define TRACE_NAME "FEVInterface"
-#include <chrono>  //DIAG: for ms timestamps in FE macro latency investigation
 #include <iostream>
 #include <sstream>
 #include <thread>  //for std::thread
 
 using namespace ots;
-
-namespace
-{
-// DIAG: temporary ms-resolution timestamp helper for FE macro latency investigation
-inline uint64_t diagNowMs()
-{
-	return std::chrono::duration_cast<std::chrono::milliseconds>(
-	           std::chrono::system_clock::now().time_since_epoch())
-	    .count();
-}
-}  // namespace
 
 const std::string FEVInterface::UNKNOWN_TYPE = "UNKNOWN";
 const std::string FEVInterface::DEFAULT =
@@ -1235,7 +1223,7 @@ void FEVInterface::runFrontEndMacro(
 	parameters.addParameter("inputArgs", inputArgsStr);
 	SOAPUtilities::addParameters(message, parameters);
 
-	__FE_COUT__ << "DIAG ms=" << diagNowMs()
+	__FE_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
 	            << " Sending FE communication: " << SOAPUtilities::translate(message)
 	            << __E__;
 
@@ -1244,8 +1232,8 @@ void FEVInterface::runFrontEndMacro(
 	        MacroMakerSupervisors.begin()->second.getDescriptor(), message);
 
 	std::string replyCommand = SOAPUtilities::translate(replyMessage).getCommand();
-	__FE_COUT__ << "DIAG ms=" << diagNowMs() << " Response received: " << replyCommand
-	            << __E__;
+	__FE_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
+	            << " Response received: " << replyCommand << __E__;
 
 	if(replyCommand == "Fault")
 	{

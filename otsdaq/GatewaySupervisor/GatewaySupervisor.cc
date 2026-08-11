@@ -3444,6 +3444,27 @@ try
 						remoteGatewayApp.appInfo.lastStatusTime = time(0) - staleSeconds;
 				}
 
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "statusChangeTime", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t parsedTime = atoi(value.c_str());
+					if(parsedTime > 0)
+						remoteGatewayApp.appInfo.lastStatusChangeTime = parsedTime;
+				}
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "statusChangeStale", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t staleSeconds = atoi(value.c_str());
+					if(staleSeconds > 0)
+						remoteGatewayApp.appInfo.lastStatusChangeTime =
+						    time(0) - staleSeconds;
+				}
+
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
@@ -3509,6 +3530,27 @@ try
 				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				remoteGatewayApp.subapps[name].lastStatusTime = atoi(value.c_str());
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "statusChangeTime", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t parsedTime = atoi(value.c_str());
+					if(parsedTime > 0)
+						remoteGatewayApp.subapps[name].lastStatusChangeTime = parsedTime;
+				}
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "statusChangeStale", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(value.size())
+				{
+					time_t staleSeconds = atoi(value.c_str());
+					if(staleSeconds > 0)
+						remoteGatewayApp.subapps[name].lastStatusChangeTime =
+						    time(0) - staleSeconds;
+				}
 
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "url", 0, after);
@@ -3991,6 +4033,17 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    "stale",
 						    std::to_string(time(0) - appInfo.getLastStatusTime()),
 						    supervisorNode);  // time since update
+						xmlOut.addAttributeToNode(
+						    "statusChangeTime",
+						    std::to_string(appInfo.getLastStatusChangeTime()),
+						    supervisorNode);
+						xmlOut.addAttributeToNode(
+						    "statusChangeStale",
+						    std::to_string(appInfo.getLastStatusChangeTime() > 0
+						                       ? time(0) -
+						                             appInfo.getLastStatusChangeTime()
+						                       : 0),
+						    supervisorNode);
 						xmlOut.addAttributeToNode("progress",
 						                          std::to_string(appInfo.getProgress()),
 						                          supervisorNode);  // get progress
@@ -4056,6 +4109,19 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							    std::to_string(time(0) -
 							                   subappInfoPair.second.lastStatusTime),
 							    subappElement);  // time since update
+							xmlOut.addAttributeToNode(
+							    "statusChangeTime",
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime),
+							    subappElement);
+							xmlOut.addAttributeToNode(
+							    "statusChangeStale",
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime > 0
+							            ? time(0) -
+							                  subappInfoPair.second.lastStatusChangeTime
+							            : 0),
+							    subappElement);
 							xmlOut.addAttributeToNode(
 							    "progress",
 							    std::to_string(subappInfoPair.second.progress),
@@ -4284,6 +4350,15 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						        time(0) -
 						        appInfo.getLastStatusTime()));  // time since update
 						xmlOut.addTextElementToData(
+						    "statusChangeTime",
+						    std::to_string(appInfo.getLastStatusChangeTime()));
+						xmlOut.addTextElementToData(
+						    "statusChangeStale",
+						    std::to_string(appInfo.getLastStatusChangeTime() > 0
+						                       ? time(0) -
+						                             appInfo.getLastStatusChangeTime()
+						                       : 0));
+						xmlOut.addTextElementToData(
 						    "progress",
 						    std::to_string(appInfo.getProgress()));  // get progress
 						xmlOut.addTextElementToData("detail",
@@ -4342,6 +4417,19 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							    std::to_string(time(0) -
 							                   subappInfoPair.second.lastStatusTime),
 							    subappElement);  // time since update
+							xmlOut.addTextElementToParent(
+							    "subapp_statusChangeTime",
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime),
+							    subappElement);
+							xmlOut.addTextElementToParent(
+							    "subapp_statusChangeStale",
+							    std::to_string(
+							        subappInfoPair.second.lastStatusChangeTime > 0
+							            ? time(0) -
+							                  subappInfoPair.second.lastStatusChangeTime
+							            : 0),
+							    subappElement);
 							xmlOut.addTextElementToParent(
 							    "subapp_progress",
 							    std::to_string(subappInfoPair.second.progress),
@@ -10148,6 +10236,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		{
 			remoteGatewayApp.iterationsDone =
 			    false;  //reset iteration state on initial send
+			remoteGatewayApp.doNotHaltWasCommandedHalt = false;
 		}
 		else if(remoteGatewayApp.iterationsDone)
 		{
@@ -10167,9 +10256,9 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 		    command == RunControlStateMachine::ABORT_TRANSITION_NAME) &&
 		   //exception: Failed subsystems must be Halted to recover
-		   //  (status may contain error details after "Failed", so use .find())
 		   !(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
-		     remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
+		     remoteGatewayApp.appInfo.status.starts_with(
+		         RunControlStateMachine::FAILED_STATE_NAME)))
 		{
 			//send Stop to DoNotHalt subsystems that are in Running/Paused when Halt or Abort is requested
 			bool sendStop = command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
@@ -10194,6 +10283,14 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 				              << "' for FSM command = " << command << __E__;
 				continue;  //skip if not included
 			}
+		}
+
+		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::DoNotHalt &&
+		   command == RunControlStateMachine::HALT_TRANSITION_NAME &&
+		   remoteGatewayApp.appInfo.status.starts_with(
+		       RunControlStateMachine::FAILED_STATE_NAME))
+		{
+			remoteGatewayApp.doNotHaltWasCommandedHalt = true;
 		}
 
 		if(remoteGatewayApp.fsm_mode == RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
@@ -10332,7 +10429,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 			for(auto& rga : remoteGatewayApps_)
 				if(rga.fullName == localApp.fullName)
 				{
-					rga.iterationsDone = localApp.iterationsDone;
+					rga.iterationsDone            = localApp.iterationsDone;
+					rga.doNotHaltWasCommandedHalt = localApp.doNotHaltWasCommandedHalt;
 					if(wasCommanded)
 					{
 						__COUT_INFO__
@@ -10412,10 +10510,9 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			    command == RunControlStateMachine::FAIL_TRANSITION_NAME ||
 			    command == RunControlStateMachine::HALT_TRANSITION_NAME ||
 			    command == RunControlStateMachine::ABORT_TRANSITION_NAME) &&
-			   //exception: Failed subsystems were sent Halt and must reach Halted
-			   //  (status may contain error details after "Failed", so use .find())
-			   !(command == RunControlStateMachine::HALT_TRANSITION_NAME &&
-			     remoteGatewayApp.appInfo.status.find("Fail") != std::string::npos))
+			   //exception: DoNotHalt subsystems that were sent Halt (from Failed state for recovery)
+			   //  must be waited on -- use persistent flag instead of re-checking mutable status
+			   !remoteGatewayApp.doNotHaltWasCommandedHalt)
 				continue;
 			if(remoteGatewayApp.fsm_mode ==
 			       RemoteGatewayInfo::FSM_ModeTypes::OnlyConfigure &&
@@ -11599,6 +11696,16 @@ try
 				        : "0");  // get time stamp
 				xmlOut.addNumberElementToData(
 				    "stale", time(0) - appInfo.getLastStatusTime());  // time since update
+				xmlOut.addTextElementToData("statusChangeTime",
+				                            appInfo.getLastStatusChangeTime()
+				                                ? StringMacros::getTimestampString(
+				                                      appInfo.getLastStatusChangeTime())
+				                                : "0");
+				xmlOut.addNumberElementToData(
+				    "statusChangeStale",
+				    appInfo.getLastStatusChangeTime() > 0
+				        ? time(0) - appInfo.getLastStatusChangeTime()
+				        : 0);
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.getProgress());  // get progress
 				xmlOut.addTextElementToData("detail", appInfo.getDetail());  // get detail
@@ -11654,6 +11761,19 @@ try
 					    "subapp_stale",
 					    time(0) - subappInfoPair.second.lastStatusTime,
 					    subappElement);  // time since update
+					xmlOut.addTextElementToParent(
+					    "subapp_statusChangeTime",
+					    subappInfoPair.second.lastStatusChangeTime
+					        ? StringMacros::getTimestampString(
+					              subappInfoPair.second.lastStatusChangeTime)
+					        : "0",
+					    subappElement);
+					xmlOut.addNumberElementToParent(
+					    "subapp_statusChangeStale",
+					    subappInfoPair.second.lastStatusChangeTime > 0
+					        ? time(0) - subappInfoPair.second.lastStatusChangeTime
+					        : 0,
+					    subappElement);
 					xmlOut.addNumberElementToParent("subapp_progress",
 					                                subappInfoPair.second.progress,
 					                                subappElement);  // get progress
@@ -11756,6 +11876,19 @@ try
 					    "subapp_stale",
 					    time(0) - subappInfoPair.second.lastStatusTime,
 					    subappElement);  // time since update
+					xmlOut.addTextElementToParent(
+					    "subapp_statusChangeTime",
+					    subappInfoPair.second.lastStatusChangeTime
+					        ? StringMacros::getTimestampString(
+					              subappInfoPair.second.lastStatusChangeTime)
+					        : "0",
+					    subappElement);
+					xmlOut.addNumberElementToParent(
+					    "subapp_statusChangeStale",
+					    subappInfoPair.second.lastStatusChangeTime > 0
+					        ? time(0) - subappInfoPair.second.lastStatusChangeTime
+					        : 0,
+					    subappElement);
 					xmlOut.addNumberElementToParent("subapp_progress",
 					                                subappInfoPair.second.progress,
 					                                subappElement);  // get progress
@@ -12685,6 +12818,12 @@ try
 				xmlOut.addTextElementToData("subsystem_lastStatusTime",
 				                            StringMacros::getTimestampString(
 				                                remoteSubsystem.appInfo.lastStatusTime));
+				xmlOut.addTextElementToData(
+				    "subsystem_lastStatusChangeTime",
+				    remoteSubsystem.appInfo.lastStatusChangeTime
+				        ? StringMacros::getTimestampString(
+				              remoteSubsystem.appInfo.lastStatusChangeTime)
+				        : "0");
 				xmlOut.addTextElementToData(
 				    "subsystem_consoleErrCount",
 				    std::to_string(remoteSubsystem.consoleErrCount));

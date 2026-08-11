@@ -488,6 +488,7 @@ public:	//used by remote subsystem control and status
 			///< selected_config_alias resolved to a group name+key by the remote subsystem itself (against its own active Backbone); empty until the subsystem reports back a resolution
 			std::string							selectedConfigGroupName;
 			TableGroupKey						selectedConfigGroupKey;
+			bool doNotHaltWasCommandedHalt = false;
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;

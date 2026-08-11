@@ -61,6 +61,7 @@ class SupervisorInfo
 		int64_t 		availableLogSpaceKB = 0, availableDataSpaceKB = 0;
 		float			logUsageRateKBps = 0, dataUsageRateKBps = 0;
 		time_t 			lastStatusTime = 0;
+		time_t 			lastStatusChangeTime = 0;
 		std::string 	url {""} , parent_url {""};
 		std::string 	class_name {""};
 		std::deque<std::pair<time_t, int64_t>>	 availableLogSpaceKB_, availableDataSpaceKB_; //keep time series of last, 3.75 minutes, 7.5, 15, 30, 60 minutes to monitor rate trends
@@ -94,6 +95,7 @@ class SupervisorInfo
 	/// Note: be careful accessing status_ in multithreaded code (need higher level lock, a la getSupervisorInfoMutex)
 	const std::string&                           getStatus						(void) const { return status_; }
 	time_t                                 		 getLastStatusTime				(void) const { return lastStatusTime_; }
+	time_t                                 		 getLastStatusChangeTime		(void) const { return lastStatusChangeTime_; }
 	const unsigned int&                          getProgress					(void) const { return progress_; }
 	const std::string&                           getDetail						(void) const { return detail_; }
 
@@ -159,6 +161,7 @@ class SupervisorInfo
 	unsigned int                             progress_;
 	std::string                              detail_;
 	time_t                                   lastStatusTime_;
+	time_t                                   lastStatusChangeTime_ = 0;
 	std::map<std::string, SubappInfo>        subapps_;
 	std::deque<std::pair<time_t, int64_t>>	 availableLogSpaceKB_, availableDataSpaceKB_; //keep time series of last, 3.75 minutes, 7.5, 15, 30, 60 minutes to monitor rate trends
 };
