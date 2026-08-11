@@ -3,6 +3,7 @@
 
 #include "otsdaq/Macros/CoutMacros.h"
 
+#include <chrono>
 #include <map>
 #include <memory>  //shared_ptr
 #include <set>
@@ -104,6 +105,7 @@ struct StringMacros
 	static std::string 			getTimestampString			(const std::string& linuxTimeInSeconds);
 	static std::string 			getTimestampString			(const time_t linuxTimeInSeconds = time(0));
 	static std::string 			getTimeDurationString		(const time_t durationInSeconds = time(0));
+	static uint64_t				nowEpochMs					(void);
 
 	//========================================================================================================================
 	/// validateValueForDefaultStringDataType ~

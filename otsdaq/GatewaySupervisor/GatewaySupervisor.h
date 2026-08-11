@@ -435,6 +435,8 @@ public:	//used by remote subsystem control and status
 			ConfigDumpTypes						config_dump_type = ConfigDumpTypes::Unknown;
 
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
+			time_t								relaunchTime = 0; ///<timestamp of last relaunch via gatewayLaunchOTSInstance
+			time_t								commandSentTime = 0; ///<timestamp of last command send; suppresses stale status write-backs briefly
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
 
@@ -478,6 +480,15 @@ public:	//used by remote subsystem control and status
 
 			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///< remote gateways can have subapps
 			bool iterationsDone = false; ///< tracks per-gateway iteration completion during FSM transitions
+
+			///< active context/config table group actually in use on the remote subsystem itself (as opposed to selected_config_alias, which is just the operator's chosen alias to configure with)
+			std::string							activeContextGroupName, activeConfigGroupName;
+			TableGroupKey						activeContextGroupKey, activeConfigGroupKey;
+
+			///< selected_config_alias resolved to a group name+key by the remote subsystem itself (against its own active Backbone); empty until the subsystem reports back a resolution
+			std::string							selectedConfigGroupName;
+			TableGroupKey						selectedConfigGroupKey;
+			bool doNotHaltWasCommandedHalt = false;
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;

@@ -3420,7 +3420,7 @@ catch(const std::runtime_error& e)
 }
 catch(...)
 {
-	__SS__ << "Unknwon error occurred filling table '" << tableName << "-v" << version
+	__SS__ << "Unknown error occurred filling table '" << tableName << "-v" << version
 	       << "'..." << __E__;
 	try
 	{

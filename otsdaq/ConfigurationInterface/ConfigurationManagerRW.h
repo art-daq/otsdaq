@@ -110,6 +110,15 @@ class ConfigurationManagerRW : public ConfigurationManager
 																				bool 					lookForEquivalent = false,
 																				bool*					foundEquivalent = nullptr);
 
+	TableVersion 								updateTableCells				(
+																				const std::string& 	tableName,
+																				const std::map<std::string /*uid*/,
+																					std::map<std::string /*colName*/, std::string /*value*/>>& cellUpdates,
+																				const std::string& 	author,
+																				TableVersion 		sourceVersion = TableVersion(),
+																				const std::string& 	versionAlias = "",
+																				const std::string& 	sourceAlias = "");
+
 	TableVersion 								copyViewToCurrentColumns		(const std::string& tableName, TableVersion sourceVersion);
 	void         								eraseTemporaryVersion			(const std::string& tableName, TableVersion targetVersion = TableVersion());
 	void         								clearCachedVersions				(const std::string& tableName);
