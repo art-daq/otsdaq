@@ -2623,7 +2623,8 @@ TableVersion ConfigurationManagerRW::updateTableCells(
     const std::string&                                               author,
     TableVersion       sourceVersion /* = TableVersion() */,
     const std::string& versionAlias /* = "" */,
-    const std::string& sourceAlias /* = "" */)
+    const std::string& sourceAlias /* = "" */,
+    const std::string& comment /* = "" */)
 {
 	TableBase* table = getTableByName(tableName);
 
@@ -2716,9 +2717,11 @@ TableVersion ConfigurationManagerRW::updateTableCells(
 
 		__GEN_COUT__ << cellsModified << " cell(s) modified." << __E__;
 
-		std::stringstream comment;
-		comment << cellsModified << " cell(s) updated via updateTableCells().";
-		cfgView->setComment(comment.str());
+		std::stringstream commentSS;
+		commentSS << cellsModified << " cell(s) updated via updateTableCells().";
+		if(!comment.empty())
+			commentSS << " Notes: " << comment;
+		cfgView->setComment(commentSS.str());
 	}
 	catch(...)
 	{
