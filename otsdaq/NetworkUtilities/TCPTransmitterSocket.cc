@@ -37,9 +37,22 @@ void TCPTransmitterSocket::send(char const* buffer,
 		          << std::endl;
 		return;
 	}
-	std::size_t sentBytes = ::send(getSocketId(), buffer, size, MSG_NOSIGNAL);
-	if(sentBytes == static_cast<std::size_t>(-1))
+	std::size_t totalSent = 0;
+	while(totalSent < size)
 	{
+		ssize_t sentBytes =
+		    ::send(getSocketId(), buffer + totalSent, size - totalSent, MSG_NOSIGNAL);
+		if(sentBytes > 0)
+		{
+			totalSent += static_cast<std::size_t>(sentBytes);
+			continue;
+		}
+
+		if(sentBytes == 0)
+		{
+			throw std::runtime_error("Write: returned 0 bytes, connection may be closed");
+		}
+
 		switch(errno)
 		{
 		// case EINVAL:
@@ -62,14 +75,11 @@ void TCPTransmitterSocket::send(char const* buffer,
 			                         strerror(errno));
 		}
 		case EINTR:
-			// TODO: Check for user interrupt flags.
-			//       Beyond the scope of this project
-			//       so continue normal operations.
-		case EAGAIN: {
-			// Temporary error.
-			throw std::runtime_error(std::string("Write: temporary error: ") +
-			                         strerror(errno));
-		}
+			// Interrupted by signal; retry send.
+			continue;
+		case EAGAIN:
+			// Temporary back-pressure; retry send.
+			continue;
 		default: {
 			throw std::runtime_error(std::string("Write: returned -1: ") +
 			                         strerror(errno));

@@ -61,6 +61,11 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 				StringMacros::systemVariables_["System"]["totalMemoryMB"] = "unknown";
 			}
 		}
+
+		// load 'artdaq' namespace system variables persisted by the ARTDAQ Supervisor
+		// (e.g. set via the Trigger Menu Editor web GUI) so ${OTS.artdaq.*}
+		// references resolve in every Supervisor process
+		StringMacros::loadPersistentSystemVariables();
 	} // end init StringMacros::systemVariables_
 	__SUP_COUTV__(StringMacros::mapToString(StringMacros::systemVariables_));
 
