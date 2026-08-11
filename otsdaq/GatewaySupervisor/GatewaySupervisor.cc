@@ -2000,6 +2000,13 @@ try
 										theSupervisor->remoteGatewayApps_[i].consoleErrCount 			= remoteGatewayApp.consoleErrCount;
 										theSupervisor->remoteGatewayApps_[i].consoleWarnCount 			= remoteGatewayApp.consoleWarnCount;
 
+										theSupervisor->remoteGatewayApps_[i].activeContextGroupName 	= remoteGatewayApp.activeContextGroupName;
+										theSupervisor->remoteGatewayApps_[i].activeContextGroupKey 	= remoteGatewayApp.activeContextGroupKey;
+										theSupervisor->remoteGatewayApps_[i].activeConfigGroupName 	= remoteGatewayApp.activeConfigGroupName;
+										theSupervisor->remoteGatewayApps_[i].activeConfigGroupKey 	= remoteGatewayApp.activeConfigGroupKey;
+										theSupervisor->remoteGatewayApps_[i].selectedConfigGroupName 	= remoteGatewayApp.selectedConfigGroupName;
+										theSupervisor->remoteGatewayApps_[i].selectedConfigGroupKey 	= remoteGatewayApp.selectedConfigGroupKey;
+
 										theSupervisor->remoteGatewayApps_[i].usernameWithLock 			= remoteGatewayApp.usernameWithLock;
 
 										theSupervisor->remoteGatewayApps_[i].config_dump 				= remoteGatewayApp.config_dump;
@@ -3312,10 +3319,18 @@ try
 	{
 		Socket      gatewayRemoteSocket(parsedFields[1], atoi(parsedFields[2].c_str()));
 		std::string requestString = "GetRemoteGatewayStatus";
-		if(portForReverseLoginOverUDP)
-			requestString += "," + ipForReverseLoginOverUDP + "," +
-			                 std::to_string(portForReverseLoginOverUDP) + "," +
-			                 remoteGatewayApp.appInfo.name;
+		//Note: params 1-3 (reverse-login IP/port/self-name) and param 4 (selected
+		//	config alias, so the remote subsystem can resolve it against its own
+		//	already-active Backbone with no extra round-trip) are always sent
+		//	together (empty where not applicable) so the receiver can rely on a
+		//	fixed param count instead of a conditional one.
+		if(portForReverseLoginOverUDP || remoteGatewayApp.selected_config_alias != "")
+			requestString +=
+			    "," + ipForReverseLoginOverUDP + "," +
+			    (portForReverseLoginOverUDP ? std::to_string(portForReverseLoginOverUDP)
+			                                : "") +
+			    "," + remoteGatewayApp.appInfo.name + "," +
+			    remoteGatewayApp.selected_config_alias;
 		requestString += "|" + COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE +
 		                 StringMacros::encodeURIComponent(contextCommonList);
 		requestString += "|" + COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE +
@@ -3588,9 +3603,43 @@ try
 		remoteGatewayApp.consoleErrCount = atoi(value.c_str());
 
 		value = StringMacros::extractXmlField(
-		    remoteStatusString, "console_warn_count", 0, after);
+		    remoteStatusString, "console_warn_count", 0, after, &after);
 		__COUTVS__(TLVL_RemoteStatusParams, value);
 		remoteGatewayApp.consoleWarnCount = atoi(value.c_str());
+
+		//get active context/config table groups (name+key) as reported by the remote subsystem's own ConfigurationManager
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "activeContextGroupName", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.activeContextGroupName = value;
+
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "activeContextGroupKey", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.activeContextGroupKey = TableGroupKey(value);
+
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "activeConfigGroupName", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.activeConfigGroupName = value;
+
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "activeConfigGroupKey", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.activeConfigGroupKey = TableGroupKey(value);
+
+		//get the resolved group for our selected config alias (only present if we sent
+		//	a non-empty selected_config_alias in the request, and the remote subsystem
+		//	could resolve it against its own active Backbone)
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "selectedConfigGroupName", 0, after, &after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.selectedConfigGroupName = value;
+
+		value = StringMacros::extractXmlField(
+		    remoteStatusString, "selectedConfigGroupKey", 0, after);
+		__COUTVS__(TLVL_RemoteStatusParams, value);
+		remoteGatewayApp.selectedConfigGroupKey = TableGroupKey(value);
 	}
 	else
 		__COUT_WARN__ << "Illegal Remote Gateawy App URL for name='"
@@ -3712,6 +3761,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 	std::string                           cachedAliasBackboneGroupNameAndKey;
 	std::string                           cachedAliasInput;
 	std::pair<std::string, TableGroupKey> cachedAliasResult;
+	bool                                  cachedAliasValid = false;
 
 	while(1)
 	{
@@ -4126,6 +4176,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
+					std::string
+					    requesterSelectedConfigAlias;  //param 4, if given: the operator's selected config alias, so it can be resolved against this subsystem's own active Backbone below
+
 					//split buffer on pipe to separate comma-separated params from Context Common Table data
 					std::string              commaSection = buffer;
 					std::vector<std::string> pipeSections;
@@ -4151,23 +4204,25 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					{
 						std::vector<std::string> params =
 						    StringMacros::getVectorFromString(commaSection, {','});
-						if(params.size() == 4)
+						if(params.size() >= 4)
 						{
 							//Parameters are 	"," + ipForReverseLoginOverUDP +
 							// 					"," + std::to_string(portForReverseLoginOverUDP) +
-							// 					"," + remoteGatewayApp.appInfo.name;
+							// 					"," + remoteGatewayApp.appInfo.name +
+							// 					"," + selected_config_alias;
 
 							__COUTVS__(TLVL_StatusParams,
 							           StringMacros::vectorToString(params));
 							std::string tmpIP   = params[1];
 							int         tmpPort = atoi(params[2].c_str());
 
-							if(!theSupervisor->theWebUsers_
-							        .remoteLoginVerificationEnabled_ ||
-							   theSupervisor->theWebUsers_.remoteLoginVerificationIP_ !=
-							       tmpIP ||
-							   theSupervisor->theWebUsers_.remoteLoginVerificationPort_ !=
-							       tmpPort)
+							if(tmpIP != "" && tmpPort != 0 &&
+							   (!theSupervisor->theWebUsers_
+							         .remoteLoginVerificationEnabled_ ||
+							    theSupervisor->theWebUsers_.remoteLoginVerificationIP_ !=
+							        tmpIP ||
+							    theSupervisor->theWebUsers_
+							            .remoteLoginVerificationPort_ != tmpPort))
 							{
 								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ =
 								    tmpIP;
@@ -4190,9 +4245,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								           .remoteLoginVerificationPort_
 								    << __E__;
 							}
+
+							if(params.size() >= 5)
+								requesterSelectedConfigAlias = params[4];
 						}
 						else
-							__COUT_ERR__ << "Parameter count is not 4, it is "
+							__COUT_ERR__ << "Parameter count is not >= 4, it is "
 							             << params.size() << __E__;
 					}
 
@@ -4434,6 +4492,60 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    activeGroupMap
 						        [ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION]
 						            .second.toString());
+
+						//resolve the requester's selected config alias (if any) against
+						//	this subsystem's own already-active Backbone group -- local
+						//	file read only, no scp/network hop, since it is this
+						//	subsystem's own active group being consulted
+						__COUTS__(TLVL_RemoteStatusVerbose)
+						    << "requesterSelectedConfigAlias='"
+						    << requesterSelectedConfigAlias << "'" << __E__;
+						if(requesterSelectedConfigAlias != "")
+						{
+							try
+							{
+								std::string backboneGroupNameAndKey =
+								    theSupervisor->cachedSubsystemCommonBackboneKey_;
+
+								if(!cachedAliasValid ||
+								   backboneGroupNameAndKey !=
+								       cachedAliasBackboneGroupNameAndKey ||
+								   requesterSelectedConfigAlias != cachedAliasInput)
+								{
+									ConfigurationManager tmpCfgMgr;
+									cachedAliasResult = tmpCfgMgr.getTableGroupFromAlias(
+									    requesterSelectedConfigAlias);
+									cachedAliasBackboneGroupNameAndKey =
+									    backboneGroupNameAndKey;
+									cachedAliasInput = requesterSelectedConfigAlias;
+									cachedAliasValid = true;
+								}
+
+								__COUTS__(TLVL_RemoteStatusVerbose)
+								    << "resolved alias '" << requesterSelectedConfigAlias
+								    << "' to group '" << cachedAliasResult.first << "("
+								    << cachedAliasResult.second << ")'" << __E__;
+								xmlOut.addTextElementToData("selectedConfigGroupName",
+								                            cachedAliasResult.first);
+								xmlOut.addTextElementToData(
+								    "selectedConfigGroupKey",
+								    cachedAliasResult.second.toString());
+							}
+							catch(const std::exception& e)
+							{
+								__COUT_WARN__
+								    << "Failed to resolve selected config alias '"
+								    << requesterSelectedConfigAlias
+								    << "' to a group: " << e.what() << __E__;
+							}
+							catch(...)
+							{
+								__COUT_WARN__
+								    << "Failed to resolve selected config alias '"
+								    << requesterSelectedConfigAlias
+								    << "' to a group (unknown error)." << __E__;
+							}
+						}
 					}
 
 					auto preAliasMs =
@@ -5280,7 +5392,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 ///	escape entryText to make it html/xml safe!!
 ////      reserved: ", ', &, <, >, \n, double-space
 void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText,
-                                           const std::string& subjectText /* = "" */)
+                                           const std::string& subjectText /* = "" */,
+                                           bool               skipFooter /* = false */)
 {
 	__COUT__ << "Making System Logbook Entry: " << entryText << __E__;
 	if(subjectText.size())
@@ -5303,6 +5416,7 @@ void GatewaySupervisor::makeSystemLogEntry(const std::string& entryText,
 
 	SOAPParameters parameters("EntryText", StringMacros::encodeURIComponent(entryText));
 	parameters.addParameter("SubjectText", StringMacros::encodeURIComponent(subjectText));
+	parameters.addParameter("SkipFooter", skipFooter ? "1" : "0");
 
 	for(auto& logbookInfo : logbookInfoMap)
 	{
@@ -5632,6 +5746,10 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	std::string logEntry =
 	    StringMacros::decodeURIComponent(CgiDataUtilities::postData(cgiIn, "logEntry"));
 
+	if(command == "Stop")
+		activeStateMachineWriteToEcl_ =
+		    (CgiDataUtilities::postData(cgiIn, "writeToEcl") == "1");
+
 	attemptStateMachineTransition(&xmlOut,
 	                              out,
 	                              command,
@@ -5768,6 +5886,14 @@ try
 
 	if(logEntry != "")
 	{
+		if(command == RunControlStateMachine::START_TRANSITION_NAME)
+		{
+			activeStateMachineRawStartComment_ = logEntry;
+			activeStateMachineRawStopComment_.clear();
+		}
+		else if(command == RunControlStateMachine::STOP_TRANSITION_NAME)
+			activeStateMachineRawStopComment_ = logEntry;
+
 		logEntry += " (" + StringMacros::getTimestampString(time(0)) + ")";
 
 		if(command == RunControlStateMachine::START_TRANSITION_NAME &&
@@ -5812,10 +5938,9 @@ try
 		activeStateMachineSystemDumpOnRunFilename_ =
 		    "";  //clear (and set if enabled during configure transition)
 
-		activeStateMachineRequireUserLogOnRun_ = false,
-		activeStateMachineRequireUserLogOnConfigure_ =
-		    false;  //clear (and set if enabled during configure transition)
-		activeStateMachineRunInfoPluginType_ = TableViewColumnInfo::
+		activeStateMachineRequireUserLogOnRun_       = false,
+		activeStateMachineRequireUserLogOnConfigure_ = false;
+		activeStateMachineRunInfoPluginType_         = TableViewColumnInfo::
 		    DATATYPE_STRING_DEFAULT;  //clear (and set if enabled during configure transition)
 
 		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
@@ -6142,7 +6267,7 @@ try
 				// Claim the next run number from the Run Info plugin (pre-start transition).
 				runNumber = runInfoInterface->claimNextRunNumber(
 				    activeStateMachineConfigureConditionID_,
-				    getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME));
+				    activeStateMachineRawStartComment_);
 
 			}  // end Run Info Plugin handling
 
@@ -6473,78 +6598,17 @@ void GatewaySupervisor::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 	__SUP_COUTV__(
 	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand());
 
-	// if coming from Running or Paused, update Run Info	w/HALT
+	// if coming from Running or Paused (i.e. Abort), record HALT and HALT_COMPLETE
 	if(theStateMachine_.getProvenanceStateName() ==
 	       RunControlStateMachine::RUNNING_STATE_NAME ||
 	   theStateMachine_.getProvenanceStateName() ==
 	       RunControlStateMachine::PAUSED_STATE_NAME)
 	{
-		try
-		{
-			ConfigurationTree configLinkNode =
-			    CorePropertySupervisorBase::theConfigurationManager_
-			        ->getSupervisorTableNode(supervisorContextUID_,
-			                                 supervisorApplicationUID_);
-			if(!configLinkNode.isDisconnected())
-			{
-				ConfigurationTree fsmLinkNode =
-				    configLinkNode.getNode("LinkToStateMachineTable")
-				        .getNode(activeStateMachineName_);
-				std::string runInfoPluginType =
-				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
-				__SUP_COUTV__(runInfoPluginType);
-				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-				   runInfoPluginType !=
-				       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-				   runInfoPluginType != "No Run Info Plugin")
-				{
-					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
-					try
-					{
-						runInfoInterface.reset(
-						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
-					}
-					catch(...)
-					{
-					}
-
-					if(runInfoInterface == nullptr)
-					{
-						__SS__ << "Run Info interface plugin construction failed of type "
-						       << runInfoPluginType << __E__;
-						__SS_THROW__;
-					}
-
-					runInfoInterface->updateRunInfo(
-					    activeStateMachineRunConditionID_,
-					    RunInfoVInterface::RunTransitionType::HALT,
-					    getLastLogEntry(RunControlStateMachine::HALT_TRANSITION_NAME));
-				}
-			}
-		}
-		catch(const std::runtime_error& e)
-		{
-			__SS__ << "RUN INFO HALT TRANSITION UPDATE INTO DATABASE FAILED!!! "
-			       << e.what() << __E__;
-			__SS_THROW__;
-		}
-		catch(...)
-		{
-			__SS__ << "RUN INFO HALT TRANSITION UPDATE INTO DATABASE FAILED!!! " << __E__;
-			try
-			{
-				throw;
-			}  //one more try to printout extra info
-			catch(const std::exception& e)
-			{
-				ss << "Exception message: " << e.what();
-			}
-			catch(...)
-			{
-			}
-			__SS_THROW__;
-		}  // End write run info into db
-	}      // end update Run Info handling
+		writeRunInfoTransition(
+		    RunInfoVInterface::RunTransitionType::HALT,
+		    getLastLogEntry(RunControlStateMachine::HALT_TRANSITION_NAME));
+		writeRunInfoTransition(RunInfoVInterface::RunTransitionType::HALT_COMPLETE, "");
+	}
 
 	activeStateMachineWindowName_ =
 	    "";  //clear window name to indicate that no window (including Iterator) is in control, which allows GUIs to change cleanup strategy
@@ -6563,89 +6627,84 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 	__COUTV__(
 	    SOAPUtilities::translate(theStateMachine_.getCurrentMessage()).getCommand());
 
-	// if coming from Running or Paused, update Run Info w/STOP
+	// if coming from Running or Paused, record STOP_COMPLETE
+	// (the STOP record was already written at the start of transitionStopping)
 	if(theStateMachine_.getProvenanceStateName() ==
 	       RunControlStateMachine::RUNNING_STATE_NAME ||
 	   theStateMachine_.getProvenanceStateName() ==
 	       RunControlStateMachine::PAUSED_STATE_NAME)
 	{
+		writeRunInfoTransition(RunInfoVInterface::RunTransitionType::STOP_COMPLETE, "");
+
+		// Write consolidated end-of-run summary to ECL if enabled via env var and user didn't opt out
+		bool doLogConsolidated = true;  //default to logging consolidated run summary
 		try
 		{
-			ConfigurationTree configLinkNode =
-			    CorePropertySupervisorBase::theConfigurationManager_
-			        ->getSupervisorTableNode(supervisorContextUID_,
-			                                 supervisorApplicationUID_);
-			if(!configLinkNode.isDisconnected())
-			{
-				__COUTV__(activeStateMachineName_);
-				ConfigurationTree fsmLinkNode =
-				    configLinkNode.getNode("LinkToStateMachineTable")
-				        .getNode(activeStateMachineName_);
-				std::string runInfoPluginType =
-				    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
-				__COUTV__(runInfoPluginType);
-				if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-				   runInfoPluginType !=
-				       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-				   runInfoPluginType != "No Run Info Plugin")
-				{
-					std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
-					try
-					{
-						runInfoInterface.reset(
-						    makeRunInfo(runInfoPluginType, activeStateMachineName_));
-					}
-					catch(...)
-					{
-					}
-
-					if(runInfoInterface == nullptr)
-					{
-						__SS__ << "Run Info interface plugin construction failed of type "
-						       << runInfoPluginType << __E__;
-						__SS_THROW__;
-					}
-
-					runInfoInterface->updateRunInfo(
-					    activeStateMachineRunConditionID_,
-					    RunInfoVInterface::RunTransitionType::STOP,
-					    getLastLogEntry(RunControlStateMachine::STOP_TRANSITION_NAME));
-				}
-			}
-			else
-				__COUT__ << "Gateway Supervisor configuration record not found at '"
-				         << ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME << "/"
-				         << supervisorContextUID_ << "/" << supervisorApplicationUID_
-				         << "' - consider adding one to control configuration dumps "
-				            "and state machine properties."
-				         << __E__;
-		}
-		catch(const std::runtime_error& e)
-		{
-			__SS__
-			    << "RUN INFO CONFIGURED STATE INSERT OR UPDATE INTO DATABASE FAILED!!! "
-			    << e.what() << __E__;
-			__SS_THROW__;
+			doLogConsolidated = __ENV__("OTS_LOG_CONSOLIDATED_RUN") == std::string("1");
 		}
 		catch(...)
+		{ /* ignore errors */
+			;
+		}
+		if(doLogConsolidated && activeStateMachineWriteToEcl_)
 		{
-			__SS__
-			    << "RUN INFO CONFIGURED STATE INSERT OR UPDATE INTO DATABASE FAILED!!! "
-			    << __E__;
 			try
 			{
-				throw;
-			}  //one more try to printout extra info
-			catch(const std::exception& e)
-			{
-				ss << "Exception message: " << e.what();
+				std::stringstream eclSs;
+				if(!activeStateMachineRawStartComment_.empty())
+					eclSs << "Start: " << activeStateMachineRawStartComment_ << "\n";
+				if(!activeStateMachineRawStopComment_.empty())
+					eclSs << "Stop: " << activeStateMachineRawStopComment_ << "\n";
+
+				eclSs << "\nRun Number: " << activeStateMachineRunNumber_ << "\n";
+				eclSs << "Run Type: " << activeStateMachineName_ << "/"
+				      << activeStateMachineRunAlias_ << "\n";
+
+				eclSs << "\nStart Time: "
+				      << StringMacros::getTimestampString(
+				             activeStateMachineRunWallClockStartTime_)
+				      << "\n";
+				time_t endTime = time(0);
+				eclSs << "End Time: " << StringMacros::getTimestampString(endTime)
+				      << "\n";
+				{
+					int dur   = activeStateMachineRunDuration_ms;
+					int dur_s = dur / 1000;
+					dur       = dur % 1000;
+					int dur_m = dur_s / 60;
+					dur_s     = dur_s % 60;
+					int dur_h = dur_m / 60;
+					dur_m     = dur_m % 60;
+					eclSs << "Duration: " << std::setw(2) << std::setfill('0') << dur_h
+					      << ":" << std::setw(2) << std::setfill('0') << dur_m << ":"
+					      << std::setw(2) << std::setfill('0') << dur_s << "\n";
+				}
+
+				eclSs << "\nConfiguration: " << activeStateMachineConfigurationAlias_
+				      << " [" << theConfigurationTableGroup_.first << "("
+				      << theConfigurationTableGroup_.second.str() << ")]\n";
+				{
+					std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+					for(const auto& remote : remoteGatewayApps_)
+					{
+						if(!remote.fsm_included)
+							continue;
+						eclSs << "  " << remote.appInfo.name << ": "
+						      << remote.selected_config_alias << "\n";
+					}
+				}
+
+				makeSystemLogEntry(
+				    eclSs.str(),
+				    activeStateMachineRunAlias_ + " " + activeStateMachineRunNumber_,
+				    true /* skipFooter */);
 			}
 			catch(...)
 			{
+				__COUT_WARN__ << "Failed to write end-of-run ECL entry." << __E__;
 			}
-			__SS_THROW__;
-		}  // End write run info into db
-	}      // end update Run Info handling
+		}
+	}
 
 }  // end stateConfigured()
 
@@ -8361,8 +8420,9 @@ try
 	}  // end make logbook entry
 	RunControlStateMachine::theProgressBar_.step();
 
-	activeStateMachineRunStartTime   = std::chrono::steady_clock::now();
-	activeStateMachineRunDuration_ms = 0;
+	activeStateMachineRunStartTime           = std::chrono::steady_clock::now();
+	activeStateMachineRunWallClockStartTime_ = time(0);
+	activeStateMachineRunDuration_ms         = 0;
 	broadcastMessage(
 	    theStateMachine_
 	        .getCurrentMessage());  // ---------------------------------- broadcast!
@@ -8838,6 +8898,19 @@ try
 	    std::chrono::duration_cast<std::chrono::milliseconds>(
 	        std::chrono::steady_clock::now() - activeStateMachineRunStartTime)
 	        .count();
+
+	// Write STOP to DB before the broadcast so the record exists even if the transition fails.
+	// A STOP_COMPLETE record is written at the end of the transition in stateConfigured().
+	try
+	{
+		writeRunInfoTransition(RunInfoVInterface::RunTransitionType::STOP,
+		                       activeStateMachineRawStopComment_);
+	}
+	catch(...)
+	{
+		__COUT_WARN__ << "STOP transition DB write failed — will not prevent transition."
+		              << __E__;
+	}
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -12728,6 +12801,9 @@ try
 				xmlOut.addTextElementToData("subsystem_name",
 				                            remoteSubsystem.appInfo.name);
 				xmlOut.addTextElementToData("subsystem_url", remoteSubsystem.appInfo.url);
+				xmlOut.addTextElementToData(
+				    "subsystem_id",
+				    std::to_string(remoteSubsystem.appInfo.id));  //remote gateway LID
 				xmlOut.addTextElementToData("subsystem_landingPage",
 				                            remoteSubsystem.landingPage);
 				__COUTT__ << "DIAG: getRemoteSubsystemStatus sending '"
@@ -12805,6 +12881,22 @@ try
 				                            remoteSubsystem.getFsmMode());
 				xmlOut.addTextElementToData("subsystem_fsmIncluded",
 				                            remoteSubsystem.fsm_included ? "1" : "0");
+				xmlOut.addTextElementToData("subsystem_fsmName", remoteSubsystem.fsmName);
+				xmlOut.addTextElementToData("subsystem_activeContextGroupName",
+				                            remoteSubsystem.activeContextGroupName);
+				xmlOut.addTextElementToData(
+				    "subsystem_activeContextGroupKey",
+				    remoteSubsystem.activeContextGroupKey.toString());
+				xmlOut.addTextElementToData("subsystem_activeConfigGroupName",
+				                            remoteSubsystem.activeConfigGroupName);
+				xmlOut.addTextElementToData(
+				    "subsystem_activeConfigGroupKey",
+				    remoteSubsystem.activeConfigGroupKey.toString());
+				xmlOut.addTextElementToData("subsystem_selectedConfigGroupName",
+				                            remoteSubsystem.selectedConfigGroupName);
+				xmlOut.addTextElementToData(
+				    "subsystem_selectedConfigGroupKey",
+				    remoteSubsystem.selectedConfigGroupKey.toString());
 			}  //end remote app loop
 
 			if(accumulateErrors != "")
@@ -14546,6 +14638,72 @@ void GatewaySupervisor::setNextRunNumber(unsigned int       runNumber,
 	runNumberFile << runNumberStream.str().c_str();
 	runNumberFile.close();
 }  // end setNextRunNumber()
+
+//==============================================================================
+void GatewaySupervisor::writeRunInfoTransition(
+    RunInfoVInterface::RunTransitionType transitionType, const std::string& comment)
+{
+	try
+	{
+		ConfigurationTree configLinkNode =
+		    CorePropertySupervisorBase::theConfigurationManager_->getSupervisorTableNode(
+		        supervisorContextUID_, supervisorApplicationUID_);
+		if(!configLinkNode.isDisconnected())
+		{
+			ConfigurationTree fsmLinkNode =
+			    configLinkNode.getNode("LinkToStateMachineTable")
+			        .getNode(activeStateMachineName_);
+			std::string runInfoPluginType =
+			    fsmLinkNode.getNode("RunInfoPluginType").getValue<std::string>();
+			if(runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+			   runInfoPluginType != TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+			   runInfoPluginType != "No Run Info Plugin")
+			{
+				std::unique_ptr<RunInfoVInterface> runInfoInterface = nullptr;
+				try
+				{
+					runInfoInterface.reset(
+					    makeRunInfo(runInfoPluginType, activeStateMachineName_));
+				}
+				catch(...)
+				{
+				}
+
+				if(runInfoInterface == nullptr)
+				{
+					__SS__ << "Run Info interface plugin construction failed of type "
+					       << runInfoPluginType << __E__;
+					__SS_THROW__;
+				}
+
+				runInfoInterface->updateRunInfo(
+				    activeStateMachineRunConditionID_, transitionType, comment);
+			}
+		}
+	}
+	catch(const std::runtime_error& e)
+	{
+		__SS__ << "RUN INFO TRANSITION UPDATE INTO DATABASE FAILED!!! " << e.what()
+		       << __E__;
+		__SS_THROW__;
+	}
+	catch(...)
+	{
+		__SS__ << "RUN INFO TRANSITION UPDATE INTO DATABASE FAILED!!! " << __E__;
+		try
+		{
+			throw;
+		}
+		catch(const std::exception& e)
+		{
+			ss << "Exception message: " << e.what();
+		}
+		catch(...)
+		{
+		}
+		__SS_THROW__;
+	}
+}  // end writeRunInfoTransition()
 
 //==============================================================================
 /// getLastLogEntry
