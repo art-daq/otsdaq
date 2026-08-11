@@ -3325,12 +3325,12 @@ try
 		//	together (empty where not applicable) so the receiver can rely on a
 		//	fixed param count instead of a conditional one.
 		if(portForReverseLoginOverUDP || remoteGatewayApp.selected_config_alias != "")
-			requestString += "," + ipForReverseLoginOverUDP + "," +
-			                 (portForReverseLoginOverUDP
-			                      ? std::to_string(portForReverseLoginOverUDP)
-			                      : "") +
-			                 "," + remoteGatewayApp.appInfo.name + "," +
-			                 remoteGatewayApp.selected_config_alias;
+			requestString +=
+			    "," + ipForReverseLoginOverUDP + "," +
+			    (portForReverseLoginOverUDP ? std::to_string(portForReverseLoginOverUDP)
+			                                : "") +
+			    "," + remoteGatewayApp.appInfo.name + "," +
+			    remoteGatewayApp.selected_config_alias;
 		requestString += "|" + COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE +
 		                 StringMacros::encodeURIComponent(contextCommonList);
 		requestString += "|" + COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE +
@@ -4176,7 +4176,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					__COUT_TYPE__(TLVL_DEBUG + TLVL_StateChangerStatus)
 					    << "Giving app status to remote monitor..." << __E__;
 
-					std::string requesterSelectedConfigAlias;  //param 4, if given: the operator's selected config alias, so it can be resolved against this subsystem's own active Backbone below
+					std::string
+					    requesterSelectedConfigAlias;  //param 4, if given: the operator's selected config alias, so it can be resolved against this subsystem's own active Backbone below
 
 					//split buffer on pipe to separate comma-separated params from Context Common Table data
 					std::string              commaSection = buffer;
@@ -4220,8 +4221,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							         .remoteLoginVerificationEnabled_ ||
 							    theSupervisor->theWebUsers_.remoteLoginVerificationIP_ !=
 							        tmpIP ||
-							    theSupervisor->theWebUsers_.remoteLoginVerificationPort_ !=
-							        tmpPort))
+							    theSupervisor->theWebUsers_
+							            .remoteLoginVerificationPort_ != tmpPort))
 							{
 								theSupervisor->theWebUsers_.remoteLoginVerificationIP_ =
 								    tmpIP;
@@ -12880,8 +12881,7 @@ try
 				                            remoteSubsystem.getFsmMode());
 				xmlOut.addTextElementToData("subsystem_fsmIncluded",
 				                            remoteSubsystem.fsm_included ? "1" : "0");
-				xmlOut.addTextElementToData("subsystem_fsmName",
-				                            remoteSubsystem.fsmName);
+				xmlOut.addTextElementToData("subsystem_fsmName", remoteSubsystem.fsmName);
 				xmlOut.addTextElementToData("subsystem_activeContextGroupName",
 				                            remoteSubsystem.activeContextGroupName);
 				xmlOut.addTextElementToData(

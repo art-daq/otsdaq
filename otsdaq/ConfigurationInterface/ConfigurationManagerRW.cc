@@ -2618,12 +2618,12 @@ TableVersion ConfigurationManagerRW::saveModifiedVersion(
 ///	Returns the new table version.
 ///
 TableVersion ConfigurationManagerRW::updateTableCells(
-    const std::string&                                                tableName,
+    const std::string&                                               tableName,
     const std::map<std::string, std::map<std::string, std::string>>& cellUpdates,
-    const std::string&                                                author,
-    TableVersion                                                      sourceVersion /* = TableVersion() */,
-    const std::string&                                                versionAlias /* = "" */,
-    const std::string&                                                sourceAlias /* = "" */)
+    const std::string&                                               author,
+    TableVersion       sourceVersion /* = TableVersion() */,
+    const std::string& versionAlias /* = "" */,
+    const std::string& sourceAlias /* = "" */)
 {
 	TableBase* table = getTableByName(tableName);
 
@@ -2634,14 +2634,15 @@ TableVersion ConfigurationManagerRW::updateTableCells(
 		auto tableIt    = allAliases.find(tableName);
 		if(tableIt == allAliases.end())
 		{
-			__SS__ << "No version aliases found for table '" << tableName << "'." << __E__;
+			__SS__ << "No version aliases found for table '" << tableName << "'."
+			       << __E__;
 			__SS_THROW__;
 		}
 		auto aliasIt = tableIt->second.find(sourceAlias);
 		if(aliasIt == tableIt->second.end())
 		{
-			__SS__ << "Version alias '" << sourceAlias
-			       << "' not found for table '" << tableName << "'. Available aliases: ";
+			__SS__ << "Version alias '" << sourceAlias << "' not found for table '"
+			       << tableName << "'. Available aliases: ";
 			for(const auto& a : tableIt->second)
 				ss << "'" << a.first << "' (v" << a.second << "), ";
 			ss << __E__;
@@ -2659,12 +2660,13 @@ TableVersion ConfigurationManagerRW::updateTableCells(
 		{
 			__SS__ << "No source version specified and table '" << tableName
 			       << "' has no active version. Please specify a version or "
-			          "ensure active groups are initialized." << __E__;
+			          "ensure active groups are initialized."
+			       << __E__;
 			__SS_THROW__;
 		}
 		sourceVersion = table->getView().getVersion();
-		__GEN_COUT__ << "Using active version " << sourceVersion
-		             << " for table '" << tableName << "'" << __E__;
+		__GEN_COUT__ << "Using active version " << sourceVersion << " for table '"
+		             << tableName << "'" << __E__;
 	}
 	else
 		getVersionedTableByName(tableName, sourceVersion);
@@ -2680,15 +2682,15 @@ TableVersion ConfigurationManagerRW::updateTableCells(
 
 	try
 	{
-		unsigned int uidCol      = cfgView->getColUID();
-		int          authorCol   = cfgView->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
-		int          timestampCol = cfgView->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
+		unsigned int uidCol    = cfgView->getColUID();
+		int          authorCol = cfgView->findColByType(TableViewColumnInfo::TYPE_AUTHOR);
+		int timestampCol = cfgView->findColByType(TableViewColumnInfo::TYPE_TIMESTAMP);
 		unsigned int cellsModified = 0;
 
 		for(const auto& rowUpdate : cellUpdates)
 		{
 			const std::string& uid = rowUpdate.first;
-			unsigned int        row = cfgView->findRow(uidCol, uid);
+			unsigned int       row = cfgView->findRow(uidCol, uid);
 
 			__GEN_COUT__ << "Updating UID '" << uid << "' at row " << row << __E__;
 
@@ -2696,8 +2698,8 @@ TableVersion ConfigurationManagerRW::updateTableCells(
 			for(const auto& colVal : rowUpdate.second)
 			{
 				unsigned int col = cfgView->findCol(colVal.first);
-				__GEN_COUT__ << "Setting [" << uid << "][" << colVal.first
-				             << "] = '" << colVal.second << "'" << __E__;
+				__GEN_COUT__ << "Setting [" << uid << "][" << colVal.first << "] = '"
+				             << colVal.second << "'" << __E__;
 				cfgView->setValueAsString(colVal.second, row, col);
 				++cellsModified;
 				rowModified = true;
@@ -2745,17 +2747,16 @@ TableVersion ConfigurationManagerRW::updateTableCells(
 	// optionally set version alias
 	if(!versionAlias.empty())
 	{
-		__GEN_COUT__ << "Setting version alias '" << versionAlias << "' for "
-		             << tableName << "-v" << newVersion << __E__;
+		__GEN_COUT__ << "Setting version alias '" << versionAlias << "' for " << tableName
+		             << "-v" << newVersion << __E__;
 
-		GroupEditStruct backboneGroupEdit(
-		    ConfigurationManager::GroupType::BACKBONE_TYPE, this);
+		GroupEditStruct backboneGroupEdit(ConfigurationManager::GroupType::BACKBONE_TYPE,
+		                                  this);
 
 		TableView* aliasTableView =
 		    backboneGroupEdit
-		        .getTableEditStruct(
-		            ConfigurationManager::VERSION_ALIASES_TABLE_NAME,
-		            true /*markModified*/)
+		        .getTableEditStruct(ConfigurationManager::VERSION_ALIASES_TABLE_NAME,
+		                            true /*markModified*/)
 		        .tableView_;
 
 		unsigned int colTableName    = aliasTableView->findCol("TableName");
@@ -2770,8 +2771,7 @@ TableVersion ConfigurationManagerRW::updateTableCells(
 			   aliasTableView->getDataView()[row][colVersionAlias] == versionAlias)
 			{
 				__GEN_COUT__ << "Updating existing alias at row " << row << __E__;
-				aliasTableView->setValueAsString(
-				    newVersion.toString(), row, colVersion);
+				aliasTableView->setValueAsString(newVersion.toString(), row, colVersion);
 				aliasFound = true;
 				break;
 			}
@@ -2784,20 +2784,18 @@ TableVersion ConfigurationManagerRW::updateTableCells(
 			    author, true /*incrementUniqueData*/, "versionAlias");
 			aliasTableView->setValueAsString(tableName, newRow, colTableName);
 			aliasTableView->setValueAsString(versionAlias, newRow, colVersionAlias);
-			aliasTableView->setValueAsString(
-			    newVersion.toString(), newRow, colVersion);
+			aliasTableView->setValueAsString(newVersion.toString(), newRow, colVersion);
 		}
 
 		TableGroupKey newBackboneKey;
-		backboneGroupEdit.saveChanges(
-		    backboneGroupEdit.originalGroupName_,
-		    newBackboneKey,
-		    nullptr /* foundEquivalentGroupKey */,
-		    true /* activateNewGroup */);
+		backboneGroupEdit.saveChanges(backboneGroupEdit.originalGroupName_,
+		                              newBackboneKey,
+		                              nullptr /* foundEquivalentGroupKey */,
+		                              true /* activateNewGroup */);
 
-		__GEN_COUT_INFO__ << "Version alias '" << versionAlias << "' set to "
-		                  << tableName << "-v" << newVersion
-		                  << " (backbone key " << newBackboneKey << ")." << __E__;
+		__GEN_COUT_INFO__ << "Version alias '" << versionAlias << "' set to " << tableName
+		                  << "-v" << newVersion << " (backbone key " << newBackboneKey
+		                  << ")." << __E__;
 	}
 
 	return newVersion;

@@ -41,7 +41,7 @@ static size_t extractInvocation_             = 0;
 // flattens within one config are sub-second apart, whereas successive configs are
 // minutes apart, so any gap beyond this threshold marks the start of a new config.
 static std::chrono::steady_clock::time_point fhiclTraceLastActivity_{};
-static const double FHICL_TRACE_RESET_GAP_S = 30.0;
+static const double                          FHICL_TRACE_RESET_GAP_S = 30.0;
 
 // Resets the per-config cumulative counters when a new config step is detected (see
 // above). Called at the start of every flatten and of extractARTDAQInfo so whichever
@@ -2411,17 +2411,16 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::extractARTDAQInfo(
 	// processes it handles. Reported as a summary at the end of this function.
 	std::chrono::steady_clock::time_point extractStartClock =
 	    std::chrono::steady_clock::now();
-	std::chrono::steady_clock::time_point stageClock = extractStartClock;
+	std::chrono::steady_clock::time_point       stageClock = extractStartClock;
 	std::vector<std::pair<std::string, double>> stageTimes;
 
 	maybeResetFHiCLTimingTrace();
-	fhiclFlattenCount_   = 0;
-	fhiclFlattenSeconds_ = 0;
+	fhiclFlattenCount_    = 0;
+	fhiclFlattenSeconds_  = 0;
 	size_t thisInvocation = ++extractInvocation_;
 
 	auto recordStageTime = [&](const std::string& stageName) {
-		stageTimes.emplace_back(stageName,
-		                        artdaq::TimeUtils::GetElapsedTime(stageClock));
+		stageTimes.emplace_back(stageName, artdaq::TimeUtils::GetElapsedTime(stageClock));
 		stageClock = std::chrono::steady_clock::now();
 	};
 
@@ -3261,7 +3260,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
     std::map<std::string /*subsystemName*/, std::string /*destinationSubsystemName*/>&
                                            subsystemObjectMap,
     std::vector<std::string /*property*/>& artdaqSupervisoInfo,
-    bool                                    suppressMultiNode /* = false */)
+    bool                                   suppressMultiNode /* = false */)
 {
 	__COUT__ << "getARTDAQSystem() suppressMultiNode=" << suppressMultiNode << __E__;
 
@@ -3717,8 +3716,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 					{
 						if(skipSet.find(StringMacros::encodeURIComponent(
 						       otherNode.first)) != skipSet.end() ||
-						   otherNode.second.status() != status)  // skip if status mismatch
-							continue;  // skip unless 'other' and not in skip set
+						   otherNode.second.status() !=
+						       status)  // skip if status mismatch
+							continue;   // skip unless 'other' and not in skip set
 
 						// _clone nodes are always independent — never group them into a multinode
 						if(nodeName.find("_clone") != std::string::npos ||
