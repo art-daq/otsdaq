@@ -10,7 +10,6 @@
 #include "cetlib_except/exception.h"
 #include "fhiclcpp/make_ParameterSet.h"
 #include "otsdaq/ARTDAQSupervisor/ARTDAQSupervisorTRACEController.h"
-#include "otsdaq/FiniteStateMachine/RunControlIterationConstants.h"
 
 #include "artdaq-core/Utilities/ExceptionHandler.hh" /*for artdaq::ExceptionHandler*/
 
@@ -1347,8 +1346,68 @@ try
 
 		__SUP_COUT_INFO__ << "Starting thread started." << __E__;
 
+		// Query all state-machine supervisors for their minimum
+		// ready-for-event-generation start iteration (ceiling value).
+		{
+			cachedMinReadyForEventGenerationStartIteration_ = 0;
+
+			for(const auto& fsm : theStateMachineImplementation_)
+			{
+				unsigned int val = fsm->getMinReadyForEventGenerationStartIteration();
+				if(val > cachedMinReadyForEventGenerationStartIteration_)
+					cachedMinReadyForEventGenerationStartIteration_ = val;
+			}
+
+			try
+			{
+				auto orderedSupervisors =
+				    allSupervisorInfo_.getOrderedSupervisorDescriptors("Start");
+
+				for(const auto& vectorAtPriority : orderedSupervisors)
+				{
+					for(const auto* appInfo : vectorAtPriority)
+					{
+						if(appInfo->getId() == getApplicationDescriptor()->getLocalId())
+							continue;
+
+						try
+						{
+							xoap::MessageReference reply = SOAPMessenger::sendWithSOAPReply(
+							    appInfo->getDescriptor(),
+							    "MinReadyForEventGenerationStartIterationRequest");
+
+							SOAPParameters params;
+							params.addParameter("MinIteration");
+							SOAPUtilities::receive(reply, params);
+
+							unsigned int val = static_cast<unsigned int>(
+							    std::stoul(params.getValue("MinIteration")));
+							if(val > cachedMinReadyForEventGenerationStartIteration_)
+								cachedMinReadyForEventGenerationStartIteration_ = val;
+						}
+						catch(const std::exception& e)
+						{
+							__SUP_COUT__ << "Could not query MinReadyForEventGenerationStartIteration "
+							             << "from supervisor '" << appInfo->getName()
+							             << "' [LID=" << appInfo->getId() << "]: "
+							             << e.what() << " -- defaulting to 0." << __E__;
+						}
+					}
+				}
+			}
+			catch(const std::exception& e)
+			{
+				__SUP_COUT_WARN__ << "Failed to get ordered supervisor descriptors "
+				                  << "for MinReadyForEventGenerationStartIteration query: "
+				                  << e.what() << " -- using local value only." << __E__;
+			}
+
+			__SUP_COUT_INFO__ << "Cached MinReadyForEventGenerationStartIteration = "
+			                  << cachedMinReadyForEventGenerationStartIteration_ << __E__;
+		}
+
 		if(RunControlStateMachine::getIterationIndex() + 1 <
-		   RunControlIterationConstants::RUN_START_READY_FOR_TRIGGERS_ITERATION)
+		   cachedMinReadyForEventGenerationStartIteration_)
 			RunControlStateMachine::
 			    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 		else
@@ -1401,7 +1460,7 @@ try
 			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
 
 			if(RunControlStateMachine::getIterationIndex() + 1 <
-			   RunControlIterationConstants::RUN_START_READY_FOR_TRIGGERS_ITERATION)
+			   cachedMinReadyForEventGenerationStartIteration_)
 				RunControlStateMachine::
 				    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 			else

@@ -210,6 +210,19 @@ std::string FEVInterfacesManager::getStatusProgressDetail(void)
 }  // end getStatusProgressString()
 
 //==============================================================================
+unsigned int FEVInterfacesManager::getMinReadyForEventGenerationStartIteration(void) const
+{
+	unsigned int maxIteration = 0;
+	for(const auto& fePair : theFEInterfaces_)
+	{
+		unsigned int val = fePair.second->getMinReadyForEventGenerationStartIteration();
+		if(val > maxIteration)
+			maxIteration = val;
+	}
+	return maxIteration;
+}  // end getMinReadyForEventGenerationStartIteration()
+
+//==============================================================================
 void FEVInterfacesManager::configure(void)
 {
 	const std::string transitionName = "Configuring";
