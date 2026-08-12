@@ -1372,9 +1372,10 @@ try
 
 						try
 						{
-							xoap::MessageReference reply = SOAPMessenger::sendWithSOAPReply(
-							    appInfo->getDescriptor(),
-							    "MinReadyForEventGenerationStartIterationRequest");
+							xoap::MessageReference reply =
+							    SOAPMessenger::sendWithSOAPReply(
+							        appInfo->getDescriptor(),
+							        "MinReadyForEventGenerationStartIterationRequest");
 
 							SOAPParameters params;
 							params.addParameter("MinIteration");
@@ -1387,19 +1388,22 @@ try
 						}
 						catch(const std::exception& e)
 						{
-							__SUP_COUT__ << "Could not query MinReadyForEventGenerationStartIteration "
+							__SUP_COUT__ << "Could not query "
+							                "MinReadyForEventGenerationStartIteration "
 							             << "from supervisor '" << appInfo->getName()
-							             << "' [LID=" << appInfo->getId() << "]: "
-							             << e.what() << " -- defaulting to 0." << __E__;
+							             << "' [LID=" << appInfo->getId()
+							             << "]: " << e.what() << " -- defaulting to 0."
+							             << __E__;
 						}
 					}
 				}
 			}
 			catch(const std::exception& e)
 			{
-				__SUP_COUT_WARN__ << "Failed to get ordered supervisor descriptors "
-				                  << "for MinReadyForEventGenerationStartIteration query: "
-				                  << e.what() << " -- using local value only." << __E__;
+				__SUP_COUT_WARN__
+				    << "Failed to get ordered supervisor descriptors "
+				    << "for MinReadyForEventGenerationStartIteration query: " << e.what()
+				    << " -- using local value only." << __E__;
 			}
 
 			__SUP_COUT_INFO__ << "Cached MinReadyForEventGenerationStartIteration = "

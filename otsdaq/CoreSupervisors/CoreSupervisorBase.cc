@@ -498,7 +498,8 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 }  // end applicationStatusRequest()
 
 //==============================================================================
-xoap::MessageReference CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest(
+xoap::MessageReference
+CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest(
     xoap::MessageReference /*message*/)
 {
 	unsigned int maxIteration = 0;
