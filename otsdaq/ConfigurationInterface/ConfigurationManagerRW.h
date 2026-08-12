@@ -117,7 +117,8 @@ class ConfigurationManagerRW : public ConfigurationManager
 																				const std::string& 	author,
 																				TableVersion 		sourceVersion = TableVersion(),
 																				const std::string& 	versionAlias = "",
-																				const std::string& 	sourceAlias = "");
+																				const std::string& 	sourceAlias = "",
+																				const std::string& 	comment = "");
 
 	TableVersion 								copyViewToCurrentColumns		(const std::string& tableName, TableVersion sourceVersion);
 	void         								eraseTemporaryVersion			(const std::string& tableName, TableVersion targetVersion = TableVersion());
