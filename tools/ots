@@ -2138,8 +2138,15 @@ launchOTS() {
 
 								# Alert the user to the problem and keep relaunching
 
+								RELAUNCH_ATTEMPTS=0
+								RELAUNCH_LIMIT=10
 								while [ "x$OTS_IS_ALIVE" == "x" ]; do
-									warning "Could not verify successful ots gateway context launch (check log for details)..."
+									RELAUNCH_ATTEMPTS=$(( RELAUNCH_ATTEMPTS + 1 ))
+									if [ $RELAUNCH_ATTEMPTS -gt $RELAUNCH_LIMIT ]; then
+										killproc ${LAST_OTS_PID} xdaq.exe
+										die "Gateway context failed to launch after ${RELAUNCH_LIMIT} attempts. See ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt"
+									fi
+									warning "Could not verify successful ots gateway context launch (check log for details)... (attempt ${RELAUNCH_ATTEMPTS}/${RELAUNCH_LIMIT})"
 									killproc ${LAST_OTS_PID} xdaq.exe
 									if [ $QUIET == 1 ]; then #display log tail for user to
 
@@ -2413,8 +2420,15 @@ launchOTS() {
 			done
 
 
+			_relaunchAttempts=0
+			_maxRelaunchAttempts=3
 			while [ "x$OTS_IS_ALIVE" == "x" ]; do
-				warning "Could not verify successful ots non-gateway context launch (check log for details)..."
+				_relaunchAttempts=$(( $_relaunchAttempts + 1 ))
+				if (( _relaunchAttempts > _maxRelaunchAttempts )); then
+					error "Non-gateway context ${THIS_HOST}:${PORT} failed to launch after ${_maxRelaunchAttempts} attempts, giving up."
+					break
+				fi
+				warning "Could not verify successful ots non-gateway context launch (attempt ${_relaunchAttempts}/${_maxRelaunchAttempts}, check log for details)..."
 				killproc ${LAST_OTS_PID} xdaq.exe
 				if [ $QUIET == 1 ]; then #display log tail for user to diagnose
 					# tail -n 20
@@ -2507,8 +2521,12 @@ launchOTS() {
 				fi
 			done
 
-			info "Verified successful ots non-gateway context ${THIS_HOST}-${PORT} launch."
-			#add successful launch to Context PID array
+			if [ "x$OTS_IS_ALIVE" != "x" ]; then
+				info "Verified successful ots non-gateway context ${THIS_HOST}-${PORT} launch."
+			else
+				error "Giving up on non-gateway context ${THIS_HOST}:${PORT} after ${_maxRelaunchAttempts} failed attempts."
+			fi
+			#add launch to Context PID array (even if not verified, so it can be cleaned up later)
 			ContextPIDArray+=($LAST_OTS_PID)
 			ContextPIDNameArray+=(${xdaqContextUID[$i]})
 			ContextPIDIsAliveArray+=(1)
@@ -2603,7 +2621,7 @@ launchOTS() {
 		out "${Yellow}${Bold}************************************************************************************${RstClr}"
 		out "${Yellow}${Bold}************************************************************************************${RstClr}"
 
-		out "${Red}${Bold}${Blink}WARNING${RstClr}: There are no configured processes for hostname ${THIS_HOST}."
+		out "${Red}${Bold}${Blink}WARNING${RstClr}: There are no configured processes for hostname THIS_HOST=${THIS_HOST}."
 		out "Are you sure your configuration is written for ${Red}${Bold}${Blink}${THIS_HOST}${RstClr}?"
 		out
 		out "These are the hosts configured to run ots Context processes: ${contextHostname[@]}"
@@ -3684,7 +3702,10 @@ launchOTSLogFind() {
 	_logfind_runrecords_dir=""
 
 	# find the latest (highest numbered) run record directory
-	_logfind_latest_run_dir=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -t/ -k$(echo "${USER_DATA}/ARTDAQConfigurations/run_records/x" | tr -cd '/' | wc -c) -n | tail -1)
+	# sort -t/ field index: leading '/' creates an empty field 1, so the
+	# directory basename sits at (number_of_slashes + 1).
+	_logfind_sort_key=$(( $(echo "${USER_DATA}/ARTDAQConfigurations/run_records/x" | tr -cd '/' | wc -c) + 1 ))
+	_logfind_latest_run_dir=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -t/ -k${_logfind_sort_key} -n | tail -1)
 
 	if [ -n "$_logfind_latest_run_dir" ]; then
 		_logfind_runrecords_dir="$_logfind_latest_run_dir"
@@ -4487,7 +4508,8 @@ _ots_trace_ssh() {
 	if [ $_rc -ne 0 ]; then
 		local _alt=""
 		if [[ "$_host" == *"-data"* ]]; then _alt="${_host/-data/}"
-		elif [[ "$_host" == *"-ipmi"* ]]; then _alt="${_host/-ipmi/}"; fi
+		elif [[ "$_host" == *"-ipmi"* ]]; then _alt="${_host/-ipmi/}"
+		else _alt="${_host%%.*}-data${_host#${_host%%.*}}"; fi
 		if [ -n "$_alt" ]; then
 			_out=$(ssh -K -o ConnectTimeout=10 -o BatchMode=yes "$_alt" "$_cmd" 2>/dev/null)
 			_rc=$?
@@ -4583,11 +4605,70 @@ launchOTSTrace() {
 			out "  ${IBlack}[DEBUG] no ranks.txt artdaq hosts found on this host${RstClr}"
 		fi
 	else
-		# CSV list
+		# CSV list -- resolve short names against known hosts
 		out "  ${IBlack}[DEBUG] host=CSV: ${_hostarg}${RstClr}"
+
+		# Build known-hosts list from ots.xml + ranks.txt + local
+		local -a _known_hosts=("${THIS_HOST}")
+		while read -r _kh; do [ -n "$_kh" ] && _known_hosts+=("$_kh"); done < <(_logdelete_get_context_hosts 2>/dev/null)
+		local _ranks
+		_ranks=$(find -L "${USER_DATA}/ARTDAQConfigurations/run_records" -maxdepth 2 -name 'ranks.txt' -type f 2>/dev/null \
+			| sort -t/ -k$(( $(echo "${USER_DATA}/ARTDAQConfigurations/run_records/" | tr -cd '/' | wc -c) + 1 )) -n | tail -1)
+		if [ -n "$_ranks" ]; then
+			while read -r _line; do
+				[[ -z "$_line" || "$_line" == host* ]] && continue
+				local _rh; _rh=$(echo "$_line" | awk '{print $1}')
+				[ -n "$_rh" ] && _known_hosts+=("$_rh")
+			done < "$_ranks"
+		fi
+
 		local _csv; IFS=',' read -ra _csv <<< "$_hostarg"
 		local _h
-		for _h in "${_csv[@]}"; do _trc_add_host "${_h// /}"; done
+		for _h in "${_csv[@]}"; do
+			_h="${_h// /}"
+			[ -z "$_h" ] && continue
+			# Try to match against known hosts (exact > short-name > unique substring)
+			local _matched=""
+			local _ambiguous=0
+			# 1) Exact full-string match
+			for _kh in "${_known_hosts[@]}"; do
+				if [[ "$_kh" == "$_h" ]]; then
+					_matched="$_kh"
+					break
+				fi
+			done
+			# 2) Exact short-name match (strip domain)
+			if [ -z "$_matched" ]; then
+				for _kh in "${_known_hosts[@]}"; do
+					if [[ "${_kh%%.*}" == "$_h" ]]; then
+						_matched="$_kh"
+						break
+					fi
+				done
+			fi
+			# 3) Substring match -- only if exactly one host matches
+			if [ -z "$_matched" ]; then
+				local -a _sub_matches=()
+				for _kh in "${_known_hosts[@]}"; do
+					if [[ "$_kh" == *"$_h"* ]]; then
+						_sub_matches+=("$_kh")
+					fi
+				done
+				if [ ${#_sub_matches[@]} -eq 1 ]; then
+					_matched="${_sub_matches[0]}"
+				elif [ ${#_sub_matches[@]} -gt 1 ]; then
+					_ambiguous=1
+					out "  ${IYellow}[WARNING] '${_h}' is ambiguous -- matches: ${_sub_matches[*]}; skipping (use a more specific name)${RstClr}"
+				fi
+			fi
+			if [ -n "$_matched" ]; then
+				out "  ${IBlack}[DEBUG] resolved '${_h}' -> '${_matched}'${RstClr}"
+				_trc_add_host "$_matched"
+			elif [ $_ambiguous -eq 0 ]; then
+				out "  ${IBlack}[DEBUG] no known host match for '${_h}', using as-is${RstClr}"
+				_trc_add_host "$_h"
+			fi
+		done
 	fi
 	out "  ${IBlack}[DEBUG] resolved: local=${_include_local} remote=(${_remote_hosts[*]})${RstClr}"
 
@@ -4604,10 +4685,21 @@ launchOTSTrace() {
 		esac
 	fi
 	local _h
+	local _trc_tmpdir
+	_trc_tmpdir=$(mktemp -d)
+	local -a _trc_pids=()
 	for _h in "${_remote_hosts[@]}"; do
 		if [ "$_fmt" == "human" ]; then out "  ${IBlack}[${_h}] querying via ssh...${RstClr}"; fi
-		_raw+=$(_ots_trace_ssh "$_h" "$_action" "$_a3" "$_a4" "$_a5" "$_a6")$'\n'
+		_ots_trace_ssh "$_h" "$_action" "$_a3" "$_a4" "$_a5" "$_a6" > "${_trc_tmpdir}/${_h}" &
+		_trc_pids+=($!)
 	done
+	local _i=0
+	for _h in "${_remote_hosts[@]}"; do
+		wait "${_trc_pids[$_i]}" 2>/dev/null
+		_raw+=$(cat "${_trc_tmpdir}/${_h}")$'\n'
+		_i=$((_i + 1))
+	done
+	rm -rf "$_trc_tmpdir"
 
 	# Keep only the bracketed trace lines (drop Fast_ots_setup banners etc.)
 	# Also deduplicate: if the same host appears in multiple blocks (e.g. local
@@ -5070,6 +5162,7 @@ otsActionHandler() {
 
 	FIRST_TIME=1 #to enable url printouts
 	DO_LOG_ROLLOVER=0
+	_actionLoopCount=0
 
 	out
 	out "Process information for PID ${bpid}: ps -aux | grep ${bpid}"
@@ -5114,6 +5207,10 @@ otsActionHandler() {
 		OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
 
 		echo "0" > $OTSDAQ_STARTOTS_ACTION_FILE #clear the command in the file; it has been responded to
+
+		if [[ "${OTSDAQ_STARTOTS_ACTION:-"0"}" != "0" ]]; then
+			out "ACTION-DIAG: read action='${OTSDAQ_STARTOTS_ACTION}' from ${OTSDAQ_STARTOTS_ACTION_FILE} (cleared to 0)"
+		fi
 
 		if [ "$OTSDAQ_REFRESH_SSH" == "1" ]; then
 			if declare -F otsUserSshTunnels > /dev/null; then
@@ -5224,6 +5321,7 @@ otsActionHandler() {
 		elif [[ $OTSDAQ_STARTOTS_ACTION == LAUNCH_INSTANCE* ]]; then
 
 			info "self-pid=${BASHPID}: Launching remote ots instance $OTSDAQ_STARTOTS_ACTION"
+			out "ACTION-DIAG: LAUNCH_INSTANCE handler START for '${OTSDAQ_STARTOTS_ACTION}'"
 
 			# Read the string into an array, scoping IFS=';' to just this read so
 			# the action handler's global IFS stays as default whitespace --
@@ -5266,11 +5364,14 @@ otsActionHandler() {
 				out "\tRemote launch of ots instance processes on host {${inst_host}}."
 				out "\t\tssh ${inst_user}@${inst_host} SCRIPT_DIR/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type}"
 
+				out "ACTION-DIAG: about to ssh KILL_ALL to ${inst_user}@${inst_host}"
 				# first kill existing for immediate gratification to user (so not confused by existing instance status)
 				ssh -K ${inst_user}@${inst_host} "echo \"KILL_ALL\" > ${inst_data}/ServiceData/StartOTS_action_quit.cmd"
+				out "ACTION-DIAG: ssh KILL_ALL returned, launching remote start in background..."
 
 				# launch ssh remote start (attempt twice)
 				ssh -K ${inst_user}@${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || ssh -K ${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || out "${Red}${REV} ***************** {${inst_host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
+				out "ACTION-DIAG: LAUNCH_INSTANCE handler DONE for ${inst_host}"
 			fi
 
 		elif [[ "$OTSDAQ_STARTOTS_ACTION" == LOG_ROLLOVER* ]]; then
@@ -5303,12 +5404,16 @@ otsActionHandler() {
 
 		elif [[ "${OTSDAQ_STARTOTS_ACTION:-"0"}" != "0"  || "${OTSDAQ_STARTOTS_QUIT:-"0"}" != "0" ]]; then
 
-			error "self-pid=${BASHPID}: Exiting ots script.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
+			error "self-pid=${BASHPID}: Exiting ots script.. Unrecognized command !=0 in Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT} (length=${#OTSDAQ_STARTOTS_ACTION})"
 			exit
 
 		fi
 
 		sleep 1
+		_actionLoopCount=$(( $_actionLoopCount + 1 ))
+		if (( _actionLoopCount % 100 == 0 )); then
+			out "ACTION-DIAG: still alive pid=${BASHPID} loop=${_actionLoopCount}"
+		fi
 		# Note!! User can prevent data check with export OTSDAQ_DATA_DISK_MINIMUM=0
 		otsDataDiskCheck
 
