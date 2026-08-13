@@ -2105,7 +2105,12 @@ try
 										             .appInfo.status.find("Launching") ==
 										         0 &&
 										     remoteGatewayApp.appInfo.progress ==
-										         100))  //dont trust done progress while still 'commanding'
+										         100 &&
+										     theSupervisor->remoteGatewayApps_[i]
+										             .commandSentTime != 0 &&
+										     difftime(time(0),
+										              theSupervisor->remoteGatewayApps_[i]
+										                  .commandSentTime) < 5))  //dont trust done progress briefly after send, but allow write-back after 5s
 										{
 											__COUT_INFO__
 											    << "DIAG: suppressing stale write-back "
