@@ -2104,13 +2104,13 @@ try
 										     theSupervisor->remoteGatewayApps_[i]
 										             .appInfo.status.find("Launching") ==
 										         0 &&
-										     remoteGatewayApp.appInfo.progress ==
-										         100 &&
+										     remoteGatewayApp.appInfo.progress == 100 &&
 										     theSupervisor->remoteGatewayApps_[i]
 										             .commandSentTime != 0 &&
 										     difftime(time(0),
 										              theSupervisor->remoteGatewayApps_[i]
-										                  .commandSentTime) < 5))  //dont trust done progress briefly after send, but allow write-back after 5s
+										                  .commandSentTime) <
+										         5))  //dont trust done progress briefly after send, but allow write-back after 5s
 										{
 											__COUT_INFO__
 											    << "DIAG: suppressing stale write-back "
@@ -5190,14 +5190,15 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 
 					sock.acknowledge(globalFieldsResult, false /* verbose */);
 					continue;
-				}                             //end GetAliasGlobalFields
+				}  //end GetAliasGlobalFields
 				else if(buffer.find("GetMinEventGenStartIteration") == 0)
 				{
 					unsigned int maxIteration = 0;
 					try
 					{
 						auto orderedSupervisors =
-						    theSupervisor->allSupervisorInfo_.getOrderedSupervisorDescriptors("Start");
+						    theSupervisor->allSupervisorInfo_
+						        .getOrderedSupervisorDescriptors("Start");
 						for(const auto& vectorAtPriority : orderedSupervisors)
 							for(const auto* appInfo : vectorAtPriority)
 								try
@@ -5205,11 +5206,13 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 									xoap::MessageReference reply =
 									    theSupervisor->sendWithSOAPReply(
 									        appInfo->getDescriptor(),
-									        "MinReadyForEventGenerationStartIterationRequest");
+									        "MinReadyForEventGenerationStartIterationRequ"
+									        "est");
 									SOAPParameters params;
 									params.addParameter("MinIteration");
 									SOAPUtilities::receive(reply, params);
-									unsigned int val = std::stoul(params.getValue("MinIteration"));
+									unsigned int val =
+									    std::stoul(params.getValue("MinIteration"));
 									if(val > maxIteration)
 										maxIteration = val;
 								}
@@ -5877,12 +5880,13 @@ try
 	//check if MinReadyForEventGenerationStartIteration is in parameters (sent by top-level Gateway for subsystem)
 	for(size_t i = 0; i < commandParameters.size(); ++i)
 	{
-		if(commandParameters[i].find(COMMAND_PARAM_MIN_EVENT_GEN_START_ITERATION_PREAMBLE) == 0)
+		if(commandParameters[i].find(
+		       COMMAND_PARAM_MIN_EVENT_GEN_START_ITERATION_PREAMBLE) == 0)
 		{
 			try
 			{
-				minReadyForEventGenerationStartIteration_ = std::stoul(
-				    commandParameters[i].substr(
+				minReadyForEventGenerationStartIteration_ =
+				    std::stoul(commandParameters[i].substr(
 				        COMMAND_PARAM_MIN_EVENT_GEN_START_ITERATION_PREAMBLE.length()));
 			}
 			catch(...)
@@ -8493,14 +8497,14 @@ try
 				for(const auto* appInfo : vectorAtPriority)
 					try
 					{
-						xoap::MessageReference reply =
-						    SOAPMessenger::sendWithSOAPReply(
-						        appInfo->getDescriptor(),
-						        "MinReadyForEventGenerationStartIterationRequest");
+						xoap::MessageReference reply = SOAPMessenger::sendWithSOAPReply(
+						    appInfo->getDescriptor(),
+						    "MinReadyForEventGenerationStartIterationRequest");
 						SOAPParameters minIterQueryParams;
 						minIterQueryParams.addParameter("MinIteration");
 						SOAPUtilities::receive(reply, minIterQueryParams);
-						unsigned int val = std::stoul(minIterQueryParams.getValue("MinIteration"));
+						unsigned int val =
+						    std::stoul(minIterQueryParams.getValue("MinIteration"));
 						if(val > minReadyForEventGenerationStartIteration_)
 							minReadyForEventGenerationStartIteration_ = val;
 					}
@@ -8527,14 +8531,18 @@ try
 				try
 				{
 					std::vector<std::string> parsedUrl =
-					    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url, {':'});
+					    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,
+					                                      {':'});
 					if(parsedUrl.size() == 3)
 					{
-						Socket            gatewayRemoteSocket(parsedUrl[1], atoi(parsedUrl[2].c_str()));
+						Socket            gatewayRemoteSocket(parsedUrl[1],
+                                                   atoi(parsedUrl[2].c_str()));
 						TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
 						tmpSocket.initialize();
-						std::string response = tmpSocket.sendAndReceive(
-						    gatewayRemoteSocket, "GetMinEventGenStartIteration", 5 /*timeoutSeconds*/);
+						std::string response =
+						    tmpSocket.sendAndReceive(gatewayRemoteSocket,
+						                             "GetMinEventGenStartIteration",
+						                             5 /*timeoutSeconds*/);
 						unsigned int val = std::stoul(response);
 						if(val > minReadyForEventGenerationStartIteration_)
 							minReadyForEventGenerationStartIteration_ = val;

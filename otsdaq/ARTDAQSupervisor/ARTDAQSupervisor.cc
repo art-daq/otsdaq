@@ -1348,8 +1348,9 @@ try
 
 		cachedMinReadyForEventGenerationStartIteration_ =
 		    RunControlStateMachine::getMinReadyForEventGenerationStartIteration();
-		__SUP_COUT_INFO__ << "MinReadyForEventGenerationStartIteration from transition parameter = "
-		                  << cachedMinReadyForEventGenerationStartIteration_ << __E__;
+		__SUP_COUT_INFO__
+		    << "MinReadyForEventGenerationStartIteration from transition parameter = "
+		    << cachedMinReadyForEventGenerationStartIteration_ << __E__;
 
 		if(RunControlStateMachine::getIterationIndex() + 1 <
 		   cachedMinReadyForEventGenerationStartIteration_)
