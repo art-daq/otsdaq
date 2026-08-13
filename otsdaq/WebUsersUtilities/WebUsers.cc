@@ -1132,8 +1132,9 @@ void WebUsers::createNewAccount(const std::string&          username,
 	// first user is admin always!
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> initPermissions = {
 	    {WebUsers::DEFAULT_USER_GROUP,
-	     (Users_.size() ? initialPermission
-	                    : WebUsers::permissionLevel_t(WebUsers::PERMISSION_LEVEL_ADMIN))}};
+	     (Users_.size()
+	          ? initialPermission
+	          : WebUsers::permissionLevel_t(WebUsers::PERMISSION_LEVEL_ADMIN))}};
 
 	Users_.back().permissions_ = initPermissions;
 	Users_.back().userId_      = usersNextUserId_++;
@@ -1610,6 +1611,21 @@ uint64_t WebUsers::attemptActiveSessionWithEmail(const std::string& email,
 	// search users for matching email
 	uint64_t i = searchUsersDatabaseForUserEmail(email);
 
+	// If no local account matches the email, derive a base username from the email's local part
+	// (the part before the '@') and sanitize it to contain only alphanumeric characters, underscores, hyphens, or periods.
+	std::string baseUsername;
+	if(i == NOT_FOUND_IN_DATABASE)
+	{
+		__COUT__ << "No local account found for email: " << email
+		         << ". Attempting to derive a base username from the email." << __E__;
+		// derive a base username from the email local-part (sanitized)
+		for(const char& c : email.substr(0, email.find('@')))
+			if(std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-' ||
+			   c == '.')
+				baseUsername += c;
+		i = searchUsersDatabaseForUsername(baseUsername);
+	}
+
 	if(i == NOT_FOUND_IN_DATABASE)  // no local account for this email
 	{
 		if(!autoCreate)
@@ -1619,12 +1635,6 @@ uint64_t WebUsers::attemptActiveSessionWithEmail(const std::string& email,
 		}
 
 		// auto-create a novice account for the authenticated SSO user
-
-		// derive a base username from the email local-part (sanitized)
-		std::string baseUsername;
-		for(const char& c : email.substr(0, email.find('@')))
-			if(std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-' || c == '.')
-				baseUsername += c;
 		if(baseUsername == "")
 			baseUsername = "ssouser";
 
@@ -1655,10 +1665,11 @@ uint64_t WebUsers::attemptActiveSessionWithEmail(const std::string& email,
 		         << email << __E__;
 		try
 		{
-			createNewAccount(newUsername,
-			                 newDisplayName,
-			                 email,
-			                 WebUsers::PERMISSION_LEVEL_EXPERT /*initial permission (100)*/);
+			createNewAccount(
+			    newUsername,
+			    newDisplayName,
+			    email,
+			    WebUsers::PERMISSION_LEVEL_NOVICE /*initial permission (100)*/);
 		}
 		catch(const std::runtime_error& e)
 		{
@@ -1695,7 +1706,7 @@ uint64_t WebUsers::attemptActiveSessionWithEmail(const std::string& email,
 	displayName = Users_[i].displayName_;  // pass by reference displayName
 	cookieCode  = createNewActiveSession(Users_[i].userId_,
                                         ip);  // return cookie code by reference
-	return Users_[i].userId_;                 // return user Id
+	return Users_[i].userId_;                  // return user Id
 }  // end attemptActiveSessionWithEmail()
 
 //==============================================================================
@@ -1964,7 +1975,7 @@ uint64_t WebUsers::searchUsersDatabaseForDisplayName(const std::string& displayN
 		if(Users_[i].displayName_ == displayName)
 			break;
 	return (i == Users_.size()) ? NOT_FOUND_IN_DATABASE : i;
-}  // end searchUsersDatabaseForUsername()
+}  // end searchUsersDatabaseForDisplayName()
 
 //==============================================================================
 /// WebUsers::searchUsersDatabaseForUserEmail ---
