@@ -10764,13 +10764,13 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 // OIDC / Single Sign-On (SSO) support
 //
 // Implements the OpenID Connect authorization-code flow (confidential client) so that
-// users can log in via an external identity provider (e.g. Fermilab SSO / Keycloak).
+// users can log in via an external identity provider.
 //
 //  - oidcLogin    : redirects the browser to the provider's authorization endpoint
 //  - oidcCallback : exchanges the returned code for tokens, extracts the user's email
 //                   from the ID token, establishes an ots session, and completes login.
 //
-// Configuration is read from $SERVICE_DATA_PATH/OtsWizardData/oidc.conf (key=value):
+// Configuration is read from $SERVICE_DATA_PATH/LoginData/oidc.conf (key=value):
 //     providerUrl   = https://.../.well-known/openid-configuration
 //     clientId      = <client id>
 //     clientSecret  = <client secret>
@@ -10779,7 +10779,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 namespace
 {
 #define OIDC_CONFIG_FILE_NAME \
-	std::string(__ENV__("SERVICE_DATA_PATH")) + "/OtsWizardData/oidc.conf"
+	std::string(__ENV__("SERVICE_DATA_PATH")) + "/LoginData/oidc.conf"
 
 // OIDC 'state' anti-CSRF store: maps issued state -> issue time
 std::mutex                    oidcStateMutex_;
