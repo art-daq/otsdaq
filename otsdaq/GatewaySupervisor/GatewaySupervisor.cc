@@ -10782,9 +10782,9 @@ namespace
 	std::string(__ENV__("SERVICE_DATA_PATH")) + "/OtsWizardData/oidc.conf"
 
 // OIDC 'state' anti-CSRF store: maps issued state -> issue time
-std::mutex                   oidcStateMutex_;
+std::mutex                    oidcStateMutex_;
 std::map<std::string, time_t> oidcStateStore_;
-const time_t                 OIDC_STATE_LIFETIME_SEC = 600;  // 10 minutes
+const time_t                  OIDC_STATE_LIFETIME_SEC = 600;  // 10 minutes
 
 //==============================================================================
 struct OIDCConfig
@@ -10877,8 +10877,7 @@ std::string oidcHttpRequest(const std::string& url,
                             std::string&       response)
 {
 	static std::once_flag curlInitFlag;
-	std::call_once(curlInitFlag,
-	               []() { curl_global_init(CURL_GLOBAL_DEFAULT); });
+	std::call_once(curlInitFlag, []() { curl_global_init(CURL_GLOBAL_DEFAULT); });
 
 	CURL* curl = curl_easy_init();
 	if(!curl)
@@ -10902,8 +10901,8 @@ std::string oidcHttpRequest(const std::string& url,
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postFields.c_str());
 	}
 
-	CURLcode res = curl_easy_perform(curl);
-	long      httpCode = 0;
+	CURLcode res      = curl_easy_perform(curl);
+	long     httpCode = 0;
 	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
 	curl_easy_cleanup(curl);
 
@@ -10959,13 +10958,27 @@ std::string oidcJsonExtractString(const std::string& json, const std::string& ke
 			char n = json[++pos];
 			switch(n)
 			{
-			case 'n': result += '\n'; break;
-			case 't': result += '\t'; break;
-			case 'r': result += '\r'; break;
-			case '/': result += '/'; break;
-			case '"': result += '"'; break;
-			case '\\': result += '\\'; break;
-			default: result += n; break;
+			case 'n':
+				result += '\n';
+				break;
+			case 't':
+				result += '\t';
+				break;
+			case 'r':
+				result += '\r';
+				break;
+			case '/':
+				result += '/';
+				break;
+			case '"':
+				result += '"';
+				break;
+			case '\\':
+				result += '\\';
+				break;
+			default:
+				result += n;
+				break;
 			}
 		}
 		else if(c == '"')
@@ -11067,14 +11080,30 @@ std::string oidcJsEscape(const std::string& value)
 	{
 		switch(c)
 		{
-		case '\\': out += "\\\\"; break;
-		case '"': out += "\\\""; break;
-		case '\'': out += "\\'"; break;
-		case '\n': out += "\\n"; break;
-		case '\r': out += "\\r"; break;
-		case '<': out += "\\x3C"; break;
-		case '>': out += "\\x3E"; break;
-		case '&': out += "\\x26"; break;
+		case '\\':
+			out += "\\\\";
+			break;
+		case '"':
+			out += "\\\"";
+			break;
+		case '\'':
+			out += "\\'";
+			break;
+		case '\n':
+			out += "\\n";
+			break;
+		case '\r':
+			out += "\\r";
+			break;
+		case '<':
+			out += "\\x3C";
+			break;
+		case '>':
+			out += "\\x3E";
+			break;
+		case '&':
+			out += "\\x26";
+			break;
 		default:
 			if((unsigned char)c < 0x20)
 			{
@@ -11099,12 +11128,24 @@ std::string oidcHtmlEscape(const std::string& value)
 	{
 		switch(c)
 		{
-		case '&': out += "&amp;"; break;
-		case '<': out += "&lt;"; break;
-		case '>': out += "&gt;"; break;
-		case '"': out += "&quot;"; break;
-		case '\'': out += "&#39;"; break;
-		default: out += c; break;
+		case '&':
+			out += "&amp;";
+			break;
+		case '<':
+			out += "&lt;";
+			break;
+		case '>':
+			out += "&gt;";
+			break;
+		case '"':
+			out += "&quot;";
+			break;
+		case '\'':
+			out += "&#39;";
+			break;
+		default:
+			out += c;
+			break;
 		}
 	}
 	return out;
@@ -11123,7 +11164,7 @@ void oidcErrorPage(xgi::Output* out, const std::string& message)
 	        "</body></html>";
 }  // end oidcErrorPage()
 
-}  // end anonymous namespace for OIDC helpers
+}  // namespace
 
 //==============================================================================
 /// oidcLogin ~ begin the OIDC/SSO authorization-code flow by redirecting the browser
@@ -11147,8 +11188,7 @@ void GatewaySupervisor::oidcLogin(xgi::Input* /*in*/, xgi::Output* out)
 		return;
 	}
 
-	std::string authEndpoint =
-	    oidcJsonExtractString(discovery, "authorization_endpoint");
+	std::string authEndpoint = oidcJsonExtractString(discovery, "authorization_endpoint");
 	if(authEndpoint == "")
 	{
 		oidcErrorPage(out,
@@ -11172,13 +11212,11 @@ void GatewaySupervisor::oidcLogin(xgi::Input* /*in*/, xgi::Output* out)
 		oidcStateStore_[state] = now;
 	}
 
-	std::string authUrl = authEndpoint +
-	                      (authEndpoint.find('?') == std::string::npos ? "?" : "&") +
-	                      "response_type=code" +
-	                      "&client_id=" + oidcUrlEncode(cfg.clientId) +
-	                      "&redirect_uri=" + oidcUrlEncode(cfg.redirectUri) +
-	                      "&scope=" + oidcUrlEncode(cfg.scope) +
-	                      "&state=" + oidcUrlEncode(state);
+	std::string authUrl =
+	    authEndpoint + (authEndpoint.find('?') == std::string::npos ? "?" : "&") +
+	    "response_type=code" + "&client_id=" + oidcUrlEncode(cfg.clientId) +
+	    "&redirect_uri=" + oidcUrlEncode(cfg.redirectUri) +
+	    "&scope=" + oidcUrlEncode(cfg.scope) + "&state=" + oidcUrlEncode(state);
 
 	*out << "<!DOCTYPE html><html><head><title>Single Sign-On</title>"
 	     << "<meta http-equiv='refresh' content='0;url=" << oidcHtmlEscape(authUrl)
@@ -11258,8 +11296,8 @@ void GatewaySupervisor::oidcCallback(xgi::Input* in, xgi::Output* out)
 	}
 
 	// exchange the authorization code for tokens (confidential client)
-	std::string postFields = "grant_type=authorization_code" +
-	                         std::string("&code=") + oidcUrlEncode(code) +
+	std::string postFields = "grant_type=authorization_code" + std::string("&code=") +
+	                         oidcUrlEncode(code) +
 	                         "&redirect_uri=" + oidcUrlEncode(cfg.redirectUri) +
 	                         "&client_id=" + oidcUrlEncode(cfg.clientId) +
 	                         "&client_secret=" + oidcUrlEncode(cfg.clientSecret);
@@ -11269,9 +11307,7 @@ void GatewaySupervisor::oidcCallback(xgi::Input* in, xgi::Output* out)
 	if(err != "")
 	{
 		std::string tokErr = oidcJsonExtractString(tokenResponse, "error");
-		oidcErrorPage(out,
-		              "Token exchange failed: " +
-		                  (tokErr != "" ? tokErr : err));
+		oidcErrorPage(out, "Token exchange failed: " + (tokErr != "" ? tokErr : err));
 		return;
 	}
 
@@ -11303,8 +11339,13 @@ void GatewaySupervisor::oidcCallback(xgi::Input* in, xgi::Output* out)
 
 	// establish an ots session for the authenticated user (auto-creating if needed)
 	std::string cookieCode, username, displayName;
-	uint64_t    uid = theWebUsers_.attemptActiveSessionWithEmail(
-        email, displayNameHint, cookieCode, username, displayName, ip, true /*autoCreate*/);
+	uint64_t    uid = theWebUsers_.attemptActiveSessionWithEmail(email,
+                                                              displayNameHint,
+                                                              cookieCode,
+                                                              username,
+                                                              displayName,
+                                                              ip,
+                                                              true /*autoCreate*/);
 
 	if(uid >= theWebUsers_.ACCOUNT_ERROR_THRESHOLD || cookieCode == "0")
 	{
@@ -11336,8 +11377,7 @@ void GatewaySupervisor::oidcCallback(xgi::Input* in, xgi::Output* out)
 	     << "try{"
 	     << "localStorage.setItem('otsCookieCode',\"" << oidcJsEscape(cookieCode)
 	     << "\");"
-	     << "localStorage.setItem('otsCookieUser',\"" << oidcJsEscape(username)
-	     << "\");"
+	     << "localStorage.setItem('otsCookieUser',\"" << oidcJsEscape(username) << "\");"
 	     << "if(window.opener&&!window.opener.closed){window.opener.location.reload();}"
 	     << "}catch(e){}"
 	     << "window.close();"
