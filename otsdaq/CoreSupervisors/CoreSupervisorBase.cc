@@ -60,6 +60,10 @@ CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
 	           &CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest,
 	           "MinReadyForEventGenerationStartIterationRequest",
 	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest,
+	           "MinReadyForEventGenerationStartIterationRequest",
+	           XDAQ_NS_URI);
 
 	__SUP_COUT__ << "Constructed. getpid()=" << getpid() << " gettid()=" << gettid()
 	             << __E__;

@@ -80,6 +80,7 @@ const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PRE
 const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE = "SubsystemCommonContextTableList:";
 const std::string GatewaySupervisor::COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE = "SubsystemCommonContextOverrideTableList:";
 const std::string GatewaySupervisor::COMMAND_PARAM_ITERATION_INDEX_PREAMBLE = "IterationIndex:";
+const std::string GatewaySupervisor::COMMAND_PARAM_MIN_EVENT_GEN_START_ITERATION_PREAMBLE = "MinReadyForEventGenerationStartIteration:";
 
 // clang-format on
 
@@ -5185,6 +5186,38 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					sock.acknowledge(globalFieldsResult, false /* verbose */);
 					continue;
 				}                             //end GetAliasGlobalFields
+				else if(buffer.find("GetMinEventGenStartIteration") == 0)
+				{
+					unsigned int maxIteration = 0;
+					try
+					{
+						auto orderedSupervisors =
+						    theSupervisor->allSupervisorInfo_.getOrderedSupervisorDescriptors("Start");
+						for(const auto& vectorAtPriority : orderedSupervisors)
+							for(const auto* appInfo : vectorAtPriority)
+								try
+								{
+									xoap::MessageReference reply =
+									    theSupervisor->sendWithSOAPReply(
+									        appInfo->getDescriptor(),
+									        "MinReadyForEventGenerationStartIterationRequest");
+									SOAPParameters params;
+									params.addParameter("MinIteration");
+									SOAPUtilities::receive(reply, params);
+									unsigned int val = std::stoul(params.getValue("MinIteration"));
+									if(val > maxIteration)
+										maxIteration = val;
+								}
+								catch(...)
+								{
+								}
+					}
+					catch(...)
+					{
+					}
+					sock.acknowledge(std::to_string(maxIteration), false /* verbose */);
+					continue;
+				}                             //end GetMinEventGenStartIteration
 				else if(!enableStateChanges)  //else it is an FSM Command!
 				{
 					__COUT_WARN__ << "Skipping potential FSM Command because "
@@ -5836,6 +5869,25 @@ try
 		}
 	}
 
+	//check if MinReadyForEventGenerationStartIteration is in parameters (sent by top-level Gateway for subsystem)
+	for(size_t i = 0; i < commandParameters.size(); ++i)
+	{
+		if(commandParameters[i].find(COMMAND_PARAM_MIN_EVENT_GEN_START_ITERATION_PREAMBLE) == 0)
+		{
+			try
+			{
+				minReadyForEventGenerationStartIteration_ = std::stoul(
+				    commandParameters[i].substr(
+				        COMMAND_PARAM_MIN_EVENT_GEN_START_ITERATION_PREAMBLE.length()));
+			}
+			catch(...)
+			{
+				minReadyForEventGenerationStartIteration_ = 0;
+			}
+			break;
+		}
+	}
+
 	/////////////////
 	// Validate FSM name (do here because remote commands bypass stateMachineXgiHandler)
 	//	if fsm name != active fsm name
@@ -6284,6 +6336,9 @@ try
 		parameters.addParameter(
 		    "RunNumber",
 		    runNumber);  // will be cached in activeStateMachineRunNumber_ in transitionStarting()
+
+		parameters.addParameter("MinReadyForEventGenerationStartIteration",
+		                        minReadyForEventGenerationStartIteration_);
 
 		if(activeStateMachineWindowName_ != fsmWindowName)
 		{
@@ -8420,12 +8475,90 @@ try
 	}  // end make logbook entry
 	RunControlStateMachine::theProgressBar_.step();
 
+	// Compute global ceiling of MinReadyForEventGenerationStartIteration
+	{
+		minReadyForEventGenerationStartIteration_ = 0;
+
+		// Query local supervisors via SOAP
+		try
+		{
+			auto orderedSupervisors =
+			    allSupervisorInfo_.getOrderedSupervisorDescriptors("Start");
+			for(const auto& vectorAtPriority : orderedSupervisors)
+				for(const auto* appInfo : vectorAtPriority)
+					try
+					{
+						xoap::MessageReference reply =
+						    SOAPMessenger::sendWithSOAPReply(
+						        appInfo->getDescriptor(),
+						        "MinReadyForEventGenerationStartIterationRequest");
+						SOAPParameters minIterQueryParams;
+						minIterQueryParams.addParameter("MinIteration");
+						SOAPUtilities::receive(reply, minIterQueryParams);
+						unsigned int val = std::stoul(minIterQueryParams.getValue("MinIteration"));
+						if(val > minReadyForEventGenerationStartIteration_)
+							minReadyForEventGenerationStartIteration_ = val;
+					}
+					catch(...)
+					{
+					}
+		}
+		catch(...)
+		{
+		}
+
+		// Query remote subsystem Gateways via UDP
+		{
+			std::vector<GatewaySupervisor::RemoteGatewayInfo> remoteGatewayApps;
+			{
+				std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+				remoteGatewayApps = remoteGatewayApps_;
+			}
+			for(const auto& remoteGatewayApp : remoteGatewayApps)
+			{
+				if(!remoteGatewayApp.appInfo.status.size() ||
+				   remoteGatewayApp.appInfo.status == SupervisorInfo::APP_STATUS_UNKNOWN)
+					continue;
+				try
+				{
+					std::vector<std::string> parsedUrl =
+					    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url, {':'});
+					if(parsedUrl.size() == 3)
+					{
+						Socket            gatewayRemoteSocket(parsedUrl[1], atoi(parsedUrl[2].c_str()));
+						TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
+						tmpSocket.initialize();
+						std::string response = tmpSocket.sendAndReceive(
+						    gatewayRemoteSocket, "GetMinEventGenStartIteration", 5 /*timeoutSeconds*/);
+						unsigned int val = std::stoul(response);
+						if(val > minReadyForEventGenerationStartIteration_)
+							minReadyForEventGenerationStartIteration_ = val;
+					}
+				}
+				catch(...)
+				{
+				}
+			}
+		}
+
+		__COUT_INFO__ << "MinReadyForEventGenerationStartIteration ceiling = "
+		              << minReadyForEventGenerationStartIteration_ << __E__;
+
+		// Embed in SOAP message so broadcastMessage() propagates to all local supervisors
+	}
+
 	activeStateMachineRunStartTime           = std::chrono::steady_clock::now();
 	activeStateMachineRunWallClockStartTime_ = time(0);
 	activeStateMachineRunDuration_ms         = 0;
-	broadcastMessage(
-	    theStateMachine_
-	        .getCurrentMessage());  // ---------------------------------- broadcast!
+	{
+		xoap::MessageReference startMessage = SOAPUtilities::makeSOAPMessageReference(
+		    SOAPUtilities::translate(theStateMachine_.getCurrentMessage()));
+		SOAPParameters minIterParams;
+		minIterParams.addParameter("MinReadyForEventGenerationStartIteration",
+		                           minReadyForEventGenerationStartIteration_);
+		SOAPUtilities::addParameters(startMessage, minIterParams);
+		broadcastMessage(startMessage);  // ---------------------------------- broadcast!
+	}
 	RunControlStateMachine::theProgressBar_.step();
 
 	//now that broadcast message done (all subsystems are done with transition!),
@@ -10383,6 +10516,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 		remoteGatewayApp.command +=
 		    "," + COMMAND_PARAM_ITERATION_INDEX_PREAMBLE + std::to_string(iteration);
+
+		remoteGatewayApp.command +=
+		    "," + COMMAND_PARAM_MIN_EVENT_GEN_START_ITERATION_PREAMBLE +
+		    std::to_string(minReadyForEventGenerationStartIteration_);
 
 		if(activeStateMachineSubsystemCommonList_.size())
 			remoteGatewayApp.command +=
