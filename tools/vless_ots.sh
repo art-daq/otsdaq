@@ -5,22 +5,36 @@
 if [ "x$1" == "x" ]; then
     echo
     echo
-    echo "    Usage: vless_ots.sh <ots log file name>"
+    echo "    Usage: vless_ots.sh <ots log file name> [-g \"grep pattern\"] [-A <lines>] [-B <lines>]"
     echo
     echo "    e.g.: vless_ots.sh /home/user/ots/Data_user/Logs/otsdaq_quiet_run-gateway-server01.fnal.gov-3055.txt"
+    echo "    e.g.: vless_ots.sh /home/user/ots/Data_user/Logs/otsdaq_quiet_run-gateway-server01.fnal.gov-3055.txt -g \"CDR lock|Phase 2b\""
+    echo "    e.g.: vless_ots.sh /home/user/ots/Data_user/Logs/otsdaq_quiet_run-gateway-server01.fnal.gov-3055.txt -g \"pre-flip\" -A 15"
     echo
     echo
     exit
 fi
 
 remote_path="$1"
+shift
+grep_pattern=""
+grep_context=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -g)  [ $# -ge 2 ] || { echo "Error: -g requires an argument." >&2; exit 1; }; grep_pattern="$2"; shift 2 ;;
+        -A)  [ $# -ge 2 ] || { echo "Error: -A requires an argument." >&2; exit 1; }; grep_context="$grep_context -A $2"; shift 2 ;;
+        -B)  [ $# -ge 2 ] || { echo "Error: -B requires an argument." >&2; exit 1; }; grep_context="$grep_context -B $2"; shift 2 ;;
+        -C)  [ $# -ge 2 ] || { echo "Error: -C requires an argument." >&2; exit 1; }; grep_context="$grep_context -C $2"; shift 2 ;;
+        *)   shift ;;
+    esac
+done
 hostname=""
 
-if [[ "$1" =~ ^([a-zA-Z0-9.-]+):(.+)$ ]]; then
+if [[ "$remote_path" =~ ^([a-zA-Z0-9.-]+):(.+)$ ]]; then
     hostname="${BASH_REMATCH[1]}"
     remote_path="${BASH_REMATCH[2]}"
 else
-    basename=$(basename "$1")
+    basename=$(basename "$remote_path")
     #parse as gateway log file first, then non-gateway
     hostname=$(echo "$basename" | sed -n 's/otsdaq_quiet_run-gateway-\([a-zA-Z0-9.-]*\)-[0-9]*\.txt/\1/p')
     if [ "x$hostname" == "x" ]; then
@@ -33,7 +47,7 @@ fi
 
 if [ "x$hostname" == "x" ]; then
     echo
-    echo "    Error: Could not determine hostname from the provided path: $1"
+    echo "    Error: Could not determine hostname from the provided path: $remote_path"
     echo
     echo "    Supported formats:"
     echo "      host:/absolute/path/to/file"
@@ -103,4 +117,9 @@ cp "${_vless_tmpdir}/${_vless_safe_winner}.tmp" .tmpLogFile
 rm -rf "$_vless_tmpdir"
 unset _vless_hosts _vless_pids _vless_tmpdir _vless_winner _vless_h _vless_safe _vless_all_done _vless_safe_winner
 
-less .tmpLogFile && rm .tmpLogFile
+if [ "x$grep_pattern" != "x" ]; then
+    grep -E $grep_context -- "$grep_pattern" .tmpLogFile > .tmpLogFile.grep
+    less .tmpLogFile.grep && rm .tmpLogFile .tmpLogFile.grep
+else
+    less .tmpLogFile && rm .tmpLogFile
+fi

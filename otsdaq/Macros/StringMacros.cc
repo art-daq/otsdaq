@@ -4,6 +4,8 @@
 #include <algorithm>  // for find_if
 #include <array>
 #include <cstdint>  // for uintptr_t
+#include <fstream>  // for loadPersistentSystemVariables
+#include <mutex>    // for loadPersistentSystemVariables
 
 using namespace ots;
 
@@ -29,6 +31,49 @@ unsigned int StringMacros::getConcurrencyCount(void)
 	systemVariables_["System"]["logicalCores"] = std::to_string(hw);
 	return hw;
 }  //end getConcurrencyCount()
+
+//==============================================================================
+// getPersistentSystemVariablesFilePath
+//	Path of the file where 'artdaq' namespace system variables are persisted
+//	(written by the ARTDAQ Supervisor, e.g. from web GUI setSystemVariable requests).
+std::string StringMacros::getPersistentSystemVariablesFilePath(void)
+{
+	return std::string(__ENV__("USER_DATA")) + "/ServiceData/ArtdaqSystemVariables.dat";
+}  // end getPersistentSystemVariablesFilePath()
+
+//==============================================================================
+// loadPersistentSystemVariables
+//	Load persisted 'artdaq' namespace system variables so that
+//	${OTS.artdaq.<property>} references resolve in every process, not only in
+//	the ARTDAQ Supervisor that saved them. Returns false if no file was found.
+bool StringMacros::loadPersistentSystemVariables(void)
+try
+{
+	// serialize concurrent callers (e.g. the parallel table-init threads calling
+	// ConfigurationManager::initPrereqsForARTDAQ() at configure time) - unguarded
+	// concurrent insertion into the static systemVariables_ map corrupts the heap
+	static std::mutex           loadMutex;
+	std::lock_guard<std::mutex> lock(loadMutex);
+
+	std::ifstream file(getPersistentSystemVariablesFilePath());
+	if(!file.is_open())
+		return false;
+
+	auto&       ns = systemVariables_["artdaq"];
+	std::string line;
+	while(std::getline(file, line))
+	{
+		size_t eqPos = line.find('=');
+		if(eqPos == std::string::npos)
+			continue;
+		ns[line.substr(0, eqPos)] = line.substr(eqPos + 1);
+	}
+	return true;
+}  // end loadPersistentSystemVariables()
+catch(...)
+{
+	return false;  // e.g. USER_DATA not defined in this process
+}
 
 #define TLVL_EscapeString 30  // = TLVL_DEBUG + 30
 #define TLVL_EnvMath 49       // = TLVL_DEBUG + 49
@@ -978,6 +1023,14 @@ std::string StringMacros::getTimeDurationString(time_t t)
 	   << std::setfill('0') << (t % 60);
 	return ss.str();
 }  //end getTimeDurationString()
+
+//==============================================================================
+uint64_t StringMacros::nowEpochMs()
+{
+	return std::chrono::duration_cast<std::chrono::milliseconds>(
+	           std::chrono::system_clock::now().time_since_epoch())
+	    .count();
+}  //end nowEpochMs()
 
 //==============================================================================
 /// validateValueForDefaultStringDataType

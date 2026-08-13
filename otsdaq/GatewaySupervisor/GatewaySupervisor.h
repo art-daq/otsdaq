@@ -7,6 +7,7 @@
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
 #include "otsdaq/FiniteStateMachine/RunControlStateMachine.h"
+#include "otsdaq/FiniteStateMachine/RunInfoVInterface.h"
 #include "otsdaq/GatewaySupervisor/Iterator.h"
 #include "otsdaq/SOAPUtilities/SOAPMessenger.h"
 #include "otsdaq/SupervisorInfo/AllSupervisorInfo.h"
@@ -152,7 +153,7 @@ class WorkLoopManager;
 		void 						transitionStartingUp(toolbox::Event::Reference e) override;
 		void 						enteringError(toolbox::Event::Reference e) override;
 
-		void 						makeSystemLogEntry(const std::string& entryText, const std::string& subjectText = "");
+		void 						makeSystemLogEntry(const std::string& entryText, const std::string& subjectText = "", bool skipFooter = false);
 		static void 				addSystemMessage(std::string toUserCSV, std::string message);
 
 		void 						checkForAsyncError(void);
@@ -167,6 +168,7 @@ class WorkLoopManager;
 		void 							setNextRunNumber								(unsigned int runNumber, const std::string& fsmName = "");
 		std::string 					getLastLogEntry									(const std::string& logType, const std::string& fsmName = "");
 		void 							setLastLogEntry									(const std::string& logType, const std::string& logEntry, const std::string& fsmName = "");
+		void 							writeRunInfoTransition							(RunInfoVInterface::RunTransitionType transitionType, const std::string& comment);
 
 
 		static xoap::MessageReference 	lastTableGroupRequestHandler					(const SOAPParameters& parameters);
@@ -346,11 +348,14 @@ class WorkLoopManager;
 		std::string 		activeStateMachineRunInfoPluginType_; ///<cached at Configure transition
 		std::map<std::string /* fsmName */, std::string /* logEntry */>
 							stateMachineConfigureLogEntry_, stateMachineStartLogEntry_, stateMachineStopLogEntry_;
+		std::string			activeStateMachineRawStartComment_, activeStateMachineRawStopComment_;
 		std::string 		activeStateMachineRunNumber_, activeStateMachineRunAlias_, activeStateMachineConfigurationAlias_;
 		bool				activeStateMachineRollOverLogOnConfigure_, activeStateMachineRollOverLogOnStart_;
 		std::chrono::steady_clock::time_point
 							activeStateMachineRunStartTime;
+		time_t				activeStateMachineRunWallClockStartTime_ = 0;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
+		bool				activeStateMachineWriteToEcl_ = true;
 		unsigned int		activeStateMachineConfigureConditionID_, activeStateMachineRunConditionID_;
 		std::string			activeStateMachineSubsystemCommonList_, activeStateMachineSubsystemCommonOverrideList_; ///<cached at Configure transition CSV list of Table/Versions specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway, to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring
 		std::string			activeSubsystemCommonContextList_, activeSubsystemCommonContextOverrideList_; ///<refreshed in AppStatusWorkLoop CSV list of Table/Versions specified as table alias "SubsystemCommonContext" and "SubsystemCommonContextOverride" by user at top-level Primary Gateway, to be pushed to remote subsystems via periodic status requests for Context group tables (e.g. StateMachineTable)
@@ -433,6 +438,8 @@ public:	//used by remote subsystem control and status
 			ConfigDumpTypes						config_dump_type = ConfigDumpTypes::Unknown;
 
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
+			time_t								relaunchTime = 0; ///<timestamp of last relaunch via gatewayLaunchOTSInstance
+			time_t								commandSentTime = 0; ///<timestamp of last command send; suppresses stale status write-backs briefly
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
 
@@ -476,6 +483,15 @@ public:	//used by remote subsystem control and status
 
 			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///< remote gateways can have subapps
 			bool iterationsDone = false; ///< tracks per-gateway iteration completion during FSM transitions
+
+			///< active context/config table group actually in use on the remote subsystem itself (as opposed to selected_config_alias, which is just the operator's chosen alias to configure with)
+			std::string							activeContextGroupName, activeConfigGroupName;
+			TableGroupKey						activeContextGroupKey, activeConfigGroupKey;
+
+			///< selected_config_alias resolved to a group name+key by the remote subsystem itself (against its own active Backbone); empty until the subsystem reports back a resolution
+			std::string							selectedConfigGroupName;
+			TableGroupKey						selectedConfigGroupKey;
+			bool doNotHaltWasCommandedHalt = false;
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
