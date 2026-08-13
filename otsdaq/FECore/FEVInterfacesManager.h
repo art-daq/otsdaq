@@ -36,6 +36,7 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	virtual void        stop(void) override;
 	virtual std::string getStatusProgressDetail(
 	    void) override;  ///< overriding VStateMachine::getStatusProgressDetail
+	unsigned int getMinReadyForEventGenerationStartIteration(void) const override;
 
 	void        universalRead(const std::string& interfaceID,
 	                          char*              address,

@@ -85,6 +85,7 @@ class WorkLoopManager;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE;
 		static const std::string COMMAND_PARAM_ITERATION_INDEX_PREAMBLE;
+		static const std::string COMMAND_PARAM_MIN_EVENT_GEN_START_ITERATION_PREAMBLE;
 
 	public:
 		XDAQ_INSTANTIATOR();
@@ -354,6 +355,7 @@ class WorkLoopManager;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
 		bool				activeStateMachineWriteToEcl_ = true;
 		unsigned int		activeStateMachineConfigureConditionID_, activeStateMachineRunConditionID_;
+		unsigned int		minReadyForEventGenerationStartIteration_ = 0;
 		std::string			activeStateMachineSubsystemCommonList_, activeStateMachineSubsystemCommonOverrideList_; ///<cached at Configure transition CSV list of Table/Versions specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway, to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring
 		std::string			activeSubsystemCommonContextList_, activeSubsystemCommonContextOverrideList_; ///<refreshed in AppStatusWorkLoop CSV list of Table/Versions specified as table alias "SubsystemCommonContext" and "SubsystemCommonContextOverride" by user at top-level Primary Gateway, to be pushed to remote subsystems via periodic status requests for Context group tables (e.g. StateMachineTable)
 		std::string			appliedContextCommonList_, appliedContextCommonOverrideList_; ///<remote-side: last applied Context Common Table lists received from top-level

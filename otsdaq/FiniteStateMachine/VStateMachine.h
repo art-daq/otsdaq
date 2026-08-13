@@ -101,6 +101,8 @@ class VStateMachine
 		return progress;
 	}  // end getStatusProgressDetail()
 
+	virtual unsigned int getMinReadyForEventGenerationStartIteration(void) const { return 0; }
+
 	void setTransitionName(const std::string& transitionName)
 	{
 		transitionName_ = transitionName;
