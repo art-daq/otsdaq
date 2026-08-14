@@ -96,6 +96,7 @@ class CoreSupervisorBase : public xdaq::Application,
 
 	virtual xoap::MessageReference 	workLoopStatusRequest			(xoap::MessageReference message);
 	virtual xoap::MessageReference 	applicationStatusRequest		(xoap::MessageReference message);
+	xoap::MessageReference 			minReadyForEventGenerationStartIterationRequest(xoap::MessageReference message);
 
 	bool 							stateMachineThread				(toolbox::task::WorkLoop* workLoop);
 
