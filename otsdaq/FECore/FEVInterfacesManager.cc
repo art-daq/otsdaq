@@ -2484,6 +2484,8 @@ void FEVInterfacesManager::preStateMachineExecution(unsigned int       i,
 	fe->VStateMachine::setTransitionName(transitionName);
 	fe->VStateMachine::setIterationIndex(VStateMachine::getIterationIndex());
 	fe->VStateMachine::setSubIterationIndex(VStateMachine::getSubIterationIndex());
+	fe->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
+	    VStateMachine::getSystemMinReadyForEventGenerationStartIteration());
 
 	fe->VStateMachine::clearIterationWork();
 	fe->VStateMachine::clearSubIterationWork();
