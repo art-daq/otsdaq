@@ -112,6 +112,8 @@ class VStateMachine
 	void               setSubIterationIndex(unsigned int i) { subIterationIndex_ = i; }
 	unsigned int       getIterationIndex(void) { return iterationIndex_; }
 	unsigned int       getSubIterationIndex(void) { return subIterationIndex_; }
+	void               setSystemMinReadyForEventGenerationStartIteration(unsigned int i) { systemMinReadyForEventGenerationStartIteration_ = i; }
+	unsigned int       getSystemMinReadyForEventGenerationStartIteration(void) const { return systemMinReadyForEventGenerationStartIteration_; }
 	void               indicateIterationWork(void) { iterationWorkFlag_ = true; }
 	void               clearIterationWork(void) { iterationWorkFlag_ = false; }
 	bool               getIterationWork(void) { return iterationWorkFlag_; }
@@ -131,6 +133,7 @@ class VStateMachine
 
   private:
 	unsigned int      iterationIndex_, subIterationIndex_;
+	unsigned int      systemMinReadyForEventGenerationStartIteration_ = 0;
 	bool              iterationWorkFlag_, subIterationWorkFlag_;
 	const std::string name_;
 	std::string       transitionName_;

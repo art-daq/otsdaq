@@ -8485,8 +8485,12 @@ try
 	RunControlStateMachine::theProgressBar_.step();
 
 	// Compute global ceiling of MinReadyForEventGenerationStartIteration
+	// (seeded with any value received from a top-level Gateway for subsystems)
 	{
-		minReadyForEventGenerationStartIteration_ = 0;
+		const unsigned int minReadyFloor          = isRemoteSubsystemIteration_.load()
+		                                                ? minReadyForEventGenerationStartIteration_
+		                                                : 0u;
+		minReadyForEventGenerationStartIteration_ = minReadyFloor;
 
 		// Query local supervisors via SOAP
 		try
