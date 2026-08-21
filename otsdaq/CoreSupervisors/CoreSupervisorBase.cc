@@ -727,8 +727,9 @@ void CoreSupervisorBase::preStateMachineExecution(unsigned int i)
 	    RunControlStateMachine::getIterationIndex());
 	theStateMachineImplementation_[i]->VStateMachine::setSubIterationIndex(
 	    RunControlStateMachine::getSubIterationIndex());
-	theStateMachineImplementation_[i]->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
-	    RunControlStateMachine::getMinReadyForEventGenerationStartIteration());
+	theStateMachineImplementation_[i]
+	    ->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
+	        RunControlStateMachine::getMinReadyForEventGenerationStartIteration());
 
 	theStateMachineImplementation_[i]->VStateMachine::clearIterationWork();
 	theStateMachineImplementation_[i]->VStateMachine::clearSubIterationWork();
