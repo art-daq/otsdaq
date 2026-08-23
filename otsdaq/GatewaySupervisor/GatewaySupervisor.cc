@@ -5788,8 +5788,12 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	    StringMacros::decodeURIComponent(CgiDataUtilities::postData(cgiIn, "logEntry"));
 
 	if(command == "Stop")
+	{
 		activeStateMachineWriteToEcl_ =
 		    (CgiDataUtilities::postData(cgiIn, "writeToEcl") == "1");
+		activeStateMachineDiscardRun_ =
+		    (CgiDataUtilities::postData(cgiIn, "discardRun") == "1");
+	}
 
 	attemptStateMachineTransition(&xmlOut,
 	                              out,
@@ -5951,6 +5955,7 @@ try
 		{
 			activeStateMachineRawStartComment_ = logEntry;
 			activeStateMachineRawStopComment_.clear();
+			activeStateMachineDiscardRun_ = false;
 		}
 		else if(command == RunControlStateMachine::STOP_TRANSITION_NAME)
 			activeStateMachineRawStopComment_ = logEntry;
@@ -14830,8 +14835,13 @@ void GatewaySupervisor::writeRunInfoTransition(
 					__SS_THROW__;
 				}
 
+				std::string metadata;
+				if(transitionType == RunInfoVInterface::RunTransitionType::STOP &&
+				   activeStateMachineDiscardRun_)
+					metadata = "{\"discardRun\":true}";
+
 				runInfoInterface->updateRunInfo(
-				    activeStateMachineRunConditionID_, transitionType, comment);
+				    activeStateMachineRunConditionID_, transitionType, comment, metadata);
 			}
 		}
 	}
