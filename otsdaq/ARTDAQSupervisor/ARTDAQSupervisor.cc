@@ -1333,33 +1333,41 @@ try
 {
 	__SUP_COUT__ << "transitionStarting" << __E__;
 
-	// first time launch thread because artdaq Supervisor may take a while
-	if(RunControlStateMachine::getIterationIndex() == 0 &&
-	   RunControlStateMachine::getSubIterationIndex() == 0)
+	// Synchronized start sequence:
+	//   Iteration 0: idle — let DTCs SoftReset before launching artdaq.
+	//   Iteration 1: launch artdaq (do_start_running); block iteration advance
+	//                until complete so DTCs don't SoftReset while artdaq is starting.
+	//   Iteration 2+: idle — DTCs do post-artdaq SoftReset, then CFO launches run plan.
+
+	const unsigned int startIteration = RunControlStateMachine::getIterationIndex();
+
+	if(startIteration == 0)
 	{
+		// Step 0: idle — let DTCs SoftReset before we launch artdaq
+		__SUP_COUT_INFO__ << "Step 0: idle, waiting for DTCs to SoftReset." << __E__;
+		RunControlStateMachine::indicateIterationWork();
+		return;
+	}
+
+	if(startIteration == 1 && RunControlStateMachine::getSubIterationIndex() == 0)
+	{
+		// Step 1: launch artdaq do_start_running
 		thread_error_message_ = "";
 		thread_progress_bar_.resetProgressBar(0);
-		last_thread_progress_update_ = time(0);  // initialize timeout timer
+		last_thread_progress_update_ = time(0);
 
-		// start configuring thread
 		std::thread(&ARTDAQSupervisor::startingThread, this).detach();
 
-		__SUP_COUT_INFO__ << "Starting thread started." << __E__;
+		__SUP_COUT_INFO__ << "Step 1: artdaq starting thread launched." << __E__;
 
-		cachedMinReadyForEventGenerationStartIteration_ =
-		    RunControlStateMachine::getMinReadyForEventGenerationStartIteration();
-		__SUP_COUT_INFO__
-		    << "MinReadyForEventGenerationStartIteration from transition parameter = "
-		    << cachedMinReadyForEventGenerationStartIteration_ << __E__;
-
-		if(RunControlStateMachine::getIterationIndex() + 1 <
-		   cachedMinReadyForEventGenerationStartIteration_)
-			RunControlStateMachine::
-			    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
-		else
-			RunControlStateMachine::indicateSubIterationWork();
+		// Sub-iterate to poll thread; the Gateway's broadcast thread stays busy
+		// with this supervisor's sub-iteration loop, blocking global iteration
+		// advance until artdaq is done.
+		RunControlStateMachine::indicateSubIterationWork();
+		return;
 	}
-	else  // not first time
+
+	if(startIteration == 1)  // sub-iteration > 0: poll the starting thread
 	{
 		std::string errorMessage;
 		{
@@ -1372,8 +1380,7 @@ try
 		__SUP_COUTV__(progress);
 		__SUP_COUTV__(thread_progress_bar_.isComplete());
 
-		// check for done and error messages
-		if(errorMessage == "" &&  // if no update in 600 seconds, give up
+		if(errorMessage == "" &&
 		   time(0) - last_thread_progress_update_ > 600)
 		{
 			__SUP_SS__ << "There has been no update from the start thread for "
@@ -1401,16 +1408,9 @@ try
 
 		if(!thread_progress_bar_.isComplete())
 		{
-			__SUP_COUT__ << "Not done yet..." << __E__;
-			//attempt to get live view of python output (not working and not needed with new Tee Buffer solution)
-			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
+			__SUP_COUT__ << "Step 1: artdaq not done yet..." << __E__;
 
-			if(RunControlStateMachine::getIterationIndex() + 1 <
-			   cachedMinReadyForEventGenerationStartIteration_)
-				RunControlStateMachine::
-				    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
-			else
-				RunControlStateMachine::indicateSubIterationWork();
+			RunControlStateMachine::indicateSubIterationWork();
 
 			if(last_thread_progress_read_ != progress)
 			{
@@ -1422,11 +1422,18 @@ try
 		}
 		else
 		{
-			__SUP_COUT_INFO__ << "Starting transition completed!" << __E__;
+			// Thread done — stop sub-iterating. The broadcast thread returns,
+			// and the Gateway sees this supervisor needs another iteration
+			// (indicateIterationWork) to advance to iteration 2+.
+			__SUP_COUT_INFO__ << "Step 1: artdaq starting transition completed!" << __E__;
 			__SUP_COUTV__(getProcessInfo_());
+			RunControlStateMachine::indicateIterationWork();
 		}
+
+		return;
 	}
 
+	// Iterations 2+: idle while DTCs do post-artdaq SoftReset and CFO launches run plan.
 	return;
 
 }  // end transitionStarting()
