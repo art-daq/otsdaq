@@ -5362,6 +5362,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					   command == RunControlStateMachine::START_TRANSITION_NAME)
 						extraDoneContent =
 						    theSupervisor->activeStateMachineSystemDumpOnRun_;
+
+					if(command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
+					   command == RunControlStateMachine::FAIL_TRANSITION_NAME)
+						theSupervisor->remoteSubsystemErrorReceived_ = true;
 				}
 				if(extraDoneContent.size())
 					extraDoneContent += "END---";
@@ -10150,7 +10154,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							auto deadline = std::chrono::steady_clock::now() +
 							                std::chrono::minutes(4);
 							while(remoteIterationIndex_ < nextIteration &&
-							      !RunControlStateMachine::asyncFailureReceived_)
+							      !remoteSubsystemErrorReceived_)
 							{
 								remoteIterationCV_.wait_for(lock,
 								                            std::chrono::seconds(1));
@@ -10167,10 +10171,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								}
 							}
 						}
-						if(RunControlStateMachine::asyncFailureReceived_)
+						if(remoteSubsystemErrorReceived_)
 						{
-							__SS__ << "Async failure received while waiting for "
-							          "iteration re-send!"
+							remoteSubsystemErrorReceived_ = false;
+							__SS__ << "Top-level Error/Fail received while waiting "
+							          "for iteration re-send -- the start sequence "
+							          "can never complete, aborting."
 							       << __E__;
 							__SS_THROW__;
 						}
@@ -10219,6 +10225,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			isRemoteSubsystemIteration_ = false;
 			remoteIterationIndex_       = 0;
 		}
+		remoteSubsystemErrorReceived_ = false;
 
 		// Check for a user cancel that arrived during the final SOAP call of the loop,
 		// which would not have been caught by the per-supervisor checkForAsyncError() call.
