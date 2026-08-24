@@ -3757,8 +3757,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								//__COUTV__(thisNodeColumns[i].second.getValue());
 								//__COUTV__(otherNodeColumns[i].second.getValue());
 
-								if(thisNodeColumns[i].second.getValue() !=
-								   otherNodeColumns[i].second.getValue())
+								if(thisNodeColumns[i].second.getValueAsString() !=
+								   otherNodeColumns[i].second.getValueAsString())
 								{
 									__COUT__ << "Mismatch, not multi-node member."
 									         << __E__;
