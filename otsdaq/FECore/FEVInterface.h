@@ -205,6 +205,15 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	{
 		return mapOfFEMacroFunctions_;
 	}
+	/// Return target-specific, read-only defaults for a registered FE macro.
+	/// The MacroMaker UI may request these values after a single FE and macro are
+	/// selected. Implementations must not write hardware or configuration here.
+	virtual std::map<std::string, std::string> getFEMacroInputDefaults(
+	    const std::string& /*feMacroName*/,
+	    const std::map<std::string, std::string>& /*currentInputValues*/) const
+	{
+		return {};
+	}
 	void 								runSelfFrontEndMacro		(
 		const std::string&                                   	feMacroName,
 		const std::vector<FEVInterface::frontEndMacroArg_t>& 	inputArgs,
