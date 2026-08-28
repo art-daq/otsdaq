@@ -10246,6 +10246,24 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			remoteIterationIndex_       = 0;
 		}
 
+		// Queue Error command to remote subsystems still mid-iteration so they
+		// break out of their 4-minute wait immediately instead of timing out.
+		{
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			for(auto& rga : remoteGatewayApps_)
+			{
+				if(!rga.fsm_included || rga.iterationsDone)
+					continue;
+				if(rga.command != "" && rga.command != "Sent")
+					continue;  // already has a pending command
+
+				__COUT__ << "Queueing Error to still-running remote gateway '"
+				         << rga.appInfo.name << "'" << __E__;
+				rga.command = RunControlStateMachine::ERROR_TRANSITION_NAME;
+				rga.fsmName = activeStateMachineName_;
+			}
+		}
+
 		// Signal all threads to exit and wait for them to finish gracefully.
 		// supervisorIterationsDone is heap-allocated (shared_ptr) and each
 		// BroadcastMessageStruct holds a shared_ptr copy, so the underlying
