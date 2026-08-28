@@ -2416,6 +2416,86 @@ std::string FEVInterfacesManager::getFEMacrosString(const std::string& superviso
 }
 
 //==============================================================================
+/// getFEMacroInputDefaults
+/// Return read-only, target-specific input defaults for an FE macro. Validate
+/// that providers only return names declared by the registered macro.
+std::map<std::string, std::string> FEVInterfacesManager::getFEMacroInputDefaults(
+    const std::string& interfaceID,
+    const std::string& feMacroName,
+    const std::string& inputArgs)
+{
+	FEVInterface* fe = getFEInterfaceP(interfaceID);
+	auto macroIt = fe->getMapOfFEMacroFunctions().find(feMacroName);
+	if(macroIt == fe->getMapOfFEMacroFunctions().end())
+	{
+		__CFG_SS__ << "FE Macro '" << feMacroName << "' of interfaceID '" << interfaceID
+		           << "' was not found." << __E__;
+		__CFG_SS_THROW__;
+	}
+
+	std::map<std::string, std::string> currentInputValues;
+	if(!inputArgs.empty())
+	{
+		std::istringstream inputStream(inputArgs);
+		std::string        splitValue;
+		while(getline(inputStream, splitValue, ';'))
+		{
+			std::istringstream pairInputStream(splitValue);
+			std::string        encodedName, encodedValue;
+			getline(pairInputStream, encodedName, ',');
+			getline(pairInputStream, encodedValue, ',');
+
+			const std::string inputName =
+			    StringMacros::decodeURIComponent(encodedName);
+			const std::string inputValue =
+			    StringMacros::decodeURIComponent(encodedValue);
+			if(inputName.empty())
+				continue;
+
+			bool declaredInput = false;
+			for(const auto& declaredName : macroIt->second.namesOfInputArguments_)
+				if(declaredName == inputName)
+				{
+					declaredInput = true;
+					break;
+				}
+			if(!declaredInput)
+			{
+				__CFG_SS__ << "Dynamic default request for FE Macro '" << feMacroName
+				           << "' of interfaceID '" << interfaceID
+				           << "' included undeclared input name '" << inputName << "'."
+				           << __E__;
+				__CFG_SS_THROW__;
+			}
+			currentInputValues[inputName] = inputValue;
+		}
+	}
+
+	auto defaults =
+	    fe->getFEMacroInputDefaults(feMacroName, currentInputValues);
+	for(const auto& defaultValue : defaults)
+	{
+		bool declaredInput = false;
+		for(const auto& inputName : macroIt->second.namesOfInputArguments_)
+			if(inputName == defaultValue.first)
+			{
+				declaredInput = true;
+				break;
+			}
+
+		if(!declaredInput)
+		{
+			__CFG_SS__ << "Dynamic default provider for FE Macro '" << feMacroName
+			           << "' of interfaceID '" << interfaceID
+			           << "' returned undeclared input name '" << defaultValue.first << "'."
+			           << __E__;
+			__CFG_SS_THROW__;
+		}
+	}
+	return defaults;
+}
+
+//==============================================================================
 bool FEVInterfacesManager::allFEWorkloopsAreDone(void)
 {
 	bool allFEWorkloopsAreDone = true;
