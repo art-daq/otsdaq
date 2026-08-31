@@ -55,7 +55,8 @@ class WebUsers
 	{
 		MOD_TYPE_UPDATE,
 		MOD_TYPE_ADD,
-		MOD_TYPE_DELETE
+		MOD_TYPE_DELETE,
+		MOD_TYPE_RESET_PASSWORD
 	};
 
 	using permissionLevel_t = uint8_t;

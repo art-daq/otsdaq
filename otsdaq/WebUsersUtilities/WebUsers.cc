@@ -3340,10 +3340,10 @@ void WebUsers::insertSettingsForUser(
 		xmldoc->copyDataChildren(prefXml);
 	}
 
-	// add settings if super user
-	if(includeAccounts && isAdminForGroup(permissionMap))
+	// Admins receive all accounts; other users receive only their own account.
+	if(includeAccounts)
 	{
-		__COUT__ << "Admin on our hands" << __E__;
+		bool includeAllAccounts = isAdminForGroup(permissionMap);
 
 		xmldoc->addTextElementToData(PREF_XML_ACCOUNTS_FIELD, "");
 
@@ -3356,6 +3356,9 @@ void WebUsers::insertSettingsForUser(
 		// get all accounts
 		for(uint64_t i = 0; i < Users_.size(); ++i)
 		{
+			if(!includeAllAccounts && i != userIndex)
+				continue;
+
 			xmldoc->addTextElementToParent(
 			    "username", Users_[i].username_, PREF_XML_ACCOUNTS_FIELD);
 			xmldoc->addTextElementToParent(
@@ -3658,6 +3661,30 @@ void WebUsers::modifyAccountSettings(uint64_t           actingUid,
 {
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> permissionMap =
 	    getPermissionsForUser(actingUid);
+	uint64_t i    = searchUsersDatabaseForUserId(actingUid);
+	uint64_t modi = searchUsersDatabaseForUsername(username);
+
+	if(cmd_type == MOD_TYPE_RESET_PASSWORD)
+	{
+		if(i == NOT_FOUND_IN_DATABASE || modi == NOT_FOUND_IN_DATABASE)
+		{
+			__SS__ << "User not found!? Should not happen." << __E__;
+			__SS_THROW__;
+		}
+		if(i != modi && !isAdminForGroup(permissionMap))
+		{
+			__SS__ << "Only admins can reset another user's password." << __E__;
+			__SS_THROW__;
+		}
+
+		__COUT_INFO__ << "Password reset for user '" << username << "'." << __E__;
+		Users_[modi].setModifier(Users_[i].username_);
+		Users_[modi].salt_              = "";
+		Users_[modi].loginFailureCount_ = 0;
+		saveDatabaseToFile(DB_USERS);
+		return;
+	}
+
 	if(!isAdminForGroup(permissionMap))
 	{
 		// not an admin
@@ -3665,19 +3692,8 @@ void WebUsers::modifyAccountSettings(uint64_t           actingUid,
 		__SS_THROW__;
 	}
 
-	uint64_t i    = searchUsersDatabaseForUserId(actingUid);
-	uint64_t modi = searchUsersDatabaseForUsername(username);
 	if(modi == 0)
 	{
-		if(i == 0)
-		{
-			__COUT_INFO__ << "Admin password reset." << __E__;
-			Users_[modi].setModifier(Users_[i].username_);
-			Users_[modi].salt_              = "";
-			Users_[modi].loginFailureCount_ = 0;
-			saveDatabaseToFile(DB_USERS);
-			return;
-		}
 		__SS__ << "Cannot modify first user" << __E__;
 		__SS_THROW__;
 	}

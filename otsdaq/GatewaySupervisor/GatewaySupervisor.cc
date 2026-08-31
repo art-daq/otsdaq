@@ -12001,7 +12001,8 @@ try
 		else if(requestType == "accountSettings")
 		{
 			std::string type = CgiDataUtilities::postData(
-			    cgiIn, "type");  // updateAccount, createAccount, deleteAccount
+			    cgiIn,
+			    "type");  // updateAccount, createAccount, deleteAccount, resetPassword
 			int type_int = -1;
 
 			if(type == "updateAccount")
@@ -12010,6 +12011,8 @@ try
 				type_int = theWebUsers_.MOD_TYPE_ADD;
 			else if(type == "deleteAccount")
 				type_int = theWebUsers_.MOD_TYPE_DELETE;
+			else if(type == "resetPassword")
+				type_int = theWebUsers_.MOD_TYPE_RESET_PASSWORD;
 
 			std::string username    = CgiDataUtilities::postData(cgiIn, "username");
 			std::string displayname = CgiDataUtilities::postData(cgiIn, "displayname");
