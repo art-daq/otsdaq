@@ -102,6 +102,9 @@ class WorkLoopManager;
 		void 						tooltipRequest					(xgi::Input* in, xgi::Output* out);
 		void 						XGI_Turtle						(xgi::Input* in, xgi::Output* out);
 
+		void 						oidcLogin						(xgi::Input* in, xgi::Output* out);
+		void 						oidcCallback					(xgi::Input* in, xgi::Output* out);
+
 		void						addStateMachineStatusToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName, bool getRunNumber = true);
 		void						addFilteredConfigAliasesToXML	(HttpXmlDocument& xmlOut, const std::string& fsmName);
 		void						addRequiredFsmLogInputToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName);

@@ -30,11 +30,15 @@
 #include <xoap/Method.h>
 #include <sstream>
 
+#include <curl/curl.h>  // for OIDC/SSO HTTP requests to identity provider
+
 #include <sys/stat.h>  // for mkdir
 #include <cctype>      // for std::isspace
 #include <chrono>      // std::chrono::seconds
 #include <cstdio>      // for snprintf
 #include <fstream>
+#include <map>     // for OIDC state store
+#include <mutex>   // for OIDC state store
 #include <thread>  // std::this_thread::sleep_for
 
 using namespace ots;
@@ -153,6 +157,8 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 	          "StateMachineIterationBreakpoint");
 	xgi::bind(this, &GatewaySupervisor::tooltipRequest, "TooltipRequest");
 	xgi::bind(this, &GatewaySupervisor::XGI_Turtle, "XGI_Turtle");
+	xgi::bind(this, &GatewaySupervisor::oidcLogin, "OIDCLogin");
+	xgi::bind(this, &GatewaySupervisor::oidcCallback, "OIDCCallback");
 
 	xoap::bind(this,
 	           &GatewaySupervisor::supervisorCookieCheck,
@@ -10907,6 +10913,630 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 	__COUT__ << "Done with " << countOfRemoteGateways
 	         << " remote gateway(s) command = " << command << __E__;
 }  // end broadcastMessageToRemoteGatewaysComplete()
+
+//==============================================================================
+// OIDC / Single Sign-On (SSO) support
+//
+// Implements the OpenID Connect authorization-code flow (confidential client) so that
+// users can log in via an external identity provider.
+//
+//  - oidcLogin    : redirects the browser to the provider's authorization endpoint
+//  - oidcCallback : exchanges the returned code for tokens, extracts the user's email
+//                   from the ID token, establishes an ots session, and completes login.
+//
+// Configuration is read from $SERVICE_DATA_PATH/LoginData/oidc.conf (key=value):
+//     providerUrl   = https://.../.well-known/openid-configuration
+//     clientId      = <client id>
+//     clientSecret  = <client secret>
+//     redirectUri   = http://<host>:<port>/urn:xdaq-application:lid=200/OIDCCallback
+//     scope         = openid email profile   (optional; this is the default)
+namespace
+{
+#define OIDC_CONFIG_FILE_NAME \
+	std::string(__ENV__("SERVICE_DATA_PATH")) + "/LoginData/oidc.conf"
+
+// OIDC 'state' anti-CSRF store: maps issued state -> issue time
+std::mutex                    oidcStateMutex_;
+std::map<std::string, time_t> oidcStateStore_;
+const time_t                  OIDC_STATE_LIFETIME_SEC = 600;  // 10 minutes
+
+//==============================================================================
+struct OIDCConfig
+{
+	std::string providerUrl;
+	std::string clientId;
+	std::string clientSecret;
+	std::string redirectUri;
+	std::string scope = "openid email profile";
+};  // end OIDCConfig
+
+//==============================================================================
+// oidcReadConfig ~ read the OIDC configuration file; returns "" on success, else error
+std::string oidcReadConfig(OIDCConfig& cfg)
+{
+	const std::string fn = OIDC_CONFIG_FILE_NAME;
+	std::ifstream     in(fn.c_str());
+	if(!in.is_open())
+		return "OIDC configuration file not found at " + fn;
+
+	std::string line;
+	while(std::getline(in, line))
+	{
+		// strip leading/trailing whitespace
+		size_t b = line.find_first_not_of(" \t\r\n");
+		if(b == std::string::npos)
+			continue;
+		if(line[b] == '#')
+			continue;  // comment
+		size_t eq = line.find('=');
+		if(eq == std::string::npos)
+			continue;
+
+		std::string key = line.substr(b, eq - b);
+		std::string val = line.substr(eq + 1);
+		// trim key
+		size_t ke = key.find_last_not_of(" \t\r\n");
+		if(ke != std::string::npos)
+			key = key.substr(0, ke + 1);
+		// trim value
+		size_t vb = val.find_first_not_of(" \t\r\n");
+		size_t ve = val.find_last_not_of(" \t\r\n");
+		if(vb == std::string::npos)
+			val = "";
+		else
+			val = val.substr(vb, ve - vb + 1);
+
+		if(key == "providerUrl")
+			cfg.providerUrl = val;
+		else if(key == "clientId")
+			cfg.clientId = val;
+		else if(key == "clientSecret")
+			cfg.clientSecret = val;
+		else if(key == "redirectUri")
+			cfg.redirectUri = val;
+		else if(key == "scope" && val != "")
+			cfg.scope = val;
+	}
+	in.close();
+
+	if(cfg.providerUrl == "")
+		return "OIDC configuration missing 'providerUrl'";
+	if(cfg.clientId == "")
+		return "OIDC configuration missing 'clientId'";
+	if(cfg.clientSecret == "")
+		return "OIDC configuration missing 'clientSecret'";
+	if(cfg.redirectUri == "")
+		return "OIDC configuration missing 'redirectUri'";
+	// require TLS for the provider to protect tokens in transit
+	if(cfg.providerUrl.substr(0, 8) != "https://")
+		return "OIDC 'providerUrl' must use https://";
+
+	return "";
+}  // end oidcReadConfig()
+
+//==============================================================================
+// oidcCurlWriteCallback ~ libcurl write callback appending to a std::string
+size_t oidcCurlWriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
+{
+	size_t total = size * nmemb;
+	static_cast<std::string*>(userp)->append(static_cast<char*>(contents), total);
+	return total;
+}  // end oidcCurlWriteCallback()
+
+//==============================================================================
+// oidcHttpRequest ~ perform an HTTPS GET (postFields empty) or POST; returns "" on
+//                   success with response body in 'response', else an error string
+std::string oidcHttpRequest(const std::string& url,
+                            const std::string& postFields,
+                            std::string&       response)
+{
+	static std::once_flag curlInitFlag;
+	std::call_once(curlInitFlag, []() { curl_global_init(CURL_GLOBAL_DEFAULT); });
+
+	CURL* curl = curl_easy_init();
+	if(!curl)
+		return "Failed to initialize CURL";
+
+	response.clear();
+	char errbuf[CURL_ERROR_SIZE];
+	errbuf[0] = '\0';
+
+	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, oidcCurlWriteCallback);
+	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+	curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+	if(postFields.size())
+	{
+		curl_easy_setopt(curl, CURLOPT_POST, 1L);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postFields.c_str());
+	}
+
+	CURLcode res      = curl_easy_perform(curl);
+	long     httpCode = 0;
+	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
+	curl_easy_cleanup(curl);
+
+	if(res != CURLE_OK)
+		return std::string("HTTP request failed: ") +
+		       (errbuf[0] ? errbuf : curl_easy_strerror(res));
+	if(httpCode < 200 || httpCode >= 300)
+		return "HTTP request returned status " + std::to_string(httpCode);
+	return "";
+}  // end oidcHttpRequest()
+
+//==============================================================================
+// oidcUrlEncode ~ percent-encode a string for use in URLs / form bodies
+std::string oidcUrlEncode(const std::string& value)
+{
+	CURL* curl = curl_easy_init();
+	if(!curl)
+		return value;
+	char*       escaped = curl_easy_escape(curl, value.c_str(), (int)value.length());
+	std::string result  = escaped ? escaped : value;
+	if(escaped)
+		curl_free(escaped);
+	curl_easy_cleanup(curl);
+	return result;
+}  // end oidcUrlEncode()
+
+//==============================================================================
+// oidcJsonExtractString ~ extract a flat JSON string value for the given key.
+//                         Minimal parser sufficient for OIDC discovery/token/claims.
+std::string oidcJsonExtractString(const std::string& json, const std::string& key)
+{
+	const std::string needle = "\"" + key + "\"";
+	size_t            pos    = json.find(needle);
+	if(pos == std::string::npos)
+		return "";
+	pos = json.find(':', pos + needle.length());
+	if(pos == std::string::npos)
+		return "";
+	++pos;
+	// skip whitespace
+	while(pos < json.length() && (json[pos] == ' ' || json[pos] == '\t' ||
+	                              json[pos] == '\n' || json[pos] == '\r'))
+		++pos;
+	if(pos >= json.length() || json[pos] != '"')
+		return "";  // not a string value
+	++pos;
+	std::string result;
+	for(; pos < json.length(); ++pos)
+	{
+		char c = json[pos];
+		if(c == '\\' && pos + 1 < json.length())
+		{
+			char n = json[++pos];
+			switch(n)
+			{
+			case 'n':
+				result += '\n';
+				break;
+			case 't':
+				result += '\t';
+				break;
+			case 'r':
+				result += '\r';
+				break;
+			case '/':
+				result += '/';
+				break;
+			case '"':
+				result += '"';
+				break;
+			case '\\':
+				result += '\\';
+				break;
+			default:
+				result += n;
+				break;
+			}
+		}
+		else if(c == '"')
+			break;
+		else
+			result += c;
+	}
+	return result;
+}  // end oidcJsonExtractString()
+
+//==============================================================================
+// oidcBase64UrlDecode ~ decode a base64url (no padding) string, e.g. a JWT segment
+std::string oidcBase64UrlDecode(const std::string& input)
+{
+	static const std::string base64Chars =
+	    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+	std::string b64 = input;
+	// base64url -> base64
+	for(char& c : b64)
+	{
+		if(c == '-')
+			c = '+';
+		else if(c == '_')
+			c = '/';
+	}
+	while(b64.size() % 4)
+		b64 += '=';
+
+	std::string out;
+	int         val  = 0;
+	int         bits = -8;
+	for(char c : b64)
+	{
+		if(c == '=')
+			break;
+		size_t idx = base64Chars.find(c);
+		if(idx == std::string::npos)
+			continue;
+		val = (val << 6) + (int)idx;
+		bits += 6;
+		if(bits >= 0)
+		{
+			out += char((val >> bits) & 0xFF);
+			bits -= 8;
+		}
+	}
+	return out;
+}  // end oidcBase64UrlDecode()
+
+//==============================================================================
+// oidcJwtPayload ~ return the decoded payload (claims JSON) of a JWT, else ""
+std::string oidcJwtPayload(const std::string& jwt)
+{
+	size_t d1 = jwt.find('.');
+	if(d1 == std::string::npos)
+		return "";
+	size_t d2 = jwt.find('.', d1 + 1);
+	if(d2 == std::string::npos)
+		return "";
+	return oidcBase64UrlDecode(jwt.substr(d1 + 1, d2 - d1 - 1));
+}  // end oidcJwtPayload()
+
+//==============================================================================
+// oidcGenRandomHex ~ generate a random hex string of the given length
+std::string oidcGenRandomHex(unsigned int length)
+{
+	static const char hex[] = "0123456789abcdef";
+	std::string       out;
+	out.reserve(length);
+
+	// Prefer a cryptographically strong RNG from the OS.
+	std::ifstream urandom("/dev/urandom", std::ios::in | std::ios::binary);
+	if(urandom)
+	{
+		for(unsigned int i = 0; i < length; ++i)
+		{
+			unsigned char byte = 0;
+			urandom.read(reinterpret_cast<char*>(&byte), 1);
+			if(!urandom)
+				break;
+			out += hex[byte & 0x0F];
+		}
+	}
+
+	// If /dev/urandom is unavailable or short-read, fall back to existing behavior.
+	while(out.size() < length)
+		out += hex[rand() % 16];
+
+	return out;
+}  // end oidcGenRandomHex()
+
+//==============================================================================
+// oidcJsEscape ~ encode a string as a safe JavaScript/JSON string literal (no quotes)
+std::string oidcJsEscape(const std::string& value)
+{
+	std::string out;
+	for(char c : value)
+	{
+		switch(c)
+		{
+		case '\\':
+			out += "\\\\";
+			break;
+		case '"':
+			out += "\\\"";
+			break;
+		case '\'':
+			out += "\\'";
+			break;
+		case '\n':
+			out += "\\n";
+			break;
+		case '\r':
+			out += "\\r";
+			break;
+		case '<':
+			out += "\\x3C";
+			break;
+		case '>':
+			out += "\\x3E";
+			break;
+		case '&':
+			out += "\\x26";
+			break;
+		default:
+			if((unsigned char)c < 0x20)
+			{
+				char buf[8];
+				snprintf(buf, sizeof(buf), "\\u%04x", c);
+				out += buf;
+			}
+			else
+				out += c;
+			break;
+		}
+	}
+	return out;
+}  // end oidcJsEscape()
+
+//==============================================================================
+// oidcHtmlEscape ~ escape a string for safe inclusion in HTML text
+std::string oidcHtmlEscape(const std::string& value)
+{
+	std::string out;
+	for(char c : value)
+	{
+		switch(c)
+		{
+		case '&':
+			out += "&amp;";
+			break;
+		case '<':
+			out += "&lt;";
+			break;
+		case '>':
+			out += "&gt;";
+			break;
+		case '"':
+			out += "&quot;";
+			break;
+		case '\'':
+			out += "&#39;";
+			break;
+		default:
+			out += c;
+			break;
+		}
+	}
+	return out;
+}  // end oidcHtmlEscape()
+
+//==============================================================================
+// oidcErrorPage ~ output a minimal HTML page reporting an SSO error to the popup
+void oidcErrorPage(xgi::Output* out, const std::string& message)
+{
+	__COUT_ERR__ << "OIDC SSO error: " << message << __E__;
+	*out << "<!DOCTYPE html><html><head><title>Single Sign-On</title></head><body "
+	        "style='font-family:sans-serif;padding:20px;'>"
+	     << "<h3>Single Sign-On failed</h3><p>" << oidcHtmlEscape(message) << "</p>"
+	     << "<p>You may close this window and try again.</p>"
+	     << "<script>try{if(window.opener&&!window.opener.closed){}}catch(e){}</script>"
+	        "</body></html>";
+}  // end oidcErrorPage()
+
+}  // namespace
+
+//==============================================================================
+/// oidcLogin ~ begin the OIDC/SSO authorization-code flow by redirecting the browser
+///             (popup) to the identity provider's authorization endpoint.
+void GatewaySupervisor::oidcLogin(xgi::Input* /*in*/, xgi::Output* out)
+{
+	OIDCConfig  cfg;
+	std::string err = oidcReadConfig(cfg);
+	if(err != "")
+	{
+		oidcErrorPage(out, err);
+		return;
+	}
+
+	// fetch the provider discovery document to find the authorization endpoint
+	std::string discovery;
+	err = oidcHttpRequest(cfg.providerUrl, "" /*GET*/, discovery);
+	if(err != "")
+	{
+		oidcErrorPage(out, "Could not reach identity provider: " + err);
+		return;
+	}
+
+	std::string authEndpoint = oidcJsonExtractString(discovery, "authorization_endpoint");
+	if(authEndpoint == "")
+	{
+		oidcErrorPage(out,
+		              "Identity provider discovery missing 'authorization_endpoint'");
+		return;
+	}
+
+	// generate and store an anti-CSRF state value
+	std::string state = oidcGenRandomHex(32);
+	{
+		std::lock_guard<std::mutex> lock(oidcStateMutex_);
+		// opportunistically prune expired states
+		time_t now = time(0);
+		for(auto it = oidcStateStore_.begin(); it != oidcStateStore_.end();)
+		{
+			if(now - it->second > OIDC_STATE_LIFETIME_SEC)
+				it = oidcStateStore_.erase(it);
+			else
+				++it;
+		}
+		oidcStateStore_[state] = now;
+	}
+
+	std::string authUrl =
+	    authEndpoint + (authEndpoint.find('?') == std::string::npos ? "?" : "&") +
+	    "response_type=code" + "&client_id=" + oidcUrlEncode(cfg.clientId) +
+	    "&redirect_uri=" + oidcUrlEncode(cfg.redirectUri) +
+	    "&scope=" + oidcUrlEncode(cfg.scope) + "&state=" + oidcUrlEncode(state);
+
+	*out << "<!DOCTYPE html><html><head><title>Single Sign-On</title>"
+	     << "<meta http-equiv='refresh' content='0;url=" << oidcHtmlEscape(authUrl)
+	     << "'></head><body style='font-family:sans-serif;padding:20px;'>"
+	     << "<p>Redirecting to Single Sign-On&hellip;</p>"
+	     << "<script>window.location.replace(\"" << oidcJsEscape(authUrl)
+	     << "\");</script></body></html>";
+}  // end oidcLogin()
+
+//==============================================================================
+/// oidcCallback ~ handle the redirect back from the identity provider: validate state,
+///                exchange the authorization code for tokens, extract the user's email
+///                from the ID token, establish an ots session, and complete the login
+///                in the opener window via same-origin localStorage.
+void GatewaySupervisor::oidcCallback(xgi::Input* in, xgi::Output* out)
+{
+	cgicc::Cgicc cgi(in);
+	std::string  ip = cgi.getEnvironment().getRemoteAddr();
+
+	std::string providerError = CgiDataUtilities::getData(cgi, "error");
+	if(providerError != "")
+	{
+		std::string desc = CgiDataUtilities::getData(cgi, "error_description");
+		oidcErrorPage(out,
+		              "Identity provider returned an error: " + providerError +
+		                  (desc != "" ? (" (" + desc + ")") : ""));
+		return;
+	}
+
+	std::string code  = CgiDataUtilities::getData(cgi, "code");
+	std::string state = CgiDataUtilities::getData(cgi, "state");
+	if(code == "")
+	{
+		oidcErrorPage(out, "Missing authorization code in callback");
+		return;
+	}
+
+	// validate and consume the anti-CSRF state
+	{
+		std::lock_guard<std::mutex> lock(oidcStateMutex_);
+		auto                        it = oidcStateStore_.find(state);
+		if(it == oidcStateStore_.end())
+		{
+			oidcErrorPage(out, "Invalid or expired Single Sign-On state");
+			return;
+		}
+		bool expired = (time(0) - it->second > OIDC_STATE_LIFETIME_SEC);
+		oidcStateStore_.erase(it);  // one-time use
+		if(expired)
+		{
+			oidcErrorPage(out, "Single Sign-On state expired; please try again");
+			return;
+		}
+	}
+
+	OIDCConfig  cfg;
+	std::string err = oidcReadConfig(cfg);
+	if(err != "")
+	{
+		oidcErrorPage(out, err);
+		return;
+	}
+
+	// fetch discovery for the token endpoint
+	std::string discovery;
+	err = oidcHttpRequest(cfg.providerUrl, "" /*GET*/, discovery);
+	if(err != "")
+	{
+		oidcErrorPage(out, "Could not reach identity provider: " + err);
+		return;
+	}
+	std::string tokenEndpoint = oidcJsonExtractString(discovery, "token_endpoint");
+	if(tokenEndpoint == "")
+	{
+		oidcErrorPage(out, "Identity provider discovery missing 'token_endpoint'");
+		return;
+	}
+
+	// exchange the authorization code for tokens (confidential client)
+	std::string postFields = "grant_type=authorization_code" + std::string("&code=") +
+	                         oidcUrlEncode(code) +
+	                         "&redirect_uri=" + oidcUrlEncode(cfg.redirectUri) +
+	                         "&client_id=" + oidcUrlEncode(cfg.clientId) +
+	                         "&client_secret=" + oidcUrlEncode(cfg.clientSecret);
+
+	std::string tokenResponse;
+	err = oidcHttpRequest(tokenEndpoint, postFields, tokenResponse);
+	if(err != "")
+	{
+		std::string tokErr = oidcJsonExtractString(tokenResponse, "error");
+		oidcErrorPage(out, "Token exchange failed: " + (tokErr != "" ? tokErr : err));
+		return;
+	}
+
+	std::string idToken = oidcJsonExtractString(tokenResponse, "id_token");
+	if(idToken == "")
+	{
+		oidcErrorPage(out, "Identity provider did not return an ID token");
+		return;
+	}
+
+	// decode the ID token claims and extract the user's identity
+	std::string claims = oidcJwtPayload(idToken);
+	if(claims == "")
+	{
+		oidcErrorPage(out, "Could not decode ID token");
+		return;
+	}
+
+	std::string email = oidcJsonExtractString(claims, "email");
+	if(email == "")
+	{
+		oidcErrorPage(out,
+		              "ID token has no 'email' claim (ensure 'email' scope is granted)");
+		return;
+	}
+	std::string displayNameHint = oidcJsonExtractString(claims, "name");
+	if(displayNameHint == "")
+		displayNameHint = oidcJsonExtractString(claims, "preferred_username");
+
+	// establish an ots session for the authenticated user (auto-creating if needed)
+	std::string cookieCode, username, displayName;
+	uint64_t    uid = theWebUsers_.attemptActiveSessionWithEmail(email,
+                                                              displayNameHint,
+                                                              cookieCode,
+                                                              username,
+                                                              displayName,
+                                                              ip,
+                                                              true /*autoCreate*/);
+
+	if(uid >= theWebUsers_.ACCOUNT_ERROR_THRESHOLD || cookieCode == "0")
+	{
+		oidcErrorPage(out,
+		              "Single Sign-On succeeded but this account could not be "
+		              "activated. Notify admins.");
+		return;
+	}
+
+	bool doLog = false;
+	try
+	{
+		doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1");
+	}
+	catch(...)
+	{ /* ignore */
+	}
+	if(doLog)
+		makeSystemLogEntry(username + " logged in via Single Sign-On.");
+
+	__COUT__ << "OIDC SSO login successful for '" << username << "' <" << email << ">"
+	         << __E__;
+
+	// complete the login in the opener window: store the login cookie in same-origin
+	// localStorage (keys must match DesktopLogin.js) and reload the opener.
+	*out << "<!DOCTYPE html><html><head><title>Single Sign-On</title></head>"
+	     << "<body style='font-family:sans-serif;padding:20px;'>"
+	     << "<p>Sign-in successful. Completing login&hellip;</p><script>"
+	     << "try{"
+	     << "localStorage.setItem('otsCookieCode',\"" << oidcJsEscape(cookieCode)
+	     << "\");"
+	     << "localStorage.setItem('otsCookieUser',\"" << oidcJsEscape(username) << "\");"
+	     << "if(window.opener&&!window.opener.closed){window.opener.location.reload();}"
+	     << "}catch(e){}"
+	     << "window.close();"
+	     << "</script></body></html>";
+}  // end oidcCallback()
 
 //==============================================================================
 /// LoginRequest
