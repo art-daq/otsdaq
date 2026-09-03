@@ -130,6 +130,8 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	time_t                             last_thread_progress_update_;
 	std::map<std::string, std::string> label_to_proc_type_map_;
 
+	unsigned int cachedMinReadyForEventGenerationStartIteration_ = 0;
+
 	std::string capturePyErr(std::string label = "");
 	bool        checkPythonError(
 	           PyObject* result);  // Check if Python call failed (returns true on error)

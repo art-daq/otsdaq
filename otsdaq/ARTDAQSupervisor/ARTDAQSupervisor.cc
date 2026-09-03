@@ -10,7 +10,6 @@
 #include "cetlib_except/exception.h"
 #include "fhiclcpp/make_ParameterSet.h"
 #include "otsdaq/ARTDAQSupervisor/ARTDAQSupervisorTRACEController.h"
-#include "otsdaq/FiniteStateMachine/RunControlIterationConstants.h"
 
 #include "artdaq-core/Utilities/ExceptionHandler.hh" /*for artdaq::ExceptionHandler*/
 
@@ -1347,8 +1346,14 @@ try
 
 		__SUP_COUT_INFO__ << "Starting thread started." << __E__;
 
+		cachedMinReadyForEventGenerationStartIteration_ =
+		    RunControlStateMachine::getMinReadyForEventGenerationStartIteration();
+		__SUP_COUT_INFO__
+		    << "MinReadyForEventGenerationStartIteration from transition parameter = "
+		    << cachedMinReadyForEventGenerationStartIteration_ << __E__;
+
 		if(RunControlStateMachine::getIterationIndex() + 1 <
-		   RunControlIterationConstants::RUN_START_READY_FOR_TRIGGERS_ITERATION)
+		   cachedMinReadyForEventGenerationStartIteration_)
 			RunControlStateMachine::
 			    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 		else
@@ -1401,7 +1406,7 @@ try
 			// __COUT_MULTI_LBL__(0, captureStderrAndStdout_("statuscheck"), "statuscheck");
 
 			if(RunControlStateMachine::getIterationIndex() + 1 <
-			   RunControlIterationConstants::RUN_START_READY_FOR_TRIGGERS_ITERATION)
+			   cachedMinReadyForEventGenerationStartIteration_)
 				RunControlStateMachine::
 				    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 			else

@@ -56,6 +56,14 @@ CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
 	           &CoreSupervisorBase::TRACESupervisorRequest,
 	           "TRACESupervisorRequest",
 	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest,
+	           "MinReadyForEventGenerationStartIterationRequest",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest,
+	           "MinReadyForEventGenerationStartIterationRequest",
+	           XDAQ_NS_URI);
 
 	__SUP_COUT__ << "Constructed. getpid()=" << getpid() << " gettid()=" << gettid()
 	             << __E__;
@@ -494,6 +502,28 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 }  // end applicationStatusRequest()
 
 //==============================================================================
+xoap::MessageReference
+CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest(
+    xoap::MessageReference /*message*/)
+{
+	unsigned int maxIteration = 0;
+	for(const auto& fsm : theStateMachineImplementation_)
+	{
+		unsigned int val = fsm->getMinReadyForEventGenerationStartIteration();
+		if(val > maxIteration)
+			maxIteration = val;
+	}
+
+	__SUP_COUT__ << "MinReadyForEventGenerationStartIteration (aggregated max) = "
+	             << maxIteration << __E__;
+
+	SOAPParameters retParameters;
+	retParameters.addParameter("MinIteration", std::to_string(maxIteration));
+	return SOAPUtilities::makeSOAPMessageReference(
+	    "MinReadyForEventGenerationStartIterationRequestReply", retParameters);
+}  // end minReadyForEventGenerationStartIterationRequest()
+
+//==============================================================================
 /// virtual progress string that can be overridden with more info
 ///	e.g. steps and sub-steps
 ///	however integer 0-100 should be first number, then separated by : colons
@@ -697,6 +727,9 @@ void CoreSupervisorBase::preStateMachineExecution(unsigned int i)
 	    RunControlStateMachine::getIterationIndex());
 	theStateMachineImplementation_[i]->VStateMachine::setSubIterationIndex(
 	    RunControlStateMachine::getSubIterationIndex());
+	theStateMachineImplementation_[i]
+	    ->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
+	        RunControlStateMachine::getMinReadyForEventGenerationStartIteration());
 
 	theStateMachineImplementation_[i]->VStateMachine::clearIterationWork();
 	theStateMachineImplementation_[i]->VStateMachine::clearSubIterationWork();
