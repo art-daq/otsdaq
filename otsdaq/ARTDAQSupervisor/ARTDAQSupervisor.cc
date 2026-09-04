@@ -971,6 +971,18 @@ try
 			__GEN_SS__ << "DAQInterface boot transition failed! "
 			           << "Status after boot attempt: " << daqinterface_state_ << __E__;
 
+			// Read the critical error saved before recovery output flooded the buffer
+			{
+				PyObject* pyCritErr = PyObject_GetAttrString(daqinterface_ptr_, "last_critical_error");
+				if(pyCritErr && PyUnicode_Check(pyCritErr))
+				{
+					std::string critErr = PyUnicode_AsUTF8(pyCritErr);
+					if(!critErr.empty())
+						ss << "\n\nCritical error: " << critErr << __E__;
+				}
+				Py_XDECREF(pyCritErr);
+			}
+
 			if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
 				ss << "... last " << OUT_ON_ERR_SIZE
 				   << " characters: " << doBootOutput.substr(doBootOutput.size() - 1000);
