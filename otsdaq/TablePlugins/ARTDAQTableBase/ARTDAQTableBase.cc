@@ -1,8 +1,11 @@
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 
 #include <dirent.h>  //DIR and dirent
+#include <atomic>
 #include <fstream>   // for std::ofstream
 #include <iostream>  // std::cout
+#include <mutex>
+#include <thread>
 #include <typeinfo>
 
 #include "otsdaq/Macros/CoutMacros.h"
@@ -23,8 +26,10 @@ using namespace ots;
 
 // Per-file flatten times are only emitted at trace verbosity, which is too noisy
 // to leave on; these accumulate the same measurements so extractARTDAQInfo() can
-// report one summary at INFO level. Written only from flattenFHICL(), which the
-// extract*Info() calls below drive serially. fhiclFlatten{Count,Seconds}_ are reset
+// report one summary at INFO level. Written only from flattenFHICL(), possibly from
+// several threads at once (see flattenFHICLInParallel(), guarded by
+// fhiclFlattenStatsMutex_); the seconds counters therefore sum per-flatten times,
+// which can exceed wall time. fhiclFlatten{Count,Seconds}_ are reset
 // per extractARTDAQInfo() call; the *Cumulative* variants persist across calls so a
 // single config -- which invokes extractARTDAQInfo() more than once (e.g. a
 // doWriteFHiCL=false host-discovery pass plus the doWriteFHiCL=true generation pass)
@@ -34,6 +39,10 @@ static double fhiclFlattenSeconds_           = 0;
 static size_t fhiclFlattenCountCumulative_   = 0;
 static double fhiclFlattenSecondsCumulative_ = 0;
 static size_t extractInvocation_             = 0;
+
+// flattenFHICL() may run from several threads at once (see
+// flattenFHICLInParallel()); this protects the counters above.
+static std::mutex fhiclFlattenStatsMutex_;
 
 // The cumulative counters span one "config step" -- but a config generates FHiCL
 // from more than one place (e.g. extractARTDAQInfo plus a separate write pass), so
@@ -48,6 +57,7 @@ static const double                          FHICL_TRACE_RESET_GAP_S = 30.0;
 // runs first in a config triggers the reset.
 static void maybeResetFHiCLTimingTrace()
 {
+	std::lock_guard<std::mutex> lock(fhiclFlattenStatsMutex_);
 	std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 	if(fhiclFlattenCountCumulative_ > 0 || extractInvocation_ > 0)
 	{
@@ -323,13 +333,87 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 	}
 
 	double flattenElapsed = artdaq::TimeUtils::GetElapsedTime(startClock);
-	++fhiclFlattenCount_;
-	fhiclFlattenSeconds_ += flattenElapsed;
-	++fhiclFlattenCountCumulative_;
-	fhiclFlattenSecondsCumulative_ += flattenElapsed;
+	{
+		std::lock_guard<std::mutex> lock(fhiclFlattenStatsMutex_);
+		++fhiclFlattenCount_;
+		fhiclFlattenSeconds_ += flattenElapsed;
+		++fhiclFlattenCountCumulative_;
+		fhiclFlattenSecondsCumulative_ += flattenElapsed;
+	}
 
 	__COUTT__ << name << " Flatten Clock time = " << flattenElapsed << __E__;
 }  // end flattenFHICL()
+
+//==============================================================================
+// Flatten a batch of same-type fcl documents with a small thread pool: the
+// parse work per document is independent, and only the timing counters are
+// shared (protected by fhiclFlattenStatsMutex_). Each entry pairs the document
+// name with an optional string pointer receiving the flattened fcl (as in
+// flattenFHICL's returnFcl). The first worker exception is rethrown on the
+// calling thread.
+void ARTDAQTableBase::flattenFHICLInParallel(
+    ARTDAQAppType                                             type,
+    const std::vector<std::pair<std::string, std::string*>>& namesAndReturnFcls)
+{
+	if(namesAndReturnFcls.empty())
+		return;
+
+	// OTS_FHICL_FLATTEN_THREADS=1 reverts to serial flattening (escape hatch in
+	// case parallel fhicl parsing ever misbehaves); higher values raise the cap
+	size_t threadCap = 8;
+	if(const char* threadsOverride = getenv("OTS_FHICL_FLATTEN_THREADS"))
+	{
+		int overrideValue = atoi(threadsOverride);
+		if(overrideValue > 0)
+			threadCap = static_cast<size_t>(overrideValue);
+	}
+	size_t threadCount = std::min<size_t>(threadCap, namesAndReturnFcls.size());
+	if(threadCount <= 1)
+	{
+		for(auto& nameAndReturnFcl : namesAndReturnFcls)
+			flattenFHICL(type, nameAndReturnFcl.first, nameAndReturnFcl.second);
+		return;
+	}
+
+	std::chrono::steady_clock::time_point startClock = std::chrono::steady_clock::now();
+
+	std::atomic<size_t>      nextIndex(0);
+	std::exception_ptr       firstError = nullptr;
+	std::mutex               errorMutex;
+	std::vector<std::thread> workers;
+	for(size_t i = 0; i < threadCount; ++i)
+		workers.emplace_back([&]() {
+			while(true)
+			{
+				size_t index = nextIndex.fetch_add(1);
+				if(index >= namesAndReturnFcls.size())
+					return;
+				try
+				{
+					flattenFHICL(type,
+					             namesAndReturnFcls[index].first,
+					             namesAndReturnFcls[index].second);
+				}
+				catch(...)
+				{
+					std::lock_guard<std::mutex> lock(errorMutex);
+					if(!firstError)
+						firstError = std::current_exception();
+					return;
+				}
+			}
+		});
+	for(auto& worker : workers)
+		worker.join();
+
+	if(firstError)
+		std::rethrow_exception(firstError);
+
+	__COUT_INFO__ << "Parallel flatten of " << namesAndReturnFcls.size() << " "
+	              << getTypeString(type) << " fcl document(s) with " << threadCount
+	              << " threads took " << artdaq::TimeUtils::GetElapsedTime(startClock)
+	              << " s" << __E__;
+}  // end flattenFHICLInParallel()
 
 //==============================================================================
 /// insertParameters
@@ -2760,9 +2844,10 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 		std::vector<std::pair<std::string, ConfigurationTree>> builders =
 		    buildersLink.getChildren();
 
-		std::string lastBuilderFcl[2],
-		    flattenedLastFclParts
-		        [2];  //same handling as otsdaq/otsdaq/TablePlugins/ARTDAQEventBuilderTable_table.cc:69
+		// Builder fcl generation happens in two stages: outputDataReceiverFHICL
+		// (config-tree access, sequential) inside the loop below, then the
+		// expensive flattens run together in parallel after the loop
+		std::vector<std::pair<std::string, std::string*>> buildersToFlatten;
 		for(auto& builder : builders)
 		{
 			const std::string& builderUID = builder.first;
@@ -2835,152 +2920,13 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 
 				if(doWriteFHiCL)
 				{
-					std::string returnFcl, processName;
-					bool        needToFlatten = true;
-					bool        captureAsLastFcl =
-					    builders
-					        .size() &&  //init to true if multiple builders left to handle
-					    (&builder != &builders.back());
 					outputDataReceiverFHICL(builder.second,
 					                        ARTDAQAppType::EventBuilder,
 					                        maxFragmentSizeBytes,
 					                        DEFAULT_ROUTING_TIMEOUT_MS,
-					                        DEFAULT_ROUTING_RETRY_COUNT,
-					                        captureAsLastFcl ? &returnFcl : nullptr);
-
-					//Speed-up Philosophy:
-					// flattenFHICL is expensive, so try to identify multinodes with fcl that only differ by process_name,
-					//	i.e., ignore starting comments and process name, then compare fcl.
-					//	Note: not much gain for any other node types but Event Builders, which tend to only differ by process_name in their fcl
-
-					auto cmi = returnFcl.find(
-					    "#	otsdaq-ARTDAQ builder UID:");  //find starting comments
-					if(cmi != std::string::npos)
-						cmi = returnFcl.find('\n', cmi);
-					if(cmi != std::string::npos)
-					{
-						size_t pnj = std::string::npos;
-						auto   pni =
-						    returnFcl.find("\tprocess_name: ", cmi);  //find process name
-						if(pni != std::string::npos)
-						{
-							pni += std::string("\tprocess_name: ")
-							           .size();  //move past field name
-							pnj = returnFcl.find('\n', pni);
-						}
-						if(pnj != std::string::npos)
-						{
-							processName = returnFcl.substr(pni, pnj - pni);
-							__COUT__ << "Found process name = " << processName << __E__;
-
-							bool sameFirst = false;
-							//check before process name (ignoring comments)
-							std::string newPiece = returnFcl.substr(cmi, pni - cmi);
-							if(flattenedLastFclParts[0].size() &&
-							   lastBuilderFcl[0].size() && lastBuilderFcl[0] == newPiece)
-							{
-								__COUT__ << "Same first fcl" << __E__;
-								sameFirst = true;
-							}
-							else if(TTEST(20))
-							{
-								__COUTVS__(20, lastBuilderFcl[0]);
-								__COUTVS__(20, newPiece);
-								for(size_t i = 0, j = 0;
-								    i < lastBuilderFcl[0].size() && j < newPiece.size();
-								    ++i, ++j)
-								{
-									if(lastBuilderFcl[0][i] != newPiece[j])
-									{
-										__COUTVS__(20, i);
-										__COUTVS__(20, j);
-										__COUTVS__(20, lastBuilderFcl[0].substr(i, 30));
-										__COUTVS__(20, newPiece.substr(j, 30));
-										break;
-									}
-								}
-							}
-							if(captureAsLastFcl)  //if more, save piece
-								lastBuilderFcl[0] = newPiece;
-
-							//check after process name
-							newPiece = returnFcl.substr(pnj);
-							if(lastBuilderFcl[0].size() && lastBuilderFcl[1] == newPiece)
-							{
-								__COUT__ << "Same second fcl" << __E__;
-								if(sameFirst)  //found opportunity for shortcut-to-flatten!
-								{
-									std::chrono::steady_clock::time_point startClock =
-									    std::chrono::steady_clock::now();
-									__COUT__ << "Found fcl match! Reuse for "
-									         << builderUID << __E__;
-									captureAsLastFcl =
-									    false;  //do not overwrite current last fcl now!
-									needToFlatten = false;
-
-									//do rapid flatten here
-									std::string outFile = getFlatFHICLFilename(
-									    ARTDAQAppType::EventBuilder, builderUID);
-									__COUTVS__(3, outFile);
-									std::ofstream ofs{outFile};
-									if(!ofs)
-									{
-										__SS__ << "Failed to open fhicl output file '"
-										       << outFile << "!'" << __E__;
-										__SS_THROW__;
-									}
-									ofs << flattenedLastFclParts[0] << "process_name: \""
-									    << processName << "\""
-									    << flattenedLastFclParts[1];
-									__COUTT__
-									    << builderUID << " Flatten Clock time = "
-									    << artdaq::TimeUtils::GetElapsedTime(startClock)
-									    << __E__;
-									continue;  //done with shortcut-to-flatten
-								}              //end shortcut-to-flatten handling
-							}
-							if(captureAsLastFcl)  //if interesting for more, save piece
-								lastBuilderFcl[1] = newPiece;
-						}
-					}
-
-					if(needToFlatten)
-						ARTDAQTableBase::flattenFHICL(
-						    ARTDAQAppType::EventBuilder,
-						    builderUID,
-						    captureAsLastFcl ? &returnFcl : nullptr);
-					else
-						__COUT__ << "Skipping full flatten for " << builderUID << __E__;
-
-					//save parts without process name
-					__COUTV__(captureAsLastFcl);
-					if(captureAsLastFcl)
-					{
-						size_t pnj = std::string::npos;
-						auto   pni = returnFcl.find("process_name:");  //find process name
-						if(pni != std::string::npos)
-						{
-							//enforce white space before process name
-							if(pni &&
-							   (returnFcl[pni - 1] == ' ' || returnFcl[pni - 1] == '\n' ||
-							    returnFcl[pni - 1] == '\t'))
-								pnj = returnFcl.find('\n', pni);
-						}
-						if(pnj != std::string::npos)
-						{
-							__COUT__
-							    << "Found flattened '"  //Note: returnFcl.substr(pni, pnj - pni) includes "process_name:"
-							    << returnFcl.substr(pni, pnj - pni) << "' at pos " << pni
-							    << " of " << returnFcl.size() << __E__;
-							flattenedLastFclParts[0] = returnFcl.substr(0, pni);
-							flattenedLastFclParts[1] = returnFcl.substr(pnj);
-						}
-						else
-						{
-							__COUT_WARN__ << "Failed to capture fcl for " << processName
-							              << "!" << __E__;
-						}
-					}
+					                        DEFAULT_ROUTING_RETRY_COUNT);
+					// The expensive flatten runs in parallel after this loop
+					buildersToFlatten.emplace_back(builderUID, nullptr);
 				}  //end doWriteFHiCL
 			}
 			else  // disabled
@@ -2988,6 +2934,9 @@ void ARTDAQTableBase::extractEventBuildersInfo(ConfigurationTree artdaqSuperviso
 				__COUT__ << "Event Builder " << builderUID << " is disabled." << __E__;
 			}
 		}  // end builder loop
+
+		if(buildersToFlatten.size())
+			flattenFHICLInParallel(ARTDAQAppType::EventBuilder, buildersToFlatten);
 	}
 	else
 	{

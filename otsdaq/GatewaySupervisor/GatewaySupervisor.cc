@@ -7243,98 +7243,101 @@ try
 
 		//at this point Configuration Tree is fully loaded
 
-		//handle configuration dump if enabled on configure transition
-		try  // errors in dump are not tolerated
+		// Configuration dump caching is deferred: it runs in a background
+		// thread so that the broadcast to supervisors can start immediately.
+		// The dumps only read from the already-activated config tree (read-only)
+		// and their results are consumed later (file write after broadcast,
+		// and at Run transition time).
+		configDumpCachingThread_ = std::make_unique<std::thread>([this,
+		    configurationAlias, subsystemCommonList, subsystemCommonOverrideList]()
 		{
-			//get/cache Run transition dump
-			if(activeStateMachineSystemDumpOnRunEnable_ ||
-			   ((activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+			try
 			{
-				__COUT_INFO__
-				    << "Caching the System Configuration Dump for the Run transition..."
-				    << __E__;
+				//get/cache Run transition dump
+				if(activeStateMachineSystemDumpOnRunEnable_ ||
+				   ((activeStateMachineRunInfoPluginType_ !=
+				         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				     activeStateMachineRunInfoPluginType_ !=
+				         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+				{
+					__COUT_INFO__
+					    << "Caching the System Configuration Dump for the Run transition..."
+					    << __E__;
 
-				// dump configuration
-				std::stringstream dumpSs;
-				CorePropertySupervisorBase::theConfigurationManager_
-				    ->dumpActiveConfiguration(
-				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
-				        activeStateMachineDumpFormatOnRun_,
-				        configurationAlias,
-				        subsystemCommonList,
-				        subsystemCommonOverrideList,
-				        getLastLogEntry(
-				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-				        theWebUsers_.getActiveUsernamesString(),
-				        theStateMachine_.getCurrentStateName(),
-				        dumpSs);
+					std::stringstream dumpSs;
+					CorePropertySupervisorBase::theConfigurationManager_
+					    ->dumpActiveConfiguration(
+					        "",
+					        activeStateMachineDumpFormatOnRun_,
+					        configurationAlias,
+					        subsystemCommonList,
+					        subsystemCommonOverrideList,
+					        getLastLogEntry(
+					            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+					        theWebUsers_.getActiveUsernamesString(),
+					        theStateMachine_.getCurrentStateName(),
+					        dumpSs);
 
-				activeStateMachineSystemDumpOnRun_ = dumpSs.str();
+					activeStateMachineSystemDumpOnRun_ = dumpSs.str();
 
-				__COUT__ << "Active State Machine Config Dump on Run " << __E__;
-				__COUTTV__(activeStateMachineSystemDumpOnRun_) << __E__;
-				__COUT_MULTI__(TLVL_SystemDump, activeStateMachineSystemDumpOnRun_);
+					__COUT__ << "Active State Machine Config Dump on Run " << __E__;
+					__COUTTV__(activeStateMachineSystemDumpOnRun_) << __E__;
+					__COUT_MULTI__(TLVL_SystemDump, activeStateMachineSystemDumpOnRun_);
+				}
+				else
+					__COUT_INFO__
+					    << "Not caching the System Configuration Dump on the Run transition."
+					    << __E__;
+
+				//get/cache Configuration transition dump
+				if(activeStateMachineSystemDumpOnConfigureEnable_ ||
+				   ((activeStateMachineRunInfoPluginType_ !=
+				         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				     activeStateMachineRunInfoPluginType_ !=
+				         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+				{
+					__COUT_INFO__ << "Caching the System Configuration Dump for the "
+					                 "Configure transition..."
+					              << __E__;
+
+					std::stringstream dumpSs;
+					CorePropertySupervisorBase::theConfigurationManager_
+					    ->dumpActiveConfiguration(
+					        "",
+					        activeStateMachineDumpFormatOnConfigure_,
+					        configurationAlias,
+					        subsystemCommonList,
+					        subsystemCommonOverrideList,
+					        getLastLogEntry(
+					            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+					        theWebUsers_.getActiveUsernamesString(),
+					        theStateMachine_.getCurrentStateName(),
+					        dumpSs);
+
+					activeStateMachineSystemDumpOnConfigure_ = dumpSs.str();
+
+					__COUT__ << "Active State Machine Config Dump on Configure " << __E__;
+					__COUTTV__(activeStateMachineSystemDumpOnConfigure_) << __E__;
+					__COUT_MULTI__(TLVL_SystemDump, activeStateMachineSystemDumpOnConfigure_);
+				}
+				else
+					__COUT_INFO__ << "Not caching the System Configuration Dump on the "
+					                 "Configure transition."
+					              << __E__;
 			}
-			else
-				__COUT_INFO__
-				    << "Not caching the System Configuration Dump on the Run transition."
-				    << __E__;
-
-			//get/cache Configuration transition dump
-			if(activeStateMachineSystemDumpOnConfigureEnable_ ||
-			   ((activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+			catch(const std::runtime_error& e)
 			{
-				__COUT_INFO__ << "Caching the System Configuration Dump for the "
-				                 "Configure transition..."
-				              << __E__;
-
-				// dump configuration
-				std::stringstream dumpSs;
-				CorePropertySupervisorBase::theConfigurationManager_
-				    ->dumpActiveConfiguration(
-				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
-				        activeStateMachineDumpFormatOnConfigure_,
-				        configurationAlias,
-				        subsystemCommonList,
-				        subsystemCommonOverrideList,
-				        getLastLogEntry(
-				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-				        theWebUsers_.getActiveUsernamesString(),
-				        theStateMachine_.getCurrentStateName(),
-				        dumpSs);
-
-				activeStateMachineSystemDumpOnConfigure_ = dumpSs.str();
-
-				__COUT__ << "Active State Machine Config Dump on Configure " << __E__;
-				__COUTTV__(activeStateMachineSystemDumpOnConfigure_) << __E__;
-				__COUT_MULTI__(TLVL_SystemDump, activeStateMachineSystemDumpOnConfigure_);
+				__COUT_ERR__ << "Error in config dump caching thread: " << e.what() << __E__;
+				configDumpCachingError_ = std::string("Config dump error: ") + e.what();
 			}
-			else
-				__COUT_INFO__ << "Not caching the System Configuration Dump on the "
-				                 "Configure transition."
-				              << __E__;
-
-		}  //end handle configuration dump if enabled on configure transition
-		catch(const std::runtime_error& e)
-		{
-			__SS__ << "Error encountered during system configuration dump. Here is the "
-			          "error: "
-			       << e.what();
-			__SS_THROW__;
-		}
-		catch(...)
-		{
-			__SS__ << "Unknown error encountered during system configuration dump.";
-			__SS_THROW__;
-		}
+			catch(...)
+			{
+				__COUT_ERR__ << "Unknown error in config dump caching thread." << __E__;
+				configDumpCachingError_ = "Unknown config dump error";
+			}
+		});  // end config dump caching thread lambda
 	}  //end configuration dump handling
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -7478,6 +7481,20 @@ try
 	//Note: Must save configuration dump after this point!! In case there are remote subsystems responding with string
 	broadcastMessage(message);  // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
+
+	// Join the config dump caching thread (launched before broadcast so the
+	// dump computation overlaps with supervisor transitions)
+	if(configDumpCachingThread_ && configDumpCachingThread_->joinable())
+	{
+		configDumpCachingThread_->join();
+		configDumpCachingThread_.reset();
+	}
+	if(!configDumpCachingError_.empty())
+	{
+		__SS__ << configDumpCachingError_ << __E__;
+		configDumpCachingError_.clear();
+		__SS_THROW__;
+	}
 
 	if(activeStateMachineSystemDumpOnConfigureEnable_)
 	{

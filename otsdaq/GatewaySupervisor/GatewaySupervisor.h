@@ -2,7 +2,9 @@
 #define _ots_GatewaySupervisor_h
 #include <atomic>
 #include <condition_variable>
+#include <memory>
 #include <mutex>
+#include <thread>
 
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
@@ -340,6 +342,8 @@ class WorkLoopManager;
 		std::string 		activeStateMachineWindowName_;
 		std::string 		activeStateMachineDumpFormatOnRun_, activeStateMachineDumpFormatOnConfigure_; ///<cached at Configure transition
 		std::string 		activeStateMachineSystemDumpOnRun_, activeStateMachineSystemDumpOnConfigure_; ///<cached at Configure transition
+		std::unique_ptr<std::thread>	configDumpCachingThread_;  ///<runs dump caching in parallel with supervisor broadcast
+		std::string						configDumpCachingError_;   ///<error from dump caching thread, checked after join
 		bool				activeStateMachineSystemDumpOnRunEnable_, activeStateMachineSystemDumpOnConfigureEnable_; ///<cached at Configure transition
 		std::string 		activeStateMachineSystemDumpOnRunFilename_, activeStateMachineSystemDumpOnConfigureFilename_; ///<cached at Configure transition
 		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; ///<cached at Configure transition

@@ -792,7 +792,7 @@ void CoreSupervisorBase::postStateMachineExecutionLoop(void)
 }  // end postStateMachineExecutionLoop()
 
 //==============================================================================
-void CoreSupervisorBase::configureInit(void)
+void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = false */)
 {
 	// activate the configuration tree (only the first iteration)
 
@@ -884,6 +884,42 @@ void CoreSupervisorBase::configureInit(void)
 		}  //end handle common override list
 	}      // end Assemble Subsystem Common Table List ----------------
 
+	// If requested, skip the (expensive) table group reload + re-activation when
+	// it can be proven redundant: same group name+key already active, no
+	// merge-in/override lists in play now or at the previous activation (those
+	// mutate active tables after load), and no scratch/temporary member versions
+	// (whose content can change without a key change). Group keys are otherwise
+	// immutable, so same key => same content.
+	if(attemptSkipIfGroupUnchanged && mergeInTables.empty() && overrideTables.empty() &&
+	   !lastActivationHadMergeOrOverride_ &&
+	   theConfigurationManager_->getActiveGroupName(
+	       ConfigurationManager::GroupType::CONFIGURATION_TYPE) == theGroup.first &&
+	   theConfigurationManager_->getActiveGroupKey(
+	       ConfigurationManager::GroupType::CONFIGURATION_TYPE) == theGroup.second)
+	{
+		bool haveScratchOrTemporaryMembers = false;
+		for(const auto& activeVersionPair : theConfigurationManager_->getActiveVersions())
+			if(activeVersionPair.second.isScratchVersion() ||
+			   activeVersionPair.second.isTemporaryVersion())
+			{
+				haveScratchOrTemporaryMembers = true;
+				__SUP_COUT__ << "Not skipping activation: active member '"
+				             << activeVersionPair.first << "' has scratch/temporary version "
+				             << activeVersionPair.second << __E__;
+				break;
+			}
+
+		if(!haveScratchOrTemporaryMembers)
+		{
+			__SUP_COUT_INFO__ << "Skipping table group activation: group '"
+			                  << theGroup.first << "(" << theGroup.second
+			                  << ")' is already active with no scratch/temporary "
+			                     "member versions and no merge-in/override lists."
+			                  << __E__;
+			return;
+		}
+	}
+
 	try
 	{
 		ConfigurationManager::ConfigureTransitionGuard configureGuard(
@@ -954,6 +990,9 @@ void CoreSupervisorBase::configureInit(void)
 		    __FUNCTION__ /*function*/
 		);
 	}
+
+	lastActivationHadMergeOrOverride_ =
+	    !mergeInTables.empty() || !overrideTables.empty();
 }  //end configureInit()
 
 //==============================================================================
@@ -961,7 +1000,7 @@ void CoreSupervisorBase::transitionConfiguring(toolbox::Event::Reference /*event
 {
 	__SUP_COUT__ << "transitionConfiguring()" << __E__;
 
-	CoreSupervisorBase::configureInit();
+	CoreSupervisorBase::configureInit(true /*attemptSkipIfGroupUnchanged*/);
 
 	CoreSupervisorBase::transitionConfiguringFSMs();
 

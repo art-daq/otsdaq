@@ -568,7 +568,13 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 		thread_progress_bar_.resetProgressBar(0);
 		last_thread_progress_update_ = time(0);  // initialize timeout timer
 
-		CoreSupervisorBase::configureInit();
+		// Skip the table group reload when the same group+key is already active
+		// (safe: keys are immutable and configureInit() verifies no
+		// scratch/temporary versions or merge/override lists are in play);
+		// set supervisor property SkipRedundantConfigureActivation=0 to disable
+		CoreSupervisorBase::configureInit(
+		    getSupervisorProperty("SkipRedundantConfigureActivation", 1) ==
+		    1 /*attemptSkipIfGroupUnchanged*/);
 
 		// start configuring thread
 		std::thread(&ARTDAQSupervisor::configuringThread, this).detach();
@@ -890,6 +896,8 @@ try
 
 		doBootOutput = captureStderrAndStdout_("do_boot");
 		__COUT_MULTI_LBL__(0, doBootOutput, "do_boot");
+		__GEN_COUT_INFO__ << "do_boot output captured (" << doBootOutput.size()
+		                  << " chars)" << __E__;
 
 		if(checkPythonError(resBoot1.get()))
 		{
@@ -955,6 +963,8 @@ try
 		}
 
 		getDAQState_();
+		__GEN_COUT_INFO__ << "do_boot block complete, state=" << daqinterface_state_
+		                  << __E__;
 		if(daqinterface_state_ != "booted")
 		{
 			std::cout << "Do boot output on error: \n" << doBootOutput << __E__;
@@ -980,7 +990,8 @@ try
 	{
 		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 
-		__GEN_COUT__ << "Status before config: " << daqinterface_state_ << __E__;
+		__GEN_COUT_INFO__ << "do_config python mutex acquired, state="
+		                  << daqinterface_state_ << __E__;
 
 		{  //do_config call
 			// RAII wrapper for Python objects to ensure cleanup even on exception
@@ -1083,20 +1094,12 @@ try
 	set_thread_message_("Halting");
 	__SUP_COUT__ << "Halting..." << __E__;
 
-	int tries = 0;
-	while(tries++ < 5)
-	{
-		std::unique_lock<std::recursive_mutex> lk(daqinterface_pythonMutex_,
-		                                          std::try_to_lock);
-		if(!lk.owns_lock())  //if lock not availabe, just report last status
-		{
-			__COUTS__(50) << "Do not have python lock for halt. tries=" << tries << __E__;
-			sleep(1);
-			continue;
-		}
-		__COUTS__(50) << "Have python lock!" << __E__;
+	// The runner thread continuously acquires the Python mutex for heartbeat
+	// checks; stop it first so we can take the mutex without contention
+	stop_runner_();
 
-		// std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	{
+		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
 		getDAQState_();
 		__SUP_COUT__ << "Status before halt: " << daqinterface_state_ << __E__;
 
@@ -1144,16 +1147,7 @@ try
 
 		getDAQState_();
 		__SUP_COUT__ << "Status after halt: " << daqinterface_state_ << __E__;
-		break;
-	}  //end retry loop
-
-	if(tries >= 5)
-	{
-		__SUP_SS__ << "Failed to acquire python lock for halting after " << tries
-		           << " tries, giving up! Is it possible the configure thread is stuck?"
-		           << __E__;
-		__SUP_SS_THROW__;
-	}
+	}  // release daqinterface_pythonMutex_
 
 	__SUP_COUT__ << "Halted." << __E__;
 	set_thread_message_("Halted");

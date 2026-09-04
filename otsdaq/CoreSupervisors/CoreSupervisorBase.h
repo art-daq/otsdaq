@@ -109,7 +109,7 @@ class CoreSupervisorBase : public xdaq::Application,
 
 	virtual void 					transitionConfiguring			(toolbox::Event::Reference event);
   protected:
-	void							configureInit					(void);
+	void							configureInit					(bool attemptSkipIfGroupUnchanged = false);
 	void 		 					transitionConfiguringFSMs		(void);
   public:
 	virtual void 					transitionHalting				(toolbox::Event::Reference event);
@@ -126,6 +126,11 @@ class CoreSupervisorBase : public xdaq::Application,
 	WorkLoopManager             stateMachineWorkLoopManager_;
 	toolbox::BSem               stateMachineSemaphore_;
 	std::vector<VStateMachine*> theStateMachineImplementation_;
+
+	/// true when the last configureInit() table group activation used non-empty
+	/// merge-in or override lists (those mutate active tables after load, so a
+	/// subsequent configureInit() may not skip the reload)
+	bool lastActivationHadMergeOrOverride_ = false;
 
 	/// for managing transition iterations
 	std::vector<bool> stateMachinesIterationDone_;
