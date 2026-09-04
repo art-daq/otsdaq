@@ -519,7 +519,26 @@ try
 				std::string  readValInst;
 				std::string& readVal = readValInst;
 				readVal.resize(universalDataSize_);  // size to data in advance
-				channel->doRead(readVal);
+				try
+				{
+					channel->doRead(readVal);
+				}
+				catch(const std::exception& e)
+				{
+					__FE_COUT_WARN__
+					    << "DCS slow controls read failed for channel '"
+					    << channel->fullChannelName << "': " << e.what()
+					    << " -- skipping this sample." << __E__;
+					continue;
+				}
+				catch(...)
+				{
+					__FE_COUT_WARN__
+					    << "DCS slow controls read failed for channel '"
+					    << channel->fullChannelName
+					    << "' with an unknown error -- skipping this sample." << __E__;
+					continue;
+				}
 				channel->handleSample(
 				    readVal, txBuffer, fp, aggregateFileIsBinaryFormat, txBufferUsed);
 				__FE_COUT__ << "Have: "
