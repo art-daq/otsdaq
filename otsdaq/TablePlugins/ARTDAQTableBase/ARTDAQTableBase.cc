@@ -1718,6 +1718,24 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 		           << services.getNode("fragmentNamingServiceProvider").getValue(),
 		       "" /* comment */,
 		       "fragmentNamingServiceProvider");
+		{
+			// Optional column: emit only when set to something other than DEFAULT.
+			// Tolerate TableInfo copies that predate the column (UpdateOTS not yet run).
+			std::string enabledFragmentTypes;
+			try
+			{
+				enabledFragmentTypes =
+				    services.getNode("enabledFragmentTypes").getValueWithDefault(std::string(""));
+			}
+			catch(...)
+			{
+				__COUTT__ << "No enabledFragmentTypes column in services table; skipping." << __E__;
+			}
+			if(!enabledFragmentTypes.empty())
+				OUTCLF("enabled_fragment_types: " << enabledFragmentTypes,
+				       "" /* comment */,
+				       "enabledFragmentTypes");
+		}
 		POPTAB;
 		OUT << "} # end ArtdaqFragmentNamingServiceInterface\n\n";
 
