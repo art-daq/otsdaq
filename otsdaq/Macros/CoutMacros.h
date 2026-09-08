@@ -65,6 +65,8 @@
 #define __COUTTV__(X) 		__COUTT__ << QUOTE(X) << " = " << (X) << __E__
 #define __COUTVS__(LVL,X)	__COUT_TYPE__(TLVL_DEBUG + LVL) << __COUT_HDR__ << QUOTE(X) << " = " << (X) << __E__
 
+#define __SYSTEM_ALERT_PREAMBLE__ "System Alert to '"
+
 #define __COUT_MULTI__(LVL,X) {if(TTEST(LVL)) { __COUTS__(LVL) << "Multi-line printout:" << __E__; auto splitArr = StringMacros::getVectorFromString(X, {'\n'}, {} /* whitespace */); for(const auto& split : splitArr) __COUTS__(LVL) << split; }}// StringMacros::coutSplit(X,LVL,{'\n'}); }}
 #define __COUT_MULTI_LBL__(LVL,X,LABEL) {if(TTEST(LVL)) { __COUTS__(LVL) << "Multi-line " << LABEL << " printout:" << __E__; auto splitArr = StringMacros::getVectorFromString(X, {'\n'}, {} /* whitespace */); for(const auto& split : splitArr) __COUTS__(LVL) << split; }} //StringMacros::coutSplit(X,LVL,{'\n'}); }}
 

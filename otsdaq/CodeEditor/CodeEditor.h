@@ -39,6 +39,7 @@ class CodeEditor
 	                    const std::string& path,
 	                    HttpXmlDocument*   xmlOut);
 	void getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut);
+	void getFhiclFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut);
 	void getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut);
 	void saveFileContent(cgicc::Cgicc&      cgiIn,
 	                     HttpXmlDocument*   xmlOut,

@@ -9,6 +9,7 @@
 #include <time.h> /* time_t, time, ctime */
 #include <cassert>
 #include <iostream>
+#include <map>
 #include <set>
 #include <vector>
 #include "otsdaq/TableCore/TableVersion.h"

@@ -5,6 +5,8 @@
 #include "otsdaq/WebUsersUtilities/WebUsers.h"
 
 #include <iostream>
+#include <map>
+#include <mutex>
 #include <string>
 
 #include "otsdaq/TableCore/TableGroupKey.h"  //for TableGroupKey
@@ -56,6 +58,28 @@ class RemoteWebUsers : public SOAPMessenger
 	enum
 	{
 		ACTIVE_USERS_UPDATE_THRESHOLD = 2,  ///< seconds, min amount of time between Supervisor requests
+	};
+
+	///"Cookie Check Cache" associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	/// Cache recent SupervisorCookieCheck SOAP responses to reduce Gateway
+	/// round-trips during burst request patterns (e.g., MacroMaker ~5 req/s,
+	/// Console polling ~10 req/s).
+	struct CachedCookieCheck
+	{
+		time_t      cacheTime;
+		std::string cookieCode;
+		std::string permissions;
+		std::string username;
+		std::string displayName;
+		std::string userWithLock;
+	};
+
+	std::map<std::string /*originalCookieCode*/, CachedCookieCheck> cookieCheckCache_;
+	std::mutex cookieCheckCacheMutex_;
+
+	enum
+	{
+		COOKIE_CHECK_CACHE_TTL = 30,  ///< seconds, max age before re-querying Gateway
 	};
 
 };

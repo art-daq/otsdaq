@@ -136,7 +136,7 @@ try
 	}
 
 	bool ignoreDuplicates = false;
-	if(!version.isTemporaryVersion() && sourceTableAsIs &&
+	if(!version.isInvalid() && !version.isTemporaryVersion() && sourceTableAsIs &&
 	   table->getViewP()->getSourceColumnNames().size() !=
 	       table->getViewP()->getDataColumnSize())
 	{

@@ -210,6 +210,19 @@ std::string FEVInterfacesManager::getStatusProgressDetail(void)
 }  // end getStatusProgressString()
 
 //==============================================================================
+unsigned int FEVInterfacesManager::getMinReadyForEventGenerationStartIteration(void) const
+{
+	unsigned int maxIteration = 0;
+	for(const auto& fePair : theFEInterfaces_)
+	{
+		unsigned int val = fePair.second->getMinReadyForEventGenerationStartIteration();
+		if(val > maxIteration)
+			maxIteration = val;
+	}
+	return maxIteration;
+}  // end getMinReadyForEventGenerationStartIteration()
+
+//==============================================================================
 void FEVInterfacesManager::configure(void)
 {
 	const std::string transitionName = "Configuring";
@@ -2338,7 +2351,8 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 				std::stringstream outNumberSs;
 				outNumberSs << std::dec << tmpNumber << " (0x" << std::hex << tmpNumber
 				            << ")" << std::dec;
-				outputArgs += argsOut[i].first + "," + outNumberSs.str();
+				outputArgs += StringMacros::encodeURIComponent(argsOut[i].first) + "," +
+				              outNumberSs.str();
 				continue;
 			}
 		}
@@ -2346,8 +2360,8 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 		{  // ignore error, assume not a number
 		}
 
-		outputArgs +=
-		    argsOut[i].first + "," + StringMacros::encodeURIComponent(argsOut[i].second);
+		outputArgs += StringMacros::encodeURIComponent(argsOut[i].first) + "," +
+		              StringMacros::encodeURIComponent(argsOut[i].second);
 	}
 
 	__CFG_COUTT__ << "outputArgs = " << outputArgs << __E__;
@@ -2470,6 +2484,8 @@ void FEVInterfacesManager::preStateMachineExecution(unsigned int       i,
 	fe->VStateMachine::setTransitionName(transitionName);
 	fe->VStateMachine::setIterationIndex(VStateMachine::getIterationIndex());
 	fe->VStateMachine::setSubIterationIndex(VStateMachine::getSubIterationIndex());
+	fe->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
+	    VStateMachine::getSystemMinReadyForEventGenerationStartIteration());
 
 	fe->VStateMachine::clearIterationWork();
 	fe->VStateMachine::clearSubIterationWork();

@@ -34,14 +34,14 @@ class ConfigurationManager
 
 	//==============================================================================
 	/// Static members
-	static const unsigned int PROCESSOR_COUNT;
-
 	static const std::string READONLY_USER;
 	static const std::string ACTIVE_GROUPS_FILENAME;
 	static const std::string ALIAS_VERSION_PREAMBLE;
 	static const std::string SCRATCH_VERSION_ALIAS;
 	static const std::string SUBSYSTEM_COMMON_VERSION_ALIAS;
 	static const std::string SUBSYSTEM_COMMON_OVERRIDE_VERSION_ALIAS;
+	static const std::string SUBSYSTEM_COMMON_CONTEXT_VERSION_ALIAS;
+	static const std::string SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_VERSION_ALIAS;
 
 	static const std::string XDAQ_CONTEXT_TABLE_NAME;
 	static const std::string XDAQ_APPLICATION_TABLE_NAME;
@@ -227,6 +227,8 @@ class ConfigurationManager
 		TableVersion>>					getVersionAliases			(const std::string& tableAliasNeedle) const; ///< returns all tableName/version pairs with table alias that matches the tableAliasNeedle
 	std::pair<std::string /*groupName*/,
 		TableGroupKey> 					getTableGroupFromAlias		(std::string systemAlias, ProgressBar* progressBar = 0);
+	void								applyContextCommonTables	(const std::map<std::string /*tableName*/, TableVersion>& mergeInTables,
+																	 const std::map<std::string /*tableName*/, TableVersion>& overrideTables);
 	std::map<std::string /*groupType*/,
 		 std::pair<std::string /*groupName*/,
 		 TableGroupKey>>				getActiveTableGroups		(void) const;

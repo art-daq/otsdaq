@@ -138,7 +138,7 @@ class ConfigurationTree
 			return isDefault_ ? zero_ : bitmap_[row][col];
 		}
 		unsigned int numberOfRows() const { return bitmap_.size(); }
-		unsigned int numberOfColumns(unsigned int row) const
+		unsigned int numberOfColumns(unsigned int row = 0) const
 		{
 			if(row >= numberOfRows())
 			{

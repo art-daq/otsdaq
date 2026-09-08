@@ -3,6 +3,8 @@
 #include "otsdaq/MessageFacility/TRACEController.h"
 
 #include <sys/statvfs.h>  // for disk space checking with statvfs
+#include <sys/sysinfo.h>  // for sysinfo() to get total memory
+#include <cstdint>        // for uint64_t
 
 using namespace ots;
 
@@ -42,6 +44,28 @@ CorePropertySupervisorBase::CorePropertySupervisorBase(xdaq::Application* applic
 		StringMacros::systemVariables_["ActiveStateMachine"]["name"] 		= StringMacros::TBD;
 		StringMacros::systemVariables_["ActiveStateMachine"]["windowName"] 	= StringMacros::TBD;
 		StringMacros::systemVariables_["ActiveStateMachine"]["runAlias"] 	= StringMacros::TBD;
+
+		{
+			StringMacros::getConcurrencyCount(); //fills systemVariables_["System"]["logicalCores"]
+
+			struct sysinfo memInfo;
+			if(sysinfo(&memInfo) == 0)
+			{
+				uint64_t totalMemMB =
+					static_cast<uint64_t>(memInfo.totalram) * memInfo.mem_unit / (1024 * 1024);
+				StringMacros::systemVariables_["System"]["totalMemoryMB"] =
+					std::to_string(totalMemMB);
+			}
+			else
+			{
+				StringMacros::systemVariables_["System"]["totalMemoryMB"] = "unknown";
+			}
+		}
+
+		// load 'artdaq' namespace system variables persisted by the ARTDAQ Supervisor
+		// (e.g. set via the Trigger Menu Editor web GUI) so ${OTS.artdaq.*}
+		// references resolve in every Supervisor process
+		StringMacros::loadPersistentSystemVariables();
 	} // end init StringMacros::systemVariables_
 	__SUP_COUTV__(StringMacros::mapToString(StringMacros::systemVariables_));
 

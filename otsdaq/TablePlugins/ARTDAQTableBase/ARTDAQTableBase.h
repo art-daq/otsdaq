@@ -149,7 +149,8 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 																				 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
 																		 std::map<std::string /*subsystemName*/,
 																			 std::string /*destinationSubsystemName*/>& 	subsystemObjectMap,
-																			 std::vector<std::string /*property*/>& 		artdaqSupervisoInfo);
+																			 std::vector<std::string /*property*/>& 		artdaqSupervisoInfo,
+																			 bool 											suppressMultiNode = false); ///< when true, skip multi-node "printer syntax" wildcard compression and emit one concrete record per node (e.g. for read-only status displays that need real node names)
 
 	static void       						setAndActivateARTDAQSystem	(ConfigurationManagerRW* cfgMgr,
 																		 const std::map<std::string /*type*/,

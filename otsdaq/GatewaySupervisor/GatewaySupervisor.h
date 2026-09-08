@@ -82,7 +82,10 @@ class WorkLoopManager;
 		static const std::string COMMAND_PARAM_LOG_ENTRY_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_OVERRIDE_PREAMBLE;
+		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE;
+		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_OVERRIDE_PREAMBLE;
 		static const std::string COMMAND_PARAM_ITERATION_INDEX_PREAMBLE;
+		static const std::string COMMAND_PARAM_MIN_EVENT_GEN_START_ITERATION_PREAMBLE;
 
 	public:
 		XDAQ_INSTANTIATOR();
@@ -102,6 +105,7 @@ class WorkLoopManager;
 		void						addStateMachineStatusToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName, bool getRunNumber = true);
 		void						addFilteredConfigAliasesToXML	(HttpXmlDocument& xmlOut, const std::string& fsmName);
 		void						addRequiredFsmLogInputToXML		(HttpXmlDocument& xmlOut, const std::string& fsmName);
+		static std::string			getGlobalFieldsString			(ConfigurationManager* cfgMgr, const std::map<std::string, TableVersion>& memberMap = {});
 
 		// State Machine requests handlers
 		void 						stateMachineXgiHandler(xgi::Input* in, xgi::Output* out);
@@ -351,7 +355,15 @@ class WorkLoopManager;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
 		bool				activeStateMachineWriteToEcl_ = true;
 		unsigned int		activeStateMachineConfigureConditionID_, activeStateMachineRunConditionID_;
+		unsigned int		minReadyForEventGenerationStartIteration_ = 0;
 		std::string			activeStateMachineSubsystemCommonList_, activeStateMachineSubsystemCommonOverrideList_; ///<cached at Configure transition CSV list of Table/Versions specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway, to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring
+		std::string			activeSubsystemCommonContextList_, activeSubsystemCommonContextOverrideList_; ///<refreshed in AppStatusWorkLoop CSV list of Table/Versions specified as table alias "SubsystemCommonContext" and "SubsystemCommonContextOverride" by user at top-level Primary Gateway, to be pushed to remote subsystems via periodic status requests for Context group tables (e.g. StateMachineTable)
+		std::string			appliedContextCommonList_, appliedContextCommonOverrideList_; ///<remote-side: last applied Context Common Table lists received from top-level
+		std::mutex			contextCommonMutex_; ///<protects appliedContextCommonList_ and appliedContextCommonOverrideList_
+
+		std::string			cachedSubsystemCommonBackboneKey_;
+		std::string			cachedSubsystemCommonList_, cachedSubsystemCommonOverrideList_;
+		std::string			cachedSubsystemCommonContextList_, cachedSubsystemCommonContextOverrideList_;
 
 		std::mutex			systemStatusMutex_;
 		std::string 		lastLogbookEntry_;
@@ -425,6 +437,8 @@ public:	//used by remote subsystem control and status
 			ConfigDumpTypes						config_dump_type = ConfigDumpTypes::Unknown;
 
 			size_t								ignoreStatusCount = 0; ///<if non-zero, do not ask for status
+			time_t								relaunchTime = 0; ///<timestamp of last relaunch via gatewayLaunchOTSInstance
+			time_t								commandSentTime = 0; ///<timestamp of last command send; suppresses stale status write-backs briefly
 
 			size_t								consoleErrCount = 0, consoleWarnCount = 0;
 
@@ -468,6 +482,15 @@ public:	//used by remote subsystem control and status
 
 			std::map<std::string, SupervisorInfo::SubappInfo>   subapps; ///< remote gateways can have subapps
 			bool iterationsDone = false; ///< tracks per-gateway iteration completion during FSM transitions
+
+			///< active context/config table group actually in use on the remote subsystem itself (as opposed to selected_config_alias, which is just the operator's chosen alias to configure with)
+			std::string							activeContextGroupName, activeConfigGroupName;
+			TableGroupKey						activeContextGroupKey, activeConfigGroupKey;
+
+			///< selected_config_alias resolved to a group name+key by the remote subsystem itself (against its own active Backbone); empty until the subsystem reports back a resolution
+			std::string							selectedConfigGroupName;
+			TableGroupKey						selectedConfigGroupKey;
+			bool doNotHaltWasCommandedHalt = false;
 		}; //end GatewaySupervisor::RemoteGatewayInfo struct
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
@@ -491,8 +514,12 @@ public:	//used by remote subsystem control and status
 		std::pair<std::string /* latestIconContext group */, TableGroupKey>
 															latestGatewayRemoteIconsContextGroup_; ///< used to track the table group key for the latest remote desktop icons
 
-		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP);
+		std::string											cachedGlobalFieldsString_;
+		std::pair<std::string, TableGroupKey>				cachedGlobalFieldsGroup_;
+
+		static void 				CheckRemoteGatewayStatus					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket, const std::string& ipForReverseLoginOverUDP, int portForReverseLoginOverUDP, const std::string& contextCommonList = "", const std::string& contextCommonOverrideList = "");
 		static void 				SendRemoteGatewayCommand					(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
+		static void					applyContextCommonTables					(GatewaySupervisor* supervisor, const std::string& contextCommonList, const std::string& contextCommonOverrideList);
 		static void 				GetRemoteGatewayIcons						(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
 		void						loadRemoteGatewaySettings					(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways, bool onlyNotFound = false) const;
 		void						saveRemoteGatewaySettings					(void) const;

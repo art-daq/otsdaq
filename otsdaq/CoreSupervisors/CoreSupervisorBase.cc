@@ -56,6 +56,14 @@ CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
 	           &CoreSupervisorBase::TRACESupervisorRequest,
 	           "TRACESupervisorRequest",
 	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest,
+	           "MinReadyForEventGenerationStartIterationRequest",
+	           XDAQ_NS_URI);
+	xoap::bind(this,
+	           &CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest,
+	           "MinReadyForEventGenerationStartIterationRequest",
+	           XDAQ_NS_URI);
 
 	__SUP_COUT__ << "Constructed. getpid()=" << getpid() << " gettid()=" << gettid()
 	             << __E__;
@@ -143,7 +151,8 @@ try
 	//**** end LOGIN GATEWAY CODE ***//
 
 	if(!userInfo.automatedCommand_)
-		__SUP_COUT__ << "requestType: " << requestType << __E__;
+		__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
+		             << " requestType: " << requestType << __E__;
 
 	if(userInfo.NonXMLRequestType_)
 	{
@@ -245,6 +254,11 @@ try
 	                         false /*print to cout*/,
 	                         !userInfo.NoXmlWhiteSpace_ /*allow whitespace*/,
 	                         true /* printErrors */);  // report any errors encountered
+
+	if(!userInfo.automatedCommand_)
+		__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
+		             << " requestType: " << requestType << " response written, elapsed="
+		             << artdaq::TimeUtils::GetElapsedTime(requestStart) << "s" << __E__;
 
 	// __SUP_COUTT__ << "Request '" << requestType
 	//               << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)
@@ -460,7 +474,7 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 	    getStatusProgressDetail());  // call virtual progress detail string generation
 
 	//return available disk space if first app in context
-	__SUP_COUTTV__(CorePropertySupervisorBase::isFirstAppInContext());
+	__SUP_COUTVS__(19, CorePropertySupervisorBase::isFirstAppInContext());
 	if(CorePropertySupervisorBase::isFirstAppInContext())
 	{
 		uint64_t availableLogSpaceKB =
@@ -486,6 +500,28 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 	return SOAPUtilities::makeSOAPMessageReference("applicationStatusRequestReply",
 	                                               retParameters);
 }  // end applicationStatusRequest()
+
+//==============================================================================
+xoap::MessageReference
+CoreSupervisorBase::minReadyForEventGenerationStartIterationRequest(
+    xoap::MessageReference /*message*/)
+{
+	unsigned int maxIteration = 0;
+	for(const auto& fsm : theStateMachineImplementation_)
+	{
+		unsigned int val = fsm->getMinReadyForEventGenerationStartIteration();
+		if(val > maxIteration)
+			maxIteration = val;
+	}
+
+	__SUP_COUT__ << "MinReadyForEventGenerationStartIteration (aggregated max) = "
+	             << maxIteration << __E__;
+
+	SOAPParameters retParameters;
+	retParameters.addParameter("MinIteration", std::to_string(maxIteration));
+	return SOAPUtilities::makeSOAPMessageReference(
+	    "MinReadyForEventGenerationStartIterationRequestReply", retParameters);
+}  // end minReadyForEventGenerationStartIterationRequest()
 
 //==============================================================================
 /// virtual progress string that can be overridden with more info
@@ -691,6 +727,9 @@ void CoreSupervisorBase::preStateMachineExecution(unsigned int i)
 	    RunControlStateMachine::getIterationIndex());
 	theStateMachineImplementation_[i]->VStateMachine::setSubIterationIndex(
 	    RunControlStateMachine::getSubIterationIndex());
+	theStateMachineImplementation_[i]
+	    ->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
+	        RunControlStateMachine::getMinReadyForEventGenerationStartIteration());
 
 	theStateMachineImplementation_[i]->VStateMachine::clearIterationWork();
 	theStateMachineImplementation_[i]->VStateMachine::clearSubIterationWork();

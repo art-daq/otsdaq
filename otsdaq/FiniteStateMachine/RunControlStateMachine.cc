@@ -362,6 +362,19 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		subIterationIndex_ = 0;
 	}
 
+	// get MinReadyForEventGenerationStartIteration
+	try
+	{
+		StringMacros::getNumber(
+		    SOAPUtilities::translate(message).getParameters().getValue(
+		        "MinReadyForEventGenerationStartIteration"),
+		    minReadyForEventGenerationStartIteration_);
+	}
+	catch(...)
+	{
+		minReadyForEventGenerationStartIteration_ = 0;
+	}
+
 	// get retransmission indicator
 	bool retransmittedCommand = false;
 	try

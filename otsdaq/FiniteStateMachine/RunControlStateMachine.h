@@ -143,6 +143,7 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 
 	unsigned int       getIterationIndex(void) { return iterationIndex_; }
 	unsigned int       getSubIterationIndex(void) { return subIterationIndex_; }
+	unsigned int       getMinReadyForEventGenerationStartIteration(void) { return minReadyForEventGenerationStartIteration_; }
 	void               indicateIterationWork(void) { iterationWorkFlag_ = true; }
 	void               clearIterationWork(void) { iterationWorkFlag_ = false; }
 	bool               getIterationWork(void) { return iterationWorkFlag_; }
@@ -165,6 +166,7 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 
 	unsigned int iterationIndex_ = 0, subIterationIndex_ = 0;
 	bool         iterationWorkFlag_, subIterationWorkFlag_;
+	unsigned int minReadyForEventGenerationStartIteration_ = 0;
 
 	toolbox::fsm::State lastIterationState_;
 	std::string         lastIterationCommand_;
