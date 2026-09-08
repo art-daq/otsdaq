@@ -1437,6 +1437,7 @@ launchOTSMacromaker() {
 	out "\tots Macro Maker access code = $(cat ${SERVICE_DATA_PATH}//OtsWizardData/sequence.out)"
 
 	printMainURL &
+	PRINT_MAIN_URL_PID=$!
 
 	ContextPIDArray+=($LAST_OTS_PID)
 	ContextPIDNameArray+=("MacroMakerMode")
@@ -1740,6 +1741,7 @@ launchOTSWiz() {
 
 
 	printMainURL &
+	PRINT_MAIN_URL_PID=$!
 
 	ContextPIDArray+=($LAST_OTS_PID)
 	ContextPIDNameArray+=("WizMode")
@@ -2630,6 +2632,7 @@ launchOTS() {
 
 	elif [[ $ISGATEWAYLAUNCH == 1 ]]; then
 		printMainURL &
+		PRINT_MAIN_URL_PID=$!
 	fi
 
 
@@ -3996,7 +3999,7 @@ launchOTSLogFind() {
 					elif [[ "$_lf_basename" == *"-wiz-"* ]]; then
 						_lf_category="wizard mode"
 					elif [[ "$_lf_basename" == *"-mm-"* ]]; then
-						_lf_category="macro maker"
+						_lf_category="Macro Maker mode"
 					elif [[ "$_lf_basename" == *"-flatten-"* ]]; then
 						_lf_category="flatten"
 					elif [[ "$_lf_basename" == "otsdaq_quiet_run-"* ]]; then
@@ -4022,7 +4025,7 @@ launchOTSLogFind() {
 			fi
 			while IFS= read -r _lf_file; do
 				_lf_age=$(_logfind_file_age "$_lf_file")
-				out "    ${Bold}action handler${RstClr} --> less -R ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+				out "    ${Bold}ots Action Handler${RstClr} --> less -R ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
 			done <<< "$_logfind_action_files"
 		fi
 
@@ -5166,6 +5169,7 @@ otsActionHandler() {
 	info "action handler command file:        ${OTSDAQ_STARTOTS_ACTION_FILE}"
 	info "action handler subsystem exit file: ${OTSDAQ_STARTOTS_QUIT_FILE}"
 	info "action handler local exit file:     ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE}"
+	out "\tots Wiz Mode access code = $(cat ${SERVICE_DATA_PATH}//OtsWizardData/sequence.out 2>/dev/null)"
 
 	#listen for file commands
 	while true; do
@@ -5404,7 +5408,7 @@ otsActionHandler() {
 
 		sleep 1
 		_actionLoopCount=$(( $_actionLoopCount + 1 ))
-		if (( _actionLoopCount % 100 == 0 )); then
+		if (( _actionLoopCount % 2500 == 0 )); then
 			out "ACTION-DIAG: still alive pid=${BASHPID} loop=${_actionLoopCount}"
 		fi
 		# Note!! User can prevent data check with export OTSDAQ_DATA_DISK_MINIMUM=0
@@ -6563,8 +6567,8 @@ fi
 # exec #rrivera commented: Ron and internet say this exec does nothing
 otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
 ACTION_HANDLER_PID=$!
-out "Action handler (pid = ${ACTION_HANDLER_PID}) log is here,"
-out " e.g.: ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+out "Action handler (pid = ${ACTION_HANDLER_PID}) log is here:"
+out "       ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
 
@@ -6583,6 +6587,9 @@ if [ $ISACTIONONLY == 0 ]; then
 
 	#only report warning if not remote launch and enabled
 	if [[ $ISREMOTE == 0 && "x$CHECK_GIT_REPO_STATUS" == "x1" ]]; then
+		if [ -n "${PRINT_MAIN_URL_PID:-}" ]; then
+			wait $PRINT_MAIN_URL_PID 2>/dev/null
+		fi
 		out "Will report a warning if any uncommitted code found..."
 		echo
 		UpdateOTS.sh --warn 2>&1 >/dev/null
