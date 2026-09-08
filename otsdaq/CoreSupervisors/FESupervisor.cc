@@ -960,7 +960,8 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 		{
 			if(!theFEInterfacesManager_)
 			{
-				__SUP_SS__ << "Missing FE Interface Manager! Are you configured?" << __E__;
+				__SUP_SS__ << "Missing FE Interface Manager! Are you configured?"
+				           << __E__;
 				__SUP_SS_THROW__;
 			}
 
@@ -971,17 +972,14 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 			requestParameters.addParameter("userPermissions");
 			SOAPUtilities::receive(message, requestParameters);
 
-			const std::string interfaceID =
-			    requestParameters.getValue("InterfaceID");
-			const std::string feMacroName =
-			    requestParameters.getValue("feMacroName");
-			const std::string inputArgs =
-			    requestParameters.getValue("inputArgs");
+			const std::string interfaceID = requestParameters.getValue("InterfaceID");
+			const std::string feMacroName = requestParameters.getValue("feMacroName");
+			const std::string inputArgs   = requestParameters.getValue("inputArgs");
 			const std::string userPermissions =
 			    requestParameters.getValue("userPermissions");
 
-			FEVInterface* fe = theFEInterfacesManager_->getFEInterfaceP(interfaceID);
-			auto macroIt = fe->getMapOfFEMacroFunctions().find(feMacroName);
+			FEVInterface* fe      = theFEInterfacesManager_->getFEInterfaceP(interfaceID);
+			auto          macroIt = fe->getMapOfFEMacroFunctions().find(feMacroName);
 			if(macroIt == fe->getMapOfFEMacroFunctions().end())
 			{
 				__SUP_SS__ << "FE Macro '" << feMacroName << "' of interfaceID '"
@@ -1011,9 +1009,9 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 			{
 				if(!encodedDefaults.empty())
 					encodedDefaults += ";";
-				encodedDefaults +=
-				    StringMacros::encodeURIComponent(defaultValue.first) + "," +
-				    StringMacros::encodeURIComponent(defaultValue.second);
+				encodedDefaults += StringMacros::encodeURIComponent(defaultValue.first) +
+				                   "," +
+				                   StringMacros::encodeURIComponent(defaultValue.second);
 			}
 			retParameters.addParameter("InputDefaults", encodedDefaults);
 			return SOAPUtilities::makeSOAPMessageReference(
