@@ -1380,8 +1380,7 @@ try
 		__SUP_COUTV__(progress);
 		__SUP_COUTV__(thread_progress_bar_.isComplete());
 
-		if(errorMessage == "" &&
-		   time(0) - last_thread_progress_update_ > 600)
+		if(errorMessage == "" && time(0) - last_thread_progress_update_ > 600)
 		{
 			__SUP_SS__ << "There has been no update from the start thread for "
 			           << (time(0) - last_thread_progress_update_)
