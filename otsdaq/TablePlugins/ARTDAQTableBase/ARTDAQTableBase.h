@@ -100,6 +100,7 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	static std::string        				getFHICLFilename			(ARTDAQAppType type, const std::string& name);
 	static std::string        				getFlatFHICLFilename		(ARTDAQAppType type, const std::string& name);
 	static void        						flattenFHICL				(ARTDAQAppType type, const std::string& name, std::string* returnFcl = nullptr);
+	static void        						flattenFHICLInParallel		(ARTDAQAppType type, const std::vector<std::pair<std::string, std::string*>>& namesAndReturnFcls);
 
 	static void        						insertParameters			(std::ostream&      out,
 																		 std::string&       tabStr,
