@@ -525,18 +525,17 @@ try
 				}
 				catch(const std::exception& e)
 				{
-					__FE_COUT_WARN__
-					    << "DCS slow controls read failed for channel '"
-					    << channel->fullChannelName << "': " << e.what()
-					    << " -- skipping this sample." << __E__;
+					__FE_COUT_WARN__ << "DCS slow controls read failed for channel '"
+					                 << channel->fullChannelName << "': " << e.what()
+					                 << " -- skipping this sample." << __E__;
 					continue;
 				}
 				catch(...)
 				{
-					__FE_COUT_WARN__
-					    << "DCS slow controls read failed for channel '"
-					    << channel->fullChannelName
-					    << "' with an unknown error -- skipping this sample." << __E__;
+					__FE_COUT_WARN__ << "DCS slow controls read failed for channel '"
+					                 << channel->fullChannelName
+					                 << "' with an unknown error -- skipping this sample."
+					                 << __E__;
 					continue;
 				}
 				channel->handleSample(

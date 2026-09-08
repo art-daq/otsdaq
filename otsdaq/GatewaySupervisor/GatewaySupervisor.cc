@@ -7239,97 +7239,106 @@ try
 		// The dumps only read from the already-activated config tree (read-only)
 		// and their results are consumed later (file write after broadcast,
 		// and at Run transition time).
-		configDumpCachingThread_ = std::make_unique<std::thread>([this,
-		    configurationAlias, subsystemCommonList, subsystemCommonOverrideList]()
-		{
-			try
-			{
-				//get/cache Run transition dump
-				if(activeStateMachineSystemDumpOnRunEnable_ ||
-				   ((activeStateMachineRunInfoPluginType_ !=
-				         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-				     activeStateMachineRunInfoPluginType_ !=
-				         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-				     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
-				{
-					__COUT_INFO__
-					    << "Caching the System Configuration Dump for the Run transition..."
-					    << __E__;
+		configDumpCachingThread_ =
+		    std::make_unique<std::thread>([this,
+		                                   configurationAlias,
+		                                   subsystemCommonList,
+		                                   subsystemCommonOverrideList]() {
+			    try
+			    {
+				    //get/cache Run transition dump
+				    if(activeStateMachineSystemDumpOnRunEnable_ ||
+				       ((activeStateMachineRunInfoPluginType_ !=
+				             TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				         activeStateMachineRunInfoPluginType_ !=
+				             TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				         activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+				    {
+					    __COUT_INFO__ << "Caching the System Configuration Dump for the "
+					                     "Run transition..."
+					                  << __E__;
 
-					std::stringstream dumpSs;
-					CorePropertySupervisorBase::theConfigurationManager_
-					    ->dumpActiveConfiguration(
-					        "",
-					        activeStateMachineDumpFormatOnRun_,
-					        configurationAlias,
-					        subsystemCommonList,
-					        subsystemCommonOverrideList,
-					        getLastLogEntry(
-					            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-					        theWebUsers_.getActiveUsernamesString(),
-					        theStateMachine_.getCurrentStateName(),
-					        dumpSs);
+					    std::stringstream dumpSs;
+					    CorePropertySupervisorBase::theConfigurationManager_
+					        ->dumpActiveConfiguration(
+					            "",
+					            activeStateMachineDumpFormatOnRun_,
+					            configurationAlias,
+					            subsystemCommonList,
+					            subsystemCommonOverrideList,
+					            getLastLogEntry(
+					                RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+					            theWebUsers_.getActiveUsernamesString(),
+					            theStateMachine_.getCurrentStateName(),
+					            dumpSs);
 
-					activeStateMachineSystemDumpOnRun_ = dumpSs.str();
+					    activeStateMachineSystemDumpOnRun_ = dumpSs.str();
 
-					__COUT__ << "Active State Machine Config Dump on Run " << __E__;
-					__COUTTV__(activeStateMachineSystemDumpOnRun_) << __E__;
-					__COUT_MULTI__(TLVL_SystemDump, activeStateMachineSystemDumpOnRun_);
-				}
-				else
-					__COUT_INFO__
-					    << "Not caching the System Configuration Dump on the Run transition."
-					    << __E__;
+					    __COUT__ << "Active State Machine Config Dump on Run " << __E__;
+					    __COUTTV__(activeStateMachineSystemDumpOnRun_) << __E__;
+					    __COUT_MULTI__(TLVL_SystemDump,
+					                   activeStateMachineSystemDumpOnRun_);
+				    }
+				    else
+					    __COUT_INFO__ << "Not caching the System Configuration Dump on "
+					                     "the Run transition."
+					                  << __E__;
 
-				//get/cache Configuration transition dump
-				if(activeStateMachineSystemDumpOnConfigureEnable_ ||
-				   ((activeStateMachineRunInfoPluginType_ !=
-				         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-				     activeStateMachineRunInfoPluginType_ !=
-				         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-				     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
-				{
-					__COUT_INFO__ << "Caching the System Configuration Dump for the "
-					                 "Configure transition..."
-					              << __E__;
+				    //get/cache Configuration transition dump
+				    if(activeStateMachineSystemDumpOnConfigureEnable_ ||
+				       ((activeStateMachineRunInfoPluginType_ !=
+				             TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				         activeStateMachineRunInfoPluginType_ !=
+				             TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				         activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+				    {
+					    __COUT_INFO__ << "Caching the System Configuration Dump for the "
+					                     "Configure transition..."
+					                  << __E__;
 
-					std::stringstream dumpSs;
-					CorePropertySupervisorBase::theConfigurationManager_
-					    ->dumpActiveConfiguration(
-					        "",
-					        activeStateMachineDumpFormatOnConfigure_,
-					        configurationAlias,
-					        subsystemCommonList,
-					        subsystemCommonOverrideList,
-					        getLastLogEntry(
-					            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-					        theWebUsers_.getActiveUsernamesString(),
-					        theStateMachine_.getCurrentStateName(),
-					        dumpSs);
+					    std::stringstream dumpSs;
+					    CorePropertySupervisorBase::theConfigurationManager_
+					        ->dumpActiveConfiguration(
+					            "",
+					            activeStateMachineDumpFormatOnConfigure_,
+					            configurationAlias,
+					            subsystemCommonList,
+					            subsystemCommonOverrideList,
+					            getLastLogEntry(
+					                RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+					            theWebUsers_.getActiveUsernamesString(),
+					            theStateMachine_.getCurrentStateName(),
+					            dumpSs);
 
-					activeStateMachineSystemDumpOnConfigure_ = dumpSs.str();
+					    activeStateMachineSystemDumpOnConfigure_ = dumpSs.str();
 
-					__COUT__ << "Active State Machine Config Dump on Configure " << __E__;
-					__COUTTV__(activeStateMachineSystemDumpOnConfigure_) << __E__;
-					__COUT_MULTI__(TLVL_SystemDump, activeStateMachineSystemDumpOnConfigure_);
-				}
-				else
-					__COUT_INFO__ << "Not caching the System Configuration Dump on the "
-					                 "Configure transition."
-					              << __E__;
-			}
-			catch(const std::runtime_error& e)
-			{
-				__COUT_ERR__ << "Error in config dump caching thread: " << e.what() << __E__;
-				configDumpCachingError_ = std::string("Config dump error: ") + e.what();
-			}
-			catch(...)
-			{
-				__COUT_ERR__ << "Unknown error in config dump caching thread." << __E__;
-				configDumpCachingError_ = "Unknown config dump error";
-			}
-		});  // end config dump caching thread lambda
-	}  //end configuration dump handling
+					    __COUT__ << "Active State Machine Config Dump on Configure "
+					             << __E__;
+					    __COUTTV__(activeStateMachineSystemDumpOnConfigure_) << __E__;
+					    __COUT_MULTI__(TLVL_SystemDump,
+					                   activeStateMachineSystemDumpOnConfigure_);
+				    }
+				    else
+					    __COUT_INFO__
+					        << "Not caching the System Configuration Dump on the "
+					           "Configure transition."
+					        << __E__;
+			    }
+			    catch(const std::runtime_error& e)
+			    {
+				    __COUT_ERR__ << "Error in config dump caching thread: " << e.what()
+				                 << __E__;
+				    configDumpCachingError_ =
+				        std::string("Config dump error: ") + e.what();
+			    }
+			    catch(...)
+			    {
+				    __COUT_ERR__ << "Unknown error in config dump caching thread."
+				                 << __E__;
+				    configDumpCachingError_ = "Unknown config dump error";
+			    }
+		    });  // end config dump caching thread lambda
+	}            //end configuration dump handling
 
 	RunControlStateMachine::theProgressBar_.step();
 

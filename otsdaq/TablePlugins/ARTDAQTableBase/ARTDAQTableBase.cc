@@ -57,7 +57,7 @@ static const double                          FHICL_TRACE_RESET_GAP_S = 30.0;
 // runs first in a config triggers the reset.
 static void maybeResetFHiCLTimingTrace()
 {
-	std::lock_guard<std::mutex> lock(fhiclFlattenStatsMutex_);
+	std::lock_guard<std::mutex>           lock(fhiclFlattenStatsMutex_);
 	std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
 	if(fhiclFlattenCountCumulative_ > 0 || extractInvocation_ > 0)
 	{
@@ -352,7 +352,7 @@ void ARTDAQTableBase::flattenFHICL(ARTDAQAppType      type,
 // flattenFHICL's returnFcl). The first worker exception is rethrown on the
 // calling thread.
 void ARTDAQTableBase::flattenFHICLInParallel(
-    ARTDAQAppType                                             type,
+    ARTDAQAppType                                            type,
     const std::vector<std::pair<std::string, std::string*>>& namesAndReturnFcls)
 {
 	if(namesAndReturnFcls.empty())
@@ -1724,12 +1724,13 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			std::string enabledFragmentTypes;
 			try
 			{
-				enabledFragmentTypes =
-				    services.getNode("enabledFragmentTypes").getValueWithDefault(std::string(""));
+				enabledFragmentTypes = services.getNode("enabledFragmentTypes")
+				                           .getValueWithDefault(std::string(""));
 			}
 			catch(...)
 			{
-				__COUTT__ << "No enabledFragmentTypes column in services table; skipping." << __E__;
+				__COUTT__ << "No enabledFragmentTypes column in services table; skipping."
+				          << __E__;
 			}
 			if(!enabledFragmentTypes.empty())
 				OUTCLF("enabled_fragment_types: " << enabledFragmentTypes,

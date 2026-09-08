@@ -973,7 +973,8 @@ try
 
 			// Read the critical error saved before recovery output flooded the buffer
 			{
-				PyObject* pyCritErr = PyObject_GetAttrString(daqinterface_ptr_, "last_critical_error");
+				PyObject* pyCritErr =
+				    PyObject_GetAttrString(daqinterface_ptr_, "last_critical_error");
 				if(pyCritErr && PyUnicode_Check(pyCritErr))
 				{
 					std::string critErr = PyUnicode_AsUTF8(pyCritErr);
