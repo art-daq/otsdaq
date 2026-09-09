@@ -2140,8 +2140,15 @@ launchOTS() {
 
 								# Alert the user to the problem and keep relaunching
 
+								RELAUNCH_ATTEMPTS=0
+								RELAUNCH_LIMIT=10
 								while [ "x$OTS_IS_ALIVE" == "x" ]; do
-									warning "Could not verify successful ots gateway context launch (check log for details)..."
+									RELAUNCH_ATTEMPTS=$(( RELAUNCH_ATTEMPTS + 1 ))
+									if [ $RELAUNCH_ATTEMPTS -gt $RELAUNCH_LIMIT ]; then
+										killproc ${LAST_OTS_PID} xdaq.exe
+										die "Gateway context failed to launch after ${RELAUNCH_LIMIT} attempts. See ${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt"
+									fi
+									warning "Could not verify successful ots gateway context launch (check log for details)... (attempt ${RELAUNCH_ATTEMPTS}/${RELAUNCH_LIMIT})"
 									killproc ${LAST_OTS_PID} xdaq.exe
 									if [ $QUIET == 1 ]; then #display log tail for user to
 
