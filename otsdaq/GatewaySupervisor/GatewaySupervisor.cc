@@ -5362,6 +5362,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					   command == RunControlStateMachine::START_TRANSITION_NAME)
 						extraDoneContent =
 						    theSupervisor->activeStateMachineSystemDumpOnRun_;
+
+					if(command == RunControlStateMachine::ERROR_TRANSITION_NAME ||
+					   command == RunControlStateMachine::FAIL_TRANSITION_NAME)
+						theSupervisor->remoteSubsystemErrorReceived_ = true;
 				}
 				if(extraDoneContent.size())
 					extraDoneContent += "END---";
@@ -5788,8 +5792,12 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	    StringMacros::decodeURIComponent(CgiDataUtilities::postData(cgiIn, "logEntry"));
 
 	if(command == "Stop")
+	{
 		activeStateMachineWriteToEcl_ =
 		    (CgiDataUtilities::postData(cgiIn, "writeToEcl") == "1");
+		activeStateMachineDiscardRun_ =
+		    (CgiDataUtilities::postData(cgiIn, "discardRun") == "1");
+	}
 
 	attemptStateMachineTransition(&xmlOut,
 	                              out,
@@ -5951,6 +5959,7 @@ try
 		{
 			activeStateMachineRawStartComment_ = logEntry;
 			activeStateMachineRawStopComment_.clear();
+			activeStateMachineDiscardRun_ = false;
 		}
 		else if(command == RunControlStateMachine::STOP_TRANSITION_NAME)
 			activeStateMachineRawStopComment_ = logEntry;
@@ -10150,7 +10159,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							auto deadline = std::chrono::steady_clock::now() +
 							                std::chrono::minutes(4);
 							while(remoteIterationIndex_ < nextIteration &&
-							      !RunControlStateMachine::asyncFailureReceived_)
+							      !remoteSubsystemErrorReceived_)
 							{
 								remoteIterationCV_.wait_for(lock,
 								                            std::chrono::seconds(1));
@@ -10167,10 +10176,12 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								}
 							}
 						}
-						if(RunControlStateMachine::asyncFailureReceived_)
+						if(remoteSubsystemErrorReceived_)
 						{
-							__SS__ << "Async failure received while waiting for "
-							          "iteration re-send!"
+							remoteSubsystemErrorReceived_ = false;
+							__SS__ << "Top-level Error/Fail received while waiting "
+							          "for iteration re-send -- the start sequence "
+							          "can never complete, aborting."
 							       << __E__;
 							__SS_THROW__;
 						}
@@ -10219,6 +10230,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			isRemoteSubsystemIteration_ = false;
 			remoteIterationIndex_       = 0;
 		}
+		remoteSubsystemErrorReceived_ = false;
 
 		// Check for a user cancel that arrived during the final SOAP call of the loop,
 		// which would not have been caught by the per-supervisor checkForAsyncError() call.
@@ -10234,6 +10246,24 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
 			isRemoteSubsystemIteration_ = false;
 			remoteIterationIndex_       = 0;
+		}
+
+		// Queue Error command to remote subsystems still mid-iteration so they
+		// break out of their 4-minute wait immediately instead of timing out.
+		{
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			for(auto& rga : remoteGatewayApps_)
+			{
+				if(!rga.fsm_included || rga.iterationsDone)
+					continue;
+				if(rga.command != "" && rga.command != "Sent")
+					continue;  // already has a pending command
+
+				__COUT__ << "Queueing Error to still-running remote gateway '"
+				         << rga.appInfo.name << "'" << __E__;
+				rga.command = RunControlStateMachine::ERROR_TRANSITION_NAME;
+				rga.fsmName = activeStateMachineName_;
+			}
 		}
 
 		// Signal all threads to exit and wait for them to finish gracefully.
@@ -14830,8 +14860,13 @@ void GatewaySupervisor::writeRunInfoTransition(
 					__SS_THROW__;
 				}
 
+				std::string metadata;
+				if(transitionType == RunInfoVInterface::RunTransitionType::STOP &&
+				   activeStateMachineDiscardRun_)
+					metadata = "{\"discardRun\":true}";
+
 				runInfoInterface->updateRunInfo(
-				    activeStateMachineRunConditionID_, transitionType, comment);
+				    activeStateMachineRunConditionID_, transitionType, comment, metadata);
 			}
 		}
 	}
