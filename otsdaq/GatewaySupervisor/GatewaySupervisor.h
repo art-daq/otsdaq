@@ -358,6 +358,7 @@ class WorkLoopManager;
 		time_t				activeStateMachineRunWallClockStartTime_ = 0;
 		int					activeStateMachineRunDuration_ms; ///< For paused runs, don't count time spent in pause state
 		bool				activeStateMachineWriteToEcl_ = true;
+		bool				activeStateMachineDiscardRun_ = false;
 		unsigned int		activeStateMachineConfigureConditionID_, activeStateMachineRunConditionID_;
 		unsigned int		minReadyForEventGenerationStartIteration_ = 0;
 		std::string			activeStateMachineSubsystemCommonList_, activeStateMachineSubsystemCommonOverrideList_; ///<cached at Configure transition CSV list of Table/Versions specified as table alias "SubsystemCommon" and "SubsystemCommonOverride" by user at top-level Primary Gateway, to be merged into the configuration for all subsystems (e.g. for DCS/DQM) when configuring
@@ -405,6 +406,7 @@ class WorkLoopManager;
 		std::condition_variable remoteIterationCV_;
 		unsigned int            remoteIterationIndex_ = 0;
 		std::atomic<bool>       isRemoteSubsystemIteration_{false}; ///< true when broadcastMessage() iteration loop is driven by top-level re-sends
+		std::atomic<bool>       remoteSubsystemErrorReceived_{false}; ///< set when top-level sends Error/Fail while this subsystem is mid-transition; checked only in the needNextIteration wait
 
 		static std::vector<std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct>> broadcastThreadStructs_; ///<moving to static, instead of a local instance inside broadcastMessage() seems to avoid crashing when multiple error stack up and threads get stuck waiting for app replies
 
