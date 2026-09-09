@@ -5792,8 +5792,12 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	    StringMacros::decodeURIComponent(CgiDataUtilities::postData(cgiIn, "logEntry"));
 
 	if(command == "Stop")
+	{
 		activeStateMachineWriteToEcl_ =
 		    (CgiDataUtilities::postData(cgiIn, "writeToEcl") == "1");
+		activeStateMachineDiscardRun_ =
+		    (CgiDataUtilities::postData(cgiIn, "discardRun") == "1");
+	}
 
 	attemptStateMachineTransition(&xmlOut,
 	                              out,
@@ -5955,6 +5959,7 @@ try
 		{
 			activeStateMachineRawStartComment_ = logEntry;
 			activeStateMachineRawStopComment_.clear();
+			activeStateMachineDiscardRun_ = false;
 		}
 		else if(command == RunControlStateMachine::STOP_TRANSITION_NAME)
 			activeStateMachineRawStopComment_ = logEntry;
@@ -10241,6 +10246,24 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
 			isRemoteSubsystemIteration_ = false;
 			remoteIterationIndex_       = 0;
+		}
+
+		// Queue Error command to remote subsystems still mid-iteration so they
+		// break out of their 4-minute wait immediately instead of timing out.
+		{
+			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+			for(auto& rga : remoteGatewayApps_)
+			{
+				if(!rga.fsm_included || rga.iterationsDone)
+					continue;
+				if(rga.command != "" && rga.command != "Sent")
+					continue;  // already has a pending command
+
+				__COUT__ << "Queueing Error to still-running remote gateway '"
+				         << rga.appInfo.name << "'" << __E__;
+				rga.command = RunControlStateMachine::ERROR_TRANSITION_NAME;
+				rga.fsmName = activeStateMachineName_;
+			}
 		}
 
 		// Signal all threads to exit and wait for them to finish gracefully.
@@ -14837,8 +14860,13 @@ void GatewaySupervisor::writeRunInfoTransition(
 					__SS_THROW__;
 				}
 
+				std::string metadata;
+				if(transitionType == RunInfoVInterface::RunTransitionType::STOP &&
+				   activeStateMachineDiscardRun_)
+					metadata = "{\"discardRun\":true}";
+
 				runInfoInterface->updateRunInfo(
-				    activeStateMachineRunConditionID_, transitionType, comment);
+				    activeStateMachineRunConditionID_, transitionType, comment, metadata);
 			}
 		}
 	}
