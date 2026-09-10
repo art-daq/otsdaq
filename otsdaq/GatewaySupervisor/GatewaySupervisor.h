@@ -157,6 +157,7 @@ class WorkLoopManager;
 		static void 				addSystemMessage(std::string toUserCSV, std::string message);
 
 		void 						checkForAsyncError(void);
+		void 						joinConfigDumpCachingThread(void);  ///< reap the deferred dump-caching thread; safe when none is running
 
 		// CorePropertySupervisorBase override functions
 		virtual void 					setSupervisorPropertyDefaults					(void) override;  ///< override to control supervisor specific defaults

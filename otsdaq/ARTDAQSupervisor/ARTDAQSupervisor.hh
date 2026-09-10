@@ -10,6 +10,8 @@
 #include <Python.h>
 #endif
 
+#include <atomic>
+#include <chrono>
 #include <mutex>
 #include <set>
 #include <thread>
@@ -114,13 +116,14 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 
 	PyObject *daqinterface_ptr_, *stringIO_out_,
 	    *stringIO_err_;  //stringIO_err_ not needed with new Tee Buffer solution
-	std::recursive_mutex         daqinterface_pythonMutex_;
+	std::recursive_timed_mutex   daqinterface_pythonMutex_;  ///<timed, so transitions can bound their acquisition
 	std::mutex                   daqinterface_statusMutex_;
 	std::string                  daqinterface_status_;
 	int                          partition_;
 	std::string                  daqinterface_state_;
 	std::unique_ptr<std::thread> runner_thread_;
 	std::atomic<bool>            runner_running_;
+	std::atomic<bool>            runner_exited_{true};  ///<set by the runner on every exit path; read by stop_runner_()
 
 	std::mutex                         thread_mutex_;
 	ProgressBar                        thread_progress_bar_;
@@ -142,7 +145,7 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	std::string                        labelToProcType_(std::string label);
 	std::list<DAQInterfaceProcessInfo> getAndParseProcessInfo_(void);
 	void                               daqinterfaceRunner_(void);
-	void                               stop_runner_(void);
+	bool                               stop_runner_(unsigned int timeoutSeconds = 5);  ///<bounded; false if the runner was abandoned
 	void                               start_runner_(void);
 	void                               set_thread_message_(std::string msg)
 	{

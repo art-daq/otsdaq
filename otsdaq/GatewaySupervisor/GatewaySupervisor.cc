@@ -190,6 +190,10 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 /// entry is made when ots is killed
 GatewaySupervisor::~GatewaySupervisor(void)
 {
+	//join before deleting the configuration manager that the thread reads,
+	//	and before the unique_ptr member is destroyed
+	joinConfigDumpCachingThread();
+
 	delete CorePropertySupervisorBase::theConfigurationManager_;
 
 	bool doLog = false;
@@ -5886,6 +5890,11 @@ try
 	}
 
 	//check if MinReadyForEventGenerationStartIteration is in parameters (sent by top-level Gateway for subsystem)
+	//	Note: reset first, so this only ever holds the value received for THIS
+	//	transition. A locally initiated Start carries no such parameter and must not
+	//	inherit a previous run's (possibly larger) floor -- that would delay event
+	//	generation even when every current supervisor reports a lower requirement.
+	minReadyForEventGenerationStartIteration_ = 0;
 	for(size_t i = 0; i < commandParameters.size(); ++i)
 	{
 		if(commandParameters[i].find(
@@ -6962,10 +6971,42 @@ void GatewaySupervisor::checkForAsyncError()
 /////////////////////////////////////////////////////////////////////////////////////
 
 //==============================================================================
+/// joinConfigDumpCachingThread
+///	Reap the deferred configuration-dump caching thread, if one exists.
+///	Safe to call when no thread is running.
+///
+///	Must be called before configDumpCachingThread_ is reassigned or destroyed:
+///	destroying a joinable std::thread calls std::terminate(), which aborts the
+///	gateway process (e.g. when a failed Configure returned before the normal
+///	join, leaving the thread unjoined, and then a new Configure arrived).
+void GatewaySupervisor::joinConfigDumpCachingThread(void)
+{
+	if(!configDumpCachingThread_)
+		return;
+
+	if(configDumpCachingThread_->joinable())
+		configDumpCachingThread_->join();
+	configDumpCachingThread_.reset();
+}  //end joinConfigDumpCachingThread()
+
+//==============================================================================
 void GatewaySupervisor::transitionConfiguring(toolbox::Event::Reference /* event*/)
 try
 {
 	checkForAsyncError();
+
+	// Scope-bound join for the deferred configuration-dump caching thread.
+	//	This transition can throw between launching that thread and the join
+	//	after the broadcast (Macro Maker SOAP setup, the broadcast itself, ...).
+	//	This destructor runs on every exit path -- including a throw out of a
+	//	function-try-block, where body locals are destroyed before the handler --
+	//	so the thread never outlives the transition that started it, and is never
+	//	left joinable for a later Configure to destroy (which calls std::terminate).
+	struct ConfigDumpThreadJoiner
+	{
+		GatewaySupervisor* gatewaySupervisor;
+		~ConfigDumpThreadJoiner() { gatewaySupervisor->joinConfigDumpCachingThread(); }
+	} configDumpThreadJoiner{this};
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -7243,6 +7284,13 @@ try
 
 		//at this point Configuration Tree is fully loaded
 
+		//reap the thread of any previous Configure attempt before reassigning,
+		//	because destroying a joinable std::thread calls std::terminate().
+		//	A Configure that failed during the broadcast returns before the
+		//	normal join below, so a thread can still be held here.
+		joinConfigDumpCachingThread();
+		configDumpCachingError_.clear();  //discard any error from that previous attempt
+
 		// Configuration dump caching is deferred: it runs in a background
 		// thread so that the broadcast to supervisors can start immediately.
 		// The dumps only read from the already-activated config tree (read-only)
@@ -7493,11 +7541,7 @@ try
 
 	// Join the config dump caching thread (launched before broadcast so the
 	// dump computation overlaps with supervisor transitions)
-	if(configDumpCachingThread_ && configDumpCachingThread_->joinable())
-	{
-		configDumpCachingThread_->join();
-		configDumpCachingThread_.reset();
-	}
+	joinConfigDumpCachingThread();
 	if(!configDumpCachingError_.empty())
 	{
 		__SS__ << configDumpCachingError_ << __E__;
@@ -7827,6 +7871,10 @@ void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
+
+	//reap the config dump caching thread, in case a failed Configure left it
+	//	running (it only reads the already-activated config tree)
+	joinConfigDumpCachingThread();
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -8522,8 +8570,9 @@ try
 	// Compute global ceiling of MinReadyForEventGenerationStartIteration
 	// (seeded with any value received from a top-level Gateway for subsystems)
 	{
-		const unsigned int minReadyFloor = minReadyForEventGenerationStartIteration_;
-		minReadyForEventGenerationStartIteration_ = minReadyFloor;
+		//seed is whatever was received from a top-level Gateway for this transition;
+		//	zero for a locally initiated Start (reset at command-parse time)
+		__COUTTV__(minReadyForEventGenerationStartIteration_);
 
 		// Query local supervisors via SOAP
 		try
