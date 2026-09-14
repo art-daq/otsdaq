@@ -75,7 +75,8 @@ class RunInfoVInterface  ///< : public Configurable
 
 	virtual void 			updateRunInfo				(unsigned int        /* runConditionID */,
 														 RunTransitionType   /* runTransitionType */,
-														 const std::string&  /* comment */) 				{ __SS__ << "updateRunInfo() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
+														 const std::string&  /* comment */,
+														 const std::string&  /* metadata */ = "") 		{ __SS__ << "updateRunInfo() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
 
 
 	/// Get functions ----
