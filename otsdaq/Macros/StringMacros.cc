@@ -1775,17 +1775,22 @@ std::string StringMacros::exec(const char* cmd)
 
 	// For capturing both stdout and stderr, we need to redirect stderr to stdout
 	// This is done by appending " 2>&1" to the command
-	std::string           cmdWithRedirect = std::string(cmd) + " 2>&1";
-	std::shared_ptr<FILE> pipe(popen(cmdWithRedirect.c_str(), "r"), pclose);
-	if(!pipe)
+	std::string cmdWithRedirect = std::string(cmd) + " 2>&1";
+	FILE*       rawPipe         = popen(cmdWithRedirect.c_str(), "r");
+	if(!rawPipe)
 		__THROW__("popen() failed!");
 
-	// Read all output (both stdout and stderr)
-	while(!feof(pipe.get()))
-	{
-		if(fgets(buffer.data(), 128, pipe.get()) != nullptr)
-			result += buffer.data();
-	}
+	// Own the pipe so that an exception while accumulating output still closes it
+	// and reaps the child process. Released below so the success path can check
+	// the pclose() status itself.
+	std::unique_ptr<FILE, int (*)(FILE*)> pipe(rawPipe, pclose);
+
+	while(fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+		result += buffer.data();
+
+	int status = pclose(pipe.release());
+	if(status == -1)
+		__COUT_WARN__ << "pclose() failed for command: " << cmd << __E__;
 
 	__COUTTV__(result);
 	return result;
