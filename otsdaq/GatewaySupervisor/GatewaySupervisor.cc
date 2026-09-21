@@ -6464,26 +6464,42 @@ xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(
 /// state  machine.
 bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 {
-	stateMachineSemaphore_.take();
-	std::string command =
-	    SOAPUtilities::translate(stateMachineWorkLoopManager_.getMessage(workLoop))
-	        .getCommand();
-
-	__COUT__ << "Propagating FSM command '" << command
-	         << "'... activeStateMachineName_ = " << activeStateMachineName_ << __E__;
-
-	std::string reply = send(allSupervisorInfo_.getGatewayDescriptor(),
-	                         stateMachineWorkLoopManager_.getMessage(workLoop));
-	stateMachineWorkLoopManager_.report(workLoop, reply, 100, true);
-
-	__COUT__ << "Done with FSM command '" << command << ".' Reply = " << reply << __E__;
-	stateMachineSemaphore_.give();
-
-	if(reply == "Fault")
+	bool holdingSemaphore = false;
+	try
 	{
-		__SS__ << "Failure to send Workloop transition command '" << command
-		       << "!' An error response '" << reply << "' was received." << __E__;
-		__COUT_ERR__ << ss.str();
+		stateMachineSemaphore_.take();
+		holdingSemaphore = true;
+
+		std::string command =
+		    SOAPUtilities::translate(stateMachineWorkLoopManager_.getMessage(workLoop))
+		        .getCommand();
+
+		__COUT__ << "Propagating FSM command '" << command
+		         << "'... activeStateMachineName_ = " << activeStateMachineName_ << __E__;
+
+		std::string reply = send(allSupervisorInfo_.getGatewayDescriptor(),
+		                         stateMachineWorkLoopManager_.getMessage(workLoop));
+		stateMachineWorkLoopManager_.report(workLoop, reply, 100, true);
+
+		__COUT__ << "Done with FSM command '" << command << ".' Reply = " << reply
+		         << __E__;
+		stateMachineSemaphore_.give();
+		holdingSemaphore = false;
+
+		if(reply == "Fault")
+		{
+			__SS__ << "Failure to send Workloop transition command '" << command
+			       << "!' An error response '" << reply << "' was received." << __E__;
+			__COUT_ERR__ << ss.str();
+		}
+	}
+	catch(...)
+	{
+		__COUT_ERR__ << "Unhandled exception in GatewaySupervisor::stateMachineThread. "
+		                "Exiting workloop." << __E__;
+		if(holdingSemaphore)
+			stateMachineSemaphore_.give();
+		stateMachineWorkLoopManager_.report(workLoop, "Fault", 100, true);
 	}
 	return false;  // execute once and automatically remove the workloop so in
 	               // WorkLoopManager the try workLoop->remove(job_) could be commented
@@ -7248,6 +7264,12 @@ try
 		// The dumps only read from the already-activated config tree (read-only)
 		// and their results are consumed later (file write after broadcast,
 		// and at Run transition time).
+		if(configDumpCachingThread_ && configDumpCachingThread_->joinable())
+		{
+			__COUT__ << "Joining previous config dump caching thread before starting new one..." << __E__;
+			configDumpCachingThread_->join();
+			configDumpCachingThread_.reset();
+		}
 		configDumpCachingThread_ = std::make_unique<std::thread>([this,
 		    configurationAlias, subsystemCommonList, subsystemCommonOverrideList]()
 		{
@@ -7817,6 +7839,13 @@ catch(...)
 void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
 try
 {
+	if(configDumpCachingThread_ && configDumpCachingThread_->joinable())
+	{
+		__COUT__ << "Joining config dump caching thread before halting..." << __E__;
+		configDumpCachingThread_->join();
+		configDumpCachingThread_.reset();
+	}
+
 	checkForAsyncError();
 
 	RunControlStateMachine::theProgressBar_.step();
