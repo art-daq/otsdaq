@@ -381,6 +381,24 @@ void ARTDAQTableBase::flattenFHICLInParallel(
 	std::exception_ptr       firstError = nullptr;
 	std::mutex               errorMutex;
 	std::vector<std::thread> workers;
+
+	// Scope-bound join for the worker pool.
+	//	If a later std::thread construction throws (OS thread or memory
+	//	exhaustion) after earlier workers have started, unwinding would destroy
+	//	'workers' while it still holds joinable threads, which calls
+	//	std::terminate instead of propagating the exception. Declared after
+	//	'workers' so it is destroyed first, joining every worker created so far.
+	struct WorkerJoiner
+	{
+		std::vector<std::thread>& workers;
+		~WorkerJoiner()
+		{
+			for(auto& worker : workers)
+				if(worker.joinable())
+					worker.join();
+		}
+	} workerJoiner{workers};
+
 	for(size_t i = 0; i < threadCount; ++i)
 		workers.emplace_back([&]() {
 			while(true)
@@ -404,7 +422,8 @@ void ARTDAQTableBase::flattenFHICLInParallel(
 			}
 		});
 	for(auto& worker : workers)
-		worker.join();
+		if(worker.joinable())
+			worker.join();
 
 	if(firstError)
 		std::rethrow_exception(firstError);

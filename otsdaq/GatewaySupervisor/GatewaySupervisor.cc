@@ -190,6 +190,10 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 /// entry is made when ots is killed
 GatewaySupervisor::~GatewaySupervisor(void)
 {
+	//join before deleting the configuration manager that the thread reads,
+	//	and before the unique_ptr member is destroyed
+	joinConfigDumpCachingThread();
+
 	delete CorePropertySupervisorBase::theConfigurationManager_;
 
 	bool doLog = false;
@@ -5886,6 +5890,11 @@ try
 	}
 
 	//check if MinReadyForEventGenerationStartIteration is in parameters (sent by top-level Gateway for subsystem)
+	//	Note: reset first, so this only ever holds the value received for THIS
+	//	transition. A locally initiated Start carries no such parameter and must not
+	//	inherit a previous run's (possibly larger) floor -- that would delay event
+	//	generation even when every current supervisor reports a lower requirement.
+	minReadyForEventGenerationStartIteration_ = 0;
 	for(size_t i = 0; i < commandParameters.size(); ++i)
 	{
 		if(commandParameters[i].find(
@@ -5908,7 +5917,7 @@ try
 	/////////////////
 	// Validate FSM name (do here because remote commands bypass stateMachineXgiHandler)
 	//	if fsm name != active fsm name
-	//		only allow, if current state is halted or init
+	//		only allow, if current state is halted, init, or configured
 	//		take active fsm name when configured
 	//	else, allow
 	if(activeStateMachineName_ != "" && activeStateMachineName_ != fsmName)
@@ -5918,6 +5927,7 @@ try
 		         << ", command = " << command << __E__;
 		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
 		   currentState != RunControlStateMachine::INITIAL_STATE_NAME &&
+		   currentState != RunControlStateMachine::CONFIGURED_STATE_NAME &&
 		   currentState != RunControlStateMachine::FAILED_STATE_NAME &&
 		   currentState != RunControlStateMachine::SHUTDOWN_STATE_NAME)
 		{
@@ -6962,10 +6972,42 @@ void GatewaySupervisor::checkForAsyncError()
 /////////////////////////////////////////////////////////////////////////////////////
 
 //==============================================================================
+/// joinConfigDumpCachingThread
+///	Reap the deferred configuration-dump caching thread, if one exists.
+///	Safe to call when no thread is running.
+///
+///	Must be called before configDumpCachingThread_ is reassigned or destroyed:
+///	destroying a joinable std::thread calls std::terminate(), which aborts the
+///	gateway process (e.g. when a failed Configure returned before the normal
+///	join, leaving the thread unjoined, and then a new Configure arrived).
+void GatewaySupervisor::joinConfigDumpCachingThread(void)
+{
+	if(!configDumpCachingThread_)
+		return;
+
+	if(configDumpCachingThread_->joinable())
+		configDumpCachingThread_->join();
+	configDumpCachingThread_.reset();
+}  //end joinConfigDumpCachingThread()
+
+//==============================================================================
 void GatewaySupervisor::transitionConfiguring(toolbox::Event::Reference /* event*/)
 try
 {
 	checkForAsyncError();
+
+	// Scope-bound join for the deferred configuration-dump caching thread.
+	//	This transition can throw between launching that thread and the join
+	//	after the broadcast (Macro Maker SOAP setup, the broadcast itself, ...).
+	//	This destructor runs on every exit path -- including a throw out of a
+	//	function-try-block, where body locals are destroyed before the handler --
+	//	so the thread never outlives the transition that started it, and is never
+	//	left joinable for a later Configure to destroy (which calls std::terminate).
+	struct ConfigDumpThreadJoiner
+	{
+		GatewaySupervisor* gatewaySupervisor;
+		~ConfigDumpThreadJoiner() { gatewaySupervisor->joinConfigDumpCachingThread(); }
+	} configDumpThreadJoiner{this};
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -7243,6 +7285,13 @@ try
 
 		//at this point Configuration Tree is fully loaded
 
+		//reap the thread of any previous Configure attempt before reassigning,
+		//	because destroying a joinable std::thread calls std::terminate().
+		//	A Configure that failed during the broadcast returns before the
+		//	normal join below, so a thread can still be held here.
+		joinConfigDumpCachingThread();
+		configDumpCachingError_.clear();  //discard any error from that previous attempt
+
 		// Configuration dump caching is deferred: it runs in a background
 		// thread so that the broadcast to supervisors can start immediately.
 		// The dumps only read from the already-activated config tree (read-only)
@@ -7493,11 +7542,7 @@ try
 
 	// Join the config dump caching thread (launched before broadcast so the
 	// dump computation overlaps with supervisor transitions)
-	if(configDumpCachingThread_ && configDumpCachingThread_->joinable())
-	{
-		configDumpCachingThread_->join();
-		configDumpCachingThread_.reset();
-	}
+	joinConfigDumpCachingThread();
 	if(!configDumpCachingError_.empty())
 	{
 		__SS__ << configDumpCachingError_ << __E__;
@@ -7827,6 +7872,10 @@ void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
 try
 {
 	checkForAsyncError();
+
+	//reap the config dump caching thread, in case a failed Configure left it
+	//	running (it only reads the already-activated config tree)
+	joinConfigDumpCachingThread();
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -8522,8 +8571,9 @@ try
 	// Compute global ceiling of MinReadyForEventGenerationStartIteration
 	// (seeded with any value received from a top-level Gateway for subsystems)
 	{
-		const unsigned int minReadyFloor = minReadyForEventGenerationStartIteration_;
-		minReadyForEventGenerationStartIteration_ = minReadyFloor;
+		//seed is whatever was received from a top-level Gateway for this transition;
+		//	zero for a locally initiated Start (reset at command-parse time)
+		__COUTTV__(minReadyForEventGenerationStartIteration_);
 
 		// Query local supervisors via SOAP
 		try
@@ -10675,9 +10725,9 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 
 	bool         done      = command == "Error";  //dont check for done if Error'ing
 	size_t       iteration = 0;
-	const size_t secsPerIteration = 1;
+	const size_t msPerIteration = 200;
 	const size_t maxIterations =
-	    10 * 60 / secsPerIteration;  //roughly 10 minutes (1s per iteration)
+	    10 * 60 * 1000 / msPerIteration;  //roughly 10 minutes
 	std::map<std::string /* name */, size_t /* progress100cnt */>
 	    progress100cnt;  // make sure remote subsystem is not in unanticipated state
 	while(!done)
@@ -10935,7 +10985,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				       << "'";
 			waitSs << __E__;
 			uint32_t timeUntilTimeout = (maxIterations - iteration) *
-			                            secsPerIteration;  // x seconds per iteration
+			                            msPerIteration / 1000;  // seconds until timeout
 			if(timeUntilTimeout / 60 < 1)
 				waitSs << "(wait count = " << iteration << ", " << timeUntilTimeout
 				       << " seconds until timeout)" << __E__;
@@ -10953,7 +11003,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			}
 		}
 		if(!done)
-			sleep(secsPerIteration);
+			usleep(msPerIteration * 1000);
 
 		checkForAsyncError();
 	}  //end primary while loop
@@ -11407,6 +11457,7 @@ void GatewaySupervisor::setSupervisorPropertyDefaults()
 	        " | resetConsoleCounts=10"
 	        " | commandRemoteSubsystem=10 | setRemoteSubsystemFsmControl=10"  //remote subsystem control
 	        " | propagateLoginToSubsystem=10"  //force login cookie propagation to a restarted subsystem
+	        " | addSystemMessage=10"  //post system messages from external tools (e.g. daqpy watchdog)
 	);
 
 	CorePropertySupervisorBase::setSupervisorProperty(
@@ -13040,7 +13091,11 @@ try
 				    "subsystem_consoleWarnCount",
 				    std::to_string(remoteSubsystem.consoleWarnCount));
 
-				if(remoteSubsystem.command == "" && remoteSubsystem.getError() != "")
+				//only accumulate errors from subsystems included in the FSM;
+				//	excluded (inactive) subsystems still report their error in
+				//	subsystem_status, but should not raise system-level popups
+				if(remoteSubsystem.fsm_included && remoteSubsystem.command == "" &&
+				   remoteSubsystem.getError() != "")
 				{
 					__SUP_COUTS__(TLVL_RemoteFSMRequests)
 					    << "Error from Subsystem '" << remoteSubsystem.appInfo.name
@@ -13656,6 +13711,16 @@ try
 			    contextName);
 
 			xmlOut.addTextElementToData("status", "restarted");
+		}
+		else if(requestType == "addSystemMessage")
+		{
+			std::string message    = CgiDataUtilities::postData(cgiIn, "message");
+			std::string targetUser = CgiDataUtilities::getData(cgiIn, "targetUser");
+			if(targetUser.empty())
+				targetUser = "*";
+
+			GatewaySupervisor::addSystemMessage(targetUser, message);
+			xmlOut.addTextElementToData("status", "success");
 		}
 		else
 		{
