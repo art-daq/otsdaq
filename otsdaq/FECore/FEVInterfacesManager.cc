@@ -2424,8 +2424,8 @@ std::map<std::string, std::string> FEVInterfacesManager::getFEMacroInputDefaults
     const std::string& feMacroName,
     const std::string& inputArgs)
 {
-	FEVInterface* fe = getFEInterfaceP(interfaceID);
-	auto macroIt = fe->getMapOfFEMacroFunctions().find(feMacroName);
+	FEVInterface* fe      = getFEInterfaceP(interfaceID);
+	auto          macroIt = fe->getMapOfFEMacroFunctions().find(feMacroName);
 	if(macroIt == fe->getMapOfFEMacroFunctions().end())
 	{
 		__CFG_SS__ << "FE Macro '" << feMacroName << "' of interfaceID '" << interfaceID
@@ -2445,10 +2445,8 @@ std::map<std::string, std::string> FEVInterfacesManager::getFEMacroInputDefaults
 			getline(pairInputStream, encodedName, ',');
 			getline(pairInputStream, encodedValue, ',');
 
-			const std::string inputName =
-			    StringMacros::decodeURIComponent(encodedName);
-			const std::string inputValue =
-			    StringMacros::decodeURIComponent(encodedValue);
+			const std::string inputName  = StringMacros::decodeURIComponent(encodedName);
+			const std::string inputValue = StringMacros::decodeURIComponent(encodedValue);
 			if(inputName.empty())
 				continue;
 
@@ -2471,8 +2469,7 @@ std::map<std::string, std::string> FEVInterfacesManager::getFEMacroInputDefaults
 		}
 	}
 
-	auto defaults =
-	    fe->getFEMacroInputDefaults(feMacroName, currentInputValues);
+	auto defaults = fe->getFEMacroInputDefaults(feMacroName, currentInputValues);
 	for(const auto& defaultValue : defaults)
 	{
 		bool declaredInput = false;
@@ -2487,8 +2484,8 @@ std::map<std::string, std::string> FEVInterfacesManager::getFEMacroInputDefaults
 		{
 			__CFG_SS__ << "Dynamic default provider for FE Macro '" << feMacroName
 			           << "' of interfaceID '" << interfaceID
-			           << "' returned undeclared input name '" << defaultValue.first << "'."
-			           << __E__;
+			           << "' returned undeclared input name '" << defaultValue.first
+			           << "'." << __E__;
 			__CFG_SS_THROW__;
 		}
 	}

@@ -727,8 +727,9 @@ void CoreSupervisorBase::preStateMachineExecution(unsigned int i)
 	    RunControlStateMachine::getIterationIndex());
 	theStateMachineImplementation_[i]->VStateMachine::setSubIterationIndex(
 	    RunControlStateMachine::getSubIterationIndex());
-	theStateMachineImplementation_[i]->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
-	    RunControlStateMachine::getMinReadyForEventGenerationStartIteration());
+	theStateMachineImplementation_[i]
+	    ->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
+	        RunControlStateMachine::getMinReadyForEventGenerationStartIteration());
 
 	theStateMachineImplementation_[i]->VStateMachine::clearIterationWork();
 	theStateMachineImplementation_[i]->VStateMachine::clearSubIterationWork();
@@ -904,7 +905,8 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 			{
 				haveScratchOrTemporaryMembers = true;
 				__SUP_COUT__ << "Not skipping activation: active member '"
-				             << activeVersionPair.first << "' has scratch/temporary version "
+				             << activeVersionPair.first
+				             << "' has scratch/temporary version "
 				             << activeVersionPair.second << __E__;
 				break;
 			}
@@ -991,8 +993,7 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 		);
 	}
 
-	lastActivationHadMergeOrOverride_ =
-	    !mergeInTables.empty() || !overrideTables.empty();
+	lastActivationHadMergeOrOverride_ = !mergeInTables.empty() || !overrideTables.empty();
 }  //end configureInit()
 
 //==============================================================================

@@ -5090,18 +5090,17 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 		{
 			cmdResult = StringMacros::exec(
 			    ("rm " + tmpSubsystemFilename +
-			     " 2>/dev/null; scp -o ConnectTimeout=5 -o BatchMode=yes " +
-			     username + "@" + hostname + ":" + filename + " " +
-			     tmpSubsystemFilename + " 2>&1; cat " +
-			     tmpSubsystemFilename + " 2>&1")
+			     " 2>/dev/null; scp -o ConnectTimeout=5 -o BatchMode=yes " + username +
+			     "@" + hostname + ":" + filename + " " + tmpSubsystemFilename +
+			     " 2>&1; cat " + tmpSubsystemFilename + " 2>&1")
 			        .c_str());
 		}
 		else
 			cmdResult = StringMacros::exec(
 			    ("rm " + tmpSubsystemFilename +
-			     " 2>/dev/null; scp -o ConnectTimeout=5 -o BatchMode=yes " +
-			     hostname + ":" + filename + " " + tmpSubsystemFilename +
-			     " 2>&1; cat " + tmpSubsystemFilename + " 2>&1")
+			     " 2>/dev/null; scp -o ConnectTimeout=5 -o BatchMode=yes " + hostname +
+			     ":" + filename + " " + tmpSubsystemFilename + " 2>&1; cat " +
+			     tmpSubsystemFilename + " 2>&1")
 			        .c_str());
 	}
 	else  //then can just directly access the file
