@@ -1780,10 +1780,15 @@ std::string StringMacros::exec(const char* cmd)
 	if(!rawPipe)
 		__THROW__("popen() failed!");
 
-	while(fgets(buffer.data(), buffer.size(), rawPipe) != nullptr)
+	// Own the pipe so that an exception while accumulating output still closes it
+	// and reaps the child process. Released below so the success path can check
+	// the pclose() status itself.
+	std::unique_ptr<FILE, int (*)(FILE*)> pipe(rawPipe, pclose);
+
+	while(fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
 		result += buffer.data();
 
-	int status = pclose(rawPipe);
+	int status = pclose(pipe.release());
 	if(status == -1)
 		__COUT_WARN__ << "pclose() failed for command: " << cmd << __E__;
 
