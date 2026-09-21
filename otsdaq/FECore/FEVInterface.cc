@@ -13,6 +13,27 @@
 
 using namespace ots;
 
+namespace
+{
+// A scoped, thread-local route supports nested calls and concurrent independent
+// DTC requests without shared callback state or a polling/worker thread.
+struct FEMacroProgressForwarder
+{
+	const FEVInterface*                           source;
+	const std::function<void(unsigned int)>&      callback;
+	FEMacroProgressForwarder*                     previous;
+	static thread_local FEMacroProgressForwarder* active;
+	FEMacroProgressForwarder(const FEVInterface*                      source_,
+	                         const std::function<void(unsigned int)>& callback_)
+	    : source(source_), callback(callback_), previous(active)
+	{
+		active = this;
+	}
+	~FEMacroProgressForwarder() { active = previous; }
+};
+thread_local FEMacroProgressForwarder* FEMacroProgressForwarder::active = nullptr;
+}  // namespace
+
 const std::string FEVInterface::UNKNOWN_TYPE = "UNKNOWN";
 const std::string FEVInterface::DEFAULT =
     TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT;
@@ -1127,6 +1148,29 @@ void FEVInterface::runSequenceOfCommands(const std::string& treeLinkName)
 ///
 ///	Note: that argsOut are populated for caller, can just pass empty vector.
 void FEVInterface::runSelfFrontEndMacro(
+    const std::string&                       name,
+    const std::vector<frontEndMacroArg_t>&   inputs,
+    std::vector<frontEndMacroArg_t>&         outputs,
+    const std::function<void(unsigned int)>& onProgress)
+{
+	FEMacroProgressForwarder scope(this, onProgress);
+	const auto               threadID = std::this_thread::get_id();
+	clearFEMacroPercentDone(threadID);
+	try
+	{
+		setFEMacroPercentDone(0);
+		runSelfFrontEndMacro(name, inputs, outputs);
+		setFEMacroPercentDone(100);
+	}
+	catch(...)
+	{
+		clearFEMacroPercentDone(threadID);
+		throw;
+	}
+	clearFEMacroPercentDone(threadID);
+}
+
+void FEVInterface::runSelfFrontEndMacro(
     const std::string& feMacroName,
     // not equivalent to __ARGS__
     //	left non-const value so caller can modify inputArgs as they are being created
@@ -1780,9 +1824,18 @@ void FEVInterface::runMacro(
 //==============================================================================
 void FEVInterface::setFEMacroPercentDone(unsigned int percentDone)
 {
-	std::lock_guard<std::mutex> lock(feMacroPercentDoneMutex_);
-	feMacroPercentDoneMap_[std::this_thread::get_id()] =
-	    static_cast<int>(percentDone > 100 ? 100 : percentDone);
+	const unsigned int percent = percentDone > 100 ? 100 : percentDone;
+	{
+		std::lock_guard<std::mutex> lock(feMacroPercentDoneMutex_);
+		feMacroPercentDoneMap_[std::this_thread::get_id()] = static_cast<int>(percent);
+	}
+	for(auto* route = FEMacroProgressForwarder::active; route; route = route->previous)
+		if(route->source == this)
+		{
+			if(route->callback)
+				route->callback(percent);
+			break;
+		}
 }  // end setFEMacroPercentDone()
 
 //==============================================================================

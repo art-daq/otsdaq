@@ -588,6 +588,14 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 		thread_progress_bar_.resetProgressBar(0);
 		last_thread_progress_update_ = time(0);  // initialize timeout timer
 
+		// Skip the table group reload when the same group+key is already active
+		// (safe: keys are immutable and configureInit() verifies no
+		// scratch/temporary versions or merge/override lists are in play);
+		// set supervisor property SkipRedundantConfigureActivation=0 to disable
+		CoreSupervisorBase::configureInit(
+		    getSupervisorProperty("SkipRedundantConfigureActivation", 1) ==
+		    1 /*attemptSkipIfGroupUnchanged*/);
+
 		// start configuring thread
 		std::thread(&ARTDAQSupervisor::configuringThread, this).detach();
 
