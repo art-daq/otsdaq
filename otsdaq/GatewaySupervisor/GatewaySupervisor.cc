@@ -7907,18 +7907,11 @@ catch(...)
 void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
 try
 {
-	if(configDumpCachingThread_ && configDumpCachingThread_->joinable())
-	{
-		__COUT__ << "Joining config dump caching thread before halting..." << __E__;
-		configDumpCachingThread_->join();
-		configDumpCachingThread_.reset();
-	}
-
-	checkForAsyncError();
-
 	//reap the config dump caching thread, in case a failed Configure left it
 	//	running (it only reads the already-activated config tree)
 	joinConfigDumpCachingThread();
+
+	checkForAsyncError();
 
 	RunControlStateMachine::theProgressBar_.step();
 
