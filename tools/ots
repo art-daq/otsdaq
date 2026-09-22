@@ -1373,13 +1373,15 @@ launchOTSMacromaker() {
 			#check if exit requested via the two quit files (to avoid endless relaunch looping)
 			OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
 			OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
-			if [[ "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
+			if [[ "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
 				out "Exit of (stale) ots... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 				killprocs
 				exit
-			elif [[ "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+			elif [[ "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
 				warning "Exiting ots Macro Maker launch verification loop on EXIT_LOOP sentinel... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 				exit
+			elif [[ "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" ]]; then
+				out "Ignoring global quit '${OTSDAQ_STARTOTS_QUIT}' in Macro Maker mode (only local quit applies)"
 			fi
 
 			warning "Could not verify successful ots Macro Maker mode context launch (check log for details)..."
@@ -5342,14 +5344,18 @@ otsActionHandler() {
 				otsdaq_flatten_system_aliases 0 &
 			fi
 
-		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "EXIT_LOOP" || \
+				( "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" && $ISMACROMAKER == 0 ) || \
+				"$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
 
 			#only exit action loop
 			out "self-pid=${BASHPID}: Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 
 			exit
 
-		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "KILL_ALL" || "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
+		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "KILL_ALL" || \
+				( "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" && $ISMACROMAKER == 0 ) || \
+				"$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
 
 			#kill all and exit action loop
 			out "self-pid=${BASHPID}: Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
