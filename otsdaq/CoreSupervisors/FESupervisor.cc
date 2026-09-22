@@ -544,11 +544,12 @@ try
 		// LORE__SUP_COUTV__(targetInterfaceID);
 		// LORE__SUP_COUTV__(macroName);
 
-		bool done = false;
+		bool        done = false;
+		std::string outputFile;  // saved-output file path, filled on Done when saving
 		try
 		{
-			done = theFEInterfacesManager_->checkMacroMultiDimensional(targetInterfaceID,
-			                                                           macroName);
+			done = theFEInterfacesManager_->checkMacroMultiDimensional(
+			    targetInterfaceID, macroName, &outputFile);
 		}
 		catch(std::runtime_error& e)
 		{
@@ -587,6 +588,7 @@ try
 		    SOAPUtilities::makeSOAPMessageReference(type + "Done");
 		SOAPParameters txParameters;
 		txParameters.addParameter("Done", done ? "1" : "0");
+		txParameters.addParameter("OutputFile", outputFile);  // "" when not saving
 		SOAPUtilities::addParameters(replyMessage, txParameters);
 
 		// LORE__SUP_COUT__ << "Sending FE macro result: " << SOAPUtilities::translate(replyMessage) << __E__;

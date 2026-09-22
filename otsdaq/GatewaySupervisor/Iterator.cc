@@ -367,6 +367,7 @@ try
 					theIteratorStruct.commandIterations_.clear();
 					theIteratorStruct.stepIndexStack_.clear();
 					theIteratorStruct.stepLabelStack_.clear();
+					theIteratorStruct.outputFiles_.clear();
 					for(auto& command : theIteratorStruct.commands_)
 					{
 						theIteratorStruct.commandIterations_.push_back(0);
@@ -1115,6 +1116,12 @@ bool Iterator::haltIterator(Iterator*               iterator,
 		         << __E__;
 
 		iterator->lastFinishedPlanName_ = iteratorStruct->activePlan_;
+		// publish the output files written during this plan for the GUI completion popup
+		iterator->lastPlanOutputFiles_ = iteratorStruct->outputFiles_;
+		for(const auto& f : iterator->lastPlanOutputFiles_)
+			__COUT_INFO__ << "Plan '" << iteratorStruct->activePlan_ << "' output file ("
+			              << (f.subsystem == "" ? std::string("Self") : f.subsystem)
+			              << ", " << f.label << "): " << f.path << __E__;
 		FILE* fp = fopen((ITERATOR_PLAN_HISTORY_FILENAME).c_str(), "w");
 		if(fp)
 		{
@@ -1495,6 +1502,7 @@ void Iterator::startCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	        .params_[IterateTable::commandExecuteMacroParams_.MacroArgumentString_],
 	    iteratorStruct->commands_[iteratorStruct->commandIndex_]
 	        .params_[IterateTable::commandExecuteMacroParams_.MacroArgumentLabels_]);
+	iteratorStruct->macroArgsSummary_ = macroArgsSummary(inputArgs);  // for output file labels
 
 	__COUTV__(macroName);
 	__COUTV__(enableSavingOutput);
@@ -1596,6 +1604,9 @@ bool Iterator::checkCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		ots::IterateTable::CommandTarget& target =
 		    iteratorStruct->commands_[iteratorStruct->commandIndex_].targets_[i];
 
+		if(i < iteratorStruct->targetsDone_.size() && iteratorStruct->targetsDone_[i])
+			continue;  // already reported Done (the FE forgets the launch once reported)
+
 		__COUT__ << "target " << target.table_ << ":" << target.UID_ << __E__;
 
 		xoap::MessageReference message =
@@ -1647,6 +1658,34 @@ bool Iterator::checkCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 
 		// mark target done
 		iteratorStruct->targetsDone_[i] = true;
+
+		// record the saved-output file (if any) for the plan completion report.
+		//	Separate receive so front-ends built before "OutputFile" was added still work.
+		try
+		{
+			SOAPParameters fileParameters;
+			fileParameters.addParameter("OutputFile");
+			SOAPUtilities::receive(replyMessage, fileParameters);
+			const std::string outputFile = fileParameters.getValue("OutputFile");
+			if(outputFile != "")
+			{
+				__COUT_INFO__ << "Macro '" << macroName << "' on '" << target.UID_
+				              << "' saved outputs to: " << outputFile << __E__;
+				// label: "<macro> on <FE> iteration #<pass> [arg = val (0xhex), ...]"
+				//	pass = how many times this command has started in this plan (1-based)
+				std::string label =
+				    macroName + " on " + target.UID_ + " iteration #" +
+				    std::to_string(
+				        iteratorStruct->commandIterations_[iteratorStruct->commandIndex_]);
+				if(iteratorStruct->macroArgsSummary_ != "")
+					label += " [" + iteratorStruct->macroArgsSummary_ + "]";
+				iteratorStruct->outputFiles_.push_back({"" /*Self*/, outputFile, label, ""});
+			}
+		}
+		catch(...)
+		{
+			__COUT__ << "Front-end did not report an OutputFile (older build?)" << __E__;
+		}
 
 		//		iteratorStruct->commands_[iteratorStruct->commandIndex_].targets_.erase(
 		//				targetIt--); //go back after delete
@@ -2728,6 +2767,14 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 	xmldoc.addTextElementToData("active_plan", activePlanName_);
 	xmldoc.addTextElementToData("last_started_plan", lastStartedPlanName_);
 	xmldoc.addTextElementToData("last_finished_plan", lastFinishedPlanName_);
+	// output files of the last finished plan: parallel arrays, one entry per file
+	for(const auto& f : lastPlanOutputFiles_)
+	{
+		xmldoc.addTextElementToData("output_file_subsystem", f.subsystem);
+		xmldoc.addTextElementToData("output_file_path", f.path);
+		xmldoc.addTextElementToData("output_file_label", f.label);
+		xmldoc.addTextElementToData("output_file_icon", f.iconName);
+	}
 
 	xmldoc.addNumberElementToData("current_command_index", activeCommandIndex_);
 	xmldoc.addNumberElementToData("current_number_of_commands", activeNumberOfCommands_);
@@ -3149,6 +3196,48 @@ Iterator::MacroLoopSpec Iterator::parseMacroLoopSpec(const std::string& inputArg
 }  // end parseMacroLoopSpec()
 
 //==============================================================================
+/// macroArgValueForLabel
+///	Integer values (decimal or 0x-hex, optional sign) are shown as "decimal (0xhex)";
+///	doubles, text and anything that does not fully parse are returned unchanged.
+std::string Iterator::macroArgValueForLabel(const std::string& value)
+{
+	if(value.empty())
+		return value;
+	char*     end = nullptr;
+	long long v   = strtoll(value.c_str(), &end, 0 /*auto base: 0x, 0 octal, decimal*/);
+	if(end == value.c_str() || *end != '\0')
+		return value;  // not (only) an integer
+	std::stringstream ss;
+	ss << v << " (0x" << std::hex << std::uppercase << v << ")";
+	return ss.str();
+}  // end macroArgValueForLabel()
+
+//==============================================================================
+/// macroArgsSummary
+///	Human-readable "arg = val, arg2 = val2" for the first iteration described by a
+///	MacroArgumentString (input names shown without any "(Default/Note)" suffix). If the
+///	string loops internally (total > 1) appends " (xN)". Never throws.
+std::string Iterator::macroArgsSummary(const std::string& inputArgs)
+{
+	try
+	{
+		const MacroLoopSpec spec   = parseMacroLoopSpec(inputArgs);
+		const auto          values = macroLoopIteration(spec, 0);
+		std::string         str;
+		for(size_t a = 0; a < values.size(); ++a)
+			str += (a ? ", " : "") + feMacroArgBaseName(values[a].first) + " = " +
+			       macroArgValueForLabel(values[a].second);
+		if(spec.totalIterations > 1)
+			str += " (x" + std::to_string(spec.totalIterations) + ")";
+		return str;
+	}
+	catch(...)
+	{
+		return "";
+	}
+}  // end macroArgsSummary()
+
+//==============================================================================
 /// macroLoopIteration
 ///	Computes the index-th iteration (0-based) as if the dimensions were nested loops
 ///	with dimension 0 outermost: value = init + step * (this dimension's counter).
@@ -3554,12 +3643,17 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				// compute this iteration's values and emit them in the remote macro's
 				//	declared input order, under the remote's current input names
 				const auto  values = macroLoopIteration(spec, i);
-				std::string inputStr;
+				std::string inputStr, argsSummary;  // wire format / "arg = val, ..." for labels
 				for(size_t k = 0; k < inputNames.size(); ++k)
+				{
 					inputStr += (k ? ";" : "") +
 					            StringMacros::encodeURIComponent(inputNames[k]) + "," +
 					            StringMacros::encodeURIComponent(
 					                values[inputToArgIndex[k]].second);
+					argsSummary += (k ? ", " : "") + feMacroArgBaseName(inputNames[k]) +
+					               " = " +
+					               macroArgValueForLabel(values[inputToArgIndex[k]].second);
+				}
 
 				// RunFrontendMacro;feClass;feUIDs;macroType;macroName;inputArgs;outputArgs;saveOutputs
 				std::string cmd = "RunFrontendMacro;*;" + uidCSV + ";" + macroType + ";" +
@@ -3588,6 +3682,30 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 					run->error = "iteration " + std::to_string(i + 1) + " of " +
 					             std::to_string(total) + ": " + response;
 					break;
+				}
+
+				// output file written by the remote MacroMaker (when saving outputs it
+				//	reports feMacroRunArgs_name=Filename / feMacroRunArgs_value=$OTSDAQ_DATA/...
+				//	instead of per-FE output values)
+				{
+					size_t      fAfter = 0;
+					std::string argName;
+					while((argName = StringMacros::extractXmlField(
+					           response, "feMacroRunArgs_name", 0, fAfter, &fAfter)) != "")
+					{
+						fAfter += strlen("feMacroRunArgs_name");
+						std::string argValue = StringMacros::extractXmlField(
+						    response, "feMacroRunArgs_value", 0, fAfter, &fAfter);
+						fAfter += strlen("feMacroRunArgs_value");
+						if(argName == "Filename" && argValue != "")
+						{
+							__COUT_INFO__ << "Remote macro '" << macroName << "' iteration "
+							              << i + 1 << " output file on '" << targetSubsystem
+							              << "': " << argValue << __E__;
+							std::lock_guard<std::mutex> lock(run->mutex);
+							run->outputFiles.emplace_back(argValue, argsSummary);
+						}
+					}
 				}
 
 				// log per-FE outputs
@@ -3696,9 +3814,89 @@ bool Iterator::checkRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 
 	if(run->done)
 	{
+		// record output files for the plan completion report
+		std::vector<std::pair<std::string, std::string>> files;
+		{
+			std::lock_guard<std::mutex> lock(run->mutex);
+			files = run->outputFiles;
+		}
+		if(files.size())
+		{
+			auto&             command = iteratorStruct->commands_[iteratorStruct->commandIndex_];
+			const std::string macroName =
+			    command.params_[IterateTable::commandExecuteMacroParams_.MacroName_];
+			std::string uids;
+			for(size_t t = 0; t < command.targets_.size(); ++t)
+				uids += (t ? "," : "") + command.targets_[t].UID_;
+			const std::string iconName = findRemoteCodeEditorIconName(
+			    iteratorStruct->theIterator_->theSupervisor_, command.targetSubsystem_);
+			// label: "<macro> on <FEs> iteration #<pass>[.<i>] [arg = val (0xhex), ...]"
+			//	pass = how many times this command has started in this plan (1-based);
+			//	.<i> only when the command looped internally and wrote several files
+			const std::string pass = std::to_string(
+			    iteratorStruct->commandIterations_[iteratorStruct->commandIndex_]);
+			for(size_t i = 0; i < files.size(); ++i)
+			{
+				std::string label = macroName + " on " + uids + " iteration #" + pass;
+				if(files.size() > 1)
+					label += "." + std::to_string(i + 1);
+				if(files[i].second != "")
+					label += " [" + files[i].second + "]";
+				iteratorStruct->outputFiles_.push_back(
+				    {command.targetSubsystem_, files[i].first, label, iconName});
+			}
+		}
+
 		iteratorStruct->remoteMacroRun_.reset();
 		__COUT__ << "checkRemoteCommandMacro complete." << __E__;
 		return true;
 	}
 	return false;
 }  // end checkRemoteCommandMacro()
+
+//==============================================================================
+/// findRemoteCodeEditorIconName
+///	Looks through the cached desktop icons of the remote subsystem for a Code Editor
+///	window and returns its desktop name ("<subsystem folder>/<caption>"), which the GUI
+///	can open by name (Desktop resolves the remote origin/LID). "" if not found.
+std::string Iterator::findRemoteCodeEditorIconName(GatewaySupervisor* supervisor,
+                                                   const std::string& targetSubsystem)
+{
+	std::string iconString, folderPath;
+	{
+		std::lock_guard<std::mutex> lock(supervisor->remoteGatewayAppsMutex_);
+		for(const auto& app : supervisor->remoteGatewayApps_)
+			if(app.appInfo.name == targetSubsystem)
+			{
+				iconString = app.iconString;
+				folderPath = app.parentIconFolderPath;
+				break;
+			}
+	}
+	if(iconString == "")
+		return "";
+
+	// 7 comma-separated fields per icon: caption, altText, uniqueWin, permissions,
+	//	picfn, linkurl, folderPath (see GatewaySupervisor::GetRemoteGatewayIcons)
+	std::vector<std::string> parts = StringMacros::getVectorFromString(iconString, {','});
+	for(size_t i = 0; i + 6 < parts.size(); i += 7)
+	{
+		const std::string& caption = parts[i];
+		const std::string& linkurl = parts[i + 5];
+		if(linkurl.find("CodeEditor") != std::string::npos ||
+		   caption.find("Code Editor") != std::string::npos)
+		{
+			// Desktop keys icons as "<folder>/<caption>" (folder without leading '/')
+			std::string folder = parts[i + 6];
+			while(folder.size() && folder[0] == '/')
+				folder = folder.substr(1);
+			while(folder.size() && folder.back() == '/')
+				folder.pop_back();
+			return folder.size() ? folder + "/" + caption : caption;
+		}
+	}
+	__COUT_WARN__ << "No Code Editor desktop icon found for remote subsystem '"
+	              << targetSubsystem << "' (folder '" << folderPath
+	              << "'); output file links will show the path only." << __E__;
+	return "";
+}  // end findRemoteCodeEditorIconName()
