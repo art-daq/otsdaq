@@ -182,25 +182,28 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 						// table name and UID so the remote dispatch can resolve them there;
 						// only warn for local (Self) commands, where the link must resolve.
 						if(commands.back().targetSubsystem_ == "")
-							__COUT_WARN__ << "Disconnected target '"
-							              << targetNode.getDisconnectedTableName() << "/"
-							              << targetNode.getDisconnectedLinkID()
-							              << "' for command " << commandChild.first
-							              << " (no such record in the active configuration); "
-							                 "keeping it, but a local macro will fail on it."
-							              << __E__;
+							__COUT_WARN__
+							    << "Disconnected target '"
+							    << targetNode.getDisconnectedTableName() << "/"
+							    << targetNode.getDisconnectedLinkID() << "' for command "
+							    << commandChild.first
+							    << " (no such record in the active configuration); "
+							       "keeping it, but a local macro will fail on it."
+							    << __E__;
 						else
-							__COUT__ << "\t\t = \tTable:"
-							         << targetNode.getDisconnectedTableName()
-							         << " UID:" << targetNode.getDisconnectedLinkID()
-							         << " (not in local configuration; resolved on remote "
-							            "subsystem '"
-							         << commands.back().targetSubsystem_ << "')" << __E__;
+							__COUT__
+							    << "\t\t = \tTable:"
+							    << targetNode.getDisconnectedTableName()
+							    << " UID:" << targetNode.getDisconnectedLinkID()
+							    << " (not in local configuration; resolved on remote "
+							       "subsystem '"
+							    << commands.back().targetSubsystem_ << "')" << __E__;
 
 						commands.back().addTarget();
 						commands.back().targets_.back().table_ =
 						    targetNode.getDisconnectedTableName();
-						commands.back().targets_.back().UID_ = targetNode.getDisconnectedLinkID();
+						commands.back().targets_.back().UID_ =
+						    targetNode.getDisconnectedLinkID();
 						continue;
 					}
 
@@ -275,9 +278,10 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 					std::string stepLabel = "";
 					try  // column added later; tolerate older table versions
 					{
-						stepLabel = dimensionalLoop.second
-						                .getNode(IterateTable::macroDimLoopCols_.StepLabel_)
-						                .getValue<std::string>();
+						stepLabel =
+						    dimensionalLoop.second
+						        .getNode(IterateTable::macroDimLoopCols_.StepLabel_)
+						        .getValue<std::string>();
 					}
 					catch(...)
 					{

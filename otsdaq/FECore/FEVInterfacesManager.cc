@@ -824,7 +824,8 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 						           args[a], argPieces[0], argPieces[1], argPieces[2]))
 						    {
 							    __GEN_SS__ << "Invalid argument '" << args[a]
-							               << "'! Expected name:initialValue:stepSize." << __E__;
+							               << "'! Expected name:initialValue:stepSize."
+							               << __E__;
 							    __GEN_SS_THROW__;
 						    }
 
@@ -1409,7 +1410,8 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 						           args[a], argPieces[0], argPieces[1], argPieces[2]))
 						    {
 							    __GEN_SS__ << "Invalid argument '" << args[a]
-							               << "'! Expected name:initialValue:stepSize." << __E__;
+							               << "'! Expected name:initialValue:stepSize."
+							               << __E__;
 							    __GEN_SS_THROW__;
 						    }
 

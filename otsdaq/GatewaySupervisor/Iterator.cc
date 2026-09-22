@@ -622,10 +622,11 @@ try
 			std::string groupAlias;
 			{
 				std::lock_guard<std::mutex> lock(
-				    iteratorStruct->theIterator_->theSupervisor_->remoteGatewayAppsMutex_);
-				const auto& remoteApp =
-				    iteratorStruct->theIterator_->theSupervisor_->remoteGatewayApps_
-				        [findRemoteGatewayApp(iteratorStruct, targetSubsystem)];
+				    iteratorStruct->theIterator_->theSupervisor_
+				        ->remoteGatewayAppsMutex_);
+				const auto& remoteApp = iteratorStruct->theIterator_->theSupervisor_
+				                            ->remoteGatewayApps_[findRemoteGatewayApp(
+				                                iteratorStruct, targetSubsystem)];
 				if(remoteApp.activeConfigGroupName == "" ||
 				   remoteApp.activeConfigGroupKey.isInvalid())
 				{
@@ -638,7 +639,8 @@ try
 				groupAlias = "GROUP:" + remoteApp.activeConfigGroupName + ":" +
 				             remoteApp.activeConfigGroupKey.toString();
 			}
-			return startRemoteCommandConfigure(iteratorStruct, groupAlias, targetSubsystem);
+			return startRemoteCommandConfigure(
+			    iteratorStruct, groupAlias, targetSubsystem);
 		}
 		return startCommandConfigureActive(iteratorStruct);
 	}
@@ -648,18 +650,21 @@ try
 		    iteratorStruct->commands_[iteratorStruct->commandIndex_]
 		        .params_[IterateTable::commandConfigureAliasParams_.SystemAlias_];
 		if(targetSubsystem.size())
-			return startRemoteCommandConfigure(iteratorStruct, systemAlias, targetSubsystem);
+			return startRemoteCommandConfigure(
+			    iteratorStruct, systemAlias, targetSubsystem);
 		return startCommandConfigureAlias(iteratorStruct, systemAlias);
 	}
 	else if(type == IterateTable::COMMAND_CONFIGURE_GROUP)
 	{
 		if(targetSubsystem.size())
 		{
-			auto& params = iteratorStruct->commands_[iteratorStruct->commandIndex_].params_;
+			auto& params =
+			    iteratorStruct->commands_[iteratorStruct->commandIndex_].params_;
 			std::string groupAlias =
 			    "GROUP:" + params[IterateTable::commandConfigureGroupParams_.GroupName_] +
 			    ":" + params[IterateTable::commandConfigureGroupParams_.GroupKey_];
-			return startRemoteCommandConfigure(iteratorStruct, groupAlias, targetSubsystem);
+			return startRemoteCommandConfigure(
+			    iteratorStruct, groupAlias, targetSubsystem);
 		}
 		return startCommandConfigureGroup(iteratorStruct);
 	}
@@ -715,40 +720,50 @@ try
 	else if(type == IterateTable::COMMAND_START)
 	{
 		if(targetSubsystem.size())
-			return startRemoteCommandFSMTransition(iteratorStruct,
-			    RunControlStateMachine::START_TRANSITION_NAME, targetSubsystem);
+			return startRemoteCommandFSMTransition(
+			    iteratorStruct,
+			    RunControlStateMachine::START_TRANSITION_NAME,
+			    targetSubsystem);
 		return startCommandFSMTransition(iteratorStruct,
 		                                 RunControlStateMachine::START_TRANSITION_NAME);
 	}
 	else if(type == IterateTable::COMMAND_STOP)
 	{
 		if(targetSubsystem.size())
-			return startRemoteCommandFSMTransition(iteratorStruct,
-			    RunControlStateMachine::STOP_TRANSITION_NAME, targetSubsystem);
+			return startRemoteCommandFSMTransition(
+			    iteratorStruct,
+			    RunControlStateMachine::STOP_TRANSITION_NAME,
+			    targetSubsystem);
 		return startCommandFSMTransition(iteratorStruct,
 		                                 RunControlStateMachine::STOP_TRANSITION_NAME);
 	}
 	else if(type == IterateTable::COMMAND_PAUSE)
 	{
 		if(targetSubsystem.size())
-			return startRemoteCommandFSMTransition(iteratorStruct,
-			    RunControlStateMachine::PAUSE_TRANSITION_NAME, targetSubsystem);
+			return startRemoteCommandFSMTransition(
+			    iteratorStruct,
+			    RunControlStateMachine::PAUSE_TRANSITION_NAME,
+			    targetSubsystem);
 		return startCommandFSMTransition(iteratorStruct,
 		                                 RunControlStateMachine::PAUSE_TRANSITION_NAME);
 	}
 	else if(type == IterateTable::COMMAND_RESUME)
 	{
 		if(targetSubsystem.size())
-			return startRemoteCommandFSMTransition(iteratorStruct,
-			    RunControlStateMachine::RESUME_TRANSITION_NAME, targetSubsystem);
+			return startRemoteCommandFSMTransition(
+			    iteratorStruct,
+			    RunControlStateMachine::RESUME_TRANSITION_NAME,
+			    targetSubsystem);
 		return startCommandFSMTransition(iteratorStruct,
 		                                 RunControlStateMachine::RESUME_TRANSITION_NAME);
 	}
 	else if(type == IterateTable::COMMAND_HALT)
 	{
 		if(targetSubsystem.size())
-			return startRemoteCommandFSMTransition(iteratorStruct,
-			    RunControlStateMachine::HALT_TRANSITION_NAME, targetSubsystem);
+			return startRemoteCommandFSMTransition(
+			    iteratorStruct,
+			    RunControlStateMachine::HALT_TRANSITION_NAME,
+			    targetSubsystem);
 		return startCommandFSMTransition(iteratorStruct,
 		                                 RunControlStateMachine::HALT_TRANSITION_NAME);
 	}
@@ -854,32 +869,38 @@ try
 	else if(type == IterateTable::COMMAND_START)
 	{
 		if(targetSubsystem.size())
-			return checkRemoteCommandFSMTransition(iteratorStruct, "Running", targetSubsystem);
+			return checkRemoteCommandFSMTransition(
+			    iteratorStruct, "Running", targetSubsystem);
 		return checkCommandFSMTransition(iteratorStruct, "Running");
 	}
 	else if(type == IterateTable::COMMAND_STOP)
 	{
 		if(targetSubsystem.size())
-			return checkRemoteCommandFSMTransition(iteratorStruct, "Configured", targetSubsystem);
+			return checkRemoteCommandFSMTransition(
+			    iteratorStruct, "Configured", targetSubsystem);
 		return checkCommandFSMTransition(iteratorStruct, "Configured");
 	}
 	else if(type == IterateTable::COMMAND_PAUSE)
 	{
 		if(targetSubsystem.size())
-			return checkRemoteCommandFSMTransition(iteratorStruct, "Paused", targetSubsystem);
+			return checkRemoteCommandFSMTransition(
+			    iteratorStruct, "Paused", targetSubsystem);
 		return checkCommandFSMTransition(iteratorStruct, "Paused");
 	}
 	else if(type == IterateTable::COMMAND_RESUME)
 	{
 		if(targetSubsystem.size())
-			return checkRemoteCommandFSMTransition(iteratorStruct, "Running", targetSubsystem);
+			return checkRemoteCommandFSMTransition(
+			    iteratorStruct, "Running", targetSubsystem);
 		return checkCommandFSMTransition(iteratorStruct, "Running");
 	}
 	else if(type == IterateTable::COMMAND_HALT)
 	{
 		if(targetSubsystem.size())
-			return checkRemoteCommandFSMTransition(iteratorStruct,
-			    RunControlStateMachine::HALTED_STATE_NAME, targetSubsystem);
+			return checkRemoteCommandFSMTransition(
+			    iteratorStruct,
+			    RunControlStateMachine::HALTED_STATE_NAME,
+			    targetSubsystem);
 		return checkCommandFSMTransition(iteratorStruct,
 		                                 RunControlStateMachine::HALTED_STATE_NAME);
 	}
@@ -1267,9 +1288,8 @@ bool Iterator::commandSkipsIfConfigured(IteratorWorkLoopStruct* iteratorStruct)
 	auto& params = iteratorStruct->commands_[iteratorStruct->commandIndex_].params_;
 	auto  it =
 	    params.find(IterateTable::commandConfigureAliasParams_.SkipIfAlreadyConfigured_);
-	return it != params.end() &&
-	       (it->second == "1" || it->second == "Yes" || it->second == "True" ||
-	        it->second == "On");
+	return it != params.end() && (it->second == "1" || it->second == "Yes" ||
+	                              it->second == "True" || it->second == "On");
 }  // end commandSkipsIfConfigured()
 
 //==============================================================================
@@ -2297,7 +2317,8 @@ std::vector<IterateTable::Command> Iterator::generateIterationPlan(
 		// generated plans keep using the plan-wide onlyConfigIfNotConfigured_ flag
 		commands.back().params_.emplace(
 		    std::pair<std::string /*param name*/, std::string /*param value*/>(
-		        IterateTable::commandConfigureAliasParams_.SkipIfAlreadyConfigured_, "0"));
+		        IterateTable::commandConfigureAliasParams_.SkipIfAlreadyConfigured_,
+		        "0"));
 	}
 
 	if(durationSeconds == (uint64_t)-1)
@@ -2816,13 +2837,12 @@ std::string Iterator::buildRemoteConfigureCommand(IteratorWorkLoopStruct* iterat
 }  // end buildRemoteConfigureCommand()
 
 //==============================================================================
-void Iterator::startRemoteCommandFSMTransition(
-    IteratorWorkLoopStruct* iteratorStruct,
-    const std::string&      transitionCommand,
-    const std::string&      targetSubsystem)
+void Iterator::startRemoteCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
+                                               const std::string&      transitionCommand,
+                                               const std::string&      targetSubsystem)
 {
-	__COUT__ << "startRemoteCommandFSMTransition: " << transitionCommand
-	         << " targeting '" << targetSubsystem << "'" << __E__;
+	__COUT__ << "startRemoteCommandFSMTransition: " << transitionCommand << " targeting '"
+	         << targetSubsystem << "'" << __E__;
 
 	std::lock_guard<std::mutex> lock(
 	    iteratorStruct->theIterator_->theSupervisor_->remoteGatewayAppsMutex_);
@@ -2834,18 +2854,18 @@ void Iterator::startRemoteCommandFSMTransition(
 }  // end startRemoteCommandFSMTransition()
 
 //==============================================================================
-bool Iterator::checkRemoteCommandFSMTransition(
-    IteratorWorkLoopStruct* iteratorStruct,
-    const std::string&      finalState,
-    const std::string&      targetSubsystem)
+bool Iterator::checkRemoteCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
+                                               const std::string&      finalState,
+                                               const std::string&      targetSubsystem)
 {
 	sleep(1);
 
 	std::lock_guard<std::mutex> lock(
 	    iteratorStruct->theIterator_->theSupervisor_->remoteGatewayAppsMutex_);
 
-	const auto& remoteApp = iteratorStruct->theIterator_->theSupervisor_->remoteGatewayApps_
-	                            [findRemoteGatewayApp(iteratorStruct, targetSubsystem)];
+	const auto& remoteApp =
+	    iteratorStruct->theIterator_->theSupervisor_
+	        ->remoteGatewayApps_[findRemoteGatewayApp(iteratorStruct, targetSubsystem)];
 
 	if(remoteApp.getError() != "")
 	{
@@ -2902,18 +2922,19 @@ void Iterator::startRemoteCommandConfigure(IteratorWorkLoopStruct* iteratorStruc
 	    iteratorStruct->theIterator_->theSupervisor_->remoteGatewayAppsMutex_);
 
 	size_t      remoteAppIndex = findRemoteGatewayApp(iteratorStruct, targetSubsystem);
-	std::string currentState   = iteratorStruct->theIterator_->theSupervisor_
-	                               ->remoteGatewayApps_[remoteAppIndex]
-	                               .appInfo.status;
+	std::string currentState =
+	    iteratorStruct->theIterator_->theSupervisor_->remoteGatewayApps_[remoteAppIndex]
+	        .appInfo.status;
 	__COUTV__(currentState);
 
 	if(currentState == RunControlStateMachine::INITIAL_STATE_NAME ||
 	   currentState == RunControlStateMachine::HALTED_STATE_NAME)
 	{
-		queueRemoteGatewayCommand(iteratorStruct,
-		                          remoteAppIndex,
-		                          buildRemoteConfigureCommand(iteratorStruct, systemAlias),
-		                          RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
+		queueRemoteGatewayCommand(
+		    iteratorStruct,
+		    remoteAppIndex,
+		    buildRemoteConfigureCommand(iteratorStruct, systemAlias),
+		    RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
 	}
 	else if(currentState == RunControlStateMachine::CONFIGURED_STATE_NAME ||
 	        currentState.find(RunControlStateMachine::FAILED_STATE_NAME) == 0)
@@ -2921,10 +2942,11 @@ void Iterator::startRemoteCommandConfigure(IteratorWorkLoopStruct* iteratorStruc
 		if(commandSkipsIfConfigured(iteratorStruct) &&
 		   currentState == RunControlStateMachine::CONFIGURED_STATE_NAME)
 		{
-			__COUT_INFO__ << "Remote subsystem '" << targetSubsystem
-			              << "' already configured and SkipIfAlreadyConfigured is set, so "
-			                 "leaving its configuration as-is."
-			              << __E__;
+			__COUT_INFO__
+			    << "Remote subsystem '" << targetSubsystem
+			    << "' already configured and SkipIfAlreadyConfigured is set, so "
+			       "leaving its configuration as-is."
+			    << __E__;
 			return;  // check sees Configured with nothing queued and completes
 		}
 
@@ -3081,7 +3103,8 @@ Iterator::expandDimensionalLoop(const std::string& inputArgs)
 			{
 				// name may contain ':' (e.g. "Target Link (Default := -1)"), so split from the right
 				std::vector<std::string> pieces(3);
-				if(!StringMacros::splitMacroArgTriple(args[a], pieces[0], pieces[1], pieces[2]))
+				if(!StringMacros::splitMacroArgTriple(
+				       args[a], pieces[0], pieces[1], pieces[2]))
 				{
 					__SS__ << "Invalid argument '" << args[a]
 					       << "'! Expected name:initialValue:stepSize." << __E__;
@@ -3095,8 +3118,9 @@ Iterator::expandDimensionalLoop(const std::string& inputArgs)
 					arg.type = DimArg::STRING;
 					arg.sVal = pieces[1];
 				}
-				else if((pieces[1].size() && (pieces[1].back() == 'f' ||
-				                              pieces[1].find('.') != std::string::npos)) ||
+				else if((pieces[1].size() &&
+				         (pieces[1].back() == 'f' ||
+				          pieces[1].find('.') != std::string::npos)) ||
 				        (pieces[2].size() && (pieces[2].back() == 'f' ||
 				                              pieces[2].find('.') != std::string::npos)))
 				{
@@ -3133,9 +3157,10 @@ Iterator::expandDimensionalLoop(const std::string& inputArgs)
 						}
 					if(clash)
 						continue;
-					std::string value = arg.type == DimArg::LONG     ? std::to_string(arg.lCur)
-					                    : arg.type == DimArg::DOUBLE ? std::to_string(arg.dCur)
-					                                                 : arg.sVal;
+					std::string value =
+					    arg.type == DimArg::LONG     ? std::to_string(arg.lCur)
+					    : arg.type == DimArg::DOUBLE ? std::to_string(arg.dCur)
+					                                 : arg.sVal;
 					argsIn.emplace_back(arg.name, value);
 				}
 			iterations.push_back(argsIn);
@@ -3223,7 +3248,8 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 			}
 
 			std::vector<std::string> pieces(3);
-			if(!StringMacros::splitMacroArgTriple(args[a], pieces[0], pieces[1], pieces[2]))
+			if(!StringMacros::splitMacroArgTriple(
+			       args[a], pieces[0], pieces[1], pieces[2]))
 			{
 				out += args[a];  // leave malformed entries for the FE-side error
 				continue;
@@ -3241,8 +3267,10 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 			}
 
 			std::string newInit;
-			if((init.size() && (init.back() == 'f' || init.find('.') != std::string::npos)) ||
-			   (step.size() && (step.back() == 'f' || step.find('.') != std::string::npos)))
+			if((init.size() &&
+			    (init.back() == 'f' || init.find('.') != std::string::npos)) ||
+			   (step.size() &&
+			    (step.back() == 'f' || step.find('.') != std::string::npos)))
 				newInit = std::to_string(strtod(init.c_str(), 0) +
 				                         strtod(step.c_str(), 0) * stepIndex);
 			else
@@ -3254,9 +3282,9 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 			}
 
 			__COUT_INFO__ << "Macro arg '" << name << "' pass " << stepIndex
-			              << (label.size() ? (" of label '" + label + "'") : "")
-			              << ": " << init << " + " << step << "*" << stepIndex << " = "
-			              << newInit << __E__;
+			              << (label.size() ? (" of label '" + label + "'") : "") << ": "
+			              << init << " + " << step << "*" << stepIndex << " = " << newInit
+			              << __E__;
 
 			out += name + ":" + newInit + ":" + step;
 		}
@@ -3273,12 +3301,13 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
                                        bool                    isFEMacro)
 {
-	auto&              command         = iteratorStruct->commands_[iteratorStruct->commandIndex_];
-	const std::string  targetSubsystem = command.targetSubsystem_;
-	const std::string  macroName =
+	auto&             command = iteratorStruct->commands_[iteratorStruct->commandIndex_];
+	const std::string targetSubsystem = command.targetSubsystem_;
+	const std::string macroName =
 	    command.params_[IterateTable::commandExecuteMacroParams_.MacroName_];
 	const bool saveOutputs =
-	    command.params_[IterateTable::commandExecuteMacroParams_.EnableSavingOutput_] == "1";
+	    command.params_[IterateTable::commandExecuteMacroParams_.EnableSavingOutput_] ==
+	    "1";
 	const std::string inputArgs = applyStepIndexToMacroArgs(
 	    iteratorStruct,
 	    command.params_[IterateTable::commandExecuteMacroParams_.MacroArgumentString_],
@@ -3318,7 +3347,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		if(feIt == info.fes.end())
 		{
 			__SS__ << "Front-end '" << uid << "' is not live on remote subsystem '"
-			       << targetSubsystem << "'. Is it enabled and is the subsystem Configured? "
+			       << targetSubsystem
+			       << "'. Is it enabled and is the subsystem Configured? "
 			       << "Live front-ends: ";
 			for(const auto& fe : info.fes)
 				ss << fe.first << " ";
@@ -3331,7 +3361,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 			if(macroIt == feIt->second.macros.end())
 			{
 				__SS__ << "FE Macro '" << macroName << "' not found on front-end '" << uid
-				       << "' of remote subsystem '" << targetSubsystem << "'. Available: ";
+				       << "' of remote subsystem '" << targetSubsystem
+				       << "'. Available: ";
 				for(const auto& m : feIt->second.macros)
 					ss << m.first << " ";
 				ss << __E__;
@@ -3352,8 +3383,9 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		auto macroIt = info.publicMacros.find(macroName);
 		if(macroIt == info.publicMacros.end())
 		{
-			__SS__ << "MacroMaker macro '" << macroName << "' not found on remote subsystem '"
-			       << targetSubsystem << "'. Available: ";
+			__SS__ << "MacroMaker macro '" << macroName
+			       << "' not found on remote subsystem '" << targetSubsystem
+			       << "'. Available: ";
 			for(const auto& m : info.publicMacros)
 				ss << m.first << " ";
 			ss << __E__;
@@ -3395,7 +3427,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		    << " iteration(s) from loop spec '" << inputArgs << "'";
 		if(saveOutputs)
 			hdr << ". Output saving is enabled: the remote MacroMaker writes "
-			       "macroOutput_<time>.txt under its OTSDAQ_DATA (OutputFilePath/Radix are "
+			       "macroOutput_<time>.txt under its OTSDAQ_DATA (OutputFilePath/Radix "
+			       "are "
 			       "not applied to remote targets)";
 		__COUT_INFO__ << hdr.str() << __E__;
 	}
@@ -3424,15 +3457,17 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 			{
 				if(run->abort)
 				{
-					__COUT_INFO__ << "Remote macro '" << macroName << "' aborted before iteration "
-					              << i + 1 << " of " << iterations.size() << __E__;
+					__COUT_INFO__ << "Remote macro '" << macroName
+					              << "' aborted before iteration " << i + 1 << " of "
+					              << iterations.size() << __E__;
 					break;
 				}
 
 				std::string inputStr;
 				for(size_t a = 0; a < iterations[i].size(); ++a)
 					inputStr += (a ? ";" : "") +
-					            StringMacros::encodeURIComponent(iterations[i][a].first) + "," +
+					            StringMacros::encodeURIComponent(iterations[i][a].first) +
+					            "," +
 					            StringMacros::encodeURIComponent(iterations[i][a].second);
 
 				// RunFrontendMacro;feClass;feUIDs;macroType;macroName;inputArgs;outputArgs;saveOutputs
@@ -3446,8 +3481,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				              << " of " << iterations.size() << " inputs: " << inputStr
 				              << __E__;
 
-				std::string response =
-				    gw->queryRemoteMacroMaker(ipPort, cmd, 30 /*inactivity s*/, [&](int pct) {
+				std::string response = gw->queryRemoteMacroMaker(
+				    ipPort, cmd, 30 /*inactivity s*/, [&](int pct) {
 					    std::lock_guard<std::mutex> lock(run->mutex);
 					    run->progress = pct;
 				    });
@@ -3463,8 +3498,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				// log per-FE outputs
 				size_t      after = 0;
 				std::string feUid;
-				while((feUid = StringMacros::extractXmlField(response, "fe_uid", 0, after, &after)) !=
-				      "")
+				while((feUid = StringMacros::extractXmlField(
+				           response, "fe_uid", 0, after, &after)) != "")
 				{
 					after += strlen("fe_uid");
 					size_t      argAfter = after;
@@ -3472,17 +3507,20 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 					// outputArgs_name/value pairs follow fe_* fields within this feMacroExec
 					size_t nextFe = response.find("<fe_uid", after);
 					while((outName = StringMacros::extractXmlField(
-					           response, "outputArgs_name", 0, argAfter, &argAfter)) != "" &&
+					           response, "outputArgs_name", 0, argAfter, &argAfter)) !=
+					          "" &&
 					      (nextFe == std::string::npos || argAfter < nextFe))
 					{
 						argAfter += strlen("outputArgs_name");
 						outValue = StringMacros::extractXmlField(
 						    response, "outputArgs_value", 0, argAfter, &argAfter);
 						argAfter += strlen("outputArgs_value");
-						outputs += " " + outName + "=" + StringMacros::decodeURIComponent(outValue);
+						outputs += " " + outName + "=" +
+						           StringMacros::decodeURIComponent(outValue);
 					}
-					__COUT_INFO__ << "Remote macro '" << macroName << "' iteration " << i + 1
-					              << " FE '" << feUid << "' outputs:" << outputs << __E__;
+					__COUT_INFO__ << "Remote macro '" << macroName << "' iteration "
+					              << i + 1 << " FE '" << feUid << "' outputs:" << outputs
+					              << __E__;
 				}
 
 				std::lock_guard<std::mutex> lock(run->mutex);
@@ -3503,7 +3541,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		run->done = true;
 	}).detach();
 
-	__COUT__ << "startRemoteCommandMacro launched for '" << targetSubsystem << "'" << __E__;
+	__COUT__ << "startRemoteCommandMacro launched for '" << targetSubsystem << "'"
+	         << __E__;
 }  // end startRemoteCommandMacro()
 
 //==============================================================================

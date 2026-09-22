@@ -13360,21 +13360,23 @@ try
 				   state != RunControlStateMachine::RUNNING_STATE_NAME &&
 				   state != RunControlStateMachine::PAUSED_STATE_NAME)
 				{
-					__SUP_SS__ << "This system is in state '" << state
-					           << ".' It must be Configured before its front-end macros can "
-					              "be listed (front-end instances only exist while configured)."
-					           << __E__;
+					__SUP_SS__
+					    << "This system is in state '" << state
+					    << ".' It must be Configured before its front-end macros can "
+					       "be listed (front-end instances only exist while configured)."
+					    << __E__;
 					__SUP_SS_THROW__;
 				}
 				const char* mmIp   = getenv("OTS_MACROMAKER_UDP_IP");
 				const char* mmPort = getenv("OTS_MACROMAKER_UDP_PORT");
 				if(!mmIp || !mmPort || !strlen(mmIp) || !strlen(mmPort))
 				{
-					__SUP_SS__ << "This system's MacroMaker UDP interface is not enabled. "
-					              "Export OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT in "
-					              "the shell that launches ots (see "
-					              "hwdev_spack_fast_setup_ots.sh for an example)."
-					           << __E__;
+					__SUP_SS__
+					    << "This system's MacroMaker UDP interface is not enabled. "
+					       "Export OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT in "
+					       "the shell that launches ots (see "
+					       "hwdev_spack_fast_setup_ots.sh for an example)."
+					    << __E__;
 					__SUP_SS_THROW__;
 				}
 				ipPort = std::string(mmIp) + ":" + mmPort;
@@ -13382,18 +13384,20 @@ try
 			else
 				ipPort = getRemoteMacroMakerUDPAddress(targetSubsystem);
 
-			RemoteFEMacroInfo info = parseFEMacroInfo(
-			    queryRemoteMacroMaker(ipPort, "GetFrontendMacroInfo", 10 /*inactivity s*/));
+			RemoteFEMacroInfo info = parseFEMacroInfo(queryRemoteMacroMaker(
+			    ipPort, "GetFrontendMacroInfo", 10 /*inactivity s*/));
 
 			xmlOut.addTextElementToData("macro_maker_udp", ipPort);
 			for(const auto& fe : info.fes)
 			{
 				auto feEl = xmlOut.addTextElementToData("fe", fe.first);
 				xmlOut.addTextElementToParent("fe_type", fe.second.feType, feEl);
-				xmlOut.addTextElementToParent("fe_supervisor", fe.second.supervisor, feEl);
+				xmlOut.addTextElementToParent(
+				    "fe_supervisor", fe.second.supervisor, feEl);
 				for(const auto& macro : fe.second.macros)
 				{
-					auto macroEl = xmlOut.addTextElementToParent("macro", macro.first, feEl);
+					auto macroEl =
+					    xmlOut.addTextElementToParent("macro", macro.first, feEl);
 					for(const auto& in : macro.second.inputs)
 						xmlOut.addTextElementToParent("input", in, macroEl);
 					for(const auto& out : macro.second.outputs)
@@ -15010,17 +15014,20 @@ std::string GatewaySupervisor::getRemoteMacroMakerUDPAddress(
 	   status != RunControlStateMachine::RUNNING_STATE_NAME &&
 	   status != RunControlStateMachine::PAUSED_STATE_NAME)
 	{
-		__SUP_SS__ << "Remote subsystem '" << targetSubsystem << "' is in state '" << status
-		           << ".' It must be Configured before its front-end macros can be listed "
-		              "or run (front-end instances only exist while configured)."
-		           << __E__;
+		__SUP_SS__
+		    << "Remote subsystem '" << targetSubsystem << "' is in state '" << status
+		    << ".' It must be Configured before its front-end macros can be listed "
+		       "or run (front-end instances only exist while configured)."
+		    << __E__;
 		__SUP_SS_THROW__;
 	}
 
 	const std::string enableHint =
 	    "Make sure MacroMaker UDP is enabled on subsystem '" + targetSubsystem +
-	    "' by exporting OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT in the shell that "
-	    "launches ots there (both the Gateway and MacroMaker processes must see them; see "
+	    "' by exporting OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT in the shell "
+	    "that "
+	    "launches ots there (both the Gateway and MacroMaker processes must see them; "
+	    "see "
 	    "hwdev_spack_fast_setup_ots.sh for an example). Also confirm that subsystem's "
 	    "Gateway was rebuilt with the GetMacroMakerUDPAddress command.";
 
@@ -15058,11 +15065,12 @@ std::string GatewaySupervisor::getRemoteMacroMakerUDPAddress(
 
 	if(response == "Disabled")
 	{
-		__SUP_SS__ << "Remote subsystem '" << targetSubsystem
-		           << "' Gateway reports that OTS_MACROMAKER_UDP_IP / OTS_MACROMAKER_UDP_PORT "
-		              "are not set in its environment, so its MacroMaker UDP interface is "
-		              "disabled.\n\n"
-		           << enableHint << __E__;
+		__SUP_SS__
+		    << "Remote subsystem '" << targetSubsystem
+		    << "' Gateway reports that OTS_MACROMAKER_UDP_IP / OTS_MACROMAKER_UDP_PORT "
+		       "are not set in its environment, so its MacroMaker UDP interface is "
+		       "disabled.\n\n"
+		    << enableHint << __E__;
 		__SUP_SS_THROW__;
 	}
 	if(response.find("Done,") != 0 || response.size() <= strlen("Done,"))
@@ -15095,8 +15103,8 @@ std::string GatewaySupervisor::queryRemoteMacroMaker(
 	std::vector<std::string> parsed = StringMacros::getVectorFromString(ipPort, {':'});
 	if(parsed.size() != 2)
 	{
-		__SUP_SS__ << "MacroMaker UDP address is not in 'ip:port' form: '" << ipPort << "'"
-		           << __E__;
+		__SUP_SS__ << "MacroMaker UDP address is not in 'ip:port' form: '" << ipPort
+		           << "'" << __E__;
 		__SUP_SS_THROW__;
 	}
 
@@ -15116,7 +15124,8 @@ std::string GatewaySupervisor::queryRemoteMacroMaker(
 	auto        lastPacketTime = std::chrono::steady_clock::now();
 	while(1)
 	{
-		if(tmpSocket.receive(packet, 0 /*timeoutSeconds*/, 200000 /*timeoutUSeconds*/) == 0)
+		if(tmpSocket.receive(packet, 0 /*timeoutSeconds*/, 200000 /*timeoutUSeconds*/) ==
+		   0)
 		{
 			lastPacketTime = std::chrono::steady_clock::now();
 			if(packet.find("<progress>") == 0)
@@ -15126,7 +15135,8 @@ std::string GatewaySupervisor::queryRemoteMacroMaker(
 				continue;
 			}
 			response += packet;
-			if(response.find("Error:") == 0 || response.find("</ROOT>") != std::string::npos)
+			if(response.find("Error:") == 0 ||
+			   response.find("</ROOT>") != std::string::npos)
 				break;
 			continue;
 		}
@@ -15200,8 +15210,8 @@ GatewaySupervisor::RemoteFEMacroInfo GatewaySupervisor::parseFEMacroInfo(
 	for(const std::string tag : {"PublicMacro", "PrivateMacro"})
 	{
 		after = 0;
-		while((value = StringMacros::extractXmlField(feMacroInfoXml, tag, 0, after, &after)) !=
-		      "")
+		while((value = StringMacros::extractXmlField(
+		           feMacroInfoXml, tag, 0, after, &after)) != "")
 		{
 			after += tag.size();
 

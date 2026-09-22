@@ -212,11 +212,11 @@ class IterateTable : public TableBase
 
 	static struct PlanTableColumns
 	{
-		const std::string Status_           = TableViewColumnInfo::COL_NAME_STATUS;
-		const std::string GroupID_          = "IterationPlanGroupID";
-		const std::string CommandLink_      = "LinkToCommandUID";
-		const std::string CommandType_      = "CommandType";
-		const std::string TargetSubsystem_  = "TargetSubsystem";
+		const std::string Status_          = TableViewColumnInfo::COL_NAME_STATUS;
+		const std::string GroupID_         = "IterationPlanGroupID";
+		const std::string CommandLink_     = "LinkToCommandUID";
+		const std::string CommandType_     = "CommandType";
+		const std::string TargetSubsystem_ = "TargetSubsystem";
 	} planTableCols_;
 };
 }  // namespace ots
