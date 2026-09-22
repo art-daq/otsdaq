@@ -1239,6 +1239,31 @@ std::vector<std::string> StringMacros::getVectorFromString(
 }  // end getVectorFromString()
 
 //==============================================================================
+bool StringMacros::splitMacroArgTriple(const std::string& inputString,
+                                       std::string&       name,
+                                       std::string&       initValue,
+                                       std::string&       stepValue,
+                                       char               delimiter /* = ':' */)
+{
+	size_t stepPos = inputString.rfind(delimiter);
+	if(stepPos == std::string::npos || stepPos == 0)
+		return false;
+	size_t initPos = inputString.rfind(delimiter, stepPos - 1);
+	if(initPos == std::string::npos)
+		return false;
+
+	auto trim = [](std::string s) {
+		size_t b = s.find_first_not_of(" \t\n\r");
+		size_t e = s.find_last_not_of(" \t\n\r");
+		return b == std::string::npos ? std::string() : s.substr(b, e - b + 1);
+	};
+	name      = trim(inputString.substr(0, initPos));
+	initValue = trim(inputString.substr(initPos + 1, stepPos - initPos - 1));
+	stepValue = trim(inputString.substr(stepPos + 1));
+	return name.size() > 0;
+}  // end splitMacroArgTriple()
+
+//==============================================================================
 /// getMapFromString
 ///	extracts the map of name-value pairs from string that uses two delimiters
 ///		ignoring whitespace

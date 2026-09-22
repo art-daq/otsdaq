@@ -6,6 +6,7 @@
 				<COLUMN Type="GroupID-macroDimensionalLoops" 	 Name="DimensionalLoopGroupID" 	 StorageName="DIMENSIONAL_LOOP_GROUP_ID" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Data" 	 Name="DimensionalLoopPriority" 	 StorageName="DIMENSIONAL_LOOP_PRIORITY" 		DataType="NUMBER" 		DataChoices=""/>
 				<COLUMN Type="Data" 	 Name="NumberOfIterations" 	 StorageName="NUMBER_OF_ITERATIONS" 		DataType="NUMBER" 		DataChoices=""/>
+				<COLUMN Type="Data" 	 Name="StepLabel" 	 StorageName="STEP_LABEL" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="ChildLink-dimensionalLoopParameters" 	 Name="LinkToDimensionalLoopParameterTable" 	 StorageName="LINK_TO_DIMENSIONAL_LOOP_PARAMETER_TABLE" 		DataType="STRING" 		DataChoices="arbitraryBool=0,NO_LINK,IterationCommandMacroDimensionalLoopParameterTable"/>
 				<COLUMN Type="ChildLinkGroupID-dimensionalLoopParameters" 	 Name="LinkToDimensionalLoopParameterGroupID" 	 StorageName="LINK_TO_DIMENSIONAL_LOOP_PARAMETER_GROUP_ID" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="STRING" 		DataChoices=""/>

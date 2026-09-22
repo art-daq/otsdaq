@@ -2,6 +2,7 @@
 #define _ots_Iterator_h
 
 #include <atomic>  //for std::atomic
+#include <memory>  //for std::shared_ptr
 #include <mutex>   //for std::mutex
 #include <string>
 #include "otsdaq/TablePlugins/IterateTable.h"
@@ -73,7 +74,8 @@ class Iterator
 		std::vector<IterateTable::Command> commands_;
 		std::vector<unsigned int>          commandIterations_;
 		unsigned int                       commandIndex_;
-		std::vector<unsigned int>          stepIndexStack_;
+		std::vector<unsigned int>          stepIndexStack_;  ///< pass index per open BEGIN_LABEL (innermost last)
+		std::vector<std::string>           stepLabelStack_;  ///< label names parallel to stepIndexStack_
 		time_t                             originalDurationInSeconds_;
 
 		// associated with FSM
@@ -85,6 +87,19 @@ class Iterator
 		std::vector<std::string> fsmCommandParameters_;
 		std::vector<bool>        targetsDone_;
 
+		bool remoteConfigureQueued_ = false;  ///< remote Configure needs Halt first when not Halted/Initial
+
+		/// state shared with the background thread driving a remote FE macro over MacroMaker UDP
+		struct RemoteMacroRun
+		{
+			std::atomic<bool> done{false}, abort{false};
+			std::mutex        mutex;  ///< guards error, iterationsDone, progress
+			std::string       error;
+			unsigned int      iterationsDone  = 0;
+			unsigned int      iterationsTotal = 0;
+			int               progress        = 0;  ///< percent of current iteration, from remote
+		};
+		std::shared_ptr<RemoteMacroRun> remoteMacroRun_;
 
 	};  // end declaration of iterator workloop members
 
@@ -94,6 +109,7 @@ class Iterator
 
 	static void startCommandChooseFSM(IteratorWorkLoopStruct* iteratorStruct, const std::string& fsmName);
 
+	static bool commandSkipsIfConfigured(IteratorWorkLoopStruct* iteratorStruct);
 	static void startCommandConfigureActive(IteratorWorkLoopStruct* iteratorStruct);
 	static void startCommandConfigureAlias(IteratorWorkLoopStruct* iteratorStruct, const std::string& systemAlias);
 	static void startCommandConfigureGroup(IteratorWorkLoopStruct* iteratorStruct);
@@ -115,6 +131,29 @@ class Iterator
 
 	static void startCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct, const std::string& transitionCommand);
 	static bool checkCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct, const std::string& finalState);
+
+	static void startRemoteCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct, const std::string& transitionCommand, const std::string& targetSubsystem);
+	static bool checkRemoteCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct, const std::string& finalState, const std::string& targetSubsystem);
+
+	static void startRemoteCommandConfigure(IteratorWorkLoopStruct* iteratorStruct, const std::string& systemAlias, const std::string& targetSubsystem);
+	static bool checkRemoteCommandConfigure(IteratorWorkLoopStruct* iteratorStruct, const std::string& targetSubsystem);
+
+	static void startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct, bool isFEMacro);
+	static bool checkRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct, bool isFEMacro);
+	/// expands the Iterator MacroArgumentString ("nIter,arg:init:step,...;nIter2,...") into
+	///	one ordered name/value list per iteration, mirroring FEVInterfacesManager::startFEMacroMultiDimensional
+	static std::vector<std::vector<std::pair<std::string, std::string>>> expandDimensionalLoop(const std::string& inputArgs);
+
+	/// pass index of the named open BEGIN_LABEL; empty label = innermost; 0 if none open / not found
+	static unsigned int getStepIndexForLabel(IteratorWorkLoopStruct* iteratorStruct, const std::string& label);
+	/// returns MacroArgumentString with each numeric init replaced by init + step*passIndex(dimension's StepLabel)
+	static std::string  applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iteratorStruct, const std::string& inputArgs, const std::string& labelsStr);
+
+	/// caller must hold theSupervisor_->remoteGatewayAppsMutex_ for both helpers;
+	///	index refers into theSupervisor_->remoteGatewayApps_
+	static size_t      findRemoteGatewayApp(IteratorWorkLoopStruct* iteratorStruct, const std::string& targetSubsystem);
+	static void        queueRemoteGatewayCommand(IteratorWorkLoopStruct* iteratorStruct, size_t remoteAppIndex, const std::string& command, const std::string& statusLabel);
+	static std::string buildRemoteConfigureCommand(IteratorWorkLoopStruct* iteratorStruct, const std::string& systemAlias);
 
 	static bool haltIterator(Iterator*               iterator,
 	                         IteratorWorkLoopStruct* iteratorStruct = 0,
