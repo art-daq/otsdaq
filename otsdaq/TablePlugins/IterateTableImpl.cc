@@ -135,9 +135,11 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 
 		try
 		{
+			// getValueWithDefault: a newly added column holds the DEFAULT sentinel, which
+			//	must read as "" (Self), not as a remote subsystem literally named DEFAULT
 			commands.back().targetSubsystem_ =
 			    commandChild.second.getNode(IterateTable::planTableCols_.TargetSubsystem_)
-			        .getValue<std::string>();
+			        .getValueWithDefault<std::string>("");
 		}
 		catch(...)
 		{
