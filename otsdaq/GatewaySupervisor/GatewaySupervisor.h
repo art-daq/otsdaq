@@ -2,6 +2,7 @@
 #define _ots_GatewaySupervisor_h
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 #include <mutex>
 
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
@@ -162,6 +163,25 @@ class WorkLoopManager;
 
 
 	private:
+		/// Remote MacroMaker UDP access (used by Iterator remote FE macros and the Iterate GUI)
+		struct RemoteFEMacroInfo
+		{
+			struct MacroInfo
+			{
+				std::vector<std::string> inputs, outputs;
+			};
+			struct FEInfo
+			{
+				std::string 							supervisor, feType;
+				std::map<std::string /*macroName*/, MacroInfo> 	macros;
+			};
+			std::map<std::string /*feUID*/, FEInfo> 		fes;
+			std::map<std::string /*macroName*/, MacroInfo> 	publicMacros;
+		};
+		std::string 					getRemoteMacroMakerUDPAddress					(const std::string& targetSubsystem);  ///< returns "ip:port"; throws with user guidance if subsystem not Configured or UDP disabled
+		std::string 					queryRemoteMacroMaker							(const std::string& ipPort, const std::string& command, unsigned int inactivityTimeoutSeconds, std::function<void(int /*percent*/)> progressCb = nullptr);  ///< returns full response ("<ROOT>...</ROOT>" or "Error: ..."); forwards <progress> packets to callback
+		static RemoteFEMacroInfo 		parseFEMacroInfo								(const std::string& feMacroInfoXml);  ///< parses GetFrontendMacroInfo response
+
 		unsigned int 					getNextRunNumber								(const std::string& fsmName = "");
 		void 							setNextRunNumber								(unsigned int runNumber, const std::string& fsmName = "");
 		std::string 					getLastLogEntry									(const std::string& logType, const std::string& fsmName = "");
