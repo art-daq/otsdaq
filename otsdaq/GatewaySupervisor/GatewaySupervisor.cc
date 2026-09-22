@@ -7449,8 +7449,9 @@ try
 		      << "_" << theConfigurationTableGroup_.first << "_v"
 		      << theConfigurationTableGroup_.second;
 
-		GatewaySupervisor::launchStartOTSCommand(
-		    runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+		// rollover only touches processes that are already running, so target the
+		//	live context hosts and avoid a ConfigurationManager reload mid-transition
+		GatewaySupervisor::launchStartOTSCommand(runSs.str(), getLiveContextHostnames());
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -8568,8 +8569,9 @@ try
 		runSs << ";" << activeStateMachineRunAlias_ << "_"
 		      << activeStateMachineRunNumber_;
 
-		GatewaySupervisor::launchStartOTSCommand(
-		    runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+		// rollover only touches processes that are already running, so target the
+		//	live context hosts and avoid a ConfigurationManager reload mid-transition
+		GatewaySupervisor::launchStartOTSCommand(runSs.str(), getLiveContextHostnames());
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -9281,8 +9283,9 @@ try
 		runSs << ";Post" << activeStateMachineRunAlias_ << "_"
 		      << activeStateMachineRunNumber_;
 
-		GatewaySupervisor::launchStartOTSCommand(
-		    runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+		// rollover only touches processes that are already running, so target the
+		//	live context hosts and avoid a ConfigurationManager reload mid-transition
+		GatewaySupervisor::launchStartOTSCommand(runSs.str(), getLiveContextHostnames());
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -10765,11 +10768,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 
 	std::map<std::string /* fullName */, int /* unknownCount */> unknownResponseCounts;
 
-	bool         done      = command == "Error";  //dont check for done if Error'ing
-	size_t       iteration = 0;
+	bool         done           = command == "Error";  //dont check for done if Error'ing
+	size_t       iteration      = 0;
 	const size_t msPerIteration = 200;
-	const size_t maxIterations =
-	    10 * 60 * 1000 / msPerIteration;  //roughly 10 minutes
+	const size_t maxIterations  = 10 * 60 * 1000 / msPerIteration;  //roughly 10 minutes
 	std::map<std::string /* name */, size_t /* progress100cnt */>
 	    progress100cnt;  // make sure remote subsystem is not in unanticipated state
 	while(!done)
@@ -11026,8 +11028,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				       << lastRemainingProgress << "' and status='" << lastRemainingStatus
 				       << "'";
 			waitSs << __E__;
-			uint32_t timeUntilTimeout = (maxIterations - iteration) *
-			                            msPerIteration / 1000;  // seconds until timeout
+			uint32_t timeUntilTimeout = (maxIterations - iteration) * msPerIteration /
+			                            1000;  // seconds until timeout
 			if(timeUntilTimeout / 60 < 1)
 				waitSs << "(wait count = " << iteration << ", " << timeUntilTimeout
 				       << " seconds until timeout)" << __E__;
@@ -14588,6 +14590,17 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 /// launchStartOTSCommand
 ///	static function (so WizardSupervisor can use it)
 ///	throws exception if command fails to start
+///
+///	Target hosts are taken from the XDAQ Context table after a full
+///	ConfigurationManager::init() reload, so that commands which (re)launch
+///	contexts (LAUNCH_OTS, LAUNCH_WIZ, OTS_APP_STARTUP, ...) see table edits made
+///	since the last load.
+///
+///	Note: the reload destroys and re-creates every active table group, so this
+///	overload must not be used while other code may be reading the configuration
+///	tree (e.g. mid-transition). For commands that only act on the processes
+///	already running (LOG_ROLLOVER), use the hostname-list overload with
+///	getLiveContextHostnames() instead.
 void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
                                               ConfigurationManager* cfgMgr)
 {
@@ -14614,8 +14627,6 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 				if(context.address_[i] == '/')
 					j = i + 1;
 			hostnames.push_back(context.address_.substr(j));
-			__COUT__ << "ots script command '" << command
-			         << "' launching on hostname = " << hostnames.back() << __E__;
 		}
 	}
 	catch(...)
@@ -14626,6 +14637,28 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 
 		__SS_THROW__;
 	}
+
+	launchStartOTSCommand(command, hostnames);
+}  // end launchStartOTSCommand(cfgMgr)
+
+//==============================================================================
+/// launchStartOTSCommand
+///	Write the command to the ots launch script's action file on each named host,
+///	then verify each script consumed it. Does not touch the ConfigurationManager.
+///	throws exception if command fails to start
+void GatewaySupervisor::launchStartOTSCommand(const std::string&              command,
+                                              const std::vector<std::string>& hostnames)
+{
+	if(hostnames.empty())
+	{
+		__SS__ << "Launch of command '" << command
+		       << "' interrupted! No target context hostnames were provided." << __E__;
+		__SS_THROW__;
+	}
+
+	for(const auto& hostname : hostnames)
+		__COUT__ << "ots script command '" << command
+		         << "' launching on hostname = " << hostname << __E__;
 
 	for(const auto& hostname : hostnames)
 	{
@@ -14674,7 +14707,22 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 			__SS_THROW__;
 		}
 	}
-}  // end launchStartOTSCommand
+}  // end launchStartOTSCommand(hostnames)
+
+//==============================================================================
+/// getLiveContextHostnames
+///	Hostnames of every XDAQ context currently known to this Gateway, taken from
+///	the live application context (allSupervisorInfo_) rather than the Context
+///	table. This is the set of processes whose logs exist right now, so it is the
+///	right target set for LOG_ROLLOVER, and it requires no configuration reload.
+std::vector<std::string> GatewaySupervisor::getLiveContextHostnames(void) const
+{
+	std::set<std::string> uniqueHostnames;
+	for(const auto& supervisorInfoPair : allSupervisorInfo_.getAllSupervisorInfo())
+		if(supervisorInfoPair.second.getHostname().size())
+			uniqueHostnames.insert(supervisorInfoPair.second.getHostname());
+	return std::vector<std::string>(uniqueHostnames.begin(), uniqueHostnames.end());
+}  // end getLiveContextHostnames()
 
 //==============================================================================
 /// xoap::supervisorCookieCheck

@@ -193,7 +193,9 @@ class WorkLoopManager;
 
 
 		static xoap::MessageReference 	lastTableGroupRequestHandler					(const SOAPParameters& parameters);
-		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr);
+		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr);  ///< reloads cfgMgr to find Context hosts; not safe mid-transition
+		static void 					launchStartOTSCommand							(const std::string& command, const std::vector<std::string>& hostnames);  ///< no ConfigurationManager access
+		std::vector<std::string> 		getLiveContextHostnames							(void) const;  ///< hosts of running contexts, from allSupervisorInfo_
 		static void 					launchStartOneServerCommand						(const std::string& command, ConfigurationManager* cfgMgr, const std::string& contextName);
 
 		static void 					indicateOtsAlive								(const CorePropertySupervisorBase* properties = 0);
