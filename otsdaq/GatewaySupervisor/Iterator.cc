@@ -3346,8 +3346,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	// Iterator is a friend of GatewaySupervisor, so the UDP bind address is reachable
 	const std::string localIpAddress = gw->ipAddressForStateChangesOverUDP_;
 
-	GatewaySupervisor::RemoteFEMacroInfo info = GatewaySupervisor::parseFEMacroInfo(
-	    GatewaySupervisor::queryRemoteMacroMaker(
+	GatewaySupervisor::RemoteFEMacroInfo info =
+	    GatewaySupervisor::parseFEMacroInfo(GatewaySupervisor::queryRemoteMacroMaker(
 	        ipPort, "GetFrontendMacroInfo", 10 /*inactivity s*/, localIpAddress));
 	__COUT__ << "Remote subsystem '" << targetSubsystem << "' has " << info.fes.size()
 	         << " live front-end(s) and " << info.publicMacros.size()

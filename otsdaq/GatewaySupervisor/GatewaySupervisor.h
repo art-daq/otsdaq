@@ -2,8 +2,8 @@
 #define _ots_GatewaySupervisor_h
 #include <atomic>
 #include <condition_variable>
-#include <memory>
 #include <functional>
+#include <memory>
 #include <mutex>
 #include <thread>
 

@@ -116,12 +116,12 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	};
 
 	PyObject *daqinterface_ptr_, *stringIO_out_,
-	    *stringIO_err_;  //stringIO_err_ not needed with new Tee Buffer solution
-	std::recursive_timed_mutex   daqinterface_pythonMutex_;  ///<timed, so transitions can bound their acquisition
-	std::mutex                   daqinterface_statusMutex_;
-	std::string                  daqinterface_status_;
-	int                          partition_;
-	std::string                  daqinterface_state_;
+	    *stringIO_err_;                                    //stringIO_err_ not needed with new Tee Buffer solution
+	std::recursive_timed_mutex daqinterface_pythonMutex_;  ///<timed, so transitions can bound their acquisition
+	std::mutex                 daqinterface_statusMutex_;
+	std::string                daqinterface_status_;
+	int                        partition_;
+	std::string                daqinterface_state_;
 	/// Per-runner control block, shared only between the supervisor and that one
 	///	runner thread. A runner abandoned by a timed-out stop_runner_() keeps its own
 	///	block, so it can neither be restarted by a later start_runner_() nor spoof
@@ -132,7 +132,7 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 		std::atomic<bool> exited{false};  ///< set by the runner on every exit path
 	};
 	std::unique_ptr<std::thread>   runner_thread_;
-	std::shared_ptr<RunnerControl> runner_control_;  ///< block of the current runner; null when none
+	std::shared_ptr<RunnerControl> runner_control_;           ///< block of the current runner; null when none
 	std::atomic<bool>              runner_abandoned_{false};  ///< a runner may still be inside Python, so interpreter teardown is unsafe
 
 	std::mutex                         thread_mutex_;
