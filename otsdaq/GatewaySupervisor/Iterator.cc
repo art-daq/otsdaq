@@ -3343,8 +3343,12 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	__COUTV__(ipPort);
 
 	// discover live FEs and macros on the remote
+	// Iterator is a friend of GatewaySupervisor, so the UDP bind address is reachable
+	const std::string localIpAddress = gw->ipAddressForStateChangesOverUDP_;
+
 	GatewaySupervisor::RemoteFEMacroInfo info = GatewaySupervisor::parseFEMacroInfo(
-	    gw->queryRemoteMacroMaker(ipPort, "GetFrontendMacroInfo", 10 /*inactivity s*/));
+	    GatewaySupervisor::queryRemoteMacroMaker(
+	        ipPort, "GetFrontendMacroInfo", 10 /*inactivity s*/, localIpAddress));
 	__COUT__ << "Remote subsystem '" << targetSubsystem << "' has " << info.fes.size()
 	         << " live front-end(s) and " << info.publicMacros.size()
 	         << " MacroMaker macro(s)." << __E__;
@@ -3495,8 +3499,12 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	run->iterationsTotal = iterations.size();
 	iteratorStruct->remoteMacroRun_ = run;
 
+	// The thread captures only value copies and the shared run state: no Iterator,
+	//	IteratorWorkLoopStruct or GatewaySupervisor pointer, so it can safely outlive
+	//	all of them (it is detached and may block on the remote for up to the
+	//	inactivity timeout). run->abort is checked inside every UDP receive poll.
 	std::thread([run,
-	             gw,
+	             localIpAddress,
 	             ipPort,
 	             uidCSV,
 	             macroName,
@@ -3535,11 +3543,16 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				              << " of " << iterations.size() << " inputs: " << inputStr
 				              << __E__;
 
-				std::string response = gw->queryRemoteMacroMaker(
-				    ipPort, cmd, 30 /*inactivity s*/, [&](int pct) {
+				std::string response = GatewaySupervisor::queryRemoteMacroMaker(
+				    ipPort,
+				    cmd,
+				    30 /*inactivity s*/,
+				    localIpAddress,
+				    [&](int pct) {
 					    std::lock_guard<std::mutex> lock(run->mutex);
 					    run->progress = pct;
-				    });
+				    },
+				    &run->abort);
 
 				if(response.find("Error") == 0)
 				{
@@ -3584,8 +3597,14 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		}
 		catch(const std::runtime_error& e)
 		{
-			std::lock_guard<std::mutex> lock(run->mutex);
-			run->error = e.what();
+			if(run->abort)  // a Halt interrupted the in-flight UDP call: not an error
+				__COUT_INFO__ << "Remote macro '" << macroName
+				              << "' aborted mid-iteration: " << e.what() << __E__;
+			else
+			{
+				std::lock_guard<std::mutex> lock(run->mutex);
+				run->error = e.what();
+			}
 		}
 		catch(...)
 		{
@@ -3602,7 +3621,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 //==============================================================================
 /// checkRemoteCommandMacro
 ///	Returns true when the background remote macro thread has finished. Throws if it
-///	recorded an error. On Halt, asks the thread to stop after the in-flight iteration.
+///	recorded an error. On Halt, asks the thread to stop: the in-flight UDP wait is
+///	interrupted promptly (the remote may still complete that iteration on its own).
 bool Iterator::checkRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
                                        bool /*isFEMacro*/)
 {
@@ -3617,9 +3637,7 @@ bool Iterator::checkRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 
 	if(iteratorStruct->doHaltAction_ && !run->abort)
 	{
-		__COUT_INFO__ << "Halt requested: remote macro will stop after the current "
-		                 "iteration completes."
-		              << __E__;
+		__COUT_INFO__ << "Halt requested: interrupting the remote macro run." << __E__;
 		run->abort = true;
 	}
 

@@ -182,7 +182,7 @@ class WorkLoopManager;
 			std::map<std::string /*macroName*/, MacroInfo> 	publicMacros;
 		};
 		std::string 					getRemoteMacroMakerUDPAddress					(const std::string& targetSubsystem);  ///< returns "ip:port"; throws with user guidance if subsystem not Configured or UDP disabled
-		std::string 					queryRemoteMacroMaker							(const std::string& ipPort, const std::string& command, unsigned int inactivityTimeoutSeconds, std::function<void(int /*percent*/)> progressCb = nullptr);  ///< returns full response ("<ROOT>...</ROOT>" or "Error: ..."); forwards <progress> packets to callback
+		static std::string 				queryRemoteMacroMaker							(const std::string& ipPort, const std::string& command, unsigned int inactivityTimeoutSeconds, const std::string& localIpAddress, std::function<void(int /*percent*/)> progressCb = nullptr, const std::atomic<bool>* abortFlag = nullptr);  ///< static (safe from detached threads): returns full response ("<ROOT>...</ROOT>" or "Error: ..."); forwards <progress> packets to callback; throws promptly if *abortFlag becomes true
 		static RemoteFEMacroInfo 		parseFEMacroInfo								(const std::string& feMacroInfoXml);  ///< parses GetFrontendMacroInfo response
 
 		unsigned int 					getNextRunNumber								(const std::string& fsmName = "");

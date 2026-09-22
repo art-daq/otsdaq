@@ -13489,8 +13489,11 @@ try
 			else
 				ipPort = getRemoteMacroMakerUDPAddress(targetSubsystem);
 
-			RemoteFEMacroInfo info = parseFEMacroInfo(queryRemoteMacroMaker(
-			    ipPort, "GetFrontendMacroInfo", 10 /*inactivity s*/));
+			RemoteFEMacroInfo info =
+			    parseFEMacroInfo(queryRemoteMacroMaker(ipPort,
+			                                           "GetFrontendMacroInfo",
+			                                           10 /*inactivity s*/,
+			                                           ipAddressForStateChangesOverUDP_));
 
 			xmlOut.addTextElementToData("macro_maker_udp", ipPort);
 			for(const auto& fe : info.fes)
@@ -15255,30 +15258,38 @@ std::string GatewaySupervisor::getRemoteMacroMakerUDPAddress(
 ///	response. "<progress>N</progress>" packets are forwarded to progressCb and not
 ///	included in the returned string. Returns when the response starts with "Error:" or
 ///	contains "</ROOT>"; throws after inactivityTimeoutSeconds with no packets.
+///
+///	Static on purpose: Iterator::startRemoteCommandMacro() calls this from a detached
+///	thread that may outlive the Iterator and even the Gateway, so it must not depend on
+///	any GatewaySupervisor member. The local bind address is passed in, and an optional
+///	abortFlag lets that thread be cancelled promptly (checked every receive poll)
+///	instead of blocking for the whole inactivity window.
 std::string GatewaySupervisor::queryRemoteMacroMaker(
     const std::string&       ipPort,
     const std::string&       command,
     unsigned int             inactivityTimeoutSeconds,
-    std::function<void(int)> progressCb /* = nullptr */)
+    const std::string&       localIpAddress,
+    std::function<void(int)> progressCb /* = nullptr */,
+    const std::atomic<bool>* abortFlag /* = nullptr */)
 {
 	std::vector<std::string> parsed = StringMacros::getVectorFromString(ipPort, {':'});
 	if(parsed.size() != 2)
 	{
-		__SUP_SS__ << "MacroMaker UDP address is not in 'ip:port' form: '" << ipPort
-		           << "'" << __E__;
-		__SUP_SS_THROW__;
+		__SS__ << "MacroMaker UDP address is not in 'ip:port' form: '" << ipPort << "'"
+		       << __E__;
+		__SS_THROW__;
 	}
 
 	Socket            macroMakerSocket(parsed[0], atoi(parsed[1].c_str()));
-	TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
+	TransceiverSocket tmpSocket(localIpAddress);
 	tmpSocket.initialize();
 	tmpSocket.flush();
 	if(tmpSocket.send(macroMakerSocket, command) < 0)
 	{
-		__SUP_SS__ << "Failed to send '" << command.substr(0, 40)
-		           << (command.size() > 40 ? "..." : "")
-		           << "' to MacroMaker UDP interface at " << ipPort << __E__;
-		__SUP_SS_THROW__;
+		__SS__ << "Failed to send '" << command.substr(0, 40)
+		       << (command.size() > 40 ? "..." : "")
+		       << "' to MacroMaker UDP interface at " << ipPort << __E__;
+		__SS_THROW__;
 	}
 
 	std::string response, packet;
@@ -15302,17 +15313,26 @@ std::string GatewaySupervisor::queryRemoteMacroMaker(
 			continue;
 		}
 
+		if(abortFlag && *abortFlag)
+		{
+			__SS__ << "Aborted while waiting for MacroMaker UDP interface at " << ipPort
+			       << " to respond to '" << command.substr(0, 40)
+			       << (command.size() > 40 ? "..." : "") << "'. Received "
+			       << response.size() << " bytes so far." << __E__;
+			__SS_THROW__;
+		}
+
 		auto idleSeconds = std::chrono::duration_cast<std::chrono::seconds>(
 		                       std::chrono::steady_clock::now() - lastPacketTime)
 		                       .count();
 		if(idleSeconds > (long)inactivityTimeoutSeconds)
 		{
-			__SUP_SS__ << "Timeout (" << inactivityTimeoutSeconds
-			           << " s without a packet) waiting for MacroMaker UDP interface at "
-			           << ipPort << " to respond to '" << command.substr(0, 40)
-			           << (command.size() > 40 ? "..." : "") << "'. Received "
-			           << response.size() << " bytes so far." << __E__;
-			__SUP_SS_THROW__;
+			__SS__ << "Timeout (" << inactivityTimeoutSeconds
+			       << " s without a packet) waiting for MacroMaker UDP interface at "
+			       << ipPort << " to respond to '" << command.substr(0, 40)
+			       << (command.size() > 40 ? "..." : "") << "'. Received "
+			       << response.size() << " bytes so far." << __E__;
+			__SS_THROW__;
 		}
 	}
 	return response;
