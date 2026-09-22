@@ -2239,15 +2239,23 @@ try
 					std::string summary;
 					std::string traceback =
 					    capturePyErr("check_proc_exceptions", &summary);
+					//Note: DAQInterface's own diagnostics (print_log) go through the
+					//	swig_artdaq bridge into the message facility, so they are
+					//	already in the Console and supervisor log as Error entries
+					//	from "DAQInterface_partition_N"; pollOutput only holds plain
+					//	Python prints and is usually empty here.
 					__SUP_COUT_ERR__
-					    << "check_proc_exceptions raised. DAQInterface output:\n"
-					    << pollOutput << "\nPython traceback:\n"
+					    << "check_proc_exceptions raised."
+					    << (pollOutput.size() ? "\nCaptured Python stdout:\n" + pollOutput
+					                          : "")
+					    << "\nPython traceback:\n"
 					    << traceback << __E__;
 					__SS__
 					    << "DAQInterface reported a problem with the artdaq processes: "
-					    << summary << "\n\nDAQInterface output:\n"
-					    << pollOutput
-					    << "\n(Full Python traceback is in the ARTDAQSupervisor log.)"
+					    << summary << (pollOutput.size() ? "\n\n" + pollOutput : "")
+					    << "\n\nSee the preceding DAQInterface_partition_" << partition_
+					    << " error messages in the Console (or the ARTDAQSupervisor "
+					       "log) for the affected process and its logfile."
 					    << __E__;
 					__SUP_SS_THROW__;
 				}
