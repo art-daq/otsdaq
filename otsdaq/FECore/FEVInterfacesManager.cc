@@ -2442,14 +2442,18 @@ std::map<std::string, std::string> FEVInterfacesManager::getFEMacroInputDefaults
 			if(inputName.empty())
 				continue;
 
-			bool declaredInput = false;
-			for(const auto& declaredName : macroIt->second.namesOfInputArguments_)
-				if(declaredName == inputName)
+			// Match on the name before any "(Default/Note)" suffix, the same rule
+			// runFEMacro() uses, so saved history whose suffix has since changed is
+			// still accepted; key the map by the CURRENT declared name for the provider.
+			const std::string inputBase = inputName.substr(0, inputName.find('('));
+			const std::string* declaredName = nullptr;
+			for(const auto& candidate : macroIt->second.namesOfInputArguments_)
+				if(candidate.substr(0, candidate.find('(')) == inputBase)
 				{
-					declaredInput = true;
+					declaredName = &candidate;
 					break;
 				}
-			if(!declaredInput)
+			if(!declaredName)
 			{
 				__CFG_SS__ << "Dynamic default request for FE Macro '" << feMacroName
 				           << "' of interfaceID '" << interfaceID
@@ -2457,7 +2461,7 @@ std::map<std::string, std::string> FEVInterfacesManager::getFEMacroInputDefaults
 				           << __E__;
 				__CFG_SS_THROW__;
 			}
-			currentInputValues[inputName] = inputValue;
+			currentInputValues[*declaredName] = inputValue;
 		}
 	}
 
