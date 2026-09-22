@@ -315,13 +315,15 @@ void ARTDAQSupervisor::destroy(void)
 	//	Python (recover, DECREF, thread cleanup, and Py_Finalize in the
 	//	destructor) is then skipped. The process is on its way out, so leaking the
 	//	interpreter is harmless; tearing it down under a live C-API call is not.
-	if(!stop_runner_(DESTROY_RUNNER_STOP_TIMEOUT_SECONDS))
+	//	The same applies if an earlier transition (e.g. Halt) already abandoned a
+	//	runner: stop_runner_() recorded that in runner_abandoned_, and that thread
+	//	may still be inside Python even though it is no longer tracked here.
+	if(!stop_runner_(DESTROY_RUNNER_STOP_TIMEOUT_SECONDS) || runner_abandoned_)
 	{
-		runner_abandoned_ = true;
-		__SUP_COUT_WARN__ << "DAQInterface runner thread did not stop within "
-		                  << DESTROY_RUNNER_STOP_TIMEOUT_SECONDS
-		                  << " seconds; skipping DAQInterface recover and Python "
-		                     "cleanup. artdaq processes may need manual cleanup."
+		__SUP_COUT_WARN__ << "A DAQInterface runner thread is (or was earlier) abandoned "
+		                     "while possibly inside a Python call; skipping DAQInterface "
+		                     "recover and Python cleanup. artdaq processes may need "
+		                     "manual cleanup."
 		                  << __E__;
 		return;
 	}
@@ -2158,13 +2160,11 @@ std::list<std::string> ots::ARTDAQSupervisor::tokenize_(std::string const& input
 void ots::ARTDAQSupervisor::daqinterfaceRunner_(std::shared_ptr<RunnerControl> control)
 try
 {
-	//mark the exit on every path -- normal return or exception -- so a bounded
-	//	stop_runner_() can tell whether this thread is still alive
-	struct RunnerExitFlag
-	{
-		std::atomic<bool>& flag;
-		~RunnerExitFlag() { flag = true; }
-	} runnerExitFlag{control->exited};
+	//Note: control->exited is set by the thread wrapper in start_runner_() only
+	//	after this function AND its function-try-block catch handler have returned.
+	//	A guard local here would fire before the handler (locals are destroyed
+	//	before a function-try-block handler runs), letting stop_runner_() join
+	//	unbounded while the handler is still sending the error to the Gateway.
 
 	TLOG(TLVL_TRACE) << "Runner thread starting";
 	unsigned int consecutiveStatusFailures = 0;
@@ -2385,6 +2385,9 @@ bool ots::ARTDAQSupervisor::stop_runner_(unsigned int timeoutSeconds)
 		                  << __E__;
 		if(thread && thread->joinable())
 			thread->detach();  //never destroy a joinable std::thread
+		//remember this for destroy()/~ARTDAQSupervisor(): the abandoned runner may
+		//	still be inside Python, so the interpreter must not be torn down
+		runner_abandoned_ = true;
 		return false;
 	}
 
@@ -2401,8 +2404,17 @@ void ots::ARTDAQSupervisor::start_runner_()
 	//a fresh control block per runner: an abandoned runner keeps its own and can
 	//	neither be restarted by this call nor report exit on behalf of this one
 	runner_control_ = std::make_shared<RunnerControl>();
-	runner_thread_  = std::make_unique<std::thread>(
-        &ots::ARTDAQSupervisor::daqinterfaceRunner_, this, runner_control_);
+	runner_thread_  = std::make_unique<std::thread>([this, control = runner_control_]() {
+        //set exited only after daqinterfaceRunner_() has fully returned, which
+        //	includes its function-try-block catch handler (error logging and the
+        //	SOAP send to the Gateway). stop_runner_() may then join promptly.
+        struct RunnerExitFlag
+        {
+            std::atomic<bool>& flag;
+            ~RunnerExitFlag() { flag = true; }
+        } runnerExitFlag{control->exited};
+        daqinterfaceRunner_(control);
+    });
 }  // end start_runner_()
 
 //==============================================================================
