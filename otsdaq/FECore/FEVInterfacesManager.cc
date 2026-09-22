@@ -688,9 +688,15 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 			    FILE* outputFilePointer = 0;
 			    if(enableSavingOutput)
 			    {
-				    std::string filename = outputFilePath + "/" + outputFileRadix +
-				                           macroName + "_" + std::to_string(time(0)) +
-				                           ".txt";
+				    // blank (or unset table column) path means $OTSDAQ_DATA, as the
+				    //	Iterate GUI advertises in its placeholder text
+				    std::string basePath = outputFilePath;
+				    if(basePath == "" ||
+				       basePath == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+				       basePath == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+					    basePath = std::string(__ENV__("OTSDAQ_DATA"));
+				    std::string filename = basePath + "/" + outputFileRadix + macroName +
+				                           "_" + std::to_string(time(0)) + ".txt";
 				    __GEN_COUT__ << "Opening file... " << filename << __E__;
 
 				    outputFilePointer = fopen(filename.c_str(), "w");
@@ -698,6 +704,12 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 				    {
 					    __GEN_SS__ << "Failed to open output file: " << filename << __E__;
 					    __GEN_SS_THROW__;
+				    }
+				    {  // record for the Iterator's completion report
+					    std::lock_guard<std::mutex> lock(
+					        feMgr->macroMultiDimensionalDoneMutex_);
+					    feMgr->macroMultiDimensionalOutputFileMap_[interfaceID] =
+					        filename;
 				    }
 			    }  // at this point output file pointer is valid or null
 
@@ -1260,7 +1272,14 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 			    FILE* outputFilePointer = 0;
 			    if(enableSavingOutput)
 			    {
-				    std::string filename = outputFilePath + "/" + outputFileRadix +
+				    // blank (or unset table column) path means $OTSDAQ_DATA, as the
+				    //	Iterate GUI advertises in its placeholder text
+				    std::string basePath = outputFilePath;
+				    if(basePath == "" ||
+				       basePath == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+				       basePath == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+					    basePath = std::string(__ENV__("OTSDAQ_DATA"));
+				    std::string filename = basePath + "/" + outputFileRadix +
 				                           feMacroName + "_" + std::to_string(time(0)) +
 				                           ".txt";
 				    __GEN_COUT__ << "Opening file... " << filename << __E__;
@@ -1270,6 +1289,12 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 				    {
 					    __GEN_SS__ << "Failed to open output file: " << filename << __E__;
 					    __GEN_SS_THROW__;
+				    }
+				    {  // record for the Iterator's completion report
+					    std::lock_guard<std::mutex> lock(
+					        feMgr->macroMultiDimensionalDoneMutex_);
+					    feMgr->macroMultiDimensionalOutputFileMap_[interfaceID] =
+					        filename;
 				    }
 			    }  // at this point output file pointer is valid or null
 
@@ -1884,7 +1909,8 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 ///
 ///	Returns true if multi-dimensional launch is done
 bool FEVInterfacesManager::checkMacroMultiDimensional(const std::string& interfaceID,
-                                                      const std::string& macroName)
+                                                      const std::string& macroName,
+                                                      std::string*       outputFile)
 {
 	// check active(only one FE Macro per interface active at any time, for now)
 	// lock mutex scope
@@ -1901,6 +1927,15 @@ bool FEVInterfacesManager::checkMacroMultiDimensional(const std::string& interfa
 	{
 		__CFG_COUT__ << "Completed multi-dimensional launch of Macro '" << macroName
 		             << "' for interface '" << interfaceID << ".'" << __E__;
+
+		// hand back the saved-output file path (if any) and forget it
+		auto fileIt = macroMultiDimensionalOutputFileMap_.find(interfaceID);
+		if(outputFile)
+			*outputFile = (fileIt != macroMultiDimensionalOutputFileMap_.end())
+			                  ? fileIt->second
+			                  : std::string();
+		if(fileIt != macroMultiDimensionalOutputFileMap_.end())
+			macroMultiDimensionalOutputFileMap_.erase(fileIt);
 
 		// erase from map
 		macroMultiDimensionalStatusMap_.erase(statusIt);
