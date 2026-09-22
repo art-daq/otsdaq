@@ -15381,7 +15381,10 @@ GatewaySupervisor::RemoteFEMacroInfo GatewaySupervisor::parseFEMacroInfo(
 		}
 	}
 
-	for(const std::string tag : {"PublicMacro", "PrivateMacro"})
+	// Only public MacroMaker macros: the remote run path always sends macroType
+	// "public", and the UDP discovery's <PrivateMacro> entries belong to the
+	// MacroMaker's own NO-USER account, so they could be advertised but never run.
+	for(const std::string tag : {"PublicMacro"})
 	{
 		after = 0;
 		while((value = StringMacros::extractXmlField(

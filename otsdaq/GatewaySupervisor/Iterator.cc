@@ -3353,7 +3353,7 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	        ipPort, "GetFrontendMacroInfo", 10 /*inactivity s*/, localIpAddress));
 	__COUT__ << "Remote subsystem '" << targetSubsystem << "' has " << info.fes.size()
 	         << " live front-end(s) and " << info.publicMacros.size()
-	         << " MacroMaker macro(s)." << __E__;
+	         << " public MacroMaker macro(s)." << __E__;
 
 	// validate targets and macro; collect input/output names
 	std::vector<std::string> inputNames, outputNames;
@@ -3426,8 +3426,10 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		if(macroIt == info.publicMacros.end())
 		{
 			__SS__ << "MacroMaker macro '" << macroName
-			       << "' not found on remote subsystem '" << targetSubsystem
-			       << "'. Available: ";
+			       << "' not found among the PUBLIC macros of remote subsystem '"
+			       << targetSubsystem
+			       << "' (only public macros can be run remotely; make a private macro "
+			          "public in MacroMaker first). Available: ";
 			for(const auto& m : info.publicMacros)
 				ss << m.first << " ";
 			ss << __E__;
