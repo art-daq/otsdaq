@@ -818,22 +818,17 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 					    // skip iteration value, start at index 1
 					    for(unsigned int a = 1; a < args.size(); ++a)
 					    {
-						    std::vector<std::string> argPieces;
-						    StringMacros::getVectorFromString(
-						        args[a], argPieces, {':'} /*delimeter set*/);
-
-						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
-
-						    // check pieces and determine if arg is long or double
-						    // 3 pieces := name, init value, step value
-						    if(argPieces.size() != 3)
+						    // name may contain ':' (e.g. "Arg (Default := 1)"): split from the right
+						    std::vector<std::string> argPieces(3);
+						    if(!StringMacros::splitMacroArgTriple(
+						           args[a], argPieces[0], argPieces[1], argPieces[2]))
 						    {
-							    __GEN_SS__ << "Invalid argument pieces! Should be size "
-							                  "3, but is "
-							               << argPieces.size() << __E__;
-							    ss << StringMacros::vectorToString(argPieces);
+							    __GEN_SS__ << "Invalid argument '" << args[a]
+							               << "'! Expected name:initialValue:stepSize." << __E__;
 							    __GEN_SS_THROW__;
 						    }
+
+						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
 
 						    // check piece 1 and 2 for double hint
 						    //	a la Iterator::startCommandModifyActive()
@@ -1408,22 +1403,17 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 					    // skip iteration value, start at index 1
 					    for(unsigned int a = 1; a < args.size(); ++a)
 					    {
-						    std::vector<std::string> argPieces;
-						    StringMacros::getVectorFromString(
-						        args[a], argPieces, {':'} /*delimeter set*/);
-
-						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
-
-						    // check pieces and determine if arg is long or double
-						    // 3 pieces := name, init value, step value
-						    if(argPieces.size() != 3)
+						    // name may contain ':' (e.g. "Arg (Default := 1)"): split from the right
+						    std::vector<std::string> argPieces(3);
+						    if(!StringMacros::splitMacroArgTriple(
+						           args[a], argPieces[0], argPieces[1], argPieces[2]))
 						    {
-							    __GEN_SS__ << "Invalid argument pieces! Should be size "
-							                  "3, but is "
-							               << argPieces.size() << __E__;
-							    ss << StringMacros::vectorToString(argPieces);
+							    __GEN_SS__ << "Invalid argument '" << args[a]
+							               << "'! Expected name:initialValue:stepSize." << __E__;
 							    __GEN_SS_THROW__;
 						    }
+
+						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
 
 						    // check piece 1 and 2 for double hint
 						    //	a la Iterator::startCommandModifyActive()
