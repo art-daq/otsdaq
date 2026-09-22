@@ -27,8 +27,14 @@
 #include "otsdaq/TableCore/TableBase.h"
 
 #define OUT_ON_ERR_SIZE 2000  //tail size of output to include on error
-#define HALT_RUNNER_STOP_TIMEOUT_SECONDS 5  //bounded wait for the DAQInterface runner thread to exit during Halt
-#define HALT_PYTHON_MUTEX_TIMEOUT_SECONDS 5  //bounded wait for the Python interpreter mutex during Halt
+//bounded wait for the DAQInterface runner thread to exit during Halt
+#define HALT_RUNNER_STOP_TIMEOUT_SECONDS 5
+//bounded wait for the Python interpreter mutex during Halt
+#define HALT_PYTHON_MUTEX_TIMEOUT_SECONDS 5
+//bounded wait for the runner thread before tearing down Python
+#define DESTROY_RUNNER_STOP_TIMEOUT_SECONDS 5
+//XML-RPC status polls (1 s apart) that may fail before the run is ended
+#define RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES 3
 
 using namespace ots;
 
@@ -277,8 +283,16 @@ ARTDAQSupervisor::~ARTDAQSupervisor(void)
 	__SUP_COUT__ << "Destructor." << __E__;
 	destroy();
 
-	__SUP_COUT__ << "Calling Py_Finalize()" << __E__;
-	Py_Finalize();
+	if(runner_abandoned_)
+		__SUP_COUT_WARN__ << "Skipping Py_Finalize(): a DAQInterface runner thread may "
+		                     "still be inside a Python call. The interpreter is leaked "
+		                     "rather than finalized under a live C-API call."
+		                  << __E__;
+	else
+	{
+		__SUP_COUT__ << "Calling Py_Finalize()" << __E__;
+		Py_Finalize();
+	}
 
 	// CorePropertySupervisorBase would destroy, but since it was created here, attempt to destroy
 	if(CorePropertySupervisorBase::theTRACEController_)
@@ -295,6 +309,22 @@ ARTDAQSupervisor::~ARTDAQSupervisor(void)
 void ARTDAQSupervisor::destroy(void)
 {
 	__SUP_COUT__ << "Destroying..." << __E__;
+
+	// Stop the runner before touching the interpreter. If it does not exit in
+	//	time it is blocked inside a Python call: everything below that enters
+	//	Python (recover, DECREF, thread cleanup, and Py_Finalize in the
+	//	destructor) is then skipped. The process is on its way out, so leaking the
+	//	interpreter is harmless; tearing it down under a live C-API call is not.
+	if(!stop_runner_(DESTROY_RUNNER_STOP_TIMEOUT_SECONDS))
+	{
+		runner_abandoned_ = true;
+		__SUP_COUT_WARN__ << "DAQInterface runner thread did not stop within "
+		                  << DESTROY_RUNNER_STOP_TIMEOUT_SECONDS
+		                  << " seconds; skipping DAQInterface recover and Python "
+		                     "cleanup. artdaq processes may need manual cleanup."
+		                  << __E__;
+		return;
+	}
 
 	if(daqinterface_ptr_ != NULL)
 	{
@@ -565,11 +595,10 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 	// Idle through FE timing-chain iterations (0-11) so that the artdaq
 	// release_all does not race with CFO event traffic (Phase 2a sends events,
 	// Phase 3e stops them, Phase 12 is the final SoftReset).
-	const unsigned int configureIteration = RunControlStateMachine::getIterationIndex();
+	const unsigned int configureIteration   = RunControlStateMachine::getIterationIndex();
 	const unsigned int artdaqStartIteration = 12;  // after final SoftReset
 
-	if(configureIteration == 0 &&
-	   RunControlStateMachine::getSubIterationIndex() == 0)
+	if(configureIteration == 0 && RunControlStateMachine::getSubIterationIndex() == 0)
 	{
 		// Activate the configuration tree on the first iteration
 		CoreSupervisorBase::configureInit(
@@ -1141,10 +1170,11 @@ try
 	set_thread_message_("Halting");
 	__SUP_COUT__ << "Halting..." << __E__;
 
-	// The runner thread continuously acquires the Python mutex for heartbeat
-	// checks; stop it first so we can take the mutex without contention.
-	//	Bounded: the runner can be stuck inside a Python call (check_proc_heartbeats)
-	//	while holding the interpreter mutex, and a Halt must not hang forever on it.
+	// The runner thread continuously acquires the Python mutex for its status
+	// polls; stop it first so we can take the mutex without contention.
+	//	Bounded: the XML-RPC polls are themselves bounded, but the runner can still
+	//	be inside a Python call while holding the interpreter mutex, and a Halt
+	//	must not hang forever on it.
 	if(!stop_runner_(HALT_RUNNER_STOP_TIMEOUT_SECONDS))
 		__SUP_COUT_WARN__ << "DAQInterface runner thread did not stop within "
 		                  << HALT_RUNNER_STOP_TIMEOUT_SECONDS
@@ -2082,7 +2112,19 @@ std::list<std::string> ots::ARTDAQSupervisor::tokenize_(std::string const& input
 }  // end tokenize_()
 
 //==============================================================================
-void ots::ARTDAQSupervisor::daqinterfaceRunner_()
+/// daqinterfaceRunner_
+///	Once a second, while artdaq is booted/ready/running, ask DAQInterface to poll
+///	every artdaq process over XML-RPC (check_proc_exceptions). The status proxy
+///	has a short timeout, so each poll is bounded; a dead process shows up as
+///	connection refused, and a process whose fragment generator threw reports the
+///	"Error" state. DAQInterface applies its own policy inside that call (drops
+///	the process, enforces the boot-file minimum-process requirements, raises if
+///	violated).
+///
+///	Note: check_proc_heartbeats (ssh + ps on every host, every second) is
+///	deliberately not used here: it is unbounded, opens an ssh session per host
+///	per poll, and sees strictly less than the XML-RPC status does.
+void ots::ARTDAQSupervisor::daqinterfaceRunner_(std::shared_ptr<RunnerControl> control)
 try
 {
 	//mark the exit on every path -- normal return or exception -- so a bounded
@@ -2091,11 +2133,11 @@ try
 	{
 		std::atomic<bool>& flag;
 		~RunnerExitFlag() { flag = true; }
-	} runnerExitFlag{runner_exited_};
+	} runnerExitFlag{control->exited};
 
 	TLOG(TLVL_TRACE) << "Runner thread starting";
-	runner_running_ = true;
-	while(runner_running_)
+	unsigned int consecutiveStatusFailures = 0;
+	while(control->running)
 	{
 		if(daqinterface_ptr_ != NULL)
 		{
@@ -2112,42 +2154,73 @@ try
 			{
 				try
 				{
-					TLOG(TLVL_TRACE) << "Calling DAQInterface::check_proc_heartbeats";
-					PyObjectGuard pName(PyUnicode_FromString("check_proc_heartbeats"));
+					TLOG(TLVL_TRACE) << "Calling DAQInterface::check_proc_exceptions";
+					PyObjectGuard pName(PyUnicode_FromString("check_proc_exceptions"));
 					PyObjectGuard res(
 					    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName.get(), NULL));
-					__COUT_MULTI_LBL__(1,
-					                   captureStderrAndStdout_("check_proc_heartbeats"),
-					                   "check_proc_heartbeats");
+					std::string pollOutput =
+					    captureStderrAndStdout_("check_proc_exceptions");
 					TLOG(TLVL_TRACE)
-					    << "Done with DAQInterface::check_proc_heartbeats call";
+					    << "Done with DAQInterface::check_proc_exceptions call";
 
 					if(res.get() == NULL)
 					{
-						runner_running_ = false;
-						std::string err = capturePyErr("check_proc_heartbeats");
-						__SS__ << "Error calling check_proc_heartbeats function: " << err
-						       << __E__;
+						control->running = false;
+						std::string err  = capturePyErr("check_proc_exceptions");
+						__SS__ << "Error calling check_proc_exceptions function: " << err
+						       << "\n\n"
+						       << pollOutput << __E__;
 						__SUP_SS_THROW__;
 						break;
+					}
+
+					if(PyObject_IsTrue(res.get()) == 1)
+					{
+						consecutiveStatusFailures = 0;
+						__COUT_MULTI_LBL__(1, pollOutput, "check_proc_exceptions");
+					}
+					else
+					{
+						//False: at least one process did not answer or reported
+						//	"Error." DAQInterface has already logged which. Tolerate
+						//	a few consecutive misses, since the status proxy timeout
+						//	is short and a busy process can miss one poll.
+						++consecutiveStatusFailures;
+						__SUP_COUT_WARN__
+						    << "DAQInterface XML-RPC status poll reported a problem ("
+						    << consecutiveStatusFailures << " of "
+						    << RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES
+						    << " consecutive allowed):\n"
+						    << pollOutput << __E__;
+						if(consecutiveStatusFailures >=
+						   RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES)
+						{
+							control->running = false;
+							__SS__ << "artdaq process status could not be confirmed for "
+							       << consecutiveStatusFailures
+							       << " consecutive polls. Last DAQInterface output:\n"
+							       << pollOutput << __E__;
+							__SUP_SS_THROW__;
+							break;
+						}
 					}
 				}
 				catch(cet::exception& ex)
 				{
-					runner_running_ = false;
-					std::string err = capturePyErr("check_proc_heartbeats");
+					control->running = false;
+					std::string err  = capturePyErr("check_proc_exceptions");
 					__SS__ << "An cet::exception occurred while calling "
-					          "check_proc_heartbeats function "
+					          "check_proc_exceptions function "
 					       << ex.explain_self() << ": " << err << __E__;
 					__SUP_SS_THROW__;
 					break;
 				}
 				catch(std::exception& ex)
 				{
-					runner_running_ = false;
-					std::string err = capturePyErr("check_proc_heartbeats");
+					control->running = false;
+					std::string err  = capturePyErr("check_proc_exceptions");
 					__SS__ << "An std::exception occurred while calling "
-					          "check_proc_heartbeats function: "
+					          "check_proc_exceptions function: "
 					       << ex.what() << "\n\n"
 					       << err << __E__;
 					__SUP_SS_THROW__;
@@ -2155,10 +2228,10 @@ try
 				}
 				catch(...)
 				{
-					runner_running_ = false;
-					std::string err = capturePyErr("check_proc_heartbeats");
+					control->running = false;
+					std::string err  = capturePyErr("check_proc_exceptions");
 					__SS__ << "An unknown Error occurred while calling "
-					          "check_proc_heartbeats function: "
+					          "check_proc_exceptions function: "
 					       << err << __E__;
 					__SUP_SS_THROW__;
 					break;
@@ -2168,8 +2241,7 @@ try
 				getDAQState_();
 				if(daqinterface_state_ != state_before)
 				{
-					runner_running_ = false;
-					lk.unlock();
+					control->running = false;
 					__SS__ << "DAQInterface state unexpectedly changed from "
 					       << state_before << " to " << daqinterface_state_
 					       << ". Check supervisor log file for more info!" << __E__;
@@ -2185,7 +2257,7 @@ try
 		}
 		usleep(1000000);
 	}
-	runner_running_ = false;
+	control->running = false;
 	TLOG(TLVL_TRACE) << "Runner thread complete";
 }  // end daqinterfaceRunner_()
 catch(...)
@@ -2235,17 +2307,22 @@ catch(...)
 ///	Returns true if the runner exited (or none was running), false if abandoned.
 bool ots::ARTDAQSupervisor::stop_runner_(unsigned int timeoutSeconds)
 {
-	runner_running_ = false;
-
-	if(!runner_thread_)
+	if(!runner_control_)
 		return true;
+
+	//take ownership of this runner's block and thread, so nothing below can be
+	//	confused with a runner started later
+	std::shared_ptr<RunnerControl> control = std::move(runner_control_);
+	std::unique_ptr<std::thread>   thread  = std::move(runner_thread_);
+
+	control->running = false;
 
 	const auto deadline =
 	    std::chrono::steady_clock::now() + std::chrono::seconds(timeoutSeconds);
-	while(!runner_exited_ && std::chrono::steady_clock::now() < deadline)
+	while(!control->exited && std::chrono::steady_clock::now() < deadline)
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-	if(!runner_exited_)
+	if(!control->exited)
 	{
 		__SUP_COUT_WARN__ << "DAQInterface runner thread did not exit within "
 		                  << timeoutSeconds
@@ -2253,14 +2330,13 @@ bool ots::ARTDAQSupervisor::stop_runner_(unsigned int timeoutSeconds)
 		                     "holding the interpreter mutex. Abandoning the thread "
 		                     "rather than hanging this transition indefinitely."
 		                  << __E__;
-		runner_thread_->detach();  //never destroy a joinable std::thread
-		runner_thread_.reset(nullptr);
+		if(thread && thread->joinable())
+			thread->detach();  //never destroy a joinable std::thread
 		return false;
 	}
 
-	if(runner_thread_->joinable())
-		runner_thread_->join();  //already exited, so this returns promptly
-	runner_thread_.reset(nullptr);
+	if(thread && thread->joinable())
+		thread->join();  //already exited, so this returns promptly
 	return true;
 }  // end stop_runner_()
 
@@ -2269,11 +2345,11 @@ void ots::ARTDAQSupervisor::start_runner_()
 {
 	stop_runner_();
 
-	//if the previous runner was abandoned, stop_runner_() already released it;
-	//	clear the exit flag for the thread about to start
-	runner_exited_ = false;
-	runner_thread_ =
-	    std::make_unique<std::thread>(&ots::ARTDAQSupervisor::daqinterfaceRunner_, this);
+	//a fresh control block per runner: an abandoned runner keeps its own and can
+	//	neither be restarted by this call nor report exit on behalf of this one
+	runner_control_ = std::make_shared<RunnerControl>();
+	runner_thread_  = std::make_unique<std::thread>(
+        &ots::ARTDAQSupervisor::daqinterfaceRunner_, this, runner_control_);
 }  // end start_runner_()
 
 //==============================================================================
