@@ -3293,6 +3293,18 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 }  // end applyStepIndexToMacroArgs()
 
 //==============================================================================
+/// feMacroArgBaseName
+///	FE macro argument names may carry a mutable "(Default := x)" / "(Note)" suffix;
+///	FEVInterfacesManager::runFEMacro ignores everything from the first '(' when
+///	matching names, so remote matching does the same. Trailing whitespace is dropped.
+std::string Iterator::feMacroArgBaseName(const std::string& argName)
+{
+	std::string base = argName.substr(0, argName.find('('));
+	size_t      end  = base.find_last_not_of(" \t");
+	return end == std::string::npos ? std::string() : base.substr(0, end + 1);
+}  // end feMacroArgBaseName()
+
+//==============================================================================
 /// startRemoteCommandMacro
 ///	Runs an FE Macro (or MacroMaker Macro) on a remote subsystem by driving that
 ///	subsystem's MacroMaker UDP interface directly: one blocking RunFrontendMacro call per
@@ -3373,6 +3385,30 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				inputNames  = macroIt->second.inputs;
 				outputNames = macroIt->second.outputs;
 			}
+			else
+			{
+				// one RunFrontendMacro call carries a single ordered input list for
+				//	all target FEs, so every target must declare the same signature
+				const auto& otherInputs = macroIt->second.inputs;
+				bool        same        = otherInputs.size() == inputNames.size();
+				for(size_t k = 0; same && k < inputNames.size(); ++k)
+					same = feMacroArgBaseName(otherInputs[k]) ==
+					       feMacroArgBaseName(inputNames[k]);
+				if(!same)
+				{
+					__SS__ << "FE Macro '" << macroName << "' on front-end '" << uid
+					       << "' of remote subsystem '" << targetSubsystem
+					       << "' declares inputs ["
+					       << StringMacros::vectorToString(otherInputs)
+					       << "] which differ from front-end '"
+					       << command.targets_[0].UID_ << "' inputs ["
+					       << StringMacros::vectorToString(inputNames)
+					       << "]. All targets of one remote macro command must share "
+					          "the same input signature."
+					       << __E__;
+					__SS_THROW__;
+				}
+			}
 		}
 		if(t)
 			uidCSV += ",";
@@ -3395,16 +3431,26 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		outputNames = macroIt->second.outputs;
 	}
 
-	// expand the dimensional loop and verify every input is bound in every iteration
+	// expand the dimensional loop, then rewrite every iteration into the remote
+	//	macro's declared input order using the remote's current input names.
+	//	The remote (FEVInterfacesManager::runFEMacro) validates inputs positionally
+	//	and ignores any "(Default/Note)" suffix, so match on the base name here too;
+	//	this keeps saved plans working when a macro's default/note text changes.
 	auto iterations = expandDimensionalLoop(inputArgs);
-	for(const auto& iteration : iterations)
+	for(auto& iteration : iterations)
+	{
+		std::vector<std::pair<std::string, std::string>> ordered;
+		std::vector<bool>                                used(iteration.size(), false);
 		for(const auto& inputName : inputNames)
 		{
-			bool bound = false;
-			for(const auto& arg : iteration)
-				if(arg.first == inputName)
+			const std::string inputBase = feMacroArgBaseName(inputName);
+			bool              bound     = false;
+			for(size_t a = 0; a < iteration.size(); ++a)
+				if(!used[a] && feMacroArgBaseName(iteration[a].first) == inputBase)
 				{
-					bound = true;
+					ordered.emplace_back(inputName, iteration[a].second);
+					used[a] = true;
+					bound   = true;
 					break;
 				}
 			if(!bound)
@@ -3419,6 +3465,14 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				__SS_THROW__;
 			}
 		}
+		for(size_t a = 0; a < iteration.size(); ++a)
+			if(!used[a])
+				__COUT_WARN__ << "Dimensional loop parameter '" << iteration[a].first
+				              << "' is not an input of macro '" << macroName
+				              << "' on remote subsystem '" << targetSubsystem
+				              << "'; it will not be sent." << __E__;
+		iteration = ordered;
+	}
 
 	{
 		std::stringstream hdr;

@@ -139,6 +139,8 @@ class Iterator
 	static bool checkRemoteCommandConfigure(IteratorWorkLoopStruct* iteratorStruct, const std::string& targetSubsystem);
 
 	static void startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct, bool isFEMacro);
+	/// FE macro input name with any "(Default/Note)" suffix removed, for order-independent matching
+	static std::string feMacroArgBaseName(const std::string& argName);
 	static bool checkRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct, bool isFEMacro);
 	/// expands the Iterator MacroArgumentString ("nIter,arg:init:step,...;nIter2,...") into
 	///	one ordered name/value list per iteration, mirroring FEVInterfacesManager::startFEMacroMultiDimensional
