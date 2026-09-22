@@ -278,10 +278,12 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 					std::string stepLabel = "";
 					try  // column added later; tolerate older table versions
 					{
+						// an unset Data column reads back as the literal "DEFAULT";
+						// blank/default means "innermost enclosing loop", i.e. ""
 						stepLabel =
 						    dimensionalLoop.second
 						        .getNode(IterateTable::macroDimLoopCols_.StepLabel_)
-						        .getValue<std::string>();
+						        .getValueWithDefault<std::string>("");
 					}
 					catch(...)
 					{

@@ -3194,7 +3194,9 @@ unsigned int Iterator::getStepIndexForLabel(IteratorWorkLoopStruct* iteratorStru
 	if(iteratorStruct->stepIndexStack_.empty())
 		return 0;
 
-	if(label == "")  // innermost open label
+	// blank, or the table's unset-column sentinel, both mean the innermost open label
+	if(label == "" || label == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+	   label == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 		return iteratorStruct->stepIndexStack_.back();
 
 	// stacks are parallel; search from the innermost outward
