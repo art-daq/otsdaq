@@ -2,7 +2,10 @@
 #define _ots_GatewaySupervisor_h
 #include <atomic>
 #include <condition_variable>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <thread>
 
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
@@ -155,6 +158,7 @@ class WorkLoopManager;
 		static void 				addSystemMessage(std::string toUserCSV, std::string message);
 
 		void 						checkForAsyncError(void);
+		void 						joinConfigDumpCachingThread(void);  ///< reap the deferred dump-caching thread; safe when none is running
 
 		// CorePropertySupervisorBase override functions
 		virtual void 					setSupervisorPropertyDefaults					(void) override;  ///< override to control supervisor specific defaults
@@ -162,6 +166,25 @@ class WorkLoopManager;
 
 
 	private:
+		/// Remote MacroMaker UDP access (used by Iterator remote FE macros and the Iterate GUI)
+		struct RemoteFEMacroInfo
+		{
+			struct MacroInfo
+			{
+				std::vector<std::string> inputs, outputs;
+			};
+			struct FEInfo
+			{
+				std::string 							supervisor, feType;
+				std::map<std::string /*macroName*/, MacroInfo> 	macros;
+			};
+			std::map<std::string /*feUID*/, FEInfo> 		fes;
+			std::map<std::string /*macroName*/, MacroInfo> 	publicMacros;  ///< MacroMaker public macros only (private ones are not runnable remotely)
+		};
+		std::string 					getRemoteMacroMakerUDPAddress					(const std::string& targetSubsystem);  ///< returns "ip:port"; throws with user guidance if subsystem not Configured or UDP disabled
+		static std::string 				queryRemoteMacroMaker							(const std::string& ipPort, const std::string& command, unsigned int inactivityTimeoutSeconds, const std::string& localIpAddress, std::function<void(int /*percent*/)> progressCb = nullptr, const std::atomic<bool>* abortFlag = nullptr);  ///< static (safe from detached threads): returns full response ("<ROOT>...</ROOT>" or "Error: ..."); forwards <progress> packets to callback; throws promptly if *abortFlag becomes true
+		static RemoteFEMacroInfo 		parseFEMacroInfo								(const std::string& feMacroInfoXml);  ///< parses GetFrontendMacroInfo response
+
 		unsigned int 					getNextRunNumber								(const std::string& fsmName = "");
 		void 							setNextRunNumber								(unsigned int runNumber, const std::string& fsmName = "");
 		std::string 					getLastLogEntry									(const std::string& logType, const std::string& fsmName = "");
@@ -170,7 +193,9 @@ class WorkLoopManager;
 
 
 		static xoap::MessageReference 	lastTableGroupRequestHandler					(const SOAPParameters& parameters);
-		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr);
+		static void 					launchStartOTSCommand							(const std::string& command, ConfigurationManager* cfgMgr);  ///< reloads cfgMgr to find Context hosts; not safe mid-transition
+		static void 					launchStartOTSCommand							(const std::string& command, const std::vector<std::string>& hostnames);  ///< no ConfigurationManager access
+		std::vector<std::string> 		getLiveContextHostnames							(void) const;  ///< hosts of running contexts, from allSupervisorInfo_
 		static void 					launchStartOneServerCommand						(const std::string& command, ConfigurationManager* cfgMgr, const std::string& contextName);
 
 		static void 					indicateOtsAlive								(const CorePropertySupervisorBase* properties = 0);
@@ -340,6 +365,8 @@ class WorkLoopManager;
 		std::string 		activeStateMachineWindowName_;
 		std::string 		activeStateMachineDumpFormatOnRun_, activeStateMachineDumpFormatOnConfigure_; ///<cached at Configure transition
 		std::string 		activeStateMachineSystemDumpOnRun_, activeStateMachineSystemDumpOnConfigure_; ///<cached at Configure transition
+		std::unique_ptr<std::thread>	configDumpCachingThread_;  ///<runs dump caching in parallel with supervisor broadcast
+		std::string						configDumpCachingError_;   ///<error from dump caching thread, checked after join
 		bool				activeStateMachineSystemDumpOnRunEnable_, activeStateMachineSystemDumpOnConfigureEnable_; ///<cached at Configure transition
 		std::string 		activeStateMachineSystemDumpOnRunFilename_, activeStateMachineSystemDumpOnConfigureFilename_; ///<cached at Configure transition
 		bool				activeStateMachineRequireUserLogOnRun_, activeStateMachineRequireUserLogOnConfigure_; ///<cached at Configure transition

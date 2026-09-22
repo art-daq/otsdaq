@@ -190,6 +190,10 @@ GatewaySupervisor::GatewaySupervisor(xdaq::ApplicationStub* s)
 /// entry is made when ots is killed
 GatewaySupervisor::~GatewaySupervisor(void)
 {
+	//join before deleting the configuration manager that the thread reads,
+	//	and before the unique_ptr member is destroyed
+	joinConfigDumpCachingThread();
+
 	delete CorePropertySupervisorBase::theConfigurationManager_;
 
 	bool doLog = false;
@@ -3824,6 +3828,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					    << "\n"
 					    << "GetStateMachineNames"
 					    << "\n"
+					    << "GetMacroMakerUDPAddress - returns Done,<ip>:<port> of this "
+					       "subsystem's MacroMaker UDP interface, or Disabled"
+					    << "\n"
 					    << "ResetConsoleCounts"
 					    << "\n"
 					    << "loginVerify"
@@ -4616,6 +4623,21 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					__COUTS__(TLVL_StatusParams)
 					    << "State machines to monitor: " << out.str() << __E__;
 					sock.acknowledge(out.str(), false /* verbose */);
+					continue;
+				}
+				if(buffer.find("GetMacroMakerUDPAddress") == 0)
+				{
+					// The MacroMaker UDP interface is enabled purely by env vars read in
+					// the MacroMakerSupervisor constructor; this gateway is launched from
+					// the same setup shell, so it sees the same exported values.
+					const char* mmIp   = getenv("OTS_MACROMAKER_UDP_IP");
+					const char* mmPort = getenv("OTS_MACROMAKER_UDP_PORT");
+					std::string response =
+					    (mmIp && mmPort && strlen(mmIp) && strlen(mmPort))
+					        ? ("Done," + std::string(mmIp) + ":" + std::string(mmPort))
+					        : "Disabled";
+					__COUT__ << "GetMacroMakerUDPAddress response: " << response << __E__;
+					sock.acknowledge(response, false /* verbose */);
 					continue;
 				}
 				if(buffer.find("ResetConsoleCounts") == 0)
@@ -5886,6 +5908,11 @@ try
 	}
 
 	//check if MinReadyForEventGenerationStartIteration is in parameters (sent by top-level Gateway for subsystem)
+	//	Note: reset first, so this only ever holds the value received for THIS
+	//	transition. A locally initiated Start carries no such parameter and must not
+	//	inherit a previous run's (possibly larger) floor -- that would delay event
+	//	generation even when every current supervisor reports a lower requirement.
+	minReadyForEventGenerationStartIteration_ = 0;
 	for(size_t i = 0; i < commandParameters.size(); ++i)
 	{
 		if(commandParameters[i].find(
@@ -5908,7 +5935,7 @@ try
 	/////////////////
 	// Validate FSM name (do here because remote commands bypass stateMachineXgiHandler)
 	//	if fsm name != active fsm name
-	//		only allow, if current state is halted or init
+	//		only allow, if current state is halted, init, or configured
 	//		take active fsm name when configured
 	//	else, allow
 	if(activeStateMachineName_ != "" && activeStateMachineName_ != fsmName)
@@ -5918,6 +5945,7 @@ try
 		         << ", command = " << command << __E__;
 		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
 		   currentState != RunControlStateMachine::INITIAL_STATE_NAME &&
+		   currentState != RunControlStateMachine::CONFIGURED_STATE_NAME &&
 		   currentState != RunControlStateMachine::FAILED_STATE_NAME &&
 		   currentState != RunControlStateMachine::SHUTDOWN_STATE_NAME)
 		{
@@ -6464,26 +6492,43 @@ xoap::MessageReference GatewaySupervisor::stateMachineXoapHandler(
 /// state  machine.
 bool GatewaySupervisor::stateMachineThread(toolbox::task::WorkLoop* workLoop)
 {
-	stateMachineSemaphore_.take();
-	std::string command =
-	    SOAPUtilities::translate(stateMachineWorkLoopManager_.getMessage(workLoop))
-	        .getCommand();
-
-	__COUT__ << "Propagating FSM command '" << command
-	         << "'... activeStateMachineName_ = " << activeStateMachineName_ << __E__;
-
-	std::string reply = send(allSupervisorInfo_.getGatewayDescriptor(),
-	                         stateMachineWorkLoopManager_.getMessage(workLoop));
-	stateMachineWorkLoopManager_.report(workLoop, reply, 100, true);
-
-	__COUT__ << "Done with FSM command '" << command << ".' Reply = " << reply << __E__;
-	stateMachineSemaphore_.give();
-
-	if(reply == "Fault")
+	bool holdingSemaphore = false;
+	try
 	{
-		__SS__ << "Failure to send Workloop transition command '" << command
-		       << "!' An error response '" << reply << "' was received." << __E__;
-		__COUT_ERR__ << ss.str();
+		stateMachineSemaphore_.take();
+		holdingSemaphore = true;
+
+		std::string command =
+		    SOAPUtilities::translate(stateMachineWorkLoopManager_.getMessage(workLoop))
+		        .getCommand();
+
+		__COUT__ << "Propagating FSM command '" << command
+		         << "'... activeStateMachineName_ = " << activeStateMachineName_ << __E__;
+
+		std::string reply = send(allSupervisorInfo_.getGatewayDescriptor(),
+		                         stateMachineWorkLoopManager_.getMessage(workLoop));
+		stateMachineWorkLoopManager_.report(workLoop, reply, 100, true);
+
+		__COUT__ << "Done with FSM command '" << command << ".' Reply = " << reply
+		         << __E__;
+		stateMachineSemaphore_.give();
+		holdingSemaphore = false;
+
+		if(reply == "Fault")
+		{
+			__SS__ << "Failure to send Workloop transition command '" << command
+			       << "!' An error response '" << reply << "' was received." << __E__;
+			__COUT_ERR__ << ss.str();
+		}
+	}
+	catch(...)
+	{
+		__COUT_ERR__ << "Unhandled exception in GatewaySupervisor::stateMachineThread. "
+		                "Exiting workloop."
+		             << __E__;
+		if(holdingSemaphore)
+			stateMachineSemaphore_.give();
+		stateMachineWorkLoopManager_.report(workLoop, "Fault", 100, true);
 	}
 	return false;  // execute once and automatically remove the workloop so in
 	               // WorkLoopManager the try workLoop->remove(job_) could be commented
@@ -6962,10 +7007,42 @@ void GatewaySupervisor::checkForAsyncError()
 /////////////////////////////////////////////////////////////////////////////////////
 
 //==============================================================================
+/// joinConfigDumpCachingThread
+///	Reap the deferred configuration-dump caching thread, if one exists.
+///	Safe to call when no thread is running.
+///
+///	Must be called before configDumpCachingThread_ is reassigned or destroyed:
+///	destroying a joinable std::thread calls std::terminate(), which aborts the
+///	gateway process (e.g. when a failed Configure returned before the normal
+///	join, leaving the thread unjoined, and then a new Configure arrived).
+void GatewaySupervisor::joinConfigDumpCachingThread(void)
+{
+	if(!configDumpCachingThread_)
+		return;
+
+	if(configDumpCachingThread_->joinable())
+		configDumpCachingThread_->join();
+	configDumpCachingThread_.reset();
+}  //end joinConfigDumpCachingThread()
+
+//==============================================================================
 void GatewaySupervisor::transitionConfiguring(toolbox::Event::Reference /* event*/)
 try
 {
 	checkForAsyncError();
+
+	// Scope-bound join for the deferred configuration-dump caching thread.
+	//	This transition can throw between launching that thread and the join
+	//	after the broadcast (Macro Maker SOAP setup, the broadcast itself, ...).
+	//	This destructor runs on every exit path -- including a throw out of a
+	//	function-try-block, where body locals are destroyed before the handler --
+	//	so the thread never outlives the transition that started it, and is never
+	//	left joinable for a later Configure to destroy (which calls std::terminate).
+	struct ConfigDumpThreadJoiner
+	{
+		GatewaySupervisor* gatewaySupervisor;
+		~ConfigDumpThreadJoiner() { gatewaySupervisor->joinConfigDumpCachingThread(); }
+	} configDumpThreadJoiner{this};
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -7243,99 +7320,118 @@ try
 
 		//at this point Configuration Tree is fully loaded
 
-		//handle configuration dump if enabled on configure transition
-		try  // errors in dump are not tolerated
-		{
-			//get/cache Run transition dump
-			if(activeStateMachineSystemDumpOnRunEnable_ ||
-			   ((activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
-			{
-				__COUT_INFO__
-				    << "Caching the System Configuration Dump for the Run transition..."
-				    << __E__;
+		//reap the thread of any previous Configure attempt before reassigning,
+		//	because destroying a joinable std::thread calls std::terminate().
+		//	A Configure that failed during the broadcast returns before the
+		//	normal join below, so a thread can still be held here.
+		joinConfigDumpCachingThread();
+		configDumpCachingError_.clear();  //discard any error from that previous attempt
 
-				// dump configuration
-				std::stringstream dumpSs;
-				CorePropertySupervisorBase::theConfigurationManager_
-				    ->dumpActiveConfiguration(
-				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
-				        activeStateMachineDumpFormatOnRun_,
-				        configurationAlias,
-				        subsystemCommonList,
-				        subsystemCommonOverrideList,
-				        getLastLogEntry(
-				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-				        theWebUsers_.getActiveUsernamesString(),
-				        theStateMachine_.getCurrentStateName(),
-				        dumpSs);
+		// Configuration dump caching is deferred: it runs in a background
+		// thread so that the broadcast to supervisors can start immediately.
+		// The dumps only read from the already-activated config tree (read-only)
+		// and their results are consumed later (file write after broadcast,
+		// and at Run transition time).
+		configDumpCachingThread_ =
+		    std::make_unique<std::thread>([this,
+		                                   configurationAlias,
+		                                   subsystemCommonList,
+		                                   subsystemCommonOverrideList]() {
+			    try
+			    {
+				    //get/cache Run transition dump
+				    if(activeStateMachineSystemDumpOnRunEnable_ ||
+				       ((activeStateMachineRunInfoPluginType_ !=
+				             TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				         activeStateMachineRunInfoPluginType_ !=
+				             TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				         activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+				    {
+					    __COUT_INFO__ << "Caching the System Configuration Dump for the "
+					                     "Run transition..."
+					                  << __E__;
 
-				activeStateMachineSystemDumpOnRun_ = dumpSs.str();
+					    std::stringstream dumpSs;
+					    CorePropertySupervisorBase::theConfigurationManager_
+					        ->dumpActiveConfiguration(
+					            "",
+					            activeStateMachineDumpFormatOnRun_,
+					            configurationAlias,
+					            subsystemCommonList,
+					            subsystemCommonOverrideList,
+					            getLastLogEntry(
+					                RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+					            theWebUsers_.getActiveUsernamesString(),
+					            theStateMachine_.getCurrentStateName(),
+					            dumpSs);
 
-				__COUT__ << "Active State Machine Config Dump on Run " << __E__;
-				__COUTTV__(activeStateMachineSystemDumpOnRun_) << __E__;
-				__COUT_MULTI__(TLVL_SystemDump, activeStateMachineSystemDumpOnRun_);
-			}
-			else
-				__COUT_INFO__
-				    << "Not caching the System Configuration Dump on the Run transition."
-				    << __E__;
+					    activeStateMachineSystemDumpOnRun_ = dumpSs.str();
 
-			//get/cache Configuration transition dump
-			if(activeStateMachineSystemDumpOnConfigureEnable_ ||
-			   ((activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ !=
-			         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-			     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
-			{
-				__COUT_INFO__ << "Caching the System Configuration Dump for the "
-				                 "Configure transition..."
-				              << __E__;
+					    __COUT__ << "Active State Machine Config Dump on Run " << __E__;
+					    __COUTTV__(activeStateMachineSystemDumpOnRun_) << __E__;
+					    __COUT_MULTI__(TLVL_SystemDump,
+					                   activeStateMachineSystemDumpOnRun_);
+				    }
+				    else
+					    __COUT_INFO__ << "Not caching the System Configuration Dump on "
+					                     "the Run transition."
+					                  << __E__;
 
-				// dump configuration
-				std::stringstream dumpSs;
-				CorePropertySupervisorBase::theConfigurationManager_
-				    ->dumpActiveConfiguration(
-				        "",  //dumpFilePath + "/" + dumpFileRadix + "_" + std::to_string(time(0)) + ".dump",
-				        activeStateMachineDumpFormatOnConfigure_,
-				        configurationAlias,
-				        subsystemCommonList,
-				        subsystemCommonOverrideList,
-				        getLastLogEntry(
-				            RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
-				        theWebUsers_.getActiveUsernamesString(),
-				        theStateMachine_.getCurrentStateName(),
-				        dumpSs);
+				    //get/cache Configuration transition dump
+				    if(activeStateMachineSystemDumpOnConfigureEnable_ ||
+				       ((activeStateMachineRunInfoPluginType_ !=
+				             TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+				         activeStateMachineRunInfoPluginType_ !=
+				             TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+				         activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+				    {
+					    __COUT_INFO__ << "Caching the System Configuration Dump for the "
+					                     "Configure transition..."
+					                  << __E__;
 
-				activeStateMachineSystemDumpOnConfigure_ = dumpSs.str();
+					    std::stringstream dumpSs;
+					    CorePropertySupervisorBase::theConfigurationManager_
+					        ->dumpActiveConfiguration(
+					            "",
+					            activeStateMachineDumpFormatOnConfigure_,
+					            configurationAlias,
+					            subsystemCommonList,
+					            subsystemCommonOverrideList,
+					            getLastLogEntry(
+					                RunControlStateMachine::CONFIGURE_TRANSITION_NAME),
+					            theWebUsers_.getActiveUsernamesString(),
+					            theStateMachine_.getCurrentStateName(),
+					            dumpSs);
 
-				__COUT__ << "Active State Machine Config Dump on Configure " << __E__;
-				__COUTTV__(activeStateMachineSystemDumpOnConfigure_) << __E__;
-				__COUT_MULTI__(TLVL_SystemDump, activeStateMachineSystemDumpOnConfigure_);
-			}
-			else
-				__COUT_INFO__ << "Not caching the System Configuration Dump on the "
-				                 "Configure transition."
-				              << __E__;
+					    activeStateMachineSystemDumpOnConfigure_ = dumpSs.str();
 
-		}  //end handle configuration dump if enabled on configure transition
-		catch(const std::runtime_error& e)
-		{
-			__SS__ << "Error encountered during system configuration dump. Here is the "
-			          "error: "
-			       << e.what();
-			__SS_THROW__;
-		}
-		catch(...)
-		{
-			__SS__ << "Unknown error encountered during system configuration dump.";
-			__SS_THROW__;
-		}
-	}  //end configuration dump handling
+					    __COUT__ << "Active State Machine Config Dump on Configure "
+					             << __E__;
+					    __COUTTV__(activeStateMachineSystemDumpOnConfigure_) << __E__;
+					    __COUT_MULTI__(TLVL_SystemDump,
+					                   activeStateMachineSystemDumpOnConfigure_);
+				    }
+				    else
+					    __COUT_INFO__
+					        << "Not caching the System Configuration Dump on the "
+					           "Configure transition."
+					        << __E__;
+			    }
+			    catch(const std::runtime_error& e)
+			    {
+				    __COUT_ERR__ << "Error in config dump caching thread: " << e.what()
+				                 << __E__;
+				    configDumpCachingError_ =
+				        std::string("Config dump error: ") + e.what();
+			    }
+			    catch(...)
+			    {
+				    __COUT_ERR__ << "Unknown error in config dump caching thread."
+				                 << __E__;
+				    configDumpCachingError_ = "Unknown config dump error";
+			    }
+		    });  // end config dump caching thread lambda
+	}            //end configuration dump handling
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -7353,8 +7449,9 @@ try
 		      << "_" << theConfigurationTableGroup_.first << "_v"
 		      << theConfigurationTableGroup_.second;
 
-		GatewaySupervisor::launchStartOTSCommand(
-		    runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+		// rollover only touches processes that are already running, so target the
+		//	live context hosts and avoid a ConfigurationManager reload mid-transition
+		GatewaySupervisor::launchStartOTSCommand(runSs.str(), getLiveContextHostnames());
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -7478,6 +7575,16 @@ try
 	//Note: Must save configuration dump after this point!! In case there are remote subsystems responding with string
 	broadcastMessage(message);  // ---------------------------------- broadcast!
 	RunControlStateMachine::theProgressBar_.step();
+
+	// Join the config dump caching thread (launched before broadcast so the
+	// dump computation overlaps with supervisor transitions)
+	joinConfigDumpCachingThread();
+	if(!configDumpCachingError_.empty())
+	{
+		__SS__ << configDumpCachingError_ << __E__;
+		configDumpCachingError_.clear();
+		__SS_THROW__;
+	}
 
 	if(activeStateMachineSystemDumpOnConfigureEnable_)
 	{
@@ -7800,6 +7907,10 @@ catch(...)
 void GatewaySupervisor::transitionHalting(toolbox::Event::Reference /*event*/)
 try
 {
+	//reap the config dump caching thread, in case a failed Configure left it
+	//	running (it only reads the already-activated config tree)
+	joinConfigDumpCachingThread();
+
 	checkForAsyncError();
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -8451,8 +8562,9 @@ try
 		runSs << ";" << activeStateMachineRunAlias_ << "_"
 		      << activeStateMachineRunNumber_;
 
-		GatewaySupervisor::launchStartOTSCommand(
-		    runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+		// rollover only touches processes that are already running, so target the
+		//	live context hosts and avoid a ConfigurationManager reload mid-transition
+		GatewaySupervisor::launchStartOTSCommand(runSs.str(), getLiveContextHostnames());
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -8496,10 +8608,9 @@ try
 	// Compute global ceiling of MinReadyForEventGenerationStartIteration
 	// (seeded with any value received from a top-level Gateway for subsystems)
 	{
-		const unsigned int minReadyFloor          = isRemoteSubsystemIteration_.load()
-		                                                ? minReadyForEventGenerationStartIteration_
-		                                                : 0u;
-		minReadyForEventGenerationStartIteration_ = minReadyFloor;
+		//seed is whatever was received from a top-level Gateway for this transition;
+		//	zero for a locally initiated Start (reset at command-parse time)
+		__COUTTV__(minReadyForEventGenerationStartIteration_);
 
 		// Query local supervisors via SOAP
 		try
@@ -9165,8 +9276,9 @@ try
 		runSs << ";Post" << activeStateMachineRunAlias_ << "_"
 		      << activeStateMachineRunNumber_;
 
-		GatewaySupervisor::launchStartOTSCommand(
-		    runSs.str(), CorePropertySupervisorBase::theConfigurationManager_);
+		// rollover only touches processes that are already running, so target the
+		//	live context hosts and avoid a ConfigurationManager reload mid-transition
+		GatewaySupervisor::launchStartOTSCommand(runSs.str(), getLiveContextHostnames());
 	}
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -10649,11 +10761,10 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 
 	std::map<std::string /* fullName */, int /* unknownCount */> unknownResponseCounts;
 
-	bool         done      = command == "Error";  //dont check for done if Error'ing
-	size_t       iteration = 0;
-	const size_t secsPerIteration = 1;
-	const size_t maxIterations =
-	    10 * 60 / secsPerIteration;  //roughly 10 minutes (1s per iteration)
+	bool         done           = command == "Error";  //dont check for done if Error'ing
+	size_t       iteration      = 0;
+	const size_t msPerIteration = 200;
+	const size_t maxIterations  = 10 * 60 * 1000 / msPerIteration;  //roughly 10 minutes
 	std::map<std::string /* name */, size_t /* progress100cnt */>
 	    progress100cnt;  // make sure remote subsystem is not in unanticipated state
 	while(!done)
@@ -10910,8 +11021,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				       << lastRemainingProgress << "' and status='" << lastRemainingStatus
 				       << "'";
 			waitSs << __E__;
-			uint32_t timeUntilTimeout = (maxIterations - iteration) *
-			                            secsPerIteration;  // x seconds per iteration
+			uint32_t timeUntilTimeout = (maxIterations - iteration) * msPerIteration /
+			                            1000;  // seconds until timeout
 			if(timeUntilTimeout / 60 < 1)
 				waitSs << "(wait count = " << iteration << ", " << timeUntilTimeout
 				       << " seconds until timeout)" << __E__;
@@ -10929,7 +11040,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 			}
 		}
 		if(!done)
-			sleep(secsPerIteration);
+			usleep(msPerIteration * 1000);
 
 		checkForAsyncError();
 	}  //end primary while loop
@@ -11383,6 +11494,7 @@ void GatewaySupervisor::setSupervisorPropertyDefaults()
 	        " | resetConsoleCounts=10"
 	        " | commandRemoteSubsystem=10 | setRemoteSubsystemFsmControl=10"  //remote subsystem control
 	        " | propagateLoginToSubsystem=10"  //force login cookie propagation to a restarted subsystem
+	        " | addSystemMessage=10"  //post system messages from external tools (e.g. daqpy watchdog)
 	);
 
 	CorePropertySupervisorBase::setSupervisorProperty(
@@ -11485,6 +11597,7 @@ try
 	// setRemoteSubsystemFsmControl
 	// getSubsystemConfigAliasSelectInfo
 	// getAliasGlobalFields
+	// getRemoteSubsystemFEMacroInfo
 
 	// resetUserTooltips
 	// silenceAllUserTooltips
@@ -13016,7 +13129,11 @@ try
 				    "subsystem_consoleWarnCount",
 				    std::to_string(remoteSubsystem.consoleWarnCount));
 
-				if(remoteSubsystem.command == "" && remoteSubsystem.getError() != "")
+				//only accumulate errors from subsystems included in the FSM;
+				//	excluded (inactive) subsystems still report their error in
+				//	subsystem_status, but should not raise system-level popups
+				if(remoteSubsystem.fsm_included && remoteSubsystem.command == "" &&
+				   remoteSubsystem.getError() != "")
 				{
 					__SUP_COUTS__(TLVL_RemoteFSMRequests)
 					    << "Error from Subsystem '" << remoteSubsystem.appInfo.name
@@ -13325,6 +13442,78 @@ try
 			                            getGlobalFieldsString(&tmpCfgMgr, globalMembers));
 
 		}  //end getAliasGlobalFields
+		else if(requestType == "getRemoteSubsystemFEMacroInfo")
+		{
+			// Live front-ends and their macros on a remote subsystem, obtained directly from
+			// that subsystem's MacroMaker UDP interface (requires it Configured + UDP enabled).
+			std::string targetSubsystem =
+			    CgiDataUtilities::getData(cgiIn, "targetSubsystem");
+			__SUP_COUTV__(targetSubsystem);
+
+			std::string ipPort;
+			if(targetSubsystem == "")  // Self: this gateway's own MacroMaker
+			{
+				std::string state = theStateMachine_.getCurrentStateName();
+				if(state != RunControlStateMachine::CONFIGURED_STATE_NAME &&
+				   state != RunControlStateMachine::RUNNING_STATE_NAME &&
+				   state != RunControlStateMachine::PAUSED_STATE_NAME)
+				{
+					__SUP_SS__
+					    << "This system is in state '" << state
+					    << ".' It must be Configured before its front-end macros can "
+					       "be listed (front-end instances only exist while configured)."
+					    << __E__;
+					__SUP_SS_THROW__;
+				}
+				const char* mmIp   = getenv("OTS_MACROMAKER_UDP_IP");
+				const char* mmPort = getenv("OTS_MACROMAKER_UDP_PORT");
+				if(!mmIp || !mmPort || !strlen(mmIp) || !strlen(mmPort))
+				{
+					__SUP_SS__
+					    << "This system's MacroMaker UDP interface is not enabled. "
+					       "Export OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT in "
+					       "the shell that launches ots (see "
+					       "hwdev_spack_fast_setup_ots.sh for an example)."
+					    << __E__;
+					__SUP_SS_THROW__;
+				}
+				ipPort = std::string(mmIp) + ":" + mmPort;
+			}
+			else
+				ipPort = getRemoteMacroMakerUDPAddress(targetSubsystem);
+
+			RemoteFEMacroInfo info =
+			    parseFEMacroInfo(queryRemoteMacroMaker(ipPort,
+			                                           "GetFrontendMacroInfo",
+			                                           10 /*inactivity s*/,
+			                                           ipAddressForStateChangesOverUDP_));
+
+			xmlOut.addTextElementToData("macro_maker_udp", ipPort);
+			for(const auto& fe : info.fes)
+			{
+				auto feEl = xmlOut.addTextElementToData("fe", fe.first);
+				xmlOut.addTextElementToParent("fe_type", fe.second.feType, feEl);
+				xmlOut.addTextElementToParent(
+				    "fe_supervisor", fe.second.supervisor, feEl);
+				for(const auto& macro : fe.second.macros)
+				{
+					auto macroEl =
+					    xmlOut.addTextElementToParent("macro", macro.first, feEl);
+					for(const auto& in : macro.second.inputs)
+						xmlOut.addTextElementToParent("input", in, macroEl);
+					for(const auto& out : macro.second.outputs)
+						xmlOut.addTextElementToParent("output", out, macroEl);
+				}
+			}
+			for(const auto& macro : info.publicMacros)
+			{
+				auto macroEl = xmlOut.addTextElementToData("public_macro", macro.first);
+				for(const auto& in : macro.second.inputs)
+					xmlOut.addTextElementToParent("input", in, macroEl);
+				for(const auto& out : macro.second.outputs)
+					xmlOut.addTextElementToParent("output", out, macroEl);
+			}
+		}  //end getRemoteSubsystemFEMacroInfo
 		else if(requestType == "commandRemoteSubsystem")
 		{
 			std::string targetSubsystem =
@@ -13632,6 +13821,16 @@ try
 			    contextName);
 
 			xmlOut.addTextElementToData("status", "restarted");
+		}
+		else if(requestType == "addSystemMessage")
+		{
+			std::string message    = CgiDataUtilities::postData(cgiIn, "message");
+			std::string targetUser = CgiDataUtilities::getData(cgiIn, "targetUser");
+			if(targetUser.empty())
+				targetUser = "*";
+
+			GatewaySupervisor::addSystemMessage(targetUser, message);
+			xmlOut.addTextElementToData("status", "success");
 		}
 		else
 		{
@@ -14387,6 +14586,17 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 /// launchStartOTSCommand
 ///	static function (so WizardSupervisor can use it)
 ///	throws exception if command fails to start
+///
+///	Target hosts are taken from the XDAQ Context table after a full
+///	ConfigurationManager::init() reload, so that commands which (re)launch
+///	contexts (LAUNCH_OTS, LAUNCH_WIZ, OTS_APP_STARTUP, ...) see table edits made
+///	since the last load.
+///
+///	Note: the reload destroys and re-creates every active table group, so this
+///	overload must not be used while other code may be reading the configuration
+///	tree (e.g. mid-transition). For commands that only act on the processes
+///	already running (LOG_ROLLOVER), use the hostname-list overload with
+///	getLiveContextHostnames() instead.
 void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
                                               ConfigurationManager* cfgMgr)
 {
@@ -14413,8 +14623,6 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 				if(context.address_[i] == '/')
 					j = i + 1;
 			hostnames.push_back(context.address_.substr(j));
-			__COUT__ << "ots script command '" << command
-			         << "' launching on hostname = " << hostnames.back() << __E__;
 		}
 	}
 	catch(...)
@@ -14425,6 +14633,28 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 
 		__SS_THROW__;
 	}
+
+	launchStartOTSCommand(command, hostnames);
+}  // end launchStartOTSCommand(cfgMgr)
+
+//==============================================================================
+/// launchStartOTSCommand
+///	Write the command to the ots launch script's action file on each named host,
+///	then verify each script consumed it. Does not touch the ConfigurationManager.
+///	throws exception if command fails to start
+void GatewaySupervisor::launchStartOTSCommand(const std::string&              command,
+                                              const std::vector<std::string>& hostnames)
+{
+	if(hostnames.empty())
+	{
+		__SS__ << "Launch of command '" << command
+		       << "' interrupted! No target context hostnames were provided." << __E__;
+		__SS_THROW__;
+	}
+
+	for(const auto& hostname : hostnames)
+		__COUT__ << "ots script command '" << command
+		         << "' launching on hostname = " << hostname << __E__;
 
 	for(const auto& hostname : hostnames)
 	{
@@ -14473,7 +14703,22 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&    command,
 			__SS_THROW__;
 		}
 	}
-}  // end launchStartOTSCommand
+}  // end launchStartOTSCommand(hostnames)
+
+//==============================================================================
+/// getLiveContextHostnames
+///	Hostnames of every XDAQ context currently known to this Gateway, taken from
+///	the live application context (allSupervisorInfo_) rather than the Context
+///	table. This is the set of processes whose logs exist right now, so it is the
+///	right target set for LOG_ROLLOVER, and it requires no configuration reload.
+std::vector<std::string> GatewaySupervisor::getLiveContextHostnames(void) const
+{
+	std::set<std::string> uniqueHostnames;
+	for(const auto& supervisorInfoPair : allSupervisorInfo_.getAllSupervisorInfo())
+		if(supervisorInfoPair.second.getHostname().size())
+			uniqueHostnames.insert(supervisorInfoPair.second.getHostname());
+	return std::vector<std::string>(uniqueHostnames.begin(), uniqueHostnames.end());
+}  // end getLiveContextHostnames()
 
 //==============================================================================
 /// xoap::supervisorCookieCheck
@@ -14893,6 +15138,280 @@ void GatewaySupervisor::writeRunInfoTransition(
 		__SS_THROW__;
 	}
 }  // end writeRunInfoTransition()
+
+//==============================================================================
+/// getRemoteMacroMakerUDPAddress
+///	Asks the remote subsystem's gateway (over its state-changer UDP socket) for the
+///	ip:port of its MacroMaker UDP interface. Throws with user-facing guidance when the
+///	subsystem is not Configured or the interface is disabled/unreachable.
+std::string GatewaySupervisor::getRemoteMacroMakerUDPAddress(
+    const std::string& targetSubsystem)
+{
+	std::string gatewayUrl, status;
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		bool                        found = false;
+		for(const auto& remoteGatewayApp : remoteGatewayApps_)
+			if(remoteGatewayApp.appInfo.name == targetSubsystem)
+			{
+				gatewayUrl = remoteGatewayApp.appInfo.url;
+				status     = remoteGatewayApp.appInfo.status;
+				found      = true;
+				break;
+			}
+		if(!found)
+		{
+			__SUP_SS__ << "Remote subsystem '" << targetSubsystem
+			           << "' was not found in the list of remote subsystems." << __E__;
+			__SUP_SS_THROW__;
+		}
+	}
+
+	if(status != RunControlStateMachine::CONFIGURED_STATE_NAME &&
+	   status != RunControlStateMachine::RUNNING_STATE_NAME &&
+	   status != RunControlStateMachine::PAUSED_STATE_NAME)
+	{
+		__SUP_SS__
+		    << "Remote subsystem '" << targetSubsystem << "' is in state '" << status
+		    << ".' It must be Configured before its front-end macros can be listed "
+		       "or run (front-end instances only exist while configured)."
+		    << __E__;
+		__SUP_SS_THROW__;
+	}
+
+	const std::string enableHint =
+	    "Make sure MacroMaker UDP is enabled on subsystem '" + targetSubsystem +
+	    "' by exporting OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT in the shell "
+	    "that "
+	    "launches ots there (both the Gateway and MacroMaker processes must see them; "
+	    "see "
+	    "hwdev_spack_fast_setup_ots.sh for an example). Also confirm that subsystem's "
+	    "Gateway was rebuilt with the GetMacroMakerUDPAddress command.";
+
+	std::vector<std::string> parsedUrl =
+	    StringMacros::getVectorFromString(gatewayUrl, {':'});
+	if(parsedUrl.size() != 3)
+	{
+		__SUP_SS__ << "Remote subsystem '" << targetSubsystem
+		           << "' gateway URL is not in the expected 'protocol:host:port' form: '"
+		           << gatewayUrl << "'" << __E__;
+		__SUP_SS_THROW__;
+	}
+
+	std::string response;
+	try
+	{
+		Socket            gatewayRemoteSocket(parsedUrl[1], atoi(parsedUrl[2].c_str()));
+		TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
+		tmpSocket.initialize();
+		response = tmpSocket.sendAndReceive(
+		    gatewayRemoteSocket, "GetMacroMakerUDPAddress", 5 /*timeoutSeconds*/);
+	}
+	catch(const std::runtime_error& e)
+	{
+		__SUP_SS__ << "No response from remote subsystem '" << targetSubsystem
+		           << "' gateway when asking for its MacroMaker UDP address: " << e.what()
+		           << "\n\n"
+		           << enableHint << __E__;
+		__SUP_SS_THROW__;
+	}
+
+	__SUP_COUT_INFO__ << "GetMacroMakerUDPAddress response from '" << targetSubsystem
+	                  << "': '" << response.substr(0, 100)
+	                  << (response.size() > 100 ? "..." : "") << "'" << __E__;
+
+	if(response == "Disabled")
+	{
+		__SUP_SS__
+		    << "Remote subsystem '" << targetSubsystem
+		    << "' Gateway reports that OTS_MACROMAKER_UDP_IP / OTS_MACROMAKER_UDP_PORT "
+		       "are not set in its environment, so its MacroMaker UDP interface is "
+		       "disabled.\n\n"
+		    << enableHint << __E__;
+		__SUP_SS_THROW__;
+	}
+	if(response.find("Done,") != 0 || response.size() <= strlen("Done,"))
+	{
+		// an old remote Gateway treats the unknown command as an FSM command attempt and
+		// replies with its FSM-format error text
+		__SUP_SS__ << "Remote subsystem '" << targetSubsystem
+		           << "' Gateway gave an unexpected reply to GetMacroMakerUDPAddress: '"
+		           << response.substr(0, 300) << (response.size() > 300 ? "..." : "")
+		           << "'. It likely has not been rebuilt with this command.\n\n"
+		           << enableHint << __E__;
+		__SUP_SS_THROW__;
+	}
+	return response.substr(strlen("Done,"));
+}  // end getRemoteMacroMakerUDPAddress()
+
+//==============================================================================
+/// queryRemoteMacroMaker
+///	Sends one command to a MacroMaker UDP interface (see
+///	MacroMakerSupervisor::RemoteControlWorkLoop) and assembles the possibly multi-packet
+///	response. "<progress>N</progress>" packets are forwarded to progressCb and not
+///	included in the returned string. Returns when the response starts with "Error:" or
+///	contains "</ROOT>"; throws after inactivityTimeoutSeconds with no packets.
+///
+///	Static on purpose: Iterator::startRemoteCommandMacro() calls this from a detached
+///	thread that may outlive the Iterator and even the Gateway, so it must not depend on
+///	any GatewaySupervisor member. The local bind address is passed in, and an optional
+///	abortFlag lets that thread be cancelled promptly (checked every receive poll)
+///	instead of blocking for the whole inactivity window.
+std::string GatewaySupervisor::queryRemoteMacroMaker(
+    const std::string&       ipPort,
+    const std::string&       command,
+    unsigned int             inactivityTimeoutSeconds,
+    const std::string&       localIpAddress,
+    std::function<void(int)> progressCb /* = nullptr */,
+    const std::atomic<bool>* abortFlag /* = nullptr */)
+{
+	std::vector<std::string> parsed = StringMacros::getVectorFromString(ipPort, {':'});
+	if(parsed.size() != 2)
+	{
+		__SS__ << "MacroMaker UDP address is not in 'ip:port' form: '" << ipPort << "'"
+		       << __E__;
+		__SS_THROW__;
+	}
+
+	Socket            macroMakerSocket(parsed[0], atoi(parsed[1].c_str()));
+	TransceiverSocket tmpSocket(localIpAddress);
+	tmpSocket.initialize();
+	tmpSocket.flush();
+	if(tmpSocket.send(macroMakerSocket, command) < 0)
+	{
+		__SS__ << "Failed to send '" << command.substr(0, 40)
+		       << (command.size() > 40 ? "..." : "")
+		       << "' to MacroMaker UDP interface at " << ipPort << __E__;
+		__SS_THROW__;
+	}
+
+	std::string response, packet;
+	auto        lastPacketTime = std::chrono::steady_clock::now();
+	while(1)
+	{
+		if(tmpSocket.receive(packet, 0 /*timeoutSeconds*/, 200000 /*timeoutUSeconds*/) ==
+		   0)
+		{
+			lastPacketTime = std::chrono::steady_clock::now();
+			if(packet.find("<progress>") == 0)
+			{
+				if(progressCb)
+					progressCb(atoi(packet.substr(strlen("<progress>")).c_str()));
+				continue;
+			}
+			response += packet;
+			if(response.find("Error:") == 0 ||
+			   response.find("</ROOT>") != std::string::npos)
+				break;
+			continue;
+		}
+
+		if(abortFlag && *abortFlag)
+		{
+			__SS__ << "Aborted while waiting for MacroMaker UDP interface at " << ipPort
+			       << " to respond to '" << command.substr(0, 40)
+			       << (command.size() > 40 ? "..." : "") << "'. Received "
+			       << response.size() << " bytes so far." << __E__;
+			__SS_THROW__;
+		}
+
+		auto idleSeconds = std::chrono::duration_cast<std::chrono::seconds>(
+		                       std::chrono::steady_clock::now() - lastPacketTime)
+		                       .count();
+		if(idleSeconds > (long)inactivityTimeoutSeconds)
+		{
+			__SS__ << "Timeout (" << inactivityTimeoutSeconds
+			       << " s without a packet) waiting for MacroMaker UDP interface at "
+			       << ipPort << " to respond to '" << command.substr(0, 40)
+			       << (command.size() > 40 ? "..." : "") << "'. Received "
+			       << response.size() << " bytes so far." << __E__;
+			__SS_THROW__;
+		}
+	}
+	return response;
+}  // end queryRemoteMacroMaker()
+
+//==============================================================================
+/// parseFEMacroInfo
+///	Parses the GetFrontendMacroInfo XML from MacroMakerSupervisor::getFEMacroList().
+///	Each <FEMacros> value is one live front-end (from FEVInterfacesManager::getFEMacrosString):
+///		sup;lid;feType;feUID;macro;perm;tooltip;nIn;in...;nOut;out...;macro2;...
+///	Each <PublicMacro>/<PrivateMacro> value is: name:perm:nIn:in...:nOut:out...
+GatewaySupervisor::RemoteFEMacroInfo GatewaySupervisor::parseFEMacroInfo(
+    const std::string& feMacroInfoXml)
+{
+	RemoteFEMacroInfo info;
+
+	// Note: extractXmlField returns the position of the found tag in 'after', so the
+	//	search position must be advanced past the tag name before the next call.
+	std::string value;
+	size_t      after = 0;
+	while((value = StringMacros::extractXmlField(
+	           feMacroInfoXml, "FEMacros", 0, after, &after)) != "")
+	{
+		after += strlen("FEMacros");
+
+		std::vector<std::string> fields =
+		    StringMacros::getVectorFromString(value, {';'}, {} /*keep whitespace*/);
+		if(fields.size() < 4)
+			continue;
+
+		RemoteFEMacroInfo::FEInfo& fe = info.fes[fields[3]];
+		fe.supervisor                 = fields[0];
+		fe.feType                     = fields[2];
+
+		// i+0 name, i+1 permissions, i+2 tooltip, i+3 nIn, inputs..., nOut, outputs...
+		size_t i = 4;
+		while(i + 3 < fields.size())
+		{
+			RemoteFEMacroInfo::MacroInfo& macro = fe.macros[fields[i]];
+			macro.inputs.clear();
+			macro.outputs.clear();
+			size_t nIn = atoi(fields[i + 3].c_str());
+			size_t j   = i + 4;
+			for(size_t k = 0; k < nIn && j < fields.size(); ++k, ++j)
+				macro.inputs.push_back(StringMacros::decodeURIComponent(fields[j]));
+			if(j >= fields.size())
+				break;
+			size_t nOut = atoi(fields[j].c_str());
+			++j;
+			for(size_t k = 0; k < nOut && j < fields.size(); ++k, ++j)
+				macro.outputs.push_back(StringMacros::decodeURIComponent(fields[j]));
+			i = j;
+		}
+	}
+
+	// Only public MacroMaker macros: the remote run path always sends macroType
+	// "public", and the UDP discovery's <PrivateMacro> entries belong to the
+	// MacroMaker's own NO-USER account, so they could be advertised but never run.
+	for(const std::string tag : {"PublicMacro"})
+	{
+		after = 0;
+		while((value = StringMacros::extractXmlField(
+		           feMacroInfoXml, tag, 0, after, &after)) != "")
+		{
+			after += tag.size();
+
+			std::vector<std::string> fields =
+			    StringMacros::getVectorFromString(value, {':'}, {} /*keep whitespace*/);
+			if(fields.size() < 3)
+				continue;
+			RemoteFEMacroInfo::MacroInfo& macro = info.publicMacros[fields[0]];
+			size_t                        nIn   = atoi(fields[2].c_str());
+			size_t                        j     = 3;
+			for(size_t k = 0; k < nIn && j < fields.size(); ++k, ++j)
+				macro.inputs.push_back(fields[j]);
+			if(j >= fields.size())
+				continue;
+			size_t nOut = atoi(fields[j].c_str());
+			++j;
+			for(size_t k = 0; k < nOut && j < fields.size(); ++k, ++j)
+				macro.outputs.push_back(fields[j]);
+		}
+	}
+
+	return info;
+}  // end parseFEMacroInfo()
 
 //==============================================================================
 /// getLastLogEntry
