@@ -2445,7 +2445,7 @@ std::map<std::string, std::string> FEVInterfacesManager::getFEMacroInputDefaults
 			// Match on the name before any "(Default/Note)" suffix, the same rule
 			// runFEMacro() uses, so saved history whose suffix has since changed is
 			// still accepted; key the map by the CURRENT declared name for the provider.
-			const std::string inputBase = inputName.substr(0, inputName.find('('));
+			const std::string  inputBase    = inputName.substr(0, inputName.find('('));
 			const std::string* declaredName = nullptr;
 			for(const auto& candidate : macroIt->second.namesOfInputArguments_)
 				if(candidate.substr(0, candidate.find('(')) == inputBase)
