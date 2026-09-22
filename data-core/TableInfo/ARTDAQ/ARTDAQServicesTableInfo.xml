@@ -6,6 +6,7 @@
 				<COLUMN Type="TrueFalse" 	 Name="sharedMemoryResumeAfterTimeout" 	 StorageName="SHARED_MEMORY_RESUME_AFTER_TIMEOUT" 		DataType="VARCHAR2" 		DataChoices=""/>
         <COLUMN Type="Data" 	 Name="sharedMemoryWaitingTime" 	 StorageName="SHARED_MEMORY_WAITING_TIME" 		DataType="VARCHAR2" 		DataChoices=""/>
         <COLUMN Type="FixedChoiceData" 	 Name="fragmentNamingServiceProvider" 	 StorageName="FRAGMENT_NAMING_SERVICE_PROVIDER" 		DataType="VARCHAR2" 		DataChoices="arbitraryBool=1,OTS,OtsDemo"/>
+        <COLUMN Type="Data" 	 Name="enabledFragmentTypes" 	 StorageName="ENABLED_FRAGMENT_TYPES" 		DataType="VARCHAR2" 		DataChoices=""/>
         <COLUMN Type="ChildLink-daqParameters" 	 Name="ServicesParametersLink" 	 StorageName="SERVICES_PARAMETERS_LINK" 		DataType="VARCHAR2" 		DataChoices="arbitraryBool=0,NO_LINK,ARTDAQDaqParameterTable"/>
 				<COLUMN Type="ChildLinkGroupID-daqParameters" 	 Name="ServiceParametersLinkGroupID" 	 StorageName="SERVICE_PARAMETERS_LINK_GROUP_ID" 		DataType="VARCHAR2" 		DataChoices=""/>
 				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="VARCHAR2" 		DataChoices=""/>
