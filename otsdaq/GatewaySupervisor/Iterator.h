@@ -95,8 +95,8 @@ class Iterator
 			std::atomic<bool> done{false}, abort{false};
 			std::mutex        mutex;  ///< guards error, iterationsDone, progress
 			std::string       error;
-			unsigned int      iterationsDone  = 0;
-			unsigned int      iterationsTotal = 0;
+			uint64_t          iterationsDone  = 0;
+			uint64_t          iterationsTotal = 0;
 			int               progress        = 0;  ///< percent of current iteration, from remote
 		};
 		std::shared_ptr<RemoteMacroRun> remoteMacroRun_;
@@ -142,9 +142,28 @@ class Iterator
 	/// FE macro input name with any "(Default/Note)" suffix removed, for order-independent matching
 	static std::string feMacroArgBaseName(const std::string& argName);
 	static bool checkRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct, bool isFEMacro);
-	/// expands the Iterator MacroArgumentString ("nIter,arg:init:step,...;nIter2,...") into
-	///	one ordered name/value list per iteration, mirroring FEVInterfacesManager::startFEMacroMultiDimensional
-	static std::vector<std::vector<std::pair<std::string, std::string>>> expandDimensionalLoop(const std::string& inputArgs);
+	/// Parsed MacroArgumentString ("nIter,arg:init:step,...;nIter2,..."), mirroring
+	///	FEVInterfacesManager::startFEMacroMultiDimensional. Iterations are NOT materialized:
+	///	call macroLoopIteration(spec, i) for i in [0, totalIterations) to compute each one
+	///	(dimension 0 outermost, lower dimension wins on a name clash).
+	struct MacroLoopSpec
+	{
+		struct Arg
+		{
+			std::string name;
+			enum { LONG, DOUBLE, STRING } type = LONG;
+			long        lInit = 0, lStep = 0;
+			double      dInit = 0, dStep = 0;
+			std::string sVal;
+		};
+		std::vector<unsigned long>      dimIterations;
+		std::vector<std::vector<Arg>>   dimArgs;
+		std::vector<std::string>        argNames;        ///< emit order, de-duplicated (lower dimension wins)
+		uint64_t                        totalIterations = 1;
+	};
+	static MacroLoopSpec parseMacroLoopSpec(const std::string& inputArgs);
+	/// name/value list for the index-th iteration, in argNames order
+	static std::vector<std::pair<std::string, std::string>> macroLoopIteration(const MacroLoopSpec& spec, uint64_t index);
 
 	/// pass index of the named open BEGIN_LABEL; empty label = innermost; 0 if none open / not found
 	static unsigned int getStepIndexForLabel(IteratorWorkLoopStruct* iteratorStruct, const std::string& label);

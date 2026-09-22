@@ -3039,42 +3039,24 @@ bool Iterator::checkRemoteCommandConfigure(IteratorWorkLoopStruct* iteratorStruc
 }  // end checkRemoteCommandConfigure()
 
 //==============================================================================
-/// expandDimensionalLoop
-///	Expands the Iterator MacroArgumentString into one ordered name/value list per
-///	iteration, replicating FEVInterfacesManager::startFEMacroMultiDimensional():
+/// parseMacroLoopSpec
+///	Parses the Iterator MacroArgumentString without materializing the iterations:
 ///		- format "nIter,arg:init:step,...;nIter2,arg:init:step,...", dimension 0 outermost
 ///		- step == DEFAULT/Default  -> constant string argument
 ///		- init or step containing '.' or ending in 'f' -> double, else long
-///		- a dimension's args are reset to init each time the dimension is entered, and
-///		  incremented by step after each pass of the inner dimensions
 ///		- lower dimension wins on a name clash
 ///	An empty string yields a single iteration with no arguments.
-std::vector<std::vector<std::pair<std::string, std::string>>>
-Iterator::expandDimensionalLoop(const std::string& inputArgs)
+Iterator::MacroLoopSpec Iterator::parseMacroLoopSpec(const std::string& inputArgs)
 {
-	struct DimArg
-	{
-		std::string name;
-		enum
-		{
-			LONG,
-			DOUBLE,
-			STRING
-		} type;
-		long        lInit = 0, lStep = 0, lCur = 0;
-		double      dInit = 0, dStep = 0, dCur = 0;
-		std::string sVal;
-	};
-	std::vector<unsigned long>       dimIterations;
-	std::vector<std::vector<DimArg>> dimArgs;
+	MacroLoopSpec spec;
 
 	std::vector<std::string> dimensions;
 	StringMacros::getVectorFromString(inputArgs, dimensions, {';'});
 
 	if(dimensions.size() == 0 || (dimensions.size() == 1 && dimensions[0] == ""))
 	{
-		dimIterations.push_back(1);
-		dimArgs.push_back({});
+		spec.dimIterations.push_back(1);
+		spec.dimArgs.push_back({});
 	}
 	else
 		for(unsigned int d = 0; d < dimensions.size(); ++d)
@@ -3096,96 +3078,112 @@ Iterator::expandDimensionalLoop(const std::string& inputArgs)
 				       << d << ". Must be a positive integer!" << __E__;
 				__SS_THROW__;
 			}
-			dimIterations.push_back(numOfIterations);
-			dimArgs.push_back({});
+			spec.dimIterations.push_back(numOfIterations);
+			spec.dimArgs.push_back({});
 
 			for(unsigned int a = 1; a < args.size(); ++a)
 			{
 				// name may contain ':' (e.g. "Target Link (Default := -1)"), so split from the right
-				std::vector<std::string> pieces(3);
-				if(!StringMacros::splitMacroArgTriple(
-				       args[a], pieces[0], pieces[1], pieces[2]))
+				std::string name, init, step;
+				if(!StringMacros::splitMacroArgTriple(args[a], name, init, step))
 				{
 					__SS__ << "Invalid argument '" << args[a]
 					       << "'! Expected name:initialValue:stepSize." << __E__;
 					__SS_THROW__;
 				}
-				DimArg arg;
-				arg.name = pieces[0];
-				if(pieces[2] == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
-				   pieces[2] == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+				MacroLoopSpec::Arg arg;
+				arg.name = name;
+				if(step == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+				   step == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 				{
-					arg.type = DimArg::STRING;
-					arg.sVal = pieces[1];
+					arg.type = MacroLoopSpec::Arg::STRING;
+					arg.sVal = init;
 				}
-				else if((pieces[1].size() &&
-				         (pieces[1].back() == 'f' ||
-				          pieces[1].find('.') != std::string::npos)) ||
-				        (pieces[2].size() && (pieces[2].back() == 'f' ||
-				                              pieces[2].find('.') != std::string::npos)))
+				else if((init.size() &&
+				         (init.back() == 'f' || init.find('.') != std::string::npos)) ||
+				        (step.size() && (step.back() == 'f' || step.find('.') != std::string::npos)))
 				{
-					arg.type  = DimArg::DOUBLE;
-					arg.dInit = strtod(pieces[1].c_str(), 0);
-					arg.dStep = strtod(pieces[2].c_str(), 0);
+					arg.type  = MacroLoopSpec::Arg::DOUBLE;
+					arg.dInit = strtod(init.c_str(), 0);
+					arg.dStep = strtod(step.c_str(), 0);
 				}
 				else
 				{
-					arg.type = DimArg::LONG;
-					StringMacros::getNumber(pieces[1], arg.lInit);
-					StringMacros::getNumber(pieces[2], arg.lStep);
+					arg.type = MacroLoopSpec::Arg::LONG;
+					StringMacros::getNumber(init, arg.lInit);
+					StringMacros::getNumber(step, arg.lStep);
 				}
-				dimArgs.back().push_back(arg);
+				spec.dimArgs.back().push_back(arg);
 			}
 		}
 
-	std::vector<std::vector<std::pair<std::string, std::string>>> iterations;
-
-	std::function<void(unsigned int)> recurse = [&](unsigned int dimension) {
-		if(dimension >= dimIterations.size())
+	// total = product of dimension counts, guarding overflow
+	spec.totalIterations = 1;
+	for(unsigned long n : spec.dimIterations)
+		if(__builtin_mul_overflow(spec.totalIterations, (uint64_t)n, &spec.totalIterations))
 		{
-			// emit one iteration: lower dimension wins on name clash
-			std::vector<std::pair<std::string, std::string>> argsIn;
-			for(unsigned int d = 0; d < dimArgs.size(); ++d)
-				for(const auto& arg : dimArgs[d])
+			__SS__ << "Dimensional loop '" << inputArgs
+			       << "' has more iterations than can be counted (product overflows)."
+			       << __E__;
+			__SS_THROW__;
+		}
+
+	// emit-order argument names, de-duplicated (lower dimension wins)
+	for(const auto& dim : spec.dimArgs)
+		for(const auto& arg : dim)
+		{
+			bool clash = false;
+			for(const auto& existing : spec.argNames)
+				if(existing == arg.name)
 				{
-					bool clash = false;
-					for(const auto& existing : argsIn)
-						if(existing.first == arg.name)
-						{
-							clash = true;
-							break;
-						}
-					if(clash)
-						continue;
-					std::string value =
-					    arg.type == DimArg::LONG     ? std::to_string(arg.lCur)
-					    : arg.type == DimArg::DOUBLE ? std::to_string(arg.dCur)
-					                                 : arg.sVal;
-					argsIn.emplace_back(arg.name, value);
+					clash = true;
+					break;
 				}
-			iterations.push_back(argsIn);
-			return;
+			if(!clash)
+				spec.argNames.push_back(arg.name);
 		}
 
-		for(auto& arg : dimArgs[dimension])
-		{
-			arg.lCur = arg.lInit;
-			arg.dCur = arg.dInit;
-		}
-		for(unsigned long i = 0; i < dimIterations[dimension]; ++i)
-		{
-			recurse(dimension + 1);
-			for(auto& arg : dimArgs[dimension])
-			{
-				arg.lCur += arg.lStep;
-				arg.dCur += arg.dStep;
-			}
-		}
-	};
-	recurse(0);
+	return spec;
+}  // end parseMacroLoopSpec()
 
-	return iterations;
-}  // end expandDimensionalLoop()
+//==============================================================================
+/// macroLoopIteration
+///	Computes the index-th iteration (0-based) as if the dimensions were nested loops
+///	with dimension 0 outermost: value = init + step * (this dimension's counter).
+std::vector<std::pair<std::string, std::string>> Iterator::macroLoopIteration(
+    const MacroLoopSpec& spec, uint64_t index)
+{
+	// odometer: innermost (last) dimension turns fastest
+	std::vector<uint64_t> counters(spec.dimIterations.size(), 0);
+	for(size_t d = spec.dimIterations.size(); d-- > 0;)
+	{
+		counters[d] = index % spec.dimIterations[d];
+		index /= spec.dimIterations[d];
+	}
+
+	std::vector<std::pair<std::string, std::string>> argsIn;
+	for(size_t d = 0; d < spec.dimArgs.size(); ++d)
+		for(const auto& arg : spec.dimArgs[d])
+		{
+			bool clash = false;
+			for(const auto& existing : argsIn)
+				if(existing.first == arg.name)
+				{
+					clash = true;
+					break;
+				}
+			if(clash)
+				continue;  // lower dimension wins
+			std::string value =
+			    arg.type == MacroLoopSpec::Arg::LONG
+			        ? std::to_string(arg.lInit + arg.lStep * (long)counters[d])
+			        : arg.type == MacroLoopSpec::Arg::DOUBLE
+			              ? std::to_string(arg.dInit + arg.dStep * (double)counters[d])
+			              : arg.sVal;
+			argsIn.emplace_back(arg.name, value);
+		}
+	return argsIn;
+}  // end macroLoopIteration()
 
 //==============================================================================
 unsigned int Iterator::getStepIndexForLabel(IteratorWorkLoopStruct* iteratorStruct,
@@ -3439,24 +3437,24 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		outputNames = macroIt->second.outputs;
 	}
 
-	// expand the dimensional loop, then rewrite every iteration into the remote
-	//	macro's declared input order using the remote's current input names.
+	// Parse the dimensional loop (iterations are computed one at a time in the worker,
+	//	so a large product never has to fit in memory) and map the remote macro's
+	//	declared inputs, in its order, onto the loop's argument names once.
 	//	The remote (FEVInterfacesManager::runFEMacro) validates inputs positionally
 	//	and ignores any "(Default/Note)" suffix, so match on the base name here too;
 	//	this keeps saved plans working when a macro's default/note text changes.
-	auto iterations = expandDimensionalLoop(inputArgs);
-	for(auto& iteration : iterations)
+	const MacroLoopSpec spec = parseMacroLoopSpec(inputArgs);
+	std::vector<size_t> inputToArgIndex;  // inputNames[k] takes spec.argNames[inputToArgIndex[k]]
 	{
-		std::vector<std::pair<std::string, std::string>> ordered;
-		std::vector<bool>                                used(iteration.size(), false);
+		std::vector<bool> used(spec.argNames.size(), false);
 		for(const auto& inputName : inputNames)
 		{
 			const std::string inputBase = feMacroArgBaseName(inputName);
 			bool              bound     = false;
-			for(size_t a = 0; a < iteration.size(); ++a)
-				if(!used[a] && feMacroArgBaseName(iteration[a].first) == inputBase)
+			for(size_t a = 0; a < spec.argNames.size(); ++a)
+				if(!used[a] && feMacroArgBaseName(spec.argNames[a]) == inputBase)
 				{
-					ordered.emplace_back(inputName, iteration[a].second);
+					inputToArgIndex.push_back(a);
 					used[a] = true;
 					bound   = true;
 					break;
@@ -3473,19 +3471,18 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				__SS_THROW__;
 			}
 		}
-		for(size_t a = 0; a < iteration.size(); ++a)
+		for(size_t a = 0; a < spec.argNames.size(); ++a)
 			if(!used[a])
-				__COUT_WARN__ << "Dimensional loop parameter '" << iteration[a].first
+				__COUT_WARN__ << "Dimensional loop parameter '" << spec.argNames[a]
 				              << "' is not an input of macro '" << macroName
 				              << "' on remote subsystem '" << targetSubsystem
 				              << "'; it will not be sent." << __E__;
-		iteration = ordered;
 	}
 
 	{
 		std::stringstream hdr;
 		hdr << "Remote macro '" << macroName << "' on subsystem '" << targetSubsystem
-		    << "' targets [" << uidCSV << "]: " << iterations.size()
+		    << "' targets [" << uidCSV << "]: " << spec.totalIterations
 		    << " iteration(s) from loop spec '" << inputArgs << "'";
 		if(saveOutputs)
 			hdr << ". Output saving is enabled: the remote MacroMaker writes "
@@ -3500,7 +3497,7 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		outputCSV += (i ? "," : "") + StringMacros::encodeURIComponent(outputNames[i]);
 
 	auto run             = std::make_shared<IteratorWorkLoopStruct::RemoteMacroRun>();
-	run->iterationsTotal = iterations.size();
+	run->iterationsTotal = spec.totalIterations;
 	iteratorStruct->remoteMacroRun_ = run;
 
 	// The thread captures only value copies and the shared run state: no Iterator,
@@ -3513,28 +3510,33 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	             uidCSV,
 	             macroName,
 	             macroType = std::string(isFEMacro ? "fe" : "public"),
-	             iterations,
+	             spec,
+	             inputNames,
+	             inputToArgIndex,
 	             outputCSV,
 	             saveOutputs,
 	             targetSubsystem]() {
 		try
 		{
-			for(size_t i = 0; i < iterations.size(); ++i)
+			const uint64_t total = spec.totalIterations;
+			for(uint64_t i = 0; i < total; ++i)
 			{
 				if(run->abort)
 				{
 					__COUT_INFO__ << "Remote macro '" << macroName
-					              << "' aborted before iteration " << i + 1 << " of "
-					              << iterations.size() << __E__;
+					              << "' aborted before iteration " << i + 1 << " of " << total
+					              << __E__;
 					break;
 				}
 
+				// compute this iteration's values and emit them in the remote macro's
+				//	declared input order, under the remote's current input names
+				const auto  values = macroLoopIteration(spec, i);
 				std::string inputStr;
-				for(size_t a = 0; a < iterations[i].size(); ++a)
-					inputStr += (a ? ";" : "") +
-					            StringMacros::encodeURIComponent(iterations[i][a].first) +
+				for(size_t k = 0; k < inputNames.size(); ++k)
+					inputStr += (k ? ";" : "") + StringMacros::encodeURIComponent(inputNames[k]) +
 					            "," +
-					            StringMacros::encodeURIComponent(iterations[i][a].second);
+					            StringMacros::encodeURIComponent(values[inputToArgIndex[k]].second);
 
 				// RunFrontendMacro;feClass;feUIDs;macroType;macroName;inputArgs;outputArgs;saveOutputs
 				std::string cmd = "RunFrontendMacro;*;" + uidCSV + ";" + macroType + ";" +
@@ -3544,8 +3546,7 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				                  (saveOutputs ? "1" : "0");
 
 				__COUT_INFO__ << "Remote macro '" << macroName << "' iteration " << i + 1
-				              << " of " << iterations.size() << " inputs: " << inputStr
-				              << __E__;
+				              << " of " << total << " inputs: " << inputStr << __E__;
 
 				std::string response = GatewaySupervisor::queryRemoteMacroMaker(
 				    ipPort,
@@ -3562,7 +3563,7 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				{
 					std::lock_guard<std::mutex> lock(run->mutex);
 					run->error = "iteration " + std::to_string(i + 1) + " of " +
-					             std::to_string(iterations.size()) + ": " + response;
+					             std::to_string(total) + ": " + response;
 					break;
 				}
 
@@ -3645,9 +3646,9 @@ bool Iterator::checkRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		run->abort = true;
 	}
 
-	std::string  error;
-	unsigned int itDone, itTotal;
-	int          progress;
+	std::string error;
+	uint64_t    itDone, itTotal;
+	int         progress;
 	{
 		std::lock_guard<std::mutex> lock(run->mutex);
 		error    = run->error;
