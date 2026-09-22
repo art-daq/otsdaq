@@ -592,10 +592,10 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 		                                  (extension.size() ? "." : "") + extension);
 	else if((i = path.find("$OTSDAQ_DATA/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
-		gitPath =
-		    CodeEditor::getFileGitURL(CodeEditor::OTSDAQ_DATA_PATH,
-		                              path.substr(i + std::string("$OTSDAQ_DATA/").size()) +
-		                                  (extension.size() ? "." : "") + extension);
+		gitPath = CodeEditor::getFileGitURL(
+		    CodeEditor::OTSDAQ_DATA_PATH,
+		    path.substr(i + std::string("$OTSDAQ_DATA/").size()) +
+		        (extension.size() ? "." : "") + extension);
 	else
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::SOURCE_BASE_PATH,

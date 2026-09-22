@@ -708,7 +708,8 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 				    {  // record for the Iterator's completion report
 					    std::lock_guard<std::mutex> lock(
 					        feMgr->macroMultiDimensionalDoneMutex_);
-					    feMgr->macroMultiDimensionalOutputFileMap_[interfaceID] = filename;
+					    feMgr->macroMultiDimensionalOutputFileMap_[interfaceID] =
+					        filename;
 				    }
 			    }  // at this point output file pointer is valid or null
 
@@ -1278,8 +1279,9 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 				       basePath == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
 				       basePath == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 					    basePath = std::string(__ENV__("OTSDAQ_DATA"));
-				    std::string filename = basePath + "/" + outputFileRadix + feMacroName +
-				                           "_" + std::to_string(time(0)) + ".txt";
+				    std::string filename = basePath + "/" + outputFileRadix +
+				                           feMacroName + "_" + std::to_string(time(0)) +
+				                           ".txt";
 				    __GEN_COUT__ << "Opening file... " << filename << __E__;
 
 				    outputFilePointer = fopen(filename.c_str(), "w");
@@ -1291,7 +1293,8 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 				    {  // record for the Iterator's completion report
 					    std::lock_guard<std::mutex> lock(
 					        feMgr->macroMultiDimensionalDoneMutex_);
-					    feMgr->macroMultiDimensionalOutputFileMap_[interfaceID] = filename;
+					    feMgr->macroMultiDimensionalOutputFileMap_[interfaceID] =
+					        filename;
 				    }
 			    }  // at this point output file pointer is valid or null
 

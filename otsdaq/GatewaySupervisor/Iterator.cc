@@ -1502,7 +1502,8 @@ void Iterator::startCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	        .params_[IterateTable::commandExecuteMacroParams_.MacroArgumentString_],
 	    iteratorStruct->commands_[iteratorStruct->commandIndex_]
 	        .params_[IterateTable::commandExecuteMacroParams_.MacroArgumentLabels_]);
-	iteratorStruct->macroArgsSummary_ = macroArgsSummary(inputArgs);  // for output file labels
+	iteratorStruct->macroArgsSummary_ =
+	    macroArgsSummary(inputArgs);  // for output file labels
 
 	__COUTV__(macroName);
 	__COUTV__(enableSavingOutput);
@@ -1676,10 +1677,12 @@ bool Iterator::checkCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				std::string label =
 				    macroName + " on " + target.UID_ + " iteration #" +
 				    std::to_string(
-				        iteratorStruct->commandIterations_[iteratorStruct->commandIndex_]);
+				        iteratorStruct
+				            ->commandIterations_[iteratorStruct->commandIndex_]);
 				if(iteratorStruct->macroArgsSummary_ != "")
 					label += " [" + iteratorStruct->macroArgsSummary_ + "]";
-				iteratorStruct->outputFiles_.push_back({"" /*Self*/, outputFile, label, ""});
+				iteratorStruct->outputFiles_.push_back(
+				    {"" /*Self*/, outputFile, label, ""});
 			}
 		}
 		catch(...)
@@ -3643,16 +3646,17 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				// compute this iteration's values and emit them in the remote macro's
 				//	declared input order, under the remote's current input names
 				const auto  values = macroLoopIteration(spec, i);
-				std::string inputStr, argsSummary;  // wire format / "arg = val, ..." for labels
+				std::string inputStr,
+				    argsSummary;  // wire format / "arg = val, ..." for labels
 				for(size_t k = 0; k < inputNames.size(); ++k)
 				{
 					inputStr += (k ? ";" : "") +
 					            StringMacros::encodeURIComponent(inputNames[k]) + "," +
 					            StringMacros::encodeURIComponent(
 					                values[inputToArgIndex[k]].second);
-					argsSummary += (k ? ", " : "") + feMacroArgBaseName(inputNames[k]) +
-					               " = " +
-					               macroArgValueForLabel(values[inputToArgIndex[k]].second);
+					argsSummary +=
+					    (k ? ", " : "") + feMacroArgBaseName(inputNames[k]) + " = " +
+					    macroArgValueForLabel(values[inputToArgIndex[k]].second);
 				}
 
 				// RunFrontendMacro;feClass;feUIDs;macroType;macroName;inputArgs;outputArgs;saveOutputs
@@ -3691,7 +3695,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 					size_t      fAfter = 0;
 					std::string argName;
 					while((argName = StringMacros::extractXmlField(
-					           response, "feMacroRunArgs_name", 0, fAfter, &fAfter)) != "")
+					           response, "feMacroRunArgs_name", 0, fAfter, &fAfter)) !=
+					      "")
 					{
 						fAfter += strlen("feMacroRunArgs_name");
 						std::string argValue = StringMacros::extractXmlField(
@@ -3699,8 +3704,9 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 						fAfter += strlen("feMacroRunArgs_value");
 						if(argName == "Filename" && argValue != "")
 						{
-							__COUT_INFO__ << "Remote macro '" << macroName << "' iteration "
-							              << i + 1 << " output file on '" << targetSubsystem
+							__COUT_INFO__ << "Remote macro '" << macroName
+							              << "' iteration " << i + 1
+							              << " output file on '" << targetSubsystem
 							              << "': " << argValue << __E__;
 							std::lock_guard<std::mutex> lock(run->mutex);
 							run->outputFiles.emplace_back(argValue, argsSummary);
@@ -3822,7 +3828,7 @@ bool Iterator::checkRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 		}
 		if(files.size())
 		{
-			auto&             command = iteratorStruct->commands_[iteratorStruct->commandIndex_];
+			auto& command = iteratorStruct->commands_[iteratorStruct->commandIndex_];
 			const std::string macroName =
 			    command.params_[IterateTable::commandExecuteMacroParams_.MacroName_];
 			std::string uids;
