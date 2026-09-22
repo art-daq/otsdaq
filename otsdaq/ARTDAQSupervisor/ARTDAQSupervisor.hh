@@ -145,7 +145,9 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 
 	unsigned int cachedMinReadyForEventGenerationStartIteration_ = 0;
 
-	std::string capturePyErr(std::string label = "");
+	/// returns the full traceback; summaryOut (optional) gets "ExcType: message" for
+	/// user-facing errors
+	std::string capturePyErr(std::string label = "", std::string* summaryOut = nullptr);
 	bool        checkPythonError(
 	           PyObject* result);  // Check if Python call failed (returns true on error)
 	std::string                        captureStderrAndStdout_(std::string label = "");

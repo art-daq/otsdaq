@@ -1747,15 +1747,46 @@ bool ots::ARTDAQSupervisor::checkPythonError(PyObject* result)
 }  //end checkPythonError()
 
 //==============================================================================
-std::string ots::ARTDAQSupervisor::capturePyErr(std::string label /* = "" */)
+/// capturePyErr
+///	Consumes the pending Python exception. Returns the full formatted traceback
+///	(for the supervisor log). If summaryOut is given it receives just
+///	"ExcType: message", trimmed, which is what belongs in an error shown to the
+///	operator; the traceback stays in the log.
+std::string ots::ARTDAQSupervisor::capturePyErr(std::string  label /* = "" */,
+                                                std::string* summaryOut /* = nullptr */)
 {
 	std::string err_msg = "Unknown Python Error";
 	PyObject *  pType, *pValue, *pTraceback;
 	PyErr_Fetch(&pType, &pValue, &pTraceback);
 	PyErr_NormalizeException(&pType, &pValue, &pTraceback);
 
+	if(summaryOut)
+		*summaryOut = err_msg;
+
 	if(pType != NULL)
 	{
+		if(summaryOut)
+		{
+			std::string summary = ((PyTypeObject*)pType)->tp_name;
+			if(pValue != NULL)
+			{
+				PyObjectGuard pStr(PyObject_Str(pValue));
+				const char*   valueCStr =
+                    pStr.get() ? PyUnicode_AsUTF8(pStr.get()) : nullptr;
+				if(valueCStr)
+				{
+					std::string value(valueCStr);
+					size_t      b = value.find_first_not_of(" \t\r\n");
+					size_t      e = value.find_last_not_of(" \t\r\n");
+					if(b != std::string::npos)
+						summary += ": " + value.substr(b, e - b + 1);
+				}
+				else
+					PyErr_Clear();
+			}
+			*summaryOut = summary;
+		}
+
 		// Format the full traceback like Python does
 		PyObjectGuard traceback_module(PyImport_ImportModule("traceback"));
 		if(traceback_module.get() != NULL)
@@ -2152,58 +2183,19 @@ try
 			if(daqinterface_state_ == "running" || daqinterface_state_ == "ready" ||
 			   daqinterface_state_ == "booted")
 			{
+				// Only the C-API call itself is inside this try: the result checks
+				//	below throw our own runtime_errors, which must not be caught here
+				//	(a second capturePyErr() would then just append "Unknown Python
+				//	Error" to a message that already explained the failure).
+				PyObject* resRaw = nullptr;
 				try
 				{
 					TLOG(TLVL_TRACE) << "Calling DAQInterface::check_proc_exceptions";
 					PyObjectGuard pName(PyUnicode_FromString("check_proc_exceptions"));
-					PyObjectGuard res(
-					    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName.get(), NULL));
-					std::string pollOutput =
-					    captureStderrAndStdout_("check_proc_exceptions");
+					resRaw =
+					    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName.get(), NULL);
 					TLOG(TLVL_TRACE)
 					    << "Done with DAQInterface::check_proc_exceptions call";
-
-					if(res.get() == NULL)
-					{
-						control->running = false;
-						std::string err  = capturePyErr("check_proc_exceptions");
-						__SS__ << "Error calling check_proc_exceptions function: " << err
-						       << "\n\n"
-						       << pollOutput << __E__;
-						__SUP_SS_THROW__;
-						break;
-					}
-
-					if(PyObject_IsTrue(res.get()) == 1)
-					{
-						consecutiveStatusFailures = 0;
-						__COUT_MULTI_LBL__(1, pollOutput, "check_proc_exceptions");
-					}
-					else
-					{
-						//False: at least one process did not answer or reported
-						//	"Error." DAQInterface has already logged which. Tolerate
-						//	a few consecutive misses, since the status proxy timeout
-						//	is short and a busy process can miss one poll.
-						++consecutiveStatusFailures;
-						__SUP_COUT_WARN__
-						    << "DAQInterface XML-RPC status poll reported a problem ("
-						    << consecutiveStatusFailures << " of "
-						    << RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES
-						    << " consecutive allowed):\n"
-						    << pollOutput << __E__;
-						if(consecutiveStatusFailures >=
-						   RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES)
-						{
-							control->running = false;
-							__SS__ << "artdaq process status could not be confirmed for "
-							       << consecutiveStatusFailures
-							       << " consecutive polls. Last DAQInterface output:\n"
-							       << pollOutput << __E__;
-							__SUP_SS_THROW__;
-							break;
-						}
-					}
 				}
 				catch(cet::exception& ex)
 				{
@@ -2213,7 +2205,6 @@ try
 					          "check_proc_exceptions function "
 					       << ex.explain_self() << ": " << err << __E__;
 					__SUP_SS_THROW__;
-					break;
 				}
 				catch(std::exception& ex)
 				{
@@ -2224,7 +2215,6 @@ try
 					       << ex.what() << "\n\n"
 					       << err << __E__;
 					__SUP_SS_THROW__;
-					break;
 				}
 				catch(...)
 				{
@@ -2234,7 +2224,62 @@ try
 					          "check_proc_exceptions function: "
 					       << err << __E__;
 					__SUP_SS_THROW__;
-					break;
+				}
+
+				PyObjectGuard res(resRaw);
+				std::string pollOutput = captureStderrAndStdout_("check_proc_exceptions");
+
+				if(res.get() == NULL)
+				{
+					//DAQInterface raised, e.g. a process repeatedly refused connection
+					//	or a process loss violated the boot-file requirements. The full
+					//	traceback goes to the supervisor log; the operator gets the
+					//	exception message plus DAQInterface's own diagnostic output.
+					control->running = false;
+					std::string summary;
+					std::string traceback =
+					    capturePyErr("check_proc_exceptions", &summary);
+					__SUP_COUT_ERR__
+					    << "check_proc_exceptions raised. DAQInterface output:\n"
+					    << pollOutput << "\nPython traceback:\n"
+					    << traceback << __E__;
+					__SS__
+					    << "DAQInterface reported a problem with the artdaq processes: "
+					    << summary << "\n\nDAQInterface output:\n"
+					    << pollOutput
+					    << "\n(Full Python traceback is in the ARTDAQSupervisor log.)"
+					    << __E__;
+					__SUP_SS_THROW__;
+				}
+
+				if(PyObject_IsTrue(res.get()) == 1)
+				{
+					consecutiveStatusFailures = 0;
+					__COUT_MULTI_LBL__(1, pollOutput, "check_proc_exceptions");
+				}
+				else
+				{
+					//False: at least one process did not answer or reported
+					//	"Error." DAQInterface has already logged which. Tolerate
+					//	a few consecutive misses, since the status proxy timeout
+					//	is short and a busy process can miss one poll.
+					++consecutiveStatusFailures;
+					__SUP_COUT_WARN__
+					    << "DAQInterface XML-RPC status poll reported a problem ("
+					    << consecutiveStatusFailures << " of "
+					    << RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES
+					    << " consecutive allowed):\n"
+					    << pollOutput << __E__;
+					if(consecutiveStatusFailures >=
+					   RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES)
+					{
+						control->running = false;
+						__SS__ << "artdaq process status could not be confirmed for "
+						       << consecutiveStatusFailures
+						       << " consecutive polls. Last DAQInterface output:\n"
+						       << pollOutput << __E__;
+						__SUP_SS_THROW__;
+					}
 				}
 
 				lk.unlock();
