@@ -3101,7 +3101,8 @@ Iterator::MacroLoopSpec Iterator::parseMacroLoopSpec(const std::string& inputArg
 				}
 				else if((init.size() &&
 				         (init.back() == 'f' || init.find('.') != std::string::npos)) ||
-				        (step.size() && (step.back() == 'f' || step.find('.') != std::string::npos)))
+				        (step.size() &&
+				         (step.back() == 'f' || step.find('.') != std::string::npos)))
 				{
 					arg.type  = MacroLoopSpec::Arg::DOUBLE;
 					arg.dInit = strtod(init.c_str(), 0);
@@ -3120,7 +3121,8 @@ Iterator::MacroLoopSpec Iterator::parseMacroLoopSpec(const std::string& inputArg
 	// total = product of dimension counts, guarding overflow
 	spec.totalIterations = 1;
 	for(unsigned long n : spec.dimIterations)
-		if(__builtin_mul_overflow(spec.totalIterations, (uint64_t)n, &spec.totalIterations))
+		if(__builtin_mul_overflow(
+		       spec.totalIterations, (uint64_t)n, &spec.totalIterations))
 		{
 			__SS__ << "Dimensional loop '" << inputArgs
 			       << "' has more iterations than can be counted (product overflows)."
@@ -3177,9 +3179,9 @@ std::vector<std::pair<std::string, std::string>> Iterator::macroLoopIteration(
 			std::string value =
 			    arg.type == MacroLoopSpec::Arg::LONG
 			        ? std::to_string(arg.lInit + arg.lStep * (long)counters[d])
-			        : arg.type == MacroLoopSpec::Arg::DOUBLE
-			              ? std::to_string(arg.dInit + arg.dStep * (double)counters[d])
-			              : arg.sVal;
+			    : arg.type == MacroLoopSpec::Arg::DOUBLE
+			        ? std::to_string(arg.dInit + arg.dStep * (double)counters[d])
+			        : arg.sVal;
 			argsIn.emplace_back(arg.name, value);
 		}
 	return argsIn;
@@ -3444,7 +3446,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	//	and ignores any "(Default/Note)" suffix, so match on the base name here too;
 	//	this keeps saved plans working when a macro's default/note text changes.
 	const MacroLoopSpec spec = parseMacroLoopSpec(inputArgs);
-	std::vector<size_t> inputToArgIndex;  // inputNames[k] takes spec.argNames[inputToArgIndex[k]]
+	std::vector<size_t>
+	    inputToArgIndex;  // inputNames[k] takes spec.argNames[inputToArgIndex[k]]
 	{
 		std::vector<bool> used(spec.argNames.size(), false);
 		for(const auto& inputName : inputNames)
@@ -3524,8 +3527,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				if(run->abort)
 				{
 					__COUT_INFO__ << "Remote macro '" << macroName
-					              << "' aborted before iteration " << i + 1 << " of " << total
-					              << __E__;
+					              << "' aborted before iteration " << i + 1 << " of "
+					              << total << __E__;
 					break;
 				}
 
@@ -3534,9 +3537,10 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				const auto  values = macroLoopIteration(spec, i);
 				std::string inputStr;
 				for(size_t k = 0; k < inputNames.size(); ++k)
-					inputStr += (k ? ";" : "") + StringMacros::encodeURIComponent(inputNames[k]) +
-					            "," +
-					            StringMacros::encodeURIComponent(values[inputToArgIndex[k]].second);
+					inputStr += (k ? ";" : "") +
+					            StringMacros::encodeURIComponent(inputNames[k]) + "," +
+					            StringMacros::encodeURIComponent(
+					                values[inputToArgIndex[k]].second);
 
 				// RunFrontendMacro;feClass;feUIDs;macroType;macroName;inputArgs;outputArgs;saveOutputs
 				std::string cmd = "RunFrontendMacro;*;" + uidCSV + ";" + macroType + ";" +
