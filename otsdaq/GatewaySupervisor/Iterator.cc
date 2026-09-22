@@ -3393,8 +3393,11 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 			}
 			else
 			{
-				// one RunFrontendMacro call carries a single ordered input list for
-				//	all target FEs, so every target must declare the same signature
+				// one RunFrontendMacro call carries a single ordered input list and a
+				//	single output list for all target FEs, so every target must declare
+				//	the same signature. Inputs match on base name (the remote ignores the
+				//	"(Default/Note)" suffix); outputs must match exactly, as the remote
+				//	compares output names verbatim (FEVInterfacesManager::runFEMacro).
 				const auto& otherInputs = macroIt->second.inputs;
 				bool        same        = otherInputs.size() == inputNames.size();
 				for(size_t k = 0; same && k < inputNames.size(); ++k)
@@ -3411,6 +3414,22 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 					       << StringMacros::vectorToString(inputNames)
 					       << "]. All targets of one remote macro command must share "
 					          "the same input signature."
+					       << __E__;
+					__SS_THROW__;
+				}
+				const auto& otherOutputs = macroIt->second.outputs;
+				if(otherOutputs != outputNames)
+				{
+					__SS__ << "FE Macro '" << macroName << "' on front-end '" << uid
+					       << "' of remote subsystem '" << targetSubsystem
+					       << "' declares outputs ["
+					       << StringMacros::vectorToString(otherOutputs)
+					       << "] which differ from front-end '"
+					       << command.targets_[0].UID_ << "' outputs ["
+					       << StringMacros::vectorToString(outputNames)
+					       << "]. All targets of one remote macro command must share "
+					          "the same output signature; use separate commands for "
+					          "front-ends with different signatures."
 					       << __E__;
 					__SS_THROW__;
 				}
