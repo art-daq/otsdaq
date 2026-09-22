@@ -34,7 +34,7 @@
 //bounded wait for the runner thread before tearing down Python
 #define DESTROY_RUNNER_STOP_TIMEOUT_SECONDS 5
 //XML-RPC status polls (1 s apart) that may fail before the run is ended
-#define RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES 3
+#define RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES 5
 
 using namespace ots;
 
