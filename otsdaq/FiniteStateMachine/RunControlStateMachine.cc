@@ -336,6 +336,18 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 
 	std::string command = SOAPUtilities::translate(message).getCommand();
 
+	// get subsystem-iteration index (outermost tier — synchronized across subsystems)
+	try
+	{
+		StringMacros::getNumber(
+		    SOAPUtilities::translate(message).getParameters().getValue("subsystemIterationIndex"),
+		    subsystemIterationIndex_);
+	}
+	catch(...)  // ignore errors and set subsystem-iteration index to 0 (backward compat with old Gateway)
+	{
+		__GEN_COUTT__ << "Defaulting subsystemIterationIndex_ to 0." << __E__;
+		subsystemIterationIndex_ = 0;
+	}
 	// get iteration index
 	try
 	{
@@ -395,7 +407,9 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		__GEN_COUT__ << "retransmission identified..." << __E__;
 
 		// attempt to stop an error if last command was same
-		if(lastIterationCommand_ == command && lastIterationIndex_ == iterationIndex_ &&
+		if(lastIterationCommand_ == command &&
+		   lastSubsystemIterationIndex_ == subsystemIterationIndex_ &&
+		   lastIterationIndex_ == iterationIndex_ &&
 		   lastSubIterationIndex_ == subIterationIndex_)
 		{
 			__GEN_COUT__
@@ -420,11 +434,12 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 			             << "' was lost - attempting to handle retransmission." << __E__;
 	}
 
-	lastIterationIndex_    = iterationIndex_;
-	lastSubIterationIndex_ = subIterationIndex_;
+	lastSubsystemIterationIndex_ = subsystemIterationIndex_;
+	lastIterationIndex_          = iterationIndex_;
+	lastSubIterationIndex_       = subIterationIndex_;
 
 	std::string currentState;
-	if(iterationIndex_ == 0 && subIterationIndex_ == 0)
+	if(subsystemIterationIndex_ == 0 && iterationIndex_ == 0 && subIterationIndex_ == 0)
 	{
 		// this is the first iteration attempt for this transition
 		theProgressBar_.reset(command, theStateMachine_.getStateMachineName());
@@ -437,8 +452,8 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 	{
 		currentState = theStateMachine_.getStateName(lastIterationState_);
 
-		__GEN_COUTS__(2) << "Iteration index " << iterationIndex_ << "."
-		                 << subIterationIndex_ << " for "
+		__GEN_COUTS__(2) << "Iteration index " << subsystemIterationIndex_ << ":"
+		                 << iterationIndex_ << "." << subIterationIndex_ << " for "
 		                 << theStateMachine_.getStateMachineName() << " from "
 		                 << currentState << " attempting to " << command << std::endl;
 	}
@@ -650,12 +665,13 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 			__GEN_COUT__ << "Now proceeding with Configure command" << __E__;
 		}
 
-		iterationWorkFlag_    = false;
-		subIterationWorkFlag_ = false;
-		if(iterationIndex_ || subIterationIndex_)
+		subsystemIterationWorkFlag_ = false;
+		iterationWorkFlag_          = false;
+		subIterationWorkFlag_       = false;
+		if(subsystemIterationIndex_ || iterationIndex_ || subIterationIndex_)
 		{
-			__GEN_COUTS__(2) << command << " iteration " << iterationIndex_ << "."
-			                 << subIterationIndex_ << __E__;
+			__GEN_COUTS__(2) << command << " subsystemIteration=" << subsystemIterationIndex_
+			             << " iteration=" << iterationIndex_ << "." << subIterationIndex_ << __E__;
 			toolbox::Event::Reference event(new toolbox::Event(command, this));
 
 			// call inheriting transition function based on last state and command
@@ -720,16 +736,21 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 			theStateMachine_.execTransition(command, message);
 		}
 
-		if(subIterationWorkFlag_)  // sub-iteration has priority over 'Working'
+		if(subIterationWorkFlag_)  // sub-iteration has highest priority
 		{
 			__GEN_COUTV__(subIterationWorkFlag_);
 			result =
 			    command + "SubIterate";  // indicate another sub-iteration back to Gateway
 		}
-		else if(iterationWorkFlag_)
+		else if(iterationWorkFlag_)  // iteration has next priority
 		{
 			__GEN_COUTVS__(2, iterationWorkFlag_);
 			result = command + "Iterate";  // indicate another iteration back to Gateway
+		}
+		else if(subsystemIterationWorkFlag_)  // subsystem-iteration is lowest priority (cross-subsystem sync)
+		{
+			__GEN_COUTVS__(2, subsystemIterationWorkFlag_);
+			result = command + "SubsystemIterate";  // indicate another subsystem-iteration back to Gateway
 		}
 	}
 	catch(const std::runtime_error& e)
@@ -790,7 +811,7 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 
 	RunControlStateMachine::theProgressBar_.step();
 
-	if(!iterationWorkFlag_ && !subIterationWorkFlag_)
+	if(!subsystemIterationWorkFlag_ && !iterationWorkFlag_ && !subIterationWorkFlag_)
 		theProgressBar_.complete();
 	else
 	{

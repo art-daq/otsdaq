@@ -141,15 +141,25 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	static const std::string START_TRANSITION_NAME;
 	static const std::string STOP_TRANSITION_NAME;
 
+	// Subsystem-iteration accessors (outermost tier — synchronized across subsystems)
+	unsigned int       getSubsystemIterationIndex(void) { return subsystemIterationIndex_; }
+	void               indicateSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = true; }
+	void               clearSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = false; }
+	bool               getSubsystemIterationWork(void) { return subsystemIterationWorkFlag_; }
+
+	// Iteration accessors (middle tier — synchronized within one subsystem)
 	unsigned int       getIterationIndex(void) { return iterationIndex_; }
 	unsigned int       getSubIterationIndex(void) { return subIterationIndex_; }
 	unsigned int       getMinReadyForEventGenerationStartIteration(void) { return minReadyForEventGenerationStartIteration_; }
 	void               indicateIterationWork(void) { iterationWorkFlag_ = true; }
 	void               clearIterationWork(void) { iterationWorkFlag_ = false; }
 	bool               getIterationWork(void) { return iterationWorkFlag_; }
+
+	// Sub-iteration accessors (innermost tier — internal to one application)
 	void               indicateSubIterationWork(void) { subIterationWorkFlag_ = true; }
 	void               clearSubIterationWork(void) { subIterationWorkFlag_ = false; }
 	bool               getSubIterationWork(void) { return subIterationWorkFlag_; }
+
 	const std::string& getLastCommand(void) { return lastIterationCommand_; }
 	const std::string& getLastAttemptedConfigureGroup(void)
 	{
@@ -164,15 +174,16 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	std::atomic<bool> asyncPauseExceptionReceived_{false};
 	std::atomic<bool> asyncStopExceptionReceived_{false};
 
+	unsigned int subsystemIterationIndex_ = 0;
 	unsigned int iterationIndex_ = 0, subIterationIndex_ = 0;
-	bool         iterationWorkFlag_, subIterationWorkFlag_;
+	bool         subsystemIterationWorkFlag_, iterationWorkFlag_, subIterationWorkFlag_;
 	unsigned int minReadyForEventGenerationStartIteration_ = 0;
 
 	toolbox::fsm::State lastIterationState_;
 	std::string         lastIterationCommand_;
 	std::string         lastAttemptedConfigureGroup_;
 	std::string         lastIterationResult_;
-	unsigned int        lastIterationIndex_, lastSubIterationIndex_;
+	unsigned int        lastSubsystemIterationIndex_, lastIterationIndex_, lastSubIterationIndex_;
 
 	std::map<toolbox::fsm::State,
 	         std::map<std::string,

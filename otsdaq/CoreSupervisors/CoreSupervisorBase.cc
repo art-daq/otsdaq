@@ -692,12 +692,14 @@ void CoreSupervisorBase::enteringError(toolbox::Event::Reference event)
 //==============================================================================
 void CoreSupervisorBase::preStateMachineExecutionLoop(void)
 {
+	RunControlStateMachine::clearSubsystemIterationWork();
 	RunControlStateMachine::clearIterationWork();
 	RunControlStateMachine::clearSubIterationWork();
 
 	stateMachinesIterationWorkCount_ = 0;
 
-	if(RunControlStateMachine::getIterationIndex() == 0 &&
+	if(RunControlStateMachine::getSubsystemIterationIndex() == 0 &&
+	   RunControlStateMachine::getIterationIndex() == 0 &&
 	   RunControlStateMachine::getSubIterationIndex() == 0)
 	{
 		// reset vector for iterations done on first iteration
@@ -709,7 +711,8 @@ void CoreSupervisorBase::preStateMachineExecutionLoop(void)
 			stateMachinesIterationDone_[i] = false;
 	}
 	else
-		__SUP_COUT__ << "Iteration " << RunControlStateMachine::getIterationIndex() << "."
+		__SUP_COUT__ << "SubsystemIteration " << RunControlStateMachine::getSubsystemIterationIndex()
+		             << " Iteration " << RunControlStateMachine::getIterationIndex() << "."
 		             << RunControlStateMachine::getSubIterationIndex() << "("
 		             << subIterationWorkStateMachineIndex_ << ")" << __E__;
 }
@@ -723,6 +726,8 @@ void CoreSupervisorBase::preStateMachineExecution(unsigned int i)
 		__SUP_SS_THROW__;
 	}
 
+	theStateMachineImplementation_[i]->VStateMachine::setSubsystemIterationIndex(
+	    RunControlStateMachine::getSubsystemIterationIndex());
 	theStateMachineImplementation_[i]->VStateMachine::setIterationIndex(
 	    RunControlStateMachine::getIterationIndex());
 	theStateMachineImplementation_[i]->VStateMachine::setSubIterationIndex(
@@ -731,6 +736,7 @@ void CoreSupervisorBase::preStateMachineExecution(unsigned int i)
 	    ->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
 	        RunControlStateMachine::getMinReadyForEventGenerationStartIteration());
 
+	theStateMachineImplementation_[i]->VStateMachine::clearSubsystemIterationWork();
 	theStateMachineImplementation_[i]->VStateMachine::clearIterationWork();
 	theStateMachineImplementation_[i]->VStateMachine::clearSubIterationWork();
 
@@ -750,7 +756,7 @@ void CoreSupervisorBase::postStateMachineExecution(unsigned int i)
 		__SUP_SS_THROW__;
 	}
 
-	// sub-iteration has priority
+	// sub-iteration has highest priority
 	if(theStateMachineImplementation_[i]->VStateMachine::getSubIterationWork())
 	{
 		subIterationWorkStateMachineIndex_ = i;
@@ -759,19 +765,31 @@ void CoreSupervisorBase::postStateMachineExecution(unsigned int i)
 		__SUP_COUT__ << "State machine " << i
 		             << " is flagged for another sub-iteration..." << __E__;
 	}
+	else if(theStateMachineImplementation_[i]->VStateMachine::getIterationWork())
+	{
+		// iteration — this app needs another iteration within this subsystem
+		stateMachinesIterationDone_[i] = false;
+		RunControlStateMachine::indicateIterationWork();  // mark not done at
+		                                                  // CoreSupervisorBase level
+		++stateMachinesIterationWorkCount_;  // increment still working count
+
+		__SUP_COUT__ << "State machine " << i
+		             << " is flagged for another iteration..." << __E__;
+	}
+	else if(theStateMachineImplementation_[i]->VStateMachine::getSubsystemIterationWork())
+	{
+		// subsystem-iteration — this app is done with inner iterations
+		// but needs another cross-subsystem sync barrier
+		stateMachinesIterationDone_[i] = true;  // done with inner iterations
+		RunControlStateMachine::indicateSubsystemIterationWork();
+
+		__SUP_COUT__ << "State machine " << i
+		             << " is flagged for another subsystem-iteration..." << __E__;
+	}
 	else
 	{
-		stateMachinesIterationDone_[i] =
-		    !theStateMachineImplementation_[i]->VStateMachine::getIterationWork();
-
-		if(!stateMachinesIterationDone_[i])
-		{
-			__SUP_COUT__ << "State machine " << i
-			             << " is flagged for another iteration..." << __E__;
-			RunControlStateMachine::indicateIterationWork();  // mark not done at
-			                                                  // CoreSupervisorBase level
-			++stateMachinesIterationWorkCount_;  // increment still working count
-		}
+		// fully done
+		stateMachinesIterationDone_[i] = true;
 	}
 }  // end postStateMachineExecution()
 
@@ -787,6 +805,10 @@ void CoreSupervisorBase::postStateMachineExecutionLoop(void)
 		    << stateMachinesIterationWorkCount_
 		    << " state machine implementation(s) flagged for another iteration..."
 		    << __E__;
+	else if(RunControlStateMachine::subsystemIterationWorkFlag_)
+		__SUP_COUT__ << "State machine implementation(s) flagged for another "
+		                "subsystem-iteration (cross-subsystem sync)..."
+		             << __E__;
 	else
 		__SUP_COUT__ << "Done configuration all state machine implementations..."
 		             << __E__;
@@ -797,7 +819,8 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 {
 	// activate the configuration tree (only the first iteration)
 
-	if(!(RunControlStateMachine::getIterationIndex() == 0 &&
+	if(!(RunControlStateMachine::getSubsystemIterationIndex() == 0 &&
+	     RunControlStateMachine::getIterationIndex() == 0 &&
 	     RunControlStateMachine::getSubIterationIndex() == 0))
 		return;
 
