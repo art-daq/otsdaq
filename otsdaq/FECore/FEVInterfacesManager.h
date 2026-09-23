@@ -49,6 +49,10 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	std::string getFEMacrosString(
 	    const std::string& supervisorName,
 	    const std::string& supervisorLid);  ///< used by MacroMaker
+	std::map<std::string, std::string> getFEMacroInputDefaults(
+	    const std::string& interfaceID,
+	    const std::string& feMacroName,
+	    const std::string& inputArgs);  ///< used by MacroMaker
 	void runFEMacro(
 	    const std::string&                         interfaceID,
 	    const FEVInterface::frontEndMacroStruct_t& feMacro,
@@ -87,7 +91,8 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	    const std::string& inputArgs);  ///< used by iterator calling (i.e. FESupervisor)
 	bool checkMacroMultiDimensional(
 	    const std::string& interfaceID,
-	    const std::string& macroName);  ///< used by iterator calling (i.e. FESupervisor)
+	    const std::string& macroName,
+	    std::string*       outputFile = nullptr);  ///< used by iterator calling (i.e. FESupervisor); on Done, outputFile receives the saved-output path ("" if none)
 
 	unsigned int getInterfaceUniversalAddressSize(
 	    const std::string& interfaceID);  ///< used by MacroMaker
@@ -118,6 +123,8 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	                                        ///< launches
 	    std::string /*status := Active, Done, Error: <message> */>
 	    macroMultiDimensionalStatusMap_;
+	std::map<std::string /*targetInterfaceID*/, std::string /*output file path*/>
+	    macroMultiDimensionalOutputFileMap_;  ///< set when saving outputs; guarded by macroMultiDimensionalDoneMutex_
 
   private:
 	std::map<std::string /*name*/, std::unique_ptr<FEVInterface> > theFEInterfaces_;

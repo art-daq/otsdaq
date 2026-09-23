@@ -26,6 +26,7 @@ class IterateTable : public TableBase
 	{
 		void                                                              addTarget() { targets_.push_back(CommandTarget()); }
 		std::string                                                       type_;
+		std::string                                                       targetSubsystem_;  // empty = self, else remote subsystem name
 		std::vector<CommandTarget>                                        targets_;
 		std::map<std::string /*param name*/, std::string /*param value*/> params_;
 	};
@@ -55,6 +56,8 @@ class IterateTable : public TableBase
 	static const std::string ITERATE_TABLE;
 	static const std::string PLAN_TABLE;
 	static const std::string TARGET_TABLE;
+	static const std::string MACRO_DIM_LOOP_TABLE;
+	static const std::string MACRO_DIM_LOOP_PARAM_TABLE;
 
 	static const std::map<std::string, std::string> commandToTableMap_;
 	static std::map<std::string, std::string>       createCommandToTableMap()
@@ -62,7 +65,7 @@ class IterateTable : public TableBase
 		std::map<std::string, std::string> m;
 		m[COMMAND_BEGIN_LABEL]            = "IterationCommandBeginLabelTable";
 		m[COMMAND_CHOOSE_FSM]             = "IterationCommandChooseFSMTable";
-		m[COMMAND_CONFIGURE_ACTIVE_GROUP] = "";  ///< no parameters
+		m[COMMAND_CONFIGURE_ACTIVE_GROUP] = "IterationCommandConfigureAliasTable";  ///< SystemAlias unused; carries SkipIfAlreadyConfigured
 		m[COMMAND_CONFIGURE_ALIAS]        = "IterationCommandConfigureAliasTable";
 		m[COMMAND_CONFIGURE_GROUP]        = "IterationCommandConfigureGroupTable";
 		m[COMMAND_ACTIVATE_ALIAS]         = "IterationCommandConfigureAliasTable";
@@ -89,18 +92,22 @@ class IterateTable : public TableBase
 	{
 		const std::string NameOfFSM_ = "NameOfStateMachine";  ///< by default ""
 	} commandChooseFSMParams_;
+	/// shared by all Configure commands: when true and the FSM is already Configured,
+	///	leave it as-is instead of Halt + re-Configure
 	static struct CommandConfigureActiveParams
 	{
-		// no parameters
+		const std::string SkipIfAlreadyConfigured_ = "SkipIfAlreadyConfigured";
 	} commandConfigureActiveParams_;
 	static struct CommandConfigureAliasParams
 	{
-		const std::string SystemAlias_ = "SystemAlias";
+		const std::string SystemAlias_             = "SystemAlias";
+		const std::string SkipIfAlreadyConfigured_ = "SkipIfAlreadyConfigured";
 	} commandConfigureAliasParams_;
 	static struct CommandConfigureGroupParams
 	{
-		const std::string GroupName_ = "GroupName";
-		const std::string GroupKey_  = "GroupKey";
+		const std::string GroupName_               = "GroupName";
+		const std::string GroupKey_                = "GroupKey";
+		const std::string SkipIfAlreadyConfigured_ = "SkipIfAlreadyConfigured";
 	} commandConfigureGroupParams_;
 	static struct CommandActivateAliasParams
 	{
@@ -114,15 +121,19 @@ class IterateTable : public TableBase
 	static struct CommandExecuteMacroParams  ///< treat FE and Macro the same
 	{
 		// targets
-		const std::string MacroName_          = "MacroName";
-		const std::string MacroParameterLink_ = "LinkToMacroDimensionalLoopTable";
-		const std::string EnableSavingOutput_ = "EnableSavingOutputsToFile";
-		const std::string OutputFilePath_     = "OutputFilePath";
-		const std::string OutputFileRadix_    = "OutputFileRadix";
+		const std::string MacroName_                 = "MacroName";
+		const std::string MacroParameterLink_        = "LinkToMacroDimensionalLoopTable";
+		const std::string MacroParameterLinkGroupID_ = "LinkToMacroDimensionalLoopGroupID";
+		const std::string EnableSavingOutput_        = "EnableSavingOutputsToFile";
+		const std::string OutputFilePath_            = "OutputFilePath";
+		const std::string OutputFileRadix_           = "OutputFileRadix";
 
-		const std::string MacroArgumentString_ = "MacroArgumentString";
+		/// runtime keys built by getPlanCommands() from the dimensional-loop tables
+		const std::string MacroArgumentString_ = "MacroArgumentString";  ///< "nIter,name:init:step,...;..."
+		const std::string MacroArgumentLabels_ = "MacroArgumentLabels";  ///< ";"-separated StepLabel per dimension
 
-		// macro parameters
+		/// GUI<->save wire key: "name:start:step:label,..." (pieces URI-encoded)
+		const std::string MacroArgs_ = "MacroArgs";
 	} commandExecuteMacroParams_;
 	static struct CommandModifyActiveParams
 	{
@@ -169,15 +180,19 @@ class IterateTable : public TableBase
 	/// for macro dimensional loop parameters
 	static struct MacroDimLoopTableColumns
 	{
+		const std::string GroupID_            = "DimensionalLoopGroupID";
 		const std::string Priority_           = "DimensionalLoopPriority";
 		const std::string NumberOfIterations_ = "NumberOfIterations";
+		const std::string StepLabel_          = "StepLabel";  ///< BEGIN_LABEL whose pass index steps this dimension; empty = innermost
 		const std::string ParamLink_          = "LinkToDimensionalLoopParameterTable";
+		const std::string ParamLinkGroupID_   = "LinkToDimensionalLoopParameterGroupID";
 	} macroDimLoopCols_;
 	static struct MacroParamTableColumns
 	{
-		const std::string Name_  = "ParameterName";
-		const std::string Value_ = "ParameterInitialValue";
-		const std::string Step_  = "ParameterStepSize";
+		const std::string GroupID_ = "ParameterGroupID";
+		const std::string Name_    = "ParameterName";
+		const std::string Value_   = "ParameterInitialValue";
+		const std::string Step_    = "ParameterStepSize";
 
 	} macroParamCols_;
 
@@ -197,10 +212,11 @@ class IterateTable : public TableBase
 
 	static struct PlanTableColumns
 	{
-		const std::string Status_      = TableViewColumnInfo::COL_NAME_STATUS;
-		const std::string GroupID_     = "IterationPlanGroupID";
-		const std::string CommandLink_ = "LinkToCommandUID";
-		const std::string CommandType_ = "CommandType";
+		const std::string Status_          = TableViewColumnInfo::COL_NAME_STATUS;
+		const std::string GroupID_         = "IterationPlanGroupID";
+		const std::string CommandLink_     = "LinkToCommandUID";
+		const std::string CommandType_     = "CommandType";
+		const std::string TargetSubsystem_ = "TargetSubsystem";
 	} planTableCols_;
 };
 }  // namespace ots

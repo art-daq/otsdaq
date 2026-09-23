@@ -27,6 +27,14 @@
 #include "otsdaq/TableCore/TableBase.h"
 
 #define OUT_ON_ERR_SIZE 2000  //tail size of output to include on error
+//bounded wait for the DAQInterface runner thread to exit during Halt
+#define HALT_RUNNER_STOP_TIMEOUT_SECONDS 5
+//bounded wait for the Python interpreter mutex during Halt
+#define HALT_PYTHON_MUTEX_TIMEOUT_SECONDS 5
+//bounded wait for the runner thread before tearing down Python
+#define DESTROY_RUNNER_STOP_TIMEOUT_SECONDS 5
+//XML-RPC status polls (1 s apart) that may fail before the run is ended
+#define RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES 5
 
 using namespace ots;
 
@@ -275,8 +283,16 @@ ARTDAQSupervisor::~ARTDAQSupervisor(void)
 	__SUP_COUT__ << "Destructor." << __E__;
 	destroy();
 
-	__SUP_COUT__ << "Calling Py_Finalize()" << __E__;
-	Py_Finalize();
+	if(runner_abandoned_)
+		__SUP_COUT_WARN__ << "Skipping Py_Finalize(): a DAQInterface runner thread may "
+		                     "still be inside a Python call. The interpreter is leaked "
+		                     "rather than finalized under a live C-API call."
+		                  << __E__;
+	else
+	{
+		__SUP_COUT__ << "Calling Py_Finalize()" << __E__;
+		Py_Finalize();
+	}
 
 	// CorePropertySupervisorBase would destroy, but since it was created here, attempt to destroy
 	if(CorePropertySupervisorBase::theTRACEController_)
@@ -294,10 +310,28 @@ void ARTDAQSupervisor::destroy(void)
 {
 	__SUP_COUT__ << "Destroying..." << __E__;
 
+	// Stop the runner before touching the interpreter. If it does not exit in
+	//	time it is blocked inside a Python call: everything below that enters
+	//	Python (recover, DECREF, thread cleanup, and Py_Finalize in the
+	//	destructor) is then skipped. The process is on its way out, so leaking the
+	//	interpreter is harmless; tearing it down under a live C-API call is not.
+	//	The same applies if an earlier transition (e.g. Halt) already abandoned a
+	//	runner: stop_runner_() recorded that in runner_abandoned_, and that thread
+	//	may still be inside Python even though it is no longer tracked here.
+	if(!stop_runner_(DESTROY_RUNNER_STOP_TIMEOUT_SECONDS) || runner_abandoned_)
+	{
+		__SUP_COUT_WARN__ << "A DAQInterface runner thread is (or was earlier) abandoned "
+		                     "while possibly inside a Python call; skipping DAQInterface "
+		                     "recover and Python cleanup. artdaq processes may need "
+		                     "manual cleanup."
+		                  << __E__;
+		return;
+	}
+
 	if(daqinterface_ptr_ != NULL)
 	{
 		__SUP_COUT__ << "Calling recover transition" << __E__;
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+		std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 
 		PyObjectGuard pName(PyUnicode_FromString("do_recover"));
 		PyObjectGuard res(
@@ -352,7 +386,7 @@ void ARTDAQSupervisor::init(void)
 
 	__SUP_COUT__ << "Initializing..." << __E__;
 	{
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+		std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 
 		// allSupervisorInfo_.init(getApplicationContext());
 		artdaq::configureMessageFacility("ARTDAQSupervisor");
@@ -527,7 +561,7 @@ void ARTDAQSupervisor::init(void)
 
 		// { //attempt to cleanup old artdaq processes DOES NOT WORK because artdaq interface knows it hasn't started
 		// 	__SUP_COUT__ << "Attempting artdaq stale cleanup..." << __E__;
-		// 	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+		// 	std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 		// 	getDAQState_();
 		// 	__SUP_COUT__ << "Status before cleanup: " << daqinterface_state_ << __E__;
 
@@ -560,20 +594,44 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 	loadArtdaqSystemVariables();
 
-	// activate the configuration tree (the first iteration)
-	if(RunControlStateMachine::getIterationIndex() == 0 &&
-	   RunControlStateMachine::getSubIterationIndex() == 0)
+	// Idle through FE timing-chain iterations (0-11) so that the artdaq
+	// release_all does not race with CFO event traffic (Phase 2a sends events,
+	// Phase 3e stops them, Phase 12 is the final SoftReset).
+	const unsigned int configureIteration   = RunControlStateMachine::getIterationIndex();
+	const unsigned int artdaqStartIteration = 12;  // after final SoftReset
+
+	if(configureIteration == 0 && RunControlStateMachine::getSubIterationIndex() == 0)
+	{
+		// Activate the configuration tree on the first iteration
+		CoreSupervisorBase::configureInit(
+		    getSupervisorProperty("SkipRedundantConfigureActivation", 1) ==
+		    1 /*attemptSkipIfGroupUnchanged*/);
+	}
+
+	if(configureIteration < artdaqStartIteration)
+	{
+		RunControlStateMachine::indicateIterationWork();
+	}
+	else if(configureIteration == artdaqStartIteration &&
+	        RunControlStateMachine::getSubIterationIndex() == 0)
 	{
 		thread_error_message_ = "";
 		thread_progress_bar_.resetProgressBar(0);
 		last_thread_progress_update_ = time(0);  // initialize timeout timer
 
-		CoreSupervisorBase::configureInit();
+		// Skip the table group reload when the same group+key is already active
+		// (safe: keys are immutable and configureInit() verifies no
+		// scratch/temporary versions or merge/override lists are in play);
+		// set supervisor property SkipRedundantConfigureActivation=0 to disable
+		CoreSupervisorBase::configureInit(
+		    getSupervisorProperty("SkipRedundantConfigureActivation", 1) ==
+		    1 /*attemptSkipIfGroupUnchanged*/);
 
 		// start configuring thread
 		std::thread(&ARTDAQSupervisor::configuringThread, this).detach();
 
-		__SUP_COUT__ << "Configuring thread started." << __E__;
+		__SUP_COUT__ << "Configuring thread started at iteration " << configureIteration
+		             << " (after FE timing chain complete)." << __E__;
 
 		RunControlStateMachine::
 		    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
@@ -799,7 +857,7 @@ try
 	// Block 1: State check — acquire and release daqinterface_pythonMutex_
 	// so the runner thread and halt transition can interleave between steps
 	{
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+		std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 		getDAQState_();
 		if(daqinterface_state_ != "stopped" && daqinterface_state_ != "")
 		{
@@ -822,7 +880,7 @@ try
 	set_thread_message_("Calling setdaqcomps");
 	__GEN_COUT__ << "Calling setdaqcomps" << __E__;
 	{
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+		std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 
 		__GEN_COUT__ << "Status before setdaqcomps: " << daqinterface_state_ << __E__;
 
@@ -875,7 +933,7 @@ try
 	__GEN_COUT_INFO__ << "Calling do_boot" << __E__;
 	std::string doBootOutput = "";
 	{
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+		std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 
 		__GEN_COUT__ << "Status before boot: " << daqinterface_state_ << __E__;
 
@@ -890,6 +948,8 @@ try
 
 		doBootOutput = captureStderrAndStdout_("do_boot");
 		__COUT_MULTI_LBL__(0, doBootOutput, "do_boot");
+		__GEN_COUT_INFO__ << "do_boot output captured (" << doBootOutput.size()
+		                  << " chars)" << __E__;
 
 		if(checkPythonError(resBoot1.get()))
 		{
@@ -955,11 +1015,39 @@ try
 		}
 
 		getDAQState_();
+		__GEN_COUT_INFO__ << "do_boot block complete, state=" << daqinterface_state_
+		                  << __E__;
 		if(daqinterface_state_ != "booted")
 		{
 			std::cout << "Do boot output on error: \n" << doBootOutput << __E__;
 			__GEN_SS__ << "DAQInterface boot transition failed! "
 			           << "Status after boot attempt: " << daqinterface_state_ << __E__;
+
+			// Read the critical error saved before recovery output flooded the buffer
+			{
+				//Note: older DAQInterface implementations do not define this attribute.
+				//	The failed lookup returns null AND leaves a Python exception pending,
+				//	which would corrupt the recovery calls made after this throw, so it
+				//	must be cleared here.
+				PyObject* pyCritErr =
+				    PyObject_GetAttrString(daqinterface_ptr_, "last_critical_error");
+				if(pyCritErr == nullptr)
+					PyErr_Clear();
+				else
+				{
+					if(PyUnicode_Check(pyCritErr))
+					{
+						//PyUnicode_AsUTF8 returns null (and sets an exception) on
+						//	conversion failure; never construct a std::string from that
+						const char* critErrCStr = PyUnicode_AsUTF8(pyCritErr);
+						if(critErrCStr == nullptr)
+							PyErr_Clear();
+						else if(critErrCStr[0] != '\0')
+							ss << "\n\nCritical error: " << critErrCStr << __E__;
+					}
+					Py_DECREF(pyCritErr);
+				}
+			}
 
 			if(doBootOutput.size() > OUT_ON_ERR_SIZE)  //last OUT_ON_ERR_SIZE chars only
 				ss << "... last " << OUT_ON_ERR_SIZE
@@ -978,9 +1066,10 @@ try
 	__GEN_COUT_INFO__ << "Calling do_config" << __E__;
 	std::string doConfigOutput = "";
 	{
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+		std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 
-		__GEN_COUT__ << "Status before config: " << daqinterface_state_ << __E__;
+		__GEN_COUT_INFO__ << "do_config python mutex acquired, state="
+		                  << daqinterface_state_ << __E__;
 
 		{  //do_config call
 			// RAII wrapper for Python objects to ensure cleanup even on exception
@@ -1083,20 +1172,31 @@ try
 	set_thread_message_("Halting");
 	__SUP_COUT__ << "Halting..." << __E__;
 
-	int tries = 0;
-	while(tries++ < 5)
-	{
-		std::unique_lock<std::recursive_mutex> lk(daqinterface_pythonMutex_,
-		                                          std::try_to_lock);
-		if(!lk.owns_lock())  //if lock not availabe, just report last status
-		{
-			__COUTS__(50) << "Do not have python lock for halt. tries=" << tries << __E__;
-			sleep(1);
-			continue;
-		}
-		__COUTS__(50) << "Have python lock!" << __E__;
+	// The runner thread continuously acquires the Python mutex for its status
+	// polls; stop it first so we can take the mutex without contention.
+	//	Bounded: the XML-RPC polls are themselves bounded, but the runner can still
+	//	be inside a Python call while holding the interpreter mutex, and a Halt
+	//	must not hang forever on it.
+	if(!stop_runner_(HALT_RUNNER_STOP_TIMEOUT_SECONDS))
+		__SUP_COUT_WARN__ << "DAQInterface runner thread did not stop within "
+		                  << HALT_RUNNER_STOP_TIMEOUT_SECONDS
+		                  << " seconds; proceeding with the Halt transition." << __E__;
 
-		// std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	{
+		//bounded acquisition, so a configure or heartbeat thread stuck inside Python
+		//	fails the Halt with a clear message instead of hanging it indefinitely
+		std::unique_lock<std::recursive_timed_mutex> lk(
+		    daqinterface_pythonMutex_,
+		    std::chrono::seconds(HALT_PYTHON_MUTEX_TIMEOUT_SECONDS));
+		if(!lk.owns_lock())
+		{
+			__SUP_SS__ << "Could not acquire the DAQInterface Python mutex within "
+			           << HALT_PYTHON_MUTEX_TIMEOUT_SECONDS
+			           << " seconds during the Halt transition. A configure or "
+			              "heartbeat thread appears to be stuck inside a Python call."
+			           << __E__;
+			__SUP_SS_THROW__;
+		}
 		getDAQState_();
 		__SUP_COUT__ << "Status before halt: " << daqinterface_state_ << __E__;
 
@@ -1144,16 +1244,7 @@ try
 
 		getDAQState_();
 		__SUP_COUT__ << "Status after halt: " << daqinterface_state_ << __E__;
-		break;
-	}  //end retry loop
-
-	if(tries >= 5)
-	{
-		__SUP_SS__ << "Failed to acquire python lock for halting after " << tries
-		           << " tries, giving up! Is it possible the configure thread is stuck?"
-		           << __E__;
-		__SUP_SS_THROW__;
-	}
+	}  // release daqinterface_pythonMutex_
 
 	__SUP_COUT__ << "Halted." << __E__;
 	set_thread_message_("Halted");
@@ -1248,7 +1339,7 @@ try
 {
 	set_thread_message_("Pausing");
 	__SUP_COUT__ << "Pausing..." << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 
 	getDAQState_();
 	__SUP_COUT__ << "Status before pause: " << daqinterface_state_ << __E__;
@@ -1291,7 +1382,7 @@ try
 {
 	set_thread_message_("Resuming");
 	__SUP_COUT__ << "Resuming..." << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 
 	getDAQState_();
 	__SUP_COUT__ << "Status before resume: " << daqinterface_state_ << __E__;
@@ -1467,7 +1558,7 @@ try
 	thread_progress_bar_.step();
 	stop_runner_();
 	{
-		std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+		std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 		getDAQState_();
 		__GEN_COUT__ << "Status before start: " << daqinterface_state_ << __E__;
 		auto runNumber = SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
@@ -1554,7 +1645,7 @@ try
 {
 	__SUP_COUT__ << "Stopping..." << __E__;
 	set_thread_message_("Stopping");
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 	getDAQState_();
 	__SUP_COUT__ << "Status before stop: " << daqinterface_state_ << __E__;
 	PyObjectGuard pName(PyUnicode_FromString("do_stop_running"));
@@ -1589,7 +1680,7 @@ catch(...)
 void ots::ARTDAQSupervisor::enteringError(toolbox::Event::Reference /*event*/)
 {
 	__SUP_COUT__ << "Entering error recovery state" << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 	getDAQState_();
 	__SUP_COUT__ << "Status before error: " << daqinterface_state_ << __E__;
 
@@ -1658,15 +1749,46 @@ bool ots::ARTDAQSupervisor::checkPythonError(PyObject* result)
 }  //end checkPythonError()
 
 //==============================================================================
-std::string ots::ARTDAQSupervisor::capturePyErr(std::string label /* = "" */)
+/// capturePyErr
+///	Consumes the pending Python exception. Returns the full formatted traceback
+///	(for the supervisor log). If summaryOut is given it receives just
+///	"ExcType: message", trimmed, which is what belongs in an error shown to the
+///	operator; the traceback stays in the log.
+std::string ots::ARTDAQSupervisor::capturePyErr(std::string  label /* = "" */,
+                                                std::string* summaryOut /* = nullptr */)
 {
 	std::string err_msg = "Unknown Python Error";
 	PyObject *  pType, *pValue, *pTraceback;
 	PyErr_Fetch(&pType, &pValue, &pTraceback);
 	PyErr_NormalizeException(&pType, &pValue, &pTraceback);
 
+	if(summaryOut)
+		*summaryOut = err_msg;
+
 	if(pType != NULL)
 	{
+		if(summaryOut)
+		{
+			std::string summary = ((PyTypeObject*)pType)->tp_name;
+			if(pValue != NULL)
+			{
+				PyObjectGuard pStr(PyObject_Str(pValue));
+				const char*   valueCStr =
+                    pStr.get() ? PyUnicode_AsUTF8(pStr.get()) : nullptr;
+				if(valueCStr)
+				{
+					std::string value(valueCStr);
+					size_t      b = value.find_first_not_of(" \t\r\n");
+					size_t      e = value.find_last_not_of(" \t\r\n");
+					if(b != std::string::npos)
+						summary += ": " + value.substr(b, e - b + 1);
+				}
+				else
+					PyErr_Clear();
+			}
+			*summaryOut = summary;
+		}
+
 		// Format the full traceback like Python does
 		PyObjectGuard traceback_module(PyImport_ImportModule("traceback"));
 		if(traceback_module.get() != NULL)
@@ -1750,7 +1872,7 @@ std::string ots::ARTDAQSupervisor::captureStderrAndStdout_(std::string label /* 
 void ots::ARTDAQSupervisor::getDAQState_()
 {
 	__SUP_COUTS__(50) << "Getting DAQInterface python lock" << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 	__SUP_COUTS__(50) << "Have DAQInterface python lock" << __E__;
 
 	if(daqinterface_ptr_ == NULL)
@@ -1824,7 +1946,7 @@ void ots::ARTDAQSupervisor::getDAQState_()
 std::string ots::ARTDAQSupervisor::getProcessInfo_(void)
 {
 	__SUP_COUTS__(50) << "Getting DAQInterface state lock" << __E__;
-	std::lock_guard<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+	std::lock_guard<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 	__SUP_COUTS__(50) << "Have DAQInterface state lock" << __E__;
 
 	if(daqinterface_ptr_ == nullptr)
@@ -1887,8 +2009,8 @@ ots::ARTDAQSupervisor::getAndParseProcessInfo_()
 	// auto                                                      info  = getProcessInfo_();
 	std::string info;
 
-	std::unique_lock<std::recursive_mutex> lk(daqinterface_pythonMutex_,
-	                                          std::try_to_lock);
+	std::unique_lock<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_,
+	                                                std::try_to_lock);
 	if(!lk.owns_lock())  //if lock not availabe, just report last status
 	{
 		__COUTS__(50) << "Do not have python lock." << __E__;
@@ -2023,16 +2145,34 @@ std::list<std::string> ots::ARTDAQSupervisor::tokenize_(std::string const& input
 }  // end tokenize_()
 
 //==============================================================================
-void ots::ARTDAQSupervisor::daqinterfaceRunner_()
+/// daqinterfaceRunner_
+///	Once a second, while artdaq is booted/ready/running, ask DAQInterface to poll
+///	every artdaq process over XML-RPC (check_proc_exceptions). The status proxy
+///	has a short timeout, so each poll is bounded; a dead process shows up as
+///	connection refused, and a process whose fragment generator threw reports the
+///	"Error" state. DAQInterface applies its own policy inside that call (drops
+///	the process, enforces the boot-file minimum-process requirements, raises if
+///	violated).
+///
+///	Note: check_proc_heartbeats (ssh + ps on every host, every second) is
+///	deliberately not used here: it is unbounded, opens an ssh session per host
+///	per poll, and sees strictly less than the XML-RPC status does.
+void ots::ARTDAQSupervisor::daqinterfaceRunner_(std::shared_ptr<RunnerControl> control)
 try
 {
+	//Note: control->exited is set by the thread wrapper in start_runner_() only
+	//	after this function AND its function-try-block catch handler have returned.
+	//	A guard local here would fire before the handler (locals are destroyed
+	//	before a function-try-block handler runs), letting stop_runner_() join
+	//	unbounded while the handler is still sending the error to the Gateway.
+
 	TLOG(TLVL_TRACE) << "Runner thread starting";
-	runner_running_ = true;
-	while(runner_running_)
+	unsigned int consecutiveStatusFailures = 0;
+	while(control->running)
 	{
 		if(daqinterface_ptr_ != NULL)
 		{
-			std::unique_lock<std::recursive_mutex> lk(daqinterface_pythonMutex_);
+			std::unique_lock<std::recursive_timed_mutex> lk(daqinterface_pythonMutex_);
 			getDAQState_();
 			std::string state_before = daqinterface_state_;
 
@@ -2043,66 +2183,118 @@ try
 			if(daqinterface_state_ == "running" || daqinterface_state_ == "ready" ||
 			   daqinterface_state_ == "booted")
 			{
+				// Only the C-API call itself is inside this try: the result checks
+				//	below throw our own runtime_errors, which must not be caught here
+				//	(a second capturePyErr() would then just append "Unknown Python
+				//	Error" to a message that already explained the failure).
+				PyObject* resRaw = nullptr;
 				try
 				{
-					TLOG(TLVL_TRACE) << "Calling DAQInterface::check_proc_heartbeats";
-					PyObjectGuard pName(PyUnicode_FromString("check_proc_heartbeats"));
-					PyObjectGuard res(
-					    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName.get(), NULL));
-					__COUT_MULTI_LBL__(1,
-					                   captureStderrAndStdout_("check_proc_heartbeats"),
-					                   "check_proc_heartbeats");
+					TLOG(TLVL_TRACE) << "Calling DAQInterface::check_proc_exceptions";
+					PyObjectGuard pName(PyUnicode_FromString("check_proc_exceptions"));
+					resRaw =
+					    PyObject_CallMethodObjArgs(daqinterface_ptr_, pName.get(), NULL);
 					TLOG(TLVL_TRACE)
-					    << "Done with DAQInterface::check_proc_heartbeats call";
-
-					if(res.get() == NULL)
-					{
-						runner_running_ = false;
-						std::string err = capturePyErr("check_proc_heartbeats");
-						__SS__ << "Error calling check_proc_heartbeats function: " << err
-						       << __E__;
-						__SUP_SS_THROW__;
-						break;
-					}
+					    << "Done with DAQInterface::check_proc_exceptions call";
 				}
 				catch(cet::exception& ex)
 				{
-					runner_running_ = false;
-					std::string err = capturePyErr("check_proc_heartbeats");
+					control->running = false;
+					std::string err  = capturePyErr("check_proc_exceptions");
 					__SS__ << "An cet::exception occurred while calling "
-					          "check_proc_heartbeats function "
+					          "check_proc_exceptions function "
 					       << ex.explain_self() << ": " << err << __E__;
 					__SUP_SS_THROW__;
-					break;
 				}
 				catch(std::exception& ex)
 				{
-					runner_running_ = false;
-					std::string err = capturePyErr("check_proc_heartbeats");
+					control->running = false;
+					std::string err  = capturePyErr("check_proc_exceptions");
 					__SS__ << "An std::exception occurred while calling "
-					          "check_proc_heartbeats function: "
+					          "check_proc_exceptions function: "
 					       << ex.what() << "\n\n"
 					       << err << __E__;
 					__SUP_SS_THROW__;
-					break;
 				}
 				catch(...)
 				{
-					runner_running_ = false;
-					std::string err = capturePyErr("check_proc_heartbeats");
+					control->running = false;
+					std::string err  = capturePyErr("check_proc_exceptions");
 					__SS__ << "An unknown Error occurred while calling "
-					          "check_proc_heartbeats function: "
+					          "check_proc_exceptions function: "
 					       << err << __E__;
 					__SUP_SS_THROW__;
-					break;
+				}
+
+				PyObjectGuard res(resRaw);
+				std::string pollOutput = captureStderrAndStdout_("check_proc_exceptions");
+
+				if(res.get() == NULL)
+				{
+					//DAQInterface raised, e.g. a process repeatedly refused connection
+					//	or a process loss violated the boot-file requirements. The full
+					//	traceback goes to the supervisor log; the operator gets the
+					//	exception message plus DAQInterface's own diagnostic output.
+					control->running = false;
+					std::string summary;
+					std::string traceback =
+					    capturePyErr("check_proc_exceptions", &summary);
+					//Note: DAQInterface's own diagnostics (print_log) go through the
+					//	swig_artdaq bridge into the message facility, so they are
+					//	already in the Console and supervisor log as Error entries
+					//	from "DAQInterface_partition_N"; pollOutput only holds plain
+					//	Python prints and is usually empty here.
+					__SUP_COUT_ERR__
+					    << "check_proc_exceptions raised."
+					    << (pollOutput.size() ? "\nCaptured Python stdout:\n" + pollOutput
+					                          : "")
+					    << "\nPython traceback:\n"
+					    << traceback << __E__;
+					__SS__
+					    << "DAQInterface reported a problem with the artdaq processes: "
+					    << summary << (pollOutput.size() ? "\n\n" + pollOutput : "")
+					    << "\n\nSee the preceding DAQInterface_partition_" << partition_
+					    << " error messages in the Console (or the ARTDAQSupervisor "
+					       "log) for the affected process and its logfile."
+					    << __E__;
+					__SUP_SS_THROW__;
+				}
+
+				if(PyObject_IsTrue(res.get()) == 1)
+				{
+					consecutiveStatusFailures = 0;
+					__COUT_MULTI_LBL__(1, pollOutput, "check_proc_exceptions");
+				}
+				else
+				{
+					//False: at least one process did not answer or reported
+					//	"Error." DAQInterface has already logged which. Tolerate
+					//	a few consecutive misses, since the status proxy timeout
+					//	is short and a busy process can miss one poll.
+					++consecutiveStatusFailures;
+					__SUP_COUT_WARN__
+					    << "DAQInterface XML-RPC status poll reported a problem ("
+					    << consecutiveStatusFailures << " of "
+					    << RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES
+					    << " consecutive allowed):\n"
+					    << pollOutput << __E__;
+					if(consecutiveStatusFailures >=
+					   RUNNER_MAX_CONSECUTIVE_STATUS_FAILURES)
+					{
+						control->running = false;
+						__SS__ << "artdaq process status could not be confirmed for "
+						       << consecutiveStatusFailures
+						       << " consecutive polls. Last DAQInterface output:\n"
+						       << pollOutput << __E__;
+						__SUP_SS_THROW__;
+					}
 				}
 
 				lk.unlock();
 				getDAQState_();
 				if(daqinterface_state_ != state_before)
 				{
-					runner_running_ = false;
-					lk.unlock();
+					control->running = false;
 					__SS__ << "DAQInterface state unexpectedly changed from "
 					       << state_before << " to " << daqinterface_state_
 					       << ". Check supervisor log file for more info!" << __E__;
@@ -2118,7 +2310,7 @@ try
 		}
 		usleep(1000000);
 	}
-	runner_running_ = false;
+	control->running = false;
 	TLOG(TLVL_TRACE) << "Runner thread complete";
 }  // end daqinterfaceRunner_()
 catch(...)
@@ -2156,22 +2348,73 @@ catch(...)
 }  // end daqinterfaceRunner_() catch
 
 //==============================================================================
-void ots::ARTDAQSupervisor::stop_runner_()
+/// stop_runner_
+///	Ask the DAQInterface runner thread to exit, and wait a bounded time for it.
+///
+///	The runner can be blocked inside a Python call (e.g. check_proc_heartbeats)
+///	while holding the interpreter mutex, so an unconditional join() here would
+///	hang the calling transition forever. If the thread has not exited within
+///	timeoutSeconds it is detached and abandoned instead: never destroy a joinable
+///	std::thread (that calls std::terminate), and never block a Halt indefinitely.
+///
+///	Returns true if the runner exited (or none was running), false if abandoned.
+bool ots::ARTDAQSupervisor::stop_runner_(unsigned int timeoutSeconds)
 {
-	runner_running_ = false;
-	if(runner_thread_ && runner_thread_->joinable())
+	if(!runner_control_)
+		return true;
+
+	//take ownership of this runner's block and thread, so nothing below can be
+	//	confused with a runner started later
+	std::shared_ptr<RunnerControl> control = std::move(runner_control_);
+	std::unique_ptr<std::thread>   thread  = std::move(runner_thread_);
+
+	control->running = false;
+
+	const auto deadline =
+	    std::chrono::steady_clock::now() + std::chrono::seconds(timeoutSeconds);
+	while(!control->exited && std::chrono::steady_clock::now() < deadline)
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+	if(!control->exited)
 	{
-		runner_thread_->join();
-		runner_thread_.reset(nullptr);
+		__SUP_COUT_WARN__ << "DAQInterface runner thread did not exit within "
+		                  << timeoutSeconds
+		                  << " seconds; it is likely blocked inside a Python call "
+		                     "holding the interpreter mutex. Abandoning the thread "
+		                     "rather than hanging this transition indefinitely."
+		                  << __E__;
+		if(thread && thread->joinable())
+			thread->detach();  //never destroy a joinable std::thread
+		//remember this for destroy()/~ARTDAQSupervisor(): the abandoned runner may
+		//	still be inside Python, so the interpreter must not be torn down
+		runner_abandoned_ = true;
+		return false;
 	}
+
+	if(thread && thread->joinable())
+		thread->join();  //already exited, so this returns promptly
+	return true;
 }  // end stop_runner_()
 
 //==============================================================================
 void ots::ARTDAQSupervisor::start_runner_()
 {
 	stop_runner_();
-	runner_thread_ =
-	    std::make_unique<std::thread>(&ots::ARTDAQSupervisor::daqinterfaceRunner_, this);
+
+	//a fresh control block per runner: an abandoned runner keeps its own and can
+	//	neither be restarted by this call nor report exit on behalf of this one
+	runner_control_ = std::make_shared<RunnerControl>();
+	runner_thread_  = std::make_unique<std::thread>([this, control = runner_control_]() {
+        //set exited only after daqinterfaceRunner_() has fully returned, which
+        //	includes its function-try-block catch handler (error logging and the
+        //	SOAP send to the Gateway). stop_runner_() may then join promptly.
+        struct RunnerExitFlag
+        {
+            std::atomic<bool>& flag;
+            ~RunnerExitFlag() { flag = true; }
+        } runnerExitFlag{control->exited};
+        daqinterfaceRunner_(control);
+    });
 }  // end start_runner_()
 
 //==============================================================================

@@ -544,11 +544,12 @@ try
 		// LORE__SUP_COUTV__(targetInterfaceID);
 		// LORE__SUP_COUTV__(macroName);
 
-		bool done = false;
+		bool        done = false;
+		std::string outputFile;  // saved-output file path, filled on Done when saving
 		try
 		{
-			done = theFEInterfacesManager_->checkMacroMultiDimensional(targetInterfaceID,
-			                                                           macroName);
+			done = theFEInterfacesManager_->checkMacroMultiDimensional(
+			    targetInterfaceID, macroName, &outputFile);
 		}
 		catch(std::runtime_error& e)
 		{
@@ -587,6 +588,7 @@ try
 		    SOAPUtilities::makeSOAPMessageReference(type + "Done");
 		SOAPParameters txParameters;
 		txParameters.addParameter("Done", done ? "1" : "0");
+		txParameters.addParameter("OutputFile", outputFile);  // "" when not saving
 		SOAPUtilities::addParameters(replyMessage, txParameters);
 
 		// LORE__SUP_COUT__ << "Sending FE macro result: " << SOAPUtilities::translate(replyMessage) << __E__;
@@ -663,6 +665,7 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 	//	UniversalWrite
 	//	UniversalRead
 	//	GetInterfaceMacros
+	//	GetInterfaceMacroInputDefaults
 	//	RunInterfaceMacro
 	//	RunMacroMakerMacro
 
@@ -952,6 +955,67 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 				retParameters.addParameter("FEMacros", "");
 			}
 
+			return SOAPUtilities::makeSOAPMessageReference(
+			    supervisorClassNoNamespace_ + "Response", retParameters);
+		}
+		else if(request == "GetInterfaceMacroInputDefaults")
+		{
+			if(!theFEInterfacesManager_)
+			{
+				__SUP_SS__ << "Missing FE Interface Manager! Are you configured?"
+				           << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			SOAPParameters requestParameters;
+			requestParameters.addParameter("InterfaceID");
+			requestParameters.addParameter("feMacroName");
+			requestParameters.addParameter("inputArgs");
+			requestParameters.addParameter("userPermissions");
+			SOAPUtilities::receive(message, requestParameters);
+
+			const std::string interfaceID = requestParameters.getValue("InterfaceID");
+			const std::string feMacroName = requestParameters.getValue("feMacroName");
+			const std::string inputArgs   = requestParameters.getValue("inputArgs");
+			const std::string userPermissions =
+			    requestParameters.getValue("userPermissions");
+
+			FEVInterface* fe      = theFEInterfacesManager_->getFEInterfaceP(interfaceID);
+			auto          macroIt = fe->getMapOfFEMacroFunctions().find(feMacroName);
+			if(macroIt == fe->getMapOfFEMacroFunctions().end())
+			{
+				__SUP_SS__ << "FE Macro '" << feMacroName << "' of interfaceID '"
+				           << interfaceID << "' was not found!" << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			std::map<std::string, WebUsers::permissionLevel_t> userPermissionLevelsMap;
+			CorePropertySupervisorBase::extractPermissionsMapFromString(
+			    userPermissions, userPermissionLevelsMap);
+			std::map<std::string, WebUsers::permissionLevel_t>
+			    requiredPermissionLevelsMap;
+			CorePropertySupervisorBase::extractPermissionsMapFromString(
+			    macroIt->second.requiredUserPermissions_, requiredPermissionLevelsMap);
+			if(!CorePropertySupervisorBase::doPermissionsGrantAccess(
+			       userPermissionLevelsMap, requiredPermissionLevelsMap))
+			{
+				__SUP_SS__ << "Invalid user permission for FE Macro '" << feMacroName
+				           << "' of interfaceID '" << interfaceID << "'." << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			const auto defaults = theFEInterfacesManager_->getFEMacroInputDefaults(
+			    interfaceID, feMacroName, inputArgs);
+			std::string encodedDefaults;
+			for(const auto& defaultValue : defaults)
+			{
+				if(!encodedDefaults.empty())
+					encodedDefaults += ";";
+				encodedDefaults += StringMacros::encodeURIComponent(defaultValue.first) +
+				                   "," +
+				                   StringMacros::encodeURIComponent(defaultValue.second);
+			}
+			retParameters.addParameter("InputDefaults", encodedDefaults);
 			return SOAPUtilities::makeSOAPMessageReference(
 			    supervisorClassNoNamespace_ + "Response", retParameters);
 		}
