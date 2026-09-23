@@ -1373,13 +1373,15 @@ launchOTSMacromaker() {
 			#check if exit requested via the two quit files (to avoid endless relaunch looping)
 			OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
 			OTSDAQ_STARTOTS_LOCAL_QUIT="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE})"
-			if [[ "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
+			if [[ "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
 				out "Exit of (stale) ots... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 				killprocs
 				exit
-			elif [[ "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+			elif [[ "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
 				warning "Exiting ots Macro Maker launch verification loop on EXIT_LOOP sentinel... Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 				exit
+			elif [[ "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" ]]; then
+				out "Ignoring global quit '${OTSDAQ_STARTOTS_QUIT}' in Macro Maker mode (only local quit applies)"
 			fi
 
 			warning "Could not verify successful ots Macro Maker mode context launch (check log for details)..."
@@ -3565,6 +3567,34 @@ launchOTSLogFind() {
 		fi
 	}
 
+	_LOGFIND_CAT_COL=18
+	_LOGFIND_AGE_COL=14
+	_LOGFIND_ORANGE=$(printf '\033[0;33m')
+	_logfind_fmt() {
+		local cat="$1" age="$2" cmd="$3"
+		if (( ${#cat} > _LOGFIND_CAT_COL )); then
+			cat="${cat:0:$((_LOGFIND_CAT_COL-2))}.."
+		fi
+		local cat_pad=""
+		if (( ${#cat} < _LOGFIND_CAT_COL )); then
+			cat_pad=$(printf '%*s' $(( _LOGFIND_CAT_COL - ${#cat} )) '')
+		fi
+		local age_display=""
+		local age_color=""
+		if [ -n "$age" ]; then
+			age_display="(${age})"
+			local _lf_age_re_hour='^[0-9][0-9]:[0-9][0-9] ago$'
+			if [[ "$age" =~ $_lf_age_re_hour ]]; then
+				age_color="${Red}"
+			fi
+		fi
+		local age_pad=""
+		if (( ${#age_display} < _LOGFIND_AGE_COL )); then
+			age_pad=$(printf '%*s' $(( _LOGFIND_AGE_COL - ${#age_display} )) '')
+		fi
+		out "    ${Bold}${cat}${RstClr}${cat_pad} ${age_color}${age_display}${RstClr}${age_pad} --> ${cmd}"
+	}
+
 	#-- helper: check if a hostname refers to the local machine --
 	#  Matches THIS_HOST exactly, THIS_HOST.domain, localhost,
 	#  or THIS_HOST with -data/-ipmi suffix (private network aliases for same machine)
@@ -3871,8 +3901,16 @@ launchOTSLogFind() {
 				fi
 
 				if [ -n "$_lf_path" ]; then
-					# extract age if present (text in parentheses after the path)
-					if [[ "$_lf_path" == *"("*"ago)"* ]]; then
+					# extract age: check pre-arrow text first (new format),
+					# then fall back to post-path text (old format)
+					# strip trailing whitespace from parsed category
+					_lf_parsed_cat="${_lf_parsed_cat%"${_lf_parsed_cat##*[![:space:]]}"}"
+					local _lf_age_re='^(.+)[[:space:]]+\(([^)]+ago)\)$'
+					if [[ "$_lf_parsed_cat" =~ $_lf_age_re ]]; then
+						_lf_age="(${BASH_REMATCH[2]})"
+						_lf_parsed_cat="${BASH_REMATCH[1]}"
+						_lf_parsed_cat="${_lf_parsed_cat%"${_lf_parsed_cat##*[![:space:]]}"}"
+					elif [[ "$_lf_path" == *"("*"ago)"* ]]; then
 						_lf_age="${_lf_path##*(}"
 						_lf_age="${_lf_age%%)*}"
 						_lf_age="(${_lf_age})"
@@ -3943,13 +3981,13 @@ launchOTSLogFind() {
 		out "${Bold}${Cyan}Log files written to (${_logfind_scope}):${RstClr}"
 		out "  ${IBlack}(none found in the last year)${RstClr}"
 	else
-		out "${Bold}${Cyan}Log files recently written to, newest for each type at bottom (${_logfind_scope}):${RstClr}"
+		out "${Bold}${Cyan}Log files recently written to, newest for each type at bottom (${_logfind_scope}):${RstClr} ${Red}red < 1 hour${RstClr}"
 
 		# local results -- categorize by parent directory or filename pattern
 		#   Files in subdirectories of $USER_DATA/Logs use the subdirectory name as category.
 		#   Files directly in the Logs root use filename-pattern matching.
 		if [ -n "$_logfind_local_files" ]; then
-			out "  [${THIS_HOST}] (local, last ${_logfind_local_label}):"
+			out "  [${THIS_HOST}] (${Bold}${Green}local${RstClr}, last ${_logfind_local_label}):"
 			_lf_logs_root="${USER_DATA}/Logs"
 			while IFS= read -r _lf_file; do
 				_lf_basename=$(basename "$_lf_file")
@@ -4021,18 +4059,18 @@ launchOTSLogFind() {
 				fi
 
 				_lf_age=$(_logfind_file_age "$_lf_file")
-				out "    ${Bold}${_lf_category}${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+				_logfind_fmt "$_lf_category" "$_lf_age" "less ${_lf_file}"
 			done <<< "$_logfind_local_files"
 		fi
 
 		# action handler results (from ots_dir/tmp/)
 		if [ -n "$_logfind_action_files" ]; then
 			if [ -z "$_logfind_local_files" ]; then
-				out "  [${THIS_HOST}] (local, last ${_logfind_action_label}):"
+				out "  [${THIS_HOST}] (${Bold}${Green}local${RstClr}, last ${_logfind_action_label}):"
 			fi
 			while IFS= read -r _lf_file; do
 				_lf_age=$(_logfind_file_age "$_lf_file")
-				out "    ${Bold}ots Action Handler${RstClr} --> less -R ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+				_logfind_fmt "ots Action Handler" "$_lf_age" "less -R ${_lf_file}"
 			done <<< "$_logfind_action_files"
 		fi
 
@@ -4057,7 +4095,7 @@ launchOTSLogFind() {
 				else
 					_lf_category="ARTDAQ config"
 				fi
-				out "    ${Bold}${_lf_category}${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+				_logfind_fmt "$_lf_category" "$_lf_age" "less ${_lf_file}"
 			done <<< "$_logfind_artdaq_files"
 		fi
 
@@ -4076,7 +4114,7 @@ launchOTSLogFind() {
 				else
 					_lf_category="run${_lf_run_number} ${_lf_basename}"
 				fi
-				out "    ${Bold}${_lf_category}${RstClr} --> less ${_lf_file}  ${IBlack}(${_lf_age})${RstClr}"
+				_logfind_fmt "$_lf_category" "$_lf_age" "less ${_lf_file}"
 			done <<< "$_logfind_runrecords_files"
 		fi
 
@@ -4085,7 +4123,7 @@ launchOTSLogFind() {
 		# pattern-based extraction rather than prefix-stripping.
 		for _lf_host in "${_logfind_remote_hosts[@]}"; do
 			if [ -n "${_logfind_remote_results[$_lf_host]+x}" ]; then
-				out "  [${_lf_host}] (remote, last ${_logfind_remote_labels[$_lf_host]}):"
+				out "  [${_lf_host}] (${Bold}${_LOGFIND_ORANGE}remote${RstClr}, last ${_logfind_remote_labels[$_lf_host]}):"
 				while IFS=$'\t' read -r _lf_category _lf_file _lf_age; do
 
 					_lf_basename=$(basename "${_lf_file#*:}")
@@ -4103,9 +4141,11 @@ launchOTSLogFind() {
 						_lf_display_path="vless_ots.sh ${_lf_host}:${_lf_file}"
 					fi
 					if [ -n "$_lf_age" ]; then
-						out "    ${Bold}${_lf_category}${RstClr} --> ${_lf_display_path}  ${IBlack}${_lf_age}${RstClr}"
+						_lf_age_stripped="${_lf_age#(}"
+						_lf_age_stripped="${_lf_age_stripped%)}"
+						_logfind_fmt "$_lf_category" "$_lf_age_stripped" "${_lf_display_path}"
 					else
-						out "    ${Bold}${_lf_category}${RstClr} --> ${_lf_display_path}"
+						_logfind_fmt "$_lf_category" "" "${_lf_display_path}"
 					fi
 				done <<< "${_logfind_remote_results[$_lf_host]}"
 			fi
@@ -4121,7 +4161,7 @@ launchOTSLogFind() {
 	unset _lf_host _lf_files _lf_file _lf_ssh_output _lf_ssh_rc _lf_line _lf_rest _lf_path
 	unset _lf_remote_files _lf_remote_label _ll_window _ll_label _ll_mmin _ll_files
 	unset _lf_ssh_cmd _lf_alt_host _lf_ssh_host_used _lf_clean _logfind_scope
-	unset _lf_basename _lf_category _lf_symlink_name _lf_age _lf_dir _lf_reldir _lf_logs_root
+	unset _lf_basename _lf_category _lf_symlink_name _lf_age _lf_age_stripped _lf_dir _lf_reldir _lf_logs_root
 	unset _lf_orig_pids _lf_alt_pids _lf_alt_hostmap _lf_tmpdir _lf_safe_host _lf_rc_orig _lf_rc_alt _lf_entry _lf_parsed_cat
 
 	unset -f _logfind_file_age
@@ -4361,10 +4401,17 @@ launchOTSLogFindARTDAQ() {
 					_lf_remote_cat="${_lf_remote_cat##* |}"
 				fi
 				_lf_remote_cat="${_lf_remote_cat#"${_lf_remote_cat%%[![:space:]]*}"}" # trim leading whitespace/tabs
-				# Extract path and age: everything after "less "
+				# Extract path and age
 				_lf_path="${_lf_clean##*less }"
 				_lf_remote_age=""
-				if [[ "$_lf_path" == *"("*"ago)"* ]]; then
+				# age may be in pre-arrow text (new format) or post-path text (old format)
+				_lf_remote_cat="${_lf_remote_cat%"${_lf_remote_cat##*[![:space:]]}"}"
+				local _lf_age_re='^(.+)[[:space:]]+\(([^)]+ago)\)$'
+				if [[ "$_lf_remote_cat" =~ $_lf_age_re ]]; then
+					_lf_remote_age="(${BASH_REMATCH[2]})"
+					_lf_remote_cat="${BASH_REMATCH[1]}"
+					_lf_remote_cat="${_lf_remote_cat%"${_lf_remote_cat##*[![:space:]]}"}"
+				elif [[ "$_lf_path" == *"("*"ago)"* ]]; then
 					_lf_remote_age="${_lf_path##*(}"
 					_lf_remote_age="(${_lf_remote_age%%)*})"
 				fi
@@ -4381,16 +4428,18 @@ launchOTSLogFindARTDAQ() {
 		done <<< "$_lf_ssh_output"
 
 		if [ -n "$_lf_remote_entries" ]; then
-			out "  [${_artdaq_host}] (ARTDAQ host, last ${_lf_remote_label}):"
+			out "  [${_artdaq_host}] (${Bold}${_LOGFIND_ORANGE}ARTDAQ host${RstClr}, last ${_lf_remote_label}):"
 			while IFS=$'\t' read -r _lf_category _lf_file _lf_age; do
 				_lf_basename=$(basename "$_lf_file")
 
 				if [[ "$_lf_basename" == "otsdaq_is_alive"* ]]; then continue; fi
 
 				if [ -n "$_lf_age" ]; then
-					out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_artdaq_host}:${_lf_file}  ${IBlack}${_lf_age}${RstClr}"
+					_lf_age_stripped="${_lf_age#(}"
+					_lf_age_stripped="${_lf_age_stripped%)}"
+					_logfind_fmt "$_lf_category" "$_lf_age_stripped" "vless_ots.sh ${_artdaq_host}:${_lf_file}"
 				else
-					out "    ${Bold}${_lf_category}${RstClr} --> vless_ots.sh ${_artdaq_host}:${_lf_file}"
+					_logfind_fmt "$_lf_category" "" "vless_ots.sh ${_artdaq_host}:${_lf_file}"
 				fi
 			done <<< "$_lf_remote_entries"
 		else
@@ -4401,7 +4450,7 @@ launchOTSLogFindARTDAQ() {
 	unset _artdaq_ranks_file _artdaq_seen_hosts _artdaq_hosts _artdaq_host _artdaq_host_stripped _artdaq_line
 	unset _lf_ssh_cmd _lf_ssh_output _lf_ssh_rc _lf_ssh_host_used _lf_alt_host
 	unset _lf_remote_entries _lf_remote_label _lf_remote_cat _lf_remote_age _lf_line _lf_clean _lf_path
-	unset _lf_file _lf_basename _lf_category _lf_age
+	unset _lf_file _lf_basename _lf_category _lf_age _lf_age_stripped
 
 	# Print the context log examples last (deferred from launchOTSLogFind)
 	_logfind_print_context_examples
@@ -5302,14 +5351,18 @@ otsActionHandler() {
 				otsdaq_flatten_system_aliases 0 &
 			fi
 
-		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
+		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "EXIT_LOOP" || \
+				( "$OTSDAQ_STARTOTS_QUIT" == "EXIT_LOOP" && $ISMACROMAKER == 0 ) || \
+				"$OTSDAQ_STARTOTS_LOCAL_QUIT" == "EXIT_LOOP ${THIS_HOST}" ]]; then
 
 			#only exit action loop
 			out "self-pid=${BASHPID}: Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 
 			exit
 
-		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "KILL_ALL" || "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" || "$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
+		elif [[ "$OTSDAQ_STARTOTS_ACTION" == "KILL_ALL" || \
+				( "$OTSDAQ_STARTOTS_QUIT" == "KILL_ALL" && $ISMACROMAKER == 0 ) || \
+				"$OTSDAQ_STARTOTS_LOCAL_QUIT" == "KILL_ALL ${THIS_HOST}" ]]; then
 
 			#kill all and exit action loop
 			out "self-pid=${BASHPID}: Exit of (stale) ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"

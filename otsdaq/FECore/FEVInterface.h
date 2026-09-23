@@ -1,6 +1,8 @@
 #ifndef _ots_FEVInterface_h_
 #define _ots_FEVInterface_h_
 
+#include <functional>
+
 #define TRACEMF_USE_VERBATIM 1  // for trace longer path filenames
 #include "artdaq/DAQdata/Globals.hh"
 
@@ -205,10 +207,26 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	{
 		return mapOfFEMacroFunctions_;
 	}
+	/// Return target-specific, read-only defaults for a registered FE macro.
+	/// The MacroMaker UI may request these values after a single FE and macro are
+	/// selected. Implementations must not write hardware or configuration here.
+	virtual std::map<std::string, std::string> getFEMacroInputDefaults(
+	    const std::string& /*feMacroName*/,
+	    const std::map<std::string, std::string>& /*currentInputValues*/) const
+	{
+		return {};
+	}
 	void 								runSelfFrontEndMacro		(
 		const std::string&                                   	feMacroName,
 		const std::vector<FEVInterface::frontEndMacroArg_t>& 	inputArgs,
 		std::vector<FEVInterface::frontEndMacroArg_t>&       	outputArgs);
+    /// Run a nested macro and forward its progress on the same calling thread.
+    void runSelfFrontEndMacro(
+        const std::string& feMacroName,
+        const std::vector<frontEndMacroArg_t>& inputArgs,
+        std::vector<frontEndMacroArg_t>& outputArgs,
+        const std::function<void(unsigned int)>& onProgress);
+
 	/// end FE Macros
 	/////////
 	///

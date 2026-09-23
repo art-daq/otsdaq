@@ -13,6 +13,27 @@
 
 using namespace ots;
 
+namespace
+{
+// A scoped, thread-local route supports nested calls and concurrent independent
+// DTC requests without shared callback state or a polling/worker thread.
+struct FEMacroProgressForwarder
+{
+	const FEVInterface*                           source;
+	const std::function<void(unsigned int)>&      callback;
+	FEMacroProgressForwarder*                     previous;
+	static thread_local FEMacroProgressForwarder* active;
+	FEMacroProgressForwarder(const FEVInterface*                      source_,
+	                         const std::function<void(unsigned int)>& callback_)
+	    : source(source_), callback(callback_), previous(active)
+	{
+		active = this;
+	}
+	~FEMacroProgressForwarder() { active = previous; }
+};
+thread_local FEMacroProgressForwarder* FEMacroProgressForwarder::active = nullptr;
+}  // namespace
+
 const std::string FEVInterface::UNKNOWN_TYPE = "UNKNOWN";
 const std::string FEVInterface::DEFAULT =
     TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT;
@@ -519,7 +540,25 @@ try
 				std::string  readValInst;
 				std::string& readVal = readValInst;
 				readVal.resize(universalDataSize_);  // size to data in advance
-				channel->doRead(readVal);
+				try
+				{
+					channel->doRead(readVal);
+				}
+				catch(const std::exception& e)
+				{
+					__FE_COUT_WARN__ << "DCS slow controls read failed for channel '"
+					                 << channel->fullChannelName << "': " << e.what()
+					                 << " -- skipping this sample." << __E__;
+					continue;
+				}
+				catch(...)
+				{
+					__FE_COUT_WARN__ << "DCS slow controls read failed for channel '"
+					                 << channel->fullChannelName
+					                 << "' with an unknown error -- skipping this sample."
+					                 << __E__;
+					continue;
+				}
 				channel->handleSample(
 				    readVal, txBuffer, fp, aggregateFileIsBinaryFormat, txBufferUsed);
 				__FE_COUT__ << "Have: "
@@ -1108,6 +1147,29 @@ void FEVInterface::runSequenceOfCommands(const std::string& treeLinkName)
 ///	Very similar to FEVInterfacesManager::runFEMacro()
 ///
 ///	Note: that argsOut are populated for caller, can just pass empty vector.
+void FEVInterface::runSelfFrontEndMacro(
+    const std::string&                       name,
+    const std::vector<frontEndMacroArg_t>&   inputs,
+    std::vector<frontEndMacroArg_t>&         outputs,
+    const std::function<void(unsigned int)>& onProgress)
+{
+	FEMacroProgressForwarder scope(this, onProgress);
+	const auto               threadID = std::this_thread::get_id();
+	clearFEMacroPercentDone(threadID);
+	try
+	{
+		setFEMacroPercentDone(0);
+		runSelfFrontEndMacro(name, inputs, outputs);
+		setFEMacroPercentDone(100);
+	}
+	catch(...)
+	{
+		clearFEMacroPercentDone(threadID);
+		throw;
+	}
+	clearFEMacroPercentDone(threadID);
+}
+
 void FEVInterface::runSelfFrontEndMacro(
     const std::string& feMacroName,
     // not equivalent to __ARGS__
@@ -1762,9 +1824,18 @@ void FEVInterface::runMacro(
 //==============================================================================
 void FEVInterface::setFEMacroPercentDone(unsigned int percentDone)
 {
-	std::lock_guard<std::mutex> lock(feMacroPercentDoneMutex_);
-	feMacroPercentDoneMap_[std::this_thread::get_id()] =
-	    static_cast<int>(percentDone > 100 ? 100 : percentDone);
+	const unsigned int percent = percentDone > 100 ? 100 : percentDone;
+	{
+		std::lock_guard<std::mutex> lock(feMacroPercentDoneMutex_);
+		feMacroPercentDoneMap_[std::this_thread::get_id()] = static_cast<int>(percent);
+	}
+	for(auto* route = FEMacroProgressForwarder::active; route; route = route->previous)
+		if(route->source == this)
+		{
+			if(route->callback)
+				route->callback(percent);
+			break;
+		}
 }  // end setFEMacroPercentDone()
 
 //==============================================================================

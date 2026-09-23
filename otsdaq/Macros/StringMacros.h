@@ -149,6 +149,15 @@ struct StringMacros
 		const std::set<char>&     								whitespace       	= {' ', '\t', '\n', '\r'},
 		std::vector<char>*        								listOfDelimiters 	= 0,
 		bool													decodeURIComponents = false);
+	/// Split "name:init:step" where name may itself contain the delimiter (e.g. FE macro
+	///	argument names like "Target Link (Default := -1)"): the LAST two fields are init and
+	///	step, everything before them is the name. Returns false if fewer than 3 fields.
+	static bool 				splitMacroArgTriple			(
+		const std::string&        								inputString,
+		std::string&              								name,
+		std::string&              								initValue,
+		std::string&              								stepValue,
+		char                      								delimiter        	= ':');
 
 	//========================================================================================================================
 	/// mapToString ~

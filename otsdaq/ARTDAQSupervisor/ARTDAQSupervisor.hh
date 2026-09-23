@@ -10,6 +10,9 @@
 #include <Python.h>
 #endif
 
+#include <atomic>
+#include <chrono>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <thread>
@@ -113,14 +116,24 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	};
 
 	PyObject *daqinterface_ptr_, *stringIO_out_,
-	    *stringIO_err_;  //stringIO_err_ not needed with new Tee Buffer solution
-	std::recursive_mutex         daqinterface_pythonMutex_;
-	std::mutex                   daqinterface_statusMutex_;
-	std::string                  daqinterface_status_;
-	int                          partition_;
-	std::string                  daqinterface_state_;
-	std::unique_ptr<std::thread> runner_thread_;
-	std::atomic<bool>            runner_running_;
+	    *stringIO_err_;                                    //stringIO_err_ not needed with new Tee Buffer solution
+	std::recursive_timed_mutex daqinterface_pythonMutex_;  ///<timed, so transitions can bound their acquisition
+	std::mutex                 daqinterface_statusMutex_;
+	std::string                daqinterface_status_;
+	int                        partition_;
+	std::string                daqinterface_state_;
+	/// Per-runner control block, shared only between the supervisor and that one
+	///	runner thread. A runner abandoned by a timed-out stop_runner_() keeps its own
+	///	block, so it can neither be restarted by a later start_runner_() nor spoof
+	///	the exit flag of the runner that replaced it.
+	struct RunnerControl
+	{
+		std::atomic<bool> running{true};  ///< cleared by stop_runner_() to request exit
+		std::atomic<bool> exited{false};  ///< set by the runner on every exit path
+	};
+	std::unique_ptr<std::thread>   runner_thread_;
+	std::shared_ptr<RunnerControl> runner_control_;           ///< block of the current runner; null when none
+	std::atomic<bool>              runner_abandoned_{false};  ///< a runner may still be inside Python, so interpreter teardown is unsafe
 
 	std::mutex                         thread_mutex_;
 	ProgressBar                        thread_progress_bar_;
@@ -132,7 +145,9 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 
 	unsigned int cachedMinReadyForEventGenerationStartIteration_ = 0;
 
-	std::string capturePyErr(std::string label = "");
+	/// returns the full traceback; summaryOut (optional) gets "ExcType: message" for
+	/// user-facing errors
+	std::string capturePyErr(std::string label = "", std::string* summaryOut = nullptr);
 	bool        checkPythonError(
 	           PyObject* result);  // Check if Python call failed (returns true on error)
 	std::string                        captureStderrAndStdout_(std::string label = "");
@@ -141,8 +156,8 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	std::string                        artdaqStateToOtsState(std::string state);
 	std::string                        labelToProcType_(std::string label);
 	std::list<DAQInterfaceProcessInfo> getAndParseProcessInfo_(void);
-	void                               daqinterfaceRunner_(void);
-	void                               stop_runner_(void);
+	void                               daqinterfaceRunner_(std::shared_ptr<RunnerControl> control);
+	bool                               stop_runner_(unsigned int timeoutSeconds = 5);  ///<bounded; false if the runner was abandoned
 	void                               start_runner_(void);
 	void                               set_thread_message_(std::string msg)
 	{

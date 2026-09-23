@@ -30,6 +30,10 @@ const std::string IterateTable::COMMAND_HALT                   = "HALT";
 const std::string IterateTable::ITERATE_TABLE = "IterateTable";
 const std::string IterateTable::PLAN_TABLE    = "IterationPlanTable";
 const std::string IterateTable::TARGET_TABLE  = "IterationTargetTable";
+const std::string IterateTable::MACRO_DIM_LOOP_TABLE =
+    "IterationCommandMacroDimensionalLoopTable";
+const std::string IterateTable::MACRO_DIM_LOOP_PARAM_TABLE =
+    "IterationCommandMacroDimensionalLoopParameterTable";
 
 const std::map<std::string, std::string> IterateTable::commandToTableMap_ =
     IterateTable::createCommandToTableMap();
@@ -129,6 +133,19 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 		    commandChild.second.getNode(IterateTable::planTableCols_.CommandType_)
 		        .getValue<std::string>();
 
+		try
+		{
+			// getValueWithDefault: a newly added column holds the DEFAULT sentinel, which
+			//	must read as "" (Self), not as a remote subsystem literally named DEFAULT
+			commands.back().targetSubsystem_ =
+			    commandChild.second.getNode(IterateTable::planTableCols_.TargetSubsystem_)
+			        .getValueWithDefault<std::string>("");
+		}
+		catch(...)
+		{
+			commands.back().targetSubsystem_ = "";
+		}
+
 		if(commandChild.second.getNode(IterateTable::planTableCols_.CommandLink_)
 		       .isDisconnected())
 			continue;  // skip if no command parameters
@@ -162,7 +179,33 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 					    target.second.getNode(IterateTable::targetCols_.TargetLink_);
 					if(targetNode.isDisconnected())
 					{
-						__COUT_ERR__ << "Disconnected target!?" << __E__;
+						// The target table/UID may not exist in THIS gateway's configuration,
+						// e.g. a front-end that lives on a remote subsystem. Keep the stored
+						// table name and UID so the remote dispatch can resolve them there;
+						// only warn for local (Self) commands, where the link must resolve.
+						if(commands.back().targetSubsystem_ == "")
+							__COUT_WARN__
+							    << "Disconnected target '"
+							    << targetNode.getDisconnectedTableName() << "/"
+							    << targetNode.getDisconnectedLinkID() << "' for command "
+							    << commandChild.first
+							    << " (no such record in the active configuration); "
+							       "keeping it, but a local macro will fail on it."
+							    << __E__;
+						else
+							__COUT__
+							    << "\t\t = \tTable:"
+							    << targetNode.getDisconnectedTableName()
+							    << " UID:" << targetNode.getDisconnectedLinkID()
+							    << " (not in local configuration; resolved on remote "
+							       "subsystem '"
+							    << commands.back().targetSubsystem_ << "')" << __E__;
+
+						commands.back().addTarget();
+						commands.back().targets_.back().table_ =
+						    targetNode.getDisconnectedTableName();
+						commands.back().targets_.back().UID_ =
+						    targetNode.getDisconnectedLinkID();
 						continue;
 					}
 
@@ -206,6 +249,9 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 				//(colon-separated name/value/stepsize sets)
 				std::string argStr = "";
 				// inputArgsStr = "3;3,myOtherArg:5:2"; //example
+				//	labelsStr: one ";"-separated StepLabel per dimension (same order);
+				//		empty = innermost enclosing BEGIN_LABEL steps this dimension
+				std::string labelsStr = "";
 
 				// std::string name, value;
 				unsigned long numberOfIterations;
@@ -231,12 +277,30 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 						__SS_THROW__;
 					}
 
+					std::string stepLabel = "";
+					try  // column added later; tolerate older table versions
+					{
+						// an unset Data column reads back as the literal "DEFAULT";
+						// blank/default means "innermost enclosing loop", i.e. ""
+						stepLabel =
+						    dimensionalLoop.second
+						        .getNode(IterateTable::macroDimLoopCols_.StepLabel_)
+						        .getValueWithDefault<std::string>("");
+					}
+					catch(...)
+					{
+					}
+
 					// at this point add dimension parameter with value numberOfIterations
 
 					if(!firstDimension)
+					{
 						argStr += ";";
+						labelsStr += ";";
+					}
 					firstDimension = false;
 					argStr += std::to_string(numberOfIterations);
+					labelsStr += stepLabel;
 
 					auto paramLinkNode = dimensionalLoop.second.getNode(
 					    IterateTable::macroDimLoopCols_.ParamLink_);
@@ -286,6 +350,10 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 				    std::pair<std::string /*param name*/, std::string /*param value*/>(
 				        IterateTable::commandExecuteMacroParams_.MacroArgumentString_,
 				        argStr));
+				commands.back().params_.emplace(
+				    std::pair<std::string /*param name*/, std::string /*param value*/>(
+				        IterateTable::commandExecuteMacroParams_.MacroArgumentLabels_,
+				        labelsStr));
 			}
 			else  // all other non-special fields
 			{

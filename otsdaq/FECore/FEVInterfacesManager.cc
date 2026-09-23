@@ -688,9 +688,15 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 			    FILE* outputFilePointer = 0;
 			    if(enableSavingOutput)
 			    {
-				    std::string filename = outputFilePath + "/" + outputFileRadix +
-				                           macroName + "_" + std::to_string(time(0)) +
-				                           ".txt";
+				    // blank (or unset table column) path means $OTSDAQ_DATA, as the
+				    //	Iterate GUI advertises in its placeholder text
+				    std::string basePath = outputFilePath;
+				    if(basePath == "" ||
+				       basePath == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+				       basePath == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+					    basePath = std::string(__ENV__("OTSDAQ_DATA"));
+				    std::string filename = basePath + "/" + outputFileRadix + macroName +
+				                           "_" + std::to_string(time(0)) + ".txt";
 				    __GEN_COUT__ << "Opening file... " << filename << __E__;
 
 				    outputFilePointer = fopen(filename.c_str(), "w");
@@ -698,6 +704,12 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 				    {
 					    __GEN_SS__ << "Failed to open output file: " << filename << __E__;
 					    __GEN_SS_THROW__;
+				    }
+				    {  // record for the Iterator's completion report
+					    std::lock_guard<std::mutex> lock(
+					        feMgr->macroMultiDimensionalDoneMutex_);
+					    feMgr->macroMultiDimensionalOutputFileMap_[interfaceID] =
+					        filename;
 				    }
 			    }  // at this point output file pointer is valid or null
 
@@ -818,22 +830,18 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 					    // skip iteration value, start at index 1
 					    for(unsigned int a = 1; a < args.size(); ++a)
 					    {
-						    std::vector<std::string> argPieces;
-						    StringMacros::getVectorFromString(
-						        args[a], argPieces, {':'} /*delimeter set*/);
-
-						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
-
-						    // check pieces and determine if arg is long or double
-						    // 3 pieces := name, init value, step value
-						    if(argPieces.size() != 3)
+						    // name may contain ':' (e.g. "Arg (Default := 1)"): split from the right
+						    std::vector<std::string> argPieces(3);
+						    if(!StringMacros::splitMacroArgTriple(
+						           args[a], argPieces[0], argPieces[1], argPieces[2]))
 						    {
-							    __GEN_SS__ << "Invalid argument pieces! Should be size "
-							                  "3, but is "
-							               << argPieces.size() << __E__;
-							    ss << StringMacros::vectorToString(argPieces);
+							    __GEN_SS__ << "Invalid argument '" << args[a]
+							               << "'! Expected name:initialValue:stepSize."
+							               << __E__;
 							    __GEN_SS_THROW__;
 						    }
+
+						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
 
 						    // check piece 1 and 2 for double hint
 						    //	a la Iterator::startCommandModifyActive()
@@ -1264,7 +1272,14 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 			    FILE* outputFilePointer = 0;
 			    if(enableSavingOutput)
 			    {
-				    std::string filename = outputFilePath + "/" + outputFileRadix +
+				    // blank (or unset table column) path means $OTSDAQ_DATA, as the
+				    //	Iterate GUI advertises in its placeholder text
+				    std::string basePath = outputFilePath;
+				    if(basePath == "" ||
+				       basePath == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+				       basePath == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+					    basePath = std::string(__ENV__("OTSDAQ_DATA"));
+				    std::string filename = basePath + "/" + outputFileRadix +
 				                           feMacroName + "_" + std::to_string(time(0)) +
 				                           ".txt";
 				    __GEN_COUT__ << "Opening file... " << filename << __E__;
@@ -1274,6 +1289,12 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 				    {
 					    __GEN_SS__ << "Failed to open output file: " << filename << __E__;
 					    __GEN_SS_THROW__;
+				    }
+				    {  // record for the Iterator's completion report
+					    std::lock_guard<std::mutex> lock(
+					        feMgr->macroMultiDimensionalDoneMutex_);
+					    feMgr->macroMultiDimensionalOutputFileMap_[interfaceID] =
+					        filename;
 				    }
 			    }  // at this point output file pointer is valid or null
 
@@ -1408,22 +1429,18 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 					    // skip iteration value, start at index 1
 					    for(unsigned int a = 1; a < args.size(); ++a)
 					    {
-						    std::vector<std::string> argPieces;
-						    StringMacros::getVectorFromString(
-						        args[a], argPieces, {':'} /*delimeter set*/);
-
-						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
-
-						    // check pieces and determine if arg is long or double
-						    // 3 pieces := name, init value, step value
-						    if(argPieces.size() != 3)
+						    // name may contain ':' (e.g. "Arg (Default := 1)"): split from the right
+						    std::vector<std::string> argPieces(3);
+						    if(!StringMacros::splitMacroArgTriple(
+						           args[a], argPieces[0], argPieces[1], argPieces[2]))
 						    {
-							    __GEN_SS__ << "Invalid argument pieces! Should be size "
-							                  "3, but is "
-							               << argPieces.size() << __E__;
-							    ss << StringMacros::vectorToString(argPieces);
+							    __GEN_SS__ << "Invalid argument '" << args[a]
+							               << "'! Expected name:initialValue:stepSize."
+							               << __E__;
 							    __GEN_SS_THROW__;
 						    }
+
+						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
 
 						    // check piece 1 and 2 for double hint
 						    //	a la Iterator::startCommandModifyActive()
@@ -1892,7 +1909,8 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 ///
 ///	Returns true if multi-dimensional launch is done
 bool FEVInterfacesManager::checkMacroMultiDimensional(const std::string& interfaceID,
-                                                      const std::string& macroName)
+                                                      const std::string& macroName,
+                                                      std::string*       outputFile)
 {
 	// check active(only one FE Macro per interface active at any time, for now)
 	// lock mutex scope
@@ -1909,6 +1927,15 @@ bool FEVInterfacesManager::checkMacroMultiDimensional(const std::string& interfa
 	{
 		__CFG_COUT__ << "Completed multi-dimensional launch of Macro '" << macroName
 		             << "' for interface '" << interfaceID << ".'" << __E__;
+
+		// hand back the saved-output file path (if any) and forget it
+		auto fileIt = macroMultiDimensionalOutputFileMap_.find(interfaceID);
+		if(outputFile)
+			*outputFile = (fileIt != macroMultiDimensionalOutputFileMap_.end())
+			                  ? fileIt->second
+			                  : std::string();
+		if(fileIt != macroMultiDimensionalOutputFileMap_.end())
+			macroMultiDimensionalOutputFileMap_.erase(fileIt);
 
 		// erase from map
 		macroMultiDimensionalStatusMap_.erase(statusIt);
@@ -2413,6 +2440,87 @@ std::string FEVInterfacesManager::getFEMacrosString(const std::string& superviso
 		retList += "\n";
 	}
 	return retList;
+}
+
+//==============================================================================
+/// getFEMacroInputDefaults
+/// Return read-only, target-specific input defaults for an FE macro. Validate
+/// that providers only return names declared by the registered macro.
+std::map<std::string, std::string> FEVInterfacesManager::getFEMacroInputDefaults(
+    const std::string& interfaceID,
+    const std::string& feMacroName,
+    const std::string& inputArgs)
+{
+	FEVInterface* fe      = getFEInterfaceP(interfaceID);
+	auto          macroIt = fe->getMapOfFEMacroFunctions().find(feMacroName);
+	if(macroIt == fe->getMapOfFEMacroFunctions().end())
+	{
+		__CFG_SS__ << "FE Macro '" << feMacroName << "' of interfaceID '" << interfaceID
+		           << "' was not found." << __E__;
+		__CFG_SS_THROW__;
+	}
+
+	std::map<std::string, std::string> currentInputValues;
+	if(!inputArgs.empty())
+	{
+		std::istringstream inputStream(inputArgs);
+		std::string        splitValue;
+		while(getline(inputStream, splitValue, ';'))
+		{
+			std::istringstream pairInputStream(splitValue);
+			std::string        encodedName, encodedValue;
+			getline(pairInputStream, encodedName, ',');
+			getline(pairInputStream, encodedValue, ',');
+
+			const std::string inputName  = StringMacros::decodeURIComponent(encodedName);
+			const std::string inputValue = StringMacros::decodeURIComponent(encodedValue);
+			if(inputName.empty())
+				continue;
+
+			// Match on the name before any "(Default/Note)" suffix, the same rule
+			// runFEMacro() uses, so saved history whose suffix has since changed is
+			// still accepted; key the map by the CURRENT declared name for the provider.
+			const std::string  inputBase    = inputName.substr(0, inputName.find('('));
+			const std::string* declaredName = nullptr;
+			for(const auto& candidate : macroIt->second.namesOfInputArguments_)
+				if(candidate.substr(0, candidate.find('(')) == inputBase)
+				{
+					declaredName = &candidate;
+					break;
+				}
+			if(!declaredName)
+			{
+				__CFG_SS__ << "Dynamic default request for FE Macro '" << feMacroName
+				           << "' of interfaceID '" << interfaceID
+				           << "' included undeclared input name '" << inputName << "'."
+				           << __E__;
+				__CFG_SS_THROW__;
+			}
+			currentInputValues[*declaredName] = inputValue;
+		}
+	}
+
+	auto defaults = fe->getFEMacroInputDefaults(feMacroName, currentInputValues);
+	for(const auto& defaultValue : defaults)
+	{
+		bool declaredInput = false;
+		for(const auto& inputName : macroIt->second.namesOfInputArguments_)
+			if(inputName == defaultValue.first)
+			{
+				declaredInput = true;
+				break;
+			}
+
+		if(!declaredInput)
+		{
+			__CFG_SS__ << "Dynamic default provider for FE Macro '" << feMacroName
+			           << "' of interfaceID '" << interfaceID
+			           << "' returned undeclared input name '" << defaultValue.first
+			           << "'." << __E__;
+			__CFG_SS_THROW__;
+		}
+	}
+	return defaults;
 }
 
 //==============================================================================
