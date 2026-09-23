@@ -137,8 +137,9 @@ class Iterator
 	static void startCommandBeginLabel(IteratorWorkLoopStruct* iteratorStruct);
 	static void startCommandRepeatLabel(IteratorWorkLoopStruct* iteratorStruct);
 
-	static void startCommandRun(IteratorWorkLoopStruct* iteratorStruct);
-	static bool checkCommandRun(IteratorWorkLoopStruct* iteratorStruct);
+	static void        startCommandRun(IteratorWorkLoopStruct* iteratorStruct);
+	static bool        checkCommandRun(IteratorWorkLoopStruct* iteratorStruct);
+	static std::string buildIteratorLogEntry(IteratorWorkLoopStruct* iteratorStruct);
 
 	static void startCommandWait(IteratorWorkLoopStruct* iteratorStruct);
 	static bool checkCommandWait(IteratorWorkLoopStruct* iteratorStruct);

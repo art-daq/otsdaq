@@ -840,6 +840,9 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 							               << __E__;
 							    __GEN_SS_THROW__;
 						    }
+						    argPieces[0] = StringMacros::decodeURIComponent(argPieces[0]);
+						    argPieces[1] = StringMacros::decodeURIComponent(argPieces[1]);
+						    argPieces[2] = StringMacros::decodeURIComponent(argPieces[2]);
 
 						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
 
@@ -1439,6 +1442,9 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 							               << __E__;
 							    __GEN_SS_THROW__;
 						    }
+						    argPieces[0] = StringMacros::decodeURIComponent(argPieces[0]);
+						    argPieces[1] = StringMacros::decodeURIComponent(argPieces[1]);
+						    argPieces[2] = StringMacros::decodeURIComponent(argPieces[2]);
 
 						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
 

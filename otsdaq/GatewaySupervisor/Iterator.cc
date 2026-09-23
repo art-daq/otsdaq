@@ -1211,12 +1211,45 @@ void Iterator::startCommandRepeatLabel(IteratorWorkLoopStruct* iteratorStruct)
 }  // end startCommandRepeatLabel()
 
 //==============================================================================
+std::string Iterator::buildIteratorLogEntry(IteratorWorkLoopStruct* iteratorStruct)
+{
+	std::string entry = "Iterator plan '" + iteratorStruct->activePlan_ + "'";
+	if(!iteratorStruct->stepIndexStack_.empty())
+	{
+		entry += " [";
+		for(size_t i = 0; i < iteratorStruct->stepIndexStack_.size(); ++i)
+		{
+			if(i)
+				entry += ", ";
+			if(i < iteratorStruct->stepLabelStack_.size() &&
+			   !iteratorStruct->stepLabelStack_[i].empty())
+				entry += iteratorStruct->stepLabelStack_[i] + " ";
+			entry += "pass " + std::to_string(iteratorStruct->stepIndexStack_[i]);
+		}
+		entry += "]";
+	}
+	return entry;
+}
+
+//==============================================================================
 void Iterator::startCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 {
 	__COUT__ << "startCommandRun " << __E__;
 
 	iteratorStruct->runIsDone_ = false;
 	iteratorStruct->fsmCommandParameters_.clear();
+
+	bool writeToEcl = false;
+	try
+	{
+		writeToEcl =
+		    iteratorStruct->commands_[iteratorStruct->commandIndex_]
+		        .params_.at(IterateTable::commandRunParams_.WriteToECL_) == "1";
+	}
+	catch(...)
+	{
+	}
+	iteratorStruct->theIterator_->theSupervisor_->activeStateMachineWriteToEcl_ = writeToEcl;
 
 	std::string errorStr     = "";
 	std::string currentState = iteratorStruct->theIterator_->theSupervisor_
@@ -1238,7 +1271,7 @@ void Iterator::startCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 		        iteratorStruct->fsmCommandParameters_,
 		        iteratorStruct->activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME
 		            ? iteratorStruct->theIterator_->genLogEntry_
-		            : "");
+		            : buildIteratorLogEntry(iteratorStruct));
 	else
 		errorStr = "Can only Run from the Configured state. The current state is " +
 		           currentState;
@@ -1448,9 +1481,12 @@ void Iterator::startCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
 	        WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 	        WebUsers::DEFAULT_ITERATOR_USERNAME,
 	        iteratorStruct->fsmCommandParameters_,
-	        (transitionCommand == RunControlStateMachine::START_TRANSITION_NAME &&
-	         iteratorStruct->activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME)
-	            ? iteratorStruct->theIterator_->genLogEntry_
+	        (transitionCommand == RunControlStateMachine::START_TRANSITION_NAME)
+	            ? (iteratorStruct->activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME
+	                   ? iteratorStruct->theIterator_->genLogEntry_
+	                   : buildIteratorLogEntry(iteratorStruct))
+	        : (transitionCommand == RunControlStateMachine::STOP_TRANSITION_NAME)
+	            ? "Stopped by iterator: " + buildIteratorLogEntry(iteratorStruct)
 	            : "");
 
 	if(errorStr != "")
@@ -2030,7 +2066,9 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 				                   iteratorStruct->fsmName_,
 				                   WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 				                   WebUsers::DEFAULT_ITERATOR_USERNAME,
-				                   iteratorStruct->fsmCommandParameters_);
+				                   iteratorStruct->fsmCommandParameters_,
+				                   "Stopped by iterator: " +
+				                       buildIteratorLogEntry(iteratorStruct));
 
 				if(errorStr != "")
 				{
@@ -2086,7 +2124,9 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 			                   iteratorStruct->fsmName_,
 			                   WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 			                   WebUsers::DEFAULT_ITERATOR_USERNAME,
-			                   iteratorStruct->fsmCommandParameters_);
+			                   iteratorStruct->fsmCommandParameters_,
+			                   "Stopped by iterator: " +
+			                       buildIteratorLogEntry(iteratorStruct));
 
 			if(errorStr != "")
 			{
@@ -3141,6 +3181,9 @@ Iterator::MacroLoopSpec Iterator::parseMacroLoopSpec(const std::string& inputArg
 					       << "'! Expected name:initialValue:stepSize." << __E__;
 					__SS_THROW__;
 				}
+				name = StringMacros::decodeURIComponent(name);
+				init = StringMacros::decodeURIComponent(init);
+				step = StringMacros::decodeURIComponent(step);
 				MacroLoopSpec::Arg arg;
 				arg.name = name;
 				if(step == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
@@ -3575,14 +3618,11 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				}
 			if(!bound)
 			{
-				__SS__ << "ArgIn '" << inputName
-				       << "' was not assigned a value by any dimensional loop parameter "
-				          "sets. This is illegal. Macro '"
-				       << macroName << "' requires '" << inputName
-				       << "' as an input argument. Either remove the input argument from "
-				          "the macro, or define a value as a dimensional loop parameter."
-				       << __E__;
-				__SS_THROW__;
+				inputToArgIndex.push_back(SIZE_MAX);
+				__COUT_INFO__ << "ArgIn '" << inputName
+				              << "' was not specified by the Iterator command for macro '"
+				              << macroName
+				              << "'; using 'Default' for this argument." << __E__;
 			}
 		}
 		for(size_t a = 0; a < spec.argNames.size(); ++a)
@@ -3650,13 +3690,16 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				    argsSummary;  // wire format / "arg = val, ..." for labels
 				for(size_t k = 0; k < inputNames.size(); ++k)
 				{
+					const std::string val =
+					    inputToArgIndex[k] == SIZE_MAX
+					        ? std::string("Default")
+					        : values[inputToArgIndex[k]].second;
 					inputStr += (k ? ";" : "") +
 					            StringMacros::encodeURIComponent(inputNames[k]) + "," +
-					            StringMacros::encodeURIComponent(
-					                values[inputToArgIndex[k]].second);
+					            StringMacros::encodeURIComponent(val);
 					argsSummary +=
 					    (k ? ", " : "") + feMacroArgBaseName(inputNames[k]) + " = " +
-					    macroArgValueForLabel(values[inputToArgIndex[k]].second);
+					    macroArgValueForLabel(val);
 				}
 
 				// RunFrontendMacro;feClass;feUIDs;macroType;macroName;inputArgs;outputArgs;saveOutputs
