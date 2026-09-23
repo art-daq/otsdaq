@@ -3186,9 +3186,9 @@ Iterator::MacroLoopSpec Iterator::parseMacroLoopSpec(const std::string& inputArg
 				step = StringMacros::decodeURIComponent(step);
 				MacroLoopSpec::Arg arg;
 				arg.name = name;
-				if(step == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
-				   step == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+				if(isConstantMacroStep(step))
 				{
+					// constant (step DEFAULT or 0): keep the value exactly as written
 					arg.type = MacroLoopSpec::Arg::STRING;
 					arg.sVal = init;
 				}
@@ -3348,6 +3348,19 @@ unsigned int Iterator::getStepIndexForLabel(IteratorWorkLoopStruct* iteratorStru
 }  // end getStepIndexForLabel()
 
 //==============================================================================
+/// isConstantMacroStep
+///	A step of DEFAULT, or a numeric 0, means the argument never changes. Such values are
+///	passed through as written (so e.g. "true" stays "true" instead of becoming "true+0" -> 0).
+bool Iterator::isConstantMacroStep(const std::string& step)
+{
+	if(step == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+	   step == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+		return true;
+	double stepValue = 1;
+	return step.size() && StringMacros::getNumber(step, stepValue) && stepValue == 0;
+}  // end isConstantMacroStep()
+
+//==============================================================================
 /// applyStepIndexToMacroArgs
 ///	inputArgs: "nIter,name:init:step,...;nIter2,..." (one ;-block per dimension)
 ///	labelsStr: ";"-separated StepLabel per dimension (may be shorter/empty)
@@ -3396,10 +3409,9 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 			const std::string& init = pieces[1];
 			const std::string& step = pieces[2];
 
-			if(step == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
-			   step == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+			if(isConstantMacroStep(step))
 			{
-				out += args[a];  // constant string argument
+				out += args[a];  // constant argument (step DEFAULT or 0): pass through untouched
 				continue;
 			}
 
