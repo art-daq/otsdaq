@@ -9995,6 +9995,25 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	unsigned int subsystemIteration = 0;
 
+	// Standalone: no top-level above (not UDP-driven) and no included remote subsystems below.
+	// Local apps are told the STANDALONE subsystem-iteration index so nobody idles a pass
+	// waiting for a subsystem that does not exist.
+	bool standaloneSubsystem = !isRemoteSubsystemIteration_;
+	if(standaloneSubsystem)
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		for(const auto& rga : remoteGatewayApps_)
+			if(rga.fsm_included)
+			{
+				standaloneSubsystem = false;
+				break;
+			}
+	}
+	__COUT_INFO__ << "Broadcasting '" << command << "' in "
+	              << (standaloneSubsystem ? "STANDALONE" : "multi-subsystem")
+	              << " mode (subsystemIterationIndex "
+	              << (standaloneSubsystem ? "= STANDALONE" : "= 0,1,2,...") << ")" << __E__;
+
 	broadcastMessageToRemoteGateways(originalMessage);  // initial send (subsystemIteration 0)
 
 	RunControlStateMachine::theProgressBar_.step();
@@ -10058,12 +10077,17 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					    SOAPUtilities::translate(originalMessage));
 
 					// add iteration indices to message
-					if(subsystemIteration || iteration)
+					if(standaloneSubsystem || subsystemIteration || iteration)
 					{
 						SOAPParameters parameters;
-						if(subsystemIteration)
-							parameters.addParameter("subsystemIterationIndex", subsystemIteration);
-						parameters.addParameter("iterationIndex", iteration);
+						if(standaloneSubsystem)
+							parameters.addParameter(
+							    "subsystemIterationIndex",
+							    (int)VStateMachine::SUBSYSTEM_ITERATION_STANDALONE);
+						else if(subsystemIteration)
+							parameters.addParameter("subsystemIterationIndex", (int)subsystemIteration);
+						if(iteration)
+							parameters.addParameter("iterationIndex", (int)iteration);
 						SOAPUtilities::addParameters(message, parameters);
 					}
 

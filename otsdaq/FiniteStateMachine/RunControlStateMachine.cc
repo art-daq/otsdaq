@@ -439,7 +439,7 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 	lastSubIterationIndex_       = subIterationIndex_;
 
 	std::string currentState;
-	if(subsystemIterationIndex_ == 0 && iterationIndex_ == 0 && subIterationIndex_ == 0)
+	if(isFirstIteration())
 	{
 		// this is the first iteration attempt for this transition
 		theProgressBar_.reset(command, theStateMachine_.getStateMachineName());
@@ -452,8 +452,10 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 	{
 		currentState = theStateMachine_.getStateName(lastIterationState_);
 
-		__GEN_COUTS__(2) << "Iteration index " << subsystemIterationIndex_ << ":"
-		                 << iterationIndex_ << "." << subIterationIndex_ << " for "
+		__GEN_COUTS__(2) << "Iteration index "
+		                 << (isStandaloneSubsystem() ? std::string("standalone")
+		                                             : std::to_string(subsystemIterationIndex_))
+		                 << ":" << iterationIndex_ << "." << subIterationIndex_ << " for "
 		                 << theStateMachine_.getStateMachineName() << " from "
 		                 << currentState << " attempting to " << command << std::endl;
 	}
@@ -668,10 +670,12 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		subsystemIterationWorkFlag_ = false;
 		iterationWorkFlag_          = false;
 		subIterationWorkFlag_       = false;
-		if(subsystemIterationIndex_ || iterationIndex_ || subIterationIndex_)
+		if(!isFirstIteration())
 		{
-			__GEN_COUTS__(2) << command << " subsystemIteration=" << subsystemIterationIndex_
-			             << " iteration=" << iterationIndex_ << "." << subIterationIndex_ << __E__;
+			__GEN_COUTS__(2) << command << " subsystemIteration="
+			                 << (isStandaloneSubsystem() ? std::string("standalone")
+			                                             : std::to_string(subsystemIterationIndex_))
+			                 << " iteration=" << iterationIndex_ << "." << subIterationIndex_ << __E__;
 			toolbox::Event::Reference event(new toolbox::Event(command, this));
 
 			// call inheriting transition function based on last state and command

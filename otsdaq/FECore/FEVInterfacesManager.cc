@@ -230,9 +230,7 @@ void FEVInterfacesManager::configure(void)
 	__CFG_COUT__ << transitionName << " FEVInterfacesManager " << __E__;
 
 	// create interfaces (the first iteration)
-	if(VStateMachine::getSubsystemIterationIndex() == 0 &&
-	   VStateMachine::getIterationIndex() == 0 &&
-	   VStateMachine::getSubIterationIndex() == 0)
+	if(VStateMachine::isFirstIteration())
 		createInterfaces();  // by priority
 
 	FEVInterface* fe;
@@ -261,7 +259,8 @@ void FEVInterfacesManager::configure(void)
 
 		// when done with fe configure, configure slow controls
 		if(!fe->VStateMachine::getSubIterationWork() &&
-		   !fe->VStateMachine::getIterationWork())
+		   !fe->VStateMachine::getIterationWork() &&
+		   !fe->VStateMachine::getSubsystemIterationWork())
 		{
 			// configure slow controls and start slow controls workloop
 			//	slow controls workloop stays alive through start/stop.. and dies on halt
@@ -2560,9 +2559,7 @@ void FEVInterfacesManager::preStateMachineExecutionLoop(void)
 	__CFG_COUT__ << "Number of front ends to transition: " << theFENamesByPriority_.size()
 	             << __E__;
 
-	if(VStateMachine::getSubsystemIterationIndex() == 0 &&
-	   VStateMachine::getIterationIndex() == 0 &&
-	   VStateMachine::getSubIterationIndex() == 0)
+	if(VStateMachine::isFirstIteration())
 	{
 		// reset map for iterations done on first iteration
 
@@ -2571,12 +2568,27 @@ void FEVInterfacesManager::preStateMachineExecutionLoop(void)
 		stateMachinesIterationDone_.clear();
 		for(const auto& FEPair : theFEInterfaces_)
 			stateMachinesIterationDone_[FEPair.first] = false;  // init to not done
+
+		stateMachinesWaitingSubsystemIteration_.clear();
+		lastSubsystemIterationIndexSeen_ = VStateMachine::getSubsystemIterationIndex();
 	}
 	else
-		__CFG_COUT__ << "SubsystemIteration " << VStateMachine::getSubsystemIterationIndex()
-		             << " Iteration " << VStateMachine::getIterationIndex() << "."
+	{
+		__CFG_COUT__ << "SubsystemIteration "
+		             << VStateMachine::getSubsystemIterationIndexString() << " Iteration "
+		             << VStateMachine::getIterationIndex() << "."
 		             << VStateMachine::getSubIterationIndex() << "("
 		             << (int)subIterationWorkStateMachineIndex_ << ")" << __E__;
+
+		// a new subsystem-iteration re-arms the FEs that asked for it
+		if(VStateMachine::getSubsystemIterationIndex() != lastSubsystemIterationIndexSeen_)
+		{
+			lastSubsystemIterationIndexSeen_ = VStateMachine::getSubsystemIterationIndex();
+			for(const auto& name : stateMachinesWaitingSubsystemIteration_)
+				stateMachinesIterationDone_[name] = false;
+			stateMachinesWaitingSubsystemIteration_.clear();
+		}
+	}
 }  // end preStateMachineExecutionLoop()
 
 //==============================================================================
@@ -2605,7 +2617,7 @@ void FEVInterfacesManager::preStateMachineExecution(unsigned int       i,
 	fe->VStateMachine::clearSubIterationWork();
 
 	__CFG_COUT__ << "theStateMachineImplementation SubsystemIteration "
-	             << fe->VStateMachine::getSubsystemIterationIndex()
+	             << fe->VStateMachine::getSubsystemIterationIndexString()
 	             << " Iteration " << fe->VStateMachine::getIterationIndex() << "."
 	             << fe->VStateMachine::getSubIterationIndex() << __E__;
 }  // end preStateMachineExecution()
@@ -2656,6 +2668,7 @@ bool FEVInterfacesManager::postStateMachineExecution(unsigned int i)
 		// subsystem-iteration — this FE is done with inner iterations
 		// but needs another cross-subsystem sync barrier
 		stateMachinesIterationDone_[name] = true;  // done with inner iterations
+		stateMachinesWaitingSubsystemIteration_.insert(name);
 		VStateMachine::indicateSubsystemIterationWork();
 
 		__CFG_COUT__ << "FE Interface '" << name

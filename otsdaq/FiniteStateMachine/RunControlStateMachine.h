@@ -2,6 +2,7 @@
 #define _ots_RunControlStateMachine_h_
 
 #include "otsdaq/FiniteStateMachine/FiniteStateMachine.h"
+#include "otsdaq/FiniteStateMachine/VStateMachine.h"
 #include "otsdaq/ProgressBar/ProgressBar.h"
 
 #include <atomic>
@@ -142,7 +143,27 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	static const std::string STOP_TRANSITION_NAME;
 
 	// Subsystem-iteration accessors (outermost tier — synchronized across subsystems)
-	unsigned int       getSubsystemIterationIndex(void) { return subsystemIterationIndex_; }
+	unsigned int       getSubsystemIterationIndex(void) const { return subsystemIterationIndex_; }
+	bool               isStandaloneSubsystem(void) const { return subsystemIterationIndex_ == VStateMachine::SUBSYSTEM_ITERATION_STANDALONE; }
+	/// true on the very first call of a transition (all indices at their starting value)
+	bool               isFirstIteration(void) const
+	{
+		return (subsystemIterationIndex_ == 0 || isStandaloneSubsystem()) &&
+		       iterationIndex_ == 0 && subIterationIndex_ == 0;
+	}
+	/// For steps that must be ordered across subsystems: the subsystem-iteration index under
+	/// a top-level, or the plain iteration index when standalone (see VStateMachine).
+	unsigned int       getSubsystemSyncStepIndex(void) const
+	{
+		return isStandaloneSubsystem() ? iterationIndex_ : subsystemIterationIndex_;
+	}
+	void               indicateSubsystemSyncStepWork(void)
+	{
+		if(isStandaloneSubsystem())
+			iterationWorkFlag_ = true;
+		else
+			subsystemIterationWorkFlag_ = true;
+	}
 	void               indicateSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = true; }
 	void               clearSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = false; }
 	bool               getSubsystemIterationWork(void) { return subsystemIterationWorkFlag_; }

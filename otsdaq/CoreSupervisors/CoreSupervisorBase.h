@@ -29,6 +29,7 @@
 #include <time.h>
 #include <map>
 #include <memory>
+#include <set>
 #include <string> /*string and to_string*/
 #include <vector>
 
@@ -133,9 +134,11 @@ class CoreSupervisorBase : public xdaq::Application,
 	bool lastActivationHadMergeOrOverride_ = false;
 
 	/// for managing transition iterations
-	std::vector<bool> stateMachinesIterationDone_;
-	unsigned int      stateMachinesIterationWorkCount_;
-	unsigned int      subIterationWorkStateMachineIndex_;
+	std::vector<bool>       stateMachinesIterationDone_;
+	std::set<unsigned int>  stateMachinesWaitingSubsystemIteration_;  ///< re-armed when the subsystem-iteration index changes
+	unsigned int            lastSubsystemIterationIndexSeen_ = 0;
+	unsigned int            stateMachinesIterationWorkCount_;
+	unsigned int            subIterationWorkStateMachineIndex_;
 	void              preStateMachineExecution(unsigned int i);
 	void              postStateMachineExecution(unsigned int i);
 	void              preStateMachineExecutionLoop(void);

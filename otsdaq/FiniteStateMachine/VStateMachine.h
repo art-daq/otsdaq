@@ -10,6 +10,11 @@ class CoreSupervisorBase;
 class VStateMachine
 {
   public:
+	/// Subsystem-iteration index sent by a Gateway that has no top-level above it and no
+	/// remote subsystems below it. Plugins treat it as "every subsystem-iteration is mine",
+	/// so nobody idles a pass waiting for another subsystem that does not exist.
+	static const unsigned int SUBSYSTEM_ITERATION_STANDALONE = (unsigned int)-1;
+
 	VStateMachine(const std::string& name)
 	    : subsystemIterationIndex_(0)
 	    , iterationIndex_(0)
@@ -60,8 +65,7 @@ class VStateMachine
 				progress += subsystemIterationAliasMap_.at(transitionName_)
 				                .at(VStateMachine::getSubsystemIterationIndex());
 			else
-				progress +=
-				    std::to_string(VStateMachine::getSubsystemIterationIndex());
+				progress += VStateMachine::getSubsystemIterationIndexString();
 
 			progress += ":";
 
@@ -103,8 +107,7 @@ class VStateMachine
 				progress += subsystemIterationAliasMap_.at(transitionName_)
 				                .at(VStateMachine::getSubsystemIterationIndex());
 			else
-				progress +=
-				    std::to_string(VStateMachine::getSubsystemIterationIndex());
+				progress += VStateMachine::getSubsystemIterationIndexString();
 
 			progress += ":";
 
@@ -132,8 +135,7 @@ class VStateMachine
 				progress += subsystemIterationAliasMap_.at(transitionName_)
 				                .at(VStateMachine::getSubsystemIterationIndex());
 			else
-				progress +=
-				    std::to_string(VStateMachine::getSubsystemIterationIndex());
+				progress += VStateMachine::getSubsystemIterationIndexString();
 		}
 		else if(transitionName_ != "")
 			progress += name_ + ":" + transitionName_;
@@ -155,7 +157,34 @@ class VStateMachine
 
 	// Subsystem-iteration accessors (outermost tier — synchronized across subsystems)
 	void               setSubsystemIterationIndex(unsigned int i) { subsystemIterationIndex_ = i; }
-	unsigned int       getSubsystemIterationIndex(void) { return subsystemIterationIndex_; }
+	unsigned int       getSubsystemIterationIndex(void) const { return subsystemIterationIndex_; }
+	bool               isStandaloneSubsystem(void) const { return subsystemIterationIndex_ == SUBSYSTEM_ITERATION_STANDALONE; }
+	/// true on the very first call of a transition (all indices at their starting value)
+	bool               isFirstIteration(void) const
+	{
+		return (subsystemIterationIndex_ == 0 || isStandaloneSubsystem()) &&
+		       iterationIndex_ == 0 && subIterationIndex_ == 0;
+	}
+	std::string        getSubsystemIterationIndexString(void) const
+	{
+		return isStandaloneSubsystem() ? std::string("standalone")
+		                               : std::to_string(subsystemIterationIndex_);
+	}
+	/// For steps that must be ordered across subsystems (e.g. start sequence):
+	/// the subsystem-iteration index under a top-level, or the plain iteration index when
+	/// standalone (the STANDALONE index never increments, while plain iterations are already
+	/// synchronized within the one subsystem).
+	unsigned int       getSubsystemSyncStepIndex(void) const
+	{
+		return isStandaloneSubsystem() ? iterationIndex_ : subsystemIterationIndex_;
+	}
+	void               indicateSubsystemSyncStepWork(void)
+	{
+		if(isStandaloneSubsystem())
+			iterationWorkFlag_ = true;
+		else
+			subsystemIterationWorkFlag_ = true;
+	}
 	void               indicateSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = true; }
 	void               clearSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = false; }
 	bool               getSubsystemIterationWork(void) { return subsystemIterationWorkFlag_; }
