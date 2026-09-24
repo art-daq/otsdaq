@@ -2581,9 +2581,11 @@ void FEVInterfacesManager::preStateMachineExecutionLoop(void)
 		             << (int)subIterationWorkStateMachineIndex_ << ")" << __E__;
 
 		// a new subsystem-iteration re-arms the FEs that asked for it
-		if(VStateMachine::getSubsystemIterationIndex() != lastSubsystemIterationIndexSeen_)
+		if(VStateMachine::getSubsystemIterationIndex() !=
+		   lastSubsystemIterationIndexSeen_)
 		{
-			lastSubsystemIterationIndexSeen_ = VStateMachine::getSubsystemIterationIndex();
+			lastSubsystemIterationIndexSeen_ =
+			    VStateMachine::getSubsystemIterationIndex();
 			for(const auto& name : stateMachinesWaitingSubsystemIteration_)
 				stateMachinesIterationDone_[name] = false;
 			stateMachinesWaitingSubsystemIteration_.clear();
@@ -2606,7 +2608,8 @@ void FEVInterfacesManager::preStateMachineExecution(unsigned int       i,
 	FEVInterface* fe = getFEInterfaceP(name);
 
 	fe->VStateMachine::setTransitionName(transitionName);
-	fe->VStateMachine::setSubsystemIterationIndex(VStateMachine::getSubsystemIterationIndex());
+	fe->VStateMachine::setSubsystemIterationIndex(
+	    VStateMachine::getSubsystemIterationIndex());
 	fe->VStateMachine::setIterationIndex(VStateMachine::getIterationIndex());
 	fe->VStateMachine::setSubIterationIndex(VStateMachine::getSubIterationIndex());
 	fe->VStateMachine::setSystemMinReadyForEventGenerationStartIteration(
@@ -2617,8 +2620,8 @@ void FEVInterfacesManager::preStateMachineExecution(unsigned int       i,
 	fe->VStateMachine::clearSubIterationWork();
 
 	__CFG_COUT__ << "theStateMachineImplementation SubsystemIteration "
-	             << fe->VStateMachine::getSubsystemIterationIndexString()
-	             << " Iteration " << fe->VStateMachine::getIterationIndex() << "."
+	             << fe->VStateMachine::getSubsystemIterationIndexString() << " Iteration "
+	             << fe->VStateMachine::getIterationIndex() << "."
 	             << fe->VStateMachine::getSubIterationIndex() << __E__;
 }  // end preStateMachineExecution()
 

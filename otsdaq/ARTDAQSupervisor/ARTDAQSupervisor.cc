@@ -1415,7 +1415,8 @@ try
 	//           so DTCs don't SoftReset while artdaq is starting.
 	//   Step 2+: idle — DTCs do post-artdaq SoftReset, then CFO launches run plan.
 
-	const unsigned int startIteration = RunControlStateMachine::getSubsystemSyncStepIndex();
+	const unsigned int startIteration =
+	    RunControlStateMachine::getSubsystemSyncStepIndex();
 
 	if(startIteration == 0)
 	{

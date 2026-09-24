@@ -340,10 +340,12 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 	try
 	{
 		StringMacros::getNumber(
-		    SOAPUtilities::translate(message).getParameters().getValue("subsystemIterationIndex"),
+		    SOAPUtilities::translate(message).getParameters().getValue(
+		        "subsystemIterationIndex"),
 		    subsystemIterationIndex_);
 	}
-	catch(...)  // ignore errors and set subsystem-iteration index to 0 (backward compat with old Gateway)
+	catch(
+	    ...)  // ignore errors and set subsystem-iteration index to 0 (backward compat with old Gateway)
 	{
 		__GEN_COUTT__ << "Defaulting subsystemIterationIndex_ to 0." << __E__;
 		subsystemIterationIndex_ = 0;
@@ -453,8 +455,9 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		currentState = theStateMachine_.getStateName(lastIterationState_);
 
 		__GEN_COUTS__(2) << "Iteration index "
-		                 << (isStandaloneSubsystem() ? std::string("standalone")
-		                                             : std::to_string(subsystemIterationIndex_))
+		                 << (isStandaloneSubsystem()
+		                         ? std::string("standalone")
+		                         : std::to_string(subsystemIterationIndex_))
 		                 << ":" << iterationIndex_ << "." << subIterationIndex_ << " for "
 		                 << theStateMachine_.getStateMachineName() << " from "
 		                 << currentState << " attempting to " << command << std::endl;
@@ -673,9 +676,11 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		if(!isFirstIteration())
 		{
 			__GEN_COUTS__(2) << command << " subsystemIteration="
-			                 << (isStandaloneSubsystem() ? std::string("standalone")
-			                                             : std::to_string(subsystemIterationIndex_))
-			                 << " iteration=" << iterationIndex_ << "." << subIterationIndex_ << __E__;
+			                 << (isStandaloneSubsystem()
+			                         ? std::string("standalone")
+			                         : std::to_string(subsystemIterationIndex_))
+			                 << " iteration=" << iterationIndex_ << "."
+			                 << subIterationIndex_ << __E__;
 			toolbox::Event::Reference event(new toolbox::Event(command, this));
 
 			// call inheriting transition function based on last state and command
@@ -751,10 +756,13 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 			__GEN_COUTVS__(2, iterationWorkFlag_);
 			result = command + "Iterate";  // indicate another iteration back to Gateway
 		}
-		else if(subsystemIterationWorkFlag_)  // subsystem-iteration is lowest priority (cross-subsystem sync)
+		else if(
+		    subsystemIterationWorkFlag_)  // subsystem-iteration is lowest priority (cross-subsystem sync)
 		{
 			__GEN_COUTVS__(2, subsystemIterationWorkFlag_);
-			result = command + "SubsystemIterate";  // indicate another subsystem-iteration back to Gateway
+			result =
+			    command +
+			    "SubsystemIterate";  // indicate another subsystem-iteration back to Gateway
 		}
 	}
 	catch(const std::runtime_error& e)

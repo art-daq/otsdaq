@@ -709,22 +709,26 @@ void CoreSupervisorBase::preStateMachineExecutionLoop(void)
 			stateMachinesIterationDone_[i] = false;
 
 		stateMachinesWaitingSubsystemIteration_.clear();
-		lastSubsystemIterationIndexSeen_ = RunControlStateMachine::getSubsystemIterationIndex();
+		lastSubsystemIterationIndexSeen_ =
+		    RunControlStateMachine::getSubsystemIterationIndex();
 	}
 	else
 	{
 		__SUP_COUT__ << "SubsystemIteration "
 		             << (RunControlStateMachine::isStandaloneSubsystem()
 		                     ? std::string("standalone")
-		                     : std::to_string(RunControlStateMachine::getSubsystemIterationIndex()))
-		             << " Iteration " << RunControlStateMachine::getIterationIndex() << "."
-		             << RunControlStateMachine::getSubIterationIndex() << "("
+		                     : std::to_string(
+		                           RunControlStateMachine::getSubsystemIterationIndex()))
+		             << " Iteration " << RunControlStateMachine::getIterationIndex()
+		             << "." << RunControlStateMachine::getSubIterationIndex() << "("
 		             << subIterationWorkStateMachineIndex_ << ")" << __E__;
 
 		// a new subsystem-iteration re-arms the apps that asked for it
-		if(RunControlStateMachine::getSubsystemIterationIndex() != lastSubsystemIterationIndexSeen_)
+		if(RunControlStateMachine::getSubsystemIterationIndex() !=
+		   lastSubsystemIterationIndexSeen_)
 		{
-			lastSubsystemIterationIndexSeen_ = RunControlStateMachine::getSubsystemIterationIndex();
+			lastSubsystemIterationIndexSeen_ =
+			    RunControlStateMachine::getSubsystemIterationIndex();
 			for(unsigned int i : stateMachinesWaitingSubsystemIteration_)
 				stateMachinesIterationDone_[i] = false;
 			stateMachinesWaitingSubsystemIteration_.clear();
@@ -786,10 +790,10 @@ void CoreSupervisorBase::postStateMachineExecution(unsigned int i)
 		stateMachinesIterationDone_[i] = false;
 		RunControlStateMachine::indicateIterationWork();  // mark not done at
 		                                                  // CoreSupervisorBase level
-		++stateMachinesIterationWorkCount_;  // increment still working count
+		++stateMachinesIterationWorkCount_;               // increment still working count
 
-		__SUP_COUT__ << "State machine " << i
-		             << " is flagged for another iteration..." << __E__;
+		__SUP_COUT__ << "State machine " << i << " is flagged for another iteration..."
+		             << __E__;
 	}
 	else if(theStateMachineImplementation_[i]->VStateMachine::getSubsystemIterationWork())
 	{

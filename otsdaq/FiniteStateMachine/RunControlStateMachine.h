@@ -143,43 +143,43 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	static const std::string STOP_TRANSITION_NAME;
 
 	// Subsystem-iteration accessors (outermost tier — synchronized across subsystems)
-	unsigned int       getSubsystemIterationIndex(void) const { return subsystemIterationIndex_; }
-	bool               isStandaloneSubsystem(void) const { return subsystemIterationIndex_ == VStateMachine::SUBSYSTEM_ITERATION_STANDALONE; }
+	unsigned int getSubsystemIterationIndex(void) const { return subsystemIterationIndex_; }
+	bool         isStandaloneSubsystem(void) const { return subsystemIterationIndex_ == VStateMachine::SUBSYSTEM_ITERATION_STANDALONE; }
 	/// true on the very first call of a transition (all indices at their starting value)
-	bool               isFirstIteration(void) const
+	bool isFirstIteration(void) const
 	{
 		return (subsystemIterationIndex_ == 0 || isStandaloneSubsystem()) &&
 		       iterationIndex_ == 0 && subIterationIndex_ == 0;
 	}
 	/// For steps that must be ordered across subsystems: the subsystem-iteration index under
 	/// a top-level, or the plain iteration index when standalone (see VStateMachine).
-	unsigned int       getSubsystemSyncStepIndex(void) const
+	unsigned int getSubsystemSyncStepIndex(void) const
 	{
 		return isStandaloneSubsystem() ? iterationIndex_ : subsystemIterationIndex_;
 	}
-	void               indicateSubsystemSyncStepWork(void)
+	void indicateSubsystemSyncStepWork(void)
 	{
 		if(isStandaloneSubsystem())
 			iterationWorkFlag_ = true;
 		else
 			subsystemIterationWorkFlag_ = true;
 	}
-	void               indicateSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = true; }
-	void               clearSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = false; }
-	bool               getSubsystemIterationWork(void) { return subsystemIterationWorkFlag_; }
+	void indicateSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = true; }
+	void clearSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = false; }
+	bool getSubsystemIterationWork(void) { return subsystemIterationWorkFlag_; }
 
 	// Iteration accessors (middle tier — synchronized within one subsystem)
-	unsigned int       getIterationIndex(void) { return iterationIndex_; }
-	unsigned int       getSubIterationIndex(void) { return subIterationIndex_; }
-	unsigned int       getMinReadyForEventGenerationStartIteration(void) { return minReadyForEventGenerationStartIteration_; }
-	void               indicateIterationWork(void) { iterationWorkFlag_ = true; }
-	void               clearIterationWork(void) { iterationWorkFlag_ = false; }
-	bool               getIterationWork(void) { return iterationWorkFlag_; }
+	unsigned int getIterationIndex(void) { return iterationIndex_; }
+	unsigned int getSubIterationIndex(void) { return subIterationIndex_; }
+	unsigned int getMinReadyForEventGenerationStartIteration(void) { return minReadyForEventGenerationStartIteration_; }
+	void         indicateIterationWork(void) { iterationWorkFlag_ = true; }
+	void         clearIterationWork(void) { iterationWorkFlag_ = false; }
+	bool         getIterationWork(void) { return iterationWorkFlag_; }
 
 	// Sub-iteration accessors (innermost tier — internal to one application)
-	void               indicateSubIterationWork(void) { subIterationWorkFlag_ = true; }
-	void               clearSubIterationWork(void) { subIterationWorkFlag_ = false; }
-	bool               getSubIterationWork(void) { return subIterationWorkFlag_; }
+	void indicateSubIterationWork(void) { subIterationWorkFlag_ = true; }
+	void clearSubIterationWork(void) { subIterationWorkFlag_ = false; }
+	bool getSubIterationWork(void) { return subIterationWorkFlag_; }
 
 	const std::string& getLastCommand(void) { return lastIterationCommand_; }
 	const std::string& getLastAttemptedConfigureGroup(void)
