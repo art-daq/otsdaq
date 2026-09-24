@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <set>
 #include <string>
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/FECore/FEVInterface.h"
@@ -132,6 +133,8 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 
 	/// for managing transition iterations
 	std::map<std::string /*name*/, bool /*isDone*/> stateMachinesIterationDone_;
+	std::set<std::string /*name*/>                  stateMachinesWaitingSubsystemIteration_;  ///< re-armed when the subsystem-iteration index changes
+	unsigned int                                    lastSubsystemIterationIndexSeen_ = 0;
 	unsigned int                                    stateMachinesIterationWorkCount_;
 	unsigned int                                    subIterationWorkStateMachineIndex_;
 	void                                            preStateMachineExecution(unsigned int i, const std::string& transitionName);
