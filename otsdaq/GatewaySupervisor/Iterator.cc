@@ -1242,14 +1242,14 @@ void Iterator::startCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 	bool writeToEcl = false;
 	try
 	{
-		writeToEcl =
-		    iteratorStruct->commands_[iteratorStruct->commandIndex_]
-		        .params_.at(IterateTable::commandRunParams_.WriteToECL_) == "1";
+		writeToEcl = iteratorStruct->commands_[iteratorStruct->commandIndex_].params_.at(
+		                 IterateTable::commandRunParams_.WriteToECL_) == "1";
 	}
 	catch(...)
 	{
 	}
-	iteratorStruct->theIterator_->theSupervisor_->activeStateMachineWriteToEcl_ = writeToEcl;
+	iteratorStruct->theIterator_->theSupervisor_->activeStateMachineWriteToEcl_ =
+	    writeToEcl;
 
 	std::string errorStr     = "";
 	std::string currentState = iteratorStruct->theIterator_->theSupervisor_
@@ -2116,17 +2116,17 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 			// need to end run!
 			__COUT__ << "Time duration reached! Stopping run..." << __E__;
 
-			errorStr = iteratorStruct->theIterator_->theSupervisor_
-			               ->attemptStateMachineTransition(
-			                   0,
-			                   0,
-			                   "Stop",
-			                   iteratorStruct->fsmName_,
-			                   WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
-			                   WebUsers::DEFAULT_ITERATOR_USERNAME,
-			                   iteratorStruct->fsmCommandParameters_,
-			                   "Stopped by iterator: " +
-			                       buildIteratorLogEntry(iteratorStruct));
+			errorStr =
+			    iteratorStruct->theIterator_->theSupervisor_
+			        ->attemptStateMachineTransition(
+			            0,
+			            0,
+			            "Stop",
+			            iteratorStruct->fsmName_,
+			            WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
+			            WebUsers::DEFAULT_ITERATOR_USERNAME,
+			            iteratorStruct->fsmCommandParameters_,
+			            "Stopped by iterator: " + buildIteratorLogEntry(iteratorStruct));
 
 			if(errorStr != "")
 			{
@@ -3413,7 +3413,8 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 
 			if(isConstantMacroStep(step))
 			{
-				out += args[a];  // constant argument (step DEFAULT or 0): pass through untouched
+				// constant argument (step DEFAULT or 0): pass through untouched
+				out += args[a];
 				continue;
 			}
 
@@ -3640,20 +3641,22 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				//	so "Default" would silently become 0: keep that a hard error.
 				if(!isFEMacro)
 				{
-					__SS__ << "ArgIn '" << inputName
-					       << "' was not assigned a value by any dimensional loop parameter "
-					          "sets. This is illegal. Macro '"
-					       << macroName << "' requires '" << inputName
-					       << "' as an input argument. Either remove the input argument from "
-					          "the macro, or define a value as a dimensional loop parameter."
-					       << __E__;
+					__SS__
+					    << "ArgIn '" << inputName
+					    << "' was not assigned a value by any dimensional loop parameter "
+					       "sets. This is illegal. Macro '"
+					    << macroName << "' requires '" << inputName
+					    << "' as an input argument. Either remove the input argument "
+					       "from "
+					       "the macro, or define a value as a dimensional loop parameter."
+					    << __E__;
 					__SS_THROW__;
 				}
 				inputToArgIndex.push_back(SIZE_MAX);
-				__COUT_INFO__ << "ArgIn '" << inputName
-				              << "' was not specified by the Iterator command for FE macro '"
-				              << macroName
-				              << "'; using 'Default' for this argument." << __E__;
+				__COUT_INFO__
+				    << "ArgIn '" << inputName
+				    << "' was not specified by the Iterator command for FE macro '"
+				    << macroName << "'; using 'Default' for this argument." << __E__;
 			}
 		}
 		for(size_t a = 0; a < spec.argNames.size(); ++a)
@@ -3721,16 +3724,14 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				    argsSummary;  // wire format / "arg = val, ..." for labels
 				for(size_t k = 0; k < inputNames.size(); ++k)
 				{
-					const std::string val =
-					    inputToArgIndex[k] == SIZE_MAX
-					        ? std::string("Default")
-					        : values[inputToArgIndex[k]].second;
+					const std::string val = inputToArgIndex[k] == SIZE_MAX
+					                            ? std::string("Default")
+					                            : values[inputToArgIndex[k]].second;
 					inputStr += (k ? ";" : "") +
 					            StringMacros::encodeURIComponent(inputNames[k]) + "," +
 					            StringMacros::encodeURIComponent(val);
-					argsSummary +=
-					    (k ? ", " : "") + feMacroArgBaseName(inputNames[k]) + " = " +
-					    macroArgValueForLabel(val);
+					argsSummary += (k ? ", " : "") + feMacroArgBaseName(inputNames[k]) +
+					               " = " + macroArgValueForLabel(val);
 				}
 
 				// RunFrontendMacro;feClass;feUIDs;macroType;macroName;inputArgs;outputArgs;saveOutputs
