@@ -3405,9 +3405,11 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 				continue;
 			}
 
-			const std::string& name = pieces[0];
-			const std::string& init = pieces[1];
-			const std::string& step = pieces[2];
+			// pieces arrive URI-encoded from IterateTable::getPlanCommands(); decode before
+			//	any numeric handling ('-' and '.' would otherwise be %2D / %2E and parse as 0)
+			const std::string name = StringMacros::decodeURIComponent(pieces[0]);
+			const std::string init = StringMacros::decodeURIComponent(pieces[1]);
+			const std::string step = StringMacros::decodeURIComponent(pieces[2]);
 
 			if(isConstantMacroStep(step))
 			{
@@ -3435,7 +3437,10 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 			              << init << " + " << step << "*" << stepIndex << " = " << newInit
 			              << __E__;
 
-			out += name + ":" + newInit + ":" + step;
+			// re-encode so the output has the same wire format as the input
+			out += StringMacros::encodeURIComponent(name) + ":" +
+			       StringMacros::encodeURIComponent(newInit) + ":" +
+			       StringMacros::encodeURIComponent(step);
 		}
 	}
 	return out;
@@ -3630,9 +3635,23 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				}
 			if(!bound)
 			{
+				// Only FE macros understand a literal "Default" (FEVInterface substitutes the
+				//	declared default). Public MacroMaker macros parse every input as a number,
+				//	so "Default" would silently become 0: keep that a hard error.
+				if(!isFEMacro)
+				{
+					__SS__ << "ArgIn '" << inputName
+					       << "' was not assigned a value by any dimensional loop parameter "
+					          "sets. This is illegal. Macro '"
+					       << macroName << "' requires '" << inputName
+					       << "' as an input argument. Either remove the input argument from "
+					          "the macro, or define a value as a dimensional loop parameter."
+					       << __E__;
+					__SS_THROW__;
+				}
 				inputToArgIndex.push_back(SIZE_MAX);
 				__COUT_INFO__ << "ArgIn '" << inputName
-				              << "' was not specified by the Iterator command for macro '"
+				              << "' was not specified by the Iterator command for FE macro '"
 				              << macroName
 				              << "'; using 'Default' for this argument." << __E__;
 			}
