@@ -42,7 +42,7 @@ class IterateTable : public TableBase
 	static const std::string COMMAND_ACTIVATE_ALIAS;
 	static const std::string COMMAND_ACTIVATE_GROUP;
 	static const std::string COMMAND_EXECUTE_FE_MACRO;
-	static const std::string COMMAND_EXECUTE_MACRO;
+	static const std::string COMMAND_EXECUTE_MM_MACRO;
 	static const std::string COMMAND_MODIFY_ACTIVE_GROUP;
 	static const std::string COMMAND_REPEAT_LABEL;
 	static const std::string COMMAND_RUN;
@@ -71,7 +71,7 @@ class IterateTable : public TableBase
 		m[COMMAND_ACTIVATE_ALIAS]         = "IterationCommandConfigureAliasTable";
 		m[COMMAND_ACTIVATE_GROUP]         = "IterationCommandConfigureGroupTable";
 		m[COMMAND_EXECUTE_FE_MACRO]       = "IterationCommandExecuteFEMacroTable";
-		m[COMMAND_EXECUTE_MACRO]          = "IterationCommandExecuteMacroTable";
+		m[COMMAND_EXECUTE_MM_MACRO]       = "IterationCommandExecuteMacroTable";
 		m[COMMAND_MODIFY_ACTIVE_GROUP]    = "IterationCommandModifyGroupTable";
 		m[COMMAND_REPEAT_LABEL]           = "IterationCommandRepeatLabelTable";
 		m[COMMAND_RUN]                    = "IterationCommandRunTable";
