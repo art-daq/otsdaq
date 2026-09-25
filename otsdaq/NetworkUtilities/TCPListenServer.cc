@@ -68,10 +68,14 @@ TCPReceiverSocket* TCPListenServer::waitForReadableClient(
 		if(fds[i].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL))
 		{
 			lastReceived = clients[i].first;
+			std::lock_guard<std::mutex> lock(fClientsMutex);
+			auto                        it = fConnectedClients.find(clients[i].first);
+			if(it == fConnectedClients.end())
+				return nullptr;
 			TLOG(25, "TCPListenServer")
 			    << "Reading from socket " << lastReceived << ", there are "
-			    << clients.size() << " clients connected.";
-			return dynamic_cast<TCPReceiverSocket*>(clients[i].second);
+			    << fConnectedClients.size() << " clients connected.";
+			return dynamic_cast<TCPReceiverSocket*>(it->second);
 		}
 	}
 	return nullptr;
