@@ -696,7 +696,7 @@ try
 			return startRemoteCommandMacro(iteratorStruct, true /*isFEMacro*/);
 		return startCommandMacro(iteratorStruct, true /*isFEMacro*/);
 	}
-	else if(type == IterateTable::COMMAND_EXECUTE_MACRO)
+	else if(type == IterateTable::COMMAND_EXECUTE_MM_MACRO)
 	{
 		if(targetSubsystem.size())
 			return startRemoteCommandMacro(iteratorStruct, false /*isFEMacro*/);
@@ -843,7 +843,7 @@ try
 			return checkRemoteCommandMacro(iteratorStruct, true /*isFEMacro*/);
 		return checkCommandMacro(iteratorStruct, true /*isFEMacro*/);
 	}
-	else if(type == IterateTable::COMMAND_EXECUTE_MACRO)
+	else if(type == IterateTable::COMMAND_EXECUTE_MM_MACRO)
 	{
 		if(targetSubsystem.size())
 			return checkRemoteCommandMacro(iteratorStruct, false /*isFEMacro*/);
