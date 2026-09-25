@@ -3,6 +3,7 @@
 
 #include <future>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 // #include <thread>
@@ -36,13 +37,23 @@ class TCPServerBase : public virtual TCPSocket
 	T* acceptClient(bool blocking = true)
 	{
 		int socketId = accept(blocking);
+		std::lock_guard<std::mutex> lock(fClientsMutex);
 		fConnectedClients.emplace(socketId, new T(socketId));
 		return dynamic_cast<T*>(fConnectedClients[socketId]);
 	}
 
+	/// Drop a client whose peer has gone away (no shutdown handshake, just close).
+	void removeClient(int socketId);
+	/// Snapshot of connected client socket ids, safe to call from any thread.
+	std::vector<int> getClientSocketIds(void) const;
+
 	void pingActiveClients(void);
 
 	// std::promise<bool>        fAcceptPromise;
+	// fClientsMutex guards fConnectedClients against the accept thread inserting while
+	// a reader thread iterates. Only acceptClient, removeClient, getClientSocketIds and
+	// TCPListenServer's receive path take it; the older broadcast/ping paths do not.
+	mutable std::mutex               fClientsMutex;
 	std::map<int, TCPSocket*>        fConnectedClients;
 	std::map<int, std::future<void>> fConnectedClientsFuture;
 	const int                        E_SHUTDOWN = 0;
