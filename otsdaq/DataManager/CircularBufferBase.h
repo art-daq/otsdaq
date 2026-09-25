@@ -32,6 +32,7 @@ class CircularBufferBase
 	virtual bool         isEmpty(void) const                                        = 0;
 	virtual unsigned int getTotalNumberOfSubBuffers(void) const                     = 0;
 	virtual unsigned int getProducerBufferSize(const std::string& producerID) const = 0;
+	virtual unsigned int getProducerWrittenBuffers(const std::string& producerID) const = 0;  ///< sub-buffers written but not yet read by every consumer
 
   protected:
 	virtual void registerProducer(const std::string& producerID,
