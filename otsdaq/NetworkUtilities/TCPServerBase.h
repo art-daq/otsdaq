@@ -36,7 +36,7 @@ class TCPServerBase : public virtual TCPSocket
 	template<class T>
 	T* acceptClient(bool blocking = true)
 	{
-		int socketId = accept(blocking);
+		int                         socketId = accept(blocking);
 		std::lock_guard<std::mutex> lock(fClientsMutex);
 		fConnectedClients.emplace(socketId, new T(socketId));
 		return dynamic_cast<T*>(fConnectedClients[socketId]);
