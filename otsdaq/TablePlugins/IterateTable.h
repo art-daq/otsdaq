@@ -152,6 +152,7 @@ class IterateTable : public TableBase
 	{
 		const std::string WaitOnRunningThreads_ = "WaitForAllFrontEndsRunningThread";
 		const std::string DurationInSeconds_    = "DurationInSeconds";
+		const std::string WriteToECL_           = "WriteToECL";
 	} commandRunParams_;
 	static struct CommandWaitParams
 	{

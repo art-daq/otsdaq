@@ -225,6 +225,33 @@ void TCPServerBase::closeClientSockets(void)
 }
 
 //==============================================================================
+void TCPServerBase::removeClient(int socketId)
+{
+	std::lock_guard<std::mutex> lock(fClientsMutex);
+	auto                        it = fConnectedClients.find(socketId);
+	if(it == fConnectedClients.end())
+		return;
+	auto clientThread = fConnectedClientsFuture.find(socketId);
+	if(clientThread != fConnectedClientsFuture.end())
+		fConnectedClientsFuture.erase(clientThread);
+	delete it->second;  // TCPSocket destructor closes the descriptor
+	fConnectedClients.erase(it);
+	__COUT__ << "Removed disconnected client socket " << socketId << ", "
+	         << fConnectedClients.size() << " remaining." << std::endl;
+}
+
+//==============================================================================
+std::vector<int> TCPServerBase::getClientSocketIds(void) const
+{
+	std::lock_guard<std::mutex> lock(fClientsMutex);
+	std::vector<int>            ids;
+	ids.reserve(fConnectedClients.size());
+	for(auto const& client : fConnectedClients)
+		ids.push_back(client.first);
+	return ids;
+}
+
+//==============================================================================
 void TCPServerBase::closeClientSocket(int socket)
 {
 	// This method is called inside the thread itself so it cannot call the removeClientSocketFuture!!!
