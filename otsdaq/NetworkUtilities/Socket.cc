@@ -129,7 +129,8 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 		{
 			__COUTT__ << "]\tPort " << port.str() << " unavailable, trying next port..."
 			          << std::endl;
-			socketNumber_ = 0;
+			close(socketNumber_);  // otherwise every occupied port leaks a descriptor
+			socketNumber_ = -1;
 		}
 		else
 		{
