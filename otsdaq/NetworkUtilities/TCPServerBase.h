@@ -50,9 +50,8 @@ class TCPServerBase : public virtual TCPSocket
 	void pingActiveClients(void);
 
 	// std::promise<bool>        fAcceptPromise;
-	// fClientsMutex guards fConnectedClients against the accept thread inserting while
-	// a reader thread iterates. Only acceptClient, removeClient, getClientSocketIds and
-	// TCPListenServer's receive path take it; the older broadcast/ping paths do not.
+	// fClientsMutex guards fConnectedClients. Every method that reads or modifies
+	// the map takes it (accept, broadcast, ping, close, remove, receive).
 	mutable std::mutex               fClientsMutex;
 	std::map<int, TCPSocket*>        fConnectedClients;
 	std::map<int, std::future<void>> fConnectedClientsFuture;
