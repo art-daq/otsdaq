@@ -499,8 +499,8 @@ void ots::ARTDAQOnlineMonitorSupervisor::ShutdownArtProcess()
 	// send it first, give art a few seconds, then force it.
 	int int_wait_ms = 1000 * 3;
 
-	TLOG(TLVL_TRACE) << "Sending SIGINT to art pid " << *art_pid_
-	                 << " and waiting up to " << int_wait_ms << " ms for it to exit";
+	TLOG(TLVL_TRACE) << "Sending SIGINT to art pid " << *art_pid_ << " and waiting up to "
+	                 << int_wait_ms << " ms for it to exit";
 	kill(*art_pid_, SIGINT);
 	for(int ii = 0; ii < int_wait_ms; ++ii)
 	{
