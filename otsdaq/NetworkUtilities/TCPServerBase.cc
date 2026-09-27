@@ -118,10 +118,14 @@ int TCPServerBase::accept(bool blocking)
 		//__COUT__ << "Number of connected clients: " << fConnectedClients.size() << std::endl;
 		// clientSocket = ::accept4(getSocketId(),(struct sockaddr *)&clientAddress,  &clientAddressSize, 0);
 		// unsigned counter = 0;
-		__COUT__ << "Client list on input:\n";
-		for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
 		{
-			__COUT__ << " --> Client: " << it->first << " : " << it->second << std::endl;
+			std::lock_guard<std::mutex> lock(fClientsMutex);
+			__COUT__ << "Client list on input:\n";
+			for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
+			{
+				__COUT__ << " --> Client: " << it->first << " : " << it->second
+				         << std::endl;
+			}
 		}
 		while(true)
 		{
@@ -129,10 +133,13 @@ int TCPServerBase::accept(bool blocking)
 			    getSocketId(), (struct sockaddr*)&clientAddress, &clientAddressSize);
 			__COUT__ << ": clientSocket returned = " << clientSocket << std::endl;
 
-			//FIXME: Commenting out this line to avoid seg-fault in the case there are two clients connecting from the same process...
-			// pingActiveClients();  // This message is to check if there are clients that disconnected and, if so, they are removed from the client list
-			if(fAccept && fMaxNumberOfClients > 0 &&
-			   fConnectedClients.size() >= fMaxNumberOfClients)
+			bool tooMany = false;
+			{
+				std::lock_guard<std::mutex> lock(fClientsMutex);
+				tooMany = fAccept && fMaxNumberOfClients > 0 &&
+				          fConnectedClients.size() >= fMaxNumberOfClients;
+			}
+			if(tooMany)
 			{
 				send(clientSocket, "Too many clients connected!", 27, 0);
 				::shutdown(clientSocket, SHUT_WR);
@@ -255,7 +262,8 @@ std::vector<int> TCPServerBase::getClientSocketIds(void) const
 void TCPServerBase::closeClientSocket(int socket)
 {
 	// This method is called inside the thread itself so it cannot call the removeClientSocketFuture!!!
-	auto it = fConnectedClients.find(socket);
+	std::lock_guard<std::mutex> lock(fClientsMutex);
+	auto                        it = fConnectedClients.find(socket);
 	if(it != fConnectedClients.end())
 	{
 		if(it->second->getSocketId() == socket)
@@ -293,6 +301,7 @@ void TCPServerBase::broadcastPacket(const char* message, std::size_t length)
 //==============================================================================
 void TCPServerBase::broadcastPacket(const std::string& message)
 {
+	std::lock_guard<std::mutex> lock(fClientsMutex);
 	for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
 	{
 		try
@@ -318,7 +327,7 @@ void TCPServerBase::broadcastPacket(const std::string& message)
 //========================================================================================================================
 void TCPServerBase::broadcast(const char* message, std::size_t length)
 {
-	//	std::lock_guard<std::mutex> lock(clientsMutex_);
+	std::lock_guard<std::mutex> lock(fClientsMutex);
 	for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
 	{
 		try
@@ -344,6 +353,7 @@ void TCPServerBase::broadcast(const char* message, std::size_t length)
 //==============================================================================
 void TCPServerBase::broadcast(const std::string& message)
 {
+	std::lock_guard<std::mutex> lock(fClientsMutex);
 	for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
 	{
 		try
@@ -369,6 +379,7 @@ void TCPServerBase::broadcast(const std::string& message)
 //==============================================================================
 void TCPServerBase::broadcast(const std::vector<char>& message)
 {
+	std::lock_guard<std::mutex> lock(fClientsMutex);
 	for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
 	{
 		try
@@ -394,6 +405,7 @@ void TCPServerBase::broadcast(const std::vector<char>& message)
 //==============================================================================
 void TCPServerBase::broadcast(const std::vector<uint16_t>& message)
 {
+	std::lock_guard<std::mutex> lock(fClientsMutex);
 	for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
 	{
 		try
@@ -421,6 +433,7 @@ void TCPServerBase::broadcast(const std::vector<uint16_t>& message)
 //==============================================================================
 void TCPServerBase::pingActiveClients()
 {
+	std::lock_guard<std::mutex> lock(fClientsMutex);
 	for(auto it = fConnectedClients.begin(); it != fConnectedClients.end(); it++)
 	{
 		__COUT__ << "Pinging client " << it->first << " : " << it->second << std::endl;

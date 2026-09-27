@@ -39,9 +39,9 @@ class TCPDataListenerProducer : public DataProducer,
 	void fastWrite(void);
 	void sampleSocketBacklog(void);  ///< work-loop thread only
 
-	std::atomic<uint64_t>                                statClients_{0};
-	std::atomic<uint64_t>                                statSocketBacklogBytes_{0};
-	std::chrono::steady_clock::time_point                lastBacklogSample_{};
+	std::atomic<uint64_t>                 statClients_{0};
+	std::atomic<uint64_t>                 statSocketBacklogBytes_{0};
+	std::chrono::steady_clock::time_point lastBacklogSample_{};
 	/// For slow write
 	std::string                        data_;
 	std::map<std::string, std::string> header_;
