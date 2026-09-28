@@ -5,6 +5,7 @@
 				<COLUMN Type="UID" 	 Name="CommandID" 	 StorageName="COMMAND_ID" 		DataType="VARCHAR2" 		DataChoices=""/>
 				<COLUMN Type="TrueFalse" 	 Name="WaitForAllFrontEndsRunningThread" 	 StorageName="WAIT_FOR_ALL_FRONT_ENDS_RUNNING_THREAD" 		DataType="VARCHAR2" 		DataChoices=""/>
 				<COLUMN Type="Data" 	 Name="DurationInSeconds" 	 StorageName="DURATION_IN_SECONDS" 		DataType="NUMBER" 		DataChoices=""/>
+				<COLUMN Type="TrueFalse" 	 Name="WriteToECL" 	 StorageName="WRITE_TO_ECL" 		DataType="VARCHAR2" 		DataChoices=""/>
 				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="VARCHAR2" 		DataChoices=""/>
 				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="VARCHAR2" 		DataChoices=""/>
 				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE" 		DataChoices=""/>

@@ -1,4 +1,5 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
+#include "otsdaq/Macros/StringMacros.h"
 #include "otsdaq/TablePlugins/IterateTable.h"
 
 #include <iostream>
@@ -324,17 +325,18 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 						// add parameter name:value:step
 
 						argStr += ",";
-						argStr +=
+						argStr += StringMacros::encodeURIComponent(
 						    macroParam.second.getNode(IterateTable::macroParamCols_.Name_)
-						        .getValue<std::string>();
+						        .getValue<std::string>());
 						argStr += ":";
-						argStr += macroParam.second
-						              .getNode(IterateTable::macroParamCols_.Value_)
-						              .getValue<std::string>();
+						argStr += StringMacros::encodeURIComponent(
+						    macroParam.second
+						        .getNode(IterateTable::macroParamCols_.Value_)
+						        .getValue<std::string>());
 						argStr += ":";
-						argStr +=
+						argStr += StringMacros::encodeURIComponent(
 						    macroParam.second.getNode(IterateTable::macroParamCols_.Step_)
-						        .getValue<std::string>();
+						        .getValue<std::string>());
 
 					}  // end parameter loop
 				}      // end dimension loop
