@@ -840,6 +840,9 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 							               << __E__;
 							    __GEN_SS_THROW__;
 						    }
+						    argPieces[0] = StringMacros::decodeURIComponent(argPieces[0]);
+						    argPieces[1] = StringMacros::decodeURIComponent(argPieces[1]);
+						    argPieces[2] = StringMacros::decodeURIComponent(argPieces[2]);
 
 						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
 
@@ -1439,17 +1442,25 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 							               << __E__;
 							    __GEN_SS_THROW__;
 						    }
+						    argPieces[0] = StringMacros::decodeURIComponent(argPieces[0]);
+						    argPieces[1] = StringMacros::decodeURIComponent(argPieces[1]);
+						    argPieces[2] = StringMacros::decodeURIComponent(argPieces[2]);
 
 						    __GEN_COUTV__(StringMacros::vectorToString(argPieces));
 
 						    // check piece 1 and 2 for double hint
 						    //	a la Iterator::startCommandModifyActive()
+						    double stepAsNumber = 1;
 						    if(argPieces[2] ==
 						           TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
 						       argPieces[2] ==
-						           TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+						           TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT ||
+						       (argPieces[2].size() &&
+						        StringMacros::getNumber(argPieces[2], stepAsNumber) &&
+						        stepAsNumber == 0))
 						    {
-							    // if step size is default, considering value an unchanging string
+							    // step DEFAULT or 0: the value never changes, so pass it
+							    //	through untouched as a string (e.g. "true" stays "true")
 
 							    __GEN_COUT__ << "Creating string argument '"
 							                 << argPieces[0] << "' := " << argPieces[1]

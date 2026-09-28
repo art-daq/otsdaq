@@ -1,4 +1,5 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
+#include "otsdaq/Macros/StringMacros.h"
 #include "otsdaq/TablePlugins/IterateTable.h"
 
 #include <iostream>
@@ -16,7 +17,7 @@ const std::string IterateTable::COMMAND_CONFIGURE_GROUP        = "CONFIGURE_GROU
 const std::string IterateTable::COMMAND_ACTIVATE_ALIAS         = "ACTIVATE_ALIAS";
 const std::string IterateTable::COMMAND_ACTIVATE_GROUP         = "ACTIVATE_GROUP";
 const std::string IterateTable::COMMAND_EXECUTE_FE_MACRO       = "EXECUTE_FE_MACRO";
-const std::string IterateTable::COMMAND_EXECUTE_MACRO          = "EXECUTE_MACRO";
+const std::string IterateTable::COMMAND_EXECUTE_MM_MACRO       = "EXECUTE_MM_MACRO";
 const std::string IterateTable::COMMAND_MODIFY_ACTIVE_GROUP    = "MODIFY_ACTIVE_GROUP";
 const std::string IterateTable::COMMAND_REPEAT_LABEL           = "REPEAT_LABEL";
 const std::string IterateTable::COMMAND_RUN                    = "RUN";
@@ -324,17 +325,18 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 						// add parameter name:value:step
 
 						argStr += ",";
-						argStr +=
+						argStr += StringMacros::encodeURIComponent(
 						    macroParam.second.getNode(IterateTable::macroParamCols_.Name_)
-						        .getValue<std::string>();
+						        .getValue<std::string>());
 						argStr += ":";
-						argStr += macroParam.second
-						              .getNode(IterateTable::macroParamCols_.Value_)
-						              .getValue<std::string>();
+						argStr += StringMacros::encodeURIComponent(
+						    macroParam.second
+						        .getNode(IterateTable::macroParamCols_.Value_)
+						        .getValue<std::string>());
 						argStr += ":";
-						argStr +=
+						argStr += StringMacros::encodeURIComponent(
 						    macroParam.second.getNode(IterateTable::macroParamCols_.Step_)
-						        .getValue<std::string>();
+						        .getValue<std::string>());
 
 					}  // end parameter loop
 				}      // end dimension loop
