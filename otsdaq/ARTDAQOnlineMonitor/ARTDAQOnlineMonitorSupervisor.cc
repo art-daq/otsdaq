@@ -487,56 +487,21 @@ void ots::ARTDAQOnlineMonitorSupervisor::ShutdownArtProcess()
 
 	auto shutdown_start = std::chrono::steady_clock::now();
 
-	int graceful_wait_ms = 1000 * 10;
-	int gentle_wait_ms   = 1000 * 2;
-	int int_wait_ms      = 1000;
+	// This sequence was copied from artdaq's SharedMemoryEventManager, where the
+	// event manager first sends an end-of-data marker and then waits for art to exit
+	// on its own. Here there is no such marker: the monitor's art process reads from
+	// a dispatcher over TCP and has no way to know the run ended, so the original
+	// 10 s "graceful" wait always timed out, and the following SIGQUIT is not handled
+	// by art's input source (ROOT catches it and prints a stack trace instead).
+	//
+	// SIGINT is the one signal the artdaq TransferWrapper input handles: it ends the
+	// receive loop, runs endJob, and unregisters the monitor from the dispatcher. So
+	// send it first, give art a few seconds, then force it.
+	int int_wait_ms = 1000 * 3;
 
-	TLOG(TLVL_TRACE) << "Waiting up to " << graceful_wait_ms
-	                 << " ms for art process to exit gracefully";
-	for(int ii = 0; ii < graceful_wait_ms; ++ii)
-	{
-		usleep(1000);
-
-		if(!check_pid())
-		{
-			TLOG(TLVL_INFO) << "art process exited after "
-			                << artdaq::TimeUtils::GetElapsedTimeMilliseconds(
-			                       shutdown_start)
-			                << " ms.";
-			return;
-		}
-	}
-
-	{
-		TLOG(TLVL_TRACE) << "Gently informing art process that it is time to shut down";
-
-		TLOG(TLVL_TRACE) << "Sending SIGQUIT to pid " << *art_pid_;
-		kill(*art_pid_, SIGQUIT);
-	}
-
-	TLOG(TLVL_TRACE) << "Waiting up to " << gentle_wait_ms
-	                 << " ms for art process to exit from SIGQUIT";
-	for(int ii = 0; ii < gentle_wait_ms; ++ii)
-	{
-		usleep(1000);
-
-		if(!check_pid())
-		{
-			TLOG(TLVL_INFO) << "art process exited after "
-			                << artdaq::TimeUtils::GetElapsedTimeMilliseconds(
-			                       shutdown_start)
-			                << " ms (SIGQUIT).";
-			return;
-		}
-	}
-
-	{
-		TLOG(TLVL_TRACE) << "Insisting that the art process shut down";
-		kill(*art_pid_, SIGINT);
-	}
-
-	TLOG(TLVL_TRACE) << "Waiting up to " << int_wait_ms
-	                 << " ms for art process to exit from SIGINT";
+	TLOG(TLVL_TRACE) << "Sending SIGINT to art pid " << *art_pid_ << " and waiting up to "
+	                 << int_wait_ms << " ms for it to exit";
+	kill(*art_pid_, SIGINT);
 	for(int ii = 0; ii < int_wait_ms; ++ii)
 	{
 		usleep(1000);
@@ -551,7 +516,8 @@ void ots::ARTDAQOnlineMonitorSupervisor::ShutdownArtProcess()
 		}
 	}
 
-	TLOG(TLVL_TRACE) << "Killing art process with extreme prejudice";
+	TLOG(TLVL_WARNING) << "art process did not exit within " << int_wait_ms
+	                   << " ms of SIGINT, killing it";
 	while(check_pid())
 	{
 		{
