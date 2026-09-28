@@ -26,6 +26,7 @@ class CircularBuffer : public CircularBufferBase
 	bool         isEmpty(void) const;
 	unsigned int getTotalNumberOfSubBuffers(void) const;
 	unsigned int getProducerBufferSize(const std::string& producerID) const;
+	unsigned int getProducerWrittenBuffers(const std::string& producerID) const;
 
 	inline int read(D& buffer, const std::string& consumerID)
 	{

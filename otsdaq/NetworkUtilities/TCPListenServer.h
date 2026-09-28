@@ -6,37 +6,59 @@
 
 #include "TRACE/trace.h"
 
+#include <chrono>
+
 namespace ots
 {
+/// TCPListenServer
+///	Accepts any number of clients and lets one reader thread pull data from whichever
+///	client has something to say. Reads never block on an idle client: the reader
+///	polls all clients, picks a ready one round-robin, and reads from it. A client
+///	whose peer closed the connection is dropped from the list on the spot.
 class TCPListenServer : public TCPServerBase
 {
   public:
 	TCPListenServer(unsigned int serverPort, unsigned int maxNumberOfClients = -1);
 	virtual ~TCPListenServer(void);
 
+	/// Raw read from a ready client. Returns an empty T if no client had data within
+	/// the poll timeout. Throws if the chosen client's connection closed (after
+	/// removing it).
 	template<class T>
-	T           receive();
+	T receive();
+	/// Length-prefixed packet from a ready client. Same timeout/throw semantics.
 	std::string receivePacket();
 
   protected:
 	void acceptConnections() override;
-	int  lastReceived;
+
+	/// Wait up to timeout for any client to become readable and return it, rotating
+	/// through clients so a chatty one cannot starve the others. nullptr on timeout
+	/// or when no clients are connected (the timeout is still honoured, so callers
+	/// do not spin).
+	TCPReceiverSocket* waitForReadableClient(std::chrono::milliseconds timeout);
+
+	static constexpr std::chrono::milliseconds kPollTimeout{5};
+
+	int lastReceived = -1;
 };
+
 template<class T>
 inline T TCPListenServer::receive()
 {
-	if(!fConnectedClients.empty())
+	TCPReceiverSocket* client = waitForReadableClient(kPollTimeout);
+	if(client == nullptr)
+		return T();
+	const int socketId = client->getSocketId();
+	try
 	{
-		auto it = fConnectedClients.find(lastReceived);
-		if(it == fConnectedClients.end() || ++it == fConnectedClients.end())
-			it = fConnectedClients.begin();
-		lastReceived = it->first;
-		TLOG(25, "TCPListenServer")
-		    << "Reading from socket " << lastReceived << ", there are "
-		    << fConnectedClients.size() << " clients connected.";
-		return dynamic_cast<TCPReceiverSocket*>(it->second)->receive<T>();
+		return client->receive<T>();
 	}
-	throw std::runtime_error("No clients connected!");
+	catch(...)
+	{
+		removeClient(socketId);
+		throw;
+	}
 }
 }  // namespace ots
 #endif
