@@ -24,9 +24,9 @@ class IterateTable : public TableBase
 
 	struct Command
 	{
-		void        addTarget() { targets_.push_back(CommandTarget()); }
-		std::string type_;
-		std::string targetSubsystem_;  // empty = self, else remote subsystem name
+		void                                                              addTarget() { targets_.push_back(CommandTarget()); }
+		std::string                                                       type_;
+		std::string                                                       targetSubsystem_;  // empty = self, else remote subsystem name
 		std::vector<CommandTarget>                                        targets_;
 		std::map<std::string /*param name*/, std::string /*param value*/> params_;
 	};
