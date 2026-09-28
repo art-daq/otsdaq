@@ -143,6 +143,7 @@ try
 
 						iterator->activePlanIsRunning_ = true;
 						iterator->iteratorBusy_        = true;
+						iterator->errorMessage_        = "";  // clear any previous error
 
 						if(theIteratorStruct.activePlan_ != iterator->activePlanName_)
 						{
@@ -326,6 +327,9 @@ try
 			//		__COUT__ << "thinking.." << theIteratorStruct.running_ << " " <<
 			//				theIteratorStruct.activePlan_ << " cmd=" <<
 			//				theIteratorStruct.commandIndex_ << __E__;
+			try  // inner catch: on error, pause the plan instead of killing the thread
+			{
+
 			if(theIteratorStruct.running_ &&
 			   theIteratorStruct.activePlan_ !=
 			       "")  // important, because after errors, still "running" until halt
@@ -333,10 +337,10 @@ try
 				if(theIteratorStruct.commandIndex_ == (unsigned int)-1)
 				{
 					// initialize the running plan
+					// commandIndex_ stays -1 until loading succeeds, so a failure
+					// here re-enters this block on retry instead of skipping it
 
 					__COUT__ << "Get commands" << __E__;
-
-					theIteratorStruct.commandIndex_ = 0;
 
 					theIteratorStruct.cfgMgr_
 					    ->init();  // completely reset to re-align with any changes
@@ -397,6 +401,8 @@ try
 					         << theIteratorStruct.originalConfigGroup_ << __E__;
 					__COUT__ << "originalConfigKey "
 					         << theIteratorStruct.originalConfigKey_ << __E__;
+
+					theIteratorStruct.commandIndex_ = 0;
 
 				}  // end initial section
 
@@ -482,6 +488,39 @@ try
 			}  // end running
 			else
 				sleep(1);  // when inactive sleep a lot
+
+			}  // end inner try
+			catch(const std::runtime_error& e)
+			{
+				__COUT_ERR__ << "Iterator command error (will pause for retry): "
+				             << e.what() << __E__;
+				theIteratorStruct.commandBusy_ = false;
+
+				std::lock_guard<std::mutex> lock(iterator->accessMutex_);
+				iterator->activePlanIsRunning_ = false;
+				iterator->errorMessage_ =
+				    std::string("Error at command ") +
+				    std::to_string(theIteratorStruct.commandIndex_) + " (" +
+				    (theIteratorStruct.commandIndex_ < theIteratorStruct.commands_.size()
+				         ? theIteratorStruct.commands_[theIteratorStruct.commandIndex_].type_
+				         : "?") +
+				    "): " + e.what();
+			}
+			catch(...)
+			{
+				__COUT_ERR__ << "Iterator unknown error (will pause for retry)." << __E__;
+				theIteratorStruct.commandBusy_ = false;
+
+				std::lock_guard<std::mutex> lock(iterator->accessMutex_);
+				iterator->activePlanIsRunning_ = false;
+				iterator->errorMessage_ =
+				    std::string("Unknown error at command ") +
+				    std::to_string(theIteratorStruct.commandIndex_) + " (" +
+				    (theIteratorStruct.commandIndex_ < theIteratorStruct.commands_.size()
+				         ? theIteratorStruct.commands_[theIteratorStruct.commandIndex_].type_
+				         : "?") +
+				    ")";
+			}
 
 			////////////////
 			////////////////
@@ -2840,10 +2879,15 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 		if(workloopRunning_)
 			xmldoc.addTextElementToData("active_plan_status", "Running");
 		else
-			xmldoc.addTextElementToData("active_plan_status", "Error");
+			xmldoc.addTextElementToData("active_plan_status", "Error");  // thread died (safety net)
 	}
 	else if(!activePlanIsRunning_ && iteratorBusy_)
-		xmldoc.addTextElementToData("active_plan_status", "Paused");
+	{
+		if(errorMessage_.size())
+			xmldoc.addTextElementToData("active_plan_status", "Error");  // paused after error — press Play to retry
+		else
+			xmldoc.addTextElementToData("active_plan_status", "Paused");
+	}
 	else
 		xmldoc.addTextElementToData("active_plan_status", "Inactive");
 
