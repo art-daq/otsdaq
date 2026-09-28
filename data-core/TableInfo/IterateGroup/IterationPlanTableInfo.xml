@@ -5,7 +5,7 @@
 				<COLUMN Type="GroupID-iterationPlan" 	 Name="IterationPlanGroupID" 	 StorageName="ITERATION_PLAN_GROUP_ID" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="UID" 	 Name="IterationPlanCommandID" 	 StorageName="ITERATION_PLAN_COMMAND_ID" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="OnOff" 	 Name="Status" 	 StorageName="STATUS" 		DataType="STRING" 		DataChoices=""/>
-				<COLUMN Type="FixedChoiceData" 	 Name="CommandType" 	 StorageName="COMMAND_TYPE" 		DataType="STRING" 		DataChoices="arbitraryBool=0,BEGIN_LABEL,REPEAT_LABEL,CHOOSE_FSM,CONFIGURE_ACTIVE_GROUP,CONFIGURE_ALIAS,CONFIGURE_GROUP,ACTIVATE_ALIAS,ACTIVATE_GROUP,MODIFY_ACTIVE_GROUP,EXECUTE_MACRO,EXECUTE_FE_MACRO,RUN,START,STOP,PAUSE,RESUME,HALT,WAIT"/>
+				<COLUMN Type="FixedChoiceData" 	 Name="CommandType" 	 StorageName="COMMAND_TYPE" 		DataType="STRING" 		DataChoices="arbitraryBool=0,BEGIN_LABEL,REPEAT_LABEL,CHOOSE_FSM,CONFIGURE_ACTIVE_GROUP,CONFIGURE_ALIAS,CONFIGURE_GROUP,ACTIVATE_ALIAS,ACTIVATE_GROUP,MODIFY_ACTIVE_GROUP,EXECUTE_MM_MACRO,EXECUTE_FE_MACRO,RUN,START,STOP,PAUSE,RESUME,HALT,WAIT"/>
 				<COLUMN Type="Data" 	 Name="TargetSubsystem" 	 StorageName="TARGET_SUBSYSTEM" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="ChildLink-command" 	 Name="LinkToCommandTable" 	 StorageName="LINK_TO_COMMAND_TABLE" 		DataType="STRING" 		DataChoices=""/>
 				<COLUMN Type="ChildLinkUID-command" 	 Name="LinkToCommandUID" 	 StorageName="LINK_TO_COMMAND_UID" 		DataType="STRING" 		DataChoices=""/>

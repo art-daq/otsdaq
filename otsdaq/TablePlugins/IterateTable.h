@@ -42,7 +42,7 @@ class IterateTable : public TableBase
 	static const std::string COMMAND_ACTIVATE_ALIAS;
 	static const std::string COMMAND_ACTIVATE_GROUP;
 	static const std::string COMMAND_EXECUTE_FE_MACRO;
-	static const std::string COMMAND_EXECUTE_MACRO;
+	static const std::string COMMAND_EXECUTE_MM_MACRO;
 	static const std::string COMMAND_MODIFY_ACTIVE_GROUP;
 	static const std::string COMMAND_REPEAT_LABEL;
 	static const std::string COMMAND_RUN;
@@ -63,25 +63,24 @@ class IterateTable : public TableBase
 	static std::map<std::string, std::string>       createCommandToTableMap()
 	{
 		std::map<std::string, std::string> m;
-		m[COMMAND_BEGIN_LABEL] = "IterationCommandBeginLabelTable";
-		m[COMMAND_CHOOSE_FSM]  = "IterationCommandChooseFSMTable";
-		m[COMMAND_CONFIGURE_ACTIVE_GROUP] =
-		    "IterationCommandConfigureAliasTable";  ///< SystemAlias unused; carries SkipIfAlreadyConfigured
-		m[COMMAND_CONFIGURE_ALIAS]     = "IterationCommandConfigureAliasTable";
-		m[COMMAND_CONFIGURE_GROUP]     = "IterationCommandConfigureGroupTable";
-		m[COMMAND_ACTIVATE_ALIAS]      = "IterationCommandConfigureAliasTable";
-		m[COMMAND_ACTIVATE_GROUP]      = "IterationCommandConfigureGroupTable";
-		m[COMMAND_EXECUTE_FE_MACRO]    = "IterationCommandExecuteFEMacroTable";
-		m[COMMAND_EXECUTE_MACRO]       = "IterationCommandExecuteMacroTable";
-		m[COMMAND_MODIFY_ACTIVE_GROUP] = "IterationCommandModifyGroupTable";
-		m[COMMAND_REPEAT_LABEL]        = "IterationCommandRepeatLabelTable";
-		m[COMMAND_RUN]                 = "IterationCommandRunTable";
-		m[COMMAND_WAIT]                = "IterationCommandRunTable";
-		m[COMMAND_START]               = "";  ///< no parameters
-		m[COMMAND_STOP]                = "";  ///< no parameters
-		m[COMMAND_PAUSE]               = "";  ///< no parameters
-		m[COMMAND_RESUME]              = "";  ///< no parameters
-		m[COMMAND_HALT]                = "";  ///< no parameters
+		m[COMMAND_BEGIN_LABEL]            = "IterationCommandBeginLabelTable";
+		m[COMMAND_CHOOSE_FSM]             = "IterationCommandChooseFSMTable";
+		m[COMMAND_CONFIGURE_ACTIVE_GROUP] = "IterationCommandConfigureAliasTable";  ///< SystemAlias unused; carries SkipIfAlreadyConfigured
+		m[COMMAND_CONFIGURE_ALIAS]        = "IterationCommandConfigureAliasTable";
+		m[COMMAND_CONFIGURE_GROUP]        = "IterationCommandConfigureGroupTable";
+		m[COMMAND_ACTIVATE_ALIAS]         = "IterationCommandConfigureAliasTable";
+		m[COMMAND_ACTIVATE_GROUP]         = "IterationCommandConfigureGroupTable";
+		m[COMMAND_EXECUTE_FE_MACRO]       = "IterationCommandExecuteFEMacroTable";
+		m[COMMAND_EXECUTE_MM_MACRO]       = "IterationCommandExecuteMacroTable";
+		m[COMMAND_MODIFY_ACTIVE_GROUP]    = "IterationCommandModifyGroupTable";
+		m[COMMAND_REPEAT_LABEL]           = "IterationCommandRepeatLabelTable";
+		m[COMMAND_RUN]                    = "IterationCommandRunTable";
+		m[COMMAND_WAIT]                   = "IterationCommandRunTable";
+		m[COMMAND_START]                  = "";  ///< no parameters
+		m[COMMAND_STOP]                   = "";  ///< no parameters
+		m[COMMAND_PAUSE]                  = "";  ///< no parameters
+		m[COMMAND_RESUME]                 = "";  ///< no parameters
+		m[COMMAND_HALT]                   = "";  ///< no parameters
 		return m;
 	}
 
