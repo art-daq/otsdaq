@@ -329,165 +329,166 @@ try
 			//				theIteratorStruct.commandIndex_ << __E__;
 			try  // inner catch: on error, pause the plan instead of killing the thread
 			{
-
-			if(theIteratorStruct.running_ &&
-			   theIteratorStruct.activePlan_ !=
-			       "")  // important, because after errors, still "running" until halt
-			{
-				if(theIteratorStruct.commandIndex_ == (unsigned int)-1)
+				if(theIteratorStruct.running_ &&
+				   theIteratorStruct.activePlan_ !=
+				       "")  // important, because after errors, still "running" until halt
 				{
-					// initialize the running plan
-					// commandIndex_ stays -1 until loading succeeds, so a failure
-					// here re-enters this block on retry instead of skipping it
-
-					__COUT__ << "Get commands" << __E__;
-
-					theIteratorStruct.cfgMgr_
-					    ->init();  // completely reset to re-align with any changes
-
-					if(theIteratorStruct.activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME)
+					if(theIteratorStruct.commandIndex_ == (unsigned int)-1)
 					{
-						__COUT__ << "Using generated plan..." << __E__;
-						theIteratorStruct.onlyConfigIfNotConfigured_ =
-						    iterator->genKeepConfiguration_;
-						theIteratorStruct.commands_ =
-						    generateIterationPlan(iterator->genFsmName_,
-						                          iterator->genConfigAlias_,
-						                          iterator->genPlanDurationSeconds_,
-						                          iterator->genPlanNumberOfRuns_);
-					}
-					else
-					{
-						__COUT__ << "Getting iterator table..." << __E__;
-						itConfig =
-						    theIteratorStruct.cfgMgr_->__GET_CONFIG__(IterateTable);
-						theIteratorStruct.onlyConfigIfNotConfigured_ = false;
-						theIteratorStruct.commands_ = itConfig->getPlanCommands(
-						    theIteratorStruct.cfgMgr_, theIteratorStruct.activePlan_);
-					}
+						// initialize the running plan
+						// commandIndex_ stays -1 until loading succeeds, so a failure
+						// here re-enters this block on retry instead of skipping it
 
-					// reset commandIteration counts and any label stacks left by a
-					//	plan halted mid-loop
-					theIteratorStruct.commandIterations_.clear();
-					theIteratorStruct.stepIndexStack_.clear();
-					theIteratorStruct.stepLabelStack_.clear();
-					theIteratorStruct.outputFiles_.clear();
-					for(auto& command : theIteratorStruct.commands_)
-					{
-						theIteratorStruct.commandIterations_.push_back(0);
-						__COUT__ << "command " << command.type_ << __E__;
-						__COUT__ << "table "
-						         << IterateTable::commandToTableMap_.at(command.type_)
-						         << __E__;
-						__COUT__ << "param count = " << command.params_.size() << __E__;
+						__COUT__ << "Get commands" << __E__;
 
-						for(auto& param : command.params_)
+						theIteratorStruct.cfgMgr_
+						    ->init();  // completely reset to re-align with any changes
+
+						if(theIteratorStruct.activePlan_ ==
+						   Iterator::RESERVED_GEN_PLAN_NAME)
 						{
-							__COUT__ << "\t param " << param.first << " : "
-							         << param.second << __E__;
+							__COUT__ << "Using generated plan..." << __E__;
+							theIteratorStruct.onlyConfigIfNotConfigured_ =
+							    iterator->genKeepConfiguration_;
+							theIteratorStruct.commands_ =
+							    generateIterationPlan(iterator->genFsmName_,
+							                          iterator->genConfigAlias_,
+							                          iterator->genPlanDurationSeconds_,
+							                          iterator->genPlanNumberOfRuns_);
 						}
-					}
-
-					theIteratorStruct.originalTrackChanges_ =
-					    ConfigurationInterface::isVersionTrackingEnabled();
-					theIteratorStruct.originalConfigGroup_ =
-					    theIteratorStruct.cfgMgr_->getActiveGroupName();
-					theIteratorStruct.originalConfigKey_ =
-					    theIteratorStruct.cfgMgr_->getActiveGroupKey();
-
-					__COUT__ << "originalTrackChanges "
-					         << theIteratorStruct.originalTrackChanges_ << __E__;
-					__COUT__ << "originalConfigGroup "
-					         << theIteratorStruct.originalConfigGroup_ << __E__;
-					__COUT__ << "originalConfigKey "
-					         << theIteratorStruct.originalConfigKey_ << __E__;
-
-					theIteratorStruct.commandIndex_ = 0;
-
-				}  // end initial section
-
-				if(!theIteratorStruct.commandBusy_)
-				{
-					if(theIteratorStruct.commandIndex_ <
-					   theIteratorStruct.commands_.size())
-					{
-						// execute command
-						theIteratorStruct.commandBusy_ = true;
-
-						__COUT__ << "Iterator starting command "
-						         << theIteratorStruct.commandIndex_ + 1 << ": "
-						         << theIteratorStruct
-						                .commands_[theIteratorStruct.commandIndex_]
-						                .type_
-						         << __E__;
-						__COUT__ << "Iterator starting command "
-						         << theIteratorStruct.commandIndex_ + 1 << ": "
-						         << theIteratorStruct
-						                .commands_[theIteratorStruct.commandIndex_]
-						                .type_
-						         << __E__;
-
-						iterator->startCommand(&theIteratorStruct);
-					}
-					else if(theIteratorStruct.commandIndex_ ==
-					        theIteratorStruct.commands_.size())  // Done!
-					{
-						__COUT__ << "Finished Iteration Plan '"
-						         << theIteratorStruct.activePlan_ << __E__;
-						__COUT__ << "Finished Iteration Plan '"
-						         << theIteratorStruct.activePlan_ << __E__;
-
-						__COUT__ << "Reverting track changes." << __E__;
-						ConfigurationInterface::setVersionTrackingEnabled(
-						    theIteratorStruct.originalTrackChanges_);
-
-						//l
-						__COUT__ << "Activating original group..." << __E__;
-						try
+						else
 						{
-							theIteratorStruct.cfgMgr_->activateTableGroup(
-							    theIteratorStruct.originalConfigGroup_,
-							    theIteratorStruct.originalConfigKey_);
-						}
-						catch(...)
-						{
-							__COUT_WARN__ << "Original group could not be activated."
-							              << __E__;
+							__COUT__ << "Getting iterator table..." << __E__;
+							itConfig =
+							    theIteratorStruct.cfgMgr_->__GET_CONFIG__(IterateTable);
+							theIteratorStruct.onlyConfigIfNotConfigured_ = false;
+							theIteratorStruct.commands_ = itConfig->getPlanCommands(
+							    theIteratorStruct.cfgMgr_, theIteratorStruct.activePlan_);
 						}
 
-						// leave FSM halted
-						__COUT__ << "Completing Iteration Plan and cleaning up..."
-						         << __E__;
+						// reset commandIteration counts and any label stacks left by a
+						//	plan halted mid-loop
+						theIteratorStruct.commandIterations_.clear();
+						theIteratorStruct.stepIndexStack_.clear();
+						theIteratorStruct.stepLabelStack_.clear();
+						theIteratorStruct.outputFiles_.clear();
+						for(auto& command : theIteratorStruct.commands_)
+						{
+							theIteratorStruct.commandIterations_.push_back(0);
+							__COUT__ << "command " << command.type_ << __E__;
+							__COUT__ << "table "
+							         << IterateTable::commandToTableMap_.at(command.type_)
+							         << __E__;
+							__COUT__ << "param count = " << command.params_.size()
+							         << __E__;
 
-						iterator->haltIterator(
-						    iterator, &theIteratorStruct, true /* doNotHaltFSM */);
-					}
-				}
-				else if(theIteratorStruct.commandBusy_)
-				{
-					// check for command completion
-					if(iterator->checkCommand(&theIteratorStruct))
+							for(auto& param : command.params_)
+							{
+								__COUT__ << "\t param " << param.first << " : "
+								         << param.second << __E__;
+							}
+						}
+
+						theIteratorStruct.originalTrackChanges_ =
+						    ConfigurationInterface::isVersionTrackingEnabled();
+						theIteratorStruct.originalConfigGroup_ =
+						    theIteratorStruct.cfgMgr_->getActiveGroupName();
+						theIteratorStruct.originalConfigKey_ =
+						    theIteratorStruct.cfgMgr_->getActiveGroupKey();
+
+						__COUT__ << "originalTrackChanges "
+						         << theIteratorStruct.originalTrackChanges_ << __E__;
+						__COUT__ << "originalConfigGroup "
+						         << theIteratorStruct.originalConfigGroup_ << __E__;
+						__COUT__ << "originalConfigKey "
+						         << theIteratorStruct.originalConfigKey_ << __E__;
+
+						theIteratorStruct.commandIndex_ = 0;
+
+					}  // end initial section
+
+					if(!theIteratorStruct.commandBusy_)
 					{
-						theIteratorStruct.commandBusy_ = false;  // command complete
+						if(theIteratorStruct.commandIndex_ <
+						   theIteratorStruct.commands_.size())
+						{
+							// execute command
+							theIteratorStruct.commandBusy_ = true;
 
-						++theIteratorStruct.commandIndex_;
+							__COUT__ << "Iterator starting command "
+							         << theIteratorStruct.commandIndex_ + 1 << ": "
+							         << theIteratorStruct
+							                .commands_[theIteratorStruct.commandIndex_]
+							                .type_
+							         << __E__;
+							__COUT__ << "Iterator starting command "
+							         << theIteratorStruct.commandIndex_ + 1 << ": "
+							         << theIteratorStruct
+							                .commands_[theIteratorStruct.commandIndex_]
+							                .type_
+							         << __E__;
 
-						__COUT__ << "Ready for next command. Done with "
-						         << theIteratorStruct.commandIndex_ << " of "
-						         << theIteratorStruct.commands_.size() << __E__;
-						__COUT__ << "Iterator ready for next command. Done with "
-						         << theIteratorStruct.commandIndex_ << " of "
-						         << theIteratorStruct.commands_.size() << __E__;
+							iterator->startCommand(&theIteratorStruct);
+						}
+						else if(theIteratorStruct.commandIndex_ ==
+						        theIteratorStruct.commands_.size())  // Done!
+						{
+							__COUT__ << "Finished Iteration Plan '"
+							         << theIteratorStruct.activePlan_ << __E__;
+							__COUT__ << "Finished Iteration Plan '"
+							         << theIteratorStruct.activePlan_ << __E__;
+
+							__COUT__ << "Reverting track changes." << __E__;
+							ConfigurationInterface::setVersionTrackingEnabled(
+							    theIteratorStruct.originalTrackChanges_);
+
+							//l
+							__COUT__ << "Activating original group..." << __E__;
+							try
+							{
+								theIteratorStruct.cfgMgr_->activateTableGroup(
+								    theIteratorStruct.originalConfigGroup_,
+								    theIteratorStruct.originalConfigKey_);
+							}
+							catch(...)
+							{
+								__COUT_WARN__ << "Original group could not be activated."
+								              << __E__;
+							}
+
+							// leave FSM halted
+							__COUT__ << "Completing Iteration Plan and cleaning up..."
+							         << __E__;
+
+							iterator->haltIterator(
+							    iterator, &theIteratorStruct, true /* doNotHaltFSM */);
+						}
+					}
+					else if(theIteratorStruct.commandBusy_)
+					{
+						// check for command completion
+						if(iterator->checkCommand(&theIteratorStruct))
+						{
+							theIteratorStruct.commandBusy_ = false;  // command complete
+
+							++theIteratorStruct.commandIndex_;
+
+							__COUT__ << "Ready for next command. Done with "
+							         << theIteratorStruct.commandIndex_ << " of "
+							         << theIteratorStruct.commands_.size() << __E__;
+							__COUT__ << "Iterator ready for next command. Done with "
+							         << theIteratorStruct.commandIndex_ << " of "
+							         << theIteratorStruct.commands_.size() << __E__;
+						}
+
+						// Note: check command gets one shot to resume
+						if(theIteratorStruct.doResumeAction_)  // end resume action
+							theIteratorStruct.doResumeAction_ = false;
 					}
 
-					// Note: check command gets one shot to resume
-					if(theIteratorStruct.doResumeAction_)  // end resume action
-						theIteratorStruct.doResumeAction_ = false;
-				}
-
-			}  // end running
-			else
-				sleep(1);  // when inactive sleep a lot
+				}  // end running
+				else
+					sleep(1);  // when inactive sleep a lot
 
 			}  // end inner try
 			catch(const std::runtime_error& e)
@@ -502,7 +503,8 @@ try
 				    std::string("Error at command ") +
 				    std::to_string(theIteratorStruct.commandIndex_) + " (" +
 				    (theIteratorStruct.commandIndex_ < theIteratorStruct.commands_.size()
-				         ? theIteratorStruct.commands_[theIteratorStruct.commandIndex_].type_
+				         ? theIteratorStruct.commands_[theIteratorStruct.commandIndex_]
+				               .type_
 				         : "?") +
 				    "): " + e.what();
 			}
@@ -517,7 +519,8 @@ try
 				    std::string("Unknown error at command ") +
 				    std::to_string(theIteratorStruct.commandIndex_) + " (" +
 				    (theIteratorStruct.commandIndex_ < theIteratorStruct.commands_.size()
-				         ? theIteratorStruct.commands_[theIteratorStruct.commandIndex_].type_
+				         ? theIteratorStruct.commands_[theIteratorStruct.commandIndex_]
+				               .type_
 				         : "?") +
 				    ")";
 			}
@@ -2879,12 +2882,15 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 		if(workloopRunning_)
 			xmldoc.addTextElementToData("active_plan_status", "Running");
 		else
-			xmldoc.addTextElementToData("active_plan_status", "Error");  // thread died (safety net)
+			xmldoc.addTextElementToData("active_plan_status",
+			                            "Error");  // thread died (safety net)
 	}
 	else if(!activePlanIsRunning_ && iteratorBusy_)
 	{
 		if(errorMessage_.size())
-			xmldoc.addTextElementToData("active_plan_status", "Error");  // paused after error — press Play to retry
+			xmldoc.addTextElementToData(
+			    "active_plan_status",
+			    "Error");  // paused after error — press Play to retry
 		else
 			xmldoc.addTextElementToData("active_plan_status", "Paused");
 	}
