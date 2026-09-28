@@ -63,24 +63,25 @@ class IterateTable : public TableBase
 	static std::map<std::string, std::string>       createCommandToTableMap()
 	{
 		std::map<std::string, std::string> m;
-		m[COMMAND_BEGIN_LABEL]            = "IterationCommandBeginLabelTable";
-		m[COMMAND_CHOOSE_FSM]             = "IterationCommandChooseFSMTable";
-		m[COMMAND_CONFIGURE_ACTIVE_GROUP] = "IterationCommandConfigureAliasTable";  ///< SystemAlias unused; carries SkipIfAlreadyConfigured
-		m[COMMAND_CONFIGURE_ALIAS]        = "IterationCommandConfigureAliasTable";
-		m[COMMAND_CONFIGURE_GROUP]        = "IterationCommandConfigureGroupTable";
-		m[COMMAND_ACTIVATE_ALIAS]         = "IterationCommandConfigureAliasTable";
-		m[COMMAND_ACTIVATE_GROUP]         = "IterationCommandConfigureGroupTable";
-		m[COMMAND_EXECUTE_FE_MACRO]       = "IterationCommandExecuteFEMacroTable";
-		m[COMMAND_EXECUTE_MACRO]          = "IterationCommandExecuteMacroTable";
-		m[COMMAND_MODIFY_ACTIVE_GROUP]    = "IterationCommandModifyGroupTable";
-		m[COMMAND_REPEAT_LABEL]           = "IterationCommandRepeatLabelTable";
-		m[COMMAND_RUN]                    = "IterationCommandRunTable";
-		m[COMMAND_WAIT]                   = "IterationCommandRunTable";
-		m[COMMAND_START]                  = "";  ///< no parameters
-		m[COMMAND_STOP]                   = "";  ///< no parameters
-		m[COMMAND_PAUSE]                  = "";  ///< no parameters
-		m[COMMAND_RESUME]                 = "";  ///< no parameters
-		m[COMMAND_HALT]                   = "";  ///< no parameters
+		m[COMMAND_BEGIN_LABEL] = "IterationCommandBeginLabelTable";
+		m[COMMAND_CHOOSE_FSM]  = "IterationCommandChooseFSMTable";
+		m[COMMAND_CONFIGURE_ACTIVE_GROUP] =
+		    "IterationCommandConfigureAliasTable";  ///< SystemAlias unused; carries SkipIfAlreadyConfigured
+		m[COMMAND_CONFIGURE_ALIAS]     = "IterationCommandConfigureAliasTable";
+		m[COMMAND_CONFIGURE_GROUP]     = "IterationCommandConfigureGroupTable";
+		m[COMMAND_ACTIVATE_ALIAS]      = "IterationCommandConfigureAliasTable";
+		m[COMMAND_ACTIVATE_GROUP]      = "IterationCommandConfigureGroupTable";
+		m[COMMAND_EXECUTE_FE_MACRO]    = "IterationCommandExecuteFEMacroTable";
+		m[COMMAND_EXECUTE_MACRO]       = "IterationCommandExecuteMacroTable";
+		m[COMMAND_MODIFY_ACTIVE_GROUP] = "IterationCommandModifyGroupTable";
+		m[COMMAND_REPEAT_LABEL]        = "IterationCommandRepeatLabelTable";
+		m[COMMAND_RUN]                 = "IterationCommandRunTable";
+		m[COMMAND_WAIT]                = "IterationCommandRunTable";
+		m[COMMAND_START]               = "";  ///< no parameters
+		m[COMMAND_STOP]                = "";  ///< no parameters
+		m[COMMAND_PAUSE]               = "";  ///< no parameters
+		m[COMMAND_RESUME]              = "";  ///< no parameters
+		m[COMMAND_HALT]                = "";  ///< no parameters
 		return m;
 	}
 
@@ -121,16 +122,19 @@ class IterateTable : public TableBase
 	static struct CommandExecuteMacroParams  ///< treat FE and Macro the same
 	{
 		// targets
-		const std::string MacroName_                 = "MacroName";
-		const std::string MacroParameterLink_        = "LinkToMacroDimensionalLoopTable";
-		const std::string MacroParameterLinkGroupID_ = "LinkToMacroDimensionalLoopGroupID";
-		const std::string EnableSavingOutput_        = "EnableSavingOutputsToFile";
-		const std::string OutputFilePath_            = "OutputFilePath";
-		const std::string OutputFileRadix_           = "OutputFileRadix";
+		const std::string MacroName_          = "MacroName";
+		const std::string MacroParameterLink_ = "LinkToMacroDimensionalLoopTable";
+		const std::string MacroParameterLinkGroupID_ =
+		    "LinkToMacroDimensionalLoopGroupID";
+		const std::string EnableSavingOutput_ = "EnableSavingOutputsToFile";
+		const std::string OutputFilePath_     = "OutputFilePath";
+		const std::string OutputFileRadix_    = "OutputFileRadix";
 
 		/// runtime keys built by getPlanCommands() from the dimensional-loop tables
-		const std::string MacroArgumentString_ = "MacroArgumentString";  ///< "nIter,name:init:step,...;..."
-		const std::string MacroArgumentLabels_ = "MacroArgumentLabels";  ///< ";"-separated StepLabel per dimension
+		const std::string MacroArgumentString_ =
+		    "MacroArgumentString";  ///< "nIter,name:init:step,...;..."
+		const std::string MacroArgumentLabels_ =
+		    "MacroArgumentLabels";  ///< ";"-separated StepLabel per dimension
 
 		/// GUI<->save wire key: "name:start:step:label,..." (pieces URI-encoded)
 		const std::string MacroArgs_ = "MacroArgs";
@@ -184,9 +188,10 @@ class IterateTable : public TableBase
 		const std::string GroupID_            = "DimensionalLoopGroupID";
 		const std::string Priority_           = "DimensionalLoopPriority";
 		const std::string NumberOfIterations_ = "NumberOfIterations";
-		const std::string StepLabel_          = "StepLabel";  ///< BEGIN_LABEL whose pass index steps this dimension; empty = innermost
-		const std::string ParamLink_          = "LinkToDimensionalLoopParameterTable";
-		const std::string ParamLinkGroupID_   = "LinkToDimensionalLoopParameterGroupID";
+		const std::string StepLabel_ =
+		    "StepLabel";  ///< BEGIN_LABEL whose pass index steps this dimension; empty = innermost
+		const std::string ParamLink_        = "LinkToDimensionalLoopParameterTable";
+		const std::string ParamLinkGroupID_ = "LinkToDimensionalLoopParameterGroupID";
 	} macroDimLoopCols_;
 	static struct MacroParamTableColumns
 	{
