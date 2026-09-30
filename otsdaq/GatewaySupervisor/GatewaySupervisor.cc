@@ -14692,12 +14692,13 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&              co
 
 			if(strncmp(line, command.c_str(), 90) == 0)
 			{
-				__SS__ << "The command '" << command << "' looks to have been ignored by "
-				       << hostname
-				       << ". Is the ots launch script still running on that node?"
-				       << " Try 'ots -a' on " << hostname
-				       << " to restart the action handler without restarting xdaq processes."
-				       << __E__;
+				__SS__
+				    << "The command '" << command << "' looks to have been ignored by "
+				    << hostname
+				    << ". Is the ots launch script still running on that node?"
+				    << " Try 'ots -a' on " << hostname
+				    << " to restart the action handler without restarting xdaq processes."
+				    << __E__;
 				__SS_THROW__;
 			}
 			__COUTV__(line);
