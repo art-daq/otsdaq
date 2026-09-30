@@ -9605,7 +9605,8 @@ try
 		}
 
 		if((reply != command + "Done") && (reply != command + "Response") &&
-		   (reply != command + "Iterate") && (reply != command + "SubIterate"))
+		   (reply != command + "Iterate") && (reply != command + "SubsystemIterate") &&
+		   (reply != command + "SubIterate"))
 		{
 			__SS__ << "Error! Gateway Supervisor can NOT " << command
 			       << " Supervisor instance = '" << appInfo.getName()
@@ -9705,6 +9706,23 @@ try
 			         << "... (iteration: " << iteration << ")" << __E__;
 
 		}  // end still working response handling
+		else if(reply == command + "SubsystemIterate")
+		{
+			// when 'SubsystemIterate' this front-end is done with inner iterations
+			// but needs another cross-subsystem sync barrier before continuing.
+			// iterationsDone stays true (inner loop can finish),
+			// but signal the outer loop to keep going.
+
+			// iterationsDone = true (already the default)
+			broadcastSubsystemIterationsDone_ = false;
+			__COUT__ << "Broadcast thread " << threadIndex << "\t"
+			         << "Supervisor instance = '" << appInfo.getName()
+			         << "' [LID=" << appInfo.getId() << "] in Context '"
+			         << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
+			         << "] flagged for another subsystem-iteration to " << command
+			         << "... (iteration: " << iteration << ")" << __E__;
+
+		}  // end subsystem-iteration response handling
 		else if(reply == command + "SubIterate")
 		{
 			// when 'Working' this front-end is expecting
@@ -9975,313 +9993,376 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	RunControlStateMachine::theProgressBar_.step();
 
-	broadcastMessageToRemoteGateways(originalMessage);
+	unsigned int subsystemIteration = 0;
+
+	// Standalone: no top-level above (not UDP-driven) and no included remote subsystems below.
+	// Local apps are told the STANDALONE subsystem-iteration index so nobody idles a pass
+	// waiting for a subsystem that does not exist.
+	bool standaloneSubsystem = !isRemoteSubsystemIteration_;
+	if(standaloneSubsystem)
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		for(const auto& rga : remoteGatewayApps_)
+			if(rga.fsm_included)
+			{
+				standaloneSubsystem = false;
+				break;
+			}
+	}
+	__COUT_INFO__ << "Broadcasting '" << command << "' in "
+	              << (standaloneSubsystem ? "STANDALONE" : "multi-subsystem")
+	              << " mode (subsystemIterationIndex "
+	              << (standaloneSubsystem ? "= STANDALONE" : "= 0,1,2,...") << ")"
+	              << __E__;
+
+	broadcastMessageToRemoteGateways(
+	    originalMessage);  // initial send (subsystemIteration 0)
 
 	RunControlStateMachine::theProgressBar_.step();
 
 	try
 	{
 		//:::::::::::::::::::::::::::::::::::::::::::::::::::::
-		// Send a SOAP message to every Supervisor in order by priority
-		do  // while !iterationsDone
+		// OUTER LOOP: subsystem-iteration (synchronized across subsystems)
+		do  // while !broadcastSubsystemIterationsDone_
 		{
-			__COUT__ << "Iteration loop pass: iteration=" << iteration << " for command '"
-			         << command << "'" << __E__;
+			broadcastSubsystemIterationsDone_ = true;
 
-			broadcastIterationsDone_ = true;
-
-			{  // start mutex scope
+			{  // start mutex scope — breakpoint pauses on subsystem-iteration
 				std::lock_guard<std::mutex> lock(broadcastIterationBreakpointMutex_);
-				iterationBreakpoint = broadcastIterationBreakpoint_;  // get breakpoint
-			}                                                         // end mutex scope
+				iterationBreakpoint = broadcastIterationBreakpoint_;
+			}
 
 			if(iterationBreakpoint < (unsigned int)-1)
-				__COUT__ << "Iteration breakpoint currently is " << iterationBreakpoint
-				         << __E__;
-			if(iteration >= iterationBreakpoint)
+				__COUT__ << "Subsystem-iteration breakpoint currently is "
+				         << iterationBreakpoint << __E__;
+			if(subsystemIteration >= iterationBreakpoint)
 			{
-				broadcastIterationsDone_ = false;
-				__COUT__ << "Waiting at transition breakpoint - iteration = " << iteration
-				         << __E__;
+				broadcastSubsystemIterationsDone_ = false;
+				__COUT__ << "Waiting at transition breakpoint - subsystemIteration = "
+				         << subsystemIteration << __E__;
 				usleep(5 * 1000 * 1000 /*5 s*/);
 				continue;  // wait until breakpoint moved
 			}
 
-			if(iteration)
+			if(subsystemIteration)
 			{
-				__COUT_INFO__ << "DIAG: re-broadcasting iteration=" << iteration
-				              << " for command '" << command << "'" << __E__;
+				__COUT_INFO__ << "DIAG: re-broadcasting subsystemIteration="
+				              << subsystemIteration << " (iteration=" << iteration
+				              << ") for command '" << command << "'" << __E__;
 
-				// Re-send command to non-done remote gateways with updated iteration index
-				broadcastMessageToRemoteGateways(originalMessage, iteration);
+				// Re-send command to non-done remote gateways with updated subsystem-iteration index
+				broadcastMessageToRemoteGateways(originalMessage, subsystemIteration);
 			}
 
-			for(unsigned int i = 0; i < supervisorIterationsDone->size(); ++i)
+			// INNER LOOP: iteration (synchronized within one subsystem, no remote round-trip)
+			do  // while !broadcastIterationsDone_
 			{
-				for(unsigned int j = 0; j < supervisorIterationsDone->size(i); ++j)
+				__COUT__ << "Iteration loop pass: subsystemIteration="
+				         << subsystemIteration << " iteration=" << iteration
+				         << " for command '" << command << "'" << __E__;
+
+				broadcastIterationsDone_ = true;
+
+				for(unsigned int i = 0; i < supervisorIterationsDone->size(); ++i)
 				{
-					checkForAsyncError();
-
-					if((*supervisorIterationsDone)[i][j])
-						continue;  // skip if supervisor is already done
-
-					const SupervisorInfo& appInfo = *(orderedSupervisors[i][j]);
-
-					// re-acquire original message
-					message = SOAPUtilities::makeSOAPMessageReference(
-					    SOAPUtilities::translate(originalMessage));
-
-					// add iteration index to message
-					if(iteration)
+					for(unsigned int j = 0; j < supervisorIterationsDone->size(i); ++j)
 					{
-						// add the iteration index as a parameter to message
-						SOAPParameters parameters;
-						parameters.addParameter("iterationIndex", iteration);
-						SOAPUtilities::addParameters(message, parameters);
-					}
+						checkForAsyncError();
 
-					if(numberOfThreads)
-					{
-						// schedule message to first open thread
-						assignedJob = false;
-						do
+						if((*supervisorIterationsDone)[i][j])
+							continue;  // skip if supervisor is already done
+
+						const SupervisorInfo& appInfo = *(orderedSupervisors[i][j]);
+
+						// re-acquire original message
+						message = SOAPUtilities::makeSOAPMessageReference(
+						    SOAPUtilities::translate(originalMessage));
+
+						// add iteration indices to message
+						if(standaloneSubsystem || subsystemIteration || iteration)
 						{
-							for(unsigned int k = 0; k < numberOfThreads; ++k)
-							{
-								if(!broadcastThreadStructs_[k]->workToDo_)
-								{
-									// found our thread!
-									assignedJob = true;
-									__COUT__ << "Giving work to thread " << k
-									         << ", command = " << command << __E__;
-
-									std::lock_guard<std::mutex> lock(
-									    broadcastThreadStructs_[k]->threadMutex_);
-									broadcastThreadStructs_[k]->setMessage(
-									    appInfo,
-									    message,
-									    command,
-									    iteration,
-									    (*supervisorIterationsDone)[i][j],
-									    supervisorIterationsDone);
-
-									break;
-								}
-							}  // end thread assigning search
-
-							if(!assignedJob)
-							{
-								__COUT__ << "No free broadcast threads, "
-								         << "waiting for an available thread..." << __E__;
-								usleep(100 * 1000 /*100 ms*/);
-							}
-						} while(!assignedJob);
-					}
-					else  // no thread
-					{
-						if(handleBroadcastMessageTarget(
-						       appInfo, message, command, iteration, reply))
-							(*supervisorIterationsDone)[i][j] = true;
-						else
-							broadcastIterationsDone_ = false;
-					}
-
-				}  // end supervisors at same priority broadcast loop
-
-				unsigned int numberOfEndpointsAtPriority =
-				    supervisorIterationsDone->size(i);
-
-				// before proceeding to next priority,
-				//	make sure all threads have completed
-				if(numberOfThreads)
-				{
-					__COUT__ << "Iteration priority level command work has been "
-					            "broadcast to threads. Waiting for threads to finish..."
-					         << __E__;
-					bool      done;
-					const int timeoutSeconds  = 4 * 60;  //4 minutes for each iteration
-					uint32_t  lastMinutesLeft = -1;
-					time_t    start;
-					time(&start);
-					uint32_t waitIt = 0;
-					do
-					{
-						done                              = true;
-						unsigned int numOfThreadsWithWork = 0;
-						unsigned int lastUnfinishedThread = -1;
-
-						for(unsigned int i = 0; i < numberOfThreads; ++i)
-							if(broadcastThreadStructs_[i]->workToDo_)
-							{
-								done = false;
-								++numOfThreadsWithWork;
-								lastUnfinishedThread = i;
-							}
-							else if(broadcastThreadStructs_[i]->error_)
-							{
-								__COUT__ << "Found thread in error! Throwing state "
-								            "machine error: "
-								         << broadcastThreadStructs_[i]->getReply()
-								         << __E__;
-								XCEPT_RAISE(toolbox::fsm::exception::Exception,
-								            broadcastThreadStructs_[i]->getReply());
-							}
-
-						if(!done)  // update status and sleep
-						{
-							if(difftime(time(0), start) > timeoutSeconds)
-							{
-								__SS__ << "Timeout (" << timeoutSeconds / 60
-								       << " minutes) waiting for threads to finish "
-								          "command = "
-								       << command << "!" << __E__;
-
-								ss << "\n"
-								   << numOfThreadsWithWork << " of "
-								   << numberOfEndpointsAtPriority
-								   << " endpoint(s) timed out:\n";
-								for(unsigned int ti = 0; ti < numberOfThreads; ++ti)
-									if(broadcastThreadStructs_[ti]->workToDo_)
-									{
-										const auto& failingAppInfo =
-										    broadcastThreadStructs_[ti]->getAppInfo();
-										ss << "  - App: " << failingAppInfo.getName()
-										   << " (ID: " << failingAppInfo.getId() << ")"
-										   << ", Context: "
-										   << failingAppInfo.getContextName()
-										   << ", Hostname: "
-										   << failingAppInfo.getHostname() << __E__;
-									}
-
-								ss << "\n"
-								   << "Please review the failing endpoint. Each "
-								      "transition iteration must finish in under "
-								   << timeoutSeconds / 60
-								   << " minutes. If a transition must take longer, "
-								      "please review the endpoint code, and break up the "
-								      "transition into multiple steps (i.e. iterations)."
-								   << __E__;
-								__SS_THROW__;
-							}
-
-							std::stringstream waitSs;
-							if(iteration > 0)
-								waitSs << "(Iteration #" << iteration << ") ";
-							waitSs << "Waiting on " << numOfThreadsWithWork << " of "
-							       << numberOfThreads
-							       << " threads to finish. Command = " << command;
-							if(command ==
-							   RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
-								waitSs << " w/" + RunControlStateMachine::
-								                      getLastAttemptedConfigureGroup();
-							if(numOfThreadsWithWork == 1)
-							{
-								waitSs << ".. "
-								       << broadcastThreadStructs_[lastUnfinishedThread]
-								              ->getAppInfo()
-								              .getName()
-								       << ":"
-								       << broadcastThreadStructs_[lastUnfinishedThread]
-								              ->getAppInfo()
-								              .getId();
-							}
-							waitSs << __E__;
-
-							time_t secondsLeft =
-							    (timeoutSeconds - difftime(time(0), start));
-							uint32_t minutesLeft = secondsLeft / 60;
-							if(secondsLeft < 10)
-								__COUT_WARN__
-								    << waitSs.str() << "\n"
-								    << "Timeout threshold (for iteration #" << iteration
-								    << ") is " << timeoutSeconds / 60 << " minutes... "
-								    << secondsLeft << " seconds remaining before timeout!"
-								    << __E__;
-							else if(lastMinutesLeft != minutesLeft && minutesLeft < 3)
-								__COUT_WARN__
-								    << waitSs.str() << "\n"
-								    << "Timeout threshold (for iteration #" << iteration
-								    << ") is " << timeoutSeconds / 60 << " minutes... "
-								    << minutesLeft << " minutes remaining before timeout!"
-								    << __E__;
-							else if((waitIt++) % 20 == 0)
-								__COUT__ << waitSs.str() << "\n"
-								         << "Timeout threshold (for iteration #"
-								         << iteration << ") is " << timeoutSeconds / 60
-								         << " minutes (" << secondsLeft
-								         << " seconds remaining before timeout)."
-								         << __E__;
-							else
-								__COUTT__ << waitSs.str();
-							lastMinutesLeft = minutesLeft;
-
-							waitSs << "\n"
-							       << "Timeout threshold is " << timeoutSeconds / 60
-							       << " minutes (" << secondsLeft
-							       << " seconds remaining before timeout)." << __E__;
-
-							{  // create lock scope that does not include sleep
-								std::lock_guard<std::mutex> lock(
-								    broadcastCommandStatusUpdateMutex_);
-								broadcastCommandStatus_ = waitSs.str();
-							}
-							usleep(100 * 1000 /*100ms*/);
+							SOAPParameters parameters;
+							if(standaloneSubsystem)
+								parameters.addParameter(
+								    "subsystemIterationIndex",
+								    (int)VStateMachine::SUBSYSTEM_ITERATION_STANDALONE);
+							else if(subsystemIteration)
+								parameters.addParameter("subsystemIterationIndex",
+								                        (int)subsystemIteration);
+							if(iteration)
+								parameters.addParameter("iterationIndex", (int)iteration);
+							SOAPUtilities::addParameters(message, parameters);
 						}
 
-					} while(!done);
-					__COUT__ << "All threads done with priority level work." << __E__;
-				}  // end thread complete verification
+						if(numberOfThreads)
+						{
+							// schedule message to first open thread
+							assignedJob = false;
+							do
+							{
+								for(unsigned int k = 0; k < numberOfThreads; ++k)
+								{
+									if(!broadcastThreadStructs_[k]->workToDo_)
+									{
+										// found our thread!
+										assignedJob = true;
+										__COUT__ << "Giving work to thread " << k
+										         << ", command = " << command << __E__;
 
-			}  // end supervisor broadcast loop for each priority
+										std::lock_guard<std::mutex> lock(
+										    broadcastThreadStructs_[k]->threadMutex_);
+										broadcastThreadStructs_[k]->setMessage(
+										    appInfo,
+										    message,
+										    command,
+										    iteration,
+										    (*supervisorIterationsDone)[i][j],
+										    supervisorIterationsDone);
 
-			//			if (!proceed)
-			//			{
-			//				__COUT__ << "Breaking out of primary loop." << __E__;
-			//				break;
-			//			}
+										break;
+									}
+								}  // end thread assigning search
 
-			// Wait for remote gateways to complete this iteration pass
-			// (may set broadcastIterationsDone_ = false if any remote requests another iteration)
-			broadcastMessageToRemoteGatewaysComplete(originalMessage, iteration);
+								if(!assignedJob)
+								{
+									__COUT__ << "No free broadcast threads, "
+									         << "waiting for an available thread..."
+									         << __E__;
+									usleep(100 * 1000 /*100 ms*/);
+								}
+							} while(!assignedJob);
+						}
+						else  // no thread
+						{
+							if(handleBroadcastMessageTarget(
+							       appInfo, message, command, iteration, reply))
+								(*supervisorIterationsDone)[i][j] = true;
+							else
+								broadcastIterationsDone_ = false;
+						}
 
-			__COUT__ << "After iteration=" << iteration << " for command '" << command
-			         << "': broadcastIterationsDone_=" << broadcastIterationsDone_
-			         << __E__;
+					}  // end supervisors at same priority broadcast loop
 
-			if(iteration || !broadcastIterationsDone_)
+					unsigned int numberOfEndpointsAtPriority =
+					    supervisorIterationsDone->size(i);
+
+					// before proceeding to next priority,
+					//	make sure all threads have completed
+					if(numberOfThreads)
+					{
+						__COUT__
+						    << "Iteration priority level command work has been "
+						       "broadcast to threads. Waiting for threads to finish..."
+						    << __E__;
+						bool      done;
+						const int timeoutSeconds = 4 * 60;  //4 minutes for each iteration
+						uint32_t  lastMinutesLeft = -1;
+						time_t    start;
+						time(&start);
+						uint32_t waitIt = 0;
+						do
+						{
+							done                              = true;
+							unsigned int numOfThreadsWithWork = 0;
+							unsigned int lastUnfinishedThread = -1;
+
+							for(unsigned int i = 0; i < numberOfThreads; ++i)
+								if(broadcastThreadStructs_[i]->workToDo_)
+								{
+									done = false;
+									++numOfThreadsWithWork;
+									lastUnfinishedThread = i;
+								}
+								else if(broadcastThreadStructs_[i]->error_)
+								{
+									__COUT__ << "Found thread in error! Throwing state "
+									            "machine error: "
+									         << broadcastThreadStructs_[i]->getReply()
+									         << __E__;
+									XCEPT_RAISE(toolbox::fsm::exception::Exception,
+									            broadcastThreadStructs_[i]->getReply());
+								}
+
+							if(!done)  // update status and sleep
+							{
+								if(difftime(time(0), start) > timeoutSeconds)
+								{
+									__SS__ << "Timeout (" << timeoutSeconds / 60
+									       << " minutes) waiting for threads to finish "
+									          "command = "
+									       << command << "!" << __E__;
+
+									ss << "\n"
+									   << numOfThreadsWithWork << " of "
+									   << numberOfEndpointsAtPriority
+									   << " endpoint(s) timed out:\n";
+									for(unsigned int ti = 0; ti < numberOfThreads; ++ti)
+										if(broadcastThreadStructs_[ti]->workToDo_)
+										{
+											const auto& failingAppInfo =
+											    broadcastThreadStructs_[ti]->getAppInfo();
+											ss << "  - App: " << failingAppInfo.getName()
+											   << " (ID: " << failingAppInfo.getId()
+											   << ")"
+											   << ", Context: "
+											   << failingAppInfo.getContextName()
+											   << ", Hostname: "
+											   << failingAppInfo.getHostname() << __E__;
+										}
+
+									ss << "\n"
+									   << "Please review the failing endpoint. Each "
+									      "transition iteration must finish in under "
+									   << timeoutSeconds / 60
+									   << " minutes. If a transition must take longer, "
+									      "please review the endpoint code, and break up "
+									      "the "
+									      "transition into multiple steps (i.e. "
+									      "iterations)."
+									   << __E__;
+									__SS_THROW__;
+								}
+
+								std::stringstream waitSs;
+								if(iteration > 0)
+									waitSs << "(Iteration #" << iteration << ") ";
+								waitSs << "Waiting on " << numOfThreadsWithWork << " of "
+								       << numberOfThreads
+								       << " threads to finish. Command = " << command;
+								if(command ==
+								   RunControlStateMachine::CONFIGURE_TRANSITION_NAME)
+									waitSs << " w/" +
+									              RunControlStateMachine::
+									                  getLastAttemptedConfigureGroup();
+								if(numOfThreadsWithWork == 1)
+								{
+									waitSs
+									    << ".. "
+									    << broadcastThreadStructs_[lastUnfinishedThread]
+									           ->getAppInfo()
+									           .getName()
+									    << ":"
+									    << broadcastThreadStructs_[lastUnfinishedThread]
+									           ->getAppInfo()
+									           .getId();
+								}
+								waitSs << __E__;
+
+								time_t secondsLeft =
+								    (timeoutSeconds - difftime(time(0), start));
+								uint32_t minutesLeft = secondsLeft / 60;
+								if(secondsLeft < 10)
+									__COUT_WARN__
+									    << waitSs.str() << "\n"
+									    << "Timeout threshold (for iteration #"
+									    << iteration << ") is " << timeoutSeconds / 60
+									    << " minutes... " << secondsLeft
+									    << " seconds remaining before timeout!" << __E__;
+								else if(lastMinutesLeft != minutesLeft && minutesLeft < 3)
+									__COUT_WARN__
+									    << waitSs.str() << "\n"
+									    << "Timeout threshold (for iteration #"
+									    << iteration << ") is " << timeoutSeconds / 60
+									    << " minutes... " << minutesLeft
+									    << " minutes remaining before timeout!" << __E__;
+								else if((waitIt++) % 20 == 0)
+									__COUT__
+									    << waitSs.str() << "\n"
+									    << "Timeout threshold (for iteration #"
+									    << iteration << ") is " << timeoutSeconds / 60
+									    << " minutes (" << secondsLeft
+									    << " seconds remaining before timeout)." << __E__;
+								else
+									__COUTT__ << waitSs.str();
+								lastMinutesLeft = minutesLeft;
+
+								waitSs << "\n"
+								       << "Timeout threshold is " << timeoutSeconds / 60
+								       << " minutes (" << secondsLeft
+								       << " seconds remaining before timeout)." << __E__;
+
+								{  // create lock scope that does not include sleep
+									std::lock_guard<std::mutex> lock(
+									    broadcastCommandStatusUpdateMutex_);
+									broadcastCommandStatus_ = waitSs.str();
+								}
+								usleep(100 * 1000 /*100ms*/);
+							}
+
+						} while(!done);
+						__COUT__ << "All threads done with priority level work." << __E__;
+					}  // end thread complete verification
+
+				}  // end supervisor broadcast loop for each priority
+
+				//			if (!proceed)
+				//			{
+				//				__COUT__ << "Breaking out of primary loop." << __E__;
+				//				break;
+				//			}
+
+				// (inner iteration status)
+				{
+					std::stringstream ss;
+					if(iteration > 0)
+						ss << "SubsystemIteration " << subsystemIteration
+						   << ", Iteration " << iteration << ": ";
+					ss << (broadcastIterationsDone_ ? "complete" : "continuing") << __E__;
+					__COUT__ << ss.str();
+
+					std::lock_guard<std::mutex> lock(broadcastCommandStatusUpdateMutex_);
+					broadcastCommandStatus_ = ss.str();
+				}
+				++iteration;  // never resets — keeps incrementing across subsystem-iteration boundaries
+
+			} while(!broadcastIterationsDone_);
+			// END INNER LOOP (iteration)
+
+			// Wait for remote gateways to complete this subsystem-iteration pass
+			// (may set broadcastSubsystemIterationsDone_ = false if any remote requests another)
+			broadcastMessageToRemoteGatewaysComplete(originalMessage, subsystemIteration);
+
+			__COUT__ << "After subsystemIteration=" << subsystemIteration
+			         << " (iteration=" << iteration << ") for command '" << command
+			         << "': broadcastSubsystemIterationsDone_="
+			         << broadcastSubsystemIterationsDone_ << __E__;
+
+			if(subsystemIteration || !broadcastSubsystemIterationsDone_)
 			{
-				if(!broadcastIterationsDone_ && isRemoteSubsystemIteration_)
+				if(!broadcastSubsystemIterationsDone_ && isRemoteSubsystemIteration_)
 				{
 					// Subsystem iteration driven by top-level: signal needNextIteration and wait
-					unsigned int nextIteration = iteration + 1;
+					unsigned int nextSubsystemIteration = subsystemIteration + 1;
 					{
 						std::lock_guard<std::mutex> lock(
 						    broadcastCommandStatusUpdateMutex_);
 						broadcastCommandStatus_ =
-						    "needNextIteration:" + std::to_string(nextIteration);
+						    "needNextIteration:" + std::to_string(nextSubsystemIteration);
 					}
 					__COUT__ << "Top-level driven subsystem iteration: signaling "
 					            "needNextIteration:"
-					         << nextIteration << ", waiting for re-send..." << __E__;
+					         << nextSubsystemIteration << ", waiting for re-send..."
+					         << __E__;
 
 					{
 						std::unique_lock<std::mutex> lock(remoteIterationMutex_);
-						if(remoteIterationIndex_ < nextIteration)
+						if(remoteIterationIndex_ < nextSubsystemIteration)
 						{
 							auto deadline = std::chrono::steady_clock::now() +
 							                std::chrono::minutes(4);
-							while(remoteIterationIndex_ < nextIteration &&
+							while(remoteIterationIndex_ < nextSubsystemIteration &&
 							      !remoteSubsystemErrorReceived_)
 							{
 								remoteIterationCV_.wait_for(lock,
 								                            std::chrono::seconds(1));
 								if(std::chrono::steady_clock::now() >= deadline &&
-								   remoteIterationIndex_ < nextIteration)
+								   remoteIterationIndex_ < nextSubsystemIteration)
 								{
 									__SS__ << "Timeout (4 min) waiting for top-level to "
 									          "send "
 									          "IterationIndex:"
-									       << nextIteration
+									       << nextSubsystemIteration
 									       << " -- top-level may have lost communication."
 									       << __E__;
 									__SS_THROW__;
@@ -10292,37 +10373,40 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 						{
 							remoteSubsystemErrorReceived_ = false;
 							__SS__ << "Top-level Error/Fail received while waiting "
-							          "for iteration re-send -- the start sequence "
+							          "for subsystem-iteration re-send -- the start "
+							          "sequence "
 							          "can never complete, aborting."
 							       << __E__;
 							__SS_THROW__;
 						}
-						if(remoteIterationIndex_ != nextIteration)
+						if(remoteIterationIndex_ != nextSubsystemIteration)
 						{
 							__SS__ << "Unexpected IterationIndex re-send: got "
 							       << remoteIterationIndex_ << " but expected "
-							       << nextIteration << __E__;
+							       << nextSubsystemIteration << __E__;
 							__SS_THROW__;
 						}
-						__COUT__ << "Received iteration re-send: IterationIndex:"
-						         << remoteIterationIndex_ << __E__;
+						__COUT__
+						    << "Received subsystem-iteration re-send: IterationIndex:"
+						    << remoteIterationIndex_ << __E__;
 					}
 
 					{
 						std::lock_guard<std::mutex> lock(
 						    broadcastCommandStatusUpdateMutex_);
-						broadcastCommandStatus_ =
-						    "Completed iteration: " + std::to_string(iteration) +
-						    " (top-level driven, continuing)";
+						broadcastCommandStatus_ = "Completed subsystem-iteration: " +
+						                          std::to_string(subsystemIteration) +
+						                          " (top-level driven, continuing)";
 					}
 				}
 				else
 				{
 					std::stringstream ss;
-					if(iteration > 0)
-						ss << "Iteration " << iteration << ": ";
-					ss << (broadcastIterationsDone_ ? "complete (all done)"
-					                                : "complete (need more iterations)")
+					if(subsystemIteration > 0)
+						ss << "Subsystem-iteration " << subsystemIteration << ": ";
+					ss << (broadcastSubsystemIterationsDone_
+					           ? "complete (all done)"
+					           : "complete (need more subsystem-iterations)")
 					   << __E__;
 					__COUT__ << ss.str();
 
@@ -10330,12 +10414,24 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 					broadcastCommandStatus_ = ss.str();
 				}
 			}
-			++iteration;
 
-		} while(!broadcastIterationsDone_);
+			// Reset per-app iteration-done flags for the next subsystem-iteration pass
+			// so that apps returning SubsystemIterate get called again
+			if(!broadcastSubsystemIterationsDone_)
+			{
+				for(unsigned int i = 0; i < supervisorIterationsDone->size(); ++i)
+					for(unsigned int j = 0; j < supervisorIterationsDone->size(i); ++j)
+						(*supervisorIterationsDone)[i][j] = false;
+			}
 
-		__COUT__ << "Iteration loop complete after " << iteration
-		         << " iteration(s) for command '" << command << "'" << __E__;
+			++subsystemIteration;
+
+		} while(!broadcastSubsystemIterationsDone_);
+		// END OUTER LOOP (subsystem-iteration)
+
+		__COUT__ << "Iteration loop complete after " << subsystemIteration
+		         << " subsystem-iteration(s), " << iteration
+		         << " total iteration(s) for command '" << command << "'" << __E__;
 
 		{
 			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
@@ -10505,7 +10601,8 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 	}
 
 	// Brief lock to snapshot remoteGatewayApps_ for processing without holding mutex
-	__COUT__ << "broadcastMessageToRemoteGateways v2 (copy-process-writeback) iteration="
+	__COUT__ << "broadcastMessageToRemoteGateways v2 (copy-process-writeback) "
+	            "subsystemIteration="
 	         << iteration << __E__;
 	std::vector<GatewaySupervisor::RemoteGatewayInfo> localApps;
 	{
@@ -10911,9 +11008,9 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 					         << iterationIndex << ") for command '" << command << "'"
 					         << __E__;
 
-					broadcastIterationsDone_ = false;
-					// This gateway is done with this iteration pass;
-					// do not count as remaining (will be re-sent in next iteration pass)
+					broadcastSubsystemIterationsDone_ = false;
+					// This gateway is done with this subsystem-iteration pass;
+					// do not count as remaining (will be re-sent in next subsystem-iteration pass)
 					continue;
 				}
 
@@ -11012,7 +11109,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 		{
 			std::stringstream waitSs;
 			if(iterationIndex > 0)
-				waitSs << "Iteration " << iterationIndex << ": ";
+				waitSs << "Subsystem-iteration " << iterationIndex << ": ";
 			waitSs << "Waiting on " << remainingRemoteGateways << " of "
 			       << totalRemoteGateways << " remote gateways to finish command '"
 			       << command << "'";
