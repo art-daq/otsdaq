@@ -12328,11 +12328,12 @@ try
 			    userInfo.getGroupPermissionLevels());
 
 			if(tmpUserWithLock !=
-			   theWebUsers_
-			       .getUserWithLock())  // if there was a change, log it
+			   theWebUsers_.getUserWithLock())  // if there was a change, log it
 				__COUT_INFO__ << (theWebUsers_.getUserWithLock() == ""
-				        ? tmpUserWithLock + " has unlocked ots."
-				        : theWebUsers_.getUserWithLock() + " has locked ots.") << __E__;
+				                      ? tmpUserWithLock + " has unlocked ots."
+				                      : theWebUsers_.getUserWithLock() +
+				                            " has locked ots.")
+				              << __E__;
 
 			//Also add Remote Subystems users-with-lock!
 			std::vector<GatewaySupervisor::RemoteGatewayInfo>
