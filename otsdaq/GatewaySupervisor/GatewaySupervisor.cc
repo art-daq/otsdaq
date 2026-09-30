@@ -13844,7 +13844,7 @@ try
 	catch(const std::runtime_error& e)
 	{
 		__SS__ << "An error was encountered handling requestType '" << requestType
-		       << "':" << e.what() << __E__;
+		       << "': " << e.what() << __E__;
 		__COUT__ << "\n" << ss.str();
 		xmlOut.addTextElementToData("Error", ss.str());
 	}
@@ -14570,7 +14570,10 @@ void GatewaySupervisor::launchStartOneServerCommand(const std::string&    comman
 		if(strncmp(line, command.c_str(), 90) == 0)
 		{
 			__SS__ << "The command looks to have been ignored by " << hostname
-			       << ". Is the ots launch script still running on that node?" << __E__;
+			       << ". Is the ots launch script still running on that node?"
+			       << " Try 'ots -a' on " << hostname
+			       << " to restart the action handler without restarting xdaq processes."
+			       << __E__;
 			__SS_THROW__;
 		}
 		__COUTV__(line);
@@ -14692,6 +14695,8 @@ void GatewaySupervisor::launchStartOTSCommand(const std::string&              co
 				__SS__ << "The command '" << command << "' looks to have been ignored by "
 				       << hostname
 				       << ". Is the ots launch script still running on that node?"
+				       << " Try 'ots -a' on " << hostname
+				       << " to restart the action handler without restarting xdaq processes."
 				       << __E__;
 				__SS_THROW__;
 			}
