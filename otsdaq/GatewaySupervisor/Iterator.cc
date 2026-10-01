@@ -279,11 +279,19 @@ try
 				// valid HALT-iterator command!
 
 				// safely end plan!
-				//	i.e. check that command is complete
+				//	i.e. check that command is complete (if command throws, proceed to halt anyway)
 
-				__COUT__ << "Waiting to halt..." << __E__;
-				while(!iterator->checkCommand(&theIteratorStruct))
+				try
+				{
 					__COUT__ << "Waiting to halt..." << __E__;
+					while(!iterator->checkCommand(&theIteratorStruct))
+						__COUT__ << "Waiting to halt..." << __E__;
+				}
+				catch(...)
+				{
+					__COUT_INFO__ << "Current command threw during halt — "
+					              << "proceeding to halt anyway." << __E__;
+				}
 
 				__COUT__ << "Completing halt..." << __E__;
 

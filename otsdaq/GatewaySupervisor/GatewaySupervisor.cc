@@ -2115,7 +2115,7 @@ try
 										                  .commandSentTime) <
 										         5))  //dont trust done progress briefly after send, but allow write-back after 5s
 										{
-											__COUT_INFO__
+											__COUT__
 											    << "DIAG: suppressing stale write-back "
 											       "for '"
 											    << remoteGatewayApp.appInfo.name
