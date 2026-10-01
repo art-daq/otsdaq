@@ -1958,17 +1958,16 @@ try
 								{
 									if(theSupervisor->remoteGatewayApps_[i]
 									       .appInfo.status != "")
-										__COUTT__
-										    << "DIAG: clear-stale wiping '"
-										    << theSupervisor->remoteGatewayApps_[i]
-										           .appInfo.name
-										    << "' status='"
-										    << theSupervisor->remoteGatewayApps_[i]
-										           .appInfo.status.substr(0, 40)
-										    << "' commandSentTime="
-										    << theSupervisor->remoteGatewayApps_[i]
-										           .commandSentTime
-										    << __E__;
+										__COUTT__ << "DIAG: clear-stale wiping '"
+										          << theSupervisor->remoteGatewayApps_[i]
+										                 .appInfo.name
+										          << "' status='"
+										          << theSupervisor->remoteGatewayApps_[i]
+										                 .appInfo.status.substr(0, 40)
+										          << "' commandSentTime="
+										          << theSupervisor->remoteGatewayApps_[i]
+										                 .commandSentTime
+										          << __E__;
 									theSupervisor->remoteGatewayApps_[i].appInfo.status =
 									    "";  //clear status as indicator to be erased
 								}
@@ -3839,7 +3838,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					    << "\n"
 					    << "GetAliasGlobalFields,<configAlias>"
 					    << "\n"
-					    << "SetGroupAliases,<alias>,<groupName>,<groupKey>,<comment>[,<alias>,"
+					    << "SetGroupAliases,<alias>,<groupName>,<groupKey>,<comment>[,<"
+					       "alias>,"
 					       "<groupName>,<groupKey>,<comment>...],<author> - all fields "
 					       "URI-encoded; saves and activates a new Backbone"
 					    << "\n"
@@ -5156,20 +5156,26 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					std::string acknowledgeString;
 					if(commandFields.size() < 6 || (commandFields.size() - 2) % 4 != 0)
 						acknowledgeString =
-						    "Error: SetGroupAliases expects 4 fields per alias plus author, "
+						    "Error: SetGroupAliases expects 4 fields per alias plus "
+						    "author, "
 						    "got " +
 						    std::to_string(commandFields.size() - 1) + " fields.";
 					else if(theSupervisor->theStateMachine_.isInTransition())
 						acknowledgeString =
-						    "Error: FSM in transition; group aliases can not be modified now.";
+						    "Error: FSM in transition; group aliases can not be modified "
+						    "now.";
 					else
 					{
-						std::vector<ConfigurationSupervisorBase::GroupAliasEdit> aliasEdits;
-						for(size_t fieldIndex = 1; fieldIndex + 3 < commandFields.size() - 1;
+						std::vector<ConfigurationSupervisorBase::GroupAliasEdit>
+						    aliasEdits;
+						for(size_t fieldIndex = 1;
+						    fieldIndex + 3 < commandFields.size() - 1;
 						    fieldIndex += 4)
 							aliasEdits.push_back(
-							    {StringMacros::decodeURIComponent(commandFields[fieldIndex]),
-							     StringMacros::decodeURIComponent(commandFields[fieldIndex + 1]),
+							    {StringMacros::decodeURIComponent(
+							         commandFields[fieldIndex]),
+							     StringMacros::decodeURIComponent(
+							         commandFields[fieldIndex + 1]),
 							     TableGroupKey(StringMacros::decodeURIComponent(
 							         commandFields[fieldIndex + 2])),
 							     StringMacros::decodeURIComponent(
@@ -5178,29 +5184,31 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    StringMacros::decodeURIComponent(commandFields.back());
 
 						__COUT_INFO__ << "Remote request to set " << aliasEdits.size()
-						              << " group alias(es) by '" << author << "'" << __E__;
+						              << " group alias(es) by '" << author << "'"
+						              << __E__;
 						try
 						{
 							ConfigurationManagerRW aliasWriteConfigManager(author);
-							auto activatedBackbone =
-							    ConfigurationSupervisorBase::setGroupAliasesInActiveBackbone(
-							        &aliasWriteConfigManager, aliasEdits);
+							auto activatedBackbone = ConfigurationSupervisorBase::
+							    setGroupAliasesInActiveBackbone(&aliasWriteConfigManager,
+							                                    aliasEdits);
 							acknowledgeString = "Done," + activatedBackbone.first + "," +
 							                    activatedBackbone.second.toString();
 						}
 						catch(const std::exception& e)
 						{
-							acknowledgeString =
-							    std::string("Error: ") + std::string(e.what()).substr(0, 1000);
+							acknowledgeString = std::string("Error: ") +
+							                    std::string(e.what()).substr(0, 1000);
 						}
 						catch(...)
 						{
-							acknowledgeString = "Error: unknown error setting group aliases.";
+							acknowledgeString =
+							    "Error: unknown error setting group aliases.";
 						}
 					}
 
-					__COUT__ << "SetGroupAliases response: " << acknowledgeString.substr(0, 200)
-					         << __E__;
+					__COUT__ << "SetGroupAliases response: "
+					         << acknowledgeString.substr(0, 200) << __E__;
 					sock.acknowledge(acknowledgeString, false /* verbose */);
 					continue;
 				}  //end SetGroupAliases
@@ -13809,11 +13817,11 @@ try
 
 			const std::string author = userInfo.username_;
 			const std::string configRestoreComment =
-			    "This alias was created to restore the Run #" + std::to_string(runNumber) +
-			    " config group";
+			    "This alias was created to restore the Run #" +
+			    std::to_string(runNumber) + " config group";
 			const std::string contextRestoreComment =
-			    "This alias was created to restore the Run #" + std::to_string(runNumber) +
-			    " context group";
+			    "This alias was created to restore the Run #" +
+			    std::to_string(runNumber) + " context group";
 
 			xmlOut.addTextElementToData("run_number", std::to_string(runNumber));
 
@@ -13840,7 +13848,7 @@ try
 					if(subsystemName == "Gateway")
 					{
 						ConfigurationManagerRW aliasWriteConfigManager(author);
-						auto activatedBackbone =
+						auto                   activatedBackbone =
 						    ConfigurationSupervisorBase::setGroupAliasesInActiveBackbone(
 						        &aliasWriteConfigManager, aliasEdits);
 						resultString = "Done," + activatedBackbone.first + "," +
@@ -13892,12 +13900,15 @@ try
 						std::string setAliasesCommand = "SetGroupAliases";
 						for(const auto& aliasEdit : aliasEdits)
 							setAliasesCommand +=
-							    "," + StringMacros::encodeURIComponent(aliasEdit.alias) + "," +
-							    StringMacros::encodeURIComponent(aliasEdit.groupName) + "," +
+							    "," + StringMacros::encodeURIComponent(aliasEdit.alias) +
+							    "," +
+							    StringMacros::encodeURIComponent(aliasEdit.groupName) +
+							    "," +
 							    StringMacros::encodeURIComponent(
 							        aliasEdit.groupKey.toString()) +
 							    "," + StringMacros::encodeURIComponent(aliasEdit.comment);
-						setAliasesCommand += "," + StringMacros::encodeURIComponent(author);
+						setAliasesCommand +=
+						    "," + StringMacros::encodeURIComponent(author);
 
 						__SUP_COUT_INFO__ << "Sending to subsystem '" << subsystemName
 						                  << "' at " << remoteGatewayUrl << ": "
@@ -13909,14 +13920,17 @@ try
 						requestSocket.initialize();
 						// the remote side saves and activates a Backbone group, which can
 						// take several seconds
-						resultString = requestSocket.sendAndReceive(
-						    remoteGatewaySocket, setAliasesCommand, 30 /*timeoutSeconds*/);
+						resultString =
+						    requestSocket.sendAndReceive(remoteGatewaySocket,
+						                                 setAliasesCommand,
+						                                 30 /*timeoutSeconds*/);
 
 						if(resultString.empty())
-							resultString =
-							    "Warning: no response from subsystem '" + subsystemName +
-							    "' (its otsdaq may predate the SetGroupAliases command, or "
-							    "it stopped responding).";
+							resultString = "Warning: no response from subsystem '" +
+							               subsystemName +
+							               "' (its otsdaq may predate the "
+							               "SetGroupAliases command, or "
+							               "it stopped responding).";
 					}
 				}
 				catch(const std::exception& e)

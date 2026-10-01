@@ -1502,8 +1502,7 @@ catch(...)
 //==============================================================================
 std::pair<std::string, TableGroupKey>
 ConfigurationSupervisorBase::setGroupAliasesInActiveBackbone(
-    ConfigurationManagerRW*            cfgMgr,
-    const std::vector<GroupAliasEdit>& aliasEdits)
+    ConfigurationManagerRW* cfgMgr, const std::vector<GroupAliasEdit>& aliasEdits)
 {
 	// Config-DB writes from a Gateway process have no other serialization.
 	static std::mutex           aliasWriteMutex;
@@ -1518,13 +1517,13 @@ ConfigurationSupervisorBase::setGroupAliasesInActiveBackbone(
 	const std::string& author = cfgMgr->getUsername();
 
 	GroupEditStruct  backboneEdit(ConfigurationManager::GroupType::BACKBONE_TYPE, cfgMgr);
-	TableEditStruct& groupAliasesTableEdit = backboneEdit.getTableEditStruct(
-	    ConfigurationManager::GROUP_ALIASES_TABLE_NAME);
+	TableEditStruct& groupAliasesTableEdit =
+	    backboneEdit.getTableEditStruct(ConfigurationManager::GROUP_ALIASES_TABLE_NAME);
 	TableView* groupAliasesView = groupAliasesTableEdit.tableView_;
 
-	const unsigned int aliasColumn   = groupAliasesView->findCol("GroupKeyAlias");
-	const unsigned int nameColumn    = groupAliasesView->findCol("GroupName");
-	const unsigned int keyColumn     = groupAliasesView->findCol("GroupKey");
+	const unsigned int aliasColumn = groupAliasesView->findCol("GroupKeyAlias");
+	const unsigned int nameColumn  = groupAliasesView->findCol("GroupName");
+	const unsigned int keyColumn   = groupAliasesView->findCol("GroupKey");
 	const unsigned int commentColumn =
 	    groupAliasesView->findCol(TableViewColumnInfo::COL_NAME_COMMENT);
 	const unsigned int authorColumn =
@@ -1569,7 +1568,8 @@ ConfigurationSupervisorBase::setGroupAliasesInActiveBackbone(
 		}
 		if(currentRow[keyColumn] != aliasEdit.groupKey.toString())
 		{
-			groupAliasesView->setValue(aliasEdit.groupKey.toString(), aliasRow, keyColumn);
+			groupAliasesView->setValue(
+			    aliasEdit.groupKey.toString(), aliasRow, keyColumn);
 			thisAliasChanged = true;
 		}
 		if(currentRow[commentColumn] != aliasEdit.comment)
@@ -1596,8 +1596,9 @@ ConfigurationSupervisorBase::setGroupAliasesInActiveBackbone(
 	if(!anyAliasChanged)
 	{
 		backboneEdit.dropChanges();
-		return {activeBackboneName,
-		        cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::BACKBONE_TYPE)};
+		return {
+		    activeBackboneName,
+		    cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::BACKBONE_TYPE)};
 	}
 
 	groupAliasesView->init();  // verify table (throws runtime_error on problems)
