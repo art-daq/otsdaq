@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <cassert>
+#include <cctype>  // for isalnum
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -1094,9 +1095,10 @@ bool WebUsers::saveDatabaseToFile(uint8_t db)
 ///			and salt starts as "" until password is set
 ///		Special case if first user name!! max permissions given (super user made)
 /// //Note: username, userId, AND displayName must be unique!
-void WebUsers::createNewAccount(const std::string& username,
-                                const std::string& displayName,
-                                const std::string& email)
+void WebUsers::createNewAccount(const std::string&          username,
+                                const std::string&          displayName,
+                                const std::string&          email,
+                                WebUsers::permissionLevel_t initialPermission)
 {
 	__COUT__ << "Creating account: " << username << __E__;
 	// check if username already exists
@@ -1130,8 +1132,9 @@ void WebUsers::createNewAccount(const std::string& username,
 	// first user is admin always!
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> initPermissions = {
 	    {WebUsers::DEFAULT_USER_GROUP,
-	     (Users_.size() ? WebUsers::PERMISSION_LEVEL_NOVICE
-	                    : WebUsers::PERMISSION_LEVEL_ADMIN)}};
+	     (Users_.size()
+	          ? initialPermission
+	          : WebUsers::permissionLevel_t(WebUsers::PERMISSION_LEVEL_ADMIN))}};
 
 	Users_.back().permissions_ = initPermissions;
 	Users_.back().userId_      = usersNextUserId_++;
@@ -1562,6 +1565,151 @@ uint64_t WebUsers::attemptActiveSessionWithCert(const std::string& uuid,
 }  // end attemptActiveSessionWithCert()
 
 //==============================================================================
+/// WebUsers::attemptActiveSessionWithEmail ---
+///	Establishes an active session for a user identified by email address, having already
+///	been authenticated by an external identity provider (e.g. OIDC/SSO single sign-on).
+///	The caller is responsible for verifying the user's identity before calling this.
+///
+///	If autoCreate is true and no local account matches the email, a new account is created
+///	(with novice permissions) so any authenticated identity-provider user can sign in.
+///
+///	returns User Id, and by reference the cookieCode, username, and displayName on success
+///	else returns NOT_FOUND_IN_DATABASE and cookieCode "0"
+uint64_t WebUsers::attemptActiveSessionWithEmail(const std::string& email,
+                                                 const std::string& displayNameHint,
+                                                 std::string&       cookieCode,
+                                                 std::string&       username,
+                                                 std::string&       displayName,
+                                                 const std::string& ip,
+                                                 bool               autoCreate)
+{
+	cookieCode = "0";
+
+	if(!checkIpAccess(ip))
+	{
+		__COUT_ERR__ << "rejected ip: " << ip << __E__;
+		return NOT_FOUND_IN_DATABASE;
+	}
+
+	cleanupExpiredEntries();  // remove expired active and login sessions
+
+	if(!CareAboutCookieCodes_)  // NO SECURITY
+	{
+		uint64_t uid = getAdminUserID();
+		username     = getUsersUsername(uid);
+		displayName  = getUsersDisplayName(uid);
+		cookieCode   = genCookieCode();  // return "dummy" cookie code by reference
+		return uid;
+	}
+
+	if(email == "")
+	{
+		__COUT__ << "Rejecting SSO logon with blank email" << __E__;
+		return NOT_FOUND_IN_DATABASE;
+	}
+
+	// search users for matching email
+	uint64_t i = searchUsersDatabaseForUserEmail(email);
+
+	// If no local account matches the email, derive a base username from the email's local part
+	// (the part before the '@') and sanitize it to contain only alphanumeric characters, underscores, hyphens, or periods.
+	std::string baseUsername;
+	if(i == NOT_FOUND_IN_DATABASE)
+	{
+		__COUT__ << "No local account found for email: " << email
+		         << ". Attempting to derive a base username from the email." << __E__;
+		// derive a base username from the email local-part (sanitized)
+		for(const char& c : email.substr(0, email.find('@')))
+			if(std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-' ||
+			   c == '.')
+				baseUsername += c;
+		i = searchUsersDatabaseForUsername(baseUsername);
+	}
+
+	if(i == NOT_FOUND_IN_DATABASE)  // no local account for this email
+	{
+		if(!autoCreate)
+		{
+			__COUT__ << "email: " << email << " is not found" << __E__;
+			return NOT_FOUND_IN_DATABASE;
+		}
+
+		// auto-create a novice account for the authenticated SSO user
+		if(baseUsername == "")
+			baseUsername = "ssouser";
+
+		// derive a base display name from the provided hint, else the email
+		std::string baseDisplayName = displayNameHint;
+		if(baseDisplayName == "")
+			baseDisplayName = email;
+
+		// ensure username and display name are unique (both are enforced unique)
+		std::string newUsername    = baseUsername;
+		std::string newDisplayName = baseDisplayName;
+		for(unsigned int n = 1;
+		    searchUsersDatabaseForUsername(newUsername) != NOT_FOUND_IN_DATABASE ||
+		    searchUsersDatabaseForDisplayName(newDisplayName) != NOT_FOUND_IN_DATABASE;
+		    ++n)
+		{
+			newUsername    = baseUsername + std::to_string(n);
+			newDisplayName = baseDisplayName + " (" + std::to_string(n) + ")";
+			if(n > 1000)  // safety
+			{
+				__COUT_ERR__ << "Unable to find unique username for SSO user " << email
+				             << __E__;
+				return NOT_FOUND_IN_DATABASE;
+			}
+		}
+
+		__COUT__ << "Auto-creating SSO account '" << newUsername << "' for email "
+		         << email << __E__;
+		try
+		{
+			createNewAccount(
+			    newUsername,
+			    newDisplayName,
+			    email,
+			    WebUsers::PERMISSION_LEVEL_NOVICE /*initial permission (100)*/);
+		}
+		catch(const std::runtime_error& e)
+		{
+			__COUT_ERR__ << "Failed to auto-create SSO account: " << e.what() << __E__;
+			return NOT_FOUND_IN_DATABASE;
+		}
+
+		i = searchUsersDatabaseForUserEmail(email);
+		if(i == NOT_FOUND_IN_DATABASE)
+		{
+			__COUT_ERR__ << "SSO account creation did not persist for " << email << __E__;
+			return NOT_FOUND_IN_DATABASE;
+		}
+	}
+
+	Users_[i].lastLoginAttempt_ = time(0);
+	if(isInactiveForGroup(Users_[i].permissions_))
+	{
+		__COUT__ << "User '" << Users_[i].username_
+		         << "' account INACTIVE (could be due to failed logins)." << __E__;
+		return NOT_FOUND_IN_DATABASE;
+	}
+
+	__COUT__ << "SSO login successful for: " << Users_[i].username_ << __E__;
+
+	// Only persist failure count reset if it was previously non-zero
+	if(Users_[i].loginFailureCount_ != 0)
+	{
+		Users_[i].loginFailureCount_ = 0;
+		saveLoginFailureCounts();  // persist reset to separate file
+	}
+
+	username    = Users_[i].username_;     // pass by reference username
+	displayName = Users_[i].displayName_;  // pass by reference displayName
+	cookieCode  = createNewActiveSession(Users_[i].userId_,
+                                        ip);  // return cookie code by reference
+	return Users_[i].userId_;                  // return user Id
+}  // end attemptActiveSessionWithEmail()
+
+//==============================================================================
 /// WebUsers::searchActiveSessionDatabaseForUID ---
 ///	returns index if found, else -1
 uint64_t WebUsers::searchActiveSessionDatabaseForCookie(
@@ -1827,7 +1975,7 @@ uint64_t WebUsers::searchUsersDatabaseForDisplayName(const std::string& displayN
 		if(Users_[i].displayName_ == displayName)
 			break;
 	return (i == Users_.size()) ? NOT_FOUND_IN_DATABASE : i;
-}  // end searchUsersDatabaseForUsername()
+}  // end searchUsersDatabaseForDisplayName()
 
 //==============================================================================
 /// WebUsers::searchUsersDatabaseForUserEmail ---
@@ -3192,10 +3340,10 @@ void WebUsers::insertSettingsForUser(
 		xmldoc->copyDataChildren(prefXml);
 	}
 
-	// add settings if super user
-	if(includeAccounts && isAdminForGroup(permissionMap))
+	// Admins receive all accounts; other users receive only their own account.
+	if(includeAccounts)
 	{
-		__COUT__ << "Admin on our hands" << __E__;
+		bool includeAllAccounts = isAdminForGroup(permissionMap);
 
 		xmldoc->addTextElementToData(PREF_XML_ACCOUNTS_FIELD, "");
 
@@ -3208,6 +3356,9 @@ void WebUsers::insertSettingsForUser(
 		// get all accounts
 		for(uint64_t i = 0; i < Users_.size(); ++i)
 		{
+			if(!includeAllAccounts && i != userIndex)
+				continue;
+
 			xmldoc->addTextElementToParent(
 			    "username", Users_[i].username_, PREF_XML_ACCOUNTS_FIELD);
 			xmldoc->addTextElementToParent(
@@ -3510,6 +3661,30 @@ void WebUsers::modifyAccountSettings(uint64_t           actingUid,
 {
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> permissionMap =
 	    getPermissionsForUser(actingUid);
+	uint64_t i    = searchUsersDatabaseForUserId(actingUid);
+	uint64_t modi = searchUsersDatabaseForUsername(username);
+
+	if(cmd_type == MOD_TYPE_RESET_PASSWORD)
+	{
+		if(i == NOT_FOUND_IN_DATABASE || modi == NOT_FOUND_IN_DATABASE)
+		{
+			__SS__ << "User not found!? Should not happen." << __E__;
+			__SS_THROW__;
+		}
+		if(i != modi && !isAdminForGroup(permissionMap))
+		{
+			__SS__ << "Only admins can reset another user's password." << __E__;
+			__SS_THROW__;
+		}
+
+		__COUT_INFO__ << "Password reset for user '" << username << "'." << __E__;
+		Users_[modi].setModifier(Users_[i].username_);
+		Users_[modi].salt_              = "";
+		Users_[modi].loginFailureCount_ = 0;
+		saveDatabaseToFile(DB_USERS);
+		return;
+	}
+
 	if(!isAdminForGroup(permissionMap))
 	{
 		// not an admin
@@ -3517,19 +3692,8 @@ void WebUsers::modifyAccountSettings(uint64_t           actingUid,
 		__SS_THROW__;
 	}
 
-	uint64_t i    = searchUsersDatabaseForUserId(actingUid);
-	uint64_t modi = searchUsersDatabaseForUsername(username);
 	if(modi == 0)
 	{
-		if(i == 0)
-		{
-			__COUT_INFO__ << "Admin password reset." << __E__;
-			Users_[modi].setModifier(Users_[i].username_);
-			Users_[modi].salt_              = "";
-			Users_[modi].loginFailureCount_ = 0;
-			saveDatabaseToFile(DB_USERS);
-			return;
-		}
 		__SS__ << "Cannot modify first user" << __E__;
 		__SS_THROW__;
 	}
