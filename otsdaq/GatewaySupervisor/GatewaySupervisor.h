@@ -418,10 +418,9 @@ class WorkLoopManager;
 
 		std::mutex   		broadcastCommandMessageIndexMutex_;
 		unsigned int 		broadcastCommandMessageIndex_;
-		std::atomic<bool>	broadcastSubsystemIterationsDone_{true};  ///< outer loop: synchronized across subsystems
-		std::atomic<bool>	broadcastIterationsDone_{true};            ///< inner loop: synchronized within one subsystem
+		std::atomic<bool>	broadcastIterationsDone_{true};
 		std::mutex   		broadcastIterationBreakpointMutex_;
-		unsigned int 		broadcastIterationBreakpoint_;  ///< pause transition when subsystem-iteration index
+		unsigned int 		broadcastIterationBreakpoint_;  ///< pause transition when iteration index
 													 ///< matches breakpoint index
 		std::mutex			broadcastCommandStatusUpdateMutex_;
 		std::string			broadcastCommandStatus_;
