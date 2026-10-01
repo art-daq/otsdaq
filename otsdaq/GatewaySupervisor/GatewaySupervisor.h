@@ -525,6 +525,13 @@ public:	//used by remote subsystem control and status
 
 		std::vector<GatewaySupervisor::RemoteGatewayInfo> 	remoteGatewayApps_;
 		std::mutex											remoteGatewayAppsMutex_;
+
+		///< Remote gateways (by fullName) that were fsm_included when the current broadcast began.
+		///< Captured once per transition in broadcastMessage() so that an include/exclude change
+		///< made by a user mid-transition cannot make the completion poll wait on (or ignore) a
+		///< subsystem that the send step treated differently. Re-captured on the next transition.
+		std::set<std::string>								broadcastIncludedRemoteGatewayNames_;
+		bool        										isRemoteGatewayIncludedInBroadcast(const RemoteGatewayInfo& remoteGatewayApp) const;
 		std::map<std::string /* appName */,
 			bool /* lastStatusGood */> 						appLastStatusGood_;
 		std::mutex											dualStatusThreadMutex_;

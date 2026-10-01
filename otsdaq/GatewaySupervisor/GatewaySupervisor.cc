@@ -10064,24 +10064,29 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 	unsigned int subsystemIteration = 0;
 
+	// Snapshot the included remote gateways for the whole transition (send + poll).
+	// A user toggling include/exclude while the transition runs must not change which
+	// subsystems the completion poll waits on; the new choice applies to the next transition.
+	{
+		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+		broadcastIncludedRemoteGatewayNames_.clear();
+		for(const auto& remoteGatewayApp : remoteGatewayApps_)
+			if(remoteGatewayApp.fsm_included)
+				broadcastIncludedRemoteGatewayNames_.insert(remoteGatewayApp.fullName);
+	}
+
 	// Standalone: no top-level above (not UDP-driven) and no included remote subsystems below.
 	// Local apps are told the STANDALONE subsystem-iteration index so nobody idles a pass
 	// waiting for a subsystem that does not exist.
-	bool standaloneSubsystem = !isRemoteSubsystemIteration_;
-	if(standaloneSubsystem)
-	{
-		std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
-		for(const auto& rga : remoteGatewayApps_)
-			if(rga.fsm_included)
-			{
-				standaloneSubsystem = false;
-				break;
-			}
-	}
+	bool standaloneSubsystem =
+	    !isRemoteSubsystemIteration_ && broadcastIncludedRemoteGatewayNames_.empty();
 	__COUT_INFO__ << "Broadcasting '" << command << "' in "
 	              << (standaloneSubsystem ? "STANDALONE" : "multi-subsystem")
 	              << " mode (subsystemIterationIndex "
-	              << (standaloneSubsystem ? "= STANDALONE" : "= 0,1,2,...") << ")"
+	              << (standaloneSubsystem ? "= STANDALONE" : "= 0,1,2,...") << ") with "
+	              << broadcastIncludedRemoteGatewayNames_.size()
+	              << " included remote gateway(s): "
+	              << StringMacros::setToString(broadcastIncludedRemoteGatewayNames_)
 	              << __E__;
 
 	broadcastMessageToRemoteGateways(
@@ -10531,7 +10536,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 			for(auto& rga : remoteGatewayApps_)
 			{
-				if(!rga.fsm_included || rga.iterationsDone)
+				if(!isRemoteGatewayIncludedInBroadcast(rga) || rga.iterationsDone)
 					continue;
 				if(rga.command != "" && rga.command != "Sent")
 					continue;  // already has a pending command
@@ -10641,6 +10646,17 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 }  // end signalAndWaitForBroadcastThreads()
 
 //==============================================================================
+/// True if this remote gateway was fsm_included when the current broadcast began.
+/// Send, completion poll, and error cleanup all use this one answer so a mid-transition
+/// include/exclude change cannot make them disagree.
+bool GatewaySupervisor::isRemoteGatewayIncludedInBroadcast(
+    const RemoteGatewayInfo& remoteGatewayApp) const
+{
+	return broadcastIncludedRemoteGatewayNames_.find(remoteGatewayApp.fullName) !=
+	       broadcastIncludedRemoteGatewayNames_.end();
+}  // end isRemoteGatewayIncludedInBroadcast()
+
+//==============================================================================
 void GatewaySupervisor::broadcastMessageToRemoteGateways(
     const xoap::MessageReference message, unsigned int iteration)
 {
@@ -10683,7 +10699,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 
 	for(auto& remoteGatewayApp : localApps)
 	{
-		if(!remoteGatewayApp.fsm_included)
+		if(!isRemoteGatewayIncludedInBroadcast(remoteGatewayApp))
 		{
 			__COUT__ << "Skipping excluded Remote gateway '"
 			         << remoteGatewayApp.appInfo.name << "' for FSM command = " << command
@@ -10962,7 +10978,7 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 		for(auto& remoteGatewayApp : remoteGatewayApps)
 		{
 			//skip remote gateways that were not commanded
-			if(!remoteGatewayApp.fsm_included)
+			if(!isRemoteGatewayIncludedInBroadcast(remoteGatewayApp))
 				continue;
 			if(remoteGatewayApp.iterationsDone)
 				continue;  //skip if already done with all iterations
