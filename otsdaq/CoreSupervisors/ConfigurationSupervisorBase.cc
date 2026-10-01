@@ -1500,6 +1500,125 @@ catch(...)
 }  // end handleAddDesktopIconXML() catch
 
 //==============================================================================
+std::pair<std::string, TableGroupKey>
+ConfigurationSupervisorBase::setGroupAliasesInActiveBackbone(
+    ConfigurationManagerRW*            cfgMgr,
+    const std::vector<GroupAliasEdit>& aliasEdits)
+{
+	// Config-DB writes from a Gateway process have no other serialization.
+	static std::mutex           aliasWriteMutex;
+	std::lock_guard<std::mutex> aliasWriteLock(aliasWriteMutex);
+
+	cfgMgr->getAllTableInfo(true /* refresh */);
+	cfgMgr->restoreActiveTableGroups(
+	    true /*throwErrors*/,
+	    "" /*pathToActiveGroupsFile*/,
+	    ConfigurationManager::LoadGroupType::ONLY_BACKBONE_OR_CONTEXT_TYPES);
+
+	const std::string& author = cfgMgr->getUsername();
+
+	GroupEditStruct  backboneEdit(ConfigurationManager::GroupType::BACKBONE_TYPE, cfgMgr);
+	TableEditStruct& groupAliasesTableEdit = backboneEdit.getTableEditStruct(
+	    ConfigurationManager::GROUP_ALIASES_TABLE_NAME);
+	TableView* groupAliasesView = groupAliasesTableEdit.tableView_;
+
+	const unsigned int aliasColumn   = groupAliasesView->findCol("GroupKeyAlias");
+	const unsigned int nameColumn    = groupAliasesView->findCol("GroupName");
+	const unsigned int keyColumn     = groupAliasesView->findCol("GroupKey");
+	const unsigned int commentColumn =
+	    groupAliasesView->findCol(TableViewColumnInfo::COL_NAME_COMMENT);
+	const unsigned int authorColumn =
+	    groupAliasesView->findCol(TableViewColumnInfo::COL_NAME_AUTHOR);
+	const unsigned int timeColumn =
+	    groupAliasesView->findCol(TableViewColumnInfo::COL_NAME_CREATION);
+
+	bool anyAliasChanged = false;
+	for(const auto& aliasEdit : aliasEdits)
+	{
+		if(aliasEdit.alias.empty() || aliasEdit.groupName.empty() ||
+		   aliasEdit.groupKey.isInvalid())
+		{
+			__COUT_WARN__ << "Skipping incomplete alias edit {" << aliasEdit.alias << ", "
+			              << aliasEdit.groupName << "(" << aliasEdit.groupKey << ")}"
+			              << __E__;
+			continue;
+		}
+
+		unsigned int aliasRow = (unsigned int)-1;
+		try
+		{
+			aliasRow = groupAliasesView->findRow(aliasColumn, aliasEdit.alias);
+		}
+		catch(...)  // not found -> add below
+		{
+		}
+
+		bool thisAliasChanged = false;
+		if(aliasRow == (unsigned int)-1)
+		{
+			aliasRow = groupAliasesView->addRow();
+			groupAliasesView->setValue(aliasEdit.alias, aliasRow, aliasColumn);
+			thisAliasChanged = true;
+		}
+
+		const auto& currentRow = groupAliasesView->getDataView()[aliasRow];
+		if(currentRow[nameColumn] != aliasEdit.groupName)
+		{
+			groupAliasesView->setValue(aliasEdit.groupName, aliasRow, nameColumn);
+			thisAliasChanged = true;
+		}
+		if(currentRow[keyColumn] != aliasEdit.groupKey.toString())
+		{
+			groupAliasesView->setValue(aliasEdit.groupKey.toString(), aliasRow, keyColumn);
+			thisAliasChanged = true;
+		}
+		if(currentRow[commentColumn] != aliasEdit.comment)
+		{
+			groupAliasesView->setValue(aliasEdit.comment, aliasRow, commentColumn);
+			thisAliasChanged = true;
+		}
+
+		if(thisAliasChanged)
+		{
+			groupAliasesView->setValue(author, aliasRow, authorColumn);
+			groupAliasesView->setValue(time(0), aliasRow, timeColumn);
+			anyAliasChanged = true;
+		}
+
+		__COUT__ << "Group alias '" << aliasEdit.alias << "' -> " << aliasEdit.groupName
+		         << "(" << aliasEdit.groupKey << ")"
+		         << (thisAliasChanged ? " [changed]" : " [unchanged]") << __E__;
+	}
+
+	const std::string activeBackboneName =
+	    cfgMgr->getActiveGroupName(ConfigurationManager::GroupType::BACKBONE_TYPE);
+
+	if(!anyAliasChanged)
+	{
+		backboneEdit.dropChanges();
+		return {activeBackboneName,
+		        cfgMgr->getActiveGroupKey(ConfigurationManager::GroupType::BACKBONE_TYPE)};
+	}
+
+	groupAliasesView->init();  // verify table (throws runtime_error on problems)
+	groupAliasesTableEdit.modified_ = true;
+
+	TableGroupKey newBackboneKey;
+	bool          foundEquivalentBackboneKey = false;
+	backboneEdit.saveChanges(backboneEdit.originalGroupName_,
+	                         newBackboneKey,
+	                         &foundEquivalentBackboneKey,
+	                         true /*activateNewGroup*/);
+
+	__COUT_INFO__ << "Group aliases saved; active Backbone is now "
+	              << backboneEdit.originalGroupName_ << "(" << newBackboneKey << ")"
+	              << (foundEquivalentBackboneKey ? " [equivalent existing group]" : "")
+	              << __E__;
+
+	return {backboneEdit.originalGroupName_, newBackboneKey};
+}  // end setGroupAliasesInActiveBackbone()
+
+//==============================================================================
 void ConfigurationSupervisorBase::recursiveCopyTreeUIDNode(
     HttpXmlDocument&        xmlOut,
     ConfigurationManagerRW* cfgMgr,

@@ -151,8 +151,8 @@ try
 	//**** end LOGIN GATEWAY CODE ***//
 
 	if(!userInfo.automatedCommand_)
-		__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-		             << " requestType: " << requestType << __E__;
+		__SUP_COUTT__ << "DIAG ms=" << StringMacros::nowEpochMs()
+		              << " requestType: " << requestType << __E__;
 
 	if(userInfo.NonXMLRequestType_)
 	{
@@ -256,9 +256,9 @@ try
 	                         true /* printErrors */);  // report any errors encountered
 
 	if(!userInfo.automatedCommand_)
-		__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-		             << " requestType: " << requestType << " response written, elapsed="
-		             << artdaq::TimeUtils::GetElapsedTime(requestStart) << "s" << __E__;
+		__SUP_COUTT__ << "DIAG ms=" << StringMacros::nowEpochMs()
+		              << " requestType: " << requestType << " response written, elapsed="
+		              << artdaq::TimeUtils::GetElapsedTime(requestStart) << "s" << __E__;
 
 	// __SUP_COUTT__ << "Request '" << requestType
 	//               << "' time: " << artdaq::TimeUtils::GetElapsedTime(requestStart)

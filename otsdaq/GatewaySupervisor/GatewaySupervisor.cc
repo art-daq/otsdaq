@@ -1958,7 +1958,7 @@ try
 								{
 									if(theSupervisor->remoteGatewayApps_[i]
 									       .appInfo.status != "")
-										__COUT_INFO__
+										__COUTT__
 										    << "DIAG: clear-stale wiping '"
 										    << theSupervisor->remoteGatewayApps_[i]
 										           .appInfo.name
@@ -2141,7 +2141,7 @@ try
 											if(theSupervisor->remoteGatewayApps_[i]
 											       .appInfo.status !=
 											   remoteGatewayApp.appInfo.status)
-												__COUT_INFO__
+												__COUTT__
 												    << "DIAG: write-back changing '"
 												    << remoteGatewayApp.appInfo.name
 												    << "' from='"
@@ -3839,6 +3839,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					    << "\n"
 					    << "GetAliasGlobalFields,<configAlias>"
 					    << "\n"
+					    << "SetGroupAliases,<alias>,<groupName>,<groupKey>,<comment>[,<alias>,"
+					       "<groupName>,<groupKey>,<comment>...],<author> - all fields "
+					       "URI-encoded; saves and activates a new Backbone"
+					    << "\n"
 					    << "FiniteStateMachineName,Command,Parameter(s)"
 					    << "\n";
 
@@ -5143,6 +5147,63 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					sock.acknowledge(iconString, true /* verbose */);
 					continue;
 				}  //end GetRemoteDesktopIcons
+				else if(buffer.find("SetGroupAliases,") == 0)
+				{
+					// SetGroupAliases,<alias>,<name>,<key>,<comment>[,...4-field blocks],<author>
+					std::vector<std::string> commandFields =
+					    StringMacros::getVectorFromString(buffer, {','});
+
+					std::string acknowledgeString;
+					if(commandFields.size() < 6 || (commandFields.size() - 2) % 4 != 0)
+						acknowledgeString =
+						    "Error: SetGroupAliases expects 4 fields per alias plus author, "
+						    "got " +
+						    std::to_string(commandFields.size() - 1) + " fields.";
+					else if(theSupervisor->theStateMachine_.isInTransition())
+						acknowledgeString =
+						    "Error: FSM in transition; group aliases can not be modified now.";
+					else
+					{
+						std::vector<ConfigurationSupervisorBase::GroupAliasEdit> aliasEdits;
+						for(size_t fieldIndex = 1; fieldIndex + 3 < commandFields.size() - 1;
+						    fieldIndex += 4)
+							aliasEdits.push_back(
+							    {StringMacros::decodeURIComponent(commandFields[fieldIndex]),
+							     StringMacros::decodeURIComponent(commandFields[fieldIndex + 1]),
+							     TableGroupKey(StringMacros::decodeURIComponent(
+							         commandFields[fieldIndex + 2])),
+							     StringMacros::decodeURIComponent(
+							         commandFields[fieldIndex + 3])});
+						std::string author =
+						    StringMacros::decodeURIComponent(commandFields.back());
+
+						__COUT_INFO__ << "Remote request to set " << aliasEdits.size()
+						              << " group alias(es) by '" << author << "'" << __E__;
+						try
+						{
+							ConfigurationManagerRW aliasWriteConfigManager(author);
+							auto activatedBackbone =
+							    ConfigurationSupervisorBase::setGroupAliasesInActiveBackbone(
+							        &aliasWriteConfigManager, aliasEdits);
+							acknowledgeString = "Done," + activatedBackbone.first + "," +
+							                    activatedBackbone.second.toString();
+						}
+						catch(const std::exception& e)
+						{
+							acknowledgeString =
+							    std::string("Error: ") + std::string(e.what()).substr(0, 1000);
+						}
+						catch(...)
+						{
+							acknowledgeString = "Error: unknown error setting group aliases.";
+						}
+					}
+
+					__COUT__ << "SetGroupAliases response: " << acknowledgeString.substr(0, 200)
+					         << __E__;
+					sock.acknowledge(acknowledgeString, false /* verbose */);
+					continue;
+				}  //end SetGroupAliases
 				else if(buffer.find("GetAliasGlobalFields,") == 0)
 				{
 					std::vector<std::string> params =
@@ -11494,6 +11555,7 @@ void GatewaySupervisor::setSupervisorPropertyDefaults()
 	        " | resetConsoleCounts=10"
 	        " | commandRemoteSubsystem=10 | setRemoteSubsystemFsmControl=10"  //remote subsystem control
 	        " | propagateLoginToSubsystem=10"  //force login cookie propagation to a restarted subsystem
+	        " | restoreRunConfigAliases=10"  //write RunRestoreConfig/Context aliases into every subsystem (RunDbViewer)
 	        " | addSystemMessage=10"  //post system messages from external tools (e.g. daqpy watchdog)
 	);
 
@@ -13694,6 +13756,184 @@ try
 				__SUP_SS__ << "Target remote subsystem '" << targetSubsystem
 				           << "' was not found for propagateLoginToSubsystem!" << __E__;
 				__SUP_SS_THROW__;
+			}
+		}
+		else if(requestType == "restoreRunConfigAliases")
+		{
+			// For every subsystem that took part in a run, create/overwrite the group
+			// aliases RunRestoreConfig and RunRestoreContext in that subsystem's own
+			// config DB, pointing at the groups recorded for the run. The run DB is
+			// the authority here; the browser only supplies the run number.
+			std::string runNumberString = CgiDataUtilities::postData(cgiIn, "runNumber");
+			std::string runInfoPluginName =
+			    CgiDataUtilities::postData(cgiIn, "runInfoPluginName");
+			std::string runInfoPluginUID =
+			    CgiDataUtilities::postData(cgiIn, "runInfoPluginUID");
+
+			__SUP_COUTV__(runNumberString);
+			__SUP_COUTV__(runInfoPluginName);
+			__SUP_COUTV__(runInfoPluginUID);
+
+			unsigned int runNumber = 0;
+			if(runNumberString.empty() ||
+			   !StringMacros::getNumber(runNumberString, runNumber) || runNumber == 0)
+			{
+				__SUP_SS__ << "Illegal run number '" << runNumberString
+				           << "' for restoreRunConfigAliases!" << __E__;
+				__SUP_SS_THROW__;
+			}
+			if(theStateMachine_.isInTransition())
+			{
+				__SUP_SS__ << "The state machine is in transition; group aliases can not "
+				              "be modified now. Try again when the transition completes."
+				           << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			std::unique_ptr<RunInfoVInterface> runInfoInterface(
+			    makeRunInfo(runInfoPluginName, runInfoPluginUID));
+			if(runInfoInterface == nullptr)
+			{
+				__SUP_SS__ << "Run Info plugin construction failed for '"
+				           << runInfoPluginName << "'" << __E__;
+				__SUP_SS_THROW__;
+			}
+			std::vector<std::vector<std::string>> subsystemRows =
+			    runInfoInterface->getRunConfigSubsystemInfo(runNumber);
+			if(subsystemRows.empty())
+			{
+				__SUP_SS__ << "No subsystem configuration records found for run "
+				           << runNumber << "." << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			const std::string author = userInfo.username_;
+			const std::string configRestoreComment =
+			    "This alias was created to restore the Run #" + std::to_string(runNumber) +
+			    " config group";
+			const std::string contextRestoreComment =
+			    "This alias was created to restore the Run #" + std::to_string(runNumber) +
+			    " context group";
+
+			xmlOut.addTextElementToData("run_number", std::to_string(runNumber));
+
+			for(const auto& subsystemRow : subsystemRows)
+			{
+				// row: [subsystem, cfgAlias, cfgName, cfgKey, ctxName, ctxKey, ...]
+				if(subsystemRow.size() < 6)
+					continue;
+				const std::string& subsystemName = subsystemRow[0];
+
+				std::vector<ConfigurationSupervisorBase::GroupAliasEdit> aliasEdits = {
+				    {"RunRestoreConfig",
+				     subsystemRow[2],
+				     TableGroupKey(subsystemRow[3]),
+				     configRestoreComment},
+				    {"RunRestoreContext",
+				     subsystemRow[4],
+				     TableGroupKey(subsystemRow[5]),
+				     contextRestoreComment}};
+
+				std::string resultString;
+				try
+				{
+					if(subsystemName == "Gateway")
+					{
+						ConfigurationManagerRW aliasWriteConfigManager(author);
+						auto activatedBackbone =
+						    ConfigurationSupervisorBase::setGroupAliasesInActiveBackbone(
+						        &aliasWriteConfigManager, aliasEdits);
+						resultString = "Done," + activatedBackbone.first + "," +
+						               activatedBackbone.second.toString();
+					}
+					else
+					{
+						std::string remoteGatewayUrl;
+						std::string remoteGatewayStatus;
+						bool        remoteGatewayKnown = false;
+						{
+							std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
+							for(const auto& remoteGatewayApp : remoteGatewayApps_)
+								if(remoteGatewayApp.fullName == subsystemName ||
+								   remoteGatewayApp.appInfo.name == subsystemName)
+								{
+									remoteGatewayKnown  = true;
+									remoteGatewayUrl    = remoteGatewayApp.appInfo.url;
+									remoteGatewayStatus = remoteGatewayApp.appInfo.status;
+									break;
+								}
+						}
+						if(!remoteGatewayKnown)
+						{
+							resultString = "Warning: subsystem '" + subsystemName +
+							               "' is not a remote subsystem of this Gateway.";
+							goto recordRestoreResult;
+						}
+						// The status poll marks an unreachable subsystem UNKNOWN; do not
+						// spend a UDP timeout on it, report it as unavailable instead.
+						if(remoteGatewayStatus == SupervisorInfo::APP_STATUS_UNKNOWN ||
+						   remoteGatewayStatus.empty())
+						{
+							resultString = "Warning: subsystem '" + subsystemName +
+							               "' is not currently available (status '" +
+							               remoteGatewayStatus + "').";
+							goto recordRestoreResult;
+						}
+
+						std::vector<std::string> urlFields =
+						    StringMacros::getVectorFromString(remoteGatewayUrl, {':'});
+						if(urlFields.size() != 3)
+						{
+							__SS__ << "Malformed URL for subsystem '" << subsystemName
+							       << "': " << remoteGatewayUrl << __E__;
+							__SS_THROW__;
+						}
+
+						std::string setAliasesCommand = "SetGroupAliases";
+						for(const auto& aliasEdit : aliasEdits)
+							setAliasesCommand +=
+							    "," + StringMacros::encodeURIComponent(aliasEdit.alias) + "," +
+							    StringMacros::encodeURIComponent(aliasEdit.groupName) + "," +
+							    StringMacros::encodeURIComponent(
+							        aliasEdit.groupKey.toString()) +
+							    "," + StringMacros::encodeURIComponent(aliasEdit.comment);
+						setAliasesCommand += "," + StringMacros::encodeURIComponent(author);
+
+						__SUP_COUT_INFO__ << "Sending to subsystem '" << subsystemName
+						                  << "' at " << remoteGatewayUrl << ": "
+						                  << setAliasesCommand << __E__;
+
+						Socket            remoteGatewaySocket(urlFields[1],
+                                                   atoi(urlFields[2].c_str()));
+						TransceiverSocket requestSocket(ipAddressForStateChangesOverUDP_);
+						requestSocket.initialize();
+						// the remote side saves and activates a Backbone group, which can
+						// take several seconds
+						resultString = requestSocket.sendAndReceive(
+						    remoteGatewaySocket, setAliasesCommand, 30 /*timeoutSeconds*/);
+
+						if(resultString.empty())
+							resultString =
+							    "Warning: no response from subsystem '" + subsystemName +
+							    "' (its otsdaq may predate the SetGroupAliases command, or "
+							    "it stopped responding).";
+					}
+				}
+				catch(const std::exception& e)
+				{
+					resultString = std::string("Error: ") + e.what();
+				}
+				catch(...)
+				{
+					resultString = "Error: unknown error.";
+				}
+
+			recordRestoreResult:
+				__SUP_COUT_INFO__ << "restoreRunConfigAliases run " << runNumber << " '"
+				                  << subsystemName << "': " << resultString.substr(0, 300)
+				                  << __E__;
+				xmlOut.addTextElementToData("subsystem", subsystemName);
+				xmlOut.addTextElementToData("result", resultString.substr(0, 1000));
 			}
 		}
 		else if(requestType == "gatewayLaunchOTS" || requestType == "gatewayLaunchWiz")
