@@ -594,12 +594,26 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 	loadArtdaqSystemVariables();
 
-	// No ordering against the front-end timing-chain phases is needed here: the board
-	// readers run with skip_dtc_init, so they do not touch DTC hardware at configure
-	// (DAQ buffer release is done by the DTC/CFO front ends at their final SoftReset and by
-	// the board readers at start). The configuring thread is polled with plain iterations,
-	// which are local to this subsystem.
-	if(RunControlStateMachine::isFirstIteration())
+	// Idle through FE timing-chain iterations (0-11) so that the artdaq
+	// release_all does not race with CFO event traffic (Phase 2a sends events,
+	// Phase 3e stops them, Phase 12 is the final SoftReset).
+	const unsigned int configureIteration   = RunControlStateMachine::getIterationIndex();
+	const unsigned int artdaqStartIteration = 12;  // after final SoftReset
+
+	if(configureIteration == 0 && RunControlStateMachine::getSubIterationIndex() == 0)
+	{
+		// Activate the configuration tree on the first iteration
+		CoreSupervisorBase::configureInit(
+		    getSupervisorProperty("SkipRedundantConfigureActivation", 1) ==
+		    1 /*attemptSkipIfGroupUnchanged*/);
+	}
+
+	if(configureIteration < artdaqStartIteration)
+	{
+		RunControlStateMachine::indicateIterationWork();
+	}
+	else if(configureIteration == artdaqStartIteration &&
+	        RunControlStateMachine::getSubIterationIndex() == 0)
 	{
 		thread_error_message_ = "";
 		thread_progress_bar_.resetProgressBar(0);
@@ -616,9 +630,11 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 		// start configuring thread
 		std::thread(&ARTDAQSupervisor::configuringThread, this).detach();
 
-		__SUP_COUT__ << "Configuring thread started." << __E__;
+		__SUP_COUT__ << "Configuring thread started at iteration " << configureIteration
+		             << " (after FE timing chain complete)." << __E__;
 
-		RunControlStateMachine::indicateIterationWork();  // poll on the next iteration
+		RunControlStateMachine::
+		    indicateIterationWork();  // use Iteration to allow other steps to complete in the system
 	}
 	else  // not first time
 	{
@@ -1408,21 +1424,19 @@ try
 {
 	__SUP_COUT__ << "transitionStarting" << __E__;
 
-	// Start sequence, ordered across subsystems (subsystem-iterations under a top-level,
-	// plain iterations when standalone — see getSubsystemSyncStepIndex()):
-	//   Step 0: idle — let DTCs SoftReset before launching artdaq.
-	//   Step 1: launch artdaq (do_start_running); sub-iterate until complete
-	//           so DTCs don't SoftReset while artdaq is starting.
-	//   Step 2+: idle — DTCs do post-artdaq SoftReset, then CFO launches run plan.
+	// Synchronized start sequence:
+	//   Iteration 0: idle — let DTCs SoftReset before launching artdaq.
+	//   Iteration 1: launch artdaq (do_start_running); block iteration advance
+	//                until complete so DTCs don't SoftReset while artdaq is starting.
+	//   Iteration 2+: idle — DTCs do post-artdaq SoftReset, then CFO launches run plan.
 
-	const unsigned int startIteration =
-	    RunControlStateMachine::getSubsystemSyncStepIndex();
+	const unsigned int startIteration = RunControlStateMachine::getIterationIndex();
 
 	if(startIteration == 0)
 	{
 		// Step 0: idle — let DTCs SoftReset before we launch artdaq
 		__SUP_COUT_INFO__ << "Step 0: idle, waiting for DTCs to SoftReset." << __E__;
-		RunControlStateMachine::indicateSubsystemSyncStepWork();
+		RunControlStateMachine::indicateIterationWork();
 		return;
 	}
 
@@ -1499,16 +1513,17 @@ try
 		else
 		{
 			// Thread done — stop sub-iterating. The broadcast thread returns,
-			// and the Gateway sees this supervisor needs another step to advance to 2+.
+			// and the Gateway sees this supervisor needs another iteration
+			// (indicateIterationWork) to advance to iteration 2+.
 			__SUP_COUT_INFO__ << "Step 1: artdaq starting transition completed!" << __E__;
 			__SUP_COUTV__(getProcessInfo_());
-			RunControlStateMachine::indicateSubsystemSyncStepWork();
+			RunControlStateMachine::indicateIterationWork();
 		}
 
 		return;
 	}
 
-	// Steps 2+: idle while DTCs do post-artdaq SoftReset and CFO launches run plan.
+	// Iterations 2+: idle while DTCs do post-artdaq SoftReset and CFO launches run plan.
 	return;
 
 }  // end transitionStarting()
