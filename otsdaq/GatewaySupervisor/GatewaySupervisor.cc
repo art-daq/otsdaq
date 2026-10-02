@@ -521,8 +521,9 @@ try
 
 	std::chrono::_V2::system_clock::time_point lastStatus =
 	    std::chrono::high_resolution_clock::now();
-	time_t lastSlowStatusWarnTime = time(0);  // suppress during startup while remote gateways are coming up
-	size_t statusWasSlowCount     = 0;
+	time_t lastSlowStatusWarnTime =
+	    time(0);  // suppress during startup while remote gateways are coming up
+	size_t statusWasSlowCount = 0;
 
 	std::string value;
 
@@ -11040,19 +11041,27 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				size_t            needNextIterationPos =
 				    remoteGatewayApp.appInfo.detail.find(needNextIterationPrefix);
 				const bool remoteIsInRestingState =
-				    remoteGatewayApp.appInfo.status == RunControlStateMachine::INITIAL_STATE_NAME ||
-				    remoteGatewayApp.appInfo.status == RunControlStateMachine::HALTED_STATE_NAME ||
-				    remoteGatewayApp.appInfo.status == RunControlStateMachine::CONFIGURED_STATE_NAME ||
-				    remoteGatewayApp.appInfo.status == RunControlStateMachine::RUNNING_STATE_NAME ||
-				    remoteGatewayApp.appInfo.status == RunControlStateMachine::PAUSED_STATE_NAME ||
-				    remoteGatewayApp.appInfo.status == RunControlStateMachine::SHUTDOWN_STATE_NAME ||
-				    remoteGatewayApp.appInfo.status.find(RunControlStateMachine::FAILED_STATE_NAME) == 0;
+				    remoteGatewayApp.appInfo.status ==
+				        RunControlStateMachine::INITIAL_STATE_NAME ||
+				    remoteGatewayApp.appInfo.status ==
+				        RunControlStateMachine::HALTED_STATE_NAME ||
+				    remoteGatewayApp.appInfo.status ==
+				        RunControlStateMachine::CONFIGURED_STATE_NAME ||
+				    remoteGatewayApp.appInfo.status ==
+				        RunControlStateMachine::RUNNING_STATE_NAME ||
+				    remoteGatewayApp.appInfo.status ==
+				        RunControlStateMachine::PAUSED_STATE_NAME ||
+				    remoteGatewayApp.appInfo.status ==
+				        RunControlStateMachine::SHUTDOWN_STATE_NAME ||
+				    remoteGatewayApp.appInfo.status.find(
+				        RunControlStateMachine::FAILED_STATE_NAME) == 0;
 				if(needNextIterationPos != std::string::npos && remoteIsInRestingState)
 				{
 					__COUT__ << "Ignoring stale needNextIteration from '"
 					         << remoteGatewayApp.appInfo.name << "' (status is '"
 					         << remoteGatewayApp.appInfo.status
-					         << "', a resting state, so it is not mid-transition)." << __E__;
+					         << "', a resting state, so it is not mid-transition)."
+					         << __E__;
 					needNextIterationPos = std::string::npos;
 				}
 				if(needNextIterationPos != std::string::npos)
