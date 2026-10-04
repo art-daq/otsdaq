@@ -594,11 +594,6 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 
 	loadArtdaqSystemVariables();
 
-	// No ordering against the front-end timing-chain phases is needed here: the board
-	// readers run with skip_dtc_init, so they do not touch DTC hardware at configure
-	// (DAQ buffer release is done by the DTC/CFO front ends at their final SoftReset and by
-	// the board readers at start). The configuring thread is polled with plain iterations,
-	// which are local to this subsystem.
 	if(RunControlStateMachine::isFirstIteration())
 	{
 		thread_error_message_ = "";
