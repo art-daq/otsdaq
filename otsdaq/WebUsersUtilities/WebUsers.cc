@@ -1637,10 +1637,10 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 			         << __E__;
 			usersUsernameWithLock_ =
 			    username;  //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
-			__COUT_INFO__ << getUserWithLock() +
-			                     " has locked REMOTE ots (overriding anonymous " +
-			                     DEFAULT_ADMIN_USERNAME + " user)."
-			              << __E__;
+			addSystemMessage(  //broadcast change!
+			    "*",
+			    getUserWithLock() + " has locked REMOTE ots (overriding anonymous " +
+			        DEFAULT_ADMIN_USERNAME + " user).");
 		}
 		else if((ActiveSessions_.size() == 0 &&
 		         RemoteSessions_.size() == 1)  // if first remote user
@@ -1652,9 +1652,9 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 			         << __E__;
 			usersUsernameWithLock_ =
 			    username;  //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
-			__COUT_INFO__ << getUserWithLock() +
-			                     " has locked REMOTE ots (which was unlocked)."
-			              << __E__;
+			addSystemMessage(  //broadcast change!
+			    "*",
+			    getUserWithLock() + " has locked REMOTE ots (which was unlocked).");
 		}
 		return verifiedUserId;
 	};  //end lambda function lockHandling()
@@ -2296,8 +2296,8 @@ uint64_t WebUsers::cookieCodeLogout(const std::string& cookieCode,
 		usersUsernameWithLock_ = "";
 
 		saveLockStateToFile();
-		__COUT_INFO__ << lockedUser + " logged out and the system lock was released."
-		              << __E__;
+		addSystemMessage("*",
+		                 lockedUser + " logged out and the system lock was released.");
 	}
 
 	return logoutCount;
@@ -2593,8 +2593,8 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 		usersUsernameWithLock_ = "";
 
 		saveLockStateToFile();
-		__COUT_INFO__ << lockedUser + " session expired and the system lock was released."
-		              << __E__;
+		addSystemMessage(
+		    "*", lockedUser + " session expired and the system lock was released.");
 	}
 	else if(CareAboutCookieCodes_ && usersUsernameWithLock_ != "")
 	{
@@ -2623,10 +2623,10 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 			usersUsernameWithLock_ = "";
 
 			saveLockStateToFile();
-			__COUT_INFO__ << lockedUser + " has been idle for " +
+			addSystemMessage("*",
+			                 lockedUser + " has been idle for " +
 			                     std::to_string(LOCK_INACTIVITY_TIMEOUT / 60) +
-			                     " minutes and the system lock was released."
-			              << __E__;
+			                     " minutes and the system lock was released.");
 		}
 	}
 }  // end cleanupExpiredEntries()
