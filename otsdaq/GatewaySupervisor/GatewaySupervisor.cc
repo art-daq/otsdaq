@@ -10508,13 +10508,18 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		         << " subsystem-iteration(s), " << iteration
 		         << " total iteration(s) for command '" << command << "'" << __E__;
 
-		// Do NOT clear isRemoteSubsystemIteration_/remoteIterationIndex_ here:
-		// a Configure received from the top-level while in Initial state is pre-empted
-		// with an Initialize transition, and that Initialize's broadcast completing
-		// must not strip the remote-driven context from the Configure that follows
-		// (it would silently run STANDALONE and skip the cross-subsystem ordering).
-		// The flags are owned by the command-receipt handler, which re-evaluates them
-		// on every received command, and by the catch path below for aborted barriers.
+		// Keep the remote-driven context only across Initialize: a Configure received
+		// from the top-level while in Initial state is pre-empted with an Initialize,
+		// and the Configure that follows must still run remote-driven. Any other
+		// completed broadcast clears it, so a later async transition (Error, Pause,
+		// Stop via execTransition, which bypass the command-receipt handler) does not
+		// inherit a stale top-level context.
+		if(command != RunControlStateMachine::INIT_TRANSITION_NAME)
+		{
+			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
+			isRemoteSubsystemIteration_ = false;
+			remoteIterationIndex_       = 0;
+		}
 		remoteSubsystemErrorReceived_ = false;
 
 		// Check for a user cancel that arrived during the final SOAP call of the loop,
