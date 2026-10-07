@@ -224,8 +224,8 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc&              cgi,
 	// If request requires lock and no user currently has lock, auto-take lock
 	if(userInfo.requireLock_ && userInfo.usernameWithLock_ == "")
 	{
-		__COUT_INFO__ << "Auto-taking lock for user '" << userInfo.username_
-		              << "' because no user has the lock and lock is required." << __E__;
+		__COUT__ << "Auto-taking lock for user '" << userInfo.username_
+		         << "' because no user has the lock and lock is required." << __E__;
 		if(setUserWithLock(userInfo.uid_, true /*lock*/, userInfo.username_))
 			userInfo.usernameWithLock_ = userInfo.username_;
 	}
@@ -393,17 +393,16 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 	   userInfo.usernameWithLock_ != userInfo.username_)
 	{
 		*out << WebUsers::REQ_USER_LOCKOUT_RESPONSE;
-		__COUT_INFO__ << "User '" << userInfo.username_ << "' is locked out. '"
-		              << userInfo.usernameWithLock_ << "' has lock." << std::endl;
+		__COUT__ << "User '" << userInfo.username_ << "' is locked out. '"
+		         << userInfo.usernameWithLock_ << "' has lock." << std::endl;
 		return false;  // failed due to another user having lock
 	}
 
 	if(userInfo.requireLock_ && userInfo.usernameWithLock_ != userInfo.username_)
 	{
 		*out << WebUsers::REQ_LOCK_REQUIRED_RESPONSE;
-		__COUT_INFO__ << "User '" << userInfo.username_
-		              << "' must have lock to proceed. ('" << userInfo.usernameWithLock_
-		              << "' has lock.)" << std::endl;
+		__COUT__ << "User '" << userInfo.username_ << "' must have lock to proceed. ('"
+		         << userInfo.usernameWithLock_ << "' has lock.)" << std::endl;
 		return false;  // failed due to lock being required, and this user does not have it
 	}
 
@@ -1633,9 +1632,9 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 		    usersUsernameWithLock_ == "") &&
 		   usersUsernameWithLock_ != username)
 		{
-			__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
-			              << "' with remote user-with-lock 'Remote:" << username << "'"
-			              << __E__;
+			__COUT__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
+			         << "' with remote user-with-lock 'Remote:" << username << "'"
+			         << __E__;
 			usersUsernameWithLock_ =
 			    username;  //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
 			__COUT_INFO__ << getUserWithLock() +
@@ -1648,9 +1647,9 @@ uint64_t WebUsers::checkRemoteLoginVerification(std::string&       cookieCode,
 		        && refresh && (usersUsernameWithLock_ == "") &&
 		        usersUsernameWithLock_ != username)
 		{
-			__COUT_INFO__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
-			              << "' with remote user-with-lock 'Remote:" << username << "'"
-			              << __E__;
+			__COUT__ << "Overriding local user-with-lock '" << usersUsernameWithLock_
+			         << "' with remote user-with-lock 'Remote:" << username << "'"
+			         << __E__;
 			usersUsernameWithLock_ =
 			    username;  //Note: not calling setUserWithLock() because taking lock was incidental (on ots restart, will revert lock to admin still)
 			__COUT_INFO__ << getUserWithLock() +
@@ -2291,8 +2290,8 @@ uint64_t WebUsers::cookieCodeLogout(const std::string& cookieCode,
 	if(CareAboutCookieCodes_ && usersUsernameWithLock_ != "" && !isUserIdActive(uid) &&
 	   getUsersUsername(uid) == usersUsernameWithLock_)
 	{
-		__COUT_INFO__ << "User '" << usersUsernameWithLock_
-		              << "' logged out while holding the lock - releasing lock." << __E__;
+		__COUT__ << "User '" << usersUsernameWithLock_
+		         << "' logged out while holding the lock - releasing lock." << __E__;
 		std::string lockedUser = usersUsernameWithLock_;
 		usersUsernameWithLock_ = "";
 
@@ -2588,9 +2587,8 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 	   !isUsernameActive(usersUsernameWithLock_))
 	{
 		//)))  // unlock if user no longer logged in
-		__COUT_INFO__ << "User '" << usersUsernameWithLock_
-		              << "' session expired while holding the lock - releasing lock."
-		              << __E__;
+		__COUT__ << "User '" << usersUsernameWithLock_
+		         << "' session expired while holding the lock - releasing lock." << __E__;
 		std::string lockedUser = usersUsernameWithLock_;
 		usersUsernameWithLock_ = "";
 
@@ -2619,9 +2617,8 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 		if(mostRecentActivity > 0 &&
 		   (time(0) - mostRecentActivity) >= LOCK_INACTIVITY_TIMEOUT)
 		{
-			__COUT_INFO__ << "User '" << usersUsernameWithLock_
-			              << "' has been inactive for " << LOCK_INACTIVITY_TIMEOUT
-			              << " seconds - releasing lock." << __E__;
+			__COUT__ << "User '" << usersUsernameWithLock_ << "' has been inactive for "
+			         << LOCK_INACTIVITY_TIMEOUT << " seconds - releasing lock." << __E__;
 			std::string lockedUser = usersUsernameWithLock_;
 			usersUsernameWithLock_ = "";
 
@@ -3485,14 +3482,14 @@ bool WebUsers::setUserWithLock(uint64_t actingUid, bool lock, const std::string&
 	else
 	{
 		if(!isUserActive)
-			__COUT_INFO__ << "User '" << username << "' is inactive so not giving lock."
-			              << __E__;
+			__COUT__ << "User '" << username << "' is inactive so not giving lock."
+			         << __E__;
 		else
 			__COUT_ERR__ << "Failed to lock for user '" << username << ".'" << __E__;
 		return false;
 	}
 
-	__COUT_INFO__ << "User '" << username << "' has locked out the system!" << __E__;
+	__COUT__ << "User '" << username << "' has locked out the system!" << __E__;
 
 	// save username with lock
 	saveLockStateToFile();
@@ -3769,8 +3766,8 @@ void WebUsers::loadUserWithLock()
 	FILE*       fp               = fopen(securityFileName.c_str(), "r");
 	if(!fp)
 	{
-		__COUT_INFO__ << "USER_WITH_LOCK_FILE " << USER_WITH_LOCK_FILE
-		              << " not found. Defaulting to admin lock." << __E__;
+		__COUT__ << "USER_WITH_LOCK_FILE " << USER_WITH_LOCK_FILE
+		         << " not found. Defaulting to admin lock." << __E__;
 
 		// default to admin lock if no file exists
 		sprintf(username, "%s", DEFAULT_ADMIN_USERNAME.c_str());
@@ -3788,15 +3785,15 @@ void WebUsers::loadUserWithLock()
 
 	if(strlen(username) == 0)
 	{
-		__COUT_INFO__ << "Loaded state for user-with-lock is unlocked." << __E__;
+		__COUT__ << "Loaded state for user-with-lock is unlocked." << __E__;
 		return;
 	}
 
 	uint64_t i = searchUsersDatabaseForUsername(username);
 	if(i == NOT_FOUND_IN_DATABASE)
 	{
-		__COUT_INFO__ << "username " << username << " not found in database. Ignoring."
-		              << __E__;
+		__COUT__ << "username " << username << " not found in database. Ignoring."
+		         << __E__;
 		return;
 	}
 	__COUT__ << "Setting lock" << __E__;
