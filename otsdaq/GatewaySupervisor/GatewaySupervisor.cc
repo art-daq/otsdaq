@@ -11143,8 +11143,14 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				else
 					progress100cnt[remoteGatewayApp.fullName] = 0;
 
+				// The loop polls every msPerIteration (200 ms) while the remote status
+				// cache refreshes only every ~500 ms, so count polls, not samples:
+				// require ~60 seconds pinned at 100% before declaring the command
+				// ignored. A subsystem legitimately sits at 100% briefly between a
+				// pre-empted Initialize and its Configure pass, and while wrapping up
+				// an iteration pass.
 				if(progress100cnt[remoteGatewayApp.fullName] >
-				   7)  //roughly 15 seconds not moving
+				   60 * 1000 / msPerIteration)  //roughly 60 seconds not moving
 				{
 					__SS__ << "Something is wrong with FSM command '" << command
 					       << "' at Remote gateway '" << remoteGatewayApp.appInfo.name
