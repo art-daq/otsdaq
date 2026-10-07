@@ -12577,14 +12577,11 @@ try
 			    accounts == "1",  // include accounts if admin
 			    userInfo.getGroupPermissionLevels());
 
-			if(tmpUserWithLock !=
-			   theWebUsers_
-			       .getUserWithLock())  // if there was a change, broadcast system message
-				theWebUsers_.addSystemMessage(
-				    "*",
-				    theWebUsers_.getUserWithLock() == ""
-				        ? tmpUserWithLock + " has unlocked ots."
-				        : theWebUsers_.getUserWithLock() + " has locked ots.");
+			if(tmpUserWithLock != theWebUsers_.getUserWithLock())
+				__COUT_INFO__ << (theWebUsers_.getUserWithLock() == ""
+				                      ? tmpUserWithLock + " has unlocked ots."
+				                      : theWebUsers_.getUserWithLock() + " has locked ots.")
+				              << __E__;
 
 			//Also add Remote Subystems users-with-lock!
 			std::vector<GatewaySupervisor::RemoteGatewayInfo>
