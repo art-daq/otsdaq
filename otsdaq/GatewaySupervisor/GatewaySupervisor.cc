@@ -1740,7 +1740,27 @@ try
 									   //relaunch lull: suppress for 60 s after a user-initiated relaunch
 									   (liveRelaunchTime == 0 ||
 									    time(0) - liveRelaunchTime > 60))
-										theSupervisor->addSystemMessage("*", ss.str());
+									{
+										std::string alertKey =
+										    remoteGatewayApp.appInfo.url +
+										    remoteGatewayApp.appInfo.name;
+										bool doAlert = false;
+										{
+											std::lock_guard<std::mutex> lock(
+											    theSupervisor->dualStatusThreadMutex_);
+											auto& lastTime =
+											    theSupervisor
+											        ->remoteAlertCooldown_[alertKey];
+											if(time(0) - lastTime > 600)
+											{
+												lastTime = time(0);
+												doAlert  = true;
+											}
+										}
+										if(doAlert)
+											theSupervisor->addSystemMessage("*",
+											                                ss.str());
+									}
 								}
 
 								//mark last status bad
@@ -10508,6 +10528,13 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		         << " subsystem-iteration(s), " << iteration
 		         << " total iteration(s) for command '" << command << "'" << __E__;
 
+		// Keep the remote-driven context only across Initialize: a Configure received
+		// from the top-level while in Initial state is pre-empted with an Initialize,
+		// and the Configure that follows must still run remote-driven. Any other
+		// completed broadcast clears it, so a later async transition (Error, Pause,
+		// Stop via execTransition, which bypass the command-receipt handler) does not
+		// inherit a stale top-level context.
+		if(command != RunControlStateMachine::INIT_TRANSITION_NAME)
 		{
 			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
 			isRemoteSubsystemIteration_ = false;
@@ -11141,8 +11168,14 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				else
 					progress100cnt[remoteGatewayApp.fullName] = 0;
 
+				// The loop polls every msPerIteration (200 ms) while the remote status
+				// cache refreshes only every ~500 ms, so count polls, not samples:
+				// require ~60 seconds pinned at 100% before declaring the command
+				// ignored. A subsystem legitimately sits at 100% briefly between a
+				// pre-empted Initialize and its Configure pass, and while wrapping up
+				// an iteration pass.
 				if(progress100cnt[remoteGatewayApp.fullName] >
-				   7)  //roughly 15 seconds not moving
+				   60 * 1000 / msPerIteration)  //roughly 60 seconds not moving
 				{
 					__SS__ << "Something is wrong with FSM command '" << command
 					       << "' at Remote gateway '" << remoteGatewayApp.appInfo.name
@@ -12544,8 +12577,7 @@ try
 			    accounts == "1",  // include accounts if admin
 			    userInfo.getGroupPermissionLevels());
 
-			if(tmpUserWithLock !=
-			   theWebUsers_.getUserWithLock())  // if there was a change, log it
+			if(tmpUserWithLock != theWebUsers_.getUserWithLock())
 				__COUT_INFO__ << (theWebUsers_.getUserWithLock() == ""
 				                      ? tmpUserWithLock + " has unlocked ots."
 				                      : theWebUsers_.getUserWithLock() +
@@ -14181,10 +14213,7 @@ try
 					remoteGatewayApp.appInfo.progress = 1;
 					remoteGatewayApp.relaunchTime     = time(0);
 
-					addSystemMessage("*",
-					                 "Subsystem '" + remoteGatewayApp.appInfo.name +
-					                     "' was relaunched at " +
-					                     StringMacros::getTimestampString() + ".");
+					// relaunch notification shown by SubsystemLaunch.js green info box
 				}
 
 			__COUT__ << "gatewayLaunchOTSInstance: releasing mutex for subsystem '"
@@ -15183,10 +15212,9 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 		if(requireLock && userWithLock == "" && uid != WebUsers::NOT_FOUND_IN_DATABASE)
 		{
 			std::string username = theWebUsers_.getUsersUsername(uid);
-			__COUT_INFO__
-			    << "Auto-taking lock for user '" << username
-			    << "' on behalf of remote supervisor (lock required, none held)."
-			    << __E__;
+			__COUT__ << "Auto-taking lock for user '" << username
+			         << "' on behalf of remote supervisor (lock required, none held)."
+			         << __E__;
 			if(theWebUsers_.setUserWithLock(uid, true /*lock*/, username))
 				userWithLock = username;
 		}

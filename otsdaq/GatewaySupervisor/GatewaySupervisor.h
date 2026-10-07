@@ -535,6 +535,7 @@ public:	//used by remote subsystem control and status
 		std::map<std::string /* appName */,
 			bool /* lastStatusGood */> 						appLastStatusGood_;
 		std::mutex											dualStatusThreadMutex_;
+		std::map<std::string, time_t>						remoteAlertCooldown_; ///< guarded by dualStatusThreadMutex_; suppresses repeated desktop alerts per remote app
 
 		std::string											ipAddressForStateChangesOverUDP_; ///< IP used for UDP reverse-login propagation to remote gateways
 		int													portForReverseLoginOverUDP_ = 0;  ///< UDP port for reverse-login; 0 = disabled
