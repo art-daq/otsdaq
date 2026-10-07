@@ -10528,11 +10528,13 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 		         << " subsystem-iteration(s), " << iteration
 		         << " total iteration(s) for command '" << command << "'" << __E__;
 
-		{
-			std::lock_guard<std::mutex> lock(remoteIterationMutex_);
-			isRemoteSubsystemIteration_ = false;
-			remoteIterationIndex_       = 0;
-		}
+		// Do NOT clear isRemoteSubsystemIteration_/remoteIterationIndex_ here:
+		// a Configure received from the top-level while in Initial state is pre-empted
+		// with an Initialize transition, and that Initialize's broadcast completing
+		// must not strip the remote-driven context from the Configure that follows
+		// (it would silently run STANDALONE and skip the cross-subsystem ordering).
+		// The flags are owned by the command-receipt handler, which re-evaluates them
+		// on every received command, and by the catch path below for aborted barriers.
 		remoteSubsystemErrorReceived_ = false;
 
 		// Check for a user cancel that arrived during the final SOAP call of the loop,
@@ -11161,8 +11163,14 @@ void GatewaySupervisor::broadcastMessageToRemoteGatewaysComplete(
 				else
 					progress100cnt[remoteGatewayApp.fullName] = 0;
 
+				// The loop polls every msPerIteration (200 ms) while the remote status
+				// cache refreshes only every ~500 ms, so count polls, not samples:
+				// require ~60 seconds pinned at 100% before declaring the command
+				// ignored. A subsystem legitimately sits at 100% briefly between a
+				// pre-empted Initialize and its Configure pass, and while wrapping up
+				// an iteration pass.
 				if(progress100cnt[remoteGatewayApp.fullName] >
-				   7)  //roughly 15 seconds not moving
+				   60 * 1000 / msPerIteration)  //roughly 60 seconds not moving
 				{
 					__SS__ << "Something is wrong with FSM command '" << command
 					       << "' at Remote gateway '" << remoteGatewayApp.appInfo.name
