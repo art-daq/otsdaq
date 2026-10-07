@@ -12580,7 +12580,8 @@ try
 			if(tmpUserWithLock != theWebUsers_.getUserWithLock())
 				__COUT_INFO__ << (theWebUsers_.getUserWithLock() == ""
 				                      ? tmpUserWithLock + " has unlocked ots."
-				                      : theWebUsers_.getUserWithLock() + " has locked ots.")
+				                      : theWebUsers_.getUserWithLock() +
+				                            " has locked ots.")
 				              << __E__;
 
 			//Also add Remote Subystems users-with-lock!
