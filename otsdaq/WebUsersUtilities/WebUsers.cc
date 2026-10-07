@@ -401,9 +401,8 @@ bool WebUsers::checkRequestAccess(cgicc::Cgicc& /*cgi*/,
 	if(userInfo.requireLock_ && userInfo.usernameWithLock_ != userInfo.username_)
 	{
 		*out << WebUsers::REQ_LOCK_REQUIRED_RESPONSE;
-		__COUT__ << "User '" << userInfo.username_
-		         << "' must have lock to proceed. ('" << userInfo.usernameWithLock_
-		         << "' has lock.)" << std::endl;
+		__COUT__ << "User '" << userInfo.username_ << "' must have lock to proceed. ('"
+		         << userInfo.usernameWithLock_ << "' has lock.)" << std::endl;
 		return false;  // failed due to lock being required, and this user does not have it
 	}
 
@@ -2589,8 +2588,7 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 	{
 		//)))  // unlock if user no longer logged in
 		__COUT__ << "User '" << usersUsernameWithLock_
-		         << "' session expired while holding the lock - releasing lock."
-		         << __E__;
+		         << "' session expired while holding the lock - releasing lock." << __E__;
 		std::string lockedUser = usersUsernameWithLock_;
 		usersUsernameWithLock_ = "";
 
@@ -2619,9 +2617,8 @@ void WebUsers::cleanupExpiredEntries(std::vector<std::string>* loggedOutUsername
 		if(mostRecentActivity > 0 &&
 		   (time(0) - mostRecentActivity) >= LOCK_INACTIVITY_TIMEOUT)
 		{
-			__COUT__ << "User '" << usersUsernameWithLock_
-			         << "' has been inactive for " << LOCK_INACTIVITY_TIMEOUT
-			         << " seconds - releasing lock." << __E__;
+			__COUT__ << "User '" << usersUsernameWithLock_ << "' has been inactive for "
+			         << LOCK_INACTIVITY_TIMEOUT << " seconds - releasing lock." << __E__;
 			std::string lockedUser = usersUsernameWithLock_;
 			usersUsernameWithLock_ = "";
 

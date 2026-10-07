@@ -1741,21 +1741,25 @@ try
 									   (liveRelaunchTime == 0 ||
 									    time(0) - liveRelaunchTime > 60))
 									{
-										std::string alertKey = remoteGatewayApp.appInfo.url +
-										                       remoteGatewayApp.appInfo.name;
+										std::string alertKey =
+										    remoteGatewayApp.appInfo.url +
+										    remoteGatewayApp.appInfo.name;
 										bool doAlert = false;
 										{
 											std::lock_guard<std::mutex> lock(
 											    theSupervisor->dualStatusThreadMutex_);
-											auto& lastTime = theSupervisor->remoteAlertCooldown_[alertKey];
+											auto& lastTime =
+											    theSupervisor
+											        ->remoteAlertCooldown_[alertKey];
 											if(time(0) - lastTime > 600)
 											{
 												lastTime = time(0);
-												doAlert = true;
+												doAlert  = true;
 											}
 										}
 										if(doAlert)
-											theSupervisor->addSystemMessage("*", ss.str());
+											theSupervisor->addSystemMessage("*",
+											                                ss.str());
 									}
 								}
 
@@ -15196,10 +15200,9 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 		if(requireLock && userWithLock == "" && uid != WebUsers::NOT_FOUND_IN_DATABASE)
 		{
 			std::string username = theWebUsers_.getUsersUsername(uid);
-			__COUT__
-			    << "Auto-taking lock for user '" << username
-			    << "' on behalf of remote supervisor (lock required, none held)."
-			    << __E__;
+			__COUT__ << "Auto-taking lock for user '" << username
+			         << "' on behalf of remote supervisor (lock required, none held)."
+			         << __E__;
 			if(theWebUsers_.setUserWithLock(uid, true /*lock*/, username))
 				userWithLock = username;
 		}
