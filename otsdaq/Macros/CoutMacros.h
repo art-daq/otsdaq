@@ -2,6 +2,8 @@
 #define _ots_Cout_Macros_h_
 
 // clang-format off
+// NOLINTBEGIN(build/define_used) // Ignoring macro usage warnings in this file
+
 
 #include <ctime>     //for time_t, time(), localtime_r(), strftime()
 #include <cstring>   //for strlen()
@@ -240,6 +242,7 @@ struct TimestampString
 }; //end TimestampString struct
 }  // end namespace ots
 
+// NOLINTEND(build/define_used)
 // clang-format on
 
 #endif
