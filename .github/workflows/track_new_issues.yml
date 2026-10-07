@@ -1,4 +1,9 @@
 name: Add issue to project
+
+# Job doesn't use the default GITHUB_TOKEN
+permissions:
+  contents: read
+
 on:
   issues:
     types:

@@ -1,4 +1,9 @@
 name: Add pull request to project
+
+# Job doesn't use the default GITHUB_TOKEN
+permissions:
+  contents: read
+
 on:
   pull_request:
     types:
