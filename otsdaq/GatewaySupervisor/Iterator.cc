@@ -291,13 +291,15 @@ try
 					__COUT__ << "Have iterator access" << __E__;
 
 				iterator->activePlanIsRunning_ = false;
-				if(pauseErrorMessage.size())  // show "Error" status so the GUI explains why
+				if(pauseErrorMessage
+				       .size())  // show "Error" status so the GUI explains why
 					iterator->errorMessage_ =
 					    std::string("Error at command ") +
 					    std::to_string(theIteratorStruct.commandIndex_) + " (" +
 					    (theIteratorStruct.commandIndex_ <
 					             theIteratorStruct.commands_.size()
-					         ? theIteratorStruct.commands_[theIteratorStruct.commandIndex_]
+					         ? theIteratorStruct
+					               .commands_[theIteratorStruct.commandIndex_]
 					               .type_
 					         : "?") +
 					    ") while pausing: " + pauseErrorMessage;
