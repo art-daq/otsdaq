@@ -1740,7 +1740,23 @@ try
 									   //relaunch lull: suppress for 60 s after a user-initiated relaunch
 									   (liveRelaunchTime == 0 ||
 									    time(0) - liveRelaunchTime > 60))
-										theSupervisor->addSystemMessage("*", ss.str());
+									{
+										std::string alertKey = remoteGatewayApp.appInfo.url +
+										                       remoteGatewayApp.appInfo.name;
+										bool doAlert = false;
+										{
+											std::lock_guard<std::mutex> lock(
+											    theSupervisor->dualStatusThreadMutex_);
+											auto& lastTime = theSupervisor->remoteAlertCooldown_[alertKey];
+											if(time(0) - lastTime > 600)
+											{
+												lastTime = time(0);
+												doAlert = true;
+											}
+										}
+										if(doAlert)
+											theSupervisor->addSystemMessage("*", ss.str());
+									}
 								}
 
 								//mark last status bad
@@ -14181,10 +14197,7 @@ try
 					remoteGatewayApp.appInfo.progress = 1;
 					remoteGatewayApp.relaunchTime     = time(0);
 
-					addSystemMessage("*",
-					                 "Subsystem '" + remoteGatewayApp.appInfo.name +
-					                     "' was relaunched at " +
-					                     StringMacros::getTimestampString() + ".");
+					// relaunch notification shown by SubsystemLaunch.js green info box
 				}
 
 			__COUT__ << "gatewayLaunchOTSInstance: releasing mutex for subsystem '"
@@ -15183,7 +15196,7 @@ xoap::MessageReference GatewaySupervisor::supervisorCookieCheck(
 		if(requireLock && userWithLock == "" && uid != WebUsers::NOT_FOUND_IN_DATABASE)
 		{
 			std::string username = theWebUsers_.getUsersUsername(uid);
-			__COUT_INFO__
+			__COUT__
 			    << "Auto-taking lock for user '" << username
 			    << "' on behalf of remote supervisor (lock required, none held)."
 			    << __E__;
