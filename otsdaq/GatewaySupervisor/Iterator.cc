@@ -2759,8 +2759,8 @@ void Iterator::playIterationPlanPrivate(HttpXmlDocument&   xmldoc,
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
 
-	if(!activePlanIsRunning_ && !commandPlay_ && iteratorBusy_ &&
-	   activePlanName_ != "" && activePlanName_ != planName)
+	if(!activePlanIsRunning_ && !commandPlay_ && iteratorBusy_ && activePlanName_ != "" &&
+	   activePlanName_ != planName)
 	{
 		// a paused plan still owns the active group; switching plans now would make
 		// the new plan treat the paused plan's group as the one to restore on finish
