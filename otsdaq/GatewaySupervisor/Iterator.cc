@@ -251,8 +251,9 @@ try
 				std::string pauseErrorMessage = "";
 				try
 				{
-					__COUT__ << "Waiting to pause..." << __E__;
-					while(!iterator->checkCommand(&theIteratorStruct))
+					// skip if no command in flight (e.g. already paused by an error)
+					while(theIteratorStruct.commandBusy_ &&
+					      !iterator->checkCommand(&theIteratorStruct))
 						__COUT__ << "Waiting to pause..." << __E__;
 				}
 				catch(const std::runtime_error& e)
@@ -322,8 +323,9 @@ try
 
 				try
 				{
-					__COUT__ << "Waiting to halt..." << __E__;
-					while(!iterator->checkCommand(&theIteratorStruct))
+					// skip if no command in flight (e.g. already paused by an error)
+					while(theIteratorStruct.commandBusy_ &&
+					      !iterator->checkCommand(&theIteratorStruct))
 						__COUT__ << "Waiting to halt..." << __E__;
 				}
 				catch(...)
@@ -2756,6 +2758,20 @@ void Iterator::playIterationPlanPrivate(HttpXmlDocument&   xmldoc,
 	std::lock_guard<std::mutex> lock(accessMutex_);
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
+
+	if(!activePlanIsRunning_ && !commandPlay_ && iteratorBusy_ &&
+	   activePlanName_ != "" && activePlanName_ != planName)
+	{
+		// a paused plan still owns the active group; switching plans now would make
+		// the new plan treat the paused plan's group as the one to restore on finish
+		__SS__ << "Invalid play command attempted. Plan '" << activePlanName_
+		       << "' is paused mid-plan; halt the Iterator before playing a different "
+		          "plan ('"
+		       << planName << "')." << __E__;
+		__COUT__ << ss.str();
+		xmldoc.addTextElementToData("error_message", ss.str());
+		return;
+	}
 
 	if(!activePlanIsRunning_ && !commandPlay_)
 	{
