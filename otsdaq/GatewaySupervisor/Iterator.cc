@@ -246,10 +246,38 @@ try
 
 				// safely pause plan!
 				//	i.e. check that command is complete
+				//	(if command throws, pause anyway and surface the error for retry)
 
-				__COUT__ << "Waiting to pause..." << __E__;
-				while(!iterator->checkCommand(&theIteratorStruct))
-					__COUT__ << "Waiting to pause..." << __E__;
+				std::string pauseErrorMessage = "";
+				try
+				{
+					// skip if no command in flight (e.g. already paused by an error)
+					while(theIteratorStruct.commandBusy_ &&
+					      !iterator->checkCommand(&theIteratorStruct))
+						__COUT__ << "Waiting to pause..." << __E__;
+				}
+				catch(const std::runtime_error& e)
+				{
+					pauseErrorMessage = e.what();
+				}
+				catch(...)
+				{
+					pauseErrorMessage = "Unknown error.";
+				}
+
+				if(pauseErrorMessage.size())
+				{
+					__COUT_ERR__ << "Current command threw during pause -- "
+					             << "pausing anyway: " << pauseErrorMessage << __E__;
+					theIteratorStruct.commandBusy_ = false;
+					// retry will call startCommand again; undo this attempt's pass count
+					if(theIteratorStruct.commandIndex_ <
+					       theIteratorStruct.commandIterations_.size() &&
+					   theIteratorStruct
+					       .commandIterations_[theIteratorStruct.commandIndex_])
+						--theIteratorStruct
+						      .commandIterations_[theIteratorStruct.commandIndex_];
+				}
 
 				__COUT__ << "Completing pause..." << __E__;
 
@@ -264,6 +292,18 @@ try
 					__COUT__ << "Have iterator access" << __E__;
 
 				iterator->activePlanIsRunning_ = false;
+				if(pauseErrorMessage
+				       .size())  // show "Error" status so the GUI explains why
+					iterator->errorMessage_ =
+					    std::string("Error at command ") +
+					    std::to_string(theIteratorStruct.commandIndex_) + " (" +
+					    (theIteratorStruct.commandIndex_ <
+					             theIteratorStruct.commands_.size()
+					         ? theIteratorStruct
+					               .commands_[theIteratorStruct.commandIndex_]
+					               .type_
+					         : "?") +
+					    ") while pausing: " + pauseErrorMessage;
 
 				__COUT__ << "Paused plan '" << theIteratorStruct.activePlan_
 				         << "' at command index " << theIteratorStruct.commandIndex_
@@ -283,8 +323,9 @@ try
 
 				try
 				{
-					__COUT__ << "Waiting to halt..." << __E__;
-					while(!iterator->checkCommand(&theIteratorStruct))
+					// skip if no command in flight (e.g. already paused by an error)
+					while(theIteratorStruct.commandBusy_ &&
+					      !iterator->checkCommand(&theIteratorStruct))
 						__COUT__ << "Waiting to halt..." << __E__;
 				}
 				catch(...)
@@ -505,6 +546,13 @@ try
 				             << e.what() << __E__;
 				theIteratorStruct.commandBusy_ = false;
 
+				// retry will call startCommand again; undo this attempt's pass count
+				if(theIteratorStruct.commandIndex_ <
+				       theIteratorStruct.commandIterations_.size() &&
+				   theIteratorStruct.commandIterations_[theIteratorStruct.commandIndex_])
+					--theIteratorStruct
+					      .commandIterations_[theIteratorStruct.commandIndex_];
+
 				std::lock_guard<std::mutex> lock(iterator->accessMutex_);
 				iterator->activePlanIsRunning_ = false;
 				iterator->errorMessage_ =
@@ -520,6 +568,13 @@ try
 			{
 				__COUT_ERR__ << "Iterator unknown error (will pause for retry)." << __E__;
 				theIteratorStruct.commandBusy_ = false;
+
+				// retry will call startCommand again; undo this attempt's pass count
+				if(theIteratorStruct.commandIndex_ <
+				       theIteratorStruct.commandIterations_.size() &&
+				   theIteratorStruct.commandIterations_[theIteratorStruct.commandIndex_])
+					--theIteratorStruct
+					      .commandIterations_[theIteratorStruct.commandIndex_];
 
 				std::lock_guard<std::mutex> lock(iterator->accessMutex_);
 				iterator->activePlanIsRunning_ = false;
@@ -831,16 +886,9 @@ catch(...)
 	ConfigurationInterface::setVersionTrackingEnabled(
 	    iteratorStruct->originalTrackChanges_);
 
-	__COUT__ << "Activating original group..." << __E__;
-	try
-	{
-		iteratorStruct->cfgMgr_->activateTableGroup(iteratorStruct->originalConfigGroup_,
-		                                            iteratorStruct->originalConfigKey_);
-	}
-	catch(...)
-	{
-		__COUT_WARN__ << "Original group could not be activated." << __E__;
-	}
+	// leave the plan's active group in place so a Play-retry of this command sees
+	// the configuration built up by earlier plan commands; plan-finish and
+	// haltIterator still restore the original group
 	throw;
 }  // end startCommand()
 
@@ -968,17 +1016,9 @@ catch(...)
 	ConfigurationInterface::setVersionTrackingEnabled(
 	    iteratorStruct->originalTrackChanges_);
 
-	__COUT__ << "Activating original group..." << __E__;
-	try
-	{
-		iteratorStruct->cfgMgr_->activateTableGroup(iteratorStruct->originalConfigGroup_,
-		                                            iteratorStruct->originalConfigKey_);
-	}
-	catch(...)
-	{
-		__COUT_WARN__ << "Original group could not be activated." << __E__;
-	}
-
+	// leave the plan's active group in place so a Play-retry of this command sees
+	// the configuration built up by earlier plan commands; plan-finish and
+	// haltIterator still restore the original group
 	throw;
 }  // end checkCommand()
 
@@ -2718,6 +2758,20 @@ void Iterator::playIterationPlanPrivate(HttpXmlDocument&   xmldoc,
 	std::lock_guard<std::mutex> lock(accessMutex_);
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
+
+	if(!activePlanIsRunning_ && !commandPlay_ && iteratorBusy_ && activePlanName_ != "" &&
+	   activePlanName_ != planName)
+	{
+		// a paused plan still owns the active group; switching plans now would make
+		// the new plan treat the paused plan's group as the one to restore on finish
+		__SS__ << "Invalid play command attempted. Plan '" << activePlanName_
+		       << "' is paused mid-plan; halt the Iterator before playing a different "
+		          "plan ('"
+		       << planName << "')." << __E__;
+		__COUT__ << ss.str();
+		xmldoc.addTextElementToData("error_message", ss.str());
+		return;
+	}
 
 	if(!activePlanIsRunning_ && !commandPlay_)
 	{
