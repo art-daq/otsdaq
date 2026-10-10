@@ -6132,11 +6132,12 @@ try
 		    DATATYPE_STRING_DEFAULT;  //clear (and set if enabled during configure transition)
 
 		if(currentState != RunControlStateMachine::HALTED_STATE_NAME &&
-		   currentState != RunControlStateMachine::
-		                       INITIAL_STATE_NAME)  // check if out of sync command
+		   currentState != RunControlStateMachine::INITIAL_STATE_NAME &&
+		   currentState != RunControlStateMachine::CONFIGURED_STATE_NAME)
 		{
 			__SS__ << "Error - Can only transition to Configured if the current "
-			       << "state is Initial or Halted. The current state is '" << currentState
+			       << "state is Initial, Halted, or Configured. The current state is '"
+			       << currentState
 			       << ".' Perhaps your state machine is out of sync, or you need to Halt "
 			          "before Configuring."
 			       << __E__;
