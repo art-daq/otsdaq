@@ -13,6 +13,7 @@ version.cc
 		 otsdaq::SupervisorInfo
 		 otsdaq::NetworkUtilities
 		 otsdaq_plugin_support::runInfoMaker
+		 CURL::libcurl
 )
 
 
