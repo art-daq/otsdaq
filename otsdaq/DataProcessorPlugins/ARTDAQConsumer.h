@@ -1,5 +1,5 @@
-#ifndef _ots_ARTDAQConsumer_h_
-#define _ots_ARTDAQConsumer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQCONSUMER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQCONSUMER_H_
 
 #include "otsdaq/ARTDAQReaderCore/ARTDAQReaderProcessorBase.h"
 
@@ -59,4 +59,4 @@ class ARTDAQConsumer
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQCONSUMER_H_

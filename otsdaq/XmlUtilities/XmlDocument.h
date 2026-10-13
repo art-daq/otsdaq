@@ -1,5 +1,5 @@
-#ifndef ots_XmlDocument_h
-#define ots_XmlDocument_h
+#ifndef OTSDAQ_OTSDAQ_XMLUTILITIES_XMLDOCUMENT_H_
+#define OTSDAQ_OTSDAQ_XMLUTILITIES_XMLDOCUMENT_H_
 
 #include <dirent.h>
 #include <stdio.h>
@@ -99,4 +99,4 @@ class XmlDocument
 }  // namespace ots
 
 // clang-format on
-#endif  // ots_XmlDocument_h
+#endif  // OTSDAQ_OTSDAQ_XMLUTILITIES_XMLDOCUMENT_H_

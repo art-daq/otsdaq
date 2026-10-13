@@ -1,5 +1,5 @@
-#ifndef _ots_DataStructs_h
-#define _ots_DataStructs_h
+#ifndef OTSDAQ_OTSDAQ_SOAPUTILITIES_DATASTRUCTS_H_
+#define OTSDAQ_OTSDAQ_SOAPUTILITIES_DATASTRUCTS_H_
 
 #include "otsdaq/Macros/CoutMacros.h"
 
@@ -106,4 +106,4 @@ class Parameters
 };
 
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_SOAPUTILITIES_DATASTRUCTS_H_

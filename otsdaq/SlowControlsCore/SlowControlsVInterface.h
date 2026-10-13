@@ -1,5 +1,5 @@
-#ifndef _ots_SlowControlsVInterface_h_
-#define _ots_SlowControlsVInterface_h_
+#ifndef OTSDAQ_OTSDAQ_SLOWCONTROLSCORE_SLOWCONTROLSVINTERFACE_H_
+#define OTSDAQ_OTSDAQ_SLOWCONTROLSCORE_SLOWCONTROLSVINTERFACE_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/FiniteStateMachine/VStateMachine.h"
@@ -39,7 +39,7 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 	virtual void                                       	subscribe(const std::string& Name)  = 0;
 	virtual void                                       	subscribeJSON(const std::string& JSONNameString)   	= 0;
 	virtual void                                       	unsubscribe(const std::string& Name)= 0;
-	virtual std::vector<std::string /*Name*/>           getChannelList(void)                = 0;
+	virtual std::vector<std::string /***Name  */>           getChannelList(void)                = 0;
 	virtual std::string                                	getList(const std::string& format)       	= 0;
 	virtual std::array<std::string, 4>                 	getCurrentValue(const std::string& Name) 	= 0;
 	virtual std::vector<std::vector<std::string>> 	   	getChannelHistory(const std::string& Name, int startTime, int endTime)	= 0;
@@ -71,4 +71,4 @@ class SlowControlsVInterface : public Configurable, public VStateMachine
 };
 // clang-format on
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_SLOWCONTROLSCORE_SLOWCONTROLSVINTERFACE_H_

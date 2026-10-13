@@ -1,5 +1,5 @@
-#ifndef _ots_DataDecoderConsumer_h_
-#define _ots_DataDecoderConsumer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_DATADECODERCONSUMER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_DATADECODERCONSUMER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataDecoders/DataDecoder.h"
@@ -23,4 +23,4 @@ class DataDecoderConsumer : public DataDecoder, public DataConsumer, public Conf
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_DATADECODERCONSUMER_H_

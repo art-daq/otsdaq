@@ -1,5 +1,5 @@
-#ifndef _ots_SlowControlsPluginMacro_h_
-#define _ots_SlowControlsPluginMacro_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_SLOWCONTROLSPLUGINMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_SLOWCONTROLSPLUGINMACROS_H_
 
 #include <memory>
 
@@ -18,4 +18,4 @@
 		                 pathToControlsConfiguration);        \
 	}
 
-#endif /* _ots_SlowControlsPluginMacro_h_ */
+#endif  // OTSDAQ_OTSDAQ_MACROS_SLOWCONTROLSPLUGINMACROS_H_

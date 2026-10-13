@@ -1,5 +1,5 @@
-#ifndef _ots_DataProcessor_h_
-#define _ots_DataProcessor_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_DATAPROCESSOR_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_DATAPROCESSOR_H_
 
 #include <atomic>
 #include <cstdint>
@@ -75,4 +75,4 @@ class DataProcessor
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_DATAPROCESSOR_H_

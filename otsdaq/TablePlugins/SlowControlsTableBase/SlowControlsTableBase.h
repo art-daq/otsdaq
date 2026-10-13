@@ -1,5 +1,5 @@
-#ifndef _ots_SlowControlsTableBase_h_
-#define _ots_SlowControlsTableBase_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_SLOWCONTROLSTABLEBASE_SLOWCONTROLSTABLEBASE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_SLOWCONTROLSTABLEBASE_SLOWCONTROLSTABLEBASE_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "otsdaq/TableCore/TableBase.h"
@@ -83,4 +83,4 @@ private:
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_SLOWCONTROLSTABLEBASE_SLOWCONTROLSTABLEBASE_H_

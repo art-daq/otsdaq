@@ -1,5 +1,5 @@
-#ifndef _ots_WizardSupervisor_h
-#define _ots_WizardSupervisor_h
+#ifndef OTSDAQ_OTSDAQ_WIZARDSUPERVISOR_WIZARDSUPERVISOR_H_
+#define OTSDAQ_OTSDAQ_WIZARDSUPERVISOR_WIZARDSUPERVISOR_H_
 
 #include "otsdaq/SOAPUtilities/SOAPMessenger.h"
 
@@ -100,4 +100,4 @@ class WizardSupervisor : public xdaq::Application, public SOAPMessenger
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_WIZARDSUPERVISOR_WIZARDSUPERVISOR_H_

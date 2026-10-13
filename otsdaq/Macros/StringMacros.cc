@@ -811,8 +811,8 @@ bool StringMacros::isNumber(const std::string& s)
 	StringMacros::getVectorFromString(
 	    s,
 	    numbers,
-	    /*delimiter*/ std::set<char>({'+', '-', '*', '/'}),
-	    /*whitespace*/ std::set<char>({' ', '\t', '\n', '\r'}),
+	    /**delimiter */ std::set<char>({'+', '-', '*', '/'}),
+	    /**whitespace */ std::set<char>({' ', '\t', '\n', '\r'}),
 	    &ops);
 
 	//__COUTV__(StringMacros::vectorToString(numbers));
@@ -887,8 +887,8 @@ std::string StringMacros::getNumberType(const std::string& s)
 	StringMacros::getVectorFromString(
 	    s,
 	    numbers,
-	    /*delimiter*/ std::set<char>({'+', '-', '*', '/'}),
-	    /*whitespace*/ std::set<char>({' ', '\t', '\n', '\r'}),
+	    /**delimiter */ std::set<char>({'+', '-', '*', '/'}),
+	    /**whitespace */ std::set<char>({' ', '\t', '\n', '\r'}),
 	    &ops);
 
 	//__COUTV__(StringMacros::vectorToString(numbers));
@@ -1324,7 +1324,7 @@ try
 				//__COUT__ << "Map value found: " <<
 				//		inputString.substr(i,j-i) << std::endl;
 
-				auto /*pair<it,success>*/ emplaceReturn =
+				auto /**pair<it,success> */ emplaceReturn =
 				    mapToReturn.emplace(std::pair<std::string, std::string>(
 				        name,
 				        validateValueForDefaultStringDataType(
@@ -1348,7 +1348,7 @@ try
 
 	if(i != j)  // last value (for case when no concluding ' ' or delimiter)
 	{
-		auto /*pair<it,success>*/ emplaceReturn =
+		auto /**pair<it,success> */ emplaceReturn =
 		    mapToReturn.emplace(std::pair<std::string, std::string>(
 		        name,
 		        validateValueForDefaultStringDataType(
@@ -1529,7 +1529,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 				__COUT__ << "Potential multi-wildcard found: " << multiWildcardString
 				         << " at position i=" << i << __E__;
 
-				std::vector<unsigned int /*lo index*/> wildCardInstances;
+				std::vector<unsigned int /**lo index */> wildCardInstances;
 				// add front one now, and back one later
 				wildCardInstances.push_back(wildcardBounds.first);
 
@@ -1692,7 +1692,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 
 					break;
 				}
-				else if(0 /*skip validation in favor of speed*/ &&
+				else if(0 /**skip validation in favor of speed */ &&
 				        wildcard != haystack[n].substr(i, k - i))
 				{
 					__SS__ << "Invalid wildcard! for name[" << n << "] = " << haystack[n]
@@ -1822,7 +1822,7 @@ std::string StringMacros::exec(const char* cmd)
 }  // end exec()
 
 // #include <iostream>
-#include <fstream> /* for ifstream */
+#include <fstream> // for ifstream 
 // #include <sstream>
 // #include <string>
 // #include <cstdlib>

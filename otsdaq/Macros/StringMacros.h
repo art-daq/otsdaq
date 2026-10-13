@@ -1,5 +1,5 @@
-#ifndef _ots_StringMacros_h_
-#define _ots_StringMacros_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_STRINGMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_STRINGMACROS_H_
 
 #include "otsdaq/Macros/CoutMacros.h"
 
@@ -89,7 +89,7 @@ struct StringMacros
 	static std::string 			convertEnvironmentVariables	(const std::string& data);
 	static std::map<std::string /* system variable */,
 		std::map<std::string /* property */,
-		std::string /* value */>>  							systemVariables_;
+		std::string /*** value   */>>  							systemVariables_;
 	static const std::string								TBD; //for to-be-defined system variables (so there is a value in wiz mode, before configuration, etc.)
 	static unsigned int				getConcurrencyCount		(void);
 	static std::string			getPersistentSystemVariablesFilePath(void);
@@ -123,7 +123,7 @@ struct StringMacros
 	//========================================================================================================================
 	/// getMapFromString ~
 	template<class T /*value type*/,
-			 class S = std::string /*name string or const string*/>
+			 class S = std::string /***name string or const string  */>
 	static void 				getMapFromString			( ///< defined in included .icc source
 		const std::string&    									inputString,
 		std::map<S, T>&       									mapToReturn,
@@ -279,4 +279,4 @@ struct StringMacros
 #include "otsdaq/Macros/StringMacros.icc"  //define template functions
 
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_MACROS_STRINGMACROS_H_

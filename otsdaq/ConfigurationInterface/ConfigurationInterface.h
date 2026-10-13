@@ -1,5 +1,5 @@
-#ifndef _ots_ConfigurationInterface_h_
-#define _ots_ConfigurationInterface_h_
+#ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONINTERFACE_H_
+#define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONINTERFACE_H_
 
 #include <memory>
 #include <mutex>
@@ -42,13 +42,13 @@ public:
 
 	/// table handling
 	#include "otsdaq/ConfigurationInterface/ConfigurationInterface.icc"  	///<define ConfigurationInterface::get() source code
-	virtual std::set<std::string /*name*/> 	getAllTableNames				(void) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getAllTableNames in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
+	virtual std::set<std::string /***name  */> 	getAllTableNames				(void) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getAllTableNames in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
 	virtual std::set<TableVersion> 			getVersions						(const TableBase* table) const = 0;
 	static const CONFIGURATION_MODE&		getMode							(void);
 	TableVersion                   			saveNewVersion					(TableBase* table, TableVersion temporaryVersion, TableVersion newVersion = TableVersion());
 
 	/// group handling
-	virtual std::set<std::string /*name*/> 	getAllTableGroupNames			(const std::string& /*filterString*/ = "") const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getAllTableGroupNames in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
+	virtual std::set<std::string /***name  */> 	getAllTableGroupNames			(const std::string& /***filterString  */ = "") const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getAllTableGroupNames in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
 	virtual std::set<TableGroupKey> 		getKeys							(const std::string& /*groupName*/) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call getKeys in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); }
 	virtual std::set<std::string /*group*/> findGroupsWithTable				(std::string const& /*tableName*/, TableVersion /*version*/) const { __SS__; __THROW__(ss.str() + "ConfigurationInterface::... Must only call findGroupsWithTable in a mode with this functionality implemented (e.g. DatabaseConfigurationInterface)."); } ///> returns the set of table groups that contain the specified table name and version
 
@@ -86,4 +86,4 @@ private:
 
 // clang-format on
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONINTERFACE_H_

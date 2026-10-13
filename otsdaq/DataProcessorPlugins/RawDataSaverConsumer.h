@@ -1,5 +1,5 @@
-#ifndef _ots_RawDataSaverConsumer_h_
-#define _ots_RawDataSaverConsumer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_RAWDATASAVERCONSUMER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_RAWDATASAVERCONSUMER_H_
 
 /// This is the basic example of a raw data saver plugin.
 /// It can be used as is and it will save the data taken from a buffer in binary format
@@ -23,4 +23,4 @@ class RawDataSaverConsumer : public RawDataSaverConsumerBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_RAWDATASAVERCONSUMER_H_

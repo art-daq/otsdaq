@@ -1,5 +1,5 @@
-#ifndef _ots_CodeEditor_h_
-#define _ots_CodeEditor_h_
+#ifndef OTSDAQ_OTSDAQ_CODEEDITOR_CODEEDITOR_H_
+#define OTSDAQ_OTSDAQ_CODEEDITOR_CODEEDITOR_H_
 
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/Macros/StringMacros.h"
@@ -58,7 +58,7 @@ class CodeEditor
 	    OTSDAQ_DATA_PATH;
 
 	static std::map<std::string /*special type*/,
-	                std::set<std::string> /*special file paths*/>
+	                std::set<std::string> /***special file paths  */>
 	getSpecialsMap(void);
 
 	static void        readFile(const std::string& basepath,
@@ -79,4 +79,4 @@ class CodeEditor
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CODEEDITOR_CODEEDITOR_H_

@@ -1,5 +1,5 @@
-#ifndef _ots_FESupervisor_h_
-#define _ots_FESupervisor_h_
+#ifndef OTSDAQ_OTSDAQ_CORESUPERVISORS_FESUPERVISOR_H_
+#define OTSDAQ_OTSDAQ_CORESUPERVISORS_FESUPERVISOR_H_
 
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
 
@@ -104,4 +104,4 @@ class FESupervisor : public CoreSupervisorBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CORESUPERVISORS_FESUPERVISOR_H_

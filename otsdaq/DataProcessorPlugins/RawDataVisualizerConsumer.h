@@ -1,5 +1,5 @@
-#ifndef _ots_RawDataVisualizerConsumer_h_
-#define _ots_RawDataVisualizerConsumer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_RAWDATAVISUALIZERCONSUMER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_RAWDATAVISUALIZERCONSUMER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataConsumer.h"
@@ -39,4 +39,4 @@ class RawDataVisualizerConsumer : public DataConsumer, public Configurable
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_RAWDATAVISUALIZERCONSUMER_H_

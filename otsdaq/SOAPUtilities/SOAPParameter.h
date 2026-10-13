@@ -1,5 +1,5 @@
-#ifndef _ots_SOAPParameter_h
-#define _ots_SOAPParameter_h
+#ifndef OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPPARAMETER_H_
+#define OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPPARAMETER_H_
 
 #include "otsdaq/SOAPUtilities/DataStructs.h"
 
@@ -25,4 +25,4 @@ class SOAPParameter : public Parameter<std::string, std::string>
 	}
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPPARAMETER_H_

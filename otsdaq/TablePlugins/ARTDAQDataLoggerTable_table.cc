@@ -66,9 +66,9 @@ void ARTDAQDataLoggerTable::genFlatFHiCL(void)
 
 	auto dataloggers = lastConfigManager_->__SELF_NODE__.getChildren(
 	    /*default filterMap*/ std::map<std::string /*relative-path*/,
-	                                   std::string /*value*/>(),
-	    /*default byPriority*/ false,
-	    /*TRUE! onlyStatusTrue*/ true);
+	                                   std::string /**value */>(),
+	    /**default byPriority */ false,
+	    /**TRUE! onlyStatusTrue */ true);
 
 	for(auto& datalogger : dataloggers)
 	{
@@ -88,7 +88,7 @@ unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(
     std::stringstream&    out,
     ConfigurationManager* configManager,
     std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
-        channelList /*= 0*/
+        channelList //= 0
 ) const
 {
 	/////////////////////////

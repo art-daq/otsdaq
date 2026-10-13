@@ -1,5 +1,5 @@
-#ifndef _ots_Cout_Macros_h_
-#define _ots_Cout_Macros_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_COUTMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_COUTMACROS_H_
 
 // clang-format off
 // NOLINTBEGIN(build/define_used) // Ignoring macro usage warnings in this file
@@ -245,4 +245,4 @@ struct TimestampString
 // NOLINTEND(build/define_used)
 // clang-format on
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_MACROS_COUTMACROS_H_

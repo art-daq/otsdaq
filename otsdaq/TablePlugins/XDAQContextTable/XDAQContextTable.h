@@ -1,5 +1,5 @@
-#ifndef _ots_XDAQContextTable_h_
-#define _ots_XDAQContextTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_XDAQCONTEXTTABLE_XDAQCONTEXTTABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_XDAQCONTEXTTABLE_XDAQCONTEXTTABLE_H_
 
 #include <string>
 
@@ -81,7 +81,7 @@ class XDAQContextTable : public TableBase
 
   private:
 	std::vector<XDAQContext> 		contexts_;
-	unsigned int /*contextIndex*/ 	artdaqSupervisorContext_;
+	unsigned int /***contextIndex  */ 	artdaqSupervisorContext_;
 
   public:
 	/// XDAQ Context Column names
@@ -137,8 +137,8 @@ class XDAQContextTable : public TableBase
 	static const std::string 							GATEWAY_SUPERVISOR_CLASS, WIZARD_SUPERVISOR_CLASS,
 														DEPRECATED_SUPERVISOR_CLASS, ARTDAQ_SUPERVISOR_CLASS;
 	static const std::map<std::string /*class*/,
-		std::string /*module*/> 						AppClassModuleLookup_;
+		std::string /***module  */> 						AppClassModuleLookup_;
 }; //end XDAQContextTable class
 }  // namespace ots
 // clang-format on
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_XDAQCONTEXTTABLE_XDAQCONTEXTTABLE_H_

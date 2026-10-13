@@ -1,5 +1,5 @@
-#ifndef _ots_SOAPMessenger_h
-#define _ots_SOAPMessenger_h
+#ifndef OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPMESSENGER_H_
+#define OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPMESSENGER_H_
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -15,10 +15,10 @@
 #include <xcept/tools.h>
 #include "otsdaq/Macros/XDAQApplicationMacros.h"
 
-#include "otsdaq/SOAPUtilities/SOAPUtilities.h" /* for SOAPCommand & SOAPParameters */
+#include "otsdaq/SOAPUtilities/SOAPUtilities.h" // for SOAPCommand & SOAPParameters 
 
 #include <string>
-#include "otsdaq/Macros/CoutMacros.h" /* for XDAQ_CONST_CALL */
+#include "otsdaq/Macros/CoutMacros.h" // for XDAQ_CONST_CALL 
 
 namespace ots
 {
@@ -54,4 +54,4 @@ class SOAPMessenger : public virtual toolbox::lang::Class
 	xdaq::Application* theApplication_;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPMESSENGER_H_

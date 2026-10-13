@@ -1,5 +1,5 @@
-#ifndef _ots_DatabaseConfigurationInterface_h_
-#define _ots_DatabaseConfigurationInterface_h_
+#ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_DATABASE_CONFIGINTERFACE_H_
+#define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_DATABASE_CONFIGINTERFACE_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 
@@ -35,14 +35,14 @@ class DatabaseConfigurationInterface : public ConfigurationInterface
 	TableVersion 							findLatestVersion		(const TableBase* table) const noexcept override;
 
 	/// returns a list of all table names
-	std::set<std::string /*name*/> 			getAllTableNames		(void) const override;
+	std::set<std::string /***name  */> 			getAllTableNames		(void) const override;
 	/// find all table versions by table type
 	std::set<TableVersion> 					getVersions				(const TableBase* table) const noexcept override;
 
 	/// find all table groups in database
-	std::set<std::string /*name+version*/> 	getAllTableGroupNames	(std::string const& filterString = "") const override;
+	std::set<std::string /***name+version  */> 	getAllTableGroupNames	(std::string const& filterString = "") const override;
 	std::set<TableGroupKey> 				getKeys					(const std::string& groupName) const override;
-	std::set<std::string /*group*/>			findGroupsWithTable		(std::string const& tableName, TableVersion version) const override;
+	std::set<std::string /***group  */>			findGroupsWithTable		(std::string const& tableName, TableVersion version) const override;
 
 	TableGroupKey							findLatestGroupKey		(const std::string& groupName) const noexcept override;
 
@@ -62,4 +62,4 @@ class DatabaseConfigurationInterface : public ConfigurationInterface
 }  // namespace ots
 
 // clang-format on
-#endif
+#endif  // OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_DATABASE_CONFIGINTERFACE_H_

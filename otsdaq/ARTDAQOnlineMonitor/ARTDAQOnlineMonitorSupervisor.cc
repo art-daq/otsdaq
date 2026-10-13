@@ -123,7 +123,7 @@ void ots::ARTDAQOnlineMonitorSupervisor::transitionConfiguring(
 		    ss.str() /* message*/,
 		    "ARTDAQOnlineMonitorSupervisor::transitionConfiguring" /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
+		    __FUNCTION__ //function
 		);
 	}
 }  //end transitionConfiguring()
@@ -260,7 +260,7 @@ catch(const std::runtime_error& e)
 		    "ots::ARTDAQOnlineMonitorSupervisorBase::transition" +
 		        transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
+		    __FUNCTION__ //function
 		);
 	}
 }  // end transitionHalting() std::runtime_error exception handling
@@ -291,7 +291,7 @@ catch(...)
 		    ss.str() /* message*/,
 		    "ots::ARTDAQOnlineMonitorSupervisor::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
+		    __FUNCTION__ //function
 		);
 	}
 }  // end transitionHalting() exception handling
@@ -346,7 +346,7 @@ void ots::ARTDAQOnlineMonitorSupervisor::RunArt(
 
 		pid = fork();
 		if(pid == 0)
-		{ /* child */
+		{ // child 
 
 			// Do any child environment setup here
 			std::string envVarKey   = "ARTDAQ_PARTITION_NUMBER";

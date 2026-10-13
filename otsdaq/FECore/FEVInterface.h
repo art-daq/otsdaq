@@ -1,5 +1,5 @@
-#ifndef _ots_FEVInterface_h_
-#define _ots_FEVInterface_h_
+#ifndef OTSDAQ_OTSDAQ_FECORE_FEVINTERFACE_H_
+#define OTSDAQ_OTSDAQ_FECORE_FEVINTERFACE_H_
 
 #include <functional>
 
@@ -107,9 +107,9 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	virtual void        				universalWrite				(char* address, char* writeValue) = 0;
 	const unsigned int& 				getUniversalAddressSize		(void) { return universalAddressSize_; }
 	const unsigned int& 				getUniversalDataSize		(void) { return universalDataSize_; }
-	virtual void 						universalBlockRead			(char* address, char* returnValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK READ"); /* to make compiler happy, use params */ __COUTV__((void*)address); __COUTV__((void*)returnValue); __COUTV__(numberOfBytes); }
+	virtual void 						universalBlockRead			(char* address, char* returnValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK READ"); /*** to make compiler happy, use params   */ __COUTV__((void*)address); __COUTV__((void*)returnValue); __COUTV__(numberOfBytes); }
 	bool 								universalBlockReadImplementationConfirmed = false; ///<is confirmed by slow controls handling (for example) that universalBlockRead is implemented by the FE plugin
-	virtual void        				universalBlockWrite			(char* address, char* writeValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK WRITE"); /* to make compiler happy, use params */ __COUTV__((void*)address); __COUTV__((void*)writeValue); __COUTV__(numberOfBytes); }
+	virtual void        				universalBlockWrite			(char* address, char* writeValue, unsigned int numberOfBytes) { throw std::runtime_error("UNDEFINED BLOCK WRITE"); /*** to make compiler happy, use params   */ __COUTV__((void*)address); __COUTV__((void*)writeValue); __COUTV__(numberOfBytes); }
 
 
 	void 								runSequenceOfCommands		(const std::string& treeLinkName);
@@ -122,22 +122,22 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 	{
 		__COUT__ << "\t Configure" << std::endl;
 		runSequenceOfCommands(
-			"LinkToConfigureSequence"); /*Run Configure Sequence Commands*/
+			"LinkToConfigureSequence"); //Run Configure Sequence Commands
 	}
 	virtual void 								start						(std::string /*runNumber*/)
 	{
 		__COUT__ << "\t Start" << std::endl;
-		runSequenceOfCommands("LinkToStartSequence"); /*Run Start Sequence Commands*/
+		runSequenceOfCommands("LinkToStartSequence"); //Run Start Sequence Commands
 	}
 	virtual void 								stop						(void)
 	{
 		__COUT__ << "\t Stop" << std::endl;
-		runSequenceOfCommands("LinkToStopSequence"); /*Run Stop Sequence Commands*/
+		runSequenceOfCommands("LinkToStopSequence"); //Run Stop Sequence Commands
 	}
 	virtual void 								halt						(void) { stop(); }
 	virtual void 								pause						(void) { stop(); }
 	virtual void 								resume						(void) { start(""); }
-	virtual bool 								running						(void) { /*while(WorkLoop::continueWorkLoop_){;}*/ return false; } ///<return true to have running() called again
+	virtual bool 								running						(void) { /***while(WorkLoop::continueWorkLoop_){;}  */ return false; } ///<return true to have running() called again
 	/// end State Machine handlers
 	/////////
 	///
@@ -271,7 +271,7 @@ class FEVInterface : public WorkLoop, public Configurable, public VStateMachine
 
 		std::string 							macroName_;
 		std::vector<std::pair<unsigned int /*op type*/,
-							  unsigned int /*index in specific type vector*/> >
+							  unsigned int /***index in specific type vector  */> >
 												operations_;
 		std::vector<macroStruct_t::readOp_t>  	readOps_;
 		std::vector<macroStruct_t::writeOp_t> 	writeOps_;
@@ -386,4 +386,4 @@ std::string 	getFEMacroArgumentValue<std::string>			(FEVInterface::frontEndMacro
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_FECORE_FEVINTERFACE_H_

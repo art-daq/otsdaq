@@ -1,5 +1,5 @@
-#ifndef _ots_DQMHistosBase_h_
-#define _ots_DQMHistosBase_h_
+#ifndef OTSDAQ_OTSDAQ_ROOTUTILITIES_DQMHISTOSBASE_H_
+#define OTSDAQ_OTSDAQ_ROOTUTILITIES_DQMHISTOSBASE_H_
 
 #include <map>
 #include <string>
@@ -55,4 +55,4 @@ class DQMHistosBase
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_ROOTUTILITIES_DQMHISTOSBASE_H_

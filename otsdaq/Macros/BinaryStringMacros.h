@@ -1,5 +1,5 @@
-#ifndef _ots_BinaryStringMacros_h_
-#define _ots_BinaryStringMacros_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_BINARYSTRINGMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_BINARYSTRINGMACROS_H_
 
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/Macros/StringMacros.h"
@@ -91,4 +91,4 @@ struct BinaryStringMacros
 
 // clang-format on
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_MACROS_BINARYSTRINGMACROS_H_

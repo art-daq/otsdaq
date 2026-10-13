@@ -1,8 +1,8 @@
-#ifndef _ots_TableTableViewColumnInfo_h_
-#define _ots_TableTableViewColumnInfo_h_
+#ifndef OTSDAQ_OTSDAQ_TABLECORE_TABLEVIEWCOLUMNINFO_H_
+#define OTSDAQ_OTSDAQ_TABLECORE_TABLEVIEWCOLUMNINFO_H_
 
 #include <map>
-#include <memory> /* shared_ptr */
+#include <memory> // shared_ptr 
 #include <string>
 #include <vector>
 
@@ -113,4 +113,4 @@ class TableViewColumnInfo
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLECORE_TABLEVIEWCOLUMNINFO_H_

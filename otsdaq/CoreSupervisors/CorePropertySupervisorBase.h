@@ -1,5 +1,5 @@
-#ifndef _ots_CorePropertySupervisorBase_h_
-#define _ots_CorePropertySupervisorBase_h_
+#ifndef OTSDAQ_OTSDAQ_CORESUPERVISORS_COREPROPERTYSUPERVISORBASE_H_
+#define OTSDAQ_OTSDAQ_CORESUPERVISORS_COREPROPERTYSUPERVISORBASE_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationTree.h"
@@ -276,4 +276,4 @@ class CorePropertySupervisorBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CORESUPERVISORS_COREPROPERTYSUPERVISORBASE_H_

@@ -1,5 +1,5 @@
-#ifndef _ots_UDPDataListenerProducer_h_
-#define _ots_UDPDataListenerProducer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_UDPDATALISTENERPRODUCER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_UDPDATALISTENERPRODUCER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataProducer.h"
@@ -43,4 +43,4 @@ class UDPDataListenerProducer : public DataProducer,
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_UDPDATALISTENERPRODUCER_H_

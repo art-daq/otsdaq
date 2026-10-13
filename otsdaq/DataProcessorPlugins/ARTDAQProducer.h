@@ -1,5 +1,5 @@
-#ifndef _ots_ARTDAQProducer_h_
-#define _ots_ARTDAQProducer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQPRODUCER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQPRODUCER_H_
 
 #include "otsdaq/ARTDAQReaderCore/ARTDAQReaderProcessorBase.h"
 
@@ -59,4 +59,4 @@ class ARTDAQProducer
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQPRODUCER_H_

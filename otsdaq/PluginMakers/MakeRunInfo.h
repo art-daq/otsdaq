@@ -1,5 +1,5 @@
-#ifndef _ots_MakeRunInfo_h_
-#define _ots_MakeRunInfo_h_
+#ifndef OTSDAQ_OTSDAQ_PLUGINMAKERS_MAKERUNINFO_H_
+#define OTSDAQ_OTSDAQ_PLUGINMAKERS_MAKERUNINFO_H_
 /// Using LibraryManager, find the correct library and return an instance of the specified
 /// Run Info Interface.
 ///
@@ -15,4 +15,4 @@ RunInfoVInterface* makeRunInfo(const std::string& runInfoPluginName,
 
 }  // namespace ots
 
-#endif /* _ots_MakeRunInfo_h_ */
+#endif  // OTSDAQ_OTSDAQ_PLUGINMAKERS_MAKERUNINFO_H_

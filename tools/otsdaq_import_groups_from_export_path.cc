@@ -89,12 +89,12 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 	std::map<std::string /*importGroupAlias*/,
 		/*original*/ std::pair<std::string /*groupName*/, TableGroupKey /*origKey*/>>	importGroupAliasMap;
 	std::map<std::pair<std::string /*groupName*/, TableGroupKey /*origKey*/>,
-		TableGroupKey /*newKey*/> 														importGroupMap;
+		TableGroupKey /**newKey */> 														importGroupMap;
 	std::map<std::string /*importTableAlias*/,
 	         /*original*/ std::pair<std::string /*tableName*/,
-			 TableVersion /*origVersion*/>>												importTableAliasMap;
+			 TableVersion /**origVersion */>>												importTableAliasMap;
 	std::map</*original*/ std::pair<std::string /*tableName*/, TableVersion /*origVersion*/>,
-	         /*newVersion*/ TableVersion>												importTableMap;
+	         /**newVersion */ TableVersion>												importTableMap;
 	// clang-format on
 
 	std::string   importedBackboneGroupName = "";
@@ -125,7 +125,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 				importGroupMap.insert(
 				    std::pair<
 				        std::pair<std::string /*groupName*/, TableGroupKey /*origKey*/>,
-				        TableGroupKey /*newKey*/>(
+				        TableGroupKey /**newKey */>(
 				        std::pair<std::string, TableGroupKey>(split[0], split[1]),
 				        TableGroupKey()));
 
@@ -482,7 +482,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 
 	// return;
 
-	/* <tableName, <origVersion, newVersion> >*/
+	// <tableName, <origVersion, newVersion> >
 	std::map<std::pair<std::string, TableVersion>, TableVersion>   modifiedTables;
 	std::map<std::string, std::pair<TableGroupKey, TableGroupKey>> activeGroupKeys;
 	std::map<std::pair<std::string, TableGroupKey>, std::string>   groupErrors;
@@ -619,7 +619,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			std::vector<std::pair<std::string, ConfigurationTree>> currentAliasNodePairs =
 			    cfgMgr->getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
 			        .getChildren();
-			std::set<std::string /* current aliases */> currentAliases;
+			std::set<std::string /** current aliases  */> currentAliases;
 
 			__COUTV__(cfgMgr->getNode(ConfigurationManager::GROUP_ALIASES_TABLE_NAME)
 			              .getTableName());
@@ -708,7 +708,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			std::vector<std::pair<std::string, ConfigurationTree>> currentAliasNodePairs =
 			    cfgMgr->getNode(ConfigurationManager::VERSION_ALIASES_TABLE_NAME)
 			        .getChildren();
-			std::set<std::string /* current aliases */> currentAliases;
+			std::set<std::string /** current aliases  */> currentAliases;
 
 			__COUTV__(cfgMgr->getNode(ConfigurationManager::VERSION_ALIASES_TABLE_NAME)
 			              .getTableName());

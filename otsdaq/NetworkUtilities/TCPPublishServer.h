@@ -1,5 +1,5 @@
-#ifndef _TCPPublishServer_h_
-#define _TCPPublishServer_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPUBLISHSERVER_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPUBLISHSERVER_H_
 
 #include "otsdaq/NetworkUtilities/TCPServerBase.h"
 
@@ -15,4 +15,4 @@ class TCPPublishServer : public TCPServerBase
 	void acceptConnections() override;
 };
 }  // namespace ots
-#endif
+#endif // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPUBLISHSERVER_H_

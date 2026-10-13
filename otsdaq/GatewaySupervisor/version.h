@@ -1,5 +1,5 @@
-#ifndef _ots_GatewaySupervisor_version_h_
-#define _ots_GatewaySupervisor_version_h_
+#ifndef OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_VERSION_H_
+#define OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_VERSION_H_
 
 #include "config/PackageInfo.h"
 
@@ -38,4 +38,4 @@ void                                           checkPackageDependencies();
 std::set<std::string, std::less<std::string> > getPackageDependencies();
 }  // namespace GatewaySupervisor
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_VERSION_H_

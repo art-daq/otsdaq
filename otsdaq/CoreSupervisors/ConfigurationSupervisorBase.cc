@@ -739,7 +739,7 @@ try
 	//		get all table groups to locate historical keys
 	//	get all groups to find historical keys
 
-	//	std::set<std::string /*name+version*/> allGroups =
+	//	std::set<std::string /**name+version */> allGroups =
 	//			cfgMgr->getConfigurationInterface()->getAllTableGroupNames(groupName);
 	//	std::string name;
 	//	TableGroupKey key;
@@ -858,7 +858,7 @@ try
 				__COUTT__ << "Attempting full table refresh (assuming cache not yet "
 				             "established)."
 				          << __E__;
-				/*const std::map<std::string, TableInfo>& allTableInfo = */ cfgMgr
+				/**const std::map<std::string, TableInfo>& allTableInfo =  */ cfgMgr
 				    ->getAllTableInfo(true /* refresh */,
 				                      &accumulatedWarnings,
 				                      "" /* errorFilterName */,
@@ -950,7 +950,7 @@ try
 		                       false /*doActivate*/,
 		                       &memberMap,
 		                       0 /*progressBar*/,
-		                       ignoreWarnings ? 0 : /*accumulateTreeErrors*/
+		                       ignoreWarnings ? 0 : //accumulateTreeErrors
 		                           &accumulateTreeErrors,
 		                       &groupComment,
 		                       &groupAuthor,
@@ -1188,7 +1188,7 @@ try
 	    true /*throwErrors*/,
 	    "" /*pathToActiveGroupsFile*/,
 	    ConfigurationManager::LoadGroupType::
-	        ONLY_BACKBONE_OR_CONTEXT_TYPES /*onlyLoadIfBackboneOrContext*/
+	        ONLY_BACKBONE_OR_CONTEXT_TYPES //onlyLoadIfBackboneOrContext
 	);
 
 	const std::string backboneGroupName =
@@ -1301,7 +1301,7 @@ try
 				try
 				{
 					windowLinkedApp = StringMacros::decodeURIComponent(windowLinkedApp);
-					/*	int appRow      = */ appTable.tableView_->findRow(
+					/**	int appRow      =  */ appTable.tableView_->findRow(
 					    appTable.tableView_->getColUID(), windowLinkedApp);
 				}
 				catch(const std::runtime_error& e)
@@ -1370,7 +1370,7 @@ try
 			    parameterTable.tableView_->findCol(DesktopIconTable::COL_PARAMETER_GID);
 
 			// remove all existing records from groupID (e.g. parameters leftover from manual manipulations)
-			std::vector<unsigned int /*row*/> rowsInGroup =
+			std::vector<unsigned int /**row */> rowsInGroup =
 			    parameterTable.tableView_->getGroupRows(
 			        gidCol, iconUID + "_Parameters" /*groupID*/);
 

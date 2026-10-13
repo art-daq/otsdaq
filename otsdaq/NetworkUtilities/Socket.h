@@ -1,5 +1,5 @@
-#ifndef _ots_Socket_h_
-#define _ots_Socket_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_SOCKET_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_SOCKET_H_
 
 #include <netinet/in.h>
 #include <sys/types.h>
@@ -45,4 +45,4 @@ class Socket
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_SOCKET_H_

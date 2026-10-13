@@ -1,5 +1,5 @@
-#ifndef _ots_FiniteStateMachine_h
-#define _ots_FiniteStateMachine_h
+#ifndef OTSDAQ_OTSDAQ_FINITESTATEMACHINE_FINITESTATEMACHINE_H_
+#define OTSDAQ_OTSDAQ_FINITESTATEMACHINE_FINITESTATEMACHINE_H_
 
 #include <toolbox/fsm/FiniteStateMachine.h>
 #include <xoap/MessageReference.h>
@@ -98,4 +98,4 @@ class FiniteStateMachine : public toolbox::fsm::FiniteStateMachine
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_FINITESTATEMACHINE_FINITESTATEMACHINE_H_

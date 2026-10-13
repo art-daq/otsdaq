@@ -1,5 +1,5 @@
-#ifndef _ots_TCPPacket_h_
-#define _ots_TCPPacket_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPACKET_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPACKET_H_
 
 #include <cstdint>
 #include <string>
@@ -41,4 +41,4 @@ class TCPPacket
 	std::string fBuffer;  ///< This is Header + Message
 };
 }  // namespace ots
-#endif
+#endif // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPACKET_H_

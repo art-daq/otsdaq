@@ -1,5 +1,5 @@
-#ifndef _ots_ConfigurationTree_h_
-#define _ots_ConfigurationTree_h_
+#ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONTREE_H_
+#define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONTREE_H_
 
 #include "otsdaq/TableCore/TableView.h"
 
@@ -315,13 +315,13 @@ class ConfigurationTree
 		const TableViewColumnInfo* columnInfo_;
 	};
 	std::vector<ConfigurationTree::RecordField> getCommonFields				(
-		const std::vector<std::string /*relative-path*/>& recordList,
-		const std::vector<std::string /*relative-path*/>& fieldAcceptList,
-		const std::vector<std::string /*relative-path*/>& fieldRejectList,
+		const std::vector<std::string /***relative-path  */>& recordList,
+		const std::vector<std::string /***relative-path  */>& fieldAcceptList,
+		const std::vector<std::string /***relative-path  */>& fieldRejectList,
 		unsigned int                                      depth = -1,
 		bool autoSelectFilterFields                             = false) const;
-	std::set<std::string /*unique-value*/> 		getUniqueValuesForField		(
-		const std::vector<std::string /*relative-path*/>& recordList,
+	std::set<std::string /***unique-value  */> 		getUniqueValuesForField		(
+		const std::vector<std::string /***relative-path  */>& recordList,
 		const std::string&                                fieldName,
 		std::string*									  fieldGroupIDChildLinkIndex = 0) const;
 
@@ -348,8 +348,8 @@ class ConfigurationTree
 	void 										recursiveGetCommonFields	(
 																				std::vector<ConfigurationTree::RecordField>&      fieldCandidateList,
 																				std::vector<int>&                                 fieldCount,
-																				const std::vector<std::string /*relative-path*/>& fieldAcceptList,
-																				const std::vector<std::string /*relative-path*/>& fieldRejectList,
+																				const std::vector<std::string /***relative-path  */>& fieldAcceptList,
+																				const std::vector<std::string /***relative-path  */>& fieldRejectList,
 																				unsigned int                                      depth,
 																				const std::string&                                relativePathBase,
 																				bool                                              inFirstRecord) const;
@@ -456,4 +456,4 @@ inline void ConfigurationTree::BitMap<std::string>::print(std::ostream& out) con
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONTREE_H_

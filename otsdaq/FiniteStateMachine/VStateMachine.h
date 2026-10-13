@@ -1,5 +1,5 @@
-#ifndef _ots_VStateMachine_h_
-#define _ots_VStateMachine_h_
+#ifndef OTSDAQ_OTSDAQ_FINITESTATEMACHINE_VSTATEMACHINE_H_
+#define OTSDAQ_OTSDAQ_FINITESTATEMACHINE_VSTATEMACHINE_H_
 
 #include <string>
 
@@ -228,4 +228,4 @@ class VStateMachine
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_FINITESTATEMACHINE_VSTATEMACHINE_H_

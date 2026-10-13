@@ -1,5 +1,5 @@
-#ifndef _ots_ARTDAQBoardReaderTable_h_
-#define _ots_ARTDAQBoardReaderTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQBOARDREADERTABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQBOARDREADERTABLE_H_
 
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 #include "otsdaq/TablePlugins/SlowControlsTableBase/SlowControlsTableBase.h"
@@ -28,4 +28,4 @@ class ARTDAQBoardReaderTable : public ARTDAQTableBase, public SlowControlsTableB
 };
 // clang-format on
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQBOARDREADERTABLE_H_

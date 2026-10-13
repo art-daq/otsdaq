@@ -71,7 +71,7 @@ void SupervisorDescriptorInfoBase::init(xdaq::ApplicationContext* applicationCon
 	                     ->getApplicationDescriptors();
 	for(auto& it : appDescriptors)
 	{
-		auto /*<it,bool*/ retPair = allSupervisors_.emplace(
+		auto /**<it,bool */ retPair = allSupervisors_.emplace(
 		    std::pair<xdata::UnsignedIntegerT,
 		              XDAQ_CONST_CALL xdaq::ApplicationDescriptor*>(it->getLocalId(),
 		                                                            it));

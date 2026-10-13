@@ -1,5 +1,5 @@
-#ifndef _CodeEditor_version_h_
-#define _CodeEditor_version_h_
+#ifndef OTSDAQ_OTSDAQ_CODEEDITOR_VERSION_H_
+#define OTSDAQ_OTSDAQ_CODEEDITOR_VERSION_H_
 
 #include "config/PackageInfo.h"
 
@@ -37,4 +37,4 @@ void                                           checkPackageDependencies();
 std::set<std::string, std::less<std::string> > getPackageDependencies();
 }  // namespace CodeEditor
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CODEEDITOR_VERSION_H_

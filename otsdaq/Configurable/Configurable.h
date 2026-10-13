@@ -1,5 +1,5 @@
-#ifndef _ots_Configurable_h_
-#define _ots_Configurable_h_
+#ifndef OTSDAQ_OTSDAQ_CONFIGURABLE_CONFIGURABLE_H_
+#define OTSDAQ_OTSDAQ_CONFIGURABLE_CONFIGURABLE_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationTree.h"
 
@@ -29,4 +29,4 @@ class Configurable
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CONFIGURABLE_CONFIGURABLE_H_

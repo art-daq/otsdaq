@@ -1,9 +1,9 @@
-#ifndef _ots_SupervisorInfo_h_
-#define _ots_SupervisorInfo_h_
+#ifndef OTSDAQ_OTSDAQ_SUPERVISORINFO_SUPERVISORINFO_H_
+#define OTSDAQ_OTSDAQ_SUPERVISORINFO_SUPERVISORINFO_H_
 
 #include <algorithm>
 #include <string>
-#include "otsdaq/Macros/CoutMacros.h" /* also for XDAQ_CONST_CALL */
+#include "otsdaq/Macros/CoutMacros.h" // also for XDAQ_CONST_CALL 
 #include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
 
 #pragma GCC diagnostic push
@@ -168,4 +168,4 @@ class SupervisorInfo
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_SUPERVISORINFO_SUPERVISORINFO_H_

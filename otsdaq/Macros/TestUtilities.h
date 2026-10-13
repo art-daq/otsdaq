@@ -1,5 +1,5 @@
-#ifndef _ots_test_utils_h_
-#define _ots_test_utils_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_TESTUTILITIES_H_
+#define OTSDAQ_OTSDAQ_MACROS_TESTUTILITIES_H_
 
 #include "otsdaq/Macros/StringMacros.h"
 
@@ -72,4 +72,4 @@ void check_and_make_envs()
 }
 }  // namespace ots::test::util
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_MACROS_TESTUTILITIES_H_

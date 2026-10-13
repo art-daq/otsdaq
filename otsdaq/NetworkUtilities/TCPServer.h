@@ -1,5 +1,5 @@
-#ifndef _ots_TCPServer_h_
-#define _ots_TCPServer_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSERVER_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSERVER_H_
 
 #include <iostream>
 #include <string>
@@ -28,4 +28,4 @@ class TCPServer : public TCPServerBase
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSERVER_H_

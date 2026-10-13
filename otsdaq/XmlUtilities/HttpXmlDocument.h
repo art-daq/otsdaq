@@ -1,5 +1,5 @@
-#ifndef ots_HttpXmlDocument_h
-#define ots_HttpXmlDocument_h
+#ifndef OTSDAQ_OTSDAQ_XMLUTILITIES_HTTPXMLDOCUMENT_H_
+#define OTSDAQ_OTSDAQ_XMLUTILITIES_HTTPXMLDOCUMENT_H_
 
 #include "otsdaq/XmlUtilities/XmlDocument.h"
 
@@ -38,7 +38,7 @@ class HttpXmlDocument : public XmlDocument
 	unsigned int 	      		getChildrenCount                (      xercesc::DOMElement  * parent         = 0   );
 	void 		      			removeDataElement               (  	   unsigned int           dataChildIndex = 0   );  ///< default to first child
 
-	std::stringstream			dataSs_		   ; /* use for large xml response construction */
+	std::stringstream			dataSs_		   ; // use for large xml response construction 
   private:
 	void 		      			recursiveAddElementToParent     (      xercesc::DOMElement  * child           		, 	xercesc::DOMElement               		* parent         	,     	  bool                                html = false          );
 	void 		      			recursiveFindAllElements        (      xercesc::DOMElement  * currEl          		, 	const std::string                       & field          	, 		  std::vector<std::string>          * retVec                );
@@ -59,4 +59,4 @@ class HttpXmlDocument : public XmlDocument
 // clang-format on
 }  // namespace ots
 
-#endif  // ots_HttpXmlDocument_h
+#endif  // OTSDAQ_OTSDAQ_XMLUTILITIES_HTTPXMLDOCUMENT_H_

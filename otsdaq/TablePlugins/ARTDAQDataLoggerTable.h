@@ -1,5 +1,5 @@
-#ifndef _ots_ARTDAQDataLoggerTable_h_
-#define _ots_ARTDAQDataLoggerTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQDATALOGGERTABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQDATALOGGERTABLE_H_
 
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 #include "otsdaq/TablePlugins/SlowControlsTableBase/SlowControlsTableBase.h"
@@ -28,4 +28,4 @@ class ARTDAQDataLoggerTable : public ARTDAQTableBase, public SlowControlsTableBa
 };
 // clang-format on
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQDATALOGGERTABLE_H_

@@ -1,5 +1,5 @@
-#ifndef _ots_UDPDataStreamerConsumer_h_
-#define _ots_UDPDataStreamerConsumer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_UDPDATASTREAMERCONSUMER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_UDPDATASTREAMERCONSUMER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataConsumer.h"
@@ -39,4 +39,4 @@ class UDPDataStreamerConsumer : public UDPDataStreamerBase,
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_UDPDATASTREAMERCONSUMER_H_

@@ -82,7 +82,7 @@ unsigned int SlowControlsTableBase::slowControlsHandler(
     std::string&       location,
     ConfigurationTree  slowControlsLink,
     std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
-        channelList /*= 0*/
+        channelList //= 0
 ) const
 try
 {

@@ -1,5 +1,5 @@
-#ifndef _ots_OtsDataSaverConsumer_h_
-#define _ots_OtsDataSaverConsumer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_OTSDATASAVERCONSUMER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_OTSDATASAVERCONSUMER_H_
 
 #include "otsdaq/DataManager/RawDataSaverConsumerBase.h"
 
@@ -25,4 +25,4 @@ class OtsDataSaverConsumer : public RawDataSaverConsumerBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_OTSDATASAVERCONSUMER_H_

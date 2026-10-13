@@ -1,5 +1,5 @@
-#ifndef _ots_TableGroupKey_h_
-#define _ots_TableGroupKey_h_
+#ifndef OTSDAQ_OTSDAQ_TABLECORE_TABLEGROUPKEY_H_
+#define OTSDAQ_OTSDAQ_TABLECORE_TABLEGROUPKEY_H_
 
 #include <ostream>
 
@@ -67,4 +67,4 @@ class TableGroupKey
 	unsigned int              key_;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLECORE_TABLEGROUPKEY_H_

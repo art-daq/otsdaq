@@ -1,12 +1,12 @@
-#ifndef _ots_TableView_h_
-#define _ots_TableView_h_
+#ifndef OTSDAQ_OTSDAQ_TABLECORE_TABLEVIEW_H_
+#define OTSDAQ_OTSDAQ_TABLECORE_TABLEVIEW_H_
 
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/Macros/StringMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
 #include <stdlib.h>
-#include <time.h> /* time_t, time, ctime */
+#include <time.h> // time_t, time, ctime 
 #include <cassert>
 #include <iostream>
 #include <map>
@@ -80,11 +80,11 @@ class TableView
 	unsigned int                          		getDataColumnSize			(void) const;
 	const unsigned int&                         getSourceColumnMismatch		(void) const { return sourceColumnMismatchCount_; }
 	const unsigned int&                         getSourceColumnMissing		(void) const { return sourceColumnMissingCount_; }
-	const std::set<std::string /*col name*/>&   getSourceColumnNames		(void) const { return sourceColumnNames_; }
-	std::set<std::string /*col name*/>          getColumnNames				(void) const;
-	std::map<std::string, unsigned int /*col*/> getColumnNamesMap			(void) const;
-	std::set<std::string /*storage name*/>      getColumnStorageNames		(void) const;
-	const std::vector<std::string /*per col*/>& getDefaultRowValues			(void) const { return rowDefaultValues_; }
+	const std::set<std::string /***col name  */>&   getSourceColumnNames		(void) const { return sourceColumnNames_; }
+	std::set<std::string /***col name  */>          getColumnNames				(void) const;
+	std::map<std::string, unsigned int /***col  */> getColumnNamesMap			(void) const;
+	std::set<std::string /***storage name  */>      getColumnStorageNames		(void) const;
+	const std::vector<std::string /***per col  */>& getDefaultRowValues			(void) const { return rowDefaultValues_; }
 	std::string									getMismatchColumnInfo		(void) const;
 
 	unsigned int       							getNumberOfRows				(void) const { return theDataView_.size(); }
@@ -104,20 +104,20 @@ class TableView
 
   public:
 
-	std::set<std::string /*groupID*/> 			getSetOfGroupIDs			(const std::string& childLinkIndex, unsigned int row = -1) const;
-	std::set<std::string /*groupID*/> 			getSetOfGroupIDs			(const unsigned int& col, unsigned int row = -1) const;
+	std::set<std::string /***groupID  */> 			getSetOfGroupIDs			(const std::string& childLinkIndex, unsigned int row = -1) const;
+	std::set<std::string /***groupID  */> 			getSetOfGroupIDs			(const unsigned int& col, unsigned int row = -1) const;
 	bool                 						isEntryInGroup				(const unsigned int& row,
 																			 const std::string&  childLinkIndex,
 																			 const std::string&  groupNeedle) const;
 	bool            							getChildLink				(const unsigned int&                      col,
 																			 bool&                                    isGroup,
 																			 std::pair<unsigned int /*link col*/,
-																			 unsigned int /*link id col*/>& linkPair) const;
+																			 unsigned int /***link id col  */>& linkPair) const;
 	unsigned int    							getLinkGroupIDColumn		(const std::string& childLinkIndex) const;
-	std::vector<unsigned int /*row*/>			getGroupRows				(const unsigned int groupIdCol, const std::string& groupID, bool onlyStatusTrue = false, bool orderedByPriority = false) const;
-	std::vector<std::vector<unsigned int /*row*/>> getGroupRowsByPriority	(const unsigned int groupIdCol, const std::string& groupID, bool onlyStatusTrue = false) const;
+	std::vector<unsigned int /***row  */>			getGroupRows				(const unsigned int groupIdCol, const std::string& groupID, bool onlyStatusTrue = false, bool orderedByPriority = false) const;
+	std::vector<std::vector<unsigned int /***row  */>> getGroupRowsByPriority	(const unsigned int groupIdCol, const std::string& groupID, bool onlyStatusTrue = false) const;
 private:
-	std::vector<std::vector<unsigned int /*row*/>> getGroupRowsInVectors	(const unsigned int groupIdCol, const std::string& groupID, bool onlyStatusTrue, bool orderedByPriority) const;
+	std::vector<std::vector<unsigned int /***row  */>> getGroupRowsInVectors	(const unsigned int groupIdCol, const std::string& groupID, bool onlyStatusTrue, bool orderedByPriority) const;
 public:
 	void                  						addRowToGroup				(const unsigned int& row,
 																			 const unsigned int& col,
@@ -241,7 +241,7 @@ public:
 	unsigned int 								initColUID					(void);
 	unsigned int 								initColStatus				(void);
 	unsigned int 								initColPriority				(void);
-	const std::vector<std::string /*per col*/>&	initRowDefaults				(void);
+	const std::vector<std::string /***per col  */>&	initRowDefaults				(void);
 
 	TableView& 									operator=					(const TableView src);  ///< operator= is purposely undefined and
 																									///< private (DO NOT USE IT!) - should use
@@ -274,4 +274,4 @@ public:
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLECORE_TABLEVIEW_H_

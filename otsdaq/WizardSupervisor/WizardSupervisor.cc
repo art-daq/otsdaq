@@ -1148,7 +1148,7 @@ void WizardSupervisor::savePostPreview(std::string& /*subject*/,
 	type, " + files[i].getDataType() + "."); return;
 		}*/
 
-	/*//file validated, so save upload to temp directory
+	/** file validated, so save upload to temp directory
 		sprintf(fileIndex,"%d",i);
 		filename = previewPath + "/" + (std::string)LOGBOOK_PREVIEW_UPLOAD_PREFACE +
 				(std::string)fileIndex + "." + filename;

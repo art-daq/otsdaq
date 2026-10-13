@@ -1,5 +1,5 @@
-#ifndef _ots_TCPDataReceiverProducer_h_
-#define _ots_TCPDataReceiverProducer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATARECEIVERPRODUCER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATARECEIVERPRODUCER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataProducer.h"
@@ -45,4 +45,4 @@ class TCPDataReceiverProducer : public DataProducer,
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATARECEIVERPRODUCER_H_
