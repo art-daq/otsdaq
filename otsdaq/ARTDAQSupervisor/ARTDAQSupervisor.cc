@@ -21,6 +21,12 @@
 #include <cstring>
 #include <fstream>
 #include <regex>
+#include <list>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/Macros/StringMacros.h"

@@ -6,6 +6,7 @@
 #include "otsdaq/NetworkUtilities/UDPDataStreamerBase.h"
 
 #include <string>
+#include <map>
 
 namespace ots
 {

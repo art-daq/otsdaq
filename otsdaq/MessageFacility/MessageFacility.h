@@ -4,6 +4,7 @@
 #include "otsdaq/Macros/CoutMacros.h"
 
 #include <messagefacility/MessageLogger/MessageLogger.h>
+#include <string>
 #include "artdaq-core/Utilities/configureMessageFacility.hh"
 
 namespace ots

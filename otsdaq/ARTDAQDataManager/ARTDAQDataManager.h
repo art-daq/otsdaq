@@ -3,6 +3,8 @@
 
 #include "otsdaq/DataManager/DataManager.h"
 
+#include <string>
+
 namespace ots
 {
 class ConfigurationManager;

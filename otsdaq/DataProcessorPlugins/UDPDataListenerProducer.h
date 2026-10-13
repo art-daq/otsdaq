@@ -6,6 +6,7 @@
 #include "otsdaq/NetworkUtilities/ReceiverSocket.h"  // Make sure this is always first because <sys/types.h> (defined in Socket.h) must be first
 
 #include <string>
+#include <map>
 
 namespace ots
 {

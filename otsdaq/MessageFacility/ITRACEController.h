@@ -7,6 +7,7 @@
 #include <list>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "TRACE/trace.h"
 #include "otsdaq/Macros/StringMacros.h"
 

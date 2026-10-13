@@ -3,6 +3,10 @@
 
 #include "otsdaq/TableCore/TableBase.h"
 
+#include <map>
+#include <string>
+#include <vector>
+
 namespace ots
 {
 class IterateTable : public TableBase

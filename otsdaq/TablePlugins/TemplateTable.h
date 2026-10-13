@@ -3,6 +3,8 @@
 
 #include "otsdaq/TableCore/TableBase.h"
 
+#include <string>
+
 namespace ots
 {
 class TemplateTable : public TableBase

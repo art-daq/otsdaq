@@ -8,6 +8,8 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <tuple>
+#include <utility>
 
 #include "otsdaq/TableCore/TableGroupKey.h"  //for TableGroupKey
 

@@ -7,6 +7,8 @@
 
 #include <atomic>
 #include <string>
+#include <functional>
+#include <map>
 #include "toolbox/lang/Class.h"
 
 namespace ots

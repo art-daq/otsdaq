@@ -10,6 +10,7 @@
 #include <string.h>  //for strstr (not the same as <string>)
 #include <iostream>  //for cout
 #include <sstream>   //for stringstream, std::stringbuf
+#include <string>
 
 #define TRACEMF_USE_VERBATIM 1 //for trace longer path filenames
 

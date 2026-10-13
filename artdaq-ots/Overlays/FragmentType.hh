@@ -2,6 +2,10 @@
 #define OTSDAQ_ARTDAQ_OTS_OVERLAYS_FRAGMENTTYPE_HH_
 #include "artdaq-core/Data/Fragment.hh"
 
+#include <map>
+#include <string>
+#include <vector>
+
 namespace ots
 {
 static std::vector<std::string> const names{"MISSED", "UDP", "UNKNOWN"};

@@ -5,6 +5,8 @@
 #include "otsdaq/DataDecoders/DataDecoder.h"
 #include "otsdaq/DataManager/DataConsumer.h"
 
+#include <string>
+
 namespace ots
 {
 class DataDecoderConsumer : public DataDecoder, public DataConsumer, public Configurable

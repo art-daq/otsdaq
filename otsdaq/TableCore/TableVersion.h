@@ -2,6 +2,7 @@
 #define OTSDAQ_OTSDAQ_TABLECORE_TABLEVERSION_H_
 
 #include <ostream>
+#include <string>
 
 namespace ots
 {

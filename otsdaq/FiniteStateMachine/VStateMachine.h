@@ -2,6 +2,7 @@
 #define OTSDAQ_OTSDAQ_FINITESTATEMACHINE_VSTATEMACHINE_H_
 
 #include <string>
+#include <map>
 
 namespace ots
 {

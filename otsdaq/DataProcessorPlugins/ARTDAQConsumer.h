@@ -7,6 +7,8 @@
 // #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataConsumer.h"
 
+#include <string>
+
 // #include <future>
 // #include <memory>
 // #include <string>

@@ -5,6 +5,8 @@
 #include <memory>  //for std::shared_ptr
 #include <mutex>   //for std::mutex
 #include <string>
+#include <utility>
+#include <vector>
 #include "otsdaq/TablePlugins/IterateTable.h"
 #include "otsdaq/XmlUtilities/HttpXmlDocument.h"
 

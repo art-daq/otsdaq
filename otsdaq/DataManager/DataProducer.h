@@ -4,6 +4,8 @@
 #include "otsdaq/DataManager/DataProducerBase.h"
 #include "otsdaq/WorkLoopManager/WorkLoop.h"
 
+#include <string>
+
 namespace ots
 {
 /// DataProducer

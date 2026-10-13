@@ -7,6 +7,8 @@
 // #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataProducer.h"
 
+#include <string>
+
 // #include <future>
 // #include <memory>
 // #include <string>

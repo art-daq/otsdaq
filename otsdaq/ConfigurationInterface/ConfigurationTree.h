@@ -383,6 +383,12 @@ class ConfigurationTree
 
 #include "otsdaq/ConfigurationInterface/ConfigurationTree.icc"  //define template functions
 
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 //==============================================================================
 /// BitMap print
 ///	 Generic type (for numbers) definition

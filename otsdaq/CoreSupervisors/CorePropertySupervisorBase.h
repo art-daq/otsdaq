@@ -41,6 +41,9 @@
 
 #include <xdaq/NamespaceURI.h>
 #include <xoap/Method.h>
+#include <map>
+#include <set>
+#include <string>
 
 namespace ots
 {

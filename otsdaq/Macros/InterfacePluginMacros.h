@@ -2,6 +2,7 @@
 #define OTSDAQ_OTSDAQ_MACROS_INTERFACEPLUGINMACROS_H_
 
 #include <memory>
+#include <string>
 #include "cetlib/compiler_macros.h"
 #include "otsdaq/FECore/FEVInterface.h"
 

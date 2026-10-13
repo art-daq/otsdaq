@@ -136,6 +136,7 @@ string 53	] [main.cc                             ] H: 5 4.6 Just a regular strin
 
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #define __USE_COLORS__ true
 

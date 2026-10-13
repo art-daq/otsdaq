@@ -6,6 +6,9 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include "artdaq-core/Utilities/TimeUtils.hh"
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"

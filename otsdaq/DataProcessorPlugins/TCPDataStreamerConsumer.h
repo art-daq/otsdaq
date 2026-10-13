@@ -6,6 +6,7 @@
 #include "otsdaq/NetworkUtilities/TCPPublishServer.h"
 
 #include <string>
+#include <map>
 
 namespace ots
 {

@@ -2,6 +2,7 @@
 #define OTSDAQ_OTSDAQ_TABLEPLUGINS_DESKTOPICONTABLE_H_
 
 #include <string>
+#include <vector>
 
 #include "otsdaq/TableCore/TableBase.h"
 

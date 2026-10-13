@@ -4,6 +4,9 @@
 #include <list>
 #include <map>
 #include <string>
+#include <set>
+#include <utility>
+#include <vector>
 
 #include "otsdaq/TableCore/TableVersion.h"
 #include "otsdaq/TableCore/TableView.h"

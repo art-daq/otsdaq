@@ -16,6 +16,11 @@
 #include <mutex>
 #include <set>
 #include <thread>
+#include <list>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "artdaq/ExternalComms/CommanderInterface.hh"
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"

@@ -6,6 +6,7 @@
 
 #include <array>
 #include <string>
+#include <vector>
 
 // clang-format off
 namespace ots

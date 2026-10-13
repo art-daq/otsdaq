@@ -7,6 +7,7 @@
 #include <queue>
 #include <set>
 #include <string>
+#include <vector>
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/FECore/FEVInterface.h"
 #include "otsdaq/FiniteStateMachine/VStateMachine.h"

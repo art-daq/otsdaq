@@ -4,6 +4,8 @@
 #include "otsdaq/ARTDAQSupervisor/ARTDAQSupervisor.hh"
 #include "otsdaq/MessageFacility/ITRACEController.h"
 
+#include <string>
+
 namespace ots
 {
 class ARTDAQSupervisorTRACEController : public ITRACEController

@@ -3,6 +3,11 @@
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+
 // clang-format off
 
 namespace ots

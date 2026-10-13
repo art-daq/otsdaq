@@ -3,6 +3,8 @@
 
 #include "otsdaq/Macros/StringMacros.h"
 
+#include <string>
+
 using namespace ots;
 
 namespace ots::test::util

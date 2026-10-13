@@ -3,6 +3,8 @@
 
 #include "otsdaq/MessageFacility/ITRACEController.h"
 
+#include <string>
+
 namespace ots
 {
 class TRACEController : public ITRACEController

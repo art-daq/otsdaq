@@ -15,6 +15,10 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <map>
+#include <memory>
+#include <set>
+#include <utility>
 #include "otsdaq/NetworkUtilities/TransceiverSocket.h"  // for UDP remote login verify
 
 #define WEB_LOGIN_DB_PATH        std::string(__ENV__("SERVICE_DATA_PATH")) + "/LoginData/"

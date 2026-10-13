@@ -12,6 +12,8 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <string>
+#include <utility>
 #include "otsdaq/TableCore/TableVersion.h"
 #include "otsdaq/TableCore/TableViewColumnInfo.h"
 

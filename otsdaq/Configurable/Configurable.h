@@ -3,6 +3,8 @@
 
 #include "otsdaq/ConfigurationInterface/ConfigurationTree.h"
 
+#include <string>
+
 namespace ots
 {
 class Configurable

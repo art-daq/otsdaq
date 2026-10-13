@@ -31,6 +31,8 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+#include <memory>
+#include <string>
 
 namespace ots
 {

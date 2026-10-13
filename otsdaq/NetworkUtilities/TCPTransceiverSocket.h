@@ -4,6 +4,8 @@
 #include "otsdaq/NetworkUtilities/TCPReceiverSocket.h"
 #include "otsdaq/NetworkUtilities/TCPTransmitterSocket.h"
 
+#include <string>
+
 namespace ots
 {
 /// A class that can read/write to a socket

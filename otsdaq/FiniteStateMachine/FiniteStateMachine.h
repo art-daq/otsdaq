@@ -3,6 +3,9 @@
 
 #include <toolbox/fsm/FiniteStateMachine.h>
 #include <xoap/MessageReference.h>
+#include <functional>
+#include <map>
+#include <string>
 
 // clang-format off
 namespace ots

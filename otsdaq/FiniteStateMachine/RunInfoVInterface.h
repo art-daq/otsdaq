@@ -2,6 +2,8 @@
 #define OTSDAQ_OTSDAQ_FINITESTATEMACHINE_RUNINFOVINTERFACE_H_
 
 #include <string>
+#include <map>
+#include <vector>
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/Macros/StringMacros.h"

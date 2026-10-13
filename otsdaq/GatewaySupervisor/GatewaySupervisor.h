@@ -40,6 +40,9 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <map>
+#include <utility>
+#include <vector>
 
 // clang-format off
 

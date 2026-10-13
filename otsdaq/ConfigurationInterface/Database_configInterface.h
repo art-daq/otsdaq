@@ -9,6 +9,8 @@
 #include <map>
 #include <set>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 // clang-format off
 namespace ots

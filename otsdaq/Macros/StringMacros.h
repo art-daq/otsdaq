@@ -9,6 +9,8 @@
 #include <set>
 #include <typeinfo>  // operator typeid
 #include <vector>
+#include <string>
+#include <utility>
 
 namespace ots
 {

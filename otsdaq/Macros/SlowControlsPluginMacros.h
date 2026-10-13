@@ -2,6 +2,7 @@
 #define OTSDAQ_OTSDAQ_MACROS_SLOWCONTROLSPLUGINMACROS_H_
 
 #include <memory>
+#include <string>
 
 #include "otsdaq/SlowControlsCore/SlowControlsVInterface.h"
 

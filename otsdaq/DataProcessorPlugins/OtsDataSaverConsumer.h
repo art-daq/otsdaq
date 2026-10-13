@@ -3,6 +3,8 @@
 
 #include "otsdaq/DataManager/RawDataSaverConsumerBase.h"
 
+#include <string>
+
 namespace ots
 {
 class OtsDataSaverConsumer : public RawDataSaverConsumerBase

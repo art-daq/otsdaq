@@ -6,6 +6,11 @@
 
 #include "otsdaq/TablePlugins/DesktopIconTable.h"
 
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
 namespace ots
 {
 // clang-format off

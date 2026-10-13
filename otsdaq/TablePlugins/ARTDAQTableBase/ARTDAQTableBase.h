@@ -5,6 +5,13 @@
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 #include "otsdaq/TableCore/TableBase.h"
 
+#include <list>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
 /// helpers
 #define OUT         out << tabStr << commentStr
 #define PUSHTAB     tabStr += "\t"

@@ -7,6 +7,7 @@
 #include <vector>
 #include <xercesc/dom/DOMElement.hpp>
 #include <xercesc/parsers/XercesDOMParser.hpp>
+#include <string>
 
 namespace ots
 {

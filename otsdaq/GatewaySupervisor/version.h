@@ -3,6 +3,10 @@
 
 #include "config/PackageInfo.h"
 
+#include <functional>
+#include <set>
+#include <string>
+
 #define MYPACKAGE_VERSION_MAJOR OTSDAQ_MAJOR_VERSION
 #define MYPACKAGE_VERSION_MINOR OTSDAQ_MINOR_VERSION
 #define MYPACKAGE_VERSION_PATCH OTSDAQ_PATCH_VERSION

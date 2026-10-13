@@ -7,6 +7,7 @@
 #include "TRACE/trace.h"
 
 #include <chrono>
+#include <string>
 
 namespace ots
 {

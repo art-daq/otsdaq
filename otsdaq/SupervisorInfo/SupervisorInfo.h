@@ -16,6 +16,10 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
 #endif
 #include <xdaq/Application.h>
+#include <deque>
+#include <map>
+#include <utility>
+#include <vector>
 #pragma GCC diagnostic pop
 #include "otsdaq/Macros/XDAQApplicationMacros.h"
 

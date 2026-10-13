@@ -4,6 +4,8 @@
 #include "otsdaq/CodeEditor/CodeEditor.h"
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
 
+#include <string>
+
 namespace ots
 {
 /// CodeEditorSupervisor

@@ -4,6 +4,10 @@
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 #include "otsdaq/TablePlugins/SlowControlsTableBase/SlowControlsTableBase.h"
 
+#include <string>
+#include <utility>
+#include <vector>
+
 namespace ots
 {
 class XDAQContextTable;
