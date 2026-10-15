@@ -129,16 +129,6 @@ RunControlStateMachine::RunControlStateMachine(const std::string& name)
 	    "ConfigurationAlias",
 	    this,
 	    &RunControlStateMachine::transitionConfiguring);
-	// Allow re-configure from Configured state so the top level can
-	// configure subsystems that have not yet reached Configured.
-	RunControlStateMachine::addStateTransition(
-	    'C',
-	    'C',
-	    RunControlStateMachine::CONFIGURE_TRANSITION_NAME,
-	    "Configuring",
-	    "ConfigurationAlias",
-	    this,
-	    &RunControlStateMachine::transitionConfiguring);
 	RunControlStateMachine::addStateTransition(
 	    'H',
 	    'X',
@@ -597,17 +587,6 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 	   currentState == RunControlStateMachine::HALTED_STATE_NAME)
 	{
 		__GEN_COUT__ << "Already Initialized.. ignoring Initialize command." << std::endl;
-
-		theStateMachine_.setErrorMessage("", false /*append*/);  // clear error message
-		return SOAPUtilities::makeSOAPMessageReference(result);
-	}
-
-	// if already Configured, respond to Configure with "done"
-	//	(top-level re-configure only targets subsystems not yet configured)
-	if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME &&
-	   currentState == RunControlStateMachine::CONFIGURED_STATE_NAME)
-	{
-		__GEN_COUT__ << "Already Configured.. ignoring Configure command." << std::endl;
 
 		theStateMachine_.setErrorMessage("", false /*append*/);  // clear error message
 		return SOAPUtilities::makeSOAPMessageReference(result);
