@@ -3243,9 +3243,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
              std::map<std::string /*record*/, std::vector<std::string /*property*/>>>&
         nodeTypeToObjectMap,
     std::map<std::string /*subsystemName*/, std::string /*destinationSubsystemName*/>&
-                                           subsystemObjectMap,
+                                             subsystemObjectMap,
     std::vector<std::string /**property */>& artdaqSupervisoInfo,
-    bool                                   suppressMultiNode /* = false */)
+    bool                                     suppressMultiNode /* = false */)
 {
 	__COUT__ << "getARTDAQSystem() suppressMultiNode=" << suppressMultiNode << __E__;
 
@@ -4906,9 +4906,10 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 				    std::string(status
 				                    ? "1"
 				                    : "0");  //include status in name to avoid collissions
-				auto result = nodeTypeToObjectMap.at(typeString)
-				                  .emplace(std::make_pair(
-				                      nodeName, std::vector<std::string /**property */>()));
+				auto result =
+				    nodeTypeToObjectMap.at(typeString)
+				        .emplace(std::make_pair(
+				            nodeName, std::vector<std::string /**property */>()));
 
 				if(TTEST(0))
 				{
@@ -4998,12 +4999,13 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 ///	Node properties: {originalName,status,hostname,subsystemName,(nodeArrString),(hostnameArrString),(hostnameFixedWidth)}
 ///
 void ARTDAQTableBase::setAndActivateARTDAQSystem(
-    ConfigurationManagerRW*                                          cfgMgr,
-    const std::map<std::string /*type*/,
-                   std::map<std::string /*record*/,
-                            std::vector<std::string /**property */>>>& nodeTypeToObjectMap,
+    ConfigurationManagerRW* cfgMgr,
+    const std::map<
+        std::string /*type*/,
+        std::map<std::string /*record*/, std::vector<std::string /**property */>>>&
+                                                                nodeTypeToObjectMap,
     const std::map<std::string /*subsystemName*/,
-                   std::string /**destinationSubsystemName */>&        subsystemObjectMap)
+                   std::string /**destinationSubsystemName */>& subsystemObjectMap)
 {
 	__COUT__ << "setAndActivateARTDAQSystem()" << __E__;
 
@@ -5734,8 +5736,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			// test the table before getting for real
 			try
 			{
-				/**	TableEditStruct& tmpTypeTable =  */ configGroupEdit.getTableEditStruct(
-				    it->second, true /*markModified*/);
+				/**	TableEditStruct& tmpTypeTable =  */ configGroupEdit
+				    .getTableEditStruct(it->second, true /*markModified*/);
 			}
 			catch(...)
 			{
@@ -5808,15 +5810,17 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			    originalMultinodeSameSiblingValues;
 			std::map<
 			    std::string /*multinode key*/,
-			    std::map<unsigned int /*col*/,
-			             std::pair<bool /* all siblings have embedded name */,
-			                       std::vector<std::string /** splitForEmbeddedValue  */>>>>
+			    std::map<
+			        unsigned int /*col*/,
+			        std::pair<bool /* all siblings have embedded name */,
+			                  std::vector<std::string /** splitForEmbeddedValue  */>>>>
 			    originalMultinodeAllSiblingEmbeddedName;
 			std::map<
 			    std::string /*multinode key*/,
-			    std::map<unsigned int /*col*/,
-			             std::pair<bool /* all siblings have embedded printer index */,
-			                       std::vector<std::string /** splitForEmbeddedIndex  */>>>>
+			    std::map<
+			        unsigned int /*col*/,
+			        std::pair<bool /* all siblings have embedded printer index */,
+			                  std::vector<std::string /** splitForEmbeddedIndex  */>>>>
 			    originalMultinodeAllSiblingEmbeddedPrinterIndex;
 
 			// node instance loop
@@ -5967,17 +5971,16 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							__COUT__ << "originalMultinodeAllSiblingEmbeddedPrinterIndex "
 							            "init col map for "
 							         << nodePair.first << __E__;
-							originalMultinodeAllSiblingEmbeddedPrinterIndex.emplace(
-							    std::make_pair(
-							        nodePair.first,
-							        std::map<
-							            unsigned int /*col*/,
-							            std::pair<
-							                bool // all siblings have embedded printed index 
-							                ,
-							                std::vector<
-							                    std::
-							                        string /** splitForEmbeddedIndex  */>>>()));
+							originalMultinodeAllSiblingEmbeddedPrinterIndex.emplace(std::make_pair(
+							    nodePair.first,
+							    std::map<
+							        unsigned int /*col*/,
+							        std::pair<
+							            bool  // all siblings have embedded printed index
+							            ,
+							            std::vector<
+							                std::
+							                    string /** splitForEmbeddedIndex  */>>>()));
 
 							// bool         isFirst     = true;
 							unsigned int originalRow       = TableView::INVALID,
@@ -6345,7 +6348,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 												unsigned int artRow =
 												    artTable->tableView_->findRow(
 												        artTable->tableView_->getColUID(),
-												        // art UID record name 
+												        // art UID record name
 												        typeTable.tableView_
 												            ->getDataView()[originalRow]
 												                           [col]);

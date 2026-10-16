@@ -130,11 +130,11 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 
   private:
 	std::map<std::string /*name*/, std::unique_ptr<FEVInterface> > theFEInterfaces_;
-	std::vector<std::string /***name  */>                              theFENamesByPriority_;
+	std::vector<std::string /***name  */>                          theFENamesByPriority_;
 
 	/// for managing transition iterations
 	std::map<std::string /*name*/, bool /*isDone*/> stateMachinesIterationDone_;
-	std::set<std::string /***name  */>                  stateMachinesWaitingSubsystemIteration_;  ///< re-armed when the subsystem-iteration index changes
+	std::set<std::string /***name  */>              stateMachinesWaitingSubsystemIteration_;  ///< re-armed when the subsystem-iteration index changes
 	unsigned int                                    lastSubsystemIterationIndexSeen_ = 0;
 	unsigned int                                    stateMachinesIterationWorkCount_;
 	unsigned int                                    subIterationWorkStateMachineIndex_;

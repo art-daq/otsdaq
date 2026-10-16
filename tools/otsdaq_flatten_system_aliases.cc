@@ -126,7 +126,7 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 	// 	and change the ConfigurationManager::ACTIVE_GROUPS_FILENAME
 	//	to reflect new group names/keys
 
-	// map<<groupName, origKey>, newKey> 
+	// map<<groupName, origKey>, newKey>
 	std::map<std::pair<std::string, TableGroupKey>, TableGroupKey> groupSet;
 	// <tableName, <origVersion, newVersion> >
 	std::map<std::pair<std::string, TableVersion>, TableVersion>   modifiedTables;

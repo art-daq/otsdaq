@@ -17,8 +17,8 @@
 
 #include "otsdaq/NetworkUtilities/TransceiverSocket.h"  // for UDP state changer
 
-#include "otsdaq/Macros/XDAQApplicationMacros.h"
 #include "otsdaq/GatewaySupervisor/PixelHistoPicGen.h"
+#include "otsdaq/Macros/XDAQApplicationMacros.h"
 
 // XDAQ includes
 #pragma GCC diagnostic push
@@ -30,17 +30,17 @@
 #include <xgi/Method.h>
 
 // System headers
+#include <pthread.h>  // for pthread_setcancelstate in broadcastMessageThread
 #include <atomic>
 #include <condition_variable>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
-#include <thread>
-#include <pthread.h>  // for pthread_setcancelstate in broadcastMessageThread
 #include <set>
 #include <sstream>
 #include <string>
-#include <map>
+#include <thread>
 #include <utility>
 #include <vector>
 

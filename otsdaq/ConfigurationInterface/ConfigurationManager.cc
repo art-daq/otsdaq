@@ -461,7 +461,7 @@ void ConfigurationManager::restoreActiveTableGroups(
 			    0 /*doNotLoadMembers   = false*/,
 			    0 /*groupTypeString    = 0*/,
 			    0 /*groupAliases       = 0*/,
-			    onlyLoadIfBackboneOrContext //onlyLoadIfBackboneOrContext = false
+			    onlyLoadIfBackboneOrContext  //onlyLoadIfBackboneOrContext = false
 			);
 
 			if(accumulatedWarnings)
@@ -5225,7 +5225,7 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 	               false /*doActivate*/,
 	               0 /*groupMembers*/,
 	               0 /*progressBar*/,
-	               &accumulatedWarnings //accumulateWarnings = 0
+	               &accumulatedWarnings  //accumulateWarnings = 0
 	);
 	__GEN_COUTTV__(accumulatedWarnings);
 
@@ -5284,14 +5284,14 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 	               false /*doActivate*/,
 	               0 /*groupMembers*/,
 	               0 /*progressBar*/,
-	               &accumulatedWarnings //accumulateWarnings = 0
+	               &accumulatedWarnings  //accumulateWarnings = 0
 	);
 	loadTableGroup(it2->second.first,
 	               it2->second.second,
 	               false /*doActivate*/,
 	               0 /*groupMembers*/,
 	               0 /*progressBar*/,
-	               &accumulatedWarnings //accumulateWarnings = 0
+	               &accumulatedWarnings  //accumulateWarnings = 0
 	);
 	__GEN_COUTTV__(accumulatedWarnings);
 
@@ -5464,7 +5464,7 @@ void ConfigurationManager::getOtherSubsystemConfigAliasInfo(
 	               false /*doActivate*/,
 	               0 /*groupMembers*/,
 	               0 /*progressBar*/,
-	               &accumulatedWarnings //accumulateWarnings = 0
+	               &accumulatedWarnings  //accumulateWarnings = 0
 	);
 	__GEN_COUTTV__(accumulatedWarnings);
 

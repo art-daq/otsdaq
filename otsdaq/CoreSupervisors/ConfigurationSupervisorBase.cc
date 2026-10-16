@@ -950,7 +950,7 @@ try
 		                       false /*doActivate*/,
 		                       &memberMap,
 		                       0 /*progressBar*/,
-		                       ignoreWarnings ? 0 : //accumulateTreeErrors
+		                       ignoreWarnings ? 0 :  //accumulateTreeErrors
 		                           &accumulateTreeErrors,
 		                       &groupComment,
 		                       &groupAuthor,
@@ -1188,7 +1188,7 @@ try
 	    true /*throwErrors*/,
 	    "" /*pathToActiveGroupsFile*/,
 	    ConfigurationManager::LoadGroupType::
-	        ONLY_BACKBONE_OR_CONTEXT_TYPES //onlyLoadIfBackboneOrContext
+	        ONLY_BACKBONE_OR_CONTEXT_TYPES  //onlyLoadIfBackboneOrContext
 	);
 
 	const std::string backboneGroupName =

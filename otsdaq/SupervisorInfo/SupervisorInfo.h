@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include <string>
-#include "otsdaq/Macros/CoutMacros.h" // also for XDAQ_CONST_CALL 
+#include "otsdaq/Macros/CoutMacros.h"  // also for XDAQ_CONST_CALL
 #include "otsdaq/TablePlugins/XDAQContextTable/XDAQContextTable.h"
 
 #pragma GCC diagnostic push

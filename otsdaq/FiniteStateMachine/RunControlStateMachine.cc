@@ -738,7 +738,7 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 					    ")";
 				}
 				catch(...)
-				{ // ignore missing parameters 
+				{  // ignore missing parameters
 				}
 			}
 

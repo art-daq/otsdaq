@@ -984,7 +984,7 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 		    ConfigurationManager::LoadGroupType::ALL_TYPES,
 		    true /*ignoreVersionTracking*/,
 		    mergeInTables /* mergeInTables */,
-		    overrideTables // overrideTables 
+		    overrideTables  // overrideTables
 		);
 	}
 	catch(const std::runtime_error& e)
@@ -1002,7 +1002,7 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::configureInit" /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 	catch(...)
@@ -1030,7 +1030,7 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::configureInit" /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 
@@ -1089,7 +1089,7 @@ void CoreSupervisorBase::transitionConfiguringFSMs()
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transitionConfiguringFSMs" /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 	catch(...)
@@ -1115,7 +1115,7 @@ void CoreSupervisorBase::transitionConfiguringFSMs()
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transitionConfiguringFSMs" /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 }  // end transitionConfiguringFSMs()
@@ -1173,7 +1173,7 @@ void CoreSupervisorBase::transitionHalting(toolbox::Event::Reference /*event*/)
 			    ss.str() /* message*/,
 			    "CoreSupervisorBase::transition" + transitionName /*module*/,
 			    __LINE__ /*line*/,
-			    __FUNCTION__ //function
+			    __FUNCTION__  //function
 			);
 		}
 	}
@@ -1212,7 +1212,7 @@ void CoreSupervisorBase::transitionHalting(toolbox::Event::Reference /*event*/)
 			    ss.str() /* message*/,
 			    "CoreSupervisorBase::transition" + transitionName /*module*/,
 			    __LINE__ /*line*/,
-			    __FUNCTION__ //function
+			    __FUNCTION__  //function
 			);
 		}
 	}
@@ -1272,7 +1272,7 @@ void CoreSupervisorBase::transitionPausing(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 	catch(...)
@@ -1297,7 +1297,7 @@ void CoreSupervisorBase::transitionPausing(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 }  // end transitionPausing()
@@ -1339,7 +1339,7 @@ void CoreSupervisorBase::transitionResuming(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 	catch(...)
@@ -1364,7 +1364,7 @@ void CoreSupervisorBase::transitionResuming(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 }  // end transitionResuming()
@@ -1411,7 +1411,7 @@ void CoreSupervisorBase::transitionStarting(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 	catch(...)
@@ -1436,7 +1436,7 @@ void CoreSupervisorBase::transitionStarting(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 }  // end transitionStarting()
@@ -1478,7 +1478,7 @@ void CoreSupervisorBase::transitionStopping(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 	catch(...)
@@ -1503,7 +1503,7 @@ void CoreSupervisorBase::transitionStopping(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "CoreSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ //function
+		    __FUNCTION__  //function
 		);
 	}
 }  // end transitionStopping()

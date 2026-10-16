@@ -430,7 +430,7 @@ TableGroupKey DatabaseConfigurationInterface::findLatestGroupKey(
 	try
 	{
 		TableBase localGroupMemberCacheLoader(
-		    true //special table
+		    true  //special table
 		    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),,
 		    TableBase::GROUP_CACHE_PREPEND + groupName);
 		TableVersion lastestGroupCacheKey =
@@ -457,7 +457,7 @@ TableGroupKey DatabaseConfigurationInterface::findLatestGroupKey(
 std::set<TableGroupKey /**key */> DatabaseConfigurationInterface::getKeys(
     const std::string& groupName) const
 {
-	std::set<TableGroupKey>        retSet;
+	std::set<TableGroupKey>          retSet;
 	std::set<std::string /**name */> names = getAllTableGroupNames();
 	for(auto& n : names)
 		if(n.find(groupName) == 0)
@@ -604,7 +604,7 @@ try
 	__COUTT__ << "Getting cache for " << groupName << "(" << groupKey << ")" << __E__;
 
 	TableBase localGroupMemberCacheSaver(
-	    true //special table
+	    true  //special table
 	    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),
 	    TableBase::GROUP_CACHE_PREPEND + groupName);
 	TableVersion localVersion(atoi(groupKey.c_str()));
@@ -689,7 +689,7 @@ try
 	__COUTT__ << "Saving cache for " << groupName << "(" << groupKey << ")" << __E__;
 
 	TableBase localGroupMemberCacheSaver(
-	    true //special table
+	    true  //special table
 	    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),
 	    TableBase::GROUP_CACHE_PREPEND + groupName);
 	localGroupMemberCacheSaver.changeVersionAndActivateView(
@@ -916,7 +916,7 @@ try
 	__COUTT__ << "Saving doc '" << documentNameToSave << "'" << __E__;
 
 	TableBase localDocSaver(
-	    true //special table
+	    true  //special table
 	    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table)
 	    TableBase::JSON_DOC_PREPEND + documentNameToSave);
 
@@ -971,7 +971,7 @@ try
 	          << "'" << __E__;
 
 	TableBase localDocLoader(
-	    true //special table
+	    true  //special table
 	    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),
 	    TableBase::JSON_DOC_PREPEND + documentNameToLoad);
 

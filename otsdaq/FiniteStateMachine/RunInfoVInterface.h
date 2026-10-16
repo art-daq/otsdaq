@@ -1,8 +1,8 @@
 #ifndef OTSDAQ_OTSDAQ_FINITESTATEMACHINE_RUNINFOVINTERFACE_H_
 #define OTSDAQ_OTSDAQ_FINITESTATEMACHINE_RUNINFOVINTERFACE_H_
 
-#include <string>
 #include <map>
+#include <string>
 #include <vector>
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/Macros/CoutMacros.h"

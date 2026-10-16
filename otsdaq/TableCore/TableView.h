@@ -6,14 +6,14 @@
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
 #include <stdlib.h>
-#include <time.h> // time_t, time, ctime 
+#include <time.h>  // time_t, time, ctime
 #include <cassert>
 #include <iostream>
 #include <map>
 #include <set>
-#include <vector>
 #include <string>
 #include <utility>
+#include <vector>
 #include "otsdaq/TableCore/TableVersion.h"
 #include "otsdaq/TableCore/TableViewColumnInfo.h"
 

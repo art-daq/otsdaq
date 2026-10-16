@@ -74,7 +74,7 @@ unsigned int ARTDAQDispatcherTable::slowControlsHandlerConfig(
     std::stringstream&    out,
     ConfigurationManager* configManager,
     std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
-        channelList //= 0
+        channelList  //= 0
 ) const
 {
 	/////////////////////////

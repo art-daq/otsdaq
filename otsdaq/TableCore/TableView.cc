@@ -1541,10 +1541,10 @@ std::vector<std::vector<unsigned int /**group row */>> TableView::getGroupRowsIn
     bool               orderedByPriority) const
 {
 	std::map<uint64_t /*priority*/, std::vector<unsigned int /*child row*/>>
-	                                                     mapByPriority;
+	                                                       mapByPriority;
 	std::vector<std::vector<unsigned int /**group row */>> retVector;
-	uint64_t                                             tmpPriority;
-	bool                                                 tmpStatus;
+	uint64_t                                               tmpPriority;
+	bool                                                   tmpStatus;
 
 	if(!(orderedByPriority &&
 	     colPriority_ != INVALID))  // if no priority column, all at same priorty [0]
@@ -2031,7 +2031,7 @@ std::set<std::string> TableView::getColumnNames(void) const
 std::map<std::string, unsigned int /**col */> TableView::getColumnNamesMap(void) const
 {
 	std::map<std::string, unsigned int /**col */> retMap;
-	unsigned int                                c = 0;
+	unsigned int                                  c = 0;
 	for(auto& colInfo : columnsInfo_)
 		retMap.emplace(std::make_pair(colInfo.getName(), c++));
 	return retMap;

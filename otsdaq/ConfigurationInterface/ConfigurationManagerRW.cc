@@ -1019,11 +1019,11 @@ try
 	                       groupKeyToCompare,
 	                       false /*doActivate*/,
 	                       &compareToMemberMap /*memberMap*/,
-	                       0, //progressBar
-	                       0, //accumulatedWarnings
-	                       0, //groupComment
+	                       0,  //progressBar
+	                       0,  //accumulatedWarnings
+	                       0,  //groupComment
 	                       0,
-	                       0, //null pointers
+	                       0,  //null pointers
 	                       true /*doNotLoadMember*/,
 	                       0 /*groupTypeString*/,
 	                       compareToMemberTableAliasesPtr);
@@ -1799,7 +1799,7 @@ const GroupInfo& ConfigurationManagerRW::getGroupInfo(
 			try
 			{
 				TableBase localGroupMemberCacheLoader(
-				    true //special table
+				    true  //special table
 				    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),,
 				    TableBase::GROUP_CACHE_PREPEND + groupName);
 				auto versions = theInterface_->getVersions(&localGroupMemberCacheLoader);
@@ -1860,7 +1860,7 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 		try
 		{
 			TableBase localGroupMemberCacheLoader(
-			    true //special table
+			    true  //special table
 			    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),,
 			    TableBase::GROUP_CACHE_PREPEND + groupName);
 			auto versions = theInterface_->getVersions(&localGroupMemberCacheLoader);
@@ -1922,11 +1922,11 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 			               key,
 			               false /*doActivate*/,
 			               &compareToMemberMap /*memberMap*/,
-			               0, //progressBar
-			               0, //accumulatedWarnings
-			               0, //groupComment
-			               0, //groupAuthor
-			               0, //groupCreateTime
+			               0,  //progressBar
+			               0,  //accumulatedWarnings
+			               0,  //groupComment
+			               0,  //groupAuthor
+			               0,  //groupCreateTime
 			               true /*doNotLoadMember*/,
 			               0 /*groupTypeString*/,
 			               compareToMemberTableAliasesPtr);
@@ -3305,7 +3305,7 @@ void ConfigurationManagerRW::testXDAQContext()
 		__GEN_COUTV__(runTimeSeconds());
 
 		TableBase localGroupMemberCacheSaver(
-		    true //special table
+		    true  //special table
 		    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),
 		    TableBase::GROUP_CACHE_PREPEND + debugGroupName);
 		TableVersion lastestGroupCacheKey =

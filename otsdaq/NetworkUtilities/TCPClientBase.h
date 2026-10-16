@@ -25,4 +25,4 @@ class TCPClientBase : public virtual TCPSocket
 	void resolveServer(std::string& serverIP);
 };
 }  // namespace ots
-#endif // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENTBASE_H_
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENTBASE_H_

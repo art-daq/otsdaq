@@ -41,4 +41,4 @@ class TCPPacket
 	std::string fBuffer;  ///< This is Header + Message
 };
 }  // namespace ots
-#endif // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPACKET_H_
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPACKET_H_

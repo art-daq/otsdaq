@@ -22,11 +22,11 @@
 #include <iostream>
 #include <map>
 #include <mutex>
+#include <set>
 #include <string>
 #include <thread>
-#include <vector>
-#include <set>
 #include <utility>
+#include <vector>
 
 #include "otsdaq/Macros/CoutMacros.h"
 

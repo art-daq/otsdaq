@@ -2,11 +2,11 @@
 #define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONMANAGER_H_
 
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
 #include <thread>
-#include <memory>
 #include <utility>
 #include <vector>
 
@@ -31,7 +31,7 @@ class ConfigurationManager
   public:
 	typedef std::map<std::string,
 	                 std::pair<std::pair<std::string, TableGroupKey>,
-	                           std::map<std::string, TableVersion> // memberMap 
+	                           std::map<std::string, TableVersion>  // memberMap
 	                           >>
 	    lastGroupLoad_t;
 

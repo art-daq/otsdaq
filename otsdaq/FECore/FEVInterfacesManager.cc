@@ -967,7 +967,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 			    // function, 	and must capture reference to the function. Also, must
 			    // capture specialFolders 	reference for use internally (const values
 			    // already are captured).
-			    std::function<void(const unsigned int //dimension
+			    std::function<void(const unsigned int  //dimension
 			                       )>
 			        localRecurse = [&dimensionIterations,
 			                        &dimensionIterationCnt,
@@ -1606,7 +1606,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 			    // function, 	and must capture reference to the function. Also, must
 			    // capture specialFolders 	reference for use internally (const values
 			    // already are captured).
-			    std::function<void(const unsigned int //dimension
+			    std::function<void(const unsigned int  //dimension
 			                       )>
 			        localRecurse = [&dimensionIterations,
 			                        &dimensionIterationCnt,

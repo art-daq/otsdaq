@@ -2,9 +2,9 @@
 #define OTSDAQ_OTSDAQ_SUPERVISORINFO_ALLSUPERVISORINFO_H_
 
 #include <map>
-#include <mutex> // for recursive_mutex 
-#include <vector>
+#include <mutex>  // for recursive_mutex
 #include <string>
+#include <vector>
 
 #include "otsdaq/SupervisorInfo/SupervisorDescriptorInfoBase.h"
 #include "otsdaq/SupervisorInfo/SupervisorInfo.h"

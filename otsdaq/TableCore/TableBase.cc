@@ -982,21 +982,21 @@ bool TableBase::setActiveView(TableVersion version)
 ///
 ///	Returns version of new temporary view that was created.
 TableVersion TableBase::mergeViews(
-    const TableView&                          sourceViewA,
-    const TableView&                          sourceViewB,
-    TableVersion                              destinationVersion,
-    const std::string&                        author,
-    const MergeApproach                       mergeApproach,
+    const TableView&                            sourceViewA,
+    const TableView&                            sourceViewB,
+    TableVersion                                destinationVersion,
+    const std::string&                          author,
+    const MergeApproach                         mergeApproach,
     std::map<std::pair<std::string /*original table*/, std::string /*original uidB*/>,
              std::string /**converted uidB */>& uidConversionMap,
     std::map<
         std::pair<std::string /*original table*/,
                   std::pair<std::string /*group linkid*/, std::string /*original gidB*/>>,
         std::string /**converted gidB */>& groupidConversionMap,
-    bool                                 fillRecordConversionMaps,
-    bool                                 applyRecordConversionMaps,
-    bool                                 generateUniqueDataColumns /*=false*/,
-    std::stringstream*                   mergeReport /*=nullptr*/)
+    bool                                   fillRecordConversionMaps,
+    bool                                   applyRecordConversionMaps,
+    bool                                   generateUniqueDataColumns /*=false*/,
+    std::stringstream*                     mergeReport /*=nullptr*/)
 {
 	__COUTT__ << "mergeViews starting..." << __E__;
 

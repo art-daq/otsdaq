@@ -1872,8 +1872,8 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
     const std::vector<std::string /**uid */>&           recordList,
     const std::vector<std::string /**relative-path */>& fieldAcceptList,
     const std::vector<std::string /**relative-path */>& fieldRejectList,
-    unsigned int                                      depth,
-    bool                                              autoSelectFilterFields) const
+    unsigned int                                        depth,
+    bool                                                autoSelectFilterFields) const
 {
 	// enforce that starting point is a table node
 	if(!isRootNode() && !isTableNode())
@@ -2162,7 +2162,7 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 ///
 std::set<std::string /**unique-value */> ConfigurationTree::getUniqueValuesForField(
     const std::vector<std::string /**relative-path */>& recordList,
-    const std::string&                                fieldName,
+    const std::string&                                  fieldName,
     std::string* fieldGroupIDChildLinkIndex /* =0 */) const
 {
 	if(fieldGroupIDChildLinkIndex)
@@ -2237,13 +2237,13 @@ std::set<std::string /**unique-value */> ConfigurationTree::getUniqueValuesForFi
 /// recursiveGetCommonFields
 ///	wrapper is ...getCommonFields
 void ConfigurationTree::recursiveGetCommonFields(
-    std::vector<ConfigurationTree::RecordField>&      fieldCandidateList,
-    std::vector<int>&                                 fieldCount,
+    std::vector<ConfigurationTree::RecordField>&        fieldCandidateList,
+    std::vector<int>&                                   fieldCount,
     const std::vector<std::string /**relative-path */>& fieldAcceptList,
     const std::vector<std::string /**relative-path */>& fieldRejectList,
-    unsigned int                                      depth,
-    const std::string&                                relativePathBase,
-    bool                                              inFirstRecord) const
+    unsigned int                                        depth,
+    const std::string&                                  relativePathBase,
+    bool                                                inFirstRecord) const
 {
 	//__COUT__ << depth << ":relativePathBase " << relativePathBase <<
 	//	" + " << inFirstRecord <<__E__;

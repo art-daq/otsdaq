@@ -2,9 +2,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 ots::FragmentType ots::toFragmentType(std::string t_string)
 {

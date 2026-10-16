@@ -2,7 +2,7 @@
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
-#include <iomanip> // for setfill 
+#include <iomanip>  // for setfill
 #include <iostream>
 #include <sstream>
 

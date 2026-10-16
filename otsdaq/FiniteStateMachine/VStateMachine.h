@@ -1,8 +1,8 @@
 #ifndef OTSDAQ_OTSDAQ_FINITESTATEMACHINE_VSTATEMACHINE_H_
 #define OTSDAQ_OTSDAQ_FINITESTATEMACHINE_VSTATEMACHINE_H_
 
-#include <string>
 #include <map>
+#include <string>
 
 namespace ots
 {

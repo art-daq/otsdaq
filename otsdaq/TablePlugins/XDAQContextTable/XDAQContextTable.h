@@ -1,9 +1,9 @@
 #ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_XDAQCONTEXTTABLE_XDAQCONTEXTTABLE_H_
 #define OTSDAQ_OTSDAQ_TABLEPLUGINS_XDAQCONTEXTTABLE_XDAQCONTEXTTABLE_H_
 
-#include <string>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"

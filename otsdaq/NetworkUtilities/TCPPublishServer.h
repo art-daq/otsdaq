@@ -15,4 +15,4 @@ class TCPPublishServer : public TCPServerBase
 	void acceptConnections() override;
 };
 }  // namespace ots
-#endif // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPUBLISHSERVER_H_
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPPUBLISHSERVER_H_

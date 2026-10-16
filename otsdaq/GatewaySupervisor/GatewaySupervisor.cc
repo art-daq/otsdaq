@@ -202,7 +202,7 @@ GatewaySupervisor::~GatewaySupervisor(void)
 		doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 
@@ -987,7 +987,7 @@ try
 								    true /*throwErrors*/,
 								    "" /*pathToActiveGroupsFile*/,
 								    ConfigurationManager::LoadGroupType::
-								        ONLY_BACKBONE_OR_CONTEXT_TYPES //onlyLoadIfBackboneOrContext
+								        ONLY_BACKBONE_OR_CONTEXT_TYPES  //onlyLoadIfBackboneOrContext
 								);
 
 								const DesktopIconTable* iconTable =
@@ -2997,7 +2997,7 @@ catch(...)
 ///	static function
 void GatewaySupervisor::GetRemoteGatewayIcons(
     GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp,
-    const std::unique_ptr<TransceiverSocket>& // not transferring ownership 
+    const std::unique_ptr<TransceiverSocket>&  // not transferring ownership
         remoteGatewaySocket)
 {
 	// comma-separated icon string, 7 fields:
@@ -3130,7 +3130,7 @@ void GatewaySupervisor::GetRemoteGatewayIcons(
 ///		Format is FiniteStateMachineName,Command,Parameter(s)
 void GatewaySupervisor::SendRemoteGatewayCommand(
     GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp,
-    const std::unique_ptr<TransceiverSocket>& // not transferring ownership 
+    const std::unique_ptr<TransceiverSocket>&  // not transferring ownership
         remoteGatewaySocket)
 {
 	remoteGatewayApp.clearError();  //clear error for new command
@@ -3322,7 +3322,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 ///		Just need status, progress, and detail of ots::GatewaySupervisor extracted from GetRemoteGatewayStatus
 void GatewaySupervisor::CheckRemoteGatewayStatus(
     GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp,
-    const std::unique_ptr<TransceiverSocket>& // not transferring ownership 
+    const std::unique_ptr<TransceiverSocket>&  // not transferring ownership
                        remoteGatewaySocket,
     const std::string& ipForReverseLoginOverUDP,
     int                portForReverseLoginOverUDP,
@@ -4759,7 +4759,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					       cookieCode /*cookieCode*/,
 					       &userGroupPermissionsMap,
 					       &uid /*uid is not given to remote users*/,
-					       "0" // check at remote location because ip addresses change from subsystem to subsystem depending on tunnels,... rxParams[3] 
+					       "0"  // check at remote location because ip addresses change from subsystem to subsystem depending on tunnels,... rxParams[3]
 					       /*ip*/,
 					       rxParams[2] /**refresh */ == "1",
 					       false /* doNotGoRemote */,
@@ -5628,7 +5628,7 @@ void GatewaySupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 			doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
 		}
 		catch(...)
-		{ // ignore errors 
+		{  // ignore errors
 			;
 		}
 
@@ -6100,7 +6100,7 @@ try
 			doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
 		}
 		catch(...)
-		{ // ignore errors 
+		{  // ignore errors
 			;
 		}
 
@@ -6851,7 +6851,7 @@ void GatewaySupervisor::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*
 			doLogConsolidated = __ENV__("OTS_LOG_CONSOLIDATED_RUN") == std::string("1");
 		}
 		catch(...)
-		{ // ignore errors 
+		{  // ignore errors
 			;
 		}
 		if(doLogConsolidated && activeStateMachineWriteToEcl_)
@@ -7286,7 +7286,7 @@ try
 			    &groupTypeString,
 			    0 /*groupAliases */,
 			    ConfigurationManager::LoadGroupType::ALL_TYPES /*groupTypeToLoad */,
-			    false // ignoreVersionTracking
+			    false  // ignoreVersionTracking
 			);
 
 			RunControlStateMachine::theProgressBar_.step();
@@ -7322,7 +7322,7 @@ try
 				    ConfigurationManager::LoadGroupType::ALL_TYPES,
 				    true /*ignoreVersionTracking*/,
 				    mergeInTables /* mergeInTables */,
-				    overrideTables // overrideTables 
+				    overrideTables  // overrideTables
 				);
 			}
 
@@ -7553,7 +7553,7 @@ try
 		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	if(doLog)
@@ -7890,7 +7890,7 @@ try
 		doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	if(doLog)
@@ -8013,7 +8013,7 @@ try
 		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	bool doLogIntermediate = false;
@@ -8022,7 +8022,7 @@ try
 		doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 
@@ -8130,7 +8130,7 @@ try
 		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	bool doLogIntermediate = false;
@@ -8139,7 +8139,7 @@ try
 		doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 
@@ -8221,7 +8221,7 @@ try
 		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	bool doLogIntermediate = false;
@@ -8230,7 +8230,7 @@ try
 		doLogIntermediate = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 
@@ -8320,7 +8320,7 @@ try
 		doLog = __ENV__("OTS_LOG_INTERMEDIATE_STATES") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	if(doLog)
@@ -8388,7 +8388,7 @@ try
 		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	bool doLogRuns = true;  //default to logging runs
@@ -8397,7 +8397,7 @@ try
 		doLogRuns = __ENV__("OTS_LOG_RUNS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 
@@ -8517,7 +8517,7 @@ try
 		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	bool doLogRuns = true;  //default to logging runs
@@ -8526,7 +8526,7 @@ try
 		doLogRuns = __ENV__("OTS_LOG_RUNS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	if(doLog)
@@ -8666,7 +8666,7 @@ try
 		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	bool doLogRuns = true;  //default to logging runs
@@ -8675,7 +8675,7 @@ try
 		doLogRuns = __ENV__("OTS_LOG_RUNS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	if(doLog)
@@ -9280,7 +9280,7 @@ try
 		doLog = __ENV__("OTS_LOG_TRANSITION_STARTS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 	bool doLogRuns = true;  //default to logging runs
@@ -9289,7 +9289,7 @@ try
 		doLogRuns = __ENV__("OTS_LOG_RUNS") == std::string("1");
 	}
 	catch(...)
-	{ // ignore errors 
+	{  // ignore errors
 		;
 	}
 
@@ -11329,7 +11329,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 				doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1");
 			}
 			catch(...)
-			{ // ignore errors 
+			{  // ignore errors
 				;
 			}
 		}
@@ -11447,7 +11447,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 					doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1");
 				}
 				catch(...)
-				{ // ignore errors 
+				{  // ignore errors
 					;
 				}
 
@@ -11528,7 +11528,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 					doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1");
 				}
 				catch(...)
-				{ // ignore errors 
+				{  // ignore errors
 					;
 				}
 
@@ -11582,7 +11582,7 @@ void GatewaySupervisor::loginRequest(xgi::Input* in, xgi::Output* out)
 						doLog = __ENV__("OTS_LOG_LOGIN_LOGOUT") == std::string("1");
 					}
 					catch(...)
-					{ // ignore errors 
+					{  // ignore errors
 						;
 					}
 
@@ -12123,12 +12123,12 @@ try
 							continue;
 
 						xmlOut.addTextElementToData("config_alias", aliasMapPair.first);
-						xmlOut.addTextElementToData(
-						    "config_key",
-						    TableGroupKey::getFullGroupString(aliasMapPair.second.first,
-						                                      aliasMapPair.second.second,
-						                                      /**decorate as (<key>) */ "(",
-						                                      ")"));
+						xmlOut.addTextElementToData("config_key",
+						                            TableGroupKey::getFullGroupString(
+						                                aliasMapPair.second.first,
+						                                aliasMapPair.second.second,
+						                                /**decorate as (<key>) */ "(",
+						                                ")"));
 
 						// __COUT__ << "config_alias_comment" << " " <<  temporaryConfigMgr.getNode(
 						// 	ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(aliasMapPair.first).getNode(
@@ -14234,7 +14234,7 @@ try
 		{
 			WebUsers::silenceAllUserTooltips(userInfo.username_);
 		}
-		else if(requestType == "restartApps") //NEW: ADDED FOR APPS RESTART
+		else if(requestType == "restartApps")  //NEW: ADDED FOR APPS RESTART
 		{
 			std::string contextName = CgiDataUtilities::getData(cgiIn, "contextName");
 			__COUT__ << "launch ots script Command = "
@@ -16155,8 +16155,8 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 ///		then "host:2016" should be listed first, so it is replaced first,
 ///		to avoid partial replacement that would block the full replacement later.
 std::string GatewaySupervisor::translateURLForRequestOrigin(
-    const std::string&                                        url,
-    const std::string&                                        requestOrigin,
+    const std::string&                                          url,
+    const std::string&                                          requestOrigin,
     std::map<std::string /* requestOrigin */,
              std::map<std::string /* requestUrlHostPort */,
                       std::string /** translatedHostPort  */>>& portTranslationMap)
@@ -16238,8 +16238,8 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
 //==============================================================================
 /// translateRemoteIconStringForRequestOrigin
 std::string GatewaySupervisor::translateRemoteIconStringForRequestOrigin(
-    const std::string&                                        iconString,
-    const std::string&                                        requestOrigin,
+    const std::string&                                          iconString,
+    const std::string&                                          requestOrigin,
     std::map<std::string /* requestOrigin */,
              std::map<std::string /* requestUrlHostPort */,
                       std::string /** translatedHostPort  */>>& portTranslationMap)

@@ -7,10 +7,10 @@
 #include <map>
 #include <memory>  //shared_ptr
 #include <set>
-#include <typeinfo>  // operator typeid
-#include <vector>
 #include <string>
+#include <typeinfo>  // operator typeid
 #include <utility>
+#include <vector>
 
 namespace ots
 {

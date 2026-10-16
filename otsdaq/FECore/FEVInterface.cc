@@ -159,7 +159,7 @@ try
 		type1 = false;
 	}
 	catch(...)
-	{ // ignore 
+	{  // ignore
 	}
 
 	if(type1)
@@ -848,7 +848,7 @@ bool FEVInterface::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)
 	try
 	{
 		continueWorkLoop_ =
-		    running(); // in case users return false, without using continueWorkLoop_
+		    running();  // in case users return false, without using continueWorkLoop_
 	}
 	catch(...)  //
 	{
@@ -1387,7 +1387,7 @@ void FEVInterface::receiveFromFrontEnd(const std::string& requester,
 					__FE_COUTV__(buffPair.first);
 
 				// match requester to map of buffers
-				std::string                        sourceBufferId = "";
+				std::string                          sourceBufferId = "";
 				std::queue<std::string /**value */>& sourceBuffer =
 				    StringMacros::getWildCardMatchFromMap(
 				        requester, receiveBuffersForTargetIt->second, &sourceBufferId);
@@ -1539,7 +1539,7 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 
 		//==========================
 		// Use lambda to identify variable name in field
-		std::function<bool(const std::string& //field value
+		std::function<bool(const std::string&  //field value
 		                   )>
 		    localIsVariable = [/*capture variable*/](const std::string& fieldValue) {
 			    // create local message facility subject

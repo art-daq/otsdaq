@@ -15,10 +15,10 @@
 #include <xcept/tools.h>
 #include "otsdaq/Macros/XDAQApplicationMacros.h"
 
-#include "otsdaq/SOAPUtilities/SOAPUtilities.h" // for SOAPCommand & SOAPParameters 
+#include "otsdaq/SOAPUtilities/SOAPUtilities.h"  // for SOAPCommand & SOAPParameters
 
 #include <string>
-#include "otsdaq/Macros/CoutMacros.h" // for XDAQ_CONST_CALL 
+#include "otsdaq/Macros/CoutMacros.h"  // for XDAQ_CONST_CALL
 
 namespace ots
 {

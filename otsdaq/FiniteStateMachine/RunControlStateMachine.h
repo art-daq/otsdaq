@@ -6,9 +6,9 @@
 #include "otsdaq/ProgressBar/ProgressBar.h"
 
 #include <atomic>
-#include <string>
 #include <functional>
 #include <map>
+#include <string>
 #include "toolbox/lang/Class.h"
 
 namespace ots

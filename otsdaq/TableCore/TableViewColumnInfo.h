@@ -2,10 +2,10 @@
 #define OTSDAQ_OTSDAQ_TABLECORE_TABLEVIEWCOLUMNINFO_H_
 
 #include <map>
-#include <memory> // shared_ptr 
+#include <memory>  // shared_ptr
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace ots
 {

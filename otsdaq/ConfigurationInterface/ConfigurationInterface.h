@@ -1,11 +1,11 @@
 #ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONINTERFACE_H_
 #define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONINTERFACE_H_
 
+#include <map>
 #include <memory>
 #include <mutex>
 #include <set>
 #include <sstream>
-#include <map>
 #include <string>
 #include <utility>
 #include "otsdaq/Macros/CoutMacros.h"

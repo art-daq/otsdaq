@@ -43,20 +43,20 @@ class ReceiverSocket : public virtual Socket
 	            unsigned int           timeoutUSeconds = 0,
 	            bool                   verbose         = false);
 	int receive(std::string&    buffer,
-	            unsigned long&  fromIPAddress,// NOLINT
-	            unsigned short& fromPort,// NOLINT
+	            unsigned long&  fromIPAddress,  // NOLINT
+	            unsigned short& fromPort,       // NOLINT
 	            unsigned int    timeoutSeconds  = 1,
 	            unsigned int    timeoutUSeconds = 0,
 	            bool            verbose         = false);
 	int receive(std::vector<uint32_t>& buffer,
-	            unsigned long&         fromIPAddress,// NOLINT
-	            unsigned short&        fromPort,// NOLINT
+	            unsigned long&         fromIPAddress,  // NOLINT
+	            unsigned short&        fromPort,       // NOLINT
 	            unsigned int           timeoutSeconds  = 1,
 	            unsigned int           timeoutUSeconds = 0,
 	            bool                   verbose         = false);
 
 	std::string    getLastIncomingIPAddress(void);
-	unsigned short getLastIncomingPort(void); // NOLINT
+	unsigned short getLastIncomingPort(void);  // NOLINT
 
   protected:
 	ReceiverSocket(void);
@@ -68,8 +68,8 @@ class ReceiverSocket : public virtual Socket
 	socklen_t          addressLength_;
 	int                numberOfBytes_;
 
-	unsigned long  lastIncomingIPAddress_ = 0;// NOLINT
-	unsigned short lastIncomingPort_      = 0;// NOLINT
+	unsigned long  lastIncomingIPAddress_ = 0;  // NOLINT
+	unsigned short lastIncomingPort_      = 0;  // NOLINT
 	unsigned int   readCounter_;
 
 	std::mutex receiveMutex_;  ///< to make receiver socket thread safe

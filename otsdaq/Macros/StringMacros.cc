@@ -1822,7 +1822,7 @@ std::string StringMacros::exec(const char* cmd)
 }  // end exec()
 
 // #include <iostream>
-#include <fstream> // for ifstream 
+#include <fstream>  // for ifstream
 // #include <sstream>
 // #include <string>
 // #include <cstdlib>

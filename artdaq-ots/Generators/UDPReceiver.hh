@@ -28,11 +28,11 @@
 #include <atomic>
 #include <chrono>
 #include <list>
+#include <memory>
 #include <mutex>
 #include <queue>
-#include <thread>
-#include <memory>
 #include <string>
+#include <thread>
 
 namespace ots
 {

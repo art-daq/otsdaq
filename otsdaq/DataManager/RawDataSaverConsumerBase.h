@@ -5,8 +5,8 @@
 #include "otsdaq/DataManager/DataConsumer.h"
 
 #include <fstream>
-#include <string>
 #include <map>
+#include <string>
 
 namespace ots
 {

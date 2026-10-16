@@ -112,7 +112,7 @@ void FixNewTableFields(int argc, char* argv[])
 	// 	and change the ConfigurationManager::ACTIVE_GROUPS_FILENAME
 	//	to reflect new group names/keys
 
-	// map<<groupName, origKey>, newKey> 
+	// map<<groupName, origKey>, newKey>
 	std::map<std::pair<std::string, TableGroupKey>, TableGroupKey> groupSet;
 	// <tableName, <origVersion, newVersion> >
 	std::map<std::pair<std::string, TableVersion>, TableVersion>   modifiedTables;
@@ -576,7 +576,7 @@ void FixNewTableFields(int argc, char* argv[])
 			// first copy to new column names
 			TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(
 			    groupAliasesName /*table name*/,
-			    memberMap[groupAliasesName] //source version
+			    memberMap[groupAliasesName]  //source version
 			);
 
 			config = cfgMgr->getTableByName(groupAliasesName);
@@ -647,7 +647,7 @@ void FixNewTableFields(int argc, char* argv[])
 			// first copy to new column names
 			TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(
 			    versionAliasesName /*table name*/,
-			    memberMap[versionAliasesName] //source version
+			    memberMap[versionAliasesName]  //source version
 			);
 
 			config = cfgMgr->getTableByName(versionAliasesName);

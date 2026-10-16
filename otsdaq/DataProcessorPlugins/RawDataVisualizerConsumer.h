@@ -4,8 +4,8 @@
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataConsumer.h"
 
-#include <string>
 #include <map>
+#include <string>
 
 namespace ots
 {

@@ -2,7 +2,7 @@
 
 #include "boost/test/auto_unit_test.hpp"
 
-#include <time.h> // time 
+#include <time.h>  // time
 #include <cassert>
 #include <cstdlib>
 #include <iostream>

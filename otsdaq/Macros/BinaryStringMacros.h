@@ -6,9 +6,9 @@
 
 #include <map>
 #include <set>
+#include <string>
 #include <typeinfo>  // operator typeid
 #include <vector>
-#include <string>
 
 namespace ots
 {

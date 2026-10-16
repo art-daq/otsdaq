@@ -16,4 +16,4 @@ class TCPClient : public TCPTransceiverSocket, public TCPClientBase
 };
 }  // namespace ots
 
-#endif // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENT_H_
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENT_H_
