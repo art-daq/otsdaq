@@ -1,5 +1,5 @@
-#ifndef ots_CgiDataUtilities_h
-#define ots_CgiDataUtilities_h
+#ifndef OTSDAQ_OTSDAQ_CGIDATAUTILITIES_CGIDATAUTILITIES_H_
+#define OTSDAQ_OTSDAQ_CGIDATAUTILITIES_CGIDATAUTILITIES_H_
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
@@ -31,4 +31,4 @@ class CgiDataUtilities
 
 }  // namespace ots
 
-#endif  // ots_CgiDataUtilities_h
+#endif  // OTSDAQ_OTSDAQ_CGIDATAUTILITIES_CGIDATAUTILITIES_H_

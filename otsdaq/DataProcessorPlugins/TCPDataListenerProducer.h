@@ -1,5 +1,5 @@
-#ifndef _ots_TCPDataListenerProducer_h_
-#define _ots_TCPDataListenerProducer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATALISTENERPRODUCER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATALISTENERPRODUCER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataProducer.h"
@@ -57,4 +57,4 @@ class TCPDataListenerProducer : public DataProducer,
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATALISTENERPRODUCER_H_

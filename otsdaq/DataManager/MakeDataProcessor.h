@@ -1,5 +1,5 @@
-#ifndef _ots_MakeDataProcessor_h_
-#define _ots_MakeDataProcessor_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_MAKEDATAPROCESSOR_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_MAKEDATAPROCESSOR_H_
 /// Using LibraryManager, find the correct library and return an instance
 /// of the specified interface.
 ///
@@ -18,4 +18,4 @@ DataProcessor* makeDataProcessor(std::string const&       processorPluginName,
                                  std::string const&       pathToInterfaceConfiguration);
 }  // namespace ots
 
-#endif /* _ots_MakeDataProcessor_h_ */
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_MAKEDATAPROCESSOR_H_

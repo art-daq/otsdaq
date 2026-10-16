@@ -1,5 +1,5 @@
-#ifndef _ots_WorkLoop_h
-#define _ots_WorkLoop_h
+#ifndef OTSDAQ_OTSDAQ_WORKLOOPMANAGER_WORKLOOP_H_
+#define OTSDAQ_OTSDAQ_WORKLOOPMANAGER_WORKLOOP_H_
 
 #include <toolbox/task/WorkLoop.h>
 #include <string>
@@ -34,4 +34,4 @@ class WorkLoop : public virtual toolbox::lang::Class
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_WORKLOOPMANAGER_WORKLOOP_H_

@@ -1,7 +1,8 @@
-#ifndef _ots_TableVersion_h_
-#define _ots_TableVersion_h_
+#ifndef OTSDAQ_OTSDAQ_TABLECORE_TABLEVERSION_H_
+#define OTSDAQ_OTSDAQ_TABLECORE_TABLEVERSION_H_
 
 #include <ostream>
+#include <string>
 
 namespace ots
 {
@@ -78,4 +79,4 @@ class TableVersion
 	unsigned int version_;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLECORE_TABLEVERSION_H_

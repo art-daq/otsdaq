@@ -1,12 +1,7 @@
-#ifndef _ots_GatewaySupervisor_h
-#define _ots_GatewaySupervisor_h
-#include <atomic>
-#include <condition_variable>
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <thread>
+#ifndef OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_GATEWAYSUPERVISOR_H_
+#define OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_GATEWAYSUPERVISOR_H_
 
+// otsdaq includes
 #include "otsdaq/CoreSupervisors/ConfigurationSupervisorBase.h"
 #include "otsdaq/CoreSupervisors/CorePropertySupervisorBase.h"
 #include "otsdaq/FiniteStateMachine/RunControlStateMachine.h"
@@ -22,21 +17,32 @@
 
 #include "otsdaq/NetworkUtilities/TransceiverSocket.h"  // for UDP state changer
 
+#include "otsdaq/GatewaySupervisor/PixelHistoPicGen.h"
+#include "otsdaq/Macros/XDAQApplicationMacros.h"
+
+// XDAQ includes
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <xdaq/Application.h>
 #pragma GCC diagnostic pop
-#include "otsdaq/Macros/XDAQApplicationMacros.h"
-
 #include <toolbox/task/WorkLoop.h>
 #include <xdata/String.h>
 #include <xgi/Method.h>
-#include "otsdaq/GatewaySupervisor/PixelHistoPicGen.h"
 
+// System headers
 #include <pthread.h>  // for pthread_setcancelstate in broadcastMessageThread
+#include <atomic>
+#include <condition_variable>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <set>
 #include <sstream>
 #include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 // clang-format off
 
@@ -161,8 +167,8 @@ class WorkLoopManager;
 		void 						joinConfigDumpCachingThread(void);  ///< reap the deferred dump-caching thread; safe when none is running
 
 		// CorePropertySupervisorBase override functions
-		virtual void 					setSupervisorPropertyDefaults					(void) override;  ///< override to control supervisor specific defaults
-		virtual void 					forceSupervisorPropertyValues					(void) override;  ///< override to force supervisor property values (and ignore user settings)
+		 void 					setSupervisorPropertyDefaults					(void) override;  ///< override to control supervisor specific defaults
+		 void 					forceSupervisorPropertyValues					(void) override;  ///< override to force supervisor property values (and ignore user settings)
 
 
 	private:
@@ -355,7 +361,7 @@ class WorkLoopManager;
 		bool 				supervisorGuiHasBeenLoaded_;  ///< use to indicate first access by user of ots since execution
 		static WebUsers   	theWebUsers_;
 		std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */,
-			std::string /* translatedHostPort */>>
+			std::string /*** translatedHostPort   */>>
 							portTranslationMap_;  ///< map of translation ports, if only certain host+port ranges are allowed at gateway for example
 
 		WorkLoopManager 	stateMachineWorkLoopManager_;
@@ -533,7 +539,7 @@ public:	//used by remote subsystem control and status
 		std::set<std::string>								broadcastIncludedRemoteGatewayNames_;
 		bool        										isRemoteGatewayIncludedInBroadcast(const RemoteGatewayInfo& remoteGatewayApp) const;
 		std::map<std::string /* appName */,
-			bool /* lastStatusGood */> 						appLastStatusGood_;
+			bool /*** lastStatusGood   */> 						appLastStatusGood_;
 		std::mutex											dualStatusThreadMutex_;
 		std::map<std::string, time_t>						remoteAlertCooldown_; ///< guarded by dualStatusThreadMutex_; suppresses repeated desktop alerts per remote app
 
@@ -569,4 +575,4 @@ public:	//used by remote subsystem control and status
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_GATEWAYSUPERVISOR_H_

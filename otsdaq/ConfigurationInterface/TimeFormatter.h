@@ -1,5 +1,5 @@
-#ifndef ots_TimeFormatter_h
-#define ots_TimeFormatter_h
+#ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_TIMEFORMATTER_H_
+#define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_TIMEFORMATTER_H_
 
 #include <sys/time.h>
 #include <string>
@@ -28,4 +28,4 @@ class TimeFormatter
 };
 
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_TIMEFORMATTER_H_

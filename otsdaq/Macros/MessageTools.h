@@ -28,12 +28,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ================================================================================*/
 
-#ifndef MESSAGETOOLS_H
-#define MESSAGETOOLS_H
+#ifndef OTSDAQ_OTSDAQ_MACROS_MESSAGETOOLS_H_
+#define OTSDAQ_OTSDAQ_MACROS_MESSAGETOOLS_H_
 
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #include "ANSIColors.h"
 
@@ -210,4 +211,4 @@ class Utils
 	}
 };
 
-#endif  // MESSAGETOOLS_H
+#endif  // OTSDAQ_OTSDAQ_MACROS_MESSAGETOOLS_H_

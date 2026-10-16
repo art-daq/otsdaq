@@ -1,11 +1,13 @@
-#ifndef _ots_ARTDAQProducer_h_
-#define _ots_ARTDAQProducer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQPRODUCER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQPRODUCER_H_
 
 #include "otsdaq/ARTDAQReaderCore/ARTDAQReaderProcessorBase.h"
 
 // #include "artdaq/Application/BoardReaderApp.hh"
 // #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataProducer.h"
+
+#include <string>
 
 // #include <future>
 // #include <memory>
@@ -59,4 +61,4 @@ class ARTDAQProducer
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQPRODUCER_H_

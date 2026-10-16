@@ -240,7 +240,7 @@ void CodeEditor::getDirectoryContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOu
 			}
 
 			std::map<std::string /*special type*/,
-			         std::set<std::string> /*special file paths*/>
+			         std::set<std::string> /**special file paths */>
 			    retMap = CodeEditor::getSpecialsMap();
 			if(retMap.find(specialTypes[i]) != retMap.end())
 			{

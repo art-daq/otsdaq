@@ -1,5 +1,5 @@
-#ifndef __DM_MACROS_H__
-#define __DM_MACROS_H__
+#ifndef OTSDAQ_OTSDAQ_MACROS_DMMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_DMMACROS_H_
 
 /*
  *   C++ ASCII output decorator
@@ -136,6 +136,7 @@ string 53	] [main.cc                             ] H: 5 4.6 Just a regular strin
 
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #define __USE_COLORS__ true
 
@@ -400,4 +401,4 @@ static std::string __c_meth__ = ACBLightPurple_;
 
 #define __PRE0__(iostream) __PRE__(0, iostream)
 
-#endif  // __DM_MACROS__
+#endif  // OTSDAQ_OTSDAQ_MACROS_DMMACROS_H_

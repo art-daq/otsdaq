@@ -1,8 +1,10 @@
-#ifndef _TCPTransceiverSocket_h_
-#define _TCPTransceiverSocket_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPTRANSCEIVERSOCKET_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPTRANSCEIVERSOCKET_H_
 
 #include "otsdaq/NetworkUtilities/TCPReceiverSocket.h"
 #include "otsdaq/NetworkUtilities/TCPTransmitterSocket.h"
+
+#include <string>
 
 namespace ots
 {
@@ -19,4 +21,4 @@ class TCPTransceiverSocket : public TCPReceiverSocket, public TCPTransmitterSock
 	std::string sendAndReceive(const std::string& sendBuffer);
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPTRANSCEIVERSOCKET_H_

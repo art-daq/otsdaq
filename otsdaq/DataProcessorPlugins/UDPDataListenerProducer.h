@@ -1,10 +1,11 @@
-#ifndef _ots_UDPDataListenerProducer_h_
-#define _ots_UDPDataListenerProducer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_UDPDATALISTENERPRODUCER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_UDPDATALISTENERPRODUCER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataProducer.h"
 #include "otsdaq/NetworkUtilities/ReceiverSocket.h"  // Make sure this is always first because <sys/types.h> (defined in Socket.h) must be first
 
+#include <map>
 #include <string>
 
 namespace ots
@@ -43,4 +44,4 @@ class UDPDataListenerProducer : public DataProducer,
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_UDPDATALISTENERPRODUCER_H_

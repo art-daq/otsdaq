@@ -1,9 +1,10 @@
-#ifndef _ots_TCPClient_h_
-#define _ots_TCPClient_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENT_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENT_H_
 
-#include <string>
 #include "otsdaq/NetworkUtilities/TCPClientBase.h"
 #include "otsdaq/NetworkUtilities/TCPTransceiverSocket.h"
+
+#include <string>
 
 namespace ots
 {
@@ -15,4 +16,4 @@ class TCPClient : public TCPTransceiverSocket, public TCPClientBase
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENT_H_

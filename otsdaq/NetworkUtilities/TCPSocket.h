@@ -1,5 +1,6 @@
-#ifndef _TCPSocket_h_
-#define _TCPSocket_h_
+#include <utility>
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSOCKET_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSOCKET_H_
 
 namespace ots
 {
@@ -33,4 +34,4 @@ class TCPSocket
 	int fSocketId;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSOCKET_H_

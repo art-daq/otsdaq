@@ -1,10 +1,12 @@
-#ifndef _ots_Iterator_h
-#define _ots_Iterator_h
+#ifndef OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_ITERATOR_H_
+#define OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_ITERATOR_H_
 
 #include <atomic>  //for std::atomic
 #include <memory>  //for std::shared_ptr
 #include <mutex>   //for std::mutex
 #include <string>
+#include <utility>
+#include <vector>
 #include "otsdaq/TablePlugins/IterateTable.h"
 #include "otsdaq/XmlUtilities/HttpXmlDocument.h"
 
@@ -240,4 +242,4 @@ class Iterator
 
 // clang-format on
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_ITERATOR_H_

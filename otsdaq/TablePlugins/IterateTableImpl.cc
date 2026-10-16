@@ -363,7 +363,7 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 				    commandSpecificFields[i].second.isValueBoolType())
 					commands.back().params_.emplace(
 					    std::pair<std::string /*param name*/,
-					              std::string /*param value*/>(
+					              std::string /**param value */>(
 					        commandSpecificFields[i].first,
 					        commandSpecificFields[i].second.getValue<bool>() ? "1"
 					                                                         : "0"));
@@ -372,13 +372,13 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 				    commandSpecificFields[i].second.isValueNumberDataType())
 					commands.back().params_.emplace(
 					    std::pair<std::string /*param name*/,
-					              std::string /*param value*/>(
+					              std::string /**param value */>(
 					        commandSpecificFields[i].first,
 					        commandSpecificFields[i].second.getValueAsString()));
 				else
 					commands.back().params_.emplace(
 					    std::pair<std::string /*param name*/,
-					              std::string /*param value*/>(
+					              std::string /**param value */>(
 					        commandSpecificFields[i].first,
 					        commandSpecificFields[i].second.getValue<std::string>()));
 			}

@@ -594,7 +594,7 @@ try
 			//		__COUT__ << "end loop.." << theIteratorStruct.running_ << " " <<
 			//				theIteratorStruct.activePlan_ << " cmd=" <<
 			//				theIteratorStruct.commandIndex_ << __E__;
-		}                               /* code */
+		}                               // code
 	}                                   //end try/catch
 	catch(const std::runtime_error& e)  //insert info about the state of the iterator
 	{
@@ -2694,7 +2694,7 @@ void Iterator::playGeneratedIterationPlan(HttpXmlDocument&   xmldoc,
 	// parameters[2] /*durationSeconds*/,
 	// parameters[3] /*numberOfRuns*/,
 	// parameters[4] /*keepConfiguration*/,
-	// parameters[5] /*logEntry*/ double encoded
+	// parameters[5] /**logEntry */ double encoded
 	parameters[5] = StringMacros::decodeURIComponent(parameters[5]);
 
 	uint64_t durationSeconds;
@@ -2709,7 +2709,7 @@ void Iterator::playGeneratedIterationPlan(HttpXmlDocument&   xmldoc,
 	                           durationSeconds,
 	                           numberOfRuns,
 	                           keepConfiguration,
-	                           parameters[5] /*logEntry*/
+	                           parameters[5]  //logEntry
 	);
 
 }  //end playGeneratedIterationPlan()

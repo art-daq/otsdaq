@@ -1869,11 +1869,11 @@ bool ConfigurationTree::isUIDNode(void) const
 ///		(careful to prevent infinite loops in tree navigation)
 ///
 std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
-    const std::vector<std::string /*uid*/>&           recordList,
-    const std::vector<std::string /*relative-path*/>& fieldAcceptList,
-    const std::vector<std::string /*relative-path*/>& fieldRejectList,
-    unsigned int                                      depth,
-    bool                                              autoSelectFilterFields) const
+    const std::vector<std::string /**uid */>&           recordList,
+    const std::vector<std::string /**relative-path */>& fieldAcceptList,
+    const std::vector<std::string /**relative-path */>& fieldRejectList,
+    unsigned int                                        depth,
+    bool                                                autoSelectFilterFields) const
 {
 	// enforce that starting point is a table node
 	if(!isRootNode() && !isTableNode())
@@ -2160,9 +2160,9 @@ std::vector<ConfigurationTree::RecordField> ConfigurationTree::getCommonFields(
 ///	returns sorted unique values for the specified records and field
 ///	Note: treat GroupIDs special, parse the | out of the value to get the distinct values.
 ///
-std::set<std::string /*unique-value*/> ConfigurationTree::getUniqueValuesForField(
-    const std::vector<std::string /*relative-path*/>& recordList,
-    const std::string&                                fieldName,
+std::set<std::string /**unique-value */> ConfigurationTree::getUniqueValuesForField(
+    const std::vector<std::string /**relative-path */>& recordList,
+    const std::string&                                  fieldName,
     std::string* fieldGroupIDChildLinkIndex /* =0 */) const
 {
 	if(fieldGroupIDChildLinkIndex)
@@ -2178,7 +2178,7 @@ std::set<std::string /*unique-value*/> ConfigurationTree::getUniqueValuesForFiel
 		__SS_THROW__;
 	}
 
-	std::set<std::string /*unique-value*/> uniqueValues;
+	std::set<std::string /**unique-value */> uniqueValues;
 
 	// for each record in <record list>
 	//	emplace value at field into set
@@ -2237,13 +2237,13 @@ std::set<std::string /*unique-value*/> ConfigurationTree::getUniqueValuesForFiel
 /// recursiveGetCommonFields
 ///	wrapper is ...getCommonFields
 void ConfigurationTree::recursiveGetCommonFields(
-    std::vector<ConfigurationTree::RecordField>&      fieldCandidateList,
-    std::vector<int>&                                 fieldCount,
-    const std::vector<std::string /*relative-path*/>& fieldAcceptList,
-    const std::vector<std::string /*relative-path*/>& fieldRejectList,
-    unsigned int                                      depth,
-    const std::string&                                relativePathBase,
-    bool                                              inFirstRecord) const
+    std::vector<ConfigurationTree::RecordField>&        fieldCandidateList,
+    std::vector<int>&                                   fieldCount,
+    const std::vector<std::string /**relative-path */>& fieldAcceptList,
+    const std::vector<std::string /**relative-path */>& fieldRejectList,
+    unsigned int                                        depth,
+    const std::string&                                  relativePathBase,
+    bool                                                inFirstRecord) const
 {
 	//__COUT__ << depth << ":relativePathBase " << relativePathBase <<
 	//	" + " << inFirstRecord <<__E__;
@@ -2796,7 +2796,7 @@ bool ConfigurationTree::isStatusNode(void) const
 std::vector<std::vector<std::string>> ConfigurationTree::getChildrenNamesByPriority(
     bool onlyStatusTrue) const
 {
-	std::vector<std::vector<std::string /*child name*/>> retVector;
+	std::vector<std::vector<std::string /**child name */>> retVector;
 
 	if(!tableView_)
 	{
@@ -2817,7 +2817,7 @@ std::vector<std::vector<std::string>> ConfigurationTree::getChildrenNamesByPrior
 
 		// bool tmpStatus;
 
-		std::vector<std::vector<unsigned int /*group row*/>> groupRowsByPriority =
+		std::vector<std::vector<unsigned int /**group row */>> groupRowsByPriority =
 		    tableView_->getGroupRowsByPriority(
 		        groupId_ == ""
 		            ? TableView::INVALID
@@ -2829,7 +2829,7 @@ std::vector<std::vector<std::string>> ConfigurationTree::getChildrenNamesByPrior
 		// now build vector of vector names by priority
 		for(const auto& priorityChildRowVector : groupRowsByPriority)
 		{
-			retVector.push_back(std::vector<std::string /*child name*/>());
+			retVector.push_back(std::vector<std::string /**child name */>());
 			for(const auto& priorityChildRow : priorityChildRowVector)
 				retVector[retVector.size() - 1].push_back(
 				    tableView_->getDataView()[priorityChildRow][tableView_->getColUID()]);
@@ -2855,7 +2855,7 @@ std::vector<std::vector<std::string>> ConfigurationTree::getChildrenNamesByPrior
 				continue;
 			else
 			{
-				retVector.push_back(std::vector<std::string /*child name*/>());
+				retVector.push_back(std::vector<std::string /**child name */>());
 				retVector[retVector.size() - 1].push_back(
 				    tableView_->getColumnInfo(c).getName());
 			}
@@ -2882,7 +2882,7 @@ std::vector<std::vector<std::string>> ConfigurationTree::getChildrenNamesByPrior
 std::vector<std::string> ConfigurationTree::getChildrenNames(
     bool byPriority /* = false */, bool onlyStatusTrue /* = false */) const
 {
-	std::vector<std::string /*child name*/> retVector;
+	std::vector<std::string /**child name */> retVector;
 
 	if(isRootNode())
 	{
@@ -2910,7 +2910,7 @@ std::vector<std::string> ConfigurationTree::getChildrenNames(
 	{
 		// this node is table node
 		// so return all uid node strings that match groupId
-		std::vector<unsigned int /*group row*/> groupRows = tableView_->getGroupRows(
+		std::vector<unsigned int /**group row */> groupRows = tableView_->getGroupRows(
 		    (groupId_ == ""
 		         ? TableView::INVALID
 		         :  // if no group ID, take all rows, do not attempt link lookup
@@ -2931,7 +2931,7 @@ std::vector<std::string> ConfigurationTree::getChildrenNames(
 		//			try
 		//			{
 		//				std::map<uint64_t /*priority*/, std::vector<unsigned int /*child row*/>> orderedByPriority;
-		//				std::vector<std::string /*child name*/>                                  retPrioritySet;
+		//				std::vector<std::string /**child name */>                                  retPrioritySet;
 		//
 		//				unsigned int col = tableView_->getColPriority();
 		//

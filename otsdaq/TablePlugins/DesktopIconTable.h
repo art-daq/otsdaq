@@ -1,7 +1,8 @@
-#ifndef _ots_DesktopIconTable_h_
-#define _ots_DesktopIconTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_DESKTOPICONTABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_DESKTOPICONTABLE_H_
 
 #include <string>
+#include <vector>
 
 #include "otsdaq/TableCore/TableBase.h"
 
@@ -67,4 +68,4 @@ class DesktopIconTable : public TableBase
 	    activeDesktopIcons_;  ///< only icons with status=true
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_DESKTOPICONTABLE_H_

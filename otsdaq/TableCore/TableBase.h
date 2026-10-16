@@ -1,9 +1,12 @@
-#ifndef _ots_TableBase_h_
-#define _ots_TableBase_h_
+#ifndef OTSDAQ_OTSDAQ_TABLECORE_TABLEBASE_H_
+#define OTSDAQ_OTSDAQ_TABLECORE_TABLEBASE_H_
 
 #include <list>
 #include <map>
+#include <set>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "otsdaq/TableCore/TableVersion.h"
 #include "otsdaq/TableCore/TableView.h"
@@ -88,11 +91,11 @@ class TableBase
 																const std::string&                        author,
 																MergeApproach                             mergeApproach,
 																std::map<std::pair<std::string /*original table*/, std::string /*original uidB*/>,
-																		 std::string /*converted uidB*/>& uidConversionMap,
+																		 std::string /***converted uidB  */>& uidConversionMap,
 																std::map<std::pair<std::string /*original table*/,
 																				   std::pair<std::string /*group linkid*/,
-																							 std::string /*original gidB*/> >,
-																		 std::string /*converted gidB*/>& groupidConversionMap,
+																							 std::string /***original gidB  */> >,
+																		 std::string /***converted gidB  */>& groupidConversionMap,
 																bool                                      fillRecordConversionMaps,
 																bool                                      applyRecordConversionMaps,
 																bool                                      generateUniqueDataColumns = false,
@@ -136,4 +139,4 @@ class TableBase
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLECORE_TABLEBASE_H_

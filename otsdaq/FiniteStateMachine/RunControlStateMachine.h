@@ -1,11 +1,13 @@
-#ifndef _ots_RunControlStateMachine_h_
-#define _ots_RunControlStateMachine_h_
+#ifndef OTSDAQ_OTSDAQ_FINITESTATEMACHINE_RUNCONTROLSTATEMACHINE_H_
+#define OTSDAQ_OTSDAQ_FINITESTATEMACHINE_RUNCONTROLSTATEMACHINE_H_
 
 #include "otsdaq/FiniteStateMachine/FiniteStateMachine.h"
 #include "otsdaq/FiniteStateMachine/VStateMachine.h"
 #include "otsdaq/ProgressBar/ProgressBar.h"
 
 #include <atomic>
+#include <functional>
+#include <map>
 #include <string>
 #include "toolbox/lang/Class.h"
 
@@ -215,4 +217,4 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_FINITESTATEMACHINE_RUNCONTROLSTATEMACHINE_H_

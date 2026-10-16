@@ -1,10 +1,11 @@
-#ifndef _ots_TCPDataStreamerConsumer_h_
-#define _ots_TCPDataStreamerConsumer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATASTREAMERCONSUMER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATASTREAMERCONSUMER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataConsumer.h"
 #include "otsdaq/NetworkUtilities/TCPPublishServer.h"
 
+#include <map>
 #include <string>
 
 namespace ots
@@ -39,4 +40,4 @@ class TCPDataStreamerConsumer : public TCPublishServer,
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATASTREAMERCONSUMER_H_

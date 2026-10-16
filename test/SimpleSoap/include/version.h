@@ -1,7 +1,11 @@
-#ifndef _FEWSupervisor_version_h_
-#define _FEWSupervisor_version_h_
+#ifndef OTSDAQ_TEST_SIMPLESOAP_INCLUDE_VERSION_H_
+#define OTSDAQ_TEST_SIMPLESOAP_INCLUDE_VERSION_H_
 
 #include "config/PackageInfo.h"
+
+#include <functional>
+#include <set>
+#include <string>
 
 #define MYPACKAGE_VERSION_MAJOR OTSDAQ_MAJOR_VERSION
 #define MYPACKAGE_VERSION_MINOR OTSDAQ_MINOR_VERSION
@@ -35,4 +39,4 @@ void                                           checkPackageDependencies();
 std::set<std::string, std::less<std::string> > getPackageDependencies();
 }  // namespace SimpleSoap
 
-#endif
+#endif  // OTSDAQ_TEST_SIMPLESOAP_INCLUDE_VERSION_H_

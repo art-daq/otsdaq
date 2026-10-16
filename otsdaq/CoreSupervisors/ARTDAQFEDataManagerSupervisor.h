@@ -1,5 +1,5 @@
-#ifndef _ots_ARTDAQFEDataManagerSupervisor_h_
-#define _ots_ARTDAQFEDataManagerSupervisor_h_
+#ifndef OTSDAQ_OTSDAQ_CORESUPERVISORS_ARTDAQFEDATAMANAGERSUPERVISOR_H_
+#define OTSDAQ_OTSDAQ_CORESUPERVISORS_ARTDAQFEDATAMANAGERSUPERVISOR_H_
 
 #include "otsdaq/CoreSupervisors/FEDataManagerSupervisor.h"
 
@@ -18,4 +18,4 @@ class ARTDAQFEDataManagerSupervisor : public FEDataManagerSupervisor
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CORESUPERVISORS_ARTDAQFEDATAMANAGERSUPERVISOR_H_

@@ -1,5 +1,5 @@
-#ifndef _ots_TCPServerBase_h_
-#define _ots_TCPServerBase_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSERVERBASE_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSERVERBASE_H_
 
 #include <future>
 #include <map>
@@ -72,4 +72,4 @@ class TCPServerBase : public virtual TCPSocket
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSERVERBASE_H_

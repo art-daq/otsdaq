@@ -1,5 +1,5 @@
-#ifndef _ots_SOAPCommand_h
-#define _ots_SOAPCommand_h
+#ifndef OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPCOMMAND_H_
+#define OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPCOMMAND_H_
 
 #include "otsdaq/SOAPUtilities/SOAPParameter.h"
 #include "otsdaq/SOAPUtilities/SOAPParameters.h"
@@ -46,4 +46,4 @@ class SOAPCommand
 };
 
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPCOMMAND_H_

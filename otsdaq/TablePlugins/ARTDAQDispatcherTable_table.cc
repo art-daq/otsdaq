@@ -53,9 +53,9 @@ void ARTDAQDispatcherTable::genFlatFHiCL(void)
 
 	auto dispatchers = lastConfigManager_->__SELF_NODE__.getChildren(
 	    /*default filterMap*/ std::map<std::string /*relative-path*/,
-	                                   std::string /*value*/>(),
-	    /*default byPriority*/ false,
-	    /*TRUE! onlyStatusTrue*/ true);
+	                                   std::string /**value */>(),
+	    /**default byPriority */ false,
+	    /**TRUE! onlyStatusTrue */ true);
 
 	for(auto& dispatcher : dispatchers)
 	{
@@ -74,7 +74,7 @@ unsigned int ARTDAQDispatcherTable::slowControlsHandlerConfig(
     std::stringstream&    out,
     ConfigurationManager* configManager,
     std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
-        channelList /*= 0*/
+        channelList  //= 0
 ) const
 {
 	/////////////////////////
