@@ -1223,6 +1223,9 @@ launchOTSMacromaker() {
 	if [ "x$OTS_MACROMAKER_UDP_IP" == "x" ] || [ "x$OTS_MACROMAKER_UDP_PORT" == "x" ]; then
 		warning "If you would like to enable command-line access to your MacroMaker mode instance, then before launching please set an IP/PORT compatible with the the system's networking interfaces using environment variables OTS_MACROMAKER_UDP_IP and OTS_MACROMAKER_UDP_PORT"
 		out #blank line
+	else
+		out "MacroMaker UDP Remote Control enabled at ${Bold}${OTS_MACROMAKER_UDP_IP}:${OTS_MACROMAKER_UDP_PORT}${RstClr} (\$OTS_MACROMAKER_UDP_IP : \$OTS_MACROMAKER_UDP_PORT)"
+		out #blank line
 	fi
 
 
@@ -1817,6 +1820,10 @@ launchOTS() {
 		out "${Purple}${REV} ***************************************************** ${RstClr}"
 		out "${Purple}${REV}                                                       ${RstClr}${Reset}" #Reset needed to prevent highlight of text in reverse searches after this output
 		out #blank line
+		if [ "x$OTS_MACROMAKER_UDP_IP" != "x" ] && [ "x$OTS_MACROMAKER_UDP_PORT" != "x" ]; then
+			out "MacroMaker UDP Remote Control enabled at ${Bold}${OTS_MACROMAKER_UDP_IP}:${OTS_MACROMAKER_UDP_PORT}${RstClr} (\$OTS_MACROMAKER_UDP_IP : \$OTS_MACROMAKER_UDP_PORT)"
+			out #blank line
+		fi
 		out "XDAQ Configuration XML   = ${XDAQ_CONFIGURATION_DATA_PATH}/${XDAQ_OTS_XML}.xml"
 
 	fi
@@ -5219,6 +5226,9 @@ otsActionHandler() {
 	info "action handler subsystem exit file: ${OTSDAQ_STARTOTS_QUIT_FILE}"
 	info "action handler local exit file:     ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE}"
 	out "\tots Wiz Mode access code = $(cat ${SERVICE_DATA_PATH}//OtsWizardData/sequence.out 2>/dev/null)"
+	if [ "x$OTS_MACROMAKER_UDP_IP" != "x" ] && [ "x$OTS_MACROMAKER_UDP_PORT" != "x" ]; then
+		out "\tMacroMaker UDP Remote Control at ${Bold}${OTS_MACROMAKER_UDP_IP}:${OTS_MACROMAKER_UDP_PORT}${RstClr} (\$OTS_MACROMAKER_UDP_IP : \$OTS_MACROMAKER_UDP_PORT)"
+	fi
 
 	#listen for file commands
 	while true; do
@@ -6622,6 +6632,9 @@ otsActionHandler >${ACTION_HANDLER_LOG} 2>&1 <&- &
 ACTION_HANDLER_PID=$!
 out "Action handler (pid = ${ACTION_HANDLER_PID}) log is here:"
 out "       ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use less -R to see colorized version)"
+if [ "x$OTS_MACROMAKER_UDP_IP" != "x" ] && [ "x$OTS_MACROMAKER_UDP_PORT" != "x" ]; then
+	out "MacroMaker UDP Remote Control at ${Bold}${OTS_MACROMAKER_UDP_IP}:${OTS_MACROMAKER_UDP_PORT}${RstClr} (\$OTS_MACROMAKER_UDP_IP : \$OTS_MACROMAKER_UDP_PORT)"
+fi
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
 
