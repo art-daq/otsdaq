@@ -119,7 +119,8 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 		}
 
 		// make a socket:
-		socketNumber_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		socketNumber_ =
+		    socket(res->ai_family, res->ai_socktype | SOCK_CLOEXEC, res->ai_protocol);
 
 		__COUTT__ << "]\tSocket Number: " << socketNumber_
 		          << " for port: " << ntohs(socketAddress_.sin_port) << " initialized."
