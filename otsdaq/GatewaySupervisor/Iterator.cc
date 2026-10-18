@@ -19,7 +19,7 @@ using namespace ots;
 	     : (std::string(__ENV__("SERVICE_DATA_PATH")))) +       \
 	    "/IteratorPlanHistory.hist"
 
-const std::string Iterator::RESERVED_GEN_PLAN_NAME = "---GENERATED_PLAN---";
+const std::string Iterator::RESERVED_GEN_PLAN_NAME   = "---GENERATED_PLAN---";
 const std::string Iterator::RESERVED_NOISE_PLAN_NAME = "---TRACKER_NOISE_RUN---";
 
 //==============================================================================

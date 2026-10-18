@@ -229,10 +229,6 @@ xoap::MessageReference FESupervisor::frontEndCommunicationRequest(
     xoap::MessageReference message)
 try
 {
-	__SUP_COUT_INFO__ << "DIAG ms=" << StringMacros::nowEpochMs() << " tid=" << gettid()
-	                  << " frontEndCommunicationRequest received: "
-	                  << SOAPUtilities::translate(message) << __E__;
-
 	if(!theFEInterfacesManager_)
 	{
 		__SUP_SS__ << "No FE Interface Manager!" << __E__;
@@ -319,14 +315,8 @@ try
 		std::string outputArgs;
 		try
 		{
-			__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-			             << " runFEMacroByFE starting, macro='" << feMacroName
-			             << "' target='" << targetInterfaceID << "'" << __E__;
 			theFEInterfacesManager_->runFEMacroByFE(
 			    requester, targetInterfaceID, feMacroName, inputArgs, outputArgs);
-			__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-			             << " runFEMacroByFE done, macro='" << feMacroName << "'"
-			             << __E__;
 		}
 		catch(std::runtime_error& e)
 		{
@@ -368,10 +358,6 @@ try
 		txParameters.addParameter("feMacroName", feMacroName);
 		txParameters.addParameter("outputArgs", outputArgs);
 		SOAPUtilities::addParameters(replyMessage, txParameters);
-
-		__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-		             << " Sending FE macro result: "
-		             << SOAPUtilities::translate(replyMessage) << __E__;
 
 		return replyMessage;
 	}                                                  // end type feMacro
@@ -645,15 +631,12 @@ catch(...)
 xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
     xoap::MessageReference message)
 {
-	__SUP_COUT__ << "$$$$$$$$$$$$$$$$$" << __E__;
-
 	// receive request parameters
 	SOAPParameters parameters;
 	parameters.addParameter("Request");
 
-	__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs() << " tid=" << gettid()
-	             << " Received Macro Maker message: " << SOAPUtilities::translate(message)
-	             << __E__;
+	__SUP_COUTT__ << "Received Macro Maker message: "
+	              << SOAPUtilities::translate(message).getCommand() << __E__;
 
 	SOAPUtilities::receive(message, parameters);
 	std::string request = parameters.getValue("Request");
@@ -1125,14 +1108,8 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 
 					try
 					{
-						__COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-						         << " async FE Macro thread starting runFEMacro, taskID="
-						         << task->taskID << __E__;
 						theFEInterfacesManager_->runFEMacro(
 						    interfaceID, localFEMacro, inputArgs, outputArgs);
-						__COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-						         << " async FE Macro thread finished runFEMacro, taskID="
-						         << task->taskID << __E__;
 						try
 						{
 							theFEInterfacesManager_->getFEInterfaceP(interfaceID)
@@ -1188,11 +1165,6 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 					}
 				}).detach();
 
-				__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-				             << " Launched async FE Macro '" << feMacroName
-				             << "' for interfaceID '" << interfaceID
-				             << "' with taskID=" << task->taskID << __E__;
-
 				// Wait briefly to see if macro finishes quickly (avoids unnecessary polling)
 				{
 					size_t sleepUs = 100;
@@ -1216,11 +1188,6 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 									__SUP_SS__ << errorCopy;
 									__SUP_SS_THROW__;
 								}
-								__SUP_COUT__
-								    << "DIAG ms=" << StringMacros::nowEpochMs()
-								    << " async macro finished within quick-wait,"
-								    << " returning synchronously, taskID=" << task->taskID
-								    << __E__;
 								retParameters.addParameter("outputArgs",
 								                           task->outputArgs);
 								for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
@@ -1241,9 +1208,6 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 					}
 				}
 
-				__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-				             << " async macro NOT done within quick-wait,"
-				             << " returning NotDoneTaskID=" << task->taskID << __E__;
 				retParameters.addParameter("NotDoneTaskID", std::to_string(task->taskID));
 				return SOAPUtilities::makeSOAPMessageReference(
 				    supervisorClassNoNamespace_ + "Response", retParameters);
@@ -1449,11 +1413,6 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 									__SUP_SS__ << errorCopy;
 									__SUP_SS_THROW__;
 								}
-								__SUP_COUT__
-								    << "DIAG ms=" << StringMacros::nowEpochMs()
-								    << " async macro finished within quick-wait,"
-								    << " returning synchronously, taskID=" << task->taskID
-								    << __E__;
 								retParameters.addParameter("outputArgs",
 								                           task->outputArgs);
 								for(size_t j = 0; j < asyncMacroTasks_.size(); ++j)
@@ -1474,9 +1433,6 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 					}
 				}
 
-				__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-				             << " async macro NOT done within quick-wait,"
-				             << " returning NotDoneTaskID=" << task->taskID << __E__;
 				retParameters.addParameter("NotDoneTaskID", std::to_string(task->taskID));
 				return SOAPUtilities::makeSOAPMessageReference(
 				    supervisorClassNoNamespace_ + "Response", retParameters);
@@ -1583,9 +1539,6 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 					__SUP_SS_THROW__;
 				}
 
-				__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-				             << " CheckMacro found task DONE (doneTime="
-				             << foundTask->doneTime << "), taskID=" << taskID << __E__;
 				retParameters.addParameter("outputArgs", foundTask->outputArgs);
 
 				// Remove completed task
@@ -1619,9 +1572,6 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 					{
 					}
 				}
-				__SUP_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-				             << " CheckMacro found task still RUNNING, taskID=" << taskID
-				             << __E__;
 				retParameters.addParameter("NotDoneTaskID", std::to_string(taskID));
 				return SOAPUtilities::makeSOAPMessageReference(
 				    supervisorClassNoNamespace_ + "Response", retParameters);
