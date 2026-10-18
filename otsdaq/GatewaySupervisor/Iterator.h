@@ -5,6 +5,7 @@
 #include <memory>  //for std::shared_ptr
 #include <mutex>   //for std::mutex
 #include <string>
+#include "otsdaq/GatewaySupervisor/TrackerNoiseRun.h"
 #include "otsdaq/TablePlugins/IterateTable.h"
 #include "otsdaq/XmlUtilities/HttpXmlDocument.h"
 
@@ -26,6 +27,7 @@ class Iterator
 	~Iterator(void);
 
 	static const std::string RESERVED_GEN_PLAN_NAME;
+	static const std::string RESERVED_NOISE_PLAN_NAME;
 
 	/// an output file written by a macro command during a plan (local FE or remote MacroMaker)
 	struct OutputFile
@@ -96,6 +98,10 @@ class Iterator
 		std::vector<std::string> fsmCommandParameters_;
 		std::vector<bool>        targetsDone_;
 
+		bool noiseRunInitialized_ = false;
+		std::vector<tracker_noise_run::Target> noiseRunTargets_;
+		std::vector<std::string> noiseRunIdentity_;
+
 		bool remoteConfigureQueued_ = false;  ///< remote Configure needs Halt first when not Halted/Initial
 
 		std::vector<OutputFile> outputFiles_;  ///< files written by macro commands so far in this plan
@@ -116,6 +122,17 @@ class Iterator
 		std::shared_ptr<RemoteMacroRun> remoteMacroRun_;
 
 	};  // end declaration of iterator workloop members
+
+	void playNoiseRunIterationPlan(HttpXmlDocument& xml);
+	void stopNoiseRunIterationPlan(HttpXmlDocument& xml);
+	void finishNoiseRunIterationPlan(IteratorWorkLoopStruct* s);
+	void initializeNoiseRun(IteratorWorkLoopStruct* s);
+	void guardNoiseRun(IteratorWorkLoopStruct* s);
+	void stepNoiseRun(IteratorWorkLoopStruct* s);
+	tracker_noise_run::Outputs runNoiseRunMacro(const tracker_noise_run::Target&, const std::string&, const std::string&, const std::vector<std::string>&);
+	bool noiseRunOwned_ = false;
+	uint64_t noiseRunScans_ = 0;
+	std::string noiseRunLastSummary_, noiseRunExcluded_, noiseRunPreviousWindow_;
 
 	static void IteratorWorkLoop(Iterator* iterator);
 	static void startCommand(IteratorWorkLoopStruct* iteratorStruct);

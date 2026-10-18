@@ -1293,17 +1293,11 @@ void FEVInterface::runFrontEndMacro(
 	parameters.addParameter("inputArgs", inputArgsStr);
 	SOAPUtilities::addParameters(message, parameters);
 
-	__FE_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-	            << " Sending FE communication: " << SOAPUtilities::translate(message)
-	            << __E__;
-
 	xoap::MessageReference replyMessage =
 	    VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
 	        MacroMakerSupervisors.begin()->second.getDescriptor(), message);
 
 	std::string replyCommand = SOAPUtilities::translate(replyMessage).getCommand();
-	__FE_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-	            << " Response received: " << replyCommand << __E__;
 
 	if(replyCommand == "Fault")
 	{

@@ -1,0 +1,404 @@
+// Included by Iterator.cc: server-owned NoiseRun is a reserved Iterator plan.
+// It deliberately performs no configuration activation or DAQ FSM transition.
+
+void Iterator::playNoiseRunIterationPlan(HttpXmlDocument& xml)
+{
+	std::lock_guard<std::mutex> lock(accessMutex_);
+	tracker_noise_run::require(
+	    !iteratorBusy_ && !activePlanIsRunning_ && !commandPlay_ && !commandHalt_,
+	    "Iterator is busy. Stop its current plan before starting NoiseRun.");
+	tracker_noise_run::require(
+	    !theSupervisor_->theStateMachine_.isInTransition() &&
+	        theSupervisor_->theStateMachine_.getCurrentStateName() == "Configured",
+	    "NoiseRun requires Tracker Configured and stopped.");
+	noiseRunPreviousWindow_ = theSupervisor_->activeStateMachineWindowName_;
+	theSupervisor_->activeStateMachineWindowName_ = "iterator";
+	lastFsmName_   = theSupervisor_->activeStateMachineName_;
+	noiseRunOwned_ = true;
+	iteratorBusy_  = true;
+	errorMessage_.clear();
+	noiseRunScans_ = 0;
+	noiseRunLastSummary_.clear();
+	noiseRunExcluded_.clear();
+	activePlanName_ = RESERVED_NOISE_PLAN_NAME;
+	commandPlay_    = true;
+	if(!workloopRunning_)
+	{
+		workloopRunning_ = true;
+		try
+		{
+			std::thread([](Iterator* i) { IteratorWorkLoop(i); }, this).detach();
+		}
+		catch(...)
+		{
+			workloopRunning_ = false;
+			noiseRunOwned_   = false;
+			iteratorBusy_    = false;
+			commandPlay_     = false;
+			activePlanName_.clear();
+			theSupervisor_->activeStateMachineWindowName_ = noiseRunPreviousWindow_;
+			throw;
+		}
+	}
+	xml.addTextElementToData("noise_run_accepted", "1");
+}
+
+void Iterator::stopNoiseRunIterationPlan(HttpXmlDocument& xml)
+{
+	bool noThread;
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		tracker_noise_run::require(
+		    noiseRunOwned_,
+		    "NoiseRun is not the active Iterator plan. No other plan was stopped.");
+		commandHalt_ = true;
+		noThread     = !workloopRunning_;
+	}
+	if(noThread)
+		finishNoiseRunIterationPlan(nullptr);
+	xml.addTextElementToData("noise_run_stop_requested", "1");
+}
+
+void Iterator::finishNoiseRunIterationPlan(IteratorWorkLoopStruct* s)
+{
+	std::lock_guard<std::mutex> lock(accessMutex_);
+	// All scan jobs have settled before the workloop reaches this boundary.
+	// Do not use haltIterator(): its normal cleanup can halt/configure the DAQ.
+	lastFinishedPlanName_ = RESERVED_NOISE_PLAN_NAME;
+	activePlanName_.clear();
+	activePlanIsRunning_ = false;
+	iteratorBusy_        = false;
+	commandPlay_         = false;
+	commandPause_        = false;
+	commandHalt_         = false;
+	noiseRunOwned_       = false;
+	activeCommandIndex_  = -1;
+	activeCommandType_.clear();
+	activeNumberOfCommands_ = 0;
+	if(theSupervisor_->activeStateMachineWindowName_ == "iterator")
+		theSupervisor_->activeStateMachineWindowName_ = noiseRunPreviousWindow_;
+	if(s)
+	{
+		s->activePlan_.clear();
+		s->commandIndex_        = -1;
+		s->doHaltAction_        = false;
+		s->noiseRunInitialized_ = false;
+		s->noiseRunTargets_.clear();
+	}
+	__COUT_INFO__ << "NoiseRun Iterator stopped after submitted requests settled. "
+	                 "Initialize readout before normal data taking."
+	              << __E__;
+}
+
+void Iterator::guardNoiseRun(IteratorWorkLoopStruct* s)
+{
+	using tracker_noise_run::require;
+	require(!theSupervisor_->theStateMachine_.isInTransition() &&
+	            theSupervisor_->theStateMachine_.getCurrentStateName() == "Configured",
+	        "Tracker left Configured or is transitioning; NoiseRun stopped.");
+	require(tracker_noise_run::persistedIdentity(
+	            ConfigurationManager::ACTIVE_GROUPS_FILENAME) == s->noiseRunIdentity_,
+	        "Persisted Context/Configuration changed; NoiseRun stopped.");
+	require(
+	    theSupervisor_->theConfigurationTableGroup_.first == s->noiseRunIdentity_.at(2) &&
+	        theSupervisor_->theConfigurationTableGroup_.second.toString() ==
+	            s->noiseRunIdentity_.at(3),
+	    "Gateway Configure group does not match persisted configuration. Configure the "
+	    "selected group first.");
+	std::set<unsigned int> supervisors;
+	for(const auto& t : s->noiseRunTargets_)
+		supervisors.insert(t.supervisor);
+	for(auto id : supervisors)
+	{
+		auto reply = theSupervisor_->SOAPMessenger::sendWithSOAPReply(
+		    theSupervisor_->allSupervisorInfo_.getAllFETypeSupervisorInfo()
+		        .at(id)
+		        .getDescriptor(),
+		    "ApplicationStatusRequest");
+		SOAPParameters rx;
+		rx.addParameter("Status");
+		rx.addParameter("Progress");
+		rx.addParameter("Error");
+		rx.addParameter("Detail");
+		const auto command = SOAPUtilities::receive(reply, rx);
+		require(
+		    command == "applicationStatusRequestReply" && rx.getValue("Error").empty() &&
+		        rx.getValue("Status") == "Configured" && rx.getValue("Progress") == "100",
+		    "Frontend is not Configured/ready: " + std::to_string(id));
+		require(rx.getValue("Detail").find(s->noiseRunIdentity_.at(2) + "(" +
+		                                   s->noiseRunIdentity_.at(3) + ")") !=
+		            std::string::npos,
+		        "Frontend Configure group does not match persisted configuration: " +
+		            std::to_string(id));
+	}
+}
+
+void Iterator::initializeNoiseRun(IteratorWorkLoopStruct* s)
+{
+	using tracker_noise_run::require;
+	s->noiseRunIdentity_ = tracker_noise_run::persistedIdentity(
+	    ConfigurationManager::ACTIVE_GROUPS_FILENAME);
+	std::string errors;
+	s->cfgMgr_->init(&errors);
+	require(errors.empty(), errors);
+	require(s->cfgMgr_->getActiveGroupName() == s->noiseRunIdentity_[2] &&
+	            s->cfgMgr_->getActiveGroupKey().toString() == s->noiseRunIdentity_[3],
+	        "Persisted configuration changed during load");
+	std::set<std::string>    seen;
+	std::vector<std::string> excluded;
+	const auto&              supervisors =
+	    theSupervisor_->allSupervisorInfo_.getAllFETypeSupervisorInfo();
+	for(const auto& context : s->cfgMgr_->getNode("XDAQContextTable").getChildren())
+	{
+		for(const auto& app :
+		    context.second.getNode("LinkToApplicationTable").getChildren())
+		{
+			if(app.second.getNode("Class").getValue<std::string>() != "ots::FESupervisor")
+				continue;
+			const bool   parentEnabled = context.second.status() && app.second.status();
+			unsigned int id            = 0;
+			bool         found         = false;
+			if(parentEnabled)
+			{
+				for(const auto& sup : supervisors)
+					if(sup.second.getName() == app.first &&
+					   sup.second.getContextName() == context.first)
+					{
+						require(!found, "Ambiguous frontend supervisor");
+						found = true;
+						id    = sup.first;
+					}
+				require(found,
+				        "Enabled frontend supervisor missing from runtime: " + app.first);
+			}
+			for(const auto& fe : app.second.getNode("LinkToSupervisorTable")
+			                         .getNode("LinkToFEInterfaceTable")
+			                         .getChildren())
+			{
+				if(!std::regex_match(fe.first, std::regex("Trk(0[1-9]|1[0-8])_DTC[01]")))
+					continue;
+				require(seen.insert(fe.first).second,
+				        "Duplicate tracker FE association: " + fe.first);
+				require(
+				    fe.second.getNode("FEInterfacePluginName").getValue<std::string>() ==
+				        "DTCFrontEndInterface",
+				    "Unsupported tracker FE plugin");
+				tracker_noise_run::Target t;
+				t.uid        = fe.first;
+				t.supervisor = id;
+				auto dtc     = fe.second.getNode("LinkToFETypeTable");
+				for(const auto& roc : dtc.getNode("LinkToROCGroupTable").getChildren())
+				{
+					if(parentEnabled && fe.second.status() && roc.second.status())
+						t.links.push_back(roc.second.getNode("linkID").getValue<int>());
+					else
+						excluded.push_back(roc.first);
+				}
+				if(!t.links.empty())
+				{
+					std::sort(t.links.begin(), t.links.end());
+					s->noiseRunTargets_.push_back(t);
+				}
+			}
+		}
+	}
+	std::sort(s->noiseRunTargets_.begin(),
+	          s->noiseRunTargets_.end(),
+	          [](const tracker_noise_run::Target& a, const tracker_noise_run::Target& b) {
+		          return a.uid < b.uid;
+	          });
+	tracker_noise_run::validateTargets(s->noiseRunTargets_);
+	guardNoiseRun(s);
+	// Discover every signature before submitting any hardware operation.
+	std::map<unsigned int, GatewaySupervisor::RemoteFEMacroInfo> info;
+	for(auto& t : s->noiseRunTargets_)
+	{
+		if(!info.count(t.supervisor))
+		{
+			SOAPParameters tx;
+			tx.addParameter("Request", "GetInterfaceMacros");
+			auto reply = theSupervisor_->SOAPMessenger::sendWithSOAPReply(
+			    supervisors.at(t.supervisor).getDescriptor(),
+			    "MacroMakerSupervisorRequest",
+			    tx);
+			SOAPParameters rx;
+			rx.addParameter("FEMacros");
+			rx.addParameter("Error");
+			auto command = SOAPUtilities::receive(reply, rx);
+			require(command == "FESupervisorResponse" && rx.getValue("Error").empty(),
+			        "Cannot discover frontend macros");
+			HttpXmlDocument    doc;
+			std::istringstream lines(rx.getValue("FEMacros"));
+			std::string        line;
+			while(std::getline(lines, line))
+				if(!line.empty())
+					doc.addTextElementToData("FEMacros", line);
+			std::ostringstream xml;
+			doc.outputXmlDocument(&xml, false);
+			info.emplace(t.supervisor, GatewaySupervisor::parseFEMacroInfo(xml.str()));
+		}
+		const auto& macros  = info.at(t.supervisor).fes.at(t.uid).macros;
+		const auto& measure = macros.at("ROC FEMacro - Measure Channel Rates");
+		require(measure.inputs.size() == 1 &&
+		            measure.inputs[0].find("Target ROC or Mask") == 0,
+		        "Unsupported rate macro signature");
+		for(const auto& output :
+		    {"Target ROC", "Return Code", "Rates", "Saved hardware masks"})
+			require(std::find(measure.outputs.begin(), measure.outputs.end(), output) !=
+			            measure.outputs.end(),
+			        "Missing rate macro output");
+		t.inputs  = measure.inputs;
+		t.outputs = measure.outputs;
+	}
+	auto&       publisher = s->noiseRunTargets_.front();
+	const auto& macro     = info.at(publisher.supervisor)
+	                        .fes.at(publisher.uid)
+	                        .macros.at("ROC FEMacro - Publish Rate Summary");
+	require(macro.inputs.size() == 2 && macro.inputs[0].find("Target ROC or Mask") == 0 &&
+	            macro.inputs[1] == "Summary JSON",
+	        "Rates publisher not loaded or unsupported");
+	require(std::find(macro.outputs.begin(), macro.outputs.end(), "Published") !=
+	            macro.outputs.end(),
+	        "Missing publisher confirmation output");
+	publisher.publisherInputs  = macro.inputs;
+	publisher.publisherOutputs = macro.outputs;
+	guardNoiseRun(s);
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		noiseRunExcluded_.clear();
+		for(const auto& r : excluded)
+			noiseRunExcluded_ += (noiseRunExcluded_.empty() ? "" : ", ") + r;
+		activeCommandIndex_     = 0;
+		activeNumberOfCommands_ = 1;
+		activeCommandType_      = "NoiseRun";
+		activeCommandStartTime_ = time(nullptr);
+	}
+	s->noiseRunInitialized_ = true;
+	s->commandIndex_        = 0;
+}
+
+tracker_noise_run::Outputs Iterator::runNoiseRunMacro(
+    const tracker_noise_run::Target& target,
+    const std::string&               name,
+    const std::string&               inputs,
+    const std::vector<std::string>&  outputs)
+{
+	using tracker_noise_run::require;
+	SOAPParameters tx;
+	tx.addParameter("Request", "RunInterfaceMacro");
+	tx.addParameter("InterfaceID", target.uid);
+	tx.addParameter("feMacroName", name);
+	tx.addParameter("inputArgs", inputs);
+	std::string names;
+	for(const auto& n : outputs)
+		names += (names.empty() ? "" : ",") + StringMacros::encodeURIComponent(n);
+	tx.addParameter("outputArgs", names);
+	tx.addParameter("userPermissions", "allUsers:1");
+	tx.addParameter("AsyncSupported", "1");
+	const auto* descriptor =
+	    theSupervisor_->allSupervisorInfo_.getAllFETypeSupervisorInfo()
+	        .at(target.supervisor)
+	        .getDescriptor();
+	std::string result, task;
+	for(;;)
+	{
+		auto reply = theSupervisor_->SOAPMessenger::sendWithSOAPReply(
+		    descriptor, "MacroMakerSupervisorRequest", tx);
+		SOAPParameters rx;
+		rx.addParameter("Error");
+		rx.addParameter("outputArgs");
+		rx.addParameter("NotDoneTaskID");
+		const auto command = SOAPUtilities::receive(reply, rx);
+		require(command == "FESupervisorResponse" && rx.getValue("Error").empty(),
+		        target.uid + ": macro request failed: " + rx.getValue("Error"));
+		const auto next = rx.getValue("NotDoneTaskID");
+		if(next.empty())
+		{
+			result = rx.getValue("outputArgs");
+			break;
+		}
+		require(std::regex_match(next, std::regex("[1-9][0-9]*")) &&
+		            (task.empty() || task == next),
+		        "Invalid async macro task ID");
+		task = next;
+		tx   = SOAPParameters();
+		tx.addParameter("Request", "CheckMacro");
+		tx.addParameter("TaskID", task);
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		// Poll only: Stop never cancels a hardware macro or launches it again.
+	}
+	tracker_noise_run::Outputs decoded;
+	std::istringstream         stream(result);
+	std::string                pair;
+	while(std::getline(stream, pair, ';'))
+	{
+		const auto comma = pair.find(',');
+		require(comma != std::string::npos, "Malformed macro result");
+		require(decoded
+		            .emplace(StringMacros::decodeURIComponent(pair.substr(0, comma)),
+		                     StringMacros::decodeURIComponent(pair.substr(comma + 1)))
+		            .second,
+		        "Duplicate macro output");
+	}
+	require(!decoded.empty(), "Empty macro result");
+	return decoded;
+}
+
+void Iterator::stepNoiseRun(IteratorWorkLoopStruct* s)
+{
+	if(!s->noiseRunInitialized_)
+		initializeNoiseRun(s);
+	auto stopped = [&] {
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		return commandHalt_ || s->doHaltAction_;
+	};
+	if(stopped())
+		return;
+	auto input = [](const std::string& name, const std::string& value) {
+		return StringMacros::encodeURIComponent(name) + "," +
+		       StringMacros::encodeURIComponent(value);
+	};
+	const auto   start     = std::chrono::steady_clock::now();
+	unsigned int guardPass = 0;
+	const auto   summary   = tracker_noise_run::scan(
+        s->noiseRunTargets_,
+        [&](const tracker_noise_run::Target& t) {
+            unsigned int mask = 0;
+            for(int link : t.links)
+                mask |= 1u << (4 * link);
+            std::ostringstream value;
+            value << "0x" << std::hex << mask;
+            return runNoiseRunMacro(t,
+                                    "ROC FEMacro - Measure Channel Rates",
+                                    input(t.inputs.at(0), value.str()),
+                                    t.outputs);
+        },
+        [&] {
+            guardNoiseRun(s);
+            if(guardPass++ == 0 && stopped())
+                throw std::runtime_error("NoiseRun Stop received before scan dispatch");
+        },
+        [&](const tracker_noise_run::Summary& result) {
+            const auto& t   = s->noiseRunTargets_.front();
+            const auto  out = runNoiseRunMacro(
+                t,
+                "ROC FEMacro - Publish Rate Summary",
+                input(t.publisherInputs.at(0), std::to_string(t.links.front())) + ";" +
+                    input(t.publisherInputs.at(1), result.json(s->noiseRunTargets_)),
+                t.publisherOutputs);
+            tracker_noise_run::require(
+                tracker_noise_run::scalar(out.at("Published")) == 1 &&
+                    tracker_noise_run::scalar(out.at("Target ROC")) ==
+                        static_cast<unsigned int>(t.links.front()),
+                "Publisher did not confirm Graphite send; not retried");
+        });
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		++noiseRunScans_;
+		noiseRunLastSummary_ = summary.json(s->noiseRunTargets_);
+	}
+	const auto next =
+	    tracker_noise_run::nextScan(start, std::chrono::steady_clock::now());
+	while(!stopped() && std::chrono::steady_clock::now() < next)
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+}
