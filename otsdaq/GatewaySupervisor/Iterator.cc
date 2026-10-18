@@ -19,7 +19,8 @@ using namespace ots;
 	     : (std::string(__ENV__("SERVICE_DATA_PATH")))) +       \
 	    "/IteratorPlanHistory.hist"
 
-const std::string Iterator::RESERVED_GEN_PLAN_NAME = "---GENERATED_PLAN---";
+const std::string Iterator::RESERVED_GEN_PLAN_NAME   = "---GENERATED_PLAN---";
+const std::string Iterator::RESERVED_NOISE_PLAN_NAME = "---TRACKER_NOISE_RUN---";
 
 //==============================================================================
 Iterator::Iterator(GatewaySupervisor* supervisor)
@@ -235,6 +236,38 @@ try
 				}
 
 			}  // end command handling and iterator mutex
+
+			if(theIteratorStruct.activePlan_ == Iterator::RESERVED_NOISE_PLAN_NAME)
+			{
+				if(theIteratorStruct.doHaltAction_)
+					iterator->finishNoiseRunIterationPlan(&theIteratorStruct);
+				else if(theIteratorStruct.running_)
+				{
+					try
+					{
+						iterator->stepNoiseRun(&theIteratorStruct);
+					}
+					catch(const std::exception& e)
+					{
+						std::lock_guard<std::mutex> lock(iterator->accessMutex_);
+						iterator->errorMessage_        = e.what();
+						iterator->activePlanIsRunning_ = false;
+						// Retain Iterator ownership on error until the operator acknowledges Stop.
+						__COUT_ERR__ << "NoiseRun stopped: " << e.what() << __E__;
+					}
+					catch(...)
+					{
+						std::lock_guard<std::mutex> lock(iterator->accessMutex_);
+						iterator->errorMessage_ =
+						    "Unknown NoiseRun failure; inspect frontend logs before "
+						    "restarting.";
+						iterator->activePlanIsRunning_ = false;
+					}
+				}
+				else
+					std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				continue;
+			}
 
 			////////////////
 			////////////////
@@ -2561,7 +2594,17 @@ try
 {
 	bool handledCommand = false;
 	__COUTTV__(command);
-	if(command == "iteratePlay")
+	if(command == "iterateNoiseRunStart")
+	{
+		playNoiseRunIterationPlan(xmldoc);
+		handledCommand = true;
+	}
+	else if(command == "iterateNoiseRunStop")
+	{
+		stopNoiseRunIterationPlan(xmldoc);
+		handledCommand = true;
+	}
+	else if(command == "iteratePlay")
 	{
 		playIterationPlan(xmldoc, parameter);
 		handledCommand = true;
@@ -2662,7 +2705,8 @@ void Iterator::playIterationPlan(HttpXmlDocument& xmldoc, const std::string& pla
 {
 	__COUT__ << "Attempting to play iteration plan '" << planName << ".'" << __E__;
 
-	if(planName == Iterator::RESERVED_GEN_PLAN_NAME)
+	if(planName == Iterator::RESERVED_GEN_PLAN_NAME ||
+	   planName == Iterator::RESERVED_NOISE_PLAN_NAME)
 	{
 		__SS__ << "Illegal use of reserved iteration plan name '"
 		       << Iterator::RESERVED_GEN_PLAN_NAME << "!' Please select a different name."
@@ -2759,6 +2803,9 @@ void Iterator::playIterationPlanPrivate(HttpXmlDocument&   xmldoc,
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
 
+	tracker_noise_run::require(!noiseRunOwned_,
+	                           "NoiseRun owns the Iterator. Use NoiseRun Stop first.");
+
 	if(!activePlanIsRunning_ && !commandPlay_ && iteratorBusy_ && activePlanName_ != "" &&
 	   activePlanName_ != planName)
 	{
@@ -2824,6 +2871,9 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
 
+	tracker_noise_run::require(!noiseRunOwned_,
+	                           "NoiseRun supports Stop rather than Pause.");
+
 	if(workloopRunning_ && activePlanIsRunning_ && !commandPause_)
 	{
 		commandPause_ = true;
@@ -2843,8 +2893,13 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 }  //end pauseIterationPlan()
 
 //==============================================================================
-void Iterator::haltIterationPlan(HttpXmlDocument& /*xmldoc*/)
+void Iterator::haltIterationPlan(HttpXmlDocument& xmldoc)
 {
+	if(noiseRunOwned_)
+	{
+		stopNoiseRunIterationPlan(xmldoc);
+		return;
+	}
 	__COUT__ << "Attempting to halt iteration plan '" << activePlanName_ << ".'" << __E__;
 	__COUT__ << "Attempting to halt iteration plan '" << activePlanName_ << ".'" << __E__;
 
@@ -2865,8 +2920,11 @@ void Iterator::haltIterationPlan(HttpXmlDocument& /*xmldoc*/)
 		commandHalt_ = true;
 
 		// clear
-		activePlanName_     = "";
-		activeCommandIndex_ = -1;
+		if(!noiseRunOwned_)
+		{
+			activePlanName_     = "";
+			activeCommandIndex_ = -1;
+		}
 	}
 	else  // no thread, so halt (and reset Error') without command to thread
 	{
@@ -2939,7 +2997,10 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 		                              genPlanDurationSeconds_);
 	}
 
-	if(activePlanIsRunning_ && iteratorBusy_)
+	if(noiseRunOwned_)
+		xmldoc.addTextElementToData("active_plan_status",
+		                            errorMessage_.empty() ? "Running" : "Error");
+	else if(activePlanIsRunning_ && iteratorBusy_)
 	{
 		if(workloopRunning_)
 			xmldoc.addTextElementToData("active_plan_status", "Running");
@@ -2959,6 +3020,18 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 	else
 		xmldoc.addTextElementToData("active_plan_status", "Inactive");
 
+	xmldoc.addTextElementToData("noise_run_supported", "1");
+	xmldoc.addTextElementToData("noise_run_fsm", theSupervisor_->activeStateMachineName_);
+	xmldoc.addTextElementToData("noise_run_owned", noiseRunOwned_ ? "1" : "0");
+	xmldoc.addNumberElementToData("noise_run_scans", noiseRunScans_);
+	xmldoc.addTextElementToData("noise_run_last_summary", noiseRunLastSummary_);
+	xmldoc.addTextElementToData("noise_run_excluded_rocs", noiseRunExcluded_);
+	xmldoc.addTextElementToData("noise_run_state",
+	                            !noiseRunOwned_          ? "Inactive"
+	                            : !errorMessage_.empty() ? "Error"
+	                            : commandHalt_           ? "Stopping"
+	                            : noiseRunScans_         ? "Running"
+	                                                     : "Starting");
 	xmldoc.addTextElementToData("error_message", errorMessage_);
 }  //end getIterationPlanStatus()
 
@@ -4093,3 +4166,5 @@ std::string Iterator::findRemoteCodeEditorIconName(GatewaySupervisor* supervisor
 	              << "'); output file links will show the path only." << __E__;
 	return "";
 }  // end findRemoteCodeEditorIconName()
+
+#include "otsdaq/GatewaySupervisor/IteratorNoiseRun.icc"
