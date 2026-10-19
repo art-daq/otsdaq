@@ -775,6 +775,38 @@ function killproc
 export -f killproc
 
 #############################
+# Wait for a context's http port to answer after its is-alive file appeared.
+# The alive file proves the xdaq process constructed its supervisors; the http
+# peer transport is the last thing xdaq opens, so be patient here rather than
+# killing a healthy process (seen Oct-2026: 25 relaunches in a row on a busy node).
+# Returns 0 if http answered, 1 if it never did.
+OTS_HTTP_VERIFY_ATTEMPTS=12 #x5s = 60s of patience once alive file is seen
+OTS_HTTP_VERIFY_FAILURES=0  #consecutive http failures with alive file present
+function waitForContextHttp
+{
+	local verifyHost=$1
+	local verifyPort=$2
+	local attempt
+	for (( attempt=1; attempt<=OTS_HTTP_VERIFY_ATTEMPTS; attempt++ )); do
+		if curl -m 3 http://${verifyHost}:${verifyPort} >/dev/null 2>&1; then
+			OTS_HTTP_VERIFY_FAILURES=0
+			return 0
+		fi
+		out "Context is alive but http PORT not yet answering (${attempt}/${OTS_HTTP_VERIFY_ATTEMPTS}) at http://${verifyHost}:${verifyPort}..."
+		sleep 5
+	done
+	OTS_HTTP_VERIFY_FAILURES=$(( OTS_HTTP_VERIFY_FAILURES + 1 ))
+	warning "Context http PORT could not be verified at curl http://${verifyHost}:${verifyPort} even though the context marked itself alive."
+	warning "This usually means a network configuration problem (hostname/interface mismatch, firewall, or port in use), not a slow startup."
+	warning "Please check the network status/configuration for ${verifyHost} and that port ${verifyPort} is reachable from this host."
+	if [ $OTS_HTTP_VERIFY_FAILURES -ge 2 ]; then
+		die "Giving up after ${OTS_HTTP_VERIFY_FAILURES} consecutive http verification failures for http://${verifyHost}:${verifyPort}. Check the network status/configuration and relaunch."
+	fi
+	return 1
+}
+export -f waitForContextHttp
+
+#############################
 # function to kill all things ots
 function killprocs
 {
@@ -1349,10 +1381,7 @@ launchOTSMacromaker() {
 			else # found the supervisor!
 				# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 				# so clear alive, if ots script can not connect to PORT
-				OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-				# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-				if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-					out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+				if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 					OTS_IS_ALIVE=
 				fi
 				break
@@ -1421,11 +1450,7 @@ launchOTSMacromaker() {
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
-					sleep 3 #give extra time in case slow web server startup
-					OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-					# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-					if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-						out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+					if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 						OTS_IS_ALIVE=
 					fi
 					break
@@ -1647,13 +1672,10 @@ launchOTSWiz() {
 				out "Checking http://${THIS_HOST}:${PORT}..."
 			else # found the supervisor!
 				# out "Found OTS_IS_ALIVE=${OTS_IS_ALIVE}"
-				sleep 3 #give extra time in case slow web server startup or late startup crash (e.g. when testing the configuration)
+				sleep 3 #give extra time in case of late startup crash (e.g. when testing the configuration)
 				# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 				# so clear alive, if ots script can not connect to PORT
-				OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-				# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-				if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-					out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+				if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 					OTS_IS_ALIVE=
 				fi
 				break
@@ -1707,11 +1729,7 @@ launchOTSWiz() {
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
-					sleep 3 #give extra time in case slow web server startup
-					OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-					# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-					if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-						out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+					if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 						OTS_IS_ALIVE=
 					fi
 					break
@@ -2136,10 +2154,7 @@ launchOTS() {
 									else # found the supervisor!
 										# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 										# so clear alive, if ots script can not connect to PORT
-										OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-										# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-										if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-											out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+										if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 											OTS_IS_ALIVE=
 										fi
 										break
@@ -2207,11 +2222,7 @@ launchOTS() {
 											OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 											out "Checking http://${THIS_HOST}:${PORT}..."
 										else  # found the supervisor!
-											sleep 3 #give extra time in case slow web server startup
-											OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-											# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-											if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-												out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+											if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 												OTS_IS_ALIVE=
 											fi
 											break
@@ -2413,10 +2424,7 @@ launchOTS() {
 				else   # found the supervisor!
 					# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 					# so clear alive, if ots script can not connect to PORT
-					OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-					# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-					if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-						out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+					if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 						OTS_IS_ALIVE=
 					fi
 					break
@@ -2489,11 +2497,7 @@ launchOTS() {
 						OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 						out "Checking http://${THIS_HOST}:${PORT}..."
 					else   # found the supervisor!
-						sleep 3 #give extra time in case slow web server startup
-						OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-						# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-						if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-							out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+						if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 							OTS_IS_ALIVE=
 						fi
 						break
