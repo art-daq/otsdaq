@@ -779,7 +779,11 @@ export -f killproc
 # The alive file proves the xdaq process constructed its supervisors; the http
 # peer transport is the last thing xdaq opens, so be patient here rather than
 # killing a healthy process (seen Oct-2026: 25 relaunches in a row on a busy node).
-# Returns 0 if http answered, 1 if it never did.
+# Returns 0 if http answered, 1 if it never did (or a quit was requested while
+# waiting -- the caller's existing quit-file checks then take the normal exit path).
+# While waiting, the quit files are re-read every poll so a KILL_ALL/EXIT_LOOP
+# from a relaunch is honored within ~5s instead of after the full wait; otherwise
+# a stale script can outlive its replacement and both fight over the same port.
 OTS_HTTP_VERIFY_ATTEMPTS=12 #x5s = 60s of patience once alive file is seen
 OTS_HTTP_VERIFY_FAILURES=0  #consecutive http failures with alive file present
 function waitForContextHttp
@@ -787,10 +791,16 @@ function waitForContextHttp
 	local verifyHost=$1
 	local verifyPort=$2
 	local attempt
+	local quitRequested
 	for (( attempt=1; attempt<=OTS_HTTP_VERIFY_ATTEMPTS; attempt++ )); do
 		if curl -m 3 http://${verifyHost}:${verifyPort} >/dev/null 2>&1; then
 			OTS_HTTP_VERIFY_FAILURES=0
 			return 0
+		fi
+		quitRequested="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE} 2>/dev/null) $(cat ${OTSDAQ_STARTOTS_QUIT_FILE} 2>/dev/null) $(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE} 2>/dev/null)"
+		if [[ "$quitRequested" == *KILL_ALL* || "$quitRequested" == *EXIT_LOOP* ]]; then
+			out "Quit requested while waiting for http PORT at http://${verifyHost}:${verifyPort}; stopping the wait so the quit can be handled."
+			return 1
 		fi
 		out "Context is alive but http PORT not yet answering (${attempt}/${OTS_HTTP_VERIFY_ATTEMPTS}) at http://${verifyHost}:${verifyPort}..."
 		sleep 5
@@ -800,7 +810,11 @@ function waitForContextHttp
 	warning "This usually means a network configuration problem (hostname/interface mismatch, firewall, or port in use), not a slow startup."
 	warning "Please check the network status/configuration for ${verifyHost} and that port ${verifyPort} is reachable from this host."
 	if [ $OTS_HTTP_VERIFY_FAILURES -ge 2 ]; then
-		die "Giving up after ${OTS_HTTP_VERIFY_FAILURES} consecutive http verification failures for http://${verifyHost}:${verifyPort}. Check the network status/configuration and relaunch."
+		warning "Giving up after ${OTS_HTTP_VERIFY_FAILURES} consecutive http verification failures for http://${verifyHost}:${verifyPort}. Check the network status/configuration and relaunch."
+		killprocs
+		# exit 0 on purpose: a non-zero status makes the remote-start ssh caller
+		# retry and spawn a second ots script on this host for the same port.
+		exit 0
 	fi
 	return 1
 }
@@ -2102,6 +2116,19 @@ launchOTS() {
 							#cleanup alive files
 							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive* &>/dev/null #hide output #remove alive file
 
+							if [ $ISREMOTE == 1 ]; then
+								# A remote-launched script does not run the gateway-driven stale-script
+								# exit, so an older gateway for this exact context may still hold the
+								# port (it may have bound the port without yet answering http, which
+								# the curl check below would miss). Kill it by USER_DATA + port.
+								staleGatewayPids=`ps aux|grep -v grep|grep [x]daq.exe|grep "${USER_DATA}/"|grep -- "-p ${PORT} "|awk '{print $2}'`
+								for staleGatewayPid in $staleGatewayPids; do
+									warning "Killing stale gateway xdaq.exe PID ${staleGatewayPid} already using ${USER_DATA} port ${PORT} before launch..."
+									killproc ${staleGatewayPid} stale-gateway
+								done
+								unset staleGatewayPids staleGatewayPid
+							fi
+
 							#attempt to avoid false starts by xdaq by detecting constructor, and relaunching
 							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat >/dev/null 2>&1 #hide output #remove alive file
 							OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
@@ -2304,6 +2331,18 @@ launchOTS() {
 			#out "skipping context not on this host -h ${xdaqHost[$i]} -p ${PORT} -e ${XDAQ_ARGS} &"
 			i=$(( $i + 1 ))
 			continue
+		fi
+
+		if [ $ISREMOTE == 1 ]; then
+			# same stale-process guard as the gateway launch: a remote-launched
+			# script never drives the stale-script exit, so kill any older xdaq
+			# for this exact USER_DATA + port before launching.
+			staleContextPids=`ps aux|grep -v grep|grep [x]daq.exe|grep "${USER_DATA}/"|grep -- "-p ${PORT} "|awk '{print $2}'`
+			for staleContextPid in $staleContextPids; do
+				warning "Killing stale context xdaq.exe PID ${staleContextPid} already using ${USER_DATA} port ${PORT} before launch..."
+				killproc ${staleContextPid} stale-context
+			done
+			unset staleContextPids staleContextPid
 		fi
 
 		#attempt to avoid false starts by xdaq by detecting constructor, and relaunching
