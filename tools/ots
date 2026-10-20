@@ -784,6 +784,28 @@ export -f killproc
 # While waiting, the quit files are re-read every poll so a KILL_ALL/EXIT_LOOP
 # from a relaunch is honored within ~5s instead of after the full wait; otherwise
 # a stale script can outlive its replacement and both fight over the same port.
+#############################
+# Print whatever owns a TCP port on this host (listener, established, or a
+# socket still held by a process that was killed but has not yet exited).
+# Used when a context's http port is unexpectedly busy or never answers, so the
+# log shows the holder at the moment of failure instead of after the fact.
+function reportPortOwner
+{
+	local reportPort=$1
+	local reportWhy=$2
+	out "${Bold}Port ${reportPort} ownership (${reportWhy}):${RstClr}"
+	if command -v lsof >/dev/null 2>&1; then
+		lsof -nP -iTCP:${reportPort} 2>/dev/null | sed 's/^/    lsof: /'
+	fi
+	if command -v ss >/dev/null 2>&1; then
+		ss -tanp 2>/dev/null | awk -v p=":${reportPort}" '$4 ~ p"$" || $5 ~ p"$"' | sed 's/^/    ss:   /'
+	fi
+	# a just-killed xdaq that has not exited yet still holds its sockets
+	ps -eo pid,stat,etime,args 2>/dev/null | grep "[x]daq.exe" | grep -- "-p ${reportPort} " | sed 's/^/    xdaq: /'
+	echo
+}
+export -f reportPortOwner
+
 OTS_HTTP_VERIFY_ATTEMPTS=12 #x5s = 60s of patience once alive file is seen
 OTS_HTTP_VERIFY_FAILURES=0  #consecutive http failures with alive file present
 function waitForContextHttp
@@ -807,9 +829,13 @@ function waitForContextHttp
 			return 1
 		fi
 		out "Context is alive but http PORT not yet answering (${attempt}/${OTS_HTTP_VERIFY_ATTEMPTS}) at http://${verifyHost}:${verifyPort}... (curl exit=${curlExitCode}, ${curlElapsed}s; 7=refused/not listening, 28=timed out)"
+		if [ $attempt -eq 1 ]; then
+			reportPortOwner ${verifyPort} "first failed http poll"
+		fi
 		sleep 5
 	done
 	OTS_HTTP_VERIFY_FAILURES=$(( OTS_HTTP_VERIFY_FAILURES + 1 ))
+	reportPortOwner ${verifyPort} "after ${OTS_HTTP_VERIFY_ATTEMPTS} failed http polls"
 	warning "Context http PORT could not be verified at curl http://${verifyHost}:${verifyPort} even though the context marked itself alive."
 	warning "This usually means a network configuration problem (hostname/interface mismatch, firewall, or port in use), not a slow startup."
 	warning "Please check the network status/configuration for ${verifyHost} and that port ${verifyPort} is reachable from this host."
@@ -2140,10 +2166,12 @@ launchOTS() {
 							if [ "$OTS_CONTEXT_UP" != "bad" ]; then
 								#sometimes the PORT takes extra time to close
 								out "Retrying... Gateway context http PORT is already in use! http://${THIS_HOST}:${PORT}"
+								reportPortOwner ${PORT} "gateway pre-launch check"
 								sleep 4
 								OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
 								# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 								if [ "$OTS_CONTEXT_UP" != "bad" ]; then
+									reportPortOwner ${PORT} "gateway pre-launch check, still in use after retry"
 									die "Gateway context http PORT is already in use! http://${THIS_HOST}:${PORT}"
 								fi
 							fi
@@ -2356,10 +2384,12 @@ launchOTS() {
 		if [ "$OTS_CONTEXT_UP" != "bad" ]; then
 			#sometimes the PORT takes extra time to close
 			out "Retrying... Context '${Bold}${xdaqContextUID[$i]}${RstClr}' http PORT is already in use! http://${THIS_HOST}:${PORT}"
+			reportPortOwner ${PORT} "context '${xdaqContextUID[$i]}' pre-launch check"
 			sleep 4
 			OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
 			# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 			if [ "$OTS_CONTEXT_UP" != "bad" ]; then
+				reportPortOwner ${PORT} "context '${xdaqContextUID[$i]}' pre-launch check, still in use after retry"
 				die "Context http PORT is already in use! http://${THIS_HOST}:${PORT}"
 			fi
 		fi
