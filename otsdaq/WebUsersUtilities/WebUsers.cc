@@ -203,8 +203,19 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc&              cgi,
 	       &userInfo.usernameWithLock_,
 	       &userInfo.userSessionIndex_))
 	{
-		*out << userInfo.cookieCode_;
-		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
+		if(!userInfo.allowNoUser_)
+		{
+			*out << userInfo.cookieCode_;
+			goto HANDLE_ACCESS_FAILURE;  // return false, access failed
+		}
+
+		// AllowNoLoginRequestTypes: proceed without a user, matching the
+		//	RemoteWebUsers::xmlRequestToGateway() behavior for non-gateway supervisors
+		__COUTT__ << "Allowing request '" << userInfo.requestType_
+		          << "' without login (@" << userInfo.ip_ << ")" << __E__;
+		userInfo.setGroupPermissionLevels("");  // inactive, no user
+		userInfo.uid_ = NOT_FOUND_IN_DATABASE;
+		return WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo);
 	}
 
 	// setup userInfo.permissionLevel_ based on userInfo.groupPermissionLevelMap_
