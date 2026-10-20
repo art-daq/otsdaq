@@ -792,8 +792,12 @@ function waitForContextHttp
 	local verifyPort=$2
 	local attempt
 	local quitRequested
+	local curlExitCode
+	local curlElapsed
 	for (( attempt=1; attempt<=OTS_HTTP_VERIFY_ATTEMPTS; attempt++ )); do
-		if curl -m 3 http://${verifyHost}:${verifyPort} >/dev/null 2>&1; then
+		curlElapsed=$(curl -s -m 3 -o /dev/null -w '%{time_total}' http://${verifyHost}:${verifyPort} 2>/dev/null)
+		curlExitCode=$?
+		if [ $curlExitCode -eq 0 ]; then
 			OTS_HTTP_VERIFY_FAILURES=0
 			return 0
 		fi
@@ -802,7 +806,7 @@ function waitForContextHttp
 			out "Quit requested while waiting for http PORT at http://${verifyHost}:${verifyPort}; stopping the wait so the quit can be handled."
 			return 1
 		fi
-		out "Context is alive but http PORT not yet answering (${attempt}/${OTS_HTTP_VERIFY_ATTEMPTS}) at http://${verifyHost}:${verifyPort}..."
+		out "Context is alive but http PORT not yet answering (${attempt}/${OTS_HTTP_VERIFY_ATTEMPTS}) at http://${verifyHost}:${verifyPort}... (curl exit=${curlExitCode}, ${curlElapsed}s; 7=refused/not listening, 28=timed out)"
 		sleep 5
 	done
 	OTS_HTTP_VERIFY_FAILURES=$(( OTS_HTTP_VERIFY_FAILURES + 1 ))

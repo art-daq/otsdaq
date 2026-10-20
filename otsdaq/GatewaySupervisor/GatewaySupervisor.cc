@@ -14153,76 +14153,97 @@ try
 		{
 			__COUT_WARN__ << requestType << " requestType received! " << __E__;
 
-			std::string targetSubsystem =
+			std::string targetSubsystemCsvList =
 			    CgiDataUtilities::getData(cgiIn, "targetSubsystem");
-			__SUP_COUTV__(targetSubsystem);
-			//launch Target Subsystem's remote ots instance
+			__SUP_COUTV__(targetSubsystemCsvList);
 
-			__COUT__ << "gatewayLaunchOTSInstance: acquiring remoteGatewayAppsMutex_ for "
-			            "subsystem '"
-			         << targetSubsystem << "'..." << __E__;
+			// split CSV list of target subsystem names
+			std::vector<std::string> targetSubsystems;
+			{
+				std::istringstream targetSubsystemStream(targetSubsystemCsvList);
+				std::string        targetSubsystemToken;
+				while(std::getline(targetSubsystemStream, targetSubsystemToken, ','))
+					if(targetSubsystemToken.size())
+						targetSubsystems.push_back(targetSubsystemToken);
+			}
 
-			bool                        found = false;
+			if(targetSubsystems.empty())
+			{
+				__SUP_SS__ << "No target subsystem(s) specified in request!" << __E__;
+				__SUP_SS_THROW__;
+			}
+
+			__COUT__ << "gatewayLaunchOTSInstance: " << targetSubsystems.size()
+			         << " target subsystem(s) to reboot..." << __E__;
+
+			__COUT__ << "gatewayLaunchOTSInstance: acquiring remoteGatewayAppsMutex_..."
+			         << __E__;
+
+			std::vector<std::string> notFoundSubsystems;
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 
-			__COUT__ << "gatewayLaunchOTSInstance: mutex acquired for subsystem '"
-			         << targetSubsystem << "'" << __E__;
+			__COUT__ << "gatewayLaunchOTSInstance: mutex acquired" << __E__;
 
-			for(auto& remoteGatewayApp : remoteGatewayApps_)
-				if(targetSubsystem == remoteGatewayApp.appInfo.name)
-				{
-					found = true;
-
-					std::stringstream commandSs;
-					commandSs << "LAUNCH_INSTANCE";
-					commandSs << ";" << remoteGatewayApp.instanceUser;
-					commandSs << ";" << remoteGatewayApp.instanceHost;
-					//assume ots path is parent of USER_DATA
-					size_t i = remoteGatewayApp.instancePath.rfind('/');
-					if(i != std::string::npos)
-						commandSs << ";" << remoteGatewayApp.instancePath.substr(0, i);
-					else
-						commandSs << ";" << remoteGatewayApp.instancePath;
-					commandSs << ";"
-					          << "Normal";
-					commandSs << ";" << remoteGatewayApp.setupType;
-					commandSs << ";"
-					          << remoteGatewayApp.instancePath;  //full USER_DATA path
-					__SUP_COUTV__(commandSs.str());
-
-					__COUT__ << "gatewayLaunchOTSInstance: about to call "
-					            "launchStartOneServerCommand"
-					         << " for subsystem '" << targetSubsystem
-					         << "' targeting context '" << getContextUID() << "'"
-					         << __E__;
-
-					GatewaySupervisor::launchStartOneServerCommand(
-					    commandSs.str(),
-					    //"LAUNCH_INSTANCE;user;hostname;/home/user/ots_spack_fast;Normal;shift1",
-					    CorePropertySupervisorBase::theConfigurationManager_,
-					    getContextUID());
-
-					__COUT__ << "gatewayLaunchOTSInstance: launchStartOneServerCommand "
-					            "returned"
-					         << " for subsystem '" << targetSubsystem << "'" << __E__;
-
-					//force status for immediate user feedback
-					remoteGatewayApp.command =
-					    "Reboot";  //use command process for getting updated status
-					remoteGatewayApp.appInfo.status   = "Rebooting... ";
-					remoteGatewayApp.appInfo.progress = 1;
-					remoteGatewayApp.relaunchTime     = time(0);
-
-					// relaunch notification shown by SubsystemLaunch.js green info box
-				}
-
-			__COUT__ << "gatewayLaunchOTSInstance: releasing mutex for subsystem '"
-			         << targetSubsystem << "' found=" << found << __E__;
-
-			if(!found)
+			for(const auto& targetSubsystem : targetSubsystems)
 			{
-				__SUP_SS__ << "Did not find any matching subsystems for target '"
-				           << targetSubsystem << "' attempted!" << __E__;
+				bool found = false;
+
+				for(auto& remoteGatewayApp : remoteGatewayApps_)
+					if(targetSubsystem == remoteGatewayApp.appInfo.name)
+					{
+						found = true;
+
+						std::stringstream commandSs;
+						commandSs << "LAUNCH_INSTANCE";
+						commandSs << ";" << remoteGatewayApp.instanceUser;
+						commandSs << ";" << remoteGatewayApp.instanceHost;
+						size_t i = remoteGatewayApp.instancePath.rfind('/');
+						if(i != std::string::npos)
+							commandSs << ";" << remoteGatewayApp.instancePath.substr(0, i);
+						else
+							commandSs << ";" << remoteGatewayApp.instancePath;
+						commandSs << ";"
+						          << "Normal";
+						commandSs << ";" << remoteGatewayApp.setupType;
+						commandSs << ";"
+						          << remoteGatewayApp.instancePath;
+						__SUP_COUTV__(commandSs.str());
+
+						__COUT__ << "gatewayLaunchOTSInstance: about to call "
+						            "launchStartOneServerCommand"
+						         << " for subsystem '" << targetSubsystem
+						         << "' targeting context '" << getContextUID() << "'"
+						         << __E__;
+
+						GatewaySupervisor::launchStartOneServerCommand(
+						    commandSs.str(),
+						    CorePropertySupervisorBase::theConfigurationManager_,
+						    getContextUID());
+
+						__COUT__ << "gatewayLaunchOTSInstance: launchStartOneServerCommand "
+						            "returned"
+						         << " for subsystem '" << targetSubsystem << "'" << __E__;
+
+						remoteGatewayApp.command =
+						    "Reboot";
+						remoteGatewayApp.appInfo.status   = "Rebooting... ";
+						remoteGatewayApp.appInfo.progress = 1;
+						remoteGatewayApp.relaunchTime     = time(0);
+					}
+
+				if(!found)
+					notFoundSubsystems.push_back(targetSubsystem);
+			}
+
+			__COUT__ << "gatewayLaunchOTSInstance: releasing mutex, "
+			         << notFoundSubsystems.size() << " not found" << __E__;
+
+			if(!notFoundSubsystems.empty())
+			{
+				__SUP_SS__ << "Did not find matching subsystem(s) for target(s): '";
+				for(size_t notFoundIndex = 0; notFoundIndex < notFoundSubsystems.size(); ++notFoundIndex)
+					ss << (notFoundIndex ? "', '" : "") << notFoundSubsystems[notFoundIndex];
+				ss << "' attempted!" << __E__;
 				__SUP_SS_THROW__;
 			}
 		}
