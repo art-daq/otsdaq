@@ -432,6 +432,14 @@ while :; do
 		info "BACKUP LOGS ENABLED"
 		BACKUPLOGS=1
 		;;
+	--backup-from-env)
+		# Set by the ssh remote-start lines (OTS_BACKUPLOGS=1) so a top-level
+		# 'ots -b' also backs up the logs of every remote context it launches.
+		if [ "x$OTS_BACKUPLOGS" == "x1" ]; then
+			info "BACKUP LOGS ENABLED (propagated from launching ots)"
+			BACKUPLOGS=1
+		fi
+		;;
 	--relaunch | -r)
 		# Disable relaunching functionality
 		info "RELAUNCH CHECK DISABLED!"
@@ -2661,7 +2669,7 @@ launchOTS() {
 				out "\t\tssh ${host} SCRIPT_DIR/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE}"
 
 				# launch ssh remote start (attempt twice)
-				ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}${Reset}" &
+				ssh -K ${host} OTS_BACKUPLOGS=${BACKUPLOGS} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh -K ${host} OTS_BACKUPLOGS=${BACKUPLOGS} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}${Reset}" &
 
 
 				#add host to remote launch host list
@@ -5507,7 +5515,7 @@ otsActionHandler() {
 				out "ACTION-DIAG: ssh KILL_ALL returned, launching remote start in background..."
 
 				# launch ssh remote start (attempt twice)
-				ssh -K ${inst_user}@${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || ssh -K ${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || out "${Red}${REV} ***************** {${inst_host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
+				ssh -K ${inst_user}@${inst_host} OTS_BACKUPLOGS=${BACKUPLOGS} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || ssh -K ${inst_host} OTS_BACKUPLOGS=${BACKUPLOGS} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || out "${Red}${REV} ***************** {${inst_host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
 				out "ACTION-DIAG: LAUNCH_INSTANCE handler DONE for ${inst_host}"
 			fi
 
