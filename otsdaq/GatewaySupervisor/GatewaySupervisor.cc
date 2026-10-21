@@ -14179,7 +14179,7 @@ try
 			__COUT__ << "gatewayLaunchOTSInstance: acquiring remoteGatewayAppsMutex_..."
 			         << __E__;
 
-			std::vector<std::string> notFoundSubsystems;
+			std::vector<std::string>    notFoundSubsystems;
 			std::lock_guard<std::mutex> lock(remoteGatewayAppsMutex_);
 
 			__COUT__ << "gatewayLaunchOTSInstance: mutex acquired" << __E__;
@@ -14199,14 +14199,14 @@ try
 						commandSs << ";" << remoteGatewayApp.instanceHost;
 						size_t i = remoteGatewayApp.instancePath.rfind('/');
 						if(i != std::string::npos)
-							commandSs << ";" << remoteGatewayApp.instancePath.substr(0, i);
+							commandSs << ";"
+							          << remoteGatewayApp.instancePath.substr(0, i);
 						else
 							commandSs << ";" << remoteGatewayApp.instancePath;
 						commandSs << ";"
 						          << "Normal";
 						commandSs << ";" << remoteGatewayApp.setupType;
-						commandSs << ";"
-						          << remoteGatewayApp.instancePath;
+						commandSs << ";" << remoteGatewayApp.instancePath;
 						__SUP_COUTV__(commandSs.str());
 
 						__COUT__ << "gatewayLaunchOTSInstance: about to call "
@@ -14220,12 +14220,12 @@ try
 						    CorePropertySupervisorBase::theConfigurationManager_,
 						    getContextUID());
 
-						__COUT__ << "gatewayLaunchOTSInstance: launchStartOneServerCommand "
-						            "returned"
-						         << " for subsystem '" << targetSubsystem << "'" << __E__;
+						__COUT__
+						    << "gatewayLaunchOTSInstance: launchStartOneServerCommand "
+						       "returned"
+						    << " for subsystem '" << targetSubsystem << "'" << __E__;
 
-						remoteGatewayApp.command =
-						    "Reboot";
+						remoteGatewayApp.command          = "Reboot";
 						remoteGatewayApp.appInfo.status   = "Rebooting... ";
 						remoteGatewayApp.appInfo.progress = 1;
 						remoteGatewayApp.relaunchTime     = time(0);
@@ -14241,8 +14241,10 @@ try
 			if(!notFoundSubsystems.empty())
 			{
 				__SUP_SS__ << "Did not find matching subsystem(s) for target(s): '";
-				for(size_t notFoundIndex = 0; notFoundIndex < notFoundSubsystems.size(); ++notFoundIndex)
-					ss << (notFoundIndex ? "', '" : "") << notFoundSubsystems[notFoundIndex];
+				for(size_t notFoundIndex = 0; notFoundIndex < notFoundSubsystems.size();
+				    ++notFoundIndex)
+					ss << (notFoundIndex ? "', '" : "")
+					   << notFoundSubsystems[notFoundIndex];
 				ss << "' attempted!" << __E__;
 				__SUP_SS_THROW__;
 			}
