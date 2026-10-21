@@ -1,9 +1,15 @@
 #include "otsdaq/Macros/StringMacros.h"
 
-#include <sched.h>    // for sched_getaffinity
-#include <algorithm>  // for find_if
+#include <fcntl.h>        // for O_CLOEXEC
+#include <sched.h>        // for sched_getaffinity
+#include <sys/syscall.h>  // for SYS_close_range
+#include <sys/wait.h>     // for waitpid
+#include <unistd.h>       // for fork, pipe2, execl
+#include <algorithm>      // for find_if
 #include <array>
+#include <cerrno>
 #include <cstdint>  // for uintptr_t
+#include <cstring>  // for strerror
 #include <fstream>  // for loadPersistentSystemVariables
 #include <mutex>    // for loadPersistentSystemVariables
 
@@ -1795,27 +1801,77 @@ std::string StringMacros::exec(const char* cmd)
 {
 	__COUTTV__(cmd);
 
-	std::array<char, 128> buffer;
+	// Not popen(): popen() lets the child inherit every open descriptor of this
+	// process, including xdaq's http listening socket. A long-running helper
+	// (e.g. 'ots -lxz') then keeps that port bound after xdaq is killed and the
+	// relaunched xdaq cannot bind it. So fork, close every fd above stderr in the
+	// child, then exec the shell.
+	int outputPipe[2];
+	if(pipe2(outputPipe, O_CLOEXEC) != 0)
+		__THROW__("pipe2() failed: " + std::string(strerror(errno)));
+
+	pid_t childPid = fork();
+	if(childPid < 0)
+	{
+		int forkErrno = errno;
+		close(outputPipe[0]);
+		close(outputPipe[1]);
+		__THROW__("fork() failed: " + std::string(strerror(forkErrno)));
+	}
+
+	if(childPid == 0)
+	{
+		// child: only async-signal-safe calls from here until exec
+		dup2(outputPipe[1], STDOUT_FILENO);
+		dup2(outputPipe[1], STDERR_FILENO);
+
+#ifdef SYS_close_range
+		if(syscall(SYS_close_range, 3, ~0U, 0) != 0)
+#endif
+		{
+			long maxFd = sysconf(_SC_OPEN_MAX);
+			if(maxFd < 0)
+				maxFd = 65536;
+			for(long fdIndex = 3; fdIndex < maxFd; ++fdIndex)
+				close(static_cast<int>(fdIndex));
+		}
+
+		execl("/bin/sh", "sh", "-c", cmd, static_cast<char*>(nullptr));
+		_exit(127);
+	}
+
+	close(outputPipe[1]);
+
 	std::string           result;
+	std::array<char, 128> buffer;
+	for(;;)
+	{
+		ssize_t bytesRead = read(outputPipe[0], buffer.data(), buffer.size());
+		if(bytesRead > 0)
+			result.append(buffer.data(), static_cast<size_t>(bytesRead));
+		else if(bytesRead == 0)
+			break;
+		else if(errno == EINTR)
+			continue;
+		else
+		{
+			__COUT_WARN__ << "read() of command output failed for command: " << cmd
+			              << " (" << strerror(errno) << ")" << __E__;
+			break;
+		}
+	}
+	close(outputPipe[0]);
 
-	// For capturing both stdout and stderr, we need to redirect stderr to stdout
-	// This is done by appending " 2>&1" to the command
-	std::string cmdWithRedirect = std::string(cmd) + " 2>&1";
-	FILE*       rawPipe         = popen(cmdWithRedirect.c_str(), "r");
-	if(!rawPipe)
-		__THROW__("popen() failed!");
-
-	// Own the pipe so that an exception while accumulating output still closes it
-	// and reaps the child process. Released below so the success path can check
-	// the pclose() status itself.
-	std::unique_ptr<FILE, int (*)(FILE*)> pipe(rawPipe, pclose);
-
-	while(fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
-		result += buffer.data();
-
-	int status = pclose(pipe.release());
-	if(status == -1)
-		__COUT_WARN__ << "pclose() failed for command: " << cmd << __E__;
+	int childStatus = 0;
+	while(waitpid(childPid, &childStatus, 0) < 0)
+	{
+		if(errno != EINTR)
+		{
+			__COUT_WARN__ << "waitpid() failed for command: " << cmd << " ("
+			              << strerror(errno) << ")" << __E__;
+			break;
+		}
+	}
 
 	__COUTTV__(result);
 	return result;

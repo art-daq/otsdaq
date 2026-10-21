@@ -2437,10 +2437,15 @@ bool WebUsers::cookieCodeIsActiveForRequest(
 		if((i = searchActiveSessionDatabaseForCookie(cookieCode)) ==
 		   NOT_FOUND_IN_DATABASE)
 		{
-			__COUT_ERR__ << "Cookie code not found" << __E__;
-			cookieCode = REQ_NO_LOGIN_RESPONSE;
-
 			incrementIpBlacklistCount(ip);  // increment ip blacklist counter
+
+			{
+				uint32_t cookieErrorCount = ipBlacklistCounts_.count(ip) ? ipBlacklistCounts_[ip] : 0;
+				if(cookieErrorCount <= 1 || cookieErrorCount % 100 == 0)
+					__COUT_ERR__ << "Cookie code not found (ip=" << ip
+					             << ", occurrences=" << cookieErrorCount << ")" << __E__;
+			}
+			cookieCode = REQ_NO_LOGIN_RESPONSE;
 
 			return false;
 		}
