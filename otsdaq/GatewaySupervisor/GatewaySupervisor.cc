@@ -9471,8 +9471,8 @@ try
 
 		if(iteration || subIteration)
 			__COUTT__ << "Broadcast thread " << threadIndex << "\t"
-			          << "Adding iteration parameters " << iteration << "." << subIteration
-			          << __E__;
+			          << "Adding iteration parameters " << iteration << "."
+			          << subIteration << __E__;
 
 		RunControlStateMachine::theProgressBar_.step();
 
@@ -9580,7 +9580,8 @@ try
 			__COUTT__ << "here in lock " << appInfo.getId() << __E__;
 
 			__COUTT__ << "Broadcast thread in lock " << threadIndex << "\t"
-			          << "Sending... \t" << SOAPUtilities::translate(message) << std::endl;
+			          << "Sending... \t" << SOAPUtilities::translate(message)
+			          << std::endl;
 			// for transition attempt, set status for app, in case the request occupies the target app
 			std::string tmpReply = send(appInfo.getDescriptor(), message);
 			__COUTTV__(tmpReply);
@@ -10242,14 +10243,17 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								else
 									broadcastIterationsDone_ = false;
 							}
-							catch(const toolbox::fsm::exception::Exception& supervisorError)
+							catch(
+							    const toolbox::fsm::exception::Exception& supervisorError)
 							{
-								__COUT_ERR__ << "Supervisor instance = '" << appInfo.getName()
-								             << "' failed " << command
-								             << "; continuing with remaining supervisors at "
-								                "this priority level: "
-								             << supervisorError.what() << __E__;
-								supervisorErrorsAtPriority.push_back(supervisorError.what());
+								__COUT_ERR__
+								    << "Supervisor instance = '" << appInfo.getName()
+								    << "' failed " << command
+								    << "; continuing with remaining supervisors at "
+								       "this priority level: "
+								    << supervisorError.what() << __E__;
+								supervisorErrorsAtPriority.push_back(
+								    supervisorError.what());
 							}
 						}
 
@@ -10289,14 +10293,16 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 								{
 									// collect and keep waiting so the remaining threads at
 									// this priority level finish their supervisors' attempts
-									__COUT_ERR__ << "Broadcast thread " << i
-									             << " reported an error; continuing to wait "
-									                "for the remaining threads: "
-									             << broadcastThreadStructs_[i]->getReply()
-									             << __E__;
+									__COUT_ERR__
+									    << "Broadcast thread " << i
+									    << " reported an error; continuing to wait "
+									       "for the remaining threads: "
+									    << broadcastThreadStructs_[i]->getReply()
+									    << __E__;
 									supervisorErrorsAtPriority.push_back(
 									    broadcastThreadStructs_[i]->getReply());
-									broadcastThreadStructs_[i]->error_ = false;  // collected
+									broadcastThreadStructs_[i]->error_ =
+									    false;  // collected
 								}
 
 							if(!done)  // update status and sleep
@@ -10406,14 +10412,16 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 							}
 
 						} while(!done);
-						__COUTT__ << "All threads done with priority level work." << __E__;
+						__COUTT__ << "All threads done with priority level work."
+						          << __E__;
 					}  // end thread complete verification
 
 					if(!supervisorErrorsAtPriority.empty())
 					{
 						__SS__ << supervisorErrorsAtPriority.size() << " of "
-						       << supervisorsAttemptedAtPriority << " Supervisor(s) failed "
-						       << command << " at priority level " << i << " (iteration "
+						       << supervisorsAttemptedAtPriority
+						       << " Supervisor(s) failed " << command
+						       << " at priority level " << i << " (iteration "
 						       << iteration
 						       << "). Every supervisor at this level was attempted; "
 						          "lower-priority levels were not started.\n";

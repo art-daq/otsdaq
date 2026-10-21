@@ -2440,7 +2440,8 @@ bool WebUsers::cookieCodeIsActiveForRequest(
 			incrementIpBlacklistCount(ip);  // increment ip blacklist counter
 
 			{
-				uint32_t cookieErrorCount = ipBlacklistCounts_.count(ip) ? ipBlacklistCounts_[ip] : 0;
+				uint32_t cookieErrorCount =
+				    ipBlacklistCounts_.count(ip) ? ipBlacklistCounts_[ip] : 0;
 				if(cookieErrorCount <= 1 || cookieErrorCount % 100 == 0)
 					__COUT_ERR__ << "Cookie code not found (ip=" << ip
 					             << ", occurrences=" << cookieErrorCount << ")" << __E__;
