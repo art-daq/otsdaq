@@ -211,8 +211,8 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc&              cgi,
 
 		// AllowNoLoginRequestTypes: proceed without a user, matching the
 		//	RemoteWebUsers::xmlRequestToGateway() behavior for non-gateway supervisors
-		__COUTT__ << "Allowing request '" << userInfo.requestType_
-		          << "' without login (@" << userInfo.ip_ << ")" << __E__;
+		__COUTT__ << "Allowing request '" << userInfo.requestType_ << "' without login (@"
+		          << userInfo.ip_ << ")" << __E__;
 		userInfo.setGroupPermissionLevels("");  // inactive, no user
 		userInfo.uid_ = NOT_FOUND_IN_DATABASE;
 		return WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo);
