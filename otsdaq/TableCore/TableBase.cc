@@ -22,15 +22,14 @@ const std::string TableBase::GROUP_METADATA_TABLE_NAME = "TableGroupMetadata";
 ///	then allowIllegalColumns is set for InfoReader
 ///	If accumulatedExceptions pointer = 0, then illegal columns throw std::runtime_error
 /// exception
-TableBase::TableBase(const std::string& tableName,
-                     std::string*       accumulatedExceptions)
+TableBase::TableBase(const std::string& tableName, std::string* accumulatedExceptions)
     // Backbone member tables (GroupAliasesTable, VersionAliasesTable) get a deeper
     // cache so saveModifiedVersion() can find an equivalent version further back in
     // history; every alias flip otherwise forks a new Backbone group.
-    : MAX_VIEWS_IN_CACHE((tableName == "GroupAliasesTable" ||
-                          tableName == "VersionAliasesTable")
-                             ? BACKBONE_MEMBER_MAX_VIEWS_IN_CACHE
-                             : 20)
+    : MAX_VIEWS_IN_CACHE(
+          (tableName == "GroupAliasesTable" || tableName == "VersionAliasesTable")
+              ? BACKBONE_MEMBER_MAX_VIEWS_IN_CACHE
+              : 20)
     , tableName_(tableName)
     , activeTableView_(0)
     , mockupTableView_(tableName)
