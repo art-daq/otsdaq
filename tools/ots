@@ -432,6 +432,14 @@ while :; do
 		info "BACKUP LOGS ENABLED"
 		BACKUPLOGS=1
 		;;
+	--backup-from-env)
+		# Set by the ssh remote-start lines (OTS_BACKUPLOGS=1) so a top-level
+		# 'ots -b' also backs up the logs of every remote context it launches.
+		if [ "x$OTS_BACKUPLOGS" == "x1" ]; then
+			info "BACKUP LOGS ENABLED (propagated from launching ots)"
+			BACKUPLOGS=1
+		fi
+		;;
 	--relaunch | -r)
 		# Disable relaunching functionality
 		info "RELAUNCH CHECK DISABLED!"
@@ -773,6 +781,101 @@ function killproc
 	done
 }
 export -f killproc
+
+#############################
+# Wait for a context's http port to answer after its is-alive file appeared.
+# The alive file proves the xdaq process constructed its supervisors; the http
+# peer transport is the last thing xdaq opens, so be patient here rather than
+# killing a healthy process (seen Oct-2026: 25 relaunches in a row on a busy node).
+# Returns 0 if http answered, 1 if it never did.
+# While waiting, the quit files are re-read every poll so a KILL_ALL/EXIT_LOOP
+# from a relaunch is honored within ~5s instead of after the full wait; otherwise
+# a stale script can outlive its replacement and both fight over the same port.
+# A quit is handled HERE (exit), not returned as a failure: every caller treats a
+# failure by clearing OTS_IS_ALIVE and entering its kill/relaunch loop, and the
+# gateway loop only re-reads the quit files after killproc + relaunch -- so an
+# 'ots -a' EXIT_LOOP during this wait would kill the healthy gateway it is meant
+# to leave running. Same per-mode rules as the in-loop sentinel checks: Macro
+# Maker mode honors only the local quit; KILL_ALL kills, EXIT_LOOP leaves xdaq up.
+#############################
+# Print whatever owns a TCP or UDP port on this host (listener, established, or a
+# socket still held by a process that was killed but has not yet exited).
+# Used when a context's http port is unexpectedly busy or never answers, so the
+# log shows the holder at the moment of failure instead of after the fact.
+# UDP is included because the MacroMaker remote-control port (OTS_MACROMAKER_UDP_PORT)
+# is UDP and has been seen held by a leaked child of a killed xdaq.exe.
+function reportPortOwner
+{
+	local reportPort=$1
+	local reportWhy=$2
+	out "${Bold}Port ${reportPort} ownership (${reportWhy}):${RstClr}"
+	if command -v lsof >/dev/null 2>&1; then
+		lsof -nP -iTCP:${reportPort} 2>/dev/null | sed 's/^/    lsof: /'
+		lsof -nP -iUDP:${reportPort} 2>/dev/null | sed 's/^/    lsof: /'
+	fi
+	if command -v ss >/dev/null 2>&1; then
+		ss -tuanp 2>/dev/null | awk -v p=":${reportPort}" '$5 ~ p"$" || $6 ~ p"$"' | sed 's/^/    ss:   /'
+	fi
+	# a just-killed xdaq that has not exited yet still holds its sockets
+	ps -eo pid,stat,etime,args 2>/dev/null | grep "[x]daq.exe" | grep -- "-p ${reportPort} " | sed 's/^/    xdaq: /'
+	echo
+}
+export -f reportPortOwner
+
+OTS_HTTP_VERIFY_ATTEMPTS=12 #x5s = 60s of patience once alive file is seen
+OTS_HTTP_VERIFY_FAILURES=0  #consecutive http failures with alive file present
+function waitForContextHttp
+{
+	local verifyHost=$1
+	local verifyPort=$2
+	local attempt
+	local quitAction
+	local quitGlobal
+	local quitLocal
+	local curlExitCode
+	local curlElapsed
+	for (( attempt=1; attempt<=OTS_HTTP_VERIFY_ATTEMPTS; attempt++ )); do
+		curlElapsed=$(curl -s -m 3 -o /dev/null -w '%{time_total}' http://${verifyHost}:${verifyPort} 2>/dev/null)
+		curlExitCode=$?
+		if [ $curlExitCode -eq 0 ]; then
+			OTS_HTTP_VERIFY_FAILURES=0
+			return 0
+		fi
+		quitAction="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE} 2>/dev/null)"
+		quitGlobal="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE} 2>/dev/null)"
+		quitLocal="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE} 2>/dev/null)"
+		if [[ "$quitLocal" == "KILL_ALL ${THIS_HOST}" || \
+				( $ISMACROMAKER == 0 && ( "$quitAction" == "KILL_ALL" || "$quitGlobal" == "KILL_ALL" ) ) ]]; then
+			out "Exit of (stale) ots while waiting for http PORT at http://${verifyHost}:${verifyPort}... Action:${quitAction}-Quit:${quitGlobal}-Local:${quitLocal}"
+			killprocs
+			exit
+		elif [[ "$quitLocal" == "EXIT_LOOP ${THIS_HOST}" || \
+				( $ISMACROMAKER == 0 && ( "$quitAction" == "EXIT_LOOP" || "$quitGlobal" == "EXIT_LOOP" ) ) ]]; then
+			#exit verification loop on EXIT_LOOP sentinel (e.g. from ots -a), leave xdaq processes running
+			warning "Exiting launch verification while waiting for http PORT at http://${verifyHost}:${verifyPort} on EXIT_LOOP sentinel... Action:${quitAction}-Quit:${quitGlobal}-Local:${quitLocal}"
+			exit
+		fi
+		out "Context is alive but http PORT not yet answering (${attempt}/${OTS_HTTP_VERIFY_ATTEMPTS}) at http://${verifyHost}:${verifyPort}... (curl exit=${curlExitCode}, ${curlElapsed}s; 7=refused/not listening, 28=timed out)"
+		if [ $attempt -eq 1 ]; then
+			reportPortOwner ${verifyPort} "first failed http poll"
+		fi
+		sleep 5
+	done
+	OTS_HTTP_VERIFY_FAILURES=$(( OTS_HTTP_VERIFY_FAILURES + 1 ))
+	reportPortOwner ${verifyPort} "after ${OTS_HTTP_VERIFY_ATTEMPTS} failed http polls"
+	warning "Context http PORT could not be verified at curl http://${verifyHost}:${verifyPort} even though the context marked itself alive."
+	warning "This usually means a network configuration problem (hostname/interface mismatch, firewall, or port in use), not a slow startup."
+	warning "Please check the network status/configuration for ${verifyHost} and that port ${verifyPort} is reachable from this host."
+	if [ $OTS_HTTP_VERIFY_FAILURES -ge 2 ]; then
+		warning "Giving up after ${OTS_HTTP_VERIFY_FAILURES} consecutive http verification failures for http://${verifyHost}:${verifyPort}. Check the network status/configuration and relaunch."
+		killprocs
+		# exit 0 on purpose: a non-zero status makes the remote-start ssh caller
+		# retry and spawn a second ots script on this host for the same port.
+		exit 0
+	fi
+	return 1
+}
+export -f waitForContextHttp
 
 #############################
 # function to kill all things ots
@@ -1349,10 +1452,7 @@ launchOTSMacromaker() {
 			else # found the supervisor!
 				# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 				# so clear alive, if ots script can not connect to PORT
-				OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-				# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-				if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-					out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+				if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 					OTS_IS_ALIVE=
 				fi
 				break
@@ -1421,11 +1521,7 @@ launchOTSMacromaker() {
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
-					sleep 3 #give extra time in case slow web server startup
-					OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-					# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-					if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-						out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+					if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 						OTS_IS_ALIVE=
 					fi
 					break
@@ -1647,13 +1743,10 @@ launchOTSWiz() {
 				out "Checking http://${THIS_HOST}:${PORT}..."
 			else # found the supervisor!
 				# out "Found OTS_IS_ALIVE=${OTS_IS_ALIVE}"
-				sleep 3 #give extra time in case slow web server startup or late startup crash (e.g. when testing the configuration)
+				sleep 3 #give extra time in case of late startup crash (e.g. when testing the configuration)
 				# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 				# so clear alive, if ots script can not connect to PORT
-				OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-				# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-				if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-					out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+				if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 					OTS_IS_ALIVE=
 				fi
 				break
@@ -1707,11 +1800,7 @@ launchOTSWiz() {
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
-					sleep 3 #give extra time in case slow web server startup
-					OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-					# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-					if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-						out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+					if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 						OTS_IS_ALIVE=
 					fi
 					break
@@ -2084,6 +2173,19 @@ launchOTS() {
 							#cleanup alive files
 							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive* &>/dev/null #hide output #remove alive file
 
+							if [ $ISREMOTE == 1 ]; then
+								# A remote-launched script does not run the gateway-driven stale-script
+								# exit, so an older gateway for this exact context may still hold the
+								# port (it may have bound the port without yet answering http, which
+								# the curl check below would miss). Kill it by USER_DATA + port.
+								staleGatewayPids=`ps aux|grep -v grep|grep [x]daq.exe|grep "${USER_DATA}/"|grep -- "-p ${PORT} "|awk '{print $2}'`
+								for staleGatewayPid in $staleGatewayPids; do
+									warning "Killing stale gateway xdaq.exe PID ${staleGatewayPid} already using ${USER_DATA} port ${PORT} before launch..."
+									killproc ${staleGatewayPid} stale-gateway
+								done
+								unset staleGatewayPids staleGatewayPid
+							fi
+
 							#attempt to avoid false starts by xdaq by detecting constructor, and relaunching
 							rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat >/dev/null 2>&1 #hide output #remove alive file
 							OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
@@ -2091,10 +2193,12 @@ launchOTS() {
 							if [ "$OTS_CONTEXT_UP" != "bad" ]; then
 								#sometimes the PORT takes extra time to close
 								out "Retrying... Gateway context http PORT is already in use! http://${THIS_HOST}:${PORT}"
+								reportPortOwner ${PORT} "gateway pre-launch check"
 								sleep 4
 								OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
 								# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 								if [ "$OTS_CONTEXT_UP" != "bad" ]; then
+									reportPortOwner ${PORT} "gateway pre-launch check, still in use after retry"
 									die "Gateway context http PORT is already in use! http://${THIS_HOST}:${PORT}"
 								fi
 							fi
@@ -2136,10 +2240,7 @@ launchOTS() {
 									else # found the supervisor!
 										# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 										# so clear alive, if ots script can not connect to PORT
-										OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-										# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-										if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-											out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+										if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 											OTS_IS_ALIVE=
 										fi
 										break
@@ -2207,11 +2308,7 @@ launchOTS() {
 											OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 											out "Checking http://${THIS_HOST}:${PORT}..."
 										else  # found the supervisor!
-											sleep 3 #give extra time in case slow web server startup
-											OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-											# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-											if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-												out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+											if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 												OTS_IS_ALIVE=
 											fi
 											break
@@ -2295,6 +2392,18 @@ launchOTS() {
 			continue
 		fi
 
+		if [ $ISREMOTE == 1 ]; then
+			# same stale-process guard as the gateway launch: a remote-launched
+			# script never drives the stale-script exit, so kill any older xdaq
+			# for this exact USER_DATA + port before launching.
+			staleContextPids=`ps aux|grep -v grep|grep [x]daq.exe|grep "${USER_DATA}/"|grep -- "-p ${PORT} "|awk '{print $2}'`
+			for staleContextPid in $staleContextPids; do
+				warning "Killing stale context xdaq.exe PID ${staleContextPid} already using ${USER_DATA} port ${PORT} before launch..."
+				killproc ${staleContextPid} stale-context
+			done
+			unset staleContextPids staleContextPid
+		fi
+
 		#attempt to avoid false starts by xdaq by detecting constructor, and relaunching
 		rm ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat >/dev/null 2>&1 #hide output #remove alive file
 		OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
@@ -2302,10 +2411,12 @@ launchOTS() {
 		if [ "$OTS_CONTEXT_UP" != "bad" ]; then
 			#sometimes the PORT takes extra time to close
 			out "Retrying... Context '${Bold}${xdaqContextUID[$i]}${RstClr}' http PORT is already in use! http://${THIS_HOST}:${PORT}"
+			reportPortOwner ${PORT} "context '${xdaqContextUID[$i]}' pre-launch check"
 			sleep 4
 			OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
 			# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
 			if [ "$OTS_CONTEXT_UP" != "bad" ]; then
+				reportPortOwner ${PORT} "context '${xdaqContextUID[$i]}' pre-launch check, still in use after retry"
 				die "Context http PORT is already in use! http://${THIS_HOST}:${PORT}"
 			fi
 		fi
@@ -2413,10 +2524,7 @@ launchOTS() {
 				else   # found the supervisor!
 					# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 					# so clear alive, if ots script can not connect to PORT
-					OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-					# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-					if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-						out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+					if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 						OTS_IS_ALIVE=
 					fi
 					break
@@ -2489,11 +2597,7 @@ launchOTS() {
 						OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 						out "Checking http://${THIS_HOST}:${PORT}..."
 					else   # found the supervisor!
-						sleep 3 #give extra time in case slow web server startup
-						OTS_CONTEXT_UP="$(curl -m 3 http://${THIS_HOST}:${PORT} >/dev/null 2>&1 || echo 'bad')" #detect if http server has gone up
-						# out "OTS_CONTEXT_UP=${OTS_CONTEXT_UP}"
-						if [ "$OTS_CONTEXT_UP" == "bad" ]; then
-							out "Context http PORT could not be verified at curl http://${THIS_HOST}:${PORT} >/dev/null 2>&1"
+						if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
 							OTS_IS_ALIVE=
 						fi
 						break
@@ -2584,7 +2688,7 @@ launchOTS() {
 				out "\t\tssh ${host} SCRIPT_DIR/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE}"
 
 				# launch ssh remote start (attempt twice)
-				ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh -K ${host} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}${Reset}" &
+				ssh -K ${host} OTS_BACKUPLOGS=${BACKUPLOGS} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || ssh -K ${host} OTS_BACKUPLOGS=${BACKUPLOGS} ${SCRIPT_DIR}/ots_remote_start ${host} ${PWD} ${OTS_SETUP_TYPE} || out "${Red}${REV} ***************** {${host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}${Reset}" &
 
 
 				#add host to remote launch host list
@@ -5430,7 +5534,7 @@ otsActionHandler() {
 				out "ACTION-DIAG: ssh KILL_ALL returned, launching remote start in background..."
 
 				# launch ssh remote start (attempt twice)
-				ssh -K ${inst_user}@${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || ssh -K ${inst_host} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || out "${Red}${REV} ***************** {${inst_host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
+				ssh -K ${inst_user}@${inst_host} OTS_BACKUPLOGS=${BACKUPLOGS} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || ssh -K ${inst_host} OTS_BACKUPLOGS=${BACKUPLOGS} ${SCRIPT_DIR}/ots_remote_instance_start ${inst_host} ${inst_path} ${inst_mode} ${inst_type} || out "${Red}${REV} ***************** {${inst_host}} Remote start failed (check local permissions and remote installation)! ********************* ${RstClr}" &
 				out "ACTION-DIAG: LAUNCH_INSTANCE handler DONE for ${inst_host}"
 			fi
 
