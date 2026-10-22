@@ -58,6 +58,14 @@ unsigned int CircularBuffer<D, H>::getProducerBufferSize(
 
 //========================================================================================================================
 template<class D, class H>
+unsigned int CircularBuffer<D, H>::getProducerWrittenBuffers(
+    const std::string& producerID) const
+{
+	return theBuffer_.at(producerID).numberOfWrittenBuffers();
+}  // end getProducerWrittenBuffers()
+
+//========================================================================================================================
+template<class D, class H>
 void CircularBuffer<D, H>::registerProducer(const std::string& producerID,
                                             unsigned int       bufferSize)
 {

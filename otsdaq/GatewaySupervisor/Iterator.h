@@ -137,8 +137,9 @@ class Iterator
 	static void startCommandBeginLabel(IteratorWorkLoopStruct* iteratorStruct);
 	static void startCommandRepeatLabel(IteratorWorkLoopStruct* iteratorStruct);
 
-	static void startCommandRun(IteratorWorkLoopStruct* iteratorStruct);
-	static bool checkCommandRun(IteratorWorkLoopStruct* iteratorStruct);
+	static void        startCommandRun(IteratorWorkLoopStruct* iteratorStruct);
+	static bool        checkCommandRun(IteratorWorkLoopStruct* iteratorStruct);
+	static std::string buildIteratorLogEntry(IteratorWorkLoopStruct* iteratorStruct);
 
 	static void startCommandWait(IteratorWorkLoopStruct* iteratorStruct);
 	static bool checkCommandWait(IteratorWorkLoopStruct* iteratorStruct);
@@ -175,6 +176,8 @@ class Iterator
 		std::vector<std::string>        argNames;        ///< emit order, de-duplicated (lower dimension wins)
 		uint64_t                        totalIterations = 1;
 	};
+	/// true for step DEFAULT/Default or a numeric 0: the argument is a constant whose value is passed through untouched
+	static bool isConstantMacroStep(const std::string& step);
 	static MacroLoopSpec parseMacroLoopSpec(const std::string& inputArgs);
 	/// name/value list for the index-th iteration, in argNames order
 	static std::vector<std::pair<std::string, std::string>> macroLoopIteration(const MacroLoopSpec& spec, uint64_t index);

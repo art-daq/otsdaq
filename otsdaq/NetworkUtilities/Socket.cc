@@ -119,7 +119,8 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 		}
 
 		// make a socket:
-		socketNumber_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+		socketNumber_ =
+		    socket(res->ai_family, res->ai_socktype | SOCK_CLOEXEC, res->ai_protocol);
 
 		__COUTT__ << "]\tSocket Number: " << socketNumber_
 		          << " for port: " << ntohs(socketAddress_.sin_port) << " initialized."
@@ -129,7 +130,8 @@ void Socket::initialize(unsigned int socketReceiveBufferSize)
 		{
 			__COUTT__ << "]\tPort " << port.str() << " unavailable, trying next port..."
 			          << std::endl;
-			socketNumber_ = 0;
+			close(socketNumber_);  // otherwise every occupied port leaks a descriptor
+			socketNumber_ = -1;
 		}
 		else
 		{

@@ -1,5 +1,8 @@
 name: build-develop
 
+permissions:
+  contents: read
+
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
 on:
@@ -21,4 +24,6 @@ on:
 jobs:
   build_against_dev_release:
     name: Build against develop
-    uses: art-daq/.github/.github/workflows/otsdaq-develop-cpp-ci.yml@stable
+    uses: art-daq/.github/.github/workflows/develop-cpp-ci.yml@stable
+    with:
+      otsdaq-mode: true

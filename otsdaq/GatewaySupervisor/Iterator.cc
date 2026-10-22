@@ -143,6 +143,7 @@ try
 
 						iterator->activePlanIsRunning_ = true;
 						iterator->iteratorBusy_        = true;
+						iterator->errorMessage_        = "";  // clear any previous error
 
 						if(theIteratorStruct.activePlan_ != iterator->activePlanName_)
 						{
@@ -245,10 +246,38 @@ try
 
 				// safely pause plan!
 				//	i.e. check that command is complete
+				//	(if command throws, pause anyway and surface the error for retry)
 
-				__COUT__ << "Waiting to pause..." << __E__;
-				while(!iterator->checkCommand(&theIteratorStruct))
-					__COUT__ << "Waiting to pause..." << __E__;
+				std::string pauseErrorMessage = "";
+				try
+				{
+					// skip if no command in flight (e.g. already paused by an error)
+					while(theIteratorStruct.commandBusy_ &&
+					      !iterator->checkCommand(&theIteratorStruct))
+						__COUT__ << "Waiting to pause..." << __E__;
+				}
+				catch(const std::runtime_error& e)
+				{
+					pauseErrorMessage = e.what();
+				}
+				catch(...)
+				{
+					pauseErrorMessage = "Unknown error.";
+				}
+
+				if(pauseErrorMessage.size())
+				{
+					__COUT_ERR__ << "Current command threw during pause -- "
+					             << "pausing anyway: " << pauseErrorMessage << __E__;
+					theIteratorStruct.commandBusy_ = false;
+					// retry will call startCommand again; undo this attempt's pass count
+					if(theIteratorStruct.commandIndex_ <
+					       theIteratorStruct.commandIterations_.size() &&
+					   theIteratorStruct
+					       .commandIterations_[theIteratorStruct.commandIndex_])
+						--theIteratorStruct
+						      .commandIterations_[theIteratorStruct.commandIndex_];
+				}
 
 				__COUT__ << "Completing pause..." << __E__;
 
@@ -263,6 +292,18 @@ try
 					__COUT__ << "Have iterator access" << __E__;
 
 				iterator->activePlanIsRunning_ = false;
+				if(pauseErrorMessage
+				       .size())  // show "Error" status so the GUI explains why
+					iterator->errorMessage_ =
+					    std::string("Error at command ") +
+					    std::to_string(theIteratorStruct.commandIndex_) + " (" +
+					    (theIteratorStruct.commandIndex_ <
+					             theIteratorStruct.commands_.size()
+					         ? theIteratorStruct
+					               .commands_[theIteratorStruct.commandIndex_]
+					               .type_
+					         : "?") +
+					    ") while pausing: " + pauseErrorMessage;
 
 				__COUT__ << "Paused plan '" << theIteratorStruct.activePlan_
 				         << "' at command index " << theIteratorStruct.commandIndex_
@@ -278,11 +319,20 @@ try
 				// valid HALT-iterator command!
 
 				// safely end plan!
-				//	i.e. check that command is complete
+				//	i.e. check that command is complete (if command throws, proceed to halt anyway)
 
-				__COUT__ << "Waiting to halt..." << __E__;
-				while(!iterator->checkCommand(&theIteratorStruct))
-					__COUT__ << "Waiting to halt..." << __E__;
+				try
+				{
+					// skip if no command in flight (e.g. already paused by an error)
+					while(theIteratorStruct.commandBusy_ &&
+					      !iterator->checkCommand(&theIteratorStruct))
+						__COUT__ << "Waiting to halt..." << __E__;
+				}
+				catch(...)
+				{
+					__COUT_INFO__ << "Current command threw during halt — "
+					              << "proceeding to halt anyway." << __E__;
+				}
 
 				__COUT__ << "Completing halt..." << __E__;
 
@@ -326,162 +376,217 @@ try
 			//		__COUT__ << "thinking.." << theIteratorStruct.running_ << " " <<
 			//				theIteratorStruct.activePlan_ << " cmd=" <<
 			//				theIteratorStruct.commandIndex_ << __E__;
-			if(theIteratorStruct.running_ &&
-			   theIteratorStruct.activePlan_ !=
-			       "")  // important, because after errors, still "running" until halt
+			try  // inner catch: on error, pause the plan instead of killing the thread
 			{
-				if(theIteratorStruct.commandIndex_ == (unsigned int)-1)
+				if(theIteratorStruct.running_ &&
+				   theIteratorStruct.activePlan_ !=
+				       "")  // important, because after errors, still "running" until halt
 				{
-					// initialize the running plan
-
-					__COUT__ << "Get commands" << __E__;
-
-					theIteratorStruct.commandIndex_ = 0;
-
-					theIteratorStruct.cfgMgr_
-					    ->init();  // completely reset to re-align with any changes
-
-					if(theIteratorStruct.activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME)
+					if(theIteratorStruct.commandIndex_ == (unsigned int)-1)
 					{
-						__COUT__ << "Using generated plan..." << __E__;
-						theIteratorStruct.onlyConfigIfNotConfigured_ =
-						    iterator->genKeepConfiguration_;
-						theIteratorStruct.commands_ =
-						    generateIterationPlan(iterator->genFsmName_,
-						                          iterator->genConfigAlias_,
-						                          iterator->genPlanDurationSeconds_,
-						                          iterator->genPlanNumberOfRuns_);
-					}
-					else
-					{
-						__COUT__ << "Getting iterator table..." << __E__;
-						itConfig =
-						    theIteratorStruct.cfgMgr_->__GET_CONFIG__(IterateTable);
-						theIteratorStruct.onlyConfigIfNotConfigured_ = false;
-						theIteratorStruct.commands_ = itConfig->getPlanCommands(
-						    theIteratorStruct.cfgMgr_, theIteratorStruct.activePlan_);
-					}
+						// initialize the running plan
+						// commandIndex_ stays -1 until loading succeeds, so a failure
+						// here re-enters this block on retry instead of skipping it
 
-					// reset commandIteration counts and any label stacks left by a
-					//	plan halted mid-loop
-					theIteratorStruct.commandIterations_.clear();
-					theIteratorStruct.stepIndexStack_.clear();
-					theIteratorStruct.stepLabelStack_.clear();
-					theIteratorStruct.outputFiles_.clear();
-					for(auto& command : theIteratorStruct.commands_)
-					{
-						theIteratorStruct.commandIterations_.push_back(0);
-						__COUT__ << "command " << command.type_ << __E__;
-						__COUT__ << "table "
-						         << IterateTable::commandToTableMap_.at(command.type_)
-						         << __E__;
-						__COUT__ << "param count = " << command.params_.size() << __E__;
+						__COUT__ << "Get commands" << __E__;
 
-						for(auto& param : command.params_)
+						theIteratorStruct.cfgMgr_
+						    ->init();  // completely reset to re-align with any changes
+
+						if(theIteratorStruct.activePlan_ ==
+						   Iterator::RESERVED_GEN_PLAN_NAME)
 						{
-							__COUT__ << "\t param " << param.first << " : "
-							         << param.second << __E__;
+							__COUT__ << "Using generated plan..." << __E__;
+							theIteratorStruct.onlyConfigIfNotConfigured_ =
+							    iterator->genKeepConfiguration_;
+							theIteratorStruct.commands_ =
+							    generateIterationPlan(iterator->genFsmName_,
+							                          iterator->genConfigAlias_,
+							                          iterator->genPlanDurationSeconds_,
+							                          iterator->genPlanNumberOfRuns_);
 						}
-					}
-
-					theIteratorStruct.originalTrackChanges_ =
-					    ConfigurationInterface::isVersionTrackingEnabled();
-					theIteratorStruct.originalConfigGroup_ =
-					    theIteratorStruct.cfgMgr_->getActiveGroupName();
-					theIteratorStruct.originalConfigKey_ =
-					    theIteratorStruct.cfgMgr_->getActiveGroupKey();
-
-					__COUT__ << "originalTrackChanges "
-					         << theIteratorStruct.originalTrackChanges_ << __E__;
-					__COUT__ << "originalConfigGroup "
-					         << theIteratorStruct.originalConfigGroup_ << __E__;
-					__COUT__ << "originalConfigKey "
-					         << theIteratorStruct.originalConfigKey_ << __E__;
-
-				}  // end initial section
-
-				if(!theIteratorStruct.commandBusy_)
-				{
-					if(theIteratorStruct.commandIndex_ <
-					   theIteratorStruct.commands_.size())
-					{
-						// execute command
-						theIteratorStruct.commandBusy_ = true;
-
-						__COUT__ << "Iterator starting command "
-						         << theIteratorStruct.commandIndex_ + 1 << ": "
-						         << theIteratorStruct
-						                .commands_[theIteratorStruct.commandIndex_]
-						                .type_
-						         << __E__;
-						__COUT__ << "Iterator starting command "
-						         << theIteratorStruct.commandIndex_ + 1 << ": "
-						         << theIteratorStruct
-						                .commands_[theIteratorStruct.commandIndex_]
-						                .type_
-						         << __E__;
-
-						iterator->startCommand(&theIteratorStruct);
-					}
-					else if(theIteratorStruct.commandIndex_ ==
-					        theIteratorStruct.commands_.size())  // Done!
-					{
-						__COUT__ << "Finished Iteration Plan '"
-						         << theIteratorStruct.activePlan_ << __E__;
-						__COUT__ << "Finished Iteration Plan '"
-						         << theIteratorStruct.activePlan_ << __E__;
-
-						__COUT__ << "Reverting track changes." << __E__;
-						ConfigurationInterface::setVersionTrackingEnabled(
-						    theIteratorStruct.originalTrackChanges_);
-
-						//l
-						__COUT__ << "Activating original group..." << __E__;
-						try
+						else
 						{
-							theIteratorStruct.cfgMgr_->activateTableGroup(
-							    theIteratorStruct.originalConfigGroup_,
-							    theIteratorStruct.originalConfigKey_);
-						}
-						catch(...)
-						{
-							__COUT_WARN__ << "Original group could not be activated."
-							              << __E__;
+							__COUT__ << "Getting iterator table..." << __E__;
+							itConfig =
+							    theIteratorStruct.cfgMgr_->__GET_CONFIG__(IterateTable);
+							theIteratorStruct.onlyConfigIfNotConfigured_ = false;
+							theIteratorStruct.commands_ = itConfig->getPlanCommands(
+							    theIteratorStruct.cfgMgr_, theIteratorStruct.activePlan_);
 						}
 
-						// leave FSM halted
-						__COUT__ << "Completing Iteration Plan and cleaning up..."
-						         << __E__;
+						// reset commandIteration counts and any label stacks left by a
+						//	plan halted mid-loop
+						theIteratorStruct.commandIterations_.clear();
+						theIteratorStruct.stepIndexStack_.clear();
+						theIteratorStruct.stepLabelStack_.clear();
+						theIteratorStruct.outputFiles_.clear();
+						for(auto& command : theIteratorStruct.commands_)
+						{
+							theIteratorStruct.commandIterations_.push_back(0);
+							__COUT__ << "command " << command.type_ << __E__;
+							__COUT__ << "table "
+							         << IterateTable::commandToTableMap_.at(command.type_)
+							         << __E__;
+							__COUT__ << "param count = " << command.params_.size()
+							         << __E__;
 
-						iterator->haltIterator(
-						    iterator, &theIteratorStruct, true /* doNotHaltFSM */);
-					}
-				}
-				else if(theIteratorStruct.commandBusy_)
-				{
-					// check for command completion
-					if(iterator->checkCommand(&theIteratorStruct))
+							for(auto& param : command.params_)
+							{
+								__COUT__ << "\t param " << param.first << " : "
+								         << param.second << __E__;
+							}
+						}
+
+						theIteratorStruct.originalTrackChanges_ =
+						    ConfigurationInterface::isVersionTrackingEnabled();
+						theIteratorStruct.originalConfigGroup_ =
+						    theIteratorStruct.cfgMgr_->getActiveGroupName();
+						theIteratorStruct.originalConfigKey_ =
+						    theIteratorStruct.cfgMgr_->getActiveGroupKey();
+
+						__COUT__ << "originalTrackChanges "
+						         << theIteratorStruct.originalTrackChanges_ << __E__;
+						__COUT__ << "originalConfigGroup "
+						         << theIteratorStruct.originalConfigGroup_ << __E__;
+						__COUT__ << "originalConfigKey "
+						         << theIteratorStruct.originalConfigKey_ << __E__;
+
+						theIteratorStruct.commandIndex_ = 0;
+
+					}  // end initial section
+
+					if(!theIteratorStruct.commandBusy_)
 					{
-						theIteratorStruct.commandBusy_ = false;  // command complete
+						if(theIteratorStruct.commandIndex_ <
+						   theIteratorStruct.commands_.size())
+						{
+							// execute command
+							theIteratorStruct.commandBusy_ = true;
 
-						++theIteratorStruct.commandIndex_;
+							__COUT__ << "Iterator starting command "
+							         << theIteratorStruct.commandIndex_ + 1 << ": "
+							         << theIteratorStruct
+							                .commands_[theIteratorStruct.commandIndex_]
+							                .type_
+							         << __E__;
+							__COUT__ << "Iterator starting command "
+							         << theIteratorStruct.commandIndex_ + 1 << ": "
+							         << theIteratorStruct
+							                .commands_[theIteratorStruct.commandIndex_]
+							                .type_
+							         << __E__;
 
-						__COUT__ << "Ready for next command. Done with "
-						         << theIteratorStruct.commandIndex_ << " of "
-						         << theIteratorStruct.commands_.size() << __E__;
-						__COUT__ << "Iterator ready for next command. Done with "
-						         << theIteratorStruct.commandIndex_ << " of "
-						         << theIteratorStruct.commands_.size() << __E__;
+							iterator->startCommand(&theIteratorStruct);
+						}
+						else if(theIteratorStruct.commandIndex_ ==
+						        theIteratorStruct.commands_.size())  // Done!
+						{
+							__COUT__ << "Finished Iteration Plan '"
+							         << theIteratorStruct.activePlan_ << __E__;
+							__COUT__ << "Finished Iteration Plan '"
+							         << theIteratorStruct.activePlan_ << __E__;
+
+							__COUT__ << "Reverting track changes." << __E__;
+							ConfigurationInterface::setVersionTrackingEnabled(
+							    theIteratorStruct.originalTrackChanges_);
+
+							//l
+							__COUT__ << "Activating original group..." << __E__;
+							try
+							{
+								theIteratorStruct.cfgMgr_->activateTableGroup(
+								    theIteratorStruct.originalConfigGroup_,
+								    theIteratorStruct.originalConfigKey_);
+							}
+							catch(...)
+							{
+								__COUT_WARN__ << "Original group could not be activated."
+								              << __E__;
+							}
+
+							// leave FSM halted
+							__COUT__ << "Completing Iteration Plan and cleaning up..."
+							         << __E__;
+
+							iterator->haltIterator(
+							    iterator, &theIteratorStruct, true /* doNotHaltFSM */);
+						}
+					}
+					else if(theIteratorStruct.commandBusy_)
+					{
+						// check for command completion
+						if(iterator->checkCommand(&theIteratorStruct))
+						{
+							theIteratorStruct.commandBusy_ = false;  // command complete
+
+							++theIteratorStruct.commandIndex_;
+
+							__COUT__ << "Ready for next command. Done with "
+							         << theIteratorStruct.commandIndex_ << " of "
+							         << theIteratorStruct.commands_.size() << __E__;
+							__COUT__ << "Iterator ready for next command. Done with "
+							         << theIteratorStruct.commandIndex_ << " of "
+							         << theIteratorStruct.commands_.size() << __E__;
+						}
+
+						// Note: check command gets one shot to resume
+						if(theIteratorStruct.doResumeAction_)  // end resume action
+							theIteratorStruct.doResumeAction_ = false;
 					}
 
-					// Note: check command gets one shot to resume
-					if(theIteratorStruct.doResumeAction_)  // end resume action
-						theIteratorStruct.doResumeAction_ = false;
-				}
+				}  // end running
+				else
+					sleep(1);  // when inactive sleep a lot
 
-			}  // end running
-			else
-				sleep(1);  // when inactive sleep a lot
+			}  // end inner try
+			catch(const std::runtime_error& e)
+			{
+				__COUT_ERR__ << "Iterator command error (will pause for retry): "
+				             << e.what() << __E__;
+				theIteratorStruct.commandBusy_ = false;
+
+				// retry will call startCommand again; undo this attempt's pass count
+				if(theIteratorStruct.commandIndex_ <
+				       theIteratorStruct.commandIterations_.size() &&
+				   theIteratorStruct.commandIterations_[theIteratorStruct.commandIndex_])
+					--theIteratorStruct
+					      .commandIterations_[theIteratorStruct.commandIndex_];
+
+				std::lock_guard<std::mutex> lock(iterator->accessMutex_);
+				iterator->activePlanIsRunning_ = false;
+				iterator->errorMessage_ =
+				    std::string("Error at command ") +
+				    std::to_string(theIteratorStruct.commandIndex_) + " (" +
+				    (theIteratorStruct.commandIndex_ < theIteratorStruct.commands_.size()
+				         ? theIteratorStruct.commands_[theIteratorStruct.commandIndex_]
+				               .type_
+				         : "?") +
+				    "): " + e.what();
+			}
+			catch(...)
+			{
+				__COUT_ERR__ << "Iterator unknown error (will pause for retry)." << __E__;
+				theIteratorStruct.commandBusy_ = false;
+
+				// retry will call startCommand again; undo this attempt's pass count
+				if(theIteratorStruct.commandIndex_ <
+				       theIteratorStruct.commandIterations_.size() &&
+				   theIteratorStruct.commandIterations_[theIteratorStruct.commandIndex_])
+					--theIteratorStruct
+					      .commandIterations_[theIteratorStruct.commandIndex_];
+
+				std::lock_guard<std::mutex> lock(iterator->accessMutex_);
+				iterator->activePlanIsRunning_ = false;
+				iterator->errorMessage_ =
+				    std::string("Unknown error at command ") +
+				    std::to_string(theIteratorStruct.commandIndex_) + " (" +
+				    (theIteratorStruct.commandIndex_ < theIteratorStruct.commands_.size()
+				         ? theIteratorStruct.commands_[theIteratorStruct.commandIndex_]
+				               .type_
+				         : "?") +
+				    ")";
+			}
 
 			////////////////
 			////////////////
@@ -696,7 +801,7 @@ try
 			return startRemoteCommandMacro(iteratorStruct, true /*isFEMacro*/);
 		return startCommandMacro(iteratorStruct, true /*isFEMacro*/);
 	}
-	else if(type == IterateTable::COMMAND_EXECUTE_MACRO)
+	else if(type == IterateTable::COMMAND_EXECUTE_MM_MACRO)
 	{
 		if(targetSubsystem.size())
 			return startRemoteCommandMacro(iteratorStruct, false /*isFEMacro*/);
@@ -781,16 +886,9 @@ catch(...)
 	ConfigurationInterface::setVersionTrackingEnabled(
 	    iteratorStruct->originalTrackChanges_);
 
-	__COUT__ << "Activating original group..." << __E__;
-	try
-	{
-		iteratorStruct->cfgMgr_->activateTableGroup(iteratorStruct->originalConfigGroup_,
-		                                            iteratorStruct->originalConfigKey_);
-	}
-	catch(...)
-	{
-		__COUT_WARN__ << "Original group could not be activated." << __E__;
-	}
+	// leave the plan's active group in place so a Play-retry of this command sees
+	// the configuration built up by earlier plan commands; plan-finish and
+	// haltIterator still restore the original group
 	throw;
 }  // end startCommand()
 
@@ -843,7 +941,7 @@ try
 			return checkRemoteCommandMacro(iteratorStruct, true /*isFEMacro*/);
 		return checkCommandMacro(iteratorStruct, true /*isFEMacro*/);
 	}
-	else if(type == IterateTable::COMMAND_EXECUTE_MACRO)
+	else if(type == IterateTable::COMMAND_EXECUTE_MM_MACRO)
 	{
 		if(targetSubsystem.size())
 			return checkRemoteCommandMacro(iteratorStruct, false /*isFEMacro*/);
@@ -918,17 +1016,9 @@ catch(...)
 	ConfigurationInterface::setVersionTrackingEnabled(
 	    iteratorStruct->originalTrackChanges_);
 
-	__COUT__ << "Activating original group..." << __E__;
-	try
-	{
-		iteratorStruct->cfgMgr_->activateTableGroup(iteratorStruct->originalConfigGroup_,
-		                                            iteratorStruct->originalConfigKey_);
-	}
-	catch(...)
-	{
-		__COUT_WARN__ << "Original group could not be activated." << __E__;
-	}
-
+	// leave the plan's active group in place so a Play-retry of this command sees
+	// the configuration built up by earlier plan commands; plan-finish and
+	// haltIterator still restore the original group
 	throw;
 }  // end checkCommand()
 
@@ -1211,12 +1301,45 @@ void Iterator::startCommandRepeatLabel(IteratorWorkLoopStruct* iteratorStruct)
 }  // end startCommandRepeatLabel()
 
 //==============================================================================
+std::string Iterator::buildIteratorLogEntry(IteratorWorkLoopStruct* iteratorStruct)
+{
+	std::string entry = "Iterator plan '" + iteratorStruct->activePlan_ + "'";
+	if(!iteratorStruct->stepIndexStack_.empty())
+	{
+		entry += " [";
+		for(size_t i = 0; i < iteratorStruct->stepIndexStack_.size(); ++i)
+		{
+			if(i)
+				entry += ", ";
+			if(i < iteratorStruct->stepLabelStack_.size() &&
+			   !iteratorStruct->stepLabelStack_[i].empty())
+				entry += iteratorStruct->stepLabelStack_[i] + " ";
+			entry += "pass " + std::to_string(iteratorStruct->stepIndexStack_[i]);
+		}
+		entry += "]";
+	}
+	return entry;
+}
+
+//==============================================================================
 void Iterator::startCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 {
 	__COUT__ << "startCommandRun " << __E__;
 
 	iteratorStruct->runIsDone_ = false;
 	iteratorStruct->fsmCommandParameters_.clear();
+
+	bool writeToEcl = false;
+	try
+	{
+		writeToEcl = iteratorStruct->commands_[iteratorStruct->commandIndex_].params_.at(
+		                 IterateTable::commandRunParams_.WriteToECL_) == "1";
+	}
+	catch(...)
+	{
+	}
+	iteratorStruct->theIterator_->theSupervisor_->activeStateMachineWriteToEcl_ =
+	    writeToEcl;
 
 	std::string errorStr     = "";
 	std::string currentState = iteratorStruct->theIterator_->theSupervisor_
@@ -1238,7 +1361,7 @@ void Iterator::startCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 		        iteratorStruct->fsmCommandParameters_,
 		        iteratorStruct->activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME
 		            ? iteratorStruct->theIterator_->genLogEntry_
-		            : "");
+		            : buildIteratorLogEntry(iteratorStruct));
 	else
 		errorStr = "Can only Run from the Configured state. The current state is " +
 		           currentState;
@@ -1448,9 +1571,12 @@ void Iterator::startCommandFSMTransition(IteratorWorkLoopStruct* iteratorStruct,
 	        WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 	        WebUsers::DEFAULT_ITERATOR_USERNAME,
 	        iteratorStruct->fsmCommandParameters_,
-	        (transitionCommand == RunControlStateMachine::START_TRANSITION_NAME &&
-	         iteratorStruct->activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME)
-	            ? iteratorStruct->theIterator_->genLogEntry_
+	        (transitionCommand == RunControlStateMachine::START_TRANSITION_NAME)
+	            ? (iteratorStruct->activePlan_ == Iterator::RESERVED_GEN_PLAN_NAME
+	                   ? iteratorStruct->theIterator_->genLogEntry_
+	                   : buildIteratorLogEntry(iteratorStruct))
+	        : (transitionCommand == RunControlStateMachine::STOP_TRANSITION_NAME)
+	            ? "Stopped by iterator: " + buildIteratorLogEntry(iteratorStruct)
 	            : "");
 
 	if(errorStr != "")
@@ -2030,7 +2156,9 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 				                   iteratorStruct->fsmName_,
 				                   WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
 				                   WebUsers::DEFAULT_ITERATOR_USERNAME,
-				                   iteratorStruct->fsmCommandParameters_);
+				                   iteratorStruct->fsmCommandParameters_,
+				                   "Stopped by iterator: " +
+				                       buildIteratorLogEntry(iteratorStruct));
 
 				if(errorStr != "")
 				{
@@ -2078,15 +2206,17 @@ bool Iterator::checkCommandRun(IteratorWorkLoopStruct* iteratorStruct)
 			// need to end run!
 			__COUT__ << "Time duration reached! Stopping run..." << __E__;
 
-			errorStr = iteratorStruct->theIterator_->theSupervisor_
-			               ->attemptStateMachineTransition(
-			                   0,
-			                   0,
-			                   "Stop",
-			                   iteratorStruct->fsmName_,
-			                   WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
-			                   WebUsers::DEFAULT_ITERATOR_USERNAME,
-			                   iteratorStruct->fsmCommandParameters_);
+			errorStr =
+			    iteratorStruct->theIterator_->theSupervisor_
+			        ->attemptStateMachineTransition(
+			            0,
+			            0,
+			            "Stop",
+			            iteratorStruct->fsmName_,
+			            WebUsers::DEFAULT_ITERATOR_USERNAME /*fsmWindowName*/,
+			            WebUsers::DEFAULT_ITERATOR_USERNAME,
+			            iteratorStruct->fsmCommandParameters_,
+			            "Stopped by iterator: " + buildIteratorLogEntry(iteratorStruct));
 
 			if(errorStr != "")
 			{
@@ -2629,6 +2759,20 @@ void Iterator::playIterationPlanPrivate(HttpXmlDocument&   xmldoc,
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
 
+	if(!activePlanIsRunning_ && !commandPlay_ && iteratorBusy_ && activePlanName_ != "" &&
+	   activePlanName_ != planName)
+	{
+		// a paused plan still owns the active group; switching plans now would make
+		// the new plan treat the paused plan's group as the one to restore on finish
+		__SS__ << "Invalid play command attempted. Plan '" << activePlanName_
+		       << "' is paused mid-plan; halt the Iterator before playing a different "
+		          "plan ('"
+		       << planName << "')." << __E__;
+		__COUT__ << ss.str();
+		xmldoc.addTextElementToData("error_message", ss.str());
+		return;
+	}
+
 	if(!activePlanIsRunning_ && !commandPlay_)
 	{
 		if(!workloopRunning_)
@@ -2800,10 +2944,18 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 		if(workloopRunning_)
 			xmldoc.addTextElementToData("active_plan_status", "Running");
 		else
-			xmldoc.addTextElementToData("active_plan_status", "Error");
+			xmldoc.addTextElementToData("active_plan_status",
+			                            "Error");  // thread died (safety net)
 	}
 	else if(!activePlanIsRunning_ && iteratorBusy_)
-		xmldoc.addTextElementToData("active_plan_status", "Paused");
+	{
+		if(errorMessage_.size())
+			xmldoc.addTextElementToData(
+			    "active_plan_status",
+			    "Error");  // paused after error — press Play to retry
+		else
+			xmldoc.addTextElementToData("active_plan_status", "Paused");
+	}
 	else
 		xmldoc.addTextElementToData("active_plan_status", "Inactive");
 
@@ -3141,11 +3293,14 @@ Iterator::MacroLoopSpec Iterator::parseMacroLoopSpec(const std::string& inputArg
 					       << "'! Expected name:initialValue:stepSize." << __E__;
 					__SS_THROW__;
 				}
+				name = StringMacros::decodeURIComponent(name);
+				init = StringMacros::decodeURIComponent(init);
+				step = StringMacros::decodeURIComponent(step);
 				MacroLoopSpec::Arg arg;
 				arg.name = name;
-				if(step == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
-				   step == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+				if(isConstantMacroStep(step))
 				{
+					// constant (step DEFAULT or 0): keep the value exactly as written
 					arg.type = MacroLoopSpec::Arg::STRING;
 					arg.sVal = init;
 				}
@@ -3305,6 +3460,19 @@ unsigned int Iterator::getStepIndexForLabel(IteratorWorkLoopStruct* iteratorStru
 }  // end getStepIndexForLabel()
 
 //==============================================================================
+/// isConstantMacroStep
+///	A step of DEFAULT, or a numeric 0, means the argument never changes. Such values are
+///	passed through as written (so e.g. "true" stays "true" instead of becoming "true+0" -> 0).
+bool Iterator::isConstantMacroStep(const std::string& step)
+{
+	if(step == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+	   step == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+		return true;
+	double stepValue = 1;
+	return step.size() && StringMacros::getNumber(step, stepValue) && stepValue == 0;
+}  // end isConstantMacroStep()
+
+//==============================================================================
 /// applyStepIndexToMacroArgs
 ///	inputArgs: "nIter,name:init:step,...;nIter2,..." (one ;-block per dimension)
 ///	labelsStr: ";"-separated StepLabel per dimension (may be shorter/empty)
@@ -3349,14 +3517,16 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 				continue;
 			}
 
-			const std::string& name = pieces[0];
-			const std::string& init = pieces[1];
-			const std::string& step = pieces[2];
+			// pieces arrive URI-encoded from IterateTable::getPlanCommands(); decode before
+			//	any numeric handling ('-' and '.' would otherwise be %2D / %2E and parse as 0)
+			const std::string name = StringMacros::decodeURIComponent(pieces[0]);
+			const std::string init = StringMacros::decodeURIComponent(pieces[1]);
+			const std::string step = StringMacros::decodeURIComponent(pieces[2]);
 
-			if(step == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
-			   step == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+			if(isConstantMacroStep(step))
 			{
-				out += args[a];  // constant string argument
+				// constant argument (step DEFAULT or 0): pass through untouched
+				out += args[a];
 				continue;
 			}
 
@@ -3380,7 +3550,10 @@ std::string Iterator::applyStepIndexToMacroArgs(IteratorWorkLoopStruct* iterator
 			              << init << " + " << step << "*" << stepIndex << " = " << newInit
 			              << __E__;
 
-			out += name + ":" + newInit + ":" + step;
+			// re-encode so the output has the same wire format as the input
+			out += StringMacros::encodeURIComponent(name) + ":" +
+			       StringMacros::encodeURIComponent(newInit) + ":" +
+			       StringMacros::encodeURIComponent(step);
 		}
 	}
 	return out;
@@ -3575,14 +3748,27 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				}
 			if(!bound)
 			{
-				__SS__ << "ArgIn '" << inputName
-				       << "' was not assigned a value by any dimensional loop parameter "
-				          "sets. This is illegal. Macro '"
-				       << macroName << "' requires '" << inputName
-				       << "' as an input argument. Either remove the input argument from "
-				          "the macro, or define a value as a dimensional loop parameter."
-				       << __E__;
-				__SS_THROW__;
+				// Only FE macros understand a literal "Default" (FEVInterface substitutes the
+				//	declared default). Public MacroMaker macros parse every input as a number,
+				//	so "Default" would silently become 0: keep that a hard error.
+				if(!isFEMacro)
+				{
+					__SS__
+					    << "ArgIn '" << inputName
+					    << "' was not assigned a value by any dimensional loop parameter "
+					       "sets. This is illegal. Macro '"
+					    << macroName << "' requires '" << inputName
+					    << "' as an input argument. Either remove the input argument "
+					       "from "
+					       "the macro, or define a value as a dimensional loop parameter."
+					    << __E__;
+					__SS_THROW__;
+				}
+				inputToArgIndex.push_back(SIZE_MAX);
+				__COUT_INFO__
+				    << "ArgIn '" << inputName
+				    << "' was not specified by the Iterator command for FE macro '"
+				    << macroName << "'; using 'Default' for this argument." << __E__;
 			}
 		}
 		for(size_t a = 0; a < spec.argNames.size(); ++a)
@@ -3650,13 +3836,14 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 				    argsSummary;  // wire format / "arg = val, ..." for labels
 				for(size_t k = 0; k < inputNames.size(); ++k)
 				{
+					const std::string val = inputToArgIndex[k] == SIZE_MAX
+					                            ? std::string("Default")
+					                            : values[inputToArgIndex[k]].second;
 					inputStr += (k ? ";" : "") +
 					            StringMacros::encodeURIComponent(inputNames[k]) + "," +
-					            StringMacros::encodeURIComponent(
-					                values[inputToArgIndex[k]].second);
-					argsSummary +=
-					    (k ? ", " : "") + feMacroArgBaseName(inputNames[k]) + " = " +
-					    macroArgValueForLabel(values[inputToArgIndex[k]].second);
+					            StringMacros::encodeURIComponent(val);
+					argsSummary += (k ? ", " : "") + feMacroArgBaseName(inputNames[k]) +
+					               " = " + macroArgValueForLabel(val);
 				}
 
 				// RunFrontendMacro;feClass;feUIDs;macroType;macroName;inputArgs;outputArgs;saveOutputs

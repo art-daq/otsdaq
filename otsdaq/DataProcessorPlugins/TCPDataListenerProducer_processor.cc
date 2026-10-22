@@ -5,6 +5,7 @@
 #include "otsdaq/NetworkUtilities/NetworkConverters.h"
 
 #include <string.h>
+#include <sys/ioctl.h>
 #include <cassert>
 #include <chrono>
 #include <iostream>
@@ -92,9 +93,11 @@ void TCPDataListenerProducer::slowWrite(void)
 	catch(const std::exception& e)
 	{
 		__COUT__ << "Error: " << e.what() << std::endl;
+		countError();
 		std::this_thread::sleep_for(std::chrono::seconds(1));
 		return;
 	}
+	countPacket(data_.size());
 	header_["Port"] = std::to_string(port_);
 
 	while(DataProducer::write(data_, header_) < 0)
@@ -112,6 +115,8 @@ void TCPDataListenerProducer::fastWrite(void)
 {
 	// std::cout << __COUT_HDR_FL__ << __PRETTY_FUNCTION__ << name_ << " running!" <<
 	// std::endl;
+
+	sampleSocketBacklog();
 
 	if(DataProducer::attachToEmptySubBuffer(dataP_, headerP_) < 0)
 	{
@@ -136,13 +141,51 @@ void TCPDataListenerProducer::fastWrite(void)
 	}
 	catch(const std::exception& e)
 	{
+		// With TCPListenServer dropping the dead client, this fires once per
+		// disconnect, so a short pause is enough and does not stall other senders.
 		__COUT__ << "Error: " << e.what() << std::endl;
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		countError();
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		return;
 	}
+	countPacket(dataP_->size());
 	(*headerP_)["Port"] = std::to_string(port_);
 
 	DataProducer::setWrittenSubBuffer<std::string, std::map<std::string, std::string>>();
+}
+
+//==============================================================================
+/// sampleSocketBacklog
+///		Called from the work-loop thread. At most twice a second, asks the kernel how
+///		many bytes are queued and unread on every connected client socket (FIONREAD).
+///		A growing number means the receiver is read-limited.
+void TCPDataListenerProducer::sampleSocketBacklog(void)
+{
+	auto now = std::chrono::steady_clock::now();
+	if(now - lastBacklogSample_ < std::chrono::milliseconds(500))
+		return;
+	lastBacklogSample_ = now;
+
+	uint64_t         backlog = 0;
+	std::vector<int> ids     = getClientSocketIds();
+	for(int fd : ids)
+	{
+		int pending = 0;
+		if(ioctl(fd, FIONREAD, &pending) == 0 && pending > 0)
+			backlog += static_cast<uint64_t>(pending);
+	}
+	statClients_.store(ids.size(), std::memory_order_relaxed);
+	statSocketBacklogBytes_.store(backlog, std::memory_order_relaxed);
+}
+
+//==============================================================================
+std::map<std::string, std::string> TCPDataListenerProducer::getExtraStatus(void) const
+{
+	std::map<std::string, std::string> status;
+	status["clients"] = std::to_string(statClients_.load(std::memory_order_relaxed));
+	status["socketBacklogBytes"] =
+	    std::to_string(statSocketBacklogBytes_.load(std::memory_order_relaxed));
+	return status;
 }
 
 DEFINE_OTS_PROCESSOR(TCPDataListenerProducer)

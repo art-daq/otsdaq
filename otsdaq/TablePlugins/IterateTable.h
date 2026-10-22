@@ -42,7 +42,7 @@ class IterateTable : public TableBase
 	static const std::string COMMAND_ACTIVATE_ALIAS;
 	static const std::string COMMAND_ACTIVATE_GROUP;
 	static const std::string COMMAND_EXECUTE_FE_MACRO;
-	static const std::string COMMAND_EXECUTE_MACRO;
+	static const std::string COMMAND_EXECUTE_MM_MACRO;
 	static const std::string COMMAND_MODIFY_ACTIVE_GROUP;
 	static const std::string COMMAND_REPEAT_LABEL;
 	static const std::string COMMAND_RUN;
@@ -71,7 +71,7 @@ class IterateTable : public TableBase
 		m[COMMAND_ACTIVATE_ALIAS]         = "IterationCommandConfigureAliasTable";
 		m[COMMAND_ACTIVATE_GROUP]         = "IterationCommandConfigureGroupTable";
 		m[COMMAND_EXECUTE_FE_MACRO]       = "IterationCommandExecuteFEMacroTable";
-		m[COMMAND_EXECUTE_MACRO]          = "IterationCommandExecuteMacroTable";
+		m[COMMAND_EXECUTE_MM_MACRO]       = "IterationCommandExecuteMacroTable";
 		m[COMMAND_MODIFY_ACTIVE_GROUP]    = "IterationCommandModifyGroupTable";
 		m[COMMAND_REPEAT_LABEL]           = "IterationCommandRepeatLabelTable";
 		m[COMMAND_RUN]                    = "IterationCommandRunTable";
@@ -121,16 +121,19 @@ class IterateTable : public TableBase
 	static struct CommandExecuteMacroParams  ///< treat FE and Macro the same
 	{
 		// targets
-		const std::string MacroName_                 = "MacroName";
-		const std::string MacroParameterLink_        = "LinkToMacroDimensionalLoopTable";
-		const std::string MacroParameterLinkGroupID_ = "LinkToMacroDimensionalLoopGroupID";
-		const std::string EnableSavingOutput_        = "EnableSavingOutputsToFile";
-		const std::string OutputFilePath_            = "OutputFilePath";
-		const std::string OutputFileRadix_           = "OutputFileRadix";
+		const std::string MacroName_          = "MacroName";
+		const std::string MacroParameterLink_ = "LinkToMacroDimensionalLoopTable";
+		const std::string MacroParameterLinkGroupID_ =
+		    "LinkToMacroDimensionalLoopGroupID";
+		const std::string EnableSavingOutput_ = "EnableSavingOutputsToFile";
+		const std::string OutputFilePath_     = "OutputFilePath";
+		const std::string OutputFileRadix_    = "OutputFileRadix";
 
 		/// runtime keys built by getPlanCommands() from the dimensional-loop tables
-		const std::string MacroArgumentString_ = "MacroArgumentString";  ///< "nIter,name:init:step,...;..."
-		const std::string MacroArgumentLabels_ = "MacroArgumentLabels";  ///< ";"-separated StepLabel per dimension
+		const std::string MacroArgumentString_ =
+		    "MacroArgumentString";  ///< "nIter,name:init:step,...;..."
+		const std::string MacroArgumentLabels_ =
+		    "MacroArgumentLabels";  ///< ";"-separated StepLabel per dimension
 
 		/// GUI<->save wire key: "name:start:step:label,..." (pieces URI-encoded)
 		const std::string MacroArgs_ = "MacroArgs";
@@ -152,6 +155,7 @@ class IterateTable : public TableBase
 	{
 		const std::string WaitOnRunningThreads_ = "WaitForAllFrontEndsRunningThread";
 		const std::string DurationInSeconds_    = "DurationInSeconds";
+		const std::string WriteToECL_           = "WriteToECL";
 	} commandRunParams_;
 	static struct CommandWaitParams
 	{
@@ -183,9 +187,10 @@ class IterateTable : public TableBase
 		const std::string GroupID_            = "DimensionalLoopGroupID";
 		const std::string Priority_           = "DimensionalLoopPriority";
 		const std::string NumberOfIterations_ = "NumberOfIterations";
-		const std::string StepLabel_          = "StepLabel";  ///< BEGIN_LABEL whose pass index steps this dimension; empty = innermost
-		const std::string ParamLink_          = "LinkToDimensionalLoopParameterTable";
-		const std::string ParamLinkGroupID_   = "LinkToDimensionalLoopParameterGroupID";
+		const std::string StepLabel_ =
+		    "StepLabel";  ///< BEGIN_LABEL whose pass index steps this dimension; empty = innermost
+		const std::string ParamLink_        = "LinkToDimensionalLoopParameterTable";
+		const std::string ParamLinkGroupID_ = "LinkToDimensionalLoopParameterGroupID";
 	} macroDimLoopCols_;
 	static struct MacroParamTableColumns
 	{

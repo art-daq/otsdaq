@@ -16,6 +16,22 @@ class ConfigurationSupervisorBase
 {
 public:
 
+	/// One group-alias assignment for setGroupAliasesInActiveBackbone()
+	struct GroupAliasEdit
+	{
+		std::string   alias;
+		std::string   groupName;
+		TableGroupKey groupKey;
+		std::string   comment;
+	};
+
+	/// Create or overwrite group aliases in the active Backbone, then save and
+	/// activate the resulting Backbone group. Author is cfgMgr->getUsername().
+	/// Returns the (name, key) of the Backbone group that is active afterwards.
+	static std::pair<std::string, TableGroupKey> setGroupAliasesInActiveBackbone(
+											ConfigurationManagerRW*            cfgMgr,
+											const std::vector<GroupAliasEdit>& aliasEdits);
+
 	static void 				getConfigurationStatusXML(HttpXmlDocument& xmlOut, ConfigurationManagerRW* cfgMgr, const std::string& username);
 
 	static TableVersion 		saveModifiedVersionXML(HttpXmlDocument&        xmlOut,

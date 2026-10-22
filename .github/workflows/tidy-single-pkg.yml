@@ -1,5 +1,8 @@
 name: Tidy Single Pkg Workflow
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -17,6 +20,7 @@ jobs:
 
   build_single_pkg:
     name: tidy single pkg
-    uses: art-daq/.github/.github/workflows/otsdaq-tidy-single-pkg.yml@stable
+    uses: art-daq/.github/.github/workflows/tidy-single-pkg.yml@stable
     with:
       against-ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event_name == 'push' && github.event.before || 0 }}
+      otsdaq-mode: true

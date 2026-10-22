@@ -1,5 +1,8 @@
 name: Git Whitespace Check Workflow
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:

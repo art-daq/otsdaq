@@ -10,9 +10,16 @@ class CoreSupervisorBase;
 class VStateMachine
 {
   public:
+	/// Subsystem-iteration index sent by a Gateway that has no top-level above it and no
+	/// remote subsystems below it. Plugins treat it as "every subsystem-iteration is mine",
+	/// so nobody idles a pass waiting for another subsystem that does not exist.
+	static const unsigned int SUBSYSTEM_ITERATION_STANDALONE = (unsigned int)-1;
+
 	VStateMachine(const std::string& name)
-	    : iterationIndex_(0)
+	    : subsystemIterationIndex_(0)
+	    , iterationIndex_(0)
 	    , subIterationIndex_(0)
+	    , subsystemIterationWorkFlag_(false)
 	    , iterationWorkFlag_(false)
 	    , subIterationWorkFlag_(false)
 	    , name_(name)
@@ -47,8 +54,20 @@ class VStateMachine
 
 		if(VStateMachine::getSubIterationWork())
 		{
-			// sub-steps going on
+			// sub-steps going on — show subsystemIteration:iteration:subIteration
 			progress += name_ + ":";
+
+			// check for subsystem-iteration alias
+			if(subsystemIterationAliasMap_.find(transitionName_) != subsystemIterationAliasMap_.end() &&
+			   subsystemIterationAliasMap_.at(transitionName_)
+			           .find(VStateMachine::getSubsystemIterationIndex()) !=
+			       subsystemIterationAliasMap_.at(transitionName_).end())
+				progress += subsystemIterationAliasMap_.at(transitionName_)
+				                .at(VStateMachine::getSubsystemIterationIndex());
+			else
+				progress += VStateMachine::getSubsystemIterationIndexString();
+
+			progress += ":";
 
 			// check for iteration alias
 			if(iterationAliasMap_.find(transitionName_) != iterationAliasMap_.end() &&
@@ -63,7 +82,7 @@ class VStateMachine
 
 			progress += ":";
 
-			// check for sib-iteration alias
+			// check for sub-iteration alias
 			if(subIterationAliasMap_.find(transitionName_) !=
 			       subIterationAliasMap_.end() &&
 			   subIterationAliasMap_.at(transitionName_)
@@ -77,8 +96,20 @@ class VStateMachine
 		}
 		else if(VStateMachine::getIterationWork())
 		{
-			// steps going on
+			// iteration steps going on — show subsystemIteration:iteration
 			progress += name_ + ":";
+
+			// check for subsystem-iteration alias
+			if(subsystemIterationAliasMap_.find(transitionName_) != subsystemIterationAliasMap_.end() &&
+			   subsystemIterationAliasMap_.at(transitionName_)
+			           .find(VStateMachine::getSubsystemIterationIndex()) !=
+			       subsystemIterationAliasMap_.at(transitionName_).end())
+				progress += subsystemIterationAliasMap_.at(transitionName_)
+				                .at(VStateMachine::getSubsystemIterationIndex());
+			else
+				progress += VStateMachine::getSubsystemIterationIndexString();
+
+			progress += ":";
 
 			// check for iteration alias
 			if(iterationAliasMap_.find(transitionName_) != iterationAliasMap_.end() &&
@@ -90,6 +121,21 @@ class VStateMachine
 			else
 				progress +=
 				    std::to_string(VStateMachine::getIterationIndex());  ///< just index
+		}
+		else if(VStateMachine::getSubsystemIterationWork())
+		{
+			// subsystem-iteration steps going on — show subsystemIteration only
+			progress += name_ + ":";
+
+			// check for subsystem-iteration alias
+			if(subsystemIterationAliasMap_.find(transitionName_) != subsystemIterationAliasMap_.end() &&
+			   subsystemIterationAliasMap_.at(transitionName_)
+			           .find(VStateMachine::getSubsystemIterationIndex()) !=
+			       subsystemIterationAliasMap_.at(transitionName_).end())
+				progress += subsystemIterationAliasMap_.at(transitionName_)
+				                .at(VStateMachine::getSubsystemIterationIndex());
+			else
+				progress += VStateMachine::getSubsystemIterationIndexString();
 		}
 		else if(transitionName_ != "")
 			progress += name_ + ":" + transitionName_;
@@ -108,22 +154,63 @@ class VStateMachine
 		transitionName_ = transitionName;
 	}
 	const std::string& getTransitionName(void) { return transitionName_; }
-	void               setIterationIndex(unsigned int i) { iterationIndex_ = i; }
-	void               setSubIterationIndex(unsigned int i) { subIterationIndex_ = i; }
-	unsigned int       getIterationIndex(void) { return iterationIndex_; }
-	unsigned int       getSubIterationIndex(void) { return subIterationIndex_; }
-	void               setSystemMinReadyForEventGenerationStartIteration(unsigned int i) { systemMinReadyForEventGenerationStartIteration_ = i; }
-	unsigned int       getSystemMinReadyForEventGenerationStartIteration(void) const { return systemMinReadyForEventGenerationStartIteration_; }
-	void               indicateIterationWork(void) { iterationWorkFlag_ = true; }
-	void               clearIterationWork(void) { iterationWorkFlag_ = false; }
-	bool               getIterationWork(void) { return iterationWorkFlag_; }
-	void               indicateSubIterationWork(void) { subIterationWorkFlag_ = true; }
-	void               clearSubIterationWork(void) { subIterationWorkFlag_ = false; }
-	bool               getSubIterationWork(void) { return subIterationWorkFlag_; }
+
+	// Subsystem-iteration accessors (outermost tier — synchronized across subsystems)
+	void         setSubsystemIterationIndex(unsigned int i) { subsystemIterationIndex_ = i; }
+	unsigned int getSubsystemIterationIndex(void) const { return subsystemIterationIndex_; }
+	bool         isStandaloneSubsystem(void) const { return subsystemIterationIndex_ == SUBSYSTEM_ITERATION_STANDALONE; }
+	/// true on the very first call of a transition (all indices at their starting value)
+	bool isFirstIteration(void) const
+	{
+		return (subsystemIterationIndex_ == 0 || isStandaloneSubsystem()) &&
+		       iterationIndex_ == 0 && subIterationIndex_ == 0;
+	}
+	std::string getSubsystemIterationIndexString(void) const
+	{
+		return isStandaloneSubsystem() ? std::string("standalone")
+		                               : std::to_string(subsystemIterationIndex_);
+	}
+	/// For steps that must be ordered across subsystems (e.g. start sequence):
+	/// the subsystem-iteration index under a top-level, or the plain iteration index when
+	/// standalone (the STANDALONE index never increments, while plain iterations are already
+	/// synchronized within the one subsystem).
+	unsigned int getSubsystemSyncStepIndex(void) const
+	{
+		return isStandaloneSubsystem() ? iterationIndex_ : subsystemIterationIndex_;
+	}
+	void indicateSubsystemSyncStepWork(void)
+	{
+		if(isStandaloneSubsystem())
+			iterationWorkFlag_ = true;
+		else
+			subsystemIterationWorkFlag_ = true;
+	}
+	void indicateSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = true; }
+	void clearSubsystemIterationWork(void) { subsystemIterationWorkFlag_ = false; }
+	bool getSubsystemIterationWork(void) { return subsystemIterationWorkFlag_; }
+
+	// Iteration accessors (middle tier — synchronized within one subsystem)
+	void         setIterationIndex(unsigned int i) { iterationIndex_ = i; }
+	void         setSubIterationIndex(unsigned int i) { subIterationIndex_ = i; }
+	unsigned int getIterationIndex(void) { return iterationIndex_; }
+	unsigned int getSubIterationIndex(void) { return subIterationIndex_; }
+	void         setSystemMinReadyForEventGenerationStartIteration(unsigned int i) { systemMinReadyForEventGenerationStartIteration_ = i; }
+	unsigned int getSystemMinReadyForEventGenerationStartIteration(void) const { return systemMinReadyForEventGenerationStartIteration_; }
+	void         indicateIterationWork(void) { iterationWorkFlag_ = true; }
+	void         clearIterationWork(void) { iterationWorkFlag_ = false; }
+	bool         getIterationWork(void) { return iterationWorkFlag_; }
+
+	// Sub-iteration accessors (innermost tier — internal to one application)
+	void indicateSubIterationWork(void) { subIterationWorkFlag_ = true; }
+	void clearSubIterationWork(void) { subIterationWorkFlag_ = false; }
+	bool getSubIterationWork(void) { return subIterationWorkFlag_; }
 
 	CoreSupervisorBase* parentSupervisor_ = nullptr;  ///< e.g. to communicate error fault and start
 	                                                  ///< transition to error for entire system
   protected:
+	std::map<std::string /*transition*/,
+	         std::map<unsigned int /*step index*/, std::string /*step alias*/>>
+	    subsystemIterationAliasMap_;
 	std::map<std::string /*transition*/,
 	         std::map<unsigned int /*step index*/, std::string /*step alias*/>>
 	    iterationAliasMap_;
@@ -132,9 +219,9 @@ class VStateMachine
 	    subIterationAliasMap_;
 
   private:
-	unsigned int      iterationIndex_, subIterationIndex_;
+	unsigned int      subsystemIterationIndex_, iterationIndex_, subIterationIndex_;
 	unsigned int      systemMinReadyForEventGenerationStartIteration_ = 0;
-	bool              iterationWorkFlag_, subIterationWorkFlag_;
+	bool              subsystemIterationWorkFlag_, iterationWorkFlag_, subIterationWorkFlag_;
 	const std::string name_;
 	std::string       transitionName_;
 };

@@ -1,4 +1,7 @@
-name: Test Single Pkg Workflow
+name: Build Single Pkg Workflow
+
+permissions:
+  contents: read
 
 on:
   push:
@@ -16,5 +19,7 @@ on:
 jobs:
 
   build_single_pkg:
-    name: test single pkg
-    uses: art-daq/.github/.github/workflows/otsdaq-test-single-pkg.yml@stable
+    name: build single pkg
+    uses: art-daq/.github/.github/workflows/build-single-pkg.yml@stable
+    with:
+      otsdaq-mode: true
