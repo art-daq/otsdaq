@@ -1842,6 +1842,30 @@ std::string StringMacros::exec(const char* cmd)
 
 	close(outputPipe[1]);
 
+	// Close the read end and reap the child on every exit path, including an
+	// exception thrown while accumulating output (e.g. bad_alloc in append); a
+	// leaked descriptor here would keep the child blocked on write and never reaped.
+	struct ChildCleanup
+	{
+		int         readFd;
+		pid_t       pid;
+		const char* command;
+		~ChildCleanup()
+		{
+			close(readFd);
+			int childStatus = 0;
+			while(waitpid(pid, &childStatus, 0) < 0)
+			{
+				if(errno != EINTR)
+				{
+					__COUT_WARN__ << "waitpid() failed for command: " << command << " ("
+					              << strerror(errno) << ")" << __E__;
+					break;
+				}
+			}
+		}
+	} childCleanup{outputPipe[0], childPid, cmd};
+
 	std::string           result;
 	std::array<char, 128> buffer;
 	for(;;)
@@ -1857,18 +1881,6 @@ std::string StringMacros::exec(const char* cmd)
 		{
 			__COUT_WARN__ << "read() of command output failed for command: " << cmd
 			              << " (" << strerror(errno) << ")" << __E__;
-			break;
-		}
-	}
-	close(outputPipe[0]);
-
-	int childStatus = 0;
-	while(waitpid(childPid, &childStatus, 0) < 0)
-	{
-		if(errno != EINTR)
-		{
-			__COUT_WARN__ << "waitpid() failed for command: " << cmd << " ("
-			              << strerror(errno) << ")" << __E__;
 			break;
 		}
 	}

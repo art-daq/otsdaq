@@ -203,7 +203,9 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc&              cgi,
 	       &userInfo.usernameWithLock_,
 	       &userInfo.userSessionIndex_))
 	{
-		if(!userInfo.allowNoUser_)
+		// cookieCodeIsActiveForRequest() also fails when checkIpAccess() rejects the
+		//	client; a rejected IP must not fall through to the no-login path below
+		if(!userInfo.allowNoUser_ || !checkIpAccess(userInfo.ip_))
 		{
 			*out << userInfo.cookieCode_;
 			goto HANDLE_ACCESS_FAILURE;  // return false, access failed

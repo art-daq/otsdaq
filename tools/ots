@@ -787,16 +787,23 @@ export -f killproc
 # The alive file proves the xdaq process constructed its supervisors; the http
 # peer transport is the last thing xdaq opens, so be patient here rather than
 # killing a healthy process (seen Oct-2026: 25 relaunches in a row on a busy node).
-# Returns 0 if http answered, 1 if it never did (or a quit was requested while
-# waiting -- the caller's existing quit-file checks then take the normal exit path).
+# Returns 0 if http answered, 1 if it never did.
 # While waiting, the quit files are re-read every poll so a KILL_ALL/EXIT_LOOP
 # from a relaunch is honored within ~5s instead of after the full wait; otherwise
 # a stale script can outlive its replacement and both fight over the same port.
+# A quit is handled HERE (exit), not returned as a failure: every caller treats a
+# failure by clearing OTS_IS_ALIVE and entering its kill/relaunch loop, and the
+# gateway loop only re-reads the quit files after killproc + relaunch -- so an
+# 'ots -a' EXIT_LOOP during this wait would kill the healthy gateway it is meant
+# to leave running. Same per-mode rules as the in-loop sentinel checks: Macro
+# Maker mode honors only the local quit; KILL_ALL kills, EXIT_LOOP leaves xdaq up.
 #############################
-# Print whatever owns a TCP port on this host (listener, established, or a
+# Print whatever owns a TCP or UDP port on this host (listener, established, or a
 # socket still held by a process that was killed but has not yet exited).
 # Used when a context's http port is unexpectedly busy or never answers, so the
 # log shows the holder at the moment of failure instead of after the fact.
+# UDP is included because the MacroMaker remote-control port (OTS_MACROMAKER_UDP_PORT)
+# is UDP and has been seen held by a leaked child of a killed xdaq.exe.
 function reportPortOwner
 {
 	local reportPort=$1
@@ -804,9 +811,10 @@ function reportPortOwner
 	out "${Bold}Port ${reportPort} ownership (${reportWhy}):${RstClr}"
 	if command -v lsof >/dev/null 2>&1; then
 		lsof -nP -iTCP:${reportPort} 2>/dev/null | sed 's/^/    lsof: /'
+		lsof -nP -iUDP:${reportPort} 2>/dev/null | sed 's/^/    lsof: /'
 	fi
 	if command -v ss >/dev/null 2>&1; then
-		ss -tanp 2>/dev/null | awk -v p=":${reportPort}" '$4 ~ p"$" || $5 ~ p"$"' | sed 's/^/    ss:   /'
+		ss -tuanp 2>/dev/null | awk -v p=":${reportPort}" '$5 ~ p"$" || $6 ~ p"$"' | sed 's/^/    ss:   /'
 	fi
 	# a just-killed xdaq that has not exited yet still holds its sockets
 	ps -eo pid,stat,etime,args 2>/dev/null | grep "[x]daq.exe" | grep -- "-p ${reportPort} " | sed 's/^/    xdaq: /'
@@ -821,7 +829,9 @@ function waitForContextHttp
 	local verifyHost=$1
 	local verifyPort=$2
 	local attempt
-	local quitRequested
+	local quitAction
+	local quitGlobal
+	local quitLocal
 	local curlExitCode
 	local curlElapsed
 	for (( attempt=1; attempt<=OTS_HTTP_VERIFY_ATTEMPTS; attempt++ )); do
@@ -831,10 +841,19 @@ function waitForContextHttp
 			OTS_HTTP_VERIFY_FAILURES=0
 			return 0
 		fi
-		quitRequested="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE} 2>/dev/null) $(cat ${OTSDAQ_STARTOTS_QUIT_FILE} 2>/dev/null) $(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE} 2>/dev/null)"
-		if [[ "$quitRequested" == *KILL_ALL* || "$quitRequested" == *EXIT_LOOP* ]]; then
-			out "Quit requested while waiting for http PORT at http://${verifyHost}:${verifyPort}; stopping the wait so the quit can be handled."
-			return 1
+		quitAction="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE} 2>/dev/null)"
+		quitGlobal="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE} 2>/dev/null)"
+		quitLocal="$(cat ${OTSDAQ_STARTOTS_LOCAL_QUIT_FILE} 2>/dev/null)"
+		if [[ "$quitLocal" == "KILL_ALL ${THIS_HOST}" || \
+				( $ISMACROMAKER == 0 && ( "$quitAction" == "KILL_ALL" || "$quitGlobal" == "KILL_ALL" ) ) ]]; then
+			out "Exit of (stale) ots while waiting for http PORT at http://${verifyHost}:${verifyPort}... Action:${quitAction}-Quit:${quitGlobal}-Local:${quitLocal}"
+			killprocs
+			exit
+		elif [[ "$quitLocal" == "EXIT_LOOP ${THIS_HOST}" || \
+				( $ISMACROMAKER == 0 && ( "$quitAction" == "EXIT_LOOP" || "$quitGlobal" == "EXIT_LOOP" ) ) ]]; then
+			#exit verification loop on EXIT_LOOP sentinel (e.g. from ots -a), leave xdaq processes running
+			warning "Exiting launch verification while waiting for http PORT at http://${verifyHost}:${verifyPort} on EXIT_LOOP sentinel... Action:${quitAction}-Quit:${quitGlobal}-Local:${quitLocal}"
+			exit
 		fi
 		out "Context is alive but http PORT not yet answering (${attempt}/${OTS_HTTP_VERIFY_ATTEMPTS}) at http://${verifyHost}:${verifyPort}... (curl exit=${curlExitCode}, ${curlElapsed}s; 7=refused/not listening, 28=timed out)"
 		if [ $attempt -eq 1 ]; then
