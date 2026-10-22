@@ -1,8 +1,9 @@
-#ifndef _ots_AllSupervisorInfo_h
-#define _ots_AllSupervisorInfo_h
+#ifndef OTSDAQ_OTSDAQ_SUPERVISORINFO_ALLSUPERVISORINFO_H_
+#define OTSDAQ_OTSDAQ_SUPERVISORINFO_ALLSUPERVISORINFO_H_
 
 #include <map>
-#include <mutex> /* for recursive_mutex */
+#include <mutex>  // for recursive_mutex
+#include <string>
 #include <vector>
 
 #include "otsdaq/SupervisorInfo/SupervisorDescriptorInfoBase.h"
@@ -83,4 +84,4 @@ class AllSupervisorInfo : public SupervisorDescriptorInfoBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_SUPERVISORINFO_ALLSUPERVISORINFO_H_

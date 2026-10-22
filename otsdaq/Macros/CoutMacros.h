@@ -1,13 +1,16 @@
-#ifndef _ots_Cout_Macros_h_
-#define _ots_Cout_Macros_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_COUTMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_COUTMACROS_H_
 
 // clang-format off
+// NOLINTBEGIN(build/define_used) // Ignoring macro usage warnings in this file
+
 
 #include <ctime>     //for time_t, time(), localtime_r(), strftime()
 #include <cstring>   //for strlen()
 #include <string.h>  //for strstr (not the same as <string>)
 #include <iostream>  //for cout
 #include <sstream>   //for stringstream, std::stringbuf
+#include <string>
 
 #define TRACEMF_USE_VERBATIM 1 //for trace longer path filenames
 
@@ -240,6 +243,7 @@ struct TimestampString
 }; //end TimestampString struct
 }  // end namespace ots
 
+// NOLINTEND(build/define_used)
 // clang-format on
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_MACROS_COUTMACROS_H_

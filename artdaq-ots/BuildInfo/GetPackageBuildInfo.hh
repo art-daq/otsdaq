@@ -1,5 +1,5 @@
-#ifndef artdaq_ots_BuildInfo_GetPackageBuildInfo_hh
-#define artdaq_ots_BuildInfo_GetPackageBuildInfo_hh
+#ifndef OTSDAQ_ARTDAQ_OTS_BUILDINFO_GETPACKAGEBUILDINFO_HH_
+#define OTSDAQ_ARTDAQ_OTS_BUILDINFO_GETPACKAGEBUILDINFO_HH_
 
 #include "artdaq-core/Data/PackageBuildInfo.hh"
 
@@ -14,4 +14,4 @@ struct GetPackageBuildInfo
 
 }  // namespace ots
 
-#endif /* artdaq_ots_BuildInfo_GetPackageBuildInfo_hh */
+#endif  // OTSDAQ_ARTDAQ_OTS_BUILDINFO_GETPACKAGEBUILDINFO_HH_

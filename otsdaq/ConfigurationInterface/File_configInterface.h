@@ -1,5 +1,5 @@
-#ifndef _ots_FileConfigurationInterface_h_
-#define _ots_FileConfigurationInterface_h_
+#ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_FILE_CONFIGINTERFACE_H_
+#define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_FILE_CONFIGINTERFACE_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 
@@ -32,4 +32,4 @@ class FileConfigurationInterface : public ConfigurationInterface
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_FILE_CONFIGINTERFACE_H_

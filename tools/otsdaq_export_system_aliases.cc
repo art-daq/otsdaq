@@ -124,9 +124,9 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	//	load/activate group
 	//		export each table as json doc to a folder <group name>_<export time>/
 
-	/* map<<groupName, origKey>, newKey> */
+	// map<<groupName, origKey>, newKey>
 	std::map<std::pair<std::string, TableGroupKey>, TableGroupKey> groupSet;
-	/* <tableName, <origVersion, newVersion> >*/
+	// <tableName, <origVersion, newVersion> >
 	std::map<std::pair<std::string, TableVersion>, TableVersion>   modifiedTables;
 	std::map<std::string, std::pair<TableGroupKey, TableGroupKey>> activeGroupKeys;
 	std::map<std::pair<std::string, TableGroupKey>, std::string>   groupErrors;

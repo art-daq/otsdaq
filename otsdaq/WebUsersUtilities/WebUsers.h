@@ -1,5 +1,5 @@
-#ifndef _ots_Utilities_WebUsers_h_
-#define _ots_Utilities_WebUsers_h_
+#ifndef OTSDAQ_OTSDAQ_WEBUSERSUTILITIES_WEBUSERS_H_
+#define OTSDAQ_OTSDAQ_WEBUSERSUTILITIES_WEBUSERS_H_
 
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/Macros/StringMacros.h"
@@ -11,9 +11,13 @@
 #pragma GCC diagnostic pop
 
 #include <iostream>
+#include <map>
+#include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "otsdaq/NetworkUtilities/TransceiverSocket.h"  // for UDP remote login verify
 
@@ -364,7 +368,7 @@ class WebUsers
 
 		WebUsers::permissionLevel_t permissionLevel_, permissionsThreshold_;
 		std::string                 ip_;
-		uint64_t    uid_ /*only WebUser owner has access to uid, RemoteWebUsers do not*/;
+		uint64_t    uid_ /***only WebUser owner has access to uid, RemoteWebUsers do not  */;
 		std::string username_, displayName_, usernameWithLock_;
 		uint64_t    userSessionIndex_; ///<can use session index to track a user's session on multiple devices/browsers
 
@@ -569,9 +573,9 @@ class WebUsers
 	static volatile bool     CareAboutCookieCodes_;
 	static bool              ipBlacklistEnabled_;  ///< enabled via OTS_ENABLE_IP_BLACKLIST env var
 	std::string              securityType_;
-	std::set<std::string /* ip */> ipAccessAccept_;
-	std::set<std::string /* ip */> ipAccessReject_;
-	std::set<std::string /* ip */> ipAccessBlacklist_;
+	std::set<std::string /*** ip   */> ipAccessAccept_;
+	std::set<std::string /*** ip   */> ipAccessReject_;
+	std::set<std::string /*** ip   */> ipAccessBlacklist_;
 
 	///"Login Session" database associations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	std::vector<LoginSession> LoginSessions_;
@@ -670,4 +674,4 @@ class WebUsers
 
 // clang-format on
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_WEBUSERSUTILITIES_WEBUSERS_H_

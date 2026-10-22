@@ -1,9 +1,16 @@
-#ifndef _ots_ARTDAQTableBase_h_
-#define _ots_ARTDAQTableBase_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQTABLEBASE_ARTDAQTABLEBASE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQTABLEBASE_ARTDAQTABLEBASE_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 #include "otsdaq/TableCore/TableBase.h"
+
+#include <list>
+#include <map>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 /// helpers
 #define OUT         out << tabStr << commentStr
@@ -147,18 +154,18 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 	static const ARTDAQInfo&       			getARTDAQSystem				(ConfigurationManagerRW* cfgMgr,
 																		 std::map<std::string /*type*/,
 																			 std::map<std::string /*record*/,
-																				 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
+																				 std::vector<std::string /***property  */>>>& 	nodeTypeToObjectMap,
 																		 std::map<std::string /*subsystemName*/,
-																			 std::string /*destinationSubsystemName*/>& 	subsystemObjectMap,
-																			 std::vector<std::string /*property*/>& 		artdaqSupervisoInfo,
+																			 std::string /***destinationSubsystemName  */>& 	subsystemObjectMap,
+																			 std::vector<std::string /***property  */>& 		artdaqSupervisoInfo,
 																			 bool 											suppressMultiNode = false); ///< when true, skip multi-node "printer syntax" wildcard compression and emit one concrete record per node (e.g. for read-only status displays that need real node names)
 
 	static void       						setAndActivateARTDAQSystem	(ConfigurationManagerRW* cfgMgr,
 																		 const std::map<std::string /*type*/,
 																			 std::map<std::string /*record*/,
-																				 std::vector<std::string /*property*/>>>& 	nodeTypeToObjectMap,
+																				 std::vector<std::string /***property  */>>>& 	nodeTypeToObjectMap,
 																		 const std::map<std::string /*subsystemName*/,
-																			 std::string /*destinationSubsystemName*/>&   	subsystemObjectMap);
+																			 std::string /***destinationSubsystemName  */>&   	subsystemObjectMap);
 
   private:
 	static int  							getSubsytemId				(ConfigurationTree subsystemNode);
@@ -291,4 +298,4 @@ class ARTDAQTableBase : virtual public TableBase ///<virtual so future plugins c
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQTABLEBASE_ARTDAQTABLEBASE_H_

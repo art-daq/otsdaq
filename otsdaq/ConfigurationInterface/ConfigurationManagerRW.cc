@@ -438,7 +438,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 								    << __COUT_HDR__
 								    << "Waiting for available thread... iteration # "
 								    << ii << __E__;
-								if(++ii > 100 /* 1s */ * 10)
+								if(++ii > 100 /** 1s  */ * 10)
 								{
 									__GEN_SS__ << "Threads seem to be stuck getting "
 									              "table info! Timeout while waiting..."
@@ -547,7 +547,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 		{
 			// build allGroupInfo_ for the ConfigurationManagerRW
 
-			std::set<std::string /*name*/> tableGroups =
+			std::set<std::string /**name */> tableGroups =
 			    theInterface_->getAllTableGroupNames();
 			__GEN_COUT__ << "Number of Groups: " << tableGroups.size() << __E__;
 
@@ -1019,11 +1019,11 @@ try
 	                       groupKeyToCompare,
 	                       false /*doActivate*/,
 	                       &compareToMemberMap /*memberMap*/,
-	                       0, /*progressBar*/
-	                       0, /*accumulatedWarnings*/
-	                       0, /*groupComment*/
+	                       0,  //progressBar
+	                       0,  //accumulatedWarnings
+	                       0,  //groupComment
 	                       0,
-	                       0, /*null pointers*/
+	                       0,  //null pointers
 	                       true /*doNotLoadMember*/,
 	                       0 /*groupTypeString*/,
 	                       compareToMemberTableAliasesPtr);
@@ -1773,7 +1773,7 @@ const GroupInfo& ConfigurationManagerRW::getGroupInfo(
     const std::string& groupName, bool attemptToReloadKeys /* = false */)
 {
 	//	//NOTE: seems like this filter is taking the long amount of time
-	//	std::set<std::string /*name*/> fullGroupNames =
+	//	std::set<std::string /**name */> fullGroupNames =
 	//			theInterface_->getAllTableGroupNames(groupName); //db filter by group name
 
 	// so instead caching ourselves...
@@ -1799,7 +1799,7 @@ const GroupInfo& ConfigurationManagerRW::getGroupInfo(
 			try
 			{
 				TableBase localGroupMemberCacheLoader(
-				    true /*special table*/
+				    true  //special table
 				    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),,
 				    TableBase::GROUP_CACHE_PREPEND + groupName);
 				auto versions = theInterface_->getVersions(&localGroupMemberCacheLoader);
@@ -1850,7 +1850,7 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 	}
 
 	//	//NOTE: seems like this filter is taking the long amount of time
-	//	std::set<std::string /*name*/> fullGroupNames =
+	//	std::set<std::string /**name */> fullGroupNames =
 	//			theInterface_->getAllTableGroupNames(groupName); //db filter bygroup  name
 	// const GroupInfo& groupInfo = getGroupInfo(groupName); // Note this also seems to take too long because requires a pre-cache load!
 	std::set<TableGroupKey> keys;
@@ -1860,7 +1860,7 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 		try
 		{
 			TableBase localGroupMemberCacheLoader(
-			    true /*special table*/
+			    true  //special table
 			    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),,
 			    TableBase::GROUP_CACHE_PREPEND + groupName);
 			auto versions = theInterface_->getVersions(&localGroupMemberCacheLoader);
@@ -1922,11 +1922,11 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 			               key,
 			               false /*doActivate*/,
 			               &compareToMemberMap /*memberMap*/,
-			               0, /*progressBar*/
-			               0, /*accumulatedWarnings*/
-			               0, /*groupComment*/
-			               0, /*groupAuthor*/
-			               0, /*groupCreateTime*/
+			               0,  //progressBar
+			               0,  //accumulatedWarnings
+			               0,  //groupComment
+			               0,  //groupAuthor
+			               0,  //groupCreateTime
 			               true /*doNotLoadMember*/,
 			               0 /*groupTypeString*/,
 			               compareToMemberTableAliasesPtr);
@@ -3264,7 +3264,7 @@ void ConfigurationManagerRW::testXDAQContext()
 
 		// build allGroupInfo_ for the ConfigurationManagerRW
 
-		std::set<std::string /*name*/> tableGroups =
+		std::set<std::string /**name */> tableGroups =
 		    theInterface_->getAllTableGroupNames();
 		__GEN_COUT__ << "Number of Groups: " << tableGroups.size() << __E__;
 
@@ -3285,7 +3285,7 @@ void ConfigurationManagerRW::testXDAQContext()
 		}
 		__GEN_COUTV__(runTimeSeconds());
 
-		std::set<std::string /*name*/> tableNames = theInterface_->getAllTableNames();
+		std::set<std::string /**name */> tableNames = theInterface_->getAllTableNames();
 		__GEN_COUT__ << "Number of Tables: " << tableNames.size() << __E__;
 
 		__GEN_COUTV__(runTimeSeconds());
@@ -3305,7 +3305,7 @@ void ConfigurationManagerRW::testXDAQContext()
 		__GEN_COUTV__(runTimeSeconds());
 
 		TableBase localGroupMemberCacheSaver(
-		    true /*special table*/
+		    true  //special table
 		    ,  //special table only allows 1 view in cache and does not load schema (which is perfect for this temporary table),
 		    TableBase::GROUP_CACHE_PREPEND + debugGroupName);
 		TableVersion lastestGroupCacheKey =

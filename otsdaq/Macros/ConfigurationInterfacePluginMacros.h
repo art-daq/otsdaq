@@ -1,5 +1,5 @@
-#ifndef _ots_ConfigurationInterfacePluginMacro_h_
-#define _ots_ConfigurationInterfacePluginMacro_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_CONFIGURATIONINTERFACEPLUGINMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_CONFIGURATIONINTERFACEPLUGINMACROS_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 
@@ -10,4 +10,4 @@ typedef ConfigurationInterface*(cbmakeFunc_t)();
 
 #define DEFINE_OTS_CONFIGURATION_INTERFACE(klass) \
 	extern "C" ConfigurationInterface* make() { return new klass(); }
-#endif /* _ots_TablePluginMacro_h_ */
+#endif  // OTSDAQ_OTSDAQ_MACROS_CONFIGURATIONINTERFACEPLUGINMACROS_H_

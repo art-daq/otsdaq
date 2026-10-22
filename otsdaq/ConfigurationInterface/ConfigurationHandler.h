@@ -1,5 +1,5 @@
-#ifndef _ots_ConfigurationHandler_h_
-#define _ots_ConfigurationHandler_h_
+#ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONHANDLER_H_
+#define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONHANDLER_H_
 
 #include <string>
 #include <xercesc/dom/DOMDocument.hpp>
@@ -74,4 +74,4 @@ class ConfigurationHandler
 
 }  // namespace ots
 
-#endif  // ots_ConfigurationHandler_h
+#endif  // OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONHANDLER_H_

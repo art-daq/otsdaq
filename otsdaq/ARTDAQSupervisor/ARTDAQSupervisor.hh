@@ -1,5 +1,5 @@
-#ifndef _ots_ARTDAQSupervisor_h
-#define _ots_ARTDAQSupervisor_h
+#ifndef OTSDAQ_OTSDAQ_ARTDAQSUPERVISOR_ARTDAQSUPERVISOR_HH_
+#define OTSDAQ_OTSDAQ_ARTDAQSUPERVISOR_ARTDAQSUPERVISOR_HH_
 
 #if __cplusplus > 201402L
 #pragma GCC diagnostic push
@@ -12,10 +12,15 @@
 
 #include <atomic>
 #include <chrono>
+#include <list>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <set>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 #include "artdaq/ExternalComms/CommanderInterface.hh"
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
@@ -168,4 +173,4 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_ARTDAQSUPERVISOR_ARTDAQSUPERVISOR_HH_

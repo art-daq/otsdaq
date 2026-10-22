@@ -1,5 +1,5 @@
-#ifndef _ots_DataProducerBase_h_
-#define _ots_DataProducerBase_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_DATAPRODUCERBASE_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_DATAPRODUCERBASE_H_
 
 #include "otsdaq/DataManager/CircularBuffer.h"
 #include "otsdaq/DataManager/DataProcessor.h"
@@ -65,4 +65,4 @@ class DataProducerBase : public DataProcessor
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_DATAPRODUCERBASE_H_

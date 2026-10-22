@@ -1,11 +1,12 @@
-#ifndef _ots_FEProducerVInterface_h_
-#define _ots_FEProducerVInterface_h_
+#ifndef OTSDAQ_OTSDAQ_FECORE_FEPRODUCERVINTERFACE_H_
+#define OTSDAQ_OTSDAQ_FECORE_FEPRODUCERVINTERFACE_H_
 
 #include "otsdaq/DataManager/DataProducerBase.h"
 #include "otsdaq/FECore/FEVInterface.h"
 
 #include <array>
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -45,4 +46,4 @@ class FEProducerVInterface : public FEVInterface, public DataProducerBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_FECORE_FEPRODUCERVINTERFACE_H_

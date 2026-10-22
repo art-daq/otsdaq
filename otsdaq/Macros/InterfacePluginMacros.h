@@ -1,7 +1,8 @@
-#ifndef _ots_InterfacePluginMacro_h_
-#define _ots_InterfacePluginMacro_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_INTERFACEPLUGINMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_INTERFACEPLUGINMACROS_H_
 
 #include <memory>
+#include <string>
 #include "cetlib/compiler_macros.h"
 #include "otsdaq/FECore/FEVInterface.h"
 
@@ -21,4 +22,4 @@
 	}                                                                                  \
 	}
 
-#endif /* _ots_InterfacePluginMacro_h_ */
+#endif  // OTSDAQ_OTSDAQ_MACROS_INTERFACEPLUGINMACROS_H_

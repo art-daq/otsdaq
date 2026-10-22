@@ -1,7 +1,9 @@
-#ifndef _ots_RunInfoVInterface_h_
-#define _ots_RunInfoVInterface_h_
+#ifndef OTSDAQ_OTSDAQ_FINITESTATEMACHINE_RUNINFOVINTERFACE_H_
+#define OTSDAQ_OTSDAQ_FINITESTATEMACHINE_RUNINFOVINTERFACE_H_
 
+#include <map>
 #include <string>
+#include <vector>
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/Macros/StringMacros.h"
@@ -68,7 +70,7 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual unsigned int 	insertRunCondition			(unsigned int        /* runNumber */,
 														 const std::map<std::string /* subsystem */,
 															std::map<std::string /*type/name/field */,
-																std::string  /* value */>>&
+																std::string  /*** value   */>>&
 																			 /* runConditionMap */,
 														 unsigned int        /* configureConditionID */,
 														 const std::string&  /* comment */) 				{ __SS__ << "insertRunCondition() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
@@ -76,7 +78,7 @@ class RunInfoVInterface  ///< : public Configurable
 	virtual void 			updateRunInfo				(unsigned int        /* runConditionID */,
 														 RunTransitionType   /* runTransitionType */,
 														 const std::string&  /* comment */,
-														 const std::string&  /* metadata */ = "") 		{ __SS__ << "updateRunInfo() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
+														 const std::string&  /*** metadata   */ = "") 		{ __SS__ << "updateRunInfo() Not implemented by the Run Info Plugin (" << mfSubject_ << ")!!"; __SS_THROW__; };
 
 
 	/// Get functions ----
@@ -104,4 +106,4 @@ class RunInfoVInterface  ///< : public Configurable
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_FINITESTATEMACHINE_RUNINFOVINTERFACE_H_

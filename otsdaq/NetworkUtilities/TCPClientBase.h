@@ -1,8 +1,9 @@
-#ifndef _ots_TCPClientBase_h_
-#define _ots_TCPClientBase_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENTBASE_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENTBASE_H_
+
+#include "otsdaq/NetworkUtilities/TCPTransceiverSocket.h"
 
 #include <string>
-#include "otsdaq/NetworkUtilities/TCPTransceiverSocket.h"
 
 namespace ots
 {
@@ -24,4 +25,4 @@ class TCPClientBase : public virtual TCPSocket
 	void resolveServer(std::string& serverIP);
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPCLIENTBASE_H_

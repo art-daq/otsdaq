@@ -1,7 +1,12 @@
-#ifndef _ots_ConfigurationManagerRW_h_
-#define _ots_ConfigurationManagerRW_h_
+#ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONMANAGERRW_H_
+#define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONMANAGERRW_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
+
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
 
 // clang-format off
 
@@ -41,7 +46,7 @@ struct GroupInfo
 	const std::string& 				getLatestKeyGroupCreationTime() const { return latestKeyGroupCreationTime_;	}
 	const std::string& 				getLatestKeyGroupTypeString() 	const {	return latestKeyGroupTypeString_; }
 	const std::map<std::string /*name*/,
-		TableVersion /*version*/>&	getLatestKeyMemberMap() 		const { return latestKeyMemberMap_;	}
+		TableVersion /***version  */>&	getLatestKeyMemberMap() 		const { return latestKeyMemberMap_;	}
 	TableGroupKey 					getLastKey() 					const {	if(keys_.size()) return *(keys_.rbegin()); else	return TableGroupKey();	}
 
   private:
@@ -50,7 +55,7 @@ struct GroupInfo
 	std::string             			latestKeyGroupAuthor_, latestKeyGroupComment_,
 										latestKeyGroupCreationTime_, latestKeyGroupTypeString_;
 	std::map<std::string /*name*/,
-		TableVersion /*version*/> 		latestKeyMemberMap_;
+		TableVersion /***version  */> 		latestKeyMemberMap_;
 };  //end GroupInfo struct
 
 #define __GET_TABLE_PTR__(X) getTablePtr<X>(QUOTE(X))
@@ -79,11 +84,11 @@ class ConfigurationManagerRW : public ConfigurationManager
 																				bool initializeActiveGroups = false);
 	std::map<std::string /*tableName*/,
 			 std::map<std::string /*aliasName*/,
-			 TableVersion /*version*/> >		getVersionAliases				(void) const;
+			 TableVersion /***version  */> >		getVersionAliases				(void) const;
 
 	template<class T>
 	T* 											getTablePtr						(const std::string& tableName) { return (T*)getTableByName(tableName); }
-	TableBase*    								getVersionedTableByName			(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false, bool touchLastAccessTime = true) /* make protected function accessible to RW users */	{ return ConfigurationManager::getVersionedTableByName(tableName, version, looseColumnMatching, accumulatedErrors, getRawData, touchLastAccessTime);	}
+	TableBase*    								getVersionedTableByName			(const std::string& tableName, TableVersion version, bool looseColumnMatching = false, std::string* accumulatedErrors = 0, bool getRawData = false, bool touchLastAccessTime = true) /*** make protected function accessible to RW users   */	{ return ConfigurationManager::getVersionedTableByName(tableName, version, looseColumnMatching, accumulatedErrors, getRawData, touchLastAccessTime);	}
 	time_t    									getVersionCreationTime			(const std::string& tableName, TableVersion version);
 	time_t    									getVersionLastAccessTime		(const std::string& tableName, TableVersion version);
 	void    									preloadVersionCreationTimes		(void);  ///< parallel load of all version creation times into the process-wide cache
@@ -292,4 +297,4 @@ public:
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONMANAGERRW_H_

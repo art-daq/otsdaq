@@ -1,5 +1,5 @@
-#ifndef _TCPListenServer_h_
-#define _TCPListenServer_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPLISTENSERVER_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPLISTENSERVER_H_
 
 #include "otsdaq/NetworkUtilities/TCPReceiverSocket.h"
 #include "otsdaq/NetworkUtilities/TCPServerBase.h"
@@ -7,6 +7,7 @@
 #include "TRACE/trace.h"
 
 #include <chrono>
+#include <string>
 
 namespace ots
 {
@@ -61,4 +62,4 @@ inline T TCPListenServer::receive()
 	}
 }
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPLISTENSERVER_H_

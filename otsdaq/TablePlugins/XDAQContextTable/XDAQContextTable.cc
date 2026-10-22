@@ -228,7 +228,7 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 	// Enforce that app IDs do not repeat!
 	//	Note: this is important because there are maps in MacroMaker and
 	// SupervisorDescriptorInfoBase that rely on localId() as key
-	std::set<unsigned int /*appId*/> appIdSet;
+	std::set<unsigned int /**appId */> appIdSet;
 
 	for(auto& child : children)
 	{

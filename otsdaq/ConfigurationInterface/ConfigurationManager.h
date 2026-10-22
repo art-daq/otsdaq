@@ -1,11 +1,14 @@
-#ifndef _ots_ConfigurationManager_h_
-#define _ots_ConfigurationManager_h_
+#ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONMANAGER_H_
+#define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONMANAGER_H_
 
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 #include "artdaq-core/Utilities/TimeUtils.hh"
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
@@ -28,7 +31,7 @@ class ConfigurationManager
   public:
 	typedef std::map<std::string,
 	                 std::pair<std::pair<std::string, TableGroupKey>,
-	                           std::map<std::string, TableVersion> /* memberMap */
+	                           std::map<std::string, TableVersion>  // memberMap
 	                           >>
 	    lastGroupLoad_t;
 
@@ -159,7 +162,7 @@ class ConfigurationManager
 	/// Getters
 	///
 	std::chrono::steady_clock::time_point						startClockTime_, deltaClockTime_;
-	std::string /* sinceStart deltaLastCheck */	runTimeSeconds() {
+	std::string /*** sinceStart deltaLastCheck   */	runTimeSeconds() {
 
 		//((double)(clock()-startClockTime_))/CLOCKS_PER_SEC;};
 		std::string retStr =
@@ -287,8 +290,8 @@ class ConfigurationManager
 		 std::pair<std::string /*groupName*/,
 		 TableGroupKey>>						getOtherSubsystemActiveTableGroups		(const std::string& otherSubsystemUID, std::string* userDataPathPtr = nullptr, std::string* hostnamePtr = nullptr, std::string* usernamePtr = nullptr);
 	void 										getOtherSubsystemInstanceInfo			(const std::string& otherSubsystemUID, std::string* userDataPathPtr = nullptr, std::string* hostnamePtr = nullptr, std::string* usernamePtr = nullptr, std::string* fullNamePtr = nullptr);
-	std::set<std::string  /* configAlias */>	getOtherSubsystemConfigAliases			(const std::string& otherSubsystemUID);
-	std::set<std::string  /* configAlias */>	getOtherSubsystemFilteredConfigAliases	(const std::string& otherSubsystemUID, const std::string& otherSubsystemFsmName );
+	std::set<std::string  /*** configAlias   */>	getOtherSubsystemConfigAliases			(const std::string& otherSubsystemUID);
+	std::set<std::string  /*** configAlias   */>	getOtherSubsystemFilteredConfigAliases	(const std::string& otherSubsystemUID, const std::string& otherSubsystemFsmName );
 	void										getOtherSubsystemConfigAliasInfo		(const std::string& otherSubsystemUID, const std::string& configAlias, std::pair<std::string, TableGroupKey>& groupTranslation, std::string& groupComment, std::string& groupAuthor, std::string& groupCreationTime);
 
 	//==============================================================================
@@ -303,10 +306,10 @@ class ConfigurationManager
 			std::string /*group name*/,
 			TableGroupKey> 				loadGroupNameAndKey			(const std::string& fileName, std::string& returnedTimeString);
 	static std::vector<std::map<std::string /* group field key */,
-			std::string /* group field value */>>
+			std::string /*** group field value   */>>
 										loadGroupHistory			(const std::string& groupAction, const std::string& groupType, bool formatTime = false);
 	static std::vector<std::map<std::string /* group field key */,
-			std::string /* group field value */>>
+			std::string /*** group field value   */>>
 										loadGroupHistory			(const std::string& fileName, bool formatTime = false);
 
 	void								initPrereqsForARTDAQ		(void);
@@ -374,4 +377,4 @@ class ConfigurationManager
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_CONFIGURATIONMANAGER_H_

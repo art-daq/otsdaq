@@ -1,5 +1,5 @@
-#ifndef _ots_TablePluginMacro_h_
-#define _ots_TablePluginMacro_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_TABLEPLUGINMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_TABLEPLUGINMACROS_H_
 
 #include "otsdaq/TableCore/TableBase.h"
 
@@ -10,4 +10,4 @@ typedef TableBase*(cbmakeFunc_t)();
 
 #define DEFINE_OTS_TABLE(klass) \
 	extern "C" TableBase* make() { return new klass(); }
-#endif /* _ots_TablePluginMacro_h_ */
+#endif  // OTSDAQ_OTSDAQ_MACROS_TABLEPLUGINMACROS_H_

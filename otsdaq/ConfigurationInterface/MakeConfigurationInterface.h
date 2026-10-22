@@ -1,5 +1,5 @@
-#ifndef _ots_makeConfigurationInterface_h_
-#define _ots_makeConfigurationInterface_h_
+#ifndef OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_MAKECONFIGURATIONINTERFACE_H_
+#define OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_MAKECONFIGURATIONINTERFACE_H_
 /// Using LibraryManager, find the correct library and return an instance of the specified
 /// configuration interface.
 ///
@@ -14,4 +14,4 @@ ConfigurationInterface* makeConfigurationInterface(
 
 }  // namespace ots
 
-#endif /* _ots_makeConfigurationInterface_h_ */
+#endif  // OTSDAQ_OTSDAQ_CONFIGURATIONINTERFACE_MAKECONFIGURATIONINTERFACE_H_

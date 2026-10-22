@@ -1,5 +1,5 @@
-#ifndef _ots_FEVInterfacesManager_h_
-#define _ots_FEVInterfacesManager_h_
+#ifndef OTSDAQ_OTSDAQ_FECORE_FEVINTERFACESMANAGER_H_
+#define OTSDAQ_OTSDAQ_FECORE_FEVINTERFACESMANAGER_H_
 
 #include <map>
 #include <memory>
@@ -7,6 +7,7 @@
 #include <queue>
 #include <set>
 #include <string>
+#include <vector>
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/FECore/FEVInterface.h"
 #include "otsdaq/FiniteStateMachine/VStateMachine.h"
@@ -122,18 +123,18 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	std::map<
 	    std::string /*targetInterfaceID*/,  ///< set of active multi-dimensional Macro
 	                                        ///< launches
-	    std::string /*status := Active, Done, Error: <message> */>
+	    std::string /***status := Active, Done, Error: <message>   */>
 	    macroMultiDimensionalStatusMap_;
 	std::map<std::string /*targetInterfaceID*/, std::string /*output file path*/>
 	    macroMultiDimensionalOutputFileMap_;  ///< set when saving outputs; guarded by macroMultiDimensionalDoneMutex_
 
   private:
 	std::map<std::string /*name*/, std::unique_ptr<FEVInterface> > theFEInterfaces_;
-	std::vector<std::string /*name*/>                              theFENamesByPriority_;
+	std::vector<std::string /***name  */>                          theFENamesByPriority_;
 
 	/// for managing transition iterations
 	std::map<std::string /*name*/, bool /*isDone*/> stateMachinesIterationDone_;
-	std::set<std::string /*name*/>                  stateMachinesWaitingSubsystemIteration_;  ///< re-armed when the subsystem-iteration index changes
+	std::set<std::string /***name  */>              stateMachinesWaitingSubsystemIteration_;  ///< re-armed when the subsystem-iteration index changes
 	unsigned int                                    lastSubsystemIterationIndexSeen_ = 0;
 	unsigned int                                    stateMachinesIterationWorkCount_;
 	unsigned int                                    subIterationWorkStateMachineIndex_;
@@ -145,4 +146,4 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_FECORE_FEVINTERFACESMANAGER_H_

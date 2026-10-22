@@ -1,5 +1,5 @@
-#ifndef OTSDAQ_MESSAGEFACILITY_ITRACECONTROLLER_H
-#define OTSDAQ_MESSAGEFACILITY_ITRACECONTROLLER_H
+#ifndef OTSDAQ_OTSDAQ_MESSAGEFACILITY_ITRACECONTROLLER_H_
+#define OTSDAQ_OTSDAQ_MESSAGEFACILITY_ITRACECONTROLLER_H_
 
 #include <limits.h>
 #include <unistd.h>
@@ -7,6 +7,7 @@
 #include <list>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "TRACE/trace.h"
 #include "otsdaq/Macros/StringMacros.h"
 
@@ -179,4 +180,4 @@ class ITRACEController
 
 }  // namespace ots
 
-#endif  // OTSDAQ_MESSAGEFACILITY_ITRACECONTROLLER_H
+#endif  // OTSDAQ_OTSDAQ_MESSAGEFACILITY_ITRACECONTROLLER_H_
