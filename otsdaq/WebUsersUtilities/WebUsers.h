@@ -55,7 +55,8 @@ class WebUsers
 	{
 		MOD_TYPE_UPDATE,
 		MOD_TYPE_ADD,
-		MOD_TYPE_DELETE
+		MOD_TYPE_DELETE,
+		MOD_TYPE_RESET_PASSWORD
 	};
 
 	using permissionLevel_t = uint8_t;
@@ -394,7 +395,8 @@ class WebUsers
 
 	void        			createNewAccount				(const std::string& username,
 															 const std::string& displayName,
-															 const std::string& email);
+												 const std::string& email,
+												 WebUsers::permissionLevel_t initialPermission = WebUsers::PERMISSION_LEVEL_NOVICE);
 	void       				cleanupExpiredEntries			(std::vector<std::string>* loggedOutUsernames = 0);
 	void       				cleanupExpiredRemoteEntries		(void);
 	std::string				createNewLoginSession			(const std::string& uuid, const std::string& ip);
@@ -409,6 +411,13 @@ class WebUsers
 															 std::string&       cookieCode,
 															 std::string&       username,
 															 const std::string& ip);
+	uint64_t				attemptActiveSessionWithEmail	(const std::string& email,
+															 const std::string& displayNameHint,
+															 std::string&       cookieCode,
+															 std::string&       username,
+															 std::string&       displayName,
+															 const std::string& ip,
+															 bool               autoCreate = true);
 	uint64_t				isCookieCodeActiveForLogin		(const std::string& uuid,
 															 std::string&       cookieCode,
 															 std::string&       username);
