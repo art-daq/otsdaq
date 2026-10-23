@@ -72,14 +72,15 @@ ApplicationInstantiator findApplicationClass(const std::string& className);
 
 #define XDAQ_INSTANTIATOR() static xdaq::Application* instantiate(xdaq::ApplicationStub* stub)
 
+// The registrar must be a visible, `used` global: an unreferenced object in an anonymous
+// namespace inside a shared library is legitimately discarded by the optimizer, and then
+// the class never registers (seen with gcc -O2: no registerApplicationClass call emitted).
 #define XDAQ_INSTANTIATOR_IMPL(CLASS)                                                                \
 	xdaq::Application* CLASS::instantiate(xdaq::ApplicationStub* stub) { return new CLASS(stub); }  \
-	namespace                                                                                      \
+	struct CLASS##_xdaq_lite_registrar                                                             \
 	{                                                                                              \
-	struct CLASS##_registrar                                                                       \
-	{                                                                                              \
-		CLASS##_registrar() { xdaq::registerApplicationClass("ots::" #CLASS, &CLASS::instantiate); } \
-	} CLASS##_registrar_instance;                                                                  \
-	}
+		CLASS##_xdaq_lite_registrar() { xdaq::registerApplicationClass("ots::" #CLASS, &CLASS::instantiate); } \
+	};                                                                                             \
+	__attribute__((used)) CLASS##_xdaq_lite_registrar CLASS##_xdaq_lite_registrar_instance;
 
 #endif

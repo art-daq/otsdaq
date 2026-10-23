@@ -19,6 +19,19 @@ foreach(lib xdaq xoap xgi xcept xdata toolbox cgicc config peer pthttp)
 	add_library(XDAQ::${lib} ALIAS XdaqLite)
 endforeach()
 
+# The lite executive: drop-in for xdaq.exe (same -p/-h/-e/-c command line the `ots` launcher uses).
+cet_make_exec(NAME ots_lite_main
+	SOURCE ots_lite_main.cc
+	LIBRARIES PRIVATE
+	otsdaq::XdaqLite
+	XercesC::XercesC
+	Threads::Threads
+	${CMAKE_DL_LIBS}
+)
+# `ots` execs xdaq.exe by name; point it at the lite executive. CMAKE_INSTALL_PREFIX is left
+# unexpanded so `cmake --install --prefix <other>` relocates the link along with the binary.
+install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink ots_lite_main \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/xdaq.exe\")")
+
 install(DIRECTORY include DESTINATION include/otsdaq/XdaqLite)
 install_headers()
 install_source()

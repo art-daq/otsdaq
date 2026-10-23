@@ -1,4 +1,5 @@
-// OTS_LITE stand-in for GNU cgicc's HTTPResponseHeader (only the surface otsdaq uses).
+// OTS_LITE stand-in for GNU cgicc's HTTPResponseHeader (only the surface otsdaq uses, plus
+// what the lite HTTP front end needs to emit a response).
 #ifndef _cgicc_HTTPResponseHeader_h_
 #define _cgicc_HTTPResponseHeader_h_
 
@@ -24,7 +25,15 @@ class HTTPResponseHeader
 		cookies_.push_back(c);
 		return *this;
 	}
+	HTTPResponseHeader& setStatus(int status, const std::string& reason)
+	{
+		status_ = status;
+		reason_ = reason;
+		return *this;
+	}
 	int                                                     getStatusCode() const { return status_; }
+	std::string                                             getReasonPhrase() const { return reason_; }
+	std::string                                             getHTTPVersion() const { return version_; }
 	const std::vector<std::pair<std::string, std::string>>& getHeaders() const { return headers_; }
 	const std::vector<HTTPCookie>&                          getCookies() const { return cookies_; }
 

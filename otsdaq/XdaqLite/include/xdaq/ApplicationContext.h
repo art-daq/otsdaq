@@ -57,6 +57,8 @@ class ApplicationContext
 	const ApplicationDescriptor* addRemoteApplication(const std::string& className, unsigned int lid, unsigned int instance, const std::string& contextURL);
 
 	Application* getApplication(unsigned int lid) const;
+	// Binds the instantiated application to a descriptor registered with addApplication(nullptr, ...).
+	void setApplication(unsigned int lid, Application* app);
 
 	// SOAP transport. Local targets are dispatched in-process; remote targets go over HTTP
 	// (not yet implemented in lite: throws xdaq::exception::Exception).

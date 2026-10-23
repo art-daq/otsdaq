@@ -78,6 +78,17 @@ xdaq::Application* xdaq::ApplicationContext::getApplication(unsigned int lid) co
 	return nullptr;
 }
 
+void xdaq::ApplicationContext::setApplication(unsigned int lid, Application* app)
+{
+	for(auto& p : localApps_)
+		if(p.first == lid)
+		{
+			p.second = app;
+			return;
+		}
+	localApps_.emplace_back(lid, app);
+}
+
 xoap::MessageReference xdaq::ApplicationContext::postSOAP(xoap::MessageReference msg, const ApplicationDescriptor& /*from*/, const ApplicationDescriptor& to)
 {
 	if(Application* local = getApplication(to.getLocalId()))
@@ -123,10 +134,55 @@ void xoap::SOAPMessage::writeTo(std::string& out) const
 	out = s.str();
 }
 
-void xoap::SOAPMessage::readFrom(const std::string& /*in*/)
+// Parses the wire form written by writeTo(): the first element inside <...Body> is the
+// command; its attributes are the parameters. Deliberately minimal (no full XML parser):
+// enough to round-trip what SOAPUtilities produces.
+void xoap::SOAPMessage::readFrom(const std::string& in)
 {
-	// Parsing of the wire form is needed only once SOAP goes over HTTP between contexts.
-	XCEPT_RAISE(xoap::exception::Exception, "OTS_LITE: SOAPMessage::readFrom not implemented yet");
+	bodyElements_.clear();
+	size_t b = in.find("Body>");
+	if(b == std::string::npos)
+		XCEPT_RAISE(xoap::exception::Exception, "SOAP message has no Body");
+	size_t lt = in.find('<', b + 5);
+	if(lt == std::string::npos)
+		return;
+	size_t gt = in.find('>', lt);
+	if(gt == std::string::npos)
+		XCEPT_RAISE(xoap::exception::Exception, "malformed SOAP body element");
+	std::string tag = in.substr(lt + 1, gt - lt - 1);
+	if(!tag.empty() && tag.back() == '/')
+		tag.pop_back();
+	size_t      sp   = tag.find_first_of(" \t\r\n");
+	std::string qn   = tag.substr(0, sp);
+	size_t      col  = qn.find(':');
+	std::string name = col == std::string::npos ? qn : qn.substr(col + 1);
+	SOAPElement el   = SOAPPart(&bodyElements_).getEnvelope().getBody().addBodyElement(SOAPName(name, col == std::string::npos ? "" : qn.substr(0, col)));
+	if(sp == std::string::npos)
+		return;
+	std::string attrs = tag.substr(sp);
+	size_t      pos   = 0;
+	while(true)
+	{
+		size_t eq = attrs.find('=', pos);
+		if(eq == std::string::npos)
+			break;
+		size_t ks = attrs.find_last_of(" \t\r\n", eq);
+		ks        = ks == std::string::npos ? 0 : ks + 1;
+		std::string key = attrs.substr(ks, eq - ks);
+		size_t      q1  = attrs.find('"', eq);
+		if(q1 == std::string::npos)
+			break;
+		size_t q2 = attrs.find('"', q1 + 1);
+		if(q2 == std::string::npos)
+			break;
+		std::string val = attrs.substr(q1 + 1, q2 - q1 - 1);
+		for(const auto& rep : std::vector<std::pair<std::string, std::string>>{{"&quot;", "\""}, {"&lt;", "<"}, {"&gt;", ">"}, {"&amp;", "&"}})
+			for(size_t f = val.find(rep.first); f != std::string::npos; f = val.find(rep.first, f + rep.second.size()))
+				val.replace(f, rep.first.size(), rep.second);
+		if(key.find("xmlns") != 0)
+			el.addAttribute(SOAPName(key), val);
+		pos = q2 + 1;
+	}
 }
 
 // ---------------------------------------------------------------------------
