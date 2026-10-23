@@ -2648,9 +2648,20 @@ try
 
 		if(iteratorBusy_)
 		{
+			const std::string& planName =
+			    activePlanName_.size() ? activePlanName_ : lastStartedPlanName_;
 			__SS__ << "Error - Can not accept request because the Iterator "
 			       << "is currently "
-			       << "in control of State Machine progress. ";
+			       << "in control of State Machine progress. "
+			       << "Iteration plan '" << planName << "' is "
+			       << (activePlanIsRunning_ ? "running" : "stopped")
+			       << " at command " << activeCommandIndex_ << " of "
+			       << activeNumberOfCommands_
+			       << (activeCommandType_.size() ? " (" + activeCommandType_ + ")" : "")
+			       << ". To regain manual control of the State Machine, halt the "
+			          "Iterator (e.g. from the Iterator web app, or contact an admin)."
+			       << (errorMessage_.size() ? " Last Iterator error: " + errorMessage_
+			                                : "");
 			__COUT_ERR__ << "\n" << ss.str();
 			__COUT_ERR__ << "\n" << ss.str();
 
