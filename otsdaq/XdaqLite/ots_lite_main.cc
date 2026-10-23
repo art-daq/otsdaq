@@ -352,6 +352,23 @@ void serveApp(int fd, LiteContext& ctx, const Request& req, const std::string& r
 	auto        headers = hdr.getHeaders();
 	for(const auto& c : hdr.getCookies())
 		headers.emplace_back("Set-Cookie", c.getName() + "=" + c.getValue() + "; Path=/");
+
+	// Real xdaq's xgi layer auto-detected XML responses; otsdaq handlers never set
+	// Content-Type themselves. Sniff the body so the browser populates responseXML.
+	{
+		bool hasContentType = false;
+		for(const auto& h : headers)
+			if(strcasecmp(h.first.c_str(), "content-type") == 0)
+			{ hasContentType = true; break; }
+		if(!hasContentType)
+		{
+			const std::string& body = out.str();
+			size_t start = body.find_first_not_of(" \t\r\n");
+			if(start != std::string::npos && body[start] == '<')
+				headers.emplace_back("Content-Type", "text/xml; charset=utf-8");
+		}
+	}
+
 	sendResponse(fd, hdr.getStatusCode(), hdr.getReasonPhrase(), headers, out.str());
 }
 
