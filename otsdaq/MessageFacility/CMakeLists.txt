@@ -1,8 +1,12 @@
+if(NOT DEFINED ENV{OTS_LITE})
+	set(OTS_ARTDAQ_CORE_UTILITIES artdaq-core::Utilities)
+endif()
+
 cet_make_library(LIBRARY_NAME MessageFacility
 	SOURCE MessageFacility.cc TRACEController.cc
   LIBRARIES PUBLIC
   otsdaq::Macros
-  artdaq-core::Utilities
+  ${OTS_ARTDAQ_CORE_UTILITIES}
   )
 
 install_headers()

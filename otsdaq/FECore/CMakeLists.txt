@@ -2,12 +2,16 @@
 cet_register_export_set(SET_NAME FEPluginTypes NAMESPACE otsdaq_plugin_types)
 cet_register_export_set(SET_NAME FEPluginSupport NAMESPACE otsdaq_plugin_support)
 
+if(NOT DEFINED ENV{OTS_LITE})
+	set(OTS_ARTDAQ_DAQDATA artdaq::DAQdata)
+endif()
+
 cet_make_library(LIBRARY_NAME IFEInterface INTERFACE
 		EXPORT_SET FEPluginTypes
 		SOURCE FEVInterface.h
 		 LIBRARIES INTERFACE
 		 otsdaq::MessageFacility
-		 artdaq::DAQdata
+		 ${OTS_ARTDAQ_DAQDATA}
 		 XercesC::XercesC
 )
 
@@ -35,7 +39,7 @@ cet_make_library(LIBRARY_NAME FECore
 		 otsdaq::Configurable
 		 otsdaq::FiniteStateMachine
 		 otsdaq::SupervisorInfo
-		 artdaq::DAQdata
+		 ${OTS_ARTDAQ_DAQDATA}
 		 PRIVATE
 		 otsdaq::NetworkUtilities
 		 otsdaq::ConfigurationInterface

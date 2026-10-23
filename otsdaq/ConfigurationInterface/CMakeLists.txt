@@ -1,6 +1,10 @@
 cet_register_export_set(SET_NAME CIPluginTypes NAMESPACE otsdaq_plugin_types)
 cet_register_export_set(SET_NAME CIPluginSupport NAMESPACE otsdaq_plugin_support)
 
+if(NOT DEFINED ENV{OTS_LITE})
+	set(OTS_ARTDAQ_APPLICATION artdaq::Application)
+endif()
+
 cet_make_library(LIBRARY_NAME IConfigurationInterface INTERFACE
 		EXPORT_SET CIPluginTypes
 		SOURCE ConfigurationInterface.h
@@ -30,7 +34,7 @@ cet_make_library(LIBRARY_NAME ConfigurationInterface
 		 XercesC::XercesC
 		 PRIVATE
 		 otsdaq::XmlUtilities
-		 artdaq::Application
+		 ${OTS_ARTDAQ_APPLICATION}
 )
 
 include(BasicPlugin)
@@ -39,6 +43,7 @@ SUFFIX configInterface INSTALL_BUILDER
 LIBRARIES CONDITIONAL otsdaq::ConfigurationInterface)
 
 include(otsdaq::configInterface)
+if(NOT DEFINED ENV{OTS_LITE})
 cet_build_plugin(Database otsdaq::configInterface
 LIBRARIES REG
 artdaq-database::ConfigurationDB
@@ -46,6 +51,7 @@ otsdaq::XmlUtilities
 PRIVATE
 artdaq-database::ConfigurationDB
 )
+endif()
 
 cet_build_plugin(File otsdaq::configInterface)
 
