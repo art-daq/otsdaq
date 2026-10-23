@@ -364,7 +364,10 @@ void serveApp(int fd, LiteContext& ctx, const Request& req, const std::string& r
 		{
 			const std::string& body = out.str();
 			size_t start = body.find_first_not_of(" \t\r\n");
-			if(start != std::string::npos && body[start] == '<')
+			if(start != std::string::npos && body[start] == '<' &&
+			   body.substr(start, 9).find("<!") == std::string::npos &&
+			   body.substr(start, 9).find("<html") == std::string::npos &&
+			   body.substr(start, 9).find("<HTML") == std::string::npos)
 				headers.emplace_back("Content-Type", "text/xml; charset=utf-8");
 		}
 	}
