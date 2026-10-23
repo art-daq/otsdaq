@@ -1,6 +1,7 @@
 // OTS_LITE: out-of-line parts of the xdaq stand-in (see include/ for the header-only parts).
 #include "xdaq/Application.h"
 #include "xdaq/ApplicationContext.h"
+#include "xdaq/HandlerRegistry.h"
 #include "xgi/Input.h"
 #include "xgi/Output.h"
 #include "toolbox/task/WorkLoopFactory.h"
@@ -13,8 +14,52 @@
 // ---------------------------------------------------------------------------
 // xdaq::Application
 // ---------------------------------------------------------------------------
+std::vector<xdaq::PendingHTTPHandler>& xdaq::pendingHTTPHandlers()
+{
+	static std::vector<PendingHTTPHandler> v;
+	return v;
+}
+std::vector<xdaq::PendingSOAPHandler>& xdaq::pendingSOAPHandlers()
+{
+	static std::vector<PendingSOAPHandler> v;
+	return v;
+}
+std::mutex& xdaq::handlerRegistryMutex()
+{
+	static std::mutex m;
+	return m;
+}
+
+void xdaq::Application::claimPendingHandlers()
+{
+	std::lock_guard<std::mutex> lk(handlerRegistryMutex());
+	auto&                       http = pendingHTTPHandlers();
+	for(auto it = http.begin(); it != http.end();)
+	{
+		if(it->resolve() == this)
+		{
+			httpHandlers_[it->name] = it->fn;
+			it                      = http.erase(it);
+		}
+		else
+			++it;
+	}
+	auto& soap = pendingSOAPHandlers();
+	for(auto it = soap.begin(); it != soap.end();)
+	{
+		if(it->resolve() == this)
+		{
+			soapHandlers_[it->command] = it->fn;
+			it                         = soap.erase(it);
+		}
+		else
+			++it;
+	}
+}
+
 bool xdaq::Application::dispatchHTTP(const std::string& name, xgi::Input* in, xgi::Output* out)
 {
+	claimPendingHandlers();
 	auto it = httpHandlers_.find(name.empty() ? "Default" : name);
 	if(it == httpHandlers_.end())
 		return false;
@@ -24,6 +69,7 @@ bool xdaq::Application::dispatchHTTP(const std::string& name, xgi::Input* in, xg
 
 xoap::MessageReference xdaq::Application::dispatchSOAP(xoap::MessageReference msg)
 {
+	claimPendingHandlers();
 	const auto& body = msg->bodyElements();
 	if(body.empty())
 		XCEPT_RAISE(xdaq::exception::Exception, "SOAP message has no body element");

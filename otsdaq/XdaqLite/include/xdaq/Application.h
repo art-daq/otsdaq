@@ -52,12 +52,20 @@ class Application : public virtual toolbox::lang::Class
 	void bindHTTP(const std::string& name, HTTPHandler h) { httpHandlers_[name] = h; }
 	void bindSOAP(const std::string& command, SOAPHandler h) { soapHandlers_[command] = h; }
 
-	// dispatch (called by the lite front end / ApplicationContext::postSOAP)
+	// dispatch (called by the HTTP server in ots_lite_main / ApplicationContext::postSOAP)
 	bool                   dispatchHTTP(const std::string& name, xgi::Input* in, xgi::Output* out);
 	xoap::MessageReference dispatchSOAP(xoap::MessageReference msg);
-	const std::map<std::string, HTTPHandler>& getHTTPHandlers() const { return httpHandlers_; }
+	const std::map<std::string, HTTPHandler>& getHTTPHandlers()
+	{
+		claimPendingHandlers();
+		return httpHandlers_;
+	}
 
   private:
+	// Moves handlers bound (possibly from mix-in base constructors) that resolve to this
+	// application out of the pending registry into this object. Safe to call repeatedly.
+	void claimPendingHandlers();
+
 	ApplicationStub*                   stub_;
 	std::map<std::string, HTTPHandler> httpHandlers_;
 	std::map<std::string, SOAPHandler> soapHandlers_;

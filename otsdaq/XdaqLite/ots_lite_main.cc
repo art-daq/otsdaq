@@ -33,6 +33,7 @@
 
 #include <arpa/inet.h>
 #include <dlfcn.h>
+#include <execinfo.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <signal.h>
@@ -382,6 +383,22 @@ void handleConnection(int fd, LiteContext* ctx, std::string remoteAddr)
 std::atomic<bool> running{true};
 void              onSignal(int) { running = false; }
 
+// On a crash, print a backtrace to stderr (which `ots` captures in the quiet-run log) so the
+// failing frame is visible without root access to core dumps. Async-signal-safe calls only.
+void onCrash(int sig)
+{
+	const char* name = sig == SIGSEGV ? "SIGSEGV" : sig == SIGABRT ? "SIGABRT" : sig == SIGBUS ? "SIGBUS" : "signal";
+	const char  hdr[] = "\nots_lite_main: fatal ";
+	::write(2, hdr, sizeof(hdr) - 1);
+	::write(2, name, strlen(name));
+	::write(2, ", backtrace:\n", 13);
+	void* frames[64];
+	int   n = backtrace(frames, 64);
+	backtrace_symbols_fd(frames, n, 2);
+	signal(sig, SIG_DFL);
+	raise(sig);
+}
+
 void usage()
 {
 	std::cerr << "usage: ots_lite_main -p <port> -h <host> [-e <profile.xml>] -c <partition.xml>\n";
@@ -526,6 +543,9 @@ int main(int argc, char** argv)
 	signal(SIGINT, onSignal);
 	signal(SIGTERM, onSignal);
 	signal(SIGPIPE, SIG_IGN);
+	signal(SIGSEGV, onCrash);
+	signal(SIGABRT, onCrash);
+	signal(SIGBUS, onCrash);
 	std::cout << "ots_lite_main: listening on http://" << host << ":" << port << std::endl;
 
 	while(running)
