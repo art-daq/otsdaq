@@ -4,6 +4,7 @@ cet_register_export_set(SET_NAME FEPluginSupport NAMESPACE otsdaq_plugin_support
 
 if(NOT DEFINED ENV{OTS_LITE})
 	set(OTS_ARTDAQ_DAQDATA artdaq::DAQdata)
+	set(OTS_ROOT_HIST ROOT::Hist) # TFormula, only used on the artdaq MetricManager path
 endif()
 
 cet_make_library(LIBRARY_NAME IFEInterface INTERFACE
@@ -44,7 +45,7 @@ cet_make_library(LIBRARY_NAME FECore
 		 otsdaq::NetworkUtilities
 		 otsdaq::ConfigurationInterface
 		 otsdaq::SOAPUtilities
-		 ROOT::Hist
+		 ${OTS_ROOT_HIST}
 )
 
 

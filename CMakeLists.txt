@@ -106,7 +106,11 @@ add_definitions(-DOTSDAQ_MAJOR_VERSION=${OTSDAQ_MAJOR_VERSION})
 add_definitions(-DOTSDAQ_MINOR_VERSION=${OTSDAQ_MINOR_VERSION})
 add_definitions(-DOTSDAQ_PATCH_VERSION=${OTSDAQ_PATCH_VERSION})
 
-include(BuildPlugins)
+if(DEFINED ENV{OTS_LITE})
+	include(OtsLitePlugins) # art::plugin base without art (see Modules/OtsLitePlugins.cmake)
+else()
+	include(BuildPlugins)
+endif()
 
 # source
 if(NOT DEFINED ENV{OTS_LITE})
