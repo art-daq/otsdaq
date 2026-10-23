@@ -1,4 +1,9 @@
 
+if(DEFINED ENV{OTS_LITE})
+	add_subdirectory(XdaqLite) # provides the XDAQ::* targets and artdaq stand-ins without xdaq/artdaq; must precede users
+	# sources include <xdaq/...> and "artdaq-core/..." unchanged; make the mirrored headers visible everywhere
+	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/XdaqLite/include)
+endif()
 add_subdirectory(Macros)
 add_subdirectory(MessageFacility)
 add_subdirectory(XmlUtilities)

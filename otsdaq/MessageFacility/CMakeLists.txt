@@ -1,4 +1,6 @@
-if(NOT DEFINED ENV{OTS_LITE})
+if(DEFINED ENV{OTS_LITE})
+	set(OTS_ARTDAQ_CORE_UTILITIES otsdaq::XdaqLite)
+else()
 	set(OTS_ARTDAQ_CORE_UTILITIES artdaq-core::Utilities)
 endif()
 

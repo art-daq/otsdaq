@@ -1,7 +1,9 @@
 cet_register_export_set(SET_NAME CIPluginTypes NAMESPACE otsdaq_plugin_types)
 cet_register_export_set(SET_NAME CIPluginSupport NAMESPACE otsdaq_plugin_support)
 
-if(NOT DEFINED ENV{OTS_LITE})
+if(DEFINED ENV{OTS_LITE})
+	set(OTS_ARTDAQ_APPLICATION otsdaq::XdaqLite)
+else()
 	set(OTS_ARTDAQ_APPLICATION artdaq::Application)
 endif()
 

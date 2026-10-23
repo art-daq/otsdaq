@@ -2,7 +2,9 @@
 cet_register_export_set(SET_NAME FEPluginTypes NAMESPACE otsdaq_plugin_types)
 cet_register_export_set(SET_NAME FEPluginSupport NAMESPACE otsdaq_plugin_support)
 
-if(NOT DEFINED ENV{OTS_LITE})
+if(DEFINED ENV{OTS_LITE})
+	set(OTS_ARTDAQ_DAQDATA otsdaq::XdaqLite)
+else()
 	set(OTS_ARTDAQ_DAQDATA artdaq::DAQdata)
 	set(OTS_ROOT_HIST ROOT::Hist) # TFormula, only used on the artdaq MetricManager path
 endif()

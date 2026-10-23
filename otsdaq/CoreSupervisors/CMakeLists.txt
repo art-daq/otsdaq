@@ -6,7 +6,9 @@
 
 find_package(cppzmq REQUIRED EXPORT) # for publish/subscribe of data from FE to Supervisor
 
-if(NOT DEFINED ENV{OTS_LITE})
+if(DEFINED ENV{OTS_LITE})
+	set(OTS_ARTDAQ_SUPERVISOR_LIBRARIES otsdaq::XdaqLite)
+else()
 	set(OTS_ARTDAQ_SUPERVISOR_SOURCES ARTDAQDataManagerSupervisor.cc ARTDAQFEDataManagerSupervisor.cc)
 	set(OTS_ARTDAQ_SUPERVISOR_LIBRARIES artdaq::DAQdata otsdaq::ARTDAQDataManager)
 endif()
