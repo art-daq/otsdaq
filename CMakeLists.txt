@@ -76,11 +76,16 @@ if(BTYPE_UC STREQUAL DEBUG)
 	endif()
 endif()
 
-find_package(artdaq-core 3.09.00 REQUIRED EXPORT)
-find_package(artdaq 3.12.00 REQUIRED EXPORT)
-find_package(XDAQ 16 REQUIRED EXPORT)
+if(DEFINED ENV{OTS_LITE})
+	message("!!! OTS_LITE build: skipping artdaq, xdaq, and artdaq-database !!!")
+	add_definitions(-DOTS_LITE)
+else()
+	find_package(artdaq-core 3.09.00 REQUIRED EXPORT)
+	find_package(artdaq 3.12.00 REQUIRED EXPORT)
+	find_package(XDAQ 16 REQUIRED EXPORT)
+	find_package(artdaq-database 1.07.00 REQUIRED)
+endif()
 find_package(XercesC 3.2 REQUIRED EXPORT)
-find_package(artdaq-database 1.07.00 REQUIRED)
 find_package(Python 3.6 COMPONENTS Development.Embed REQUIRED)
 find_package(CURL REQUIRED EXPORT) # Curl required by artdaq-database, unclear why EXPORT command isn't working
 
@@ -104,8 +109,10 @@ add_definitions(-DOTSDAQ_PATCH_VERSION=${OTSDAQ_PATCH_VERSION})
 include(BuildPlugins)
 
 # source
-add_subdirectory(artdaq-ots)
-cet_register_export_set(SET_NAME artdaqUsers SET_DEFAULT)
+if(NOT DEFINED ENV{OTS_LITE})
+	add_subdirectory(artdaq-ots)
+	cet_register_export_set(SET_NAME artdaqUsers SET_DEFAULT)
+endif()
 add_subdirectory(otsdaq)
 cet_register_export_set(SET_NAME otsdaqUsers SET_DEFAULT)
 
