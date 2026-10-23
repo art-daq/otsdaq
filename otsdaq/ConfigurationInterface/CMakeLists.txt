@@ -45,7 +45,18 @@ SUFFIX configInterface INSTALL_BUILDER
 LIBRARIES CONDITIONAL otsdaq::ConfigurationInterface)
 
 include(otsdaq::configInterface)
-if(NOT DEFINED ENV{OTS_LITE})
+if(DEFINED ENV{OTS_LITE})
+# ConfigurationManager always asks for the "Database" plugin by name; under OTS_LITE that
+# name is served by the read-only filesystemdb reader (no artdaq-database).
+# cet_build_plugin auto-discovers <Name>.cc (the real Database.cc) unless IMPL_SOURCE is
+# given explicitly, so both halves are named here.
+cet_build_plugin(Database otsdaq::configInterface
+IMPL_SOURCE DatabaseLite_configInterface.cc
+REG_SOURCE DatabaseLiteReg.cc
+LIBRARIES REG
+otsdaq::XmlUtilities
+)
+else()
 cet_build_plugin(Database otsdaq::configInterface
 LIBRARIES REG
 artdaq-database::ConfigurationDB
