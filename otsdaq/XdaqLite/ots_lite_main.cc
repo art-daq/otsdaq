@@ -528,6 +528,9 @@ int main(int argc, char** argv)
 		}
 		handles[s.module] = h;
 	}
+	// Register every application descriptor before constructing any, as xdaq.exe does:
+	// Supervisor constructors enumerate the whole context (AllSupervisorInfo).
+	std::map<unsigned int, const xdaq::ApplicationDescriptor*> descriptors;
 	for(const auto& s : specs)
 	{
 		if(!s.module.empty() && !handles.count(s.module))
@@ -535,6 +538,12 @@ int main(int argc, char** argv)
 			std::cerr << "ots_lite_main: skipping " << s.className << " lid=" << s.lid << " (module not loaded)\n";
 			continue;
 		}
+		descriptors[s.lid] = ctx.context->addApplication(nullptr, s.className, s.lid, s.instance);
+	}
+	for(const auto& s : specs)
+	{
+		if(!descriptors.count(s.lid))
+			continue;
 		// "ots::WizardSupervisor" -> namespaces + class, mangled as _ZN3ots16WizardSupervisor11instantiateEPN4xdaq15ApplicationStubE
 		std::string mangled = "_ZN";
 		{
@@ -561,8 +570,7 @@ int main(int argc, char** argv)
 			return 1;
 		}
 		xdaq::ApplicationInstantiator make = reinterpret_cast<xdaq::ApplicationInstantiator>(sym);
-		const xdaq::ApplicationDescriptor* d = ctx.context->addApplication(nullptr, s.className, s.lid, s.instance);
-		ctx.stubs.emplace_back(new xdaq::ApplicationStub(ctx.context.get(), d));
+		ctx.stubs.emplace_back(new xdaq::ApplicationStub(ctx.context.get(), descriptors[s.lid]));
 		std::cout << "ots_lite_main: instantiating " << s.className << " lid=" << s.lid << std::endl;
 		try
 		{

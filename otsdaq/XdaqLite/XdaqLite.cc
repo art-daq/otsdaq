@@ -120,9 +120,13 @@ void xdaq::ApplicationContext::setApplication(unsigned int lid, Application* app
 
 xoap::MessageReference xdaq::ApplicationContext::postSOAP(xoap::MessageReference msg, const ApplicationDescriptor& /*from*/, const ApplicationDescriptor& to)
 {
-	if(Application* local = getApplication(to.getLocalId()))
-		if(to.getContextDescriptor() == &context_)
+	if(to.getContextDescriptor() == &context_)
+	{
+		if(Application* local = getApplication(to.getLocalId()))
 			return local->dispatchSOAP(msg);
+		XCEPT_RAISE(xdaq::exception::Exception,
+		            "OTS_LITE: SOAP target lid=" + std::to_string(to.getLocalId()) + " (" + to.getClassName() + ") is in this context but not constructed yet");
+	}
 	XCEPT_RAISE(xdaq::exception::Exception,
 	            "OTS_LITE: SOAP to a remote context is not implemented yet (target lid=" + std::to_string(to.getLocalId()) + " at " + to.getContextDescriptor()->getURL() + ")");
 }
