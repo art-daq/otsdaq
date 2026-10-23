@@ -81,6 +81,29 @@ std::string localName(xercesc::DOMElement* e)
 	return p == std::string::npos ? n : n.substr(p + 1);
 }
 
+// xdaq.exe expands ${VAR} in the partition XML itself; the normal-mode partition that
+// GatewaySupervisor writes is not run through envsubst by `ots` (the wizard one is).
+std::string expandEnv(const std::string& s)
+{
+	std::string out;
+	for(size_t i = 0; i < s.size();)
+	{
+		if(s[i] == '$' && i + 1 < s.size() && s[i + 1] == '{')
+		{
+			size_t close = s.find('}', i + 2);
+			if(close != std::string::npos)
+			{
+				const char* v = getenv(s.substr(i + 2, close - i - 2).c_str());
+				out += v ? v : "";
+				i = close + 1;
+				continue;
+			}
+		}
+		out += s[i++];
+	}
+	return out;
+}
+
 // Returns the context URL and the applications; modules are paired to the preceding
 // <xc:Application> as xdaq does (each Application is followed by its Module).
 std::string parsePartition(const std::string& file, std::vector<AppSpec>& apps)
@@ -101,7 +124,7 @@ std::string parsePartition(const std::string& file, std::vector<AppSpec>& apps)
 		auto* ctx = static_cast<xercesc::DOMElement*>(c);
 		if(localName(ctx) != "Context")
 			continue;
-		url = xs(ctx->getAttribute(xercesc::XMLString::transcode("url")));
+		url = expandEnv(xs(ctx->getAttribute(xercesc::XMLString::transcode("url"))));
 		for(xercesc::DOMNode* a = ctx->getFirstChild(); a; a = a->getNextSibling())
 		{
 			if(a->getNodeType() != xercesc::DOMNode::ELEMENT_NODE)
@@ -119,7 +142,7 @@ std::string parsePartition(const std::string& file, std::vector<AppSpec>& apps)
 			}
 			else if(ln == "Module" && !apps.empty() && apps.back().module.empty())
 			{
-				apps.back().module = xs(el->getTextContent());
+				apps.back().module = expandEnv(xs(el->getTextContent()));
 			}
 		}
 		break;  // one context per process
@@ -499,13 +522,19 @@ int main(int argc, char** argv)
 		void* h = dlopen(s.module.c_str(), RTLD_NOW | RTLD_GLOBAL);
 		if(!h)
 		{
-			std::cerr << "ots_lite_main: cannot load " << s.module << ": " << dlerror() << "\n";
-			return 1;
+			// Not built under OTS_LITE (e.g. libVisualization.so); keep the rest of the context up.
+			std::cerr << "ots_lite_main: WARNING cannot load " << s.module << ": " << dlerror() << " -- skipping applications in this module\n";
+			continue;
 		}
 		handles[s.module] = h;
 	}
 	for(const auto& s : specs)
 	{
+		if(!s.module.empty() && !handles.count(s.module))
+		{
+			std::cerr << "ots_lite_main: skipping " << s.className << " lid=" << s.lid << " (module not loaded)\n";
+			continue;
+		}
 		// "ots::WizardSupervisor" -> namespaces + class, mangled as _ZN3ots16WizardSupervisor11instantiateEPN4xdaq15ApplicationStubE
 		std::string mangled = "_ZN";
 		{
