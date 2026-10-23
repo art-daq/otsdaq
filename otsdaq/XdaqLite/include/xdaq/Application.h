@@ -63,24 +63,17 @@ class Application : public virtual toolbox::lang::Class
 	std::map<std::string, SOAPHandler> soapHandlers_;
 };
 
-// Factory registration, mirroring xdaq's macros: each Supervisor class declares
-// XDAQ_INSTANTIATOR() and defines XDAQ_INSTANTIATOR_IMPL(Class) in its .cc.
+// Each Supervisor class declares XDAQ_INSTANTIATOR() and defines XDAQ_INSTANTIATOR_IMPL(Class)
+// in its .cc, producing an exported `ots::Class::instantiate(xdaq::ApplicationStub*)`.
+// As real xdaq.exe does, ots_lite_main finds it with dlsym by its mangled name; there is no
+// registry. (otsdaq's own Macros/XDAQApplicationMacros.h redefines these two macros identically
+// after including this header, so they must stay plain.)
 typedef Application* (*ApplicationInstantiator)(ApplicationStub*);
-void                    registerApplicationClass(const std::string& className, ApplicationInstantiator fn);
-ApplicationInstantiator findApplicationClass(const std::string& className);
 }  // namespace xdaq
 
 #define XDAQ_INSTANTIATOR() static xdaq::Application* instantiate(xdaq::ApplicationStub* stub)
 
-// The registrar must be a visible, `used` global: an unreferenced object in an anonymous
-// namespace inside a shared library is legitimately discarded by the optimizer, and then
-// the class never registers (seen with gcc -O2: no registerApplicationClass call emitted).
-#define XDAQ_INSTANTIATOR_IMPL(CLASS)                                                                \
-	xdaq::Application* CLASS::instantiate(xdaq::ApplicationStub* stub) { return new CLASS(stub); }  \
-	struct CLASS##_xdaq_lite_registrar                                                             \
-	{                                                                                              \
-		CLASS##_xdaq_lite_registrar() { xdaq::registerApplicationClass("ots::" #CLASS, &CLASS::instantiate); } \
-	};                                                                                             \
-	__attribute__((used)) CLASS##_xdaq_lite_registrar CLASS##_xdaq_lite_registrar_instance;
+#define XDAQ_INSTANTIATOR_IMPL(CLASS) \
+	xdaq::Application* CLASS::instantiate(xdaq::ApplicationStub* stub) { return new CLASS(stub); }
 
 #endif

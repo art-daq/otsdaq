@@ -34,23 +34,6 @@ xoap::MessageReference xdaq::Application::dispatchSOAP(xoap::MessageReference ms
 	return it->second(msg);
 }
 
-namespace
-{
-std::map<std::string, xdaq::ApplicationInstantiator>& instantiators()
-{
-	static std::map<std::string, xdaq::ApplicationInstantiator> m;
-	return m;
-}
-}  // namespace
-
-void xdaq::registerApplicationClass(const std::string& className, ApplicationInstantiator fn) { instantiators()[className] = fn; }
-
-xdaq::ApplicationInstantiator xdaq::findApplicationClass(const std::string& className)
-{
-	auto it = instantiators().find(className);
-	return it == instantiators().end() ? nullptr : it->second;
-}
-
 // ---------------------------------------------------------------------------
 // xdaq::ApplicationContext
 // ---------------------------------------------------------------------------

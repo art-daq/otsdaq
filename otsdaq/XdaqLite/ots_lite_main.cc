@@ -451,25 +451,50 @@ int main(int argc, char** argv)
 	ctx.context.reset(new xdaq::ApplicationContext(url));
 	std::cout << "ots_lite_main: context " << url << " (" << specs.size() << " applications), WebPath=" << ctx.webRoot << std::endl;
 
-	// load modules first (static registrars run on dlopen), then instantiate
+	// Load every module first, then instantiate. As real xdaq.exe does, each class is found
+	// by the exported symbol ots::<Class>::instantiate(xdaq::ApplicationStub*) that
+	// XDAQ_INSTANTIATOR_IMPL defines; its Itanium-mangled name is built from the class name.
+	std::map<std::string, void*> handles;
 	for(const auto& s : specs)
 	{
-		if(s.module.empty())
+		if(s.module.empty() || handles.count(s.module))
 			continue;
-		if(!dlopen(s.module.c_str(), RTLD_NOW | RTLD_GLOBAL))
+		void* h = dlopen(s.module.c_str(), RTLD_NOW | RTLD_GLOBAL);
+		if(!h)
 		{
 			std::cerr << "ots_lite_main: cannot load " << s.module << ": " << dlerror() << "\n";
 			return 1;
 		}
+		handles[s.module] = h;
 	}
 	for(const auto& s : specs)
 	{
-		xdaq::ApplicationInstantiator make = xdaq::findApplicationClass(s.className);
-		if(!make)
+		// "ots::WizardSupervisor" -> namespaces + class, mangled as _ZN3ots16WizardSupervisor11instantiateEPN4xdaq15ApplicationStubE
+		std::string mangled = "_ZN";
 		{
-			std::cerr << "ots_lite_main: class " << s.className << " not registered by " << s.module << " (missing XDAQ_INSTANTIATOR_IMPL?)\n";
+			size_t pos = 0;
+			while(true)
+			{
+				size_t      sep  = s.className.find("::", pos);
+				std::string part = s.className.substr(pos, sep == std::string::npos ? std::string::npos : sep - pos);
+				mangled += std::to_string(part.size()) + part;
+				if(sep == std::string::npos)
+					break;
+				pos = sep + 2;
+			}
+		}
+		mangled += "11instantiateEPN4xdaq15ApplicationStubE";
+
+		void* sym = nullptr;
+		for(const auto& h : handles)
+			if((sym = dlsym(h.second, mangled.c_str())))
+				break;
+		if(!sym)
+		{
+			std::cerr << "ots_lite_main: no " << s.className << "::instantiate(xdaq::ApplicationStub*) exported by " << s.module << " (symbol " << mangled << "; missing XDAQ_INSTANTIATOR_IMPL?)\n";
 			return 1;
 		}
+		xdaq::ApplicationInstantiator make = reinterpret_cast<xdaq::ApplicationInstantiator>(sym);
 		const xdaq::ApplicationDescriptor* d = ctx.context->addApplication(nullptr, s.className, s.lid, s.instance);
 		ctx.stubs.emplace_back(new xdaq::ApplicationStub(ctx.context.get(), d));
 		std::cout << "ots_lite_main: instantiating " << s.className << " lid=" << s.lid << std::endl;
