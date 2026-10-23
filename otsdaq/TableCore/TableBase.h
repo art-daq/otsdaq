@@ -27,6 +27,7 @@ class TableBase
 		RENAME   ///< Rename records with UID conflicts from source view B
 	};
 
+	static const unsigned int BACKBONE_MEMBER_MAX_VIEWS_IN_CACHE = 100;
 	const unsigned int MAX_VIEWS_IN_CACHE;  ///< Each inheriting table class could have
 	                                        ///< varying amounts of cache
 	//TableBase(void); //should not be used
