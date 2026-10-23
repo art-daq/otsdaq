@@ -461,6 +461,14 @@ try
 		resetSlowControlsChannelIterator();
 		while((channel = getNextSlowControlsChannel()) != nullptr)
 		{
+			// stop was requested (e.g. Halt) while in the middle of this channel
+			// scan: break out now instead of draining the rest of the (possibly
+			// large) channel list, so stopSlowControlsWorkLoop()'s blocking cancel()
+			// returns promptly and metricMan->shutdown() cannot race a still-running
+			// sendMetric() call on this thread.
+			if(!slowControlsWorkLoop_.getContinueWorkLoop())
+				break;
+
 			// skip if no read access
 			if(!channel->readAccess_)
 				continue;
@@ -1285,17 +1293,11 @@ void FEVInterface::runFrontEndMacro(
 	parameters.addParameter("inputArgs", inputArgsStr);
 	SOAPUtilities::addParameters(message, parameters);
 
-	__FE_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-	            << " Sending FE communication: " << SOAPUtilities::translate(message)
-	            << __E__;
-
 	xoap::MessageReference replyMessage =
 	    VStateMachine::parentSupervisor_->SOAPMessenger::sendWithSOAPReply(
 	        MacroMakerSupervisors.begin()->second.getDescriptor(), message);
 
 	std::string replyCommand = SOAPUtilities::translate(replyMessage).getCommand();
-	__FE_COUT__ << "DIAG ms=" << StringMacros::nowEpochMs()
-	            << " Response received: " << replyCommand << __E__;
 
 	if(replyCommand == "Fault")
 	{
