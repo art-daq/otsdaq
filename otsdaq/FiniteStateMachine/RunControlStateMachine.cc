@@ -758,10 +758,11 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		{
 			try
 			{
-				const auto& parameters = SOAPUtilities::translate(message).getParameters();
-				configuredGroup_ = parameters.getValue("ConfigurationTableGroupName") +
-				                   "(" + parameters.getValue("ConfigurationTableGroupKey") +
-				                   ")";
+				const auto& parameters =
+				    SOAPUtilities::translate(message).getParameters();
+				configuredGroup_ =
+				    parameters.getValue("ConfigurationTableGroupName") + "(" +
+				    parameters.getValue("ConfigurationTableGroupKey") + ")";
 			}
 			catch(...)
 			{

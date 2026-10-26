@@ -66,7 +66,7 @@ void Iterator::stopNoiseRunIterationPlan(HttpXmlDocument& xml, bool acknowledgeU
 			              << __E__;
 		noiseRunUnresolvedOps_ = 0;
 		commandHalt_           = true;
-		noThread     = !workloopRunning_;
+		noThread               = !workloopRunning_;
 	}
 	if(noThread)
 		// synchronous path: reached through stateMachineXgiHandler, which already
@@ -224,7 +224,8 @@ void Iterator::initializeNoiseRun(IteratorWorkLoopStruct* s)
 					if(feEnabled && roc.second.status())
 						t.links.push_back(roc.second.getNode("linkID").getValue<int>());
 					else if(feEnabled)
-						excluded.push_back(roc.first);  // disabled ROC under an enabled FE
+						excluded.push_back(
+						    roc.first);  // disabled ROC under an enabled FE
 					else
 						disabledFeRocs[fe.first].push_back(roc.first);
 				}
@@ -354,12 +355,13 @@ tracker_noise_run::Outputs Iterator::runNoiseRunMacro(
 		__COUT_ERR__ << "NoiseRun hardware operation outcome unknown on " << target.uid
 		             << " ('" << name << "'): " << why
 		             << ". Verify the frontend/ROC masks before any further operation; "
-		                "ordinary Stop is blocked until acknowledged." << __E__;
+		                "ordinary Stop is blocked until acknowledged."
+		             << __E__;
 		throw std::runtime_error(target.uid + ": unresolved hardware operation: " + why);
 	};
 	std::string result, task;
-	const auto  pollDeadline =
-	    std::chrono::steady_clock::now() + std::chrono::seconds(noiseRunPollTimeoutSeconds_);
+	const auto  pollDeadline = std::chrono::steady_clock::now() +
+	                          std::chrono::seconds(noiseRunPollTimeoutSeconds_);
 	for(;;)
 	{
 		xoap::MessageReference reply;

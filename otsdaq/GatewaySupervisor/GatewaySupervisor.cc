@@ -5980,10 +5980,12 @@ try
 	//	hardware and restoring masks, no DAQ transition may run, local or from a parent.
 	if(theIterator_.isNoiseRunOwned())
 	{
-		__SS__ << "Error - Can not accept '" << command
-		       << "' because the Tracker NoiseRun owns the Iterator and may be accessing "
-		          "hardware. Stop NoiseRun first (iterateNoiseRunStop) and wait for it to "
-		          "report Inactive." << __E__;
+		__SS__
+		    << "Error - Can not accept '" << command
+		    << "' because the Tracker NoiseRun owns the Iterator and may be accessing "
+		       "hardware. Stop NoiseRun first (iterateNoiseRunStop) and wait for it to "
+		       "report Inactive."
+		    << __E__;
 		__SS_THROW__;
 	}
 
