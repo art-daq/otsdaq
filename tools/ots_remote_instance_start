@@ -86,11 +86,12 @@ fi
 if [ "$OTS_MODE" == "Normal" ]; then
   # standard ots launch to handle normal instance start
   # Exec since this is the last thing this script does and we don't need a pointless fork (plus the process stays the same for ssh)
-  exec ots || die "Couldn't launch ots instance on ${THIS_HOST}"
+  # --backup-from-env makes ots honor OTS_BACKUPLOGS=1 (set on the ssh command line by the launching ots -b)
+  exec ots --backup-from-env || die "Couldn't launch ots instance on ${THIS_HOST}"
 elif [ "$OTS_MODE" == "Wiz" ]; then
   # standard ots -w launch to handle wiz mode instance start
   # Exec since this is the last thing this script does and we don't need a pointless fork (plus the process stays the same for ssh)
-  exec ots -w || die "Couldn't launch ots instance on ${THIS_HOST}"
+  exec ots -w --backup-from-env || die "Couldn't launch ots instance on ${THIS_HOST}"
 else
   error "Unrecognized ots mode: $OTS_MODE"
 fi
