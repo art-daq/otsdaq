@@ -17,7 +17,8 @@ void Iterator::playNoiseRunIterationPlan(HttpXmlDocument& xml)
 	noiseRunOwned_ = true;
 	iteratorBusy_  = true;
 	errorMessage_.clear();
-	noiseRunScans_ = 0;
+	noiseRunScans_         = 0;
+	noiseRunUnresolvedOps_ = 0;
 	noiseRunLastSummary_.clear();
 	noiseRunExcluded_.clear();
 	activePlanName_ = RESERVED_NOISE_PLAN_NAME;
@@ -43,7 +44,7 @@ void Iterator::playNoiseRunIterationPlan(HttpXmlDocument& xml)
 	xml.addTextElementToData("noise_run_accepted", "1");
 }
 
-void Iterator::stopNoiseRunIterationPlan(HttpXmlDocument& xml)
+void Iterator::stopNoiseRunIterationPlan(HttpXmlDocument& xml, bool acknowledgeUnresolved)
 {
 	bool noThread;
 	{
@@ -51,16 +52,39 @@ void Iterator::stopNoiseRunIterationPlan(HttpXmlDocument& xml)
 		tracker_noise_run::require(
 		    noiseRunOwned_,
 		    "NoiseRun is not the active Iterator plan. No other plan was stopped.");
-		commandHalt_ = true;
+		if(noiseRunUnresolvedOps_ && !acknowledgeUnresolved)
+			tracker_noise_run::require(
+			    false,
+			    std::to_string(noiseRunUnresolvedOps_) +
+			        " NoiseRun hardware operation(s) have an unknown outcome (frontend "
+			        "did not answer). Check the frontend logs and ROC masks, then use "
+			        "iterateNoiseRunStopAcknowledge to release the Iterator.");
+		if(acknowledgeUnresolved && noiseRunUnresolvedOps_)
+			__COUT_WARN__ << "Operator acknowledged " << noiseRunUnresolvedOps_
+			              << " unresolved NoiseRun hardware operation(s); releasing the "
+			                 "Iterator."
+			              << __E__;
+		noiseRunUnresolvedOps_ = 0;
+		commandHalt_           = true;
 		noThread     = !workloopRunning_;
 	}
 	if(noThread)
-		finishNoiseRunIterationPlan(nullptr);
+		// synchronous path: reached through stateMachineXgiHandler, which already
+		// holds stateMachineAccessMutex_
+		finishNoiseRunIterationPlan(nullptr, true /*callerHoldsFsmMutex*/);
 	xml.addTextElementToData("noise_run_stop_requested", "1");
 }
 
-void Iterator::finishNoiseRunIterationPlan(IteratorWorkLoopStruct* s)
+void Iterator::finishNoiseRunIterationPlan(IteratorWorkLoopStruct* s,
+                                           bool                    callerHoldsFsmMutex)
 {
+	// activeStateMachineWindowName_ is read by stateMachineXgiHandler under the FSM
+	// mutex, so restoring it needs that mutex too. Lock order everywhere in the
+	// Iterator is FSM mutex first, then accessMutex_.
+	std::unique_lock<std::mutex> fsmLock(theSupervisor_->stateMachineAccessMutex_,
+	                                     std::defer_lock);
+	if(!callerHoldsFsmMutex)
+		fsmLock.lock();
 	std::lock_guard<std::mutex> lock(accessMutex_);
 	// All scan jobs have settled before the workloop reaches this boundary.
 	// Do not use haltIterator(): its normal cleanup can halt/configure the DAQ.
@@ -119,17 +143,18 @@ void Iterator::guardNoiseRun(IteratorWorkLoopStruct* s)
 		rx.addParameter("Status");
 		rx.addParameter("Progress");
 		rx.addParameter("Error");
-		rx.addParameter("Detail");
+		rx.addParameter("ConfiguredGroup");
 		const auto command = SOAPUtilities::receive(reply, rx);
 		require(
 		    command == "applicationStatusRequestReply" && rx.getValue("Error").empty() &&
 		        rx.getValue("Status") == "Configured" && rx.getValue("Progress") == "100",
 		    "Frontend is not Configured/ready: " + std::to_string(id));
-		require(rx.getValue("Detail").find(s->noiseRunIdentity_.at(2) + "(" +
-		                                   s->noiseRunIdentity_.at(3) + ")") !=
-		            std::string::npos,
-		        "Frontend Configure group does not match persisted configuration: " +
-		            std::to_string(id));
+		// exact match on the structured field (not the human-readable Detail text,
+		// which drops the group after Stop and would also match e.g. TrackerConfig(7))
+		require(rx.getValue("ConfiguredGroup") ==
+		            s->noiseRunIdentity_.at(2) + "(" + s->noiseRunIdentity_.at(3) + ")",
+		        "Frontend Configure group '" + rx.getValue("ConfiguredGroup") +
+		            "' does not match persisted configuration: " + std::to_string(id));
 	}
 }
 
@@ -146,7 +171,9 @@ void Iterator::initializeNoiseRun(IteratorWorkLoopStruct* s)
 	        "Persisted configuration changed during load");
 	std::set<std::string>    seen;
 	std::vector<std::string> excluded;
-	const auto&              supervisors =
+	std::map<std::string, std::vector<std::string>>
+	            disabledFeRocs;  // reported as excluded only if no enabled twin exists
+	const auto& supervisors =
 	    theSupervisor_->allSupervisorInfo_.getAllFETypeSupervisorInfo();
 	for(const auto& context : s->cfgMgr_->getNode("XDAQContextTable").getChildren())
 	{
@@ -177,8 +204,13 @@ void Iterator::initializeNoiseRun(IteratorWorkLoopStruct* s)
 			{
 				if(!std::regex_match(fe.first, std::regex("Trk(0[1-9]|1[0-8])_DTC[01]")))
 					continue;
-				require(seen.insert(fe.first).second,
-				        "Duplicate tracker FE association: " + fe.first);
+				// only enabled associations can collide: XDAQContextTable enforces
+				// application uniqueness for enabled contexts/apps only, so a disabled
+				// alternate context may legitimately point at the same FE group
+				const bool feEnabled = parentEnabled && fe.second.status();
+				if(feEnabled)
+					require(seen.insert(fe.first).second,
+					        "Duplicate enabled tracker FE association: " + fe.first);
 				require(
 				    fe.second.getNode("FEInterfacePluginName").getValue<std::string>() ==
 				        "DTCFrontEndInterface",
@@ -189,10 +221,12 @@ void Iterator::initializeNoiseRun(IteratorWorkLoopStruct* s)
 				auto dtc     = fe.second.getNode("LinkToFETypeTable");
 				for(const auto& roc : dtc.getNode("LinkToROCGroupTable").getChildren())
 				{
-					if(parentEnabled && fe.second.status() && roc.second.status())
+					if(feEnabled && roc.second.status())
 						t.links.push_back(roc.second.getNode("linkID").getValue<int>());
+					else if(feEnabled)
+						excluded.push_back(roc.first);  // disabled ROC under an enabled FE
 					else
-						excluded.push_back(roc.first);
+						disabledFeRocs[fe.first].push_back(roc.first);
 				}
 				if(!t.links.empty())
 				{
@@ -202,6 +236,10 @@ void Iterator::initializeNoiseRun(IteratorWorkLoopStruct* s)
 			}
 		}
 	}
+	for(const auto& disabledFe : disabledFeRocs)
+		if(seen.count(disabledFe.first) == 0)
+			excluded.insert(
+			    excluded.end(), disabledFe.second.begin(), disabledFe.second.end());
 	std::sort(s->noiseRunTargets_.begin(),
 	          s->noiseRunTargets_.end(),
 	          [](const tracker_noise_run::Target& a, const tracker_noise_run::Target& b) {
@@ -299,18 +337,62 @@ tracker_noise_run::Outputs Iterator::runNoiseRunMacro(
 	    theSupervisor_->allSupervisorInfo_.getAllFETypeSupervisorInfo()
 	        .at(target.supervisor)
 	        .getDescriptor();
+	// Once the frontend has (or may have) started the macro, this function must not
+	// return until the frontend reports it finished: scan() only waits on these calls,
+	// and Stop releases Iterator ownership as soon as scan() returns. Leaving early
+	// would let a new scan or a DAQ transition overlap a measurement or a mask restore.
+	//	- a lost reply to the initial dispatch is an UNKNOWN outcome: the macro may be
+	//	  running. Never resubmit it; flag an unresolved hardware operation instead.
+	//	- a CheckMacro transport error is retried (completion-only polling). If the
+	//	  frontend stays unreachable past the poll timeout, flag unresolved and give up.
+	// An unresolved flag blocks ordinary Stop until the operator acknowledges it.
+	auto markUnresolved = [&](const std::string& why) {
+		{
+			std::lock_guard<std::mutex> lock(accessMutex_);
+			++noiseRunUnresolvedOps_;
+		}
+		__COUT_ERR__ << "NoiseRun hardware operation outcome unknown on " << target.uid
+		             << " ('" << name << "'): " << why
+		             << ". Verify the frontend/ROC masks before any further operation; "
+		                "ordinary Stop is blocked until acknowledged." << __E__;
+		throw std::runtime_error(target.uid + ": unresolved hardware operation: " + why);
+	};
 	std::string result, task;
+	const auto  pollDeadline =
+	    std::chrono::steady_clock::now() + std::chrono::seconds(noiseRunPollTimeoutSeconds_);
 	for(;;)
 	{
-		auto reply = theSupervisor_->SOAPMessenger::sendWithSOAPReply(
-		    descriptor, "MacroMakerSupervisorRequest", tx);
+		xoap::MessageReference reply;
+		try
+		{
+			reply = theSupervisor_->SOAPMessenger::sendWithSOAPReply(
+			    descriptor, "MacroMakerSupervisorRequest", tx);
+		}
+		catch(const std::exception& e)
+		{
+			if(task.empty())
+				markUnresolved(std::string("no reply to macro dispatch: ") + e.what());
+			if(std::chrono::steady_clock::now() > pollDeadline)
+				markUnresolved("frontend unreachable while polling task " + task +
+				               " for " + std::to_string(noiseRunPollTimeoutSeconds_) +
+				               " s: " + e.what());
+			__COUT_WARN__ << target.uid << ": CheckMacro for task " << task
+			              << " failed, retrying: " << e.what() << __E__;
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+			continue;
+		}
 		SOAPParameters rx;
 		rx.addParameter("Error");
 		rx.addParameter("outputArgs");
 		rx.addParameter("NotDoneTaskID");
 		const auto command = SOAPUtilities::receive(reply, rx);
-		require(command == "FESupervisorResponse" && rx.getValue("Error").empty(),
-		        target.uid + ": macro request failed: " + rx.getValue("Error"));
+		if(command != "FESupervisorResponse" || !rx.getValue("Error").empty())
+		{
+			// a definite error reply from the frontend means the task is not running
+			// (dispatch rejected, or CheckMacro found it finished with an error)
+			require(false,
+			        target.uid + ": macro request failed: " + rx.getValue("Error"));
+		}
 		const auto next = rx.getValue("NotDoneTaskID");
 		if(next.empty())
 		{

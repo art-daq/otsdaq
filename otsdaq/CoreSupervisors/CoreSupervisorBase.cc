@@ -463,6 +463,8 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 	retParameters.addParameter(
 	    "Detail",
 	    getStatusProgressDetail());  // call virtual progress detail string generation
+	retParameters.addParameter("ConfiguredGroup",
+	                           RunControlStateMachine::getConfiguredGroup());
 
 	//return available disk space if first app in context
 	__SUP_COUTVS__(19, CorePropertySupervisorBase::isFirstAppInContext());

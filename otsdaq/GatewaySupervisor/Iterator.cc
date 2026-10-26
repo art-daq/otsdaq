@@ -2604,6 +2604,12 @@ try
 		stopNoiseRunIterationPlan(xmldoc);
 		handledCommand = true;
 	}
+	else if(command == "iterateNoiseRunStopAcknowledge")
+	{
+		// operator has checked the frontend after a macro with unknown outcome
+		stopNoiseRunIterationPlan(xmldoc, true /*acknowledgeUnresolved*/);
+		handledCommand = true;
+	}
 	else if(command == "iteratePlay")
 	{
 		playIterationPlan(xmldoc, parameter);
@@ -2895,7 +2901,14 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 //==============================================================================
 void Iterator::haltIterationPlan(HttpXmlDocument& xmldoc)
 {
-	if(noiseRunOwned_)
+	// noiseRunOwned_ is written by the worker under accessMutex_ (finishNoiseRun);
+	// snapshot it under the same mutex, then release before stopNoiseRun locks again
+	bool noiseRunOwnedSnapshot;
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		noiseRunOwnedSnapshot = noiseRunOwned_;
+	}
+	if(noiseRunOwnedSnapshot)
 	{
 		stopNoiseRunIterationPlan(xmldoc);
 		return;
@@ -3026,8 +3039,10 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 	xmldoc.addNumberElementToData("noise_run_scans", noiseRunScans_);
 	xmldoc.addTextElementToData("noise_run_last_summary", noiseRunLastSummary_);
 	xmldoc.addTextElementToData("noise_run_excluded_rocs", noiseRunExcluded_);
+	xmldoc.addNumberElementToData("noise_run_unresolved_ops", noiseRunUnresolvedOps_);
 	xmldoc.addTextElementToData("noise_run_state",
 	                            !noiseRunOwned_          ? "Inactive"
+	                            : noiseRunUnresolvedOps_ ? "Unresolved"
 	                            : !errorMessage_.empty() ? "Error"
 	                            : commandHalt_           ? "Stopping"
 	                            : noiseRunScans_         ? "Running"

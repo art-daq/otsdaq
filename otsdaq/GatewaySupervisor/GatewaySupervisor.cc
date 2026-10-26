@@ -5975,6 +5975,19 @@ try
 	}
 
 	/////////////////
+	// NoiseRun ownership (do here because remote commands bypass stateMachineXgiHandler
+	//	and therefore the Iterator command handler): while rate macros are touching
+	//	hardware and restoring masks, no DAQ transition may run, local or from a parent.
+	if(theIterator_.isNoiseRunOwned())
+	{
+		__SS__ << "Error - Can not accept '" << command
+		       << "' because the Tracker NoiseRun owns the Iterator and may be accessing "
+		          "hardware. Stop NoiseRun first (iterateNoiseRunStop) and wait for it to "
+		          "report Inactive." << __E__;
+		__SS_THROW__;
+	}
+
+	/////////////////
 	// Validate FSM name (do here because remote commands bypass stateMachineXgiHandler)
 	//	if fsm name != active fsm name
 	//		only allow, if current state is halted, init, or configured

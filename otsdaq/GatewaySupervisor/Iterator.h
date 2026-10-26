@@ -124,14 +124,23 @@ class Iterator
 	};  // end declaration of iterator workloop members
 
 	void playNoiseRunIterationPlan(HttpXmlDocument& xml);
-	void stopNoiseRunIterationPlan(HttpXmlDocument& xml);
-	void finishNoiseRunIterationPlan(IteratorWorkLoopStruct* s);
+	void stopNoiseRunIterationPlan(HttpXmlDocument& xml, bool acknowledgeUnresolved = false);
+	void finishNoiseRunIterationPlan(IteratorWorkLoopStruct* s, bool callerHoldsFsmMutex = false);
 	void initializeNoiseRun(IteratorWorkLoopStruct* s);
 	void guardNoiseRun(IteratorWorkLoopStruct* s);
 	void stepNoiseRun(IteratorWorkLoopStruct* s);
 	tracker_noise_run::Outputs runNoiseRunMacro(const tracker_noise_run::Target&, const std::string&, const std::string&, const std::vector<std::string>&);
+	/// true from NoiseRun start until every submitted hardware macro has settled and
+	///	the operator's Stop has been processed; locks accessMutex_ (caller must NOT hold it)
+	bool isNoiseRunOwned(void)
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		return noiseRunOwned_;
+	}
 	bool noiseRunOwned_ = false;
 	uint64_t noiseRunScans_ = 0;
+	unsigned int noiseRunUnresolvedOps_ = 0;  ///< hardware macros whose outcome is unknown (guarded by accessMutex_); blocks ordinary Stop
+	static constexpr unsigned int noiseRunPollTimeoutSeconds_ = 600;  ///< how long to keep polling an unreachable frontend before declaring the macro unresolved
 	std::string noiseRunLastSummary_, noiseRunExcluded_, noiseRunPreviousWindow_;
 
 	static void IteratorWorkLoop(Iterator* iterator);
