@@ -5,7 +5,7 @@
 #include <memory>  //for std::shared_ptr
 #include <mutex>   //for std::mutex
 #include <string>
-#include "otsdaq/GatewaySupervisor/TrackerNoiseRun.h"
+#include "otsdaq/GatewaySupervisor/IteratorPluginVInterface.h"
 #include "otsdaq/TablePlugins/IterateTable.h"
 #include "otsdaq/XmlUtilities/HttpXmlDocument.h"
 
@@ -27,7 +27,6 @@ class Iterator
 	~Iterator(void);
 
 	static const std::string RESERVED_GEN_PLAN_NAME;
-	static const std::string RESERVED_NOISE_PLAN_NAME;
 
 	/// an output file written by a macro command during a plan (local FE or remote MacroMaker)
 	struct OutputFile
@@ -98,9 +97,7 @@ class Iterator
 		std::vector<std::string> fsmCommandParameters_;
 		std::vector<bool>        targetsDone_;
 
-		bool noiseRunInitialized_ = false;
-		std::vector<tracker_noise_run::Target> noiseRunTargets_;
-		std::vector<std::string> noiseRunIdentity_;
+		bool pluginInitialized_ = false;  ///< plugin initialize() has run for the current ownership
 
 		bool remoteConfigureQueued_ = false;  ///< remote Configure needs Halt first when not Halted/Initial
 
@@ -123,25 +120,24 @@ class Iterator
 
 	};  // end declaration of iterator workloop members
 
-	void playNoiseRunIterationPlan(HttpXmlDocument& xml);
-	void stopNoiseRunIterationPlan(HttpXmlDocument& xml, bool acknowledgeUnresolved = false);
-	void finishNoiseRunIterationPlan(IteratorWorkLoopStruct* s, bool callerHoldsFsmMutex = false);
-	void initializeNoiseRun(IteratorWorkLoopStruct* s);
-	void guardNoiseRun(IteratorWorkLoopStruct* s);
-	void stepNoiseRun(IteratorWorkLoopStruct* s);
-	tracker_noise_run::Outputs runNoiseRunMacro(const tracker_noise_run::Target&, const std::string&, const std::string&, const std::vector<std::string>&);
-	/// true from NoiseRun start until every submitted hardware macro has settled and
-	///	the operator's Stop has been processed; locks accessMutex_ (caller must NOT hold it)
-	bool isNoiseRunOwned(void)
+	/// ~~ experiment Iterator plugins (see IteratorPluginVInterface.h) ~~
+	///	Request:  StateMachine=iteratePluginCommand&plugin=<Name>&pluginCommand=<cmd>
+	///	A plugin is created by name when a command arrives and no plugin owns the
+	///	Iterator; it is destroyed after finish(). Guarded by accessMutex_.
+	void handlePluginCommand(HttpXmlDocument& xml, const std::string& pluginName, const std::string& pluginCommand);
+	/// worker-thread driver for the plugin's reserved plan; returns true if it consumed this loop pass
+	bool runPluginPlan(IteratorWorkLoopStruct* iteratorStruct);
+	/// runs finish() with the FSM mutex held (unless the caller already holds it), restores the window name, releases the plugin
+	void finishPluginPlan(IteratorWorkLoopStruct* iteratorStruct, bool callerHoldsFsmMutex);
+	IteratorPluginContext makePluginContext(IteratorWorkLoopStruct* iteratorStruct);
+	/// true while a plugin owns the Iterator and says DAQ transitions must wait; locks accessMutex_ (caller must NOT hold it)
+	bool isPluginBlockingTransitions(void)
 	{
 		std::lock_guard<std::mutex> lock(accessMutex_);
-		return noiseRunOwned_;
+		return activePlugin_ && activePlugin_->blocksDaqTransitions();
 	}
-	bool noiseRunOwned_ = false;
-	uint64_t noiseRunScans_ = 0;
-	unsigned int noiseRunUnresolvedOps_ = 0;  ///< hardware macros whose outcome is unknown (guarded by accessMutex_); blocks ordinary Stop
-	static constexpr unsigned int noiseRunPollTimeoutSeconds_ = 600;  ///< how long to keep polling an unreachable frontend before declaring the macro unresolved
-	std::string noiseRunLastSummary_, noiseRunExcluded_, noiseRunPreviousWindow_;
+	std::unique_ptr<IteratorPluginVInterface> activePlugin_;  ///< non-null only while a plugin owns the Iterator
+	std::string pluginPreviousWindow_;  ///< activeStateMachineWindowName_ to restore when the plugin releases
 
 	static void IteratorWorkLoop(Iterator* iterator);
 	static void startCommand(IteratorWorkLoopStruct* iteratorStruct);

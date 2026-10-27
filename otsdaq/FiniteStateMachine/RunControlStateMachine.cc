@@ -758,8 +758,10 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		{
 			try
 			{
-				const auto& parameters =
-				    SOAPUtilities::translate(message).getParameters();
+				// keep the translated command alive: getParameters() returns a
+				// reference into it, so binding that to a const& of a temporary dangles
+				const SOAPCommand   soapCommand = SOAPUtilities::translate(message);
+				const SOAPParameters& parameters = soapCommand.getParameters();
 				configuredGroup_ =
 				    parameters.getValue("ConfigurationTableGroupName") + "(" +
 				    parameters.getValue("ConfigurationTableGroupKey") + ")";

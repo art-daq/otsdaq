@@ -5812,6 +5812,17 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	fsmWindowName             = StringMacros::decodeURIComponent(fsmWindowName);
 	std::string currentState  = theStateMachine_.getCurrentStateName();
 
+	// the Iterator command handler takes one parameter; for an experiment plugin
+	// command pack "<plugin>:<pluginCommand>" into it (see Iterator::handlePluginCommand)
+	std::string iteratorParameter = fsmWindowName;
+	if(command == "iteratePluginCommand")
+		iteratorParameter =
+		    StringMacros::decodeURIComponent(
+		        CgiDataUtilities::getOrPostData(cgiIn, "plugin")) +
+		    ":" +
+		    StringMacros::decodeURIComponent(
+		        CgiDataUtilities::getOrPostData(cgiIn, "pluginCommand"));
+
 	__COUT__ << "Check for Handled by theIterator_, activeStateMachineWindowName_ = "
 	         << activeStateMachineWindowName_ << __E__;
 
@@ -5821,7 +5832,7 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	    (activeStateMachineName_ == fsmName &&
 	     command.find("iterate") ==
 	         0) /* for combo iterate/fsm GUIs like SubsystemLaunch.js */) &&
-	   theIterator_.handleCommandRequest(xmlOut, command, fsmWindowName))
+	   theIterator_.handleCommandRequest(xmlOut, command, iteratorParameter))
 	{
 		__COUT__ << "Handled by theIterator_" << __E__;
 		xmlOut.outputXmlDocument((std::ostringstream*)out, false);
@@ -5975,17 +5986,16 @@ try
 	}
 
 	/////////////////
-	// NoiseRun ownership (do here because remote commands bypass stateMachineXgiHandler
-	//	and therefore the Iterator command handler): while rate macros are touching
-	//	hardware and restoring masks, no DAQ transition may run, local or from a parent.
-	if(theIterator_.isNoiseRunOwned())
+	// Iterator plugin ownership (do here because remote commands bypass
+	//	stateMachineXgiHandler and therefore the Iterator command handler): while a
+	//	plugin is touching hardware, no DAQ transition may run, local or from a parent.
+	if(theIterator_.isPluginBlockingTransitions())
 	{
-		__SS__
-		    << "Error - Can not accept '" << command
-		    << "' because the Tracker NoiseRun owns the Iterator and may be accessing "
-		       "hardware. Stop NoiseRun first (iterateNoiseRunStop) and wait for it to "
-		       "report Inactive."
-		    << __E__;
+		__SS__ << "Error - Can not accept '" << command
+		       << "' because an Iterator plugin owns the Iterator and may be accessing "
+		          "hardware. Stop the plugin first (iteratePluginCommand ... Stop) and "
+		          "wait for the Iterator to report Inactive."
+		       << __E__;
 		__SS_THROW__;
 	}
 

@@ -81,6 +81,7 @@ class WorkLoopManager;
 	{
 		friend class WizardSupervisor;
 		friend class Iterator;
+		friend class IteratorPluginVInterface;  ///< experiment Iterator plugins reach members through its forwarders
 
 		static const std::string COMMAND_PARAM_LOG_ENTRY_PREAMBLE;
 		static const std::string COMMAND_PARAM_SUBSYSTEM_COMMON_PREAMBLE;
@@ -165,8 +166,8 @@ class WorkLoopManager;
 		virtual void 					forceSupervisorPropertyValues					(void) override;  ///< override to force supervisor property values (and ignore user settings)
 
 
-	private:
-		/// Remote MacroMaker UDP access (used by Iterator remote FE macros and the Iterate GUI)
+	public:
+		/// Remote MacroMaker UDP access (used by Iterator remote FE macros, the Iterate GUI, and Iterator plugins)
 		struct RemoteFEMacroInfo
 		{
 			struct MacroInfo
@@ -185,6 +186,7 @@ class WorkLoopManager;
 		static std::string 				queryRemoteMacroMaker							(const std::string& ipPort, const std::string& command, unsigned int inactivityTimeoutSeconds, const std::string& localIpAddress, std::function<void(int /*percent*/)> progressCb = nullptr, const std::atomic<bool>* abortFlag = nullptr);  ///< static (safe from detached threads): returns full response ("<ROOT>...</ROOT>" or "Error: ..."); forwards <progress> packets to callback; throws promptly if *abortFlag becomes true
 		static RemoteFEMacroInfo 		parseFEMacroInfo								(const std::string& feMacroInfoXml);  ///< parses GetFrontendMacroInfo response
 
+	private:
 		unsigned int 					getNextRunNumber								(const std::string& fsmName = "");
 		void 							setNextRunNumber								(unsigned int runNumber, const std::string& fsmName = "");
 		std::string 					getLastLogEntry									(const std::string& logType, const std::string& fsmName = "");
