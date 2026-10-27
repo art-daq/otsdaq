@@ -2572,9 +2572,10 @@ try
 		if(separator == std::string::npos || separator == 0 ||
 		   separator + 1 >= parameter.size())
 		{
-			__SS__ << "Malformed iteratePluginCommand parameter '" << parameter
-			       << "'; expected 'plugin=<Name>&pluginCommand=<Command>' in the request."
-			       << __E__;
+			__SS__
+			    << "Malformed iteratePluginCommand parameter '" << parameter
+			    << "'; expected 'plugin=<Name>&pluginCommand=<Command>' in the request."
+			    << __E__;
 			__SS_THROW__;
 		}
 		handlePluginCommand(
@@ -2857,9 +2858,10 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 
 	if(activePlugin_)
 	{
-		__SS__ << "Iterator plugin '" << activePlugin_->getPluginName()
-		       << "' owns the Iterator and does not support Pause; send it a Stop command."
-		       << __E__;
+		__SS__
+		    << "Iterator plugin '" << activePlugin_->getPluginName()
+		    << "' owns the Iterator and does not support Pause; send it a Stop command."
+		    << __E__;
 		__SS_THROW__;
 	}
 
@@ -4233,7 +4235,7 @@ void Iterator::handlePluginCommand(HttpXmlDocument&   xmldoc,
 		ownedBefore = activePlugin_ && activePlugin_->owns();
 	}
 
-	IteratorPluginVInterface& plugin = activePlugin_ ? *activePlugin_ : *freshPlugin;
+	IteratorPluginVInterface& plugin  = activePlugin_ ? *activePlugin_ : *freshPlugin;
 	IteratorPluginContext     context = makePluginContext(nullptr);
 	plugin.handleCommand(pluginCommand, xmldoc, context);  // throws on refusal
 
@@ -4245,9 +4247,9 @@ void Iterator::handlePluginCommand(HttpXmlDocument&   xmldoc,
 		std::lock_guard<std::mutex> lock(accessMutex_);
 		pluginPreviousWindow_ = theSupervisor_->activeStateMachineWindowName_;
 		theSupervisor_->activeStateMachineWindowName_ = "iterator";
-		lastFsmName_    = theSupervisor_->activeStateMachineName_;
-		activePlugin_   = std::move(freshPlugin);
-		iteratorBusy_   = true;
+		lastFsmName_  = theSupervisor_->activeStateMachineName_;
+		activePlugin_ = std::move(freshPlugin);
+		iteratorBusy_ = true;
 		errorMessage_.clear();
 		activePlanName_ = activePlugin_->getPlanName();
 		commandPlay_    = true;

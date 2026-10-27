@@ -5816,12 +5816,11 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	// command pack "<plugin>:<pluginCommand>" into it (see Iterator::handlePluginCommand)
 	std::string iteratorParameter = fsmWindowName;
 	if(command == "iteratePluginCommand")
-		iteratorParameter =
-		    StringMacros::decodeURIComponent(
-		        CgiDataUtilities::getOrPostData(cgiIn, "plugin")) +
-		    ":" +
-		    StringMacros::decodeURIComponent(
-		        CgiDataUtilities::getOrPostData(cgiIn, "pluginCommand"));
+		iteratorParameter = StringMacros::decodeURIComponent(
+		                        CgiDataUtilities::getOrPostData(cgiIn, "plugin")) +
+		                    ":" +
+		                    StringMacros::decodeURIComponent(
+		                        CgiDataUtilities::getOrPostData(cgiIn, "pluginCommand"));
 
 	__COUT__ << "Check for Handled by theIterator_, activeStateMachineWindowName_ = "
 	         << activeStateMachineWindowName_ << __E__;

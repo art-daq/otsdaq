@@ -30,8 +30,8 @@ struct IteratorPluginContext
 	GatewaySupervisor*      supervisor;
 	ConfigurationManagerRW* configurationManager;  ///< the Iterator worker's manager (worker-thread calls only)
 
-	std::function<bool()>                   stopRequested;  ///< true once the operator asked to stop the plugin
-	std::function<void(const std::string&)> setError;       ///< records an Iterator error message (locks internally)
+	std::function<bool()>                   stopRequested;         ///< true once the operator asked to stop the plugin
+	std::function<void(const std::string&)> setError;              ///< records an Iterator error message (locks internally)
 	std::function<void(const std::string&)> setActiveCommandType;  ///< status text shown for the active command
 };
 
@@ -54,7 +54,8 @@ struct IteratorPluginContext
 class IteratorPluginVInterface
 {
   public:
-	explicit IteratorPluginVInterface(const std::string& pluginName) : pluginName_(pluginName) {}
+	explicit IteratorPluginVInterface(const std::string& pluginName)
+	    : pluginName_(pluginName) {}
 	virtual ~IteratorPluginVInterface(void) = default;
 
 	const std::string& getPluginName(void) const { return pluginName_; }

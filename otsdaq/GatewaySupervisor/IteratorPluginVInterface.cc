@@ -33,7 +33,7 @@ IteratorPluginVInterface::gatewayConfigurationTableGroup(GatewaySupervisor* supe
 
 //==============================================================================
 xoap::MessageReference IteratorPluginVInterface::gatewaySendWithSOAPReply(
-    GatewaySupervisor*                           supervisor,
+    GatewaySupervisor* supervisor,
     XDAQ_CONST_CALL xdaq::ApplicationDescriptor* descriptor,
     const std::string&                           command)
 {
@@ -42,7 +42,7 @@ xoap::MessageReference IteratorPluginVInterface::gatewaySendWithSOAPReply(
 
 //==============================================================================
 xoap::MessageReference IteratorPluginVInterface::gatewaySendWithSOAPReply(
-    GatewaySupervisor*                           supervisor,
+    GatewaySupervisor* supervisor,
     XDAQ_CONST_CALL xdaq::ApplicationDescriptor* descriptor,
     const std::string&                           command,
     const SOAPParameters&                        parameters)
