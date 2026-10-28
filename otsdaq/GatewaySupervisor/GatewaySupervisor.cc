@@ -1977,18 +1977,6 @@ try
 								                  .commandSentTime) <
 								         2))  //respect grace period after send
 								{
-									if(theSupervisor->remoteGatewayApps_[i]
-									       .appInfo.status != "")
-										__COUTT__ << "DIAG: clear-stale wiping '"
-										          << theSupervisor->remoteGatewayApps_[i]
-										                 .appInfo.name
-										          << "' status='"
-										          << theSupervisor->remoteGatewayApps_[i]
-										                 .appInfo.status.substr(0, 40)
-										          << "' commandSentTime="
-										          << theSupervisor->remoteGatewayApps_[i]
-										                 .commandSentTime
-										          << __E__;
 									theSupervisor->remoteGatewayApps_[i].appInfo.status =
 									    "";  //clear status as indicator to be erased
 								}
@@ -2098,19 +2086,21 @@ try
 										    (remoteGatewayApp.command == "Sent");
 										if(justCompletedSend)  //apply command clear, skip write-back this iteration
 										{
-											__COUT_INFO__
-											    << "DIAG: justCompletedSend for '"
-											    << remoteGatewayApp.appInfo.name
-											    << "' sharedStatus='"
-											    << theSupervisor->remoteGatewayApps_[i]
-											           .appInfo.status.substr(0, 40)
-											    << "' polledStatus='"
-											    << remoteGatewayApp.appInfo.status.substr(
-											           0, 40)
-											    << "' command='"
-											    << theSupervisor->remoteGatewayApps_[i]
-											           .command
-											    << "'" << __E__;
+											if(theSupervisor->remoteGatewayApps_[i]
+											       .appInfo.status !=
+											   remoteGatewayApp.appInfo.status)
+												__COUT__
+												    << "Remote '"
+												    << remoteGatewayApp.appInfo.name
+												    << "' status diverged after send: "
+												       "shared='"
+												    << theSupervisor
+												           ->remoteGatewayApps_[i]
+												           .appInfo.status.substr(0, 40)
+												    << "' polled='"
+												    << remoteGatewayApp.appInfo.status
+												           .substr(0, 40)
+												    << "'" << __E__;
 											theSupervisor->remoteGatewayApps_[i].command =
 											    "";
 											theSupervisor->remoteGatewayApps_[i]
@@ -2136,48 +2126,10 @@ try
 										                  .commandSentTime) <
 										         5))  //dont trust done progress briefly after send, but allow write-back after 5s
 										{
-											__COUT__
-											    << "DIAG: suppressing stale write-back "
-											       "for '"
-											    << remoteGatewayApp.appInfo.name
-											    << "' polledStatus='"
-											    << remoteGatewayApp.appInfo.status.substr(
-											           0, 40)
-											    << "' sharedStatus='"
-											    << theSupervisor->remoteGatewayApps_[i]
-											           .appInfo.status.substr(0, 40)
-											    << "' sharedCmd='"
-											    << theSupervisor->remoteGatewayApps_[i]
-											           .command
-											    << "' commandingRemote="
-											    << commandingRemoteGatewayApps
-											    << " commandSentTime="
-											    << theSupervisor->remoteGatewayApps_[i]
-											           .commandSentTime
-											    << __E__;
+											// suppress stale write-back
 										}
 										else
 										{
-											if(theSupervisor->remoteGatewayApps_[i]
-											       .appInfo.status !=
-											   remoteGatewayApp.appInfo.status)
-												__COUTT__
-												    << "DIAG: write-back changing '"
-												    << remoteGatewayApp.appInfo.name
-												    << "' from='"
-												    << theSupervisor
-												           ->remoteGatewayApps_[i]
-												           .appInfo.status.substr(0, 40)
-												    << "' to='"
-												    << remoteGatewayApp.appInfo.status
-												           .substr(0, 40)
-												    << "' commandSentTime="
-												    << theSupervisor
-												           ->remoteGatewayApps_[i]
-												           .commandSentTime
-												    << " commandingRemote="
-												    << commandingRemoteGatewayApps
-												    << __E__;
 											theSupervisor->remoteGatewayApps_[i]
 											    .commandSentTime = 0;
 											theSupervisor->remoteGatewayApps_[i].appInfo =
@@ -5860,6 +5812,16 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	fsmWindowName             = StringMacros::decodeURIComponent(fsmWindowName);
 	std::string currentState  = theStateMachine_.getCurrentStateName();
 
+	// the Iterator command handler takes one parameter; for an experiment plugin
+	// command pack "<plugin>:<pluginCommand>" into it (see Iterator::handlePluginCommand)
+	std::string iteratorParameter = fsmWindowName;
+	if(command == "iteratePluginCommand")
+		iteratorParameter = StringMacros::decodeURIComponent(
+		                        CgiDataUtilities::getOrPostData(cgiIn, "plugin")) +
+		                    ":" +
+		                    StringMacros::decodeURIComponent(
+		                        CgiDataUtilities::getOrPostData(cgiIn, "pluginCommand"));
+
 	__COUT__ << "Check for Handled by theIterator_, activeStateMachineWindowName_ = "
 	         << activeStateMachineWindowName_ << __E__;
 
@@ -5869,7 +5831,7 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	    (activeStateMachineName_ == fsmName &&
 	     command.find("iterate") ==
 	         0) /* for combo iterate/fsm GUIs like SubsystemLaunch.js */) &&
-	   theIterator_.handleCommandRequest(xmlOut, command, fsmWindowName))
+	   theIterator_.handleCommandRequest(xmlOut, command, iteratorParameter))
 	{
 		__COUT__ << "Handled by theIterator_" << __E__;
 		xmlOut.outputXmlDocument((std::ostringstream*)out, false);
@@ -6020,6 +5982,20 @@ try
 			}
 			break;
 		}
+	}
+
+	/////////////////
+	// Iterator plugin ownership (do here because remote commands bypass
+	//	stateMachineXgiHandler and therefore the Iterator command handler): while a
+	//	plugin is touching hardware, no DAQ transition may run, local or from a parent.
+	if(theIterator_.isPluginBlockingTransitions())
+	{
+		__SS__ << "Error - Can not accept '" << command
+		       << "' because an Iterator plugin owns the Iterator and may be accessing "
+		          "hardware. Stop the plugin first (iteratePluginCommand ... Stop) and "
+		          "wait for the Iterator to report Inactive."
+		       << __E__;
+		__SS_THROW__;
 	}
 
 	/////////////////
@@ -10141,9 +10117,9 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 			if(subsystemIteration)
 			{
-				__COUT_INFO__ << "DIAG: re-broadcasting subsystemIteration="
-				              << subsystemIteration << " (iteration=" << iteration
-				              << ") for command '" << command << "'" << __E__;
+				__COUT__ << "Re-broadcasting subsystem-iteration " << subsystemIteration
+				         << " (iteration " << iteration << ") for command '" << command
+				         << "'" << __E__;
 
 				// Re-send command to non-done remote gateways with updated subsystem-iteration index
 				broadcastMessageToRemoteGateways(originalMessage, subsystemIteration);
@@ -10962,9 +10938,6 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 		//re-broadcasts should not overwrite real transitioning status)
 		if(iteration == 0)
 		{
-			__COUT_INFO__ << "DIAG: setting Launching for '"
-			              << remoteGatewayApp.appInfo.name << "' iteration=" << iteration
-			              << " to='Launching " << commandAndParams << "'" << __E__;
 			remoteGatewayApp.appInfo.status   = "Launching " + commandAndParams;
 			remoteGatewayApp.appInfo.progress = 0;
 		}
@@ -10989,11 +10962,6 @@ void GatewaySupervisor::broadcastMessageToRemoteGateways(
 					rga.doNotHaltWasCommandedHalt = localApp.doNotHaltWasCommandedHalt;
 					if(wasCommanded)
 					{
-						__COUT_INFO__
-						    << "DIAG: broadcast write-back for '" << rga.appInfo.name
-						    << "' oldStatus='" << rga.appInfo.status.substr(0, 40)
-						    << "' newStatus='" << localApp.appInfo.status.substr(0, 40)
-						    << "' command='" << localApp.command << "'" << __E__;
 						rga.command = localApp.command;
 						rga.fsmName = localApp.fsmName;
 						if(localApp.config_dump.size())
@@ -13393,9 +13361,6 @@ try
 				    std::to_string(remoteSubsystem.appInfo.id));  //remote gateway LID
 				xmlOut.addTextElementToData("subsystem_landingPage",
 				                            remoteSubsystem.landingPage);
-				__COUTT__ << "DIAG: getRemoteSubsystemStatus sending '"
-				          << remoteSubsystem.appInfo.name << "' status='"
-				          << remoteSubsystem.appInfo.status.substr(0, 40) << "'" << __E__;
 				xmlOut.addTextElementToData("subsystem_status",
 				                            remoteSubsystem.appInfo.status);
 				xmlOut.addTextElementToData(

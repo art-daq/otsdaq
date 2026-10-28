@@ -5,6 +5,7 @@
 #include <memory>  //for std::shared_ptr
 #include <mutex>   //for std::mutex
 #include <string>
+#include "otsdaq/GatewaySupervisor/IteratorPluginVInterface.h"
 #include "otsdaq/TablePlugins/IterateTable.h"
 #include "otsdaq/XmlUtilities/HttpXmlDocument.h"
 
@@ -96,6 +97,8 @@ class Iterator
 		std::vector<std::string> fsmCommandParameters_;
 		std::vector<bool>        targetsDone_;
 
+		bool pluginInitialized_ = false;  ///< plugin initialize() has run for the current ownership
+
 		bool remoteConfigureQueued_ = false;  ///< remote Configure needs Halt first when not Halted/Initial
 
 		std::vector<OutputFile> outputFiles_;  ///< files written by macro commands so far in this plan
@@ -116,6 +119,25 @@ class Iterator
 		std::shared_ptr<RemoteMacroRun> remoteMacroRun_;
 
 	};  // end declaration of iterator workloop members
+
+	/// ~~ experiment Iterator plugins (see IteratorPluginVInterface.h) ~~
+	///	Request:  StateMachine=iteratePluginCommand&plugin=<Name>&pluginCommand=<cmd>
+	///	A plugin is created by name when a command arrives and no plugin owns the
+	///	Iterator; it is destroyed after finish(). Guarded by accessMutex_.
+	void handlePluginCommand(HttpXmlDocument& xml, const std::string& pluginName, const std::string& pluginCommand);
+	/// worker-thread driver for the plugin's reserved plan; returns true if it consumed this loop pass
+	bool runPluginPlan(IteratorWorkLoopStruct* iteratorStruct);
+	/// runs finish() with the FSM mutex held (unless the caller already holds it), restores the window name, releases the plugin
+	void finishPluginPlan(IteratorWorkLoopStruct* iteratorStruct, bool callerHoldsFsmMutex);
+	IteratorPluginContext makePluginContext(IteratorWorkLoopStruct* iteratorStruct);
+	/// true while a plugin owns the Iterator and says DAQ transitions must wait; locks accessMutex_ (caller must NOT hold it)
+	bool isPluginBlockingTransitions(void)
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		return activePlugin_ && activePlugin_->blocksDaqTransitions();
+	}
+	std::unique_ptr<IteratorPluginVInterface> activePlugin_;  ///< non-null only while a plugin owns the Iterator
+	std::string pluginPreviousWindow_;  ///< activeStateMachineWindowName_ to restore when the plugin releases
 
 	static void IteratorWorkLoop(Iterator* iterator);
 	static void startCommand(IteratorWorkLoopStruct* iteratorStruct);
