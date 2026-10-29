@@ -93,8 +93,14 @@ class FiniteStateMachine
 	}
 
 	// --- driving ------------------------------------------------------------
-	// Fires a transition on the current state. Transition handler exceptions move the
-	// machine to the failed state ('F') and invoke the failed-state hooks, as xdaq does.
+	// Fires a transition on the current state. Mirrors xdaq's
+	// toolbox/src/common/fsm/FiniteStateMachine.cc: an exception from the transition
+	// handler moves the machine to the failed state ('F'), invokes the failed-state hooks
+	// with a FailedEvent carrying the exception, and RETURNS (never rethrows). otsdaq's
+	// execTransition()/runControlMessageHandler() rely on that: they detect the failure by
+	// checking the state afterwards and show the message the hooks stored
+	// (GatewaySupervisor::enteringError -> setErrorMessage). Rethrowing made otsdaq wrap and
+	// overwrite that message with "Transition X was not executed from current state Failed".
 	void fireEvent(toolbox::Event::Reference e)
 	{
 		const std::string input = e->type();
@@ -112,17 +118,35 @@ class FiniteStateMachine
 		}
 		catch(xcept::Exception& ex)
 		{
-			currentState_ = 'F';
-			toolbox::Event::Reference failed(new toolbox::fsm::FailedEvent(ex, from, to, this));
-			if(failedAction_)
-				failedAction_(failed);
-			if(failedChanged_)
-				failedChanged_(*this);
-			throw;
+			enterFailedState(ex, from, to);
+			return;
+		}
+		catch(const std::exception& ex)
+		{
+			xcept::Exception xe("xcept::Exception", ex.what(), __FILE__, __LINE__, __FUNCTION__);
+			enterFailedState(xe, from, to);
+			return;
+		}
+		catch(...)
+		{
+			xcept::Exception xe("xcept::Exception", "Caught unknown exception raised in user code", __FILE__, __LINE__, __FUNCTION__);
+			enterFailedState(xe, from, to);
+			return;
 		}
 		currentState_ = to;
 		if(stateActions_.count(currentState_))
 			stateActions_[currentState_](*this);
+	}
+
+  private:
+	void enterFailedState(xcept::Exception& ex, State from, State to)
+	{
+		currentState_ = 'F';
+		toolbox::Event::Reference failed(new toolbox::fsm::FailedEvent(ex, from, to, this));
+		if(failedAction_)
+			failedAction_(failed);
+		if(failedChanged_)
+			failedChanged_(*this);
 	}
 
   protected:
