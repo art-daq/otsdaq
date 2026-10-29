@@ -29,11 +29,11 @@ class Cgicc
 
 	const CgiEnvironment& getEnvironment() const { return env_; }
 
-	form_iterator       getElement(const std::string& name);
-	const_form_iterator getElement(const std::string& name) const;
+	form_iterator          getElement(const std::string& name);
+	const_form_iterator    getElement(const std::string& name) const;
 	std::vector<FormEntry> getElements() const { return entries_; }
-	bool                getElement(const std::string& name, std::vector<FormEntry>& result) const;
-	bool                queryCheckbox(const std::string& name) const { return getElement(name) != entries_.end(); }
+	bool                   getElement(const std::string& name, std::vector<FormEntry>& result) const;
+	bool                   queryCheckbox(const std::string& name) const { return getElement(name) != entries_.end(); }
 	// GNU cgicc shorthand: value of the named form element, or "" if absent
 	std::string operator()(const std::string& name) const
 	{
@@ -41,8 +41,8 @@ class Cgicc
 		return it == entries_.end() ? std::string() : it->getValue();
 	}
 
-	file_iterator       getFile(const std::string& name);
-	const_file_iterator getFile(const std::string& name) const;
+	file_iterator                getFile(const std::string& name);
+	const_file_iterator          getFile(const std::string& name) const;
 	const std::vector<FormFile>& getFiles() const { return files_; }
 
 	// iteration helpers some code uses

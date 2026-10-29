@@ -9,7 +9,8 @@ namespace xdaq
 class ContextDescriptor
 {
   public:
-	explicit ContextDescriptor(const std::string& url) : url_(url) {}
+	explicit ContextDescriptor(const std::string& url)
+	    : url_(url) {}
 	std::string getURL() const { return url_; }
 
   private:

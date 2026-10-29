@@ -40,7 +40,8 @@ FEDataManagerSupervisor::FEDataManagerSupervisor(xdaq::ApplicationStub* s,
 	if(artdaqDataManager)
 	{
 #ifdef OTS_LITE
-		__SUP_SS__ << "ARTDAQ Data Manager is not available in an OTS_LITE build." << __E__;
+		__SUP_SS__ << "ARTDAQ Data Manager is not available in an OTS_LITE build."
+		           << __E__;
 		__SUP_SS_THROW__;
 #else
 		__SUP_COUT__ << "Adding ARTDAQ Data Manager now...!" << __E__;

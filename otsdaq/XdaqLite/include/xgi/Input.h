@@ -16,7 +16,10 @@ class Input : public cgicc::CgiInput
 {
   public:
 	Input() {}
-	Input(const cgicc::CgiEnvironment& env, const std::string& queryString, const std::string& postData) : env_(env), query_(queryString), body_(postData) {}
+	Input(const cgicc::CgiEnvironment& env, const std::string& queryString, const std::string& postData)
+	    : env_(env)
+	    , query_(queryString)
+	    , body_(postData) {}
 
 	const cgicc::CgiEnvironment& getEnvironment() const override { return env_; }
 	std::string                  getQueryString() const override { return query_; }

@@ -15,7 +15,10 @@ class FailedEvent : public toolbox::Event
 {
   public:
 	FailedEvent(xcept::Exception& e, State from, State to, void* originator = nullptr)
-	    : toolbox::Event("Fail", originator), exception_(e), from_(from), to_(to)
+	    : toolbox::Event("Fail", originator)
+	    , exception_(e)
+	    , from_(from)
+	    , to_(to)
 	{
 	}
 	xcept::Exception& getException() { return exception_; }

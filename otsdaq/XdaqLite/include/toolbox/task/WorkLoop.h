@@ -19,7 +19,9 @@ class WorkLoop;
 class ActionSignature
 {
   public:
-	ActionSignature(const std::string& name, std::function<bool(WorkLoop*)> f) : name_(name), f_(f) {}
+	ActionSignature(const std::string& name, std::function<bool(WorkLoop*)> f)
+	    : name_(name)
+	    , f_(f) {}
 	std::string name() const { return name_; }
 	bool        invoke(WorkLoop* wl) { return f_(wl); }
 
@@ -37,7 +39,12 @@ ActionSignature* bind(OBJECT* obj, bool (OBJECT::*func)(WorkLoop*), const std::s
 class WorkLoop
 {
   public:
-	WorkLoop(const std::string& name, const std::string& type) : name_(name), type_(type), job_(nullptr), active_(false), running_(false) {}
+	WorkLoop(const std::string& name, const std::string& type)
+	    : name_(name)
+	    , type_(type)
+	    , job_(nullptr)
+	    , active_(false)
+	    , running_(false) {}
 	~WorkLoop() { cancel(); }
 
 	std::string getName() const { return name_ + "/" + type_; }
@@ -65,11 +72,11 @@ class WorkLoop
 		active_  = true;
 		running_ = true;
 		thread_  = std::thread([this] {
-			 while(running_ && job_ && job_->invoke(this))
-			 {
-			 }
-			 active_ = false;
-		 });
+            while(running_ && job_ && job_->invoke(this))
+            {
+            }
+            active_ = false;
+        });
 	}
 	// Waits for the job thread to finish, as xdaq's cancel() does.
 	void cancel()

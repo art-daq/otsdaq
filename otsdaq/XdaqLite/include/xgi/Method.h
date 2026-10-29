@@ -18,8 +18,7 @@ template<class OBJECT>
 void bind(OBJECT* obj, void (OBJECT::*func)(xgi::Input*, xgi::Output*), const std::string& name)
 {
 	std::lock_guard<std::mutex> lk(xdaq::handlerRegistryMutex());
-	xdaq::pendingHTTPHandlers().push_back({static_cast<void*>(obj), name, [obj, func](xgi::Input* in, xgi::Output* out) { (obj->*func)(in, out); },
-	                                       [obj]() -> xdaq::Application* { return dynamic_cast<xdaq::Application*>(obj); }});
+	xdaq::pendingHTTPHandlers().push_back({static_cast<void*>(obj), name, [obj, func](xgi::Input* in, xgi::Output* out) { (obj->*func)(in, out); }, [obj]() -> xdaq::Application* { return dynamic_cast<xdaq::Application*>(obj); }});
 }
 }  // namespace xgi
 

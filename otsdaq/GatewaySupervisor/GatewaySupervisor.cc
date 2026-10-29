@@ -12666,8 +12666,9 @@ try
 
 			for(unsigned int i = 0; i < states.size(); ++i)  // get all states
 			{
-				stateStr[0]             = states[i];
-				xercesc::DOMElement* stateParent = xmlOut.addTextElementToData("state", stateStr);
+				stateStr[0] = states[i];
+				xercesc::DOMElement* stateParent =
+				    xmlOut.addTextElementToData("state", stateStr);
 
 				xmlOut.addTextElementToParent(
 				    "state_name", theStateMachine_.getStateName(states[i]), stateParent);

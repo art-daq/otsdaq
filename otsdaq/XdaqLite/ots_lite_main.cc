@@ -117,7 +117,8 @@ std::string parsePartition(const std::string& file, std::vector<AppSpec>& apps)
 		throw std::runtime_error("cannot parse partition XML " + file);
 
 	std::string url;
-	for(xercesc::DOMNode* c = doc->getDocumentElement()->getFirstChild(); c; c = c->getNextSibling())
+	for(xercesc::DOMNode* c = doc->getDocumentElement()->getFirstChild(); c;
+	    c                   = c->getNextSibling())
 	{
 		if(c->getNodeType() != xercesc::DOMNode::ELEMENT_NODE)
 			continue;
@@ -134,10 +135,15 @@ std::string parsePartition(const std::string& file, std::vector<AppSpec>& apps)
 			if(ln == "Application")
 			{
 				AppSpec s;
-				s.className = xs(el->getAttribute(xercesc::XMLString::transcode("class")));
-				s.lid       = std::strtoul(xs(el->getAttribute(xercesc::XMLString::transcode("id"))).c_str(), nullptr, 10);
-				std::string inst = xs(el->getAttribute(xercesc::XMLString::transcode("instance")));
-				s.instance       = inst.empty() ? 1 : std::strtoul(inst.c_str(), nullptr, 10);
+				s.className =
+				    xs(el->getAttribute(xercesc::XMLString::transcode("class")));
+				s.lid = std::strtoul(
+				    xs(el->getAttribute(xercesc::XMLString::transcode("id"))).c_str(),
+				    nullptr,
+				    10);
+				std::string inst =
+				    xs(el->getAttribute(xercesc::XMLString::transcode("instance")));
+				s.instance = inst.empty() ? 1 : std::strtoul(inst.c_str(), nullptr, 10);
 				apps.push_back(s);
 			}
 			else if(ln == "Module" && !apps.empty() && apps.back().module.empty())
@@ -193,7 +199,7 @@ bool readRequest(int fd, Request& r)
 		std::string k = line.substr(0, c), v = line.substr(c + 1);
 		for(auto& ch : k)
 			ch = std::tolower(ch);
-		size_t s = v.find_first_not_of(' ');
+		size_t s     = v.find_first_not_of(' ');
 		r.headers[k] = s == std::string::npos ? "" : v.substr(s);
 	}
 	size_t clen = 0;
@@ -226,7 +232,11 @@ void writeAll(int fd, const std::string& s)
 	}
 }
 
-void sendResponse(int fd, int status, const std::string& reason, const std::vector<std::pair<std::string, std::string>>& headers, const std::string& body)
+void sendResponse(int                                                     fd,
+                  int                                                     status,
+                  const std::string&                                      reason,
+                  const std::vector<std::pair<std::string, std::string>>& headers,
+                  const std::string&                                      body)
 {
 	std::ostringstream o;
 	o << "HTTP/1.1 " << status << " " << reason << "\r\n";
@@ -250,7 +260,24 @@ std::string mimeFor(const std::string& path)
 	for(auto& c : ext)
 		c = std::tolower(c);
 	static const std::map<std::string, std::string> m = {
-	    {"html", "text/html; charset=utf-8"}, {"htm", "text/html; charset=utf-8"}, {"js", "application/javascript"}, {"css", "text/css"}, {"png", "image/png"}, {"jpg", "image/jpeg"}, {"jpeg", "image/jpeg"}, {"gif", "image/gif"}, {"svg", "image/svg+xml"}, {"ico", "image/x-icon"}, {"json", "application/json"}, {"xml", "text/xml"}, {"txt", "text/plain"}, {"woff", "font/woff"}, {"woff2", "font/woff2"}, {"ttf", "font/ttf"}, {"mp3", "audio/mpeg"}, {"wav", "audio/wav"}};
+	    {"html", "text/html; charset=utf-8"},
+	    {"htm", "text/html; charset=utf-8"},
+	    {"js", "application/javascript"},
+	    {"css", "text/css"},
+	    {"png", "image/png"},
+	    {"jpg", "image/jpeg"},
+	    {"jpeg", "image/jpeg"},
+	    {"gif", "image/gif"},
+	    {"svg", "image/svg+xml"},
+	    {"ico", "image/x-icon"},
+	    {"json", "application/json"},
+	    {"xml", "text/xml"},
+	    {"txt", "text/plain"},
+	    {"woff", "font/woff"},
+	    {"woff2", "font/woff2"},
+	    {"ttf", "font/ttf"},
+	    {"mp3", "audio/mpeg"},
+	    {"wav", "audio/wav"}};
 	auto it = m.find(ext);
 	return it == m.end() ? "application/octet-stream" : it->second;
 }
@@ -262,12 +289,12 @@ std::string urlDecodePath(const std::string& s) { return cgicc::form_urldecode(s
 // ---------------------------------------------------------------------------
 struct LiteContext
 {
-	std::unique_ptr<xdaq::ApplicationContext>          context;
-	std::map<unsigned int, xdaq::Application*>         apps;  // lid -> app
+	std::unique_ptr<xdaq::ApplicationContext>           context;
+	std::map<unsigned int, xdaq::Application*>          apps;  // lid -> app
 	std::vector<std::unique_ptr<xdaq::ApplicationStub>> stubs;
-	std::string                                        webRoot;
-	std::string                                        host;
-	unsigned short                                     port = 0;
+	std::string                                         webRoot;
+	std::string                                         host;
+	unsigned short                                      port = 0;
 };
 
 void serveStatic(int fd, LiteContext& ctx, const std::string& path)
@@ -287,7 +314,11 @@ void serveStatic(int fd, LiteContext& ctx, const std::string& path)
 	}
 	std::ostringstream body;
 	body << in.rdbuf();
-	sendResponse(fd, 200, "OK", {{"Content-Type", mimeFor(file)}, {"Cache-Control", "no-cache"}}, body.str());
+	sendResponse(fd,
+	             200,
+	             "OK",
+	             {{"Content-Type", mimeFor(file)}, {"Cache-Control", "no-cache"}},
+	             body.str());
 }
 
 void serveApp(int fd, LiteContext& ctx, const Request& req, const std::string& remoteAddr)
@@ -296,21 +327,27 @@ void serveApp(int fd, LiteContext& ctx, const Request& req, const std::string& r
 	static const std::string prefix = "/urn:xdaq-application:lid=";
 	size_t                   p      = prefix.size();
 	size_t                   slash  = req.path.find('/', p);
-	unsigned int             lid    = std::strtoul(req.path.substr(p, slash == std::string::npos ? std::string::npos : slash - p).c_str(), nullptr, 10);
-	std::string              name   = slash == std::string::npos ? "" : req.path.substr(slash + 1);
+	unsigned int             lid    = std::strtoul(
+        req.path.substr(p, slash == std::string::npos ? std::string::npos : slash - p)
+            .c_str(),
+        nullptr,
+        10);
+	std::string name = slash == std::string::npos ? "" : req.path.substr(slash + 1);
 	if(name.empty())
 		name = "Default";
 
 	auto it = ctx.apps.find(lid);
 	if(it == ctx.apps.end())
 	{
-		sendResponse(fd, 404, "Not Found", {}, "No application with lid=" + std::to_string(lid));
+		sendResponse(
+		    fd, 404, "Not Found", {}, "No application with lid=" + std::to_string(lid));
 		return;
 	}
 	xdaq::Application* app = it->second;
 
 	auto ctIt = req.headers.find("content-type");
-	if(req.method == "POST" && ctIt != req.headers.end() && ctIt->second.find("text/xml") != std::string::npos)
+	if(req.method == "POST" && ctIt != req.headers.end() &&
+	   ctIt->second.find("text/xml") != std::string::npos)
 	{
 		// SOAP: body element local name = command, attributes = parameters
 		xoap::MessageReference msg = xoap::createMessage();
@@ -324,7 +361,8 @@ void serveApp(int fd, LiteContext& ctx, const Request& req, const std::string& r
 		}
 		catch(const std::exception& e)
 		{
-			sendResponse(fd, 500, "SOAP Error", {{"Content-Type", "text/plain"}}, e.what());
+			sendResponse(
+			    fd, 500, "SOAP Error", {{"Content-Type", "text/plain"}}, e.what());
 		}
 		return;
 	}
@@ -357,18 +395,31 @@ void serveApp(int fd, LiteContext& ctx, const Request& req, const std::string& r
 	{
 		if(!app->dispatchHTTP(name, &in, &out))
 		{
-			sendResponse(fd, 404, "Not Found", {}, "Application lid=" + std::to_string(lid) + " has no handler '" + name + "'");
+			sendResponse(fd,
+			             404,
+			             "Not Found",
+			             {},
+			             "Application lid=" + std::to_string(lid) + " has no handler '" +
+			                 name + "'");
 			return;
 		}
 	}
 	catch(const std::exception& e)
 	{
-		sendResponse(fd, 500, "Internal Server Error", {{"Content-Type", "text/plain"}}, std::string("Handler '") + name + "' threw: " + e.what());
+		sendResponse(fd,
+		             500,
+		             "Internal Server Error",
+		             {{"Content-Type", "text/plain"}},
+		             std::string("Handler '") + name + "' threw: " + e.what());
 		return;
 	}
 	catch(...)
 	{
-		sendResponse(fd, 500, "Internal Server Error", {{"Content-Type", "text/plain"}}, std::string("Handler '") + name + "' threw an unknown exception");
+		sendResponse(fd,
+		             500,
+		             "Internal Server Error",
+		             {{"Content-Type", "text/plain"}},
+		             std::string("Handler '") + name + "' threw an unknown exception");
 		return;
 	}
 	const auto& hdr     = out.getHTTPResponseHeader();
@@ -382,11 +433,14 @@ void serveApp(int fd, LiteContext& ctx, const Request& req, const std::string& r
 		bool hasContentType = false;
 		for(const auto& h : headers)
 			if(strcasecmp(h.first.c_str(), "content-type") == 0)
-			{ hasContentType = true; break; }
+			{
+				hasContentType = true;
+				break;
+			}
 		if(!hasContentType)
 		{
-			const std::string& body = out.str();
-			size_t start = body.find_first_not_of(" \t\r\n");
+			const std::string& body  = out.str();
+			size_t             start = body.find_first_not_of(" \t\r\n");
 			if(start != std::string::npos && body[start] == '<' &&
 			   body.substr(start, 9).find("<!") == std::string::npos &&
 			   body.substr(start, 9).find("<html") == std::string::npos &&
@@ -410,13 +464,22 @@ void handleConnection(int fd, LiteContext* ctx, std::string remoteAddr)
 			else if(req.path.rfind("/urn:xdaq-application:lid=", 0) == 0)
 				serveApp(fd, *ctx, req, remoteAddr);
 			else if(req.path == "/" || req.path.empty())
-				sendResponse(fd, 200, "OK", {{"Content-Type", "text/plain"}}, "otsdaq lite context on " + ctx->host + ":" + std::to_string(ctx->port) + "\n");
+				sendResponse(fd,
+				             200,
+				             "OK",
+				             {{"Content-Type", "text/plain"}},
+				             "otsdaq lite context on " + ctx->host + ":" +
+				                 std::to_string(ctx->port) + "\n");
 			else
 				sendResponse(fd, 404, "Not Found", {}, "Not found: " + req.path);
 		}
 		catch(const std::exception& e)
 		{
-			sendResponse(fd, 500, "Internal Server Error", {{"Content-Type", "text/plain"}}, e.what());
+			sendResponse(fd,
+			             500,
+			             "Internal Server Error",
+			             {{"Content-Type", "text/plain"}},
+			             e.what());
 		}
 	}
 	::shutdown(fd, SHUT_RDWR);
@@ -430,7 +493,10 @@ void              onSignal(int) { running = false; }
 // failing frame is visible without root access to core dumps. Async-signal-safe calls only.
 void onCrash(int sig)
 {
-	const char* name = sig == SIGSEGV ? "SIGSEGV" : sig == SIGABRT ? "SIGABRT" : sig == SIGBUS ? "SIGBUS" : "signal";
+	const char* name  = sig == SIGSEGV   ? "SIGSEGV"
+	                    : sig == SIGABRT ? "SIGABRT"
+	                    : sig == SIGBUS  ? "SIGBUS"
+	                                     : "signal";
 	const char  hdr[] = "\nots_lite_main: fatal ";
 	::write(2, hdr, sizeof(hdr) - 1);
 	::write(2, name, strlen(name));
@@ -444,7 +510,8 @@ void onCrash(int sig)
 
 void usage()
 {
-	std::cerr << "usage: ots_lite_main -p <port> -h <host> [-e <profile.xml>] -c <partition.xml>\n";
+	std::cerr << "usage: ots_lite_main -p <port> -h <host> [-e <profile.xml>] -c "
+	             "<partition.xml>\n";
 }
 }  // namespace
 
@@ -454,7 +521,7 @@ int main(int argc, char** argv)
 	int         port = 0;
 	for(int i = 1; i < argc; ++i)
 	{
-		std::string a = argv[i];
+		std::string a    = argv[i];
 		auto        next = [&](std::string& dst) {
             if(i + 1 >= argc)
             {
@@ -490,10 +557,10 @@ int main(int argc, char** argv)
 	xercesc::XMLPlatformUtils::Initialize();
 
 	LiteContext ctx;
-	ctx.host = host;
-	ctx.port = port;
+	ctx.host        = host;
+	ctx.port        = port;
 	const char* web = getenv("OTSDAQ_WEB_PATH");
-	ctx.webRoot      = web ? web : "";
+	ctx.webRoot     = web ? web : "";
 
 	std::vector<AppSpec> specs;
 	std::string          url;
@@ -509,7 +576,8 @@ int main(int argc, char** argv)
 	if(url.empty())
 		url = "http://" + host + ":" + std::to_string(port);
 	ctx.context.reset(new xdaq::ApplicationContext(url));
-	std::cout << "ots_lite_main: context " << url << " (" << specs.size() << " applications), WebPath=" << ctx.webRoot << std::endl;
+	std::cout << "ots_lite_main: context " << url << " (" << specs.size()
+	          << " applications), WebPath=" << ctx.webRoot << std::endl;
 
 	// Load every module first, then instantiate. As real xdaq.exe does, each class is found
 	// by the exported symbol ots::<Class>::instantiate(xdaq::ApplicationStub*) that
@@ -523,7 +591,8 @@ int main(int argc, char** argv)
 		if(!h)
 		{
 			// Not built under OTS_LITE (e.g. libVisualization.so); keep the rest of the context up.
-			std::cerr << "ots_lite_main: WARNING cannot load " << s.module << ": " << dlerror() << " -- skipping applications in this module\n";
+			std::cerr << "ots_lite_main: WARNING cannot load " << s.module << ": "
+			          << dlerror() << " -- skipping applications in this module\n";
 			continue;
 		}
 		handles[s.module] = h;
@@ -535,10 +604,12 @@ int main(int argc, char** argv)
 	{
 		if(!s.module.empty() && !handles.count(s.module))
 		{
-			std::cerr << "ots_lite_main: skipping " << s.className << " lid=" << s.lid << " (module not loaded)\n";
+			std::cerr << "ots_lite_main: skipping " << s.className << " lid=" << s.lid
+			          << " (module not loaded)\n";
 			continue;
 		}
-		descriptors[s.lid] = ctx.context->addApplication(nullptr, s.className, s.lid, s.instance);
+		descriptors[s.lid] =
+		    ctx.context->addApplication(nullptr, s.className, s.lid, s.instance);
 	}
 	for(const auto& s : specs)
 	{
@@ -551,7 +622,8 @@ int main(int argc, char** argv)
 			while(true)
 			{
 				size_t      sep  = s.className.find("::", pos);
-				std::string part = s.className.substr(pos, sep == std::string::npos ? std::string::npos : sep - pos);
+				std::string part = s.className.substr(
+				    pos, sep == std::string::npos ? std::string::npos : sep - pos);
 				mangled += std::to_string(part.size()) + part;
 				if(sep == std::string::npos)
 					break;
@@ -566,12 +638,17 @@ int main(int argc, char** argv)
 				break;
 		if(!sym)
 		{
-			std::cerr << "ots_lite_main: no " << s.className << "::instantiate(xdaq::ApplicationStub*) exported by " << s.module << " (symbol " << mangled << "; missing XDAQ_INSTANTIATOR_IMPL?)\n";
+			std::cerr << "ots_lite_main: no " << s.className
+			          << "::instantiate(xdaq::ApplicationStub*) exported by " << s.module
+			          << " (symbol " << mangled << "; missing XDAQ_INSTANTIATOR_IMPL?)\n";
 			return 1;
 		}
-		xdaq::ApplicationInstantiator make = reinterpret_cast<xdaq::ApplicationInstantiator>(sym);
-		ctx.stubs.emplace_back(new xdaq::ApplicationStub(ctx.context.get(), descriptors[s.lid]));
-		std::cout << "ots_lite_main: instantiating " << s.className << " lid=" << s.lid << std::endl;
+		xdaq::ApplicationInstantiator make =
+		    reinterpret_cast<xdaq::ApplicationInstantiator>(sym);
+		ctx.stubs.emplace_back(
+		    new xdaq::ApplicationStub(ctx.context.get(), descriptors[s.lid]));
+		std::cout << "ots_lite_main: instantiating " << s.className << " lid=" << s.lid
+		          << std::endl;
 		try
 		{
 			xdaq::Application* app = make(ctx.stubs.back().get());
@@ -580,7 +657,8 @@ int main(int argc, char** argv)
 		}
 		catch(const std::exception& e)
 		{
-			std::cerr << "ots_lite_main: constructing " << s.className << " failed: " << e.what() << "\n";
+			std::cerr << "ots_lite_main: constructing " << s.className
+			          << " failed: " << e.what() << "\n";
 			return 1;
 		}
 	}
@@ -592,9 +670,11 @@ int main(int argc, char** argv)
 	addr.sin_family      = AF_INET;
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	addr.sin_port        = htons(port);
-	if(::bind(srv, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0 || ::listen(srv, 64) != 0)
+	if(::bind(srv, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) != 0 ||
+	   ::listen(srv, 64) != 0)
 	{
-		std::cerr << "ots_lite_main: cannot listen on port " << port << ": " << strerror(errno) << "\n";
+		std::cerr << "ots_lite_main: cannot listen on port " << port << ": "
+		          << strerror(errno) << "\n";
 		return 1;
 	}
 	signal(SIGINT, onSignal);
@@ -603,7 +683,8 @@ int main(int argc, char** argv)
 	signal(SIGSEGV, onCrash);
 	signal(SIGABRT, onCrash);
 	signal(SIGBUS, onCrash);
-	std::cout << "ots_lite_main: listening on http://" << host << ":" << port << std::endl;
+	std::cout << "ots_lite_main: listening on http://" << host << ":" << port
+	          << std::endl;
 
 	while(running)
 	{

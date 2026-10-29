@@ -16,8 +16,7 @@ template<class OBJECT>
 void bind(OBJECT* obj, MessageReference (OBJECT::*func)(MessageReference), const std::string& command, const std::string& /*namespaceURI*/ = "")
 {
 	std::lock_guard<std::mutex> lk(xdaq::handlerRegistryMutex());
-	xdaq::pendingSOAPHandlers().push_back({static_cast<void*>(obj), command, [obj, func](MessageReference m) { return (obj->*func)(m); },
-	                                       [obj]() -> xdaq::Application* { return dynamic_cast<xdaq::Application*>(obj); }});
+	xdaq::pendingSOAPHandlers().push_back({static_cast<void*>(obj), command, [obj, func](MessageReference m) { return (obj->*func)(m); }, [obj]() -> xdaq::Application* { return dynamic_cast<xdaq::Application*>(obj); }});
 }
 }  // namespace xoap
 

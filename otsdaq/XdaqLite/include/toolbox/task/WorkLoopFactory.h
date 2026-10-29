@@ -35,8 +35,8 @@ class WorkLoopFactory
 	}
 
   private:
-	std::mutex                        mutex_;
-	std::map<std::string, WorkLoop*>  loops_;
+	std::mutex                       mutex_;
+	std::map<std::string, WorkLoop*> loops_;
 };
 
 WorkLoopFactory* getWorkLoopFactory();

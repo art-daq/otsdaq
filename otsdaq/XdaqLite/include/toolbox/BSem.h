@@ -15,7 +15,8 @@ class BSem
 		EMPTY = 0,
 		FULL  = 1
 	};
-	explicit BSem(State initial = EMPTY, bool /*recursive*/ = false) : available_(initial == FULL) {}
+	explicit BSem(State initial = EMPTY, bool /*recursive*/ = false)
+	    : available_(initial == FULL) {}
 
 	void take()
 	{

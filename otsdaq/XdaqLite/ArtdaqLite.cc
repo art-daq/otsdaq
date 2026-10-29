@@ -15,7 +15,8 @@
 std::unique_ptr<artdaq::MetricManager> artdaq::Globals::metricMan_;
 std::string                            artdaq::Globals::app_name_;
 
-void artdaq::ExceptionHandler(ExceptionHandlerRethrow decision, const std::string& optional_message)
+void artdaq::ExceptionHandler(ExceptionHandlerRethrow decision,
+                              const std::string&      optional_message)
 {
 	try
 	{
@@ -23,20 +24,25 @@ void artdaq::ExceptionHandler(ExceptionHandlerRethrow decision, const std::strin
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << "ExceptionHandler: " << optional_message << " std::exception: " << e.what() << std::endl;
+		std::cerr << "ExceptionHandler: " << optional_message
+		          << " std::exception: " << e.what() << std::endl;
 	}
 	catch(...)
 	{
-		std::cerr << "ExceptionHandler: " << optional_message << " unknown exception" << std::endl;
+		std::cerr << "ExceptionHandler: " << optional_message << " unknown exception"
+		          << std::endl;
 	}
 	if(decision == ExceptionHandlerRethrow::yes)
 		throw;
 }
 
-std::string artdaq::generateMessageFacilityConfiguration(char const* progname, bool useConsole, bool printDebug, char const* fileExtraName)
+std::string artdaq::generateMessageFacilityConfiguration(char const* progname,
+                                                         bool        useConsole,
+                                                         bool        printDebug,
+                                                         char const* fileExtraName)
 {
-	const char*       logRoot = getenv("ARTDAQ_LOG_ROOT");
-	const std::string level   = printDebug ? "DEBUG" : "INFO";
+	const char*        logRoot = getenv("ARTDAQ_LOG_ROOT");
+	const std::string  level   = printDebug ? "DEBUG" : "INFO";
 	std::ostringstream ss;
 	ss << "destinations : { ";
 	if(useConsole)
@@ -46,7 +52,9 @@ std::string artdaq::generateMessageFacilityConfiguration(char const* progname, b
 		std::filesystem::path dir = std::filesystem::path(logRoot) / progname;
 		std::error_code       ec;
 		std::filesystem::create_directories(dir, ec);
-		ss << "file : { type : \"file\" threshold : \"DEBUG\" filename : \"" << (dir / (std::string(progname) + fileExtraName + "-%p.log")).string() << "\" append : false } ";
+		ss << "file : { type : \"file\" threshold : \"DEBUG\" filename : \""
+		   << (dir / (std::string(progname) + fileExtraName + "-%p.log")).string()
+		   << "\" append : false } ";
 	}
 	ss << "} ";
 	return ss.str();
@@ -54,9 +62,12 @@ std::string artdaq::generateMessageFacilityConfiguration(char const* progname, b
 
 void artdaq::configureTRACE(fhicl::ParameterSet&) {}
 
-void artdaq::configureMessageFacility(char const* progname, bool useConsole, bool printDebug)
+void artdaq::configureMessageFacility(char const* progname,
+                                      bool        useConsole,
+                                      bool        printDebug)
 {
-	const std::string config = generateMessageFacilityConfiguration(progname, useConsole, printDebug);
+	const std::string config =
+	    generateMessageFacilityConfiguration(progname, useConsole, printDebug);
 	mf::StartMessageFacility(fhicl::ParameterSet::make(config), progname);
 }
 

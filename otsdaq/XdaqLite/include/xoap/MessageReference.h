@@ -28,13 +28,16 @@ class Exception : public xcept::Exception
 }  // namespace exception
 
 typedef std::string XMLCh;
-inline std::string XMLCh2String(const XMLCh* s) { return s ? *s : std::string(); }
+inline std::string  XMLCh2String(const XMLCh* s) { return s ? *s : std::string(); }
 
 class SOAPName
 {
   public:
 	SOAPName() {}
-	SOAPName(const std::string& local, const std::string& prefix = "", const std::string& uri = "") : local_(local), prefix_(prefix), uri_(uri) {}
+	SOAPName(const std::string& local, const std::string& prefix = "", const std::string& uri = "")
+	    : local_(local)
+	    , prefix_(prefix)
+	    , uri_(uri) {}
 	std::string getLocalName() const { return local_; }
 	std::string getPrefix() const { return prefix_; }
 	std::string getURI() const { return uri_; }
@@ -54,7 +57,9 @@ namespace lite
 class DOMNode
 {
   public:
-	DOMNode(const std::string& name, const std::string& value) : name_(name), value_(value) {}
+	DOMNode(const std::string& name, const std::string& value)
+	    : name_(name)
+	    , value_(value) {}
 	const XMLCh* getNodeName() const { return &name_; }
 	const XMLCh* getNodeValue() const { return &value_; }
 
@@ -81,7 +86,8 @@ class DOMNamedNodeMap
 class DOMElement
 {
   public:
-	explicit DOMElement(const std::map<std::string, std::string>* attrs) : attrs_(attrs) {}
+	explicit DOMElement(const std::map<std::string, std::string>* attrs)
+	    : attrs_(attrs) {}
 	// Rebuilt on each call so attributes added after getDOM() are visible.
 	DOMNamedNodeMap* getAttributes()
 	{
@@ -107,8 +113,10 @@ class SOAPElement
 	};
 
   public:
-	SOAPElement() : impl_(std::make_shared<Impl>()) {}
-	explicit SOAPElement(const SOAPName& name) : SOAPElement() { impl_->name = name; }
+	SOAPElement()
+	    : impl_(std::make_shared<Impl>()) {}
+	explicit SOAPElement(const SOAPName& name)
+	    : SOAPElement() { impl_->name = name; }
 
 	SOAPName    getElementName() const { return impl_->name; }
 	void        addAttribute(const SOAPName& name, const std::string& value) { impl_->attributes[name.getLocalName()] = value; }
@@ -142,7 +150,8 @@ class SOAPElement
 class SOAPBody
 {
   public:
-	explicit SOAPBody(std::vector<SOAPElement>* elements) : elements_(elements) {}
+	explicit SOAPBody(std::vector<SOAPElement>* elements)
+	    : elements_(elements) {}
 	SOAPElement addBodyElement(const SOAPName& name)
 	{
 		elements_->emplace_back(name);
@@ -158,7 +167,8 @@ class SOAPBody
 class SOAPEnvelope
 {
   public:
-	explicit SOAPEnvelope(std::vector<SOAPElement>* elements) : elements_(elements) {}
+	explicit SOAPEnvelope(std::vector<SOAPElement>* elements)
+	    : elements_(elements) {}
 	SOAPName createName(const std::string& local, const std::string& prefix = "", const std::string& uri = "") const { return SOAPName(local, prefix, uri); }
 	SOAPBody getBody() const { return SOAPBody(elements_); }
 
@@ -169,7 +179,8 @@ class SOAPEnvelope
 class SOAPPart
 {
   public:
-	explicit SOAPPart(std::vector<SOAPElement>* elements) : elements_(elements) {}
+	explicit SOAPPart(std::vector<SOAPElement>* elements)
+	    : elements_(elements) {}
 	SOAPEnvelope getEnvelope() const { return SOAPEnvelope(elements_); }
 
   private:

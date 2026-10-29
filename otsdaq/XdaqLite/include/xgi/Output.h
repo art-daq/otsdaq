@@ -12,7 +12,8 @@ namespace xgi
 class Output : public std::ostringstream
 {
   public:
-	Output() : header_("HTTP/1.1", 200, "OK") {}
+	Output()
+	    : header_("HTTP/1.1", 200, "OK") {}
 	cgicc::HTTPResponseHeader& getHTTPResponseHeader() { return header_; }
 	void                       setHTTPResponseHeader(const cgicc::HTTPResponseHeader& h) { header_ = h; }
 

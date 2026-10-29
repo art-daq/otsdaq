@@ -21,7 +21,9 @@ namespace fsm
 class FiniteStateMachine
 {
   public:
-	FiniteStateMachine() : currentState_(0), initialState_(0) {}
+	FiniteStateMachine()
+	    : currentState_(0)
+	    , initialState_(0) {}
 	virtual ~FiniteStateMachine() {}
 
 	// --- state definition -------------------------------------------------
@@ -124,15 +126,15 @@ class FiniteStateMachine
 	}
 
   protected:
-	State                                                              currentState_;
-	State                                                              initialState_;
-	std::vector<State>                                                 states_;
-	std::map<State, std::string>                                       stateNames_;
-	std::map<State, std::map<std::string, State>>                      stateTransitionTable_;
-	std::map<State, std::function<void(FiniteStateMachine&)>>          stateActions_;
+	State                                                                                  currentState_;
+	State                                                                                  initialState_;
+	std::vector<State>                                                                     states_;
+	std::map<State, std::string>                                                           stateNames_;
+	std::map<State, std::map<std::string, State>>                                          stateTransitionTable_;
+	std::map<State, std::function<void(FiniteStateMachine&)>>                              stateActions_;
 	std::map<State, std::map<std::string, std::function<void(toolbox::Event::Reference)>>> transitionActions_;
-	std::function<void(toolbox::Event::Reference)>                     failedAction_;
-	std::function<void(FiniteStateMachine&)>                           failedChanged_;
+	std::function<void(toolbox::Event::Reference)>                                         failedAction_;
+	std::function<void(FiniteStateMachine&)>                                               failedChanged_;
 };
 }  // namespace fsm
 }  // namespace toolbox

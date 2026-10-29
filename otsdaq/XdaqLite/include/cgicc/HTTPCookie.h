@@ -9,8 +9,14 @@ namespace cgicc
 class HTTPCookie
 {
   public:
-	HTTPCookie() : maxAge_(0), secure_(false) {}
-	HTTPCookie(const std::string& name, const std::string& value) : name_(name), value_(value), maxAge_(0), secure_(false) {}
+	HTTPCookie()
+	    : maxAge_(0)
+	    , secure_(false) {}
+	HTTPCookie(const std::string& name, const std::string& value)
+	    : name_(name)
+	    , value_(value)
+	    , maxAge_(0)
+	    , secure_(false) {}
 	std::string getName() const { return name_; }
 	std::string getValue() const { return value_; }
 	void        setMaxAge(unsigned long a) { maxAge_ = a; }

@@ -45,7 +45,8 @@ class NetGroup
 class ApplicationContext
 {
   public:
-	explicit ApplicationContext(const std::string& url) : context_(url) {}
+	explicit ApplicationContext(const std::string& url)
+	    : context_(url) {}
 
 	const ContextDescriptor* getContextDescriptor() const { return &context_; }
 	const Zone*              getDefaultZone() const { return &zone_; }
@@ -65,12 +66,12 @@ class ApplicationContext
 	xoap::MessageReference postSOAP(xoap::MessageReference msg, const ApplicationDescriptor& from, const ApplicationDescriptor& to);
 
   private:
-	ContextDescriptor                                       context_;
-	Zone                                                    zone_;
-	NetGroup                                                netGroup_;
-	std::vector<std::unique_ptr<ApplicationDescriptor>>     descriptors_;
-	std::vector<std::unique_ptr<ContextDescriptor>>         remoteContexts_;
-	std::vector<std::pair<unsigned int, Application*>>      localApps_;
+	ContextDescriptor                                   context_;
+	Zone                                                zone_;
+	NetGroup                                            netGroup_;
+	std::vector<std::unique_ptr<ApplicationDescriptor>> descriptors_;
+	std::vector<std::unique_ptr<ContextDescriptor>>     remoteContexts_;
+	std::vector<std::pair<unsigned int, Application*>>  localApps_;
 };
 }  // namespace xdaq
 
