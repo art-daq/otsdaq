@@ -48,6 +48,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -598,22 +599,28 @@ int main(int argc, char** argv)
 		handles[s.module] = h;
 	}
 	// Register every application descriptor before constructing any, as xdaq.exe does:
-	// Supervisor constructors enumerate the whole context (AllSupervisorInfo).
+	// Supervisor constructors enumerate the whole context (AllSupervisorInfo), and the
+	// Gateway's transition ordering (from XDAQContextTable) expects every enabled app to be
+	// present there. An app whose module could not be loaded keeps its descriptor but is
+	// never constructed; SOAP to it then fails with a clear message (postSOAP).
 	std::map<unsigned int, const xdaq::ApplicationDescriptor*> descriptors;
+	std::set<unsigned int>                                     unloadable;
 	for(const auto& s : specs)
 	{
-		if(!s.module.empty() && !handles.count(s.module))
-		{
-			std::cerr << "ots_lite_main: skipping " << s.className << " lid=" << s.lid
-			          << " (module not loaded)\n";
-			continue;
-		}
 		descriptors[s.lid] =
 		    ctx.context->addApplication(nullptr, s.className, s.lid, s.instance);
+		if(!s.module.empty() && !handles.count(s.module))
+		{
+			std::cerr << "ots_lite_main: not constructing " << s.className
+			          << " lid=" << s.lid
+			          << " (module not loaded); disable it in the Configuration GUI "
+			             "(XDAQApplicationTable Status=Off) to keep it out of transitions\n";
+			unloadable.insert(s.lid);
+		}
 	}
 	for(const auto& s : specs)
 	{
-		if(!descriptors.count(s.lid))
+		if(unloadable.count(s.lid))
 			continue;
 		// "ots::WizardSupervisor" -> namespaces + class, mangled as _ZN3ots16WizardSupervisor11instantiateEPN4xdaq15ApplicationStubE
 		std::string mangled = "_ZN";
