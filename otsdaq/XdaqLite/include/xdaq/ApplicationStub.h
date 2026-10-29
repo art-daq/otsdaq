@@ -10,7 +10,9 @@ namespace xdaq
 class ApplicationStub
 {
   public:
-	ApplicationStub(ApplicationContext* context, const ApplicationDescriptor* descriptor) : context_(context), descriptor_(descriptor) {}
+	ApplicationStub(ApplicationContext* context, const ApplicationDescriptor* descriptor)
+	    : context_(context)
+	    , descriptor_(descriptor) {}
 	ApplicationContext*          getContext() const { return context_; }
 	const ApplicationDescriptor* getDescriptor() const { return descriptor_; }
 

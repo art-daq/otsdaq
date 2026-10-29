@@ -6,9 +6,9 @@
 
 namespace xdata
 {
-typedef unsigned int UnsignedIntegerT;
+typedef unsigned int  UnsignedIntegerT;
 typedef unsigned long UnsignedLongT;
-typedef std::string StringT;
+typedef std::string   StringT;
 }  // namespace xdata
 
 #endif

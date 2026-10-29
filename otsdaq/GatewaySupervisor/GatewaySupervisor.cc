@@ -12691,8 +12691,9 @@ try
 
 			for(unsigned int i = 0; i < states.size(); ++i)  // get all states
 			{
-				stateStr[0]             = states[i];
-				xercesc::DOMElement* stateParent = xmlOut.addTextElementToData("state", stateStr);
+				stateStr[0] = states[i];
+				xercesc::DOMElement* stateParent =
+				    xmlOut.addTextElementToData("state", stateStr);
 
 				xmlOut.addTextElementToParent(
 				    "state_name", theStateMachine_.getStateName(states[i]), stateParent);
@@ -16185,7 +16186,7 @@ std::string GatewaySupervisor::getSubsystemLaunchRunType()
 	if(!subsystemLaunchRunTypeLoaded_)
 	{
 		subsystemLaunchRunTypeLoaded_ = true;
-		std::string   filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
+		std::string filepath          = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
 		                       SUBSYSTEM_LAUNCH_RUN_TYPE_FILE_NAME;
 		std::ifstream runTypeFile(filepath.c_str());
 		if(runTypeFile.is_open())
@@ -16205,7 +16206,7 @@ void GatewaySupervisor::setSubsystemLaunchRunType(const std::string& runType)
 	subsystemLaunchRunType_       = runType;
 	subsystemLaunchRunTypeLoaded_ = true;
 
-	std::string   filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
+	std::string filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
 	                       SUBSYSTEM_LAUNCH_RUN_TYPE_FILE_NAME;
 	std::ofstream runTypeFile(filepath.c_str());
 	if(!runTypeFile.is_open())

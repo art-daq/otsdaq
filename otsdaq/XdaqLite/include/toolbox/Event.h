@@ -12,7 +12,9 @@ class Event
   public:
 	typedef std::shared_ptr<Event> Reference;
 
-	Event(const std::string& type, void* originator = nullptr) : type_(type), originator_(originator) {}
+	Event(const std::string& type, void* originator = nullptr)
+	    : type_(type)
+	    , originator_(originator) {}
 	virtual ~Event() {}
 
 	std::string type() const { return type_; }

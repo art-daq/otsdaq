@@ -11,7 +11,9 @@ class FormEntry
 {
   public:
 	FormEntry() {}
-	FormEntry(const std::string& name, const std::string& value) : name_(name), value_(value) {}
+	FormEntry(const std::string& name, const std::string& value)
+	    : name_(name)
+	    , value_(value) {}
 
 	std::string getName() const { return name_; }
 	std::string getValue() const { return value_; }

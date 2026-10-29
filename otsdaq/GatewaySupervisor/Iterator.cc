@@ -73,7 +73,8 @@ void Iterator::logPlanEvent(const std::string& planName, const std::string& even
 std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct)
 {
 	if(iteratorStruct->commandIndex_ >= iteratorStruct->commands_.size())
-		return "#" + std::to_string(iteratorStruct->commandIndex_ + 1) + " (out of range)";
+		return "#" + std::to_string(iteratorStruct->commandIndex_ + 1) +
+		       " (out of range)";
 
 	const auto&       command = iteratorStruct->commands_[iteratorStruct->commandIndex_];
 	std::stringstream description;
@@ -86,12 +87,13 @@ std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct)
 	{
 		description << " (";
 		if(iteratorStruct->commandIndex_ < iteratorStruct->commandIterations_.size())
-			description << "run "
-			            << iteratorStruct->commandIterations_[iteratorStruct->commandIndex_]
-			            << " of this command; ";
+			description
+			    << "run "
+			    << iteratorStruct->commandIterations_[iteratorStruct->commandIndex_]
+			    << " of this command; ";
 		for(size_t i = 0; i < iteratorStruct->stepLabelStack_.size(); ++i)
-			description << (i ? ", " : "") << "loop '" << iteratorStruct->stepLabelStack_[i]
-			            << "' pass "
+			description << (i ? ", " : "") << "loop '"
+			            << iteratorStruct->stepLabelStack_[i] << "' pass "
 			            << (i < iteratorStruct->stepIndexStack_.size()
 			                    ? iteratorStruct->stepIndexStack_[i] + 1
 			                    : 1);
@@ -119,7 +121,8 @@ std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct)
 		for(const auto& param : command.params_)
 		{
 			if(isMacro &&
-			   param.first == IterateTable::commandExecuteMacroParams_.MacroArgumentString_)
+			   param.first ==
+			       IterateTable::commandExecuteMacroParams_.MacroArgumentString_)
 				continue;  // superseded by args=[...] above
 			description << (first ? "" : ", ") << param.first << "=" << param.second;
 			first = false;
@@ -280,15 +283,17 @@ try
 							         << ".'" << __E__;
 							__COUT__ << "Starting plan '" << theIteratorStruct.activePlan_
 							         << ".'" << __E__;
-							startPlanLog(theIteratorStruct.activePlan_);  // new file per run
+							startPlanLog(
+							    theIteratorStruct.activePlan_);  // new file per run
 							logPlanEvent(theIteratorStruct.activePlan_, "PLAN START");
 						}
 						else
 						{
 							theIteratorStruct.doResumeAction_ = true;
-							logPlanEvent(theIteratorStruct.activePlan_,
-							             "PLAN RESUME at command #" +
-							                 std::to_string(theIteratorStruct.commandIndex_ + 1));
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "PLAN RESUME at command #" +
+							        std::to_string(theIteratorStruct.commandIndex_ + 1));
 							__COUT__ << "Continuing plan '"
 							         << theIteratorStruct.activePlan_
 							         << "' at command index "
@@ -612,10 +617,11 @@ try
 							         << theIteratorStruct.activePlan_ << __E__;
 							__COUT__ << "Finished Iteration Plan '"
 							         << theIteratorStruct.activePlan_ << __E__;
-							logPlanEvent(theIteratorStruct.activePlan_,
-							             "PLAN FINISHED (" +
-							                 std::to_string(theIteratorStruct.commands_.size()) +
-							                 " commands)");
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "PLAN FINISHED (" +
+							        std::to_string(theIteratorStruct.commands_.size()) +
+							        " commands)");
 
 							__COUT__ << "Reverting track changes." << __E__;
 							ConfigurationInterface::setVersionTrackingEnabled(
@@ -650,17 +656,19 @@ try
 						{
 							theIteratorStruct.commandBusy_ = false;  // command complete
 
-							logPlanEvent(theIteratorStruct.activePlan_,
-							             "DONE  #" +
-							                 std::to_string(theIteratorStruct.commandIndex_ + 1) +
-							                 " " +
-							                 theIteratorStruct
-							                     .commands_[theIteratorStruct.commandIndex_]
-							                     .type_ +
-							                 " took " +
-							                 std::to_string(
-							                     time(0) - theIteratorStruct.commandLogStartTime_) +
-							                 " s");
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "DONE  #" +
+							        std::to_string(theIteratorStruct.commandIndex_ + 1) +
+							        " " +
+							        theIteratorStruct
+							            .commands_[theIteratorStruct.commandIndex_]
+							            .type_ +
+							        " took " +
+							        std::to_string(
+							            time(0) -
+							            theIteratorStruct.commandLogStartTime_) +
+							        " s");
 							++theIteratorStruct.commandIndex_;
 
 							__COUT__ << "Ready for next command. Done with "
@@ -686,11 +694,11 @@ try
 				__COUT_ERR__ << "Iterator command error (will pause for retry): "
 				             << e.what() << __E__;
 				theIteratorStruct.commandBusy_ = false;
-				logPlanEvent(theIteratorStruct.activePlan_,
-				             "ERROR " + describeCommand(&theIteratorStruct) + " after " +
-				                 std::to_string(time(0) -
-				                                theIteratorStruct.commandLogStartTime_) +
-				                 " s : " + e.what());
+				logPlanEvent(
+				    theIteratorStruct.activePlan_,
+				    "ERROR " + describeCommand(&theIteratorStruct) + " after " +
+				        std::to_string(time(0) - theIteratorStruct.commandLogStartTime_) +
+				        " s : " + e.what());
 
 				// retry will call startCommand again; undo this attempt's pass count
 				if(theIteratorStruct.commandIndex_ <
@@ -714,11 +722,11 @@ try
 			{
 				__COUT_ERR__ << "Iterator unknown error (will pause for retry)." << __E__;
 				theIteratorStruct.commandBusy_ = false;
-				logPlanEvent(theIteratorStruct.activePlan_,
-				             "ERROR " + describeCommand(&theIteratorStruct) + " after " +
-				                 std::to_string(time(0) -
-				                                theIteratorStruct.commandLogStartTime_) +
-				                 " s : unknown exception");
+				logPlanEvent(
+				    theIteratorStruct.activePlan_,
+				    "ERROR " + describeCommand(&theIteratorStruct) + " after " +
+				        std::to_string(time(0) - theIteratorStruct.commandLogStartTime_) +
+				        " s : unknown exception");
 
 				// retry will call startCommand again; undo this attempt's pass count
 				if(theIteratorStruct.commandIndex_ <
@@ -1266,15 +1274,15 @@ void Iterator::startCommandChooseFSM(IteratorWorkLoopStruct* iteratorStruct,
 ///	before changing anything.
 void Iterator::startCommandSetupIncludedSubsystems(IteratorWorkLoopStruct* iteratorStruct,
                                                    const std::string&      mode,
-                                                   const std::string& subsystemsCSV)
+                                                   const std::string&      subsystemsCSV)
 {
 	__COUTV__(mode);
 	__COUTV__(subsystemsCSV);
 
 	if(mode != "Set" && mode != "Add" && mode != "Remove")
 	{
-		__SS__ << "Unrecognized Mode '" << mode
-		       << "' for " << IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS
+		__SS__ << "Unrecognized Mode '" << mode << "' for "
+		       << IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS
 		       << "; expected Set, Add, or Remove." << __E__;
 		__SS_THROW__;
 	}
@@ -1294,7 +1302,8 @@ void Iterator::startCommandSetupIncludedSubsystems(IteratorWorkLoopStruct* itera
 	for(const auto& name : requestedSubsystems)
 		if(knownSubsystems.find(name) == knownSubsystems.end())
 		{
-			__SS__ << "Subsystem '" << name << "' is not a known remote subsystem of "
+			__SS__ << "Subsystem '" << name
+			       << "' is not a known remote subsystem of "
 			          "this Gateway. Known subsystems: "
 			       << StringMacros::setToString(knownSubsystems) << __E__;
 			__SS_THROW__;
@@ -1302,8 +1311,8 @@ void Iterator::startCommandSetupIncludedSubsystems(IteratorWorkLoopStruct* itera
 
 	for(auto& remoteGatewayApp : supervisor->remoteGatewayApps_)
 	{
-		const bool listed =
-		    requestedSubsystems.find(remoteGatewayApp.appInfo.name) != requestedSubsystems.end();
+		const bool listed = requestedSubsystems.find(remoteGatewayApp.appInfo.name) !=
+		                    requestedSubsystems.end();
 		bool include = remoteGatewayApp.fsm_included;
 		if(mode == "Set")
 			include = listed;

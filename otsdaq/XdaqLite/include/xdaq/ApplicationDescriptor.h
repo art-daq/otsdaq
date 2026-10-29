@@ -12,7 +12,10 @@ class ApplicationDescriptor
 {
   public:
 	ApplicationDescriptor(const std::string& className, unsigned int localId, unsigned int instance, const ContextDescriptor* context)
-	    : className_(className), localId_(localId), instance_(instance), context_(context)
+	    : className_(className)
+	    , localId_(localId)
+	    , instance_(instance)
+	    , context_(context)
 	{
 	}
 	std::string              getClassName() const { return className_; }

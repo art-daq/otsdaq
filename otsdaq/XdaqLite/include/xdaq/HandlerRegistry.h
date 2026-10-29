@@ -29,17 +29,17 @@ class Application;
 
 struct PendingHTTPHandler
 {
-	void*                                                  owner;
-	std::string                                            name;
-	std::function<void(xgi::Input*, xgi::Output*)>         fn;
-	std::function<Application*()>                          resolve;  // dynamic_cast owner -> Application, valid once complete
+	void*                                          owner;
+	std::string                                    name;
+	std::function<void(xgi::Input*, xgi::Output*)> fn;
+	std::function<Application*()>                  resolve;  // dynamic_cast owner -> Application, valid once complete
 };
 struct PendingSOAPHandler
 {
-	void*                                                                                       owner;
-	std::string                                                                                 command;
-	std::function<std::shared_ptr<xoap::SOAPMessage>(std::shared_ptr<xoap::SOAPMessage>)>      fn;
-	std::function<Application*()>                                                               resolve;
+	void*                                                                                 owner;
+	std::string                                                                           command;
+	std::function<std::shared_ptr<xoap::SOAPMessage>(std::shared_ptr<xoap::SOAPMessage>)> fn;
+	std::function<Application*()>                                                         resolve;
 };
 
 std::vector<PendingHTTPHandler>& pendingHTTPHandlers();

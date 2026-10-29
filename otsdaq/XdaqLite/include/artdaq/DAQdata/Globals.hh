@@ -45,6 +45,6 @@ class Globals
 }  // namespace artdaq
 
 #define metricMan artdaq::Globals::metricMan_
-#define app_name artdaq::Globals::app_name_
+#define app_name  artdaq::Globals::app_name_
 
 #endif

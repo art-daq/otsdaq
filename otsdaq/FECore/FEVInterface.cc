@@ -580,7 +580,7 @@ try
 			if(txBuffer.size())
 				__FE_COUT__ << "txBuffer sz=" << txBuffer.size() << __E__;
 
-			// Use artdaq Metric Manager if available,
+				// Use artdaq Metric Manager if available,
 #ifndef OTS_LITE
 			if(channel->monitoringEnabled && metricMan && metricMan->Running() &&
 			   universalAddressSize_ <= 8)

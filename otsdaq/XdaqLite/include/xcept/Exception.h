@@ -13,11 +13,19 @@ class Exception : public std::exception
 {
   public:
 	Exception(const std::string& name, const std::string& message, const std::string& module = "", int line = 0, const std::string& function = "")
-	    : name_(name), message_(message), module_(module), line_(line), function_(function)
+	    : name_(name)
+	    , message_(message)
+	    , module_(module)
+	    , line_(line)
+	    , function_(function)
 	{
 	}
 	Exception(const std::string& name, const std::string& message, const std::string& module, int line, const std::string& function, Exception& previous)
-	    : name_(name), message_(message + " <- " + previous.message()), module_(module), line_(line), function_(function)
+	    : name_(name)
+	    , message_(message + " <- " + previous.message())
+	    , module_(module)
+	    , line_(line)
+	    , function_(function)
 	{
 	}
 	virtual ~Exception() noexcept {}
@@ -36,17 +44,17 @@ class Exception : public std::exception
 };
 }  // namespace xcept
 
-#define XCEPT_DECLARE(NAMESPACE, NAME) \
-	namespace NAMESPACE                \
-	{                                  \
-	class NAME : public xcept::Exception \
-	{                                  \
-	  public:                          \
+#define XCEPT_DECLARE(NAMESPACE, NAME)     \
+	namespace NAMESPACE                    \
+	{                                      \
+	class NAME : public xcept::Exception   \
+	{                                      \
+	  public:                              \
 		using xcept::Exception::Exception; \
-	};                                 \
+	};                                     \
 	}
 
-#define XCEPT_RAISE(EXCEPTION, MSG) throw EXCEPTION(#EXCEPTION, MSG, __FILE__, __LINE__, __FUNCTION__)
+#define XCEPT_RAISE(EXCEPTION, MSG)             throw EXCEPTION(#EXCEPTION, MSG, __FILE__, __LINE__, __FUNCTION__)
 #define XCEPT_RETHROW(EXCEPTION, MSG, PREVIOUS) throw EXCEPTION(#EXCEPTION, MSG, __FILE__, __LINE__, __FUNCTION__, PREVIOUS)
 #define XCEPT_ASSERT(COND, EXCEPTION, MSG) \
 	if(!(COND))                            \

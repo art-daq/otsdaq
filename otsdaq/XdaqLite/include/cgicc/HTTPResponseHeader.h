@@ -13,7 +13,10 @@ namespace cgicc
 class HTTPResponseHeader
 {
   public:
-	HTTPResponseHeader(const std::string& version = "HTTP/1.1", int status = 200, const std::string& reason = "OK") : version_(version), status_(status), reason_(reason) {}
+	HTTPResponseHeader(const std::string& version = "HTTP/1.1", int status = 200, const std::string& reason = "OK")
+	    : version_(version)
+	    , status_(status)
+	    , reason_(reason) {}
 
 	HTTPResponseHeader& addHeader(const std::string& name, const std::string& value)
 	{

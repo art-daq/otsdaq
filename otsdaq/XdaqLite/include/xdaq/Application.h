@@ -39,10 +39,11 @@ namespace xdaq
 class Application : public virtual toolbox::lang::Class
 {
   public:
-	typedef std::function<void(xgi::Input*, xgi::Output*)>                   HTTPHandler;
-	typedef std::function<xoap::MessageReference(xoap::MessageReference)>   SOAPHandler;
+	typedef std::function<void(xgi::Input*, xgi::Output*)>                HTTPHandler;
+	typedef std::function<xoap::MessageReference(xoap::MessageReference)> SOAPHandler;
 
-	explicit Application(ApplicationStub* stub) : stub_(stub) {}
+	explicit Application(ApplicationStub* stub)
+	    : stub_(stub) {}
 	virtual ~Application() {}
 
 	const ApplicationDescriptor* getApplicationDescriptor() const { return stub_->getDescriptor(); }
@@ -53,8 +54,8 @@ class Application : public virtual toolbox::lang::Class
 	void bindSOAP(const std::string& command, SOAPHandler h) { soapHandlers_[command] = h; }
 
 	// dispatch (called by the HTTP server in ots_lite_main / ApplicationContext::postSOAP)
-	bool                   dispatchHTTP(const std::string& name, xgi::Input* in, xgi::Output* out);
-	xoap::MessageReference dispatchSOAP(xoap::MessageReference msg);
+	bool                                      dispatchHTTP(const std::string& name, xgi::Input* in, xgi::Output* out);
+	xoap::MessageReference                    dispatchSOAP(xoap::MessageReference msg);
 	const std::map<std::string, HTTPHandler>& getHTTPHandlers()
 	{
 		claimPendingHandlers();
