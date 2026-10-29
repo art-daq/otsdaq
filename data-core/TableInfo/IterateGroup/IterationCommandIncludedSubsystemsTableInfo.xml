@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+	<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TableInfo.xsd">
+		<TABLE Name="IterationCommandIncludedSubsystemsTable">
+			<VIEW Name="ITERATION_COMMAND_INCLUDED_SUBSYSTEMS_TABLE" Type="File,Database,DatabaseTest" Description="Parameters%20for%20the%20SETUP_INCLUDED_SUBSYSTEMS%20Iterator%20command%3A%20which%20remote%20subsystems%20follow%20the%20top-level%20Gateway%20FSM%20commands.%20Mode%20Set%20replaces%20the%20included%20list%20with%20Subsystems%3B%20Add%20makes%20sure%20they%20are%20included%3B%20Remove%20makes%20sure%20they%20are%20not.%20Subsystems%20is%20a%20comma-separated%20list%20of%20subsystem%20names.">
+				<COLUMN Type="UID" 	 Name="CommandID" 	 StorageName="COMMAND_ID" 		DataType="VARCHAR2" 		DataChoices=""/>
+				<COLUMN Type="FixedChoiceData" 	 Name="Mode" 	 StorageName="MODE" 		DataType="VARCHAR2" 		DataChoices="Set,Add,Remove"/>
+				<COLUMN Type="Data" 	 Name="Subsystems" 	 StorageName="SUBSYSTEMS" 		DataType="VARCHAR2" 		DataChoices=""/>
+				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="VARCHAR2" 		DataChoices=""/>
+				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="VARCHAR2" 		DataChoices=""/>
+				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE" 		DataChoices=""/>
+			</VIEW>
+		</TABLE>
+	</ROOT>

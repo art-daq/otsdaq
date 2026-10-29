@@ -52,6 +52,7 @@ class IterateTable : public TableBase
 	static const std::string COMMAND_PAUSE;
 	static const std::string COMMAND_RESUME;
 	static const std::string COMMAND_HALT;
+	static const std::string COMMAND_SETUP_INCLUDED_SUBSYSTEMS;
 
 	static const std::string ITERATE_TABLE;
 	static const std::string PLAN_TABLE;
@@ -81,6 +82,7 @@ class IterateTable : public TableBase
 		m[COMMAND_PAUSE]                  = "";  ///< no parameters
 		m[COMMAND_RESUME]                 = "";  ///< no parameters
 		m[COMMAND_HALT]                   = "";  ///< no parameters
+		m[COMMAND_SETUP_INCLUDED_SUBSYSTEMS] = "IterationCommandIncludedSubsystemsTable";
 		return m;
 	}
 
@@ -92,6 +94,12 @@ class IterateTable : public TableBase
 	{
 		const std::string NameOfFSM_ = "NameOfStateMachine";  ///< by default ""
 	} commandChooseFSMParams_;
+	/// which remote subsystems follow the top-level Gateway FSM commands
+	static struct CommandSetupIncludedSubsystemsParams
+	{
+		const std::string Mode_       = "Mode";        ///< Set | Add | Remove
+		const std::string Subsystems_ = "Subsystems";  ///< comma-separated subsystem names
+	} commandSetupIncludedSubsystemsParams_;
 	/// shared by all Configure commands: when true and the FSM is already Configured,
 	///	leave it as-is instead of Halt + re-Configure
 	static struct CommandConfigureActiveParams
