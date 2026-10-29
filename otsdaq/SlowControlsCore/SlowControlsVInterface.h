@@ -5,6 +5,7 @@
 #include "otsdaq/FiniteStateMachine/VStateMachine.h"
 
 #include <array>
+#include <functional>
 #include <string>
 
 // clang-format off

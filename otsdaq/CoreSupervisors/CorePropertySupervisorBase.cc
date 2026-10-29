@@ -187,7 +187,13 @@ CorePropertySupervisorBase::~CorePropertySupervisorBase(void)
 {
 	__SUP_COUT__ << "Destructor." << __E__;
 
-	CorePropertySupervisorBase::indicateOtsDead(this);
+	// If the constructor threw before the configuration manager was built, there is no
+	// context tree to read the port/host from; marking ots dead would dereference null and
+	// turn the constructor's exception into a segfault that hides it.
+	if(theConfigurationManager_)
+		CorePropertySupervisorBase::indicateOtsDead(this);
+	else
+		CorePropertySupervisorBase::indicateOtsDead(nullptr);
 
 	if(theConfigurationManager_)
 		delete theConfigurationManager_;

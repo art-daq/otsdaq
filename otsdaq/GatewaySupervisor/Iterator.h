@@ -99,6 +99,8 @@ class Iterator
 
 		bool pluginInitialized_ = false;  ///< plugin initialize() has run for the current ownership
 
+		time_t commandLogStartTime_ = 0;  ///< when the current command's START line was logged, for the DONE/ERROR duration
+
 		bool remoteConfigureQueued_ = false;  ///< remote Configure needs Halt first when not Halted/Initial
 
 		std::vector<OutputFile> outputFiles_;  ///< files written by macro commands so far in this plan
@@ -144,6 +146,8 @@ class Iterator
 	static bool checkCommand(IteratorWorkLoopStruct* iteratorStruct);
 
 	static void startCommandChooseFSM(IteratorWorkLoopStruct* iteratorStruct, const std::string& fsmName);
+	/// Set/Add/Remove the remote subsystems that follow top-level FSM commands (mirrors setRemoteSubsystemFsmControl)
+	static void startCommandSetupIncludedSubsystems(IteratorWorkLoopStruct* iteratorStruct, const std::string& mode, const std::string& subsystemsCSV);
 
 	static bool commandSkipsIfConfigured(IteratorWorkLoopStruct* iteratorStruct);
 	static void startCommandConfigureActive(IteratorWorkLoopStruct* iteratorStruct);
@@ -222,6 +226,15 @@ class Iterator
 	/// desktop icon name ("<folder>/<caption>") of the remote subsystem's Code Editor, or "" if none is known;
 	///	locks theSupervisor_->remoteGatewayAppsMutex_ (caller must NOT hold it)
 	static std::string findRemoteCodeEditorIconName(GatewaySupervisor* supervisor, const std::string& targetSubsystem);
+
+	/// open a new plan log file for this run: $OTSDAQ_LOG_DIR/IteratorPlanLog.<start time>.txt
+	static void startPlanLog(const std::string& planName);
+	/// append one timestamped line to the current plan log file so users can see
+	///	afterwards which commands ran, with which parameters; never throws
+	///	(a logging failure must not stop a plan)
+	static void logPlanEvent(const std::string& planName, const std::string& event);
+	/// "#<n> TYPE [pass=.. loops=label:i,..] [-> subsystem] [targets=..] {param=value, ...}"
+	static std::string describeCommand(IteratorWorkLoopStruct* iteratorStruct);
 
 	static bool haltIterator(Iterator*               iterator,
 	                         IteratorWorkLoopStruct* iteratorStruct = 0,
