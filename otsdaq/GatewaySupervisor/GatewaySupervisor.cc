@@ -48,6 +48,7 @@ using namespace ots;
 #define FSM_USERS_PREFERENCES_FILETYPE "pref"
 
 #define REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME "RemoteSubsystems.txt"
+#define SUBSYSTEM_LAUNCH_RUN_TYPE_FILE_NAME "SubsystemLaunchRunType.txt"
 
 #define TLVL_StateChanger		 	9	// = TLVL_DEBUG + 9
 #define TLVL_RemoteIcons		 	10	// = TLVL_DEBUG + 10
@@ -11840,6 +11841,7 @@ try
 	// getStateMachine
 	// getStateMachineLastLogEntry
 	// stateMachinePreferences
+	// subsystemLaunchRunType		-- system-wide Subsystem Launch run type (FSM name), shared by all users
 	// getStateMachineNames
 	// getCurrentState
 	// cancelStateMachineTransition
@@ -11989,6 +11991,19 @@ try
 				theWebUsers_.getGenericPreference(
 				    userInfo.uid_, DEFAULT_FSM_NAME, &xmlOut);
 			}
+		}
+		else if(requestType == "subsystemLaunchRunType")
+		{
+			//system-wide run type (FSM name) for the Subsystem Launch page, shared by all users
+			std::string set = CgiDataUtilities::getData(cgiIn, "set");
+			if(set == "1")
+			{
+				std::string runType = CgiDataUtilities::getData(cgiIn, "runType");
+				__SUP_COUTV__(runType);
+				setSubsystemLaunchRunType(runType);
+			}
+			xmlOut.addTextElementToData("subsystemLaunchRunType",
+			                            getSubsystemLaunchRunType());
 		}
 		else if(requestType == "getAliasList")
 		{
@@ -13277,6 +13292,10 @@ try
 					    << __E__;
 				}
 			}  //end SubsystemCommon lists
+
+			//system-wide Subsystem Launch run type, so every open page follows a change by any user
+			xmlOut.addTextElementToData("subsystemLaunchRunType",
+			                            getSubsystemLaunchRunType());
 
 			{  //get system status
 
@@ -16155,6 +16174,49 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 
 	settingsFile.close();
 }  // end saveRemoteGatewaySettings()
+
+//==============================================================================
+/// getSubsystemLaunchRunType
+///		Returns the system-wide Subsystem Launch run type (FSM name), shared by all users.
+///		Loaded from file on first access so it survives Gateway restarts.
+std::string GatewaySupervisor::getSubsystemLaunchRunType()
+{
+	std::lock_guard<std::mutex> lock(subsystemLaunchRunTypeMutex_);
+	if(!subsystemLaunchRunTypeLoaded_)
+	{
+		subsystemLaunchRunTypeLoaded_ = true;
+		std::string   filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
+		                       SUBSYSTEM_LAUNCH_RUN_TYPE_FILE_NAME;
+		std::ifstream runTypeFile(filepath.c_str());
+		if(runTypeFile.is_open())
+		{
+			std::getline(runTypeFile, subsystemLaunchRunType_);
+			runTypeFile.close();
+		}
+		__SUP_COUTV__(subsystemLaunchRunType_);
+	}
+	return subsystemLaunchRunType_;
+}  // end getSubsystemLaunchRunType()
+
+//==============================================================================
+void GatewaySupervisor::setSubsystemLaunchRunType(const std::string& runType)
+{
+	std::lock_guard<std::mutex> lock(subsystemLaunchRunTypeMutex_);
+	subsystemLaunchRunType_       = runType;
+	subsystemLaunchRunTypeLoaded_ = true;
+
+	std::string   filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
+	                       SUBSYSTEM_LAUNCH_RUN_TYPE_FILE_NAME;
+	std::ofstream runTypeFile(filepath.c_str());
+	if(!runTypeFile.is_open())
+	{
+		__SUP_SS__ << "Cannot open Subsystem Launch run type file: " << filepath << __E__;
+		__SUP_SS_THROW__;
+	}
+	runTypeFile << runType << __E__;
+	runTypeFile.close();
+	__SUP_COUT__ << "Subsystem Launch run type set to '" << runType << "'" << __E__;
+}  // end setSubsystemLaunchRunType()
 
 //==============================================================================
 /// translateURLForRequestOrigin
