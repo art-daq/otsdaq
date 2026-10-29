@@ -1,9 +1,3 @@
-#include <dirent.h>
-#include <cassert>
-#include <iostream>
-#include <memory>
-#include <string>
-
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 // #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
@@ -11,6 +5,12 @@
 
 // Shared test utilities
 #include "otsdaq/Macros/TestUtilities.h"
+
+#include <dirent.h>
+#include <cassert>
+#include <iostream>
+#include <memory>
+#include <string>
 
 /// usage:
 /// otsdaq_flatten_system_aliases <baseFlatVersion> <pathToSwapIn (optional)>

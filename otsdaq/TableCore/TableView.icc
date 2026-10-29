@@ -263,9 +263,9 @@ void TableView::setValue(const T& value, unsigned int row, unsigned int col)
 	}
 	else
 	{
-		__SS__ << "\tUnrecognized view data type: " << columnsInfo_[col].getDataType()
+		__SS__ << "\tUnrecognized view data type: " << columnsInfo_[col].getDataType() // NOLINT
 		       << " in configuration " << tableName_
-		       << " at column=" << columnsInfo_[col].getName()
+		       << " at column=" << columnsInfo_[col].getName() // NOLINT
 		       << " for setValue with type '"
 		       << StringMacros::demangleTypeName(typeid(value).name()) << "'"
 		       << std::endl;

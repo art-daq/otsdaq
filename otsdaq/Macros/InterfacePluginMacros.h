@@ -1,10 +1,12 @@
 #ifndef OTSDAQ_OTSDAQ_MACROS_INTERFACEPLUGINMACROS_H_
 #define OTSDAQ_OTSDAQ_MACROS_INTERFACEPLUGINMACROS_H_
 
+#include "otsdaq/FECore/FEVInterface.h"
+
+#include "cetlib/compiler_macros.h"
+
 #include <memory>
 #include <string>
-#include "cetlib/compiler_macros.h"
-#include "otsdaq/FECore/FEVInterface.h"
 
 #ifndef EXTERN_C_FUNC_DECLARE_START
 #define EXTERN_C_FUNC_DECLARE_START extern "C" {

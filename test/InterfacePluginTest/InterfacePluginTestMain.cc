@@ -1,24 +1,15 @@
-// #include <otsdaq_demo/otsdaq-demo/FEInterfaces/FEWROtsUDPFSSRInterface.h>
-// #include <otsdaq_demo/otsdaq-demo/UserConfigurationDataFormats/FEWROtsUDPFSSRInterfaceConfiguration.h>
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "otsdaq/FECore/FEVInterfacesManager.h"
-// #include "otsdaq/TableDataFormats/TableGroupKey.h"
-
-// #include "otsdaq-demo/FEInterfaces/FEWOtsGenericInterface.h"
 #include "otsdaq/FECore/FEVInterface.h"
-
-#include <iostream>
-#include <memory>
-
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/FECore/MakeInterface.h"
 #include "otsdaq/TableCore/MakeTable.h"
 
-// #include "otsdaq-components/FEInterfaces/FEWOtsUDPFSSRInterface.h"
-// #include "otsdaq-components/FEInterfaces/FEWOtsUDPHCALInterface.h"
-
 // Shared test utilities
 #include "otsdaq/Macros/TestUtilities.h"
+
+#include <iostream>
+#include <memory>
 
 using namespace ots;
 

@@ -1,10 +1,10 @@
 #ifndef OTSDAQ_OTSDAQ_MACROS_SLOWCONTROLSPLUGINMACROS_H_
 #define OTSDAQ_OTSDAQ_MACROS_SLOWCONTROLSPLUGINMACROS_H_
 
+#include "otsdaq/SlowControlsCore/SlowControlsVInterface.h"
+
 #include <memory>
 #include <string>
-
-#include "otsdaq/SlowControlsCore/SlowControlsVInterface.h"
 
 #define DEFINE_OTS_SLOW_CONTROLS(klass)                       \
 	extern "C" ots::SlowControlsVInterface* make(             \

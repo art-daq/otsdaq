@@ -1,21 +1,13 @@
-// #define BOOST_TEST_MODULE ( databaseconfiguration test)
-
-// #include "boost/test/auto_unit_test.hpp"
+#include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
+#include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
+#include "artdaq-database/JsonDocument/JSONDocument.h"
+#include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
 
 #include <dirent.h>
 #include <cassert>
 #include <iostream>
 #include <memory>
 #include <string>
-#include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
-#include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
-// #include "otsdaq/TablePlugins/Configurations.h"
-// #include "otsdaq/TablePlugins/ConfigurationAliases.h"
-// #include "otsdaq/TablePlugins/FETable.h"
-// #include "otsdaq/PluginMakers/makeTable.h"
-// #include "otsdaq/PluginMakers/MakeInterface.h"
-#include "artdaq-database/JsonDocument/JSONDocument.h"
-#include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
 
 using namespace ots;
 

@@ -2,7 +2,7 @@
 #define OTSDAQ_OTSDAQ_MACROS_COUTMACROS_H_
 
 // clang-format off
-// NOLINTBEGIN(build/define_used) // Ignoring macro usage warnings in this file
+// NOLINTBEGIN(build/define_used, bugprone-reserved-identifier, cppcoreguidelines-macro-usage) // Ignoring macro usage warnings in this file
 
 
 #include <ctime>     //for time_t, time(), localtime_r(), strftime()
@@ -243,7 +243,7 @@ struct TimestampString
 }; //end TimestampString struct
 }  // end namespace ots
 
-// NOLINTEND(build/define_used)
+// NOLINTEND(build/define_used, bugprone-reserved-identifier, cppcoreguidelines-macro-usage) // Ignoring macro usage warnings in this file
 // clang-format on
 
 #endif  // OTSDAQ_OTSDAQ_MACROS_COUTMACROS_H_
