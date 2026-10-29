@@ -4,7 +4,9 @@
 #include "otsdaq/Macros/BinaryStringMacros.h"
 #include "otsdaq/NetworkUtilities/UDPDataStreamerBase.h"
 
+#ifndef OTS_LITE
 #include <TFormula.h>
+#endif
 
 #define TRACE_NAME "FEVInterface"
 #include <iostream>
@@ -579,6 +581,7 @@ try
 				__FE_COUT__ << "txBuffer sz=" << txBuffer.size() << __E__;
 
 			// Use artdaq Metric Manager if available,
+#ifndef OTS_LITE
 			if(channel->monitoringEnabled && metricMan && metricMan->Running() &&
 			   universalAddressSize_ <= 8)
 			{
@@ -636,6 +639,7 @@ try
 				            << " metricMan->Running()="
 				            << (metricMan && metricMan->Running()) << __E__;
 			}
+#endif  // OTS_LITE: no artdaq MetricManager, no TFormula
 
 			// make sure buffer hasn't exploded somehow
 			if(txBuffer.size() > txBufferSz)
