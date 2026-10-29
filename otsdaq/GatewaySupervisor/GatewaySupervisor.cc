@@ -48,6 +48,7 @@ using namespace ots;
 #define FSM_USERS_PREFERENCES_FILETYPE "pref"
 
 #define REMOTE_SUBSYSTEM_SETTINGS_FILE_NAME "RemoteSubsystems.txt"
+#define SUBSYSTEM_LAUNCH_RUN_TYPE_FILE_NAME "SubsystemLaunchRunType.txt"
 
 #define TLVL_StateChanger		 	9	// = TLVL_DEBUG + 9
 #define TLVL_RemoteIcons		 	10	// = TLVL_DEBUG + 10
@@ -5812,6 +5813,16 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	fsmWindowName             = StringMacros::decodeURIComponent(fsmWindowName);
 	std::string currentState  = theStateMachine_.getCurrentStateName();
 
+	// the Iterator command handler takes one parameter; for an experiment plugin
+	// command pack "<plugin>:<pluginCommand>" into it (see Iterator::handlePluginCommand)
+	std::string iteratorParameter = fsmWindowName;
+	if(command == "iteratePluginCommand")
+		iteratorParameter = StringMacros::decodeURIComponent(
+		                        CgiDataUtilities::getOrPostData(cgiIn, "plugin")) +
+		                    ":" +
+		                    StringMacros::decodeURIComponent(
+		                        CgiDataUtilities::getOrPostData(cgiIn, "pluginCommand"));
+
 	__COUT__ << "Check for Handled by theIterator_, activeStateMachineWindowName_ = "
 	         << activeStateMachineWindowName_ << __E__;
 
@@ -5821,7 +5832,7 @@ void GatewaySupervisor::stateMachineXgiHandler(xgi::Input* in, xgi::Output* out)
 	    (activeStateMachineName_ == fsmName &&
 	     command.find("iterate") ==
 	         0) /* for combo iterate/fsm GUIs like SubsystemLaunch.js */) &&
-	   theIterator_.handleCommandRequest(xmlOut, command, fsmWindowName))
+	   theIterator_.handleCommandRequest(xmlOut, command, iteratorParameter))
 	{
 		__COUT__ << "Handled by theIterator_" << __E__;
 		xmlOut.outputXmlDocument((std::ostringstream*)out, false);
@@ -5972,6 +5983,20 @@ try
 			}
 			break;
 		}
+	}
+
+	/////////////////
+	// Iterator plugin ownership (do here because remote commands bypass
+	//	stateMachineXgiHandler and therefore the Iterator command handler): while a
+	//	plugin is touching hardware, no DAQ transition may run, local or from a parent.
+	if(theIterator_.isPluginBlockingTransitions())
+	{
+		__SS__ << "Error - Can not accept '" << command
+		       << "' because an Iterator plugin owns the Iterator and may be accessing "
+		          "hardware. Stop the plugin first (iteratePluginCommand ... Stop) and "
+		          "wait for the Iterator to report Inactive."
+		       << __E__;
+		__SS_THROW__;
 	}
 
 	/////////////////
@@ -11816,6 +11841,7 @@ try
 	// getStateMachine
 	// getStateMachineLastLogEntry
 	// stateMachinePreferences
+	// subsystemLaunchRunType		-- system-wide Subsystem Launch run type (FSM name), shared by all users
 	// getStateMachineNames
 	// getCurrentState
 	// cancelStateMachineTransition
@@ -11965,6 +11991,19 @@ try
 				theWebUsers_.getGenericPreference(
 				    userInfo.uid_, DEFAULT_FSM_NAME, &xmlOut);
 			}
+		}
+		else if(requestType == "subsystemLaunchRunType")
+		{
+			//system-wide run type (FSM name) for the Subsystem Launch page, shared by all users
+			std::string set = CgiDataUtilities::getData(cgiIn, "set");
+			if(set == "1")
+			{
+				std::string runType = CgiDataUtilities::getData(cgiIn, "runType");
+				__SUP_COUTV__(runType);
+				setSubsystemLaunchRunType(runType);
+			}
+			xmlOut.addTextElementToData("subsystemLaunchRunType",
+			                            getSubsystemLaunchRunType());
 		}
 		else if(requestType == "getAliasList")
 		{
@@ -12652,8 +12691,9 @@ try
 
 			for(unsigned int i = 0; i < states.size(); ++i)  // get all states
 			{
-				stateStr[0]             = states[i];
-				DOMElement* stateParent = xmlOut.addTextElementToData("state", stateStr);
+				stateStr[0] = states[i];
+				xercesc::DOMElement* stateParent =
+				    xmlOut.addTextElementToData("state", stateStr);
 
 				xmlOut.addTextElementToParent(
 				    "state_name", theStateMachine_.getStateName(states[i]), stateParent);
@@ -13253,6 +13293,10 @@ try
 					    << __E__;
 				}
 			}  //end SubsystemCommon lists
+
+			//system-wide Subsystem Launch run type, so every open page follows a change by any user
+			xmlOut.addTextElementToData("subsystemLaunchRunType",
+			                            getSubsystemLaunchRunType());
 
 			{  //get system status
 
@@ -16131,6 +16175,49 @@ void GatewaySupervisor::saveRemoteGatewaySettings() const
 
 	settingsFile.close();
 }  // end saveRemoteGatewaySettings()
+
+//==============================================================================
+/// getSubsystemLaunchRunType
+///		Returns the system-wide Subsystem Launch run type (FSM name), shared by all users.
+///		Loaded from file on first access so it survives Gateway restarts.
+std::string GatewaySupervisor::getSubsystemLaunchRunType()
+{
+	std::lock_guard<std::mutex> lock(subsystemLaunchRunTypeMutex_);
+	if(!subsystemLaunchRunTypeLoaded_)
+	{
+		subsystemLaunchRunTypeLoaded_ = true;
+		std::string filepath          = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
+		                       SUBSYSTEM_LAUNCH_RUN_TYPE_FILE_NAME;
+		std::ifstream runTypeFile(filepath.c_str());
+		if(runTypeFile.is_open())
+		{
+			std::getline(runTypeFile, subsystemLaunchRunType_);
+			runTypeFile.close();
+		}
+		__SUP_COUTV__(subsystemLaunchRunType_);
+	}
+	return subsystemLaunchRunType_;
+}  // end getSubsystemLaunchRunType()
+
+//==============================================================================
+void GatewaySupervisor::setSubsystemLaunchRunType(const std::string& runType)
+{
+	std::lock_guard<std::mutex> lock(subsystemLaunchRunTypeMutex_);
+	subsystemLaunchRunType_       = runType;
+	subsystemLaunchRunTypeLoaded_ = true;
+
+	std::string filepath = std::string(__ENV__("SERVICE_DATA_PATH")) + "/" +
+	                       SUBSYSTEM_LAUNCH_RUN_TYPE_FILE_NAME;
+	std::ofstream runTypeFile(filepath.c_str());
+	if(!runTypeFile.is_open())
+	{
+		__SUP_SS__ << "Cannot open Subsystem Launch run type file: " << filepath << __E__;
+		__SUP_SS_THROW__;
+	}
+	runTypeFile << runType << __E__;
+	runTypeFile.close();
+	__SUP_COUT__ << "Subsystem Launch run type set to '" << runType << "'" << __E__;
+}  // end setSubsystemLaunchRunType()
 
 //==============================================================================
 /// translateURLForRequestOrigin

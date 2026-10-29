@@ -52,6 +52,7 @@ class IterateTable : public TableBase
 	static const std::string COMMAND_PAUSE;
 	static const std::string COMMAND_RESUME;
 	static const std::string COMMAND_HALT;
+	static const std::string COMMAND_SETUP_INCLUDED_SUBSYSTEMS;
 
 	static const std::string ITERATE_TABLE;
 	static const std::string PLAN_TABLE;
@@ -63,24 +64,25 @@ class IterateTable : public TableBase
 	static std::map<std::string, std::string>       createCommandToTableMap()
 	{
 		std::map<std::string, std::string> m;
-		m[COMMAND_BEGIN_LABEL]            = "IterationCommandBeginLabelTable";
-		m[COMMAND_CHOOSE_FSM]             = "IterationCommandChooseFSMTable";
-		m[COMMAND_CONFIGURE_ACTIVE_GROUP] = "IterationCommandConfigureAliasTable";  ///< SystemAlias unused; carries SkipIfAlreadyConfigured
-		m[COMMAND_CONFIGURE_ALIAS]        = "IterationCommandConfigureAliasTable";
-		m[COMMAND_CONFIGURE_GROUP]        = "IterationCommandConfigureGroupTable";
-		m[COMMAND_ACTIVATE_ALIAS]         = "IterationCommandConfigureAliasTable";
-		m[COMMAND_ACTIVATE_GROUP]         = "IterationCommandConfigureGroupTable";
-		m[COMMAND_EXECUTE_FE_MACRO]       = "IterationCommandExecuteFEMacroTable";
-		m[COMMAND_EXECUTE_MM_MACRO]       = "IterationCommandExecuteMacroTable";
-		m[COMMAND_MODIFY_ACTIVE_GROUP]    = "IterationCommandModifyGroupTable";
-		m[COMMAND_REPEAT_LABEL]           = "IterationCommandRepeatLabelTable";
-		m[COMMAND_RUN]                    = "IterationCommandRunTable";
-		m[COMMAND_WAIT]                   = "IterationCommandRunTable";
-		m[COMMAND_START]                  = "";  ///< no parameters
-		m[COMMAND_STOP]                   = "";  ///< no parameters
-		m[COMMAND_PAUSE]                  = "";  ///< no parameters
-		m[COMMAND_RESUME]                 = "";  ///< no parameters
-		m[COMMAND_HALT]                   = "";  ///< no parameters
+		m[COMMAND_BEGIN_LABEL]               = "IterationCommandBeginLabelTable";
+		m[COMMAND_CHOOSE_FSM]                = "IterationCommandChooseFSMTable";
+		m[COMMAND_CONFIGURE_ACTIVE_GROUP]    = "IterationCommandConfigureAliasTable";  ///< SystemAlias unused; carries SkipIfAlreadyConfigured
+		m[COMMAND_CONFIGURE_ALIAS]           = "IterationCommandConfigureAliasTable";
+		m[COMMAND_CONFIGURE_GROUP]           = "IterationCommandConfigureGroupTable";
+		m[COMMAND_ACTIVATE_ALIAS]            = "IterationCommandConfigureAliasTable";
+		m[COMMAND_ACTIVATE_GROUP]            = "IterationCommandConfigureGroupTable";
+		m[COMMAND_EXECUTE_FE_MACRO]          = "IterationCommandExecuteFEMacroTable";
+		m[COMMAND_EXECUTE_MM_MACRO]          = "IterationCommandExecuteMacroTable";
+		m[COMMAND_MODIFY_ACTIVE_GROUP]       = "IterationCommandModifyGroupTable";
+		m[COMMAND_REPEAT_LABEL]              = "IterationCommandRepeatLabelTable";
+		m[COMMAND_RUN]                       = "IterationCommandRunTable";
+		m[COMMAND_WAIT]                      = "IterationCommandRunTable";
+		m[COMMAND_START]                     = "";  ///< no parameters
+		m[COMMAND_STOP]                      = "";  ///< no parameters
+		m[COMMAND_PAUSE]                     = "";  ///< no parameters
+		m[COMMAND_RESUME]                    = "";  ///< no parameters
+		m[COMMAND_HALT]                      = "";  ///< no parameters
+		m[COMMAND_SETUP_INCLUDED_SUBSYSTEMS] = "IterationCommandIncludedSubsystemsTable";
 		return m;
 	}
 
@@ -92,6 +94,12 @@ class IterateTable : public TableBase
 	{
 		const std::string NameOfFSM_ = "NameOfStateMachine";  ///< by default ""
 	} commandChooseFSMParams_;
+	/// which remote subsystems follow the top-level Gateway FSM commands
+	static struct CommandSetupIncludedSubsystemsParams
+	{
+		const std::string Mode_       = "Mode";        ///< Set | Add | Remove
+		const std::string Subsystems_ = "Subsystems";  ///< comma-separated subsystem names
+	} commandSetupIncludedSubsystemsParams_;
 	/// shared by all Configure commands: when true and the FSM is already Configured,
 	///	leave it as-is instead of Halt + re-Configure
 	static struct CommandConfigureActiveParams

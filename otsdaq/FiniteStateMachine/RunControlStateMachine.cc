@@ -745,6 +745,33 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 			theStateMachine_.execTransition(command, message);
 		}
 
+		// structured configured-group identity (the Detail text is for humans only)
+		if(command == RunControlStateMachine::HALT_TRANSITION_NAME ||
+		   command == RunControlStateMachine::ABORT_TRANSITION_NAME ||
+		   command == RunControlStateMachine::INIT_TRANSITION_NAME)
+			configuredGroup_.clear();
+		else if(command == RunControlStateMachine::CONFIGURE_TRANSITION_NAME &&
+		        !subIterationWorkFlag_ && !iterationWorkFlag_ &&
+		        !subsystemIterationWorkFlag_ &&
+		        theStateMachine_.getCurrentStateName() ==
+		            RunControlStateMachine::CONFIGURED_STATE_NAME)
+		{
+			try
+			{
+				// keep the translated command alive: getParameters() returns a
+				// reference into it, so binding that to a const& of a temporary dangles
+				const SOAPCommand     soapCommand = SOAPUtilities::translate(message);
+				const SOAPParameters& parameters  = soapCommand.getParameters();
+				configuredGroup_ =
+				    parameters.getValue("ConfigurationTableGroupName") + "(" +
+				    parameters.getValue("ConfigurationTableGroupKey") + ")";
+			}
+			catch(...)
+			{
+				configuredGroup_.clear();  // Gateway has no name/key translation
+			}
+		}
+
 		if(subIterationWorkFlag_)  // sub-iteration has highest priority
 		{
 			__GEN_COUTV__(subIterationWorkFlag_);

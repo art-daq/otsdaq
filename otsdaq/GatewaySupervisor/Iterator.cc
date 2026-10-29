@@ -1,10 +1,13 @@
 #include "otsdaq/GatewaySupervisor/Iterator.h"
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
 #include "otsdaq/GatewaySupervisor/GatewaySupervisor.h"
+#include "otsdaq/GatewaySupervisor/MakeIteratorPlugin.h"
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
 #include "otsdaq/WebUsersUtilities/WebUsers.h"
 
+#include <ctime>    //for strftime in plan log filename
+#include <fstream>  //for plan log
 #include <iostream>
 #include <thread>  //for std::thread
 
@@ -19,8 +22,115 @@ using namespace ots;
 	     : (std::string(__ENV__("SERVICE_DATA_PATH")))) +       \
 	    "/IteratorPlanHistory.hist"
 
-const std::string Iterator::RESERVED_GEN_PLAN_NAME   = "---GENERATED_PLAN---";
-const std::string Iterator::RESERVED_NOISE_PLAN_NAME = "---TRACKER_NOISE_RUN---";
+const std::string Iterator::RESERVED_GEN_PLAN_NAME = "---GENERATED_PLAN---";
+
+// one log file per plan run: $OTSDAQ_LOG_DIR/IteratorPlanLog.<start time>.txt
+static std::mutex  planLogMutex;
+static std::string planLogFilename;
+
+//==============================================================================
+void Iterator::startPlanLog(const std::string& planName)
+{
+	std::lock_guard<std::mutex> lock(planLogMutex);
+	std::string                 logDirectory;
+	if(getenv("OTSDAQ_LOG_DIR"))
+		logDirectory = getenv("OTSDAQ_LOG_DIR");
+	else
+		logDirectory = std::string(__ENV__("USER_DATA")) + "/Logs";
+	const time_t now = time(0);
+	char         timestamp[32];
+	strftime(timestamp, sizeof(timestamp), "%Y%m%d-%H%M%S", localtime(&now));
+	planLogFilename = logDirectory + "/IteratorPlanLog." + timestamp + ".txt";
+	__COUT_INFO__ << "Iterator plan '" << planName << "' log file: " << planLogFilename
+	              << __E__;
+}  // end startPlanLog()
+
+//==============================================================================
+void Iterator::logPlanEvent(const std::string& planName, const std::string& event)
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(planLogMutex);
+		if(planLogFilename.empty())
+			return;  // no plan started since the Gateway came up
+		std::ofstream planLog(planLogFilename, std::ios::app);
+		if(!planLog)
+		{
+			__COUT_WARN__ << "Could not open Iterator plan log: " << planLogFilename
+			              << __E__;
+			return;
+		}
+		planLog << StringMacros::getTimestampString() << " | " << planName << " | "
+		        << event << "\n";
+	}
+	catch(...)
+	{
+		__COUT_WARN__ << "Failed writing Iterator plan log entry: " << event << __E__;
+	}
+}  // end logPlanEvent()
+
+//==============================================================================
+std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct)
+{
+	if(iteratorStruct->commandIndex_ >= iteratorStruct->commands_.size())
+		return "#" + std::to_string(iteratorStruct->commandIndex_ + 1) +
+		       " (out of range)";
+
+	const auto&       command = iteratorStruct->commands_[iteratorStruct->commandIndex_];
+	std::stringstream description;
+	description << "#" << (iteratorStruct->commandIndex_ + 1) << " " << command.type_;
+
+	// loop position in plain words, e.g.
+	//	(run 3 of this command; loop 'Voltages' pass 2, loop 'Channels' pass 1)
+	// labels are the user's own BEGIN_LABEL names, quoted; passes count from 1
+	if(iteratorStruct->stepLabelStack_.size())
+	{
+		description << " (";
+		if(iteratorStruct->commandIndex_ < iteratorStruct->commandIterations_.size())
+			description
+			    << "run "
+			    << iteratorStruct->commandIterations_[iteratorStruct->commandIndex_]
+			    << " of this command; ";
+		for(size_t i = 0; i < iteratorStruct->stepLabelStack_.size(); ++i)
+			description << (i ? ", " : "") << "loop '"
+			            << iteratorStruct->stepLabelStack_[i] << "' pass "
+			            << (i < iteratorStruct->stepIndexStack_.size()
+			                    ? iteratorStruct->stepIndexStack_[i] + 1
+			                    : 1);
+		description << ")";
+	}
+	if(command.targetSubsystem_.size())
+		description << " -> " << command.targetSubsystem_;
+	if(command.targets_.size())
+	{
+		description << " targets=";
+		for(size_t i = 0; i < command.targets_.size(); ++i)
+			description << (i ? "," : "") << command.targets_[i].table_ << "/"
+			            << command.targets_[i].UID_;
+	}
+	// macro commands: the stored MacroArgumentString holds the starting values; the
+	// values actually sent on this pass (after loop stepping) are in macroArgsSummary_
+	const bool isMacro = command.type_ == IterateTable::COMMAND_EXECUTE_FE_MACRO ||
+	                     command.type_ == IterateTable::COMMAND_EXECUTE_MM_MACRO;
+	if(isMacro && iteratorStruct->macroArgsSummary_.size())
+		description << " args=[" << iteratorStruct->macroArgsSummary_ << "]";
+	if(command.params_.size())
+	{
+		description << " {";
+		bool first = true;
+		for(const auto& param : command.params_)
+		{
+			if(isMacro &&
+			   param.first ==
+			       IterateTable::commandExecuteMacroParams_.MacroArgumentString_)
+				continue;  // superseded by args=[...] above
+			description << (first ? "" : ", ") << param.first << "=" << param.second;
+			first = false;
+		}
+		description << "}";
+	}
+	return description.str();
+}  // end describeCommand()
 
 //==============================================================================
 Iterator::Iterator(GatewaySupervisor* supervisor)
@@ -173,10 +283,17 @@ try
 							         << ".'" << __E__;
 							__COUT__ << "Starting plan '" << theIteratorStruct.activePlan_
 							         << ".'" << __E__;
+							startPlanLog(
+							    theIteratorStruct.activePlan_);  // new file per run
+							logPlanEvent(theIteratorStruct.activePlan_, "PLAN START");
 						}
 						else
 						{
 							theIteratorStruct.doResumeAction_ = true;
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "PLAN RESUME at command #" +
+							        std::to_string(theIteratorStruct.commandIndex_ + 1));
 							__COUT__ << "Continuing plan '"
 							         << theIteratorStruct.activePlan_
 							         << "' at command index "
@@ -237,37 +354,8 @@ try
 
 			}  // end command handling and iterator mutex
 
-			if(theIteratorStruct.activePlan_ == Iterator::RESERVED_NOISE_PLAN_NAME)
-			{
-				if(theIteratorStruct.doHaltAction_)
-					iterator->finishNoiseRunIterationPlan(&theIteratorStruct);
-				else if(theIteratorStruct.running_)
-				{
-					try
-					{
-						iterator->stepNoiseRun(&theIteratorStruct);
-					}
-					catch(const std::exception& e)
-					{
-						std::lock_guard<std::mutex> lock(iterator->accessMutex_);
-						iterator->errorMessage_        = e.what();
-						iterator->activePlanIsRunning_ = false;
-						// Retain Iterator ownership on error until the operator acknowledges Stop.
-						__COUT_ERR__ << "NoiseRun stopped: " << e.what() << __E__;
-					}
-					catch(...)
-					{
-						std::lock_guard<std::mutex> lock(iterator->accessMutex_);
-						iterator->errorMessage_ =
-						    "Unknown NoiseRun failure; inspect frontend logs before "
-						    "restarting.";
-						iterator->activePlanIsRunning_ = false;
-					}
-				}
-				else
-					std::this_thread::sleep_for(std::chrono::milliseconds(100));
-				continue;
-			}
+			if(iterator->runPluginPlan(&theIteratorStruct))
+				continue;  // an experiment plugin owns the Iterator this pass
 
 			////////////////
 			////////////////
@@ -344,6 +432,9 @@ try
 				__COUT__ << "Paused plan '" << theIteratorStruct.activePlan_
 				         << "' at command index " << theIteratorStruct.commandIndex_
 				         << ". " << __E__;
+				logPlanEvent(theIteratorStruct.activePlan_,
+				             "PLAN PAUSED before command #" +
+				                 std::to_string(theIteratorStruct.commandIndex_ + 1));
 
 				continue;  // resume workloop
 			}
@@ -371,6 +462,9 @@ try
 
 				theIteratorStruct.doHaltAction_ = false;  // clear
 
+				logPlanEvent(theIteratorStruct.activePlan_,
+				             "PLAN HALTED by user at command #" +
+				                 std::to_string(theIteratorStruct.commandIndex_ + 1));
 				iterator->haltIterator(iterator, &theIteratorStruct);
 
 				//			//last ditch effort to make sure FSM is halted
@@ -510,7 +604,11 @@ try
 							                .type_
 							         << __E__;
 
+							theIteratorStruct.commandLogStartTime_ = time(0);
 							iterator->startCommand(&theIteratorStruct);
+							// after startCommand so pass/loop counters are current
+							logPlanEvent(theIteratorStruct.activePlan_,
+							             "START " + describeCommand(&theIteratorStruct));
 						}
 						else if(theIteratorStruct.commandIndex_ ==
 						        theIteratorStruct.commands_.size())  // Done!
@@ -519,6 +617,11 @@ try
 							         << theIteratorStruct.activePlan_ << __E__;
 							__COUT__ << "Finished Iteration Plan '"
 							         << theIteratorStruct.activePlan_ << __E__;
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "PLAN FINISHED (" +
+							        std::to_string(theIteratorStruct.commands_.size()) +
+							        " commands)");
 
 							__COUT__ << "Reverting track changes." << __E__;
 							ConfigurationInterface::setVersionTrackingEnabled(
@@ -553,6 +656,19 @@ try
 						{
 							theIteratorStruct.commandBusy_ = false;  // command complete
 
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "DONE  #" +
+							        std::to_string(theIteratorStruct.commandIndex_ + 1) +
+							        " " +
+							        theIteratorStruct
+							            .commands_[theIteratorStruct.commandIndex_]
+							            .type_ +
+							        " took " +
+							        std::to_string(
+							            time(0) -
+							            theIteratorStruct.commandLogStartTime_) +
+							        " s");
 							++theIteratorStruct.commandIndex_;
 
 							__COUT__ << "Ready for next command. Done with "
@@ -578,6 +694,11 @@ try
 				__COUT_ERR__ << "Iterator command error (will pause for retry): "
 				             << e.what() << __E__;
 				theIteratorStruct.commandBusy_ = false;
+				logPlanEvent(
+				    theIteratorStruct.activePlan_,
+				    "ERROR " + describeCommand(&theIteratorStruct) + " after " +
+				        std::to_string(time(0) - theIteratorStruct.commandLogStartTime_) +
+				        " s : " + e.what());
 
 				// retry will call startCommand again; undo this attempt's pass count
 				if(theIteratorStruct.commandIndex_ <
@@ -601,6 +722,11 @@ try
 			{
 				__COUT_ERR__ << "Iterator unknown error (will pause for retry)." << __E__;
 				theIteratorStruct.commandBusy_ = false;
+				logPlanEvent(
+				    theIteratorStruct.activePlan_,
+				    "ERROR " + describeCommand(&theIteratorStruct) + " after " +
+				        std::to_string(time(0) - theIteratorStruct.commandLogStartTime_) +
+				        " s : unknown exception");
 
 				// retry will call startCommand again; undo this attempt's pass count
 				if(theIteratorStruct.commandIndex_ <
@@ -734,7 +860,8 @@ try
 	    type == IterateTable::COMMAND_RUN || type == IterateTable::COMMAND_WAIT ||
 	    type == IterateTable::COMMAND_BEGIN_LABEL ||
 	    type == IterateTable::COMMAND_REPEAT_LABEL ||
-	    type == IterateTable::COMMAND_CHOOSE_FSM))
+	    type == IterateTable::COMMAND_CHOOSE_FSM ||
+	    type == IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS))
 	{
 		__SS__ << "Command type '" << type << "' can not target a remote subsystem ('"
 		       << targetSubsystem << "'). Clear the TargetSubsystem for this command."
@@ -752,6 +879,14 @@ try
 		    iteratorStruct,
 		    iteratorStruct->commands_[iteratorStruct->commandIndex_]
 		        .params_[IterateTable::commandChooseFSMParams_.NameOfFSM_]);
+	}
+	else if(type == IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS)
+	{
+		auto& params = iteratorStruct->commands_[iteratorStruct->commandIndex_].params_;
+		return startCommandSetupIncludedSubsystems(
+		    iteratorStruct,
+		    params[IterateTable::commandSetupIncludedSubsystemsParams_.Mode_],
+		    params[IterateTable::commandSetupIncludedSubsystemsParams_.Subsystems_]);
 	}
 	else if(type == IterateTable::COMMAND_CONFIGURE_ACTIVE_GROUP)
 	{
@@ -949,9 +1084,10 @@ try
 		// do nothing
 		return true;
 	}
-	else if(type == IterateTable::COMMAND_CHOOSE_FSM)
+	else if(type == IterateTable::COMMAND_CHOOSE_FSM ||
+	        type == IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS)
 	{
-		// do nothing
+		// do nothing, completed in start
 		return true;
 	}
 	else if(type == IterateTable::COMMAND_CONFIGURE_ALIAS ||
@@ -1126,6 +1262,73 @@ void Iterator::startCommandChooseFSM(IteratorWorkLoopStruct* iteratorStruct,
 
 	__COUT__ << "fsmNextRunNumber_  = " << iteratorStruct->fsmNextRunNumber_ << __E__;
 }  // end startCommandChooseFSM()
+
+//==============================================================================
+/// startCommandSetupIncludedSubsystems
+///	Same effect as the "Included" checkboxes in the Subsystem Launch page
+///	(GatewaySupervisor "setRemoteSubsystemFsmControl", controlType "include"):
+///		Set    -> exactly the listed subsystems are included, every other one excluded
+///		Add    -> the listed subsystems become included; others untouched
+///		Remove -> the listed subsystems become excluded; others untouched
+///	Every listed name must be a known remote subsystem, otherwise the command fails
+///	before changing anything.
+void Iterator::startCommandSetupIncludedSubsystems(IteratorWorkLoopStruct* iteratorStruct,
+                                                   const std::string&      mode,
+                                                   const std::string&      subsystemsCSV)
+{
+	__COUTV__(mode);
+	__COUTV__(subsystemsCSV);
+
+	if(mode != "Set" && mode != "Add" && mode != "Remove")
+	{
+		__SS__ << "Unrecognized Mode '" << mode << "' for "
+		       << IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS
+		       << "; expected Set, Add, or Remove." << __E__;
+		__SS_THROW__;
+	}
+
+	std::set<std::string> requestedSubsystems;
+	for(const auto& name : StringMacros::getVectorFromString(subsystemsCSV, {','}))
+		if(name.size())
+			requestedSubsystems.insert(name);
+
+	GatewaySupervisor*          supervisor = iteratorStruct->theIterator_->theSupervisor_;
+	std::lock_guard<std::mutex> lock(supervisor->remoteGatewayAppsMutex_);
+
+	// validate first so a typo cannot leave the system half-changed
+	std::set<std::string> knownSubsystems;
+	for(const auto& remoteGatewayApp : supervisor->remoteGatewayApps_)
+		knownSubsystems.insert(remoteGatewayApp.appInfo.name);
+	for(const auto& name : requestedSubsystems)
+		if(knownSubsystems.find(name) == knownSubsystems.end())
+		{
+			__SS__ << "Subsystem '" << name
+			       << "' is not a known remote subsystem of "
+			          "this Gateway. Known subsystems: "
+			       << StringMacros::setToString(knownSubsystems) << __E__;
+			__SS_THROW__;
+		}
+
+	for(auto& remoteGatewayApp : supervisor->remoteGatewayApps_)
+	{
+		const bool listed = requestedSubsystems.find(remoteGatewayApp.appInfo.name) !=
+		                    requestedSubsystems.end();
+		bool include = remoteGatewayApp.fsm_included;
+		if(mode == "Set")
+			include = listed;
+		else if(listed)
+			include = (mode == "Add");
+		if(include != remoteGatewayApp.fsm_included)
+			__COUT_INFO__ << (include ? "Including" : "Excluding") << " subsystem '"
+			              << remoteGatewayApp.appInfo.name
+			              << "' in top-level FSM commands (Iterator "
+			              << IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS << " "
+			              << mode << ")." << __E__;
+		remoteGatewayApp.fsm_included = include;
+	}
+
+	supervisor->saveRemoteGatewaySettings();  // persist like the launch page does
+}  // end startCommandSetupIncludedSubsystems()
 
 //==============================================================================
 /// return true if an action was attempted
@@ -2594,14 +2797,21 @@ try
 {
 	bool handledCommand = false;
 	__COUTTV__(command);
-	if(command == "iterateNoiseRunStart")
+	if(command == "iteratePluginCommand")
 	{
-		playNoiseRunIterationPlan(xmldoc);
-		handledCommand = true;
-	}
-	else if(command == "iterateNoiseRunStop")
-	{
-		stopNoiseRunIterationPlan(xmldoc);
+		// parameter is "<pluginName>:<pluginCommand>" (packed by stateMachineXgiHandler)
+		const size_t separator = parameter.find(':');
+		if(separator == std::string::npos || separator == 0 ||
+		   separator + 1 >= parameter.size())
+		{
+			__SS__
+			    << "Malformed iteratePluginCommand parameter '" << parameter
+			    << "'; expected 'plugin=<Name>&pluginCommand=<Command>' in the request."
+			    << __E__;
+			__SS_THROW__;
+		}
+		handlePluginCommand(
+		    xmldoc, parameter.substr(0, separator), parameter.substr(separator + 1));
 		handledCommand = true;
 	}
 	else if(command == "iteratePlay")
@@ -2716,12 +2926,15 @@ void Iterator::playIterationPlan(HttpXmlDocument& xmldoc, const std::string& pla
 {
 	__COUT__ << "Attempting to play iteration plan '" << planName << ".'" << __E__;
 
-	if(planName == Iterator::RESERVED_GEN_PLAN_NAME ||
-	   planName == Iterator::RESERVED_NOISE_PLAN_NAME)
+	bool reservedByPlugin;
 	{
-		__SS__ << "Illegal use of reserved iteration plan name '"
-		       << Iterator::RESERVED_GEN_PLAN_NAME << "!' Please select a different name."
-		       << __E__;
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		reservedByPlugin = activePlugin_ && planName == activePlugin_->getPlanName();
+	}
+	if(planName == Iterator::RESERVED_GEN_PLAN_NAME || reservedByPlugin)
+	{
+		__SS__ << "Illegal use of reserved iteration plan name '" << planName
+		       << "!' Please select a different name." << __E__;
 		__SS_THROW__;
 	}
 
@@ -2814,8 +3027,12 @@ void Iterator::playIterationPlanPrivate(HttpXmlDocument&   xmldoc,
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
 
-	tracker_noise_run::require(!noiseRunOwned_,
-	                           "NoiseRun owns the Iterator. Use NoiseRun Stop first.");
+	if(activePlugin_)
+	{
+		__SS__ << "Iterator plugin '" << activePlugin_->getPluginName()
+		       << "' owns the Iterator; stop it first." << __E__;
+		__SS_THROW__;
+	}
 
 	if(!activePlanIsRunning_ && !commandPlay_ && iteratorBusy_ && activePlanName_ != "" &&
 	   activePlanName_ != planName)
@@ -2882,8 +3099,14 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
 
-	tracker_noise_run::require(!noiseRunOwned_,
-	                           "NoiseRun supports Stop rather than Pause.");
+	if(activePlugin_)
+	{
+		__SS__
+		    << "Iterator plugin '" << activePlugin_->getPluginName()
+		    << "' owns the Iterator and does not support Pause; send it a Stop command."
+		    << __E__;
+		__SS_THROW__;
+	}
 
 	if(workloopRunning_ && activePlanIsRunning_ && !commandPause_)
 	{
@@ -2906,9 +3129,17 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 //==============================================================================
 void Iterator::haltIterationPlan(HttpXmlDocument& xmldoc)
 {
-	if(noiseRunOwned_)
+	// activePlugin_ is written by the worker under accessMutex_ (finishPluginPlan);
+	// snapshot its name under the same mutex, then release before the command locks again
+	std::string owningPluginName;
 	{
-		stopNoiseRunIterationPlan(xmldoc);
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		if(activePlugin_)
+			owningPluginName = activePlugin_->getPluginName();
+	}
+	if(owningPluginName.size())
+	{
+		handlePluginCommand(xmldoc, owningPluginName, "Halt");
 		return;
 	}
 	__COUT__ << "Attempting to halt iteration plan '" << activePlanName_ << ".'" << __E__;
@@ -2931,11 +3162,8 @@ void Iterator::haltIterationPlan(HttpXmlDocument& xmldoc)
 		commandHalt_ = true;
 
 		// clear
-		if(!noiseRunOwned_)
-		{
-			activePlanName_     = "";
-			activeCommandIndex_ = -1;
-		}
+		activePlanName_     = "";
+		activeCommandIndex_ = -1;
 	}
 	else  // no thread, so halt (and reset Error') without command to thread
 	{
@@ -3008,7 +3236,7 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 		                              genPlanDurationSeconds_);
 	}
 
-	if(noiseRunOwned_)
+	if(activePlugin_)
 		xmldoc.addTextElementToData("active_plan_status",
 		                            errorMessage_.empty() ? "Running" : "Error");
 	else if(activePlanIsRunning_ && iteratorBusy_)
@@ -3031,19 +3259,16 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 	else
 		xmldoc.addTextElementToData("active_plan_status", "Inactive");
 
-	xmldoc.addTextElementToData("noise_run_supported", "1");
-	xmldoc.addTextElementToData("noise_run_fsm", theSupervisor_->activeStateMachineName_);
-	xmldoc.addTextElementToData("noise_run_owned", noiseRunOwned_ ? "1" : "0");
-	xmldoc.addNumberElementToData("noise_run_scans", noiseRunScans_);
-	xmldoc.addTextElementToData("noise_run_last_summary", noiseRunLastSummary_);
-	xmldoc.addTextElementToData("noise_run_excluded_rocs", noiseRunExcluded_);
-	xmldoc.addTextElementToData("noise_run_state",
-	                            !noiseRunOwned_          ? "Inactive"
-	                            : !errorMessage_.empty() ? "Error"
-	                            : commandHalt_           ? "Stopping"
-	                            : noiseRunScans_         ? "Running"
-	                                                     : "Starting");
 	xmldoc.addTextElementToData("error_message", errorMessage_);
+
+	// experiment plugin status: appended only while a plugin owns the Iterator
+	xmldoc.addTextElementToData("active_plugin",
+	                            activePlugin_ ? activePlugin_->getPluginName() : "");
+	if(activePlugin_)
+	{
+		IteratorPluginContext context = makePluginContext(nullptr);
+		activePlugin_->addStatus(xmldoc, context);
+	}
 }  //end getIterationPlanStatus()
 
 //==============================================================================
@@ -3679,6 +3904,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	__COUT__ << "startRemoteCommandMacro: '" << macroName << "' targeting '"
 	         << targetSubsystem << "' isFEMacro=" << isFEMacro << __E__;
 	__COUTV__(inputArgs);
+	iteratorStruct->macroArgsSummary_ =
+	    macroArgsSummary(inputArgs);  // actual per-pass values, for the plan log
 
 	if(command.targets_.size() == 0)
 	{
@@ -4178,4 +4405,240 @@ std::string Iterator::findRemoteCodeEditorIconName(GatewaySupervisor* supervisor
 	return "";
 }  // end findRemoteCodeEditorIconName()
 
-#include "otsdaq/GatewaySupervisor/IteratorNoiseRun.icc"
+//==============================================================================
+// ~~ experiment Iterator plugins ~~
+//	A plugin runs as a reserved Iterator plan. The Iterator does the bookkeeping that
+//	a normal plan would get from startCommand/checkCommand: taking the window name,
+//	marking the Iterator busy, driving the worker thread, and releasing on finish.
+//	The plugin decides, through owns(), whether a command took or released ownership.
+
+//==============================================================================
+IteratorPluginContext Iterator::makePluginContext(IteratorWorkLoopStruct* iteratorStruct)
+{
+	IteratorPluginContext context;
+	context.supervisor           = theSupervisor_;
+	context.configurationManager = iteratorStruct ? iteratorStruct->cfgMgr_ : nullptr;
+	context.stopRequested        = [this, iteratorStruct]() {
+        std::lock_guard<std::mutex> lock(accessMutex_);
+        return commandHalt_ || (iteratorStruct && iteratorStruct->doHaltAction_);
+	};
+	context.setError = [this](const std::string& message) {
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		errorMessage_ = message;
+	};
+	context.setActiveCommandType = [this](const std::string& commandType) {
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		activeCommandType_      = commandType;
+		activeCommandIndex_     = 0;
+		activeNumberOfCommands_ = 1;
+		activeCommandStartTime_ = time(nullptr);
+	};
+	return context;
+}  // end makePluginContext()
+
+//==============================================================================
+void Iterator::handlePluginCommand(HttpXmlDocument&   xmldoc,
+                                   const std::string& pluginName,
+                                   const std::string& pluginCommand)
+{
+	__COUT__ << "Iterator plugin command '" << pluginCommand << "' for plugin '"
+	         << pluginName << "'" << __E__;
+
+	std::unique_ptr<IteratorPluginVInterface> freshPlugin;
+	bool                                      ownedBefore;
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+
+		if(activePlugin_ && activePlugin_->getPluginName() != pluginName)
+		{
+			__SS__ << "Iterator plugin '" << activePlugin_->getPluginName()
+			       << "' owns the Iterator; stop it before commanding plugin '"
+			       << pluginName << "'." << __E__;
+			__SS_THROW__;
+		}
+		if(!activePlugin_)
+		{
+			if(iteratorBusy_ || activePlanIsRunning_ || commandPlay_ || commandHalt_)
+			{
+				__SS__ << "Iterator is busy with plan '" << activePlanName_
+				       << "'. Stop its current plan before commanding plugin '"
+				       << pluginName << "'." << __E__;
+				__SS_THROW__;
+			}
+			try
+			{
+				freshPlugin = makeIteratorPlugin(pluginName);  // new instance per use
+			}
+			catch(const std::exception& e)
+			{
+				__SS__ << "Iterator plugin '" << pluginName
+				       << "' is not available in this build: " << e.what() << __E__;
+				__SS_THROW__;
+			}
+			__COUT_INFO__ << "Created Iterator plugin '" << pluginName << "'" << __E__;
+		}
+		ownedBefore = activePlugin_ && activePlugin_->owns();
+	}
+
+	IteratorPluginVInterface& plugin  = activePlugin_ ? *activePlugin_ : *freshPlugin;
+	IteratorPluginContext     context = makePluginContext(nullptr);
+	plugin.handleCommand(pluginCommand, xmldoc, context);  // throws on refusal
+
+	const bool ownsAfter = plugin.owns();
+
+	if(!ownedBefore && ownsAfter)
+	{
+		// plugin took ownership: run it as a reserved plan (mirrors playIterationPlan)
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		pluginPreviousWindow_ = theSupervisor_->activeStateMachineWindowName_;
+		theSupervisor_->activeStateMachineWindowName_ = "iterator";
+		lastFsmName_  = theSupervisor_->activeStateMachineName_;
+		activePlugin_ = std::move(freshPlugin);
+		iteratorBusy_ = true;
+		errorMessage_.clear();
+		activePlanName_ = activePlugin_->getPlanName();
+		commandPlay_    = true;
+		if(!workloopRunning_)
+		{
+			workloopRunning_ = true;
+			try
+			{
+				std::thread([](Iterator* iterator) { IteratorWorkLoop(iterator); }, this)
+				    .detach();
+			}
+			catch(...)
+			{
+				workloopRunning_ = false;
+				iteratorBusy_    = false;
+				commandPlay_     = false;
+				activePlanName_.clear();
+				theSupervisor_->activeStateMachineWindowName_ = pluginPreviousWindow_;
+				activePlugin_.reset();
+				throw;
+			}
+		}
+	}
+	else if(ownedBefore && !ownsAfter)
+	{
+		// plugin accepted a stop: let the worker settle and finish, or finish now if no thread
+		bool noThread;
+		{
+			std::lock_guard<std::mutex> lock(accessMutex_);
+			commandHalt_ = true;
+			noThread     = !workloopRunning_;
+		}
+		if(noThread)
+			// reached through stateMachineXgiHandler, which already holds the FSM mutex
+			finishPluginPlan(nullptr, true /*callerHoldsFsmMutex*/);
+	}
+	// else: a command that neither took nor released ownership (e.g. a query); the
+	// fresh instance, if any, is destroyed here
+}  // end handlePluginCommand()
+
+//==============================================================================
+bool Iterator::runPluginPlan(IteratorWorkLoopStruct* iteratorStruct)
+{
+	IteratorPluginVInterface* plugin;
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		plugin = activePlugin_.get();
+	}
+	if(!plugin || iteratorStruct->activePlan_ != plugin->getPlanName())
+		return false;
+
+	if(iteratorStruct->doHaltAction_)
+		finishPluginPlan(iteratorStruct, false /*callerHoldsFsmMutex*/);
+	else if(iteratorStruct->running_)
+	{
+		try
+		{
+			IteratorPluginContext context = makePluginContext(iteratorStruct);
+			if(!iteratorStruct->pluginInitialized_)
+			{
+				plugin->initialize(context);
+				iteratorStruct->pluginInitialized_ = true;
+				iteratorStruct->commandIndex_      = 0;
+			}
+			if(!context.stopRequested())
+				plugin->step(context);
+		}
+		catch(const std::exception& e)
+		{
+			std::lock_guard<std::mutex> lock(accessMutex_);
+			errorMessage_        = e.what();
+			activePlanIsRunning_ = false;
+			// the plugin keeps ownership on error until the operator sends a stop it accepts
+			__COUT_ERR__ << "Iterator plugin '" << plugin->getPluginName()
+			             << "' stopped: " << e.what() << __E__;
+		}
+		catch(...)
+		{
+			std::lock_guard<std::mutex> lock(accessMutex_);
+			errorMessage_ = "Unknown failure in Iterator plugin '" +
+			                plugin->getPluginName() +
+			                "'; inspect the logs before restarting.";
+			activePlanIsRunning_ = false;
+		}
+	}
+	else
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	return true;
+}  // end runPluginPlan()
+
+//==============================================================================
+void Iterator::finishPluginPlan(IteratorWorkLoopStruct* iteratorStruct,
+                                bool                    callerHoldsFsmMutex)
+{
+	// activeStateMachineWindowName_ is read by stateMachineXgiHandler under the FSM
+	// mutex, so restoring it needs that mutex too. Lock order everywhere in the
+	// Iterator is FSM mutex first, then accessMutex_.
+	std::unique_lock<std::mutex> fsmLock(theSupervisor_->stateMachineAccessMutex_,
+	                                     std::defer_lock);
+	if(!callerHoldsFsmMutex)
+		fsmLock.lock();
+
+	std::unique_ptr<IteratorPluginVInterface> finishedPlugin;
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		if(!activePlugin_)
+			return;
+		finishedPlugin = std::move(activePlugin_);
+	}
+
+	// plugin cleanup runs outside accessMutex_ (it may use the context callbacks)
+	IteratorPluginContext context = makePluginContext(iteratorStruct);
+	try
+	{
+		finishedPlugin->finish(context);
+	}
+	catch(const std::exception& e)
+	{
+		__COUT_ERR__ << "Iterator plugin '" << finishedPlugin->getPluginName()
+		             << "' finish() failed: " << e.what() << __E__;
+	}
+
+	std::lock_guard<std::mutex> lock(accessMutex_);
+	// Do not use haltIterator(): its normal cleanup can halt/configure the DAQ.
+	lastFinishedPlanName_ = finishedPlugin->getPlanName();
+	activePlanName_.clear();
+	activePlanIsRunning_ = false;
+	iteratorBusy_        = false;
+	commandPlay_         = false;
+	commandPause_        = false;
+	commandHalt_         = false;
+	activeCommandIndex_  = -1;
+	activeCommandType_.clear();
+	activeNumberOfCommands_ = 0;
+	if(theSupervisor_->activeStateMachineWindowName_ == "iterator")
+		theSupervisor_->activeStateMachineWindowName_ = pluginPreviousWindow_;
+	if(iteratorStruct)
+	{
+		iteratorStruct->activePlan_.clear();
+		iteratorStruct->commandIndex_      = -1;
+		iteratorStruct->doHaltAction_      = false;
+		iteratorStruct->pluginInitialized_ = false;
+	}
+	__COUT_INFO__ << "Iterator plugin '" << finishedPlugin->getPluginName()
+	              << "' released the Iterator." << __E__;
+	// finishedPlugin is destroyed on return; the next Start creates a new instance
+}  // end finishPluginPlan()

@@ -186,6 +186,10 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	{
 		return lastAttemptedConfigureGroup_;
 	}
+	/// "<name>(<key>)" of the group this application last Configured successfully;
+	///	kept across Stop/Start/Pause so a Configured-after-Stop app still reports it;
+	///	cleared on Halt/Initialize. Empty if never configured or key/name unknown.
+	const std::string& getConfiguredGroup(void) { return configuredGroup_; }
 
   protected:
 	FiniteStateMachine theStateMachine_;
@@ -203,6 +207,7 @@ class RunControlStateMachine : public virtual toolbox::lang::Class
 	toolbox::fsm::State lastIterationState_;
 	std::string         lastIterationCommand_;
 	std::string         lastAttemptedConfigureGroup_;
+	std::string         configuredGroup_;  ///< see getConfiguredGroup()
 	std::string         lastIterationResult_;
 	unsigned int        lastSubsystemIterationIndex_, lastIterationIndex_, lastSubIterationIndex_;
 

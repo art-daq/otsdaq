@@ -5,7 +5,7 @@
 #include <memory>  //for std::shared_ptr
 #include <mutex>   //for std::mutex
 #include <string>
-#include "otsdaq/GatewaySupervisor/TrackerNoiseRun.h"
+#include "otsdaq/GatewaySupervisor/IteratorPluginVInterface.h"
 #include "otsdaq/TablePlugins/IterateTable.h"
 #include "otsdaq/XmlUtilities/HttpXmlDocument.h"
 
@@ -27,7 +27,6 @@ class Iterator
 	~Iterator(void);
 
 	static const std::string RESERVED_GEN_PLAN_NAME;
-	static const std::string RESERVED_NOISE_PLAN_NAME;
 
 	/// an output file written by a macro command during a plan (local FE or remote MacroMaker)
 	struct OutputFile
@@ -98,9 +97,9 @@ class Iterator
 		std::vector<std::string> fsmCommandParameters_;
 		std::vector<bool>        targetsDone_;
 
-		bool noiseRunInitialized_ = false;
-		std::vector<tracker_noise_run::Target> noiseRunTargets_;
-		std::vector<std::string> noiseRunIdentity_;
+		bool pluginInitialized_ = false;  ///< plugin initialize() has run for the current ownership
+
+		time_t commandLogStartTime_ = 0;  ///< when the current command's START line was logged, for the DONE/ERROR duration
 
 		bool remoteConfigureQueued_ = false;  ///< remote Configure needs Halt first when not Halted/Initial
 
@@ -123,22 +122,32 @@ class Iterator
 
 	};  // end declaration of iterator workloop members
 
-	void playNoiseRunIterationPlan(HttpXmlDocument& xml);
-	void stopNoiseRunIterationPlan(HttpXmlDocument& xml);
-	void finishNoiseRunIterationPlan(IteratorWorkLoopStruct* s);
-	void initializeNoiseRun(IteratorWorkLoopStruct* s);
-	void guardNoiseRun(IteratorWorkLoopStruct* s);
-	void stepNoiseRun(IteratorWorkLoopStruct* s);
-	tracker_noise_run::Outputs runNoiseRunMacro(const tracker_noise_run::Target&, const std::string&, const std::string&, const std::vector<std::string>&);
-	bool noiseRunOwned_ = false;
-	uint64_t noiseRunScans_ = 0;
-	std::string noiseRunLastSummary_, noiseRunExcluded_, noiseRunPreviousWindow_;
+	/// ~~ experiment Iterator plugins (see IteratorPluginVInterface.h) ~~
+	///	Request:  StateMachine=iteratePluginCommand&plugin=<Name>&pluginCommand=<cmd>
+	///	A plugin is created by name when a command arrives and no plugin owns the
+	///	Iterator; it is destroyed after finish(). Guarded by accessMutex_.
+	void handlePluginCommand(HttpXmlDocument& xml, const std::string& pluginName, const std::string& pluginCommand);
+	/// worker-thread driver for the plugin's reserved plan; returns true if it consumed this loop pass
+	bool runPluginPlan(IteratorWorkLoopStruct* iteratorStruct);
+	/// runs finish() with the FSM mutex held (unless the caller already holds it), restores the window name, releases the plugin
+	void finishPluginPlan(IteratorWorkLoopStruct* iteratorStruct, bool callerHoldsFsmMutex);
+	IteratorPluginContext makePluginContext(IteratorWorkLoopStruct* iteratorStruct);
+	/// true while a plugin owns the Iterator and says DAQ transitions must wait; locks accessMutex_ (caller must NOT hold it)
+	bool isPluginBlockingTransitions(void)
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		return activePlugin_ && activePlugin_->blocksDaqTransitions();
+	}
+	std::unique_ptr<IteratorPluginVInterface> activePlugin_;  ///< non-null only while a plugin owns the Iterator
+	std::string pluginPreviousWindow_;  ///< activeStateMachineWindowName_ to restore when the plugin releases
 
 	static void IteratorWorkLoop(Iterator* iterator);
 	static void startCommand(IteratorWorkLoopStruct* iteratorStruct);
 	static bool checkCommand(IteratorWorkLoopStruct* iteratorStruct);
 
 	static void startCommandChooseFSM(IteratorWorkLoopStruct* iteratorStruct, const std::string& fsmName);
+	/// Set/Add/Remove the remote subsystems that follow top-level FSM commands (mirrors setRemoteSubsystemFsmControl)
+	static void startCommandSetupIncludedSubsystems(IteratorWorkLoopStruct* iteratorStruct, const std::string& mode, const std::string& subsystemsCSV);
 
 	static bool commandSkipsIfConfigured(IteratorWorkLoopStruct* iteratorStruct);
 	static void startCommandConfigureActive(IteratorWorkLoopStruct* iteratorStruct);
@@ -217,6 +226,15 @@ class Iterator
 	/// desktop icon name ("<folder>/<caption>") of the remote subsystem's Code Editor, or "" if none is known;
 	///	locks theSupervisor_->remoteGatewayAppsMutex_ (caller must NOT hold it)
 	static std::string findRemoteCodeEditorIconName(GatewaySupervisor* supervisor, const std::string& targetSubsystem);
+
+	/// open a new plan log file for this run: $OTSDAQ_LOG_DIR/IteratorPlanLog.<start time>.txt
+	static void startPlanLog(const std::string& planName);
+	/// append one timestamped line to the current plan log file so users can see
+	///	afterwards which commands ran, with which parameters; never throws
+	///	(a logging failure must not stop a plan)
+	static void logPlanEvent(const std::string& planName, const std::string& event);
+	/// "#<n> TYPE [pass=.. loops=label:i,..] [-> subsystem] [targets=..] {param=value, ...}"
+	static std::string describeCommand(IteratorWorkLoopStruct* iteratorStruct);
 
 	static bool haltIterator(Iterator*               iterator,
 	                         IteratorWorkLoopStruct* iteratorStruct = 0,
