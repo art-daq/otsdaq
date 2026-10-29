@@ -1897,6 +1897,7 @@ launchOTS() {
 	######################## setup DAQInterface ########################
 	####################################################################
 
+	if [ -z "${OTS_LITE}" ]; then # DAQInterface is artdaq; not built under OTS_LITE
 	export DAQINTERFACE_PROCESS_MANAGEMENT_METHOD="direct"
 	export DAQINTERFACE_FHICL_DIRECTORY=$USER_DATA/ARTDAQConfigurations
 	export DAQINTERFACE_KNOWN_BOARDREADERS_LIST=$USER_DATA/ARTDAQConfigurations/known_boardreaders_list
@@ -1924,6 +1925,7 @@ launchOTS() {
 		source $ARTDAQ_DAQINTERFACE_DIR/source_me >/dev/null 2>&1 #hide all output when remote (to hide tty warnings)
 	fi
 	export DAQINTERFACE_SETUP_FHICLCPP=$USER_DATA/ARTDAQConfigurations/.setup_fhiclcpp
+	fi # end OTS_LITE check
 
 	####################################################################
 	###################### end DAQInterface setup ######################
