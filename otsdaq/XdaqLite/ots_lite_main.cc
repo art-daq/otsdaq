@@ -592,17 +592,20 @@ int main(int argc, char** argv)
 	// Load every module first, then instantiate. As real xdaq.exe does, each class is found
 	// by the exported symbol ots::<Class>::instantiate(xdaq::ApplicationStub*) that
 	// XDAQ_INSTANTIATOR_IMPL defines; its Itanium-mangled name is built from the class name.
-	std::map<std::string, void*> handles;
+	std::map<std::string, void*>       handles;
+	std::map<std::string, std::string> loadErrors;  // module -> dlerror()
 	for(const auto& s : specs)
 	{
-		if(s.module.empty() || handles.count(s.module))
+		if(s.module.empty() || handles.count(s.module) || loadErrors.count(s.module))
 			continue;
 		void* h = dlopen(s.module.c_str(), RTLD_NOW | RTLD_GLOBAL);
 		if(!h)
 		{
 			// Not built under OTS_LITE (e.g. libVisualization.so); keep the rest of the context up.
+			const char* err      = dlerror();
+			loadErrors[s.module] = err ? err : "unknown dlopen error";
 			std::cerr << "ots_lite_main: WARNING cannot load " << s.module << ": "
-			          << dlerror() << " -- skipping applications in this module\n";
+			          << loadErrors[s.module] << " -- skipping applications in this module\n";
 			continue;
 		}
 		handles[s.module] = h;
@@ -620,10 +623,14 @@ int main(int argc, char** argv)
 		    ctx.context->addApplication(nullptr, s.className, s.lid, s.instance);
 		if(!s.module.empty() && !handles.count(s.module))
 		{
-			std::cerr << "ots_lite_main: not constructing " << s.className
-			          << " lid=" << s.lid
-			          << " (module not loaded); disable it in the Configuration GUI "
-			             "(XDAQApplicationTable Status=Off) to keep it out of transitions\n";
+			std::string reason = "Supervisor " + s.className + " [LID=" + std::to_string(s.lid) +
+			                     "] was not started: its library " + s.module +
+			                     " could not be loaded (" + loadErrors[s.module] +
+			                     "). This Supervisor is not available in the otsdaq lite build. "
+			                     "To run without it, set its Status to Off in the Configuration GUI "
+			                     "(XDAQApplicationTable), save and activate the context, and restart ots.";
+			std::cerr << "ots_lite_main: " << reason << "\n";
+			ctx.context->setUnavailableReason(s.lid, reason);
 			unloadable.insert(s.lid);
 		}
 	}

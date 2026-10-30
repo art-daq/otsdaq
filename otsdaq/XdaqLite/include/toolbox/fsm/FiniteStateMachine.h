@@ -4,6 +4,7 @@
 #ifndef _toolbox_fsm_FiniteStateMachine_h_
 #define _toolbox_fsm_FiniteStateMachine_h_
 
+#include <algorithm>
 #include <functional>
 #include <map>
 #include <set>
@@ -21,9 +22,14 @@ namespace fsm
 class FiniteStateMachine
 {
   public:
+	// xdaq pre-registers the failed state 'F' (named "failed"; otsdaq renames it "Failed") so it
+	// appears in getStates() -- the web GUI builds its list of legal states from that.
 	FiniteStateMachine()
 	    : currentState_(0)
-	    , initialState_(0) {}
+	    , initialState_(0)
+	{
+		addState('F', "failed");
+	}
 	virtual ~FiniteStateMachine() {}
 
 	// --- state definition -------------------------------------------------

@@ -141,6 +141,9 @@ xoap::MessageReference xdaq::ApplicationContext::postSOAP(
 	{
 		if(Application* local = getApplication(to.getLocalId()))
 			return local->dispatchSOAP(msg);
+		auto why = unavailable_.find(to.getLocalId());
+		if(why != unavailable_.end())
+			XCEPT_RAISE(xdaq::exception::Exception, why->second);
 		XCEPT_RAISE(xdaq::exception::Exception,
 		            "OTS_LITE: SOAP target lid=" + std::to_string(to.getLocalId()) +
 		                " (" + to.getClassName() +

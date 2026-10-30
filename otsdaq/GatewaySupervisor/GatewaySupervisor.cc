@@ -9619,8 +9619,9 @@ try
 			       << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
 			       << "].\n\n"
 			       << "Xoap message failure. Did the target Supervisor crash? Try "
-			          "re-initializing or restarting otsdaq."
-			       << __E__;
+			          "re-initializing or restarting otsdaq.\n\n"
+			       << "Reason given by the messaging layer: "
+			       << xcept::stdformat_exception_history(e) << __E__;
 			__COUT_ERR__ << ss.str();
 
 			try
@@ -9774,8 +9775,9 @@ try
 				       << "] in Context '" << appInfo.getContextName()
 				       << "' [URL=" << appInfo.getURL() << "].\n\n"
 				       << "Xoap message failure. Did the target Supervisor crash? Try "
-				          "re-initializing or restarting otsdaq."
-				       << __E__;
+				          "re-initializing or restarting otsdaq.\n\n"
+				       << "Reason given by the messaging layer: "
+				       << xcept::stdformat_exception_history(e) << __E__;
 				__COUT_ERR__ << ss.str();
 				XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 			}
