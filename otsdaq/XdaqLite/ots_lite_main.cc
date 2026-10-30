@@ -626,9 +626,9 @@ int main(int argc, char** argv)
 			std::string reason = "Supervisor " + s.className + " [LID=" + std::to_string(s.lid) +
 			                     "] was not started: its library " + s.module +
 			                     " could not be loaded (" + loadErrors[s.module] +
-			                     "). This Supervisor is not available in the otsdaq lite build. "
-			                     "To run without it, set its Status to Off in the Configuration GUI "
-			                     "(XDAQApplicationTable), save and activate the context, and restart ots.";
+			                     "). Either fix the missing .so (e.g. a compile error) or exclude this "
+			                     "Supervisor by setting its Status to Off in the Configuration GUI "
+			                     "(XDAQApplicationTable), then save and activate the context and restart ots.";
 			std::cerr << "ots_lite_main: " << reason << "\n";
 			ctx.context->setUnavailableReason(s.lid, reason);
 			unloadable.insert(s.lid);
