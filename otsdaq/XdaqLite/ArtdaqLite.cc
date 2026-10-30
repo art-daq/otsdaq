@@ -9,8 +9,10 @@
 #include <unistd.h>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 std::unique_ptr<artdaq::MetricManager> artdaq::Globals::metricMan_;
 std::string                            artdaq::Globals::app_name_;
@@ -36,16 +38,21 @@ void artdaq::ExceptionHandler(ExceptionHandlerRethrow decision,
 		throw;
 }
 
+// Follows artdaq-core: the destinations come from the fcl file named by ARTDAQ_LOG_FHICL
+// (otsdaq's MessageFacility*.fcl, which use the "OTS" and "UDP" destination types; lite
+// builds its own versions of those two plugins alongside this library). With no fcl, a
+// plain cout destination is used so messages still reach the ots quiet-run log.
 std::string artdaq::generateMessageFacilityConfiguration(char const* progname,
                                                          bool        useConsole,
                                                          bool        printDebug,
                                                          char const* fileExtraName)
 {
-	const char*        logRoot = getenv("ARTDAQ_LOG_ROOT");
-	const std::string  level   = printDebug ? "DEBUG" : "INFO";
+	const char*        logRoot  = getenv("ARTDAQ_LOG_ROOT");
+	const char*        logFhicl = getenv("ARTDAQ_LOG_FHICL");
+	const std::string  level    = printDebug ? "DEBUG" : "INFO";
 	std::ostringstream ss;
 	ss << "destinations : { ";
-	if(useConsole)
+	if(useConsole || logFhicl == nullptr)
 		ss << "console : { type : \"cout\" threshold : \"" << level << "\" } ";
 	if(logRoot != nullptr)
 	{
@@ -55,6 +62,13 @@ std::string artdaq::generateMessageFacilityConfiguration(char const* progname,
 		ss << "file : { type : \"file\" threshold : \"DEBUG\" filename : \""
 		   << (dir / (std::string(progname) + fileExtraName + "-%p.log")).string()
 		   << "\" append : false } ";
+	}
+	if(logFhicl != nullptr)
+	{
+		std::ifstream in(logFhicl);
+		if(!in)
+			throw std::runtime_error(std::string("Unable to open requested fhicl file ARTDAQ_LOG_FHICL=\"") + logFhicl + "\".");
+		ss << in.rdbuf();
 	}
 	ss << "} ";
 	return ss.str();

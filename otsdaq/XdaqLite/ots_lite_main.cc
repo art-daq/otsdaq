@@ -518,6 +518,15 @@ void usage()
 
 int main(int argc, char** argv)
 {
+	// otsdaq's __COUT*__ macros reach MessageFacility through TRACE's slow path, which forwards
+	// a level only if it is in the TRACE name's S mask. TRACE's compiled-in default stops below
+	// TLVL_DEBUG (8), so __COUT__ would never reach the log. The `ots` script sets the mask with
+	// trace_cntl before launching xdaq.exe; that only reaches names already in the TRACE file,
+	// so set the per-process default too. TRACE reads TRACE_LVLS once at its first use and
+	// applies it to every name this process registers. 0x1ff = TLVL 0-8 (FATAL..DEBUG), the same
+	// value `ots` uses; a user-set TRACE_LVLS is respected.
+	setenv("TRACE_LVLS", "0x1ff", 0 /*do not overwrite*/);
+
 	std::string host = "localhost", profile, partition;
 	int         port = 0;
 	for(int i = 1; i < argc; ++i)

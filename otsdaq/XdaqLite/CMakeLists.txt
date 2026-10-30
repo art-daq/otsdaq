@@ -32,6 +32,13 @@ cet_make_exec(NAME ots_lite_main
 # unexpanded so `cmake --install --prefix <other>` relocates the link along with the binary.
 install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E create_symlink ots_lite_main \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/bin/xdaq.exe\")")
 
+# MessageFacility destinations named in otsdaq's MessageFacility*.fcl files; the originals
+# are in artdaq_mfextensions, which lite does not build. The library names must match the
+# ones MessageFacility looks up: libOTS_mfPlugin.so and libUDP_mfPlugin.so.
+include(mfPlugin)
+cet_build_plugin(OTS mfPlugin LIBRARIES REG messagefacility::MF_MessageLogger)
+cet_build_plugin(UDP mfPlugin LIBRARIES REG messagefacility::MF_MessageLogger)
+
 install(DIRECTORY include DESTINATION include/otsdaq/XdaqLite)
 install_headers()
 install_source()
