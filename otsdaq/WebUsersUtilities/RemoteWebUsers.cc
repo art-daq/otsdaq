@@ -172,7 +172,6 @@ bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
 		parameters.clear();
 		parameters.addParameter("CookieCode");
 		parameters.addParameter("Permissions");
-		parameters.addParameter("UserGroups");
 		parameters.addParameter("UserWithLock");
 		parameters.addParameter("Username");
 		parameters.addParameter("DisplayName");
