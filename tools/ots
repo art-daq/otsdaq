@@ -1328,6 +1328,11 @@ launchOTSMacromaker() {
 		out #blank line
 	fi
 
+	if [ "x$OTS_CONFIGGUI_UDP_IP" == "x" ] || [ "x$OTS_CONFIGGUI_UDP_PORT" == "x" ]; then
+		warning "If you would like to enable command-line access to your Configuration GUI instance, then before launching please set an IP/PORT compatible with the the system's networking interfaces using environment variables OTS_CONFIGGUI_UDP_IP and OTS_CONFIGGUI_UDP_PORT"
+		out #blank line
+	fi
+
 
 	unset ContextPIDArray #reset
 	unset ContextPIDNameArray #reset
@@ -5329,6 +5334,9 @@ otsActionHandler() {
 	if [ "x$OTS_MACROMAKER_UDP_IP" != "x" ] && [ "x$OTS_MACROMAKER_UDP_PORT" != "x" ]; then
 		out "\tMacroMaker UDP Remote Control at ${Bold}${OTS_MACROMAKER_UDP_IP}:${OTS_MACROMAKER_UDP_PORT}${RstClr} (\$OTS_MACROMAKER_UDP_IP : \$OTS_MACROMAKER_UDP_PORT)"
 	fi
+	if [ "x$OTS_CONFIGGUI_UDP_IP" != "x" ] && [ "x$OTS_CONFIGGUI_UDP_PORT" != "x" ]; then
+		out "\tConfigurationGUI UDP Remote Control at ${Bold}${OTS_CONFIGGUI_UDP_IP}:${OTS_CONFIGGUI_UDP_PORT}${RstClr} (\$OTS_CONFIGGUI_UDP_IP : \$OTS_CONFIGGUI_UDP_PORT)"
+	fi
 
 	#listen for file commands
 	while true; do
@@ -6735,6 +6743,10 @@ out "       ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use
 if [ "x$OTS_MACROMAKER_UDP_IP" != "x" ] && [ "x$OTS_MACROMAKER_UDP_PORT" != "x" ]; then
 	out "MacroMaker UDP Remote Control at ${Bold}${OTS_MACROMAKER_UDP_IP}:${OTS_MACROMAKER_UDP_PORT}${RstClr} (\$OTS_MACROMAKER_UDP_IP : \$OTS_MACROMAKER_UDP_PORT)"
 	out "       at terminal: ${Bold}ots_mm_udp_test${RstClr} ${OTS_MACROMAKER_UDP_IP} ${OTS_MACROMAKER_UDP_PORT}"
+fi
+if [ "x$OTS_CONFIGGUI_UDP_IP" != "x" ] && [ "x$OTS_CONFIGGUI_UDP_PORT" != "x" ]; then
+	out "ConfigurationGUI UDP Remote Control at ${Bold}${OTS_CONFIGGUI_UDP_IP}:${OTS_CONFIGGUI_UDP_PORT}${RstClr} (\$OTS_CONFIGGUI_UDP_IP : \$OTS_CONFIGGUI_UDP_PORT)"
+	out "       at terminal: ${Bold}ots_cfg_udp_test${RstClr} ${OTS_CONFIGGUI_UDP_IP} ${OTS_CONFIGGUI_UDP_PORT}"
 fi
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us
