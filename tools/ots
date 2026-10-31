@@ -5179,6 +5179,7 @@ otsDataDiskCheck() {
 #  such as rebuild, restart, exit, etc.
 # Action Handler Logs are written to tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$
 # Log rollover is also handled.
+mkdir -p tmp
 ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.$$"
 otsActionHandler() {
 
