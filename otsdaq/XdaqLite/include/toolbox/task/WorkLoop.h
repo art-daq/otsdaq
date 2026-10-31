@@ -82,7 +82,7 @@ class WorkLoop
 	void cancel()
 	{
 		if(!active_ && !thread_.joinable())
-			XCEPT_RAISE(xcept::Exception, "WorkLoop '" + name_ + "' is not active");
+			return;
 		running_ = false;
 		if(thread_.joinable())
 		{
