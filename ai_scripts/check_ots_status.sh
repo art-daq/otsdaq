@@ -42,10 +42,12 @@ else
 fi
 echo
 
-# Check ConfigGUI UDP
+# Check ConfigGUI UDP (-y: read-only query, fine to run without a Kerberos ticket)
 if [ -n "$OTS_CONFIG_UDP_PORT" ]; then
     echo "ConfigGUI UDP: $OTS_CONFIG_UDP_IP:$OTS_CONFIG_UDP_PORT"
-    ss -ulnp 2>/dev/null | grep ":${OTS_CONFIG_UDP_PORT} " && echo "  (port bound)" || echo "  (port NOT bound)"
+    ss -ulnp 2>/dev/null | grep -q ":${OTS_CONFIG_UDP_PORT} " && echo "  (port bound)" || echo "  (port NOT bound)"
+    timeout 5 ots_cfg_udp_test -y "$OTS_CONFIG_UDP_IP" "$OTS_CONFIG_UDP_PORT" getActiveTableGroups 2>/dev/null \
+        | grep -o "<[A-Za-z]*-ActiveGroup[A-Za-z]* value='[^']*'/>" | sed 's/^/  /' || echo "  (no reply to getActiveTableGroups)"
 else
     echo "ConfigGUI UDP: not configured (OTS_CONFIG_UDP_PORT not set)"
 fi

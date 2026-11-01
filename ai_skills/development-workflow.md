@@ -56,5 +56,6 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 - Use `tlvls` / `tshow` for TRACE diagnostics
 - Use `ss -ulnp` to verify UDP ports are bound
 - Use `pgrep -fa xdaq` to check running processes
-- `ots_mm_udp_test` to test FE communication
-- `ots_cfg_udp_test` to inspect/modify configuration tables
+- `ots_mm_udp_test` to test FE communication (see `macromaker-udp.md`)
+- `ots_cfg_udp_test` to inspect/modify configuration tables (see `configgui-udp.md`;
+  use `-y` for read-only queries when no Kerberos ticket is available)
