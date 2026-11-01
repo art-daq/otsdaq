@@ -72,16 +72,33 @@ Record UIDs come from the first column (`UID` column) of `getSpecificTable`, or
 from the tree. Example: the GatewaySupervisorTable record is `Supervisor0`, not
 `GatewaySupervisor`.
 
-### Workflow: edit a field → save table → save group → activate
+### Workflow: edit fields → save table → save group → activate
 
-Verified sequence enabling `EnableStateChangesOverUDP` on the gateway:
+Sequence enabling state changes over UDP on the gateway.
+
+**WARNING — never enable `EnableStateChangesOverUDP` alone.** The gateway
+opens a socket on `IPAddressForStateChangesOverUDP:PortForStateChangesOverUDP`
+at construction; with the mockup defaults (`DEFAULT`, `0`) `Socket.cc` throws
+`Invalid IP:Port combination... DEFAULT:0` in a detached thread, the gateway
+core-dumps, and `ots` cannot start until the active group is reverted. All three
+fields must be set in the same version (IP must be a numeric address, e.g.
+`127.0.0.1` or the host IP; pick an unused UDP port, e.g. `3001`).
 
 ```bash
-# 1. edit one cell of the current version (5) -> creates a TEMPORARY version
-#    (reply: <savedVersion value='-2'/>). Temporary versions live only in this
-#    UDP user's session and are not visible to the GUI or other users.
+# 1. edit cells of the current version (5). The first edit creates a TEMPORARY
+#    version (reply: <savedVersion value='-2'/>); further edits must target that
+#    temporary version and return the same one. Temporary versions live only in
+#    this UDP user's session and are not visible to the GUI or other users.
 ots_cfg_udp_test 127.0.0.1 2010 saveTreeNodeEdit \
     targetTable=GatewaySupervisorTable targetTableVersion=5 \
+    targetUID=Supervisor0 targetColumn=IPAddressForStateChangesOverUDP \
+    newValue=127.0.0.1 editNodeType=value
+ots_cfg_udp_test 127.0.0.1 2010 saveTreeNodeEdit \
+    targetTable=GatewaySupervisorTable targetTableVersion=-2 \
+    targetUID=Supervisor0 targetColumn=PortForStateChangesOverUDP \
+    newValue=3001 editNodeType=value
+ots_cfg_udp_test 127.0.0.1 2010 saveTreeNodeEdit \
+    targetTable=GatewaySupervisorTable targetTableVersion=-2 \
     targetUID=Supervisor0 targetColumn=EnableStateChangesOverUDP \
     newValue=1 editNodeType=value
 
@@ -92,6 +109,9 @@ ots_cfg_udp_test 127.0.0.1 2010 saveSpecificTable \
     tableName=GatewaySupervisorTable version=-2 temporary=0 \
     dataOffset=0 chunkSize=0 sourceTableAsIs=1 lookForEquivalent=1 \
     tableComment=Enable%20UDP%20state%20changes
+
+#    verify before building a group: all three UDP cells must show the new values
+ots_cfg_udp_test -y 127.0.0.1 2010 getSpecificTable tableName=GatewaySupervisorTable version=6
 
 # 3. save a new group: tableList is name,version pairs, comma separated, taken
 #    from getSpecificTableGroup with the edited table's version replaced.
@@ -107,6 +127,13 @@ ots_cfg_udp_test 127.0.0.1 2010 activateTableGroup \
 
 # 5. restart ots for Context-group changes to take effect
 ```
+
+**If ots fails to start after an activation** (gateway `Aborted (core dumped)`
+in the `ots` output; cause in `Data/Logs/otsdaq_quiet_run-gateway-*.txt`), revert
+without the GUI: `Data/ServiceData/ActiveTableGroups.cfg` is plain text — pairs
+of lines `<group name>` / `<key>` for Context, Backbone, Iterate, Configuration.
+Set the Context key back to the previous working key and relaunch `ots`. The
+bad group stays in the database; fix the table and save a new group.
 
 Other useful write requests (same parameter names as the browser):
 
