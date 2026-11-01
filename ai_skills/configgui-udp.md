@@ -28,8 +28,11 @@ ots_cfg_udp_test [-y] <ip> <port> <RequestType> [name=value ...]
   principal (`klist`). Without a ticket the tool prints
   `Identity could not be extracted from Kerberos principal (please kinit for this
   to work).` and asks before proceeding anonymously (author `UDP-REMOTE-CONTROL`).
-  `-y` skips the question. **Agents:** use `-y` for read-only queries; for edits,
-  check `klist` first and tell the user to `kinit` rather than editing anonymously.
+  `-y` skips the question. **Agents:** use `-y` for read-only queries only; for
+  edits, NEVER auto-confirm anonymous — ask the user if they want to proceed
+  anonymously or `kinit` first. The principal line is matched case-insensitively
+  (MIT `klist` prints `Default principal:`, Heimdal prints `Principal:`); if
+  extraction fails with a valid ticket, check `klist` output format.
 - Run with no arguments for the full usage list.
 
 ### Parameter encoding (the cause of most failures)
@@ -92,6 +95,8 @@ ots_cfg_udp_test 127.0.0.1 2010 saveSpecificTable \
 
 # 3. save a new group: tableList is name,version pairs, comma separated, taken
 #    from getSpecificTableGroup with the edited table's version replaced.
+#    IMPORTANT: tableList must end with a trailing comma (the parser reads
+#    name,version, pairs and needs the final comma to find the version).
 ots_cfg_udp_test 127.0.0.1 2010 saveNewTableGroup \
     groupName=testContext groupComment=Enable%20UDP \
     tableList=DesktopIconTable,3,DesktopWindowParameterTable,3,GatewaySupervisorTable,6,MessageFacilityTable,3,SlowControlsDashboardSupervisorTable,3,StateMachineTable,4,XDAQApplicationPropertyTable,3,...
