@@ -47,14 +47,14 @@ unencoded; `startPath=%2F` fails with `Cannot find table named '%2F'`.
 ### Reading
 
 ```bash
-# active groups: <Context-ActiveGroupName value='testContext'/> <Context-ActiveGroupKey value='6'/> ...
+# active groups (reply gives group names and keys for Context, Backbone, etc.)
 ots_cfg_udp_test -y 127.0.0.1 2010 getActiveTableGroups
 
 # all table names
 ots_cfg_udp_test -y 127.0.0.1 2010 getTables
 
-# members of a group: <MemberName value='GatewaySupervisorTable'/> <MemberVersion value='5'/> ...
-ots_cfg_udp_test -y 127.0.0.1 2010 getSpecificTableGroup groupName=testContext groupKey=6
+# members of a group (use the group name and key from getActiveTableGroups)
+ots_cfg_udp_test -y 127.0.0.1 2010 getSpecificTableGroup groupName=<CONTEXT_GROUP> groupKey=<CONTEXT_KEY>
 
 # a table: ColumnHeader list, then one ColCSV per column (cells URL-encoded)
 # Omit version for the latest. An unknown version is NOT an error: the reply
@@ -63,14 +63,15 @@ ots_cfg_udp_test -y 127.0.0.1 2010 getSpecificTable tableName=GatewaySupervisorT
 
 # browse the configuration tree
 ots_cfg_udp_test -y 127.0.0.1 2010 getTreeView \
-    tableGroup=testContext tableGroupKey=6 startPath=/ depth=1
+    tableGroup=<CONTEXT_GROUP> tableGroupKey=<CONTEXT_KEY> startPath=/ depth=1
 ots_cfg_udp_test -y 127.0.0.1 2010 getTreeView \
-    tableGroup=testContext tableGroupKey=6 startPath=/GatewaySupervisorTable depth=2
+    tableGroup=<CONTEXT_GROUP> tableGroupKey=<CONTEXT_KEY> startPath=/GatewaySupervisorTable depth=2
 ```
 
 Record UIDs come from the first column (`UID` column) of `getSpecificTable`, or
-from the tree. Example: the GatewaySupervisorTable record is `Supervisor0`, not
-`GatewaySupervisor`.
+from the tree. They are instance-specific and are NOT the table name (the
+GatewaySupervisorTable record is typically named something like `Supervisor0`,
+never `GatewaySupervisor`); always read the UID rather than guessing it.
 
 ### Workflow: edit fields → save table → save group → activate
 
@@ -85,74 +86,106 @@ fields must be set in the same version (IP must be a numeric address, e.g.
 `127.0.0.1` or the host IP; pick an unused UDP port, e.g. `3001`).
 
 ```bash
-# 1. edit cells of the current version (5). The first edit creates a TEMPORARY
-#    version (reply: <savedVersion value='-2'/>); further edits must target that
-#    temporary version and return the same one. Temporary versions live only in
-#    this UDP user's session and are not visible to the GUI or other users.
+# First, discover the active Context group name and key, and the current
+# GatewaySupervisorTable version, using getActiveTableGroups and
+# getSpecificTableGroup.  The examples below use placeholders:
+#   <CONTEXT_GROUP>  — the active Context group name
+#   <CONTEXT_KEY>    — the active Context group key
+#   <GW_VERSION>     — the current GatewaySupervisorTable version
+#   <GW_UID>         — the GatewaySupervisorTable record UID (from getSpecificTable)
+#   <TEMP_VERSION_n> — the temporary version returned by the n-th saveTreeNodeEdit
+#   <SAVED_VERSION>  — the real version returned by saveSpecificTable
+
+# 1. edit cells of the current version. The first edit creates a TEMPORARY
+#    version (negative number in the reply's <savedVersion value='...'/>). Each
+#    following edit must target the temporary version from the PREVIOUS reply,
+#    and may return a DIFFERENT temporary number (e.g. -2, then -3); always use
+#    the value each reply returns, never assume it stays the same. Temporary
+#    versions live only in this UDP user's session and are not visible to the
+#    GUI or other users.
 ots_cfg_udp_test 127.0.0.1 2010 saveTreeNodeEdit \
-    targetTable=GatewaySupervisorTable targetTableVersion=5 \
-    targetUID=Supervisor0 targetColumn=IPAddressForStateChangesOverUDP \
+    targetTable=GatewaySupervisorTable targetTableVersion=<GW_VERSION> \
+    targetUID=<GW_UID> targetColumn=IPAddressForStateChangesOverUDP \
     newValue=127.0.0.1 editNodeType=value
 ots_cfg_udp_test 127.0.0.1 2010 saveTreeNodeEdit \
-    targetTable=GatewaySupervisorTable targetTableVersion=-2 \
-    targetUID=Supervisor0 targetColumn=PortForStateChangesOverUDP \
+    targetTable=GatewaySupervisorTable targetTableVersion=<TEMP_VERSION_1> \
+    targetUID=<GW_UID> targetColumn=PortForStateChangesOverUDP \
     newValue=3001 editNodeType=value
 ots_cfg_udp_test 127.0.0.1 2010 saveTreeNodeEdit \
-    targetTable=GatewaySupervisorTable targetTableVersion=-2 \
-    targetUID=Supervisor0 targetColumn=EnableStateChangesOverUDP \
+    targetTable=GatewaySupervisorTable targetTableVersion=<TEMP_VERSION_2> \
+    targetUID=<GW_UID> targetColumn=EnableStateChangesOverUDP \
     newValue=1 editNodeType=value
 
-# 2. persist the temporary version as a real one (reply: <savedVersion value='6'/>).
+# 2. persist the last temporary version as a real one (reply: <savedVersion value='N'/>).
 #    This is the exact request the browser sends; groups cannot be built from
 #    temporary member versions, so this step is mandatory.
 ots_cfg_udp_test 127.0.0.1 2010 saveSpecificTable \
-    tableName=GatewaySupervisorTable version=-2 temporary=0 \
+    tableName=GatewaySupervisorTable version=<TEMP_VERSION_3> temporary=0 \
     dataOffset=0 chunkSize=0 sourceTableAsIs=1 lookForEquivalent=1 \
     tableComment=Enable%20UDP%20state%20changes
 
 #    verify before building a group: all three UDP cells must show the new values
-ots_cfg_udp_test -y 127.0.0.1 2010 getSpecificTable tableName=GatewaySupervisorTable version=6
+ots_cfg_udp_test -y 127.0.0.1 2010 getSpecificTable tableName=GatewaySupervisorTable version=<SAVED_VERSION>
 
 # 3. save a new group: tableList is name,version pairs, comma separated, taken
 #    from getSpecificTableGroup with the edited table's version replaced.
 #    IMPORTANT: tableList must end with a trailing comma (the parser reads
 #    name,version, pairs and needs the final comma to find the version).
 ots_cfg_udp_test 127.0.0.1 2010 saveNewTableGroup \
-    groupName=testContext groupComment=Enable%20UDP \
-    tableList=DesktopIconTable,3,DesktopWindowParameterTable,3,GatewaySupervisorTable,6,MessageFacilityTable,3,SlowControlsDashboardSupervisorTable,3,StateMachineTable,4,XDAQApplicationPropertyTable,3,...
+    groupName=<CONTEXT_GROUP> groupComment=Enable%20UDP \
+    tableList=<TABLE1>,<VER1>,<TABLE2>,<VER2>,GatewaySupervisorTable,<SAVED_VERSION>,...
 
 # 4. activate the new group (reply gives the new key; parameters are groupName/groupKey)
 ots_cfg_udp_test 127.0.0.1 2010 activateTableGroup \
-    groupName=testContext groupKey=7 ignoreWarnings=0
+    groupName=<CONTEXT_GROUP> groupKey=<NEW_KEY> ignoreWarnings=0
 
 # 5. restart ots for Context-group changes to take effect
 ```
 
-**If ots fails to start after an activation** (gateway `Aborted (core dumped)`
-in the `ots` output; cause in `Data/Logs/otsdaq_quiet_run-gateway-*.txt`), revert
-without the GUI: `Data/ServiceData/ActiveTableGroups.cfg` is plain text — pairs
-of lines `<group name>` / `<key>` for Context, Backbone, Iterate, Configuration.
-Set the Context key back to the previous working key and relaunch `ots`. The
-bad group stays in the database; fix the table and save a new group.
+**If ots fails to start after an activation** (`ots` reports the gateway
+process exited during launch and prints the crash lines from
+`$USER_DATA/Logs/otsdaq_quiet_run-gateway-*.txt`), revert without the GUI using
+`ai_scripts/revert_active_table_group.sh` (see below). It edits
+`$SERVICE_DATA_PATH/ActiveTableGroups.cfg`, which is plain text — pairs of lines
+`<group name>` / `<key>` for Context, Backbone, Iterate, Configuration. Set the
+Context key back to the previous working key (the one reported by
+`getActiveTableGroups` before the activation) and relaunch `ots`. The bad group
+stays in the database; fix the table and save a new group.
 
 Other useful write requests (same parameter names as the browser):
 
 ```bash
-# batch set fields on records under a tree path
+# batch set fields on records under a tree path (all three UDP fields together,
+# never the enable flag alone -- see WARNING above)
 ots_cfg_udp_test 127.0.0.1 2010 setTreeNodeFieldValues \
-    tableGroup=testContext tableGroupKey=6 startPath=/GatewaySupervisorTable \
-    recordList=Supervisor0 fieldList=EnableStateChangesOverUDP valueList=1
+    tableGroup=<CONTEXT_GROUP> tableGroupKey=<CONTEXT_KEY> startPath=/GatewaySupervisorTable \
+    recordList=<GW_UID> \
+    fieldList=IPAddressForStateChangesOverUDP,PortForStateChangesOverUDP,EnableStateChangesOverUDP \
+    valueList=127.0.0.1,3001,1
 
 # which active groups contain these modified tables
 ots_cfg_udp_test -y 127.0.0.1 2010 checkAffectedActiveGroups \
-    modifiedTables=GatewaySupervisorTable,6
+    modifiedTables=GatewaySupervisorTable,<SAVED_VERSION>
 
 # Backbone aliases
 ots_cfg_udp_test 127.0.0.1 2010 setGroupAliasInActiveBackbone \
-    groupAlias=Physics groupName=testContext groupKey=7
+    groupAlias=Physics groupName=<CONTEXT_GROUP> groupKey=<NEW_KEY>
 ots_cfg_udp_test 127.0.0.1 2010 setTableAliasInActiveBackbone \
-    tableAlias=Latest tableName=GatewaySupervisorTable version=6
+    tableAlias=Latest tableName=GatewaySupervisorTable version=<SAVED_VERSION>
 ```
+
+## Helper Scripts (otsdaq/ai_scripts)
+
+All take the ConfigGUI UDP address from `OTS_CONFIG_UDP_IP`/`OTS_CONFIG_UDP_PORT`
+and discover group names, keys and table versions at run time — nothing about a
+particular instance is hard-coded.
+
+| Script | Purpose |
+|--------|---------|
+| `cfg_udp_browse_tree.sh [startPath] [depth]` | read-only tree browse of the active Context group |
+| `cfg_udp_edit_field.sh <table> <uid> <column> <value> [groupType]` | one-field edit → save → new group → activate; refuses the enable-only gateway UDP edit |
+| `enable_gateway_udp_transitions.sh <ip> <port> [cfg_ip] [cfg_port]` | sets IP, port and enable flag together, chaining temporary versions |
+| `revert_active_table_group.sh [groupType] [key]` | edits `ActiveTableGroups.cfg` when `ots` cannot start; backs the file up first |
 
 ## Client Library: ots_cfg_udp_interface
 
@@ -161,12 +194,14 @@ Self-contained POSIX sockets, no otsdaq dependency.
 
 ```cpp
 ots_cfg_udp_interface cfg("127.0.0.1", 2010, ots_cfg_udp_interface::getKerberosUsername());
-std::string xml = cfg.getActiveTableGroups();
-std::string key = ots_cfg_udp_interface::extractXmlField(xml, "Context-ActiveGroupKey");
-cfg.saveTreeNodeEdit("GatewaySupervisorTable", "5", "Supervisor0",
-                     "EnableStateChangesOverUDP", "1");   // wrappers do the encoding
-std::string any = cfg.sendRequest("getTreeView", {{"tableGroup","testContext"},
-                     {"tableGroupKey","6"}, {"startPath","/"}, {"depth","1"}});
+std::string xml   = cfg.getActiveTableGroups();
+std::string group = ots_cfg_udp_interface::extractXmlField(xml, "Context-ActiveGroupName");
+std::string key   = ots_cfg_udp_interface::extractXmlField(xml, "Context-ActiveGroupKey");
+std::string r     = cfg.saveTreeNodeEdit("GatewaySupervisorTable", gwVersion, gwUid,
+                        "IPAddressForStateChangesOverUDP", "127.0.0.1"); // wrappers do the encoding
+std::string temp  = ots_cfg_udp_interface::extractXmlField(r, "savedVersion"); // use in the next edit
+std::string any   = cfg.sendRequest("getTreeView", {{"tableGroup", group},
+                        {"tableGroupKey", key}, {"startPath","/"}, {"depth","1"}});
 ```
 
 `sendRequest()` sends values as given; the named wrappers (`saveTreeNodeEdit`,
@@ -193,5 +228,8 @@ synthetic `cgicc::Cgicc` plus an admin-level `RequestUserInfo`, and passed to
   (first column) or `getTreeView`
 - `Groups can not be created using temporary member tables`: run
   `saveSpecificTable ... temporary=0` first (step 2 above)
+- Second `saveTreeNodeEdit` returns a different temporary number (e.g. `-3`
+  after `-2`): normal; chain each edit from the version in the previous reply
+  and persist the last one
 - Tool stops with the Kerberos question: no ticket in this shell; `kinit`, or use
   `-y` for read-only queries

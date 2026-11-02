@@ -10,8 +10,14 @@
 #   ./cfg_udp_edit_field.sh <table> <uid> <column> <newValue> [groupType]
 #
 # Examples:
-#   ./cfg_udp_edit_field.sh GatewaySupervisorTable Supervisor0 EnableStateChangesOverUDP 1
 #   ./cfg_udp_edit_field.sh FEOtsUDPTemplateInterfaceTable ExampleInterface0 Status Off Context
+#
+# Record UIDs come from the first column of getSpecificTable or from
+# cfg_udp_browse_tree.sh; they differ per instance.
+#
+# NOTE: enabling GatewaySupervisorTable.EnableStateChangesOverUDP needs the IP
+# and port set in the same version or the gateway core-dumps at startup; this
+# script refuses that edit -- use enable_gateway_udp_transitions.sh instead.
 
 set -e
 
@@ -26,6 +32,14 @@ UID_NAME="$2"
 COLUMN="$3"
 NEW_VALUE="$4"
 GROUP_TYPE="${5:-Context}"
+
+if [ "$TABLE" = "GatewaySupervisorTable" ] && [ "$COLUMN" = "EnableStateChangesOverUDP" ] \
+   && { [ "$NEW_VALUE" = "1" ] || [ "$NEW_VALUE" = "Yes" ] || [ "$NEW_VALUE" = "true" ]; }; then
+    echo "ERROR: refusing to set $COLUMN alone -- IPAddressForStateChangesOverUDP and"
+    echo "PortForStateChangesOverUDP must be set in the same table version or the gateway"
+    echo "core-dumps at startup. Use enable_gateway_udp_transitions.sh <ip> <port> instead."
+    exit 1
+fi
 
 CFG_IP="${OTS_CONFIG_UDP_IP:-127.0.0.1}"
 CFG_PORT="${OTS_CONFIG_UDP_PORT:-2010}"
@@ -95,7 +109,16 @@ SAVE_RESULT=$(cfg saveSpecificTable \
     tableName="$TABLE" version="$TEMP_VERSION" temporary=0 \
     dataOffset=0 chunkSize=0 sourceTableAsIs=1 lookForEquivalent=1 \
     tableComment="$ENCODED_COMMENT")
+if echo "$SAVE_RESULT" | grep -q "<Error"; then
+    echo "ERROR in saveSpecificTable:"
+    echo "$SAVE_RESULT" | grep -oP "Error value='\K[^']+"
+    exit 1
+fi
 NEW_VERSION=$(echo "$SAVE_RESULT" | grep -oP "savedVersion value='\K[^']+")
+if [ -z "$NEW_VERSION" ]; then
+    echo "ERROR: no savedVersion in saveSpecificTable reply."
+    exit 1
+fi
 echo "New version: $NEW_VERSION"
 
 # Step 3: Build the table list (replace old version with new)
