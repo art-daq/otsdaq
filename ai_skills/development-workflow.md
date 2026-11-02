@@ -59,3 +59,17 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 - `ots_mm_udp_test` to test FE communication (see `macromaker-udp.md`)
 - `ots_cfg_udp_test` to inspect/modify configuration tables (see `configgui-udp.md`;
   use `-y` for read-only queries when no Kerberos ticket is available)
+
+## Writing Helper Scripts (lessons)
+
+- A `python3 - <<'EOF'` heredoc occupies python's stdin with the script. Piping data
+  into that same command delivers nothing and fails silently (empty output). Pass
+  data as an argument (`python3 - "$DATA" <<'EOF'`, read `sys.argv[1]`) or write the
+  script to a temp file.
+- UDP replies from otsdaq supervisors are chunked into 1500-byte datagrams. Loop on
+  `recvfrom` until the XML root closes; a single read returns a fragment.
+- Test a script's parsing and polling against a throwaway local fake server on a
+  spare port (replying in 1500-byte chunks and changing state on a command) instead
+  of the live system; run `bash -n` for syntax.
+- Do not assume element order or fixed IDs in status XML; select by `<class>`.
+

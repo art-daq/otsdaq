@@ -80,8 +80,35 @@ command, then poll `GetRemoteAppStatus`:
   the outcome (`Successfully executed state change command` or
   `UDP State Changer failed to execute command because of the following error`).
 
-`ai_scripts/gateway_udp_cmd.sh` sends the command, then polls and prints only the
-Gateway status line until it settles (Failed, or the expected state).
+`ai_scripts/gateway_udp_cmd.sh <ip> <port> <message> [expectedState] [timeoutSeconds]`
+sends the message. With `expectedState` (e.g. `Configured`) it prints the status
+before sending, then polls every 3 s until that state is reached (exit 0), the
+status starts with `Failed:::` (exit 1, full error printed), or it times out
+(exit 2). Exit 3 means the reply had no Gateway entry, usually because
+`EnableApplicationStatusMonitoring` is off. If the status was already `Failed:::`
+before sending, a later `FAILED` that is identical is flagged as possibly left
+over. Replies arrive as 1500-byte datagrams; the script reassembles them and finds
+the Gateway by `<class>ots::GatewaySupervisor</class>`, not by position or LID.
+
+When writing your own polling code: read datagrams until `</ROOT>` (one `recvfrom`
+returns only the first 1500 bytes, which may not even contain the Gateway entry).
+
+## Verified sequence (lite, from a clean start)
+
+1. `ots_udp_hw_emulator` running (port 4000); `ots` started with the Context
+   group enabling UDP state changes, status monitoring, IP and port.
+2. `gateway_udp_cmd.sh 127.0.0.1 2014 GetStateMachineNames` lists the FSMs
+   (`PhysicsRuns0`, `CalibrationRuns0`, `OtherRuns0` in the demo).
+3. `gateway_udp_cmd.sh 127.0.0.1 2014 PhysicsRuns0,Configure,defaultSystemAlias Configured`
+   -> `Reached Configured`; the log shows
+   `Attempting Configure transition with Configuration table group name: <group>, key: <key>`
+   and per-app statuses become `Configured` (apps without an FSM role, such as
+   ChatSupervisor, stay `Initial`).
+4. `gateway_udp_cmd.sh 127.0.0.1 2014 PhysicsRuns0,Halt Halted` returns to Halted.
+
+Every failure met on the way (missing alias parameter, emulator down, ROOT consumer
+not built in lite, alias pointing at the old group) is listed under Troubleshooting
+below with its cause.
 
 ## Troubleshooting
 
@@ -89,7 +116,7 @@ Gateway status line until it settles (Failed, or the expected state).
   not active in the running Context group (restart after activation).
 - Configure fails on a front end with `Timeout period of 5 seconds reached`
   `127.0.0.1 : 4000`: the hardware emulator is not running. `ots` does not launch
-  it (it only kills it on exit); start `ots_udp_hw_emulator` from
+  it (only the hard kill, `ots -K`, stops it); start `ots_udp_hw_emulator` from
   `local/install/bin` first.
 - Configure fails on a ROOT consumer (e.g. DQM) in the lite build: those plugins
   are not built in lite; disable that consumer in the Configuration group.

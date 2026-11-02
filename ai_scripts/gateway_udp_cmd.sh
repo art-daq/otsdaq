@@ -41,14 +41,32 @@ gateway_status() {
     # The Gateway entry is the one whose <class> is ots::GatewaySupervisor; its
     # LID is whatever the XDAQ config assigns, so do not rely on it being first.
     # Elements are emitted in order name, id, status, ..., class per app.
-    send GetRemoteAppStatus 5 | python3 -I - <<'EOF'
+    # The XML goes in as an argument: a heredoc already occupies python's stdin
+    # (the script), so piping the XML in as well silently delivers nothing.
+    python3 -I - "$(send GetRemoteAppStatus 5)" <<'EOF'
 import re, sys, html
-xml = sys.stdin.read()
+xml = sys.argv[1]
 m = re.search(r"<name value='[^']*'/>(?:(?!<name value=).)*?<status value='([^']*)'/>"
               r"(?:(?!<name value=).)*?<class value='ots::GatewaySupervisor'/>", xml, re.S)
 print(html.unescape(m.group(1)) if m else "")
 EOF
 }
+
+# Status before sending. Text from an earlier failed transition persists until
+# the next one succeeds, so a "Failed:::" seen right away may be left over.
+PRE=""
+case "$MSG" in
+    Get*|Help*|help*) ;;
+    *) if [ -n "$EXPECT" ]; then
+           PRE=$(gateway_status)
+           if [ -z "$PRE" ]; then
+               echo "No Gateway status in the GetRemoteAppStatus reply."
+               echo "Check EnableApplicationStatusMonitoring=Yes and the UDP IP/port."
+               exit 3
+           fi
+           echo "Status before: ${PRE:0:120}"
+       fi ;;
+esac
 
 REPLY=$(send "$MSG" 3)
 [ -n "$REPLY" ] && echo "$REPLY"
@@ -64,7 +82,9 @@ while [ $SECONDS -lt $END ]; do
     sleep 3
     ST=$(gateway_status)
     case "$ST" in
-        Failed:::*) echo "FAILED: $ST"; exit 1 ;;
+        Failed:::*)
+            [ "$ST" = "$PRE" ] && echo "(note: identical to the status before sending; may be left over from an earlier attempt)"
+            echo "FAILED: $ST"; exit 1 ;;
         "$EXPECT") echo "Reached $EXPECT"; exit 0 ;;
     esac
     echo "  status: ${ST:0:120}"
