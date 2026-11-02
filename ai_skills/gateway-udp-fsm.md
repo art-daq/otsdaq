@@ -85,9 +85,15 @@ Gateway status line until it settles (Failed, or the expected state).
 - Activating a new Configuration group over ConfigGUI UDP does not reload it in
   already-running supervisors: Configure keeps using the group loaded at startup
   (the old consumer/plugin error repeats). Restart `ots` after changing any group.
-- `Configure,<alias>` resolves the alias through the Backbone `GroupAliasesTable`.
-  A new group is ignored until the alias points at it:
-  `ots_cfg_udp_test 127.0.0.1 2010 setGroupAliasInActiveBackbone groupAlias=<alias> groupName=<group> groupKey=<newKey>`
+- `Configure,<alias>` resolves the alias through the **active Backbone group**,
+  not the latest `GroupAliasesTable`. A new Configuration group is ignored until
+  (1) `setGroupAliasInActiveBackbone groupAlias=<alias> groupName=<group> groupKey=<newKey>`
+  saves a new `GroupAliasesTable` version, AND (2) that version goes into a new
+  Backbone group that is activated: `saveNewTableGroup groupName=<backbone>
+  tableList=GroupAliasesTable,<newVer>,VersionAliasesTable,<ver>,` then
+  `activateTableGroup`. Skipping (2) leaves the Gateway on the old key; confirm
+  with the log line `Attempting Configure transition with Configuration table
+  group name: <group>, key: <key>`. The Backbone is read at startup, so restart.
 - Disabling a plugin that is not built in lite (e.g. `DemoDQMHistosConsumer`):
   set `Status=Off` on its record (e.g. `DB1Consumer1`) in `DataProcessorTable`
   (edit, saveSpecificTable, saveNewTableGroup on the Configuration group,
