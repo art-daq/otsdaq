@@ -13,23 +13,41 @@ IP="$1"; PORT="$2"; MSG="$3"; EXPECT="$4"; TMO="${5:-120}"
 [ -z "$MSG" ] && { sed -n 2,11p "$0"; exit 1; }
 
 send() {
+    # Replies are sent in 1500-byte datagrams (TransceiverSocket::acknowledge
+    # default chunk size), so keep reading until the XML root closes or the
+    # socket goes quiet. Non-XML replies (Help, Done, error text) are one line.
     python3 -I - "$IP" "$PORT" "$1" "$2" <<'EOF'
 import socket, sys
 ip, port, msg, t = sys.argv[1], int(sys.argv[2]), sys.argv[3], float(sys.argv[4])
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.settimeout(t)
 s.sendto(msg.encode(), (ip, port))
+out = b""
 try:
-    print(s.recvfrom(65535)[0].decode(errors="replace"))
+    while True:
+        out += s.recvfrom(65535)[0]
+        if b"</ROOT>" in out[-10:]:
+            break
+        if not out.lstrip().startswith(b"<"):
+            break
+        s.settimeout(1.0)  # later chunks follow immediately
 except socket.timeout:
     pass
+sys.stdout.write(out.decode(errors="replace"))
 EOF
 }
 
 gateway_status() {
-    # first <status> in GetRemoteAppStatus is the Gateway; unescape XML entities
-    send GetRemoteAppStatus 5 | grep -m1 "<status" \
-        | sed "s/.*value='//;s/'\/>.*//;s/&apos;/'/g;s/&lt;/</g;s/&gt;/>/g;s/&amp;/\&/g"
+    # The Gateway entry is the one whose <class> is ots::GatewaySupervisor; its
+    # LID is whatever the XDAQ config assigns, so do not rely on it being first.
+    # Elements are emitted in order name, id, status, ..., class per app.
+    send GetRemoteAppStatus 5 | python3 -I - <<'EOF'
+import re, sys, html
+xml = sys.stdin.read()
+m = re.search(r"<name value='[^']*'/>(?:(?!<name value=).)*?<status value='([^']*)'/>"
+              r"(?:(?!<name value=).)*?<class value='ots::GatewaySupervisor'/>", xml, re.S)
+print(html.unescape(m.group(1)) if m else "")
+EOF
 }
 
 REPLY=$(send "$MSG" 3)

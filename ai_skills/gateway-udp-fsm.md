@@ -14,31 +14,44 @@ together (see `configgui-udp.md` for the edit/save/activate workflow):
 | `EnableStateChangesOverUDP` | Yes | starts the listener |
 | `IPAddressForStateChangesOverUDP` | numeric IP, e.g. `127.0.0.1` | `DEFAULT` crashes the gateway |
 | `PortForStateChangesOverUDP` | unused UDP port, e.g. `2014` | `0` crashes the gateway |
-| `EnableApplicationStatusMonitoring` | Yes | without it every app reports `Not Monitored`, so UDP status is useless |
+| `EnableApplicationStatusMonitoring` | Yes | the Gateway's own status (incl. `Failed:::`) is computed by `AppStatusWorkLoop`; without it every app stays `Not Monitored` and transition results are invisible over UDP |
 | `EnableAckForStateChangesOverUDP` | optional | see Acknowledgements |
 
-Restart `ots` after activating the new Context group. Verify the log line
-`Waiting for UDP State Changer packet on <ip>:<port>` and `ss -ulnp | grep <port>`.
+Restart `ots` after activating the new Context group. Verify with
+`ss -ulnp | grep <port>` and, in `$USER_DATA/Logs/otsdaq_quiet_run-gateway-*.txt`,
+the lines `Enabling state changes over UDP...` and `enableStateChanges = 1`
+(the per-poll `Waiting for UDP State Changer packet on ...` line is a TRACE
+detail level and is normally not in the log).
 
 ## Protocol
 
-One datagram per command, plain text, sent to the IP:port above.
+One datagram per command, plain text, sent to the IP:port above. **Replies
+longer than 1500 bytes arrive as several datagrams** (`TransceiverSocket::acknowledge`
+chunks at 1500 with no gap); a status reply for a normal context is several
+chunks, so a client must keep receiving until it sees `</ROOT>`. A single
+`recvfrom` returns only the first chunk, cut mid-element.
 
 | Message | Reply |
 |---------|-------|
-| `Help` | command list |
-| `GetStateMachineNames` | XML list of FSM names (e.g. `PhysicsRuns0`) |
-| `GetRemoteAppStatus` | XML: per supervisor `name`, `status`, `progress`, `detail`, ... |
+| `Help` | command list (all supported messages) |
+| `GetStateMachineNames` | XML `<fsm value='...'/>` per FSM name |
+| `GetRemoteAppStatus` | XML: per supervisor, in order, `name`, `id`, `status`, `time`, `stale`, ..., `progress`, `detail`, ..., `class` |
 | `GetRemoteGatewayStatusXML` | same data, one `<supervisor .../>` element each |
 | `<FSMName>,<Command>[,<param>...]` | FSM transition (reply only if acks enabled) |
+
+Find the Gateway in `GetRemoteAppStatus` by `<class value='ots::GatewaySupervisor'/>`,
+not by position: its LID (and so its place in the list) is set by the XDAQ
+configuration, not fixed.
 
 Command names: `Initialize`, `Configure`, `Start`, `Pause`, `Resume`, `Stop`,
 `Halt`, `Abort`. `Configure` requires the **Configuration Alias as its first
 parameter**; without it the log shows
 `Can only transition to Configured if a Configuration Alias parameter is provided`.
-Find aliases with the ConfigGUI UDP (`getActiveTableGroups` shows
-`Configuration-ActiveGroupAlias`, e.g. `defaultSystemAlias`). `Start` takes the
-run number as a parameter.
+Find aliases with the ConfigGUI UDP: `getActiveTableGroups` shows
+`Configuration-ActiveGroupAlias` **only when** a GroupAliases entry matches the
+active Configuration group; otherwise read `getGroupAliases`. `Start` takes the
+run number as an optional first parameter (omitted: next number from
+`$SERVICE_DATA_PATH/RunNumber/`).
 
 ```bash
 ai_scripts/gateway_udp_cmd.sh 127.0.0.1 2014 PhysicsRuns0,Configure,defaultSystemAlias
@@ -55,12 +68,17 @@ command, then poll `GetRemoteAppStatus`:
 - Gateway `status`: `Initial`, `Halted`, `Configured`, `Running`, `Paused`, or a
   transition name while in progress (`progress` is the percentage).
 - Success: Gateway `status` reaches the target state and the transition finishes.
-- Failure: Gateway `status` starts with `Failed:::` followed by the full error
-  chain (which supervisor, which front-end, root cause). The text is URL/XML
-  escaped (`&apos;`, `&lt;`).
+- Failure: Gateway `status` starts with `Failed:::` (or `Soft-Error:::` if the
+  FSM was Paused) followed by the full error chain (which supervisor, which
+  front-end, root cause). The text is XML-escaped (`&apos;`, `&quot;`, `&lt;`,
+  `&gt;`, `&amp;`, `&#NNN;`).
+- Before the first status poll completes, or with
+  `EnableApplicationStatusMonitoring=No`, apps report `UNKNOWN` / `Not Monitored`.
 - Poll every few seconds; Configure can take several seconds to minutes.
-- Check `FSM` log in `Data/Logs/otsdaq_quiet_run-gateway-*.txt` for the received
-  command (`Received a remote FSM Command attempt!`, `Word[0]`, `Word[1]`).
+- Check `$USER_DATA/Logs/otsdaq_quiet_run-gateway-*.txt` for the received
+  command (`Received a remote FSM Command attempt!`, `Word[0]`, `Word[1]`) and
+  the outcome (`Successfully executed state change command` or
+  `UDP State Changer failed to execute command because of the following error`).
 
 `ai_scripts/gateway_udp_cmd.sh` sends the command, then polls and prints only the
 Gateway status line until it settles (Failed, or the expected state).
