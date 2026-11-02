@@ -691,6 +691,11 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 			std::string addressStr  = requestParameters.getValue("Address");
 			std::string dataStr     = requestParameters.getValue("Data");
 
+			if(addressStr.size() >= 2 && addressStr[0] == '0' && (addressStr[1] == 'x' || addressStr[1] == 'X'))
+				addressStr = addressStr.substr(2);
+			if(dataStr.size() >= 2 && dataStr[0] == '0' && (dataStr[1] == 'x' || dataStr[1] == 'X'))
+				dataStr = dataStr.substr(2);
+
 			__SUP_COUT__ << "Address: " << addressStr << " Data: " << dataStr
 			             << " InterfaceID: " << interfaceID << __E__;
 
@@ -716,8 +721,8 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 			__SUP_COUT__ << "Translating address: ";
 
 			std::string addressTmp;
-			addressTmp.reserve(
-			    theFEInterfacesManager_->getInterfaceUniversalAddressSize(interfaceID));
+			addressTmp.resize(
+			    theFEInterfacesManager_->getInterfaceUniversalAddressSize(interfaceID), '\0');
 			char* address = &addressTmp[0];
 
 			if(addressStr.size() % 2)  // if odd, make even
@@ -747,8 +752,8 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 			__SUP_COUT__ << "Translating data: ";
 
 			std::string dataTmp;
-			dataTmp.reserve(
-			    theFEInterfacesManager_->getInterfaceUniversalDataSize(interfaceID));
+			dataTmp.resize(
+			    theFEInterfacesManager_->getInterfaceUniversalDataSize(interfaceID), '\0');
 			char* data = &dataTmp[0];
 
 			if(dataStr.size() % 2)  // if odd, make even
@@ -807,6 +812,9 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 			std::string interfaceID = requestParameters.getValue("InterfaceID");
 			std::string addressStr  = requestParameters.getValue("Address");
 
+			if(addressStr.size() >= 2 && addressStr[0] == '0' && (addressStr[1] == 'x' || addressStr[1] == 'X'))
+				addressStr = addressStr.substr(2);
+
 			__SUP_COUT__ << "Address: " << addressStr << " InterfaceID: " << interfaceID
 			             << __E__;
 
@@ -830,8 +838,8 @@ xoap::MessageReference FESupervisor::macroMakerSupervisorRequest(
 			__SUP_COUT__ << "Translating address: ";
 
 			std::string addressTmp;
-			addressTmp.reserve(
-			    theFEInterfacesManager_->getInterfaceUniversalAddressSize(interfaceID));
+			addressTmp.resize(
+			    theFEInterfacesManager_->getInterfaceUniversalAddressSize(interfaceID), '\0');
 			char* address = &addressTmp[0];
 
 			if(addressStr.size() % 2)  // if odd, make even
