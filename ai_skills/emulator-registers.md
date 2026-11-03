@@ -59,21 +59,24 @@ The full-OTS data chain:
 3. `RawDataVisualizerConsumer` (another DataProcessor plugin) reads from
    the buffer and holds the latest packet in `getLastRawDataBuffer()`
 4. `VisualSupervisor::request("getWaveformData")` finds the consumer,
-   reads the raw bytes, parses them as 4 channels × 2 bytes/sample,
-   and returns CSV per channel as XML
-5. `ViewerWaveform.js` renders the waveform in the browser
+   copies the latest raw packet, skips the 2-byte header (type byte,
+   sequence byte), de-interleaves it using the `numChannels` and
+   `bitWidth` request parameters, and returns CSV per channel as XML
+5. `ViewerWaveform.js` renders the waveform in the browser; its
+   "ch" and "-bit" drop-downs set those request parameters and must
+   match emulator registers 0x1007 and 0x1005 (defaults 1 ch, 16-bit)
+
+The emulator packet carries no channel-count or bit-width fields, so
+the viewer cannot discover them; if the drop-downs disagree with the
+registers the traces are split wrong but the viewer still goes live.
+If no consumer has data yet (system not Running, or the packet is
+shorter than one sample), the handler returns a DEMO sine wave.
 
 Both the listener and the consumer must be configured in the
 `DataProcessorTable` records linked to the supervisor's
 `LinkToDataBufferTable`. The supervisor that hosts them can be
 `FEDataManagerSupervisor` (combines FE + DataManager in one app)
 or a standalone DataManager context.
-
-**OTS lite limitation:** the live-data path in `getWaveformData` is
-inside `#ifndef OTS_LITE` (`VisualSupervisor.cc:1762`). In the lite
-build, the handler always falls through to a demo sine-wave generator.
-To get real waveform data in lite, that `#ifndef` guard would need to
-be removed and `RawDataVisualizerConsumer` linked into the lite build.
 
 ## FE Interface
 
