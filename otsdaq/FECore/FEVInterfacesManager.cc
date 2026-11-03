@@ -770,7 +770,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 			    //			<long/double step size>
 			    //		}
 
-			    std::vector<unsigned long /*dimension iterations*/> dimensionIterations,
+			    std::vector<unsigned long /**dimension iterations */> dimensionIterations,
 			        dimensionIterationCnt;
 
 			    using longParamMap_t = std::map<
@@ -1002,7 +1002,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 			    // function, 	and must capture reference to the function. Also, must
 			    // capture specialFolders 	reference for use internally (const values
 			    // already are captured).
-			    std::function<void(const unsigned int /*dimension*/
+			    std::function<void(const unsigned int  //dimension
 			                       )>
 			        localRecurse = [&dimensionIterations,
 			                        &dimensionIterationCnt,
@@ -1358,7 +1358,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 			    //			<long/double step size>
 			    //		}
 
-			    std::vector<unsigned long /*dimension iterations*/> dimensionIterations,
+			    std::vector<unsigned long /**dimension iterations */> dimensionIterations,
 			        dimensionIterationCnt;
 
 			    using longParamMap_t = std::map<
@@ -1369,7 +1369,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 			        std::map<std::string /*name*/,
 			                 std::pair<double /*current value*/,
 			                           std::pair<double /*initial value*/,
-			                                     double /*step value*/>>>;
+			                                     double /**step value */>>>;
 			    using stringParamMap_t =
 			        std::map<std::string /*name*/, std::string /* value*/>;
 
@@ -1641,7 +1641,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 			    // function, 	and must capture reference to the function. Also, must
 			    // capture specialFolders 	reference for use internally (const values
 			    // already are captured).
-			    std::function<void(const unsigned int /*dimension*/
+			    std::function<void(const unsigned int  //dimension
 			                       )>
 			        localRecurse = [&dimensionIterations,
 			                        &dimensionIterationCnt,

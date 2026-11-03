@@ -155,7 +155,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 	// create objects
 
 	// std::map<std::string /*tableName*/,
-	//	TableVersion /*next persisten version*/>
+	//	TableVersion /**next persisten version */>
 	// tableNextVersionMap;
 
 	std::map<std::string /*importGroupAlias*/,
@@ -163,7 +163,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 	    originalGroupAliasMap;
 
 	std::map</*original*/ std::pair<std::string /*groupName*/, TableGroupKey>,
-	         /*new*/ TableGroupKey>
+	         /**new */ TableGroupKey>
 	    groupSet;
 
 	std::map<std::string /*importTableAlias*/,
@@ -171,11 +171,11 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 	    originalTableAliasMap;
 
 	std::map</*original*/ std::pair<std::string /*tableName*/, TableVersion>,
-	         /*new*/ TableVersion>
+	         /**new */ TableVersion>
 	    newTableVersionMap;
 
 	std::map</*original*/ std::pair<std::string, TableGroupKey>,
-	         std::string /*error string*/>
+	         std::string /**error string */>
 	    groupErrors;
 
 	// get prepared with initial source db

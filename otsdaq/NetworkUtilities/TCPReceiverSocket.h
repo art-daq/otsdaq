@@ -1,5 +1,5 @@
-#ifndef _TCPReceiverSocket_h_
-#define _TCPReceiverSocket_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPRECEIVERSOCKET_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPRECEIVERSOCKET_H_
 
 #include <chrono>
 #include <string>
@@ -40,4 +40,4 @@ class TCPReceiverSocket : public virtual TCPSocket
 	static constexpr unsigned int maxSocketSize = 65536;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPRECEIVERSOCKET_H_

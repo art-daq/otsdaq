@@ -1,5 +1,5 @@
-#ifndef _ots_SOAPUtilities_h
-#define _ots_SOAPUtilities_h
+#ifndef OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPUTILITIES_H_
+#define OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPUTILITIES_H_
 
 #include <xoap/MessageReference.h>
 
@@ -35,4 +35,4 @@ class SOAPUtilities
 	                           SOAPParameters&               parameters);
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPUTILITIES_H_

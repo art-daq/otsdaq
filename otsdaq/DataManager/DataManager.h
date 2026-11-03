@@ -1,5 +1,5 @@
-#ifndef _ots_DataManager_h_
-#define _ots_DataManager_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_DATAMANAGER_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_DATAMANAGER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/CircularBuffer.h"
@@ -93,7 +93,7 @@ class DataManager : public Configurable, public VStateMachine
 		BufferStatus                   status_;
 	};
 	std::map<std::string /*dataBufferId*/,
-	         Buffer /*CircularBuffer:=Map of Producer to Buffer Implementations*/>
+	         Buffer /***CircularBuffer:=Map of Producer to Buffer Implementations  */>
 	    buffers_;
 
   public:
@@ -109,4 +109,4 @@ class DataManager : public Configurable, public VStateMachine
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_DATAMANAGER_H_

@@ -346,7 +346,7 @@ void TableView::init(void)
 		// check that UID is really unique ID (no repeats)
 		// and ... allow letters, numbers, dash, underscore
 		// and ... force size 1
-		std::set<std::string /*uid*/> uidSet;
+		std::set<std::string /**uid */> uidSet;
 		for(unsigned int row = 0; row < getNumberOfRows(); ++row)
 		{
 			if(uidSet.find(theDataView_[row][colUID_]) != uidSet.end())
@@ -396,7 +396,7 @@ void TableView::init(void)
 		while((colPos = findColByType(TableViewColumnInfo::TYPE_UNIQUE_DATA,
 		                              colPos + 1)) != INVALID)
 		{
-			std::set<std::string /*unique data*/> uDataSet;
+			std::set<std::string /**unique data */> uDataSet;
 			for(unsigned int row = 0; row < getNumberOfRows(); ++row)
 			{
 				if(uDataSet.find(theDataView_[row][colPos]) != uDataSet.end())
@@ -437,7 +437,7 @@ void TableView::init(void)
 				{
 					std::map<std::string /*group name*/,
 					         std::pair<unsigned int /*memberCount*/,
-					                   std::set<std::string /*unique data*/>>>
+					                   std::set<std::string /**unique data */>>>
 					    uGroupDataSets;
 
 					for(unsigned int row = 0; row < getNumberOfRows(); ++row)
@@ -1494,14 +1494,14 @@ void TableView::addRowToGroup(const unsigned int& row,
 ///	with consideration for status on/off and priority, if enabled with flags
 ///
 ///	Note: empty group id of "" or '*' will return all rows
-std::vector<unsigned int /*group row*/> TableView::getGroupRows(
+std::vector<unsigned int /**group row */> TableView::getGroupRows(
     const unsigned int groupIdCol,
     const std::string& groupID,
     bool               onlyStatusTrue /*=false*/,
     bool               orderedByPriority /*=false*/) const
 {
-	std::vector<unsigned int /*group row*/>              retVector;
-	std::vector<std::vector<unsigned int /*group row*/>> groupRowVectors =
+	std::vector<unsigned int /**group row */>              retVector;
+	std::vector<std::vector<unsigned int /**group row */>> groupRowVectors =
 	    getGroupRowsInVectors(groupIdCol, groupID, onlyStatusTrue, orderedByPriority);
 
 	for(const auto& groupRowVector : groupRowVectors)
@@ -1517,7 +1517,7 @@ std::vector<unsigned int /*group row*/> TableView::getGroupRows(
 ///	with consideration for status on/off and priority, if enabled with flags
 ///
 ///	Note: empty group id of "" or '*' will return all rows
-std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsByPriority(
+std::vector<std::vector<unsigned int /**group row */>> TableView::getGroupRowsByPriority(
     const unsigned int groupIdCol,
     const std::string& groupID,
     bool               onlyStatusTrue /*=false*/) const
@@ -1534,21 +1534,21 @@ std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsByPr
 ///	with consideration for status on/off and priority, if enabled with flags
 ///
 ///	Note: empty group id of "" or '*' will return all rows
-std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsInVectors(
+std::vector<std::vector<unsigned int /**group row */>> TableView::getGroupRowsInVectors(
     const unsigned int groupIdCol,
     const std::string& groupID,
     bool               onlyStatusTrue,
     bool               orderedByPriority) const
 {
 	std::map<uint64_t /*priority*/, std::vector<unsigned int /*child row*/>>
-	                                                     mapByPriority;
-	std::vector<std::vector<unsigned int /*group row*/>> retVector;
-	uint64_t                                             tmpPriority;
-	bool                                                 tmpStatus;
+	                                                       mapByPriority;
+	std::vector<std::vector<unsigned int /**group row */>> retVector;
+	uint64_t                                               tmpPriority;
+	bool                                                   tmpStatus;
 
 	if(!(orderedByPriority &&
 	     colPriority_ != INVALID))  // if no priority column, all at same priorty [0]
-		retVector.push_back(std::vector<unsigned int /*group row*/>());
+		retVector.push_back(std::vector<unsigned int /**group row */>());
 
 	__COUTS__(2) << "getGroupRowsInVectors: " << groupID << " at col " << groupIdCol
 	             << __E__;
@@ -1587,7 +1587,7 @@ std::vector<std::vector<unsigned int /*group row*/>> TableView::getGroupRowsInVe
 		// now build return vector
 		for(const auto& priorityChildRowVector : mapByPriority)
 		{
-			retVector.push_back(std::vector<unsigned int /*group row*/>());
+			retVector.push_back(std::vector<unsigned int /**group row */>());
 			for(const auto& priorityChildRow : priorityChildRowVector.second)
 				retVector[retVector.size() - 1].push_back(priorityChildRow);
 		}
@@ -2028,10 +2028,10 @@ std::set<std::string> TableView::getColumnNames(void) const
 }  // end getColumnNames()
 
 //==============================================================================
-std::map<std::string, unsigned int /*col*/> TableView::getColumnNamesMap(void) const
+std::map<std::string, unsigned int /**col */> TableView::getColumnNamesMap(void) const
 {
-	std::map<std::string, unsigned int /*col*/> retMap;
-	unsigned int                                c = 0;
+	std::map<std::string, unsigned int /**col */> retMap;
+	unsigned int                                  c = 0;
 	for(auto& colInfo : columnsInfo_)
 		retMap.emplace(std::make_pair(colInfo.getName(), c++));
 	return retMap;

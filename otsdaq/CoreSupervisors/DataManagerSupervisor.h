@@ -1,5 +1,5 @@
-#ifndef _ots_DataManagerSupervisor_h_
-#define _ots_DataManagerSupervisor_h_
+#ifndef OTSDAQ_OTSDAQ_CORESUPERVISORS_DATAMANAGERSUPERVISOR_H_
+#define OTSDAQ_OTSDAQ_CORESUPERVISORS_DATAMANAGERSUPERVISOR_H_
 
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
 
@@ -22,4 +22,4 @@ class DataManagerSupervisor : public CoreSupervisorBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CORESUPERVISORS_DATAMANAGERSUPERVISOR_H_

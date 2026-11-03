@@ -1,5 +1,5 @@
-#ifndef _ots_MakeSlowControls_h_
-#define _ots_MakeSlowControls_h_
+#ifndef OTSDAQ_OTSDAQ_SLOWCONTROLSCORE_MAKESLOWCONTROLS_H_
+#define OTSDAQ_OTSDAQ_SLOWCONTROLSCORE_MAKESLOWCONTROLS_H_
 /// Using LibraryManager, find the correct library and return an instance of the specified
 /// Slow Controls Interface.
 ///
@@ -21,4 +21,4 @@ SlowControlsVInterface* makeSlowControls(
 
 }  // namespace ots
 
-#endif /* _ots_MakeSlowControls_h_ */
+#endif  // OTSDAQ_OTSDAQ_SLOWCONTROLSCORE_MAKESLOWCONTROLS_H_

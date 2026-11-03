@@ -90,7 +90,7 @@ void AllSupervisorInfo::init(xdaq::ApplicationContext* applicationContext)
 		SupervisorInfo tempSupervisorInfo(
 		    descriptor.second /* descriptor */,
 		    "" /* config app name */,
-		    "" /* config parent context name */  // skip configuration info
+		    "" /** config parent context name  */  // skip configuration info
 		);
 
 		// check for gateway supervisor
@@ -138,13 +138,13 @@ void AllSupervisorInfo::init(xdaq::ApplicationContext* applicationContext)
 		name        = contextConfig ? contextConfig->getApplicationUID(
                                    descriptor.second->getContextDescriptor()->getURL(),
                                    descriptor.second->getLocalId())
-		                            : "" /* config app name */;
+		                            : "" /** config app name  */;
 		contextName = contextConfig
 		                  ? contextConfig->getContextUID(
 		                        descriptor.second->getContextDescriptor()->getURL())
-		                  : "" /* config parent context name */;
+		                  : "" /** config parent context name  */;
 
-		auto /*<iterator,bool>*/ emplacePair =
+		auto /**<iterator,bool> */ emplacePair =
 		    allSupervisorInfo_.emplace(std::pair<unsigned int, SupervisorInfo>(
 		        descriptor.second->getLocalId(),  // descriptor.first,
 		        SupervisorInfo(descriptor.second /* descriptor */, name, contextName)));

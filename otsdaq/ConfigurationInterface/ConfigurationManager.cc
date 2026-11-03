@@ -130,7 +130,7 @@ const std::set<std::string> ConfigurationManager::iterateMemberNames_ 				= {
 																						"IterateTable",
 																						"IterationPlanTable",
 																						"IterationTargetTable",
-																						/*command specific tables*/ "IterationCommandBeginLabelTable",
+																						/**command specific tables */ "IterationCommandBeginLabelTable",
 																						"IterationCommandChooseFSMTable",
 																						"IterationCommandConfigureAliasTable",
 																						"IterationCommandConfigureGroupTable",
@@ -461,7 +461,7 @@ void ConfigurationManager::restoreActiveTableGroups(
 			    0 /*doNotLoadMembers   = false*/,
 			    0 /*groupTypeString    = 0*/,
 			    0 /*groupAliases       = 0*/,
-			    onlyLoadIfBackboneOrContext /*onlyLoadIfBackboneOrContext = false*/
+			    onlyLoadIfBackboneOrContext  //onlyLoadIfBackboneOrContext = false
 			);
 
 			if(accumulatedWarnings)
@@ -1755,7 +1755,7 @@ void ConfigurationManager::loadMemberMap(
 	const int numOfThreads = StringMacros::getConcurrencyCount() / 2 < memberMap.size()
 	                             ? (StringMacros::getConcurrencyCount() / 2)
 	                             : memberMap.size();
-	if(memberMap.size() <= 2 /* i.e. is Context group */ || usingCache ||
+	if(memberMap.size() <= 2 /** i.e. is Context group  */ || usingCache ||
 	   numOfThreads < 2)  // no multi-threading
 	{
 		//	for each member
@@ -2355,13 +2355,13 @@ void ConfigurationManager::loadTableGroup(
 					             << StringMacros::mapToString(overrideTables) << __E__;
 
 					std::map<std::pair<std::string /*original table*/,
-					                   std::string /*original uidB*/>,
-					         std::string /*converted uidB*/>
+					                   std::string /**original uidB */>,
+					         std::string /**converted uidB */>
 					    uidConversionMap;
 					std::map<std::pair<std::string /*original table*/,
 					                   std::pair<std::string /*group linkid*/,
-					                             std::string /*original gidB*/>>,
-					         std::string /*converted gidB*/>
+					                             std::string /**original gidB */>>,
+					         std::string /**converted gidB */>
 					    groupidConversionMap;
 
 					for(const auto& mergeInPair : overrideTables)
@@ -2423,13 +2423,13 @@ void ConfigurationManager::loadTableGroup(
 					             << StringMacros::mapToString(mergInTables) << __E__;
 
 					std::map<std::pair<std::string /*original table*/,
-					                   std::string /*original uidB*/>,
-					         std::string /*converted uidB*/>
+					                   std::string /**original uidB */>,
+					         std::string /**converted uidB */>
 					    uidConversionMap;
 					std::map<std::pair<std::string /*original table*/,
 					                   std::pair<std::string /*group linkid*/,
-					                             std::string /*original gidB*/>>,
-					         std::string /*converted gidB*/>
+					                             std::string /**original gidB */>>,
+					         std::string /**converted gidB */>
 					    groupidConversionMap;
 
 					for(const auto& mergeInPair : mergInTables)
@@ -4078,7 +4078,7 @@ ConfigurationManager::getVersionAliases(const std::string& tableAliasNeedle) con
 		for(auto& tableAliasPair : tableAliasMap.second)
 			if(tableAliasPair.first == tableAliasNeedle)  //then table alias match!
 				retSet.insert(std::pair<std::string /*table name*/,
-				                        TableVersion /*aliased version*/>(
+				                        TableVersion /**aliased version */>(
 				    tableAliasMap.first, tableAliasPair.second));
 
 	return retSet;
@@ -5183,7 +5183,7 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 
 //==============================================================================
 ///Ignore any System Aliases with "Context" or "Iterat" in the name
-std::set<std::string /* configAlias */>
+std::set<std::string /** configAlias  */>
 ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSubsystemUID)
 {
 	std::set<std::string> retSet;
@@ -5225,7 +5225,7 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 	               false /*doActivate*/,
 	               0 /*groupMembers*/,
 	               0 /*progressBar*/,
-	               &accumulatedWarnings /*accumulateWarnings = 0*/
+	               &accumulatedWarnings  //accumulateWarnings = 0
 	);
 	__GEN_COUTTV__(accumulatedWarnings);
 
@@ -5245,7 +5245,7 @@ ConfigurationManager::getOtherSubsystemConfigAliases(const std::string& otherSub
 
 //==============================================================================
 ///Ignore any System Aliases with "Context" or "Iterat" in the name
-std::set<std::string /* configAlias */>
+std::set<std::string /** configAlias  */>
 ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
     const std::string& otherSubsystemUID, const std::string& otherSubsystemFsmName)
 {
@@ -5284,14 +5284,14 @@ ConfigurationManager::getOtherSubsystemFilteredConfigAliases(
 	               false /*doActivate*/,
 	               0 /*groupMembers*/,
 	               0 /*progressBar*/,
-	               &accumulatedWarnings /*accumulateWarnings = 0*/
+	               &accumulatedWarnings  //accumulateWarnings = 0
 	);
 	loadTableGroup(it2->second.first,
 	               it2->second.second,
 	               false /*doActivate*/,
 	               0 /*groupMembers*/,
 	               0 /*progressBar*/,
-	               &accumulatedWarnings /*accumulateWarnings = 0*/
+	               &accumulatedWarnings  //accumulateWarnings = 0
 	);
 	__GEN_COUTTV__(accumulatedWarnings);
 
@@ -5464,7 +5464,7 @@ void ConfigurationManager::getOtherSubsystemConfigAliasInfo(
 	               false /*doActivate*/,
 	               0 /*groupMembers*/,
 	               0 /*progressBar*/,
-	               &accumulatedWarnings /*accumulateWarnings = 0*/
+	               &accumulatedWarnings  //accumulateWarnings = 0
 	);
 	__GEN_COUTTV__(accumulatedWarnings);
 

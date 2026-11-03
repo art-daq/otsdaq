@@ -1,5 +1,5 @@
-#ifndef _ots_TransceiverSocket_h_
-#define _ots_TransceiverSocket_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TRANSCEIVERSOCKET_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TRANSCEIVERSOCKET_H_
 
 #include "otsdaq/NetworkUtilities/ReceiverSocket.h"
 #include "otsdaq/NetworkUtilities/TransmitterSocket.h"
@@ -86,4 +86,4 @@ class TransceiverSocket : public TransmitterSocket, public ReceiverSocket
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TRANSCEIVERSOCKET_H_

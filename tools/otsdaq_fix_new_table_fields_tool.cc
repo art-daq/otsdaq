@@ -1,9 +1,3 @@
-#include <dirent.h>
-#include <cassert>
-#include <iostream>
-#include <memory>
-#include <string>
-
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 // #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
@@ -11,6 +5,12 @@
 
 // Shared test utilities
 #include "otsdaq/Macros/TestUtilities.h"
+
+#include <dirent.h>
+#include <cassert>
+#include <iostream>
+#include <memory>
+#include <string>
 
 /// usage:
 /// otsdaq_flatten_system_aliases <baseFlatVersion> <pathToSwapIn (optional)>
@@ -112,9 +112,9 @@ void FixNewTableFields(int argc, char* argv[])
 	// 	and change the ConfigurationManager::ACTIVE_GROUPS_FILENAME
 	//	to reflect new group names/keys
 
-	/* map<<groupName, origKey>, newKey> */
+	// map<<groupName, origKey>, newKey>
 	std::map<std::pair<std::string, TableGroupKey>, TableGroupKey> groupSet;
-	/* <tableName, <origVersion, newVersion> >*/
+	// <tableName, <origVersion, newVersion> >
 	std::map<std::pair<std::string, TableVersion>, TableVersion>   modifiedTables;
 	std::map<std::string, std::pair<TableGroupKey, TableGroupKey>> activeGroupKeys;
 	std::map<std::pair<std::string, TableGroupKey>, std::string>   groupErrors;
@@ -576,7 +576,7 @@ void FixNewTableFields(int argc, char* argv[])
 			// first copy to new column names
 			TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(
 			    groupAliasesName /*table name*/,
-			    memberMap[groupAliasesName] /*source version*/
+			    memberMap[groupAliasesName]  //source version
 			);
 
 			config = cfgMgr->getTableByName(groupAliasesName);
@@ -647,7 +647,7 @@ void FixNewTableFields(int argc, char* argv[])
 			// first copy to new column names
 			TableVersion temporaryVersion = cfgMgr->copyViewToCurrentColumns(
 			    versionAliasesName /*table name*/,
-			    memberMap[versionAliasesName] /*source version*/
+			    memberMap[versionAliasesName]  //source version
 			);
 
 			config = cfgMgr->getTableByName(versionAliasesName);

@@ -1,5 +1,5 @@
-#ifndef artdaq_ots_Generators_UDPReceiver_hh
-#define artdaq_ots_Generators_UDPReceiver_hh
+#ifndef OTSDAQ_ARTDAQ_OTS_GENERATORS_UDPRECEIVER_HH_
+#define OTSDAQ_ARTDAQ_OTS_GENERATORS_UDPRECEIVER_HH_
 
 /// The UDP Receiver class receives UDP data from an otsdaq application and
 /// puts that data into UDPFragments for further ARTDAQ analysis.
@@ -28,8 +28,10 @@
 #include <atomic>
 #include <chrono>
 #include <list>
+#include <memory>
 #include <mutex>
 #include <queue>
+#include <string>
 #include <thread>
 
 namespace ots
@@ -130,4 +132,4 @@ class UDPReceiver : public artdaq::CommandableFragmentGenerator
 };
 }  // namespace ots
 
-#endif /* artdaq_demo_Generators_ToySimulator_hh */
+#endif  // OTSDAQ_ARTDAQ_OTS_GENERATORS_UDPRECEIVER_HH_

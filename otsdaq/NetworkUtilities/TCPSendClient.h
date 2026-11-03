@@ -1,5 +1,5 @@
-#ifndef _TCPSendClient_h_
-#define _TCPSendClient_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSENDCLIENT_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSENDCLIENT_H_
 
 #include <string>
 #include "otsdaq/NetworkUtilities/TCPClientBase.h"
@@ -15,4 +15,4 @@ class TCPSendClient : public TCPTransmitterSocket, public TCPClientBase
 	virtual ~TCPSendClient(void);
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSENDCLIENT_H_

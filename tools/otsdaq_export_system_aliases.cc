@@ -1,11 +1,5 @@
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
-#include <dirent.h>
-#include <cassert>
-#include <iostream>
-#include <memory>
-#include <string>
-
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 // #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
@@ -13,6 +7,12 @@
 
 // Shared test utilities
 #include "otsdaq/Macros/TestUtilities.h"
+
+#include <dirent.h>
+#include <cassert>
+#include <iostream>
+#include <memory>
+#include <string>
 
 /// Exports all active groups and system alias groups (specified by the active backbone)
 ///		to the path specified. Each group's member tables will be organized in a folder with metadata.
@@ -124,9 +124,9 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 	//	load/activate group
 	//		export each table as json doc to a folder <group name>_<export time>/
 
-	/* map<<groupName, origKey>, newKey> */
+	// map<<groupName, origKey>, newKey>
 	std::map<std::pair<std::string, TableGroupKey>, TableGroupKey> groupSet;
-	/* <tableName, <origVersion, newVersion> >*/
+	// <tableName, <origVersion, newVersion> >
 	std::map<std::pair<std::string, TableVersion>, TableVersion>   modifiedTables;
 	std::map<std::string, std::pair<TableGroupKey, TableGroupKey>> activeGroupKeys;
 	std::map<std::pair<std::string, TableGroupKey>, std::string>   groupErrors;

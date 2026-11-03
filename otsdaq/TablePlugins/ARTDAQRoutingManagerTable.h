@@ -1,8 +1,12 @@
-#ifndef _ots_ARTDAQRoutingManagerTable_h_
-#define _ots_ARTDAQRoutingManagerTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQROUTINGMANAGERTABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQROUTINGMANAGERTABLE_H_
 
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 #include "otsdaq/TablePlugins/SlowControlsTableBase/SlowControlsTableBase.h"
+
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace ots
 {
@@ -28,4 +32,4 @@ class ARTDAQRoutingManagerTable : public ARTDAQTableBase, public SlowControlsTab
 };
 // clang-format on
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQROUTINGMANAGERTABLE_H_

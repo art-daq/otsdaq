@@ -1,5 +1,5 @@
-#ifndef _ots_CircularBufferBase_h_
-#define _ots_CircularBufferBase_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_CIRCULARBUFFERBASE_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_CIRCULARBUFFERBASE_H_
 
 #include <string>
 
@@ -46,4 +46,4 @@ class CircularBufferBase
 	std::string mfSubject_;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_CIRCULARBUFFERBASE_H_

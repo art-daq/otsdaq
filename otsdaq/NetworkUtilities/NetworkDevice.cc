@@ -386,7 +386,7 @@ int NetworkDevice::getInterface(std::string ipAddress)
 
 		family = ifa->ifa_addr->sa_family;
 
-		/* For an AF_INET* interface address, display the address */
+		// For an AF_INET* interface address, display the address
 
 		if(family == AF_INET || family == AF_INET6)
 		{

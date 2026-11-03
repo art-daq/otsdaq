@@ -1,5 +1,5 @@
-#ifndef _ots_CoreSupervisorBase_h_
-#define _ots_CoreSupervisorBase_h_
+#ifndef OTSDAQ_OTSDAQ_CORESUPERVISORS_CORESUPERVISORBASE_H_
+#define OTSDAQ_OTSDAQ_CORESUPERVISORS_CORESUPERVISORBASE_H_
 
 #include "otsdaq/FiniteStateMachine/RunControlStateMachine.h"
 #include "otsdaq/SOAPUtilities/SOAPMessenger.h"
@@ -30,7 +30,7 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <string> /*string and to_string*/
+#include <string>  //string and to_string
 #include <vector>
 
 namespace ots
@@ -150,4 +150,4 @@ class CoreSupervisorBase : public xdaq::Application,
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CORESUPERVISORS_CORESUPERVISORBASE_H_

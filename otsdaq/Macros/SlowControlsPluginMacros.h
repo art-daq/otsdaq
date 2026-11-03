@@ -1,9 +1,10 @@
-#ifndef _ots_SlowControlsPluginMacro_h_
-#define _ots_SlowControlsPluginMacro_h_
-
-#include <memory>
+#ifndef OTSDAQ_OTSDAQ_MACROS_SLOWCONTROLSPLUGINMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_SLOWCONTROLSPLUGINMACROS_H_
 
 #include "otsdaq/SlowControlsCore/SlowControlsVInterface.h"
+
+#include <memory>
+#include <string>
 
 #define DEFINE_OTS_SLOW_CONTROLS(klass)                       \
 	extern "C" ots::SlowControlsVInterface* make(             \
@@ -18,4 +19,4 @@
 		                 pathToControlsConfiguration);        \
 	}
 
-#endif /* _ots_SlowControlsPluginMacro_h_ */
+#endif  // OTSDAQ_OTSDAQ_MACROS_SLOWCONTROLSPLUGINMACROS_H_

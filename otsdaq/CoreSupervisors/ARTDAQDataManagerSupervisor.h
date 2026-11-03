@@ -1,5 +1,5 @@
-#ifndef _ots_ARTDAQDataManagerSupervisor_h_
-#define _ots_ARTDAQDataManagerSupervisor_h_
+#ifndef OTSDAQ_OTSDAQ_CORESUPERVISORS_ARTDAQDATAMANAGERSUPERVISOR_H_
+#define OTSDAQ_OTSDAQ_CORESUPERVISORS_ARTDAQDATAMANAGERSUPERVISOR_H_
 
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
 
@@ -20,4 +20,4 @@ class ARTDAQDataManagerSupervisor : public CoreSupervisorBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CORESUPERVISORS_ARTDAQDATAMANAGERSUPERVISOR_H_

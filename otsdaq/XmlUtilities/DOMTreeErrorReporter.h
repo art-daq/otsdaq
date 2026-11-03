@@ -1,5 +1,5 @@
-#ifndef ots_DOMTreeErrorReporter_h
-#define ots_DOMTreeErrorReporter_h
+#ifndef OTSDAQ_OTSDAQ_XMLUTILITIES_DOMTREEERRORREPORTER_H_
+#define OTSDAQ_OTSDAQ_XMLUTILITIES_DOMTREEERRORREPORTER_H_
 
 #include <string>
 #include <xercesc/sax/ErrorHandler.hpp>
@@ -23,4 +23,4 @@ class DOMTreeErrorReporter : public xercesc::ErrorHandler
 };
 
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_XMLUTILITIES_DOMTREEERRORREPORTER_H_

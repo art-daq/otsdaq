@@ -1,5 +1,5 @@
-#ifndef _ots_RunInfoPluginMacro_h_
-#define _ots_RunInfoPluginMacro_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_RUNINFOPLUGINMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_RUNINFOPLUGINMACROS_H_
 
 #include <string>
 #include "cetlib/compiler_macros.h"
@@ -17,4 +17,4 @@ typedef RunInfoVInterface*(dpvimakeFunc_t)();
 		return new klass(runInfoPluginClassName, activeStateMachineName);              \
 	}
 
-#endif /* _ots_RunInfoPluginMacro_h_ */
+#endif  // OTSDAQ_OTSDAQ_MACROS_RUNINFOPLUGINMACROS_H_

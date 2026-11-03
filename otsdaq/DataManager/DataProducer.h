@@ -1,8 +1,10 @@
-#ifndef _ots_DataProducer_h_
-#define _ots_DataProducer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_DATAPRODUCER_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_DATAPRODUCER_H_
 
 #include "otsdaq/DataManager/DataProducerBase.h"
 #include "otsdaq/WorkLoopManager/WorkLoop.h"
+
+#include <string>
 
 namespace ots
 {
@@ -25,4 +27,4 @@ class DataProducer : public DataProducerBase, public virtual WorkLoop
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_DATAPRODUCER_H_

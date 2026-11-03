@@ -1,5 +1,5 @@
-#ifndef _ots_DQMHistosConsumerBase_h_
-#define _ots_DQMHistosConsumerBase_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_DQMHISTOSCONSUMERBASE_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_DQMHISTOSCONSUMERBASE_H_
 
 #include <mutex>
 #include <string>
@@ -29,4 +29,4 @@ class DQMHistosConsumerBase : public DQMHistosBase, public DataConsumer
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_DQMHISTOSCONSUMERBASE_H_

@@ -1,7 +1,11 @@
-#ifndef _ots_IterateTable_h_
-#define _ots_IterateTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_ITERATETABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_ITERATETABLE_H_
 
 #include "otsdaq/TableCore/TableBase.h"
+
+#include <map>
+#include <string>
+#include <vector>
 
 namespace ots
 {
@@ -225,4 +229,4 @@ class IterateTable : public TableBase
 	} planTableCols_;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_ITERATETABLE_H_

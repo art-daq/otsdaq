@@ -1,5 +1,5 @@
-#ifndef _ots_SupervisorTableBase_h_
-#define _ots_SupervisorTableBase_h_
+#ifndef OTSDAQ_OTSDAQ_SUPERVISORINFO_SUPERVISORDESCRIPTORINFOBASE_H_
+#define OTSDAQ_OTSDAQ_SUPERVISORINFO_SUPERVISORDESCRIPTORINFOBASE_H_
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -42,4 +42,4 @@ class SupervisorDescriptorInfoBase
 	SupervisorDescriptors allSupervisors_;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_SUPERVISORINFO_SUPERVISORDESCRIPTORINFOBASE_H_

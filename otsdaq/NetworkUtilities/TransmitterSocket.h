@@ -1,5 +1,5 @@
-#ifndef _ots_TransmitterSocket_h_
-#define _ots_TransmitterSocket_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TRANSMITTERSOCKET_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TRANSMITTERSOCKET_H_
 
 #include "otsdaq/NetworkUtilities/Socket.h"
 
@@ -33,4 +33,4 @@ class TransmitterSocket : public virtual Socket
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TRANSMITTERSOCKET_H_

@@ -1,8 +1,12 @@
-#ifndef _ots_ARTDAQEventBuilderTable_h_
-#define _ots_ARTDAQEventBuilderTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQEVENTBUILDERTABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQEVENTBUILDERTABLE_H_
 
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
 #include "otsdaq/TablePlugins/SlowControlsTableBase/SlowControlsTableBase.h"
+
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace ots
 {
@@ -28,4 +32,4 @@ class ARTDAQEventBuilderTable : public ARTDAQTableBase, public SlowControlsTable
 };
 // clang-format on
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_ARTDAQEVENTBUILDERTABLE_H_

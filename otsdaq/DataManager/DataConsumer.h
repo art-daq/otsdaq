@@ -1,5 +1,5 @@
-#ifndef _ots_DataConsumer_h_
-#define _ots_DataConsumer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_DATACONSUMER_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_DATACONSUMER_H_
 
 #include <map>
 #include <string>
@@ -72,4 +72,4 @@ class DataConsumer : public DataProcessor, public virtual WorkLoop
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_DATACONSUMER_H_

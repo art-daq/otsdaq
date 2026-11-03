@@ -55,9 +55,9 @@ void ARTDAQEventBuilderTable::genFlatFHiCL(void)
 	auto builders = lastConfigManager_->getNode(ARTDAQTableBase::getTableName())
 	                    .getChildren(
 	                        /*default filterMap*/ std::map<std::string /*relative-path*/,
-	                                                       std::string /*value*/>(),
-	                        /*default byPriority*/ false,
-	                        /*TRUE! onlyStatusTrue*/ true);
+	                                                       std::string /**value */>(),
+	                        /**default byPriority */ false,
+	                        /**TRUE! onlyStatusTrue */ true);
 
 	// Builder fcl generation happens in two stages: outputDataReceiverFHICL
 	// (config-tree access, sequential) inside the loop below, then the expensive
@@ -90,7 +90,7 @@ unsigned int ARTDAQEventBuilderTable::slowControlsHandlerConfig(
     std::stringstream&    out,
     ConfigurationManager* configManager,
     std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
-        channelList /*= 0*/
+        channelList  //= 0
 ) const
 {
 	/////////////////////////

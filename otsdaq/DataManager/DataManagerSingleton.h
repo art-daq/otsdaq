@@ -1,5 +1,5 @@
-#ifndef _ots_DataManagerSingleton_h_
-#define _ots_DataManagerSingleton_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_DATAMANAGERSINGLETON_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_DATAMANAGERSINGLETON_H_
 
 #include <cassert>
 #include <map>
@@ -76,4 +76,4 @@ class DataManagerSingleton
 };
 
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_DATAMANAGERSINGLETON_H_

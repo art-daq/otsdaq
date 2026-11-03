@@ -1,5 +1,5 @@
-#ifndef _ots_BufferImplementation_h_
-#define _ots_BufferImplementation_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_BUFFERIMPLEMENTATION_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_BUFFERIMPLEMENTATION_H_
 
 #include "otsdaq/DataManager/CircularBufferBase.h"
 #include "otsdaq/Macros/CoutMacros.h"
@@ -104,4 +104,4 @@ class BufferImplementation
 #include "otsdaq/DataManager/BufferImplementation.icc"
 
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_BUFFERIMPLEMENTATION_H_

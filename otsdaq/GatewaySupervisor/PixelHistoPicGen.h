@@ -1,5 +1,5 @@
-#ifndef _PixelHistoPicGen_h_
-#define _PixelHistoPicGen_h_
+#ifndef OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_PIXELHISTOPICGEN_H_
+#define OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_PIXELHISTOPICGEN_H_
 
 #include <stdlib.h>
 #include <string>
@@ -253,4 +253,4 @@ class PixelHistoPicGen
 	bool firstTurtle;
 };
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_GATEWAYSUPERVISOR_PIXELHISTOPICGEN_H_

@@ -1,5 +1,5 @@
-#ifndef _ots_FESlowControlsWorkLoop_h_
-#define _ots_FESlowControlsWorkLoop_h_
+#ifndef OTSDAQ_OTSDAQ_FECORE_FESLOWCONTROLSWORKLOOP_H_
+#define OTSDAQ_OTSDAQ_FECORE_FESLOWCONTROLSWORKLOOP_H_
 
 #include "otsdaq/WorkLoopManager/WorkLoop.h"
 
@@ -30,4 +30,4 @@ class FESlowControlsWorkLoop : public WorkLoop
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_FECORE_FESLOWCONTROLSWORKLOOP_H_

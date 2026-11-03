@@ -1,10 +1,11 @@
-#ifndef _ots_TCPDataReceiverProducer_h_
-#define _ots_TCPDataReceiverProducer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATARECEIVERPRODUCER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATARECEIVERPRODUCER_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataProducer.h"
 #include "otsdaq/NetworkUtilities/TCPSubscribeClient.h"  // Make sure this is always first because <sys/types.h> (defined in Socket.h) must be first
 
+#include <map>
 #include <string>
 
 namespace ots
@@ -45,4 +46,4 @@ class TCPDataReceiverProducer : public DataProducer,
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_TCPDATARECEIVERPRODUCER_H_

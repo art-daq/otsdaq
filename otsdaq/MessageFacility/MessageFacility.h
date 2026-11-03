@@ -1,9 +1,10 @@
-#ifndef OTSDAQ_CORE_MESSAGEFACILITY_MESSAGEFACILITY_H
-#define OTSDAQ_CORE_MESSAGEFACILITY_MESSAGEFACILITY_H
+#ifndef OTSDAQ_OTSDAQ_MESSAGEFACILITY_MESSAGEFACILITY_H_
+#define OTSDAQ_OTSDAQ_MESSAGEFACILITY_MESSAGEFACILITY_H_
 
 #include "otsdaq/Macros/CoutMacros.h"
 
 #include <messagefacility/MessageLogger/MessageLogger.h>
+#include <string>
 #include "artdaq-core/Utilities/configureMessageFacility.hh"
 
 namespace ots
@@ -94,4 +95,4 @@ inline void INIT_MF(const char* name)
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_MESSAGEFACILITY_MESSAGEFACILITY_H_

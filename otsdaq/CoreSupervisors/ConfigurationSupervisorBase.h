@@ -1,10 +1,15 @@
-#ifndef _ots_ConfigurationSupervisorBase_h_
-#define _ots_ConfigurationSupervisorBase_h_
+#ifndef OTSDAQ_OTSDAQ_CORESUPERVISORS_CONFIGURATIONSUPERVISORBASE_H_
+#define OTSDAQ_OTSDAQ_CORESUPERVISORS_CONFIGURATIONSUPERVISORBASE_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 #include "otsdaq/XmlUtilities/HttpXmlDocument.h"
 
 #include "otsdaq/TablePlugins/DesktopIconTable.h"
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace ots
 {
@@ -103,4 +108,4 @@ public:
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CORESUPERVISORS_CONFIGURATIONSUPERVISORBASE_H_

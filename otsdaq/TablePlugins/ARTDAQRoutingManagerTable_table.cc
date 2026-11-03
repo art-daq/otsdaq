@@ -52,9 +52,9 @@ void ARTDAQRoutingManagerTable::genFlatFHiCL(void)
 
 	auto routingManagers = lastConfigManager_->__SELF_NODE__.getChildren(
 	    /*default filterMap*/ std::map<std::string /*relative-path*/,
-	                                   std::string /*value*/>(),
-	    /*default byPriority*/ false,
-	    /*TRUE! onlyStatusTrue*/ true);
+	                                   std::string /**value */>(),
+	    /**default byPriority */ false,
+	    /**TRUE! onlyStatusTrue */ true);
 
 	for(auto& routingManager : routingManagers)
 	{
@@ -72,7 +72,7 @@ unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
     std::stringstream&    out,
     ConfigurationManager* configManager,
     std::vector<std::pair<std::string /*channelName*/, std::vector<std::string>>>*
-        channelList /*= 0*/
+        channelList  //= 0
 ) const
 {
 	/////////////////////////

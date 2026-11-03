@@ -28,8 +28,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  ================================================================================*/
 
-#ifndef _ANSICOLORS_H
-#define _ANSICOLORS_H
+#ifndef OTSDAQ_OTSDAQ_MACROS_ANSICOLORS_H_
+#define OTSDAQ_OTSDAQ_MACROS_ANSICOLORS_H_
 
 #include <iostream>
 #include <sstream>
@@ -80,4 +80,4 @@
 #define ACSave   "\x1B[s"
 #define ACRecall "\x1B[u"
 
-#endif  // _ANSICOLORS_H
+#endif  // OTSDAQ_OTSDAQ_MACROS_ANSICOLORS_H_

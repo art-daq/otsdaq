@@ -1,5 +1,5 @@
-#ifndef _ots_VisualDataManager_h_
-#define _ots_VisualDataManager_h_
+#ifndef OTSDAQ_OTSDAQ_ROOTUTILITIES_VISUALDATAMANAGER_H_
+#define OTSDAQ_OTSDAQ_ROOTUTILITIES_VISUALDATAMANAGER_H_
 
 #include "otsdaq/DataManager/DataManager.h"
 // #include "otsdaq/MonicelliInterface/Visual3DEvent.h"
@@ -58,4 +58,4 @@ class VisualDataManager : public DataManager
 };
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_ROOTUTILITIES_VISUALDATAMANAGER_H_

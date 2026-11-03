@@ -1,5 +1,5 @@
-#ifndef _ots_MakeInterface_h_
-#define _ots_MakeInterface_h_
+#ifndef OTSDAQ_OTSDAQ_FECORE_MAKEINTERFACE_H_
+#define OTSDAQ_OTSDAQ_FECORE_MAKEINTERFACE_H_
 /// Using LibraryManager, find the correct library and return an instance
 /// of the specified interface.
 ///
@@ -18,4 +18,4 @@ std::unique_ptr<FEVInterface> makeInterface(
     const std::string&       pathToInterfaceConfiguration);
 }  // namespace ots
 
-#endif /* _ots_MakeInterface_h_ */
+#endif  // OTSDAQ_OTSDAQ_FECORE_MAKEINTERFACE_H_

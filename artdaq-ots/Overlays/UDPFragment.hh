@@ -1,5 +1,5 @@
-#ifndef artdaq_ots_Overlays_UDPFragment_hh
-#define artdaq_ots_Overlays_UDPFragment_hh
+#ifndef OTSDAQ_ARTDAQ_OTS_OVERLAYS_UDPFRAGMENT_HH_
+#define OTSDAQ_ARTDAQ_OTS_OVERLAYS_UDPFRAGMENT_HH_
 
 #include "artdaq-core/Data/Fragment.hh"
 #include "cetlib_except/exception.h"
@@ -124,4 +124,4 @@ class ots::UDPFragment
 	artdaq::Fragment const& artdaq_Fragment_;
 };
 
-#endif /* artdaq_ots_Overlays_UDPFragment_hh */
+#endif  // OTSDAQ_ARTDAQ_OTS_OVERLAYS_UDPFRAGMENT_HH_

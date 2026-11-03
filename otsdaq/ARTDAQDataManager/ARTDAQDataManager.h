@@ -1,7 +1,9 @@
-#ifndef _ots_ARTDAQDataManager_h_
-#define _ots_ARTDAQDataManager_h_
+#ifndef OTSDAQ_OTSDAQ_ARTDAQDATAMANAGER_ARTDAQDATAMANAGER_H_
+#define OTSDAQ_OTSDAQ_ARTDAQDATAMANAGER_ARTDAQDATAMANAGER_H_
 
 #include "otsdaq/DataManager/DataManager.h"
+
+#include <string>
 
 namespace ots
 {
@@ -24,4 +26,4 @@ class ARTDAQDataManager : public DataManager
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_ARTDAQDATAMANAGER_ARTDAQDATAMANAGER_H_

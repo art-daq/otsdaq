@@ -1,11 +1,5 @@
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
-#include <dirent.h>
-#include <cassert>
-#include <iostream>
-#include <memory>
-#include <string>
-
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationManagerRW.h"
 // #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
@@ -13,6 +7,12 @@
 
 // Shared test utilities
 #include "otsdaq/Macros/TestUtilities.h"
+
+#include <dirent.h>
+#include <cassert>
+#include <iostream>
+#include <memory>
+#include <string>
 
 /// usage:
 /// otsdaq_load_json_document <document_name_to_load> <document_version_to_load> <path_to_save_JSON>

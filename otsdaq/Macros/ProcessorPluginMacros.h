@@ -1,5 +1,5 @@
-#ifndef _ots_ProcessorPluginMacro_h_
-#define _ots_ProcessorPluginMacro_h_
+#ifndef OTSDAQ_OTSDAQ_MACROS_PROCESSORPLUGINMACROS_H_
+#define OTSDAQ_OTSDAQ_MACROS_PROCESSORPLUGINMACROS_H_
 
 #include <string>
 #include "otsdaq/DataManager/DataProcessor.h"
@@ -23,4 +23,4 @@ typedef DataProcessor*(dpvimakeFunc_t)();
 		                 pathToInterfaceConfiguration);                                        \
 	}
 
-#endif /* _ots_ProcessorPluginMacro_h_ */
+#endif  // OTSDAQ_OTSDAQ_MACROS_PROCESSORPLUGINMACROS_H_

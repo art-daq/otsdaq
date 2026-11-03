@@ -1,5 +1,5 @@
-#ifndef _ots_ARTDAQOnlineMonitorSupervisor_h
-#define _ots_ARTDAQOnlineMonitorSupervisor_h
+#ifndef OTSDAQ_OTSDAQ_ARTDAQONLINEMONITOR_ARTDAQONLINEMONITORSUPERVISOR_H_
+#define OTSDAQ_OTSDAQ_ARTDAQONLINEMONITOR_ARTDAQONLINEMONITORSUPERVISOR_H_
 
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
 
@@ -49,4 +49,4 @@ class ARTDAQOnlineMonitorSupervisor : public CoreSupervisorBase
 	int                                 om_rank_;
 };
 }  // namespace ots
-#endif  // _ots_ARTDAQOnlineMonitorSupervisor_h
+#endif  // OTSDAQ_OTSDAQ_ARTDAQONLINEMONITOR_ARTDAQONLINEMONITORSUPERVISOR_H_

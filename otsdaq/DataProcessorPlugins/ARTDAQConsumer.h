@@ -1,11 +1,13 @@
-#ifndef _ots_ARTDAQConsumer_h_
-#define _ots_ARTDAQConsumer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQCONSUMER_H_
+#define OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQCONSUMER_H_
 
 #include "otsdaq/ARTDAQReaderCore/ARTDAQReaderProcessorBase.h"
 
 // #include "artdaq/Application/BoardReaderApp.hh"
 // #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataConsumer.h"
+
+#include <string>
 
 // #include <future>
 // #include <memory>
@@ -59,4 +61,4 @@ class ARTDAQConsumer
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAPROCESSORPLUGINS_ARTDAQCONSUMER_H_

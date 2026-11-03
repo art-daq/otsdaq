@@ -1,5 +1,5 @@
-#ifndef _ots_NetworkConverters_h_
-#define _ots_NetworkConverters_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_NETWORKCONVERTERS_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_NETWORKCONVERTERS_H_
 
 #include <stdint.h>
 #include <string>
@@ -31,4 +31,4 @@ class NetworkConverters
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_NETWORKCONVERTERS_H_

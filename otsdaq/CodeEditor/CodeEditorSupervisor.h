@@ -1,8 +1,10 @@
-#ifndef _ots_CodeEditorSupervisor_h_
-#define _ots_CodeEditorSupervisor_h_
+#ifndef OTSDAQ_OTSDAQ_CODEEDITOR_CODEEDITORSUPERVISOR_H_
+#define OTSDAQ_OTSDAQ_CODEEDITOR_CODEEDITORSUPERVISOR_H_
 
 #include "otsdaq/CodeEditor/CodeEditor.h"
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
+
+#include <string>
 
 namespace ots
 {
@@ -33,4 +35,4 @@ class CodeEditorSupervisor : public CoreSupervisorBase
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_CODEEDITOR_CODEEDITORSUPERVISOR_H_

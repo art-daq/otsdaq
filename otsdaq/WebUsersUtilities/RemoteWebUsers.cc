@@ -266,7 +266,7 @@ void RemoteWebUsers::getLastTableGroups(
     std::map<std::string /* group type */,
              std::tuple<std::string /*group name*/,
                         TableGroupKey,
-                        std::string /* time string*/>>& theGroups)
+                        std::string /** time string */>>& theGroups)
 {
 	xoap::MessageReference retMsg =
 	    ots::SOAPMessenger::sendWithSOAPReply(gatewaySupervisorDescriptor_,

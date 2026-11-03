@@ -1,5 +1,5 @@
-#ifndef _ots_ARTDAQReaderProcessorBase_h_
-#define _ots_ARTDAQReaderProcessorBase_h_
+#ifndef OTSDAQ_OTSDAQ_ARTDAQREADERCORE_ARTDAQREADERPROCESSORBASE_H_
+#define OTSDAQ_OTSDAQ_ARTDAQREADERCORE_ARTDAQREADERPROCESSORBASE_H_
 
 #include "artdaq/Application/BoardReaderApp.hh"
 #include "otsdaq/Configurable/Configurable.h"
@@ -57,4 +57,4 @@ class ARTDAQReaderProcessorBase : public Configurable
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_ARTDAQREADERCORE_ARTDAQREADERPROCESSORBASE_H_

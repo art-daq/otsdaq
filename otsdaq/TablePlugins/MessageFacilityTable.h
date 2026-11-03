@@ -1,5 +1,5 @@
-#ifndef _ots_DesktopIconTable_h_
-#define _ots_DesktopIconTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_MESSAGEFACILITYTABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_MESSAGEFACILITYTABLE_H_
 
 #include <string>
 
@@ -19,4 +19,4 @@ class MessageFacilityTable : public TableBase
   private:
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_MESSAGEFACILITYTABLE_H_

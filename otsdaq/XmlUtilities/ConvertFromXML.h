@@ -1,5 +1,5 @@
-#ifndef ots_ConvertFromXML_h
-#define ots_ConvertFromXML_h
+#ifndef OTSDAQ_OTSDAQ_XMLUTILITIES_CONVERTFROMXML_H_
+#define OTSDAQ_OTSDAQ_XMLUTILITIES_CONVERTFROMXML_H_
 
 #include <string>
 #include <xercesc/util/XMLChar.hpp>
@@ -26,4 +26,4 @@ class ConvertFromXML
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_XMLUTILITIES_CONVERTFROMXML_H_

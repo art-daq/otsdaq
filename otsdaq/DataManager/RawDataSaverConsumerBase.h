@@ -1,10 +1,11 @@
-#ifndef _ots_RawDataSaverConsumerBase_h_
-#define _ots_RawDataSaverConsumerBase_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_RAWDATASAVERCONSUMERBASE_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_RAWDATASAVERCONSUMERBASE_H_
 
 #include "otsdaq/Configurable/Configurable.h"
 #include "otsdaq/DataManager/DataConsumer.h"
 
 #include <fstream>
+#include <map>
 #include <string>
 
 namespace ots
@@ -54,4 +55,4 @@ class RawDataSaverConsumerBase : public DataConsumer, public Configurable
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_RAWDATASAVERCONSUMERBASE_H_

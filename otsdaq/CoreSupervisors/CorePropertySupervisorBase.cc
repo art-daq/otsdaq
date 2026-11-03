@@ -609,7 +609,7 @@ void CorePropertySupervisorBase::loadUserSupervisorProperties(void)
 
 	try
 	{
-		auto /*map<name,node>*/ children =
+		auto /**map<name,node> */ children =
 		    supervisorNode.getNode("LinkToPropertyTable").getChildren();
 
 		for(auto& child : children)
@@ -1083,7 +1083,7 @@ const std::string& CorePropertySupervisorBase::setTraceLevels(
 	if(allMode || mode == "TRIGGER")
 		setMask.T = ((uint64_t(setValueMSB)) << 32) | (uint64_t(uint32_t(setValueLSB)));
 
-	std::vector<std::string /*labels*/> labels;
+	std::vector<std::string /**labels */> labels;
 	StringMacros::getVectorFromString(labelsStr, labels, {','});
 	for(const auto& label : labels)
 	{
@@ -1113,7 +1113,7 @@ const std::string& CorePropertySupervisorBase::setIndividualTraceLevels(
 	bool                         slowMode    = mode == "SLOW";
 	bool                         triggerMode = mode == "TRIGGER";
 
-	std::vector<std::string /*labels,msb,lsb*/> labelValues;
+	std::vector<std::string /**labels,msb,lsb */> labelValues;
 	StringMacros::getVectorFromString(labelValuesStr, labelValues, {','});
 	for(unsigned int i = 0; i < labelValues.size(); i += 3 /*label,msb,lsb*/)
 	{

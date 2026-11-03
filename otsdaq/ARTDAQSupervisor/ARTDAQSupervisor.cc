@@ -11,7 +11,7 @@
 #include "fhiclcpp/make_ParameterSet.h"
 #include "otsdaq/ARTDAQSupervisor/ARTDAQSupervisorTRACEController.h"
 
-#include "artdaq-core/Utilities/ExceptionHandler.hh" /*for artdaq::ExceptionHandler*/
+#include "artdaq-core/Utilities/ExceptionHandler.hh"  //for artdaq::ExceptionHandler
 
 #include <boost/exception/all.hpp>
 #include <boost/filesystem.hpp>
@@ -20,7 +20,13 @@
 #include <cerrno>
 #include <cstring>
 #include <fstream>
+#include <list>
+#include <map>
 #include <regex>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
 #include "otsdaq/Macros/StringMacros.h"
@@ -434,7 +440,7 @@ void ARTDAQSupervisor::init(void)
 
 			__SUP_COUT__ << "Creating Module name" << __E__;
 			PyObjectGuard pName(PyUnicode_FromString("rc.control.daqinterface"));
-			/* Error checking of pName left out */
+			// Error checking of pName left out
 
 			__SUP_COUT__ << "Importing module" << __E__;
 			PyObjectGuard pModule(PyImport_Import(pName.get()));
@@ -672,7 +678,7 @@ void ARTDAQSupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/
 			    ss.str() /* message*/,
 			    "CoreSupervisorBase::transitionConfiguring" /*module*/,
 			    __LINE__ /*line*/,
-			    __FUNCTION__ /*function*/
+			    __FUNCTION__  //function
 			);
 		}
 
@@ -1253,7 +1259,7 @@ catch(const std::runtime_error& e)
 		    ss.str() /* message*/,
 		    "ARTDAQSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
+		    __FUNCTION__  //function
 		);
 	}
 }  // end transitionHalting() std::runtime_error exception handling
@@ -1284,7 +1290,7 @@ catch(...)
 		    ss.str() /* message*/,
 		    "ARTDAQSupervisorBase::transition" + transitionName /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
+		    __FUNCTION__  //function
 		);
 	}
 }  // end transitionHalting() exception handling
@@ -1473,7 +1479,7 @@ try
 			    ss.str() /* message*/,
 			    "CoreSupervisorBase::transitionStarting" /*module*/,
 			    __LINE__ /*line*/,
-			    __FUNCTION__ /*function*/
+			    __FUNCTION__  //function
 			);
 		}
 

@@ -1,7 +1,9 @@
-#ifndef _ots_TemplateTable_h_
-#define _ots_TemplateTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_TEMPLATETABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_TEMPLATETABLE_H_
 
 #include "otsdaq/TableCore/TableBase.h"
+
+#include <string>
 
 namespace ots
 {
@@ -24,4 +26,4 @@ class TemplateTable : public TableBase
 	} colNames_;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_TEMPLATETABLE_H_

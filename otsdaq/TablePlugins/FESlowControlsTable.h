@@ -1,5 +1,5 @@
-#ifndef _ots_FESlowControlsTable_h_
-#define _ots_FESlowControlsTable_h_
+#ifndef OTSDAQ_OTSDAQ_TABLEPLUGINS_FESLOWCONTROLSTABLE_H_
+#define OTSDAQ_OTSDAQ_TABLEPLUGINS_FESLOWCONTROLSTABLE_H_
 
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 
@@ -27,4 +27,4 @@ class FESlowControlsTable : public TableBase
 	} colNames_;
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLEPLUGINS_FESLOWCONTROLSTABLE_H_

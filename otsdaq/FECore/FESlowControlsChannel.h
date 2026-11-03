@@ -1,5 +1,5 @@
-#ifndef _ots_FESlowControlsChannel_h_
-#define _ots_FESlowControlsChannel_h_
+#ifndef OTSDAQ_OTSDAQ_FECORE_FESLOWCONTROLSCHANNEL_H_
+#define OTSDAQ_OTSDAQ_FECORE_FESLOWCONTROLSCHANNEL_H_
 
 #include <iostream>
 #include <string>
@@ -103,4 +103,4 @@ class FESlowControlsChannel
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_FECORE_FESLOWCONTROLSCHANNEL_H_

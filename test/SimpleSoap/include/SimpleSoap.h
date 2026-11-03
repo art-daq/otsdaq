@@ -1,5 +1,5 @@
-#ifndef _SimpleSoap_SimpleSoap_h
-#define _SimpleSoap_SimpleSoap_h
+#ifndef OTSDAQ_TEST_SIMPLESOAP_INCLUDE_SIMPLESOAP_H_
+#define OTSDAQ_TEST_SIMPLESOAP_INCLUDE_SIMPLESOAP_H_
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -49,4 +49,4 @@ class SimpleSoap : public xdaq::Application, public SOAPMessenger
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_TEST_SIMPLESOAP_INCLUDE_SIMPLESOAP_H_

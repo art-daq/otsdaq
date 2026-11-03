@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 
-#include "artdaq-core/Utilities/ExceptionHandler.hh" /*for artdaq::ExceptionHandler*/
+#include "artdaq-core/Utilities/ExceptionHandler.hh"  //for artdaq::ExceptionHandler
 
 /// https://cdcvs.fnal.gov/redmine/projects/artdaq/repository/revisions/develop/entry/artdaq/DAQdata/Globals.hh
 /// for metric manager include
@@ -1749,7 +1749,7 @@ void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "FESupervisor::transitionConfiguring" /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
+		    __FUNCTION__  //function
 		);
 	}
 	catch(...)
@@ -1777,7 +1777,7 @@ void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 		    ss.str() /* message*/,
 		    "FESupervisor::transitionConfiguring" /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
+		    __FUNCTION__  //function
 		);
 	}
 
@@ -1871,7 +1871,7 @@ void FESupervisor::transitionHalting(toolbox::Event::Reference event)
 		    ss.str() /* message*/,
 		    "FESupervisor::transitionHalting" /*module*/,
 		    __LINE__ /*line*/,
-		    __FUNCTION__ /*function*/
+		    __FUNCTION__  //function
 		);
 	}
 

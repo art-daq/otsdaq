@@ -1,5 +1,5 @@
-#ifndef _ots_Utilities_ProgressBar_h_
-#define _ots_Utilities_ProgressBar_h_
+#ifndef OTSDAQ_OTSDAQ_PROGRESSBAR_PROGRESSBAR_H_
+#define OTSDAQ_OTSDAQ_PROGRESSBAR_PROGRESSBAR_H_
 
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
@@ -116,4 +116,4 @@ class ProgressBar
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_PROGRESSBAR_PROGRESSBAR_H_

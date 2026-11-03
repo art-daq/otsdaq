@@ -1,5 +1,5 @@
-#ifndef artdaq_ots_Overlays_UDPFragmentWriter_hh
-#define artdaq_ots_Overlays_UDPFragmentWriter_hh
+#ifndef OTSDAQ_ARTDAQ_OTS_OVERLAYS_UDPFRAGMENTWRITER_HH_
+#define OTSDAQ_ARTDAQ_OTS_OVERLAYS_UDPFRAGMENTWRITER_HH_
 
 ////////////////////////////////////////////////////////////////////////
 /// UDPFragmentWriter
@@ -106,4 +106,4 @@ inline size_t ots::UDPFragmentWriter::bytes_to_words_(size_t nBytes)
 	return (mod == 0) ? nBytes / bytes_per_word_() : nBytes / bytes_per_word_() + 1;
 }
 
-#endif /* artdaq_demo_Overlays_UDPFragmentWriter_hh */
+#endif  // OTSDAQ_ARTDAQ_OTS_OVERLAYS_UDPFRAGMENTWRITER_HH_

@@ -1,5 +1,5 @@
-#ifndef __RootFileExplorer_H__
-#define __RootFileExplorer_H__
+#ifndef OTSDAQ_OTSDAQ_ROOTUTILITIES_ROOTFILEEXPLORER_H_
+#define OTSDAQ_OTSDAQ_ROOTUTILITIES_ROOTFILEEXPLORER_H_
 
 #include <dirent.h>
 #include <errno.h>
@@ -141,4 +141,4 @@ class RootFileExplorer
 //  HttpXmlDocument                                xmlOut_           ;
 } ;
 // clang-format on
-#endif
+#endif  // OTSDAQ_OTSDAQ_ROOTUTILITIES_ROOTFILEEXPLORER_H_

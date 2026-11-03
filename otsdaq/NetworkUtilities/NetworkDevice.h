@@ -1,5 +1,5 @@
-#ifndef _ots_NetworkDevice_h_
-#define _ots_NetworkDevice_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_NETWORKDEVICE_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_NETWORKDEVICE_H_
 
 #include <netinet/in.h>
 #include <map>
@@ -51,4 +51,4 @@ class NetworkDevice
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_NETWORKDEVICE_H_

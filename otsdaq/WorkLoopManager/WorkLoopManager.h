@@ -1,5 +1,5 @@
-#ifndef _ots_WorkLoopManager_h
-#define _ots_WorkLoopManager_h
+#ifndef OTSDAQ_OTSDAQ_WORKLOOPMANAGER_WORKLOOPMANAGER_H_
+#define OTSDAQ_OTSDAQ_WORKLOOPMANAGER_WORKLOOPMANAGER_H_
 
 #include <toolbox/task/WorkLoop.h>
 #pragma GCC diagnostic push
@@ -87,4 +87,4 @@ class WorkLoopManager
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_WORKLOOPMANAGER_WORKLOOPMANAGER_H_

@@ -1,5 +1,5 @@
-#ifndef _ots_TCPTransmitterSocket_h_
-#define _ots_TCPTransmitterSocket_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPTRANSMITTERSOCKET_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPTRANSMITTERSOCKET_H_
 
 #include "otsdaq/NetworkUtilities/TCPSocket.h"
 
@@ -35,4 +35,4 @@ class TCPTransmitterSocket : public virtual TCPSocket
 	void setSendTimeout(unsigned int timeoutSeconds, unsigned int timeoutMicroSeconds);
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPTRANSMITTERSOCKET_H_

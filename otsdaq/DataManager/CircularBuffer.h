@@ -1,5 +1,5 @@
-#ifndef _ots_CircularBuffer_h_
-#define _ots_CircularBuffer_h_
+#ifndef OTSDAQ_OTSDAQ_DATAMANAGER_CIRCULARBUFFER_H_
+#define OTSDAQ_OTSDAQ_DATAMANAGER_CIRCULARBUFFER_H_
 
 #include "otsdaq/DataManager/BufferImplementation.h"
 #include "otsdaq/DataManager/CircularBufferBase.h"
@@ -98,7 +98,7 @@ class CircularBuffer : public CircularBufferBase
 
   private:
 	std::map<std::string /*producer id*/,
-	         BufferImplementation<D, H> /*one producer, many consumers*/>
+	         BufferImplementation<D, H> /***one producer, many consumers  */>
 	    theBuffer_;
 
 	void registerProducer(const std::string& producerID,
@@ -109,7 +109,7 @@ class CircularBuffer : public CircularBufferBase
 	void setNextProducerBuffer(const std::string& consumer);
 
 	std::map<std::string /*consumer id*/,
-	         /*iterator within producer map*/ typename std::
+	         /***iterator within producer map  */ typename std::
 	             map<std::string, BufferImplementation<D, H>>::iterator>
 	    lastReadBuffer_;
 
@@ -118,4 +118,4 @@ class CircularBuffer : public CircularBufferBase
 #include "otsdaq/DataManager/CircularBuffer.icc"
 
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_DATAMANAGER_CIRCULARBUFFER_H_

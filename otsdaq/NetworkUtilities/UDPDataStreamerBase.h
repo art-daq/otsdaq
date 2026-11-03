@@ -1,9 +1,11 @@
-#ifndef _ots_UDPDataStreamerBase_h_
-#define _ots_UDPDataStreamerBase_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_UDPDATASTREAMERBASE_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_UDPDATASTREAMERBASE_H_
 
-#include <string>
 #include "otsdaq/NetworkUtilities/ReceiverSocket.h"     // Make sure this is always first because <sys/types.h> (defined in Socket.h) must be first
 #include "otsdaq/NetworkUtilities/TransmitterSocket.h"  // Make sure this is always first because <sys/types.h> (defined in Socket.h) must be first
+
+#include <string>
+#include <vector>
 
 namespace ots
 {
@@ -31,4 +33,4 @@ class UDPDataStreamerBase : public TransmitterSocket
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_UDPDATASTREAMERBASE_H_

@@ -1,5 +1,5 @@
-#ifndef _ots_TableInfoReader_h_
-#define _ots_TableInfoReader_h_
+#ifndef OTSDAQ_OTSDAQ_TABLECORE_TABLEINFOREADER_H_
+#define OTSDAQ_OTSDAQ_TABLECORE_TABLEINFOREADER_H_
 
 #include <string>
 #include <xercesc/dom/DOMDocument.hpp>
@@ -64,4 +64,4 @@ class TableInfoReader
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_TABLECORE_TABLEINFOREADER_H_

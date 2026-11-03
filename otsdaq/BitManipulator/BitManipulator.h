@@ -1,5 +1,5 @@
-#ifndef ots_BitManipulator_h
-#define ots_BitManipulator_h
+#ifndef OTSDAQ_OTSDAQ_BITMANIPULATOR_BITMANIPULATOR_H_
+#define OTSDAQ_OTSDAQ_BITMANIPULATOR_BITMANIPULATOR_H_
 
 #include <stdint.h>
 #include <string>
@@ -40,4 +40,4 @@ class BitManipulator
 
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_BITMANIPULATOR_BITMANIPULATOR_H_

@@ -1,5 +1,5 @@
-#ifndef _ots_SOAPParameters_h
-#define _ots_SOAPParameters_h
+#ifndef OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPPARAMETERS_H_
+#define OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPPARAMETERS_H_
 
 #include "otsdaq/SOAPUtilities/DataStructs.h"
 #include "otsdaq/SOAPUtilities/SOAPParameter.h"
@@ -20,4 +20,4 @@ class SOAPParameters : public Parameters<std::string, std::string>
 	int  getValueAsInt(const std::string& name) { return atoi(getValue(name).c_str()); }
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_SOAPUTILITIES_SOAPPARAMETERS_H_

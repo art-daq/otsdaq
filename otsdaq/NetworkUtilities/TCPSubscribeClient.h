@@ -1,9 +1,10 @@
-#ifndef _TCPSubscribeClient_h_
-#define _TCPSubscribeClient_h_
+#ifndef OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSUBSCRIBECLIENT_H_
+#define OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSUBSCRIBECLIENT_H_
 
-#include <string>
 #include "otsdaq/NetworkUtilities/TCPClientBase.h"
 #include "otsdaq/NetworkUtilities/TCPTransceiverSocket.h"
+
+#include <string>
 
 namespace ots
 {
@@ -15,4 +16,4 @@ class TCPSubscribeClient : public TCPReceiverSocket, public TCPClientBase
 	virtual ~TCPSubscribeClient(void);
 };
 }  // namespace ots
-#endif
+#endif  // OTSDAQ_OTSDAQ_NETWORKUTILITIES_TCPSUBSCRIBECLIENT_H_

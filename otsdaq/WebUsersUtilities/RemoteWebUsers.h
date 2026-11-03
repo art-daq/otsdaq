@@ -1,5 +1,5 @@
-#ifndef _ots_Utilities_RemoteWebUsers_h
-#define _ots_Utilities_RemoteWebUsers_h
+#ifndef OTSDAQ_OTSDAQ_WEBUSERSUTILITIES_REMOTEWEBUSERS_H_
+#define OTSDAQ_OTSDAQ_WEBUSERSUTILITIES_REMOTEWEBUSERS_H_
 
 #include "otsdaq/SOAPUtilities/SOAPMessenger.h"  //for xdaq::ApplicationDescriptor
 #include "otsdaq/WebUsersUtilities/WebUsers.h"
@@ -8,6 +8,8 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <tuple>
+#include <utility>
 
 #include "otsdaq/TableCore/TableGroupKey.h"  //for TableGroupKey
 
@@ -48,7 +50,7 @@ class RemoteWebUsers : public SOAPMessenger
 				getLastTableGroup		(const std::string& actionOfLastGroup, std::string& returnedActionTimeString);  ///< actionOfLastGroup = "Configured" or "Started", for example
 	void		getLastTableGroups		(std::map< std::string /* group type */,
 										std::tuple<std::string /*group name*/, TableGroupKey,
-											std::string /* time string*/>>& theGroups);
+											std::string /*** time string  */>>& theGroups);
 
   private:
 
@@ -86,4 +88,4 @@ class RemoteWebUsers : public SOAPMessenger
 // clang-format on
 }  // namespace ots
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_WEBUSERSUTILITIES_REMOTEWEBUSERS_H_

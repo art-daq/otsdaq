@@ -1,7 +1,11 @@
-#ifndef _ots_WizardSupervisor_version_h_
-#define _ots_WizardSupervisor_version_h_
+#ifndef OTSDAQ_OTSDAQ_WIZARDSUPERVISOR_VERSION_H_
+#define OTSDAQ_OTSDAQ_WIZARDSUPERVISOR_VERSION_H_
 
 #include "config/PackageInfo.h"
+
+#include <functional>
+#include <set>
+#include <string>
 
 #define MYPACKAGE_VERSION_MAJOR OTSDAQ_MAJOR_VERSION
 #define MYPACKAGE_VERSION_MINOR OTSDAQ_MINOR_VERSION
@@ -38,4 +42,4 @@ void                                           checkPackageDependencies();
 std::set<std::string, std::less<std::string> > getPackageDependencies();
 }  // namespace WizardSupervisor
 
-#endif
+#endif  // OTSDAQ_OTSDAQ_WIZARDSUPERVISOR_VERSION_H_
