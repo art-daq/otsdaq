@@ -1,7 +1,7 @@
-#include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
-#include "otsdaq/FECore/FEVInterfacesManager.h"
-#include "otsdaq/FECore/FEVInterface.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
+#include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
+#include "otsdaq/FECore/FEVInterface.h"
+#include "otsdaq/FECore/FEVInterfacesManager.h"
 #include "otsdaq/FECore/MakeInterface.h"
 #include "otsdaq/TableCore/MakeTable.h"
 

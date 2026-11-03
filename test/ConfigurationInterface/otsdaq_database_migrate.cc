@@ -1,7 +1,7 @@
-#include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
-#include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "artdaq-database/JsonDocument/JSONDocument.h"
 #include "artdaq-database/StorageProviders/FileSystemDB/provider_filedb_index.h"
+#include "otsdaq/ConfigurationInterface/ConfigurationInterface.h"
+#include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 
 #include <dirent.h>
 #include <cassert>
