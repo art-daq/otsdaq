@@ -285,8 +285,8 @@ void StringMacros::sanitizeForSQL(std::string& str)
 	std::map<char, std::string> replacements = {
 	    {'\'', "''"},   // Single quote becomes two single quotes
 	    {'\\', "\\\\"}  //,  // Backslash becomes double backslash
-		// {';', "\\;"},    // Semicolon can be escaped (optional)
-		// {'-', "\\-"},    // Dash for comments (optional, context-specific)
+	                    // {';', "\\;"},    // Semicolon can be escaped (optional)
+	    // {'-', "\\-"},    // Dash for comments (optional, context-specific)
 	};
 
 	size_t pos = 0;
@@ -442,7 +442,7 @@ std::string StringMacros::escapeString(std::string inString,
 				inString.insert(i,
 				                (inString[i] == '\'')
 				                    ? "&apos"
-									: "&quot");      // insert HTML name before quotes
+				                    : "&quot");      // insert HTML name before quotes
 				inString.replace(i + 5, 1, 1, ';');  // replace special character with ;
 				i += 5;                              // skip to next char to check
 				                                     //__COUT__ <<  inString << std::endl;
@@ -461,7 +461,7 @@ std::string StringMacros::escapeString(std::string inString,
 					    i,
 					    (inString[i] == '<')
 					        ? "&lt"
-							: "&gt");  // insert HTML name before special character
+					        : "&gt");  // insert HTML name before special character
 					inString.replace(
 					    i + 3, 1, 1, ';');  // replace special character with ;
 					i += 3;                 // skip to next char to check
@@ -472,7 +472,7 @@ std::string StringMacros::escapeString(std::string inString,
 					    i,
 					    (inString[i] == '<')
 					        ? "&amp;lt"
-							: "&amp;gt");  // insert HTML name before special character
+					        : "&amp;gt");  // insert HTML name before special character
 					inString.replace(
 					    i + 7, 1, 1, ';');  // replace special character with ;
 					i += 7;                 // skip to next char to check
@@ -1004,7 +1004,9 @@ std::string StringMacros::getTimestampString(const std::string& linuxTimeInSecon
 ///	returns ots style timestamp string
 ///	of known fixed size: Thu Aug 23 14:55:02 2001 CST
 std::string StringMacros::getTimestampString(const time_t linuxTimeInSeconds)
-{ return ots::TimestampString().get(linuxTimeInSeconds); }  // end getTimestampString()
+{
+	return ots::TimestampString().get(linuxTimeInSeconds);
+}  // end getTimestampString()
 
 //==============================================================================
 /// getTimeDurationString
@@ -1045,7 +1047,7 @@ try
 {
 	return doConvertEnvironmentVariables
 	           ? StringMacros::convertEnvironmentVariables(value)
-			   : value;
+	           : value;
 }
 catch(const std::runtime_error& e)
 {
@@ -1584,7 +1586,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 				std::string wildCardValue = haystack[n].substr(
 				    commonChunksToReturn[0].size(),
 				    haystack[n].find(commonChunksToReturn[1],
-					                 commonChunksToReturn[0].size() + 1) -
+				                     commonChunksToReturn[0].size() + 1) -
 				        commonChunksToReturn[0].size());
 				__COUTTV__(wildCardValue);
 
@@ -1607,7 +1609,7 @@ bool StringMacros::extractCommonChunks(const std::vector<std::string>& haystack,
 					__COUTT__ << "Found built '" << builtString << "' in " << haystack[n]
 					          << __E__;
 			}  //end haystack loop
-		}  //end common chunk loop
+		}      //end common chunk loop
 
 		__COUTTV__(StringMacros::vectorToString(commonChunksToReturn));
 		__COUTTV__(commonChunksToReturn[0].size());

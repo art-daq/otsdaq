@@ -23,15 +23,15 @@ RawDataSaverConsumerBase::RawDataSaverConsumerBase(
           supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)
     , filePath_(theXDAQContextConfigTree.getNode(configurationPath)
-	                .getNode("FilePath")
-	                .getValue<std::string>())
+                    .getNode("FilePath")
+                    .getValue<std::string>())
     , fileRadix_(theXDAQContextConfigTree.getNode(configurationPath)
-	                 .getNode("RadixFileName")
-	                 .getValue<std::string>())
+                     .getNode("RadixFileName")
+                     .getValue<std::string>())
     , maxFileSize_(theXDAQContextConfigTree.getNode(configurationPath)
-	                   .getNode("MaxFileSize")
-	                   .getValue<long>() *
-	               1000000)  // Instead of 2^6=1048576
+                       .getNode("MaxFileSize")
+                       .getValue<long>() *
+                   1000000)  // Instead of 2^6=1048576
     , currentSubRunNumber_(0)
 
 {

@@ -18,12 +18,16 @@ using namespace ots;
 
 //==============================================================================
 TransceiverSocket::TransceiverSocket(void)
-{ __COUT__ << "TransceiverSocket constructor " << __E__; }
+{
+	__COUT__ << "TransceiverSocket constructor " << __E__;
+}
 
 //==============================================================================
 TransceiverSocket::TransceiverSocket(std::string IPAddress, unsigned int port)
     : Socket(IPAddress, port)
-{ __COUT__ << "TransceiverSocket constructor " << IPAddress << ":" << port << __E__; }
+{
+	__COUT__ << "TransceiverSocket constructor " << IPAddress << ":" << port << __E__;
+}
 
 //==============================================================================
 TransceiverSocket::~TransceiverSocket(void) {}
@@ -206,9 +210,9 @@ int TransceiverSocket::sendAll(const std::string& buffer,
 	{
 		std::string retransmitRequest;
 		int         rc = receive(retransmitRequest,
-		                         retransmitTimeoutSeconds,
-		                         0 /*timeoutUSeconds*/,
-		                         false /*verbose*/);
+                         retransmitTimeoutSeconds,
+                         0 /*timeoutUSeconds*/,
+                         false /*verbose*/);
 		if(rc < 0)
 		{
 			// Timeout - assume receiver got everything (or gave up)
@@ -341,7 +345,7 @@ std::string TransceiverSocket::sendAndReceive(
 	              0 /*timeoutSeconds*/,
 	              (timeoutSeconds == 0 && timeoutUSeconds < interPacketTimeoutUSeconds)
 	                  ? timeoutUSeconds
-					  : interPacketTimeoutUSeconds,
+	                  : interPacketTimeoutUSeconds,
 	              verbose) >= 0)
 	{
 		++extraPackets;
@@ -405,9 +409,9 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 	{
 		std::string rawPacket;
 		int         rc = receive(rawPacket,
-		                         firstPacketReceived ? 0 : timeoutSeconds,
-		                         firstPacketReceived ? interPacketTimeoutUSeconds : 0,
-		                         false /*verbose*/);
+                         firstPacketReceived ? 0 : timeoutSeconds,
+                         firstPacketReceived ? interPacketTimeoutUSeconds : 0,
+                         false /*verbose*/);
 
 		if(rc < 0)
 		{
@@ -553,7 +557,7 @@ int TransceiverSocket::receiveAll(std::string& buffer,
 			{
 				std::string rawPacket;
 				int         rc = receive(
-				    rawPacket, timeoutSeconds, 0 /*timeoutUSeconds*/, false /*verbose*/);
+                    rawPacket, timeoutSeconds, 0 /*timeoutUSeconds*/, false /*verbose*/);
 				if(rc < 0)
 					break;  // timeout, will retry
 

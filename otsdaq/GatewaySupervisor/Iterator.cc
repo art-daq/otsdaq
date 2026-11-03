@@ -19,7 +19,7 @@ using namespace ots;
 #define ITERATOR_PLAN_HISTORY_FILENAME                          \
 	((getenv("SERVICE_DATA_PATH") == NULL)                      \
 	     ? (std::string(__ENV__("USER_DATA")) + "/ServiceData") \
-		 : (std::string(__ENV__("SERVICE_DATA_PATH")))) +       \
+	     : (std::string(__ENV__("SERVICE_DATA_PATH")))) +       \
 	    "/IteratorPlanHistory.hist"
 
 const std::string Iterator::RESERVED_GEN_PLAN_NAME = "---GENERATED_PLAN---";
@@ -419,7 +419,7 @@ try
 					    std::string("Error at command ") +
 					    std::to_string(theIteratorStruct.commandIndex_) + " (" +
 					    (theIteratorStruct.commandIndex_ <
-						         theIteratorStruct.commands_.size()
+					             theIteratorStruct.commands_.size()
 					         ? theIteratorStruct
 					               .commands_[theIteratorStruct.commandIndex_]
 					               .type_
@@ -528,9 +528,9 @@ try
 							    iterator->genKeepConfiguration_;
 							theIteratorStruct.commands_ =
 							    generateIterationPlan(iterator->genFsmName_,
-								                      iterator->genConfigAlias_,
-								                      iterator->genPlanDurationSeconds_,
-								                      iterator->genPlanNumberOfRuns_);
+							                          iterator->genConfigAlias_,
+							                          iterator->genPlanDurationSeconds_,
+							                          iterator->genPlanNumberOfRuns_);
 						}
 						else
 						{
@@ -753,8 +753,8 @@ try
 			//		__COUT__ << "end loop.." << theIteratorStruct.running_ << " " <<
 			//				theIteratorStruct.activePlan_ << " cmd=" <<
 			//				theIteratorStruct.commandIndex_ << __E__;
-		} /* code */
-	}  //end try/catch
+		}                               /* code */
+	}                                   //end try/catch
 	catch(const std::runtime_error& e)  //insert info about the state of the iterator
 	{
 		if(theIteratorStruct.activePlan_ != "")
@@ -1693,7 +1693,7 @@ void Iterator::startCommandConfigureGroup(IteratorWorkLoopStruct* iteratorStruct
 	        .params_[IterateTable::commandConfigureGroupParams_.GroupName_];
 	TableGroupKey key =
 	    TableGroupKey(iteratorStruct->commands_[iteratorStruct->commandIndex_]
-		                  .params_[IterateTable::commandConfigureGroupParams_.GroupKey_]);
+	                      .params_[IterateTable::commandConfigureGroupParams_.GroupKey_]);
 
 	__COUT__ << "group " << group << __E__;
 	__COUT__ << "key " << key << __E__;
@@ -1769,7 +1769,7 @@ void Iterator::startCommandConfigureAlias(IteratorWorkLoopStruct* iteratorStruct
 		__SS__ << "Iterator failed to configure with system alias '"
 		       << (iteratorStruct->fsmCommandParameters_.size()
 		               ? iteratorStruct->fsmCommandParameters_[0]
-					   : "UNKNOWN")
+		               : "UNKNOWN")
 		       << "' because of the following error: " << errorStr;
 		__SS_THROW__;
 	}
@@ -2624,7 +2624,7 @@ bool Iterator::checkCommandConfigure(IteratorWorkLoopStruct* iteratorStruct)
 		__SS__ << "Iterator failed to configure with system alias '"
 		       << (iteratorStruct->fsmCommandParameters_.size()
 		               ? iteratorStruct->fsmCommandParameters_[0]
-					   : "UNKNOWN")
+		               : "UNKNOWN")
 		       << "' because of the following error: " << errorStr;
 		__SS_THROW__;
 	}
@@ -2779,7 +2779,7 @@ std::vector<IterateTable::Command> Iterator::generateIterationPlan(
 			    std::pair<std::string /*param name*/, std::string /*param value*/>(
 			        IterateTable::commandRepeatLabelParams_.NumberOfRepetitions_,
 			        std::to_string(numberOfRuns -
-					               1)  //number of repeats (i.e., 1 repeat, gives 2 runs)
+			                       1)  //number of repeats (i.e., 1 repeat, gives 2 runs)
 			        ));
 		}
 	}
@@ -3175,7 +3175,7 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 	    theSupervisor_->theStateMachine_.isInTransition()
 	        ? theSupervisor_->theStateMachine_.getCurrentTransitionName(
 	              theSupervisor_->stateMachineLastCommandInput_)
-			: theSupervisor_->theStateMachine_.getCurrentStateName());
+	        : theSupervisor_->theStateMachine_.getCurrentStateName());
 
 	// xmldoc.addTextElementToData("in_transition",
 	// theSupervisor_->theStateMachine_.isInTransition() ? "1" : "0");
@@ -3488,7 +3488,7 @@ bool Iterator::checkRemoteCommandConfigure(IteratorWorkLoopStruct* iteratorStruc
 		       << "' with system alias '"
 		       << (iteratorStruct->fsmCommandParameters_.size()
 		               ? iteratorStruct->fsmCommandParameters_[0]
-					   : "UNKNOWN")
+		               : "UNKNOWN")
 		       << "' because of the following error: " << remoteApp.getError() << __E__;
 		__SS_THROW__;
 	}
@@ -3515,7 +3515,7 @@ bool Iterator::checkRemoteCommandConfigure(IteratorWorkLoopStruct* iteratorStruc
 			    iteratorStruct,
 			    remoteAppIndex,
 			    buildRemoteConfigureCommand(iteratorStruct,
-				                            iteratorStruct->fsmCommandParameters_[0]),
+			                                iteratorStruct->fsmCommandParameters_[0]),
 			    RunControlStateMachine::CONFIGURE_TRANSITION_NAME);
 			iteratorStruct->remoteConfigureQueued_ = false;
 		}
@@ -4408,8 +4408,8 @@ IteratorPluginContext Iterator::makePluginContext(IteratorWorkLoopStruct* iterat
 	context.supervisor           = theSupervisor_;
 	context.configurationManager = iteratorStruct ? iteratorStruct->cfgMgr_ : nullptr;
 	context.stopRequested        = [this, iteratorStruct]() {
-		std::lock_guard<std::mutex> lock(accessMutex_);
-		return commandHalt_ || (iteratorStruct && iteratorStruct->doHaltAction_);
+        std::lock_guard<std::mutex> lock(accessMutex_);
+        return commandHalt_ || (iteratorStruct && iteratorStruct->doHaltAction_);
 	};
 	context.setError = [this](const std::string& message) {
 		std::lock_guard<std::mutex> lock(accessMutex_);
@@ -4563,9 +4563,9 @@ bool Iterator::runPluginPlan(IteratorWorkLoopStruct* iteratorStruct)
 		catch(...)
 		{
 			std::lock_guard<std::mutex> lock(accessMutex_);
-			errorMessage_        = "Unknown failure in Iterator plugin '" +
-			                       plugin->getPluginName() +
-			                       "'; inspect the logs before restarting.";
+			errorMessage_ = "Unknown failure in Iterator plugin '" +
+			                plugin->getPluginName() +
+			                "'; inspect the logs before restarting.";
 			activePlanIsRunning_ = false;
 		}
 	}

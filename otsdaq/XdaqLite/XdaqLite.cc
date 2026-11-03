@@ -225,10 +225,10 @@ void xoap::SOAPMessage::readFrom(const std::string& in)
 	size_t      col  = qn.find(':');
 	std::string name = col == std::string::npos ? qn : qn.substr(col + 1);
 	SOAPElement el   = SOAPPart(&bodyElements_)
-	                       .getEnvelope()
-	                       .getBody()
-	                       .addBodyElement(SOAPName(
-	                           name, col == std::string::npos ? "" : qn.substr(0, col)));
+	                     .getEnvelope()
+	                     .getBody()
+	                     .addBodyElement(SOAPName(
+	                         name, col == std::string::npos ? "" : qn.substr(0, col)));
 	if(sp == std::string::npos)
 		return;
 	std::string attrs = tag.substr(sp);
@@ -252,7 +252,7 @@ void xoap::SOAPMessage::readFrom(const std::string& in)
 		        {"&quot;", "\""}, {"&lt;", "<"}, {"&gt;", ">"}, {"&amp;", "&"}})
 			for(size_t f = val.find(rep.first); f != std::string::npos;
 			    f        = val.find(rep.first, f + rep.second.size()))
-				val.replace(f, rep.first.size(), rep.second);
+                val.replace(f, rep.first.size(), rep.second);
 		if(key.find("xmlns") != 0)
 			el.addAttribute(SOAPName(key), val);
 		pos = q2 + 1;

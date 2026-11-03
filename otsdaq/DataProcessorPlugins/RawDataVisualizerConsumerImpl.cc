@@ -25,11 +25,15 @@ RawDataVisualizerConsumer::~RawDataVisualizerConsumer(void) {}
 
 //==============================================================================
 void RawDataVisualizerConsumer::startProcessingData(std::string runNumber)
-{ DataConsumer::startProcessingData(runNumber); }
+{
+	DataConsumer::startProcessingData(runNumber);
+}
 
 //==============================================================================
 void RawDataVisualizerConsumer::stopProcessingData(void)
-{ DataConsumer::stopProcessingData(); }
+{
+	DataConsumer::stopProcessingData();
+}
 
 //==============================================================================
 bool RawDataVisualizerConsumer::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)

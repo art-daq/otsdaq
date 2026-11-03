@@ -55,7 +55,7 @@ void ARTDAQEventBuilderTable::genFlatFHiCL(void)
 	auto builders = lastConfigManager_->getNode(ARTDAQTableBase::getTableName())
 	                    .getChildren(
 	                        /*default filterMap*/ std::map<std::string /*relative-path*/,
-							                               std::string /*value*/>(),
+	                                                       std::string /*value*/>(),
 	                        /*default byPriority*/ false,
 	                        /*TRUE! onlyStatusTrue*/ true);
 
@@ -158,7 +158,7 @@ unsigned int ARTDAQEventBuilderTable::slowControlsHandlerConfig(
 						std::string subsystem =
 						    metricParametersLink.second.getNode("metricParameterValue")
 						        .getValueWithDefault<std::string>(std::string("TDAQ_") +
-								                                  __ENV__("MU2E_OWNER"));
+						                                          __ENV__("MU2E_OWNER"));
 						if(subsystem.find("Mu2e:") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
 						while(subsystem.find("\"") != std::string::npos)
@@ -166,12 +166,12 @@ unsigned int ARTDAQEventBuilderTable::slowControlsHandlerConfig(
 
 						numberOfEventBuiderMetricParameters =
 						    slowControlsHandler(out,
-							                    tabStr,
-							                    commentStr,
-							                    subsystem,
-							                    eventBuilderPair.first,
-							                    slowControlsLink,
-							                    channelList);
+						                        tabStr,
+						                        commentStr,
+						                        subsystem,
+						                        eventBuilderPair.first,
+						                        slowControlsLink,
+						                        channelList);
 
 						__COUT__ << "EventBuilder '" << eventBuilderPair.first
 						         << "' number of metrics for slow controls: "
@@ -192,6 +192,8 @@ unsigned int ARTDAQEventBuilderTable::slowControlsHandlerConfig(
 //==============================================================================
 /// return out file path
 std::string ARTDAQEventBuilderTable::setFilePath() const
-{ return SLOWCONTROL_PV_FILE_PATH; }
+{
+	return SLOWCONTROL_PV_FILE_PATH;
+}
 
 DEFINE_OTS_TABLE(ARTDAQEventBuilderTable)

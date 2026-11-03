@@ -15,7 +15,9 @@ using namespace ots;
 //==============================================================================
 void FileConfigurationInterface::fill(TableBase*   configuration,
                                       TableVersion version) const
-{ ConfigurationHandler::readXML(configuration, version); }
+{
+	ConfigurationHandler::readXML(configuration, version);
+}
 
 //==============================================================================
 /// findLatestVersion
@@ -33,7 +35,9 @@ TableVersion FileConfigurationInterface::findLatestVersion(
 /// save active configuration view to file
 void FileConfigurationInterface::saveActiveVersion(const TableBase* configuration,
                                                    bool /*overwrite*/) const
-{ ConfigurationHandler::writeXML(configuration); }
+{
+	ConfigurationHandler::writeXML(configuration);
+}
 
 //==============================================================================
 std::set<TableVersion> FileConfigurationInterface::getVersions(

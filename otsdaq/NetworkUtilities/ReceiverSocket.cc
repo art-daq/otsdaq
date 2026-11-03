@@ -19,13 +19,17 @@ ReceiverSocket::ReceiverSocket(std::string IPAddress, unsigned int port)
     , addressLength_(sizeof(fromAddress_))
     , numberOfBytes_(0)
     , readCounter_(0)
-{ __COUT__ << "ReceiverSocket constructor " << IPAddress << ":" << port << __E__; }
+{
+	__COUT__ << "ReceiverSocket constructor " << IPAddress << ":" << port << __E__;
+}
 
 //==============================================================================
 /// protected constructor
 ReceiverSocket::ReceiverSocket(void)
     : addressLength_(sizeof(fromAddress_)), numberOfBytes_(0), readCounter_(0)
-{ __COUT__ << "ReceiverSocket constructor" << __E__; }
+{
+	__COUT__ << "ReceiverSocket constructor" << __E__;
+}
 
 //==============================================================================
 ReceiverSocket::~ReceiverSocket(void) {}
@@ -45,7 +49,9 @@ std::string ReceiverSocket::getLastIncomingIPAddress(void)
 }  //end getLastIncomingIPAddress()
 //==============================================================================
 unsigned short ReceiverSocket::getLastIncomingPort(void)
-{ return ntohs(lastIncomingPort_); }
+{
+	return ntohs(lastIncomingPort_);
+}
 
 //==============================================================================
 int ReceiverSocket::receive(std::string& buffer,

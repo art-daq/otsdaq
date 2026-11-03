@@ -18,8 +18,8 @@ TCPDataStreamerConsumer::TCPDataStreamerConsumer(
     const std::string&       configurationPath)
     : WorkLoop(processorUID)
     , TCPDataStreamerBase(theXDAQContextConfigTree.getNode(configurationPath)
-	                          .getNode("StreamToPort")
-	                          .getValue<unsigned int>())
+                              .getNode("StreamToPort")
+                              .getValue<unsigned int>())
     , DataConsumer(
           supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)

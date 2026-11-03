@@ -438,16 +438,16 @@ void XDAQContextTable::extractContexts(ConfigurationManager* configManager)
 			{
 				appChild.second.getNode(colApplication_.colConfigurePriority_)
 				    .getValue(contexts_.back()
-					              .applications_.back()
-					              .stateMachineCommandPriority_["Configure"]);
+				                  .applications_.back()
+				                  .stateMachineCommandPriority_["Configure"]);
 				appChild.second.getNode(colApplication_.colStartPriority_)
 				    .getValue(contexts_.back()
-					              .applications_.back()
-					              .stateMachineCommandPriority_["Start"]);
+				                  .applications_.back()
+				                  .stateMachineCommandPriority_["Start"]);
 				appChild.second.getNode(colApplication_.colStopPriority_)
 				    .getValue(contexts_.back()
-					              .applications_.back()
-					              .stateMachineCommandPriority_["Stop"]);
+				                  .applications_.back()
+				                  .stateMachineCommandPriority_["Stop"]);
 			}
 			catch(...)
 			{
@@ -755,8 +755,8 @@ std::string XDAQContextTable::getContextOfApplication(
 
 			if(app.first == appUID)
 				return context.first;  // return context UID
-		}  // end app search loop
-	}  // end context search loop
+		}                              // end app search loop
+	}                                  // end context search loop
 
 	__SS__ << "Application '" << appUID << "' search found no parent context!" << __E__;
 	// ss << StringMacros::stackTrace() << __E__;
@@ -796,8 +796,8 @@ std::string XDAQContextTable::getContextOfGateway(
 			if(className == XDAQContextTable::GATEWAY_SUPERVISOR_CLASS ||
 			   className == XDAQContextTable::DEPRECATED_SUPERVISOR_CLASS)
 				return context.first;  // return context UID
-		}  // end app search loop
-	}  // end context search loop
+		}                              // end app search loop
+	}                                  // end context search loop
 
 	__SS__ << "Gateway Application search found no parent context!" << __E__;
 	__SS_THROW__;

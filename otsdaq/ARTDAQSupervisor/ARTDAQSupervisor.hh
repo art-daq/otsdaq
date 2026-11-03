@@ -149,7 +149,7 @@ class ARTDAQSupervisor : public CoreSupervisorBase
 	/// user-facing errors
 	std::string capturePyErr(std::string label = "", std::string* summaryOut = nullptr);
 	bool        checkPythonError(
-	    PyObject* result);  // Check if Python call failed (returns true on error)
+	           PyObject* result);  // Check if Python call failed (returns true on error)
 	std::string                        captureStderrAndStdout_(std::string label = "");
 	void                               getDAQState_(void);
 	std::string                        getProcessInfo_(void);

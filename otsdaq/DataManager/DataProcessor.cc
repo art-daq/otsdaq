@@ -28,4 +28,6 @@ DataProcessor::~DataProcessor(void) { __GEN_COUT__ << "Destructed." << __E__; }
 
 //==============================================================================
 void DataProcessor::setCircularBuffer(CircularBufferBase* circularBuffer)
-{ theCircularBuffer_ = circularBuffer; }
+{
+	theCircularBuffer_ = circularBuffer;
+}

@@ -337,7 +337,7 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 		                currEl->getFirstChild()->getNodeType() ==
 		                    xercesc::DOMNode::TEXT_NODE))
 		                  ? "/"
-						  : "")
+		                  : "")
 		          << ">"
 		          << " len:" << nodeList->getLength() << std::endl;
 	if(out)
@@ -363,7 +363,7 @@ void HttpXmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 			           currEl->getFirstChild()->getNodeType() ==
 			               xercesc::DOMNode::TEXT_NODE))
 			             ? "/"
-						 : "")
+			             : "")
 			     << ">" << std::endl;
 
 			if(printErrors && strcmp(XML_TO_CHAR(currEl->getNodeName()), "Error") == 0)
@@ -462,7 +462,7 @@ std::string HttpXmlDocument::recursiveFindElementValue(xercesc::DOMElement* curr
 		if(currEl->getFirstChild() != NULL &&
 		   currEl->getFirstChild()->getNodeType() ==
 		       xercesc::DOMNode::TEXT_NODE)  // if has a text node first, return as
-			                                 // value attribute
+		                                     // value attribute
 			return StringMacros::escapeString(
 			    XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()));
 		else
@@ -480,7 +480,7 @@ std::string HttpXmlDocument::recursiveFindElementValue(xercesc::DOMElement* curr
 			    (xercesc::DOMElement*)(nodeList->item(i)), field, occurance, count);
 			if(retStr != "")
 				return retStr;  // found among children already, done
-			                    // else continue search within children recursively
+				                // else continue search within children recursively
 		}
 	return "";  // nothing found
 }  //end recursiveFindElementValue()
@@ -505,7 +505,7 @@ void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*      currEl,
 	if(XML_TO_CHAR(currEl->getNodeName()) == field && currEl->getFirstChild() != NULL &&
 	   currEl->getFirstChild()->getNodeType() ==
 	       xercesc::DOMNode::TEXT_NODE)  // if has a text node first, return as value
-		                                 // attribute
+	                                     // attribute
 		retVec->push_back(XML_TO_CHAR(currEl->getFirstChild()->getNodeValue()));
 
 	// look through children recursively
@@ -554,7 +554,7 @@ xercesc::DOMElement* HttpXmlDocument::recursiveFindElement(xercesc::DOMElement* 
 		if(currEl->getFirstChild() != NULL &&
 		   currEl->getFirstChild()->getNodeType() ==
 		       xercesc::DOMNode::TEXT_NODE)  // if has a text node first, return as
-			                                 // value attribute
+		                                     // value attribute
 			return currEl;
 		else
 			return 0;  // empty value attribute
@@ -571,7 +571,7 @@ xercesc::DOMElement* HttpXmlDocument::recursiveFindElement(xercesc::DOMElement* 
 			    (xercesc::DOMElement*)(nodeList->item(i)), field, occurance, count);
 			if(retEl)
 				return retEl;  // found among children already, done
-			                   // else continue search within children recursively
+				               // else continue search within children recursively
 		}
 	return 0;  // nothing found
 }  //end recursiveFindElement()
@@ -641,7 +641,7 @@ void HttpXmlDocument::recursiveFindAllElements(xercesc::DOMElement*             
 	if(XML_TO_CHAR(currEl->getNodeName()) == field && currEl->getFirstChild() != NULL &&
 	   currEl->getFirstChild()->getNodeType() ==
 	       xercesc::DOMNode::TEXT_NODE)  // if has a text node first, return as value
-		                                 // attribute
+	                                     // attribute
 		retVec->push_back(currEl);
 
 	// look through children recursively
@@ -707,9 +707,9 @@ bool HttpXmlDocument::loadXmlDocument(const std::string& filePath)
 		if(nodeList->getLength())  // may not always be header element
 			headerElement_ =
 			    (xercesc::DOMElement*)(theDocument_
-				                           ->getElementsByTagName(
+			                               ->getElementsByTagName(
 			                                   CONVERT_TO_XML(headerTagName_))
-				                           ->item(0));
+			                               ->item(0));
 		else
 			headerElement_ = 0;
 

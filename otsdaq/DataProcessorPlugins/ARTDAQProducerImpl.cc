@@ -26,10 +26,10 @@ ARTDAQProducer::ARTDAQProducer(std::string              supervisorApplicationUID
     : WorkLoop(processorUID)
     , DataProducer(supervisorApplicationUID, bufferUID, processorUID)
     , ARTDAQReaderProcessorBase(supervisorApplicationUID,
-	                            bufferUID,
-	                            processorUID,
-	                            theXDAQContextConfigTree,
-	                            configurationPath)
+                                bufferUID,
+                                processorUID,
+                                theXDAQContextConfigTree,
+                                configurationPath)
 ///    : WorkLoop(processorUID)
 ///    , DataProducer(supervisorApplicationUID, bufferUID, processorUID)
 ///    //
@@ -237,7 +237,9 @@ void ARTDAQProducer::resumeProcessingData(void) { ARTDAQReaderProcessorBase::res
 ///
 //==============================================================================
 void ARTDAQProducer::startProcessingData(std::string runNumber)
-{ ARTDAQReaderProcessorBase::start(runNumber); }
+{
+	ARTDAQReaderProcessorBase::start(runNumber);
+}
 ///	__COUT__ << "\tStart" << __E__;
 ///
 ///	art::RunID runId((art::RunNumber_t)boost::lexical_cast<art::RunNumber_t>(runNumber));

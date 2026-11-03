@@ -53,8 +53,8 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 	//	__COUTT__ << "*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*" << std::endl;
 	//	__COUTT__ << configManager->__SELF_NODE__ << std::endl;
 
-	bool        enableFwd = true, useWeb = true,
-	            useQT = false;  // default to enabling web console
+	bool enableFwd = true, useWeb = true,
+	     useQT = false;  // default to enabling web console
 	int         fwdPort, destFwdPort;
 	std::string fwdIP;
 	std::string parseFilename = "/src";
@@ -144,7 +144,7 @@ void MessageFacilityTable::init(ConfigurationManager* configManager)
 		          << ":" << fwdPort << ":" << destFwdPort << " in MesageFacility table."
 		          << __E__;
 		break;  // take first enable row only!
-	}  // end record loop
+	}           // end record loop
 
 	if(useWeb && useQT)
 	{

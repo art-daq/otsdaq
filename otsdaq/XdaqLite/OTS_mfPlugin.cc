@@ -34,9 +34,9 @@ class ELOTSLite : public mf::service::ELdestination
 	{
 		fhicl::TableFragment<mf::service::ELdestination::Config> elDestConfig;
 		fhicl::Atom<std::string>                                 format_string{
-		    fhicl::Name{"format_string"},
-		    fhicl::Comment{"Format specifier for printing to console. %% => '%' ..."},
-		    "%L:%N:%f [%u]\t%m"};
+            fhicl::Name{"format_string"},
+            fhicl::Comment{"Format specifier for printing to console. %% => '%' ..."},
+            "%L:%N:%f [%u]\t%m"};
 		fhicl::Atom<std::string> filename_delimit{
 		    fhicl::Name{"filename_delimit"},
 		    fhicl::Comment{"Grab path after this. \"/srcs/\" /x/srcs/y/z.cc => y/z.cc"},

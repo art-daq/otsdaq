@@ -12,10 +12,10 @@ RawDataSaverConsumer::RawDataSaverConsumer(
     const std::string&       configurationPath)
     : WorkLoop(processorUID)
     , RawDataSaverConsumerBase(supervisorApplicationUID,
-	                           bufferUID,
-	                           processorUID,
-	                           theXDAQContextConfigTree,
-	                           configurationPath)
+                               bufferUID,
+                               processorUID,
+                               theXDAQContextConfigTree,
+                               configurationPath)
 {
 }
 

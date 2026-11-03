@@ -13,7 +13,9 @@ SupervisorDescriptorInfoBase::SupervisorDescriptorInfoBase(void) {}
 //==============================================================================
 SupervisorDescriptorInfoBase::SupervisorDescriptorInfoBase(
     xdaq::ApplicationContext* applicationContext)
-{ init(applicationContext); }
+{
+	init(applicationContext);
+}
 
 //==============================================================================
 SupervisorDescriptorInfoBase::~SupervisorDescriptorInfoBase() {}
@@ -71,8 +73,8 @@ void SupervisorDescriptorInfoBase::init(xdaq::ApplicationContext* applicationCon
 	{
 		auto /*<it,bool*/ retPair = allSupervisors_.emplace(
 		    std::pair<xdata::UnsignedIntegerT,
-			          XDAQ_CONST_CALL xdaq::ApplicationDescriptor*>(it->getLocalId(),
-			                                                        it));
+		              XDAQ_CONST_CALL xdaq::ApplicationDescriptor*>(it->getLocalId(),
+		                                                            it));
 		if(!retPair.second)
 		{
 			__SS__ << "Error! Duplicate Application IDs are not allowed. ID ="
@@ -84,4 +86,6 @@ void SupervisorDescriptorInfoBase::init(xdaq::ApplicationContext* applicationCon
 
 //==============================================================================
 const SupervisorDescriptors& SupervisorDescriptorInfoBase::getAllDescriptors(void) const
-{ return allSupervisors_; }
+{
+	return allSupervisors_;
+}

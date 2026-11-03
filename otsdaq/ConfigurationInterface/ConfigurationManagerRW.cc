@@ -14,7 +14,7 @@ using namespace ots;
 #define CORE_TABLE_INFO_FILENAME                                \
 	((getenv("SERVICE_DATA_PATH") == NULL)                      \
 	     ? (std::string(__ENV__("USER_DATA")) + "/ServiceData") \
-		 : (std::string(__ENV__("SERVICE_DATA_PATH")))) +       \
+	     : (std::string(__ENV__("SERVICE_DATA_PATH")))) +       \
 	    "/CoreTableInfoNames.dat"
 
 std::atomic<bool> ConfigurationManagerRW::firstTimeConstructed_ = true;
@@ -417,7 +417,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 					sharedTableInfoPtrs.push_back(std::make_shared<ots::TableInfo>());
 					sharedTableInfoPtrs.back()->accumulatedWarnings_ =
 					    accumulatedWarnings ? "ALLOW"
-						                    : "";  //mark to allow accumulated warnings
+					                        : "";  //mark to allow accumulated warnings
 
 					if(threadsLaunched >= numOfThreads)
 					{
@@ -456,15 +456,15 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 					*(threadDone[foundThreadIndex]) = false;
 					std::thread(
 					    [](ConfigurationManagerRW*            theCfgMgr,
-						   std::string                        theTableName,
-						   TableBase*                         existingTable,
-						   std::shared_ptr<ots::TableInfo>    theTableInfo,
-						   std::shared_ptr<std::atomic<bool>> theThreadDone) {
+					       std::string                        theTableName,
+					       TableBase*                         existingTable,
+					       std::shared_ptr<ots::TableInfo>    theTableInfo,
+					       std::shared_ptr<std::atomic<bool>> theThreadDone) {
 						    ConfigurationManagerRW::loadTableInfoThread(theCfgMgr,
-							                                            theTableName,
-							                                            existingTable,
-							                                            theTableInfo,
-							                                            theThreadDone);
+						                                                theTableName,
+						                                                existingTable,
+						                                                theTableInfo,
+						                                                theThreadDone);
 					    },
 					    this,
 					    tableName,
@@ -610,7 +610,7 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 							groupInfo.second.latestKeyMemberMap_ = {};
 						}
 					}  // end group info loop
-				else  //multi-threading
+				else   //multi-threading
 				{
 					int threadsLaunched  = 0;
 					int foundThreadIndex = 0;
@@ -655,10 +655,10 @@ const std::map<std::string, TableInfo>& ConfigurationManagerRW::getAllTableInfo(
 
 						std::thread(
 						    [](ConfigurationManagerRW*            theCfgMgr,
-							   std::string                        theGroupName,
-							   ots::TableGroupKey                 theGroupKey,
-							   std::shared_ptr<ots::GroupInfo>    theGroupInfo,
-							   std::shared_ptr<std::atomic<bool>> theThreadDone) {
+						       std::string                        theGroupName,
+						       ots::TableGroupKey                 theGroupKey,
+						       std::shared_ptr<ots::GroupInfo>    theGroupInfo,
+						       std::shared_ptr<std::atomic<bool>> theThreadDone) {
 							    ConfigurationManagerRW::loadTableGroupThread(
 							        theCfgMgr,
 							        theGroupName,
@@ -1187,23 +1187,23 @@ void ConfigurationManagerRW::activateTableGroup(const std::string& tableGroupNam
 	__COUT_INFO__ << "Active Context table group: " << theContextTableGroup_ << "("
 	              << (theContextTableGroupKey_
 	                      ? theContextTableGroupKey_->toString().c_str()
-						  : "-1")
+	                      : "-1")
 	              << ")" << __E__;
 	__COUT_INFO__ << "Active Backbone table group: " << theBackboneTableGroup_ << "("
 	              << (theBackboneTableGroupKey_
 	                      ? theBackboneTableGroupKey_->toString().c_str()
-						  : "-1")
+	                      : "-1")
 	              << ")" << __E__;
 	__COUT_INFO__ << "Active Iterate table group: " << theIterateTableGroup_ << "("
 	              << (theIterateTableGroupKey_
 	                      ? theIterateTableGroupKey_->toString().c_str()
-						  : "-1")
+	                      : "-1")
 	              << ")" << __E__;
 	__COUT_INFO__ << "Active Configuration table group: " << theConfigurationTableGroup_
 	              << "("
 	              << (theConfigurationTableGroupKey_
 	                      ? theConfigurationTableGroupKey_->toString().c_str()
-						  : "-1")
+	                      : "-1")
 	              << ")" << __E__;
 
 	std::string fn = ConfigurationManager::ACTIVE_GROUPS_FILENAME;
@@ -1237,7 +1237,7 @@ void ConfigurationManagerRW::activateTableGroup(const std::string& tableGroupNam
 	        "%s\n",
 	        theConfigurationTableGroupKey_
 	            ? theConfigurationTableGroupKey_->toString().c_str()
-				: "-1");
+	            : "-1");
 	fclose(fp);
 
 	// save last activated group
@@ -1408,13 +1408,13 @@ time_t ConfigurationManagerRW::getVersionCreationTime(const std::string& tableNa
 	std::string localAccumulatedErrors;
 	const auto  loadStartTime = std::chrono::steady_clock::now();
 	time_t      creationTime  = getVersionedTableByName(tableName,
-	                                                    version,
-	                                                    true /* looseColumnMatching */,
-	                                                    &localAccumulatedErrors,
-	                                                    false /* getRawData */,
-	                                                    false /* touchLastAccessTime */)
-	                                ->getView(version)
-	                                .getCreationTime();
+                                                  version,
+                                                  true /* looseColumnMatching */,
+                                                  &localAccumulatedErrors,
+                                                  false /* getRawData */,
+                                                  false /* touchLastAccessTime */)
+	                          ->getView(version)
+	                          .getCreationTime();
 
 	double loadSec =
 	    std::chrono::duration<double>(std::chrono::steady_clock::now() - loadStartTime)
@@ -1982,7 +1982,7 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 			// check member size for exact match
 			if(groupMemberMap.size() != compareToMemberMap.size())
 				continue;  // different size, so not same (groupMemberMap is a subset of
-			               // memberPairs)
+				           // memberPairs)
 
 			__GEN_COUT__ << "Found exact match with key: " << key << __E__;
 			// else found an exact match!
@@ -2042,24 +2042,24 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 
 			std::thread(
 			    [](ConfigurationManagerRW*                    cfgMgr,
-				   std::string                                theGroupName,
-				   ots::TableGroupKey                         groupKeyToCompare,
-				   const std::map<std::string, TableVersion>& groupMemberMap,
-				   const std::map<std::string /*name*/, std::string /*alias*/>&
-				                                      memberTableAliases,
-				   std::atomic<bool>*                 theFoundIdentical,
-				   ots::TableGroupKey*                theIdenticalKey,
-				   std::mutex*                        theThreadMutex,
-				   std::shared_ptr<std::atomic<bool>> theThreadDone) {
+			       std::string                                theGroupName,
+			       ots::TableGroupKey                         groupKeyToCompare,
+			       const std::map<std::string, TableVersion>& groupMemberMap,
+			       const std::map<std::string /*name*/, std::string /*alias*/>&
+			                                          memberTableAliases,
+			       std::atomic<bool>*                 theFoundIdentical,
+			       ots::TableGroupKey*                theIdenticalKey,
+			       std::mutex*                        theThreadMutex,
+			       std::shared_ptr<std::atomic<bool>> theThreadDone) {
 				    ConfigurationManagerRW::compareTableGroupThread(cfgMgr,
-					                                                theGroupName,
-					                                                groupKeyToCompare,
-					                                                groupMemberMap,
-					                                                memberTableAliases,
-					                                                theFoundIdentical,
-					                                                theIdenticalKey,
-					                                                theThreadMutex,
-					                                                theThreadDone);
+				                                                    theGroupName,
+				                                                    groupKeyToCompare,
+				                                                    groupMemberMap,
+				                                                    memberTableAliases,
+				                                                    theFoundIdentical,
+				                                                    theIdenticalKey,
+				                                                    theThreadMutex,
+				                                                    theThreadDone);
 			    },
 			    this,
 			    groupName,
@@ -2102,7 +2102,7 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 
 		// if here, then no match found
 		return TableGroupKey();  // return invalid key
-	}  //end multi-thread handling
+	}                            //end multi-thread handling
 }  // end findTableGroup()
 
 //==============================================================================
@@ -2767,7 +2767,7 @@ TableVersion ConfigurationManagerRW::updateTableCells(
 		TableView* aliasTableView =
 		    backboneGroupEdit
 		        .getTableEditStruct(ConfigurationManager::VERSION_ALIASES_TABLE_NAME,
-				                    true /*markModified*/)
+		                            true /*markModified*/)
 		        .tableView_;
 
 		unsigned int colTableName    = aliasTableView->findCol("TableName");
@@ -3099,7 +3099,7 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 			TableView* tableView =
 			    backboneGroupEdit
 			        .getTableEditStruct(ConfigurationManager::VERSION_ALIASES_TABLE_NAME,
-					                    true /*markModified*/)
+			                            true /*markModified*/)
 			        .tableView_;
 
 			for(auto& groupTable : groupTables_)
@@ -3197,7 +3197,7 @@ void GroupEditStruct::saveChanges(const std::string& groupNameToSave,
 			    localNewBackboneKey,
 			    accumulatedWarnings ? accumulatedWarnings : nullptr);
 
-	}  //end non-backbone save type handling
+	}     //end non-backbone save type handling
 	else  //is backbone save type
 	{
 		// acquire all active groups and ignore errors, so that activateTableGroup does not
@@ -3247,7 +3247,7 @@ void ConfigurationManagerRW::testXDAQContext()
 
 			std::set<std::string> groupsContainingTable =
 			    theInterface_->findGroupsWithTable(documentNameToLoad,
-				                                   documentVersionToLoad);
+			                                       documentVersionToLoad);
 			__GEN_COUT__ << "Groups containing " << documentNameToLoad << "-v"
 			             << documentVersionToLoad
 			             << " count: " << groupsContainingTable.size() << __E__;
@@ -3428,7 +3428,7 @@ void ConfigurationManagerRW::testXDAQContext()
 			std::string  documentNameToLoad = "MessageFacilityTable";
 			TableVersion documentVersionToLoad(7);
 			TableBase    localDocLoader(
-			    documentNameToLoad);  //can not use special table when filling
+                documentNameToLoad);  //can not use special table when filling
 
 			__GEN_COUT__ << "Testing table save of non-existing " << documentNameToLoad
 			             << __E__;

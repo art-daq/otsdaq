@@ -40,10 +40,10 @@ class ITRACEController
 
 	virtual const HostTraceLevelMap& getTraceLevels(void) = 0;  ///< pure virtual
 	virtual void                     setTraceLevelMask(
-	    std::string const& name,
-	    TraceMasks const&  lvl,
-	    std::string const& hostname = "localhost",
-	    std::string const& mode     = "ALL") = 0;  ///< pure virtual
+	                        std::string const& name,
+	                        TraceMasks const&  lvl,
+	                        std::string const& hostname = "localhost",
+	                        std::string const& mode     = "ALL") = 0;  ///< pure virtual
 
 	virtual bool getIsTriggered(void)                         = 0;  ///< pure virtual
 	virtual void setTriggerEnable(size_t entriesAfterTrigger) = 0;  ///< pure virtual

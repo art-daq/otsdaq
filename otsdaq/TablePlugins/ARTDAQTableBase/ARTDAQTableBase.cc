@@ -531,7 +531,7 @@ void ARTDAQTableBase::insertParameters(std::ostream&      out,
 					{
 						auto cfgMgr = parameterGroupLink.getConfigurationManager();
 						value       = cfgMgr->getTableByName(potentialTable)
-						                  ->getFclValueForARTDAQ(cfgMgr, key);
+						            ->getFclValueForARTDAQ(cfgMgr, key);
 					}
 					catch(const std::runtime_error& e)
 					{
@@ -695,7 +695,7 @@ void ARTDAQTableBase::insertMetricsBlock(std::ostream&      out,
 					                  .getValue(),
 					       metricParameter.second.hasComment()
 					           ? metricParameter.second.getComment()
-							   : "");
+					           : "");
 
 					if(!metricParameter.second.status())
 						POPCOMMENT;
@@ -1556,8 +1556,8 @@ void ARTDAQTableBase::outputOnlineMonitorFHICL(const ConfigurationTree& monitorN
 			int disp_fake_rank =
 			    dispatcherLink.getNode("DispatcherID").getValueWithDefault<int>(200);
 
-			size_t      max_fragment_size = monitorNode.getNode("max_fragment_size_words")
-			                                    .getValueWithDefault(0x100000);
+			size_t max_fragment_size = monitorNode.getNode("max_fragment_size_words")
+			                               .getValueWithDefault(0x100000);
 			std::string transfer_plugin_type = monitorNode.getNode("transfer_plugin_type")
 			                                       .getValueWithDefault("Autodetect");
 
@@ -1723,7 +1723,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 		OUTCLF("resume_after_timeout: "
 		           << (services.getNode("sharedMemoryResumeAfterTimeout").getValue<bool>()
 		                   ? "true"
-						   : "false"),
+		                   : "false"),
 		       "" /* comment */,
 		       "sharedMemoryResumeAfterTimeout");
 		POPTAB;
@@ -1773,7 +1773,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 
 		POPTAB;
 		OUT << "} # end services\n\n";  // end services
-	}  //end services
+	}                                   //end services
 	else
 	{
 		__COUTS__(3) << "No services found" << __E__;
@@ -1816,10 +1816,10 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 			__COUTT__ << "insertModuleType... " << localParentPath2 << __E__;
 			std::string moduleType =
 			    insertModuleType(out,
-				                 tabStr,
-				                 commentStr,
-				                 localParentPath2,
-				                 outputPlugin.second.getNode("outputModuleType"));
+			                     tabStr,
+			                     commentStr,
+			                     localParentPath2,
+			                     outputPlugin.second.getNode("outputModuleType"));
 
 			//--------------------------------------
 			// handle ALL output parameters
@@ -1914,7 +1914,7 @@ void ARTDAQTableBase::insertArtProcessBlock(std::ostream&      out,
 
 		POPTAB;
 		OUT << "} # end outputs\n\n";  // end outputs
-	}  //end outputs
+	}                                  //end outputs
 	else
 	{
 		__COUTS__(3) << "No outputs found" << __E__;
@@ -2717,7 +2717,7 @@ void ARTDAQTableBase::extractRoutingManagersInfo(ConfigurationTree artdaqSupervi
 					{
 						info_
 						    .subsystems[info_.subsystems[routingManagerSubsystemID]
-							                .destination]
+						                    .destination]
 						    .sources.insert(routingManagerSubsystemID);
 					}
 
@@ -3164,7 +3164,7 @@ void ARTDAQTableBase::extractDispatchersInfo(ConfigurationTree artdaqSupervisorN
 					{
 						info_
 						    .subsystems[info_.subsystems[dispatcherSubsystemID]
-							                .destination]
+						                    .destination]
 						    .sources.insert(dispatcherSubsystemID);
 					}
 				}
@@ -3240,7 +3240,7 @@ bool ARTDAQTableBase::isARTDAQEnabled(const ConfigurationManager* cfgMgr)
 const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
     ConfigurationManagerRW* cfgMgr,
     std::map<std::string /*type*/,
-	         std::map<std::string /*record*/, std::vector<std::string /*property*/>>>&
+             std::map<std::string /*record*/, std::vector<std::string /*property*/>>>&
         nodeTypeToObjectMap,
     std::map<std::string /*subsystemName*/, std::string /*destinationSubsystemName*/>&
                                            subsystemObjectMap,
@@ -3397,8 +3397,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							{
 								int key =
 								    atoi(nameSplit[1]
-									         .substr(keyi, nameSplit[1].size() - 4 - keyi)
-									         .c_str());
+								             .substr(keyi, nameSplit[1].size() - 4 - keyi)
+								             .c_str());
 								__COUTVS__(2, key);
 								float tmpscore =
 								    finalConfigGroupKey.key() -
@@ -3444,7 +3444,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								score += tmpscore;
 							}
 							__COUTVS__(2, score);
-						}  //end config group score calc
+						}                         //end config group score calc
 						if(nameSplit.size() > 0)  //include context group in score
 						{
 							//match key to right of decimal and name to left of decimal
@@ -3453,8 +3453,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							{
 								int key =
 								    atoi(nameSplit[0]
-									         .substr(keyi, nameSplit[0].size() - 4 - keyi)
-									         .c_str());
+								             .substr(keyi, nameSplit[0].size() - 4 - keyi)
+								             .c_str());
 								__COUTVS__(2, key);
 								float tmpscore =
 								    finalContextGroupKey.key() -
@@ -3509,8 +3509,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 							__COUTVS__(2, bestName);
 						}
 					}  //end score handling
-				}  //end file handling
-			}  //end directory search loop for best layout file
+				}      //end file handling
+			}          //end directory search loop for best layout file
 
 			if(bestName != "")
 			{
@@ -3586,9 +3586,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 		const ARTDAQTableBase::ARTDAQInfo& info = ARTDAQTableBase::extractARTDAQInfo(
 		    XDAQContextTable::getSupervisorConfigNode(/*artdaqSupervisorNode*/
-			                                          cfgMgr,
-			                                          artdaqContext->contextUID_,
-			                                          artdaqApp.applicationUID_),
+		                                              cfgMgr,
+		                                              artdaqContext->contextUID_,
+		                                              artdaqApp.applicationUID_),
 		    true /*getStatusFalseNodes*/);
 
 		__COUT__ << "========== "
@@ -3609,8 +3609,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 			nodeTypeToObjectMap.emplace(
 			    std::make_pair(typeString,
-				               std::map<std::string /*record*/,
-				                        std::vector<std::string /*property*/>>()));
+			                   std::map<std::string /*record*/,
+			                            std::vector<std::string /*property*/>>()));
 
 			auto it = info.processes.find(nameTypePair.second);
 			if(it == info.processes.end())
@@ -3647,14 +3647,14 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 			const std::set<std::string /*colName*/> skipColumns(
 			    {ARTDAQ_TYPE_TABLE_HOSTNAME,
-				 ARTDAQ_TYPE_TABLE_ALLOWED_PROCESSORS,
-				 ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK,
-				 colARTDAQReader_
-				     .colDaqFragmentIDs_,  //for board readers, skip the 'unique' fragment IDs when considering for multinode
-				 TableViewColumnInfo::COL_NAME_COMMENT,
-				 TableViewColumnInfo::COL_NAME_AUTHOR,
-				 TableViewColumnInfo::
-				     COL_NAME_CREATION});  // note: also skip UID and Status
+			     ARTDAQ_TYPE_TABLE_ALLOWED_PROCESSORS,
+			     ARTDAQ_TYPE_TABLE_SUBSYSTEM_LINK,
+			     colARTDAQReader_
+			         .colDaqFragmentIDs_,  //for board readers, skip the 'unique' fragment IDs when considering for multinode
+			     TableViewColumnInfo::COL_NAME_COMMENT,
+			     TableViewColumnInfo::COL_NAME_AUTHOR,
+			     TableViewColumnInfo::
+			         COL_NAME_CREATION});  // note: also skip UID and Status
 
 			if(TTEST(1) && nodeLayoutNames.find(typeString) != nodeLayoutNames.end())
 			{
@@ -3948,8 +3948,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									--i;  //rewind for multiNodeNames[i] erase
 								}
 							}  //end loop to trim multinode candidates
-						}  //end applying layout template name rule
-					}  //end match to layout name templates
+						}      //end applying layout template name rule
+					}          //end match to layout name templates
 
 					__COUTV__(nodeName);
 					__COUTV__(StringMacros::vectorToString(multiNodeNames));
@@ -4001,7 +4001,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								if(j < multiNodeNames[0].size() &&
 								   k < multiNodeNames[i].size())
 									++score;  // found a matching letter!
-							}  // end forward score loop
+							}                 // end forward score loop
 
 							__COUTVS__(3, score);
 
@@ -4036,7 +4036,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								if(j < multiNodeNames[0].size() &&
 								   k < multiNodeNames[i].size())
 									++score;  // found a matching letter!
-							}  // end backward score loop
+							}                 // end backward score loop
 
 							__COUTVS__(3, score / 2.0);
 
@@ -4298,8 +4298,8 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 						//  the "DL*" pattern produced by numeric-only members DL1, DL2, DL3.
 						auto matchesCommonChunksPattern =
 						    [](const std::string&              name,
-							   const std::vector<std::string>& chunks,
-							   const std::vector<std::string>& wildcards) -> bool {
+						       const std::vector<std::string>& chunks,
+						       const std::vector<std::string>& wildcards) -> bool {
 							// Check if all multinode wildcards are purely numeric
 							bool wildcardsAllNumeric = !wildcards.empty();
 							for(const auto& w : wildcards)
@@ -4595,33 +4595,33 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 					auto expandNumericWildcards =
 					    [](std::vector<std::string>& commonChunks,
-						   std::vector<std::string>& wildcards,
-						   const std::string&        logPrefix) {
+					       std::vector<std::string>& wildcards,
+					       const std::string&        logPrefix) {
 						    bool allDigitWC = true;
 						    for(const auto& wc : wildcards)
 						    {
 							    if(wc.empty() || wc.find_first_not_of("0123456789") !=
-								                     std::string::npos)
+							                         std::string::npos)
 							    {
 								    allDigitWC = false;
 								    break;
 							    }
 						    }
 						    if(allDigitWC && !commonChunks.empty() &&
-							   !commonChunks[0].empty())
+						       !commonChunks[0].empty())
 						    {
 							    size_t trailingDigits = 0;
 							    for(int ci = (int)commonChunks[0].size() - 1; ci >= 0;
-								    --ci)
+							        --ci)
 							    {
 								    if(commonChunks[0][ci] >= '0' &&
-									   commonChunks[0][ci] <= '9')
+								       commonChunks[0][ci] <= '9')
 									    ++trailingDigits;
 								    else
 									    break;
 							    }
 							    if(trailingDigits > 0 &&
-								   trailingDigits < commonChunks[0].size())
+							       trailingDigits < commonChunks[0].size())
 							    {
 								    std::string prefix = commonChunks[0].substr(
 								        commonChunks[0].size() - trailingDigits);
@@ -4648,9 +4648,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 						bool wildcardsNeeded =
 						    StringMacros::extractCommonChunks(multiNodeNames,
-							                                  commonChunks,
-							                                  wildcards,
-							                                  nodeFixedWildcardLength);
+						                                      commonChunks,
+						                                      wildcards,
+						                                      nodeFixedWildcardLength);
 
 						if(!wildcardsNeeded || wildcards.size() != multiNodeNames.size())
 						{
@@ -4729,7 +4729,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 								{
 									if(i < hyphenLo)
 										hyphenLo = i;  // start hyphen
-									                   //else continue hyphen
+										               //else continue hyphen
 								}
 								else  // new comma
 								{
@@ -4758,13 +4758,13 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									isFirst = false;
 								}
 							}
-						}  // end all integer handling
+						}     // end all integer handling
 						else  // not all integers, so csv
 						{
 							multiNodeString = StringMacros::vectorToString(wildcards);
 							nodeFixedWildcardLength =
 							    0;  //wipe out fixed length rule if not all numbers
-						}  // end not-all integer handling
+						}           // end not-all integer handling
 
 						__COUTV__(multiNodeString);
 						__COUTV__(nodeFixedWildcardLength);
@@ -4779,9 +4779,9 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 
 						bool wildcardsNeeded =
 						    StringMacros::extractCommonChunks(hostnameArray,
-							                                  commonChunks,
-							                                  wildcards,
-							                                  hostFixedWildcardLength);
+						                                      commonChunks,
+						                                      wildcards,
+						                                      hostFixedWildcardLength);
 
 						__COUTV__(wildcardsNeeded);
 						__COUTV__(StringMacros::vectorToString(commonChunks));
@@ -4855,7 +4855,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 									{
 										if(i < hyphenLo)
 											hyphenLo = i;  // start hyphen
-										                   //else continue hyphen
+											               //else continue hyphen
 									}
 									else  // new comma
 									{
@@ -4887,14 +4887,14 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 										isFirst = false;
 									}
 								}
-							}  // end all integer handling
+							}     // end all integer handling
 							else  // not all integers, so csv
 							{
 								hostArrayString = StringMacros::vectorToString(wildcards);
 								hostFixedWildcardLength =
 								    0;  //wipe out fixed length rule if not all numbers
-							}  // end not-all integer handling
-						}  // end wildcard need handling
+							}           // end not-all integer handling
+						}               // end wildcard need handling
 						__COUTV__(hostArrayString);
 						__COUTV__(hostFixedWildcardLength);
 					}  // end node name printer syntax handling
@@ -4905,7 +4905,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 				    ";status=" +
 				    std::string(status
 				                    ? "1"
-									: "0");  //include status in name to avoid collissions
+				                    : "0");  //include status in name to avoid collissions
 				auto result = nodeTypeToObjectMap.at(typeString)
 				                  .emplace(std::make_pair(
 				                      nodeName, std::vector<std::string /*property*/>()));
@@ -4979,7 +4979,7 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 				__COUTV__(hostArrayString);
 				__COUT__ << "Done with extraction of node '" << nodeName << "'" << __E__;
 			}  //end main node extraction loop
-		}  // end processor type handling
+		}      // end processor type handling
 
 	}  // end artdaq app loop
 
@@ -5000,10 +5000,10 @@ const ARTDAQTableBase::ARTDAQInfo& ARTDAQTableBase::getARTDAQSystem(
 void ARTDAQTableBase::setAndActivateARTDAQSystem(
     ConfigurationManagerRW*                                          cfgMgr,
     const std::map<std::string /*type*/,
-	               std::map<std::string /*record*/,
-	                        std::vector<std::string /*property*/>>>& nodeTypeToObjectMap,
+                   std::map<std::string /*record*/,
+                            std::vector<std::string /*property*/>>>& nodeTypeToObjectMap,
     const std::map<std::string /*subsystemName*/,
-	               std::string /*destinationSubsystemName*/>&        subsystemObjectMap)
+                   std::string /*destinationSubsystemName*/>&        subsystemObjectMap)
 {
 	__COUT__ << "setAndActivateARTDAQSystem()" << __E__;
 
@@ -5341,18 +5341,18 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						    contextAppGroupID,
 						    row,
 						    appTable.tableView_->findCol(XDAQContextTable::colApplication_
-							                                 .colApplicationGroupID_));
+						                                     .colApplicationGroupID_));
 
 						// create group link to artdaq Supervisor app properties
 						appTable.tableView_->setValueAsString(
 						    ConfigurationManager::XDAQ_APP_PROPERTY_TABLE_NAME,
 						    row,
 						    appTable.tableView_->findCol(XDAQContextTable::colApplication_
-							                                 .colLinkToPropertyTable_));
+						                                     .colLinkToPropertyTable_));
 						appPropertiesGroupID = appTable.tableView_->setUniqueColumnValue(
 						    row,
 						    appTable.tableView_->findCol(XDAQContextTable::colApplication_
-							                                 .colLinkToPropertyGroupID_),
+						                                     .colLinkToPropertyGroupID_),
 						    appUID + "Properties");
 
 						__COUTV__(appPropertiesGroupID);
@@ -5366,7 +5366,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						    cfgMgr->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME)
 						        .getNode(artdaqContext->contextUID_)
 						        .getNode(XDAQContextTable::colContext_
-								             .colLinkToApplicationTable_)
+						                     .colLinkToApplicationTable_)
 						        .getNode(artdaqContext->applications_[0].applicationUID_)
 						        .getRow();
 						__COUTV__(row);
@@ -5455,7 +5455,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 						    appPropertyTable.tableView_->findCol(
 						        XDAQContextTable::colAppProperty_.colPropertyGroupID_));
 					}  // end property create loop
-				}  // end create app property entries
+				}      // end create app property entries
 
 				{
 					std::stringstream ss;
@@ -5486,7 +5486,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 				       "created table versions."
 				    << __E__;
 				throw;  // re-throw
-			}  // end catch
+			}           // end catch
 
 			__COUT_INFO__ << "Edits complete for new artdaq Supervisor! Created '"
 			              << appUID << "'" << __E__;
@@ -5809,14 +5809,14 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 			std::map<
 			    std::string /*multinode key*/,
 			    std::map<unsigned int /*col*/,
-				         std::pair<bool /* all siblings have embedded name */,
-				                   std::vector<std::string /* splitForEmbeddedValue */>>>>
+			             std::pair<bool /* all siblings have embedded name */,
+			                       std::vector<std::string /* splitForEmbeddedValue */>>>>
 			    originalMultinodeAllSiblingEmbeddedName;
 			std::map<
 			    std::string /*multinode key*/,
 			    std::map<unsigned int /*col*/,
-				         std::pair<bool /* all siblings have embedded printer index */,
-				                   std::vector<std::string /* splitForEmbeddedIndex */>>>>
+			             std::pair<bool /* all siblings have embedded printer index */,
+			                       std::vector<std::string /* splitForEmbeddedIndex */>>>>
 			    originalMultinodeAllSiblingEmbeddedPrinterIndex;
 
 			// node instance loop
@@ -5874,7 +5874,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 							std::vector<std::string> printerSyntaxArr =
 							    StringMacros::getVectorFromString(originalParameterArr[1],
-								                                  {','} /*delimiter*/);
+							                                      {','} /*delimiter*/);
 
 							// unsigned int             count = 0;
 							std::vector<std::string> originalNodeIndices;
@@ -5923,7 +5923,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							__COUTV__(originalParameterArr[2]);
 							std::vector<std::string> originalNamePieces =
 							    StringMacros::getVectorFromString(originalParameterArr[2],
-								                                  {'*'} /*delimiter*/);
+							                                      {'*'} /*delimiter*/);
 							__COUTV__(StringMacros::vectorToString(originalNamePieces));
 
 							if(originalNamePieces.size() < 2)
@@ -5951,7 +5951,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 							    std::map<
 							        unsigned int /*col*/,
 							        std::pair<bool /* all siblings have same value */,
-									          std::string /* sameValue */>>()));
+							                  std::string /* sameValue */>>()));
 							__COUT__ << "originalMultinodeAllSiblingEmbeddedName init "
 							            "col map for "
 							         << nodePair.first << __E__;
@@ -6022,8 +6022,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 								// before deleting, record all customizing values to draw from when creating new multinode records
 								auto result = originalMultinodeValues.emplace(
 								    std::make_pair(originalName,
-									               std::map<unsigned int /*col*/,
-									                        std::string /*value*/>()));
+								                   std::map<unsigned int /*col*/,
+								                            std::string /*value*/>()));
 								if(!result.second)
 									__COUT__
 									    << "originalName '" << originalName
@@ -6641,8 +6641,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 											}  //end ART Process Name cache handling
 
 										}  //end col caching handling
-									}  //end col loop
-								}  //end cache handling
+									}      //end col loop
+								}          //end cache handling
 
 								if(originalRow !=
 								   TableView::
@@ -7015,7 +7015,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 						std::vector<std::string> printerSyntaxArr =
 						    StringMacros::getVectorFromString(nodePair.second[i],
-							                                  {','} /*delimiter*/);
+						                                      {','} /*delimiter*/);
 
 						if(printerSyntaxArr.size() == 2)  // consider if fixed value
 						{
@@ -7046,7 +7046,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 							std::vector<std::string> printerSyntaxRange =
 							    StringMacros::getVectorFromString(printerSyntaxValue,
-								                                  {'-'} /*delimiter*/);
+							                                      {'-'} /*delimiter*/);
 							if(printerSyntaxRange.size() == 0 ||
 							   printerSyntaxRange.size() > 2)
 							{
@@ -7694,8 +7694,8 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 
 						isFirst = false;
 					}  // end multi-node loop
-				}  // end multi-node handling
-			}  // end node record loop
+				}      // end multi-node handling
+			}          // end node record loop
 
 			{  // delete record handling
 				__COUT__ << "Deleting '" << nodeTypePair.first
@@ -7770,7 +7770,7 @@ void ARTDAQTableBase::setAndActivateARTDAQSystem(
 		            "created table versions."
 		         << __E__;
 		throw;  // re-throw
-	}  // end catch
+	}           // end catch
 
 	__COUT__ << "Edits complete for artdaq nodes and subsystems.. now save and activate "
 	            "groups, and update aliases!"

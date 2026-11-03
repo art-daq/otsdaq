@@ -35,11 +35,15 @@ bool ots::TRACEController::getIsTriggered()
 
 //==============================================================================
 void ots::TRACEController::setTriggerEnable(size_t entriesAfterTrigger)
-{ TRACE_CNTL("trig", entriesAfterTrigger + 1); }  // end setTriggerEnable()
+{
+	TRACE_CNTL("trig", entriesAfterTrigger + 1);
+}  // end setTriggerEnable()
 
 //==============================================================================
 void ots::TRACEController::resetTraceBuffer()
-{ TRACE_CNTL("reset"); }  // end resetTraceBuffer()
+{
+	TRACE_CNTL("reset");
+}  // end resetTraceBuffer()
 
 //==============================================================================
 void ots::TRACEController::enableTrace(bool enable /* = true */)

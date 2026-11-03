@@ -178,10 +178,10 @@ T TableView::validateValueForColumn(const std::string& value,
 			else if(columnsInfo_[col].getType() == TableViewColumnInfo::TYPE_YES_NO)
 				retValue = (value == TableViewColumnInfo::TYPE_VALUE_YES) ? true : false;
 			else if(value.length() && value[0] == '1')  // for converting pure string
-				                                        // types
+			                                            // types
 				retValue = true;
 			else if(value.length() && value[0] == '0')  // for converting pure string
-				                                        // types
+			                                            // types
 				retValue = false;
 			else
 			{
@@ -231,7 +231,9 @@ T TableView::validateValueForColumn(const std::string& value,
 //==============================================================================
 template<class T>
 void TableView::setVersion(const T& version)
-{ version_ = TableVersion(version); }  // end setVersion<>()
+{
+	version_ = TableVersion(version);
+}  // end setVersion<>()
 
 //==============================================================================
 /// These two methods check for basic type consistency

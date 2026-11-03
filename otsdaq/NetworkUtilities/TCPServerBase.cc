@@ -294,7 +294,9 @@ void TCPServerBase::closeClientSocket(int socket)
 
 //==============================================================================
 void TCPServerBase::broadcastPacket(const char* message, std::size_t length)
-{ broadcastPacket(std::string(message, length)); }
+{
+	broadcastPacket(std::string(message, length));
+}
 
 //==============================================================================
 void TCPServerBase::broadcastPacket(const std::string& message)

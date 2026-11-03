@@ -395,12 +395,16 @@ void BufferImplementation<D, H>::resetConsumerList(void)
 //========================================================================================================================
 template<class D, class H>
 unsigned int BufferImplementation<D, H>::nextWritePointer(void)
-{ return (unsigned int)((writePointer_ + 1) % numberOfSubBuffers_); }
+{
+	return (unsigned int)((writePointer_ + 1) % numberOfSubBuffers_);
+}
 
 //========================================================================================================================
 template<class D, class H>
 unsigned int BufferImplementation<D, H>::nextReadPointer(const std::string& consumer)
-{ return (getReadPointer(consumer) + 1) % numberOfSubBuffers_; }
+{
+	return (getReadPointer(consumer) + 1) % numberOfSubBuffers_;
+}
 
 //========================================================================================================================
 template<class D, class H>
@@ -415,12 +419,16 @@ int BufferImplementation<D, H>::getFreeBufferIndex(void)
 //========================================================================================================================
 template<class D, class H>
 D& BufferImplementation<D, H>::getSubBuffer(unsigned int subBuffer)
-{ return subBuffers_[subBuffer]; }
+{
+	return subBuffers_[subBuffer];
+}
 
 //========================================================================================================================
 template<class D, class H>
 H& BufferImplementation<D, H>::getHeader(unsigned int subBuffer)
-{ return headers_[subBuffer]; }
+{
+	return headers_[subBuffer];
+}
 
 //========================================================================================================================
 template<class D, class H>
@@ -461,18 +469,24 @@ void BufferImplementation<D, H>::setFree(unsigned int       subBuffer,
 //========================================================================================================================
 template<class D, class H>
 std::atomic_bool& BufferImplementation<D, H>::isFree(unsigned int subBuffer) const
-{ return subBuffersStatus_[subBuffer]; }
+{
+	return subBuffersStatus_[subBuffer];
+}
 
 //========================================================================================================================
 template<class D, class H>
 std::atomic_bool& BufferImplementation<D, H>::isFree(unsigned int       subBuffer,
                                                      const std::string& consumer) const
-{ return consumers_.at(consumer).subBuffersStatus_[subBuffer]; }
+{
+	return consumers_.at(consumer).subBuffersStatus_[subBuffer];
+}
 
 //========================================================================================================================
 template<class D, class H>
 unsigned int BufferImplementation<D, H>::getReadPointer(const std::string& consumer)
-{ return consumers_[consumer].readPointer_; }
+{
+	return consumers_[consumer].readPointer_;
+}
 
 //========================================================================================================================
 template<class D, class H>
