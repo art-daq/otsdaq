@@ -89,38 +89,26 @@ TableVersion& TableVersion::operator/=(const TableVersion a)
 //==============================================================================
 /// operator==
 bool TableVersion::operator==(unsigned int version) const
-{
-	return (version_ == version);
-}
+{ return (version_ == version); }
 bool TableVersion::operator==(const TableVersion& version) const
-{
-	return (version_ == version.version_);
-}
+{ return (version_ == version.version_); }
 
 //==============================================================================
 /// operator!=
 bool TableVersion::operator!=(unsigned int version) const
-{
-	return (version_ != version);
-}
+{ return (version_ != version); }
 bool TableVersion::operator!=(const TableVersion& version) const
-{
-	return (version_ != version.version_);
-}
+{ return (version_ != version.version_); }
 
 //==============================================================================
 /// operator<
 bool TableVersion::operator<(const TableVersion& version) const
-{
-	return (version_ < version.version_);
-}
+{ return (version_ < version.version_); }
 
 //==============================================================================
 /// operator>
 bool TableVersion::operator>(const TableVersion& version) const
-{
-	return (version_ > version.version_);
-}
+{ return (version_ > version.version_); }
 
 //==============================================================================
 /// isInvalid
@@ -135,17 +123,13 @@ bool TableVersion::isInvalid() const
 /// isTemporaryVersion
 ///	claim a block of unsigned ints to designate as temporary versions
 bool TableVersion::isTemporaryVersion() const
-{
-	return (version_ >= INVALID - NUM_OF_TEMP_VERSIONS && version_ != INVALID);
-}
+{ return (version_ >= INVALID - NUM_OF_TEMP_VERSIONS && version_ != INVALID); }
 
 //==============================================================================
 /// isScratchVersion
 ///	claim the most positive signed integer as the scratch version
 bool TableVersion::isScratchVersion() const
-{
-	return (version_ == TableVersion::SCRATCH);
-}
+{ return (version_ == TableVersion::SCRATCH); }
 
 //==============================================================================
 /// isMockupVersion

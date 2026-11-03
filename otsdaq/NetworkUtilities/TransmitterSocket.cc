@@ -10,16 +10,12 @@ using namespace ots;
 
 //==============================================================================
 TransmitterSocket::TransmitterSocket(void)
-{
-	__COUT__ << "TransmitterSocket constructor " << __E__;
-}
+{ __COUT__ << "TransmitterSocket constructor " << __E__; }
 
 //==============================================================================
 TransmitterSocket::TransmitterSocket(const std::string& IPAddress, unsigned int port)
     : Socket(IPAddress, port)
-{
-	__COUT__ << "TransmitterSocket constructor " << IPAddress << ":" << port << __E__;
-}
+{ __COUT__ << "TransmitterSocket constructor " << IPAddress << ":" << port << __E__; }
 
 //==============================================================================
 TransmitterSocket::~TransmitterSocket(void) {}
@@ -112,11 +108,11 @@ int TransmitterSocket::send(Socket&                      toSocket,
 		                    ? MAX_SEND_SIZE
 		                    : 2 * (buffer.size() - offset);
 		sts           = sendto(socketNumber_,
-                     &buffer[0] + offset,
-                     thisSize,
-                     0,
-                     (struct sockaddr*)&(toSocket.getSocketAddress()),
-                     sizeof(sockaddr_in));
+		                       &buffer[0] + offset,
+		                       thisSize,
+		                       0,
+		                       (struct sockaddr*)&(toSocket.getSocketAddress()),
+		                       sizeof(sockaddr_in));
 		offset += sts / 2;
 	}
 

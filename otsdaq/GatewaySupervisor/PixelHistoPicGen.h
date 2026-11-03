@@ -240,17 +240,17 @@ class PixelHistoPicGen
 
 	int* clickMask_;  ///<array of roc indices that have been clicked
 
-	unsigned char img_[IMG_WIDTH][IMG_HEIGHT][3];  ///<RGB img representation {x,y,rgb}
-	unsigned char bimg_[BIMG_WIDTH][BIMG_HEIGHT]
-	                   [3];  ///<barrel RGB img representation {x,y,rgb}
-	unsigned char auxImg_[AUX_IMG_WIDTH][AUX_IMG_HEIGHT]
-	                     [4];   ///<RGB alpha img representation {x,y,rgba}
-	unsigned char*** readImg_;  ///<RGB read img representation {x,y,rgb}
+	unsigned char    img_[IMG_WIDTH][IMG_HEIGHT][3];  ///<RGB img representation {x,y,rgb}
+	unsigned char    bimg_[BIMG_WIDTH][BIMG_HEIGHT]
+	                      [3];  ///<barrel RGB img representation {x,y,rgb}
+	unsigned char    auxImg_[AUX_IMG_WIDTH][AUX_IMG_HEIGHT]
+	                        [4];  ///<RGB alpha img representation {x,y,rgba}
+	unsigned char*** readImg_;    ///<RGB read img representation {x,y,rgb}
 	int              readImgW_, readImgH_;
 
 	unsigned char turtleImg_[TUR_IMG_WIDTH][TUR_IMG_HEIGHT]
 	                        [4];  ///<RGB alpha img representation {x,y,rgba}
-	bool firstTurtle;
+	bool          firstTurtle;
 };
 
 #endif

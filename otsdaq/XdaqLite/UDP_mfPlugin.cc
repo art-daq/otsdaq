@@ -20,12 +20,15 @@ class ELUDPLite : public mf::service::ELdestination
 	struct Config
 	{
 		fhicl::TableFragment<mf::service::ELdestination::Config> elDestConfig;
-		fhicl::Atom<int>         error_turnoff_threshold{fhicl::Name{"error_turnoff_threshold"}, 0};
-		fhicl::Atom<int>         error_report_backoff_factor{fhicl::Name{"error_report_backoff_factor"}, 0};
+		fhicl::Atom<int> error_turnoff_threshold{fhicl::Name{"error_turnoff_threshold"},
+		                                         0};
+		fhicl::Atom<int> error_report_backoff_factor{
+		    fhicl::Name{"error_report_backoff_factor"}, 0};
 		fhicl::Atom<std::string> host{fhicl::Name{"host"}, "127.0.0.1"};
 		fhicl::Atom<int>         port{fhicl::Name{"port"}, 0};
-		fhicl::Atom<bool>        multicast_enabled{fhicl::Name{"multicast_enabled"}, false};
-		fhicl::Atom<std::string> multicast_interface_ip{fhicl::Name{"multicast_interface_ip"}, ""};
+		fhicl::Atom<bool> multicast_enabled{fhicl::Name{"multicast_enabled"}, false};
+		fhicl::Atom<std::string> multicast_interface_ip{
+		    fhicl::Name{"multicast_interface_ip"}, ""};
 		fhicl::Atom<std::string> filename_delimit{fhicl::Name{"filename_delimit"}, "/"};
 	};
 	using Parameters = fhicl::WrappedTable<Config>;
@@ -37,9 +40,6 @@ class ELUDPLite : public mf::service::ELdestination
 };
 }  // namespace ots
 
-MAKE_MFPLUGIN_START(, pset)
-{
-	return std::make_unique<ots::ELUDPLite>(pset);
-}
+MAKE_MFPLUGIN_START(, pset) { return std::make_unique<ots::ELUDPLite>(pset); }
 FHICL_PROVIDE_ALLOWED_CONFIGURATION(ots::ELUDPLite)
 MAKE_PLUGIN_END

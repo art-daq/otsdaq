@@ -136,7 +136,7 @@ try
 			    << ""
 			    << "\", \"" << comment << "\"  }" << __E__;
 
-		}           // end binary channel loop
+		}  // end binary channel loop
 		if(!first)  // if there was data, then pop tabs
 		{
 			POPTAB;
@@ -184,7 +184,7 @@ try
 			        .getValue<std::string>();
 			std::string precision = "0";
 			std::string units     = channel.second.getNode(channelColNames_.colUnits_)
-			                        .getValue<std::string>();
+			                            .getValue<std::string>();
 			// channel.second.getNode(channelColNames_.colChannelDataType_)
 			//     .getValue<std::string>();
 			std::string low_alarm_lmt =
@@ -221,18 +221,14 @@ try
 			    << low_warn_lmt << "\", \"" << high_warn_lmt << "\", \"" << high_alarm_lmt
 			    << "\", \""
 			    << ""
-			    << "\", \"" <<  // MDEL
-			    ""
-			    << "\", \"" <<  // ADEL
-			    ""
-			    << "\", \"" <<  // INP
-			    ""
-			    << "\", \"" <<  // SCAN
-			    ""
-			    << "\", \"" <<  // DTYP
+			    << "\", \"" <<     // MDEL
+			    "" << "\", \"" <<  // ADEL
+			    "" << "\", \"" <<  // INP
+			    "" << "\", \"" <<  // SCAN
+			    "" << "\", \"" <<  // DTYP
 			    comment << "\"  }" << __E__;
 
-		}           // end binary channel loop
+		}  // end binary channel loop
 		if(!first)  // if there was data, then pop tabs
 		{
 			POPTAB;

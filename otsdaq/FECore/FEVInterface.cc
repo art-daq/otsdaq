@@ -28,9 +28,7 @@ struct FEMacroProgressForwarder
 	FEMacroProgressForwarder(const FEVInterface*                      source_,
 	                         const std::function<void(unsigned int)>& callback_)
 	    : source(source_), callback(callback_), previous(active)
-	{
-		active = this;
-	}
+	{ active = this; }
 	~FEMacroProgressForwarder() { active = previous; }
 };
 thread_local FEMacroProgressForwarder* FEMacroProgressForwarder::active = nullptr;
@@ -308,9 +306,7 @@ FESlowControlsChannel* FEVInterface::getNextSlowControlsChannel(void)
 //==============================================================================
 /// virtual in case channels are handled in multiple maps, for example
 unsigned int FEVInterface::getSlowControlsChannelCount(void)
-{
-	return mapOfSlowControlsChannels_.size();
-}  // end getSlowControlsChannelCount()
+{ return mapOfSlowControlsChannels_.size(); }  // end getSlowControlsChannelCount()
 
 //==============================================================================
 bool FEVInterface::slowControlsRunning(void)
@@ -375,9 +371,9 @@ try
 		__FE_COUT__ << "slowControlsInterfaceLink is valid! Create tx socket..." << __E__;
 		slowContrlolsTxSocket.reset(
 		    new UDPDataStreamerBase(slowControlsSelfIPAddress,
-		                            slowControlsSelfPort,
-		                            slowControlsSupervisorIPAddress,
-		                            slowControlsSupervisorPort));
+			                        slowControlsSelfPort,
+			                        slowControlsSupervisorIPAddress,
+			                        slowControlsSupervisorPort));
 		txBufferUsed = true;
 	}
 	else
@@ -542,7 +538,7 @@ try
 						//can NOT break; from while loop... must take iterator back to starting point channel iterator
 					}
 				}  //end while loop searching for buffered slow controls value
-			}      //end buffered value check
+			}  //end buffered value check
 
 			//get and handle sample if not already handled using buffered value
 			if(!usingBufferedValue)
@@ -580,7 +576,7 @@ try
 			if(txBuffer.size())
 				__FE_COUT__ << "txBuffer sz=" << txBuffer.size() << __E__;
 
-				// Use artdaq Metric Manager if available,
+			// Use artdaq Metric Manager if available,
 #ifndef OTS_LITE
 			if(channel->monitoringEnabled && metricMan && metricMan->Running() &&
 			   universalAddressSize_ <= 8)
@@ -752,9 +748,9 @@ catch(...)  //
 
 	std::thread(
 	    [](FEVInterface*     fe,
-	       const std::string errorMessage,
-	       bool              isPauseException,
-	       bool              isStopException) {
+		   const std::string errorMessage,
+		   bool              isPauseException,
+		   bool              isStopException) {
 		    FEVInterface::sendAsyncExceptionToGateway(
 		        fe, errorMessage, isPauseException, isStopException);
 	    },
@@ -914,9 +910,9 @@ bool FEVInterface::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)
 
 		std::thread(
 		    [](FEVInterface*     fe,
-		       const std::string errorMessage,
-		       bool              isPauseException,
-		       bool              isStopException) {
+			   const std::string errorMessage,
+			   bool              isPauseException,
+			   bool              isStopException) {
 			    FEVInterface::sendAsyncExceptionToGateway(
 			        fe, errorMessage, isPauseException, isStopException);
 		    },
@@ -982,12 +978,12 @@ void FEVInterface::registerFEMacroFunction(
 	mapOfFEMacroFunctions_.insert(std::pair<std::string, frontEndMacroStruct_t>(
 	    feMacroName,
 	    frontEndMacroStruct_t(feMacroName,
-	                          feMacroFunction,
-	                          namesOfInputArgs,
-	                          namesOfOutputArgs,
-	                          requiredUserPermissions,
-	                          allowedCallingFEs,
-	                          feMacroTooltip)));
+		                      feMacroFunction,
+		                      namesOfInputArgs,
+		                      namesOfOutputArgs,
+		                      requiredUserPermissions,
+		                      allowedCallingFEs,
+		                      feMacroTooltip)));
 
 }  // end registerFEMacroFunction()
 
@@ -1278,7 +1274,7 @@ void FEVInterface::runFrontEndMacro(
 		__FE_COUT__ << arg.first << ": " << arg.second << __E__;
 		encodedInputArgs.push_back(
 		    std::make_pair(StringMacros::encodeURIComponent(arg.first),
-		                   StringMacros::encodeURIComponent(arg.second)));
+			               StringMacros::encodeURIComponent(arg.second)));
 	}
 
 	std::string inputArgsStr = StringMacros::vectorToString(
@@ -1354,7 +1350,7 @@ void FEVInterface::runFrontEndMacro(
 	for(auto& mapPair : mapToReturn)
 		outputArgs.push_back(
 		    std::make_pair(StringMacros::decodeURIComponent(mapPair.first),
-		                   StringMacros::decodeURIComponent(mapPair.second)));
+			               StringMacros::decodeURIComponent(mapPair.second)));
 
 }  // end runFrontEndMacro()
 
@@ -1436,7 +1432,7 @@ void FEVInterface::receiveFromFrontEnd(const std::string& requester,
 
 		--timeoutInSeconds;
 		sleep(1);  // wait a sec
-	}              // end timeout loop
+	}  // end timeout loop
 
 	// should never get here
 }  // end receiveFromFrontEnd()
@@ -1555,10 +1551,10 @@ FEVInterface::macroStruct_t::macroStruct_t(const std::string& macroString)
 			    // return false if all hex characters found
 			    for(const auto& c : fieldValue)
 				    if(!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ||
-				         (c >= 'A' && c <= 'F')))
+					     (c >= 'A' && c <= 'F')))
 					    return true;  // is variable name!
 			    return false;         // else is a valid hex string, so not variable name
-		    };                        // end local lambda localIsVariable()
+		    };  // end local lambda localIsVariable()
 
 		if(commandPieces[1][0] == 'r' && commandPieces.size() == 4)  // read type
 		{
@@ -1816,7 +1812,7 @@ void FEVInterface::runMacro(
 
 			usleep(delayOp.delay_ /*ms*/ * 1000);
 
-		}     // end delay op
+		}  // end delay op
 		else  // invalid type
 		{
 			__FE_SS__ << "Invalid command type '" << op.first << "!'" << __E__;

@@ -92,9 +92,9 @@ void XmlDocument::initDocument(void)
 		{
 			theDocument_ = theImplementation_->createDocument(
 			    CONVERT_TO_XML("http://www.w3.org/2001/XMLSchema-instance"),  // root
-			                                                                  // element
-			                                                                  // namespace
-			                                                                  // URI.
+				                                                              // element
+				                                                              // namespace
+				                                                              // URI.
 			    CONVERT_TO_XML(rootTagName_),  // root element name
 			    0);                            // theDocument_ type object (DTD).
 		}
@@ -415,14 +415,14 @@ void XmlDocument::recursiveOutputXmlDocument(xercesc::DOMElement* currEl,
 		                currEl->getFirstChild()->getNodeType() ==
 		                    xercesc::DOMNode::TEXT_NODE))
 		                  ? "/"
-		                  : "")
+						  : "")
 		          << ">" << std::endl;
 	if(out)
 		*out << ((nodeList->getLength() == 0 ||
 		          (nodeList->getLength() == 1 &&
 		           currEl->getFirstChild()->getNodeType() == xercesc::DOMNode::TEXT_NODE))
 		             ? "/"
-		             : "")
+					 : "")
 		     << ">" << std::endl;
 
 	// insert children
@@ -831,6 +831,4 @@ xercesc::DOMElement* XmlDocument::populateBinaryTreeNode(xercesc::DOMElement* an
 //==========================================================================================
 /// Used by developer Dario Menasce for alternative XML requests at web user interface.
 void XmlDocument::setDarioStyle(bool darioStyle)
-{
-	darioXMLStyle_ = darioStyle;
-}  //end setDarioStyle()
+{ darioXMLStyle_ = darioStyle; }  //end setDarioStyle()

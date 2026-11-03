@@ -16,7 +16,7 @@ using namespace ots;
 //==============================================================================
 ProgressBar::ProgressBar()
     : cProgressBarFilePath_(std::string(__ENV__("SERVICE_DATA_PATH")) +
-                            "/ProgressBarData/")
+	                        "/ProgressBarData/")
     , cProgressBarFileExtension_(".txt")
     , totalStepsFileName_("")
     , stepCount_(0)

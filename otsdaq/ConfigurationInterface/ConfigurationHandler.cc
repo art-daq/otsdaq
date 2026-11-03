@@ -164,9 +164,7 @@ bool ConfigurationHandler::validateNode(XMLCh*             tagName,
 xercesc::DOMNode* ConfigurationHandler::getNode(XMLCh*            tagName,
                                                 xercesc::DOMNode* parent,
                                                 unsigned int      itemNumber)
-{
-	return getNode(tagName, dynamic_cast<xercesc::DOMElement*>(parent), itemNumber);
-}
+{ return getNode(tagName, dynamic_cast<xercesc::DOMElement*>(parent), itemNumber); }
 
 //==============================================================================
 xercesc::DOMNode* ConfigurationHandler::getNode(XMLCh*               tagName,
@@ -195,23 +193,17 @@ xercesc::DOMNode* ConfigurationHandler::getNode(XMLCh*               tagName,
 xercesc::DOMElement* ConfigurationHandler::getElement(XMLCh*            tagName,
                                                       xercesc::DOMNode* parent,
                                                       unsigned int      itemNumber)
-{
-	return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber));
-}
+{ return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber)); }
 
 //==============================================================================
 xercesc::DOMElement* ConfigurationHandler::getElement(XMLCh*               tagName,
                                                       xercesc::DOMElement* parent,
                                                       unsigned int         itemNumber)
-{
-	return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber));
-}
+{ return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber)); }
 
 //==============================================================================
 void ConfigurationHandler::readXML(TableBase* table, TableVersion version)
-{
-	readXML(*table, version);
-}
+{ readXML(*table, version); }
 
 //==============================================================================
 void ConfigurationHandler::readXML(TableBase& table, TableVersion version)
@@ -451,8 +443,8 @@ void ConfigurationHandler::readXML(TableBase& table, TableVersion version)
 					      << colNumber + 1
 					      << (colNumber == 0
 					              ? "st"
-					              : (colNumber == 1 ? "nd"
-					                                : (colNumber == 2 ? "rd" : "th")))
+								  : (colNumber == 1 ? "nd"
+								                    : (colNumber == 2 ? "rd" : "th")))
 					      << " element found in the file at " << XML_TO_CHAR(dataTag_)
 					      << " tag number " << row << " is "
 					      << XML_TO_CHAR(columnElement->getTagName());
@@ -511,8 +503,8 @@ std::string ConfigurationHandler::writeXML(const TableBase& table)
 			//<ROOT>
 			xercesc::DOMDocument* document =
 			    implementation->createDocument(0,         // root element namespace URI.
-			                                   rootTag_,  // root element name
-			                                   0);        // document type object (DTD).
+				                               rootTag_,  // root element name
+				                               0);        // document type object (DTD).
 
 			xercesc::DOMElement* rootElement = document->getDocumentElement();
 			rootElement->setAttribute(
@@ -773,9 +765,7 @@ void ConfigurationHandler::outputXML(xercesc::DOMDocument* pmyDOMDocument,
 
 //==============================================================================
 std::string ConfigurationHandler::writeXML(const TableBase* table)
-{
-	return writeXML(*table);
-}
+{ return writeXML(*table); }
 
 //==============================================================================
 std::string ConfigurationHandler::getXMLFileName(const TableBase& table,

@@ -29,7 +29,7 @@ TableBase::TableBase(const std::string& tableName, std::string* accumulatedExcep
     : MAX_VIEWS_IN_CACHE(
           (tableName == "GroupAliasesTable" || tableName == "VersionAliasesTable")
               ? BACKBONE_MEMBER_MAX_VIEWS_IN_CACHE
-              : 20)
+			  : 20)
     , tableName_(tableName)
     , activeTableView_(0)
     , mockupTableView_(tableName)
@@ -143,7 +143,7 @@ TableBase::TableBase(const std::string& tableName, std::string* accumulatedExcep
 ///	e.g. the TableGroupMetadata table in ConfigurationManager
 TableBase::TableBase(bool specialTable, const std::string& specialTableName)
     : MAX_VIEWS_IN_CACHE(1)  // This is done, so that inheriting table classes could have
-                             // varying amounts of cache
+	                         // varying amounts of cache
     , tableName_(specialTableName)
     , activeTableView_(0)
     , mockupTableView_(specialTableName)
@@ -191,14 +191,14 @@ void TableBase::specialMetaTableConstructor()
 	std::vector<TableViewColumnInfo>* colInfo = getMockupViewP()->getColumnsInfoP();
 	colInfo->push_back(
 	    TableViewColumnInfo(TableViewColumnInfo::TYPE_UID,  // just to make init() happy
-	                        "UnusedUID",
-	                        "UNUSED_UID",
-	                        TableViewColumnInfo::DATATYPE_NUMBER,
-	                        0 /*Default*/,
-	                        "",
-	                        0 /*Min*/,
-	                        0 /*Max*/,
-	                        0));
+		                    "UnusedUID",
+		                    "UNUSED_UID",
+		                    TableViewColumnInfo::DATATYPE_NUMBER,
+		                    0 /*Default*/,
+		                    "",
+		                    0 /*Min*/,
+		                    0 /*Max*/,
+		                    0));
 	colInfo->push_back(TableViewColumnInfo(TableViewColumnInfo::TYPE_DATA,
 	                                       "GroupAliases",
 	                                       "GROUP_ALIASES",
@@ -375,7 +375,7 @@ void TableBase::trimTemporary(TableVersion targetVersion)
 				if(activeTableView_ &&
 				   getViewVersion() == it->first)  // if activeVersion is being erased!
 					deactivate();  // deactivate active view, instead of guessing at next
-					               // active view
+				                   // active view
 				tableViews_.erase(it++);
 			}
 			else
@@ -795,9 +795,7 @@ void TableBase::changeVersionAndActivateView(TableVersion temporaryVersion,
 
 //==============================================================================
 bool TableBase::isStored(const TableVersion& version) const
-{
-	return (tableViews_.find(version) != tableViews_.end());
-}  //end isStored()
+{ return (tableViews_.find(version) != tableViews_.end()); }  //end isStored()
 
 //==============================================================================
 bool TableBase::eraseView(TableVersion version)
@@ -819,15 +817,11 @@ const std::string& TableBase::getTableName(void) const { return tableName_; }
 
 //==============================================================================
 const std::string& TableBase::getTableDescription(void) const
-{
-	return tableDescription_;
-}  //end getTableDescription()
+{ return tableDescription_; }  //end getTableDescription()
 
 //==============================================================================
 const TableVersion& TableBase::getViewVersion(void) const
-{
-	return getView().getVersion();
-}  //end getViewVersion()
+{ return getView().getVersion(); }  //end getViewVersion()
 
 //==============================================================================
 /// latestAndMockupColumnNumberMismatch
@@ -940,9 +934,7 @@ void TableBase::setTableName(const std::string& tableName) { tableName_ = tableN
 
 //==============================================================================
 void TableBase::setTableDescription(const std::string& tableDescription)
-{
-	tableDescription_ = tableDescription;
-}  //end setTableDescription()
+{ tableDescription_ = tableDescription; }  //end setTableDescription()
 
 //==============================================================================
 /// deactivate
@@ -992,10 +984,10 @@ TableVersion TableBase::mergeViews(
     const std::string&                        author,
     const MergeApproach                       mergeApproach,
     std::map<std::pair<std::string /*original table*/, std::string /*original uidB*/>,
-             std::string /*converted uidB*/>& uidConversionMap,
+	         std::string /*converted uidB*/>& uidConversionMap,
     std::map<
         std::pair<std::string /*original table*/,
-                  std::pair<std::string /*group linkid*/, std::string /*original gidB*/>>,
+		          std::pair<std::string /*group linkid*/, std::string /*original gidB*/>>,
         std::string /*converted gidB*/>& groupidConversionMap,
     bool                                 fillRecordConversionMaps,
     bool                                 applyRecordConversionMaps,
@@ -1062,8 +1054,8 @@ TableVersion TableBase::mergeViews(
 		(*mergeReport) << "\n'"
 		               << (mergeApproach == MergeApproach::RENAME
 		                       ? "RENAME"
-		                       : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
-		                                                                  : "SKIP"))
+							   : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+							                                              : "SKIP"))
 		               << "'-Merging table '" << getTableName() << "' A=v"
 		               << sourceViewA.getVersion() << " with B=v"
 		               << sourceViewB.getVersion() << __E__;
@@ -1205,11 +1197,11 @@ TableVersion TableBase::mergeViews(
 
 					groupidConversionMap
 					    [std::pair<std::string /*original table*/,
-					               std::pair<std::string /*group linkid*/,
-					                         std::string /*original gidB*/>>(
+						           std::pair<std::string /*group linkid*/,
+						                     std::string /*original gidB*/>>(
 					        getTableName(),
 					        std::pair<std::string /*group linkid*/,
-					                  std::string /*original gidB*/>(
+							          std::string /*original gidB*/>(
 					            sourceViewB.getColumnInfo(cb).getChildLinkIndex(),
 					            bGroupid))] = uniqueIdString;
 					localConvertedIds.push_back(uniqueIdString);  // save to vector for
@@ -1229,7 +1221,7 @@ TableVersion TableBase::mergeViews(
 				// done creating conversion map
 				__COUTTV__(StringMacros::mapToString(groupidConversionMap));
 
-			}     // end group id conversion map fill
+			}  // end group id conversion map fill
 			else  // start uid conversion map fill
 			{
 				for(unsigned int rb = 0; rb < sourceViewB.getNumberOfRows(); ++rb)
@@ -1373,7 +1365,7 @@ TableVersion TableBase::mergeViews(
 	          << destinationVersion << " with approach '"
 	          << (mergeApproach == MergeApproach::RENAME
 	                  ? "RENAME"
-	                  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE" : "SKIP"))
+					  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE" : "SKIP"))
 	          << "'" << __E__;
 
 	// if the merge fails then delete the destinationVersion view
@@ -1385,7 +1377,7 @@ TableVersion TableBase::mergeViews(
 		    std::make_pair(destinationVersion, TableView(getTableName())));
 		TableView* destinationView =
 		    &(tableViews_.at(destinationVersion)
-		          .copy(sourceViewA, destinationVersion, author));
+			      .copy(sourceViewA, destinationVersion, author));
 
 		unsigned int destRow, destSize = destinationView->getDataView().size();
 		unsigned int cb;
@@ -1439,7 +1431,7 @@ TableVersion TableBase::mergeViews(
 						// if table and uid are in conversion map, convert
 						if((uidConversionIt = uidConversionMap.find(
 						        std::pair<std::string /*original table*/,
-						                  std::string /*original uidB*/>(
+								          std::string /*original uidB*/>(
 						            sourceViewB.getValueAsString(rb, linkPair.first),
 						            sourceViewB.getValueAsString(
 						                rb, linkPair.second)))) != uidConversionMap.end())
@@ -1469,11 +1461,11 @@ TableVersion TableBase::mergeViews(
 						// if table and uid are in conversion map, convert
 						if((groupidConversionIt = groupidConversionMap.find(
 						        std::pair<std::string /*original table*/,
-						                  std::pair<std::string /*group linkid*/,
-						                            std::string /*original gidB*/>>(
+								          std::pair<std::string /*group linkid*/,
+								                    std::string /*original gidB*/>>(
 						            sourceViewB.getValueAsString(rb, linkPair.first),
 						            std::pair<std::string /*group linkid*/,
-						                      std::string /*original gidB*/>(
+									          std::string /*original gidB*/>(
 						                sourceViewB.getColumnInfo(cb).getChildLinkIndex(),
 						                sourceViewB.getValueAsString(
 						                    rb, linkPair.second))))) !=
@@ -1501,7 +1493,7 @@ TableVersion TableBase::mergeViews(
 						__COUTT__ << "Checking UID... col=" << cb << __E__;
 						if((uidConversionIt = uidConversionMap.find(
 						        std::pair<std::string /*original table*/,
-						                  std::string /*original uidB*/>(
+								          std::string /*original uidB*/>(
 						            getTableName(),
 						            sourceViewB.getValueAsString(rb, cb)))) !=
 						   uidConversionMap.end())
@@ -1527,11 +1519,11 @@ TableVersion TableBase::mergeViews(
 						__COUTT__ << "Checking GroupID... col=" << cb << __E__;
 						if((groupidConversionIt = groupidConversionMap.find(
 						        std::pair<std::string /*original table*/,
-						                  std::pair<std::string /*group linkid*/,
-						                            std::string /*original gidB*/>>(
+								          std::pair<std::string /*group linkid*/,
+								                    std::string /*original gidB*/>>(
 						            getTableName(),
 						            std::pair<std::string /*group linkid*/,
-						                      std::string /*original gidB*/>(
+									          std::string /*original gidB*/>(
 						                sourceViewB.getColumnInfo(cb).getChildLinkIndex(),
 						                sourceViewB.getValueAsString(rb, cb))))) !=
 						   groupidConversionMap.end())
@@ -1577,11 +1569,11 @@ TableVersion TableBase::mergeViews(
 									destinationView->setValueAsString(
 									    strb.substr(0, stri) +
 									        (mapPairToPair.first.first + "/" +
-									         mapPairToPair.first.second) +
+											 mapPairToPair.first.second) +
 									        strb.substr(stri +
-									                    (mapPairToPair.first.first + "/" +
-									                     mapPairToPair.first.second)
-									                        .size()),
+											            (mapPairToPair.first.first + "/" +
+											             mapPairToPair.first.second)
+											                .size()),
 									    destRow,
 									    cb);
 
@@ -1628,8 +1620,8 @@ TableVersion TableBase::mergeViews(
 				__COUTT__ << "No "
 				          << (mergeApproach == MergeApproach::RENAME
 				                  ? "RENAME"
-				                  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
-				                                                             : "SKIP"))
+								  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+								                                             : "SKIP"))
 				          << " conflict: " << __E__;
 
 				if(mergeApproach == MergeApproach::REPLACE ||
@@ -1651,8 +1643,8 @@ TableVersion TableBase::mergeViews(
 			__COUTT__ << "found "
 			          << (mergeApproach == MergeApproach::RENAME
 			                  ? "RENAME"
-			                  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
-			                                                             : "SKIP"))
+							  : (mergeApproach == MergeApproach::REPLACE ? "REPLACE"
+							                                             : "SKIP"))
 			          << " conflict: " << sourceViewB.getDataView()[rb][colUID] << __E__;
 
 			if(mergeApproach == MergeApproach::REPLACE)
@@ -1819,8 +1811,8 @@ TableVersion TableBase::createTemporaryView(TableVersion sourceViewVersion,
 			tableViews_.emplace(std::make_pair(tmpVersion, TableView(tableName_)));
 			tableViews_.at(tmpVersion)
 			    .copy(tableViews_.at(sourceViewVersion),
-			          tmpVersion,
-			          tableViews_.at(sourceViewVersion).getAuthor());
+				      tmpVersion,
+				      tableViews_.at(sourceViewVersion).getAuthor());
 		}
 		catch(...)
 		{

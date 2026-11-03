@@ -72,11 +72,11 @@ class WorkLoop
 		active_  = true;
 		running_ = true;
 		thread_  = std::thread([this] {
-            while(running_ && job_ && job_->invoke(this))
-            {
-            }
-            active_ = false;
-        });
+			while(running_ && job_ && job_->invoke(this))
+			{
+			}
+			active_ = false;
+		});
 	}
 	// Waits for the job thread to finish, as xdaq's cancel() does.
 	void cancel()

@@ -775,7 +775,7 @@ bool WebUsers::loadDatabases()
 							std::map<std::string /*groupName*/,
 							         WebUsers::permissionLevel_t>
 							    initPermissions = {{WebUsers::DEFAULT_USER_GROUP,
-							                        WebUsers::PERMISSION_LEVEL_ADMIN}};
+								                    WebUsers::PERMISSION_LEVEL_ADMIN}};
 
 							Users_.back().permissions_ = initPermissions;
 						}
@@ -1142,8 +1142,8 @@ void WebUsers::createNewAccount(const std::string& username,
 	// first user is admin always!
 	std::map<std::string /*groupName*/, WebUsers::permissionLevel_t> initPermissions = {
 	    {WebUsers::DEFAULT_USER_GROUP,
-	     (Users_.size() ? WebUsers::PERMISSION_LEVEL_NOVICE
-	                    : WebUsers::PERMISSION_LEVEL_ADMIN)}};
+		 (Users_.size() ? WebUsers::PERMISSION_LEVEL_NOVICE
+		                : WebUsers::PERMISSION_LEVEL_ADMIN)}};
 
 	Users_.back().permissions_ = initPermissions;
 	Users_.back().userId_      = usersNextUserId_++;
@@ -1891,7 +1891,7 @@ uint64_t WebUsers::searchHashesDatabaseForHash(const std::string& hash)
 	if(i < Hashes_.size())  // if found, means login successful, so update access time
 		Hashes_[i].accessTime_ =
 		    ((time(0) + (rand() % 2 ? 1 : -1) * (rand() % 30 * 24 * 60 * 60)) &
-		     0x0FFFFFFFFFE000000);
+			 0x0FFFFFFFFFE000000);
 	// else
 	//	__COUT__ << "No matching hash..." << __E__;
 
@@ -1914,7 +1914,7 @@ bool WebUsers::addToHashesDatabase(const std::string& hash)
 	Hashes_.back().hash_ = hash;
 	Hashes_.back().accessTime_ =
 	    ((time(0) + (rand() % 2 ? 1 : -1) * (rand() % 30 * 24 * 60 * 60)) &
-	     0x0FFFFFFFFFE000000);
+		 0x0FFFFFFFFFE000000);
 	// in seconds, blur by month and mask out changes on year time frame: 0xFFFFFFFF
 	// FE000000
 	return saveDatabaseToFile(DB_HASHES);
@@ -3361,7 +3361,7 @@ std::string WebUsers::getGenericPreference(uint64_t           uid,
 		const long size = ftell(fp);
 		char*      line = new char
 		    [size +
-		     1];  // std::string with line.reserve(size + 1) does not work for unknown reason
+			 1];  // std::string with line.reserve(size + 1) does not work for unknown reason
 		rewind(fp);
 		fread(line, 1, size, fp);
 		line[size] = '\0';
@@ -3913,7 +3913,7 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers,
 				{
 					WebUsers::permissionLevel_t userLevel =
 					    getPermissionLevelForGroup(getPermissionsForUser(user.userId_),
-					                               targetGroupMap.begin()->first);
+						                           targetGroupMap.begin()->first);
 
 					__COUTV__(
 					    StringMacros::mapToString(getPermissionsForUser(user.userId_)));
@@ -3987,7 +3987,7 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers,
 
 		std::string filename = (std::string)WEB_LOGIN_DB_PATH +
 		                       (std::string)USERS_DB_PATH + "/.tmp_email.txt";
-		FILE* fp = fopen(filename.c_str(), "w");
+		FILE*       fp       = fopen(filename.c_str(), "w");
 		if(!fp)
 		{
 			__SS__ << "Could not open email file: " << filename << __E__;
@@ -3998,7 +3998,7 @@ void WebUsers::addSystemMessage(const std::vector<std::string>& targetUsers,
 		        "From: %s\n",
 		        (WebUsers::OTS_OWNER == ""
 		             ? "ots"
-		             : (StringMacros::decodeURIComponent(WebUsers::OTS_OWNER) + "_ots"))
+					 : (StringMacros::decodeURIComponent(WebUsers::OTS_OWNER) + "_ots"))
 		            .c_str());
 		fprintf(fp, "To: %s\n", toList.c_str());
 		fprintf(fp, "Subject: %s\n", subject.c_str());
@@ -4151,7 +4151,7 @@ std::string WebUsers::getSystemMessage(const std::string& targetUser)
 				              << systemMessagePair.second.size() << " "
 				              << (systemMessagePair.second.size()
 				                      ? systemMessagePair.second[0].message_
-				                      : "")
+									  : "")
 				              << __E__;
 		}
 		if(it != systemMessages_.end())

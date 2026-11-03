@@ -66,7 +66,7 @@ void ARTDAQDataLoggerTable::genFlatFHiCL(void)
 
 	auto dataloggers = lastConfigManager_->__SELF_NODE__.getChildren(
 	    /*default filterMap*/ std::map<std::string /*relative-path*/,
-	                                   std::string /*value*/>(),
+		                               std::string /*value*/>(),
 	    /*default byPriority*/ false,
 	    /*TRUE! onlyStatusTrue*/ true);
 
@@ -156,7 +156,7 @@ unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(
 						std::string subsystem =
 						    metricParametersLink.second.getNode("metricParameterValue")
 						        .getValueWithDefault<std::string>(std::string("TDAQ_") +
-						                                          __ENV__("MU2E_OWNER"));
+								                                  __ENV__("MU2E_OWNER"));
 						if(subsystem.find("Mu2e:") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
 						while(subsystem.find("\"") != std::string::npos)
@@ -164,12 +164,12 @@ unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(
 
 						numberOfDataLoggerMetricParameters =
 						    slowControlsHandler(out,
-						                        tabStr,
-						                        commentStr,
-						                        subsystem,
-						                        dataLoggerPair.first,
-						                        slowControlsLink,
-						                        channelList);
+							                    tabStr,
+							                    commentStr,
+							                    subsystem,
+							                    dataLoggerPair.first,
+							                    slowControlsLink,
+							                    channelList);
 
 						__COUT__ << "DataLogger '" << dataLoggerPair.first
 						         << "' number of metrics for slow controls: "
@@ -190,8 +190,6 @@ unsigned int ARTDAQDataLoggerTable::slowControlsHandlerConfig(
 //==============================================================================
 /// return out file path
 std::string ARTDAQDataLoggerTable::setFilePath() const
-{
-	return SLOWCONTROL_PV_FILE_PATH;
-}
+{ return SLOWCONTROL_PV_FILE_PATH; }
 
 DEFINE_OTS_TABLE(ARTDAQDataLoggerTable)

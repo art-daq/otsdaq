@@ -46,8 +46,8 @@ int main()
 	// INSERTED GLOBALLY IN THE CODE
 	ConfigurationManager* theConfigurationManager_ = new ConfigurationManager;
 	FEVInterfacesManager  theFEVInterfacesManager_(
-        theConfigurationManager_->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME),
-        theSupervisorConfigurationPath_);
+	    theConfigurationManager_->getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME),
+	    theSupervisorConfigurationPath_);
 
 	std::pair<std::string /*group name*/, TableGroupKey> theGroup =
 	    theConfigurationManager_->getTableGroupFromAlias(ConfigurationAlias_);

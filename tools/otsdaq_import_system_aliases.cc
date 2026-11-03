@@ -291,7 +291,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 			groupSet.insert(
 			    std::pair<std::pair<std::string, TableGroupKey>, TableGroupKey>(
 			        std::pair<std::string, TableGroupKey>(activeGroup.second.first,
-			                                              activeGroup.second.second),
+					                                      activeGroup.second.second),
 			        TableGroupKey()));
 		}
 
@@ -391,7 +391,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 			    aliasPair.second.getNode("TableName").getValueAsString(),
 			    TableVersion(aliasPair.second.getNode("Version").getValueAsString()));
 		}  // end table aliases loop
-	}      // end extract group set
+	}  // end extract group set
 	catch(const std::runtime_error& e)
 	{
 		__COUT_ERR__ << "There was a fatal error: " << e.what() << __E__;
@@ -531,7 +531,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 			groupErrors.insert(
 			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
 			        std::pair<std::string, TableGroupKey>(groupPair.first.first,
-			                                              groupPair.first.second),
+					                                      groupPair.first.second),
 			        "Error caught loading the group."));
 			continue;
 		}
@@ -634,7 +634,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 				newTableVersionMap.insert(
 				    std::pair<std::pair<std::string, TableVersion>, TableVersion>(
 				        std::pair<std::string, TableVersion>(memberPair.first,
-				                                             memberPair.second),
+						                                     memberPair.second),
 				        newVersion));
 
 				memberPair.second = newVersion;  // change version in the member map
@@ -783,7 +783,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 			groupErrors.insert(
 			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
 			        std::pair<std::string, TableGroupKey>(groupPair.first.first,
-			                                              groupPair.first.second),
+					                                      groupPair.first.second),
 			        "Error caught saving the group."));
 		}
 		catch(...)
@@ -794,7 +794,7 @@ void ImportSystemAliasTableGroups(int argc, char* argv[])
 			groupErrors.insert(
 			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
 			        std::pair<std::string, TableGroupKey>(groupPair.first.first,
-			                                              groupPair.first.second),
+					                                      groupPair.first.second),
 			        "Error caught saving the group."));
 		}
 		//=========================

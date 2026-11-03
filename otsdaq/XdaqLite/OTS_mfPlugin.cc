@@ -33,8 +33,14 @@ class ELOTSLite : public mf::service::ELdestination
 	struct Config
 	{
 		fhicl::TableFragment<mf::service::ELdestination::Config> elDestConfig;
-		fhicl::Atom<std::string> format_string{fhicl::Name{"format_string"}, fhicl::Comment{"Format specifier for printing to console. %% => '%' ..."}, "%L:%N:%f [%u]\t%m"};
-		fhicl::Atom<std::string> filename_delimit{fhicl::Name{"filename_delimit"}, fhicl::Comment{"Grab path after this. \"/srcs/\" /x/srcs/y/z.cc => y/z.cc"}, "/"};
+		fhicl::Atom<std::string>                                 format_string{
+		    fhicl::Name{"format_string"},
+		    fhicl::Comment{"Format specifier for printing to console. %% => '%' ..."},
+		    "%L:%N:%f [%u]\t%m"};
+		fhicl::Atom<std::string> filename_delimit{
+		    fhicl::Name{"filename_delimit"},
+		    fhicl::Comment{"Grab path after this. \"/srcs/\" /x/srcs/y/z.cc => y/z.cc"},
+		    "/"};
 	};
 	using Parameters = fhicl::WrappedTable<Config>;
 
@@ -50,7 +56,8 @@ class ELOTSLite : public mf::service::ELdestination
 			hostname_ = buf;
 			if(hostent* he = gethostbyname(buf))
 				if(he->h_addr_list[0])
-					hostaddr_ = inet_ntoa(*reinterpret_cast<in_addr*>(he->h_addr_list[0]));
+					hostaddr_ =
+					    inet_ntoa(*reinterpret_cast<in_addr*>(he->h_addr_list[0]));
 		}
 	}
 
@@ -73,24 +80,52 @@ class ELOTSLite : public mf::service::ELdestination
 			}
 			switch(*cp)
 			{
-			case 'A': oss << mf::GetApplicationName(); break;
-			case 'a': oss << hostaddr_; break;
-			case 'd': oss << xid.module(); break;
-			case 'f': oss << shortFilename(msg.filename()); break;
-			case 'h': oss << hostname_; break;
-			case 'L': oss << xid.severity().getInputStr(); break;
+			case 'A':
+				oss << mf::GetApplicationName();
+				break;
+			case 'a':
+				oss << hostaddr_;
+				break;
+			case 'd':
+				oss << xid.module();
+				break;
+			case 'f':
+				oss << shortFilename(msg.filename());
+				break;
+			case 'h':
+				oss << hostname_;
+				break;
+			case 'L':
+				oss << xid.severity().getInputStr();
+				break;
 			case 'm':
 				oss << messageText(msg);
 				msgPrinted = true;
 				break;
-			case 'N': oss << xid.id(); break;
-			case 'P': oss << pid_; break;
-			case 'r': oss << mf::GetIteration(); break;
-			case 's': oss << static_cast<char>(xid.severity().getInputStr()[0] | 0x20); break;
-			case 'T': oss << format_.timestamp(msg.timestamp()); break;
-			case 'u': oss << msg.lineNumber(); break;
-			case '%': oss << '%'; break;
-			default: oss << '%' << *cp; break;
+			case 'N':
+				oss << xid.id();
+				break;
+			case 'P':
+				oss << pid_;
+				break;
+			case 'r':
+				oss << mf::GetIteration();
+				break;
+			case 's':
+				oss << static_cast<char>(xid.severity().getInputStr()[0] | 0x20);
+				break;
+			case 'T':
+				oss << format_.timestamp(msg.timestamp());
+				break;
+			case 'u':
+				oss << msg.lineNumber();
+				break;
+			case '%':
+				oss << '%';
+				break;
+			default:
+				oss << '%' << *cp;
+				break;
 			}
 		}
 		if(!msgPrinted)
@@ -142,9 +177,6 @@ class ELOTSLite : public mf::service::ELdestination
 };
 }  // namespace ots
 
-MAKE_MFPLUGIN_START(, pset)
-{
-	return std::make_unique<ots::ELOTSLite>(pset);
-}
+MAKE_MFPLUGIN_START(, pset) { return std::make_unique<ots::ELOTSLite>(pset); }
 FHICL_PROVIDE_ALLOWED_CONFIGURATION(ots::ELOTSLite)
 MAKE_PLUGIN_END

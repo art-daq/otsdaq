@@ -398,9 +398,9 @@ try
 
 				auto /*pair<it,success>*/ emplaceReturn = mapToReturn.emplace(
 				    std::pair<S, T>(name,
-				                    validateValueForDefaultStringDataType<T>(
+					                validateValueForDefaultStringDataType<T>(
 				                        inputString.substr(i, j - i))  // value
-				                    ));
+					                ));
 
 				if(!emplaceReturn.second)
 				{

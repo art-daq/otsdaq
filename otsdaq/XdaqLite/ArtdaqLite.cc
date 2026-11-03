@@ -45,8 +45,8 @@ void artdaq::ExceptionHandler(ExceptionHandlerRethrow decision,
 // to turn that off, and a generated `file` table placed before it was taken instead of
 // the fcl's value, silently diverting every message into "<ARTDAQ_LOG_ROOT>/./.-%p.log".
 std::string artdaq::generateMessageFacilityConfiguration(char const* /*progname*/,
-                                                         bool        useConsole,
-                                                         bool        printDebug,
+                                                         bool useConsole,
+                                                         bool printDebug,
                                                          char const* /*fileExtraName*/)
 {
 	const char*        logFhicl = getenv("ARTDAQ_LOG_FHICL");
@@ -59,7 +59,9 @@ std::string artdaq::generateMessageFacilityConfiguration(char const* /*progname*
 	{
 		std::ifstream in(logFhicl);
 		if(!in)
-			throw std::runtime_error(std::string("Unable to open requested fhicl file ARTDAQ_LOG_FHICL=\"") + logFhicl + "\".");
+			throw std::runtime_error(
+			    std::string("Unable to open requested fhicl file ARTDAQ_LOG_FHICL=\"") +
+			    logFhicl + "\".");
 		ss << in.rdbuf();
 	}
 	ss << "} ";

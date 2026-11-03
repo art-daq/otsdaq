@@ -25,18 +25,14 @@ FiniteStateMachine::FiniteStateMachine(const std::string& stateMachineName)
     , provenanceState_('X')
     , theErrorMessage_("")
     , stateMachineName_(stateMachineName)
-{
-	__GEN_COUT__ << "Constructing FiniteStateMachine" << __E__;
-}  // end constructor()
+{ __GEN_COUT__ << "Constructing FiniteStateMachine" << __E__; }  // end constructor()
 
 //==============================================================================
 FiniteStateMachine::~FiniteStateMachine(void) {}
 
 //==============================================================================
 toolbox::fsm::State FiniteStateMachine::getProvenanceState(void)
-{
-	return provenanceState_;
-}
+{ return provenanceState_; }
 
 //==============================================================================
 toolbox::fsm::State FiniteStateMachine::getTransitionFinalState(
@@ -63,15 +59,11 @@ toolbox::fsm::State FiniteStateMachine::getTransitionFinalState(
 
 //==============================================================================
 std::string FiniteStateMachine::getProvenanceStateName(void)
-{
-	return getStateName(getProvenanceState());
-}
+{ return getStateName(getProvenanceState()); }
 
 //==============================================================================
 std::string FiniteStateMachine::getCurrentStateName(void)
-{
-	return getStateName(getCurrentState());
-}
+{ return getStateName(getCurrentState()); }
 
 //==============================================================================
 /// getTimeInState
@@ -79,9 +71,7 @@ std::string FiniteStateMachine::getCurrentStateName(void)
 ///	returns 0 if invalid (i.e. stateEntranceTime_ is not set - stateEntranceTime_ is
 /// initialized to 0)
 time_t FiniteStateMachine::getTimeInState(void) const
-{
-	return stateEntranceTime_ ? (time(0) - stateEntranceTime_) : 0;
-}
+{ return stateEntranceTime_ ? (time(0) - stateEntranceTime_) : 0; }
 
 //==============================================================================
 std::string FiniteStateMachine::getCurrentTransitionName(const std::string& transition)
@@ -188,9 +178,7 @@ std::string FiniteStateMachine::getTransitionParameter(const toolbox::fsm::State
 
 //==============================================================================
 std::string FiniteStateMachine::getTransitionFinalStateName(const std::string& transition)
-{
-	return getStateName(getTransitionFinalState(transition));
-}
+{ return getStateName(getTransitionFinalState(transition)); }
 
 //==============================================================================
 bool FiniteStateMachine::execTransition(const std::string& transition)
@@ -373,9 +361,7 @@ void FiniteStateMachine::setErrorMessage(const std::string& errMessage, bool app
 
 //==============================================================================
 const std::string& FiniteStateMachine::getErrorMessage() const
-{
-	return theErrorMessage_;
-}
+{ return theErrorMessage_; }
 
 //==============================================================================
 void FiniteStateMachine::setInitialState(toolbox::fsm::State state)

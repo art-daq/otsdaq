@@ -113,7 +113,7 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	std::mutex frontEndCommunicationReceiveMutex_;
 	std::map<
 	    std::string /*targetInterfaceID*/,  ///< map of target to buffers organized by
-	                                        ///< source
+		                                    ///< source
 	    std::map<std::string /*requester*/, std::queue<std::string /*value*/> > >
 	    frontEndCommunicationReceiveBuffer_;
 
@@ -121,7 +121,7 @@ class FEVInterfacesManager : public Configurable, public VStateMachine
 	std::mutex macroMultiDimensionalDoneMutex_;
 	std::map<
 	    std::string /*targetInterfaceID*/,  ///< set of active multi-dimensional Macro
-	                                        ///< launches
+		                                    ///< launches
 	    std::string /*status := Active, Done, Error: <message> */>
 	    macroMultiDimensionalStatusMap_;
 	std::map<std::string /*targetInterfaceID*/, std::string /*output file path*/>

@@ -11,8 +11,8 @@ ots::FragmentType ots::toFragmentType(std::string t_string)
 	auto it = std::find(names.begin(), names.end(), t_string);
 	return (it == names.end())
 	           ? FragmentType::INVALID
-	           : static_cast<FragmentType>(artdaq::Fragment::FirstUserFragmentType +
-	                                       (it - names.begin()));
+			   : static_cast<FragmentType>(artdaq::Fragment::FirstUserFragmentType +
+			                               (it - names.begin()));
 }
 
 std::string ots::fragmentTypeToString(FragmentType val)

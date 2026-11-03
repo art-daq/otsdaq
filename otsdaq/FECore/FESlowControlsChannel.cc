@@ -63,7 +63,7 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface*      interface,
     , recordChangesOnly_(recordChangesOnly)
     , delayBetweenSamples_(delayBetweenSamples < 1
                                ? 1
-                               : delayBetweenSamples)  // units of seconds, with 1 minimum
+							   : delayBetweenSamples)  // units of seconds, with 1 minimum
     , saveEnabled_(saveEnabled)
     , savePath_(savePath)
     , saveFileRadix_(saveFileRadix)
@@ -76,8 +76,8 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface*      interface,
     , hiAlarmed_(false)
     , hihiAlarmed_(false)
     , saveFullFileName_(savePath_ + "/" + saveFileRadix_ + "-" +
-                        underscoreString(fullChannelName) + "-" +
-                        std::to_string(time(0)) + (saveBinaryFormat_ ? ".dat" : ".txt"))
+	                    underscoreString(fullChannelName) + "-" +
+	                    std::to_string(time(0)) + (saveBinaryFormat_ ? ".dat" : ".txt"))
 {
 	__GEN_COUTV__(dataType);
 	__GEN_COUTV__(interface->getUniversalAddressSize());
@@ -155,7 +155,7 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface*      interface,
 	if(!sizeOfReadBytes_)
 		sizeOfReadBytes_ =
 		    ((universalDataBitOffset_ + sizeOfDataTypeBits_) / 8 +
-		     (((universalDataBitOffset_ + sizeOfDataTypeBits_) % 8) ? 1 : 0));
+			 (((universalDataBitOffset_ + sizeOfDataTypeBits_) % 8) ? 1 : 0));
 	sizeOfDataTypeBytes_ =
 	    ((sizeOfDataTypeBits_) / 8 + (((sizeOfDataTypeBits_) % 8) ? 1 : 0));
 
@@ -280,13 +280,9 @@ FESlowControlsChannel::FESlowControlsChannel(FEVInterface*      interface,
 FESlowControlsChannel::~FESlowControlsChannel(void) {}
 
 const std::string& FESlowControlsChannel::getInterfaceUID(void) const
-{
-	return interface_->getInterfaceUID();
-}
+{ return interface_->getInterfaceUID(); }
 const std::string& FESlowControlsChannel::getInterfaceType(void) const
-{
-	return interface_->getInterfaceType();
-}
+{ return interface_->getInterfaceType(); }
 
 //==============================================================================
 void FESlowControlsChannel::doRead(std::string& readValue)

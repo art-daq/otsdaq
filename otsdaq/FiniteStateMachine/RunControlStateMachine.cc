@@ -457,7 +457,7 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 		__GEN_COUTS__(2) << "Iteration index "
 		                 << (isStandaloneSubsystem()
 		                         ? std::string("standalone")
-		                         : std::to_string(subsystemIterationIndex_))
+								 : std::to_string(subsystemIterationIndex_))
 		                 << ":" << iterationIndex_ << "." << subIterationIndex_ << " for "
 		                 << theStateMachine_.getStateMachineName() << " from "
 		                 << currentState << " attempting to " << command << std::endl;
@@ -678,7 +678,7 @@ xoap::MessageReference RunControlStateMachine::runControlMessageHandler(
 			__GEN_COUTS__(2) << command << " subsystemIteration="
 			                 << (isStandaloneSubsystem()
 			                         ? std::string("standalone")
-			                         : std::to_string(subsystemIterationIndex_))
+									 : std::to_string(subsystemIterationIndex_))
 			                 << " iteration=" << iterationIndex_ << "."
 			                 << subIterationIndex_ << __E__;
 			toolbox::Event::Reference event(new toolbox::Event(command, this));
