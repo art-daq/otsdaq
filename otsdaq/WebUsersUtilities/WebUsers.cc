@@ -203,8 +203,21 @@ bool WebUsers::xmlRequestOnGateway(cgicc::Cgicc&              cgi,
 	       &userInfo.usernameWithLock_,
 	       &userInfo.userSessionIndex_))
 	{
-		*out << userInfo.cookieCode_;
-		goto HANDLE_ACCESS_FAILURE;  // return false, access failed
+		// cookieCodeIsActiveForRequest() also fails when checkIpAccess() rejects the
+		//	client; a rejected IP must not fall through to the no-login path below
+		if(!userInfo.allowNoUser_ || !checkIpAccess(userInfo.ip_))
+		{
+			*out << userInfo.cookieCode_;
+			goto HANDLE_ACCESS_FAILURE;  // return false, access failed
+		}
+
+		// AllowNoLoginRequestTypes: proceed without a user, matching the
+		//	RemoteWebUsers::xmlRequestToGateway() behavior for non-gateway supervisors
+		__COUTT__ << "Allowing request '" << userInfo.requestType_ << "' without login (@"
+		          << userInfo.ip_ << ")" << __E__;
+		userInfo.setGroupPermissionLevels("");  // inactive, no user
+		userInfo.uid_ = NOT_FOUND_IN_DATABASE;
+		return WebUsers::checkRequestAccess(cgi, out, xmldoc, userInfo);
 	}
 
 	// setup userInfo.permissionLevel_ based on userInfo.groupPermissionLevelMap_
@@ -2426,10 +2439,16 @@ bool WebUsers::cookieCodeIsActiveForRequest(
 		if((i = searchActiveSessionDatabaseForCookie(cookieCode)) ==
 		   NOT_FOUND_IN_DATABASE)
 		{
-			__COUT_ERR__ << "Cookie code not found" << __E__;
-			cookieCode = REQ_NO_LOGIN_RESPONSE;
-
 			incrementIpBlacklistCount(ip);  // increment ip blacklist counter
+
+			{
+				uint32_t cookieErrorCount =
+				    ipBlacklistCounts_.count(ip) ? ipBlacklistCounts_[ip] : 0;
+				if(cookieErrorCount <= 1 || cookieErrorCount % 100 == 0)
+					__COUT_ERR__ << "Cookie code not found (ip=" << ip
+					             << ", occurrences=" << cookieErrorCount << ")" << __E__;
+			}
+			cookieCode = REQ_NO_LOGIN_RESPONSE;
 
 			return false;
 		}

@@ -1880,7 +1880,15 @@ TableGroupKey ConfigurationManagerRW::findTableGroup(
 
 	__COUTTV__(StringMacros::setToString(keys));
 
-	const unsigned int MAX_DEPTH_TO_CHECK = 20;
+	// Backbone groups are searched deeper: a Backbone forks on every alias flip, so a
+	// previously used alias combination is often well beyond the last 20 keys.
+	// Size check first: getTypeOfGroup() throws on a partial member match, and the
+	// common Config groups have ~50 members, so most calls never reach it.
+	const bool isBackboneGroup =
+	    groupMemberMap.size() == ConfigurationManager::getBackboneMemberNames().size() &&
+	    ConfigurationManager::getTypeOfGroup(groupMemberMap) ==
+	        ConfigurationManager::GroupType::BACKBONE_TYPE;
+	const unsigned int MAX_DEPTH_TO_CHECK = isBackboneGroup ? 100 : 20;
 	unsigned int       keyMinToCheck      = 0;
 
 	if(keys.size())

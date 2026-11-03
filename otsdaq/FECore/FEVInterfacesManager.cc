@@ -235,6 +235,11 @@ void FEVInterfacesManager::configure(void)
 
 	FEVInterface* fe;
 
+	// every FE gets its configure attempt this pass; failures are collected and
+	// thrown together so the error reports how many FEs failed, not just the first
+	std::vector<std::string> feConfigureFailures;
+	unsigned int             feConfigureAttemptCount = 0;
+
 	preStateMachineExecutionLoop();
 	for(unsigned int i = 0; i < theFENamesByPriority_.size(); ++i)
 	{
@@ -252,25 +257,55 @@ void FEVInterfacesManager::configure(void)
 			continue;  // skip state machines already done
 
 		__CFG_COUT__ << transitionName << " interface " << name << __E__;
+		++feConfigureAttemptCount;
 
-		preStateMachineExecution(i, transitionName);
-		fe->configure();
-		postStateMachineExecution(i);
-
-		// when done with fe configure, configure slow controls
-		if(!fe->VStateMachine::getSubIterationWork() &&
-		   !fe->VStateMachine::getIterationWork() &&
-		   !fe->VStateMachine::getSubsystemIterationWork())
+		try
 		{
-			// configure slow controls and start slow controls workloop
-			//	slow controls workloop stays alive through start/stop.. and dies on halt
-			fe->configureSlowControls();
-			fe->startSlowControlsWorkLoop();
+			preStateMachineExecution(i, transitionName);
+			fe->configure();
+			postStateMachineExecution(i);
 
-			__CFG_COUT__ << "Done " << transitionName << " interface " << name << __E__;
+			// when done with fe configure, configure slow controls
+			if(!fe->VStateMachine::getSubIterationWork() &&
+			   !fe->VStateMachine::getIterationWork() &&
+			   !fe->VStateMachine::getSubsystemIterationWork())
+			{
+				// configure slow controls and start slow controls workloop
+				//	slow controls workloop stays alive through start/stop.. and dies on halt
+				fe->configureSlowControls();
+				fe->startSlowControlsWorkLoop();
+
+				__CFG_COUT__ << "Done " << transitionName << " interface " << name
+				             << __E__;
+			}
+		}
+		catch(const std::runtime_error& feConfigureError)
+		{
+			__CFG_COUT_ERR__ << transitionName << " interface " << name
+			                 << " failed: " << feConfigureError.what() << __E__;
+			feConfigureFailures.push_back(name + ": " + feConfigureError.what());
+		}
+		catch(...)
+		{
+			__CFG_COUT_ERR__ << transitionName << " interface " << name
+			                 << " failed with unknown exception." << __E__;
+			feConfigureFailures.push_back(name + ": unknown exception");
 		}
 	}
 	postStateMachineExecutionLoop();
+
+	if(!feConfigureFailures.empty())
+	{
+		__CFG_SS__ << feConfigureFailures.size() << " of " << feConfigureAttemptCount
+		           << " front-end interface(s) failed " << transitionName
+		           << " at SubsystemIteration "
+		           << VStateMachine::getSubsystemIterationIndexString() << " Iteration "
+		           << VStateMachine::getIterationIndex() << "."
+		           << VStateMachine::getSubIterationIndex() << ":";
+		for(const auto& feConfigureFailure : feConfigureFailures)
+			ss << "\n  - " << feConfigureFailure;
+		__CFG_SS_THROW__;
+	}
 
 	__CFG_COUT__ << "Done " << transitionName << " all interfaces." << __E__;
 }  // end configure()

@@ -1,6 +1,7 @@
 #include "otsdaq/GatewaySupervisor/Iterator.h"
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
 #include "otsdaq/GatewaySupervisor/GatewaySupervisor.h"
+#include "otsdaq/GatewaySupervisor/MakeIteratorPlugin.h"
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
 #include "otsdaq/WebUsersUtilities/WebUsers.h"
@@ -235,6 +236,9 @@ try
 				}
 
 			}  // end command handling and iterator mutex
+
+			if(iterator->runPluginPlan(&theIteratorStruct))
+				continue;  // an experiment plugin owns the Iterator this pass
 
 			////////////////
 			////////////////
@@ -2561,7 +2565,24 @@ try
 {
 	bool handledCommand = false;
 	__COUTTV__(command);
-	if(command == "iteratePlay")
+	if(command == "iteratePluginCommand")
+	{
+		// parameter is "<pluginName>:<pluginCommand>" (packed by stateMachineXgiHandler)
+		const size_t separator = parameter.find(':');
+		if(separator == std::string::npos || separator == 0 ||
+		   separator + 1 >= parameter.size())
+		{
+			__SS__
+			    << "Malformed iteratePluginCommand parameter '" << parameter
+			    << "'; expected 'plugin=<Name>&pluginCommand=<Command>' in the request."
+			    << __E__;
+			__SS_THROW__;
+		}
+		handlePluginCommand(
+		    xmldoc, parameter.substr(0, separator), parameter.substr(separator + 1));
+		handledCommand = true;
+	}
+	else if(command == "iteratePlay")
 	{
 		playIterationPlan(xmldoc, parameter);
 		handledCommand = true;
@@ -2662,11 +2683,15 @@ void Iterator::playIterationPlan(HttpXmlDocument& xmldoc, const std::string& pla
 {
 	__COUT__ << "Attempting to play iteration plan '" << planName << ".'" << __E__;
 
-	if(planName == Iterator::RESERVED_GEN_PLAN_NAME)
+	bool reservedByPlugin;
 	{
-		__SS__ << "Illegal use of reserved iteration plan name '"
-		       << Iterator::RESERVED_GEN_PLAN_NAME << "!' Please select a different name."
-		       << __E__;
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		reservedByPlugin = activePlugin_ && planName == activePlugin_->getPlanName();
+	}
+	if(planName == Iterator::RESERVED_GEN_PLAN_NAME || reservedByPlugin)
+	{
+		__SS__ << "Illegal use of reserved iteration plan name '" << planName
+		       << "!' Please select a different name." << __E__;
 		__SS_THROW__;
 	}
 
@@ -2759,6 +2784,13 @@ void Iterator::playIterationPlanPrivate(HttpXmlDocument&   xmldoc,
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
 
+	if(activePlugin_)
+	{
+		__SS__ << "Iterator plugin '" << activePlugin_->getPluginName()
+		       << "' owns the Iterator; stop it first." << __E__;
+		__SS_THROW__;
+	}
+
 	if(!activePlanIsRunning_ && !commandPlay_ && iteratorBusy_ && activePlanName_ != "" &&
 	   activePlanName_ != planName)
 	{
@@ -2824,6 +2856,15 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 	if(theSupervisor_->VERBOSE_MUTEX)
 		__COUT__ << "Have iterator access" << __E__;
 
+	if(activePlugin_)
+	{
+		__SS__
+		    << "Iterator plugin '" << activePlugin_->getPluginName()
+		    << "' owns the Iterator and does not support Pause; send it a Stop command."
+		    << __E__;
+		__SS_THROW__;
+	}
+
 	if(workloopRunning_ && activePlanIsRunning_ && !commandPause_)
 	{
 		commandPause_ = true;
@@ -2843,8 +2884,21 @@ void Iterator::pauseIterationPlan(HttpXmlDocument& xmldoc)
 }  //end pauseIterationPlan()
 
 //==============================================================================
-void Iterator::haltIterationPlan(HttpXmlDocument& /*xmldoc*/)
+void Iterator::haltIterationPlan(HttpXmlDocument& xmldoc)
 {
+	// activePlugin_ is written by the worker under accessMutex_ (finishPluginPlan);
+	// snapshot its name under the same mutex, then release before the command locks again
+	std::string owningPluginName;
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		if(activePlugin_)
+			owningPluginName = activePlugin_->getPluginName();
+	}
+	if(owningPluginName.size())
+	{
+		handlePluginCommand(xmldoc, owningPluginName, "Halt");
+		return;
+	}
 	__COUT__ << "Attempting to halt iteration plan '" << activePlanName_ << ".'" << __E__;
 	__COUT__ << "Attempting to halt iteration plan '" << activePlanName_ << ".'" << __E__;
 
@@ -2939,7 +2993,10 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 		                              genPlanDurationSeconds_);
 	}
 
-	if(activePlanIsRunning_ && iteratorBusy_)
+	if(activePlugin_)
+		xmldoc.addTextElementToData("active_plan_status",
+		                            errorMessage_.empty() ? "Running" : "Error");
+	else if(activePlanIsRunning_ && iteratorBusy_)
 	{
 		if(workloopRunning_)
 			xmldoc.addTextElementToData("active_plan_status", "Running");
@@ -2960,6 +3017,15 @@ void Iterator::getIterationPlanStatus(HttpXmlDocument& xmldoc)
 		xmldoc.addTextElementToData("active_plan_status", "Inactive");
 
 	xmldoc.addTextElementToData("error_message", errorMessage_);
+
+	// experiment plugin status: appended only while a plugin owns the Iterator
+	xmldoc.addTextElementToData("active_plugin",
+	                            activePlugin_ ? activePlugin_->getPluginName() : "");
+	if(activePlugin_)
+	{
+		IteratorPluginContext context = makePluginContext(nullptr);
+		activePlugin_->addStatus(xmldoc, context);
+	}
 }  //end getIterationPlanStatus()
 
 //==============================================================================
@@ -4093,3 +4159,241 @@ std::string Iterator::findRemoteCodeEditorIconName(GatewaySupervisor* supervisor
 	              << "'); output file links will show the path only." << __E__;
 	return "";
 }  // end findRemoteCodeEditorIconName()
+
+//==============================================================================
+// ~~ experiment Iterator plugins ~~
+//	A plugin runs as a reserved Iterator plan. The Iterator does the bookkeeping that
+//	a normal plan would get from startCommand/checkCommand: taking the window name,
+//	marking the Iterator busy, driving the worker thread, and releasing on finish.
+//	The plugin decides, through owns(), whether a command took or released ownership.
+
+//==============================================================================
+IteratorPluginContext Iterator::makePluginContext(IteratorWorkLoopStruct* iteratorStruct)
+{
+	IteratorPluginContext context;
+	context.supervisor           = theSupervisor_;
+	context.configurationManager = iteratorStruct ? iteratorStruct->cfgMgr_ : nullptr;
+	context.stopRequested        = [this, iteratorStruct]() {
+        std::lock_guard<std::mutex> lock(accessMutex_);
+        return commandHalt_ || (iteratorStruct && iteratorStruct->doHaltAction_);
+	};
+	context.setError = [this](const std::string& message) {
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		errorMessage_ = message;
+	};
+	context.setActiveCommandType = [this](const std::string& commandType) {
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		activeCommandType_      = commandType;
+		activeCommandIndex_     = 0;
+		activeNumberOfCommands_ = 1;
+		activeCommandStartTime_ = time(nullptr);
+	};
+	return context;
+}  // end makePluginContext()
+
+//==============================================================================
+void Iterator::handlePluginCommand(HttpXmlDocument&   xmldoc,
+                                   const std::string& pluginName,
+                                   const std::string& pluginCommand)
+{
+	__COUT__ << "Iterator plugin command '" << pluginCommand << "' for plugin '"
+	         << pluginName << "'" << __E__;
+
+	std::unique_ptr<IteratorPluginVInterface> freshPlugin;
+	bool                                      ownedBefore;
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+
+		if(activePlugin_ && activePlugin_->getPluginName() != pluginName)
+		{
+			__SS__ << "Iterator plugin '" << activePlugin_->getPluginName()
+			       << "' owns the Iterator; stop it before commanding plugin '"
+			       << pluginName << "'." << __E__;
+			__SS_THROW__;
+		}
+		if(!activePlugin_)
+		{
+			if(iteratorBusy_ || activePlanIsRunning_ || commandPlay_ || commandHalt_)
+			{
+				__SS__ << "Iterator is busy with plan '" << activePlanName_
+				       << "'. Stop its current plan before commanding plugin '"
+				       << pluginName << "'." << __E__;
+				__SS_THROW__;
+			}
+			try
+			{
+				freshPlugin = makeIteratorPlugin(pluginName);  // new instance per use
+			}
+			catch(const std::exception& e)
+			{
+				__SS__ << "Iterator plugin '" << pluginName
+				       << "' is not available in this build: " << e.what() << __E__;
+				__SS_THROW__;
+			}
+			__COUT_INFO__ << "Created Iterator plugin '" << pluginName << "'" << __E__;
+		}
+		ownedBefore = activePlugin_ && activePlugin_->owns();
+	}
+
+	IteratorPluginVInterface& plugin  = activePlugin_ ? *activePlugin_ : *freshPlugin;
+	IteratorPluginContext     context = makePluginContext(nullptr);
+	plugin.handleCommand(pluginCommand, xmldoc, context);  // throws on refusal
+
+	const bool ownsAfter = plugin.owns();
+
+	if(!ownedBefore && ownsAfter)
+	{
+		// plugin took ownership: run it as a reserved plan (mirrors playIterationPlan)
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		pluginPreviousWindow_ = theSupervisor_->activeStateMachineWindowName_;
+		theSupervisor_->activeStateMachineWindowName_ = "iterator";
+		lastFsmName_  = theSupervisor_->activeStateMachineName_;
+		activePlugin_ = std::move(freshPlugin);
+		iteratorBusy_ = true;
+		errorMessage_.clear();
+		activePlanName_ = activePlugin_->getPlanName();
+		commandPlay_    = true;
+		if(!workloopRunning_)
+		{
+			workloopRunning_ = true;
+			try
+			{
+				std::thread([](Iterator* iterator) { IteratorWorkLoop(iterator); }, this)
+				    .detach();
+			}
+			catch(...)
+			{
+				workloopRunning_ = false;
+				iteratorBusy_    = false;
+				commandPlay_     = false;
+				activePlanName_.clear();
+				theSupervisor_->activeStateMachineWindowName_ = pluginPreviousWindow_;
+				activePlugin_.reset();
+				throw;
+			}
+		}
+	}
+	else if(ownedBefore && !ownsAfter)
+	{
+		// plugin accepted a stop: let the worker settle and finish, or finish now if no thread
+		bool noThread;
+		{
+			std::lock_guard<std::mutex> lock(accessMutex_);
+			commandHalt_ = true;
+			noThread     = !workloopRunning_;
+		}
+		if(noThread)
+			// reached through stateMachineXgiHandler, which already holds the FSM mutex
+			finishPluginPlan(nullptr, true /*callerHoldsFsmMutex*/);
+	}
+	// else: a command that neither took nor released ownership (e.g. a query); the
+	// fresh instance, if any, is destroyed here
+}  // end handlePluginCommand()
+
+//==============================================================================
+bool Iterator::runPluginPlan(IteratorWorkLoopStruct* iteratorStruct)
+{
+	IteratorPluginVInterface* plugin;
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		plugin = activePlugin_.get();
+	}
+	if(!plugin || iteratorStruct->activePlan_ != plugin->getPlanName())
+		return false;
+
+	if(iteratorStruct->doHaltAction_)
+		finishPluginPlan(iteratorStruct, false /*callerHoldsFsmMutex*/);
+	else if(iteratorStruct->running_)
+	{
+		try
+		{
+			IteratorPluginContext context = makePluginContext(iteratorStruct);
+			if(!iteratorStruct->pluginInitialized_)
+			{
+				plugin->initialize(context);
+				iteratorStruct->pluginInitialized_ = true;
+				iteratorStruct->commandIndex_      = 0;
+			}
+			if(!context.stopRequested())
+				plugin->step(context);
+		}
+		catch(const std::exception& e)
+		{
+			std::lock_guard<std::mutex> lock(accessMutex_);
+			errorMessage_        = e.what();
+			activePlanIsRunning_ = false;
+			// the plugin keeps ownership on error until the operator sends a stop it accepts
+			__COUT_ERR__ << "Iterator plugin '" << plugin->getPluginName()
+			             << "' stopped: " << e.what() << __E__;
+		}
+		catch(...)
+		{
+			std::lock_guard<std::mutex> lock(accessMutex_);
+			errorMessage_ = "Unknown failure in Iterator plugin '" +
+			                plugin->getPluginName() +
+			                "'; inspect the logs before restarting.";
+			activePlanIsRunning_ = false;
+		}
+	}
+	else
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	return true;
+}  // end runPluginPlan()
+
+//==============================================================================
+void Iterator::finishPluginPlan(IteratorWorkLoopStruct* iteratorStruct,
+                                bool                    callerHoldsFsmMutex)
+{
+	// activeStateMachineWindowName_ is read by stateMachineXgiHandler under the FSM
+	// mutex, so restoring it needs that mutex too. Lock order everywhere in the
+	// Iterator is FSM mutex first, then accessMutex_.
+	std::unique_lock<std::mutex> fsmLock(theSupervisor_->stateMachineAccessMutex_,
+	                                     std::defer_lock);
+	if(!callerHoldsFsmMutex)
+		fsmLock.lock();
+
+	std::unique_ptr<IteratorPluginVInterface> finishedPlugin;
+	{
+		std::lock_guard<std::mutex> lock(accessMutex_);
+		if(!activePlugin_)
+			return;
+		finishedPlugin = std::move(activePlugin_);
+	}
+
+	// plugin cleanup runs outside accessMutex_ (it may use the context callbacks)
+	IteratorPluginContext context = makePluginContext(iteratorStruct);
+	try
+	{
+		finishedPlugin->finish(context);
+	}
+	catch(const std::exception& e)
+	{
+		__COUT_ERR__ << "Iterator plugin '" << finishedPlugin->getPluginName()
+		             << "' finish() failed: " << e.what() << __E__;
+	}
+
+	std::lock_guard<std::mutex> lock(accessMutex_);
+	// Do not use haltIterator(): its normal cleanup can halt/configure the DAQ.
+	lastFinishedPlanName_ = finishedPlugin->getPlanName();
+	activePlanName_.clear();
+	activePlanIsRunning_ = false;
+	iteratorBusy_        = false;
+	commandPlay_         = false;
+	commandPause_        = false;
+	commandHalt_         = false;
+	activeCommandIndex_  = -1;
+	activeCommandType_.clear();
+	activeNumberOfCommands_ = 0;
+	if(theSupervisor_->activeStateMachineWindowName_ == "iterator")
+		theSupervisor_->activeStateMachineWindowName_ = pluginPreviousWindow_;
+	if(iteratorStruct)
+	{
+		iteratorStruct->activePlan_.clear();
+		iteratorStruct->commandIndex_      = -1;
+		iteratorStruct->doHaltAction_      = false;
+		iteratorStruct->pluginInitialized_ = false;
+	}
+	__COUT_INFO__ << "Iterator plugin '" << finishedPlugin->getPluginName()
+	              << "' released the Iterator." << __E__;
+	// finishedPlugin is destroyed on return; the next Start creates a new instance
+}  // end finishPluginPlan()
