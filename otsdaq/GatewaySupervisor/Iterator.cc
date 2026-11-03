@@ -6,6 +6,8 @@
 #include "otsdaq/MessageFacility/MessageFacility.h"
 #include "otsdaq/WebUsersUtilities/WebUsers.h"
 
+#include <ctime>    //for strftime in plan log filename
+#include <fstream>  //for plan log
 #include <iostream>
 #include <thread>  //for std::thread
 
@@ -21,6 +23,114 @@ using namespace ots;
 	    "/IteratorPlanHistory.hist"
 
 const std::string Iterator::RESERVED_GEN_PLAN_NAME = "---GENERATED_PLAN---";
+
+// one log file per plan run: $OTSDAQ_LOG_DIR/IteratorPlanLog.<start time>.txt
+static std::mutex  planLogMutex;
+static std::string planLogFilename;
+
+//==============================================================================
+void Iterator::startPlanLog(const std::string& planName)
+{
+	std::lock_guard<std::mutex> lock(planLogMutex);
+	std::string                 logDirectory;
+	if(getenv("OTSDAQ_LOG_DIR"))
+		logDirectory = getenv("OTSDAQ_LOG_DIR");
+	else
+		logDirectory = std::string(__ENV__("USER_DATA")) + "/Logs";
+	const time_t now = time(0);
+	char         timestamp[32];
+	strftime(timestamp, sizeof(timestamp), "%Y%m%d-%H%M%S", localtime(&now));
+	planLogFilename = logDirectory + "/IteratorPlanLog." + timestamp + ".txt";
+	__COUT_INFO__ << "Iterator plan '" << planName << "' log file: " << planLogFilename
+	              << __E__;
+}  // end startPlanLog()
+
+//==============================================================================
+void Iterator::logPlanEvent(const std::string& planName, const std::string& event)
+{
+	try
+	{
+		std::lock_guard<std::mutex> lock(planLogMutex);
+		if(planLogFilename.empty())
+			return;  // no plan started since the Gateway came up
+		std::ofstream planLog(planLogFilename, std::ios::app);
+		if(!planLog)
+		{
+			__COUT_WARN__ << "Could not open Iterator plan log: " << planLogFilename
+			              << __E__;
+			return;
+		}
+		planLog << StringMacros::getTimestampString() << " | " << planName << " | "
+		        << event << "\n";
+	}
+	catch(...)
+	{
+		__COUT_WARN__ << "Failed writing Iterator plan log entry: " << event << __E__;
+	}
+}  // end logPlanEvent()
+
+//==============================================================================
+std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct)
+{
+	if(iteratorStruct->commandIndex_ >= iteratorStruct->commands_.size())
+		return "#" + std::to_string(iteratorStruct->commandIndex_ + 1) +
+		       " (out of range)";
+
+	const auto&       command = iteratorStruct->commands_[iteratorStruct->commandIndex_];
+	std::stringstream description;
+	description << "#" << (iteratorStruct->commandIndex_ + 1) << " " << command.type_;
+
+	// loop position in plain words, e.g.
+	//	(run 3 of this command; loop 'Voltages' pass 2, loop 'Channels' pass 1)
+	// labels are the user's own BEGIN_LABEL names, quoted; passes count from 1
+	if(iteratorStruct->stepLabelStack_.size())
+	{
+		description << " (";
+		if(iteratorStruct->commandIndex_ < iteratorStruct->commandIterations_.size())
+			description
+			    << "run "
+			    << iteratorStruct->commandIterations_[iteratorStruct->commandIndex_]
+			    << " of this command; ";
+		for(size_t i = 0; i < iteratorStruct->stepLabelStack_.size(); ++i)
+			description << (i ? ", " : "") << "loop '"
+			            << iteratorStruct->stepLabelStack_[i] << "' pass "
+			            << (i < iteratorStruct->stepIndexStack_.size()
+			                    ? iteratorStruct->stepIndexStack_[i] + 1
+			                    : 1);
+		description << ")";
+	}
+	if(command.targetSubsystem_.size())
+		description << " -> " << command.targetSubsystem_;
+	if(command.targets_.size())
+	{
+		description << " targets=";
+		for(size_t i = 0; i < command.targets_.size(); ++i)
+			description << (i ? "," : "") << command.targets_[i].table_ << "/"
+			            << command.targets_[i].UID_;
+	}
+	// macro commands: the stored MacroArgumentString holds the starting values; the
+	// values actually sent on this pass (after loop stepping) are in macroArgsSummary_
+	const bool isMacro = command.type_ == IterateTable::COMMAND_EXECUTE_FE_MACRO ||
+	                     command.type_ == IterateTable::COMMAND_EXECUTE_MM_MACRO;
+	if(isMacro && iteratorStruct->macroArgsSummary_.size())
+		description << " args=[" << iteratorStruct->macroArgsSummary_ << "]";
+	if(command.params_.size())
+	{
+		description << " {";
+		bool first = true;
+		for(const auto& param : command.params_)
+		{
+			if(isMacro &&
+			   param.first ==
+			       IterateTable::commandExecuteMacroParams_.MacroArgumentString_)
+				continue;  // superseded by args=[...] above
+			description << (first ? "" : ", ") << param.first << "=" << param.second;
+			first = false;
+		}
+		description << "}";
+	}
+	return description.str();
+}  // end describeCommand()
 
 //==============================================================================
 Iterator::Iterator(GatewaySupervisor* supervisor)
@@ -173,10 +283,17 @@ try
 							         << ".'" << __E__;
 							__COUT__ << "Starting plan '" << theIteratorStruct.activePlan_
 							         << ".'" << __E__;
+							startPlanLog(
+							    theIteratorStruct.activePlan_);  // new file per run
+							logPlanEvent(theIteratorStruct.activePlan_, "PLAN START");
 						}
 						else
 						{
 							theIteratorStruct.doResumeAction_ = true;
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "PLAN RESUME at command #" +
+							        std::to_string(theIteratorStruct.commandIndex_ + 1));
 							__COUT__ << "Continuing plan '"
 							         << theIteratorStruct.activePlan_
 							         << "' at command index "
@@ -315,6 +432,9 @@ try
 				__COUT__ << "Paused plan '" << theIteratorStruct.activePlan_
 				         << "' at command index " << theIteratorStruct.commandIndex_
 				         << ". " << __E__;
+				logPlanEvent(theIteratorStruct.activePlan_,
+				             "PLAN PAUSED before command #" +
+				                 std::to_string(theIteratorStruct.commandIndex_ + 1));
 
 				continue;  // resume workloop
 			}
@@ -342,6 +462,9 @@ try
 
 				theIteratorStruct.doHaltAction_ = false;  // clear
 
+				logPlanEvent(theIteratorStruct.activePlan_,
+				             "PLAN HALTED by user at command #" +
+				                 std::to_string(theIteratorStruct.commandIndex_ + 1));
 				iterator->haltIterator(iterator, &theIteratorStruct);
 
 				//			//last ditch effort to make sure FSM is halted
@@ -481,7 +604,11 @@ try
 							                .type_
 							         << __E__;
 
+							theIteratorStruct.commandLogStartTime_ = time(0);
 							iterator->startCommand(&theIteratorStruct);
+							// after startCommand so pass/loop counters are current
+							logPlanEvent(theIteratorStruct.activePlan_,
+							             "START " + describeCommand(&theIteratorStruct));
 						}
 						else if(theIteratorStruct.commandIndex_ ==
 						        theIteratorStruct.commands_.size())  // Done!
@@ -490,6 +617,11 @@ try
 							         << theIteratorStruct.activePlan_ << __E__;
 							__COUT__ << "Finished Iteration Plan '"
 							         << theIteratorStruct.activePlan_ << __E__;
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "PLAN FINISHED (" +
+							        std::to_string(theIteratorStruct.commands_.size()) +
+							        " commands)");
 
 							__COUT__ << "Reverting track changes." << __E__;
 							ConfigurationInterface::setVersionTrackingEnabled(
@@ -524,6 +656,19 @@ try
 						{
 							theIteratorStruct.commandBusy_ = false;  // command complete
 
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "DONE  #" +
+							        std::to_string(theIteratorStruct.commandIndex_ + 1) +
+							        " " +
+							        theIteratorStruct
+							            .commands_[theIteratorStruct.commandIndex_]
+							            .type_ +
+							        " took " +
+							        std::to_string(
+							            time(0) -
+							            theIteratorStruct.commandLogStartTime_) +
+							        " s");
 							++theIteratorStruct.commandIndex_;
 
 							__COUT__ << "Ready for next command. Done with "
@@ -549,6 +694,11 @@ try
 				__COUT_ERR__ << "Iterator command error (will pause for retry): "
 				             << e.what() << __E__;
 				theIteratorStruct.commandBusy_ = false;
+				logPlanEvent(
+				    theIteratorStruct.activePlan_,
+				    "ERROR " + describeCommand(&theIteratorStruct) + " after " +
+				        std::to_string(time(0) - theIteratorStruct.commandLogStartTime_) +
+				        " s : " + e.what());
 
 				// retry will call startCommand again; undo this attempt's pass count
 				if(theIteratorStruct.commandIndex_ <
@@ -572,6 +722,11 @@ try
 			{
 				__COUT_ERR__ << "Iterator unknown error (will pause for retry)." << __E__;
 				theIteratorStruct.commandBusy_ = false;
+				logPlanEvent(
+				    theIteratorStruct.activePlan_,
+				    "ERROR " + describeCommand(&theIteratorStruct) + " after " +
+				        std::to_string(time(0) - theIteratorStruct.commandLogStartTime_) +
+				        " s : unknown exception");
 
 				// retry will call startCommand again; undo this attempt's pass count
 				if(theIteratorStruct.commandIndex_ <
@@ -705,7 +860,8 @@ try
 	    type == IterateTable::COMMAND_RUN || type == IterateTable::COMMAND_WAIT ||
 	    type == IterateTable::COMMAND_BEGIN_LABEL ||
 	    type == IterateTable::COMMAND_REPEAT_LABEL ||
-	    type == IterateTable::COMMAND_CHOOSE_FSM))
+	    type == IterateTable::COMMAND_CHOOSE_FSM ||
+	    type == IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS))
 	{
 		__SS__ << "Command type '" << type << "' can not target a remote subsystem ('"
 		       << targetSubsystem << "'). Clear the TargetSubsystem for this command."
@@ -723,6 +879,14 @@ try
 		    iteratorStruct,
 		    iteratorStruct->commands_[iteratorStruct->commandIndex_]
 		        .params_[IterateTable::commandChooseFSMParams_.NameOfFSM_]);
+	}
+	else if(type == IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS)
+	{
+		auto& params = iteratorStruct->commands_[iteratorStruct->commandIndex_].params_;
+		return startCommandSetupIncludedSubsystems(
+		    iteratorStruct,
+		    params[IterateTable::commandSetupIncludedSubsystemsParams_.Mode_],
+		    params[IterateTable::commandSetupIncludedSubsystemsParams_.Subsystems_]);
 	}
 	else if(type == IterateTable::COMMAND_CONFIGURE_ACTIVE_GROUP)
 	{
@@ -920,9 +1084,10 @@ try
 		// do nothing
 		return true;
 	}
-	else if(type == IterateTable::COMMAND_CHOOSE_FSM)
+	else if(type == IterateTable::COMMAND_CHOOSE_FSM ||
+	        type == IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS)
 	{
-		// do nothing
+		// do nothing, completed in start
 		return true;
 	}
 	else if(type == IterateTable::COMMAND_CONFIGURE_ALIAS ||
@@ -1097,6 +1262,73 @@ void Iterator::startCommandChooseFSM(IteratorWorkLoopStruct* iteratorStruct,
 
 	__COUT__ << "fsmNextRunNumber_  = " << iteratorStruct->fsmNextRunNumber_ << __E__;
 }  // end startCommandChooseFSM()
+
+//==============================================================================
+/// startCommandSetupIncludedSubsystems
+///	Same effect as the "Included" checkboxes in the Subsystem Launch page
+///	(GatewaySupervisor "setRemoteSubsystemFsmControl", controlType "include"):
+///		Set    -> exactly the listed subsystems are included, every other one excluded
+///		Add    -> the listed subsystems become included; others untouched
+///		Remove -> the listed subsystems become excluded; others untouched
+///	Every listed name must be a known remote subsystem, otherwise the command fails
+///	before changing anything.
+void Iterator::startCommandSetupIncludedSubsystems(IteratorWorkLoopStruct* iteratorStruct,
+                                                   const std::string&      mode,
+                                                   const std::string&      subsystemsCSV)
+{
+	__COUTV__(mode);
+	__COUTV__(subsystemsCSV);
+
+	if(mode != "Set" && mode != "Add" && mode != "Remove")
+	{
+		__SS__ << "Unrecognized Mode '" << mode << "' for "
+		       << IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS
+		       << "; expected Set, Add, or Remove." << __E__;
+		__SS_THROW__;
+	}
+
+	std::set<std::string> requestedSubsystems;
+	for(const auto& name : StringMacros::getVectorFromString(subsystemsCSV, {','}))
+		if(name.size())
+			requestedSubsystems.insert(name);
+
+	GatewaySupervisor*          supervisor = iteratorStruct->theIterator_->theSupervisor_;
+	std::lock_guard<std::mutex> lock(supervisor->remoteGatewayAppsMutex_);
+
+	// validate first so a typo cannot leave the system half-changed
+	std::set<std::string> knownSubsystems;
+	for(const auto& remoteGatewayApp : supervisor->remoteGatewayApps_)
+		knownSubsystems.insert(remoteGatewayApp.appInfo.name);
+	for(const auto& name : requestedSubsystems)
+		if(knownSubsystems.find(name) == knownSubsystems.end())
+		{
+			__SS__ << "Subsystem '" << name
+			       << "' is not a known remote subsystem of "
+			          "this Gateway. Known subsystems: "
+			       << StringMacros::setToString(knownSubsystems) << __E__;
+			__SS_THROW__;
+		}
+
+	for(auto& remoteGatewayApp : supervisor->remoteGatewayApps_)
+	{
+		const bool listed = requestedSubsystems.find(remoteGatewayApp.appInfo.name) !=
+		                    requestedSubsystems.end();
+		bool include = remoteGatewayApp.fsm_included;
+		if(mode == "Set")
+			include = listed;
+		else if(listed)
+			include = (mode == "Add");
+		if(include != remoteGatewayApp.fsm_included)
+			__COUT_INFO__ << (include ? "Including" : "Excluding") << " subsystem '"
+			              << remoteGatewayApp.appInfo.name
+			              << "' in top-level FSM commands (Iterator "
+			              << IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS << " "
+			              << mode << ")." << __E__;
+		remoteGatewayApp.fsm_included = include;
+	}
+
+	supervisor->saveRemoteGatewaySettings();  // persist like the launch page does
+}  // end startCommandSetupIncludedSubsystems()
 
 //==============================================================================
 /// return true if an action was attempted
@@ -3661,6 +3893,8 @@ void Iterator::startRemoteCommandMacro(IteratorWorkLoopStruct* iteratorStruct,
 	__COUT__ << "startRemoteCommandMacro: '" << macroName << "' targeting '"
 	         << targetSubsystem << "' isFEMacro=" << isFEMacro << __E__;
 	__COUTV__(inputArgs);
+	iteratorStruct->macroArgsSummary_ =
+	    macroArgsSummary(inputArgs);  // actual per-pass values, for the plan log
 
 	if(command.targets_.size() == 0)
 	{

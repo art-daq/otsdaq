@@ -27,6 +27,8 @@ const std::string IterateTable::COMMAND_STOP                   = "STOP";
 const std::string IterateTable::COMMAND_PAUSE                  = "PAUSE";
 const std::string IterateTable::COMMAND_RESUME                 = "RESUME";
 const std::string IterateTable::COMMAND_HALT                   = "HALT";
+const std::string IterateTable::COMMAND_SETUP_INCLUDED_SUBSYSTEMS =
+    "SETUP_INCLUDED_SUBSYSTEMS";
 
 const std::string IterateTable::ITERATE_TABLE = "IterateTable";
 const std::string IterateTable::PLAN_TABLE    = "IterationPlanTable";
@@ -57,6 +59,7 @@ IterateTable::CommandRunParams             IterateTable::commandRunParams_;
 IterateTable::CommandWaitParams            IterateTable::commandWaitParams_;
 
 IterateTable::CommandChooseFSMParams       IterateTable::commandChooseFSMParams_;
+IterateTable::CommandSetupIncludedSubsystemsParams IterateTable::commandSetupIncludedSubsystemsParams_;
 
 IterateTable::TargetParams                 IterateTable::targetParams_;
 IterateTable::TargetTableColumns           IterateTable::targetCols_;

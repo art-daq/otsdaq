@@ -563,6 +563,11 @@ public:	//used by remote subsystem control and status
 		static void 				GetRemoteGatewayIcons						(GatewaySupervisor::RemoteGatewayInfo& remoteGatewayApp, const std::unique_ptr<TransceiverSocket>& remoteGatewaySocket);
 		void						loadRemoteGatewaySettings					(std::vector<GatewaySupervisor::RemoteGatewayInfo>& remoteGateways, bool onlyNotFound = false) const;
 		void						saveRemoteGatewaySettings					(void) const;
+		std::string					getSubsystemLaunchRunType					(void);
+		void						setSubsystemLaunchRunType					(const std::string& runType);
+		std::mutex					subsystemLaunchRunTypeMutex_;
+		std::string					subsystemLaunchRunType_; ///< system-wide (shared by all users) FSM name selected in the Subsystem Launch page, persisted under SERVICE_DATA_PATH
+		bool						subsystemLaunchRunTypeLoaded_ = false;
 		static std::string			translateURLForRequestOrigin				(const std::string& url, const std::string& requestOrigin, std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, std::string /* translatedHostPort */>>& portTranslationMap);
 		static std::string			translateRemoteIconStringForRequestOrigin	(const std::string& iconString, const std::string& requestOrigin, std::map<std::string /* requestOrigin */, std::map<std::string /* requestUrlHostPort */, std::string /* translatedHostPort */>>& portTranslationMap);
 
