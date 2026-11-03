@@ -338,7 +338,7 @@ std::string DesktopIconTable::getRemoteURL(ConfigurationManager* configManager,
 	    "remoteServerOrigin=" + StringMacros::encodeURIComponent(contextAddress) +
 	    "&remoteServerUrnLid=" +
 	    std::to_string(doForWizMode ? XDAQContextTable::XDAQApplication::WIZMODE_APP_ID
-	                                : XDAQContextTable::XDAQApplication::GATEWAY_APP_ID);
+		                            : XDAQContextTable::XDAQApplication::GATEWAY_APP_ID);
 
 	if(doForWizMode)
 		retURL += "&forcedWizMode=1";

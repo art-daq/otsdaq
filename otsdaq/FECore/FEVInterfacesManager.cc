@@ -112,7 +112,7 @@ void FEVInterfacesManager::createInterfaces(void)
 			    interface.first,
 			    theXDAQContextConfigTree_,
 			    (theConfigurationPath_ + "/" + COL_NAME_feGroupLink + "/" +
-			     interface.first + "/" + COL_NAME_feTypeLink));
+				 interface.first + "/" + COL_NAME_feTypeLink));
 
 			// setup parent supervisor and interface manager
 			//	of FEVinterface (for backwards compatibility, left out of constructor)
@@ -695,13 +695,13 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 	// start thread
 	std::thread(
 	    [](FEVInterfacesManager* feMgr,
-	       const std::string     interfaceID,
-	       const std::string     macroName,
-	       const std::string     macroString,
-	       const bool            enableSavingOutput,
-	       const std::string     outputFilePath,
-	       const std::string     outputFileRadix,
-	       const std::string     inputArgsStr) {
+		   const std::string     interfaceID,
+		   const std::string     macroName,
+		   const std::string     macroString,
+		   const bool            enableSavingOutput,
+		   const std::string     outputFilePath,
+		   const std::string     outputFileRadix,
+		   const std::string     inputArgsStr) {
 		    // create local message facility subject
 		    std::string mfSubject_ = "threadMultiD-" + macroName;
 		    __GEN_COUT__ << "Thread started." << __E__;
@@ -727,11 +727,11 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 				    //	Iterate GUI advertises in its placeholder text
 				    std::string basePath = outputFilePath;
 				    if(basePath == "" ||
-				       basePath == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
-				       basePath == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+					   basePath == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+					   basePath == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 					    basePath = std::string(__ENV__("OTSDAQ_DATA"));
 				    std::string filename = basePath + "/" + outputFileRadix + macroName +
-				                           "_" + std::to_string(time(0)) + ".txt";
+					                       "_" + std::to_string(time(0)) + ".txt";
 				    __GEN_COUT__ << "Opening file... " << filename << __E__;
 
 				    outputFilePointer = fopen(filename.c_str(), "w");
@@ -776,7 +776,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 			    using longParamMap_t = std::map<
 			        std::string /*name*/,
 			        std::pair<long /*current value*/,
-			                  std::pair<long /*initial value*/, long /*step value*/>>>;
+					          std::pair<long /*initial value*/, long /*step value*/>>>;
 
 			    std::vector<longParamMap_t> longDimensionParameters;
 			    // Note: double parameters not allowed for Macro (allowed in FE Macros)
@@ -791,11 +791,11 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 			    for(const auto& inputArgName : macro.namesOfInputArguments_)
 				    variableMap.emplace(  // do not care about input arg value
 				        std::pair<std::string /*name*/, uint64_t /*value*/>(inputArgName,
-				                                                            0));
+						                                                    0));
 			    for(const auto& outputArgName : macro.namesOfOutputArguments_)
 				    variableMap.emplace(  // do not care about output arg value
 				        std::pair<std::string /*name*/, uint64_t /*value*/>(outputArgName,
-				                                                            0));
+						                                                    0));
 
 			    if(0)  // example
 			    {
@@ -884,11 +884,11 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 						    // check piece 1 and 2 for double hint
 						    //	a la Iterator::startCommandModifyActive()
 						    if((argPieces[1].size() &&
-						        (argPieces[1][argPieces[1].size() - 1] == 'f' ||
-						         argPieces[1].find('.') != std::string::npos)) ||
-						       (argPieces[2].size() &&
-						        (argPieces[2][argPieces[2].size() - 1] == 'f' ||
-						         argPieces[2].find('.') != std::string::npos)))
+							    (argPieces[1][argPieces[1].size() - 1] == 'f' ||
+							     argPieces[1].find('.') != std::string::npos)) ||
+							   (argPieces[2].size() &&
+							    (argPieces[2][argPieces[2].size() - 1] == 'f' ||
+							     argPieces[2].find('.') != std::string::npos)))
 						    {
 							    // handle as double
 
@@ -937,7 +937,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 							        std::make_pair(
 							            startValue /*current value*/,
 							            std::make_pair(startValue /*initial value*/,
-							                           stepSize /*step value*/))));
+										               stepSize /*step value*/))));
 						    }
 
 					    }  // end dimensional argument loop
@@ -1003,19 +1003,19 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 			    // capture specialFolders 	reference for use internally (const values
 			    // already are captured).
 			    std::function<void(const unsigned int /*dimension*/
-			                       )>
+				                   )>
 			        localRecurse = [&dimensionIterations,
-			                        &dimensionIterationCnt,
-			                        &iterationCount,
-			                        &longDimensionParameters,
-			                        &fe,
-			                        &macro,
-			                        &variableMap,
-			                        &outputFilePointer,
-			                        &localRecurse](const unsigned int dimension) {
+					                &dimensionIterationCnt,
+					                &iterationCount,
+					                &longDimensionParameters,
+					                &fe,
+					                &macro,
+					                &variableMap,
+					                &outputFilePointer,
+					                &localRecurse](const unsigned int dimension) {
 				        // create local message facility subject
 				        std::string mfSubject_ = "multiD-" + std::to_string(dimension) +
-				                                 "-" + macro.macroName_;
+						                         "-" + macro.macroName_;
 				        __GEN_COUTV__(dimension);
 
 				        if(dimension >= dimensionIterations.size())
@@ -1034,7 +1034,7 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 						        // and longs will have priority over doubles
 
 						        for(unsigned int j = 0; j < dimensionIterations.size();
-						            ++j)
+								    ++j)
 						        {
 							        for(auto& longParam : longDimensionParameters[j])
 							        {
@@ -1061,8 +1061,8 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 							        outSS << "\t"
 							              << "iteration " << iterationCount << __E__;
 							        for(unsigned int i = 0;
-							            i < dimensionIterationCnt.size();
-							            ++i)
+									    i < dimensionIterationCnt.size();
+									    ++i)
 								        outSS << "\t"
 								              << "dimension[" << i
 								              << "] index := " << dimensionIterationCnt[i]
@@ -1139,10 +1139,10 @@ void FEVInterfacesManager::startMacroMultiDimensional(const std::string& request
 				        }  // end update current value to initial value for all dimensional parameters
 
 				        for(dimensionIterationCnt[dimension] =
-				                0;  // reset each time through dimension loop
-				            dimensionIterationCnt[dimension] <
-				            dimensionIterations[dimension];
-				            ++dimensionIterationCnt[dimension])
+						        0;  // reset each time through dimension loop
+						    dimensionIterationCnt[dimension] <
+						    dimensionIterations[dimension];
+						    ++dimensionIterationCnt[dimension])
 				        {
 					        __GEN_COUT__ << "dimension[" << dimension << "] index := "
 					                     << dimensionIterationCnt[dimension] << __E__;
@@ -1277,12 +1277,12 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 	// start thread
 	std::thread(
 	    [](FEVInterfacesManager* feMgr,
-	       const std::string     interfaceID,
-	       const std::string     feMacroName,
-	       const bool            enableSavingOutput,
-	       const std::string     outputFilePath,
-	       const std::string     outputFileRadix,
-	       const std::string     inputArgsStr) {
+		   const std::string     interfaceID,
+		   const std::string     feMacroName,
+		   const bool            enableSavingOutput,
+		   const std::string     outputFilePath,
+		   const std::string     outputFileRadix,
+		   const std::string     inputArgsStr) {
 		    // create local message facility subject
 		    std::string mfSubject_ = "threadMultiD-" + feMacroName;
 		    __GEN_COUT__ << "Thread started." << __E__;
@@ -1314,12 +1314,12 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 				    //	Iterate GUI advertises in its placeholder text
 				    std::string basePath = outputFilePath;
 				    if(basePath == "" ||
-				       basePath == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
-				       basePath == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
+					   basePath == TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+					   basePath == TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT)
 					    basePath = std::string(__ENV__("OTSDAQ_DATA"));
 				    std::string filename = basePath + "/" + outputFileRadix +
-				                           feMacroName + "_" + std::to_string(time(0)) +
-				                           ".txt";
+					                       feMacroName + "_" + std::to_string(time(0)) +
+					                       ".txt";
 				    __GEN_COUT__ << "Opening file... " << filename << __E__;
 
 				    outputFilePointer = fopen(filename.c_str(), "w");
@@ -1364,12 +1364,12 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 			    using longParamMap_t = std::map<
 			        std::string /*name*/,
 			        std::pair<long /*current value*/,
-			                  std::pair<long /*initial value*/, long /*step value*/>>>;
+					          std::pair<long /*initial value*/, long /*step value*/>>>;
 			    using doubleParamMap_t =
 			        std::map<std::string /*name*/,
-			                 std::pair<double /*current value*/,
-			                           std::pair<double /*initial value*/,
-			                                     double /*step value*/>>>;
+					         std::pair<double /*current value*/,
+					                   std::pair<double /*initial value*/,
+					                             double /*step value*/>>>;
 			    using stringParamMap_t =
 			        std::map<std::string /*name*/, std::string /* value*/>;
 
@@ -1487,12 +1487,12 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 						    //	a la Iterator::startCommandModifyActive()
 						    double stepAsNumber = 1;
 						    if(argPieces[2] ==
-						           TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
-						       argPieces[2] ==
-						           TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT ||
-						       (argPieces[2].size() &&
-						        StringMacros::getNumber(argPieces[2], stepAsNumber) &&
-						        stepAsNumber == 0))
+							       TableViewColumnInfo::DATATYPE_STRING_DEFAULT ||
+							   argPieces[2] ==
+							       TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT ||
+							   (argPieces[2].size() &&
+							    StringMacros::getNumber(argPieces[2], stepAsNumber) &&
+							    stepAsNumber == 0))
 						    {
 							    // step DEFAULT or 0: the value never changes, so pass it
 							    //	through untouched as a string (e.g. "true" stays "true")
@@ -1505,11 +1505,11 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 							        std::make_pair(argPieces[0], argPieces[1]));
 						    }
 						    else if((argPieces[1].size() &&
-						             (argPieces[1][argPieces[1].size() - 1] == 'f' ||
-						              argPieces[1].find('.') != std::string::npos)) ||
-						            (argPieces[2].size() &&
-						             (argPieces[2][argPieces[2].size() - 1] == 'f' ||
-						              argPieces[2].find('.') != std::string::npos)))
+							         (argPieces[1][argPieces[1].size() - 1] == 'f' ||
+							          argPieces[1].find('.') != std::string::npos)) ||
+							        (argPieces[2].size() &&
+							         (argPieces[2][argPieces[2].size() - 1] == 'f' ||
+							          argPieces[2].find('.') != std::string::npos)))
 						    {
 							    // handle as double
 							    //__GEN_COUT__ << "Double found" << __E__;
@@ -1529,7 +1529,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 							        std::make_pair(
 							            startValue /*current value*/,
 							            std::make_pair(startValue /*initial value*/,
-							                           stepSize /*step value*/))));
+										               stepSize /*step value*/))));
 						    }
 						    else
 						    {
@@ -1554,7 +1554,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 							        std::make_pair(
 							            startValue /*current value*/,
 							            std::make_pair(startValue /*initial value*/,
-							                           stepSize /*step value*/))));
+										               stepSize /*step value*/))));
 						    }
 
 					    }  // end dimensional argument loop
@@ -1562,8 +1562,8 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 				    }  // end dimensions loop
 
 			    if(dimensionIterations.size() != longDimensionParameters.size() ||
-			       dimensionIterations.size() != doubleDimensionParameters.size() ||
-			       dimensionIterations.size() != stringDimensionParameters.size())
+				   dimensionIterations.size() != doubleDimensionParameters.size() ||
+				   dimensionIterations.size() != stringDimensionParameters.size())
 			    {
 				    __GEN_SS__ << "Impossible vector size mismatch! "
 				               << dimensionIterations.size() << " - "
@@ -1616,12 +1616,12 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 
 					    outSS << "\nHere are the identified input arguments:" << __E__;
 					    for(unsigned int i = 0; i < feMacro.namesOfInputArguments_.size();
-					        ++i)
+						    ++i)
 						    outSS << "\t" << feMacro.namesOfInputArguments_[i] << __E__;
 					    outSS << "\nHere are the identified input arguments:" << __E__;
 					    for(unsigned int i = 0;
-					        i < feMacro.namesOfOutputArguments_.size();
-					        ++i)
+						    i < feMacro.namesOfOutputArguments_.size();
+						    ++i)
 						    outSS << "\t" << feMacro.namesOfOutputArguments_[i] << __E__;
 
 					    outSS << "\n==========================\n" << __E__;
@@ -1642,22 +1642,22 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 			    // capture specialFolders 	reference for use internally (const values
 			    // already are captured).
 			    std::function<void(const unsigned int /*dimension*/
-			                       )>
+				                   )>
 			        localRecurse = [&dimensionIterations,
-			                        &dimensionIterationCnt,
-			                        &iterationCount,
-			                        &longDimensionParameters,
-			                        &doubleDimensionParameters,
-			                        &stringDimensionParameters,
-			                        &fe,
-			                        &feMacro,
-			                        &outputFilePointer,
-			                        &argsIn,
-			                        &argsOut,
-			                        &localRecurse](const unsigned int dimension) {
+					                &dimensionIterationCnt,
+					                &iterationCount,
+					                &longDimensionParameters,
+					                &doubleDimensionParameters,
+					                &stringDimensionParameters,
+					                &fe,
+					                &feMacro,
+					                &outputFilePointer,
+					                &argsIn,
+					                &argsOut,
+					                &localRecurse](const unsigned int dimension) {
 				        // create local message facility subject
 				        std::string mfSubject_ = "multiD-" + std::to_string(dimension) +
-				                                 "-" + feMacro.feMacroName_;
+						                         "-" + feMacro.feMacroName_;
 				        __GEN_COUTV__(dimension);
 
 				        if(dimension >= dimensionIterations.size())
@@ -1680,7 +1680,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 					        {
 						        foundAsLong = false;
 						        for(unsigned int j = 0; j < dimensionIterations.size();
-						            ++j)
+								    ++j)
 						        {
 							        auto longIt =
 							            longDimensionParameters[j].find(argsIn[i].first);
@@ -1705,7 +1705,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 						        }
 
 						        for(unsigned int j = 0; j < dimensionIterations.size();
-						            ++j)
+								    ++j)
 						        {
 							        auto doubleIt = doubleDimensionParameters[j].find(
 							            argsIn[i].first);
@@ -1730,7 +1730,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 						        }
 
 						        for(unsigned int j = 0; j < dimensionIterations.size();
-						            ++j)
+								    ++j)
 						        {
 							        auto stringIt = stringDimensionParameters[j].find(
 							            argsIn[i].first);
@@ -1782,8 +1782,8 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 							        outSS << "\t"
 							              << "iteration " << iterationCount << __E__;
 							        for(unsigned int i = 0;
-							            i < dimensionIterationCnt.size();
-							            ++i)
+									    i < dimensionIterationCnt.size();
+									    ++i)
 								        outSS << "\t"
 								              << "dimension[" << i
 								              << "] index := " << dimensionIterationCnt[i]
@@ -1848,14 +1848,14 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 						            << "' current value: " << doublePair.second.first
 						            << __E__;
 					        }  // end double loop
-				        }      // end update current value to initial value for all
-				               // dimensional parameters
+				        }  // end update current value to initial value for all
+				        // dimensional parameters
 
 				        for(dimensionIterationCnt[dimension] =
-				                0;  // reset each time through dimension loop
-				            dimensionIterationCnt[dimension] <
-				            dimensionIterations[dimension];
-				            ++dimensionIterationCnt[dimension])
+						        0;  // reset each time through dimension loop
+						    dimensionIterationCnt[dimension] <
+						    dimensionIterations[dimension];
+						    ++dimensionIterationCnt[dimension])
 				        {
 					        __GEN_COUT__ << "dimension[" << dimension << "] index := "
 					                     << dimensionIterationCnt[dimension] << __E__;
@@ -1876,7 +1876,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 						        }  // end long loop
 
 						        for(auto& doublePair :
-						            doubleDimensionParameters[dimension])
+								    doubleDimensionParameters[dimension])
 						        {
 							        doublePair.second.first +=  // add step value
 							            doublePair.second.second.second;
@@ -1886,8 +1886,8 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 							            << "' current value: " << doublePair.second.first
 							            << __E__;
 						        }  // end double loop
-					        }      // end update current value to next value for all
-					               // dimensional parameters
+					        }  // end update current value to next value for all
+					        // dimensional parameters
 				        }
 				        __GEN_COUT__ << "Completed dimension[" << dimension
 				                     << "] number of iterations := "
@@ -2336,8 +2336,8 @@ void FEVInterfacesManager::runFEMacro(const std::string& interfaceID,
 			    returnStrings[returnStrings.size() - 1]));
 			//
 			//			__CFG_COUT__ << argsOut[argsOut.size()-1].first << __E__;
-			__CFG_COUTT__ << (uint64_t) & (returnStrings[returnStrings.size() - 1])
-			                                  << __E__;
+			__CFG_COUTT__ << (uint64_t)&(returnStrings[returnStrings.size() - 1])
+			              << __E__;
 		}
 	}
 

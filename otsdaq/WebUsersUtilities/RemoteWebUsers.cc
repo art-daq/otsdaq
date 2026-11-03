@@ -109,7 +109,7 @@ bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
 			return true;  //successful sequence login!
 		else
 			goto HANDLE_ACCESS_FAILURE;  // return false, access failed
-	}                                    //end  Wiz or Macormaker mode
+	}  //end  Wiz or Macormaker mode
 
 	// else proceed with inquiry to Gateway Supervisor
 
@@ -172,7 +172,6 @@ bool RemoteWebUsers::xmlRequestToGateway(cgicc::Cgicc&              cgi,
 		parameters.clear();
 		parameters.addParameter("CookieCode");
 		parameters.addParameter("Permissions");
-		parameters.addParameter("UserGroups");
 		parameters.addParameter("UserWithLock");
 		parameters.addParameter("Username");
 		parameters.addParameter("DisplayName");
@@ -264,14 +263,14 @@ std::string RemoteWebUsers::getActiveUserList()
 /// has occurred
 void RemoteWebUsers::getLastTableGroups(
     std::map<std::string /* group type */,
-             std::tuple<std::string /*group name*/,
-                        TableGroupKey,
-                        std::string /* time string*/>>& theGroups)
+	         std::tuple<std::string /*group name*/,
+	                    TableGroupKey,
+	                    std::string /* time string*/>>& theGroups)
 {
 	xoap::MessageReference retMsg =
 	    ots::SOAPMessenger::sendWithSOAPReply(gatewaySupervisorDescriptor_,
-	                                          "SupervisorLastTableGroupRequest",
-	                                          SOAPParameters("ActionOfLastGroup", "ALL"));
+		                                      "SupervisorLastTableGroupRequest",
+		                                      SOAPParameters("ActionOfLastGroup", "ALL"));
 
 	SOAPParameters retParameters;
 	retParameters.addParameter("GroupName");

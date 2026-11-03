@@ -17,24 +17,24 @@ UDPDataStreamerConsumer::UDPDataStreamerConsumer(
     const ConfigurationTree& theXDAQContextConfigTree,
     const std::string&       configurationPath)
     : Socket(theXDAQContextConfigTree.getNode(configurationPath)
-                 .getNode("HostIPAddress")
-                 .getValue<std::string>(),
-             theXDAQContextConfigTree.getNode(configurationPath)
-                 .getNode("HostPort")
-                 .getValue<unsigned int>())
+	             .getNode("HostIPAddress")
+	             .getValue<std::string>(),
+	         theXDAQContextConfigTree.getNode(configurationPath)
+	             .getNode("HostPort")
+	             .getValue<unsigned int>())
     , WorkLoop(processorUID)
     , UDPDataStreamerBase(theXDAQContextConfigTree.getNode(configurationPath)
-                              .getNode("HostIPAddress")
-                              .getValue<std::string>(),
-                          theXDAQContextConfigTree.getNode(configurationPath)
-                              .getNode("HostPort")
-                              .getValue<unsigned int>(),
-                          theXDAQContextConfigTree.getNode(configurationPath)
-                              .getNode("StreamToIPAddress")
-                              .getValue<std::string>(),
-                          theXDAQContextConfigTree.getNode(configurationPath)
-                              .getNode("StreamToPort")
-                              .getValue<unsigned int>())
+	                          .getNode("HostIPAddress")
+	                          .getValue<std::string>(),
+	                      theXDAQContextConfigTree.getNode(configurationPath)
+	                          .getNode("HostPort")
+	                          .getValue<unsigned int>(),
+	                      theXDAQContextConfigTree.getNode(configurationPath)
+	                          .getNode("StreamToIPAddress")
+	                          .getValue<std::string>(),
+	                      theXDAQContextConfigTree.getNode(configurationPath)
+	                          .getNode("StreamToPort")
+	                          .getValue<unsigned int>())
     , DataConsumer(
           supervisorApplicationUID, bufferUID, processorUID, HighConsumerPriority)
     , Configurable(theXDAQContextConfigTree, configurationPath)

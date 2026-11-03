@@ -49,9 +49,9 @@ void ConfigurationSupervisorBase::getConfigurationStatusXML(
 						break;
 					}
 				}  // end alias match search loop
-			}      // end active group loop
-		}          // end handling of matching group alias to active groups
-		           // else ignore missing active group alias table or active backbone
+			}  // end active group loop
+		}  // end handling of matching group alias to active groups
+		// else ignore missing active group alias table or active backbone
 	}
 	catch(...)
 	{
@@ -294,13 +294,13 @@ TableVersion ConfigurationSupervisorBase::saveModifiedVersionXML(
 	bool         foundEquivalent;
 	TableVersion newAssignedVersion =
 	    cfgMgr->saveModifiedVersion(tableName,
-	                                originalVersion,
-	                                makeTemporary,
-	                                table,
-	                                temporaryModifiedVersion,
-	                                ignoreDuplicates,
-	                                lookForEquivalent,
-	                                &foundEquivalent);
+		                            originalVersion,
+		                            makeTemporary,
+		                            table,
+		                            temporaryModifiedVersion,
+		                            ignoreDuplicates,
+		                            lookForEquivalent,
+		                            &foundEquivalent);
 
 	xmlOut.addTextElementToData("savedName", tableName);
 	xmlOut.addTextElementToData("savedVersion", newAssignedVersion.toString());
@@ -860,11 +860,11 @@ try
 				          << __E__;
 				/*const std::map<std::string, TableInfo>& allTableInfo = */ cfgMgr
 				    ->getAllTableInfo(true /* refresh */,
-				                      &accumulatedWarnings,
-				                      "" /* errorFilterName */,
-				                      true /* getGroupKeys*/,
-				                      false /* getGroupInfo */,
-				                      true /* initializeActiveGroups */);
+					                  &accumulatedWarnings,
+					                  "" /* errorFilterName */,
+					                  true /* getGroupKeys*/,
+					                  false /* getGroupInfo */,
+					                  true /* initializeActiveGroups */);
 				__COUTT__ << "After full table refresh (assuming cache not yet "
 				             "established) so ignoring these errors: "
 				          << accumulatedWarnings << __E__;
@@ -1433,7 +1433,7 @@ try
 		         << __E__;
 
 		throw;  // re-throw
-	}           // end catch
+	}  // end catch
 
 	__COUT__ << "Edits complete for new desktop icon, now making persistent tables."
 	         << __E__;

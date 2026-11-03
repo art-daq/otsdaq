@@ -8,9 +8,10 @@
 
 #include <unistd.h>
 #include <exception>
-#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 std::unique_ptr<artdaq::MetricManager> artdaq::Globals::metricMan_;
 std::string                            artdaq::Globals::app_name_;
@@ -36,25 +37,32 @@ void artdaq::ExceptionHandler(ExceptionHandlerRethrow decision,
 		throw;
 }
 
-std::string artdaq::generateMessageFacilityConfiguration(char const* progname,
-                                                         bool        useConsole,
-                                                         bool        printDebug,
-                                                         char const* fileExtraName)
+// Follows artdaq-core: the destinations come from the fcl file named by ARTDAQ_LOG_FHICL
+// (otsdaq's MessageFacility*.fcl, which use the "OTS" and "UDP" destination types; lite
+// builds its own versions of those two plugins alongside this library). With no fcl, a
+// plain cout destination is used so messages still reach the ots quiet-run log.
+// No per-application log file is generated: otsdaq's fcl files all end with `file: ""`
+// to turn that off, and a generated `file` table placed before it was taken instead of
+// the fcl's value, silently diverting every message into "<ARTDAQ_LOG_ROOT>/./.-%p.log".
+std::string artdaq::generateMessageFacilityConfiguration(char const* /*progname*/,
+                                                         bool useConsole,
+                                                         bool printDebug,
+                                                         char const* /*fileExtraName*/)
 {
-	const char*        logRoot = getenv("ARTDAQ_LOG_ROOT");
-	const std::string  level   = printDebug ? "DEBUG" : "INFO";
+	const char*        logFhicl = getenv("ARTDAQ_LOG_FHICL");
+	const std::string  level    = printDebug ? "DEBUG" : "INFO";
 	std::ostringstream ss;
 	ss << "destinations : { ";
-	if(useConsole)
+	if(useConsole || logFhicl == nullptr)
 		ss << "console : { type : \"cout\" threshold : \"" << level << "\" } ";
-	if(logRoot != nullptr)
+	if(logFhicl != nullptr)
 	{
-		std::filesystem::path dir = std::filesystem::path(logRoot) / progname;
-		std::error_code       ec;
-		std::filesystem::create_directories(dir, ec);
-		ss << "file : { type : \"file\" threshold : \"DEBUG\" filename : \""
-		   << (dir / (std::string(progname) + fileExtraName + "-%p.log")).string()
-		   << "\" append : false } ";
+		std::ifstream in(logFhicl);
+		if(!in)
+			throw std::runtime_error(
+			    std::string("Unable to open requested fhicl file ARTDAQ_LOG_FHICL=\"") +
+			    logFhicl + "\".");
+		ss << in.rdbuf();
 	}
 	ss << "} ";
 	return ss.str();

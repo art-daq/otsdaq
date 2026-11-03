@@ -18,13 +18,13 @@ CoreSupervisorBase::CoreSupervisorBase(xdaq::ApplicationStub* stub)
           CorePropertySupervisorBase::allSupervisorInfo_.isWizardMode()
               ?  // set state machine name
               CorePropertySupervisorBase::supervisorClassNoNamespace_
-              : CorePropertySupervisorBase::supervisorClassNoNamespace_ + ":" +
-                    CorePropertySupervisorBase::getSupervisorUID())
+			  : CorePropertySupervisorBase::supervisorClassNoNamespace_ + ":" +
+			        CorePropertySupervisorBase::getSupervisorUID())
     , stateMachineWorkLoopManager_(toolbox::task::bind(
           this, &CoreSupervisorBase::stateMachineThread, "StateMachine"))
     , stateMachineSemaphore_(toolbox::BSem::FULL)
     , theRemoteWebUsers_(this,
-                         CorePropertySupervisorBase::getGatewaySupervisorDescriptor())
+	                     CorePropertySupervisorBase::getGatewaySupervisorDescriptor())
 {
 	__SUP_COUT__ << "Constructor." << __E__;
 
@@ -90,9 +90,7 @@ void CoreSupervisorBase::destroy(void)
 //==============================================================================
 /// wrapper for inheritance call
 void CoreSupervisorBase::defaultPageWrapper(xgi::Input* in, xgi::Output* out)
-{
-	return defaultPage(in, out);
-}
+{ return defaultPage(in, out); }
 
 //==============================================================================
 void CoreSupervisorBase::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
@@ -455,7 +453,7 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 		retParameters.addParameter(
 		    "Status",
 		    (theStateMachine_.getCurrentStateName() == "Paused" ? "Soft-Error:::"
-		                                                        : "Error:::") +
+			                                                    : "Error:::") +
 		        err);
 
 	retParameters.addParameter(
@@ -633,33 +631,23 @@ xoap::MessageReference CoreSupervisorBase::stateMachineErrorMessageRequest(
 
 //==============================================================================
 void CoreSupervisorBase::stateInitial(toolbox::fsm::FiniteStateMachine& /*fsm*/)
-{
-	__SUP_COUT__ << "CoreSupervisorBase::stateInitial" << __E__;
-}
+{ __SUP_COUT__ << "CoreSupervisorBase::stateInitial" << __E__; }
 
 //==============================================================================
 void CoreSupervisorBase::stateHalted(toolbox::fsm::FiniteStateMachine& /*fsm*/)
-{
-	__SUP_COUT__ << "CoreSupervisorBase::stateHalted" << __E__;
-}
+{ __SUP_COUT__ << "CoreSupervisorBase::stateHalted" << __E__; }
 
 //==============================================================================
 void CoreSupervisorBase::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
-{
-	__SUP_COUT__ << "CoreSupervisorBase::stateRunning" << __E__;
-}
+{ __SUP_COUT__ << "CoreSupervisorBase::stateRunning" << __E__; }
 
 //==============================================================================
 void CoreSupervisorBase::stateConfigured(toolbox::fsm::FiniteStateMachine& /*fsm*/)
-{
-	__SUP_COUT__ << "CoreSupervisorBase::stateConfigured" << __E__;
-}
+{ __SUP_COUT__ << "CoreSupervisorBase::stateConfigured" << __E__; }
 
 //==============================================================================
 void CoreSupervisorBase::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
-{
-	__SUP_COUT__ << "CoreSupervisorBase::statePaused" << __E__;
-}
+{ __SUP_COUT__ << "CoreSupervisorBase::statePaused" << __E__; }
 
 //==============================================================================
 void CoreSupervisorBase::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
@@ -715,7 +703,7 @@ void CoreSupervisorBase::preStateMachineExecutionLoop(void)
 		__SUP_COUT__ << "SubsystemIteration "
 		             << (RunControlStateMachine::isStandaloneSubsystem()
 		                     ? std::string("standalone")
-		                     : std::to_string(
+							 : std::to_string(
 		                           RunControlStateMachine::getSubsystemIterationIndex()))
 		             << " Iteration " << RunControlStateMachine::getIterationIndex()
 		             << "." << RunControlStateMachine::getSubIterationIndex() << "("
@@ -847,8 +835,8 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 	        .getParameters()
 	        .getValue("ConfigurationTableGroupName"),
 	    TableGroupKey(SOAPUtilities::translate(theStateMachine_.getCurrentMessage())
-	                      .getParameters()
-	                      .getValue("ConfigurationTableGroupKey")));
+		                  .getParameters()
+		                  .getValue("ConfigurationTableGroupKey")));
 
 	__SUP_COUT__ << "Configuration table group name: " << theGroup.first
 	             << " key: " << theGroup.second << __E__;
@@ -922,7 +910,7 @@ void CoreSupervisorBase::configureInit(bool attemptSkipIfGroupUnchanged /* = fal
 				__COUTV__(StringMacros::mapToString(overrideTables));
 			}
 		}  //end handle common override list
-	}      // end Assemble Subsystem Common Table List ----------------
+	}  // end Assemble Subsystem Common Table List ----------------
 
 	// If requested, skip the (expensive) table group reload + re-activation when
 	// it can be proven redundant: same group name+key already active, no
@@ -1537,7 +1525,7 @@ try
 	xoap::MessageReference replyMessage = SOAPMessenger::sendWithSOAPReply(
 	    gatewaySupervisor,
 	    isStopException ? "AsyncStopException"
-	                    : (isPauseException ? "AsyncPauseException" : "AsyncError"),
+		                : (isPauseException ? "AsyncPauseException" : "AsyncError"),
 	    parameters);
 
 	std::stringstream replyMessageSStream;

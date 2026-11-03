@@ -18,9 +18,7 @@ DataProducer::DataProducer(std::string  supervisorApplicationUID,
                            unsigned int bufferSize)
     : WorkLoop(processorUID)
     , DataProducerBase(supervisorApplicationUID, bufferUID, processorUID, bufferSize)
-{
-	__GEN_COUT__ << "Constructed." << __E__;
-}
+{ __GEN_COUT__ << "Constructed." << __E__; }
 
 //==============================================================================
 DataProducer::~DataProducer(void) { __GEN_COUT__ << "Destructed." << __E__; }

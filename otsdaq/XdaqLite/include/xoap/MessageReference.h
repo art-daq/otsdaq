@@ -124,7 +124,7 @@ class SOAPElement
 	{
 		auto it = impl_->attributes.find(name.getLocalName());
 		if(it == impl_->attributes.end())
-			XCEPT_RAISE(xoap::exception::Exception, "Attribute '" + name.getLocalName() + "' not found");
+			return "";
 		return it->second;
 	}
 	const std::map<std::string, std::string>& getAttributes() const { return impl_->attributes; }

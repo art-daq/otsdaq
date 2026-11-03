@@ -22,30 +22,30 @@ TCPDataReceiverProducer::TCPDataReceiverProducer(
     : WorkLoop(processorUID)
     //, Socket       ("192.168.133.100", 40000)
     , DataProducer(supervisorApplicationUID,
-                   bufferUID,
-                   processorUID,
-                   theXDAQContextConfigTree.getNode(configurationPath)
-                       .getNode("BufferSize")
-                       .getValue<unsigned int>())
+	               bufferUID,
+	               processorUID,
+	               theXDAQContextConfigTree.getNode(configurationPath)
+	                   .getNode("BufferSize")
+	                   .getValue<unsigned int>())
     //, DataProducer (supervisorApplicationUID, bufferUID, processorUID, 100)
     , Configurable(theXDAQContextConfigTree, configurationPath)
     , TCPSubscribeClient(theXDAQContextConfigTree.getNode(configurationPath)
-                             .getNode("ServerIPAddress")
-                             .getValue<std::string>(),
-                         theXDAQContextConfigTree.getNode(configurationPath)
-                             .getNode("ServerPort")
-                             .getValue<unsigned int>())
+	                         .getNode("ServerIPAddress")
+	                         .getValue<std::string>(),
+	                     theXDAQContextConfigTree.getNode(configurationPath)
+	                         .getNode("ServerPort")
+	                         .getValue<unsigned int>())
     , dataP_(nullptr)
     , headerP_(nullptr)
     , ipAddress_(theXDAQContextConfigTree.getNode(configurationPath)
-                     .getNode("ServerIPAddress")
-                     .getValue<std::string>())
+	                 .getNode("ServerIPAddress")
+	                 .getValue<std::string>())
     , port_(theXDAQContextConfigTree.getNode(configurationPath)
-                .getNode("ServerPort")
-                .getValue<unsigned int>())
+	            .getNode("ServerPort")
+	            .getValue<unsigned int>())
     , dataType_(theXDAQContextConfigTree.getNode(configurationPath)
-                    .getNode("DataType")
-                    .getValue<std::string>())
+	                .getNode("DataType")
+	                .getValue<std::string>())
 {
 }
 

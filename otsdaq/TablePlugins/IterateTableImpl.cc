@@ -242,7 +242,7 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 
 				auto dimensionalLoops = commandSpecificFields[i].second.getChildren(
 				    std::map<std::string /*relative-path*/,
-				             std::string /*value*/>() /*no filter*/,
+					         std::string /*value*/>() /*no filter*/,
 				    true /*by Priority*/);
 
 				__COUTV__(dimensionalLoops.size());
@@ -342,7 +342,7 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 						        .getValue<std::string>());
 
 					}  // end parameter loop
-				}      // end dimension loop
+				}  // end dimension loop
 
 				// Macro argument string is done
 				__COUTV__(argStr);
@@ -366,22 +366,22 @@ std::vector<IterateTable::Command> IterateTable::getPlanCommands(
 				    commandSpecificFields[i].second.isValueBoolType())
 					commands.back().params_.emplace(
 					    std::pair<std::string /*param name*/,
-					              std::string /*param value*/>(
+						          std::string /*param value*/>(
 					        commandSpecificFields[i].first,
 					        commandSpecificFields[i].second.getValue<bool>() ? "1"
-					                                                         : "0"));
+							                                                 : "0"));
 				else if(  // number data type, get raw value string (note: does not do
 				          // math or variable substitution)
 				    commandSpecificFields[i].second.isValueNumberDataType())
 					commands.back().params_.emplace(
 					    std::pair<std::string /*param name*/,
-					              std::string /*param value*/>(
+						          std::string /*param value*/>(
 					        commandSpecificFields[i].first,
 					        commandSpecificFields[i].second.getValueAsString()));
 				else
 					commands.back().params_.emplace(
 					    std::pair<std::string /*param name*/,
-					              std::string /*param value*/>(
+						          std::string /*param value*/>(
 					        commandSpecificFields[i].first,
 					        commandSpecificFields[i].second.getValue<std::string>()));
 			}

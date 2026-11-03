@@ -12,7 +12,7 @@ using namespace ots;
 
 const bool AllSupervisorInfo::MACROMAKER_MODE =
     ((getenv("MACROMAKER_MODE") ==
-      NULL)  // check Macro Maker mode environment variable in a safe way
+	  NULL)  // check Macro Maker mode environment variable in a safe way
          ? (false)
          : ((std::string(__ENV__("MACROMAKER_MODE")) == "1") ? true : false));
 
@@ -27,9 +27,7 @@ AllSupervisorInfo::AllSupervisorInfo(void)
 //==============================================================================
 AllSupervisorInfo::AllSupervisorInfo(xdaq::ApplicationContext* applicationContext)
     : AllSupervisorInfo()
-{
-	init(applicationContext);
-}
+{ init(applicationContext); }
 
 //==============================================================================
 AllSupervisorInfo::~AllSupervisorInfo(void) { destroy(); }
@@ -117,9 +115,9 @@ void AllSupervisorInfo::init(xdaq::ApplicationContext* applicationContext)
 	std::unique_ptr<ConfigurationManager> cfgMgr(
 	    (isWizardMode || AllSupervisorInfo::MACROMAKER_MODE)
 	        ? 0
-	        : new ConfigurationManager(false /* initForWriteAccess */,
-	                                   false /* doInitializeFromFhicl */,
-	                                   true /* forceNotFirstInContext */));
+			: new ConfigurationManager(false /* initForWriteAccess */,
+			                           false /* doInitializeFromFhicl */,
+			                           true /* forceNotFirstInContext */));
 	const XDAQContextTable* contextConfig =
 	    (isWizardMode || AllSupervisorInfo::MACROMAKER_MODE)
 	        ? nullptr
@@ -136,8 +134,8 @@ void AllSupervisorInfo::init(xdaq::ApplicationContext* applicationContext)
 	for(const auto& descriptor : allDescriptors)
 	{
 		name        = contextConfig ? contextConfig->getApplicationUID(
-                                   descriptor.second->getContextDescriptor()->getURL(),
-                                   descriptor.second->getLocalId())
+		                                  descriptor.second->getContextDescriptor()->getURL(),
+		                                  descriptor.second->getLocalId())
 		                            : "" /* config app name */;
 		contextName = contextConfig
 		                  ? contextConfig->getContextUID(
@@ -461,9 +459,7 @@ const SupervisorInfo& AllSupervisorInfo::getGatewayInfo(void) const
 //==============================================================================
 XDAQ_CONST_CALL xdaq::ApplicationDescriptor* AllSupervisorInfo::getGatewayDescriptor(
     void) const
-{
-	return getGatewayInfo().getDescriptor();
-}
+{ return getGatewayInfo().getDescriptor(); }
 
 //==============================================================================
 const SupervisorInfo& AllSupervisorInfo::getWizardInfo(void) const
@@ -479,9 +475,7 @@ const SupervisorInfo& AllSupervisorInfo::getWizardInfo(void) const
 //==============================================================================
 XDAQ_CONST_CALL xdaq::ApplicationDescriptor* AllSupervisorInfo::getWizardDescriptor(
     void) const
-{
-	return getWizardInfo().getDescriptor();
-}
+{ return getWizardInfo().getDescriptor(); }
 
 //==============================================================================
 const SupervisorInfo& AllSupervisorInfo::getArtdaqSupervisorInfo(void) const
@@ -526,7 +520,7 @@ AllSupervisorInfo::getOrderedSupervisorDescriptors(
 						        .push_back(app.id_);  // if no priority, then default to
 					// XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
 					else  // take value, and do not allow DEFAULT value of 0 -> force to
-					      // XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
+						  // XDAQContextTable::XDAQApplication::DEFAULT_PRIORITY
 						orderedByPriority[it->second ? it->second
 						                             : XDAQContextTable::XDAQApplication::
 						                                   DEFAULT_PRIORITY]
@@ -613,7 +607,7 @@ AllSupervisorInfo::getOrderedSupervisorDescriptors(
 			         << "]: "
 			         << (it->second.getName().size() > whitespace.size()
 			                 ? ""
-			                 : whitespace.substr(
+							 : whitespace.substr(
 			                       0, whitespace.size() - it->second.getName().size()))
 			         << " priority " << (unsigned int)priorityAppVector.first << " count "
 			         << retVec[retVec.size() - 1].size() << __E__;

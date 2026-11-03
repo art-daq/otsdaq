@@ -21,9 +21,7 @@ WorkLoop::WorkLoop(const std::string& name)
     , workLoopType_("waiting")
     , workLoop_(0)
     , job_(toolbox::task::bind(this, &WorkLoop::workLoopThread, workLoopName_))
-{
-	__COUT__ << "Constructed." << __E__;
-}
+{ __COUT__ << "Constructed." << __E__; }
 
 //==============================================================================
 WorkLoop::~WorkLoop(void)
@@ -52,7 +50,7 @@ void WorkLoop::startWorkLoop(void)
 
 	if(workLoop_->isActive())
 		return;  // This might be a consumer producer running at the same time so it has
-		         // been activated already
+	             // been activated already
 
 	try
 	{
@@ -134,6 +132,4 @@ bool WorkLoop::stopWorkLoop()
 
 //==============================================================================
 bool WorkLoop::isActive(void) const
-{
-	return workLoop_->isActive() && continueWorkLoop_;
-}  // end isActive
+{ return workLoop_->isActive() && continueWorkLoop_; }  // end isActive

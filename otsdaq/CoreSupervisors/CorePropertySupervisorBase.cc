@@ -309,7 +309,7 @@ void CorePropertySupervisorBase::indicateOtsAlive(
 	// indicate ots is alive (for ots script to verify launch was successful)
 	std::string filename = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/otsdaq_is_alive-" +
 	                       hostname + "-" + portStr + ".dat";
-	FILE* fp = fopen(filename.c_str(), "w");
+	FILE*       fp       = fopen(filename.c_str(), "w");
 	if(!fp)
 	{
 		__SS__ << "Failed to open the ots-is-alive file: " << filename << __E__;
@@ -364,7 +364,7 @@ void CorePropertySupervisorBase::indicateOtsDead(
 	// indicate ots is dead (for ots script to verify launch was successful)
 	std::string filename = std::string(__ENV__("OTSDAQ_LOG_DIR")) + "/otsdaq_is_alive-" +
 	                       hostname + "-" + portStr + ".dat";
-	FILE* fp = fopen(filename.c_str(), "w");
+	FILE*       fp       = fopen(filename.c_str(), "w");
 	if(!fp)
 	{
 		__SS__ << "Failed to open the ots-is-alive file: " << filename << __E__;
@@ -378,7 +378,7 @@ void CorePropertySupervisorBase::indicateOtsDead(
 //==============================================================================
 /// will be wizard supervisor in wiz mode, otherwise Gateway Supervisor descriptor
 XDAQ_CONST_CALL xdaq::ApplicationDescriptor*
-                CorePropertySupervisorBase::getGatewaySupervisorDescriptor(void)
+CorePropertySupervisorBase::getGatewaySupervisorDescriptor(void)
 {
 	if(allSupervisorInfo_.isMacroMakerMode())
 		return 0;
@@ -547,8 +547,8 @@ void CorePropertySupervisorBase::checkSupervisorPropertySetup()
 		    << supervisorClass_ << "'" << __E__;
 	else
 		CorePropertySupervisorBase::loadUserSupervisorProperties();  // loads user
-		                                                             // settings from
-		                                                             // configuration
+	                                                                 // settings from
+	                                                                 // configuration
 
 	readOnly_ = getSupervisorProperty("ReadOnly", "0") == "1" ? true : false;
 	__SUP_COUTV__(readOnly_);
@@ -827,7 +827,7 @@ void CorePropertySupervisorBase::getRequestUserInfo(WebUsers::RequestUserInfo& u
 		{
 			StringMacros::getSetFromString(
 			    StringMacros::getWildCardMatchFromMap(userInfo.requestType_,
-			                                          propertyStruct_.UserGroupsAllowed),
+				                                      propertyStruct_.UserGroupsAllowed),
 			    userInfo.groupsAllowed_);
 		}
 		catch(std::runtime_error& e)
@@ -1076,7 +1076,7 @@ const std::string& CorePropertySupervisorBase::getTraceLevels()
 			    ":T:" + std::to_string((unsigned int)(traceMask.second.T >> 32)) + ":" +
 			    std::to_string((unsigned int)traceMask.second.T);
 		}  // end label loop
-	}      // end host loop
+	}  // end host loop
 	__SUP_COUTTV__(traceReturnString_);
 	__SUP_COUTV__(traceReturnHostString_);
 	__SUP_COUT__ << "end getTraceLevels()" << __E__;

@@ -11,14 +11,12 @@ Configurable::Configurable(const ConfigurationTree& theXDAQContextConfigTree,
     , theConfigurationPath_(theConfigurationPath)
     , theConfigurationRecordName_(
           (theXDAQContextConfigTree_.getNode(theConfigurationPath_).isLinkNode() &&
-           theXDAQContextConfigTree_.getNode(theConfigurationPath_).isDisconnected())
+		   theXDAQContextConfigTree_.getNode(theConfigurationPath_).isDisconnected())
               ? theXDAQContextConfigTree_.getNode(theConfigurationPath_)
                     .getDisconnectedLinkID()
-              : theXDAQContextConfigTree_.getNode(theConfigurationPath_)
-                    .getValueAsString())
-{
-	__CFG_COUT__ << " Configurable class constructed. " << __E__;
-}  // end constructor()
+			  : theXDAQContextConfigTree_.getNode(theConfigurationPath_)
+			        .getValueAsString())
+{ __CFG_COUT__ << " Configurable class constructed. " << __E__; }  // end constructor()
 
 //==============================================================================
 Configurable::~Configurable(void) {}
@@ -33,9 +31,7 @@ ConfigurationTree Configurable::getSelfNode() const
 
 //==============================================================================
 const ConfigurationManager* Configurable::getConfigurationManager() const
-{
-	return theXDAQContextConfigTree_.getConfigurationManager();
-}
+{ return theXDAQContextConfigTree_.getConfigurationManager(); }
 
 //==============================================================================
 const std::string& Configurable::getContextUID() const

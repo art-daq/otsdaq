@@ -214,9 +214,7 @@ GatewaySupervisor::~GatewaySupervisor(void)
 //==============================================================================
 ///For Wizard Supervisor to call
 void GatewaySupervisor::indicateOtsAlive(const CorePropertySupervisorBase* properties)
-{
-	CorePropertySupervisorBase::indicateOtsAlive(properties);
-}  //end indicateOtsAlive()
+{ CorePropertySupervisorBase::indicateOtsAlive(properties); }  //end indicateOtsAlive()
 
 //==============================================================================
 void GatewaySupervisor::init(void)
@@ -235,9 +233,9 @@ void GatewaySupervisor::init(void)
 			enableStateChanges = CorePropertySupervisorBase::getSupervisorTableNode()
 			                         .getNode("EnableStateChangesOverUDP")
 			                         .getValue<bool>();
-			enableLoginVerify = CorePropertySupervisorBase::getSupervisorTableNode()
-			                        .getNode("EnableAckForStateChangesOverUDP")
-			                        .getValue<bool>();
+			enableLoginVerify  = CorePropertySupervisorBase::getSupervisorTableNode()
+			                         .getNode("EnableAckForStateChangesOverUDP")
+			                         .getValue<bool>();
 		}
 		catch(...)
 		{
@@ -637,10 +635,10 @@ try
 					{
 						bool isRemoteAppDisconnected =
 						    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
-						                           remoteGatewayApp.appInfo.name) !=
+							                       remoteGatewayApp.appInfo.name) !=
 						        appLastStatusGood.end() &&
 						    !appLastStatusGood.at(remoteGatewayApp.appInfo.url +
-						                          remoteGatewayApp.appInfo.name);
+							                      remoteGatewayApp.appInfo.name);
 
 						//skip based on disconnected status
 						if(doDisconnected && !isRemoteAppDisconnected)
@@ -786,7 +784,7 @@ try
 						{
 							status =
 							    (theSupervisor->theStateMachine_.getCurrentStateName() ==
-							             RunControlStateMachine::PAUSED_STATE_NAME
+								         RunControlStateMachine::PAUSED_STATE_NAME
 							         ? "Soft-Error:::"
 							         : "Failed:::") +
 							    err;
@@ -955,11 +953,11 @@ try
 					    //disconnect version will handle refreshing
 					    //primary version does first time to init apps and socket
 					    (loopCount ==
-					     0) ||  //must init socket first time! (for both thread types)
+						 0) ||  //must init socket first time! (for both thread types)
 					    (remoteApps.size() &&
-					     !remoteGatewaySocket) ||  //if there are app (from other loop) but socket not init'd
+						 !remoteGatewaySocket) ||  //if there are app (from other loop) but socket not init'd
 					    (doDisconnected &&
-					     loopCount))  //% 20 == 0) ) //!commandingRemoteGatewayApps &&
+						 loopCount))  //% 20 == 0) ) //!commandingRemoteGatewayApps &&
 					{
 						__COUTS__(TLVL_StatusWorkloop)
 						    << "Doing remote gateway icon/subapp refresh, doDisconnected "
@@ -1026,7 +1024,7 @@ try
 									theSupervisor->latestGatewayIconsContextGroup_ =
 									    cfgMgr.getActiveTableGroups()
 									        [ConfigurationManager::
-									             GROUP_TYPE_NAME_CONTEXT];
+											     GROUP_TYPE_NAME_CONTEXT];
 								}  //end lock scope
 							}
 							catch(...)
@@ -1073,7 +1071,7 @@ try
 									    << __E__;
 									std::vector<std::string> urlSplit =
 									    StringMacros::getVectorFromString(remoteURL,
-									                                      {'?'});
+										                                  {'?'});
 									if(urlSplit.size() > 0)
 										remoteURL = urlSplit[0];
 									if(urlSplit.size() > 1)
@@ -1081,7 +1079,7 @@ try
 										//look for 'LandingPage' parameter
 										std::vector<std::string> parameterPairs =
 										    StringMacros::getVectorFromString(urlSplit[1],
-										                                      {'&'});
+											                                  {'&'});
 										for(const auto& parameterPair : parameterPairs)
 										{
 											std::vector<std::string> parameterPairSplit =
@@ -1346,7 +1344,7 @@ try
 								remoteApps.erase(remoteApps.begin() + r);
 								--r;
 							}  //end removal of stale remote app with blank status
-						}      //end clean up stale remoteGatewayApps with blank status
+						}  //end clean up stale remoteGatewayApps with blank status
 						remoteAppsExist = remoteApps.size();
 
 						if(remoteAppsExist &&
@@ -1584,10 +1582,10 @@ try
 						{
 							bool isRemoteAppDisconnected =
 							    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
-							                           remoteGatewayApp.appInfo.name) !=
+								                       remoteGatewayApp.appInfo.name) !=
 							        appLastStatusGood.end() &&
 							    !appLastStatusGood.at(remoteGatewayApp.appInfo.url +
-							                          remoteGatewayApp.appInfo.name);
+								                      remoteGatewayApp.appInfo.name);
 
 							__COUTS__(TLVL_StatusWorkloop)
 							    << "Status needed? doDisconnected = " << doDisconnected
@@ -1674,7 +1672,7 @@ try
 									    theSupervisor->dualStatusThreadMutex_);
 									theSupervisor->appLastStatusGood_
 									    [remoteGatewayApp.appInfo.url +
-									     remoteGatewayApp.appInfo.name] = true;
+										 remoteGatewayApp.appInfo.name] = true;
 								}
 
 								if(!(remoteGatewayApp.appInfo.progress ==
@@ -1793,7 +1791,7 @@ try
 									    theSupervisor->dualStatusThreadMutex_);
 									theSupervisor->appLastStatusGood_
 									    [remoteGatewayApp.appInfo.url +
-									     remoteGatewayApp.appInfo.name] = false;
+										 remoteGatewayApp.appInfo.name] = false;
 								}
 							}
 							auto duration =
@@ -1863,10 +1861,10 @@ try
 
 							bool isRemoteAppDisconnected =
 							    appLastStatusGood.find(remoteGatewayApp.appInfo.url +
-							                           remoteGatewayApp.appInfo.name) !=
+								                       remoteGatewayApp.appInfo.name) !=
 							        appLastStatusGood.end() &&
 							    !appLastStatusGood.at(remoteGatewayApp.appInfo.url +
-							                          remoteGatewayApp.appInfo.name);
+								                      remoteGatewayApp.appInfo.name);
 
 							__COUTVS__(TLVL_RemoteDesktopIcons, isRemoteAppDisconnected);
 
@@ -1941,8 +1939,8 @@ try
 										}
 								}
 							}  //end remote app icon request handling
-						}      //end remote app icon request loop
-					}          //end remote desktop icon gathering
+						}  //end remote app icon request loop
+					}  //end remote desktop icon gathering
 
 					//for each remote gateway, copy info to Gateway supervisor remote gateway structure
 					if(gettingRemoteStatus)
@@ -2132,21 +2130,21 @@ try
 										    theSupervisor->remoteGatewayApps_[i]
 										            .command != "" ||
 										    (theSupervisor->remoteGatewayApps_[i]
-										             .commandSentTime != 0 &&
-										     difftime(time(0),
-										              theSupervisor->remoteGatewayApps_[i]
-										                  .commandSentTime) < 2) ||
+											         .commandSentTime != 0 &&
+											 difftime(time(0),
+											          theSupervisor->remoteGatewayApps_[i]
+											              .commandSentTime) < 2) ||
 										    (commandingRemoteGatewayApps &&
-										     theSupervisor->remoteGatewayApps_[i]
-										             .appInfo.status.find("Launching") ==
-										         0 &&
-										     remoteGatewayApp.appInfo.progress == 100 &&
-										     theSupervisor->remoteGatewayApps_[i]
-										             .commandSentTime != 0 &&
-										     difftime(time(0),
-										              theSupervisor->remoteGatewayApps_[i]
-										                  .commandSentTime) <
-										         5))  //dont trust done progress briefly after send, but allow write-back after 5s
+											 theSupervisor->remoteGatewayApps_[i]
+											         .appInfo.status.find("Launching") ==
+											     0 &&
+											 remoteGatewayApp.appInfo.progress == 100 &&
+											 theSupervisor->remoteGatewayApps_[i]
+											         .commandSentTime != 0 &&
+											 difftime(time(0),
+											          theSupervisor->remoteGatewayApps_[i]
+											              .commandSentTime) <
+											     5))  //dont trust done progress briefly after send, but allow write-back after 5s
 										{
 											// suppress stale write-back
 										}
@@ -2285,7 +2283,7 @@ try
 					auto soapStartTime = std::chrono::high_resolution_clock::now();
 					xoap::MessageReference statusMessage =
 					    theSupervisor->sendWithSOAPReply(appInfo.getDescriptor(),
-					                                     tempMessage);
+						                                 tempMessage);
 					auto soapMs =
 					    std::chrono::duration_cast<std::chrono::milliseconds>(
 					        std::chrono::high_resolution_clock::now() - soapStartTime)
@@ -2357,13 +2355,13 @@ try
 						if(parseDetail.size() > 1)
 							theSupervisor->systemConsoleErrCount_ =
 							    atoi(parseDetail[1]
-							             .substr(parseDetail[1].find(':') + 1)
-							             .c_str());
+								         .substr(parseDetail[1].find(':') + 1)
+								         .c_str());
 						if(parseDetail.size() > 2)
 							theSupervisor->systemConsoleWarnCount_ =
 							    atoi(parseDetail[2]
-							             .substr(parseDetail[2].find(':') + 1)
-							             .c_str());
+								         .substr(parseDetail[2].find(':') + 1)
+								         .c_str());
 						__COUTVS__(TLVL_DebugStatusDetail,
 						           theSupervisor->systemConsoleErrCount_);
 						__COUTVS__(TLVL_DebugStatusDetail,
@@ -2409,8 +2407,8 @@ try
 						if(parseDetail.size() > 6)
 							theSupervisor->systemConsoleInfoCount_ =
 							    atoi(parseDetail[6]
-							             .substr(parseDetail[6].find(':') + 1)
-							             .c_str());
+								         .substr(parseDetail[6].find(':') + 1)
+								         .c_str());
 
 						if(parseDetail.size() >
 						   7)  //e.g. First Err (Mon Sep 30 14:38:20 2024 CDT): Remote%20lo
@@ -2519,7 +2517,7 @@ try
 						__COUT_WARN__ << "Failed to send getStatus SOAP Message - will "
 						                 "suppress repeat errors: "
 						              << e.what() << __E__;
-					}     // else quiet repeat error messages
+					}  // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
 						bool shouldTriggerError = false;
@@ -2584,7 +2582,7 @@ try
 							}
 							catch(...)
 							{
-							}       //ignore any errors
+							}  //ignore any errors
 							break;  //only send one Error, then restart status loop
 						}
 					}
@@ -2638,7 +2636,7 @@ try
 						              << appName << "' [LID=" << appInfo.getId()
 						              << "] in Context '" << appInfo.getContextName()
 						              << "' [URL=" << appInfo.getURL() << "]." << __E__;
-					}     // else quiet repeat error messages
+					}  // else quiet repeat error messages
 					else  //check if should throw state machine error
 					{
 						bool shouldTriggerError2 = false;
@@ -2681,7 +2679,7 @@ try
 							}
 							catch(...)
 							{
-							}       //ignore any errors
+							}  //ignore any errors
 							break;  //only send one Error, then restart status loop
 						}
 					}
@@ -2829,7 +2827,7 @@ try
 			const time_t minLookbackSecs[4] = {300, 300, 300, 60};  //5,5,5,1 min
 			const int    windowSecs[4]      = {3600, 1800, 900, 450};
 			const int    silenceSecs[4]     = {
-                30 * 60, 15 * 60, 15 * 30, 15 * 15};  //30, 15, 7.5, 3.75 minutes
+			    30 * 60, 15 * 60, 15 * 30, 15 * 15};  //30, 15, 7.5, 3.75 minutes
 			const char* const windowLabels[4] = {
 			    "last hour", "last half-hour", "last quarter-hour", "last few minutes"};
 
@@ -2851,10 +2849,10 @@ try
 			                             info.getVarUsageRateLastQuarterHourKBps(),
 			                             info.getVarUsageRateNowKBps()};
 			const time_t logSpans[4]  = {
-                info.getLogSpaceSampleAgeSeconds(slotForWindow[0]),
-                info.getLogSpaceSampleAgeSeconds(slotForWindow[1]),
-                info.getLogSpaceSampleAgeSeconds(slotForWindow[2]),
-                info.getLogSpaceSampleAgeSeconds(slotForWindow[3])};
+			    info.getLogSpaceSampleAgeSeconds(slotForWindow[0]),
+			    info.getLogSpaceSampleAgeSeconds(slotForWindow[1]),
+			    info.getLogSpaceSampleAgeSeconds(slotForWindow[2]),
+			    info.getLogSpaceSampleAgeSeconds(slotForWindow[3])};
 			const time_t dataSpans[4] = {
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[0]),
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[1]),
@@ -2871,8 +2869,8 @@ try
 			                               const std::string& diskPath,
 			                               int64_t            availableSpaceKB,
 			                               int64_t            availableSpaceKB_MIN,
-			                               const float(&rates)[4],
-			                               const time_t(&spans)[4],
+			                               const float (&rates)[4],
+			                               const time_t (&spans)[4],
 			                               std::map<std::string, time_t>& alertMap,
 			                               std::map<std::string, time_t>& firstTripMap) {
 				const std::string& ctx = appInfo.getContextName();
@@ -3203,10 +3201,10 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		// detection, and retransmit requests.
 		std::string commandResponseString =
 		    remoteGatewaySocket->sendAndReceiveAll(gatewayRemoteSocket,
-		                                           command,
-		                                           10 /*timeoutSeconds*/,
-		                                           10 /*retransmitMaxRetries*/,
-		                                           false /*verbose*/);
+			                                       command,
+			                                       10 /*timeoutSeconds*/,
+			                                       10 /*retransmitMaxRetries*/,
+			                                       false /*verbose*/);
 		__COUT__ << "Response from subsystem '" << remoteGatewayApp.appInfo.name
 		         << "' received: " << commandResponseString.size() << " bytes" << __E__;
 
@@ -3329,7 +3327,7 @@ void GatewaySupervisor::SendRemoteGatewayCommand(
 		       << "' the command '"
 		       << (tmpCommand.size() > 100
 		               ? (tmpCommand.substr(0, 100) + "<truncated>...")
-		               : tmpCommand)
+					   : tmpCommand)
 		       << "' at url: " << remoteGatewayApp.appInfo.url
 		       << " due to error: " << e.what() << __E__;
 		__COUT_ERR__ << ss.str();
@@ -3380,7 +3378,7 @@ try
 			requestString +=
 			    "," + ipForReverseLoginOverUDP + "," +
 			    (portForReverseLoginOverUDP ? std::to_string(portForReverseLoginOverUDP)
-			                                : "") +
+				                            : "") +
 			    "," + remoteGatewayApp.appInfo.name + "," +
 			    remoteGatewayApp.selected_config_alias;
 		requestString += "|" + COMMAND_PARAM_SUBSYSTEM_COMMON_CONTEXT_PREAMBLE +
@@ -3541,7 +3539,7 @@ try
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				remoteGatewayApp.appInfo.id = atoi(value.c_str());
 
-			}     //end found Remote Gateway status
+			}  //end found Remote Gateway status
 			else  //found remote subapp
 			{
 				//get remote subapp class name
@@ -3944,7 +3942,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								pipeSectionsXML.push_back(buffer.substr(
 								    pipePos + 1,
 								    nextPipe != std::string::npos ? nextPipe - pipePos - 1
-								                                  : std::string::npos));
+									                              : std::string::npos));
 								pipePos = nextPipe;
 							}
 						}
@@ -4080,8 +4078,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								    std::pair<unsigned int, SupervisorInfo>(
 								        it.second.getId(),  // descriptor.first,
 								        SupervisorInfo(0 /* descriptor */,
-								                       it.second.getName(),
-								                       it.second.getContextName())));
+										               it.second.getName(),
+										               it.second.getContextName())));
 
 							//copy if have lock
 							localAllSupervisorInfo.at(it.second.getId()) = it.second;
@@ -4131,7 +4129,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    std::to_string(appInfo.getLastStatusChangeTime() > 0
 						                       ? time(0) -
 						                             appInfo.getLastStatusChangeTime()
-						                       : 0),
+											   : 0),
 						    supervisorNode);
 						xmlOut.addAttributeToNode("progress",
 						                          std::to_string(appInfo.getProgress()),
@@ -4205,12 +4203,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							    subappInfoPair.second.lastStatusTime
 							        ? StringMacros::getTimestampString(
 							              subappInfoPair.second.lastStatusTime)
-							        : "0",
+									: "0",
 							    subappElement);  // get time stamp
 							xmlOut.addAttributeToNode(
 							    "stale",
 							    std::to_string(time(0) -
-							                   subappInfoPair.second.lastStatusTime),
+								               subappInfoPair.second.lastStatusTime),
 							    subappElement);  // time since update
 							xmlOut.addAttributeToNode(
 							    "statusChangeTime",
@@ -4223,7 +4221,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							        subappInfoPair.second.lastStatusChangeTime > 0
 							            ? time(0) -
 							                  subappInfoPair.second.lastStatusChangeTime
-							            : 0),
+										: 0),
 							    subappElement);
 							xmlOut.addAttributeToNode(
 							    "progress",
@@ -4296,7 +4294,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 								pipeSections.push_back(buffer.substr(
 								    pipePos + 1,
 								    nextPipe != std::string::npos ? nextPipe - pipePos - 1
-								                                  : std::string::npos));
+									                              : std::string::npos));
 								pipePos = nextPipe;
 							}
 						}
@@ -4461,7 +4459,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    std::to_string(appInfo.getLastStatusChangeTime() > 0
 						                       ? time(0) -
 						                             appInfo.getLastStatusChangeTime()
-						                       : 0));
+											   : 0));
 						xmlOut.addTextElementToData(
 						    "progress",
 						    std::to_string(appInfo.getProgress()));  // get progress
@@ -4526,12 +4524,12 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							    subappInfoPair.second.lastStatusTime
 							        ? StringMacros::getTimestampString(
 							              subappInfoPair.second.lastStatusTime)
-							        : "0",
+									: "0",
 							    subappElement);  // get time stamp
 							xmlOut.addTextElementToParent(
 							    "subapp_stale",
 							    std::to_string(time(0) -
-							                   subappInfoPair.second.lastStatusTime),
+								               subappInfoPair.second.lastStatusTime),
 							    subappElement);  // time since update
 							xmlOut.addTextElementToParent(
 							    "subapp_statusChangeTime",
@@ -4544,7 +4542,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							        subappInfoPair.second.lastStatusChangeTime > 0
 							            ? time(0) -
 							                  subappInfoPair.second.lastStatusChangeTime
-							            : 0),
+										: 0),
 							    subappElement);
 							xmlOut.addTextElementToParent(
 							    "subapp_progress",
@@ -5182,8 +5180,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 									    ipAddressForStateChangesOverUDP);
 									std::string remoteIconString =
 									    iconSocket.sendAndReceive(iconRemoteSocket,
-									                              "GetRemoteDesktopIcons",
-									                              10 /*timeoutSeconds*/);
+										                          "GetRemoteDesktopIcons",
+										                          10 /*timeoutSeconds*/);
 									__COUTVS__(10, remoteIconString);
 									continue;
 								}
@@ -5235,7 +5233,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						        &tmpCfgMgr,
 						        "/WebPath/html/ConfigurationGUI.html?urn=" +
 						            std::to_string(XDAQContextTable::XDAQApplication::
-						                               WIZMODE_CONFIG_APP_ID),
+									                   WIZMODE_CONFIG_APP_ID),
 						        true /* forWizMode */);
 						iconString += "," + std::string("");  //icon.folderPath_;
 					}
@@ -5272,11 +5270,11 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							aliasEdits.push_back(
 							    {StringMacros::decodeURIComponent(
 							         commandFields[fieldIndex]),
-							     StringMacros::decodeURIComponent(
+								 StringMacros::decodeURIComponent(
 							         commandFields[fieldIndex + 1]),
-							     TableGroupKey(StringMacros::decodeURIComponent(
+								 TableGroupKey(StringMacros::decodeURIComponent(
 							         commandFields[fieldIndex + 2])),
-							     StringMacros::decodeURIComponent(
+								 StringMacros::decodeURIComponent(
 							         commandFields[fieldIndex + 3])});
 						std::string author =
 						    StringMacros::decodeURIComponent(commandFields.back());
@@ -5289,7 +5287,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							ConfigurationManagerRW aliasWriteConfigManager(author);
 							auto activatedBackbone = ConfigurationSupervisorBase::
 							    setGroupAliasesInActiveBackbone(&aliasWriteConfigManager,
-							                                    aliasEdits);
+								                                aliasEdits);
 							acknowledgeString = "Done," + activatedBackbone.first + "," +
 							                    activatedBackbone.second.toString();
 						}
@@ -5414,7 +5412,7 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 					}
 					sock.acknowledge(std::to_string(maxIteration), false /* verbose */);
 					continue;
-				}                             //end GetMinEventGenStartIteration
+				}  //end GetMinEventGenStartIteration
 				else if(!enableStateChanges)  //else it is an FSM Command!
 				{
 					__COUT_WARN__ << "Skipping potential FSM Command because "
@@ -5578,8 +5576,8 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						sock.acknowledge(
 						    "Done" + (extraDoneContent.size()
 						                  ? ("," + extraDoneContent)
-						                  : ""  //append extra done content, if any
-						              ),
+										  : ""  //append extra done content, if any
+							          ),
 						    true /* verbose */,
 						    extraDoneContent.size() ? 65500 : 1500 /*maxChunkSize*/,
 						    0 /*interPacketGapUSeconds*/,
@@ -5716,8 +5714,7 @@ void GatewaySupervisor::Default(xgi::Input* /*in*/, xgi::Output* out)
 	*out << "<!DOCTYPE HTML><html lang='en'><head><title>ots</title>"
 	     << GatewaySupervisor::getIconHeaderString() <<
 	    // end show ots icon
-	    "</head>"
-	     << "<frameset col='100%' row='100%'>"
+	    "</head>" << "<frameset col='100%' row='100%'>"
 	     << "<frame src='/WebPath/html/Desktop.html?urn="
 	     << this->getApplicationDescriptor()->getLocalId()
 	     << "&securityType=" << securityType_ << "'></frameset></html>";
@@ -6261,7 +6258,7 @@ try
 			ConfigurationTree configLinkNode =
 			    CorePropertySupervisorBase::theConfigurationManager_
 			        ->getSupervisorTableNode(supervisorContextUID_,
-			                                 supervisorApplicationUID_);
+					                         supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
 				bool doThrow = false;
@@ -6752,7 +6749,7 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			ConfigurationTree configLinkNode =
 			    CorePropertySupervisorBase::theConfigurationManager_
 			        ->getSupervisorTableNode(supervisorContextUID_,
-			                                 supervisorApplicationUID_);
+					                         supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
 				ConfigurationTree fsmLinkNode =
@@ -6813,7 +6810,7 @@ void GatewaySupervisor::statePaused(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 }  // end statePaused()
 
 //==============================================================================
@@ -6832,7 +6829,7 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			ConfigurationTree configLinkNode =
 			    CorePropertySupervisorBase::theConfigurationManager_
 			        ->getSupervisorTableNode(supervisorContextUID_,
-			                                 supervisorApplicationUID_);
+					                         supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
 				ConfigurationTree fsmLinkNode =
@@ -6893,7 +6890,7 @@ void GatewaySupervisor::stateRunning(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End update pause time into run info db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 }  // end stateRunning()
 
 //==============================================================================
@@ -7042,7 +7039,7 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			ConfigurationTree configLinkNode =
 			    CorePropertySupervisorBase::theConfigurationManager_
 			        ->getSupervisorTableNode(supervisorContextUID_,
-			                                 supervisorApplicationUID_);
+					                         supervisorApplicationUID_);
 			if(!configLinkNode.isDisconnected())
 			{
 				ConfigurationTree fsmLinkNode =
@@ -7105,7 +7102,7 @@ void GatewaySupervisor::inError(toolbox::fsm::FiniteStateMachine& /*fsm*/)
 			}
 			__SS_THROW__;
 		}  // End write run info into db
-	}      // end update Run Info handling
+	}  // end update Run Info handling
 
 }  // end inError()
 
@@ -7147,7 +7144,7 @@ void GatewaySupervisor::enteringError(toolbox::Event::Reference event)
 		   << theStateMachine_.getStateName(failedEvent.getToState())
 		   << ".\n\nException:\n"
 		   << failedException.message() << __E__;  // rbegin()->at("message") << __E__;
-		    //<< failedEvent.getException().what() << __E__;
+		//<< failedEvent.getException().what() << __E__;
 	}
 
 	__COUT_ERR__ << "\n" << ss.str();
@@ -7300,7 +7297,7 @@ try
 				__COUTV__(StringMacros::mapToString(overrideTables));
 			}
 		}  //end handle common override list
-	}      // end Assemble Subsystem Common Table List ----------------
+	}  // end Assemble Subsystem Common Table List ----------------
 
 	{  //do configuration dump handling
 		try
@@ -7525,18 +7522,18 @@ try
 		// and at Run transition time).
 		configDumpCachingThread_ =
 		    std::make_unique<std::thread>([this,
-		                                   configurationAlias,
-		                                   subsystemCommonList,
-		                                   subsystemCommonOverrideList]() {
+			                               configurationAlias,
+			                               subsystemCommonList,
+			                               subsystemCommonOverrideList]() {
 			    try
 			    {
 				    //get/cache Run transition dump
 				    if(activeStateMachineSystemDumpOnRunEnable_ ||
-				       ((activeStateMachineRunInfoPluginType_ !=
-				             TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-				         activeStateMachineRunInfoPluginType_ !=
-				             TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-				         activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+					   ((activeStateMachineRunInfoPluginType_ !=
+					         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+					     activeStateMachineRunInfoPluginType_ !=
+					         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+					     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
 				    {
 					    __COUT_INFO__ << "Caching the System Configuration Dump for the "
 					                     "Run transition..."
@@ -7561,7 +7558,7 @@ try
 					    __COUT__ << "Active State Machine Config Dump on Run " << __E__;
 					    __COUTTV__(activeStateMachineSystemDumpOnRun_) << __E__;
 					    __COUT_MULTI__(TLVL_SystemDump,
-					                   activeStateMachineSystemDumpOnRun_);
+						               activeStateMachineSystemDumpOnRun_);
 				    }
 				    else
 					    __COUT_INFO__ << "Not caching the System Configuration Dump on "
@@ -7570,11 +7567,11 @@ try
 
 				    //get/cache Configuration transition dump
 				    if(activeStateMachineSystemDumpOnConfigureEnable_ ||
-				       ((activeStateMachineRunInfoPluginType_ !=
-				             TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
-				         activeStateMachineRunInfoPluginType_ !=
-				             TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
-				         activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
+					   ((activeStateMachineRunInfoPluginType_ !=
+					         TableViewColumnInfo::DATATYPE_STRING_DEFAULT &&
+					     activeStateMachineRunInfoPluginType_ !=
+					         TableViewColumnInfo::DATATYPE_STRING_ALT_DEFAULT &&
+					     activeStateMachineRunInfoPluginType_ != "No Run Info Plugin")))
 				    {
 					    __COUT_INFO__ << "Caching the System Configuration Dump for the "
 					                     "Configure transition..."
@@ -7600,7 +7597,7 @@ try
 					             << __E__;
 					    __COUTTV__(activeStateMachineSystemDumpOnConfigure_) << __E__;
 					    __COUT_MULTI__(TLVL_SystemDump,
-					                   activeStateMachineSystemDumpOnConfigure_);
+						               activeStateMachineSystemDumpOnConfigure_);
 				    }
 				    else
 					    __COUT_INFO__
@@ -7622,7 +7619,7 @@ try
 				    configDumpCachingError_ = "Unknown config dump error";
 			    }
 		    });  // end config dump caching thread lambda
-	}            //end configuration dump handling
+	}  //end configuration dump handling
 
 	RunControlStateMachine::theProgressBar_.step();
 
@@ -7782,7 +7779,7 @@ try
 		//write local configuration dump file
 		std::string fullfilename = activeStateMachineSystemDumpOnConfigureFilename_ +
 		                           "_" + std::to_string(time(0)) + ".dump";
-		FILE* fp = fopen(fullfilename.c_str(), "w");
+		FILE*       fp           = fopen(fullfilename.c_str(), "w");
 		if(!fp)
 		{
 			__SS__ << "Configuration dump failed to file: " << fullfilename << __E__;
@@ -8504,10 +8501,10 @@ try
 
 	std::ostringstream dur_ss;
 	{
-		int dur = std::chrono::duration_cast<std::chrono::milliseconds>(
-		              std::chrono::steady_clock::now() - activeStateMachineRunStartTime)
-		              .count() +
-		          activeStateMachineRunDuration_ms;
+		int dur   = std::chrono::duration_cast<std::chrono::milliseconds>(
+		                std::chrono::steady_clock::now() - activeStateMachineRunStartTime)
+		                .count() +
+		            activeStateMachineRunDuration_ms;
 		int dur_s = dur / 1000;
 		dur       = dur % 1000;
 		int dur_m = dur_s / 60;
@@ -8847,17 +8844,17 @@ try
 				{
 					std::vector<std::string> parsedUrl =
 					    StringMacros::getVectorFromString(remoteGatewayApp.appInfo.url,
-					                                      {':'});
+						                                  {':'});
 					if(parsedUrl.size() == 3)
 					{
 						Socket            gatewayRemoteSocket(parsedUrl[1],
-                                                   atoi(parsedUrl[2].c_str()));
+						                                      atoi(parsedUrl[2].c_str()));
 						TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
 						tmpSocket.initialize();
 						std::string response =
 						    tmpSocket.sendAndReceive(gatewayRemoteSocket,
-						                             "GetMinEventGenStartIteration",
-						                             5 /*timeoutSeconds*/);
+							                         "GetMinEventGenStartIteration",
+							                         5 /*timeoutSeconds*/);
 						unsigned int val = std::stoul(response);
 						if(val > minReadyForEventGenerationStartIteration_)
 							minReadyForEventGenerationStartIteration_ = val;
@@ -9089,7 +9086,7 @@ try
 		std::string fullfilename = activeStateMachineSystemDumpOnRunFilename_ + "_" +
 		                           std::to_string(time(0)) + "_run" +
 		                           activeStateMachineRunNumber_ + ".dump";
-		FILE* fp = fopen(fullfilename.c_str(), "w");
+		FILE*       fp           = fopen(fullfilename.c_str(), "w");
 		if(!fp)
 		{
 			__SS__ << "Configuration dump failed to file: " << fullfilename << __E__;
@@ -9719,8 +9716,9 @@ try
 			       << appInfo.getContextName() << "' [URL=" << appInfo.getURL()
 			       << "].\n\n"
 			       << "Xoap message failure. Did the target Supervisor crash? Try "
-			          "re-initializing or restarting otsdaq."
-			       << __E__;
+			          "re-initializing or restarting otsdaq.\n\n"
+			       << "Reason given by the messaging layer: "
+			       << xcept::stdformat_exception_history(e) << __E__;
 			__COUT_ERR__ << ss.str();
 
 			try
@@ -9812,7 +9810,7 @@ try
 			{
 				xoap::MessageReference errorMessage =
 				    sendWithSOAPReply(appInfo.getDescriptor(),
-				                      SOAPUtilities::makeSOAPMessageReference(
+					                  SOAPUtilities::makeSOAPMessageReference(
 				                          "StateMachineErrorMessageRequest"));
 
 				// Check exit flag after the error-retrieval SOAP call.
@@ -9852,7 +9850,7 @@ try
 
 				if(command == RunControlStateMachine::ERROR_TRANSITION_NAME)
 					return true;  // do not throw exception and exit loop if informing all
-					              // apps about error
+				                  // apps about error
 				// else throw exception and go into Error
 				XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 			}
@@ -9874,8 +9872,9 @@ try
 				       << "] in Context '" << appInfo.getContextName()
 				       << "' [URL=" << appInfo.getURL() << "].\n\n"
 				       << "Xoap message failure. Did the target Supervisor crash? Try "
-				          "re-initializing or restarting otsdaq."
-				       << __E__;
+				          "re-initializing or restarting otsdaq.\n\n"
+				       << "Reason given by the messaging layer: "
+				       << xcept::stdformat_exception_history(e) << __E__;
 				__COUT_ERR__ << ss.str();
 				XCEPT_RAISE(toolbox::fsm::exception::Exception, ss.str());
 			}
@@ -10123,8 +10122,8 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 	// initialize to false (not done)
 	for(const auto& vectorAtPriority : orderedSupervisors)
 		supervisorIterationsDone->push(vectorAtPriority.size());  // push_back(
-		    // std::vector<uint8_t>(vectorAtPriority.size(),
-		    // false /*initial value*/));
+	// std::vector<uint8_t>(vectorAtPriority.size(),
+	// false /*initial value*/));
 
 	unsigned int iteration = 0;
 	// unsigned int subIteration;
@@ -10173,7 +10172,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 
 		std::thread(
 		    [](GatewaySupervisor*                                        supervisorPtr,
-		       std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct) {
+			   std::shared_ptr<GatewaySupervisor::BroadcastThreadStruct> threadStruct) {
 			    GatewaySupervisor::broadcastMessageThread(supervisorPtr, threadStruct);
 		    },
 		    this,
@@ -10644,7 +10643,7 @@ void GatewaySupervisor::broadcastMessage(xoap::MessageReference message)
 						ss << "Subsystem-iteration " << subsystemIteration << ": ";
 					ss << (broadcastSubsystemIterationsDone_
 					           ? "complete (all done)"
-					           : "complete (need more subsystem-iterations)")
+							   : "complete (need more subsystem-iterations)")
 					   << __E__;
 					__COUTT__ << ss.str();
 
@@ -10820,7 +10819,7 @@ void GatewaySupervisor::signalAndWaitForBroadcastThreads(unsigned int numberOfTh
 			}
 			usleep(100 * 1000 /*100ms*/);
 		}  //end handling of remaining threads
-	}      //end wait while loop
+	}  //end wait while loop
 }  // end signalAndWaitForBroadcastThreads()
 
 //==============================================================================
@@ -12153,7 +12152,7 @@ try
 				ConfigurationTree configLinkNode =
 				    CorePropertySupervisorBase::theConfigurationManager_
 				        ->getSupervisorTableNode(supervisorContextUID_,
-				                                 supervisorApplicationUID_);
+						                         supervisorApplicationUID_);
 
 				if(!configLinkNode.isDisconnected())
 				{
@@ -12275,9 +12274,9 @@ try
 						xmlOut.addTextElementToData(
 						    "config_key",
 						    TableGroupKey::getFullGroupString(aliasMapPair.second.first,
-						                                      aliasMapPair.second.second,
-						                                      /*decorate as (<key>)*/ "(",
-						                                      ")"));
+							                                  aliasMapPair.second.second,
+							                                  /*decorate as (<key>)*/ "(",
+							                                  ")"));
 
 						// __COUT__ << "config_alias_comment" << " " <<  temporaryConfigMgr.getNode(
 						// 	ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(aliasMapPair.first).getNode(
@@ -12352,8 +12351,8 @@ try
 						    std::pair<unsigned int, SupervisorInfo>(
 						        it.second.getId(),  // descriptor.first,
 						        SupervisorInfo(0 /* descriptor */,
-						                       it.second.getName(),
-						                       it.second.getContextName())));
+								               it.second.getName(),
+								               it.second.getContextName())));
 
 					//copy if have lock
 					localAllSupervisorInfo_.at(it.second.getId()) = it.second;
@@ -12390,19 +12389,19 @@ try
 				    "time",
 				    appInfo.getLastStatusTime()
 				        ? StringMacros::getTimestampString(appInfo.getLastStatusTime())
-				        : "0");  // get time stamp
+						: "0");  // get time stamp
 				xmlOut.addNumberElementToData(
 				    "stale", time(0) - appInfo.getLastStatusTime());  // time since update
 				xmlOut.addTextElementToData("statusChangeTime",
 				                            appInfo.getLastStatusChangeTime()
 				                                ? StringMacros::getTimestampString(
 				                                      appInfo.getLastStatusChangeTime())
-				                                : "0");
+												: "0");
 				xmlOut.addNumberElementToData(
 				    "statusChangeStale",
 				    appInfo.getLastStatusChangeTime() > 0
 				        ? time(0) - appInfo.getLastStatusChangeTime()
-				        : 0);
+						: 0);
 				xmlOut.addNumberElementToData("progress",
 				                              appInfo.getProgress());  // get progress
 				xmlOut.addTextElementToData("detail", appInfo.getDetail());  // get detail
@@ -12464,7 +12463,7 @@ try
 					    subappInfoPair.second.lastStatusTime
 					        ? StringMacros::getTimestampString(
 					              subappInfoPair.second.lastStatusTime)
-					        : "0",
+							: "0",
 					    subappElement);  // get timestamp
 					xmlOut.addNumberElementToParent(
 					    "subapp_stale",
@@ -12475,13 +12474,13 @@ try
 					    subappInfoPair.second.lastStatusChangeTime
 					        ? StringMacros::getTimestampString(
 					              subappInfoPair.second.lastStatusChangeTime)
-					        : "0",
+							: "0",
 					    subappElement);
 					xmlOut.addNumberElementToParent(
 					    "subapp_statusChangeStale",
 					    subappInfoPair.second.lastStatusChangeTime > 0
 					        ? time(0) - subappInfoPair.second.lastStatusChangeTime
-					        : 0,
+							: 0,
 					    subappElement);
 					xmlOut.addNumberElementToParent("subapp_progress",
 					                                subappInfoPair.second.progress,
@@ -12548,7 +12547,7 @@ try
 				    "time",
 				    appInfo.lastStatusTime
 				        ? StringMacros::getTimestampString(appInfo.lastStatusTime)
-				        : "0");  // get timestamp
+						: "0");  // get timestamp
 				xmlOut.addNumberElementToData(
 				    "stale",
 				    time(0) - appInfo.lastStatusTime);  // time since update
@@ -12592,7 +12591,7 @@ try
 					    subappInfoPair.second.lastStatusTime
 					        ? StringMacros::getTimestampString(
 					              subappInfoPair.second.lastStatusTime)
-					        : "0",
+							: "0",
 					    subappElement);  // get time stamp
 					xmlOut.addNumberElementToParent(
 					    "subapp_stale",
@@ -12603,13 +12602,13 @@ try
 					    subappInfoPair.second.lastStatusChangeTime
 					        ? StringMacros::getTimestampString(
 					              subappInfoPair.second.lastStatusChangeTime)
-					        : "0",
+							: "0",
 					    subappElement);
 					xmlOut.addNumberElementToParent(
 					    "subapp_statusChangeStale",
 					    subappInfoPair.second.lastStatusChangeTime > 0
 					        ? time(0) - subappInfoPair.second.lastStatusChangeTime
-					        : 0,
+							: 0,
 					    subappElement);
 					xmlOut.addNumberElementToParent("subapp_progress",
 					                                subappInfoPair.second.progress,
@@ -12750,7 +12749,7 @@ try
 				xmlOut.addTextElementToData(
 				    "server_alert",
 				    std::string("Set user lock action failed. You must have valid "
-				                "permissions and ") +
+					            "permissions and ") +
 				        "locking user must be currently logged in.");
 
 			theWebUsers_.insertSettingsForUser(
@@ -12762,8 +12761,8 @@ try
 			if(tmpUserWithLock != theWebUsers_.getUserWithLock())
 				__COUT_INFO__ << (theWebUsers_.getUserWithLock() == ""
 				                      ? tmpUserWithLock + " has unlocked ots."
-				                      : theWebUsers_.getUserWithLock() +
-				                            " has locked ots.")
+									  : theWebUsers_.getUserWithLock() +
+									        " has locked ots.")
 				              << __E__;
 
 			//Also add Remote Subystems users-with-lock!
@@ -12938,7 +12937,7 @@ try
 			ConfigurationTree configLinkNode =
 			    CorePropertySupervisorBase::theConfigurationManager_
 			        ->getSupervisorTableNode(supervisorContextUID_,
-			                                 supervisorApplicationUID_);
+					                         supervisorApplicationUID_);
 
 			try
 			{
@@ -13031,7 +13030,7 @@ try
 					    tmpCfgMgr.getActiveTableGroups()
 					        [ConfigurationManager::GROUP_TYPE_NAME_CONTEXT];
 				}  //end lock scope
-			}      //end load of active context icons
+			}  //end load of active context icons
 			//at this point icons is correctly populated
 
 			std::string iconString = "";
@@ -13224,7 +13223,7 @@ try
 							else
 								iconString += remoteGatewayApp.iconString;
 							break;  //done with cache retrieval
-						}           //end loop retrieval
+						}  //end loop retrieval
 
 						if(!found)
 						{
@@ -13256,9 +13255,9 @@ try
 				iconString +=
 				    "," + std::string(icon.enforceOneWindowInstance_ ? "1" : "0");
 				iconString += "," + std::string("1");  // set permission to 1 so the
-				    // desktop shows every icon that the
-				    // server allows (i.e., trust server
-				    // security, ignore client security)
+				// desktop shows every icon that the
+				// server allows (i.e., trust server
+				// security, ignore client security)
 				iconString += "," + icon.imageURL_;
 
 				if(doAddressTranslation)
@@ -13460,7 +13459,7 @@ try
 				xmlOut.addTextElementToData(
 				    "last_run_log_entry",
 				    getLastLogEntry(RunControlStateMachine::START_TRANSITION_NAME,
-				                    fsmName));
+					                fsmName));
 
 				//getIterationPlanStatus returns iterator status and does not request next run number (which is expensive)
 				//	.. so only get run number 1:10
@@ -13477,13 +13476,13 @@ try
 				    "last_logbook_entry_time",
 				    lastLogbookEntryTime_
 				        ? StringMacros::getTimestampString(lastLogbookEntryTime_)
-				        : "0");
+						: "0");
 				auto msgPair = theWebUsers_.getLastSystemMessage();
 				xmlOut.addTextElementToData("last_system_message", msgPair.first);
 				xmlOut.addTextElementToData(
 				    "last_system_message_time",
 				    msgPair.second ? StringMacros::getTimestampString(msgPair.second)
-				                   : "0");
+					               : "0");
 				xmlOut.addNumberElementToData("active_user_count",
 				                              theWebUsers_.getActiveUserCount());
 				xmlOut.addTextElementToData(
@@ -13553,7 +13552,7 @@ try
 				    remoteSubsystem.appInfo.lastStatusChangeTime
 				        ? StringMacros::getTimestampString(
 				              remoteSubsystem.appInfo.lastStatusChangeTime)
-				        : "0");
+						: "0");
 				xmlOut.addTextElementToData(
 				    "subsystem_consoleErrCount",
 				    std::to_string(remoteSubsystem.consoleErrCount));
@@ -13609,7 +13608,7 @@ try
 				xmlOut.addTextElementToData(
 				    "subsystem_configAliasChoices",
 				    StringMacros::setToString(remoteSubsystem.config_aliases,
-				                              {','}));  //CSV list of aliases
+					                          {','}));  //CSV list of aliases
 				xmlOut.addTextElementToData("subsystem_fsmMode",
 				                            remoteSubsystem.getFsmMode());
 				xmlOut.addTextElementToData("subsystem_fsmIncluded",
@@ -13768,8 +13767,8 @@ try
 						        remoteGatewayApp.appInfo.url, {':'});
 						if(parsedUrl.size() == 3)
 						{
-							Socket            gatewayRemoteSocket(parsedUrl[1],
-                                                       atoi(parsedUrl[2].c_str()));
+							Socket gatewayRemoteSocket(parsedUrl[1],
+							                           atoi(parsedUrl[2].c_str()));
 							TransceiverSocket tmpSocket(ipAddressForStateChangesOverUDP_);
 							tmpSocket.initialize();
 
@@ -13916,9 +13915,9 @@ try
 
 			RemoteFEMacroInfo info =
 			    parseFEMacroInfo(queryRemoteMacroMaker(ipPort,
-			                                           "GetFrontendMacroInfo",
-			                                           10 /*inactivity s*/,
-			                                           ipAddressForStateChangesOverUDP_));
+				                                       "GetFrontendMacroInfo",
+				                                       10 /*inactivity s*/,
+				                                       ipAddressForStateChangesOverUDP_));
 
 			xmlOut.addTextElementToData("macro_maker_udp", ipPort);
 			for(const auto& fe : info.fes)
@@ -14102,7 +14101,7 @@ try
 				}
 
 				Socket      gatewayRemoteSocket(parsedFields[1],
-                                           atoi(parsedFields[2].c_str()));
+				                                atoi(parsedFields[2].c_str()));
 				std::string requestString =
 				    "GetRemoteGatewayStatus," + ipAddressForStateChangesOverUDP_ + "," +
 				    std::to_string(portForReverseLoginOverUDP_) + "," + targetSubsystem;
@@ -14196,13 +14195,13 @@ try
 
 				std::vector<ConfigurationSupervisorBase::GroupAliasEdit> aliasEdits = {
 				    {"RunRestoreConfig",
-				     subsystemRow[2],
-				     TableGroupKey(subsystemRow[3]),
-				     configRestoreComment},
+					 subsystemRow[2],
+					 TableGroupKey(subsystemRow[3]),
+					 configRestoreComment},
 				    {"RunRestoreContext",
-				     subsystemRow[4],
-				     TableGroupKey(subsystemRow[5]),
-				     contextRestoreComment}};
+					 subsystemRow[4],
+					 TableGroupKey(subsystemRow[5]),
+					 contextRestoreComment}};
 
 				std::string resultString;
 				try
@@ -14277,15 +14276,15 @@ try
 						                  << setAliasesCommand << __E__;
 
 						Socket            remoteGatewaySocket(urlFields[1],
-                                                   atoi(urlFields[2].c_str()));
+						                                      atoi(urlFields[2].c_str()));
 						TransceiverSocket requestSocket(ipAddressForStateChangesOverUDP_);
 						requestSocket.initialize();
 						// the remote side saves and activates a Backbone group, which can
 						// take several seconds
 						resultString =
 						    requestSocket.sendAndReceive(remoteGatewaySocket,
-						                                 setAliasesCommand,
-						                                 30 /*timeoutSeconds*/);
+							                             setAliasesCommand,
+							                             30 /*timeoutSeconds*/);
 
 						if(resultString.empty())
 							resultString = "Warning: no response from subsystem '" +
@@ -14935,9 +14934,9 @@ void GatewaySupervisor::addFilteredConfigAliasesToXML(HttpXmlDocument&   xmlOut,
 			xmlOut.addTextElementToData(
 			    "config_key",
 			    TableGroupKey::getFullGroupString(aliasMapPair.second.first,
-			                                      aliasMapPair.second.second,
-			                                      /*decorate as (<key>)*/ "(",
-			                                      ")"));
+				                                  aliasMapPair.second.second,
+				                                  /*decorate as (<key>)*/ "(",
+				                                  ")"));
 
 			// __COUT__ << "config_alias_comment" << " " <<  temporaryConfigMgr.getNode(
 			// 	ConfigurationManager::GROUP_ALIASES_TABLE_NAME).getNode(aliasMapPair.first).getNode(
@@ -15563,14 +15562,14 @@ xoap::MessageReference GatewaySupervisor::lastTableGroupRequestHandler(
 		                                      "AttemptedConfig"});
 		fileNames = std::vector<std::string>(
 		    {ConfigurationManager::LAST_CONFIGURED_CONFIG_GROUP_FILE,
-		     ConfigurationManager::LAST_STARTED_CONFIG_GROUP_FILE,
-		     ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
-		     ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE,
-		     ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE,
-		     ConfigurationManager::LAST_ACTIVATED_ITERATE_GROUP_FILE,
-		     ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE,
-		     ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_ALIAS_FILE,
-		     ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_GROUP_FILE});
+			 ConfigurationManager::LAST_STARTED_CONFIG_GROUP_FILE,
+			 ConfigurationManager::LAST_ACTIVATED_CONFIG_GROUP_FILE,
+			 ConfigurationManager::LAST_ACTIVATED_CONTEXT_GROUP_FILE,
+			 ConfigurationManager::LAST_ACTIVATED_BACKBONE_GROUP_FILE,
+			 ConfigurationManager::LAST_ACTIVATED_ITERATE_GROUP_FILE,
+			 ConfigurationManager::LAST_CONFIGURED_CONFIG_ALIAS_FILE,
+			 ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_ALIAS_FILE,
+			 ConfigurationManager::LAST_ATTEMPTED_CONFIGURE_CONFIG_GROUP_FILE});
 	}
 	else
 	{
@@ -16408,8 +16407,8 @@ std::string GatewaySupervisor::translateURLForRequestOrigin(
     const std::string&                                        url,
     const std::string&                                        requestOrigin,
     std::map<std::string /* requestOrigin */,
-             std::map<std::string /* requestUrlHostPort */,
-                      std::string /* translatedHostPort */>>& portTranslationMap)
+	         std::map<std::string /* requestUrlHostPort */,
+	                  std::string /* translatedHostPort */>>& portTranslationMap)
 {
 	__COUT__ << "Translating URL '" << url << "' for request origin: " << requestOrigin
 	         << __E__;
@@ -16491,8 +16490,8 @@ std::string GatewaySupervisor::translateRemoteIconStringForRequestOrigin(
     const std::string&                                        iconString,
     const std::string&                                        requestOrigin,
     std::map<std::string /* requestOrigin */,
-             std::map<std::string /* requestUrlHostPort */,
-                      std::string /* translatedHostPort */>>& portTranslationMap)
+	         std::map<std::string /* requestUrlHostPort */,
+	                  std::string /* translatedHostPort */>>& portTranslationMap)
 {
 	__COUT__ << "Translating Remote Icon String for request origin: " << requestOrigin
 	         << __E__;
@@ -16548,8 +16547,8 @@ void GatewaySupervisor::handleGetApplicationIdRequest(
     cgicc::Cgicc&      cgiIn,
     HttpXmlDocument&   xmlOut,
     std::map<std::string /* requestOrigin */,
-             std::map<std::string /* requestUrlHostPort */,
-                      std::string /* translatedHostPort */>>*
+	         std::map<std::string /* requestUrlHostPort */,
+	                  std::string /* translatedHostPort */>>*
         portTranslationMap /* = nullptr */)
 {
 	std::string requestOrigin = StringMacros::decodeURIComponent(
@@ -16606,7 +16605,7 @@ void GatewaySupervisor::handleGetApplicationIdRequest(
 
 		xmlOut.addTextElementToData("context",
 		                            appInfo.getContextName());  // get context
-	}                                                           //end app search loop
+	}  //end app search loop
 
 	if(!found)
 	{

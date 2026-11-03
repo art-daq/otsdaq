@@ -490,8 +490,8 @@ void TableView::init(void)
 		//		note: childLinkId refers to childLinkGroupIDs AND childLinkUIDs
 		std::set<std::string> groupIdIndexes, childLinkIndexes, childLinkIdLabels;
 		unsigned int          groupIdIndexesCount = 0, childLinkIndexesCount = 0,
-		             childLinkIdLabelsCount = 0;
-		bool                                                               tmpIsGroup;
+		                      childLinkIdLabelsCount = 0;
+		bool                  tmpIsGroup;
 		std::pair<unsigned int /*link col*/, unsigned int /*link id col*/> tmpLinkPair;
 
 		// check sanity of data view rows x cols (have seen weird out-of-range crashes)
@@ -849,7 +849,7 @@ void TableView::init(void)
 						}
 					}
 			}  // end handling NUMBER data types
-		}      // end column loop
+		}  // end column loop
 
 		// verify child link index uniqueness
 		if(groupIdIndexes.size() != groupIdIndexesCount)
@@ -937,20 +937,20 @@ std::string TableView::validateValueForColumn(const std::string& value,
 		{
 			return doConvertEnvironmentVariables
 			           ? StringMacros::convertEnvironmentVariables(choices[index])
-			           : choices[index];  // handled value from fixed choices
+					   : choices[index];  // handled value from fixed choices
 		}
 	}  // end handling default to fixed choice conversion
 
 	if(columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_STRING)
 		return doConvertEnvironmentVariables
 		           ? StringMacros::convertEnvironmentVariables(value)
-		           : value;
+				   : value;
 	else if(columnsInfo_[col].getDataType() == TableViewColumnInfo::DATATYPE_TIME)
 	{
 		return StringMacros::getTimestampString(
 		    doConvertEnvironmentVariables
 		        ? StringMacros::convertEnvironmentVariables(value)
-		        : value);
+				: value);
 	}
 	else
 	{
@@ -1011,7 +1011,7 @@ std::string TableView::getValueAsString(unsigned int row,
 
 	return doConvertEnvironmentVariables
 	           ? StringMacros::convertEnvironmentVariables(theDataView_[row][col])
-	           : theDataView_[row][col];
+			   : theDataView_[row][col];
 }  //end getValueAsString()
 
 //==============================================================================
@@ -1080,9 +1080,7 @@ void TableView::setValue(const std::string& value, unsigned int row, unsigned in
 
 //==============================================================================
 void TableView::setValue(const char* value, unsigned int row, unsigned int col)
-{
-	setValue(std::string(value), row, col);
-}  // end setValue()
+{ setValue(std::string(value), row, col); }  // end setValue()
 
 //==============================================================================
 /// setValueAsString
@@ -1756,9 +1754,7 @@ bool TableView::isEntryInGroupCol(const unsigned int&    r,
 /// Note: should mirror what happens in TableView::isEntryInGroupCol
 std::set<std::string> TableView::getSetOfGroupIDs(const std::string& childLinkIndex,
                                                   unsigned int       r) const
-{
-	return getSetOfGroupIDs(getLinkGroupIDColumn(childLinkIndex), r);
-}
+{ return getSetOfGroupIDs(getLinkGroupIDColumn(childLinkIndex), r); }
 std::set<std::string> TableView::getSetOfGroupIDs(const unsigned int& c,
                                                   unsigned int        r) const
 {
@@ -2126,9 +2122,7 @@ const TableViewColumnInfo& TableView::getColumnInfo(unsigned int column) const
 ///
 //==============================================================================
 void TableView::setURIEncodedComment(const std::string& uriComment)
-{
-	comment_ = StringMacros::decodeURIComponent(uriComment);
-}
+{ comment_ = StringMacros::decodeURIComponent(uriComment); }
 
 //==============================================================================
 void TableView::setAuthor(const std::string& author) { author_ = author; }
@@ -2141,9 +2135,7 @@ void TableView::setLastAccessTime(time_t t) { lastAccessTime_ = t; }
 
 //==============================================================================
 void TableView::setLooseColumnMatching(bool setValue)
-{
-	fillWithLooseColumnMatching_ = setValue;
-}
+{ fillWithLooseColumnMatching_ = setValue; }
 
 //==============================================================================
 void TableView::doGetSourceRawData(bool setValue) { getSourceRawData_ = setValue; }
@@ -2241,7 +2233,7 @@ void TableView::printJSON(std::ostream& out /* = std::cout */) const
 			out << getCustomStorageData();
 			return;
 		}  //end special GROUP CACHE table construction
-	}      //end handle special GROUP CACHE table
+	}  //end handle special GROUP CACHE table
 
 	out << "{\n";
 	out << "\"NAME\" : \"" << tableName_ << "\",\n";
@@ -2337,7 +2329,7 @@ void TableView::printCSV(std::ostream&      out /* = std::cout */,
 			// out << getCustomStorageData();
 			// return;
 		}  //end special GROUP CACHE table construction
-	}      //end handle special GROUP CACHE table
+	}  //end handle special GROUP CACHE table
 
 	for(int c = 0; includeColumnNames && c < (int)getNumberOfColumns(); ++c)
 	{
@@ -2387,7 +2379,7 @@ int TableView::fillFromJSON(const std::string& json)
 			setCustomStorageData(json);
 			return 0;  //success
 		}  //end special JSON DOC table construction or special GROUP CACHE table construction
-	}      //end handle special GROUP CACHE table
+	}  //end handle special GROUP CACHE table
 
 	bool dbg     = false;  //tableName_ == "TABLE_GROUP_METADATA";
 	bool rawData = getSourceRawData_;
@@ -2829,7 +2821,7 @@ int TableView::fillFromJSON(const std::string& json)
 
 								// auto matched
 								if(col <= lastCol)  // add row (use lastCol in case new
-								                    // column-0 was added
+									                // column-0 was added
 									row = addRow();
 								lastCol = col;
 								if(getNumberOfRows() == 1)  // only for first row
@@ -2871,7 +2863,7 @@ int TableView::fillFromJSON(const std::string& json)
 									       .getStorageName()[keyIsMatchStorageIndex] ==
 									   '_')
 										++keyIsMatchStorageIndex;  // skip to next storage
-										                           // character
+									                               // character
 									if(currKey[keyIsMatchIndex] == '_')
 										continue;  // skip to next character
 
@@ -2913,7 +2905,7 @@ int TableView::fillFromJSON(const std::string& json)
 								}
 
 								if(keyIsMatch || keyIsComment)  // currKey ==
-								    // columnsInfo_[c].getStorageName())
+								// columnsInfo_[c].getStorageName())
 								{
 									if(keyEntryCountMap.find(currKey) ==
 									   keyEntryCountMap.end())
@@ -2983,8 +2975,8 @@ int TableView::fillFromJSON(const std::string& json)
 					}
 					break;
 				default:;  // unknown match?
-				}          // end switch statement to match json key
-			}              // end matched key if statement
+				}  // end switch statement to match json key
+			}  // end matched key if statement
 
 			// clean up handling of new value
 
@@ -3457,7 +3449,7 @@ bool TableView::setURIEncodedValue(const std::string&  value,
 
 	bool rowWasModified =
 	    (originalValueStr !=
-	     getValueAsString(r, c, false));  // do not convert env variables
+		 getValueAsString(r, c, false));  // do not convert env variables
 
 	// if row was modified, assign author and timestamp
 	if(author != "" && rowWasModified)
@@ -3491,8 +3483,8 @@ unsigned int TableView::addRow(
     const std::string& author,
     unsigned char
         incrementUniqueData /* = false */,  // leave as unsigned char rather than
-    // bool, too many things (e.g. strings)
-    // evaluate successfully to bool values
+	// bool, too many things (e.g. strings)
+	// evaluate successfully to bool values
     const std::string& baseNameAutoUID /* = "" */,
     unsigned int       rowToAdd /* = -1 */,
     std::string        childLinkIndex /* = "" */,

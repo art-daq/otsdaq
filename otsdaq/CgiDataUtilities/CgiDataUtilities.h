@@ -13,8 +13,8 @@ namespace ots
 class CgiDataUtilities
 {
   public:
-	CgiDataUtilities(){};
-	~CgiDataUtilities(){};
+	CgiDataUtilities() {};
+	~CgiDataUtilities() {};
 
 	static std::string getOrPostData(cgicc::Cgicc& cgi, const std::string& needle);
 	static std::string postData(cgicc::Cgicc& cgi, const std::string& needle);

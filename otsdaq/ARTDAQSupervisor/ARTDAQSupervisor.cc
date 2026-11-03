@@ -1692,9 +1692,9 @@ std::vector<SupervisorInfo::SubappInfo> ots::ARTDAQSupervisor::getSubappInfo(voi
 	{
 		SupervisorInfo::SubappInfo info;
 
-		info.name   = app.label;
-		info.detail = "Rank " + std::to_string(app.rank) + ", subsystem " +
-		              std::to_string(app.subsystem);
+		info.name           = app.label;
+		info.detail         = "Rank " + std::to_string(app.rank) + ", subsystem " +
+		                      std::to_string(app.subsystem);
 		info.lastStatusTime = time(0);
 		info.progress       = 100;
 		info.status         = artdaqStateToOtsState(app.state);
@@ -1754,7 +1754,7 @@ std::string ots::ARTDAQSupervisor::capturePyErr(std::string  label /* = "" */,
 			{
 				PyObjectGuard pStr(PyObject_Str(pValue));
 				const char*   valueCStr =
-                    pStr.get() ? PyUnicode_AsUTF8(pStr.get()) : nullptr;
+				    pStr.get() ? PyUnicode_AsUTF8(pStr.get()) : nullptr;
 				if(valueCStr)
 				{
 					std::string value(valueCStr);
@@ -1779,10 +1779,10 @@ std::string ots::ARTDAQSupervisor::capturePyErr(std::string  label /* = "" */,
 			{
 				PyObjectGuard formatted(
 				    PyObject_CallFunctionObjArgs(format_exception.get(),
-				                                 pType,
-				                                 pValue ? pValue : Py_None,
-				                                 pTraceback ? pTraceback : Py_None,
-				                                 NULL));
+					                             pType,
+					                             pValue ? pValue : Py_None,
+					                             pTraceback ? pTraceback : Py_None,
+					                             NULL));
 				if(formatted.get() != NULL)
 				{
 					// formatted is a list of strings, join them
@@ -2078,7 +2078,7 @@ std::set<std::string> ots::ARTDAQSupervisor::getConfiguredArtdaqHosts(void)
 	{
 		ConfigurationTree           supervisorNode = getSupervisorTableNode();
 		ARTDAQTableBase::ARTDAQInfo info           = ARTDAQTableBase::extractARTDAQInfo(
-            supervisorNode, false /*getStatusFalseNodes*/, false /*doWriteFHiCL*/);
+		    supervisorNode, false /*getStatusFalseNodes*/, false /*doWriteFHiCL*/);
 		for(const auto& typeProcs : info.processes)
 			for(const auto& proc : typeProcs.second)
 				if(proc.status && !proc.hostname.empty())
@@ -2385,16 +2385,16 @@ void ots::ARTDAQSupervisor::start_runner_()
 	//	neither be restarted by this call nor report exit on behalf of this one
 	runner_control_ = std::make_shared<RunnerControl>();
 	runner_thread_  = std::make_unique<std::thread>([this, control = runner_control_]() {
-        //set exited only after daqinterfaceRunner_() has fully returned, which
-        //	includes its function-try-block catch handler (error logging and the
-        //	SOAP send to the Gateway). stop_runner_() may then join promptly.
-        struct RunnerExitFlag
-        {
-            std::atomic<bool>& flag;
-            ~RunnerExitFlag() { flag = true; }
-        } runnerExitFlag{control->exited};
-        daqinterfaceRunner_(control);
-    });
+		//set exited only after daqinterfaceRunner_() has fully returned, which
+		//	includes its function-try-block catch handler (error logging and the
+		//	SOAP send to the Gateway). stop_runner_() may then join promptly.
+		struct RunnerExitFlag
+		{
+			std::atomic<bool>& flag;
+			~RunnerExitFlag() { flag = true; }
+		} runnerExitFlag{control->exited};
+		daqinterfaceRunner_(control);
+	});
 }  // end start_runner_()
 
 //==============================================================================

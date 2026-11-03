@@ -783,6 +783,40 @@ function killproc
 export -f killproc
 
 #############################
+# Check if a launched process has already exited.
+# Returns 0 if the process exited (and prints the crash cause), 1 if still running.
+function reportExitedProcess
+{
+	local checkPid=$1
+	local checkLog=${2:-}
+	local checkLabel=${3:-Process}
+
+	kill -0 ${checkPid} >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		return 1
+	fi
+
+	error "${checkLabel} process (PID ${checkPid}) exited during launch."
+
+	if [ -n "$checkLog" ] && [ -f "$checkLog" ]; then
+		local crashLine
+		crashLine=$(grep -n -E 'terminate called|what\(\):|FATAL|Segmentation fault|Aborted' "$checkLog" | tail -1 | cut -d: -f1)
+		if [ -n "$crashLine" ]; then
+			local startLine=$(( crashLine > 1 ? crashLine - 1 : 1 ))
+			local endLine=$(( crashLine + 4 ))
+			out "Crash context from ${checkLog} (lines ${startLine}-${endLine}):"
+			sed -n "${startLine},${endLine}p" "$checkLog" | sed 's/^/    /'
+		else
+			displayLogTail "$checkLog"
+		fi
+		out "Full log: ${checkLog}"
+	fi
+
+	return 0
+}
+export -f reportExitedProcess
+
+#############################
 # Wait for a context's http port to answer after its is-alive file appeared.
 # The alive file proves the xdaq process constructed its supervisors; the http
 # peer transport is the last thing xdaq opens, so be patient here rather than
@@ -828,6 +862,9 @@ function waitForContextHttp
 {
 	local verifyHost=$1
 	local verifyPort=$2
+	local verifyPid=${3:-}
+	local verifyLog=${4:-}
+	local verifyLabel=${5:-Context}
 	local attempt
 	local quitAction
 	local quitGlobal
@@ -840,6 +877,11 @@ function waitForContextHttp
 		if [ $curlExitCode -eq 0 ]; then
 			OTS_HTTP_VERIFY_FAILURES=0
 			return 0
+		fi
+		if [ -n "$verifyPid" ]; then
+			if reportExitedProcess ${verifyPid} "$verifyLog" "$verifyLabel"; then
+				return 1
+			fi
 		fi
 		quitAction="$(cat ${OTSDAQ_STARTOTS_ACTION_FILE} 2>/dev/null)"
 		quitGlobal="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE} 2>/dev/null)"
@@ -855,7 +897,7 @@ function waitForContextHttp
 			warning "Exiting launch verification while waiting for http PORT at http://${verifyHost}:${verifyPort} on EXIT_LOOP sentinel... Action:${quitAction}-Quit:${quitGlobal}-Local:${quitLocal}"
 			exit
 		fi
-		out "Context is alive but http PORT not yet answering (${attempt}/${OTS_HTTP_VERIFY_ATTEMPTS}) at http://${verifyHost}:${verifyPort}... (curl exit=${curlExitCode}, ${curlElapsed}s; 7=refused/not listening, 28=timed out)"
+		out "Context marked alive but http PORT not yet answering (${attempt}/${OTS_HTTP_VERIFY_ATTEMPTS}) at http://${verifyHost}:${verifyPort}... (curl exit=${curlExitCode}, ${curlElapsed}s; 7=refused/not listening, 28=timed out)"
 		if [ $attempt -eq 1 ]; then
 			reportPortOwner ${verifyPort} "first failed http poll"
 		fi
@@ -1328,6 +1370,11 @@ launchOTSMacromaker() {
 		out #blank line
 	fi
 
+	if [ "x$OTS_CONFIG_UDP_IP" == "x" ] || [ "x$OTS_CONFIG_UDP_PORT" == "x" ]; then
+		warning "If you would like to enable command-line access to your Configuration GUI instance, then before launching please set an IP/PORT compatible with the the system's networking interfaces using environment variables OTS_CONFIG_UDP_IP and OTS_CONFIG_UDP_PORT"
+		out #blank line
+	fi
+
 
 	unset ContextPIDArray #reset
 	unset ContextPIDNameArray #reset
@@ -1443,13 +1490,14 @@ launchOTSMacromaker() {
 
 		for t in {1..4}; do
 			if [ "x$OTS_IS_ALIVE" == "x" ]; then
+				if reportExitedProcess ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt" "MacroMaker"; then break; fi
 				sleep 2
 				OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 				out "Checking http://${THIS_HOST}:${PORT}..."
 			else # found the supervisor!
 				# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 				# so clear alive, if ots script can not connect to PORT
-				if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
+				if ! waitForContextHttp ${THIS_HOST} ${PORT} ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt" "MacroMaker"; then
 					OTS_IS_ALIVE=
 				fi
 				break
@@ -1468,7 +1516,15 @@ launchOTSMacromaker() {
 		# done
 
 		# Alert user to the problem and keep trying
+		_mmRelaunchAttempts=0
+		_mmMaxRelaunchAttempts=3
 		while [ "x$OTS_IS_ALIVE" == "x" ]; do
+			_mmRelaunchAttempts=$(( $_mmRelaunchAttempts + 1 ))
+			if (( _mmRelaunchAttempts > _mmMaxRelaunchAttempts )); then
+				error "MacroMaker context failed to launch after ${_mmMaxRelaunchAttempts} attempts, giving up. Fix the error above and relaunch."
+				killprocs
+				exit 0
+			fi
 
 			#check if exit requested via the two quit files (to avoid endless relaunch looping)
 			OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
@@ -1484,7 +1540,7 @@ launchOTSMacromaker() {
 				out "Ignoring global quit '${OTSDAQ_STARTOTS_QUIT}' in Macro Maker mode (only local quit applies)"
 			fi
 
-			warning "Could not verify successful ots Macro Maker mode context launch (check log for details)..."
+			warning "Could not verify successful ots Macro Maker mode context launch (attempt ${_mmRelaunchAttempts}/${_mmMaxRelaunchAttempts}, check log for details)..."
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
 				# tail -n 20
@@ -1514,11 +1570,12 @@ launchOTSMacromaker() {
 			# Test for start 16 times with short sleep
 			for t in {1..16}; do
 				if [ "x$OTS_IS_ALIVE" == "x" ]; then
+					if reportExitedProcess ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt" "MacroMaker"; then break; fi
 					sleep "$((2 + t))"
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
-					if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
+					if ! waitForContextHttp ${THIS_HOST} ${PORT} ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-mm-${THIS_HOST}.txt" "MacroMaker"; then
 						OTS_IS_ALIVE=
 					fi
 					break
@@ -1527,7 +1584,9 @@ launchOTSMacromaker() {
 
 		done
 
-		info "Verified successful ots Macro Maker mode context ${THIS_HOST}-${PORT} launch..."
+		if [ "x$OTS_IS_ALIVE" != "x" ]; then
+			info "Verified successful ots Macro Maker mode context ${THIS_HOST}-${PORT} launch..."
+		fi
 	fi
 
 	MAIN_URL="http://${THIS_HOST}:${PORT}/urn:xdaq-application:lid=$MACROMAKER_SUPERVISOR_ID/Verify?code=$(cat ${SERVICE_DATA_PATH}//OtsWizardData/sequence.out)"
@@ -1735,6 +1794,7 @@ launchOTSWiz() {
 
 		for t in {1..4}; do
 			if [ "x$OTS_IS_ALIVE" == "x" ]; then
+				if reportExitedProcess ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt" "Wizard"; then break; fi
 				sleep 2
 				OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 				out "Checking http://${THIS_HOST}:${PORT}..."
@@ -1743,7 +1803,7 @@ launchOTSWiz() {
 				sleep 3 #give extra time in case of late startup crash (e.g. when testing the configuration)
 				# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 				# so clear alive, if ots script can not connect to PORT
-				if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
+				if ! waitForContextHttp ${THIS_HOST} ${PORT} ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt" "Wizard"; then
 					OTS_IS_ALIVE=
 				fi
 				break
@@ -1753,7 +1813,15 @@ launchOTSWiz() {
 
 		#out "OTS_IS_ALIVE=${OTS_IS_ALIVE}"
 
+		_wizRelaunchAttempts=0
+		_wizMaxRelaunchAttempts=3
 		while [ "x$OTS_IS_ALIVE" == "x" ]; do
+			_wizRelaunchAttempts=$(( $_wizRelaunchAttempts + 1 ))
+			if (( _wizRelaunchAttempts > _wizMaxRelaunchAttempts )); then
+				error "Wizard context failed to launch after ${_wizMaxRelaunchAttempts} attempts, giving up. Fix the error above and relaunch."
+				killprocs
+				exit 0
+			fi
 
 			#check if exit requested via the two quit files (to avoid endless relaunch looping)
 			OTSDAQ_STARTOTS_QUIT="$(cat ${OTSDAQ_STARTOTS_QUIT_FILE})"
@@ -1767,7 +1835,7 @@ launchOTSWiz() {
 				exit
 			fi
 
-			warning "Could not verify successful ots wiz context launch (check log for details)..."
+			warning "Could not verify successful ots wiz context launch (attempt ${_wizRelaunchAttempts}/${_wizMaxRelaunchAttempts}, check log for details)..."
 			killproc ${LAST_OTS_PID} xdaq.exe
 			if [ $QUIET == 1 ]; then #display log tail for user to diagnose
 				# tail -n 20
@@ -1793,11 +1861,12 @@ launchOTSWiz() {
 			# Test for start 16 times with short sleep
 			for t in {1..16}; do
 				if [ "x$OTS_IS_ALIVE" == "x" ]; then
+					if reportExitedProcess ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt" "Wizard"; then break; fi
 					sleep "$((2 + t))"
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-wiz-0.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else  # found the supervisor!
-					if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
+					if ! waitForContextHttp ${THIS_HOST} ${PORT} ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-wiz-${THIS_HOST}.txt" "Wizard"; then
 						OTS_IS_ALIVE=
 					fi
 					break
@@ -1806,7 +1875,9 @@ launchOTSWiz() {
 
 		done
 
-		info "Verified successful ots wiz context launch..."
+		if [ "x$OTS_IS_ALIVE" != "x" ]; then
+			info "Verified successful ots wiz context launch..."
+		fi
 	fi
 	out #blank line
 
@@ -1979,6 +2050,7 @@ launchOTS() {
 	######################## setup DAQInterface ########################
 	####################################################################
 
+	if [ -z "${OTS_LITE}" ]; then # DAQInterface is artdaq; not built under OTS_LITE
 	export DAQINTERFACE_PROCESS_MANAGEMENT_METHOD="direct"
 	export DAQINTERFACE_FHICL_DIRECTORY=$USER_DATA/ARTDAQConfigurations
 	export DAQINTERFACE_KNOWN_BOARDREADERS_LIST=$USER_DATA/ARTDAQConfigurations/known_boardreaders_list
@@ -2006,6 +2078,7 @@ launchOTS() {
 		source $ARTDAQ_DAQINTERFACE_DIR/source_me >/dev/null 2>&1 #hide all output when remote (to hide tty warnings)
 	fi
 	export DAQINTERFACE_SETUP_FHICLCPP=$USER_DATA/ARTDAQConfigurations/.setup_fhiclcpp
+	fi # end OTS_LITE check
 
 	####################################################################
 	###################### end DAQInterface setup ######################
@@ -2227,13 +2300,14 @@ launchOTS() {
 								# Test for start 8 times with short sleep
 								for t in {1..8}; do
 									if [ "x$OTS_IS_ALIVE" == "x" ]; then
+										if reportExitedProcess ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt" "Gateway"; then break; fi
 										sleep 2
 										OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 										out "Checking http://${THIS_HOST}:${PORT}..."
 									else # found the supervisor!
 										# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 										# so clear alive, if ots script can not connect to PORT
-										if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
+										if ! waitForContextHttp ${THIS_HOST} ${PORT} ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt" "Gateway"; then
 											OTS_IS_ALIVE=
 										fi
 										break
@@ -2243,8 +2317,16 @@ launchOTS() {
 
 								# Alert the user to the problem and keep relaunching
 
+								_gwRelaunchAttempts=0
+								_gwMaxRelaunchAttempts=3
 								while [ "x$OTS_IS_ALIVE" == "x" ]; do
-									warning "Could not verify successful ots gateway context launch (check log for details)..."
+									_gwRelaunchAttempts=$(( $_gwRelaunchAttempts + 1 ))
+									if (( _gwRelaunchAttempts > _gwMaxRelaunchAttempts )); then
+										error "Gateway context failed to launch after ${_gwMaxRelaunchAttempts} attempts, giving up. Fix the error above (e.g. revert Data/ServiceData/ActiveTableGroups.cfg to the last working group) and relaunch."
+										killprocs
+										exit 0
+									fi
+									warning "Could not verify successful ots gateway context launch (attempt ${_gwRelaunchAttempts}/${_gwMaxRelaunchAttempts}, check log for details)..."
 									killproc ${LAST_OTS_PID} xdaq.exe
 									if [ $QUIET == 1 ]; then #display log tail for user to
 
@@ -2297,11 +2379,12 @@ launchOTS() {
 									# Test for start 16 times with short sleep
 									for t in {1..16}; do
 										if [ "x$OTS_IS_ALIVE" == "x" ]; then
+											if reportExitedProcess ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt" "Gateway"; then break; fi
 											sleep "$((2 + t))"
 											OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 											out "Checking http://${THIS_HOST}:${PORT}..."
 										else  # found the supervisor!
-											if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
+											if ! waitForContextHttp ${THIS_HOST} ${PORT} ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-gateway-${THIS_HOST}-${PORT}.txt" "Gateway"; then
 												OTS_IS_ALIVE=
 											fi
 											break
@@ -2333,7 +2416,9 @@ launchOTS() {
 
 								done
 
-								info "Verified successful ots gateway context ${THIS_HOST}-${PORT} launch..."
+								if [ "x$OTS_IS_ALIVE" != "x" ]; then
+									info "Verified successful ots gateway context ${THIS_HOST}-${PORT} launch..."
+								fi
 							fi
 
 							GATEWAY_PID=$LAST_OTS_PID
@@ -2511,13 +2596,14 @@ launchOTS() {
 				# out "test of exit ots... Action:${OTSDAQ_STARTOTS_ACTION}-Quit:${OTSDAQ_STARTOTS_QUIT}-Local:${OTSDAQ_STARTOTS_LOCAL_QUIT}"
 
 				if [ "x$OTS_IS_ALIVE" == "x" ]; then
+					if reportExitedProcess ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt" "Non-gateway ${xdaqContextUID[$i]}"; then break; fi
 					sleep 2
 					OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 					out "Checking http://${THIS_HOST}:${PORT}..."
 				else   # found the supervisor!
 					# have seen instances where http peer transport xdaq PORT is not established, but xdaq context still is constructed
 					# so clear alive, if ots script can not connect to PORT
-					if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
+					if ! waitForContextHttp ${THIS_HOST} ${PORT} ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt" "Non-gateway ${xdaqContextUID[$i]}"; then
 						OTS_IS_ALIVE=
 					fi
 					break
@@ -2561,6 +2647,7 @@ launchOTS() {
 				OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)"
 				for t in {1..16}; do
 					if [ "x$OTS_IS_ALIVE" == "x" ]; then
+						if reportExitedProcess ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt" "Non-gateway ${xdaqContextUID[$i]}"; then break; fi
 						sleep "$((2 + t))"
 
 						#check if exit requested to avoid endless looping (e.g. on remote hosts)
@@ -2590,7 +2677,7 @@ launchOTS() {
 						OTS_IS_ALIVE="$(cat ${OTSDAQ_LOG_DIR}/otsdaq_is_alive-${THIS_HOST}-${PORT}.dat 2>/dev/null)" #hide error messages, but not std out (std out is needed!)
 						out "Checking http://${THIS_HOST}:${PORT}..."
 					else   # found the supervisor!
-						if ! waitForContextHttp ${THIS_HOST} ${PORT}; then
+						if ! waitForContextHttp ${THIS_HOST} ${PORT} ${LAST_OTS_PID} "${OTSDAQ_LOG_DIR}/otsdaq_quiet_run-${THIS_HOST}-${PORT}.txt" "Non-gateway ${xdaqContextUID[$i]}"; then
 							OTS_IS_ALIVE=
 						fi
 						break
@@ -5274,6 +5361,7 @@ otsDataDiskCheck() {
 #  such as rebuild, restart, exit, etc.
 # Action Handler Logs are written to tmp/otsActionsHandler_${OTS_SETUP_TYPE}.$$
 # Log rollover is also handled.
+mkdir -p tmp
 ACTION_HANDLER_LOG="tmp/otsActionsHandler_${OTS_SETUP_TYPE}-${THIS_HOST}.$$"
 otsActionHandler() {
 
@@ -5325,6 +5413,9 @@ otsActionHandler() {
 	out "\tots Wiz Mode access code = $(cat ${SERVICE_DATA_PATH}//OtsWizardData/sequence.out 2>/dev/null)"
 	if [ "x$OTS_MACROMAKER_UDP_IP" != "x" ] && [ "x$OTS_MACROMAKER_UDP_PORT" != "x" ]; then
 		out "\tMacroMaker UDP Remote Control at ${Bold}${OTS_MACROMAKER_UDP_IP}:${OTS_MACROMAKER_UDP_PORT}${RstClr} (\$OTS_MACROMAKER_UDP_IP : \$OTS_MACROMAKER_UDP_PORT)"
+	fi
+	if [ "x$OTS_CONFIG_UDP_IP" != "x" ] && [ "x$OTS_CONFIG_UDP_PORT" != "x" ]; then
+		out "\tConfigurationGUI UDP Remote Control at ${Bold}${OTS_CONFIG_UDP_IP}:${OTS_CONFIG_UDP_PORT}${RstClr} (\$OTS_CONFIG_UDP_IP : \$OTS_CONFIG_UDP_PORT)"
 	fi
 
 	#listen for file commands
@@ -6732,6 +6823,10 @@ out "       ${Bold}less -R${RstClr} ${Yellow}${ACTION_HANDLER_LOG}${RstClr} (use
 if [ "x$OTS_MACROMAKER_UDP_IP" != "x" ] && [ "x$OTS_MACROMAKER_UDP_PORT" != "x" ]; then
 	out "MacroMaker UDP Remote Control at ${Bold}${OTS_MACROMAKER_UDP_IP}:${OTS_MACROMAKER_UDP_PORT}${RstClr} (\$OTS_MACROMAKER_UDP_IP : \$OTS_MACROMAKER_UDP_PORT)"
 	out "       at terminal: ${Bold}ots_mm_udp_test${RstClr} ${OTS_MACROMAKER_UDP_IP} ${OTS_MACROMAKER_UDP_PORT}"
+fi
+if [ "x$OTS_CONFIG_UDP_IP" != "x" ] && [ "x$OTS_CONFIG_UDP_PORT" != "x" ]; then
+	out "ConfigurationGUI UDP Remote Control at ${Bold}${OTS_CONFIG_UDP_IP}:${OTS_CONFIG_UDP_PORT}${RstClr} (\$OTS_CONFIG_UDP_IP : \$OTS_CONFIG_UDP_PORT)"
+	out "       at terminal: ${Bold}ots_cfg_udp_test${RstClr} ${OTS_CONFIG_UDP_IP} ${OTS_CONFIG_UDP_PORT}"
 fi
 
 #exec >/dev/null 2>&1 </dev/null # output redirections stop getting a SIGTTOU when run remotely which will kill us

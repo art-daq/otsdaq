@@ -35,9 +35,7 @@ bool MakeSerializable<TableBase const*>::writeDocumentImpl<JsonData>(JsonData& d
 
 template<>
 std::string MakeSerializable<TableBase const*>::configurationNameImpl() const
-{
-	return _conf->getTableName();
-}
+{ return _conf->getTableName(); }
 
 template<>
 template<>
@@ -50,9 +48,7 @@ bool MakeSerializable<TableBase*>::readDocumentImpl<JsonData>(JsonData const& da
 
 template<>
 std::string MakeSerializable<TableBase*>::configurationNameImpl() const
-{
-	return _conf->getTableName();
-}
+{ return _conf->getTableName(); }
 
 }  // namespace configuration
 }  // namespace database

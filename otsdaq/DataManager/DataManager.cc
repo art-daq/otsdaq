@@ -968,9 +968,9 @@ void DataManager::pauseBuffer(const std::string& bufferUID)
 		timeOut += sleepTime;
 		if(timeOut >
 		   sleepTime * buffers_[bufferUID].buffer_->getTotalNumberOfSubBuffers())  // 1
-		    // milliseconds
-		    // for each
-		    // buffer!!!!
+		// milliseconds
+		// for each
+		// buffer!!!!
 		{
 			__CFG_COUT__ << "Couldn't flush all buffers! Timing out after "
 			             << buffers_[bufferUID].buffer_->getTotalNumberOfSubBuffers() *

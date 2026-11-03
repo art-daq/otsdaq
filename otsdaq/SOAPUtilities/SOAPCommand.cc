@@ -81,30 +81,22 @@ void SOAPCommand::setCommand(std::string command) { command_ = command; }
 
 //==============================================================================
 void SOAPCommand::setParameters(const SOAPParameters& parameters)
-{
-	parameters_ = parameters;
-}
+{ parameters_ = parameters; }
 
 //==============================================================================
 void SOAPCommand::setParameter(std::string parameterName, std::string parameterValue)
-{
-	parameters_.addParameter(parameterName, parameterValue);
-}
+{ parameters_.addParameter(parameterName, parameterValue); }
 
 //==============================================================================
 void SOAPCommand::setParameter(const SOAPParameter parameter)
-{
-	parameters_.addParameter(parameter.getName(), parameter.getValue());
-}
+{ parameters_.addParameter(parameter.getName(), parameter.getValue()); }
 
 //==============================================================================
 bool SOAPCommand::hasParameters(void) const { return (parameters_.size() != 0); }
 
 //==============================================================================
 bool SOAPCommand::findParameter(std::string parameterName) const
-{
-	return (parameters_.find(parameterName) != parameters_.end());
-}
+{ return (parameters_.find(parameterName) != parameters_.end()); }
 
 //==============================================================================
 namespace ots
