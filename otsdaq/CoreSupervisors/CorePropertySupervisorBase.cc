@@ -247,7 +247,7 @@ void CorePropertySupervisorBase::getAvailableDiskSpace()
 	// /var breaks the node in ways that look unrelated to otsdaq. Same 10 s gate as the
 	// two above, so this adds one local statvfs per 10 s per host. Never throw: a
 	// problem reading /var must not take down the status reply for log and data.
-	uint64_t      availableVarSpaceKB = 0;
+	uint64_t       availableVarSpaceKB = 0;
 	struct statvfs varStat;
 	if(statvfs((OTSDAQ_VAR_DIR + "/").c_str(), &varStat) == 0)
 		availableVarSpaceKB = (uint64_t)varStat.f_bavail * varStat.f_frsize / 1024;

@@ -474,7 +474,8 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 		    CorePropertySupervisorBase::getAvailableLogSpaceKB();
 		uint64_t availableDataSpaceKB =
 		    CorePropertySupervisorBase::getAvailableDataSpaceKB();
-		uint64_t availableVarSpaceKB = CorePropertySupervisorBase::getAvailableVarSpaceKB();
+		uint64_t availableVarSpaceKB =
+		    CorePropertySupervisorBase::getAvailableVarSpaceKB();
 
 		retParameters.addParameter("AvailableLogSpaceKB",
 		                           std::to_string(availableLogSpaceKB));

@@ -451,7 +451,8 @@ try
 	{
 		int64_t log = 0, data = 0, var = 0;
 	};
-	std::map<std::string /* context uid */, AvailableDiskSpaceKB> availableDiskSpaceKB_map;
+	std::map<std::string /* context uid */, AvailableDiskSpaceKB>
+	    availableDiskSpaceKB_map;
 	// Single shared "last alert" timestamp per disk per context — any window firing
 	// resets it, so a flood of correlated alerts is suppressed. Faster-window
 	// thresholds still get more chances because they use shorter silence periods.
@@ -687,9 +688,10 @@ try
 			std::vector<SupervisorInfo::SubappInfo> subapps;
 			int                                     progressInteger;
 
-			int64_t availableLogSpaceKB = 0, availableDataSpaceKB = 0, availableVarSpaceKB = 0;
-			auto    appInfo = it.second;
-			const std::string& appName = appInfo.getName();
+			int64_t availableLogSpaceKB = 0, availableDataSpaceKB = 0,
+			        availableVarSpaceKB = 0;
+			auto               appInfo  = it.second;
+			const std::string& appName  = appInfo.getName();
 
 			bool isDisconnected =
 			    appLastStatusGood.find(appName) != appLastStatusGood.end() &&
@@ -724,7 +726,8 @@ try
 						    theSupervisor
 						        ->CorePropertySupervisorBase::getAvailableDataSpaceKB();
 						availableVarSpaceKB =
-						    theSupervisor->CorePropertySupervisorBase::getAvailableVarSpaceKB();
+						    theSupervisor
+						        ->CorePropertySupervisorBase::getAvailableVarSpaceKB();
 
 						__COUTVS__(TLVL_StatusWorkloop, availableLogSpaceKB);
 						__COUTVS__(TLVL_StatusWorkloop, availableDataSpaceKB);
@@ -2462,7 +2465,8 @@ try
 					else
 						availableDataSpaceKB = std::stoull(value);
 					__COUTVS__(TLVL_DebugStatusDetail, availableDataSpaceKB);
-					value = parameters.getValue("AvailableVarSpaceKB");  // absent from older apps
+					value = parameters.getValue(
+					    "AvailableVarSpaceKB");  // absent from older apps
 					if(!value.size())
 						availableVarSpaceKB = 0;
 					else
@@ -2727,9 +2731,10 @@ try
 			//	without the field) falls back to the last known value for this context
 			const time_t hardLowSilenceSecs = 5 * 60;  //rate-limit hard-low alarms
 			const time_t nowForHardLow      = time(0);
-			auto&        lastKnownSpace     = availableDiskSpaceKB_map[appInfo.getContextName()];
+			auto& lastKnownSpace = availableDiskSpaceKB_map[appInfo.getContextName()];
 
-			auto recordAndAlertHardLow = [&](const std::string& diskTag,  //"LOG", "DATA", "VAR"
+			auto recordAndAlertHardLow = [&](const std::string&
+			                                     diskTag,  //"LOG", "DATA", "VAR"
 			                                 const std::string& diskPath,
 			                                 int64_t&           availableSpaceKB,
 			                                 int64_t&           lastKnownSpaceKB,
@@ -2740,7 +2745,7 @@ try
 					availableSpaceKB = lastKnownSpaceKB;
 					return;
 				}
-				if(lastKnownSpaceKB > availableSpaceKB &&  //dropped since last pass
+				if(lastKnownSpaceKB > availableSpaceKB &&    //dropped since last pass
 				   availableSpaceKB < availableSpaceKB_MIN)  //and below threshold
 				{
 					auto lastIt = alertMap.find(appInfo.getContextName());
@@ -2749,8 +2754,8 @@ try
 					{
 						theSupervisor->addSystemMessage(
 						    "*",
-						    diskTag + " disk space low (at host='" + appInfo.getHostname() +
-						        "' and path='" + diskPath +
+						    diskTag + " disk space low (at host='" +
+						        appInfo.getHostname() + "' and path='" + diskPath +
 						        "/'): " + std::to_string(availableSpaceKB / 1024) +
 						        " MB remaining.");
 						alertMap[appInfo.getContextName()] = nowForHardLow;
@@ -2855,10 +2860,11 @@ try
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[1]),
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[2]),
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[3])};
-			const time_t varSpans[4] = {info.getVarSpaceSampleAgeSeconds(slotForWindow[0]),
-			                            info.getVarSpaceSampleAgeSeconds(slotForWindow[1]),
-			                            info.getVarSpaceSampleAgeSeconds(slotForWindow[2]),
-			                            info.getVarSpaceSampleAgeSeconds(slotForWindow[3])};
+			const time_t varSpans[4] = {
+			    info.getVarSpaceSampleAgeSeconds(slotForWindow[0]),
+			    info.getVarSpaceSampleAgeSeconds(slotForWindow[1]),
+			    info.getVarSpaceSampleAgeSeconds(slotForWindow[2]),
+			    info.getVarSpaceSampleAgeSeconds(slotForWindow[3])};
 
 			auto checkDiskRateAlerts = [&](const std::string& diskTag,   //"LOG" or "DATA"
 			                               const std::string& diskWord,  //"log" or "data"
@@ -2954,9 +2960,10 @@ try
 			auto sameRates = [](const float(&a)[4], const float(&b)[4]) {
 				return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
 			};
-			bool varIsSameAsLogOrData =
-			    (availableVarSpaceKB == availableLogSpaceKB && sameRates(varRates, logRates)) ||
-			    (availableVarSpaceKB == availableDataSpaceKB && sameRates(varRates, dataRates));
+			bool varIsSameAsLogOrData = (availableVarSpaceKB == availableLogSpaceKB &&
+			                             sameRates(varRates, logRates)) ||
+			                            (availableVarSpaceKB == availableDataSpaceKB &&
+			                             sameRates(varRates, dataRates));
 			if(!varIsSameAsLogOrData)
 				checkDiskRateAlerts("VAR",
 				                    "/var",
