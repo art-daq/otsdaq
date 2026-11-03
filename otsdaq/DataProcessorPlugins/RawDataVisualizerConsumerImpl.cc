@@ -3,6 +3,8 @@
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
+#include <chrono>
+
 using namespace ots;
 
 //==============================================================================
@@ -79,6 +81,10 @@ void RawDataVisualizerConsumer::slowRead(void)
 		std::lock_guard<std::mutex> lock(dataMutex_);
 		data_.swap(data);
 		header_.swap(header);
+		lastPacketTimeMs_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+		                        std::chrono::system_clock::now().time_since_epoch())
+		                        .count();
+		++packetCount_;
 	}
 	__COUTT__ << DataProcessor::processorUID_ << " UID: " << supervisorApplicationUID_
 	          << std::endl;

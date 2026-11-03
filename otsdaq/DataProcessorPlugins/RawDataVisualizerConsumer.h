@@ -31,6 +31,13 @@ class RawDataVisualizerConsumer : public DataConsumer, public Configurable
 		std::lock_guard<std::mutex> lock(dataMutex_);
 		return data_;
 	}
+	// Receive time (ms since epoch) and running count of packets read from the buffer
+	void getLastRawDataInfo(uint64_t& packetTimeMs, uint64_t& packetCount)
+	{
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		packetTimeMs = lastPacketTimeMs_;
+		packetCount  = packetCount_;
+	}
 
   private:
 	bool workLoopThread(toolbox::task::WorkLoop* workLoop) override;
@@ -44,6 +51,8 @@ class RawDataVisualizerConsumer : public DataConsumer, public Configurable
 	std::string                        data_;
 	std::map<std::string, std::string> header_;
 	std::mutex                         dataMutex_;
+	uint64_t                           lastPacketTimeMs_ = 0;
+	uint64_t                           packetCount_      = 0;
 };
 }  // namespace ots
 
