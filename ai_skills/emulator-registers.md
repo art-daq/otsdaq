@@ -15,10 +15,21 @@ strips `0x` automatically). Reads return 16 hex digits (8 bytes, little-endian).
 | 0x1001 | W/R | 8 | Data packet count (countdown to 0) | 0 |
 | 0x1002 | W/R | 8 | Data rate (loop iterations between sends) | 100 (0x64) |
 | 0x1003 | W/R | 1 | LED register (8-bit bitmask) | 0 |
-| 0x1004 | W/R | 1 | Data mode: 0=counter, 1=sine, 2=multi-ch waveforms | 0 |
+| 0x1004 | W/R | 1 | Data mode: 0=counter, 1=sine (1 ch), 2=multi-ch waveforms, 3=sawtooth (1 ch) | 0 |
 | 0x1005 | W/R | 2 | Sample bit width (8, 12, 16, 32) | 16 (0x10) |
 | 0x1006 | W/R | 2 | Samples per packet (0=auto-fill to max) | 1 |
-| 0x1007 | W/R | 2 | Number of channels (min 1) | 1 |
+| 0x1007 | W/R | 2 | Number of channels (min 1; ignored in modes 1 and 3) | 1 |
+| 0x1008 | W/R | 2 | Waveform period in samples per cycle (modes 1, 3; 0=100) | 100 (0x64) |
+| 0x1009 | W/R | 2 | Waveform amplitude, peak-to-peak % of full scale (modes 1-3; max 1000, >100 clips) | 100 (0x64) |
+| 0x100A | W/R | 2 | Waveform offset, center as % of full scale (modes 1-3; max 100) | 50 (0x32) |
+
+Sample value = offset + amplitude × (unit waveform − 0.5), clamped to
+0..full scale. Defaults (100 %, 50 %) give the historical output: sine
+and sawtooth swing over the full range. Mode 2's eight channel shapes
+(`generateWaveformSample`) keep their own fixed periods; only
+amplitude/offset apply to them. The mode-1 sine and mode-3 ramp restart
+their phase at `count` = 0, i.e. at every write to 0x1001 or
+0x100000009, and advance by one per sample across packets.
 | 0x100000006 | W/R | 4 | Stream destination IP (network byte order) | — |
 | 0x100000008 | W/R | 4 | Stream destination port | — |
 | 0x100000009 | W/R | 1 | Burst data enable (1=on, 0=off) | 0 |
