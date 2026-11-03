@@ -53,15 +53,21 @@ ConfigurationInterface* ConfigurationInterface::getInstance(
 
 //==============================================================================
 bool ConfigurationInterface::isVersionTrackingEnabled()
-{ return ConfigurationInterface::theVersionTrackingEnabled_; }
+{
+	return ConfigurationInterface::theVersionTrackingEnabled_;
+}
 
 //==============================================================================
 void ConfigurationInterface::setVersionTrackingEnabled(bool setValue)
-{ ConfigurationInterface::theVersionTrackingEnabled_ = setValue; }
+{
+	ConfigurationInterface::theVersionTrackingEnabled_ = setValue;
+}
 
 //==============================================================================
 const ConfigurationInterface::CONFIGURATION_MODE& ConfigurationInterface::getMode()
-{ return ConfigurationInterface::theMode_; }
+{
+	return ConfigurationInterface::theMode_;
+}
 
 //==============================================================================
 /// saveNewVersion
@@ -81,7 +87,7 @@ TableVersion ConfigurationInterface::saveNewVersion(TableBase*   table,
 	}
 
 	if(!ConfigurationInterface::isVersionTrackingEnabled())  // tracking is OFF, so always
-		                                                     // save to same version
+	                                                         // save to same version
 		newVersion = TableVersion::SCRATCH;
 
 	bool rewriteableExists = false;

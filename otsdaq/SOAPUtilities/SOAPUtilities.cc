@@ -144,7 +144,9 @@ SOAPCommand SOAPUtilities::translate(const xoap::MessageReference& message)
 //==============================================================================
 std::string SOAPUtilities::receive(const xoap::MessageReference& message,
                                    SOAPCommand&                  soapCommand)
-{ return receive(message, soapCommand.getParametersRef()); }
+{
+	return receive(message, soapCommand.getParametersRef());
+}
 
 //==============================================================================
 std::string SOAPUtilities::receive(const xoap::MessageReference& message)

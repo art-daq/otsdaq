@@ -43,7 +43,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 	std::string importPath = argv[1];
 	std::string prepend    = argc > 2 ? argv[2] : "";  //get prepend arg or empty default
 	bool        forceBackboneSave =
-	    argc > 3 ? true : false;  //get force backbone save arg or false
+        argc > 3 ? true : false;  //get force backbone save arg or false
 	int flatVersion = 0;
 
 	__COUTV__(importPath);
@@ -186,11 +186,11 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		std::string                             accumulatedWarnings;
 		const std::map<std::string, TableInfo>& allTableInfo =
 		    cfgMgr->getAllTableInfo(true /* refresh */,
-			                        &accumulatedWarnings,
-			                        "" /* errorFilterName */,
-			                        true /* getGroupKeys*/,
-			                        false /* getGroupInfo */,
-			                        true /* initializeActiveGroups */);
+		                            &accumulatedWarnings,
+		                            "" /* errorFilterName */,
+		                            true /* getGroupKeys*/,
+		                            false /* getGroupInfo */,
+		                            true /* initializeActiveGroups */);
 		__COUTV__(allTableInfo.size());
 		auto groups = cfgMgr->getAllGroupInfo();
 		__COUTTV__(groups.size());
@@ -301,7 +301,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			__COUT__ << "Checking '" << tableName << "' for duplicate..." << __E__;
 			duplicateVersion =
 			    table->checkForDuplicate(originalVersion,
-				                         TableVersion());  // then all versions in search
+			                             TableVersion());  // then all versions in search
 
 		}  //end check duplicate
 
@@ -360,13 +360,13 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			bool foundEquivalent;
 			auto newAssignedVersion =
 			    cfgMgr->saveModifiedVersion(memberName,
-				                            TableVersion() /*original source is mockup*/,
-				                            false /*makeTemporary*/,
-				                            table,
-				                            temporaryVersion,
-				                            false /*ignoreDuplicates*/,
-				                            true /*lookForEquivalent*/,
-				                            &foundEquivalent);
+			                                TableVersion() /*original source is mockup*/,
+			                                false /*makeTemporary*/,
+			                                table,
+			                                temporaryVersion,
+			                                false /*ignoreDuplicates*/,
+			                                true /*lookForEquivalent*/,
+			                                &foundEquivalent);
 			if(foundEquivalent)
 				__COUT__ << "Found equivalent version: " << newAssignedVersion << __E__;
 			else
@@ -509,7 +509,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 		    std::pair<std::string, std::pair<TableGroupKey, TableGroupKey>>(
 		        activeGroup.second.first,
 		        std::pair<TableGroupKey, TableGroupKey>(activeGroup.second.second,
-				                                        TableGroupKey())));
+		                                                TableGroupKey())));
 
 		if(activeGroup.first == ConfigurationManager::GROUP_TYPE_NAME_BACKBONE)
 		{
@@ -965,13 +965,13 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 				bool foundEquivalent;
 				newAssignedVersion =
 				    cfgMgr->saveModifiedVersion(member.first,
-					                            temporaryVersion,
-					                            false /*makeTemporary*/,
-					                            memberTable,
-					                            temporaryVersion,
-					                            false /*ignoreDuplicates*/,
-					                            true /*lookForEquivalent*/,
-					                            &foundEquivalent);
+				                                temporaryVersion,
+				                                false /*makeTemporary*/,
+				                                memberTable,
+				                                temporaryVersion,
+				                                false /*ignoreDuplicates*/,
+				                                true /*lookForEquivalent*/,
+				                                &foundEquivalent);
 				if(foundEquivalent)
 					__COUT__ << "Found equivalent version: " << newAssignedVersion
 					         << __E__;
@@ -1248,7 +1248,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			__COUT__ << "Checking '" << tableName << "' for duplicate..." << __E__;
 			duplicateVersion =
 			    table->checkForDuplicate(originalVersion,
-				                         TableVersion());  // then all versions in search
+			                             TableVersion());  // then all versions in search
 
 		}  //end check duplicate
 
@@ -1416,7 +1416,7 @@ void ImportTableGroupsFromPath(int argc, char* argv[])
 			__COUT__ << "Checking '" << tableName << "' for duplicate..." << __E__;
 			duplicateVersion =
 			    table->checkForDuplicate(originalVersion,
-				                         TableVersion());  // then all versions in search
+			                             TableVersion());  // then all versions in search
 
 			__COUTV__(table->getViewVersion());
 		}  //end check duplicate

@@ -86,11 +86,11 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 		std::string                             accumulatedWarnings;
 		const std::map<std::string, TableInfo>& allTableInfo =
 		    cfgMgr->getAllTableInfo(true /* refresh */,
-			                        &accumulatedWarnings,
-			                        "" /* errorFilterName */,
-			                        true /* getGroupKeys*/,
-			                        false /* getGroupInfo */,
-			                        true /* initializeActiveGroups */);
+		                            &accumulatedWarnings,
+		                            "" /* errorFilterName */,
+		                            true /* getGroupKeys*/,
+		                            false /* getGroupInfo */,
+		                            true /* initializeActiveGroups */);
 		__COUTV__(allTableInfo.size());
 		auto groups = cfgMgr->getAllGroupInfo();
 		__COUTV__(groups.size());
@@ -151,13 +151,13 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 
 		groupSet.insert(std::pair<std::pair<std::string, TableGroupKey>, TableGroupKey>(
 		    std::pair<std::string, TableGroupKey>(activeGroup.second.first,
-			                                      activeGroup.second.second),
+		                                          activeGroup.second.second),
 		    TableGroupKey()));
 		activeGroupKeys.insert(
 		    std::pair<std::string, std::pair<TableGroupKey, TableGroupKey>>(
 		        activeGroup.second.first,
 		        std::pair<TableGroupKey, TableGroupKey>(activeGroup.second.second,
-				                                        TableGroupKey())));
+		                                                TableGroupKey())));
 
 		if(activeGroup.first == ConfigurationManager::GROUP_TYPE_NAME_BACKBONE)
 		{
@@ -448,7 +448,7 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 			groupErrors.insert(
 			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
 			        std::pair<std::string, TableGroupKey>(group.first.first,
-					                                      group.first.second),
+			                                              group.first.second),
 			        "Error caught exporting the group."));
 		}
 		catch(...)
@@ -459,7 +459,7 @@ void ExportActiveSystemAliasTableGroups(int argc, char* argv[])
 			groupErrors.insert(
 			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
 			        std::pair<std::string, TableGroupKey>(group.first.first,
-					                                      group.first.second),
+			                                              group.first.second),
 			        "Error caught exporting the group."));
 		}
 	}  //end group export loop

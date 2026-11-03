@@ -329,10 +329,10 @@ void serveApp(int fd, LiteContext& ctx, const Request& req, const std::string& r
 	size_t                   p      = prefix.size();
 	size_t                   slash  = req.path.find('/', p);
 	unsigned int             lid    = std::strtoul(
-	    req.path.substr(p, slash == std::string::npos ? std::string::npos : slash - p)
-	        .c_str(),
-	    nullptr,
-	    10);
+        req.path.substr(p, slash == std::string::npos ? std::string::npos : slash - p)
+            .c_str(),
+        nullptr,
+        10);
 	std::string name = slash == std::string::npos ? "" : req.path.substr(slash + 1);
 	if(name.empty())
 		name = "Default";
@@ -533,12 +533,12 @@ int main(int argc, char** argv)
 	{
 		std::string a    = argv[i];
 		auto        next = [&](std::string& dst) {
-			if(i + 1 >= argc)
-			{
-				usage();
-				std::exit(1);
-			}
-			dst = argv[++i];
+            if(i + 1 >= argc)
+            {
+                usage();
+                std::exit(1);
+            }
+            dst = argv[++i];
 		};
 		if(a == "-p")
 		{
@@ -631,7 +631,7 @@ int main(int argc, char** argv)
 			    "). Either fix the missing .so (e.g. a compile error) or exclude this "
 			    "Supervisor by setting its Status to Off in the Configuration GUI "
 			    "(XDAQApplicationTable), then save and activate the context and restart "
-				"ots.";
+			    "ots.";
 			std::cerr << "ots_lite_main: " << reason << "\n";
 			ctx.context->setUnavailableReason(s.lid, reason);
 			unloadable.insert(s.lid);

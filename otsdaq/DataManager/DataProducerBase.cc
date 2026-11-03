@@ -26,7 +26,9 @@ DataProducerBase::DataProducerBase(const std::string& supervisorApplicationUID,
 
 //==============================================================================
 DataProducerBase::~DataProducerBase(void)
-{ __GEN_COUT__ << "Destructed." << __E__; }  // end destructor()
+{
+	__GEN_COUT__ << "Destructed." << __E__;
+}  // end destructor()
 
 //==============================================================================
 /// mirror DataConsumer::registerToBuffer

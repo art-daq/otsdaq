@@ -9,12 +9,16 @@
 template<class D, class H>
 CircularBuffer<D, H>::CircularBuffer(const std::string& dataBufferId)
     : CircularBufferBase(dataBufferId)
-{ __GEN_COUT__ << "Constructed." << __E__; }  // end constructor()
+{
+	__GEN_COUT__ << "Constructed." << __E__;
+}  // end constructor()
 
 //========================================================================================================================
 template<class D, class H>
 CircularBuffer<D, H>::~CircularBuffer(void)
-{ __GEN_COUT__ << "Destructed." << __E__; }  // end destructor()
+{
+	__GEN_COUT__ << "Destructed." << __E__;
+}  // end destructor()
 
 //========================================================================================================================
 template<class D, class H>
@@ -48,7 +52,9 @@ unsigned int CircularBuffer<D, H>::getTotalNumberOfSubBuffers(void) const
 template<class D, class H>
 unsigned int CircularBuffer<D, H>::getProducerBufferSize(
     const std::string& producerID) const
-{ return theBuffer_.at(producerID).bufferSize(); }  // end getProducerBufferSize()
+{
+	return theBuffer_.at(producerID).bufferSize();
+}  // end getProducerBufferSize()
 
 //========================================================================================================================
 template<class D, class H>

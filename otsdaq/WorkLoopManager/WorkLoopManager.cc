@@ -26,11 +26,15 @@ WorkLoopManager::~WorkLoopManager(void) {}
 
 //==============================================================================
 HttpXmlDocument WorkLoopManager::processRequest(cgicc::Cgicc& cgi)
-{ return processRequest(composeWorkLoopName(requestNumber_++, cgi)); }
+{
+	return processRequest(composeWorkLoopName(requestNumber_++, cgi));
+}
 
 //==============================================================================
 HttpXmlDocument WorkLoopManager::processRequest(const xoap::MessageReference& message)
-{ return processRequest(composeWorkLoopName(requestNumber_++, message), &message); }
+{
+	return processRequest(composeWorkLoopName(requestNumber_++, message), &message);
+}
 
 //==============================================================================
 HttpXmlDocument WorkLoopManager::processRequest(std::string workLoopName,
@@ -74,7 +78,7 @@ HttpXmlDocument WorkLoopManager::processRequest(std::string workLoopName,
 	{
 		workLoops_[requestNumber].workLoop =
 		    toolbox::task::getWorkLoopFactory()->getWorkLoop(workLoopName,
-			                                                 cWorkLoopType_);
+		                                                     cWorkLoopType_);
 	}
 	catch(xcept::Exception& e)
 	{
@@ -213,7 +217,9 @@ bool WorkLoopManager::getRequestResult(cgicc::Cgicc& cgi, HttpXmlDocument& xmlDo
 
 //==============================================================================
 bool WorkLoopManager::removeWorkLoop(toolbox::task::WorkLoop* workLoop)
-{ return removeWorkLoop(getWorkLoopRequestNumber(workLoop)); }
+{
+	return removeWorkLoop(getWorkLoopRequestNumber(workLoop));
+}
 
 //==============================================================================
 bool WorkLoopManager::removeWorkLoop(RequestNumber requestNumber)
@@ -345,7 +351,9 @@ std::string WorkLoopManager::composeWorkLoopName(RequestNumber requestNumber,
 //==============================================================================
 WorkLoopManager::RequestNumber WorkLoopManager::getWorkLoopRequestNumber(
     toolbox::task::WorkLoop* workLoop)
-{ return getWorkLoopRequestNumber(workLoop->getName()); }
+{
+	return getWorkLoopRequestNumber(workLoop->getName());
+}
 
 //==============================================================================
 WorkLoopManager::RequestNumber WorkLoopManager::getWorkLoopRequestNumber(
@@ -357,7 +365,9 @@ WorkLoopManager::RequestNumber WorkLoopManager::getWorkLoopRequestNumber(
 
 //==============================================================================
 std::string WorkLoopManager::getWorkLoopRequest(toolbox::task::WorkLoop* workLoop)
-{ return getWorkLoopRequest(workLoop->getName()); }
+{
+	return getWorkLoopRequest(workLoop->getName());
+}
 
 //==============================================================================
 std::string WorkLoopManager::getWorkLoopRequest(std::string workLoopName)

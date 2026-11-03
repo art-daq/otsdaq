@@ -54,7 +54,9 @@ void SupervisorInfo::setSubappStatus(const std::string& name,
 
 //=====================================================================================
 void SupervisorInfo::copySubappStatus(const SubappInfo& info)
-{ subapps_[info.name] = info; }  // end setSubappStatus()
+{
+	subapps_[info.name] = info;
+}  // end setSubappStatus()
 
 //=====================================================================================
 std::string SupervisorInfo::extractHostname(const std::string& URL)

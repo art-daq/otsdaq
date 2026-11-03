@@ -31,11 +31,15 @@ std::string NetworkConverters::stringToNameIP(const std::string& value)
 }
 //==============================================================================
 uint32_t NetworkConverters::stringToNetworkIP(const std::string& value)
-{ return unsignedToNetworkIP(stringToUnsignedIP(value)); }
+{
+	return unsignedToNetworkIP(stringToUnsignedIP(value));
+}
 
 //==============================================================================
 std::string NetworkConverters::networkToStringIP(uint32_t value)
-{ return unsignedToStringIP(networkToUnsignedIP(value)); }
+{
+	return unsignedToStringIP(networkToUnsignedIP(value));
+}
 
 //==============================================================================
 std::string NetworkConverters::unsignedToStringIP(uint32_t value)
@@ -63,11 +67,15 @@ uint32_t NetworkConverters::networkToUnsignedIP(uint32_t value) { return ntohl(v
 
 //==============================================================================
 uint16_t NetworkConverters::stringToNetworkPort(const std::string& value)
-{ return unsignedToNetworkPort(stringToUnsignedPort(value)); }
+{
+	return unsignedToNetworkPort(stringToUnsignedPort(value));
+}
 
 //==============================================================================
 std::string NetworkConverters::networkToStringPort(uint16_t value)
-{ return unsignedToStringPort(networkToUnsignedPort(value)); }
+{
+	return unsignedToStringPort(networkToUnsignedPort(value));
+}
 
 //==============================================================================
 std::string NetworkConverters::unsignedToStringPort(uint16_t value)
@@ -80,7 +88,9 @@ std::string NetworkConverters::unsignedToStringPort(uint16_t value)
 
 //==============================================================================
 uint16_t NetworkConverters::stringToUnsignedPort(const std::string& value)
-{ return ((((uint32_t)value[0]) & 0xff) << 8) + (((uint32_t)value[1]) & 0xff); }
+{
+	return ((((uint32_t)value[0]) & 0xff) << 8) + (((uint32_t)value[1]) & 0xff);
+}
 
 //==============================================================================
 uint16_t NetworkConverters::unsignedToNetworkPort(uint16_t value) { return htons(value); }

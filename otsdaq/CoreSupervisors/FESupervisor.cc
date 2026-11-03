@@ -360,7 +360,7 @@ try
 		SOAPUtilities::addParameters(replyMessage, txParameters);
 
 		return replyMessage;
-	}  // end type feMacro
+	}                                                  // end type feMacro
 	else if(type == "feMacroMultiDimensionalStart" ||  // from iterator
 	        type == "macroMultiDimensionalStart")      // from iterator
 	{
@@ -1627,7 +1627,7 @@ xoap::MessageReference FESupervisor::workLoopStatusRequest(
 	return SOAPUtilities::makeSOAPMessageReference(
 	    (theFEInterfacesManager_->allFEWorkloopsAreDone()
 	         ? CoreSupervisorBase::WORK_LOOP_DONE
-			 : CoreSupervisorBase::WORK_LOOP_WORKING));
+	         : CoreSupervisorBase::WORK_LOOP_WORKING));
 }  // end workLoopStatusRequest()
 
 //==============================================================================

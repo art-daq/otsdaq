@@ -118,7 +118,9 @@ void TableInfoReader::terminatePlatform(void)
 
 //==============================================================================
 void TableInfoReader::setAllowColumnErrors(bool setValue)
-{ allowIllegalColumns_ = setValue; }
+{
+	allowIllegalColumns_ = setValue;
+}
 //==============================================================================
 const bool& TableInfoReader::getAllowColumnErrors(void) { return allowIllegalColumns_; }
 
@@ -146,7 +148,7 @@ bool TableInfoReader::checkViewType(std::string type)
 	// names
 	const unsigned int allowedNamesSize               = 3;
 	const std::string  allowedNames[allowedNamesSize] = {
-	    "File", "Database", "DatabaseTest"};
+        "File", "Database", "DatabaseTest"};
 	if(systemType != allowedNames[0] && systemType != allowedNames[1] &&
 	   systemType != allowedNames[2])
 	{
@@ -177,7 +179,9 @@ bool TableInfoReader::checkViewType(std::string type)
 xercesc::DOMNode* TableInfoReader::getNode(XMLCh*            tagName,
                                            xercesc::DOMNode* parent,
                                            unsigned int      itemNumber)
-{ return getNode(tagName, dynamic_cast<xercesc::DOMElement*>(parent), itemNumber); }
+{
+	return getNode(tagName, dynamic_cast<xercesc::DOMElement*>(parent), itemNumber);
+}
 
 //==============================================================================
 xercesc::DOMNode* TableInfoReader::getNode(XMLCh*               tagName,
@@ -204,13 +208,17 @@ xercesc::DOMNode* TableInfoReader::getNode(XMLCh*               tagName,
 xercesc::DOMElement* TableInfoReader::getElement(XMLCh*            tagName,
                                                  xercesc::DOMNode* parent,
                                                  unsigned int      itemNumber)
-{ return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber)); }
+{
+	return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber));
+}
 
 //==============================================================================
 xercesc::DOMElement* TableInfoReader::getElement(XMLCh*               tagName,
                                                  xercesc::DOMElement* parent,
                                                  unsigned int         itemNumber)
-{ return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber)); }
+{
+	return dynamic_cast<xercesc::DOMElement*>(getNode(tagName, parent, itemNumber));
+}
 
 //==============================================================================
 std::string TableInfoReader::read(TableBase& table)
@@ -376,9 +384,9 @@ std::string TableInfoReader::read(TableBase& table)
 				//  Documentation :https://xerces.apache.org/xerces-c/apiDocs-3/classDOMElement.html#a9d6a102d853eafe6619be4324c1555c3
 				std::string defaultValue;
 				bool        isDefaultValue =
-				    columnElement->getAttributeNode(columnDefaultValueAttributeTag_)
-				        ? true
-				        : false;
+                    columnElement->getAttributeNode(columnDefaultValueAttributeTag_)
+				               ? true
+				               : false;
 				if(isDefaultValue)
 				{
 					defaultValue = StringMacros::decodeURIComponent(XML_TO_CHAR(
@@ -388,8 +396,8 @@ std::string TableInfoReader::read(TableBase& table)
 				}
 				std::string minValue;
 				bool        isMinValue =
-				    columnElement->getAttributeNode(columnMinValueAttributeTag_) ? true
-					                                                             : false;
+                    columnElement->getAttributeNode(columnMinValueAttributeTag_) ? true
+				                                                                        : false;
 				if(isMinValue)
 				{
 					minValue = StringMacros::decodeURIComponent(XML_TO_CHAR(
@@ -399,8 +407,8 @@ std::string TableInfoReader::read(TableBase& table)
 				}
 				std::string maxValue;
 				bool        isMaxValue =
-				    columnElement->getAttributeNode(columnMaxValueAttributeTag_) ? true
-					                                                             : false;
+                    columnElement->getAttributeNode(columnMaxValueAttributeTag_) ? true
+				                                                                        : false;
 				if(isMaxValue)
 				{
 					maxValue = StringMacros::decodeURIComponent(XML_TO_CHAR(
@@ -429,7 +437,7 @@ std::string TableInfoReader::read(TableBase& table)
 				    isMaxValue ? &maxValue : 0,
 				    allowIllegalColumns_
 				        ? &capturedException
-						: 0));  // capture exception string if allowing illegal columns
+				        : 0));  // capture exception string if allowing illegal columns
 
 				// if error detected (this implies allowing illegal columns)
 				//	accumulate and return accumulated errors at end

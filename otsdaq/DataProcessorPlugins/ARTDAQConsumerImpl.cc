@@ -25,10 +25,10 @@ ARTDAQConsumer::ARTDAQConsumer(std::string              supervisorApplicationUID
     : WorkLoop(processorUID)
     , DataConsumer(supervisorApplicationUID, bufferUID, processorUID, LowConsumerPriority)
     , ARTDAQReaderProcessorBase(supervisorApplicationUID,
-	                            bufferUID,
-	                            processorUID,
-	                            theXDAQContextConfigTree,
-	                            configurationPath)
+                                bufferUID,
+                                processorUID,
+                                theXDAQContextConfigTree,
+                                configurationPath)
 ///    : WorkLoop(processorUID)
 ///    , DataConsumer(supervisorApplicationUID, bufferUID, processorUID,
 ///    LowConsumerPriority) , Configurable(theXDAQContextConfigTree, configurationPath)
@@ -232,7 +232,9 @@ void ARTDAQConsumer::resumeProcessingData(void) { ARTDAQReaderProcessorBase::res
 
 //==============================================================================
 void ARTDAQConsumer::startProcessingData(std::string runNumber)
-{ ARTDAQReaderProcessorBase::start(runNumber); }
+{
+	ARTDAQReaderProcessorBase::start(runNumber);
+}
 //{
 //	__COUT__ << "\tStart" << __E__;
 //

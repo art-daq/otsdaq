@@ -161,13 +161,13 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 
 		groupSet.insert(std::pair<std::pair<std::string, TableGroupKey>, TableGroupKey>(
 		    std::pair<std::string, TableGroupKey>(activeGroup.second.first,
-			                                      activeGroup.second.second),
+		                                          activeGroup.second.second),
 		    TableGroupKey()));
 		activeGroupKeys.insert(
 		    std::pair<std::string, std::pair<TableGroupKey, TableGroupKey>>(
 		        activeGroup.second.first,
 		        std::pair<TableGroupKey, TableGroupKey>(activeGroup.second.second,
-				                                        TableGroupKey())));
+		                                                TableGroupKey())));
 
 		if(activeGroup.first == ConfigurationManager::GROUP_TYPE_NAME_BACKBONE)
 		{
@@ -458,7 +458,7 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 			groupErrors.insert(
 			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
 			        std::pair<std::string, TableGroupKey>(groupPair.first.first,
-					                                      groupPair.first.second),
+			                                              groupPair.first.second),
 			        "Error caught loading the group."));
 			continue;
 		}
@@ -500,7 +500,7 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 				modifiedTables.insert(
 				    std::pair<std::pair<std::string, TableVersion>, TableVersion>(
 				        std::pair<std::string, TableVersion>(memberPair.first,
-						                                     memberPair.second),
+				                                             memberPair.second),
 				        TableVersion(flatVersion)));
 
 				memberPair.second = flatVersion;  // change version in the member map
@@ -553,7 +553,7 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 			theInterface_->saveTableGroup(
 			    memberMap,
 			    TableGroupKey::getFullGroupString(groupPair.first.first,
-				                                  TableGroupKey(flatVersion)));
+			                                      TableGroupKey(flatVersion)));
 
 			// and modify groupSet and activeGroupKeys keys
 			groupPair.second = TableGroupKey(flatVersion);
@@ -573,7 +573,7 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 			groupErrors.insert(
 			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
 			        std::pair<std::string, TableGroupKey>(groupPair.first.first,
-					                                      groupPair.first.second),
+			                                              groupPair.first.second),
 			        "Error caught saving the group."));
 		}
 		catch(...)
@@ -584,7 +584,7 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 			groupErrors.insert(
 			    std::pair<std::pair<std::string, TableGroupKey>, std::string>(
 			        std::pair<std::string, TableGroupKey>(groupPair.first.first,
-					                                      groupPair.first.second),
+			                                              groupPair.first.second),
 			        "Error caught saving the group."));
 		}
 		//=========================
@@ -809,7 +809,7 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 		theInterface_->saveTableGroup(
 		    memberMap,
 		    TableGroupKey::getFullGroupString(activeBackboneGroupName,
-			                                  TableGroupKey(flatVersion)));
+		                                      TableGroupKey(flatVersion)));
 
 		activeGroupKeys[activeBackboneGroupName].second = TableGroupKey(flatVersion);
 
@@ -880,25 +880,25 @@ void FlattenActiveSystemAliasTableGroups(int argc, char* argv[])
 			        "%s\n",
 			        theContextTableGroupKey_
 			            ? theContextTableGroupKey_->toString().c_str()
-						: "-1");
+			            : "-1");
 			fprintf(fp, "%s\n", theBackboneTableGroup_.c_str());
 			fprintf(fp,
 			        "%s\n",
 			        theBackboneTableGroupKey_
 			            ? theBackboneTableGroupKey_->toString().c_str()
-						: "-1");
+			            : "-1");
 			fprintf(fp, "%s\n", theConfigurationTableGroup_.c_str());
 			fprintf(fp,
 			        "%s\n",
 			        theConfigurationTableGroupKey_
 			            ? theConfigurationTableGroupKey_->toString().c_str()
-						: "-1");
+			            : "-1");
 			fprintf(fp, "%s\n", theIterateTableGroup_.c_str());
 			fprintf(fp,
 			        "%s\n",
 			        theIterateTableGroupKey_
 			            ? theIterateTableGroupKey_->toString().c_str()
-						: "-1");
+			            : "-1");
 			fclose(fp);
 		}
 	}

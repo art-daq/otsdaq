@@ -86,19 +86,19 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
     , name_(name)
     , storageName_(storageName)
     , dataType_(/*convert antiquated*/ dataType == "VARCHAR2" ? DATATYPE_STRING
-	                                                          : dataType)
+                                                              : dataType)
     , defaultValue_(defaultValue ? *defaultValue
-	                             : getDefaultDefaultValue(type_, dataType_))
+                                 : getDefaultDefaultValue(type_, dataType_))
     ,  // if default pointer, take input default value
     dataChoices_(getDataChoicesFromString(dataChoicesCSV))
     , minValue_(minValue ? ((*minValue) == "null" ? "" : (*minValue))
-	                     : getMinDefaultValue(dataType_))
+                         : getMinDefaultValue(dataType_))
     ,  // there was a time during JS GUI development when "null" was being injected into data files rather than empty strings. Because this member variable is
-	   // constant, this is the single cleansing point.
+    // constant, this is the single cleansing point.
     maxValue_(maxValue ? ((*maxValue) == "null" ? "" : (*maxValue))
-	                   : getMaxDefaultValue(dataType_))
+                       : getMaxDefaultValue(dataType_))
     ,  // there was a time during JS GUI development when "null" was being injected into data files rather than empty strings. Because this member variable is
-	   // constant, this is the single cleansing point.
+    // constant, this is the single cleansing point.
     bitMapInfoP_(nullptr)
 {
 	//keep lightweight because tables+columns get copied around a lot
@@ -480,7 +480,9 @@ const std::string& TableViewColumnInfo::getType(void) const { return type_; }
 //==============================================================================
 /// returns the configued default value value for this particular column
 const std::string& TableViewColumnInfo::getDefaultValue(void) const
-{ return defaultValue_; }
+{
+	return defaultValue_;
+}
 const std::string& TableViewColumnInfo::getMinValue(void) const { return minValue_; }
 const std::string& TableViewColumnInfo::getMaxValue(void) const { return maxValue_; }
 
@@ -624,21 +626,27 @@ bool TableViewColumnInfo::isBoolType(void) const
 //==============================================================================
 /// isNumberDataType
 bool TableViewColumnInfo::isNumberDataType(void) const
-{ return (dataType_ == DATATYPE_NUMBER); }  // end isBoolType()
+{
+	return (dataType_ == DATATYPE_NUMBER);
+}  // end isBoolType()
 
 //==============================================================================
 const std::string& TableViewColumnInfo::getName(void) const { return name_; }
 
 //==============================================================================
 const std::string& TableViewColumnInfo::getStorageName(void) const
-{ return storageName_; }
+{
+	return storageName_;
+}
 
 //==============================================================================
 const std::string& TableViewColumnInfo::getDataType(void) const { return dataType_; }
 
 //==============================================================================
 const std::vector<std::string>& TableViewColumnInfo::getDataChoices(void) const
-{ return dataChoices_; }
+{
+	return dataChoices_;
+}
 
 //==============================================================================
 /// getBitMapInfo

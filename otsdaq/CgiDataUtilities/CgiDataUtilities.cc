@@ -79,11 +79,17 @@ std::string CgiDataUtilities::getData(cgicc::Cgicc& cgi, const std::string& need
 
 //==============================================================================
 int CgiDataUtilities::getOrPostDataAsInt(cgicc::Cgicc& cgi, const std::string& needle)
-{ return atoi(getOrPostData(cgi, needle).c_str()); }
+{
+	return atoi(getOrPostData(cgi, needle).c_str());
+}
 int CgiDataUtilities::postDataAsInt(cgicc::Cgicc& cgi, const std::string& needle)
-{ return atoi(postData(cgi, needle).c_str()); }
+{
+	return atoi(postData(cgi, needle).c_str());
+}
 int CgiDataUtilities::getDataAsInt(cgicc::Cgicc& cgi, const std::string& needle)
-{ return atoi(getData(cgi, needle).c_str()); }
+{
+	return atoi(getData(cgi, needle).c_str());
+}
 
 //==============================================================================
 uint64_t CgiDataUtilities::getOrPostDataAsUint64_t(cgicc::Cgicc&      cgi,

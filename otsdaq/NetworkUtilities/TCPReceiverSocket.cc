@@ -49,7 +49,7 @@ std::string TCPReceiverSocket::receivePacket(std::chrono::milliseconds timeout)
 		{
 			int this_received_bytes =
 			    receive(reinterpret_cast<char*>(&message_size) + received_bytes,
-				        4 - received_bytes);
+			            4 - received_bytes);
 			if(this_received_bytes < 0)
 			{
 				continue;

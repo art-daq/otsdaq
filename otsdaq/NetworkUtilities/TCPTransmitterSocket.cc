@@ -16,11 +16,15 @@ TCPTransmitterSocket::~TCPTransmitterSocket(void) {}
 
 //==============================================================================
 void TCPTransmitterSocket::sendPacket(char const* buffer, std::size_t size)
-{ send(TCPPacket::encode(buffer, size)); }
+{
+	send(TCPPacket::encode(buffer, size));
+}
 
 //==============================================================================
 void TCPTransmitterSocket::sendPacket(const std::string& buffer)
-{ send(TCPPacket::encode(buffer)); }
+{
+	send(TCPPacket::encode(buffer));
+}
 
 //==============================================================================
 void TCPTransmitterSocket::send(char const* buffer,
@@ -86,15 +90,21 @@ void TCPTransmitterSocket::send(char const* buffer,
 
 //==============================================================================
 void TCPTransmitterSocket::send(const std::string& buffer)
-{ send(&buffer.at(0), buffer.size()); }
+{
+	send(&buffer.at(0), buffer.size());
+}
 
 //==============================================================================
 void TCPTransmitterSocket::send(const std::vector<char>& buffer)
-{ send(&buffer.at(0), buffer.size()); }
+{
+	send(&buffer.at(0), buffer.size());
+}
 
 //==============================================================================
 void TCPTransmitterSocket::send(const std::vector<uint16_t>& buffer)
-{ send((const char*)&buffer.at(0), buffer.size()); }
+{
+	send((const char*)&buffer.at(0), buffer.size());
+}
 
 //==============================================================================
 void TCPTransmitterSocket::setSendTimeout(unsigned int timeoutSeconds,

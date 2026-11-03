@@ -52,7 +52,7 @@ void ARTDAQRoutingManagerTable::genFlatFHiCL(void)
 
 	auto routingManagers = lastConfigManager_->__SELF_NODE__.getChildren(
 	    /*default filterMap*/ std::map<std::string /*relative-path*/,
-		                               std::string /*value*/>(),
+	                                   std::string /*value*/>(),
 	    /*default byPriority*/ false,
 	    /*TRUE! onlyStatusTrue*/ true);
 
@@ -136,7 +136,7 @@ unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
 						std::string subsystem =
 						    metricParametersLink.second.getNode("metricParameterValue")
 						        .getValueWithDefault<std::string>(std::string("TDAQ_") +
-								                                  __ENV__("MU2E_OWNER"));
+						                                          __ENV__("MU2E_OWNER"));
 						if(subsystem.find("Mu2e:") != std::string::npos)
 							subsystem = subsystem.replace(subsystem.find("Mu2e:"), 5, "");
 						while(subsystem.find("\"") != std::string::npos)
@@ -144,12 +144,12 @@ unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
 
 						numberOfRoutingManagerMetricParameters =
 						    slowControlsHandler(out,
-							                    tabStr,
-							                    commentStr,
-							                    subsystem,
-							                    routingManagerPair.first,
-							                    slowControlsLink,
-							                    channelList);
+						                        tabStr,
+						                        commentStr,
+						                        subsystem,
+						                        routingManagerPair.first,
+						                        slowControlsLink,
+						                        channelList);
 
 						__COUT__ << "RoutingManager '" << routingManagerPair.first
 						         << "' number of metrics for slow controls: "
@@ -170,6 +170,8 @@ unsigned int ARTDAQRoutingManagerTable::slowControlsHandlerConfig(
 //==============================================================================
 /// return out file path
 std::string ARTDAQRoutingManagerTable::setFilePath() const
-{ return SLOWCONTROL_PV_FILE_PATH; }
+{
+	return SLOWCONTROL_PV_FILE_PATH;
+}
 
 DEFINE_OTS_TABLE(ARTDAQRoutingManagerTable)

@@ -38,7 +38,7 @@ class CircularBufferBase
 	virtual void registerProducer(const std::string& producerID,
 	                              unsigned int       numberOfSubBuffers = 100) = 0;
 	virtual void registerConsumer(const std::string& consumerID,
-	                              ConsumerPriority   priority)                 = 0;
+	                              ConsumerPriority   priority)             = 0;
 	//    virtual void unregisterProducer			(const std::string& producerID) = 0;
 	//    virtual void unregisterConsume			r(const std::string& consumerID) = 0;
 

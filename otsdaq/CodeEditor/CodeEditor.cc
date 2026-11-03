@@ -38,8 +38,8 @@ const std::string CodeEditor::OTSDAQ_WEB_PATH =
 /// CodeEditor
 CodeEditor::CodeEditor()
     : ALLOWED_FILE_EXTENSIONS_({"h",    "hh",  "hpp", "hxx", "c",   "cc",   "cpp", "cxx",
-	                            "icc",  "dat", "txt", "sh",  "css", "html", "htm", "js",
-	                            "json", "py",  "fcl", "xml", "xsd", "cfg",  "csv"})
+                                "icc",  "dat", "txt", "sh",  "css", "html", "htm", "js",
+                                "json", "py",  "fcl", "xml", "xsd", "cfg",  "csv"})
 {
 	std::string path = CODE_EDITOR_DATA_PATH;
 	DIR*        dir  = opendir(path.c_str());
@@ -421,7 +421,7 @@ void CodeEditor::getFileContent(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	std::string extension = CgiDataUtilities::getData(cgiIn, "ext");
 	if(extension == "ots")
 		extension = "";         // special handling of ots extension (to get bash script
-	                            // properly)
+		                        // properly)
 	if(!(extension == "bin" ||  //allow bin for read-only
 	     (path.length() > 4 && path.substr(path.length() - 4) == "/ots")))
 		extension = safeExtensionString(extension);
@@ -564,7 +564,7 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	std::string extension = CgiDataUtilities::getData(cgiIn, "ext");
 	if(extension == "ots")
 		extension = "";         // special handling of ots extension (to get bash script
-	                            // properly)
+		                        // properly)
 	if(!(extension == "bin" ||  //allow bin for read-only
 	     (path.length() > 4 && path.substr(path.length() - 4) == "/ots")))
 		extension = safeExtensionString(extension);
@@ -576,8 +576,8 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	   (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::USER_DATA_PATH,
-			                          path.substr(i + std::string("$USER_DATA/").size()) +
-			                              (extension.size() ? "." : "") + extension);
+		                              path.substr(i + std::string("$USER_DATA/").size()) +
+		                                  (extension.size() ? "." : "") + extension);
 	else if((i = path.find("$OTSDAQ_WEB_PATH/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath = CodeEditor::getFileGitURL(
@@ -588,8 +588,8 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::OTSDAQ_WEB_PATH,
-			                          path.substr(i + std::string("/WebPath/").size()) +
-			                              (extension.size() ? "." : "") + extension);
+		                              path.substr(i + std::string("/WebPath/").size()) +
+		                                  (extension.size() ? "." : "") + extension);
 	else if((i = path.find("$OTSDAQ_DATA/")) == 0 ||
 	        (i == 1 && path[0] == '/'))  // if leading / or without
 		gitPath = CodeEditor::getFileGitURL(
@@ -599,7 +599,7 @@ void CodeEditor::getFileGitURL(cgicc::Cgicc& cgiIn, HttpXmlDocument* xmlOut)
 	else
 		gitPath =
 		    CodeEditor::getFileGitURL(CodeEditor::SOURCE_BASE_PATH,
-			                          path + (extension.size() ? "." : "") + extension);
+		                              path + (extension.size() ? "." : "") + extension);
 
 	xmlOut->addTextElementToData("gitPath", gitPath);
 
@@ -818,21 +818,21 @@ void CodeEditor::saveFileContent(cgicc::Cgicc&      cgiIn,
 	{
 		basepath = "/";
 		path     = CodeEditor::USER_DATA_PATH + "/" +
-		           path.substr((pathMatchPrepend + "$USER_DATA/").size());
+		       path.substr((pathMatchPrepend + "$USER_DATA/").size());
 	}
 	else if(path.substr(0, (pathMatchPrepend + "$OTSDAQ_WEB_PATH/").size()) ==
 	        pathMatchPrepend + "$OTSDAQ_WEB_PATH/")
 	{
 		basepath = "/";
 		path     = CodeEditor::OTSDAQ_WEB_PATH + "/" +
-		           path.substr((pathMatchPrepend + "$OTSDAQ_WEB_PATH/").size());
+		       path.substr((pathMatchPrepend + "$OTSDAQ_WEB_PATH/").size());
 	}
 	else if(path.substr(0, (pathMatchPrepend + "$OTSDAQ_DATA/").size()) ==
 	        pathMatchPrepend + "$OTSDAQ_DATA/")
 	{
 		basepath = "/";
 		path     = CodeEditor::OTSDAQ_DATA_PATH + "/" +
-		           path.substr((pathMatchPrepend + "$OTSDAQ_DATA/").size());
+		       path.substr((pathMatchPrepend + "$OTSDAQ_DATA/").size());
 	}
 	//__COUTV__(path);
 	//__COUTV__(basepath);
@@ -1002,8 +1002,8 @@ CodeEditor::getSpecialsMap(void)
 			    //__COUT__ << type << " " << name << "\n" << std::endl;
 
 			    if(name[0] != '.' &&
-				   (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
-				    type == 4 || type == 8))
+			       (type == 0 ||  // 0 == UNKNOWN (which can happen - seen in SL7 VM)
+			        type == 4 || type == 8))
 			    {
 				    isDir = false;
 
@@ -1043,19 +1043,19 @@ CodeEditor::getSpecialsMap(void)
 					    // recurse deeper!
 					    if(depth < 4)  // limit search depth
 						    localRecurse(path + "/" + name,
-							             offsetPath + "/" + name,
-							             depth + 1,
-							             childSpecialIndex);
+						                 offsetPath + "/" + name,
+						                 depth + 1,
+						                 childSpecialIndex);
 				    }
 				    else if(specialIndex >= 0)
 				    {
 					    // get special files!!
 
 					    if(name.find(".h") == name.length() - 2 ||
-						   name.find(".cc") == name.length() - 3 ||
-						   name.find(".txt") == name.length() - 4 ||
-						   name.find(".sh") == name.length() - 3 ||
-						   name.find(".py") == name.length() - 3)
+					       name.find(".cc") == name.length() - 3 ||
+					       name.find(".txt") == name.length() - 4 ||
+					       name.find(".sh") == name.length() - 3 ||
+					       name.find(".py") == name.length() - 3)
 					    {
 						    //__COUT__ << "Found special '" <<
 						    // specialFolders[specialIndex] <<
@@ -1063,7 +1063,7 @@ CodeEditor::getSpecialsMap(void)
 						    //		path << " " << specialIndex << __E__;
 
 						    retMap[specialMapTypes[specialIndex]].emplace(offsetPath +
-							                                              "/" + name);
+						                                                  "/" + name);
 					    }
 				    }
 			    }

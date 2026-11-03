@@ -454,7 +454,7 @@ void ConfigurationManager::restoreActiveTableGroups(
 			    0 /*groupMembers*/,
 			    0 /*progressBar*/,
 			    (accumulatedWarnings ? &groupAccumulatedErrors
-				                     : 0) /*accumulateWarnings = 0*/,
+			                         : 0) /*accumulateWarnings = 0*/,
 			    0 /*groupComment       = 0*/,
 			    0 /*groupAuthor        = 0*/,
 			    0 /*groupCreateTime    = 0*/,
@@ -579,7 +579,7 @@ void ConfigurationManager::destroyTableGroup(const std::string& theGroup,
 			__GEN_COUTT__ << "\t" << dbgHeader << ".. " << it->first
 			              << (it->second->isActive()
 			                      ? "_v" + it->second->getViewVersion().str()
-								  : "")
+			                      : "")
 			              << __E__;
 
 			if(onlyDeactivate)  // only deactivate
@@ -653,14 +653,14 @@ const std::string& ConfigurationManager::convertGroupTypeToName(
 {
 	return groupTypeId == ConfigurationManager::GroupType::CONTEXT_TYPE
 	           ? ConfigurationManager::GROUP_TYPE_NAME_CONTEXT
-			   : (groupTypeId == ConfigurationManager::GroupType::BACKBONE_TYPE
+	           : (groupTypeId == ConfigurationManager::GroupType::BACKBONE_TYPE
 	                  ? ConfigurationManager::GROUP_TYPE_NAME_BACKBONE
-					  : (groupTypeId == ConfigurationManager::GroupType::ITERATE_TYPE
+	                  : (groupTypeId == ConfigurationManager::GroupType::ITERATE_TYPE
 	                         ? ConfigurationManager::GROUP_TYPE_NAME_ITERATE
-							 : (groupTypeId == ConfigurationManager::GroupType::
-							                       CONFIGURATION_TYPE
+	                         : (groupTypeId == ConfigurationManager::GroupType::
+	                                               CONFIGURATION_TYPE
 	                                ? ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION
-									: ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN)));
+	                                : ConfigurationManager::GROUP_TYPE_NAME_UNKNOWN)));
 }  // end convertGroupTypeToName()
 
 //==============================================================================
@@ -836,11 +836,11 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 
 	return isContext
 	           ? ConfigurationManager::GroupType::CONTEXT_TYPE
-			   : (isBackbone
+	           : (isBackbone
 	                  ? ConfigurationManager::GroupType::BACKBONE_TYPE
-					  : (isIterate
+	                  : (isIterate
 	                         ? ConfigurationManager::GroupType::ITERATE_TYPE
-							 : ConfigurationManager::GroupType::CONFIGURATION_TYPE));
+	                         : ConfigurationManager::GroupType::CONFIGURATION_TYPE));
 }  // end getTypeOfGroup()
 
 //==============================================================================
@@ -848,7 +848,9 @@ ConfigurationManager::GroupType ConfigurationManager::getTypeOfGroup(
 ///	return string for group type
 const std::string& ConfigurationManager::getTypeNameOfGroup(
     const std::map<std::string /*name*/, TableVersion /*version*/>& memberMap)
-{ return convertGroupTypeToName(getTypeOfGroup(memberMap)); }  // end getTypeNameOfGroup()
+{
+	return convertGroupTypeToName(getTypeOfGroup(memberMap));
+}  // end getTypeNameOfGroup()
 
 //==============================================================================
 /// dumpMacroMakerModeFhicl
@@ -1034,7 +1036,7 @@ void ConfigurationManager::recursiveTreeToFhicl(ConfigurationTree node,
 
 		}  // end fe fields
 
-	}  // close UID content
+	}        // close UID content
 	POPTAB;  // close UID decoration
 	OUT << "} //end " << node.getValueAsString() << " record" << __E__;
 
@@ -1702,7 +1704,8 @@ void ConfigurationManager::dumpActiveConfiguration(
 		    <<
 
 		    // List all choices (must match accepted dumpType strings)
-		    "Group Keys" << ", "
+		    "Group Keys"
+		    << ", "
 		    << "Table Versions"
 		    << ", "
 		    << "Group Keys and Table Versions"
@@ -1932,21 +1935,21 @@ void ConfigurationManager::loadMemberMap(
 
 			std::thread(
 			    [](ConfigurationInterface*                 theInterface,
-				   std::map<std::string, ots::TableBase*>* theNameToTableMap,
-				   ots::TableBase*                         theTable,
-				   std::string                             theTableName,
-				   ots::TableVersion                       version,
-				   std::string*                            theThreadErrors,
-				   std::mutex*                             theThreadMutex,
-				   std::shared_ptr<std::atomic<bool>>      theThreadDone) {
+			       std::map<std::string, ots::TableBase*>* theNameToTableMap,
+			       ots::TableBase*                         theTable,
+			       std::string                             theTableName,
+			       ots::TableVersion                       version,
+			       std::string*                            theThreadErrors,
+			       std::mutex*                             theThreadMutex,
+			       std::shared_ptr<std::atomic<bool>>      theThreadDone) {
 				    ConfigurationManager::fillTableThread(theInterface,
-					                                      theNameToTableMap,
-					                                      theTable,
-					                                      theTableName,
-					                                      version,
-					                                      theThreadErrors,
-					                                      theThreadMutex,
-					                                      theThreadDone);
+				                                          theNameToTableMap,
+				                                          theTable,
+				                                          theTableName,
+				                                          version,
+				                                          theThreadErrors,
+				                                          theThreadMutex,
+				                                          theThreadDone);
 			    },
 			    theInterface_,
 			    &nameToTableMap_,
@@ -2386,7 +2389,7 @@ void ConfigurationManager::loadTableGroup(
 						                memberMap.at(mergeInPair.first))
 						                ->getView() /* sourceViewA */,
 						            getVersionedTableByName(mergeInPair.first,
-									                        mergeInPair.second)
+						                                    mergeInPair.second)
 						                ->getView() /* sourceViewB*/,
 						            TableVersion() /* destinationVersion*/,
 						            "override-table",
@@ -2403,9 +2406,9 @@ void ConfigurationManager::loadTableGroup(
 						nameToTableMap_.at(mergeInPair.first)
 						    ->getViewP()
 						    ->setComment(nameToTableMap_.at(mergeInPair.first)
-							                 ->getView()
-							                 .getComment() +
-							             "\n" + mergeReport.str());
+						                     ->getView()
+						                     .getComment() +
+						                 "\n" + mergeReport.str());
 						__GEN_COUT__ << "Overriding table '" << mergeInPair.first
 						             << "' resulting version v" << newVersion << __E__;
 						__GEN_COUTV__(mergeReport.str());
@@ -2455,7 +2458,7 @@ void ConfigurationManager::loadTableGroup(
 						                memberMap.at(mergeInPair.first))
 						                ->getView() /* sourceViewA */,
 						            getVersionedTableByName(mergeInPair.first,
-									                        mergeInPair.second)
+						                                    mergeInPair.second)
 						                ->getView() /* sourceViewB*/,
 						            TableVersion() /* destinationVersion*/,
 						            "merge-in-table",
@@ -2472,9 +2475,9 @@ void ConfigurationManager::loadTableGroup(
 						nameToTableMap_.at(mergeInPair.first)
 						    ->getViewP()
 						    ->setComment(nameToTableMap_.at(mergeInPair.first)
-							                 ->getView()
-							                 .getComment() +
-							             "\n" + mergeReport.str());
+						                     ->getView()
+						                     .getComment() +
+						                 "\n" + mergeReport.str());
 						__GEN_COUT__ << "Merging-in table '" << mergeInPair.first
 						             << "' resulting version v" << newVersion << __E__;
 						__GEN_COUTV__(mergeReport.str());
@@ -2623,15 +2626,15 @@ void ConfigurationManager::loadTableGroup(
 
 						std::thread(
 						    [](ConfigurationManager*              cfgMgr,
-							   ots::TableBase*                    theTable,
-							   std::string*                       theThreadErrors,
-							   std::mutex*                        theThreadMutex,
-							   std::shared_ptr<std::atomic<bool>> theThreadDone) {
+						       ots::TableBase*                    theTable,
+						       std::string*                       theThreadErrors,
+						       std::mutex*                        theThreadMutex,
+						       std::shared_ptr<std::atomic<bool>> theThreadDone) {
 							    ConfigurationManager::initTableThread(cfgMgr,
-								                                      theTable,
-								                                      theThreadErrors,
-								                                      theThreadMutex,
-								                                      theThreadDone);
+							                                          theTable,
+							                                          theThreadErrors,
+							                                          theThreadMutex,
+							                                          theThreadDone);
 						    },
 						    this,
 						    nameToTableMap_.at(memberPair.first),
@@ -2909,12 +2912,12 @@ void ConfigurationManager::copyTableGroupFromCache(
 			}
 			nameToTableMap_.at(memberPair.first)
 			    ->copyView(cacheConfigMgr.getTableByName(memberPair.first)
-				               ->getView(memberPair.second),
-				           memberPair.second,
-				           cacheConfigMgr.getTableByName(memberPair.first)
-				               ->getView(memberPair.second)
-				               .getAuthor(),
-				           true /* looseColumnMatching */);
+			                   ->getView(memberPair.second),
+			               memberPair.second,
+			               cacheConfigMgr.getTableByName(memberPair.first)
+			                   ->getView(memberPair.second)
+			                   .getAuthor(),
+			               true /* looseColumnMatching */);
 
 			//Note: copyView does not make the new view the active view,
 			//	to make the new view the active view do this:
@@ -3041,15 +3044,15 @@ void ConfigurationManager::copyTableGroupFromCache(
 
 					std::thread(
 					    [](ConfigurationManager*              cfgMgr,
-						   ots::TableBase*                    theTable,
-						   std::string*                       theAccumulatedWarnings,
-						   std::mutex*                        theThreadMutex,
-						   std::shared_ptr<std::atomic<bool>> theThreadDone) {
+					       ots::TableBase*                    theTable,
+					       std::string*                       theAccumulatedWarnings,
+					       std::mutex*                        theThreadMutex,
+					       std::shared_ptr<std::atomic<bool>> theThreadDone) {
 						    ConfigurationManager::initTableThread(cfgMgr,
-							                                      theTable,
-							                                      theAccumulatedWarnings,
-							                                      theThreadMutex,
-							                                      theThreadDone);
+						                                          theTable,
+						                                          theAccumulatedWarnings,
+						                                          theThreadMutex,
+						                                          theThreadDone);
 					    },
 					    this,
 					    nameToTableMap_.at(memberPair.first),
@@ -3521,7 +3524,7 @@ ConfigurationManager::getActiveTableGroups(void) const
 	        theIterateTableGroupKey_ ? *theIterateTableGroupKey_ : TableGroupKey());
 	retMap[ConfigurationManager::GROUP_TYPE_NAME_CONFIGURATION] =
 	    std::pair<std::string, TableGroupKey>(theConfigurationTableGroup_,
-		                                      theConfigurationTableGroupKey_
+	                                          theConfigurationTableGroupKey_
 	                                              ? *theConfigurationTableGroupKey_
 	                                              : TableGroupKey());
 	return retMap;
@@ -3658,7 +3661,9 @@ ConfigurationTree ConfigurationManager::getNode(const std::string& nodeString,
 //==============================================================================
 std::map<std::string, ConfigurationTree> ConfigurationManager::getNodes(
     const std::string& nodeString) const
-{ return getNode(nodeString).getChildrenMap(); }
+{
+	return getNode(nodeString).getChildrenMap();
+}
 
 //==============================================================================
 /// getFirstPathToNode
@@ -4120,7 +4125,7 @@ ConfigurationManager::getVersionAliases(void) const
 		if(retMap.find(tableName) != retMap.end() &&
 		   retMap[tableName].find(versionAlias) != retMap[tableName].end())
 			continue;  // skip repeats (Note: this also prevents overwriting of Scratch
-		               // alias)
+			           // alias)
 
 		// validate that SubsystemCommonContext aliases only reference Context group tables
 		if(versionAlias == SUBSYSTEM_COMMON_CONTEXT_VERSION_ALIAS ||
@@ -4340,15 +4345,21 @@ const std::set<std::string>& ConfigurationManager::getActiveContextMemberNames()
 
 //==============================================================================
 const std::set<std::string>& ConfigurationManager::getFixedContextMemberNames()
-{ return ConfigurationManager::fixedContextMemberNames_; }  // end getContextMemberNames()
+{
+	return ConfigurationManager::fixedContextMemberNames_;
+}  // end getContextMemberNames()
 
 //==============================================================================
 const std::set<std::string>& ConfigurationManager::getBackboneMemberNames()
-{ return ConfigurationManager::backboneMemberNames_; }  // end getBackboneMemberNames()
+{
+	return ConfigurationManager::backboneMemberNames_;
+}  // end getBackboneMemberNames()
 
 //==============================================================================
 const std::set<std::string>& ConfigurationManager::getIterateMemberNames()
-{ return ConfigurationManager::iterateMemberNames_; }  // end getIterateMemberNames()
+{
+	return ConfigurationManager::iterateMemberNames_;
+}  // end getIterateMemberNames()
 
 //==============================================================================
 const std::set<std::string>& ConfigurationManager::getConfigurationMemberNames(void)
@@ -4889,14 +4900,14 @@ bool ConfigurationManager::isOwnerFirstAppInContext()
 	{
 		auto contextChildren =
 		    getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
-			        ownerContextUID_ + "/LinkToApplicationTable")
+		            ownerContextUID_ + "/LinkToApplicationTable")
 		        .getChildrenNames(false /* byPriority */, true /* onlyStatusTrue */);
 
 		if(contextChildren.size() == 0)  // no enabled apps, check if owner is app[0]
 		{
 			contextChildren =
 			    getNode(ConfigurationManager::XDAQ_CONTEXT_TABLE_NAME + "/" +
-				        ownerContextUID_ + "/LinkToApplicationTable")
+			            ownerContextUID_ + "/LinkToApplicationTable")
 			        .getChildrenNames(false /* byPriority */, false /* onlyStatusTrue */);
 			__GEN_COUTVS__(10, StringMacros::vectorToString(contextChildren));
 		}
@@ -5079,17 +5090,17 @@ ConfigurationManager::getOtherSubsystemActiveTableGroups(
 		{
 			cmdResult = StringMacros::exec(
 			    ("rm " + tmpSubsystemFilename +
-				 " 2>/dev/null; scp -o ConnectTimeout=5 -o BatchMode=yes " + username +
-				 "@" + hostname + ":" + filename + " " + tmpSubsystemFilename +
-				 " 2>&1; cat " + tmpSubsystemFilename + " 2>&1")
+			     " 2>/dev/null; scp -o ConnectTimeout=5 -o BatchMode=yes " + username +
+			     "@" + hostname + ":" + filename + " " + tmpSubsystemFilename +
+			     " 2>&1; cat " + tmpSubsystemFilename + " 2>&1")
 			        .c_str());
 		}
 		else
 			cmdResult = StringMacros::exec(
 			    ("rm " + tmpSubsystemFilename +
-				 " 2>/dev/null; scp -o ConnectTimeout=5 -o BatchMode=yes " + hostname +
-				 ":" + filename + " " + tmpSubsystemFilename + " 2>&1; cat " +
-				 tmpSubsystemFilename + " 2>&1")
+			     " 2>/dev/null; scp -o ConnectTimeout=5 -o BatchMode=yes " + hostname +
+			     ":" + filename + " " + tmpSubsystemFilename + " 2>&1; cat " +
+			     tmpSubsystemFilename + " 2>&1")
 			        .c_str());
 	}
 	else  //then can just directly access the file

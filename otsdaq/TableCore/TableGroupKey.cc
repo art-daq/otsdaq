@@ -61,7 +61,9 @@ unsigned int TableGroupKey::key(void) const { return key_; }
 /// operator==
 bool TableGroupKey::operator==(unsigned int key) const { return (key_ == key); }
 bool TableGroupKey::operator==(const TableGroupKey& key) const
-{ return (key_ == key.key_); }
+{
+	return (key_ == key.key_);
+}
 
 //==============================================================================
 /// operator*=
@@ -123,17 +125,23 @@ TableGroupKey& TableGroupKey::operator=(const unsigned int key)
 //==============================================================================
 bool TableGroupKey::operator!=(unsigned int key) const { return (key_ != key); }
 bool TableGroupKey::operator!=(const TableGroupKey& key) const
-{ return (key_ != key.key_); }
+{
+	return (key_ != key.key_);
+}
 
 //==============================================================================
 /// operator<
 bool TableGroupKey::operator<(const TableGroupKey& key) const
-{ return (key_ < key.key_); }
+{
+	return (key_ < key.key_);
+}
 
 //==============================================================================
 /// operator>
 bool TableGroupKey::operator>(const TableGroupKey& key) const
-{ return (key_ > key.key_); }
+{
+	return (key_ > key.key_);
+}
 
 //==============================================================================
 /// isInvalid

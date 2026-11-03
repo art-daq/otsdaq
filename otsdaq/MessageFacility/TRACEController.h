@@ -9,7 +9,7 @@ class TRACEController : public ITRACEController
 {
   public:
 	TRACEController()
-	    : ITRACEController() {};
+	    : ITRACEController(){};
 	virtual ~TRACEController() = default;
 
 	virtual const HostTraceLevelMap& getTraceLevels(void);

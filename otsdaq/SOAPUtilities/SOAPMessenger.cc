@@ -39,7 +39,9 @@ SOAPMessenger::SOAPMessenger(const SOAPMessenger& aSOAPMessenger)
 std::string SOAPMessenger::send(XDAQ_CONST_CALL xdaq::ApplicationDescriptor* ind,
                                 xoap::MessageReference                       message)
 
-{ return SOAPUtilities::receive(sendWithSOAPReply(ind, message)); }
+{
+	return SOAPUtilities::receive(sendWithSOAPReply(ind, message));
+}
 
 //==============================================================================
 std::string SOAPMessenger::send(XDAQ_CONST_CALL xdaq::ApplicationDescriptor* d,
@@ -78,13 +80,17 @@ std::string SOAPMessenger::send(XDAQ_CONST_CALL xdaq::ApplicationDescriptor* ind
                                 std::string                                  cmd,
                                 SOAPParameters                               parameters)
 
-{ return SOAPUtilities::receive(sendWithSOAPReply(ind, cmd, parameters)); }
+{
+	return SOAPUtilities::receive(sendWithSOAPReply(ind, cmd, parameters));
+}
 
 //==============================================================================
 xoap::MessageReference SOAPMessenger::sendWithSOAPReply(
     XDAQ_CONST_CALL xdaq::ApplicationDescriptor* ind, std::string cmd)
 
-{ return sendWithSOAPReply(ind, SOAPUtilities::makeSOAPMessageReference(cmd)); }
+{
+	return sendWithSOAPReply(ind, SOAPUtilities::makeSOAPMessageReference(cmd));
+}
 
 //==============================================================================
 xoap::MessageReference SOAPMessenger::sendWithSOAPReply(
