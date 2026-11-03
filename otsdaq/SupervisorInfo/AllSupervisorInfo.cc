@@ -358,7 +358,8 @@ void AllSupervisorInfo::setSupervisorStatus(
     const std::string&                      detail,
     std::vector<SupervisorInfo::SubappInfo> subapps,
     const uint64_t                          availableLogSpaceKB,
-    const uint64_t                          availableDataSpaceKB)
+    const uint64_t                          availableDataSpaceKB,
+    const uint64_t                          availableVarSpaceKB)
 {
 	setSupervisorStatus(app->getApplicationDescriptor()->getLocalId(),
 	                    status,
@@ -366,7 +367,8 @@ void AllSupervisorInfo::setSupervisorStatus(
 	                    detail,
 	                    subapps,
 	                    availableLogSpaceKB,
-	                    availableDataSpaceKB);
+	                    availableDataSpaceKB,
+	                    availableVarSpaceKB);
 }  // end setSupervisorStatus()
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
@@ -376,7 +378,8 @@ void AllSupervisorInfo::setSupervisorStatus(
     const std::string&                      detail,
     std::vector<SupervisorInfo::SubappInfo> subapps,
     const uint64_t                          availableLogSpaceKB,
-    const uint64_t                          availableDataSpaceKB)
+    const uint64_t                          availableDataSpaceKB,
+    const uint64_t                          availableVarSpaceKB)
 {
 	setSupervisorStatus(appInfo.getId(),
 	                    status,
@@ -384,7 +387,8 @@ void AllSupervisorInfo::setSupervisorStatus(
 	                    detail,
 	                    subapps,
 	                    availableLogSpaceKB,
-	                    availableDataSpaceKB);
+	                    availableDataSpaceKB,
+	                    availableVarSpaceKB);
 }  // end setSupervisorStatus()
 //==============================================================================
 void AllSupervisorInfo::setSupervisorStatus(
@@ -394,7 +398,8 @@ void AllSupervisorInfo::setSupervisorStatus(
     const std::string&                      detail,
     std::vector<SupervisorInfo::SubappInfo> subapps,
     const uint64_t                          availableLogSpaceKB,
-    const uint64_t                          availableDataSpaceKB)
+    const uint64_t                          availableDataSpaceKB,
+    const uint64_t                          availableVarSpaceKB)
 {
 	auto it = allSupervisorInfo_.find(id);
 	if(it == allSupervisorInfo_.end())
@@ -407,8 +412,12 @@ void AllSupervisorInfo::setSupervisorStatus(
 	{
 		if(progress > 100)
 			__COUT__ << "What happened 2? " << progress << __E__;
-		it->second.setStatus(
-		    status, progress, detail, availableLogSpaceKB, availableDataSpaceKB);
+		it->second.setStatus(status,
+		                     progress,
+		                     detail,
+		                     availableLogSpaceKB,
+		                     availableDataSpaceKB,
+		                     availableVarSpaceKB);
 		//if subapps size mismatch, then clear to eliminate renamed subapps
 		if(it->second.getSubappInfo().size() != subapps.size())
 			it->second.clearSubapps();

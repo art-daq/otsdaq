@@ -32,25 +32,27 @@ void CodeEditorSupervisor::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
 //==============================================================================
 /// setSupervisorPropertyDefaults
 ///		override to set defaults for supervisor property values (before user settings
-/// override)
+/// override). By default, write access requires a named (non-admin) user with
+/// permission level 255; both can be relaxed through Supervisor Properties.
 void CodeEditorSupervisor::setSupervisorPropertyDefaults()
 {
 	CorePropertySupervisorBase::setSupervisorProperty(
 	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.UserPermissionsThreshold,
 	    std::string() + "*=1 | codeEditor=-1");
+	CorePropertySupervisorBase::setSupervisorProperty(
+	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireSecurityRequestTypes,
+	    "codeEditor");
 
 }  // end setSupervisorPropertyDefaults()
 
 //==============================================================================
 /// forceSupervisorPropertyValues
-///		override to force supervisor property values (and ignore user settings)
+///		override to force supervisor property values (and ignore user settings).
+///		The lock is always required for write access.
 void CodeEditorSupervisor::forceSupervisorPropertyValues()
 {
 	CorePropertySupervisorBase::setSupervisorProperty(
 	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireUserLockRequestTypes,
-	    "codeEditor");
-	CorePropertySupervisorBase::setSupervisorProperty(
-	    CorePropertySupervisorBase::SUPERVISOR_PROPERTIES.RequireSecurityRequestTypes,
 	    "codeEditor");
 
 }  // end forceSupervisorPropertyValues()

@@ -445,30 +445,34 @@ try
 	int    portForReverseLoginOverUDP  = 0;  //if 0, then not reverse login not enabled
 	std::string ipAddressForStateChangesOverUDP = "";  //if "", then not enabled
 
-	std::map<std::string /* context uid */,
-	         std::pair<int64_t /* available log space KB */,
-	                   int64_t /* available data space KB */>>
-	    availableDiskSpaceKB_map;
+	// last known free space per context for the three watched disks: the one holding
+	// $OTSDAQ_LOG_DIR, the one holding $OTSDAQ_DATA, and the host's /var
+	struct AvailableDiskSpaceKB
+	{
+		int64_t log = 0, data = 0, var = 0;
+	};
+	std::map<std::string /* context uid */, AvailableDiskSpaceKB> availableDiskSpaceKB_map;
 	// Single shared "last alert" timestamp per disk per context — any window firing
 	// resets it, so a flood of correlated alerts is suppressed. Faster-window
 	// thresholds still get more chances because they use shorter silence periods.
 	std::map<std::string /* context uid */, time_t /* last alert */>
-	    rateToLogDiskAlert_map, rateToDataDiskAlert_map;
+	    rateToLogDiskAlert_map, rateToDataDiskAlert_map, rateToVarDiskAlert_map;
 	// Per-disk "first time the trip condition was observed" — used to require the
 	// condition to be sustained for a few seconds before firing. Cleared on any
 	// pass that does not see a trip, so brief transients reset the clock.
 	std::map<std::string /* context uid */, time_t /* first trip seen */>
-	    firstTripLogObserved_map, firstTripDataObserved_map;
+	    firstTripLogObserved_map, firstTripDataObserved_map, firstTripVarObserved_map;
 	// Time-suppression for the hard-low "available disk space low" alarm so a
 	// disk hovering near MIN does not spam every status pass.
 	std::map<std::string /* context uid */, time_t /* last alert */> hardLowLogAlert_map,
-	    hardLowDataAlert_map;
+	    hardLowDataAlert_map, hardLowVarAlert_map;
 	// Workloop start time — used to skip the rate alarms during a warmup window
 	// while the historical-sample deque is dominated by the seed value (which is
 	// usually captured during the noisy startup burst).
 	const time_t workloopStartTime = time(0);
 
-	int64_t availableLogSpaceKB_MIN = 0, availableDataSpaceKB_MIN = 0;
+	int64_t availableLogSpaceKB_MIN = 0, availableDataSpaceKB_MIN = 0,
+	        availableVarSpaceKB_MIN = 0;
 
 	try  // Note!! User can prevent data check by export OTSDAQ_LOG_DISK_MINIMUM=0
 	{
@@ -489,6 +493,16 @@ try
 		availableDataSpaceKB_MIN = 1000000;  //1 GB default in KBs;
 	}
 	__COUTV__(availableDataSpaceKB_MIN);
+
+	try  // Note!! User can prevent /var check by export OTSDAQ_VAR_DISK_MINIMUM=0
+	{
+		availableVarSpaceKB_MIN = std::stoull(__ENV__("OTSDAQ_VAR_DISK_MINIMUM"));
+	}
+	catch(...)
+	{
+		availableVarSpaceKB_MIN = 1000000;  //1 GB default in KBs;
+	}
+	__COUTV__(availableVarSpaceKB_MIN);
 
 	auto formatRateKBps = [](float rateKBps) -> std::string {
 		float       absRate = rateKBps < 0 ? -rateKBps : rateKBps;
@@ -515,6 +529,7 @@ try
 	};
 	const std::string otsdaq_log_dir  = __ENV__("OTSDAQ_LOG_DIR");
 	const std::string otsdaq_data_dir = __ENV__("OTSDAQ_DATA");
+	const std::string otsdaq_var_dir  = CorePropertySupervisorBase::OTSDAQ_VAR_DIR;
 
 	if(doDisconnected)
 		sleep(5);  // stagger the two loops a bit
@@ -672,8 +687,8 @@ try
 			std::vector<SupervisorInfo::SubappInfo> subapps;
 			int                                     progressInteger;
 
-			int64_t            availableLogSpaceKB = 0, availableDataSpaceKB = 0;
-			auto               appInfo = it.second;
+			int64_t availableLogSpaceKB = 0, availableDataSpaceKB = 0, availableVarSpaceKB = 0;
+			auto    appInfo = it.second;
 			const std::string& appName = appInfo.getName();
 
 			bool isDisconnected =
@@ -708,9 +723,12 @@ try
 						availableDataSpaceKB =
 						    theSupervisor
 						        ->CorePropertySupervisorBase::getAvailableDataSpaceKB();
+						availableVarSpaceKB =
+						    theSupervisor->CorePropertySupervisorBase::getAvailableVarSpaceKB();
 
 						__COUTVS__(TLVL_StatusWorkloop, availableLogSpaceKB);
 						__COUTVS__(TLVL_StatusWorkloop, availableDataSpaceKB);
+						__COUTVS__(TLVL_StatusWorkloop, availableVarSpaceKB);
 
 						// send back status and progress parameters
 						const std::string& err =
@@ -2294,6 +2312,7 @@ try
 					parameters.addParameter("Subapps");
 					parameters.addParameter("AvailableLogSpaceKB");
 					parameters.addParameter("AvailableDataSpaceKB");
+					parameters.addParameter("AvailableVarSpaceKB");
 					SOAPUtilities::receive(statusMessage, parameters);
 					auto parseMs =
 					    std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -2443,6 +2462,12 @@ try
 					else
 						availableDataSpaceKB = std::stoull(value);
 					__COUTVS__(TLVL_DebugStatusDetail, availableDataSpaceKB);
+					value = parameters.getValue("AvailableVarSpaceKB");  // absent from older apps
+					if(!value.size())
+						availableVarSpaceKB = 0;
+					else
+						availableVarSpaceKB = std::stoull(value);
+					__COUTVS__(TLVL_DebugStatusDetail, availableVarSpaceKB);
 
 					if(!appLastStatusGood[appName])
 					{
@@ -2694,66 +2719,74 @@ try
 
 			__COUTVS__(TLVL_DebugStatusWorkloop, availableLogSpaceKB);
 			__COUTVS__(TLVL_DebugStatusWorkloop, availableDataSpaceKB);
+			__COUTVS__(TLVL_DebugStatusWorkloop, availableVarSpaceKB);
 
-			//alert and record available disk space
-			auto spaceIt = availableDiskSpaceKB_map.find(appInfo.getContextName());
+			//alert and record available disk space -- same treatment for each disk:
+			//	a fresh non-zero reading that dropped below MIN fires a rate-limited
+			//	system message; a zero reading (app not first in context, or older app
+			//	without the field) falls back to the last known value for this context
 			const time_t hardLowSilenceSecs = 5 * 60;  //rate-limit hard-low alarms
 			const time_t nowForHardLow      = time(0);
-			if(availableLogSpaceKB)  //if non-zero, then assume is latest valid value
-			{
-				if((spaceIt == availableDiskSpaceKB_map.end() ||  //and new value
-				    spaceIt->second.first > availableLogSpaceKB) &&
-				   availableLogSpaceKB < availableLogSpaceKB_MIN)  //and below threshold
-				{
-					//rate-limit: do not fire if we already alerted recently for this context
-					auto lastIt = hardLowLogAlert_map.find(appInfo.getContextName());
-					if(lastIt == hardLowLogAlert_map.end() ||
-					   nowForHardLow - lastIt->second > hardLowSilenceSecs)
-					{
-						theSupervisor->addSystemMessage(
-						    "*",
-						    "LOG disk space low (at host='" + appInfo.getHostname() +
-						        "' and path='" + otsdaq_log_dir +
-						        "/'): " + std::to_string(availableLogSpaceKB / 1024) +
-						        " MB remaining.");
-						hardLowLogAlert_map[appInfo.getContextName()] = nowForHardLow;
-					}
-				}
-				availableDiskSpaceKB_map[appInfo.getContextName()].first =
-				    availableLogSpaceKB;
-			}
-			else if(spaceIt !=
-			        availableDiskSpaceKB_map.end())  //else use last known value
-				availableLogSpaceKB = spaceIt->second.first;
+			auto&        lastKnownSpace     = availableDiskSpaceKB_map[appInfo.getContextName()];
 
-			if(availableDataSpaceKB)  //if non-zero, then assume is latest valid value
-			{
-				if((spaceIt == availableDiskSpaceKB_map.end() ||  //and new value
-				    spaceIt->second.second > availableDataSpaceKB) &&
-				   availableDataSpaceKB < availableDataSpaceKB_MIN)  //and below threshold
+			auto recordAndAlertHardLow = [&](const std::string& diskTag,  //"LOG", "DATA", "VAR"
+			                                 const std::string& diskPath,
+			                                 int64_t&           availableSpaceKB,
+			                                 int64_t&           lastKnownSpaceKB,
+			                                 int64_t            availableSpaceKB_MIN,
+			                                 std::map<std::string, time_t>& alertMap) {
+				if(!availableSpaceKB)  //no fresh reading: keep showing the last known value
 				{
-					auto lastIt = hardLowDataAlert_map.find(appInfo.getContextName());
-					if(lastIt == hardLowDataAlert_map.end() ||
+					availableSpaceKB = lastKnownSpaceKB;
+					return;
+				}
+				if(lastKnownSpaceKB > availableSpaceKB &&  //dropped since last pass
+				   availableSpaceKB < availableSpaceKB_MIN)  //and below threshold
+				{
+					auto lastIt = alertMap.find(appInfo.getContextName());
+					if(lastIt == alertMap.end() ||
 					   nowForHardLow - lastIt->second > hardLowSilenceSecs)
 					{
 						theSupervisor->addSystemMessage(
 						    "*",
-						    "DATA disk space low (at host='" + appInfo.getHostname() +
-						        "' and path='" + otsdaq_data_dir +
-						        "/'): " + std::to_string(availableDataSpaceKB / 1024) +
+						    diskTag + " disk space low (at host='" + appInfo.getHostname() +
+						        "' and path='" + diskPath +
+						        "/'): " + std::to_string(availableSpaceKB / 1024) +
 						        " MB remaining.");
-						hardLowDataAlert_map[appInfo.getContextName()] = nowForHardLow;
+						alertMap[appInfo.getContextName()] = nowForHardLow;
 					}
 				}
-				availableDiskSpaceKB_map[appInfo.getContextName()].second =
-				    availableDataSpaceKB;
-			}
-			else if(spaceIt !=
-			        availableDiskSpaceKB_map.end())  //else use last known value
-				availableDataSpaceKB = spaceIt->second.second;
+				lastKnownSpaceKB = availableSpaceKB;
+			};
+
+			recordAndAlertHardLow("LOG",
+			                      otsdaq_log_dir,
+			                      availableLogSpaceKB,
+			                      lastKnownSpace.log,
+			                      availableLogSpaceKB_MIN,
+			                      hardLowLogAlert_map);
+			recordAndAlertHardLow("DATA",
+			                      otsdaq_data_dir,
+			                      availableDataSpaceKB,
+			                      lastKnownSpace.data,
+			                      availableDataSpaceKB_MIN,
+			                      hardLowDataAlert_map);
+			// /var hard-low only when it is a different disk from log and data (a
+			// shared root volume would otherwise raise the same alarm three times)
+			if(availableVarSpaceKB && (availableVarSpaceKB == availableLogSpaceKB ||
+			                           availableVarSpaceKB == availableDataSpaceKB))
+				lastKnownSpace.var = availableVarSpaceKB;  //record, no separate alarm
+			else
+				recordAndAlertHardLow("VAR",
+				                      otsdaq_var_dir,
+				                      availableVarSpaceKB,
+				                      lastKnownSpace.var,
+				                      availableVarSpaceKB_MIN,
+				                      hardLowVarAlert_map);
 
 			__COUTVS__(TLVL_DebugStatusWorkloop, availableLogSpaceKB);
 			__COUTVS__(TLVL_DebugStatusWorkloop, availableDataSpaceKB);
+			__COUTVS__(TLVL_DebugStatusWorkloop, availableVarSpaceKB);
 
 			theSupervisor->allSupervisorInfo_
 			    .setSupervisorStatus(  //====================================== set supervisor status
@@ -2763,7 +2796,8 @@ try
 			        detail,
 			        subapps,
 			        availableLogSpaceKB,
-			        availableDataSpaceKB);
+			        availableDataSpaceKB,
+			        availableVarSpaceKB);
 
 			//if no recent alert, check if rate to disk is too high ------------
 			// Windows go from longest-and-quietest to shortest-and-loudest. A
@@ -2807,6 +2841,10 @@ try
 			                             info.getDataUsageRateLastHalfHourKBps(),
 			                             info.getDataUsageRateLastQuarterHourKBps(),
 			                             info.getDataUsageRateNowKBps()};
+			const float  varRates[4]  = {info.getVarUsageRateLastHourKBps(),
+			                             info.getVarUsageRateLastHalfHourKBps(),
+			                             info.getVarUsageRateLastQuarterHourKBps(),
+			                             info.getVarUsageRateNowKBps()};
 			const time_t logSpans[4]  = {
                 info.getLogSpaceSampleAgeSeconds(slotForWindow[0]),
                 info.getLogSpaceSampleAgeSeconds(slotForWindow[1]),
@@ -2817,6 +2855,10 @@ try
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[1]),
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[2]),
 			    info.getDataSpaceSampleAgeSeconds(slotForWindow[3])};
+			const time_t varSpans[4] = {info.getVarSpaceSampleAgeSeconds(slotForWindow[0]),
+			                            info.getVarSpaceSampleAgeSeconds(slotForWindow[1]),
+			                            info.getVarSpaceSampleAgeSeconds(slotForWindow[2]),
+			                            info.getVarSpaceSampleAgeSeconds(slotForWindow[3])};
 
 			auto checkDiskRateAlerts = [&](const std::string& diskTag,   //"LOG" or "DATA"
 			                               const std::string& diskWord,  //"log" or "data"
@@ -2907,6 +2949,26 @@ try
 				                    firstTripDataObserved_map);
 			else
 				firstTripDataObserved_map.erase(appInfo.getContextName());
+
+			//same for /var: skip when it is the same physical disk as log or data
+			auto sameRates = [](const float(&a)[4], const float(&b)[4]) {
+				return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
+			};
+			bool varIsSameAsLogOrData =
+			    (availableVarSpaceKB == availableLogSpaceKB && sameRates(varRates, logRates)) ||
+			    (availableVarSpaceKB == availableDataSpaceKB && sameRates(varRates, dataRates));
+			if(!varIsSameAsLogOrData)
+				checkDiskRateAlerts("VAR",
+				                    "/var",
+				                    otsdaq_var_dir,
+				                    availableVarSpaceKB,
+				                    availableVarSpaceKB_MIN,
+				                    varRates,
+				                    varSpans,
+				                    rateToVarDiskAlert_map,
+				                    firstTripVarObserved_map);
+			else
+				firstTripVarObserved_map.erase(appInfo.getContextName());
 
 			// Measure time spent on this app's status
 			auto appStatusMs =
@@ -3393,6 +3455,14 @@ try
 					remoteGatewayApp.appInfo.availableDataSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
+				    remoteStatusString, "availableVarSpaceKB", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())  // older remote Gateway
+					remoteGatewayApp.appInfo.availableVarSpaceKB = 0;
+				else
+					remoteGatewayApp.appInfo.availableVarSpaceKB = std::stoull(value);
+
+				value = StringMacros::extractXmlField(
 				    remoteStatusString, "logUsageRateKBps", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
@@ -3405,6 +3475,13 @@ try
 				if(!value.size())
 					value = "0";
 				remoteGatewayApp.appInfo.dataUsageRateKBps = std::stof(value);
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "varUsageRateKBps", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.appInfo.varUsageRateKBps = std::stof(value);
 
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
@@ -3496,6 +3573,13 @@ try
 				remoteGatewayApp.subapps[name].availableDataSpaceKB = std::stoull(value);
 
 				value = StringMacros::extractXmlField(
+				    remoteStatusString, "availableVarSpaceKB", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())  // older remote Gateway
+					value = "0";
+				remoteGatewayApp.subapps[name].availableVarSpaceKB = std::stoull(value);
+
+				value = StringMacros::extractXmlField(
 				    remoteStatusString, "logUsageRateKBps", 0, after);
 				__COUTVS__(TLVL_RemoteStatusParams, value);
 				if(!value.size())
@@ -3508,6 +3592,13 @@ try
 				if(!value.size())
 					value = "0";
 				remoteGatewayApp.subapps[name].dataUsageRateKBps = std::stof(value);
+
+				value = StringMacros::extractXmlField(
+				    remoteStatusString, "varUsageRateKBps", 0, after);
+				__COUTVS__(TLVL_RemoteStatusParams, value);
+				if(!value.size())
+					value = "0";
+				remoteGatewayApp.subapps[name].varUsageRateKBps = std::stof(value);
 
 				value =
 				    StringMacros::extractXmlField(remoteStatusString, "time", 0, after);
@@ -4048,6 +4139,10 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						    "availableDataSpaceKB",
 						    std::to_string(appInfo.getAvailableDataSpaceKB()),
 						    supervisorNode);  // get data space
+						xmlOut.addAttributeToNode(
+						    "availableVarSpaceKB",
+						    std::to_string(appInfo.getAvailableVarSpaceKB()),
+						    supervisorNode);  // get /var space
 						float rate = appInfo.getLogUsageRateLastHourKBps();
 						if(rate == 0)
 							rate = appInfo.getLogUsageRateLastHalfHourKBps();
@@ -4068,6 +4163,16 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						xmlOut.addAttributeToNode("dataUsageRateKBps",
 						                          std::to_string(rate),
 						                          supervisorNode);  // get data usage rate
+						rate = appInfo.getVarUsageRateLastHourKBps();
+						if(rate == 0)
+							rate = appInfo.getVarUsageRateLastHalfHourKBps();
+						if(rate == 0)
+							rate = appInfo.getVarUsageRateLastQuarterHourKBps();
+						if(rate == 0)
+							rate = appInfo.getVarUsageRateNowKBps();
+						xmlOut.addAttributeToNode("varUsageRateKBps",
+						                          std::to_string(rate),
+						                          supervisorNode);  // get /var usage rate
 						xmlOut.addAttributeToNode(
 						    "class",
 						    appInfo.getClass(),
@@ -4361,6 +4466,9 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 						xmlOut.addNumberElementToData(
 						    "availableDataSpaceKB",
 						    appInfo.getAvailableDataSpaceKB());  // get data space
+						xmlOut.addNumberElementToData(
+						    "availableVarSpaceKB",
+						    appInfo.getAvailableVarSpaceKB());  // get /var space
 						float rate = appInfo.getLogUsageRateLastHourKBps();
 						if(rate == 0)
 							rate = appInfo.getLogUsageRateLastHalfHourKBps();
@@ -4379,6 +4487,15 @@ void GatewaySupervisor::StateChangerWorkLoop(GatewaySupervisor* theSupervisor)
 							rate = appInfo.getDataUsageRateNowKBps();
 						xmlOut.addNumberElementToData("dataUsageRateKBps",
 						                              rate);  // get data usage rate
+						rate = appInfo.getVarUsageRateLastHourKBps();
+						if(rate == 0)
+							rate = appInfo.getVarUsageRateLastHalfHourKBps();
+						if(rate == 0)
+							rate = appInfo.getVarUsageRateLastQuarterHourKBps();
+						if(rate == 0)
+							rate = appInfo.getVarUsageRateNowKBps();
+						xmlOut.addNumberElementToData("varUsageRateKBps",
+						                              rate);  // get /var usage rate
 						xmlOut.addTextElementToData(
 						    "class",
 						    appInfo.getClass());  // get application class
@@ -12290,6 +12407,9 @@ try
 				xmlOut.addNumberElementToData("availableDataSpaceGB",
 				                              appInfo.getAvailableDataSpaceKB() /
 				                                  1000.0f / 1000.0f);  // get data space
+				xmlOut.addNumberElementToData("availableVarSpaceGB",
+				                              appInfo.getAvailableVarSpaceKB() / 1000.0f /
+				                                  1000.0f);  // get /var space
 				float rate = appInfo.getLogUsageRateLastHourKBps();
 				if(rate == 0)
 					rate = appInfo.getLogUsageRateLastHalfHourKBps();
@@ -12309,6 +12429,15 @@ try
 				__SUP_COUTT__ << appInfo.getName() << " rate=" << rate << __E__;
 				xmlOut.addNumberElementToData("dataUsageRateKBps",
 				                              rate);  // get data usage rate
+				rate = appInfo.getVarUsageRateLastHourKBps();
+				if(rate == 0)
+					rate = appInfo.getVarUsageRateLastHalfHourKBps();
+				if(rate == 0)
+					rate = appInfo.getVarUsageRateLastQuarterHourKBps();
+				if(rate == 0)
+					rate = appInfo.getVarUsageRateNowKBps();
+				xmlOut.addNumberElementToData("varUsageRateKBps",
+				                              rate);  // get /var usage rate
 				xmlOut.addTextElementToData("class",
 				                            appInfo.getClass());  // get application class
 				xmlOut.addTextElementToData("url",
@@ -12363,6 +12492,10 @@ try
 					    subappInfoPair.second.availableDataSpaceKB / 1000.0f / 1000.0f,
 					    subappElement);  // get data space
 					xmlOut.addNumberElementToParent(
+					    "subapp_availableVarSpaceGB",
+					    subappInfoPair.second.availableVarSpaceKB / 1000.0f / 1000.0f,
+					    subappElement);  // get /var space
+					xmlOut.addNumberElementToParent(
 					    "subapp_logUsageRateKBps",
 					    subappInfoPair.second.logUsageRateKBps,
 					    subappElement);  // get log usage rate
@@ -12370,6 +12503,10 @@ try
 					    "subapp_dataUsageRateKBps",
 					    subappInfoPair.second.dataUsageRateKBps,
 					    subappElement);  // get data usage rate
+					xmlOut.addNumberElementToParent(
+					    "subapp_varUsageRateKBps",
+					    subappInfoPair.second.varUsageRateKBps,
+					    subappElement);  // get /var usage rate
 					xmlOut.addTextElementToParent("subapp_url",
 					                              subappInfoPair.second.url,
 					                              subappElement);  // get detail
@@ -12420,10 +12557,15 @@ try
 				    "availableDataSpaceGB",
 				    appInfo.availableDataSpaceKB / 1000.0f / 1000.0f);  // get data space
 				xmlOut.addNumberElementToData(
+				    "availableVarSpaceGB",
+				    appInfo.availableVarSpaceKB / 1000.0f / 1000.0f);  // get /var space
+				xmlOut.addNumberElementToData(
 				    "logUsageRateKBps", appInfo.logUsageRateKBps);  // get log usage rate
 				xmlOut.addNumberElementToData(
 				    "dataUsageRateKBps",
 				    appInfo.dataUsageRateKBps);  // get data usage rate
+				xmlOut.addNumberElementToData(
+				    "varUsageRateKBps", appInfo.varUsageRateKBps);  // get /var usage rate
 				xmlOut.addTextElementToData("class",
 				                            appInfo.class_name);  // get application class
 				xmlOut.addTextElementToData("url",
@@ -12478,6 +12620,10 @@ try
 					    subappInfoPair.second.availableDataSpaceKB / 1000.0f / 1000.0f,
 					    subappElement);  // get data space
 					xmlOut.addNumberElementToParent(
+					    "subapp_availableVarSpaceGB",
+					    subappInfoPair.second.availableVarSpaceKB / 1000.0f / 1000.0f,
+					    subappElement);  // get /var space
+					xmlOut.addNumberElementToParent(
 					    "subapp_logUsageRateKBps",
 					    subappInfoPair.second.logUsageRateKBps,
 					    subappElement);  // get log usage rate
@@ -12485,6 +12631,10 @@ try
 					    "subapp_dataUsageRateKBps",
 					    subappInfoPair.second.dataUsageRateKBps,
 					    subappElement);  // get data usage rate
+					xmlOut.addNumberElementToParent(
+					    "subapp_varUsageRateKBps",
+					    subappInfoPair.second.varUsageRateKBps,
+					    subappElement);  // get /var usage rate
 					xmlOut.addTextElementToParent("subapp_url",
 					                              subappInfoPair.second.parent_url,
 					                              subappElement);  // get detail

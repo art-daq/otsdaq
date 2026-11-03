@@ -10,7 +10,8 @@ void SupervisorInfo::setStatus(const std::string& status,
                                const unsigned int progress,
                                const std::string& detail,
                                const int64_t      availableLogSpaceKB,
-                               const int64_t      availableDataSpaceKB)
+                               const int64_t      availableDataSpaceKB,
+                               const int64_t      availableVarSpaceKB)
 {
 	/// Note: be careful accessing status_ in multithreaded code (need higher level lock, a la getSupervisorInfoMutex)
 	if(status != SupervisorInfo::APP_STATUS_UNKNOWN)
@@ -24,6 +25,7 @@ void SupervisorInfo::setStatus(const std::string& status,
 	detail_   = detail;
 	SupervisorInfo::emplaceAvailableSpace(availableLogSpaceKB, availableLogSpaceKB_);
 	SupervisorInfo::emplaceAvailableSpace(availableDataSpaceKB, availableDataSpaceKB_);
+	SupervisorInfo::emplaceAvailableSpace(availableVarSpaceKB, availableVarSpaceKB_);
 }  // end setStatus()
 
 //=====================================================================================
@@ -32,7 +34,8 @@ void SupervisorInfo::setSubappStatus(const std::string& name,
                                      const unsigned int progress,
                                      const std::string& detail,
                                      const int64_t      availableLogSpaceKB,
-                                     const int64_t      availableDataSpaceKB)
+                                     const int64_t      availableDataSpaceKB,
+                                     const int64_t      availableVarSpaceKB)
 {
 	subapps_[name].name = name;
 	if(status !=
@@ -50,6 +53,8 @@ void SupervisorInfo::setSubappStatus(const std::string& name,
 	                                      subapps_.at(name).availableLogSpaceKB_);
 	SupervisorInfo::emplaceAvailableSpace(availableDataSpaceKB,
 	                                      subapps_.at(name).availableDataSpaceKB_);
+	SupervisorInfo::emplaceAvailableSpace(availableVarSpaceKB,
+	                                      subapps_.at(name).availableVarSpaceKB_);
 }  // end setSubappStatus()
 
 //=====================================================================================
