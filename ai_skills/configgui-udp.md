@@ -187,6 +187,57 @@ particular instance is hard-coded.
 | `enable_gateway_udp_transitions.sh <ip> <port> [cfg_ip] [cfg_port]` | sets IP, port and enable flag together, chaining temporary versions |
 | `revert_active_table_group.sh [groupType] [key]` | edits `ActiveTableGroups.cfg` when `ots` cannot start; backs the file up first |
 
+## Editing links and adding rows (saveTreeNodeEdit editNodeType values)
+
+`saveTreeNodeEdit` does more than set a cell. The `editNodeType` values (from
+`handleSaveTreeNodeEditXML`) used so far:
+
+| editNodeType | targetColumn | newValue | effect |
+|--------------|--------------|----------|--------|
+| `value` | the field | new value (URI-encoded) | set one cell on an existing row |
+| `link-GroupID` | the link column, e.g. `LinkToParameterTable` | `<tableName>,<groupID>` (raw comma) | point a group link at a table and group |
+| `link-UID` | the link column | `<tableName>,<uid>` | point a UID link at a table and row |
+| `table-newGroupRow` | any column of the table (required, unused) | `<linkIndex>,<groupID>,<newRowUID>` | add a row to group `<groupID>`; `linkIndex` is the link index of the table's GroupID column |
+
+Notes from a real run (Visualizer window parameter, `mode=waveform`):
+- A "value is the same as the current value" reply is an `<Error>` but harmless (for
+  example `Enabled` was already `True` on a new row).
+- Chain edits on the **version each reply returns** (`-2`, then `-3`, then `-4`);
+  do not guess. A failed edit does not consume a number.
+- Edits on different tables each start their own temporary chain (both started at
+  `-2`); persist each with `saveSpecificTable ... version=<its last temp>`, then put
+  both new versions in the `tableList` of one `saveNewTableGroup`.
+- Read the result back with `getTreeView ... startPath=/<Table>/<UID>/<LinkColumn>`
+  before activating: a link edit shows as the linked rows under that path.
+
+### Example: pass window parameters to a Desktop icon (Context group)
+
+The Visualizer page reads `mode` from its window parameters (`Visualization.html`:
+`DesktopContent.getParameter(0, "mode")`; `waveform` launches the waveform viewer,
+anything else the ROOT viewer). Window parameters come from `DesktopWindowParameterTable`
+through the icon's `LinkToParameterTable`/`LinkToParameterGroupID` (group link index
+`windowParameters`).
+
+```bash
+# 1. link the icon (record UID = the IconName, here Visualizer) to a new group
+ots_cfg_udp_test 127.0.0.1 2010 saveTreeNodeEdit \
+    targetTable=DesktopIconTable targetTableVersion=<iconVer> targetUID=Visualizer \
+    targetColumn=LinkToParameterTable newValue=DesktopWindowParameterTable,Visualizer_params \
+    editNodeType=link-GroupID
+# 2. add the parameter row to that group, then set key and value
+ots_cfg_udp_test 127.0.0.1 2010 saveTreeNodeEdit \
+    targetTable=DesktopWindowParameterTable targetTableVersion=<paramVer> \
+    targetUID=Visualizer_param0 targetColumn=windowParameterGroupID \
+    newValue=windowParameters,Visualizer_params,Visualizer_param0 editNodeType=table-newGroupRow
+#    then editNodeType=value on windowParameterKey=mode and windowParameterValue=waveform
+#    (Enabled is already True on a new row)
+# 3. saveSpecificTable both tables, saveNewTableGroup (trailing comma), activateTableGroup,
+#    restart ots (Context group).
+```
+*Verified* through the tree read-back (Visualizer -> `Visualizer_param0` with
+`mode=waveform`, Enabled). The effect in the browser window is checked in
+`tutorial-to-visualizer-waveforms.md`.
+
 ## Client Library: ots_cfg_udp_interface
 
 Header: `test/ots_cfg_udp_interface.h`, implementation `.cpp` (otsdaq-utilities).

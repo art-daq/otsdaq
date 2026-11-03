@@ -118,6 +118,15 @@ Gateway log `Data/Logs/otsdaq_quiet_run-gateway-*.txt`:
 - `RawDataVisualizerConsumerImpl.cc ... DB1Consumer1 running` and per-packet
   `DB1Consumer1 UID: VisualSupervisor` => the consumer handled packets. *Verified.*
 
+## Step 5b - Put the Visualizer window in waveform mode (Context group)
+
+`Visualization.html` only launches the waveform viewer when its window parameter
+`mode` is `waveform`. Add it as a Desktop window parameter on the Visualizer icon
+(`DesktopIconTable` -> `DesktopWindowParameterTable`), using the "Editing links and
+adding rows" section of `configgui-udp.md`. Then activate the new Context group and
+restart ots. *Verified:* the tree read-back shows the Visualizer icon resolving to
+`mode=waveform`; **unverified:** what the opened window shows.
+
 ## Step 6 - See it in the Visualizer window
 
 Open `http://<host>:2015/urn:xdaq-application:lid=200/`, log in, and open the
