@@ -123,7 +123,7 @@ edit_cell() {
         echo "$result" | grep -oP "Error value='\K[^']+" >&2
         exit 1
     fi
-    saved=$(echo "$result" | grep -oP "savedVersion value='\K[^']+")
+    saved=$(echo "$result" | grep -oP "savedVersion value='\K[^']+" || true)
     if [ -z "$saved" ]; then
         echo "ERROR: no savedVersion in reply to saveTreeNodeEdit $column" >&2
         exit 1
@@ -169,7 +169,7 @@ echo
 echo "--- Step 3: Save new group ---"
 TABLE_LIST=""
 while IFS= read -r line; do
-    MNAME=$(echo "$line" | grep -oP "MemberName value='\K[^']+")
+    MNAME=$(echo "$line" | grep -oP "MemberName value='\K[^']+" || true)  # non-member lines must not trip set -e
     if [ -n "$MNAME" ]; then
         # read the next MemberVersion
         read -r vline

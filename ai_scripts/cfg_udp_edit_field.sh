@@ -62,7 +62,7 @@ cfg_ro() {
 
 # Get active group for the requested type
 ACTIVE=$(cfg_ro getActiveTableGroups)
-GROUP_NAME=$(echo "$ACTIVE" | grep -oP "${GROUP_TYPE}-ActiveGroupName value='\K[^']+")
+GROUP_NAME=$(echo "$ACTIVE" | grep -oP "${GROUP_TYPE}-ActiveGroupName value='\K[^']+" || true)
 GROUP_KEY=$(echo "$ACTIVE" | grep -oP "${GROUP_TYPE}-ActiveGroupKey value='\K[^']+")
 
 if [ -z "$GROUP_NAME" ] || [ "$GROUP_KEY" = "-1" ]; then
@@ -73,7 +73,7 @@ echo "Active $GROUP_TYPE group: $GROUP_NAME key $GROUP_KEY"
 
 # Get current table version
 MEMBERS=$(cfg_ro getSpecificTableGroup groupName="$GROUP_NAME" groupKey="$GROUP_KEY")
-CURRENT_VERSION=$(echo "$MEMBERS" | grep -A1 "MemberName value='$TABLE'" | grep -oP "MemberVersion value='\K[^']+")
+CURRENT_VERSION=$(echo "$MEMBERS" | grep -A1 "MemberName value='$TABLE'" | grep -oP "MemberVersion value='\K[^']+" || true)
 
 if [ -z "$CURRENT_VERSION" ]; then
     echo "ERROR: $TABLE not found in $GROUP_NAME group."
@@ -81,8 +81,11 @@ if [ -z "$CURRENT_VERSION" ]; then
 fi
 echo "$TABLE version: $CURRENT_VERSION"
 
-# URL-encode the new value for fields that need it
-ENCODED_VALUE=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$NEW_VALUE', safe=''))" 2>/dev/null || echo "$NEW_VALUE")
+# URL-encode via argv so quotes/backslashes in the value never reach Python source
+urlencode() {
+    python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=''))" "$1"
+}
+ENCODED_VALUE=$(urlencode "$NEW_VALUE") || { echo "ERROR: python3 is required to URL-encode the value."; exit 1; }
 
 # Step 1: Edit the cell
 echo
@@ -104,7 +107,7 @@ echo "Temporary version: $TEMP_VERSION"
 # Step 2: Persist the temporary version
 echo
 echo "Step 2: Persist temporary version"
-ENCODED_COMMENT=$(python3 -c "import urllib.parse; print(urllib.parse.quote('Set $COLUMN=$NEW_VALUE', safe=''))" 2>/dev/null || echo "Set%20${COLUMN}")
+ENCODED_COMMENT=$(urlencode "Set $COLUMN=$NEW_VALUE") || { echo "ERROR: python3 is required to URL-encode the comment."; exit 1; }
 SAVE_RESULT=$(cfg saveSpecificTable \
     tableName="$TABLE" version="$TEMP_VERSION" temporary=0 \
     dataOffset=0 chunkSize=0 sourceTableAsIs=1 lookForEquivalent=1 \
@@ -114,7 +117,7 @@ if echo "$SAVE_RESULT" | grep -q "<Error"; then
     echo "$SAVE_RESULT" | grep -oP "Error value='\K[^']+"
     exit 1
 fi
-NEW_VERSION=$(echo "$SAVE_RESULT" | grep -oP "savedVersion value='\K[^']+")
+NEW_VERSION=$(echo "$SAVE_RESULT" | grep -oP "savedVersion value='\K[^']+" || true)
 if [ -z "$NEW_VERSION" ]; then
     echo "ERROR: no savedVersion in saveSpecificTable reply."
     exit 1
@@ -126,7 +129,7 @@ echo
 echo "Step 3: Save new group"
 TABLE_LIST=""
 while IFS= read -r line; do
-    MNAME=$(echo "$line" | grep -oP "MemberName value='\K[^']+")
+    MNAME=$(echo "$line" | grep -oP "MemberName value='\K[^']+" || true)  # non-member lines must not trip set -e
     if [ -n "$MNAME" ]; then
         read -r vline
         MVER=$(echo "$vline" | grep -oP "MemberVersion value='\K[^']+")

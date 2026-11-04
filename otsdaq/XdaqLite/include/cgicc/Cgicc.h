@@ -51,6 +51,8 @@ class Cgicc
 
   private:
 	void parse(const std::string& data);
+	void parseBody(const std::string& contentType, const std::string& postData);
+	void parseMultipart(const std::string& boundary, const std::string& body);
 
 	CgiEnvironment         env_;
 	std::vector<FormEntry> entries_;

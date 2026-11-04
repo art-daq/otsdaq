@@ -295,10 +295,7 @@ cgicc::Cgicc::Cgicc(CgiInput* input)
 		return;
 	env_ = input->getEnvironment();
 	parse(input->getQueryString());
-	if(env_.getContentType().find("application/x-www-form-urlencoded") !=
-	       std::string::npos ||
-	   env_.getContentType().empty())
-		parse(input->getPostData());
+	parseBody(env_.getContentType(), input->getPostData());
 }
 
 cgicc::Cgicc::Cgicc(const CgiEnvironment& env,
@@ -307,10 +304,88 @@ cgicc::Cgicc::Cgicc(const CgiEnvironment& env,
     : env_(env)
 {
 	parse(queryString);
-	if(env.getContentType().find("application/x-www-form-urlencoded") !=
-	       std::string::npos ||
-	   env.getContentType().empty())
+	parseBody(env.getContentType(), postData);
+}
+
+void cgicc::Cgicc::parseBody(const std::string& contentType, const std::string& postData)
+{
+	size_t b = contentType.find("boundary=");
+	if(contentType.find("multipart/form-data") != std::string::npos &&
+	   b != std::string::npos)
+	{
+		std::string boundary = contentType.substr(b + 9);
+		size_t      end      = boundary.find(';');
+		if(end != std::string::npos)
+			boundary.erase(end);
+		while(!boundary.empty() && (boundary.back() == ' ' || boundary.back() == '\r' ||
+		                            boundary.back() == '\n'))
+			boundary.pop_back();
+		if(boundary.size() > 1 && boundary.front() == '"' && boundary.back() == '"')
+			boundary = boundary.substr(1, boundary.size() - 2);
+		parseMultipart(boundary, postData);
+	}
+	else if(contentType.find("application/x-www-form-urlencoded") != std::string::npos ||
+	        contentType.empty())
 		parse(postData);
+}
+
+// RFC 7578: parts are delimited by "--<boundary>"; each has a header block ending in a
+// blank line. A part with a filename is a FormFile, otherwise a FormEntry.
+void cgicc::Cgicc::parseMultipart(const std::string& boundary, const std::string& body)
+{
+	const std::string delim = "--" + boundary;
+	size_t            pos   = body.find(delim);
+	while(pos != std::string::npos)
+	{
+		pos += delim.size();
+		if(body.compare(pos, 2, "--") == 0)
+			break;  // closing delimiter
+		size_t hdrStart = body.find_first_not_of("\r\n", pos);
+		if(hdrStart == std::string::npos)
+			break;
+		size_t hdrEnd    = body.find("\r\n\r\n", hdrStart);
+		size_t dataStart = hdrEnd + 4;
+		if(hdrEnd == std::string::npos)
+		{
+			hdrEnd = body.find("\n\n", hdrStart);
+			if(hdrEnd == std::string::npos)
+				break;
+			dataStart = hdrEnd + 2;
+		}
+		size_t next = body.find(delim, dataStart);
+		if(next == std::string::npos)
+			break;
+		size_t dataEnd = next;  // drop the line break that precedes the next delimiter
+		if(dataEnd >= dataStart + 2 && body.compare(dataEnd - 2, 2, "\r\n") == 0)
+			dataEnd -= 2;
+		else if(dataEnd > dataStart && body[dataEnd - 1] == '\n')
+			dataEnd -= 1;
+
+		std::string headers = body.substr(hdrStart, hdrEnd - hdrStart);
+		auto        attr    = [&headers](const std::string& key) {
+            size_t k = headers.find(" " + key + "=\"");  // leading space: "name" must not match "filename"
+            if(k == std::string::npos)
+                return std::string();
+            k += key.size() + 3;
+            size_t q = headers.find('"', k);
+            return headers.substr(k, q == std::string::npos ? std::string::npos : q - k);
+		};
+		std::string type;
+		size_t      ct = headers.find("Content-Type:");
+		if(ct != std::string::npos)
+		{
+			ct += 13;
+			size_t ctEnd = headers.find_first_of("\r\n", ct);
+			type = headers.substr(ct, ctEnd == std::string::npos ? std::string::npos : ctEnd - ct);
+			type.erase(0, type.find_first_not_of(' '));
+		}
+		std::string data = body.substr(dataStart, dataEnd - dataStart);
+		if(headers.find("filename=") != std::string::npos)
+			files_.emplace_back(attr("name"), attr("filename"), type, data);
+		else
+			entries_.emplace_back(attr("name"), data);
+		pos = next;
+	}
 }
 
 void cgicc::Cgicc::parse(const std::string& data)

@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <functional>
+#include <iostream>
 #include <string>
 #include <thread>
 
@@ -69,14 +70,11 @@ class WorkLoop
 			XCEPT_RAISE(xcept::Exception, "WorkLoop '" + name_ + "' already active");
 		if(!job_)
 			XCEPT_RAISE(xcept::Exception, "WorkLoop '" + name_ + "' has no job");
+		if(thread_.joinable())  // retire a worker whose job already finished on its own
+			thread_.join();
 		active_  = true;
 		running_ = true;
-		thread_  = std::thread([this] {
-            while(running_ && job_ && job_->invoke(this))
-            {
-            }
-            active_ = false;
-        });
+		thread_  = std::thread([this] { run(); });
 	}
 	// Waits for the job thread to finish, as xdaq's cancel() does.
 	void cancel()
@@ -95,10 +93,42 @@ class WorkLoop
 	}
 
   private:
-	std::string       name_, type_;
-	ActionSignature*  job_;
-	std::atomic<bool> active_, running_;
-	std::thread       thread_;
+	// As in xdaq, a job that returns false (or throws) is removed from the loop; the
+	// exception is reported here instead of escaping the thread and killing the process.
+	void run()
+	{
+		bool keepJob = true;
+		while(keepJob && running_)
+		{
+			ActionSignature* job = job_;
+			if(!job)
+				break;
+			try
+			{
+				keepJob = job->invoke(this);
+			}
+			catch(const std::exception& e)
+			{
+				std::cerr << "WorkLoop '" << getName() << "' job '" << job->name()
+				          << "' threw: " << e.what() << std::endl;
+				keepJob = false;
+			}
+			catch(...)
+			{
+				std::cerr << "WorkLoop '" << getName() << "' job '" << job->name()
+				          << "' threw an unknown exception" << std::endl;
+				keepJob = false;
+			}
+		}
+		if(!keepJob)
+			job_ = nullptr;
+		active_ = false;
+	}
+
+	std::string                   name_, type_;
+	std::atomic<ActionSignature*> job_;
+	std::atomic<bool>             active_, running_;
+	std::thread                   thread_;
 };
 }  // namespace task
 }  // namespace toolbox

@@ -100,6 +100,7 @@ class Iterator
 		bool pluginInitialized_ = false;  ///< plugin initialize() has run for the current ownership
 
 		time_t commandLogStartTime_ = 0;  ///< when the current command's START line was logged, for the DONE/ERROR duration
+		unsigned int commandLogIndex_ = 0;  ///< command dispatched by startCommand(); REPEAT_LABEL moves commandIndex_ before START/DONE are logged
 
 		bool remoteConfigureQueued_ = false;  ///< remote Configure needs Halt first when not Halted/Initial
 
@@ -234,7 +235,7 @@ class Iterator
 	///	(a logging failure must not stop a plan)
 	static void logPlanEvent(const std::string& planName, const std::string& event);
 	/// "#<n> TYPE [pass=.. loops=label:i,..] [-> subsystem] [targets=..] {param=value, ...}"
-	static std::string describeCommand(IteratorWorkLoopStruct* iteratorStruct);
+	static std::string describeCommand(IteratorWorkLoopStruct* iteratorStruct, unsigned int commandIndex);
 
 	static bool haltIterator(Iterator*               iterator,
 	                         IteratorWorkLoopStruct* iteratorStruct = 0,
