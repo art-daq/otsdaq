@@ -74,8 +74,7 @@ std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct,
                                       unsigned int            commandIndex)
 {
 	if(commandIndex >= iteratorStruct->commands_.size())
-		return "#" + std::to_string(commandIndex + 1) +
-		       " (out of range)";
+		return "#" + std::to_string(commandIndex + 1) + " (out of range)";
 
 	const auto&       command = iteratorStruct->commands_[commandIndex];
 	std::stringstream description;
@@ -88,10 +87,8 @@ std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct,
 	{
 		description << " (";
 		if(commandIndex < iteratorStruct->commandIterations_.size())
-			description
-			    << "run "
-			    << iteratorStruct->commandIterations_[commandIndex]
-			    << " of this command; ";
+			description << "run " << iteratorStruct->commandIterations_[commandIndex]
+			            << " of this command; ";
 		for(size_t i = 0; i < iteratorStruct->stepLabelStack_.size(); ++i)
 			description << (i ? ", " : "") << "loop '"
 			            << iteratorStruct->stepLabelStack_[i] << "' pass "
@@ -607,13 +604,15 @@ try
 
 							theIteratorStruct.commandLogStartTime_ = time(0);
 							// REPEAT_LABEL moves commandIndex_; keep the dispatched one for the log
-							theIteratorStruct.commandLogIndex_ = theIteratorStruct.commandIndex_;
+							theIteratorStruct.commandLogIndex_ =
+							    theIteratorStruct.commandIndex_;
 							iterator->startCommand(&theIteratorStruct);
 							// after startCommand so pass/loop counters are current
-							logPlanEvent(theIteratorStruct.activePlan_,
-							             "START " + describeCommand(
-							                            &theIteratorStruct,
-							                            theIteratorStruct.commandLogIndex_));
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "START " +
+							        describeCommand(&theIteratorStruct,
+							                        theIteratorStruct.commandLogIndex_));
 						}
 						else if(theIteratorStruct.commandIndex_ ==
 						        theIteratorStruct.commands_.size())  // Done!
@@ -664,7 +663,8 @@ try
 							logPlanEvent(
 							    theIteratorStruct.activePlan_,
 							    "DONE  #" +
-							        std::to_string(theIteratorStruct.commandLogIndex_ + 1) +
+							        std::to_string(theIteratorStruct.commandLogIndex_ +
+							                       1) +
 							        " " +
 							        theIteratorStruct
 							            .commands_[theIteratorStruct.commandLogIndex_]

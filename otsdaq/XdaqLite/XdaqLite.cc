@@ -363,7 +363,8 @@ void cgicc::Cgicc::parseMultipart(const std::string& boundary, const std::string
 
 		std::string headers = body.substr(hdrStart, hdrEnd - hdrStart);
 		auto        attr    = [&headers](const std::string& key) {
-            size_t k = headers.find(" " + key + "=\"");  // leading space: "name" must not match "filename"
+            size_t k = headers.find(
+                " " + key + "=\"");  // leading space: "name" must not match "filename"
             if(k == std::string::npos)
                 return std::string();
             k += key.size() + 3;
@@ -376,7 +377,8 @@ void cgicc::Cgicc::parseMultipart(const std::string& boundary, const std::string
 		{
 			ct += 13;
 			size_t ctEnd = headers.find_first_of("\r\n", ct);
-			type = headers.substr(ct, ctEnd == std::string::npos ? std::string::npos : ctEnd - ct);
+			type         = headers.substr(
+                ct, ctEnd == std::string::npos ? std::string::npos : ctEnd - ct);
 			type.erase(0, type.find_first_not_of(' '));
 		}
 		std::string data = body.substr(dataStart, dataEnd - dataStart);
