@@ -95,13 +95,38 @@ void CoreSupervisorBase::defaultPageWrapper(xgi::Input* in, xgi::Output* out)
 }
 
 //==============================================================================
-void CoreSupervisorBase::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
+/// getStandAloneDefaultPageParameters
+///		Desktop.openStandalone (Desktop.js) opens an application's default page with
+///		"?standAloneMode=1&gatewayLID=<N>". The default page only wraps the content
+///		html in a frame, so those parameters must be forwarded in the frame src for
+///		DesktopContent.js to see them. Values are restricted to digits so they are
+///		safe inside the single-quoted src attribute.
+std::string CoreSupervisorBase::getStandAloneDefaultPageParameters(xgi::Input* in)
+{
+	if(!in)
+		return "";
+
+	cgicc::Cgicc cgiIn(in);
+	if(CgiDataUtilities::getData(cgiIn, "standAloneMode") != "1")
+		return "";
+
+	std::string params     = "&standAloneMode=1";
+	std::string gatewayLID = CgiDataUtilities::getData(cgiIn, "gatewayLID");
+	if(!gatewayLID.empty() &&
+	   gatewayLID.find_first_not_of("0123456789") == std::string::npos)
+		params += "&gatewayLID=" + gatewayLID;
+	return params;
+}  // end getStandAloneDefaultPageParameters()
+
+//==============================================================================
+void CoreSupervisorBase::defaultPage(xgi::Input* in, xgi::Output* out)
 {
 	__SUP_COUT__ << "Supervisor class " << supervisorClass_ << __E__;
 
 	std::stringstream pagess;
 	pagess << "/WebPath/html/" << supervisorClassNoNamespace_
-	       << ".html?urn=" << this->getApplicationDescriptor()->getLocalId();
+	       << ".html?urn=" << this->getApplicationDescriptor()->getLocalId()
+	       << getStandAloneDefaultPageParameters(in);
 
 	__SUP_COUT__ << "Default page = " << pagess.str() << __E__;
 
