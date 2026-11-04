@@ -1,6 +1,8 @@
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
+#include "otsdaq/Macros/StringMacros.h"
 
 #include <iostream>
+#include <regex>
 
 using namespace ots;
 
@@ -97,10 +99,11 @@ void CoreSupervisorBase::defaultPageWrapper(xgi::Input* in, xgi::Output* out)
 //==============================================================================
 /// getStandAloneDefaultPageParameters
 ///		Desktop.openStandalone (Desktop.js) opens an application's default page with
-///		"?standAloneMode=1&gatewayLID=<N>". The default page only wraps the content
-///		html in a frame, so those parameters must be forwarded in the frame src for
-///		DesktopContent.js to see them. Values are restricted to digits so they are
-///		safe inside the single-quoted src attribute.
+///		"?standAloneMode=1&gatewayLID=<N>&gatewayOrigin=<http://host:port>". The
+///		default page only wraps the content html in a frame, so those parameters must
+///		be forwarded in the frame src for DesktopContent.js to see them. The LID is
+///		restricted to digits and the origin to "http(s)://host[:port]" (re-encoded)
+///		so the values are safe inside the single-quoted src attribute.
 std::string CoreSupervisorBase::getStandAloneDefaultPageParameters(xgi::Input* in)
 {
 	if(!in)
@@ -115,6 +118,13 @@ std::string CoreSupervisorBase::getStandAloneDefaultPageParameters(xgi::Input* i
 	if(!gatewayLID.empty() &&
 	   gatewayLID.find_first_not_of("0123456789") == std::string::npos)
 		params += "&gatewayLID=" + gatewayLID;
+
+	// getData() returns the raw (still percent-encoded) query value
+	std::string gatewayOrigin = StringMacros::decodeURIComponent(
+	    CgiDataUtilities::getData(cgiIn, "gatewayOrigin"));
+	static const std::regex originRegex("^https?://[A-Za-z0-9.-]+(:[0-9]+)?$");
+	if(!gatewayOrigin.empty() && std::regex_match(gatewayOrigin, originRegex))
+		params += "&gatewayOrigin=" + StringMacros::encodeURIComponent(gatewayOrigin);
 	return params;
 }  // end getStandAloneDefaultPageParameters()
 
