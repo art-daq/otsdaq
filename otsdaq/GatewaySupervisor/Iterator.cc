@@ -70,15 +70,15 @@ void Iterator::logPlanEvent(const std::string& planName, const std::string& even
 }  // end logPlanEvent()
 
 //==============================================================================
-std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct)
+std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct,
+                                      unsigned int            commandIndex)
 {
-	if(iteratorStruct->commandIndex_ >= iteratorStruct->commands_.size())
-		return "#" + std::to_string(iteratorStruct->commandIndex_ + 1) +
-		       " (out of range)";
+	if(commandIndex >= iteratorStruct->commands_.size())
+		return "#" + std::to_string(commandIndex + 1) + " (out of range)";
 
-	const auto&       command = iteratorStruct->commands_[iteratorStruct->commandIndex_];
+	const auto&       command = iteratorStruct->commands_[commandIndex];
 	std::stringstream description;
-	description << "#" << (iteratorStruct->commandIndex_ + 1) << " " << command.type_;
+	description << "#" << (commandIndex + 1) << " " << command.type_;
 
 	// loop position in plain words, e.g.
 	//	(run 3 of this command; loop 'Voltages' pass 2, loop 'Channels' pass 1)
@@ -86,11 +86,9 @@ std::string Iterator::describeCommand(IteratorWorkLoopStruct* iteratorStruct)
 	if(iteratorStruct->stepLabelStack_.size())
 	{
 		description << " (";
-		if(iteratorStruct->commandIndex_ < iteratorStruct->commandIterations_.size())
-			description
-			    << "run "
-			    << iteratorStruct->commandIterations_[iteratorStruct->commandIndex_]
-			    << " of this command; ";
+		if(commandIndex < iteratorStruct->commandIterations_.size())
+			description << "run " << iteratorStruct->commandIterations_[commandIndex]
+			            << " of this command; ";
 		for(size_t i = 0; i < iteratorStruct->stepLabelStack_.size(); ++i)
 			description << (i ? ", " : "") << "loop '"
 			            << iteratorStruct->stepLabelStack_[i] << "' pass "
@@ -605,10 +603,16 @@ try
 							         << __E__;
 
 							theIteratorStruct.commandLogStartTime_ = time(0);
+							// REPEAT_LABEL moves commandIndex_; keep the dispatched one for the log
+							theIteratorStruct.commandLogIndex_ =
+							    theIteratorStruct.commandIndex_;
 							iterator->startCommand(&theIteratorStruct);
 							// after startCommand so pass/loop counters are current
-							logPlanEvent(theIteratorStruct.activePlan_,
-							             "START " + describeCommand(&theIteratorStruct));
+							logPlanEvent(
+							    theIteratorStruct.activePlan_,
+							    "START " +
+							        describeCommand(&theIteratorStruct,
+							                        theIteratorStruct.commandLogIndex_));
 						}
 						else if(theIteratorStruct.commandIndex_ ==
 						        theIteratorStruct.commands_.size())  // Done!
@@ -659,10 +663,11 @@ try
 							logPlanEvent(
 							    theIteratorStruct.activePlan_,
 							    "DONE  #" +
-							        std::to_string(theIteratorStruct.commandIndex_ + 1) +
+							        std::to_string(theIteratorStruct.commandLogIndex_ +
+							                       1) +
 							        " " +
 							        theIteratorStruct
-							            .commands_[theIteratorStruct.commandIndex_]
+							            .commands_[theIteratorStruct.commandLogIndex_]
 							            .type_ +
 							        " took " +
 							        std::to_string(
@@ -696,7 +701,10 @@ try
 				theIteratorStruct.commandBusy_ = false;
 				logPlanEvent(
 				    theIteratorStruct.activePlan_,
-				    "ERROR " + describeCommand(&theIteratorStruct) + " after " +
+				    "ERROR " +
+				        describeCommand(&theIteratorStruct,
+				                        theIteratorStruct.commandLogIndex_) +
+				        " after " +
 				        std::to_string(time(0) - theIteratorStruct.commandLogStartTime_) +
 				        " s : " + e.what());
 
@@ -724,7 +732,10 @@ try
 				theIteratorStruct.commandBusy_ = false;
 				logPlanEvent(
 				    theIteratorStruct.activePlan_,
-				    "ERROR " + describeCommand(&theIteratorStruct) + " after " +
+				    "ERROR " +
+				        describeCommand(&theIteratorStruct,
+				                        theIteratorStruct.commandLogIndex_) +
+				        " after " +
 				        std::to_string(time(0) - theIteratorStruct.commandLogStartTime_) +
 				        " s : unknown exception");
 

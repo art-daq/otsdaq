@@ -94,11 +94,11 @@ TableViewColumnInfo::TableViewColumnInfo(const std::string& type,
     , minValue_(minValue ? ((*minValue) == "null" ? "" : (*minValue))
                          : getMinDefaultValue(dataType_))
     ,  // there was a time during JS GUI development when "null" was being injected into data files rather than empty strings. Because this member variable is
-       // constant, this is the single cleansing point.
+    // constant, this is the single cleansing point.
     maxValue_(maxValue ? ((*maxValue) == "null" ? "" : (*maxValue))
                        : getMaxDefaultValue(dataType_))
     ,  // there was a time during JS GUI development when "null" was being injected into data files rather than empty strings. Because this member variable is
-       // constant, this is the single cleansing point.
+    // constant, this is the single cleansing point.
     bitMapInfoP_(nullptr)
 {
 	//keep lightweight because tables+columns get copied around a lot

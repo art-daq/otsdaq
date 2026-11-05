@@ -3,6 +3,8 @@
 #include "otsdaq/Macros/CoutMacros.h"
 #include "otsdaq/MessageFacility/MessageFacility.h"
 
+#include <chrono>
+
 using namespace ots;
 
 //==============================================================================
@@ -36,9 +38,9 @@ void RawDataVisualizerConsumer::stopProcessingData(void)
 //==============================================================================
 bool RawDataVisualizerConsumer::workLoopThread(toolbox::task::WorkLoop* /*workLoop*/)
 {
-	__COUT__ << DataProcessor::processorUID_
-	         << " running, because workloop: " << WorkLoop::continueWorkLoop_
-	         << std::endl;
+	__COUTT__ << DataProcessor::processorUID_
+	          << " running, because workloop: " << WorkLoop::continueWorkLoop_
+	          << std::endl;
 	slowRead();  // fastRead();
 	return WorkLoop::continueWorkLoop_;
 }
@@ -68,11 +70,22 @@ void RawDataVisualizerConsumer::fastRead(void)
 void RawDataVisualizerConsumer::slowRead(void)
 {
 	// This is making a copy!!!
-	if(DataConsumer::read(data_, header_) < 0)
+	std::string                        data;
+	std::map<std::string, std::string> header;
+	if(DataConsumer::read(data, header) < 0)
 	{
 		usleep(1000);
 		return;
 	}
-	__COUT__ << DataProcessor::processorUID_ << " UID: " << supervisorApplicationUID_
-	         << std::endl;
+	{
+		std::lock_guard<std::mutex> lock(dataMutex_);
+		data_.swap(data);
+		header_.swap(header);
+		lastPacketTimeMs_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+		                        std::chrono::system_clock::now().time_since_epoch())
+		                        .count();
+		++packetCount_;
+	}
+	__COUTT__ << DataProcessor::processorUID_ << " UID: " << supervisorApplicationUID_
+	          << std::endl;
 }

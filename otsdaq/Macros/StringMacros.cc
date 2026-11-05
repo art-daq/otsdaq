@@ -285,7 +285,7 @@ void StringMacros::sanitizeForSQL(std::string& str)
 	std::map<char, std::string> replacements = {
 	    {'\'', "''"},   // Single quote becomes two single quotes
 	    {'\\', "\\\\"}  //,  // Backslash becomes double backslash
-	    // {';', "\\;"},    // Semicolon can be escaped (optional)
+	                    // {';', "\\;"},    // Semicolon can be escaped (optional)
 	    // {'-', "\\-"},    // Dash for comments (optional, context-specific)
 	};
 

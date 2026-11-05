@@ -2913,7 +2913,7 @@ int TableView::fillFromJSON(const std::string& json)
 								}
 
 								if(keyIsMatch || keyIsComment)  // currKey ==
-								    // columnsInfo_[c].getStorageName())
+								// columnsInfo_[c].getStorageName())
 								{
 									if(keyEntryCountMap.find(currKey) ==
 									   keyEntryCountMap.end())
@@ -3491,8 +3491,8 @@ unsigned int TableView::addRow(
     const std::string& author,
     unsigned char
         incrementUniqueData /* = false */,  // leave as unsigned char rather than
-    // bool, too many things (e.g. strings)
-    // evaluate successfully to bool values
+                                            // bool, too many things (e.g. strings)
+                                            // evaluate successfully to bool values
     const std::string& baseNameAutoUID /* = "" */,
     unsigned int       rowToAdd /* = -1 */,
     std::string        childLinkIndex /* = "" */,

@@ -3,6 +3,7 @@
 #ifndef _xdaq_ApplicationContext_h_
 #define _xdaq_ApplicationContext_h_
 
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -60,6 +61,9 @@ class ApplicationContext
 	Application* getApplication(unsigned int lid) const;
 	// Binds the instantiated application to a descriptor registered with addApplication(nullptr, ...).
 	void setApplication(unsigned int lid, Application* app);
+	// Records why a registered application was never constructed (e.g. its module could not be
+	// loaded); postSOAP reports it when something tries to reach that application.
+	void setUnavailableReason(unsigned int lid, const std::string& reason) { unavailable_[lid] = reason; }
 
 	// SOAP transport. Local targets are dispatched in-process; remote targets go over HTTP
 	// (not yet implemented in lite: throws xdaq::exception::Exception).
@@ -72,6 +76,7 @@ class ApplicationContext
 	std::vector<std::unique_ptr<ApplicationDescriptor>> descriptors_;
 	std::vector<std::unique_ptr<ContextDescriptor>>     remoteContexts_;
 	std::vector<std::pair<unsigned int, Application*>>  localApps_;
+	std::map<unsigned int, std::string>                 unavailable_;
 };
 }  // namespace xdaq
 

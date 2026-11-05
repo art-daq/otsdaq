@@ -48,6 +48,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <thread>
@@ -517,6 +518,15 @@ void usage()
 
 int main(int argc, char** argv)
 {
+	// otsdaq's __COUT*__ macros reach MessageFacility through TRACE's slow path, which forwards
+	// a level only if it is in the TRACE name's S mask. TRACE's compiled-in default stops below
+	// TLVL_DEBUG (8), so __COUT__ would never reach the log. The `ots` script sets the mask with
+	// trace_cntl before launching xdaq.exe; that only reaches names already in the TRACE file,
+	// so set the per-process default too. TRACE reads TRACE_LVLS once at its first use and
+	// applies it to every name this process registers. 0x1ff = TLVL 0-8 (FATAL..DEBUG), the same
+	// value `ots` uses; a user-set TRACE_LVLS is respected.
+	setenv("TRACE_LVLS", "0x1ff", 0 /*do not overwrite*/);
+
 	std::string host = "localhost", profile, partition;
 	int         port = 0;
 	for(int i = 1; i < argc; ++i)
@@ -582,38 +592,54 @@ int main(int argc, char** argv)
 	// Load every module first, then instantiate. As real xdaq.exe does, each class is found
 	// by the exported symbol ots::<Class>::instantiate(xdaq::ApplicationStub*) that
 	// XDAQ_INSTANTIATOR_IMPL defines; its Itanium-mangled name is built from the class name.
-	std::map<std::string, void*> handles;
+	std::map<std::string, void*>       handles;
+	std::map<std::string, std::string> loadErrors;  // module -> dlerror()
 	for(const auto& s : specs)
 	{
-		if(s.module.empty() || handles.count(s.module))
+		if(s.module.empty() || handles.count(s.module) || loadErrors.count(s.module))
 			continue;
 		void* h = dlopen(s.module.c_str(), RTLD_NOW | RTLD_GLOBAL);
 		if(!h)
 		{
 			// Not built under OTS_LITE (e.g. libVisualization.so); keep the rest of the context up.
+			const char* err      = dlerror();
+			loadErrors[s.module] = err ? err : "unknown dlopen error";
 			std::cerr << "ots_lite_main: WARNING cannot load " << s.module << ": "
-			          << dlerror() << " -- skipping applications in this module\n";
+			          << loadErrors[s.module]
+			          << " -- skipping applications in this module\n";
 			continue;
 		}
 		handles[s.module] = h;
 	}
 	// Register every application descriptor before constructing any, as xdaq.exe does:
-	// Supervisor constructors enumerate the whole context (AllSupervisorInfo).
+	// Supervisor constructors enumerate the whole context (AllSupervisorInfo), and the
+	// Gateway's transition ordering (from XDAQContextTable) expects every enabled app to be
+	// present there. An app whose module could not be loaded keeps its descriptor but is
+	// never constructed; SOAP to it then fails with a clear message (postSOAP).
 	std::map<unsigned int, const xdaq::ApplicationDescriptor*> descriptors;
+	std::set<unsigned int>                                     unloadable;
 	for(const auto& s : specs)
 	{
-		if(!s.module.empty() && !handles.count(s.module))
-		{
-			std::cerr << "ots_lite_main: skipping " << s.className << " lid=" << s.lid
-			          << " (module not loaded)\n";
-			continue;
-		}
 		descriptors[s.lid] =
 		    ctx.context->addApplication(nullptr, s.className, s.lid, s.instance);
+		if(!s.module.empty() && !handles.count(s.module))
+		{
+			std::string reason =
+			    "Supervisor " + s.className + " [LID=" + std::to_string(s.lid) +
+			    "] was not started: its library " + s.module + " could not be loaded (" +
+			    loadErrors[s.module] +
+			    "). Either fix the missing .so (e.g. a compile error) or exclude this "
+			    "Supervisor by setting its Status to Off in the Configuration GUI "
+			    "(XDAQApplicationTable), then save and activate the context and restart "
+			    "ots.";
+			std::cerr << "ots_lite_main: " << reason << "\n";
+			ctx.context->setUnavailableReason(s.lid, reason);
+			unloadable.insert(s.lid);
+		}
 	}
 	for(const auto& s : specs)
 	{
-		if(!descriptors.count(s.lid))
+		if(unloadable.count(s.lid))
 			continue;
 		// "ots::WizardSupervisor" -> namespaces + class, mangled as _ZN3ots16WizardSupervisor11instantiateEPN4xdaq15ApplicationStubE
 		std::string mangled = "_ZN";

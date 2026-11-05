@@ -58,13 +58,13 @@ class SupervisorInfo
 		std::string 	status {""};
 		unsigned int 	progress = 0, id = 0;
 		std::string 	detail {""};
-		int64_t 		availableLogSpaceKB = 0, availableDataSpaceKB = 0;
-		float			logUsageRateKBps = 0, dataUsageRateKBps = 0;
+		int64_t 		availableLogSpaceKB = 0, availableDataSpaceKB = 0, availableVarSpaceKB = 0;
+		float			logUsageRateKBps = 0, dataUsageRateKBps = 0, varUsageRateKBps = 0;
 		time_t 			lastStatusTime = 0;
 		time_t 			lastStatusChangeTime = 0;
 		std::string 	url {""} , parent_url {""};
 		std::string 	class_name {""};
-		std::deque<std::pair<time_t, int64_t>>	 availableLogSpaceKB_, availableDataSpaceKB_; //keep time series of last, 3.75 minutes, 7.5, 15, 30, 60 minutes to monitor rate trends
+		std::deque<std::pair<time_t, int64_t>>	 availableLogSpaceKB_, availableDataSpaceKB_, availableVarSpaceKB_; //keep time series of last, 3.75 minutes, 7.5, 15, 30, 60 minutes to monitor rate trends
 	}; // end SubappInfo struct
 
 	static const std::string APP_STATUS_UNKNOWN;
@@ -108,12 +108,14 @@ class SupervisorInfo
 
 	int64_t										 getAvailableLogSpaceKB         	(void) const { return availableLogSpaceKB_.size()  > 0 ? availableLogSpaceKB_.front().second : 0; }
 	int64_t										 getAvailableDataSpaceKB        	(void) const { return availableDataSpaceKB_.size() > 0 ? availableDataSpaceKB_.front().second : 0; }
+	int64_t										 getAvailableVarSpaceKB         	(void) const { return availableVarSpaceKB_.size()  > 0 ? availableVarSpaceKB_.front().second : 0; }
 
 	// Actual lookback span (seconds) between the newest sample and the sample at the
 	// given slot. Used by the disk-space alarm to refuse rates whose historical
 	// sample is still too young to be meaningful (e.g. just after startup).
 	time_t										 getLogSpaceSampleAgeSeconds		(size_t slot) const { return availableLogSpaceKB_.size()  > slot ? availableLogSpaceKB_.front().first - availableLogSpaceKB_[slot].first : 0; }
 	time_t										 getDataSpaceSampleAgeSeconds		(size_t slot) const { return availableDataSpaceKB_.size() > slot ? availableDataSpaceKB_.front().first - availableDataSpaceKB_[slot].first : 0; }
+	time_t										 getVarSpaceSampleAgeSeconds		(size_t slot) const { return availableVarSpaceKB_.size()  > slot ? availableVarSpaceKB_.front().first - availableVarSpaceKB_[slot].first : 0; }
 
 	float	                                     getLogUsageRateLastHourKBps   		(void) const { return availableLogSpaceKB_.size()  > 9 ? (availableLogSpaceKB_[9].second - availableLogSpaceKB_.front().second)*1.0f/
 																																			  std::max(static_cast<time_t>(1), availableLogSpaceKB_.front().first - availableLogSpaceKB_[9].first) : 0; }
@@ -131,9 +133,17 @@ class SupervisorInfo
 																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[5].first): 0; }
 	float	                                     getDataUsageRateNowKBps   			(void) const { return availableDataSpaceKB_.size() > 1 ? (availableDataSpaceKB_[1].second - availableDataSpaceKB_.front().second)*1.0f/
 																																			  std::max(static_cast<time_t>(1), availableDataSpaceKB_.front().first - availableDataSpaceKB_[1].first) : 0; }
+	float	                                     getVarUsageRateLastHourKBps   		(void) const { return availableVarSpaceKB_.size()  > 9 ? (availableVarSpaceKB_[9].second - availableVarSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableVarSpaceKB_.front().first - availableVarSpaceKB_[9].first) : 0; }
+	float	                                     getVarUsageRateLastHalfHourKBps	(void) const { return availableVarSpaceKB_.size()  > 7 ? (availableVarSpaceKB_[7].second - availableVarSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableVarSpaceKB_.front().first - availableVarSpaceKB_[7].first): 0; }
+	float	                                     getVarUsageRateLastQuarterHourKBps	(void) const { return availableVarSpaceKB_.size()  > 5 ? (availableVarSpaceKB_[5].second - availableVarSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableVarSpaceKB_.front().first - availableVarSpaceKB_[5].first): 0; }
+	float	                                     getVarUsageRateNowKBps   			(void) const { return availableVarSpaceKB_.size()  > 1 ? (availableVarSpaceKB_[1].second - availableVarSpaceKB_.front().second)*1.0f/
+																																			  std::max(static_cast<time_t>(1), availableVarSpaceKB_.front().first - availableVarSpaceKB_[1].first) : 0; }
 	/// Setters -------------------
-	void setStatus(const std::string& status, const unsigned int progress, const std::string& detail = "", const int64_t availableLogSpaceKB = 0, const int64_t availableDataSpaceKB = 0);
-	void setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail = "", const int64_t availableLogSpaceKB = 0, const int64_t availableDataSpaceKB = 0);
+	void setStatus(const std::string& status, const unsigned int progress, const std::string& detail = "", const int64_t availableLogSpaceKB = 0, const int64_t availableDataSpaceKB = 0, const int64_t availableVarSpaceKB = 0);
+	void setSubappStatus(const std::string& name, const std::string& status, const unsigned int progress, const std::string& detail = "", const int64_t availableLogSpaceKB = 0, const int64_t availableDataSpaceKB = 0, const int64_t availableVarSpaceKB = 0);
 	void copySubappStatus(const SubappInfo& info);
 	void clearSubapps() { subapps_.clear(); };
 
@@ -163,7 +173,7 @@ class SupervisorInfo
 	time_t                                   lastStatusTime_;
 	time_t                                   lastStatusChangeTime_ = 0;
 	std::map<std::string, SubappInfo>        subapps_;
-	std::deque<std::pair<time_t, int64_t>>	 availableLogSpaceKB_, availableDataSpaceKB_; //keep time series of last, 3.75 minutes, 7.5, 15, 30, 60 minutes to monitor rate trends
+	std::deque<std::pair<time_t, int64_t>>	 availableLogSpaceKB_, availableDataSpaceKB_, availableVarSpaceKB_; //keep time series of last, 3.75 minutes, 7.5, 15, 30, 60 minutes to monitor rate trends
 };
 // clang-format on
 }  // namespace ots
