@@ -1849,7 +1849,7 @@ void FEVInterfacesManager::startFEMacroMultiDimensional(
 						            << __E__;
 					        }  // end double loop
 				        }      // end update current value to initial value for all
-				               // dimensional parameters
+				        // dimensional parameters
 
 				        for(dimensionIterationCnt[dimension] =
 				                0;  // reset each time through dimension loop

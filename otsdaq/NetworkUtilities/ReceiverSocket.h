@@ -73,7 +73,7 @@ class ReceiverSocket : public virtual Socket
 	unsigned int   readCounter_;
 
 	std::mutex receiveMutex_;  ///< to make receiver socket thread safe
-	    //	i.e. multiple threads can share a socket and call receive()
+	//	i.e. multiple threads can share a socket and call receive()
 
 	char flushBuffer_
 	    [1500]{};  ///< Buffer for flush() to discard received data and avoid nullptr usage

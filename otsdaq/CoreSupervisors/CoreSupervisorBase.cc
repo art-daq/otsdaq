@@ -1,6 +1,8 @@
 #include "otsdaq/CoreSupervisors/CoreSupervisorBase.h"
+#include "otsdaq/Macros/StringMacros.h"
 
 #include <iostream>
+#include <regex>
 
 using namespace ots;
 
@@ -95,13 +97,46 @@ void CoreSupervisorBase::defaultPageWrapper(xgi::Input* in, xgi::Output* out)
 }
 
 //==============================================================================
-void CoreSupervisorBase::defaultPage(xgi::Input* /*in*/, xgi::Output* out)
+/// getStandAloneDefaultPageParameters
+///		Desktop.openStandalone (Desktop.js) opens an application's default page with
+///		"?standAloneMode=1&gatewayLID=<N>&gatewayOrigin=<http://host:port>". The
+///		default page only wraps the content html in a frame, so those parameters must
+///		be forwarded in the frame src for DesktopContent.js to see them. The LID is
+///		restricted to digits and the origin to "http(s)://host[:port]" (re-encoded)
+///		so the values are safe inside the single-quoted src attribute.
+std::string CoreSupervisorBase::getStandAloneDefaultPageParameters(xgi::Input* in)
+{
+	if(!in)
+		return "";
+
+	cgicc::Cgicc cgiIn(in);
+	if(CgiDataUtilities::getData(cgiIn, "standAloneMode") != "1")
+		return "";
+
+	std::string params     = "&standAloneMode=1";
+	std::string gatewayLID = CgiDataUtilities::getData(cgiIn, "gatewayLID");
+	if(!gatewayLID.empty() &&
+	   gatewayLID.find_first_not_of("0123456789") == std::string::npos)
+		params += "&gatewayLID=" + gatewayLID;
+
+	// getData() returns the raw (still percent-encoded) query value
+	std::string gatewayOrigin = StringMacros::decodeURIComponent(
+	    CgiDataUtilities::getData(cgiIn, "gatewayOrigin"));
+	static const std::regex originRegex("^https?://[A-Za-z0-9.-]+(:[0-9]+)?$");
+	if(!gatewayOrigin.empty() && std::regex_match(gatewayOrigin, originRegex))
+		params += "&gatewayOrigin=" + StringMacros::encodeURIComponent(gatewayOrigin);
+	return params;
+}  // end getStandAloneDefaultPageParameters()
+
+//==============================================================================
+void CoreSupervisorBase::defaultPage(xgi::Input* in, xgi::Output* out)
 {
 	__SUP_COUT__ << "Supervisor class " << supervisorClass_ << __E__;
 
 	std::stringstream pagess;
 	pagess << "/WebPath/html/" << supervisorClassNoNamespace_
-	       << ".html?urn=" << this->getApplicationDescriptor()->getLocalId();
+	       << ".html?urn=" << this->getApplicationDescriptor()->getLocalId()
+	       << getStandAloneDefaultPageParameters(in);
 
 	__SUP_COUT__ << "Default page = " << pagess.str() << __E__;
 
@@ -474,16 +509,21 @@ xoap::MessageReference CoreSupervisorBase::applicationStatusRequest(
 		    CorePropertySupervisorBase::getAvailableLogSpaceKB();
 		uint64_t availableDataSpaceKB =
 		    CorePropertySupervisorBase::getAvailableDataSpaceKB();
+		uint64_t availableVarSpaceKB =
+		    CorePropertySupervisorBase::getAvailableVarSpaceKB();
 
 		retParameters.addParameter("AvailableLogSpaceKB",
 		                           std::to_string(availableLogSpaceKB));
 		retParameters.addParameter("AvailableDataSpaceKB",
 		                           std::to_string(availableDataSpaceKB));
+		retParameters.addParameter("AvailableVarSpaceKB",
+		                           std::to_string(availableVarSpaceKB));
 	}
 	else  // just return 0 since not responsible for disk space
 	{
 		retParameters.addParameter("AvailableLogSpaceKB", "0");
 		retParameters.addParameter("AvailableDataSpaceKB", "0");
+		retParameters.addParameter("AvailableVarSpaceKB", "0");
 	}
 
 	auto subappInfo = getSubappInfo();

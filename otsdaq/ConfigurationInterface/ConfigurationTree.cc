@@ -240,8 +240,8 @@ void ConfigurationTree::getValue(std::string& value) const
 	{
 		if(isLinkNode() && isDisconnected())
 			value = (groupId_ == "") ? getValueName() : groupId_;  // a disconnected link
-			    // still knows its table
-			    // name or groupId
+		// still knows its table
+		// name or groupId
 		else
 			value = (groupId_ == "") ? table_->getTableName() : groupId_;
 	}

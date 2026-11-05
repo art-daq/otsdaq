@@ -67,6 +67,11 @@ class CoreSupervisorBase : public xdaq::Application,
 	///		- The security setting defaults can be setup or forced by overriding
 	/// setSupervisorPropertyDefaults and forceSupervisorProperties
 	virtual void 					defaultPage						(xgi::Input* in, xgi::Output* out);
+	/// getStandAloneDefaultPageParameters returns the stand-alone parameters of a
+	/// default-page request ("&standAloneMode=1&gatewayLID=<N>&gatewayOrigin=<...>",
+	/// or "" when not a stand-alone request) so defaultPage overrides can forward them to the content
+	/// page in the frame src (see Desktop.openStandalone in Desktop.js).
+	static std::string 				getStandAloneDefaultPageParameters	(xgi::Input* in);
 	virtual void 					request							(const std::string&               requestType,
 																	cgicc::Cgicc&                    cgiIn,
 																	HttpXmlDocument&                 xmlOut,

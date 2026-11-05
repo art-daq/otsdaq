@@ -253,6 +253,7 @@ class CorePropertySupervisorBase
 	bool 								isFirstAppInContext								(void) const { return isFirstAppInContext_;}
 	uint64_t 							getAvailableLogSpaceKB							(void) { getAvailableDiskSpace(); return availableLogSpaceKB_.load(); }
 	uint64_t 							getAvailableDataSpaceKB							(void) { getAvailableDiskSpace(); return availableDataSpaceKB_.load(); }
+	uint64_t 							getAvailableVarSpaceKB							(void) { getAvailableDiskSpace(); return availableVarSpaceKB_.load(); }  ///< system /var filesystem; 0 if unreadable
 
 	bool 								isReadOnly										(void) const { return readOnly_; }
 
@@ -267,9 +268,11 @@ class CorePropertySupervisorBase
 
 	void								getAvailableDiskSpace							(void);
 
-	std::atomic<uint64_t>				availableLogSpaceKB_{0}, availableDataSpaceKB_{0};
+	std::atomic<uint64_t>				availableLogSpaceKB_{0}, availableDataSpaceKB_{0}, availableVarSpaceKB_{0};
 	time_t								lastDiskSpaceCheckTime_ = 0;
+	bool								varSpaceWarned_ = false;  ///< warn once if /var can not be read, then report 0 quietly
 	const std::string 					OTSDAQ_LOG_DIR, OTSDAQ_DATA_DIR;
+	static const std::string			OTSDAQ_VAR_DIR;  ///< "/var": the system disk, deliberately not configurable
 };
 
 // clang-format on

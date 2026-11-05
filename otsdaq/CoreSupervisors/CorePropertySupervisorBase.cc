@@ -8,6 +8,8 @@
 
 using namespace ots;
 
+const std::string CorePropertySupervisorBase::OTSDAQ_VAR_DIR = "/var";
+
 const CorePropertySupervisorBase::SupervisorProperties
     CorePropertySupervisorBase::SUPERVISOR_PROPERTIES =
         CorePropertySupervisorBase::SupervisorProperties();
@@ -187,7 +189,13 @@ CorePropertySupervisorBase::~CorePropertySupervisorBase(void)
 {
 	__SUP_COUT__ << "Destructor." << __E__;
 
-	CorePropertySupervisorBase::indicateOtsDead(this);
+	// If the constructor threw before the configuration manager was built, there is no
+	// context tree to read the port/host from; marking ots dead would dereference null and
+	// turn the constructor's exception into a segfault that hides it.
+	if(theConfigurationManager_)
+		CorePropertySupervisorBase::indicateOtsDead(this);
+	else
+		CorePropertySupervisorBase::indicateOtsDead(nullptr);
 
 	if(theConfigurationManager_)
 		delete theConfigurationManager_;
@@ -235,8 +243,25 @@ void CorePropertySupervisorBase::getAvailableDiskSpace()
 	    (uint64_t)dataStat.f_bavail * dataStat.f_frsize / 1024;  // in KB
 	__SUP_COUTTV__(availableDataSpaceKB);
 
+	// /var is the host's system disk (journals, databases, container storage); a full
+	// /var breaks the node in ways that look unrelated to otsdaq. Same 10 s gate as the
+	// two above, so this adds one local statvfs per 10 s per host. Never throw: a
+	// problem reading /var must not take down the status reply for log and data.
+	uint64_t       availableVarSpaceKB = 0;
+	struct statvfs varStat;
+	if(statvfs((OTSDAQ_VAR_DIR + "/").c_str(), &varStat) == 0)
+		availableVarSpaceKB = (uint64_t)varStat.f_bavail * varStat.f_frsize / 1024;
+	else if(!varSpaceWarned_)
+	{
+		varSpaceWarned_ = true;
+		__SUP_COUT_WARN__ << "Disk space retrieval failed for " << OTSDAQ_VAR_DIR
+		                  << "; reporting 0 for /var from now on." << __E__;
+	}
+	__SUP_COUTTV__(availableVarSpaceKB);
+
 	availableLogSpaceKB_  = availableLogSpaceKB;
 	availableDataSpaceKB_ = availableDataSpaceKB;
+	availableVarSpaceKB_  = availableVarSpaceKB;
 
 	lastDiskSpaceCheckTime_ = time(0);
 }  //end getAvailableDiskSpace()
