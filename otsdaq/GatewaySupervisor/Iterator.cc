@@ -2875,9 +2875,8 @@ try
 			       << "is currently "
 			       << "in control of State Machine progress. "
 			       << "Iteration plan '" << planName << "' is "
-			       << (activePlanIsRunning_ ? "running" : "stopped")
-			       << " at command " << activeCommandIndex_ << " of "
-			       << activeNumberOfCommands_
+			       << (activePlanIsRunning_ ? "running" : "stopped") << " at command "
+			       << activeCommandIndex_ << " of " << activeNumberOfCommands_
 			       << (activeCommandType_.size() ? " (" + activeCommandType_ + ")" : "")
 			       << ". To regain manual control of the State Machine, halt the "
 			          "Iterator (e.g. from the Iterator web app, or contact an admin)."

@@ -138,6 +138,12 @@ class CoreSupervisorBase : public xdaq::Application,
 	/// subsequent configureInit() may not skip the reload)
 	bool lastActivationHadMergeOrOverride_ = false;
 
+	/// snapshot of the 'artdaq' namespace system variables (e.g. triggerMenuTag
+	/// chosen in a web GUI) at the last configureInit() activation; table plugins
+	/// resolve ${OTS.artdaq.*} at activation, so a change here must defeat the
+	/// redundant-activation skip even when the table group is unchanged
+	std::map<std::string, std::string> lastActivationArtdaqSystemVariables_;
+
 	/// for managing transition iterations
 	std::vector<bool>       stateMachinesIterationDone_;
 	std::set<unsigned int>  stateMachinesWaitingSubsystemIteration_;  ///< re-armed when the subsystem-iteration index changes
