@@ -1,7 +1,9 @@
 #include "otsdaq/CoreSupervisors/FESupervisor.h"
 #include "otsdaq/ConfigurationInterface/ConfigurationManager.h"
 #include "otsdaq/FECore/FEVInterfacesManager.h"
+#ifndef OTS_LITE
 #include "otsdaq/TablePlugins/ARTDAQTableBase/ARTDAQTableBase.h"
+#endif
 
 #include "artdaq/DAQdata/Globals.hh"  // instantiates artdaq::Globals::metricMan_
 
@@ -1688,6 +1690,7 @@ void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 
 		std::string metric_string     = "";
 		bool        metricStringSetup = true;
+#ifndef OTS_LITE
 		try
 		{
 			std::ostringstream oss;
@@ -1702,6 +1705,9 @@ void FESupervisor::transitionConfiguring(toolbox::Event::Reference /*event*/)
 			metricStringSetup = false;
 			metric_string     = "";
 		}  // ignore error
+#else
+		metricStringSetup = false;  // no artdaq metrics block in ots-lite
+#endif
 
 		if(!metricMan)
 		{
