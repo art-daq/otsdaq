@@ -14,10 +14,15 @@ registers), `ots-lite-architecture.md`.
 
 | Repo | File | Purpose |
 |------|------|---------|
-| otsdaq-components | `FEInterfaces/FESunrockInterface.h`, `FESunrockInterfaceImpl.cc`, `FESunrockInterface_interface.cc`, `CMakeLists.txt` | the plugin (library + loadable plugin) |
-| otsdaq | `data-core/TableInfo/ConfigCore/FESunrockInterfaceTableInfo.xml` | config table `FESunrockInterfaceTable` |
+| otsdaq-td-ims-asic (new) | `otsdaq-td-ims-asic/FEInterfaces/FESunrockInterface.h`, `FESunrockInterfaceImpl.cc`, `FESunrockInterface_interface.cc`, `CMakeLists.txt` | the plugin (library + loadable plugin) |
+| otsdaq-td-ims-asic (new) | `data-core/TableInfo/ConfigCore/FESunrockInterfaceTableInfo.xml` | config table `FESunrockInterfaceTable` |
 | otsdaq | `otsdaq/XdaqLite/ots_lite_main.cc` | lite executive: parse *all* contexts, serve the one on its own `-p` port, register the others' applications as remote |
 | otsdaq | `otsdaq/XdaqLite/XdaqLite.cc` | `postSOAP` to a remote context over HTTP (was "not implemented yet") |
+
+The plugin and table live in their own repo, `otsdaq-td-ims-asic`, not in otsdaq-components
+or otsdaq data-core: the hardware is project specific. The repo was created locally in
+`dev-srcs/otsdaq-td-ims-asic` (branch `develop`, no remote yet). Its top-level
+`CMakeLists.txt` is derived from `otsdaq-demo`'s; it depends only on `otsdaq`.
 
 Why the lite changes: before them `ots_lite_main` used only the **first**
 `<xc:Context>` in the partition XML and could not send SOAP to another context, so a
@@ -74,11 +79,27 @@ Configuration group via a **new Backbone group** (see `gateway-udp-fsm.md`), res
 
 ## Install and run (user steps)
 
-1. `UpdateOTS.sh --pullall; mb` (rebuilds otsdaq and otsdaq-components).
-2. Copy the new table definition into the run area:
-   `cp srcs/otsdaq/data-core/TableInfo/ConfigCore/FESunrockInterfaceTableInfo.xml <lite-area>/Data/TableInfo/`
+The lite installer (`ots-quick-lite-start.sh`) hardcodes its four repos (clone loop, the
+`mb`/`mz`/`mz_uc` aliases written to `setup_ots.sh`, and the build loop), and
+`UpdateOTS.sh --pullall` only knows those four, so the fifth repo is added by hand:
+
+1. Put the repo in the run area: `cp -r <dev-srcs>/otsdaq-td-ims-asic <lite-area>/srcs/`
+   (or `git clone` it into `srcs/` once it has a remote).
+2. Add `otsdaq-td-ims-asic` after `otsdaq-demo` in the `for p in ...` lists of the `mb` and
+   `mz` aliases in `setup_ots.sh`.
+3. First build, with the same cmake flags the `mz` alias uses for the other packages
+   (after otsdaq has been built and installed):
+   `cmake -S srcs/otsdaq-td-ims-asic -B build/otsdaq-td-ims-asic <flags>`, then
+   `cmake --build build/otsdaq-td-ims-asic -j && cmake --install build/otsdaq-td-ims-asic`.
+   Afterwards `mb` includes it.
+4. Copy the new table definition into the run area:
+   `cp srcs/otsdaq-td-ims-asic/data-core/TableInfo/ConfigCore/FESunrockInterfaceTableInfo.xml Data/TableInfo/`
    (the run-area `Data/TableInfo` is a plain copy made at install time).
-3. Apply the configuration above, restart `ots`.
+5. Apply the configuration above, restart `ots`.
+
+An earlier build of the plugin from otsdaq-components may have left
+`libFESunrockInterface.so` in `local/install/lib`; the new package installs over the same
+file names, so no cleanup is needed.
 
 ## Checks (all unverified)
 
