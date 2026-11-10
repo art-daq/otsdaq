@@ -15,7 +15,7 @@ registers), `ots-lite-architecture.md`.
 | Repo | File | Purpose |
 |------|------|---------|
 | otsdaq-td-ims-asic (new) | `otsdaq-td-ims-asic/FEInterfaces/FESunrockInterface.h`, `FESunrockInterfaceImpl.cc`, `FESunrockInterface_interface.cc`, `CMakeLists.txt` | the plugin (library + loadable plugin) |
-| otsdaq-td-ims-asic (new) | `data-core/TableInfo/ConfigCore/FESunrockInterfaceTableInfo.xml` | config table `FESunrockInterfaceTable` |
+| otsdaq-td-ims-asic (new) | `CoreTables/FESunrockInterfaceTableInfo.xml` | config table `FESunrockInterfaceTable` |
 | otsdaq | `otsdaq/XdaqLite/ots_lite_main.cc` | lite executive: parse *all* contexts, serve the one on its own `-p` port, register the others' applications as remote |
 | otsdaq | `otsdaq/XdaqLite/XdaqLite.cc` | `postSOAP` to a remote context over HTTP (was "not implemented yet") |
 
@@ -93,7 +93,7 @@ The lite installer (`ots-quick-lite-start.sh`) hardcodes its four repos (clone l
    `cmake --build build/otsdaq-td-ims-asic -j && cmake --install build/otsdaq-td-ims-asic`.
    Afterwards `mb` includes it.
 4. Copy the new table definition into the run area:
-   `cp srcs/otsdaq-td-ims-asic/data-core/TableInfo/ConfigCore/FESunrockInterfaceTableInfo.xml Data/TableInfo/`
+   `cp srcs/otsdaq-td-ims-asic/CoreTables/FESunrockInterfaceTableInfo.xml Data/TableInfo/`
    (the run-area `Data/TableInfo` is a plain copy made at install time).
 5. Apply the configuration above, restart `ots`.
 
