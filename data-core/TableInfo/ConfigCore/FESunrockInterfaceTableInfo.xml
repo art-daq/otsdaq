@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+	<ROOT xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="TableInfo.xsd">
+		<TABLE Name="FESunrockInterfaceTable">
+			<VIEW Name="FE_SUNROCK_INTERFACE_TABLE" Type="File,Database,DatabaseTest">
+				<COLUMN Type="UID" 	 Name="InterfaceID" 	 StorageName="INTERFACE_ID" 		DataType="VARCHAR2"/>
+				<COLUMN Type="Data" 	 Name="ZynqHostName" 	 StorageName="ZYNQ_HOST_NAME" 		DataType="VARCHAR2"/>
+				<COLUMN Type="Data" 	 Name="ZynqSshUser" 	 StorageName="ZYNQ_SSH_USER" 		DataType="VARCHAR2"/>
+				<COLUMN Type="Data" 	 Name="ZynqSshPort" 	 StorageName="ZYNQ_SSH_PORT" 		DataType="NUMBER"/>
+				<COLUMN Type="Data" 	 Name="CommandTimeoutSeconds" 	 StorageName="COMMAND_TIMEOUT_SECONDS" 		DataType="NUMBER"/>
+				<COLUMN Type="Data" 	 Name="StatusPollPeriodSeconds" 	 StorageName="STATUS_POLL_PERIOD_SECONDS" 		DataType="NUMBER"/>
+				<COLUMN Type="Comment" 	 Name="CommentDescription" 	 StorageName="COMMENT_DESCRIPTION" 		DataType="VARCHAR2"/>
+				<COLUMN Type="Author" 	 Name="Author" 	 StorageName="AUTHOR" 		DataType="VARCHAR2"/>
+				<COLUMN Type="Timestamp" 	 Name="RecordInsertionTime" 	 StorageName="RECORD_INSERTION_TIME" 		DataType="TIMESTAMP WITH TIMEZONE"/>
+			</VIEW>
+		</TABLE>
+	</ROOT>
