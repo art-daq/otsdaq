@@ -4,20 +4,44 @@ _otsdaq_ is a Ready-to-Use data-acquisition (DAQ) solution aimed at scaling down
 
 _otsdaq_ provides a library of supported front-end boards and firmware modules which implement a custom UDP protocol.   Additionally, an integrated Run Control GUI and readout software are provided, preconfigured to communicate with _otsdaq_ firmware.
 
-# Code Documentation {#topicList}
+<a id="install"></a>
+
+# Installing otsdaq
+
+Run either one-line command in a new, empty directory that is not inside a git checkout.
+Neither needs root. If system packages are missing, the script stops and prints the exact
+`dnf` or `apt` command for an administrator to run, then you rerun the same line.
+
+**otsdaq lite**, about 5 minutes: no Spack, CVMFS, xdaq or artdaq; plain CMake and gcc.
+See [lite-quick-install-readme.md](https://github.com/art-daq/otsdaq-demo/blob/develop/lite-quick-install-readme.md) for requirements and details.
+
+    mkdir ots && cd ots && wget https://raw.githubusercontent.com/art-daq/otsdaq-demo/develop/tools/ots-quick-lite-start.sh && chmod +x ots-quick-lite-start.sh && ./ots-quick-lite-start.sh
+
+**Full otsdaq**, with artdaq and xdaq through Spack: under an hour when products are already
+available from CVMFS or an administrator's upstream area, more than two hours from scratch.
+Add `--develop` to also check out the otsdaq sources for development.
+See the [installation tutorial](https://otsdaq.fnal.gov/tutorials_v2/tutorialPages/installing_and_starting_otsdaq.php) for details.
+
+    mkdir ots && cd ots && wget https://raw.githubusercontent.com/art-daq/otsdaq-demo/develop/tools/ots-quick-spack-start_v1.1.sh -O ots-quick-spack-start.sh && chmod +x ots-quick-spack-start.sh && unset SPACK_ROOT && ./ots-quick-spack-start.sh
+
+Then, in each new terminal, `source setup_ots.sh` in that directory and run `ots --wiz` to configure or `ots` to start.
+
+<a id="topiclist"></a>
+
+# Code Documentation
 
 
 Below are some helpful links to _otsdaq_ C++ classes organized by topic. The topics are as follows:  
   
 *   [Supervisor Base Classes](#supervisor)
-*   [_otsdaq_ Core Supervisors](#coreSupervisors)
+*   [_otsdaq_ Core Supervisors](#coresupervisors)
 *   [Configuration Primer](https://otsdaq.fnal.gov/tutorials/first_demo/topics/configuration_primer.html)
 *   [Web Desktop Login and Requests](#access)
 *   [Front-ends](#frontends)
-*   [Data Managers](#dataManagers)
+*   [Data Managers](#datamanagers)
 *   [_artdaq_](#artdaq)
 *   [Visualization and DQM](#visualization)
-*   [Slow Controls](#slowControls)
+*   [Slow Controls](#slowcontrols)
 
   
   
@@ -46,9 +70,11 @@ _otsdaq_ is built on top of the _artdaq_ toolkit and the XDAQ toolkit:
 
   
   
-[Jump to Topics List](#topicList)
+[Jump to Topics List](#topiclist)
 
-Supervisor Base Classes {#supervisor}
+<a id="supervisor"></a>
+
+Supervisor Base Classes
 =======================
 
 All client otsdaq supervisors should inherit functionality from these classes. Inheriting from CoreSupervisorBase should be sufficient for most user-created supervisors for compatibility within otsdaq.
@@ -75,9 +101,11 @@ This class provides finite state machine functionality for otsdaq supervisors.
 
   
   
-[Jump to Topics List](#topicList)
+[Jump to Topics List](#topiclist)
 
-otsdaq Core Supervisors {#coreSupervisors}
+<a id="coresupervisors"></a>
+
+otsdaq Core Supervisors
 =========================
 
 The otsdaq Core Supervisors are the supervisors provided with otsdaq and otsdaq-utilities distribution.
@@ -132,9 +160,11 @@ This class handles the web user interface to a VisualDataManager with reqgard to
 
   
   
-[Jump to Topics List](#topicList)
+[Jump to Topics List](#topiclist)
 
-Web Desktop Login and Requests {#access}
+<a id="access"></a>
+
+Web Desktop Login and Requests
 ==============================
 
 The classes in this section are involved in user account management and system security.
@@ -157,9 +187,11 @@ This class provides the functionality for client supervisors to check with the G
 
   
   
-[Jump to Topics List](#topicList)
+[Jump to Topics List](#topiclist)
 
-Front-ends {#frontends}
+<a id="frontends"></a>
+
+Front-ends
 ==========
 
 The classes in this section are involved with the control and management of front-end interface. Front-end interfaces are considered to be the specifics for how to interface to a device external to otsdaq. For example, a front-end interface might interface to physics detector readout electronics or a detector readout software emulator.
@@ -174,7 +206,7 @@ This class handles a collection of front-end interface pluginss. It provides an 
 
 [FEDataManagerSupervisor](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1FEDataManagerSupervisor.html)
 
-This class handles two collections: a collection of Front-end plugins, and a collection of Data Processor plugins (see [Data Managers](#dataManagers)). The unique functionality of the FEDataManagerSupervisor is if a FEProducerVInterface plugin is instantiated in the collection of Front-end plugins, then that FEProducerVInterface will also be included in the collection of Data Processor plugin as a Data Producer - thus creating a single plugin instance that is a hybrid between Front-end plugin and Data Producer. This may be useful if, for example, it is convenient for the front-end interface to also receive streaming data to be saved or monitored.
+This class handles two collections: a collection of Front-end plugins, and a collection of Data Processor plugins (see [Data Managers](#datamanagers)). The unique functionality of the FEDataManagerSupervisor is if a FEProducerVInterface plugin is instantiated in the collection of Front-end plugins, then that FEProducerVInterface will also be included in the collection of Data Processor plugin as a Data Producer - thus creating a single plugin instance that is a hybrid between Front-end plugin and Data Producer. This may be useful if, for example, it is convenient for the front-end interface to also receive streaming data to be saved or monitored.
 
 [FEVInterfacesManager](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1FEVInterfacesManager.html)
 
@@ -186,17 +218,19 @@ This class is a virtual class defining the features of front-end interface plugi
 
 [FEProducerVInterface](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1FEProducerVInterface.html)
 
-This class provides base class functionality for Front-end Data Producer plugin classes that interface to front-end devices and place incoming streaming data in a Buffer. This is a plugin base that class that is a hybrid between a FEVInterface and a DataProducerBase (see [Data Managers](#dataManagers)).
+This class provides base class functionality for Front-end Data Producer plugin classes that interface to front-end devices and place incoming streaming data in a Buffer. This is a plugin base that class that is a hybrid between a FEVInterface and a DataProducerBase (see [Data Managers](#datamanagers)).
 
 [FESlowControlsChannel](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1FESlowControlsChannel.html)
 
-This class provides base slow controls channel functionality for Front-end plugin classes to monitor slow controls channels. Slow controls channels have fields like name, address, bit-field size, alarm thresholds, etc. (see [Slow Controls](#slowControls)).
+This class provides base slow controls channel functionality for Front-end plugin classes to monitor slow controls channels. Slow controls channels have fields like name, address, bit-field size, alarm thresholds, etc. (see [Slow Controls](#slowcontrols)).
 
   
   
-[Jump to Topics List](#topicList)
+[Jump to Topics List](#topiclist)
 
-Data Managers {#dataManagers}
+<a id="datamanagers"></a>
+
+Data Managers
 =============
 
 These classes are associated with the handling of data being received by the otsdaq system.
@@ -243,9 +277,11 @@ This class provides base class functionality for Front-end Data Producer plugin 
 
   
   
-[Jump to Topics List](#topicList)
+[Jump to Topics List](#topiclist)
 
-artdaq {#artdaq}
+<a id="artdaq"></a>
+
+artdaq
 ========
 
 The classes in this section are involved with the otsdaq layer on top of the artdaq toolkit.
@@ -264,9 +300,11 @@ This class provides the base functionality for artdaq configuration table plugin
 
   
   
-[Jump to Topics List](#topicList)
+[Jump to Topics List](#topiclist)
 
-Visualization and DQM {#visualization}
+<a id="visualization"></a>
+
+Visualization and DQM
 =====================
 
 The classes in this section are involved with data visualization and Data Quality Monitoring (DQM).
@@ -281,17 +319,19 @@ This class is the web server to visualize objects found on disk and also the con
 
 [VisualDataManager](https://art-daq.github.io/otsdaq_doxygen/otsdaq-utilities/classots_1_1VisualDataManager.html)
 
-This class provides functionality for handling Visualizer data consumer plugin classes that can produce live visualization objects during a finite state machine Run. It inherits all Data Manager (see [Data Managers](#dataManagers)) functionality as well.
+This class provides functionality for handling Visualizer data consumer plugin classes that can produce live visualization objects during a finite state machine Run. It inherits all Data Manager (see [Data Managers](#datamanagers)) functionality as well.
 
 [RawDataVisualizerConsumer](https://art-daq.github.io/otsdaq_doxygen/otsdaq/classots_1_1RawDataVisualizerConsumer.html)
 
-This class provides example functionality for creating live visualization objects from the incoming data. It inherits all functionality of a DataConsumer plugin class (see [Data Managers](#dataManagers)). Custom visualizer plugins can be created using this class as an example, and can be children plugins to the VisualDataManager container. An example DQM use case is to create a live ROOT TTree based on incoming data, then users can use the Visualizer web-app to browser live data during a finite state machine Run.
+This class provides example functionality for creating live visualization objects from the incoming data. It inherits all functionality of a DataConsumer plugin class (see [Data Managers](#datamanagers)). Custom visualizer plugins can be created using this class as an example, and can be children plugins to the VisualDataManager container. An example DQM use case is to create a live ROOT TTree based on incoming data, then users can use the Visualizer web-app to browser live data during a finite state machine Run.
 
   
   
-[Jump to Topics List](#topicList)
+[Jump to Topics List](#topiclist)
 
-Slow Controls {#slowControls}
+<a id="slowcontrols"></a>
+
+Slow Controls
 =============
 
 The classes in this section are involved with slow controls and monitoring. Generally, slow controls refers to a management and archiving system involving many channels. [EPICS](https://epics-controls.org/) is one such slow controls system. Slow controls channels are usually treated independently. Channels have associated fields (e.g. name, value, timestamp, alarm thresholds, etc.) and persistent history. In EPICS, a “Channel” is known as a “Process Variable” (PV), so PV and channel are often used interchangeably.
